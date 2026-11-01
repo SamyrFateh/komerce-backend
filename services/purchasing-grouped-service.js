@@ -21,7 +21,7 @@
 /**
  * Forme regroupée des purchase_orders (PR 4/8, MISSION_PURCHASE_LINES), derrière KOMERCE_GROUPED_PURCHASING.
  *
- * Une ligne ouverte (purchase_lines sans PO) est regroupée par (fournisseur, hub) dans une PO `draft` ; la PO
+ * Une ligne ouverte (purchase_lines sans PO) est regroupée par (fournisseur, hub, marché) dans une PO `draft` ; la PO
  * regroupée n'a pas de colonnes de ligne (order_id, qty, supplier_sku… NULL). Les gardes I2–I5 sont en base ;
  * ce service donne des erreurs lisibles et pose l'ordre de verrouillage commun : PO d'abord, lignes ensuite
  * (identifiants triés), pour qu'annulation de commande, détachement et abandon ne s'interbloquent pas.
@@ -103,7 +103,7 @@ function mapDbError(err) {
 
 async function lockGroupedPo(client, poId, { requireDraft = true } = {}) {
   const { rows: [po] } = await client.query(
-    'SELECT id, order_id, status, supplier_id, procurement_hub_ref FROM purchase_orders WHERE id = $1 FOR UPDATE',
+    'SELECT id, order_id, status, supplier_id, procurement_hub_ref, market_id FROM purchase_orders WHERE id = $1 FOR UPDATE',
     [poId]
   );
   if (!po) throw fail(404, 'PURCHASE_ORDER_NOT_FOUND', 'Purchase order introuvable');
@@ -118,9 +118,9 @@ async function lockGroupedPo(client, poId, { requireDraft = true } = {}) {
   return po;
 }
 
-// ─── Marché : visible partout, jamais une clé de regroupement ────────────────────────────────────
-// Une PO regroupée peut contenir des lignes de plusieurs marchés (KM, CM, CG…). Le marché reste une propriété de
-// chaque ligne (order_item → order → market_id, via v_purchase_line_market) ; la PO n'en porte aucun.
+// ─── Le marché est dérivé de la commande client et scelle la PO fournisseur ──────────────────────
+// Chaque PO nouvellement préparée regroupe un seul fournisseur, un Hub et un marché.
+// Les dossiers historiques multi-marchés restent lisibles, jamais réattribués silencieusement.
 
 const LINE_COLUMNS = `
     pl.id AS line_id, pl.supplier_id, s.name AS supplier_name, pl.procurement_hub_ref,
@@ -193,11 +193,11 @@ function summarizeMarkets(lines) {
   return { markets, multi_market: markets.length > 1 };
 }
 
-// ─── Lecture : lignes ouvertes regroupées par (fournisseur, hub) ─────────────────────────────────
+// ─── Lecture : lignes ouvertes regroupées par (fournisseur, hub, marché) ─────────────────────────
 
 /**
  * @param {{ market_id?: string }} [filter] filtre OPÉRATEUR uniquement (vue restreinte à un marché) :
- *   il ne change jamais la clé de regroupement (fournisseur + hub).
+ *   la clé de regroupement reste fournisseur + hub + marché (dérivé en base).
  */
 async function listOpenLines({ market_id: marketId } = {}, q = db) {
   requireEnabled();
@@ -212,12 +212,15 @@ async function listOpenLines({ market_id: marketId } = {}, q = db) {
 
   const groups = new Map();
   for (const row of rows) {
-    const key = `${row.supplier_id}|${row.procurement_hub_ref}`;
+    const key = `${row.supplier_id}|${row.procurement_hub_ref}|${row.market_id}`;
     if (!groups.has(key)) {
       groups.set(key, {
         supplier_id: row.supplier_id,
         supplier_name: row.supplier_name,
         procurement_hub_ref: row.procurement_hub_ref,
+        market_id: row.market_id,
+        market_code: row.market_code,
+        market_name: row.market_name,
         currencies: new Set(),
         lines: [],
         by_supplier_unit_ref: new Map(),
@@ -240,6 +243,9 @@ async function listOpenLines({ market_id: marketId } = {}, q = db) {
       supplier_id: g.supplier_id,
       supplier_name: g.supplier_name,
       procurement_hub_ref: g.procurement_hub_ref,
+      market_id: g.market_id,
+      market_code: g.market_code,
+      market_name: g.market_name,
       currencies: [...g.currencies].sort(),
       lines: g.lines,
       by_supplier_unit_ref: [...g.by_supplier_unit_ref.values()],
@@ -259,7 +265,7 @@ async function loadPurchaseOrderLines(q, poId) {
   return rows.map(shapeLine);
 }
 
-/** Lecture d'une PO regroupée : en-tête (sans marché), lignes avec leur marché, ventilation par marché. */
+/** Lecture d'une PO regroupée : marché canonique de l'en-tête et commandes clientes de ses lignes. */
 async function getGroupedPurchaseOrder(poId, q = db) {
   requireUuid(poId, 'po_id');
   const { rows: [po] } = await q.query(`
@@ -290,12 +296,25 @@ async function preparePurchaseOrder({ supplier_id, procurement_hub_ref, line_ids
     if (!supplier) throw fail(404, 'SUPPLIER_NOT_FOUND', 'Fournisseur introuvable');
     const triggerMode = supplier.platform === 'whatsapp' ? 'whatsapp' : 'manual';
 
+    // Le navigateur n'est jamais autorité du marché : résolution directe par order_item -> order.
+    // La garde PostgreSQL revérifie l'identité au rattachement, sous verrou de la PO.
+    const { rows: markets } = await client.query(`
+      SELECT DISTINCT o.market_id
+        FROM purchase_lines pl
+        JOIN order_items oi ON oi.id = pl.order_item_id
+        JOIN orders o ON o.id = oi.order_id
+       WHERE pl.id = ANY($1::uuid[])
+    `, [ids]);
+    if (markets.length !== 1 || !markets[0].market_id) {
+      throw fail(409, 'PURCHASE_ORDER_MARKET_REQUIRED', 'Les lignes d’une PO doivent appartenir à un seul marché');
+    }
+
     // qty est passé explicitement à NULL : la colonne garde son DEFAULT 1 pour les écrivains historiques.
     const { rows: [po] } = await client.query(`
-      INSERT INTO purchase_orders (order_id, supplier_id, status, trigger_mode, procurement_hub_ref, qty, supplier_sku, notes)
-      VALUES (NULL, $1, 'draft', $2, $3, NULL, NULL, $4)
+      INSERT INTO purchase_orders (order_id, supplier_id, status, trigger_mode, procurement_hub_ref, market_id, qty, supplier_sku, notes)
+      VALUES (NULL, $1, 'draft', $2, $3, $4, NULL, NULL, $5)
       RETURNING *
-    `, [supplierId, triggerMode, hub, actor && actor.id ? `[GROUPED] préparée par ${actor.id}` : '[GROUPED] préparée']);
+    `, [supplierId, triggerMode, hub, markets[0].market_id, actor && actor.id ? `[GROUPED] préparée par ${actor.id}` : '[GROUPED] préparée']);
 
     await client.query('SELECT id FROM purchase_lines WHERE id = ANY($1::uuid[]) ORDER BY id FOR UPDATE', [ids]);
     // I2 : rattachement uniquement depuis l'état ouvert ; tout écart de compte annule tout.
@@ -315,6 +334,37 @@ async function preparePurchaseOrder({ supplier_id, procurement_hub_ref, line_ids
     const lines = await loadPurchaseOrderLines(client, po.id);
     log.info({ po_id: po.id, supplier_id: supplierId, lines: ids.length }, '[PURCHASING] PO regroupée préparée (draft)');
     return { purchase_order: po, line_ids: ids, lines, ...summarizeMarkets(lines) };
+  });
+}
+
+// ─── Enrichissement d'une PO ouverte : aucune création de nouvelle commande fournisseur ─────────
+async function attachDraftLines(poId, lineIds) {
+  requireEnabled();
+  requireUuid(poId, 'po_id');
+  const ids = requireLineIds(lineIds);
+
+  return withTransaction(async (client) => {
+    // Verrouiller la PO en premier, puis les lignes dans un ordre stable.
+    // Les triggers PostgreSQL imposent le même marché, le même fournisseur,
+    // le même Hub, la même devise et une identité fournisseur exacte.
+    const po = await lockGroupedPo(client, poId);
+    if (!po.market_id) {
+      throw fail(409, 'PURCHASE_ORDER_MARKET_REQUIRED', 'Ancienne PO sans marché unique : ajout impossible');
+    }
+    await client.query('SELECT id FROM purchase_lines WHERE id = ANY($1::uuid[]) ORDER BY id FOR UPDATE', [ids]);
+    const { rows: attached } = await client.query(`
+      UPDATE purchase_lines
+         SET purchase_order_id = $1, updated_at = NOW()
+       WHERE id = ANY($2::uuid[]) AND purchase_order_id IS NULL AND cancelled_at IS NULL
+       RETURNING id
+    `, [poId, ids]);
+    if (attached.length !== ids.length) {
+      throw fail(409, 'PURCHASE_LINES_ALREADY_ATTACHED',
+        'Une ligne est introuvable, annulée ou déjà engagée dans une autre PO',
+        { requested: ids.length, attached: attached.length });
+    }
+    const lines = await loadPurchaseOrderLines(client, poId);
+    return { purchase_order_id: poId, line_ids: ids, lines, ...summarizeMarkets(lines) };
   });
 }
 
@@ -421,6 +471,7 @@ module.exports = {
   listOpenLines,
   getGroupedPurchaseOrder,
   preparePurchaseOrder,
+  attachDraftLines,
   detachLines,
   discardPurchaseOrder,
   cancelLine,
