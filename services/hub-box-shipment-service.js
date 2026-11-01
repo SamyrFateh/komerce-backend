@@ -100,7 +100,7 @@ async function attachBoxToShipment({ unitId, shipmentReference, expectedMarketId
         }
       }
       const { rows: [shipment] } = await client.query(
-        'SELECT id, market_id, stage FROM international_shipments WHERE reference = $1', [reference]
+        'SELECT id, market_id, stage FROM international_shipments WHERE reference = $1 FOR UPDATE', [reference]
       );
       if (!shipment) throw failure(404, 'INTERNATIONAL_SHIPMENT_NOT_FOUND', 'Expédition introuvable');
       const { rows: [existing] } = await client.query(
