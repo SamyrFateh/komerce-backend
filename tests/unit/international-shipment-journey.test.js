@@ -155,7 +155,7 @@ test('un agent Hub ouvre un dossier vide sans transitaire, mode ni fausse preuve
   expect(opened).toMatchObject({stage:'hub_ready',hub_draft:true,hub_units:0});
   expect(x.executed.find(q=>q.sql.includes('INSERT INTO international_shipments')).params).toEqual([market.id,'KM-DRAFT-001',hub.id]);
   const event=x.executed.find(q=>q.sql.includes('INSERT INTO international_shipment_events'));
-  expect(event.params).toContain(null);
+  expect(event.sql).toContain('NULL');
   expect(event.sql).toContain("'opened'");
   expect(x.executed.some(q=>q.sql.includes('international_shipment_parcels'))).toBe(false);
   await expectError(journey.open(market,{id:'op',role:'market_operator'},{reference:'KM-DRAFT-002'},x.db),'JOURNEY_ROLE_FORBIDDEN');
