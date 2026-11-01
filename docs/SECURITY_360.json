@@ -2,8 +2,8 @@
   "generatedAt": "2026-10-31T09:03:51.055Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 770,
-    "protected": 715,
+    "total": 771,
+    "protected": 716,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -4005,6 +4005,16 @@
     },
     {
       "key": "POST /api/admin/workspaces/shipping-customs/market/{marketCode}/international/{reference}/link-customs",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_transitaire",
+        "market_operator"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/shipping-customs/market/{marketCode}/international/{reference}/reconcile-n1",
       "level": "PROTECTED",
       "roles": [
         "admin",
