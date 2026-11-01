@@ -4,6 +4,10 @@ on:
   pull_request:
     paths:
       - 'migrations/354_international_shipment_journey.sql'
+      - 'migrations/355_international_n1_reconciliation.sql'
+      - 'services/international-n1-reconciliation.js'
+      - 'tests/unit/international-n1-reconciliation.test.js'
+      - 'scripts/testing/international-n1-pg16-*.sql'
       - 'services/international-shipment-journey.js'
       - 'routes/admin-shipping-customs-workspace.js'
       - 'public/dashboards/canonical/js/international-journey-panel.js'
@@ -54,12 +58,17 @@ jobs:
       - name: JS source syntax
         run: |
           node --check services/international-shipment-journey.js
+          node --check services/international-n1-reconciliation.js
           node --check public/dashboards/canonical/js/international-journey-panel.js
           node --check routes/admin-shipping-customs-workspace.js
       - name: Jest targeted role/transport/UI
-        run: npx jest --runInBand tests/unit/international-shipment-journey.test.js tests/unit/international-journey-panel.test.js tests/unit/admin-shipping-customs-workspace-route.test.js tests/unit/canonical-shipping-customs-workspace-ui.test.js
-      - name: PostgreSQL 16 migration 353 on disposable schema
+        run: npx jest --runInBand tests/unit/international-shipment-journey.test.js tests/unit/international-n1-reconciliation.test.js tests/unit/international-journey-panel.test.js tests/unit/admin-shipping-customs-workspace-route.test.js tests/unit/canonical-shipping-customs-workspace-ui.test.js
+      - name: PostgreSQL 16 migrations 354 and 355 on disposable schema
         run: |
           psql -v ON_ERROR_STOP=1 -f scripts/testing/international-journey-pg16-fixture.sql
           psql -v ON_ERROR_STOP=1 -f migrations/354_international_shipment_journey.sql
           psql -v ON_ERROR_STOP=1 -f scripts/testing/international-journey-pg16-assert.sql
+          psql -v ON_ERROR_STOP=1 -f scripts/testing/international-n1-pg16-fixture.sql
+          psql -v ON_ERROR_STOP=1 -f migrations/355_international_n1_reconciliation.sql
+          psql -v ON_ERROR_STOP=1 -f migrations/355_international_n1_reconciliation.sql
+          psql -v ON_ERROR_STOP=1 -f scripts/testing/international-n1-pg16-assert.sql

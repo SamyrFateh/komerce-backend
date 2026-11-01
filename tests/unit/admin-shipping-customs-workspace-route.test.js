@@ -74,6 +74,13 @@ jest.mock('../../services/shipping-customs-workspace', () => {
   };
 });
 
+const mockInternationalN1=jest.fn();
+jest.mock('../../services/international-n1-reconciliation',()=>({
+  ReconciliationError:class ReconciliationError extends Error{
+    constructor(code,message,status=409){super(message);this.code=code;this.status=status;}
+  },
+  reconcile:(...args)=>mockInternationalN1(...args),
+}));
 // International transport stages remain separate from customs writes.
 const mockJourneyList=jest.fn(),mockJourneyDetail=jest.fn(),mockJourneyCreate=jest.fn();
 const mockJourneyTransition=jest.fn(),mockJourneyTracking=jest.fn();
@@ -148,6 +155,7 @@ beforeEach(() => {
     customs: { shipments: [], candidates: [] },
   });
   mockConfirmTransit.mockResolvedValue({ parcel_ref: 'PCL-CM-001', status: 'in_transit' });
+  mockInternationalN1.mockResolvedValue({status:'reconciled',actual_n1_kmf:'12000.00'});
   mockJourneyList.mockResolvedValue([]);
   mockJourneyDetail.mockResolvedValue({shipment:{reference:'INT-CM-001'},events:[],charges:[],parcels:[]});
   mockJourneyCreate.mockResolvedValue({reference:'INT-CM-001'});
@@ -378,4 +386,15 @@ describe('Chaîne internationale réelle — autorité marché et gestes sépar�
     expect((await request(app()).post(base+'/INT-CM-001/link-customs').send({customs_reference:'CUS-001'})).status).toBe(200);
     expect((await request(app()).post(base).send({market_id:'fake'})).status).toBe(400);
   });
+});
+
+test('N1 reconciliation is Admin-only and market-scoped',async()=>{
+  const url='/api/admin/workspaces/shipping-customs/market/CM/international/INT-CM-001/reconcile-n1';
+  mockUserRole='market_operator';
+  expect((await request(app()).post(url).send({})).status).toBe(403);
+  expect(mockInternationalN1).not.toHaveBeenCalled();
+  mockUserRole='admin';mockGlobalAllowed=true;
+  expect((await request(app()).post(url).send({})).status).toBe(200);
+  expect(mockInternationalN1).toHaveBeenCalledWith(
+    expect.objectContaining({id:'market-cm-id'}),expect.objectContaining({role:'admin'}),'INT-CM-001');
 });
