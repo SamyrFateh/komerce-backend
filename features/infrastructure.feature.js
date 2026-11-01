@@ -55,6 +55,7 @@ module.exports = {
     middleware: [
       'middleware/error-handler.js',
       'middleware/rate-limit.js',
+      'middleware/recette-isolation-guard.js',
       'middleware/request-id.js',
       'middleware/require-non-production.js',
       'middleware/upload.js',
