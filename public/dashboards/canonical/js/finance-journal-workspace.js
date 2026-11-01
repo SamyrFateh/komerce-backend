@@ -65,6 +65,8 @@
     if (!rows.length) return text(doc, 'p', 'kmc-workspace-empty', emptyMessage);
     const wrap = doc.createElement('div');
     wrap.style.overflowX = 'auto';
+    wrap.style.maxWidth = '100%';
+    wrap.style.minWidth = '0';
     const node = doc.createElement('table');
     node.className = 'kmc-com-table';
     const head = doc.createElement('tr');
@@ -157,6 +159,8 @@
     rootNode.appendChild(tabs);
     const content = doc.createElement('div');
     content.setAttribute('data-journal-content', '');
+    content.style.minWidth = '0';
+    content.style.maxWidth = '100%';
     rootNode.appendChild(content);
 
     function drawTabs() {

@@ -31,7 +31,7 @@ const cash = { scope: { code: 'KM', name: 'Comores' }, filters: { from: '2026-10
 async function mount(page, role) {
   await page.route(ORIGIN + '/**', async route => {
     const url = new URL(route.request().url());
-    if (url.pathname === PAGE) return route.fulfill({ contentType: 'text/html; charset=utf-8', body: '<!doctype html><html lang="fr"><head><meta name="viewport" content="width=device-width"></head><body><main id="root"></main>' + ['primitives', 'admin-context', 'finance-accounting-workspace', 'finance-journal-workspace'].map(n => `<script src="/dashboards/canonical/js/${n}.js"></script>`).join('') + '</body></html>' });
+    if (url.pathname === PAGE) return route.fulfill({ contentType: 'text/html; charset=utf-8', body: '<!doctype html><html lang="fr"><head><meta name="viewport" content="width=device-width">' + ['base','tokens','renderer','operations-workspace','canonical-theme-v2','canonical-shell-v4','canonical-finish-polish-v1','komerce-layout-canon-v1'].map(n => `<link rel="stylesheet" href="/dashboards/canonical/css/${n}.css">`).join('') + '</head><body><main id="root"></main>' + ['primitives', 'admin-context', 'finance-accounting-workspace', 'finance-journal-workspace'].map(n => `<script src="/dashboards/canonical/js/${n}.js"></script>`).join('') + '</body></html>' });
     if (url.pathname.startsWith('/dashboards/canonical/')) {
       const file = path.join(CANONICAL, url.pathname.replace('/dashboards/canonical/', ''));
       return fs.existsSync(file) ? route.fulfill({ path: file }) : route.fulfill({ status: 404, body: '' });
