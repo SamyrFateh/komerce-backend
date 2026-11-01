@@ -729,3 +729,31 @@ Migration 300 ajoute `customs_shipment_fees.post_closure` (boolean, défaut fals
 
 `catalog_media_recovery_audit` conserve l'identité produit, la référence candidat fournisseur, l'acteur, la liste des identités médias fournisseur et l'empreinte SHA-256 du sous-ensemble média, avec les comptages avant/après. Le service `catalog-media-recovery` n'ajoute des médias à un brouillon inactif précédemment vide qu'après preuve source V2, sous autorisation Catalogue + Sourcing et transaction commune avec la ligne d'audit. Aucune publication ni exposition marché. Migration en PR, **non appliquée au staging** à ce stade.
 <!-- /schema-pending -->
+
+
+### Chaîne d'expédition internationale — migration 353 (intended_migration_schema, not yet live)
+
+<!-- schema-pending: international_shipments (migration 353, not yet live) -->
+
+`international_shipments` — Dossier de transport international réel : marché, transitaire, mode, étape prouvée, volume, facture de fret, suivi et ETA, lien optionnel vers le dossier douanier distinct. Source des faits transport, sans écriture N1 automatique.
+
+<!-- /schema-pending -->
+
+<!-- schema-pending: international_shipment_parcels (migration 353, not yet live) -->
+
+`international_shipment_parcels` — Composition physique verrouillée : identifiant du dossier de transport et colis liés ; un colis n'appartient qu'à une expédition internationale. Volume Hub conservé et rattachement contrôlé côté service.
+
+<!-- /schema-pending -->
+
+<!-- schema-pending: international_shipment_events (migration 353, not yet live) -->
+
+`international_shipment_events` — Journal append-only des jalons : acteur, preuve, horodatage, étape précédente/suivante et information de suivi révisable sans effacer l'historique.
+
+<!-- /schema-pending -->
+
+<!-- schema-pending: international_shipment_charges (migration 353, not yet live) -->
+
+`international_shipment_charges` — Journal append-only de frais d'arrivée et transport local (montant, catégorie, preuve, idempotence, correction par crédit). Faits documentaires non encore ventilés en N1 ; rapprochement douane/fret obligatoire avant toute imputation.
+
+<!-- /schema-pending -->
+
