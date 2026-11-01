@@ -22,6 +22,7 @@ const purge = require('../controlled-business-purge');
 const { confirmTarget } = require('./target-guard');
 const { verify } = require('./staging-verify-empty');
 const { seedReferenceData } = require('../seed-reference-data');
+const { resetScope } = require('./staging-reset-classification');
 
 const ACK_VALUE = 'RESET-STAGING-BUSINESS-DATA';
 const REFERENCE_TABLES = Object.freeze(['markets', 'currency_parities', 'fx_pegs', 'capability_registry', 'ceiling_templates', 'ceiling_template_capabilities', 'finance_config']);
@@ -55,24 +56,56 @@ function assertResetAllowed(mode, env = process.env) {
   if (!pin || env.KOMERCE_STAGING_RESET_DB_PIN !== pin) {
     throw new ResetRefusal('STAGING_RESET_DATABASE_NOT_PINNED', 'KOMERCE_STAGING_RESET_DB_PIN doit egaler host:port/base de DATABASE_URL');
   }
+  try { resetScope(env); } catch (e) { throw new ResetRefusal('STAGING_RESET_SCOPE_INVALID', 'KOMERCE_STAGING_RESET_MODE doit valoir prudent (defaut) ou full'); }
   if (mode === 'execute') {
     if (env.KOMERCE_STAGING_RESET_ACK !== ACK_VALUE) throw new ResetRefusal('STAGING_RESET_ACK_MISSING', `KOMERCE_STAGING_RESET_ACK=${ACK_VALUE}`);
     if (env.KOMERCE_CONTROLLED_PURGE_CONFIRM !== purge.CONFIRM_TOKEN) throw new ResetRefusal('STAGING_RESET_PURGE_TOKEN_MISSING', 'KOMERCE_CONTROLLED_PURGE_CONFIRM');
   }
 }
 
+const REFERENCE_KEYS = Object.freeze({
+  markets: ['code'], currency_parities: ['currency'], fx_pegs: ['quote_ccy', 'valid_from'], capability_registry: ['capability'],
+  ceiling_templates: ['name', 'version'], ceiling_template_capabilities: ['template_id', 'capability'], finance_config: ['id'],
+});
+const VOLATILE = new Set(['updated_at', 'created_at', 'applied_at']);
+
 async function snapshotReference(q) {
   const out = {};
   for (const t of REFERENCE_TABLES) {
-    const { rows } = await q.query(
-      `SELECT md5((to_jsonb(t) - 'updated_at' - 'created_at' - 'applied_at')::text) AS h FROM "${t}" t ORDER BY 1`
-    );
-    out[t] = rows.map((r) => r.h);
+    const { rows } = await q.query(`SELECT to_jsonb(t) AS r FROM "${t}" t`);
+    out[t] = rows.map((r) => Object.fromEntries(Object.entries(r.r).filter(([k]) => !VOLATILE.has(k))));
   }
   return out;
 }
 
-/** Ce que le seed changerait aujourd'hui, mesure dans une transaction ANNULEE (verrous de lignes uniquement). */
+/** Diff exact staging -> seed par ligne et colonne, mesure dans une transaction ANNULEE. */
+function diffReference(before, after) {
+  const drift = {};
+  for (const t of REFERENCE_TABLES) {
+    const keyCols = REFERENCE_KEYS[t];
+    const k = (row) => keyCols.map((c) => String(row[c])).join('|');
+    const b = new Map(before[t].map((r) => [k(r), r]));
+    const a = new Map(after[t].map((r) => [k(r), r]));
+    const diffs = [];
+    for (const [key, row] of a) {
+      const old = b.get(key);
+      if (!old) { diffs.push({ key, change: 'added_by_seed', seed_row: row }); continue; }
+      for (const col of Object.keys(row)) {
+        if (JSON.stringify(old[col]) !== JSON.stringify(row[col])) diffs.push({ key, column: col, staging: old[col], seed: row[col], change: 'overwritten_by_seed' });
+      }
+    }
+    for (const [key, row] of b) if (!a.has(key)) diffs.push({ key, change: 'removed', staging_row: row });
+    if (diffs.length) {
+      drift[t] = {
+        rows_before: before[t].length, rows_after: after[t].length,
+        changed_or_removed: diffs.filter((d) => d.change !== 'added_by_seed').length,
+        new_or_changed_values: diffs.length, diffs,
+      };
+    }
+  }
+  return drift;
+}
+
 async function seedDrift(deps) {
   const client = await deps.db.getClient();
   try {
@@ -80,19 +113,32 @@ async function seedDrift(deps) {
     const before = await snapshotReference(client);
     await deps.seed(client);
     const after = await snapshotReference(client);
-    const drift = {};
-    for (const t of REFERENCE_TABLES) {
-      const b = new Map(); for (const h of before[t]) b.set(h, (b.get(h) || 0) + 1);
-      const a = new Map(); for (const h of after[t]) a.set(h, (a.get(h) || 0) + 1);
-      const removedOrChanged = [...b].reduce((n, [h, c]) => n + Math.max(0, c - (a.get(h) || 0)), 0);
-      const added = [...a].reduce((n, [h, c]) => n + Math.max(0, c - (b.get(h) || 0)), 0);
-      if (removedOrChanged || added) drift[t] = { rows_before: before[t].length, rows_after: after[t].length, changed_or_removed: removedOrChanged, new_or_changed_values: added };
-    }
-    return drift;
+    return diffReference(before, after);
   } finally {
     await client.query('ROLLBACK').catch(() => {});
     client.release();
   }
+}
+
+/** Decompte livemode des webhooks Stripe traites si l'information est stockee (colonne ou payload_summary). */
+async function stripeLivemode(q) {
+  const { rows: cols } = await q.query(
+    `SELECT column_name, data_type FROM information_schema.columns WHERE table_schema='public' AND table_name='stripe_events_processed'`);
+  const names = cols.map((c) => c.column_name);
+  const { rows: [tot] } = await q.query('SELECT COUNT(*)::int AS n FROM stripe_events_processed');
+  const out = { total: tot.n, columns: names };
+  if (names.includes('livemode')) {
+    const { rows } = await q.query('SELECT livemode::text AS livemode, COUNT(*)::int AS n FROM stripe_events_processed GROUP BY 1');
+    return { ...out, stored: 'column', by_livemode: Object.fromEntries(rows.map((r) => [r.livemode, r.n])) };
+  }
+  const payload = cols.find((c) => c.column_name === 'payload_summary');
+  if (payload && ['jsonb', 'json'].includes(payload.data_type)) {
+    const { rows } = await q.query(
+      `SELECT COALESCE(payload_summary::jsonb ->> 'livemode', 'absent') AS livemode, COUNT(*)::int AS n FROM stripe_events_processed GROUP BY 1`);
+    const by = Object.fromEntries(rows.map((r) => [r.livemode, r.n]));
+    return { ...out, stored: Object.keys(by).every((k) => k === 'absent') ? 'not_stored' : 'payload_summary', by_livemode: by };
+  }
+  return { ...out, stored: 'not_stored', by_livemode: null };
 }
 
 async function runReset(mode, { env = process.env, deps = {} } = {}) {
@@ -115,6 +161,8 @@ async function runReset(mode, { env = process.env, deps = {} } = {}) {
     throw err;
   }
 
+  let stripeBefore;
+  try { stripeBefore = await stripeLivemode(d.db); } catch (e) { stripeBefore = { stored: 'unavailable', error: String(e.message).slice(0, 120) }; }
   const purgeReport = await d.purge.run({ execute, withFixtures: true, env, q: d.db });
   const report = {
     mode,
@@ -127,13 +175,17 @@ async function runReset(mode, { env = process.env, deps = {} } = {}) {
     foundation_rows_before: purgeReport.protected_before,
     uncertain_foundation: purgeReport.uncertain_foundation,
     reference_drift: drift,
+    scope: resetScope(env),
+    rows_to_purge_total: Object.values(purgeReport.before || {}).reduce((n, v) => n + Number(v), 0),
+    stripe_events_processed: stripeBefore,
+    simulation: purgeReport.simulation || null,
     sourcing_sources_disabled: purgeReport.sourcing_sources_disabled || 0,
   };
 
   if (!execute) {
     report.status = 'DRY_RUN_OK';
     report.fixture_blockers = (purgeReport.fixtures && purgeReport.fixtures.blockers) || [];
-    if (report.fixture_blockers.length) report.status = 'DRY_RUN_BLOCKED';
+    if (report.fixture_blockers.length || (report.simulation && !report.simulation.ok)) report.status = 'DRY_RUN_BLOCKED';
     return report;
   }
 
@@ -176,4 +228,4 @@ async function main(argv = process.argv.slice(2), env = process.env) {
 
 if (require.main === module) main();
 
-module.exports = { ACK_VALUE, ResetRefusal, databasePin, assertResetAllowed, seedDrift, runReset, main };
+module.exports = { REFERENCE_TABLES, diffReference, stripeLivemode, ACK_VALUE, ResetRefusal, databasePin, assertResetAllowed, seedDrift, runReset, main };
