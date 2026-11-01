@@ -48,13 +48,13 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 | Objet | Compte | Note |
 |---|---|---|
-| Tables | 218 | Vérifié sur le dump live Railway. |
+| Tables | 220 | Vérifié sur le dump live Railway. |
 | Vues | 20 | Vérifié sur le dump live Railway. |
 | ENUMs | 17 | Types métier présents dans le dump live Railway. |
-| Index | 504 | Performance + contraintes uniques |
-| Foreign keys | 415 | Cohérence relationnelle |
-| Fonctions | 92 | Fonctions présentes dans le dump live Railway. |
-| Triggers | 110 | Triggers présents dans le dump live Railway. |
+| Index | 505 | Performance + contraintes uniques |
+| Foreign keys | 420 | Cohérence relationnelle |
+| Fonctions | 93 | Fonctions présentes dans le dump live Railway. |
+| Triggers | 112 | Triggers présents dans le dump live Railway. |
 | Extensions | `pgcrypto`, `uuid-ossp` | UUID + chiffrement |
 
 ---
@@ -756,9 +756,23 @@ Migration 300 ajoute `customs_shipment_fees.post_closure` (boolean, défaut fals
 
 <!-- /schema-pending -->
 
-### Libellés des coûts variables par marché — migration 355 (intended_migration_schema)
+### Rapprochement économique N1 international — migration 355 (pending live)
 
-<!-- schema-pending: cost_component_market_overrides.label_override (migration 355, not yet live) -->
-<!-- schema-pending: cost_component_market_overrides.description_override (migration 355, not yet live) -->
+<!-- schema-pending: international_n1_reconciliations (migration 355, not yet live) -->
 
-La migration 355 ajoute deux champs facultatifs au référentiel des surcharges de marché : `label_override` (160 caractères) et `description_override` (500 caractères). Ces champs personnalisent uniquement l’affichage du marché ; l’identifiant technique, le composant global, son montant de base et les calculs restent inchangés. Les modifications restent historisées dans `cost_component_market_override_events`.
+`international_n1_reconciliations` — Dernière empreinte documentaire réconciliée par expédition internationale, conservation du fret, frais d'arrivée et transport local ; reprise idempotente, jamais estimation N3.
+
+<!-- /schema-pending -->
+
+<!-- schema-pending: international_n1_allocation_links (migration 355, not yet live) -->
+
+`international_n1_allocation_links` — Provenance exclusive des allocations N1 `order_item_real_cost_allocations` depuis un transport international ; isolation des écritures douane existantes, liens de colis et de lignes de commande.
+
+<!-- /schema-pending -->
+
+### Libellés de coûts par marché — migration 356 (intended_migration_schema)
+
+<!-- schema-pending: cost_component_market_overrides.label_override (migration 356, not yet live) -->
+<!-- schema-pending: cost_component_market_overrides.description_override (migration 356, not yet live) -->
+
+La migration 356 ajoute des libellés et descriptions spécifiques aux marchés, historisés et sans mutation du référentiel global.
