@@ -95,7 +95,7 @@ test('UX-07 — Hub & Relais : une vue exclusive à la fois (Hub / Relais / Stoc
 test('mode execution (Hub live) : actions Hub uniquement, aucune action Relais exposée', () => {
   expect(SOURCE).toContain("context.mode === 'execution' ? EXECUTION_VIEWS : WORKSPACE_VIEWS");
   expect(SOURCE).not.toMatch(/EXECUTION_VIEWS = Object\.freeze\(\[[^\]]*relay/);
-  expect(SOURCE).toContain("mode: options.mode === 'execution' ? 'execution' : 'pilot'");
+  expect(SOURCE).toContain("mode: ['execution', 'relay-execution'].includes(options.mode) ? options.mode : 'pilot'");
   expect(SOURCE).toContain('HUB LIVE · EXÉCUTION');
 });
 
