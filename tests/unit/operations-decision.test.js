@@ -21,9 +21,8 @@ describe('operations-decision visual hierarchy contract',()=>{
     expect(hero).toBeGreaterThanOrEqual(0);
     expect(attention).toBeGreaterThan(hero);
     expect(primary).toBeGreaterThan(attention);
-    // Seul bloc secondaire admis : les files d'action commandes, rendues APRÈS la chaîne.
-    expect(SRC.split("data-dashboard-role', 'secondary").length - 1).toBe(1);
-    expect(renderSource.indexOf("data-dashboard-role', 'secondary")).toBeGreaterThan(primary);
+    // Aucun bloc secondaire : la chaîne est l'unique surface de supervision.
+    expect(SRC.split("data-dashboard-role', 'secondary").length - 1).toBe(0);
     expect(SRC).not.toContain("cardSection(doc, 'File d’exécution'");
     expect(SRC).not.toContain("cardSection(doc, 'Approfondir'");
     expect(SRC).not.toContain("cardSection(doc, 'Colis en retard critique'");
@@ -47,28 +46,13 @@ test('le titre du Hero Operations n’est plus doublé (« Tour de contrôle » 
   expect(src).not.toContain('Opérations — Tour de contrôle');
 });
 
-test('Operations affiche les files Cash à confirmer, À commander, En attente de réception Hub et Préparer le colis (ex-écran Commandes), avec retour vers Opérations', () => {
+test('Operations ne duplique plus de files d’attente sous la chaîne (supervision unique)', () => {
   const src = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/js/operations-decision.js'), 'utf8');
-  expect(src).toContain("'Cash à confirmer'");
-  expect(src).toContain("'À commander'");
-  expect(src).toContain("'En attente de réception Hub'");
-  expect(src).toContain("'Préparer le colis'");
-  expect(src).toContain("'orders-to-order'");
-  expect(src).toContain("'orders-awaiting-hub-reception'");
-  expect(src).not.toContain("'Colis à créer'");
-  expect(src).toContain("'orders-pending-cash'");
-  expect(src).toContain("'orders-ready-for-parcel'");
-  expect(src).toContain("'/admin/operations', 'Retour aux opérations'");
-
-  const mod = require('../../public/dashboards/canonical/js/operations-decision.js');
-  const base = { formatNumber: (v) => String(v) };
-  const items = mod.workQueueItems([{ reference: 'CMD-1', status: 'pending', payment_mode: 'cash', total_kmf: 1500 }, { id: 'x' }], base);
-  expect(items[0]).toMatchObject({ title: 'CMD-1', helper: 'pending · cash · 1500 KMF', actionLabel: 'Ouvrir →' });
-  expect(items[0].href).toContain('/admin/orders/CMD-1');
-  expect(items[1].href).toBeUndefined();
-  expect(mod.workQueueItems(undefined, base)).toEqual([]);
+  ['Cash à confirmer', 'À commander', 'En attente de réception Hub', 'Préparer le colis', 'orders-pending-cash', 'orders-to-order', 'orders-ready-for-parcel'].forEach(label => {
+    expect(src).not.toContain(label);
+  });
+  expect(src).toContain('kmc-control-panel-close');
 });
-
 
 test('les signaux d’Opérations mènent à l’Action Center (« Traiter ») et plus à des ancres mortes', () => {
   const src = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/js/operations-decision.js'), 'utf8');
@@ -148,23 +132,6 @@ test('données incomplètes : aucune fausse position zéro ni phase valide sans 
   expect(subset[1].helper).toBe('Position indisponible');
   expect(subset[1].href).toBeUndefined();
   expect(subset[5].helper).toContain('Non projetée');
-});
-
-test('Opérations : le retour depuis une commande restitue la page courante avec marché et période', () => {
-  jest.resetModules();
-  globalThis.location = { pathname: '/admin/operations', search: '?market=CM&period=90' };
-  try {
-    require('../../public/dashboards/canonical/js/navigation-policy-v4.js');
-    const mod = require('../../public/dashboards/canonical/js/operations-decision.js');
-    const [item] = mod.workQueueItems([{ reference: 'CMD-1', status: 'pending' }], { formatNumber: v => String(v) });
-    const url = new URL(item.href, 'http://x.test');
-    expect(url.pathname).toBe('/admin/orders/CMD-1');
-    expect(url.searchParams.get('return_to')).toBe('/admin/operations?market=CM&period=90');
-    expect(url.searchParams.get('return_label')).toBe('Retour aux opérations');
-  } finally {
-    delete globalThis.location;
-    delete globalThis.KomerceCanonicalNavigation;
-  }
 });
 
 test('Opérations : le filtre stage est lu depuis l’URL, conserve marché et période, et ignore une valeur inconnue', () => {

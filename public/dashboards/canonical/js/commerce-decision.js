@@ -457,41 +457,6 @@
     return card.section;
   }
 
-  function recentSection(doc, payload, base) {
-    const card = cardSection(doc, 'Dernières commandes', 'Les cinq commandes créées les plus récentes de la période.', 'commerce-recent-orders');
-    const rows = recentOrderRows(payload, base);
-    if (!rows.length) {
-      card.body.appendChild(text(doc, 'p', 'kmc-commerce-ranking-empty', 'Aucune commande sur la période sélectionnée.'));
-      return card.section;
-    }
-    const table = doc.createElement('table');
-    table.className = 'kmc-com-table';
-    const head = doc.createElement('tr');
-    ['Commande', 'Date', 'Marché', 'Client', 'Montant', 'Statut'].forEach(h => head.appendChild(text(doc, 'th', '', h)));
-    const thead = doc.createElement('thead');
-    thead.appendChild(head);
-    table.appendChild(thead);
-    const tbody = doc.createElement('tbody');
-    rows.forEach(r => {
-      const tr = doc.createElement('tr');
-      const ref = doc.createElement('td');
-      const a = text(doc, 'a', '', r.reference);
-      a.setAttribute('href', withReturn(`/admin/orders/${encodeURIComponent(r.reference)}`));
-      ref.appendChild(a);
-      tr.appendChild(ref);
-      [r.date, r.market, r.client, r.amount, r.status].forEach(v => tr.appendChild(text(doc, 'td', '', v)));
-      tbody.appendChild(tr);
-    });
-    table.appendChild(tbody);
-    card.body.appendChild(table);
-    return card.section;
-  }
-
-  function withReturn(href) {
-    const nav = globalThis.KomerceCanonicalNavigation;
-    return nav && typeof nav.withNavContext === 'function' ? nav.withNavContext(href, 'Retour à Commerce') : href;
-  }
-
   function render(rootNode, payload, options, base, decisionUi) {
     const doc = options.document;
     const ui = options.ui;
@@ -602,9 +567,6 @@
     }
     rankings.appendChild(categoriesCard.section);
     dashboard.appendChild(rankings);
-    const recent = recentSection(doc, payload, base);
-    recent.setAttribute('data-dashboard-role', 'secondary');
-    dashboard.appendChild(recent);
 
     rootNode.appendChild(dashboard);
     return { element: dashboard, visual: 'decision-first-v1' };

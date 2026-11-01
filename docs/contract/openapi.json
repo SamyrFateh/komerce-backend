@@ -7,7 +7,7 @@
   },
   "x-contract-debt": {
     "unknown_responses": 49,
-    "total_routes": 713,
+    "total_routes": 714,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -6446,6 +6446,10 @@
                       "type": "string",
                       "x-observed": true
                     },
+                    "open_shipments": {
+                      "type": "string",
+                      "x-observed": true
+                    },
                     "to_handle": {
                       "type": "string",
                       "x-observed": true
@@ -6494,6 +6498,49 @@
                       "x-observed": true
                     },
                     "chain": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/operations/market/{marketCode}/boxes/shipment": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/operations/market/{marketCode}/boxes/shipment",
+        "x-route-file": "routes/admin-operations-workspace.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "result": {
                       "type": "string",
                       "x-observed": true
                     }
@@ -25664,6 +25711,10 @@
                       "x-observed": true
                     },
                     "boxes": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "open_shipments": {
                       "type": "string",
                       "x-observed": true
                     },

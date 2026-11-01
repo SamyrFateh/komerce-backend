@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-11-01T11:47:42.071Z",
+  "generatedAt": "2026-11-01T12:11:10.726Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 780,
-    "protected": 725,
+    "total": 781,
+    "protected": 726,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -2160,6 +2160,14 @@
     },
     {
       "key": "POST /api/admin/workspaces/operations/market/{marketCode}/boxes/{unitId}/shipment",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/operations/market/{marketCode}/boxes/shipment",
       "level": "PROTECTED",
       "roles": [
         "admin",
