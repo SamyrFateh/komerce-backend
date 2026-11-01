@@ -244,6 +244,20 @@
         const recOk = rec.available === true;
     const markets = Array.isArray(units.by_market) ? units.by_market : [];
     const pos = Array.isArray(rec.purchase_orders) ? rec.purchase_orders : [];
+    const trace = d.trace || {};
+    const traceRows = Array.isArray(trace.rows) ? trace.rows : [];
+    const traceState = { RECEIVED:'Reçu', IDENTIFIED:'Identifié', QUALITY_CHECKED:'Contrôlé',
+      LOCATED:'Localisé', ALLOCATED:'Affecté', PICKED:'Préparé',
+      PACKED:'Fermé', DISPATCHED:'Expédié', QUARANTINED:'Quarantaine' };
+    const traceTable = trace.available === true
+      ? table(['Marché', 'PO', 'Carton / contenant', 'Quantité', 'État'], traceRows.map(r => {
+        const isBox = r.unit_type === 'MARKET_PARCEL';
+        const po = String(r.purchase_order_id || '');
+        return `<tr><td>${esc(r.market_code || '—')}</td><td title="${esc(po)}">${esc(po.slice(0,8))}</td>
+          <td>${isBox ? esc(r.physical_reference) : `À emballer · ${esc(r.physical_reference)}`}</td>
+          <td>${num(r.quantity)}</td><td>${esc(traceState[r.state] || r.state || '—')}</td></tr>`;
+      }), { empty:'Aucun placement physique lié à une PO.' })
+      : `<p>Rapprochement physique non disponible.</p>`;
     return {
       hero: `<header class="kir-hero kir-live-hero">
         <div>
@@ -272,6 +286,10 @@
         </section>
         <section class="lk-block" aria-label="Unités par marché"><span class="kir-section-kicker">PAR MARCHÉ</span>
           ${table(['Marché', 'Reçues aujourd’hui', 'Contrôlées', 'Expédiées', 'Quarantaine'], markets.map(m => `<tr><td>${esc(m.market_name || m.market_code)}</td><td>${num(m.received_today)}</td><td>${num(m.controlled)}</td><td>${num(m.dispatched)}</td><td>${num(m.quarantined)}</td></tr>`), { empty:'Aucune unité physique enregistrée.' })}
+        </section>
+        <section class="lk-block" aria-label="Rapprochement PO cartons"><span class="kir-section-kicker">PO → CARTONS · PAR MARCHÉ</span>
+          <p>Quantités physiquement retrouvées dans chaque contenant. Les unités reçues non emballées restent visibles ; aucune destination n'est ressaisie.</p>
+          ${traceTable}
         </section>
         <section class="lk-block" aria-label="Réceptions fournisseur"><span class="kir-section-kicker">RÉCEPTIONS FOURNISSEUR ATTENDUES</span>
           ${recOk
