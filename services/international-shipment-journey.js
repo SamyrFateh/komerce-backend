@@ -142,7 +142,7 @@ async function transition(market,actor,reference,body={},database=db){
         "SELECT COUNT(*)::int AS n FROM international_shipment_hub_boxes b JOIN hub_physical_units u ON u.id=b.physical_unit_id WHERE b.shipment_id=$1 AND (u.state<>'DISPATCHED' OR u.outcome_type IS NOT NULL)",
         [s.id]
       );
-      if(Number(pending?.n)>0)
+      if(!pending || Number(pending.n)>0)
         fail(409,'JOURNEY_HUB_BOX_NOT_DISPATCHED','Chaque KOM-BOX doit être dispatché avant la remise transitaire');
     }
     if(target==='in_transit'&&!s.tracking_reference&&!s.bill_of_lading_ref)
