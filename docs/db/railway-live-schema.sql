@@ -1877,6 +1877,31 @@ $$;
 
 
 --
+-- Name: international_hub_draft_transfer_guard(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.international_hub_draft_transfer_guard() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE v_count integer; v_bad integer;
+BEGIN
+  IF OLD.stage='hub_ready' AND NEW.stage='handed_over' AND OLD.hub_draft THEN
+    SELECT COUNT(*)::int,
+      COUNT(*) FILTER (WHERE u.state IS DISTINCT FROM 'DISPATCHED' OR u.outcome_type IS NOT NULL)::int
+      INTO v_count,v_bad FROM public.international_shipment_hub_units h
+      JOIN public.hub_physical_units u ON u.id=h.physical_unit_id
+      WHERE h.shipment_id=OLD.id;
+    IF v_count=0 THEN RAISE EXCEPTION 'hub_draft_handover_empty' USING ERRCODE='23514'; END IF;
+    IF v_bad>0 THEN RAISE EXCEPTION 'hub_draft_handover_undispatched' USING ERRCODE='23514'; END IF;
+    IF NEW.forwarder_name IS NULL OR length(btrim(NEW.forwarder_name))<2 OR NEW.transport_mode IS NULL THEN
+      RAISE EXCEPTION 'hub_draft_handover_transport_required' USING ERRCODE='23514';
+    END IF;
+  END IF;
+  RETURN NEW;
+END $$;
+
+
+--
 -- Name: international_shipment_hub_units_guard(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -6066,13 +6091,13 @@ CREATE TABLE public.international_shipment_events (
     event_type text NOT NULL,
     from_stage text,
     to_stage text,
-    proof_ref text NOT NULL,
+    proof_ref text,
     actor_id text NOT NULL,
     notes text,
     occurred_at timestamp with time zone DEFAULT now() NOT NULL,
     payload jsonb DEFAULT '{}'::jsonb NOT NULL,
-    CONSTRAINT international_shipment_events_event_type_check CHECK ((event_type = ANY (ARRAY['created'::text, 'stage_changed'::text, 'tracking_updated'::text, 'freight_recorded'::text, 'customs_linked'::text]))),
-    CONSTRAINT international_shipment_events_proof_ref_check CHECK ((length(btrim(proof_ref)) > 0))
+    CONSTRAINT chk_international_events_evidence CHECK ((((event_type = ANY (ARRAY['opened'::text, 'box_attached'::text, 'box_detached'::text])) AND (proof_ref IS NULL)) OR ((event_type <> ALL (ARRAY['opened'::text, 'box_attached'::text, 'box_detached'::text])) AND (proof_ref IS NOT NULL) AND (length(btrim(proof_ref)) > 0)))),
+    CONSTRAINT international_shipment_events_event_type_check CHECK ((event_type = ANY (ARRAY['created'::text, 'opened'::text, 'box_attached'::text, 'box_detached'::text, 'stage_changed'::text, 'tracking_updated'::text, 'freight_recorded'::text, 'customs_linked'::text])))
 );
 
 
@@ -6109,8 +6134,8 @@ CREATE TABLE public.international_shipments (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     market_id uuid NOT NULL,
     reference text NOT NULL,
-    forwarder_name text NOT NULL,
-    transport_mode text NOT NULL,
+    forwarder_name text,
+    transport_mode text,
     stage text DEFAULT 'hub_ready'::text NOT NULL,
     volume_m3 numeric(12,5),
     freight_rate_kmf_per_m3 numeric(14,2),
@@ -6126,6 +6151,8 @@ CREATE TABLE public.international_shipments (
     created_by text NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    hub_draft boolean DEFAULT false NOT NULL,
+    CONSTRAINT chk_international_handover_transport CHECK (((stage = 'hub_ready'::text) OR ((forwarder_name IS NOT NULL) AND (transport_mode IS NOT NULL)))),
     CONSTRAINT chk_international_invoice_proof CHECK (((freight_invoice_kmf IS NULL) OR ((freight_invoice_ref IS NOT NULL) AND (length(btrim(freight_invoice_ref)) > 0)))),
     CONSTRAINT international_shipments_forwarder_name_check CHECK (((length(btrim(forwarder_name)) >= 2) AND (length(btrim(forwarder_name)) <= 180))),
     CONSTRAINT international_shipments_freight_invoice_kmf_check CHECK ((freight_invoice_kmf >= (0)::numeric)),
@@ -6142,6 +6169,13 @@ CREATE TABLE public.international_shipments (
 --
 
 COMMENT ON TABLE public.international_shipments IS 'Transport international réel séparé des déclarations douanières; progression par preuves et coûts de fret facturés.';
+
+
+--
+-- Name: COLUMN international_shipments.hub_draft; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.international_shipments.hub_draft IS 'Dossier ouvert en préparation au Hub : transitaire, mode et preuve de remise absents jusqu au transfert réel.';
 
 
 --
@@ -18451,6 +18485,13 @@ CREATE CONSTRAINT TRIGGER trg_hub_quarantine_incident_required AFTER INSERT OR U
 --
 
 CREATE TRIGGER trg_incidents_updated BEFORE UPDATE ON public.incidents FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+
+--
+-- Name: international_shipments trg_international_hub_draft_transfer_guard; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_international_hub_draft_transfer_guard BEFORE UPDATE OF stage ON public.international_shipments FOR EACH ROW EXECUTE FUNCTION public.international_hub_draft_transfer_guard();
 
 
 --

@@ -21,13 +21,13 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 1924,
-    "edges": 9498,
+    "edges": 9499,
     "dbTables": 221,
     "doctrines": 729,
     "impactAreas": 207,
     "unresolvedCodeEdges": 914,
     "dbWriteViaOverlapWarnings": 11,
-    "multiWriterTables": 91
+    "multiWriterTables": 92
   },
   "byDomain": {
     "infrastructure": 25,
@@ -19312,7 +19312,8 @@
         "international_shipment_hub_units"
       ],
       "dbWrite": [
-        "international_shipment_hub_units"
+        "international_shipment_hub_units",
+        "international_shipment_events"
       ],
       "dbWriteVia": [],
       "dbTxn": [
@@ -37776,6 +37777,11 @@
       "table": "international_shipment_hub_units"
     },
     {
+      "id": "db:international_shipment_events",
+      "type": "db-table",
+      "table": "international_shipment_events"
+    },
+    {
       "id": "db:v_purchase_line_progress",
       "type": "db-table",
       "table": "v_purchase_line_progress"
@@ -37814,11 +37820,6 @@
       "id": "db:international_n1_allocation_links",
       "type": "db-table",
       "table": "international_n1_allocation_links"
-    },
-    {
-      "id": "db:international_shipment_events",
-      "type": "db-table",
-      "table": "international_shipment_events"
     },
     {
       "id": "db:inventory_items",
@@ -72532,6 +72533,12 @@
       "to": "db:international_shipment_hub_units",
       "type": "db-write",
       "label": "international_shipment_hub_units"
+    },
+    {
+      "from": "services/hub-box-shipment-service.js",
+      "to": "db:international_shipment_events",
+      "type": "db-write",
+      "label": "international_shipment_events"
     },
     {
       "from": "services/hub-box-shipment-service.js",
@@ -119542,7 +119549,8 @@
         "international_shipment_hub_units"
       ],
       "dbWrite": [
-        "international_shipment_hub_units"
+        "international_shipment_hub_units",
+        "international_shipment_events"
       ],
       "dbWriteVia": [],
       "doctrines": [
@@ -119554,6 +119562,7 @@
       ],
       "mustCheck": [
         "db:hub_physical_units",
+        "db:international_shipment_events",
         "db:international_shipment_hub_units",
         "db:international_shipments",
         "doctrine:Allocation & Custody; une KOM-BOX appartient à au plus une expédition du même marché",
@@ -137769,6 +137778,14 @@
       "writers": [
         "services/providers-inquiry-service.js",
         "services/providers-service.js"
+      ]
+    },
+    {
+      "table": "international_shipment_events",
+      "writerCount": 2,
+      "writers": [
+        "services/hub-box-shipment-service.js",
+        "services/international-shipment-journey.js"
       ]
     },
     {
