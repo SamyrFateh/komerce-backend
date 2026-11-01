@@ -21,13 +21,13 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 1924,
-    "edges": 9493,
+    "edges": 9498,
     "dbTables": 221,
     "doctrines": 729,
     "impactAreas": 207,
     "unresolvedCodeEdges": 914,
     "dbWriteViaOverlapWarnings": 11,
-    "multiWriterTables": 90
+    "multiWriterTables": 91
   },
   "byDomain": {
     "infrastructure": 25,
@@ -20280,6 +20280,10 @@
       "dbRead": [
         "international_shipments",
         "international_shipment_parcels",
+        "international_shipment_hub_units",
+        "hub_physical_units",
+        "hub_physical_unit_placements",
+        "hub_purchase_allocations",
         "international_shipment_charges",
         "international_shipment_events",
         "parcels",
@@ -20292,6 +20296,7 @@
       "dbWrite": [
         "international_shipments",
         "international_shipment_parcels",
+        "international_shipment_hub_units",
         "international_shipment_events",
         "international_shipment_charges"
       ],
@@ -74345,6 +74350,30 @@
     },
     {
       "from": "services/international-shipment-journey.js",
+      "to": "db:international_shipment_hub_units",
+      "type": "db-read",
+      "label": "international_shipment_hub_units"
+    },
+    {
+      "from": "services/international-shipment-journey.js",
+      "to": "db:hub_physical_units",
+      "type": "db-read",
+      "label": "hub_physical_units"
+    },
+    {
+      "from": "services/international-shipment-journey.js",
+      "to": "db:hub_physical_unit_placements",
+      "type": "db-read",
+      "label": "hub_physical_unit_placements"
+    },
+    {
+      "from": "services/international-shipment-journey.js",
+      "to": "db:hub_purchase_allocations",
+      "type": "db-read",
+      "label": "hub_purchase_allocations"
+    },
+    {
+      "from": "services/international-shipment-journey.js",
       "to": "db:international_shipment_charges",
       "type": "db-read",
       "label": "international_shipment_charges"
@@ -74402,6 +74431,12 @@
       "to": "db:international_shipment_parcels",
       "type": "db-write",
       "label": "international_shipment_parcels"
+    },
+    {
+      "from": "services/international-shipment-journey.js",
+      "to": "db:international_shipment_hub_units",
+      "type": "db-write",
+      "label": "international_shipment_hub_units"
     },
     {
       "from": "services/international-shipment-journey.js",
@@ -120514,6 +120549,10 @@
       "dbRead": [
         "international_shipments",
         "international_shipment_parcels",
+        "international_shipment_hub_units",
+        "hub_physical_units",
+        "hub_physical_unit_placements",
+        "hub_purchase_allocations",
         "international_shipment_charges",
         "international_shipment_events",
         "parcels",
@@ -120526,6 +120565,7 @@
       "dbWrite": [
         "international_shipments",
         "international_shipment_parcels",
+        "international_shipment_hub_units",
         "international_shipment_events",
         "international_shipment_charges"
       ],
@@ -120540,9 +120580,13 @@
         "db:customs_shipment_fees",
         "db:customs_shipment_parcels",
         "db:customs_shipments",
+        "db:hub_physical_unit_placements",
+        "db:hub_physical_units",
+        "db:hub_purchase_allocations",
         "db:international_n1_reconciliations",
         "db:international_shipment_charges",
         "db:international_shipment_events",
+        "db:international_shipment_hub_units",
         "db:international_shipment_parcels",
         "db:international_shipments",
         "db:orders",
@@ -137725,6 +137769,14 @@
       "writers": [
         "services/providers-inquiry-service.js",
         "services/providers-service.js"
+      ]
+    },
+    {
+      "table": "international_shipment_hub_units",
+      "writerCount": 2,
+      "writers": [
+        "services/hub-box-shipment-service.js",
+        "services/international-shipment-journey.js"
       ]
     },
     {
