@@ -105,25 +105,25 @@
     const scope = workspace.scope || {};
     const header = el('header', 'kmc-workspace-header');
     const copy = el('div');
-    copy.appendChild(el('span', 'kmc-workspace-kicker', 'MARCHÉ & DÉLÉGATION · PREUVE D’AUTONOMIE'));
-    copy.appendChild(el('h1', 'kmc-workspace-title', `${scope.market_name || marketCode} · ${access.role || 'scope'}`));
-    copy.appendChild(el('p', 'kmc-workspace-subtitle', `Devise locale : ${scope.market_currency || '—'} · scope serveur · ${access.read_only ? 'lecture / simulation' : 'gestion pays'}`));
+    copy.appendChild(el('span', 'kmc-workspace-kicker', 'GESTION DU MARCHÉ'));
+    copy.appendChild(el('h1', 'kmc-workspace-title', `${scope.market_name || marketCode}`));
+    copy.appendChild(el('p', 'kmc-workspace-subtitle', `Prix et décisions commerciales · ${scope.market_currency || '—'}${access.read_only ? ' · Consultation' : ''}`));
     header.appendChild(copy);
 
     const nav = el('nav', 'kmc-workspace-nav');
-    const dashboard = el('a', 'kmc-workspace-nav-link', 'Dashboard →');
+    const dashboard = el('a', 'kmc-workspace-nav-link', 'Vue d’ensemble');
     dashboard.href = '/admin/pilotage';
     nav.appendChild(dashboard);
-    const workshop = el('a', 'kmc-workspace-nav-link', 'Atelier des coûts →');
+    const workshop = el('a', 'kmc-workspace-nav-link', 'Atelier des coûts');
     workshop.href = `/admin/workspaces/pricing?market=${encodeURIComponent(marketCode)}`;
     nav.appendChild(workshop);
-    const buyer = el('a', 'kmc-workspace-nav-link', 'Voir la boutique →');
+    const buyer = el('a', 'kmc-workspace-nav-link', 'Voir la boutique');
     buyer.href = `/?market=${encodeURIComponent(marketCode)}`;
     buyer.target = '_blank';
     nav.appendChild(buyer);
     header.appendChild(nav);
 
-    const status = el('div', 'kmc-workspace-feedback', 'Prêt.');
+    const status = el('div', 'kmc-workspace-feedback', '');
     status.dataset.autonomyFeedback = '';
     status.setAttribute('role', 'status');
     header.appendChild(status);
@@ -135,8 +135,8 @@
       ? context.access.allowedMarkets
       : [];
     if (allowed.length <= 1) return;
-    const section = el('section', 'kmc-section');
-    section.appendChild(el('h2', 'kmc-section-title', 'Marché actif'));
+    const section = el('section', 'kmc-section kmc-autonomy-selector');
+    section.appendChild(el('h2', 'kmc-section-title', 'Marché'));
     const select = global.document.createElement('select');
     select.className = 'kmc-workspace-input';
     allowed.forEach(code => {
@@ -158,9 +158,8 @@
   function renderCapabilities(workspace) {
     const access = workspace.access || {};
     const caps = workspace.capabilities || {};
-    const section = el('section', 'kmc-section');
-    section.appendChild(el('h2', 'kmc-section-title', 'Capacités effectives'));
-    section.appendChild(el('p', 'kmc-workspace-note', 'Les capacités ci-dessous reflètent les APIs réellement disponibles et leur frontière serveur.'));
+    const section = el('details', 'kmc-section kmc-autonomy-access');
+    section.appendChild(el('summary', 'kmc-section-title', 'Autorisations et accès'));
     const grid = el('div', 'kmc-workspace-actions-grid');
     grid.appendChild(capabilityCard('Lire le modèle pays', true, `scope ${workspace.scope && workspace.scope.market_code || '—'}`));
     grid.appendChild(capabilityCard('Simuler l’impact', Boolean(caps.simulation), 'Viewer et manager · lecture seule.'));
