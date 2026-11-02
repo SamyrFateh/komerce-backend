@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
- * @role          orders-local-relay-receipt
- * @domain        orders
+ * @role          logistics-local-relay-receipt
+ * @domain        logistics
  * @layer         service
  * @criticality   critical
  * @inputs        order_id, authenticated_relay_actor, attested_physical_receipt
