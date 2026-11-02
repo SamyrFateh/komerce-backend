@@ -248,7 +248,7 @@ async function transitionOrderStatus({
     const relayAllowed = actor?.role !== 'agent_relais' ||
       (actor.relais_id && String(actor.relais_id) === String(order.relais_id));
     if (newStatus !== 'available' ||
-        !['confirmed','ordered','preparation'].includes(previousStatus) ||
+        !['confirmed','ordered','preparation','shipped','in_transit'].includes(previousStatus) ||
         order.payment_status !== 'paid' || !order.relais_id ||
         !actor?.id || !roleAllowed || !relayAllowed || !scanId) {
       return {success:false,previousStatus,newStatus,
@@ -258,10 +258,11 @@ async function transitionOrderStatus({
       "SELECT id FROM scans WHERE id=$1 AND order_id=$2 AND step='relais_received' AND scanned_by=$3 LIMIT 1",
       [scanId,orderId,actor.id]);
     const {rows:[composition]}=await q.query(
-      "SELECT COUNT(*)::int AS total, COUNT(*) FILTER (WHERE fulfillment_source='LOCAL_STOCK')::int AS local FROM order_items WHERE order_id=$1",
+      "SELECT COUNT(*)::int AS total, COUNT(*) FILTER (WHERE fulfillment_source='LOCAL_STOCK')::int AS local, COUNT(*) FILTER (WHERE fulfillment_source='IMPORT')::int AS imported FROM order_items WHERE order_id=$1",
       [orderId]);
     if (!proofs.length || !composition || Number(composition.total)===0 ||
-        Number(composition.local)!==Number(composition.total)) {
+        Number(composition.local)<1 ||
+        Number(composition.local)+Number(composition.imported)!==Number(composition.total)) {
       return {success:false,previousStatus,newStatus,
         code:'LOCAL_RECEIPT_PROOF_INVALID',error:'Preuve de réception ou provenance locale insuffisante'};
     }
@@ -305,7 +306,7 @@ async function transitionOrderStatus({
     && STATUS_RANK[newStatus] !== undefined
     && STATUS_RANK[previousStatus] < STATUS_RANK.preparation
     && STATUS_RANK[newStatus] >= STATUS_RANK.preparation;
-  if (crossesPreparation) {
+  if (crossesPreparation && source !== 'local_relay_receipt') {
     const { getOrderPhysicalCoverage } = require('./order-physical-coverage-service');
     const coverage = await getOrderPhysicalCoverage(q, orderId);
     if (!coverage.covered) {
@@ -334,7 +335,7 @@ async function transitionOrderStatus({
   // Doctrine DOUANE_DECLARATION_PIVOT : la réception ne peut pas être validée
   // tant que le montant douane de l'expédition n'a pas été saisi par l'admin.
   // Commandes sans colis groupage (pas de customs_shipment lié) : laissées passer.
-  if (newStatus === 'available') {
+  if (newStatus === 'available' && source !== 'local_relay_receipt') {
     const { isCustomsDeclaredForOrder } = require('./customs-shipment-service');
     const customsCheck = await isCustomsDeclaredForOrder(q, orderId);
     if (!customsCheck.allowed) {
@@ -358,7 +359,7 @@ async function transitionOrderStatus({
 
   // Une expédition douane groupée ne devient confirmed qu'une fois toutes ses
   // commandes liées effectivement post-douane. Le helper est group-safe.
-  if (newStatus === 'available') {
+  if (newStatus === 'available' && source !== 'local_relay_receipt') {
     const { confirmCustomsShipmentsForOrder } = require('./customs-shipment-service');
     await confirmCustomsShipmentsForOrder(q, orderId);
   }
