@@ -129,6 +129,14 @@ describeDb('Hub P0 — chaîne d\'approvisionnement complète (REAL_DB)', () => 
 
       const before = await dossier.getDossier({ marketId: km, supplierId: supplierA });
       expect(before.needs.map((n) => n.line_id)).toEqual(expect.arrayContaining(lineIds));
+      // Work : les dossiers commandes et tous leurs articles d'import existent
+      // AVANT qu'une PO soit constituée. Aucun faux colis client n'est créé.
+      const c1Dossier = before.orders.find((o) => o.id === s.c1.orderId);
+      const c2Dossier = before.orders.find((o) => o.id === s.c2.orderId);
+      expect(c1Dossier.items).toHaveLength(2);
+      expect(c2Dossier.items).toHaveLength(1);
+      expect(c1Dossier.items.every((item) => item.fulfillment_source === 'IMPORT')).toBe(true);
+      expect(before.client_parcels.filter((p) => p.order_id === s.c1.orderId)).toHaveLength(0);
 
       const prepared = await grouped.preparePurchaseOrder(
         { supplier_id: supplierA, procurement_hub_ref: 'DXB', line_ids: lineIds }, { actor: actor() });
