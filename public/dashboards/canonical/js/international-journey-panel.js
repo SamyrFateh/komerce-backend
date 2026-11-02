@@ -104,8 +104,8 @@
   }
   function canTransition(ctx,next){
     if(!next)return false;
-    if(ctx.user?.role==='admin')return true;
-    if(ctx.user?.role==='agent_hub')return ['handed_over','local_delivery','relay_received'].includes(next);
+    if(ctx.user?.role==='admin')return next!=='relay_received';
+    if(ctx.user?.role==='agent_hub')return ['handed_over','local_delivery'].includes(next);
     if(ctx.user?.role==='agent_transitaire')return ['forwarder_received','in_transit','arrived'].includes(next);
     return false;
   }

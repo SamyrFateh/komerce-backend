@@ -30,6 +30,7 @@
  */
 
 const db = require('../db');
+const providerAuthority = require('./suppliers/provider-authority');
 const log = require('../utils/logger').child({ module: 'purchasing-grouped' });
 
 const GROUPED_ROUTE_CODE = 'PURCHASE_ORDER_GROUPED_USE_PO_ROUTES';
@@ -103,7 +104,7 @@ function mapDbError(err) {
 
 async function lockGroupedPo(client, poId, { requireDraft = true } = {}) {
   const { rows: [po] } = await client.query(
-    'SELECT id, order_id, status, supplier_id, procurement_hub_ref, market_id FROM purchase_orders WHERE id = $1 FOR UPDATE',
+    'SELECT id, order_id, status, supplier_id, procurement_hub_ref, market_id, trigger_mode FROM purchase_orders WHERE id = $1 FOR UPDATE',
     [poId]
   );
   if (!po) throw fail(404, 'PURCHASE_ORDER_NOT_FOUND', 'Purchase order introuvable');
@@ -126,7 +127,7 @@ const LINE_COLUMNS = `
     pl.id AS line_id, pl.supplier_id, s.name AS supplier_name, pl.procurement_hub_ref,
     pl.purchase_order_id, pl.order_item_id, vm.order_id, o.reference AS order_reference,
     vm.market_id, mk.code AS market_code, mk.name AS market_name,
-    p.name AS product_name, pl.product_sku_id, pl.supplier_sku, pl.supplier_unit_ref,
+    p.name AS product_name, oi.product_id, pl.product_sku_id, pl.supplier_sku, pl.supplier_unit_ref,
     pl.quantity, vm.effective_quantity, vm.cancelled, pl.supplier_unit_price, pl.supplier_currency, pl.created_at,
     pl.parent_line_id, pl.confirmed_quantity, pl.confirmed_unit_price, pl.confirmed_at,
     pl.settled_quantity, pl.settled_at, pl.settle_reason, pl.cancel_reason,
@@ -154,6 +155,7 @@ function shapeLine(row) {
     market_code: row.market_code || null,
     market_name: row.market_name || null,
     product_name: row.product_name || null,
+    product_id: row.product_id,
     product_sku_id: row.product_sku_id,
     supplier_sku: row.supplier_sku,
     supplier_unit_ref: row.supplier_unit_ref,
@@ -281,8 +283,12 @@ async function getGroupedPurchaseOrder(poId, q = db) {
 
 // ─── Préparation d'une PO regroupée (draft) ───────────────────────────────────────────────────────
 
-async function preparePurchaseOrder({ supplier_id, procurement_hub_ref, line_ids } = {}, { actor = null } = {}) {
+async function preparePurchaseOrder({ supplier_id, procurement_hub_ref, line_ids, execution_mode } = {}, { actor = null } = {}) {
   requireEnabled();
+  // Mode d'exécution de la PO (arbitrage Hub autonome) : `manual` par défaut, indépendant de la plateforme d'origine des SKU.
+  // `api` = exécution distante par le provider du fournisseur ; trigger_mode 'auto' est son seul porteur (pas de nouveau statut).
+  const mode = execution_mode === undefined || execution_mode === null ? 'manual' : String(execution_mode);
+  if (mode !== 'manual' && mode !== 'api') throw fail(400, 'INVALID_INPUT', 'execution_mode doit valoir manual ou api');
   const supplierId = requireUuid(supplier_id, 'supplier_id');
   const hub = typeof procurement_hub_ref === 'string' ? procurement_hub_ref.trim() : '';
   if (!hub) throw fail(400, 'INVALID_INPUT', 'procurement_hub_ref obligatoire');
@@ -294,7 +300,10 @@ async function preparePurchaseOrder({ supplier_id, procurement_hub_ref, line_ids
       [supplierId]
     );
     if (!supplier) throw fail(404, 'SUPPLIER_NOT_FOUND', 'Fournisseur introuvable');
-    const triggerMode = supplier.platform === 'whatsapp' ? 'whatsapp' : 'manual';
+    if (mode === 'api' && providerAuthority.remotePreflightRequirement(supplier.platform) !== providerAuthority.PREFLIGHT_REQUIREMENT.REQUIRED) {
+      throw fail(409, 'PURCHASE_ORDER_API_UNAVAILABLE', `Le fournisseur (${supplier.platform}) n'a pas d'intégration distante : la PO s'exécute en manuel`);
+    }
+    const triggerMode = mode === 'api' ? 'auto' : (supplier.platform === 'whatsapp' ? 'whatsapp' : 'manual');
 
     // Le navigateur n'est jamais autorité du marché : résolution directe par order_item -> order.
     // La garde PostgreSQL revérifie l'identité au rattachement, sous verrou de la PO.

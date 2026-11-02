@@ -28,6 +28,7 @@ const workspace = require('../services/operations-workspace');
 const supply = require('../services/hub-procurement-dossier');
 const boxShipment = require('../services/hub-box-shipment-service');
 const shipmentJourney = require('../services/international-shipment-journey');
+const relayReceipts = require('../services/relay-shipment-receipt');
 const log = require('../utils/logger').child({ module: 'admin-operations-workspace' });
 
 const router = express.Router();
@@ -352,6 +353,41 @@ router.post(
         actionActor(req)
       );
       return sendCashConfirmationResult(res, result);
+    } catch (err) {
+      return sendWorkspaceError(err, res, next);
+    }
+  }
+);
+
+// Relais live — contenu réellement expédié (Expédition → KOM-BOX → commandes → articles) et réception attestée PAR LE RELAIS.
+router.get(
+  '/market/:marketCode/relay-shipments',
+  requireWorkspaceReadAccess,
+  async (req, res, next) => {
+    try {
+      res.set('Cache-Control', 'private, no-store');
+      const relaisId = req.user && req.user.role === 'agent_relais' ? req.user.relais_id || null : null;
+      return res.json(await relayReceipts.listRelayShipments({ market: req.workspaceMarket, relaisId }));
+    } catch (err) {
+      return sendWorkspaceError(err, res, next);
+    }
+  }
+);
+
+router.post(
+  '/market/:marketCode/relay-shipments/:reference/receive',
+  attachRelayExecutionCapability('execution.parcel.receive'),
+  requireRole(['agent_relais']),
+  requireRelayPhysicalMarket,
+  async (req, res, next) => {
+    try {
+      const result = await relayReceipts.receiveShipment({
+        market: req.workspaceMarket,
+        actor: { ...actionActor(req), relais_id: req.user && req.user.relais_id },
+        reference: req.params.reference,
+        body: req.body || {},
+      });
+      return res.status(201).json({ ok: true, action: 'relay_shipment_receive', result });
     } catch (err) {
       return sendWorkspaceError(err, res, next);
     }

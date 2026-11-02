@@ -19,6 +19,8 @@ const CSS = ['base', 'canonical-theme-v2', 'canonical-shell-v4', 'canonical-lega
 
 const SUPPLIER = { id: '11111111-1111-4111-8111-111111111111', name: 'Allegro Pologne' };
 const HUB = 'HUB-001';
+const PRODUCT = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
+const NEW_SUPPLIER_ID = '22222222-2222-4222-8222-222222222222';
 const KM = { market_id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', market_code: 'KM', market_name: 'Comores' };
 const CM = { market_id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', market_code: 'CM', market_name: 'Cameroun' };
 
@@ -31,6 +33,7 @@ function makeLine(n, market, qty, extra = {}) {
     order_item_id: `item-${n}`,
     ...market,
     product_name: `Produit ${n}`,
+    product_id: PRODUCT,
     supplier_sku: `SKU-${n}`,
     supplier_unit_ref: n <= 2 ? 'UNIT-A' : 'UNIT-B',
     quantity: qty,
@@ -62,7 +65,7 @@ function summarize(lines) {
 }
 
 /** API d'achats simulée avec état ; chaque appel mutant est journalisé dans `calls`. */
-function createFakeApi({ submitRefusal = false } = {}) {
+function createFakeApi({ submitRefusal = false, triggerMode = 'manual' } = {}) {
   const state = {
     lines: [makeLine(1, KM, 5), makeLine(2, CM, 3), makeLine(3, KM, 4)],
     pos: new Map(),
@@ -78,6 +81,23 @@ function createFakeApi({ submitRefusal = false } = {}) {
     const key = `${method} ${pathname}`;
     if (method === 'POST') state.calls.push({ key, body });
 
+    if (key === 'GET /api/purchasing/suppliers') {
+      return { status: 200, json: [
+        { ...SUPPLIER, platform: 'allegro', matching_product_supplier_id: '33333333-3333-4333-8333-333333333333' },
+      ] };
+    }
+    if (key === 'POST /api/purchasing/suppliers') {
+      return { status: 201, json: { id: NEW_SUPPLIER_ID, name: body.name, platform: 'local', owner_scope: 'hub' } };
+    }
+    if (/^POST \/api\/purchasing\/suppliers\/[^/]+\/map$/.test(key)) {
+      return { status: 201, json: { id: '44444444-4444-4444-8444-444444444444', supplier_id: pathname.split('/')[4] } };
+    }
+    if (/^POST \/api\/purchasing\/lines\/[^/]+\/change-supplier$/.test(key)) {
+      const id = pathname.split('/')[4];
+      const old = state.lines.find((l) => l.line_id === id);
+      if (old) old.cancelled = true;
+      return { status: 201, json: { replaced_line_id: id, line: old } };
+    }
     if (key === 'GET /api/purchasing') {
       return { status: 200, json: { purchase_orders: [...state.pos.values()].map((po) => ({ ...po, supplier_name: SUPPLIER.name })), total: state.pos.size } };
     }
@@ -92,7 +112,7 @@ function createFakeApi({ submitRefusal = false } = {}) {
     if (key === 'POST /api/purchasing/po/prepare') {
       await new Promise((r) => setTimeout(r, 300));
       const id = `cccccccc-cccc-4ccc-8ccc-00000000000${state.nextPo++}`;
-      const po = { id, status: 'draft', procurement_hub_ref: body.procurement_hub_ref, supplier_id: body.supplier_id };
+      const po = { id, status: 'draft', procurement_hub_ref: body.procurement_hub_ref, supplier_id: body.supplier_id, trigger_mode: triggerMode };
       state.pos.set(id, po);
       state.lines.forEach((l) => { if (body.line_ids.includes(l.line_id)) l.purchase_order_id = id; });
       return { status: 201, json: { purchase_order: po, line_ids: body.line_ids, lines: poLines(id), ...summarize(poLines(id)) } };
@@ -231,6 +251,66 @@ test.describe('Achats fournisseurs — espace canonique', () => {
     await expect(page.locator('tr[data-purchasing-line]')).toHaveCount(1);
   });
 
+
+  test('changement direct vers un fournisseur local : création, mapping puis filiation, sans quitter les achats', async ({ page }) => {
+    const api = createFakeApi();
+    await mountWorkspace(page, api);
+    await page.locator('tr[data-purchasing-line]').first().locator('[data-workspace-action="change-supplier"]').click();
+    const panel = page.locator('[data-change-supplier-form]').first();
+    await expect(panel).toBeVisible();
+    await panel.getByLabel('Nouveau fournisseur local').fill('Boutique Dubai');
+    await panel.getByLabel('Contact fournisseur').fill('+971500001111');
+    await panel.getByLabel('Référence produit fournisseur').fill('BOUTIQUE-XYZ');
+    await panel.getByLabel('Prix unitaire en AED').fill('14.5');
+    await panel.getByLabel('Motif du changement de fournisseur').fill('Rupture chez le premier fournisseur');
+    await panel.locator('[data-workspace-action="change-supplier"]').click();
+    await expect(page.locator('[data-workspace-feedback]')).toContainText('Fournisseur remplacé');
+    expect(mutatingCalls(api, '/suppliers')).toHaveLength(1);
+    const maps = api.state.calls.filter((c) => c.key.endsWith('/map'));
+    expect(maps).toHaveLength(1);
+    expect(maps[0].body).toMatchObject({ product_id: PRODUCT, supplier_price_aed: 14.5 });
+    const changes = api.state.calls.filter((c) => c.key.endsWith('/change-supplier'));
+    expect(changes).toHaveLength(1);
+    expect(changes[0].body).toMatchObject({ product_supplier_id: '44444444-4444-4444-8444-444444444444', execution_mode: 'manual' });
+  });
+
+  test('fournisseur existant déjà mappé : aucune réécriture du catalogue global', async ({ page }) => {
+    const api = createFakeApi();
+    await mountWorkspace(page, api);
+    await page.locator('tr[data-purchasing-line]').first().locator('[data-workspace-action="change-supplier"]').click();
+    const panel = page.locator('[data-change-supplier-form]').first();
+    await panel.getByLabel('Fournisseur de remplacement').selectOption(SUPPLIER.id);
+    await panel.getByLabel('Motif du changement de fournisseur').fill('Rupture locale');
+    await panel.locator('[data-workspace-action="change-supplier"]').click();
+    await expect(page.locator('[data-workspace-feedback]')).toContainText('Fournisseur remplacé');
+    expect(api.state.calls.filter((c) => c.key.endsWith('/map'))).toHaveLength(0);
+    expect(api.state.calls.filter((c) => c.key.endsWith('/change-supplier'))[0].body.product_supplier_id)
+      .toBe('33333333-3333-4333-8333-333333333333');
+  });
+
+  test('achat manuel par défaut : aucun mode API demandé, consigne de preuve d\'achat, aucune confirmation fournisseur exigée', async ({ page }) => {
+    const api = createFakeApi();
+    await mountWorkspace(page, api);
+    await page.locator('tr[data-purchasing-line] input[type=checkbox]').nth(0).check();
+    await page.locator('[data-workspace-action="prepare-po"]').click();
+    await expect(page.locator('[data-purchasing-po][data-purchasing-exec-mode="manual"]')).toBeVisible();
+    await expect(page.getByText('Achat manuel', { exact: false }).first()).toBeVisible();
+    expect(mutatingCalls(api, '/po/prepare')[0].body.execution_mode).toBeUndefined();
+    await page.locator('[data-workspace-action="submit-po"]').click();
+    await expect(page.locator('[data-purchasing-execution-hint="manual"]')).toContainText('Aucune confirmation fournisseur n’est exigée');
+  });
+
+  test('PO en exécution API : libellé API et consigne de confirmation fournisseur', async ({ page }) => {
+    const api = createFakeApi({ triggerMode: 'auto' });
+    await mountWorkspace(page, api);
+    await page.locator('tr[data-purchasing-line] input[type=checkbox]').nth(0).check();
+    await page.locator('[data-workspace-action="prepare-po"]').click();
+    await expect(page.locator('[data-purchasing-po][data-purchasing-exec-mode="api"]')).toBeVisible();
+    await expect(page.getByText('Exécution API', { exact: false }).first()).toBeVisible();
+    await page.locator('[data-workspace-action="submit-po"]').click();
+    await expect(page.locator('[data-purchasing-execution-hint="api"]')).toContainText('confirmée par le fournisseur');
+  });
+
   test('brouillon : détacher une ligne la rend à nouveau ouverte', async ({ page }) => {
     const api = createFakeApi();
     await mountWorkspace(page, api);
@@ -259,12 +339,14 @@ test.describe('Achats fournisseurs — espace canonique', () => {
 
     await page.locator('[data-confirmed-quantity]').fill('2');
     await page.locator('[data-supplier-order-id]').fill('ALG-42');
+    await page.locator('[data-purchase-proof-ref]').fill('RECU-ALG-42');
     await page.locator('[data-workspace-action="confirm-po"]').click();
 
     await expect(page.locator('[data-purchasing-po-status="confirmed"]')).toBeVisible();
     const confirm = mutatingCalls(api, '/po/cccccccc-cccc-4ccc-8ccc-000000000001/confirm');
     expect(confirm).toHaveLength(1);
     expect(confirm[0].body.supplier_order_id).toBe('ALG-42');
+    expect(confirm[0].body.purchase_proof_ref).toBe('RECU-ALG-42');
     expect(confirm[0].body.lines).toEqual([{ purchase_line_id: '00000000-0000-4000-8000-000000000001', confirmed_quantity: 2 }]);
     await expect(page.locator('[data-workspace-feedback]')).toContainText('1 reliquat');
     // reliquat 5 - 2 = 3 : nouvelle ligne ouverte (KOM-1009) qui garde le marché de la ligne d'origine

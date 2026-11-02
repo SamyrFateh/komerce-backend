@@ -86,7 +86,7 @@ async function autoCreateParcel(client, orderId, actor) {
 
   // 4. Charger les items
   const { rows: items } = await client.query(
-    `SELECT oi.id, oi.product_id, oi.quantity, oi.price_kmf,
+    `SELECT oi.id, oi.product_id, oi.quantity, oi.price_kmf, oi.fulfillment_source,
        p.name AS product_name, p.weight_kg AS product_weight
      FROM order_items oi
      LEFT JOIN products p ON p.id = oi.product_id
@@ -151,8 +151,11 @@ async function autoCreateParcel(client, orderId, actor) {
            $6, $7, 0, 0, 0,
            false, $8
          )`,
+        // Article d'import : aucune quantité affectée/emballée sans preuve physique (réception Hub, KOM-BOX) ;
+        // elles sont dérivées des placements Hub (migration 363). Hors import (stock local) : circuit direct relais.
         [randomUUID(), parcelId, item.id, item.product_id, item.quantity,
-         item.quantity, item.quantity, item.product_name]
+         item.fulfillment_source === 'IMPORT' ? 0 : item.quantity,
+         item.fulfillment_source === 'IMPORT' ? 0 : item.quantity, item.product_name]
       );
       await client.query('RELEASE SAVEPOINT sp_pi');
     } catch (_) {

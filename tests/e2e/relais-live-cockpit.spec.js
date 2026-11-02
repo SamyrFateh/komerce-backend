@@ -21,7 +21,7 @@ const dashboard = { kpi:{ en_transit:4, disponibles:9, cash_a_encaisser:3, monta
 const detail = (n) => ({ order:{ id:`r-${n}`, reference:`KMC-0${100 + n}`, status:'available', heures_attente:80, age_jours:4 }, client:{ nom:`Client ${n}` },
   relais:{ nom:'Relais Mitsamiouli', ile:'Grande Comore' }, paiement:{ cash_pending:true, total_kmf:12000 }, items:[{ produit:'Coque', quantity:1, prix_kmf:12000 }], timeline:[], incidents:[] });
 
-async function mountRelay(page, search = '') {
+async function mountRelay(page, search = '', { failDetail = false } = {}) {
   const state = { calls:[], writes:[] };
   await page.route(`${ORIGIN}/**`, async (route) => {
     const req = route.request();
@@ -47,7 +47,11 @@ async function mountRelay(page, search = '') {
       return route.fulfill({ contentType:'application/json', body:JSON.stringify({ total:rows.length, orders:rows }) });
     }
     const m = url.pathname.match(/^\/api\/relay\/orders\/r-(\d+)$/);
-    if (m) { state.calls.push(`order:r-${m[1]}`); return route.fulfill({ contentType:'application/json', body:JSON.stringify(detail(Number(m[1]))) }); }
+    if (m) {
+      state.calls.push(`order:r-${m[1]}`);
+      if (failDetail) return route.fulfill({ status:500, contentType:'application/json', body:'{"error":"Erreur interne du serveur"}' });
+      return route.fulfill({ contentType:'application/json', body:JSON.stringify(detail(Number(m[1]))) });
+    }
     return route.fulfill({ status:404, body:'{}' });
   });
   await page.setViewportSize({ width:1672, height:941 });
@@ -84,6 +88,19 @@ test.describe('Cockpit Relais — navigation canonique', () => {
     await expect(page).toHaveURL(/view=orders.*list=available/);
     await page.locator('.kir-back').click();
     await expect(page.locator('.kir-hero h1')).toContainText('Suivi des Relais');
+    expect(state.writes).toEqual([]);
+  });
+
+  test('une fiche renvoyant HTTP 500 préserve la navigation vers la file Relais', async ({ page }) => {
+    const state = await mountRelay(page, '', { failDetail:true });
+    await page.locator('.kir-run-truth-grid > a', { hasText:'En transit' }).click();
+    await page.locator('.lk-table a').first().click();
+    await expect(page.locator('.kir-drill-head h2')).toHaveText('Détail indisponible');
+    await expect(page.locator('.kir-back')).toHaveText('← Retour à Colis en transit');
+    await expect(page.locator('.kir-error')).toContainText('Le suivi Relais reste accessible');
+    await expect(page.locator('.kir-main')).not.toContainText('Cockpit indisponible');
+    await page.locator('.kir-back').click();
+    await expect(page.locator('.lk-table')).toBeVisible();
     expect(state.writes).toEqual([]);
   });
 

@@ -87,7 +87,7 @@ async function getDossier({ marketId, supplierId = null, now = new Date() }, q =
   if (orderIds.length) {
     const { rows: clientParcelRows } = await q.query(`
       SELECT pa.id AS parcel_id, pa.order_id, pa.reference, pa.status,
-             pi.order_item_id, pi.quantity
+             pi.order_item_id, pi.quantity, pi.qty_allocated, pi.qty_packed, pi.qty_shipped
         FROM parcels pa
         JOIN parcel_items pi ON pi.parcel_id = pa.id
         JOIN order_items oi ON oi.id = pi.order_item_id AND oi.fulfillment_source = 'IMPORT'
@@ -100,6 +100,8 @@ async function getDossier({ marketId, supplierId = null, now = new Date() }, q =
       });
       clientParcels.get(r.parcel_id).contents.push({
         order_item_id: r.order_item_id, quantity: Number(r.quantity),
+        // Preuve physique dérivée des réceptions Hub et des placements KOM-BOX (migration 363), jamais préremplie.
+        allocated: Number(r.qty_allocated), packed: Number(r.qty_packed), shipped: Number(r.qty_shipped),
       });
     }
   }

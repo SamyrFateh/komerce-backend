@@ -48,13 +48,13 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 | Objet | Compte | Note |
 |---|---|---|
-| Tables | 223 | Vérifié sur le dump live Railway. |
+| Tables | 222 | Vérifié sur le dump live Railway. |
 | Vues | 20 | Vérifié sur le dump live Railway. |
 | ENUMs | 17 | Types métier présents dans le dump live Railway. |
 | Index | 510 | Performance + contraintes uniques |
 | Foreign keys | 427 | Cohérence relationnelle |
-| Fonctions | 99 | Fonctions présentes dans le dump live Railway. |
-| Triggers | 118 | Triggers présents dans le dump live Railway. |
+| Fonctions | 105 | Fonctions présentes dans le dump live Railway. |
+| Triggers | 122 | Triggers présents dans le dump live Railway. |
 | Extensions | `pgcrypto`, `uuid-ossp` | UUID + chiffrement |
 
 ---
@@ -790,6 +790,10 @@ La migration 359 ajoute **`international_shipments.hub_draft`** (booléen, défa
 
 Le journal `international_shipment_events` accepte les événements `opened`, `box_attached` et `box_detached` avec preuve documentaire NULL (faits opérateur), sans jamais confondre ces événements avec le transfert de garde. La transition `handed_over` exige toujours une **preuve réelle** ; pour un brouillon Hub elle exige aussi un transitaire, un mode et au moins un KOM-BOX `DISPATCHED` sans anomalie (garde du service **et** trigger PostgreSQL). Les liens carton deviennent immuables après la remise (migration 358). La douane et N1 restent la suite #3250, hors du scope 359.
 
+### Fournisseurs locaux du Hub — migration 362 (intended_migration_schema)
+
+La migration 362 ajoute **`suppliers.owner_scope`** (`NULL` = catalogue global géré par l'admin ; `hub` = fournisseur local créé par le Hub, plateforme `local`/`whatsapp`, sans `auto_order`) et **`suppliers.created_by`** (utilisateur créateur). Le périmètre Hub ne modifie jamais le catalogue global et le déclencheur d'achat automatique ignore les fournisseurs `owner_scope = 'hub'`.
+
 <!-- schema-pending: financial_movements (migration 360, not yet live) -->
 <!-- schema-pending: financial_movement_documents (migration 360, not yet live) -->
 ### Journal financier canonique — migration 360 (intended_migration_schema)
@@ -808,3 +812,9 @@ La **migration 361** harmonise le transport canonique KOM-BOX et la projection �
 - `international_shipment_events.event_type = customs_amount_confirmed` : événement audité portant la preuve de déclaration des droits d'expédition, distinct des changements d'état physiques.
 - `international_shipment_parcels` et `international_n1_allocation_links` : anciennes tables de jointure **retirées uniquement si vides** ; abort explicite de migration sinon. Le modèle canonique physique est `international_shipment_hub_units`. Toute imputation automatique de fret/douane aux lignes de commande est supprimée pour les expéditions internationales.
 La projection N1 prévisionnelle du pricing reste intacte ; l'ajustement prévision/réel se lit au niveau expédition/marché/période sans doubler les charges.
+
+<!-- schema-pending: international_shipment_relay_receipts (migration 364, not yet live) -->
+### Attestations de réception relais (migration 364 — intended_migration_schema)
+
+`international_shipment_relay_receipts` est une nouvelle table **pas encore live** (migration 364, Relais live). Une ligne = l'attestation immuable d'un agent relais pour un article d'une expédition internationale : `expected_qty` (placé en KOM-BOX de l'expédition), `received_qty`, `proof_ref` obligatoire, `incident_id` en cas d'écart. Unicité `(shipment_id, order_item_id)` ; UPDATE/DELETE refusés par trigger. L'étape `relay_received` du parcours en découle ; elle n'est posée ni par l'admin ni par l'agent Hub.
+<!-- /schema-pending -->

@@ -210,7 +210,7 @@ async function loadSupplierMapping(client, item, exactSku) {
            s.account_id, s.api_key_enc, s.api_secret_enc, s.lead_time_days
     FROM product_suppliers ps JOIN suppliers s ON s.id = ps.supplier_id
     WHERE ps.product_id = $1 AND ps.is_active = TRUE AND s.is_active = TRUE
-      AND ps.deleted_at IS NULL AND s.deleted_at IS NULL ${providerClause}
+      AND ps.deleted_at IS NULL AND s.deleted_at IS NULL AND s.owner_scope IS NULL ${providerClause}
     ORDER BY ps.priority ASC LIMIT 1
   `, params);
   return ps || null;

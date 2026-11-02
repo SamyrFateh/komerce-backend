@@ -11,10 +11,17 @@ const KNOWN_CANONICAL_ALIASES=Object.freeze({
   '/admin/hub-relais':'/admin/workspaces/operations',
   '/admin/inventory':'/admin/workspaces/operations',
 });
-function expectedPath(rawUrl,origin='https://komerce-backend-production.up.railway.app') {
+function expectedPath(rawUrl,origin='https://komerce-backend-production.up.railway.app',options={}) {
   const url=new URL(rawUrl,origin);
   if(url.origin!==origin)throw new Error('OUT_OF_SCOPE_NAVIGATION_ORIGIN');
   if(url.searchParams.get('legacy')==='1')return url.pathname;
+  // L'ancien écran opérationnel est retiré par app.js::boot(), après résolution
+  // du rôle. Ce redirect ne doit pas masquer un 403 sur la destination finale.
+  if(url.pathname==='/admin/workspaces/operations') {
+    const role=options.role;
+    if(role==='agent_relais')return '/admin/relais-live';
+    if(['admin','agent_hub','market_operator'].includes(role))return '/admin/hub-live';
+  }
   return KNOWN_CANONICAL_ALIASES[url.pathname]||url.pathname;
 }
 module.exports={KNOWN_CANONICAL_ALIASES,expectedPath};

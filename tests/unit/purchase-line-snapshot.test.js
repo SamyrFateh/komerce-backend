@@ -124,7 +124,7 @@ describe('lignes historiques', () => {
     const c = { query: jest.fn().mockResolvedValue({ rows: [{ id: 'open1' }] }) };
     expect(await snap.insertOpenPurchaseLine(c, { item: base.item, ps, snapshot: snapshot(), quantity: 3 })).toEqual({ id: 'open1' });
     expect(c.query.mock.calls[0][0]).toContain('VALUES (NULL,');
-    expect(c.query.mock.calls[0][1]).toEqual(['it', 'sup', 'ps', 'sk', 'S', 'R', JSON.stringify({ p: 1 }), 3, 2, 'AED', 'DXB']);
+    expect(c.query.mock.calls[0][1]).toEqual(['it', 'sup', 'ps', 'sk', 'S', 'R', JSON.stringify({ p: 1 }), 3, 2, 'AED', 'DXB', null]);
   });
   test('ligne ouverte : refuse sans order_item ou sans identité exacte', async () => {
     const c = { query: jest.fn() };
