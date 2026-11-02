@@ -21,14 +21,14 @@ const ORDER='00000000-0000-0000-0000-000000000011';
 const actor={id:'00000000-0000-0000-0000-000000000033',role:'agent_relais',relais_id:RELAY};
 const SCAN='00000000-0000-0000-0000-000000000066';
 
-function context({status='confirmed',paid='paid',proof=true,total=1,local=1}={}) {
+function context({status='confirmed',paid='paid',proof=true,total=1,local=1,imported=0}={}) {
   const query=jest.fn(async(sql)=>{
     if (/SELECT o.id, o.status/.test(sql))return {rows:[{
       id:ORDER,status,payment_status:paid,payment_mode:'cash_relais',
       relais_id:RELAY,pickup_secret_hash:'existing-secret-hash',user_id:'user',reference:'R',relais_name:'Relais'
     }]};
     if (/SELECT id FROM scans/.test(sql))return {rows:proof?[{id:SCAN}]:[]};
-    if (/COUNT\(\*\)::int AS total/.test(sql))return {rows:[{total,local}]};
+    if (/COUNT\(\*\)::int AS total/.test(sql))return {rows:[{total,local,imported}]};
     return {rows:[],rowCount:1};
   });
   return {query};
@@ -51,16 +51,29 @@ test('rejects cross-relay or missing actor, without updating order',async()=>{
   expect(r.code).toBe('LOCAL_RECEIPT_FORBIDDEN');
   expect(q.query.mock.calls.some(([sql])=>/UPDATE orders SET/.test(sql))).toBe(false);
 });
-test('rejects fake physical proof or import/mixed order',async()=>{
+test('rejects fake physical proof or unknown provenance; accepts a paid mix',async()=>{
   const q=context({proof:false});
   expect((await go(q)).code).toBe('LOCAL_RECEIPT_PROOF_INVALID');
-  const mixed=context({total:2,local:1});
-  expect((await go(mixed)).code).toBe('LOCAL_RECEIPT_PROOF_INVALID');
-  expect(mixed.query.mock.calls.some(([sql])=>/UPDATE orders SET/.test(sql))).toBe(false);
+  const mixed=context({total:2,local:1,imported:1});
+  expect((await go(mixed)).success).toBe(true);
+  const unknown=context({total:2,local:1,imported:0});
+  expect((await go(unknown)).code).toBe('LOCAL_RECEIPT_PROOF_INVALID');
+  expect(unknown.query.mock.calls.some(([sql])=>/UPDATE orders SET/.test(sql))).toBe(false);
 });
 test('cannot use local source to skip payment or trigger collected',async()=>{
   const q=context({paid:'pending'});
   expect((await go(q)).code).toBe('LOCAL_RECEIPT_FORBIDDEN');
   const paid=context();
   expect((await go(paid,{newStatus:'collected'})).code).toBe('LOCAL_RECEIPT_FORBIDDEN');
+});
+
+test('local physical proof is independent of unfinished import coverage and customs',async()=>{
+  const physical=require('../../services/order-physical-coverage-service');
+  const customs=require('../../services/customs-shipment-service');
+  physical.getOrderPhysicalCoverage.mockClear();
+  customs.isCustomsDeclaredForOrder.mockClear();
+  const mixed=context({total:2,local:1,imported:1});
+  expect((await go(mixed)).success).toBe(true);
+  expect(physical.getOrderPhysicalCoverage).not.toHaveBeenCalled();
+  expect(customs.isCustomsDeclaredForOrder).not.toHaveBeenCalled();
 });
