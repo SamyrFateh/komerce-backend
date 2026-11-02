@@ -9,7 +9,7 @@
  * @depends       db, services/incident-write-service.js
  * @used-by       routes/admin-operations-workspace.js
  * @db-read       international_shipments, international_shipment_hub_units, international_shipment_relay_receipts, hub_physical_units, hub_physical_unit_placements, hub_purchase_allocations, order_items, orders, products, relais, parcel_items, parcels
- * @db-write      international_shipment_relay_receipts, international_shipments, international_shipment_events, incidents
+ * @db-write      international_shipment_relay_receipts, international_shipments, international_shipment_events, incidents, parcel_items
  * @db-txn        withTransaction
  * @doctrine      relay_reception_attested_by_relay, no_status_deduced_from_hub_or_admin, market_scope_server_owned
  * @impact-areas  logistics, relay
@@ -110,6 +110,8 @@ async function listRelayShipments({ market, relaisId = null }, q = db) {
  * Le verrou de l'expédition puis les FOR UPDATE des parcel_items sérialisent la réconciliation.
  */
 async function projectRelayReceiptToClientParcels(client, orderItemId) {
+  // Verrou commun aux expéditions concurrentes touchant le même article client.
+  await client.query('SELECT id FROM order_items WHERE id = $1 FOR UPDATE', [orderItemId]);
   const { rows: [totals] } = await client.query(`
     SELECT
       (SELECT COALESCE(SUM(placement.quantity), 0)::int
@@ -153,6 +155,10 @@ async function projectRelayReceiptToClientParcels(client, orderItemId) {
     projected += targetReceived;
     shipped -= targetShipped;
     received -= targetReceived;
+  }
+  if (shipped > 0) {
+    fail(409, 'RELAY_CLIENT_PARCEL_COVERAGE_MISSING',
+      'Une partie des articles expédiés ne figure dans aucun colis client actif.');
   }
   return { projected_received: projected, parcels_updated: parcels.length };
 }
