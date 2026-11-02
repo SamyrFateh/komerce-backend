@@ -350,6 +350,7 @@ describe('logistics-control-chain-projection', () => {
 
 test('SQL : le CASE simple de propriétaire n’a pas de WHEN parasite avant son opérande (régression syntaxe PG)', () => {
   const source = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'services', 'logistics-control-chain-projection.js'), 'utf8');
-  expect(source).toContain('THEN CASE (\n');
+  expect(source).toContain("WHEN COALESCE(hf.has_quarantine, FALSE) THEN 'hub'");
+  expect(source).toContain('ELSE ss.primary_owner_role');
   expect(source).not.toMatch(/THEN CASE\s+WHEN \(\s+CASE/);
 });
