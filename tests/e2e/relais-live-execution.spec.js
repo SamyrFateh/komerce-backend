@@ -45,6 +45,22 @@ const WORKSPACE = {
 };
 
 
+const ITEM_A = '11111111-1111-4111-8111-111111111111';
+const ITEM_B = '22222222-2222-4222-8222-222222222222';
+const RELAY_SHIPMENTS = {
+  market: { code: 'KM' },
+  shipments: [{
+    reference: 'SHIP-KM-1', stage: 'local_delivery', receivable: true,
+    boxes: [{
+      unit_id: 'box-1', reference: 'BOX-KM-1', state: 'DISPATCHED',
+      orders: [{ order_id: 'o1', reference: 'K-ORDER-1', items: [
+        { order_item_id: ITEM_A, product: 'Coque', ordered: 4, expected: 3, shipped: 3, missing: 1, received: null, received_gap: null, incident_id: null, handed: 0 },
+        { order_item_id: ITEM_B, product: 'Câble', ordered: 2, expected: 2, shipped: 2, missing: 0, received: 2, received_gap: 0, incident_id: null, handed: 1 },
+      ] }],
+    }],
+  }],
+};
+
 async function mount(page, posts = []) {
   page.on('dialog', (dialog) => dialog.accept());
   await page.route(`${ORIGIN}/**`, async (route) => {
@@ -56,13 +72,14 @@ async function mount(page, posts = []) {
       return fs.existsSync(file) ? route.fulfill({ path: file }) : route.fulfill({ status: 404, body: '' });
     }
     if (route.request().method() === 'POST') {
-      posts.push({ path: url.pathname });
+      posts.push({ path: url.pathname, body: route.request().postDataJSON() });
       await new Promise((resolve) => setTimeout(resolve, 150));
-      return json({ ok: true });
+      return json({ ok: true, result: { receipts: [{ incident_id: 'inc-1' }] } });
     }
     if (url.pathname === '/api/auth/me') return json(FX.auth_me);
     if (url.pathname === '/api/admin/dashboard/context') return json(FX.context);
     if (url.pathname === API) return json(WORKSPACE);
+    if (url.pathname === `${API}/relay-shipments`) return json(RELAY_SHIPMENTS);
     if (url.pathname === CASH_API) return json(CASH);
     return route.fulfill({ status: 404, body: '' });
   });
@@ -97,6 +114,29 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
         `${API}/parcels/PCL-KM-2/receive`,
         `${API}/parcels/PCL-KM-3/collect`,
       ]);
+    });
+
+    test('contenu réellement expédié : expédition → KOM-BOX → commande → article ; le reçu n\'est jamais prérempli et l\'attestation part du relais', async ({ page }) => {
+      const posts = [];
+      await mount(page, posts);
+      const shipment = page.locator('[data-relay-shipment="SHIP-KM-1"]');
+      await expect(shipment).toContainText('KOM-BOX BOX-KM-1');
+      await expect(shipment).toContainText('Commande K-ORDER-1');
+      const coque = shipment.locator(`[data-relay-item="${ITEM_A}"]`);
+      await expect(coque.locator('td').nth(1)).toHaveText('3');   // attendu
+      await expect(coque.locator('td').nth(3)).toHaveText('1');   // manquant / reliquat
+      await expect(coque.locator('input[data-relay-received]')).toHaveValue('');
+      await expect(shipment.locator(`[data-relay-item="${ITEM_B}"]`)).toContainText('2'); // déjà attesté
+      await expect(shipment.locator(`[data-relay-item="${ITEM_B}"] input`)).toHaveCount(0);
+      await coque.locator('input[data-relay-received]').fill('2');
+      await page.locator('[data-relay-proof]').fill('BORD-1');
+      await page.locator('[data-workspace-action="relay-shipment-receive"]').click();
+      await expect.poll(() => posts.length).toBe(1);
+      expect(posts[0].path).toBe(`${API}/relay-shipments/SHIP-KM-1/receive`);
+      expect(posts[0].body).toEqual({ proof_ref: 'BORD-1', lines: [{ order_item_id: ITEM_A, received_qty: 2 }] });
+      await expect(page.locator('[data-workspace-feedback]')).toContainText('écart enregistré en incident');
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+      expect(overflow).toBeLessThanOrEqual(1);
     });
 
     test('Cash & dépôts est hébergé dans Relais live (module canonique, même route marché)', async ({ page }) => {

@@ -21,7 +21,7 @@ const STAGES = Object.freeze(['hub_ready','handed_over','forwarder_received','in
 const STAGE_ROLES = Object.freeze({
   handed_over:['admin','agent_hub'],forwarder_received:['admin','agent_transitaire'],
   in_transit:['admin','agent_transitaire'],arrived:['admin','agent_transitaire'],
-  customs_released:['admin'],local_delivery:['admin','agent_hub'],relay_received:['admin','agent_hub'],
+  customs_released:['admin'],local_delivery:['admin','agent_hub'],relay_received:['agent_relais'],
 });
 const FEE_TYPES = Object.freeze(['handling','storage','forwarder','local_tax','exceptional','other','local_transport']);
 class JourneyError extends Error {
@@ -105,6 +105,8 @@ async function transition(market,actor,reference,body={},database=db){
   marketOk(market);
   const target=str(body.to_stage,'to_stage',40),roles=STAGE_ROLES[target];
   if(!roles)fail(400,'JOURNEY_STAGE_INVALID','Étape non reconnue');
+  // La réception relais est attestée PAR LE RELAIS article par article (relay-shipment-receipt) : jamais posée ici.
+  if(target==='relay_received')fail(409,'JOURNEY_RELAY_ATTESTATION_REQUIRED','La réception relais est attestée par le relais, article par article');
   actorOk(actor,roles);
   const proof=str(body.proof_ref,'proof_ref',240);
   return transact(database,async client=>{
