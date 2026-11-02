@@ -63,6 +63,7 @@ module.exports = {
       'services/order-cost-snapshot.js',
       'services/order-display-snapshot.js',
       'services/order-status-machine.js',
+      'services/local-relay-receipt-service.js',
       'services/order-financial-closure-reconciliation.js',
       'services/order-financial-closure-signal.js',
       'services/order-checkout-service.js',
@@ -106,6 +107,7 @@ module.exports = {
       'tests/unit/order-fulfillment-snapshot-migration.test.js',
       'tests/unit/order-fulfillment-snapshot.test.js',
       'tests/unit/order-status-machine-mobile-money.test.js',
+      'tests/unit/local-relay-receipt-service.test.js',
       'tests/unit/qr-collection-core-emission.test.js',
       // E2E fonctionnel — preuve d'unicite de remise (Lot 1 retrait-secours).
       'tests/e2e-api/orders.single-collect.e2e.test.js',
