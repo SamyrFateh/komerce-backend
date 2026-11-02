@@ -2,8 +2,8 @@
   "generatedAt": "2026-11-01T15:56:57.545Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 783,
-    "protected": 728,
+    "total": 784,
+    "protected": 729,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -4880,6 +4880,14 @@
       "key": "POST /api/orders/{id}/cancel-backorder",
       "level": "PROTECTED",
       "roles": []
+    },
+    {
+      "key": "POST /api/orders/{id}/local-relay-receipt",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_relais"
+      ]
     },
     {
       "key": "POST /api/orders/{id}/mark-availability",
