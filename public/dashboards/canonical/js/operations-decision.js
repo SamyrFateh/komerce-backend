@@ -150,7 +150,7 @@
         lineage: controlLineage(order),
         transitions: (Array.isArray(order.transitions) ? order.transitions : []).filter(item => item && item.status).map(item => ({ status: String(item.status), at: item.at || null })),
         split: order.split === true,
-        localOnly: order.local_only === true,
+        ...(order.local_only === true ? { localOnly: true } : {}),
         href: order.order_reference ? contextualHref(`/admin/orders/${encodeURIComponent(order.order_reference)}`, '/admin/operations', 'Retour aux opérations') : null,
       })),
     }));
