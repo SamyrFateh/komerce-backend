@@ -94,6 +94,15 @@ test.describe('Hub live · Approvisionnement — desktop 1440', () => {
     await expect(pos).toContainText('2 / 3 reçus');
     await expect(page.locator('[data-hub-order]').first()).toContainText('PCL-C2');
     await expect(page.locator('[data-hub-order]').first()).toContainText('BOX-2');
+    const columns = await page.locator('[data-hub-order]').first()
+      .locator('[data-hub-order-flow] > .kmc-hub-work-stage')
+      .evaluateAll(nodes => nodes.map(node => {
+        const { x, y } = node.getBoundingClientRect();
+        return { x, y };
+      }));
+    expect(columns).toHaveLength(5);
+    expect(columns.every((c, i) => i === 0 || c.x > columns[i - 1].x)).toBe(true);
+    expect(columns.every(c => Math.abs(c.y - columns[0].y) < 2)).toBe(true);
     await expect(page.locator('[data-supply-to-handle]')).toContainText('1 unité(s) confirmée(s) non reçue(s)');
     await expect(page.getByText('Unités encore attendues')).toBeVisible();
     await page.screenshot({ path: 'test-results/hub-live-supply-1440.png', fullPage: true });
