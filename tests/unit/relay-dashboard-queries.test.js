@@ -298,7 +298,7 @@ describe('getOrderDetail — éléments complémentaires', () => {
     const res = await relayQueries.getOrderDetail(ADMIN, uuid);
     expect(db.query.mock.calls[0][0]).toContain('o.id = $1::uuid OR o.reference = $1::text');
     expect(db.query.mock.calls[0][1]).toEqual([uuid]);
-    expect(db.query.mock.calls[0][0]).not.toMatch(/o\\.reference = \\$1(?:[\\s)]|$)/);
+    expect(db.query.mock.calls[0][0]).not.toContain('o.reference = $1 ');
     expect(res.client).toMatchObject({ nom: 'Ali', phone: '+269' });
     expect(res.paiement).toMatchObject({ cash_pending: true, bloquant_pour_remise: true, total_eur: null, wallet_applied: 0 });
     expect(res.incidents).toEqual([{ id: 1 }]);
