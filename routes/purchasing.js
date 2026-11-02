@@ -211,11 +211,15 @@ router.get('/suppliers', ...groupedGuard, async (req, res, next) => {
     const conditions = ['1=1'];
     const params     = [];
 
-    if (platform) { conditions.push('s.platform = 
-    if (active !== undefined) { conditions.push('s.is_active = 
+    if (platform) { conditions.push('s.platform = $' + (params.length + 1)); params.push(platform); }
+    if (active !== undefined) { conditions.push('s.is_active = $' + (params.length + 1)); params.push(active === 'true'); }
     conditions.push('s.deleted_at IS NULL');
-    // Pas de paramètre supplémentaire sans product_id : contrat historique préservé.
-    const productPlaceholder = productId ? '
+    // Le paramètre produit est ajouté uniquement si demandé (compatibilité ancienne API).
+    const productPlaceholder = productId ? '$' + (params.length + 1) : null;
+    if (productId) params.push(productId);
+    const matchingProductSql = productPlaceholder
+      ? 'MAX(CASE WHEN ps.product_id = ' + productPlaceholder + '::uuid THEN ps.id::text END)::uuid'
+      : 'NULL::uuid';
 
     const { rows } = await db.query(`
       SELECT
