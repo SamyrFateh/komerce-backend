@@ -77,7 +77,7 @@ async function mount(page, posts) {
   });
   await page.goto(`${ORIGIN}/admin/hub-live?view=execute`);
   await page.locator('select').first().selectOption({ label: 'KM · Comores' });
-  await expect(page.locator('h1')).toHaveText('Exécuter les opérations Hub');
+  await expect(page.locator('h1')).toHaveText('Hub live · Dossiers');
   await page.locator('[data-workspace-view="supply"]').click();
 }
 
@@ -89,7 +89,7 @@ test.describe('Hub live · Approvisionnement — desktop 1440', () => {
     await expect(pos).not.toContainText('Envoyée');
     await expect(pos).toContainText('5 / 6');
     await expect(page.locator('[data-supply-to-handle]')).toContainText('1 unité(s) confirmée(s) non reçue(s)');
-    await expect(page.getByText('Quantités manquantes')).toBeVisible();
+    await expect(page.getByText('Unités encore attendues')).toBeVisible();
     await page.screenshot({ path: 'test-results/hub-live-supply-1440.png', fullPage: true });
   });
 
