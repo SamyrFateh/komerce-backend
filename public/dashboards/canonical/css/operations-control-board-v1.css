@@ -200,40 +200,6 @@ body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-contr
   text-align: center;
 }
 
-/* Structural banner inside the responsible stage. */
-body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-structural-alerts {
-  display: grid;
-  gap: 6px;
-  padding: 9px 8px 0;
-}
-
-body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-structural-alert {
-  min-height: 48px;
-  padding: 9px 10px;
-  border: 1px solid #fed7aa;
-  border-left: 4px solid var(--ocb-orange);
-  border-radius: 9px;
-  background: #FFFFFF;
-}
-
-body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-structural-alert.is-critical {
-  border-color: #fecaca;
-  border-left-color: var(--ocb-red);
-  background: #fef2f2;
-}
-
-body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-structural-count {
-  color: var(--ocb-red);
-  font-size: 13.5px;
-  font-weight: 800;
-}
-
-body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-structural-summary {
-  color: #475569;
-  font-size: 12px;
-  line-height: 1.3;
-}
-
 /* Orders */
 body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-order-list {
   flex: 1 1 auto;
