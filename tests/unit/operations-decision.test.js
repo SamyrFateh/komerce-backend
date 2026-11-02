@@ -63,9 +63,9 @@ test('les signaux d’Opérations mènent à l’Action Center (« Traiter ») e
   expect(src).toContain("contextualHref(`/admin/orders/${encodeURIComponent(order.order_reference)}`, '/admin/operations', 'Retour aux opérations')");
 });
 
-test('une chaîne sans commandes ni alertes se replie sans attribuer un état de santé positif', () => {
+test('une chaîne sans commandes se replie même si des agrégats serveur existent', () => {
   expect(SRC).toContain('columns.some(column => column.orders.length > 0)');
-  expect(SRC).toContain('columns.some(column => column.alerts.length > 0)');
+  expect(SRC).not.toContain('columns.some(column => column.alerts.length > 0)');
   expect(SRC).toContain("isEmpty ? 'kmc-control-chain is-empty' : 'kmc-control-chain is-active'");
   expect(SRC).toContain('Aucune commande dans la chaîne pour le périmètre sélectionné.');
 });
