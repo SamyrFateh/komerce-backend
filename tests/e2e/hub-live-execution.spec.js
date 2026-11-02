@@ -151,7 +151,7 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       const posts = [];
       await mount(page, { view: null, posts });
       await expect(page.locator('[data-workspace-view="supply"]')).toHaveAttribute('aria-selected', 'true');
-      await expect(page.locator('[data-hub-work-orders]')).toContainText('Dossiers');
+      await expect(page.locator('[data-hub-work-orders] [data-hub-order]')).toHaveCount(1);
       await expect(page.locator('.kmc-section-title').filter({ hasText: 'Dossiers · Vue du jour' })).toBeVisible();
       await expect(page.locator('[data-hub-dossier-home] [data-metric-key="hub-remaining"]')).toContainText('3');
       await expect(page.locator('[data-hub-dossier-home]')).not.toContainText('À traiter maintenant');
