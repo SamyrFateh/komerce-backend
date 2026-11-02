@@ -1529,3 +1529,122 @@
   .kmc-hub-work-stage { padding: 11px; }
   .kmc-hub-work-order-title { min-width: 150px; }
 }
+
+
+/* Parcours Work horizontal — une commande, cinq colonnes de gauche à droite.
+   La rangée défile dans le dossier si l'espace utile est trop étroit, jamais
+   toute la page. Les détails physiques restent au bon endroit. */
+.kmc-operations-workspace[data-workspace-mode="execution"] .kmc-hub-work-order-body {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(208px, 1fr));
+  align-items: stretch;
+  gap: 13px;
+  padding: 14px 15px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  scroll-snap-type: x proximity;
+}
+.kmc-operations-workspace[data-workspace-mode="execution"] .kmc-hub-work-order-body > .kmc-hub-work-stage {
+  grid-column: auto;
+  min-width: 0;
+  position: relative;
+  align-self: stretch;
+  padding: 13px 11px;
+  border-color: #dce7f2;
+  scroll-snap-align: start;
+  background: #fff;
+}
+.kmc-operations-workspace[data-workspace-mode="execution"] .kmc-hub-work-order-body > .kmc-hub-work-stage:not(:nth-child(5))::after {
+  content: "→";
+  position: absolute;
+  right: -13px;
+  top: 31px;
+  width: 12px;
+  z-index: 2;
+  color: #2d6eaf;
+  font-weight: 900;
+  text-align: center;
+  font-size: 15px;
+  pointer-events: none;
+}
+.kmc-operations-workspace[data-workspace-mode="execution"] .kmc-hub-work-order-body > .kmc-hub-dossier-reliquat {
+  grid-column: 1 / -1;
+  margin: 0;
+  white-space: normal;
+}
+.kmc-hub-work-stage-heading {
+  font-size: 12px;
+  min-height: 30px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.kmc-hub-work-stage .kmc-workspace-muted {
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.kmc-hub-work-compact-card {
+  border: 1px solid #e6ecf3;
+  border-radius: 8px;
+  padding: 9px;
+  background: #f9fbfe;
+  margin: 8px 0;
+}
+.kmc-hub-work-item-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.kmc-hub-work-item-head strong {
+  min-width: 0;
+  flex: 1;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.kmc-hub-work-item-head .kmc-hub-work-qty {
+  color: #315e90;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.kmc-hub-work-compact-card p {
+  font-size: 11px;
+  margin: 5px 0 0;
+}
+.kmc-hub-work-receipt {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 11px;
+  color: #2b4766;
+}
+.kmc-hub-work-receipt strong { font-size: 12px; }
+.kmc-hub-work-line-warning {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 3px 7px;
+  border-radius: 6px;
+  color: #815000;
+  background: #fff1d8;
+  font-weight: 760;
+  font-size: 11px;
+}
+.kmc-hub-work-po-head { align-items: flex-start; }
+.kmc-hub-work-po-head > div { min-width: 0; }
+.kmc-hub-work-po-head .kmc-hub-work-count { padding: 5px 8px; }
+.kmc-hub-work-parcel { font-size: 11px; line-height: 1.45; }
+.kmc-hub-work-stage .kmc-hub-dossier-toolbar { justify-content: flex-start; }
+.kmc-hub-work-stage .kmc-workspace-action { white-space: normal; text-align: left; }
+@media (max-width: 1199px) {
+  .kmc-operations-workspace[data-workspace-mode="execution"] .kmc-hub-work-order-body {
+    grid-template-columns: repeat(5, minmax(230px, 1fr));
+  }
+}
+@media (max-width: 720px) {
+  .kmc-operations-workspace[data-workspace-mode="execution"] .kmc-hub-work-order-body {
+    padding: 10px;
+    gap: 11px;
+  }
+}
