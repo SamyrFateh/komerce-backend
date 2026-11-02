@@ -40,7 +40,7 @@ function scopedContext(overrides = {}) {
 
 describe('LOT 2C-CANON — AdminContext et MarketScope', () => {
   test('fige le contexte serveur sans déduire le scope depuis le rôle', () => {
-    expect(SCOPE_MODES).toEqual(['global', 'market']);
+    expect(SCOPE_MODES).toEqual(['global', 'market', 'hub']);
 
     const context = validateAdminContext(scopedContext());
 
@@ -84,6 +84,28 @@ describe('LOT 2C-CANON — AdminContext et MarketScope', () => {
     });
     expect(resolveMarketView(globalContext, 'KM'))
       .toEqual({ mode: 'market', marketCode: 'KM', crossMarket: false });
+  });
+
+  test('Hub central : filtre logistique tous marchés, jamais dashboard global', () => {
+    const hubContext = {
+      actor: { id: 'hub-1', role: 'agent_hub' },
+      access: {
+        mode: 'hub', allowedMarkets: ['CM', 'KM'], defaultMarket: 'CM',
+        capabilities: [],
+      },
+    };
+    expect(validateAdminContext(hubContext).access.mode).toBe('hub');
+    expect(resolveMarketView(hubContext, 'KM')).toEqual({
+      mode: 'market', marketCode: 'KM', crossMarket: false,
+    });
+    expect(() => resolveMarketView(hubContext, null)).toThrow(/scope global/);
+    expect(() => resolveMarketView(hubContext, 'CG')).toThrow(/autorisés par le serveur/);
+    expect(() => validateAdminContext({
+      ...hubContext, actor: { id: 'op-1', role: 'market_operator' },
+    })).toThrow(/scope hub réservé/);
+    expect(() => validateAdminContext({
+      ...hubContext, access: { ...hubContext.access, allowedMarkets: [] },
+    })).toThrow(/au moins un marché/);
   });
 
   test('refuse les payloads ambigus ou fabriqués', () => {
@@ -132,6 +154,8 @@ describe('L1 resolveExplicitMarket (contrat front)', () => {
     ['multi-marchés sans choix', m(['KM', 'CM'], 'KM'), '', 'prompt', null],
     ['mono-marché', m(['CM'], 'CM'), '', 'selected', 'CM'],
     ['mono-marché ?market non autorisé', m(['CM'], 'CM'), '?market=KM', 'unauthorized', null],
+    ['hub central avec choix explicite', { actor: { id: 'h', role: 'agent_hub' }, access: { mode: 'hub', allowedMarkets: ['KM', 'CM'], defaultMarket: 'KM', capabilities: [] } }, '', 'prompt', null],
+    ['hub mono-marché', { actor: { id: 'h', role: 'agent_hub' }, access: { mode: 'hub', allowedMarkets: ['KM'], defaultMarket: 'KM', capabilities: [] } }, '', 'selected', 'KM'],
     ['global sans marché', g([]), '', 'no_access', null],
   ])('%s', (_label, ctx, search, state, code) => {
     const r = contract.resolveExplicitMarket(ctx, search);
