@@ -94,20 +94,21 @@ test('la file administrative vient de GET /api/purchasing et ouvre un détail PO
   expect(fetch).toHaveBeenCalledWith('/api/hub/dossier?market=KM',expect.objectContaining({method:'GET'}));
   expect(entries[0].classList.contains('is-selected')).toBe(true);
 });
-test('la file opérationnelle affiche les seules commandes IMPORT projetées par le serveur et ouvre leur parcours', async () => {
+test('Hub opérationnel utilise toute la largeur et sélectionne la ligne commande sans rail doublon', async () => {
   const app=load(),root=el('main'),location={search:'?branch=operations&market=KM'};
-  const card=el('details'); card.setAttribute('data-hub-order','order-1');
-  const operationMount=jest.fn(host=>host.appendChild(card));
+  const row=el('tr'); row.setAttribute('data-hub-order','order-1');
+  const operationMount=jest.fn(host=>host.appendChild(row));
   const fetch=mockFetch({orders:[{id:'order-1',reference:'KOM-001',status:'confirmed',items:[{id:'item-1'}]}]});
   const api=app.mount({root,user:{role:'agent_hub'},document:doc,location,fetch,
     renderAdministrative:jest.fn(),renderOperations:operationMount});
-  await api.reloadCases();
-  expect(fetch).toHaveBeenCalledWith('/api/hub/dossier?market=KM',expect.objectContaining({method:'GET'}));
-  const entries=root.querySelectorAll('[data-hub-case]');
-  expect(entries).toHaveLength(1);
-  entries[0].click();
-  expect(card.open).toBe(true);
+  expect(root.children[2].classList.contains('is-table')).toBe(true);
+  expect(root.querySelectorAll('[data-hub-case-list]')).toHaveLength(0);
+  expect(operationMount).toHaveBeenCalledTimes(1);
+  api.selectOrder('order-1');
+  expect(row.classList.contains('is-selected')).toBe(true);
+  expect(row.scrollIntoView).toHaveBeenCalled();
 });
+
 test('marché implicite unique : la file opérationnelle utilise la délégation serveur', async () => {
   const app=load(),root=el('main'),fetch=mockFetch({orders:[]});
   const api=app.mount({root,user:{role:'agent_hub'},document:doc,location:{search:'?branch=operations'},
