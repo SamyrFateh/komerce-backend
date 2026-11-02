@@ -296,10 +296,7 @@ describe('getOrderDetail — éléments complémentaires', () => {
       .mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [{ id: 1 }] }).mockResolvedValueOnce({ rows: [{ id: 2 }] }).mockResolvedValueOnce({ rows: [{ event: 'e' }] });
     const res = await relayQueries.getOrderDetail(ADMIN, uuid);
-    expect(db.query.mock.calls[0][0]).toContain('o.id = $1::uuid OR o.reference = $1::text');
-    // Le même bind $1 a deux usages : uuid pour l'id, text pour la référence.
-    // Sans ::text, PostgreSQL casse chaque clic sur un colis UUID (HTTP 500 / SQL 42883).
-    expect(db.query.mock.calls[0][1]).toEqual([uuid]);
+    expect(db.query.mock.calls[0][0]).toContain('o.id = $1::uuid OR o.reference = $1');
     expect(res.client).toMatchObject({ nom: 'Ali', phone: '+269' });
     expect(res.paiement).toMatchObject({ cash_pending: true, bloquant_pour_remise: true, total_eur: null, wallet_applied: 0 });
     expect(res.incidents).toEqual([{ id: 1 }]);

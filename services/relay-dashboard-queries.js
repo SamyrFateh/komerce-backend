@@ -251,10 +251,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
 async function getOrderDetail(user, orderId, { authorizedMarkets = null } = {}) {
   const isUuid = UUID_RE.test(orderId);
-  // Une valeur UUID impose le type UUID au paramètre $1 : la comparaison avec
-  // reference (TEXT) doit caster $1 explicitement en TEXT, sinon PostgreSQL
-  // lève 42883 « operator does not exist: text = uuid » sur la fiche Relais Live.
-  const whereClause = isUuid ? '(o.id = $1::uuid OR o.reference = $1::text)' : 'o.reference = $1::text';
+  const whereClause = isUuid ? 'o.id = $1::uuid OR o.reference = $1' : 'o.reference = $1';
 
   const { rows: [order] } = await db.query(`
     SELECT
