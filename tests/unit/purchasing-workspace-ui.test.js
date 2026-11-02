@@ -20,7 +20,13 @@ test('Achats fournisseurs garde une vue d’ensemble centrée sur les achats à 
 
 test('les trois onglets PO expriment leur rôle métier sans modifier les clés de statut', () => {
   expect(source).toContain(`[['prepare', "Ordre d'Achat à envoyer"], ['ongoing', "Ordre d'Achat en Cours"], ['history', "Ordre d'Achat terminés"]]`);
-  expect(source).toContain("activeStatuses = { prepare: ['draft'], ongoing: ['notified', 'confirmed'], history: ['hub_received', 'cancelled'] }");
+  expect(source).toContain("activeStatuses = { prepare: ['draft'], ongoing: ['notified', 'confirmed', 'shipped'], history: ['hub_received', 'cancelled'] }");
+});
+
+test('expédiée par le fournisseur ne signifie pas reçue au Hub', () => {
+  expect(source).toContain("shipped: 'Expédiée par le fournisseur'");
+  expect(source).toContain("statuses: ['notified', 'confirmed', 'shipped']");
+  expect(source).not.toContain("history: ['shipped'");
 });
 
 test('l\'en-tête du workspace porte le rôle hero (cadre et illustration communs aux overviews)', () => {
