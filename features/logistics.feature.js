@@ -259,7 +259,7 @@ module.exports = {
       'invoices: R',
       'order_items: RW',
       'orders: R',
-      'parcel_events: RW',
+      'parcel_events: RW!', // logistiq. owns lifecycle and append-only trace, no new cross-feature writer
       'parcel_items: RW!',
       'parcels: RW!',
       'pickup_print_tokens: RW!',
