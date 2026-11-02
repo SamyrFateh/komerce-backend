@@ -171,6 +171,9 @@
       hero.appendChild(controls);
       hero.appendChild(feedback);
       workspaceHeader.remove();
+      // Ne retirer la topbar que lorsque le sélecteur est déjà accessible
+      // dans le Hero. L'écran de sélection initiale doit la conserver.
+      doc.body?.classList?.add('kmc-market-hero-integrated');
     }
 
     if (typeof global.MutationObserver === 'function' && !root.dataset.decisionObserverMounted) {
