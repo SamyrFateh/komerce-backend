@@ -63,9 +63,9 @@ test('les signaux d’Opérations mènent à l’Action Center (« Traiter ») e
   expect(src).toContain("contextualHref(`/admin/orders/${encodeURIComponent(order.order_reference)}`, '/admin/operations', 'Retour aux opérations')");
 });
 
-test('une chaîne sans commandes ni alertes se replie sans attribuer un état de santé positif', () => {
+test('une chaîne sans commandes se replie même si des agrégats serveur existent', () => {
   expect(SRC).toContain('columns.some(column => column.orders.length > 0)');
-  expect(SRC).toContain('columns.some(column => column.alerts.length > 0)');
+  expect(SRC).not.toContain('columns.some(column => column.alerts.length > 0)');
   expect(SRC).toContain("isEmpty ? 'kmc-control-chain is-empty' : 'kmc-control-chain is-active'");
   expect(SRC).toContain('Aucune commande dans la chaîne pour le périmètre sélectionné.');
 });
@@ -195,4 +195,13 @@ test('Vue opérations : ne jamais inventer une cause, un retard ou un responsabl
     .toEqual({ title:'Commande locale en cours', detail:'Préparation et retrait au relais', next:null });
   expect(show({code:'parcel_blocked',summary:'Statut "in_transit" depuis 8 jours'},'TRANSPORT','RED').title)
     .not.toMatch(/bloqu/);
+});
+
+test('les alertes structurelles ne se dupliquent pas dans le parcours', () => {
+  // Le backend garde les regroupements, l'UI ne rend que la commande gouvernante.
+  expect(SRC).toContain('structuralAlerts');
+  expect(SRC).toContain('alerts: structuralAlerts');
+  expect(SRC).not.toContain('kmc-control-structural-alert');
+  expect(SRC).not.toContain('commandes · même anomalie');
+  expect(SRC).toContain('const isEmpty = !hasOrders;');
 });
