@@ -204,16 +204,23 @@ router.get('/supplier-payments/:payment_id/settlements', ...guard, async (req, r
 router.get('/suppliers', ...groupedGuard, async (req, res, next) => {
   try {
     const { platform, active } = req.query;
+    const productId = typeof req.query.product_id === 'string' ? req.query.product_id.trim() : null;
+    if (productId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(productId)) {
+      return res.status(400).json({ error: 'product_id invalide' });
+    }
     const conditions = ['1=1'];
     const params     = [];
 
     if (platform) { conditions.push(`platform = $${params.length + 1}`); params.push(platform); }
     if (active !== undefined) { conditions.push(`is_active = $${params.length + 1}`); params.push(active === 'true'); }
     conditions.push('s.deleted_at IS NULL');
+    params.push(productId);
+    const productPlaceholder = `${params.length}`;
 
     const { rows } = await db.query(`
       SELECT
         s.*,
+        MAX(CASE WHEN ps.product_id = ${productPlaceholder}::uuid THEN ps.id::text END)::uuid AS matching_product_supplier_id,
         COUNT(DISTINCT ps.product_id) AS products_mapped,
         COUNT(DISTINCT po.id)         AS purchase_orders_total
       FROM suppliers s
