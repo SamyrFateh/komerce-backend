@@ -15,6 +15,7 @@ const { transitionOrderStatus } = require('./order-status-machine');
 const clientNotifications = require('./client-notification-service');
 const log = require('../utils/logger').child({ module: 'local-relay-receipt' });
 const { setOrderItemAvailabilityStatus } = require('./order-item-availability-service');
+const { addParcelItemTraced } = require('./parcel-item-mutation-service');
 const fail = (status, code, error) => ({ok:false, status, body:{code,error}});
 
 // A relay actor's signed physical receipt, never an inference from AVAILABLE_NOW.
@@ -67,7 +68,7 @@ async function recordLocalRelayReceipt({orderId, actor, physicalReceived, note =
     const proofNote='Réception physique locale attestée au relais'+
       (typeof note==='string' && note.trim() ? ': '+note.trim().slice(0,500) : '');
     await client.query(
-      "INSERT INTO parcels (id,order_id,type,status,reference,label,relais_id,created_by,available_at,notes) VALUES ($1,$2,'standard','available',$3,'Retrait local',$4,$5,NOW(),$6)",
+      "INSERT INTO parcels (id,order_id,type,status,reference,label,relais_id,created_by,notes) VALUES ($1,$2,'standard','draft',$3,'Retrait local',$4,$5,$6)",
       [parcelId,orderId,reference,order.relais_id,actor.id,proofNote]);
     // Insert the physical receipt proof before the parcel lines. Migration 362
     // checks the proof in the parcel quantity trigger in this same transaction.
@@ -75,12 +76,19 @@ async function recordLocalRelayReceipt({orderId, actor, physicalReceived, note =
       "INSERT INTO scans (order_id,parcel_id,step,scan_code,scanned_by,notes) VALUES ($1,$2,'relais_received',$3,$4,$5) RETURNING id",
       [orderId,parcelId,order.reference,actor.id,proofNote]);
     for (const item of localItems) {
-      // Packed locally and received at relay; NEVER marked internationally shipped.
+      // Canonical guarded assignment owns parcel_items composition. A local
+      // receipt is NOT an international shipment, so qty_shipped remains 0.
+      const assignment=await addParcelItemTraced(client,{
+        parcelId,orderItemId:item.id,quantity:Number(item.quantity),actorId:actor.id
+      });
+      if (!assignment?.row || assignment.already_assigned)
+        throw new Error('LOCAL_RECEIPT_ITEM_ASSIGNMENT_CONFLICT');
       await client.query(
-        'INSERT INTO parcel_items (parcel_id,order_item_id,product_id,quantity,qty_allocated,qty_packed,qty_shipped,qty_received,verified,verified_at,verified_by) VALUES ($1,$2,$3,$4,$4,$4,0,$4,TRUE,NOW(),$5)',
-        [parcelId,item.id,item.product_id,item.quantity,actor.id]);
+        'UPDATE parcel_items SET qty_allocated=$3,qty_packed=$3,qty_shipped=0,qty_received=$3,verified=TRUE,verified_at=NOW(),verified_by=$4 WHERE parcel_id=$1 AND order_item_id=$2',
+        [parcelId,item.id,item.quantity,actor.id]);
       await setOrderItemAvailabilityStatus(client,item.id,'available');
     }
+    await client.query("UPDATE parcels SET status='available',available_at=NOW() WHERE id=$1",[parcelId]);
     await client.query(
       "INSERT INTO parcel_events (parcel_id,event_type,actor_id,notes,metadata) VALUES ($1,'available',$2,$3,$4::jsonb)",
       [parcelId,actor.id,proofNote,JSON.stringify({source:'local_relay_receipt',scan_id:receipt.id})]);
