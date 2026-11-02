@@ -57,7 +57,7 @@ describe('market commercial price decision boundary', () => {
     const ui = read('public/dashboards/canonical/js/market-autonomy.js');
     expect(route).toMatch(/local-price\/activation-preview/);
     expect(route).toMatch(/local-price\/activate', requireCatalogPriceCapability\('pricing\.activate'\)/);
-    expect(ui).toMatch(/Voir l’impact/);
+    expect(ui).toMatch(/Vérifier le prix/);
     expect(ui).toMatch(/LOCAL_ACTIVE/);
     expect(ui).toMatch(/Viewer · lecture seule/);
   });
