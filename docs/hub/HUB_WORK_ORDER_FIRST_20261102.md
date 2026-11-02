@@ -15,15 +15,15 @@ La v3 précédente ouvrait un tableau d'approvisionnement avec une PO comme raci
 
 ## Interface
 - Premier niveau : une carte par commande, de la plus récente à la plus ancienne ; état de commande directement issu du serveur, PO fournisseurs multiples et attente fournisseur visibles sans ouvrir d'autres tableaux.
-- **Parcours naturel Work horizontal** : l'ouverture de la commande révèle cinq colonnes alignées de gauche à droite, reliées par flèches : `Commande / Articles → PO fournisseurs → Réception / Contrôle → Colis client → Cartons / Départ`. Jamais cinq sections superposées ni une disposition en deux colonnes alternées.
+- **Parcours naturel Work horizontal** : l'ouverture de la commande révèle six colonnes alignées de gauche à droite, reliées par flèches : `Commande / Articles → PO fournisseurs → Réception / Contrôle → Colis client → Cartons transport → Expédition`. Jamais cinq sections superposées ni une disposition en deux colonnes alternées.
 - Les détails de chaque étape sont des cartes compactes verticales DANS leur colonne, pas des tables à sept colonnes. Le dossier possède son propre défilement horizontal si la zone desktop est étroite, sans faire déborder la page.
-- La colonne de gauche garde les quantités client et le nombre de PO ; la seconde suit chaque fournisseur de façon indépendante ; la troisième présente réellement reçu/confirmé/reliquat/anomalie ; les deux dernières distinguent colis client et carton transport prouvés.
+- La colonne de gauche garde les quantités client et le nombre de PO ; la seconde suit chaque fournisseur de façon indépendante ; la troisième présente réellement reçu/confirmé/reliquat/anomalie ; les trois dernières distinguent colis client, carton transport et expédition prouvés.
 - Source autoritative pour actions : Achats fournisseurs émet les PO ; Réceptions encaisse la preuve physique ; le service Hub possède le rattachement carton/expédition. Pas de deuxième route d'écriture introduite.
 - Valeurs 'indisponible' si pas de preuve ; aucune clôture de commande dérivée d'un taux de réception.
 
 ## Preuves avant GO
 1. PostgreSQL : commande avec articles IMPORT visible avant PO, deuxième PO fournisseur sur même commande, réception partielle, article endommagé, reliquat, client parcel distinct du KOM-BOX, local exclu.
-2. Chromium desktop 1440 : une commande dépliée comporte les cinq colonnes **sur la même ligne, positions x croissantes**, deux PO indépendantes, liens et mouvements prouvés, actions cartons conservées ; aucune écriture pour consultation. Vérifier en capture les textes longs et la lisibilité sur 1440.
+2. Chromium desktop 1440 : une commande dépliée comporte les six colonnes **sur la même ligne, positions x croissantes**, deux PO indépendantes, liens et mouvements prouvés, actions cartons conservées ; aucune écriture pour consultation. Vérifier en capture les textes longs et la lisibilité sur 1440.
 3. Gouvernance : Required verdict vert, backend et rôles, relecture Railway sur SHA réellement déployé.
 4. Validation visuelle du mock Work original non réalisée dans cette session ; un test Chromium de structure ne suffit pas à certifier le pixel.
 
