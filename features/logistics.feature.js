@@ -137,6 +137,7 @@ module.exports = {
       'services/transport-rails.js',
       'services/international-shipment-journey.js',
       'services/relay-shipment-receipt.js',
+      'services/relay-parcel-item-reconciliation.js',
     ],
     routes: [
       'routes/parcels.js',
@@ -168,6 +169,7 @@ module.exports = {
     tests: [
       'tests/integration/hub-physical-proof-postgres.test.js',
       'tests/integration/relay-shipment-receipt-postgres.test.js',
+      'tests/unit/relay-shipment-parcel-projection.test.js',
       'tests/unit/market-transport-tariff-gate.test.js',
       'tests/integration/market-transport-sale-rates-postgres.test.js',
       'tests/unit/hub-dubai-projection.test.js',
@@ -257,6 +259,7 @@ module.exports = {
       'international_shipment_charges: RW!',
       'international_shipment_events: RW!',
       'international_shipment_hub_units: RW!',
+      'international_shipment_relay_receipts: RW!',
       'international_shipments: RW!',
       'incidents: R',
       'invoices: R',

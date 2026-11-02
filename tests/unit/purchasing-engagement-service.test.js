@@ -203,6 +203,12 @@ describe('confirmGroupedPurchaseOrder — garde-fous', () => {
     await expect(engagement.confirmGroupedPurchaseOrder(PO, { lines: okLines })).rejects.toMatchObject({ status: 409, code: 'PURCHASE_ORDER_NOT_GROUPED' });
   });
 
+  it('achat manuel : une quantité positive exige une preuve, sans affecter le mode API', async () => {
+    scripted([[/FROM purchase_orders WHERE id = \$1 FOR UPDATE/, { rows: [poRow({ status: 'notified', trigger_mode: 'manual' })] }]]);
+    await expect(engagement.confirmGroupedPurchaseOrder(PO, { lines: okLines }))
+      .rejects.toMatchObject({ status: 400, code: 'MANUAL_PURCHASE_PROOF_REQUIRED' });
+  });
+
   it('tout à zéro : aucune vérification de preuve fournisseur ; texte libre (notes, suivi) sans valeur → null', async () => {
     const { calls } = scripted([
       [/FROM purchase_orders WHERE id = \$1 FOR UPDATE/, { rows: [poRow({ status: 'notified' })] }],

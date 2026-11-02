@@ -163,6 +163,111 @@
     return `${group.supplier_id}|${group.procurement_hub_ref}|${group.market_id}`;
   }
 
+
+  // Achat de substitution : le lien article/fournisseur est créé avant le changement de ligne.
+  // Toutes les mutations passent par les routes autorisées ; aucune PO engagée n'est réécrite.
+  function renderChangeSupplier(doc, parent, line, context) {
+    const panel = doc.createElement('form');
+    panel.className = 'kmc-purchasing-supplier-change';
+    panel.setAttribute('data-change-supplier-form', line.line_id);
+    const heading = text(doc, 'strong', '', 'Changer de fournisseur · ' + (line.product_name || 'Article'));
+    panel.appendChild(heading);
+    const picker = doc.createElement('select');
+    picker.setAttribute('aria-label', 'Fournisseur de remplacement');
+    const placeholder = doc.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = 'Choisir un fournisseur existant';
+    picker.appendChild(placeholder);
+    panel.appendChild(picker);
+    const name = doc.createElement('input');
+    name.placeholder = 'Ou nom du nouveau fournisseur local';
+    name.setAttribute('aria-label', 'Nouveau fournisseur local');
+    panel.appendChild(name);
+    const phone = doc.createElement('input');
+    phone.placeholder = 'Téléphone du nouveau fournisseur (facultatif)';
+    phone.setAttribute('aria-label', 'Contact fournisseur');
+    panel.appendChild(phone);
+    const sku = doc.createElement('input');
+    sku.placeholder = 'Référence produit chez ce fournisseur';
+    sku.value = line.supplier_sku || line.supplier_unit_ref || '';
+    // Requis seulement si un nouveau mapping doit être créé (validation dans submit).
+    sku.required = false;
+    sku.setAttribute('aria-label', 'Référence produit fournisseur');
+    panel.appendChild(sku);
+    const price = doc.createElement('input');
+    price.type = 'number';
+    price.min = '0.01';
+    price.step = 'any';
+    price.placeholder = 'Prix unitaire réel (AED)';
+    price.required = false;
+    price.setAttribute('aria-label', 'Prix unitaire en AED');
+    panel.appendChild(price);
+    const reason = doc.createElement('input');
+    reason.placeholder = 'Motif du changement';
+    reason.required = true;
+    reason.setAttribute('aria-label', 'Motif du changement de fournisseur');
+    panel.appendChild(reason);
+    const status = text(doc, 'p', 'kmc-workspace-subtitle', 'Le fournisseur initial et sa ligne resteront dans l’historique.');
+    panel.appendChild(status);
+    const save = makeButton(doc, 'Valider le changement', 'change-supplier');
+    save.type = 'submit';
+    panel.appendChild(save);
+    parent.appendChild(panel);
+    let availableSuppliers = [];
+    jsonRequest(context.fetchFn, `${ENDPOINT}/suppliers?active=true&product_id=${encodeURIComponent(line.product_id)}`).then((suppliers) => {
+      availableSuppliers = Array.isArray(suppliers) ? suppliers : [];
+      availableSuppliers.forEach((supplier) => {
+        // Un agent Hub peut utiliser un mapping global existant, mais ne peut pas réécrire le catalogue global.
+        if (context.user && context.user.role === 'agent_hub' && !supplier.matching_product_supplier_id && supplier.owner_scope !== 'hub') return;
+        const option = doc.createElement('option');
+        option.value = supplier.id;
+        option.textContent = supplier.name;
+        picker.appendChild(option);
+      });
+    }).catch((error) => { status.textContent = describeError(error); });
+    panel.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (save.disabled) return;
+      const existing = availableSuppliers.find((supplier) => supplier.id === picker.value);
+      const needsMapping = !!name.value.trim() || !existing || !existing.matching_product_supplier_id;
+      if (!line.product_id || !reason.value.trim() || (!picker.value && !name.value.trim()) ||
+          (needsMapping && (!sku.value.trim() || !(Number(price.value) > 0)))) {
+        status.textContent = needsMapping
+          ? 'Renseignez le fournisseur, la référence produit, le prix AED et le motif.'
+          : 'Renseignez le fournisseur et le motif.';
+        return;
+      }
+      save.disabled = true;
+      try {
+        let supplierId = picker.value;
+        if (name.value.trim()) {
+          const supplier = await jsonRequest(context.fetchFn, `${ENDPOINT}/suppliers`, {
+            method: 'POST', body: { name: name.value.trim(), platform: 'local', contact_phone: phone.value.trim() || null },
+          });
+          supplierId = supplier.id;
+        }
+        let mappingId = !name.value.trim() && existing && existing.matching_product_supplier_id;
+        if (!mappingId) {
+          const mapping = await jsonRequest(context.fetchFn, `${ENDPOINT}/suppliers/${encodeURIComponent(supplierId)}/map`, {
+            method: 'POST',
+            body: { product_id: line.product_id, supplier_sku: sku.value.trim(), supplier_price_aed: Number(price.value) },
+          });
+          mappingId = mapping.id;
+        }
+        await jsonRequest(context.fetchFn, `${ENDPOINT}/lines/${encodeURIComponent(line.line_id)}/change-supplier`, {
+          method: 'POST',
+          body: { product_supplier_id: mappingId, reason: reason.value.trim(), execution_mode: 'manual' },
+        });
+        context.selection.delete(line.line_id);
+        await context.reload();
+        setFeedback(context.root, 'Fournisseur remplacé ; ancienne ligne conservée et nouvelle ligne ouverte.', 'success');
+      } catch (error) {
+        status.textContent = describeError(error);
+        save.disabled = false;
+      }
+    });
+  }
+
   function renderGroup(doc, slot, group, context) {
     const key = groupKey(group);
     const card = doc.createElement('article');
@@ -235,6 +340,13 @@
           successMessage: 'Ligne annulée.',
         });
       });
+      const change = makeButton(doc, 'Changer fournisseur', 'change-supplier', true);
+      change.addEventListener('click', () => {
+        const existing = card.querySelector('[data-change-supplier-form="' + line.line_id + '"]');
+        if (existing) { existing.remove(); return; }
+        renderChangeSupplier(doc, card, line, context);
+      });
+      actions.appendChild(change);
       actions.appendChild(cancel);
       tr.appendChild(actions);
       tbody.appendChild(tr);
@@ -342,6 +454,17 @@
     ref.setAttribute('data-supplier-order-id', '');
     form.appendChild(ref);
 
+    const proof = doc.createElement('input');
+    if (manual) {
+      proof.type = 'text';
+      proof.required = true;
+      proof.minLength = 4;
+      proof.placeholder = 'Justificatif obligatoire : référence facture, reçu ou lien vers la photo';
+      proof.setAttribute('aria-label', 'Justificatif de l’achat manuel (obligatoire)');
+      proof.setAttribute('data-purchase-proof-ref', '');
+      form.appendChild(proof);
+    }
+
     const bar = doc.createElement('div');
     bar.className = 'kmc-workspace-section-actions';
     const submit = makeButton(doc, 'Enregistrer la confirmation', 'confirm-po');
@@ -363,6 +486,10 @@
         if (price.value.trim() !== '') entry.confirmed_unit_price = Number(price.value);
         payloadLines.push(entry);
       }
+      if (manual && payloadLines.some((l) => l.confirmed_quantity > 0) && proof.value.trim().length < 4) {
+        setFeedback(context.root, 'Ajoutez une référence de facture, de reçu ou de photo avant de confirmer l’achat manuel.', 'critical');
+        return;
+      }
       context.busy.add('confirm');
       submit.disabled = true;
       context.act(submit, 'confirm', {
@@ -370,6 +497,7 @@
         body: {
           lines: payloadLines,
           ...(ref.value.trim() ? { supplier_order_id: ref.value.trim() } : {}),
+          ...(manual ? { purchase_proof_ref: proof.value.trim() } : {}),
         },
         successMessage: (result) => {
           const remnants = (result.remnants || []).length;
@@ -777,6 +905,7 @@
 
     const context = {
       root: rootNode,
+      fetchFn,
       user: options.user || {},
       confirm: options.confirm || (typeof window !== 'undefined' ? window.confirm.bind(window) : () => true),
       prompt: options.prompt || (typeof window !== 'undefined' ? window.prompt.bind(window) : () => null),

@@ -23,6 +23,7 @@
 'use strict';
 const db = require('../db');
 const { createScanIncident } = require('./incident-write-service');
+const { projectRelayReceiptToClientParcels } = require('./relay-parcel-item-reconciliation');
 
 class RelayReceiptError extends Error {
   constructor(status, code, message) { super(message); this.status = status; this.code = code; }
@@ -163,7 +164,8 @@ async function receiveShipment({ market, actor, reference, body = {} }, database
         if (error && error.code === '23505') fail(409, 'RELAY_RECEIPT_ALREADY_ATTESTED', 'Réception déjà attestée pour cet article');
         throw error;
       }
-      results.push({ order_item_id: l.itemId, expected, received: l.qty, incident_id: incidentId });
+      const projection = await projectRelayReceiptToClientParcels(client, l.itemId);
+      results.push({ order_item_id: l.itemId, expected, received: l.qty, incident_id: incidentId, ...projection });
     }
 
     // L'étape relay_received découle des attestations : tous les articles attendus (tous relais) ont une attestation.
@@ -184,4 +186,4 @@ async function receiveShipment({ market, actor, reference, body = {} }, database
   });
 }
 
-module.exports = { listRelayShipments, receiveShipment, RelayReceiptError, RELAY_VISIBLE_STAGES };
+module.exports = { listRelayShipments, receiveShipment, projectRelayReceiptToClientParcels, RelayReceiptError, RELAY_VISIBLE_STAGES };

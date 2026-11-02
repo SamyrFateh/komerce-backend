@@ -411,9 +411,13 @@ async function confirmGroupedPurchaseOrder(poId, body = {}, { actor = null, cont
   const trackingUrl = optionalText(body.tracking_url);
   const trackingNumber = optionalText(body.tracking_number);
   const notes = optionalText(body.notes);
+  const manualProof = optionalText(body.purchase_proof_ref);
 
   const outcome = await withTransaction(async (client) => {
     const po = await lockGroupedPo(client, poId, { requireDraft: false });
+    if (po.trigger_mode !== 'auto' && confirmations.some((line) => line.confirmedQuantity > 0) && (!manualProof || manualProof.length < 4)) {
+      throw fail(400, 'MANUAL_PURCHASE_PROOF_REQUIRED', 'Une référence de justificatif d’achat est obligatoire avant toute confirmation manuelle.');
+    }
     if (po.status !== 'notified') {
       throw fail(409, 'PURCHASE_ORDER_NOT_NOTIFIED', `PO au statut "${po.status}" : seule une PO soumise (notified) se confirme`, {
         current_status: po.status,
@@ -480,7 +484,8 @@ async function confirmGroupedPurchaseOrder(poId, body = {}, { actor = null, cont
                tracking_number = COALESCE($4, tracking_number),
                notes = CASE WHEN $5::text IS NULL THEN notes ELSE CONCAT(COALESCE(notes, ''), E'\\n', $5::text) END
          WHERE id = $1
-      `, [po.id, verifiedRef, trackingUrl, trackingNumber, notes]);
+      `, [po.id, verifiedRef, trackingUrl, trackingNumber,
+        po.trigger_mode === 'auto' ? notes : [notes, manualProof && `[PREUVE_ACHAT_MANUEL] ${manualProof}`].filter(Boolean).join('\n') || null]);
     }
     return { po_id: po.id, remnantIds, allZero };
   });

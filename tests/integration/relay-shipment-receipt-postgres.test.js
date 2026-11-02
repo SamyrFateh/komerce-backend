@@ -47,7 +47,7 @@ if (!process.env.DATABASE_URL) {
       await c.query(`INSERT INTO hub_purchase_allocations(id,purchase_order_id,order_id,order_item_id,product_sku_id,supplier_id,supplier_unit_ref,supplier_order_identity,quantity,market_id,destination_ref)
                      VALUES($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9,$10,'KM')`, [allocId, poId, orderId, itemId, skuId, supplier, `${tag}-${label}-U`, JSON.stringify(identity), qty, km]);
     });
-    return { orderId, itemId, allocId };
+    return { orderId, itemId, allocId, productId };
   }
 
   beforeAll(async () => {
@@ -71,8 +71,25 @@ if (!process.env.DATABASE_URL) {
       // A : 3 expédiés sur 4 commandés (reliquat 1) ; B : 2 sur 2.
       await c.query('INSERT INTO hub_physical_unit_placements(physical_unit_id,allocation_id,quantity,operation_type) VALUES($1,$2,3,$3)', [box, items.a.allocId, 'REPACK']);
       await c.query('INSERT INTO hub_physical_unit_placements(physical_unit_id,allocation_id,quantity,operation_type) VALUES($1,$2,2,$3)', [box, items.b.allocId, 'REPACK']);
+
       await c.query('INSERT INTO international_shipment_hub_units(shipment_id,physical_unit_id) VALUES($1,$2)', [shipmentId, box]);
+      // Réceptions fournisseur distinctes des REPACK dans KOM-BOX : matérialité complète.
+      const inbound = id();
+      await c.query(`INSERT INTO hub_physical_units(id,reference,unit_type,state,market_id)
+                     VALUES($1,$2,'SUPPLIER_PACKAGE','RECEIVED',$3)`, [inbound, `${tag}-IN`, km]);
+      await c.query('INSERT INTO hub_physical_unit_placements(physical_unit_id,allocation_id,quantity,operation_type) VALUES($1,$2,3,$3)', [inbound, items.a.allocId, 'RECEIVE']);
+      await c.query('INSERT INTO hub_physical_unit_placements(physical_unit_id,allocation_id,quantity,operation_type) VALUES($1,$2,2,$3)', [inbound, items.b.allocId, 'RECEIVE']);
     });
+    // Colis clients distincts de la KOM-BOX ; le trigger 363 les alimente depuis les preuves du Hub.
+    for (const [key, count] of [['a', 4], ['b', 2]]) {
+      const source = items[key];
+      const parcelId = id();
+      await q(`INSERT INTO parcels(id,order_id,reference,type,status,relais_id)
+               VALUES($1,$2,$3,'standard','preparation',$4)`,
+        [parcelId, source.orderId, `${tag}-CLIENT-${key}`, key === 'a' ? relaisA : relaisB]);
+      await q(`INSERT INTO parcel_items(id,parcel_id,order_item_id,product_id,quantity)
+               VALUES($1,$2,$3,$4,$5)`, [id(), parcelId, source.itemId, source.productId, count]);
+    }
   });
   afterAll(async () => { await db.pool.end().catch(() => {}); });
 
@@ -115,6 +132,8 @@ if (!process.env.DATABASE_URL) {
     const inc = (await q('SELECT incident_type, detected_source, details, order_item_id FROM incidents WHERE id=$1', [out.receipts[0].incident_id])).rows[0];
     expect(inc).toMatchObject({ incident_type: 'missing_item', detected_source: 'relay_agent', order_item_id: items.a.itemId });
     expect(inc.details).toMatchObject({ expected: 3, received: 2, shipment_reference: ref });
+    const parcelA = (await q('SELECT qty_allocated,qty_packed,qty_shipped,qty_received FROM parcel_items WHERE order_item_id=$1', [items.a.itemId])).rows[0];
+    expect(parcelA).toMatchObject({ qty_allocated: 3, qty_packed: 3, qty_shipped: 3, qty_received: 2 });
 
     await expect(relay.receiveShipment({ market, actor: agentA, reference: ref, body: { proof_ref: 'BORD-A2', lines: [{ order_item_id: items.a.itemId, received_qty: 3 }] } }))
       .rejects.toMatchObject({ status: 409, code: 'RELAY_RECEIPT_ALREADY_ATTESTED' });
@@ -130,6 +149,8 @@ if (!process.env.DATABASE_URL) {
   test('tous les relais ont attesté → relay_received, avec événement de preuve ; réception conforme sans incident', async () => {
     const out = await relay.receiveShipment({ market, actor: agentB, reference: ref, body: { proof_ref: 'BORD-B', lines: [{ order_item_id: items.b.itemId, received_qty: 2 }] } });
     expect(out.receipts[0].incident_id).toBeNull();
+    const parcelB = (await q('SELECT qty_shipped,qty_received FROM parcel_items WHERE order_item_id=$1', [items.b.itemId])).rows[0];
+    expect(parcelB).toMatchObject({ qty_shipped: 2, qty_received: 2 });
     expect(out).toMatchObject({ complete: true, stage: 'relay_received' });
     expect((await q('SELECT stage FROM international_shipments WHERE id=$1', [shipmentId])).rows[0].stage).toBe('relay_received');
     const ev = (await q("SELECT to_stage, proof_ref, payload FROM international_shipment_events WHERE shipment_id=$1 AND to_stage='relay_received'", [shipmentId])).rows[0];
