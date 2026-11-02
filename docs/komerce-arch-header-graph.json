@@ -13,20 +13,20 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 771,
-    "filesWithFullHeaders": 720,
+    "scannedCodeFiles": 773,
+    "filesWithFullHeaders": 722,
     "filesWithLiteHeaders": 51,
-    "filesWithAnyHeaders": 771,
+    "filesWithAnyHeaders": 773,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1940,
-    "edges": 9578,
+    "graphNodes": 1945,
+    "edges": 9623,
     "dbTables": 222,
-    "doctrines": 740,
+    "doctrines": 743,
     "impactAreas": 207,
-    "unresolvedCodeEdges": 921,
-    "dbWriteViaOverlapWarnings": 11,
+    "unresolvedCodeEdges": 923,
+    "dbWriteViaOverlapWarnings": 12,
     "multiWriterTables": 95
   },
   "byDomain": {
@@ -42,7 +42,7 @@
     "market": 9,
     "economic-engine": 67,
     "sourcing": 37,
-    "logistics": 61,
+    "logistics": 63,
     "boutique": 21,
     "checkout": 3,
     "shared-cart": 25,
@@ -112,7 +112,7 @@
     "schema": 1,
     "route": 138,
     "entrypoint": 1,
-    "service": 454,
+    "service": 456,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -121,9 +121,9 @@
     "validators": 1
   },
   "byCriticality": {
-    "critical": 113,
+    "critical": 114,
     "medium": 153,
-    "high": 444,
+    "high": 445,
     "low": 60,
     "unknown": 1
   },
@@ -20642,6 +20642,94 @@
       "version": "2026-10"
     },
     {
+      "id": "services/local-relay-receipt-service.js",
+      "file": "services/local-relay-receipt-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "logistics-local-relay-receipt",
+      "domain": "logistics",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "order_id",
+        "authenticated_relay_actor",
+        "attested_physical_receipt"
+      ],
+      "outputs": [
+        "parcel_local",
+        "scan_proof",
+        "local_line_availability",
+        "order_status"
+      ],
+      "depends": [
+        "db.js",
+        "services/order-status-machine.js",
+        "services/parcel-item-mutation-service.js",
+        "services/parcel-operations.js",
+        "services/order-item-availability-service.js",
+        "utils/reference.js"
+      ],
+      "usedBy": [
+        "routes/orders/status.js"
+      ],
+      "dbRead": [
+        "orders",
+        "order_items",
+        "relais",
+        "parcels",
+        "local_stock",
+        "local_stock_allocations"
+      ],
+      "dbWrite": [
+        "parcels",
+        "parcel_items",
+        "parcel_events",
+        "scans"
+      ],
+      "dbWriteVia": [
+        {
+          "via": "parcel-operations",
+          "tables": [
+            "parcels"
+          ]
+        },
+        {
+          "via": "parcel-item-mutation-service",
+          "tables": [
+            "parcel_items",
+            "parcel_events"
+          ]
+        },
+        {
+          "via": "order-status-machine",
+          "tables": [
+            "orders",
+            "order_status_history"
+          ]
+        },
+        {
+          "via": "order-item-availability-service",
+          "tables": [
+            "order_items"
+          ]
+        }
+      ],
+      "dbTxn": [
+        "caller-owned-atomic"
+      ],
+      "doctrine": [],
+      "impactAreas": [
+        "orders",
+        "logistics",
+        "local-stock",
+        "pickup"
+      ],
+      "version": null,
+      "dbWriteViaOverlapWarning": "services/local-relay-receipt-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> parcels, parcel_items, parcel_events"
+    },
+    {
       "id": "services/local-stock-checkout-preview.js",
       "file": "services/local-stock-checkout-preview.js",
       "type": "file",
@@ -24559,7 +24647,8 @@
         "order_items",
         "orders",
         "products",
-        "relais"
+        "relais",
+        "scans"
       ],
       "dbWrite": [
         "order_items",
@@ -29460,6 +29549,60 @@
         "market"
       ],
       "version": "2026-09"
+    },
+    {
+      "id": "services/relay-parcel-item-reconciliation.js",
+      "file": "services/relay-parcel-item-reconciliation.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "relay-parcel-item-reconciliation",
+      "domain": "logistics",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "locked_order_item_id",
+        "physical_shipment_links",
+        "immutable_relay_receipts"
+      ],
+      "outputs": [
+        "quantity_proof_projection_on_customer_parcels"
+      ],
+      "depends": [
+        "db"
+      ],
+      "usedBy": [
+        "services/relay-shipment-receipt.js"
+      ],
+      "dbRead": [
+        "order_items",
+        "international_shipment_hub_units",
+        "international_shipments",
+        "hub_physical_unit_placements",
+        "hub_purchase_allocations",
+        "international_shipment_relay_receipts",
+        "parcels",
+        "parcel_items"
+      ],
+      "dbWrite": [
+        "parcel_items"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "caller_transaction_with_order_item_lock"
+      ],
+      "doctrine": [
+        "single_physical_truth",
+        "no_fabricated_quantities",
+        "receipt_regression_forbidden"
+      ],
+      "impactAreas": [
+        "logistics",
+        "relay",
+        "orders"
+      ],
+      "version": "2026-11"
     },
     {
       "id": "services/relay-shipment-receipt.js",
@@ -41504,6 +41647,21 @@
       "doctrine": "market_operator_scoping (GAP-2)"
     },
     {
+      "id": "doctrine:single_physical_truth",
+      "type": "doctrine",
+      "doctrine": "single_physical_truth"
+    },
+    {
+      "id": "doctrine:no_fabricated_quantities",
+      "type": "doctrine",
+      "doctrine": "no_fabricated_quantities"
+    },
+    {
+      "id": "doctrine:receipt_regression_forbidden",
+      "type": "doctrine",
+      "doctrine": "receipt_regression_forbidden"
+    },
+    {
       "id": "doctrine:relay_reception_attested_by_relay",
       "type": "doctrine",
       "doctrine": "relay_reception_attested_by_relay"
@@ -42914,6 +43072,11 @@
       "area": "privacy"
     },
     {
+      "id": "impact:pickup",
+      "type": "impact-area",
+      "area": "pickup"
+    },
+    {
       "id": "impact:governance",
       "type": "impact-area",
       "area": "governance"
@@ -42927,11 +43090,6 @@
       "id": "impact:markets",
       "type": "impact-area",
       "area": "markets"
-    },
-    {
-      "id": "impact:pickup",
-      "type": "impact-area",
-      "area": "pickup"
     },
     {
       "id": "impact:infrastructure",
@@ -75350,6 +75508,174 @@
       "label": "privacy"
     },
     {
+      "from": "services/local-relay-receipt-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/local-relay-receipt-service.js",
+      "to": "services/order-status-machine.js",
+      "type": "depends",
+      "label": "services/order-status-machine.js"
+    },
+    {
+      "from": "services/local-relay-receipt-service.js",
+      "to": "services/parcel-item-mutation-service.js",
+      "type": "depends",
+      "label": "services/parcel-item-mutation-service.js"
+    },
+    {
+      "from": "services/local-relay-receipt-service.js",
+      "to": "services/parcel-operations.js",
+      "type": "depends",
+      "label": "services/parcel-operations.js"
+    },
+    {
+      "from": "services/local-relay-receipt-service.js",
+      "to": "services/order-item-availability-service.js",
+      "type": "depends",
+      "label": "services/order-item-availability-service.js"
+    },
+    {
+      "from": "services/local-relay-receipt-service.js",
+      "to": "utils/reference.js",
+      "type": "depends",
+      "label": "utils/reference.js"
+    },
+    {
+      "from": "routes/orders/status.js",
+      "to": "services/local-relay-receipt-service.js",
+      "type": "uses",
+      "label": "routes/orders/status.js"
+    },
+    {
+      "from": "services/local-relay-receipt-service.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/local-relay-receipt-service.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
+    },
+    {
+      "from": "services/local-relay-receipt-service.js",
+      "to": "db:relais",
+      "type": "db-read",
+      "label": "relais"
+    },
+    {
+      "from": "services/local-relay-receipt-service.js",
+      "to": "db:parcels",
+      "type": "db-read",
+      "label": "parcels"
+    },
+    {
+      "from": "services/local-relay-receipt-service.js",
+      "to": "db:local_stock",
+      "type": "db-read",
+      "label": "local_stock"
+    },
+    {
+      "from": "services/local-relay-receipt-service.js",
+      "to": "db:local_stock_allocations",
+      "type": "db-read",
+      "label": "local_stock_allocations"
+    },
+    {
+      "from": "services/local-relay-receipt-service.js",
+      "to": "db:parcels",
+      "type": "db-write",
+      "label": "parcels"
+    },
+    {
+      "from": "services/local-relay-receipt-service.js",
+      "to": "db:parcel_items",
+      "type": "db-write",
+      "label": "parcel_items"
+    },
+    {
+      "from": "services/local-relay-receipt-service.js",
+      "to": "db:parcel_events",
+      "type": "db-write",
+      "label": "parcel_events"
+    },
+    {
+      "from": "services/local-relay-receipt-service.js",
+      "to": "db:scans",
+      "type": "db-write",
+      "label": "scans"
+    },
+    {
+      "from": "services/local-relay-receipt-service.js",
+      "to": "db:parcels",
+      "type": "db-write-via",
+      "label": "parcels",
+      "via": "parcel-operations"
+    },
+    {
+      "from": "services/local-relay-receipt-service.js",
+      "to": "db:parcel_items",
+      "type": "db-write-via",
+      "label": "parcel_items",
+      "via": "parcel-item-mutation-service"
+    },
+    {
+      "from": "services/local-relay-receipt-service.js",
+      "to": "db:parcel_events",
+      "type": "db-write-via",
+      "label": "parcel_events",
+      "via": "parcel-item-mutation-service"
+    },
+    {
+      "from": "services/local-relay-receipt-service.js",
+      "to": "db:orders",
+      "type": "db-write-via",
+      "label": "orders",
+      "via": "order-status-machine"
+    },
+    {
+      "from": "services/local-relay-receipt-service.js",
+      "to": "db:order_status_history",
+      "type": "db-write-via",
+      "label": "order_status_history",
+      "via": "order-status-machine"
+    },
+    {
+      "from": "services/local-relay-receipt-service.js",
+      "to": "db:order_items",
+      "type": "db-write-via",
+      "label": "order_items",
+      "via": "order-item-availability-service"
+    },
+    {
+      "from": "services/local-relay-receipt-service.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
+    },
+    {
+      "from": "services/local-relay-receipt-service.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
+    },
+    {
+      "from": "services/local-relay-receipt-service.js",
+      "to": "impact:local-stock",
+      "type": "impact",
+      "label": "local-stock"
+    },
+    {
+      "from": "services/local-relay-receipt-service.js",
+      "to": "impact:pickup",
+      "type": "impact",
+      "label": "pickup"
+    },
+    {
       "from": "services/local-stock-checkout-preview.js",
       "to": "db.js",
       "type": "depends",
@@ -81751,6 +82077,12 @@
       "to": "db:relais",
       "type": "db-read",
       "label": "relais"
+    },
+    {
+      "from": "services/order-status-machine.js",
+      "to": "db:scans",
+      "type": "db-read",
+      "label": "scans"
     },
     {
       "from": "services/order-status-machine.js",
@@ -89263,6 +89595,108 @@
       "to": "impact:market",
       "type": "impact",
       "label": "market"
+    },
+    {
+      "from": "services/relay-parcel-item-reconciliation.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/relay-shipment-receipt.js",
+      "to": "services/relay-parcel-item-reconciliation.js",
+      "type": "uses",
+      "label": "services/relay-shipment-receipt.js"
+    },
+    {
+      "from": "services/relay-parcel-item-reconciliation.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
+    },
+    {
+      "from": "services/relay-parcel-item-reconciliation.js",
+      "to": "db:international_shipment_hub_units",
+      "type": "db-read",
+      "label": "international_shipment_hub_units"
+    },
+    {
+      "from": "services/relay-parcel-item-reconciliation.js",
+      "to": "db:international_shipments",
+      "type": "db-read",
+      "label": "international_shipments"
+    },
+    {
+      "from": "services/relay-parcel-item-reconciliation.js",
+      "to": "db:hub_physical_unit_placements",
+      "type": "db-read",
+      "label": "hub_physical_unit_placements"
+    },
+    {
+      "from": "services/relay-parcel-item-reconciliation.js",
+      "to": "db:hub_purchase_allocations",
+      "type": "db-read",
+      "label": "hub_purchase_allocations"
+    },
+    {
+      "from": "services/relay-parcel-item-reconciliation.js",
+      "to": "db:international_shipment_relay_receipts",
+      "type": "db-read",
+      "label": "international_shipment_relay_receipts"
+    },
+    {
+      "from": "services/relay-parcel-item-reconciliation.js",
+      "to": "db:parcels",
+      "type": "db-read",
+      "label": "parcels"
+    },
+    {
+      "from": "services/relay-parcel-item-reconciliation.js",
+      "to": "db:parcel_items",
+      "type": "db-read",
+      "label": "parcel_items"
+    },
+    {
+      "from": "services/relay-parcel-item-reconciliation.js",
+      "to": "db:parcel_items",
+      "type": "db-write",
+      "label": "parcel_items"
+    },
+    {
+      "from": "services/relay-parcel-item-reconciliation.js",
+      "to": "doctrine:single_physical_truth",
+      "type": "doctrine",
+      "label": "single_physical_truth"
+    },
+    {
+      "from": "services/relay-parcel-item-reconciliation.js",
+      "to": "doctrine:no_fabricated_quantities",
+      "type": "doctrine",
+      "label": "no_fabricated_quantities"
+    },
+    {
+      "from": "services/relay-parcel-item-reconciliation.js",
+      "to": "doctrine:receipt_regression_forbidden",
+      "type": "doctrine",
+      "label": "receipt_regression_forbidden"
+    },
+    {
+      "from": "services/relay-parcel-item-reconciliation.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
+    },
+    {
+      "from": "services/relay-parcel-item-reconciliation.js",
+      "to": "impact:relay",
+      "type": "impact",
+      "label": "relay"
+    },
+    {
+      "from": "services/relay-parcel-item-reconciliation.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
     },
     {
       "from": "services/relay-shipment-receipt.js",
@@ -112099,6 +112533,7 @@
         "middleware/auth.js",
         "middleware/validate.js",
         "services/cost-allocation/canonical-margin-writer.js",
+        "services/local-relay-receipt-service.js",
         "utils/logger.js"
       ]
     },
@@ -121720,6 +122155,97 @@
         "routes/relay-dashboard.js"
       ]
     },
+    "services/local-relay-receipt-service.js": {
+      "role": "logistics-local-relay-receipt",
+      "domain": "logistics",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "services/order-status-machine.js",
+        "services/parcel-item-mutation-service.js",
+        "services/parcel-operations.js",
+        "services/order-item-availability-service.js",
+        "utils/reference.js"
+      ],
+      "directUsedBy": [
+        "routes/orders/status.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "orders",
+        "order_items",
+        "relais",
+        "parcels",
+        "local_stock",
+        "local_stock_allocations"
+      ],
+      "dbWrite": [
+        "parcels",
+        "parcel_items",
+        "parcel_events",
+        "scans"
+      ],
+      "dbWriteVia": [
+        {
+          "via": "parcel-operations",
+          "tables": [
+            "parcels"
+          ]
+        },
+        {
+          "via": "parcel-item-mutation-service",
+          "tables": [
+            "parcel_items",
+            "parcel_events"
+          ]
+        },
+        {
+          "via": "order-status-machine",
+          "tables": [
+            "orders",
+            "order_status_history"
+          ]
+        },
+        {
+          "via": "order-item-availability-service",
+          "tables": [
+            "order_items"
+          ]
+        }
+      ],
+      "doctrines": [],
+      "impactAreas": [
+        "orders",
+        "logistics",
+        "local-stock",
+        "pickup"
+      ],
+      "mustCheck": [
+        "db:local_stock",
+        "db:local_stock_allocations",
+        "db:order_items",
+        "db:order_status_history",
+        "db:orders",
+        "db:parcel_events",
+        "db:parcel_items",
+        "db:parcels",
+        "db:relais",
+        "db:scans",
+        "impact:local-stock",
+        "impact:logistics",
+        "impact:orders",
+        "impact:pickup",
+        "routes/orders/status.js",
+        "services/order-item-availability-service.js",
+        "services/order-status-machine.js",
+        "services/parcel-item-mutation-service.js",
+        "services/parcel-operations.js",
+        "utils/reference.js"
+      ]
+    },
     "services/local-stock-checkout-preview.js": {
       "role": "local-stock-checkout-preview",
       "domain": "local-stock",
@@ -125372,6 +125898,7 @@
         "doctrine:lifecycle_owner_boundary",
         "impact:logistics",
         "impact:orders",
+        "services/local-relay-receipt-service.js",
         "services/parcel-operations.js"
       ]
     },
@@ -125677,7 +126204,8 @@
         "order_items",
         "orders",
         "products",
-        "relais"
+        "relais",
+        "scans"
       ],
       "dbWrite": [
         "order_items",
@@ -125721,6 +126249,7 @@
         "db:product_variants",
         "db:products",
         "db:relais",
+        "db:scans",
         "doctrine:annulation_tracee",
         "doctrine:payment_to_stock_single_entry",
         "doctrine:status_transition_source_unique",
@@ -125738,6 +126267,7 @@
         "services/client-notification-service.js",
         "services/cost-allocation/canonical-margin-writer.js",
         "services/customs-shipment-service.js",
+        "services/local-relay-receipt-service.js",
         "services/notification-service.js",
         "services/notifications/notification-service.js",
         "services/operations-workspace.js",
@@ -126009,7 +126539,8 @@
         "impact:inventory",
         "impact:logistics",
         "routes/hub-dashboard.js",
-        "services/inventory-service.js"
+        "services/inventory-service.js",
+        "services/local-relay-receipt-service.js"
       ]
     },
     "services/parcel-mutation-service.js": {
@@ -126135,6 +126666,7 @@
         "doctrine:resolve_before_behavior_change",
         "impact:logistics",
         "routes/orders/parcels.js",
+        "services/local-relay-receipt-service.js",
         "services/notification-service.js",
         "services/order-fx-snapshot.js",
         "services/order-item-availability-service.js",
@@ -130506,6 +131038,62 @@
         "utils/logger.js"
       ]
     },
+    "services/relay-parcel-item-reconciliation.js": {
+      "role": "relay-parcel-item-reconciliation",
+      "domain": "logistics",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db"
+      ],
+      "directUsedBy": [
+        "services/relay-shipment-receipt.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "order_items",
+        "international_shipment_hub_units",
+        "international_shipments",
+        "hub_physical_unit_placements",
+        "hub_purchase_allocations",
+        "international_shipment_relay_receipts",
+        "parcels",
+        "parcel_items"
+      ],
+      "dbWrite": [
+        "parcel_items"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "single_physical_truth",
+        "no_fabricated_quantities",
+        "receipt_regression_forbidden"
+      ],
+      "impactAreas": [
+        "logistics",
+        "relay",
+        "orders"
+      ],
+      "mustCheck": [
+        "db:hub_physical_unit_placements",
+        "db:hub_purchase_allocations",
+        "db:international_shipment_hub_units",
+        "db:international_shipment_relay_receipts",
+        "db:international_shipments",
+        "db:order_items",
+        "db:parcel_items",
+        "db:parcels",
+        "doctrine:no_fabricated_quantities",
+        "doctrine:receipt_regression_forbidden",
+        "doctrine:single_physical_truth",
+        "impact:logistics",
+        "impact:orders",
+        "impact:relay",
+        "services/relay-shipment-receipt.js"
+      ]
+    },
     "services/relay-shipment-receipt.js": {
       "role": "relay-shipment-receipt-owner",
       "domain": "logistics",
@@ -130572,7 +131160,8 @@
         "impact:logistics",
         "impact:relay",
         "routes/admin-operations-workspace.js",
-        "services/incident-write-service.js"
+        "services/incident-write-service.js",
+        "services/relay-parcel-item-reconciliation.js"
       ]
     },
     "services/repair-ordered-purchasing.js": {
@@ -137878,6 +138467,7 @@
         "routes/hub-dashboard.js",
         "routes/logistics.js",
         "routes/parcels.js",
+        "services/local-relay-receipt-service.js",
         "services/parcel-operations.js",
         "services/parcelOptimizationService.js",
         "utils/parcels.js"
@@ -138093,6 +138683,7 @@
   "dbWriteViaOverlapWarnings": [
     "routes/sourcing-scanner.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> sourcing_candidates",
     "services/customs-shipment-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> order_item_real_cost_allocations",
+    "services/local-relay-receipt-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> parcels, parcel_items, parcel_events",
     "services/market-delegation-team-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> assignment_memberships",
     "services/order-financial-closure-signal.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> signals",
     "services/pickup-collection-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> pickup_print_tokens, pickup_reveal_codes, scans",
@@ -138171,7 +138762,7 @@
     },
     {
       "table": "parcels",
-      "writerCount": 15,
+      "writerCount": 16,
       "writers": [
         "routes/admin-customs-shipments.js",
         "routes/admin/system.js",
@@ -138179,6 +138770,7 @@
         "routes/parcels.js",
         "routes/transitaire-api.js",
         "services/auto-parcel.js",
+        "services/local-relay-receipt-service.js",
         "services/parcel-auto-create-service.js",
         "services/parcel-mutation-service.js",
         "services/parcel-operations.js",
@@ -138188,6 +138780,24 @@
         "services/simulator/cleanup.js",
         "services/simulator/state-advancer.js",
         "utils/parcelSync.js"
+      ]
+    },
+    {
+      "table": "parcel_items",
+      "writerCount": 12,
+      "writers": [
+        "routes/admin/system.js",
+        "routes/parcels.js",
+        "services/auto-parcel.js",
+        "services/local-relay-receipt-service.js",
+        "services/parcel-auto-create-service.js",
+        "services/parcel-item-mutation-service.js",
+        "services/parcel-operations.js",
+        "services/parcelOptimizationService.js",
+        "services/relay-parcel-item-reconciliation.js",
+        "services/scan-engine.js",
+        "services/simulator/cleanup.js",
+        "services/simulator/state-advancer.js"
       ]
     },
     {
@@ -138209,27 +138819,12 @@
       ]
     },
     {
-      "table": "parcel_items",
-      "writerCount": 10,
-      "writers": [
-        "routes/admin/system.js",
-        "routes/parcels.js",
-        "services/auto-parcel.js",
-        "services/parcel-auto-create-service.js",
-        "services/parcel-item-mutation-service.js",
-        "services/parcel-operations.js",
-        "services/parcelOptimizationService.js",
-        "services/scan-engine.js",
-        "services/simulator/cleanup.js",
-        "services/simulator/state-advancer.js"
-      ]
-    },
-    {
       "table": "scans",
-      "writerCount": 10,
+      "writerCount": 11,
       "writers": [
         "routes/admin/delete-order-cascade.js",
         "routes/transit-dashboard.js",
+        "services/local-relay-receipt-service.js",
         "services/pickup-collection-recorder.js",
         "services/pickup-collection-service.js",
         "services/scan-operations.js",
@@ -138534,6 +139129,16 @@
       ]
     },
     {
+      "table": "parcel_events",
+      "writerCount": 4,
+      "writers": [
+        "services/local-relay-receipt-service.js",
+        "services/parcel-item-mutation-service.js",
+        "services/parcel-security.js",
+        "utils/parcelSync.js"
+      ]
+    },
+    {
       "table": "product_skus",
       "writerCount": 4,
       "writers": [
@@ -138645,15 +139250,6 @@
         "services/hub-box-shipment-service.js",
         "services/international-shipment-journey.js",
         "services/relay-shipment-receipt.js"
-      ]
-    },
-    {
-      "table": "parcel_events",
-      "writerCount": 3,
-      "writers": [
-        "services/parcel-item-mutation-service.js",
-        "services/parcel-security.js",
-        "utils/parcelSync.js"
       ]
     },
     {
@@ -142471,6 +143067,12 @@
       "label": "payment confirmation flows"
     },
     {
+      "from": "services/local-relay-receipt-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
       "from": "services/local-stock-checkout-preview.js",
       "to": "db.js",
       "type": "depends",
@@ -143378,6 +143980,12 @@
     },
     {
       "from": "services/relay-dashboard-queries.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/relay-parcel-item-reconciliation.js",
       "to": "db",
       "type": "depends",
       "label": "db"
