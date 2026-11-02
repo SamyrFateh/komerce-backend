@@ -42,6 +42,29 @@ const { notifyStatusChange }        = require('../../services/notification-servi
 const { transitionOrderStatus }     = require('../../services/order-status-machine');
 const log = require('../../utils/logger').child({ module: 'status' });
 const pickupProofService = require('../../services/documents/pickup-proof');
+const { recordLocalRelayReceipt } = require('../../services/local-relay-receipt-service');
+
+// Reception physique locale : l'agent du relais atteste la possession des
+// articles LOCAL_STOCK d'une commande locale ou mixte. Les articles IMPORT
+// restent dans leur propre chaîne Hub et leurs propres colis ; aucun faux transit.
+router.post('/:id/local-relay-receipt',
+  authenticate, requireRole(['admin','agent_relais']), async (req,res,next)=>{
+    try {
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(req.params.id))
+        return res.status(400).json({code:'ORDER_ID_INVALID',error:'Identifiant de commande invalide'});
+      if (req.body?.physical_received !== true)
+        return res.status(400).json({code:'LOCAL_RECEIPT_PROOF_REQUIRED',error:'Attestation de réception physique requise'});
+      if (req.body.note != null && (typeof req.body.note !== 'string' || req.body.note.length>500))
+        return res.status(400).json({code:'LOCAL_RECEIPT_NOTE_INVALID',error:'Note invalide (500 caractères maximum)'});
+      const result=await recordLocalRelayReceipt({
+        orderId:req.params.id,
+        actor:{id:req.user.id,role:req.user.role,relais_id:req.user.relais_id},
+        physicalReceived:true,note:req.body.note || null,
+      });
+      return res.status(result.status).json(result.body);
+    } catch(err) {return next(err);}
+  }
+);
 
 // ─── PATCH /api/orders/:id/status ────────────────────────────────────────────
 

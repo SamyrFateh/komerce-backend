@@ -238,7 +238,27 @@ async function syncScanToParcels({ order_id, step, scan_id, target_one_available
   let transition = { newStatus: null };
   for (const oid of touchedOrderIds) {
     const allParcels = await listParcelsRepresentingOrder(q, oid, { columns: 'p.status, p.type' });
-    const computed = computeOrderStatus(allParcels);
+    let computed = computeOrderStatus(allParcels);
+    // A collected parcel is not the same as a fully delivered order. An
+    // IMPORT line may not have a parcel yet when LOCAL_STOCK is handed over.
+    // Check actual coverage of EVERY ordered line before the terminal state.
+    if (computed === 'collected') {
+      const { rows: [coverage] } = await q.query(
+        `SELECT EXISTS (
+             SELECT 1 FROM order_items oi
+             LEFT JOIN LATERAL (
+               SELECT COALESCE(SUM(pi.quantity) FILTER (WHERE p.status='collected'), 0) AS collected_qty
+                 FROM parcel_items pi
+                 JOIN parcels p ON p.id=pi.parcel_id
+                WHERE pi.order_item_id=oi.id
+             ) delivered ON TRUE
+            WHERE oi.order_id=$1
+              AND COALESCE(delivered.collected_qty,0) < oi.quantity
+           ) AS outstanding`,
+        [oid]
+      );
+      if (coverage?.outstanding) computed = 'available';
+    }
     // Call the machine — source 'scan' allows forward-only transitions
     const t = await transitionOrderStatus({
       orderId: oid,

@@ -139,6 +139,7 @@ const ROUTE_SCHEMA_MAP = [
   { prefix: '/api/orders',               method: 'post',   schema: validators.orders?.create },
   { prefix: '/api/orders',               method: 'get',    schema: validators.orders?.list },
   { prefix: '/api/orders/{id}/status',   method: 'patch',  schema: validators.orders?.updateStatus },
+  { prefix: '/api/orders/{id}/local-relay-receipt', method: 'post', schema: null }, // attestation terrain, validation in-route
   // Pas de DELETE /api/orders/{id} en vrai (vérifié contre routes/orders/cancel.js) :
   // l'annulation est POST /api/orders/{id}/cancel. L'ancienne entrée 'delete' ici ne
   // matchait jamais aucune route réelle → le schéma Joi cancelOrder n'était jamais
@@ -1147,6 +1148,11 @@ const KNOWN_RESPONSES = {
   // orders/status.js → POST mark-availability → res.json({ success: true, order: updated })
   '/api/orders/{id}/mark-availability': {
     post: { fields: ['success','order'], source: 'route-read' }
+  },
+  // Réception attestée au relais d'articles LOCAL_STOCK, y compris commande mixte :
+  // codes HTTP/status/parcel_id proviennent de recordLocalRelayReceipt.
+  '/api/orders/{id}/local-relay-receipt': {
+    post: { fields: ['success','status','parcel_id'], source: 'service-read' }
   },
   // orders/status.js → POST partial-ship → res.json({ success: true, order: updated })
   '/api/orders/{id}/partial-ship': {

@@ -50,6 +50,7 @@ module.exports = {
   docs: [
     'docs/doctrine/DOCTRINE_ANNULATION.md',
     'docs/doctrine/CHECKOUT_UNIFIED_ATTACK.md',
+    'docs/contract/LOCAL_RELAY_RECEIPT_P0_20261102.md',
   ],
 
   files: {
@@ -106,6 +107,9 @@ module.exports = {
       'tests/unit/order-fulfillment-snapshot-migration.test.js',
       'tests/unit/order-fulfillment-snapshot.test.js',
       'tests/unit/order-status-machine-mobile-money.test.js',
+      'tests/unit/local-relay-receipt-service.test.js',
+      'tests/unit/order-status-local-receipt.test.js',
+      'tests/e2e-api/orders.local-relay-receipt.e2e.test.js',
       'tests/unit/qr-collection-core-emission.test.js',
       // E2E fonctionnel — preuve d'unicite de remise (Lot 1 retrait-secours).
       'tests/e2e-api/orders.single-collect.e2e.test.js',
@@ -222,8 +226,8 @@ module.exports = {
 
   security: {
     status: 'CONFIRMED_MIXED',
-    authedRoutesDetected: 31,
-    totalRoutes: 33,
+    authedRoutesDetected: 32,
+    totalRoutes: 34,
     note: "La facture a été transférée à documents et n'expose plus de route publique. La seule capability publique restante dans orders est GET /api/orders/retrait/:token, validée par verify-qr-collection.js.",
   },
   contract: {
@@ -245,6 +249,7 @@ module.exports = {
       'POST /api/orders/:id/partial-ship',
       'POST /api/orders/:id/qr-token',
       'PATCH /api/orders/:id/status',
+      'POST /api/orders/:id/local-relay-receipt',
       'GET /api/orders/:id/sub-orders',
       'GET /api/orders/credits',
       'PATCH /api/orders/parcels/:parcelId/status',

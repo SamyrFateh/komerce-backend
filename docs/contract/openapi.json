@@ -7,7 +7,7 @@
   },
   "x-contract-debt": {
     "unknown_responses": 51,
-    "total_routes": 716,
+    "total_routes": 717,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -33379,6 +33379,53 @@
                   "type": "object",
                   "properties": {
                     "config": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/orders/{id}/local-relay-receipt": {
+      "post": {
+        "summary": "POST /api/orders/{id}/local-relay-receipt",
+        "x-route-file": "routes/orders/status.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "service-read",
+                  "description": "Champs observés (source: service-read)",
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "status": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "parcel_id": {
                       "type": "string",
                       "x-observed": true
                     }

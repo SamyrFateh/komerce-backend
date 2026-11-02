@@ -42,7 +42,7 @@ describe('order-item-availability-service', () => {
     ]);
   });
 
-  test('setOrderItemAvailabilityStatus only changes status + updated_at', async () => {
+  test('setOrderItemAvailabilityStatus updates status without a nonexistent timestamp column', async () => {
     const client = {
       query: jest.fn().mockResolvedValue({ rows: [], rowCount: 1 }),
     };
@@ -51,8 +51,9 @@ describe('order-item-availability-service', () => {
 
     expect(client.query).toHaveBeenCalledTimes(1);
     expect(client.query.mock.calls[0][0]).toContain(
-      'UPDATE order_items SET availability_status = $1, updated_at = NOW()'
+      'UPDATE order_items SET availability_status = $1'
     );
+    expect(client.query.mock.calls[0][0]).not.toContain('updated_at');
     expect(client.query.mock.calls[0][1]).toEqual(['available', 'oi-2']);
   });
 

@@ -279,11 +279,17 @@ const STATE_MACHINE_PAYMENT_SOURCES = new Set([
   'shared_cart_full_payment', 'paypal_capture',
 ]);
 
+// Sources avec validation de preuve physique dans la state machine :
+// NEVER qualify as generic forward-only; local_relay_receipt requires paid
+// order, assigned relay actor and an authenticated relais_received scan.
+const STATE_MACHINE_ATTESTED_SOURCES = new Set(['local_relay_receipt']);
+
 // Union : toutes les sources reconnues
 const STATE_MACHINE_ALL_SOURCES = new Set([
   ...STATE_MACHINE_FORWARD_SOURCES,
   ...STATE_MACHINE_PATCH_SOURCES,
   ...STATE_MACHINE_PAYMENT_SOURCES,
+  ...STATE_MACHINE_ATTESTED_SOURCES,
 ]);
 
 // Exemptions : chaos-testing — transitions délibérément incohérentes
