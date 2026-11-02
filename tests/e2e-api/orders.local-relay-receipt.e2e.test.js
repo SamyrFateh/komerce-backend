@@ -33,21 +33,23 @@ describeE2E('Orders - local relay receipt without hub',({db})=>{
     if(!market)throw new Error('Marché KM requis pour la recette');
     const ids=Object.values(orders);
     // E2E database only: teardown all children first; no production writes.
-    cleanup.trackSql([
+    // createCleanup is LIFO; register parents first and children last.
+    cleanup.trackSql('DELETE FROM relais WHERE id=ANY($1::uuid[])',[[relay,foreignRelay]]);
+    cleanup.trackSql('DELETE FROM users WHERE id=ANY($1::uuid[])',[[user,agent,foreignAgent]]);
+    cleanup.trackSql('DELETE FROM products WHERE id=ANY($1::uuid[])',[[product,importProduct]]);
+    cleanup.trackSql('DELETE FROM local_stock WHERE id=$1',[stock]);
+    const childCleanup=[
       'DELETE FROM scans WHERE order_id=ANY($1::uuid[])',
       'DELETE FROM parcel_events WHERE parcel_id IN (SELECT id FROM parcels WHERE order_id=ANY($1::uuid[]))',
       'DELETE FROM parcel_items WHERE parcel_id IN (SELECT id FROM parcels WHERE order_id=ANY($1::uuid[]))',
       'DELETE FROM parcels WHERE order_id=ANY($1::uuid[])',
       'DELETE FROM order_status_history WHERE order_id=ANY($1::uuid[])',
-      'DELETE FROM client_notifications WHERE entity_type=\'order\' AND entity_id=ANY($1::uuid[])',
+      "DELETE FROM client_notifications WHERE entity_type='order' AND entity_id=ANY($1::uuid[])",
       'DELETE FROM local_stock_allocations WHERE order_id=ANY($1::uuid[])',
       'DELETE FROM order_items WHERE order_id=ANY($1::uuid[])',
       'DELETE FROM orders WHERE id=ANY($1::uuid[])',
-    ].join(';')+';', [ids]);
-    cleanup.trackSql('DELETE FROM local_stock WHERE id=$1',[stock]);
-    cleanup.trackSql('DELETE FROM products WHERE id=ANY($1::uuid[])',[[product,importProduct]]);
-    cleanup.trackSql('DELETE FROM users WHERE id=ANY($1::uuid[])',[[user,agent,foreignAgent]]);
-    cleanup.trackSql('DELETE FROM relais WHERE id=ANY($1::uuid[])',[[relay,foreignRelay]]);
+    ];
+    for(const sql of childCleanup.reverse())cleanup.trackSql(sql,[ids]);
 
     await q("INSERT INTO relais (id,name,agent_name,phone,address,market_id) VALUES ($1,$2,'Agent','+269000221','Test',$3),($4,$5,'Agent','+269000222','Test',$3)",
       [relay,tag('relay'),market.id,foreignRelay,tag('other'),]);
