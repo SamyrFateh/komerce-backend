@@ -80,6 +80,7 @@ module.exports = {
       'migrations/313_market_transport_sale_rates.sql',
       'migrations/354_international_shipment_journey.sql',
       'migrations/359_hub_draft_open_and_handover.sql',
+      'migrations/363_parcel_items_physical_proof.sql',
     ],
     docs: [
       'docs/doctrine/DOCTRINE_DENSITE_VALEUR.md',
@@ -163,6 +164,7 @@ module.exports = {
       'dashboards/admin/js/views/OrdersLogisticsView.js',
     ],
     tests: [
+      'tests/integration/hub-physical-proof-postgres.test.js',
       'tests/unit/market-transport-tariff-gate.test.js',
       'tests/integration/market-transport-sale-rates-postgres.test.js',
       'tests/unit/hub-dubai-projection.test.js',
@@ -435,6 +437,8 @@ module.exports = {
   authority: 'backend-core — logistics possède la vérité physique et la custody ; scan-engine.js reste autorité de la machine de scan colis legacy, hub-physical-identity.js possède HUB-001 sans jamais réassigner les vérités Purchasing/Orders/Market',
 
   invariants: [
+    { statement: 'une seule vérité physique (lot 2, migration 363) : pour un article d\'import, parcel_items.qty_allocated ne dépasse jamais ce que le Hub a reçu (placements RECEIVE) et qty_packed ce qui est placé en KOM-BOX (MARKET_PARCEL), la chaîne expédié <= emballé <= affecté restant portée par trg_check_parcel_item_qty ; ces quantités sont dérivées des placements physiques (trigger), jamais préremplies à l\'encaissement ; un article hors import (stock local) suit le circuit direct relais sans preuve Hub',
+      test: 'tests/integration/hub-physical-proof-postgres.test.js' },
     { statement: 'RC-2: la clôture par colis groupés ou partiels est prouvée en PostgreSQL isolé sur tables temporaires ; toute ligne encore due empêche collected',
       test: 'tests/e2e-api/logistics.order-coverage-rc2.e2e.test.js' },
     { statement: 'RC-2 : aucun passage de commande à collected sans couverture intégrale de toutes ses lignes et quantités réellement collectées sur les colis actifs, même en présence de livraisons partielles ou de lignes jamais affectées',
