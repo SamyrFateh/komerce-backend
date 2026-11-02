@@ -205,6 +205,7 @@
       "international_shipment_charges",
       "international_shipment_events",
       "international_shipment_hub_units",
+      "international_shipment_relay_receipts",
       "international_shipments",
       "invoices",
       "market_cost_attributions",
