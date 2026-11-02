@@ -342,6 +342,17 @@
     ref.setAttribute('data-supplier-order-id', '');
     form.appendChild(ref);
 
+    const proof = doc.createElement('input');
+    if (manual) {
+      proof.type = 'text';
+      proof.required = true;
+      proof.minLength = 4;
+      proof.placeholder = 'Justificatif obligatoire : référence facture, reçu ou lien vers la photo';
+      proof.setAttribute('aria-label', 'Justificatif de l’achat manuel (obligatoire)');
+      proof.setAttribute('data-purchase-proof-ref', '');
+      form.appendChild(proof);
+    }
+
     const bar = doc.createElement('div');
     bar.className = 'kmc-workspace-section-actions';
     const submit = makeButton(doc, 'Enregistrer la confirmation', 'confirm-po');
@@ -363,6 +374,10 @@
         if (price.value.trim() !== '') entry.confirmed_unit_price = Number(price.value);
         payloadLines.push(entry);
       }
+      if (manual && payloadLines.some((l) => l.confirmed_quantity > 0) && proof.value.trim().length < 4) {
+        setFeedback(context.root, 'Ajoutez une référence de facture, de reçu ou de photo avant de confirmer l’achat manuel.', 'critical');
+        return;
+      }
       context.busy.add('confirm');
       submit.disabled = true;
       context.act(submit, 'confirm', {
@@ -370,6 +385,7 @@
         body: {
           lines: payloadLines,
           ...(ref.value.trim() ? { supplier_order_id: ref.value.trim() } : {}),
+          ...(manual ? { purchase_proof_ref: proof.value.trim() } : {}),
         },
         successMessage: (result) => {
           const remnants = (result.remnants || []).length;
