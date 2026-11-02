@@ -808,8 +808,12 @@
       const identity = doc.createElement('div');
       identity.className = 'kmc-hub-board-identity';
       identity.appendChild(text(doc, 'strong', '', group.reference));
-      identity.appendChild(text(doc, 'small', '',
-        String(group.items.length || new Set(group.lines.map(l => l.order_item_id)).size) + ' article(s)'));
+      const itemKeys = new Set([
+        ...group.items.map(item => String(item.id || item.product)),
+        ...group.lines.map(line => String(line.order_item_id || line.product)),
+        ...group.needs.map(need => String(need.order_item_id || need.product_name)),
+      ]);
+      identity.appendChild(text(doc, 'small', '', String(itemKeys.size) + ' article(s)'));
       orderCell.appendChild(identity);
       row.appendChild(orderCell);
       const ordered = group.items.reduce((total, item) => total + Math.max(0, Number(item.ordered) || 0), 0);
@@ -836,7 +840,7 @@
       stageCell(row, group, 'Fournisseur',
         !pos.length ? 'Non commandé' : unsent ? 'Envoi à prouver' :
           purchasedReceived >= expected && expected > 0 ? 'Reçu au Hub' : 'Attente fournisseur',
-        !pos.length ? '' : pos.length + ' fournisseur/PO',
+        !pos.length ? '' : pos.length + ' PO liée(s)',
         'La transmission de la PO ne prouve ni l’expédition fournisseur ni la réception physique. Consulter les preuves d’envoi et le suivi des fournisseurs.',
         !pos.length || unsent);
       stageCell(row, group, 'Réception',
