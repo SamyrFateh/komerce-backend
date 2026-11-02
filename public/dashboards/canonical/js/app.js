@@ -36,6 +36,7 @@
     PURCHASING_WORKSPACE: 'purchasing-workspace',
     IMPORT_RUNTIME: 'import-runtime',
     HUB_LIVE: 'hub-live',
+    HUB_WORKSTATION: 'hub-workstation',
     RELAIS_LIVE: 'relais-live',
     PRICING_WORKSPACE: 'pricing-workspace',
     ACTION_CENTER: 'action-center',
@@ -67,6 +68,7 @@
     [SURFACES.PURCHASING_WORKSPACE]: 'Les achats faits aux fournisseurs : ce qui est commandé, payé et expédié.',
     [SURFACES.IMPORT_RUNTIME]: 'Le suivi en direct des produits qui arrivent des fournisseurs : où en est chaque lot et ce qui le bloque.',
     [SURFACES.HUB_LIVE]: 'L’écran de travail du Hub, en direct : les colis attendus, reçus et à traiter.',
+    [SURFACES.HUB_WORKSTATION]: 'Le Hub comporte deux branches reliées par un dossier unique : administration des achats et opérations physiques.',
     [SURFACES.RELAIS_LIVE]: 'L’écran de travail du Relais, en direct : les colis arrivés et ceux à remettre aux clients.',
     [SURFACES.PRICING_WORKSPACE]: 'Ici, on fixe les prix de vente. Un bon prix couvre ce que le produit coûte et laisse une marge. Tant qu’un coût réel n’existe pas, on utilise un coût estimé, indiqué comme tel.',
     [SURFACES.ACTION_CENTER]: 'La liste de ce qui demande une action maintenant. Chaque ligne dit qui doit agir et pourquoi.',
@@ -259,6 +261,7 @@
     if (path === '/admin/workspaces/purchasing') return SURFACES.PURCHASING_WORKSPACE;
     if (path === '/admin/import-runtime') return SURFACES.IMPORT_RUNTIME;
     if (path === '/admin/hub-live') return SURFACES.HUB_LIVE;
+    if (path === '/admin/hub') return SURFACES.HUB_WORKSTATION;
     if (path === '/admin/relais-live') return SURFACES.RELAIS_LIVE;
     if (path === '/admin/workspaces/pricing' || path === '/admin-next/workspaces/pricing') {
       return SURFACES.PRICING_WORKSPACE;
@@ -605,6 +608,18 @@
     });
   }
 
+  // Mini-app intégrée : deux branches, writers existants, même coque Canonical.
+  function renderHubWorkstation(root, user, adminContext) {
+    const moduleApi = global.KomerceCanonicalHubWorkstation;
+    if (!moduleApi) throw new Error('canonical_hub_workstation_module_missing');
+    return moduleApi.mount({
+      root, user, document: global.document, location: global.location,
+      history: global.history, fetch: global.fetch.bind(global), adminContext,
+      renderAdministrative: host => renderPurchasingWorkspace(host, user),
+      renderOperations: host => renderHubExecutionShell(host, user, adminContext),
+    });
+  }
+
   function renderHubLive(root, user, adminContext) {
     if (isHubExecutionRequest()) return renderHubExecutionShell(root, user, adminContext);
     if (!global.KomerceCanonicalHubLive) throw new Error('canonical_hub_live_module_missing');
@@ -940,6 +955,7 @@
     if (surface === SURFACES.PURCHASING_WORKSPACE) return renderPurchasingWorkspace(root, user);
     if (surface === SURFACES.IMPORT_RUNTIME) return renderImportRuntime(root, user);
     if (surface === SURFACES.HUB_LIVE) return renderHubLive(root, user, adminContext);
+    if (surface === SURFACES.HUB_WORKSTATION) return renderHubWorkstation(root, user, adminContext);
     if (surface === SURFACES.RELAIS_LIVE) return renderRelayLive(root, user, adminContext);
     if (surface === SURFACES.PRICING_WORKSPACE) return renderPricingWorkspaceShell(root, user, adminContext);
     if (surface === SURFACES.ACTION_CENTER) return renderActionCenter(root, user);

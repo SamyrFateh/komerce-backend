@@ -1,0 +1,52 @@
+/* Komerce Hub : vraie mini-app intégrée, deux branches, dossier gauche / actions droite. */
+.kmc-hub-app { width: 100%; min-width: 0; display: grid; gap: 12px; }
+.kmc-hub-app-header { display: flex; align-items: center; justify-content: space-between; padding: 2px 4px 0; }
+.kmc-hub-app-title { display: grid; gap: 2px; }
+.kmc-hub-app-eyebrow, .kmc-hub-app-pane-label {
+  color: #64748b; font-size: 10px; letter-spacing: .075em; font-weight: 760; text-transform: uppercase;
+}
+.kmc-hub-app-title h1 { font-size: clamp(20px, 2vw, 26px); line-height: 1.2; margin: 0; color: var(--text-primary, #16263a); }
+.kmc-hub-app-title p { margin: 0; font-size: 12px; color: var(--text-secondary, #64748b); }
+.kmc-hub-app-branches { display: flex; gap: 8px; padding-bottom: 5px; border-bottom: 1px solid #e1e7ed; }
+.kmc-hub-app-branch { display: flex; align-items: center; padding: 9px 15px; min-width: 180px; border-radius: 9px; text-decoration: none; color: #40546a; border: 1px solid transparent; }
+.kmc-hub-app-branch:hover { background: #f5f8fb; }
+.kmc-hub-app-branch.is-active { background: #eaf5f1; color: #155c4a; border-color: #c9e2d8; }
+.kmc-hub-app-branch-copy { display: grid; gap: 2px; }
+.kmc-hub-app-branch-copy strong { font-size: 13px; }
+.kmc-hub-app-branch-copy small { font-size: 11px; color: #667a8d; }
+.kmc-hub-app-layout { display: grid; grid-template-columns: minmax(225px, 265px) minmax(0, 1fr); gap: 14px; align-items: start; min-width: 0; }
+.kmc-hub-app-rail { background: var(--surface, #fff); border: 1px solid #e0e7ef; border-radius: 12px; padding: 12px; min-width: 0; display: grid; gap: 11px; position: sticky; top: 82px; max-height: calc(100vh - 104px); }
+.kmc-hub-app-rail-heading { display: grid; gap: 2px; }
+.kmc-hub-app-rail-heading strong { font-size: 14px; }
+.kmc-hub-app-rail-heading small, .kmc-hub-app-rail-note { color: #697a8d; font-size: 11px; line-height: 1.4; }
+.kmc-hub-app-rail-note { margin: 0; padding-top: 8px; border-top: 1px solid #e3e8ef; }
+.kmc-hub-app-search { width: 100%; box-sizing: border-box; min-height: 36px; padding: 7px 10px; border-radius: 8px; border: 1px solid #d9e1e9; background: #fff; font: inherit; font-size: 12px; }
+.kmc-hub-app-rail-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.kmc-hub-app-light-button { color: #345368; background: #f3f7fa; padding: 6px 9px; font-size: 11px; font-weight: 650; border: 1px solid #dae5ea; border-radius: 7px; cursor: pointer; }
+.kmc-hub-app-light-button:hover { background: #e6eff4; }
+.kmc-hub-app-case-list { min-height: 90px; max-height: min(520px, 57vh); overflow-y: auto; display: grid; gap: 6px; align-content: start; }
+.kmc-hub-app-case { border: 1px solid #e1e8ef; background: #fff; color: #14263a; padding: 10px 11px; text-align: left; border-radius: 8px; width: 100%; cursor: pointer; display: grid; gap: 4px; min-width: 0; }
+.kmc-hub-app-case:hover { background: #f6f9fb; }
+.kmc-hub-app-case.is-selected { background: #e9f6f1; border-color: #88c7b0; box-shadow: inset 3px 0 #158468; }
+.kmc-hub-app-case strong { font-size: 12px; font-weight: 720; overflow-wrap: anywhere; }
+.kmc-hub-app-case span, .kmc-hub-app-case small { font-size: 11px; color: #66798b; line-height: 1.35; overflow-wrap: anywhere; }
+.kmc-hub-app-case small { font-size: 10px; }
+.kmc-hub-app-list-empty, .kmc-hub-app-list-error { font-size: 12px; color: #697d90; margin: 4px 0; line-height: 1.4; }
+.kmc-hub-app-list-error { color: #a52a33; }
+.kmc-hub-app-content { display: grid; gap: 8px; min-width: 0; }
+.kmc-hub-app-pane-label { padding-left: 3px; }
+.kmc-hub-app-workspace { min-width: 0; width: 100%; }
+.kmc-hub-app-workspace .kmc-workspace-header { margin-top: 0; }
+.kmc-hub-app-workspace .kmc-hub-work-order-body { overflow-x: auto; }
+.kmc-hub-app-case:focus-visible, .kmc-hub-app-branch:focus-visible, .kmc-hub-app-light-button:focus-visible {
+  outline: 2px solid #087b61; outline-offset: 2px;
+}
+@media (max-width: 1150px) {
+  .kmc-hub-app-layout { grid-template-columns: minmax(205px, 235px) minmax(0, 1fr); gap: 10px; }
+}
+@media (max-width: 800px) {
+  .kmc-hub-app-layout { grid-template-columns: 1fr; }
+  .kmc-hub-app-rail { position: static; max-height: none; }
+  .kmc-hub-app-case-list { max-height: 200px; }
+  .kmc-hub-app-branch { min-width: 0; flex: 1; }
+}
