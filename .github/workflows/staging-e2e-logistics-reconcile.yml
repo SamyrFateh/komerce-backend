@@ -17,12 +17,14 @@ concurrency:
   cancel-in-progress: false
 jobs:
   reconcile:
+    # Only the repository owner's audit issue runs without manual approval.
+    # Never allow an issue to request password reconciliation.
     if: >-
       github.repository == 'SamyrFateh/komerce-backend' &&
       (github.event_name == 'workflow_dispatch' ||
-       (github.event_name == 'issues' && github.actor == github.repository_owner &&
-        (github.event.issue.title == '[staging-op] audit-hub-relais-e2e' ||
-         github.event.issue.title == '[staging-op] reconcile-hub-relais-e2e')))
+       (github.event_name == 'issues' &&
+        github.event.issue.user.login == github.repository_owner &&
+        github.event.issue.title == '[staging-op] audit-hub-relais-e2e'))
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     env:
@@ -42,6 +44,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - name: Ensure issue-triggered credential checks are read-only
+        if: ${{ github.event_name == 'issues' }}
+        run: test "$E2E_LOGISTICS_RECONCILE_MODE" = 'audit'
       - name: Pin deployed code before touching E2E credentials
         shell: bash
         run: echo "E2E_EXPECTED_DEPLOY_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
