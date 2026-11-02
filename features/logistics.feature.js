@@ -257,6 +257,8 @@ module.exports = {
       'international_shipments: RW!',
       'incidents: R',
       'invoices: R',
+      'local_stock: R',
+      'local_stock_allocations: R',
       'order_items: RW',
       'orders: R',
       'parcel_events: RW!', // logistiq. owns lifecycle and append-only trace, no new cross-feature writer
