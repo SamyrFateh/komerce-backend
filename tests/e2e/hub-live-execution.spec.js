@@ -140,8 +140,9 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       const posts = [];
       await mount(page, { view: null, posts });
       await expect(page.locator('[data-workspace-view="supply"]')).toHaveAttribute('aria-selected', 'true');
-      await expect(page.locator('[data-hub-dossier-home]')).toContainText('Dossiers · Vue du jour');
-      await expect(page.locator('[data-workspace-metrics]')).toHaveCount(0);
+      await expect(page.locator('[data-hub-dossier-home] .kmc-hub-dossier-flow')).toContainText('PO fournisseurs');
+      await expect(page.locator('.kmc-section-title').filter({ hasText: 'Dossiers · Vue du jour' })).toBeVisible();
+      await expect(page.locator('.kmc-workspace-metrics')).toHaveCount(0);
       const po = page.locator(`[data-hub-po="${PO_ID}"]`);
       await expect(po).toBeVisible();
       await expect(po).toHaveAttribute('open', '');
