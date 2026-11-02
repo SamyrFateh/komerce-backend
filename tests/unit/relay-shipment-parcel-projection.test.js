@@ -11,6 +11,7 @@ const pid = (n) => '00000000-0000-4000-8000-' + String(n).padStart(12, '0');
 function clientWith({ shipped, received, parcels = [] }) {
   const updates = [];
   const query = jest.fn(async (sql, params) => {
+    if (sql.includes('SELECT id FROM order_items')) return { rows: [{ id: ITEM }] };
     if (sql.includes('physically_shipped')) return { rows: [{ physically_shipped: shipped, attested_received: received }] };
     if (sql.includes('FOR UPDATE OF pi')) return { rows: parcels };
     if (sql.includes('UPDATE parcel_items')) {
