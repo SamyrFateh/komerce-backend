@@ -142,6 +142,8 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       await expect(page.locator('[data-workspace-view="supply"]')).toHaveAttribute('aria-selected', 'true');
       await expect(page.locator('[data-hub-dossier-home] .kmc-hub-dossier-flow')).toContainText('PO fournisseurs');
       await expect(page.locator('.kmc-section-title').filter({ hasText: 'Dossiers · Vue du jour' })).toBeVisible();
+      await expect(page.locator('[data-hub-dossier-home] [data-metric-key="hub-remaining"]')).toContainText('3');
+      await expect(page.locator('[data-hub-dossier-home]')).not.toContainText('À traiter maintenant');
       await expect(page.locator('.kmc-workspace-metrics')).toHaveCount(0);
       const po = page.locator(`[data-hub-po="${PO_ID}"]`);
       await expect(po).toBeVisible();
