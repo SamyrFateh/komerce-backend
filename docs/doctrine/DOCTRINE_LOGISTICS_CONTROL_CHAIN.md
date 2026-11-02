@@ -204,6 +204,8 @@ RELAY_EXCEPTION
 
 Un retard n'est jamais assimilé à une indisponibilité ; une non-conformité n'est jamais assimilée à un retard.
 
+**Règle V2 de qualification :** une absence de scan ou de mutation depuis un délai arbitraire (30 minutes, par exemple) ne suffit jamais à dégrader une commande GREEN en ORANGE. Une alerte exige une échéance métier prouvée, un signal métier persistant, un incident ouvert ou une quarantaine. RED signifie « action requise » et ne prétend pas systématiquement que toute la commande est immobilisée. Les transitions de couleur suivent la vérité source et ne sont pas un second lifecycle.
+
 ## 8. Règle canonique des commandes splittées
 
 Une commande peut avoir plusieurs branches simultanément à des étapes différentes.
