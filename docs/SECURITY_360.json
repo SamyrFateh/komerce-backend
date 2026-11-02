@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-11-02T12:22:48.944Z",
+  "generatedAt": "2026-11-02T14:10:11.614Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 784,
-    "protected": 729,
+    "total": 786,
+    "protected": 731,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -2247,6 +2247,18 @@
         "admin",
         "agent_hub"
       ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/operations/market/{marketCode}/relay-shipments/{reference}/receive",
+      "level": "PROTECTED",
+      "roles": [
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "GET /api/admin/workspaces/operations/market/{marketCode}/relay-shipments",
+      "level": "PROTECTED",
+      "roles": []
     },
     {
       "key": "GET /api/admin/workspaces/operations/market/{marketCode}/supply/trace",
