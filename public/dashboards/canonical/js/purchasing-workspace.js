@@ -212,8 +212,12 @@
     save.type = 'submit';
     panel.appendChild(save);
     parent.appendChild(panel);
-    jsonRequest(context.fetchFn, `${ENDPOINT}/suppliers?active=true`).then((suppliers) => {
-      (Array.isArray(suppliers) ? suppliers : []).forEach((supplier) => {
+    let availableSuppliers = [];
+    jsonRequest(context.fetchFn, `${ENDPOINT}/suppliers?active=true&product_id=${encodeURIComponent(line.product_id)}`).then((suppliers) => {
+      availableSuppliers = Array.isArray(suppliers) ? suppliers : [];
+      availableSuppliers.forEach((supplier) => {
+        // Un agent Hub peut utiliser un mapping global existant, mais ne peut pas réécrire le catalogue global.
+        if (context.user && context.user.role === 'agent_hub' && !supplier.matching_product_supplier_id && supplier.owner_scope !== 'hub') return;
         const option = doc.createElement('option');
         option.value = supplier.id;
         option.textContent = supplier.name;
@@ -223,9 +227,13 @@
     panel.addEventListener('submit', async (event) => {
       event.preventDefault();
       if (save.disabled) return;
-      if (!line.product_id || !sku.value.trim() || !(Number(price.value) > 0) || !reason.value.trim() ||
-          (!picker.value && !name.value.trim())) {
-        status.textContent = 'Renseignez le fournisseur, la référence produit, le prix AED et le motif.';
+      const existing = availableSuppliers.find((supplier) => supplier.id === picker.value);
+      const needsMapping = !!name.value.trim() || !existing || !existing.matching_product_supplier_id;
+      if (!line.product_id || !reason.value.trim() || (!picker.value && !name.value.trim()) ||
+          (needsMapping && (!sku.value.trim() || !(Number(price.value) > 0)))) {
+        status.textContent = needsMapping
+          ? 'Renseignez le fournisseur, la référence produit, le prix AED et le motif.'
+          : 'Renseignez le fournisseur et le motif.';
         return;
       }
       save.disabled = true;
@@ -237,13 +245,17 @@
           });
           supplierId = supplier.id;
         }
-        const mapping = await jsonRequest(context.fetchFn, `${ENDPOINT}/suppliers/${encodeURIComponent(supplierId)}/map`, {
-          method: 'POST',
-          body: { product_id: line.product_id, supplier_sku: sku.value.trim(), supplier_price_aed: Number(price.value) },
-        });
+        let mappingId = !name.value.trim() && existing && existing.matching_product_supplier_id;
+        if (!mappingId) {
+          const mapping = await jsonRequest(context.fetchFn, `${ENDPOINT}/suppliers/${encodeURIComponent(supplierId)}/map`, {
+            method: 'POST',
+            body: { product_id: line.product_id, supplier_sku: sku.value.trim(), supplier_price_aed: Number(price.value) },
+          });
+          mappingId = mapping.id;
+        }
         await jsonRequest(context.fetchFn, `${ENDPOINT}/lines/${encodeURIComponent(line.line_id)}/change-supplier`, {
           method: 'POST',
-          body: { product_supplier_id: mapping.id, reason: reason.value.trim(), execution_mode: 'manual' },
+          body: { product_supplier_id: mappingId, reason: reason.value.trim(), execution_mode: 'manual' },
         });
         context.selection.delete(line.line_id);
         await context.reload();
