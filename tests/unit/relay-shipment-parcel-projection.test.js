@@ -4,7 +4,7 @@
  */
 jest.mock('../../db', () => ({ query: jest.fn(), withTransaction: jest.fn() }));
 jest.mock('../../services/incident-write-service', () => ({ createScanIncident: jest.fn() }));
-const { projectRelayReceiptToClientParcels } = require('../../services/relay-shipment-receipt');
+const { projectRelayReceiptToClientParcels } = require('../../services/relay-parcel-item-reconciliation');
 
 const ITEM = '00000000-0000-4000-8000-000000000011';
 const pid = (n) => '00000000-0000-4000-8000-' + String(n).padStart(12, '0');
