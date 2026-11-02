@@ -100,7 +100,7 @@ test.describe('Hub live · Approvisionnement — desktop 1440', () => {
         const { x, y } = node.getBoundingClientRect();
         return { x, y };
       }));
-    expect(columns).toHaveLength(5);
+    expect(columns).toHaveLength(6);
     expect(columns.every((c, i) => i === 0 || c.x > columns[i - 1].x)).toBe(true);
     expect(columns.every(c => Math.abs(c.y - columns[0].y) < 2)).toBe(true);
     await expect(page.locator('[data-supply-to-handle]')).toContainText('1 unité(s) confirmée(s) non reçue(s)');
