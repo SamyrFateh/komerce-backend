@@ -137,6 +137,7 @@ module.exports = {
       'services/transport-rails.js',
       'services/international-shipment-journey.js',
       'services/relay-shipment-receipt.js',
+      'services/relay-parcel-item-reconciliation.js',
     ],
     routes: [
       'routes/parcels.js',
