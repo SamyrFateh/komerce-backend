@@ -6,10 +6,11 @@
  * @criticality   critical
  * @inputs        order_id, authenticated_relay_actor, attested_physical_receipt
  * @outputs       parcel_local, scan_proof, local_line_availability, order_status
- * @depends       db.js, services/order-status-machine.js, services/parcel-item-mutation-service.js, services/order-item-availability-service.js, utils/reference.js
+ * @depends       db.js, services/order-status-machine.js, services/parcel-item-mutation-service.js, services/parcel-operations.js, services/order-item-availability-service.js, utils/reference.js
  * @used-by       routes/orders/status.js
  * @db-read       orders, order_items, relais, parcels, local_stock, local_stock_allocations
  * @db-write      parcels, parcel_items, parcel_events, scans
+ * @db-write-via:parcel-operations parcels
  * @db-write-via:parcel-item-mutation-service parcel_items, parcel_events
  * @db-write-via:order-status-machine orders, order_status_history
  * @db-write-via:order-item-availability-service order_items
@@ -25,6 +26,7 @@ const clientNotifications = require('./client-notification-service');
 const log = require('../utils/logger').child({ module: 'local-relay-receipt' });
 const { setOrderItemAvailabilityStatus } = require('./order-item-availability-service');
 const { addParcelItemTraced } = require('./parcel-item-mutation-service');
+const { transitionParcelStatus } = require('./parcel-operations');
 const fail = (status, code, error) => ({ok:false, status, body:{code,error}});
 
 // A relay actor's signed physical receipt, never an inference from AVAILABLE_NOW.
@@ -113,7 +115,12 @@ async function recordLocalRelayReceipt({orderId, actor, physicalReceived, note =
         [parcelId,item.id,item.quantity,actor.id]);
       await setOrderItemAvailabilityStatus(client,item.id,'available');
     }
-    await client.query("UPDATE parcels SET status='available',available_at=NOW() WHERE id=$1",[parcelId]);
+    // The parcel status owner enforces the central incident authority guard.
+    // A physically attested relay receipt starts directly as available: there
+    // is no fabricated Hub preparation, shipping or international journey.
+    const parcelTransition=await transitionParcelStatus(client,parcelId,'available',{skipValidation:true});
+    if (!parcelTransition?.ok)
+      throw new Error('LOCAL_RECEIPT_PARCEL_TRANSITION_REFUSED');
     await client.query(
       "INSERT INTO parcel_events (parcel_id,event_type,actor_id,notes,metadata) VALUES ($1,'available',$2,$3,$4::jsonb)",
       [parcelId,actor.id,proofNote,JSON.stringify({source:'local_relay_receipt',scan_id:receipt.id})]);
