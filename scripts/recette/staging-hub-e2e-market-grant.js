@@ -88,7 +88,7 @@ async function execute(env=process.env){
     // écriture ni aucun nouveau droit même lorsque l'admin est global.
     const matrix=await request('/api/market-delegation/central/team-matrix',{cookie:admin});
     const rows=Array.isArray(matrix.data)?matrix.data:(matrix.data?.markets||matrix.data?.rows||[]);
-    const active=Array.isArray(rows)&&rows.some(m=>m.market_code===MARKET&&m.assignment_status==='ACTIVE');
+    const active=Array.isArray(rows)&&rows.some(m=>m.market?.code===MARKET&&m.assignment?.status==='ACTIVE');
     return {status:'HUB_E2E_TEAM_AUTHORITY_MISSING',changed:false,market:MARKET,
       teamStatus:team.status,centralMatrixStatus:matrix.status,assignmentActive:active,
       sha:sha.slice(0,12)};
