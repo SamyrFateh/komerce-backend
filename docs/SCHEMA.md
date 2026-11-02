@@ -812,3 +812,9 @@ La **migration 361** harmonise le transport canonique KOM-BOX et la projection �
 - `international_shipment_events.event_type = customs_amount_confirmed` : événement audité portant la preuve de déclaration des droits d'expédition, distinct des changements d'état physiques.
 - `international_shipment_parcels` et `international_n1_allocation_links` : anciennes tables de jointure **retirées uniquement si vides** ; abort explicite de migration sinon. Le modèle canonique physique est `international_shipment_hub_units`. Toute imputation automatique de fret/douane aux lignes de commande est supprimée pour les expéditions internationales.
 La projection N1 prévisionnelle du pricing reste intacte ; l'ajustement prévision/réel se lit au niveau expédition/marché/période sans doubler les charges.
+
+<!-- schema-pending: international_shipment_relay_receipts (migration 364, not yet live) -->
+### Attestations de réception relais (migration 364 — intended_migration_schema)
+
+`international_shipment_relay_receipts` est une nouvelle table **pas encore live** (migration 364, Relais live). Une ligne = l'attestation immuable d'un agent relais pour un article d'une expédition internationale : `expected_qty` (placé en KOM-BOX de l'expédition), `received_qty`, `proof_ref` obligatoire, `incident_id` en cas d'écart. Unicité `(shipment_id, order_item_id)` ; UPDATE/DELETE refusés par trigger. L'étape `relay_received` du parcours en découle ; elle n'est posée ni par l'admin ni par l'agent Hub.
+<!-- /schema-pending -->
