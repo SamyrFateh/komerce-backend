@@ -151,7 +151,10 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       const posts = [];
       await mount(page, { view: null, posts });
       await expect(page.locator('[data-workspace-view="supply"]')).toHaveAttribute('aria-selected', 'true');
-      await expect(page.locator('[data-hub-work-orders] [data-hub-order]')).toHaveCount(1);
+      // Deux dossiers sont attendus : K-ORDER-1 (deux PO) et K-ORDER-2
+      // (besoin d'achat encore sans PO). Ne pas effacer la commande en attente.
+      await expect(page.locator('[data-hub-work-orders] [data-hub-order]')).toHaveCount(2);
+      await expect(page.locator('[data-hub-work-orders] [data-hub-order]').last()).toContainText('K-ORDER-2');
       await expect(page.locator('.kmc-section-title').filter({ hasText: 'Dossiers · Vue du jour' })).toBeVisible();
       await expect(page.locator('[data-hub-dossier-home] [data-metric-key="hub-remaining"]')).toContainText('3');
       await expect(page.locator('[data-hub-dossier-home]')).not.toContainText('À traiter maintenant');
