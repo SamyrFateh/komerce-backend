@@ -74,7 +74,7 @@
       // restent dans Opérations.
       spaces: Object.freeze([
         Object.freeze({ id: 'import-runtime', label: 'Sourcing live', href: '/admin/import-runtime', roles: Object.freeze(['admin', 'sourcing']) }),
-        Object.freeze({ id: 'hub-live', label: 'Hub live', href: '/admin/hub-live', roles: Object.freeze(['admin', 'agent_hub']) }),
+        Object.freeze({ id: 'hub-live', label: 'Hub live', href: '/admin/hub-live?view=execute', roles: Object.freeze(['admin', 'agent_hub']) }),
         Object.freeze({ id: 'relais-live', label: 'Relais live', href: '/admin/relais-live', roles: Object.freeze(['admin', 'agent_relais']) }),
       ]),
     }),
@@ -917,7 +917,7 @@
       items: Object.freeze([
         // Une seule entrée Sourcing : le cockpit LIVE est la porte principale ; les vues détaillées restent accessibles par leurs liens contextuels.
         Object.freeze({ id: 'live-import-runtime', label: 'Sourcing', href: '/admin/import-runtime', roles: ['admin', 'sourcing'], surfaces: ['import-runtime', 'sourcing-workspace', 'supplier-360'] }),
-        Object.freeze({ id: 'live-hub', label: 'Hub live', href: '/admin/hub-live', roles: ['admin', 'agent_hub'], surfaces: ['hub-live'] }),
+        Object.freeze({ id: 'live-hub', label: 'Hub live', href: '/admin/hub-live?view=execute', roles: ['admin', 'agent_hub'], surfaces: ['hub-live'] }),
         Object.freeze({ id: 'live-relais', label: 'Relais live', href: '/admin/relais-live', roles: ['admin', 'agent_relais'], surfaces: ['relais-live'] }),
       ]),
     }),
@@ -1127,12 +1127,11 @@
         .includes(String(global.location?.pathname || ''))) {
       return [{ id:'sourcing-live', label:'Sourcing Live', href:'/admin/import-runtime' }];
     }
+    // Sourcing Live et Hub Live : une porte de travail métier, pas trois
+    // sous-menus concurrents. Les vues legacy directes restent lisibles via
+    // leurs URL historiques (sans créer un second cockpit de navigation).
     if (domainId === 'live' && String(global.location?.pathname || '') === '/admin/hub-live') {
-      return [
-        { id: 'hub-flux', label: 'Flux Hub', href: '/admin/hub-live' },
-        { id: 'hub-suivi', label: 'Suivi', href: '/admin/hub-live?view=overview' },
-        { id: 'hub-execution', label: 'Exécution', href: '/admin/hub-live?view=execute' },
-      ];
+      return [{ id: 'hub-dossiers', label: 'Hub Live · Dossiers', href: '/admin/hub-live?view=execute' }];
     }
     if (domainId === 'live' && String(global.location?.pathname || '') === '/admin/relais-live') {
       return [
@@ -1162,11 +1161,7 @@
 
     if (domainId === 'live' && ['/admin/workspaces/sourcing', '/admin/import-runtime'].includes(path))
       return 'sourcing-live';
-    if (domainId === 'live' && path === '/admin/hub-live') {
-      if (search.get('view') === 'execute') return 'hub-execution';
-      if (!search.get('view') || search.get('view') === 'flux') return 'hub-flux';
-      return 'hub-suivi';
-    }
+    if (domainId === 'live' && path === '/admin/hub-live') return 'hub-dossiers';
     if (domainId === 'live' && path === '/admin/relais-live') {
       return search.get('view') === 'orders' && search.get('list') === 'all' || search.get('view') === 'order' && search.get('from') === 'all' ? 'relais-colis' : 'relais-suivi';
     }
