@@ -133,7 +133,7 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
     expect(labels('operations')).toEqual(['Vue opérations', 'Expéditions & Douane', 'Achats fournisseurs']);
     expect(labels('finance')).toEqual(['Vue finance', 'Comptabilité']);
     expect(groups.find(group => group.id === 'live').items.map(item => item.href))
-      .toEqual(['/admin/import-runtime', '/admin/hub-live', '/admin/relais-live']);
+      .toEqual(['/admin/import-runtime', '/admin/hub-live?view=execute', '/admin/relais-live']);
     expect(labels('markets')).toEqual(['Responsables pays', 'Catalogue pays']);
     const all = groups.flatMap(group => group.items);
     expect(all.some(item => item.href === '/admin/suppliers')).toBe(false);
@@ -344,11 +344,11 @@ test('Hub et Relais Live utilisent leur navigation locale sans onglets concurren
 describe('Navigation Live — trois métiers, onglets contextuels uniques', () => {
   afterEach(() => { delete global.location; });
   test.each([
-    ['/admin/hub-live', '', ['Flux Hub', 'Suivi', 'Exécution'], 'hub-flux'],
-    ['/admin/hub-live', '?view=overview', ['Flux Hub', 'Suivi', 'Exécution'], 'hub-suivi'],
-    ['/admin/hub-live', '?view=flux', ['Flux Hub', 'Suivi', 'Exécution'], 'hub-flux'],
-    ['/admin/hub-live', '?view=queue&tab=all', ['Flux Hub', 'Suivi', 'Exécution'], 'hub-suivi'],
-    ['/admin/hub-live', '?view=execute', ['Flux Hub', 'Suivi', 'Exécution'], 'hub-execution'],
+    ['/admin/hub-live', '', ['Hub Live · Dossiers'], 'hub-dossiers'],
+    ['/admin/hub-live', '?view=overview', ['Hub Live · Dossiers'], 'hub-dossiers'],
+    ['/admin/hub-live', '?view=flux', ['Hub Live · Dossiers'], 'hub-dossiers'],
+    ['/admin/hub-live', '?view=queue&tab=all', ['Hub Live · Dossiers'], 'hub-dossiers'],
+    ['/admin/hub-live', '?view=execute', ['Hub Live · Dossiers'], 'hub-dossiers'],
     ['/admin/relais-live', '', ['Suivi', 'Colis'], 'relais-suivi'],
     ['/admin/relais-live', '?view=orders&list=all', ['Suivi', 'Colis'], 'relais-colis'],
   ])('%s %s respecte ses onglets métier', (pathname, search, labels, active) => {

@@ -346,7 +346,7 @@ describe('canonical admin navigation — N2 domaine Opérations (doctrine V2 §4
     expect(secondaryNav(header)).toBeUndefined();
     const links = header.children[0].children[1].children;
     expect(links.find(link => link.attributes['data-dashboard'] === 'operations').href).toBe('/admin/workspaces/shipping-customs');
-    expect(links.find(link => link.attributes['data-dashboard'] === 'live').href).toBe('/admin/hub-live');
+    expect(links.find(link => link.attributes['data-dashboard'] === 'live').href).toBe('/admin/hub-live?view=execute');
   });
 
   test('agent_relais n’a plus d’écran Opérations : son seul espace est Relais live', () => {

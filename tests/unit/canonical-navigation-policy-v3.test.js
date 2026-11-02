@@ -94,7 +94,7 @@ describe('Canonical Navigation Policy V3.1', () => {
     expect(nav.landingForDomain(live, { role: 'sourcing' })).toBe('/admin/import-runtime');
     expect(nav.landingForDomain(operations, { role: 'sourcing' })).toBeNull();
     expect(nav.landingForDomain(operations, { role: 'agent_hub' })).toBe('/admin/workspaces/shipping-customs');
-    expect(nav.landingForDomain(live, { role: 'agent_hub' })).toBe('/admin/hub-live');
+    expect(nav.landingForDomain(live, { role: 'agent_hub' })).toBe('/admin/hub-live?view=execute');
     expect(nav.landingForDomain(live, { role: 'agent_relais' })).toBe('/admin/relais-live');
     expect(nav.landingForDomain(operations, { role: 'agent_transitaire' })).toBe('/admin/workspaces/shipping-customs');
     expect(nav.landingForDomain(finance, { role: 'finance' })).toBe('/admin/workspaces/accounting');
@@ -106,7 +106,7 @@ describe('Canonical Navigation Policy V3.1', () => {
     expect(nav.defaultLandingFor({ role: 'market_operator' })).toBe('/admin/pilotage');
     expect(nav.defaultLandingFor({ role: 'finance' })).toBe('/admin/workspaces/accounting');
     expect(nav.defaultLandingFor({ role: 'sourcing' })).toBe('/admin/import-runtime');
-    expect(nav.defaultLandingFor({ role: 'agent_hub' })).toBe('/admin/hub-live');
+    expect(nav.defaultLandingFor({ role: 'agent_hub' })).toBe('/admin/hub-live?view=execute');
     expect(nav.defaultLandingFor({ role: 'agent_relais' })).toBe('/admin/relais-live');
     expect(nav.defaultLandingFor({ role: 'agent_transitaire' })).toBe('/admin/workspaces/shipping-customs');
     expect(nav.defaultLandingFor({ role: 'support' })).toBe('/portail');

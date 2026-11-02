@@ -8,7 +8,7 @@
  * @outputs       market_procurement_dossier, physical_trace
  * @depends       db
  * @used-by       routes/hub.js
- * @db-read       markets, orders, order_items, products, suppliers, purchase_lines, purchase_orders, v_purchase_line_progress, hub_purchase_allocations, hub_physical_units, hub_physical_unit_placements, international_shipments, international_shipment_hub_units
+ * @db-read       markets, orders, order_items, products, suppliers, purchase_lines, purchase_orders, v_purchase_line_progress, hub_purchase_allocations, hub_physical_units, hub_physical_unit_placements, international_shipments, international_shipment_hub_units, parcels, parcel_items
  * @db-write      (none)
  * @db-txn        @none
  * @doctrine      une décision, une autorité, un enregistrement ; projection en lecture seule, aucune seconde source de vérité
@@ -53,6 +53,57 @@ function poStage(po, totals) {
 }
 
 async function getDossier({ marketId, supplierId = null, now = new Date() }, q = db) {
+  // Entrée Work : la commande IMPORT reste visible même avant l'ouverture de
+  // sa première ligne d'achat. LOCAL_STOCK et les sources inconnues ne sont
+  // jamais projetées dans la file Hub. Aucun état métier calculé ici.
+  const { rows: orderRows } = await q.query(`
+    SELECT o.id AS order_id, o.reference AS order_ref, o.status AS order_status,
+           oi.id AS order_item_id, oi.quantity AS ordered,
+           p.name AS product_name, oi.fulfillment_source
+      FROM orders o
+      JOIN order_items oi ON oi.order_id = o.id AND oi.fulfillment_source = 'IMPORT'
+      LEFT JOIN products p ON p.id = oi.product_id
+     WHERE o.market_id = $1 AND o.status NOT IN ('pending', 'cancelled', 'refunded', 'collected')
+       AND ($2::uuid IS NULL OR EXISTS (
+         SELECT 1 FROM purchase_lines pl
+          WHERE pl.order_item_id = oi.id AND pl.supplier_id = $2 AND pl.cancelled_at IS NULL
+       ))
+     ORDER BY o.created_at DESC, o.id, oi.id`, [marketId, supplierId]);
+  const orders = new Map();
+  for (const r of orderRows) {
+    if (!orders.has(r.order_id)) orders.set(r.order_id, {
+      id: r.order_id, reference: r.order_ref, status: r.order_status, items: [],
+    });
+    orders.get(r.order_id).items.push({
+      id: r.order_item_id, product: r.product_name, ordered: Number(r.ordered),
+      fulfillment_source: r.fulfillment_source,
+    });
+  }
+
+  // Le colis client (parcels) n'est PAS un carton de transport KOM-BOX
+  // (hub_physical_units/MARKET_PARCEL). Les deux preuves restent séparées.
+  const orderIds = [...orders.keys()];
+  const clientParcels = new Map();
+  if (orderIds.length) {
+    const { rows: clientParcelRows } = await q.query(`
+      SELECT pa.id AS parcel_id, pa.order_id, pa.reference, pa.status,
+             pi.order_item_id, pi.quantity
+        FROM parcels pa
+        JOIN parcel_items pi ON pi.parcel_id = pa.id
+        JOIN order_items oi ON oi.id = pi.order_item_id AND oi.fulfillment_source = 'IMPORT'
+       WHERE pa.order_id = ANY($1::uuid[]) AND pa.status <> 'cancelled'
+       ORDER BY pa.created_at DESC, pa.id, pi.order_item_id`, [orderIds]);
+    for (const r of clientParcelRows) {
+      if (!clientParcels.has(r.parcel_id)) clientParcels.set(r.parcel_id, {
+        id: r.parcel_id, order_id: r.order_id, reference: r.reference,
+        status: r.status, contents: [],
+      });
+      clientParcels.get(r.parcel_id).contents.push({
+        order_item_id: r.order_item_id, quantity: Number(r.quantity),
+      });
+    }
+  }
+
   const { rows: needsRows } = await q.query(`
     SELECT pl.id AS line_id, pl.supplier_id, s.name AS supplier_name, pl.product_sku_id, pl.supplier_sku,
            p.name AS product_name, pl.quantity, oi.order_id, o.reference AS order_ref, pl.order_item_id, pl.created_at
@@ -191,6 +242,8 @@ async function getDossier({ marketId, supplierId = null, now = new Date() }, q =
       boxes_open: [...boxes.values()].filter((b) => !['DISPATCHED'].includes(b.state)).length,
       boxes_unshipped: [...boxes.values()].filter((b) => !b.shipment_ref).length,
     },
+    orders: [...orders.values()],
+    client_parcels: [...clientParcels.values()],
     needs: needsRows,
     purchase_orders: purchaseOrders,
     receipts: receiptRows.map((r) => ({ id: r.id, reference: r.reference, external_ref: r.external_ref, state: r.state,
