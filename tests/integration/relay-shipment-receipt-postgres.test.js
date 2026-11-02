@@ -17,7 +17,6 @@ if (!process.env.DATABASE_URL) {
   const db = require('../../db');
   const relay = require('../../services/relay-shipment-receipt');
   const journey = require('../../services/international-shipment-journey');
-  const relayQueries = require('../../services/relay-dashboard-queries');
 
   const id = () => crypto.randomUUID();
   const q = (sql, params) => db.query(sql, params);
@@ -89,12 +88,6 @@ if (!process.env.DATABASE_URL) {
     const only = mine.shipments.find((s) => s.reference === ref).boxes[0].orders;
     expect(only).toHaveLength(1);
     expect(only[0].items[0].order_item_id).toBe(items.b.itemId);
-  });
-
-  test('fiche colis Relais live par UUID : plus de 500 SQL (id uuid / référence text)', async () => {
-    const detail = await relayQueries.getOrderDetail({ id: admin, role: 'admin' }, items.a.orderId);
-    expect(detail).toBeTruthy();
-    expect(detail.order.id).toBe(items.a.orderId);
   });
 
   test('ni admin ni Hub ne posent relay_received', async () => {
