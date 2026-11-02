@@ -102,6 +102,11 @@ function toTextArray(value) {
 }
 
 function envelopeFor(row) {
+  // Local pur : pas de preuve importée (PO/Hub/colis) à inventer.
+  if (row.local_only === true && row.current_stage === 'RELAY'
+      && toTextArray(row.parcel_refs).length === 0) {
+    return Object.freeze({ type: 'ORDER', refs: Object.freeze([String(row.order_reference)]) });
+  }
   if (['RELAY', 'CUSTOMS', 'TRANSPORT', 'FORWARDER'].includes(row.current_stage)) {
     return Object.freeze({ type: 'PARCEL', refs: Object.freeze(toTextArray(row.parcel_refs)) });
   }
@@ -146,6 +151,7 @@ function projectRow(row) {
   return Object.freeze({
     order_reference: row.order_reference,
     stage: row.current_stage,
+    local_only: row.local_only === true,
     health,
     exception: exceptions[0] || null,
     exceptions,
@@ -181,6 +187,15 @@ async function getControlChain(options = {}) {
          AND o.simulation_scope IS NULL
          AND o.status::text = ANY($2::text[])
          AND ($4::uuid IS NULL OR o.id = $4::uuid)
+    ),
+    fulfillment_facts AS (
+      -- LOCAL_ONLY exige toutes les lignes explicitement LOCAL_STOCK.
+      -- Une provenance NULL n'est ni une preuve de LOCAL ni une preuve d'IMPORT.
+      SELECT oi.order_id,
+             BOOL_AND(oi.fulfillment_source = 'LOCAL_STOCK') AS local_only
+        FROM order_items oi
+        JOIN scoped_orders so ON so.id = oi.order_id
+       GROUP BY oi.order_id
     ),
     purchase_facts AS (
       SELECT oi.order_id,
@@ -362,11 +377,16 @@ async function getControlChain(options = {}) {
              COALESCE(hf.hub_unit_refs, ARRAY[]::text[]) AS hub_unit_refs,
              COALESCE(paf.parcel_refs, ARRAY[]::text[]) AS parcel_refs,
              COALESCE(paf.parcels_count, 0) AS parcels_count,
+             COALESCE(ff.local_only, FALSE) AS local_only,
              CASE
                -- orders.status est l'agrégat canonique "pire état visible" des colis.
                -- Il garde une commande splittée à l'étape de son engagement restant
                -- au lieu de la pousser vers le morceau le plus avancé.
                WHEN so.order_status = 'available' THEN 'RELAY'
+               -- Commande 100% locale : préparer puis remettre directement
+               -- au relais, sans PO ni étape Hub fictive.
+               WHEN COALESCE(ff.local_only, FALSE)
+                    AND so.order_status IN ('confirmed','ordered','preparation') THEN 'RELAY'
                WHEN so.order_status = 'in_transit' AND COALESCE(paf.has_in_transit, FALSE) THEN 'TRANSPORT'
                WHEN so.order_status = 'in_transit'
                     AND (COALESCE(paf.has_arrived, FALSE) OR COALESCE(cf.has_customs, FALSE)) THEN 'CUSTOMS'
@@ -424,6 +444,7 @@ async function getControlChain(options = {}) {
                COALESCE(cf.last_customs_at, so.created_at)
              ) AS last_fact_at
         FROM scoped_orders so
+        LEFT JOIN fulfillment_facts ff ON ff.order_id = so.id
         LEFT JOIN purchase_facts pf ON pf.order_id = so.id
         LEFT JOIN hub_facts hf ON hf.order_id = so.id
         LEFT JOIN parcel_facts paf ON paf.order_id = so.id
@@ -432,6 +453,7 @@ async function getControlChain(options = {}) {
     )
     SELECT order_reference,
            current_stage,
+           local_only,
            health,
            exception_code,
            exception_summary,
