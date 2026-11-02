@@ -102,6 +102,7 @@ module.exports = {
       'tests/unit/pickup-authorization-service.test.js',
       'tests/unit/name-normalize.test.js',
       'tests/unit/auth-step-up-otp-route.test.js',
+      'tests/unit/staging-hub-e2e-market-grant.test.js',
     ],
   },
 

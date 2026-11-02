@@ -1,0 +1,44 @@
+name: Staging Hub E2E scoped market grant
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        type: choice
+        required: true
+        default: audit
+        options: [audit, reconcile]
+  issues:
+    types: [opened]
+permissions:
+  contents: read
+concurrency:
+  group: komerce-staging-e2e-hub-market-membership
+  cancel-in-progress: false
+jobs:
+  scope:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issues' && github.actor == github.repository_owner &&
+       (github.event.issue.title == '[staging-op] hub-market-scope-audit' ||
+        github.event.issue.title == '[staging-op] hub-market-scope-reconcile'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    env:
+      KOMERCE_ENV: staging
+      E2E_STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      HUB_MARKET_GRANT_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || (github.event.issue.title == '[staging-op] hub-market-scope-reconcile' && 'reconcile' || 'audit') }}
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      E2E_MARKET_OPERATOR_EMAIL: ${{ secrets.E2E_MARKET_OPERATOR_EMAIL }}
+      E2E_MARKET_OPERATOR_PASSWORD: ${{ secrets.E2E_MARKET_OPERATOR_PASSWORD }}
+      E2E_AGENT_HUB_EMAIL: ${{ secrets.E2E_AGENT_HUB_EMAIL }}
+      E2E_AGENT_HUB_PASSWORD: ${{ secrets.E2E_AGENT_HUB_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Audit or reconcile dedicated Hub market membership, never global
+        run: node scripts/recette/staging-hub-e2e-market-grant.js
