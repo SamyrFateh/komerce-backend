@@ -33,7 +33,7 @@ module.exports = {
       'Authentification commune puis landing/navigation contextuelles ; les deep-links /admin/** restent des destinations, pas des portails séparés',
       'AdminContext canonical — projection UI d\'une autorité market déjà résolue côté serveur, jamais une source d\'autorisation locale',
       'Logistics Control Tower canonical : projection read-only end-to-end d une commande Market de l engagement client au relais, montrant current_stage + health + cause + filiation sans créer de lifecycle, statut ou vérité métier parallèle',
-      'Tour de contrôle niveau 1 : une seule ligne cliquable par numéro de commande sous son étape gouvernante ; vert discret, orange à risque/retard, rouge action requise ; les causes structurelles agrègent des faits/signaux canoniques communs',
+      'Tour de contrôle niveau 1 : cinq phases graphiques regroupent les neuf étapes canoniques et chaque commande reste unique à son étape gouvernante ; sous-étape, couleur et cause visibles dans la carte ; rouge signifie action requise, orange repose sur un vrai signal métier, jamais sur trente minutes d inactivité ; détail intégré, lien vers espace propriétaire soumis au rôle ; les causes structurelles agrègent des faits canoniques communs',
       'Canonical Reference Resolver : résolution read-only d une référence opérationnelle vers son identité propriétaire, sa commande cliente, sa position Control Tower et sa destination canonique ; aucune persistance, aucun statut parallèle, aucune élévation d autorité',
       'auth-guard et composants partagés des runtimes historiques tant qu’ils restent servis',
     ],

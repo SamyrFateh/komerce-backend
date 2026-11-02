@@ -217,12 +217,18 @@
     const enhanced = {
       ...base,
       mount(options) {
+        // Hub Live has its own verified server-projected dossier KPIs.  The
+        // legacy decision wrapper replaces *every* MetricStrip with an
+        // "À traiter maintenant" panel, hiding those KPIs even on a healthy
+        // dossier.  Keep the original primitive for Hub execution only;
+        // leave the pilot/Relais decision view unchanged.
+        const hubExecution = options && options.mode === 'execution';
         return Promise.resolve(baseMount({
           ...options,
-          ui: decorateUi(options && options.ui, decisionUi, options && options.document),
+          ui: hubExecution ? options.ui : decorateUi(options && options.ui, decisionUi, options && options.document),
         })).then(result => Object.freeze({
           ...result,
-          decisionFirst: true,
+          decisionFirst: !hubExecution,
         }));
       },
       projectDecisionItems(summary) {

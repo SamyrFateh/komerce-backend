@@ -132,7 +132,7 @@ test('real staging: full navigation, market context and browser errors',async({p
          n1:data.n1,n2:data.n2,n3:data.n3,links:data.links.length});
        if(response?.status()!==200)fail('P1','PAGE_HTTP',route+' '+response?.status());
        if(actual!==route){
-         const expected=expectedPath(route,ORIGIN);
+         const expected=expectedPath(route,ORIGIN,{role});
          if(actual===expected)result.canonicalRedirects.push({source:route,destination:actual,kind:'canonical_alias'});
          else fail('P1','WRONG_ROUTE',route+' => '+actual);
        }
@@ -156,7 +156,7 @@ test('real staging: full navigation, market context and browser errors',async({p
          if(clicked.kind!=='CLICKED'){
            fail('P2',clicked.kind,route+' -> '+dest+': '+short(clicked.detail));
          } else if(clicked.actual!==dest){
-           const expected=expectedPath(link.href,ORIGIN);
+           const expected=expectedPath(link.href,ORIGIN,{role});
            if(clicked.actual===expected){
              result.canonicalRedirects.push({source:route,destination:clicked.actual,via:dest,kind:'clicked_alias'});
            } else {

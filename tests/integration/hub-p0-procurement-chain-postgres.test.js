@@ -129,6 +129,14 @@ describeDb('Hub P0 — chaîne d\'approvisionnement complète (REAL_DB)', () => 
 
       const before = await dossier.getDossier({ marketId: km, supplierId: supplierA });
       expect(before.needs.map((n) => n.line_id)).toEqual(expect.arrayContaining(lineIds));
+      // Work : les dossiers commandes et tous leurs articles d'import existent
+      // AVANT qu'une PO soit constituée. Aucun faux colis client n'est créé.
+      const c1Dossier = before.orders.find((o) => o.id === s.c1.orderId);
+      const c2Dossier = before.orders.find((o) => o.id === s.c2.orderId);
+      expect(c1Dossier.items).toHaveLength(2);
+      expect(c2Dossier.items).toHaveLength(1);
+      expect(c1Dossier.items.every((item) => item.fulfillment_source === 'IMPORT')).toBe(true);
+      expect(before.client_parcels.filter((p) => p.order_id === s.c1.orderId)).toHaveLength(0);
 
       const prepared = await grouped.preparePurchaseOrder(
         { supplier_id: supplierA, procurement_hub_ref: 'DXB', line_ids: lineIds }, { actor: actor() });
@@ -144,7 +152,7 @@ describeDb('Hub P0 — chaîne d\'approvisionnement complète (REAL_DB)', () => 
       stage = (await dossier.getDossier({ marketId: km })).purchase_orders.find((p) => p.id === s.po);
       expect(stage.stage).toBe('sent');
 
-      await engagement.confirmGroupedPurchaseOrder(s.po, {
+      await engagement.confirmGroupedPurchaseOrder(s.po, { purchase_proof_ref: 'RECU-HUB-P0',
         supplier_order_id: `SO-${tag}`,
         lines: [...s.c1.lines, ...s.c2.lines].map((l) => ({ purchase_line_id: l.lineId, confirmed_quantity: l.qty })),
       }, { actor: actor() });
@@ -347,7 +355,7 @@ describeDb('Hub P0 — chaîne d\'approvisionnement complète (REAL_DB)', () => 
     });
 
     test('mauvaise variante, sur-réception et double saisie idempotente', async () => {
-      await engagement.confirmGroupedPurchaseOrder(km1.po, {
+      await engagement.confirmGroupedPurchaseOrder(km1.po, { purchase_proof_ref: 'RECU-HUB-P0',
         supplier_order_id: `SO2-${tag}`, lines: [{ purchase_line_id: km1.lines[0].lineId, confirmed_quantity: 1 }],
       }, { actor: actor() });
       const wrong = await receive(km1.po, sku2.id, 1, `${tag}-WRONGSKU`);

@@ -1829,6 +1829,26 @@ $$;
 
 
 --
+-- Name: hub_item_physical_proof(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.hub_item_physical_proof(p_order_item_id uuid, OUT received integer, OUT boxed integer) RETURNS record
+    LANGUAGE plpgsql STABLE
+    AS $$
+BEGIN
+  SELECT COALESCE(SUM(p.quantity), 0)::integer INTO received
+    FROM public.hub_physical_unit_placements p
+    JOIN public.hub_purchase_allocations a ON a.id = p.allocation_id
+   WHERE a.order_item_id = p_order_item_id AND p.operation_type = 'RECEIVE';
+  SELECT COALESCE(SUM(p.quantity), 0)::integer INTO boxed
+    FROM public.hub_physical_unit_placements p
+    JOIN public.hub_purchase_allocations a ON a.id = p.allocation_id
+    JOIN public.hub_physical_units u ON u.id = p.physical_unit_id
+   WHERE a.order_item_id = p_order_item_id AND p.removed_at IS NULL AND u.unit_type = 'MARKET_PARCEL';
+END $$;
+
+
+--
 -- Name: hub_reject_custody_event_mutation(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -2167,6 +2187,37 @@ BEGIN
   RETURN NEW;
 END;
 $$;
+
+
+--
+-- Name: parcel_items_guard_physical_proof(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.parcel_items_guard_physical_proof() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  v_source text; v_received integer; v_boxed integer; v_other_alloc integer; v_other_packed integer;
+BEGIN
+  IF NEW.qty_allocated = 0 AND NEW.qty_packed = 0 THEN RETURN NEW; END IF;
+  IF TG_OP = 'UPDATE' AND NEW.qty_allocated = OLD.qty_allocated AND NEW.qty_packed = OLD.qty_packed THEN RETURN NEW; END IF;
+  SELECT fulfillment_source INTO v_source FROM public.order_items WHERE id = NEW.order_item_id;
+  IF v_source IS DISTINCT FROM 'IMPORT' THEN RETURN NEW; END IF;
+  SELECT received, boxed INTO v_received, v_boxed FROM public.hub_item_physical_proof(NEW.order_item_id);
+  SELECT COALESCE(SUM(pi.qty_allocated), 0), COALESCE(SUM(pi.qty_packed), 0)
+    INTO v_other_alloc, v_other_packed
+    FROM public.parcel_items pi JOIN public.parcels pa ON pa.id = pi.parcel_id
+   WHERE pi.order_item_id = NEW.order_item_id AND pi.id <> NEW.id AND pa.cancelled_at IS NULL;
+  IF v_other_alloc + NEW.qty_allocated > v_received THEN
+    RAISE EXCEPTION 'parcel_item_no_physical_proof: qty_allocated % > reçu au Hub % pour l''article %', v_other_alloc + NEW.qty_allocated, v_received, NEW.order_item_id
+      USING ERRCODE = '23514';
+  END IF;
+  IF v_other_packed + NEW.qty_packed > v_boxed THEN
+    RAISE EXCEPTION 'parcel_item_no_physical_proof: qty_packed % > placé en KOM-BOX % pour l''article %', v_other_packed + NEW.qty_packed, v_boxed, NEW.order_item_id
+      USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END $$;
 
 
 --
@@ -2871,6 +2922,25 @@ $$;
 
 
 --
+-- Name: shipment_relay_receipts_immutable(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.shipment_relay_receipts_immutable() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF TG_OP = 'DELETE'
+     OR NEW.shipment_id IS DISTINCT FROM OLD.shipment_id OR NEW.order_item_id IS DISTINCT FROM OLD.order_item_id
+     OR NEW.relais_id IS DISTINCT FROM OLD.relais_id OR NEW.expected_qty IS DISTINCT FROM OLD.expected_qty
+     OR NEW.received_qty IS DISTINCT FROM OLD.received_qty OR NEW.proof_ref IS DISTINCT FROM OLD.proof_ref
+     OR NEW.received_at IS DISTINCT FROM OLD.received_at THEN
+    RAISE EXCEPTION 'shipment_relay_receipt_immutable: une attestation de réception relais ne se modifie ni ne se supprime' USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END $$;
+
+
+--
 -- Name: sourcing_check_api_requires_units(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -3194,6 +3264,66 @@ BEGIN
   RETURN COALESCE(NEW, OLD);
 END;
 $$;
+
+
+--
+-- Name: sync_parcel_items_from_physical(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.sync_parcel_items_from_physical(p_order_item_id uuid) RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  v_received integer; v_boxed integer; v_a integer; v_b integer; v_na integer; v_nb integer; r record;
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM public.order_items WHERE id = p_order_item_id AND fulfillment_source = 'IMPORT') THEN RETURN; END IF;
+  SELECT received, boxed INTO v_received, v_boxed FROM public.hub_item_physical_proof(p_order_item_id);
+  v_a := v_received; v_b := v_boxed;
+  FOR r IN
+    SELECT pi.id, pi.quantity, pi.qty_allocated, pi.qty_packed, pi.qty_shipped
+      FROM public.parcel_items pi JOIN public.parcels pa ON pa.id = pi.parcel_id
+     WHERE pi.order_item_id = p_order_item_id AND pa.cancelled_at IS NULL
+     ORDER BY pi.created_at, pi.id
+       FOR UPDATE OF pi
+  LOOP
+    v_na := LEAST(r.quantity, v_a);
+    v_nb := LEAST(v_na, v_b);
+    v_a := v_a - v_na;
+    v_b := v_b - v_nb;
+    IF v_nb < r.qty_shipped THEN CONTINUE; END IF; -- déjà expédié : la preuve passée ne se réécrit pas
+    IF v_na <> r.qty_allocated OR v_nb <> r.qty_packed THEN
+      UPDATE public.parcel_items SET qty_allocated = v_na, qty_packed = v_nb WHERE id = r.id;
+    END IF;
+  END LOOP;
+END $$;
+
+
+--
+-- Name: sync_parcel_items_on_insert(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.sync_parcel_items_on_insert() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  PERFORM public.sync_parcel_items_from_physical(NEW.order_item_id);
+  RETURN NULL;
+END $$;
+
+
+--
+-- Name: sync_parcel_items_on_placement(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.sync_parcel_items_on_placement() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE v_item uuid;
+BEGIN
+  SELECT order_item_id INTO v_item FROM public.hub_purchase_allocations WHERE id = NEW.allocation_id;
+  IF v_item IS NOT NULL THEN PERFORM public.sync_parcel_items_from_physical(v_item); END IF;
+  RETURN NULL;
+END $$;
 
 
 --
@@ -6100,28 +6230,6 @@ COMMENT ON COLUMN public.inquiries.requester_note IS 'Précision libre facultati
 
 
 --
--- Name: international_n1_allocation_links; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.international_n1_allocation_links (
-    allocation_id uuid NOT NULL,
-    shipment_id uuid NOT NULL,
-    component text NOT NULL,
-    fee_type text DEFAULT ''::text NOT NULL,
-    parcel_id uuid NOT NULL,
-    order_item_id uuid NOT NULL,
-    CONSTRAINT international_n1_allocation_links_component_check CHECK ((component = ANY (ARRAY['freight'::text, 'port_transitaire'::text, 'local_distribution'::text])))
-);
-
-
---
--- Name: TABLE international_n1_allocation_links; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON TABLE public.international_n1_allocation_links IS 'Ownership of N1 allocations by international freight/fee projection; legacy customs allocator must not delete these rows.';
-
-
---
 -- Name: international_n1_reconciliations; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -6135,6 +6243,13 @@ CREATE TABLE public.international_n1_reconciliations (
     allocation_rows integer DEFAULT 0 NOT NULL,
     actor_id text NOT NULL,
     reconciled_at timestamp with time zone DEFAULT now() NOT NULL,
+    total_customs_kmf numeric(14,2) DEFAULT 0 NOT NULL,
+    total_customs_fees_kmf numeric(14,2) DEFAULT 0 CONSTRAINT international_n1_reconciliation_total_customs_fees_kmf_not_null NOT NULL,
+    documented_total_kmf numeric(14,2) DEFAULT 0 NOT NULL,
+    financial_closed_at timestamp with time zone,
+    financial_closed_by text,
+    financial_close_proof_ref text,
+    CONSTRAINT chk_shipment_financial_close_proof CHECK ((((financial_closed_at IS NULL) AND (financial_closed_by IS NULL) AND (financial_close_proof_ref IS NULL)) OR ((financial_closed_at IS NOT NULL) AND (financial_closed_by IS NOT NULL) AND (financial_close_proof_ref IS NOT NULL) AND (length(btrim(financial_close_proof_ref)) > 0)))),
     CONSTRAINT international_n1_reconciliations_allocation_rows_check CHECK ((allocation_rows >= 0)),
     CONSTRAINT international_n1_reconciliations_snapshot_hash_check CHECK ((length(snapshot_hash) = 64))
 );
@@ -6144,7 +6259,14 @@ CREATE TABLE public.international_n1_reconciliations (
 -- Name: TABLE international_n1_reconciliations; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON TABLE public.international_n1_reconciliations IS 'Idempotent source snapshot of actual international N1; never forecasts or N3.';
+COMMENT ON TABLE public.international_n1_reconciliations IS 'Snapshot documented real costs BY SHIPMENT, for posterior calibration; zero article allocations. Financial closure distinct from physical relay receipt.';
+
+
+--
+-- Name: COLUMN international_n1_reconciliations.documented_total_kmf; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.international_n1_reconciliations.documented_total_kmf IS 'Sum of documented sources at the shipment level. Financial completeness is never inferred from this total.';
 
 
 --
@@ -6196,7 +6318,7 @@ CREATE TABLE public.international_shipment_events (
     occurred_at timestamp with time zone DEFAULT now() NOT NULL,
     payload jsonb DEFAULT '{}'::jsonb NOT NULL,
     CONSTRAINT chk_international_events_evidence CHECK ((((event_type = ANY (ARRAY['opened'::text, 'box_attached'::text, 'box_detached'::text])) AND (proof_ref IS NULL)) OR ((event_type <> ALL (ARRAY['opened'::text, 'box_attached'::text, 'box_detached'::text])) AND (proof_ref IS NOT NULL) AND (length(btrim(proof_ref)) > 0)))),
-    CONSTRAINT international_shipment_events_event_type_check CHECK ((event_type = ANY (ARRAY['created'::text, 'opened'::text, 'box_attached'::text, 'box_detached'::text, 'stage_changed'::text, 'tracking_updated'::text, 'freight_recorded'::text, 'customs_linked'::text])))
+    CONSTRAINT international_shipment_events_event_type_check CHECK ((event_type = ANY (ARRAY['created'::text, 'opened'::text, 'box_attached'::text, 'box_detached'::text, 'stage_changed'::text, 'tracking_updated'::text, 'freight_recorded'::text, 'customs_linked'::text, 'customs_amount_confirmed'::text])))
 );
 
 
@@ -6213,15 +6335,23 @@ CREATE TABLE public.international_shipment_hub_units (
 
 
 --
--- Name: international_shipment_parcels; Type: TABLE; Schema: public; Owner: -
+-- Name: international_shipment_relay_receipts; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE public.international_shipment_parcels (
+CREATE TABLE public.international_shipment_relay_receipts (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
     shipment_id uuid NOT NULL,
-    parcel_id uuid NOT NULL,
-    volume_cm3 numeric(14,2),
-    attached_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT international_shipment_parcels_volume_cm3_check CHECK ((volume_cm3 >= (0)::numeric))
+    order_item_id uuid NOT NULL,
+    relais_id uuid NOT NULL,
+    expected_qty integer NOT NULL,
+    received_qty integer NOT NULL,
+    received_by uuid,
+    proof_ref text NOT NULL,
+    incident_id uuid,
+    received_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT international_shipment_relay_receipts_expected_qty_check CHECK ((expected_qty > 0)),
+    CONSTRAINT international_shipment_relay_receipts_proof_ref_check CHECK ((btrim(proof_ref) <> ''::text)),
+    CONSTRAINT international_shipment_relay_receipts_received_qty_check CHECK ((received_qty >= 0))
 );
 
 
@@ -11330,6 +11460,9 @@ CREATE TABLE public.suppliers (
     secure_transport_fee_pct numeric(4,2) DEFAULT 0 NOT NULL,
     secure_transport_contact character varying(200),
     deleted_at timestamp with time zone,
+    owner_scope text,
+    created_by uuid,
+    CONSTRAINT suppliers_owner_scope_check CHECK (((owner_scope IS NULL) OR ((owner_scope = 'hub'::text) AND (platform = ANY (ARRAY['local'::text, 'whatsapp'::text])) AND (auto_order = false)))),
     CONSTRAINT suppliers_platform_check CHECK ((platform = ANY (ARRAY['noon'::text, 'amazon_uae'::text, 'aliexpress'::text, 'local'::text, 'whatsapp'::text, 'allegro'::text, 'cj'::text])))
 );
 
@@ -11360,6 +11493,13 @@ COMMENT ON COLUMN public.suppliers.auto_order IS 'true = API dispo â†’ comm
 --
 
 COMMENT ON COLUMN public.suppliers.lead_time_days IS 'DÃ©lai estimÃ© entre commande fournisseur et rÃ©ception Hub Dubai';
+
+
+--
+-- Name: COLUMN suppliers.owner_scope; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.suppliers.owner_scope IS 'NULL = catalogue global (admin) ; hub = fournisseur local créé par le Hub, périmètre Hub uniquement';
 
 
 --
@@ -13013,14 +13153,6 @@ ALTER TABLE ONLY public.inquiries
 
 
 --
--- Name: international_n1_allocation_links international_n1_allocation_links_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.international_n1_allocation_links
-    ADD CONSTRAINT international_n1_allocation_links_pkey PRIMARY KEY (allocation_id);
-
-
---
 -- Name: international_n1_reconciliations international_n1_reconciliations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -13053,11 +13185,11 @@ ALTER TABLE ONLY public.international_shipment_hub_units
 
 
 --
--- Name: international_shipment_parcels international_shipment_parcels_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: international_shipment_relay_receipts international_shipment_relay_receipts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.international_shipment_parcels
-    ADD CONSTRAINT international_shipment_parcels_pkey PRIMARY KEY (shipment_id, parcel_id);
+ALTER TABLE ONLY public.international_shipment_relay_receipts
+    ADD CONSTRAINT international_shipment_relay_receipts_pkey PRIMARY KEY (id);
 
 
 --
@@ -14461,22 +14593,6 @@ ALTER TABLE ONLY public.international_shipments
 
 
 --
--- Name: international_n1_allocation_links uq_international_n1_share; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.international_n1_allocation_links
-    ADD CONSTRAINT uq_international_n1_share UNIQUE (shipment_id, component, fee_type, parcel_id, order_item_id);
-
-
---
--- Name: international_shipment_parcels uq_international_parcel; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.international_shipment_parcels
-    ADD CONSTRAINT uq_international_parcel UNIQUE (parcel_id);
-
-
---
 -- Name: international_shipment_hub_units uq_international_shipment_hub_unit; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -14514,6 +14630,14 @@ ALTER TABLE ONLY public.physical_outcome_receipts
 
 ALTER TABLE ONLY public.refund_execution_intents
     ADD CONSTRAINT uq_refund_intents_provider_operation UNIQUE (provider, operation_key);
+
+
+--
+-- Name: international_shipment_relay_receipts uq_shipment_relay_receipt; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.international_shipment_relay_receipts
+    ADD CONSTRAINT uq_shipment_relay_receipt UNIQUE (shipment_id, order_item_id);
 
 
 --
@@ -15515,13 +15639,6 @@ CREATE INDEX idx_international_charges_shipment ON public.international_shipment
 --
 
 CREATE INDEX idx_international_events_shipment ON public.international_shipment_events USING btree (shipment_id, occurred_at DESC);
-
-
---
--- Name: idx_international_n1_links_shipment; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_international_n1_links_shipment ON public.international_n1_allocation_links USING btree (shipment_id);
 
 
 --
@@ -17247,6 +17364,13 @@ CREATE INDEX idx_shared_carts_token ON public.shared_carts USING btree (token);
 
 
 --
+-- Name: idx_shipment_relay_receipts_relais; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_shipment_relay_receipts_relais ON public.international_shipment_relay_receipts USING btree (relais_id, shipment_id);
+
+
+--
 -- Name: idx_shipments_reference; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -18766,6 +18890,13 @@ CREATE TRIGGER trg_orders_updated BEFORE UPDATE ON public.orders FOR EACH ROW EX
 
 
 --
+-- Name: parcel_items trg_parcel_items_physical_proof; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_parcel_items_physical_proof BEFORE INSERT OR UPDATE OF qty_allocated, qty_packed ON public.parcel_items FOR EACH ROW EXECUTE FUNCTION public.parcel_items_guard_physical_proof();
+
+
+--
 -- Name: parcels trg_parcel_ship_guard; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -19046,6 +19177,13 @@ CREATE TRIGGER trg_shared_carts_updated BEFORE UPDATE ON public.shared_carts FOR
 
 
 --
+-- Name: international_shipment_relay_receipts trg_shipment_relay_receipts_immutable; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_shipment_relay_receipts_immutable BEFORE DELETE OR UPDATE ON public.international_shipment_relay_receipts FOR EACH ROW EXECUTE FUNCTION public.shipment_relay_receipts_immutable();
+
+
+--
 -- Name: shipments trg_shipments_updated; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -19078,6 +19216,20 @@ CREATE TRIGGER trg_supplier_execution_payments_guard BEFORE INSERT OR UPDATE OF 
 --
 
 CREATE TRIGGER trg_sync_has_variants AFTER INSERT OR DELETE OR UPDATE OF product_id ON public.product_variants FOR EACH ROW EXECUTE FUNCTION public.sync_has_variants();
+
+
+--
+-- Name: parcel_items trg_sync_parcel_items_on_insert; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_sync_parcel_items_on_insert AFTER INSERT ON public.parcel_items FOR EACH ROW EXECUTE FUNCTION public.sync_parcel_items_on_insert();
+
+
+--
+-- Name: hub_physical_unit_placements trg_sync_parcel_items_on_placement; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_sync_parcel_items_on_placement AFTER INSERT OR UPDATE OF removed_at ON public.hub_physical_unit_placements FOR EACH ROW EXECUTE FUNCTION public.sync_parcel_items_on_placement();
 
 
 --
@@ -20152,38 +20304,6 @@ ALTER TABLE ONLY public.inquiries
 
 
 --
--- Name: international_n1_allocation_links international_n1_allocation_links_allocation_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.international_n1_allocation_links
-    ADD CONSTRAINT international_n1_allocation_links_allocation_id_fkey FOREIGN KEY (allocation_id) REFERENCES public.order_item_real_cost_allocations(id) ON DELETE CASCADE;
-
-
---
--- Name: international_n1_allocation_links international_n1_allocation_links_order_item_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.international_n1_allocation_links
-    ADD CONSTRAINT international_n1_allocation_links_order_item_id_fkey FOREIGN KEY (order_item_id) REFERENCES public.order_items(id);
-
-
---
--- Name: international_n1_allocation_links international_n1_allocation_links_parcel_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.international_n1_allocation_links
-    ADD CONSTRAINT international_n1_allocation_links_parcel_id_fkey FOREIGN KEY (parcel_id) REFERENCES public.parcels(id);
-
-
---
--- Name: international_n1_allocation_links international_n1_allocation_links_shipment_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.international_n1_allocation_links
-    ADD CONSTRAINT international_n1_allocation_links_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.international_shipments(id) ON DELETE RESTRICT;
-
-
---
 -- Name: international_n1_reconciliations international_n1_reconciliations_shipment_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -20232,19 +20352,43 @@ ALTER TABLE ONLY public.international_shipment_hub_units
 
 
 --
--- Name: international_shipment_parcels international_shipment_parcels_parcel_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: international_shipment_relay_receipts international_shipment_relay_receipts_incident_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.international_shipment_parcels
-    ADD CONSTRAINT international_shipment_parcels_parcel_id_fkey FOREIGN KEY (parcel_id) REFERENCES public.parcels(id) ON DELETE RESTRICT;
+ALTER TABLE ONLY public.international_shipment_relay_receipts
+    ADD CONSTRAINT international_shipment_relay_receipts_incident_id_fkey FOREIGN KEY (incident_id) REFERENCES public.incidents(id) ON DELETE SET NULL;
 
 
 --
--- Name: international_shipment_parcels international_shipment_parcels_shipment_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: international_shipment_relay_receipts international_shipment_relay_receipts_order_item_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.international_shipment_parcels
-    ADD CONSTRAINT international_shipment_parcels_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.international_shipments(id) ON DELETE RESTRICT;
+ALTER TABLE ONLY public.international_shipment_relay_receipts
+    ADD CONSTRAINT international_shipment_relay_receipts_order_item_id_fkey FOREIGN KEY (order_item_id) REFERENCES public.order_items(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: international_shipment_relay_receipts international_shipment_relay_receipts_received_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.international_shipment_relay_receipts
+    ADD CONSTRAINT international_shipment_relay_receipts_received_by_fkey FOREIGN KEY (received_by) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: international_shipment_relay_receipts international_shipment_relay_receipts_relais_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.international_shipment_relay_receipts
+    ADD CONSTRAINT international_shipment_relay_receipts_relais_id_fkey FOREIGN KEY (relais_id) REFERENCES public.relais(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: international_shipment_relay_receipts international_shipment_relay_receipts_shipment_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.international_shipment_relay_receipts
+    ADD CONSTRAINT international_shipment_relay_receipts_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.international_shipments(id) ON DELETE RESTRICT;
 
 
 --
@@ -22357,6 +22501,14 @@ ALTER TABLE ONLY public.supplier_execution_payments
 
 ALTER TABLE ONLY public.supplier_payment_settlements
     ADD CONSTRAINT supplier_payment_settlements_supplier_execution_payment_id_fkey FOREIGN KEY (supplier_execution_payment_id) REFERENCES public.supplier_execution_payments(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: suppliers suppliers_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.suppliers
+    ADD CONSTRAINT suppliers_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(id) ON DELETE SET NULL;
 
 
 --

@@ -16,14 +16,13 @@ beforeEach(() => {
 });
 
 describe('logistics-control-chain-projection', () => {
-  test('la santé canonique expose GREEN / ORANGE / RED / UNKNOWN et une fenêtre de fraîcheur explicite', () => {
+  test('la santé canonique distingue état normal, alerte métier et observation inconnue', () => {
     expect(projection.HEALTH).toEqual({
       GREEN: 'GREEN',
       ORANGE: 'ORANGE',
       RED: 'RED',
       UNKNOWN: 'UNKNOWN',
     });
-    expect(projection.CONTROL_CHAIN_STALE_AFTER_MINUTES).toBe(30);
   });
 
   test('le vocabulaire d’étapes reste aligné sur la doctrine canonique', () => {
@@ -57,6 +56,7 @@ describe('logistics-control-chain-projection', () => {
     expect(row).toEqual({
       order_reference: 'K-104829',
       stage: 'HUB_CONTROL',
+      local_only: false,
       health: 'RED',
       exception: {
         code: 'hub_quarantine',
@@ -135,6 +135,35 @@ describe('logistics-control-chain-projection', () => {
     expect(row.lineage.parcels).toEqual(['KOM-P-1', 'KOM-P-2']);
   });
 
+
+  test('le circuit 100% local saute achats / Hub et ne s invente pas de colis', async () => {
+    mockQuery.mockResolvedValue({ rows: [] });
+    await projection.getControlChain({
+      market: { id: '11111111-1111-4111-8111-111111111111', code: 'KM' },
+    });
+    const [sql] = mockQuery.mock.calls[0];
+    expect(sql).toContain("BOOL_AND(COALESCE(oi.fulfillment_source = 'LOCAL_STOCK', FALSE)) AS local_only");
+    expect(sql).toContain("AND so.order_status IN ('confirmed','ordered','preparation') THEN 'RELAY'");
+    expect(sql).toContain("LEFT JOIN fulfillment_facts ff ON ff.order_id = so.id");
+
+    const local = projection.projectRow({
+      order_reference: 'LOCAL-101', current_stage: 'RELAY', local_only: true,
+      health: 'GREEN', purchase_order_refs: [], hub_unit_refs: [], parcel_refs: [], parcels_count: 0,
+    });
+    expect(local.stage).toBe('RELAY');
+    expect(local.local_only).toBe(true);
+    expect(local.lineage.purchase_orders).toEqual([]);
+    expect(local.lineage.hub_units).toEqual([]);
+    expect(local.envelope).toEqual({ type: 'ORDER', refs: ['LOCAL-101'] });
+
+    const mixed = projection.projectRow({
+      order_reference: 'MIXED-101', current_stage: 'HUB_CONTROL', local_only: false,
+      health: 'GREEN', purchase_order_refs:['PO-1'], hub_unit_refs:['HU-1'],
+      parcel_refs: [], parcels_count:0,
+    });
+    expect(mixed.local_only).toBe(false);
+    expect(mixed.stage).toBe('HUB_CONTROL');
+  });
   test('la lecture market-scoped injecte uniquement le market id résolu côté serveur', async () => {
     mockQuery.mockResolvedValue({
       rows: [{
@@ -205,32 +234,20 @@ describe('logistics-control-chain-projection', () => {
     expect(sql).not.toContain("OR so.payment_status = 'paid' THEN 'PURCHASING'");
   });
 
-  test('GREEN exige un fait récent ; une observation vieillissante devient ORANGE et l absence de fait reste UNKNOWN', async () => {
+  test('une attente normale, même longue, ne crée ni risque ni fausse action', async () => {
     mockQuery.mockResolvedValue({ rows: [] });
     await projection.getControlChain({
       market: { id: '11111111-1111-4111-8111-111111111111', code: 'CM' },
     });
 
     const [sql, params] = mockQuery.mock.calls[0];
-    expect(sql).toContain("THEN 'ORANGE'");
-    expect(sql).toContain("$5::int * INTERVAL '1 minute'");
+    expect(params).toHaveLength(4);
+    expect(sql).not.toContain("INTERVAL '1 minute'");
+    expect(sql).not.toContain('observation_stale');
+    expect(sql).toContain("ss.primary_severity = 'warning' THEN 'ORANGE'");
+    expect(sql).toContain("hf.has_quarantine, FALSE) THEN 'RED'");
     expect(sql).toContain("IS NOT NULL THEN 'GREEN'");
     expect(sql).toContain("ELSE 'UNKNOWN'");
-    expect(params[4]).toBe(30);
-  });
-
-  test('une observation stale porte une cause et un owner actionnables', async () => {
-    mockQuery.mockResolvedValue({ rows: [] });
-    await projection.getControlChain({
-      market: { id: '11111111-1111-4111-8111-111111111111', code: 'CM' },
-    });
-
-    const [sql] = mockQuery.mock.calls[0];
-    expect(sql).toContain("THEN 'observation_stale'");
-    expect(sql).toContain("THEN 'Observation métier trop ancienne'");
-    expect(sql).toContain("WHEN 'PURCHASING' THEN 'purchasing'");
-    expect(sql).toContain("WHEN 'CUSTOMS' THEN 'customs'");
-    expect(sql).toContain("WHEN 'RELAY' THEN 'relais'");
   });
 
   test('les incidents ouverts alimentent orange/rouge sans créer un statut dashboard', async () => {
@@ -333,6 +350,7 @@ describe('logistics-control-chain-projection', () => {
 
 test('SQL : le CASE simple de propriétaire n’a pas de WHEN parasite avant son opérande (régression syntaxe PG)', () => {
   const source = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'services', 'logistics-control-chain-projection.js'), 'utf8');
-  expect(source).toContain('THEN CASE (\n');
+  expect(source).toContain("WHEN COALESCE(hf.has_quarantine, FALSE) THEN 'hub'");
+  expect(source).toContain('ELSE ss.primary_owner_role');
   expect(source).not.toMatch(/THEN CASE\s+WHEN \(\s+CASE/);
 });

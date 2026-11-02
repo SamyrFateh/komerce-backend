@@ -190,8 +190,11 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
     return { line: line.id, item: lineItem };
   }
 
-  async function preparedPo(supplier, lineIds) {
-    return (await grouped.preparePurchaseOrder({ supplier_id: supplier, procurement_hub_ref: 'DXB', line_ids: lineIds })).purchase_order;
+  async function preparedPo(supplier, lineIds, executionMode) {
+    // Les fournisseurs Allegro de ces tests exécutent en mode API (préparation distante + réconciliation) ; le reste en manuel.
+    const platform = (await row('SELECT platform FROM suppliers WHERE id=$1', [supplier])).platform;
+    const mode = executionMode || (platform === 'allegro' ? 'api' : 'manual');
+    return (await grouped.preparePurchaseOrder({ supplier_id: supplier, procurement_hub_ref: 'DXB', line_ids: lineIds, execution_mode: mode })).purchase_order;
   }
 
   async function submittedPo(supplier, lineIds) {
@@ -234,7 +237,7 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
       expect(byRef).toEqual({ U1: 5, U2: 1 });
       expect(out.multi_market).toBe(false);
       expect(out.markets.map((m) => m.market_code)).toEqual(['KM']);
-      expect(out.preflights.every((p) => p.ready && p.status === 'NOT_REQUIRED')).toBe(true);
+      expect(out.preflights.every((p) => p.ready && p.status === 'MANUAL')).toBe(true);
       expect(out.notification.channel).toBe('admin_manual');
       expect(mockNotifyText).toHaveBeenCalledTimes(1);
       expect(mockNotifyText.mock.calls[0][1]).toContain('x5');
@@ -314,7 +317,7 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
       const b = await seedLine({ supplier, quantity: 2, market: 'KM', unitRef: 'U2' });
       const po = await submittedPo(supplier, [a.line, b.line]);
 
-      const out = await engagement.confirmGroupedPurchaseOrder(po.id, {
+      const out = await engagement.confirmGroupedPurchaseOrder(po.id, { purchase_proof_ref: 'TEST-RECEIPT',
         supplier_order_id: 'SUP-1', tracking_number: 'TRK',
         lines: [
           { purchase_line_id: a.line, confirmed_quantity: 3, confirmed_unit_price: 12.5 },
@@ -347,7 +350,7 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
       const supplier = await seedSupplier();
       const a = await seedLine({ supplier, quantity: 4 });
       const po = await submittedPo(supplier, [a.line]);
-      const out = await engagement.confirmGroupedPurchaseOrder(po.id, { lines: [{ purchase_line_id: a.line, confirmed_quantity: 1 }] });
+      const out = await engagement.confirmGroupedPurchaseOrder(po.id, { purchase_proof_ref: 'TEST-RECEIPT', lines: [{ purchase_line_id: a.line, confirmed_quantity: 1 }] });
       const open = await grouped.listOpenLines();
       expect(open.groups[0].lines.map((l) => l.line_id)).toEqual([out.remnants[0].line_id]);
       const second = await grouped.preparePurchaseOrder({ supplier_id: supplier, procurement_hub_ref: 'DXB', line_ids: [out.remnants[0].line_id] });
@@ -361,9 +364,9 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
       const stranger = await seedLine({ supplier, quantity: 2, unitRef: 'U3' });
       const po = await submittedPo(supplier, [a.line, b.line]);
 
-      await expect(engagement.confirmGroupedPurchaseOrder(po.id, { lines: [{ purchase_line_id: a.line, confirmed_quantity: 2 }] }))
+      await expect(engagement.confirmGroupedPurchaseOrder(po.id, { purchase_proof_ref: 'TEST-RECEIPT', lines: [{ purchase_line_id: a.line, confirmed_quantity: 2 }] }))
         .rejects.toMatchObject({ status: 409, code: 'PURCHASE_LINES_MISMATCH', missing: [b.line], extra: [] });
-      await expect(engagement.confirmGroupedPurchaseOrder(po.id, {
+      await expect(engagement.confirmGroupedPurchaseOrder(po.id, { purchase_proof_ref: 'TEST-RECEIPT',
         lines: [
           { purchase_line_id: a.line, confirmed_quantity: 2 }, { purchase_line_id: b.line, confirmed_quantity: 2 },
           { purchase_line_id: stranger.line, confirmed_quantity: 2 },
@@ -399,7 +402,7 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
       const a = await seedLine({ supplier, quantity: 3 });
       const po = await submittedPo(supplier, [a.line]);
 
-      const out = await engagement.confirmGroupedPurchaseOrder(po.id, { lines: [{ purchase_line_id: a.line, confirmed_quantity: 0 }] });
+      const out = await engagement.confirmGroupedPurchaseOrder(po.id, { purchase_proof_ref: 'TEST-RECEIPT', lines: [{ purchase_line_id: a.line, confirmed_quantity: 0 }] });
 
       expect(out.purchase_order.status).toBe('cancelled');
       expect(out.remnants).toHaveLength(1);
@@ -412,13 +415,13 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
       const supplier = await seedSupplier();
       const a = await seedLine({ supplier, quantity: 2 });
       const draft = await preparedPo(supplier, [a.line]);
-      await expect(engagement.confirmGroupedPurchaseOrder(draft.id, { lines: [{ purchase_line_id: a.line, confirmed_quantity: 2 }] }))
+      await expect(engagement.confirmGroupedPurchaseOrder(draft.id, { purchase_proof_ref: 'TEST-RECEIPT', lines: [{ purchase_line_id: a.line, confirmed_quantity: 2 }] }))
         .rejects.toMatchObject({ status: 409, code: 'PURCHASE_ORDER_NOT_NOTIFIED', current_status: 'draft' });
       await q(`UPDATE purchase_orders SET status = 'notified' WHERE id = $1`, [draft.id]);
-      const out = await engagement.confirmGroupedPurchaseOrder(draft.id, { lines: [{ purchase_line_id: a.line, confirmed_quantity: 2 }] });
+      const out = await engagement.confirmGroupedPurchaseOrder(draft.id, { purchase_proof_ref: 'TEST-RECEIPT', lines: [{ purchase_line_id: a.line, confirmed_quantity: 2 }] });
       expect(out.remnants).toEqual([]);
       expect(out.markets[0].remnant_quantity).toBe(0);
-      await expect(engagement.confirmGroupedPurchaseOrder(draft.id, { lines: [{ purchase_line_id: a.line, confirmed_quantity: 2 }] }))
+      await expect(engagement.confirmGroupedPurchaseOrder(draft.id, { purchase_proof_ref: 'TEST-RECEIPT', lines: [{ purchase_line_id: a.line, confirmed_quantity: 2 }] }))
         .rejects.toMatchObject({ status: 409, code: 'PURCHASE_ORDER_NOT_NOTIFIED', current_status: 'confirmed' });
     });
 
@@ -430,7 +433,7 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
 
       await expect(engagement.confirmGroupedPurchaseOrder(
         po.id,
-        { supplier_order_id: 'CHECKOUT-1', lines: [{ purchase_line_id: a.line, confirmed_quantity: 1 }] },
+        { purchase_proof_ref: 'TEST-RECEIPT', supplier_order_id: 'CHECKOUT-1', lines: [{ purchase_line_id: a.line, confirmed_quantity: 1 }] },
         { context: { allegroSandboxClient: client } }
       )).rejects.toMatchObject({ status: 409, code: 'PURCHASE_ORDER_CONFIRMATION_REJECTED', provider: 'allegro' });
 
@@ -443,7 +446,7 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
       const supplier = await seedSupplier({ platform: 'allegro' });
       const a = await seedLine({ supplier, quantity: 2, identity: ALLEGRO('111'), unitRef: '111' });
       const po = await submittedPo(supplier, [a.line]);
-      await expect(engagement.confirmGroupedPurchaseOrder(po.id, { lines: [{ purchase_line_id: a.line, confirmed_quantity: 2 }] }))
+      await expect(engagement.confirmGroupedPurchaseOrder(po.id, { purchase_proof_ref: 'TEST-RECEIPT', lines: [{ purchase_line_id: a.line, confirmed_quantity: 2 }] }))
         .rejects.toMatchObject({ status: 409, code: 'PURCHASE_ORDER_CONFIRMATION_REJECTED' });
     });
 
@@ -451,9 +454,9 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
       const supplier = await seedSupplier();
       const a = await seedLine({ supplier, quantity: 2 });
       const po = await submittedPo(supplier, [a.line]);
-      await engagement.confirmGroupedPurchaseOrder(po.id, { lines: [{ purchase_line_id: a.line, confirmed_quantity: 2 }] });
+      await engagement.confirmGroupedPurchaseOrder(po.id, { purchase_proof_ref: 'TEST-RECEIPT', lines: [{ purchase_line_id: a.line, confirmed_quantity: 2 }] });
       await q(`UPDATE purchase_orders SET status = 'notified' WHERE id = $1`, [po.id]);
-      await expect(engagement.confirmGroupedPurchaseOrder(po.id, { lines: [{ purchase_line_id: a.line, confirmed_quantity: 1 }] }))
+      await expect(engagement.confirmGroupedPurchaseOrder(po.id, { purchase_proof_ref: 'TEST-RECEIPT', lines: [{ purchase_line_id: a.line, confirmed_quantity: 1 }] }))
         .rejects.toMatchObject({ status: 409, code: 'PURCHASE_LINE_FROZEN' });
     });
   });
@@ -466,7 +469,7 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
       const others = [];
       for (const [i, q2] of extra.entries()) others.push(await seedLine({ supplier, quantity: q2, market, unitRef: `X${i}` }));
       const po = await submittedPo(supplier, [a.line, ...others.map((o) => o.line)]);
-      await engagement.confirmGroupedPurchaseOrder(po.id, {
+      await engagement.confirmGroupedPurchaseOrder(po.id, { purchase_proof_ref: 'TEST-RECEIPT',
         lines: [{ purchase_line_id: a.line, confirmed_quantity: quantity }, ...others.map((o, i) => ({ purchase_line_id: o.line, confirmed_quantity: extra[i] }))],
       });
       return { supplier, ...a, po, others };
@@ -488,10 +491,10 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
       expect(others).toHaveLength(1);
     });
 
-    it('sans reopen_remainder (défaut) : aucune ligne créée', async () => {
+    it('reopen_remainder:false explicite : aucune ligne créée', async () => {
       const { line } = await confirmedLine({ quantity: 6, extra: [2] });
       await receive(line, 5);
-      const out = await engagement.settleLine(line, { settled_quantity: 5, reason: 'écart accepté' });
+      const out = await engagement.settleLine(line, { settled_quantity: 5, reason: 'écart accepté', reopen_remainder: false });
       expect(out.remnant).toBeNull();
       expect((await row('SELECT count(*)::int AS n FROM purchase_lines WHERE parent_line_id IS NOT NULL')).n).toBe(0);
     });
@@ -528,10 +531,10 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
       await expect(engagement.settleLine(open.line, { settled_quantity: 0, reason: 'x' }))
         .rejects.toMatchObject({ status: 409, code: 'PURCHASE_LINE_NOT_SETTLEABLE' });
 
-      const notified = await seedLine({ supplier, quantity: 2 });
-      await submittedPo(supplier, [notified.line]);
-      await expect(engagement.settleLine(notified.line, { settled_quantity: 0, reason: 'x' }))
-        .rejects.toMatchObject({ status: 409, code: 'PURCHASE_LINE_NOT_SETTLEABLE', current_status: 'notified' });
+      const drafted = await seedLine({ supplier, quantity: 2 });
+      await preparedPo(supplier, [drafted.line]);
+      await expect(engagement.settleLine(drafted.line, { settled_quantity: 0, reason: 'x' }))
+        .rejects.toMatchObject({ status: 409, code: 'PURCHASE_LINE_NOT_SETTLEABLE', current_status: 'draft' });
 
       await expect(engagement.settleLine(id(), { settled_quantity: 0, reason: 'x' })).rejects.toMatchObject({ status: 404 });
     });
@@ -543,7 +546,7 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
       const supplier = await seedSupplier();
       const a = await seedLine({ supplier, quantity: 4 });
       const po = await submittedPo(supplier, [a.line]);
-      const out = await engagement.confirmGroupedPurchaseOrder(po.id, { lines: [{ purchase_line_id: a.line, confirmed_quantity: 1 }] });
+      const out = await engagement.confirmGroupedPurchaseOrder(po.id, { purchase_proof_ref: 'TEST-RECEIPT', lines: [{ purchase_line_id: a.line, confirmed_quantity: 1 }] });
       const remnant = out.remnants[0].line_id;
 
       // Tant que le reliquat est ouvert, le besoin est couvert : une ligne manuelle de 3 serait un sur-engagement.

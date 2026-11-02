@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-11-01T15:56:57.545Z",
+  "generatedAt": "2026-11-02T14:10:11.614Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 784,
-    "protected": 729,
+    "total": 787,
+    "protected": 732,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -1382,6 +1382,11 @@
       "roles": []
     },
     {
+      "key": "GET /api/admin/workspaces/operations/market/{marketCode}/relay-shipments",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
       "key": "GET /api/admin/workspaces/operations/market/{marketCode}/supply",
       "level": "PROTECTED",
       "roles": []
@@ -2452,7 +2457,8 @@
       "key": "GET /api/purchasing/suppliers",
       "level": "PROTECTED",
       "roles": [
-        "admin"
+        "admin",
+        "agent_hub"
       ]
     },
     {
@@ -3831,6 +3837,13 @@
       ]
     },
     {
+      "key": "POST /api/admin/workspaces/operations/market/{marketCode}/relay-shipments/{reference}/receive",
+      "level": "PROTECTED",
+      "roles": [
+        "agent_relais"
+      ]
+    },
+    {
       "key": "POST /api/admin/workspaces/pricing/competitors",
       "level": "PROTECTED",
       "roles": [
@@ -5149,6 +5162,14 @@
       ]
     },
     {
+      "key": "POST /api/purchasing/lines/{id}/change-supplier",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
       "key": "POST /api/purchasing/lines/{id}/settle",
       "level": "PROTECTED",
       "roles": [
@@ -5223,14 +5244,16 @@
       "key": "POST /api/purchasing/suppliers",
       "level": "PROTECTED",
       "roles": [
-        "admin"
+        "admin",
+        "agent_hub"
       ]
     },
     {
       "key": "POST /api/purchasing/suppliers/{id}/map",
       "level": "PROTECTED",
       "roles": [
-        "admin"
+        "admin",
+        "agent_hub"
       ]
     },
     {

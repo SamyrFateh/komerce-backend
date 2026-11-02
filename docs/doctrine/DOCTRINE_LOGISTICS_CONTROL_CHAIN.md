@@ -204,6 +204,8 @@ RELAY_EXCEPTION
 
 Un retard n'est jamais assimilé à une indisponibilité ; une non-conformité n'est jamais assimilée à un retard.
 
+**Règle V2 de qualification :** une absence de scan ou de mutation depuis un délai arbitraire (30 minutes, par exemple) ne suffit jamais à dégrader une commande GREEN en ORANGE. Une alerte exige une échéance métier prouvée, un signal métier persistant, un incident ouvert ou une quarantaine. RED signifie « action requise » et ne prétend pas systématiquement que toute la commande est immobilisée. Les transitions de couleur suivent la vérité source et ne sont pas un second lifecycle.
+
 ## 8. Règle canonique des commandes splittées
 
 Une commande peut avoir plusieurs branches simultanément à des étapes différentes.
@@ -301,6 +303,12 @@ exception isolée
 concentration d'exceptions corrélées
 → agir sur la cause structurelle
 ```
+
+## 10 bis. Lisibilité des causes en supervision
+
+L'affichage de niveau 1 expose d'abord une **formulation métier courte** issue du code de cause persistant, puis la référence de commande en second plan, le fait observé, l'action et le rôle réellement associés au signal. Les états techniques `in_transit`, `available`, les libellés `item(s)` et les codes de réconciliation ne constituent jamais le titre principal. La donnée source brute reste consultable à la demande dans le détail, sans disparition de la preuve.
+
+La couche UI ne modifie **jamais** la santé, le propriétaire ou les délais : elle traduit uniquement une cause reconnue. Code inconnu ou responsable absent → titre neutre, sans diagnostic ni rôle inventé. Une observation de transport inchangée ne devient pas, par reformulation, une preuve que le transport est effectivement bloqué.
 
 ## 11. Principe UI
 

@@ -60,7 +60,7 @@ function scripted(handlers) {
   return { client, calls };
 }
 
-const poRow = (extra = {}) => ({ id: PO, order_id: null, status: 'draft', supplier_id: uuid(3), procurement_hub_ref: 'DXB', ...extra });
+const poRow = (extra = {}) => ({ id: PO, order_id: null, status: 'draft', supplier_id: uuid(3), procurement_hub_ref: 'DXB', trigger_mode: 'auto', ...extra });
 const submitLine = (extra = {}) => ({
   id: L1, product_sku_id: uuid(5), supplier_sku: 'SKU', supplier_unit_ref: 'U1',
   supplier_order_identity: { provider: 'noon', version: 1, payload: { a: 1 } },
@@ -203,6 +203,12 @@ describe('confirmGroupedPurchaseOrder — garde-fous', () => {
     await expect(engagement.confirmGroupedPurchaseOrder(PO, { lines: okLines })).rejects.toMatchObject({ status: 409, code: 'PURCHASE_ORDER_NOT_GROUPED' });
   });
 
+  it('achat manuel : une quantité positive exige une preuve, sans affecter le mode API', async () => {
+    scripted([[/FROM purchase_orders WHERE id = \$1 FOR UPDATE/, { rows: [poRow({ status: 'notified', trigger_mode: 'manual' })] }]]);
+    await expect(engagement.confirmGroupedPurchaseOrder(PO, { lines: okLines }))
+      .rejects.toMatchObject({ status: 400, code: 'MANUAL_PURCHASE_PROOF_REQUIRED' });
+  });
+
   it('tout à zéro : aucune vérification de preuve fournisseur ; texte libre (notes, suivi) sans valeur → null', async () => {
     const { calls } = scripted([
       [/FROM purchase_orders WHERE id = \$1 FOR UPDATE/, { rows: [poRow({ status: 'notified' })] }],
@@ -338,7 +344,7 @@ describe('settleLine — garde-fous', () => {
 });
 
 describe('createManualLine', () => {
-  const body = { order_item_id: uuid(20), product_supplier_id: uuid(21), quantity: 2 };
+  const body = { order_item_id: uuid(20), product_supplier_id: uuid(21), quantity: 2, execution_mode: 'api' };
   const item = { id: uuid(20), product_id: uuid(22), sku_id: uuid(23), fulfillment_source: 'IMPORT', order_status: 'confirmed' };
   const ps = { id: uuid(21), supplier_id: uuid(3), platform: 'Noon' };
   const handlers = (over = {}) => [

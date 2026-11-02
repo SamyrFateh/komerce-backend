@@ -13,21 +13,21 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 770,
-    "filesWithFullHeaders": 719,
+    "scannedCodeFiles": 771,
+    "filesWithFullHeaders": 720,
     "filesWithLiteHeaders": 51,
-    "filesWithAnyHeaders": 770,
+    "filesWithAnyHeaders": 771,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1936,
-    "edges": 9548,
-    "dbTables": 221,
-    "doctrines": 738,
+    "graphNodes": 1940,
+    "edges": 9578,
+    "dbTables": 222,
+    "doctrines": 740,
     "impactAreas": 207,
-    "unresolvedCodeEdges": 919,
+    "unresolvedCodeEdges": 921,
     "dbWriteViaOverlapWarnings": 11,
-    "multiWriterTables": 94
+    "multiWriterTables": 95
   },
   "byDomain": {
     "infrastructure": 25,
@@ -42,7 +42,7 @@
     "market": 9,
     "economic-engine": 67,
     "sourcing": 37,
-    "logistics": 60,
+    "logistics": 61,
     "boutique": 21,
     "checkout": 3,
     "shared-cart": 25,
@@ -112,7 +112,7 @@
     "schema": 1,
     "route": 138,
     "entrypoint": 1,
-    "service": 453,
+    "service": 454,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -123,7 +123,7 @@
   "byCriticality": {
     "critical": 113,
     "medium": 153,
-    "high": 443,
+    "high": 444,
     "low": 60,
     "unknown": 1
   },
@@ -17086,6 +17086,7 @@
       ],
       "depends": [
         "db",
+        "services/financial-journal-reporting",
         "dashboard-metrics",
         "dashboard-metrics/_helpers",
         "pricing-market-corridor",
@@ -19849,7 +19850,9 @@
         "hub_physical_units",
         "hub_physical_unit_placements",
         "international_shipments",
-        "international_shipment_hub_units"
+        "international_shipment_hub_units",
+        "parcels",
+        "parcel_items"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -20808,6 +20811,7 @@
       ],
       "dbRead": [
         "orders",
+        "order_status_history",
         "order_items",
         "purchase_lines",
         "purchase_orders",
@@ -29458,6 +29462,70 @@
       "version": "2026-09"
     },
     {
+      "id": "services/relay-shipment-receipt.js",
+      "file": "services/relay-shipment-receipt.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "relay-shipment-receipt-owner",
+      "domain": "logistics",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated_relay_actor",
+        "server_resolved_market",
+        "shipment_reference",
+        "per_item_received_quantities"
+      ],
+      "outputs": [
+        "shipment_content_tree",
+        "immutable_relay_receipts",
+        "traceable_incidents"
+      ],
+      "depends": [
+        "db",
+        "services/incident-write-service.js"
+      ],
+      "usedBy": [
+        "routes/admin-operations-workspace.js"
+      ],
+      "dbRead": [
+        "international_shipments",
+        "international_shipment_hub_units",
+        "international_shipment_relay_receipts",
+        "hub_physical_units",
+        "hub_physical_unit_placements",
+        "hub_purchase_allocations",
+        "order_items",
+        "orders",
+        "products",
+        "relais",
+        "parcel_items",
+        "parcels"
+      ],
+      "dbWrite": [
+        "international_shipment_relay_receipts",
+        "international_shipments",
+        "international_shipment_events",
+        "incidents"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "withTransaction"
+      ],
+      "doctrine": [
+        "relay_reception_attested_by_relay",
+        "no_status_deduced_from_hub_or_admin",
+        "market_scope_server_owned"
+      ],
+      "impactAreas": [
+        "logistics",
+        "relay"
+      ],
+      "version": "2026-11"
+    },
+    {
       "id": "services/repair-ordered-purchasing.js",
       "file": "services/repair-ordered-purchasing.js",
       "type": "file",
@@ -30341,7 +30409,8 @@
         "utils/logger.js",
         "utils/rules.js",
         "services/supplier-payment-review.js",
-        "services/cash-deposit-service.js"
+        "services/cash-deposit-service.js",
+        "services/financial-journal-reporting.js"
       ],
       "usedBy": [
         "routes/signals.js",
@@ -30349,6 +30418,7 @@
         "services/action-center-workspace.js"
       ],
       "dbRead": [
+        "markets",
         "cash_collections",
         "cash_deposits",
         "customs_shipment_parcels",
@@ -38144,6 +38214,11 @@
       "table": "refund_execution_intents"
     },
     {
+      "id": "db:international_shipment_relay_receipts",
+      "type": "db-table",
+      "table": "international_shipment_relay_receipts"
+    },
+    {
       "id": "db:shared_cart_saved_access",
       "type": "db-table",
       "table": "shared_cart_saved_access"
@@ -41427,6 +41502,16 @@
       "id": "doctrine:market_operator_scoping (GAP-2)",
       "type": "doctrine",
       "doctrine": "market_operator_scoping (GAP-2)"
+    },
+    {
+      "id": "doctrine:relay_reception_attested_by_relay",
+      "type": "doctrine",
+      "doctrine": "relay_reception_attested_by_relay"
+    },
+    {
+      "id": "doctrine:no_status_deduced_from_hub_or_admin",
+      "type": "doctrine",
+      "doctrine": "no_status_deduced_from_hub_or_admin"
     },
     {
       "id": "doctrine:snapshot_fige",
@@ -68851,6 +68936,12 @@
     },
     {
       "from": "services/dashboard-commerce.js",
+      "to": "services/financial-journal-reporting",
+      "type": "depends",
+      "label": "services/financial-journal-reporting"
+    },
+    {
+      "from": "services/dashboard-commerce.js",
       "to": "dashboard-metrics",
       "type": "depends",
       "label": "dashboard-metrics"
@@ -73877,6 +73968,18 @@
     },
     {
       "from": "services/hub-procurement-dossier.js",
+      "to": "db:parcels",
+      "type": "db-read",
+      "label": "parcels"
+    },
+    {
+      "from": "services/hub-procurement-dossier.js",
+      "to": "db:parcel_items",
+      "type": "db-read",
+      "label": "parcel_items"
+    },
+    {
+      "from": "services/hub-procurement-dossier.js",
       "to": "doctrine:une décision",
       "type": "doctrine",
       "label": "une décision"
@@ -75455,6 +75558,12 @@
       "to": "db:orders",
       "type": "db-read",
       "label": "orders"
+    },
+    {
+      "from": "services/logistics-control-chain-projection.js",
+      "to": "db:order_status_history",
+      "type": "db-read",
+      "label": "order_status_history"
     },
     {
       "from": "services/logistics-control-chain-projection.js",
@@ -89156,6 +89265,150 @@
       "label": "market"
     },
     {
+      "from": "services/relay-shipment-receipt.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/relay-shipment-receipt.js",
+      "to": "services/incident-write-service.js",
+      "type": "depends",
+      "label": "services/incident-write-service.js"
+    },
+    {
+      "from": "routes/admin-operations-workspace.js",
+      "to": "services/relay-shipment-receipt.js",
+      "type": "uses",
+      "label": "routes/admin-operations-workspace.js"
+    },
+    {
+      "from": "services/relay-shipment-receipt.js",
+      "to": "db:international_shipments",
+      "type": "db-read",
+      "label": "international_shipments"
+    },
+    {
+      "from": "services/relay-shipment-receipt.js",
+      "to": "db:international_shipment_hub_units",
+      "type": "db-read",
+      "label": "international_shipment_hub_units"
+    },
+    {
+      "from": "services/relay-shipment-receipt.js",
+      "to": "db:international_shipment_relay_receipts",
+      "type": "db-read",
+      "label": "international_shipment_relay_receipts"
+    },
+    {
+      "from": "services/relay-shipment-receipt.js",
+      "to": "db:hub_physical_units",
+      "type": "db-read",
+      "label": "hub_physical_units"
+    },
+    {
+      "from": "services/relay-shipment-receipt.js",
+      "to": "db:hub_physical_unit_placements",
+      "type": "db-read",
+      "label": "hub_physical_unit_placements"
+    },
+    {
+      "from": "services/relay-shipment-receipt.js",
+      "to": "db:hub_purchase_allocations",
+      "type": "db-read",
+      "label": "hub_purchase_allocations"
+    },
+    {
+      "from": "services/relay-shipment-receipt.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
+    },
+    {
+      "from": "services/relay-shipment-receipt.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/relay-shipment-receipt.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/relay-shipment-receipt.js",
+      "to": "db:relais",
+      "type": "db-read",
+      "label": "relais"
+    },
+    {
+      "from": "services/relay-shipment-receipt.js",
+      "to": "db:parcel_items",
+      "type": "db-read",
+      "label": "parcel_items"
+    },
+    {
+      "from": "services/relay-shipment-receipt.js",
+      "to": "db:parcels",
+      "type": "db-read",
+      "label": "parcels"
+    },
+    {
+      "from": "services/relay-shipment-receipt.js",
+      "to": "db:international_shipment_relay_receipts",
+      "type": "db-write",
+      "label": "international_shipment_relay_receipts"
+    },
+    {
+      "from": "services/relay-shipment-receipt.js",
+      "to": "db:international_shipments",
+      "type": "db-write",
+      "label": "international_shipments"
+    },
+    {
+      "from": "services/relay-shipment-receipt.js",
+      "to": "db:international_shipment_events",
+      "type": "db-write",
+      "label": "international_shipment_events"
+    },
+    {
+      "from": "services/relay-shipment-receipt.js",
+      "to": "db:incidents",
+      "type": "db-write",
+      "label": "incidents"
+    },
+    {
+      "from": "services/relay-shipment-receipt.js",
+      "to": "doctrine:relay_reception_attested_by_relay",
+      "type": "doctrine",
+      "label": "relay_reception_attested_by_relay"
+    },
+    {
+      "from": "services/relay-shipment-receipt.js",
+      "to": "doctrine:no_status_deduced_from_hub_or_admin",
+      "type": "doctrine",
+      "label": "no_status_deduced_from_hub_or_admin"
+    },
+    {
+      "from": "services/relay-shipment-receipt.js",
+      "to": "doctrine:market_scope_server_owned",
+      "type": "doctrine",
+      "label": "market_scope_server_owned"
+    },
+    {
+      "from": "services/relay-shipment-receipt.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
+    },
+    {
+      "from": "services/relay-shipment-receipt.js",
+      "to": "impact:relay",
+      "type": "impact",
+      "label": "relay"
+    },
+    {
       "from": "services/repair-ordered-purchasing.js",
       "to": "db",
       "type": "depends",
@@ -90624,6 +90877,12 @@
       "label": "services/cash-deposit-service.js"
     },
     {
+      "from": "services/signal-service.js",
+      "to": "services/financial-journal-reporting.js",
+      "type": "depends",
+      "label": "services/financial-journal-reporting.js"
+    },
+    {
       "from": "routes/signals.js",
       "to": "services/signal-service.js",
       "type": "uses",
@@ -90640,6 +90899,12 @@
       "to": "services/signal-service.js",
       "type": "uses",
       "label": "services/action-center-workspace.js"
+    },
+    {
+      "from": "services/signal-service.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
     },
     {
       "from": "services/signal-service.js",
@@ -107450,7 +107715,8 @@
         "impact:orders",
         "impact:payments",
         "middleware/require-market-execution-capability.js",
-        "services/operations-workspace.js"
+        "services/operations-workspace.js",
+        "services/relay-shipment-receipt.js"
       ]
     },
     "routes/admin-order-360.js": {
@@ -117761,6 +118027,7 @@
       "purpose": null,
       "directDependsOn": [
         "db",
+        "services/financial-journal-reporting",
         "dashboard-metrics",
         "dashboard-metrics/_helpers",
         "pricing-market-corridor",
@@ -119702,7 +119969,8 @@
         "impact:dashboards",
         "impact:finance",
         "services/dashboard-finance-canonical.js",
-        "services/financial-journal.js"
+        "services/financial-journal.js",
+        "services/signal-service.js"
       ]
     },
     "services/financial-journal.js": {
@@ -120625,7 +120893,9 @@
         "hub_physical_units",
         "hub_physical_unit_placements",
         "international_shipments",
-        "international_shipment_hub_units"
+        "international_shipment_hub_units",
+        "parcels",
+        "parcel_items"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -120649,6 +120919,8 @@
         "db:markets",
         "db:order_items",
         "db:orders",
+        "db:parcel_items",
+        "db:parcels",
         "db:products",
         "db:purchase_lines",
         "db:purchase_orders",
@@ -121164,6 +121436,7 @@
         "services/hub-physical-identity.js",
         "services/incident-governance.js",
         "services/reconciliation-service.js",
+        "services/relay-shipment-receipt.js",
         "services/scan-engine.js"
       ]
     },
@@ -121591,6 +121864,7 @@
       "ownedFiles": [],
       "dbRead": [
         "orders",
+        "order_status_history",
         "order_items",
         "purchase_lines",
         "purchase_orders",
@@ -121628,6 +121902,7 @@
         "db:hub_purchase_allocations",
         "db:incidents",
         "db:order_items",
+        "db:order_status_history",
         "db:orders",
         "db:parcels",
         "db:purchase_lines",
@@ -130231,6 +130506,75 @@
         "utils/logger.js"
       ]
     },
+    "services/relay-shipment-receipt.js": {
+      "role": "relay-shipment-receipt-owner",
+      "domain": "logistics",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db",
+        "services/incident-write-service.js"
+      ],
+      "directUsedBy": [
+        "routes/admin-operations-workspace.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "international_shipments",
+        "international_shipment_hub_units",
+        "international_shipment_relay_receipts",
+        "hub_physical_units",
+        "hub_physical_unit_placements",
+        "hub_purchase_allocations",
+        "order_items",
+        "orders",
+        "products",
+        "relais",
+        "parcel_items",
+        "parcels"
+      ],
+      "dbWrite": [
+        "international_shipment_relay_receipts",
+        "international_shipments",
+        "international_shipment_events",
+        "incidents"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "relay_reception_attested_by_relay",
+        "no_status_deduced_from_hub_or_admin",
+        "market_scope_server_owned"
+      ],
+      "impactAreas": [
+        "logistics",
+        "relay"
+      ],
+      "mustCheck": [
+        "db:hub_physical_unit_placements",
+        "db:hub_physical_units",
+        "db:hub_purchase_allocations",
+        "db:incidents",
+        "db:international_shipment_events",
+        "db:international_shipment_hub_units",
+        "db:international_shipment_relay_receipts",
+        "db:international_shipments",
+        "db:order_items",
+        "db:orders",
+        "db:parcel_items",
+        "db:parcels",
+        "db:products",
+        "db:relais",
+        "doctrine:market_scope_server_owned",
+        "doctrine:no_status_deduced_from_hub_or_admin",
+        "doctrine:relay_reception_attested_by_relay",
+        "impact:logistics",
+        "impact:relay",
+        "routes/admin-operations-workspace.js",
+        "services/incident-write-service.js"
+      ]
+    },
     "services/repair-ordered-purchasing.js": {
       "role": "orders-repair-ordered-purchasing",
       "domain": "purchasing",
@@ -131097,7 +131441,8 @@
         "utils/logger.js",
         "utils/rules.js",
         "services/supplier-payment-review.js",
-        "services/cash-deposit-service.js"
+        "services/cash-deposit-service.js",
+        "services/financial-journal-reporting.js"
       ],
       "directUsedBy": [
         "routes/signals.js",
@@ -131106,6 +131451,7 @@
       ],
       "ownedFiles": [],
       "dbRead": [
+        "markets",
         "cash_collections",
         "cash_deposits",
         "customs_shipment_parcels",
@@ -131146,6 +131492,7 @@
         "db:customs_shipments",
         "db:hub_physical_unit_placements",
         "db:hub_purchase_allocations",
+        "db:markets",
         "db:order_items",
         "db:orders",
         "db:parcels",
@@ -131167,6 +131514,7 @@
         "routes/signals.js",
         "services/action-center-workspace.js",
         "services/cash-deposit-service.js",
+        "services/financial-journal-reporting.js",
         "services/incident-escalation.js",
         "services/order-financial-closure-signal.js",
         "services/signal-admin-service.js",
@@ -138156,6 +138504,16 @@
       ]
     },
     {
+      "table": "incidents",
+      "writerCount": 4,
+      "writers": [
+        "services/incident-escalation.js",
+        "services/incident-service.js",
+        "services/incident-write-service.js",
+        "services/relay-shipment-receipt.js"
+      ]
+    },
+    {
       "table": "market_delegation_audit",
       "writerCount": 4,
       "writers": [
@@ -138281,12 +138639,12 @@
       ]
     },
     {
-      "table": "incidents",
+      "table": "international_shipment_events",
       "writerCount": 3,
       "writers": [
-        "services/incident-escalation.js",
-        "services/incident-service.js",
-        "services/incident-write-service.js"
+        "services/hub-box-shipment-service.js",
+        "services/international-shipment-journey.js",
+        "services/relay-shipment-receipt.js"
       ]
     },
     {
@@ -138483,7 +138841,7 @@
       ]
     },
     {
-      "table": "international_shipment_events",
+      "table": "international_shipment_hub_units",
       "writerCount": 2,
       "writers": [
         "services/hub-box-shipment-service.js",
@@ -138491,11 +138849,11 @@
       ]
     },
     {
-      "table": "international_shipment_hub_units",
+      "table": "international_shipments",
       "writerCount": 2,
       "writers": [
-        "services/hub-box-shipment-service.js",
-        "services/international-shipment-journey.js"
+        "services/international-shipment-journey.js",
+        "services/relay-shipment-receipt.js"
       ]
     },
     {
@@ -141370,6 +141728,12 @@
     },
     {
       "from": "services/dashboard-commerce.js",
+      "to": "services/financial-journal-reporting",
+      "type": "depends",
+      "label": "services/financial-journal-reporting"
+    },
+    {
+      "from": "services/dashboard-commerce.js",
       "to": "dashboard-metrics",
       "type": "depends",
       "label": "dashboard-metrics"
@@ -143014,6 +143378,12 @@
     },
     {
       "from": "services/relay-dashboard-queries.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/relay-shipment-receipt.js",
       "to": "db",
       "type": "depends",
       "label": "db"

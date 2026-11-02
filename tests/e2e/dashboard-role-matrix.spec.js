@@ -44,7 +44,7 @@ const ROLE_HOME = Object.freeze({
   market_operator: '/admin/pilotage',
   finance: '/admin/workspaces/accounting',
   sourcing: '/admin/import-runtime',
-  agent_hub: '/admin/hub-live',
+  agent_hub: '/admin/hub-live?view=execute',
   agent_relais: '/admin/relais-live',
   agent_transitaire: '/admin/workspaces/shipping-customs',
   support: '/portail',
@@ -90,6 +90,16 @@ test.describe('Navigation V4 — matrice des 8 rôles', () => {
       expect(home).toBe(ROLE_HOME[role]);
     });
   }
+
+  test('Hub Live du menu agent mène au dossier d’exécution, pas au Flux Hub historique', async ({ page }) => {
+    await mount(page, 'agent_hub');
+    const hub = page.locator('.kmc-admin-primary-link[data-dashboard="live-hub"]');
+    await expect(hub).toHaveAttribute('href', '/admin/hub-live?view=execute');
+    const landing = await page.evaluate(() =>
+      window.KomerceCanonicalNavigation.defaultLandingFor(window.KOMERCE_CANONICAL_AUTH_USER)
+    );
+    expect(landing).toBe('/admin/hub-live?view=execute');
+  });
 
   test('un agent ne reçoit jamais les surfaces admin ou finance globale', async ({ page }) => {
     await mount(page, 'agent_hub');

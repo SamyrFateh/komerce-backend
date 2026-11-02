@@ -184,16 +184,21 @@ test.describe('Operations — logistics control board', () => {
     expect(secondaryIndex).toBe(-1);
   });
 
-  test('les files redondantes sont retirées et un dossier s’ouvre en panneau latéral', async ({ page }) => {
+  test('les files redondantes sont retirées et le dossier s’ouvre sous le flux', async ({ page }) => {
     for (const id of ['orders-pending-cash', 'orders-to-order', 'orders-awaiting-hub-reception', 'orders-ready-for-parcel']) {
       await expect(page.locator(`#${id}`)).toHaveCount(0);
     }
     await page.locator('.kmc-control-order').first().click();
-    const panel = page.locator('.kmc-control-order-detail:not([hidden])');
+    const panel = page.locator('.kmc-control-detail-dock:not([hidden]) .kmc-control-order-detail');
     await expect(panel).toBeVisible();
-    const box = await panel.boundingBox();
-    const vp = page.viewportSize();
-    expect(box.x + box.width).toBeGreaterThan(vp.width - 2);
+    const bounds = await panel.evaluate(el => {
+      const r = el.getBoundingClientRect();
+      const board = el.closest('.kmc-control-chain').getBoundingClientRect();
+      return { left:r.left, width:r.width, boardLeft:board.left, boardWidth:board.width, position:getComputedStyle(el).position };
+    });
+    expect(bounds.position).toBe('static');
+    expect(Math.abs(bounds.left - bounds.boardLeft)).toBeLessThan(3);
+    expect(Math.abs(bounds.width - bounds.boardWidth)).toBeLessThan(3);
     await panel.locator('.kmc-control-panel-close').click();
     await expect(panel).toHaveCount(0);
   });
@@ -211,9 +216,9 @@ test.describe('Operations — logistics control board', () => {
     );
     expect(values).toEqual([
       { label:'Normal', value:13 },
-      { label:'À risque', value:3 },
-      { label:'Bloqué', value:4 },
-      { label:'Non observé', value:1 },
+      { label:'À surveiller', value:3 },
+      { label:'Action requise', value:4 },
+      { label:'Non déterminé', value:1 },
     ]);
   });
 
@@ -233,12 +238,12 @@ test.describe('Operations — logistics control board', () => {
       '5 commandes positionnées', '6 commandes positionnées',
       '2 commandes positionnées', 'Non projetée ici · voir Order 360',
     ]);
-    await expect(phases.nth(1)).toHaveAttribute('href', /\/admin\/workspaces\/purchasing/);
-    await expect(phases.nth(2)).toHaveAttribute('href', /\/admin\/workspaces\/operations/);
-    await expect(phases.nth(3)).toHaveAttribute('href', /\/admin\/workspaces\/shipping-customs/);
+    await expect(phases.nth(1)).toHaveAttribute('href', /stage=PURCHASING/);
+    await expect(phases.nth(2)).toHaveAttribute('href', /stage=HUB/);
+    await expect(phases.nth(3)).toHaveAttribute('href', /stage=CUSTOMS/);
     await expect(phases.nth(5)).not.toHaveAttribute('href', /./);
-    await expect(page.locator('.kmc-control-stage')).toHaveCount(9);
-    await expect(page.locator('#operations-stage-hub-receiving')).toBeAttached();
+    await expect(page.locator('.kmc-control-stage')).toHaveCount(5);
+    await expect(page.locator('#operations-stage-hub')).toBeAttached();
   });
 
   test('sur mobile le parcours est défilable sans retirer la Control Tower canonique', async ({ page }) => {
@@ -251,32 +256,32 @@ test.describe('Operations — logistics control board', () => {
     }));
     expect(size.scrollWidth).toBeGreaterThan(size.clientWidth);
     expect(size.overflowX).toBe('auto');
-    await expect(page.locator('.kmc-control-stage')).toHaveCount(9);
+    await expect(page.locator('.kmc-control-stage')).toHaveCount(5);
   });
 
-  test('affiche les 9 étapes et la légende santé', async ({ page }) => {
-    await expect(page.locator('.kmc-control-stage')).toHaveCount(9);
+  test('affiche 5 phases, leurs sous-étapes et la légende santé', async ({ page }) => {
+    await expect(page.locator('.kmc-control-stage')).toHaveCount(5);
     await expect(page.locator('.kmc-control-chain-legend-item')).toHaveCount(4);
-    await expect(page.locator('.kmc-control-stage-icon')).toHaveCount(9);
+    await expect(page.locator('.kmc-control-stage-icon')).toHaveCount(5);
   });
 
-  test('les colonnes sont des vraies colonnes opérationnelles hautes', async ({ page }) => {
+  test('les phases compactes exposent des cartes lisibles', async ({ page }) => {
     const geometry = await page.locator('.kmc-control-stage').first().evaluate(el => {
       const cs=getComputedStyle(el), r=el.getBoundingClientRect();
       return { height:r.height, radius:cs.borderRadius, background:cs.backgroundColor };
     });
-    expect(geometry.height).toBeGreaterThanOrEqual(440);
+    expect(geometry.height).toBeGreaterThanOrEqual(110);
     expect(geometry.radius).toBe('12px');
     const icon = await page.locator('.kmc-control-stage-icon').first().evaluate(el => {
       const r = el.getBoundingClientRect();
       return { width:r.width, height:r.height };
     });
-    expect(icon.width).toBeGreaterThanOrEqual(60);
-    expect(icon.height).toBeGreaterThanOrEqual(60);
+    expect(icon.width).toBeGreaterThanOrEqual(40);
+    expect(icon.height).toBeGreaterThanOrEqual(40);
   });
 
 
-  test('les 9 étapes tiennent ensemble sur le viewport desktop de référence', async ({ page }) => {
+  test('les 5 phases tiennent ensemble sur le viewport desktop de référence', async ({ page }) => {
     const board = page.locator('.kmc-control-chain');
     const geometry = await board.evaluate(el => ({
       clientWidth: el.clientWidth,
@@ -285,7 +290,7 @@ test.describe('Operations — logistics control board', () => {
     expect(geometry.scrollWidth).toBeLessThanOrEqual(geometry.clientWidth + 2);
 
     const stages = page.locator('.kmc-control-stage');
-    await expect(stages).toHaveCount(9);
+    await expect(stages).toHaveCount(5);
     const first = await stages.first().boundingBox();
     const last = await stages.last().boundingBox();
     expect(first).not.toBeNull();
@@ -296,7 +301,7 @@ test.describe('Operations — logistics control board', () => {
   test('les cartes restent compactes puis révèlent l’objet précis au clic', async ({ page }) => {
     const warning = page.locator('.kmc-control-order.is-warning').filter({ hasText:'K-104816' });
     await expect(warning).toBeVisible();
-    await expect(warning).not.toContainText('Confirmation fournisseur à surveiller');
+    await expect(warning).toContainText('Point à surveiller');
     const hiddenDetails = page.locator('.kmc-control-order-detail');
     const visibleBeforeClick = await hiddenDetails.evaluateAll(nodes =>
       nodes.filter(node => !node.hidden && getComputedStyle(node).display !== 'none').length
@@ -305,12 +310,12 @@ test.describe('Operations — logistics control board', () => {
 
     await warning.click();
 
-    const detail = page.locator('.kmc-control-order-row.is-expanded .kmc-control-order-detail');
+    const detail = page.locator('.kmc-control-detail-dock:not([hidden]) .kmc-control-order-detail');
     await expect(detail).toBeVisible();
     await expect(detail).toContainText('Objet en cause');
     await expect(detail).toContainText('PO fournisseur · PO-104816');
     await expect(detail).toContainText('Confirmation fournisseur à surveiller');
-    await expect(detail).toContainText('Responsable : operations');
+    await expect(detail).toContainText('À examiner · Opérations');
     const openHref = await detail.locator('.kmc-control-order-open').getAttribute('href');
     expect(openHref.startsWith('/admin/orders/K-104816')).toBe(true);
     expect(decodeURIComponent(openHref)).toContain('return_to=/admin/operations');
@@ -322,14 +327,14 @@ test.describe('Operations — logistics control board', () => {
 
   test('l’encapsulation distingue PO, unité HUB et colis avec le lineage serveur', async ({ page }) => {
     await page.locator('.kmc-control-order.is-critical').filter({ hasText:'K-104766' }).click();
-    let detail = page.locator('.kmc-control-order-row.is-expanded .kmc-control-order-detail');
+    let detail = page.locator('.kmc-control-detail-dock:not([hidden]) .kmc-control-order-detail');
     await expect(detail).toContainText('Unité HUB · HU-104766');
     await expect(detail).toContainText('PO-104766');
     await expect(detail.locator('[data-order-transitions]')).toContainText('confirmed');
     await expect(detail.locator('[data-order-transitions]')).toContainText('paid');
 
     await page.locator('.kmc-control-order.is-warning').filter({ hasText:'K-104715' }).click();
-    detail = page.locator('.kmc-control-order-row.is-expanded .kmc-control-order-detail').last();
+    detail = page.locator('.kmc-control-detail-dock:not([hidden]) .kmc-control-order-detail').last();
     await expect(detail).toContainText('Colis · P-104715');
     await expect(detail).toContainText('HU-104715');
     await expect(detail).toContainText('PO-104715');
@@ -343,6 +348,91 @@ test.describe('Operations — logistics control board', () => {
     await expect(page.locator('#operations-orders')).toHaveCount(0);
     await expect(page.locator('#operations-delays')).toHaveCount(0);
     await expect(page.locator('.kmc-control-structural-alert')).toHaveCount(0);
+  });
+
+
+  test('pas de doublons structurels : les alertes restent dans les commandes et les compteurs', async ({ page }) => {
+    // La fixture contient un agrégat commun à trois commandes ; pas de ligne
+    // supplémentaire, ni d'en-tête avant les cartes de cette phase.
+    const purchasing = page.locator('[data-control-phase="PURCHASING"]');
+    await expect(purchasing.locator('.kmc-control-structural-alert')).toHaveCount(0);
+    await expect(purchasing).not.toContainText('3 commandes · même anomalie');
+    await expect(purchasing.locator('.kmc-control-order')).toHaveCount(6);
+    await expect(purchasing.locator('.kmc-control-order.is-critical')).toHaveCount(3);
+    await expect(purchasing.locator('.kmc-control-stage-count')).toHaveText('6 commandes');
+    // Le dossier de l'une de ces commandes reste accessible.
+    await purchasing.locator('.kmc-control-order.is-critical').first().click();
+    await expect(page.locator('.kmc-control-detail-dock:not([hidden]) .kmc-control-order-detail')).toBeVisible();
+  });
+
+  test('la phase conserve la sous-étape et le résumé métier visibles sans ouvrir le dossier', async ({ page }) => {
+    const supplier = page.locator('[data-control-phase="PURCHASING"] .kmc-control-order.is-warning');
+    await expect(supplier.filter({ hasText:'K-104816' })).toContainText('Point à surveiller');
+    await expect(supplier.filter({ hasText:'K-104816' })).toContainText('Fournisseur');
+    expect(await page.locator('.kmc-control-stage-health-part').count()).toBeGreaterThan(5);
+    await expect(page.locator('.kmc-control-detail-dock:not([hidden])')).toHaveCount(0);
+  });
+
+  test('une nouvelle lecture serveur fait évoluer la couleur sans inventer de statut', async ({ page }) => {
+    const affected = page.locator('.kmc-control-order').filter({ hasText:'K-104829' });
+    await expect(affected).toHaveClass(/is-critical/);
+    const updated = JSON.parse(JSON.stringify(payload));
+    updated.control_chain.by_stage.PURCHASING[0].health = 'GREEN';
+    updated.control_chain.by_stage.PURCHASING[0].exceptions = [];
+    await page.route(`${ORIGIN}/api/admin/dashboard/operations`, async route => {
+      await route.fulfill({ contentType:'application/json', body:JSON.stringify(updated) });
+    });
+    await page.locator('.kmc-operations-refresh').click();
+    await expect(page.locator('.kmc-control-order').filter({ hasText:'K-104829' })).toHaveClass(/is-positive/);
+  });
+
+  test('la vue desktop 1440×900 affiche cinq phases et les causes lisibles', async ({ page }, testInfo) => {
+    await page.setViewportSize({ width:1440, height:900 });
+    await expect(page.locator('.kmc-control-stage')).toHaveCount(5);
+    await expect(page.locator('.kmc-control-order.is-warning').filter({hasText:'K-104816'}))
+       .toContainText('Point à surveiller');
+    await page.screenshot({ path:testInfo.outputPath('operations-living-flow-1440x900.png'), fullPage:false });
+  });
+
+
+  test('les alertes connues affichent le problème métier, le responsable et une preuve repliable', async ({ page }) => {
+    const updated = JSON.parse(JSON.stringify(payload));
+    updated.control_chain.by_stage.PURCHASING[0].exceptions = [{
+      code:'ordered_without_purchase_order',
+      summary:'1 item(s) non couvert(s) par une ligne d’achat depuis 11404 min',
+      owner_role:'sourcing'
+    }];
+    updated.control_chain.by_stage.SUPPLIER[1].exceptions = [{
+      code:'supplier_payment_review',
+      summary:'ambiguous · rapprochement unverified · PAYMENT_AMBIGUOUS_RECONCILIATION_REQUIRED',
+      owner_role:'admin'
+    }];
+    updated.control_chain.by_stage.TRANSPORT[2].exceptions = [{
+      code:'parcel_blocked', summary:'Statut "in_transit" depuis 8 jours (cmd K-104715)',
+      owner_role:'logistics'
+    }];
+    await page.route(`${ORIGIN}/api/admin/dashboard/operations`, async route =>
+      route.fulfill({contentType:'application/json',body:JSON.stringify(updated)}));
+    await page.locator('.kmc-operations-refresh').click();
+
+    const purchasing = page.locator('.kmc-control-order').filter({hasText:'K-104829'});
+    await expect(purchasing.locator('.kmc-control-order-issue')).toHaveText('1 article sans achat fournisseur');
+    await expect(purchasing.locator('.kmc-control-order-summary')).toContainText('depuis 7 j 22 h');
+    await expect(purchasing.locator('.kmc-control-order-next')).toHaveText('Compléter les achats · Sourcing');
+    await expect(purchasing).not.toContainText('item(s)');
+    await purchasing.click();
+    const proof = page.locator('.kmc-control-detail-dock:not([hidden]) .kmc-control-cause-proof');
+    await expect(proof).toBeVisible();
+    await proof.locator('summary').click();
+    await expect(proof.locator('.kmc-control-cause-raw')).toContainText('11404 min');
+
+    const supplier = page.locator('.kmc-control-order').filter({hasText:'K-104816'});
+    await expect(supplier.locator('.kmc-control-order-issue')).toHaveText('Paiement fournisseur à vérifier');
+    await expect(supplier).not.toContainText('PAYMENT_AMBIGUOUS');
+    const transport = page.locator('.kmc-control-order').filter({hasText:'K-104715'});
+    await expect(transport.locator('.kmc-control-order-issue')).toHaveText('Suivi transport à vérifier');
+    await expect(transport.locator('.kmc-control-order-summary')).toContainText('depuis 8 j');
+    await expect(transport).not.toContainText('in_transit');
   });
 
   test('capture de revue 1672×941', async ({ page }, testInfo) => {
