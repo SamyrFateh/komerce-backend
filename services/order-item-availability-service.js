@@ -44,8 +44,7 @@ async function updateOrderItemAvailabilityDetails(client, {
     `UPDATE order_items
      SET availability_status = $1,
          estimated_available_at = $2,
-         backorder_reason = $3,
-         updated_at = NOW()
+         backorder_reason = $3
      WHERE id = $4
      RETURNING id, product_id, quantity, availability_status, estimated_available_at, backorder_reason`,
     [status, estimatedAvailableAt, backorderReason, orderItemId]
@@ -58,7 +57,7 @@ async function setOrderItemAvailabilityStatus(client, orderItemId, status) {
   assertClient(client);
 
   await client.query(
-    `UPDATE order_items SET availability_status = $1, updated_at = NOW()
+    `UPDATE order_items SET availability_status = $1
      WHERE id = $2`,
     [status, orderItemId]
   );
