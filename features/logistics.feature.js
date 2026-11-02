@@ -257,6 +257,7 @@ module.exports = {
       'international_shipment_charges: RW!',
       'international_shipment_events: RW!',
       'international_shipment_hub_units: RW!',
+      'international_shipment_relay_receipts: RW!',
       'international_shipments: RW!',
       'incidents: R',
       'invoices: R',
