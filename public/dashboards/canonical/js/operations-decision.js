@@ -756,7 +756,37 @@
         try {
           const endpoint = base.endpointForContext(options.adminContext, options.contextContract, options.requestedMarket);
           const updated = await base.jsonRequest(options.fetch, endpoint);
+          // Animation purement visuelle: les positions/couleurs restent celles
+          // de l'API. Ne jamais inférer un événement métier depuis le DOM.
+          const before = new Map();
+          rootNode.querySelectorAll('.kmc-control-order').forEach(node => {
+            const ref = node.querySelector('.kmc-control-order-ref');
+            if (ref) before.set(ref.textContent, {
+              rect: node.getBoundingClientRect(),
+              health: node.className,
+            });
+          });
           render(rootNode, updated, options, base, decisionUi);
+          const view = doc.defaultView;
+          const reduced = view && typeof view.matchMedia === 'function'
+            && view.matchMedia('(prefers-reduced-motion: reduce)').matches;
+          if (!reduced) {
+            rootNode.querySelectorAll('.kmc-control-order').forEach(node => {
+              const ref = node.querySelector('.kmc-control-order-ref');
+              const previous = ref && before.get(ref.textContent);
+              if (!previous || typeof node.animate !== 'function') return;
+              const rect = node.getBoundingClientRect();
+              const dx = previous.rect.left - rect.left;
+              const dy = previous.rect.top - rect.top;
+              if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
+                node.animate([{ transform: `translate(${dx}px, ${dy}px)`, opacity: .65 },
+                  { transform: 'translate(0, 0)', opacity: 1 }],
+                { duration: 420, easing: 'ease-out' });
+              } else if (previous.health !== node.className) {
+                node.animate([{ opacity: .45 }, { opacity: 1 }], { duration: 440, easing: 'ease-out' });
+              }
+            });
+          }
         } catch (_error) {
           refresh.disabled = false;
           refresh.textContent = 'Échec de lecture · Réessayer ↻';
