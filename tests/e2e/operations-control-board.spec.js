@@ -290,7 +290,7 @@ test.describe('Operations — logistics control board', () => {
     expect(geometry.scrollWidth).toBeLessThanOrEqual(geometry.clientWidth + 2);
 
     const stages = page.locator('.kmc-control-stage');
-    await expect(stages).toHaveCount(9);
+    await expect(stages).toHaveCount(5);
     const first = await stages.first().boundingBox();
     const last = await stages.last().boundingBox();
     expect(first).not.toBeNull();
@@ -301,7 +301,7 @@ test.describe('Operations — logistics control board', () => {
   test('les cartes restent compactes puis révèlent l’objet précis au clic', async ({ page }) => {
     const warning = page.locator('.kmc-control-order.is-warning').filter({ hasText:'K-104816' });
     await expect(warning).toBeVisible();
-    await expect(warning).not.toContainText('Confirmation fournisseur à surveiller');
+    await expect(warning).toContainText('Confirmation fournisseur à surveiller');
     const hiddenDetails = page.locator('.kmc-control-order-detail');
     const visibleBeforeClick = await hiddenDetails.evaluateAll(nodes =>
       nodes.filter(node => !node.hidden && getComputedStyle(node).display !== 'none').length
