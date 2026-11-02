@@ -150,6 +150,7 @@
         lineage: controlLineage(order),
         transitions: (Array.isArray(order.transitions) ? order.transitions : []).filter(item => item && item.status).map(item => ({ status: String(item.status), at: item.at || null })),
         split: order.split === true,
+        ...(order.local_only === true ? { localOnly: true } : {}),
         href: order.order_reference ? contextualHref(`/admin/orders/${encodeURIComponent(order.order_reference)}`, '/admin/operations', 'Retour aux opérations') : null,
       })),
     }));
@@ -173,11 +174,6 @@
     const columns = controlChainColumns(payload);
     if (!columns.length) return [];
     const byKey = new Map(columns.map(column => [column.key, column]));
-    const visibleDrill = base && typeof base.visibleDrillSchema === 'function'
-      ? base.visibleDrillSchema(base.OPERATIONS_SCHEMA, user).drill : [];
-    const allowedWorkspaces = new Map((visibleDrill || []).map(item => [item.id, item.href]));
-    const role = user && user.role;
-
     return PROCESS_PHASES.map(phase => {
       if (!phase.stages.length) {
         return { key: phase.key, label: phase.label, helper: 'Non projetée ici · voir Order 360',
@@ -185,18 +181,12 @@
       }
       const available = phase.stages.every(stage => byKey.has(stage));
       const count = available ? phase.stages.reduce((sum, stage) => sum + byKey.get(stage).orders.length, 0) : null;
-      const fallback = stageHref(phase.key);
-      const ownerHref = phase.workspace === 'purchasing' && role === 'admin'
-        ? '/admin/workspaces/purchasing'
-        : allowedWorkspaces.get(phase.workspace);
       return {
         key: phase.key, label: phase.label,
         helper: count == null ? 'Position indisponible'
           : `${count} commande${count > 1 ? 's' : ''} positionnée${count > 1 ? 's' : ''}`,
         tone: 'neutral', observed: available,
-        href: available ? (ownerHref
-          ? contextualHref(ownerHref, '/admin/operations', 'Retour aux opérations')
-          : fallback) : undefined,
+        href: available ? stageHref(phase.key) : undefined,
       };
     });
   }
@@ -210,7 +200,7 @@
     wrapper.setAttribute('data-process-source', 'control_chain');
     wrapper.appendChild(text(doc, 'h3', 'kmc-operations-process-title', 'Parcours des commandes'));
     wrapper.appendChild(text(doc, 'p', 'kmc-operations-process-caption',
-      'Positions actuelles dans la chaîne canonique · une commande comptée une seule fois · aucune étape présumée terminée.'));
+      'Cliquez sur une phase pour voir les commandes. Les neuf sous-étapes restent identifiables dans chaque carte.'));
     const host = doc.createElement('div');
     host.className = 'kmc-operations-process-steps';
     decisionUi.FlowStrip.render(host, { stages: phases });
@@ -218,64 +208,130 @@
     return wrapper;
   }
 
-  function renderControlChain(doc, host, payload) {
+  // Phase graphique = agrégation visuelle des neuf étapes conservées au serveur.
+  // Les commandes et leurs couleurs ne sont jamais recalculées par le navigateur.
+  function renderControlChain(doc, host, payload, user, base) {
     const activeKey = stageFilterKey();
-    const activePhase = activeKey ? PROCESS_PHASES.find(phase => phase.key === activeKey) : null;
-    const columns = controlChainColumns(payload).filter(column => !activePhase || activePhase.stages.includes(column.key));
+    const source = controlChainColumns(payload);
+    const columns = PROCESS_PHASES.filter(phase => phase.stages.length && (!activeKey || phase.key === activeKey))
+      .map(phase => {
+        const members = source.filter(stage => phase.stages.includes(stage.key));
+        return {
+          key: phase.key,
+          label: phase.label,
+          meta: controlStageMeta(phase.anchor),
+          orders: members.flatMap(stage => stage.orders.map(order => ({
+            ...order,
+            stageLabel: order.localOnly && stage.key === 'RELAY' ? 'Préparation / retrait local' : stage.label,
+            stageKey: stage.key,
+          }))),
+          alerts: members.flatMap(stage => stage.alerts),
+        };
+      });
     const hasOrders = columns.some(column => column.orders.length > 0);
     const hasAlerts = columns.some(column => column.alerts.length > 0);
     const isEmpty = !hasOrders && !hasAlerts;
     host.className = isEmpty ? 'kmc-control-chain is-empty' : 'kmc-control-chain is-active';
     host.setAttribute('data-chain-state', isEmpty ? 'empty' : 'active');
+    host.setAttribute('data-phase-count', String(columns.length));
+
+    // Le dossier est sous les cinq phases, jamais au-dessus ou en panneau masquant.
+    const visibleDrill = base && typeof base.visibleDrillSchema === 'function'
+      ? base.visibleDrillSchema(base.OPERATIONS_SCHEMA, user).drill : [];
+    const allowedWorkspaces = new Map((visibleDrill || []).map(item => [item.id, item.href]));
+    const workspaceByPhase = {
+      PURCHASING: user && user.role === 'admin' ? '/admin/workspaces/purchasing' : null,
+      HUB: allowedWorkspaces.get('operations-workspace'),
+      CUSTOMS: allowedWorkspaces.get('shipping-customs-workspace'),
+      RELAY: allowedWorkspaces.get('operations-workspace'),
+    };
+    const detailDock = doc.createElement('div');
+    detailDock.className = 'kmc-control-detail-dock';
+    detailDock.setAttribute('role', 'region');
+    detailDock.setAttribute('aria-label', 'Détail opérationnel de la commande');
+    detailDock.hidden = true;
+    let activeRow = null;
+    let activeButton = null;
+    const closeActive = () => {
+      if (activeRow) activeRow.classList.remove('is-expanded');
+      if (activeButton) activeButton.setAttribute('aria-expanded', 'false');
+      detailDock.replaceChildren();
+      detailDock.hidden = true;
+      activeRow = null;
+      activeButton = null;
+    };
 
     columns.forEach(column => {
       const stage = doc.createElement('section');
       stage.className = 'kmc-control-stage';
-      stage.setAttribute('data-control-stage', column.key);
-      stage.id = `operations-stage-${String(column.key).toLowerCase().replace(/_/g, '-')}`;
+      stage.setAttribute('data-control-phase', column.key);
+      stage.id = `operations-stage-${column.key.toLowerCase()}`;
 
       const heading = doc.createElement('div');
       heading.className = 'kmc-control-stage-heading';
-
       const identity = doc.createElement('div');
       identity.className = 'kmc-control-stage-identity';
-      const icon = text(doc, 'span', `kmc-control-stage-icon is-${column.meta.accent}`, column.meta.icon);
-      icon.setAttribute('aria-hidden', 'true');
-      identity.appendChild(icon);
+      const stageIcon = text(doc, 'span', `kmc-control-stage-icon is-${column.meta.accent}`, column.meta.icon);
+      stageIcon.setAttribute('aria-hidden', 'true');
+      identity.appendChild(stageIcon);
       identity.appendChild(text(doc, 'span', 'kmc-control-stage-title', column.label));
       heading.appendChild(identity);
-      heading.appendChild(text(doc, 'span', 'kmc-control-stage-count', column.orders.length));
+      heading.appendChild(text(doc, 'span', 'kmc-control-stage-count', `${column.orders.length} commande${column.orders.length > 1 ? 's' : ''}`));
+
+      const healthCounts = { GREEN: 0, ORANGE: 0, RED: 0, UNKNOWN: 0 };
+      column.orders.forEach(order => { healthCounts[order.health] += 1; });
+      const distribution = doc.createElement('div');
+      distribution.className = 'kmc-control-stage-health';
+      [['GREEN', 'Normal'], ['ORANGE', 'À surveiller'], ['RED', 'Action requise'], ['UNKNOWN', 'Non déterminé']]
+        .forEach(([health, title]) => {
+          if (!healthCounts[health]) return;
+          const indicator = text(doc, 'span', `kmc-control-stage-health-part ${controlHealthClass(health)}`, String(healthCounts[health]));
+          indicator.title = `${healthCounts[health]} · ${title}`;
+          indicator.setAttribute('aria-label', indicator.title);
+          distribution.appendChild(indicator);
+        });
+      heading.appendChild(distribution);
       stage.appendChild(heading);
 
       const list = doc.createElement('div');
       list.className = 'kmc-control-order-list';
-
       if (!column.orders.length && !isEmpty) {
-        list.appendChild(text(doc, 'div', 'kmc-control-order-empty', '—'));
-      } else {
-        column.orders.forEach(order => {
-          const row = doc.createElement('div');
-          row.className = 'kmc-control-order-row';
+        list.appendChild(text(doc, 'p', 'kmc-control-order-empty', 'Aucune commande à cette phase'));
+      }
 
-          const item = doc.createElement('button');
-          item.type = 'button';
-          item.className = `kmc-control-order ${controlHealthClass(order.health)}`;
-          item.setAttribute('aria-label', `${order.reference} · ${order.health}`);
-          item.setAttribute('aria-expanded', 'false');
+      column.alerts.forEach(alert => {
+        const banner = doc.createElement('div');
+        banner.className = `kmc-control-structural-alert ${controlHealthClass(alert.health)}`;
+        banner.appendChild(text(doc, 'strong', 'kmc-control-structural-count', `${alert.count} commandes · même anomalie`));
+        banner.appendChild(text(doc, 'span', 'kmc-control-structural-summary', alert.summary));
+        list.appendChild(banner);
+      });
 
-          const detailId = `control-detail-${String(column.key).toLowerCase()}-${String(order.reference).replace(/[^a-z0-9_-]+/gi, '-')}`;
-          item.setAttribute('aria-controls', detailId);
-
-          const dot = doc.createElement('span');
-          dot.className = 'kmc-control-order-dot';
-          dot.setAttribute('aria-hidden', 'true');
-          item.appendChild(dot);
-          item.appendChild(text(doc, 'span', 'kmc-control-order-state', controlHealthIcon(order.health)));
-          item.appendChild(text(doc, 'span', 'kmc-control-order-ref', order.reference));
-
-          const disclosure = text(doc, 'span', 'kmc-control-order-disclosure', '›');
-          disclosure.setAttribute('aria-hidden', 'true');
-          item.appendChild(disclosure);
+      column.orders.forEach(order => {
+        const row = doc.createElement('div');
+        row.className = 'kmc-control-order-row';
+        const item = doc.createElement('button');
+        item.type = 'button';
+        item.className = `kmc-control-order ${controlHealthClass(order.health)}`;
+        const mainCause = order.causes[0] && order.causes[0].summary;
+        const stateLabel = { GREEN: 'En cours', ORANGE: 'À surveiller', RED: 'Action requise', UNKNOWN: 'Non déterminé' }[order.health];
+        const summary = mainCause || (order.health === 'GREEN'
+          ? (order.localOnly ? 'Circuit local sans Hub ni PO fournisseur' : 'Progression normale')
+          : 'Aucune cause métier précisée');
+        item.setAttribute('aria-label', `${order.reference} · ${order.stageLabel} · ${stateLabel} · ${summary}`);
+        item.setAttribute('aria-expanded', 'false');
+        item.title = `${order.reference} · ${order.stageLabel}`;
+        const detailId = `control-detail-${String(column.key).toLowerCase()}-${String(order.reference).replace(/[^a-z0-9_-]+/gi, '-')}`;
+        item.setAttribute('aria-controls', detailId);
+        const dot = doc.createElement('span');
+        dot.className = 'kmc-control-order-dot';
+        dot.setAttribute('aria-hidden', 'true');
+        item.appendChild(dot);
+        item.appendChild(text(doc, 'strong', 'kmc-control-order-ref', order.reference));
+        item.appendChild(text(doc, 'span', 'kmc-control-order-disclosure', '›'));
+        item.appendChild(text(doc, 'span', 'kmc-control-order-substage', order.stageLabel));
+        item.appendChild(text(doc, 'span', 'kmc-control-order-state-label', stateLabel));
+        item.appendChild(text(doc, 'span', 'kmc-control-order-summary', summary));
 
           const detail = doc.createElement('div');
           detail.id = detailId;
@@ -285,7 +341,7 @@
           const panelHead = doc.createElement('div');
           panelHead.className = 'kmc-control-panel-head';
           panelHead.appendChild(text(doc, 'strong', 'kmc-control-panel-title', order.reference));
-          panelHead.appendChild(text(doc, 'span', 'kmc-control-panel-stage', `Étape : ${column.label}`));
+          panelHead.appendChild(text(doc, 'span', 'kmc-control-panel-stage', `Étape : ${order.stageLabel}`));
           const closeBtn = text(doc, 'button', 'kmc-control-panel-close', '×');
           closeBtn.type = 'button';
           closeBtn.setAttribute('aria-label', 'Fermer le panneau');
@@ -349,41 +405,40 @@
             detail.appendChild(history);
           }
 
+          const workspace = workspaceByPhase[column.key];
+          if (workspace) {
+            const action = text(doc, 'a', 'kmc-control-order-action', 'Ouvrir l’espace de traitement →');
+            action.setAttribute('href', contextualHref(workspace, '/admin/operations', 'Retour aux opérations'));
+            detail.appendChild(action);
+          }
           if (order.href) {
-            const link = text(doc, 'a', 'kmc-control-order-open', 'Ouvrir Order 360 →');
+            const link = text(doc, 'a', 'kmc-control-order-open', 'Consulter Order 360 →');
             link.setAttribute('href', order.href);
             detail.appendChild(link);
           }
 
-          const setOpen = open => {
-            if (open) {
-              host.querySelectorAll('.kmc-control-order-row.is-expanded').forEach(other => {
-                if (other === row) return;
-                other.classList.remove('is-expanded');
-                const d = other.querySelector('.kmc-control-order-detail');
-                const b = other.querySelector('.kmc-control-order');
-                if (d) d.hidden = true;
-                if (b) b.setAttribute('aria-expanded', 'false');
-              });
-            }
-            item.setAttribute('aria-expanded', open ? 'true' : 'false');
-            detail.hidden = !open;
-            row.classList.toggle('is-expanded', open);
-          };
-          item.addEventListener('click', () => setOpen(item.getAttribute('aria-expanded') !== 'true'));
-          closeBtn.addEventListener('click', () => { setOpen(false); item.focus(); });
 
-          row.appendChild(item);
-          row.appendChild(detail);
-          list.appendChild(row);
-        });
-      }
-
+        const setOpen = open => {
+          if (!open) { closeActive(); return; }
+          closeActive();
+          activeRow = row;
+          activeButton = item;
+          row.classList.add('is-expanded');
+          item.setAttribute('aria-expanded', 'true');
+          detail.hidden = false;
+          detailDock.replaceChildren(detail);
+          detailDock.hidden = false;
+        };
+        item.addEventListener('click', () => setOpen(item.getAttribute('aria-expanded') !== 'true'));
+        closeBtn.addEventListener('click', () => { setOpen(false); item.focus(); });
+        row.appendChild(item);
+        list.appendChild(row);
+      });
       stage.appendChild(list);
       host.appendChild(stage);
     });
+    host.appendChild(detailDock);
   }
-
 
   function controlHealthSummary(payload) {
     const summary = { GREEN: 0, ORANGE: 0, RED: 0, UNKNOWN: 0 };
@@ -404,9 +459,9 @@
 
     [
       ['GREEN', 'positive', 'Normal'],
-      ['ORANGE', 'warning', 'À risque'],
-      ['RED', 'critical', 'Bloqué'],
-      ['UNKNOWN', 'unknown', 'Non observé'],
+      ['ORANGE', 'warning', 'À surveiller'],
+      ['RED', 'critical', 'Action requise'],
+      ['UNKNOWN', 'unknown', 'Non déterminé'],
     ].forEach(([health, tone, label]) => {
       const item = doc.createElement('div');
       item.className = `kmc-control-health-summary-item is-${tone}`;
@@ -427,9 +482,9 @@
     legend.className = 'kmc-control-chain-legend';
     [
       ['positive', 'Normal'],
-      ['warning', 'À risque'],
-      ['critical', 'Bloqué'],
-      ['unknown', 'Non observé'],
+      ['warning', 'À surveiller'],
+      ['critical', 'Action requise'],
+      ['unknown', 'Non déterminé'],
     ].forEach(([tone, label]) => {
       const item = doc.createElement('span');
       item.className = `kmc-control-chain-legend-item is-${tone}`;
@@ -693,10 +748,55 @@
       const chain = cardSection(
         doc,
         'Chaîne logistique client → relais',
-        'Une commande reste une seule ligne de pilotage sous son étape gouvernante. Vert : normal · orange : à risque · rouge : action requise.',
+        'Chaque commande évolue dans le flux ; sa couleur indique uniquement sa situation métier. Cliquez sur une commande pour comprendre la cause.',
         'operations-control-chain'
       );
       chain.section.className += ' kmc-control-chain-card';
+      const refresh = text(doc, 'button', 'kmc-operations-refresh', 'Actualiser les mouvements ↻');
+      refresh.type = 'button';
+      refresh.addEventListener('click', async () => {
+        refresh.disabled = true;
+        refresh.textContent = 'Actualisation…';
+        try {
+          const endpoint = base.endpointForContext(options.adminContext, options.contextContract, options.requestedMarket);
+          const updated = await base.jsonRequest(options.fetch, endpoint);
+          // Animation purement visuelle: les positions/couleurs restent celles
+          // de l'API. Ne jamais inférer un événement métier depuis le DOM.
+          const before = new Map();
+          rootNode.querySelectorAll('.kmc-control-order').forEach(node => {
+            const ref = node.querySelector('.kmc-control-order-ref');
+            if (ref) before.set(ref.textContent, {
+              rect: node.getBoundingClientRect(),
+              health: node.className,
+            });
+          });
+          render(rootNode, updated, options, base, decisionUi);
+          const view = doc.defaultView;
+          const reduced = view && typeof view.matchMedia === 'function'
+            && view.matchMedia('(prefers-reduced-motion: reduce)').matches;
+          if (!reduced) {
+            rootNode.querySelectorAll('.kmc-control-order').forEach(node => {
+              const ref = node.querySelector('.kmc-control-order-ref');
+              const previous = ref && before.get(ref.textContent);
+              if (!previous || typeof node.animate !== 'function') return;
+              const rect = node.getBoundingClientRect();
+              const dx = previous.rect.left - rect.left;
+              const dy = previous.rect.top - rect.top;
+              if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
+                node.animate([{ transform: `translate(${dx}px, ${dy}px)`, opacity: .65 },
+                  { transform: 'translate(0, 0)', opacity: 1 }],
+                { duration: 420, easing: 'ease-out' });
+              } else if (previous.health !== node.className) {
+                node.animate([{ opacity: .45 }, { opacity: 1 }], { duration: 440, easing: 'ease-out' });
+              }
+            });
+          }
+        } catch (_error) {
+          refresh.disabled = false;
+          refresh.textContent = 'Échec de lecture · Réessayer ↻';
+        }
+      });
+      chain.section.appendChild(refresh);
       chain.section.setAttribute('data-dashboard-role', 'primary');
       const process = renderProcessPhases(doc, payload, options.user, base, decisionUi);
       if (process) chain.section.insertBefore(process, chain.body);
@@ -714,7 +814,7 @@
         chip.appendChild(clear);
         chain.section.insertBefore(chip, chain.body);
       }
-      renderControlChain(doc, chain.body, payload);
+      renderControlChain(doc, chain.body, payload, options.user, base);
       if (chain.body.getAttribute('data-chain-state') === 'empty') {
         chain.section.setAttribute('data-chain-state', 'empty');
         chain.section.appendChild(text(doc, 'p', 'kmc-control-chain-empty-notice', 'Aucune commande dans la chaîne pour le périmètre sélectionné.'));
@@ -729,14 +829,35 @@
   function enhance(base, decisionUi) {
     if (!base || typeof base.mount !== 'function') throw new Error('operations_decision_base_missing');
     const baseMount = base.mount;
+    let liveTimer = null;
+    let timerWindow = null;
     return Object.freeze({
       ...base,
       mount(options) {
-        return baseMount(options).then(result => ({
-          ...result,
-          result: render(options.root, result.payload, options, base, decisionUi),
-          decisionFirst: true,
-        }));
+        if (liveTimer !== null && timerWindow) timerWindow.clearInterval(liveTimer);
+        liveTimer = null;
+        return baseMount(options).then(result => {
+          const rendered = render(options.root, result.payload, options, base, decisionUi);
+          const win = options.document && options.document.defaultView;
+          if (win && typeof win.setInterval === 'function') {
+            timerWindow = win;
+            // Une simple relecture canonique, aucune mutation ni statut déduit.
+            // Suspendre pendant un dossier ouvert et quand la page est masquée.
+            liveTimer = win.setInterval(() => {
+              const root = options.root;
+              if (!root.isConnected || !root.querySelector('[data-dashboard-id="operations"]')) {
+                win.clearInterval(liveTimer);
+                liveTimer = null;
+                return;
+              }
+              if (options.document.visibilityState === 'hidden'
+                  || root.querySelector('.kmc-control-detail-dock:not([hidden])')) return;
+              const button = root.querySelector('.kmc-operations-refresh');
+              if (button && !button.disabled) button.click();
+            }, 60000);
+          }
+          return { ...result, result: rendered, decisionFirst: true };
+        });
       },
       CONTROL_STAGE_META,
       controlStageMeta,
