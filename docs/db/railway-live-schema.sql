@@ -6100,28 +6100,6 @@ COMMENT ON COLUMN public.inquiries.requester_note IS 'Précision libre facultati
 
 
 --
--- Name: international_n1_allocation_links; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.international_n1_allocation_links (
-    allocation_id uuid NOT NULL,
-    shipment_id uuid NOT NULL,
-    component text NOT NULL,
-    fee_type text DEFAULT ''::text NOT NULL,
-    parcel_id uuid NOT NULL,
-    order_item_id uuid NOT NULL,
-    CONSTRAINT international_n1_allocation_links_component_check CHECK ((component = ANY (ARRAY['freight'::text, 'port_transitaire'::text, 'local_distribution'::text])))
-);
-
-
---
--- Name: TABLE international_n1_allocation_links; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON TABLE public.international_n1_allocation_links IS 'Ownership of N1 allocations by international freight/fee projection; legacy customs allocator must not delete these rows.';
-
-
---
 -- Name: international_n1_reconciliations; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -6135,6 +6113,13 @@ CREATE TABLE public.international_n1_reconciliations (
     allocation_rows integer DEFAULT 0 NOT NULL,
     actor_id text NOT NULL,
     reconciled_at timestamp with time zone DEFAULT now() NOT NULL,
+    total_customs_kmf numeric(14,2) DEFAULT 0 NOT NULL,
+    total_customs_fees_kmf numeric(14,2) DEFAULT 0 CONSTRAINT international_n1_reconciliation_total_customs_fees_kmf_not_null NOT NULL,
+    documented_total_kmf numeric(14,2) DEFAULT 0 NOT NULL,
+    financial_closed_at timestamp with time zone,
+    financial_closed_by text,
+    financial_close_proof_ref text,
+    CONSTRAINT chk_shipment_financial_close_proof CHECK ((((financial_closed_at IS NULL) AND (financial_closed_by IS NULL) AND (financial_close_proof_ref IS NULL)) OR ((financial_closed_at IS NOT NULL) AND (financial_closed_by IS NOT NULL) AND (financial_close_proof_ref IS NOT NULL) AND (length(btrim(financial_close_proof_ref)) > 0)))),
     CONSTRAINT international_n1_reconciliations_allocation_rows_check CHECK ((allocation_rows >= 0)),
     CONSTRAINT international_n1_reconciliations_snapshot_hash_check CHECK ((length(snapshot_hash) = 64))
 );
@@ -6144,7 +6129,14 @@ CREATE TABLE public.international_n1_reconciliations (
 -- Name: TABLE international_n1_reconciliations; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON TABLE public.international_n1_reconciliations IS 'Idempotent source snapshot of actual international N1; never forecasts or N3.';
+COMMENT ON TABLE public.international_n1_reconciliations IS 'Snapshot documented real costs BY SHIPMENT, for posterior calibration; zero article allocations. Financial closure distinct from physical relay receipt.';
+
+
+--
+-- Name: COLUMN international_n1_reconciliations.documented_total_kmf; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.international_n1_reconciliations.documented_total_kmf IS 'Sum of documented sources at the shipment level. Financial completeness is never inferred from this total.';
 
 
 --
@@ -6196,7 +6188,7 @@ CREATE TABLE public.international_shipment_events (
     occurred_at timestamp with time zone DEFAULT now() NOT NULL,
     payload jsonb DEFAULT '{}'::jsonb NOT NULL,
     CONSTRAINT chk_international_events_evidence CHECK ((((event_type = ANY (ARRAY['opened'::text, 'box_attached'::text, 'box_detached'::text])) AND (proof_ref IS NULL)) OR ((event_type <> ALL (ARRAY['opened'::text, 'box_attached'::text, 'box_detached'::text])) AND (proof_ref IS NOT NULL) AND (length(btrim(proof_ref)) > 0)))),
-    CONSTRAINT international_shipment_events_event_type_check CHECK ((event_type = ANY (ARRAY['created'::text, 'opened'::text, 'box_attached'::text, 'box_detached'::text, 'stage_changed'::text, 'tracking_updated'::text, 'freight_recorded'::text, 'customs_linked'::text])))
+    CONSTRAINT international_shipment_events_event_type_check CHECK ((event_type = ANY (ARRAY['created'::text, 'opened'::text, 'box_attached'::text, 'box_detached'::text, 'stage_changed'::text, 'tracking_updated'::text, 'freight_recorded'::text, 'customs_linked'::text, 'customs_amount_confirmed'::text])))
 );
 
 
@@ -6209,19 +6201,6 @@ CREATE TABLE public.international_shipment_hub_units (
     physical_unit_id uuid NOT NULL,
     attached_by uuid,
     attached_at timestamp with time zone DEFAULT now() NOT NULL
-);
-
-
---
--- Name: international_shipment_parcels; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.international_shipment_parcels (
-    shipment_id uuid NOT NULL,
-    parcel_id uuid NOT NULL,
-    volume_cm3 numeric(14,2),
-    attached_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT international_shipment_parcels_volume_cm3_check CHECK ((volume_cm3 >= (0)::numeric))
 );
 
 
@@ -11330,6 +11309,9 @@ CREATE TABLE public.suppliers (
     secure_transport_fee_pct numeric(4,2) DEFAULT 0 NOT NULL,
     secure_transport_contact character varying(200),
     deleted_at timestamp with time zone,
+    owner_scope text,
+    created_by uuid,
+    CONSTRAINT suppliers_owner_scope_check CHECK (((owner_scope IS NULL) OR ((owner_scope = 'hub'::text) AND (platform = ANY (ARRAY['local'::text, 'whatsapp'::text])) AND (auto_order = false)))),
     CONSTRAINT suppliers_platform_check CHECK ((platform = ANY (ARRAY['noon'::text, 'amazon_uae'::text, 'aliexpress'::text, 'local'::text, 'whatsapp'::text, 'allegro'::text, 'cj'::text])))
 );
 
@@ -11360,6 +11342,13 @@ COMMENT ON COLUMN public.suppliers.auto_order IS 'true = API dispo â†’ comm
 --
 
 COMMENT ON COLUMN public.suppliers.lead_time_days IS 'DÃ©lai estimÃ© entre commande fournisseur et rÃ©ception Hub Dubai';
+
+
+--
+-- Name: COLUMN suppliers.owner_scope; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.suppliers.owner_scope IS 'NULL = catalogue global (admin) ; hub = fournisseur local créé par le Hub, périmètre Hub uniquement';
 
 
 --
@@ -13013,14 +13002,6 @@ ALTER TABLE ONLY public.inquiries
 
 
 --
--- Name: international_n1_allocation_links international_n1_allocation_links_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.international_n1_allocation_links
-    ADD CONSTRAINT international_n1_allocation_links_pkey PRIMARY KEY (allocation_id);
-
-
---
 -- Name: international_n1_reconciliations international_n1_reconciliations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -13050,14 +13031,6 @@ ALTER TABLE ONLY public.international_shipment_events
 
 ALTER TABLE ONLY public.international_shipment_hub_units
     ADD CONSTRAINT international_shipment_hub_units_pkey PRIMARY KEY (shipment_id, physical_unit_id);
-
-
---
--- Name: international_shipment_parcels international_shipment_parcels_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.international_shipment_parcels
-    ADD CONSTRAINT international_shipment_parcels_pkey PRIMARY KEY (shipment_id, parcel_id);
 
 
 --
@@ -14461,22 +14434,6 @@ ALTER TABLE ONLY public.international_shipments
 
 
 --
--- Name: international_n1_allocation_links uq_international_n1_share; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.international_n1_allocation_links
-    ADD CONSTRAINT uq_international_n1_share UNIQUE (shipment_id, component, fee_type, parcel_id, order_item_id);
-
-
---
--- Name: international_shipment_parcels uq_international_parcel; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.international_shipment_parcels
-    ADD CONSTRAINT uq_international_parcel UNIQUE (parcel_id);
-
-
---
 -- Name: international_shipment_hub_units uq_international_shipment_hub_unit; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -15515,13 +15472,6 @@ CREATE INDEX idx_international_charges_shipment ON public.international_shipment
 --
 
 CREATE INDEX idx_international_events_shipment ON public.international_shipment_events USING btree (shipment_id, occurred_at DESC);
-
-
---
--- Name: idx_international_n1_links_shipment; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_international_n1_links_shipment ON public.international_n1_allocation_links USING btree (shipment_id);
 
 
 --
@@ -20152,38 +20102,6 @@ ALTER TABLE ONLY public.inquiries
 
 
 --
--- Name: international_n1_allocation_links international_n1_allocation_links_allocation_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.international_n1_allocation_links
-    ADD CONSTRAINT international_n1_allocation_links_allocation_id_fkey FOREIGN KEY (allocation_id) REFERENCES public.order_item_real_cost_allocations(id) ON DELETE CASCADE;
-
-
---
--- Name: international_n1_allocation_links international_n1_allocation_links_order_item_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.international_n1_allocation_links
-    ADD CONSTRAINT international_n1_allocation_links_order_item_id_fkey FOREIGN KEY (order_item_id) REFERENCES public.order_items(id);
-
-
---
--- Name: international_n1_allocation_links international_n1_allocation_links_parcel_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.international_n1_allocation_links
-    ADD CONSTRAINT international_n1_allocation_links_parcel_id_fkey FOREIGN KEY (parcel_id) REFERENCES public.parcels(id);
-
-
---
--- Name: international_n1_allocation_links international_n1_allocation_links_shipment_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.international_n1_allocation_links
-    ADD CONSTRAINT international_n1_allocation_links_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.international_shipments(id) ON DELETE RESTRICT;
-
-
---
 -- Name: international_n1_reconciliations international_n1_reconciliations_shipment_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -20229,22 +20147,6 @@ ALTER TABLE ONLY public.international_shipment_hub_units
 
 ALTER TABLE ONLY public.international_shipment_hub_units
     ADD CONSTRAINT international_shipment_hub_units_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.international_shipments(id) ON DELETE RESTRICT;
-
-
---
--- Name: international_shipment_parcels international_shipment_parcels_parcel_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.international_shipment_parcels
-    ADD CONSTRAINT international_shipment_parcels_parcel_id_fkey FOREIGN KEY (parcel_id) REFERENCES public.parcels(id) ON DELETE RESTRICT;
-
-
---
--- Name: international_shipment_parcels international_shipment_parcels_shipment_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.international_shipment_parcels
-    ADD CONSTRAINT international_shipment_parcels_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.international_shipments(id) ON DELETE RESTRICT;
 
 
 --
@@ -22357,6 +22259,14 @@ ALTER TABLE ONLY public.supplier_execution_payments
 
 ALTER TABLE ONLY public.supplier_payment_settlements
     ADD CONSTRAINT supplier_payment_settlements_supplier_execution_payment_id_fkey FOREIGN KEY (supplier_execution_payment_id) REFERENCES public.supplier_execution_payments(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: suppliers suppliers_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.suppliers
+    ADD CONSTRAINT suppliers_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(id) ON DELETE SET NULL;
 
 
 --

@@ -21,11 +21,11 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 1936,
-    "edges": 9548,
+    "edges": 9554,
     "dbTables": 221,
     "doctrines": 738,
     "impactAreas": 207,
-    "unresolvedCodeEdges": 919,
+    "unresolvedCodeEdges": 920,
     "dbWriteViaOverlapWarnings": 11,
     "multiWriterTables": 94
   },
@@ -17086,6 +17086,7 @@
       ],
       "depends": [
         "db",
+        "services/financial-journal-reporting",
         "dashboard-metrics",
         "dashboard-metrics/_helpers",
         "pricing-market-corridor",
@@ -19849,7 +19850,9 @@
         "hub_physical_units",
         "hub_physical_unit_placements",
         "international_shipments",
-        "international_shipment_hub_units"
+        "international_shipment_hub_units",
+        "parcels",
+        "parcel_items"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -20808,6 +20811,7 @@
       ],
       "dbRead": [
         "orders",
+        "order_status_history",
         "order_items",
         "purchase_lines",
         "purchase_orders",
@@ -30341,7 +30345,8 @@
         "utils/logger.js",
         "utils/rules.js",
         "services/supplier-payment-review.js",
-        "services/cash-deposit-service.js"
+        "services/cash-deposit-service.js",
+        "services/financial-journal-reporting.js"
       ],
       "usedBy": [
         "routes/signals.js",
@@ -30349,6 +30354,7 @@
         "services/action-center-workspace.js"
       ],
       "dbRead": [
+        "markets",
         "cash_collections",
         "cash_deposits",
         "customs_shipment_parcels",
@@ -68851,6 +68857,12 @@
     },
     {
       "from": "services/dashboard-commerce.js",
+      "to": "services/financial-journal-reporting",
+      "type": "depends",
+      "label": "services/financial-journal-reporting"
+    },
+    {
+      "from": "services/dashboard-commerce.js",
       "to": "dashboard-metrics",
       "type": "depends",
       "label": "dashboard-metrics"
@@ -73877,6 +73889,18 @@
     },
     {
       "from": "services/hub-procurement-dossier.js",
+      "to": "db:parcels",
+      "type": "db-read",
+      "label": "parcels"
+    },
+    {
+      "from": "services/hub-procurement-dossier.js",
+      "to": "db:parcel_items",
+      "type": "db-read",
+      "label": "parcel_items"
+    },
+    {
+      "from": "services/hub-procurement-dossier.js",
       "to": "doctrine:une décision",
       "type": "doctrine",
       "label": "une décision"
@@ -75455,6 +75479,12 @@
       "to": "db:orders",
       "type": "db-read",
       "label": "orders"
+    },
+    {
+      "from": "services/logistics-control-chain-projection.js",
+      "to": "db:order_status_history",
+      "type": "db-read",
+      "label": "order_status_history"
     },
     {
       "from": "services/logistics-control-chain-projection.js",
@@ -90624,6 +90654,12 @@
       "label": "services/cash-deposit-service.js"
     },
     {
+      "from": "services/signal-service.js",
+      "to": "services/financial-journal-reporting.js",
+      "type": "depends",
+      "label": "services/financial-journal-reporting.js"
+    },
+    {
       "from": "routes/signals.js",
       "to": "services/signal-service.js",
       "type": "uses",
@@ -90640,6 +90676,12 @@
       "to": "services/signal-service.js",
       "type": "uses",
       "label": "services/action-center-workspace.js"
+    },
+    {
+      "from": "services/signal-service.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
     },
     {
       "from": "services/signal-service.js",
@@ -117761,6 +117803,7 @@
       "purpose": null,
       "directDependsOn": [
         "db",
+        "services/financial-journal-reporting",
         "dashboard-metrics",
         "dashboard-metrics/_helpers",
         "pricing-market-corridor",
@@ -119702,7 +119745,8 @@
         "impact:dashboards",
         "impact:finance",
         "services/dashboard-finance-canonical.js",
-        "services/financial-journal.js"
+        "services/financial-journal.js",
+        "services/signal-service.js"
       ]
     },
     "services/financial-journal.js": {
@@ -120625,7 +120669,9 @@
         "hub_physical_units",
         "hub_physical_unit_placements",
         "international_shipments",
-        "international_shipment_hub_units"
+        "international_shipment_hub_units",
+        "parcels",
+        "parcel_items"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -120649,6 +120695,8 @@
         "db:markets",
         "db:order_items",
         "db:orders",
+        "db:parcel_items",
+        "db:parcels",
         "db:products",
         "db:purchase_lines",
         "db:purchase_orders",
@@ -121591,6 +121639,7 @@
       "ownedFiles": [],
       "dbRead": [
         "orders",
+        "order_status_history",
         "order_items",
         "purchase_lines",
         "purchase_orders",
@@ -121628,6 +121677,7 @@
         "db:hub_purchase_allocations",
         "db:incidents",
         "db:order_items",
+        "db:order_status_history",
         "db:orders",
         "db:parcels",
         "db:purchase_lines",
@@ -131097,7 +131147,8 @@
         "utils/logger.js",
         "utils/rules.js",
         "services/supplier-payment-review.js",
-        "services/cash-deposit-service.js"
+        "services/cash-deposit-service.js",
+        "services/financial-journal-reporting.js"
       ],
       "directUsedBy": [
         "routes/signals.js",
@@ -131106,6 +131157,7 @@
       ],
       "ownedFiles": [],
       "dbRead": [
+        "markets",
         "cash_collections",
         "cash_deposits",
         "customs_shipment_parcels",
@@ -131146,6 +131198,7 @@
         "db:customs_shipments",
         "db:hub_physical_unit_placements",
         "db:hub_purchase_allocations",
+        "db:markets",
         "db:order_items",
         "db:orders",
         "db:parcels",
@@ -131167,6 +131220,7 @@
         "routes/signals.js",
         "services/action-center-workspace.js",
         "services/cash-deposit-service.js",
+        "services/financial-journal-reporting.js",
         "services/incident-escalation.js",
         "services/order-financial-closure-signal.js",
         "services/signal-admin-service.js",
@@ -141367,6 +141421,12 @@
       "to": "db",
       "type": "depends",
       "label": "db"
+    },
+    {
+      "from": "services/dashboard-commerce.js",
+      "to": "services/financial-journal-reporting",
+      "type": "depends",
+      "label": "services/financial-journal-reporting"
     },
     {
       "from": "services/dashboard-commerce.js",
