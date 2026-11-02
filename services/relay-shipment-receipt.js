@@ -102,6 +102,61 @@ async function listRelayShipments({ market, relaisId = null }, q = db) {
   return { market: { id: market.id, code: market.code }, shipments: out };
 }
 
+/**
+ * Synchronise la projection du colis client depuis les deux faits physiques :
+ *  - quantité expédiée : KOM-BOX effectivement remises au transitaire ;
+ *  - quantité reçue : attestations immuables des agents relais.
+ * Ne crée jamais de quantité fictive et n'abaisse pas une preuve déjà inscrite.
+ * Le verrou de l'expédition puis les FOR UPDATE des parcel_items sérialisent la réconciliation.
+ */
+async function projectRelayReceiptToClientParcels(client, orderItemId) {
+  const { rows: [totals] } = await client.query(`
+    SELECT
+      (SELECT COALESCE(SUM(placement.quantity), 0)::int
+         FROM international_shipment_hub_units ship_box
+         JOIN international_shipments ship ON ship.id = ship_box.shipment_id AND ship.stage <> 'hub_ready'
+         JOIN hub_physical_unit_placements placement
+           ON placement.physical_unit_id = ship_box.physical_unit_id AND placement.removed_at IS NULL
+         JOIN hub_purchase_allocations alloc ON alloc.id = placement.allocation_id
+        WHERE alloc.order_item_id = $1) AS physically_shipped,
+      (SELECT COALESCE(SUM(receipt.received_qty), 0)::int
+         FROM international_shipment_relay_receipts receipt
+        WHERE receipt.order_item_id = $1) AS attested_received
+  `, [orderItemId]);
+  let shipped = Number(totals.physically_shipped || 0);
+  let received = Math.min(shipped, Number(totals.attested_received || 0));
+  const { rows: parcels } = await client.query(`
+    SELECT pi.id, pi.quantity, pi.qty_packed, pi.qty_shipped, pi.qty_received
+      FROM parcel_items pi JOIN parcels p ON p.id = pi.parcel_id
+     WHERE pi.order_item_id = $1 AND p.cancelled_at IS NULL
+     ORDER BY pi.created_at, pi.id
+     FOR UPDATE OF pi
+  `, [orderItemId]);
+  let projected = 0;
+  for (const pi of parcels) {
+    const targetShipped = Math.min(Number(pi.quantity), shipped);
+    const targetReceived = Math.min(targetShipped, received);
+    if (targetShipped > Number(pi.qty_packed)) {
+      fail(409, 'RELAY_PARCEL_PACKING_PROOF_MISSING',
+        'Colis client non rapproché de sa preuve KOM-BOX : expédition non enregistrable comme réception client.');
+    }
+    if (targetShipped < Number(pi.qty_shipped) || targetReceived < Number(pi.qty_received)) {
+      fail(409, 'RELAY_PARCEL_RECEIPT_REGRESSION',
+        'La réception ne peut réduire une quantité précédemment attestée sur le colis client.');
+    }
+    if (targetShipped !== Number(pi.qty_shipped) || targetReceived !== Number(pi.qty_received)) {
+      await client.query(
+        'UPDATE parcel_items SET qty_shipped = $2, qty_received = $3 WHERE id = $1',
+        [pi.id, targetShipped, targetReceived]
+      );
+    }
+    projected += targetReceived;
+    shipped -= targetShipped;
+    received -= targetReceived;
+  }
+  return { projected_received: projected, parcels_updated: parcels.length };
+}
+
 function parseLines(body) {
   const raw = body && body.lines;
   if (!Array.isArray(raw) || !raw.length) fail(400, 'RELAY_RECEIPT_LINES_REQUIRED', 'lines[] obligatoire (une entrée par article reçu)');
@@ -163,7 +218,8 @@ async function receiveShipment({ market, actor, reference, body = {} }, database
         if (error && error.code === '23505') fail(409, 'RELAY_RECEIPT_ALREADY_ATTESTED', 'Réception déjà attestée pour cet article');
         throw error;
       }
-      results.push({ order_item_id: l.itemId, expected, received: l.qty, incident_id: incidentId });
+      const projection = await projectRelayReceiptToClientParcels(client, l.itemId);
+      results.push({ order_item_id: l.itemId, expected, received: l.qty, incident_id: incidentId, ...projection });
     }
 
     // L'étape relay_received découle des attestations : tous les articles attendus (tous relais) ont une attestation.
@@ -184,4 +240,4 @@ async function receiveShipment({ market, actor, reference, body = {} }, database
   });
 }
 
-module.exports = { listRelayShipments, receiveShipment, RelayReceiptError, RELAY_VISIBLE_STAGES };
+module.exports = { listRelayShipments, receiveShipment, projectRelayReceiptToClientParcels, RelayReceiptError, RELAY_VISIBLE_STAGES };
