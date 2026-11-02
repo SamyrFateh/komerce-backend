@@ -113,6 +113,7 @@
     root.appendChild(branchNav);
 
     const layout = make(doc, 'div', 'kmc-hub-app-layout');
+    if (branch === 'operations') layout.classList.add('is-table');
     const rail = make(doc, 'aside', 'kmc-hub-app-rail');
     rail.setAttribute('aria-label', branch === 'administrative' ? 'Ordres d’achat' : 'Dossiers Hub');
     const railHeading = make(doc, 'div', 'kmc-hub-app-rail-heading');
@@ -140,7 +141,7 @@
     rail.appendChild(list);
     const railNote = make(doc, 'p', 'kmc-hub-app-rail-note', 'Un dossier relie commandes, articles, PO, réception et expédition.');
     rail.appendChild(railNote);
-    layout.appendChild(rail);
+    if (branch === 'administrative') layout.appendChild(rail);
 
     const content = make(doc, 'section', 'kmc-hub-app-content');
     content.setAttribute('aria-label', BRANCHES[branch].label);
@@ -189,12 +190,12 @@
       showSelected();
       const tab = host.querySelector?.('[data-workspace-view="supply"]');
       if (tab && tab.getAttribute('aria-selected') !== 'true') tab.click();
-      const cards = host.querySelectorAll?.('[data-hub-order]') || [];
+      const rows = host.querySelectorAll?.('[data-hub-order]') || [];
       let selected = null;
-      cards.forEach(card => {
-        const matches = card.getAttribute('data-hub-order') === active.orderId;
-        card.open = matches;
-        if (matches) selected = card;
+      rows.forEach(row => {
+        const matches = row.getAttribute('data-hub-order') === active.orderId;
+        row.classList.toggle('is-selected', matches);
+        if (matches) selected = row;
       });
       if (selected?.scrollIntoView) selected.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     };
@@ -306,7 +307,7 @@
       ? renderAdministrative(host) : renderOperations(host);
     pendingMount = Promise.resolve(mainRender);
     pendingMount.catch(() => {});
-    loadCases().catch(() => {});
+    if (branch === 'administrative') loadCases().catch(() => {});
 
     return Object.freeze({ branch, reloadCases: loadCases, selectPO, selectOrder });
   }
