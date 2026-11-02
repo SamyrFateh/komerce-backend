@@ -1095,6 +1095,7 @@
     if (view === 'supply') renderSupplySection(rootNode, ui, doc, context);
 
     if (view === 'relay') {
+    renderRelayShipmentsSection(rootNode, ui, doc, context);
     renderOrderActionSection(rootNode, ui, doc, context, {
       title: 'Relais · Encaisser',
       description: 'Paiements cash en attente dans ce marché. La confirmation appelle l’autorité paiement + auto-colis existante.',
@@ -1194,6 +1195,116 @@
         runningMessage: `${row.reference} · action en cours…`,
         successMessage: `${row.reference} · action appliquée.`,
       }).catch(() => {}));
+    });
+  }
+
+  // Relais live — contenu réellement expédié, déroulable Expédition → KOM-BOX → commandes → articles.
+  // Le reçu n'est jamais prérempli : il n'existe que par attestation du relais, article par article.
+  function renderRelayShipmentsSection(rootNode, ui, doc, context) {
+    const slot = createSection(rootNode, ui, 'Relais · Expéditions en route',
+      'Ce qui a réellement été expédié, carton par carton. La réception est constatée par le relais, jamais déduite d’un statut posé par le Hub.');
+    slot.setAttribute('data-relay-shipments', '');
+    const data = context.relayShipments;
+    if (!data) {
+      slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', context.relayShipmentsError || 'Expéditions indisponibles.'));
+      return;
+    }
+    if (!data.shipments.length) {
+      slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucune expédition en route vers ce relais.'));
+      return;
+    }
+    data.shipments.forEach(shipment => {
+      const card = doc.createElement('details');
+      card.className = 'kmc-relay-shipment';
+      card.open = true;
+      card.setAttribute('data-relay-shipment', shipment.reference);
+      card.appendChild(text(doc, 'summary', 'kmc-relay-shipment-title',
+        'Expédition ' + shipment.reference + ' · ' + shipment.stage));
+      const inputs = [];
+      shipment.boxes.forEach(box => {
+        const boxNode = doc.createElement('div');
+        boxNode.className = 'kmc-relay-box';
+        boxNode.setAttribute('data-relay-box', box.reference);
+        boxNode.appendChild(text(doc, 'h4', 'kmc-relay-box-title', 'KOM-BOX ' + box.reference));
+        box.orders.forEach(order => {
+          boxNode.appendChild(text(doc, 'div', 'kmc-workspace-muted', 'Commande ' + order.reference));
+          const table = doc.createElement('table');
+          table.className = 'kmc-workspace-table';
+          table.innerHTML = '<thead><tr><th>Article</th><th>Attendu</th><th>Expédié</th><th>Manquant</th><th>Reçu</th><th>Remis</th></tr></thead>';
+          const tbody = doc.createElement('tbody');
+          order.items.forEach(item => {
+            const tr = doc.createElement('tr');
+            tr.setAttribute('data-relay-item', item.order_item_id);
+            [item.product, formatNumber(item.expected), formatNumber(item.shipped), formatNumber(item.missing)]
+              .forEach(value => tr.appendChild(text(doc, 'td', '', value)));
+            const receivedCell = doc.createElement('td');
+            if (item.received !== null) {
+              receivedCell.textContent = formatNumber(item.received) + (item.incident_id ? ' · incident ouvert' : '');
+            } else if (shipment.receivable) {
+              const input = doc.createElement('input');
+              input.type = 'number';
+              input.min = '0';
+              input.step = '1';
+              input.placeholder = '0 à ' + item.expected;
+              input.setAttribute('aria-label', 'Reçu ' + item.product);
+              input.setAttribute('data-relay-received', item.order_item_id);
+              receivedCell.appendChild(input);
+              inputs.push({ item, input });
+            } else {
+              receivedCell.textContent = 'Non attesté';
+            }
+            tr.appendChild(receivedCell);
+            tr.appendChild(text(doc, 'td', '', formatNumber(item.handed)));
+            tbody.appendChild(tr);
+          });
+          table.appendChild(tbody);
+          const wrap = doc.createElement('div');
+          wrap.className = 'kmc-workspace-table-wrap';
+          wrap.appendChild(table);
+          boxNode.appendChild(wrap);
+        });
+        card.appendChild(boxNode);
+      });
+      if (inputs.length) {
+        const form = doc.createElement('form');
+        form.className = 'kmc-relay-receipt-form';
+        form.noValidate = true;
+        const proof = doc.createElement('input');
+        proof.type = 'text';
+        proof.placeholder = 'Référence de preuve (bordereau, photo)';
+        proof.setAttribute('aria-label', 'Preuve de réception');
+        proof.setAttribute('data-relay-proof', '');
+        form.appendChild(proof);
+        const submit = makeActionButton(doc, 'Attester la réception', 'relay-shipment-receive');
+        submit.type = 'submit';
+        form.appendChild(submit);
+        form.addEventListener('submit', event => {
+          event.preventDefault();
+          const lines = [];
+          for (const { item, input } of inputs) {
+            if (input.value.trim() === '') continue;
+            const qty = Number(input.value);
+            if (!Number.isInteger(qty) || qty < 0) {
+              setFeedback(context.root, 'Quantité reçue invalide pour ' + item.product + '.', 'critical');
+              return;
+            }
+            lines.push({ order_item_id: item.order_item_id, received_qty: qty });
+          }
+          if (!lines.length || !proof.value.trim()) {
+            setFeedback(context.root, 'Saisissez les quantités réellement reçues et la preuve.', 'critical');
+            return;
+          }
+          runAction(context, submit, {
+            url: endpointFor(context.marketCode, 'relay-shipments/' + encodeURIComponent(shipment.reference) + '/receive'),
+            body: { proof_ref: proof.value.trim(), lines },
+            runningMessage: 'Attestation en cours…',
+            successMessage: result => (result.result && result.result.receipts || []).some(r => r.incident_id)
+              ? 'Réception attestée · écart enregistré en incident.' : 'Réception attestée.',
+          }).catch(() => {});
+        });
+        card.appendChild(form);
+      }
+      slot.appendChild(card);
     });
   }
 
@@ -1324,6 +1435,15 @@
         } catch (error) {
           context.dossier = null;
           context.dossierError = error.message;
+        }
+      }
+      if (context.mode === 'relay-execution') {
+        try {
+          context.relayShipments = await jsonRequest(fetchFn, endpointFor(marketCode, 'relay-shipments'));
+          context.relayShipmentsError = null;
+        } catch (error) {
+          context.relayShipments = null;
+          context.relayShipmentsError = error.message;
         }
       }
       currentPayload = payload;
