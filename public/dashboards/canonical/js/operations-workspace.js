@@ -859,12 +859,18 @@
         shipments.length ? 'Rattachement prouvé' : '',
         'Un carton rattaché à une expédition n’est pas nécessairement remis au transitaire. La preuve de remise reste distincte.',
         false);
+      // Présenter simultanément le reliquat et le contrôle : une anomalie
+      // ne doit pas masquer un article encore attendu, et les deux nombres
+      // ne doivent pas être additionnés (ils peuvent concerner la même unité).
+      const remainingNotes = [];
+      if (anomalies) remainingNotes.push(formatNumber(anomalies) + ' à contrôler');
+      if (openNeeds && pending) remainingNotes.push(formatNumber(openNeeds) + ' à acheter');
       stageCell(row, group, 'Reste à solder',
-        anomalies ? formatNumber(anomalies) + ' à contrôler' :
-          pending ? formatNumber(pending) + ' non reçue(s)' :
+        pending ? formatNumber(pending) + ' non reçue(s)' :
+          anomalies ? formatNumber(anomalies) + ' à contrôler' :
             shipments.length ? 'À suivre' : 'À préparer',
-        openNeeds && pending ? 'dont ' + formatNumber(openNeeds) + ' à acheter' : '',
-        'Les unités non reçues restent suivies. Aucun remboursement ni clôture automatique n’est affirmé sans preuve de règlement par article.',
+        remainingNotes.join(' · '),
+        'Les unités non reçues restent suivies ; les anomalies à contrôler ne s’ajoutent pas automatiquement au reliquat. Aucun remboursement ni clôture automatique sans preuve canonique.',
         anomalies > 0 || pending > 0);
       tbody.appendChild(row);
     });
