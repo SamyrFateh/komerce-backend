@@ -184,16 +184,21 @@ test.describe('Operations — logistics control board', () => {
     expect(secondaryIndex).toBe(-1);
   });
 
-  test('les files redondantes sont retirées et un dossier s’ouvre en panneau latéral', async ({ page }) => {
+  test('les files redondantes sont retirées et le dossier s’ouvre sous le flux', async ({ page }) => {
     for (const id of ['orders-pending-cash', 'orders-to-order', 'orders-awaiting-hub-reception', 'orders-ready-for-parcel']) {
       await expect(page.locator(`#${id}`)).toHaveCount(0);
     }
     await page.locator('.kmc-control-order').first().click();
-    const panel = page.locator('.kmc-control-order-detail:not([hidden])');
+    const panel = page.locator('.kmc-control-detail-dock:not([hidden]) .kmc-control-order-detail');
     await expect(panel).toBeVisible();
-    const box = await panel.boundingBox();
-    const vp = page.viewportSize();
-    expect(box.x + box.width).toBeGreaterThan(vp.width - 2);
+    const bounds = await panel.evaluate(el => {
+      const r = el.getBoundingClientRect();
+      const board = el.closest('.kmc-control-chain').getBoundingClientRect();
+      return { left:r.left, width:r.width, boardLeft:board.left, boardWidth:board.width, position:getComputedStyle(el).position };
+    });
+    expect(bounds.position).toBe('static');
+    expect(Math.abs(bounds.left - bounds.boardLeft)).toBeLessThan(3);
+    expect(Math.abs(bounds.width - bounds.boardWidth)).toBeLessThan(3);
     await panel.locator('.kmc-control-panel-close').click();
     await expect(panel).toHaveCount(0);
   });
@@ -211,9 +216,9 @@ test.describe('Operations — logistics control board', () => {
     );
     expect(values).toEqual([
       { label:'Normal', value:13 },
-      { label:'À risque', value:3 },
-      { label:'Bloqué', value:4 },
-      { label:'Non observé', value:1 },
+      { label:'À surveiller', value:3 },
+      { label:'Action requise', value:4 },
+      { label:'Non déterminé', value:1 },
     ]);
   });
 
@@ -237,8 +242,8 @@ test.describe('Operations — logistics control board', () => {
     await expect(phases.nth(2)).toHaveAttribute('href', /\/admin\/workspaces\/operations/);
     await expect(phases.nth(3)).toHaveAttribute('href', /\/admin\/workspaces\/shipping-customs/);
     await expect(phases.nth(5)).not.toHaveAttribute('href', /./);
-    await expect(page.locator('.kmc-control-stage')).toHaveCount(9);
-    await expect(page.locator('#operations-stage-hub-receiving')).toBeAttached();
+    await expect(page.locator('.kmc-control-stage')).toHaveCount(5);
+    await expect(page.locator('#operations-stage-hub')).toBeAttached();
   });
 
   test('sur mobile le parcours est défilable sans retirer la Control Tower canonique', async ({ page }) => {
@@ -251,32 +256,32 @@ test.describe('Operations — logistics control board', () => {
     }));
     expect(size.scrollWidth).toBeGreaterThan(size.clientWidth);
     expect(size.overflowX).toBe('auto');
-    await expect(page.locator('.kmc-control-stage')).toHaveCount(9);
+    await expect(page.locator('.kmc-control-stage')).toHaveCount(5);
   });
 
-  test('affiche les 9 étapes et la légende santé', async ({ page }) => {
-    await expect(page.locator('.kmc-control-stage')).toHaveCount(9);
+  test('affiche 5 phases, leurs sous-étapes et la légende santé', async ({ page }) => {
+    await expect(page.locator('.kmc-control-stage')).toHaveCount(5);
     await expect(page.locator('.kmc-control-chain-legend-item')).toHaveCount(4);
-    await expect(page.locator('.kmc-control-stage-icon')).toHaveCount(9);
+    await expect(page.locator('.kmc-control-stage-icon')).toHaveCount(5);
   });
 
-  test('les colonnes sont des vraies colonnes opérationnelles hautes', async ({ page }) => {
+  test('les phases compactes exposent des cartes lisibles', async ({ page }) => {
     const geometry = await page.locator('.kmc-control-stage').first().evaluate(el => {
       const cs=getComputedStyle(el), r=el.getBoundingClientRect();
       return { height:r.height, radius:cs.borderRadius, background:cs.backgroundColor };
     });
-    expect(geometry.height).toBeGreaterThanOrEqual(440);
+    expect(geometry.height).toBeGreaterThanOrEqual(110);
     expect(geometry.radius).toBe('12px');
     const icon = await page.locator('.kmc-control-stage-icon').first().evaluate(el => {
       const r = el.getBoundingClientRect();
       return { width:r.width, height:r.height };
     });
-    expect(icon.width).toBeGreaterThanOrEqual(60);
-    expect(icon.height).toBeGreaterThanOrEqual(60);
+    expect(icon.width).toBeGreaterThanOrEqual(40);
+    expect(icon.height).toBeGreaterThanOrEqual(40);
   });
 
 
-  test('les 9 étapes tiennent ensemble sur le viewport desktop de référence', async ({ page }) => {
+  test('les 5 phases tiennent ensemble sur le viewport desktop de référence', async ({ page }) => {
     const board = page.locator('.kmc-control-chain');
     const geometry = await board.evaluate(el => ({
       clientWidth: el.clientWidth,
@@ -305,7 +310,7 @@ test.describe('Operations — logistics control board', () => {
 
     await warning.click();
 
-    const detail = page.locator('.kmc-control-order-row.is-expanded .kmc-control-order-detail');
+    const detail = page.locator('.kmc-control-detail-dock:not([hidden]) .kmc-control-order-detail');
     await expect(detail).toBeVisible();
     await expect(detail).toContainText('Objet en cause');
     await expect(detail).toContainText('PO fournisseur · PO-104816');
@@ -317,19 +322,19 @@ test.describe('Operations — logistics control board', () => {
 
     const unknown = page.locator('.kmc-control-order.is-unknown').filter({ hasText:'K-104688' });
     await expect(unknown).toBeVisible();
-    await expect(page.locator('.kmc-control-structural-alert')).toHaveCount(0);
+    await expect(page.locator('.kmc-control-structural-alert')).toHaveCount(1);
   });
 
   test('l’encapsulation distingue PO, unité HUB et colis avec le lineage serveur', async ({ page }) => {
     await page.locator('.kmc-control-order.is-critical').filter({ hasText:'K-104766' }).click();
-    let detail = page.locator('.kmc-control-order-row.is-expanded .kmc-control-order-detail');
+    let detail = page.locator('.kmc-control-detail-dock:not([hidden]) .kmc-control-order-detail');
     await expect(detail).toContainText('Unité HUB · HU-104766');
     await expect(detail).toContainText('PO-104766');
     await expect(detail.locator('[data-order-transitions]')).toContainText('confirmed');
     await expect(detail.locator('[data-order-transitions]')).toContainText('paid');
 
     await page.locator('.kmc-control-order.is-warning').filter({ hasText:'K-104715' }).click();
-    detail = page.locator('.kmc-control-order-row.is-expanded .kmc-control-order-detail').last();
+    detail = page.locator('.kmc-control-detail-dock:not([hidden]) .kmc-control-order-detail').last();
     await expect(detail).toContainText('Colis · P-104715');
     await expect(detail).toContainText('HU-104715');
     await expect(detail).toContainText('PO-104715');
@@ -342,7 +347,16 @@ test.describe('Operations — logistics control board', () => {
     await expect(page.locator('#operations-drill')).toHaveCount(0);
     await expect(page.locator('#operations-orders')).toHaveCount(0);
     await expect(page.locator('#operations-delays')).toHaveCount(0);
-    await expect(page.locator('.kmc-control-structural-alert')).toHaveCount(0);
+    await expect(page.locator('.kmc-control-structural-alert')).toHaveCount(1);
+  });
+
+
+  test('la phase conserve la sous-étape et le résumé métier visibles sans ouvrir le dossier', async ({ page }) => {
+    const supplier = page.locator('[data-control-phase="PURCHASING"] .kmc-control-order.is-warning');
+    await expect(supplier.filter({ hasText:'K-104816' })).toContainText('Confirmation fournisseur à surveiller');
+    await expect(supplier.filter({ hasText:'K-104816' })).toContainText('Fournisseur');
+    expect(await page.locator('.kmc-control-stage-health-part').count()).toBeGreaterThan(5);
+    await expect(page.locator('.kmc-control-detail-dock:not([hidden])')).toHaveCount(0);
   });
 
   test('capture de revue 1672×941', async ({ page }, testInfo) => {
