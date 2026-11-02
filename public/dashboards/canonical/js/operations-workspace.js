@@ -665,14 +665,18 @@
         group.pos.set(String(po.id), po);
       });
     });
+    // Un colis local n'ouvre JAMAIS de dossier Hub à lui seul. Les seules
+    // racines admises proviennent des lignes IMPORT/achats déjà projetées.
+    const existingOrder = (id, reference) => dossiers.get(String(id || ''))
+      || [...dossiers.values()].find(g => reference && g.reference === reference) || null;
     (d.client_parcels || []).forEach(parcel => {
-      const group = byOrder(parcel.order_id, null);
+      const group = existingOrder(parcel.order_id, null);
       if (group) group.clientParcels.push(parcel);
     });
     (d.boxes || []).forEach(box => {
       const seen = new Set();
       (box.contents || []).forEach(content => {
-        const group = byOrder(content.order_id, content.order_ref);
+        const group = existingOrder(content.order_id, content.order_ref);
         if (group && !seen.has(group)) {
           group.boxes.push(box);
           seen.add(group);
