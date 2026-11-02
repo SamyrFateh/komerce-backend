@@ -130,31 +130,6 @@
     root.appendChild(header);
   }
 
-  function renderMarketSelector(context, marketCode) {
-    const allowed = context.access && Array.isArray(context.access.allowedMarkets)
-      ? context.access.allowedMarkets
-      : [];
-    if (allowed.length <= 1) return;
-    const section = el('section', 'kmc-section kmc-autonomy-selector');
-    section.appendChild(el('h2', 'kmc-section-title', 'Marché'));
-    const select = global.document.createElement('select');
-    select.className = 'kmc-workspace-input';
-    allowed.forEach(code => {
-      const option = global.document.createElement('option');
-      option.value = code;
-      option.textContent = code;
-      option.selected = code === marketCode;
-      select.appendChild(option);
-    });
-    select.addEventListener('change', () => {
-      const url = new URL(global.location.href);
-      url.searchParams.set('market', select.value);
-      global.location.href = url.toString();
-    });
-    section.appendChild(select);
-    root.appendChild(section);
-  }
-
   function renderCapabilities(workspace) {
     const access = workspace.access || {};
     const caps = workspace.capabilities || {};
@@ -384,7 +359,6 @@
       root.className = 'kmc-workspace';
       root.replaceChildren();
       renderHeader(context, marketCode, workspace);
-      renderMarketSelector(context, marketCode);
       renderCapabilities(workspace);
       renderPrices(marketCode, workspace, prices);
     } catch (error) {

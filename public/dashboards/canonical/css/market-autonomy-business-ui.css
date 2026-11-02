@@ -6,13 +6,6 @@
 #market-autonomy-root .kmc-workspace-title { font-size: clamp(25px,2.2vw,32px); }
 #market-autonomy-root .kmc-workspace-nav { display: flex; flex-wrap: wrap; gap: 10px; }
 
-#market-autonomy-root .kmc-autonomy-selector {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
-  padding: 9px 14px; margin-bottom: 12px;
-}
-#market-autonomy-root .kmc-autonomy-selector .kmc-section-title { margin: 0; font-size: 13px; }
-#market-autonomy-root .kmc-autonomy-selector select { width: auto; min-width: 120px; max-width: 180px; }
-
 #market-autonomy-root .kmc-autonomy-access {
   padding: 0; margin-top: 14px; margin-bottom: 12px;
   border: 1px solid #e2e8f0; border-radius: 11px; background: #f8fafc;
@@ -169,12 +162,8 @@
   #market-autonomy-root .kmc-autonomy-reason input { flex: 1 1 100%; max-width: 100%; }
 }
 
-/* 02/11 — Un seul Hero pour le marché. La recherche transversale et le
-   sélecteur de coque ne doublent plus les outils du marché : la sélection
-   autorisée est déplacée à l'intérieur du Hero métier par le bootstrap.\n   La topbar demeure visible avant sélection explicite d'un marché. */
-body.kmc-shell-v4.kmc-hero-first.kmc-market-hero-integrated[data-kmc-surface="market-autonomy"] > .kmc-admin-topbar {
-  display: none !important;
-}
+/* Marché : le choix de marché (drapeau + liste) appartient exclusivement
+   à la barre supérieure canonique. Aucun sélecteur dans le Hero métier. */
 body.kmc-shell-v4[data-kmc-surface="market-autonomy"] #markets-decision-country-overview {
   width: 100%;
   min-width: 0;
@@ -194,10 +183,10 @@ body.kmc-shell-v4[data-kmc-surface="market-autonomy"] #markets-decision-country-
 #market-autonomy-root .kmc-autonomy-hero-controls {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   flex-wrap: wrap;
   gap: 10px 20px;
-  margin-top: 15px;
+  margin-top: 12px;
   position: relative;
   z-index: 1;
 }
@@ -212,24 +201,6 @@ body.kmc-shell-v4[data-kmc-surface="market-autonomy"] #markets-decision-country-
   font-size: 13px;
   font-weight: 700;
   white-space: nowrap;
-}
-#market-autonomy-root .kmc-autonomy-hero-controls .kmc-autonomy-selector {
-  display: flex !important;
-  flex: 0 0 auto;
-  align-items: center;
-  width: auto;
-  gap: 10px;
-  min-height: 36px;
-  padding: 0;
-  margin: 0;
-  border: 0;
-  background: transparent;
-  box-shadow: none;
-}
-#market-autonomy-root .kmc-autonomy-hero-controls .kmc-autonomy-selector select {
-  min-width: 106px;
-  min-height: 36px;
-  padding: 5px 10px;
 }
 #market-autonomy-root #markets-decision-country-overview .kmc-workspace-feedback {
   margin: 8px 0 0;
