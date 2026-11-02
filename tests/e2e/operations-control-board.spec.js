@@ -322,7 +322,7 @@ test.describe('Operations — logistics control board', () => {
 
     const unknown = page.locator('.kmc-control-order.is-unknown').filter({ hasText:'K-104688' });
     await expect(unknown).toBeVisible();
-    await expect(page.locator('.kmc-control-structural-alert')).toHaveCount(1);
+    await expect(page.locator('.kmc-control-structural-alert')).toHaveCount(0);
   });
 
   test('l’encapsulation distingue PO, unité HUB et colis avec le lineage serveur', async ({ page }) => {
@@ -347,9 +347,23 @@ test.describe('Operations — logistics control board', () => {
     await expect(page.locator('#operations-drill')).toHaveCount(0);
     await expect(page.locator('#operations-orders')).toHaveCount(0);
     await expect(page.locator('#operations-delays')).toHaveCount(0);
-    await expect(page.locator('.kmc-control-structural-alert')).toHaveCount(1);
+    await expect(page.locator('.kmc-control-structural-alert')).toHaveCount(0);
   });
 
+
+  test('pas de doublons structurels : les alertes restent dans les commandes et les compteurs', async ({ page }) => {
+    // La fixture contient un agrégat commun à trois commandes ; pas de ligne
+    // supplémentaire, ni d'en-tête avant les cartes de cette phase.
+    const purchasing = page.locator('[data-control-phase="PURCHASING"]');
+    await expect(purchasing.locator('.kmc-control-structural-alert')).toHaveCount(0);
+    await expect(purchasing).not.toContainText('3 commandes · même anomalie');
+    await expect(purchasing.locator('.kmc-control-order')).toHaveCount(6);
+    await expect(purchasing.locator('.kmc-control-order.is-critical')).toHaveCount(3);
+    await expect(purchasing.locator('.kmc-control-stage-count')).toHaveText('6 commandes');
+    // Le dossier de l'une de ces commandes reste accessible.
+    await purchasing.locator('.kmc-control-order.is-critical').first().click();
+    await expect(page.locator('.kmc-control-detail-dock:not([hidden]) .kmc-control-order-detail')).toBeVisible();
+  });
 
   test('la phase conserve la sous-étape et le résumé métier visibles sans ouvrir le dossier', async ({ page }) => {
     const supplier = page.locator('[data-control-phase="PURCHASING"] .kmc-control-order.is-warning');
