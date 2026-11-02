@@ -198,7 +198,7 @@ async function transitionOrderStatus({
   // ── 1. Load current order ────────────────────────────────────────────────
   const forUpdate = dbClient ? ' FOR UPDATE OF o' : '';
   const { rows: [order] } = await q.query(
-    `SELECT o.id, o.status, o.payment_mode, o.relais_id, o.pickup_secret_hash,
+    `SELECT o.id, o.status, o.payment_status, o.payment_mode, o.relais_id, o.pickup_secret_hash,
             o.user_id, o.reference, r.name AS relais_name
        FROM orders o
        LEFT JOIN relais r ON r.id = o.relais_id
@@ -241,6 +241,30 @@ async function transitionOrderStatus({
       return { success: false, error: "Agent relais: uniquement commandes cash relais" };
     }
 
+  } else if (source === 'local_relay_receipt') {
+    // Dedicated, signed physical proof. No generic system/scan shortcut and
+    // no fabricated shipped / in_transit history for stock held locally.
+    const roleAllowed = ['admin','agent_relais'].includes(actor?.role);
+    const relayAllowed = actor?.role !== 'agent_relais' ||
+      (actor.relais_id && String(actor.relais_id) === String(order.relais_id));
+    if (newStatus !== 'available' ||
+        !['confirmed','ordered','preparation'].includes(previousStatus) ||
+        order.payment_status !== 'paid' || !order.relais_id ||
+        !actor?.id || !roleAllowed || !relayAllowed || !scanId) {
+      return {success:false,previousStatus,newStatus,
+        code:'LOCAL_RECEIPT_FORBIDDEN',error:'Réception locale non autorisée ou commande non éligible'};
+    }
+    const {rows:proofs}=await q.query(
+      "SELECT id FROM scans WHERE id=$1 AND order_id=$2 AND step='relais_received' AND scanned_by=$3 LIMIT 1",
+      [scanId,orderId,actor.id]);
+    const {rows:[composition]}=await q.query(
+      "SELECT COUNT(*)::int AS total, COUNT(*) FILTER (WHERE fulfillment_source='LOCAL_STOCK')::int AS local FROM order_items WHERE order_id=$1",
+      [orderId]);
+    if (!proofs.length || !composition || Number(composition.total)===0 ||
+        Number(composition.local)!==Number(composition.total)) {
+      return {success:false,previousStatus,newStatus,
+        code:'LOCAL_RECEIPT_PROOF_INVALID',error:'Preuve de réception ou provenance locale insuffisante'};
+    }
   } else if (PAYMENT_CONFIRMATION_SOURCES.has(source)) {
     // Payment confirmation sources: STRICTLY pending → confirmed only
     if (!(previousStatus === 'pending' && newStatus === 'confirmed')) {
