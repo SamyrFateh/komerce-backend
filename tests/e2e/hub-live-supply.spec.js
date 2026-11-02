@@ -28,16 +28,20 @@ const DOSSIER = {
   market: { id: 'm1', code: 'KM', name: 'Comores' },
   generated_at: '2026-11-01T10:00:00Z',
   kpis: { orders_waiting: 2, lines_open: 1, po_draft: 0, po_issued_not_sent: 1, po_sent_unconfirmed: 0, qty_missing: 1, qty_anomaly: 0, boxes_open: 2, boxes_unshipped: 1 },
+  orders: [{ id: '4def6c00-67b9-4584-85ed-00d2b8a24292', reference: 'K-C2', status: 'ordered',
+    items: [{ id: 'aa03f8af-6229-4252-b8a7-aac02e1c7701', product: 'Câble USB', ordered: 3, fulfillment_source: 'IMPORT' }] }],
+  client_parcels: [{ id: 'client-1', order_id: '4def6c00-67b9-4584-85ed-00d2b8a24292', reference: 'PCL-C2',
+    status: 'preparation', contents: [{ order_item_id: 'aa03f8af-6229-4252-b8a7-aac02e1c7701', quantity: 2 }] }],
   needs: [{ line_id: 'l9', order_ref: 'K-C3', product_name: 'Câble USB', supplier_name: 'Fournisseur A', quantity: 2 }],
   purchase_orders: [{
     id: PO, status: 'notified', stage: 'issued_not_sent', supplier_name: 'Fournisseur A', sent_at: null, sent_channel: null,
     totals: { effective: 6, received: 5, missing: 1, anomaly: 0 },
-    lines: [{ line_id: 'l1', order_ref: 'K-C2', ordered: 3, confirmed: 3, received: 2, missing: 1, anomaly: 0 }],
+    lines: [{ line_id: 'l1', order_id: '4def6c00-67b9-4584-85ed-00d2b8a24292', order_item_id: 'aa03f8af-6229-4252-b8a7-aac02e1c7701', order_ref: 'K-C2', product: 'Câble USB', ordered: 3, confirmed: 3, received: 2, missing: 1, anomaly: 0 }],
   }],
   receipts: [{ id: 'u1', reference: 'COLIS-1', external_ref: 'EXT-1', state: 'ALLOCATED', received_at: '2026-11-01T09:00:00Z', qty: 4 }],
   boxes: [
     { unit_id: BOX, reference: 'BOX-1', state: 'PACKED', shipment_ref: null, shipment_stage: null, contents: [{ order_ref: 'K-C1', line_id: 'l2', qty: 3 }] },
-    { unit_id: 'b2', reference: 'BOX-2', state: 'PACKED', shipment_ref: 'SHIP-1', shipment_stage: 'hub_ready', contents: [{ order_ref: 'K-C2', line_id: 'l1', qty: 2 }] },
+    { unit_id: 'b2', reference: 'BOX-2', state: 'PACKED', shipment_ref: 'SHIP-1', shipment_stage: 'hub_ready', contents: [{ order_id: '4def6c00-67b9-4584-85ed-00d2b8a24292', order_ref: 'K-C2', line_id: 'l1', qty: 2 }] },
   ],
   open_shipments: [{ reference: 'SHIP-2', forwarder_name: 'Transitaire X', transport_mode: 'sea', box_count: 0 }],
   to_handle: [{ kind: 'PO_MISSING_QTY', po_id: PO, supplier_name: 'Fournisseur A', reason: '1 unité(s) confirmée(s) non reçue(s)' }],
@@ -87,7 +91,9 @@ test.describe('Hub live · Approvisionnement — desktop 1440', () => {
     const pos = page.locator('[data-supply-pos]');
     await expect(pos).toContainText('Bon émis, envoi non prouvé');
     await expect(pos).not.toContainText('Envoyée');
-    await expect(pos).toContainText('5 / 6');
+    await expect(pos).toContainText('2 / 3 reçus');
+    await expect(page.locator('[data-hub-order]').first()).toContainText('PCL-C2');
+    await expect(page.locator('[data-hub-order]').first()).toContainText('BOX-2');
     await expect(page.locator('[data-supply-to-handle]')).toContainText('1 unité(s) confirmée(s) non reçue(s)');
     await expect(page.getByText('Unités encore attendues')).toBeVisible();
     await page.screenshot({ path: 'test-results/hub-live-supply-1440.png', fullPage: true });
@@ -96,7 +102,7 @@ test.describe('Hub live · Approvisionnement — desktop 1440', () => {
   test('filiation : commande → PO → colis → carton → expédition, en lecture seule', async ({ page }) => {
     const posts = [];
     await mount(page, posts);
-    await page.locator('[data-supply-pos] [data-workspace-action="show-trace"]').click();
+    await page.locator('[data-hub-order] [data-workspace-action="show-trace"]').first().click();
     const trace = page.locator('[data-supply-trace]');
     await expect(trace).toContainText('COLIS-1');
     await expect(trace).toContainText('BOX-2');
