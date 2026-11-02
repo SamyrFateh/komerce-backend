@@ -301,7 +301,7 @@ describe('canonical admin navigation — N2 domaine Opérations (doctrine V2 §4
     const n2 = secondaryNav(header);
     expect(n2.className).toBe('kmc-admin-secondary-nav');
     const ids = n2.children.map(link => link.attributes['data-dashboard']);
-    expect(ids).toEqual(['operations-overview', 'shipping-customs-workspace', 'purchasing-workspace']);
+    expect(ids).toEqual(['operations-overview', 'shipping-customs-workspace', 'purchasing-workspace', 'hub-workstation']);
 
     const active = n2.children.find(link => link.attributes['data-dashboard'] === 'shipping-customs-workspace');
     expect(active.attributes['aria-current']).toBe('page');
