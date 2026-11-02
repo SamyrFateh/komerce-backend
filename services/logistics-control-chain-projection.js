@@ -40,8 +40,6 @@ const HEALTH = Object.freeze({
   UNKNOWN: 'UNKNOWN',
 });
 
-const CONTROL_CHAIN_STALE_AFTER_MINUTES = 30;
-
 const STRUCTURAL_ALERT_MIN_ORDERS = 3;
 
 function healthRank(health) {
@@ -167,7 +165,7 @@ function projectRow(row) {
 async function getControlChain(options = {}) {
   const limit = Math.max(1, Math.min(Number(options.limit) || 250, 500));
   const orderId = options.orderId || null;
-  const params = [marketId(options.market), ACTIVE_ORDER_STATUSES, limit, orderId, CONTROL_CHAIN_STALE_AFTER_MINUTES];
+  const params = [marketId(options.market), ACTIVE_ORDER_STATUSES, limit, orderId];
 
   const { rows } = await db.query(`
     WITH scoped_orders AS (
@@ -390,16 +388,11 @@ async function getControlChain(options = {}) {
                ELSE 'ORDER'
              END AS current_stage,
              CASE
+               -- L'inactivité n'est pas un risque : seule une anomalie métier
+               -- persistée ou une quarantaine influe sur la couleur.
                WHEN COALESCE(hf.has_quarantine, FALSE) THEN 'RED'
                WHEN ss.primary_severity IN ('urgent','critical','high') THEN 'RED'
                WHEN ss.primary_severity = 'warning' THEN 'ORANGE'
-               WHEN GREATEST(
-                 so.updated_at,
-                 COALESCE(pf.last_purchase_at, so.created_at),
-                 COALESCE(hf.last_hub_at, so.created_at),
-                 COALESCE(paf.last_parcel_at, so.created_at),
-                 COALESCE(cf.last_customs_at, so.created_at)
-               ) < NOW() - ($5::int * INTERVAL '1 minute') THEN 'ORANGE'
                WHEN GREATEST(
                  so.updated_at,
                  COALESCE(pf.last_purchase_at, so.created_at),
@@ -411,70 +404,15 @@ async function getControlChain(options = {}) {
              END AS health,
              CASE
                WHEN COALESCE(hf.has_quarantine, FALSE) THEN 'hub_quarantine'
-               WHEN ss.primary_signal_type IS NULL
-                    AND GREATEST(
-                      so.updated_at,
-                      COALESCE(pf.last_purchase_at, so.created_at),
-                      COALESCE(hf.last_hub_at, so.created_at),
-                      COALESCE(paf.last_parcel_at, so.created_at),
-                      COALESCE(cf.last_customs_at, so.created_at)
-                    ) < NOW() - ($5::int * INTERVAL '1 minute')
-                 THEN 'observation_stale'
                ELSE ss.primary_signal_type
              END AS exception_code,
              CASE
                WHEN COALESCE(hf.has_quarantine, FALSE) THEN 'Unité HUB en quarantaine'
-               WHEN ss.primary_signal_type IS NULL
-                    AND GREATEST(
-                      so.updated_at,
-                      COALESCE(pf.last_purchase_at, so.created_at),
-                      COALESCE(hf.last_hub_at, so.created_at),
-                      COALESCE(paf.last_parcel_at, so.created_at),
-                      COALESCE(cf.last_customs_at, so.created_at)
-                    ) < NOW() - ($5::int * INTERVAL '1 minute')
-                 THEN 'Observation métier trop ancienne'
                ELSE ss.primary_summary
              END AS exception_summary,
              CASE
-               WHEN ss.primary_owner_role IS NOT NULL THEN ss.primary_owner_role
-               WHEN GREATEST(
-                      so.updated_at,
-                      COALESCE(pf.last_purchase_at, so.created_at),
-                      COALESCE(hf.last_hub_at, so.created_at),
-                      COALESCE(paf.last_parcel_at, so.created_at),
-                      COALESCE(cf.last_customs_at, so.created_at)
-                    ) < NOW() - ($5::int * INTERVAL '1 minute')
-                 THEN CASE (
-                     CASE
-                       WHEN so.order_status = 'available' THEN 'RELAY'
-                       WHEN so.order_status = 'in_transit' AND COALESCE(paf.has_in_transit, FALSE) THEN 'TRANSPORT'
-                       WHEN so.order_status = 'in_transit'
-                            AND (COALESCE(paf.has_arrived, FALSE) OR COALESCE(cf.has_customs, FALSE)) THEN 'CUSTOMS'
-                       WHEN so.order_status = 'in_transit' THEN 'TRANSPORT'
-                       WHEN so.order_status = 'shipped' THEN 'FORWARDER'
-                       WHEN so.order_status = 'preparation' AND COALESCE(hf.has_receiving_pending, FALSE) THEN 'HUB_RECEIVING'
-                       WHEN so.order_status = 'preparation'
-                            AND (COALESCE(hf.has_control, FALSE) OR COALESCE(hf.has_quarantine, FALSE) OR COALESCE(paf.has_preparation, FALSE)) THEN 'HUB_CONTROL'
-                       WHEN so.order_status = 'preparation' AND COALESCE(hf.has_dispatched, FALSE) THEN 'FORWARDER'
-                       WHEN so.order_status = 'preparation' THEN 'HUB_CONTROL'
-                       WHEN so.order_status = 'ordered' AND COALESCE(pf.supplier_acknowledged, FALSE) THEN 'SUPPLIER'
-                       WHEN so.order_status = 'ordered' THEN 'PURCHASING'
-                       WHEN COALESCE(pf.supplier_acknowledged, FALSE) THEN 'SUPPLIER'
-                       WHEN COALESCE(pf.po_count, 0) > 0 THEN 'PURCHASING'
-                       ELSE 'ORDER'
-                     END
-                   )
-                   WHEN 'PURCHASING' THEN 'purchasing'
-                   WHEN 'SUPPLIER' THEN 'purchasing'
-                   WHEN 'HUB_RECEIVING' THEN 'hub'
-                   WHEN 'HUB_CONTROL' THEN 'hub'
-                   WHEN 'FORWARDER' THEN 'transitaire'
-                   WHEN 'TRANSPORT' THEN 'logistics'
-                   WHEN 'CUSTOMS' THEN 'customs'
-                   WHEN 'RELAY' THEN 'relais'
-                   ELSE 'operations'
-                 END
-               ELSE NULL
+               WHEN COALESCE(hf.has_quarantine, FALSE) THEN 'hub'
+               ELSE ss.primary_owner_role
              END AS exception_owner_role,
              ss.primary_severity AS exception_severity,
              COALESCE(ss.exception_causes, '[]'::jsonb) AS exception_causes,
@@ -549,7 +487,6 @@ module.exports = {
   STAGES,
   HEALTH,
   STRUCTURAL_ALERT_MIN_ORDERS,
-  CONTROL_CHAIN_STALE_AFTER_MINUTES,
   healthRank,
   buildStructuralAlerts,
   normalizeExceptions,
