@@ -790,6 +790,10 @@ La migration 359 ajoute **`international_shipments.hub_draft`** (booléen, défa
 
 Le journal `international_shipment_events` accepte les événements `opened`, `box_attached` et `box_detached` avec preuve documentaire NULL (faits opérateur), sans jamais confondre ces événements avec le transfert de garde. La transition `handed_over` exige toujours une **preuve réelle** ; pour un brouillon Hub elle exige aussi un transitaire, un mode et au moins un KOM-BOX `DISPATCHED` sans anomalie (garde du service **et** trigger PostgreSQL). Les liens carton deviennent immuables après la remise (migration 358). La douane et N1 restent la suite #3250, hors du scope 359.
 
+### Fournisseurs locaux du Hub — migration 362 (intended_migration_schema)
+
+La migration 362 ajoute **`suppliers.owner_scope`** (`NULL` = catalogue global géré par l'admin ; `hub` = fournisseur local créé par le Hub, plateforme `local`/`whatsapp`, sans `auto_order`) et **`suppliers.created_by`** (utilisateur créateur). Le périmètre Hub ne modifie jamais le catalogue global et le déclencheur d'achat automatique ignore les fournisseurs `owner_scope = 'hub'`.
+
 <!-- schema-pending: financial_movements (migration 360, not yet live) -->
 <!-- schema-pending: financial_movement_documents (migration 360, not yet live) -->
 ### Journal financier canonique — migration 360 (intended_migration_schema)
