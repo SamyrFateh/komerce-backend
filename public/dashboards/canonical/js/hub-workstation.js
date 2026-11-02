@@ -65,7 +65,7 @@
   }
 
   function mount(options = {}) {
-    const {root, user, document:doc, location, history, fetch:fetchFn,
+    const {root, user, document:doc, location, history, fetch:fetchFn, adminContext,
       renderAdministrative, renderOperations} = options;
     if (!root || !doc || !user) throw new Error('hub_workstation_context_missing');
     if (typeof renderAdministrative !== 'function' || typeof renderOperations !== 'function') {
@@ -223,7 +223,7 @@
 
     // Les listes reprennent les projections serveur sans en déduire de nouveau
     // état métier. Aucun paiement validé n'est simulé.
-    const loadCases = async () => {
+    const loadCases = async (marketOverride = '') => {
       const seq = ++activeItems.seq;
       if (typeof fetchFn !== 'function') return;
       list.replaceChildren(make(doc, 'p', 'kmc-hub-app-list-empty', 'Chargement des dossiers…'));
@@ -240,7 +240,9 @@
         } else {
           // Le dossier Hub exclut déjà LOCAL_STOCK. Jamais d'agrégation client
           // ou de quantité physique recalculée dans le navigateur.
-          const market = selectedMarket(location);
+          const markets = adminContext?.access?.allowedMarkets;
+          const market = marketOverride || selectedMarket(location) ||
+            (Array.isArray(markets) && markets.length === 1 ? markets[0] : '');
           if (!market) {
             if (seq === activeItems.seq) {
               activeItems.rows = [];
@@ -283,7 +285,7 @@
     host.addEventListener('change', event => {
       if (!event.target?.matches?.('.kmc-market-context-select')) return;
       // Sa validation asynchrone appartient au module Canonical.
-      Promise.resolve().then(() => loadCases().catch(() => {}));
+      loadCases(event.target.value).catch(() => {});
     });
 
     const mainRender = branch === 'administrative'
