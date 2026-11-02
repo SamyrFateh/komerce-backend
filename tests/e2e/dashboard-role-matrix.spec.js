@@ -44,7 +44,7 @@ const ROLE_HOME = Object.freeze({
   market_operator: '/admin/pilotage',
   finance: '/admin/workspaces/accounting',
   sourcing: '/admin/import-runtime',
-  agent_hub: '/admin/hub-live',
+  agent_hub: '/admin/hub-live?view=execute',
   agent_relais: '/admin/relais-live',
   agent_transitaire: '/admin/workspaces/shipping-customs',
   support: '/portail',
