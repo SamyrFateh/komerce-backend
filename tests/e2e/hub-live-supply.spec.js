@@ -89,7 +89,7 @@ test.describe('Hub live · Approvisionnement — desktop 1440', () => {
   test('un bon émis n’est pas un envoi ; la réception partielle et le manquant sont visibles', async ({ page }) => {
     await mount(page, []);
     const pos = page.locator('[data-supply-pos]');
-    await expect(pos).toContainText('Bon émis, envoi non prouvé');
+    await expect(pos).toContainText('Envoi fournisseur non prouvé');
     await expect(pos).not.toContainText('Envoyée');
     await expect(pos).toContainText('2 / 3 reçus');
     await expect(page.locator('[data-hub-order]').first()).toContainText('PCL-C2');
