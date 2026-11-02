@@ -8,7 +8,7 @@
  * @outputs       parcel_local, scan_proof, local_line_availability, order_status
  * @depends       db.js, services/order-status-machine.js, services/parcel-item-mutation-service.js, services/order-item-availability-service.js, utils/reference.js
  * @used-by       routes/orders/status.js
- * @db-read       orders, order_items, relais, parcels, local_stock_allocations
+ * @db-read       orders, order_items, relais, parcels, local_stock, local_stock_allocations
  * @db-write      parcels, parcel_items, parcel_events, scans
  * @db-write-via:parcel-item-mutation-service parcel_items, parcel_events
  * @db-write-via:order-status-machine orders, order_status_history
@@ -38,7 +38,7 @@ async function recordLocalRelayReceipt({orderId, actor, physicalReceived, note =
   try {
     await client.query('BEGIN');
     const {rows:[order]} = await client.query(
-      'SELECT o.id, o.reference, o.status, o.payment_status, o.relais_id, o.user_id, r.name AS relais_name FROM orders o JOIN relais r ON r.id=o.relais_id WHERE o.id=$1 FOR UPDATE OF o', [orderId]);
+      'SELECT o.id, o.reference, o.status, o.payment_status, o.relais_id, o.market_id, o.user_id, r.name AS relais_name FROM orders o JOIN relais r ON r.id=o.relais_id WHERE o.id=$1 FOR UPDATE OF o', [orderId]);
     if (!order) {
       await client.query('ROLLBACK');
       return fail(404,'ORDER_NOT_FOUND','Commande introuvable');
@@ -59,10 +59,26 @@ async function recordLocalRelayReceipt({orderId, actor, physicalReceived, note =
       return fail(409,'LOCAL_RECEIPT_INVALID_PROVENANCE','Réception locale impossible : provenance absente ou aucune ligne locale');
     }
     const localItems=items.filter(item=>item.fulfillment_source==='LOCAL_STOCK');
-    const {rows:[stock]} = await client.query(
-      "SELECT COALESCE(SUM(quantity) FILTER (WHERE consumed_at IS NOT NULL AND released_at IS NULL),0)::int AS consumed FROM local_stock_allocations WHERE order_id=$1", [orderId]);
-    const expected = localItems.reduce((sum,item)=>sum+Number(item.quantity),0);
-    if (Number(stock?.consumed)!==expected) {
+    // Quantities are not enough: a consumed allocation must cover exactly the
+    // same *product* (and market) as the local order line, never another SKU.
+    const {rows:allocations} = await client.query(
+      `SELECT ls.product_id,ls.market_id,COALESCE(SUM(lsa.quantity),0)::int AS consumed
+         FROM local_stock_allocations lsa
+         JOIN local_stock ls ON ls.id=lsa.local_stock_id
+        WHERE lsa.order_id=$1 AND lsa.consumed_at IS NOT NULL AND lsa.released_at IS NULL
+        GROUP BY ls.product_id,ls.market_id`,
+      [orderId]);
+    const expectedByProduct = new Map();
+    for (const item of localItems)
+      expectedByProduct.set(String(item.product_id),
+        (expectedByProduct.get(String(item.product_id))||0)+Number(item.quantity));
+    const allocatedByProduct = new Map();
+    for (const alloc of allocations)
+      allocatedByProduct.set(String(alloc.product_id),
+        (allocatedByProduct.get(String(alloc.product_id))||0)+Number(alloc.consumed));
+    if (allocations.some(alloc=>String(alloc.market_id)!==String(order.market_id)) ||
+        allocatedByProduct.size!==expectedByProduct.size ||
+        [...expectedByProduct].some(([productId,quantity])=>allocatedByProduct.get(productId)!==quantity)) {
       await client.query('ROLLBACK');
       return fail(409,'LOCAL_RECEIPT_ALLOCATION_MISMATCH','Allocation locale payée incohérente');
     }
