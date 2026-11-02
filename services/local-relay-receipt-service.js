@@ -67,15 +67,18 @@ async function recordLocalRelayReceipt({orderId, actor, physicalReceived, note =
     await client.query(
       "INSERT INTO parcels (id,order_id,type,status,reference,label,relais_id,created_by,available_at,notes) VALUES ($1,$2,'standard','available',$3,'Retrait local',$4,$5,NOW(),$6)",
       [parcelId,orderId,reference,order.relais_id,actor.id,proofNote]);
-    for (const item of items) {
-      await client.query(
-        'INSERT INTO parcel_items (parcel_id,order_item_id,product_id,quantity,qty_received,verified,verified_at,verified_by) VALUES ($1,$2,$3,$4,$4,TRUE,NOW(),$5)',
-        [parcelId,item.id,item.product_id,item.quantity,actor.id]);
-      await setOrderItemAvailabilityStatus(client,item.id,'available');
-    }
+    // Insert the physical receipt proof before the parcel lines. Migration 362
+    // checks the proof in the parcel quantity trigger in this same transaction.
     const {rows:[receipt]}=await client.query(
       "INSERT INTO scans (order_id,parcel_id,step,scan_code,scanned_by,notes) VALUES ($1,$2,'relais_received',$3,$4,$5) RETURNING id",
       [orderId,parcelId,order.reference,actor.id,proofNote]);
+    for (const item of items) {
+      // Packed locally and received at relay; NEVER marked internationally shipped.
+      await client.query(
+        'INSERT INTO parcel_items (parcel_id,order_item_id,product_id,quantity,qty_allocated,qty_packed,qty_shipped,qty_received,verified,verified_at,verified_by) VALUES ($1,$2,$3,$4,$4,$4,0,$4,TRUE,NOW(),$5)',
+        [parcelId,item.id,item.product_id,item.quantity,actor.id]);
+      await setOrderItemAvailabilityStatus(client,item.id,'available');
+    }
     await client.query(
       "INSERT INTO parcel_events (parcel_id,event_type,actor_id,notes,metadata) VALUES ($1,'available',$2,$3,$4::jsonb)",
       [parcelId,actor.id,proofNote,JSON.stringify({source:'local_relay_receipt',scan_id:receipt.id})]);
