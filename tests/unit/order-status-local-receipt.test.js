@@ -1,6 +1,6 @@
 'use strict';
 /** @test-kind unit @test-runner jest @test-requires none */
-jest.mock('../../utils/logger',()=>({child:()=>({info:jest.fn(),warn:jest.fn(),error:jest.fn()})}));
+jest.mock('../../utils/logger',()=>{const sink={info:jest.fn(),warn:jest.fn(),error:jest.fn(),debug:jest.fn()};return {...sink,child:()=>sink,forModule:()=>sink};});
 jest.mock('../../services/product-admin-service',()=>({adjustStock:jest.fn()}));
 jest.mock('../../services/local-stock-service',()=>({
   consumeAllocationsForOrder:jest.fn(),releaseAllocationsForOrder:jest.fn()
