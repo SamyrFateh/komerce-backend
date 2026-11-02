@@ -614,6 +614,7 @@
     if (!moduleApi) throw new Error('canonical_hub_workstation_module_missing');
     return moduleApi.mount({
       root, user, document: global.document, location: global.location,
+      history: global.history, fetch: global.fetch.bind(global), adminContext,
       renderAdministrative: host => renderPurchasingWorkspace(host, user),
       renderOperations: host => renderHubExecutionShell(host, user, adminContext),
     });
