@@ -80,7 +80,7 @@ module.exports = {
       'migrations/313_market_transport_sale_rates.sql',
       'migrations/354_international_shipment_journey.sql',
       'migrations/359_hub_draft_open_and_handover.sql',
-      'migrations/362_local_relay_receipt_quantity_guard.sql',
+      'migrations/366_local_relay_receipt_quantity_guard.sql',
       'migrations/363_parcel_items_physical_proof.sql',
       'migrations/364_shipment_relay_receipts.sql',
     ],

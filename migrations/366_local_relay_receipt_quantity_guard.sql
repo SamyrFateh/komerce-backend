@@ -1,4 +1,4 @@
--- @migration 362_local_relay_receipt_quantity_guard.sql
+-- @migration 366_local_relay_receipt_quantity_guard.sql
 -- @domain logistics, orders, local-stock
 -- A physical LOCAL_STOCK receipt occurs at the destination relay, without
 -- any international shipment. Do NOT forge qty_shipped to appease the
