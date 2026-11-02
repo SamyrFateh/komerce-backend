@@ -119,10 +119,13 @@ test('Mayotte : drapeau SVG fourni et référencé par la politique de navigatio
   expect(fs.existsSync(path.join(__dirname, '../../public/dashboards/canonical/assets/flags/YT.svg'))).toBe(true);
 });
 
-test('Hub live expose l’onglet Exécution (vue execute) sans toucher aux autres onglets', () => {
+test('Hub live ouvre directement le poste Dossiers et ne recrée pas les anciennes sous-vues', () => {
   const src = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/js/navigation-policy-v4.js'), 'utf8');
-  expect(src).toContain("{ id: 'hub-execution', label: 'Exécution', href: '/admin/hub-live?view=execute' }");
-  expect(src).toContain("if (search.get('view') === 'execute') return 'hub-execution';");
+  expect(src).toContain("id: 'live-hub', label: 'Hub live', href: '/admin/hub-live?view=execute'");
+  expect(src).toContain("{ id: 'hub-dossiers', label: 'Hub Live · Dossiers', href: '/admin/hub-live?view=execute' }");
+  expect(src).toContain("if (domainId === 'live' && path === '/admin/hub-live') return 'hub-dossiers';");
+  expect(src).not.toContain("{ id: 'hub-suivi', label: 'Suivi'");
+  expect(src).not.toContain("{ id: 'hub-flux', label: 'Flux Hub'");
 });
 
 describe('contexte transporté (marché, période, périmètre)', () => {
