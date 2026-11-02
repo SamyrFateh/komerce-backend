@@ -211,8 +211,9 @@ module.exports = {
       'order_items: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)
       'order_status_history: RW',
       'orders: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)
-      'parcel_items: R',
-      'parcels: R',
+      'parcel_events: W~', // journal logistique écrit par réception locale (writer, pas owner)
+      'parcel_items: RW~', // affectation canonique + quantité reçue (writer, pas owner)
+      'parcels: RW~', // création colis local tracé, sans changement d’owner
       'product_variants: R',  // W-via:product-admin-service (adjustStock variantes)
       'products: R',          // W-via:product-admin-service (adjustStock — order-payment-confirmation.js, order-status-machine.js)
       'recipients: RW',
@@ -227,8 +228,8 @@ module.exports = {
 
   security: {
     status: 'CONFIRMED_MIXED',
-    authedRoutesDetected: 31,
-    totalRoutes: 33,
+    authedRoutesDetected: 32,
+    totalRoutes: 34,
     note: "La facture a été transférée à documents et n'expose plus de route publique. La seule capability publique restante dans orders est GET /api/orders/retrait/:token, validée par verify-qr-collection.js.",
   },
   contract: {
@@ -250,6 +251,7 @@ module.exports = {
       'POST /api/orders/:id/partial-ship',
       'POST /api/orders/:id/qr-token',
       'PATCH /api/orders/:id/status',
+      'POST /api/orders/:id/local-relay-receipt',
       'GET /api/orders/:id/sub-orders',
       'GET /api/orders/credits',
       'PATCH /api/orders/parcels/:parcelId/status',
