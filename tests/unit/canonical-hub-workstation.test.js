@@ -50,7 +50,7 @@ const load = () => {
   return global.KomerceCanonicalHubWorkstation;
 };
 const mockFetch = data => jest.fn(async url => ({
-  ok:true, json:async () => url.startsWith('/api/purchasing') ? {purchase_orders:data.po||[]} : {orders:data.orders||[]},
+  ok:true, json:async () => url.startsWith('/api/purchasing') ? {purchase_orders:data.po||[]} : {orders:data.orders||[],purchase_orders:data.po||[]},
 }));
 
 test('la mini-app administrative compose deux branches et le vrai workspace achats', async () => {
@@ -91,7 +91,7 @@ test('la file administrative vient de GET /api/purchasing et ouvre un détail PO
   entries[0].click();
   expect(history.pushState).toHaveBeenCalledWith(null,'','/admin/hub?branch=administrative&market=KM&po=PO-42');
   expect(renderAdministrative).toHaveBeenCalledTimes(2);
-  expect(fetch).toHaveBeenCalledWith('/api/purchasing',expect.objectContaining({method:'GET'}));
+  expect(fetch).toHaveBeenCalledWith('/api/hub/dossier?market=KM',expect.objectContaining({method:'GET'}));
   expect(entries[0].classList.contains('is-selected')).toBe(true);
 });
 test('la file opérationnelle affiche les seules commandes IMPORT projetées par le serveur et ouvre leur parcours', async () => {
@@ -116,6 +116,15 @@ test('marché implicite unique : la file opérationnelle utilise la délégation
   await api.reloadCases();
   expect(fetch).toHaveBeenCalledWith('/api/hub/dossier?market=KM',expect.anything());
 });
+test('sans marché, la liste administrative reste la projection globale de Purchasing', async () => {
+  const app=load(), root=el('main'), fetch=mockFetch({po:[{id:'PO-1',supplier_name:'Boutique',status:'draft'}]});
+  const api=app.mount({root,user:{role:'admin'},document:doc,location:{search:'?branch=administrative'},
+    fetch,renderAdministrative:jest.fn(),renderOperations:jest.fn()});
+  await api.reloadCases();
+  expect(fetch).toHaveBeenCalledWith('/api/purchasing',expect.objectContaining({method:'GET'}));
+  expect(root.querySelectorAll('[data-hub-case]')).toHaveLength(1);
+});
+
 test('le retour de branche conserve le marché mais jamais la PO côté opérations', () => {
   const app=load();
   expect(app.href('operations','?market=KM&po=PO-42')).toBe('/admin/hub?market=KM&branch=operations');
