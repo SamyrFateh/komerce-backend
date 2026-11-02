@@ -201,6 +201,17 @@
 
   // ── Objet ───────────────────────────────────────────────────────────────────
   function renderOrder(p, data) {
+    // Une fiche en échec ne doit pas effacer le parcours Suivi/Colis.
+    // Ne jamais afficher les données d'une commande précédente comme repli.
+    if (data?.unavailable) {
+      const from = fromOf(p);
+      const backHref = from ? listUrl(from) : BASE;
+      return {
+        title:'Détail indisponible',
+        copy:'Impossible de lire ce colis pour le moment.',
+        body:`<div class="kir-error" role="alert">Le suivi Relais reste accessible. <a href="${backHref}" data-cockpit-nav>Revenir aux colis</a></div>`,
+      };
+    }
     const o = data?.order || {};
     const relais = data?.relais || {};
     const pay = data?.paiement || {};
@@ -265,7 +276,13 @@
     },
     order:{
       tab:p => (fromOf(p) === 'all' ? 'colis' : 'suivi'),
-      load:(p, api) => api(`/api/relay/orders/${encodeURIComponent(p.order || '')}?projection=live`),
+      async load(p, api) {
+        try {
+          return await api(`/api/relay/orders/${encodeURIComponent(p.order || '')}?projection=live`);
+        } catch (_error) {
+          return { unavailable:true };
+        }
+      },
       render:renderOrder,
       nav:navOrder,
     },

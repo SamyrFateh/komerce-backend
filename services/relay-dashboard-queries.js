@@ -251,7 +251,9 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
 async function getOrderDetail(user, orderId, { authorizedMarkets = null } = {}) {
   const isUuid = UUID_RE.test(orderId);
-  const whereClause = isUuid ? 'o.id = $1::uuid OR o.reference = $1' : 'o.reference = $1';
+  // Bind $1 prend le type uuid dans la première branche. Caster explicitement
+  // la référence texte évite PostgreSQL 42883 (text = uuid) sur les deep-links.
+  const whereClause = isUuid ? '(o.id = $1::uuid OR o.reference = $1::text)' : 'o.reference = $1::text';
 
   const { rows: [order] } = await db.query(`
     SELECT
