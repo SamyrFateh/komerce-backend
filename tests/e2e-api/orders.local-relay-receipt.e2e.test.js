@@ -208,9 +208,11 @@ describeE2E('Orders - local relay receipt without hub',({db})=>{
     await q(`INSERT INTO hub_physical_units
       (id,reference,unit_type,state,external_ref,current_location_ref)
       VALUES ($1,$2,'SUPPLIER_PACKAGE','RECEIVED',$2,'DXB-HUB')`,[unit,hubRef]);
+    // Le marché d'une KOM-BOX est dérivé de son contenu lors du départ ;
+    // l'assigner manuellement violerait hub_market_only_derived_at_outbound.
     await q(`INSERT INTO hub_physical_units
-      (id,reference,unit_type,state,market_id,current_location_ref)
-      VALUES ($1,$2,'MARKET_PARCEL','PACKED',$3,'DXB-HUB')`,[box,hubRef+'-BOX',market.id]);
+      (id,reference,unit_type,state,current_location_ref)
+      VALUES ($1,$2,'MARKET_PARCEL','PACKED','DXB-HUB')`,[box,hubRef+'-BOX']);
     await q("INSERT INTO hub_physical_unit_placements (physical_unit_id,allocation_id,quantity,operation_type) VALUES ($1,$2,1,'RECEIVE')",[unit,allocation]);
     await q("INSERT INTO hub_physical_unit_placements (physical_unit_id,allocation_id,quantity,operation_type) VALUES ($1,$2,1,'REPACK')",[box,allocation]);
     const {rows:[proof]}=await q('SELECT received,boxed FROM hub_item_physical_proof($1)',[items.mixedImport]);
