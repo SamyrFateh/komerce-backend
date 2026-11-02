@@ -80,6 +80,7 @@ module.exports = {
       'migrations/313_market_transport_sale_rates.sql',
       'migrations/354_international_shipment_journey.sql',
       'migrations/359_hub_draft_open_and_handover.sql',
+      'migrations/362_local_relay_receipt_quantity_guard.sql',
     ],
     docs: [
       'docs/doctrine/DOCTRINE_DENSITE_VALEUR.md',
@@ -100,6 +101,7 @@ module.exports = {
       'services/market-transport-tariff-gate.js',
       'services/market-transport-sale-rates.js',
       'services/parcel-item-mutation-service.js',
+      'services/local-relay-receipt-service.js',
       'services/parcel-mutation-service.js',
       'services/parcel-order-membership.js',
       'services/parcel-security.js',
