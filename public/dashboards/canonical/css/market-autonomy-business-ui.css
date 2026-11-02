@@ -171,8 +171,8 @@
 
 /* 02/11 — Un seul Hero pour le marché. La recherche transversale et le
    sélecteur de coque ne doublent plus les outils du marché : la sélection
-   autorisée est déplacée à l'intérieur du Hero métier par le bootstrap. */
-body.kmc-shell-v4.kmc-hero-first[data-kmc-surface="market-autonomy"] > .kmc-admin-topbar {
+   autorisée est déplacée à l'intérieur du Hero métier par le bootstrap.\n   La topbar demeure visible avant sélection explicite d'un marché. */
+body.kmc-shell-v4.kmc-hero-first.kmc-market-hero-integrated[data-kmc-surface="market-autonomy"] > .kmc-admin-topbar {
   display: none !important;
 }
 body.kmc-shell-v4[data-kmc-surface="market-autonomy"] #markets-decision-country-overview {
