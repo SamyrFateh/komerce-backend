@@ -6,6 +6,7 @@ jest.mock('../../services/client-notification-service',()=>({emitPickupReady:jes
 jest.mock('../../utils/reference',()=>({generateParcelRef:jest.fn().mockResolvedValue('KOM-P-2026-000999')}));
 jest.mock('../../services/order-status-machine',()=>({transitionOrderStatus:jest.fn()}));
 jest.mock('../../services/parcel-item-mutation-service',()=>({addParcelItemTraced:jest.fn().mockResolvedValue({row:{id:'assigned'}})}));
+jest.mock('../../services/parcel-operations',()=>({transitionParcelStatus:jest.fn().mockResolvedValue({ok:true})}));
 jest.mock('../../services/order-item-availability-service',()=>({setOrderItemAvailabilityStatus:jest.fn().mockResolvedValue(undefined)}));
 
 const db=require('../../db');
@@ -13,6 +14,7 @@ const clientNotifications=require('../../services/client-notification-service');
 const {transitionOrderStatus}=require('../../services/order-status-machine');
 const {setOrderItemAvailabilityStatus}=require('../../services/order-item-availability-service');
 const {addParcelItemTraced}=require('../../services/parcel-item-mutation-service');
+const {transitionParcelStatus}=require('../../services/parcel-operations');
 const {recordLocalRelayReceipt}=require('../../services/local-relay-receipt-service');
 
 const ORDER='00000000-0000-0000-0000-000000000011';
@@ -70,7 +72,7 @@ test('mixed order receives only local lines and preserves import provenance',asy
   expect(addParcelItemTraced).toHaveBeenCalledTimes(1);
   expect(addParcelItemTraced).toHaveBeenCalledWith(client,expect.objectContaining({parcelId:expect.any(String),orderItemId:item.id,quantity:2,actorId:actor.id}));
   expect(written(/UPDATE parcel_items SET qty_allocated/)).toBe(true);
-  expect(written(/UPDATE parcels SET status='available'/)).toBe(true);
+  expect(transitionParcelStatus).toHaveBeenCalledWith(client,expect.any(String),'available',{skipValidation:true});
 });
 test('unknown provenance or fully imported order fails closed',async()=>{
   setup({items:[{...item,fulfillment_source:null}]});
@@ -101,7 +103,7 @@ test('local paid receipt is atomic, parcel-scoped, and uses canonical status mac
   const r=await execute({note:'reçu et compté'});
   expect(r).toMatchObject({ok:true,body:{status:'available',receipt_scan_id:expect.any(String)}});
   expect(client.query.mock.calls[0][0]).toBe('BEGIN');
-  expect(written(/FROM orders WHERE id=\$1 FOR UPDATE/)).toBe(true);
+  expect(written(/FROM orders o JOIN relais r ON r.id=o.relais_id WHERE o.id=\$1 FOR UPDATE OF o/)).toBe(true);
   expect(written(/INSERT INTO parcels/)).toBe(true);
   expect(addParcelItemTraced).toHaveBeenCalledTimes(1);
   expect(written(/INSERT INTO scans/)).toBe(true);
