@@ -304,6 +304,12 @@ concentration d'exceptions corrélées
 → agir sur la cause structurelle
 ```
 
+## 10 bis. Lisibilité des causes en supervision
+
+L'affichage de niveau 1 expose d'abord une **formulation métier courte** issue du code de cause persistant, puis la référence de commande en second plan, le fait observé, l'action et le rôle réellement associés au signal. Les états techniques `in_transit`, `available`, les libellés `item(s)` et les codes de réconciliation ne constituent jamais le titre principal. La donnée source brute reste consultable à la demande dans le détail, sans disparition de la preuve.
+
+La couche UI ne modifie **jamais** la santé, le propriétaire ou les délais : elle traduit uniquement une cause reconnue. Code inconnu ou responsable absent → titre neutre, sans diagnostic ni rôle inventé. Une observation de transport inchangée ne devient pas, par reformulation, une preuve que le transport est effectivement bloqué.
+
 ## 11. Principe UI
 
 La sophistication appartient au modèle et à la traçabilité, pas à l'écran.

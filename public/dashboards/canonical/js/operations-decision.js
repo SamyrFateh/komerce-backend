@@ -94,6 +94,109 @@
     }));
   }
 
+
+  // Projection éditoriale : aucune couleur ni cause métier n'est calculée ici.
+  const CONTROL_OWNER_LABELS = Object.freeze({
+    finance: 'Finance', sourcing: 'Sourcing', purchasing: 'Achats', hub: 'Hub',
+    logistics: 'Logistique', transitaire: 'Transitaire', customs: 'Douane',
+    relais: 'Relais', operations: 'Opérations', admin: 'Administration', support: 'Support',
+  });
+
+  function controlOwnerLabel(role) {
+    return role && CONTROL_OWNER_LABELS[String(role).trim().toLowerCase()] || null;
+  }
+
+  function controlCauseAge(source) {
+    const raw = String(source || '');
+    const days = raw.match(/(?:depuis|après)\s+(\d{1,5})\s+jours?\b/i);
+    if (days) return `depuis ${Number(days[1])} j`;
+    const minutes = raw.match(/depuis\s+(\d{1,8})\s+min\b/i);
+    if (!minutes) return '';
+    const n = Number(minutes[1]);
+    if (!Number.isSafeInteger(n) || n < 0) return '';
+    if (n >= 1440) {
+      const h = Math.floor(n % 1440 / 60);
+      return `depuis ${Math.floor(n / 1440)} j${h ? ` ${h} h` : ''}`;
+    }
+    return n >= 60 ? `depuis ${Math.floor(n / 60)} h` : `depuis ${n} min`;
+  }
+
+  // Le code de cause est la seule clé de traduction. Aucune interprétation
+  // inférée d'un code inconnu : le dossier conserve la preuve brute.
+  function describeControlCause(cause, stageKey, health, localOnly = false) {
+    const code = cause && String(cause.code || '').toLowerCase();
+    const raw = cause && String(cause.summary || '') || '';
+    const age = controlCauseAge(raw);
+    const count = raw.match(/^\s*(\d+)\s+item\(s\)\s+non couvert/i);
+    const number = count ? Number(count[1]) : null;
+    const fixed = (title, detail, next) => ({
+      title, detail: age ? `${detail} · ${age}` : detail, next,
+    });
+    switch (code) {
+      case 'ordered_without_purchase_order':
+      case 'purchase_line_missing':
+        return fixed(
+          number != null ? `${number} article${number > 1 ? 's' : ''} sans achat fournisseur` : 'Achat fournisseur incomplet',
+          'Articles sans ligne d’achat', 'Compléter les achats');
+      case 'purchasing_po_creation_failed':
+        return fixed('Création de PO échouée', 'Commande fournisseur non créée', 'Reprendre la création');
+      case 'supplier_payment_review':
+        if (/mismatch|mismatched|écart/i.test(raw))
+          return fixed('Écart sur paiement fournisseur', 'Rapprochement à contrôler', 'Vérifier le paiement');
+        if (/rejected|rejet/i.test(raw))
+          return fixed('Paiement fournisseur rejeté', 'Rejet à examiner', 'Vérifier le rejet');
+        return fixed('Paiement fournisseur à vérifier', 'Rapprochement non confirmé', 'Contrôler le rapprochement');
+      case 'supplier_payment_blocked':
+        return fixed('Paiement fournisseur bloqué', 'Validation du paiement nécessaire', 'Vérifier le paiement');
+      case 'supplier_order_ambiguous':
+        return fixed('Commande fournisseur à vérifier', 'Envoi incertain : risque de doublon', 'Confirmer avec le fournisseur');
+      case 'purchase_order_receipt_stuck':
+        return fixed('Préparation à déclencher', 'Achats reçus, progression non enregistrée', 'Vérifier la transition');
+      case 'purchase_order_overreceived':
+        return fixed('Quantité reçue en excès', 'Écart de réception fournisseur', 'Contrôler les quantités');
+      case 'hub_quarantine':
+      case 'hub_non_compliant':
+        return fixed('Article isolé au Hub', 'Non-conformité en cours de traitement', 'Traiter la non-conformité');
+      case 'customs_declaration_pending':
+        return fixed('Déclaration douanière attendue', 'Dossier arrivé, déclaration à finaliser', 'Finaliser la déclaration');
+      case 'pickup_overdue':
+        return fixed('Retrait client en attente', 'Commande disponible au relais', 'Vérifier le retrait');
+      case 'customer_payment_attention':
+        return /échou|échec|failed/i.test(raw)
+          ? fixed('Paiement client échoué', 'Le règlement n’a pas abouti', 'Vérifier le paiement')
+          : fixed('Paiement client à confirmer', 'Confirmation de règlement attendue', 'Vérifier le règlement');
+      case 'cash_expiring':
+        return fixed('Encaissement relais à régulariser', 'Dépôt ou transfert non confirmé', 'Contrôler les fonds');
+      case 'preparation_stuck':
+        return fixed('Préparation à vérifier', 'Commande toujours en préparation', 'Vérifier le suivi Hub');
+      case 'parcel_blocked': {
+        const status = (raw.match(/statut\s*["“]([a-z_]+)["”]/i) || [])[1];
+        switch (status) {
+          case 'available': return fixed('Retrait client en attente', 'Colis disponible au relais', 'Vérifier le retrait');
+          case 'arrived': return fixed('Suite de l’arrivée à vérifier', 'Colis arrivé, progression à confirmer', 'Contrôler la suite logistique');
+          case 'in_transit': return fixed('Suivi transport à vérifier', 'Colis toujours en transit', 'Vérifier l’acheminement');
+          case 'shipped': return fixed('Suivi expédition à vérifier', 'Colis expédié, progression à confirmer', 'Vérifier le transitaire');
+          case 'preparation': return fixed('Préparation colis à vérifier', 'Colis toujours en préparation', 'Contrôler la préparation');
+          default: return fixed('Suivi du colis à vérifier', 'Progression à confirmer', 'Contrôler le suivi');
+        }
+      }
+      default:
+        if (health === 'GREEN') return {
+          title: localOnly ? 'Commande locale en cours' : 'Progression normale',
+          detail: localOnly ? 'Préparation et retrait au relais' : 'Aucune intervention signalée',
+          next: null,
+        };
+        if (health === 'UNKNOWN') return {
+          title: 'Situation à confirmer', detail: 'Informations insuffisantes', next: null,
+        };
+        return {
+          title: health === 'RED' ? 'Anomalie à examiner' : 'Point à surveiller',
+          detail: cause ? 'Cause à consulter dans le dossier' : 'Cause non précisée',
+          next: null,
+        };
+    }
+  }
+
   const CONTROL_ENVELOPE_LABEL = Object.freeze({
     ORDER: 'Commande',
     PURCHASE_ORDER: 'PO fournisseur',
@@ -225,12 +328,12 @@
             stageLabel: order.localOnly && stage.key === 'RELAY' ? 'Préparation / retrait local' : stage.label,
             stageKey: stage.key,
           }))),
-          alerts: members.flatMap(stage => stage.alerts),
         };
       });
     const hasOrders = columns.some(column => column.orders.length > 0);
-    const hasAlerts = columns.some(column => column.alerts.length > 0);
-    const isEmpty = !hasOrders && !hasAlerts;
+    // Les alertes structurelles restent dans l'API, mais leur synthèse répétait
+    // les commandes et encombrait le parcours. Seules les commandes sont rendues.
+    const isEmpty = !hasOrders;
     host.className = isEmpty ? 'kmc-control-chain is-empty' : 'kmc-control-chain is-active';
     host.setAttribute('data-chain-state', isEmpty ? 'empty' : 'active');
     host.setAttribute('data-phase-count', String(columns.length));
@@ -299,26 +402,18 @@
         list.appendChild(text(doc, 'p', 'kmc-control-order-empty', 'Aucune commande à cette phase'));
       }
 
-      column.alerts.forEach(alert => {
-        const banner = doc.createElement('div');
-        banner.className = `kmc-control-structural-alert ${controlHealthClass(alert.health)}`;
-        banner.appendChild(text(doc, 'strong', 'kmc-control-structural-count', `${alert.count} commandes · même anomalie`));
-        banner.appendChild(text(doc, 'span', 'kmc-control-structural-summary', alert.summary));
-        list.appendChild(banner);
-      });
-
       column.orders.forEach(order => {
         const row = doc.createElement('div');
         row.className = 'kmc-control-order-row';
         const item = doc.createElement('button');
         item.type = 'button';
         item.className = `kmc-control-order ${controlHealthClass(order.health)}`;
-        const mainCause = order.causes[0] && order.causes[0].summary;
+        const mainCause = order.causes[0] || null;
+        const situation = describeControlCause(mainCause, order.stageKey, order.health, order.localOnly);
+        const owner = controlOwnerLabel(mainCause && mainCause.owner);
         const stateLabel = { GREEN: 'En cours', ORANGE: 'À surveiller', RED: 'Action requise', UNKNOWN: 'Non déterminé' }[order.health];
-        const summary = mainCause || (order.health === 'GREEN'
-          ? (order.localOnly ? 'Circuit local sans Hub ni PO fournisseur' : 'Progression normale')
-          : 'Aucune cause métier précisée');
-        item.setAttribute('aria-label', `${order.reference} · ${order.stageLabel} · ${stateLabel} · ${summary}`);
+        const summary = situation.detail;
+        item.setAttribute('aria-label', `${situation.title} · ${order.reference} · ${order.stageLabel} · ${stateLabel} · ${summary}`);
         item.setAttribute('aria-expanded', 'false');
         item.title = `${order.reference} · ${order.stageLabel}`;
         const detailId = `control-detail-${String(column.key).toLowerCase()}-${String(order.reference).replace(/[^a-z0-9_-]+/gi, '-')}`;
@@ -327,11 +422,14 @@
         dot.className = 'kmc-control-order-dot';
         dot.setAttribute('aria-hidden', 'true');
         item.appendChild(dot);
-        item.appendChild(text(doc, 'strong', 'kmc-control-order-ref', order.reference));
+        item.appendChild(text(doc, 'strong', 'kmc-control-order-issue', situation.title));
         item.appendChild(text(doc, 'span', 'kmc-control-order-disclosure', '›'));
+        item.appendChild(text(doc, 'span', 'kmc-control-order-ref', order.reference));
         item.appendChild(text(doc, 'span', 'kmc-control-order-substage', order.stageLabel));
         item.appendChild(text(doc, 'span', 'kmc-control-order-state-label', stateLabel));
         item.appendChild(text(doc, 'span', 'kmc-control-order-summary', summary));
+        if (owner) item.appendChild(text(doc, 'span', 'kmc-control-order-next', `${situation.next || 'À examiner'} · ${owner}`));
+        else if (situation.next) item.appendChild(text(doc, 'span', 'kmc-control-order-next', situation.next));
 
           const detail = doc.createElement('div');
           detail.id = detailId;
@@ -340,7 +438,8 @@
 
           const panelHead = doc.createElement('div');
           panelHead.className = 'kmc-control-panel-head';
-          panelHead.appendChild(text(doc, 'strong', 'kmc-control-panel-title', order.reference));
+          panelHead.appendChild(text(doc, 'strong', 'kmc-control-panel-title', situation.title));
+          panelHead.appendChild(text(doc, 'span', 'kmc-control-panel-reference', order.reference));
           panelHead.appendChild(text(doc, 'span', 'kmc-control-panel-stage', `Étape : ${order.stageLabel}`));
           const closeBtn = text(doc, 'button', 'kmc-control-panel-close', '×');
           closeBtn.type = 'button';
@@ -365,10 +464,19 @@
             const causes = doc.createElement('div');
             causes.className = 'kmc-control-order-causes';
             order.causes.forEach(cause => {
+              const message = describeControlCause(cause, order.stageKey, order.health, order.localOnly);
               const line = doc.createElement('div');
               line.className = 'kmc-control-order-cause-line';
-              line.appendChild(text(doc, 'span', 'kmc-control-order-cause-summary', cause.summary));
-              if (cause.owner) line.appendChild(text(doc, 'span', 'kmc-control-order-owner', `Responsable : ${cause.owner}`));
+              line.appendChild(text(doc, 'strong', 'kmc-control-order-cause-title', message.title));
+              line.appendChild(text(doc, 'span', 'kmc-control-order-cause-summary', message.detail));
+              const actor = controlOwnerLabel(cause.owner);
+              if (actor) line.appendChild(text(doc, 'span', 'kmc-control-order-owner', `${message.next || 'À examiner'} · ${actor}`));
+              else if (message.next) line.appendChild(text(doc, 'span', 'kmc-control-order-owner', message.next));
+              const rawProof = doc.createElement('details');
+              rawProof.className = 'kmc-control-cause-proof';
+              rawProof.appendChild(text(doc, 'summary', '', 'Voir la donnée source'));
+              rawProof.appendChild(text(doc, 'span', 'kmc-control-cause-raw', [cause.code, cause.summary].filter(Boolean).join(' · ')));
+              line.appendChild(rawProof);
               causes.appendChild(line);
             });
             detail.appendChild(causes);
@@ -888,6 +996,9 @@
     decisionItems,
     controlHealthClass,
     controlChainColumns,
+    controlOwnerLabel,
+    controlCauseAge,
+    describeControlCause,
     PROCESS_PHASES,
     projectProcessPhases,
     renderProcessPhases,
