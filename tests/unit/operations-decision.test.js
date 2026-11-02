@@ -150,3 +150,12 @@ test('Opérations : le filtre stage est lu depuis l’URL, conserve marché et p
     delete globalThis.location;
   }
 });
+
+test('le flux vivant relit les faits toutes les 60 secondes sans masquer un dossier actif', () => {
+  expect(SRC).toContain('win.setInterval(() => {');
+  expect(SRC).toContain('}, 60000)');
+  expect(SRC).toContain("options.document.visibilityState === 'hidden'");
+  expect(SRC).toContain(".kmc-control-detail-dock:not([hidden])");
+  expect(SRC).toContain('button.click()');
+  expect(SRC).toContain("prefers-reduced-motion: reduce");
+});
