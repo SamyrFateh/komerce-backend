@@ -1648,3 +1648,13 @@
     gap: 11px;
   }
 }
+
+.kmc-operations-workspace[data-workspace-mode="execution"] .kmc-hub-work-trace-detail {
+  grid-column: 1 / -1;
+  min-width: 0;
+  overflow: hidden;
+}
+.kmc-operations-workspace[data-workspace-mode="execution"] .kmc-hub-work-trace-detail .kmc-workspace-table-wrap {
+  overflow-x: auto;
+  max-width: 100%;
+}
