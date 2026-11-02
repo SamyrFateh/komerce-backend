@@ -72,6 +72,25 @@ describe('Hub / Relais — decision-first visual', () => {
     expect(decision.summaryCards(items).every(card => card.tone === 'neutral')).toBe(true);
   });
 
+  test('Hub Live conserve les métriques physiques projetées, sans bandeau de décisions hérité', async () => {
+    const baseMount = jest.fn(opts => Promise.resolve({ marketCode: 'KM' }));
+    const originalRender = jest.fn();
+    const ui = { MetricStrip: { render: originalRender } };
+    const decisionUi = {
+      DecisionStrip: { render: jest.fn() },
+      SummaryCards: { render: jest.fn() },
+    };
+    const enhanced = decision.enhance({ mount: baseMount, metricItems: workspace.metricItems }, decisionUi);
+    const result = await enhanced.mount({ mode: 'execution', ui, document: {} });
+    expect(baseMount.mock.calls[0][0].ui).toBe(ui);
+    expect(baseMount.mock.calls[0][0].ui.MetricStrip.render).toBe(originalRender);
+    expect(result.decisionFirst).toBe(false);
+
+    // L'ancien tableau de décisions reste inchangé pour les autres surfaces.
+    await enhanced.mount({ mode: 'relay-execution', ui, document: {} });
+    expect(baseMount.mock.calls[1][0].ui.MetricStrip.render).not.toBe(originalRender);
+  });
+
   test('enhance conserve le mount métier et ne remplace que la projection MetricStrip', async () => {
     const baseMount = jest.fn(options => Promise.resolve({
       marketCode: 'CM',
