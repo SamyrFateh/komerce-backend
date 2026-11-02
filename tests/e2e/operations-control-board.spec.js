@@ -359,6 +359,27 @@ test.describe('Operations — logistics control board', () => {
     await expect(page.locator('.kmc-control-detail-dock:not([hidden])')).toHaveCount(0);
   });
 
+  test('une nouvelle lecture serveur fait évoluer la couleur sans inventer de statut', async ({ page }) => {
+    const affected = page.locator('.kmc-control-order').filter({ hasText:'K-104829' });
+    await expect(affected).toHaveClass(/is-critical/);
+    const updated = JSON.parse(JSON.stringify(payload));
+    updated.control_chain.by_stage.PURCHASING[0].health = 'GREEN';
+    updated.control_chain.by_stage.PURCHASING[0].exceptions = [];
+    await page.route(`${ORIGIN}/api/admin/dashboard/operations`, async route => {
+      await route.fulfill({ contentType:'application/json', body:JSON.stringify(updated) });
+    });
+    await page.locator('.kmc-operations-refresh').click();
+    await expect(page.locator('.kmc-control-order').filter({ hasText:'K-104829' })).toHaveClass(/is-positive/);
+  });
+
+  test('la vue desktop 1440×900 affiche cinq phases et les causes lisibles', async ({ page }, testInfo) => {
+    await page.setViewportSize({ width:1440, height:900 });
+    await expect(page.locator('.kmc-control-stage')).toHaveCount(5);
+    await expect(page.locator('.kmc-control-order.is-warning').filter({hasText:'K-104816'}))
+      .toContainText('Confirmation fournisseur à surveiller');
+    await page.screenshot({ path:testInfo.outputPath('operations-living-flow-1440x900.png'), fullPage:false });
+  });
+
   test('capture de revue 1672×941', async ({ page }, testInfo) => {
     await page.screenshot({ path:testInfo.outputPath('operations-control-board-1672x941.png'), fullPage:false });
   });
