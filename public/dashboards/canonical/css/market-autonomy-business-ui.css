@@ -1,0 +1,170 @@
+/* Marché — surface de décision métier, sans table horizontale.
+   Présentation uniquement : les prix et les contrôles restent côté API. */
+#market-autonomy-root { min-width: 0; }
+#market-autonomy-root .kmc-workspace-header { margin-bottom: 12px; }
+#market-autonomy-root .kmc-workspace-feedback:empty { display: none; }
+#market-autonomy-root .kmc-workspace-title { font-size: clamp(25px,2.2vw,32px); }
+#market-autonomy-root .kmc-workspace-nav { display: flex; flex-wrap: wrap; gap: 10px; }
+
+#market-autonomy-root .kmc-autonomy-selector {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+  padding: 9px 14px; margin-bottom: 12px;
+}
+#market-autonomy-root .kmc-autonomy-selector .kmc-section-title { margin: 0; font-size: 13px; }
+#market-autonomy-root .kmc-autonomy-selector select { width: auto; min-width: 120px; max-width: 180px; }
+
+#market-autonomy-root .kmc-autonomy-access {
+  padding: 0; margin-top: 14px; margin-bottom: 12px;
+  border: 1px solid #e2e8f0; border-radius: 11px; background: #f8fafc;
+}
+#market-autonomy-root .kmc-autonomy-access > summary {
+  list-style: revert; cursor: pointer; padding: 12px 16px;
+  color: #475569; font-size: 13px; font-weight: 750;
+}
+#market-autonomy-root .kmc-autonomy-access[open] { padding-bottom: 14px; }
+#market-autonomy-root .kmc-autonomy-access .kmc-workspace-actions-grid {
+  padding: 0 14px; gap: 8px;
+}
+#market-autonomy-root .kmc-autonomy-access .kmc-workspace-action-card { font-size: 12px; }
+
+#market-autonomy-root .kmc-autonomy-prices {
+  min-width: 0; padding: 20px; border: 1px solid #d9e4f2;
+  border-radius: 14px; background: #fff;
+}
+#market-autonomy-root .kmc-autonomy-prices > .kmc-section-title {
+  margin: 0 0 4px; color: #102746; font-size: 20px; font-weight: 800;
+}
+#market-autonomy-root .kmc-autonomy-prices > .kmc-workspace-note {
+  margin: 0 0 8px; color: #60738b; font-size: 13px; line-height: 1.5;
+}
+#market-autonomy-root .kmc-autonomy-catalog-link {
+  display: inline-flex; align-items: center; margin: 2px 0 16px;
+  color: #1759b8; font-weight: 750; font-size: 13px; text-decoration: none;
+}
+#market-autonomy-root .kmc-autonomy-catalog-link:hover { text-decoration: underline; }
+
+#market-autonomy-root .kmc-autonomy-toolbar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+  margin: 0 0 14px;
+}
+#market-autonomy-root .kmc-autonomy-toolbar input,
+#market-autonomy-root .kmc-autonomy-toolbar select {
+  box-sizing: border-box; min-height: 42px; max-width: 100%;
+  padding: 10px 12px; border: 1px solid #cbd5e1;
+  border-radius: 10px; font-size: 13.5px; background: #fff; color: #152944;
+}
+#market-autonomy-root .kmc-autonomy-toolbar input { flex: 1 1 250px; min-width: 0; }
+#market-autonomy-root .kmc-autonomy-toolbar select { flex: 0 1 210px; }
+#market-autonomy-root .kmc-autonomy-count {
+  margin-left: auto; color: #64748b; font-size: 12.5px; white-space: nowrap;
+}
+
+#market-autonomy-root .kmc-autonomy-list {
+  min-width: 0; width: 100%; max-width: 100%;
+  overflow: visible; border: 0; border-radius: 0; background: transparent; box-shadow: none;
+}
+#market-autonomy-root .kmc-autonomy-list .kmc-autonomy-table {
+  display: block; width: 100%; min-width: 0 !important; max-width: 100%;
+  border: 0; border-spacing: 0; background: transparent;
+}
+#market-autonomy-root .kmc-autonomy-table thead { display: none; }
+#market-autonomy-root .kmc-autonomy-table tbody { display: grid; gap: 9px; min-width: 0; }
+#market-autonomy-root .kmc-autonomy-table .kmc-autonomy-row {
+  display: grid; grid-template-columns: minmax(0,2.1fr) minmax(0,.75fr) minmax(0,.92fr) minmax(0,.8fr);
+  align-items: center; column-gap: 20px; row-gap: 12px;
+  min-width: 0; padding: 14px 16px;
+  border: 1px solid #dfe7f1; border-radius: 12px; background: #fff;
+  box-shadow: 0 1px 3px rgb(15 23 42 / .03);
+}
+#market-autonomy-root .kmc-autonomy-table .kmc-autonomy-row:hover { border-color: #b8cde9; }
+#market-autonomy-root .kmc-autonomy-table .kmc-autonomy-row[hidden] { display: none !important; }
+#market-autonomy-root .kmc-autonomy-table .kmc-autonomy-row > td {
+  display: grid; min-width: 0; width: auto; padding: 0 !important;
+  border: 0 !important; vertical-align: middle;
+  overflow-wrap: anywhere; color: #263b58; font-size: 13px;
+}
+#market-autonomy-root .kmc-autonomy-table .kmc-autonomy-row > td:nth-child(2)::before,
+#market-autonomy-root .kmc-autonomy-table .kmc-autonomy-row > td:nth-child(3)::before,
+#market-autonomy-root .kmc-autonomy-table .kmc-autonomy-row > td:nth-child(4)::before {
+  display: block; margin-bottom: 5px; color: #708198;
+  font-size: 11px; font-weight: 750; letter-spacing: .02em;
+}
+#market-autonomy-root .kmc-autonomy-table td:nth-child(2)::before { content: "Prix global"; }
+#market-autonomy-root .kmc-autonomy-table td:nth-child(3)::before { content: "Prix marché"; }
+#market-autonomy-root .kmc-autonomy-table td:nth-child(4)::before { content: "Situation"; }
+#market-autonomy-root .kmc-autonomy-product-title {
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden; color: #122747; font-size: 14px; line-height: 1.4;
+}
+#market-autonomy-root .kmc-autonomy-ref { color: #7b8799; margin-top: 5px; font-size: 11.5px; }
+#market-autonomy-root .kmc-autonomy-table .kmc-autonomy-row > td:nth-child(2) {
+  font-size: 13px; font-variant-numeric: tabular-nums;
+}
+#market-autonomy-root .kmc-autonomy-saved-price { font-size: 14px; font-variant-numeric: tabular-nums; }
+#market-autonomy-root .kmc-autonomy-row:not(.is-expanded) > td:nth-child(3) input,
+#market-autonomy-root .kmc-autonomy-row:not(.is-expanded) > td:nth-child(3) small { display: none; }
+#market-autonomy-root .kmc-autonomy-row.is-expanded .kmc-autonomy-saved-price { display: none; }
+#market-autonomy-root .kmc-autonomy-row > td:nth-child(3) input,
+#market-autonomy-root .kmc-autonomy-reason input {
+  box-sizing: border-box; width: 100%; min-width: 0; min-height: 39px;
+  margin-top: 4px; padding: 8px 10px; border: 1px solid #b9c9dd;
+  border-radius: 9px; color: #122747; background: #fff; font: inherit;
+}
+#market-autonomy-root .kmc-autonomy-status {
+  display: inline-flex; width: fit-content; padding: 4px 9px;
+  border-radius: 999px; font-size: 11.5px; font-weight: 800; white-space: nowrap;
+}
+#market-autonomy-root .kmc-autonomy-status.is-active { background: #e9f8f2; color: #087757; }
+#market-autonomy-root .kmc-autonomy-status.is-draft { background: #fff5e5; color: #9c630d; }
+#market-autonomy-root .kmc-autonomy-status.is-missing { background: #f1f5f9; color: #64748b; }
+#market-autonomy-root .kmc-autonomy-toggle {
+  width: fit-content; margin-top: 8px; padding: 5px 0; border: 0; border-radius: 4px;
+  background: transparent; color: #135fbd; font-weight: 800; font-size: 12px; cursor: pointer;
+}
+#market-autonomy-root .kmc-autonomy-toggle:hover { text-decoration: underline; }
+#market-autonomy-root .kmc-autonomy-toggle:focus-visible,
+#market-autonomy-root .kmc-autonomy-toolbar :focus-visible { outline: 3px solid #98c1fa; outline-offset: 2px; }
+
+#market-autonomy-root .kmc-autonomy-table .kmc-autonomy-row > td:nth-child(5),
+#market-autonomy-root .kmc-autonomy-table .kmc-autonomy-row > td:nth-child(6) {
+  display: none; grid-column: 1 / -1;
+}
+#market-autonomy-root .kmc-autonomy-table .kmc-autonomy-row.is-expanded > td:nth-child(5),
+#market-autonomy-root .kmc-autonomy-table .kmc-autonomy-row.is-expanded > td:nth-child(6) {
+  display: flex; flex-wrap: wrap; gap: 10px;
+}
+#market-autonomy-root .kmc-autonomy-table .kmc-autonomy-row.is-expanded > td:nth-child(5) {
+  align-items: center; padding-top: 14px !important; border-top: 1px solid #e7eef6 !important;
+}
+#market-autonomy-root .kmc-autonomy-reason label { flex: 0 0 150px; color: #52647d; font-weight: 750; }
+#market-autonomy-root .kmc-autonomy-reason input { flex: 1 1 250px; max-width: 500px; margin-top: 0; }
+#market-autonomy-root .kmc-autonomy-actions { align-items: center; }
+#market-autonomy-root .kmc-autonomy-actions .kmc-workspace-action {
+  min-height: 36px; border-radius: 8px; font-weight: 750; font-size: 12.5px;
+}
+
+@media (max-width: 1120px) {
+  #market-autonomy-root .kmc-autonomy-table .kmc-autonomy-row {
+    grid-template-columns: minmax(0,1.8fr) minmax(0,.8fr) minmax(0,1fr);
+  }
+  #market-autonomy-root .kmc-autonomy-table .kmc-autonomy-row > td:nth-child(4) {
+    grid-column: 1 / -1; display: flex; align-items: center; gap: 12px;
+  }
+  #market-autonomy-root .kmc-autonomy-table .kmc-autonomy-row > td:nth-child(4)::before { display: none; }
+  #market-autonomy-root .kmc-autonomy-toggle { margin-top: 0; }
+}
+@media (max-width: 680px) {
+  #market-autonomy-root .kmc-autonomy-prices { padding: 13px; }
+  #market-autonomy-root .kmc-autonomy-toolbar { display: grid; grid-template-columns: 1fr; }
+  #market-autonomy-root .kmc-autonomy-toolbar input,
+  #market-autonomy-root .kmc-autonomy-toolbar select { width: 100%; }
+  #market-autonomy-root .kmc-autonomy-count { margin-left: 0; }
+  #market-autonomy-root .kmc-autonomy-table .kmc-autonomy-row {
+    grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 12px;
+    padding: 13px;
+  }
+  #market-autonomy-root .kmc-autonomy-table .kmc-autonomy-row > td:nth-child(1),
+  #market-autonomy-root .kmc-autonomy-table .kmc-autonomy-row > td:nth-child(4) { grid-column: 1 / -1; }
+  #market-autonomy-root .kmc-autonomy-reason label { flex: 1 1 100%; }
+  #market-autonomy-root .kmc-autonomy-reason input { flex: 1 1 100%; max-width: 100%; }
+}
