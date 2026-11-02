@@ -41,3 +41,12 @@ Aucun ancien écran n'est retiré : redirection seulement après la recette mét
 - Opérations : historique des 6 dernières transitions (`order_status_history`) dans le panneau latéral, projeté côté serveur et borné au marché ; « prochaine action » = responsable de la cause (déjà affiché).
 - Finance / Comptabilité : niveaux N1/N2/N3 (N3 non alimenté, N2 = hypothèse de classement).
 - Commerce : encaissé net (journal) et part des lignes produit.
+
+## Retrait des anciens écrans (2026-11-02)
+
+- **Hub & Relais** (`/admin/workspaces/operations`) : retiré de la navigation. L'URL historique redirige vers `/admin/hub-live?view=execute` (agent_relais : `/admin/relais-live?view=execute`) en conservant `?market`.
+- **Cash & dépôts** : onglet retiré de Comptabilité ; le module vit dans Relais live (onglet « Cash & dépôts »).
+- **Accès conservés** : `market_operator` → « Hub · Exécution » et « Relais · Cash & dépôts » (domaine Opérations, lecture) ; `finance` → « Cash & dépôts » (domaine Finance, module cash seul, sans file opérationnelle) ; `agent_hub` / `agent_relais` atterrissent sur leur Live.
+- **Sécurité** : `agent_relais` ne lit plus le journal financier (403 sur `/journal/*`) et n'a plus Comptabilité dans sa navigation.
+- Moteur `operations-workspace.js` conservé (modes `execution` et `relay-execution`) ; le mode lecture seule historique n'a plus de point d'entrée.
+

@@ -144,8 +144,8 @@
     market_operator:    '/admin/pilotage',
     finance:            '/admin/workspaces/accounting',
     sourcing:           '/admin/import-runtime',
-    agent_hub:          '/admin/workspaces/operations',
-    agent_relais:       '/admin/workspaces/operations',
+    agent_hub:          '/admin/hub-live',
+    agent_relais:       '/admin/relais-live',
     agent_transitaire:  '/admin/workspaces/shipping-customs',
     support:            '/admin/pilotage',
   });
@@ -830,7 +830,19 @@
     });
   }
 
+  // L'ancien écran Hub & Relais est retiré : l'URL redirige vers l'exécution Hub live / Relais live.
+  function operationsWorkspaceTarget(user) {
+    const role = (user && user.role) || '';
+    const base = role === 'agent_relais' ? '/admin/relais-live' : '/admin/hub-live';
+    const market = new URLSearchParams(String(global.location?.search || '')).get('market');
+    return base + '?view=execute' + (market ? '&market=' + encodeURIComponent(market) : '');
+  }
+
   function renderOperationsWorkspaceShell(root, user, adminContext) {
+    if (global.location && typeof global.location.replace === 'function') {
+      global.location.replace(operationsWorkspaceTarget(user));
+      return undefined;
+    }
     return renderMarketSurfaceShell(root, user, adminContext, {
       surface: 'operations-workspace',
       title: 'Workspace Operations / Hub-Relais',
@@ -958,6 +970,11 @@
     }
 
     const surface = surfaceForPath(global.location.pathname);
+    // Ancien écran Hub & Relais retiré : l'URL historique mène à l'exécution Hub live / Relais live.
+    if (surface === SURFACES.OPERATIONS_WORKSPACE) {
+      global.location.replace(operationsWorkspaceTarget(user));
+      return user;
+    }
     const adminContext = (surface === SURFACES.CATALOG_WORKSPACE || surface === SURFACES.SOURCING_WORKSPACE || surface === SURFACES.PURCHASING_WORKSPACE || surface === SURFACES.IMPORT_RUNTIME || surface === SURFACES.ACTION_CENTER || surface === SURFACES.SETTINGS)
       ? null
       : await requireAdminContext();
@@ -1049,6 +1066,7 @@
     renderOperationsShell,
     renderFinanceShell,
     renderOperationsWorkspaceShell,
+    operationsWorkspaceTarget,
     renderShippingCustomsWorkspaceShell,
     renderFinanceAccountingWorkspaceShell,
     renderPricingWorkspaceShell,

@@ -18,7 +18,7 @@ const EXPECTED = Object.freeze({
   admin: [
     'control-tower', 'action-center',
     'flow-commerce', 'flow-orders', 'entity-clients', 'workspace-pricing', 'workspace-catalog',
-    'flow-operations', 'workspace-operations', 'workspace-shipping', 'workspace-purchasing',
+    'flow-operations', 'workspace-shipping', 'workspace-purchasing',
     'flow-finance', 'workspace-accounting',
     'live-import-runtime', 'live-hub', 'live-relais',
     'markets-home', 'market-catalog',
@@ -27,14 +27,14 @@ const EXPECTED = Object.freeze({
   market_operator: [
     'control-tower', 'action-center',
     'flow-commerce', 'flow-orders', 'entity-clients', 'workspace-pricing',
-    'flow-operations', 'workspace-operations', 'workspace-shipping',
+    'flow-operations', 'workspace-hub-exec', 'workspace-relais-exec', 'workspace-shipping',
     'flow-finance', 'workspace-accounting',
     'market-autonomy', 'market-catalog',
   ],
-  agent_hub: ['action-center', 'workspace-operations', 'workspace-shipping', 'live-hub'],
-  agent_relais: ['action-center', 'workspace-operations', 'workspace-accounting', 'live-relais'],
+  agent_hub: ['action-center', 'workspace-shipping', 'live-hub'],
+  agent_relais: ['action-center', 'live-relais'],
   agent_transitaire: ['action-center', 'workspace-shipping'],
-  finance: ['workspace-accounting'],
+  finance: ['workspace-accounting', 'workspace-cash'],
   sourcing: ['live-import-runtime'],
   support: [],
 });
@@ -44,8 +44,8 @@ const ROLE_HOME = Object.freeze({
   market_operator: '/admin/pilotage',
   finance: '/admin/workspaces/accounting',
   sourcing: '/admin/import-runtime',
-  agent_hub: '/admin/workspaces/operations',
-  agent_relais: '/admin/workspaces/operations',
+  agent_hub: '/admin/hub-live',
+  agent_relais: '/admin/relais-live',
   agent_transitaire: '/admin/workspaces/shipping-customs',
   support: '/portail',
 });

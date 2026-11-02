@@ -599,7 +599,9 @@ function parseNavigation() {
 }
 
 // ── 4. Résolution href → surface (réplique fidèle des deux surfaceForPath()) ──
-function resolveHrefToSurface(href, appRouting, navParsed) {
+function resolveHrefToSurface(rawHref, appRouting, navParsed) {
+  // surfaceForPath() ne lit que le pathname : la query (?view=execute) ne change pas la surface.
+  const href = String(rawHref).split('?')[0];
   if (navParsed.htmlSurfaceForPath[href]) {
     return { surfaceId: navParsed.htmlSurfaceForPath[href], via: 'standalone-html' };
   }

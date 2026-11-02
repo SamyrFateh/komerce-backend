@@ -15,7 +15,7 @@
  * @impact-areas  admin-dashboard, accounting, finance
  * @version       2026-11
  *
- * Comptabilité : Synthèse | Journal | Rapprochements | Pièces justificatives (+ « Cash & dépôts » en transition vers Relais live).
+ * Comptabilité : Synthèse | Journal | Rapprochements | Pièces justificatives.
  * Tout vient de la projection serveur du journal ; aucune règle financière n'est recalculée ici.
  */
 'use strict';
@@ -32,7 +32,6 @@
     { id: 'movements', label: 'Journal' },
     { id: 'reconciliation', label: 'Rapprochements' },
     { id: 'documents', label: 'Pièces justificatives' },
-    { id: 'cash', label: 'Cash & dépôts' },
   ]);
 
   function text(doc, tag, className, value) {
@@ -186,15 +185,6 @@
     async function load() {
       drawTabs();
       content.replaceChildren();
-      if (state.tab === 'cash') {
-        const cash = globalThis.KomerceCanonicalFinanceAccountingWorkspace;
-        if (!cash) { content.appendChild(text(doc, 'p', 'kmc-workspace-note', 'Module Cash & dépôts indisponible.')); return; }
-        content.appendChild(text(doc, 'p', 'kmc-workspace-note', 'Transition : l’exécution cash & dépôts vit dans Relais live ; cette vue reste la projection comptable.'));
-        const host = doc.createElement('div');
-        content.appendChild(host);
-        await cash.mount({ ...options, root: host }).catch(error => host.appendChild(text(doc, 'p', 'kmc-workspace-note', error.message)));
-        return;
-      }
       ui.UIState.render(content, 'loading', 'Chargement…');
       try {
         const data = await getJson(fetchFn, endpointFor(marketCode, state.tab, { from: state.from, to: state.to }));

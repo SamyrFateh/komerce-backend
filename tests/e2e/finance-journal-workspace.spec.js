@@ -1,7 +1,7 @@
 /**
  * @e2e finance-journal-workspace.spec.js
  * @feature Lot 5 — Comptabilité sur le journal financier (finance-journal-workspace)
- * @brief Navigateur réel, API simulée : 4 onglets journal + transition Cash & dépôts, 1440 et 390, rôles.
+ * @brief Navigateur réel, API simulée : 4 onglets journal (Cash & dépôts vit dans Relais live), 1440 et 390, rôles.
  */
 'use strict';
 const fs = require('fs');
@@ -70,8 +70,7 @@ for (const [label, size] of [['1440', { width: 1440, height: 900 }], ['390', { w
         await expect(page.locator('body')).toContainText('PRF-9');
         await expect(page.locator('body')).toContainText('PO-4');
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
-        await page.locator('[data-journal-tab="cash"]').click();
-        await expect(page.locator('body')).toContainText('Cash & dépôts');
+        await expect(page.locator('[data-journal-tab="cash"]')).toHaveCount(0);
       });
     }
   });

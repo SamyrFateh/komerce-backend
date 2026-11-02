@@ -999,6 +999,24 @@
     }
     if (!MARKET_CODE.test(marketCode)) throw new Error('canonical_operations_workspace_market_required');
 
+    // Finance : accès au seul module Cash & dépôts (pas de file opérationnelle), hébergé dans Relais live.
+    if (options.mode === 'relay-execution' && options.user && options.user.role === 'finance') {
+      rootNode.className = 'kmc-operations-workspace';
+      rootNode.replaceChildren();
+      rootNode.appendChild(createHeader(doc, { scope: { code: marketCode, name: '' } }, 'relay-execution'));
+      const host = doc.createElement('div');
+      host.setAttribute('data-relay-cash-host', '');
+      rootNode.appendChild(host);
+      const cashModule = globalThis.KomerceCanonicalFinanceAccountingWorkspace;
+      if (!cashModule) { host.appendChild(text(doc, 'p', 'kmc-workspace-note', 'Module Cash & dépôts indisponible.')); return Object.freeze({ marketCode }); }
+      await cashModule.mount({
+        root: host, document: doc, ui, fetch: fetchFn, user: options.user,
+        adminContext: options.adminContext || null, requestedMarket: marketCode,
+        contextContract: { resolveMarketView: () => ({ marketCode }) },
+      }).catch(error => host.appendChild(text(doc, 'p', 'kmc-workspace-note', error.message)));
+      return Object.freeze({ marketCode });
+    }
+
     let currentPayload = null;
     const context = {
       root: rootNode,

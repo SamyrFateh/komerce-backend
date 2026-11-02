@@ -60,7 +60,8 @@
       label: 'Opérations',
       spaces: Object.freeze([
         Object.freeze({ id: 'operations-overview', label: 'Vue d’ensemble', href: '/admin/operations', roles: Object.freeze(['admin', 'market_operator']) }),
-        Object.freeze({ id: 'operations-workspace', label: 'Hub / Relais', href: '/admin/workspaces/operations', roles: Object.freeze(['admin', 'agent_hub', 'agent_relais', 'market_operator']) }),
+        Object.freeze({ id: 'hub-execution', label: 'Hub · Exécution', href: '/admin/hub-live?view=execute', roles: Object.freeze(['market_operator']) }),
+        Object.freeze({ id: 'relais-execution', label: 'Relais · Cash & dépôts', href: '/admin/relais-live?view=execute', roles: Object.freeze(['market_operator']) }),
         Object.freeze({ id: 'shipping-customs-workspace', label: 'Expéditions & Douane', href: '/admin/workspaces/shipping-customs', roles: Object.freeze(['admin', 'agent_hub', 'agent_transitaire', 'market_operator']) }),
         Object.freeze({ id: 'purchasing-workspace', label: 'Achats fournisseurs', href: '/admin/workspaces/purchasing', roles: Object.freeze(['admin']) }),
       ]),
@@ -82,7 +83,8 @@
       label: 'Finance',
       spaces: Object.freeze([
         Object.freeze({ id: 'finance-overview', label: 'Vue d’ensemble', href: '/admin/finance', roles: Object.freeze(['admin', 'market_operator']) }),
-        Object.freeze({ id: 'accounting-workspace', label: 'Comptabilité', href: '/admin/workspaces/accounting', roles: Object.freeze(['admin', 'finance', 'agent_relais', 'market_operator']) }),
+        Object.freeze({ id: 'accounting-workspace', label: 'Comptabilité', href: '/admin/workspaces/accounting', roles: Object.freeze(['admin', 'finance', 'market_operator']) }),
+        Object.freeze({ id: 'cash-deposits', label: 'Cash & dépôts', href: '/admin/relais-live?view=execute', roles: Object.freeze(['finance']) }),
       ]),
     }),
   ]);
@@ -92,8 +94,8 @@
     market_operator: '/admin/pilotage',
     finance: '/admin/workspaces/accounting',
     sourcing: '/admin/import-runtime',
-    agent_hub: '/admin/workspaces/operations',
-    agent_relais: '/admin/workspaces/operations',
+    agent_hub: '/admin/hub-live',
+    agent_relais: '/admin/relais-live',
     agent_transitaire: '/admin/workspaces/shipping-customs',
     support: '/portail',
   });
@@ -852,7 +854,9 @@
     'workspace-catalog': '▣',
     'workspace-sourcing': '◉',
     'workspace-purchasing': '▧',
-    'workspace-operations': '◈',
+    'workspace-hub-exec': '◈',
+    'workspace-relais-exec': '◈',
+    'workspace-cash': '▤',
     'workspace-shipping': '⇢',
     'workspace-accounting': '▤',
     'markets-home': '◎',
@@ -891,7 +895,8 @@
       label: 'Opérations',
       items: Object.freeze([
         Object.freeze({ id: 'flow-operations', label: 'Vue opérations', href: '/admin/operations', roles: ['admin', 'market_operator'], capability: 'operations.read', surfaces: ['operations'] }),
-        Object.freeze({ id: 'workspace-operations', label: 'Hub & Relais', href: '/admin/workspaces/operations', roles: ['admin', 'agent_hub', 'agent_relais', 'market_operator'], capability: 'operations.read', surfaces: ['operations-workspace'] }),
+        Object.freeze({ id: 'workspace-hub-exec', label: 'Hub · Exécution', href: '/admin/hub-live?view=execute', roles: ['market_operator'], capability: 'operations.read', surfaces: [] }),
+        Object.freeze({ id: 'workspace-relais-exec', label: 'Relais · Cash & dépôts', href: '/admin/relais-live?view=execute', roles: ['market_operator'], capability: 'operations.read', surfaces: [] }),
         Object.freeze({ id: 'workspace-shipping', label: 'Expéditions & Douane', href: '/admin/workspaces/shipping-customs', roles: ['admin', 'agent_hub', 'agent_transitaire', 'market_operator'], capability: 'operations.read', surfaces: ['shipping-customs-workspace'] }),
 
         Object.freeze({ id: 'workspace-purchasing', label: 'Achats fournisseurs', href: '/admin/workspaces/purchasing', roles: ['admin'], surfaces: ['purchasing-workspace'] }),
@@ -902,7 +907,8 @@
       label: 'Finance',
       items: Object.freeze([
         Object.freeze({ id: 'flow-finance', label: 'Vue finance', href: '/admin/finance', roles: ['admin', 'market_operator'], capability: 'finance.read', surfaces: ['finance'] }),
-        Object.freeze({ id: 'workspace-accounting', label: 'Comptabilité', href: '/admin/workspaces/accounting', roles: ['admin', 'finance', 'agent_relais', 'market_operator'], capability: 'finance.read', surfaces: ['accounting-workspace'] }),
+        Object.freeze({ id: 'workspace-accounting', label: 'Comptabilité', href: '/admin/workspaces/accounting', roles: ['admin', 'finance', 'market_operator'], capability: 'finance.read', surfaces: ['accounting-workspace'] }),
+        Object.freeze({ id: 'workspace-cash', label: 'Cash & dépôts', href: '/admin/relais-live?view=execute', roles: ['finance'], surfaces: [] }),
       ]),
     }),
     Object.freeze({

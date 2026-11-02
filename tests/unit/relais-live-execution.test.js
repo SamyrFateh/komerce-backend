@@ -25,3 +25,11 @@ test('Relais live expose l’onglet Exécution et app.js route view=execute vers
   expect(app).toContain("mode: 'relay-execution'");
   expect(read('navigation-policy-v4.js')).toContain("surface === 'relais-live'");
 });
+
+test('Finance : accès au seul module Cash & dépôts de Relais live, sans charger la file opérationnelle', () => {
+  const ws = require('fs').readFileSync(require('path').join(__dirname, '../../public/dashboards/canonical/js/operations-workspace.js'), 'utf8');
+  expect(ws).toContain("options.mode === 'relay-execution' && options.user && options.user.role === 'finance'");
+  const branch = ws.slice(ws.indexOf("options.user.role === 'finance'"), ws.indexOf('let currentPayload = null;'));
+  expect(branch).not.toContain('endpointFor(marketCode)');
+  expect(branch).toContain('KomerceCanonicalFinanceAccountingWorkspace');
+});

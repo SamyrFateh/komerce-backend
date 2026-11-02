@@ -75,6 +75,15 @@ function requireWorkspaceReadAccess(req, res, next) {
     .catch(next);
 }
 
+// Le journal financier (coûts, paiements fournisseurs, rapprochements) n'est jamais exposé à un agent relais :
+// son périmètre est le cash de son relais, servi par le workspace « Cash & dépôts ».
+function requireJournalReadAccess(req, res, next) {
+  if (req.user && req.user.role === 'agent_relais') {
+    return res.status(403).json({ error: 'Le journal financier n’est pas accessible à ce rôle.' });
+  }
+  return requireWorkspaceReadAccess(req, res, next);
+}
+
 function requireDepositMarketAccess(req, res, next) {
   if (req.user && req.user.role === 'agent_relais') {
     return requireRelayMarketBinding(req, res, next);
@@ -198,7 +207,7 @@ function journalScope(req) {
   return { marketId: req.workspaceMarket.id, from: req.query.from, to: req.query.to };
 }
 
-router.get('/market/:marketCode/journal/:view(summary|movements|documents|reconciliation)', requireWorkspaceReadAccess, async (req, res, next) => {
+router.get('/market/:marketCode/journal/:view(summary|movements|documents|reconciliation)', requireJournalReadAccess, async (req, res, next) => {
   try {
     res.set('Cache-Control', 'private, no-store');
     const scope = journalScope(req);
