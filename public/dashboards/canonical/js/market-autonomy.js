@@ -178,10 +178,10 @@
     const ratio = gate.coverage_ratio == null ? '—' : Number(gate.coverage_ratio).toFixed(3);
     return [
       `Prix projeté : ${fmt(economics.projected_price_kmf, 'KMF')}`,
-      `CDR : ${fmt(economics.cdr_complete_kmf, 'KMF')}`,
-      `Position : ${economics.strategy_risk || '—'}`,
-      `Couverture : ${gate.decision_status || '—'} (${ratio})`,
-      activation.allowed ? `ACTIVABLE · ${activation.reason}` : `BLOQUÉ · ${activation.reason}`,
+      `Coût rendu : ${fmt(economics.cdr_complete_kmf, 'KMF')}`,
+      `Niveau de risque : ${economics.strategy_risk || '—'}`,
+      `Couverture économique : ${gate.decision_status || '—'} (${ratio})`,
+      activation.allowed ? `Activation possible · ${activation.reason}` : `Activation impossible · ${activation.reason}`,
     ].join(' · ');
   }
 
@@ -221,13 +221,13 @@
         entry.node.hidden = !show;
         if (show) visible += 1;
       });
-      count.textContent = visible + ' produit' + (visible > 1 ? 's' : '') + ' affiché' + (visible > 1 ? 's' : '');
+      count.textContent = visible + ' produit' + (visible > 1 ? 's' : '') + ' affiché' + (visible > 1 ? 's' : '') + ((pricePayload.products || []).length > 100 ? ' · 100 premiers produits chargés' : '');
     }
     search.addEventListener('input', applyFilter);
     filter.addEventListener('change', applyFilter);
 
     const tableWrap = el('div', 'kmc-workspace-table-wrap kmc-autonomy-list');
-    const table = el('table', 'kmc-workspace-table');
+    const table = el('table', 'kmc-workspace-table kmc-autonomy-table');
     table.innerHTML = '<thead><tr><th>Produit</th><th>Prix global</th><th>Prix du marché</th><th>Situation</th><th>Motif</th><th>Actions</th></tr></thead>';
     const tbody = global.document.createElement('tbody');
     const canManage = Boolean(workspace.capabilities && workspace.capabilities.local_price_drafts);
@@ -237,6 +237,7 @@
       tr.className = 'kmc-autonomy-row';
       const state = row.decision_status === 'LOCAL_ACTIVE' ? 'active' : row.local_price != null ? 'draft' : 'missing';
       const product = el('td');
+      product.title = row.name || row.product_ref || '';
       product.appendChild(el('strong', 'kmc-autonomy-product-title', row.name || row.category || 'Produit'));
       product.appendChild(el('small', 'kmc-autonomy-ref', row.product_ref));
       tr.appendChild(product);
