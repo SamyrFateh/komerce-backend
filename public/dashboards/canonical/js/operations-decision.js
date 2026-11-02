@@ -150,6 +150,7 @@
         lineage: controlLineage(order),
         transitions: (Array.isArray(order.transitions) ? order.transitions : []).filter(item => item && item.status).map(item => ({ status: String(item.status), at: item.at || null })),
         split: order.split === true,
+        localOnly: order.local_only === true,
         href: order.order_reference ? contextualHref(`/admin/orders/${encodeURIComponent(order.order_reference)}`, '/admin/operations', 'Retour aux opérations') : null,
       })),
     }));
@@ -220,7 +221,9 @@
           label: phase.label,
           meta: controlStageMeta(phase.anchor),
           orders: members.flatMap(stage => stage.orders.map(order => ({
-            ...order, stageLabel: stage.label, stageKey: stage.key,
+            ...order,
+            stageLabel: order.localOnly && stage.key === 'RELAY' ? 'Préparation / retrait local' : stage.label,
+            stageKey: stage.key,
           }))),
           alerts: members.flatMap(stage => stage.alerts),
         };
@@ -313,7 +316,8 @@
         const mainCause = order.causes[0] && order.causes[0].summary;
         const stateLabel = { GREEN: 'En cours', ORANGE: 'À surveiller', RED: 'Action requise', UNKNOWN: 'Non déterminé' }[order.health];
         const summary = mainCause || (order.health === 'GREEN'
-          ? 'Progression normale' : 'Aucune cause métier précisée');
+          ? (order.localOnly ? 'Circuit local sans Hub ni PO fournisseur' : 'Progression normale')
+          : 'Aucune cause métier précisée');
         item.setAttribute('aria-label', `${order.reference} · ${order.stageLabel} · ${stateLabel} · ${summary}`);
         item.setAttribute('aria-expanded', 'false');
         item.title = `${order.reference} · ${order.stageLabel}`;
@@ -337,7 +341,7 @@
           const panelHead = doc.createElement('div');
           panelHead.className = 'kmc-control-panel-head';
           panelHead.appendChild(text(doc, 'strong', 'kmc-control-panel-title', order.reference));
-          panelHead.appendChild(text(doc, 'span', 'kmc-control-panel-stage', `Étape : ${column.label}`));
+          panelHead.appendChild(text(doc, 'span', 'kmc-control-panel-stage', `Étape : ${order.stageLabel}`));
           const closeBtn = text(doc, 'button', 'kmc-control-panel-close', '×');
           closeBtn.type = 'button';
           closeBtn.setAttribute('aria-label', 'Fermer le panneau');
