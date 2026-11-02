@@ -50,6 +50,7 @@ module.exports = {
   docs: [
     'docs/doctrine/DOCTRINE_ANNULATION.md',
     'docs/doctrine/CHECKOUT_UNIFIED_ATTACK.md',
+    'docs/contract/LOCAL_RELAY_RECEIPT_P0_20261102.md',
   ],
 
   files: {
