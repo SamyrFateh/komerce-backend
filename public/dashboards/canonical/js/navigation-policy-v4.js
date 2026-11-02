@@ -64,6 +64,7 @@
         Object.freeze({ id: 'relais-execution', label: 'Relais · Cash & dépôts', href: '/admin/relais-live?view=execute', roles: Object.freeze(['market_operator']) }),
         Object.freeze({ id: 'shipping-customs-workspace', label: 'Expéditions & Douane', href: '/admin/workspaces/shipping-customs', roles: Object.freeze(['admin', 'agent_hub', 'agent_transitaire', 'market_operator']) }),
         Object.freeze({ id: 'purchasing-workspace', label: 'Achats fournisseurs', href: '/admin/workspaces/purchasing', roles: Object.freeze(['admin']) }),
+        Object.freeze({ id: 'hub-workstation', label: 'Hub · Poste de travail', href: '/admin/hub', roles: Object.freeze(['admin', 'agent_hub']) }),
       ]),
     }),
     Object.freeze({
@@ -119,6 +120,7 @@
     'operations-workspace': 'operations',
     'shipping-customs-workspace': 'operations',
     'purchasing-workspace': 'operations',
+    'hub-workstation': 'operations',
     'sourcing-workspace': 'live',
     'import-runtime': 'live',
     'hub-live': 'live',
@@ -151,6 +153,7 @@
     'operations-workspace': 'operations-workspace',
     'shipping-customs-workspace': 'shipping-customs-workspace',
     'purchasing-workspace': 'purchasing-workspace',
+    'hub-workstation': 'hub-workstation',
     'import-runtime': 'import-runtime',
     'sourcing-workspace': 'import-runtime',
     'hub-live': 'hub-live',
