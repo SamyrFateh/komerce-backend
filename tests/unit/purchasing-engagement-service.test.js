@@ -204,7 +204,7 @@ describe('confirmGroupedPurchaseOrder — garde-fous', () => {
   });
 
   it('achat manuel : une quantité positive exige une preuve, sans affecter le mode API', async () => {
-    scripted([[/FROM purchase_orders WHERE id = \\$1 FOR UPDATE/, { rows: [poRow({ status: 'notified', trigger_mode: 'manual' })] }]]);
+    scripted([[/FROM purchase_orders WHERE id = \$1 FOR UPDATE/, { rows: [poRow({ status: 'notified', trigger_mode: 'manual' })] }]]);
     await expect(engagement.confirmGroupedPurchaseOrder(PO, { lines: okLines }))
       .rejects.toMatchObject({ status: 400, code: 'MANUAL_PURCHASE_PROOF_REQUIRED' });
   });
