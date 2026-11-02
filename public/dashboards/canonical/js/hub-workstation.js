@@ -146,7 +146,7 @@
     content.setAttribute('aria-label', BRANCHES[branch].label);
     content.setAttribute('data-hub-active-branch', branch);
     content.appendChild(make(doc, 'div', 'kmc-hub-app-pane-label',
-      branch === 'administrative' ? 'ACHETER · JUSTIFIER · RAPPROCHER' : 'RÉCEPTIONNER · PRÉPARER · EXPÉDIER'));
+      branch === 'administrative' ? 'PRÉPARER · ENGAGER · SUIVRE' : 'RÉCEPTIONNER · PRÉPARER · EXPÉDIER'));
     const host = make(doc, 'div', 'kmc-hub-app-workspace');
     host.setAttribute('data-hub-branch-workspace', branch);
     content.appendChild(host);
@@ -289,6 +289,13 @@
     refresh.addEventListener('click', () => { loadCases().catch(() => {}); });
     // Le sélecteur de marché se trouve dans la surface Canonical à droite.
     // Son changement met à jour le contexte via la navigation native.
+    // La commande « Retour à la liste » appartient au writer Purchasing.
+    // Réconcilier seulement la sélection visuelle du panneau gauche.
+    host.addEventListener('click', event => {
+      if (branch !== 'administrative' || !event.target?.closest?.('[data-workspace-action="close-po"]')) return;
+      active.poId = '';
+      showSelected();
+    });
     host.addEventListener('change', event => {
       if (!event.target?.matches?.('.kmc-market-context-select')) return;
       // Sa validation asynchrone appartient au module Canonical.
