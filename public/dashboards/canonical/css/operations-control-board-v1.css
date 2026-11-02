@@ -782,7 +782,7 @@ body.kmc-shell-v4 .kmc-control-stage-health-part.is-positive {
   color: #166534;
 }
 body.kmc-shell-v4 .kmc-control-stage-health-part.is-warning {
-  background: #fef3c7;
+  background: #f1f5f9;
   color: #92400e;
 }
 body.kmc-shell-v4 .kmc-control-stage-health-part.is-critical {
@@ -960,4 +960,11 @@ body.kmc-shell-v4 .kmc-control-order-open {
 }
 body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-chain[data-phase-count="1"] {
   grid-template-columns: minmax(200px, 1fr);
+}
+
+/* Le dock de détail est le dernier enfant de la grille : la cinquième phase
+ * est l'avant-dernier enfant et ne doit pas dessiner de flèche hors cadre. */
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"]
+  .kmc-control-stage:nth-last-child(2) .kmc-control-stage-heading::after {
+  display: none;
 }
