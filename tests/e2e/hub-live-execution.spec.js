@@ -55,19 +55,23 @@ const DOSSIER = {
   generated_at: '2026-11-02T08:00:00Z',
   kpis: { orders_waiting: 1, po_draft: 0, po_issued_not_sent: 1, po_sent_unconfirmed: 0,
     qty_missing: 3, boxes_unshipped: 1 },
+  orders: [{ id: '9d141f3c-0035-497b-8c60-3bf3808867a1', reference: 'K-ORDER-1', status: 'ordered',
+    items: [{ id: 'fa828646-e76e-48a5-8f5d-3848bc48e1d6', product: 'Coque téléphone', ordered: 5, fulfillment_source: 'IMPORT' }] }],
+  client_parcels: [{ id: 'client-1', order_id: '9d141f3c-0035-497b-8c60-3bf3808867a1', reference: 'PCL-KM-1',
+    status: 'preparation', contents: [{ order_item_id: 'fa828646-e76e-48a5-8f5d-3848bc48e1d6', quantity: 2 }] }],
   needs: [{ order_id: 'o2', order_ref: 'K-ORDER-2', product_name: 'Câble USB',
     supplier_name: 'CJ Dropshipping', quantity: 1 }],
   purchase_orders: [{
     id: PO_ID, supplier_name: 'CJ Dropshipping', stage: 'partially_received', status: 'confirmed',
     sent_at: '2026-11-01T09:00:00Z', sent_channel: 'email',
     totals: { effective: 5, received: 2, missing: 3, anomaly: 1 },
-    lines: [{ line_id: 'line-1', order_ref: 'K-ORDER-1', product: 'Coque téléphone',
+    lines: [{ line_id: 'line-1', order_id: '9d141f3c-0035-497b-8c60-3bf3808867a1', order_item_id: 'fa828646-e76e-48a5-8f5d-3848bc48e1d6', order_ref: 'K-ORDER-1', product: 'Coque téléphone',
       ordered: 5, confirmed: 5, received: 2, missing: 3, anomaly: 1 }],
   }],
   receipts: [{ id: 'unit-1', reference: 'SUP-1', external_ref: 'CJ-1', state: 'RECEIVED', qty: 2,
     received_at: '2026-11-01T10:00:00Z' }],
   boxes: [{ unit_id: 'box-1', reference: 'KOM-BOX-1', state: 'PACKED',
-    shipment_ref: null, shipment_stage: null, contents: [{ order_ref: 'K-ORDER-1', qty: 2 }] }],
+    shipment_ref: null, shipment_stage: null, contents: [{ order_id: '9d141f3c-0035-497b-8c60-3bf3808867a1', order_ref: 'K-ORDER-1', qty: 2 }] }],
   open_shipments: [],
   to_handle: [{ kind: 'PO_MISSING_QTY', po_id: PO_ID, supplier_name: 'CJ Dropshipping',
     reason: '3 unités confirmées non reçues' }],
@@ -140,7 +144,7 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       const posts = [];
       await mount(page, { view: null, posts });
       await expect(page.locator('[data-workspace-view="supply"]')).toHaveAttribute('aria-selected', 'true');
-      await expect(page.locator('[data-hub-dossier-home] .kmc-hub-dossier-flow')).toContainText('PO fournisseurs');
+      await expect(page.locator('[data-hub-dossier-home] .kmc-hub-dossier-flow')).toContainText('Articles et PO');
       await expect(page.locator('.kmc-section-title').filter({ hasText: 'Dossiers · Vue du jour' })).toBeVisible();
       await expect(page.locator('[data-hub-dossier-home] [data-metric-key="hub-remaining"]')).toContainText('3');
       await expect(page.locator('[data-hub-dossier-home]')).not.toContainText('À traiter maintenant');
@@ -151,9 +155,11 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       await expect(po).toContainText('CJ Dropshipping');
       await expect(po).toContainText('2 / 5 reçus');
       await expect(po).toContainText('K-ORDER-1');
-      await expect(po).toContainText('3 unité(s) attendue(s)');
-      await page.getByRole('button', { name: 'Voir le parcours complet' }).click();
+      await expect(page.locator('[data-hub-order]').first()).toContainText('3 unité(s) encore attendue(s)');
+      await expect(page.locator('[data-hub-order]').first()).toContainText('PCL-KM-1');
+      await page.getByRole('button', { name: 'Voir les colis et mouvements prouvés' }).click();
       await expect(page.locator('[data-supply-trace]')).toContainText('SUP-1');
+      await expect(page.locator('[data-hub-order]').first()).toContainText('KOM-BOX-1');
       expect(posts).toHaveLength(0);
     });
 
