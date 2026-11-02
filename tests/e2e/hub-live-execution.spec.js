@@ -167,7 +167,7 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       await expect(page.locator('[data-hub-order]').first()).toContainText('K-ORDER-1');
       await expect(page.locator('[data-hub-order]').first()).toContainText('3 unité(s) encore attendue(s)');
       await expect(page.locator('[data-hub-order]').first()).toContainText('PCL-KM-1');
-      await page.getByRole('button', { name: 'Voir les colis et mouvements prouvés' }).click();
+      await page.locator('[data-hub-order]').first().getByRole('button', { name: 'Voir les colis et mouvements prouvés' }).click();
       await expect(page.locator('[data-supply-trace]')).toContainText('SUP-1');
       await expect(page.locator('[data-hub-order]').first()).toContainText('KOM-BOX-1');
       expect(posts).toHaveLength(0);
@@ -184,7 +184,8 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
         expect.stringContaining('PO fournisseurs'),
         expect.stringContaining('Réception · Contrôle'),
         expect.stringContaining('Colis client'),
-        expect.stringContaining('Cartons · Départ'),
+        expect.stringContaining('Cartons transport'),
+        expect.stringContaining('Expédition'),
       ]);
       await expect(dossier).toContainText('Autre fournisseur');
       await expect(dossier).toContainText('Chargeur USB');
@@ -202,7 +203,7 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
           clientWidth: node.clientWidth, scrollWidth: node.scrollWidth,
         };
       });
-      expect(layout.columns).toBe(5);
+      expect(layout.columns).toBe(6);
       expect(layout.x.every((x, i, arr) => i === 0 || x > arr[i - 1])).toBe(true);
       expect(layout.y.every(y => Math.abs(y - layout.y[0]) < 2)).toBe(true);
       expect(layout.within).toBe(true);
