@@ -75,8 +75,24 @@ async function execute(env=process.env){
   if(candidates.length!==1)throw Error('HUB_E2E_ACCOUNT_NOT_UNIQUE');
   const memberUserId=candidates[0].id;
 
-  const team=await request('/api/market-delegation/markets/'+MARKET+'/team',{cookie:operator});
-  if(team.status!==200)throw Error('MARKET_TEAM_READ_UNAUTHORIZED_'+team.status);
+  // Aucune lecture de membership via rôle ou scope legacy. Seuls des acteurs
+  // qui détiennent effectivement team.read sur l'affectation KM peuvent agir.
+  let grantActorCookie=operator;
+  let team=await request('/api/market-delegation/markets/'+MARKET+'/team',{cookie:operator});
+  if(team.status===403){
+    const centralTeam=await request('/api/market-delegation/markets/'+MARKET+'/team',{cookie:admin});
+    if(centralTeam.status===200){team=centralTeam;grantActorCookie=admin;}
+  }
+  if(team.status!==200){
+    // Matrice centrale = diagnostic strictement read-only : n'autorise aucune
+    // écriture ni aucun nouveau droit même lorsque l'admin est global.
+    const matrix=await request('/api/market-delegation/central/team-matrix',{cookie:admin});
+    const rows=Array.isArray(matrix.data)?matrix.data:(matrix.data?.markets||matrix.data?.rows||[]);
+    const active=Array.isArray(rows)&&rows.some(m=>m.market_code===MARKET&&m.assignment_status==='ACTIVE');
+    return {status:'HUB_E2E_TEAM_AUTHORITY_MISSING',changed:false,market:MARKET,
+      teamStatus:team.status,centralMatrixStatus:matrix.status,assignmentActive:active,
+      sha:sha.slice(0,12)};
+  }
   if(team.data.market?.code!==MARKET)throw Error('MARKET_TEAM_MISMATCH');
   const existing=(team.data.members||[]).filter(m=>m.user_id===memberUserId&&m.status==='ACTIVE');
   if(existing.length>1)throw Error('HUB_MULTIPLE_ACTIVE_MEMBERSHIPS');
@@ -92,26 +108,26 @@ async function execute(env=process.env){
       memberActive:existing.length===1,contextStatus:before.status,market:MARKET,sha:sha.slice(0,12)};
   }
 
-  // A genuinely delegated market operator, not global admin, must authorize
-  // the least-privilege grant on an ACTIVE assignment.
+  // Le membre délégant doit avoir team.grant/team.invite sur l'assignation
+  // ACTIVE. Même un admin global sans membership ne peut contourner le garde.
   const grantable=team.data.actor_grantable_capabilities||[];
   if(!CAPABILITIES.every(c=>grantable.includes(c)))
-    throw Error('OPERATOR_CANNOT_GRANT_MINIMAL_HUB_CAPABILITIES');
+    throw Error('ACTOR_CANNOT_GRANT_MINIMAL_HUB_CAPABILITIES');
   if(existing.length===1){
     const authority=team.data.actor_capabilities||[];
     if(!authority.includes('team.grant')||!authority.includes('team.revoke'))
-      throw Error('OPERATOR_CANNOT_REPLACE_MEMBERSHIP_CAPABILITIES');
+      throw Error('ACTOR_CANNOT_REPLACE_MEMBERSHIP_CAPABILITIES');
     const next=[...new Set([...existing[0].capabilities,...CAPABILITIES])].sort();
     const res=await request('/api/market-delegation/markets/'+MARKET+'/team/'+
       encodeURIComponent(existing[0].membership_id)+'/capabilities',{
-      method:'PUT',cookie:operator,body:{capabilities:next}
+      method:'PUT',cookie:grantActorCookie,body:{capabilities:next}
     });
     if(res.status!==200)throw Error('HUB_MEMBERSHIP_GRANT_FAILED_'+res.status);
   }else{
     if(!(team.data.actor_capabilities||[]).includes('team.invite'))
-      throw Error('OPERATOR_TEAM_INVITE_DENIED');
+      throw Error('ACTOR_TEAM_INVITE_DENIED');
     const res=await request('/api/market-delegation/markets/'+MARKET+'/team/invitations',{
-      method:'POST',cookie:operator,body:{email:env.E2E_AGENT_HUB_EMAIL,
+      method:'POST',cookie:grantActorCookie,body:{email:env.E2E_AGENT_HUB_EMAIL,
         capabilities:CAPABILITIES}
     });
     if(res.status!==201||res.data?.kind!=='membership')
