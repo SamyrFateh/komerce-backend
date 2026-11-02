@@ -106,16 +106,16 @@ test('les six phases ne reprennent que les positions serveur et ne fabriquent au
     '1 commande positionnée', 'Non projetée ici · voir Order 360',
   ]);
   expect(admin.map(p => p.tone)).toEqual(Array(6).fill('neutral'));
-  expect(admin[1].href).toContain('/admin/workspaces/purchasing');
-  expect(admin[2].href).toContain('/admin/workspaces/operations');
-  expect(admin[3].href).toContain('/admin/workspaces/shipping-customs');
+  expect(admin[1].href).toBe('?stage=PURCHASING');
+  expect(admin[2].href).toBe('?stage=HUB');
+  expect(admin[3].href).toBe('?stage=CUSTOMS');
   expect(admin[5].href).toBeUndefined();
   expect(admin[5].observed).toBe(false);
 
   const marketOperator = view.projectProcessPhases(model, { role: 'market_operator' }, base);
   expect(marketOperator[1].href).toBe('?stage=PURCHASING');
   expect(marketOperator[3].href).toBe('?stage=CUSTOMS');
-  expect(marketOperator[2].href).toContain('/admin/workspaces/operations');
+  expect(marketOperator[2].href).toBe('?stage=HUB');
 });
 
 test('données incomplètes : aucune fausse position zéro ni phase valide sans la chaîne', () => {
