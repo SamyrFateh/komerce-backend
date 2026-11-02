@@ -1531,12 +1531,12 @@
 }
 
 
-/* Parcours Work horizontal — une commande, cinq colonnes de gauche à droite.
+/* Parcours Work horizontal — une commande, six colonnes de gauche à droite.
    La rangée défile dans le dossier si l'espace utile est trop étroit, jamais
    toute la page. Les détails physiques restent au bon endroit. */
 .kmc-operations-workspace[data-workspace-mode="execution"] .kmc-hub-work-order-body {
   display: grid;
-  grid-template-columns: repeat(5, minmax(208px, 1fr));
+  grid-template-columns: repeat(6, minmax(180px, 1fr));
   align-items: stretch;
   gap: 13px;
   padding: 14px 15px;
@@ -1555,7 +1555,7 @@
   scroll-snap-align: start;
   background: #fff;
 }
-.kmc-operations-workspace[data-workspace-mode="execution"] .kmc-hub-work-order-body > .kmc-hub-work-stage:not(:nth-child(5))::after {
+.kmc-operations-workspace[data-workspace-mode="execution"] .kmc-hub-work-order-body > .kmc-hub-work-stage:not(:nth-child(6))::after {
   content: "→";
   position: absolute;
   right: -13px;
@@ -1639,7 +1639,7 @@
 .kmc-hub-work-stage .kmc-workspace-action { white-space: normal; text-align: left; }
 @media (max-width: 1199px) {
   .kmc-operations-workspace[data-workspace-mode="execution"] .kmc-hub-work-order-body {
-    grid-template-columns: repeat(5, minmax(230px, 1fr));
+    grid-template-columns: repeat(6, minmax(215px, 1fr));
   }
 }
 @media (max-width: 720px) {
