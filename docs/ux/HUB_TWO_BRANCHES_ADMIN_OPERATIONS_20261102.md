@@ -1,6 +1,6 @@
 # Hub — Deux branches, un dossier transversal (UX cible, 2 novembre 2026)
 
-> **STATUT : composition UI intégrée sur la branche de conception ; non fusionnée, non déployée.** Route Canonical `/admin/hub` et deux branches câblées sur les modules existants. Les écrans métier internes ne sont pas encore refondus et aucun nouveau contrat financier n'est livré.
+> **STATUT : mini-app à deux colonnes codée sur branche, non fusionnée, non déployée.** Route Canonical `/admin/hub` ; à gauche, dossiers PO / commandes issus des projections serveur ; à droite, le module de travail métier canonique existant. Aucun contrat financier de validation nouveau n'est livré.
 
 ## 1. Décision métier
 Le Hub est piloté par sa directrice et comporte **exactement deux branches** :
@@ -70,7 +70,7 @@ La chronologie détaillée est consultable à la demande ; ne pas ajouter une s�
 - Aucun compteur « emballé / expédié / reçu » ne dérive de la simple commande payée ; vérifier la réalité sur `hub_physical_unit_placements`, expéditions et scans relais.
 
 ## 6. Découpage pour éviter les conflits Sonnet
-**Phase UX intégrée isolée (cette PR) :** nouvelle route `/admin/hub`, module `hub-workstation.js` et feuille CSS, entrées du routeur et de la navigation. Composition des modules existants sans modifier leurs writers ni leur API. Les fichiers `purchasing-workspace.js`, `operations-workspace.js` et `hub-live.js` restent inchangés.
+**Phase UX intégrée isolée (cette PR) :** nouvelle route `/admin/hub`, module `hub-workstation.js` et feuille CSS, entrées du routeur et de la navigation. File réelle à gauche : lecture `GET /api/hub/dossier?market=` pour dossiers import et PO marché ; `GET /api/purchasing` pour la liste PO globale sans marché explicite. Sélection PO : `?po=` et remontage du vrai workspace achats ; sélection commande : ouverture du vrai dossier `<details data-hub-order>` dans le workspace d'exécution. Composition sans modifier les writers ni leur API. Les fichiers `purchasing-workspace.js`, `operations-workspace.js` et `hub-live.js` restent inchangés.
 **Après stabilisation backend des PR Sonnet :** intégrer d'abord l'administratif dans `purchasing-workspace.js`, puis l'opérationnel dans l'écran d'exécution canonique ; garder un seul parcours Hub Live. Adapter les capacités serveur et la navigation seulement après vérification des rôles.
 **Après câblage :** tests PostgreSQL de rapprochement, Playwright Chromium 1440 des deux colonnes, E2E du dossier partagé, tests des refus 403 et des doubles clics/paiements.
 
@@ -85,6 +85,6 @@ La chronologie détaillée est consultable à la demande ; ne pas ajouter une s�
 8. Pas de duplication de mouvements comptables : une seule source canonique pour chaque facture, paiement et flux physique.
 
 ## 8. Livrable visuel
-**Mini-app réellement intégrée au shell Canonical** : `/admin/hub?branch=administrative` (admin) et `/admin/hub?branch=operations&market=KM` (admin/agent_hub). La rail latérale choisit la branche, le panneau droit monte l'espace métier existant et conserve ses appels API et permissions serveur. Pas de données fictives ni d'actions financières simulées. À ce stade, la colonne de gauche est la navigation des branches ; **la refonte interne liste des dossiers à gauche / panneau de travail à droite reste à livrer** après stabilisation de Sonnet.
+**Mini-app réellement intégrée au shell Canonical** : `/admin/hub?branch=administrative` (admin) et `/admin/hub?branch=operations&market=KM` (admin/agent_hub). Branches en haut ; **liste des dossiers à gauche / espace d'action existant à droite**, avec recherche et rafraîchissement manuel de la file. Les actions du panneau droit déclenchent exclusivement les services canoniques existants. À ce stade, on conserve les onglets internes des deux workspaces : optimisation de leur présentation et réconciliation facture/paiement restent à livrer après Sonnet. La directrice du Hub n'a pas encore de capacité serveur spécifique ; aucune validation nouvelle n'est rendue opérante artificiellement.
 
 **Critère GO :** démonstration des deux parcours sur API stabilisées, preuve réconciliation PO–facture–réception–paiement et E2E du Hub au relais. **Ce document ne vaut pas GO de production.**
