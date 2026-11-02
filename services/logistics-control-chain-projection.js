@@ -192,7 +192,7 @@ async function getControlChain(options = {}) {
       -- LOCAL_ONLY exige toutes les lignes explicitement LOCAL_STOCK.
       -- Une provenance NULL n'est ni une preuve de LOCAL ni une preuve d'IMPORT.
       SELECT oi.order_id,
-             BOOL_AND(oi.fulfillment_source = 'LOCAL_STOCK') AS local_only
+             BOOL_AND(COALESCE(oi.fulfillment_source = 'LOCAL_STOCK', FALSE)) AS local_only
         FROM order_items oi
         JOIN scoped_orders so ON so.id = oi.order_id
        GROUP BY oi.order_id
