@@ -208,13 +208,23 @@ describeE2E('Orders - local relay receipt without hub',({db})=>{
     await q(`INSERT INTO hub_physical_units
       (id,reference,unit_type,state,external_ref,current_location_ref)
       VALUES ($1,$2,'SUPPLIER_PACKAGE','RECEIVED',$2,'DXB-HUB')`,[unit,hubRef]);
-    // Le marché d'une KOM-BOX est dérivé de son contenu lors du départ ;
-    // l'assigner manuellement violerait hub_market_only_derived_at_outbound.
+    // Le Hub exige RECEIVED comme état initial. Le marché de KOM-BOX est
+    // ensuite dérivé des allocations au passage PACKED, jamais à l'INSERT.
     await q(`INSERT INTO hub_physical_units
       (id,reference,unit_type,state,current_location_ref)
-      VALUES ($1,$2,'MARKET_PARCEL','PACKED','DXB-HUB')`,[box,hubRef+'-BOX']);
+      VALUES ($1,$2,'MARKET_PARCEL','RECEIVED','DXB-HUB')`,[box,hubRef+'-BOX']);
     await q("INSERT INTO hub_physical_unit_placements (physical_unit_id,allocation_id,quantity,operation_type) VALUES ($1,$2,1,'RECEIVE')",[unit,allocation]);
+    // Une allocation ne peut pas être simultanément active dans le colis
+    // fournisseur ET la KOM-BOX. Clôturer la source avant REPACK.
+    await q(`UPDATE hub_physical_unit_placements
+      SET removed_at=GREATEST(clock_timestamp(),placed_at+INTERVAL '1 microsecond')
+      WHERE physical_unit_id=$1 AND allocation_id=$2 AND removed_at IS NULL`,[unit,allocation]);
     await q("INSERT INTO hub_physical_unit_placements (physical_unit_id,allocation_id,quantity,operation_type) VALUES ($1,$2,1,'REPACK')",[box,allocation]);
+    // Transitions canoniques, dans l'ordre strict imposé par PostgreSQL.
+    for(const state of ['IDENTIFIED','QUALITY_CHECKED','LOCATED','ALLOCATED','PICKED','PACKED'])
+      await q('UPDATE hub_physical_units SET state=$1 WHERE id=$2',[state,box]);
+    const {rows:[boxIdentity]}=await q('SELECT state,market_id FROM hub_physical_units WHERE id=$1',[box]);
+    expect(boxIdentity).toMatchObject({state:'PACKED',market_id:market.id});
     const {rows:[proof]}=await q('SELECT received,boxed FROM hub_item_physical_proof($1)',[items.mixedImport]);
     expect(proof).toMatchObject({received:1,boxed:1});
     const {rows:[beforeShipment]}=await q(
