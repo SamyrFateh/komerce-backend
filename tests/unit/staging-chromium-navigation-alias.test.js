@@ -17,6 +17,16 @@ test('rediriger vers Opérations est nominal et non un WRONG_ROUTE',()=>{
   expect(expectedPath('/admin/orders-logistics?status=active')).toBe('/admin/operations');
   expect(expectedPath('/admin/hub-relais')).toBe('/admin/workspaces/operations');
 });
+test('redirection Operations tenant compte du rôle, sans masquer les refus de droits',()=>{
+  const origin='https://komerce-backend-production.up.railway.app';
+  expect(expectedPath('/admin/workspaces/operations',origin,{role:'agent_hub'})).toBe('/admin/hub-live');
+  expect(expectedPath('/admin/workspaces/operations',origin,{role:'agent_relais'})).toBe('/admin/relais-live');
+  expect(expectedPath('/admin/workspaces/operations',origin,{role:'admin'})).toBe('/admin/hub-live');
+  expect(expectedPath('/admin/workspaces/operations',origin,{role:'market_operator'})).toBe('/admin/hub-live');
+  expect(expectedPath('/admin/workspaces/operations',origin,{role:'finance'})).toBe('/admin/workspaces/operations');
+  expect(expectedPath('/admin/hub-live',origin,{role:'agent_hub'})).toBe('/admin/hub-live');
+  expect(expectedPath('/admin/relais-live',origin,{role:'agent_relais'})).toBe('/admin/relais-live');
+});
 test('legacy=1 désactive le traitement d alias',()=>{
   expect(expectedPath('/admin/orders-logistics?legacy=1')).toBe('/admin/orders-logistics');
 });
