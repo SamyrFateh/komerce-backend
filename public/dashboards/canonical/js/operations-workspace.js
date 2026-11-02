@@ -91,12 +91,12 @@
     const relayExec = mode === 'relay-execution';
     const execution = mode === 'execution' || relayExec;
     copy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', relayExec ? 'RELAIS LIVE · EXÉCUTION' : execution ? 'HUB LIVE · EXÉCUTION' : 'HUB & RELAIS'));
-    copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', relayExec ? 'Exécuter les opérations Relais' : execution ? 'Exécuter les opérations Hub' : 'Flux à traiter'));
+    copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', relayExec ? 'Exécuter les opérations Relais' : execution ? 'Hub live · Dossiers' : 'Flux à traiter'));
     copy.appendChild(text(
       doc,
       'p',
       'kmc-workspace-subtitle',
-      `${payload.scope.code} · ${payload.scope.name} · ${relayExec ? 'encaisser, réceptionner, remettre au client' : execution ? 'commander, répartir, expédier, affecter' : 'voir ce qui attend une action'}`
+      `${payload.scope.code} · ${payload.scope.name} · ${relayExec ? 'encaisser, réceptionner, remettre au client' : execution ? 'suivre les PO, réceptionner, affecter et préparer les expéditions' : 'voir ce qui attend une action'}`
     ));
     header.appendChild(copy);
 
@@ -349,9 +349,9 @@
 
   // Hub live · Exécution : actions Hub uniquement (jamais Relais) + réception fournisseur.
   const EXECUTION_VIEWS = Object.freeze([
-    { id: 'hub', label: 'Hub' },
-    { id: 'reception', label: 'Réception fournisseur' },
-    { id: 'supply', label: 'Approvisionnement' },
+    { id: 'supply', label: 'Dossiers' },
+    { id: 'reception', label: 'Réceptions' },
+    { id: 'hub', label: 'Actions Hub' },
     { id: 'inventory', label: 'Stock à affecter' },
   ]);
 
@@ -559,6 +559,7 @@
       button.disabled = true;
       try {
         context.trace = await jsonRequest(context.fetch, `${endpointFor(context.marketCode, 'supply/trace')}?${query}`);
+        context.openPOId = new URLSearchParams(query).get('po_id') || null;
         context.traceError = null;
       } catch (error) {
         context.trace = null;
@@ -590,46 +591,139 @@
     slot.appendChild(simpleTable(doc, ['Commande', 'Produit', 'Commandé', 'PO', 'Unité physique', 'État', 'Expédition'], rows, 'Aucune filiation trouvée.'));
   }
 
+  // Dossier vivant : la projection serveur reste la seule source de vérité.
+  // Les accordéons ne changent aucun état; chaque action existante garde son service propriétaire.
   function renderSupplySection(rootNode, ui, doc, context) {
-    const kpiSlot = createSection(rootNode, ui, 'Hub · Approvisionnement', 'Besoins, PO, réceptions et cartons de ce marché. Un bon émis n’est pas un envoi : seul l’envoi enregistré dans Achats fournisseurs compte.');
-    if (context.dossierError) { kpiSlot.appendChild(text(doc, 'div', 'kmc-workspace-empty', `Dossier indisponible : ${context.dossierError}`)); return; }
+    const kpiSlot = createSection(rootNode, ui, 'Dossiers · Vue du jour',
+      'Du besoin client au départ des cartons. Ouvrez une PO pour retrouver chaque commande, article et reliquat.');
+    kpiSlot.setAttribute('data-hub-dossier-home', '');
+    if (context.dossierError) {
+      kpiSlot.appendChild(text(doc, 'div', 'kmc-workspace-empty', `Dossier indisponible : ${context.dossierError}`));
+      return;
+    }
     const d = context.dossier;
-    if (!d) { kpiSlot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Dossier non chargé.')); return; }
+    if (!d) {
+      kpiSlot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Dossier non chargé.'));
+      return;
+    }
     const k = d.kpis || {};
     const strip = doc.createElement('div');
+    strip.className = 'kmc-hub-dossier-metrics';
     kpiSlot.appendChild(strip);
-    const kpi = (key, label, value, warn) => ({ key, label, value: formatNumber(value), tone: warn && value > 0 ? 'warning' : 'neutral' });
+    const metric = (key, label, value, warn) => ({
+      key, label, value: formatNumber(value), tone: warn && Number(value) > 0 ? 'warning' : 'neutral',
+    });
     ui.MetricStrip.render(strip, { items: [
-      kpi('s-orders', 'Commandes en attente d’achat', k.orders_waiting, false),
-      kpi('s-draft', 'PO brouillon', k.po_draft, false),
-      kpi('s-issued', 'Bons émis non envoyés', k.po_issued_not_sent, true),
-      kpi('s-sent', 'Envoyées sans confirmation', k.po_sent_unconfirmed, false),
-      kpi('s-missing', 'Quantités manquantes', k.qty_missing, true),
-      kpi('s-boxes', 'Cartons non expédiés', k.boxes_unshipped, false),
+      metric('hub-needs', 'Commandes à approvisionner', k.orders_waiting, false),
+      metric('hub-po-unsent', 'PO à envoyer', k.po_issued_not_sent, false),
+      metric('hub-remaining', 'Unités encore attendues', k.qty_missing, false),
+      metric('hub-boxes', 'Cartons non expédiés', k.boxes_unshipped, false),
     ] });
 
-    const handle = createSection(rootNode, ui, 'Blocages à lever', 'Uniquement ce qui bloque la chaîne.');
-    handle.setAttribute('data-supply-to-handle', '');
-    handle.appendChild(simpleTable(doc, ['Sujet', 'Raison'], (d.to_handle || []).map(item => [item.supplier_name || item.kind, item.reason]), 'Rien à traiter.'));
+    const flow = doc.createElement('ol');
+    flow.className = 'kmc-hub-dossier-flow';
+    flow.setAttribute('aria-label', 'Cycle des dossiers du Hub');
+    ['Besoins', 'PO fournisseurs', 'Réceptions', 'Colis & cartons', 'Départs'].forEach((label, index) => {
+      const step = text(doc, 'li', 'kmc-hub-dossier-step', label);
+      step.prepend(text(doc, 'span', 'kmc-hub-dossier-number', index + 1));
+      flow.appendChild(step);
+    });
+    kpiSlot.appendChild(flow);
 
-    const needs = createSection(rootNode, ui, 'Besoins', 'Lignes d’achat ouvertes, à constituer en PO dans Achats fournisseurs.');
-    needs.appendChild(simpleTable(doc, ['Commande', 'Produit', 'Fournisseur', 'Quantité'],
-      (d.needs || []).map(n => [n.order_ref, n.product_name || '—', n.supplier_name, formatNumber(n.quantity)]), 'Aucun besoin ouvert.'));
+    const needs = createSection(rootNode, ui, 'Besoins à approvisionner',
+      'Articles issus des commandes clients, à regrouper en PO mono-marché par fournisseur.');
+    needs.setAttribute('data-supply-needs', '');
+    const needsHead = doc.createElement('div');
+    needsHead.className = 'kmc-hub-dossier-toolbar';
+    needsHead.appendChild(text(doc, 'span', 'kmc-workspace-muted', `${(d.needs || []).length} ligne(s) d’achat ouverte(s)`));
+    const buyLink = text(doc, 'a', 'kmc-hub-dossier-link', 'Préparer les PO dans Achats fournisseurs');
+    buyLink.href = `/admin/workspaces/purchasing?market=${encodeURIComponent(context.marketCode)}`;
+    needsHead.appendChild(buyLink);
+    needs.appendChild(needsHead);
+    needs.appendChild(simpleTable(doc, ['Commande', 'Article', 'Fournisseur', 'Quantité'],
+      (d.needs || []).map(n => [orderLink(doc, n.order_ref), n.product_name || '—', n.supplier_name || '—', formatNumber(n.quantity)]),
+      'Tous les besoins sont déjà rapprochés d’une PO.'));
 
-    const pos = createSection(rootNode, ui, 'Purchase Orders', 'Étape dérivée du serveur. La réception se fait dans l’onglet Réception fournisseur.');
+    const pos = createSection(rootNode, ui, 'PO fournisseurs · Suivi par dossier',
+      'Chaque PO progresse à son rythme. Les reliquats restent liés à la commande initiale.');
     pos.setAttribute('data-supply-pos', '');
-    pos.appendChild(simpleTable(doc, ['PO', 'Fournisseur', 'Étape', 'Envoi', 'Reçu / confirmé', 'Manquant', 'Filiation'],
-      (d.purchase_orders || []).map(po => {
-        const sent = po.sent_at ? `${SENT_CHANNEL_LABELS[po.sent_channel] || po.sent_channel} · ${formatDate(po.sent_at)}` : '—';
-        const confirmed = po.totals.effective;
-        return [String(po.id).slice(0, 8), po.supplier_name, PO_STAGE_LABELS[po.stage] || po.stage, sent,
-          `${formatNumber(po.totals.received)} / ${formatNumber(confirmed)}`, formatNumber(po.totals.missing),
-          createTraceButton(doc, context, 'Voir', `po_id=${encodeURIComponent(po.id)}`)];
-      }), 'Aucune PO sur ce marché.'));
+    const purchaseOrders = d.purchase_orders || [];
+    if (!purchaseOrders.length) pos.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucune PO sur ce marché.'));
+    purchaseOrders.forEach((po, index) => {
+      const details = doc.createElement('details');
+      details.className = 'kmc-hub-dossier-po';
+      details.setAttribute('data-hub-po', String(po.id));
+      details.open = context.openPOId ? context.openPOId === po.id : index === 0;
+      details.addEventListener('toggle', () => { if (details.open) context.openPOId = po.id; });
+      const summary = doc.createElement('summary');
+      summary.className = 'kmc-hub-dossier-po-summary';
+      const identity = doc.createElement('div');
+      identity.className = 'kmc-hub-dossier-po-title';
+      identity.appendChild(text(doc, 'strong', '', po.supplier_name || 'Fournisseur non renseigné'));
+      identity.appendChild(text(doc, 'span', 'kmc-workspace-muted', `PO ${String(po.id).slice(0, 8)} · ${po.lines.length} ligne(s)`));
+      summary.appendChild(identity);
+      const stage = text(doc, 'span', 'kmc-hub-dossier-stage', PO_STAGE_LABELS[po.stage] || po.stage);
+      stage.dataset.stage = String(po.stage || '');
+      summary.appendChild(stage);
+      const totals = po.totals || {};
+      const progress = doc.createElement('div');
+      progress.className = 'kmc-hub-dossier-progress';
+      const effective = Number(totals.effective) || 0;
+      const received = Number(totals.received) || 0;
+      const pct = effective > 0 ? Math.max(0, Math.min(100, received / effective * 100)) : 0;
+      const track = doc.createElement('span');
+      track.className = 'kmc-hub-dossier-progress-track';
+      const fill = doc.createElement('span');
+      fill.className = 'kmc-hub-dossier-progress-fill';
+      fill.style.width = `${pct}%`;
+      track.appendChild(fill);
+      progress.appendChild(track);
+      progress.appendChild(text(doc, 'span', '', `${formatNumber(received)} / ${formatNumber(effective)} reçus`));
+      summary.appendChild(progress);
+      details.appendChild(summary);
+      const inside = doc.createElement('div');
+      inside.className = 'kmc-hub-dossier-po-body';
+      const sent = po.sent_at ? `Envoi prouvé : ${SENT_CHANNEL_LABELS[po.sent_channel] || po.sent_channel} · ${formatDate(po.sent_at)}` : 'Envoi non enregistré';
+      inside.appendChild(text(doc, 'p', 'kmc-workspace-muted', sent));
+      inside.appendChild(simpleTable(doc, ['Commande', 'Article', 'Confirmé', 'Reçu', 'Reliquat', 'Anomalie'],
+        (po.lines || []).map(line => [
+          orderLink(doc, line.order_ref), line.product || '—', formatNumber(line.confirmed),
+          formatNumber(line.received), formatNumber(line.missing), formatNumber(line.anomaly),
+        ]), 'Aucune ligne fournisseur.'));
+      const actions = doc.createElement('div');
+      actions.className = 'kmc-hub-dossier-toolbar';
+      const trace = createTraceButton(doc, context, 'Voir le parcours complet', `po_id=${encodeURIComponent(po.id)}`);
+      trace.classList.add('is-secondary');
+      actions.appendChild(trace);
+      if (Number(totals.missing) > 0) actions.appendChild(text(doc, 'span', 'kmc-hub-dossier-reliquat',
+        `${formatNumber(totals.missing)} unité(s) attendue(s) · ne pas clôturer la réception`));
+      inside.appendChild(actions);
+      details.appendChild(inside);
+      pos.appendChild(details);
+    });
+    // Le parcours apparaît juste sous les PO et reste visible après sélection.
+    renderTracePanel(rootNode, ui, doc, context);
 
-    const receipts = createSection(rootNode, ui, 'Colis reçus', 'Colis fournisseur physiquement reçus pour ce marché.');
+    const points = d.to_handle || [];
+    if (points.length) {
+      const follow = createSection(rootNode, ui, 'Écarts et points de suivi',
+        'Faits à examiner dans leur dossier ; un écart ordinaire n’est pas automatiquement un blocage urgent.');
+      follow.setAttribute('data-supply-to-handle', '');
+      follow.appendChild(simpleTable(doc, ['Dossier', 'Fait constaté'], points.map(item => [
+        item.supplier_name || item.kind, item.reason,
+      ]), 'Aucun écart à suivre.'));
+    }
+
+    const receipts = doc.createElement('details');
+    receipts.className = 'kmc-hub-dossier-secondary';
+    receipts.setAttribute('data-supply-receipts', '');
+    const receiptSummary = doc.createElement('summary');
+    receiptSummary.textContent = `Réceptions physiques · ${(d.receipts || []).length} colis fournisseur`;
+    receipts.appendChild(receiptSummary);
     receipts.appendChild(simpleTable(doc, ['Colis', 'Référence fournisseur', 'État', 'Quantité', 'Reçu le'],
-      (d.receipts || []).map(r => [r.reference, r.external_ref || '—', r.state, formatNumber(r.qty), formatDate(r.received_at)]), 'Aucun colis reçu.'));
+      (d.receipts || []).map(r => [r.reference, r.external_ref || '—', r.state, formatNumber(r.qty), formatDate(r.received_at)]),
+      'Aucun colis reçu.'));
+    rootNode.appendChild(receipts);
 
     const boxes = createSection(rootNode, ui, 'Cartons KOM-BOX', 'Ouvrez un dossier, même vide, puis composez-le progressivement. La remise au transitaire est un acte distinct avec preuve et cartons DISPATCHED.');
     boxes.setAttribute('data-supply-boxes', '');
@@ -708,7 +802,6 @@
         return [pick, box.reference, box.state, contents || '—', box.shipment_ref || '—', action];
       }), 'Aucun carton.'));
 
-    renderTracePanel(rootNode, ui, doc, context);
   }
 
   function createViewTabs(doc, activeView, onSelect, views = WORKSPACE_VIEWS) {
@@ -733,13 +826,18 @@
   function renderPayload(rootNode, ui, doc, payload, context) {
     rootNode.className = 'kmc-operations-workspace';
     rootNode.setAttribute('data-workspace-kind', 'hub-relay');
+    rootNode.setAttribute('data-workspace-mode', context.mode);
     rootNode.replaceChildren();
     rootNode.appendChild(createHeader(doc, payload, context.mode));
 
-    const metrics = doc.createElement('section');
-    metrics.className = 'kmc-workspace-metrics';
-    rootNode.appendChild(metrics);
-    ui.MetricStrip.render(metrics, { items: metricItems(payload.summary) });
+    // En Hub Live le dossier porte déjà les quatre indicateurs de sa projection
+    // serveur. Ne pas répéter les métriques Relais ni repousser la file sous le pli.
+    if (context.mode !== 'execution') {
+      const metrics = doc.createElement('section');
+      metrics.className = 'kmc-workspace-metrics';
+      rootNode.appendChild(metrics);
+      ui.MetricStrip.render(metrics, { items: metricItems(payload.summary) });
+    }
 
     // UX-07 : une vue = une question. Un seul groupe de sections à la fois.
     // Mode « execution » (Hub live) : uniquement les actions Hub ; les actions Relais restent hors de cette surface.
@@ -1023,6 +1121,7 @@
       fetch: fetchFn,
       marketCode,
       mode: ['execution', 'relay-execution'].includes(options.mode) ? options.mode : 'pilot',
+      view: options.mode === 'execution' ? 'supply' : undefined,
       confirm: typeof options.confirm === 'function'
         ? options.confirm
         : (typeof globalThis.confirm === 'function' ? globalThis.confirm.bind(globalThis) : () => true),

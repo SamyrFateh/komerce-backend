@@ -50,7 +50,38 @@ const WORKSPACE = {
   },
 };
 
-async function mount(page, { posts = [], failShip = false, receiveReply = null, receivable = RECEIVABLE_PAYLOAD, view = '', emptyDistribution = false, pilot = false } = {}) {
+const DOSSIER = {
+  market_id: 'KM',
+  generated_at: '2026-11-02T08:00:00Z',
+  kpis: { orders_waiting: 1, po_draft: 0, po_issued_not_sent: 1, po_sent_unconfirmed: 0,
+    qty_missing: 3, boxes_unshipped: 1 },
+  needs: [{ order_id: 'o2', order_ref: 'K-ORDER-2', product_name: 'Câble USB',
+    supplier_name: 'CJ Dropshipping', quantity: 1 }],
+  purchase_orders: [{
+    id: PO_ID, supplier_name: 'CJ Dropshipping', stage: 'partially_received', status: 'confirmed',
+    sent_at: '2026-11-01T09:00:00Z', sent_channel: 'email',
+    totals: { effective: 5, received: 2, missing: 3, anomaly: 1 },
+    lines: [{ line_id: 'line-1', order_ref: 'K-ORDER-1', product: 'Coque téléphone',
+      ordered: 5, confirmed: 5, received: 2, missing: 3, anomaly: 1 }],
+  }],
+  receipts: [{ id: 'unit-1', reference: 'SUP-1', external_ref: 'CJ-1', state: 'RECEIVED', qty: 2,
+    received_at: '2026-11-01T10:00:00Z' }],
+  boxes: [{ unit_id: 'box-1', reference: 'KOM-BOX-1', state: 'PACKED',
+    shipment_ref: null, shipment_stage: null, contents: [{ order_ref: 'K-ORDER-1', qty: 2 }] }],
+  open_shipments: [],
+  to_handle: [{ kind: 'PO_MISSING_QTY', po_id: PO_ID, supplier_name: 'CJ Dropshipping',
+    reason: '3 unités confirmées non reçues' }],
+};
+const TRACE = {
+  purchase_order_id: PO_ID,
+  chain: [{ order_ref: 'K-ORDER-1', product: 'Coque téléphone', ordered: 5,
+    purchase_order: { id: PO_ID, status: 'confirmed' }, placements: [{
+      unit: { reference: 'SUP-1', type: 'SUPPLIER_PACKAGE', state: 'RECEIVED' },
+      quantity: 2, active: true, shipment: null,
+    }] }],
+};
+
+async function mount(page, { posts = [], failShip = false, receiveReply = null, receivable = RECEIVABLE_PAYLOAD, view = 'hub', emptyDistribution = false, pilot = false } = {}) {
   page.on('dialog', (dialog) => dialog.accept());
   await page.route(`${ORIGIN}/**`, async (route) => {
     const url = new URL(route.request().url());
@@ -75,6 +106,8 @@ async function mount(page, { posts = [], failShip = false, receiveReply = null, 
     if (url.pathname === '/api/auth/me') return json(FX.auth_me);
     if (url.pathname === '/api/admin/dashboard/context') return json(FX.context);
     if (url.pathname === API) return json(emptyDistribution ? { ...WORKSPACE, distribution: { unassigned: [] } } : WORKSPACE);
+    if (url.pathname === `${API}/supply`) return json(DOSSIER);
+    if (url.pathname === `${API}/supply/trace`) return json(TRACE);
     if (url.pathname === RECEIVABLE) return receivable === 'forbidden' ? json({ error: 'Accès refusé' }, 403) : json(receivable);
     return route.fulfill({ status: 404, body: '' });
   });
@@ -86,7 +119,7 @@ async function mount(page, { posts = [], failShip = false, receiveReply = null, 
   }
   await page.goto(`${ORIGIN}/admin/hub-live?view=execute`);
   await page.locator('select').first().selectOption({ label: 'KM · Comores' });
-  await expect(page.locator('h1')).toHaveText('Exécuter les opérations Hub');
+  await expect(page.locator('h1')).toHaveText('Hub live · Dossiers');
   if (view) await page.locator(`[data-workspace-view="${view}"]`).click();
 }
 
@@ -96,11 +129,32 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
 
     test('actions Hub uniquement : aucun onglet ni bouton Relais', async ({ page }) => {
       await mount(page);
-      await expect(page.locator('[data-workspace-view]')).toHaveText(['Hub', 'Réception fournisseur', 'Approvisionnement', 'Stock à affecter']);
+      await expect(page.locator('[data-workspace-view]')).toHaveText(['Dossiers', 'Réceptions', 'Actions Hub', 'Stock à affecter']);
       await expect(page.locator('[data-workspace-action="mark-ordered"]')).toHaveCount(1);
       await expect(page.locator('[data-workspace-action="run-distribution"]')).toHaveCount(1);
       await expect(page.locator('[data-workspace-action="ship"]')).toHaveCount(1);
       await expect(page.locator('[data-workspace-action="confirm-cash"], [data-workspace-action="receive"], [data-workspace-action="collect"]')).toHaveCount(0);
+    });
+
+    test('entrée Hub : dossier vivant, PO dépliable, reçu/restant et filiation sans mutation', async ({ page }) => {
+      const posts = [];
+      await mount(page, { view: null, posts });
+      await expect(page.locator('[data-workspace-view="supply"]')).toHaveAttribute('aria-selected', 'true');
+      await expect(page.locator('[data-hub-dossier-home] .kmc-hub-dossier-flow')).toContainText('PO fournisseurs');
+      await expect(page.locator('.kmc-section-title').filter({ hasText: 'Dossiers · Vue du jour' })).toBeVisible();
+      await expect(page.locator('[data-hub-dossier-home] [data-metric-key="hub-remaining"]')).toContainText('3');
+      await expect(page.locator('[data-hub-dossier-home]')).not.toContainText('À traiter maintenant');
+      await expect(page.locator('.kmc-workspace-metrics')).toHaveCount(0);
+      const po = page.locator(`[data-hub-po="${PO_ID}"]`);
+      await expect(po).toBeVisible();
+      await expect(po).toHaveAttribute('open', '');
+      await expect(po).toContainText('CJ Dropshipping');
+      await expect(po).toContainText('2 / 5 reçus');
+      await expect(po).toContainText('K-ORDER-1');
+      await expect(po).toContainText('3 unité(s) attendue(s)');
+      await page.getByRole('button', { name: 'Voir le parcours complet' }).click();
+      await expect(page.locator('[data-supply-trace]')).toContainText('SUP-1');
+      expect(posts).toHaveLength(0);
     });
 
     test('L9a : « Répartir ce marché » est masqué quand aucune commande n’est à répartir', async ({ page }) => {
