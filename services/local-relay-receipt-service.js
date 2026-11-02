@@ -12,6 +12,8 @@ const crypto = require('crypto');
 const db = require('../db');
 const { generateParcelRef } = require('../utils/reference');
 const { transitionOrderStatus } = require('./order-status-machine');
+const clientNotifications = require('./client-notification-service');
+const log = require('../utils/logger').child({ module: 'local-relay-receipt' });
 const { setOrderItemAvailabilityStatus } = require('./order-item-availability-service');
 const fail = (status, code, error) => ({ok:false, status, body:{code,error}});
 
@@ -26,7 +28,7 @@ async function recordLocalRelayReceipt({orderId, actor, physicalReceived, note =
   try {
     await client.query('BEGIN');
     const {rows:[order]} = await client.query(
-      'SELECT id, reference, status, payment_status, relais_id FROM orders WHERE id=$1 FOR UPDATE', [orderId]);
+      'SELECT o.id, o.reference, o.status, o.payment_status, o.relais_id, o.user_id, r.name AS relais_name FROM orders o JOIN relais r ON r.id=o.relais_id WHERE o.id=$1 FOR UPDATE OF o', [orderId]);
     if (!order) {
       await client.query('ROLLBACK');
       return fail(404,'ORDER_NOT_FOUND','Commande introuvable');
@@ -81,10 +83,19 @@ async function recordLocalRelayReceipt({orderId, actor, physicalReceived, note =
       orderId,newStatus:'available',actor,source:'local_relay_receipt',
       scanId:receipt.id,note:proofNote,dbClient:client
     });
-    if (!transition.success || transition.noop || transition.newStatus!=='available')
-      throw Object.assign(new Error(transition.error||'Transition locale refusée'),
-        {code:transition.code||'LOCAL_RECEIPT_TRANSITION_REFUSED'});
+    if (!transition.success || transition.noop || transition.newStatus!=='available') {
+      await client.query('ROLLBACK');
+      return fail(409,transition.code||'LOCAL_RECEIPT_TRANSITION_REFUSED',transition.error||'Transition locale refusée');
+    }
     await client.query('COMMIT');
+    try {
+      await clientNotifications.emitPickupReady({
+        dbClient:db,userId:order.user_id,orderId,orderReference:order.reference,
+        relaisName:order.relais_name
+      });
+    } catch (notifyErr) {
+      log.warn({err:notifyErr,order_id:orderId},'Pickup notification projection failed; reconciliation will retry');
+    }
     return {ok:true,status:200,body:{
       success:true,status:'available',parcel_id:parcelId,
       parcel_reference:reference,receipt_scan_id:receipt.id
