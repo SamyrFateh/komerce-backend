@@ -173,11 +173,6 @@
     const columns = controlChainColumns(payload);
     if (!columns.length) return [];
     const byKey = new Map(columns.map(column => [column.key, column]));
-    const visibleDrill = base && typeof base.visibleDrillSchema === 'function'
-      ? base.visibleDrillSchema(base.OPERATIONS_SCHEMA, user).drill : [];
-    const allowedWorkspaces = new Map((visibleDrill || []).map(item => [item.id, item.href]));
-    const role = user && user.role;
-
     return PROCESS_PHASES.map(phase => {
       if (!phase.stages.length) {
         return { key: phase.key, label: phase.label, helper: 'Non projetée ici · voir Order 360',
@@ -185,18 +180,12 @@
       }
       const available = phase.stages.every(stage => byKey.has(stage));
       const count = available ? phase.stages.reduce((sum, stage) => sum + byKey.get(stage).orders.length, 0) : null;
-      const fallback = stageHref(phase.key);
-      const ownerHref = phase.workspace === 'purchasing' && role === 'admin'
-        ? '/admin/workspaces/purchasing'
-        : allowedWorkspaces.get(phase.workspace);
       return {
         key: phase.key, label: phase.label,
         helper: count == null ? 'Position indisponible'
           : `${count} commande${count > 1 ? 's' : ''} positionnée${count > 1 ? 's' : ''}`,
         tone: 'neutral', observed: available,
-        href: available ? (ownerHref
-          ? contextualHref(ownerHref, '/admin/operations', 'Retour aux opérations')
-          : fallback) : undefined,
+        href: available ? stageHref(phase.key) : undefined,
       };
     });
   }
@@ -210,7 +199,7 @@
     wrapper.setAttribute('data-process-source', 'control_chain');
     wrapper.appendChild(text(doc, 'h3', 'kmc-operations-process-title', 'Parcours des commandes'));
     wrapper.appendChild(text(doc, 'p', 'kmc-operations-process-caption',
-      'Positions actuelles dans la chaîne canonique · une commande comptée une seule fois · aucune étape présumée terminée.'));
+      'Cliquez sur une phase pour voir les commandes. Les neuf sous-étapes restent identifiables dans chaque carte.'));
     const host = doc.createElement('div');
     host.className = 'kmc-operations-process-steps';
     decisionUi.FlowStrip.render(host, { stages: phases });
@@ -220,7 +209,7 @@
 
   // Phase graphique = agrégation visuelle des neuf étapes conservées au serveur.
   // Les commandes et leurs couleurs ne sont jamais recalculées par le navigateur.
-  function renderControlChain(doc, host, payload) {
+  function renderControlChain(doc, host, payload, user, base) {
     const activeKey = stageFilterKey();
     const source = controlChainColumns(payload);
     const columns = PROCESS_PHASES.filter(phase => phase.stages.length && (!activeKey || phase.key === activeKey))
@@ -244,6 +233,15 @@
     host.setAttribute('data-phase-count', String(columns.length));
 
     // Le dossier est sous les cinq phases, jamais au-dessus ou en panneau masquant.
+    const visibleDrill = base && typeof base.visibleDrillSchema === 'function'
+      ? base.visibleDrillSchema(base.OPERATIONS_SCHEMA, user).drill : [];
+    const allowedWorkspaces = new Map((visibleDrill || []).map(item => [item.id, item.href]));
+    const workspaceByPhase = {
+      PURCHASING: user && user.role === 'admin' ? '/admin/workspaces/purchasing' : null,
+      HUB: allowedWorkspaces.get('operations-workspace'),
+      CUSTOMS: allowedWorkspaces.get('shipping-customs-workspace'),
+      RELAY: allowedWorkspaces.get('operations-workspace'),
+    };
     const detailDock = doc.createElement('div');
     detailDock.className = 'kmc-control-detail-dock';
     detailDock.setAttribute('role', 'region');
@@ -403,8 +401,14 @@
             detail.appendChild(history);
           }
 
+          const workspace = workspaceByPhase[column.key];
+          if (workspace) {
+            const action = text(doc, 'a', 'kmc-control-order-action', 'Ouvrir l’espace de traitement →');
+            action.setAttribute('href', contextualHref(workspace, '/admin/operations', 'Retour aux opérations'));
+            detail.appendChild(action);
+          }
           if (order.href) {
-            const link = text(doc, 'a', 'kmc-control-order-open', 'Ouvrir Order 360 →');
+            const link = text(doc, 'a', 'kmc-control-order-open', 'Consulter Order 360 →');
             link.setAttribute('href', order.href);
             detail.appendChild(link);
           }
@@ -744,6 +748,21 @@
         'operations-control-chain'
       );
       chain.section.className += ' kmc-control-chain-card';
+      const refresh = text(doc, 'button', 'kmc-operations-refresh', 'Actualiser les mouvements ↻');
+      refresh.type = 'button';
+      refresh.addEventListener('click', async () => {
+        refresh.disabled = true;
+        refresh.textContent = 'Actualisation…';
+        try {
+          const endpoint = base.endpointForContext(options.adminContext, options.contextContract, options.requestedMarket);
+          const updated = await base.jsonRequest(options.fetch, endpoint);
+          render(rootNode, updated, options, base, decisionUi);
+        } catch (_error) {
+          refresh.disabled = false;
+          refresh.textContent = 'Échec de lecture · Réessayer ↻';
+        }
+      });
+      chain.section.appendChild(refresh);
       chain.section.setAttribute('data-dashboard-role', 'primary');
       const process = renderProcessPhases(doc, payload, options.user, base, decisionUi);
       if (process) chain.section.insertBefore(process, chain.body);
@@ -761,7 +780,7 @@
         chip.appendChild(clear);
         chain.section.insertBefore(chip, chain.body);
       }
-      renderControlChain(doc, chain.body, payload);
+      renderControlChain(doc, chain.body, payload, options.user, base);
       if (chain.body.getAttribute('data-chain-state') === 'empty') {
         chain.section.setAttribute('data-chain-state', 'empty');
         chain.section.appendChild(text(doc, 'p', 'kmc-control-chain-empty-notice', 'Aucune commande dans la chaîne pour le périmètre sélectionné.'));
