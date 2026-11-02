@@ -1,11 +1,14 @@
 'use strict';
 /** @test-kind unit @test-runner jest @test-requires none */
 jest.mock('../../db',()=>({getClient:jest.fn()}));
+jest.mock('../../utils/logger',()=>({child:()=>({info:jest.fn(),warn:jest.fn(),error:jest.fn()})}));
+jest.mock('../../services/client-notification-service',()=>({emitPickupReady:jest.fn().mockResolvedValue(null)}));
 jest.mock('../../utils/reference',()=>({generateParcelRef:jest.fn().mockResolvedValue('KOM-P-2026-000999')}));
 jest.mock('../../services/order-status-machine',()=>({transitionOrderStatus:jest.fn()}));
 jest.mock('../../services/order-item-availability-service',()=>({setOrderItemAvailabilityStatus:jest.fn().mockResolvedValue(undefined)}));
 
 const db=require('../../db');
+const clientNotifications=require('../../services/client-notification-service');
 const {transitionOrderStatus}=require('../../services/order-status-machine');
 const {setOrderItemAvailabilityStatus}=require('../../services/order-item-availability-service');
 const {recordLocalRelayReceipt}=require('../../services/local-relay-receipt-service');
@@ -18,8 +21,8 @@ let client;
 
 function setup({status='confirmed',paid='paid',items=[item],consumed=2,existing=[]}={}) {
   client={release:jest.fn(),query:jest.fn(async(sql)=>{
-    if (/^SELECT id, reference, status/.test(sql))
-      return {rows:[{id:ORDER,reference:'KOM-2026-1',relais_id:RELAY,status,payment_status:paid}]};
+    if (/^SELECT o.id, o.reference, o.status/.test(sql))
+      return {rows:[{id:ORDER,reference:'KOM-2026-1',relais_id:RELAY,user_id:'u',relais_name:'Relais',status,payment_status:paid}]};
     if (/^SELECT id,product_id,quantity/.test(sql))return {rows:items};
     if (sql.includes('AS consumed FROM local_stock_allocations'))return {rows:[{consumed}]};
     if (/^SELECT p.id FROM parcels/.test(sql))return {rows:existing};
@@ -91,10 +94,12 @@ test('local paid receipt is atomic, parcel-scoped, and uses canonical status mac
   }));
   expect(written(/^COMMIT$/)).toBe(true);
   expect(client.release).toHaveBeenCalledTimes(1);
+  expect(clientNotifications.emitPickupReady).toHaveBeenCalledWith(expect.objectContaining({orderId:ORDER,orderReference:'KOM-2026-1',relaisName:'Relais'}));
 });
 test('status machine refusal rolls back parcel, scan and availability together',async()=>{
   transitionOrderStatus.mockResolvedValue({success:false,error:'not eligible'});
-  await expect(execute()).rejects.toThrow('not eligible');
+  const r=await execute();
+  expect(r).toMatchObject({status:409,body:{error:'not eligible'}});
   expect(written(/^ROLLBACK$/)).toBe(true);
   expect(written(/^COMMIT$/)).toBe(false);
   expect(client.release).toHaveBeenCalledTimes(1);
