@@ -63,7 +63,7 @@ async function getDossier({ marketId, supplierId = null, now = new Date() }, q =
       FROM orders o
       JOIN order_items oi ON oi.order_id = o.id AND oi.fulfillment_source = 'IMPORT'
       LEFT JOIN products p ON p.id = oi.product_id
-     WHERE o.market_id = $1 AND o.status NOT IN ('cancelled', 'refunded', 'collected')
+     WHERE o.market_id = $1 AND o.status NOT IN ('pending', 'cancelled', 'refunded', 'collected')
        AND ($2::uuid IS NULL OR EXISTS (
          SELECT 1 FROM purchase_lines pl
           WHERE pl.order_item_id = oi.id AND pl.supplier_id = $2 AND pl.cancelled_at IS NULL
@@ -89,7 +89,8 @@ async function getDossier({ marketId, supplierId = null, now = new Date() }, q =
       SELECT pa.id AS parcel_id, pa.order_id, pa.reference, pa.status,
              pi.order_item_id, pi.quantity
         FROM parcels pa
-        LEFT JOIN parcel_items pi ON pi.parcel_id = pa.id
+        JOIN parcel_items pi ON pi.parcel_id = pa.id
+        JOIN order_items oi ON oi.id = pi.order_item_id AND oi.fulfillment_source = 'IMPORT'
        WHERE pa.order_id = ANY($1::uuid[]) AND pa.status <> 'cancelled'
        ORDER BY pa.created_at DESC, pa.id, pi.order_item_id`, [orderIds]);
     for (const r of clientParcelRows) {
@@ -97,7 +98,7 @@ async function getDossier({ marketId, supplierId = null, now = new Date() }, q =
         id: r.parcel_id, order_id: r.order_id, reference: r.reference,
         status: r.status, contents: [],
       });
-      if (r.order_item_id) clientParcels.get(r.parcel_id).contents.push({
+      clientParcels.get(r.parcel_id).contents.push({
         order_item_id: r.order_item_id, quantity: Number(r.quantity),
       });
     }
