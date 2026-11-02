@@ -240,6 +240,26 @@ function userFixtureReason(user, allow = allowlistFrom()) {
   if (NAME_FIXTURE_REGEX.test(String(user.full_name || ''))) return 'name_prefix';
   return null;
 }
+// ── Mode FULL (arbitrage utilisateur 2026-11-02 « on purge tout ») ──
+// KOMERCE_STAGING_RESET_MODE=full : tout compte hors allowlist est retire, et les lignes de FONDATION dont l'auteur est retire
+// sont purgees, UNIQUEMENT pour les colonnes nominatives ci-dessous (table.colonne). Toute autre reference reste un BLOCAGE.
+// Defaut (absent ou 'prudent') = comportement prudent. Les 5 premieres colonnes viennent de l'arbitrage ; la derniere est
+// la consequence FK directe (RESTRICT) de la suppression de market_operating_assignments.
+const RESET_SCOPES = Object.freeze(['prudent', 'full']);
+const FULL_MODE_PURGE_COLUMNS = Object.freeze([
+  'assignment_capability_ceiling.granted_by',
+  'market_delegation_audit.actor_user_id',
+  'market_operating_assignments.granted_by',
+  'market_cash_destinations.activated_by',
+  'market_cash_destinations.proposed_by',
+  'market_cash_control_policies.assignment_id',
+]);
+function resetScope(env = process.env) {
+  const v = String(env.KOMERCE_STAGING_RESET_MODE || 'prudent').toLowerCase();
+  if (!RESET_SCOPES.includes(v)) throw new Error(`STAGING_RESET_SCOPE_INVALID:${v}`);
+  return v;
+}
+
 function relaisFixtureReason(r) {
   if (NAME_FIXTURE_REGEX.test(String(r.name || ''))) return 'name_prefix';
   if (/adresse recette|moroni test|recette rct1/i.test(String(r.address || ''))) return 'address_marker';
@@ -253,6 +273,7 @@ function partnerFixtureReason(p) {
 
 module.exports = {
   TABLES, ENTRIES, FIXTURE_OWNER_COLUMNS, FIXTURE_ROOT_TABLES, ROOTS_TRUNCATE, ROOTS_DELETE, PROTECTED, UNCERTAIN_FOUNDATION, UNCERTAIN_PURGE,
+  RESET_SCOPES, FULL_MODE_PURGE_COLUMNS, resetScope,
   ALLOWLIST_EMAILS, USER_EMAIL_REGEXES, NAME_FIXTURE_REGEX,
   classOf, namesOf, isPurgeClass, isProtectedClass, listSchemaTablesStatic, diffAgainstSchema, allowlistFrom,
   userFixtureReason, relaisFixtureReason, partnerFixtureReason,

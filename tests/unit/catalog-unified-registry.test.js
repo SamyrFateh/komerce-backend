@@ -323,3 +323,32 @@ test('les cinq handoffs RCT1 désactivés sont exclus par identité croisée, sa
   expect(sql).toContain('UNION ALL');
   expect(sql).not.toContain("WHERE p.is_active=TRUE");
 });
+
+test('arbitrage humain : classification ou approbation, jamais WATCH, audit ou traitement technique',()=>{
+  const candidate={...originalCandidate,work_status:'sourcing_category_review'};
+  expect(publicRow(candidate).requires_arbitration).toBe(true);
+  expect(publicRow({...candidate,work_status:'sourcing_review'}).requires_arbitration).toBe(true);
+  expect(publicRow({...candidate,work_status:'sourcing_deferred'}).requires_arbitration).toBe(false);
+  expect(publicRow({...candidate,work_status:'processing'}).requires_arbitration).toBe(false);
+  for(const status of ['taxonomy_to_confirm','editorial_to_complete','approval_pending'])
+    expect(publicRow({...canonical,work_status:status}).requires_arbitration).toBe(true);
+  for(const status of ['approval_to_review','approval_unproven','source_to_normalize','media_to_complete','catalog_approved'])
+    expect(publicRow({...canonical,work_status:status}).requires_arbitration).toBe(false);
+});
+
+test('filtre À arbitrer : compteur global indépendant de la pagination et des statuts techniques',async()=>{
+  const q=executor([
+    {operator_group:'correction',count:10,arbitration_count:3},
+    {operator_group:'review',count:20,arbitration_count:2},
+    {operator_group:'processing',count:7,arbitration_count:0},
+  ],[canonical]);
+  const result=await listUnified({status:'arbitration',limit:2,offset:1},q);
+  expect(result.arbitrations).toBe(5);
+  expect(result.groups).toMatchObject({correction:10,review:20,processing:7});
+  expect(result.page).toMatchObject({total:5,has_previous:true,has_next:true});
+  const countQuery=q.query.mock.calls[0][0],pageQuery=q.query.mock.calls[1][0];
+  expect(countQuery).toContain('COUNT(*) FILTER (WHERE requires_arbitration)');
+  expect(countQuery).not.toContain('requires_arbitration IS TRUE');
+  expect(pageQuery).toContain('WHERE requires_arbitration IS TRUE');
+  expect(q.query.mock.calls[1][1]).toEqual([2,1]);
+});

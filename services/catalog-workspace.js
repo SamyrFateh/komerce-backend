@@ -402,7 +402,7 @@ async function buildWorkspace(query = {}) {
     summary: {
       ...summary,
       registry_total: registry.page.total,
-      ...(query.unified === '1' ? { operator_groups: registry.groups } : {}),
+      ...(query.unified === '1' ? { operator_groups: registry.groups, operator_arbitrations: registry.arbitrations } : {}),
       categories: categories.filter(row => row.is_active).length,
       commercial_approved: commercialSummary.approved_products,
       commercial_closed_lots: commercialSummary.closed_lots,

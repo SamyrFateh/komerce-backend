@@ -243,4 +243,94 @@ if (!process.env.DATABASE_URL) {
       }
     });
   });
+
+  describe('STAGING RESET — REAL_DB — mode full', () => {
+    let eph; let c; let rows; let baseline;
+    beforeAll(async () => {
+      eph = await helpers.createEphemeralDatabase(process.env.DATABASE_URL);
+      c = new Client({ connectionString: eph.url });
+      await c.connect();
+      const market = (await c.query('SELECT id FROM markets ORDER BY code LIMIT 1')).rows[0];
+      rows = {};
+      rows.admin = await insertRow(c, 'users', { email: 'admin@komerce.km', role: 'admin', full_name: 'Admin Komerce' });
+      rows.client = await insertRow(c, 'users', { email: '26912345678@komerce.km', role: 'client', full_name: 'Client reel' });
+      rows.fix = await insertRow(c, 'users', { email: 'rct1.op@recette.komerce.invalid', role: 'market_operator', full_name: 'RCT1 Op' });
+      rows.fix2 = await insertRow(c, 'users', { email: 'e2e.two@e2e-cash.test', role: 'admin', full_name: 'E2E Two' });
+      rows.rel = await insertRow(c, 'relais', { name: 'RCT1-REL-KM', market_id: market.id });
+      rows.assign = await insertRow(c, 'market_operating_assignments', { market_id: market.id, granted_by: rows.fix.id });
+      rows.ceil = await insertRow(c, 'assignment_capability_ceiling', { assignment_id: rows.assign.id, granted_by: rows.fix.id });
+      rows.policy = await insertRow(c, 'market_cash_control_policies', { assignment_id: rows.assign.id, market_id: market.id });
+      rows.audit = await insertRow(c, 'market_delegation_audit', { actor_user_id: rows.fix.id });
+      rows.auditKeep = await insertRow(c, 'market_delegation_audit', { actor_user_id: rows.admin.id });
+      rows.dest = await insertRow(c, 'market_cash_destinations', { market_id: market.id, proposed_by: rows.fix.id });
+      await c.query(`UPDATE market_cash_destinations SET status='ACTIVE', activated_by=$1, activated_at=NOW() WHERE id=$2`, [rows.fix2.id, rows.dest.id]);
+      await insertRow(c, 'orders', { user_id: rows.client.id });
+      await insertRow(c, 'stripe_events_processed');
+      baseline = await fingerprintAll(c);
+    });
+    afterAll(async () => {
+      if (c) await c.end().catch(() => {});
+      if (eph) await eph.drop().catch(() => {});
+    });
+
+    test('prudent (defaut) : les 5 blocages sont rapportes, le client reel est conserve', () => {
+      const dry = drive(eph.url, 'dry-run');
+      expect(dry.report.status).toBe('DRY_RUN_BLOCKED');
+      expect(dry.report.fixture_blockers.map((b) => `${b.table}.${b.columns.join('+')}`).sort()).toEqual([
+        'assignment_capability_ceiling.granted_by', 'market_cash_destinations.activated_by', 'market_cash_destinations.proposed_by',
+        'market_delegation_audit.actor_user_id', 'market_operating_assignments.granted_by',
+      ]);
+      expect(dry.report.fixtures.summary.users_kept_unmatched.map((u) => u.role)).toEqual(['client']);
+      expect(dry.report.scope).toBe('prudent');
+    });
+
+    test('full dry-run : 0 blocage, 0 mutation, rapport exact (relais, diff referentiel, stripe)', async () => {
+      const dry = drive(eph.url, 'dry-run', { KOMERCE_STAGING_RESET_MODE: 'full' });
+      expect(dry.ok).toBe(true);
+      const r = dry.report;
+      expect(r.scope).toBe('full');
+      expect(r.status).toBe('DRY_RUN_OK');
+      expect(r.fixtures.blockers).toEqual([]);
+      expect(r.fixtures.summary).toMatchObject({ users: 3, relais: 1 });
+      expect(r.fixtures.summary.users_kept_by_role).toEqual({ admin: 1 });
+      expect(r.fixtures.summary.relais_removed).toEqual([expect.objectContaining({ name: 'RCT1-REL-KM', market: expect.any(String) })]);
+      expect(r.fixtures.would_delete).toMatchObject({
+        users: 3, assignment_capability_ceiling: 1, market_operating_assignments: 1, market_cash_control_policies: 1,
+        market_cash_destinations: 1, market_delegation_audit: 1,
+      });
+      expect(r.reference_drift).toEqual({});
+      expect(r.stripe_events_processed).toMatchObject({ total: 1, stored: 'not_stored' });
+      expect(r.rows_to_purge_total).toBeGreaterThan(0);
+      expect(sameExcept(baseline, await fingerprintAll(c), new Set())).toEqual([]);
+      // repetition generale : joue la purge complete (dont TRUNCATE de la table append-only) puis annule
+      const sim = drive(eph.url, 'dry-run', { KOMERCE_STAGING_RESET_MODE: 'full', KOMERCE_STAGING_RESET_SIMULATE: '1' });
+      expect(sim.report.simulation).toMatchObject({ ok: true, rolled_back: true });
+      expect(sim.report.simulation.fixtures_deleted).toMatchObject({ users: 3, market_cash_destinations: 1 });
+      expect(sameExcept(baseline, await fingerprintAll(c), new Set())).toEqual([]);
+    });
+
+    test('full execute : seul l admin subsiste, lignes d auteurs retires purgees, ligne de l admin conservee, verify vert, idempotent', async () => {
+      const out = drive(eph.url, 'execute', { KOMERCE_STAGING_RESET_MODE: 'full' });
+      expect({ ok: out.ok, message: out.message }).toEqual({ ok: true, message: undefined });
+      expect(out.report.status).toBe('RESET_OK');
+      expect((await c.query('SELECT email FROM users')).rows.map((u) => u.email)).toEqual(['admin@komerce.km']);
+      expect(Number((await c.query('SELECT COUNT(*) FROM market_operating_assignments')).rows[0].count)).toBe(0);
+      expect(Number((await c.query('SELECT COUNT(*) FROM market_cash_destinations')).rows[0].count)).toBe(0);
+      expect((await c.query('SELECT actor_user_id FROM market_delegation_audit')).rows.map((a) => a.actor_user_id)).toEqual([rows.admin.id]);
+      expect(Number((await c.query('SELECT COUNT(*) FROM relais')).rows[0].count)).toBe(0);
+      const after = await fingerprintAll(c);
+      const again = drive(eph.url, 'execute', { KOMERCE_STAGING_RESET_MODE: 'full' });
+      expect(again.report.status).toBe('RESET_OK');
+      expect(again.report.fixtures_deleted).toEqual({});
+      expect(sameExcept(after, await fingerprintAll(c), new Set())).toEqual([]);
+    });
+
+    test('full ne force pas une colonne hors liste nominative (economic_structure_cost_events.recorded_by)', async () => {
+      const u = await insertRow(c, 'users', { email: 'x@komerce.km', role: 'client', full_name: 'X' });
+      await insertRow(c, 'economic_structure_cost_events', { recorded_by: u.id });
+      const dry = drive(eph.url, 'dry-run', { KOMERCE_STAGING_RESET_MODE: 'full' });
+      expect(dry.report.status).toBe('DRY_RUN_BLOCKED');
+      expect(dry.report.fixture_blockers).toEqual([expect.objectContaining({ table: 'economic_structure_cost_events', columns: ['recorded_by'] })]);
+    });
+  });
 }

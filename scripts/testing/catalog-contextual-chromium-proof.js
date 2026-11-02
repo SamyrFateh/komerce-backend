@@ -221,7 +221,7 @@ async function main() {
     await economic.locator('[data-workspace-action="candidate-economic-category-review"]').click();
     assert((await economic.locator('[data-catalog-economic-category-choice] option').first().innerText())
       .includes('Proposé'));
-    assert((await economic.innerText()).includes('catégorie économique'));
+    assert((await economic.innerText()).toLowerCase().includes('famille de calcul'));
     await page.screenshot({
       path:path.join(output,'candidat-categorie-economique-contextuelle.png'),fullPage:true,
     });
