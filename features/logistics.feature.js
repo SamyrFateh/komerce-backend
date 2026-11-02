@@ -412,6 +412,7 @@ module.exports = {
       'infrastructure (DB + transactional outbox F0 ; les constats physiques sont publiés via outbox-producer dans la transaction du fait)',
       "business-rules (FF-C1 2026-07-29 — lecture du référentiel de règles métier ; preuve: utils/parcels.js -> utils/rules.js ; services/parcel-operations.js -> utils/rules.js)",
       'orders (commande rattachée au colis ; HUB-001 ne lit que order_id/order_item_id/market_id/relais_id autoritatifs et ne les réassigne jamais)',
+      'local-stock (lecture par SKU et marché des allocations consommées pour la réception directe au relais, sans Hub fictif)',
       'auth',
       'auth-identity (autorisation nominative de retrait exceptionnel — services/pickup-authorization-service.js:getActiveAuthorizationForUpdate/hasActiveAuthorization, jamais de requête directe sur user_pickup_authorizations, Lot 5)',
       'catalog',
