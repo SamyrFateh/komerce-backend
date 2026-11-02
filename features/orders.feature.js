@@ -64,7 +64,6 @@ module.exports = {
       'services/order-cost-snapshot.js',
       'services/order-display-snapshot.js',
       'services/order-status-machine.js',
-      'services/local-relay-receipt-service.js',
       'services/order-financial-closure-reconciliation.js',
       'services/order-financial-closure-signal.js',
       'services/order-checkout-service.js',
@@ -211,9 +210,8 @@ module.exports = {
       'order_items: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)
       'order_status_history: RW',
       'orders: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)
-      'parcel_events: W~', // journal logistique écrit par réception locale (writer, pas owner)
-      'parcel_items: RW~', // affectation canonique + quantité reçue (writer, pas owner)
-      'parcels: RW~', // création colis local tracé, sans changement d’owner
+      'parcel_items: R',
+      'parcels: R',
       'product_variants: R',  // W-via:product-admin-service (adjustStock variantes)
       'products: R',          // W-via:product-admin-service (adjustStock — order-payment-confirmation.js, order-status-machine.js)
       'recipients: RW',
