@@ -164,13 +164,66 @@ describeE2E('Orders - local relay receipt without hub',({db})=>{
     const {rows:[next]}=await q('SELECT code FROM pickup_reveal_codes WHERE order_id=$1',[orders.mixed]);
     expect(next?.code).toBeTruthy();
     expect(next.code).not.toBe(secret.code);
-    // Simulate an imported parcel *after* its separate Hub/transit/customs
-    // journey; this test validates pickup reconciliation, not Hub E2E.
+    // The import parcel is initially empty: the physical-proof guard MUST
+    // reject quantities unsupported by an actual Hub receipt and KOM-BOX
+    // placement. This spec tests pickup reconciliation, NOT a full customs /
+    // transitaire E2E journey; those are certified separately.
     const importParcel=uuid();
-    await q("INSERT INTO parcels (id,order_id,reference,type,status,relais_id,available_at) VALUES ($1,$2,$3,'standard','available',$4,NOW())",
+    await q("INSERT INTO parcels (id,order_id,reference,type,status,relais_id) VALUES ($1,$2,$3,'standard','preparation',$4)",
       [importParcel,orders.mixed,'E2E-LR-'+tag('import-parcel'),relay]);
-    await q("INSERT INTO parcel_items (parcel_id,order_item_id,product_id,quantity,qty_allocated,qty_packed,qty_shipped,qty_received,verified) VALUES ($1,$2,$3,1,1,1,1,1,TRUE)",
+    await q("INSERT INTO parcel_items (parcel_id,order_item_id,product_id,quantity) VALUES ($1,$2,$3,1)",
       [importParcel,items.mixedImport,importProduct]);
+    await expect(q('UPDATE parcel_items SET qty_allocated=1 WHERE parcel_id=$1 AND order_item_id=$2',
+      [importParcel,items.mixedImport])).rejects.toThrow(/parcel_item_no_physical_proof/);
+
+    // Minimal real-Postgres fixture for the *separate* import leg:
+    // PO -> purchase allocation -> supplier receipt -> physical KOM-BOX.
+    // No bypass of the runtime trigger, no fictitious qty_shipped for LOCAL.
+    const supplier=uuid(),sku=uuid(),po=uuid(),allocation=uuid(),unit=uuid(),box=uuid();
+    const hubRef=tag('mixed-import-hub');
+    const supplierIdentity={provider:'manual',version:1,payload:{supplier_sku:hubRef}};
+    // The teardown already uses a transaction-scoped disabled-trigger role
+    // on the disposable localhost PostgreSQL. Register physical children in
+    // LIFO order, ahead of existing order/parcel fixture cleanup.
+    cleanup.trackSql('DELETE FROM suppliers WHERE id=$1',[supplier]);
+    cleanup.trackSql('DELETE FROM product_skus WHERE id=$1',[sku]);
+    cleanup.trackSql('DELETE FROM purchase_orders WHERE id=$1',[po]);
+    cleanup.trackSql('DELETE FROM hub_physical_units WHERE id=ANY($1::uuid[])',[[unit,box]]);
+    cleanup.trackSql('DELETE FROM hub_purchase_allocations WHERE id=$1',[allocation]);
+    cleanup.trackSql('DELETE FROM hub_physical_unit_placements WHERE allocation_id=$1',[allocation]);
+
+    await q("INSERT INTO suppliers (id,name,platform) VALUES ($1,$2,'cj')",[supplier,hubRef]);
+    await q(`INSERT INTO product_skus
+      (id,product_id,sku,stock,is_active,source,supplier_sku,supplier_unit_ref,supplier_order_identity)
+      VALUES ($1,$2,$3,0,TRUE,'SUPPLIER',$4,$4,$5::jsonb)`,
+      [sku,importProduct,'K-'+hubRef,hubRef,JSON.stringify(supplierIdentity)]);
+    await q(`INSERT INTO purchase_orders
+      (id,order_id,order_item_id,product_sku_id,supplier_id,supplier_sku,supplier_unit_ref,supplier_order_identity,qty,status)
+      VALUES ($1,$2,$3,$4,$5,$6,$6,$7::jsonb,1,'confirmed')`,
+      [po,orders.mixed,items.mixedImport,sku,supplier,hubRef,JSON.stringify(supplierIdentity)]);
+    await q(`INSERT INTO hub_purchase_allocations
+      (id,purchase_order_id,order_id,order_item_id,product_sku_id,supplier_id,supplier_unit_ref,supplier_order_identity,quantity,market_id,destination_ref)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8::jsonb,1,$9,$10)`,
+      [allocation,po,orders.mixed,items.mixedImport,sku,supplier,hubRef,JSON.stringify(supplierIdentity),market.id,'relais:'+relay]);
+    await q(`INSERT INTO hub_physical_units
+      (id,reference,unit_type,state,external_ref,current_location_ref)
+      VALUES ($1,$2,'SUPPLIER_PACKAGE','RECEIVED',$2,'DXB-HUB')`,[unit,hubRef]);
+    await q(`INSERT INTO hub_physical_units
+      (id,reference,unit_type,state,market_id,current_location_ref)
+      VALUES ($1,$2,'MARKET_PARCEL','PACKED',$3,'DXB-HUB')`,[box,hubRef+'-BOX',market.id]);
+    await q("INSERT INTO hub_physical_unit_placements (physical_unit_id,allocation_id,quantity,operation_type) VALUES ($1,$2,1,'RECEIVE')",[unit,allocation]);
+    await q("INSERT INTO hub_physical_unit_placements (physical_unit_id,allocation_id,quantity,operation_type) VALUES ($1,$2,1,'REPACK')",[box,allocation]);
+    const {rows:[proof]}=await q('SELECT received,boxed FROM hub_item_physical_proof($1)',[items.mixedImport]);
+    expect(proof).toMatchObject({received:1,boxed:1});
+    const {rows:[beforeShipment]}=await q(
+      'SELECT qty_allocated,qty_packed,qty_shipped,qty_received FROM parcel_items WHERE parcel_id=$1 AND order_item_id=$2',
+      [importParcel,items.mixedImport]);
+    expect(beforeShipment).toMatchObject({qty_allocated:1,qty_packed:1,qty_shipped:0,qty_received:0});
+    // Carrier/relay evidence is outside this scoped spec; transition here
+    // represents arrival after the separately certified physical leg.
+    await q(`UPDATE parcel_items SET qty_shipped=1,qty_received=1,verified=TRUE
+      WHERE parcel_id=$1 AND order_item_id=$2`,[importParcel,items.mixedImport]);
+    await q("UPDATE parcels SET status='available',available_at=NOW() WHERE id=$1",[importParcel]);
     const second=await request(app).post('/api/pickup/collect/'+orders.mixed)
       .set('Authorization','Bearer '+token)
       .send({collected_by_name:'Client',pickup_code:next.code});
