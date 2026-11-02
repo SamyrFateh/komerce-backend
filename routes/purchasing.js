@@ -211,7 +211,236 @@ router.get('/suppliers', ...groupedGuard, async (req, res, next) => {
     const conditions = ['1=1'];
     const params     = [];
 
-    if (platform) { conditions.push(`s.platform = ${params.length + 1}`); params.push(platform); }
+    if (platform) { conditions.push('s.platform = 
+    if (active !== undefined) { conditions.push('s.is_active = 
+    conditions.push('s.deleted_at IS NULL');
+    // Pas de paramètre supplémentaire sans product_id : contrat historique préservé.
+    const productPlaceholder = productId ? '
+
+    const { rows } = await db.query(`
+      SELECT
+        s.*,
+        ${matchingProductSql} AS matching_product_supplier_id,
+        COUNT(DISTINCT ps.product_id) AS products_mapped,
+        COUNT(DISTINCT po.id)         AS purchase_orders_total
+      FROM suppliers s
+      LEFT JOIN product_suppliers ps ON ps.supplier_id = s.id AND ps.is_active = TRUE AND ps.deleted_at IS NULL
+      LEFT JOIN purchase_orders   po ON po.supplier_id = s.id
+      WHERE ${conditions.join(' AND ')}
+      GROUP BY s.id
+      ORDER BY s.name
+    `, params);
+
+    const safe = rows.map(({ api_key_enc, api_secret_enc, ...s }) => ({
+      ...s,
+      has_api_key: !!api_key_enc,
+    }));
+
+    res.json(safe);
+  } catch(err) { next(err); }
+});
+
+// ─── POST /api/purchasing/suppliers — créer un fournisseur ───────────────────
+
+// Le Hub crée ses fournisseurs locaux (local/whatsapp) dans son périmètre ; le catalogue global reste à l'admin.
+function hubSupplierScope(req) { return req.user && req.user.role === 'agent_hub'; }
+ + (params.length + 1)); params.push(platform); }
+    if (active !== undefined) { conditions.push(`s.is_active = ${params.length + 1}`); params.push(active === 'true'); }
+    conditions.push('s.deleted_at IS NULL');
+    params.push(productId);
+    const productPlaceholder = `${params.length}`;
+
+    const { rows } = await db.query(`
+      SELECT
+        s.*,
+        MAX(CASE WHEN ps.product_id = ${productPlaceholder}::uuid THEN ps.id::text END)::uuid AS matching_product_supplier_id,
+        COUNT(DISTINCT ps.product_id) AS products_mapped,
+        COUNT(DISTINCT po.id)         AS purchase_orders_total
+      FROM suppliers s
+      LEFT JOIN product_suppliers ps ON ps.supplier_id = s.id AND ps.is_active = TRUE AND ps.deleted_at IS NULL
+      LEFT JOIN purchase_orders   po ON po.supplier_id = s.id
+      WHERE ${conditions.join(' AND ')}
+      GROUP BY s.id
+      ORDER BY s.name
+    `, params);
+
+    const safe = rows.map(({ api_key_enc, api_secret_enc, ...s }) => ({
+      ...s,
+      has_api_key: !!api_key_enc,
+    }));
+
+    res.json(safe);
+  } catch(err) { next(err); }
+});
+
+// ─── POST /api/purchasing/suppliers — créer un fournisseur ───────────────────
+
+// Le Hub crée ses fournisseurs locaux (local/whatsapp) dans son périmètre ; le catalogue global reste à l'admin.
+function hubSupplierScope(req) { return req.user && req.user.role === 'agent_hub'; }
+ + (params.length + 1)); params.push(active === 'true'); }
+    conditions.push('s.deleted_at IS NULL');
+    params.push(productId);
+    const productPlaceholder = `${params.length}`;
+
+    const { rows } = await db.query(`
+      SELECT
+        s.*,
+        MAX(CASE WHEN ps.product_id = ${productPlaceholder}::uuid THEN ps.id::text END)::uuid AS matching_product_supplier_id,
+        COUNT(DISTINCT ps.product_id) AS products_mapped,
+        COUNT(DISTINCT po.id)         AS purchase_orders_total
+      FROM suppliers s
+      LEFT JOIN product_suppliers ps ON ps.supplier_id = s.id AND ps.is_active = TRUE AND ps.deleted_at IS NULL
+      LEFT JOIN purchase_orders   po ON po.supplier_id = s.id
+      WHERE ${conditions.join(' AND ')}
+      GROUP BY s.id
+      ORDER BY s.name
+    `, params);
+
+    const safe = rows.map(({ api_key_enc, api_secret_enc, ...s }) => ({
+      ...s,
+      has_api_key: !!api_key_enc,
+    }));
+
+    res.json(safe);
+  } catch(err) { next(err); }
+});
+
+// ─── POST /api/purchasing/suppliers — créer un fournisseur ───────────────────
+
+// Le Hub crée ses fournisseurs locaux (local/whatsapp) dans son périmètre ; le catalogue global reste à l'admin.
+function hubSupplierScope(req) { return req.user && req.user.role === 'agent_hub'; }
+ + (params.length + 1)); params.push(platform); }
+    if (active !== undefined) { conditions.push(`s.is_active = ${params.length + 1}`); params.push(active === 'true'); }
+    conditions.push('s.deleted_at IS NULL');
+    params.push(productId);
+    const productPlaceholder = `${params.length}`;
+
+    const { rows } = await db.query(`
+      SELECT
+        s.*,
+        MAX(CASE WHEN ps.product_id = ${productPlaceholder}::uuid THEN ps.id::text END)::uuid AS matching_product_supplier_id,
+        COUNT(DISTINCT ps.product_id) AS products_mapped,
+        COUNT(DISTINCT po.id)         AS purchase_orders_total
+      FROM suppliers s
+      LEFT JOIN product_suppliers ps ON ps.supplier_id = s.id AND ps.is_active = TRUE AND ps.deleted_at IS NULL
+      LEFT JOIN purchase_orders   po ON po.supplier_id = s.id
+      WHERE ${conditions.join(' AND ')}
+      GROUP BY s.id
+      ORDER BY s.name
+    `, params);
+
+    const safe = rows.map(({ api_key_enc, api_secret_enc, ...s }) => ({
+      ...s,
+      has_api_key: !!api_key_enc,
+    }));
+
+    res.json(safe);
+  } catch(err) { next(err); }
+});
+
+// ─── POST /api/purchasing/suppliers — créer un fournisseur ───────────────────
+
+// Le Hub crée ses fournisseurs locaux (local/whatsapp) dans son périmètre ; le catalogue global reste à l'admin.
+function hubSupplierScope(req) { return req.user && req.user.role === 'agent_hub'; }
+ + (params.length + 1) : null;
+    if (productId) params.push(productId);
+    const matchingProductSql = productPlaceholder
+      ? 'MAX(CASE WHEN ps.product_id = ' + productPlaceholder + '::uuid THEN ps.id::text END)::uuid'
+      : 'NULL::uuid';
+
+    const { rows } = await db.query(`
+      SELECT
+        s.*,
+        MAX(CASE WHEN ps.product_id = ${productPlaceholder}::uuid THEN ps.id::text END)::uuid AS matching_product_supplier_id,
+        COUNT(DISTINCT ps.product_id) AS products_mapped,
+        COUNT(DISTINCT po.id)         AS purchase_orders_total
+      FROM suppliers s
+      LEFT JOIN product_suppliers ps ON ps.supplier_id = s.id AND ps.is_active = TRUE AND ps.deleted_at IS NULL
+      LEFT JOIN purchase_orders   po ON po.supplier_id = s.id
+      WHERE ${conditions.join(' AND ')}
+      GROUP BY s.id
+      ORDER BY s.name
+    `, params);
+
+    const safe = rows.map(({ api_key_enc, api_secret_enc, ...s }) => ({
+      ...s,
+      has_api_key: !!api_key_enc,
+    }));
+
+    res.json(safe);
+  } catch(err) { next(err); }
+});
+
+// ─── POST /api/purchasing/suppliers — créer un fournisseur ───────────────────
+
+// Le Hub crée ses fournisseurs locaux (local/whatsapp) dans son périmètre ; le catalogue global reste à l'admin.
+function hubSupplierScope(req) { return req.user && req.user.role === 'agent_hub'; }
+ + (params.length + 1)); params.push(platform); }
+    if (active !== undefined) { conditions.push(`s.is_active = ${params.length + 1}`); params.push(active === 'true'); }
+    conditions.push('s.deleted_at IS NULL');
+    params.push(productId);
+    const productPlaceholder = `${params.length}`;
+
+    const { rows } = await db.query(`
+      SELECT
+        s.*,
+        MAX(CASE WHEN ps.product_id = ${productPlaceholder}::uuid THEN ps.id::text END)::uuid AS matching_product_supplier_id,
+        COUNT(DISTINCT ps.product_id) AS products_mapped,
+        COUNT(DISTINCT po.id)         AS purchase_orders_total
+      FROM suppliers s
+      LEFT JOIN product_suppliers ps ON ps.supplier_id = s.id AND ps.is_active = TRUE AND ps.deleted_at IS NULL
+      LEFT JOIN purchase_orders   po ON po.supplier_id = s.id
+      WHERE ${conditions.join(' AND ')}
+      GROUP BY s.id
+      ORDER BY s.name
+    `, params);
+
+    const safe = rows.map(({ api_key_enc, api_secret_enc, ...s }) => ({
+      ...s,
+      has_api_key: !!api_key_enc,
+    }));
+
+    res.json(safe);
+  } catch(err) { next(err); }
+});
+
+// ─── POST /api/purchasing/suppliers — créer un fournisseur ───────────────────
+
+// Le Hub crée ses fournisseurs locaux (local/whatsapp) dans son périmètre ; le catalogue global reste à l'admin.
+function hubSupplierScope(req) { return req.user && req.user.role === 'agent_hub'; }
+ + (params.length + 1)); params.push(active === 'true'); }
+    conditions.push('s.deleted_at IS NULL');
+    params.push(productId);
+    const productPlaceholder = `${params.length}`;
+
+    const { rows } = await db.query(`
+      SELECT
+        s.*,
+        MAX(CASE WHEN ps.product_id = ${productPlaceholder}::uuid THEN ps.id::text END)::uuid AS matching_product_supplier_id,
+        COUNT(DISTINCT ps.product_id) AS products_mapped,
+        COUNT(DISTINCT po.id)         AS purchase_orders_total
+      FROM suppliers s
+      LEFT JOIN product_suppliers ps ON ps.supplier_id = s.id AND ps.is_active = TRUE AND ps.deleted_at IS NULL
+      LEFT JOIN purchase_orders   po ON po.supplier_id = s.id
+      WHERE ${conditions.join(' AND ')}
+      GROUP BY s.id
+      ORDER BY s.name
+    `, params);
+
+    const safe = rows.map(({ api_key_enc, api_secret_enc, ...s }) => ({
+      ...s,
+      has_api_key: !!api_key_enc,
+    }));
+
+    res.json(safe);
+  } catch(err) { next(err); }
+});
+
+// ─── POST /api/purchasing/suppliers — créer un fournisseur ───────────────────
+
+// Le Hub crée ses fournisseurs locaux (local/whatsapp) dans son périmètre ; le catalogue global reste à l'admin.
+function hubSupplierScope(req) { return req.user && req.user.role === 'agent_hub'; }
+ + (params.length + 1)); params.push(platform); }
     if (active !== undefined) { conditions.push(`s.is_active = ${params.length + 1}`); params.push(active === 'true'); }
     conditions.push('s.deleted_at IS NULL');
     params.push(productId);
