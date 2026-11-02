@@ -86,34 +86,34 @@ async function mount(page, posts) {
 }
 
 test.describe('Hub live · Approvisionnement — desktop 1440', () => {
-  test('un bon émis n’est pas un envoi ; la réception partielle et le manquant sont visibles', async ({ page }) => {
+  test('tableau compact : PO non envoyée, réception partielle, reliquat et rattachement distinct', async ({ page }) => {
     await mount(page, []);
     const pos = page.locator('[data-supply-pos]');
-    await expect(pos).toContainText('Envoi fournisseur non prouvé');
+    const row = page.locator('[data-hub-order="4def6c00-67b9-4584-85ed-00d2b8a24292"]');
+    await expect(pos).toContainText('Envoi à prouver');
     await expect(pos).not.toContainText('Envoyée');
-    await expect(pos).toContainText('2 / 3 reçus');
-    await expect(page.locator('[data-hub-order]').first()).toContainText('PCL-C2');
-    await expect(page.locator('[data-hub-order]').first()).toContainText('BOX-2');
-    // Colis client : quantités = preuve physique (affecté 2, emballé 1, expédié 0), pas un prérempli.
-    await expect(page.locator('[data-hub-order]').first()).toContainText('affecté 2 · emballé 1 · expédié 0');
-    const columns = await page.locator('[data-hub-order]').first()
-      .locator('[data-hub-order-flow] > .kmc-hub-work-stage')
-      .evaluateAll(nodes => nodes.map(node => {
-        const { x, y } = node.getBoundingClientRect();
-        return { x, y };
-      }));
-    expect(columns).toHaveLength(6);
-    expect(columns.every((c, i) => i === 0 || c.x > columns[i - 1].x)).toBe(true);
-    expect(columns.every(c => Math.abs(c.y - columns[0].y) < 2)).toBe(true);
+    await expect(row).toContainText('2 reçu(s)');
+    await expect(row).toContainText('1 non reçue(s)');
+    await expect(row).toContainText('1 KOM-BOX');
+    await expect(row).toContainText('1 expédition(s)');
+    await expect(row).not.toContainText('Câble USB');
+    await expect(row).not.toContainText('remboursé');
+    await expect(pos.locator('.kmc-hub-board thead th')).toHaveCount(7);
     await expect(page.locator('[data-supply-to-handle]')).toContainText('1 unité(s) confirmée(s) non reçue(s)');
     await expect(page.getByText('Unités encore attendues')).toBeVisible();
+    const coords = await pos.locator('.kmc-hub-board thead th').evaluateAll(nodes =>
+      nodes.map(n => n.getBoundingClientRect().x));
+    expect(coords.every((x, i) => i === 0 || x > coords[i - 1])).toBe(true);
     await page.screenshot({ path: 'test-results/hub-live-supply-1440.png', fullPage: true });
   });
 
-  test('filiation : commande → PO → colis → carton → expédition, en lecture seule', async ({ page }) => {
+  test('filiation : trace complète à la demande, sans mutation ni détail article dans le tableau', async ({ page }) => {
     const posts = [];
     await mount(page, posts);
-    await page.locator('[data-hub-order] [data-workspace-action="show-trace"]').first().click();
+    const row = page.locator('[data-hub-order="4def6c00-67b9-4584-85ed-00d2b8a24292"]');
+    await row.locator('[data-hub-stage="Cartons"]').click({ button: 'right' });
+    await expect(page.locator('[data-hub-context-menu]')).toBeVisible();
+    await page.locator('[data-hub-context-menu]').getByRole('button', { name: 'Voir les preuves / la filiation' }).click();
     const trace = page.locator('[data-supply-trace]');
     await expect(trace).toContainText('COLIS-1');
     await expect(trace).toContainText('BOX-2');
@@ -179,7 +179,8 @@ test.describe('Hub live · Approvisionnement — mobile 390', () => {
   test('la preuve physique du colis client reste lisible sans débordement horizontal', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await mount(page, []);
-    await expect(page.locator('[data-hub-order]').first()).toContainText('affecté 2 · emballé 1 · expédié 0');
+    await expect(page.locator('[data-hub-order]').first()).toContainText('1 non reçue(s)');
+    await expect(page.locator('[data-hub-order]').first()).not.toContainText('Câble USB');
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(1);
   });

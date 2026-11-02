@@ -50,3 +50,8 @@
   .kmc-hub-app-case-list { max-height: 200px; }
   .kmc-hub-app-branch { min-width: 0; flex: 1; }
 }
+
+/* Le cockpit Hub exploite toute la largeur ; la file latérale du prototype est retirée. */
+.kmc-hub-app-layout.is-table { display:block; }
+.kmc-hub-app-layout.is-table > .kmc-hub-app-rail { display:none; }
+.kmc-hub-app-layout.is-table > .kmc-hub-app-content { width:100%; min-width:0; }
