@@ -1387,3 +1387,145 @@
   .kmc-hub-dossier-toolbar { align-items: flex-start; }
   .kmc-hub-dossier-po-summary { padding: 12px; }
 }
+
+
+/* Work Hub: commande d'abord, six blocs de preuves dans un dossier.
+   Les couleurs reflètent les données du serveur ; aucun nouveau statut métier. */
+.kmc-hub-work-order {
+  margin: 11px 0;
+  border: 1px solid #d7e2ef;
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+}
+.kmc-hub-work-order[open] {
+  border-color: #9ebce4;
+  box-shadow: 0 3px 16px rgb(22 63 109 / 0.06);
+}
+.kmc-hub-work-order-summary {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  cursor: pointer;
+  padding: 14px 18px;
+  list-style: none;
+}
+.kmc-hub-work-order-summary::-webkit-details-marker { display: none; }
+.kmc-hub-work-order-summary::before {
+  content: "▸";
+  color: #4474a8;
+  font-weight: 800;
+}
+.kmc-hub-work-order[open] > .kmc-hub-work-order-summary::before { content: "▾"; }
+.kmc-hub-work-order-summary:focus-visible {
+  outline: 3px solid #8caee3;
+  outline-offset: -3px;
+}
+.kmc-hub-work-order-title {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 210px;
+  flex: 1;
+}
+.kmc-hub-work-order-title strong {
+  color: #1d3553;
+  font-size: 14px;
+  font-weight: 800;
+}
+.kmc-hub-work-order-title .kmc-workspace-muted { font-size: 11px; }
+.kmc-hub-work-count {
+  font-size: 11px;
+  color: #47617e;
+  padding: 7px 10px;
+  border: 1px solid #e4eaf1;
+  border-radius: 999px;
+  white-space: normal;
+  font-weight: 750;
+}
+.kmc-hub-work-count.is-attention {
+  color: #8c5b0a;
+  background: #fff7e9;
+  border-color: #f0dfc0;
+}
+.kmc-hub-work-order-body {
+  border-top: 1px solid #e3eaf3;
+  background: #fafcff;
+  padding: 14px 17px 17px;
+  display: grid;
+  gap: 12px;
+}
+.kmc-hub-work-stage {
+  background: #fff;
+  border: 1px solid #e0e8f1;
+  border-radius: 10px;
+  padding: 13px 15px;
+  min-width: 0;
+}
+.kmc-hub-work-stage-heading {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  margin: 0 0 11px;
+  color: #1f4168;
+  font-size: 13px;
+  font-weight: 800;
+}
+.kmc-hub-work-stage .kmc-hub-dossier-number {
+  width: 23px;
+  height: 23px;
+}
+.kmc-hub-work-item {
+  padding: 9px 0 12px;
+  border-top: 1px solid #e9eef5;
+}
+.kmc-hub-work-item:first-of-type { border-top: 0; padding-top: 0; }
+.kmc-hub-work-item-head,
+.kmc-hub-work-po-head {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.kmc-hub-work-item-head strong { color: #273d5c; font-size: 13px; }
+.kmc-hub-work-po {
+  border-top: 1px solid #e8edf4;
+  padding: 9px 0;
+}
+.kmc-hub-work-po:first-of-type { border-top: 0; }
+.kmc-hub-work-po-head > div {
+  display: flex;
+  flex: 1;
+  gap: 4px;
+  flex-direction: column;
+}
+.kmc-hub-work-po-head strong { font-size: 13px; }
+.kmc-hub-work-po p { font-size: 11px; margin: 2px 0 0; }
+.kmc-hub-work-parcel {
+  padding: 10px 12px;
+  border: 1px solid #e5edf5;
+  background: #f8fafc;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #25415f;
+  margin-top: 6px;
+  overflow-wrap: anywhere;
+}
+.kmc-hub-work-order-body > .kmc-hub-dossier-reliquat {
+  margin: 0;
+  padding: 12px;
+  border: 1px solid #edd9b1;
+}
+@media (min-width: 1150px) {
+  .kmc-hub-work-order-body { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .kmc-hub-work-stage:first-child,
+  .kmc-hub-work-order-body > .kmc-hub-dossier-reliquat { grid-column: 1 / -1; }
+}
+@media (max-width: 780px) {
+  .kmc-hub-work-order-summary { align-items: flex-start; padding: 13px; }
+  .kmc-hub-work-order-body { padding: 10px; }
+  .kmc-hub-work-stage { padding: 11px; }
+  .kmc-hub-work-order-title { min-width: 150px; }
+}
