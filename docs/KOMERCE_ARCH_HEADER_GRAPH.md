@@ -6,20 +6,20 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 770
-- Files with full headers: 719
+- Scanned code files: 771
+- Files with full headers: 720
 - Files with lite headers: 51
-- Files with any headers: 770
+- Files with any headers: 771
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1936
-- Edges: 9554
-- DB tables: 221
-- Doctrines: 738
+- Graph nodes: 1940
+- Edges: 9578
+- DB tables: 222
+- Doctrines: 740
 - Impact areas: 207
-- Unresolved code edges: 920
-- Tables multi-écrivains directs (>=2): 94
+- Unresolved code edges: 921
+- Tables multi-écrivains directs (>=2): 95
 - Avertissements db-write / db-write-via en chevauchement: 11
 
 ## Domains
@@ -45,7 +45,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - infrastructure: 25
 - inventory: 2
 - local-stock: 4
-- logistics: 60
+- logistics: 61
 - loyalty: 3
 - market: 9
 - market-autonomy: 4
@@ -92,7 +92,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 138
 - route-manifest: 1
 - schema: 1
-- service: 453
+- service: 454
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -569,6 +569,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/relais-mutation-service.js — logistics-relais-mutation-service (logistics, high, full)
 - services/relay-collect-amount.js — dashboard-relay-collect-amount (dashboard, high, full)
 - services/relay-dashboard-queries.js — dashboard-relay-dashboard-queries (dashboard, high, full)
+- services/relay-shipment-receipt.js — relay-shipment-receipt-owner (logistics, high, full)
 - services/shared-cart-library.js — shared-cart-library-service (shared-cart, high, full)
 - services/shared-cart-queries.js — shared-cart-db-query-service (shared-cart, high, full)
 - services/shared-cart-user-cleanup.js — shared-cart-user-cleanup-boundary (shared-cart, high, full)
@@ -846,10 +847,10 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/incident-escalation.js -> incidents
 - WRITE services/incident-service.js -> incidents
 - WRITE services/incident-write-service.js -> incidents
+- WRITE services/relay-shipment-receipt.js -> incidents
 - WRITE services/providers-inquiry-service.js -> inquiries
 - WRITE services/providers-service.js -> inquiries
 - WRITE services/international-n1-reconciliation.js -> international_n1_reconciliations
-- WRITE services/international-shipment-journey.js -> international_shipment_charges
 
 ## DB Write-Via Edges (délégation déclarée)
 
@@ -1004,6 +1005,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - basket_items: 4 écrivains directs — routes/admin/system.js, services/shared-cart-creation.js, services/shared-cart-engine.js, services/shared-cart-user-cleanup.js
 - baskets: 4 écrivains directs — routes/admin/system.js, services/shared-cart-creation.js, services/shared-cart-engine.js, services/shared-cart-user-cleanup.js
 - cash_confirmation_controls: 4 écrivains directs — services/cash-confirmation-control-service.js, services/cash-operations.js, services/confirm-pickup-cash-payment.js, services/payment-cash-confirm.js
+- incidents: 4 écrivains directs — services/incident-escalation.js, services/incident-service.js, services/incident-write-service.js, services/relay-shipment-receipt.js
 - market_delegation_audit: 4 écrivains directs — middleware/require-market-delegated-capability.js, middleware/require-market-execution-capability.js, services/cash-deposit-service.js, services/market-delegation-service.js
 - order_comments: 4 écrivains directs — routes/hub-dashboard.js, routes/hub-mark-ordered.js, routes/relay-dashboard.js, services/operations-workspace.js
 - product_skus: 4 écrivains directs — services/catalog-promotion.js, services/catalog-stock-sync-application.js, services/product-sku-service.js, services/product-stock-service.js
@@ -1017,7 +1019,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - charges: 3 écrivains directs — bootstrap/startup-migrations.js, services/economic-engine-queries.js, services/market-structure-charge-reference.js
 - financial_movement_documents: 3 écrivains directs — bootstrap/crons.js, services/financial-journal-projectors.js, services/financial-journal.js
 - financial_movements: 3 écrivains directs — bootstrap/crons.js, services/financial-journal-projectors.js, services/financial-journal.js
-- incidents: 3 écrivains directs — services/incident-escalation.js, services/incident-service.js, services/incident-write-service.js
+- international_shipment_events: 3 écrivains directs — services/hub-box-shipment-service.js, services/international-shipment-journey.js, services/relay-shipment-receipt.js
 - parcel_events: 3 écrivains directs — services/parcel-item-mutation-service.js, services/parcel-security.js, utils/parcelSync.js
 - price_history: 3 écrivains directs — services/economic-price-audit-service.js, services/pricing-apply.js, services/pricing-strategy-service.js
 - relais: 3 écrivains directs — routes/admin/system.js, services/relais-mutation-service.js, services/routing.js
@@ -1035,7 +1037,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - client_notifications: 2 écrivains directs — routes/client-notifications.js, services/client-notification-service.js
 - customs_shipment_parcel_events: 2 écrivains directs — routes/admin-customs-shipments.js, services/customs-shipment-service.js
 - customs_shipment_parcels: 2 écrivains directs — routes/admin-customs-shipments.js, services/customs-shipment-service.js
-- customs_shipments: 2 écrivains directs — routes/admin-customs-shipments.js, services/customs-shipment-service.js
 
 ## DB Write / Write-Via Overlap Warnings
 
