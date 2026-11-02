@@ -11,7 +11,7 @@ const request=require('supertest');
 const express=require('express');
 const {signAuthToken}=require('../../utils/auth-session');
 const {generateAndStoreSecret}=require('../../services/pickup-secret-service');
-const {describeE2E,createCleanup,tag,uuid}=require('../helpers/e2eDbKit');
+const {describeE2E,createCleanup,assertTestDatabase,tag,uuid}=require('../helpers/e2eDbKit');
 jest.setTimeout(90000);
 
 describeE2E('Orders - local relay receipt without hub',({db})=>{
@@ -19,7 +19,7 @@ describeE2E('Orders - local relay receipt without hub',({db})=>{
   const product=uuid(),importProduct=uuid(),stock=uuid();
   const orders={local:uuid(),mixed:uuid(),unpaid:uuid()};
   const items={local:uuid(),mixedLocal:uuid(),mixedImport:uuid(),unpaid:uuid()};
-  let app,token,foreignToken,cleanup,market;
+  let app,token,foreignToken,cleanup,cleanupClient,market;
   const refs={local: 'E2E-LR-'+tag('local'),mixed:'E2E-LR-'+tag('mixed'),unpaid:'E2E-LR-'+tag('unpaid')};
   const q=(sql,params=[])=>db.query(sql,params);
   const send=(which,auth=token)=>request(app)
@@ -28,7 +28,12 @@ describeE2E('Orders - local relay receipt without hub',({db})=>{
     .send({physical_received:true,note:'Unités présentes et contrôlées au relais'});
 
   beforeAll(async()=>{
-    cleanup=createCleanup(db);
+    // Teardown executes under one scoped transaction on the disposable PG test DB.
+    // Do not bypass immutable physical facts in application routes.
+    cleanup=createCleanup({ query:(sql,args)=> {
+      if(!cleanupClient)throw new Error('Local test cleanup client unavailable');
+      return cleanupClient.query(sql,args);
+    } });
     market=(await q("SELECT id FROM markets WHERE code='KM' LIMIT 1")).rows[0];
     if(!market)throw new Error('Marché KM requis pour la recette');
     const ids=Object.values(orders);
@@ -44,6 +49,8 @@ describeE2E('Orders - local relay receipt without hub',({db})=>{
       'DELETE FROM parcel_items WHERE parcel_id IN (SELECT id FROM parcels WHERE order_id=ANY($1::uuid[]))',
       'DELETE FROM parcels WHERE order_id=ANY($1::uuid[])',
       'DELETE FROM order_status_history WHERE order_id=ANY($1::uuid[])',
+      'DELETE FROM pickup_reveal_codes WHERE order_id=ANY($1::uuid[])',
+      'DELETE FROM pickup_print_tokens WHERE order_id=ANY($1::uuid[])',
       "DELETE FROM client_notifications WHERE entity_type='order' AND entity_id=ANY($1::uuid[])",
       'DELETE FROM local_stock_allocations WHERE order_id=ANY($1::uuid[])',
       'DELETE FROM order_items WHERE order_id=ANY($1::uuid[])',
@@ -84,7 +91,31 @@ describeE2E('Orders - local relay receipt without hub',({db})=>{
     app.use('/api/pickup',require('../../routes/pickup-secret'));
     app.use((err,_req,res,_next)=>res.status(err.status||500).json({error:err.message}));
   });
-  afterAll(async()=>{if(cleanup)await cleanup.run();});
+  afterAll(async()=>{
+    if(!cleanup)return;
+    // Physical parcel/history deletion is intentionally forbidden in runtime.
+    // This cleanup is permitted ONLY on an isolated loopback *test* database.
+    const target=assertTestDatabase();
+    if(!['localhost','127.0.0.1','::1'].includes(target.host)) {
+      throw new Error('Refus du teardown avec triggers désactivés hors PostgreSQL test local');
+    }
+    const client=await db.getClient();
+    let inTx=false;
+    try {
+      await client.query('BEGIN');inTx=true;
+      // SET LOCAL never outlives this transaction and cannot weaken runtime guards.
+      await client.query('SET LOCAL session_replication_role = replica');
+      cleanupClient=client;
+      await cleanup.run();
+      await client.query('COMMIT');inTx=false;
+    }catch(error){
+      if(inTx)await client.query('ROLLBACK').catch(()=>{});
+      throw error;
+    }finally{
+      cleanupClient=null;
+      client.release();
+    }
+  });
 
   test('paid local -> receipt proof -> available -> secure parcel pickup once',async()=>{
     const secret=await generateAndStoreSecret({orderId:orders.local,relaisId:relay,channel:'cash_relais'});
