@@ -289,7 +289,11 @@
     form.setAttribute('data-purchasing-confirm', '');
     form.noValidate = true;
 
-    const intro = text(doc, 'p', 'kmc-workspace-subtitle', 'Saisissez la quantité réellement confirmée par le fournisseur pour chaque ligne. L’écart devient un reliquat ouvert, jamais perdu.');
+    const manual = po.trigger_mode !== 'auto';
+    const intro = text(doc, 'p', 'kmc-workspace-subtitle', manual
+      ? 'Achat manuel : saisissez la quantité réellement achetée et la référence ou preuve d’achat. Aucune confirmation fournisseur n’est exigée pour recevoir ; l’écart devient un reliquat ouvert, jamais perdu.'
+      : 'Saisissez la quantité réellement confirmée par le fournisseur pour chaque ligne. L’écart devient un reliquat ouvert, jamais perdu.');
+    intro.setAttribute('data-purchasing-execution-hint', manual ? 'manual' : 'api');
     form.appendChild(intro);
 
     const table = doc.createElement('table');
@@ -520,9 +524,10 @@
       rootNode,
       ui,
       `${['hub_received', 'cancelled'].includes(po.status) ? 'Historique des achats · ' : 'Achat fournisseur en cours · '}Commande ${shortId(po.id)}`,
-      `Hub ${po.procurement_hub_ref || '—'} · ${STATUS_LABELS[po.status] || po.status}`
+      `Hub ${po.procurement_hub_ref || '—'} · ${STATUS_LABELS[po.status] || po.status} · ${po.trigger_mode === 'auto' ? 'Exécution API' : 'Achat manuel'}`
     );
     slot.setAttribute('data-purchasing-po', po.id);
+    slot.setAttribute('data-purchasing-exec-mode', po.trigger_mode === 'auto' ? 'api' : 'manual');
     slot.setAttribute('data-purchasing-po-status', po.status);
     slot.appendChild(marketBadges(doc, detail.markets, detail.multi_market));
 

@@ -156,7 +156,7 @@ async function insertHistoricalPurchaseLine(client, { purchaseOrderId, item, ps,
  * Aucune notification fournisseur, aucune PO : l'achat est regroupé plus tard par l'opérateur.
  * Réservée aux items à identité exacte (la garde I4 refuserait de toute façon de la regrouper sinon).
  */
-async function insertOpenPurchaseLine(client, { item, ps, snapshot, quantity }) {
+async function insertOpenPurchaseLine(client, { item, ps, snapshot, quantity, parentLineId = null }) {
   if (!item?.id) throw new Error('[insertOpenPurchaseLine] order_item requis');
   if (!snapshot.productSkuId || !snapshot.supplierUnitRef || !snapshot.supplierOrderIdentity) {
     throw new Error('[insertOpenPurchaseLine] identité exacte requise');
@@ -165,14 +165,14 @@ async function insertOpenPurchaseLine(client, { item, ps, snapshot, quantity }) 
     INSERT INTO purchase_lines
       (purchase_order_id, order_item_id, supplier_id, product_supplier_id, product_sku_id,
        supplier_sku, supplier_unit_ref, supplier_order_identity, quantity,
-       supplier_unit_price, supplier_currency, procurement_hub_ref)
-    VALUES (NULL,$1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9,$10,$11)
+       supplier_unit_price, supplier_currency, procurement_hub_ref, parent_line_id)
+    VALUES (NULL,$1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9,$10,$11,$12)
     RETURNING id
   `, [
     item.id, ps.supplier_id, ps.id, snapshot.productSkuId,
     snapshot.purchaseTarget.supplier_sku, snapshot.supplierUnitRef,
     JSON.stringify(snapshot.supplierOrderIdentity),
-    quantity, snapshot.money.amount, snapshot.money.currency, resolveProcurementHubRef(),
+    quantity, snapshot.money.amount, snapshot.money.currency, resolveProcurementHubRef(), parentLineId,
   ]);
   return line;
 }

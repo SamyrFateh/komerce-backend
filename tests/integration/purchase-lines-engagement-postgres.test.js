@@ -190,8 +190,11 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
     return { line: line.id, item: lineItem };
   }
 
-  async function preparedPo(supplier, lineIds) {
-    return (await grouped.preparePurchaseOrder({ supplier_id: supplier, procurement_hub_ref: 'DXB', line_ids: lineIds })).purchase_order;
+  async function preparedPo(supplier, lineIds, executionMode) {
+    // Les fournisseurs Allegro de ces tests exécutent en mode API (préparation distante + réconciliation) ; le reste en manuel.
+    const platform = (await row('SELECT platform FROM suppliers WHERE id=$1', [supplier])).platform;
+    const mode = executionMode || (platform === 'allegro' ? 'api' : 'manual');
+    return (await grouped.preparePurchaseOrder({ supplier_id: supplier, procurement_hub_ref: 'DXB', line_ids: lineIds, execution_mode: mode })).purchase_order;
   }
 
   async function submittedPo(supplier, lineIds) {
@@ -234,7 +237,7 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
       expect(byRef).toEqual({ U1: 5, U2: 1 });
       expect(out.multi_market).toBe(false);
       expect(out.markets.map((m) => m.market_code)).toEqual(['KM']);
-      expect(out.preflights.every((p) => p.ready && p.status === 'NOT_REQUIRED')).toBe(true);
+      expect(out.preflights.every((p) => p.ready && p.status === 'MANUAL')).toBe(true);
       expect(out.notification.channel).toBe('admin_manual');
       expect(mockNotifyText).toHaveBeenCalledTimes(1);
       expect(mockNotifyText.mock.calls[0][1]).toContain('x5');
@@ -488,10 +491,10 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
       expect(others).toHaveLength(1);
     });
 
-    it('sans reopen_remainder (défaut) : aucune ligne créée', async () => {
+    it('reopen_remainder:false explicite : aucune ligne créée', async () => {
       const { line } = await confirmedLine({ quantity: 6, extra: [2] });
       await receive(line, 5);
-      const out = await engagement.settleLine(line, { settled_quantity: 5, reason: 'écart accepté' });
+      const out = await engagement.settleLine(line, { settled_quantity: 5, reason: 'écart accepté', reopen_remainder: false });
       expect(out.remnant).toBeNull();
       expect((await row('SELECT count(*)::int AS n FROM purchase_lines WHERE parent_line_id IS NOT NULL')).n).toBe(0);
     });
@@ -528,10 +531,10 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
       await expect(engagement.settleLine(open.line, { settled_quantity: 0, reason: 'x' }))
         .rejects.toMatchObject({ status: 409, code: 'PURCHASE_LINE_NOT_SETTLEABLE' });
 
-      const notified = await seedLine({ supplier, quantity: 2 });
-      await submittedPo(supplier, [notified.line]);
-      await expect(engagement.settleLine(notified.line, { settled_quantity: 0, reason: 'x' }))
-        .rejects.toMatchObject({ status: 409, code: 'PURCHASE_LINE_NOT_SETTLEABLE', current_status: 'notified' });
+      const drafted = await seedLine({ supplier, quantity: 2 });
+      await preparedPo(supplier, [drafted.line]);
+      await expect(engagement.settleLine(drafted.line, { settled_quantity: 0, reason: 'x' }))
+        .rejects.toMatchObject({ status: 409, code: 'PURCHASE_LINE_NOT_SETTLEABLE', current_status: 'draft' });
 
       await expect(engagement.settleLine(id(), { settled_quantity: 0, reason: 'x' })).rejects.toMatchObject({ status: 404 });
     });
