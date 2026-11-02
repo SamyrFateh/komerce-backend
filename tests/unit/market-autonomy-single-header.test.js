@@ -23,8 +23,8 @@ describe('Marché — composition sans doublon', () => {
     expect(country).toContain("controls.appendChild(navigation)");
     expect(country).toContain("hero.appendChild(feedback)");
     expect(country).toContain("workspaceHeader.remove()");
-    expect(country).toContain("doc.body?.classList?.add('kmc-market-hero-integrated')");
-    expect(country).toContain("if (selector) controls.appendChild(selector)");
+    expect(country).not.toContain('kmc-market-hero-integrated');
+    expect(country).not.toContain('controls.appendChild(selector)');
     expect(country).not.toMatch(/cloneNode\(/);
   });
 
@@ -36,14 +36,19 @@ describe('Marché — composition sans doublon', () => {
     expect(country).toContain('metrics: countryMetricItems(workspace, prices)');
   });
 
-  test('la barre transversale est masquée seulement sur cette page', () => {
+  test('le drapeau et la sélection sont uniquement dans la topbar canonique', () => {
     const css = source('public/dashboards/canonical/css/market-autonomy-business-ui.css');
-    expect(css).toContain('data-kmc-surface="market-autonomy"] > .kmc-admin-topbar');
-    expect(css).toContain('kmc-autonomy-hero-controls');
-    expect(css).toContain('.kmc-market-hero-integrated[data-kmc-surface="market-autonomy"]');
-    expect(css).toContain('.kmc-autonomy-hero-controls .kmc-autonomy-selector');
+    const workspace = source('public/dashboards/canonical/js/market-autonomy.js');
+    const shell = source('public/dashboards/canonical/js/navigation-policy-v4.js');
     const html = source('public/dashboards/canonical/market-autonomy.html');
-    expect(html).toContain('market-autonomy-business-ui.css?v=261102-3');
-    expect(html).toContain('markets-decision-bootstrap.js?v=261102-3');
+    expect(css).not.toContain('> .kmc-admin-topbar {');
+    expect(css).not.toContain('.kmc-autonomy-hero-controls .kmc-autonomy-selector');
+    expect(workspace).not.toContain('renderMarketSelector(');
+    expect(shell).toContain("flag.className = 'kmc-admin-market-flag'");
+    expect(shell).toContain("select.className = 'kmc-admin-market-select'");
+    expect(css).toContain('kmc-autonomy-hero-controls');
+    expect(html).toContain('market-autonomy-business-ui.css?v=261102-4');
+    expect(html).toContain('market-autonomy.js?v=261102-4');
+    expect(html).toContain('markets-decision-bootstrap.js?v=261102-4');
   });
 });
