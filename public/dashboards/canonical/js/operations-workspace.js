@@ -822,12 +822,8 @@
       physicalActions.appendChild(text(doc, 'span', 'kmc-workspace-muted',
         'Le reçu provient du contrôle Hub ; la confirmation fournisseur ne vaut jamais réception.'));
       reception.appendChild(physicalActions);
-      if (context.trace && context.traceOrderId === group.id) {
-        renderTracePanel(reception, ui, doc, context);
-      } else if (context.traceError && context.traceOrderId === group.id) {
-        renderTracePanel(reception, ui, doc, context);
-      }
-
+      // Filiation détaillée : pleine largeur SOUS la ligne des cinq colonnes.
+      // Ne jamais forcer son tableau à sept champs dans une colonne de 220 px.
       const parcels = stage(body, 4, 'Colis client');
       if (!group.clientParcels.length) parcels.appendChild(text(doc, 'div', 'kmc-workspace-empty',
         Array.isArray(d.client_parcels)
@@ -852,6 +848,13 @@
             (box.shipment_stage ? ' (' + box.shipment_stage + ')' : '') : 'Pas encore affecté à une expédition');
         transport.appendChild(text(doc, 'div', 'kmc-hub-work-parcel', boxText));
       });
+      if (context.traceOrderId === group.id && (context.trace || context.traceError)) {
+        const details = doc.createElement('div');
+        details.className = 'kmc-hub-work-trace-detail';
+        details.setAttribute('data-hub-work-evidence', '');
+        body.appendChild(details);
+        renderTracePanel(details, ui, doc, context);
+      }
       if (waiting || anomalies) {
         body.appendChild(text(doc, 'p', 'kmc-hub-dossier-reliquat',
           (waiting ? formatNumber(waiting) + ' unité(s) encore attendue(s) du fournisseur. ' : '') +
