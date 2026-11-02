@@ -96,6 +96,8 @@ describeE2E('Orders - local relay receipt without hub',({db})=>{
     const {rows:[parcel]}=await q('SELECT status,shipment_id,shipped_at,in_transit_at,relais_id FROM parcels WHERE id=$1',
       [response.body.parcel_id]);
     expect(parcel).toMatchObject({status:'available',shipment_id:null,shipped_at:null,in_transit_at:null,relais_id:relay});
+    const {rows:qty}=await q('SELECT qty_received,qty_shipped FROM parcel_items WHERE parcel_id=$1',[response.body.parcel_id]);
+    expect(qty).toMatchObject([{qty_received:2,qty_shipped:0}]);
     const {rows:[count]}=await q("SELECT count(*)::int AS n FROM order_status_history WHERE order_id=$1 AND status='available'",[orders.local]);
     expect(count.n).toBe(1);
     const {rows:[physical]}=await q('SELECT count(*)::int AS n FROM scans WHERE order_id=$1 AND step=\'relais_received\'',[orders.local]);
@@ -111,12 +113,44 @@ describeE2E('Orders - local relay receipt without hub',({db})=>{
     const {rows:[after]}=await q('SELECT status FROM orders WHERE id=$1',[orders.local]);
     expect(after.status).toBe('collected');
   });
-  test('foreign relay, unpaid and mixed orders cannot enter pickup-ready',async()=>{
-    expect((await send('mixed')).status).toBe(409);
+  test('mixed: local pickup now, import remains outstanding, then second one-shot pickup',async()=>{
+    const secret=await generateAndStoreSecret({orderId:orders.mixed,relaisId:relay,channel:'cash_relais'});
+    const local=await send('mixed');
+    expect(local.status).toBe(200);
+    const {rows:localLines}=await q(
+      'SELECT pi.order_item_id, pi.qty_received, pi.qty_shipped FROM parcel_items pi WHERE pi.parcel_id=$1',
+      [local.body.parcel_id]);
+    expect(localLines).toMatchObject([{order_item_id:items.mixedLocal,qty_received:1,qty_shipped:0}]);
+    const first=await request(app).post('/api/pickup/collect/'+orders.mixed)
+      .set('Authorization','Bearer '+token)
+      .send({collected_by_name:'Client',pickup_code:secret.code});
+    expect(first.status).toBe(200);
+    const {rows:[partial]}=await q('SELECT status FROM orders WHERE id=$1',[orders.mixed]);
+    expect(partial.status).toBe('available');
+    const {rows:[localParcel]}=await q('SELECT status FROM parcels WHERE id=$1',[local.body.parcel_id]);
+    expect(localParcel.status).toBe('collected');
+    // The new one-shot secret is issued atomically after partial pickup.
+    const {rows:[next]}=await q('SELECT code FROM pickup_reveal_codes WHERE order_id=$1',[orders.mixed]);
+    expect(next?.code).toBeTruthy();
+    expect(next.code).not.toBe(secret.code);
+    // Simulate an imported parcel *after* its separate Hub/transit/customs
+    // journey; this test validates pickup reconciliation, not Hub E2E.
+    const importParcel=uuid();
+    await q("INSERT INTO parcels (id,order_id,reference,type,status,relais_id,available_at) VALUES ($1,$2,$3,'standard','available',$4,NOW())",
+      [importParcel,orders.mixed,'E2E-LR-'+tag('import-parcel'),relay]);
+    await q("INSERT INTO parcel_items (parcel_id,order_item_id,product_id,quantity,qty_allocated,qty_packed,qty_shipped,qty_received,verified) VALUES ($1,$2,$3,1,1,1,1,1,TRUE)",
+      [importParcel,items.mixedImport,importProduct]);
+    const second=await request(app).post('/api/pickup/collect/'+orders.mixed)
+      .set('Authorization','Bearer '+token)
+      .send({collected_by_name:'Client',pickup_code:next.code});
+    expect(second.status).toBe(200);
+    const {rows:[complete]}=await q('SELECT status FROM orders WHERE id=$1',[orders.mixed]);
+    expect(complete.status).toBe('collected');
+    const {rows:[history]}=await q("SELECT COUNT(*)::int AS n FROM order_status_history WHERE order_id=$1 AND status='collected'",[orders.mixed]);
+    expect(history.n).toBe(1);
+  });
+  test('foreign relay and unpaid orders cannot attest, including on mixed checkout',async()=>{
     expect((await send('unpaid')).status).toBe(409);
     expect((await send('mixed',foreignToken)).status).toBe(403);
-    const {rows:untouched}=await q('SELECT status FROM orders WHERE id=ANY($1::uuid[]) ORDER BY id',
-      [[orders.mixed,orders.unpaid]]);
-    expect(untouched.every(row=>row.status==='confirmed')).toBe(true);
   });
 });
