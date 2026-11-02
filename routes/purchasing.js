@@ -174,6 +174,10 @@ router.post('/lines', ...groupedGuard, async (req, res, next) => {
   try { res.status(201).json(await engagement.createManualLine(req.body || {}, { actor: req.user })); } catch (err) { groupedError(err, res, next); }
 });
 
+router.post('/lines/:id/change-supplier', ...groupedGuard, async (req, res, next) => {
+  try { res.status(201).json(await engagement.changeLineSupplier(req.params.id, req.body || {}, { actor: req.user })); } catch (err) { groupedError(err, res, next); }
+});
+
 router.post('/lines/:id/settle', ...groupedGuard, async (req, res, next) => {
   try { res.json(await engagement.settleLine(req.params.id, req.body || {}, { actor: req.user })); } catch (err) { groupedError(err, res, next); }
 });
@@ -197,7 +201,7 @@ router.get('/supplier-payments/:payment_id/settlements', ...guard, async (req, r
 
 // ─── GET /api/purchasing/suppliers ───────────────────────────────────────────
 
-router.get('/suppliers', ...guard, async (req, res, next) => {
+router.get('/suppliers', ...groupedGuard, async (req, res, next) => {
   try {
     const { platform, active } = req.query;
     const conditions = ['1=1'];
@@ -231,8 +235,12 @@ router.get('/suppliers', ...guard, async (req, res, next) => {
 
 // ─── POST /api/purchasing/suppliers — créer un fournisseur ───────────────────
 
-router.post('/suppliers', ...guard, async (req, res, next) => {
+// Le Hub crée ses fournisseurs locaux (local/whatsapp) dans son périmètre ; le catalogue global reste à l'admin.
+function hubSupplierScope(req) { return req.user && req.user.role === 'agent_hub'; }
+
+router.post('/suppliers', ...groupedGuard, async (req, res, next) => {
   try {
+    const hubScoped = hubSupplierScope(req);
     const {
       name, platform, contact_name, contact_phone, contact_email,
       api_key_enc, api_secret_enc, account_id,
@@ -242,17 +250,20 @@ router.post('/suppliers', ...guard, async (req, res, next) => {
     if (!name || !platform) {
       return res.status(400).json({ error: 'name et platform obligatoires' });
     }
+    if (hubScoped && (!['local', 'whatsapp'].includes(platform) || auto_order || api_key_enc || api_secret_enc || account_id)) {
+      return res.status(403).json({ error: 'Le Hub ne crée que des fournisseurs locaux ou WhatsApp, sans accès API', code: 'HUB_SUPPLIER_SCOPE' });
+    }
 
     const { rows: [supplier] } = await db.query(`
       INSERT INTO suppliers
         (name, platform, contact_name, contact_phone, contact_email,
          api_key_enc, api_secret_enc, account_id,
-         auto_order, lead_time_days, notes)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
-      RETURNING id, name, platform, auto_order, lead_time_days, is_active, created_at
+         auto_order, lead_time_days, notes, owner_scope, created_by)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+      RETURNING id, name, platform, auto_order, lead_time_days, is_active, created_at, owner_scope
     `, [name, platform, contact_name, contact_phone, contact_email,
         api_key_enc, api_secret_enc, account_id,
-        auto_order, lead_time_days, notes]);
+        auto_order, lead_time_days, notes, hubScoped ? 'hub' : null, req.user && req.user.id ? req.user.id : null]);
 
     res.status(201).json(supplier);
   } catch(err) { next(err); }
@@ -260,8 +271,17 @@ router.post('/suppliers', ...guard, async (req, res, next) => {
 
 // ─── POST /api/purchasing/suppliers/:id/map — mapper produit → fournisseur ───
 
-router.post('/suppliers/:id/map', ...guard, async (req, res, next) => {
+router.post('/suppliers/:id/map', ...groupedGuard, async (req, res, next) => {
   try {
+    if (hubSupplierScope(req)) {
+      const { rows: [own] } = await db.query(
+        `SELECT 1 FROM suppliers WHERE id = $1 AND owner_scope = 'hub' AND deleted_at IS NULL`, [req.params.id]
+      );
+      if (!own) return res.status(403).json({ error: 'Le Hub ne mappe que ses propres fournisseurs locaux', code: 'HUB_SUPPLIER_SCOPE' });
+      if (!(Number((req.body || {}).supplier_price_aed) > 0)) {
+        return res.status(400).json({ error: 'supplier_price_aed obligatoire (prix réel du fournisseur local)' });
+      }
+    }
     const {
       product_id,
       supplier_sku,

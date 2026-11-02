@@ -62,7 +62,7 @@ function summarize(lines) {
 }
 
 /** API d'achats simulée avec état ; chaque appel mutant est journalisé dans `calls`. */
-function createFakeApi({ submitRefusal = false } = {}) {
+function createFakeApi({ submitRefusal = false, triggerMode = 'manual' } = {}) {
   const state = {
     lines: [makeLine(1, KM, 5), makeLine(2, CM, 3), makeLine(3, KM, 4)],
     pos: new Map(),
@@ -92,7 +92,7 @@ function createFakeApi({ submitRefusal = false } = {}) {
     if (key === 'POST /api/purchasing/po/prepare') {
       await new Promise((r) => setTimeout(r, 300));
       const id = `cccccccc-cccc-4ccc-8ccc-00000000000${state.nextPo++}`;
-      const po = { id, status: 'draft', procurement_hub_ref: body.procurement_hub_ref, supplier_id: body.supplier_id };
+      const po = { id, status: 'draft', procurement_hub_ref: body.procurement_hub_ref, supplier_id: body.supplier_id, trigger_mode: triggerMode };
       state.pos.set(id, po);
       state.lines.forEach((l) => { if (body.line_ids.includes(l.line_id)) l.purchase_order_id = id; });
       return { status: 201, json: { purchase_order: po, line_ids: body.line_ids, lines: poLines(id), ...summarize(poLines(id)) } };
@@ -229,6 +229,29 @@ test.describe('Achats fournisseurs — espace canonique', () => {
     await expect(page.locator('tr[data-purchasing-po-line]')).toHaveCount(2);
     await page.locator('[data-workspace-action="close-po"]').click();
     await expect(page.locator('tr[data-purchasing-line]')).toHaveCount(1);
+  });
+
+  test('achat manuel par défaut : aucun mode API demandé, consigne de preuve d\'achat, aucune confirmation fournisseur exigée', async ({ page }) => {
+    const api = createFakeApi();
+    await mountWorkspace(page, api);
+    await page.locator('tr[data-purchasing-line] input[type=checkbox]').nth(0).check();
+    await page.locator('[data-workspace-action="prepare-po"]').click();
+    await expect(page.locator('[data-purchasing-po][data-purchasing-exec-mode="manual"]')).toBeVisible();
+    await expect(page.getByText('Achat manuel', { exact: false }).first()).toBeVisible();
+    expect(mutatingCalls(api, '/po/prepare')[0].body.execution_mode).toBeUndefined();
+    await page.locator('[data-workspace-action="submit-po"]').click();
+    await expect(page.locator('[data-purchasing-execution-hint="manual"]')).toContainText('Aucune confirmation fournisseur n’est exigée');
+  });
+
+  test('PO en exécution API : libellé API et consigne de confirmation fournisseur', async ({ page }) => {
+    const api = createFakeApi({ triggerMode: 'auto' });
+    await mountWorkspace(page, api);
+    await page.locator('tr[data-purchasing-line] input[type=checkbox]').nth(0).check();
+    await page.locator('[data-workspace-action="prepare-po"]').click();
+    await expect(page.locator('[data-purchasing-po][data-purchasing-exec-mode="api"]')).toBeVisible();
+    await expect(page.getByText('Exécution API', { exact: false }).first()).toBeVisible();
+    await page.locator('[data-workspace-action="submit-po"]').click();
+    await expect(page.locator('[data-purchasing-execution-hint="api"]')).toContainText('confirmée par le fournisseur');
   });
 
   test('brouillon : détacher une ligne la rend à nouveau ouverte', async ({ page }) => {

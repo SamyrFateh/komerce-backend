@@ -59,7 +59,8 @@ const {
 } = shared;
 
 // Statuts de PO regroupée où une ligne peut être soldée (seul `confirmed` : `hub_received` est terminal).
-const SETTLEABLE_PO_STATUSES = ['confirmed'];
+// Une PO manuelle se solde dès `notified` (achat réel passé, aucune confirmation fournisseur artificielle).
+const SETTLEABLE_PO_STATUSES = ['notified', 'confirmed'];
 
 function requireNonNegativeInt(value, name) {
   if (!Number.isSafeInteger(value) || value < 0) throw fail(400, 'INVALID_INPUT', `${name} doit être un entier >= 0`);
@@ -240,6 +241,15 @@ async function prepareGroups(client, groups, context) {
   return { verdicts, readyByProvider };
 }
 
+function manualVerdicts(groups) {
+  return {
+    verdicts: groups.map((g) => ({
+      supplier_unit_ref: g.supplier_unit_ref, provider: g.identity && g.identity.provider, quantity: g.quantity, ready: true, status: 'MANUAL',
+    })),
+    readyByProvider: new Map(),
+  };
+}
+
 /** Charge utile fournisseur (adaptateurs qui savent en construire une) : un refus de l'adaptateur refuse la soumission. */
 async function buildProviderPayloads(readyByProvider, context, verdicts) {
   for (const [provider, entries] of readyByProvider.entries()) {
@@ -282,7 +292,10 @@ async function submitPurchaseOrder(poId, { actor = null, context = {} } = {}) {
     if (!lineRows.length) throw fail(409, 'PURCHASE_ORDER_EMPTY', 'Une PO sans ligne ne peut pas être soumise');
 
     const groups = groupBySupplierUnitRef(lineRows.map((r) => ({ ...r })));
-    const { verdicts, readyByProvider } = await prepareGroups(client, groups, context);
+    // Mode manuel : aucune dépendance API (ni préparation distante ni réconciliation) — le Hub achète puis enregistre.
+    const { verdicts, readyByProvider } = po.trigger_mode === 'auto'
+      ? await prepareGroups(client, groups, context)
+      : manualVerdicts(groups);
     if (verdicts.every((v) => v.ready)) await buildProviderPayloads(readyByProvider, context, verdicts);
     if (verdicts.some((v) => !v.ready)) {
       throw fail(409, 'PURCHASE_ORDER_SUBMIT_REFUSED', 'Soumission refusée : préparation fournisseur non prête, la PO reste en brouillon', {
@@ -430,7 +443,10 @@ async function confirmGroupedPurchaseOrder(poId, body = {}, { actor = null, cont
     }
 
     const allZero = confirmations.every((c) => c.confirmedQuantity === 0);
-    const verifiedRef = allZero ? supplierOrderId : await verifyConfirmationEvidence(lines, confirmations, supplierOrderId, context);
+    // Réconciliation fournisseur uniquement pour une PO API ; une PO manuelle enregistre la référence/preuve déclarée par le Hub.
+    const verifiedRef = (allZero || po.trigger_mode !== 'auto')
+      ? supplierOrderId
+      : await verifyConfirmationEvidence(lines, confirmations, supplierOrderId, context);
 
     // 1) confirmations d'abord (l'effectif des lignes d'origine baisse), 2) reliquats ensuite (I1).
     for (const line of lines) {
@@ -502,7 +518,7 @@ async function closeGroupedPurchaseOrderIfComplete(client, poId) {
     UPDATE purchase_orders
        SET status = 'hub_received', hub_received_at = COALESCE(hub_received_at, NOW()), updated_at = NOW(),
            notes = CONCAT(COALESCE(notes, ''), E'\\n[GROUPED] toutes les lignes sont soldées')
-     WHERE id = $1 AND status = 'confirmed'
+     WHERE id = $1 AND status IN ('notified', 'confirmed')
   `, [poId]);
   return true;
 }
@@ -513,7 +529,7 @@ async function settleLine(lineId, body = {}, { actor = null } = {}) {
   const settledQuantity = requireNonNegativeInt(body.settled_quantity, 'settled_quantity');
   const reason = optionalText(body.reason);
   if (!reason) throw fail(400, 'INVALID_INPUT', 'reason obligatoire');
-  const reopenRemainder = body.reopen_remainder === true;
+  const reopenExplicit = body.reopen_remainder;
 
   const outcome = await withTransaction(async (client) => {
     // Ordre commun : PO d'abord (lue sans verrou, verrouillée), puis la ligne.
@@ -536,9 +552,12 @@ async function settleLine(lineId, body = {}, { actor = null } = {}) {
     }
     if (line.cancelled_at) throw fail(409, 'PURCHASE_LINE_ALREADY_CANCELLED', 'Ligne annulée');
     if (line.settled_at) throw fail(409, 'PURCHASE_LINE_ALREADY_SETTLED', 'Clôture déjà enregistrée');
-    if (line.confirmed_quantity === null) throw fail(409, 'PURCHASE_LINE_NOT_CONFIRMED', 'La ligne n\'est pas confirmée');
+    // Ligne non confirmée (PO manuelle soumise) : l'effectif est la quantité commandée.
+    if (line.confirmed_quantity === null && po.status === 'confirmed') {
+      throw fail(409, 'PURCHASE_LINE_NOT_CONFIRMED', 'La ligne n\'est pas confirmée');
+    }
 
-    const effective = line.confirmed_quantity;
+    const effective = line.confirmed_quantity === null ? line.quantity : line.confirmed_quantity;
     if (settledQuantity >= effective) {
       throw fail(400, 'INVALID_INPUT', 'settled_quantity doit être strictement inférieure à la quantité effective', { confirmed_quantity: effective });
     }
@@ -559,6 +578,8 @@ async function settleLine(lineId, body = {}, { actor = null } = {}) {
     `, [lineId, settledQuantity, reason]);
     const remaining = effective - settledQuantity;
     let remnantId = null;
+    // PO manuelle : le reliquat est conservé automatiquement (ligne enfant), sauf refus explicite.
+    const reopenRemainder = reopenExplicit === undefined ? po.trigger_mode !== 'auto' : reopenExplicit === true;
     if (reopenRemainder) remnantId = await insertRemnant(client, line, remaining, actor);
     const closed = await closeGroupedPurchaseOrderIfComplete(client, po.id);
     return { lineId, remnantId, remaining, poId: po.id, closed };
@@ -578,59 +599,117 @@ async function settleLine(lineId, body = {}, { actor = null } = {}) {
 
 // ─── Création manuelle d'une ligne ouverte ────────────────────────────────────────────────────────
 
+async function createLineInTransaction(client, { orderItemId, productSupplierId, quantity, actor, context, executionMode, parentLineId = null }) {
+  const { rows: [item] } = await client.query(`
+    SELECT oi.*, p.name AS product_name, o.status AS order_status
+      FROM order_items oi
+      JOIN orders o ON o.id = oi.order_id
+      JOIN products p ON p.id = oi.product_id
+     WHERE oi.id = $1
+  `, [orderItemId]);
+  if (!item) throw fail(404, 'ORDER_ITEM_NOT_FOUND', 'Article de commande introuvable');
+  if (item.fulfillment_source === 'LOCAL_STOCK') throw fail(409, 'ORDER_ITEM_LOCAL_STOCK', 'Un article en stock local ne s\'achète pas');
+  if (item.order_status === 'cancelled') throw fail(409, 'ORDER_CANCELLED', 'La commande est annulée');
+
+  const { rows: [ps] } = await client.query(`
+    SELECT ps.*, s.name AS supplier_name, s.platform, s.auto_order, s.contact_phone
+      FROM product_suppliers ps JOIN suppliers s ON s.id = ps.supplier_id
+     WHERE ps.id = $1 AND ps.product_id = $2 AND ps.is_active = TRUE AND s.is_active = TRUE
+       AND ps.deleted_at IS NULL AND s.deleted_at IS NULL
+  `, [productSupplierId, item.product_id]);
+  if (!ps) throw fail(404, 'PRODUCT_SUPPLIER_NOT_FOUND', 'Mapping fournisseur actif introuvable pour ce produit');
+
+  // Seule une unité à identité exacte est regroupable (I4) : même instantané que le déclencheur.
+  let exactSku;
+  let readiness;
+  try {
+    exactSku = await loadExactSoldSku(client, item);
+    if (!exactSku) throw fail(409, 'EXACT_IDENTITY_REQUIRED', 'Seul un article à SKU exact peut devenir une ligne d\'achat regroupable');
+    if (executionMode === 'api') {
+      // Exécution API : le fournisseur doit être celui du provider de l'identité, prêt selon le moteur canonique.
+      if (String(ps.platform || '').toLowerCase() !== exactSku.supplier_order_identity.provider) {
+        throw fail(409, 'SUPPLIER_PROVIDER_MISMATCH', 'Une ligne en exécution API doit être achetée chez le provider de l\'identité du SKU vendu');
+      }
+      readiness = await resolveExactSkuProcurementReadiness(client, exactSku, quantity, context);
+    } else {
+      // Exécution manuelle : l'identité du SKU reste l'identité produit ; le Hub achète où il veut, au prix réel du mapping.
+      // Aucune préparation distante : l'achat réel est enregistré par le Hub.
+      readiness = {
+        unit_price: Number(ps.supplier_price_aed), currency: 'AED',
+        supplier_unit_ref: exactSku.supplier_unit_ref, supplier_order_identity: exactSku.supplier_order_identity,
+      };
+      if (!exactSku.supplier_unit_ref) throw fail(409, 'EXACT_IDENTITY_REQUIRED', 'supplier_unit_ref absent sur le SKU vendu');
+    }
+  } catch (error) {
+    if (error && error.code === 'BLOCKED_SUPPLIER_IDENTITY') {
+      throw fail(409, 'BLOCKED_SUPPLIER_IDENTITY', error.message, { details: error.details || {} });
+    }
+    throw error;
+  }
+  const snapshot = { ...buildPurchaseTarget(ps, exactSku, readiness), productSkuId: exactSku.id };
+  // I1 (base) refuse tout sur-engagement de l'article ; mapDbError le remonte en 409.
+  const line = await insertOpenPurchaseLine(client, { item, ps, snapshot, quantity, parentLineId });
+  if (actor && uuidOrNull(actor.id)) {
+    await client.query('UPDATE purchase_lines SET created_by = $2 WHERE id = $1', [line.id, actor.id]);
+  }
+  return line.id;
+}
+
+function parseExecutionMode(value) {
+  if (value === undefined || value === null) return 'manual';
+  if (value !== 'manual' && value !== 'api') throw fail(400, 'INVALID_INPUT', 'execution_mode doit valoir manual ou api');
+  return value;
+}
+
 async function createManualLine(body = {}, { actor = null, context = {} } = {}) {
   requireEnabled();
   const orderItemId = requireUuid(body.order_item_id, 'order_item_id');
   const productSupplierId = requireUuid(body.product_supplier_id, 'product_supplier_id');
   const quantity = requirePositiveInt(body.quantity, 'quantity');
+  const executionMode = parseExecutionMode(body.execution_mode);
 
-  const lineId = await withTransaction(async (client) => {
-    const { rows: [item] } = await client.query(`
-      SELECT oi.*, p.name AS product_name, o.status AS order_status
-        FROM order_items oi
-        JOIN orders o ON o.id = oi.order_id
-        JOIN products p ON p.id = oi.product_id
-       WHERE oi.id = $1
-    `, [orderItemId]);
-    if (!item) throw fail(404, 'ORDER_ITEM_NOT_FOUND', 'Article de commande introuvable');
-    if (item.fulfillment_source === 'LOCAL_STOCK') throw fail(409, 'ORDER_ITEM_LOCAL_STOCK', 'Un article en stock local ne s\'achète pas');
-    if (item.order_status === 'cancelled') throw fail(409, 'ORDER_CANCELLED', 'La commande est annulée');
-
-    const { rows: [ps] } = await client.query(`
-      SELECT ps.*, s.name AS supplier_name, s.platform, s.auto_order, s.contact_phone
-        FROM product_suppliers ps JOIN suppliers s ON s.id = ps.supplier_id
-       WHERE ps.id = $1 AND ps.product_id = $2 AND ps.is_active = TRUE AND s.is_active = TRUE
-         AND ps.deleted_at IS NULL AND s.deleted_at IS NULL
-    `, [productSupplierId, item.product_id]);
-    if (!ps) throw fail(404, 'PRODUCT_SUPPLIER_NOT_FOUND', 'Mapping fournisseur actif introuvable pour ce produit');
-
-    // Seule une unité à identité exacte est regroupable (I4) : même instantané que le déclencheur.
-    let exactSku;
-    let readiness;
-    try {
-      exactSku = await loadExactSoldSku(client, item);
-      if (!exactSku) throw fail(409, 'EXACT_IDENTITY_REQUIRED', 'Seul un article à SKU exact peut devenir une ligne d\'achat regroupable');
-      if (String(ps.platform || '').toLowerCase() !== exactSku.supplier_order_identity.provider) {
-        throw fail(409, 'SUPPLIER_PROVIDER_MISMATCH', 'Le fournisseur choisi ne correspond pas au provider de l\'identité du SKU vendu');
-      }
-      readiness = await resolveExactSkuProcurementReadiness(client, exactSku, quantity, context);
-    } catch (error) {
-      if (error && error.code === 'BLOCKED_SUPPLIER_IDENTITY') {
-        throw fail(409, 'BLOCKED_SUPPLIER_IDENTITY', error.message, { details: error.details || {} });
-      }
-      throw error;
-    }
-    const snapshot = { ...buildPurchaseTarget(ps, exactSku, readiness), productSkuId: exactSku.id };
-    // I1 (base) refuse tout sur-engagement de l'article ; mapDbError le remonte en 409.
-    const line = await insertOpenPurchaseLine(client, { item, ps, snapshot, quantity });
-    if (actor && uuidOrNull(actor.id)) {
-      await client.query('UPDATE purchase_lines SET created_by = $2 WHERE id = $1', [line.id, actor.id]);
-    }
-    return line.id;
-  });
-
+  const lineId = await withTransaction((client) => createLineInTransaction(client, {
+    orderItemId, productSupplierId, quantity, actor, context, executionMode,
+  }));
   const [line] = await loadLinesByIds(db, [lineId]);
   return { line, ...summarizeMarkets([line]) };
+}
+
+/**
+ * Changement de fournisseur d'une ligne NON engagée (ouverte ou en brouillon) : la ligne d'origine est annulée
+ * (elle reste dans l'historique), la nouvelle naît avec `parent_line_id` = l'ancienne (filiation). Aucun double
+ * comptage : I1 ne compte pas la ligne annulée. Une ligne engagée (PO soumise) se change via son reliquat.
+ */
+async function changeLineSupplier(lineId, body = {}, { actor = null, context = {} } = {}) {
+  requireEnabled();
+  requireUuid(lineId, 'line_id');
+  const productSupplierId = requireUuid(body.product_supplier_id, 'product_supplier_id');
+  const reason = optionalText(body.reason);
+  if (!reason) throw fail(400, 'INVALID_INPUT', 'reason obligatoire');
+  const executionMode = parseExecutionMode(body.execution_mode);
+
+  const newLineId = await withTransaction(async (client) => {
+    const { rows: [peek] } = await client.query('SELECT id, purchase_order_id FROM purchase_lines WHERE id = $1', [lineId]);
+    if (!peek) throw fail(404, 'PURCHASE_LINE_NOT_FOUND', 'Ligne d\'achat introuvable');
+    if (peek.purchase_order_id) await lockGroupedPo(client, peek.purchase_order_id, { requireDraft: true });
+    const { rows: [line] } = await client.query(
+      'SELECT id, order_item_id, quantity, supplier_id, purchase_order_id, cancelled_at, confirmed_quantity FROM purchase_lines WHERE id = $1 FOR UPDATE', [lineId]
+    );
+    if (line.cancelled_at) throw fail(409, 'PURCHASE_LINE_ALREADY_CANCELLED', 'Ligne déjà annulée');
+    if (line.confirmed_quantity !== null) throw fail(409, 'PURCHASE_LINE_NOT_CANCELLABLE', 'Ligne déjà confirmée : changer le fournisseur de son reliquat');
+    await client.query(
+      'UPDATE purchase_lines SET purchase_order_id = NULL, updated_at = NOW() WHERE id = $1 AND purchase_order_id IS NOT NULL', [lineId]
+    );
+    await client.query(
+      'UPDATE purchase_lines SET cancelled_at = NOW(), cancel_reason = $2, updated_at = NOW() WHERE id = $1',
+      [lineId, `Changement de fournisseur : ${reason}`]
+    );
+    return createLineInTransaction(client, {
+      orderItemId: line.order_item_id, productSupplierId, quantity: Number(line.quantity), actor, context, executionMode, parentLineId: line.id,
+    });
+  });
+  const [line] = await loadLinesByIds(db, [newLineId]);
+  return { line, replaced_line_id: lineId, ...summarizeMarkets([line]) };
 }
 
 // ─── Preuve d'envoi : « bon émis » (submit) ≠ « envoyé au fournisseur » ─────────────────────────
@@ -682,4 +761,5 @@ module.exports = {
   confirmGroupedPurchaseOrder,
   settleLine,
   createManualLine,
+  changeLineSupplier,
 };
