@@ -825,14 +825,35 @@
   function enhance(base, decisionUi) {
     if (!base || typeof base.mount !== 'function') throw new Error('operations_decision_base_missing');
     const baseMount = base.mount;
+    let liveTimer = null;
+    let timerWindow = null;
     return Object.freeze({
       ...base,
       mount(options) {
-        return baseMount(options).then(result => ({
-          ...result,
-          result: render(options.root, result.payload, options, base, decisionUi),
-          decisionFirst: true,
-        }));
+        if (liveTimer !== null && timerWindow) timerWindow.clearInterval(liveTimer);
+        liveTimer = null;
+        return baseMount(options).then(result => {
+          const rendered = render(options.root, result.payload, options, base, decisionUi);
+          const win = options.document && options.document.defaultView;
+          if (win && typeof win.setInterval === 'function') {
+            timerWindow = win;
+            // Une simple relecture canonique, aucune mutation ni statut déduit.
+            // Suspendre pendant un dossier ouvert et quand la page est masquée.
+            liveTimer = win.setInterval(() => {
+              const root = options.root;
+              if (!root.isConnected || !root.querySelector('[data-dashboard-id="operations"]')) {
+                win.clearInterval(liveTimer);
+                liveTimer = null;
+                return;
+              }
+              if (options.document.visibilityState === 'hidden'
+                  || root.querySelector('.kmc-control-detail-dock:not([hidden])')) return;
+              const button = root.querySelector('.kmc-operations-refresh');
+              if (button && !button.disabled) button.click();
+            }, 60000);
+          }
+          return { ...result, result: rendered, decisionFirst: true };
+        });
       },
       CONTROL_STAGE_META,
       controlStageMeta,
