@@ -301,7 +301,7 @@ test.describe('Operations — logistics control board', () => {
   test('les cartes restent compactes puis révèlent l’objet précis au clic', async ({ page }) => {
     const warning = page.locator('.kmc-control-order.is-warning').filter({ hasText:'K-104816' });
     await expect(warning).toBeVisible();
-    await expect(warning).toContainText('Confirmation fournisseur à surveiller');
+    await expect(warning).toContainText('Point à surveiller');
     const hiddenDetails = page.locator('.kmc-control-order-detail');
     const visibleBeforeClick = await hiddenDetails.evaluateAll(nodes =>
       nodes.filter(node => !node.hidden && getComputedStyle(node).display !== 'none').length
@@ -315,7 +315,7 @@ test.describe('Operations — logistics control board', () => {
     await expect(detail).toContainText('Objet en cause');
     await expect(detail).toContainText('PO fournisseur · PO-104816');
     await expect(detail).toContainText('Confirmation fournisseur à surveiller');
-    await expect(detail).toContainText('Responsable : operations');
+    await expect(detail).toContainText('À examiner · Opérations');
     const openHref = await detail.locator('.kmc-control-order-open').getAttribute('href');
     expect(openHref.startsWith('/admin/orders/K-104816')).toBe(true);
     expect(decodeURIComponent(openHref)).toContain('return_to=/admin/operations');
@@ -353,7 +353,7 @@ test.describe('Operations — logistics control board', () => {
 
   test('la phase conserve la sous-étape et le résumé métier visibles sans ouvrir le dossier', async ({ page }) => {
     const supplier = page.locator('[data-control-phase="PURCHASING"] .kmc-control-order.is-warning');
-    await expect(supplier.filter({ hasText:'K-104816' })).toContainText('Confirmation fournisseur à surveiller');
+    await expect(supplier.filter({ hasText:'K-104816' })).toContainText('Point à surveiller');
     await expect(supplier.filter({ hasText:'K-104816' })).toContainText('Fournisseur');
     expect(await page.locator('.kmc-control-stage-health-part').count()).toBeGreaterThan(5);
     await expect(page.locator('.kmc-control-detail-dock:not([hidden])')).toHaveCount(0);
@@ -376,8 +376,49 @@ test.describe('Operations — logistics control board', () => {
     await page.setViewportSize({ width:1440, height:900 });
     await expect(page.locator('.kmc-control-stage')).toHaveCount(5);
     await expect(page.locator('.kmc-control-order.is-warning').filter({hasText:'K-104816'}))
-      .toContainText('Confirmation fournisseur à surveiller');
+       .toContainText('Point à surveiller');
     await page.screenshot({ path:testInfo.outputPath('operations-living-flow-1440x900.png'), fullPage:false });
+  });
+
+
+  test('les alertes connues affichent le problème métier, le responsable et une preuve repliable', async ({ page }) => {
+    const updated = JSON.parse(JSON.stringify(payload));
+    updated.control_chain.by_stage.PURCHASING[0].exceptions = [{
+      code:'ordered_without_purchase_order',
+      summary:'1 item(s) non couvert(s) par une ligne d’achat depuis 11404 min',
+      owner_role:'sourcing'
+    }];
+    updated.control_chain.by_stage.SUPPLIER[1].exceptions = [{
+      code:'supplier_payment_review',
+      summary:'ambiguous · rapprochement unverified · PAYMENT_AMBIGUOUS_RECONCILIATION_REQUIRED',
+      owner_role:'admin'
+    }];
+    updated.control_chain.by_stage.TRANSPORT[2].exceptions = [{
+      code:'parcel_blocked', summary:'Statut "in_transit" depuis 8 jours (cmd K-104715)',
+      owner_role:'logistics'
+    }];
+    await page.route(`${ORIGIN}/api/admin/dashboard/operations`, async route =>
+      route.fulfill({contentType:'application/json',body:JSON.stringify(updated)}));
+    await page.locator('.kmc-operations-refresh').click();
+
+    const purchasing = page.locator('.kmc-control-order').filter({hasText:'K-104829'});
+    await expect(purchasing.locator('.kmc-control-order-issue')).toHaveText('1 article sans achat fournisseur');
+    await expect(purchasing.locator('.kmc-control-order-summary')).toContainText('depuis 7 j 22 h');
+    await expect(purchasing.locator('.kmc-control-order-next')).toHaveText('Compléter les achats · Sourcing');
+    await expect(purchasing).not.toContainText('item(s)');
+    await purchasing.click();
+    const proof = page.locator('.kmc-control-detail-dock:not([hidden]) .kmc-control-cause-proof');
+    await expect(proof).toBeVisible();
+    await proof.locator('summary').click();
+    await expect(proof.locator('.kmc-control-cause-raw')).toContainText('11404 min');
+
+    const supplier = page.locator('.kmc-control-order').filter({hasText:'K-104816'});
+    await expect(supplier.locator('.kmc-control-order-issue')).toHaveText('Paiement fournisseur à vérifier');
+    await expect(supplier).not.toContainText('PAYMENT_AMBIGUOUS');
+    const transport = page.locator('.kmc-control-order').filter({hasText:'K-104715'});
+    await expect(transport.locator('.kmc-control-order-issue')).toHaveText('Suivi transport à vérifier');
+    await expect(transport.locator('.kmc-control-order-summary')).toContainText('depuis 8 j');
+    await expect(transport).not.toContainText('in_transit');
   });
 
   test('capture de revue 1672×941', async ({ page }, testInfo) => {
