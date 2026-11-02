@@ -196,3 +196,12 @@ test('Vue opérations : ne jamais inventer une cause, un retard ou un responsabl
   expect(show({code:'parcel_blocked',summary:'Statut "in_transit" depuis 8 jours'},'TRANSPORT','RED').title)
     .not.toMatch(/bloqu/);
 });
+
+test('les alertes structurelles ne se dupliquent pas dans le parcours', () => {
+  // Le backend garde les regroupements, l'UI ne rend que la commande gouvernante.
+  expect(SRC).toContain('structuralAlerts');
+  expect(SRC).toContain('alerts: structuralAlerts');
+  expect(SRC).not.toContain('kmc-control-structural-alert');
+  expect(SRC).not.toContain('commandes · même anomalie');
+  expect(SRC).toContain('const isEmpty = !hasOrders;');
+});
