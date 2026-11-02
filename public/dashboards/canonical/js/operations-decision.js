@@ -328,12 +328,12 @@
             stageLabel: order.localOnly && stage.key === 'RELAY' ? 'Préparation / retrait local' : stage.label,
             stageKey: stage.key,
           }))),
-          alerts: members.flatMap(stage => stage.alerts),
         };
       });
     const hasOrders = columns.some(column => column.orders.length > 0);
-    const hasAlerts = columns.some(column => column.alerts.length > 0);
-    const isEmpty = !hasOrders && !hasAlerts;
+    // Les alertes structurelles restent dans l'API, mais leur synthèse répétait
+    // les commandes et encombrait le parcours. Seules les commandes sont rendues.
+    const isEmpty = !hasOrders;
     host.className = isEmpty ? 'kmc-control-chain is-empty' : 'kmc-control-chain is-active';
     host.setAttribute('data-chain-state', isEmpty ? 'empty' : 'active');
     host.setAttribute('data-phase-count', String(columns.length));
@@ -401,15 +401,6 @@
       if (!column.orders.length && !isEmpty) {
         list.appendChild(text(doc, 'p', 'kmc-control-order-empty', 'Aucune commande à cette phase'));
       }
-
-      column.alerts.forEach(alert => {
-        const banner = doc.createElement('div');
-        banner.className = `kmc-control-structural-alert ${controlHealthClass(alert.health)}`;
-        banner.appendChild(text(doc, 'strong', 'kmc-control-structural-count', `${alert.count} commandes · même anomalie`));
-        const structural = describeControlCause({ code: alert.code, summary: alert.summary }, column.key, alert.health);
-        banner.appendChild(text(doc, 'span', 'kmc-control-structural-summary', structural.title));
-        list.appendChild(banner);
-      });
 
       column.orders.forEach(order => {
         const row = doc.createElement('div');
