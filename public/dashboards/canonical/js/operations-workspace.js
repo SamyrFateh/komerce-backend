@@ -732,7 +732,7 @@
       const body = doc.createElement('div');
       body.className = 'kmc-hub-work-order-body';
       body.setAttribute('data-hub-order-flow', '');
-      body.setAttribute('aria-label', 'Parcours commande · articles, PO, réception, colis client, expédition');
+      body.setAttribute('aria-label', 'Parcours commande · articles, PO, réception, colis client, cartons, expédition');
       card.appendChild(body);
       ordersSlot.appendChild(card);
 
@@ -822,7 +822,7 @@
       physicalActions.appendChild(text(doc, 'span', 'kmc-workspace-muted',
         'Le reçu provient du contrôle Hub ; la confirmation fournisseur ne vaut jamais réception.'));
       reception.appendChild(physicalActions);
-      // Filiation détaillée : pleine largeur SOUS la ligne des cinq colonnes.
+      // Filiation détaillée : pleine largeur SOUS la ligne des six colonnes.
       // Ne jamais forcer son tableau à sept champs dans une colonne de 220 px.
       const parcels = stage(body, 4, 'Colis client');
       if (!group.clientParcels.length) parcels.appendChild(text(doc, 'div', 'kmc-workspace-empty',
@@ -837,16 +837,29 @@
             ' ×' + formatNumber(c.quantity)).join(', ')));
       });
 
-      const transport = stage(body, 5, 'Cartons · Départ');
+      const transport = stage(body, 5, 'Cartons transport');
       if (!group.boxes.length) transport.appendChild(text(doc, 'div', 'kmc-workspace-empty',
         'Aucun carton KOM-BOX rattaché à cette commande.'));
       group.boxes.forEach(box => {
         const contents = (box.contents || []).filter(c => c.order_id === group.id || c.order_ref === group.reference);
         const boxText = box.reference + ' · ' + box.state + ' · ' +
-          contents.map(c => formatNumber(c.qty) + ' unité(s)').join(', ') +
-          ' · ' + (box.shipment_ref ? 'Expédition ' + box.shipment_ref +
-            (box.shipment_stage ? ' (' + box.shipment_stage + ')' : '') : 'Pas encore affecté à une expédition');
+          contents.map(c => formatNumber(c.qty) + ' unité(s)').join(', ');
         transport.appendChild(text(doc, 'div', 'kmc-hub-work-parcel', boxText));
+      });
+      // Le carton n'est PAS une expédition. N'afficher un départ que si le
+      // rattachement physique carton → expédition est réellement prouvé.
+      const shipments = stage(body, 6, 'Expédition');
+      const proven = new Map();
+      group.boxes.forEach(box => {
+        if (box.shipment_ref && !proven.has(box.shipment_ref)) {
+          proven.set(box.shipment_ref, box.shipment_stage || null);
+        }
+      });
+      if (!proven.size) shipments.appendChild(text(doc, 'div', 'kmc-workspace-empty',
+        'Aucune expédition liée à la commande.'));
+      proven.forEach((shipmentStage, reference) => {
+        shipments.appendChild(text(doc, 'div', 'kmc-hub-work-parcel',
+          reference + (shipmentStage ? ' · ' + shipmentStage : ' · Étape non renseignée')));
       });
       if (context.traceOrderId === group.id && (context.trace || context.traceError)) {
         const details = doc.createElement('div');
