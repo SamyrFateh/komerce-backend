@@ -109,6 +109,7 @@ module.exports = {
       'tests/unit/order-status-machine-mobile-money.test.js',
       'tests/unit/local-relay-receipt-service.test.js',
       'tests/unit/order-status-local-receipt.test.js',
+      'tests/e2e-api/orders.local-relay-receipt.e2e.test.js',
       'tests/unit/qr-collection-core-emission.test.js',
       // E2E fonctionnel — preuve d'unicite de remise (Lot 1 retrait-secours).
       'tests/e2e-api/orders.single-collect.e2e.test.js',
