@@ -160,6 +160,7 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       await expect(row).toContainText('2 PO liées');
       await expect(row).toContainText('4 reçu(s)');
       await expect(row).toContainText('3 non reçue(s)');
+      await expect(row).toContainText('1 à contrôler');
       await expect(row).toContainText('1 KOM-BOX');
       await expect(row).not.toContainText('Coque téléphone');
       await expect(row).not.toContainText('Remboursé');
