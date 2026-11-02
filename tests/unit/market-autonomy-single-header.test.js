@@ -23,6 +23,7 @@ describe('Marché — composition sans doublon', () => {
     expect(country).toContain("controls.appendChild(navigation)");
     expect(country).toContain("hero.appendChild(feedback)");
     expect(country).toContain("workspaceHeader.remove()");
+    expect(country).toContain("doc.body?.classList?.add('kmc-market-hero-integrated')");
     expect(country).toContain("if (selector) controls.appendChild(selector)");
     expect(country).not.toMatch(/cloneNode\(/);
   });
@@ -39,9 +40,10 @@ describe('Marché — composition sans doublon', () => {
     const css = source('public/dashboards/canonical/css/market-autonomy-business-ui.css');
     expect(css).toContain('data-kmc-surface="market-autonomy"] > .kmc-admin-topbar');
     expect(css).toContain('kmc-autonomy-hero-controls');
+    expect(css).toContain('.kmc-market-hero-integrated[data-kmc-surface="market-autonomy"]');
     expect(css).toContain('.kmc-autonomy-hero-controls .kmc-autonomy-selector');
     const html = source('public/dashboards/canonical/market-autonomy.html');
-    expect(html).toContain('market-autonomy-business-ui.css?v=261102-2');
-    expect(html).toContain('markets-decision-bootstrap.js?v=261102-2');
+    expect(html).toContain('market-autonomy-business-ui.css?v=261102-3');
+    expect(html).toContain('markets-decision-bootstrap.js?v=261102-3');
   });
 });
