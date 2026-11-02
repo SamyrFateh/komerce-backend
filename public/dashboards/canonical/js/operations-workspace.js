@@ -834,7 +834,9 @@
         parcels.appendChild(text(doc, 'div', 'kmc-hub-work-parcel',
           parcel.reference + ' · ' + parcel.status + ' · ' +
           (parcel.contents || []).map(c => (itemNames.get(String(c.order_item_id)) || 'Article') +
-            ' ×' + formatNumber(c.quantity)).join(', ')));
+            ' ×' + formatNumber(c.quantity) +
+            (c.allocated == null ? '' : ' (affecté ' + formatNumber(c.allocated) + ' · emballé ' + formatNumber(c.packed) +
+              ' · expédié ' + formatNumber(c.shipped) + ')')).join(', ')));
       });
 
       const transport = stage(body, 5, 'Cartons transport');

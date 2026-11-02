@@ -31,7 +31,7 @@ const DOSSIER = {
   orders: [{ id: '4def6c00-67b9-4584-85ed-00d2b8a24292', reference: 'K-C2', status: 'ordered',
     items: [{ id: 'aa03f8af-6229-4252-b8a7-aac02e1c7701', product: 'Câble USB', ordered: 3, fulfillment_source: 'IMPORT' }] }],
   client_parcels: [{ id: 'client-1', order_id: '4def6c00-67b9-4584-85ed-00d2b8a24292', reference: 'PCL-C2',
-    status: 'preparation', contents: [{ order_item_id: 'aa03f8af-6229-4252-b8a7-aac02e1c7701', quantity: 2 }] }],
+    status: 'preparation', contents: [{ order_item_id: 'aa03f8af-6229-4252-b8a7-aac02e1c7701', quantity: 2, allocated: 2, packed: 1, shipped: 0 }] }],
   needs: [{ line_id: 'l9', order_ref: 'K-C3', product_name: 'Câble USB', supplier_name: 'Fournisseur A', quantity: 2 }],
   purchase_orders: [{
     id: PO, status: 'notified', stage: 'issued_not_sent', supplier_name: 'Fournisseur A', sent_at: null, sent_channel: null,
@@ -94,6 +94,8 @@ test.describe('Hub live · Approvisionnement — desktop 1440', () => {
     await expect(pos).toContainText('2 / 3 reçus');
     await expect(page.locator('[data-hub-order]').first()).toContainText('PCL-C2');
     await expect(page.locator('[data-hub-order]').first()).toContainText('BOX-2');
+    // Colis client : quantités = preuve physique (affecté 2, emballé 1, expédié 0), pas un prérempli.
+    await expect(page.locator('[data-hub-order]').first()).toContainText('affecté 2 · emballé 1 · expédié 0');
     const columns = await page.locator('[data-hub-order]').first()
       .locator('[data-hub-order-flow] > .kmc-hub-work-stage')
       .evaluateAll(nodes => nodes.map(node => {
@@ -171,4 +173,14 @@ test.describe('Hub live · Approvisionnement — desktop 1440', () => {
     expect(posts[0]).toEqual({path:`${API}/boxes/b2/detach`,body:{}});
   });
 
+});
+
+test.describe('Hub live · Approvisionnement — mobile 390', () => {
+  test('la preuve physique du colis client reste lisible sans débordement horizontal', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await mount(page, []);
+    await expect(page.locator('[data-hub-order]').first()).toContainText('affecté 2 · emballé 1 · expédié 0');
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflow).toBeLessThanOrEqual(1);
+  });
 });
