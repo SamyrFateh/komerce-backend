@@ -159,3 +159,40 @@ test('le flux vivant relit les faits toutes les 60 secondes sans masquer un doss
   expect(SRC).toContain('button.click()');
   expect(SRC).toContain("prefers-reduced-motion: reduce");
 });
+
+
+test('Vue opérations : phrases courtes basées sur le code métier, sans code technique dans la carte', () => {
+  const { describeControlCause: show, controlCauseAge, controlOwnerLabel } =
+    require('../../public/dashboards/canonical/js/operations-decision');
+  const cases = [
+    [{code:'ordered_without_purchase_order', summary:'1 item(s) non couvert(s) par une ligne d’achat depuis 11404 min'}, '1 article sans achat fournisseur', '7 j 22 h'],
+    [{code:'supplier_payment_review', summary:'ambiguous · rapprochement unverified · PAYMENT_AMBIGUOUS_RECONCILIATION_REQUIRED'}, 'Paiement fournisseur à vérifier', 'Rapprochement non confirmé'],
+    [{code:'parcel_blocked', summary:'Statut "in_transit" depuis 8 jours (cmd K-1)'}, 'Suivi transport à vérifier', 'depuis 8 j'],
+    [{code:'parcel_blocked', summary:'Statut "arrived" depuis 8 jours'}, 'Suite de l’arrivée à vérifier', 'Colis arrivé'],
+    [{code:'parcel_blocked', summary:'Statut "available" depuis 8 jours'}, 'Retrait client en attente', 'Colis disponible'],
+    [{code:'hub_non_compliant', summary:'Article non conforme au contrôle HUB'}, 'Article isolé au Hub', 'Non-conformité'],
+    [{code:'customer_payment_attention', summary:'Le paiement client est explicitement en échec.'}, 'Paiement client échoué', 'pas abouti'],
+    [{code:'purchasing_po_creation_failed', summary:'product_id=x sku_id=abc error=timeout'}, 'Création de PO échouée', 'non créée'],
+  ];
+  cases.forEach(([cause, title, fragment]) => {
+    const result = show(cause, 'PURCHASING', 'RED');
+    expect(result.title).toBe(title);
+    expect(result.detail).toContain(fragment);
+    expect(JSON.stringify(result)).not.toMatch(/item\(s\)|in_transit|available|PAYMENT_AMBIGUOUS_|sku_id=/);
+  });
+  expect(controlCauseAge('depuis 11404 min')).toBe('depuis 7 j 22 h');
+  expect(controlOwnerLabel('sourcing')).toBe('Sourcing');
+  expect(controlOwnerLabel('unknown_system')).toBeNull();
+});
+
+test('Vue opérations : ne jamais inventer une cause, un retard ou un responsable', () => {
+  const { describeControlCause: show } = require('../../public/dashboards/canonical/js/operations-decision');
+  expect(show({code:'FUTURE_NEW_SIGNAL',summary:'UNKNOWN_CODE_1219'}, 'TRANSPORT', 'RED'))
+    .toEqual({ title:'Anomalie à examiner', detail:'Cause à consulter dans le dossier', next:null });
+  expect(show(null, 'SUPPLIER', 'ORANGE'))
+    .toEqual({ title:'Point à surveiller', detail:'Cause non précisée', next:null });
+  expect(show(null, 'RELAY', 'GREEN', true))
+    .toEqual({ title:'Commande locale en cours', detail:'Préparation et retrait au relais', next:null });
+  expect(show({code:'parcel_blocked',summary:'Statut "in_transit" depuis 8 jours'},'TRANSPORT','RED').title)
+    .not.toMatch(/bloqu/);
+});
