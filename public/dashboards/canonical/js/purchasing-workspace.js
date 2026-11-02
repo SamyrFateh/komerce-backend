@@ -190,7 +190,8 @@
     const sku = doc.createElement('input');
     sku.placeholder = 'Référence produit chez ce fournisseur';
     sku.value = line.supplier_sku || line.supplier_unit_ref || '';
-    sku.required = true;
+    // Requis seulement si un nouveau mapping doit être créé (validation dans submit).
+    sku.required = false;
     sku.setAttribute('aria-label', 'Référence produit fournisseur');
     panel.appendChild(sku);
     const price = doc.createElement('input');
@@ -198,7 +199,7 @@
     price.min = '0.01';
     price.step = 'any';
     price.placeholder = 'Prix unitaire réel (AED)';
-    price.required = true;
+    price.required = false;
     price.setAttribute('aria-label', 'Prix unitaire en AED');
     panel.appendChild(price);
     const reason = doc.createElement('input');
