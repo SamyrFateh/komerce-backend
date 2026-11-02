@@ -1,12 +1,21 @@
-/** @komerce-arch @role orders-local-relay-receipt @domain orders @layer service
- * @criticality critical @inputs order_id, authenticated agent, physical_receipt
- * @outputs local parcel, proof and order available
- * @depends db.js, services/order-status-machine.js, services/order-item-availability-service.js, utils/reference.js
- * @used-by routes/orders/status.js @db-read orders, order_items, parcels, local_stock_allocations
- * @db-write parcels, parcel_items, parcel_events, scans
+/**
+ * @komerce-arch
+ * @role          orders-local-relay-receipt
+ * @domain        orders
+ * @layer         service
+ * @criticality   critical
+ * @inputs        order_id, authenticated_relay_actor, attested_physical_receipt
+ * @outputs       parcel_local, scan_proof, local_line_availability, order_status
+ * @depends       db.js, services/order-status-machine.js, services/parcel-item-mutation-service.js, services/order-item-availability-service.js, utils/reference.js
+ * @used-by       routes/orders/status.js
+ * @db-read       orders, order_items, relais, parcels, local_stock_allocations
+ * @db-write      parcels, parcel_items, parcel_events, scans
+ * @db-write-via:parcel-item-mutation-service parcel_items, parcel_events
  * @db-write-via:order-status-machine orders, order_status_history
  * @db-write-via:order-item-availability-service order_items
- * @db-txn caller-owned-atomic @impact-areas orders, logistics, local-stock, pickup */
+ * @db-txn        caller-owned-atomic
+ * @impact-areas  orders, logistics, local-stock, pickup
+ */
 'use strict';
 const crypto = require('crypto');
 const db = require('../db');
