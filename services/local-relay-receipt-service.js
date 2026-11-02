@@ -18,7 +18,7 @@ const { setOrderItemAvailabilityStatus } = require('./order-item-availability-se
 const fail = (status, code, error) => ({ok:false, status, body:{code,error}});
 
 // A relay actor's signed physical receipt, never an inference from AVAILABLE_NOW.
-// Fail closed for mixed orders: a separate parcel-scoped path is required.
+// Mixed orders retain import lines untouched; local proof belongs to its own parcel.
 async function recordLocalRelayReceipt({orderId, actor, physicalReceived, note = null}) {
   if (!actor?.id || !['admin','agent_relais'].includes(actor.role))
     return fail(403,'LOCAL_RECEIPT_ROLE_FORBIDDEN','Seul le relais ou un administrateur peut attester la réception');
@@ -37,25 +37,27 @@ async function recordLocalRelayReceipt({orderId, actor, physicalReceived, note =
       await client.query('ROLLBACK');
       return fail(403,'LOCAL_RECEIPT_RELAY_FORBIDDEN','Commande hors du relais de cet agent');
     }
-    if (order.payment_status!=='paid' || !['confirmed','ordered','preparation'].includes(order.status)) {
+    if (order.payment_status!=='paid' || !['confirmed','ordered','preparation','shipped','in_transit','available'].includes(order.status)) {
       await client.query('ROLLBACK');
       return fail(409,'LOCAL_RECEIPT_ORDER_NOT_READY','Paiement non confirmé ou commande déjà avancée');
     }
     const {rows:items} = await client.query(
       'SELECT id,product_id,quantity,fulfillment_source FROM order_items WHERE order_id=$1 ORDER BY id FOR UPDATE', [orderId]);
-    if (!items.length || items.some(item=>item.fulfillment_source!=='LOCAL_STOCK')) {
+    if (!items.some(item=>item.fulfillment_source==='LOCAL_STOCK') ||
+        items.some(item=>!['LOCAL_STOCK','IMPORT'].includes(item.fulfillment_source))) {
       await client.query('ROLLBACK');
-      return fail(409,'LOCAL_RECEIPT_NOT_LOCAL_ONLY','Les commandes mixtes exigent une réception par colis');
+      return fail(409,'LOCAL_RECEIPT_INVALID_PROVENANCE','Réception locale impossible : provenance absente ou aucune ligne locale');
     }
+    const localItems=items.filter(item=>item.fulfillment_source==='LOCAL_STOCK');
     const {rows:[stock]} = await client.query(
       "SELECT COALESCE(SUM(quantity) FILTER (WHERE consumed_at IS NOT NULL AND released_at IS NULL),0)::int AS consumed FROM local_stock_allocations WHERE order_id=$1", [orderId]);
-    const expected = items.reduce((sum,item)=>sum+Number(item.quantity),0);
+    const expected = localItems.reduce((sum,item)=>sum+Number(item.quantity),0);
     if (Number(stock?.consumed)!==expected) {
       await client.query('ROLLBACK');
       return fail(409,'LOCAL_RECEIPT_ALLOCATION_MISMATCH','Allocation locale payée incohérente');
     }
     const {rows:existing} = await client.query(
-      'SELECT p.id FROM parcels p WHERE p.order_id=$1 OR EXISTS (SELECT 1 FROM parcel_items pi JOIN order_items oi ON oi.id=pi.order_item_id WHERE pi.parcel_id=p.id AND oi.order_id=$1) LIMIT 1 FOR UPDATE OF p',
+      "SELECT p.id FROM parcels p JOIN parcel_items pi ON pi.parcel_id=p.id JOIN order_items oi ON oi.id=pi.order_item_id WHERE oi.order_id=$1 AND oi.fulfillment_source='LOCAL_STOCK' LIMIT 1 FOR UPDATE OF p",
       [orderId]);
     if (existing.length) {
       await client.query('ROLLBACK');
@@ -72,7 +74,7 @@ async function recordLocalRelayReceipt({orderId, actor, physicalReceived, note =
     const {rows:[receipt]}=await client.query(
       "INSERT INTO scans (order_id,parcel_id,step,scan_code,scanned_by,notes) VALUES ($1,$2,'relais_received',$3,$4,$5) RETURNING id",
       [orderId,parcelId,order.reference,actor.id,proofNote]);
-    for (const item of items) {
+    for (const item of localItems) {
       // Packed locally and received at relay; NEVER marked internationally shipped.
       await client.query(
         'INSERT INTO parcel_items (parcel_id,order_item_id,product_id,quantity,qty_allocated,qty_packed,qty_shipped,qty_received,verified,verified_at,verified_by) VALUES ($1,$2,$3,$4,$4,$4,0,$4,TRUE,NOW(),$5)',
@@ -86,7 +88,7 @@ async function recordLocalRelayReceipt({orderId, actor, physicalReceived, note =
       orderId,newStatus:'available',actor,source:'local_relay_receipt',
       scanId:receipt.id,note:proofNote,dbClient:client
     });
-    if (!transition.success || transition.noop || transition.newStatus!=='available') {
+    if (!transition.success || transition.newStatus!=='available') {
       await client.query('ROLLBACK');
       return fail(409,transition.code||'LOCAL_RECEIPT_TRANSITION_REFUSED',transition.error||'Transition locale refusée');
     }
