@@ -147,66 +147,65 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       await expect(page.locator('[data-workspace-action="confirm-cash"], [data-workspace-action="receive"], [data-workspace-action="collect"]')).toHaveCount(0);
     });
 
-    test('entrée Hub : dossier vivant, PO dépliable, reçu/restant et filiation sans mutation', async ({ page }) => {
+    test('entrée Hub : tableau compact, PO multiples et absence de preuves inventées', async ({ page }) => {
       const posts = [];
       await mount(page, { view: null, posts });
       await expect(page.locator('[data-workspace-view="supply"]')).toHaveAttribute('aria-selected', 'true');
-      // Deux dossiers sont attendus : K-ORDER-1 (deux PO) et K-ORDER-2
-      // (besoin d'achat encore sans PO). Ne pas effacer la commande en attente.
       await expect(page.locator('[data-hub-work-orders] [data-hub-order]')).toHaveCount(2);
       await expect(page.locator('[data-hub-work-orders] [data-hub-order]').last()).toContainText('K-ORDER-2');
-      await expect(page.locator('.kmc-section-title').filter({ hasText: 'Dossiers · Vue du jour' })).toBeVisible();
+      await expect(page.locator('[data-hub-work-orders] .kmc-hub-board thead')).toContainText('Reste à solder');
+      await expect(page.locator('[data-hub-work-orders] .kmc-hub-board thead')).toContainText('Fournisseur');
       await expect(page.locator('[data-hub-dossier-home] [data-metric-key="hub-remaining"]')).toContainText('3');
-      await expect(page.locator('[data-hub-dossier-home]')).not.toContainText('À traiter maintenant');
-      await expect(page.locator('.kmc-workspace-metrics')).toHaveCount(0);
-      const po = page.locator(`[data-hub-po="${PO_ID}"]`);
-      await expect(po).toBeVisible();
-      await expect(page.locator('[data-hub-order]').first()).toHaveAttribute('open', '');
-      await expect(po).toContainText('CJ Dropshipping');
-      await expect(po).toContainText('2 / 5 reçus');
-      await expect(page.locator('[data-hub-order]').first()).toContainText('K-ORDER-1');
-      await expect(page.locator('[data-hub-order]').first()).toContainText('3 unité(s) encore attendue(s)');
-      await expect(page.locator('[data-hub-order]').first()).toContainText('PCL-KM-1');
-      await page.locator('[data-hub-order]').first().getByRole('button', { name: 'Voir les colis et mouvements prouvés' }).click();
+      const row = page.locator('[data-hub-order="9d141f3c-0035-497b-8c60-3bf3808867a1"]');
+      await expect(row).toContainText('2 PO liées');
+      await expect(row).toContainText('4 reçu(s)');
+      await expect(row).toContainText('3 non reçue(s)');
+      await expect(row).toContainText('1 KOM-BOX');
+      await expect(row).not.toContainText('Coque téléphone');
+      await expect(row).not.toContainText('Remboursé');
+      await row.locator('[data-hub-stage="Réception"]').click();
+      await expect(page.locator('[data-hub-context-menu]')).toBeVisible();
+      await expect(page.locator('[data-hub-context-menu]')).toContainText('Réceptionner une PO');
+      await expect(page.locator('[data-hub-context-menu]')).toContainText('Voir les preuves / la filiation');
+      await page.locator('[data-hub-context-menu]').getByRole('button', { name: 'Voir les preuves / la filiation' }).click();
       await expect(page.locator('[data-supply-trace]')).toContainText('SUP-1');
-      await expect(page.locator('[data-hub-order]').first()).toContainText('KOM-BOX-1');
       expect(posts).toHaveLength(0);
     });
 
-    test('Work : une commande déroule ses articles, deux PO indépendantes, colis client puis carton transport', async ({ page }) => {
+    test('clic droit et clavier : actions contextuelles, sans mutation implicite', async ({ page }) => {
+      const posts = [];
+      await mount(page, { view: null, posts });
+      const row = page.locator('[data-hub-order="9d141f3c-0035-497b-8c60-3bf3808867a1"]');
+      await row.locator('[data-hub-stage="PO"]').click({ button: 'right' });
+      await expect(page.locator('[data-hub-context-menu]')).toContainText('Ouvrir les achats fournisseurs');
+      await expect(page.locator('[data-hub-context-menu] a').first()).toHaveAttribute('href', '/admin/workspaces/purchasing?market=KM');
+      await page.keyboard.press('Escape');
+      await expect(page.locator('[data-hub-context-menu]')).toBeHidden();
+      await row.locator('[data-hub-stage="Réception"]').focus();
+      await page.keyboard.press('Enter');
+      await expect(page.locator('[data-hub-context-menu]')).toBeVisible();
+      await page.locator('[data-hub-context-menu]').getByRole('button', { name: 'Réceptionner une PO' }).click();
+      await expect(page.locator('[data-workspace-view="reception"]')).toHaveAttribute('aria-selected', 'true');
+      expect(posts).toHaveLength(0);
+    });
+
+    test('tableau Hub : lisible à largeur fixe, sans cellules article ni faux départ', async ({ page }) => {
       await mount(page, { view: null });
-      const dossier = page.locator('[data-hub-order="9d141f3c-0035-497b-8c60-3bf3808867a1"]');
-      await expect(dossier).toBeVisible();
-      await expect(dossier.locator('[data-hub-po]')).toHaveCount(2);
-      const stages = await dossier.locator('.kmc-hub-work-stage-heading').allTextContents();
-      expect(stages.map(s => s.trim())).toEqual([
-        expect.stringContaining('Commande · Articles'),
-        expect.stringContaining('PO fournisseurs'),
-        expect.stringContaining('Réception · Contrôle'),
-        expect.stringContaining('Colis client'),
-        expect.stringContaining('Cartons transport'),
-        expect.stringContaining('Expédition'),
-      ]);
-      await expect(dossier).toContainText('Autre fournisseur');
-      await expect(dossier).toContainText('Chargeur USB');
-      await expect(dossier).toContainText('PCL-KM-1');
-      await expect(dossier).toContainText('KOM-BOX-1');
-      await expect(dossier).toContainText('3 unité(s) encore attendue(s)');
-      const layout = await dossier.locator('[data-hub-order-flow]').evaluate(node => {
-        const sections = [...node.querySelectorAll(':scope > .kmc-hub-work-stage')];
-        const coords = sections.map(el => el.getBoundingClientRect());
-        const container = node.getBoundingClientRect();
-        const style = window.getComputedStyle(node);
-        return { columns: style.gridTemplateColumns.split(' ').length,
-          x: coords.map(rect => rect.x), y: coords.map(rect => rect.y),
-          within: coords.every(rect => rect.left >= container.left),
-          clientWidth: node.clientWidth, scrollWidth: node.scrollWidth,
+      const board = page.locator('[data-hub-work-orders] .kmc-hub-board');
+      await expect(board.locator('thead th')).toHaveCount(7);
+      await expect(board.locator('tbody tr')).toHaveCount(2);
+      await expect(board.locator('[data-hub-stage="Départ"]').first()).toContainText('Pas de départ');
+      const layout = await board.evaluate(el => {
+        const wrap = el.closest('.kmc-hub-board-scroll');
+        return {
+          inside: el.getBoundingClientRect().left >= wrap.getBoundingClientRect().left - 1,
+          pageOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+          scrollableOnSmallScreens: wrap.scrollWidth >= wrap.clientWidth,
         };
       });
-      expect(layout.columns).toBe(6);
-      expect(layout.x.every((x, i, arr) => i === 0 || x > arr[i - 1])).toBe(true);
-      expect(layout.y.every(y => Math.abs(y - layout.y[0]) < 2)).toBe(true);
-      expect(layout.within).toBe(true);
+      expect(layout.inside).toBe(true);
+      expect(layout.pageOverflow).toBeLessThanOrEqual(1);
+      expect(layout.scrollableOnSmallScreens).toBe(true);
     });
 
     test('L9a : « Répartir ce marché » est masqué quand aucune commande n’est à répartir', async ({ page }) => {
