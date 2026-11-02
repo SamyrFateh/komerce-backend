@@ -163,6 +163,98 @@
     return `${group.supplier_id}|${group.procurement_hub_ref}|${group.market_id}`;
   }
 
+
+  // Achat de substitution : le lien article/fournisseur est créé avant le changement de ligne.
+  // Toutes les mutations passent par les routes autorisées ; aucune PO engagée n'est réécrite.
+  function renderChangeSupplier(doc, parent, line, context) {
+    const panel = doc.createElement('form');
+    panel.className = 'kmc-purchasing-supplier-change';
+    panel.setAttribute('data-change-supplier-form', line.line_id);
+    const heading = text(doc, 'strong', '', 'Changer de fournisseur · ' + (line.product_name || 'Article'));
+    panel.appendChild(heading);
+    const picker = doc.createElement('select');
+    picker.setAttribute('aria-label', 'Fournisseur de remplacement');
+    const placeholder = doc.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = 'Choisir un fournisseur existant';
+    picker.appendChild(placeholder);
+    panel.appendChild(picker);
+    const name = doc.createElement('input');
+    name.placeholder = 'Ou nom du nouveau fournisseur local';
+    name.setAttribute('aria-label', 'Nouveau fournisseur local');
+    panel.appendChild(name);
+    const phone = doc.createElement('input');
+    phone.placeholder = 'Téléphone du nouveau fournisseur (facultatif)';
+    phone.setAttribute('aria-label', 'Contact fournisseur');
+    panel.appendChild(phone);
+    const sku = doc.createElement('input');
+    sku.placeholder = 'Référence produit chez ce fournisseur';
+    sku.value = line.supplier_sku || line.supplier_unit_ref || '';
+    sku.required = true;
+    sku.setAttribute('aria-label', 'Référence produit fournisseur');
+    panel.appendChild(sku);
+    const price = doc.createElement('input');
+    price.type = 'number';
+    price.min = '0.01';
+    price.step = 'any';
+    price.placeholder = 'Prix unitaire réel (AED)';
+    price.required = true;
+    price.setAttribute('aria-label', 'Prix unitaire en AED');
+    panel.appendChild(price);
+    const reason = doc.createElement('input');
+    reason.placeholder = 'Motif du changement';
+    reason.required = true;
+    reason.setAttribute('aria-label', 'Motif du changement de fournisseur');
+    panel.appendChild(reason);
+    const status = text(doc, 'p', 'kmc-workspace-subtitle', 'Le fournisseur initial et sa ligne resteront dans l’historique.');
+    panel.appendChild(status);
+    const save = makeButton(doc, 'Valider le changement', 'change-supplier');
+    save.type = 'submit';
+    panel.appendChild(save);
+    parent.appendChild(panel);
+    jsonRequest(context.fetchFn, `${ENDPOINT}/suppliers?active=true`).then((suppliers) => {
+      (Array.isArray(suppliers) ? suppliers : []).forEach((supplier) => {
+        const option = doc.createElement('option');
+        option.value = supplier.id;
+        option.textContent = supplier.name;
+        picker.appendChild(option);
+      });
+    }).catch((error) => { status.textContent = describeError(error); });
+    panel.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (save.disabled) return;
+      if (!line.product_id || !sku.value.trim() || !(Number(price.value) > 0) || !reason.value.trim() ||
+          (!picker.value && !name.value.trim())) {
+        status.textContent = 'Renseignez le fournisseur, la référence produit, le prix AED et le motif.';
+        return;
+      }
+      save.disabled = true;
+      try {
+        let supplierId = picker.value;
+        if (name.value.trim()) {
+          const supplier = await jsonRequest(context.fetchFn, `${ENDPOINT}/suppliers`, {
+            method: 'POST', body: { name: name.value.trim(), platform: 'local', contact_phone: phone.value.trim() || null },
+          });
+          supplierId = supplier.id;
+        }
+        const mapping = await jsonRequest(context.fetchFn, `${ENDPOINT}/suppliers/${encodeURIComponent(supplierId)}/map`, {
+          method: 'POST',
+          body: { product_id: line.product_id, supplier_sku: sku.value.trim(), supplier_price_aed: Number(price.value) },
+        });
+        await jsonRequest(context.fetchFn, `${ENDPOINT}/lines/${encodeURIComponent(line.line_id)}/change-supplier`, {
+          method: 'POST',
+          body: { product_supplier_id: mapping.id, reason: reason.value.trim(), execution_mode: 'manual' },
+        });
+        context.selection.delete(line.line_id);
+        await context.reload();
+        setFeedback(context.root, 'Fournisseur remplacé ; ancienne ligne conservée et nouvelle ligne ouverte.', 'success');
+      } catch (error) {
+        status.textContent = describeError(error);
+        save.disabled = false;
+      }
+    });
+  }
+
   function renderGroup(doc, slot, group, context) {
     const key = groupKey(group);
     const card = doc.createElement('article');
@@ -235,6 +327,13 @@
           successMessage: 'Ligne annulée.',
         });
       });
+      const change = makeButton(doc, 'Changer fournisseur', 'change-supplier', true);
+      change.addEventListener('click', () => {
+        const existing = card.querySelector('[data-change-supplier-form="' + line.line_id + '"]');
+        if (existing) { existing.remove(); return; }
+        renderChangeSupplier(doc, card, line, context);
+      });
+      actions.appendChild(change);
       actions.appendChild(cancel);
       tr.appendChild(actions);
       tbody.appendChild(tr);
@@ -793,6 +892,7 @@
 
     const context = {
       root: rootNode,
+      fetchFn,
       user: options.user || {},
       confirm: options.confirm || (typeof window !== 'undefined' ? window.confirm.bind(window) : () => true),
       prompt: options.prompt || (typeof window !== 'undefined' ? window.prompt.bind(window) : () => null),
