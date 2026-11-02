@@ -56,7 +56,8 @@ const DOSSIER = {
   kpis: { orders_waiting: 1, po_draft: 0, po_issued_not_sent: 1, po_sent_unconfirmed: 0,
     qty_missing: 3, boxes_unshipped: 1 },
   orders: [{ id: '9d141f3c-0035-497b-8c60-3bf3808867a1', reference: 'K-ORDER-1', status: 'ordered',
-    items: [{ id: 'fa828646-e76e-48a5-8f5d-3848bc48e1d6', product: 'Coque téléphone', ordered: 5, fulfillment_source: 'IMPORT' }] }],
+    items: [{ id: 'fa828646-e76e-48a5-8f5d-3848bc48e1d6', product: 'Coque téléphone', ordered: 5, fulfillment_source: 'IMPORT' },
+      { id: '2ed41731-0244-4790-9a55-1992cc037312', product: 'Chargeur USB', ordered: 2, fulfillment_source: 'IMPORT' }] }],
   client_parcels: [{ id: 'client-1', order_id: '9d141f3c-0035-497b-8c60-3bf3808867a1', reference: 'PCL-KM-1',
     status: 'preparation', contents: [{ order_item_id: 'fa828646-e76e-48a5-8f5d-3848bc48e1d6', quantity: 2 }] }],
   needs: [{ order_id: 'o2', order_ref: 'K-ORDER-2', product_name: 'Câble USB',
@@ -67,6 +68,12 @@ const DOSSIER = {
     totals: { effective: 5, received: 2, missing: 3, anomaly: 1 },
     lines: [{ line_id: 'line-1', order_id: '9d141f3c-0035-497b-8c60-3bf3808867a1', order_item_id: 'fa828646-e76e-48a5-8f5d-3848bc48e1d6', order_ref: 'K-ORDER-1', product: 'Coque téléphone',
       ordered: 5, confirmed: 5, received: 2, missing: 3, anomaly: 1 }],
+  }, {
+    id: 'c8eb45d9-56e7-4289-b11a-aeb147228eb9', supplier_name: 'Autre fournisseur',
+    stage: 'received', status: 'confirmed', sent_at: '2026-11-01T09:00:00Z',
+    sent_channel: 'email', totals: { effective: 2, received: 2, missing: 0, anomaly: 0 },
+    lines: [{ line_id: 'line-2', order_id: '9d141f3c-0035-497b-8c60-3bf3808867a1', order_item_id: '2ed41731-0244-4790-9a55-1992cc037312',
+      order_ref: 'K-ORDER-1', product: 'Chargeur USB', ordered: 2, confirmed: 2, received: 2, missing: 0, anomaly: 0 }],
   }],
   receipts: [{ id: 'unit-1', reference: 'SUP-1', external_ref: 'CJ-1', state: 'RECEIVED', qty: 2,
     received_at: '2026-11-01T10:00:00Z' }],
@@ -161,6 +168,26 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       await expect(page.locator('[data-supply-trace]')).toContainText('SUP-1');
       await expect(page.locator('[data-hub-order]').first()).toContainText('KOM-BOX-1');
       expect(posts).toHaveLength(0);
+    });
+
+    test('Work : une commande déroule ses articles, deux PO indépendantes, colis client puis carton transport', async ({ page }) => {
+      await mount(page, { view: null });
+      const dossier = page.locator('[data-hub-order="9d141f3c-0035-497b-8c60-3bf3808867a1"]');
+      await expect(dossier).toBeVisible();
+      await expect(dossier.locator('[data-hub-po]')).toHaveCount(2);
+      const stages = await dossier.locator('.kmc-hub-work-stage-heading').allTextContents();
+      expect(stages.map(s => s.trim())).toEqual([
+        expect.stringContaining('Articles de la commande'),
+        expect.stringContaining('PO fournisseurs'),
+        expect.stringContaining('Réception physique'),
+        expect.stringContaining('Colis client'),
+        expect.stringContaining('Cartons de transport'),
+      ]);
+      await expect(dossier).toContainText('Autre fournisseur');
+      await expect(dossier).toContainText('Chargeur USB');
+      await expect(dossier).toContainText('PCL-KM-1');
+      await expect(dossier).toContainText('KOM-BOX-1');
+      await expect(dossier).toContainText('3 unité(s) encore attendue(s)');
     });
 
     test('L9a : « Répartir ce marché » est masqué quand aucune commande n’est à répartir', async ({ page }) => {
