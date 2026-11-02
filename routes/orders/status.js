@@ -45,8 +45,8 @@ const pickupProofService = require('../../services/documents/pickup-proof');
 const { recordLocalRelayReceipt } = require('../../services/local-relay-receipt-service');
 
 // Reception physique locale : l'agent du relais atteste la possession des
-// articles. Aucun Hub, PO, transitaire ou faux transit. Uniquement 100 % LOCAL_STOCK.
-// La validation du parcours mixte reste parcel-scoped, jamais ici.
+// articles LOCAL_STOCK d'une commande locale ou mixte. Les articles IMPORT
+// restent dans leur propre chaîne Hub et leurs propres colis ; aucun faux transit.
 router.post('/:id/local-relay-receipt',
   authenticate, requireRole(['admin','agent_relais']), async (req,res,next)=>{
     try {
