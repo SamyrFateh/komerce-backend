@@ -59,11 +59,24 @@ test('unpaid order is never made available',async()=>{
   expect(r.body.code).toBe('LOCAL_RECEIPT_ORDER_NOT_READY');
   expect(written(/INSERT INTO/)).toBe(false);
 });
-test('an IMPORT or mixed order cannot be silently promoted',async()=>{
-  setup({items:[item,{...item,id:'import',fulfillment_source:'IMPORT'}],consumed:2});
+test('mixed order receives only local lines and preserves import provenance',async()=>{
+  const imported={...item,id:'import',fulfillment_source:'IMPORT',quantity:1};
+  setup({items:[item,imported],consumed:2});
   const r=await execute();
-  expect(r.body.code).toBe('LOCAL_RECEIPT_NOT_LOCAL_ONLY');
-  expect(written(/INSERT INTO/)).toBe(false);
+  expect(r.status).toBe(200);
+  const itemInserts=client.query.mock.calls.filter(([sql])=>/INSERT INTO parcel_items/.test(sql));
+  expect(itemInserts).toHaveLength(1);
+  expect(itemInserts[0][1][1]).toBe(item.id);
+  expect(client.query.mock.calls.findIndex(([sql])=>/INSERT INTO scans/.test(sql)))
+    .toBeLessThan(client.query.mock.calls.findIndex(([sql])=>/INSERT INTO parcel_items/.test(sql)));
+  expect(itemInserts[0][0]).toMatch(/qty_shipped,qty_received/);
+  expect(itemInserts[0][0]).toMatch(/\$4,\$4,0,\$4/);
+});
+test('unknown provenance or fully imported order fails closed',async()=>{
+  setup({items:[{...item,fulfillment_source:null}]});
+  expect((await execute()).body.code).toBe('LOCAL_RECEIPT_INVALID_PROVENANCE');
+  setup({items:[{...item,fulfillment_source:'IMPORT'}]});
+  expect((await execute()).body.code).toBe('LOCAL_RECEIPT_INVALID_PROVENANCE');
 });
 test('paid allocation must match local quantity',async()=>{
   setup({consumed:1});
