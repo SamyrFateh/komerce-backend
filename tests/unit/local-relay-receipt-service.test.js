@@ -17,16 +17,17 @@ const {recordLocalRelayReceipt}=require('../../services/local-relay-receipt-serv
 
 const ORDER='00000000-0000-0000-0000-000000000011';
 const RELAY='00000000-0000-0000-0000-000000000022';
+const MARKET='00000000-0000-0000-0000-000000000077';
 const actor={id:'00000000-0000-0000-0000-000000000033',role:'agent_relais',relais_id:RELAY};
 const item={id:'00000000-0000-0000-0000-000000000044',product_id:'00000000-0000-0000-0000-000000000055',quantity:2,fulfillment_source:'LOCAL_STOCK'};
 let client;
 
-function setup({status='confirmed',paid='paid',items=[item],consumed=2,existing=[]}={}) {
+function setup({status='confirmed',paid='paid',items=[item],consumed=2,allocationProduct=item.product_id,allocationMarket=MARKET,existing=[]}={}) {
   client={release:jest.fn(),query:jest.fn(async(sql)=>{
     if (/^SELECT o.id, o.reference, o.status/.test(sql))
-      return {rows:[{id:ORDER,reference:'KOM-2026-1',relais_id:RELAY,user_id:'u',relais_name:'Relais',status,payment_status:paid}]};
+      return {rows:[{id:ORDER,reference:'KOM-2026-1',relais_id:RELAY,user_id:'u',market_id:MARKET,relais_name:'Relais',status,payment_status:paid}]};
     if (/^SELECT id,product_id,quantity/.test(sql))return {rows:items};
-    if (sql.includes('AS consumed FROM local_stock_allocations'))return {rows:[{consumed}]};
+    if (sql.includes('FROM local_stock_allocations lsa'))return {rows:[{product_id:allocationProduct,market_id:allocationMarket,consumed}]};
     if (/^SELECT p.id FROM parcels/.test(sql))return {rows:existing};
     if (/INSERT INTO scans/.test(sql))return {rows:[{id:'00000000-0000-0000-0000-000000000066'}]};
     return {rows:[],rowCount:1};
@@ -81,6 +82,13 @@ test('paid allocation must match local quantity',async()=>{
   setup({consumed:1});
   const r=await execute();
   expect(r.body.code).toBe('LOCAL_RECEIPT_ALLOCATION_MISMATCH');
+  expect(written(/INSERT INTO/)).toBe(false);
+});
+test('allocation of equal quantity but wrong SKU or market is refused',async()=>{
+  setup({consumed:2,allocationProduct:'other-product'});
+  expect((await execute()).body.code).toBe('LOCAL_RECEIPT_ALLOCATION_MISMATCH');
+  setup({consumed:2,allocationMarket:'other-market'});
+  expect((await execute()).body.code).toBe('LOCAL_RECEIPT_ALLOCATION_MISMATCH');
   expect(written(/INSERT INTO/)).toBe(false);
 });
 test('never duplicates an existing parcel',async()=>{
