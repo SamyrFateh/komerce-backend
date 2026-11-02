@@ -28,6 +28,8 @@
   const PO_STAGE = Object.freeze({
     draft: 'À préparer', notified: 'En cours', confirmed: 'En cours',
     shipped: 'Fournisseur expédié', hub_received: 'Réceptionnée', cancelled: 'Annulée',
+    issued_not_sent: 'À envoyer', sent: 'Envoyée', partially_received: 'Partiellement reçue',
+    received: 'Reçue',
   });
   const safe = value => String(value == null ? '' : value);
   const parseBranch = search => {
@@ -230,11 +232,16 @@
       try {
         let rows;
         if (branch === 'administrative') {
-          const payload = await requestJSON(fetchFn, '/api/purchasing');
+          // Marché explicite : même projection PO mono-marché que le dossier Hub.
+          // Sans marché : liste administrative existante, à portée globale.
+          const market = marketOverride || selectedMarket(location);
+          const payload = await requestJSON(fetchFn, market
+            ? '/api/hub/dossier?market=' + encodeURIComponent(market)
+            : '/api/purchasing');
           rows = (Array.isArray(payload.purchase_orders) ? payload.purchase_orders : []).map(po => ({
             id: po.id, title: 'PO ' + smallRef(po.id),
             secondary: po.supplier_name || 'Fournisseur non renseigné',
-            tertiary: (PO_STAGE[po.status] || po.status || 'Statut inconnu') +
+            tertiary: (PO_STAGE[po.stage || po.status] || po.stage || po.status || 'Statut inconnu') +
               (po.order_ref ? ' · ' + po.order_ref : ''),
           }));
         } else {
