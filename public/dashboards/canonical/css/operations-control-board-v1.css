@@ -917,3 +917,47 @@ body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-contr
     transition: none;
   }
 }
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-operations-refresh {
+  float: right;
+  margin: 8px 0;
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ocb-ink);
+  background: #fff;
+  border: 1px solid var(--ocb-line);
+  border-radius: 8px;
+  cursor: pointer;
+}
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-operations-refresh:hover,
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-operations-refresh:focus-visible {
+  border-color: var(--ocb-blue);
+}
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-operations-refresh:disabled {
+  opacity: .65;
+  cursor: wait;
+}
+body.kmc-shell-v4 .kmc-control-order-action,
+body.kmc-shell-v4 .kmc-control-order-open {
+  display: inline-block;
+  margin: 10px 14px 0 0;
+  padding: 7px 10px;
+  border: 1px solid var(--ocb-line);
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 700;
+}
+body.kmc-shell-v4 .kmc-control-order-action {
+  background: var(--ocb-ink);
+  color: #fff;
+}
+body.kmc-shell-v4 .kmc-control-order-open {
+  background: #fff;
+  color: var(--ocb-ink);
+}
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-chain[data-phase-count="1"] {
+  grid-template-columns: minmax(200px, 1fr);
+}
