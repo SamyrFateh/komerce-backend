@@ -238,9 +238,9 @@ test.describe('Operations — logistics control board', () => {
       '5 commandes positionnées', '6 commandes positionnées',
       '2 commandes positionnées', 'Non projetée ici · voir Order 360',
     ]);
-    await expect(phases.nth(1)).toHaveAttribute('href', /\/admin\/workspaces\/purchasing/);
-    await expect(phases.nth(2)).toHaveAttribute('href', /\/admin\/workspaces\/operations/);
-    await expect(phases.nth(3)).toHaveAttribute('href', /\/admin\/workspaces\/shipping-customs/);
+    await expect(phases.nth(1)).toHaveAttribute('href', /stage=PURCHASING/);
+    await expect(phases.nth(2)).toHaveAttribute('href', /stage=HUB/);
+    await expect(phases.nth(3)).toHaveAttribute('href', /stage=CUSTOMS/);
     await expect(phases.nth(5)).not.toHaveAttribute('href', /./);
     await expect(page.locator('.kmc-control-stage')).toHaveCount(5);
     await expect(page.locator('#operations-stage-hub')).toBeAttached();
