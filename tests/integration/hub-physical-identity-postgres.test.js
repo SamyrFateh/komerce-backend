@@ -235,6 +235,14 @@ beforeAll(async () => {
       );
     `);
     await client.query(migrationSql);
+    // Cette suite isole HUB-001 dans un schéma local créé depuis la migration 233.
+    // Le writer canonique contient désormais les colonnes passives des lots 392/393 ;
+    // leur présence doit être reproduite ici sans appliquer une migration public.*
+    // à la base isolée ni changer les règles métier historiques testées.
+    await client.query(`ALTER TABLE hub_physical_units
+      ADD COLUMN order_id uuid, ADD COLUMN bag_plan jsonb`);
+    await client.query(`ALTER TABLE hub_physical_unit_placements
+      ADD COLUMN evidence_method text, ADD COLUMN evidence_code text, ADD COLUMN evidence_ref text`);
     for (const name of ['263_purchase_lines_foundation.sql', '264_purchase_line_progress_view.sql', '265_hub_allocations_purchase_line.sql', '266_purchase_orders_grouped_form.sql', '306_purchase_line_progress_physical.sql', '309_hub_placement_guard_exclude_outcomes.sql']) {
       await client.query(fs.readFileSync(path.join(__dirname, '../../migrations', name), 'utf8').replace(/public\./g, `${schema}.`));
     }
