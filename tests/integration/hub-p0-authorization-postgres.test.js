@@ -8,7 +8,6 @@
  * @brief HUB P0 (#3247) — frontière d'autorisation HTTP réelle : agent_hub constitue les PO et lit le dossier ; market_operator sans délégation ne lit pas un marché et n'écrit aucune PO.
  */
 
-process.env.KOMERCE_GROUPED_PURCHASING = '1';
 
 jest.setTimeout(60000);
 

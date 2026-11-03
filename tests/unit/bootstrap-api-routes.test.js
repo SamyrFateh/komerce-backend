@@ -35,7 +35,7 @@ const ROUTE_MODULE_NAMES = [
   'admin/catalog-approval',
   'auth', 'auto-distribute-api', 'baskets', 'boutique-suggestions', 'carriers',
   'cash', 'categories', 'client-auth', 'client-notifications', 'client-tracking', 'dashboard', 'economic',
-  'documents', 'finance', 'health', 'hub', 'hub-dashboard', 'hub-mark-ordered', 'inventory-api',
+  'documents', 'finance', 'health', 'hub', 'hub-dashboard', 'inventory-api',
   'invoices', 'logistics', 'loyalty', 'meta-whatsapp', 'modules', 'notification-api',
   'ops-api', 'order-api-v2', 'orders', 'otp', 'parcel-api-v2', 'parcel-label',
   'parcels', 'payments', 'payments-paypal', 'pickup-secret', 'pricing',
@@ -200,7 +200,7 @@ describe('bootstrap/api-routes', () => {
       expect(mountedPaths).not.toContain('/api/admin/collective');
     });
 
-    test('monte hub-mark-ordered et auto-distribute-api sur le même préfixe /api/hub que hub principal', () => {
+    test('monte auto-distribute-api sur le même préfixe /api/hub que hub principal', () => {
       const apiRoutes = loadApiRoutes();
       const app = fakeApp();
       apiRoutes.mountApiRoutesAfterStripeOwnedBlocks(app);
@@ -209,7 +209,6 @@ describe('bootstrap/api-routes', () => {
       expect(hubCalls.map(c => c[1])).toEqual(
         expect.arrayContaining([
           mockMarkers['hub'],
-          mockMarkers['hub-mark-ordered'],
           mockMarkers['auto-distribute-api'],
         ])
       );

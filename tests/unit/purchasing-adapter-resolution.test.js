@@ -101,13 +101,10 @@ describe('purchasing-trigger-service.js ne contient plus aucun littéral de prov
     expect(src).not.toMatch(/function (noon|amazon|aliexpress)Order/);
   });
 
-  test('callSupplierAPI résout via le registry + validateAdapter, jamais via switch(platform)', () => {
-    const src = fs.readFileSync(
-      path.join(__dirname, '..', '..', 'services', 'purchasing-trigger-service.js'), 'utf8'
-    );
-    expect(src).not.toMatch(/switch\s*\(\s*ps\.platform\s*\)/);
-    expect(src).toMatch(/EXECUTION_ADAPTER_REGISTRY/);
-    expect(src).toMatch(/validateAdapter/);
+  test('le déclencheur ne résout aucun adapter et n\'appelle jamais un fournisseur (P0-5)', () => {
+    const src = fs.readFileSync(path.join(__dirname, '../../services/purchasing-trigger-service.js'), 'utf8');
+    expect(src).not.toMatch(/EXECUTION_ADAPTER_REGISTRY/);
+    expect(src).not.toMatch(/placeOrder|callSupplierAPI|validateAdapter/);
   });
 });
 
@@ -135,64 +132,7 @@ describe('execution-adapter-registry — composition root', () => {
 // Caractérisation AVANT — le chemin manuel Golden Allegro reste inchangé
 // ═════════════════════════════════════════════════════════════════════════════
 
-describe('caractérisation — Allegro auto_order=false ne touche jamais la résolution d\'adapter', () => {
-  test('auto_order=false → callSupplierAPI jamais invoqué, mode manuel identique au Golden actuel', async () => {
-    process.env.ADMIN_PHONE = '+269900000';
-    db.query.mockResolvedValueOnce({ rows: [order] }).mockResolvedValueOnce({ rows: [item] });
-    const client = makeClient([
-      { rows: [supplierRow({ auto_order: false, platform: 'allegro' })] },
-      { rows: [] },
-      { rows: [{ id: '00000000-0000-0000-0000-000000000301' }] },
-      {},
-    ]);
-    db.getClient.mockResolvedValue(client);
-
-    const result = await triggerPurchasing('o1');
-
-    expect(result.purchase_orders).toEqual([{ item: 'Sac Ali', status: 'admin_notified', purchase_order_id: '00000000-0000-0000-0000-000000000301', inbound_tag: 'KOM-IN-00000000000000000000000000000301' }]);
-  });
-});
-
-// ═════════════════════════════════════════════════════════════════════════════
-// Fail-closed — provider inconnu vs adapter connu sans placeOrder
-// ═════════════════════════════════════════════════════════════════════════════
-
 describe('résolution fail-closed — deux causes distinctes, jamais confondues', () => {
-  test('provider inconnu (non enregistré) + auto_order=true → échec explicite "adapter absent"', async () => {
-    process.env.ADMIN_PHONE = '+269900000';
-    db.query.mockResolvedValueOnce({ rows: [order] }).mockResolvedValueOnce({ rows: [item] });
-    const client = makeClient([
-      { rows: [supplierRow({ auto_order: true, platform: 'totally_unknown_provider' })] },
-      { rows: [] },
-      { rows: [{ id: '00000000-0000-0000-0000-000000000301' }] },
-      {}, // UPDATE status notified (api_failed_notified path)
-    ]);
-    db.getClient.mockResolvedValue(client);
-
-    const result = await triggerPurchasing('o1');
-
-    expect(result.purchase_orders[0].status).toBe('api_failed_notified');
-  });
-
-  test('adapter connu (allegro) sans placeOrder + auto_order=true → échec explicite "sans capacité placeOrder", pas un crash', async () => {
-    process.env.ADMIN_PHONE = '+269900000';
-    db.query.mockResolvedValueOnce({ rows: [order] }).mockResolvedValueOnce({ rows: [item] });
-    const client = makeClient([
-      { rows: [supplierRow({ auto_order: true, platform: 'allegro' })] },
-      { rows: [] },
-      { rows: [{ id: '00000000-0000-0000-0000-000000000301' }] },
-      {},
-    ]);
-    db.getClient.mockResolvedValue(client);
-
-    const result = await triggerPurchasing('o1');
-
-    // Même résultat observable que "provider inconnu" (api_failed_notified,
-    // mode manuel) — c'est la DISTINCTION de la cause (testée séparément
-    // via callSupplierAPI ci-dessous) qui change, pas le comportement.
-    expect(result.purchase_orders[0].status).toBe('api_failed_notified');
-  });
-
   test('les deux causes d\'échec produisent des messages .error distincts (pas de success:false silencieux ambigu)', async () => {
     // Test direct de callSupplierAPI (exporté ? non — testé via triggerPurchasing
     // + interception de notifyAdminManual serait indirect ; on vérifie donc le

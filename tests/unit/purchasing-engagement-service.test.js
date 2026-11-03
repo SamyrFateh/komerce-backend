@@ -69,11 +69,10 @@ const submitLine = (extra = {}) => ({
 
 beforeEach(() => {
   jest.clearAllMocks();
-  process.env.KOMERCE_GROUPED_PURCHASING = '1';
   for (const key of Object.keys(mockRegistry)) delete mockRegistry[key];
   db.query.mockResolvedValue({ rows: [] });
 });
-afterEach(() => { delete process.env.KOMERCE_GROUPED_PURCHASING; delete process.env.ADMIN_PHONE; });
+afterEach(() => { delete process.env.ADMIN_PHONE; });
 
 describe('summarizeCommitmentByMarket', () => {
   const line = (market, code, qty, price, currency = 'USD', cancelled = false) => ({
@@ -106,15 +105,7 @@ describe('summarizeCommitmentByMarket', () => {
 });
 
 describe('garde-fous communs', () => {
-  it('drapeau éteint → 409 sur les quatre entrées ; identifiants invalides → 400', async () => {
-    delete process.env.KOMERCE_GROUPED_PURCHASING;
-    for (const call of [
-      () => engagement.submitPurchaseOrder(PO),
-      () => engagement.confirmGroupedPurchaseOrder(PO, {}),
-      () => engagement.settleLine(L1, {}),
-      () => engagement.createManualLine({}),
-    ]) await expect(call()).rejects.toMatchObject({ status: 409, code: 'GROUPED_PURCHASING_DISABLED' });
-    process.env.KOMERCE_GROUPED_PURCHASING = '1';
+  it('identifiants invalides → 400, sans ouvrir de transaction', async () => {
     await expect(engagement.submitPurchaseOrder('x')).rejects.toMatchObject({ status: 400 });
     await expect(engagement.confirmGroupedPurchaseOrder('x', { lines: [] })).rejects.toMatchObject({ status: 400 });
     await expect(engagement.settleLine('x', {})).rejects.toMatchObject({ status: 400 });
@@ -232,10 +223,10 @@ describe('confirmGroupedPurchaseOrder — garde-fous', () => {
     const { calls } = scripted([
       [/FROM purchase_orders WHERE id = \$1 FOR UPDATE/, { rows: [poRow({ status: 'notified' })] }],
       [/FROM purchase_lines\s+WHERE purchase_order_id/, { rows: [
-        { id: L1, quantity: 2, supplier_unit_ref: 'U1', supplier_sku: 'S', supplier_order_identity: identity },
-        { id: L2, quantity: 3, supplier_unit_ref: 'U1', supplier_sku: 'S', supplier_order_identity: identity },
-        { id: uuid(13), quantity: 1, supplier_unit_ref: 'U9', supplier_sku: 'S', supplier_order_identity: null },
-        { id: uuid(14), quantity: 1, supplier_unit_ref: 'U8', supplier_sku: 'S', supplier_order_identity: identity },
+        { id: L1, quantity: 2, supplier_unit_ref: 'U1', supplier_sku: 'S', supplier_unit_price: 10, supplier_order_identity: identity },
+        { id: L2, quantity: 3, supplier_unit_ref: 'U1', supplier_sku: 'S', supplier_unit_price: 10, supplier_order_identity: identity },
+        { id: uuid(13), quantity: 1, supplier_unit_ref: 'U9', supplier_sku: 'S', supplier_unit_price: 10, supplier_order_identity: null },
+        { id: uuid(14), quantity: 1, supplier_unit_ref: 'U8', supplier_sku: 'S', supplier_unit_price: 10, supplier_order_identity: identity },
       ] }],
       [/INSERT INTO purchase_lines/, { rows: [{ id: uuid(97) }] }],
     ]);
@@ -259,7 +250,7 @@ describe('confirmGroupedPurchaseOrder — garde-fous', () => {
     mockVerify.mockResolvedValue({ required: false, provider: 'noon' });
     const { calls } = scripted([
       [/FROM purchase_orders WHERE id = \$1 FOR UPDATE/, { rows: [poRow({ status: 'notified' })] }],
-      [/FROM purchase_lines\s+WHERE purchase_order_id/, { rows: [{ id: L1, quantity: 1, supplier_unit_ref: 'U1', supplier_sku: 'S', supplier_order_identity: { provider: 'noon' } }] }],
+      [/FROM purchase_lines\s+WHERE purchase_order_id/, { rows: [{ id: L1, quantity: 1, supplier_unit_ref: 'U1', supplier_sku: 'S', supplier_unit_price: 10, supplier_order_identity: { provider: 'noon' } }] }],
     ]);
     db.query.mockResolvedValue({ rows: [{ id: PO, status: 'confirmed' }] });
     await engagement.confirmGroupedPurchaseOrder(PO, { supplier_order_id: 'RAW', notes: 'ok', lines: okLines });
@@ -270,7 +261,7 @@ describe('confirmGroupedPurchaseOrder — garde-fous', () => {
     mockVerify.mockResolvedValue({ required: true, provider: 'allegro', commitment_verdict: 'rejected' });
     scripted([
       [/FROM purchase_orders WHERE id = \$1 FOR UPDATE/, { rows: [poRow({ status: 'notified' })] }],
-      [/FROM purchase_lines\s+WHERE purchase_order_id/, { rows: [{ id: L1, quantity: 1, supplier_unit_ref: 'U1', supplier_sku: 'S', supplier_order_identity: { provider: 'allegro' } }] }],
+      [/FROM purchase_lines\s+WHERE purchase_order_id/, { rows: [{ id: L1, quantity: 1, supplier_unit_ref: 'U1', supplier_sku: 'S', supplier_unit_price: 10, supplier_order_identity: { provider: 'allegro' } }] }],
     ]);
     await expect(engagement.confirmGroupedPurchaseOrder(PO, { lines: okLines })).rejects.toThrow(/raison inconnue/);
   });

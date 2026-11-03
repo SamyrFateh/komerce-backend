@@ -91,14 +91,13 @@ describe('purchasing exact SKU procurement', () => {
     expect(client.calls.some(c => c.sql.includes('INSERT INTO purchase_orders'))).toBe(false);
   });
 
-  it('IMPORT + sku_id snapshotte SOI exacte et monnaie fournisseur native', async () => {
+  it('IMPORT + sku_id : ligne ouverte portant la SOI exacte et la monnaie fournisseur native, aucune PO', async () => {
     const item = {
       id: 'oi-import', product_id: 'p1', product_name: 'T-shirt', category: 'mode',
       quantity: 2, sku_id: 'sku-black-m', fulfillment_source: 'IMPORT', price_aed: 50,
     };
     db.query.mockResolvedValueOnce({ rows: [ORDER] }).mockResolvedValueOnce({ rows: [item] });
 
-    let insertParams = null;
     let lineParams = null;
     const client = makeClient((sql, params) => {
       if (sql.includes('INSERT INTO purchase_lines')) { lineParams = params; return { rows: [{ id: 'line-1' }] }; }
@@ -113,12 +112,6 @@ describe('purchasing exact SKU procurement', () => {
         api_secret_enc: null, lead_time_days: 5, supplier_url: null,
       }] };
       if (sql.includes('FROM v_purchase_line_progress')) return { rows: [] };
-      if (sql.startsWith('SELECT id, status') && sql.includes('FROM purchase_orders')) return { rows: [] };
-      if (sql.includes('INSERT INTO purchase_orders')) {
-        insertParams = params;
-        return { rows: [{ id: '00000000-0000-0000-0000-000000000201' }] };
-      }
-      if (sql.startsWith('UPDATE purchase_orders')) return { rows: [] };
       throw new Error(`SQL inattendu: ${sql}`);
     });
     db.getClient.mockResolvedValue(client);
@@ -126,37 +119,24 @@ describe('purchasing exact SKU procurement', () => {
     const result = await triggerPurchasing(ORDER.id);
 
     expect(result.purchase_orders[0]).toEqual({
-      item: 'T-shirt', status: 'admin_notified', purchase_order_id: '00000000-0000-0000-0000-000000000201',
-    inbound_tag: 'KOM-IN-00000000000000000000000000000201',
+      item: 'T-shirt', status: 'line_opened', purchase_order_id: null, purchase_line_id: 'line-1',
     });
     expect(evaluateCanonicalProcurementReadiness).toHaveBeenCalledWith(expect.objectContaining({
       productSkuId: 'sku-black-m', quantity: 2, soldIdentity: IDENTITY,
     }));
     expect(client.calls.find(c => c.sql.includes('FROM product_suppliers')).sql).toContain('lower(s.platform) = lower($2)');
-    expect(insertParams[0]).toBe(ORDER.id);
-    expect(insertParams[1]).toBe('oi-import');
-    expect(insertParams[4]).toBe('sku-black-m');
-    expect(insertParams[5]).toBe('ALI-BLACK-M');
-    expect(insertParams[6]).toBe('UNIT-BLACK-M');
-    expect(JSON.parse(insertParams[7])).toEqual(IDENTITY);
-    expect(insertParams[8]).toBe(2);
-    expect(insertParams[9]).toBeNull();
-    expect(insertParams[10]).toBe(29.9);
-    expect(insertParams[11]).toBe('PLN');
-    expect(insertParams[12]).toBe('manual');
-    // Écriture double : la ligne d'achat porte le même instantané, rattachée à la PO, hub par défaut DXB.
-    expect(lineParams[0]).toBe('00000000-0000-0000-0000-000000000201');
-    expect(lineParams[1]).toBe('oi-import');
-    expect(lineParams[2]).toBe('sup1');
-    expect(lineParams[3]).toBe('ps1');
-    expect(lineParams[4]).toBe('sku-black-m');
-    expect(lineParams[5]).toBe('ALI-BLACK-M');
-    expect(lineParams[6]).toBe('UNIT-BLACK-M');
-    expect(JSON.parse(lineParams[7])).toEqual(IDENTITY);
-    expect(lineParams[8]).toBe(2);
-    expect(lineParams[9]).toBe(29.9);
-    expect(lineParams[10]).toBe('PLN');
-    expect(lineParams[11]).toBe('DXB');
+    expect(client.calls.some(c => c.sql.includes('INSERT INTO purchase_orders'))).toBe(false);
+    expect(lineParams[0]).toBe('oi-import');
+    expect(lineParams[1]).toBe('sup1');
+    expect(lineParams[2]).toBe('ps1');
+    expect(lineParams[3]).toBe('sku-black-m');
+    expect(lineParams[4]).toBe('ALI-BLACK-M');
+    expect(lineParams[5]).toBe('UNIT-BLACK-M');
+    expect(JSON.parse(lineParams[6])).toEqual(IDENTITY);
+    expect(lineParams[7]).toBe(2);
+    expect(lineParams[8]).toBe(29.9);
+    expect(lineParams[9]).toBe('PLN');
+    expect(lineParams[10]).toBe('DXB');
   });
 
   it('GAP-4A — readiness bloquée (adapter requis absent, identité divergente, etc.) devient une erreur item avec alerte, comme avant', async () => {
@@ -187,51 +167,6 @@ describe('purchasing exact SKU procurement', () => {
     expect(createAlert).toHaveBeenCalledWith(client, expect.objectContaining({ type: 'purchasing_po_creation_failed' }));
   });
 
-  it('GAP-4B — AliExpress exact-sku reste en mode manuel sans opt-in d exécution, jamais un crash', async () => {
-    const item = {
-      id: 'oi-auto', product_id: 'p1', product_name: 'T-shirt', category: 'mode',
-      quantity: 1, sku_id: 'sku-black-m', fulfillment_source: 'IMPORT', price_aed: 50,
-    };
-    db.query.mockResolvedValueOnce({ rows: [ORDER] }).mockResolvedValueOnce({ rows: [item] });
-
-    let updateSql = null;
-    const client = makeClient((sql, params) => {
-      if (sql.includes('FROM product_skus')) return { rows: [{
-        id: 'sku-black-m', product_id: 'p1', supplier_sku: 'ALI-BLACK-M',
-        supplier_unit_ref: 'UNIT-BLACK-M', supplier_order_identity: IDENTITY,
-      }] };
-      if (sql.includes('FROM product_suppliers')) return { rows: [{
-        id: 'ps1', supplier_id: 'sup1', supplier_sku: 'GENERIC-PRODUCT-SKU',
-        supplier_price_aed: null, supplier_name: 'AliExpress', platform: 'aliexpress',
-        auto_order: true, contact_phone: null, account_id: null, api_key_enc: null,
-        api_secret_enc: null, lead_time_days: 5, supplier_url: null,
-      }] };
-      if (sql.includes('FROM v_purchase_line_progress')) return { rows: [] };
-      if (sql.startsWith('SELECT id, status') && sql.includes('FROM purchase_orders')) return { rows: [] };
-      if (sql.includes('INSERT INTO purchase_orders')) return { rows: [{ id: '00000000-0000-0000-0000-000000000201' }] };
-      if (sql.includes('INSERT INTO purchase_lines')) return { rows: [{ id: 'line-1' }] };
-      if (sql.startsWith('UPDATE purchase_orders')) { updateSql = sql; return { rows: [] }; }
-      throw new Error(`SQL inattendu: ${sql}`);
-    });
-    db.getClient.mockResolvedValue(client);
-
-    const result = await triggerPurchasing(ORDER.id);
-
-    expect(result.purchase_orders[0]).toEqual({
-      item: 'T-shirt',
-      status: 'api_failed_notified',
-      purchase_order_id: '00000000-0000-0000-0000-000000000201',
-      inbound_tag: 'KOM-IN-00000000000000000000000000000201',
-      error: 'Procurement Execution Boundary non atteinte (CERTIFICATION_RUNTIME_ENVIRONMENT_REQUIRED)',
-    });
-    // Mode manuel — jamais 'confirmed' — car l'exécution AliExpress est fermée sans opt-in.
-    const postCommitUpdate = db.query.mock.calls.find(([sql]) =>
-      String(sql).includes("SET status='notified', trigger_mode='manual'")
-    );
-    expect(postCommitUpdate).toBeTruthy();
-    expect(updateSql).toBeNull();
-  });
-
   it('IMPORT + sku_id sans SOI bloque avant le mapping fournisseur', async () => {
     const item = {
       id: 'oi-bad', product_id: 'p1', product_name: 'T-shirt', category: 'mode',
@@ -257,7 +192,7 @@ describe('purchasing exact SKU procurement', () => {
     expect(createAlert).toHaveBeenCalledWith(client, expect.objectContaining({ type: 'purchasing_po_creation_failed' }));
   });
 
-  describe('mode regroupé (KOMERCE_GROUPED_PURCHASING=1)', () => {
+  describe('couverture et mapping manuel', () => {
     const PS_ROW = {
       id: 'ps1', supplier_id: 'sup1', supplier_sku: 'GENERIC', supplier_price_aed: null, supplier_name: 'AliExpress',
       platform: 'aliexpress', auto_order: true, contact_phone: null, account_id: null, api_key_enc: null,
@@ -267,8 +202,6 @@ describe('purchasing exact SKU procurement', () => {
       id: 'sku-black-m', product_id: 'p1', supplier_sku: 'ALI-BLACK-M',
       supplier_unit_ref: 'UNIT-BLACK-M', supplier_order_identity: IDENTITY,
     };
-    beforeEach(() => { process.env.KOMERCE_GROUPED_PURCHASING = '1'; });
-    afterEach(() => { delete process.env.KOMERCE_GROUPED_PURCHASING; });
 
     it('item à identité exacte → ligne ouverte sans PO, sans notification ni appel fournisseur', async () => {
       const item = {
@@ -315,31 +248,34 @@ describe('purchasing exact SKU procurement', () => {
 
       const result = await triggerPurchasing(ORDER.id);
 
-      expect(result.purchase_orders[0]).toMatchObject({ status: 'already_exists', purchase_order_id: null, inbound_tag: null });
+      expect(result.purchase_orders[0]).toMatchObject({ status: 'already_exists', purchase_order_id: null });
       expect(client.calls.some(c => c.sql.includes('INSERT INTO purchase_lines'))).toBe(false);
     });
 
-    it('item sans SKU exact → chemin historique inchangé (PO + ligne), jamais une ligne ouverte', async () => {
+    it('item sans SKU exact → ligne ouverte via mapping manuel (identité absente, prix AED du mapping), jamais une PO', async () => {
       const item = {
-        id: 'oi-legacy', product_id: 'p1', product_name: 'Legacy', category: 'mode',
+        id: 'oi-manual', product_id: 'p1', product_name: 'Manuel', category: 'mode',
         quantity: 1, sku_id: null, fulfillment_source: 'IMPORT', price_aed: 50,
       };
       db.query.mockResolvedValueOnce({ rows: [ORDER] }).mockResolvedValueOnce({ rows: [item] });
-      const client = makeClient((sql) => {
+      let lineParams = null;
+      const client = makeClient((sql, params) => {
         if (sql.includes('FROM product_suppliers')) return { rows: [{ ...PS_ROW, auto_order: false, platform: 'alibaba', supplier_price_aed: 12 }] };
         if (sql.includes('FROM v_purchase_line_progress')) return { rows: [] };
-        if (sql.startsWith('SELECT id, status') && sql.includes('FROM purchase_orders')) return { rows: [] };
-        if (sql.includes('INSERT INTO purchase_orders')) return { rows: [{ id: '00000000-0000-0000-0000-000000000301' }] };
-        if (sql.includes('INSERT INTO purchase_lines')) return { rows: [{ id: 'line-hist' }] };
-        if (sql.startsWith('UPDATE purchase_orders')) return { rows: [] };
+        if (sql.includes('INSERT INTO purchase_lines')) { lineParams = params; return { rows: [{ id: 'line-manual' }] }; }
         throw new Error(`SQL inattendu: ${sql}`);
       });
       db.getClient.mockResolvedValue(client);
 
       const result = await triggerPurchasing(ORDER.id);
 
-      expect(result.purchase_orders[0]).toMatchObject({ status: 'admin_notified', purchase_order_id: '00000000-0000-0000-0000-000000000301' });
-      expect(client.calls.find(c => c.sql.includes('INSERT INTO purchase_lines')).sql).not.toContain('VALUES (NULL,');
+      expect(result.purchase_orders[0]).toMatchObject({ status: 'line_opened', purchase_order_id: null, purchase_line_id: 'line-manual' });
+      expect(lineParams[3]).toBeNull();
+      expect(lineParams[5]).toBeNull();
+      expect(lineParams[6]).toBeNull();
+      expect(lineParams[8]).toBe(12);
+      expect(lineParams[9]).toBe('AED');
+      expect(client.calls.some(c => c.sql.includes('INSERT INTO purchase_orders'))).toBe(false);
     });
   });
 });

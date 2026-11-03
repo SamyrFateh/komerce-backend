@@ -92,7 +92,6 @@ module.exports = {
       'routes/orders/qr.js',
       'routes/orders/list.js',
       'routes/orders/cancel.js',
-      'routes/hub-mark-ordered.js',
       'routes/order-api-v2.js',
     ],
     boutique: [
@@ -146,7 +145,6 @@ module.exports = {
       'tests/unit/admin-order-refund-payment-service.test.js',
       'tests/unit/cancel-order-purchase-orders.test.js',
       'tests/unit/delete-order-cascade.test.js',
-      'tests/unit/hub-mark-ordered.test.js',
       'tests/unit/order-api-v2.test.js',
       'tests/unit/order-cost-snapshot.test.js',
       'tests/unit/order-display-snapshot.test.js',
@@ -240,7 +238,6 @@ module.exports = {
       'GET /api/admin/orders',
       'DELETE /api/admin/orders/:id',
       'POST /api/admin/orders/:id/refund',
-      'POST /api/hub/orders/mark-ordered',
       'POST /api/orders/:id/cancel-backorder',
       'PATCH /api/orders/:id/cost',
       'GET /api/orders/:id/history',

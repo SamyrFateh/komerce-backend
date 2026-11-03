@@ -8,7 +8,6 @@
  * @brief HUB P0 (#3247) — chaîne physique complète sur PostgreSQL réel : commandes → PO mono-marché/fournisseur → envoi → confirmation → réceptions partielles multi-colis → KOM-BOX → expédition → filiation, plus cas négatifs et concurrence.
  */
 
-process.env.KOMERCE_GROUPED_PURCHASING = '1';
 
 const crypto = require('crypto');
 

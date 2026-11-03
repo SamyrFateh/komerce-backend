@@ -30,11 +30,6 @@
   'use strict';
 
   const DECISION_COPY = Object.freeze({
-    'hub-order': Object.freeze({
-      label: 'Commandes à lancer',
-      helper: 'Commandes confirmées à envoyer au sourcing',
-      icon: '↗',
-    }),
     distribution: Object.freeze({
       label: 'Commandes à répartir',
       helper: 'Commandes non affectées à répartir dans les colis',
@@ -121,11 +116,10 @@
       {
         key: 'hub',
         title: 'Hub',
-        subtitle: 'Commander · répartir · expédier',
+        subtitle: 'Répartir · expédier',
         icon: 'H',
-        tone: cardTone(index, ['hub-order', 'distribution', 'ship']),
+        tone: cardTone(index, ['distribution', 'ship']),
         metrics: [
-          metric(index, 'hub-order', 'À commander'),
           metric(index, 'distribution', 'À répartir'),
           metric(index, 'ship', 'À expédier'),
         ],

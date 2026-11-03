@@ -125,7 +125,6 @@ test('buildQueues ne crée aucune transition métier côté présentation', () =
     ]
   );
 
-  expect(queues.hub.to_order.map(row => row.reference)).toEqual(['CMD-1']);
   expect(queues.hub.to_ship.map(row => row.reference)).toEqual(['PCL-1']);
   expect(queues.relay.cash_pending.map(row => row.reference)).toEqual(['CMD-2']);
   expect(queues.relay.to_receive.map(row => row.reference)).toEqual(['PCL-2']);

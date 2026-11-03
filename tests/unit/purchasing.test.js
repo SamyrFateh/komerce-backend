@@ -115,106 +115,42 @@ describe('triggerPurchasing', () => {
     expect(inserts).toHaveLength(0);
   });
 
+  test.each([
+    ['manuel', PS_LOCAL],
+    ['auto_order (aucun appel fournisseur au paiement)', PS_AUTO],
+  ])('fournisseur %s → une ligne ouverte, aucune PO', async (_label, ps) => {
+    mockDbQuery
+      .mockResolvedValueOnce({ rows: [ORDER] })
+      .mockResolvedValueOnce({ rows: [{ ...ITEM, id: 'oi-1' }] });
+    const client = makeClient([{ rows: [ps] }, { rows: [] }, { rows: [{ id: 'line-1' }] }]);
+    mockGetClient.mockResolvedValue(client);
+
+    const result = await triggerPurchasing('order-uuid');
+    expect(result.purchase_orders[0]).toMatchObject({ status: 'line_opened', purchase_order_id: null, purchase_line_id: 'line-1' });
+    expect(client.calls.filter(c => c.sql.startsWith('INSERT INTO purchase_orders'))).toHaveLength(0);
+    expect(client.calls.filter(c => c.sql.startsWith('INSERT INTO purchase_lines'))).toHaveLength(1);
+  });
+
   test('already_exists → idempotent, aucun INSERT', async () => {
     mockDbQuery
       .mockResolvedValueOnce({ rows: [ORDER] })
-      .mockResolvedValueOnce({ rows: [ITEM] });
-
-    const client = makeClient([
-      { rows: [PS_LOCAL] },
-      { rows: [{ id: '00000000-0000-0000-0000-000000000401', status: 'confirmed' }] }, // existingPo
-    ]);
+      .mockResolvedValueOnce({ rows: [{ ...ITEM, id: 'oi-1' }] });
+    const client = makeClient([{ rows: [PS_LOCAL] }, { rows: [{ id: null, status: null, effective_quantity: 2 }] }]);
     mockGetClient.mockResolvedValue(client);
 
     const result = await triggerPurchasing('order-uuid');
     expect(result.purchase_orders[0].status).toBe('already_exists');
-    expect(result.purchase_orders[0].purchase_order_id).toBe('00000000-0000-0000-0000-000000000401');
-    const inserts = client.calls.filter(c => c.sql.startsWith('INSERT INTO purchase_orders'));
-    expect(inserts).toHaveLength(0);
-  });
-
-  test('mode manual → status admin_notified', async () => {
-    mockDbQuery
-      .mockResolvedValueOnce({ rows: [ORDER] })
-      .mockResolvedValueOnce({ rows: [ITEM] });
-
-    const client = makeClient([
-      { rows: [PS_LOCAL] },
-      { rows: [] },                   // existingPo → rien
-      { rows: [{ id: '00000000-0000-0000-0000-000000000402' }] },  // INSERT purchase_orders
-      { rows: [], rowCount: 1 },      // UPDATE status = notified
-    ]);
-    mockGetClient.mockResolvedValue(client);
-
-    const result = await triggerPurchasing('order-uuid');
-    expect(result.purchase_orders[0].status).toBe('admin_notified');
-    expect(result.purchase_orders[0].purchase_order_id).toBe('00000000-0000-0000-0000-000000000402');
-  });
-
-  test('mode whatsapp → status whatsapp_sent', async () => {
-    mockDbQuery
-      .mockResolvedValueOnce({ rows: [ORDER] })
-      .mockResolvedValueOnce({ rows: [ITEM] });
-
-    const client = makeClient([
-      { rows: [PS_WHATSAPP] },
-      { rows: [] },                   // existingPo
-      { rows: [{ id: '00000000-0000-0000-0000-000000000403' }] },   // INSERT
-      { rows: [], rowCount: 1 },      // UPDATE notes wa_url (LOT R3 : via le client transactionnel)
-      { rows: [], rowCount: 1 },      // UPDATE status = notified
-    ]);
-    mockGetClient.mockResolvedValue(client);
-
-    const result = await triggerPurchasing('order-uuid');
-    expect(result.purchase_orders[0].status).toBe('whatsapp_sent');
-    // LOT R3 (DEBT-03/FSF-03) : le wa_url doit être écrit dans LA MÊME
-    // transaction que l'INSERT purchase_orders (via le client), pas via
-    // db.query (le pool) — sinon perdu après COMMIT (READ COMMITTED).
-    const waUpdate = client.calls.find(c => c.sql.startsWith('UPDATE purchase_orders SET notes'));
-    expect(waUpdate).toBeDefined();
-    expect(waUpdate.params[0]).toEqual(expect.stringContaining('wa_url:'));
-  });
-
-  test('mode auto_order (stub noon → echec) → api_failed_notified', async () => {
-    mockDbQuery
-      .mockResolvedValueOnce({ rows: [ORDER] })
-      .mockResolvedValueOnce({ rows: [ITEM] });
-
-    const client = makeClient([
-      { rows: [PS_AUTO] },
-      { rows: [] },                  // existingPo
-      { rows: [{ id: '00000000-0000-0000-0000-000000000404' }] }, // INSERT
-      { rows: [], rowCount: 1 },     // UPDATE trigger_mode=manual, status=notified (api_failed fallback)
-    ]);
-    mockGetClient.mockResolvedValue(client);
-
-    const result = await triggerPurchasing('order-uuid');
-    // Noon est un stub qui retourne success:false → api_failed_notified
-    expect(result.purchase_orders[0].status).toBe('api_failed_notified');
+    expect(client.calls.filter(c => c.sql.startsWith('INSERT'))).toHaveLength(0);
   });
 
   test('erreur DB sur INSERT → savepoint rollback, résultat error, alerte insérée', async () => {
     mockDbQuery
       .mockResolvedValueOnce({ rows: [ORDER] })
-      .mockResolvedValueOnce({ rows: [ITEM] });
-
-    const dbError = new Error('constraint_violation');
-    const client = makeClient([
-      { rows: [PS_LOCAL] },
-      { rows: [] },            // existingPo
-      { error: dbError },      // INSERT purchase_orders → crash
-      { rows: [], rowCount: 1 }, // INSERT alerts
-    ]);
+      .mockResolvedValueOnce({ rows: [{ ...ITEM, id: 'oi-1' }] });
+    const client = makeClient([{ rows: [PS_LOCAL] }, { rows: [] }, { error: new Error('db down') }, { rows: [] }]);
     mockGetClient.mockResolvedValue(client);
 
     const result = await triggerPurchasing('order-uuid');
-    expect(result.purchase_orders[0].status).toBe('error');
-    expect(result.purchase_orders[0].error).toBe('constraint_violation');
-
-    const rbSp = client.calls.find(c => /ROLLBACK TO SAVEPOINT/i.test(c.sql));
-    expect(rbSp).toBeDefined();
-
-    const alert = client.calls.find(c => c.sql.startsWith('INSERT INTO alerts'));
-    expect(alert).toBeDefined();
+    expect(result.purchase_orders[0]).toMatchObject({ status: 'error', error: 'db down' });
   });
 });

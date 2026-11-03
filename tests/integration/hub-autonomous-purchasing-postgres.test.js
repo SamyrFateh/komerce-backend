@@ -8,7 +8,6 @@
  * @brief HUB lot 1 — achats Hub autonomes : PO manuelle sans API (identité aliexpress, fournisseur local), réception directe sans confirmation fournisseur, reliquat automatique, changement de fournisseur avec filiation, mode API refusé hors provider, périmètre fournisseurs du Hub.
  */
 
-process.env.KOMERCE_GROUPED_PURCHASING = '1';
 
 jest.setTimeout(60000);
 

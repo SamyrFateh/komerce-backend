@@ -81,14 +81,14 @@ if (!hasIntegrationEnv) {
       FOR EACH ROW EXECUTE FUNCTION o9_fail_selected_alerts()
     `);
 
-    await fixtureLockClient.query('DROP TRIGGER IF EXISTS o9_fail_selected_po_trigger ON purchase_orders');
+    await fixtureLockClient.query('DROP TRIGGER IF EXISTS o9_fail_selected_po_trigger ON purchase_lines');
     await fixtureLockClient.query('DROP FUNCTION IF EXISTS o9_fail_selected_po()');
     await fixtureLockClient.query(`
       CREATE FUNCTION o9_fail_selected_po() RETURNS trigger
       LANGUAGE plpgsql AS $$
       BEGIN
         IF NEW.supplier_sku LIKE 'O9-FAIL-O9P0-%' THEN
-          RAISE EXCEPTION 'O9 forced purchase_order failure for %', NEW.supplier_sku;
+          RAISE EXCEPTION 'O9 forced purchase_line failure for %', NEW.supplier_sku;
         END IF;
         RETURN NEW;
       END;
@@ -96,7 +96,7 @@ if (!hasIntegrationEnv) {
     `);
     await fixtureLockClient.query(`
       CREATE TRIGGER o9_fail_selected_po_trigger
-      BEFORE INSERT ON purchase_orders
+      BEFORE INSERT ON purchase_lines
       FOR EACH ROW EXECUTE FUNCTION o9_fail_selected_po()
     `);
   }
@@ -105,7 +105,7 @@ if (!hasIntegrationEnv) {
     if (!fixtureLockClient) return;
     await fixtureLockClient.query('DROP TRIGGER IF EXISTS o9_fail_selected_alerts_trigger ON alerts').catch(() => {});
     await fixtureLockClient.query('DROP FUNCTION IF EXISTS o9_fail_selected_alerts()').catch(() => {});
-    await fixtureLockClient.query('DROP TRIGGER IF EXISTS o9_fail_selected_po_trigger ON purchase_orders').catch(() => {});
+    await fixtureLockClient.query('DROP TRIGGER IF EXISTS o9_fail_selected_po_trigger ON purchase_lines').catch(() => {});
     await fixtureLockClient.query('DROP FUNCTION IF EXISTS o9_fail_selected_po()').catch(() => {});
     await fixtureLockClient.query('SELECT pg_advisory_unlock($1)', [ADVISORY_LOCK_KEY]).catch(() => {});
     fixtureLockClient.release();
@@ -375,10 +375,11 @@ if (!hasIntegrationEnv) {
 
       expect(result.purchase_orders).toHaveLength(3);
       expect(result.purchase_orders.filter(r => r.status === 'error')).toHaveLength(1);
-      expect(result.purchase_orders.filter(r => r.purchase_order_id)).toHaveLength(2);
+      expect(result.purchase_orders.filter(r => r.status === 'line_opened')).toHaveLength(2);
 
       const { rows: pos } = await db.query(
-        'SELECT supplier_sku, status FROM purchase_orders WHERE order_id = $1 ORDER BY supplier_sku',
+        `SELECT pl.supplier_sku FROM purchase_lines pl JOIN order_items oi ON oi.id = pl.order_item_id
+          WHERE oi.order_id = $1 ORDER BY pl.supplier_sku`,
         [order.id]
       );
       expect(pos).toHaveLength(2);

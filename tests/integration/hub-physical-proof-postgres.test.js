@@ -8,7 +8,6 @@
  * @brief HUB lot 2 — une seule vérité physique : le colis client (parcel_items) d'un article d'import est dérivé des réceptions Hub et des placements en KOM-BOX ; aucune quantité affectée/emballée/expédiée sans preuve, expédié <= placé <= reçu.
  */
 
-process.env.KOMERCE_GROUPED_PURCHASING = '1';
 jest.setTimeout(60000);
 
 const crypto = require('crypto');

@@ -113,7 +113,6 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   const inventoryApiRouter = require('../routes/inventory-api');
   const transitaireApiRouter = require('../routes/transitaire-api');
   const autoDistributeRouter = require('../routes/auto-distribute-api');
-  const hubMarkOrderedRouter = require('../routes/hub-mark-ordered');
   const sharesRouter = require('../routes/shares');
   const localStockRouter = require('../routes/local-stock');
   const providersServicesRouter = require('../routes/providers-services');
@@ -233,7 +232,6 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   app.use('/api/logistics',  logisticsRouter);
   app.use('/api/parcels',    parcelsRouter);
   app.use('/api/hub',        hubRouter);
-  app.use('/api/hub',        hubMarkOrderedRouter);
   app.use('/api/hub/inventory', inventoryApiRouter);
   app.use('/api/transitaire', transitaireApiRouter);
   app.use('/api/hub', autoDistributeRouter);

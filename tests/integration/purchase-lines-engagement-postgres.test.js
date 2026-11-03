@@ -145,13 +145,12 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
   });
 
   beforeEach(async () => {
-    process.env.KOMERCE_GROUPED_PURCHASING = '1';
     mockNotifyText.mockClear();
     mockReadiness.mockReset();
     mockReadiness.mockResolvedValue({ ready: true, status: 'FULFILLMENT_READY', preflight: { ready: true, evidence: { manual_procurement_ready: true } } });
     await newSchema();
   });
-  afterEach(() => { delete process.env.KOMERCE_GROUPED_PURCHASING; delete process.env.ADMIN_PHONE; });
+  afterEach(() => { delete process.env.ADMIN_PHONE; });
 
   // ─── fixtures ─────────────────────────────────────────────────────────────────────────────────
   async function seedSupplier({ platform = 'manual', name = 'Fournisseur', phone = null } = {}) {
@@ -288,7 +287,7 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
       expect((await row('SELECT status FROM purchase_orders WHERE id=$1', [po.id])).status).toBe('draft');
     });
 
-    it('PO déjà soumise, historique ou introuvable : 409 / 404 ; flag éteint : 409', async () => {
+    it('PO déjà soumise, historique ou introuvable : 409 / 404', async () => {
       const supplier = await seedSupplier();
       const a = await seedLine({ supplier });
       const po = await preparedPo(supplier, [a.line]);
@@ -296,8 +295,6 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
       await expect(engagement.submitPurchaseOrder(po.id)).rejects.toMatchObject({ status: 409, code: 'PURCHASE_ORDER_NOT_DRAFT' });
       await expect(engagement.submitPurchaseOrder(id())).rejects.toMatchObject({ status: 404 });
       await expect(engagement.submitPurchaseOrder('pas-un-uuid')).rejects.toMatchObject({ status: 400 });
-      delete process.env.KOMERCE_GROUPED_PURCHASING;
-      await expect(engagement.submitPurchaseOrder(po.id)).rejects.toMatchObject({ status: 409, code: 'GROUPED_PURCHASING_DISABLED' });
     });
 
     it('une PO draft sans ligne active ne se soumet pas', async () => {

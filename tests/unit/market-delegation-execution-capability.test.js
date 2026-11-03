@@ -41,9 +41,9 @@ describe('market execution capability delegation', () => {
     expect(sql).not.toMatch(/UPDATE users/i);
   });
 
-  test('Workspace mappe chacune des 7 mutations à sa capability exacte', () => {
+  test('Workspace mappe chacune des 6 mutations à sa capability exacte', () => {
     const route = fs.readFileSync(path.join(ROOT, 'routes', 'admin-operations-workspace.js'), 'utf8');
-    for (const cap of ["execution.order.mark_ordered","execution.distribution.run","execution.parcel.ship","execution.inventory.assign","execution.parcel.receive","execution.parcel.collect","execution.cash.confirm"]) expect(route).toContain(cap);
+    for (const cap of ["execution.distribution.run","execution.parcel.ship","execution.inventory.assign","execution.parcel.receive","execution.parcel.collect","execution.cash.confirm"]) expect(route).toContain(cap);
     expect(route).toContain('attachMarketExecutionRoleFor');
   });
 });
