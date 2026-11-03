@@ -53,6 +53,7 @@ const NEXT_OPERATOR_STATE = Object.freeze({
 function badRequest(message, code = 'HUB_OPERATOR_BAD_REQUEST') {
   const error = new Error(message);
   error.code = code;
+  error.status = 400;
   return error;
 }
 
@@ -71,6 +72,13 @@ function requireText(value, name, max = 200) {
 
 function hubErrorResponse(error) {
   const code = error && error.code;
+  if (error && error.status === 400) {
+    return { status: 400, body: { error: error.message, code } };
+  }
+  if (code === '23514' && /^HUB_ORDER_BAG_[A-Z_]+/.test(String(error.message || ''))) {
+    const businessCode = String(error.message).match(/^HUB_ORDER_BAG_[A-Z_]+/)[0];
+    return { status: 409, body: { error: 'Opération impossible : sac client non conforme', code: businessCode } };
+  }
   if (code === '22P02' || String(code || '').startsWith('HUB_OPERATOR_')) {
     return { status: 400, body: { error: error.message, code } };
   }
@@ -108,7 +116,8 @@ async function transitionOperatorUnit(client, { unitId, toState, actorId, locati
       `Transition opérateur interdite : ${unit.state} → ${toState}`
     );
   }
-  if (['PACKED', 'DISPATCHED'].includes(toState) && unit.unit_type !== 'MARKET_PARCEL') {
+  if (['PACKED', 'DISPATCHED'].includes(toState) && unit.unit_type !== 'MARKET_PARCEL' &&
+      !(toState === 'PACKED' && unit.unit_type === 'HANDLING_UNIT' && unit.order_id)) {
     throw new HubPhysicalError(
       'HUB_OPERATOR_OUTBOUND_TYPE_REQUIRED',
       `${toState} exige une unité MARKET_PARCEL`
@@ -267,16 +276,26 @@ async function createOperatorUnitCommand(payload, userId) {
     const reference = payload && payload.reference
       ? requireText(payload.reference, 'reference', 200)
       : generatePhysicalReference(unitType);
+    const orderId = payload && payload.order_id ? requireUuid(payload.order_id, 'order_id') : null;
+    const bagPlan = payload && payload.bag_plan ? payload.bag_plan : null;
+    if (bagPlan && (!orderId || !Array.isArray(bagPlan) || bagPlan.length < 1 || bagPlan.length > 100 ||
+      bagPlan.some(item => !item || !/^[0-9a-f-]{36}$/i.test(item.order_item_id) ||
+        !Number.isInteger(Number(item.quantity)) || Number(item.quantity) <= 0))) {
+      throw badRequest('Plan de sac invalide', 'HUB_ORDER_BAG_PLAN_INVALID');
+    }
+    if (orderId && unitType !== 'HANDLING_UNIT') throw badRequest('Un sac client exige HANDLING_UNIT', 'HUB_ORDER_BAG_REQUIRES_HANDLING_UNIT');
     const unit = await withOperatorTransaction((client) => createPhysicalUnit(client, {
       reference,
       unitType,
+      orderId,
+      bagPlan,
       externalRef: payload.external_ref ? String(payload.external_ref).trim() : null,
       actorId: userId || null,
       locationRef: payload.location_ref ? String(payload.location_ref).trim() : null,
       initialState: 'RECEIVED',
       details: { operator_created: true },
     }));
-    return { status: 201, body: { physical_unit: unit, label: { reference: unit.reference, kind: unitType === 'HANDLING_UNIT' ? 'KOM-ITEM' : 'KOM-BOX' } } };
+    return { status: 201, body: { physical_unit: unit, label: { reference: unit.reference, kind: orderId ? 'KOM-SAC' : unitType === 'HANDLING_UNIT' ? 'KOM-ITEM' : 'KOM-BOX' } } };
   } catch (error) {
     return hubErrorResponse(error);
   }
@@ -315,6 +334,9 @@ async function moveAllocationCommand(payload, userId) {
       allocationId,
       quantity,
       operationType,
+      evidenceMethod: payload && payload.evidence_method ? String(payload.evidence_method).trim().toUpperCase() : null,
+      evidenceCode: payload && payload.evidence_code ? String(payload.evidence_code).trim() : null,
+      evidenceRef: payload && payload.evidence_ref ? String(payload.evidence_ref).trim() : null,
       actorId: userId || null,
       locationRef: payload.location_ref ? String(payload.location_ref).trim() : null,
     }));
