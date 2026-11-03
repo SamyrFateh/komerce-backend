@@ -416,7 +416,7 @@
     scannerInput.setAttribute('aria-label', 'Scanner le code physique de la référence fournisseur');
     scannerLabel.appendChild(scannerInput);
     scannerPanel.appendChild(scannerLabel);
-    const scannerResult = text(doc, 'span', 'kmc-workspace-receive-scan-result', 'Sans scan : contrôle manuel de la variante.');
+    const scannerResult = text(doc, 'span', 'kmc-workspace-receive-scan-result', 'Scanner la référence avant de déclarer sa quantité reçue.');
     scannerResult.setAttribute('role', 'status');
     scannerPanel.appendChild(scannerResult);
     card.appendChild(scannerPanel);
@@ -432,6 +432,7 @@
     table.appendChild(thead);
     const tbody = doc.createElement('tbody');
     const inputs = [];
+    const scannedCodeBySku = new Map();
     po.lines.forEach((line, index) => {
       const row = doc.createElement('tr');
       row.appendChild(text(doc, 'td', '', line.product_name));
@@ -486,6 +487,8 @@
           contents.push({
             purchase_order_id: po.purchase_order_id,
             ...(line.product_sku_id ? { product_sku_id: line.product_sku_id } : {}),
+            ...(scannedCodeBySku.has(String(line.product_sku_id)) ?
+              { evidence_code: scannedCodeBySku.get(String(line.product_sku_id)) } : {}),
             quantity,
           });
         }
@@ -495,10 +498,12 @@
 
     function sync() {
       const { contents, invalid } = collect();
-      button.disabled = invalid || contents.length === 0;
+      const unverified = contents.some(item => !item.evidence_code);
+      button.disabled = invalid || contents.length === 0 || unverified;
       hint.textContent = invalid
         ? 'Quantité invalide : entier entre 0 et le restant attendu.'
-        : 'Saisissez la quantité réellement reçue. Aucune quantité n’est préremplie.';
+        : unverified ? 'Scanner toutes les références déclarées reçues avant validation.'
+        : 'Quantité réellement comptée et références scannées : prêt à enregistrer.';
     }
     inputs.forEach(({ input }) => input.addEventListener('input', sync));
     let scanning = false;
@@ -524,6 +529,10 @@
           ? `Référence confirmée : ${candidate.line.product_name}. Comptez puis saisissez la quantité réellement reçue.`
           : `Référence fournisseur déclarée : ${candidate.line.product_name}. Vérification physique du code à confirmer.`;
         scannerResult.dataset.scanTone = matched.confirmed ? 'success' : 'warning';
+        if (matched.confirmed) {
+          scannedCodeBySku.set(String(candidate.line.product_sku_id), String(matched.code));
+        }
+        sync();
         candidate.input.focus();
       } catch (error) {
         scannerResult.textContent = `Code non reconnu ou incompatible avec cette PO (${error.code || 'contrôle requis'}).`;
@@ -537,7 +546,7 @@
 
     button.addEventListener('click', () => {
       const { contents, invalid } = collect();
-      if (invalid || contents.length === 0) return;
+      if (invalid || !contents.length || contents.some(item => !item.evidence_code)) return;
       const total = contents.reduce((sum, item) => sum + item.quantity, 0);
       const trackingRef = String(tracking.value || '').trim();
       runAction(context, button, {
