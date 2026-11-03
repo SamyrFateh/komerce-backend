@@ -51,7 +51,6 @@
   };
   const smallRef = value => safe(value).slice(0, 8);
   const getPO = location => new URLSearchParams(safe(location && location.search)).get('po') || '';
-  const selectedMarket = location => new URLSearchParams(safe(location && location.search)).get('market') || '';
 
   function requestJSON(fetchFn, url) {
     return Promise.resolve(fetchFn(url, {
@@ -312,7 +311,8 @@
       if (!history || typeof history.pushState !== 'function' || !location) return;
       const params = new URLSearchParams(safe(location.search));
       if (poId) params.set('po', poId); else params.delete('po');
-      // Préserver branch/market et les autres paramètres non métiers.
+      params.delete('market');
+      // Hub sans marché : préserver uniquement la branche et le dossier PO.
       const query = params.toString();
       history.pushState(null, '', HUB_PATH + (query ? '?' + query : ''));
     };
