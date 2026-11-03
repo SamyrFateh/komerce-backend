@@ -18,11 +18,11 @@ const administration={
   purchase_orders:[
     {id:PO1,market:'KM',supplier:'Alpha Trading',stage:'draft',order_count:3,
       received:0,expected:4,anomalies:0,sent_at:null,payment_count:0,verified_debit_count:0,
-      commitment_authorization:'Non tracée',payment_authorization:'Non tracée',
+      commitment_authorization:'À valider',payment_authorization:'À autoriser',
       payment_evidence:'Aucune preuve de débit'},
     {id:PO2,market:'CM',supplier:'Beta Dubai',stage:'issued_not_sent',order_count:2,
       received:1,expected:3,anomalies:0,sent_at:null,payment_count:1,verified_debit_count:0,
-      commitment_authorization:'Non tracée',payment_authorization:'Non tracée',
+      commitment_authorization:'À valider',payment_authorization:'À autoriser',
       payment_evidence:'Débit à rapprocher'},
   ],
 };
@@ -73,11 +73,11 @@ test('Admin — PO en deux marchés, tableau compact, paiement non autorisé fic
   await page.locator('[data-hub-admin-po="'+PO2+'"] [data-hub-admin-stage="Engagement"]').click({button:'right'});
   await expect(page.locator('[data-hub-admin-menu]')).toBeVisible();
   await expect(page.locator('[data-hub-admin-menu] a')).toHaveCount(0);
-  await expect(page.locator('[data-hub-admin-menu]')).toContainText('Engagement d’achat');
+  await expect(page.locator('[data-hub-admin-menu]')).toContainText('engagement');
   await page.keyboard.press('Escape');
   await page.locator('[data-hub-admin-view="payments"]').click();
   await expect(page.locator('[data-hub-admin-po="'+PO2+'"]')).toContainText('Débit à rapprocher');
-  await expect(page.locator('[data-hub-admin-po="'+PO2+'"]')).toContainText('Non tracée');
+  await expect(page.locator('[data-hub-admin-po="'+PO2+'"]')).toContainText('À autoriser');
   expect(calls).toEqual(['GET /api/hub/administration']);
   await page.screenshot({path:'test-results/hub-administration-1440.png',fullPage:true});
 });

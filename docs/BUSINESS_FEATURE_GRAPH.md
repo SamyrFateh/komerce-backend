@@ -81,7 +81,7 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 
 | Dépôt | Manifests découverts | Manifests connectés | Nœuds techniques | Owned | Orphelins |
 |---|---|---|---|---|---|
-| backend | 36 | 36 | 670 | 670 | 0 |
+| backend | 36 | 36 | 672 | 672 | 0 |
 | dash | 3 | 3 | N/A | N/A | N/A |
 | boutique | 16 | 16 | 104 | 104 | 0 |
 
@@ -219,11 +219,11 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 > Exposer les agrégats de pilotage et porter un portail interne Canonical unifié accessible depuis /admin, dont la navigation et les workspaces sont adaptés au rôle, aux scopes marché et aux capabilities résolus côté serveur, sans réutiliser les deux générations historiques de dashboards.
 
 - middleware: 1
-- services: 44
+- services: 45
 - routes: 28
 - migrations: 2
 - dash: 171
-- tests: 198
+- tests: 201
 - tables owned (lifecycle): 2 — `order_incidents`, `partners`
 - tables written: 20
 - interfaces exposed: 88
@@ -585,13 +585,13 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 > Transformer un besoin d'approvisionnement issu d'une commande en engagement fournisseur traçable (bon de commande), puis constater sa réception.
 
-- services: 49
+- services: 50
 - routes: 1
 - migrations: 14
 - scripts: 14
-- tests: 83
-- tables owned (lifecycle): 11 — `purchase_lines`, `purchase_orders`, `product_suppliers`, `supplier_execution_payments`, `supplier_payment_settlements`, `suppliers`, `supplier_execution_events`, `supplier_execution_fulfillments`, `supplier_execution_order_lines`, `supplier_execution_orders`, `supplier_execution_payment_proofs`
-- tables written: 11
+- tests: 85
+- tables owned (lifecycle): 13 — `purchase_lines`, `purchase_orders`, `product_suppliers`, `supplier_execution_payments`, `supplier_payment_settlements`, `suppliers`, `hub_authorization_grants`, `purchase_order_authorizations`, `supplier_execution_events`, `supplier_execution_fulfillments`, `supplier_execution_order_lines`, `supplier_execution_orders`, `supplier_execution_payment_proofs`
+- tables written: 13
 - interfaces exposed: 20
 - internal APIs: 14
 - dependencies (consumes): 10 — supplier-connectivity, external-provider-contracts, sourcing, catalog, infrastructure, orders, auth, economic-engine, notifications, logistics
@@ -798,6 +798,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `fx_public_reference_quotes` | `market` | declared-table-owner | market | — |
 | `fx_rate_observations` | `market` | declared-table-owner | market | — |
 | `garment_models` | `platform-ops` | single-writer | platform-ops | economic-engine |
+| `hub_authorization_grants` | `purchasing` | declared-table-owner | purchasing | — |
 | `hub_custody_events` | `logistics` | declared-table-owner | logistics | — |
 | `hub_physical_unit_placements` | `logistics` | declared-table-owner | logistics | dashboard |
 | `hub_physical_units` | `logistics` | declared-table-owner | logistics | dashboard |
@@ -881,6 +882,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `provider_credentials` | `sourcing` | declared-table-owner | sourcing | — |
 | `providers` | `providers-services` | single-writer | providers-services | market-delegation |
 | `purchase_lines` | `purchasing` | declared-table-owner | purchasing | dashboard |
+| `purchase_order_authorizations` | `purchasing` | declared-table-owner | purchasing | — |
 | `purchase_orders` | `purchasing` | declared-table-owner | purchasing | dashboard, logistics |
 | `recipients` | `orders` | multi-writer-resolved-by-classification-signal | dashboard, orders | documents, economic-engine, logistics, notifications |
 | `refund_execution_intents` | `refunds` | single-writer | refunds | — |
@@ -2227,7 +2229,7 @@ Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la det
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> sourcing — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "sourcing"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> unsold-resolution — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "unsold-resolution"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** inventory -> payments — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "inventory" vers "payments"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** logistics -> dashboard — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "logistics" vers "dashboard"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** logistics -> dashboard — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "logistics" vers "dashboard"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** logistics -> economic-engine — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "logistics" vers "economic-engine"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** loyalty -> logistics — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "loyalty" vers "logistics"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** market -> customs — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "market" vers "customs"
@@ -2285,7 +2287,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 2217 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 2224 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 214 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 79 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -2365,7 +2367,7 @@ Meta Graph monté : oui.
 | dashboard | infrastructure | static-code | 111 | **DECLARED_AND_OBSERVED** |
 | dashboard | inventory | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | dashboard | local-stock | static-code | 1 | **DECLARED_AND_OBSERVED** |
-| dashboard | logistics | static-code, data-read, data-write | 36 | **DECLARED_AND_OBSERVED** |
+| dashboard | logistics | static-code, data-read, data-write | 37 | **DECLARED_AND_OBSERVED** |
 | dashboard | loyalty | static-code | 1 | **OBSERVED_UNDECLARED** |
 | dashboard | market | static-code, data-read | 7 | **DECLARED_AND_OBSERVED** |
 | dashboard | market-autonomy | data-read | 1 | **DECLARED_AND_OBSERVED** |
@@ -2462,7 +2464,7 @@ Meta Graph monté : oui.
 | logistics | business-rules | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
 | logistics | catalog | static-code, data-write, data-read | 3 | **DECLARED_AND_OBSERVED** |
 | logistics | customs | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
-| logistics | dashboard | static-code | 1 | **OBSERVED_UNDECLARED** |
+| logistics | dashboard | static-code | 2 | **OBSERVED_UNDECLARED** |
 | logistics | documents | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | logistics | economic-engine | static-code | 1 | **OBSERVED_UNDECLARED** |
 | logistics | incident-management | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
@@ -2600,7 +2602,7 @@ Meta Graph monté : oui.
 | purchasing | decision-signals | static-code | 1 | **OBSERVED_UNDECLARED** |
 | purchasing | economic-engine | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | purchasing | external-provider-contracts | static-code | 1 | **DECLARED_AND_OBSERVED** |
-| purchasing | infrastructure | static-code | 61 | **DECLARED_AND_OBSERVED** |
+| purchasing | infrastructure | static-code | 63 | **DECLARED_AND_OBSERVED** |
 | purchasing | logistics | static-code, data-read | 15 | **DECLARED_AND_OBSERVED** |
 | purchasing | notifications | static-code | 9 | **DECLARED_AND_OBSERVED** |
 | purchasing | orders | static-code, data-read | 8 | **DECLARED_AND_OBSERVED** |

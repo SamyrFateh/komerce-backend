@@ -45,7 +45,6 @@
     'finance.act': 'Demander un règlement',
     'settlement.receive': 'Confirmer la réception d’un règlement',
     'cash_control.policy.manage': 'Gérer le contrôle des encaissements',
-    'execution.order.mark_ordered': 'Envoyer une commande au sourcing',
     'execution.distribution.run': 'Lancer la répartition',
     'execution.parcel.ship': 'Expédier un colis',
     'execution.inventory.assign': 'Affecter l’inventaire à un colis',
@@ -68,7 +67,6 @@
 
   const TERRAIN_PRESET = Object.freeze([
     'operations.read',
-    'execution.order.mark_ordered',
     'execution.distribution.run',
     'execution.parcel.ship',
     'execution.inventory.assign',

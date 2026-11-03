@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 774,
-    "filesWithFullHeaders": 723,
+    "scannedCodeFiles": 776,
+    "filesWithFullHeaders": 725,
     "filesWithLiteHeaders": 51,
-    "filesWithAnyHeaders": 774,
+    "filesWithAnyHeaders": 776,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1951,
-    "edges": 9640,
-    "dbTables": 222,
-    "doctrines": 748,
+    "graphNodes": 1961,
+    "edges": 9670,
+    "dbTables": 224,
+    "doctrines": 754,
     "impactAreas": 207,
-    "unresolvedCodeEdges": 924,
+    "unresolvedCodeEdges": 925,
     "dbWriteViaOverlapWarnings": 12,
     "multiWriterTables": 93
   },
@@ -55,7 +55,7 @@
     "wallet": 3,
     "providers-services": 7,
     "customs": 8,
-    "dashboard": 30,
+    "dashboard": 31,
     "loyalty": 3,
     "market-control-plane": 5,
     "settlement": 2,
@@ -66,7 +66,7 @@
     "operations": 11,
     "inventory": 2,
     "local-stock": 4,
-    "purchasing": 50,
+    "purchasing": 51,
     "unsold-resolution": 1,
     "external-provider-contracts": 1,
     "finance": 3,
@@ -112,7 +112,7 @@
     "schema": 1,
     "route": 137,
     "entrypoint": 1,
-    "service": 458,
+    "service": 460,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -121,9 +121,9 @@
     "validators": 1
   },
   "byCriticality": {
-    "critical": 113,
+    "critical": 114,
     "medium": 154,
-    "high": 446,
+    "high": 447,
     "low": 60,
     "unknown": 1
   },
@@ -6689,7 +6689,10 @@
         "assignment_memberships",
         "membership_capabilities",
         "assignment_capability_ceiling",
-        "dashboard_global_access_grants"
+        "dashboard_global_access_grants",
+        "hub_physical_units",
+        "hub_physical_unit_placements",
+        "hub_purchase_allocations"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -19442,11 +19445,14 @@
         "routes/hub.js"
       ],
       "dbRead": [
+        "hub_authorization_grants",
         "markets",
         "orders",
+        "purchase_order_authorizations",
         "purchase_orders",
         "purchase_lines",
-        "supplier_execution_payments"
+        "supplier_execution_payments",
+        "users"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -19461,6 +19467,61 @@
         "admin-dashboard"
       ],
       "version": "2026-11-v1"
+    },
+    {
+      "id": "services/hub-authorization-service.js",
+      "file": "services/hub-authorization-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "hub-authorization-service",
+      "domain": "purchasing",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "user_id",
+        "authorization_type",
+        "purchase_order_id",
+        "proof_ref"
+      ],
+      "outputs": [
+        "hub_authorization_grants",
+        "purchase_order_authorizations"
+      ],
+      "depends": [
+        "db"
+      ],
+      "usedBy": [
+        "routes/purchasing.js",
+        "services/purchasing-engagement-service.js",
+        "services/supplier-payment-orchestrator.js"
+      ],
+      "dbRead": [
+        "hub_authorization_grants",
+        "purchase_lines",
+        "purchase_orders",
+        "purchase_order_authorizations",
+        "users"
+      ],
+      "dbWrite": [
+        "hub_authorization_grants",
+        "purchase_order_authorizations"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "owns_transaction"
+      ],
+      "doctrine": [
+        "two_distinct_directrice_authorizations",
+        "no_implicit_power",
+        "append_only_decisions"
+      ],
+      "impactAreas": [
+        "purchasing",
+        "finance"
+      ],
+      "version": "2026-11"
     },
     {
       "id": "services/hub-box-shipment-service.js",
@@ -21039,6 +21100,45 @@
         "loyalty"
       ],
       "version": "2026-06"
+    },
+    {
+      "id": "services/manual-scan-confirmation.js",
+      "file": "services/manual-scan-confirmation.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "manual-scan-confirmation",
+      "domain": "dashboard",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "reason_closed_list",
+        "optional_note"
+      ],
+      "outputs": [
+        "degraded_mode_metadata_for_scan_engine"
+      ],
+      "depends": [],
+      "usedBy": [
+        "services/operations-workspace.js",
+        "services/shipping-customs-workspace.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "single_scan_writer",
+        "degraded_mode_traced",
+        "no_gate_bypass"
+      ],
+      "impactAreas": [
+        "logistics",
+        "relay",
+        "hub"
+      ],
+      "version": "2026-11"
     },
     {
       "id": "services/market-business-day.js",
@@ -37612,6 +37712,21 @@
       "table": "market_settlement_events"
     },
     {
+      "id": "db:hub_physical_units",
+      "type": "db-table",
+      "table": "hub_physical_units"
+    },
+    {
+      "id": "db:hub_physical_unit_placements",
+      "type": "db-table",
+      "table": "hub_physical_unit_placements"
+    },
+    {
+      "id": "db:hub_purchase_allocations",
+      "type": "db-table",
+      "table": "hub_purchase_allocations"
+    },
+    {
       "id": "db:pricing_components",
       "type": "db-table",
       "table": "pricing_components"
@@ -37992,21 +38107,6 @@
       "table": "supplier_execution_groups"
     },
     {
-      "id": "db:hub_purchase_allocations",
-      "type": "db-table",
-      "table": "hub_purchase_allocations"
-    },
-    {
-      "id": "db:hub_physical_unit_placements",
-      "type": "db-table",
-      "table": "hub_physical_unit_placements"
-    },
-    {
-      "id": "db:hub_physical_units",
-      "type": "db-table",
-      "table": "hub_physical_units"
-    },
-    {
       "id": "db:capability_registry",
       "type": "db-table",
       "table": "capability_registry"
@@ -38210,6 +38310,16 @@
       "id": "db:supplier_execution_order_lines",
       "type": "db-table",
       "table": "supplier_execution_order_lines"
+    },
+    {
+      "id": "db:hub_authorization_grants",
+      "type": "db-table",
+      "table": "hub_authorization_grants"
+    },
+    {
+      "id": "db:purchase_order_authorizations",
+      "type": "db-table",
+      "table": "purchase_order_authorizations"
     },
     {
       "id": "db:international_shipments",
@@ -40587,6 +40697,21 @@
       "doctrine": "supplier_payment_authorization_distinct_from_debit"
     },
     {
+      "id": "doctrine:two_distinct_directrice_authorizations",
+      "type": "doctrine",
+      "doctrine": "two_distinct_directrice_authorizations"
+    },
+    {
+      "id": "doctrine:no_implicit_power",
+      "type": "doctrine",
+      "doctrine": "no_implicit_power"
+    },
+    {
+      "id": "doctrine:append_only_decisions",
+      "type": "doctrine",
+      "doctrine": "append_only_decisions"
+    },
+    {
       "id": "doctrine:Allocation & Custody; une KOM-BOX appartient à au plus une expédition du même marché",
       "type": "doctrine",
       "doctrine": "Allocation & Custody; une KOM-BOX appartient à au plus une expédition du même marché"
@@ -40820,6 +40945,21 @@
       "id": "doctrine:decision_projection_never_reads_products_stock",
       "type": "doctrine",
       "doctrine": "decision_projection_never_reads_products_stock"
+    },
+    {
+      "id": "doctrine:single_scan_writer",
+      "type": "doctrine",
+      "doctrine": "single_scan_writer"
+    },
+    {
+      "id": "doctrine:degraded_mode_traced",
+      "type": "doctrine",
+      "doctrine": "degraded_mode_traced"
+    },
+    {
+      "id": "doctrine:no_gate_bypass",
+      "type": "doctrine",
+      "doctrine": "no_gate_bypass"
     },
     {
       "id": "doctrine:business_day_belongs_to_market_not_browser_or_server",
@@ -52902,6 +53042,24 @@
       "to": "db:dashboard_global_access_grants",
       "type": "db-read",
       "label": "dashboard_global_access_grants"
+    },
+    {
+      "from": "routes/admin-operations-workspace.js",
+      "to": "db:hub_physical_units",
+      "type": "db-read",
+      "label": "hub_physical_units"
+    },
+    {
+      "from": "routes/admin-operations-workspace.js",
+      "to": "db:hub_physical_unit_placements",
+      "type": "db-read",
+      "label": "hub_physical_unit_placements"
+    },
+    {
+      "from": "routes/admin-operations-workspace.js",
+      "to": "db:hub_purchase_allocations",
+      "type": "db-read",
+      "label": "hub_purchase_allocations"
     },
     {
       "from": "routes/admin-operations-workspace.js",
@@ -73378,6 +73536,12 @@
     },
     {
       "from": "services/hub-administration-board.js",
+      "to": "db:hub_authorization_grants",
+      "type": "db-read",
+      "label": "hub_authorization_grants"
+    },
+    {
+      "from": "services/hub-administration-board.js",
       "to": "db:markets",
       "type": "db-read",
       "label": "markets"
@@ -73387,6 +73551,12 @@
       "to": "db:orders",
       "type": "db-read",
       "label": "orders"
+    },
+    {
+      "from": "services/hub-administration-board.js",
+      "to": "db:purchase_order_authorizations",
+      "type": "db-read",
+      "label": "purchase_order_authorizations"
     },
     {
       "from": "services/hub-administration-board.js",
@@ -73405,6 +73575,12 @@
       "to": "db:supplier_execution_payments",
       "type": "db-read",
       "label": "supplier_execution_payments"
+    },
+    {
+      "from": "services/hub-administration-board.js",
+      "to": "db:users",
+      "type": "db-read",
+      "label": "users"
     },
     {
       "from": "services/hub-administration-board.js",
@@ -73435,6 +73611,102 @@
       "to": "impact:admin-dashboard",
       "type": "impact",
       "label": "admin-dashboard"
+    },
+    {
+      "from": "services/hub-authorization-service.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "routes/purchasing.js",
+      "to": "services/hub-authorization-service.js",
+      "type": "uses",
+      "label": "routes/purchasing.js"
+    },
+    {
+      "from": "services/purchasing-engagement-service.js",
+      "to": "services/hub-authorization-service.js",
+      "type": "uses",
+      "label": "services/purchasing-engagement-service.js"
+    },
+    {
+      "from": "services/supplier-payment-orchestrator.js",
+      "to": "services/hub-authorization-service.js",
+      "type": "uses",
+      "label": "services/supplier-payment-orchestrator.js"
+    },
+    {
+      "from": "services/hub-authorization-service.js",
+      "to": "db:hub_authorization_grants",
+      "type": "db-read",
+      "label": "hub_authorization_grants"
+    },
+    {
+      "from": "services/hub-authorization-service.js",
+      "to": "db:purchase_lines",
+      "type": "db-read",
+      "label": "purchase_lines"
+    },
+    {
+      "from": "services/hub-authorization-service.js",
+      "to": "db:purchase_orders",
+      "type": "db-read",
+      "label": "purchase_orders"
+    },
+    {
+      "from": "services/hub-authorization-service.js",
+      "to": "db:purchase_order_authorizations",
+      "type": "db-read",
+      "label": "purchase_order_authorizations"
+    },
+    {
+      "from": "services/hub-authorization-service.js",
+      "to": "db:users",
+      "type": "db-read",
+      "label": "users"
+    },
+    {
+      "from": "services/hub-authorization-service.js",
+      "to": "db:hub_authorization_grants",
+      "type": "db-write",
+      "label": "hub_authorization_grants"
+    },
+    {
+      "from": "services/hub-authorization-service.js",
+      "to": "db:purchase_order_authorizations",
+      "type": "db-write",
+      "label": "purchase_order_authorizations"
+    },
+    {
+      "from": "services/hub-authorization-service.js",
+      "to": "doctrine:two_distinct_directrice_authorizations",
+      "type": "doctrine",
+      "label": "two_distinct_directrice_authorizations"
+    },
+    {
+      "from": "services/hub-authorization-service.js",
+      "to": "doctrine:no_implicit_power",
+      "type": "doctrine",
+      "label": "no_implicit_power"
+    },
+    {
+      "from": "services/hub-authorization-service.js",
+      "to": "doctrine:append_only_decisions",
+      "type": "doctrine",
+      "label": "append_only_decisions"
+    },
+    {
+      "from": "services/hub-authorization-service.js",
+      "to": "impact:purchasing",
+      "type": "impact",
+      "label": "purchasing"
+    },
+    {
+      "from": "services/hub-authorization-service.js",
+      "to": "impact:finance",
+      "type": "impact",
+      "label": "finance"
     },
     {
       "from": "services/hub-box-shipment-service.js",
@@ -76315,6 +76587,54 @@
       "to": "impact:loyalty",
       "type": "impact",
       "label": "loyalty"
+    },
+    {
+      "from": "services/operations-workspace.js",
+      "to": "services/manual-scan-confirmation.js",
+      "type": "uses",
+      "label": "services/operations-workspace.js"
+    },
+    {
+      "from": "services/shipping-customs-workspace.js",
+      "to": "services/manual-scan-confirmation.js",
+      "type": "uses",
+      "label": "services/shipping-customs-workspace.js"
+    },
+    {
+      "from": "services/manual-scan-confirmation.js",
+      "to": "doctrine:single_scan_writer",
+      "type": "doctrine",
+      "label": "single_scan_writer"
+    },
+    {
+      "from": "services/manual-scan-confirmation.js",
+      "to": "doctrine:degraded_mode_traced",
+      "type": "doctrine",
+      "label": "degraded_mode_traced"
+    },
+    {
+      "from": "services/manual-scan-confirmation.js",
+      "to": "doctrine:no_gate_bypass",
+      "type": "doctrine",
+      "label": "no_gate_bypass"
+    },
+    {
+      "from": "services/manual-scan-confirmation.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
+    },
+    {
+      "from": "services/manual-scan-confirmation.js",
+      "to": "impact:relay",
+      "type": "impact",
+      "label": "relay"
+    },
+    {
+      "from": "services/manual-scan-confirmation.js",
+      "to": "impact:hub",
+      "type": "impact",
+      "label": "hub"
     },
     {
       "from": "services/dashboard-commerce.js",
@@ -108278,7 +108598,10 @@
         "assignment_memberships",
         "membership_capabilities",
         "assignment_capability_ceiling",
-        "dashboard_global_access_grants"
+        "dashboard_global_access_grants",
+        "hub_physical_units",
+        "hub_physical_unit_placements",
+        "hub_purchase_allocations"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -108302,6 +108625,9 @@
         "db:assignment_capability_ceiling",
         "db:assignment_memberships",
         "db:dashboard_global_access_grants",
+        "db:hub_physical_unit_placements",
+        "db:hub_physical_units",
+        "db:hub_purchase_allocations",
         "db:market_operating_assignments",
         "db:markets",
         "db:membership_capabilities",
@@ -113555,6 +113881,7 @@
         "impact:unknown",
         "middleware/auth.js",
         "routes/payments.js",
+        "services/hub-authorization-service.js",
         "services/order-mutation-service.js",
         "services/purchasing-admin-service.js",
         "services/purchasing-canonical-money.js",
@@ -121083,11 +121410,14 @@
       ],
       "ownedFiles": [],
       "dbRead": [
+        "hub_authorization_grants",
         "markets",
         "orders",
+        "purchase_order_authorizations",
         "purchase_orders",
         "purchase_lines",
-        "supplier_execution_payments"
+        "supplier_execution_payments",
+        "users"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -121101,11 +121431,14 @@
         "admin-dashboard"
       ],
       "mustCheck": [
+        "db:hub_authorization_grants",
         "db:markets",
         "db:orders",
         "db:purchase_lines",
+        "db:purchase_order_authorizations",
         "db:purchase_orders",
         "db:supplier_execution_payments",
+        "db:users",
         "doctrine:one_po_one_supplier_one_market",
         "doctrine:supplier_payment_authorization_distinct_from_debit",
         "impact:admin-dashboard",
@@ -121113,6 +121446,59 @@
         "impact:purchasing",
         "routes/hub.js",
         "services/hub-procurement-dossier.js"
+      ]
+    },
+    "services/hub-authorization-service.js": {
+      "role": "hub-authorization-service",
+      "domain": "purchasing",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db"
+      ],
+      "directUsedBy": [
+        "routes/purchasing.js",
+        "services/purchasing-engagement-service.js",
+        "services/supplier-payment-orchestrator.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "hub_authorization_grants",
+        "purchase_lines",
+        "purchase_orders",
+        "purchase_order_authorizations",
+        "users"
+      ],
+      "dbWrite": [
+        "hub_authorization_grants",
+        "purchase_order_authorizations"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "two_distinct_directrice_authorizations",
+        "no_implicit_power",
+        "append_only_decisions"
+      ],
+      "impactAreas": [
+        "purchasing",
+        "finance"
+      ],
+      "mustCheck": [
+        "db:hub_authorization_grants",
+        "db:purchase_lines",
+        "db:purchase_order_authorizations",
+        "db:purchase_orders",
+        "db:users",
+        "doctrine:append_only_decisions",
+        "doctrine:no_implicit_power",
+        "doctrine:two_distinct_directrice_authorizations",
+        "impact:finance",
+        "impact:purchasing",
+        "routes/purchasing.js",
+        "services/purchasing-engagement-service.js",
+        "services/supplier-payment-orchestrator.js"
       ]
     },
     "services/hub-box-shipment-service.js": {
@@ -122744,6 +123130,43 @@
         "services/payment-cash-confirm.js",
         "services/payment-stripe.js",
         "utils/logger.js"
+      ]
+    },
+    "services/manual-scan-confirmation.js": {
+      "role": "manual-scan-confirmation",
+      "domain": "dashboard",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [],
+      "directUsedBy": [
+        "services/operations-workspace.js",
+        "services/shipping-customs-workspace.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "single_scan_writer",
+        "degraded_mode_traced",
+        "no_gate_bypass"
+      ],
+      "impactAreas": [
+        "logistics",
+        "relay",
+        "hub"
+      ],
+      "mustCheck": [
+        "doctrine:degraded_mode_traced",
+        "doctrine:no_gate_bypass",
+        "doctrine:single_scan_writer",
+        "impact:hub",
+        "impact:logistics",
+        "impact:relay",
+        "services/operations-workspace.js",
+        "services/shipping-customs-workspace.js"
       ]
     },
     "services/market-business-day.js": {
@@ -125580,6 +126003,7 @@
         "routes/admin-operations-workspace.js",
         "services/auto-parcel.js",
         "services/inventory-service.js",
+        "services/manual-scan-confirmation.js",
         "services/operations-relay-projection.js",
         "services/order-status-machine.js",
         "services/parcel-auto-create-service.js",
@@ -130237,6 +130661,7 @@
         "impact:purchasing",
         "impact:supplier-integration",
         "routes/purchasing.js",
+        "services/hub-authorization-service.js",
         "services/hub-reference.js",
         "services/notification-service.js",
         "services/purchase-line-snapshot.js",
@@ -132194,6 +132619,7 @@
         "impact:market-authorization",
         "routes/admin-shipping-customs-workspace.js",
         "services/customs-shipment-service.js",
+        "services/manual-scan-confirmation.js",
         "services/scan-engine.js"
       ]
     },
@@ -134498,6 +134924,7 @@
         "doctrine:docs/doctrine/DOCTRINE_SUPPLIER_PAYMENT_FACT.md",
         "impact:purchasing",
         "impact:supplier-integration",
+        "services/hub-authorization-service.js",
         "services/supplier-payment-state.js",
         "services/suppliers/cj-supplier-payment-runtime.js"
       ]
@@ -143078,6 +143505,12 @@
     },
     {
       "from": "services/hub-administration-board.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/hub-authorization-service.js",
       "to": "db",
       "type": "depends",
       "label": "db"
