@@ -38,11 +38,18 @@ async function markFullyHandedOverParcelsShipped(client, shipmentId, actor, proo
   }
   const { rows: parcels } = await client.query(`
     SELECT p.id, p.reference, p.status, p.order_id,
-           SUM(pi.quantity)::int AS expected_qty,
-           SUM(pi.qty_shipped)::int AS shipped_qty
+           qty.expected_qty, qty.shipped_qty
       FROM parcels p
-      JOIN parcel_items pi ON pi.parcel_id = p.id
-     WHERE p.cancelled_at IS NULL AND p.status IN ('preparation','shipped','in_transit','arrived','available','collected')
+      JOIN (
+        SELECT pi.parcel_id,
+               SUM(pi.quantity)::int AS expected_qty,
+               SUM(pi.qty_shipped)::int AS shipped_qty
+          FROM parcel_items pi
+         GROUP BY pi.parcel_id
+        HAVING SUM(pi.qty_shipped)>0 AND SUM(pi.qty_shipped)=SUM(pi.quantity)
+      ) qty ON qty.parcel_id=p.id
+     WHERE p.cancelled_at IS NULL
+       AND p.status IN ('preparation','shipped','in_transit','arrived','available','collected')
        AND EXISTS (
          SELECT 1 FROM parcel_items rel_pi
          JOIN hub_purchase_allocations a ON a.order_item_id=rel_pi.order_item_id
@@ -50,8 +57,6 @@ async function markFullyHandedOverParcelsShipped(client, shipmentId, actor, proo
          JOIN international_shipment_hub_units boxes ON boxes.physical_unit_id=placements.physical_unit_id
           WHERE rel_pi.parcel_id=p.id AND boxes.shipment_id=$1 AND placements.removed_at IS NULL
        )
-     GROUP BY p.id, p.reference, p.status, p.order_id
-    HAVING SUM(pi.qty_shipped) > 0 AND SUM(pi.qty_shipped)=SUM(pi.quantity)
      ORDER BY p.id FOR UPDATE OF p`, [shipmentId]);
   const transitioned = [];
   for (const parcel of parcels) {
