@@ -896,7 +896,6 @@
       label: 'Opérations',
       items: Object.freeze([
         Object.freeze({ id: 'flow-operations', label: 'Vue opérations', href: '/admin/operations', roles: ['admin', 'market_operator'], capability: 'operations.read', surfaces: ['operations'] }),
-        Object.freeze({ id: 'workspace-hub-exec', label: 'Hub · Exécution', href: '/admin/hub-live?view=execute', roles: ['market_operator'], capability: 'operations.read', surfaces: [] }),
         Object.freeze({ id: 'workspace-relais-exec', label: 'Relais · Cash & dépôts', href: '/admin/relais-live?view=execute', roles: ['market_operator'], capability: 'operations.read', surfaces: [] }),
         Object.freeze({ id: 'workspace-shipping', label: 'Expéditions & Douane', href: '/admin/workspaces/shipping-customs', roles: ['admin', 'agent_hub', 'agent_transitaire', 'market_operator'], capability: 'operations.read', surfaces: ['shipping-customs-workspace'] }),
 
@@ -918,7 +917,7 @@
       items: Object.freeze([
         // Une seule entrée Sourcing : le cockpit LIVE est la porte principale ; les vues détaillées restent accessibles par leurs liens contextuels.
         Object.freeze({ id: 'live-import-runtime', label: 'Sourcing', href: '/admin/import-runtime', roles: ['admin', 'sourcing'], surfaces: ['import-runtime', 'sourcing-workspace', 'supplier-360'] }),
-        Object.freeze({ id: 'live-hub', label: 'Hub live', href: '/admin/hub-live?view=execute', roles: ['admin', 'agent_hub'], surfaces: ['hub-live'] }),
+        Object.freeze({ id: 'live-hub', label: 'Hub · Tous les marchés', href: '/admin/hub', roles: ['admin', 'market_operator', 'finance', 'sourcing', 'agent_hub', 'agent_relais', 'agent_transitaire', 'support'], surfaces: ['hub-workstation', 'hub-live'] }),
         Object.freeze({ id: 'live-relais', label: 'Relais live', href: '/admin/relais-live', roles: ['admin', 'agent_relais'], surfaces: ['relais-live'] }),
       ]),
     }),
