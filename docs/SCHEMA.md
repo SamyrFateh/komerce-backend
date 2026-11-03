@@ -834,3 +834,16 @@ La projection N1 prévisionnelle du pricing reste intacte ; l'ajustement prévis
 ### Migration 366 — intention de schéma : réception locale sans expédition fictive
 
 Mode : `intended_migration_schema` (pas encore vérifié dans le dump live). La migration 366 remplace **la fonction existante** `public.check_parcel_item_quantities()` (déclencheur `trg_check_parcel_item_qty`, migration 022) sans créer de table ou de colonne. Elle conserve les contraintes quantités de l'import. Exception stricte : `parcel_items.qty_received > qty_shipped` est autorisée seulement si la ligne `order_items.fulfillment_source='LOCAL_STOCK'` et si un scan `relais_received` de ce même colis/commande, avec acteur identifié, existe dans la transaction. Les colis locaux restent à `qty_shipped=0` ; aucun passage fictif par Hub/transitaire/douane. Rollback : remettre la définition exacte de `check_parcel_item_quantities()` de la migration 022 après arrêt du flux local.
+
+
+<!-- schema-pending
+object: product_sku_physical_codes
+kind: table
+migration: 391
+section: ### 4.2 Logistique colis (5 tables)
+role: Code physique EAN/GTIN ou fournisseur identifié par SKU Komerce. Un code identifie une variante, jamais une unité ni une commande. Portée fournisseur nullable pour EAN universel, confiance DECLARED/CONFIRMED et preuve d'observation.
+-->
+
+### Migration 391 — correspondance physique code/SKU (`intended_migration_schema`)
+
+`product_sku_physical_codes` est une table prévue, non encore vérifiée dans le dump Railway. Elle conserve le lien code physique → variante Komerce, éventuellement sous fournisseur. Les référentiels commerciaux SKU fournisseur déjà présents restent autoritaires, et une validation manuelle est nécessaire avant d'utiliser un code déclaré comme constat physique. Les commandes clientes restent affectées via les allocations Hub.
