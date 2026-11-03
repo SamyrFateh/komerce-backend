@@ -156,7 +156,7 @@ test('Administration : une PO transmise n’est pas une décision de la directri
   const {posts}=await mount(page,{role:'admin',admin:true});
   await page.locator('[data-hub-admin-stage="Fournisseur"]').click({button:'right'});
   await expect(page.getByRole('button',{name:'Attester l’envoi fournisseur'})).toBeVisible();
-  await expect(page.locator('[data-hub-admin-po="'+PO+'"]')).toContainText('Brouillon à préparer');
+  await expect(page.locator('[data-hub-admin-po="'+PO+'"]')).toContainText('Envoi à prouver');
   expect(posts).toHaveLength(0);
 });
 
