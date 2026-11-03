@@ -77,10 +77,15 @@ describeDb('Hub V1 — sac client mono-commande (PG réel)', () => {
     await submitAuthorized(engagement, poId, { actor: { id: actorId, role: 'admin' } });
     const received = await hubOps.receiveSupplierPackageCommand({
       reference: tag + '-IN',
-      contents: [{ purchase_order_id: poId, product_sku_id: skuId, quantity: 2 }],
+      contents: [{ purchase_order_id: poId, product_sku_id: skuId, quantity: 2, evidence_code: barcode }],
     }, actorId);
     expect(received.status).toBe(201);
     sourceUnitId = received.body.unit.id;
+    const {rows:[proof]}=await q(
+      "SELECT count(*)::int AS lines, count(*) FILTER (WHERE evidence_method='SCAN' AND evidence_code=$2)::int AS scans " +
+      "FROM hub_physical_unit_placements WHERE physical_unit_id=$1 AND operation_type='RECEIVE'",
+      [sourceUnitId,barcode]);
+    expect(proof).toEqual({lines:2,scans:2});
     allocation1 = (await q('SELECT id FROM hub_purchase_allocations WHERE purchase_line_id=$1', [line1])).rows[0].id;
     allocation2 = (await q('SELECT id FROM hub_purchase_allocations WHERE purchase_line_id=$1', [line2])).rows[0].id;
   });
