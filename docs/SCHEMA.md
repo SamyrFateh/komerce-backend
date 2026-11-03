@@ -879,3 +879,16 @@ role: Code physique EAN/GTIN ou fournisseur identifié par SKU Komerce. Un code 
 `hub_box_effective_placements` est une projection SQL de tous les articles physiquement présents dans un carton : placements directs de la KOM-BOX ou placements encore actifs dans les sacs réellement liés. Les allocations ne sont jamais dupliquées ou déplacées fictivement. Les calculs `hub_item_physical_proof`, `hub_item_handed_over`, `sync_parcel_items_from_physical`, la composition de l'expédition et la réception relais utilisent cette projection.
 
 Cette migration est déclarée prévue et n'est pas appliquée en Staging ; certificat E2E marché, réception relais et cas d'erreur obligatoire avant déploiement.
+
+
+<!-- schema-pending: hub_box_bags (migration 394, not yet live) -->
+### Table `hub_box_bags` — migration 394 (intended_migration_schema)
+
+Contenance physique immuable : un sac client `HANDLING_UNIT` fermé (`bag_unit_id`) est rattaché à une KOM-BOX `MARKET_PARCEL` (`box_unit_id`) et au colis canonique `parcels.id`. Les deux références sont scannées ; le contrôle transactionnel vérifie la commande, les quantités, le marché et la destination. Aucune quantité de l'article n'est artificiellement transférée entre sac et carton.
+<!-- /schema-pending -->
+
+<!-- schema-pending: hub_box_effective_placements (migration 394, not yet live) -->
+### Vue `hub_box_effective_placements` — migration 394 (intended_migration_schema)
+
+Projection SQL unique du contenu de la KOM-BOX : placements directs historiques et placements toujours actifs des sacs client effectivement rattachés, sans duplication. Source des quantités physiquement emballées/expédiées et de la lecture au relais. Cette vue n'est pas disponible dans le dump Railway avant migration.
+<!-- /schema-pending -->
