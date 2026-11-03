@@ -55,3 +55,12 @@
 .kmc-hub-app-layout.is-table { display:block; }
 .kmc-hub-app-layout.is-table > .kmc-hub-app-rail { display:none; }
 .kmc-hub-app-layout.is-table > .kmc-hub-app-content { width:100%; min-width:0; }
+
+/* Hub transverse : lecture globale et recherche utilisable à 1440 px. */
+.kmc-hub-global-toolbar { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; color:#203448; padding:2px 1px 3px; }
+.kmc-hub-global-toolbar strong { font-size:13px; }
+.kmc-hub-global-count { font-size:11px; color:#718395; }
+.kmc-hub-app-workspace > .kmc-hub-app-search { max-width:360px; margin:0 0 11px 0; }
+.kmc-hub-app-workspace .kmc-hub-board-scroll { width:100%; }
+.kmc-hub-app-workspace .kmc-hub-board { min-width:920px; }
+.kmc-hub-app-workspace .kmc-hub-board-identity small { white-space:normal; }
