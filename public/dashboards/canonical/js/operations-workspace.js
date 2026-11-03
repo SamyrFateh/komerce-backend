@@ -116,7 +116,6 @@
 
   function metricItems(summary = {}) {
     return [
-      { key: 'hub-order', label: 'Hub · Commander', value: formatNumber(summary.hub_to_order), tone: summary.hub_to_order ? 'warning' : 'neutral' },
       { key: 'distribution', label: 'À répartir', value: formatNumber(summary.hub_unassigned), tone: summary.hub_unassigned ? 'warning' : 'neutral' },
       { key: 'ship', label: 'Hub · Expédier', value: formatNumber(summary.hub_to_ship), tone: summary.hub_to_ship ? 'warning' : 'neutral' },
       { key: 'cash', label: 'Relais · Encaisser', value: formatNumber(summary.relay_cash_pending), tone: summary.relay_cash_pending ? 'warning' : 'neutral' },
@@ -1027,18 +1026,6 @@
     if ((view === 'hub' || view === 'inventory') && isHubReadOnly(context)) renderExecuteLink(rootNode, doc, context);
 
     if (view === 'hub') {
-    renderOrderActionSection(rootNode, ui, doc, context, {
-      title: 'Hub · Commander',
-      description: 'Commandes confirmées à envoyer au sourcing. La transition reste exécutée par la state machine commande.',
-      rows: payload.queues.hub.to_order,
-      hub: true,
-      action: 'mark-ordered',
-      actionLabel: 'Commander',
-      suffix: row => `orders/${encodeURIComponent(row.reference)}/mark-ordered`,
-      confirm: row => `Envoyer ${row.reference} au sourcing ?`,
-      empty: 'Aucune commande à envoyer au sourcing.',
-    });
-
     const distribution = createSection(
       rootNode,
       ui,

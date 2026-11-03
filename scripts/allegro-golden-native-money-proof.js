@@ -19,7 +19,6 @@
  */
 
 const db = require('../db');
-const { isGroupedPurchasingEnabled } = require('../services/purchasing-grouped-service');
 
 function readArg(argv, name) {
   const inline = argv.find(arg => arg.startsWith(`${name}=`));
@@ -105,7 +104,7 @@ async function readHistoricalPurchaseOrder(query, { orderId, productId, supplier
 }
 
 /**
- * Mode regroupé (KOMERCE_GROUPED_PURCHASING=1) : « une ligne par item » au lieu d'« une PO par commande ».
+ * Modèle regroupé (unique) : « une ligne par item » au lieu d'« une PO par commande ».
  * Le déclencheur ouvre une ligne sans PO ; l'identité et la monnaie native se prouvent sur la ligne (instantané).
  */
 async function readGroupedPurchaseLine(query, { orderId, productId, supplierSku }) {
@@ -158,7 +157,7 @@ async function runGoldenNativeMoneyProof({
   query = db.query.bind(db),
   fetchImpl = global.fetch,
   triggerPurchasing,
-  grouped = isGroupedPurchasingEnabled(),
+  grouped = true,
 } = {}) {
   if (!orderId || !productId || !supplierSku) throw new Error('GOLDEN_INPUTS_REQUIRED');
   if (!adminPassword) throw new Error('ADMIN_PASSWORD_REQUIRED');

@@ -250,13 +250,11 @@ describe('P-18 — Idempotence', () => {
 // P-19  Flow routing
 // ═════════════════════════════════════════════════════════════════════════════
 
-describe('P-19 — trigger_mode Allegro = manual', () => {
-  test('P-19 — code route auto_order=false + platform≠whatsapp → manual', () => {
-    const src = fs.readFileSync(
-      path.join(ROOT, 'services', 'purchasing-trigger-service.js'), 'utf8'
-    );
-    expect(src).toMatch(/triggerMode\s*=\s*ps\.auto_order\s*\?\s*'auto'\s*:/);
-    expect(src).toMatch(/ps\.platform\s*===\s*'whatsapp'\s*\?\s*'whatsapp'\s*:\s*'manual'/);
+describe('P-19 — le déclencheur ne choisit plus de trigger_mode', () => {
+  test('P-19 — aucune PO créée au paiement : le mode est choisi à la préparation de PO (manual par défaut)', () => {
+    const src = fs.readFileSync(path.join(ROOT, 'services', 'purchasing-trigger-service.js'), 'utf8');
+    expect(src).not.toMatch(/triggerMode/);
+    expect(src).not.toContain('INSERT INTO purchase_orders');
   });
 });
 

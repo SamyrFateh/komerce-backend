@@ -198,6 +198,6 @@ describe('§9bis.5 — triggerMode ne lit jamais evidence.execution_mode (dette 
     // ps.auto_order et ps.platform, jamais depuis l'evidence d'un adapter.
     expect(src).not.toMatch(/execution_mode/);
     expect(src).not.toMatch(/auto_order_ready/);
-    expect(src).toMatch(/ps\.auto_order\s*\?\s*'auto'/);
+    expect(src).not.toMatch(/triggerMode/);
   });
 });

@@ -210,7 +210,6 @@ const ROUTE_SCHEMA_MAP = [
   { prefix: '/api/agent/action-center/{signalRef}/snooze', method: 'post', schema: null },
   // LOT 4A — Canonical Operations / Hub-Relais Workspace (single-market actions)
   { prefix: '/api/admin/workspaces/operations/market/{marketCode}', method: 'get', schema: null },
-  { prefix: '/api/admin/workspaces/operations/market/{marketCode}/orders/{reference}/mark-ordered', method: 'post', schema: null },
   { prefix: '/api/admin/workspaces/operations/market/{marketCode}/distribution/run', method: 'post', schema: null },
   { prefix: '/api/admin/workspaces/operations/market/{marketCode}/parcels/{reference}/ship', method: 'post', schema: null },
   { prefix: '/api/admin/workspaces/operations/market/{marketCode}/orders/{reference}/confirm-cash', method: 'post', schema: null },
@@ -804,9 +803,6 @@ const KNOWN_RESPONSES = {
   // LOT 4A — réponses Operations Workspace consommées par Canonical.
   '/api/admin/workspaces/operations/market/{marketCode}': {
     get: { fields: ['scope','summary','queues','distribution','inventory','data_quality'], source: 'test' }
-  },
-  '/api/admin/workspaces/operations/market/{marketCode}/orders/{reference}/mark-ordered': {
-    post: { fields: ['ok','action','result'], source: 'test' }
   },
   '/api/admin/workspaces/operations/market/{marketCode}/distribution/run': {
     post: { fields: ['ok','action','result'], source: 'test' }
@@ -1819,9 +1815,6 @@ const KNOWN_RESPONSES = {
   },
   '/api/hub/today': {
     get: { fields: ['data','count'], source: 'route-read' }
-  },
-  '/api/hub/orders/mark-ordered': {
-    post: { fields: ['ok'], source: 'test' }
   },
   '/api/hub/auto-distribute': {
     post: { fields: ['distributed'], source: 'test' },

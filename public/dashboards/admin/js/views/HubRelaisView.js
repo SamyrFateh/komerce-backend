@@ -244,8 +244,8 @@
       <td class="hr-td-secondary">${desc}</td>
       <td class="hr-td-muted hr-td-nowrap">${fmtAgo(o.created_at)}</td>
       <td class="hr-td-action">
-        <button data-action="${btnDataAction}" data-ref="${o.reference}"
-          class="btn btn-sm hr-btn-action">${btnLabel}</button>
+        ${btnLabel ? `<button data-action="${btnDataAction}" data-ref="${o.reference}"
+          class="btn btn-sm hr-btn-action">${btnLabel}</button>` : ''}
       </td>
     </tr>`;
   }
@@ -371,7 +371,7 @@
 
     const panelCommander = denseTable(
       ['Réf', 'Client', 'Détails', 'Âge', ''],
-      confirmed.length ? confirmed.map(o => orderRow(o, '🛒 Commander', 'hub-mark-ordered')).join('') : null
+      confirmed.length ? confirmed.map(o => orderRow(o, '', '')).join('') : null
     );
 
     const panelRepartir = `
@@ -440,16 +440,6 @@
 
     // ── Wire refresh ──
     wrapperEl.querySelector('.btn-refresh-hub').addEventListener('click', () => refreshView('hub'));
-
-    // ── Wire commander actions ──
-    wrapperEl.querySelectorAll('[data-action="hub-mark-ordered"]').forEach(btn => {
-      btn.addEventListener('click', () => doAction(
-        btn, '🛒 Commander',
-        () => KmcApi.hubMarkOrdered(btn.dataset.ref),
-        `${btn.dataset.ref} → commandé 📋`,
-        () => refreshView('hub')
-      ));
-    });
 
     // ── Wire expédier actions ──
     wrapperEl.querySelectorAll('[data-action="hub-ship"]').forEach(btn => {

@@ -59,7 +59,6 @@ jest.mock('../../services/market-delegation-service', () => ({
 }));
 
 const mockBuildWorkspace = jest.fn();
-const mockMarkOrdered = jest.fn();
 const mockRunDistribution = jest.fn();
 const mockScanParcel = jest.fn();
 const mockConfirmCash = jest.fn();
@@ -76,7 +75,6 @@ jest.mock('../../services/operations-workspace', () => {
   return {
     OperationsWorkspaceError,
     buildWorkspace: (...args) => mockBuildWorkspace(...args),
-    markOrdered: (...args) => mockMarkOrdered(...args),
     runDistribution: (...args) => mockRunDistribution(...args),
     scanParcel: (...args) => mockScanParcel(...args),
     confirmCash: (...args) => mockConfirmCash(...args),
@@ -159,7 +157,6 @@ beforeEach(() => {
     distribution: { parcels: [], unassigned: [] },
     inventory: { items: [], open_parcels: [] },
   });
-  mockMarkOrdered.mockResolvedValue({ reference: 'CMD-CM-001', status: 'ordered' });
   mockRunDistribution.mockResolvedValue({ market: 'CM', attempted: 0, distributed: 0 });
   mockScanParcel.mockResolvedValue({ reference: 'PCL-CM-001', status: 'shipped' });
   mockConfirmCash.mockResolvedValue({ reference: 'CMD-CM-001', payment_status: 'paid' });
@@ -252,19 +249,17 @@ test('market_id navigateur est rejeté avant toute autorité', async () => {
 });
 
 test('admin ne peut muter sans la capability execution exacte', async () => {
-  mockGrantedCapabilities.delete('execution.order.mark_ordered@CM');
+  mockGrantedCapabilities.delete('execution.distribution.run@CM');
   const res = await request(app())
-    .post('/api/admin/workspaces/operations/market/CM/orders/CMD-CM-001/mark-ordered')
+    .post('/api/admin/workspaces/operations/market/CM/distribution/run')
     .send({});
 
   expect(res.status).toBe(403);
   expect(res.body.code).toBe('MARKET_CAPABILITY_REQUIRED');
-  expect(mockMarkOrdered).not.toHaveBeenCalled();
+  expect(mockRunDistribution).not.toHaveBeenCalled();
 });
 
 test('chaque mutation Hub exige sa capability exacte et audite avant mutation', async () => {
-  const mark = await request(app())
-    .post('/api/admin/workspaces/operations/market/CM/orders/CMD-CM-001/mark-ordered').send({});
   const distribute = await request(app())
     .post('/api/admin/workspaces/operations/market/CM/distribution/run').send({});
   const ship = await request(app())
@@ -273,9 +268,8 @@ test('chaque mutation Hub exige sa capability exacte et audite avant mutation', 
     .post('/api/admin/workspaces/operations/market/CM/inventory/items/item-1/assign')
     .send({ parcel_ref: 'PCL-CM-001' });
 
-  expect([mark.status, distribute.status, ship.status, assign.status]).toEqual([200, 200, 200, 200]);
+  expect([distribute.status, ship.status, assign.status]).toEqual([200, 200, 200]);
   for (const capability of [
-    'execution.order.mark_ordered',
     'execution.distribution.run',
     'execution.parcel.ship',
     'execution.inventory.assign',
@@ -285,7 +279,7 @@ test('chaque mutation Hub exige sa capability exacte et audite avant mutation', 
       requiredCapability: capability,
     }));
   }
-  expect(mockAudit).toHaveBeenCalledTimes(4);
+  expect(mockAudit).toHaveBeenCalledTimes(3);
 });
 
 test('une execution capability exacte projette le rôle de compatibilité sans modifier users.role', async () => {

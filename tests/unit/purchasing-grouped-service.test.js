@@ -4,12 +4,6 @@
 const grouped = require('../../services/purchasing-grouped-service');
 
 describe('purchasing-grouped-service — dossiers mono-marché', () => {
-  const prior = process.env.KOMERCE_GROUPED_PURCHASING;
-  afterAll(() => {
-    if (prior === undefined) delete process.env.KOMERCE_GROUPED_PURCHASING;
-    else process.env.KOMERCE_GROUPED_PURCHASING = prior;
-  });
-
   test('exports the grouped purchasing orchestration surface', () => {
     expect(grouped).toBeTruthy();
     expect(typeof grouped.preparePurchaseOrder).toBe('function');
@@ -18,7 +12,6 @@ describe('purchasing-grouped-service — dossiers mono-marché', () => {
   });
 
   test('sépare les besoins par fournisseur, hub ET marché sans renommer un marché au navigateur', async () => {
-    process.env.KOMERCE_GROUPED_PURCHASING = '1';
     const shared = {
       supplier_id: 'supplier-a',
       supplier_name: 'Fournisseur A',

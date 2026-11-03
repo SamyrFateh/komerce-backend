@@ -290,24 +290,6 @@ router.post(
 );
 
 router.post(
-  '/market/:marketCode/orders/:reference/mark-ordered',
-  attachHubExecutionCapability('execution.order.mark_ordered'),
-  requireHubWorkspaceAction,
-  async (req, res, next) => {
-    try {
-      const result = await workspace.markOrdered(
-        req.params.reference,
-        req.workspaceMarket,
-        actionActor(req)
-      );
-      return res.json({ ok: true, action: 'mark_ordered', result });
-    } catch (err) {
-      return sendWorkspaceError(err, res, next);
-    }
-  }
-);
-
-router.post(
   '/market/:marketCode/distribution/run',
   attachHubExecutionCapability('execution.distribution.run'),
   requireHubWorkspaceAction,

@@ -115,7 +115,6 @@ CT.api = {
   simCleanup: function() { return this.post("/api/simulator/cleanup"); },
 
   // ---- Hub operational ----
-  hubMarkOrdered: function(ref) { return this.post("/api/hub/orders/mark-ordered", { reference: ref }); },
   hubShip: function(parcelId) { return this.post("/api/hub-dash/parcels/" + parcelId + "/ship"); },
   hubStartPrep: function(orderId) { return this.post("/api/hub-dash/orders/" + orderId + "/start-prep"); },
   hubParcels: function() { return this.get("/api/v2/parcels"); },

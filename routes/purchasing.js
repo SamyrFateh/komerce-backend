@@ -37,7 +37,7 @@
  *   POST /api/purchasing/:id/receive                  → 410 DECLARATIVE_RECEIVE_CLOSED (réception = POST /api/scans/hub/receive)
  *   DELETE /api/purchasing/po/:po_id                  → annuler une purchase order
  *
- * Forme regroupée (PR 4, KOMERCE_GROUPED_PURCHASING=1 ; sinon 409 GROUPED_PURCHASING_DISABLED) :
+ * Forme regroupée (modèle unique) :
  *   GET  /api/purchasing/open-lines[?market_id=]      → lignes ouvertes par (fournisseur, hub, marché), filtre opérateur
  *   GET  /api/purchasing/po/:po_id                    → lecture d'une PO regroupée (lignes + marchés)
  *   POST /api/purchasing/po/prepare                   → PO regroupée draft + rattachement des lignes

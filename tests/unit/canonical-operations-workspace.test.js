@@ -33,7 +33,6 @@ test('le frontend ne construit jamais market_id comme autorité', () => {
 
 test('les KPI du Workspace sont une projection pure du résumé serveur', () => {
   const items = workspace.metricItems({
-    hub_to_order: 2,
     hub_unassigned: 3,
     hub_to_ship: 4,
     relay_cash_pending: 5,
@@ -42,7 +41,7 @@ test('les KPI du Workspace sont une projection pure du résumé serveur', () => 
     inventory_to_assign: 8,
   });
 
-  expect(items.map(item => item.value)).toEqual(['2', '3', '4', '5', '6', '7', '8']);
+  expect(items.map(item => item.value)).toEqual(['3', '4', '5', '6', '7', '8']);
   expect(items.every(item => item.tone === 'warning')).toBe(true);
 });
 

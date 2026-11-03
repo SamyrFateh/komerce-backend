@@ -54,7 +54,7 @@ const { shared } = require('./purchasing-grouped-service');
 const log = require('../utils/logger').child({ module: 'purchasing-engagement' });
 
 const {
-  fail, requireEnabled, requireUuid, withTransaction, lockGroupedPo,
+  fail, requireUuid, withTransaction, lockGroupedPo,
   loadPurchaseOrderLines, summarizeMarkets, shapeLine, LINE_COLUMNS, LINE_JOINS,
 } = shared;
 
@@ -162,7 +162,7 @@ async function insertRemnant(client, line, quantity, actor) {
 function groupBySupplierUnitRef(lines) {
   const groups = new Map();
   for (const line of lines) {
-    const key = line.supplier_unit_ref;
+    const key = line.supplier_unit_ref || `${line.product_sku_id || 'line'}:${line.supplier_sku}:${line.supplier_unit_ref ? '' : line.id}`;
     if (!groups.has(key)) {
       groups.set(key, {
         supplier_unit_ref: key,
@@ -275,7 +275,6 @@ async function buildProviderPayloads(readyByProvider, context, verdicts) {
 }
 
 async function submitPurchaseOrder(poId, { actor = null, context = {} } = {}) {
-  requireEnabled();
   requireUuid(poId, 'po_id');
 
   const outcome = await withTransaction(async (client) => {
@@ -404,7 +403,6 @@ async function verifyConfirmationEvidence(lines, confirmations, supplierOrderId,
 }
 
 async function confirmGroupedPurchaseOrder(poId, body = {}, { actor = null, context = {} } = {}) {
-  requireEnabled();
   requireUuid(poId, 'po_id');
   const confirmations = parseConfirmationLines(body);
   const supplierOrderId = optionalText(body.supplier_order_id);
@@ -443,6 +441,13 @@ async function confirmGroupedPurchaseOrder(poId, body = {}, { actor = null, cont
     for (const line of lines) {
       if (byId.get(line.id).confirmedQuantity > line.quantity) {
         throw fail(400, 'INVALID_INPUT', `confirmed_quantity dépasse la quantité de la ligne ${line.id}`, { purchase_line_id: line.id, quantity: line.quantity });
+      }
+    }
+
+    for (const line of lines) {
+      const c = byId.get(line.id);
+      if (c.confirmedQuantity > 0 && c.price === null && !(Number(line.supplier_unit_price) > 0)) {
+        throw fail(400, 'CONFIRMED_PRICE_REQUIRED', 'Prix unitaire confirmé obligatoire pour une ligne sans prix fournisseur connu', { purchase_line_id: line.id });
       }
     }
 
@@ -529,7 +534,6 @@ async function closeGroupedPurchaseOrderIfComplete(client, poId) {
 }
 
 async function settleLine(lineId, body = {}, { actor = null } = {}) {
-  requireEnabled();
   requireUuid(lineId, 'line_id');
   const settledQuantity = requireNonNegativeInt(body.settled_quantity, 'settled_quantity');
   const reason = optionalText(body.reason);
@@ -629,8 +633,11 @@ async function createLineInTransaction(client, { orderItemId, productSupplierId,
   let readiness;
   try {
     exactSku = await loadExactSoldSku(client, item);
-    if (!exactSku) throw fail(409, 'EXACT_IDENTITY_REQUIRED', 'Seul un article à SKU exact peut devenir une ligne d\'achat regroupable');
-    if (executionMode === 'api') {
+    if (!exactSku && executionMode === 'api') throw fail(409, 'EXACT_IDENTITY_REQUIRED', 'Une ligne en exécution API exige un article à SKU exact');
+    if (!exactSku) {
+      // Mapping fournisseur manuel (modèle unique) : pas d'identité exacte, prix AED du mapping s'il existe.
+      readiness = null;
+    } else if (executionMode === 'api') {
       // Exécution API : le fournisseur doit être celui du provider de l'identité, prêt selon le moteur canonique.
       if (String(ps.platform || '').toLowerCase() !== exactSku.supplier_order_identity.provider) {
         throw fail(409, 'SUPPLIER_PROVIDER_MISMATCH', 'Une ligne en exécution API doit être achetée chez le provider de l\'identité du SKU vendu');
@@ -651,7 +658,16 @@ async function createLineInTransaction(client, { orderItemId, productSupplierId,
     }
     throw error;
   }
-  const snapshot = { ...buildPurchaseTarget(ps, exactSku, readiness), productSkuId: exactSku.id };
+  let snapshot;
+  if (exactSku) {
+    snapshot = { ...buildPurchaseTarget(ps, exactSku, readiness), productSkuId: exactSku.id };
+  } else {
+    const amount = Number(ps.supplier_price_aed);
+    snapshot = {
+      purchaseTarget: ps, productSkuId: null, supplierUnitRef: null, supplierOrderIdentity: null,
+      money: Number.isFinite(amount) && amount > 0 ? { amount, currency: 'AED' } : null,
+    };
+  }
   // I1 (base) refuse tout sur-engagement de l'article ; mapDbError le remonte en 409.
   const line = await insertOpenPurchaseLine(client, { item, ps, snapshot, quantity, parentLineId });
   if (actor && uuidOrNull(actor.id)) {
@@ -667,7 +683,6 @@ function parseExecutionMode(value) {
 }
 
 async function createManualLine(body = {}, { actor = null, context = {} } = {}) {
-  requireEnabled();
   const orderItemId = requireUuid(body.order_item_id, 'order_item_id');
   const productSupplierId = requireUuid(body.product_supplier_id, 'product_supplier_id');
   const quantity = requirePositiveInt(body.quantity, 'quantity');
@@ -686,7 +701,6 @@ async function createManualLine(body = {}, { actor = null, context = {} } = {}) 
  * comptage : I1 ne compte pas la ligne annulée. Une ligne engagée (PO soumise) se change via son reliquat.
  */
 async function changeLineSupplier(lineId, body = {}, { actor = null, context = {} } = {}) {
-  requireEnabled();
   requireUuid(lineId, 'line_id');
   const productSupplierId = requireUuid(body.product_supplier_id, 'product_supplier_id');
   const reason = optionalText(body.reason);
@@ -723,7 +737,6 @@ async function changeLineSupplier(lineId, body = {}, { actor = null, context = {
 const SENT_CHANNELS = new Set(['email', 'whatsapp', 'phone', 'api', 'other']);
 
 async function recordPurchaseOrderSent(poId, body = {}, { actor = null } = {}) {
-  requireEnabled();
   requireUuid(poId, 'po_id');
   const channel = String((body && body.channel) || '').trim().toLowerCase();
   if (!SENT_CHANNELS.has(channel)) {

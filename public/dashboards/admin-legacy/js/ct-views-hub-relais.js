@@ -165,7 +165,7 @@ CT.views.hub = async function(container) {
     confirmed.forEach(function(o) {
       var items = []; try { items = typeof o.items === 'string' ? JSON.parse(o.items) : (o.items || []); } catch(e) {}
       var desc = (items.length || o.nb_items || 0) + ' art. · ' + CT.pc.fmt(o.total_kmf) + ' · ' + (o.relais_island || '—');
-      rows1 += _compactRow(o.reference, o.customer_name || 'Client', desc, CT.pc.ago(o.created_at), '🛒 Commander', 'hub-mark-ordered', '#b45309');
+      rows1 += _compactRow(o.reference, o.customer_name || 'Client', desc, CT.pc.ago(o.created_at), '', '', '#b45309');
     });
     html += '<div class="ct-tab-panel" data-panel="h1" style="' + (firstActive !== 'h1' ? 'display:none;' : '') + 'background:#fff;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 8px 8px;padding:8px">';
     html += _compactTable(['Réf', 'Client', 'Détails', 'Âge', ''], rows1);
@@ -393,18 +393,6 @@ function _wireHubActions(container) {
   var refreshBtn = container.querySelector('[data-act="hub-refresh"]');
   if (refreshBtn) refreshBtn.addEventListener('click', function() { CT.views.hub(document.getElementById('ct-main')); });
 
-  container.querySelectorAll('[data-action="hub-mark-ordered"]').forEach(function(btn) {
-    btn.addEventListener('click', async function() {
-      var ref = btn.dataset.ref;
-      if (!confirm('Passer en commande ' + ref + ' ?\nconfirmed → ordered')) return;
-      btn.disabled = true; btn.textContent = '⏳...';
-      try {
-        await CT.api.hubMarkOrdered(ref);
-        _toast('✅ ' + ref + ' → commandé 📋');
-        CT.views.hub(document.getElementById('ct-main'));
-      } catch(e) { alert('❌ ' + e.message); btn.disabled = false; btn.textContent = '🛒 Commander'; }
-    });
-  });
 
   // Auto-distribution loader + button
   _loadDistribution();

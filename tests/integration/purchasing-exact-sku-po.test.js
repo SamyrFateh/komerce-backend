@@ -356,18 +356,18 @@ if (!hasIntegrationEnv) {
 
       const result = await triggerPurchasing(order.id, { context: aliexpressContext });
       expect(result.purchase_orders).toHaveLength(1);
-      expect(result.purchase_orders[0].purchase_order_id).toBeTruthy();
+      expect(result.purchase_orders[0]).toMatchObject({ status: 'line_opened', purchase_order_id: null });
 
       const { rows: [po] } = await db.query(
-        `SELECT order_item_id, product_sku_id, supplier_sku,
-                supplier_unit_ref, supplier_order_identity, qty,
-                unit_price_aed, supplier_unit_price, supplier_currency,
-                supplier_total_price
-           FROM purchase_orders
+        `SELECT order_item_id, product_sku_id, supplier_sku, purchase_order_id,
+                supplier_unit_ref, supplier_order_identity, quantity AS qty,
+                supplier_unit_price, supplier_currency
+           FROM purchase_lines
           WHERE id = $1`,
-        [result.purchase_orders[0].purchase_order_id]
+        [result.purchase_orders[0].purchase_line_id]
       );
 
+      expect(po.purchase_order_id).toBeNull();
       expect(po.order_item_id).toBe(orderItem.id);
       expect(po.product_sku_id).toBe(skuB.id);
       expect(po.supplier_sku).toBe('AE-BLACK-M');
@@ -375,10 +375,8 @@ if (!hasIntegrationEnv) {
       expect(po.supplier_unit_ref).toBe('14:Black;5:M');
       expect(po.supplier_order_identity).toEqual(identityB);
       expect(po.qty).toBe(1);
-      expect(po.unit_price_aed).toBeNull();
       expect(Number(po.supplier_unit_price)).toBe(29.9);
       expect(po.supplier_currency).toBe('PLN');
-      expect(Number(po.supplier_total_price)).toBe(29.9);
       expect(canonicalUnitId).toBeTruthy();
     });
   });

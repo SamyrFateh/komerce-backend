@@ -6,7 +6,7 @@
  * @test-requires postgres
  */
 /**
- * E2E-P0-PURCHASING — achats regroupés (drapeau KOMERCE_GROUPED_PURCHASING allumé), PR 7/8
+ * E2E-P0-PURCHASING — achats regroupés (modèle unique), PR 7/8
  *
  * Feature propriétaire : purchasing — traversées : orders (machine d'états), logistics (réception Hub)
  *
@@ -142,7 +142,6 @@ describeE2E('E2E-P0-PURCHASING — achats regroupés : flux complet', ({ db }) =
   }
 
   beforeAll(async () => {
-    process.env.KOMERCE_GROUPED_PURCHASING = '1';
     cleanup = createCleanup(db);
     hubRef = 'DXB';
     // Tables Hub / lignes d'achat : append-only (triggers d'immutabilité). Nettoyage de test uniquement, en une
@@ -188,7 +187,7 @@ describeE2E('E2E-P0-PURCHASING — achats regroupés : flux complet', ({ db }) =
   });
 
   afterAll(async () => {
-    delete process.env.KOMERCE_GROUPED_PURCHASING;
+   
     if (cleanup) await cleanup.run();
   });
 

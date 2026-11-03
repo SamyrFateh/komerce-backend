@@ -7,7 +7,7 @@
  * @test-requires postgres
  */
 /**
- * E2E-P0-PURCHASING — purchasing · anti-doublon de bon de commande
+ * E2E-P0-PURCHASING — purchasing · besoin d'achat unique (modèle regroupé)
  *
  * Feature propriétaire : purchasing
  * Features traversées  : orders (commande cliente, machine de statut),
@@ -20,13 +20,10 @@
  *     jamais son cycle de vie — toute mutation de orders.status continue de
  *     passer exclusivement par order-status-machine.js »
  *
- * Contrat mesuré (services/purchasing-trigger-service.js, I-SWEEP-3B) :
- *   avant toute création, une recherche
- *     WHERE order_id = $1 AND product_supplier_id = $2 AND status != 'cancelled'
- *   renvoie `already_exists` et court-circuite l'INSERT. La clé d'unicité est
- *   donc le couple (commande, mapping produit→fournisseur), et un bon de
- *   commande ANNULÉ ne bloque pas un nouveau besoin — ce qui est cohérent : on
- *   doit pouvoir racheter après une annulation fournisseur.
+ * Contrat mesuré (services/purchasing-trigger-service.js, P0-5) :
+ *   un article payé devient exactement UNE ligne d'achat ouverte (sans PO) ;
+ *   le rejeu renvoie `already_exists` ; une ligne annulée ne bloque pas un
+ *   nouveau besoin ; aucune PO n'est créée par commande.
  *
  * FRONTIÈRE RÉSEAU CONTRÔLÉE : aucune. `ADMIN_WHATSAPP` n'est pas défini dans
  * l'environnement de test, donc la notification fournisseur est désactivée à la
@@ -91,6 +88,17 @@ describeE2E('E2E-P0-PURCHASING — purchasing · anti-doublon de bon de commande
     return rows;
   };
 
+  const linesOf = async (orderId) => {
+    const { rows } = await db.query(
+      `SELECT pl.id, pl.quantity, pl.purchase_order_id, pl.cancelled_at, pl.product_supplier_id,
+              pl.product_sku_id, pl.supplier_order_identity
+         FROM purchase_lines pl JOIN order_items oi ON oi.id = pl.order_item_id
+        WHERE oi.order_id = $1 ORDER BY pl.created_at ASC`,
+      [orderId]
+    );
+    return rows;
+  };
+
   const orderStatus = async (orderId) => {
     const { rows } = await db.query('SELECT status FROM orders WHERE id = $1', [orderId]);
     return rows[0].status;
@@ -108,16 +116,22 @@ describeE2E('E2E-P0-PURCHASING — purchasing · anti-doublon de bon de commande
     cleanup = createCleanup(db);
 
     const ordersOfRun = `SELECT id FROM orders WHERE user_id = '${clientId}'`;
-    cleanup.trackSql('DELETE FROM users WHERE id = $1', [clientId]);
-    cleanup.trackSql('DELETE FROM suppliers WHERE id = $1', [supplierId]);
-    cleanup.trackSql('DELETE FROM products WHERE name LIKE $1', [`E2E Purchasing ${RUN_TAG}%`]);
-    cleanup.trackSql('DELETE FROM relais WHERE id = $1', [relaisId]);
-    cleanup.trackSql('DELETE FROM product_suppliers WHERE supplier_id = $1', [supplierId]);
-    cleanup.trackSql('DELETE FROM orders WHERE user_id = $1', [clientId]);
-    cleanup.trackSql(`DELETE FROM purchase_orders WHERE order_id IN (${ordersOfRun})`);
-    cleanup.trackSql(`DELETE FROM order_status_history WHERE order_id IN (${ordersOfRun})`);
-    cleanup.trackSql(`DELETE FROM invoices WHERE order_id IN (${ordersOfRun})`);
-    cleanup.trackSql(`DELETE FROM order_items WHERE order_id IN (${ordersOfRun})`);
+    const itemsOfRun = `SELECT id FROM order_items WHERE order_id IN (${ordersOfRun})`;
+    cleanup.trackSql(`
+      SET session_replication_role = replica;
+      DELETE FROM purchase_lines WHERE order_item_id IN (${itemsOfRun});
+      DELETE FROM purchase_orders WHERE supplier_id = '${supplierId}';
+      DELETE FROM order_status_history WHERE order_id IN (${ordersOfRun});
+      DELETE FROM invoices WHERE order_id IN (${ordersOfRun});
+      DELETE FROM order_items WHERE order_id IN (${ordersOfRun});
+      DELETE FROM orders WHERE user_id = '${clientId}';
+      DELETE FROM product_suppliers WHERE supplier_id = '${supplierId}';
+      DELETE FROM products WHERE name LIKE 'E2E Purchasing ${RUN_TAG}%';
+      DELETE FROM relais WHERE id = '${relaisId}';
+      DELETE FROM suppliers WHERE id = '${supplierId}';
+      DELETE FROM users WHERE id = '${clientId}';
+      SET session_replication_role = origin;
+    `);
 
     await db.query(
       `INSERT INTO users (id, full_name, email, phone, role)
@@ -140,63 +154,52 @@ describeE2E('E2E-P0-PURCHASING — purchasing · anti-doublon de bon de commande
     if (cleanup) await cleanup.run();
   });
 
-  // ── 1. NOMINAL ───────────────────────────────────────────────────────────
-  it('1 — NOMINAL : un besoin génère un bon de commande, avec la quantité commandée', async () => {
+  // ── 1. NOMINAL ──────────────────────────────────────────────────────────
+  it('1 — NOMINAL : un article payé devient exactement une ligne ouverte, aucune PO', async () => {
     const n = await seedNeed('nominal', { quantity: 2 });
 
     const result = await triggerPurchasing(n.orderId);
 
-    const pos = await posOf(n.orderId);
-    expect(pos).toHaveLength(1);
-    // Valeur mesurée, pas supposée : le bon naît `pending` puis passe à
-    // `notified` parce que le fournisseur de test est sur WhatsApp et que
-    // notifySupplierWhatsApp inscrit son wa_url dans la même transaction.
-    // Asserter `pending` reviendrait à figer une étape intermédiaire.
-    expect(pos[0].status).toBe('notified');
-    expect(Number(pos[0].qty)).toBe(2);
-    expect(pos[0].product_supplier_id).toBe(n.productSupplierId);
+    expect(await posOf(n.orderId)).toHaveLength(0);
+    const lines = await linesOf(n.orderId);
+    expect(lines).toHaveLength(1);
+    expect(lines[0].purchase_order_id).toBeNull();
+    expect(Number(lines[0].quantity)).toBe(2);
+    expect(lines[0].product_supplier_id).toBe(n.productSupplierId);
+    expect(lines[0].product_sku_id).toBeNull();
+    expect(lines[0].supplier_order_identity).toBeNull();
 
-    // Contrat de retour mesuré : { purchase_orders: Array } — un seul besoin
-    // couvert, rattaché au bon mapping produit->fournisseur.
-    expect(Array.isArray(result.purchase_orders)).toBe(true);
     expect(result.purchase_orders).toHaveLength(1);
-    expect(result.purchase_orders[0].purchase_order_id).toBe(pos[0].id);
-    expect(result.purchase_orders[0].status).not.toBe('already_exists');
+    expect(result.purchase_orders[0]).toMatchObject({ status: 'line_opened', purchase_order_id: null, purchase_line_id: lines[0].id });
   });
 
-  // ── 2. IDEMPOTENCE I-SWEEP-3B ────────────────────────────────────────────
-  it('2 — rejeu du déclenchement : aucun second bon de commande (I-SWEEP-3B)', async () => {
+  // ── 2. REJEU ────────────────────────────────────────────────────────────
+  it('2 — rejeu du déclenchement : aucune seconde ligne (webhook de paiement réémis)', async () => {
     const n = await seedNeed('replay', { quantity: 3 });
 
     await triggerPurchasing(n.orderId);
-    const afterFirst = await posOf(n.orderId);
+    const afterFirst = await linesOf(n.orderId);
     expect(afterFirst).toHaveLength(1);
 
-    // Le rejeu est le cas réel : le webhook de paiement déclenche l'achat en
-    // fire-and-forget, et Stripe peut réémettre. Deux bons de commande pour un
-    // même besoin, c'est une double commande fournisseur — de l'argent réel.
     const second = await triggerPurchasing(n.orderId);
 
-    const afterSecond = await posOf(n.orderId);
-    expect(afterSecond).toHaveLength(1);
-    expect(afterSecond[0].id).toBe(afterFirst[0].id);
-    expect(afterSecond[0].status).toBe(afterFirst[0].status);
-
-    // Le service doit le dire explicitement, pas échouer en silence.
-    expect(second.purchase_orders).toHaveLength(1);
+    const afterSecond = await linesOf(n.orderId);
+    expect(afterSecond.map((l) => l.id)).toEqual(afterFirst.map((l) => l.id));
     expect(second.purchase_orders[0].status).toBe('already_exists');
-    expect(second.purchase_orders[0].purchase_order_id).toBe(afterFirst[0].id);
+    expect(await posOf(n.orderId)).toHaveLength(0);
   });
 
-  // ── 3. TRIPLE REJEU ──────────────────────────────────────────────────────
-  it('3 — trois déclenchements successifs : toujours un seul bon de commande', async () => {
+  // ── 3. TRIPLE REJEU + CONCURRENCE ───────────────────────────────────────
+  it('3 — trois déclenchements successifs puis deux concurrents : toujours une seule ligne', async () => {
     const n = await seedNeed('triple');
 
     await triggerPurchasing(n.orderId);
     await triggerPurchasing(n.orderId);
     await triggerPurchasing(n.orderId);
+    await Promise.allSettled([triggerPurchasing(n.orderId), triggerPurchasing(n.orderId)]);
 
-    expect(await posOf(n.orderId)).toHaveLength(1);
+    expect(await linesOf(n.orderId)).toHaveLength(1);
+    expect(await posOf(n.orderId)).toHaveLength(0);
   });
 
   // ── 4. FRONTIÈRE D'OWNERSHIP ─────────────────────────────────────────────
@@ -215,33 +218,30 @@ describeE2E('E2E-P0-PURCHASING — purchasing · anti-doublon de bon de commande
     expect(await historyOf(n.orderId)).toEqual(historyBefore);
   });
 
-  // ── 5. BON DE COMMANDE ANNULÉ ────────────────────────────────────────────
-  it("5 — un bon de commande annulé ne bloque pas un nouveau besoin", async () => {
+  // ── 5. LIGNE ANNULÉE ────────────────────────────────────────────────────
+  it('5 — une ligne annulée ne bloque pas un nouveau besoin', async () => {
     const n = await seedNeed('recreate');
 
     await triggerPurchasing(n.orderId);
-    const [first] = await posOf(n.orderId);
+    const [first] = await linesOf(n.orderId);
 
-    // Annulation côté fournisseur : le besoin redevient à couvrir.
-    await db.query("UPDATE purchase_orders SET status = 'cancelled' WHERE id = $1", [first.id]);
+    await db.query("UPDATE purchase_lines SET cancelled_at = now(), cancel_reason = 'e2e' WHERE id = $1", [first.id]);
 
     await triggerPurchasing(n.orderId);
 
-    const pos = await posOf(n.orderId);
-    // La garde exclut explicitement les bons `cancelled` : un nouveau bon doit
-    // pouvoir naître, sinon un achat annulé condamnerait la commande cliente.
-    expect(pos).toHaveLength(2);
-    const active = pos.filter((p) => p.status !== 'cancelled');
+    const lines = await linesOf(n.orderId);
+    expect(lines).toHaveLength(2);
+    const active = lines.filter((l) => !l.cancelled_at);
     expect(active).toHaveLength(1);
     expect(active[0].id).not.toBe(first.id);
   });
 
   // ── 6. ANNULATION DE COMMANDE ────────────────────────────────────────────
-  it("6 — l'annulation de la commande libère les bons de commande liés", async () => {
+  it("6 — l'annulation de la commande annule ses lignes ouvertes", async () => {
     const n = await seedNeed('cancelorder');
 
     await triggerPurchasing(n.orderId);
-    expect(await posOf(n.orderId)).toHaveLength(1);
+    expect(await linesOf(n.orderId)).toHaveLength(1);
 
     const client = await db.pool.connect();
     try {
@@ -266,8 +266,7 @@ describeE2E('E2E-P0-PURCHASING — purchasing · anti-doublon de bon de commande
     // Invariant orders : « annulation libere les achats fournisseurs lies dans
     // la meme transaction ». Laisser un bon `pending` sur une commande annulée
     // ferait acheter chez le fournisseur une marchandise que personne n'attend.
-    const pos = await posOf(n.orderId);
-    const stillOpen = pos.filter((p) => p.status !== 'cancelled');
+    const stillOpen = (await linesOf(n.orderId)).filter((l) => !l.cancelled_at);
     expect(stillOpen).toHaveLength(0);
   });
 });
