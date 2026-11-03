@@ -8,7 +8,7 @@
  * @outputs       financial_movements
  * @depends       db, services/financial-journal.js
  * @used-by       finance journal reconciliation, finance projections
- * @db-read       orders, refunds, supplier_execution_payments, supplier_execution_payment_proofs, supplier_payment_settlements, purchase_orders, order_item_real_cost_allocations, market_settlements, markets, cash_custody_receipts, cash_deposits, customs_shipments, international_shipment_charges, international_shipment_events, international_shipment_hub_units, international_shipments
+ * @db-read       orders, refunds, supplier_execution_payments, supplier_execution_payment_proofs, supplier_payment_settlements, purchase_orders, order_item_real_cost_allocations, market_settlements, markets, cash_custody_receipts, cash_deposits, customs_shipments, international_shipment_charges, international_shipment_events, international_shipment_hub_units, international_shipments, international_n1_allocation_links
  * @db-write      financial_movements, financial_movement_documents
  * @db-txn        caller_provided_client
  * @doctrine      idempotent_projection, sources_stay_authoritative, native_amounts_preserved, not_double_entry, custody_is_not_revenue, shipment_costs_not_item_allocations
@@ -230,10 +230,16 @@ async function projectCustodyMovements(client, { marketId = null } = {}) {
 async function assertShipmentCostAuthority(client, rows) {
   const ids = [...new Set(rows.map(row => row.shipment_id || row.id).filter(Boolean))];
   if (!ids.length) return;
+  // order_item_real_cost_allocations.shipment_id pointe vers customs_shipments,
+  // PAS international_shipments. La table des liens porte l'ID international.
   const { rows: checks } = await client.query(
-    `SELECT a.shipment_id, COUNT(*)::int AS n FROM order_item_real_cost_allocations a
-       WHERE a.is_actual = true AND a.shipment_id = ANY($1::uuid[])
-       GROUP BY a.shipment_id LIMIT 1`, [ids]);
+    `SELECT s.id AS shipment_id, COUNT(DISTINCT a.id)::int AS n
+       FROM international_shipments s
+       JOIN order_item_real_cost_allocations a ON a.is_actual = true
+       LEFT JOIN international_n1_allocation_links l ON l.allocation_id = a.id
+      WHERE s.id = ANY($1::uuid[])
+        AND (a.shipment_id = s.customs_shipment_id OR l.shipment_id = s.id)
+      GROUP BY s.id LIMIT 1`, [ids]);
   if (checks.length && Number(checks[0].n) > 0) {
     const error = new Error('Coût expédition et allocation article concurrents : réconciliation requise');
     error.code = 'JOURNAL_SHIPMENT_ITEM_ALLOCATION_CONFLICT';
