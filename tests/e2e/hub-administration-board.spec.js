@@ -72,8 +72,8 @@ test('Admin — PO en deux marchés, tableau compact, paiement non autorisé fic
   await expect(page.locator('.kmc-market-context-select')).toHaveCount(0);
   await page.locator('[data-hub-admin-po="'+PO2+'"] [data-hub-admin-stage="Engagement"]').click({button:'right'});
   await expect(page.locator('[data-hub-admin-menu]')).toBeVisible();
-  await expect(page.locator('[data-hub-admin-menu] a')).toHaveAttribute('href',
-    '/admin/workspaces/purchasing?po='+PO2+'&market=CM');
+  await expect(page.locator('[data-hub-admin-menu] a')).toHaveCount(0);
+  await expect(page.locator('[data-hub-admin-menu]')).toContainText('Engagement d’achat');
   await page.keyboard.press('Escape');
   await page.locator('[data-hub-admin-view="payments"]').click();
   await expect(page.locator('[data-hub-admin-po="'+PO2+'"]')).toContainText('Débit à rapprocher');
