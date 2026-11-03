@@ -1451,12 +1451,45 @@
       card.setAttribute('data-relay-shipment', shipment.reference);
       card.appendChild(text(doc, 'summary', 'kmc-relay-shipment-title',
         'Expédition ' + shipment.reference + ' · ' + shipment.stage));
+      // Même sac physique que celui fermé au Hub : son scan ouvre la commande
+      // et le colis canonique, sans attester automatiquement la réception.
+      const scanBar=doc.createElement('div');
+      scanBar.className='kmc-hub-bag-controls';
+      scanBar.setAttribute('data-relay-bag-scanner','');
+      const bagCode=doc.createElement('input');
+      bagCode.type='text';bagCode.autocomplete='off';
+      bagCode.placeholder='Scanner un sac de cette expédition';
+      bagCode.setAttribute('aria-label','Scanner le sac client reçu au relais');
+      const scan=makeActionButton(doc,'Identifier le sac','relay-lookup-bag');
+      const result=text(doc,'span','kmc-workspace-muted','Scanner un sac pour retrouver la commande et le colis client.');
+      result.setAttribute('role','status');
+      const identify=async()=>{
+        const code=bagCode.value.trim();if(!code)return;
+        scan.disabled=true;result.textContent='Recherche du sac dans cette expédition…';
+        try{
+          const info=await jsonRequest(context.fetch,endpointFor(context.marketCode,
+            'relay-shipments/'+encodeURIComponent(shipment.reference)+'/bags/'+encodeURIComponent(code)));
+          result.textContent=info.bag_reference+' → commande '+info.order_reference+
+            ' · colis '+info.parcel_reference+' · '+
+            (info.contents||[]).map(item=>(item.product_name||'Article')+' ×'+item.quantity).join(', ');
+        }catch(err){
+          result.textContent='Sac non reconnu dans cette expédition ou non autorisé pour ce relais.';
+        }finally{scan.disabled=false;}
+      };
+      bagCode.addEventListener('keydown',event=>{
+        if(event.key==='Enter'){event.preventDefault();identify();}
+      });
+      scan.addEventListener('click',identify);
+      [bagCode,scan,result].forEach(node=>scanBar.appendChild(node));
+      card.appendChild(scanBar);
       const inputs = [];
       shipment.boxes.forEach(box => {
         const boxNode = doc.createElement('div');
         boxNode.className = 'kmc-relay-box';
         boxNode.setAttribute('data-relay-box', box.reference);
         boxNode.appendChild(text(doc, 'h4', 'kmc-relay-box-title', 'KOM-BOX ' + box.reference));
+        (box.bags || []).forEach(bag => boxNode.appendChild(text(doc, 'div', 'kmc-workspace-muted',
+          'Sac '+bag.reference+' · commande '+bag.order_reference+' · colis '+bag.parcel_reference)));
         box.orders.forEach(order => {
           boxNode.appendChild(text(doc, 'div', 'kmc-workspace-muted', 'Commande ' + order.reference));
           const table = doc.createElement('table');
