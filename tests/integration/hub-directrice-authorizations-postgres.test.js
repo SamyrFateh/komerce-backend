@@ -45,6 +45,9 @@ if (!process.env.DATABASE_URL) {
   }
 
   beforeAll(async () => {
+    // Modèle d'achat unique (369) : le garde de rattachement n'exige l'identité fournisseur exacte qu'aux PO en mode API.
+    // Idempotent ; garantit le garde attendu même si la baseline CI (snapshot Railway) porte encore celui de 266.
+    await q(require('fs').readFileSync(require('path').join(__dirname, '../../migrations/369_single_purchase_model.sql'), 'utf8'));
     km = (await q("SELECT id FROM markets WHERE code='KM'")).rows[0].id;
     admin = await user('admin', 'admin');
     directrice = await user('agent_hub', 'directrice');
