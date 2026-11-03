@@ -17,7 +17,7 @@
  *
  * Jusqu'où c'est prouvé : serveur Komerce + PostgreSQL réels, acteurs réels, SQL = oracle écrit ici.
  * Ce qui n'est PAS prouvé : aucun fournisseur (paiement électronique, transporteur, SMS/WhatsApp) :
- * le paiement est un cash relais, la logistique est portée par les scans de l'application, et la
+ * le paiement est un cash relais, l'attestation locale est faite par le writer métier, et la
  * recette échoue si un effet externe (notification/outbox) apparaît. Aucune purge des faits financiers.
  * Rapport : test-results/order-to-cash-thread/report.{json,md}.
  */
@@ -28,6 +28,7 @@ const bcrypt = require('bcryptjs');
 const db = require('../../db');
 const { createMarketDelegationFixture, READ_ONLY_CAPABILITIES } = require('../helpers/marketDelegationE2EKit');
 const { projectAssignment, LEGACY_VIEWER_CAPABILITIES } = require('../../services/market-scope-projector');
+const { setLocalStock, setLocalStockExposure } = require('../../services/local-stock-service');
 const { PREFIX, PASSWORD, rnd, target, api, login, preflight, externalEffects, provisionActors } = require('./support');
 
 const OUT = path.join(__dirname, '..', '..', 'test-results', 'order-to-cash-thread');
@@ -94,6 +95,10 @@ test.describe.serial('Fil commande → encaissement → garde — routes réelle
              VALUES ($1,$2,50000,(SELECT currency FROM markets WHERE id = $1),'LOCAL_ACTIVE','E2E thread — activation directe de test',NOW(),'{}'::jsonb,NOW())`, [fx.marketA.id, product]);
     await q(`INSERT INTO product_market_exposure(product_id,market_id,commercial_exposure) VALUES ($1,$2,'ENABLED')
              ON CONFLICT (product_id, market_id) DO UPDATE SET commercial_exposure='ENABLED'`, [product, fx.marketA.id]);
+    // Produit local réellement présent : le checkout et la consommation du stock passent
+    // par local-stock-service ; aucune commande fournisseur ou expédition Hub fictive.
+    await setLocalStock({productId:product,marketId:fx.marketA.id,qtyPhysical:50,actorUserId:fx.central.id});
+    await setLocalStockExposure(product,fx.marketA.id,'ENABLED');
     if (!(await q(`SELECT 1 FROM market_delivery_attestations WHERE market_id=$1 AND revoked_at IS NULL AND valid_until>NOW()`, [fx.marketA.id])).rows.length) {
       const carrier = (await q(`INSERT INTO carriers(name,type,is_active) VALUES ('E2E carrier','maritime',TRUE) RETURNING id`)).rows[0].id;
       await q(`INSERT INTO market_delivery_attestations(market_id,carrier_id,mode,origin_ref,freight_rate,rate_currency,rate_unit,transit_days,evidence_ref,attested_by,valid_until)
@@ -155,33 +160,45 @@ test.describe.serial('Fil commande → encaissement → garde — routes réelle
     step('Relais : cash confirmé et encaissé une seule fois par sa route', `paiement ${o.payment_status}, commande ${o.status}, encaissement ${ids.total} KMF, colis ${ids.parcel ? ids.parcel.reference : 'aucun'}`);
   });
 
-  test('3 · le hub prépare et expédie, le relais réceptionne : chaque statut ne bouge que par sa frontière', async () => {
-    const hub = suffix => `/api/hub-dash/${suffix}`;
-    refuse('le client ne peut pas préparer', await call('client', 'POST', hub(`orders/${ids.order}/start-prep`), {}));
-    expect((await orderOf(ids.order)).status).not.toBe('preparation');
-    ok(await call('agentHub', 'POST', hub(`orders/${ids.order}/start-prep`), {}), 'start-prep');
-    expect((await orderOf(ids.order)).status).toBe('preparation');
-    const items = (await q('SELECT id FROM order_items WHERE order_id = $1', [ids.order])).rows.map(r => r.id);
-    expect(items.length).toBeGreaterThan(0);
-    const created = ok(await call('agentHub', 'POST', hub(`orders/${ids.order}/create-parcel`), { item_ids: items }), 'create-parcel');
-    ids.parcel = { id: created.json.parcel.id, reference: created.json.parcel.reference };
-    ok(await call('agentHub', 'POST', hub(`parcels/${ids.parcel.id}/ready`), {}), 'colis prêt');
-    refuse('le relais ne peut pas expédier à la place du hub', await call('agentRelais', 'POST', wsApi(`parcels/${ids.parcel.reference}/ship`), {}));
-    ok(await call('agentHub', 'POST', hub(`parcels/${ids.parcel.id}/ship`), { transport: 'E2E thread' }), 'ship');
-    const afterShip = await orderOf(ids.order);
-    expect(['shipped', 'in_transit']).toContain(afterShip.status);
-    refuse('le hub ne peut pas réceptionner à la place du relais', await call('agentHub', 'POST', wsApi(`parcels/${ids.parcel.reference}/receive`), {}));
-    ok(await call('agentRelais', 'POST', wsApi(`parcels/${ids.parcel.reference}/receive`), {}), 'receive');
-    const afterReceive = await orderOf(ids.order);
-    expect(afterReceive.status).toBe('available');
-    step('Hub puis relais : préparation, colis, expédition et réception par leurs routes', `après expédition ${afterShip.status}, après réception ${afterReceive.status}`);
+  test('3 · stock local : attestation physique au relais sans faux Hub, transitaire ni douane', async () => {
+    // Checkout local résolu sous verrou, snapshot irréversible LOCAL_STOCK.
+    const source = (await q(
+      'SELECT fulfillment_source FROM order_items WHERE order_id=$1', [ids.order]
+    )).rows.map(row => row.fulfillment_source);
+    expect(source).toEqual(['LOCAL_STOCK']);
+    const receiptPath = `/api/orders/${ids.order}/local-relay-receipt`;
+    const payload = {physical_received:true,note:'Présence physique vérifiée par le relais'};
+    refuse('client sans droit de réception',await call('client','POST',receiptPath,payload),[403]);
+    refuse('agent Hub sans droit de réception locale',await call('agentHub','POST',receiptPath,payload),[403]);
+    refuse('agent autre relais sans droit physique',await call('agentOther','POST',receiptPath,payload),[403]);
+    refuse('réception sans attestation explicite',await call('agentRelais','POST',receiptPath,{physical_received:false}),[400]);
+    expect(await parcelOf()).toBeUndefined();
+    ok(await call('agentRelais','POST',receiptPath,payload),'attestation relais locale canonique');
+    ids.parcel = await parcelOf();
+    expect(ids.parcel).toBeTruthy();
+    expect(ids.parcel.status).toBe('available');
+    expect((await orderOf(ids.order)).status).toBe('available');
+    const physical = (await q(
+      `SELECT pi.qty_shipped::int shipped,pi.qty_received::int received,pi.qty_collected::int collected
+         FROM parcel_items pi WHERE pi.parcel_id=$1`,[ids.parcel.id]
+    )).rows;
+    expect(physical).toEqual([{shipped:0,received:2,collected:0}]);
+    const purchasing = (await q(
+      'SELECT COUNT(*)::int n FROM purchase_lines pl JOIN order_items oi ON oi.id=pl.order_item_id WHERE oi.order_id=$1',
+      [ids.order]
+    )).rows[0].n;
+    expect(purchasing).toBe(0);
+    refuse('une seconde réception n’invente pas de nouveaux articles',await call('agentRelais','POST',receiptPath,payload),[409]);
+    step('Stock local : réception au relais par API canonique (sans Hub ni expédition internationale)',
+      `commande ${ids.ref}, colis ${ids.parcel.reference}, reçus 2/2, expédiés 0, lignes achat 0`);
   });
 
   test('4 · le relais remet le colis : commande collectée, trace de chaque frontière, cash inchangé', async () => {
     ok(await call('agentRelais', 'POST', wsApi(`parcels/${ids.parcel.reference}/collect`), {}), 'collect');
     expect(await orderOf(ids.order)).toMatchObject({ status: 'collected', payment_status: 'paid' });
     const hist = (await histOf(ids.order)).map(h => h.s);
-    for (const st of ['preparation', 'collected']) expect(hist, 'trace de transition').toContain(st);
+    for (const st of ['available', 'collected']) expect(hist, 'trace de transition').toContain(st);
+    expect(hist).not.toContain('shipped'); // stock local : aucun faux passage au transitaire
     expect(await collectionsOf()).toHaveLength(1);
     step('Relais : colis remis, commande collectée', `historique : ${hist.join(' → ')}`);
   });
