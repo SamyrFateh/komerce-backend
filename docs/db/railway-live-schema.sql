@@ -1582,6 +1582,30 @@ $$;
 
 
 --
+-- Name: guard_item_refund_pending_collection(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.guard_item_refund_pending_collection() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE v_reserved integer;
+BEGIN
+  IF NEW.qty_collected IS NOT DISTINCT FROM OLD.qty_collected
+     AND NEW.qty_refunded IS NOT DISTINCT FROM OLD.qty_refunded
+     AND NEW.quantity IS NOT DISTINCT FROM OLD.quantity THEN
+    RETURN NEW;
+  END IF;
+  SELECT COALESCE(SUM(r.quantity),0)::integer INTO v_reserved
+    FROM public.order_item_refund_reservations r
+   WHERE r.order_item_id=NEW.id AND r.status IN ('reserved','processing','unknown');
+  IF NEW.qty_collected + NEW.qty_refunded + v_reserved > NEW.quantity THEN
+    RAISE EXCEPTION 'ITEM_REFUND_PENDING_QTY_NOT_COLLECTABLE' USING ERRCODE='23514';
+  END IF;
+  RETURN NEW;
+END $$;
+
+
+--
 -- Name: hub_guard_allocation_purchase_line(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -6916,6 +6940,7 @@ CREATE TABLE public.market_delegation_audit (
     occurred_at timestamp with time zone DEFAULT now() NOT NULL,
     correlation_id text,
     market_id uuid,
+    retired_capability text,
     CONSTRAINT market_delegation_audit_action_check CHECK ((char_length(btrim(action)) > 0))
 );
 
@@ -7610,6 +7635,41 @@ COMMENT ON COLUMN public.order_item_real_cost_allocations.provenance IS 'Provena
 
 
 --
+-- Name: order_item_refund_reservations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.order_item_refund_reservations (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    order_id uuid NOT NULL,
+    order_item_id uuid NOT NULL,
+    source_incident_id uuid NOT NULL,
+    refund_intent_id uuid NOT NULL,
+    operation_key uuid NOT NULL,
+    quantity integer NOT NULL,
+    amount_kmf numeric(14,2) NOT NULL,
+    amount_eur numeric(12,2) NOT NULL,
+    reason text NOT NULL,
+    status text DEFAULT 'reserved'::text NOT NULL,
+    created_by uuid,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    provider_ref text,
+    resolved_at timestamp with time zone,
+    CONSTRAINT order_item_refund_reservations_amount_eur_check CHECK ((amount_eur > (0)::numeric)),
+    CONSTRAINT order_item_refund_reservations_amount_kmf_check CHECK ((amount_kmf > (0)::numeric)),
+    CONSTRAINT order_item_refund_reservations_quantity_check CHECK ((quantity > 0)),
+    CONSTRAINT order_item_refund_reservations_reason_check CHECK ((length(btrim(reason)) >= 8)),
+    CONSTRAINT order_item_refund_reservations_status_check CHECK ((status = ANY (ARRAY['reserved'::text, 'processing'::text, 'unknown'::text, 'confirmed'::text, 'failed'::text])))
+);
+
+
+--
+-- Name: TABLE order_item_refund_reservations; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.order_item_refund_reservations IS 'E7: reservations partielles adossees a une attestation relais et a une intention PSP durable ; aucune sortie de fonds ni annulation automatique lors de la reservation.';
+
+
+--
 -- Name: order_items; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -7649,8 +7709,10 @@ CREATE TABLE public.order_items (
     requested_transport_rail text,
     shared_cart_item_id uuid,
     fulfillment_source text,
+    qty_refunded integer DEFAULT 0 NOT NULL,
     CONSTRAINT chk_order_items_price CHECK ((price_kmf > (0)::numeric)),
     CONSTRAINT chk_order_items_qty CHECK ((quantity > 0)),
+    CONSTRAINT chk_order_items_qty_refunded CHECK (((qty_refunded >= 0) AND ((qty_refunded + qty_collected) <= quantity))),
     CONSTRAINT order_items_delivery_mode_check CHECK ((delivery_mode = ANY (ARRAY['sea'::text, 'air'::text]))),
     CONSTRAINT order_items_fulfillment_source_valid CHECK (((fulfillment_source IS NULL) OR (fulfillment_source = ANY (ARRAY['LOCAL_STOCK'::text, 'IMPORT'::text])))),
     CONSTRAINT order_items_requested_transport_rail_check CHECK ((requested_transport_rail = ANY (ARRAY['SEA_STANDARD'::text, 'AIR_EXPRESS'::text])))
@@ -13706,6 +13768,22 @@ ALTER TABLE ONLY public.order_item_real_cost_allocations
 
 
 --
+-- Name: order_item_refund_reservations order_item_refund_reservations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.order_item_refund_reservations
+    ADD CONSTRAINT order_item_refund_reservations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: order_item_refund_reservations order_item_refund_reservations_refund_intent_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.order_item_refund_reservations
+    ADD CONSTRAINT order_item_refund_reservations_refund_intent_id_key UNIQUE (refund_intent_id);
+
+
+--
 -- Name: order_items order_items_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -14799,6 +14877,14 @@ ALTER TABLE ONLY public.international_shipments
 
 ALTER TABLE ONLY public.international_shipment_hub_units
     ADD CONSTRAINT uq_international_shipment_hub_unit UNIQUE (physical_unit_id);
+
+
+--
+-- Name: order_item_refund_reservations uq_item_refund_order_operation; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.order_item_refund_reservations
+    ADD CONSTRAINT uq_item_refund_order_operation UNIQUE (order_id, operation_key);
 
 
 --
@@ -15918,6 +16004,13 @@ CREATE INDEX idx_invoices_owner_created ON public.invoices USING btree (owner_us
 --
 
 CREATE UNIQUE INDEX idx_invoices_public_token ON public.invoices USING btree (public_token) WHERE (public_token IS NOT NULL);
+
+
+--
+-- Name: idx_item_refund_reservations_line; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_item_refund_reservations_line ON public.order_item_refund_reservations USING btree (order_item_id, created_at);
 
 
 --
@@ -18931,6 +19024,13 @@ CREATE TRIGGER trg_financial_movements_guard BEFORE DELETE OR UPDATE ON public.f
 
 
 --
+-- Name: order_items trg_guard_item_refund_pending_collection; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_guard_item_refund_pending_collection BEFORE UPDATE OF qty_collected, qty_refunded, quantity ON public.order_items FOR EACH ROW EXECUTE FUNCTION public.guard_item_refund_pending_collection();
+
+
+--
 -- Name: hub_purchase_allocations trg_hub_allocation_purchase_line; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -20902,7 +21002,7 @@ ALTER TABLE ONLY public.market_delegation_audit
 --
 
 ALTER TABLE ONLY public.market_delegation_audit
-    ADD CONSTRAINT market_delegation_audit_capability_fkey FOREIGN KEY (capability) REFERENCES public.capability_registry(capability);
+    ADD CONSTRAINT market_delegation_audit_capability_fkey FOREIGN KEY (capability) REFERENCES public.capability_registry(capability) ON DELETE SET NULL;
 
 
 --
@@ -21375,6 +21475,46 @@ ALTER TABLE ONLY public.order_item_real_cost_allocations
 
 ALTER TABLE ONLY public.order_item_real_cost_allocations
     ADD CONSTRAINT order_item_real_cost_allocations_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.customs_shipments(id) ON DELETE SET NULL;
+
+
+--
+-- Name: order_item_refund_reservations order_item_refund_reservations_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.order_item_refund_reservations
+    ADD CONSTRAINT order_item_refund_reservations_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: order_item_refund_reservations order_item_refund_reservations_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.order_item_refund_reservations
+    ADD CONSTRAINT order_item_refund_reservations_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: order_item_refund_reservations order_item_refund_reservations_order_item_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.order_item_refund_reservations
+    ADD CONSTRAINT order_item_refund_reservations_order_item_id_fkey FOREIGN KEY (order_item_id) REFERENCES public.order_items(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: order_item_refund_reservations order_item_refund_reservations_refund_intent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.order_item_refund_reservations
+    ADD CONSTRAINT order_item_refund_reservations_refund_intent_id_fkey FOREIGN KEY (refund_intent_id) REFERENCES public.refund_execution_intents(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: order_item_refund_reservations order_item_refund_reservations_source_incident_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.order_item_refund_reservations
+    ADD CONSTRAINT order_item_refund_reservations_source_incident_id_fkey FOREIGN KEY (source_incident_id) REFERENCES public.incidents(id) ON DELETE RESTRICT;
 
 
 --
