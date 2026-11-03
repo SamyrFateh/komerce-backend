@@ -45,10 +45,10 @@ test('only explicit roles, server market, proofs and valid states are accepted',
   await expectError(journey.transition(market,{id:'no',role:'market_operator'},'INT-KM-001',{to_stage:'handed_over',proof_ref:'X'},x.db),'JOURNEY_ROLE_FORBIDDEN');
 });
 
-test('Hub remise confirmed atomically, without marking parcel or customs cleared',async()=>{
+test('Hub remise atomique : projection des colis éligibles et aucune douane inventée',async()=>{
   const x=fixture();
   const res=await journey.transition(market,hub,'INT-KM-001',{to_stage:'handed_over',proof_ref:'HUB-HANDOVER-1'},x.db);
-  expect(res).toEqual({reference:'INT-KM-001',from_stage:'hub_ready',stage:'handed_over'});
+  expect(res).toEqual({reference:'INT-KM-001',from_stage:'hub_ready',stage:'handed_over',client_parcels_shipped:[]});
   expect(x.db.withTransaction).toHaveBeenCalledTimes(1);
   expect(x.executed.some(q=>q.sql.includes('UPDATE international_shipments SET stage'))).toBe(true);
   expect(x.executed.some(q=>q.sql.includes('international_shipment_events')&&

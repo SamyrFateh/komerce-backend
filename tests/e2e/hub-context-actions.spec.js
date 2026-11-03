@@ -48,7 +48,7 @@ async function mount(page,{role='agent_hub',row=baseOrder,dossierData=dossier,ad
     purchase_orders:1,drafts:0,to_send:1,supplier_waiting:0,payment_to_reconcile:0,
   },purchase_orders:[{id:PO,supplier:'Alpha',market:'KM',order_count:1,stage:'issued_not_sent',
     status:'notified',sent_at:null,received:1,expected:2,anomalies:0,
-    commitment_authorization:'Non tracée',payment_authorization:'Non tracée',
+    commitment_authorization:'À valider',payment_authorization:'À autoriser',
     payment_evidence:'Aucune preuve de débit'}]};
   await page.route(ORIGIN+'/**',async route=>{
     const request=route.request(),url=new URL(request.url());
@@ -125,12 +125,14 @@ test('Administration : Engagement ne se confond pas avec Fournisseur ni Paiement
   const row=page.locator('[data-hub-admin-po="'+PO+'"]');
   const menu=page.locator('[data-hub-admin-menu]');
   await row.locator('[data-hub-admin-stage="Engagement"]').click({button:'right'});
-  await expect(menu).toContainText('Engagement d’achat');
+  await expect(menu).toContainText('engagement');
   await expect(menu.locator('[data-hub-real-action]')).toHaveCount(0);
   await expect(menu.locator('a')).toHaveCount(0);
+  await page.keyboard.press('Escape');
   await row.locator('[data-hub-admin-stage="Fournisseur"]').click({button:'right'});
   await expect(menu.getByRole('button',{name:'Attester l’envoi fournisseur'})).toBeVisible();
-  await expect(menu).not.toContainText('Engagement d’achat');
+  await expect(menu).not.toContainText('L’engagement se valide');
+  await page.keyboard.press('Escape');
   await row.locator('[data-hub-admin-stage="Paiement"]').click({button:'right'});
   await expect(menu).toContainText('Une preuve de débit ne remplace pas');
   await expect(menu.locator('[data-hub-real-action]')).toHaveCount(0);

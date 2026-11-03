@@ -7699,7 +7699,7 @@
             ]
           },
           "services": {
-            "count": 44,
+            "count": 45,
             "files": [
               {
                 "declared": "public/golden-e2e-cockpit.html",
@@ -7862,6 +7862,11 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/manual-scan-confirmation.js",
+                "resolvedPath": "services/manual-scan-confirmation.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/market-business-day.js",
                 "resolvedPath": "services/market-business-day.js",
                 "status": "resolved-in-technical-graph"
@@ -7924,7 +7929,7 @@
             ]
           },
           "tests": {
-            "count": 198,
+            "count": 201,
             "files": [
               {
                 "declared": "playwright.config.js",
@@ -8692,6 +8697,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/hub-context-actions-authorizations.test.js",
+                "resolvedPath": "tests/unit/hub-context-actions-authorizations.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/hub-dashboard-queries.test.js",
                 "resolvedPath": "tests/unit/hub-dashboard-queries.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -8704,6 +8714,11 @@
               {
                 "declared": "tests/unit/hub-live-journey.test.js",
                 "resolvedPath": "tests/unit/hub-live-journey.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/hub-live-komboxes-ops.test.js",
+                "resolvedPath": "tests/unit/hub-live-komboxes-ops.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -8724,6 +8739,11 @@
               {
                 "declared": "tests/unit/logistics-control-chain-projection.test.js",
                 "resolvedPath": "tests/unit/logistics-control-chain-projection.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/manual-scan-confirmation.test.js",
+                "resolvedPath": "tests/unit/manual-scan-confirmation.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -8919,7 +8939,7 @@
             ]
           }
         },
-        "totalFiles": 444,
+        "totalFiles": 448,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -28639,11 +28659,16 @@
             ]
           },
           "services": {
-            "count": 49,
+            "count": 50,
             "files": [
               {
                 "declared": "services/hub-administration-board.js",
                 "resolvedPath": "services/hub-administration-board.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/hub-authorization-service.js",
+                "resolvedPath": "services/hub-authorization-service.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -28889,7 +28914,7 @@
             ]
           },
           "tests": {
-            "count": 83,
+            "count": 85,
             "files": [
               {
                 "declared": "tests/e2e-api/purchasing.grouped-flow.e2e.test.js",
@@ -28904,6 +28929,11 @@
               {
                 "declared": "tests/integration/hub-autonomous-purchasing-postgres.test.js",
                 "resolvedPath": "tests/integration/hub-autonomous-purchasing-postgres.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/hub-directrice-authorizations-postgres.test.js",
+                "resolvedPath": "tests/integration/hub-directrice-authorizations-postgres.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -29157,6 +29187,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/purchasing-authorizations-route.test.js",
+                "resolvedPath": "tests/unit/purchasing-authorizations-route.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/purchasing-cancel-service.test.js",
                 "resolvedPath": "tests/unit/purchasing-cancel-service.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -29309,7 +29344,7 @@
             ]
           }
         },
-        "totalFiles": 161,
+        "totalFiles": 164,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -29319,11 +29354,19 @@
       "ownership": {
         "ownsTables": [
           {
+            "table": "hub_authorization_grants",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "product_suppliers",
             "resolution": "single-writer"
           },
           {
             "table": "purchase_lines",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "purchase_order_authorizations",
             "resolution": "declared-table-owner"
           },
           {
@@ -29365,6 +29408,12 @@
         ],
         "writesTables": [
           {
+            "table": "hub_authorization_grants",
+            "mode": "RW",
+            "lifecycleOwner": "purchasing",
+            "ownershipStatus": "owner"
+          },
+          {
             "table": "product_suppliers",
             "mode": "RW",
             "lifecycleOwner": "purchasing",
@@ -29372,6 +29421,12 @@
           },
           {
             "table": "purchase_lines",
+            "mode": "RW",
+            "lifecycleOwner": "purchasing",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "purchase_order_authorizations",
             "mode": "RW",
             "lifecycleOwner": "purchasing",
             "ownershipStatus": "owner"
@@ -29457,11 +29512,19 @@
       "data": {
         "ownsTables": [
           {
+            "table": "hub_authorization_grants",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "product_suppliers",
             "resolution": "single-writer"
           },
           {
             "table": "purchase_lines",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "purchase_order_authorizations",
             "resolution": "declared-table-owner"
           },
           {
@@ -29503,6 +29566,12 @@
         ],
         "writesTables": [
           {
+            "table": "hub_authorization_grants",
+            "mode": "RW",
+            "lifecycleOwner": "purchasing",
+            "ownershipStatus": "owner"
+          },
+          {
             "table": "product_suppliers",
             "mode": "RW",
             "lifecycleOwner": "purchasing",
@@ -29510,6 +29579,12 @@
           },
           {
             "table": "purchase_lines",
+            "mode": "RW",
+            "lifecycleOwner": "purchasing",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "purchase_order_authorizations",
             "mode": "RW",
             "lifecycleOwner": "purchasing",
             "ownershipStatus": "owner"

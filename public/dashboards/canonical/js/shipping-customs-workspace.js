@@ -220,6 +220,21 @@
       slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucun colis à mettre en transit.'));
       return;
     }
+    // Mode dégradé : confirmation sans scan matériel, motif obligatoire et tracé (même writer scan-engine).
+    const manualWrap = doc.createElement('div');
+    manualWrap.className = 'kmc-workspace-manual-reason';
+    manualWrap.setAttribute('data-manual-confirmation', '');
+    const manualSelect = doc.createElement('select');
+    manualSelect.setAttribute('aria-label', 'Motif de la confirmation sans scan');
+    manualSelect.setAttribute('data-manual-reason', '');
+    [['scanner_unavailable', 'Scanner indisponible'], ['label_unreadable', 'Étiquette illisible'], ['offline', 'Hors ligne'], ['other', 'Autre (précisez)']]
+      .forEach(([value, label]) => manualSelect.appendChild(Object.assign(doc.createElement('option'), { value, textContent: label })));
+    const manualNote = doc.createElement('input');
+    manualNote.type = 'text'; manualNote.maxLength = 500; manualNote.placeholder = 'Précision (obligatoire si « Autre »)';
+    manualNote.setAttribute('aria-label', 'Précision du motif'); manualNote.setAttribute('data-manual-note', '');
+    manualWrap.appendChild(text(doc, 'span', 'kmc-workspace-muted', 'Confirmation sans scan · motif : '));
+    manualWrap.appendChild(manualSelect); manualWrap.appendChild(manualNote);
+    if (canAct) slot.appendChild(manualWrap);
     const table = doc.createElement('table');
     table.className = 'kmc-workspace-table';
     table.innerHTML = '<thead><tr><th>Colis</th><th>Commande</th><th>Client</th><th>Destination</th><th>Poids</th><th>Depuis</th><th></th></tr></thead>';
@@ -246,6 +261,7 @@
         actionCell.appendChild(button);
         button.addEventListener('click', () => runAction(context, button, {
           url: endpointFor(context.marketCode, `parcels/${encodeURIComponent(row.reference)}/confirm-transit`),
+          body: { reason: manualSelect.value, ...(manualNote.value.trim() ? { note: manualNote.value.trim() } : {}) },
           confirmMessage: `Confirmer le transit de ${row.reference} ?`,
           successMessage: `${row.reference} est maintenant en transit.`,
         }));

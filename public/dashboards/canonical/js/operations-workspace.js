@@ -943,7 +943,69 @@
       successMessage: result => `Dossier ${result && result.result ? result.result.reference : ''} ouvert en préparation · ${checked.size} carton(s).`,
     }).catch(() => {}));
 
-    boxes.appendChild(simpleTable(doc, ['', 'Carton', 'État', 'Contenu', 'Expédition', 'Action'],
+    // Composition des KOM-BOX via les routes Workspace (qui délèguent aux commandes Hub canoniques) : une seule autorité.
+    const BOX_NEXT_STATE = Object.freeze({
+      RECEIVED: 'IDENTIFIED', IDENTIFIED: 'QUALITY_CHECKED', QUALITY_CHECKED: 'LOCATED',
+      LOCATED: 'ALLOCATED', ALLOCATED: 'PICKED', PICKED: 'PACKED', PACKED: 'DISPATCHED',
+    });
+    const BOX_MUTABLE = new Set(['RECEIVED', 'IDENTIFIED', 'QUALITY_CHECKED', 'LOCATED', 'ALLOCATED', 'PICKED']);
+    const fillable = Array.isArray(d.fillable) ? d.fillable : [];
+    const createBar = doc.createElement('div');
+    createBar.className = 'kmc-workspace-receive-footer';
+    createBar.setAttribute('data-supply-box-create', '');
+    const newRef = field('Référence du carton (facultative)', 'Référence de la nouvelle KOM-BOX');
+    const newBox = makeActionButton(doc, 'Créer une KOM-BOX', 'create-box');
+    newBox.addEventListener('click', () => runAction(context, newBox, {
+      url: endpointFor(context.marketCode, 'boxes'),
+      body: newRef.value.trim() ? { reference: newRef.value.trim() } : {},
+      runningMessage: 'Création de la KOM-BOX…',
+      successMessage: result => `KOM-BOX ${result && result.physical_unit ? result.physical_unit.reference : ''} créée.`,
+    }).catch(() => {}));
+    [newRef, newBox].forEach(node => createBar.appendChild(node));
+    boxes.appendChild(createBar);
+
+    const composeCell = box => {
+      const cell = doc.createElement('div');
+      cell.className = 'kmc-workspace-box-compose';
+      if (BOX_MUTABLE.has(box.state) && fillable.length) {
+        const source = doc.createElement('select');
+        source.setAttribute('aria-label', `Article reçu à mettre dans ${box.reference}`);
+        fillable.forEach((line, i) => source.appendChild(Object.assign(doc.createElement('option'), {
+          value: String(i), textContent: `${line.order_ref} · ${line.product || 'article'} · ${line.quantity} dispo (${line.from_unit_ref})`,
+        })));
+        const qty = doc.createElement('input');
+        qty.type = 'number'; qty.min = '1'; qty.step = '1'; qty.value = '1';
+        qty.setAttribute('aria-label', `Quantité à mettre dans ${box.reference}`);
+        const add = makeActionButton(doc, 'Ajouter au carton', 'fill-box');
+        add.addEventListener('click', () => {
+          const line = fillable[Number(source.value)];
+          if (!line) return;
+          runAction(context, add, {
+            url: endpointFor(context.marketCode, `boxes/${box.unit_id}/fill`),
+            body: { from_unit_id: line.from_unit_id, allocation_id: line.allocation_id, quantity: Number(qty.value) },
+            runningMessage: 'Mise en carton…',
+            successMessage: 'Quantité placée dans la KOM-BOX.',
+          }).catch(() => {});
+        });
+        [source, qty, add].forEach(node => cell.appendChild(node));
+      }
+      const next = BOX_NEXT_STATE[box.state];
+      if (next && (box.contents || []).length) {
+        const label = next === 'DISPATCHED' ? 'Prêt à remettre au transitaire' : `Étape suivante · ${next}`;
+        const step = makeActionButton(doc, label, 'advance-box');
+        step.addEventListener('click', () => runAction(context, step, {
+          url: endpointFor(context.marketCode, `boxes/${box.unit_id}/advance`),
+          body: { to_state: next },
+          confirmMessage: next === 'DISPATCHED' ? `Confirmer que ${box.reference} est prêt pour la remise au transitaire ?` : undefined,
+          runningMessage: 'Changement d’étape…',
+          successMessage: `${box.reference} : ${next}.`,
+        }).catch(() => {}));
+        cell.appendChild(step);
+      }
+      return cell.children.length ? cell : '—';
+    };
+
+    boxes.appendChild(simpleTable(doc, ['', 'Carton', 'État', 'Contenu', 'Expédition', 'Composer', 'Action'],
       (d.boxes || []).map(box => {
         const contents = box.contents.map(c => `${c.order_ref} ×${formatNumber(c.qty)}`).join(', ');
         let pick = '';
@@ -973,7 +1035,7 @@
             successMessage: 'Carton retiré du dossier encore en préparation.',
           }).catch(() => {}));
         }
-        return [pick, box.reference, box.state, contents || '—', box.shipment_ref || '—', action];
+        return [pick, box.reference, box.state, contents || '—', box.shipment_ref || '—', composeCell(box), action];
       }), 'Aucun carton.'));
 
   }
@@ -1142,9 +1204,33 @@
     renderActionRows(slot, doc, context, config, 'order');
   }
 
+  // Mode dégradé : la confirmation depuis l'interface remplace le scan matériel ; le motif est obligatoire et tracé.
+  const MANUAL_REASONS = Object.freeze([
+    ['scanner_unavailable', 'Scanner indisponible'], ['label_unreadable', 'Étiquette illisible'],
+    ['offline', 'Hors ligne'], ['other', 'Autre (précisez)'],
+  ]);
+
+  function manualReasonControls(doc) {
+    const wrap = doc.createElement('div');
+    wrap.className = 'kmc-workspace-manual-reason';
+    wrap.setAttribute('data-manual-confirmation', '');
+    const select = doc.createElement('select');
+    select.setAttribute('aria-label', 'Motif de la confirmation sans scan');
+    select.setAttribute('data-manual-reason', '');
+    MANUAL_REASONS.forEach(([value, label]) => select.appendChild(Object.assign(doc.createElement('option'), { value, textContent: label })));
+    const note = doc.createElement('input');
+    note.type = 'text'; note.maxLength = 500; note.placeholder = 'Précision (obligatoire si « Autre »)';
+    note.setAttribute('aria-label', 'Précision du motif'); note.setAttribute('data-manual-note', '');
+    wrap.appendChild(text(doc, 'span', 'kmc-workspace-muted', 'Confirmation sans scan · motif : '));
+    wrap.appendChild(select); wrap.appendChild(note);
+    return { wrap, body: () => ({ reason: select.value, ...(note.value.trim() ? { note: note.value.trim() } : {}) }) };
+  }
+
   function renderParcelActionSection(rootNode, ui, doc, context, config) {
     const slot = createSection(rootNode, ui, config.title, config.description);
-    renderActionRows(slot, doc, context, config, 'parcel');
+    const manual = manualReasonControls(doc);
+    slot.appendChild(manual.wrap);
+    renderActionRows(slot, doc, context, Object.assign({}, config, { manualBody: manual.body }), 'parcel');
   }
 
   function renderActionRows(slot, doc, context, config, kind) {
@@ -1162,6 +1248,7 @@
       actionCell.appendChild(button);
       button.addEventListener('click', () => runAction(context, button, {
         url: endpointFor(context.marketCode, config.suffix(row)),
+        ...(config.manualBody ? { body: config.manualBody() } : {}),
         confirmMessage: config.confirm(row),
         runningMessage: `${row.reference} · action en cours…`,
         successMessage: `${row.reference} · action appliquée.`,

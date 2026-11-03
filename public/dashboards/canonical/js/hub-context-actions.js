@@ -4,7 +4,7 @@
 (function initHubContextActions(global) {
   'use strict';
   const writableRoles = ['admin','agent_hub'];
-  const validUuid = value => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(value || ''));
+  const validUuid = value => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(value || ''));
   const text = value => String(value == null ? '' : value);
   const node = (doc, tag, css, value) => {
     const item = doc.createElement(tag);
@@ -277,19 +277,82 @@
       return false;
     }
   }
-  function administration(menu,{doc,fetch:fetchFn,user,po,field,refresh}) {
+  const decisionLine = (label,d) => label+' par '+(d.decided_by_name||'la directrice')+' le '+
+    String(d.decided_at||'').slice(0,10)+' · '+d.amount+' '+d.currency+' · pièce '+d.proof_ref+'.';
+  // Les deux décisions de la directrice sont indépendantes ; le serveur exige le droit actif et refuse sinon.
+  function commitment(menu,doc,po,grants,fetchFn,refresh) {
+    if(po.commitment_decision){
+      explanation(menu,doc,decisionLine('Engagement d’achat validé',po.commitment_decision));
+      if(validUuid(po.id)&&po.status==='draft'){
+        action(menu,doc,'Soumettre au fournisseur','La PO engagée est soumise ; l’envoi réel s’atteste ensuite.',async()=>{
+          try{await request(fetchFn,'/api/purchasing/po/'+encodeURIComponent(po.id)+'/submit',{});menu.hidden=true;await refresh?.();}
+          catch(err){explanation(menu,doc,'Soumission refusée : '+err.message);}
+        });
+      }
+      return true;
+    }
+    if(!validUuid(po.id)||po.status!=='draft'){
+      explanation(menu,doc,'L’engagement se valide sur une PO en brouillon.');
+      return false;
+    }
+    if(!grants.purchase_commitment){
+      explanation(menu,doc,'Engagement d’achat à valider par la directrice. Votre compte ne détient pas cette autorisation (attribuée par l’Admin central) ; une PO préparée n’est pas un engagement.');
+      return false;
+    }
+    action(menu,doc,'Valider l’engagement d’achat','Décision tracée : décideur, date, montant, pièce.',()=>form(
+      menu,doc,'PO '+po.id.slice(0,8)+' · Engagement d’achat',[
+        {name:'proof_ref',label:'Pièce / référence de la décision',required:true},
+        {name:'amount',label:'Montant (si les lignes n’ont pas un prix fournisseur unique)',type:'number',min:0,step:'0.01'},
+        {name:'currency',label:'Devise (ex. AED)'},
+      ],values=>request(fetchFn,'/api/purchasing/po/'+encodeURIComponent(po.id)+'/authorize-commitment',{
+        proof_ref:values.proof_ref.trim(),
+        ...(values.amount?{amount:Number(values.amount),currency:values.currency.trim()}:{}),
+      }),refresh));
+    return true;
+  }
+  function paymentAuthorization(menu,doc,po,grants,fetchFn,refresh) {
+    if(po.payment_decision){
+      explanation(menu,doc,decisionLine('Paiement fournisseur autorisé',po.payment_decision));
+      return true;
+    }
+    if(!po.commitment_decision){
+      explanation(menu,doc,'Le paiement ne peut être autorisé qu’après la validation de l’engagement d’achat.');
+      return false;
+    }
+    if(!validUuid(po.id)||!['notified','confirmed'].includes(po.status)){
+      explanation(menu,doc,'Le paiement s’autorise après la soumission de la PO. La soumission n’autorise rien par elle-même.');
+      return false;
+    }
+    if(!grants.supplier_payment){
+      explanation(menu,doc,'Paiement fournisseur à autoriser par la directrice. Votre compte ne détient pas cette autorisation (attribuée par l’Admin central).');
+      return false;
+    }
+    action(menu,doc,'Autoriser le paiement fournisseur','Décision tracée, distincte de l’engagement et du débit.',()=>form(
+      menu,doc,'PO '+po.id.slice(0,8)+' · Autorisation de paiement',[
+        {name:'proof_ref',label:'Pièce / référence de la décision',required:true},
+        {name:'amount',label:'Montant autorisé',type:'number',min:0,step:'0.01',required:true},
+        {name:'currency',label:'Devise (ex. AED)',required:true},
+      ],values=>request(fetchFn,'/api/purchasing/po/'+encodeURIComponent(po.id)+'/authorize-payment',{
+        proof_ref:values.proof_ref.trim(),amount:Number(values.amount),currency:values.currency.trim(),
+      }),refresh));
+    return true;
+  }
+  function administration(menu,{doc,fetch:fetchFn,user,po,field,refresh,grants = {}}) {
     if(!writableRoles.includes(user?.role))return false;
     if(field==='Fournisseur'){
       if(sent(menu,doc,po,fetchFn,refresh))return true;
       explanation(menu,doc,po.sent_at?
-        'Envoi déjà attesté : aucune seconde déclaration autorisée.':
-        'La PO doit être soumise avant qu’un envoi réel puisse être enregistré.');
+        'Envoi déjà attesté : aucune seconde déclaration autorisée. La confirmation fournisseur ligne par ligne se saisit dans Achats fournisseurs.':
+        'La PO doit être soumise (après validation de l’engagement) avant qu’un envoi réel puisse être enregistré.');
+      if(po.sent_at&&po.status==='notified'){
+        const link=node(doc,'a','kmc-hub-board-menu-action is-primary','Confirmer les lignes fournisseur');
+        link.href='/admin/workspaces/purchasing';
+        menu.appendChild(link);
+      }
     }else if(field==='Engagement'){
-      explanation(menu,doc,
-        'Engagement d’achat : décision de la directrice non enregistrée dans le modèle actuel. Ne pas assimiler une PO soumise à une autorisation.');
+      commitment(menu,doc,po,grants,fetchFn,refresh);
     }else if(field==='Autorisation'){
-      explanation(menu,doc,
-        'Paiement fournisseur : autorisation indépendante de la directrice non enregistrée. Aucune validation fictive ne sera créée.');
+      paymentAuthorization(menu,doc,po,grants,fetchFn,refresh);
     }else if(field==='Paiement'||field==='Justificatifs'){
       explanation(menu,doc,
         (po.payment_evidence||'Aucune preuve de débit')+

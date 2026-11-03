@@ -27,6 +27,7 @@ const db = require('../db');
 const { transitionOrderStatus } = require('./order-status-machine');
 const autoParcel = require('./auto-parcel');
 const scanEngine = require('./scan-engine');
+const { buildManualConfirmation } = require('./manual-scan-confirmation');
 const inventory = require('./inventory-service');
 const { confirmCashByReference } = require('./payment-cash-confirm');
 const { countRelayParcels } = require('./operations-relay-projection');
@@ -499,8 +500,9 @@ const SCAN_ACTIONS = Object.freeze({
 const SCAN_ACTOR_ROLE = Object.freeze({ admin: 'admin', agent_hub: 'hub_agent', agent_relais: 'relay_agent' });
 const SCAN_STATION_ROLE = Object.freeze({ ship: 'hub_agent', collect: 'relay_agent' });
 
-async function scanParcel(reference, action, market, actor = {}) {
+async function scanParcel(reference, action, market, actor = {}, manualInput = null) {
   const resolvedMarket = requireMarket(market);
+  const manual = buildManualConfirmation(manualInput);
   const scan = SCAN_ACTIONS[action];
   if (!scan) {
     throw new OperationsWorkspaceError('invalid_scan_action', 'Action colis inconnue', 400);
@@ -513,10 +515,11 @@ async function scanParcel(reference, action, market, actor = {}) {
     actor_name: actor.full_name || 'Workspace Opérations',
     actor_role: SCAN_ACTOR_ROLE[actor.role] || SCAN_STATION_ROLE[action],
     location: resolvedMarket.code,
-    notes: scan.notes,
+    notes: `${scan.notes} · ${manual.notes}`,
     metadata: {
       source: 'canonical_operations_workspace',
       market_code: resolvedMarket.code,
+      ...manual.metadata,
     },
   });
   if (!result.success) {
