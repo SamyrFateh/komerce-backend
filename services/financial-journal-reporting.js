@@ -43,7 +43,10 @@ async function summarize(client, scope = {}) {
   const eurUnavailable = rows.reduce((total, row) => total + row.eur_unavailable, 0);
   return {
     rows,
-    eur_total_known: rows.reduce((total, row) => total + (row.eur_total == null ? 0 : Number(row.eur_total)), 0),
+    // Les mouvements de garde ne sont jamais des recettes ou dépenses
+    // supplémentaires, même quand une contre-valeur EUR est disponible.
+    eur_total_known: rows.filter(row => row.direction !== 'custody')
+      .reduce((total, row) => total + (row.eur_total == null ? 0 : Number(row.eur_total)), 0),
     eur_unavailable_movements: eurUnavailable,
     eur_complete: eurUnavailable === 0,
   };
