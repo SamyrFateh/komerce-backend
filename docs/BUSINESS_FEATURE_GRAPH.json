@@ -17757,6 +17757,13 @@
       {
         "feature": "purchasing",
         "category": "services",
+        "declared": "services/hub-authorization-service.js",
+        "resolvedPath": "services/hub-authorization-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "purchasing",
+        "category": "services",
         "declared": "services/purchasing-completion-service.js",
         "resolvedPath": "services/purchasing-completion-service.js",
         "status": "resolved-in-technical-graph"
@@ -18060,6 +18067,20 @@
         "category": "tests",
         "declared": "tests/integration/purchase-lines-engagement-postgres.test.js",
         "resolvedPath": "tests/integration/purchase-lines-engagement-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/integration/hub-directrice-authorizations-postgres.test.js",
+        "resolvedPath": "tests/integration/hub-directrice-authorizations-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/unit/purchasing-authorizations-route.test.js",
+        "resolvedPath": "tests/unit/purchasing-authorizations-route.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -45399,6 +45420,10 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "services/hub-authorization-service.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "services/purchasing-completion-service.js",
                 "targetFile": "db.js"
               },
@@ -45496,6 +45521,10 @@
               },
               {
                 "sourceFileId": "tests/integration/purchase-lines-engagement-postgres.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/hub-directrice-authorizations-postgres.test.js",
                 "targetFile": "db.js"
               },
               {
@@ -47958,7 +47987,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2217
+        "filesObserved": 2220
       },
       "boutique": {
         "filesObserved": 214,
@@ -51753,8 +51782,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 670,
-        "technicalNodesOwned": 670,
+        "technicalNodesTotal": 671,
+        "technicalNodesOwned": 671,
         "technicalOrphans": 0
       },
       "dash": {

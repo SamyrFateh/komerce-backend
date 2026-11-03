@@ -28639,11 +28639,16 @@
             ]
           },
           "services": {
-            "count": 49,
+            "count": 50,
             "files": [
               {
                 "declared": "services/hub-administration-board.js",
                 "resolvedPath": "services/hub-administration-board.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/hub-authorization-service.js",
+                "resolvedPath": "services/hub-authorization-service.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -28889,7 +28894,7 @@
             ]
           },
           "tests": {
-            "count": 83,
+            "count": 85,
             "files": [
               {
                 "declared": "tests/e2e-api/purchasing.grouped-flow.e2e.test.js",
@@ -28904,6 +28909,11 @@
               {
                 "declared": "tests/integration/hub-autonomous-purchasing-postgres.test.js",
                 "resolvedPath": "tests/integration/hub-autonomous-purchasing-postgres.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/hub-directrice-authorizations-postgres.test.js",
+                "resolvedPath": "tests/integration/hub-directrice-authorizations-postgres.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -29157,6 +29167,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/purchasing-authorizations-route.test.js",
+                "resolvedPath": "tests/unit/purchasing-authorizations-route.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/purchasing-cancel-service.test.js",
                 "resolvedPath": "tests/unit/purchasing-cancel-service.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -29309,7 +29324,7 @@
             ]
           }
         },
-        "totalFiles": 161,
+        "totalFiles": 164,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
