@@ -1204,9 +1204,33 @@
     renderActionRows(slot, doc, context, config, 'order');
   }
 
+  // Mode dégradé : la confirmation depuis l'interface remplace le scan matériel ; le motif est obligatoire et tracé.
+  const MANUAL_REASONS = Object.freeze([
+    ['scanner_unavailable', 'Scanner indisponible'], ['label_unreadable', 'Étiquette illisible'],
+    ['offline', 'Hors ligne'], ['other', 'Autre (précisez)'],
+  ]);
+
+  function manualReasonControls(doc) {
+    const wrap = doc.createElement('div');
+    wrap.className = 'kmc-workspace-manual-reason';
+    wrap.setAttribute('data-manual-confirmation', '');
+    const select = doc.createElement('select');
+    select.setAttribute('aria-label', 'Motif de la confirmation sans scan');
+    select.setAttribute('data-manual-reason', '');
+    MANUAL_REASONS.forEach(([value, label]) => select.appendChild(Object.assign(doc.createElement('option'), { value, textContent: label })));
+    const note = doc.createElement('input');
+    note.type = 'text'; note.maxLength = 500; note.placeholder = 'Précision (obligatoire si « Autre »)';
+    note.setAttribute('aria-label', 'Précision du motif'); note.setAttribute('data-manual-note', '');
+    wrap.appendChild(text(doc, 'span', 'kmc-workspace-muted', 'Confirmation sans scan · motif : '));
+    wrap.appendChild(select); wrap.appendChild(note);
+    return { wrap, body: () => ({ reason: select.value, ...(note.value.trim() ? { note: note.value.trim() } : {}) }) };
+  }
+
   function renderParcelActionSection(rootNode, ui, doc, context, config) {
     const slot = createSection(rootNode, ui, config.title, config.description);
-    renderActionRows(slot, doc, context, config, 'parcel');
+    const manual = manualReasonControls(doc);
+    slot.appendChild(manual.wrap);
+    renderActionRows(slot, doc, context, Object.assign({}, config, { manualBody: manual.body }), 'parcel');
   }
 
   function renderActionRows(slot, doc, context, config, kind) {
@@ -1224,6 +1248,7 @@
       actionCell.appendChild(button);
       button.addEventListener('click', () => runAction(context, button, {
         url: endpointFor(context.marketCode, config.suffix(row)),
+        ...(config.manualBody ? { body: config.manualBody() } : {}),
         confirmMessage: config.confirm(row),
         runningMessage: `${row.reference} · action en cours…`,
         successMessage: `${row.reference} · action appliquée.`,

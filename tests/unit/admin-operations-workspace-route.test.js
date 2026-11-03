@@ -263,7 +263,7 @@ test('chaque mutation Hub exige sa capability exacte et audite avant mutation', 
   const distribute = await request(app())
     .post('/api/admin/workspaces/operations/market/CM/distribution/run').send({});
   const ship = await request(app())
-    .post('/api/admin/workspaces/operations/market/CM/parcels/PCL-CM-001/ship').send({});
+    .post('/api/admin/workspaces/operations/market/CM/parcels/PCL-CM-001/ship').send({ reason: 'scanner_unavailable' });
   const assign = await request(app())
     .post('/api/admin/workspaces/operations/market/CM/inventory/items/item-1/assign')
     .send({ parcel_ref: 'PCL-CM-001' });
@@ -331,14 +331,15 @@ test('users.role seul ne bloque ni n accorde une action : seule la capability ex
 test('market_operator peut consommer une execution capability explicitement déléguée', async () => {
   mockUserRole = 'market_operator';
   const res = await request(app())
-    .post('/api/admin/workspaces/operations/market/CM/parcels/PCL-CM-001/ship').send({});
+    .post('/api/admin/workspaces/operations/market/CM/parcels/PCL-CM-001/ship').send({ reason: 'scanner_unavailable' });
 
   expect(res.status).toBe(200);
   expect(mockScanParcel).toHaveBeenCalledWith(
     'PCL-CM-001',
     'ship',
     expect.objectContaining({ id: 'market-cm-id', code: 'CM' }),
-    expect.objectContaining({ role: 'agent_hub' })
+    expect.objectContaining({ role: 'agent_hub' }),
+    expect.objectContaining({ reason: 'scanner_unavailable' })
   );
 });
 

@@ -380,7 +380,8 @@ router.post(
         req.params.reference,
         'ship',
         req.workspaceMarket,
-        actionActor(req)
+        actionActor(req),
+        req.body
       );
       return res.json({ ok: true, action: 'ship', result });
     } catch (err) {
@@ -454,7 +455,8 @@ router.post(
         req.params.reference,
         'collect',
         req.workspaceMarket,
-        actionActor(req)
+        actionActor(req),
+        req.body
       );
       return res.json({ ok: true, action: 'collect', result });
     } catch (err) {
