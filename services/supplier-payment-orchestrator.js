@@ -40,6 +40,9 @@ async function executeSupplierPayment(client, {
   if (typeof invokeProviderPayment !== 'function') throw new Error('SUPPLIER_PAYMENT_PROVIDER_CALL_REQUIRED');
 
   const prepared = await prepareSupplierPayment(client, payment);
+  // P04 : aucun appel fournisseur sans autorisation de paiement de la directrice (montant et devise bornés).
+  await require('./hub-authorization-service').assertPaymentAuthorized(
+    client, payment.purchaseOrderId, prepared.expected_amount, prepared.currency);
   const gate = await canInvokeProviderPayment(client, {
     provider: prepared.provider,
     paymentExecutionKey: prepared.payment_execution_key,

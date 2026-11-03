@@ -11,6 +11,9 @@
 
 const crypto = require('crypto');
 
+
+const { submitAuthorized } = require('../helpers/submit-authorized');
+
 jest.setTimeout(60000);
 
 const db = require('../../db');
@@ -142,7 +145,7 @@ describeDb('Hub P0 — chaîne d\'approvisionnement complète (REAL_DB)', () => 
       s.po = prepared.purchase_order.id;
       expect(s.po).toBeTruthy();
 
-      await engagement.submitPurchaseOrder(s.po, { actor: actor() });
+      await submitAuthorized(engagement, s.po, { actor: actor() });
       let stage = (await dossier.getDossier({ marketId: km })).purchase_orders.find((p) => p.id === s.po);
       expect(stage.stage).toBe('issued_not_sent'); // un bon émis n'est pas un envoi prouvé
 
@@ -344,7 +347,7 @@ describeDb('Hub P0 — chaîne d\'approvisionnement complète (REAL_DB)', () => 
     });
 
     test('deuxième envoi : même canal idempotent, canal différent refusé', async () => {
-      await engagement.submitPurchaseOrder(km1.po, { actor: actor() });
+      await submitAuthorized(engagement, km1.po, { actor: actor() });
       await engagement.recordPurchaseOrderSent(km1.po, { channel: 'email' }, { actor: actor() });
       const again = await engagement.recordPurchaseOrderSent(km1.po, { channel: 'email' }, { actor: actor() });
       expect(again.already_sent).toBe(true);

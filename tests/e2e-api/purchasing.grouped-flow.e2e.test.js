@@ -38,6 +38,8 @@ jest.mock('../../services/scan-operations', () => ({ ...jest.requireActual('../.
 
 const { describeE2E, createCleanup, RUN_TAG, tag, uuid } = require('../helpers/e2eDbKit');
 
+const { submitAuthorized } = require('../helpers/submit-authorized');
+
 jest.setTimeout(90000);
 
 describeE2E('E2E-P0-PURCHASING — achats regroupés : flux complet', ({ db }) => {
@@ -280,8 +282,8 @@ describeE2E('E2E-P0-PURCHASING — achats regroupés : flux complet', ({ db }) =
     expect(po1.order_id).toBeNull();
     expect(await poStatus(po1.id)).toBe('draft');
 
-    await engagement.submitPurchaseOrder(po1.id);
-    await engagement.submitPurchaseOrder(po2.id);
+    await submitAuthorized(engagement, po1.id);
+    await submitAuthorized(engagement, po2.id);
     expect(await poStatus(po1.id)).toBe('notified');
 
     // Confirmation partielle de PO1 (KM) : A 2/2, B 2/3 → reliquat ouvert de 1 sur B.
@@ -307,7 +309,7 @@ describeE2E('E2E-P0-PURCHASING — achats regroupés : flux complet', ({ db }) =
 
     // Reliquat de B repris dans une nouvelle PO, soumis, confirmé, reçu → B passe en préparation.
     const po3 = (await grouped.preparePurchaseOrder({ supplier_id: supplier1, procurement_hub_ref: hubRef, line_ids: [remnant.id] })).purchase_order;
-    await engagement.submitPurchaseOrder(po3.id);
+    await submitAuthorized(engagement, po3.id);
     await engagement.confirmGroupedPurchaseOrder(po3.id, { purchase_proof_ref: 'TEST-RECEIPT', supplier_order_id: `SUP-${tag('po3')}`, lines: [{ purchase_line_id: remnant.id, confirmed_quantity: 1 }] });
     await completeOrdersAfterHubReceipt(await hubReceive(remnant.id, 1));
     expect(await poStatus(po3.id)).toBe('hub_received');
@@ -356,7 +358,7 @@ describeE2E('E2E-P0-PURCHASING — achats regroupés : flux complet', ({ db }) =
     expect((await one('SELECT purchase_order_id FROM purchase_lines WHERE id = $1', [foreign.lineId])).purchase_order_id)
       .toBeNull();
 
-    await engagement.submitPurchaseOrder(draft.id);
+    await submitAuthorized(engagement, draft.id);
     await expect(grouped.attachDraftLines(draft.id, [foreign.lineId]))
       .rejects.toMatchObject({ status: 409, code: 'PURCHASE_ORDER_NOT_DRAFT' });
   });
@@ -383,7 +385,7 @@ describeE2E('E2E-P0-PURCHASING — achats regroupés : flux complet', ({ db }) =
 
     // Ligne soldée sans reliquat (fail-closed) : item non couvert → signal.
     const po = (await grouped.preparePurchaseOrder({ supplier_id: supplier1, procurement_hub_ref: hubRef, line_ids: [solded.lineId] })).purchase_order;
-    await engagement.submitPurchaseOrder(po.id);
+    await submitAuthorized(engagement, po.id);
     await engagement.confirmGroupedPurchaseOrder(po.id, { purchase_proof_ref: 'TEST-RECEIPT', supplier_order_id: `SUP-${tag('sg')}`, lines: [{ purchase_line_id: solded.lineId, confirmed_quantity: 2 }] });
     await hubReceive(solded.lineId, 1); // le Hub a reçu 1 sur 2 : la clôture ne peut pas aller en dessous
     await engagement.settleLine(solded.lineId, { settled_quantity: 1, reason: 'écart constaté', reopen_remainder: false });

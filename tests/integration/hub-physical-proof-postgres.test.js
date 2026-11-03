@@ -11,6 +11,8 @@
 jest.setTimeout(60000);
 
 const crypto = require('crypto');
+
+const { submitAuthorized } = require('../helpers/submit-authorized');
 const db = require('../../db');
 const grouped = require('../../services/purchasing-grouped-service');
 const engagement = require('../../services/purchasing-engagement-service');
@@ -71,7 +73,7 @@ describeDb('Hub lot 2 — preuve physique des quantités du colis client (REAL_D
 
   test('réception partielle : affecté = reçu (3 sur 5), emballé encore 0', async () => {
     po = (await grouped.preparePurchaseOrder({ supplier_id: supplier, procurement_hub_ref: 'DXB', line_ids: [lineId] }, { actor: { id: admin, role: 'admin' } })).purchase_order.id;
-    await engagement.submitPurchaseOrder(po, { actor: { id: admin, role: 'admin' } });
+    await submitAuthorized(engagement, po, { actor: { id: admin, role: 'admin' } });
     const r = await hubOps.receiveSupplierPackageCommand({ reference: `${tag}-COLIS`, location_ref: 'HUB-DXB-RECEIVE', contents: [{ purchase_order_id: po, product_sku_id: sku.id, quantity: 3 }] }, admin);
     expect(r.status).toBe(201);
     global.__unit = r.body.unit.id;
