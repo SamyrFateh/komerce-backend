@@ -35,9 +35,10 @@
 // module → il faut le fixer AVANT le premier require.
 process.env.JWT_SECRET = 'test-secret-stable-32-characters-minimum';
 
-jest.mock('../../db', () => ({ query: jest.fn() }));
+jest.mock('../../db', () => ({ query: jest.fn(), getClient: jest.fn() }));
 
 jest.mock('../../middleware/auth', () => ({
+  invalidateUserCache: jest.fn(),
   authenticate: (req, _res, next) => {
     req.user = req.user || { id: 'user-1' };
     req.auth = req.auth || { authTime: Math.floor(Date.now() / 1000), amr: ['passkey'] };
@@ -153,6 +154,17 @@ describe('POST /api/auth/register', () => {
 
 // ═══════════════════════════════════════════════════════════════════════
 describe('POST /api/auth/login', () => {
+  it('refuse tout login d’un collaborateur non activé', async () => {
+    db.query.mockResolvedValueOnce({ rows: [{
+      id: 'pending', email: 'pending@komerce.co', role: 'market_operator',
+      password_hash: 'random-non-credential', account_activation_required: true,
+    }] });
+    const res = await request(app).post('/api/auth/login')
+      .send({ email: 'pending@komerce.co', password: 'Abcdefg1' });
+    expect(res.status).toBe(401);
+    expect(bcrypt.compare).not.toHaveBeenCalled();
+  });
+
   it('400 si password manquant', async () => {
     const res = await request(app).post('/api/auth/login').send({ email: 'a@a.com' });
     expect(res.status).toBe(400);
@@ -342,6 +354,61 @@ describe('DELETE /api/auth/me/pickup-authorization', () => {
 // tests/unit/require-recent-auth.test.js — ici, seule la logique propre
 // à cette route (vérification du mot de passe actuel + mise à jour) est
 // sous test.
+describe('POST /api/auth/activate-account', () => {
+  it('active en transaction sans ouvrir une session et consomme le jeton une seule fois', async () => {
+    const client = {
+      query: jest.fn(async (sql) => {
+        if (/UPDATE credential_action_tokens/.test(sql)) return { rows: [{ user_id: 'user-1' }] };
+        if (/UPDATE users SET password_hash/.test(sql)) return { rowCount: 1 };
+        return { rows: [] };
+      }),
+      release: jest.fn(),
+    };
+    db.getClient.mockResolvedValueOnce(client);
+    const res = await request(app).post('/api/auth/activate-account')
+      .send({ token: 'a'.repeat(64), password: 'StrongPass1' });
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(client.query).toHaveBeenCalledWith('COMMIT');
+    expect(client.query.mock.calls.some(([sql]) => /account_activation_required=FALSE/.test(sql))).toBe(true);
+    expect(client.release).toHaveBeenCalledTimes(1);
+    expect(res.headers['set-cookie']).toBeUndefined();
+  });
+
+
+  it('rejects malformed activation before accessing persistence', async () => {
+    const res = await request(app).post('/api/auth/activate-account').send({ token: 'bad', password: 'weak' });
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('INVALID_ACTIVATION_REQUEST');
+    expect(db.query).not.toHaveBeenCalled();
+  });
+});
+
+describe('POST /api/auth/password-reset', () => {
+  it('répond uniformément pour un email inexistant', async () => {
+    const client = { query: jest.fn(async () => ({ rows: [] })), release: jest.fn() };
+    db.getClient.mockResolvedValueOnce(client);
+    const res = await request(app).post('/api/auth/password-reset/request').send({ email: 'missing@example.com' });
+    expect(res.status).toBe(202);
+    expect(res.body).toEqual({ accepted: true });
+  });
+  it('consomme le jeton et invalide les anciennes sessions', async () => {
+    const client = {
+      query: jest.fn(async (sql) => {
+        if (/UPDATE credential_action_tokens/.test(sql)) return { rows: [{ user_id: 'user-1' }] };
+        if (/UPDATE users SET password_hash/.test(sql)) return { rowCount: 1 };
+        return { rows: [] };
+      }), release: jest.fn(),
+    };
+    db.getClient.mockResolvedValueOnce(client);
+    const res = await request(app).post('/api/auth/password-reset/confirm')
+      .send({ token: 'b'.repeat(64), new_password: 'AnotherPass1' });
+    expect(res.status).toBe(200);
+    expect(client.query.mock.calls.some(([sql]) => /credentials_changed_at=NOW\(\)/.test(sql))).toBe(true);
+    expect(client.query).toHaveBeenCalledWith('COMMIT');
+  });
+});
+
 describe('PUT /api/auth/me/password', () => {
   it('428 si la session n’a pas de preuve récente (méthode faible/ancienne)', async () => {
     // Écrase req.auth pour simuler une session issue d'un simple login
@@ -387,6 +454,7 @@ describe('PUT /api/auth/me/password', () => {
   });
 
   it('succès : vérifie le mot de passe actuel puis écrit le nouveau hash', async () => {
+    bcrypt.compare.mockResolvedValueOnce(true).mockResolvedValueOnce(false);
     db.query
       .mockResolvedValueOnce({ rows: [{ password_hash: 'hash-actuel' }] })
       .mockResolvedValueOnce({ rowCount: 1 });
@@ -399,6 +467,25 @@ describe('PUT /api/auth/me/password', () => {
     expect(bcrypt.hash).toHaveBeenCalledWith('Nouveau123!', 12);
     const updateCall = db.query.mock.calls.find(c => /UPDATE users SET password_hash/.test(c[0]));
     expect(updateCall[1]).toEqual(['hashed-pw', 'user-1']);
+  });
+
+  it('refuse un nouveau mot de passe faible même avec une session récente', async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ password_hash: 'hash-actuel' }] });
+    const res = await request(app).put('/api/auth/me/password')
+      .send({ current_password: 'Ancien123!', new_password: 'nouveau123' });
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('WEAK_PASSWORD');
+    expect(bcrypt.hash).not.toHaveBeenCalled();
+  });
+
+  it('refuse de réutiliser le mot de passe précédent', async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ password_hash: 'hash-actuel' }] });
+    bcrypt.compare.mockResolvedValueOnce(true).mockResolvedValueOnce(true);
+    const res = await request(app).put('/api/auth/me/password')
+      .send({ current_password: 'Ancien123!', new_password: 'Ancien123!' });
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('SAME_PASSWORD');
+    expect(bcrypt.hash).not.toHaveBeenCalled();
   });
 
   it('erreur DB → next(err) → 500', async () => {

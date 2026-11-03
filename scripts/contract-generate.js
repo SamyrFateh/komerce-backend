@@ -593,6 +593,18 @@ const KNOWN_RESPONSES = {
   '/api/auth/me/password': {
     put: { fields: ['success','message'], source: 'route-read' }
   },
+  '/api/auth/activate-account': {
+    post: { fields: ['success'], source: 'test' }
+  },
+  '/api/auth/password-reset/request': {
+    post: { fields: ['accepted'], source: 'test' }
+  },
+  '/api/auth/password-reset/confirm': {
+    post: { fields: ['success'], source: 'test' }
+  },
+  '/api/admin/users/{id}/resend-invitation': {
+    post: { fields: ['success','invitation_sent'], source: 'route-read' }
+  },
   '/api/auth/step-up/otp/request': {
     post: { fields: ['ok','message','expiresIn','retryAfter'], source: 'route-read' }
   },
@@ -2768,6 +2780,7 @@ if (inventory.length < 150) {
 }
 
 const SUCCESS_STATUS_OVERRIDES = Object.freeze({
+  'POST /api/auth/password-reset/request': '202',
   'POST /api/admin/market-settlements/markets/{marketCode}/settlements/ready': '201',
   'POST /api/market-delegation/markets/{marketCode}/network/providers': '201',
   'POST /api/market-delegation/markets/{marketCode}/network/relais': '201',

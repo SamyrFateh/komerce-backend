@@ -28,6 +28,7 @@ const jwt  = require('jsonwebtoken');
 const db   = require('../db');
 const log = require('../utils/logger').child({ module: 'auth-guest' });
 const userCache = require('../utils/user-cache');
+const { sessionPredatesCredentials } = require('../utils/credential-session-guard');
 const { normalizePhone } = require('../utils/phone');
 const { sessionClaimsVerdict } = require('../utils/auth-token-policy');
 
@@ -64,11 +65,13 @@ async function authenticateOrCreateGuest(req, res, next) {
           return res.status(401).json({ error: 'Session expirée — reconnectez-vous' });
         }
 
-        let user = getCachedUser(decoded.id);
+        // V1 security: force a fresh DB identity on every request. A 5-minute
+    // process-local cache cannot safely revoke staff roles or JWTs across workers.
+    let user = null;
 
         if (!user) {
           const { rows } = await db.query(
-            `SELECT id, full_name, email, phone, phone_payer, role, currency_pref
+            `SELECT id, full_name, email, phone, phone_payer, role, currency_pref, account_activation_required, credentials_changed_at
                FROM users WHERE id = $1`,
             [decoded.id]
           );
@@ -78,6 +81,12 @@ async function authenticateOrCreateGuest(req, res, next) {
           }
         }
 
+        if (user && sessionPredatesCredentials(decoded.auth_time, user.credentials_changed_at)) {
+          return res.status(401).json({ error: 'Session révoquée', code: 'credentials_changed' });
+        }
+        if (user && user.account_activation_required === true) {
+          return res.status(401).json({ error: 'Compte non activé', code: 'account_activation_required' });
+        }
         if (user) {
           req.user = user;
           return next();

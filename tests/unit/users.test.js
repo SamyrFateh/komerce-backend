@@ -16,6 +16,13 @@ jest.mock('../../utils/logger', () => ({
 
 jest.mock('../../db', () => ({ query: jest.fn(), getClient: jest.fn() }));
 
+jest.mock('../../services/credential-action-store', () => ({
+  createActionToken: jest.fn().mockResolvedValue({ token: 'a'.repeat(64) }),
+}));
+jest.mock('../../services/credential-invitation-email', () => ({
+  sendCredentialLink: jest.fn().mockResolvedValue({ sent: true }),
+}));
+
 jest.mock('../../services/market-operator-provisioning', () => ({
   grantOperatorScope: jest.fn(),
   revokeOperatorScope: jest.fn(),
@@ -39,6 +46,7 @@ jest.mock('../../services/market-scope-admin-service', () => ({
 
 let mockUser = null;
 jest.mock('../../middleware/auth', () => ({
+  invalidateUserCache: jest.fn(),
   authenticate: (req, res, next) => {
     if (!mockUser) return res.status(401).json({ error: 'Non authentifié' });
     req.user = mockUser;
@@ -78,6 +86,8 @@ const request = require('supertest');
 const db = require('../../db');
 const marketScopes = require('../../services/market-scope-admin-service');
 const provisioning = require('../../services/market-operator-provisioning');
+const credentialStore = require('../../services/credential-action-store');
+const invitations = require('../../services/credential-invitation-email');
 
 let app;
 
@@ -104,6 +114,8 @@ beforeEach(() => {
   marketScopes.listUserMarketScopeHistory.mockResolvedValue([]);
   marketScopes.hasUserMarketScopeHistory.mockResolvedValue(false);
   provisioning.grantOperatorScope.mockResolvedValue({ status: 'granted', scope: null });
+  credentialStore.createActionToken.mockResolvedValue({ token: 'a'.repeat(64) });
+  invitations.sendCredentialLink.mockResolvedValue({ sent: true });
   provisioning.revokeOperatorScope.mockResolvedValue({ status: 'revoked', revoked: null });
   provisioning.revokeAllOperatorScopes.mockResolvedValue([]);
   db.getClient.mockImplementation(async () => makeClient());
@@ -204,6 +216,28 @@ describe('GET /api/admin/users/:id/market-scopes', () => {
     expect(res.status).toBe(200);
     expect(res.body.active).toHaveLength(1);
     expect(res.body.history).toHaveLength(2);
+  });
+});
+
+describe('V1 — sécurité des habilitations centrales', () => {
+  it('refuse de créer un Responsable marché sans autorité centrale explicite', async () => {
+    mockGlobalAllowed = false;
+    const res = await request(app).post('/api/admin/users').send({
+      full_name: 'Responsable', email: 'refuse@x.km', password: 'Abcdefg1',
+      role: 'market_operator', market_codes: ['KM', 'CM'],
+    });
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe('dashboard_global_access_denied');
+    expect(db.query).not.toHaveBeenCalled();
+    expect(provisioning.grantOperatorScope).not.toHaveBeenCalled();
+  });
+  it('refuse une promotion de rôle sans autorité centrale explicite', async () => {
+    mockGlobalAllowed = false;
+    const res = await request(app).put('/api/admin/users/u1/role').send({
+      role: 'market_operator', market_codes: ['KM'],
+    });
+    expect(res.status).toBe(403);
+    expect(db.query).not.toHaveBeenCalled();
   });
 });
 
@@ -351,6 +385,94 @@ describe('POST /api/admin/users', () => {
     }));
   });
 
+  it('crée KM et CM en une transaction, sans choisir des permissions techniques', async () => {
+    db.query.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({
+      rows: [{ id: 'op-2', email: 'multi@x.km', role: 'market_operator' }],
+    });
+    provisioning.grantOperatorScope
+      .mockResolvedValueOnce({ status: 'granted', scope: { market_code: 'KM', scope_role: 'manager' } })
+      .mockResolvedValueOnce({ status: 'granted', scope: { market_code: 'CM', scope_role: 'manager' } });
+    const client = makeClient();
+    db.getClient.mockResolvedValueOnce(client);
+    const res = await request(app).post('/api/admin/users').send({
+      full_name: 'Responsable', email: 'multi@x.km', password: 'Abcdefg1',
+      role: 'market_operator', market_codes: ['km', 'CM'],
+    });
+    expect(res.status).toBe(201);
+    expect(res.body.market_scopes.map((s) => s.market_code)).toEqual(['KM', 'CM']);
+    expect(provisioning.grantOperatorScope).toHaveBeenCalledTimes(2);
+    expect(provisioning.grantOperatorScope).toHaveBeenNthCalledWith(2, client, expect.objectContaining({
+      marketCode: 'CM', scopeRole: 'manager', grantedBy: ADMIN.id,
+    }));
+    expect(client.query).toHaveBeenCalledWith('COMMIT');
+  });
+
+  it('un marché invalide annule aussi le premier marché et le compte', async () => {
+    db.query.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({
+      rows: [{ id: 'op-3', email: 'rollback@x.km', role: 'market_operator' }],
+    });
+    provisioning.grantOperatorScope
+      .mockResolvedValueOnce({ status: 'granted', scope: { market_code: 'KM' } })
+      .mockResolvedValueOnce({ status: 'market_not_found', scope: null });
+    const client = makeClient();
+    db.getClient.mockResolvedValueOnce(client);
+    const res = await request(app).post('/api/admin/users').send({
+      full_name: 'Responsable', email: 'rollback@x.km', password: 'Abcdefg1',
+      role: 'market_operator', market_codes: ['KM', 'ZZ'],
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('MARKET_NOT_FOUND');
+    expect(client.query).toHaveBeenCalledWith('ROLLBACK');
+    expect(client.query).not.toHaveBeenCalledWith('COMMIT');
+  });
+
+  it('refuse les codes doublons, les market_id et les marchés pour un rôle non-marché', async () => {
+    const base = { full_name: 'Responsable', email: 'u@x.km', password: 'Abcdefg1', role: 'market_operator' };
+    const duplicate = await request(app).post('/api/admin/users').send({ ...base, market_codes: ['KM', 'km'] });
+    expect(duplicate.body.code).toBe('DUPLICATE_MARKET_CODE');
+    const injected = await request(app).post('/api/admin/users').send({ ...base, market_codes: ['KM'], market_id: 'spoof' });
+    expect(injected.body.code).toBe('MIXED_MARKET_SCOPE_FORMAT');
+    const nonMarket = await request(app).post('/api/admin/users').send({ ...base, role: 'client', market_codes: ['KM'] });
+    expect(nonMarket.body.code).toBe('MARKET_SCOPE_ROLE_MISMATCH');
+    expect(db.query).not.toHaveBeenCalled();
+  });
+
+  it('invite un Responsable marché sur KM et CM sans mot de passe administrateur', async () => {
+    db.query.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({
+      rows: [{ id: 'op-invite', email: 'invite@x.km', role: 'market_operator' }],
+    });
+    provisioning.grantOperatorScope
+      .mockResolvedValueOnce({ status: 'granted', scope: { market_code: 'KM' } })
+      .mockResolvedValueOnce({ status: 'granted', scope: { market_code: 'CM' } });
+    const client = makeClient();
+    db.getClient.mockResolvedValueOnce(client);
+    const res = await request(app).post('/api/admin/users').send({
+      full_name: 'Responsable', email: 'invite@x.km',
+      role: 'market_operator', market_codes: ['KM', 'CM'], invite: true,
+    });
+    expect(res.status).toBe(201);
+    expect(res.body.account_activation_required).toBe(true);
+    expect(res.body.invitation_sent).toBe(true);
+    expect(JSON.stringify(res.body)).not.toContain('a'.repeat(64));
+    expect(credentialStore.createActionToken).toHaveBeenCalledWith(client, {
+      userId: 'op-invite', purpose: 'account_activation',
+    });
+    expect(invitations.sendCredentialLink).toHaveBeenCalledWith({
+      email: 'invite@x.km', token: 'a'.repeat(64), purpose: 'account_activation',
+    });
+    expect(client.query).toHaveBeenCalledWith('COMMIT');
+  });
+
+  it('refuse un mot de passe fourni avec une invitation', async () => {
+    const res = await request(app).post('/api/admin/users').send({
+      full_name: 'Responsable', email: 'invite@x.km', password: 'Abcdefg1',
+      role: 'market_operator', market_codes: ['KM'], invite: true,
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('INVITATION_PASSWORD_FORBIDDEN');
+    expect(db.query).not.toHaveBeenCalled();
+  });
+
   it('marché inconnu annule le provisioning', async () => {
     db.query
       .mockResolvedValueOnce({ rows: [] })
@@ -412,6 +534,23 @@ describe('PUT /api/admin/users/:id/role', () => {
     const res = await request(app).put('/api/admin/users/u1/role').send({ role: 'market_operator' });
     expect(res.status).toBe(400);
     expect(res.body.code).toBe('MARKET_SCOPE_REQUIRED');
+  });
+
+  it('promotion multi-marchés KM/CM transactionnelle depuis un profil client', async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ id: 'u1', role: 'client' }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'u1', role: 'market_operator' }] });
+    provisioning.grantOperatorScope
+      .mockResolvedValueOnce({ status: 'granted', scope: { market_code: 'KM', scope_role: 'manager' } })
+      .mockResolvedValueOnce({ status: 'granted', scope: { market_code: 'CM', scope_role: 'manager' } });
+    const client = makeClient();
+    db.getClient.mockResolvedValueOnce(client);
+    const res = await request(app).put('/api/admin/users/u1/role').send({
+      role: 'market_operator', market_codes: ['km', 'CM'],
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.market_scopes.map((v) => v.market_code)).toEqual(['KM', 'CM']);
+    expect(client.query).toHaveBeenCalledWith('COMMIT');
+    expect(provisioning.grantOperatorScope).toHaveBeenCalledTimes(2);
   });
 
   it('promotion market_operator + manager CM est atomique', async () => {

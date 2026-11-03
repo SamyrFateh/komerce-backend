@@ -11,14 +11,15 @@ const admin = require('../../public/dashboards/canonical/js/users-admin');
 
 const source = fs.readFileSync(path.join(__dirname, '..', '..', 'public/dashboards/canonical/js/users-admin.js'), 'utf8');
 
-describe('Users admin — consultation seule', () => {
+describe('Users admin — rôles V1 et affectation marchés', () => {
   test('rowsFor projette rôle, périmètres et dernière connexion sans inférer de statut', () => {
     const rows = admin.rowsFor({ users: [
-      { full_name: 'A', email: 'a@x', role: 'market_operator', last_login_at: '2026-10-01T10:00:00Z', market_scopes: [{ market_code: 'KM', scope_role: 'manager' }] },
+      { full_name: 'A', email: 'a@x', role: 'market_operator', last_login_at: '2026-10-01T10:00:00Z', market_scopes: [{ market_code: 'KM', scope_role: 'manager' }], account_activation_required: false },
       { full_name: null, email: null, role: 'inconnu', last_login_at: null, market_scopes: [] },
     ] });
-    expect(rows[0]).toEqual({ name: 'A', email: 'a@x', role: 'Opérateur marché', scopes: 'KM · manager', last_login: '2026-10-01' });
+    expect(rows[0]).toEqual({ name: 'A', email: 'a@x', role: 'Responsable marché', scopes: 'KM', activation: 'Activé', last_login: '2026-10-01' });
     expect(rows[1].role).toBe('inconnu (non reconnu)');
+    expect(rows[1].activation).toBe('—');
     expect(rows[1].last_login).toBe('Jamais connecté');
     expect(rows[1].scopes).toBe('—');
     expect(admin.rowsFor(undefined)).toEqual([]);
@@ -28,10 +29,12 @@ describe('Users admin — consultation seule', () => {
     expect(Object.keys(admin.ROLE_LABELS).sort()).toEqual(['admin', 'agent_hub', 'agent_relais', 'client', 'market_operator']);
   });
 
-  test('aucune mutation : un seul GET, aucun verbe mutant, aucun champ secret', () => {
-    expect(source).toContain("method: 'GET'");
-    expect(source).not.toMatch(/method:\s*'(POST|PUT|PATCH|DELETE)'/);
-    expect(source).not.toMatch(/password|<button|<input|<select/i);
+  test('gestion des affectations : actions serveur, pas de mot de passe administrateur', () => {
+    expect(source).toContain("method: granted ? 'POST' : 'DELETE'");
+    expect(source).toContain("scope_role: 'manager'");
+    expect(source).toContain("'/api/admin/users/markets'");
+    expect(source).toContain('data-market-assignments');
+    expect(source).not.toMatch(/new_password|password_hash|Mot de passe provisoire/);
   });
 
   test('render : erreur HTTP → message, pas de table', async () => {

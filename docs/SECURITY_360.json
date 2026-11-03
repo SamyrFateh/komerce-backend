@@ -2,9 +2,9 @@
   "generatedAt": "2026-11-03T17:09:39.129Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 797,
-    "protected": 742,
-    "public": 55,
+    "total": 801,
+    "protected": 743,
+    "public": 58,
     "unprotected": 0,
     "admin_no_guard": 0,
     "unknown": 0
@@ -1936,6 +1936,13 @@
       ]
     },
     {
+      "key": "POST /api/admin/users/{id}/resend-invitation",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
       "key": "PUT /api/admin/users/{id}/role",
       "level": "PROTECTED",
       "roles": [
@@ -3072,6 +3079,11 @@
       ]
     },
     {
+      "key": "POST /api/auth/activate-account",
+      "level": "PUBLIC",
+      "roles": []
+    },
+    {
       "key": "POST /api/auth/admin-reset",
       "level": "PUBLIC",
       "roles": []
@@ -3219,6 +3231,16 @@
     {
       "key": "POST /api/auth/passkey/step-up/verify",
       "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/auth/password-reset/confirm",
+      "level": "PUBLIC",
+      "roles": []
+    },
+    {
+      "key": "POST /api/auth/password-reset/request",
+      "level": "PUBLIC",
       "roles": []
     },
     {
