@@ -289,7 +289,7 @@ async function projectShipmentCustoms(client, { marketId = null } = {}) {
           WHERE e.shipment_id = s.id AND e.event_type = 'customs_amount_confirmed'
           ORDER BY e.occurred_at DESC LIMIT 1
        ) ev ON true
-      WHERE cs.status = 'declared' AND cs.customs_paid_kmf > 0
+      WHERE cs.declared_at IS NOT NULL AND cs.customs_paid_kmf > 0
         AND EXISTS (SELECT 1 FROM international_shipment_hub_units hu WHERE hu.shipment_id = s.id)
         ${marketFilter('s', marketId, params)}
       ORDER BY cs.id`, params);
