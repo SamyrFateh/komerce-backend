@@ -215,246 +215,285 @@
     }
   }
 
+
+  const ADMIN_PO_STAGE = Object.freeze({
+    draft: 'Brouillon à préparer',
+    issued_not_sent: 'Envoi à prouver',
+    sent: 'En attente fournisseur',
+    confirmed: 'Confirmée fournisseur',
+    partially_received: 'Réception partielle',
+    received: 'Réceptionnée',
+    cancelled: 'Annulée',
+  });
+
+  async function renderAdministrationBoard(root, {document:doc, fetch:fetchFn, user} = {}) {
+    if (!root || !doc || typeof fetchFn !== 'function') throw new Error('hub_admin_board_context_missing');
+    if (!['admin','agent_hub'].includes(user && user.role)) throw new Error('hub_admin_board_role_not_allowed');
+    root.replaceChildren();
+
+    const top = make(doc, 'div', 'kmc-hub-global-toolbar');
+    top.appendChild(make(doc, 'strong', '', 'Achats fournisseurs · Tous les marchés'));
+    const count = make(doc, 'span', 'kmc-hub-global-count', 'Chargement…');
+    top.appendChild(count);
+    root.appendChild(top);
+    const stats = make(doc, 'div', 'kmc-hub-admin-stats');
+    stats.setAttribute('data-hub-admin-stats', '');
+    root.appendChild(stats);
+
+    const tools = make(doc, 'div', 'kmc-hub-admin-toolbar');
+    const tabs = make(doc, 'div', 'kmc-hub-admin-tabs');
+    const views = [
+      {id:'engagements', label:'PO & engagements'},
+      {id:'payments', label:'Paiements fournisseurs'},
+    ];
+    const buttons = [];
+    let view = 'engagements';
+    for (const option of views) {
+      const button = make(doc, 'button', 'kmc-hub-admin-tab', option.label);
+      button.type = 'button';
+      button.setAttribute('data-hub-admin-view', option.id);
+      button.addEventListener('click', () => {view=option.id; renderRows();});
+      tabs.appendChild(button);
+      buttons.push(button);
+    }
+    tools.appendChild(tabs);
+    const search = make(doc, 'input', 'kmc-hub-app-search');
+    search.type = 'search';
+    search.placeholder = 'Rechercher PO, fournisseur ou marché';
+    search.setAttribute('aria-label', search.placeholder);
+    tools.appendChild(search);
+    root.appendChild(tools);
+
+    const scroll = make(doc, 'div', 'kmc-hub-board-scroll');
+    const table = make(doc, 'table', 'kmc-hub-board kmc-hub-admin-table');
+    table.setAttribute('aria-label', 'Ordres d’achat et engagements fournisseurs du Hub');
+    const head = make(doc, 'thead');
+    const body = make(doc, 'tbody');
+    table.appendChild(head);
+    table.appendChild(body);
+    scroll.appendChild(table);
+    root.appendChild(scroll);
+
+    const note = make(doc, 'p', 'kmc-hub-admin-note',
+      'Autorisation de la directrice : preuve distincte de l’envoi de PO et du débit fournisseur. ' +
+      'La décision n’est pas encore tracée par cette projection ; aucune validation n’est déduite du statut de PO.');
+    root.appendChild(note);
+
+    const menu = make(doc, 'div', 'kmc-hub-board-menu');
+    menu.setAttribute('role', 'dialog');
+    menu.setAttribute('aria-label', 'Actions et justificatifs de la PO');
+    menu.setAttribute('data-hub-admin-menu', '');
+    menu.hidden = true;
+    root.appendChild(menu);
+    const closeMenu = () => {menu.hidden = true;};
+    const addLink = (label, url) => {
+      const link = make(doc, 'a', 'kmc-hub-board-menu-action', label);
+      link.href = url;
+      menu.appendChild(link);
+    };
+    const openMenu = (po, field, value, event) => {
+      menu.replaceChildren();
+      menu.appendChild(make(doc, 'strong', 'kmc-hub-board-menu-title',
+        'PO ' + smallRef(po.id) + ' · ' + field));
+      menu.appendChild(make(doc, 'p', 'kmc-hub-board-menu-summary', value));
+      menu.appendChild(make(doc, 'p', 'kmc-hub-board-menu-summary',
+        'Marché ' + po.market + ' · ' + po.order_count + ' commande(s) rattachée(s).'));
+      // The canonical writer remains the only mutation surface; the summary
+      // NEVER submits, approves, pays, sends or receives on a right-click.
+      const target = '/admin/workspaces/purchasing?po=' + encodeURIComponent(po.id)
+        + (po.multi_market_legacy ? '' : '&market=' + encodeURIComponent(po.market));
+      addLink('Ouvrir la PO et ses justificatifs', target);
+      if (user.role === 'admin') {
+        menu.appendChild(make(doc, 'p', 'kmc-hub-board-menu-summary',
+          field === 'Paiement' ? 'Voir les débits réellement prouvés dans le dossier fournisseur.'
+            : 'Les validations d’achat s’exécutent exclusivement dans le module Achats fournisseurs.'));
+      }
+      const close = make(doc, 'button', 'kmc-hub-board-menu-action', 'Fermer');
+      close.type = 'button';
+      close.addEventListener('click', closeMenu);
+      menu.appendChild(close);
+      menu.hidden = false;
+      const box = event?.currentTarget?.getBoundingClientRect?.();
+      const x = event?.type === 'contextmenu' ? event.clientX : (box ? box.left : 8);
+      const y = event?.type === 'contextmenu' ? event.clientY : (box ? box.bottom : 8);
+      const width = doc.defaultView?.innerWidth || 1440;
+      const height = doc.defaultView?.innerHeight || 900;
+      menu.style.left = Math.max(8, Math.min(x, width - 310)) + 'px';
+      menu.style.top = Math.max(8, Math.min(y, height - 265)) + 'px';
+      menu.querySelector?.('a,button')?.focus?.();
+    };
+    root.addEventListener('keydown', event => {if(event.key === 'Escape') closeMenu();});
+
+    let rows = [];
+    const cellAction = (tr, po, field, value, hint) => {
+      const td = make(doc, 'td');
+      const button = make(doc, 'button', 'kmc-hub-board-cell', value || '—');
+      button.type = 'button';
+      button.setAttribute('data-hub-admin-stage', field);
+      if (hint) button.appendChild(make(doc, 'small', '', hint));
+      button.addEventListener('click', event => openMenu(po, field, value, event));
+      button.addEventListener('contextmenu', event => {event.preventDefault(); openMenu(po,field,value,event);});
+      td.appendChild(button);
+      tr.appendChild(td);
+    };
+    const renderRows = () => {
+      body.replaceChildren();
+      head.replaceChildren();
+      buttons.forEach((button, i) => {
+        const active = views[i].id === view;
+        button.classList.toggle('is-active', active);
+        button.setAttribute('aria-pressed', String(active));
+      });
+      const labels = view === 'engagements'
+        ? ['PO / Fournisseur','Marché','Commandes','Engagement','Envoi fournisseur','Réception','Paiement']
+        : ['PO / Fournisseur','Marché','Débit fournisseur','Autorisation directrice','Preuve'];
+      const hrow = make(doc,'tr');
+      for (const label of labels) hrow.appendChild(make(doc,'th','',label));
+      head.appendChild(hrow);
+      const term = safe(search.value).trim().toLocaleLowerCase('fr');
+      const matching = rows.filter(po => [po.id,po.supplier,po.market,po.stage,po.payment_evidence]
+        .some(v=>safe(v).toLocaleLowerCase('fr').includes(term)));
+      count.textContent = matching.length + ' / ' + rows.length + ' PO';
+      if (!matching.length) {
+        const tr = make(doc,'tr');
+        const td = make(doc,'td','',term ? 'Aucune PO correspondante.' : 'Aucune PO fournisseur pour les marchés actifs.');
+        td.colSpan=labels.length;
+        tr.appendChild(td);
+        body.appendChild(tr);
+        return;
+      }
+      for (const po of matching) {
+        const tr = make(doc,'tr');
+        tr.setAttribute('data-hub-admin-po',po.id);
+        const identity = make(doc,'td');
+        const wrap = make(doc,'div','kmc-hub-board-identity');
+        wrap.appendChild(make(doc,'strong','', 'PO ' + smallRef(po.id)));
+        wrap.appendChild(make(doc,'small','', po.supplier));
+        identity.appendChild(wrap);
+        tr.appendChild(identity);
+        tr.appendChild(make(doc,'td','',po.market || '—'));
+        if (view === 'engagements') {
+          tr.appendChild(make(doc,'td','',String(po.order_count || 0)));
+          cellAction(tr,po,'Engagement', ADMIN_PO_STAGE[po.stage] || po.stage || 'À vérifier',
+            'Autorisation distincte non tracée');
+          cellAction(tr,po,'Fournisseur',po.sent_at ? 'Envoi enregistré' : 'Envoi non prouvé');
+          cellAction(tr,po,'Réception',
+            po.received ? po.received + ' / ' + po.expected + ' reçu(s)' : 'Non reçue',
+            po.anomalies ? po.anomalies + ' à contrôler' : '');
+          cellAction(tr,po,'Paiement',po.payment_evidence);
+        } else {
+          cellAction(tr,po,'Paiement',po.payment_evidence,
+            po.payment_count ? po.verified_debit_count + ' / ' + po.payment_count + ' preuve(s) de débit' : '');
+          cellAction(tr,po,'Autorisation',po.payment_authorization);
+          cellAction(tr,po,'Justificatifs',
+            po.payment_count ? po.payment_count + ' paiement(s) référencé(s)' : 'Aucun débit référencé');
+        }
+        body.appendChild(tr);
+      }
+    };
+    search.addEventListener('input',renderRows);
+    try {
+      const payload = await requestJSON(fetchFn,'/api/hub/administration');
+      if (payload.scope !== 'HUB_ADMINISTRATION_GLOBAL' || !Array.isArray(payload.purchase_orders))
+        throw new Error('Réponse Administration Hub invalide');
+      rows=payload.purchase_orders;
+      const metrics=[
+        ['PO',payload.kpis?.purchase_orders],
+        ['Brouillons',payload.kpis?.drafts],
+        ['Envois à prouver',payload.kpis?.to_send],
+        ['Suivis fournisseurs',payload.kpis?.supplier_waiting],
+        ['Débits à rapprocher',payload.kpis?.payment_to_reconcile],
+      ];
+      stats.replaceChildren();
+      for(const [label,value] of metrics){
+        const box = make(doc,'div','kmc-hub-admin-stat');
+        box.appendChild(make(doc,'strong','',String(Number(value)||0)));
+        box.appendChild(make(doc,'span','',label));
+        stats.appendChild(box);
+      }
+      renderRows();
+      return payload;
+    } catch (error) {
+      count.textContent='Indisponible';
+      const tr = make(doc,'tr');
+      const td = make(doc,'td','kmc-hub-app-list-error','Administration indisponible : ' + error.message);
+      td.colSpan=7;
+      tr.appendChild(td);
+      body.replaceChildren(tr);
+      return null;
+    }
+  }
+
   function mount(options = {}) {
-    const {root, user, document:doc, location, history, fetch:fetchFn, adminContext,
+    const {root, user, document:doc, location, history, fetch:fetchFn,
       renderAdministrative, renderOperations} = options;
     if (!root || !doc || !user) throw new Error('hub_workstation_context_missing');
-    if (typeof renderAdministrative !== 'function' || typeof renderOperations !== 'function') {
+    if (typeof renderAdministrative !== 'function' || typeof renderOperations !== 'function')
       throw new Error('hub_workstation_renderers_missing');
-    }
     const role = safe(user.role);
-    if (!['admin', 'agent_hub', 'market_operator', 'agent_relais', 'finance', 'sourcing', 'agent_transitaire', 'support'].includes(role)) {
-      throw new Error('hub_workstation_role_not_allowed');
+    const visibleRoles=['admin','agent_hub','market_operator','agent_relais','finance','sourcing','agent_transitaire','support'];
+    if(!visibleRoles.includes(role)) throw new Error('hub_workstation_role_not_allowed');
+    const administrativeAllowed = role === 'admin' || role === 'agent_hub';
+    const params = new URLSearchParams(safe(location?.search));
+    if (params.has('market') && history?.replaceState) {
+      params.delete('market');
+      history.replaceState(null,'',HUB_PATH + (params.toString() ? '?' + params.toString() : ''));
     }
-    const administrativeAllowed = role === 'admin';
-    const search = safe(location && location.search);
-    // Un ancien lien ?market=KM ne doit pas donner l'impression de filtrer le Hub.
-    if (new URLSearchParams(search).has('market') && history?.replaceState) {
-      const clean = new URLSearchParams(search);
-      clean.delete('market');
-      history.replaceState(null, '', HUB_PATH + (clean.toString() ? '?' + clean.toString() : ''));
-    }
-    const requested = parseBranch(search);
-    const branch = requested === 'administrative' && !administrativeAllowed ? 'operations' : requested;
-    const active = { orderId: '', poId: branch === 'administrative' ? getPO(location) : '' };
-
+    const requested=parseBranch(safe(location?.search));
+    const branch=requested === 'administrative' && !administrativeAllowed ? 'operations' : requested;
     root.replaceChildren();
-    root.className = 'kmc-hub-app';
-    const header = make(doc, 'header', 'kmc-hub-app-header');
-    const title = make(doc, 'div', 'kmc-hub-app-title');
-    title.appendChild(make(doc, 'span', 'kmc-hub-app-eyebrow', 'KOMERCE · HUB'));
-    title.appendChild(make(doc, 'h1', '', 'Poste de travail Hub'));
-    title.appendChild(make(doc, 'p', '', 'Deux branches · un seul dossier de traçabilité'));
-    header.appendChild(title);
+    root.className='kmc-hub-app';
+    const header=make(doc,'header','kmc-hub-app-header');
+    const heading=make(doc,'div','kmc-hub-app-title');
+    heading.appendChild(make(doc,'span','kmc-hub-app-eyebrow','KOMERCE · HUB'));
+    heading.appendChild(make(doc,'h1','','Hub · Tous les marchés'));
+    heading.appendChild(make(doc,'p','','Achats fournisseurs, réception, préparation et expéditions'));
+    header.appendChild(heading);
     root.appendChild(header);
-
-    // Branches compactes en haut : la vraie colonne gauche sert aux dossiers.
-    const branchNav = make(doc, 'nav', 'kmc-hub-app-branches');
-    branchNav.setAttribute('aria-label', 'Branches du Hub');
-    for (const id of ['administrative', 'operations']) {
-      if (id === 'administrative' && !administrativeAllowed) continue;
-      const definition = BRANCHES[id];
-      const link = make(doc, 'a', 'kmc-hub-app-branch');
-      link.setAttribute('href', href(id, search));
-      link.setAttribute('data-hub-branch', id);
-      if (id === branch) {
-        link.classList.add('is-active');
-        link.setAttribute('aria-current', 'page');
-      }
-      const label = make(doc, 'span', 'kmc-hub-app-branch-copy');
-      label.appendChild(make(doc, 'strong', '', definition.label));
-      label.appendChild(make(doc, 'small', '', definition.hint));
-      link.appendChild(label);
-      branchNav.appendChild(link);
+    const nav=make(doc,'nav','kmc-hub-app-branches');
+    nav.setAttribute('aria-label','Postes de travail Hub');
+    for(const id of ['administrative','operations']){
+      if(id === 'administrative' && !administrativeAllowed)continue;
+      const spec=BRANCHES[id];
+      const link=make(doc,'a','kmc-hub-app-branch');
+      link.setAttribute('href',href(id,safe(location?.search)));
+      link.setAttribute('data-hub-branch',id);
+      if(id === branch){link.classList.add('is-active');link.setAttribute('aria-current','page');}
+      const copy=make(doc,'span','kmc-hub-app-branch-copy');
+      copy.appendChild(make(doc,'strong','',spec.label));
+      copy.appendChild(make(doc,'small','',spec.hint));
+      link.appendChild(copy);
+      nav.appendChild(link);
     }
-    root.appendChild(branchNav);
-
-    const layout = make(doc, 'div', 'kmc-hub-app-layout');
-    if (branch === 'operations') layout.classList.add('is-table');
-    const rail = make(doc, 'aside', 'kmc-hub-app-rail');
-    rail.setAttribute('aria-label', branch === 'administrative' ? 'Ordres d’achat' : 'Dossiers Hub');
-    const railHeading = make(doc, 'div', 'kmc-hub-app-rail-heading');
-    railHeading.appendChild(make(doc, 'strong', '',
-      branch === 'administrative' ? 'Achats fournisseurs' : 'Commandes à suivre'));
-    railHeading.appendChild(make(doc, 'small', '', 'Données réelles · lecture seule'));
-    rail.appendChild(railHeading);
-
-    const searchInput = make(doc, 'input', 'kmc-hub-app-search');
-    searchInput.type = 'search';
-    searchInput.placeholder = branch === 'administrative' ? 'Chercher une PO / fournisseur' : 'Chercher une commande';
-    searchInput.setAttribute('aria-label', searchInput.placeholder);
-    rail.appendChild(searchInput);
-    const actions = make(doc, 'div', 'kmc-hub-app-rail-actions');
-    const resetButton = make(doc, 'button', 'kmc-hub-app-light-button',
-      branch === 'administrative' ? 'Besoins à constituer' : 'Tous les dossiers');
-    resetButton.type = 'button';
-    actions.appendChild(resetButton);
-    const refresh = make(doc, 'button', 'kmc-hub-app-light-button', 'Actualiser');
-    refresh.type = 'button';
-    actions.appendChild(refresh);
-    rail.appendChild(actions);
-    const list = make(doc, 'div', 'kmc-hub-app-case-list');
-    list.setAttribute('data-hub-case-list', branch);
-    rail.appendChild(list);
-    const railNote = make(doc, 'p', 'kmc-hub-app-rail-note', 'Un dossier relie commandes, articles, PO, réception et expédition.');
-    rail.appendChild(railNote);
-    if (branch === 'administrative') layout.appendChild(rail);
-
-    const content = make(doc, 'section', 'kmc-hub-app-content');
-    content.setAttribute('aria-label', BRANCHES[branch].label);
-    content.setAttribute('data-hub-active-branch', branch);
-    content.appendChild(make(doc, 'div', 'kmc-hub-app-pane-label',
-      branch === 'administrative' ? 'PRÉPARER · ENGAGER · SUIVRE' : 'RÉCEPTIONNER · PRÉPARER · EXPÉDIER'));
-    const host = make(doc, 'div', 'kmc-hub-app-workspace');
-    host.setAttribute('data-hub-branch-workspace', branch);
+    root.appendChild(nav);
+    const layout=make(doc,'div','kmc-hub-app-layout is-table');
+    const content=make(doc,'section','kmc-hub-app-content');
+    content.setAttribute('data-hub-active-branch',branch);
+    const host=make(doc,'div','kmc-hub-app-workspace');
+    host.setAttribute('data-hub-branch-workspace',branch);
     content.appendChild(host);
     layout.appendChild(content);
     root.appendChild(layout);
-
-    const activeItems = { rows: [], seq: 0 };
-    let pendingMount = null;
-    const updateUrl = poId => {
-      if (!history || typeof history.pushState !== 'function' || !location) return;
-      const params = new URLSearchParams(safe(location.search));
-      if (poId) params.set('po', poId); else params.delete('po');
-      params.delete('market');
-      // Hub sans marché : préserver uniquement la branche et le dossier PO.
-      const query = params.toString();
-      history.pushState(null, '', HUB_PATH + (query ? '?' + query : ''));
+    const reloadCases=()=>Promise.resolve(branch === 'administrative'
+      ? renderAdministrative(host) : renderOperations(host));
+    const selected=reloadCases();
+    selected.catch?.(()=>{});
+    const selectPO=id=>{
+      if(branch !== 'administrative')return;
+      const cells=host.querySelectorAll?.('[data-hub-admin-po]') || [];
+      const row=[...cells].find(node=>node.getAttribute('data-hub-admin-po')===id);
+      if(row?.scrollIntoView)row.scrollIntoView({block:'nearest'});
     };
-    const showSelected = () => {
-      list.querySelectorAll?.('[data-hub-case]').forEach(node => {
-        const chosen = node.getAttribute('data-hub-case') ===
-          (branch === 'administrative' ? active.poId : active.orderId);
-        node.classList.toggle('is-selected', chosen);
-        node.setAttribute('aria-current', chosen ? 'true' : 'false');
-      });
+    const selectOrder=id=>{
+      if(branch !== 'operations')return;
+      const rows=host.querySelectorAll?.('[data-hub-global-order]') || [];
+      const row=[...rows].find(node=>node.getAttribute('data-hub-global-order')===id);
+      if(row?.scrollIntoView)row.scrollIntoView({block:'nearest'});
     };
-    const selectPO = poId => {
-      if (branch !== 'administrative') return;
-      const next = safe(poId);
-      if (next === active.poId) return;
-      active.poId = next;
-      updateUrl(next);
-      showSelected();
-      host.replaceChildren();
-      pendingMount = Promise.resolve(renderAdministrative(host));
-      pendingMount.catch(() => {}); // Les erreurs sont déjà affichées par la surface métier.
-    };
-
-    const selectOrder = orderId => {
-      if (branch !== 'operations') return;
-      active.orderId = safe(orderId);
-      showSelected();
-      const tab = host.querySelector?.('[data-workspace-view="supply"]');
-      if (tab && tab.getAttribute('aria-selected') !== 'true') tab.click();
-      const rows = host.querySelectorAll?.('[data-hub-order]') || [];
-      let selected = null;
-      rows.forEach(row => {
-        const matches = row.getAttribute('data-hub-order') === active.orderId;
-        row.classList.toggle('is-selected', matches);
-        if (matches) selected = row;
-      });
-      if (selected?.scrollIntoView) selected.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    };
-
-    const itemButton = (id, name, line2, line3) => {
-      const button = make(doc, 'button', 'kmc-hub-app-case');
-      button.type = 'button';
-      button.setAttribute('data-hub-case', safe(id));
-      button.appendChild(make(doc, 'strong', '', name));
-      if (line2) button.appendChild(make(doc, 'span', '', line2));
-      if (line3) button.appendChild(make(doc, 'small', '', line3));
-      button.addEventListener('click', () => branch === 'administrative' ? selectPO(id) : selectOrder(id));
-      return button;
-    };
-
-    const renderCaseList = () => {
-      list.replaceChildren();
-      const term = safe(searchInput.value).trim().toLocaleLowerCase('fr');
-      const matching = activeItems.rows.filter(row => [row.title, row.secondary, row.tertiary]
-        .some(value => safe(value).toLocaleLowerCase('fr').includes(term)));
-      if (!matching.length) {
-        list.appendChild(make(doc, 'p', 'kmc-hub-app-list-empty', term
-          ? 'Aucun dossier correspondant.' : 'Aucun dossier pour ce périmètre.'));
-      }
-      matching.forEach(row => list.appendChild(itemButton(row.id, row.title, row.secondary, row.tertiary)));
-      showSelected();
-    };
-
-    // Les listes reprennent les projections serveur sans en déduire de nouveau
-    // état métier. Aucun paiement validé n'est simulé.
-    const loadCases = async (marketOverride = '') => {
-      const seq = ++activeItems.seq;
-      if (typeof fetchFn !== 'function') return;
-      list.replaceChildren(make(doc, 'p', 'kmc-hub-app-list-empty', 'Chargement des dossiers…'));
-      try {
-        let rows;
-        if (branch === 'administrative') {
-          // Administration des achats : vue globale indépendante du sélecteur marché.
-          const payload = await requestJSON(fetchFn, '/api/purchasing');
-          rows = (Array.isArray(payload.purchase_orders) ? payload.purchase_orders : []).map(po => ({
-            id: po.id, title: 'PO ' + smallRef(po.id),
-            secondary: po.supplier_name || 'Fournisseur non renseigné',
-            tertiary: (PO_STAGE[po.stage || po.status] || po.stage || po.status || 'Statut inconnu') +
-              (po.order_ref ? ' · ' + po.order_ref : ''),
-          }));
-        } else {
-          // Projection globale de lecture, sans aucun marché à sélectionner.
-          const dossier = await requestJSON(fetchFn, '/api/hub/board');
-          rows = (Array.isArray(dossier.orders) ? dossier.orders : []).map(order => ({
-            id: order.id, title: order.reference,
-            secondary: order.market + ' · ' + (order.market_name || order.market),
-            tertiary: order.remaining,
-          }));
-        }
-        if (seq !== activeItems.seq) return;
-        activeItems.rows = rows;
-        renderCaseList();
-      } catch (error) {
-        if (seq !== activeItems.seq) return;
-        activeItems.rows = [];
-        list.replaceChildren(make(doc, 'p', 'kmc-hub-app-list-error',
-          'Liste indisponible : ' + error.message));
-      }
-    };
-
-    searchInput.addEventListener('input', renderCaseList);
-    resetButton.addEventListener('click', () => {
-      if (branch === 'administrative') selectPO('');
-      else {
-        active.orderId = '';
-        showSelected();
-        const cards = host.querySelectorAll?.('[data-hub-order]') || [];
-        cards.forEach((card, index) => { card.open = index === 0; });
-      }
-    });
-    refresh.addEventListener('click', () => { loadCases().catch(() => {}); });
-    // Le sélecteur de marché se trouve dans la surface Canonical à droite.
-    // Son changement met à jour le contexte via la navigation native.
-    // La commande « Retour à la liste » appartient au writer Purchasing.
-    // Réconcilier seulement la sélection visuelle du panneau gauche.
-    host.addEventListener('click', event => {
-      if (branch !== 'administrative' || !event.target?.closest?.('[data-workspace-action="close-po"]')) return;
-      active.poId = '';
-      showSelected();
-    });
-    host.addEventListener('change', event => {
-      if (!event.target?.matches?.('.kmc-market-context-select')) return;
-      // Sa validation asynchrone appartient au module Canonical.
-      loadCases(event.target.value).catch(() => {});
-    });
-
-    const mainRender = branch === 'administrative'
-      ? renderAdministrative(host) : renderOperations(host);
-    pendingMount = Promise.resolve(mainRender);
-    pendingMount.catch(() => {});
-    if (branch === 'administrative') loadCases().catch(() => {});
-
-    return Object.freeze({ branch, reloadCases: loadCases, selectPO, selectOrder });
+    return Object.freeze({branch,reloadCases,selectPO,selectOrder});
   }
 
   global.KomerceCanonicalHubWorkstation = Object.freeze({
-    mount, renderGlobalBoard, parseBranch, href, BRANCHES, PO_STAGE,
+    mount, renderGlobalBoard, renderAdministrationBoard, parseBranch, href, BRANCHES, PO_STAGE,
   });
 })(typeof globalThis !== 'undefined' ? globalThis : this);
