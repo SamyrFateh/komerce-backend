@@ -198,7 +198,6 @@ test('scanParcel résout le colis dans le marché avant d appeler le moteur appe
 test.each([
   ['admin', 'ship', 'admin'],
   ['agent_hub', 'ship', 'hub_agent'],
-  ['agent_relais', 'receive', 'relay_agent'],
   ['agent_relais', 'collect', 'relay_agent'],
   // rôle inattendu : la station qui exécute l'action décide (jamais d'étiquette « admin » par défaut)
   ['market_operator', 'collect', 'relay_agent'],

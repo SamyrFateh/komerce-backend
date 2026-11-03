@@ -377,26 +377,6 @@ router.post(
 );
 
 router.post(
-  '/market/:marketCode/parcels/:reference/receive',
-  attachRelayExecutionCapability('execution.parcel.receive'),
-  requireRelayWorkspaceAction,
-  requireRelayPhysicalMarket,
-  async (req, res, next) => {
-    try {
-      const result = await workspace.scanParcel(
-        req.params.reference,
-        'receive',
-        req.workspaceMarket,
-        actionActor(req)
-      );
-      return res.json({ ok: true, action: 'receive', result });
-    } catch (err) {
-      return sendWorkspaceError(err, res, next);
-    }
-  }
-);
-
-router.post(
   '/market/:marketCode/parcels/:reference/collect',
   attachRelayExecutionCapability('execution.parcel.collect'),
   requireRelayWorkspaceAction,

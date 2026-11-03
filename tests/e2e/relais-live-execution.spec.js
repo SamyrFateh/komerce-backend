@@ -95,23 +95,20 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
     test('actions Relais uniquement : aucune action Hub', async ({ page }) => {
       await mount(page);
       await expect(page.locator('[data-workspace-action="confirm-cash"]')).toHaveCount(1);
-      await expect(page.locator('[data-workspace-action="receive"]')).toHaveCount(1);
+      await expect(page.locator('[data-workspace-action="receive"]')).toHaveCount(0);
       await expect(page.locator('[data-workspace-action="collect"]')).toHaveCount(1);
       await expect(page.locator('[data-workspace-action="mark-ordered"], [data-workspace-action="ship"], [data-workspace-action="run-distribution"]')).toHaveCount(0);
     });
 
-    test('encaisser, réceptionner, remettre : une mutation par clic sur les routes du marché', async ({ page }) => {
+    test('encaisser, remettre (la réception passe par l'attestation d'expédition) : une mutation par clic sur les routes du marché', async ({ page }) => {
       const posts = [];
       await mount(page, posts);
       await page.locator('[data-workspace-action="confirm-cash"]').click();
       await expect.poll(() => posts.length).toBe(1);
-      await page.locator('[data-workspace-action="receive"]').click();
-      await expect.poll(() => posts.length).toBe(2);
       await page.locator('[data-workspace-action="collect"]').click();
-      await expect.poll(() => posts.length).toBe(3);
+      await expect.poll(() => posts.length).toBe(2);
       expect(posts.map((p) => p.path)).toEqual([
         `${API}/orders/K-CASH-1/confirm-cash`,
-        `${API}/parcels/PCL-KM-2/receive`,
         `${API}/parcels/PCL-KM-3/collect`,
       ]);
     });

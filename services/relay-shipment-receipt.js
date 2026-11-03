@@ -23,7 +23,7 @@
 'use strict';
 const db = require('../db');
 const { createScanIncident } = require('./incident-write-service');
-const { projectRelayReceiptToClientParcels } = require('./relay-parcel-item-reconciliation');
+const { projectRelayReceiptToClientParcels, makeAttestedQuantitiesAvailable } = require('./relay-parcel-item-reconciliation');
 
 class RelayReceiptError extends Error {
   constructor(status, code, message) { super(message); this.status = status; this.code = code; }
@@ -128,7 +128,8 @@ async function receiveShipment({ market, actor, reference, body = {} }, database
   if (!proof || proof.length > 240) fail(400, 'RELAY_RECEIPT_PROOF_REQUIRED', 'proof_ref obligatoire (bordereau, photo, référence)');
   const lines = parseLines(body);
 
-  return database.withTransaction(async (client) => {
+  let newlyAvailable = [];
+  const outcome = await database.withTransaction(async (client) => {
     const { rows: [s] } = await client.query(
       'SELECT id, reference, stage FROM international_shipments WHERE market_id = $1 AND reference = $2 FOR UPDATE',
       [market.id, String(reference || '')]);
@@ -168,6 +169,9 @@ async function receiveShipment({ market, actor, reference, body = {} }, database
       results.push({ order_item_id: l.itemId, expected, received: l.qty, incident_id: incidentId, ...projection });
     }
 
+    // L'attestation devient effective : colis puis commande disponibles pour les quantités attestées.
+    newlyAvailable = await makeAttestedQuantitiesAvailable(client, lines.map((l) => l.itemId), actor, proof);
+
     // L'étape relay_received découle des attestations : tous les articles attendus (tous relais) ont une attestation.
     const all = await loadExpected(client, s.id, null);
     const allItems = [...new Set(all.map((e) => e.order_item_id))];
@@ -184,6 +188,19 @@ async function receiveShipment({ market, actor, reference, body = {} }, database
     }
     return { reference: s.reference, receipts: results, stage: complete ? 'relay_received' : s.stage, complete };
   });
+  if (newlyAvailable.length) {
+    const clientNotifications = require('./client-notification-service');
+    for (const orderId of newlyAvailable) {
+      try {
+        const { rows: [o] } = await database.query(
+          'SELECT o.user_id, o.reference, r.name AS relais_name FROM orders o LEFT JOIN relais r ON r.id = o.relais_id WHERE o.id = $1', [orderId]);
+        if (o) await clientNotifications.emitPickupReady({ dbClient: database, userId: o.user_id, orderId, orderReference: o.reference, relaisName: o.relais_name });
+      } catch (err) {
+        require('../utils/logger').child({ module: 'relay-shipment-receipt' }).warn({ err, order_id: orderId }, 'Pickup notification projection failed; reconciliation will retry');
+      }
+    }
+  }
+  return outcome;
 }
 
 module.exports = { listRelayShipments, receiveShipment, projectRelayReceiptToClientParcels, RelayReceiptError, RELAY_VISIBLE_STAGES };

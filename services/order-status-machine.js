@@ -266,6 +266,26 @@ async function transitionOrderStatus({
       return {success:false,previousStatus,newStatus,
         code:'LOCAL_RECEIPT_PROOF_INVALID',error:'Preuve de réception ou provenance locale insuffisante'};
     }
+  } else if (source === 'relay_attestation') {
+    // P0-1 : disponibilité dérivée de l'attestation immuable du relais (quantités réellement reçues, même partielles).
+    // Pas de raccourci scan/system : l'acteur est le relais de la commande (ou admin) et une attestation > 0 doit exister.
+    const roleAllowed = ['admin','agent_relais'].includes(actor?.role);
+    const relayAllowed = actor?.role !== 'agent_relais' ||
+      (actor.relais_id && String(actor.relais_id) === String(order.relais_id));
+    if (newStatus !== 'available' ||
+        !['confirmed','ordered','preparation','shipped','in_transit'].includes(previousStatus) ||
+        order.payment_status !== 'paid' || !order.relais_id || !actor?.id || !roleAllowed || !relayAllowed) {
+      return {success:false,previousStatus,newStatus,
+        code:'RELAY_ATTESTATION_FORBIDDEN',error:'Attestation relais non autorisée ou commande non éligible'};
+    }
+    const {rows:[att]}=await q.query(
+      `SELECT COALESCE(SUM(r.received_qty),0)::int AS received
+         FROM international_shipment_relay_receipts r JOIN order_items oi ON oi.id = r.order_item_id
+        WHERE oi.order_id = $1`, [orderId]);
+    if (!att || Number(att.received) < 1) {
+      return {success:false,previousStatus,newStatus,
+        code:'RELAY_ATTESTATION_MISSING',error:'Aucune quantité attestée par le relais pour cette commande'};
+    }
   } else if (PAYMENT_CONFIRMATION_SOURCES.has(source)) {
     // Payment confirmation sources: STRICTLY pending → confirmed only
     if (!(previousStatus === 'pending' && newStatus === 'confirmed')) {
@@ -306,7 +326,7 @@ async function transitionOrderStatus({
     && STATUS_RANK[newStatus] !== undefined
     && STATUS_RANK[previousStatus] < STATUS_RANK.preparation
     && STATUS_RANK[newStatus] >= STATUS_RANK.preparation;
-  if (crossesPreparation && source !== 'local_relay_receipt') {
+  if (crossesPreparation && source !== 'local_relay_receipt' && source !== 'relay_attestation') {
     const { getOrderPhysicalCoverage } = require('./order-physical-coverage-service');
     const coverage = await getOrderPhysicalCoverage(q, orderId);
     if (!coverage.covered) {

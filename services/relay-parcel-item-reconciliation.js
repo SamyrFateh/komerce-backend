@@ -84,4 +84,44 @@ async function projectRelayReceiptToClientParcels(client, orderItemId) {
 }
 
 
-module.exports = { projectRelayReceiptToClientParcels, RelayParcelProjectionError };
+/**
+ * P0-1 — Rend EFFECTIVE l'attestation : les colis clients qui portent une quantité attestée passent « available »
+ * (preuve scan `relais_received` rattachée à l'attestation) puis la commande, via les writers canoniques
+ * (transitionParcelStatus / transitionOrderStatus : code de retrait émis par la machine d'état, gate douane conservé).
+ * Idempotent : un colis/une commande déjà disponibles ne sont pas retouchés. Les quantités manquantes restent visibles
+ * (qty_received < quantity) et ne sont jamais écrasées. Retourne les commandes nouvellement disponibles (notification post-commit).
+ */
+async function makeAttestedQuantitiesAvailable(client, orderItemIds, actor, proofRef) {
+  const { transitionParcelStatus } = require('./parcel-operations');
+  const { transitionOrderStatus } = require('./order-status-machine');
+  const note = `Réception relais attestée (${proofRef})`;
+  const newlyAvailable = [];
+  const { rows: parcels } = await client.query(`
+    SELECT DISTINCT p.id, p.order_id, p.status
+      FROM parcel_items pi JOIN parcels p ON p.id = pi.parcel_id
+     WHERE pi.order_item_id = ANY($1::uuid[]) AND pi.qty_received > 0 AND p.cancelled_at IS NULL
+     ORDER BY p.order_id, p.id`, [orderItemIds]);
+  const orders = new Set();
+  for (const parcel of parcels) {
+    orders.add(parcel.order_id);
+    if (['available', 'collected', 'delivered'].includes(parcel.status)) continue;
+    const { rows: [scan] } = await client.query(
+      "INSERT INTO scans (order_id, parcel_id, step, scan_code, scanned_by, notes) VALUES ($1,$2,'relais_received',$3,$4,$5) RETURNING id",
+      [parcel.order_id, parcel.id, proofRef, actor.id, note]);
+    const moved = await transitionParcelStatus(client, parcel.id, 'available', { skipValidation: true });
+    if (!moved || !moved.ok) fail(409, 'RELAY_PARCEL_AVAILABLE_REFUSED', 'Le colis client ne peut pas devenir disponible : transition refusée.');
+    await client.query(
+      "INSERT INTO parcel_events (parcel_id, event_type, actor_id, notes, metadata) VALUES ($1,'available',$2,$3,$4::jsonb)",
+      [parcel.id, actor.id, note, JSON.stringify({ source: 'relay_attestation', scan_id: scan.id })]);
+  }
+  for (const orderId of orders) {
+    const result = await transitionOrderStatus({
+      orderId, newStatus: 'available', actor, source: 'relay_attestation', note, dbClient: client,
+    });
+    if (!result.success) fail(409, result.code || 'RELAY_ORDER_AVAILABLE_REFUSED', result.error || 'Commande non disponible : transition refusée.');
+    if (!result.noop && result.previousStatus !== 'available') newlyAvailable.push(orderId);
+  }
+  return newlyAvailable;
+}
+
+module.exports = { projectRelayReceiptToClientParcels, makeAttestedQuantitiesAvailable, RelayParcelProjectionError };

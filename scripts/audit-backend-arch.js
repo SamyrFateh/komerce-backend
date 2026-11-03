@@ -282,7 +282,7 @@ const STATE_MACHINE_PAYMENT_SOURCES = new Set([
 // Sources avec validation de preuve physique dans la state machine :
 // NEVER qualify as generic forward-only; local_relay_receipt requires paid
 // order, assigned relay actor and an authenticated relais_received scan.
-const STATE_MACHINE_ATTESTED_SOURCES = new Set(['local_relay_receipt']);
+const STATE_MACHINE_ATTESTED_SOURCES = new Set(['local_relay_receipt', 'relay_attestation']);
 
 // Union : toutes les sources reconnues
 const STATE_MACHINE_ALL_SOURCES = new Set([

@@ -242,6 +242,10 @@ describeE2E('Orders - local relay receipt without hub',({db})=>{
     await q('INSERT INTO international_shipment_hub_units(shipment_id,physical_unit_id) VALUES ($1,$2)',[shipment.id,box]);
     await q("UPDATE hub_physical_units SET state='DISPATCHED' WHERE id=$1",[box]);
     await q("UPDATE international_shipments SET stage='handed_over',forwarder_name='Transitaire',transport_mode='sea' WHERE id=$1",[shipment.id]);
+    // La réception import n'est constatée que par l'attestation immuable du relais (migration 371).
+    await q("UPDATE international_shipments SET stage='local_delivery' WHERE id=$1",[shipment.id]);
+    await q(`INSERT INTO international_shipment_relay_receipts (shipment_id,order_item_id,relais_id,expected_qty,received_qty,received_by,proof_ref)
+      SELECT $1,$2,o.relais_id,1,1,$3,'E2E-ATT' FROM orders o WHERE o.id=$4`,[shipment.id,items.mixedImport,String(agent),orders.mixed]);
     await q(`UPDATE parcel_items SET qty_received=1,verified=TRUE
       WHERE parcel_id=$1 AND order_item_id=$2`,[importParcel,items.mixedImport]);
     await q("UPDATE parcels SET status='available',available_at=NOW() WHERE id=$1",[importParcel]);

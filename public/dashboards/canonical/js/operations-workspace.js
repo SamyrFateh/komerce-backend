@@ -1090,17 +1090,6 @@
     });
 
     renderParcelActionSection(rootNode, ui, doc, context, {
-      title: 'Relais · Réceptionner',
-      description: 'Scanne l’arrivée du colis ; le moteur logistique journalise et rattrape les étapes manquantes si nécessaire.',
-      rows: payload.queues.relay.to_receive,
-      action: 'receive',
-      actionLabel: 'Réceptionner',
-      suffix: row => `parcels/${encodeURIComponent(row.reference)}/receive`,
-      confirm: row => `Confirmer la réception de ${row.reference} ?`,
-      empty: 'Aucun colis à réceptionner.',
-    });
-
-    renderParcelActionSection(rootNode, ui, doc, context, {
       title: 'Relais · Distribuer',
       description: 'Remise client par scan append-only du moteur logistique.',
       rows: payload.queues.relay.to_collect,
