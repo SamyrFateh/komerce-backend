@@ -238,13 +238,11 @@ async function getDossier({ marketId, supplierId = null, now = new Date() }, q =
   const {rows:openBagRows}=await q.query(
     "SELECT u.id AS unit_id, u.reference, u.state, u.order_id, " +
     "o.reference AS order_ref, u.bag_plan, " +
-    "COALESCE((SELECT jsonb_agg(jsonb_build_object('order_item_id',a.order_item_id, " +
-    "'quantity',qty.actual_qty)) FROM (SELECT a.order_item_id,SUM(p.quantity)::int AS actual_qty " +
+    "COALESCE((SELECT jsonb_agg(jsonb_build_object('order_item_id',q.order_item_id, " +
+    "'quantity',q.actual_qty)) FROM (SELECT a.order_item_id,SUM(p.quantity)::int AS actual_qty " +
     "FROM hub_physical_unit_placements p JOIN hub_purchase_allocations a ON a.id=p.allocation_id " +
-    "WHERE p.physical_unit_id=u.id AND p.removed_at IS NULL GROUP BY a.order_item_id) qty " +
-    "JOIN order_items oi ON oi.id=qty.order_item_id " +
-    "JOIN hub_purchase_allocations a ON a.order_item_id=oi.id " +
-    "GROUP BY u.id), '[]'::jsonb) AS actual_contents " +
+    "WHERE p.physical_unit_id=u.id AND p.removed_at IS NULL GROUP BY a.order_item_id) q), " +
+    "'[]'::jsonb) AS actual_contents " +
     "FROM hub_physical_units u JOIN orders o ON o.id=u.order_id " +
     "WHERE u.unit_type='HANDLING_UNIT' AND u.order_id IS NOT NULL " +
     "AND u.state NOT IN ('PACKED','DISPATCHED','QUARANTINED','SUPERSEDED') " +
