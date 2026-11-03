@@ -2,8 +2,8 @@
   "generatedAt": "2026-11-03T17:09:39.129Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 794,
-    "protected": 739,
+    "total": 797,
+    "protected": 742,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -1357,6 +1357,27 @@
     },
     {
       "key": "POST /api/admin/orders/{id}/refund",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/orders/{id}/items/{itemId}/refund-reservations",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/orders/{id}/items/{itemId}/refund-reservations/{reservationId}/execute",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/orders/{id}/items/{itemId}/refund-reservations/{reservationId}/reconcile",
       "level": "PROTECTED",
       "roles": [
         "admin"

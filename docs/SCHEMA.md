@@ -840,3 +840,10 @@ Mode : `intended_migration_schema` (pas encore vérifié dans le dump live). La 
 
 Le writer `mark-ordered` a été retiré par L1 : la commande import payée génère une ligne de besoin et la PO reste un objet distinct.
 La capability obsolète est supprimée de `capability_registry`, `membership_capabilities`, `assignment_capability_ceiling` et `ceiling_template_capabilities`. Les anciens audits conservent un snapshot `market_delegation_audit.retired_capability` (lecture historique uniquement, aucune autorité). La FK historique utilise `ON DELETE SET NULL` ; les grants actifs ne peuvent plus référencer cette capability.
+
+
+<!-- schema-pending: order_item_refund_reservations (migration 365, not yet live) -->
+### E7 — réservations de remboursement par article (migration 365 — intended_migration_schema)
+
+Une réservation pour une quantité d'article réellement manquante au relais, reliée à une attestation immuable `international_shipment_relay_receipts.incident_id` et à une intention PSP déjà enregistrée, avec `operation_key` UUID stable et unique par commande. Les montants KMF/EUR dérivent de l'encaissement d'origine ; aucune nouvelle conversion. Un verrou de commande sérialise les décisions concurrentes et interdit de dépasser la quantité manquante ou le montant capturé. `status=reserved` **ne signifie pas remboursé** ; paiement, preuve PSP et journal `refunds` doivent suivre un circuit distinct avant `confirmed`. La colonne `order_items.qty_refunded` est créée par la même migration, avec contrainte `qty_refunded + qty_collected <= quantity` ; elle n'augmente qu'au même COMMIT que la preuve PSP confirmée et l'écriture du journal financier. Un reliquat manquant peut être remboursé lorsque d'autres quantités ont déjà été remises.
+<!-- /schema-pending -->
