@@ -98,7 +98,6 @@ async function projection(client, scope = {}) {
 const CATEGORY_LABELS = Object.freeze({
   sale: 'Encaissements clients', refund: 'Remboursements clients', supplier_purchase: 'Achats fournisseurs',
   cash_custody_transfer: 'Transfert de garde (neutre)', cash_final_deposit: 'Dépôt final de garde (neutre)',
-  cash_custody_loss: 'Perte de garde (non assimilée à une vente)',
   supplier_refund: 'Remboursements fournisseurs', payment_fee: 'Frais de paiement', market_settlement: 'Règlements marché',
 });
 const STATE_LABELS = Object.freeze({ planned: 'Prévu', committed: 'Engagé', observed: 'Constaté', settled: 'Réglé', reversed: 'Annulé' });
@@ -240,7 +239,7 @@ async function reconcileWithSources(client, scope = {}) {
               WHERE m.source_kind = 'cash_custody_movement'
               ${scope.marketId ? 'AND m.market_id = $1' : ''}) AS journal_count,
             (SELECT COUNT(*)::int FROM cash_custody_movements c
-              WHERE c.source IN ('TRANSFER_OUT','TRANSFER_IN','FINAL_CLOSURE','LOSS')
+              WHERE c.source IN ('TRANSFER_OUT','TRANSFER_IN','FINAL_CLOSURE')
                 AND c.delta_kmf <> 0 AND c.market_id IS NOT NULL
               ${scope.marketId ? 'AND c.market_id = $1' : ''}) AS source_count`,
     scope.marketId ? [scope.marketId] : [])).rows[0];
