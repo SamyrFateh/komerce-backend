@@ -59,3 +59,34 @@ sélecteur ni paramètre market requis. Le marché est un attribut de la ligne,
 
 Le tableau n'affiche jamais « remboursé » sans preuve canonique de
 réconciliation. Un état sans PO reste « à constituer ».
+
+
+## 3 novembre — Deux postes compacts implémentés
+
+Le Hub central conserve **deux espaces internes** sur \`/admin/hub\` :
+- **Opérations**, tableau commandes clients et état physique, lecture transverse pour les huit profils internes.
+- **Administration**, tableau par PO fournisseur (groupement de commandes, suivi d'envoi, réception, preuves de débit), visible à \`admin\` et \`agent_hub\`. Deux vues : \`PO & engagements\` et \`Paiements fournisseurs\`.
+
+Sur cette page, les onglets \`Sourcing live\` et \`Relais live\` sont masqués
+uniquement dans la navigation locale ; leurs cockpits restent accessibles sur
+leurs routes propres. Le sélecteur haut est remplacé par \`Global · Tous les
+marchés\` (texte fixe, non sélecteur). Le marché est un attribut d'une PO/commande,
+pas une condition d'accès à la lecture globale.
+
+Les actions de chaque cellule sont des **liens contextuels vers le writer
+canonique**, jamais une transition par simple clic droit. Le backend
+\`GET /api/hub/administration\` est protégé \`admin|agent_hub\`, ne renvoie ni
+contacts clients, ni produits, ni montant de paiement, et n'accepte aucun
+paramètre marché. L'endpoint \`GET /api/hub/board\` reste la seule projection
+transverse tous profils.
+
+### Limite métier volontairement explicite
+
+La séparation décidée **validation de l'engagement d'achat** / **autorisation du
+paiement fournisseur** ne possède pas encore, dans le dossier existant, une
+preuve canonique d'approbation par la directrice. Les deux colonnes affichent
+\`Non tracée\` plutôt que de prétendre que l'acte est autorisé à partir du statut
+PO ou du débit. \`Débit constaté\` ne signifie **ni** autorisation **ni** paiement
+intégral, seulement une preuve de débit effectivement vérifiée. La création du
+writer de décision, de son acteur et de sa preuve est un prochain chantier
+métier distinct, à certifier avant d'activer ces actions.

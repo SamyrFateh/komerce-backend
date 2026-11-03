@@ -1793,6 +1793,9 @@ const KNOWN_RESPONSES = {
   '/api/admin/workspaces/operations/market/{marketCode}/boxes/{unitId}/shipment': {
     post: { fields: ['unit_id','shipment_id','shipment_reference','already_attached'], source: 'route-read' }
   },
+  '/api/hub/administration': {
+    get: { fields: ['scope','markets','approval_trace_available','kpis','purchase_orders'], source: 'route-read' }
+  },
   '/api/hub/board': {
     get: { fields: ['scope','markets','orders'], source: 'route-read' }
   },

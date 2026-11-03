@@ -64,3 +64,36 @@
 .kmc-hub-app-workspace .kmc-hub-board-scroll { width:100%; }
 .kmc-hub-app-workspace .kmc-hub-board { min-width:920px; }
 .kmc-hub-app-workspace .kmc-hub-board-identity small { white-space:normal; }
+
+
+/* Hub v3 · Les deux branches utilisent un tableau de travail pleine largeur. */
+.kmc-hub-global-scope { display:inline-flex; align-items:center; min-height:34px; padding:0 13px; font-size:12px; font-weight:650; color:#40556c; background:#f5f8fa; border:1px solid #dfe7ee; border-radius:8px; }
+.kmc-hub-app-header { padding:3px 2px 0; }
+.kmc-hub-app-branches { gap:12px; border-bottom:0; padding:0; margin:0 0 3px; }
+.kmc-hub-app-branch { min-width:205px; background:#fff; border:1px solid #e0e7ed; padding:11px 15px; }
+.kmc-hub-app-branch.is-active { background:#eef7f4; border-color:#9acdbb; }
+.kmc-hub-app-layout.is-table > .kmc-hub-app-content { display:block; }
+.kmc-hub-admin-stats { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:9px; margin:10px 0 16px; }
+.kmc-hub-admin-stat { min-width:0; border:1px solid #e3e9ef; background:#f8fafc; border-radius:10px; padding:11px 13px; display:grid; gap:5px; }
+.kmc-hub-admin-stat strong { font-size:22px; line-height:1.15; font-weight:750; color:#243950; font-variant-numeric:tabular-nums; }
+.kmc-hub-admin-stat span { font-size:11px; line-height:1.25; color:#5a6e83; }
+.kmc-hub-admin-toolbar { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin:0 0 12px; }
+.kmc-hub-admin-toolbar > .kmc-hub-app-search { width:min(345px,100%); min-height:39px; margin-left:auto; }
+.kmc-hub-admin-tabs { display:flex; flex-wrap:wrap; gap:7px; }
+.kmc-hub-admin-tab { background:#fff; color:#4a5c6e; border:1px solid #dce5ec; font:inherit; font-size:12px; font-weight:680; padding:9px 12px; border-radius:8px; cursor:pointer; }
+.kmc-hub-admin-tab:hover { background:#f4f8fa; }
+.kmc-hub-admin-tab.is-active { background:#eaf5f1; border-color:#9bcbb9; color:#155d49; }
+.kmc-hub-admin-tab:focus-visible { outline:2px solid #128468; outline-offset:2px; }
+.kmc-hub-admin-table th:first-child { width:200px; }
+.kmc-hub-admin-table td:first-child { padding-left:14px; }
+.kmc-hub-admin-table .kmc-hub-board-cell { min-height:46px; cursor:context-menu; }
+.kmc-hub-admin-table tbody td { font-size:12px; }
+.kmc-hub-admin-note { margin:8px 2px 3px; font-size:11px; line-height:1.45; color:#607286; }
+@media (max-width:1050px) {
+  .kmc-hub-admin-stats { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .kmc-hub-admin-table { min-width:930px; }
+}
+@media (max-width:640px) {
+  .kmc-hub-admin-stats { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .kmc-hub-admin-toolbar > .kmc-hub-app-search { width:100%; margin-left:0; }
+}

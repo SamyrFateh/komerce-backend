@@ -615,7 +615,9 @@
     return moduleApi.mount({
       root, user, document: global.document, location: global.location,
       history: global.history, fetch: global.fetch.bind(global), adminContext,
-      renderAdministrative: host => renderPurchasingWorkspace(host, user),
+      renderAdministrative: host => moduleApi.renderAdministrationBoard(host, {
+        document: global.document, fetch: global.fetch.bind(global), user,
+      }),
       renderOperations: host => moduleApi.renderGlobalBoard(host, {
         document: global.document, fetch: global.fetch.bind(global), user,
       }),

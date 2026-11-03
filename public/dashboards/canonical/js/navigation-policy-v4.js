@@ -1127,6 +1127,12 @@
         .includes(String(global.location?.pathname || ''))) {
       return [{ id:'sourcing-live', label:'Sourcing Live', href:'/admin/import-runtime' }];
     }
+    // Le Hub central possède ses propres deux postes Administration/Opérations.
+    // Masquer uniquement sur /admin/hub les onglets N2 Sourcing et Relais ;
+    // ils restent disponibles depuis leurs espaces respectifs.
+    if (domainId === 'live' && String(global.location?.pathname || '') === '/admin/hub') {
+      return [{ id:'hub-live', label:'Hub · Tous les marchés', href:'/admin/hub' }];
+    }
     // Sourcing Live et Hub Live : une porte de travail métier, pas trois
     // sous-menus concurrents. Les vues legacy directes restent lisibles via
     // leurs URL historiques (sans créer un second cockpit de navigation).
@@ -1374,7 +1380,10 @@
     const utilities = header.querySelector?.('.kmc-admin-utility-nav');
     const market = utilities?.querySelector?.('.kmc-admin-market-control');
     const account = utilities?.querySelector?.('.kmc-admin-account');
-    if (market) right.appendChild(market);
+    // Le Hub est transversal : un sélecteur de marché serait trompeur ici.
+    if (String(global.location?.pathname || '') === '/admin/hub') {
+      right.appendChild(createNode(doc,'span','kmc-hub-global-scope','Global · Tous les marchés'));
+    } else if (market) right.appendChild(market);
     if (account) right.appendChild(account);
     topbar.appendChild(right);
     return topbar;

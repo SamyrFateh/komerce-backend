@@ -51,81 +51,84 @@ const load = () => {
   return global.KomerceCanonicalHubWorkstation;
 };
 const mockFetch = data => jest.fn(async url => ({
-  ok:true, json:async () => url.startsWith('/api/purchasing') ? {purchase_orders:data.po||[]} :
-    url === '/api/hub/board' ? {scope:'HUB_GLOBAL',orders:data.orders||[]} : {orders:data.orders||[],purchase_orders:data.po||[]},
+  ok:true, json:async () => url === '/api/hub/administration' ?
+    {scope:'HUB_ADMINISTRATION_GLOBAL',kpis:{purchase_orders:(data.po||[]).length},purchase_orders:data.po||[]} :
+    url === '/api/hub/board' ? {scope:'HUB_GLOBAL',orders:data.orders||[]} :
+    {orders:data.orders||[],purchase_orders:data.po||[]},
 }));
 
-test('la mini-app administrative compose deux branches et le vrai workspace achats', async () => {
-  const app=load(), root=el('main'), admin=jest.fn(), ops=jest.fn();
-  const api=app.mount({
-    root,user:{role:'admin'},document:doc,location:{search:'?branch=administrative&market=KM'},
-    fetch:mockFetch({po:[]}),renderAdministrative:admin,renderOperations:ops,
-  });
-  await api.reloadCases();
+test('Administration et Opérations occupent toute la largeur sans rail doublon', async () => {
+  const app=load(),root=el('main'),admin=jest.fn(),ops=jest.fn();
+  const api=app.mount({root,user:{role:'admin'},document:doc,
+    location:{search:'?branch=administrative&market=KM'},fetch:mockFetch({}),
+    renderAdministrative:admin,renderOperations:ops});
+  expect(api.branch).toBe('administrative');
+  expect(root.children[1].querySelectorAll('[data-hub-branch]')).toHaveLength(2);
+  expect(root.children[2].className).toContain('is-table');
+  expect(root.querySelectorAll('[data-hub-case-list]')).toHaveLength(0);
   expect(admin).toHaveBeenCalledTimes(1);
   expect(ops).not.toHaveBeenCalled();
-  expect(root.children[1].querySelectorAll('[data-hub-branch]')).toHaveLength(2);
-  expect(root.children[2].querySelectorAll('[data-hub-branch-workspace]')).toHaveLength(1);
-  expect(root.children[2].querySelectorAll('[data-hub-case-list]')).toHaveLength(1);
+  await api.reloadCases();
+  expect(admin).toHaveBeenCalledTimes(2);
 });
 
-test('un agent Hub ne peut pas ouvrir le mode administratif par URL', async () => {
+test('un agent Hub voit les deux branches, sans autorisation de paiement ajoutée', () => {
+  const app=load(),root=el('main'),admin=jest.fn();
+  const mounted=app.mount({root,user:{role:'agent_hub'},document:doc,location:{search:'?branch=administrative'},
+    renderAdministrative:admin,renderOperations:jest.fn()});
+  expect(mounted.branch).toBe('administrative');
+  expect(root.querySelectorAll('[data-hub-branch]')).toHaveLength(2);
+  expect(admin).toHaveBeenCalledTimes(1);
+});
+
+test('un relais reste sur la consultation Opérations malgré une URL Administration', () => {
   const app=load(),root=el('main'),admin=jest.fn(),ops=jest.fn();
-  const api=app.mount({
-    root,user:{role:'agent_hub'},document:doc,location:{search:'?branch=administrative&market=KM'},
-    fetch:mockFetch({orders:[]}),renderAdministrative:admin,renderOperations:ops,
-  });
-  await api.reloadCases();
-  expect(api.branch).toBe('operations');
+  const mounted=app.mount({root,user:{role:'agent_relais'},document:doc,location:{search:'?branch=administrative'},
+    renderAdministrative:admin,renderOperations:ops});
+  expect(mounted.branch).toBe('operations');
+  expect(root.querySelectorAll('[data-hub-branch]')).toHaveLength(1);
   expect(admin).not.toHaveBeenCalled();
   expect(ops).toHaveBeenCalledTimes(1);
-  expect(root.children[1].querySelectorAll('[data-hub-branch]')).toHaveLength(1);
-});
-test('la file administrative vient de GET /api/purchasing et ouvre un détail PO dans la colonne droite', async () => {
-  const app=load(),root=el('main'),history={pushState:jest.fn()},location={search:'?branch=administrative&market=KM'};
-  const fetch=mockFetch({po:[{id:'PO-42',supplier_name:'Magasin Dubaï',status:'draft'}]});
-  const renderAdministrative=jest.fn();
-  const api=app.mount({root,user:{role:'admin'},document:doc,location,history,fetch,
-    renderAdministrative,renderOperations:jest.fn()});
-  await api.reloadCases();
-  const entries=root.querySelectorAll('[data-hub-case]');
-  expect(entries).toHaveLength(1);
-  entries[0].click();
-  expect(history.pushState).toHaveBeenCalledWith(null,'','/admin/hub?branch=administrative&po=PO-42');
-  expect(renderAdministrative).toHaveBeenCalledTimes(2);
-  expect(fetch).toHaveBeenCalledWith('/api/purchasing',expect.objectContaining({method:'GET'}));
-  expect(entries[0].classList.contains('is-selected')).toBe(true);
-});
-test('Hub opérationnel utilise toute la largeur et sélectionne la ligne commande sans rail doublon', async () => {
-  const app=load(),root=el('main'),location={search:'?branch=operations&market=KM'};
-  const row=el('tr'); row.setAttribute('data-hub-order','order-1');
-  const operationMount=jest.fn(host=>host.appendChild(row));
-  const fetch=mockFetch({orders:[{id:'order-1',reference:'KOM-001',status:'confirmed',items:[{id:'item-1'}]}]});
-  const api=app.mount({root,user:{role:'agent_hub'},document:doc,location,fetch,
-    renderAdministrative:jest.fn(),renderOperations:operationMount});
-  expect(root.children[2].classList.contains('is-table')).toBe(true);
-  expect(root.querySelectorAll('[data-hub-case-list]')).toHaveLength(0);
-  expect(operationMount).toHaveBeenCalledTimes(1);
-  api.selectOrder('order-1');
-  expect(row.classList.contains('is-selected')).toBe(true);
-  expect(row.scrollIntoView).toHaveBeenCalled();
 });
 
-test('le Hub reste global même avec un contexte de marché délégué', async () => {
-  const app=load(),root=el('main'),fetch=mockFetch({orders:[]});
-  const api=app.mount({root,user:{role:'agent_hub'},document:doc,location:{search:'?branch=operations'},
-    adminContext:{access:{allowedMarkets:['KM']}},fetch,
-    renderAdministrative:jest.fn(),renderOperations:jest.fn()});
-  await api.reloadCases();
-  expect(fetch).toHaveBeenCalledWith('/api/hub/board',expect.anything());
+test('Administration charge le tableau PO de tous les marchés et les preuves sans mutation', async () => {
+  const app=load(),root=el('main'),po={id:'10000000-0000-4000-8000-000000000001',
+    supplier:'Alpha Trading',market:'KM',stage:'draft',order_count:3,expected:4,received:1,
+    payment_count:1,verified_debit_count:0,payment_evidence:'Débit à rapprocher',
+    commitment_authorization:'Non tracée',payment_authorization:'Non tracée'};
+  const fetch=mockFetch({po:[po]});
+  const payload=await app.renderAdministrationBoard(root,{document:doc,fetch,user:{role:'admin'}});
+  expect(payload.scope).toBe('HUB_ADMINISTRATION_GLOBAL');
+  expect(fetch).toHaveBeenCalledWith('/api/hub/administration',expect.objectContaining({method:'GET'}));
+  expect(root.querySelectorAll('[data-hub-admin-po]')).toHaveLength(1);
+  expect(root.querySelectorAll('[data-hub-admin-stage="Engagement"]')).toHaveLength(1);
+  expect(root.querySelectorAll('[data-hub-admin-stage="Paiement"]')).toHaveLength(1);
+  root.querySelectorAll('[data-hub-admin-stage="Paiement"]')[0].click();
+  expect(root.querySelectorAll('[data-hub-admin-menu]')).toHaveLength(1);
+  expect(fetch).toHaveBeenCalledTimes(1);
+  const paymentTab=root.querySelectorAll('[data-hub-admin-view="payments"]')[0];
+  paymentTab.click();
+  expect(root.querySelectorAll('[data-hub-admin-stage="Autorisation"]')).toHaveLength(1);
+  expect(root.querySelectorAll('[data-hub-admin-po]')).toHaveLength(1);
+  expect(fetch).toHaveBeenCalledTimes(1);
 });
-test('sans marché, la liste administrative reste la projection globale de Purchasing', async () => {
-  const app=load(), root=el('main'), fetch=mockFetch({po:[{id:'PO-1',supplier_name:'Boutique',status:'draft'}]});
-  const api=app.mount({root,user:{role:'admin'},document:doc,location:{search:'?branch=administrative'},
-    fetch,renderAdministrative:jest.fn(),renderOperations:jest.fn()});
-  await api.reloadCases();
-  expect(fetch).toHaveBeenCalledWith('/api/purchasing',expect.objectContaining({method:'GET'}));
-  expect(root.querySelectorAll('[data-hub-case]')).toHaveLength(1);
+
+test('Administration ne donne pas accès à un profil non Hub même via appel direct', async () => {
+  const app=load();
+  await expect(app.renderAdministrationBoard(el('main'),{document:doc,fetch:mockFetch({}),
+    user:{role:'agent_relais'}})).rejects.toThrow('hub_admin_board_role_not_allowed');
+});
+
+test('la vue Opérations reste globale sans contexte de marché délégué', async () => {
+  const app=load(),root=el('main'),fetch=mockFetch({orders:[]});
+  const mounted=app.mount({root,user:{role:'agent_hub'},document:doc,
+    location:{search:'?branch=operations&market=KM'},fetch,
+    renderAdministrative:jest.fn(),
+    renderOperations:host=>app.renderGlobalBoard(host,{document:doc,fetch,user:{role:'agent_hub'}})});
+  await mounted.reloadCases();
+  expect(fetch).toHaveBeenCalledWith('/api/hub/board',expect.anything());
+  expect(fetch).not.toHaveBeenCalledWith(expect.stringMatching(/dossier\?market/),expect.anything());
+  expect(root.querySelectorAll('[data-hub-case-list]')).toHaveLength(0);
 });
 
 test('les liens Hub ne conservent jamais le paramètre market', () => {
@@ -159,7 +162,7 @@ test.each(['admin','agent_hub','market_operator','agent_relais','finance','sourc
     expect(ops).toHaveBeenCalledTimes(1);
     expect(admin).not.toHaveBeenCalled();
     await mounted.reloadCases();
-    expect(fetch).toHaveBeenCalledWith('/api/hub/board',expect.anything());
+    expect(ops).toHaveBeenCalledTimes(2);
     expect(fetch).not.toHaveBeenCalledWith(expect.stringMatching(/\/dossier\?market=/),expect.anything());
   }
 );
