@@ -187,6 +187,7 @@ module.exports = {
       'tests/integration/hub-physical-identity-postgres.test.js',
       'tests/integration/hub-order-bag-ownership-postgres.test.js',
       'tests/unit/hub-physical-codes.test.js',
+      'tests/unit/hub-bag-box-ui-contract.test.js',
       'tests/unit/order-physical-coverage-gate.test.js',
       'tests/e2e-api/hub.historical-receipt-coverage.e2e.test.js',
       'tests/integration/hub-physical-hardening-postgres.test.js',
