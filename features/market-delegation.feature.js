@@ -185,6 +185,7 @@ module.exports = {
       'tests/unit/provision-market-operator.test.js',
       'tests/unit/market-operator-provisioning.test.js',
       'tests/unit/market-delegation-p0.test.js',
+      'tests/unit/retired-mark-ordered-capability.test.js',
       'tests/unit/market-delegation-audit-market.test.js',
       'tests/unit/market-delegation-operating-governance.test.js',
       'tests/unit/market-delegation-provisioning-writers.test.js',
