@@ -13,7 +13,17 @@
  * sont testées indirectement via processScan (non exportées).
  */
 
-const { makeClient, expectTransactionCommitted, expectTransactionRolledBack } = require('../integration/test-harness/mock-db');
+const { makeClient: baseMakeClient, expectTransactionCommitted, expectTransactionRolledBack } = require('../integration/test-harness/mock-db');
+
+// P0-2 : la garde « import remis au transitaire » interroge les lignes IMPORT du colis ; ici aucun article import.
+function makeClient(script) {
+  const client = baseMakeClient(script);
+  const inner = client.query;
+  client.query = jest.fn((sql, ...rest) => (/fulfillment_source = 'IMPORT'/.test(String(sql))
+    ? Promise.resolve({ rows: [], rowCount: 0 })
+    : inner(sql, ...rest)));
+  return client;
+}
 
 // ── Mocks modules externes ──────────────────────────────────────
 jest.mock('../../db', () => ({ connect: jest.fn(), query: jest.fn() }));
