@@ -23,7 +23,7 @@ test('aucun writer ou menu marché ne propose mark-ordered', () => {
 });
 
 test('la migration conserve le nom des capabilities retirées dans les audits, sans droit résiduel', () => {
-  const sql=fs.readFileSync(path.join(ROOT,'migrations/380_retire_mark_ordered_capability.sql'),'utf8');
+  const sql=fs.readFileSync(path.join(ROOT,'migrations/390_retire_mark_ordered_capability.sql'),'utf8');
   expect(sql).toContain("ADD COLUMN IF NOT EXISTS retired_capability");
   expect(sql).toContain('ON DELETE SET NULL');
   expect(sql).toContain("DELETE FROM public.membership_capabilities");
