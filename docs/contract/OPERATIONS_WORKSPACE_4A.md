@@ -51,7 +51,6 @@ The Workspace never derives Market ID authority from `users.role`. A delegated m
 | Action | Exact authority | Compatibility role after proof |
 | --- | --- | --- |
 | read selected-market Workspace | `operations.read` (or explicit dashboard-global read grant; persisted `agent_relais` may use its server relay binding) | none |
-| mark order as ordered | `execution.order.mark_ordered` | `agent_hub` |
 | run automatic distribution | `execution.distribution.run` | `agent_hub` |
 | ship parcel | `execution.parcel.ship` | `agent_hub` |
 | assign inventory to parcel | `execution.inventory.assign` | `agent_hub` |
@@ -84,7 +83,6 @@ Examples:
 - CM capability holder → CG: `403 MARKET_CAPABILITY_REQUIRED`;
 - central dashboard authority → CG: read allowed **after CG is explicitly selected**, mutation still requires the exact `execution.*` capability;
 - `agent_hub` without `execution.cash.confirm` → `403`; with that explicit capability, the request receives the Relais compatibility role;
-- `agent_relais` without `execution.order.mark_ordered` → `403`; capability possession, not `users.role`, decides the Hub action;
 - `?market_id=<CG UUID>`: `400 client_market_id_forbidden`;
 - `{ "market_id": "<CG UUID>" }`: `400 client_market_id_forbidden`.
 
@@ -159,16 +157,6 @@ These counts are not economic/business recomputation. They are the sizes of alre
 ## Mutation routes
 
 All mutations are POST and all are market-scoped.
-
-### Send confirmed order to sourcing
-
-`POST /market/:marketCode/orders/:reference/mark-ordered`
-
-Exact authority: `execution.order.mark_ordered` on the selected market. After proof, the request uses compatibility role `agent_hub`.
-
-The Workspace validates that the order belongs to the selected market, then delegates the status change to `order-status-machine`.
-
-The Workspace does not implement its own order state machine.
 
 ### Run parcel distribution
 
