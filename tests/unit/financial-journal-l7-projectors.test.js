@@ -82,3 +82,16 @@ test('une allocation article de la même expédition interdit le double coût', 
     .toMatchObject({ code: 'JOURNAL_SHIPMENT_ITEM_ALLOCATION_CONFLICT' });
   expect(journal.recordMovement).not.toHaveBeenCalled();
 });
+
+test('la garde en EUR ne gonfle pas le total économique du journal', async () => {
+  const reporting = require('../../services/financial-journal-reporting');
+  const client = clientFor([
+    { direction: 'inflow', category:'sale', state:'settled', currency:'EUR',
+      movements:1, native_total:'10', eur_total:'10', eur_unavailable:0 },
+    { direction:'custody', category:'cash_custody_transfer', state:'observed',
+      currency:'EUR', movements:2, native_total:'20', eur_total:'20', eur_unavailable:0 },
+  ]);
+  const out = await reporting.summarize(client);
+  expect(out.eur_total_known).toBe(10);
+  expect(out.rows).toHaveLength(2);
+});
