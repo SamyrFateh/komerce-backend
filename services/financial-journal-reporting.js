@@ -94,6 +94,8 @@ async function projection(client, scope = {}) {
 // Libellés métier : seule source (les écrans Finance et Comptabilité les lisent, ne les redéfinissent pas).
 const CATEGORY_LABELS = Object.freeze({
   sale: 'Encaissements clients', refund: 'Remboursements clients', supplier_purchase: 'Achats fournisseurs',
+  cash_custody_transfer: 'Transfert de garde (neutre)', cash_final_deposit: 'Dépôt final de garde (neutre)',
+  cash_custody_loss: 'Perte de garde (non assimilée à une vente)',
   supplier_refund: 'Remboursements fournisseurs', payment_fee: 'Frais de paiement', market_settlement: 'Règlements marché',
 });
 const STATE_LABELS = Object.freeze({ planned: 'Prévu', committed: 'Engagé', observed: 'Constaté', settled: 'Réglé', reversed: 'Annulé' });
@@ -122,13 +124,13 @@ function costLevels(lines, supplierRemaining) {
   return COST_LEVELS.map(def => {
     if (def.source_missing) return { level: def.level, label: def.label, source_missing: true, states: [], remaining_native: [] };
     const states = COST_STATES.map(state => {
-      const picked = lines.filter(line => line.state === state && ['outflow', 'cost'].includes(line.direction) && def.match(line.category));
+      const picked = lines.filter(line => line.state === state && ['outflow', 'cost', 'cost_reversal'].includes(line.direction) && def.match(line.category));
       const native = new Map();
-      picked.forEach(line => line.native.forEach(item => native.set(item.currency, (native.get(item.currency) || 0) + Number(item.total))));
+      picked.forEach(line => line.native.forEach(item => native.set(item.currency, (native.get(item.currency) || 0) + (line.direction === 'cost_reversal' ? -1 : 1) * Number(item.total))));
       return {
         state, state_label: stateLabel(state),
         movements: picked.reduce((n, line) => n + line.movements, 0),
-        eur_total: Math.round(picked.reduce((n, line) => n + line.eur_total, 0) * 100) / 100,
+        eur_total: Math.round(picked.reduce((n, line) => n + (line.direction === 'cost_reversal' ? -1 : 1) * line.eur_total, 0) * 100) / 100,
         eur_unavailable: picked.reduce((n, line) => n + line.eur_unavailable, 0),
         native: [...native.entries()].sort().map(([currency, total]) => ({ currency, total: total.toFixed(4) })),
       };
@@ -144,7 +146,7 @@ async function listMovements(client, scope = {}) {
   const params = [];
   let where = periodClause('m', scope, params);
   if (scope.state && MOVEMENT_STATES.has(scope.state)) { params.push(scope.state); where += ` AND m.state = $${params.length}`; }
-  if (scope.direction && ['inflow', 'outflow', 'cost'].includes(scope.direction)) { params.push(scope.direction); where += ` AND m.direction = $${params.length}`; }
+  if (scope.direction && ['inflow', 'outflow', 'cost', 'cost_reversal', 'custody'].includes(scope.direction)) { params.push(scope.direction); where += ` AND m.direction = $${params.length}`; }
   const limit = Math.min(Math.max(parseInt(scope.limit, 10) || 50, 1), 200);
   const offset = Math.max(parseInt(scope.offset, 10) || 0, 0);
   const total = (await client.query(`SELECT COUNT(*)::int AS n FROM financial_movements m WHERE true${where}`, params)).rows[0].n;
