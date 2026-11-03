@@ -315,7 +315,7 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | Table | Rôle |
 |---|---|
 | `scans` | Scans terrain (legacy/compat). |
-| `scan_events` | Événements scan (modèle moderne, protégé par `prevent_scan_event_delete`). **Migration 096 (2026-07-02, `verified_live_schema` — vérifié live Railway)** : + `photo_urls` (text[], DEFAULT '{}', miroir de disputes.photo_urls). Usage doctrinal : event_type=seal_photo au scellé Dubaï = borne 1 des fenêtres de responsabilité (avant : fournisseur ; après : transport). Alimenté par POST /api/hub/photo. Doctrine : `docs/doctrine/DOCTRINE_NON_CONFORMITE.md` §2. |
+| `scan_events` | Événements scan (modèle moderne, protégé par `prevent_scan_event_delete`). **Migration 096 (2026-07-02, `verified_live_schema` — vérifié live Railway)** : + `photo_urls` (text[], DEFAULT '{}', miroir de disputes.photo_urls). Usage doctrinal : event_type=seal_photo au scellé Dubaï = borne 1 des fenêtres de responsabilité (avant : fournisseur ; après : transport). Alimenté par POST /api/hub/photo. Doctrine : `docs/doctrine/DOCTRINE_NON_CONFORMITE.md` §2. **Migration 381 (2026-11-03, `intended_migration_schema`)** : + `entry_mode` TEXT généré (stocké) depuis `metadata->>'entry_mode'`, défaut `scan` ; valeurs fermées `scan` | `manual_confirmation` ; une confirmation manuelle exige `metadata.manual_reason` (CHECK). Trace du mode dégradé : confirmation depuis l'interface via le même scan-engine, jamais un second writer. |
 | `relais` | Points relais. |
 | `inventory_items` | Inventaire hub. |
 | `carriers` | Transporteurs. |

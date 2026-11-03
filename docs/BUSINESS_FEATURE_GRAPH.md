@@ -81,7 +81,7 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 
 | Dépôt | Manifests découverts | Manifests connectés | Nœuds techniques | Owned | Orphelins |
 |---|---|---|---|---|---|
-| backend | 36 | 36 | 671 | 671 | 0 |
+| backend | 36 | 36 | 672 | 672 | 0 |
 | dash | 3 | 3 | N/A | N/A | N/A |
 | boutique | 16 | 16 | 104 | 104 | 0 |
 
@@ -219,11 +219,11 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 > Exposer les agrégats de pilotage et porter un portail interne Canonical unifié accessible depuis /admin, dont la navigation et les workspaces sont adaptés au rôle, aux scopes marché et aux capabilities résolus côté serveur, sans réutiliser les deux générations historiques de dashboards.
 
 - middleware: 1
-- services: 44
+- services: 45
 - routes: 28
 - migrations: 2
 - dash: 171
-- tests: 200
+- tests: 201
 - tables owned (lifecycle): 2 — `order_incidents`, `partners`
 - tables written: 20
 - interfaces exposed: 88
@@ -2229,7 +2229,7 @@ Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la det
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> sourcing — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "sourcing"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> unsold-resolution — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "unsold-resolution"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** inventory -> payments — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "inventory" vers "payments"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** logistics -> dashboard — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "logistics" vers "dashboard"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** logistics -> dashboard — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "logistics" vers "dashboard"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** logistics -> economic-engine — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "logistics" vers "economic-engine"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** loyalty -> logistics — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "loyalty" vers "logistics"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** market -> customs — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "market" vers "customs"
@@ -2287,7 +2287,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 2222 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 2224 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 214 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 79 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -2464,7 +2464,7 @@ Meta Graph monté : oui.
 | logistics | business-rules | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
 | logistics | catalog | static-code, data-write, data-read | 3 | **DECLARED_AND_OBSERVED** |
 | logistics | customs | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
-| logistics | dashboard | static-code | 1 | **OBSERVED_UNDECLARED** |
+| logistics | dashboard | static-code | 2 | **OBSERVED_UNDECLARED** |
 | logistics | documents | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | logistics | economic-engine | static-code | 1 | **OBSERVED_UNDECLARED** |
 | logistics | incident-management | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |

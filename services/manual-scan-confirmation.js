@@ -1,16 +1,21 @@
-'use strict';
 /**
- * @feature       dashboard
+ * @komerce-arch
+ * @role          manual-scan-confirmation
+ * @domain        dashboard
  * @layer         service
- * @owner         dashboard
- * @purpose       Mode dégradé : une confirmation faite depuis l'interface (sans scan matériel) passe par le MÊME writer
- *                (scan-engine.processScan) ; ce module ne fait que valider le motif et marquer l'événement
- *                `entry_mode = manual_confirmation`. Aucune gate n'est contournée, aucune écriture directe.
- * @inputs        reason (liste fermée), note facultative
- * @outputs       metadata à fusionner dans processScan, notes lisibles
+ * @criticality   high
+ * @inputs        reason_closed_list, optional_note
+ * @outputs       degraded_mode_metadata_for_scan_engine
+ * @depends       none
+ * @used-by       services/operations-workspace.js, services/shipping-customs-workspace.js
  * @db-read       none
  * @db-write      none
+ * @db-txn        none
+ * @doctrine      single_scan_writer, degraded_mode_traced, no_gate_bypass
+ * @impact-areas  logistics, relay, hub
+ * @version       2026-11
  */
+'use strict';
 
 const MANUAL_REASONS = Object.freeze({
   scanner_unavailable: 'Scanner indisponible',
