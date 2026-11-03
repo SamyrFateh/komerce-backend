@@ -267,16 +267,19 @@ async function createOperatorUnitCommand(payload, userId) {
     const reference = payload && payload.reference
       ? requireText(payload.reference, 'reference', 200)
       : generatePhysicalReference(unitType);
+    const orderId = payload && payload.order_id ? requireUuid(payload.order_id, 'order_id') : null;
+    if (orderId && unitType !== 'HANDLING_UNIT') throw badRequest('Un sac client exige HANDLING_UNIT', 'HUB_ORDER_BAG_REQUIRES_HANDLING_UNIT');
     const unit = await withOperatorTransaction((client) => createPhysicalUnit(client, {
       reference,
       unitType,
+      orderId,
       externalRef: payload.external_ref ? String(payload.external_ref).trim() : null,
       actorId: userId || null,
       locationRef: payload.location_ref ? String(payload.location_ref).trim() : null,
       initialState: 'RECEIVED',
       details: { operator_created: true },
     }));
-    return { status: 201, body: { physical_unit: unit, label: { reference: unit.reference, kind: unitType === 'HANDLING_UNIT' ? 'KOM-ITEM' : 'KOM-BOX' } } };
+    return { status: 201, body: { physical_unit: unit, label: { reference: unit.reference, kind: orderId ? 'KOM-SAC' : unitType === 'HANDLING_UNIT' ? 'KOM-ITEM' : 'KOM-BOX' } } };
   } catch (error) {
     return hubErrorResponse(error);
   }
