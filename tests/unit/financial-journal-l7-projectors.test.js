@@ -71,3 +71,14 @@ test('projectAll déclenche les sources L7 sans writer supplémentaire', async (
     'cash_custody', 'shipment_freight', 'shipment_charges', 'shipment_customs',
   ]));
 });
+
+test('une allocation article de la même expédition interdit le double coût', async () => {
+  const freight = { id: SID, reference: 'SHIP-KM', market_id: MID,
+    amount_kmf: '1000', freight_invoice_ref: 'FREIGHT-1',
+    occurred_at: '2026-11-03T11:00:00Z' };
+  const client = { query: jest.fn().mockResolvedValueOnce({ rows: [freight] })
+    .mockResolvedValueOnce({ rows: [{ shipment_id: SID, n: 1 }] }) };
+  await expect(projectors.projectShipmentFreight(client)).rejects
+    .toMatchObject({ code: 'JOURNAL_SHIPMENT_ITEM_ALLOCATION_CONFLICT' });
+  expect(journal.recordMovement).not.toHaveBeenCalled();
+});
