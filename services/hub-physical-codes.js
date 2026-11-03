@@ -115,6 +115,17 @@ async function confirmPhysicalCode(q, { purchaseOrderId, productSkuId, code, cod
   }
   // Empêche l'apprentissage concurrent du même code pour deux variantes.
   await q.query('SELECT pg_advisory_xact_lock(hashtext($1))', [normalized]);
+  // Un GTIN universel ne peut entrer en collision avec une déclaration locale
+  // d'un autre fournisseur, même non visible dans le scope de cette PO.
+  if (type === 'EAN_GTIN') {
+    const { rows: allScopes } = await q.query(
+      'SELECT DISTINCT product_sku_id FROM product_sku_physical_codes WHERE code = $1',
+      [normalized]
+    );
+    if (allScopes.some(row => String(row.product_sku_id) !== skuId)) {
+      throw new PhysicalCodeError(409, 'HUB_PHYSICAL_CODE_AMBIGUOUS');
+    }
+  }
   const matches = await codesForSupplier(q, normalized, po.supplier_id);
   if (matches.some(row => String(row.product_sku_id) !== skuId)) {
     throw new PhysicalCodeError(409, 'HUB_PHYSICAL_CODE_AMBIGUOUS');
