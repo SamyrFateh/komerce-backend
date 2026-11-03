@@ -53,6 +53,7 @@ const NEXT_OPERATOR_STATE = Object.freeze({
 function badRequest(message, code = 'HUB_OPERATOR_BAD_REQUEST') {
   const error = new Error(message);
   error.code = code;
+  error.status = 400;
   return error;
 }
 
@@ -71,6 +72,13 @@ function requireText(value, name, max = 200) {
 
 function hubErrorResponse(error) {
   const code = error && error.code;
+  if (error && error.status === 400) {
+    return { status: 400, body: { error: error.message, code } };
+  }
+  if (code === '23514' && /^HUB_ORDER_BAG_[A-Z_]+/.test(String(error.message || ''))) {
+    const businessCode = String(error.message).match(/^HUB_ORDER_BAG_[A-Z_]+/)[0];
+    return { status: 409, body: { error: 'Opération impossible : sac client non conforme', code: businessCode } };
+  }
   if (code === '22P02' || String(code || '').startsWith('HUB_OPERATOR_')) {
     return { status: 400, body: { error: error.message, code } };
   }
@@ -108,7 +116,8 @@ async function transitionOperatorUnit(client, { unitId, toState, actorId, locati
       `Transition opérateur interdite : ${unit.state} → ${toState}`
     );
   }
-  if (['PACKED', 'DISPATCHED'].includes(toState) && unit.unit_type !== 'MARKET_PARCEL') {
+  if (['PACKED', 'DISPATCHED'].includes(toState) && unit.unit_type !== 'MARKET_PARCEL' &&
+      !(toState === 'PACKED' && unit.unit_type === 'HANDLING_UNIT' && unit.order_id)) {
     throw new HubPhysicalError(
       'HUB_OPERATOR_OUTBOUND_TYPE_REQUIRED',
       `${toState} exige une unité MARKET_PARCEL`
