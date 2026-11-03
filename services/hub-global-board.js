@@ -38,6 +38,25 @@ function summarizeMarket(market, payload) {
     const openNeeds = sum(needs, need => need.quantity);
     const notSent = po.some(p => !p.sent_at);
     const draft = po.some(p => p.stage === 'draft');
+    const readyBoxes = boxes.filter(b => b.state === 'DISPATCHED' && !b.shipment_ref);
+    // États visuels dérivés, jamais enregistrés comme des statuts métier.
+    const stage_states = {
+      po: !po.length ? 'waiting' : draft ? 'progress' : openNeeds ? 'warning' : 'complete',
+      supplier: !po.length ? 'muted' : notSent ? 'warning' :
+        notReceived ? 'progress' : 'complete',
+      reception: !received ? 'muted' : notReceived ? 'warning' : 'complete',
+      cartons: !boxes.length ? 'muted' : readyBoxes.length ? 'ready' : 'progress',
+      departure: !linkedShipments.size ? 'muted' : 'progress',
+      remaining: anomalies ? 'critical' : notReceived ? 'warning' : 'complete',
+    };
+    const next_action = anomalies ? 'Contrôler les écarts' :
+      !po.length || openNeeds ? 'Constituer PO' :
+      draft ? 'Compléter PO' :
+      notSent ? 'Prouver l’envoi fournisseur' :
+      notReceived ? 'Réceptionner le reliquat' :
+      !boxes.length ? 'Préparer le colis' :
+      readyBoxes.length ? 'Rattacher la KOM-BOX' :
+      linkedShipments.size ? 'Suivre l’expédition' : 'Préparer le départ';
     result.push({
       id: order.id,
       reference: order.reference,
@@ -55,6 +74,7 @@ function summarizeMarket(market, payload) {
       remaining_detail: [anomalies && anomalies + ' à contrôler', openNeeds && openNeeds + ' à acheter']
         .filter(Boolean).join(' · '),
       attention: Boolean(notReceived || anomalies || openNeeds || !po.length || notSent),
+      stage_states, next_action,
     });
   }
   return result;

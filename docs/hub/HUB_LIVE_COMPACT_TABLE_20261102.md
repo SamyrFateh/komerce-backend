@@ -90,3 +90,42 @@ PO ou du débit. \`Débit constaté\` ne signifie **ni** autorisation **ni** pai
 intégral, seulement une preuve de débit effectivement vérifiée. La création du
 writer de décision, de son acteur et de sa preuve est un prochain chantier
 métier distinct, à certifier avant d'activer ces actions.
+
+
+## 3 novembre — Menu contextuel exécutable et code couleur pour certification
+
+Les statuts de couleur et la « Prochaine action » sont **dérivés** de la vérité PO,
+réception, KOM-BOX et expédition : rien n'est enregistré comme un statut métier
+supplémentaire. Les teintes restent discrètes : gris non démarré, bleu en cours,
+ambre attente, vert prêt/conforme, rouge anomalie, violet décision
+administrative distincte.
+
+Clic droit/clic normal/clavier sur la cellule :
+- **PO** : proposer « Préparer PO » seulement avec lignes d'achat groupables,
+  fournisseur, Hub et marché canoniques ; forme brouillon manuelle, writer
+  \`POST /api/purchasing/po/prepare\`. Pas de soumission implicite.
+- **Fournisseur** : une PO \`notified\` non envoyée peut recevoir une preuve
+  d'envoi réelle (canal + référence/note) via \`POST /api/purchasing/po/:id/sent\`.
+  L'ouverture du menu n'envoie jamais la PO.
+- **Réception** : quantités explicitement comptées et référence physique,
+  contrôlées par le serveur via \`POST /api/scans/hub/receive\`. Toutes les
+  quantités sont initialement 0. Aucun mouvement si le manifeste est vide.
+- **Cartons / Départ** : uniquement une KOM-BOX \`DISPATCHED\` sans départ et
+  une expédition \`hub_ready\` du même marché peuvent être liées via
+  \`POST /api/hub/box/:unit_id/shipment\`.
+- **Reste à solder** : propose les mêmes actions canonisées d'achat et de
+  réception lorsqu'elles sont réellement applicables ; aucun remboursement
+  fictif ni clôture déclarative.
+
+Les actions ne sont assemblées qu'après lecture de
+\`GET /api/hub/dossier?market=...\` pour un \`admin\` ou \`agent_hub\`. Les
+profils lecture seule ne déclenchent pas cette lecture privée et n'obtiennent
+aucune commande d'écriture. Chaque action est confirmée explicitement par
+l'opérateur, le backend garde l'autorité, la vue relit ensuite le résultat
+canonique.
+
+**Dette non dissimulée** : la décision de la directrice autorisant
+l'engagement d'une PO et celle autorisant le paiement fournisseur ne disposent
+pas encore de preuve distincte dans la projection. Le menu n'ajoute ni bouton
+d'approbation non prouvée ni bouton de remboursement. La certification de
+l'ergonomie n'est pas la certification du workflow financier.

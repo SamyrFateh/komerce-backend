@@ -119,10 +119,12 @@
         // Ce n'est pas le périmètre de la consultation centrale.
         const target = make(doc, 'a', 'kmc-hub-board-menu-action', 'Ouvrir les opérations de cette commande');
         target.href = '/admin/hub-live?view=execute&market=' + encodeURIComponent(order.market);
+        target.classList.add('is-secondary');
         menu.appendChild(target);
         if (user.role === 'admin' && ['PO', 'Fournisseur'].includes(label)) {
           const purchase = make(doc, 'a', 'kmc-hub-board-menu-action', 'Ouvrir les achats fournisseurs');
           purchase.href = '/admin/workspaces/purchasing?market=' + encodeURIComponent(order.market);
+          purchase.classList.add('is-secondary');
           menu.appendChild(purchase);
         }
       } else {
@@ -131,9 +133,16 @@
       }
       const close = make(doc, 'button', 'kmc-hub-board-menu-action', 'Fermer');
       close.type = 'button';
+      close.classList.add('is-dismiss');
       close.addEventListener('click', closeMenu);
       menu.appendChild(close);
       menu.hidden = false;
+      if (canOperate && global.KomerceHubContextActions) {
+        global.KomerceHubContextActions.operations(menu, {
+          doc, fetch:fetchFn, user, order, stage:label,
+          refresh:()=>renderGlobalBoard(root,{document:doc,fetch:fetchFn,user}),
+        });
+      }
       const box = event && event.currentTarget && event.currentTarget.getBoundingClientRect?.();
       const width = doc.defaultView?.innerWidth || 1440;
       const height = doc.defaultView?.innerHeight || 900;
@@ -167,6 +176,11 @@
         const idBox = make(doc, 'div', 'kmc-hub-board-identity');
         idBox.appendChild(make(doc, 'strong', '', order.reference));
         idBox.appendChild(make(doc, 'small', '', order.market + ' · ' + (order.market_name || order.market)));
+        if (order.next_action) {
+          const next = make(doc, 'small', 'kmc-hub-next-action', order.next_action);
+          next.setAttribute('data-hub-next-action','');
+          idBox.appendChild(next);
+        }
         identity.appendChild(idBox);
         tr.appendChild(identity);
         for (const [label, key] of [
@@ -178,6 +192,10 @@
           button.type = 'button';
           button.setAttribute('data-hub-global-stage', label);
           button.setAttribute('aria-label', order.reference + ' · ' + label + ' · ' + (order[key] || '—'));
+          const state = order.stage_states && order.stage_states[key];
+          if (['muted','waiting','progress','warning','ready','complete','critical'].includes(state)) {
+            button.classList.add('is-stage-'+state);
+          }
           if (key === 'remaining' && order.attention) button.classList.add('is-attention');
           if (key === 'remaining' && order.remaining_detail) {
             button.appendChild(make(doc, 'small', '', order.remaining_detail));
@@ -289,6 +307,7 @@
     const addLink = (label, url) => {
       const link = make(doc, 'a', 'kmc-hub-board-menu-action', label);
       link.href = url;
+      link.classList.add('is-secondary');
       menu.appendChild(link);
     };
     const openMenu = (po, field, value, event) => {
@@ -310,9 +329,16 @@
       }
       const close = make(doc, 'button', 'kmc-hub-board-menu-action', 'Fermer');
       close.type = 'button';
+      close.classList.add('is-dismiss');
       close.addEventListener('click', closeMenu);
       menu.appendChild(close);
       menu.hidden = false;
+      if (global.KomerceHubContextActions) {
+        global.KomerceHubContextActions.administration(menu,{
+          doc,fetch:fetchFn,user,po,field,
+          refresh:()=>renderAdministrationBoard(root,{document:doc,fetch:fetchFn,user}),
+        });
+      }
       const box = event?.currentTarget?.getBoundingClientRect?.();
       const x = event?.type === 'contextmenu' ? event.clientX : (box ? box.left : 8);
       const y = event?.type === 'contextmenu' ? event.clientY : (box ? box.bottom : 8);
@@ -330,6 +356,16 @@
       const button = make(doc, 'button', 'kmc-hub-board-cell', value || '—');
       button.type = 'button';
       button.setAttribute('data-hub-admin-stage', field);
+      if (field==='Engagement'||field==='Autorisation') {
+        button.classList.add('is-stage-decision');
+      } else if (field==='Paiement') {
+        button.classList.add(value==='Débit constaté'?'is-stage-complete':'is-stage-warning');
+      } else if (field==='Fournisseur') {
+        button.classList.add(po.sent_at?'is-stage-complete':'is-stage-warning');
+      } else if (field==='Réception') {
+        button.classList.add(po.received >= po.expected && po.expected>0?'is-stage-complete':
+          po.received>0?'is-stage-progress':'is-stage-muted');
+      }
       if (hint) button.appendChild(make(doc, 'small', '', hint));
       button.addEventListener('click', event => openMenu(po, field, value, event));
       button.addEventListener('contextmenu', event => {event.preventDefault(); openMenu(po,field,value,event);});
@@ -369,6 +405,11 @@
         const wrap = make(doc,'div','kmc-hub-board-identity');
         wrap.appendChild(make(doc,'strong','', 'PO ' + smallRef(po.id)));
         wrap.appendChild(make(doc,'small','', po.supplier));
+        const next = po.stage==='draft'?'Préparer la PO':
+          po.stage==='issued_not_sent'?'Attester l’envoi':
+          po.stage==='sent'?'Suivre le fournisseur':
+          po.payment_evidence==='Débit à rapprocher'?'Rapprocher le débit':'Suivre la réception';
+        wrap.appendChild(make(doc,'small','kmc-hub-next-action',next));
         identity.appendChild(wrap);
         tr.appendChild(identity);
         tr.appendChild(make(doc,'td','',po.market || '—'));
