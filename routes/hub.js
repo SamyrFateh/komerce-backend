@@ -158,7 +158,9 @@ const HUB_VIEW_ROLES = Object.freeze([
 const hubBoardRead = [
   authenticate,
   attachMarketDelegatedRoleFor(HUB_VIEW_ROLES),
-  requireRole(HUB_VIEW_ROLES),
+  // Explicit list retains Security 360's static proof of the allowed readers.
+  requireRole(['admin', 'agent_hub', 'market_operator', 'agent_relais',
+    'finance', 'sourcing', 'agent_transitaire', 'support']),
 ];
 
 router.get('/board', ...hubBoardRead, async (req, res, next) => {
