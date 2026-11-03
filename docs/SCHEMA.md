@@ -51,7 +51,7 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 | Tables | 224 | Vérifié sur le dump live Railway. |
 | Vues | 20 | Vérifié sur le dump live Railway. |
 | ENUMs | 17 | Types métier présents dans le dump live Railway. |
-| Index | 511 | Performance + contraintes uniques |
+| Index | 512 | Performance + contraintes uniques |
 | Foreign keys | 432 | Cohérence relationnelle |
 | Fonctions | 111 | Fonctions présentes dans le dump live Railway. |
 | Triggers | 127 | Triggers présents dans le dump live Railway. |

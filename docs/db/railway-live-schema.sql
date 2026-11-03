@@ -10159,7 +10159,10 @@ CREATE TABLE public.scan_events (
     corrects_event_id uuid,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     photo_urls text[] DEFAULT '{}'::text[],
+    entry_mode text GENERATED ALWAYS AS (COALESCE((metadata ->> 'entry_mode'::text), 'scan'::text)) STORED,
     CONSTRAINT scan_events_actor_role_check CHECK ((actor_role = ANY (ARRAY['hub_agent'::text, 'relay_agent'::text, 'driver'::text, 'system'::text, 'admin'::text]))),
+    CONSTRAINT scan_events_entry_mode_check CHECK ((entry_mode = ANY (ARRAY['scan'::text, 'manual_confirmation'::text]))),
+    CONSTRAINT scan_events_manual_reason_check CHECK (((entry_mode <> 'manual_confirmation'::text) OR (NULLIF(btrim((metadata ->> 'manual_reason'::text)), ''::text) IS NOT NULL))),
     CONSTRAINT scan_events_status_check CHECK ((status = ANY (ARRAY['applied'::text, 'rejected'::text, 'needs_review'::text, 'reversed'::text])))
 );
 
@@ -17322,6 +17325,13 @@ CREATE INDEX idx_scan_events_actor ON public.scan_events USING btree (scanned_by
 --
 
 CREATE INDEX idx_scan_events_created ON public.scan_events USING btree (created_at DESC);
+
+
+--
+-- Name: idx_scan_events_entry_mode; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_scan_events_entry_mode ON public.scan_events USING btree (entry_mode) WHERE (entry_mode <> 'scan'::text);
 
 
 --
