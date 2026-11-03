@@ -95,3 +95,20 @@ test('la garde en EUR ne gonfle pas le total économique du journal', async () =
   expect(out.eur_total_known).toBe(10);
   expect(out.rows).toHaveLength(2);
 });
+
+test('un transfert mal projeté est détecté par le rapprochement, même avec le bon nombre de lignes', async () => {
+  const reporting = require('../../services/financial-journal-reporting');
+  const client = { query: jest.fn(async sql => {
+    if (sql.includes('AS journal_count') && sql.includes('cash_custody_movements')) {
+      return { rows: [{ journal_count:2, source_count:2, journal_abs:'5000', source_abs:'5000',
+        journal_signed:'100', source_signed:'0' }] };
+    }
+    if (sql.includes('AS n FROM financial_movements')) return { rows: [{ n:0 }] };
+    return { rows: [{ journal_kmf:'0', source_kmf:'0', journal_native:'0', source_native:'0' }] };
+  }) };
+  const result = await reporting.reconcileWithSources(client, {});
+  expect(result.ok).toBe(false);
+  expect(result.checks.find(c => c.name === 'custody_event_count').ok).toBe(true);
+  expect(result.checks.find(c => c.name === 'custody_abs_kmf').ok).toBe(true);
+  expect(result.checks.find(c => c.name === 'custody_signed_kmf').ok).toBe(false);
+});
