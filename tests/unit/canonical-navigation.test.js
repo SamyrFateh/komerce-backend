@@ -291,7 +291,7 @@ describe('canonical admin navigation — contrat N1 du mock (doctrine V2 §2)', 
 });
 
 describe('canonical admin navigation — N2 domaine Opérations (doctrine V2 §4)', () => {
-  test('admin voit les 4 espaces Opérations dans l’ordre canonique, Expéditions & Douane actif (Sourcing live est dans Live)', () => {
+  test('admin voit les 3 espaces Opérations dans l’ordre canonique, Expéditions & Douane actif (Sourcing live est dans Live)', () => {
     const env = loadNavigation('/admin/workspaces/shipping-customs', 'shipping-customs-workspace');
     const header = mountFor(env, '/admin/workspaces/shipping-customs', 'shipping-customs-workspace', { role: 'admin' });
 
@@ -301,7 +301,7 @@ describe('canonical admin navigation — N2 domaine Opérations (doctrine V2 §4
     const n2 = secondaryNav(header);
     expect(n2.className).toBe('kmc-admin-secondary-nav');
     const ids = n2.children.map(link => link.attributes['data-dashboard']);
-    expect(ids).toEqual(['operations-overview', 'shipping-customs-workspace', 'purchasing-workspace', 'hub-workstation']);
+    expect(ids).toEqual(['operations-overview', 'shipping-customs-workspace', 'purchasing-workspace']);
 
     const active = n2.children.find(link => link.attributes['data-dashboard'] === 'shipping-customs-workspace');
     expect(active.attributes['aria-current']).toBe('page');
@@ -327,13 +327,13 @@ describe('canonical admin navigation — N2 domaine Opérations (doctrine V2 §4
     }
   });
 
-  test('market_operator voit Vue d’ensemble, Hub · Exécution, Relais · Cash & dépôts, Expéditions & Douane — jamais Sourcing', () => {
+  test('market_operator voit Vue d’ensemble, Relais · Cash & dépôts, Expéditions & Douane — Hub global est dans Live', () => {
     const env = loadNavigation('/admin/operations', 'operations');
     const header = mountFor(env, '/admin/operations', 'operations', { role: 'market_operator' });
 
     const n2 = secondaryNav(header);
     const ids = n2.children.map(link => link.attributes['data-dashboard']);
-    expect(ids).toEqual(['operations-overview', 'hub-execution', 'relais-execution', 'shipping-customs-workspace']);
+    expect(ids).toEqual(['operations-overview', 'relais-execution', 'shipping-customs-workspace']);
     expect(ids).not.toContain('sourcing-workspace');
 
     const overview = n2.children.find(link => link.attributes['data-dashboard'] === 'operations-overview');
@@ -346,16 +346,16 @@ describe('canonical admin navigation — N2 domaine Opérations (doctrine V2 §4
     expect(secondaryNav(header)).toBeUndefined();
     const links = header.children[0].children[1].children;
     expect(links.find(link => link.attributes['data-dashboard'] === 'operations').href).toBe('/admin/workspaces/shipping-customs');
-    expect(links.find(link => link.attributes['data-dashboard'] === 'live').href).toBe('/admin/hub-live?view=execute');
+    expect(links.find(link => link.attributes['data-dashboard'] === 'live').href).toBe('/admin/hub');
   });
 
-  test('agent_relais n’a plus d’écran Opérations : son seul espace est Relais live', () => {
+  test('agent_relais n’a plus d’écran Opérations : Hub global et Relais sont dans Live', () => {
     const env = loadNavigation('/admin/pilotage', 'pilotage');
     const header = mountFor(env, '/admin/pilotage', 'pilotage', { role: 'agent_relais' });
     const links = header.children[0].children[1].children;
     expect(links.find(link => link.attributes['data-dashboard'] === 'operations')).toBeUndefined();
     expect(links.find(link => link.attributes['data-dashboard'] === 'finance')).toBeUndefined();
-    expect(links.find(link => link.attributes['data-dashboard'] === 'live').href).toBe('/admin/relais-live');
+    expect(links.find(link => link.attributes['data-dashboard'] === 'live').href).toBe('/admin/hub');
   });
 
   test('agent_transitaire n’a qu’Expéditions & Douane — aucune ligne N2, le domaine mène directement dessus', () => {
