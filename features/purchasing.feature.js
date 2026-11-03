@@ -79,6 +79,7 @@ module.exports = {
   files: {
     services: [
       'services/purchasing-order-detail.js',
+      'services/hub-administration-board.js',
       'services/suppliers/allegro-fulfillment-adapter.js',
       'services/suppliers/allegro-fulfillment-reader.js',
       'services/suppliers/allegro-purchase-reconciliation.js',
@@ -164,6 +165,7 @@ module.exports = {
     ],
     tests: [
       'tests/unit/purchasing-order-detail.test.js',
+      'tests/unit/hub-administration-board.test.js',
       'tests/integration/purchasing-order-detail-postgres.test.js',
       'tests/unit/purchase-line-snapshot.test.js',
       'tests/unit/procurement-execution-context.test.js',
