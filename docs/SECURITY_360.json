@@ -2,8 +2,8 @@
   "generatedAt": "2026-11-02T14:10:11.614Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 787,
-    "protected": 732,
+    "total": 788,
+    "protected": 733,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -1880,6 +1880,20 @@
       "roles": [
         "admin",
         "agent_hub"
+      ]
+    },
+    {
+      "key": "GET /api/hub/board",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "market_operator",
+        "agent_relais",
+        "finance",
+        "sourcing",
+        "agent_transitaire",
+        "support"
       ]
     },
     {

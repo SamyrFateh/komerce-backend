@@ -146,7 +146,7 @@
     market_operator:    '/admin/pilotage',
     finance:            '/admin/workspaces/accounting',
     sourcing:           '/admin/import-runtime',
-    agent_hub:          '/admin/hub-live?view=execute',
+    agent_hub:          '/admin/hub',
     agent_relais:       '/admin/relais-live',
     agent_transitaire:  '/admin/workspaces/shipping-customs',
     support:            '/admin/pilotage',
@@ -616,7 +616,9 @@
       root, user, document: global.document, location: global.location,
       history: global.history, fetch: global.fetch.bind(global), adminContext,
       renderAdministrative: host => renderPurchasingWorkspace(host, user),
-      renderOperations: host => renderHubExecutionShell(host, user, adminContext),
+      renderOperations: host => moduleApi.renderGlobalBoard(host, {
+        document: global.document, fetch: global.fetch.bind(global), user,
+      }),
     });
   }
 
@@ -991,7 +993,7 @@
       global.location.replace(operationsWorkspaceTarget(user));
       return user;
     }
-    const adminContext = (surface === SURFACES.CATALOG_WORKSPACE || surface === SURFACES.SOURCING_WORKSPACE || surface === SURFACES.PURCHASING_WORKSPACE || surface === SURFACES.IMPORT_RUNTIME || surface === SURFACES.ACTION_CENTER || surface === SURFACES.SETTINGS)
+    const adminContext = (surface === SURFACES.CATALOG_WORKSPACE || surface === SURFACES.SOURCING_WORKSPACE || surface === SURFACES.PURCHASING_WORKSPACE || surface === SURFACES.IMPORT_RUNTIME || surface === SURFACES.HUB_WORKSTATION || surface === SURFACES.ACTION_CENTER || surface === SURFACES.SETTINGS)
       ? null
       : await requireAdminContext();
     global.KOMERCE_CANONICAL_AUTH_USER = user;

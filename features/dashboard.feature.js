@@ -702,6 +702,7 @@ module.exports = {
       'tests/e2e/import-runtime-credentials.spec.js',
       'tests/e2e/hub-live-cockpit.spec.js',
       'tests/e2e/hub-live-supply.spec.js',
+      'tests/e2e/hub-global-board.spec.js',
       'tests/e2e/relais-live-cockpit.spec.js',
       'tests/e2e/live-ops-shell.spec.js',
       'tests/unit/market-currency.test.js',

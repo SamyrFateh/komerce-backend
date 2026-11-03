@@ -434,7 +434,7 @@ describe('canonical admin app — defaultLandingSurface (docs/admin-nav-capabili
     expect(env.api.defaultLandingSurface({ role: 'market_operator' })).toBe('/admin/pilotage');
     expect(env.api.defaultLandingSurface({ role: 'finance' })).toBe('/admin/workspaces/accounting');
     expect(env.api.defaultLandingSurface({ role: 'sourcing' })).toBe('/admin/import-runtime');
-    expect(env.api.defaultLandingSurface({ role: 'agent_hub' })).toBe('/admin/hub-live?view=execute');
+    expect(env.api.defaultLandingSurface({ role: 'agent_hub' })).toBe('/admin/hub');
     expect(env.api.defaultLandingSurface({ role: 'agent_relais' })).toBe('/admin/relais-live');
     expect(env.api.defaultLandingSurface({ role: 'agent_transitaire' })).toBe('/admin/workspaces/shipping-customs');
     expect(env.api.defaultLandingSurface({ role: 'support' })).toBe('/admin/pilotage');
@@ -451,7 +451,7 @@ describe('canonical admin app — defaultLandingSurface (docs/admin-nav-capabili
     ['market_operator', '/admin/pilotage'],
     ['finance', '/admin/workspaces/accounting'],
     ['sourcing', '/admin/import-runtime'],
-    ['agent_hub', '/admin/hub-live?view=execute'],
+    ['agent_hub', '/admin/hub'],
     ['agent_relais', '/admin/relais-live'],
     ['agent_transitaire', '/admin/workspaces/shipping-customs'],
   ])('/admin redirige %s vers sa landing avant de charger AdminContext', async (role, landing) => {

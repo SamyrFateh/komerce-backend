@@ -27,16 +27,16 @@ const EXPECTED = Object.freeze({
   market_operator: [
     'control-tower', 'action-center',
     'flow-commerce', 'flow-orders', 'entity-clients', 'workspace-pricing',
-    'flow-operations', 'workspace-hub-exec', 'workspace-relais-exec', 'workspace-shipping',
-    'flow-finance', 'workspace-accounting',
+    'flow-operations', 'workspace-relais-exec', 'workspace-shipping',
+    'flow-finance', 'workspace-accounting', 'live-hub',
     'market-autonomy', 'market-catalog',
   ],
   agent_hub: ['action-center', 'workspace-shipping', 'live-hub'],
-  agent_relais: ['action-center', 'live-relais'],
-  agent_transitaire: ['action-center', 'workspace-shipping'],
-  finance: ['workspace-accounting', 'workspace-cash'],
-  sourcing: ['live-import-runtime'],
-  support: [],
+  agent_relais: ['action-center', 'live-hub', 'live-relais'],
+  agent_transitaire: ['action-center', 'workspace-shipping', 'live-hub'],
+  finance: ['workspace-accounting', 'workspace-cash', 'live-hub'],
+  sourcing: ['live-import-runtime', 'live-hub'],
+  support: ['live-hub'],
 });
 
 const ROLE_HOME = Object.freeze({
@@ -44,7 +44,7 @@ const ROLE_HOME = Object.freeze({
   market_operator: '/admin/pilotage',
   finance: '/admin/workspaces/accounting',
   sourcing: '/admin/import-runtime',
-  agent_hub: '/admin/hub-live?view=execute',
+  agent_hub: '/admin/hub',
   agent_relais: '/admin/relais-live',
   agent_transitaire: '/admin/workspaces/shipping-customs',
   support: '/portail',
@@ -91,14 +91,14 @@ test.describe('Navigation V4 — matrice des 8 rôles', () => {
     });
   }
 
-  test('Hub Live du menu agent mène au dossier d’exécution, pas au Flux Hub historique', async ({ page }) => {
+  test('Hub Live du menu agent mène au cockpit global tous marchés', async ({ page }) => {
     await mount(page, 'agent_hub');
     const hub = page.locator('.kmc-admin-primary-link[data-dashboard="live-hub"]');
-    await expect(hub).toHaveAttribute('href', '/admin/hub-live?view=execute');
+    await expect(hub).toHaveAttribute('href', '/admin/hub');
     const landing = await page.evaluate(() =>
       window.KomerceCanonicalNavigation.defaultLandingFor(window.KOMERCE_CANONICAL_AUTH_USER)
     );
-    expect(landing).toBe('/admin/hub-live?view=execute');
+    expect(landing).toBe('/admin/hub');
   });
 
   test('un agent ne reçoit jamais les surfaces admin ou finance globale', async ({ page }) => {
