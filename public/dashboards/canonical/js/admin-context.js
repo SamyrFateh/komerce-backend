@@ -26,7 +26,8 @@
   /* istanbul ignore else -- exercé par le navigateur, sans branche métier. */
   if (root) root.KomerceAdminContext = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this, function createAdminContextContract() {
-  const SCOPE_MODES = Object.freeze(['global', 'market']);
+  // 'hub' is a central LOGISTICS context, never a dashboard-global grant.
+  const SCOPE_MODES = Object.freeze(['global', 'market', 'hub']);
   const MARKET_CODE = /^[A-Z]{2}$/;
 
   function fail(message) {
@@ -65,9 +66,10 @@
 
     const mode = requiredString(raw.access.mode, 'access.mode');
     if (!SCOPE_MODES.includes(mode)) fail(`access.mode doit être ${SCOPE_MODES.join(' ou ')}`);
+    if (mode === 'hub' && actor.role !== 'agent_hub') fail('scope hub réservé au rôle Hub central');
 
     const allowedMarkets = normalizeStringList(raw.access.allowedMarkets, 'access.allowedMarkets', marketCode);
-    if (mode === 'market' && allowedMarkets.length === 0) {
+    if ((mode === 'market' || mode === 'hub') && allowedMarkets.length === 0) {
       fail('un opérateur scopé doit posséder au moins un marché autorisé');
     }
 
@@ -78,7 +80,7 @@
     );
 
     const defaultMarket = raw.access.defaultMarket === null || raw.access.defaultMarket === undefined
-      ? (mode === 'market' ? allowedMarkets[0] : null)
+      ? (mode === 'market' || mode === 'hub' ? allowedMarkets[0] : null)
       : marketCode(raw.access.defaultMarket, 'access.defaultMarket');
 
     if (defaultMarket !== null && !allowedMarkets.includes(defaultMarket)) {
@@ -131,7 +133,7 @@
         ? Object.freeze({ ...base, state: 'selected', marketCode: requested })
         : Object.freeze({ ...base, state: 'unauthorized', marketCode: null });
     }
-    if (context.access.mode === 'market' && allowed.length === 1) {
+    if ((context.access.mode === 'market' || context.access.mode === 'hub') && allowed.length === 1) {
       return Object.freeze({ ...base, state: 'selected', marketCode: allowed[0] });
     }
     return Object.freeze({ ...base, state: 'prompt', marketCode: null });

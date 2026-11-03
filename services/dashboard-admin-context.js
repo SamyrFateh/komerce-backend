@@ -11,7 +11,7 @@
  * @db-read       dashboard_global_access_grants, operator_market_scopes, markets, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, users, relais
  * @db-write      none
  * @db-txn        none
- * @doctrine      server_global_context_explicit, server_market_scope_is_authority, delegated_capability_projection_is_never_authority, delegated_capability_projection_stays_market_scoped
+ * @doctrine      server_global_context_explicit, central_hub_logistics_context_not_dashboard_grant, server_market_scope_is_authority, delegated_capability_projection_is_never_authority, delegated_capability_projection_stays_market_scoped
  * @impact-areas  admin-dashboard, market-authorization, canonical
  * @version       2026-09
  */
@@ -65,10 +65,15 @@ async function getScopedMarketCodes(userId) {
 const WORKSPACE_READ_CAPABILITIES = Object.freeze({
   finance: Object.freeze(['finance.read']),
   agent_transitaire: Object.freeze(['logistics.read']),
-  agent_hub: Object.freeze(['operations.read', 'logistics.read']),
 });
 
 async function getWorkspaceMarketCodes(user) {
+  if (user.role === 'agent_hub') {
+    // Central Hub serves imported orders from all ACTIVE markets.
+    // These codes are a read-only logistics filter, not an authorization
+    // to access prices, teams, finance or market-scoped business actions.
+    return getAllActiveMarketCodes();
+  }
   if (user.role === 'agent_relais') {
     // Physical relay binding is the server-side authority for Relay workspaces.
     const { rows } = await db.query(
@@ -111,6 +116,9 @@ async function getWorkspaceMarketCodes(user) {
 // réelle vit uniquement dans delegatedCapabilities[marketCode], jamais dans
 // cette liste de base.
 function capabilitiesFor(mode) {
+  // V1 Hub is not Admin central: do not advertise dashboard/global business
+  // capabilities from a logistics-wide set of visible market codes.
+  if (mode === 'hub') return [];
   const base = ['pilotage.read'];
   if (mode === 'global') base.push('dashboard.global.read');
   return base;
@@ -156,16 +164,22 @@ async function delegatedCapabilitiesByMarket(userId, marketCodes) {
 async function resolveDashboardAdminContext(user) {
   if (!user || !user.id || !user.role) throw new DashboardAccessDeniedError();
 
-  const globalAuthority = await hasDashboardGlobalAuthority(user.id);
+  // Four operational profiles V1: Hub is a CENTRAL logistics actor, NOT a
+  // subordinate of a country's market team. Never project dashboard-global
+  // authority or delegated commercial capabilities onto this role.
+  const centralHub = user.role === 'agent_hub';
+  const globalAuthority = !centralHub && await hasDashboardGlobalAuthority(user.id);
   const allowedMarkets = globalAuthority
     ? await getAllActiveMarketCodes()
     : await getWorkspaceMarketCodes(user);
 
-  if (!globalAuthority && allowedMarkets.length === 0) {
+  if (!allowedMarkets.length) {
     throw new DashboardAccessDeniedError();
   }
 
-  const mode = globalAuthority ? 'global' : 'market';
+  // UI context only. Every business API separately enforces its own role
+  // and operation guard; 'hub' must never behave like 'global' in guards.
+  const mode = centralHub ? 'hub' : globalAuthority ? 'global' : 'market';
 
   // Un admin global voit déjà tout (dashboard.global.read) : cette projection
   // ne sert qu'à décider une visibilité UI pour un opérateur scopé, donc on
