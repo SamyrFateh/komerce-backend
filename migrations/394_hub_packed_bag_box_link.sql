@@ -329,8 +329,9 @@ END $$;
 -- Personne ne peut contourner ce gel par SQL direct après PACKED.
 CREATE OR REPLACE FUNCTION public.hub_order_bag_sealed_placements_guard()
 RETURNS trigger LANGUAGE plpgsql AS $$
-DECLARE v_state text;
-DECLARE v_order uuid;
+DECLARE
+  v_state text;
+  v_order uuid;
 BEGIN
   SELECT u.state, u.order_id INTO v_state, v_order
     FROM public.hub_physical_units u
