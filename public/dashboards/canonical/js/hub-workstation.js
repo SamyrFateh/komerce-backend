@@ -107,33 +107,23 @@
     root.appendChild(menu);
 
     const canOperate = ['admin', 'agent_hub'].includes(user && user.role);
-    const closeMenu = () => { menu.hidden = true; };
+    let menuSerial = 0;
+    const closeMenu = () => {
+      menu.hidden = true;
+      menu.setAttribute('data-hub-request', String(++menuSerial));
+    };
     const openMenu = (order, label, value, event) => {
+      // Ce menu appartient à UNE étape. Aucun lien universel injecté à toutes
+      // les cellules avant la lecture de l'autorité métier.
+      const requestId = String(++menuSerial);
+      menu.setAttribute('data-hub-request', requestId);
       menu.replaceChildren();
-      menu.appendChild(make(doc, 'strong', 'kmc-hub-board-menu-title', order.reference + ' · ' + label));
+      menu.classList.remove('is-editing');
+      menu.appendChild(make(doc, 'strong', 'kmc-hub-board-menu-title',
+        order.reference + ' · ' + label));
       menu.appendChild(make(doc, 'p', 'kmc-hub-board-menu-summary', value));
-      menu.appendChild(make(doc, 'p', 'kmc-hub-board-menu-summary',
-        'Marché ' + order.market + ' · Vue centrale sans filtre de marché.'));
-      if (canOperate) {
-        // L'exécution utilise uniquement le marché DÉRIVÉ du dossier serveur.
-        // Ce n'est pas le périmètre de la consultation centrale.
-        const target = make(doc, 'a', 'kmc-hub-board-menu-action', 'Ouvrir les opérations de cette commande');
-        target.href = '/admin/hub-live?view=execute&market=' + encodeURIComponent(order.market);
-        target.classList.add('is-secondary');
-        menu.appendChild(target);
-        if (user.role === 'admin' && ['PO', 'Fournisseur'].includes(label)) {
-          const purchase = make(doc, 'a', 'kmc-hub-board-menu-action', 'Ouvrir les achats fournisseurs');
-          purchase.href = '/admin/workspaces/purchasing?market=' + encodeURIComponent(order.market);
-          purchase.classList.add('is-secondary');
-          menu.appendChild(purchase);
-        }
-      } else {
-        menu.appendChild(make(doc, 'p', 'kmc-hub-board-menu-summary',
-          'Consultation seule. Les validations et mouvements physiques sont réservés à l’équipe Hub.'));
-      }
-      const close = make(doc, 'button', 'kmc-hub-board-menu-action', 'Fermer');
+      const close = make(doc, 'button', 'kmc-hub-board-menu-action is-dismiss', 'Fermer');
       close.type = 'button';
-      close.classList.add('is-dismiss');
       close.addEventListener('click', closeMenu);
       menu.appendChild(close);
       menu.hidden = false;
@@ -142,6 +132,11 @@
           doc, fetch:fetchFn, user, order, stage:label,
           refresh:()=>renderGlobalBoard(root,{document:doc,fetch:fetchFn,user}),
         });
+      } else {
+        menu.appendChild(make(doc, 'p', 'kmc-hub-action-explanation',
+          !canOperate
+            ? 'Consultation seule : cette étape ne peut pas être modifiée avec ce profil.'
+            : 'Les actions de cette étape ne sont pas chargées. Actualiser la page.'));
       }
       const box = event && event.currentTarget && event.currentTarget.getBoundingClientRect?.();
       const width = doc.defaultView?.innerWidth || 1440;
@@ -304,32 +299,16 @@
     menu.hidden = true;
     root.appendChild(menu);
     const closeMenu = () => {menu.hidden = true;};
-    const addLink = (label, url) => {
-      const link = make(doc, 'a', 'kmc-hub-board-menu-action', label);
-      link.href = url;
-      link.classList.add('is-secondary');
-      menu.appendChild(link);
-    };
     const openMenu = (po, field, value, event) => {
       menu.replaceChildren();
+      menu.classList.remove('is-editing');
       menu.appendChild(make(doc, 'strong', 'kmc-hub-board-menu-title',
         'PO ' + smallRef(po.id) + ' · ' + field));
       menu.appendChild(make(doc, 'p', 'kmc-hub-board-menu-summary', value));
-      menu.appendChild(make(doc, 'p', 'kmc-hub-board-menu-summary',
-        'Marché ' + po.market + ' · ' + po.order_count + ' commande(s) rattachée(s).'));
-      // The canonical writer remains the only mutation surface; the summary
-      // NEVER submits, approves, pays, sends or receives on a right-click.
-      const target = '/admin/workspaces/purchasing?po=' + encodeURIComponent(po.id)
-        + (po.multi_market_legacy ? '' : '&market=' + encodeURIComponent(po.market));
-      addLink('Ouvrir la PO et ses justificatifs', target);
-      if (user.role === 'admin') {
-        menu.appendChild(make(doc, 'p', 'kmc-hub-board-menu-summary',
-          field === 'Paiement' ? 'Voir les débits réellement prouvés dans le dossier fournisseur.'
-            : 'Les validations d’achat s’exécutent exclusivement dans le module Achats fournisseurs.'));
-      }
-      const close = make(doc, 'button', 'kmc-hub-board-menu-action', 'Fermer');
+      // Pas de lien "Ouvrir la PO" répété dans toutes les colonnes. Chaque
+      // cellule exprime une action possible ou une dépendance précise.
+      const close = make(doc, 'button', 'kmc-hub-board-menu-action is-dismiss', 'Fermer');
       close.type = 'button';
-      close.classList.add('is-dismiss');
       close.addEventListener('click', closeMenu);
       menu.appendChild(close);
       menu.hidden = false;
@@ -338,6 +317,9 @@
           doc,fetch:fetchFn,user,po,field,
           refresh:()=>renderAdministrationBoard(root,{document:doc,fetch:fetchFn,user}),
         });
+      } else {
+        menu.appendChild(make(doc,'p','kmc-hub-action-explanation',
+          'Les actions de cette étape ne sont pas chargées. Actualiser la page.'));
       }
       const box = event?.currentTarget?.getBoundingClientRect?.();
       const x = event?.type === 'contextmenu' ? event.clientX : (box ? box.left : 8);
