@@ -189,6 +189,8 @@ describeE2E('Orders - local relay receipt without hub',({db})=>{
     cleanup.trackSql('DELETE FROM product_skus WHERE id=$1',[sku]);
     cleanup.trackSql('DELETE FROM purchase_orders WHERE id=$1',[po]);
     cleanup.trackSql('DELETE FROM hub_physical_units WHERE id=ANY($1::uuid[])',[[unit,box]]);
+    cleanup.trackSql('DELETE FROM international_shipments WHERE reference LIKE $1',[hubRef+'-SHIP%']);
+    cleanup.trackSql('DELETE FROM international_shipment_hub_units WHERE physical_unit_id=ANY($1::uuid[])',[[unit,box]]);
     cleanup.trackSql('DELETE FROM hub_purchase_allocations WHERE id=$1',[allocation]);
     cleanup.trackSql('DELETE FROM hub_physical_unit_placements WHERE allocation_id=$1',[allocation]);
 
@@ -233,7 +235,18 @@ describeE2E('Orders - local relay receipt without hub',({db})=>{
     expect(beforeShipment).toMatchObject({qty_allocated:1,qty_packed:1,qty_shipped:0,qty_received:0});
     // Carrier/relay evidence is outside this scoped spec; transition here
     // represents arrival after the separately certified physical leg.
-    await q(`UPDATE parcel_items SET qty_shipped=1,qty_received=1,verified=TRUE
+    // « Expédié » = remis au transitaire (migration 370) : le carton rejoint une expédition puis la remise est constatée.
+    const {rows:[shipment]}=await q(
+      "INSERT INTO international_shipments(market_id,reference,created_by,hub_draft) VALUES ($1,$2,$3,TRUE) RETURNING id",
+      [market.id,hubRef+'-SHIP',String(agent)]);
+    await q('INSERT INTO international_shipment_hub_units(shipment_id,physical_unit_id) VALUES ($1,$2)',[shipment.id,box]);
+    await q("UPDATE hub_physical_units SET state='DISPATCHED' WHERE id=$1",[box]);
+    await q("UPDATE international_shipments SET stage='handed_over',forwarder_name='Transitaire',transport_mode='sea' WHERE id=$1",[shipment.id]);
+    // La réception import n'est constatée que par l'attestation immuable du relais (migration 371).
+    await q("UPDATE international_shipments SET stage='local_delivery' WHERE id=$1",[shipment.id]);
+    await q(`INSERT INTO international_shipment_relay_receipts (shipment_id,order_item_id,relais_id,expected_qty,received_qty,received_by,proof_ref)
+      SELECT $1,$2,o.relais_id,1,1,$3,'E2E-ATT' FROM orders o WHERE o.id=$4`,[shipment.id,items.mixedImport,String(agent),orders.mixed]);
+    await q(`UPDATE parcel_items SET qty_received=1,verified=TRUE
       WHERE parcel_id=$1 AND order_item_id=$2`,[importParcel,items.mixedImport]);
     await q("UPDATE parcels SET status='available',available_at=NOW() WHERE id=$1",[importParcel]);
     const second=await request(app).post('/api/pickup/collect/'+orders.mixed)
