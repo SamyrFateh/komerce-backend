@@ -164,7 +164,7 @@ describeDb('Hub V1 — sac client mono-commande (PG réel)', () => {
   test('la commande 2 peut préparer son propre sac avec la quantité restante', async () => {
     const result = await hubOps.moveAllocationCommand({
       from_unit_id: sourceUnitId, to_unit_id: bag2Id, allocation_id: allocation2,
-      quantity: 1, operation_type: 'REPACK',
+      quantity: 1, operation_type: 'REPACK', evidence_method: 'SCAN', evidence_code: barcode,
     }, actorId);
     expect(result.status).toBe(200);
     const rows = await q(
