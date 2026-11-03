@@ -9,7 +9,7 @@
  * @depends       db
  * @used-by       services/relay-shipment-receipt.js
  * @db-read       order_items, international_shipment_hub_units, international_shipments, hub_physical_unit_placements, hub_purchase_allocations, international_shipment_relay_receipts, parcels, parcel_items
- * @db-write      parcel_items
+ * @db-write      parcel_events, parcel_items, scans
  * @db-txn        caller_transaction_with_order_item_lock
  * @doctrine      single_physical_truth, no_fabricated_quantities, receipt_regression_forbidden
  * @impact-areas  logistics, relay, orders

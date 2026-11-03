@@ -8,7 +8,7 @@
  * @outputs       validated_transition, order_history, side_effects
  * @depends       db.js, services/client-notification-service.js
  * @used-by       order-payment-confirmation.js, routes/orders.js, cancellation-flows, admin-flows
- * @db-read       order_items, orders, products, relais, scans
+ * @db-read       international_shipment_relay_receipts, order_items, orders, products, relais, scans
  * @db-write      order_items, order_status_history, orders
  * @db-write-via:customs-shipment-service customs_shipments
  * @db-write-via:product-admin-service products, product_variants
