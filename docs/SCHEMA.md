@@ -857,3 +857,12 @@ role: Code physique EAN/GTIN ou fournisseur identifié par SKU Komerce. Un code 
 `hub_physical_units.bag_plan` (JSONB nullable) décrit les couples `order_item_id` / `quantity` destinés à cette préparation, y compris partielle. Le plan est immuable après création.
 
 `hub_physical_unit_placements` ajoute `evidence_method` (SCAN, MANUAL, COUNT_ON_MANIFEST), `evidence_code`, `evidence_ref` : toute insertion de quantité dans un sac client exige un code confirmé et conforme au SKU/fournisseur ou une preuve manuelle référencée. La preuve est immuable. Avant PACKED, PostgreSQL vérifie que le contenu actif correspond exactement au plan du sac. Les KOM-BOX restent soumises à leurs invariants existants ; le transport du sac fermé et son lien au relais constituent un jalon distinct à certifier.
+
+
+### Migration 394 — sac client physiquement contenu dans une KOM-BOX (intended_migration_schema)
+
+`hub_box_bags` matérialise le lien immuable entre `HANDLING_UNIT` sac client déjà PACKED, `MARKET_PARCEL` KOM-BOX, et `parcels` colis client. Le scan des références des deux contenants est exigé et vérifié, de même que la mono-commande, le marché, la destination et la correspondance des `parcel_items`.
+
+`hub_box_effective_placements` est une projection SQL de tous les articles physiquement présents dans un carton : placements directs de la KOM-BOX ou placements encore actifs dans les sacs réellement liés. Les allocations ne sont jamais dupliquées ou déplacées fictivement. Les calculs `hub_item_physical_proof`, `hub_item_handed_over`, `sync_parcel_items_from_physical`, la composition de l'expédition et la réception relais utilisent cette projection.
+
+Cette migration est déclarée prévue et n'est pas appliquée en Staging ; certificat E2E marché, réception relais et cas d'erreur obligatoire avant déploiement.
