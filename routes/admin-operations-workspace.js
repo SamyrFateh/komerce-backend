@@ -8,7 +8,7 @@
  * @outputs       authorized_operations_workspace_projection, authorized_domain_mutations
  * @depends       db, middleware/auth, middleware/require-market-execution-capability, middleware/require-market-delegated-capability, middleware/require-dashboard-global-authority, services/operations-workspace
  * @used-by       bootstrap/api-routes.js
- * @db-read       markets, users, relais, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, dashboard_global_access_grants, hub_physical_units, hub_physical_unit_placements, hub_purchase_allocations, purchase_orders
+ * @db-read       markets, users, relais, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, dashboard_global_access_grants, hub_physical_units, hub_physical_unit_placements, hub_purchase_allocations, hub_box_bags, purchase_orders
  * @db-write      none
  * @db-txn        none
  * @doctrine      workspace_single_market_action_context, capability_is_market_authority, relay_binding_is_server_authority, client_market_id_forbidden, workspace_role_least_privilege
@@ -27,6 +27,7 @@ const { hasDashboardGlobalAuthority } = require('../middleware/require-dashboard
 const workspace = require('../services/operations-workspace');
 const supply = require('../services/hub-procurement-dossier');
 const boxShipment = require('../services/hub-box-shipment-service');
+const bagBox = require('../services/hub-bag-box-service');
 const hubOps = require('../services/hub-operations');
 const shipmentJourney = require('../services/international-shipment-journey');
 const relayReceipts = require('../services/relay-shipment-receipt');
@@ -314,6 +315,24 @@ router.post(
   }
 );
 
+// Scans physiques : un sac de commande déjà PACKED est placé ENTIER dans la KOM-BOX.
+router.post(
+  '/market/:marketCode/boxes/:unitId/bags',
+  attachHubExecutionCapability('execution.parcel.ship'),
+  requireHubWorkspaceAction,
+  async (req, res, next) => {
+    try {
+      const body = req.body || {};
+      const result = await bagBox.attachBagToBox({
+        boxUnitId: req.params.unitId, bagUnitId: body.bag_unit_id, parcelId: body.parcel_id,
+        bagReferenceScan: body.bag_reference_scan, boxReferenceScan: body.box_reference_scan,
+        expectedMarketId: req.workspaceMarket.id, actorId: req.user.id,
+      });
+      return res.status(result.already_linked ? 200 : 201).json(result);
+    } catch (err) { return sendWorkspaceError(err, res, next); }
+  }
+);
+
 router.post(
   '/market/:marketCode/boxes/:unitId/advance',
   attachHubExecutionCapability('execution.parcel.ship'),
@@ -448,6 +467,25 @@ router.get(
     } catch (err) {
       return sendWorkspaceError(err, res, next);
     }
+  }
+);
+
+// Scan du sac au relais : seul le colis de cette expédition et de ce relais est visible.
+router.get(
+  '/market/:marketCode/relay-shipments/:reference/bags/:bagRef',
+  attachRelayExecutionCapability('execution.parcel.receive'),
+  requireRole(['admin', 'agent_relais']),
+  requireRelayPhysicalMarket,
+  async (req, res, next) => {
+    try {
+      res.set('Cache-Control', 'private, no-store');
+      const result = await bagBox.getBagAtRelay({
+        bagReference: req.params.bagRef, shipmentReference: req.params.reference,
+        expectedMarketId: req.workspaceMarket.id,
+        relaisId: req.user.role === 'agent_relais' ? req.user.relais_id : null,
+      });
+      return res.json(result);
+    } catch (err) { return sendWorkspaceError(err, res, next); }
   }
 );
 
