@@ -40,6 +40,7 @@
     const params = new URLSearchParams(safe(search));
     params.set('branch', branch);
     if (branch !== 'administrative') params.delete('po');
+    params.delete('market'); // Hub global : jamais de contexte marché sur la vue centrale.
     return HUB_PATH + '?' + params.toString();
   };
   const make = (doc, tag, css, textContent) => {
@@ -66,6 +67,155 @@
     });
   }
 
+
+  // Le Hub est une entité centrale : ce tableau agrège TOUS les marchés
+  // sans sélecteur de marché. Les opérations utilisent ensuite, si besoin,
+  // le marché d'une commande pour cibler leur writer canonique.
+  async function renderGlobalBoard(root, { document:doc, fetch:fetchFn, user } = {}) {
+    if (!root || !doc || typeof fetchFn !== 'function') {
+      throw new Error('hub_global_board_context_missing');
+    }
+    root.replaceChildren();
+    const header = make(doc, 'div', 'kmc-hub-global-toolbar');
+    header.appendChild(make(doc, 'strong', '', 'Toutes les commandes import · Tous les marchés'));
+    header.appendChild(make(doc, 'span', 'kmc-hub-global-count', 'Chargement…'));
+    root.appendChild(header);
+    const search = make(doc, 'input', 'kmc-hub-app-search');
+    search.type = 'search';
+    search.placeholder = 'Rechercher une commande ou un marché';
+    search.setAttribute('aria-label', search.placeholder);
+    root.appendChild(search);
+    const scroll = make(doc, 'div', 'kmc-hub-board-scroll');
+    const table = make(doc, 'table', 'kmc-hub-board');
+    table.setAttribute('aria-label', 'Tableau central Hub, tous les marchés');
+    const head = make(doc, 'thead');
+    const titleRow = make(doc, 'tr');
+    for (const label of ['Commande / Marché', 'PO', 'Fournisseur', 'Réception', 'Cartons', 'Départ', 'Reste à solder']) {
+      titleRow.appendChild(make(doc, 'th', '', label));
+    }
+    head.appendChild(titleRow);
+    table.appendChild(head);
+    const body = make(doc, 'tbody');
+    table.appendChild(body);
+    scroll.appendChild(table);
+    root.appendChild(scroll);
+
+    const menu = make(doc, 'div', 'kmc-hub-board-menu');
+    menu.setAttribute('role', 'dialog');
+    menu.setAttribute('aria-label', 'Actions et preuves du Hub');
+    menu.setAttribute('data-hub-global-menu', '');
+    menu.hidden = true;
+    root.appendChild(menu);
+
+    const canOperate = ['admin', 'agent_hub'].includes(user && user.role);
+    const closeMenu = () => { menu.hidden = true; };
+    const openMenu = (order, label, value, event) => {
+      menu.replaceChildren();
+      menu.appendChild(make(doc, 'strong', 'kmc-hub-board-menu-title', order.reference + ' · ' + label));
+      menu.appendChild(make(doc, 'p', 'kmc-hub-board-menu-summary', value));
+      menu.appendChild(make(doc, 'p', 'kmc-hub-board-menu-summary',
+        'Marché ' + order.market + ' · Vue centrale sans filtre de marché.'));
+      if (canOperate) {
+        // L'exécution utilise uniquement le marché DÉRIVÉ du dossier serveur.
+        // Ce n'est pas le périmètre de la consultation centrale.
+        const target = make(doc, 'a', 'kmc-hub-board-menu-action', 'Ouvrir les opérations de cette commande');
+        target.href = '/admin/hub-live?view=execute&market=' + encodeURIComponent(order.market);
+        menu.appendChild(target);
+        if (user.role === 'admin' && ['PO', 'Fournisseur'].includes(label)) {
+          const purchase = make(doc, 'a', 'kmc-hub-board-menu-action', 'Ouvrir les achats fournisseurs');
+          purchase.href = '/admin/workspaces/purchasing?market=' + encodeURIComponent(order.market);
+          menu.appendChild(purchase);
+        }
+      } else {
+        menu.appendChild(make(doc, 'p', 'kmc-hub-board-menu-summary',
+          'Consultation seule. Les validations et mouvements physiques sont réservés à l’équipe Hub.'));
+      }
+      const close = make(doc, 'button', 'kmc-hub-board-menu-action', 'Fermer');
+      close.type = 'button';
+      close.addEventListener('click', closeMenu);
+      menu.appendChild(close);
+      menu.hidden = false;
+      const box = event && event.currentTarget && event.currentTarget.getBoundingClientRect?.();
+      const width = doc.defaultView?.innerWidth || 1440;
+      const height = doc.defaultView?.innerHeight || 900;
+      const x = event?.type === 'contextmenu' ? event.clientX : (box ? box.left : 10);
+      const y = event?.type === 'contextmenu' ? event.clientY : (box ? box.bottom : 10);
+      menu.style.left = Math.max(8, Math.min(x, width - 310)) + 'px';
+      menu.style.top = Math.max(8, Math.min(y, height - 240)) + 'px';
+      menu.querySelector?.('a,button')?.focus?.();
+    };
+    root.addEventListener('keydown', event => { if (event.key === 'Escape') closeMenu(); });
+
+    let rows = [];
+    const renderRows = () => {
+      body.replaceChildren();
+      const term = safe(search.value).trim().toLocaleLowerCase('fr');
+      const filtered = rows.filter(o => [o.reference, o.market, o.market_name]
+        .some(v => safe(v).toLocaleLowerCase('fr').includes(term)));
+      header.lastChild.textContent = filtered.length + ' / ' + rows.length + ' commande(s)';
+      if (!filtered.length) {
+        const tr = make(doc, 'tr');
+        const td = make(doc, 'td', '', term ? 'Aucune commande correspondante.' : 'Aucune commande import active.');
+        td.colSpan = 7;
+        tr.appendChild(td);
+        body.appendChild(tr);
+        return;
+      }
+      for (const order of filtered) {
+        const tr = make(doc, 'tr');
+        tr.setAttribute('data-hub-global-order', order.reference);
+        const identity = make(doc, 'td');
+        const idBox = make(doc, 'div', 'kmc-hub-board-identity');
+        idBox.appendChild(make(doc, 'strong', '', order.reference));
+        idBox.appendChild(make(doc, 'small', '', order.market + ' · ' + (order.market_name || order.market)));
+        identity.appendChild(idBox);
+        tr.appendChild(identity);
+        for (const [label, key] of [
+          ['PO', 'po'], ['Fournisseur', 'supplier'], ['Réception', 'reception'],
+          ['Cartons', 'cartons'], ['Départ', 'departure'], ['Reste à solder', 'remaining'],
+        ]) {
+          const td = make(doc, 'td');
+          const button = make(doc, 'button', 'kmc-hub-board-cell', order[key] || '—');
+          button.type = 'button';
+          button.setAttribute('data-hub-global-stage', label);
+          button.setAttribute('aria-label', order.reference + ' · ' + label + ' · ' + (order[key] || '—'));
+          if (key === 'remaining' && order.attention) button.classList.add('is-attention');
+          if (key === 'remaining' && order.remaining_detail) {
+            button.appendChild(make(doc, 'small', '', order.remaining_detail));
+          }
+          button.addEventListener('click', event => openMenu(order, label, order[key], event));
+          button.addEventListener('contextmenu', event => {
+            event.preventDefault();
+            openMenu(order, label, order[key], event);
+          });
+          td.appendChild(button);
+          tr.appendChild(td);
+        }
+        body.appendChild(tr);
+      }
+    };
+    search.addEventListener('input', renderRows);
+    try {
+      const payload = await requestJSON(fetchFn, '/api/hub/board');
+      if (payload.scope !== 'HUB_GLOBAL' || !Array.isArray(payload.orders)) {
+        throw new Error('Réponse globale Hub invalide');
+      }
+      rows = payload.orders;
+      renderRows();
+      return payload;
+    } catch (error) {
+      body.replaceChildren();
+      header.lastChild.textContent = 'Indisponible';
+      const tr = make(doc, 'tr');
+      const td = make(doc, 'td', 'kmc-hub-app-list-error',
+        'Impossible de charger la vue centrale Hub : ' + error.message);
+      td.colSpan = 7;
+      tr.appendChild(td);
+      body.appendChild(tr);
+      return null;
+    }
+  }
+
   function mount(options = {}) {
     const {root, user, document:doc, location, history, fetch:fetchFn, adminContext,
       renderAdministrative, renderOperations} = options;
@@ -74,7 +224,9 @@
       throw new Error('hub_workstation_renderers_missing');
     }
     const role = safe(user.role);
-    if (role !== 'admin' && role !== 'agent_hub') throw new Error('hub_workstation_role_not_allowed');
+    if (!['admin', 'agent_hub', 'market_operator', 'agent_relais', 'finance', 'sourcing', 'agent_transitaire', 'support'].includes(role)) {
+      throw new Error('hub_workstation_role_not_allowed');
+    }
     const administrativeAllowed = role === 'admin';
     const search = safe(location && location.search);
     const requested = parseBranch(search);
@@ -233,12 +385,8 @@
       try {
         let rows;
         if (branch === 'administrative') {
-          // Marché explicite : même projection PO mono-marché que le dossier Hub.
-          // Sans marché : liste administrative existante, à portée globale.
-          const market = marketOverride || selectedMarket(location);
-          const payload = await requestJSON(fetchFn, market
-            ? '/api/hub/dossier?market=' + encodeURIComponent(market)
-            : '/api/purchasing');
+          // Administration des achats : vue globale indépendante du sélecteur marché.
+          const payload = await requestJSON(fetchFn, '/api/purchasing');
           rows = (Array.isArray(payload.purchase_orders) ? payload.purchase_orders : []).map(po => ({
             id: po.id, title: 'PO ' + smallRef(po.id),
             secondary: po.supplier_name || 'Fournisseur non renseigné',
@@ -246,24 +394,12 @@
               (po.order_ref ? ' · ' + po.order_ref : ''),
           }));
         } else {
-          // Le dossier Hub exclut déjà LOCAL_STOCK. Jamais d'agrégation client
-          // ou de quantité physique recalculée dans le navigateur.
-          const markets = adminContext?.access?.allowedMarkets;
-          const market = marketOverride || selectedMarket(location) ||
-            (Array.isArray(markets) && markets.length === 1 ? markets[0] : '');
-          if (!market) {
-            if (seq === activeItems.seq) {
-              activeItems.rows = [];
-              list.replaceChildren(make(doc, 'p', 'kmc-hub-app-list-empty',
-                'Choisissez un marché dans l’espace de travail.'));
-            }
-            return;
-          }
-          const dossier = await requestJSON(fetchFn, '/api/hub/dossier?market=' + encodeURIComponent(market));
+          // Projection globale de lecture, sans aucun marché à sélectionner.
+          const dossier = await requestJSON(fetchFn, '/api/hub/board');
           rows = (Array.isArray(dossier.orders) ? dossier.orders : []).map(order => ({
-            id: order.id, title: order.reference || smallRef(order.id),
-            secondary: String((order.items || []).length) + ' article(s) import',
-            tertiary: order.status || 'Commande à suivre',
+            id: order.id, title: order.reference,
+            secondary: order.market + ' · ' + (order.market_name || order.market),
+            tertiary: order.remaining,
           }));
         }
         if (seq !== activeItems.seq) return;
@@ -313,6 +449,6 @@
   }
 
   global.KomerceCanonicalHubWorkstation = Object.freeze({
-    mount, parseBranch, href, BRANCHES, PO_STAGE,
+    mount, renderGlobalBoard, parseBranch, href, BRANCHES, PO_STAGE,
   });
 })(typeof globalThis !== 'undefined' ? globalThis : this);
