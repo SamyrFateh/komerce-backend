@@ -97,11 +97,11 @@ async function getAdministrationBoard(query = db,
   const pos = gatherPurchaseOrders(result);
   const ids = pos.map(po => po.id);
   const { rows: evidence } = ids.length ? await query.query(
-    \`SELECT purchase_order_id, COUNT(*)::int AS payment_count,
+    `SELECT purchase_order_id, COUNT(*)::int AS payment_count,
              COUNT(*) FILTER (WHERE real_debit_verified IS TRUE)::int AS verified_debit_count
         FROM supplier_execution_payments
        WHERE purchase_order_id = ANY($1::uuid[])
-       GROUP BY purchase_order_id\`, [ids]
+       GROUP BY purchase_order_id`, [ids]
   ) : { rows: [] };
   const purchaseOrders = attachPaymentEvidence(pos, evidence);
   return {
