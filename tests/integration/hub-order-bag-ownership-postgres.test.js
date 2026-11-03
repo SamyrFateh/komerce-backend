@@ -14,6 +14,7 @@ const db = require('../../db');
 const grouped = require('../../services/purchasing-grouped-service');
 const engagement = require('../../services/purchasing-engagement-service');
 const hubOps = require('../../services/hub-operations');
+const bagBox = require('../../services/hub-bag-box-service');
 const { submitAuthorized } = require('../helpers/submit-authorized');
 
 const q = (sql, params) => db.query(sql, params);
@@ -212,6 +213,69 @@ describeDb('Hub V1 — sac client mono-commande (PG réel)', () => {
     }, actorId);
     expect(closed.status).not.toBe(200);
   });
+
+  test('M7 : deux sacs scellés restent intacts dans une KOM-BOX, avec preuve du colis relais', async () => {
+    const parcel1 = id(), parcel2 = id();
+    const pi1 = id(), pi2 = id();
+    await q("INSERT INTO parcels(id,order_id,reference,status) VALUES ($1,$2,$3,'preparation'),($4,$5,$6,'preparation')",
+      [parcel1,order1,tag + '-P1',parcel2,order2,tag + '-P2']);
+    const product = (await q('SELECT product_id FROM order_items WHERE id=$1',[item1])).rows[0].product_id;
+    await q('INSERT INTO parcel_items(id,parcel_id,order_item_id,product_id,quantity) VALUES($1,$2,$3,$4,1),($5,$6,$7,$4,1)',
+      [pi1,parcel1,item1,product,pi2,parcel2,item2]);
+
+    const newBox = await hubOps.createOperatorUnitCommand({
+      unit_type: 'MARKET_PARCEL', reference: tag + '-BOX',
+    }, actorId);
+    expect(newBox.status).toBe(201);
+    const boxId = newBox.body.physical_unit.id;
+    for (const stage of ['IDENTIFIED','QUALITY_CHECKED','LOCATED','ALLOCATED','PICKED']) {
+      const t = await hubOps.transitionOperatorUnitCommand({ unit_id: boxId, to_state:stage }, actorId);
+      expect(t.status).toBe(200);
+    }
+
+    const first = await bagBox.attachBagToBox({
+      bagUnitId: bag1Id, boxUnitId: boxId, parcelId: parcel1,
+      bagReferenceScan: tag + '-SAC1', boxReferenceScan: tag + '-BOX',
+      expectedMarketId: marketId, actorId,
+    });
+    expect(first.already_linked).toBe(false);
+    const second = await bagBox.attachBagToBox({
+      bagUnitId: bag2Id, boxUnitId: boxId, parcelId: parcel2,
+      bagReferenceScan: tag + '-SAC2', boxReferenceScan: tag + '-BOX',
+      expectedMarketId: marketId, actorId,
+    });
+    expect(second.already_linked).toBe(false);
+
+    // La preuve physique est conservée dans CHAQUE sac ; aucun MOVE ni SUPERSEDED.
+    const { rows: bags } = await q('SELECT id,state,order_id FROM hub_physical_units WHERE id=ANY($1::uuid[]) ORDER BY id',[[bag1Id,bag2Id]]);
+    expect(bags).toHaveLength(2);
+    expect(bags.map(b=>b.state)).toEqual(['PACKED','PACKED']);
+    const {rows:[boxQuantities]}=await q(
+      'SELECT count(*)::int AS lines, sum(quantity)::int AS qty FROM hub_box_effective_placements WHERE box_unit_id=$1',[boxId]
+    );
+    expect(boxQuantities).toEqual({lines:2,qty:2});
+    const {rows:parcelQuantities}=await q(
+      'SELECT order_item_id,qty_allocated,qty_packed,qty_shipped FROM parcel_items WHERE id=ANY($1::uuid[]) ORDER BY order_item_id',[[pi1,pi2]]
+    );
+    expect(parcelQuantities).toHaveLength(2);
+    expect(parcelQuantities.map(p=>p.qty_packed)).toEqual([1,1]);
+    expect(parcelQuantities.map(p=>p.qty_shipped)).toEqual([0,0]);
+
+    const seal=await hubOps.transitionOperatorUnitCommand({unit_id:boxId,to_state:'PACKED'},actorId);
+    expect(seal.status).toBe(200);
+    const {rows:[packed]}=await q('SELECT state,market_id FROM hub_physical_units WHERE id=$1',[boxId]);
+    expect(packed.state).toBe('PACKED');
+    expect(packed.market_id).toBe(marketId);
+
+    const replay=await bagBox.attachBagToBox({
+      bagUnitId:bag1Id,boxUnitId:boxId,parcelId:parcel1,
+      bagReferenceScan:tag+'-SAC1',boxReferenceScan:tag+'-BOX',expectedMarketId:marketId,actorId,
+    });
+    expect(replay.already_linked).toBe(true);
+    const {rows:[still]}=await q('SELECT COUNT(*)::int AS n FROM hub_box_bags WHERE box_unit_id=$1',[boxId]);
+    expect(still.n).toBe(2);
+  });
+
 
 
 });
