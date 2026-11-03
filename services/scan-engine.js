@@ -121,6 +121,10 @@ async function processScan(params) {
       throw new ScanError('UNKNOWN_EVENT', `Type de scan inconnu: ${params.event_type}`);
     }
 
+    if (params.event_type === 'shipped') {
+      await assertImportHandedOver(client, params.parcel_id);
+    }
+
     const { valid } = await _validateAndCatchup(client, params, parcel, parcelItems, result);
     if (!valid) {
       await client.query('COMMIT');
@@ -563,6 +567,25 @@ async function _resolvePhysicalProofIncidents(client, params, result) {
 // ════════════════════════════════════════════════════════════════
 // HELPERS INTERNES
 // ════════════════════════════════════════════════════════════════
+
+/**
+ * P0-2 — « Expédié » d'un colis contenant de l'import = remis physiquement au transitaire.
+ * qty_shipped est dérivé de la remise (migration 370) : un scan Hub ne le pose jamais.
+ */
+async function assertImportHandedOver(client, parcelId) {
+  const { rows } = await client.query(
+    `SELECT pi.id, pi.qty_packed, pi.qty_shipped
+       FROM parcel_items pi JOIN order_items oi ON oi.id = pi.order_item_id
+      WHERE pi.parcel_id = $1 AND oi.fulfillment_source = 'IMPORT'`,
+    [parcelId]
+  );
+  if (!rows.length) return;
+  const handed = rows.some((r) => Number(r.qty_shipped) > 0) && rows.every((r) => Number(r.qty_shipped) >= Number(r.qty_packed));
+  if (!handed) {
+    throw new ScanError('IMPORT_NOT_HANDED_OVER',
+      'Colis import : l’expédition est constatée par la remise du carton au transitaire, pas par un scan Hub');
+  }
+}
 
 /** Cascade les quantités vers le champ cible pour tous les items d'un colis */
 async function cascadeQuantities(client, parcelId, qtyField) {
