@@ -233,6 +233,18 @@ describeDb('Hub V1 — sac client mono-commande (PG réel)', () => {
       expect(t.status).toBe(200);
     }
 
+    // Les identifiants scannés et le colis client doivent concorder.
+    await expect(bagBox.attachBagToBox({
+      bagUnitId:bag1Id,boxUnitId:boxId,parcelId:parcel1,
+      bagReferenceScan:tag+'-FAUX',boxReferenceScan:tag+'-BOX',
+      expectedMarketId:marketId,actorId,
+    })).rejects.toMatchObject({code:'HUB_BOX_BAG_SCAN_MISMATCH'});
+    await expect(bagBox.attachBagToBox({
+      bagUnitId:bag1Id,boxUnitId:boxId,parcelId:parcel2,
+      bagReferenceScan:tag+'-SAC1',boxReferenceScan:tag+'-BOX',
+      expectedMarketId:marketId,actorId,
+    })).rejects.toMatchObject({code:'HUB_BOX_BAG_PARCEL_ORDER_MISMATCH'});
+
     const first = await bagBox.attachBagToBox({
       bagUnitId: bag1Id, boxUnitId: boxId, parcelId: parcel1,
       bagReferenceScan: tag + '-SAC1', boxReferenceScan: tag + '-BOX',
@@ -274,6 +286,18 @@ describeDb('Hub V1 — sac client mono-commande (PG réel)', () => {
     expect(replay.already_linked).toBe(true);
     const {rows:[still]}=await q('SELECT COUNT(*)::int AS n FROM hub_box_bags WHERE box_unit_id=$1',[boxId]);
     expect(still.n).toBe(2);
+    const {rows:[placement]}=await q(
+      'SELECT id FROM hub_physical_unit_placements WHERE physical_unit_id=$1 AND removed_at IS NULL LIMIT 1',
+      [bag1Id]);
+    await expect(q('UPDATE hub_physical_unit_placements SET removed_at=now() WHERE id=$1',
+      [placement.id])).rejects.toThrow(/HUB_ORDER_BAG_SEALED_CONTENT_IMMUTABLE/);
+    // Une nouvelle preuve ne peut pas être insérée dans le sac fermé.
+    await expect(q(
+      "INSERT INTO hub_physical_unit_placements " +
+      "(physical_unit_id,allocation_id,quantity,operation_id,operation_type,created_by,evidence_method,evidence_code) " +
+      "VALUES($1,$2,1,$3,'REPACK',$4,'SCAN',$5)",
+      [bag1Id,allocation1,id(),actorId,barcode]
+    )).rejects.toThrow(/HUB_ORDER_BAG_SEALED_CONTENT_IMMUTABLE/);
   });
 
 
