@@ -32,3 +32,30 @@ Le poste de travail Hub Live opérationnel présente **une ligne par commande IM
 
 ## Suite métier explicitement hors de ce lot
 La projection actuelle ne fournit pas encore un verdict canonique au **niveau article : reliquat à livrer / remboursement autorisé / remboursé**. Raccorder la réconciliation finale au futur tableau sans créer un statut ni une table frontend parallèle. La preuve de l'avis d'expédition fournisseur (manuel ou API) doit aussi être projetée de façon unifiée depuis Supplier Execution avant d'afficher une étape « en route ».
+
+
+## 3 novembre — Hub transversal, visible sans marché
+
+Le Hub est **central pour tous les marchés**. Le tableau opérationnel d'entrée
+\`/admin/hub\` affiche les commandes import de tous les marchés actifs, sans
+sélecteur ni paramètre market requis. Le marché est un attribut de la ligne,
+**pas une limitation du droit de lecture**.
+
+- Endpoint global \`GET /api/hub/board\`, authentifié et autorisé pour tous les
+  profils internes (admin, agent_hub, market_operator, agent_relais, finance,
+  sourcing, agent_transitaire, support ; plus identité déléguée vérifiée).
+- Données explicitement minimisées : référence commande, marché, état des cinq
+  grandes étapes, unités non reçues et anomalies. Pas d'email client, prix,
+  facture, pièce fournisseur, identifiant financier ou liste article.
+- Une opération physique ou une validation d'achat reste autorisée uniquement
+  par les writers existants. Le clic contextuel peut ouvrir le writer spécialisé
+  avec le marché **dérivé du dossier**, sans transformer le Hub central en vue
+  filtrée.
+- Navigation Live : un seul Hub global pour tous les rôles internes ; ancienne
+  URL d'exécution conservée comme outil ciblé aux opérateurs habilités.
+- Import uniquement : les commandes LOCAL_STOCK continuent de relever du
+  circuit Relais.
+- Test négatif : consultation par le relais ne peut déclencher aucun POST Hub.
+
+Le tableau n'affiche jamais « remboursé » sans preuve canonique de
+réconciliation. Un état sans PO reste « à constituer ».
