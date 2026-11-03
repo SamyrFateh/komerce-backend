@@ -236,6 +236,34 @@ router.get(
   }
 );
 
+// Scanner une référence fournisseur dans le poste de réception du marché.
+// Aucun rattachement client ici : le code identifie seulement la variante exacte de la PO.
+router.get(
+  '/market/:marketCode/supply/physical-code',
+  attachHubExecutionCapability('execution.parcel.receive'),
+  requireHubWorkspaceAction,
+  async (req, res, next) => {
+    try {
+      const purchaseOrderId = String(req.query.purchase_order_id || '');
+      if (!/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(purchaseOrderId)) {
+        return res.status(400).json({ error: 'PO invalide', code: 'HUB_PHYSICAL_PO_INVALID' });
+      }
+      const { rows } = await db.query(
+        'SELECT id FROM purchase_orders WHERE id=$1 AND market_id=$2 LIMIT 1',
+        [purchaseOrderId, req.workspaceMarket.id]
+      );
+      if (!rows.length) return res.status(404).json({ error: 'PO absente de ce marché', code: 'HUB_PHYSICAL_PO_NOT_IN_MARKET' });
+      // Import tardif : ce poste d'écran ne peut être activé qu'après le lot mapping #3330.
+      const physicalCodes = require('../services/hub-physical-codes');
+      const match = await physicalCodes.resolvePhysicalCode(db, {
+        purchaseOrderId, code: req.query.code,
+      });
+      res.set('Cache-Control', 'private, no-store');
+      return res.json(match);
+    } catch (err) { return sendWorkspaceError(err, res, next); }
+  }
+);
+
 // Composition des KOM-BOX depuis Hub Live : mêmes commandes canoniques que /api/hub/* (hub-operations), avec le marché
 // du Workspace imposé côté serveur (allocation et contenu du carton doivent appartenir au marché).
 async function boxMarketGuard(unitId, marketId, allocationId) {
