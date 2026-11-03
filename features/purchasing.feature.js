@@ -266,6 +266,8 @@ module.exports = {
       'supplier_payment_settlements: RW',
       'suppliers: RW',
       'purchase_lines: RW!',
+      'hub_authorization_grants: RW!',
+      'purchase_order_authorizations: RW!',
       'supplier_execution_events: RW!',
       'supplier_execution_fulfillments: RW!',
       'supplier_execution_order_lines: RW!',

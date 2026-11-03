@@ -223,7 +223,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - routes: 28
 - migrations: 2
 - dash: 171
-- tests: 198
+- tests: 199
 - tables owned (lifecycle): 2 — `order_incidents`, `partners`
 - tables written: 20
 - interfaces exposed: 88
@@ -590,8 +590,8 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - migrations: 14
 - scripts: 14
 - tests: 85
-- tables owned (lifecycle): 11 — `purchase_lines`, `purchase_orders`, `product_suppliers`, `supplier_execution_payments`, `supplier_payment_settlements`, `suppliers`, `supplier_execution_events`, `supplier_execution_fulfillments`, `supplier_execution_order_lines`, `supplier_execution_orders`, `supplier_execution_payment_proofs`
-- tables written: 11
+- tables owned (lifecycle): 13 — `purchase_lines`, `purchase_orders`, `product_suppliers`, `supplier_execution_payments`, `supplier_payment_settlements`, `suppliers`, `hub_authorization_grants`, `purchase_order_authorizations`, `supplier_execution_events`, `supplier_execution_fulfillments`, `supplier_execution_order_lines`, `supplier_execution_orders`, `supplier_execution_payment_proofs`
+- tables written: 13
 - interfaces exposed: 20
 - internal APIs: 14
 - dependencies (consumes): 10 — supplier-connectivity, external-provider-contracts, sourcing, catalog, infrastructure, orders, auth, economic-engine, notifications, logistics
@@ -798,6 +798,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `fx_public_reference_quotes` | `market` | declared-table-owner | market | — |
 | `fx_rate_observations` | `market` | declared-table-owner | market | — |
 | `garment_models` | `platform-ops` | single-writer | platform-ops | economic-engine |
+| `hub_authorization_grants` | `purchasing` | declared-table-owner | purchasing | — |
 | `hub_custody_events` | `logistics` | declared-table-owner | logistics | — |
 | `hub_physical_unit_placements` | `logistics` | declared-table-owner | logistics | dashboard |
 | `hub_physical_units` | `logistics` | declared-table-owner | logistics | dashboard |
@@ -881,6 +882,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `provider_credentials` | `sourcing` | declared-table-owner | sourcing | — |
 | `providers` | `providers-services` | single-writer | providers-services | market-delegation |
 | `purchase_lines` | `purchasing` | declared-table-owner | purchasing | dashboard |
+| `purchase_order_authorizations` | `purchasing` | declared-table-owner | purchasing | — |
 | `purchase_orders` | `purchasing` | declared-table-owner | purchasing | dashboard, logistics |
 | `recipients` | `orders` | multi-writer-resolved-by-classification-signal | dashboard, orders | documents, economic-engine, logistics, notifications |
 | `refund_execution_intents` | `refunds` | single-writer | refunds | — |
@@ -2285,7 +2287,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 2220 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 2221 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 214 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 79 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_

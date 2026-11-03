@@ -6543,6 +6543,13 @@
       {
         "feature": "dashboard",
         "category": "tests",
+        "declared": "tests/unit/hub-context-actions-authorizations.test.js",
+        "resolvedPath": "tests/unit/hub-context-actions-authorizations.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
         "declared": "tests/e2e/context-return-links.spec.js",
         "resolvedPath": "tests/e2e/context-return-links.spec.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -47987,7 +47994,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2220
+        "filesObserved": 2221
       },
       "boutique": {
         "filesObserved": 214,
@@ -51389,6 +51396,32 @@
       "readers": [],
       "lifecycleOwner": "purchasing",
       "resolution": "single-writer"
+    },
+    "hub_authorization_grants": {
+      "writers": [
+        {
+          "feature": "purchasing",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "purchasing",
+      "resolution": "declared-table-owner"
+    },
+    "purchase_order_authorizations": {
+      "writers": [
+        {
+          "feature": "purchasing",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "purchasing",
+      "resolution": "declared-table-owner"
     },
     "supplier_execution_events": {
       "writers": [
