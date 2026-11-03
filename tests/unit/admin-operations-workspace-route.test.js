@@ -15,7 +15,6 @@ let mockRelayMarketIds = new Set(['market-cm-id']);
 let mockGrantedCapabilities = new Set();
 
 const EXECUTION_CAPS = [
-  'execution.order.mark_ordered',
   'execution.distribution.run',
   'execution.parcel.ship',
   'execution.inventory.assign',
