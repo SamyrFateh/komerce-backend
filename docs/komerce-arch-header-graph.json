@@ -13,17 +13,17 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 775,
-    "filesWithFullHeaders": 724,
+    "scannedCodeFiles": 776,
+    "filesWithFullHeaders": 725,
     "filesWithLiteHeaders": 51,
-    "filesWithAnyHeaders": 775,
+    "filesWithAnyHeaders": 776,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1957,
-    "edges": 9662,
+    "graphNodes": 1961,
+    "edges": 9670,
     "dbTables": 224,
-    "doctrines": 751,
+    "doctrines": 754,
     "impactAreas": 207,
     "unresolvedCodeEdges": 925,
     "dbWriteViaOverlapWarnings": 12,
@@ -55,7 +55,7 @@
     "wallet": 3,
     "providers-services": 7,
     "customs": 8,
-    "dashboard": 30,
+    "dashboard": 31,
     "loyalty": 3,
     "market-control-plane": 5,
     "settlement": 2,
@@ -112,7 +112,7 @@
     "schema": 1,
     "route": 137,
     "entrypoint": 1,
-    "service": 459,
+    "service": 460,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -123,7 +123,7 @@
   "byCriticality": {
     "critical": 114,
     "medium": 154,
-    "high": 446,
+    "high": 447,
     "low": 60,
     "unknown": 1
   },
@@ -21102,6 +21102,45 @@
       "version": "2026-06"
     },
     {
+      "id": "services/manual-scan-confirmation.js",
+      "file": "services/manual-scan-confirmation.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "manual-scan-confirmation",
+      "domain": "dashboard",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "reason_closed_list",
+        "optional_note"
+      ],
+      "outputs": [
+        "degraded_mode_metadata_for_scan_engine"
+      ],
+      "depends": [],
+      "usedBy": [
+        "services/operations-workspace.js",
+        "services/shipping-customs-workspace.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "single_scan_writer",
+        "degraded_mode_traced",
+        "no_gate_bypass"
+      ],
+      "impactAreas": [
+        "logistics",
+        "relay",
+        "hub"
+      ],
+      "version": "2026-11"
+    },
+    {
       "id": "services/market-business-day.js",
       "file": "services/market-business-day.js",
       "type": "file",
@@ -40906,6 +40945,21 @@
       "id": "doctrine:decision_projection_never_reads_products_stock",
       "type": "doctrine",
       "doctrine": "decision_projection_never_reads_products_stock"
+    },
+    {
+      "id": "doctrine:single_scan_writer",
+      "type": "doctrine",
+      "doctrine": "single_scan_writer"
+    },
+    {
+      "id": "doctrine:degraded_mode_traced",
+      "type": "doctrine",
+      "doctrine": "degraded_mode_traced"
+    },
+    {
+      "id": "doctrine:no_gate_bypass",
+      "type": "doctrine",
+      "doctrine": "no_gate_bypass"
     },
     {
       "id": "doctrine:business_day_belongs_to_market_not_browser_or_server",
@@ -76533,6 +76587,54 @@
       "to": "impact:loyalty",
       "type": "impact",
       "label": "loyalty"
+    },
+    {
+      "from": "services/operations-workspace.js",
+      "to": "services/manual-scan-confirmation.js",
+      "type": "uses",
+      "label": "services/operations-workspace.js"
+    },
+    {
+      "from": "services/shipping-customs-workspace.js",
+      "to": "services/manual-scan-confirmation.js",
+      "type": "uses",
+      "label": "services/shipping-customs-workspace.js"
+    },
+    {
+      "from": "services/manual-scan-confirmation.js",
+      "to": "doctrine:single_scan_writer",
+      "type": "doctrine",
+      "label": "single_scan_writer"
+    },
+    {
+      "from": "services/manual-scan-confirmation.js",
+      "to": "doctrine:degraded_mode_traced",
+      "type": "doctrine",
+      "label": "degraded_mode_traced"
+    },
+    {
+      "from": "services/manual-scan-confirmation.js",
+      "to": "doctrine:no_gate_bypass",
+      "type": "doctrine",
+      "label": "no_gate_bypass"
+    },
+    {
+      "from": "services/manual-scan-confirmation.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
+    },
+    {
+      "from": "services/manual-scan-confirmation.js",
+      "to": "impact:relay",
+      "type": "impact",
+      "label": "relay"
+    },
+    {
+      "from": "services/manual-scan-confirmation.js",
+      "to": "impact:hub",
+      "type": "impact",
+      "label": "hub"
     },
     {
       "from": "services/dashboard-commerce.js",
@@ -123030,6 +123132,43 @@
         "utils/logger.js"
       ]
     },
+    "services/manual-scan-confirmation.js": {
+      "role": "manual-scan-confirmation",
+      "domain": "dashboard",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [],
+      "directUsedBy": [
+        "services/operations-workspace.js",
+        "services/shipping-customs-workspace.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "single_scan_writer",
+        "degraded_mode_traced",
+        "no_gate_bypass"
+      ],
+      "impactAreas": [
+        "logistics",
+        "relay",
+        "hub"
+      ],
+      "mustCheck": [
+        "doctrine:degraded_mode_traced",
+        "doctrine:no_gate_bypass",
+        "doctrine:single_scan_writer",
+        "impact:hub",
+        "impact:logistics",
+        "impact:relay",
+        "services/operations-workspace.js",
+        "services/shipping-customs-workspace.js"
+      ]
+    },
     "services/market-business-day.js": {
       "role": "market-business-day-authority",
       "domain": "admin-dashboard",
@@ -125864,6 +126003,7 @@
         "routes/admin-operations-workspace.js",
         "services/auto-parcel.js",
         "services/inventory-service.js",
+        "services/manual-scan-confirmation.js",
         "services/operations-relay-projection.js",
         "services/order-status-machine.js",
         "services/parcel-auto-create-service.js",
@@ -132479,6 +132619,7 @@
         "impact:market-authorization",
         "routes/admin-shipping-customs-workspace.js",
         "services/customs-shipment-service.js",
+        "services/manual-scan-confirmation.js",
         "services/scan-engine.js"
       ]
     },

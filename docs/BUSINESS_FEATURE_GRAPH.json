@@ -4912,6 +4912,13 @@
       {
         "feature": "dashboard",
         "category": "services",
+        "declared": "services/manual-scan-confirmation.js",
+        "resolvedPath": "services/manual-scan-confirmation.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "dashboard",
+        "category": "services",
         "declared": "services/operations-relay-projection.js",
         "resolvedPath": "services/operations-relay-projection.js",
         "status": "resolved-in-technical-graph"
@@ -7490,6 +7497,13 @@
         "category": "tests",
         "declared": "tests/unit/hub-live-komboxes-ops.test.js",
         "resolvedPath": "tests/unit/hub-live-komboxes-ops.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/manual-scan-confirmation.test.js",
+        "resolvedPath": "tests/unit/manual-scan-confirmation.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -39366,6 +39380,10 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "tests/integration/relay-shipment-receipt-postgres.test.js",
+                "targetFile": "services/operations-workspace.js"
+              },
+              {
                 "sourceFileId": "tests/integration/txg05-parcel-items-product-id.test.js",
                 "targetFile": "routes/hub-dashboard.js"
               }
@@ -48005,7 +48023,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2222
+        "filesObserved": 2224
       },
       "boutique": {
         "filesObserved": 214,
@@ -51826,8 +51844,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 671,
-        "technicalNodesOwned": 671,
+        "technicalNodesTotal": 672,
+        "technicalNodesOwned": 672,
         "technicalOrphans": 0
       },
       "dash": {
@@ -52094,7 +52112,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "logistics -> dashboard",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"logistics\" vers \"dashboard\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"logistics\" vers \"dashboard\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
