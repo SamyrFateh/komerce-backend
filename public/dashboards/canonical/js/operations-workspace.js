@@ -1138,6 +1138,7 @@
           const add=makeActionButton(doc,'Placer le sac','put-bag-in-box');
           const identify=()=>{
             const bag=readyBags.find(b=>b.reference===bagScan.value.trim());
+            const previousParcel=parcel.value;
             parcel.replaceChildren();
             parcel.appendChild(Object.assign(doc.createElement('option'),{
               value:'',textContent:bag?'Choisir le colis client…':'Scanner un sac identifié…',
@@ -1146,7 +1147,8 @@
               .forEach(p=>parcel.appendChild(Object.assign(doc.createElement('option'),{
                 value:p.id,textContent:p.reference+' · '+bag.order_ref,
               })));
-            if(parcel.options.length===2)parcel.selectedIndex=1;
+            if([...parcel.options].some(opt=>opt.value===previousParcel))parcel.value=previousParcel;
+            else if(parcel.options.length===2)parcel.selectedIndex=1;
             add.disabled=!(bag&&boxScan.value.trim()===box.reference&&parcel.value);
             return bag;
           };
