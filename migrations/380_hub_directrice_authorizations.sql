@@ -5,7 +5,7 @@
 -- et une table de décisions append-only (décideur, horodatage, montant, devise, pièce).
 CREATE TABLE IF NOT EXISTS public.hub_authorization_grants (
   id                 uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id            uuid NOT NULL REFERENCES public.users(id),
+  user_id            uuid NOT NULL REFERENCES public.users(id) ON DELETE CASCADE, -- droit rattaché au compte : disparaît avec lui (reset utilisateurs)
   authorization_type text NOT NULL CHECK (authorization_type IN ('purchase_commitment','supplier_payment')),
   granted_by         uuid NOT NULL REFERENCES public.users(id),
   granted_at         timestamptz NOT NULL DEFAULT now(),
