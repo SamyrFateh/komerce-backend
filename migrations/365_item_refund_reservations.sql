@@ -36,3 +36,28 @@ CREATE INDEX IF NOT EXISTS idx_item_refund_reservations_line
 COMMENT ON TABLE public.order_item_refund_reservations IS
   'E7: reservations partielles adossees a une attestation relais et a une intention PSP durable ;'
   ' aucune sortie de fonds ni annulation automatique lors de la reservation.';
+
+-- La quantité réservée attend sa décision PSP : elle ne peut pas être remise
+-- au client entre l'engagement du remboursement et sa confirmation/son échec.
+-- Les remboursements confirmed sont déjà comptés par qty_refunded.
+CREATE OR REPLACE FUNCTION public.guard_item_refund_pending_collection()
+RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE v_reserved integer;
+BEGIN
+  IF NEW.qty_collected IS NOT DISTINCT FROM OLD.qty_collected
+     AND NEW.qty_refunded IS NOT DISTINCT FROM OLD.qty_refunded
+     AND NEW.quantity IS NOT DISTINCT FROM OLD.quantity THEN
+    RETURN NEW;
+  END IF;
+  SELECT COALESCE(SUM(r.quantity),0)::integer INTO v_reserved
+    FROM public.order_item_refund_reservations r
+   WHERE r.order_item_id=NEW.id AND r.status IN ('reserved','processing','unknown');
+  IF NEW.qty_collected + NEW.qty_refunded + v_reserved > NEW.quantity THEN
+    RAISE EXCEPTION 'ITEM_REFUND_PENDING_QTY_NOT_COLLECTABLE' USING ERRCODE='23514';
+  END IF;
+  RETURN NEW;
+END $$;
+DROP TRIGGER IF EXISTS trg_guard_item_refund_pending_collection ON public.order_items;
+CREATE TRIGGER trg_guard_item_refund_pending_collection
+  BEFORE UPDATE OF qty_collected, qty_refunded, quantity ON public.order_items
+  FOR EACH ROW EXECUTE FUNCTION public.guard_item_refund_pending_collection();
