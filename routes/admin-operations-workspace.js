@@ -482,7 +482,7 @@ router.get(
       const result = await bagBox.getBagAtRelay({
         bagReference: req.params.bagRef, shipmentReference: req.params.reference,
         expectedMarketId: req.workspaceMarket.id,
-        relaisId: req.user.role === 'agent_relais' ? req.user.relais_id : null,
+        relaisId: req.relayMarketAuthority ? req.relayMarketAuthority.relais_id : null,
       });
       return res.json(result);
     } catch (err) { return sendWorkspaceError(err, res, next); }
