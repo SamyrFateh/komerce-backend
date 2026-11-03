@@ -136,6 +136,7 @@ module.exports = {
       'migrations/272_market_delegation_transit_execution_capability.sql',
       'migrations/210_market_delegation_structure_event_record_live.sql',
       'migrations/212_market_delegation_execution_ceiling.sql',
+      'migrations/380_retire_mark_ordered_capability.sql',
     ],
     config: [
       'config/market-delegation-capabilities.js',
