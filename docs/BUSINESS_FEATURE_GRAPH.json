@@ -22458,14 +22458,6 @@
       },
       {
         "feature": "dashboard",
-        "entry": "POST /api/admin/workspaces/operations/market/:marketCode/parcels/:reference/receive",
-        "method": "POST",
-        "path": "/api/admin/workspaces/operations/market/{id}/parcels/{id}/receive",
-        "routeFile": "routes/admin-operations-workspace.js",
-        "status": "resolved-owned"
-      },
-      {
-        "feature": "dashboard",
         "entry": "POST /api/admin/workspaces/operations/market/:marketCode/parcels/:reference/ship",
         "method": "POST",
         "path": "/api/admin/workspaces/operations/market/{id}/parcels/{id}/ship",

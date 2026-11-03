@@ -226,7 +226,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - tests: 198
 - tables owned (lifecycle): 2 — `order_incidents`, `partners`
 - tables written: 20
-- interfaces exposed: 89
+- interfaces exposed: 88
 - internal APIs: 0
 - dependencies (consumes): 26 — shared-cart, incident-management, orders, infrastructure, payments, logistics, inventory, local-stock, economic-engine, wallet, auth, auth-identity, market-delegation, customs, documents, notifications, purchasing, supplier-connectivity, external-provider-contracts, business-rules, decision-signals, market, market-delegation, sourcing, catalog, market-autonomy
 - consumers: 9 — economic-engine, infrastructure, market-control-plane, market-delegation, market-operator-dashboard, orders, sourcing, admin-dashboard, decision-signals
@@ -1134,7 +1134,6 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `POST /api/admin/workspaces/operations/market/{id}/inventory/items/{id}/assign` | dashboard | `routes/admin-operations-workspace.js` (resolved-owned) |
 | `POST /api/admin/workspaces/operations/market/{id}/orders/{id}/confirm-cash` | dashboard | `routes/admin-operations-workspace.js` (resolved-owned) |
 | `POST /api/admin/workspaces/operations/market/{id}/parcels/{id}/collect` | dashboard | `routes/admin-operations-workspace.js` (resolved-owned) |
-| `POST /api/admin/workspaces/operations/market/{id}/parcels/{id}/receive` | dashboard | `routes/admin-operations-workspace.js` (resolved-owned) |
 | `POST /api/admin/workspaces/operations/market/{id}/parcels/{id}/ship` | dashboard | `routes/admin-operations-workspace.js` (resolved-owned) |
 | `GET /api/admin/workspaces/shipping-customs/market/{id}` | dashboard | `routes/admin-shipping-customs-workspace.js` (resolved-owned) |
 | `POST /api/admin/workspaces/shipping-customs/market/{id}/customs/shipments` | dashboard | `routes/admin-shipping-customs-workspace.js` (resolved-owned) |
