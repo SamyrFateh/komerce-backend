@@ -2,8 +2,8 @@
   "generatedAt": "2026-11-03T17:09:39.129Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 797,
-    "protected": 742,
+    "total": 805,
+    "protected": 750,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -2198,6 +2198,14 @@
       ]
     },
     {
+      "key": "POST /api/admin/workspaces/operations/market/{marketCode}/boxes/{unitId}/bags",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
       "key": "POST /api/admin/workspaces/operations/market/{marketCode}/boxes/{unitId}/detach",
       "level": "PROTECTED",
       "roles": [
@@ -2223,6 +2231,30 @@
     },
     {
       "key": "POST /api/admin/workspaces/operations/market/{marketCode}/boxes/shipment",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/operations/market/{marketCode}/bags",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/operations/market/{marketCode}/bags/{unitId}/close",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/operations/market/{marketCode}/bags/{unitId}/deposit",
       "level": "PROTECTED",
       "roles": [
         "admin",
@@ -2290,9 +2322,25 @@
       "roles": []
     },
     {
+      "key": "GET /api/admin/workspaces/operations/market/{marketCode}/supply/physical-code",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
       "key": "GET /api/admin/workspaces/operations/market/{marketCode}/supply/trace",
       "level": "PROTECTED",
       "roles": []
+    },
+    {
+      "key": "GET /api/admin/workspaces/operations/market/{marketCode}/relay-shipments/{reference}/bags/{bagRef}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_relais"
+      ]
     },
     {
       "key": "GET /api/admin/workspaces/operations/market/{marketCode}/supply",
@@ -3817,6 +3865,14 @@
       ]
     },
     {
+      "key": "POST /api/hub/physical-codes/confirm",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
       "key": "POST /api/hub/revalidate",
       "level": "PROTECTED",
       "roles": [
@@ -3834,6 +3890,14 @@
     },
     {
       "key": "POST /api/hub/seal",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "GET /api/hub/physical-codes/resolve",
       "level": "PROTECTED",
       "roles": [
         "admin",

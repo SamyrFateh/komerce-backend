@@ -11,13 +11,15 @@ const route = fs.readFileSync(path.join(__dirname, '../../routes/admin-operation
 
 test('Hub Live compose les KOM-BOX uniquement via les routes Workspace marché', () => {
   expect(ui).toContain("endpointFor(context.marketCode, 'boxes')");
-  expect(ui).toContain('/fill`');
+  expect(ui).toContain("box.unit_id)+\'/bags\'");
+  expect(ui).toContain("'put-bag-in-box'");
+  expect(ui).not.toContain("'fill-box'");
   expect(ui).toContain('/advance`');
   expect(ui).not.toContain('/api/hub/');
 });
 
 test('les routes de composition sont gardées par la capacité parcel.ship et le marché serveur', () => {
-  for (const suffix of ['/market/:marketCode/boxes\'', '/boxes/:unitId/fill\'', '/boxes/:unitId/advance\'']) {
+  for (const suffix of ['/market/:marketCode/boxes\'', '/boxes/:unitId/bags\'', '/boxes/:unitId/advance\'']) {
     const i = route.indexOf(suffix);
     expect(i).toBeGreaterThan(-1);
     const block = route.slice(i, i + 220);
