@@ -834,3 +834,14 @@ La projection N1 prévisionnelle du pricing reste intacte ; l'ajustement prévis
 ### Migration 366 — intention de schéma : réception locale sans expédition fictive
 
 Mode : `intended_migration_schema` (pas encore vérifié dans le dump live). La migration 366 remplace **la fonction existante** `public.check_parcel_item_quantities()` (déclencheur `trg_check_parcel_item_qty`, migration 022) sans créer de table ou de colonne. Elle conserve les contraintes quantités de l'import. Exception stricte : `parcel_items.qty_received > qty_shipped` est autorisée seulement si la ligne `order_items.fulfillment_source='LOCAL_STOCK'` et si un scan `relais_received` de ce même colis/commande, avec acteur identifié, existe dans la transaction. Les colis locaux restent à `qty_shipped=0` ; aucun passage fictif par Hub/transitaire/douane. Rollback : remettre la définition exacte de `check_parcel_item_quantities()` de la migration 022 après arrêt du flux local.
+
+
+### Migration 392 — sac client mono-commande (intended_migration_schema)
+
+`hub_physical_units.order_id` (UUID nullable, FK orders) ne s'applique qu'aux `HANDLING_UNIT` utilisés comme sacs clients. L'identifiant de commande est immuable après affectation ; le trigger de placement refuse une quantité réservée à une autre commande. Ce contrôle opère dans PostgreSQL, même si l'appelant contourne l'interface.
+
+### Migration 393 — preuve de dépôt et plan figé du sac (intended_migration_schema)
+
+`hub_physical_units.bag_plan` (JSONB nullable) décrit les couples `order_item_id` / `quantity` destinés à cette préparation, y compris partielle. Le plan est immuable après création.
+
+`hub_physical_unit_placements` ajoute `evidence_method` (SCAN, MANUAL, COUNT_ON_MANIFEST), `evidence_code`, `evidence_ref` : toute insertion de quantité dans un sac client exige un code confirmé et conforme au SKU/fournisseur ou une preuve manuelle référencée. La preuve est immuable. Avant PACKED, PostgreSQL vérifie que le contenu actif correspond exactement au plan du sac. Les KOM-BOX restent soumises à leurs invariants existants ; le transport du sac fermé et son lien au relais constituent un jalon distinct à certifier.

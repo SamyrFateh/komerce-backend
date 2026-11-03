@@ -360,12 +360,14 @@ async function createPhysicalUnit(executor, {
   locationRef = null,
   initialState = 'RECEIVED',
   orderId = null,
+  bagPlan = null,
   details = {},
 }) {
   const db = requireExecutor(executor);
   if (!reference || !String(reference).trim()) fail('HUB_PHYSICAL_REFERENCE_REQUIRED');
   if (!UNIT_TYPES.has(unitType)) fail('HUB_PHYSICAL_UNIT_TYPE_INVALID');
   if (orderId && unitType !== 'HANDLING_UNIT') fail('HUB_ORDER_BAG_REQUIRES_HANDLING_UNIT');
+  if (bagPlan && !orderId) fail('HUB_ORDER_BAG_PLAN_REQUIRES_ORDER');
   if (!UNIT_STATES.has(initialState)) fail('HUB_PHYSICAL_STATE_INVALID');
   if (!['RECEIVED', 'QUARANTINED'].includes(initialState)) {
     fail('HUB_PHYSICAL_INITIAL_STATE_INVALID', 'Une unité physique doit naître RECEIVED ou QUARANTINED');
@@ -373,10 +375,10 @@ async function createPhysicalUnit(executor, {
 
   const { rows: [unit] } = await db.query(
     `INSERT INTO hub_physical_units (
-       reference, unit_type, state, external_ref, current_location_ref, created_by, order_id
-     ) VALUES ($1,$2,$3,$4,$5,$6,$7)
+       reference, unit_type, state, external_ref, current_location_ref, created_by, order_id, bag_plan
+     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8::jsonb)
      RETURNING *`,
-    [String(reference).trim(), unitType, initialState, externalRef, locationRef, actorId, orderId]
+    [String(reference).trim(), unitType, initialState, externalRef, locationRef, actorId, orderId, bagPlan ? JSON.stringify(bagPlan) : null]
   );
 
   await insertCustodyEvent(db, {
@@ -984,6 +986,9 @@ async function moveAllocationQuantity(executor, {
   allocationId,
   quantity,
   operationType,
+  evidenceMethod = null,
+  evidenceCode = null,
+  evidenceRef = null,
   actorId = null,
   locationRef = null,
 }) {
@@ -1007,6 +1012,31 @@ async function moveAllocationQuantity(executor, {
     [allocationId]
   );
   if (!allocation) fail('HUB_PURCHASE_ALLOCATION_NOT_FOUND');
+
+  let verifiedCode = null;
+  if (target.unit_type === 'HANDLING_UNIT' && target.order_id) {
+    if (String(target.order_id) !== String(allocation.order_id)) fail('HUB_ORDER_BAG_ALLOCATION_MISMATCH');
+    if (evidenceMethod === 'SCAN') {
+      const physicalCodes = require('./hub-physical-codes');
+      let observation;
+      try {
+        observation = await physicalCodes.resolvePhysicalCode(db, {
+          purchaseOrderId: allocation.purchase_order_id,
+          code: evidenceCode,
+        });
+      } catch (error) {
+        fail('HUB_ORDER_BAG_SCAN_INVALID', error.code || 'Code physique inconnu');
+      }
+      if (!observation.confirmed || String(observation.product_sku_id) !== String(allocation.product_sku_id)) {
+        fail('HUB_ORDER_BAG_SCAN_SKU_MISMATCH');
+      }
+      verifiedCode = observation.code;
+    } else if (evidenceMethod === 'MANUAL' && typeof evidenceRef === 'string' && evidenceRef.trim().length >= 6) {
+      if (evidenceCode) fail('HUB_ORDER_BAG_MANUAL_CODE_FORBIDDEN');
+    } else {
+      fail('HUB_ORDER_BAG_DEPOSIT_EVIDENCE_REQUIRED');
+    }
+  }
 
   const { rows: placements } = await db.query(
     `SELECT * FROM hub_physical_unit_placements
@@ -1033,9 +1063,11 @@ async function moveAllocationQuantity(executor, {
     if (take < rowQty) {
       await db.query(
         `INSERT INTO hub_physical_unit_placements (
-           physical_unit_id, allocation_id, quantity, operation_id, operation_type, created_by
-         ) VALUES ($1,$2,$3,$4,$5,$6)`,
-        [fromUnitId, allocationId, rowQty - take, operationId, operationType, actorId]
+           physical_unit_id, allocation_id, quantity, operation_id, operation_type, created_by,
+           evidence_method, evidence_code, evidence_ref
+         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+        [fromUnitId, allocationId, rowQty - take, operationId, operationType, actorId,
+         placement.evidence_method || null, placement.evidence_code || null, placement.evidence_ref || null]
       );
     }
     remaining -= take;
@@ -1043,9 +1075,12 @@ async function moveAllocationQuantity(executor, {
 
   await db.query(
     `INSERT INTO hub_physical_unit_placements (
-       physical_unit_id, allocation_id, quantity, operation_id, operation_type, created_by
-     ) VALUES ($1,$2,$3,$4,$5,$6)`,
-    [toUnitId, allocationId, moveQty, operationId, operationType, actorId]
+       physical_unit_id, allocation_id, quantity, operation_id, operation_type, created_by,
+       evidence_method, evidence_code, evidence_ref
+     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+    [toUnitId, allocationId, moveQty, operationId, operationType, actorId,
+     verifiedCode ? 'SCAN' : evidenceMethod === 'MANUAL' ? 'MANUAL' : null,
+     verifiedCode, evidenceMethod === 'MANUAL' ? evidenceRef.trim() : null]
   );
 
   await insertCustodyEvent(db, {
