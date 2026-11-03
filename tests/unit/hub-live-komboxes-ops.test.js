@@ -11,7 +11,7 @@ const route = fs.readFileSync(path.join(__dirname, '../../routes/admin-operation
 
 test('Hub Live compose les KOM-BOX uniquement via les routes Workspace marché', () => {
   expect(ui).toContain("endpointFor(context.marketCode, 'boxes')");
-  expect(ui).toContain("'/bags');");
+  expect(ui).toContain("box.unit_id)+\'/bags\'");
   expect(ui).toContain("'put-bag-in-box'");
   expect(ui).not.toContain("'fill-box'");
   expect(ui).toContain('/advance`');
