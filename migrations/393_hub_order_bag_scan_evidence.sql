@@ -170,3 +170,23 @@ DROP TRIGGER IF EXISTS trg_hub_order_bag_pack_guard ON public.hub_physical_units
 CREATE TRIGGER trg_hub_order_bag_pack_guard
   BEFORE UPDATE OF state ON public.hub_physical_units
   FOR EACH ROW EXECUTE FUNCTION public.hub_order_bag_pack_guard();
+
+
+-- Proof fields are immutable even after an erroneous or malicious direct UPDATE.
+-- The existing placement guard only permits removed_at changes but predates these columns.
+CREATE OR REPLACE FUNCTION public.hub_order_bag_placement_evidence_immutable()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.evidence_method IS DISTINCT FROM OLD.evidence_method
+    OR NEW.evidence_code IS DISTINCT FROM OLD.evidence_code
+    OR NEW.evidence_ref IS DISTINCT FROM OLD.evidence_ref THEN
+    RAISE EXCEPTION 'HUB_ORDER_BAG_EVIDENCE_IMMUTABLE' USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END $$;
+
+DROP TRIGGER IF EXISTS trg_hub_order_bag_placement_evidence_immutable
+  ON public.hub_physical_unit_placements;
+CREATE TRIGGER trg_hub_order_bag_placement_evidence_immutable
+  BEFORE UPDATE ON public.hub_physical_unit_placements
+  FOR EACH ROW EXECUTE FUNCTION public.hub_order_bag_placement_evidence_immutable();
