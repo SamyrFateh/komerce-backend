@@ -696,6 +696,7 @@ module.exports = {
       'tests/e2e/purchasing-workspace.spec.js',
       'tests/unit/canonical-purchasing-workspace-boundary.test.js',
       'tests/unit/canonical-hub-workstation.test.js',
+      'tests/unit/hub-context-actions-authorizations.test.js',
       'tests/e2e/context-return-links.spec.js',
       'tests/e2e/import-runtime-cockpit.spec.js',
       'tests/e2e/import-runtime-source-registry.spec.js',
