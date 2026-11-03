@@ -45,6 +45,33 @@ BEGIN
     RAISE EXCEPTION 'HUB_BOX_BAG_PARCEL_ORDER_MISMATCH' USING ERRCODE='23514';
   END IF;
 
+  -- Un colis canonique ne peut contenir plus d'unités que prévu, même
+  -- lorsque plusieurs sacs distincts sont rattachés au même colis.
+  IF EXISTS (
+    WITH all_bag_items AS (
+      SELECT a.order_item_id, pl.quantity
+        FROM public.hub_physical_unit_placements pl
+        JOIN public.hub_purchase_allocations a ON a.id=pl.allocation_id
+       WHERE pl.physical_unit_id=NEW.bag_unit_id AND pl.removed_at IS NULL
+      UNION ALL
+      SELECT a.order_item_id, pl.quantity
+        FROM public.hub_box_bags link
+        JOIN public.hub_physical_unit_placements pl
+          ON pl.physical_unit_id=link.bag_unit_id AND pl.removed_at IS NULL
+        JOIN public.hub_purchase_allocations a ON a.id=pl.allocation_id
+       WHERE link.parcel_id=NEW.parcel_id
+    )
+    SELECT 1
+      FROM all_bag_items i
+     GROUP BY i.order_item_id
+    HAVING SUM(i.quantity) > COALESCE((
+      SELECT SUM(pi.quantity) FROM public.parcel_items pi
+       WHERE pi.parcel_id=NEW.parcel_id AND pi.order_item_id=i.order_item_id
+    ), 0)
+  ) THEN
+    RAISE EXCEPTION 'HUB_BOX_BAG_PARCEL_QTY_EXCEEDED' USING ERRCODE='23514';
+  END IF;
+
   IF EXISTS (
     SELECT 1
       FROM public.hub_physical_unit_placements p
@@ -296,3 +323,43 @@ BEGIN
   END LOOP;
   RETURN NULL;
 END $$;
+
+
+-- L'exemplaire du sac scellé reste physiquement le même durant le transport.
+-- Personne ne peut contourner ce gel par SQL direct après PACKED.
+CREATE OR REPLACE FUNCTION public.hub_order_bag_sealed_placements_guard()
+RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE v_state text;
+DECLARE v_order uuid;
+BEGIN
+  SELECT u.state, u.order_id INTO v_state, v_order
+    FROM public.hub_physical_units u
+   WHERE u.id = NEW.physical_unit_id;
+  IF v_order IS NOT NULL AND v_state IN ('PACKED','DISPATCHED') THEN
+    RAISE EXCEPTION 'HUB_ORDER_BAG_SEALED_CONTENT_IMMUTABLE' USING ERRCODE='23514';
+  END IF;
+  RETURN NEW;
+END $$;
+CREATE TRIGGER trg_hub_order_bag_sealed_placements_guard
+  BEFORE INSERT OR UPDATE OF removed_at, allocation_id, physical_unit_id, quantity
+  ON public.hub_physical_unit_placements
+  FOR EACH ROW EXECUTE FUNCTION public.hub_order_bag_sealed_placements_guard();
+
+-- Blocage du départ si l'un des sacs liés est devenu non conforme.
+CREATE OR REPLACE FUNCTION public.hub_box_sealed_bag_departure_guard()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.unit_type='MARKET_PARCEL' AND NEW.state IN ('PACKED','DISPATCHED')
+     AND EXISTS (
+       SELECT 1 FROM public.hub_box_bags l
+       JOIN public.hub_physical_units bag ON bag.id=l.bag_unit_id
+       WHERE l.box_unit_id=NEW.id
+         AND (bag.state <> 'PACKED' OR bag.outcome_type IS NOT NULL)
+     ) THEN
+    RAISE EXCEPTION 'HUB_BOX_BAG_NOT_AVAILABLE_FOR_DEPARTURE' USING ERRCODE='23514';
+  END IF;
+  RETURN NEW;
+END $$;
+CREATE TRIGGER trg_hub_box_sealed_bag_departure_guard
+  BEFORE UPDATE OF state ON public.hub_physical_units
+  FOR EACH ROW EXECUTE FUNCTION public.hub_box_sealed_bag_departure_guard();
