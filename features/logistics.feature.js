@@ -278,6 +278,7 @@ module.exports = {
       'pickup_reveal_codes: RW!',
       'pickup_verify_attempts: RW',
       'product_suppliers: R',
+      'product_sku_physical_codes: RW!',
       'product_variants: R',
       'products: RW',
       'purchase_orders: R',
