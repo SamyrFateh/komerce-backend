@@ -1013,6 +1013,113 @@
     [newRef, newBox].forEach(node => createBar.appendChild(node));
     boxes.appendChild(createBar);
 
+    // Préparation : un sac appartient à UNE commande et son contenu est figé
+    // à l'ouverture. Un seul scan physique par référence déposée.
+    const availableByOrder = new Map();
+    fillable.forEach(line => {
+      const key = String(line.order_id);
+      if (!availableByOrder.has(key)) availableByOrder.set(key, {
+        order_id: line.order_id, order_ref: line.order_ref, lines: [],
+      });
+      availableByOrder.get(key).lines.push(line);
+    });
+    const openBags = Array.isArray(d.bags_open) ? d.bags_open : [];
+    const readyBags = Array.isArray(d.bags_ready) ? d.bags_ready : [];
+    const activeOrders = new Set(openBags.map(bag => String(bag.order_id)));
+    const prep = doc.createElement('section');
+    prep.className = 'kmc-hub-bag-prep';
+    prep.setAttribute('data-hub-bag-preparation', '');
+    prep.appendChild(text(doc, 'h4', '', 'Préparer les sacs clients'));
+    prep.appendChild(text(doc, 'p', 'kmc-workspace-muted',
+      'Une commande par sac. Scanner la référence au dépôt, confirmer la quantité, puis fermer. Aucun second scan à la fermeture.'));
+    const orderChoices = [...availableByOrder.values()].filter(order => !activeOrders.has(String(order.order_id)));
+    if (orderChoices.length) {
+      const createRow = doc.createElement('div');
+      createRow.className = 'kmc-hub-bag-controls';
+      const orderSelect = doc.createElement('select');
+      orderSelect.setAttribute('aria-label', 'Commande dont préparer le sac');
+      orderChoices.forEach((order,i) => orderSelect.appendChild(Object.assign(doc.createElement('option'), {
+        value: String(i), textContent: order.order_ref + ' · ' +
+          order.lines.reduce((sum,line) => sum + Number(line.quantity), 0) + ' unité(s) disponible(s)',
+      })));
+      const createBag = makeActionButton(doc, 'Créer le sac client', 'create-customer-bag');
+      createBag.addEventListener('click', () => {
+        const order = orderChoices[Number(orderSelect.value)];
+        if (!order) return;
+        const plans = new Map();
+        order.lines.forEach(line => {
+          const key = String(line.order_item_id);
+          plans.set(key,(plans.get(key) || 0) + Number(line.quantity));
+        });
+        const bagPlan = [...plans].map(([order_item_id, quantity]) => ({order_item_id,quantity}));
+        runAction(context, createBag, {
+          url: endpointFor(context.marketCode, 'bags'),
+          body: {order_id:order.order_id,bag_plan:bagPlan},
+          runningMessage: 'Ouverture du sac client…',
+          successMessage: result => 'Sac ' + (result.physical_unit?.reference || '') + ' créé pour ' + order.order_ref,
+        }).catch(() => {});
+      });
+      createRow.appendChild(orderSelect); createRow.appendChild(createBag); prep.appendChild(createRow);
+    } else if (!openBags.length) {
+      prep.appendChild(text(doc, 'p', 'kmc-workspace-muted','Aucune quantité réceptionnée à préparer.'));
+    }
+    openBags.forEach(bag => {
+      const holder = doc.createElement('div');
+      holder.className = 'kmc-hub-bag-open';
+      holder.appendChild(text(doc, 'strong', '', bag.reference + ' · ' + bag.order_ref));
+      const actual = new Map((bag.actual_contents || []).map(item => [String(item.order_item_id), Number(item.quantity)]));
+      const planned = new Map((bag.bag_plan || []).map(item => [String(item.order_item_id), Number(item.quantity)]));
+      const totalPlanned = [...planned.values()].reduce((a,b) => a+b,0);
+      const totalActual = [...actual.values()].reduce((a,b) => a+b,0);
+      holder.appendChild(text(doc, 'span', 'kmc-workspace-muted',
+        totalActual + ' / ' + totalPlanned + ' unité(s) physiquement déposée(s)'));
+      const options = fillable.filter(line => String(line.order_id)===String(bag.order_id)
+        && (planned.get(String(line.order_item_id)) || 0) > (actual.get(String(line.order_item_id)) || 0));
+      if (options.length) {
+        const row = doc.createElement('div'); row.className='kmc-hub-bag-controls';
+        const source=doc.createElement('select');
+        source.setAttribute('aria-label','Référence disponible pour ' + bag.reference);
+        options.forEach((line,i)=>source.appendChild(Object.assign(doc.createElement('option'),{
+          value:String(i),
+          textContent:(line.product||'Article')+' · '+line.quantity+' disponible(s) ('+line.from_unit_ref+')',
+        })));
+        const barcode=field('Scanner EAN / référence physique','Code physique observé lors du dépôt dans '+bag.reference);
+        barcode.setAttribute('data-hub-bag-code','');
+        const qty=doc.createElement('input');qty.type='number';qty.min='1';qty.step='1';qty.value='1';
+        qty.setAttribute('aria-label','Quantité déposée dans '+bag.reference);
+        const put=makeActionButton(doc,'Déposer dans le sac','scan-bag-deposit');
+        const deposit=()=>{
+          const line=options[Number(source.value)];
+          if (!line || !barcode.value.trim()) return;
+          const left=(planned.get(String(line.order_item_id))||0)-(actual.get(String(line.order_item_id))||0);
+          const quantity=Number(qty.value);
+          if (!Number.isInteger(quantity)||quantity<1||quantity>Math.min(left,Number(line.quantity))) return;
+          runAction(context,put,{
+            url:endpointFor(context.marketCode, 'bags/'+encodeURIComponent(bag.unit_id)+'/deposit'),
+            body:{from_unit_id:line.from_unit_id,allocation_id:line.allocation_id,
+              quantity,evidence_method:'SCAN',evidence_code:barcode.value.trim()},
+            runningMessage:'Contrôle du scan et dépôt…',
+            successMessage:'Dépôt confirmé dans '+bag.reference,
+          }).catch(()=>{});
+        };
+        barcode.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();deposit();}});
+        put.addEventListener('click',deposit);
+        [source,barcode,qty,put].forEach(node=>row.appendChild(node));
+        holder.appendChild(row);
+      }
+      if (totalPlanned>0 && totalActual===totalPlanned && [...planned].every(([id,q])=>actual.get(id)===q)) {
+        const close=makeActionButton(doc,'Fermer le sac','close-customer-bag');
+        close.addEventListener('click',()=>runAction(context,close,{
+          url:endpointFor(context.marketCode,'bags/'+encodeURIComponent(bag.unit_id)+'/close'),
+          body:{},runningMessage:'Contrôle du contenu avant fermeture…',
+          successMessage:bag.reference+' fermé et prêt pour KOM-BOX.',
+        }).catch(()=>{}));
+        holder.appendChild(close);
+      }
+      prep.appendChild(holder);
+    });
+    boxes.appendChild(prep);
+
     const composeCell = box => {
       const cell = doc.createElement('div');
       cell.className = 'kmc-workspace-box-compose';
