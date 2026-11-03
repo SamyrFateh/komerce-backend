@@ -47,7 +47,7 @@ describe('Marché — composition sans doublon', () => {
     expect(shell).toContain("flag.className = 'kmc-admin-market-flag'");
     expect(shell).toContain("select.className = 'kmc-admin-market-select'");
     expect(css).toContain('kmc-autonomy-hero-controls');
-    expect(html).toContain('market-autonomy-business-ui.css?v=261102-4');
+    expect(html).toContain('market-autonomy-business-ui.css?v=261103-1');
     expect(html).toContain('market-autonomy.js?v=261102-4');
     expect(html).toContain('markets-decision-bootstrap.js?v=261102-4');
   });
