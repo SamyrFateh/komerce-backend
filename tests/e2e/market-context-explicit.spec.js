@@ -123,6 +123,29 @@ test.describe('L1 — surfaces à shell marché (5)', () => {
   }
 });
 
+test('Autonomie marché : seul le sélecteur avec drapeau de la topbar reste visible après chargement', async ({ page }) => {
+  await mount(page, GLOBAL_CTX);
+  await page.route(`${ORIGIN}/api/admin/workspaces/pricing/market/KM**`, route => {
+    const url = new URL(route.request().url());
+    const payload = url.pathname.endsWith('/commercial-prices')
+      ? { market: { currency: 'KMF' }, products: [] }
+      : {
+          scope: { market_code: 'KM', market_name: 'Comores', market_currency: 'KMF' },
+          access: { role: 'global_admin', read_only: false },
+          capabilities: { local_price_drafts: true, local_price_buyer_activation: true },
+        };
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(payload) });
+  });
+  await go(page, '/dashboards/canonical/market-autonomy.html', 'market=KM');
+  await expect(page.locator('.kmc-admin-topbar .kmc-admin-market-select')).toBeVisible();
+  await expect(page.locator('.kmc-admin-topbar .kmc-admin-market-select')).toHaveValue('KM');
+  await expect(page.locator('.kmc-admin-topbar .kmc-admin-market-flag')).toBeVisible();
+  await expect(page.locator('#markets-decision-country-overview [data-dashboard-role="hero"]')).toBeVisible();
+  await expect(page.locator('#market-autonomy-root .kmc-workspace-header')).toHaveCount(0);
+  await expect(page.locator('#market-autonomy-root .kmc-autonomy-selector')).toHaveCount(0);
+  await expect(page.locator('#market-autonomy-root .kmc-autonomy-hero-controls .kmc-workspace-nav')).toBeVisible();
+});
+
 test.describe('L1 — pages autonomes (Autonomie marché, Catalogue pays)', () => {
   for (const [label, target] of STANDALONE_SURFACES) {
     test(`${label} : Global -> invite + sélecteur du shell vide, aucun appel marché`, async ({ page }) => {

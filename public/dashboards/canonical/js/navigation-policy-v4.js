@@ -60,11 +60,9 @@
       label: 'Opérations',
       spaces: Object.freeze([
         Object.freeze({ id: 'operations-overview', label: 'Vue d’ensemble', href: '/admin/operations', roles: Object.freeze(['admin', 'market_operator']) }),
-        Object.freeze({ id: 'hub-execution', label: 'Hub · Exécution', href: '/admin/hub-live?view=execute', roles: Object.freeze(['market_operator']) }),
         Object.freeze({ id: 'relais-execution', label: 'Relais · Cash & dépôts', href: '/admin/relais-live?view=execute', roles: Object.freeze(['market_operator']) }),
         Object.freeze({ id: 'shipping-customs-workspace', label: 'Expéditions & Douane', href: '/admin/workspaces/shipping-customs', roles: Object.freeze(['admin', 'agent_hub', 'agent_transitaire', 'market_operator']) }),
         Object.freeze({ id: 'purchasing-workspace', label: 'Achats fournisseurs', href: '/admin/workspaces/purchasing', roles: Object.freeze(['admin']) }),
-        Object.freeze({ id: 'hub-workstation', label: 'Hub · Poste de travail', href: '/admin/hub', roles: Object.freeze(['admin', 'agent_hub']) }),
       ]),
     }),
     Object.freeze({
@@ -75,7 +73,7 @@
       // restent dans Opérations.
       spaces: Object.freeze([
         Object.freeze({ id: 'import-runtime', label: 'Sourcing live', href: '/admin/import-runtime', roles: Object.freeze(['admin', 'sourcing']) }),
-        Object.freeze({ id: 'hub-live', label: 'Hub live', href: '/admin/hub-live?view=execute', roles: Object.freeze(['admin', 'agent_hub']) }),
+        Object.freeze({ id: 'hub-live', label: 'Hub · Tous les marchés', href: '/admin/hub', roles: Object.freeze(['admin', 'market_operator', 'finance', 'sourcing', 'agent_hub', 'agent_relais', 'agent_transitaire', 'support']) }),
         Object.freeze({ id: 'relais-live', label: 'Relais live', href: '/admin/relais-live', roles: Object.freeze(['admin', 'agent_relais']) }),
       ]),
     }),
@@ -95,7 +93,7 @@
     market_operator: '/admin/pilotage',
     finance: '/admin/workspaces/accounting',
     sourcing: '/admin/import-runtime',
-    agent_hub: '/admin/hub-live?view=execute',
+    agent_hub: '/admin/hub',
     agent_relais: '/admin/relais-live',
     agent_transitaire: '/admin/workspaces/shipping-customs',
     support: '/portail',
@@ -120,7 +118,7 @@
     'operations-workspace': 'operations',
     'shipping-customs-workspace': 'operations',
     'purchasing-workspace': 'operations',
-    'hub-workstation': 'operations',
+    'hub-workstation': 'live',
     'sourcing-workspace': 'live',
     'import-runtime': 'live',
     'hub-live': 'live',
@@ -153,7 +151,7 @@
     'operations-workspace': 'operations-workspace',
     'shipping-customs-workspace': 'shipping-customs-workspace',
     'purchasing-workspace': 'purchasing-workspace',
-    'hub-workstation': 'hub-workstation',
+    'hub-workstation': 'hub-live',
     'import-runtime': 'import-runtime',
     'sourcing-workspace': 'import-runtime',
     'hub-live': 'hub-live',
@@ -898,7 +896,6 @@
       label: 'Opérations',
       items: Object.freeze([
         Object.freeze({ id: 'flow-operations', label: 'Vue opérations', href: '/admin/operations', roles: ['admin', 'market_operator'], capability: 'operations.read', surfaces: ['operations'] }),
-        Object.freeze({ id: 'workspace-hub-exec', label: 'Hub · Exécution', href: '/admin/hub-live?view=execute', roles: ['market_operator'], capability: 'operations.read', surfaces: [] }),
         Object.freeze({ id: 'workspace-relais-exec', label: 'Relais · Cash & dépôts', href: '/admin/relais-live?view=execute', roles: ['market_operator'], capability: 'operations.read', surfaces: [] }),
         Object.freeze({ id: 'workspace-shipping', label: 'Expéditions & Douane', href: '/admin/workspaces/shipping-customs', roles: ['admin', 'agent_hub', 'agent_transitaire', 'market_operator'], capability: 'operations.read', surfaces: ['shipping-customs-workspace'] }),
 
@@ -920,7 +917,7 @@
       items: Object.freeze([
         // Une seule entrée Sourcing : le cockpit LIVE est la porte principale ; les vues détaillées restent accessibles par leurs liens contextuels.
         Object.freeze({ id: 'live-import-runtime', label: 'Sourcing', href: '/admin/import-runtime', roles: ['admin', 'sourcing'], surfaces: ['import-runtime', 'sourcing-workspace', 'supplier-360'] }),
-        Object.freeze({ id: 'live-hub', label: 'Hub live', href: '/admin/hub-live?view=execute', roles: ['admin', 'agent_hub'], surfaces: ['hub-live'] }),
+        Object.freeze({ id: 'live-hub', label: 'Hub · Tous les marchés', href: '/admin/hub', roles: ['admin', 'market_operator', 'finance', 'sourcing', 'agent_hub', 'agent_relais', 'agent_transitaire', 'support'], surfaces: ['hub-workstation', 'hub-live'] }),
         Object.freeze({ id: 'live-relais', label: 'Relais live', href: '/admin/relais-live', roles: ['admin', 'agent_relais'], surfaces: ['relais-live'] }),
       ]),
     }),
@@ -1129,6 +1126,12 @@
     if (domainId === 'live' && ['/admin/import-runtime', '/admin/workspaces/sourcing']
         .includes(String(global.location?.pathname || ''))) {
       return [{ id:'sourcing-live', label:'Sourcing Live', href:'/admin/import-runtime' }];
+    }
+    // Le Hub central possède ses propres deux postes Administration/Opérations.
+    // Masquer uniquement sur /admin/hub les onglets N2 Sourcing et Relais ;
+    // ils restent disponibles depuis leurs espaces respectifs.
+    if (domainId === 'live' && String(global.location?.pathname || '') === '/admin/hub') {
+      return [{ id:'hub-live', label:'Hub · Tous les marchés', href:'/admin/hub' }];
     }
     // Sourcing Live et Hub Live : une porte de travail métier, pas trois
     // sous-menus concurrents. Les vues legacy directes restent lisibles via
@@ -1377,7 +1380,10 @@
     const utilities = header.querySelector?.('.kmc-admin-utility-nav');
     const market = utilities?.querySelector?.('.kmc-admin-market-control');
     const account = utilities?.querySelector?.('.kmc-admin-account');
-    if (market) right.appendChild(market);
+    // Le Hub est transversal : un sélecteur de marché serait trompeur ici.
+    if (String(global.location?.pathname || '') === '/admin/hub') {
+      right.appendChild(createNode(doc,'span','kmc-hub-global-scope','Global · Tous les marchés'));
+    } else if (market) right.appendChild(market);
     if (account) right.appendChild(account);
     topbar.appendChild(right);
     return topbar;

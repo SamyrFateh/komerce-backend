@@ -105,62 +105,36 @@
     const scope = workspace.scope || {};
     const header = el('header', 'kmc-workspace-header');
     const copy = el('div');
-    copy.appendChild(el('span', 'kmc-workspace-kicker', 'MARCHÉ & DÉLÉGATION · PREUVE D’AUTONOMIE'));
-    copy.appendChild(el('h1', 'kmc-workspace-title', `${scope.market_name || marketCode} · ${access.role || 'scope'}`));
-    copy.appendChild(el('p', 'kmc-workspace-subtitle', `Devise locale : ${scope.market_currency || '—'} · scope serveur · ${access.read_only ? 'lecture / simulation' : 'gestion pays'}`));
+    copy.appendChild(el('span', 'kmc-workspace-kicker', 'GESTION DU MARCHÉ'));
+    copy.appendChild(el('h1', 'kmc-workspace-title', `${scope.market_name || marketCode}`));
+    copy.appendChild(el('p', 'kmc-workspace-subtitle', `Prix et décisions commerciales · ${scope.market_currency || '—'}${access.read_only ? ' · Consultation' : ''}`));
     header.appendChild(copy);
 
     const nav = el('nav', 'kmc-workspace-nav');
-    const dashboard = el('a', 'kmc-workspace-nav-link', 'Dashboard →');
+    const dashboard = el('a', 'kmc-workspace-nav-link', 'Vue d’ensemble');
     dashboard.href = '/admin/pilotage';
     nav.appendChild(dashboard);
-    const workshop = el('a', 'kmc-workspace-nav-link', 'Atelier des coûts →');
+    const workshop = el('a', 'kmc-workspace-nav-link', 'Atelier des coûts');
     workshop.href = `/admin/workspaces/pricing?market=${encodeURIComponent(marketCode)}`;
     nav.appendChild(workshop);
-    const buyer = el('a', 'kmc-workspace-nav-link', 'Voir la boutique →');
+    const buyer = el('a', 'kmc-workspace-nav-link', 'Voir la boutique');
     buyer.href = `/?market=${encodeURIComponent(marketCode)}`;
     buyer.target = '_blank';
     nav.appendChild(buyer);
     header.appendChild(nav);
 
-    const status = el('div', 'kmc-workspace-feedback', 'Prêt.');
+    const status = el('div', 'kmc-workspace-feedback', '');
     status.dataset.autonomyFeedback = '';
     status.setAttribute('role', 'status');
     header.appendChild(status);
     root.appendChild(header);
   }
 
-  function renderMarketSelector(context, marketCode) {
-    const allowed = context.access && Array.isArray(context.access.allowedMarkets)
-      ? context.access.allowedMarkets
-      : [];
-    if (allowed.length <= 1) return;
-    const section = el('section', 'kmc-section');
-    section.appendChild(el('h2', 'kmc-section-title', 'Marché actif'));
-    const select = global.document.createElement('select');
-    select.className = 'kmc-workspace-input';
-    allowed.forEach(code => {
-      const option = global.document.createElement('option');
-      option.value = code;
-      option.textContent = code;
-      option.selected = code === marketCode;
-      select.appendChild(option);
-    });
-    select.addEventListener('change', () => {
-      const url = new URL(global.location.href);
-      url.searchParams.set('market', select.value);
-      global.location.href = url.toString();
-    });
-    section.appendChild(select);
-    root.appendChild(section);
-  }
-
   function renderCapabilities(workspace) {
     const access = workspace.access || {};
     const caps = workspace.capabilities || {};
-    const section = el('section', 'kmc-section');
-    section.appendChild(el('h2', 'kmc-section-title', 'Capacités effectives'));
-    section.appendChild(el('p', 'kmc-workspace-note', 'Les capacités ci-dessous reflètent les APIs réellement disponibles et leur frontière serveur.'));
+    const section = el('details', 'kmc-section kmc-autonomy-access');
+    section.appendChild(el('summary', 'kmc-section-title', 'Autorisations et accès'));
     const grid = el('div', 'kmc-workspace-actions-grid');
     grid.appendChild(capabilityCard('Lire le modèle pays', true, `scope ${workspace.scope && workspace.scope.market_code || '—'}`));
     grid.appendChild(capabilityCard('Simuler l’impact', Boolean(caps.simulation), 'Viewer et manager · lecture seule.'));
@@ -179,33 +153,73 @@
     const ratio = gate.coverage_ratio == null ? '—' : Number(gate.coverage_ratio).toFixed(3);
     return [
       `Prix projeté : ${fmt(economics.projected_price_kmf, 'KMF')}`,
-      `CDR : ${fmt(economics.cdr_complete_kmf, 'KMF')}`,
-      `Position : ${economics.strategy_risk || '—'}`,
-      `Couverture : ${gate.decision_status || '—'} (${ratio})`,
-      activation.allowed ? `ACTIVABLE · ${activation.reason}` : `BLOQUÉ · ${activation.reason}`,
+      `Coût rendu : ${fmt(economics.cdr_complete_kmf, 'KMF')}`,
+      `Niveau de risque : ${economics.strategy_risk || '—'}`,
+      `Couverture économique : ${gate.decision_status || '—'} (${ratio})`,
+      activation.allowed ? `Activation possible · ${activation.reason}` : `Activation impossible · ${activation.reason}`,
     ].join(' · ');
   }
 
   function renderPrices(marketCode, workspace, pricePayload) {
-    const section = el('section', 'kmc-section');
-    section.appendChild(el('h2', 'kmc-section-title', 'Prix commercial local'));
-    section.appendChild(el('p', 'kmc-workspace-note', `Le manager décide dans ${pricePayload.market.currency}. DRAFT → gate économique → LOCAL_ACTIVE. Le prix global KMF n’est jamais écrasé.`));
+    const section = el('section', 'kmc-section kmc-autonomy-prices');
+    section.id = 'market-local-prices';
+    section.appendChild(el('h2', 'kmc-section-title', 'Prix des produits'));
+    section.appendChild(el('p', 'kmc-workspace-note', 'Définissez le prix de vente sur ce marché. Le prix global reste inchangé.'));
+    const catalog = el('a', 'kmc-autonomy-catalog-link', 'Gérer les produits en vente');
+    catalog.href = '/dashboards/canonical/market-catalog.html?market=' + encodeURIComponent(marketCode);
+    section.appendChild(catalog);
 
-    const tableWrap = el('div', 'kmc-workspace-table-wrap');
-    const table = el('table', 'kmc-workspace-table');
-    table.innerHTML = '<thead><tr><th>Produit</th><th>Base globale</th><th>Décision locale</th><th>État</th><th>Motif</th><th>Actions</th></tr></thead>';
+    const toolbar = el('div', 'kmc-autonomy-toolbar');
+    const search = global.document.createElement('input');
+    search.type = 'search';
+    search.placeholder = 'Rechercher un produit ou une référence';
+    search.setAttribute('aria-label', 'Rechercher un produit');
+    const filter = global.document.createElement('select');
+    filter.setAttribute('aria-label', 'Filtrer les décisions de prix');
+    [['all', 'Tous les produits'], ['missing', 'Prix à définir'], ['draft', 'À activer'], ['active', 'Prix actifs']].forEach(pair => {
+      const option = el('option', '', pair[1]);
+      option.value = pair[0];
+      filter.appendChild(option);
+    });
+    const count = el('span', 'kmc-autonomy-count', '');
+    toolbar.appendChild(search);
+    toolbar.appendChild(filter);
+    toolbar.appendChild(count);
+    section.appendChild(toolbar);
+    const entries = [];
+    function applyFilter() {
+      const term = String(search.value || '').trim().toLocaleLowerCase('fr');
+      let visible = 0;
+      entries.forEach(entry => {
+        const found = !term || entry.text.includes(term);
+        const show = found && (filter.value === 'all' || filter.value === entry.state);
+        entry.node.hidden = !show;
+        if (show) visible += 1;
+      });
+      count.textContent = visible + ' produit' + (visible > 1 ? 's' : '') + ' affiché' + (visible > 1 ? 's' : '') + ((pricePayload.products || []).length > 100 ? ' · 100 premiers produits chargés' : '');
+    }
+    search.addEventListener('input', applyFilter);
+    filter.addEventListener('change', applyFilter);
+
+    const tableWrap = el('div', 'kmc-workspace-table-wrap kmc-autonomy-list');
+    const table = el('table', 'kmc-workspace-table kmc-autonomy-table');
+    table.innerHTML = '<thead><tr><th>Produit</th><th>Prix global</th><th>Prix du marché</th><th>Situation</th><th>Motif</th><th>Actions</th></tr></thead>';
     const tbody = global.document.createElement('tbody');
     const canManage = Boolean(workspace.capabilities && workspace.capabilities.local_price_drafts);
 
     (pricePayload.products || []).slice(0, 100).forEach(row => {
       const tr = global.document.createElement('tr');
+      tr.className = 'kmc-autonomy-row';
+      const state = row.decision_status === 'LOCAL_ACTIVE' ? 'active' : row.local_price != null ? 'draft' : 'missing';
       const product = el('td');
-      product.appendChild(el('strong', '', row.product_ref));
-      product.appendChild(el('div', 'kmc-workspace-note', row.name || row.category || 'Produit'));
+      product.title = row.name || row.product_ref || '';
+      product.appendChild(el('strong', 'kmc-autonomy-product-title', row.name || row.category || 'Produit'));
+      product.appendChild(el('small', 'kmc-autonomy-ref', row.product_ref));
       tr.appendChild(product);
       tr.appendChild(el('td', '', `${new Intl.NumberFormat('fr-FR').format(row.global_price_kmf || 0)} KMF`));
 
       const localCell = el('td');
+      localCell.appendChild(el('strong', 'kmc-autonomy-saved-price', row.local_price == null ? 'À définir' : fmt(row.local_price, pricePayload.market.currency)));
       const input = global.document.createElement('input');
       input.type = 'number';
       input.min = '0.0001';
@@ -217,9 +231,22 @@
       localCell.appendChild(el('small', '', ` ${pricePayload.market.currency}`));
       tr.appendChild(localCell);
 
-      tr.appendChild(el('td', '', row.decision_status || 'Aucune décision locale'));
+      const stateCell = el('td', 'kmc-autonomy-state');
+      stateCell.appendChild(el('span', 'kmc-autonomy-status is-' + state, state === 'active' ? 'Prix actif' : state === 'draft' ? 'À activer' : 'Prix à définir'));
+      const toggle = el('button', 'kmc-autonomy-toggle', canManage ? 'Gérer le prix' : 'Voir le détail');
+      toggle.type = 'button';
+      toggle.setAttribute('aria-expanded', 'false');
+      toggle.addEventListener('click', () => {
+        const open = tr.classList.toggle('is-expanded');
+        toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        toggle.textContent = open ? 'Fermer' : canManage ? 'Gérer le prix' : 'Voir le détail';
+        if (open && canManage) input.focus();
+      });
+      stateCell.appendChild(toggle);
+      tr.appendChild(stateCell);
 
-      const reasonCell = el('td');
+      const reasonCell = el('td', 'kmc-autonomy-reason');
+      reasonCell.appendChild(el('label', '', 'Motif de la décision'));
       const reason = global.document.createElement('input');
       reason.type = 'text';
       reason.placeholder = 'Motif de décision';
@@ -228,7 +255,7 @@
       reasonCell.appendChild(reason);
       tr.appendChild(reasonCell);
 
-      const actions = el('td');
+      const actions = el('td', 'kmc-autonomy-actions');
       if (canManage) {
         const save = el('button', 'kmc-workspace-action', 'Enregistrer');
         save.type = 'button';
@@ -249,7 +276,7 @@
       }
 
       if (row.local_price != null) {
-        const preview = el('button', 'kmc-workspace-action is-secondary', 'Voir l’impact');
+        const preview = el('button', 'kmc-workspace-action is-secondary', 'Vérifier le prix');
         preview.type = 'button';
         preview.addEventListener('click', async () => {
           feedback(`Simulation du gate ${row.product_ref}…`);
@@ -264,7 +291,7 @@
       }
 
       if (canManage && row.local_price != null && row.decision_status !== 'LOCAL_ACTIVE') {
-        const activate = el('button', 'kmc-workspace-action', 'Mettre au catalogue');
+        const activate = el('button', 'kmc-workspace-action', 'Activer le prix');
         activate.type = 'button';
         activate.addEventListener('click', async () => {
           feedback(`Activation ${row.product_ref}…`);
@@ -283,7 +310,7 @@
       }
 
       if (canManage && row.local_price != null) {
-        const reset = el('button', 'kmc-workspace-action is-secondary', 'Revenir à la base');
+        const reset = el('button', 'kmc-workspace-action is-secondary', 'Revenir au prix global');
         reset.type = 'button';
         reset.addEventListener('click', async () => {
           feedback(`Reset ${row.product_ref}…`);
@@ -304,8 +331,14 @@
       if (!canManage) actions.appendChild(el('span', 'kmc-workspace-note', 'Viewer · lecture seule'));
       tr.appendChild(actions);
       tbody.appendChild(tr);
+      entries.push({
+        node: tr,
+        state,
+        text: [row.product_ref, row.name, row.category].join(' ').toLocaleLowerCase('fr'),
+      });
     });
 
+    applyFilter();
     table.appendChild(tbody);
     tableWrap.appendChild(table);
     section.appendChild(tableWrap);
@@ -326,7 +359,6 @@
       root.className = 'kmc-workspace';
       root.replaceChildren();
       renderHeader(context, marketCode, workspace);
-      renderMarketSelector(context, marketCode);
       renderCapabilities(workspace);
       renderPrices(marketCode, workspace, prices);
     } catch (error) {

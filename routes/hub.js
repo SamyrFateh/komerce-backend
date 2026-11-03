@@ -147,6 +147,38 @@ router.delete('/box/:unit_id/shipment', ...hubAuth, async (req, res, next) => {
 
 // Dossier d'approvisionnement par marché : projection en lecture seule (aucune seconde source de vérité).
 const dossier = require('../services/hub-procurement-dossier');
+const globalHubBoard = require('../services/hub-global-board');
+const administrationBoard = require('../services/hub-administration-board');
+
+// Visibilité transverse en lecture seule pour tous les collaborateurs internes.
+// Les écritures Hub demeurent strictement gardées par hubAuth et leurs services.
+const HUB_VIEW_ROLES = Object.freeze([
+  'admin', 'agent_hub', 'market_operator', 'agent_relais',
+  'finance', 'sourcing', 'agent_transitaire', 'support',
+]);
+const hubBoardRead = [
+  authenticate,
+  attachMarketDelegatedRoleFor(HUB_VIEW_ROLES),
+  // Explicit list retains Security 360's static proof of the allowed readers.
+  requireRole(['admin', 'agent_hub', 'market_operator', 'agent_relais',
+    'finance', 'sourcing', 'agent_transitaire', 'support']),
+];
+
+// The administrative financial/PO projection is NOT the all-role Hub board.
+// Reading it never confers purchasing or payment-writing authority.
+router.get('/administration', authenticate, requireRole(['admin', 'agent_hub']), async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'private, no-store');
+    return res.json(await administrationBoard.getAdministrationBoard());
+  } catch (err) { return next(err); }
+});
+
+router.get('/board', ...hubBoardRead, async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'private, no-store');
+    return res.json(await globalHubBoard.getGlobalBoard());
+  } catch (err) { return next(err); }
+});
 
 function marketAllowed(req, marketId) {
   if (req.user.role !== 'market_operator') return true;

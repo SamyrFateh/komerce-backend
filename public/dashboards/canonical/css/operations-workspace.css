@@ -1658,3 +1658,31 @@
   overflow-x: auto;
   max-width: 100%;
 }
+
+
+/* Hub Live V4 — tableau de travail, pas de six parcours détaillés répétés. */
+.kmc-hub-board-toolbar { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:12px; }
+.kmc-hub-board-scroll { width:100%; overflow-x:auto; overscroll-behavior-x:contain; border:1px solid #e1e8ee; border-radius:12px; background:#fff; }
+.kmc-hub-board { border-collapse:separate; border-spacing:0; table-layout:fixed; width:100%; min-width:960px; color:#203247; }
+.kmc-hub-board th { text-align:left; font-size:11px; font-weight:750; color:#627384; background:#f5f8fa; border-bottom:1px solid #e1e8ee; padding:11px 8px; white-space:nowrap; }
+.kmc-hub-board th:first-child { width:128px; padding-left:14px; }
+.kmc-hub-board th:last-child { width:144px; }
+.kmc-hub-board td { border-bottom:1px solid #edf1f4; padding:7px 5px; vertical-align:middle; }
+.kmc-hub-board tr:last-child td { border-bottom:0; }
+.kmc-hub-board tbody tr:hover { background:#fbfcfd; }
+.kmc-hub-board td:first-child { padding-left:14px; }
+.kmc-hub-board-identity { display:grid; gap:4px; }
+.kmc-hub-board-identity strong { font-size:12px; color:#23364b; overflow-wrap:anywhere; }
+.kmc-hub-board-identity small { font-size:10px; color:#80909e; }
+.kmc-hub-board-cell { background:transparent; color:#2c4357; border:1px solid transparent; border-radius:7px; display:grid; align-content:center; text-align:left; gap:3px; width:100%; min-height:47px; font:inherit; font-size:11px; font-weight:640; padding:8px; cursor:context-menu; line-height:1.3; }
+.kmc-hub-board-cell small { display:block; font-size:10px; color:#7d8a96; font-weight:450; }
+.kmc-hub-board-cell:hover { background:#edf5f6; border-color:#bad7d2; }
+.kmc-hub-board-cell.is-attention { color:#855718; }
+.kmc-hub-board-cell:focus-visible,.kmc-hub-board-menu-action:focus-visible { outline:2px solid #0b8066; outline-offset:1px; }
+.kmc-hub-board-menu { position:fixed; z-index:400; width:min(288px,calc(100vw - 16px)); background:var(--surface,#fff); box-shadow:0 14px 44px rgb(17 36 58 / 0.17); border:1px solid #d9e5eb; border-radius:12px; padding:11px; display:grid; gap:4px; }
+.kmc-hub-board-menu[hidden] { display:none; }
+.kmc-hub-board-menu-title { font-size:13px; padding:4px 6px; color:#213b51; }
+.kmc-hub-board-menu-summary { font-size:11px; color:#66798c; margin:0 6px 8px; line-height:1.45; }
+.kmc-hub-board-menu-action { display:block; width:100%; border:0; border-radius:7px; background:transparent; text-align:left; font:inherit; font-size:12px; color:#25445d; text-decoration:none; padding:10px; cursor:pointer; }
+.kmc-hub-board-menu-action:hover { background:#eef5f4; }
+@media(max-width:1020px){.kmc-hub-board {min-width:940px;}}

@@ -25748,6 +25748,88 @@
         }
       }
     },
+    "/api/hub/administration": {
+      "get": {
+        "summary": "GET /api/hub/administration",
+        "x-route-file": "routes/hub.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "scope": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "markets": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "approval_trace_available": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "kpis": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "purchase_orders": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/hub/board": {
+      "get": {
+        "summary": "GET /api/hub/board",
+        "x-route-file": "routes/hub.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "scope": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "markets": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "orders": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
     "/api/hub/dossier": {
       "get": {
         "summary": "GET /api/hub/dossier",

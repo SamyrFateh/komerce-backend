@@ -149,11 +149,27 @@
       requestJson(`/api/admin/workspaces/pricing/market/${encodeURIComponent(marketCode)}`),
       requestJson(`/api/admin/workspaces/pricing/market/${encodeURIComponent(marketCode)}/commercial-prices`),
     ]);
-    global.KomerceMarketsDecision.renderCountryOverview(host, { marketCode, workspace, prices }, {
+    const overview = global.KomerceMarketsDecision.renderCountryOverview(host, { marketCode, workspace, prices }, {
       document: doc,
       ui: global.KomerceCanonicalUI,
       decisionUi: global.KomerceDecisionUI,
     });
+
+    // La synthèse et le workspace ne doivent pas chacun afficher un en-tête.
+    // Réutiliser les liens réels et le feedback dans l'unique Hero. Le drapeau
+    // et le sélecteur de marché restent exclusivement dans la topbar canonique.
+    const hero = overview && overview.querySelector('[data-dashboard-role="hero"]');
+    const workspaceHeader = root.querySelector('.kmc-workspace-header');
+    const navigation = workspaceHeader && workspaceHeader.querySelector('.kmc-workspace-nav');
+    const feedback = workspaceHeader && workspaceHeader.querySelector('[data-autonomy-feedback]');
+    if (hero && workspaceHeader && navigation && feedback) {
+      const controls = doc.createElement('div');
+      controls.className = 'kmc-autonomy-hero-controls';
+      controls.appendChild(navigation);
+      hero.appendChild(controls);
+      hero.appendChild(feedback);
+      workspaceHeader.remove();
+    }
 
     if (typeof global.MutationObserver === 'function' && !root.dataset.decisionObserverMounted) {
       root.dataset.decisionObserverMounted = '1';
