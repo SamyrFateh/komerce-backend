@@ -48,13 +48,13 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 | Objet | Compte | Note |
 |---|---|---|
-| Tables | 222 | Vérifié sur le dump live Railway. |
+| Tables | 224 | Vérifié sur le dump live Railway. |
 | Vues | 20 | Vérifié sur le dump live Railway. |
 | ENUMs | 17 | Types métier présents dans le dump live Railway. |
-| Index | 510 | Performance + contraintes uniques |
-| Foreign keys | 427 | Cohérence relationnelle |
-| Fonctions | 105 | Fonctions présentes dans le dump live Railway. |
-| Triggers | 122 | Triggers présents dans le dump live Railway. |
+| Index | 512 | Performance + contraintes uniques |
+| Foreign keys | 432 | Cohérence relationnelle |
+| Fonctions | 111 | Fonctions présentes dans le dump live Railway. |
+| Triggers | 127 | Triggers présents dans le dump live Railway. |
 | Extensions | `pgcrypto`, `uuid-ossp` | UUID + chiffrement |
 
 ---
@@ -315,7 +315,7 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | Table | Rôle |
 |---|---|
 | `scans` | Scans terrain (legacy/compat). |
-| `scan_events` | Événements scan (modèle moderne, protégé par `prevent_scan_event_delete`). **Migration 096 (2026-07-02, `verified_live_schema` — vérifié live Railway)** : + `photo_urls` (text[], DEFAULT '{}', miroir de disputes.photo_urls). Usage doctrinal : event_type=seal_photo au scellé Dubaï = borne 1 des fenêtres de responsabilité (avant : fournisseur ; après : transport). Alimenté par POST /api/hub/photo. Doctrine : `docs/doctrine/DOCTRINE_NON_CONFORMITE.md` §2. |
+| `scan_events` | Événements scan (modèle moderne, protégé par `prevent_scan_event_delete`). **Migration 096 (2026-07-02, `verified_live_schema` — vérifié live Railway)** : + `photo_urls` (text[], DEFAULT '{}', miroir de disputes.photo_urls). Usage doctrinal : event_type=seal_photo au scellé Dubaï = borne 1 des fenêtres de responsabilité (avant : fournisseur ; après : transport). Alimenté par POST /api/hub/photo. Doctrine : `docs/doctrine/DOCTRINE_NON_CONFORMITE.md` §2. **Migration 381 (2026-11-03, `intended_migration_schema`)** : + `entry_mode` TEXT généré (stocké) depuis `metadata->>'entry_mode'`, défaut `scan` ; valeurs fermées `scan` | `manual_confirmation` ; une confirmation manuelle exige `metadata.manual_reason` (CHECK). Trace du mode dégradé : confirmation depuis l'interface via le même scan-engine, jamais un second writer. |
 | `relais` | Points relais. |
 | `inventory_items` | Inventaire hub. |
 | `carriers` | Transporteurs. |
@@ -677,6 +677,18 @@ Migration 300 ajoute `customs_shipment_fees.post_closure` (boolean, défaut fals
 ### Cash custody provenance edges (migration 304 — intended_migration_schema)
 
 `cash_custody_provenance_edges` is a new, **not yet live** append-only table proposed by migration 304. It associates explicit collection-level cash portions with custody receipt events, with optional parent edges for multi-hop transfers, conservation ceilings and Market consistency. It is not a second custody balance authority and does not establish final financial closure. Migration remains draft and requires isolated PostgreSQL verification for reversals, losses, concurrency and end-to-end traceability before merge.
+<!-- /schema-pending -->
+
+<!-- schema-pending: hub_authorization_grants (migration 380, not yet live) -->
+### Hub authorization grants (migration 380 — intended_migration_schema)
+
+`hub_authorization_grants` is a new, **not yet live** table proposed by migration 380. It records which Hub account holds which directrice authorization (`purchase_commitment` or `supplier_payment`), granted and revoked by the central Admin (`granted_by`, `revoked_by`, `revoke_reason`). At most one active grant per user and type. It adds no role: it only states who may take the two distinct decisions recorded in `purchase_order_authorizations`.
+<!-- /schema-pending -->
+
+<!-- schema-pending: purchase_order_authorizations (migration 380, not yet live) -->
+### Purchase order authorizations (migration 380 — intended_migration_schema)
+
+`purchase_order_authorizations` is a new, **not yet live** append-only table proposed by migration 380. Each row is one directrice decision on a purchase order (`purchase_commitment` or `supplier_payment`) with decider, timestamp, amount, currency and proof reference. One decision per type and PO; UPDATE and DELETE are refused. A submitted PO is never an implicit commitment, and a payment is never implicitly authorized.
 <!-- /schema-pending -->
 
 <!-- schema-pending: market_delivery_attestations (migration 305, not yet live) -->

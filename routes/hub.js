@@ -169,7 +169,7 @@ const hubBoardRead = [
 router.get('/administration', authenticate, requireRole(['admin', 'agent_hub']), async (req, res, next) => {
   try {
     res.set('Cache-Control', 'private, no-store');
-    return res.json(await administrationBoard.getAdministrationBoard());
+    return res.json(await administrationBoard.getAdministrationBoard(undefined, undefined, req.user && req.user.id));
   } catch (err) { return next(err); }
 });
 

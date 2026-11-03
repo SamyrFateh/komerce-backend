@@ -288,8 +288,8 @@
     root.appendChild(scroll);
 
     const note = make(doc, 'p', 'kmc-hub-admin-note',
-      'Autorisation de la directrice : preuve distincte de l’envoi de PO et du débit fournisseur. ' +
-      'La décision n’est pas encore tracée par cette projection ; aucune validation n’est déduite du statut de PO.');
+      'Autorisation de la directrice : deux décisions distinctes (engagement d’achat, paiement fournisseur), ' +
+      'tracées avec décideur, date, montant et pièce. Aucune validation n’est déduite du statut de PO ni d’un débit.');
     root.appendChild(note);
 
     const menu = make(doc, 'div', 'kmc-hub-board-menu');
@@ -314,7 +314,7 @@
       menu.hidden = false;
       if (global.KomerceHubContextActions) {
         global.KomerceHubContextActions.administration(menu,{
-          doc,fetch:fetchFn,user,po,field,
+          doc,fetch:fetchFn,user,po,field,grants:viewerGrants,
           refresh:()=>renderAdministrationBoard(root,{document:doc,fetch:fetchFn,user}),
         });
       } else {
@@ -333,6 +333,7 @@
     root.addEventListener('keydown', event => {if(event.key === 'Escape') closeMenu();});
 
     let rows = [];
+    let viewerGrants = {};
     const cellAction = (tr, po, field, value, hint) => {
       const td = make(doc, 'td');
       const button = make(doc, 'button', 'kmc-hub-board-cell', value || '—');
@@ -398,7 +399,7 @@
         if (view === 'engagements') {
           tr.appendChild(make(doc,'td','',String(po.order_count || 0)));
           cellAction(tr,po,'Engagement', ADMIN_PO_STAGE[po.stage] || po.stage || 'À vérifier',
-            'Autorisation distincte non tracée');
+            po.commitment_authorization || 'À valider');
           cellAction(tr,po,'Fournisseur',po.sent_at ? 'Envoi enregistré' : 'Envoi non prouvé');
           cellAction(tr,po,'Réception',
             po.received ? po.received + ' / ' + po.expected + ' reçu(s)' : 'Non reçue',
@@ -420,6 +421,7 @@
       if (payload.scope !== 'HUB_ADMINISTRATION_GLOBAL' || !Array.isArray(payload.purchase_orders))
         throw new Error('Réponse Administration Hub invalide');
       rows=payload.purchase_orders;
+      viewerGrants=payload.viewer_grants || {};
       const metrics=[
         ['PO',payload.kpis?.purchase_orders],
         ['Brouillons',payload.kpis?.drafts],

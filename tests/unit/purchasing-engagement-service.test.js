@@ -8,6 +8,7 @@
  */
 
 jest.mock('../../db', () => ({ getClient: jest.fn(), query: jest.fn() }));
+jest.mock('../../services/hub-authorization-service', () => ({ assertCommitmentAuthorized: jest.fn().mockResolvedValue(undefined) }));
 jest.mock('../../utils/logger', () => {
   const f = jest.fn(() => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }));
   return { child: f, forModule: f, info: jest.fn(), warn: jest.fn(), error: jest.fn() };

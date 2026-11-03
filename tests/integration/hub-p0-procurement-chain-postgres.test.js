@@ -11,6 +11,9 @@
 
 const crypto = require('crypto');
 
+
+const { submitAuthorized } = require('../helpers/submit-authorized');
+
 jest.setTimeout(60000);
 
 const db = require('../../db');
@@ -142,7 +145,7 @@ describeDb('Hub P0 — chaîne d\'approvisionnement complète (REAL_DB)', () => 
       s.po = prepared.purchase_order.id;
       expect(s.po).toBeTruthy();
 
-      await engagement.submitPurchaseOrder(s.po, { actor: actor() });
+      await submitAuthorized(engagement, s.po, { actor: actor() });
       let stage = (await dossier.getDossier({ marketId: km })).purchase_orders.find((p) => p.id === s.po);
       expect(stage.stage).toBe('issued_not_sent'); // un bon émis n'est pas un envoi prouvé
 
@@ -200,6 +203,12 @@ describeDb('Hub P0 — chaîne d\'approvisionnement complète (REAL_DB)', () => 
       };
       s.box1 = await mkBox(1); s.box2 = await mkBox(2);
 
+      // Hub Live voit les KOM-BOX encore vides et les quantités reçues disponibles pour les composer (aucune ressaisie SQL).
+      const composable = await dossier.getDossier({ marketId: km });
+      expect(composable.boxes.filter((b) => [s.box1, s.box2].includes(b.unit_id) && b.contents.length === 0)).toHaveLength(2);
+      const receivedBefore = composable.fillable.filter((f) => [unitOf(s.colis1), unitOf(s.colis2)].includes(f.from_unit_id));
+      expect(receivedBefore.reduce((n, f) => n + f.quantity, 0)).toBe(5);
+
       const allocOf = async (lineId) => (await q('SELECT id FROM hub_purchase_allocations WHERE purchase_line_id=$1', [lineId])).rows[0].id;
       const repack = async (from, to, lineId, quantity) => {
         const res = await hubOps.moveAllocationCommand({ from_unit_id: from, to_unit_id: to, allocation_id: await allocOf(lineId), quantity, operation_type: 'REPACK' }, admin);
@@ -208,6 +217,21 @@ describeDb('Hub P0 — chaîne d\'approvisionnement complète (REAL_DB)', () => 
       await repack(unitOf(s.colis1), s.box1, s.c1.lines[0].lineId, 2); // C1 S1
       await repack(unitOf(s.colis2), s.box1, s.c1.lines[1].lineId, 1); // C1 S2
       await repack(unitOf(s.colis1), s.box2, s.c2.lines[0].lineId, 2); // C2 S1
+
+      const composed = await dossier.getDossier({ marketId: km });
+      expect(composed.fillable.filter((f) => [unitOf(s.colis1), unitOf(s.colis2)].includes(f.from_unit_id))).toHaveLength(0);
+      expect(composed.boxes.find((b) => b.unit_id === s.box1).contents.reduce((n, c) => n + c.qty, 0)).toBe(3);
+
+      // Aucune quantité non réceptionnée ne peut entrer dans un carton : tout est déjà placé, un REPACK de plus est refusé
+      // (quantité > disponible dans la source), et une allocation qui n'est pas dans l'unité source est refusée.
+      const over = await hubOps.moveAllocationCommand({ from_unit_id: unitOf(s.colis1), to_unit_id: s.box2, allocation_id: await allocOf(s.c1.lines[0].lineId), quantity: 1, operation_type: 'REPACK' }, admin);
+      expect(over.status).toBeGreaterThanOrEqual(400);
+      const foreign = await hubOps.moveAllocationCommand({ from_unit_id: unitOf(s.colis2), to_unit_id: s.box2, allocation_id: await allocOf(s.c2.lines[0].lineId), quantity: 1, operation_type: 'REPACK' }, admin);
+      expect(foreign.status).toBeGreaterThanOrEqual(400);
+      const afterRefusals = await dossier.getDossier({ marketId: km });
+      expect(afterRefusals.boxes.find((b) => b.unit_id === s.box1).contents.reduce((n, c) => n + c.qty, 0)).toBe(3);
+      expect(afterRefusals.boxes.find((b) => b.unit_id === s.box2).contents.reduce((n, c) => n + c.qty, 0)).toBe(2);
+      expect(afterRefusals.fillable.filter((f) => [unitOf(s.colis1), unitOf(s.colis2)].includes(f.from_unit_id))).toHaveLength(0);
 
       await advance(s.box1, ['PACKED']); await advance(s.box2, ['PACKED']);
 
@@ -344,7 +368,7 @@ describeDb('Hub P0 — chaîne d\'approvisionnement complète (REAL_DB)', () => 
     });
 
     test('deuxième envoi : même canal idempotent, canal différent refusé', async () => {
-      await engagement.submitPurchaseOrder(km1.po, { actor: actor() });
+      await submitAuthorized(engagement, km1.po, { actor: actor() });
       await engagement.recordPurchaseOrderSent(km1.po, { channel: 'email' }, { actor: actor() });
       const again = await engagement.recordPurchaseOrderSent(km1.po, { channel: 'email' }, { actor: actor() });
       expect(again.already_sent).toBe(true);

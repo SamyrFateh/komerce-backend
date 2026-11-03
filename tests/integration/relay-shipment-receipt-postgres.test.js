@@ -191,4 +191,41 @@ if (!process.env.DATABASE_URL) {
     expect(pi.quantity).toBe(4);
     expect((await q('SELECT status FROM orders WHERE id=$1', [items.a.orderId])).rows[0].status).not.toBe('collected');
   });
+
+  test('L11 · confirmation manuelle : même moteur, mêmes gates, trace dégradée avec motif', async () => {
+    const workspace = require('../../services/operations-workspace');
+    const refOf = async (itemId) => (await q('SELECT p.id, p.reference FROM parcels p JOIN parcel_items pi ON pi.parcel_id=p.id WHERE pi.order_item_id=$1', [itemId])).rows[0];
+    const pa = await refOf(items.a.itemId);
+    // gate : un colis déjà disponible ne peut pas être « expédié », même confirmé à la main — rien n'est appliqué
+    const statusBefore = (await q('SELECT status FROM parcels WHERE id=$1', [pa.id])).rows[0].status;
+    await expect(workspace.scanParcel(pa.reference, 'ship', market, { id: admin, role: 'admin' }, { reason: 'scanner_unavailable' })).rejects.toBeTruthy();
+    expect((await q('SELECT status FROM parcels WHERE id=$1', [pa.id])).rows[0].status).toBe(statusBefore);
+    expect((await q("SELECT count(*)::int AS n FROM scan_events WHERE parcel_id=$1 AND event_type='shipped' AND status='applied' AND entry_mode='manual_confirmation'", [pa.id])).rows[0].n).toBe(0);
+    // chemin nominal en mode manuel : la remise est appliquée par le même moteur et tracée « dégradé »
+    const pb = await refOf(items.b.itemId);
+    await q('UPDATE orders SET relais_id=$2 WHERE id=$1', [items.b.orderId, relaisB]);
+    const done = await workspace.scanParcel(pb.reference, 'collect', market, { id: admin, role: 'admin' }, { reason: 'label_unreadable', note: 'QR abîmé' });
+    expect(done).toBeTruthy();
+    const applied = (await q("SELECT entry_mode, metadata, status FROM scan_events WHERE parcel_id=$1 AND event_type='customer_collected' AND status='applied' ORDER BY created_at DESC LIMIT 1", [pb.id])).rows[0];
+    expect(applied).toMatchObject({ entry_mode: 'manual_confirmation', status: 'applied' });
+    expect(applied.metadata).toMatchObject({ manual_reason: 'label_unreadable', manual_note: 'QR abîmé' });
+    // sans motif : aucun appel moteur, aucune ligne
+    const before = (await q('SELECT count(*)::int AS n FROM scan_events WHERE parcel_id=$1', [pa.id])).rows[0].n;
+    await expect(workspace.scanParcel(pa.reference, 'ship', market, { id: admin, role: 'admin' })).rejects.toMatchObject({ code: 'manual_reason_required' });
+    expect((await q('SELECT count(*)::int AS n FROM scan_events WHERE parcel_id=$1', [pa.id])).rows[0].n).toBe(before);
+    // la réception import reste réservée à l'attestation relais, même en mode manuel
+    const scanEngine = require('../../services/scan-engine');
+    const viaEngine = await scanEngine.processScan({ parcel_id: pa.id, event_type: 'relais_received', scanned_by: admin, actor_role: 'admin', metadata: { entry_mode: 'manual_confirmation', manual_reason: 'offline' } });
+    expect(viaEngine.success).toBe(false);
+    expect(viaEngine.error).toMatchObject({ code: 'IMPORT_RECEIPT_REQUIRES_RELAY_ATTESTATION' });
+  });
+
+  test('L11 · contraintes base : motif obligatoire et modes fermés sur scan_events', async () => {
+    const pa = (await q('SELECT parcel_id FROM parcel_items WHERE order_item_id=$1', [items.a.itemId])).rows[0].parcel_id;
+    const ins = (meta) => q("INSERT INTO scan_events(parcel_id,event_type,actor_role,metadata) VALUES($1,'shipped','admin',$2::jsonb)", [pa, JSON.stringify(meta)]);
+    await expect(ins({ entry_mode: 'manual_confirmation' })).rejects.toThrow(/scan_events_manual_reason_check/);
+    await expect(ins({ entry_mode: 'magic', manual_reason: 'x' })).rejects.toThrow(/scan_events_entry_mode_check/);
+    await expect(ins({ entry_mode: 'manual_confirmation', manual_reason: 'offline' })).resolves.toBeTruthy();
+    expect((await q("SELECT entry_mode FROM scan_events WHERE parcel_id=$1 AND metadata->>'manual_reason'='offline' LIMIT 1", [pa])).rows[0].entry_mode).toBe('manual_confirmation');
+  });
 }

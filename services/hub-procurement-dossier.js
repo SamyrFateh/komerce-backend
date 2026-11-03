@@ -202,6 +202,34 @@ async function getDossier({ marketId, supplierId = null, now = new Date() }, q =
     boxes.get(r.unit_id).contents.push({ order_id: r.order_id, order_ref: r.order_ref, line_id: r.purchase_line_id, qty: Number(r.quantity) });
   }
 
+  // KOM-BOX vides (créées depuis le Hub, pas encore composées) : visibles pour pouvoir être remplies.
+  const { rows: emptyBoxRows } = await q.query(`
+    SELECT u.id AS unit_id, u.reference, u.state FROM hub_physical_units u
+     WHERE u.unit_type = 'MARKET_PARCEL' AND u.state NOT IN ('DISPATCHED','SUPERSEDED','QUARANTINED')
+       AND NOT EXISTS (SELECT 1 FROM hub_physical_unit_placements p WHERE p.physical_unit_id = u.id AND p.removed_at IS NULL)
+     ORDER BY u.created_at DESC LIMIT 20`);
+  for (const r of emptyBoxRows) {
+    if (!boxes.has(r.unit_id)) boxes.set(r.unit_id, { unit_id: r.unit_id, reference: r.reference, state: r.state, shipment_ref: null, shipment_stage: null, contents: [] });
+  }
+
+  // Quantités reçues pas encore mises en carton : sources proposées pour composer une KOM-BOX (REPACK), sans ressaisie.
+  const { rows: fillableRows } = await q.query(`
+    SELECT p.allocation_id, u.id AS from_unit_id, u.reference AS from_unit_ref, a.order_id, o.reference AS order_ref,
+           pr.name AS product_name, p.quantity
+      FROM hub_physical_unit_placements p
+      JOIN hub_physical_units u ON u.id = p.physical_unit_id AND u.unit_type <> 'MARKET_PARCEL'
+           AND u.state NOT IN ('QUARANTINED','SUPERSEDED','DISPATCHED')
+      JOIN hub_purchase_allocations a ON a.id = p.allocation_id
+      JOIN orders o ON o.id = a.order_id
+      LEFT JOIN order_items oi ON oi.id = a.order_item_id
+      LEFT JOIN products pr ON pr.id = oi.product_id
+     WHERE p.removed_at IS NULL AND p.quantity > 0 AND a.market_id = $1
+     ORDER BY u.created_at DESC, p.allocation_id LIMIT 200`, [marketId]);
+  const fillable = fillableRows.map((r) => ({
+    allocation_id: r.allocation_id, from_unit_id: r.from_unit_id, from_unit_ref: r.from_unit_ref,
+    order_id: r.order_id, order_ref: r.order_ref, product: r.product_name || null, quantity: Number(r.quantity),
+  }));
+
   // Expéditions encore ouvertes (hub_ready) du marché : cibles de rattachement proposées au Hub, sans ressaisie.
   const { rows: shipmentRows } = await q.query(
     `SELECT s.reference, s.forwarder_name, s.transport_mode,
@@ -251,6 +279,7 @@ async function getDossier({ marketId, supplierId = null, now = new Date() }, q =
     receipts: receiptRows.map((r) => ({ id: r.id, reference: r.reference, external_ref: r.external_ref, state: r.state,
       received_at: r.created_at, po_ids: r.po_ids, qty: Number(r.qty) })),
     boxes: [...boxes.values()],
+    fillable,
     open_shipments: shipmentRows,
     to_handle: toHandle,
   };

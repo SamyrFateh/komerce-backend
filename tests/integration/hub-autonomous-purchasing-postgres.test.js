@@ -15,6 +15,7 @@ if (!process.env.DATABASE_URL) {
   describe.skip('hub-autonomous-purchasing (needs DATABASE_URL)', () => { test('skipped', () => {}); });
 } else {
   const crypto = require('crypto');
+  const { submitAuthorized } = require('../helpers/submit-authorized');
   const request = require('supertest');
   const db = require('../../db');
   const grouped = require('../../services/purchasing-grouped-service');
@@ -74,7 +75,7 @@ if (!process.env.DATABASE_URL) {
     const po = (await grouped.preparePurchaseOrder({ supplier_id: supplier, procurement_hub_ref: 'DXB', line_ids: [lineId] }, { actor: admin })).purchase_order;
     expect((await q('SELECT trigger_mode FROM purchase_orders WHERE id=$1', [po.id])).rows[0].trigger_mode).toBe('manual');
 
-    const submitted = await engagement.submitPurchaseOrder(po.id, { actor: admin });
+    const submitted = await submitAuthorized(engagement, po.id, { actor: admin });
     expect(submitted.preflights.every((p) => p.status === 'MANUAL' && p.provider === 'aliexpress')).toBe(true);
     expect(submitted.purchase_order.status).toBe('notified');
 
@@ -131,7 +132,7 @@ if (!process.env.DATABASE_URL) {
     const b = await localSupplier('EngB');
     const line = (await engagement.createManualLine({ order_item_id: item, product_supplier_id: a.mapping, quantity: 2 }, { actor: admin })).line.line_id;
     const po = (await grouped.preparePurchaseOrder({ supplier_id: a.supplier, procurement_hub_ref: 'DXB', line_ids: [line] }, { actor: admin })).purchase_order;
-    await engagement.submitPurchaseOrder(po.id, { actor: admin });
+    await submitAuthorized(engagement, po.id, { actor: admin });
     await expect(engagement.changeLineSupplier(line, { product_supplier_id: b.mapping, reason: 'x' }))
       .rejects.toMatchObject({ status: 409, code: 'PURCHASE_ORDER_NOT_DRAFT' });
   });
