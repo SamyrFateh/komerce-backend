@@ -824,7 +824,7 @@ La projection N1 prévisionnelle du pricing reste intacte ; l'ajustement prévis
 Mode : `intended_migration_schema` (pas encore vérifié dans le dump live). La migration 366 remplace **la fonction existante** `public.check_parcel_item_quantities()` (déclencheur `trg_check_parcel_item_qty`, migration 022) sans créer de table ou de colonne. Elle conserve les contraintes quantités de l'import. Exception stricte : `parcel_items.qty_received > qty_shipped` est autorisée seulement si la ligne `order_items.fulfillment_source='LOCAL_STOCK'` et si un scan `relais_received` de ce même colis/commande, avec acteur identifié, existe dans la transaction. Les colis locaux restent à `qty_shipped=0` ; aucun passage fictif par Hub/transitaire/douane. Rollback : remettre la définition exacte de `check_parcel_item_quantities()` de la migration 022 après arrêt du flux local.
 
 
-### Migration 380 — retrait de la capacité `execution.order.mark_ordered`
+### Migration 390 — retrait de la capacité `execution.order.mark_ordered`
 
 Le writer `mark-ordered` a été retiré par L1 : la commande import payée génère une ligne de besoin et la PO reste un objet distinct.
 La capability obsolète est supprimée de `capability_registry`, `membership_capabilities`, `assignment_capability_ceiling` et `ceiling_template_capabilities`. Les anciens audits conservent un snapshot `market_delegation_audit.retired_capability` (lecture historique uniquement, aucune autorité). La FK historique utilise `ON DELETE SET NULL` ; les grants actifs ne peuvent plus référencer cette capability.
