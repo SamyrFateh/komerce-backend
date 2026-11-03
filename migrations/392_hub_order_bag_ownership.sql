@@ -19,6 +19,13 @@ BEGIN
   IF NEW.order_id IS NOT NULL AND NEW.unit_type <> 'HANDLING_UNIT' THEN
     RAISE EXCEPTION 'HUB_ORDER_BAG_REQUIRES_HANDLING_UNIT' USING ERRCODE = '23514';
   END IF;
+  IF TG_OP = 'UPDATE' AND OLD.order_id IS NULL AND NEW.order_id IS NOT NULL AND EXISTS (
+    SELECT 1 FROM public.hub_physical_unit_placements p
+    JOIN public.hub_purchase_allocations a ON a.id = p.allocation_id
+    WHERE p.physical_unit_id = NEW.id AND p.removed_at IS NULL AND a.order_id IS DISTINCT FROM NEW.order_id
+  ) THEN
+    RAISE EXCEPTION 'HUB_ORDER_BAG_EXISTING_CONTENT_MISMATCH' USING ERRCODE = '23514';
+  END IF;
   IF TG_OP = 'UPDATE' AND OLD.order_id IS NOT NULL AND NEW.order_id IS DISTINCT FROM OLD.order_id THEN
     RAISE EXCEPTION 'HUB_ORDER_BAG_OWNER_IMMUTABLE' USING ERRCODE = '23514';
   END IF;
