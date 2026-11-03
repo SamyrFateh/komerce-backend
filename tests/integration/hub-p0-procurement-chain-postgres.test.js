@@ -203,6 +203,12 @@ describeDb('Hub P0 — chaîne d\'approvisionnement complète (REAL_DB)', () => 
       };
       s.box1 = await mkBox(1); s.box2 = await mkBox(2);
 
+      // Hub Live voit les KOM-BOX encore vides et les quantités reçues disponibles pour les composer (aucune ressaisie SQL).
+      const composable = await dossier.getDossier({ marketId: km });
+      expect(composable.boxes.filter((b) => [s.box1, s.box2].includes(b.unit_id) && b.contents.length === 0)).toHaveLength(2);
+      const receivedBefore = composable.fillable.filter((f) => [unitOf(s.colis1), unitOf(s.colis2)].includes(f.from_unit_id));
+      expect(receivedBefore.reduce((n, f) => n + f.quantity, 0)).toBe(5);
+
       const allocOf = async (lineId) => (await q('SELECT id FROM hub_purchase_allocations WHERE purchase_line_id=$1', [lineId])).rows[0].id;
       const repack = async (from, to, lineId, quantity) => {
         const res = await hubOps.moveAllocationCommand({ from_unit_id: from, to_unit_id: to, allocation_id: await allocOf(lineId), quantity, operation_type: 'REPACK' }, admin);
@@ -211,6 +217,10 @@ describeDb('Hub P0 — chaîne d\'approvisionnement complète (REAL_DB)', () => 
       await repack(unitOf(s.colis1), s.box1, s.c1.lines[0].lineId, 2); // C1 S1
       await repack(unitOf(s.colis2), s.box1, s.c1.lines[1].lineId, 1); // C1 S2
       await repack(unitOf(s.colis1), s.box2, s.c2.lines[0].lineId, 2); // C2 S1
+
+      const composed = await dossier.getDossier({ marketId: km });
+      expect(composed.fillable.filter((f) => [unitOf(s.colis1), unitOf(s.colis2)].includes(f.from_unit_id))).toHaveLength(0);
+      expect(composed.boxes.find((b) => b.unit_id === s.box1).contents.reduce((n, c) => n + c.qty, 0)).toBe(3);
 
       await advance(s.box1, ['PACKED']); await advance(s.box2, ['PACKED']);
 

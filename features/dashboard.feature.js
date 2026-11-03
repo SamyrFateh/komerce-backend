@@ -832,6 +832,7 @@ module.exports = {
       'tests/unit/canonical-client-index.test.js',
       'tests/unit/admin-dashboard-market.test.js',
       'tests/unit/admin-operations-workspace-route.test.js',
+      'tests/unit/hub-live-komboxes-ops.test.js',
       'tests/unit/admin-order-360-route.test.js',
       'tests/unit/admin-product-360-route.test.js',
       'tests/unit/admin-shipping-customs-workspace-route.test.js',
