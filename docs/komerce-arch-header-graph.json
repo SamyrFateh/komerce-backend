@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 1951,
-    "edges": 9637,
+    "edges": 9640,
     "dbTables": 222,
     "doctrines": 748,
     "impactAreas": 207,
@@ -24692,6 +24692,7 @@
         "admin-flows"
       ],
       "dbRead": [
+        "international_shipment_relay_receipts",
         "order_items",
         "orders",
         "products",
@@ -29628,7 +29629,9 @@
         "parcel_items"
       ],
       "dbWrite": [
-        "parcel_items"
+        "parcel_events",
+        "parcel_items",
+        "scans"
       ],
       "dbWriteVia": [],
       "dbTxn": [
@@ -38304,6 +38307,11 @@
       "table": "market_transport_sale_rates"
     },
     {
+      "id": "db:international_shipment_relay_receipts",
+      "type": "db-table",
+      "table": "international_shipment_relay_receipts"
+    },
+    {
       "id": "db:physical_outcome_receipts",
       "type": "db-table",
       "table": "physical_outcome_receipts"
@@ -38397,11 +38405,6 @@
       "id": "db:refund_execution_intents",
       "type": "db-table",
       "table": "refund_execution_intents"
-    },
-    {
-      "id": "db:international_shipment_relay_receipts",
-      "type": "db-table",
-      "table": "international_shipment_relay_receipts"
     },
     {
       "id": "db:shared_cart_saved_access",
@@ -82243,6 +82246,12 @@
     },
     {
       "from": "services/order-status-machine.js",
+      "to": "db:international_shipment_relay_receipts",
+      "type": "db-read",
+      "label": "international_shipment_relay_receipts"
+    },
+    {
+      "from": "services/order-status-machine.js",
       "to": "db:order_items",
       "type": "db-read",
       "label": "order_items"
@@ -89809,9 +89818,21 @@
     },
     {
       "from": "services/relay-parcel-item-reconciliation.js",
+      "to": "db:parcel_events",
+      "type": "db-write",
+      "label": "parcel_events"
+    },
+    {
+      "from": "services/relay-parcel-item-reconciliation.js",
       "to": "db:parcel_items",
       "type": "db-write",
       "label": "parcel_items"
+    },
+    {
+      "from": "services/relay-parcel-item-reconciliation.js",
+      "to": "db:scans",
+      "type": "db-write",
+      "label": "scans"
     },
     {
       "from": "services/relay-parcel-item-reconciliation.js",
@@ -126416,6 +126437,7 @@
       ],
       "ownedFiles": [],
       "dbRead": [
+        "international_shipment_relay_receipts",
         "order_items",
         "orders",
         "products",
@@ -126458,6 +126480,7 @@
       ],
       "mustCheck": [
         "db:customs_shipments",
+        "db:international_shipment_relay_receipts",
         "db:order_items",
         "db:order_status_history",
         "db:orders",
@@ -131267,7 +131290,9 @@
         "parcel_items"
       ],
       "dbWrite": [
-        "parcel_items"
+        "parcel_events",
+        "parcel_items",
+        "scans"
       ],
       "dbWriteVia": [],
       "doctrines": [
@@ -131287,8 +131312,10 @@
         "db:international_shipment_relay_receipts",
         "db:international_shipments",
         "db:order_items",
+        "db:parcel_events",
         "db:parcel_items",
         "db:parcels",
+        "db:scans",
         "doctrine:no_fabricated_quantities",
         "doctrine:receipt_regression_forbidden",
         "doctrine:single_physical_truth",
@@ -139024,13 +139051,14 @@
     },
     {
       "table": "scans",
-      "writerCount": 11,
+      "writerCount": 12,
       "writers": [
         "routes/admin/delete-order-cascade.js",
         "routes/transit-dashboard.js",
         "services/local-relay-receipt-service.js",
         "services/pickup-collection-recorder.js",
         "services/pickup-collection-service.js",
+        "services/relay-parcel-item-reconciliation.js",
         "services/scan-operations.js",
         "services/scan-write-service.js",
         "services/simulator/cleanup.js",
@@ -139238,6 +139266,17 @@
       ]
     },
     {
+      "table": "parcel_events",
+      "writerCount": 5,
+      "writers": [
+        "services/local-relay-receipt-service.js",
+        "services/parcel-item-mutation-service.js",
+        "services/parcel-security.js",
+        "services/relay-parcel-item-reconciliation.js",
+        "utils/parcelSync.js"
+      ]
+    },
+    {
       "table": "shared_carts",
       "writerCount": 5,
       "writers": [
@@ -139318,16 +139357,6 @@
         "middleware/require-market-execution-capability.js",
         "services/cash-deposit-service.js",
         "services/market-delegation-service.js"
-      ]
-    },
-    {
-      "table": "parcel_events",
-      "writerCount": 4,
-      "writers": [
-        "services/local-relay-receipt-service.js",
-        "services/parcel-item-mutation-service.js",
-        "services/parcel-security.js",
-        "utils/parcelSync.js"
       ]
     },
     {

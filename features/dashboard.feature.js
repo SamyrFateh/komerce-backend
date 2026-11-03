@@ -242,7 +242,6 @@ module.exports = {
       'POST /api/admin/workspaces/operations/market/:marketCode/inventory/items/:itemId/assign',
       'POST /api/admin/workspaces/operations/market/:marketCode/orders/:reference/confirm-cash',
       'POST /api/admin/workspaces/operations/market/:marketCode/parcels/:reference/collect',
-      'POST /api/admin/workspaces/operations/market/:marketCode/parcels/:reference/receive',
       'POST /api/admin/workspaces/operations/market/:marketCode/parcels/:reference/ship',
       'GET /api/admin/workspaces/shipping-customs/market/:marketCode',
       'POST /api/admin/workspaces/shipping-customs/market/:marketCode/customs/shipments',
