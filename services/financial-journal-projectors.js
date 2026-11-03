@@ -8,7 +8,7 @@
  * @outputs       financial_movements
  * @depends       db, services/financial-journal.js
  * @used-by       finance journal reconciliation, finance projections
- * @db-read       orders, refunds, supplier_execution_payments, supplier_execution_payment_proofs, supplier_payment_settlements, purchase_orders, order_item_real_cost_allocations, market_settlements, markets
+ * @db-read       orders, refunds, supplier_execution_payments, supplier_execution_payment_proofs, supplier_payment_settlements, purchase_orders, order_item_real_cost_allocations, market_settlements, markets, cash_custody_receipts, cash_deposits, customs_shipments, international_shipment_charges, international_shipment_events, international_shipment_hub_units, international_shipments
  * @db-write      financial_movements, financial_movement_documents
  * @db-txn        caller_provided_client
  * @doctrine      idempotent_projection, sources_stay_authoritative, native_amounts_preserved, not_double_entry, custody_is_not_revenue, shipment_costs_not_item_allocations
