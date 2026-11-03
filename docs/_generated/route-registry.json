@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-11-03T14:02:50.532Z",
+  "generatedAt": "2026-11-03T14:51:13.910Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 774,
+  "count": 773,
   "routes": [
     {
       "method": "GET",
@@ -2566,16 +2566,6 @@
       "fullPath": "/api/admin/workspaces/operations/market/:marketCode/parcels/:reference/collect",
       "mountPrefix": "/api/admin/workspaces/operations",
       "localPath": "/market/:marketCode/parcels/:reference/collect",
-      "routeFile": "routes/admin-operations-workspace.js",
-      "mountedFrom": [
-        "bootstrap/api-routes.js"
-      ]
-    },
-    {
-      "method": "POST",
-      "fullPath": "/api/admin/workspaces/operations/market/:marketCode/parcels/:reference/receive",
-      "mountPrefix": "/api/admin/workspaces/operations",
-      "localPath": "/market/:marketCode/parcels/:reference/receive",
       "routeFile": "routes/admin-operations-workspace.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
