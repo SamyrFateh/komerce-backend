@@ -947,21 +947,37 @@ $$;
 CREATE FUNCTION public.check_parcel_item_quantities() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
+DECLARE
+  local_receipt_proven BOOLEAN := FALSE;
 BEGIN
   IF NEW.qty_packed > NEW.qty_allocated THEN
-    RAISE EXCEPTION 'ANTI-ERREUR: qty_packed (%) > qty_allocated (%) pour parcel_item %', 
+    RAISE EXCEPTION 'ANTI-ERREUR: qty_packed (%) > qty_allocated (%) pour parcel_item %',
       NEW.qty_packed, NEW.qty_allocated, NEW.id;
   END IF;
   IF NEW.qty_shipped > NEW.qty_packed THEN
-    RAISE EXCEPTION 'ANTI-ERREUR: qty_shipped (%) > qty_packed (%) pour parcel_item %', 
+    RAISE EXCEPTION 'ANTI-ERREUR: qty_shipped (%) > qty_packed (%) pour parcel_item %',
       NEW.qty_shipped, NEW.qty_packed, NEW.id;
   END IF;
   IF NEW.qty_received > NEW.qty_shipped THEN
-    RAISE EXCEPTION 'ANTI-ERREUR: qty_received (%) > qty_shipped (%) pour parcel_item %', 
-      NEW.qty_received, NEW.qty_shipped, NEW.id;
+    SELECT EXISTS (
+      SELECT 1
+        FROM public.order_items oi
+        JOIN public.parcels p ON p.id = NEW.parcel_id
+        JOIN public.scans s ON s.parcel_id = p.id
+       WHERE oi.id = NEW.order_item_id
+         AND oi.order_id = p.order_id
+         AND oi.fulfillment_source = 'LOCAL_STOCK'
+         AND s.order_id = oi.order_id
+         AND s.step = 'relais_received'
+         AND s.scanned_by IS NOT NULL
+    ) INTO local_receipt_proven;
+    IF NOT local_receipt_proven THEN
+      RAISE EXCEPTION 'ANTI-ERREUR: qty_received (%) > qty_shipped (%) sans réception locale attestée pour parcel_item %',
+        NEW.qty_received, NEW.qty_shipped, NEW.id;
+    END IF;
   END IF;
   IF NEW.qty_collected > NEW.qty_received THEN
-    RAISE EXCEPTION 'ANTI-ERREUR: qty_collected (%) > qty_received (%) pour parcel_item %', 
+    RAISE EXCEPTION 'ANTI-ERREUR: qty_collected (%) > qty_received (%) pour parcel_item %',
       NEW.qty_collected, NEW.qty_received, NEW.id;
   END IF;
   RETURN NEW;
