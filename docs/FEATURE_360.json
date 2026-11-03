@@ -7924,7 +7924,7 @@
             ]
           },
           "tests": {
-            "count": 199,
+            "count": 200,
             "files": [
               {
                 "declared": "playwright.config.js",
@@ -8712,6 +8712,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/hub-live-komboxes-ops.test.js",
+                "resolvedPath": "tests/unit/hub-live-komboxes-ops.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/import-lot-registry.test.js",
                 "resolvedPath": "tests/unit/import-lot-registry.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -8924,7 +8929,7 @@
             ]
           }
         },
-        "totalFiles": 445,
+        "totalFiles": 446,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,

@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-11-03T16:15:56.809Z",
+  "generatedAt": "2026-11-03T17:09:39.129Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 791,
-    "protected": 736,
+    "total": 794,
+    "protected": 739,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -2169,7 +2169,23 @@
       ]
     },
     {
+      "key": "POST /api/admin/workspaces/operations/market/{marketCode}/boxes/{unitId}/advance",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
       "key": "POST /api/admin/workspaces/operations/market/{marketCode}/boxes/{unitId}/detach",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/operations/market/{marketCode}/boxes/{unitId}/fill",
       "level": "PROTECTED",
       "roles": [
         "admin",
@@ -2186,6 +2202,14 @@
     },
     {
       "key": "POST /api/admin/workspaces/operations/market/{marketCode}/boxes/shipment",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/operations/market/{marketCode}/boxes",
       "level": "PROTECTED",
       "roles": [
         "admin",

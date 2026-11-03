@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 1957,
-    "edges": 9659,
+    "edges": 9662,
     "dbTables": 224,
     "doctrines": 751,
     "impactAreas": 207,
@@ -6689,7 +6689,10 @@
         "assignment_memberships",
         "membership_capabilities",
         "assignment_capability_ceiling",
-        "dashboard_global_access_grants"
+        "dashboard_global_access_grants",
+        "hub_physical_units",
+        "hub_physical_unit_placements",
+        "hub_purchase_allocations"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -37670,6 +37673,21 @@
       "table": "market_settlement_events"
     },
     {
+      "id": "db:hub_physical_units",
+      "type": "db-table",
+      "table": "hub_physical_units"
+    },
+    {
+      "id": "db:hub_physical_unit_placements",
+      "type": "db-table",
+      "table": "hub_physical_unit_placements"
+    },
+    {
+      "id": "db:hub_purchase_allocations",
+      "type": "db-table",
+      "table": "hub_purchase_allocations"
+    },
+    {
       "id": "db:pricing_components",
       "type": "db-table",
       "table": "pricing_components"
@@ -38048,21 +38066,6 @@
       "id": "db:supplier_execution_groups",
       "type": "db-table",
       "table": "supplier_execution_groups"
-    },
-    {
-      "id": "db:hub_purchase_allocations",
-      "type": "db-table",
-      "table": "hub_purchase_allocations"
-    },
-    {
-      "id": "db:hub_physical_unit_placements",
-      "type": "db-table",
-      "table": "hub_physical_unit_placements"
-    },
-    {
-      "id": "db:hub_physical_units",
-      "type": "db-table",
-      "table": "hub_physical_units"
     },
     {
       "id": "db:capability_registry",
@@ -52985,6 +52988,24 @@
       "to": "db:dashboard_global_access_grants",
       "type": "db-read",
       "label": "dashboard_global_access_grants"
+    },
+    {
+      "from": "routes/admin-operations-workspace.js",
+      "to": "db:hub_physical_units",
+      "type": "db-read",
+      "label": "hub_physical_units"
+    },
+    {
+      "from": "routes/admin-operations-workspace.js",
+      "to": "db:hub_physical_unit_placements",
+      "type": "db-read",
+      "label": "hub_physical_unit_placements"
+    },
+    {
+      "from": "routes/admin-operations-workspace.js",
+      "to": "db:hub_purchase_allocations",
+      "type": "db-read",
+      "label": "hub_purchase_allocations"
     },
     {
       "from": "routes/admin-operations-workspace.js",
@@ -108475,7 +108496,10 @@
         "assignment_memberships",
         "membership_capabilities",
         "assignment_capability_ceiling",
-        "dashboard_global_access_grants"
+        "dashboard_global_access_grants",
+        "hub_physical_units",
+        "hub_physical_unit_placements",
+        "hub_purchase_allocations"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -108499,6 +108523,9 @@
         "db:assignment_capability_ceiling",
         "db:assignment_memberships",
         "db:dashboard_global_access_grants",
+        "db:hub_physical_unit_placements",
+        "db:hub_physical_units",
+        "db:hub_purchase_allocations",
         "db:market_operating_assignments",
         "db:markets",
         "db:membership_capabilities",
