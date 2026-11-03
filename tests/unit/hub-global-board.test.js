@@ -23,6 +23,8 @@ describe('Hub central : tous les marchés, lecture seule', () => {
       reference:'KM-1',market:'KM',po:'À constituer',supplier:'Non commandé',
       remaining:'2 non reçue(s)',attention:true,
     });
+    expect(rows[0].next_action).toBe('Constituer PO');
+    expect(rows[0].stage_states).toMatchObject({po:'waiting',supplier:'muted',remaining:'warning'});
     expect(JSON.stringify(rows)).not.toMatch(/Objet confidentiel|Privé|price|email|payment/);
   });
 
@@ -39,6 +41,8 @@ describe('Hub central : tous les marchés, lecture seule', () => {
     expect(row.remaining_detail).toContain('1 à contrôler');
     expect(row.departure).toBe('1 expédition(s) liée(s)');
     expect(row.departure).not.toMatch(/livré|remis/i);
+    expect(row.next_action).toBe('Contrôler les écarts');
+    expect(row.stage_states).toMatchObject({reception:'warning',remaining:'critical',departure:'progress'});
   });
 
   test('l’API de synthèse balaie tous les marchés actifs sans sélection cliente', async () => {
