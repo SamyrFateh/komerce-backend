@@ -95,7 +95,7 @@ market_price_observation_events market_price_observations mobile_money_transacti
 order_item_cost_imputations order_item_real_cost_allocations order_items order_status_history parcel_events parcel_items
 pickup_print_tokens pickup_reveal_codes price_history pricing_maturity_disposition_events pricing_strategies pricing_strategy_history
 product_attributes product_content_profile product_content_sections product_market_exposure product_market_price_draft_events
-product_market_price_drafts product_sku_media product_skus product_suppliers product_variants purchase_lines purchase_order_authorizations hub_authorization_grants refund_execution_intents
+product_market_price_drafts product_sku_media product_skus product_suppliers product_variants purchase_lines purchase_order_authorizations refund_execution_intents
 scans shared_cart_events shared_cart_saved_access sourcing_candidate_observations sourcing_identity_constraints sourcing_match_proposals
 sourcing_observation_evidence sourcing_resolution_bindings sourcing_resolution_decisions store_credits supplier_catalog_import_rejections
 supplier_execution_groups supplier_payment_settlements unsold_items`.split(/\s+/).map((t) => V(t, 'enfant FK d une racine purgee')),
@@ -146,6 +146,7 @@ supplier_execution_groups supplier_payment_settlements unsold_items`.split(/\s+/
   S('catalog_global_access_grants', 'acces globaux (owner user_id)'), S('dashboard_global_access_grants', 'acces globaux (owner user_id)'),
   S('pricing_global_access_grants', 'acces globaux (owner user_id)'), S('sourcing_global_access_grants', 'acces globaux (owner user_id)'),
   S('decision_signal_global_access_grants', 'acces globaux (owner user_id)'), S('webauthn_credentials', 'passkeys (owner user_id)'),
+  S('hub_authorization_grants', 'droits d autorisation Hub (owner user_id) : conserves pour les comptes conserves'),
 ];
 
 const TABLES = new Map();
@@ -165,6 +166,7 @@ const FIXTURE_OWNER_COLUMNS = Object.freeze({
   sourcing_global_access_grants: ['user_id'],
   decision_signal_global_access_grants: ['user_id'],
   webauthn_credentials: ['user_id'],
+  hub_authorization_grants: ['user_id'],
 });
 /** Racines de ciblage : leurs lignes sont designees par les regles ci-dessous. */
 const FIXTURE_ROOT_TABLES = Object.freeze(['users', 'relais', 'partners']);
