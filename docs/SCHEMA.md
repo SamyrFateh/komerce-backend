@@ -679,6 +679,18 @@ Migration 300 ajoute `customs_shipment_fees.post_closure` (boolean, défaut fals
 `cash_custody_provenance_edges` is a new, **not yet live** append-only table proposed by migration 304. It associates explicit collection-level cash portions with custody receipt events, with optional parent edges for multi-hop transfers, conservation ceilings and Market consistency. It is not a second custody balance authority and does not establish final financial closure. Migration remains draft and requires isolated PostgreSQL verification for reversals, losses, concurrency and end-to-end traceability before merge.
 <!-- /schema-pending -->
 
+<!-- schema-pending: hub_authorization_grants (migration 380, not yet live) -->
+### Hub authorization grants (migration 380 — intended_migration_schema)
+
+`hub_authorization_grants` is a new, **not yet live** table proposed by migration 380. It records which Hub account holds which directrice authorization (`purchase_commitment` or `supplier_payment`), granted and revoked by the central Admin (`granted_by`, `revoked_by`, `revoke_reason`). At most one active grant per user and type. It adds no role: it only states who may take the two distinct decisions recorded in `purchase_order_authorizations`.
+<!-- /schema-pending -->
+
+<!-- schema-pending: purchase_order_authorizations (migration 380, not yet live) -->
+### Purchase order authorizations (migration 380 — intended_migration_schema)
+
+`purchase_order_authorizations` is a new, **not yet live** append-only table proposed by migration 380. Each row is one directrice decision on a purchase order (`purchase_commitment` or `supplier_payment`) with decider, timestamp, amount, currency and proof reference. One decision per type and PO; UPDATE and DELETE are refused. A submitted PO is never an implicit commitment, and a payment is never implicitly authorized.
+<!-- /schema-pending -->
+
 <!-- schema-pending: market_delivery_attestations (migration 305, not yet live) -->
 ### Market delivery attestations (migration 305 — intended_migration_schema)
 

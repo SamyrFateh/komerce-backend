@@ -279,6 +279,7 @@ async function submitPurchaseOrder(poId, { actor = null, context = {} } = {}) {
 
   const outcome = await withTransaction(async (client) => {
     const po = await lockGroupedPo(client, poId);
+    await require('./hub-authorization-service').assertCommitmentAuthorized(client, po.id);
     const { rows: lineRows } = await client.query(`
       SELECT pl.id, pl.product_sku_id, pl.supplier_sku, pl.supplier_unit_ref, pl.supplier_order_identity,
              pl.quantity, pl.supplier_unit_price, pl.supplier_currency, p.name AS product_name

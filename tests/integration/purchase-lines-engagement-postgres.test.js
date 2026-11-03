@@ -9,6 +9,8 @@
  */
 
 const fs = require('fs');
+
+const { submitAuthorized } = require('../helpers/submit-authorized');
 const path = require('path');
 const crypto = require('crypto');
 const { Pool } = require('pg');
@@ -34,7 +36,7 @@ const engagement = require('../../services/purchasing-engagement-service');
 const hasDb = Boolean(process.env.DATABASE_URL);
 const describeDb = hasDb ? describe : describe.skip;
 const id = () => crypto.randomUUID();
-const MIGRATIONS = ['263_purchase_lines_foundation.sql', '264_purchase_line_progress_view.sql', '265_hub_allocations_purchase_line.sql', '266_purchase_orders_grouped_form.sql', '357_purchase_orders_market_scope.sql'];
+const MIGRATIONS = ['263_purchase_lines_foundation.sql', '264_purchase_line_progress_view.sql', '265_hub_allocations_purchase_line.sql', '266_purchase_orders_grouped_form.sql', '357_purchase_orders_market_scope.sql', '380_hub_directrice_authorizations.sql'];
 const identityOf = (provider, payload = { supplier_sku: 'U1' }) => JSON.stringify({ provider, version: 1, payload });
 const NOON = identityOf('noon');
 const ALLEGRO = (offer) => identityOf('allegro', { environment: 'sandbox', offer_id: offer });
@@ -227,7 +229,7 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
       const c = await seedLine({ supplier, quantity: 1, market: 'KM', unitRef: 'U2' });
       const po = await preparedPo(supplier, [a.line, b.line, c.line]);
 
-      const out = await engagement.submitPurchaseOrder(po.id);
+      const out = await submitAuthorized(engagement, po.id);
 
       expect(out.purchase_order.status).toBe('notified');
       expect(out.purchase_order.ordered_at).not.toBeNull();
@@ -249,7 +251,7 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
       const po = await preparedPo(supplier, [a.line]);
       expect((await row('SELECT trigger_mode FROM purchase_orders WHERE id=$1', [po.id])).trigger_mode).toBe('whatsapp');
 
-      const out = await engagement.submitPurchaseOrder(po.id);
+      const out = await submitAuthorized(engagement, po.id);
 
       expect(out.notification.channel).toBe('whatsapp');
       expect(out.purchase_order.notes).toMatch(/^wa_url:https:\/\/wa\.me\/\+971500000\?text=/);
@@ -263,7 +265,7 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
       const po = await preparedPo(supplier, [a.line]);
       mockReadiness.mockResolvedValue({ ready: false, status: 'OUT_OF_STOCK', reason: 'ALLEGRO_INSUFFICIENT_STOCK' });
 
-      await expect(engagement.submitPurchaseOrder(po.id)).rejects.toMatchObject({
+      await expect(submitAuthorized(engagement, po.id)).rejects.toMatchObject({
         status: 409, code: 'PURCHASE_ORDER_SUBMIT_REFUSED',
         verdicts: [expect.objectContaining({ supplier_unit_ref: '111', ready: false, status: 'OUT_OF_STOCK' })],
       });
@@ -280,7 +282,7 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
       const b = await seedLine({ supplier, identity: ALLEGRO('222'), unitRef: '222' });
       const po = await preparedPo(supplier, [a.line, b.line]);
 
-      await expect(engagement.submitPurchaseOrder(po.id)).rejects.toMatchObject({
+      await expect(submitAuthorized(engagement, po.id)).rejects.toMatchObject({
         status: 409, code: 'PURCHASE_ORDER_SUBMIT_REFUSED',
         verdicts: expect.arrayContaining([expect.objectContaining({ status: 'BUILD_ORDER_PAYLOAD_REFUSED', reason: 'ALLEGRO_MULTI_ITEM_UNSUPPORTED' })]),
       });
@@ -291,8 +293,8 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
       const supplier = await seedSupplier();
       const a = await seedLine({ supplier });
       const po = await preparedPo(supplier, [a.line]);
-      await engagement.submitPurchaseOrder(po.id);
-      await expect(engagement.submitPurchaseOrder(po.id)).rejects.toMatchObject({ status: 409, code: 'PURCHASE_ORDER_NOT_DRAFT' });
+      await submitAuthorized(engagement, po.id);
+      await expect(submitAuthorized(engagement, po.id)).rejects.toMatchObject({ status: 409, code: 'PURCHASE_ORDER_NOT_DRAFT' });
       await expect(engagement.submitPurchaseOrder(id())).rejects.toMatchObject({ status: 404 });
       await expect(engagement.submitPurchaseOrder('pas-un-uuid')).rejects.toMatchObject({ status: 400 });
     });
@@ -302,7 +304,7 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
       const a = await seedLine({ supplier });
       const po = await preparedPo(supplier, [a.line]);
       await grouped.cancelLine(a.line, 'test');
-      await expect(engagement.submitPurchaseOrder(po.id)).rejects.toMatchObject({ status: 409, code: 'PURCHASE_ORDER_EMPTY' });
+      await expect(submitAuthorized(engagement, po.id)).rejects.toMatchObject({ status: 409, code: 'PURCHASE_ORDER_EMPTY' });
     });
   });
 

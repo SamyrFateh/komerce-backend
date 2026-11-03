@@ -126,6 +126,7 @@ module.exports = {
       'services/procurement-execution-context.js',
       'services/purchasing-grouped-service.js',
       'services/purchasing-engagement-service.js',
+      'services/hub-authorization-service.js',
       'services/purchasing-completion-service.js',
     ],
     routes: [
@@ -178,6 +179,8 @@ module.exports = {
       'tests/integration/hub-autonomous-purchasing-postgres.test.js',
       'tests/integration/hub-p0-authorization-postgres.test.js',
       'tests/integration/purchase-lines-engagement-postgres.test.js',
+      'tests/integration/hub-directrice-authorizations-postgres.test.js',
+      'tests/unit/purchasing-authorizations-route.test.js',
       'tests/integration/supplier-execution-persistence-postgres.test.js',
       'tests/integration/supplier-execution-payments-postgres.test.js',
       'tests/unit/supplier-payment-state.test.js',
