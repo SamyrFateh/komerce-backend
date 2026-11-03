@@ -100,7 +100,7 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       await expect(page.locator('[data-workspace-action="mark-ordered"], [data-workspace-action="ship"], [data-workspace-action="run-distribution"]')).toHaveCount(0);
     });
 
-    test('encaisser, remettre (la réception passe par l'attestation d'expédition) : une mutation par clic sur les routes du marché', async ({ page }) => {
+    test("encaisser, remettre (la réception passe par l'attestation d'expédition) : une mutation par clic sur les routes du marché", async ({ page }) => {
       const posts = [];
       await mount(page, posts);
       await page.locator('[data-workspace-action="confirm-cash"]').click();
