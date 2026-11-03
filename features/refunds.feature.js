@@ -61,6 +61,8 @@ module.exports = {
     ],
     services: [
       'services/refund-service.js',
+      'services/item-refund-reservation-service.js',
+      'services/item-refund-psp-orchestrator.js',
       'services/refund-intent-ledger.js',
       'services/refund-evidence-verifier.js',
       'services/refund-intent-reconciliation.js',
@@ -76,6 +78,9 @@ module.exports = {
       // les arrondir à l'unité lui faisait perdre des centimes.
       'tests/e2e-api/refunds.credits-cash-numeric.e2e.test.js',
       'tests/unit/refund-service.test.js',
+      'tests/unit/item-refund-reservation-service.test.js',
+      'tests/unit/item-refund-psp-orchestrator.test.js',
+      'tests/e2e-api/refunds.item-partial-physical.e2e.test.js',
       'tests/unit/refund-intent-ledger.test.js',
       'tests/unit/refund-evidence-verifier.test.js',
       'tests/unit/refund-intent-reconciliation.test.js',
@@ -105,6 +110,9 @@ module.exports = {
       'orders: R',
       'refunds: RW',
       'refund_execution_intents: RW',
+      'order_item_refund_reservations: RW',
+      'order_items: R',
+      'international_shipment_relay_receipts: R',
       'wallets: R',
     ],
   },
@@ -126,6 +134,8 @@ module.exports = {
     consumes: [
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
       'orders (commande source)',
+      'logistics (attestation physique du manquant au relais ; source incident immuable)',
+      'payments (capture PSP, intention durable et réconciliation du remboursement en EUR)',
       'wallet (credit)',
       'documents (reçu)',
       'economic-engine (A8 : rafraîchissement transactionnel de la marge réelle canonique via canonical-margin-writer ; no-op si la règle CANONICAL_MARGIN_WRITER_ENABLED vaut 0)',
