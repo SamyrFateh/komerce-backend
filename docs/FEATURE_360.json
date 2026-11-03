@@ -7924,7 +7924,7 @@
             ]
           },
           "tests": {
-            "count": 198,
+            "count": 199,
             "files": [
               {
                 "declared": "playwright.config.js",
@@ -8692,6 +8692,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/hub-context-actions-authorizations.test.js",
+                "resolvedPath": "tests/unit/hub-context-actions-authorizations.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/hub-dashboard-queries.test.js",
                 "resolvedPath": "tests/unit/hub-dashboard-queries.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -8919,7 +8924,7 @@
             ]
           }
         },
-        "totalFiles": 444,
+        "totalFiles": 445,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -29334,11 +29339,19 @@
       "ownership": {
         "ownsTables": [
           {
+            "table": "hub_authorization_grants",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "product_suppliers",
             "resolution": "single-writer"
           },
           {
             "table": "purchase_lines",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "purchase_order_authorizations",
             "resolution": "declared-table-owner"
           },
           {
@@ -29380,6 +29393,12 @@
         ],
         "writesTables": [
           {
+            "table": "hub_authorization_grants",
+            "mode": "RW",
+            "lifecycleOwner": "purchasing",
+            "ownershipStatus": "owner"
+          },
+          {
             "table": "product_suppliers",
             "mode": "RW",
             "lifecycleOwner": "purchasing",
@@ -29387,6 +29406,12 @@
           },
           {
             "table": "purchase_lines",
+            "mode": "RW",
+            "lifecycleOwner": "purchasing",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "purchase_order_authorizations",
             "mode": "RW",
             "lifecycleOwner": "purchasing",
             "ownershipStatus": "owner"
@@ -29472,11 +29497,19 @@
       "data": {
         "ownsTables": [
           {
+            "table": "hub_authorization_grants",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "product_suppliers",
             "resolution": "single-writer"
           },
           {
             "table": "purchase_lines",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "purchase_order_authorizations",
             "resolution": "declared-table-owner"
           },
           {
@@ -29518,6 +29551,12 @@
         ],
         "writesTables": [
           {
+            "table": "hub_authorization_grants",
+            "mode": "RW",
+            "lifecycleOwner": "purchasing",
+            "ownershipStatus": "owner"
+          },
+          {
             "table": "product_suppliers",
             "mode": "RW",
             "lifecycleOwner": "purchasing",
@@ -29525,6 +29564,12 @@
           },
           {
             "table": "purchase_lines",
+            "mode": "RW",
+            "lifecycleOwner": "purchasing",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "purchase_order_authorizations",
             "mode": "RW",
             "lifecycleOwner": "purchasing",
             "ownershipStatus": "owner"

@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 1957,
-    "edges": 9656,
+    "edges": 9659,
     "dbTables": 224,
     "doctrines": 751,
     "impactAreas": 207,
@@ -19442,11 +19442,14 @@
         "routes/hub.js"
       ],
       "dbRead": [
+        "hub_authorization_grants",
         "markets",
         "orders",
+        "purchase_order_authorizations",
         "purchase_orders",
         "purchase_lines",
-        "supplier_execution_payments"
+        "supplier_execution_payments",
+        "users"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -73458,6 +73461,12 @@
     },
     {
       "from": "services/hub-administration-board.js",
+      "to": "db:hub_authorization_grants",
+      "type": "db-read",
+      "label": "hub_authorization_grants"
+    },
+    {
+      "from": "services/hub-administration-board.js",
       "to": "db:markets",
       "type": "db-read",
       "label": "markets"
@@ -73467,6 +73476,12 @@
       "to": "db:orders",
       "type": "db-read",
       "label": "orders"
+    },
+    {
+      "from": "services/hub-administration-board.js",
+      "to": "db:purchase_order_authorizations",
+      "type": "db-read",
+      "label": "purchase_order_authorizations"
     },
     {
       "from": "services/hub-administration-board.js",
@@ -73485,6 +73500,12 @@
       "to": "db:supplier_execution_payments",
       "type": "db-read",
       "label": "supplier_execution_payments"
+    },
+    {
+      "from": "services/hub-administration-board.js",
+      "to": "db:users",
+      "type": "db-read",
+      "label": "users"
     },
     {
       "from": "services/hub-administration-board.js",
@@ -121260,11 +121281,14 @@
       ],
       "ownedFiles": [],
       "dbRead": [
+        "hub_authorization_grants",
         "markets",
         "orders",
+        "purchase_order_authorizations",
         "purchase_orders",
         "purchase_lines",
-        "supplier_execution_payments"
+        "supplier_execution_payments",
+        "users"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -121278,11 +121302,14 @@
         "admin-dashboard"
       ],
       "mustCheck": [
+        "db:hub_authorization_grants",
         "db:markets",
         "db:orders",
         "db:purchase_lines",
+        "db:purchase_order_authorizations",
         "db:purchase_orders",
         "db:supplier_execution_payments",
+        "db:users",
         "doctrine:one_po_one_supplier_one_market",
         "doctrine:supplier_payment_authorization_distinct_from_debit",
         "impact:admin-dashboard",
