@@ -120,3 +120,142 @@ CREATE OR REPLACE VIEW public.hub_box_effective_placements AS
   SELECT p.id AS placement_id, l.box_unit_id, l.bag_unit_id, p.allocation_id, p.quantity
     FROM public.hub_box_bags l
     JOIN public.hub_physical_unit_placements p ON p.physical_unit_id=l.bag_unit_id AND p.removed_at IS NULL;
+
+
+CREATE OR REPLACE FUNCTION public.hub_guard_physical_unit_update() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  active_count integer;
+  market_count integer;
+  destination_count integer;
+  resolved_market_id uuid;
+  resolved_destination_ref text;
+  transition_ok boolean;
+  resume_state text;
+BEGIN
+  IF OLD.market_id IS NOT NULL AND NEW.market_id IS DISTINCT FROM OLD.market_id THEN
+    RAISE EXCEPTION 'hub_physical_unit_market_immutable';
+  END IF;
+
+  IF OLD.outcome_type IS NOT NULL AND NEW.outcome_type IS DISTINCT FROM OLD.outcome_type THEN
+    RAISE EXCEPTION 'hub_physical_outcome_immutable';
+  END IF;
+
+  IF NEW.market_id IS DISTINCT FROM OLD.market_id
+     AND NEW.state NOT IN ('PACKED', 'DISPATCHED') THEN
+    RAISE EXCEPTION 'hub_market_only_derived_at_outbound';
+  END IF;
+
+  IF NEW.state IS DISTINCT FROM OLD.state THEN
+    IF OLD.state = 'QUARANTINED' THEN
+      IF OLD.outcome_type IS NOT NULL THEN
+        RAISE EXCEPTION 'hub_destructive_outcome_quarantine_terminal';
+      END IF;
+
+      IF EXISTS (
+        SELECT 1
+          FROM incidents i
+         WHERE i.status IN ('open', 'investigating')
+           AND i.details->>'physical_unit_id' = OLD.id::text
+      ) THEN
+        RAISE EXCEPTION 'hub_quarantine_incident_active';
+      END IF;
+
+      SELECT COALESCE(NULLIF(e.from_state, 'QUARANTINED'), 'RECEIVED')
+        INTO resume_state
+        FROM hub_custody_events e
+       WHERE e.physical_unit_id = OLD.id
+         AND e.event_type = 'QUARANTINE'
+       ORDER BY e.created_at DESC, e.id DESC
+       LIMIT 1;
+
+      resume_state := COALESCE(resume_state, 'RECEIVED');
+      transition_ok := NEW.state = resume_state;
+    ELSE
+      transition_ok := CASE OLD.state
+        WHEN 'RECEIVED'        THEN NEW.state IN ('IDENTIFIED', 'QUARANTINED', 'SUPERSEDED')
+        WHEN 'IDENTIFIED'      THEN NEW.state IN ('QUALITY_CHECKED', 'QUARANTINED', 'SUPERSEDED')
+        WHEN 'QUALITY_CHECKED' THEN NEW.state IN ('LOCATED', 'QUARANTINED', 'SUPERSEDED')
+        WHEN 'LOCATED'         THEN NEW.state IN ('ALLOCATED', 'QUARANTINED', 'SUPERSEDED')
+        WHEN 'ALLOCATED'       THEN NEW.state IN ('PICKED', 'QUARANTINED', 'SUPERSEDED')
+        WHEN 'PICKED'          THEN NEW.state IN ('PACKED', 'QUARANTINED', 'SUPERSEDED')
+        WHEN 'PACKED'          THEN NEW.state IN ('DISPATCHED', 'QUARANTINED')
+        WHEN 'DISPATCHED'      THEN NEW.state = 'QUARANTINED'
+        ELSE false
+      END;
+    END IF;
+
+    IF NOT transition_ok THEN
+      RAISE EXCEPTION 'hub_physical_state_transition_invalid:%->%', OLD.state, NEW.state;
+    END IF;
+  END IF;
+
+  IF NEW.state IN ('PACKED', 'DISPATCHED') THEN
+    SELECT COUNT(*)::integer,
+           COUNT(DISTINCT a.market_id)::integer,
+           COUNT(DISTINCT a.destination_ref)::integer,
+           MIN(a.market_id::text)::uuid,
+           MIN(a.destination_ref)
+      INTO active_count, market_count, destination_count, resolved_market_id, resolved_destination_ref
+      FROM (
+        SELECT p.allocation_id, p.quantity
+          FROM hub_physical_unit_placements p
+         WHERE NEW.unit_type = 'HANDLING_UNIT'
+           AND p.physical_unit_id = NEW.id AND p.removed_at IS NULL
+        UNION ALL
+        SELECT p.allocation_id, p.quantity
+          FROM hub_box_effective_placements p
+         WHERE NEW.unit_type = 'MARKET_PARCEL' AND p.box_unit_id = NEW.id
+      ) p
+      JOIN hub_purchase_allocations a ON a.id = p.allocation_id;
+
+    IF active_count = 0 THEN
+      RAISE EXCEPTION 'hub_outbound_unit_empty';
+    END IF;
+    IF market_count <> 1 THEN
+      RAISE EXCEPTION 'hub_outbound_market_not_homogeneous';
+    END IF;
+    IF destination_count <> 1 OR resolved_destination_ref IS NULL THEN
+      RAISE EXCEPTION 'hub_outbound_destination_not_homogeneous';
+    END IF;
+    IF NEW.market_id IS NOT NULL AND NEW.market_id IS DISTINCT FROM resolved_market_id THEN
+      RAISE EXCEPTION 'hub_outbound_market_snapshot_mismatch';
+    END IF;
+
+    NEW.market_id := resolved_market_id;
+  END IF;
+
+  NEW.updated_at := now();
+  RETURN NEW;
+END;
+$$;
+
+
+-- Tous les compteurs lisent la composition effective de la KOM-BOX.
+-- Le sac garde ses placements actifs ; il n'est jamais vidé par un MOVE fictif.
+CREATE OR REPLACE FUNCTION public.hub_item_handed_over(p_order_item_id uuid)
+RETURNS integer LANGUAGE sql STABLE AS $$
+  SELECT COALESCE(SUM(p.quantity), 0)::integer
+    FROM public.hub_box_effective_placements p
+    JOIN public.hub_purchase_allocations a ON a.id = p.allocation_id
+    JOIN public.international_shipment_hub_units h ON h.physical_unit_id = p.box_unit_id
+    JOIN public.international_shipments s ON s.id = h.shipment_id
+   WHERE a.order_item_id = p_order_item_id
+     AND s.stage <> 'hub_ready';
+$$;
+
+CREATE OR REPLACE FUNCTION public.hub_item_physical_proof(
+  p_order_item_id uuid, OUT received integer, OUT boxed integer
+) RETURNS record LANGUAGE plpgsql STABLE AS $$
+BEGIN
+  SELECT COALESCE(SUM(p.quantity), 0)::integer INTO received
+    FROM public.hub_physical_unit_placements p
+    JOIN public.hub_purchase_allocations a ON a.id = p.allocation_id
+   WHERE a.order_item_id = p_order_item_id AND p.operation_type = 'RECEIVE';
+
+  SELECT COALESCE(SUM(p.quantity), 0)::integer INTO boxed
+    FROM public.hub_box_effective_placements p
+    JOIN public.hub_purchase_allocations a ON a.id = p.allocation_id
+   WHERE a.order_item_id = p_order_item_id;
+END $$;
