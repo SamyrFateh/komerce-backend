@@ -159,4 +159,36 @@ if (!process.env.DATABASE_URL) {
     await expect(relay.receiveShipment({ market, actor: agentB, reference: ref, body: { proof_ref: 'Z', lines: [{ order_item_id: items.b.itemId, received_qty: 2 }] } }))
       .rejects.toMatchObject({ status: 409, code: 'RELAY_SHIPMENT_NOT_AT_RELAY' });
   });
+
+  test('P0-1 · l\'attestation est effective : colis et commande disponibles pour les quantités attestées, code de retrait émis, écart jamais écrasé', async () => {
+    const o = (await q('SELECT status, pickup_secret_hash FROM orders WHERE id=$1', [items.a.orderId])).rows[0];
+    expect(o.status).toBe('available');
+    expect(o.pickup_secret_hash).toBeTruthy();
+    const p = (await q('SELECT p.status, pi.quantity, pi.qty_shipped, pi.qty_received FROM parcels p JOIN parcel_items pi ON pi.parcel_id=p.id WHERE pi.order_item_id=$1', [items.a.itemId])).rows[0];
+    expect(p).toMatchObject({ status: 'available', quantity: 4, qty_shipped: 3, qty_received: 2 });
+    expect((await q("SELECT count(*)::int AS n FROM scans WHERE parcel_id IN (SELECT parcel_id FROM parcel_items WHERE order_item_id=$1) AND step='relais_received'", [items.a.itemId])).rows[0].n).toBe(1);
+  });
+
+  test('P0-1 · aucun scan ni écriture directe ne peut réceptionner ou compléter une quantité import à la place du relais', async () => {
+    const scanEngine = require('../../services/scan-engine');
+    const parcelA = (await q('SELECT parcel_id FROM parcel_items WHERE order_item_id=$1', [items.a.itemId])).rows[0].parcel_id;
+    const refused = await scanEngine.processScan({ parcel_id: parcelA, event_type: 'relais_received', scanned_by: admin, actor_role: 'admin' });
+    expect(refused.success).toBe(false);
+    expect(refused.error).toMatchObject({ code: 'IMPORT_RECEIPT_REQUIRES_RELAY_ATTESTATION' });
+    await expect(q('UPDATE parcel_items SET qty_received = 4 WHERE order_item_id=$1', [items.a.itemId])).rejects.toThrow();
+    await expect(q('UPDATE parcel_items SET qty_received = 3 WHERE order_item_id=$1', [items.a.itemId])).rejects.toThrow(/parcel_item_not_relay_attested/);
+    expect((await q('SELECT qty_received FROM parcel_items WHERE order_item_id=$1', [items.a.itemId])).rows[0].qty_received).toBe(2);
+  });
+
+  test('P0-1 · retrait borné à la quantité reçue : 2 remis sur 4, la commande n\'est pas clôturée et le reliquat reste visible', async () => {
+    const scanEngine = require('../../services/scan-engine');
+    const parcelA = (await q('SELECT parcel_id FROM parcel_items WHERE order_item_id=$1', [items.a.itemId])).rows[0].parcel_id;
+    await q('UPDATE orders SET relais_id=$2 WHERE id=$1', [items.a.orderId, relaisA]);
+    const out = await scanEngine.processScan({ parcel_id: parcelA, event_type: 'customer_collected', scanned_by: admin, actor_role: 'admin' });
+    const pi = (await q('SELECT quantity, qty_received, qty_collected FROM parcel_items WHERE order_item_id=$1', [items.a.itemId])).rows[0];
+    expect(out.success).toBe(true);
+    expect(pi.qty_collected).toBe(2);
+    expect(pi.quantity).toBe(4);
+    expect((await q('SELECT status FROM orders WHERE id=$1', [items.a.orderId])).rows[0].status).not.toBe('collected');
+  });
 }
