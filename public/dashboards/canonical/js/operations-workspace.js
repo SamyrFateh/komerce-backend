@@ -404,6 +404,22 @@
     head.appendChild(text(doc, 'span', 'kmc-workspace-muted',
       `PO ${String(po.purchase_order_id).slice(0, 8)} · ${po.supplier_order_ref || 'sans référence fournisseur'} · statut fournisseur : ${po.po_status} (information, pas une réception)`));
     card.appendChild(head);
+    // Douchette USB (mode clavier) : un scan reconnaît une référence, jamais un client.
+    const scannerPanel = doc.createElement('div');
+    scannerPanel.className = 'kmc-workspace-receive-scanner';
+    const scannerLabel = text(doc, 'label', 'kmc-workspace-receive-scan-label', 'Identifier la référence reçue');
+    const scannerInput = doc.createElement('input');
+    scannerInput.type = 'text';
+    scannerInput.autocomplete = 'off';
+    scannerInput.className = 'kmc-workspace-receive-scan-input';
+    scannerInput.placeholder = 'Scanner EAN / code fournisseur puis Entrée';
+    scannerInput.setAttribute('aria-label', 'Scanner le code physique de la référence fournisseur');
+    scannerLabel.appendChild(scannerInput);
+    scannerPanel.appendChild(scannerLabel);
+    const scannerResult = text(doc, 'span', 'kmc-workspace-receive-scan-result', 'Sans scan : contrôle manuel de la variante.');
+    scannerResult.setAttribute('role', 'status');
+    scannerPanel.appendChild(scannerResult);
+    card.appendChild(scannerPanel);
 
     const wrap = doc.createElement('div');
     wrap.className = 'kmc-workspace-table-wrap';
@@ -485,6 +501,40 @@
         : 'Saisissez la quantité réellement reçue. Aucune quantité n’est préremplie.';
     }
     inputs.forEach(({ input }) => input.addEventListener('input', sync));
+    let scanning = false;
+    scannerInput.addEventListener('keydown', async event => {
+      if (event.key !== 'Enter') return;
+      event.preventDefault();
+      const code = String(scannerInput.value || '').trim();
+      if (!code || scanning) return;
+      scanning = true;
+      scannerInput.disabled = true;
+      scannerResult.textContent = 'Identification en cours…';
+      scannerResult.dataset.scanTone = 'pending';
+      try {
+        const query = new URLSearchParams({ purchase_order_id: String(po.purchase_order_id), code });
+        const matched = await jsonRequest(context.fetch, `${endpointFor(context.marketCode, 'supply/physical-code')}?${query}`);
+        const candidate = inputs.find(({ line }) => String(line.product_sku_id || '') === String(matched.product_sku_id) && Number(line.remaining_quantity) > 0);
+        if (!candidate) {
+          scannerResult.textContent = 'Référence reconnue, mais aucune quantité attendue dans cette PO : traiter l’écart.';
+          scannerResult.dataset.scanTone = 'warning';
+          return;
+        }
+        scannerResult.textContent = matched.confirmed
+          ? `Référence confirmée : ${candidate.line.product_name}. Comptez puis saisissez la quantité réellement reçue.`
+          : `Référence fournisseur déclarée : ${candidate.line.product_name}. Vérification physique du code à confirmer.`;
+        scannerResult.dataset.scanTone = matched.confirmed ? 'success' : 'warning';
+        candidate.input.focus();
+        candidate.input.select();
+      } catch (error) {
+        scannerResult.textContent = `Code non reconnu ou incompatible avec cette PO (${error.code || 'contrôle requis'}).`;
+        scannerResult.dataset.scanTone = 'error';
+        scannerInput.focus();
+      } finally {
+        scanning = false;
+        scannerInput.disabled = false;
+      }
+    });
 
     button.addEventListener('click', () => {
       const { contents, invalid } = collect();
