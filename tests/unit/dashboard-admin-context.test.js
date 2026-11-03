@@ -122,19 +122,42 @@ describe('dashboard-admin-context', () => {
       .rejects.toMatchObject({ code: 'dashboard_access_denied' });
   });
 
-  test('Hub: union des marchés où une lecture operations/logistics est réellement accordée', async () => {
+  test('Hub central: tous les marchés actifs sans appartenance à une équipe marché', async () => {
     mockHasGlobal.mockResolvedValue(false);
-    mockListAuthorizedMarkets
-      .mockResolvedValueOnce([{ market_code: 'CM' }])
-      .mockResolvedValueOnce([{ market_code: 'KM' }, { market_code: 'CM' }]);
-    mockQuery.mockResolvedValueOnce({ rows: [{ code: 'CM' }, { code: 'KM' }] });
+    mockQuery.mockResolvedValueOnce({ rows: [{ code: 'CG' }, { code: 'CM' }, { code: 'KM' }] });
 
     const ctx = await resolveDashboardAdminContext({ id: 'hub-1', role: 'agent_hub' });
-    expect(ctx.access.allowedMarkets).toEqual(['CM', 'KM']);
-    expect(mockListAuthorizedMarkets).toHaveBeenCalledTimes(2);
-    expect(mockListAuthorizedMarkets.mock.calls.map(([, args]) => args.requiredCapability))
-      .toEqual(['operations.read', 'logistics.read']);
-    expect(mockQuery.mock.calls[0][1]).toEqual([['CM', 'KM']]);
+    expect(ctx.actor.role).toBe('agent_hub');
+    expect(ctx.access).toEqual({
+      mode: 'hub',
+      allowedMarkets: ['CG', 'CM', 'KM'],
+      defaultMarket: 'CG',
+      capabilities: [],
+      delegatedCapabilities: {},
+    });
+    expect(mockListAuthorizedMarkets).not.toHaveBeenCalled();
+    expect(mockResolveAuthorization).not.toHaveBeenCalled();
+    expect(mockHasGlobal).not.toHaveBeenCalled();
+    const [sql, params] = mockQuery.mock.calls[0];
+    expect(sql).toContain('WHERE is_active = TRUE');
+    expect(sql).not.toContain('operator_market_scopes');
+    expect(params).toBeUndefined();
+  });
+
+  test('Hub central: le rôle ne fabrique aucun droit Admin, même avec un ancien grant global', async () => {
+    mockHasGlobal.mockResolvedValue(true);
+    mockQuery.mockResolvedValueOnce({ rows: [{ code: 'KM' }] });
+    const ctx = await resolveDashboardAdminContext({ id: 'hub-1', role: 'agent_hub' });
+    expect(ctx.access.mode).toBe('hub');
+    expect(ctx.access.capabilities).not.toContain('dashboard.global.read');
+    expect(ctx.access.delegatedCapabilities).toEqual({});
+    expect(mockHasGlobal).not.toHaveBeenCalled();
+  });
+
+  test('Hub sans marché opérationnel actif : pas de périmètre inventé', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+    await expect(resolveDashboardAdminContext({ id: 'hub-1', role: 'agent_hub' }))
+      .rejects.toMatchObject({ code: 'dashboard_access_denied' });
   });
 
   test('Relais: seul le rattachement physique actif détermine son marché', async () => {

@@ -170,6 +170,25 @@ describe('GET /api/admin/dashboard/context', () => {
     expect(JSON.stringify(res.body)).not.toContain('market_id');
   });
 
+  test('Hub central accède au contexte logistique, jamais au cockpit commercial pays', async () => {
+    mockCurrentUser = { id: 'hub-central-1', role: 'agent_hub' };
+    mockResolveAdminContext.mockResolvedValueOnce({
+      actor: { id: mockCurrentUser.id, role: 'agent_hub' },
+      access: {
+        mode: 'hub', allowedMarkets: ['CG', 'CM', 'KM'],
+        defaultMarket: 'CG', capabilities: [], delegatedCapabilities: {},
+      },
+    });
+    const context = await request(makeApp()).get('/api/admin/dashboard/context');
+    expect(context.status).toBe(200);
+    expect(context.body.access.mode).toBe('hub');
+    expect(context.body.access.allowedMarkets).toEqual(['CG', 'CM', 'KM']);
+    expect(context.body.access.capabilities).not.toContain('dashboard.global.read');
+    const commercial = await request(makeApp()).get('/api/admin/dashboard/unified/market/CM');
+    expect(commercial.status).toBe(403);
+    expect(mockBuildMarketPilotage).not.toHaveBeenCalled();
+  });
+
   test.each(['agent_hub', 'agent_relais', 'finance'])('%s peut résoudre son AdminContext sans devenir admin dashboard', async role => {
     mockCurrentUser = { id: `${role}-1`, role };
 
