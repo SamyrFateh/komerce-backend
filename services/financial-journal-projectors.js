@@ -223,6 +223,23 @@ async function projectCustodyMovements(client, { marketId = null } = {}) {
   }));
 }
 
+// Fail-closed : ne pas additionner une facture du dossier et une ancienne allocation
+// article du MEME dossier. La migration 361 interdit déjà cette double autorité,
+// et le journal ne doit pas la réintroduire lors d'une reconstruction de Staging.
+async function assertShipmentCostAuthority(client, rows) {
+  const ids = [...new Set(rows.map(row => row.shipment_id || row.id).filter(Boolean))];
+  if (!ids.length) return;
+  const { rows: checks } = await client.query(
+    `SELECT a.shipment_id, COUNT(*)::int AS n FROM order_item_real_cost_allocations a
+       WHERE a.is_actual = true AND a.shipment_id = ANY($1::uuid[])
+       GROUP BY a.shipment_id LIMIT 1`, [ids]);
+  if (checks.length && Number(checks[0].n) > 0) {
+    const error = new Error('Coût expédition et allocation article concurrents : réconciliation requise');
+    error.code = 'JOURNAL_SHIPMENT_ITEM_ALLOCATION_CONFLICT';
+    throw error;
+  }
+}
+
 // Les coûts physiques appartiennent au dossier d'expédition (pas aux articles).
 // Ne jamais projeter un agrégat de rapprochement en plus de ses factures sources.
 async function projectShipmentFreight(client, { marketId = null } = {}) {
@@ -240,6 +257,7 @@ async function projectShipmentFreight(client, { marketId = null } = {}) {
         AND EXISTS (SELECT 1 FROM international_shipment_hub_units hu WHERE hu.shipment_id = s.id)
         ${marketFilter('s', marketId, params)}
       ORDER BY s.id`, params);
+  await assertShipmentCostAuthority(client, rows);
   return feed(emptyReport(), client, rows, row => ({
     sourceKind: 'shipment_freight', sourceId: row.id,
     direction: 'cost', category: 'cost:shipment_freight', state: 'observed',
@@ -262,6 +280,7 @@ async function projectShipmentCharges(client, { marketId = null } = {}) {
         AND EXISTS (SELECT 1 FROM international_shipment_hub_units hu WHERE hu.shipment_id = s.id)
         ${marketFilter('s', marketId, params)}
       ORDER BY c.recorded_at, c.id`, params);
+  await assertShipmentCostAuthority(client, rows);
   return feed(emptyReport(), client, rows, row => ({
     sourceKind: 'shipment_charge', sourceId: row.id,
     direction: row.kind === 'credit' ? 'cost_reversal' : 'cost',
@@ -293,6 +312,7 @@ async function projectShipmentCustoms(client, { marketId = null } = {}) {
         AND EXISTS (SELECT 1 FROM international_shipment_hub_units hu WHERE hu.shipment_id = s.id)
         ${marketFilter('s', marketId, params)}
       ORDER BY cs.id`, params);
+  await assertShipmentCostAuthority(client, rows);
   return feed(emptyReport(), client, rows, row => ({
     sourceKind: 'shipment_customs', sourceId: row.id,
     direction: 'cost', category: 'cost:shipment_customs', state: 'observed',
