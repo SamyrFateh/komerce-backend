@@ -1686,3 +1686,19 @@
 .kmc-hub-board-menu-action { display:block; width:100%; border:0; border-radius:7px; background:transparent; text-align:left; font:inherit; font-size:12px; color:#25445d; text-decoration:none; padding:10px; cursor:pointer; }
 .kmc-hub-board-menu-action:hover { background:#eef5f4; }
 @media(max-width:1020px){.kmc-hub-board {min-width:940px;}}
+
+
+/* Réception Hub : scan par référence, état visuel sans ajouter un écran séparé. */
+.kmc-operations-workspace[data-workspace-mode="execution"] .kmc-workspace-receive-scanner {
+  display: flex; flex-wrap: wrap; align-items: end; gap: 9px 14px;
+  padding: 10px 12px; margin: 9px 0 10px;
+  background: #f0f6ff; border: 1px solid #bdd4f7; border-radius: 10px;
+}
+.kmc-workspace-receive-scan-label { display: flex; flex: 1 1 245px; min-width: 190px; flex-direction: column; gap: 5px; color: #1c416f; font-size: 12px; font-weight: 750; }
+.kmc-workspace-receive-scan-input { min-height: 42px; padding: 8px 11px; border: 1px solid #99bce9; border-radius: 8px; background: white; color: #122c4d; font: inherit; font-weight: 500; }
+.kmc-workspace-receive-scan-input:focus-visible { outline: 3px solid #5d9def; outline-offset: 2px; }
+.kmc-workspace-receive-scan-result { flex: 2 1 220px; min-width: 170px; color: #31577f; font-size: 12px; }
+.kmc-workspace-receive-scan-result[data-scan-tone="success"] { color: #126a3e; font-weight: 700; }
+.kmc-workspace-receive-scan-result[data-scan-tone="warning"] { color: #9a5800; font-weight: 700; }
+.kmc-workspace-receive-scan-result[data-scan-tone="error"] { color: #ad2830; font-weight: 700; }
+@media (max-width: 680px) { .kmc-workspace-receive-scan-label, .kmc-workspace-receive-scan-result { flex-basis: 100%; } }
