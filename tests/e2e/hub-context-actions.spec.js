@@ -95,6 +95,48 @@ test('colors et prochaine action restent des faits lisibles, sans détail articl
   await page.screenshot({path:'test-results/hub-context-colors-1440.png',fullPage:true});
 });
 
+test('clic droit : PO, fournisseur, cartons et départ affichent des menus vraiment distincts',async({page})=>{
+  const {posts}=await mount(page);
+  const row=page.locator('[data-hub-global-order="KM-302"]');
+  const menu=page.locator('[data-hub-global-menu]');
+  await row.locator('[data-hub-global-stage="PO"]').click({button:'right'});
+  await expect(menu).toContainText('PO déjà constituée');
+  await expect(menu.locator('a')).toHaveCount(0);
+  await expect(menu.locator('[data-hub-real-action]')).toHaveCount(0);
+
+  await row.locator('[data-hub-global-stage="Fournisseur"]').click({button:'right'});
+  await expect(menu.getByRole('button',{name:'Attester l’envoi fournisseur'})).toBeVisible();
+  await expect(menu).not.toContainText('PO déjà constituée');
+  await expect(menu.locator('a')).toHaveCount(0);
+
+  await row.locator('[data-hub-global-stage="Cartons"]').click({button:'right'});
+  await expect(menu).toContainText('Carton(s) présent(s)');
+  await expect(menu.locator('[data-hub-real-action]')).toHaveCount(0);
+
+  await row.locator('[data-hub-global-stage="Départ"]').click({button:'right'});
+  await expect(menu.getByRole('button',{name:/Affecter KOM-BOX-302 à un départ/})).toBeVisible();
+  await expect(menu).not.toContainText('Carton(s) présent(s)');
+  await expect(menu.locator('a')).toHaveCount(0);
+  expect(posts).toHaveLength(0);
+});
+
+test('Administration : Engagement ne se confond pas avec Fournisseur ni Paiement',async({page})=>{
+  const {posts}=await mount(page,{role:'admin',admin:true});
+  const row=page.locator('[data-hub-admin-po="'+PO+'"]');
+  const menu=page.locator('[data-hub-admin-menu]');
+  await row.locator('[data-hub-admin-stage="Engagement"]').click({button:'right'});
+  await expect(menu).toContainText('Engagement d’achat');
+  await expect(menu.locator('[data-hub-real-action]')).toHaveCount(0);
+  await expect(menu.locator('a')).toHaveCount(0);
+  await row.locator('[data-hub-admin-stage="Fournisseur"]').click({button:'right'});
+  await expect(menu.getByRole('button',{name:'Attester l’envoi fournisseur'})).toBeVisible();
+  await expect(menu).not.toContainText('Engagement d’achat');
+  await row.locator('[data-hub-admin-stage="Paiement"]').click({button:'right'});
+  await expect(menu).toContainText('Une preuve de débit ne remplace pas');
+  await expect(menu.locator('[data-hub-real-action]')).toHaveCount(0);
+  expect(posts).toHaveLength(0);
+});
+
 test('fournisseur : preuve d’envoi saisie puis POST canonique seulement après confirmation',async({page})=>{
   const {posts}=await mount(page);
   await page.locator('[data-hub-global-stage="Fournisseur"]').click({button:'right'});
