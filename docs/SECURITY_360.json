@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-11-03T14:03:26.065Z",
+  "generatedAt": "2026-11-03T15:21:29.852Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 787,
-    "protected": 732,
+    "total": 786,
+    "protected": 731,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -2218,14 +2218,6 @@
     },
     {
       "key": "POST /api/admin/workspaces/operations/market/{marketCode}/parcels/{reference}/collect",
-      "level": "PROTECTED",
-      "roles": [
-        "admin",
-        "agent_relais"
-      ]
-    },
-    {
-      "key": "POST /api/admin/workspaces/operations/market/{marketCode}/parcels/{reference}/receive",
       "level": "PROTECTED",
       "roles": [
         "admin",

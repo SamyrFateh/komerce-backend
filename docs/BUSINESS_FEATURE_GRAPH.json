@@ -22458,14 +22458,6 @@
       },
       {
         "feature": "dashboard",
-        "entry": "POST /api/admin/workspaces/operations/market/:marketCode/parcels/:reference/receive",
-        "method": "POST",
-        "path": "/api/admin/workspaces/operations/market/{id}/parcels/{id}/receive",
-        "routeFile": "routes/admin-operations-workspace.js",
-        "status": "resolved-owned"
-      },
-      {
-        "feature": "dashboard",
         "entry": "POST /api/admin/workspaces/operations/market/:marketCode/parcels/:reference/ship",
         "method": "POST",
         "path": "/api/admin/workspaces/operations/market/{id}/parcels/{id}/ship",
@@ -39592,6 +39584,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "services/relay-shipment-receipt.js",
+                "targetFile": "utils/logger.js"
+              },
+              {
                 "sourceFileId": "routes/parcels.js",
                 "targetFile": "db.js"
               },
@@ -39976,6 +39972,10 @@
                 "targetFile": "services/notifications/notification-service.js"
               },
               {
+                "sourceFileId": "services/relay-shipment-receipt.js",
+                "targetFile": "services/client-notification-service.js"
+              },
+              {
                 "sourceFileId": "routes/parcel-api-v2/scans.js",
                 "targetFile": "services/notification-service.js"
               },
@@ -40094,6 +40094,10 @@
               {
                 "sourceFileId": "services/routing.js",
                 "targetFile": "services/order-mutation-service.js"
+              },
+              {
+                "sourceFileId": "services/relay-parcel-item-reconciliation.js",
+                "targetFile": "services/order-status-machine.js"
               },
               {
                 "sourceFileId": "routes/parcels.js",
