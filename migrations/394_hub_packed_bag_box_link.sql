@@ -259,3 +259,40 @@ BEGIN
     JOIN public.hub_purchase_allocations a ON a.id = p.allocation_id
    WHERE a.order_item_id = p_order_item_id;
 END $$;
+
+
+-- Lorsqu'un sac est ajouté à une KOM-BOX, la quantité "emballée" du colis client
+-- est recalculée depuis la nouvelle preuve physique, pas déclarée par l'agent.
+CREATE OR REPLACE FUNCTION public.sync_parcel_items_on_bag_box_link()
+RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE v_item uuid;
+BEGIN
+  FOR v_item IN
+    SELECT DISTINCT a.order_item_id
+      FROM public.hub_physical_unit_placements p
+      JOIN public.hub_purchase_allocations a ON a.id=p.allocation_id
+     WHERE p.physical_unit_id=NEW.bag_unit_id AND p.removed_at IS NULL
+  LOOP
+    PERFORM public.sync_parcel_items_from_physical(v_item);
+  END LOOP;
+  RETURN NULL;
+END $$;
+CREATE TRIGGER trg_sync_parcel_items_on_bag_box_link
+  AFTER INSERT ON public.hub_box_bags
+  FOR EACH ROW EXECUTE FUNCTION public.sync_parcel_items_on_bag_box_link();
+
+CREATE OR REPLACE FUNCTION public.sync_parcel_items_on_shipment_stage()
+RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE v_item uuid;
+BEGIN
+  FOR v_item IN
+    SELECT DISTINCT a.order_item_id
+      FROM public.international_shipment_hub_units h
+      JOIN public.hub_box_effective_placements p ON p.box_unit_id=h.physical_unit_id
+      JOIN public.hub_purchase_allocations a ON a.id=p.allocation_id
+     WHERE h.shipment_id=NEW.id
+  LOOP
+    PERFORM public.sync_parcel_items_from_physical(v_item);
+  END LOOP;
+  RETURN NULL;
+END $$;
