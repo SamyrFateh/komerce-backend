@@ -22,6 +22,9 @@ function fakeDb({ codes = [], expected = true, poStatus = 'notified' } = {}) {
       if (sql.startsWith('SELECT id, product_sku_id, supplier_id, code, code_type')) {
         return { rows: codes };
       }
+      if (sql.startsWith('SELECT DISTINCT product_sku_id FROM product_sku_physical_codes')) {
+        return { rows: codes.map(row => ({ product_sku_id: row.product_sku_id })) };
+      }
       if (sql.startsWith('SELECT pg_advisory_xact_lock')) return { rows: [{}] };
       if (sql.startsWith('INSERT INTO product_sku_physical_codes')) {
         return { rows: [{ id: '66666666-6666-4666-8666-666666666666', trust: 'CONFIRMED' }] };
@@ -97,6 +100,14 @@ describe('Hub V1 — physical barcode identifies a SKU, never a customer', () =>
     });
     expect(saved).toMatchObject({ product_sku_id: SKU, trust: 'CONFIRMED' });
     expect(q.query.mock.calls.some(([sql]) => sql.startsWith('SELECT pg_advisory_xact_lock'))).toBe(true);
+  });
+
+  test('a global EAN rejects a conflicting code from any supplier scope', async () => {
+    const q = fakeDb({ codes: [physicalCode(OTHER_SKU)] });
+    await expect(confirmPhysicalCode(q, {
+      purchaseOrderId: PO, productSkuId: SKU, code: '0012345678905',
+      codeType: 'EAN_GTIN', actorId: ACTOR, proofRef: 'verification-emballage',
+    })).rejects.toMatchObject({ code: 'HUB_PHYSICAL_CODE_AMBIGUOUS' });
   });
 
   test('a code previously mapped to a different SKU is rejected without rewrite', async () => {
