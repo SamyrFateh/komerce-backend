@@ -111,6 +111,8 @@ const CHECK_LABELS = Object.freeze({
   supplier_settlements_native: 'Règlements fournisseurs : journal ↔ règlements prouvés (natif)',
   movements_without_provenance: 'Mouvements sans provenance (doit être 0)',
   custody_event_count: 'Garde cash : événements journalisés sans recette',
+  custody_abs_kmf: 'Garde cash : montants déplacés, sans recette',
+  custody_signed_kmf: 'Garde cash : conservation des soldes de détention',
   shipment_freight_kmf: 'Factures de fret : journal ↔ expéditions',
   shipment_charges_net_kmf: 'Charges et avoirs : journal ↔ expéditions',
   shipment_customs_kmf: 'Douane : journal ↔ déclarations d’expédition',
@@ -233,17 +235,37 @@ async function reconcileWithSources(client, scope = {}) {
   add('supplier_settlements_native', sup.journal_native, sup.source_native);
 
 
-  // L7 — réconcilier les mouvements de garde sans les assimiler à du chiffre d'affaires.
+  // L7 — réconciliation stricte des mouvements de garde, hors chiffre d'affaires.
+  // Vérifier le nombre ET les montants absolus/signés : un transfert interne
+  // ne doit ni gonfler les recettes ni masquer un écart de détention.
   const custody = (await client.query(
-    `SELECT (SELECT COUNT(*)::int FROM financial_movements m
-              WHERE m.source_kind = 'cash_custody_movement'
-              ${scope.marketId ? 'AND m.market_id = $1' : ''}) AS journal_count,
-            (SELECT COUNT(*)::int FROM cash_custody_movements c
-              WHERE c.source IN ('TRANSFER_OUT','TRANSFER_IN','FINAL_CLOSURE')
-                AND c.delta_kmf <> 0 AND c.market_id IS NOT NULL
-              ${scope.marketId ? 'AND c.market_id = $1' : ''}) AS source_count`,
+    `SELECT
+       (SELECT COUNT(*)::int FROM financial_movements m
+         WHERE m.source_kind='cash_custody_movement'
+           ${scope.marketId ? 'AND m.market_id=$1' : ''}) AS journal_count,
+       (SELECT COUNT(*)::int FROM cash_custody_movements c
+         WHERE c.source IN ('TRANSFER_OUT','TRANSFER_IN','FINAL_CLOSURE')
+           AND c.delta_kmf<>0 AND c.market_id IS NOT NULL
+           ${scope.marketId ? 'AND c.market_id=$1' : ''}) AS source_count,
+       (SELECT COALESCE(SUM(m.amount_native),0)::text FROM financial_movements m
+         WHERE m.source_kind='cash_custody_movement'
+           ${scope.marketId ? 'AND m.market_id=$1' : ''}) AS journal_abs,
+       (SELECT COALESCE(SUM(ABS(c.delta_kmf)),0)::text FROM cash_custody_movements c
+         WHERE c.source IN ('TRANSFER_OUT','TRANSFER_IN','FINAL_CLOSURE')
+           AND c.delta_kmf<>0 AND c.market_id IS NOT NULL
+           ${scope.marketId ? 'AND c.market_id=$1' : ''}) AS source_abs,
+       (SELECT COALESCE(SUM(m.amount_native * COALESCE((m.provenance->>'delta_sign')::numeric,0)),0)::text
+          FROM financial_movements m
+         WHERE m.source_kind='cash_custody_movement'
+           ${scope.marketId ? 'AND m.market_id=$1' : ''}) AS journal_signed,
+       (SELECT COALESCE(SUM(c.delta_kmf),0)::text FROM cash_custody_movements c
+         WHERE c.source IN ('TRANSFER_OUT','TRANSFER_IN','FINAL_CLOSURE')
+           AND c.delta_kmf<>0 AND c.market_id IS NOT NULL
+           ${scope.marketId ? 'AND c.market_id=$1' : ''}) AS source_signed`,
     scope.marketId ? [scope.marketId] : [])).rows[0];
   add('custody_event_count', custody.journal_count, custody.source_count);
+  add('custody_abs_kmf', custody.journal_abs, custody.source_abs);
+  add('custody_signed_kmf', custody.journal_signed, custody.source_signed);
 
   const freight = (await client.query(
     `SELECT (SELECT COALESCE(SUM(m.amount_native),0)::text FROM financial_movements m
