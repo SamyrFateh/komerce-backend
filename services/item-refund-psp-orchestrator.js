@@ -86,17 +86,18 @@ async function finalizeVerifiedRefund({reservationId,providerRef,db=defaultDb}) 
         fail('ITEM_REFUND_FINANCIAL_REPLAY_CONFLICT','Remboursement financier antérieur incohérent');
       }
     }
-    // Mutation portée par le propriétaire Orders, dans la transaction
-    // financière commune : une preuve PSP confirmée avant la quantité.
-    await applyVerifiedItemRefundToOrderItem(client,{
-      orderId:ref.order_id,orderItemId:ref.order_item_id,quantity:Number(ref.quantity)
-    });
+    // Transaction commune: passer la réservation en confirmed AVANT d'incrémenter
+    // qty_refunded. Le garde PostgreSQL bloque les remises concurrentes tant
+    // qu'une réservation est active, sans compter deux fois la même quantité.
     const state = await client.query(
       "UPDATE order_item_refund_reservations SET status='confirmed',provider_ref=$2,resolved_at=NOW() WHERE id=$1 AND status IN('reserved','processing','unknown') RETURNING id",
       [reservationId,providerRef]
     );
     if(state.rows.length!==1)fail('ITEM_REFUND_FINALIZATION_CONFLICT',
       'Réservation modifiée avant confirmation');
+    await applyVerifiedItemRefundToOrderItem(client,{
+      orderId:ref.order_id,orderItemId:ref.order_item_id,quantity:Number(ref.quantity)
+    });
     await client.query('COMMIT');tx=false;
     return {reservationId,status:'confirmed',replayed:false,paid:true};
   } catch(err){if(tx)await client.query('ROLLBACK').catch(()=>{});throw err}
