@@ -268,7 +268,7 @@ test('agent_transitaire confirme le transit seulement avec execution.transit.con
   mockUserRole = 'agent_transitaire';
   const res = await request(app())
     .post('/api/admin/workspaces/shipping-customs/market/CM/parcels/PCL-CM-001/confirm-transit')
-    .send({ notes: 'Départ confirmé' });
+    .send({ notes: 'Départ confirmé', reason: 'offline' });
 
   expect(res.status).toBe(200);
   expect(mockResolveAuthorization).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
@@ -279,7 +279,8 @@ test('agent_transitaire confirme le transit seulement avec execution.transit.con
     'PCL-CM-001',
     expect.objectContaining({ id: 'market-cm-id', code: 'CM' }),
     expect.objectContaining({ id: 'agent_transitaire-1', role: 'agent_transitaire' }),
-    'Départ confirmé'
+    'Départ confirmé',
+    expect.objectContaining({ reason: 'offline' })
   );
 });
 

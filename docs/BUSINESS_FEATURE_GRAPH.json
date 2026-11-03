@@ -4912,6 +4912,13 @@
       {
         "feature": "dashboard",
         "category": "services",
+        "declared": "services/manual-scan-confirmation.js",
+        "resolvedPath": "services/manual-scan-confirmation.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "dashboard",
+        "category": "services",
         "declared": "services/operations-relay-projection.js",
         "resolvedPath": "services/operations-relay-projection.js",
         "status": "resolved-in-technical-graph"
@@ -6543,6 +6550,13 @@
       {
         "feature": "dashboard",
         "category": "tests",
+        "declared": "tests/unit/hub-context-actions-authorizations.test.js",
+        "resolvedPath": "tests/unit/hub-context-actions-authorizations.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
         "declared": "tests/e2e/context-return-links.spec.js",
         "resolvedPath": "tests/e2e/context-return-links.spec.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -7476,6 +7490,20 @@
         "category": "tests",
         "declared": "tests/unit/admin-operations-workspace-route.test.js",
         "resolvedPath": "tests/unit/admin-operations-workspace-route.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/hub-live-komboxes-ops.test.js",
+        "resolvedPath": "tests/unit/hub-live-komboxes-ops.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/manual-scan-confirmation.test.js",
+        "resolvedPath": "tests/unit/manual-scan-confirmation.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -17757,6 +17785,13 @@
       {
         "feature": "purchasing",
         "category": "services",
+        "declared": "services/hub-authorization-service.js",
+        "resolvedPath": "services/hub-authorization-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "purchasing",
+        "category": "services",
         "declared": "services/purchasing-completion-service.js",
         "resolvedPath": "services/purchasing-completion-service.js",
         "status": "resolved-in-technical-graph"
@@ -18060,6 +18095,20 @@
         "category": "tests",
         "declared": "tests/integration/purchase-lines-engagement-postgres.test.js",
         "resolvedPath": "tests/integration/purchase-lines-engagement-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/integration/hub-directrice-authorizations-postgres.test.js",
+        "resolvedPath": "tests/integration/hub-directrice-authorizations-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/unit/purchasing-authorizations-route.test.js",
+        "resolvedPath": "tests/unit/purchasing-authorizations-route.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -35777,6 +35826,10 @@
               },
               {
                 "sourceFileId": "routes/admin-operations-workspace.js",
+                "targetFile": "services/hub-operations.js"
+              },
+              {
+                "sourceFileId": "routes/admin-operations-workspace.js",
                 "targetFile": "services/international-shipment-journey.js"
               },
               {
@@ -39326,6 +39379,10 @@
           {
             "channel": "static-code",
             "evidence": [
+              {
+                "sourceFileId": "tests/integration/relay-shipment-receipt-postgres.test.js",
+                "targetFile": "services/operations-workspace.js"
+              },
               {
                 "sourceFileId": "tests/integration/txg05-parcel-items-product-id.test.js",
                 "targetFile": "routes/hub-dashboard.js"
@@ -45399,6 +45456,10 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "services/hub-authorization-service.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "services/purchasing-completion-service.js",
                 "targetFile": "db.js"
               },
@@ -45496,6 +45557,10 @@
               },
               {
                 "sourceFileId": "tests/integration/purchase-lines-engagement-postgres.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/hub-directrice-authorizations-postgres.test.js",
                 "targetFile": "db.js"
               },
               {
@@ -47958,7 +48023,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2217
+        "filesObserved": 2224
       },
       "boutique": {
         "filesObserved": 214,
@@ -51361,6 +51426,32 @@
       "lifecycleOwner": "purchasing",
       "resolution": "single-writer"
     },
+    "hub_authorization_grants": {
+      "writers": [
+        {
+          "feature": "purchasing",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "purchasing",
+      "resolution": "declared-table-owner"
+    },
+    "purchase_order_authorizations": {
+      "writers": [
+        {
+          "feature": "purchasing",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "purchasing",
+      "resolution": "declared-table-owner"
+    },
     "supplier_execution_events": {
       "writers": [
         {
@@ -51753,8 +51844,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 670,
-        "technicalNodesOwned": 670,
+        "technicalNodesTotal": 672,
+        "technicalNodesOwned": 672,
         "technicalOrphans": 0
       },
       "dash": {
@@ -52021,7 +52112,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "logistics -> dashboard",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"logistics\" vers \"dashboard\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"logistics\" vers \"dashboard\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",

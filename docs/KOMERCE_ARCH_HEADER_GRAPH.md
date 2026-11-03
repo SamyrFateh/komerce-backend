@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 774
-- Files with full headers: 723
+- Scanned code files: 776
+- Files with full headers: 725
 - Files with lite headers: 51
-- Files with any headers: 774
+- Files with any headers: 776
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1951
-- Edges: 9640
-- DB tables: 222
-- Doctrines: 748
+- Graph nodes: 1961
+- Edges: 9670
+- DB tables: 224
+- Doctrines: 754
 - Impact areas: 207
-- Unresolved code edges: 924
+- Unresolved code edges: 925
 - Tables multi-écrivains directs (>=2): 93
 - Avertissements db-write / db-write-via en chevauchement: 12
 
@@ -35,7 +35,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - catalog: 136
 - checkout: 3
 - customs: 8
-- dashboard: 30
+- dashboard: 31
 - decision-signals: 14
 - documents: 15
 - economic-engine: 67
@@ -59,7 +59,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - payments: 1
 - platform-ops: 2
 - providers-services: 7
-- purchasing: 50
+- purchasing: 51
 - recommendations: 6
 - refunds: 5
 - settlement: 2
@@ -92,7 +92,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 137
 - route-manifest: 1
 - schema: 1
-- service: 458
+- service: 460
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -169,6 +169,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/fx-chain-service.js — fx-chain-service (market, critical, full)
 - services/fx-observation-service.js — fx-observation-service (market, critical, full)
 - services/fx-public-reference-feed.js — official-fx-reference-ingestion (market, critical, full)
+- services/hub-authorization-service.js — hub-authorization-service (purchasing, critical, full)
 - services/hub-operations.js — hub-operations (logistics, critical, full)
 - services/hub-physical-identity.js — hub-physical-identity (logistics, critical, full)
 - services/inventory-service.js — inventory-inventory-service (inventory, critical, full)
@@ -474,6 +475,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/local-stock-decision-projection.js — local-stock-decision-projection (local-stock, high, full)
 - services/local-stock-service.js — local-stock-local-stock-service (local-stock, high, full)
 - services/logistics-control-chain-projection.js — logistics-control-chain-projection (admin-dashboard, high, full)
+- services/manual-scan-confirmation.js — manual-scan-confirmation (dashboard, high, full)
 - services/market-business-day.js — market-business-day-authority (admin-dashboard, high, full)
 - services/market-commercial-price-service.js — market-commercial-price-decision-owner (market-autonomy, high, full)
 - services/market-cost-attribution-service.js — economic-engine-market-cost-attribution (economic-engine, high, full)
@@ -840,6 +842,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/admin-finance-config.js -> fx_rate_observations
 - WRITE services/fx-observation-service.js -> fx_rate_observations
 - WRITE routes/modules.js -> garment_models
+- WRITE services/hub-authorization-service.js -> hub_authorization_grants
 - WRITE services/hub-physical-identity.js -> hub_custody_events
 - WRITE services/hub-physical-identity.js -> hub_physical_unit_placements
 - WRITE services/hub-physical-identity.js -> hub_physical_units
@@ -852,7 +855,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/relay-shipment-receipt.js -> incidents
 - WRITE services/providers-inquiry-service.js -> inquiries
 - WRITE services/providers-service.js -> inquiries
-- WRITE services/international-n1-reconciliation.js -> international_n1_reconciliations
 
 ## DB Write-Via Edges (délégation déclarée)
 

@@ -15,6 +15,11 @@ jest.mock('../../services/supplier-payment-state', () => ({
   markPaymentRejected: jest.fn(),
 }));
 
+const mockAssertPaymentAuthorized = jest.fn();
+jest.mock('../../services/hub-authorization-service', () => ({
+  assertPaymentAuthorized: (...a) => mockAssertPaymentAuthorized(...a),
+}));
+
 const state = require('../../services/supplier-payment-state');
 const { executeSupplierPayment } = require('../../services/supplier-payment-orchestrator');
 
@@ -177,4 +182,14 @@ test('gate bloque tout nouvel appel si le paiement est déjà succeeded', async 
     invoked:false,
     reason:'PAYMENT_ALREADY_SUCCEEDED',
   });
+});
+
+test('P04 : sans autorisation de paiement de la directrice, aucun appel fournisseur', async () => {
+  state.prepareSupplierPayment.mockResolvedValue(prepared);
+  mockAssertPaymentAuthorized.mockRejectedValueOnce(Object.assign(new Error('non autorisé'), { code: 'SUPPLIER_PAYMENT_NOT_AUTHORIZED' }));
+  const invoke = jest.fn();
+  await expect(executeSupplierPayment({}, { payment: { purchaseOrderId: 'po-1' }, invokeProviderPayment: invoke }))
+    .rejects.toMatchObject({ code: 'SUPPLIER_PAYMENT_NOT_AUTHORIZED' });
+  expect(invoke).not.toHaveBeenCalled();
+  expect(state.markPaymentRequested).not.toHaveBeenCalled();
 });

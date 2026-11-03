@@ -80,6 +80,9 @@ if (!process.env.DATABASE_URL) {
     rows.passkeyAdmin = await insertRow(c, 'webauthn_credentials', { user_id: rows.admin.id });
     rows.grantFix = await insertRow(c, 'catalog_global_access_grants', { user_id: rows.f1.id });
     rows.grantAdmin = await insertRow(c, 'catalog_global_access_grants', { user_id: rows.admin.id });
+    // Autorisations Hub (P04) : droit d'une fixture (retiré) vs de l'admin (conservé) ; décision d'autorisation sur une PO (purgée).
+    rows.hubGrantFix = await insertRow(c, 'hub_authorization_grants', { user_id: rows.f1.id, authorization_type: 'purchase_commitment', granted_by: rows.admin.id });
+    rows.hubGrantAdmin = await insertRow(c, 'hub_authorization_grants', { user_id: rows.admin.id, authorization_type: 'supplier_payment', granted_by: rows.admin.id });
     rows.scopeFix = await insertRow(c, 'operator_market_scopes', { user_id: rows.f4.id });
     rows.inviteFix = await insertRow(c, 'market_team_invitations', { invited_by_user_id: rows.f4.id });
 
@@ -95,6 +98,7 @@ if (!process.env.DATABASE_URL) {
       'paypal_events_processed', 'otp_codes', 'alerts', 'webauthn_challenges', 'client_notifications', 'financial_movements',
       'risk_provisions', 'sourcing_captures',
     ]) await insertRow(c, t);
+    await insertRow(c, 'purchase_order_authorizations', { authorization_type: 'purchase_commitment', decided_by: rows.admin.id, amount: 100, currency: 'EUR', proof_ref: 'ACC-1' });
     await insertRow(c, 'wallets', { user_id: rows.f3.id });
     await insertRow(c, 'user_pickup_authorizations', { user_id: rows.f1.id });
     // Fondation mise en place par le jeu de donnees (rattachee a l'admin conserve, jamais a une fixture).
@@ -144,7 +148,7 @@ if (!process.env.DATABASE_URL) {
       expect(report.fixtures.blockers).toEqual([]);
       expect(report.fixtures.would_delete).toMatchObject({
         users: 4, relais: 1, partners: 1, assignment_memberships: 1, webauthn_credentials: 1,
-        catalog_global_access_grants: 1, operator_market_scopes: 1, market_team_invitations: 1,
+        catalog_global_access_grants: 1, hub_authorization_grants: 1, operator_market_scopes: 1, market_team_invitations: 1,
       });
       return fingerprintAll(c).then((after) => expect(sameExcept(baseline, after, new Set())).toEqual([]));
     });
@@ -170,6 +174,9 @@ if (!process.env.DATABASE_URL) {
       expect((await c.query('SELECT user_id FROM assignment_memberships')).rows.map((r) => r.user_id)).toEqual([rows.admin.id]);
       expect((await c.query('SELECT user_id FROM webauthn_credentials')).rows.map((r) => r.user_id)).toEqual([rows.admin.id]);
       expect((await c.query('SELECT user_id FROM catalog_global_access_grants')).rows.map((r) => r.user_id)).toEqual([rows.admin.id]);
+      // autorisations Hub : droit du compte conservé préservé, celui de la fixture retiré, décisions de PO purgées
+      expect((await c.query('SELECT user_id FROM hub_authorization_grants')).rows.map((r) => r.user_id)).toEqual([rows.admin.id]);
+      expect((await c.query('SELECT count(*)::int AS n FROM purchase_order_authorizations')).rows[0].n).toBe(0);
       // referentiels presents
       const { rows: [m] } = await c.query('SELECT COUNT(*)::int AS n FROM markets');
       expect(m.n).toBeGreaterThanOrEqual(5);

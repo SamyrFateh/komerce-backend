@@ -8,6 +8,7 @@
  * @outputs immutable_shipment_facts, read_only_cost_reconciliation
  * @db-read international_shipments, international_shipment_hub_units, hub_physical_units, hub_physical_unit_placements, hub_purchase_allocations, international_shipment_charges, international_shipment_events, orders, customs_shipments, customs_shipment_parcels, customs_shipment_fees, international_n1_reconciliations
  * @db-write international_shipments, international_shipment_hub_units, international_shipment_events, international_shipment_charges
+ * @db-write-via:parcel-shipment-handover parcel_events, parcels
  * @db-write-via:customs-shipment-service customs_shipments
  * @db-txn withTransaction
  * @doctrine market_scope_server_owned, fact_not_financial_allocation, no_customs_clearance_inferred
@@ -16,6 +17,7 @@
 const db = require('../db');
 const boxShipment = require('./hub-box-shipment-service');
 const customsService = require('./customs-shipment-service');
+const { markFullyHandedOverParcelsShipped } = require('./parcel-shipment-handover');
 const STAGES = Object.freeze(['hub_ready','handed_over','forwarder_received','in_transit','arrived',
   'customs_released','local_delivery','relay_received']);
 const STAGE_ROLES = Object.freeze({
@@ -152,9 +154,13 @@ async function transition(market,actor,reference,body={},database=db){
       await client.query('UPDATE international_shipments SET stage=$3,updated_at=now()'+stamped+
         ' WHERE id=$1 AND market_id=$2',[s.id,market.id,target]);
     }
+    const clientParcels = target === 'handed_over'
+      ? await markFullyHandedOverParcelsShipped(client, s.id, actor, proof) : null;
     await evidence(client,s,'stage_changed',actor,proof,s.stage,target,
-      handedUnits?{physical_step:target,hub_units:handedUnits,...transferDetails}:{physical_step:target},body.notes);
-    return {reference:s.reference,from_stage:s.stage,stage:target};
+      handedUnits?{physical_step:target,hub_units:handedUnits,...transferDetails,
+        client_parcels_shipped:clientParcels?.parcels_marked_shipped || []}:{physical_step:target},body.notes);
+    return {reference:s.reference,from_stage:s.stage,stage:target,
+      ...(clientParcels ? { client_parcels_shipped:clientParcels.parcels_marked_shipped } : {})};
   });
 }
 async function updateTracking(market,actor,reference,body={},database=db){

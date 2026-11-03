@@ -8,7 +8,7 @@
  * @outputs       authorized_operations_workspace_projection, authorized_domain_mutations
  * @depends       db, middleware/auth, middleware/require-market-execution-capability, middleware/require-market-delegated-capability, middleware/require-dashboard-global-authority, services/operations-workspace
  * @used-by       bootstrap/api-routes.js
- * @db-read       markets, users, relais, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, dashboard_global_access_grants
+ * @db-read       markets, users, relais, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, dashboard_global_access_grants, hub_physical_units, hub_physical_unit_placements, hub_purchase_allocations
  * @db-write      none
  * @db-txn        none
  * @doctrine      workspace_single_market_action_context, capability_is_market_authority, relay_binding_is_server_authority, client_market_id_forbidden, workspace_role_least_privilege
@@ -27,6 +27,7 @@ const { hasDashboardGlobalAuthority } = require('../middleware/require-dashboard
 const workspace = require('../services/operations-workspace');
 const supply = require('../services/hub-procurement-dossier');
 const boxShipment = require('../services/hub-box-shipment-service');
+const hubOps = require('../services/hub-operations');
 const shipmentJourney = require('../services/international-shipment-journey');
 const relayReceipts = require('../services/relay-shipment-receipt');
 const log = require('../utils/logger').child({ module: 'admin-operations-workspace' });
@@ -235,6 +236,72 @@ router.get(
   }
 );
 
+// Composition des KOM-BOX depuis Hub Live : mêmes commandes canoniques que /api/hub/* (hub-operations), avec le marché
+// du Workspace imposé côté serveur (allocation et contenu du carton doivent appartenir au marché).
+async function boxMarketGuard(unitId, marketId, allocationId) {
+  const { rows: [unit] } = await db.query(`SELECT unit_type FROM hub_physical_units WHERE id = $1`, [unitId]);
+  if (!unit || unit.unit_type !== 'MARKET_PARCEL') return { status: 404, body: { error: 'KOM-BOX introuvable', code: 'BOX_NOT_FOUND' } };
+  const { rows: foreign } = await db.query(
+    `SELECT 1 FROM hub_physical_unit_placements p JOIN hub_purchase_allocations a ON a.id = p.allocation_id
+      WHERE p.physical_unit_id = $1 AND p.removed_at IS NULL AND a.market_id <> $2 LIMIT 1`, [unitId, marketId]);
+  if (foreign.length) return { status: 403, body: { error: 'KOM-BOX d’un autre marché', code: 'BOX_MARKET_MISMATCH' } };
+  if (allocationId) {
+    const { rows: own } = await db.query(
+      `SELECT 1 FROM hub_purchase_allocations WHERE id = $1 AND market_id = $2`, [allocationId, marketId]);
+    if (!own.length) return { status: 403, body: { error: 'Allocation d’un autre marché', code: 'ALLOCATION_MARKET_MISMATCH' } };
+  }
+  return null;
+}
+
+router.post(
+  '/market/:marketCode/boxes',
+  attachHubExecutionCapability('execution.parcel.ship'),
+  requireHubWorkspaceAction,
+  async (req, res, next) => {
+    try {
+      const body = req.body || {};
+      const out = await hubOps.createOperatorUnitCommand({
+        unit_type: 'MARKET_PARCEL', ...(body.reference ? { reference: body.reference } : {}),
+      }, req.user.id);
+      return res.status(out.status).json(out.body);
+    } catch (err) { return sendWorkspaceError(err, res, next); }
+  }
+);
+
+router.post(
+  '/market/:marketCode/boxes/:unitId/fill',
+  attachHubExecutionCapability('execution.parcel.ship'),
+  requireHubWorkspaceAction,
+  async (req, res, next) => {
+    try {
+      const body = req.body || {};
+      const refused = await boxMarketGuard(req.params.unitId, req.workspaceMarket.id, body.allocation_id);
+      if (refused) return res.status(refused.status).json(refused.body);
+      const out = await hubOps.moveAllocationCommand({
+        from_unit_id: body.from_unit_id, to_unit_id: req.params.unitId, allocation_id: body.allocation_id,
+        quantity: body.quantity, operation_type: 'REPACK',
+      }, req.user.id);
+      return res.status(out.status).json(out.body);
+    } catch (err) { return sendWorkspaceError(err, res, next); }
+  }
+);
+
+router.post(
+  '/market/:marketCode/boxes/:unitId/advance',
+  attachHubExecutionCapability('execution.parcel.ship'),
+  requireHubWorkspaceAction,
+  async (req, res, next) => {
+    try {
+      const refused = await boxMarketGuard(req.params.unitId, req.workspaceMarket.id, null);
+      if (refused) return res.status(refused.status).json(refused.body);
+      const out = await hubOps.transitionOperatorUnitCommand({
+        unit_id: req.params.unitId, to_state: (req.body || {}).to_state,
+      }, req.user.id);
+      return res.status(out.status).json(out.body);
+    } catch (err) { return sendWorkspaceError(err, res, next); }
+  }
+);
+
 // Création d'un dossier d'expédition internationale directement depuis des KOM-BOX (service métier unique :
 // international-shipment-journey) ; la préparation est possible pour un agent Hub habilité sur son marché.
 router.post(
@@ -313,7 +380,8 @@ router.post(
         req.params.reference,
         'ship',
         req.workspaceMarket,
-        actionActor(req)
+        actionActor(req),
+        req.body
       );
       return res.json({ ok: true, action: 'ship', result });
     } catch (err) {
@@ -387,7 +455,8 @@ router.post(
         req.params.reference,
         'collect',
         req.workspaceMarket,
-        actionActor(req)
+        actionActor(req),
+        req.body
       );
       return res.json({ ok: true, action: 'collect', result });
     } catch (err) {
