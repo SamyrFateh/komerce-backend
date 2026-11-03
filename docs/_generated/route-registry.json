@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-11-03T16:06:18.118Z",
+  "generatedAt": "2026-11-03T17:09:03.820Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 778,
+  "count": 781,
   "routes": [
     {
       "method": "GET",
@@ -2503,9 +2503,39 @@
     },
     {
       "method": "POST",
+      "fullPath": "/api/admin/workspaces/operations/market/:marketCode/boxes",
+      "mountPrefix": "/api/admin/workspaces/operations",
+      "localPath": "/market/:marketCode/boxes",
+      "routeFile": "routes/admin-operations-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/operations/market/:marketCode/boxes/:unitId/advance",
+      "mountPrefix": "/api/admin/workspaces/operations",
+      "localPath": "/market/:marketCode/boxes/:unitId/advance",
+      "routeFile": "routes/admin-operations-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
       "fullPath": "/api/admin/workspaces/operations/market/:marketCode/boxes/:unitId/detach",
       "mountPrefix": "/api/admin/workspaces/operations",
       "localPath": "/market/:marketCode/boxes/:unitId/detach",
+      "routeFile": "routes/admin-operations-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/operations/market/:marketCode/boxes/:unitId/fill",
+      "mountPrefix": "/api/admin/workspaces/operations",
+      "localPath": "/market/:marketCode/boxes/:unitId/fill",
       "routeFile": "routes/admin-operations-workspace.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"

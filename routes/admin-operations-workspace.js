@@ -8,7 +8,7 @@
  * @outputs       authorized_operations_workspace_projection, authorized_domain_mutations
  * @depends       db, middleware/auth, middleware/require-market-execution-capability, middleware/require-market-delegated-capability, middleware/require-dashboard-global-authority, services/operations-workspace
  * @used-by       bootstrap/api-routes.js
- * @db-read       markets, users, relais, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, dashboard_global_access_grants
+ * @db-read       markets, users, relais, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, dashboard_global_access_grants, hub_physical_units, hub_physical_unit_placements, hub_purchase_allocations
  * @db-write      none
  * @db-txn        none
  * @doctrine      workspace_single_market_action_context, capability_is_market_authority, relay_binding_is_server_authority, client_market_id_forbidden, workspace_role_least_privilege
