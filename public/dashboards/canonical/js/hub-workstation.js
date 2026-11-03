@@ -228,6 +228,12 @@
     }
     const administrativeAllowed = role === 'admin';
     const search = safe(location && location.search);
+    // Un ancien lien ?market=KM ne doit pas donner l'impression de filtrer le Hub.
+    if (new URLSearchParams(search).has('market') && history?.replaceState) {
+      const clean = new URLSearchParams(search);
+      clean.delete('market');
+      history.replaceState(null, '', HUB_PATH + (clean.toString() ? '?' + clean.toString() : ''));
+    }
     const requested = parseBranch(search);
     const branch = requested === 'administrative' && !administrativeAllowed ? 'operations' : requested;
     const active = { orderId: '', poId: branch === 'administrative' ? getPO(location) : '' };
