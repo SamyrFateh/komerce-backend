@@ -525,7 +525,6 @@
           : `Référence fournisseur déclarée : ${candidate.line.product_name}. Vérification physique du code à confirmer.`;
         scannerResult.dataset.scanTone = matched.confirmed ? 'success' : 'warning';
         candidate.input.focus();
-        candidate.input.select();
       } catch (error) {
         scannerResult.textContent = `Code non reconnu ou incompatible avec cette PO (${error.code || 'contrôle requis'}).`;
         scannerResult.dataset.scanTone = 'error';
