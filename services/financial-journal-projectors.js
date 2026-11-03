@@ -188,6 +188,7 @@ async function projectMarketSettlements(client, { marketId = null } = {}) {
  * Ces écritures n'ont JAMAIS la direction inflow/outflow : transfert entre détenteurs
  * ou dépôt final ne créent ni seconde vente ni nouvel encaissement.
  * L'identité (ref_id, source, holder) est stable au rejeu et pour les contre-écritures.
+ * Les pertes décidées ne sont PAS des transferts ; leur traitement économique reste séparé.
  */
 async function projectCustodyMovements(client, { marketId = null } = {}) {
   const params = [];
@@ -199,7 +200,7 @@ async function projectCustodyMovements(client, { marketId = null } = {}) {
        FROM cash_custody_movements c
        LEFT JOIN cash_deposits d ON d.id = c.deposit_id
        LEFT JOIN cash_custody_receipts r ON r.id = c.ref_id
-      WHERE c.source IN ('TRANSFER_OUT', 'TRANSFER_IN', 'FINAL_CLOSURE', 'LOSS')
+      WHERE c.source IN ('TRANSFER_OUT', 'TRANSFER_IN', 'FINAL_CLOSURE')
         AND c.delta_kmf <> 0 AND c.market_id IS NOT NULL${marketFilter('c', marketId, params)}
       ORDER BY c.occurred_at, c.ref_id, c.source`, params);
   return feed(emptyReport(), client, rows, row => ({
@@ -207,7 +208,7 @@ async function projectCustodyMovements(client, { marketId = null } = {}) {
     facet: `${row.source}:${row.holder_id}`,
     direction: 'custody',
     category: row.source === 'FINAL_CLOSURE' ? 'cash_final_deposit'
-      : row.source === 'LOSS' ? 'cash_custody_loss' : 'cash_custody_transfer',
+      : 'cash_custody_transfer',
     state: 'observed',
     links: { marketId: row.market_id },
     amountNative: Math.abs(Number(row.delta_kmf)).toFixed(2), currency: 'KMF',
