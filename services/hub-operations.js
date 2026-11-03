@@ -268,11 +268,18 @@ async function createOperatorUnitCommand(payload, userId) {
       ? requireText(payload.reference, 'reference', 200)
       : generatePhysicalReference(unitType);
     const orderId = payload && payload.order_id ? requireUuid(payload.order_id, 'order_id') : null;
+    const bagPlan = payload && payload.bag_plan ? payload.bag_plan : null;
+    if (bagPlan && (!orderId || !Array.isArray(bagPlan) || bagPlan.length < 1 || bagPlan.length > 100 ||
+      bagPlan.some(item => !item || !/^[0-9a-f-]{36}$/i.test(item.order_item_id) ||
+        !Number.isInteger(Number(item.quantity)) || Number(item.quantity) <= 0))) {
+      throw badRequest('Plan de sac invalide', 'HUB_ORDER_BAG_PLAN_INVALID');
+    }
     if (orderId && unitType !== 'HANDLING_UNIT') throw badRequest('Un sac client exige HANDLING_UNIT', 'HUB_ORDER_BAG_REQUIRES_HANDLING_UNIT');
     const unit = await withOperatorTransaction((client) => createPhysicalUnit(client, {
       reference,
       unitType,
       orderId,
+      bagPlan,
       externalRef: payload.external_ref ? String(payload.external_ref).trim() : null,
       actorId: userId || null,
       locationRef: payload.location_ref ? String(payload.location_ref).trim() : null,
@@ -318,6 +325,9 @@ async function moveAllocationCommand(payload, userId) {
       allocationId,
       quantity,
       operationType,
+      evidenceMethod: payload && payload.evidence_method ? String(payload.evidence_method).trim().toUpperCase() : null,
+      evidenceCode: payload && payload.evidence_code ? String(payload.evidence_code).trim() : null,
+      evidenceRef: payload && payload.evidence_ref ? String(payload.evidence_ref).trim() : null,
       actorId: userId || null,
       locationRef: payload.location_ref ? String(payload.location_ref).trim() : null,
     }));
