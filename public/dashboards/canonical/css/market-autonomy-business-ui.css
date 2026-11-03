@@ -57,7 +57,7 @@
   overflow: visible; border: 0; border-radius: 0; background: transparent; box-shadow: none;
 }
 #market-autonomy-root .kmc-autonomy-list .kmc-autonomy-table {
-  display: block; width: 100%; min-width: 0 !important; max-width: 100%;
+  display: block; width: 100%; min-width: 0; max-width: 100%;
   border: 0; border-spacing: 0; background: transparent;
 }
 #market-autonomy-root .kmc-autonomy-table thead { display: none; }
@@ -70,10 +70,10 @@
   box-shadow: 0 1px 3px rgb(15 23 42 / .03);
 }
 #market-autonomy-root .kmc-autonomy-table .kmc-autonomy-row:hover { border-color: #b8cde9; }
-#market-autonomy-root .kmc-autonomy-table .kmc-autonomy-row[hidden] { display: none !important; }
+#market-autonomy-root .kmc-autonomy-table .kmc-autonomy-row[hidden] { display: none; }
 #market-autonomy-root .kmc-autonomy-table .kmc-autonomy-row > td {
-  display: grid; min-width: 0; width: auto; padding: 0 !important;
-  border: 0 !important; vertical-align: middle;
+  display: grid; min-width: 0; width: auto; padding: 0;
+  border: 0; vertical-align: middle;
   overflow-wrap: anywhere; color: #263b58; font-size: 13px;
 }
 #market-autonomy-root .kmc-autonomy-table .kmc-autonomy-row > td:nth-child(2)::before,
@@ -127,7 +127,7 @@
   display: flex; flex-wrap: wrap; gap: 10px;
 }
 #market-autonomy-root .kmc-autonomy-table .kmc-autonomy-row.is-expanded > td:nth-child(5) {
-  align-items: center; padding-top: 14px !important; border-top: 1px solid #e7eef6 !important;
+  align-items: center; padding-top: 14px; border-top: 1px solid #e7eef6;
 }
 #market-autonomy-root .kmc-autonomy-reason label { flex: 0 0 150px; color: #52647d; font-weight: 750; }
 #market-autonomy-root .kmc-autonomy-reason input { flex: 1 1 250px; max-width: 500px; margin-top: 0; }
