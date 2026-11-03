@@ -35,7 +35,7 @@ hormis la connexion. Jamais de RESET, seed, purge ou paiement réel.
 
 1. L5 Chromium lecture seule : rôle, session, menu N1/N2/N3, vrais clics,
 routes, retour, responsive, réseau, exceptions JS, versions, comparaison de
-la navigation observée avec les routes du référentiel ; contexte KM/CM/CG/DJ.
+la navigation observée avec les routes du référentiel ; contexte KM/CM/CG/DJ/YT.
 2. E2E métier isolé : fixture de référence commune, transitions P1–P7,
 sources SQL canoniques, payload API, écran propriétaire, résultats attendus,
 cas négatifs, idempotence, séparation RCT1/réel, nettoyage sélectif.
@@ -75,3 +75,37 @@ pas un parcours uniquement parce que la CI a réussi des mocks.
 **GO global** seulement lorsque les sept processus P1–P7 sont réellement
 prouvés sur les marchés applicables avec données propriétaires, vrai navigateur,
 droits serveur et retours, plus cas négatifs et vérification humaine.
+
+
+## Préparation des cinq marchés — cible 2026-11-03
+
+L'audit de navigation en lecture seule inclut **KM, CM, CG, DJ et YT**, sans assimiler Mayotte à KM.
+La matrice `tests/staging-canonical/market-business-proof-matrix.js` définit les cas obligatoires, les différences
+de devise, de circuit et les pièces à conserver. Elle n'est pas une preuve de réussite.
+
+Deux harnais séparés :
+
+1. `tests/staging-canonical/real-navigation.spec.js` : navigation réelle et visibilité de tous les marchés, sans écriture.
+2. `tests/staging-business/market-chromium-real-readonly.spec.js` : connexion des comptes `market_operator` issus de L10,
+   contrôle des scopes autorisés, refus des marchés interdits, navigation et captures Chromium sur chacun des cinq marchés.
+   Variables `E2E_MARKET_OPERATOR_KM_EMAIL/PASSWORD`, `E2E_MARKET_OPERATOR_CM_CG_EMAIL/PASSWORD`,
+   `E2E_MARKET_OPERATOR_DJ_EMAIL/PASSWORD`, `E2E_MARKET_OPERATOR_YT_EMAIL/PASSWORD` ;
+   `E2E_STAGING_BASE_URL` et `E2E_EXPECTED_DEPLOY_SHA`. Aucune information secrète en fichier ni dans les captures.
+
+**Avant ces tests :** L10 doit réellement inviter/activer les identités via les API canoniques ;
+DJ doit réussir le provisioning (readiness ACTIVE) et les responsables marché ne doivent disposer
+que de leurs délégations autorisées. Un compte ou marché absent est BLOCKED, jamais PASS.
+
+**Préparation du reset :** réutiliser le script canonique existant
+`node scripts/recette/staging-reset.js --dry-run`, qui vérifie le fingerprint Staging,
+la base épinglée, les classifications complètes et la dérive des référentiels.
+Ne pas exécuter `--execute` avant fusion des writers L1–L10 et preuve que les cinq
+marchés peuvent être reconstruits via API. L'exécution destructive exige les jetons de
+confirmation prévus par le script, seulement sur Staging vérifié.
+Les comptes L10 nécessaires à la recette doivent être préservés ou recréés par invitation canonique.
+
+**Limite volontaire :** ces harnais ne certifient pas encore le parcours transactionnel
+commande → PO → Hub → transitaire → relais → retrait → finance. Celui-ci requiert un
+dataset neuf créé uniquement via les API métier, des transactions réelles de sandbox
+et des assertions de quantité, idempotence, droits et journal. Les contrats P00–P09
+restent NOT_PROVEN jusqu'aux preuves E2E API + Chromium + recette humaine.

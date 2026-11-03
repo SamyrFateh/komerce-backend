@@ -679,6 +679,8 @@ module.exports = {
       'css/ct-inventory.css',
     ],
     tests: [
+      'tests/unit/staging-five-market-matrix.test.js',
+      'tests/staging-business/market-chromium-real-readonly.spec.js',
       'tests/integration/signal-simulation-scope-postgres.test.js',
       'tests/unit/control-tower.test.js',
       'tests/integration/dashboard-admin-context-isolation.test.js',
