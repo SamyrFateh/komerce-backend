@@ -215,7 +215,7 @@ async function getDossier({ marketId, supplierId = null, now = new Date() }, q =
   // Quantités reçues pas encore mises en carton : sources proposées pour composer une KOM-BOX (REPACK), sans ressaisie.
   const { rows: fillableRows } = await q.query(`
     SELECT p.allocation_id, u.id AS from_unit_id, u.reference AS from_unit_ref, a.order_id, o.reference AS order_ref,
-           pr.name AS product_name, p.quantity
+           a.order_item_id, a.product_sku_id, pr.name AS product_name, p.quantity
       FROM hub_physical_unit_placements p
       JOIN hub_physical_units u ON u.id = p.physical_unit_id AND u.unit_type <> 'MARKET_PARCEL'
            AND u.state NOT IN ('QUARANTINED','SUPERSEDED','DISPATCHED')
@@ -228,7 +228,31 @@ async function getDossier({ marketId, supplierId = null, now = new Date() }, q =
      ORDER BY u.created_at DESC, p.allocation_id LIMIT 200`, [marketId]);
   const fillable = fillableRows.map((r) => ({
     allocation_id: r.allocation_id, from_unit_id: r.from_unit_id, from_unit_ref: r.from_unit_ref,
-    order_id: r.order_id, order_ref: r.order_ref, product: r.product_name || null, quantity: Number(r.quantity),
+    order_id: r.order_id, order_ref: r.order_ref,
+    order_item_id: r.order_item_id, product_sku_id: r.product_sku_id,
+    product: r.product_name || null, quantity: Number(r.quantity),
+  }));
+
+  // Sacs de commande en cours de préparation : une seule unité physique
+  // mono-commande, dont le manifeste est immuable et partial-friendly.
+  const {rows:openBagRows}=await q.query(
+    "SELECT u.id AS unit_id, u.reference, u.state, u.order_id, " +
+    "o.reference AS order_ref, u.bag_plan, " +
+    "COALESCE((SELECT jsonb_agg(jsonb_build_object('order_item_id',a.order_item_id, " +
+    "'quantity',qty.actual_qty)) FROM (SELECT a.order_item_id,SUM(p.quantity)::int AS actual_qty " +
+    "FROM hub_physical_unit_placements p JOIN hub_purchase_allocations a ON a.id=p.allocation_id " +
+    "WHERE p.physical_unit_id=u.id AND p.removed_at IS NULL GROUP BY a.order_item_id) qty " +
+    "JOIN order_items oi ON oi.id=qty.order_item_id " +
+    "JOIN hub_purchase_allocations a ON a.order_item_id=oi.id " +
+    "GROUP BY u.id), '[]'::jsonb) AS actual_contents " +
+    "FROM hub_physical_units u JOIN orders o ON o.id=u.order_id " +
+    "WHERE u.unit_type='HANDLING_UNIT' AND u.order_id IS NOT NULL " +
+    "AND u.state NOT IN ('PACKED','DISPATCHED','QUARANTINED','SUPERSEDED') " +
+    "AND o.market_id=$1 ORDER BY u.created_at DESC LIMIT 100", [marketId]
+  );
+  const bags_open=openBagRows.map(r=>({
+    unit_id:r.unit_id,reference:r.reference,state:r.state,order_id:r.order_id,
+    order_ref:r.order_ref,bag_plan:r.bag_plan||[],actual_contents:r.actual_contents||[],
   }));
 
   // Sacs clients scellés, encore hors carton : à scanner dans une KOM-BOX.
@@ -300,6 +324,7 @@ async function getDossier({ marketId, supplierId = null, now = new Date() }, q =
       received_at: r.created_at, po_ids: r.po_ids, qty: Number(r.qty) })),
     boxes: [...boxes.values()],
     bags_ready,
+    bags_open,
     fillable,
     open_shipments: shipmentRows,
     to_handle: toHandle,
