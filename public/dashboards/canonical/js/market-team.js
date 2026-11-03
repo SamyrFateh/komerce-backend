@@ -67,7 +67,6 @@
 
   const TERRAIN_PRESET = Object.freeze([
     'operations.read',
-    'execution.order.mark_ordered',
     'execution.distribution.run',
     'execution.parcel.ship',
     'execution.inventory.assign',
