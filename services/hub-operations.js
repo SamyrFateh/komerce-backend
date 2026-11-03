@@ -194,6 +194,7 @@ async function receiveSupplierPackageCommand(payload, userId) {
       // Obligatoire côté service pour une PO regroupée (réception par ligne), ignoré sinon.
       ...(item && item.product_sku_id ? { product_sku_id: requireUuid(item.product_sku_id, 'product_sku_id') } : {}),
       quantity: Number(item && item.quantity),
+      ...(item && item.evidence_code ? { evidence_code: requireText(item.evidence_code, 'evidence_code', 128) } : {}),
     }));
     if (normalizedContents.some((item) => !Number.isInteger(item.quantity) || item.quantity <= 0)) {
       throw badRequest('quantity doit être un entier strictement positif');
@@ -248,6 +249,7 @@ async function reconcileSupplierPackageCommand(payload, userId) {
       // Obligatoire côté service pour une PO regroupée (réception par ligne), ignoré sinon.
       ...(item && item.product_sku_id ? { product_sku_id: requireUuid(item.product_sku_id, 'product_sku_id') } : {}),
       quantity: Number(item && item.quantity),
+      ...(item && item.evidence_code ? { evidence_code: requireText(item.evidence_code, 'evidence_code', 128) } : {}),
     }));
     if (normalizedContents.some((item) => !Number.isInteger(item.quantity) || item.quantity <= 0)) {
       throw badRequest('quantity doit être un entier strictement positif');
