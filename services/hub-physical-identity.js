@@ -359,11 +359,13 @@ async function createPhysicalUnit(executor, {
   actorId = null,
   locationRef = null,
   initialState = 'RECEIVED',
+  orderId = null,
   details = {},
 }) {
   const db = requireExecutor(executor);
   if (!reference || !String(reference).trim()) fail('HUB_PHYSICAL_REFERENCE_REQUIRED');
   if (!UNIT_TYPES.has(unitType)) fail('HUB_PHYSICAL_UNIT_TYPE_INVALID');
+  if (orderId && unitType !== 'HANDLING_UNIT') fail('HUB_ORDER_BAG_REQUIRES_HANDLING_UNIT');
   if (!UNIT_STATES.has(initialState)) fail('HUB_PHYSICAL_STATE_INVALID');
   if (!['RECEIVED', 'QUARANTINED'].includes(initialState)) {
     fail('HUB_PHYSICAL_INITIAL_STATE_INVALID', 'Une unité physique doit naître RECEIVED ou QUARANTINED');
@@ -371,10 +373,10 @@ async function createPhysicalUnit(executor, {
 
   const { rows: [unit] } = await db.query(
     `INSERT INTO hub_physical_units (
-       reference, unit_type, state, external_ref, current_location_ref, created_by
-     ) VALUES ($1,$2,$3,$4,$5,$6)
+       reference, unit_type, state, external_ref, current_location_ref, created_by, order_id
+     ) VALUES ($1,$2,$3,$4,$5,$6,$7)
      RETURNING *`,
-    [String(reference).trim(), unitType, initialState, externalRef, locationRef, actorId]
+    [String(reference).trim(), unitType, initialState, externalRef, locationRef, actorId, orderId]
   );
 
   await insertCustodyEvent(db, {
