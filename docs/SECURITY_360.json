@@ -2,8 +2,8 @@
   "generatedAt": "2026-11-03T17:09:39.129Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 797,
-    "protected": 742,
+    "total": 799,
+    "protected": 744,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -1385,6 +1385,14 @@
       "key": "GET /api/admin/workspaces/operations/market/{marketCode}/relay-shipments",
       "level": "PROTECTED",
       "roles": []
+    },
+    {
+      "key": "GET /api/admin/workspaces/operations/market/{marketCode}/relay-shipments/{reference}/bags/{bagRef}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_relais"
+      ]
     },
     {
       "key": "GET /api/admin/workspaces/operations/market/{marketCode}/supply",
@@ -3811,6 +3819,14 @@
     },
     {
       "key": "POST /api/admin/workspaces/operations/market/{marketCode}/boxes/{unitId}/advance",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/operations/market/{marketCode}/boxes/{unitId}/bags",
       "level": "PROTECTED",
       "roles": [
         "admin",
