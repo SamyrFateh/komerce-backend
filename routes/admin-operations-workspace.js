@@ -170,6 +170,10 @@ function sendCashConfirmationResult(res, result) {
 }
 
 function sendWorkspaceError(err, res, next) {
+  if (err && err.code === '23514' && /^HUB_ORDER_BAG_[A-Z_]+/.test(String(err.message || ''))) {
+    return res.status(409).json({error:'Contenu du sac non conforme',
+      code:String(err.message).match(/^HUB_ORDER_BAG_[A-Z_]+/)[0]});
+  }
   if (err instanceof workspace.OperationsWorkspaceError) {
     return res.status(err.status || 400).json({ error: err.message, code: err.code });
   }
