@@ -222,6 +222,17 @@ describeDb('Hub P0 — chaîne d\'approvisionnement complète (REAL_DB)', () => 
       expect(composed.fillable.filter((f) => [unitOf(s.colis1), unitOf(s.colis2)].includes(f.from_unit_id))).toHaveLength(0);
       expect(composed.boxes.find((b) => b.unit_id === s.box1).contents.reduce((n, c) => n + c.qty, 0)).toBe(3);
 
+      // Aucune quantité non réceptionnée ne peut entrer dans un carton : tout est déjà placé, un REPACK de plus est refusé
+      // (quantité > disponible dans la source), et une allocation qui n'est pas dans l'unité source est refusée.
+      const over = await hubOps.moveAllocationCommand({ from_unit_id: unitOf(s.colis1), to_unit_id: s.box2, allocation_id: await allocOf(s.c1.lines[0].lineId), quantity: 1, operation_type: 'REPACK' }, admin);
+      expect(over.status).toBeGreaterThanOrEqual(400);
+      const foreign = await hubOps.moveAllocationCommand({ from_unit_id: unitOf(s.colis2), to_unit_id: s.box2, allocation_id: await allocOf(s.c2.lines[0].lineId), quantity: 1, operation_type: 'REPACK' }, admin);
+      expect(foreign.status).toBeGreaterThanOrEqual(400);
+      const afterRefusals = await dossier.getDossier({ marketId: km });
+      expect(afterRefusals.boxes.find((b) => b.unit_id === s.box1).contents.reduce((n, c) => n + c.qty, 0)).toBe(3);
+      expect(afterRefusals.boxes.find((b) => b.unit_id === s.box2).contents.reduce((n, c) => n + c.qty, 0)).toBe(2);
+      expect(afterRefusals.fillable.filter((f) => [unitOf(s.colis1), unitOf(s.colis2)].includes(f.from_unit_id))).toHaveLength(0);
+
       await advance(s.box1, ['PACKED']); await advance(s.box2, ['PACKED']);
 
       // Création du dossier par le VRAI service métier, directement depuis les KOM-BOX (aucun INSERT SQL).

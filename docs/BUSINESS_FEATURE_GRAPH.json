@@ -7488,6 +7488,13 @@
       {
         "feature": "dashboard",
         "category": "tests",
+        "declared": "tests/unit/hub-live-komboxes-ops.test.js",
+        "resolvedPath": "tests/unit/hub-live-komboxes-ops.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
         "declared": "tests/unit/admin-order-360-route.test.js",
         "resolvedPath": "tests/unit/admin-order-360-route.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -35805,6 +35812,10 @@
               },
               {
                 "sourceFileId": "routes/admin-operations-workspace.js",
+                "targetFile": "services/hub-operations.js"
+              },
+              {
+                "sourceFileId": "routes/admin-operations-workspace.js",
                 "targetFile": "services/international-shipment-journey.js"
               },
               {
@@ -47994,7 +48005,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2221
+        "filesObserved": 2222
       },
       "boutique": {
         "filesObserved": 214,
