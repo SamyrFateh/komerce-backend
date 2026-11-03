@@ -108,6 +108,10 @@ const CHECK_LABELS = Object.freeze({
   cost_allocations_kmf: 'Coûts réels : journal ↔ allocations de coûts (KMF)',
   supplier_settlements_native: 'Règlements fournisseurs : journal ↔ règlements prouvés (natif)',
   movements_without_provenance: 'Mouvements sans provenance (doit être 0)',
+  custody_event_count: 'Garde cash : événements journalisés sans recette',
+  shipment_freight_kmf: 'Factures de fret : journal ↔ expéditions',
+  shipment_charges_net_kmf: 'Charges et avoirs : journal ↔ expéditions',
+  shipment_customs_kmf: 'Douane : journal ↔ déclarations d’expédition',
 });
 
 // Niveaux de coût (doctrine N1/N2/N3) : classification unique, lue par Finance et Comptabilité.
@@ -225,6 +229,52 @@ async function reconcileWithSources(client, scope = {}) {
     scope.marketId ? [scope.marketId] : [])).rows[0];
   // Montants natifs de devises différentes sommés ici uniquement pour la preuve d'égalité exacte source/journal (jamais affichés).
   add('supplier_settlements_native', sup.journal_native, sup.source_native);
+
+
+  // L7 — réconcilier les mouvements de garde sans les assimiler à du chiffre d'affaires.
+  const custody = (await client.query(
+    `SELECT (SELECT COUNT(*)::int FROM financial_movements m
+              WHERE m.source_kind = 'cash_custody_movement'
+              ${scope.marketId ? 'AND m.market_id = $1' : ''}) AS journal_count,
+            (SELECT COUNT(*)::int FROM cash_custody_movements c
+              WHERE c.source IN ('TRANSFER_OUT','TRANSFER_IN','FINAL_CLOSURE','LOSS')
+                AND c.delta_kmf <> 0 AND c.market_id IS NOT NULL
+              ${scope.marketId ? 'AND c.market_id = $1' : ''}) AS source_count`,
+    scope.marketId ? [scope.marketId] : [])).rows[0];
+  add('custody_event_count', custody.journal_count, custody.source_count);
+
+  const freight = (await client.query(
+    `SELECT (SELECT COALESCE(SUM(m.amount_native),0)::text FROM financial_movements m
+             WHERE m.source_kind = 'shipment_freight' ${scope.marketId ? 'AND m.market_id = $1' : ''}) AS journal_kmf,
+            (SELECT COALESCE(SUM(s.freight_invoice_kmf),0)::text FROM international_shipments s
+             WHERE s.freight_invoice_kmf > 0 AND s.freight_invoice_ref IS NOT NULL
+               AND EXISTS(SELECT 1 FROM international_shipment_hub_units hu WHERE hu.shipment_id=s.id)
+               ${scope.marketId ? 'AND s.market_id = $1' : ''}) AS source_kmf`,
+    scope.marketId ? [scope.marketId] : [])).rows[0];
+  add('shipment_freight_kmf', freight.journal_kmf, freight.source_kmf);
+
+  const charges = (await client.query(
+    `SELECT (SELECT COALESCE(SUM(CASE WHEN m.direction='cost_reversal' THEN -m.amount_native ELSE m.amount_native END),0)::text
+               FROM financial_movements m WHERE m.source_kind='shipment_charge'
+               ${scope.marketId ? 'AND m.market_id=$1' : ''}) AS journal_kmf,
+            (SELECT COALESCE(SUM(CASE WHEN c.kind='credit' THEN -c.amount_kmf ELSE c.amount_kmf END),0)::text
+               FROM international_shipment_charges c JOIN international_shipments s ON s.id=c.shipment_id
+               WHERE c.amount_kmf > 0
+                 AND EXISTS(SELECT 1 FROM international_shipment_hub_units hu WHERE hu.shipment_id=s.id)
+                 ${scope.marketId ? 'AND s.market_id=$1' : ''}) AS source_kmf`,
+    scope.marketId ? [scope.marketId] : [])).rows[0];
+  add('shipment_charges_net_kmf', charges.journal_kmf, charges.source_kmf);
+
+  const customs = (await client.query(
+    `SELECT (SELECT COALESCE(SUM(m.amount_native),0)::text FROM financial_movements m
+              WHERE m.source_kind='shipment_customs' ${scope.marketId ? 'AND m.market_id=$1' : ''}) AS journal_kmf,
+            (SELECT COALESCE(SUM(cs.customs_paid_kmf),0)::text
+               FROM customs_shipments cs JOIN international_shipments s ON s.customs_shipment_id=cs.id AND s.market_id=cs.market_id
+              WHERE cs.declared_at IS NOT NULL AND cs.customs_paid_kmf>0
+                AND EXISTS(SELECT 1 FROM international_shipment_hub_units hu WHERE hu.shipment_id=s.id)
+                ${scope.marketId ? 'AND s.market_id=$1' : ''}) AS source_kmf`,
+    scope.marketId ? [scope.marketId] : [])).rows[0];
+  add('shipment_customs_kmf', customs.journal_kmf, customs.source_kmf);
 
   const orphans = (await client.query(
     `SELECT COUNT(*)::int AS n FROM financial_movements m
