@@ -4,6 +4,8 @@
  * remise partielle, et clôture atomique du ledger financier/qty_refunded. Aucun PSP.
  */
 const crypto=require('crypto');
+const fs=require('fs');
+const path=require('path');
 const {describeE2E}=require('../helpers/e2eDbKit');
 const {reserveVerifiedShortage}=require('../../services/item-refund-reservation-service');
 const {finalizeVerifiedRefund}=require('../../services/item-refund-psp-orchestrator');
@@ -44,6 +46,12 @@ describeE2E('E7 PG physique : article manquant + reliquat + PSP vérifié',({db}
         +'amount_eur numeric(12,2),refund_type text,refund_method text,stripe_refund_id text,'
         +'reason text,status text,completed_at timestamptz,'
         +'UNIQUE(order_id,refund_type))');
+      // Rejouer le VRAI garde du fichier migration 365 dans le schéma E2E isolé.
+      const source=fs.readFileSync(path.join(__dirname,'../../migrations/365_item_refund_reservations.sql'),'utf8');
+      const start=source.indexOf('CREATE OR REPLACE FUNCTION public.guard_item_refund_pending_collection()');
+      if(start<0)throw new Error('Migration 365 sans garde actif sur qty_collected');
+      const guardSql=source.slice(start).replace(/public\./g,schema+'.');
+      await admin.query(guardSql);
       workerA=await db.connect();workerB=await db.connect();
       for(const c of [admin,workerA,workerB])await c.query('SET search_path TO '+schema+',public');
       const ps=await Promise.all([admin,workerA,workerB].map(async c=>
@@ -94,6 +102,22 @@ describeE2E('E7 PG physique : article manquant + reliquat + PSP vérifié',({db}
     expect([a.replayed,b.replayed].sort()).toEqual([false,true]);
     expect((await admin.query('SELECT COUNT(*)::int AS n FROM refund_execution_intents')).rows[0].n).toBe(1);
   });
+  test('remise au client interdite pendant une réserve PSP même si la quantité totale reste valide',async()=>{
+    const created=await reserveVerifiedShortage(input(id(),workerA));
+    for (const status of ['reserved','processing','unknown']) {
+      await admin.query('UPDATE order_item_refund_reservations SET status=$2 WHERE id=$1',
+        [created.reservationId,status]);
+      await expect(workerB.query('UPDATE order_items SET qty_collected=3 WHERE id=$1',[itemId]))
+        .rejects.toThrow(/ITEM_REFUND_PENDING_QTY_NOT_COLLECTABLE/);
+      const {rows:[item]}=await admin.query('SELECT qty_collected,qty_refunded FROM order_items WHERE id=$1',[itemId]);
+      expect(item).toEqual({qty_collected:2,qty_refunded:0});
+    }
+    await admin.query("UPDATE order_item_refund_reservations SET status='failed' WHERE id=$1",
+      [created.reservationId]);
+    await workerB.query('UPDATE order_items SET qty_collected=3 WHERE id=$1',[itemId]);
+    expect((await admin.query('SELECT qty_collected FROM order_items WHERE id=$1',[itemId])).rows[0].qty_collected).toBe(3);
+  });
+
   test('reçu PSP : rembourse une unité, conserve les deux remises et l autre article',async()=>{
     const created=await reserveVerifiedShortage(input(id(),admin));
     await admin.query(`UPDATE refund_execution_intents SET status='confirmed',provider_ref='re_e7_ok'
