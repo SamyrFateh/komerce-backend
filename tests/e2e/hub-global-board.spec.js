@@ -63,12 +63,12 @@ test.describe('Hub global sans scope marché',()=>{
       await expect(page.locator('.kmc-market-context-select')).toHaveCount(0);
       await page.locator('[data-hub-global-order="KM-100"] [data-hub-global-stage="PO"]').click({button:'right'});
       await expect(page.locator('[data-hub-global-menu]')).toBeVisible();
-      if(['admin','agent_hub'].includes(role)){
-        await expect(page.locator('[data-hub-global-menu] a').first())
-          .toHaveAttribute('href','/admin/hub-live?view=execute&market=KM');
-      }else{
-        await expect(page.locator('[data-hub-global-menu] a')).toHaveCount(0);
+      // Aucun lien universel : seule une action d'étape ou sa dépendance est admise.
+      await expect(page.locator('[data-hub-global-menu] a')).toHaveCount(0);
+      if(!['admin','agent_hub'].includes(role)){
         await expect(page.locator('[data-hub-global-menu]')).toContainText('Consultation seule');
+      }else{
+        await expect(page.locator('[data-hub-global-menu]')).toContainText('PO');
       }
       expect(calls).toEqual(['GET /api/hub/board']);
     }

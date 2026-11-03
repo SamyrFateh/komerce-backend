@@ -120,8 +120,9 @@
     ));
     return true;
   }
-  async function prepare(menu,doc,order,fetchFn,refresh) {
+  async function prepare(menu,doc,order,fetchFn,refresh,isCurrent = () => true) {
     const data=await request(fetchFn,'/api/purchasing/open-lines');
+    if(!isCurrent())return false;
     const candidates=(data.groups||[]).flatMap(group=>{
       const lines=(group.lines||[]).filter(l=>l.order_id===order.id && l.groupable && validUuid(l.line_id));
       if(!lines.length||!validUuid(group.supplier_id)||!group.procurement_hub_ref)return [];
@@ -148,8 +149,9 @@
     return candidates.length>0;
   }
 
-  async function receive(menu,doc,poIds,fetchFn,refresh) {
+  async function receive(menu,doc,poIds,fetchFn,refresh,isCurrent = () => true) {
     const data=await request(fetchFn,'/api/scans/hub/receivable');
+    if(!isCurrent())return false;
     let count=0;
     for(const po of (data.purchase_orders || []).filter(p=>poIds.includes(p.purchase_order_id))){
       const available=(po.lines||[]).filter(l=>validUuid(l.product_sku_id)&&l.remaining_quantity>0);
@@ -200,52 +202,104 @@
   }
   async function operations(menu,{doc,fetch:fetchFn,user,order,stage,refresh}) {
     if(!writableRoles.includes(user?.role))return false;
-    const marker=order.id+'|'+stage;
+    // Une ouverture d'une autre cellule annule les requêtes de l'ancien menu.
+    const serial=menu.getAttribute('data-hub-request')||'';
+    const marker=serial+'|'+order.id+'|'+stage;
     menu.setAttribute('data-hub-action-key',marker);
-    const busy=node(doc,'p','kmc-hub-action-loading','Vérification des actions disponibles…');
+    const isCurrent=()=>!menu.hidden &&
+      menu.getAttribute('data-hub-request')===serial &&
+      menu.getAttribute('data-hub-action-key')===marker;
+    const busy=node(doc,'p','kmc-hub-action-loading',
+      'Lecture des actions possibles pour « '+stage+' »…');
     menu.appendChild(busy);
     try {
-      const market=encodeURIComponent(order.market);
-      const data=await request(fetchFn,'/api/hub/dossier?market='+market);
-      if(menu.hidden||menu.getAttribute('data-hub-action-key')!==marker)return false;
-      busy.remove();
+      const data=await request(fetchFn,'/api/hub/dossier?market='+encodeURIComponent(order.market));
+      if(!isCurrent())return false;
       const pos=(data.purchase_orders||[]).filter(po=>(po.lines||[]).some(l=>l.order_id===order.id));
       const poIds=pos.map(po=>po.id);
-      const boxes=(data.boxes||[]).filter(b=>(b.contents||[]).some(c=>c.order_id===order.id));
-      let actions=0;
-      if(stage==='PO'||stage==='Reste à solder'){
-        if((data.needs||[]).some(n=>n.order_id===order.id)){
-          if(await prepare(menu,doc,order,fetchFn,refresh))actions++;
+      const needs=(data.needs||[]).filter(n=>n.order_id===order.id);
+      const boxes=(data.boxes||[]).filter(box=>(box.contents||[]).some(c=>c.order_id===order.id));
+      const received=pos.reduce((total,po)=>total+(po.lines||[])
+        .filter(l=>l.order_id===order.id).reduce((s,l)=>s+(Number(l.received)||0),0),0);
+      let count=0;
+      let unavailable='';
+      if(stage==='PO'){
+        if(needs.length){
+          count+=Number(await prepare(menu,doc,order,fetchFn,refresh,isCurrent));
+          unavailable='Les lignes d’achat ouvertes ne sont pas encore groupables : renseigner le fournisseur, le Hub et les références d’achat.';
+        }else if(!pos.length){
+          unavailable='Aucune ligne d’achat préparée pour cette commande. Il faut d’abord rattacher les articles au fournisseur avant de constituer la PO.';
+        }else if(pos.some(p=>p.stage==='draft')){
+          unavailable='PO brouillon existante : compléter les lignes et faire valider l’engagement avant de soumettre le bon.';
+        }else{
+          unavailable='PO déjà constituée : voir l’étape Fournisseur pour la preuve de transmission.';
         }
+      }else if(stage==='Fournisseur'){
+        for(const po of pos)if(sent(menu,doc,po,fetchFn,refresh))count++;
+        unavailable=!pos.length?'Aucune PO fournisseur : constituer d’abord la PO.':
+          pos.some(p=>p.stage==='draft')?'PO encore brouillon : l’envoi ne peut pas être attesté avant soumission.':
+          pos.every(p=>p.sent_at)?'Transmission déjà enregistrée pour les PO de cette commande.':
+          'Aucun envoi attestable : vérifier le statut de la PO et son engagement.';
+      }else if(stage==='Réception'){
+        if(poIds.length)count+=Number(await receive(menu,doc,poIds,fetchFn,refresh,isCurrent));
+        unavailable=!poIds.length?'Aucune PO associée : la réception exige une commande fournisseur.':
+          'Aucune quantité recevable actuellement : vérifier la PO et les quantités physiques restant à réceptionner.';
+      }else if(stage==='Cartons'){
+        // Une KOM-BOX vide ne prouve pas l'emballage. Ne pas proposer de création
+        // trompeuse avant l'allocation physique et le contrôle du contenu.
+        unavailable=received<=0?'Rien de réceptionné : préparer le carton seulement après le contrôle physique.':
+          boxes.length?'Carton(s) présent(s) : contrôler le contenu et la preuve d’emballage avant la mise au départ.':
+          'Articles réceptionnés : constituer et contrôler leur carton physique depuis les allocations réelles du Hub.';
+      }else if(stage==='Départ'){
+        count+=Number(ship(menu,doc,boxes,data.open_shipments,fetchFn,refresh));
+        const ready=boxes.filter(box=>box.state==='DISPATCHED'&&!box.shipment_ref);
+        unavailable=!boxes.length?'Aucun carton constitué : la préparation physique doit précéder le départ.':
+          !ready.length?'Aucun carton prêt à rattacher : confirmer l’emballage et le scellage dans le Hub.':
+          'Aucune expédition ouverte pour ce marché : créer le départ avant de rattacher le carton.';
+      }else if(stage==='Reste à solder'){
+        if(needs.length)count+=Number(await prepare(menu,doc,order,fetchFn,refresh,isCurrent));
+        if(isCurrent()&&poIds.length)count+=Number(await receive(menu,doc,poIds,fetchFn,refresh,isCurrent));
+        unavailable=needs.length?'Des articles restent à acheter : la préparation de PO nécessite des lignes fournisseur groupables.':
+          poIds.length?'Le reliquat ne possède aucune réception admissible pour le moment.':
+          'Aucun reliquat engagé en achat. Remboursement et clôture restent soumis à une décision métier traçable.';
+      }else{
+        unavailable='Étape inconnue : aucune action disponible.';
       }
-      if(stage==='Fournisseur'){
-        for(const po of pos)if(sent(menu,doc,po,fetchFn,refresh))actions++;
-      }
-      if(stage==='Réception'||stage==='Reste à solder'){
-        if(poIds.length&&await receive(menu,doc,poIds,fetchFn,refresh))actions++;
-      }
-      if(stage==='Cartons'||stage==='Départ'){
-        if(ship(menu,doc,boxes,data.open_shipments,fetchFn,refresh))actions++;
-      }
-      if(menu.hidden||menu.getAttribute('data-hub-action-key')!==marker)return false;
-      if(!actions)explanation(menu,doc,
-        'Aucune transition directe autorisée ici : vérifier les dépendances et les preuves dans le dossier.');
-      return actions>0;
-    }catch(error){
+      if(!isCurrent())return false;
       busy.remove();
-      explanation(menu,doc,'Actions indisponibles : '+error.message);
+      if(!count)explanation(menu,doc,unavailable);
+      return count>0;
+    }catch(error){
+      if(!isCurrent())return false;
+      busy.remove();
+      explanation(menu,doc,
+        'Impossible de vérifier les actions de « '+stage+' » : '+error.message);
       return false;
     }
   }
   function administration(menu,{doc,fetch:fetchFn,user,po,field,refresh}) {
     if(!writableRoles.includes(user?.role))return false;
-    if(field==='Fournisseur'&&sent(menu,doc,po,fetchFn,refresh))return true;
-    if(['Engagement','Autorisation'].includes(field))
-      explanation(menu,doc,'Autorisation de la directrice non tracée : aucune approbation implicite possible.');
-    else if(field==='Paiement'||field==='Justificatifs')
-      explanation(menu,doc,'La preuve de débit ne vaut pas autorisation du paiement fournisseur.');
-    else
-      explanation(menu,doc,'Aucune mutation autorisée pour cette étape. Ouvrir la PO pour examiner ses preuves.');
+    if(field==='Fournisseur'){
+      if(sent(menu,doc,po,fetchFn,refresh))return true;
+      explanation(menu,doc,po.sent_at?
+        'Envoi déjà attesté : aucune seconde déclaration autorisée.':
+        'La PO doit être soumise avant qu’un envoi réel puisse être enregistré.');
+    }else if(field==='Engagement'){
+      explanation(menu,doc,
+        'Engagement d’achat : décision de la directrice non enregistrée dans le modèle actuel. Ne pas assimiler une PO soumise à une autorisation.');
+    }else if(field==='Autorisation'){
+      explanation(menu,doc,
+        'Paiement fournisseur : autorisation indépendante de la directrice non enregistrée. Aucune validation fictive ne sera créée.');
+    }else if(field==='Paiement'||field==='Justificatifs'){
+      explanation(menu,doc,
+        (po.payment_evidence||'Aucune preuve de débit')+
+        ' · Une preuve de débit ne remplace pas l’autorisation de paiement.');
+    }else if(field==='Réception'){
+      explanation(menu,doc,
+        'Réception : utiliser le contrôle physique et le manifeste fournisseur dans Opérations. Le statut fournisseur ne suffit pas.');
+    }else{
+      explanation(menu,doc,'Aucune écriture possible à cette étape.');
+    }
     return false;
   }
   global.KomerceHubContextActions=Object.freeze({operations,administration,request});

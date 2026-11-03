@@ -16,6 +16,7 @@ function el(tag) {
     get lastChild() { return this.children[this.children.length-1] || null; },
     classList: {
       add(key) { classes.add(key); },
+      remove(key) { classes.delete(key); },
       toggle(key, flag) { if (flag) classes.add(key); else classes.delete(key); },
       contains(key) { return classes.has(key); },
     },
