@@ -18,7 +18,7 @@ describePg('P0-5 — capability mark-ordered retirée en PG16 (migration 380)',(
     expect(rows.every(r=>r.n===0)).toBe(true);
   });
 
-  test('référence historique d'audit préservée par snapshot sans autoriser un ancien droit',async()=>{
+  test("référence historique d'audit préservée par snapshot sans autoriser un ancien droit",async()=>{
     const {rows:[c]}=await db.query(`
       SELECT
         EXISTS(SELECT 1 FROM information_schema.columns
