@@ -884,7 +884,7 @@ Cette migration est déclarée prévue et n'est pas appliquée en Staging ; cert
 object: hub_box_bags
 kind: table
 migration: 394
-section: ### 4.2 Logistique colis
+section: ### 4.2 Logistique colis (5 tables)
 role: Contenance immuable sac client scellé dans KOM-BOX, avec référence scannée et identifiant du colis canonique.
 -->
 
@@ -892,6 +892,6 @@ role: Contenance immuable sac client scellé dans KOM-BOX, avec référence scan
 object: hub_box_effective_placements
 kind: view
 migration: 394
-section: ### 4.2 Logistique colis
+section: ### 4.2 Logistique colis (5 tables)
 role: Projection des placements directs de KOM-BOX plus contenu des sacs clients physiquement rattachés, sans double comptage.
 -->
