@@ -120,3 +120,50 @@ test('vue agent : même surface Action Center, endpoint agent, acquitter/reporte
   const service = fs.readFileSync(path.join(ROOT, 'services', 'action-center-agent-scope.js'), 'utf8');
   expect(service).not.toMatch(/'resolve'/);
 });
+
+test('transitaire sans marché : écran de refus explicite, sans élargir le scope serveur', async () => {
+  const ui = require(path.join(CANONICAL, 'js', 'action-center.js'));
+  const nodes = [];
+  const doc = {
+    createElement: jest.fn(tag => {
+      const node = { tag, children: [], attrs: {}, textContent: '',
+        appendChild(child) { this.children.push(child); },
+        setAttribute(key, value) { this.attrs[key] = value; },
+      };
+      nodes.push(node);
+      return node;
+    }),
+  };
+  const root = {
+    dataset: {},
+    replaceChildren: jest.fn(),
+    appendChild: jest.fn(),
+    classList: { add: jest.fn() },
+  };
+  const fetch = jest.fn(async () => ({
+    status: 403,
+    ok: false,
+    json: async () => ({ code: 'agent_action_center_market_scope_missing' }),
+  }));
+  const result = await ui.mount({ user: { role: 'agent_transitaire' }, root, document: doc, fetch });
+  expect(fetch).toHaveBeenCalledWith('/api/agent/action-center', expect.objectContaining({ method: 'GET' }));
+  expect(result).toEqual({ blocked: true });
+  expect(root.dataset.actionCenterMode).toBe('blocked');
+  expect(root.appendChild).toHaveBeenCalledTimes(1);
+  expect(nodes.map(node => node.textContent)).toContain('Affectation marché requise');
+  expect(nodes.some(node => node.attrs.role === 'alert')).toBe(true);
+});
+
+test('403 hors absence de marché : la couche UI ne masque pas une vraie erreur serveur', async () => {
+  const ui = require(path.join(CANONICAL, 'js', 'action-center.js'));
+  const fetch = jest.fn(async () => ({
+    status: 403, ok: false,
+    json: async () => ({ code: 'agent_action_center_role_forbidden' }),
+  }));
+  await expect(ui.mount({
+    user: { role: 'agent_transitaire' },
+    root: { replaceChildren: jest.fn() },
+    document: { createElement: jest.fn() },
+    fetch,
+  })).rejects.toMatchObject({ status: 403, code: 'agent_action_center_role_forbidden' });
+});
