@@ -83,6 +83,33 @@ const DOSSIER = {
   to_handle: [{ kind: 'PO_MISSING_QTY', po_id: PO_ID, supplier_name: 'CJ Dropshipping',
     reason: '3 unités confirmées non reçues' }],
 };
+const UNSOURCED_DOSSIER = {
+  ...DOSSIER,
+  kpis: {
+    ...DOSSIER.kpis, orders_waiting: 1,
+    items_sourcing_required: 2, units_sourcing_required: 3,
+  },
+  orders: [{
+    id: 'cf9520d0-84ff-4fe1-ab9b-a5e972b1365b',
+    reference: 'KRGNX5O', status: 'ordered',
+    items: [
+      { id: '8e4d7630-db62-4a4f-aea8-5fd1dfbe6798',
+        product_id: 'ed8dfc1f-31ca-405e-a67c-d6f83e258f73',
+        product: 'Audit Product ND5VE6', ordered: 2,
+        purchasing_missing: 2, sourcing_required: true, supplier_mapping_present: false },
+      { id: '81ad184a-2c4a-49a0-b128-c98809e24a35',
+        product_id: 'ec436f28-a849-4d3d-afd9-a1a9141bd543',
+        product: 'Collier Gold', ordered: 1,
+        purchasing_missing: 1, sourcing_required: true, supplier_mapping_present: false },
+    ],
+  }],
+  client_parcels: [], needs: [], purchase_orders: [], receipts: [], boxes: [],
+  to_handle: [{
+    kind: 'ORDER_SOURCING_REQUIRED',
+    order_ref: 'KRGNX5O', order_item_id: '8e4d7630-db62-4a4f-aea8-5fd1dfbe6798',
+    missing_quantity: 2, reason: 'Sourcing requis : Audit Product',
+  }],
+};
 const TRACE = {
   purchase_order_id: PO_ID,
   chain: [{ order_ref: 'K-ORDER-1', product: 'Coque téléphone', ordered: 5,
@@ -92,7 +119,7 @@ const TRACE = {
     }] }],
 };
 
-async function mount(page, { posts = [], failShip = false, receiveReply = null, receivable = RECEIVABLE_PAYLOAD, view = 'hub', emptyDistribution = false, pilot = false } = {}) {
+async function mount(page, { posts = [], failShip = false, receiveReply = null, receivable = RECEIVABLE_PAYLOAD, dossier = DOSSIER, suppliers = [], view = 'hub', emptyDistribution = false, pilot = false } = {}) {
   page.on('dialog', (dialog) => dialog.accept());
   await page.route(`${ORIGIN}/**`, async (route) => {
     const url = new URL(route.request().url());
@@ -108,6 +135,16 @@ async function mount(page, { posts = [], failShip = false, receiveReply = null, 
       const reply = receiveReply || { status: 201, body: { quarantined: false, unit: { id: 'u1', reference: 'x' } } };
       return json(reply.body, reply.status);
     }
+    if (url.pathname === '/api/purchasing/suppliers' && route.request().method() === 'GET') {
+      return json(suppliers);
+    }
+    if (url.pathname.startsWith('/api/purchasing/') && route.request().method() === 'POST') {
+      posts.push({ path: url.pathname, body: route.request().postDataJSON() });
+      if (url.pathname === '/api/purchasing/suppliers') return json({ id: 'supplier-test-1' }, 201);
+      if (url.pathname.endsWith('/map')) return json({ id: 'mapping-test-1' }, 201);
+      if (url.pathname === '/api/purchasing/lines') return json({ line: { line_id: 'line-test-1' } }, 201);
+      return json({ error: 'route sourcing inconnue' }, 404);
+    }
     if (route.request().method() === 'POST') {
       posts.push({ path: url.pathname, body: route.request().postDataJSON() });
       if (failShip && url.pathname.endsWith('/ship')) return json({ error: 'Colis non expédiable' }, 409);
@@ -117,7 +154,7 @@ async function mount(page, { posts = [], failShip = false, receiveReply = null, 
     if (url.pathname === '/api/auth/me') return json(FX.auth_me);
     if (url.pathname === '/api/admin/dashboard/context') return json(FX.context);
     if (url.pathname === API) return json(emptyDistribution ? { ...WORKSPACE, distribution: { unassigned: [] } } : WORKSPACE);
-    if (url.pathname === `${API}/supply`) return json(DOSSIER);
+    if (url.pathname === `${API}/supply`) return json(dossier);
     if (url.pathname === `${API}/supply/trace`) return json(TRACE);
     if (url.pathname === RECEIVABLE) return receivable === 'forbidden' ? json({ error: 'Accès refusé' }, 403) : json(receivable);
     return route.fulfill({ status: 404, body: '' });
@@ -171,6 +208,78 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       await page.locator('[data-hub-context-menu]').getByRole('button', { name: 'Voir les preuves / la filiation' }).click();
       await expect(page.locator('[data-supply-trace]')).toContainText('SUP-1');
       expect(posts).toHaveLength(0);
+    });
+
+    test('L8 : une commande payée sans lignes reste visible et le clic droit ouvre le sourcing', async ({ page }) => {
+      const posts = [];
+      await mount(page, { view: null, dossier: UNSOURCED_DOSSIER, posts });
+      const row = page.locator('[data-hub-order="cf9520d0-84ff-4fe1-ab9b-a5e972b1365b"]');
+      await expect(row.locator('[data-hub-stage="PO"]')).toContainText('Sourcing requis');
+      await expect(row.locator('[data-hub-stage="PO"]')).toContainText('3 unité(s) sans achat');
+      await row.locator('[data-hub-stage="PO"]').click({ button: 'right' });
+      await expect(page.locator('[data-hub-context-menu]')).toContainText('Résoudre le sourcing / créer un achat manuel');
+      await page.locator('[data-hub-context-menu]').getByRole('button',
+        { name: 'Résoudre le sourcing / créer un achat manuel' }).click();
+      await expect(page.locator('[data-hub-sourcing-form="KRGNX5O"]')).toBeVisible();
+      await expect(page.locator('[data-sourcing-item] option')).toHaveCount(2);
+      expect(posts).toHaveLength(0); // aucun achat créé par le simple clic
+    });
+
+    test('L8 : création via fournisseur + mapping + ligne manuelle, sans PO envoyée ni doublon', async ({ page }) => {
+      const posts = [];
+      await mount(page, { view: null, dossier: UNSOURCED_DOSSIER, posts });
+      await page.locator('[data-hub-order="cf9520d0-84ff-4fe1-ab9b-a5e972b1365b"] [data-hub-stage="PO"]').click();
+      await page.locator('[data-hub-context-menu]').getByRole('button',
+        { name: 'Résoudre le sourcing / créer un achat manuel' }).click();
+      const form = page.locator('[data-hub-sourcing-form="KRGNX5O"]');
+      await expect(form.locator('[data-sourcing-supplier]')).toBeEnabled();
+      await form.locator('[data-sourcing-name]').fill('Fournisseur local de recette');
+      await form.locator('[data-sourcing-ref]').fill('SKU-LOCAL-AUDIT');
+      await form.locator('[data-sourcing-price]').fill('25.50');
+      await form.locator('[data-workspace-action="create-manual-purchase-line"]').dblclick();
+      await expect.poll(() => posts.length).toBe(3);
+      expect(posts.map(p => p.path)).toEqual([
+        '/api/purchasing/suppliers',
+        '/api/purchasing/suppliers/supplier-test-1/map',
+        '/api/purchasing/lines',
+      ]);
+      expect(posts[0].body).toMatchObject({ platform: 'local', auto_order: false });
+      expect(posts[1].body).toMatchObject({
+        product_id: 'ed8dfc1f-31ca-405e-a67c-d6f83e258f73',
+        supplier_sku: 'SKU-LOCAL-AUDIT', supplier_price_aed: 25.5,
+      });
+      expect(posts[2].body).toEqual({
+        order_item_id: '8e4d7630-db62-4a4f-aea8-5fd1dfbe6798',
+        product_supplier_id: 'mapping-test-1', quantity: 2, execution_mode: 'manual',
+      });
+      await expect(page.locator('[data-workspace-feedback]')).toContainText('Ligne d’achat ouverte');
+    });
+
+    test('L8 : un fournisseur déjà associé évite deux mutations de sourcing', async ({ page }) => {
+      const posts = [];
+      await mount(page, {
+        view: null, dossier: UNSOURCED_DOSSIER, posts,
+        suppliers: [{
+          id: 'supplier-existing-1', name: 'Fournisseur connu', is_active: true,
+          matching_product_supplier_id: 'mapping-existing-1', owner_scope: null,
+        }],
+      });
+      await page.locator('[data-hub-order="cf9520d0-84ff-4fe1-ab9b-a5e972b1365b"] [data-hub-stage="PO"]').click();
+      await page.locator('[data-hub-context-menu]').getByRole('button',
+        { name: 'Résoudre le sourcing / créer un achat manuel' }).click();
+      const form = page.locator('[data-hub-sourcing-form="KRGNX5O"]');
+      await expect(form.locator('[data-sourcing-supplier]')).toBeEnabled();
+      await form.locator('[data-sourcing-supplier]').selectOption('supplier-existing-1');
+      await form.locator('[data-workspace-action="create-manual-purchase-line"]').click();
+      await expect.poll(() => posts.length).toBe(1);
+      expect(posts[0]).toEqual({
+        path: '/api/purchasing/lines',
+        body: {
+          order_item_id: '8e4d7630-db62-4a4f-aea8-5fd1dfbe6798',
+          product_supplier_id: 'mapping-existing-1',
+          quantity: 2, execution_mode: 'manual',
+        },
+      });
     });
 
     test('clic droit et clavier : actions contextuelles, sans mutation implicite', async ({ page }) => {
