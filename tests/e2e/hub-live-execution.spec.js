@@ -239,6 +239,52 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       expect(posts).toHaveLength(0); // aucun achat créé par le simple clic
     });
 
+    test('L8 UX : sourcing en deux zones lisibles, responsive et fermable sans écriture', async ({ page }) => {
+      const posts = [];
+      await mount(page, { view: null, dossier: UNSOURCED_DOSSIER, posts });
+      await page.locator('[data-hub-order="cf9520d0-84ff-4fe1-ab9b-a5e972b1365b"] [data-hub-stage="PO"]').click();
+      await page.locator('[data-hub-context-menu]').getByRole('button',
+        { name: 'Résoudre le sourcing / créer un achat manuel' }).click();
+
+      const panel = page.locator('[data-hub-sourcing-recovery]');
+      const form = panel.locator('[data-hub-sourcing-form="KRGNX5O"]');
+      const article = form.locator('.kmc-hub-sourcing-group').first();
+      const supplier = form.locator('.kmc-hub-sourcing-group').last();
+      await expect(article.getByText('Article concerné')).toBeVisible();
+      await expect(supplier.getByText('Fournisseur et conditions')).toBeVisible();
+      await expect(form.locator('[data-sourcing-quantity]')).toContainText('2 unités restantes à acheter');
+      await form.locator('[data-sourcing-item]').selectOption('81ad184a-2c4a-49a0-b128-c98809e24a35');
+      await expect(form.locator('[data-sourcing-quantity]')).toContainText('1 unité restante à acheter');
+
+      // Un seul instant de mesure : scrollIntoView({ behavior: 'smooth' })
+      // anime le viewport ; plusieurs boundingBox() successifs fabriquent
+      // un faux décalage vertical des colonnes pendant le scroll.
+      const geometry = await form.evaluate(node => {
+        const rect = el => {
+          const { x, y, width, height } = el.getBoundingClientRect();
+          return { x, y, width, height };
+        };
+        const [left, right] = node.querySelectorAll('.kmc-hub-sourcing-group');
+        const footer = node.querySelector('.kmc-hub-sourcing-footer');
+        const host = node.closest('[data-hub-sourcing-recovery]');
+        return {
+          article: rect(left), supplier: rect(right), footer: rect(footer),
+          scrollWidth: host.scrollWidth, clientWidth: host.clientWidth,
+        };
+      });
+      expect(geometry.scrollWidth).toBeLessThanOrEqual(geometry.clientWidth + 2);
+      expect(geometry.footer.y).toBeGreaterThan(geometry.article.y);
+      if (name === 'desktop') {
+        expect(geometry.supplier.x).toBeGreaterThan(geometry.article.x + geometry.article.width - 2);
+        expect(Math.abs(geometry.supplier.y - geometry.article.y)).toBeLessThan(3);
+      } else {
+        expect(geometry.supplier.y).toBeGreaterThan(geometry.article.y + geometry.article.height - 2);
+      }
+      await panel.locator('[data-sourcing-close]').click();
+      await expect(panel).toBeHidden();
+      expect(posts).toHaveLength(0);
+    });
+
     test('L8 : création via fournisseur + mapping + ligne manuelle, sans PO envoyée ni doublon', async ({ page }) => {
       const posts = [];
       await mount(page, { view: null, dossier: UNSOURCED_DOSSIER, posts });
@@ -284,6 +330,10 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       const form = page.locator('[data-hub-sourcing-form="KRGNX5O"]');
       await expect(form.locator('[data-sourcing-supplier]')).toBeEnabled();
       await form.locator('[data-sourcing-supplier]').selectOption('supplier-existing-1');
+      await expect(form.locator('[data-sourcing-name]')).toBeHidden();
+      await expect(form.locator('[data-sourcing-ref]')).toBeHidden();
+      await expect(form.locator('[data-sourcing-price]')).toBeHidden();
+      await expect(form.locator('[data-sourcing-mapping-note]')).toBeVisible();
       await form.locator('[data-workspace-action="create-manual-purchase-line"]').click();
       await expect.poll(() => posts.length).toBe(1);
       expect(posts[0]).toEqual({

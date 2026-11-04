@@ -1716,3 +1716,162 @@
 .kmc-workspace-box-compose { display: flex; flex-direction: column; gap: 7px; align-items: stretch; }
 .kmc-workspace-box-compose select, .kmc-workspace-box-compose input { min-width: 135px; }
 @media (max-width: 680px) { .kmc-hub-bag-controls { flex-direction: column; align-items: stretch; } .kmc-hub-bag-controls input, .kmc-hub-bag-controls select { width: 100%; } }
+
+
+/* Hub Live — reprise sourcing : formulaire opérationnel, pas de champs sur une ligne. */
+.kmc-hub-sourcing-panel {
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 14px;
+  padding: 18px 20px;
+  border: 1px solid #d5e1e8;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 7px 20px rgb(22 45 64 / .04);
+  color: #1c344b;
+}
+.kmc-hub-sourcing-panel [hidden] { display: none !important; }
+.kmc-hub-sourcing-heading {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px 18px;
+}
+.kmc-hub-sourcing-heading-copy { min-width: 0; flex: 1; }
+.kmc-hub-sourcing-heading h3 {
+  margin: 0 0 5px;
+  font-size: 15px;
+  line-height: 1.4;
+  font-weight: 750;
+  color: #172f4a;
+}
+.kmc-hub-sourcing-heading p {
+  margin: 0;
+  max-width: 750px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: #65788b;
+}
+.kmc-hub-sourcing-close {
+  flex: 0 0 auto;
+  min-height: 34px;
+  padding: 6px 12px;
+  border: 1px solid #d6e1e8;
+  border-radius: 8px;
+  background: #fff;
+  color: #395671;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 680;
+  cursor: pointer;
+}
+.kmc-hub-sourcing-close:hover { background: #f4f8fa; }
+.kmc-hub-sourcing-close:focus-visible,
+.kmc-hub-sourcing-field :is(input, select):focus-visible {
+  outline: 2px solid #248a82;
+  outline-offset: 2px;
+}
+.kmc-hub-sourcing-form { display: grid; gap: 15px; margin-top: 16px; }
+.kmc-hub-sourcing-layout {
+  display: grid;
+  grid-template-columns: minmax(0, .85fr) minmax(0, 1.25fr);
+  gap: 14px;
+  align-items: stretch;
+}
+.kmc-hub-sourcing-group {
+  min-width: 0;
+  margin: 0; /* neutralise les marges génériques entre sections du workspace */
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border: 1px solid #e0e9ee;
+  border-radius: 10px;
+  padding: 15px;
+  background: #f8fafc;
+}
+.kmc-hub-sourcing-group h4 {
+  margin: 0 0 2px;
+  color: #28536c;
+  font-size: 13px;
+  font-weight: 760;
+}
+.kmc-hub-sourcing-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  color: #384f63;
+  font-size: 12px;
+  line-height: 1.4;
+  font-weight: 690;
+}
+.kmc-hub-sourcing-field > span { display: block; }
+.kmc-hub-sourcing-field :is(input, select) {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  border: 1px solid #c7d7e3;
+  border-radius: 8px;
+  padding: 9px 11px;
+  background: #fff;
+  color: #173149;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+}
+.kmc-hub-sourcing-field :is(input, select):disabled {
+  background: #eaf0f3;
+  color: #718597;
+}
+.kmc-hub-sourcing-details {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, .75fr);
+  gap: 12px;
+  align-items: start;
+}
+.kmc-hub-sourcing-quantity {
+  align-self: flex-start;
+  margin: 0;
+  padding: 7px 10px;
+  border: 1px solid #f1ddbc;
+  background: #fff8ed;
+  border-radius: 7px;
+  color: #8c5a16;
+  font-size: 12px;
+  font-weight: 750;
+}
+.kmc-hub-sourcing-help {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #6b7d8e;
+}
+.kmc-hub-sourcing-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  border-top: 1px solid #e6edf1;
+  padding-top: 14px;
+}
+.kmc-hub-sourcing-footer-copy { flex: 1 1 350px; min-width: 0; }
+.kmc-hub-sourcing-status { margin: 6px 0 0; color: #3c596d; font-size: 12px; line-height: 1.5; }
+.kmc-hub-sourcing-status:empty { display: none; }
+.kmc-hub-sourcing-footer .kmc-workspace-action {
+  min-height: 42px;
+  padding: 10px 17px;
+  white-space: normal;
+}
+@media (max-width: 920px) {
+  .kmc-hub-sourcing-layout { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 540px) {
+  .kmc-hub-sourcing-panel { padding: 14px; }
+  .kmc-hub-sourcing-group { padding: 12px; }
+  .kmc-hub-sourcing-details { grid-template-columns: minmax(0, 1fr); }
+  .kmc-hub-sourcing-footer .kmc-workspace-action { width: 100%; }
+}
