@@ -119,7 +119,7 @@ const TRACE = {
     }] }],
 };
 
-async function mount(page, { posts = [], failShip = false, receiveReply = null, receivable = RECEIVABLE_PAYLOAD, dossier = DOSSIER, suppliers = [], failManual = false, view = 'hub', emptyDistribution = false, pilot = false } = {}) {
+async function mount(page, { posts = [], failShip = false, receiveReply = null, receivable = RECEIVABLE_PAYLOAD, dossier = DOSSIER, suppliers = [], failManual = false, focusOrder = null, view = 'hub', emptyDistribution = false, pilot = false } = {}) {
   page.on('dialog', (dialog) => dialog.accept());
   await page.route(`${ORIGIN}/**`, async (route) => {
     const url = new URL(route.request().url());
@@ -167,8 +167,9 @@ async function mount(page, { posts = [], failShip = false, receiveReply = null, 
     if (view) await page.locator(`[data-workspace-view="${view}"]`).click();
     return;
   }
-  await page.goto(`${ORIGIN}/admin/hub-live?view=execute`);
-  await page.locator('select').first().selectOption({ label: 'KM · Comores' });
+  await page.goto(`${ORIGIN}/admin/hub-live?view=execute${focusOrder
+    ? '&market=KM&order=' + encodeURIComponent(focusOrder) : ''}`);
+  if (!focusOrder) await page.locator('select').first().selectOption({ label: 'KM · Comores' });
   await expect(page.locator('h1')).toHaveText('Hub live · Dossiers');
   if (view) await page.locator(`[data-workspace-view="${view}"]`).click();
 }
@@ -209,6 +210,17 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       await expect(page.locator('[data-hub-context-menu]')).toContainText('Voir les preuves / la filiation');
       await page.locator('[data-hub-context-menu]').getByRole('button', { name: 'Voir les preuves / la filiation' }).click();
       await expect(page.locator('[data-supply-trace]')).toContainText('SUP-1');
+      expect(posts).toHaveLength(0);
+    });
+
+    test('L8 : lien du Hub central ouvre directement le sourcing du bon dossier, sans écriture', async ({ page }) => {
+      const posts = [];
+      const id = 'cf9520d0-84ff-4fe1-ab9b-a5e972b1365b';
+      await mount(page, { view: null, dossier: UNSOURCED_DOSSIER, posts, focusOrder: id });
+      await expect(page.locator('[data-hub-order="' + id + '"]')).toContainText('Sourcing requis');
+      await expect(page.locator('[data-hub-sourcing-form="KRGNX5O"]')).toBeVisible();
+      await expect(page.locator('[data-sourcing-item] option')).toHaveCount(2);
+      await expect(page.locator('[data-sourcing-supplier]')).toBeEnabled();
       expect(posts).toHaveLength(0);
     });
 
