@@ -4892,6 +4892,23 @@ COMMENT ON COLUMN public.cost_components.provenance IS 'Provenance déclarée de
 
 
 --
+-- Name: credential_action_tokens; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.credential_action_tokens (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    token_hash character(64) NOT NULL,
+    purpose character varying(32) NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    expires_at timestamp with time zone NOT NULL,
+    consumed_at timestamp with time zone,
+    CONSTRAINT credential_action_tokens_check CHECK ((expires_at > created_at)),
+    CONSTRAINT credential_action_tokens_purpose_check CHECK (((purpose)::text = ANY ((ARRAY['account_activation'::character varying, 'password_reset'::character varying])::text[])))
+);
+
+
+--
 -- Name: currency_parities; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -11881,7 +11898,9 @@ CREATE TABLE public.users (
     relais_id uuid,
     phone_payer character varying(20),
     big_basket_count integer DEFAULT 0 NOT NULL,
-    big_basket_last_notified_count integer DEFAULT 0 NOT NULL
+    big_basket_last_notified_count integer DEFAULT 0 NOT NULL,
+    account_activation_required boolean DEFAULT false NOT NULL,
+    credentials_changed_at timestamp with time zone
 );
 
 
@@ -13077,6 +13096,22 @@ ALTER TABLE ONLY public.cost_components
 
 ALTER TABLE ONLY public.cost_components
     ADD CONSTRAINT cost_components_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: credential_action_tokens credential_action_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.credential_action_tokens
+    ADD CONSTRAINT credential_action_tokens_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: credential_action_tokens credential_action_tokens_token_hash_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.credential_action_tokens
+    ADD CONSTRAINT credential_action_tokens_token_hash_key UNIQUE (token_hash);
 
 
 --
@@ -15493,6 +15528,13 @@ CREATE INDEX idx_cost_components_channel ON public.cost_components USING btree (
 --
 
 CREATE INDEX idx_cost_components_scope ON public.cost_components USING btree (scope, scope_value) WHERE is_active;
+
+
+--
+-- Name: idx_credential_action_tokens_user_purpose; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_credential_action_tokens_user_purpose ON public.credential_action_tokens USING btree (user_id, purpose) WHERE (consumed_at IS NULL);
 
 
 --
@@ -18051,6 +18093,13 @@ CREATE INDEX idx_users_loyalty ON public.users USING btree (loyalty_tier_id);
 
 
 --
+-- Name: idx_users_pending_activation; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_users_pending_activation ON public.users USING btree (id) WHERE (account_activation_required = true);
+
+
+--
 -- Name: idx_users_phone_payer; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -20195,6 +20244,14 @@ ALTER TABLE ONLY public.cost_components
 
 ALTER TABLE ONLY public.cost_components
     ADD CONSTRAINT cost_components_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: credential_action_tokens credential_action_tokens_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.credential_action_tokens
+    ADD CONSTRAINT credential_action_tokens_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
 
 
 --

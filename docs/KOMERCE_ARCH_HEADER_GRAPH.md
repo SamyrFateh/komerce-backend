@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 780
-- Files with full headers: 729
+- Scanned code files: 784
+- Files with full headers: 733
 - Files with lite headers: 51
-- Files with any headers: 780
+- Files with any headers: 784
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1978
-- Edges: 9730
-- DB tables: 225
-- Doctrines: 766
+- Graph nodes: 1985
+- Edges: 9748
+- DB tables: 226
+- Doctrines: 768
 - Impact areas: 207
-- Unresolved code edges: 931
+- Unresolved code edges: 937
 - Tables multi-écrivains directs (>=2): 94
 - Avertissements db-write / db-write-via en chevauchement: 12
 
@@ -27,7 +27,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - account: 2
 - admin-dashboard: 39
 - auth: 14
-- auth-identity: 7
+- auth-identity: 11
 - auth-passkey: 7
 - bootstrap: 2
 - boutique: 21
@@ -92,7 +92,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 137
 - route-manifest: 1
 - schema: 1
-- service: 464
+- service: 467
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -109,7 +109,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - ui-runtime: 2
 - ui-service: 5
 - ui-state: 1
-- util: 31
+- util: 32
 - util-ui: 1
 - utility: 2
 - validators: 1
@@ -426,6 +426,9 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/cost-allocation/manual-cost-entry-service.js — manual-cost-entry (economic-engine, high, full)
 - services/cost-component-admin-service.js — economic-engine-cost-component-admin-service (economic-engine, high, full)
 - services/cost-component-market-service.js — economic-engine-market-cost-component-service (economic-engine, high, full)
+- services/credential-action-store.js — credential-action-token-persistence (auth-identity, high, full)
+- services/credential-invitation-email.js — credential-invitation-delivery (auth-identity, high, full)
+- services/credential-link-token.js — credential-link-crypto (auth-identity, high, full)
 - services/customer-handoff-reconciliation.js — customer-handoff-reconciliation (logistics, high, full)
 - services/customs-classification.js — customs-classification (customs, high, full)
 - services/customs-dynamic-category-classifier.js — customs-dynamic-category-classifier (customs, high, full)
@@ -675,6 +678,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - utils/auth-session.js — auth-session-proof (auth, high, full)
 - utils/auth-token-policy.js — auth-token-policy (auth, high, full)
 - utils/certification-accounting.js — certification-batch-accounting (infrastructure, high, full)
+- utils/credential-session-guard.js — credential-session-version-guard (auth-identity, high, full)
 - utils/documents/customs-invoice-html.js — customs-invoice-html (documents, high, full)
 - utils/name-normalize.js — name-normalize (shared, high, full)
 - utils/parcels.js — logistics-parcels (logistics, high, full)
@@ -813,6 +817,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/cost-component-market-service.js -> cost_component_market_override_events
 - WRITE services/cost-component-market-service.js -> cost_component_market_overrides
 - WRITE services/cost-component-admin-service.js -> cost_components
+- WRITE services/credential-action-store.js -> credential_action_tokens
 - WRITE routes/admin-customs-categories.js -> customs_categories
 - WRITE routes/orders/status.js -> customs_history
 - WRITE services/customs-shipment-fee-service.js -> customs_shipment_fees
@@ -858,7 +863,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/incident-write-service.js -> incidents
 - WRITE services/relay-shipment-receipt.js -> incidents
 - WRITE services/providers-inquiry-service.js -> inquiries
-- WRITE services/providers-service.js -> inquiries
 
 ## DB Write-Via Edges (délégation déclarée)
 

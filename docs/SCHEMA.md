@@ -48,11 +48,11 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 | Objet | Compte | Note |
 |---|---|---|
-| Tables | 225 | Vérifié sur le dump live Railway. |
+| Tables | 226 | Vérifié sur le dump live Railway. |
 | Vues | 20 | Vérifié sur le dump live Railway. |
 | ENUMs | 17 | Types métier présents dans le dump live Railway. |
-| Index | 513 | Performance + contraintes uniques |
-| Foreign keys | 437 | Cohérence relationnelle |
+| Index | 515 | Performance + contraintes uniques |
+| Foreign keys | 438 | Cohérence relationnelle |
 | Fonctions | 112 | Fonctions présentes dans le dump live Railway. |
 | Triggers | 128 | Triggers présents dans le dump live Railway. |
 | Extensions | `pgcrypto`, `uuid-ossp` | UUID + chiffrement |
@@ -325,19 +325,13 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | Table | Rôle |
 |---|---|
 | `users` **Migration 368 (`intended_migration_schema`)** : + `account_activation_required` BOOLEAN NOT NULL DEFAULT FALSE (nouveaux comptes collaborateurs invités bloqués avant consommation du lien) et + `credentials_changed_at` TIMESTAMPTZ nullable (borne serveur de révocation de tous les JWT antérieurs à un changement/récupération de mot de passe) ; les utilisateurs existants restent activés à l'application de la migration. | Utilisateurs (rôle via ENUM `user_role`). **Migration 320 (`intended_migration_schema`)** : ajoute la valeur `finance` à `public.user_role` pour le portail interne, sans créer d'utilisateur ni accorder de membership ou de capability. `sourcing` provient de la migration 148a ; `agent_transitaire` existe dans l'ENUM historique. |
-<!-- schema-pending
-object: credential_action_tokens
-kind: table
-migration: 367
-section: ### 4.12 Utilisateurs et fidélité (7 tables)
-role: Jetons d'activation et de récupération à usage unique (empreinte SHA-256 seulement, finalité et expiration, consommation atomique), propriété auth-identity. Migration 367, intended_migration_schema.
--->
 | `otp_codes` | Codes OTP. |
 | `user_pickup_authorizations` | Autorisation nominative courante de retrait exceptionnel, propriété auth-identity. Une ligne par utilisateur ; aucun numéro, copie ou donnée de pièce d’identité conservé. Migration 121. |
 | `revoked_tokens` | Révocation JWT (logout) : `jti` révoqué, `expires_at` pour purge. Câblage : `routes/auth.js` insère au logout, `middleware/auth.js` vérifie, cron de purge dans `bootstrap/crons.js`. Migration 072. |
 | `recipients` | Destinataires (peuvent être ≠ user). |
 | `loyalty_tiers` | Niveaux fidélité. |
 | `loyalty_rewards` | Récompenses. |
+| `credential_action_tokens` | Jetons d'activation et de récupération à usage unique (empreinte SHA-256 seulement, finalité et expiration, consommation atomique), propriété auth-identity. Migration 367, intended_migration_schema. **Migration 367 — promue le 2026-11-04 (schema-promote, dump live verifie).** |
 
 ### 4.12 bis — Marchés, autorisations globales, délégation et Passkeys
 
