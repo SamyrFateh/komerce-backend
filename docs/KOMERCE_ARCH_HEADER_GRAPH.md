@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 784
-- Files with full headers: 733
+- Scanned code files: 786
+- Files with full headers: 735
 - Files with lite headers: 51
-- Files with any headers: 784
+- Files with any headers: 786
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1985
-- Edges: 9748
-- DB tables: 226
-- Doctrines: 768
+- Graph nodes: 1992
+- Edges: 9780
+- DB tables: 229
+- Doctrines: 770
 - Impact areas: 207
-- Unresolved code edges: 937
+- Unresolved code edges: 939
 - Tables multi-écrivains directs (>=2): 94
 - Avertissements db-write / db-write-via en chevauchement: 12
 
@@ -45,7 +45,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - infrastructure: 25
 - inventory: 2
 - local-stock: 4
-- logistics: 65
+- logistics: 67
 - loyalty: 3
 - market: 9
 - market-autonomy: 4
@@ -92,7 +92,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 137
 - route-manifest: 1
 - schema: 1
-- service: 467
+- service: 469
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -170,6 +170,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/fx-observation-service.js — fx-observation-service (market, critical, full)
 - services/fx-public-reference-feed.js — official-fx-reference-ingestion (market, critical, full)
 - services/hub-authorization-service.js — hub-authorization-service (purchasing, critical, full)
+- services/hub-bag-box-service.js — hub-bag-box (logistics, critical, full)
 - services/hub-operations.js — hub-operations (logistics, critical, full)
 - services/hub-physical-identity.js — hub-physical-identity (logistics, critical, full)
 - services/inventory-service.js — inventory-inventory-service (inventory, critical, full)
@@ -467,6 +468,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/hub-box-shipment-service.js — hub-box-shipment (logistics, high, full)
 - services/hub-dashboard-queries.js — dashboard-hub-dashboard-queries (dashboard, high, full)
 - services/hub-inbound-reconciliation.js — hub-inbound-reconciliation (logistics, high, full)
+- services/hub-physical-codes.js — hub-physical-codes (logistics, high, full)
 - services/hub-procurement-dossier.js — hub-procurement-dossier (logistics, high, full)
 - services/hub-receive-idempotency.js — hub-receive-idempotency (logistics, high, full)
 - services/hub-reference.js — hub-reference (logistics, high, full)
@@ -852,6 +854,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/fx-observation-service.js -> fx_rate_observations
 - WRITE routes/modules.js -> garment_models
 - WRITE services/hub-authorization-service.js -> hub_authorization_grants
+- WRITE services/hub-bag-box-service.js -> hub_box_bags
 - WRITE services/hub-physical-identity.js -> hub_custody_events
 - WRITE services/hub-physical-identity.js -> hub_physical_unit_placements
 - WRITE services/hub-physical-identity.js -> hub_physical_units
@@ -862,7 +865,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/incident-service.js -> incidents
 - WRITE services/incident-write-service.js -> incidents
 - WRITE services/relay-shipment-receipt.js -> incidents
-- WRITE services/providers-inquiry-service.js -> inquiries
 
 ## DB Write-Via Edges (délégation déclarée)
 
