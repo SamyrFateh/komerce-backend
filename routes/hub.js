@@ -46,6 +46,7 @@ const { validate } = require('../middleware/validate');
 const { hub } = require('../validators');
 const hubOps  = require('../services/hub-operations');
 const boxShipment = require('../services/hub-box-shipment-service');
+const physicalCodes = require('../services/hub-physical-codes');
 const uploadHub = require('../middleware/upload-hub');
 
 const hubAuth = [authenticate, requireRole(['admin', 'agent_hub'])];
@@ -74,6 +75,51 @@ router.post('/scan', ...hubAuth, validate({ body: hub.scan }), async (req, res, 
     const result = await hubOps.receiveParcel(req.body.parcel_ref, req.user.id, req.body.notes);
     res.status(result.status).json(result.body);
   } catch (err) { next(err); }
+});
+
+// Identification d'une référence réellement scannée ; ne fait PAS la réception ni l'allocation client.
+function sendPhysicalCodeError(err, res, next) {
+  if (err instanceof physicalCodes.PhysicalCodeError) {
+    return res.status(err.status).json({ error: err.message, code: err.code });
+  }
+  return next(err);
+}
+
+router.get('/physical-codes/resolve', ...hubAuth, async (req, res, next) => {
+  try {
+    const result = await physicalCodes.resolvePhysicalCode(db, {
+      purchaseOrderId: req.query.purchase_order_id,
+      code: req.query.code,
+    });
+    return res.json(result);
+  } catch (err) { return sendPhysicalCodeError(err, res, next); }
+});
+
+// L'agent confirme la référence imprimée ET la preuve visuelle de variante.
+// La transaction protège l'apprentissage concurrent d'un code physique.
+router.post('/physical-codes/confirm', ...hubAuth, async (req, res, next) => {
+  let client;
+  try {
+    client = await db.connect();
+    await client.query('BEGIN');
+    const result = await physicalCodes.confirmPhysicalCode(client, {
+      purchaseOrderId: req.body && req.body.purchase_order_id,
+      productSkuId: req.body && req.body.product_sku_id,
+      code: req.body && req.body.code,
+      codeType: req.body && req.body.code_type,
+      proofRef: req.body && req.body.proof_ref,
+      actorId: req.user.id,
+    });
+    await client.query('COMMIT');
+    return res.status(201).json(result);
+  } catch (err) {
+    if (client) {
+      try { await client.query('ROLLBACK'); } catch (_) { /* keep original error */ }
+    }
+    return sendPhysicalCodeError(err, res, next);
+  } finally {
+    if (client) client.release();
+  }
 });
 
 router.post('/unit', ...hubAuth, async (req, res, next) => {
