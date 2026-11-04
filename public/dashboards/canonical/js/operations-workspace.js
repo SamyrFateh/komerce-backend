@@ -799,6 +799,7 @@
       close.textContent = 'Fermer';
       close.setAttribute('data-sourcing-close', '');
       close.addEventListener('click', () => {
+        if (writing) return; // une mutation en cours ne doit pas être dissimulée
         host.hidden = true;
         host.replaceChildren();
       });
@@ -901,7 +902,7 @@
       }
       function updateItemSummary() {
         const quantity = Number(chosenItem()?.purchasing_missing || 0);
-        itemSummary.textContent = formatNumber(quantity) + ' unité(s) restant à acheter';
+        itemSummary.textContent = formatNumber(quantity) + (quantity > 1 ? ' unités restantes à acheter' : ' unité restante à acheter');
       }
       async function loadSuppliers() {
         const serial = ++requestSerial;
