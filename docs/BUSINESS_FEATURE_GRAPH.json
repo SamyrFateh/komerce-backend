@@ -17820,6 +17820,20 @@
       {
         "feature": "purchasing",
         "category": "services",
+        "declared": "services/supplier-source-resolution.js",
+        "resolvedPath": "services/supplier-source-resolution.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "purchasing",
+        "category": "services",
+        "declared": "scripts/recette/audit-sku-supplier-link.js",
+        "resolvedPath": "scripts/recette/audit-sku-supplier-link.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "purchasing",
+        "category": "services",
         "declared": "services/supplier-payment-state.js",
         "resolvedPath": "services/supplier-payment-state.js",
         "status": "resolved-in-technical-graph"
@@ -18340,6 +18354,27 @@
         "category": "tests",
         "declared": "tests/unit/purchase-line-snapshot.test.js",
         "resolvedPath": "tests/unit/purchase-line-snapshot.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/unit/supplier-source-resolution.test.js",
+        "resolvedPath": "tests/unit/supplier-source-resolution.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/integration/supplier-source-resolution-postgres.test.js",
+        "resolvedPath": "tests/integration/supplier-source-resolution-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/integration/supplier-source-anomaly-postgres.test.js",
+        "resolvedPath": "tests/integration/supplier-source-anomaly-postgres.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -34665,6 +34700,14 @@
                 "targetFile": "services/suppliers/allegro-fulfillment-adapter.js"
               },
               {
+                "sourceFileId": "services/catalog-promotion/sku.js",
+                "targetFile": "services/supplier-source-resolution.js"
+              },
+              {
+                "sourceFileId": "services/catalog-public-view.js",
+                "targetFile": "services/supplier-source-resolution.js"
+              },
+              {
                 "sourceFileId": "tests/unit/allegro-golden-preflight-contract.test.js",
                 "targetFile": "services/purchasing-trigger-service.js"
               },
@@ -40735,6 +40778,10 @@
                 "targetFile": "services/purchasing-completion-service.js"
               },
               {
+                "sourceFileId": "services/hub-procurement-dossier.js",
+                "targetFile": "services/supplier-source-resolution.js"
+              },
+              {
                 "sourceFileId": "routes/pickup-secret.js",
                 "targetFile": "services/purchasing-trigger-service.js"
               },
@@ -45791,6 +45838,22 @@
                 "targetFile": "services/suppliers/connectors/cj-connector.js"
               },
               {
+                "sourceFileId": "tests/unit/supplier-source-resolution.test.js",
+                "targetFile": "services/catalog-public-view.js"
+              },
+              {
+                "sourceFileId": "tests/unit/supplier-source-resolution.test.js",
+                "targetFile": "services/catalog-promotion/sku.js"
+              },
+              {
+                "sourceFileId": "tests/integration/supplier-source-resolution-postgres.test.js",
+                "targetFile": "services/catalog-public-view.js"
+              },
+              {
+                "sourceFileId": "tests/integration/supplier-source-anomaly-postgres.test.js",
+                "targetFile": "services/catalog-public-view.js"
+              },
+              {
                 "sourceFileId": "tests/unit/allegro-seller-order-read.test.js",
                 "targetFile": "services/suppliers/allegro-sandbox-client.js"
               },
@@ -46028,6 +46091,14 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "tests/integration/supplier-source-resolution-postgres.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/supplier-source-anomaly-postgres.test.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "tests/integration/purchase-lines-grouped-postgres.test.js",
                 "targetFile": "db.js"
               },
@@ -46154,6 +46225,10 @@
               {
                 "sourceFileId": "services/purchasing-completion-service.js",
                 "targetFile": "services/scan-operations.js"
+              },
+              {
+                "sourceFileId": "tests/integration/supplier-source-anomaly-postgres.test.js",
+                "targetFile": "services/hub-procurement-dossier.js"
               },
               {
                 "sourceFileId": "tests/integration/hub-p0-procurement-chain-postgres.test.js",
@@ -48559,7 +48634,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2261
+        "filesObserved": 2266
       },
       "boutique": {
         "filesObserved": 214,
@@ -52424,8 +52499,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 682,
-        "technicalNodesOwned": 682,
+        "technicalNodesTotal": 683,
+        "technicalNodesOwned": 683,
         "technicalOrphans": 0
       },
       "dash": {

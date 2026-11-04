@@ -107,13 +107,28 @@ test.describe('Hub live · cockpit maquette C — desktop 1440', () => {
     expect(await pills.count()).toBeLessThanOrEqual(4);
     const anomaly = page.locator('.hlc-todo-pill.is-bad');
     await expect(anomaly).toHaveCount(1);
-    await expect(anomaly).toContainText('fournisseur du SKU non rattaché aux achats');
+    await expect(anomaly).toContainText('Sourcing requis — aucun fournisseur admissible');
     const kom103 = page.locator(`[data-hlc-order="${orderId(snapshot('needs'), 'KOM-103')}"]`);
     await expect(kom103).toContainText('Anomalie fournisseur');
     await anomaly.click();
-    await expect(page.locator('[data-hlc-blocker]')).toContainText('fournisseur du SKU non rattaché aux achats');
+    await expect(page.locator('[data-hlc-blocker]')).toContainText('Sourcing requis — aucun fournisseur admissible');
     await expect(page.locator('[data-hlc-action="resolve-sourcing"]')).toBeEnabled();
     expect(await enabledPrimaries(page).count()).toBe(1);
+  });
+
+  test('Sourcing requis — aucun fournisseur admissible : rendu rouge sur l\'anomalie (pastille, besoin, fil), aucune PO possible', async ({ page }) => {
+    await mount(page, { source: snapshot('needs') });
+    const label = 'Sourcing requis — aucun fournisseur admissible';
+    const pill = page.locator('.hlc-todo-pill.is-bad');
+    await expect(pill).toHaveCount(1);
+    await expect(pill).toContainText(label);
+    const rgb = (s) => s.match(/\d+/g).map(Number);
+    const [r, g, b] = rgb(await pill.evaluate((el) => getComputedStyle(el).borderTopColor));
+    expect([r, g, b]).toEqual([192, 38, 45]); // #c0262d : rouge anomalie, jamais l'ambre des avertissements
+    await expect(page.locator('.hlc-need.is-dashed .hlc-need-title').first()).toContainText(label);
+    await pill.click();
+    await expect(page.locator('[data-hlc-blocker]')).toContainText(label);
+    await page.screenshot({ path: 'test-results/hub-live-sourcing-requis.png' });
   });
 
   test('réception partielle 2/3 : étape « Reçue 2/3 » distincte, FIFO KOM-101 d’abord, reliquat KOM-102, KOM-101 non prête', async ({ page }) => {

@@ -6,7 +6,7 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db, services/notification-service.js, services/hub-reference.js, services/purchase-line-snapshot.js, services/supplier-execution-persistence.js, services/suppliers/supplier-order-identity.js, services/suppliers/canonical-unit-purchasing-gate.js, services/suppliers/procurement-execution-boundary.js, services/suppliers/execution-adapter-registry.js, utils/logger.js
+ * @depends       db, services/notification-service.js, services/hub-reference.js, services/purchase-line-snapshot.js, services/supplier-source-resolution.js, services/supplier-execution-persistence.js, services/suppliers/supplier-order-identity.js, services/suppliers/canonical-unit-purchasing-gate.js, services/suppliers/procurement-execution-boundary.js, services/suppliers/execution-adapter-registry.js, utils/logger.js
  * @used-by       routes/cash.js, routes/purchasing.js
  * @db-read       order_items, orders, product_skus, product_suppliers, products, purchase_lines, suppliers
  * @db-write      alerts, purchase_lines
@@ -29,6 +29,7 @@ const {
   findItemCoverage,
   resolveProcurementHubRef,
 } = require('./purchase-line-snapshot');
+const { resolveSupplierSource, SOURCE_STATUS } = require('./supplier-source-resolution');
 const log = require('../utils/logger').child({ module: 'purchasing-trigger' });
 
 async function notifyAdminNoSupplier(order, item) {
@@ -47,22 +48,17 @@ async function notifyAdminNoSupplier(order, item) {
   log.warn('[PURCHASING] Aucun fournisseur pour produit:', item.product_name, '— commande:', order.reference);
 }
 
+// Résolution via la fonction partagée (services/supplier-source-resolution.js) : association active la plus
+// prioritaire pour le produit et la plateforme du SKU vendu. Non résolue → null (« Sourcing requis ») ;
+// ambiguë ou provider interdit → erreur explicite, jamais de choix arbitraire.
 async function loadSupplierMapping(client, item, exactSku) {
-  const params = [item.product_id];
-  let providerClause = '';
-  if (exactSku) {
-    params.push(exactSku.supplier_order_identity.provider);
-    providerClause = 'AND lower(s.platform) = lower($2)';
-  }
-  const { rows: [ps] } = await client.query(`
-    SELECT ps.*, s.name AS supplier_name, s.platform, s.auto_order, s.contact_phone,
-           s.account_id, s.api_key_enc, s.api_secret_enc, s.lead_time_days
-    FROM product_suppliers ps JOIN suppliers s ON s.id = ps.supplier_id
-    WHERE ps.product_id = $1 AND ps.is_active = TRUE AND s.is_active = TRUE
-      AND ps.deleted_at IS NULL AND s.deleted_at IS NULL AND s.owner_scope IS NULL ${providerClause}
-    ORDER BY ps.priority ASC LIMIT 1
-  `, params);
-  return ps || null;
+  const provider = exactSku ? exactSku.supplier_order_identity.provider : null;
+  const res = await resolveSupplierSource(client, { productId: item.product_id, provider });
+  if (res.status === SOURCE_STATUS.RESOLVED) return res.mapping;
+  if (res.status === SOURCE_STATUS.UNRESOLVED) return null;
+  const err = new Error(`SUPPLIER_SOURCE_${res.status}: produit ${item.product_id}, provider ${provider || 'n/a'}`);
+  err.code = `SUPPLIER_SOURCE_${res.status}`;
+  throw err;
 }
 
 async function alertItemFailure(client, orderId, item, savepointIdx, itemErr) {
@@ -140,8 +136,9 @@ async function triggerPurchasing(orderId, options = {}) {
         continue;
       }
 
-      const ps = await loadSupplierMapping(client, item, exactSku);
+      let ps = null;
       try {
+        ps = await loadSupplierMapping(client, item, exactSku);
         if (!ps) {
           await notifyAdminNoSupplier(order, item);
           results.push({ item: item.product_name, status: 'no_supplier', purchase_order_id: null });

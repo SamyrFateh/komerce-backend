@@ -152,6 +152,7 @@ describe('POST /api/purchasing/suppliers/:id/map — canonical supplier money', 
           supplier_order_identity: IDENTITY,
         }],
       })
+      .mockResolvedValueOnce({ rows: [{ next_priority: 3 }] })
       .mockResolvedValueOnce({ rows: [{ id: 'map-1', supplier_price_aed: null }] });
 
     const res = await request(app())
@@ -160,8 +161,11 @@ describe('POST /api/purchasing/suppliers/:id/map — canonical supplier money', 
 
     expect(res.status).toBe(201);
     expect(res.body).toEqual({ id: 'map-1', supplier_price_aed: null });
-    expect(db.query).toHaveBeenCalledTimes(2);
-    expect(db.query.mock.calls[1][1][4]).toBeNull();
+    expect(db.query).toHaveBeenCalledTimes(3);
+    expect(db.query.mock.calls[2][1][4]).toBeNull();
+    // priorité non fournie : explicite null + première priorité libre calculée côté serveur.
+    expect(db.query.mock.calls[2][1][6]).toBeNull();
+    expect(db.query.mock.calls[2][1][8]).toBe(3);
     expect(resolver.resolveCanonicalUnitForProductSku).toHaveBeenCalledWith('sku-1', expect.any(Function));
   });
 

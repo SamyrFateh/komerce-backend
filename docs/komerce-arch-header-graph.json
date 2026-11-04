@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 786,
-    "filesWithFullHeaders": 735,
+    "scannedCodeFiles": 787,
+    "filesWithFullHeaders": 736,
     "filesWithLiteHeaders": 51,
-    "filesWithAnyHeaders": 786,
+    "filesWithAnyHeaders": 787,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1992,
-    "edges": 9786,
+    "graphNodes": 1993,
+    "edges": 9809,
     "dbTables": 229,
     "doctrines": 770,
     "impactAreas": 207,
-    "unresolvedCodeEdges": 939,
+    "unresolvedCodeEdges": 940,
     "dbWriteViaOverlapWarnings": 12,
     "multiWriterTables": 94
   },
@@ -66,7 +66,7 @@
     "operations": 11,
     "inventory": 2,
     "local-stock": 4,
-    "purchasing": 51,
+    "purchasing": 52,
     "unsold-resolution": 1,
     "external-provider-contracts": 1,
     "finance": 3,
@@ -112,7 +112,7 @@
     "schema": 1,
     "route": 137,
     "entrypoint": 1,
-    "service": 469,
+    "service": 470,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -123,7 +123,7 @@
   "byCriticality": {
     "critical": 118,
     "medium": 154,
-    "high": 453,
+    "high": 454,
     "low": 60,
     "unknown": 1
   },
@@ -15026,7 +15026,8 @@
         "sku_reconciliation_plan (toCreate/toUpdate/toReactivate/toDeactivate)"
       ],
       "depends": [
-        "services/suppliers/supplier-order-identity.js"
+        "services/suppliers/supplier-order-identity.js",
+        "services/supplier-source-resolution.js"
       ],
       "usedBy": [
         "services/catalog-promotion.js (Lot 6)"
@@ -15098,7 +15099,9 @@
       "outputs": [
         "public_product_view"
       ],
-      "depends": [],
+      "depends": [
+        "services/supplier-source-resolution.js"
+      ],
       "usedBy": [
         "routes/products.js"
       ],
@@ -15108,7 +15111,9 @@
         "product_market_exposure",
         "product_market_price_drafts",
         "product_skus",
-        "product_variants"
+        "product_suppliers",
+        "product_variants",
+        "suppliers"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -20143,7 +20148,8 @@
         "physical_trace"
       ],
       "depends": [
-        "db"
+        "db",
+        "services/supplier-source-resolution.js"
       ],
       "usedBy": [
         "routes/hub.js",
@@ -20154,6 +20160,7 @@
         "orders",
         "order_items",
         "products",
+        "product_skus",
         "product_suppliers",
         "suppliers",
         "purchase_lines",
@@ -28822,6 +28829,7 @@
       "depends": [
         "db",
         "utils/logger.js",
+        "services/supplier-source-resolution.js",
         "services/order-mutation-service.js",
         "services/suppliers/purchase-order-confirmation-boundary.js (confirmPurchaseOrder",
         "GAP-5)",
@@ -29248,6 +29256,7 @@
         "services/notification-service.js",
         "services/hub-reference.js",
         "services/purchase-line-snapshot.js",
+        "services/supplier-source-resolution.js",
         "services/supplier-execution-persistence.js",
         "services/suppliers/supplier-order-identity.js",
         "services/suppliers/canonical-unit-purchasing-gate.js",
@@ -33573,6 +33582,58 @@
         "economic-engine"
       ],
       "version": "2026-10"
+    },
+    {
+      "id": "services/supplier-source-resolution.js",
+      "file": "services/supplier-source-resolution.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "supplier-source-resolution",
+      "domain": "purchasing",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "product_id",
+        "supplier_order_identity.provider",
+        "product_suppliers"
+      ],
+      "outputs": [
+        "resolved_supplier_source",
+        "eligibility_sql",
+        "removal_blockers"
+      ],
+      "depends": [],
+      "usedBy": [
+        "services/purchasing-trigger-service.js",
+        "services/catalog-public-view.js",
+        "services/hub-procurement-dossier.js",
+        "services/purchasing-admin-service.js",
+        "scripts/recette/audit-sku-supplier-link.js"
+      ],
+      "dbRead": [
+        "product_suppliers",
+        "suppliers",
+        "product_skus",
+        "products",
+        "purchase_orders",
+        "purchase_lines"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "caller_owned"
+      ],
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md"
+      ],
+      "impactAreas": [
+        "catalog",
+        "purchasing",
+        "sourcing"
+      ],
+      "version": "2026-11-v1"
     },
     {
       "id": "services/suppliers/aliexpress-discovery.js",
@@ -66493,6 +66554,12 @@
       "label": "services/suppliers/supplier-order-identity.js"
     },
     {
+      "from": "services/catalog-promotion/sku.js",
+      "to": "services/supplier-source-resolution.js",
+      "type": "depends",
+      "label": "services/supplier-source-resolution.js"
+    },
+    {
       "from": "services/catalog-promotion.js (Lot 6)",
       "to": "services/catalog-promotion/sku.js",
       "type": "uses",
@@ -66559,6 +66626,12 @@
       "label": "supplier-connectivity"
     },
     {
+      "from": "services/catalog-public-view.js",
+      "to": "services/supplier-source-resolution.js",
+      "type": "depends",
+      "label": "services/supplier-source-resolution.js"
+    },
+    {
       "from": "routes/products.js",
       "to": "services/catalog-public-view.js",
       "type": "uses",
@@ -66596,9 +66669,21 @@
     },
     {
       "from": "services/catalog-public-view.js",
+      "to": "db:product_suppliers",
+      "type": "db-read",
+      "label": "product_suppliers"
+    },
+    {
+      "from": "services/catalog-public-view.js",
       "to": "db:product_variants",
       "type": "db-read",
       "label": "product_variants"
+    },
+    {
+      "from": "services/catalog-public-view.js",
+      "to": "db:suppliers",
+      "type": "db-read",
+      "label": "suppliers"
     },
     {
       "from": "services/catalog-public-view.js",
@@ -75314,6 +75399,12 @@
       "label": "db"
     },
     {
+      "from": "services/hub-procurement-dossier.js",
+      "to": "services/supplier-source-resolution.js",
+      "type": "depends",
+      "label": "services/supplier-source-resolution.js"
+    },
+    {
       "from": "routes/hub.js",
       "to": "services/hub-procurement-dossier.js",
       "type": "uses",
@@ -75348,6 +75439,12 @@
       "to": "db:products",
       "type": "db-read",
       "label": "products"
+    },
+    {
+      "from": "services/hub-procurement-dossier.js",
+      "to": "db:product_skus",
+      "type": "db-read",
+      "label": "product_skus"
     },
     {
       "from": "services/hub-procurement-dossier.js",
@@ -89330,6 +89427,12 @@
     },
     {
       "from": "services/purchasing-admin-service.js",
+      "to": "services/supplier-source-resolution.js",
+      "type": "depends",
+      "label": "services/supplier-source-resolution.js"
+    },
+    {
+      "from": "services/purchasing-admin-service.js",
       "to": "services/order-mutation-service.js",
       "type": "depends",
       "label": "services/order-mutation-service.js"
@@ -90089,6 +90192,12 @@
       "to": "services/purchase-line-snapshot.js",
       "type": "depends",
       "label": "services/purchase-line-snapshot.js"
+    },
+    {
+      "from": "services/purchasing-trigger-service.js",
+      "to": "services/supplier-source-resolution.js",
+      "type": "depends",
+      "label": "services/supplier-source-resolution.js"
     },
     {
       "from": "services/purchasing-trigger-service.js",
@@ -96913,6 +97022,96 @@
       "to": "impact:economic-engine",
       "type": "impact",
       "label": "economic-engine"
+    },
+    {
+      "from": "services/purchasing-trigger-service.js",
+      "to": "services/supplier-source-resolution.js",
+      "type": "uses",
+      "label": "services/purchasing-trigger-service.js"
+    },
+    {
+      "from": "services/catalog-public-view.js",
+      "to": "services/supplier-source-resolution.js",
+      "type": "uses",
+      "label": "services/catalog-public-view.js"
+    },
+    {
+      "from": "services/hub-procurement-dossier.js",
+      "to": "services/supplier-source-resolution.js",
+      "type": "uses",
+      "label": "services/hub-procurement-dossier.js"
+    },
+    {
+      "from": "services/purchasing-admin-service.js",
+      "to": "services/supplier-source-resolution.js",
+      "type": "uses",
+      "label": "services/purchasing-admin-service.js"
+    },
+    {
+      "from": "scripts/recette/audit-sku-supplier-link.js",
+      "to": "services/supplier-source-resolution.js",
+      "type": "uses",
+      "label": "scripts/recette/audit-sku-supplier-link.js"
+    },
+    {
+      "from": "services/supplier-source-resolution.js",
+      "to": "db:product_suppliers",
+      "type": "db-read",
+      "label": "product_suppliers"
+    },
+    {
+      "from": "services/supplier-source-resolution.js",
+      "to": "db:suppliers",
+      "type": "db-read",
+      "label": "suppliers"
+    },
+    {
+      "from": "services/supplier-source-resolution.js",
+      "to": "db:product_skus",
+      "type": "db-read",
+      "label": "product_skus"
+    },
+    {
+      "from": "services/supplier-source-resolution.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/supplier-source-resolution.js",
+      "to": "db:purchase_orders",
+      "type": "db-read",
+      "label": "purchase_orders"
+    },
+    {
+      "from": "services/supplier-source-resolution.js",
+      "to": "db:purchase_lines",
+      "type": "db-read",
+      "label": "purchase_lines"
+    },
+    {
+      "from": "services/supplier-source-resolution.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md"
+    },
+    {
+      "from": "services/supplier-source-resolution.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "services/supplier-source-resolution.js",
+      "to": "impact:purchasing",
+      "type": "impact",
+      "label": "purchasing"
+    },
+    {
+      "from": "services/supplier-source-resolution.js",
+      "to": "impact:sourcing",
+      "type": "impact",
+      "label": "sourcing"
     },
     {
       "from": "services/suppliers/connectors/aliexpress-connected-connector.js",
@@ -118156,7 +118355,8 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
-        "services/suppliers/supplier-order-identity.js"
+        "services/suppliers/supplier-order-identity.js",
+        "services/supplier-source-resolution.js"
       ],
       "directUsedBy": [
         "services/catalog-promotion.js (Lot 6)"
@@ -118181,6 +118381,7 @@
         "impact:catalog",
         "impact:purchasing",
         "services/catalog-promotion.js",
+        "services/supplier-source-resolution.js",
         "services/suppliers/supplier-order-identity.js"
       ]
     },
@@ -118220,7 +118421,9 @@
       "headerType": "full",
       "owner": null,
       "purpose": null,
-      "directDependsOn": [],
+      "directDependsOn": [
+        "services/supplier-source-resolution.js"
+      ],
       "directUsedBy": [
         "routes/products.js"
       ],
@@ -118231,7 +118434,9 @@
         "product_market_exposure",
         "product_market_price_drafts",
         "product_skus",
-        "product_variants"
+        "product_suppliers",
+        "product_variants",
+        "suppliers"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -118253,7 +118458,9 @@
         "db:product_market_exposure",
         "db:product_market_price_drafts",
         "db:product_skus",
+        "db:product_suppliers",
         "db:product_variants",
+        "db:suppliers",
         "doctrine:docs/doctrine/DOCTRINE_CATALOGUE.md",
         "doctrine:only_LOCAL_ACTIVE_is_buyer_effective",
         "doctrine:visible_means_sellable",
@@ -118267,7 +118474,8 @@
         "services/catalog-market-exposure-service.js",
         "services/catalog-product-read-cutover-trial.js",
         "services/catalog-run-progress.js",
-        "services/discovery-rail-composer.js"
+        "services/discovery-rail-composer.js",
+        "services/supplier-source-resolution.js"
       ]
     },
     "services/catalog-publication-decision-audit.js": {
@@ -123394,7 +123602,8 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
-        "db"
+        "db",
+        "services/supplier-source-resolution.js"
       ],
       "directUsedBy": [
         "routes/hub.js",
@@ -123406,6 +123615,7 @@
         "orders",
         "order_items",
         "products",
+        "product_skus",
         "product_suppliers",
         "suppliers",
         "purchase_lines",
@@ -123452,6 +123662,7 @@
         "db:orders",
         "db:parcel_items",
         "db:parcels",
+        "db:product_skus",
         "db:product_suppliers",
         "db:products",
         "db:purchase_lines",
@@ -123471,7 +123682,8 @@
         "routes/admin-operations-workspace.js",
         "routes/hub.js",
         "services/hub-administration-board.js",
-        "services/hub-global-board.js"
+        "services/hub-global-board.js",
+        "services/supplier-source-resolution.js"
       ]
     },
     "services/hub-receivable.js": {
@@ -132111,6 +132323,7 @@
       "directDependsOn": [
         "db",
         "utils/logger.js",
+        "services/supplier-source-resolution.js",
         "services/order-mutation-service.js",
         "services/suppliers/purchase-order-confirmation-boundary.js (confirmPurchaseOrder",
         "GAP-5)",
@@ -132154,6 +132367,7 @@
         "services/order-mutation-service.js",
         "services/purchase-line-snapshot.js",
         "services/purchasing-grouped-service.js",
+        "services/supplier-source-resolution.js",
         "utils/logger.js"
       ]
     },
@@ -132540,6 +132754,7 @@
         "services/notification-service.js",
         "services/hub-reference.js",
         "services/purchase-line-snapshot.js",
+        "services/supplier-source-resolution.js",
         "services/supplier-execution-persistence.js",
         "services/suppliers/supplier-order-identity.js",
         "services/suppliers/canonical-unit-purchasing-gate.js",
@@ -132600,6 +132815,7 @@
         "services/purchase-line-snapshot.js",
         "services/purchasing-canonical-money.js",
         "services/supplier-execution-persistence.js",
+        "services/supplier-source-resolution.js",
         "services/suppliers/canonical-unit-purchasing-gate.js",
         "services/suppliers/execution-adapter-registry.js",
         "services/suppliers/procurement-execution-boundary.js",
@@ -136829,6 +137045,58 @@
         "impact:purchasing",
         "services/suppliers/cj-billing-history-reconciliation.js",
         "services/suppliers/cj-supplier-payment-runtime.js"
+      ]
+    },
+    "services/supplier-source-resolution.js": {
+      "role": "supplier-source-resolution",
+      "domain": "purchasing",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [],
+      "directUsedBy": [
+        "services/purchasing-trigger-service.js",
+        "services/catalog-public-view.js",
+        "services/hub-procurement-dossier.js",
+        "services/purchasing-admin-service.js",
+        "scripts/recette/audit-sku-supplier-link.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "product_suppliers",
+        "suppliers",
+        "product_skus",
+        "products",
+        "purchase_orders",
+        "purchase_lines"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md"
+      ],
+      "impactAreas": [
+        "catalog",
+        "purchasing",
+        "sourcing"
+      ],
+      "mustCheck": [
+        "db:product_skus",
+        "db:product_suppliers",
+        "db:products",
+        "db:purchase_lines",
+        "db:purchase_orders",
+        "db:suppliers",
+        "doctrine:docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md",
+        "impact:catalog",
+        "impact:purchasing",
+        "impact:sourcing",
+        "services/catalog-promotion/sku.js",
+        "services/catalog-public-view.js",
+        "services/hub-procurement-dossier.js",
+        "services/purchasing-admin-service.js",
+        "services/purchasing-trigger-service.js"
       ]
     },
     "services/suppliers/aliexpress-discovery.js": {
@@ -146890,6 +147158,12 @@
       "to": "services/supplier-payment-state.js",
       "type": "uses",
       "label": "future provider payment orchestration"
+    },
+    {
+      "from": "scripts/recette/audit-sku-supplier-link.js",
+      "to": "services/supplier-source-resolution.js",
+      "type": "uses",
+      "label": "scripts/recette/audit-sku-supplier-link.js"
     },
     {
       "from": "scripts/aliexpress-feed-surface-proof.js",
