@@ -26,7 +26,7 @@ if (!process.env.DATABASE_URL) {
   const id = () => crypto.randomUUID();
   const q = (sql, params) => db.query(sql, params);
   const tag = `HAP-${Date.now().toString(36)}-${crypto.randomBytes(3).toString('hex')}`;
-  let app; let admin; let agentHub; let km; let relais; let sku; let seq = 0;
+  let app; let admin; let agentHub; let km; let relais; let sku; let seq = 0; let mappingPriority = 0;
 
   async function makeOrderItem(quantity) {
     const orderId = id(); const itemId = id();
@@ -41,8 +41,10 @@ if (!process.env.DATABASE_URL) {
   async function localSupplier(name) {
     const supplier = id(); const mapping = id();
     await q("INSERT INTO suppliers(id,name,platform,is_active) VALUES($1,$2,'local',true)", [supplier, `${name} ${tag}`]);
-    await q(`INSERT INTO product_suppliers(id,product_id,supplier_id,supplier_sku,supplier_price_aed) VALUES($1,$2,$3,$4,42)`,
-      [mapping, sku.productId, supplier, `LOCAL-${name}`]);
+    // Priorité unique par produit parmi les associations actives (migration 395) : une priorité distincte par fournisseur.
+    mappingPriority += 1;
+    await q(`INSERT INTO product_suppliers(id,product_id,supplier_id,supplier_sku,supplier_price_aed,priority) VALUES($1,$2,$3,$4,42,$5)`,
+      [mapping, sku.productId, supplier, `LOCAL-${name}`, mappingPriority]);
     return { supplier, mapping };
   }
 
@@ -151,7 +153,7 @@ if (!process.env.DATABASE_URL) {
     const noPrice = await request(app).post(`/api/purchasing/suppliers/${created.body.id}/map`).set(...auth).send({ product_id: sku.productId, supplier_sku: 'L1' });
     expect(noPrice.status).toBe(400);
     const mapped = await request(app).post(`/api/purchasing/suppliers/${created.body.id}/map`).set(...auth)
-      .send({ product_id: sku.productId, supplier_sku: 'L1', supplier_price_aed: 30 });
+      .send({ product_id: sku.productId, supplier_sku: 'L1', supplier_price_aed: 30, priority: 50 });
     expect(mapped.status).toBe(201);
 
     const globalSupplier = id();
