@@ -282,10 +282,10 @@ describe('POST /api/purchasing/suppliers/:id/map — mapper produit → fourniss
 
   it('accepte la monnaie canonique sans inventer de prix AED', async () => {
     resolveCanonicalMappingMoney.mockResolvedValueOnce({ unit_price: 12, currency: 'PLN' });
-    db.query.mockResolvedValueOnce({ rows: [{ id: 'map-canonical', supplier_price_aed: null }] });
+    db.query.mockResolvedValueOnce({ rows: [{ next_priority: 1 }] }).mockResolvedValueOnce({ rows: [{ id: 'map-canonical', supplier_price_aed: null }] });
     const res = await request(app).post('/api/purchasing/suppliers/s1/map').send({ product_id: 'p1', supplier_sku: 'SKU1' });
     expect(res.status).toBe(201);
-    expect(db.query.mock.calls[0][1][4]).toBeNull();
+    expect(db.query.mock.calls[1][1][4]).toBeNull();
   });
   it('400 si product_id manquant', async () => {
     const res = await request(app)
@@ -309,18 +309,19 @@ describe('POST /api/purchasing/suppliers/:id/map — mapper produit → fourniss
     expect(res.status).toBe(400);
   });
 
-  it('201 + valeurs par défaut (min_order_qty=1, priority=1) si non fournies', async () => {
-    db.query.mockResolvedValueOnce({ rows: [{ id: 'map1' }] });
+  it('201 + valeurs par défaut (min_order_qty=1, priorité automatique = première libre) si non fournies', async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ next_priority: 1 }] }).mockResolvedValueOnce({ rows: [{ id: 'map1' }] });
     const res = await request(app)
       .post('/api/purchasing/suppliers/s1/map')
       .send({ product_id: 'p1', supplier_sku: 'SKU1', supplier_price_aed: 10 });
     expect(res.status).toBe(201);
-    const [, params] = db.query.mock.calls[0];
-    // product_id, supplier.id(params), supplier_sku, supplier_url, supplier_price_aed, min_order_qty, priority, notes
+    const [, params] = db.query.mock.calls[1];
+    // product_id, supplier.id(params), supplier_sku, supplier_url, supplier_price_aed, min_order_qty, priority explicite (null = auto), notes, première priorité libre
     expect(params[0]).toBe('p1');
     expect(params[1]).toBe('s1');
     expect(params[5]).toBe(1); // min_order_qty
-    expect(params[6]).toBe(1); // priority
+    expect(params[6]).toBeNull(); // priorité explicite absente
+    expect(params[8]).toBe(1); // première priorité libre
   });
 
   it('erreur DB → next(err) → 500', async () => {

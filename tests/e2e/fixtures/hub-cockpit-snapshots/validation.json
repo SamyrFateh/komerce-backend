@@ -527,8 +527,8 @@
      "order_id": "e346c7a1-1f88-42b8-bf6f-bff0cbbcd924"
     },
     "severity": "anomaly",
-    "missing": "Anomalie KOM-103 : fournisseur du SKU non rattaché aux achats",
-    "why": "Aucun fournisseur associé au SKU.",
+    "missing": "Sourcing requis — aucun fournisseur admissible · KOM-103",
+    "why": "Aucun fournisseur admissible pour le produit et la plateforme du SKU.",
     "action": {
      "type": "resolve_sourcing",
      "order_id": "e346c7a1-1f88-42b8-bf6f-bff0cbbcd924",
@@ -732,7 +732,7 @@
    "product_name": "Produit C",
    "missing_quantity": 2,
    "supplier_mapping_present": false,
-   "reason": "KOM-103 · Produit C : 2 unité(s) sans ligne d'achat · fournisseur à identifier"
+   "reason": "KOM-103 · Produit C : 2 unité(s) sans ligne d'achat · aucun fournisseur admissible"
   }
  ]
 }

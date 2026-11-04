@@ -4,6 +4,13 @@
 -- @safety    Échoue avec un message clair si des doublons existent déjà (aucune correction silencieuse) ; DDL idempotente.
 -- @doctrine  docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md
 
+-- Comportement sur données existantes :
+--   * aucun doublon : crée l'index (idempotent) ;
+--   * doublons de priorité parmi les associations ACTIVES non supprimées (cas probable : la priorité par défaut vaut 1) :
+--     la migration ÉCHOUE avec la liste (produit, priorité, nombre d'associations) et ne modifie AUCUNE donnée.
+-- Procédure pré-déploiement : 1) node scripts/recette/audit-sku-supplier-link.js --json sur l'environnement cible
+-- (section priority_duplicates) ; 2) arbitrer chaque produit : fixer des priorités distinctes (1 = préféré) ou désactiver
+-- les associations en trop ; 3) migrer.
 DO $$
 DECLARE
   dup_count integer;

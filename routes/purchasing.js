@@ -326,9 +326,15 @@ router.post('/suppliers/:id/map', ...groupedGuard, async (req, res, next) => {
       supplier_url,
       supplier_price_aed = null,
       min_order_qty = 1,
-      priority = 1,
+      priority = null,
       notes,
     } = req.body;
+
+    // Priorité unique par produit parmi les associations actives (ux_product_suppliers_active_priority) :
+    // explicite (conflit = 409) ou attribuée automatiquement à la première priorité libre après la plus haute.
+    if (priority !== null && !(Number.isInteger(Number(priority)) && Number(priority) > 0)) {
+      return res.status(400).json({ error: 'priority doit être un entier strictement positif' });
+    }
 
     if (!product_id || !supplier_sku) {
       return res.status(400).json({ error: 'product_id et supplier_sku obligatoires' });
@@ -347,23 +353,31 @@ router.post('/suppliers/:id/map', ...groupedGuard, async (req, res, next) => {
       }
     }
 
+    const { rows: [{ next_priority: nextPriority }] } = await db.query(
+      `SELECT COALESCE(MAX(priority), 0) + 1 AS next_priority FROM product_suppliers
+        WHERE product_id = $1 AND is_active = TRUE AND deleted_at IS NULL`, [product_id]);
+    const explicitPriority = priority === null ? null : Number(priority);
+
     const { rows: [mapping] } = await db.query(`
       INSERT INTO product_suppliers
         (product_id, supplier_id, supplier_sku, supplier_url,
          supplier_price_aed, min_order_qty, priority, notes)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+      VALUES ($1,$2,$3,$4,$5,$6,COALESCE($7::int, $9::int),$8)
       ON CONFLICT (product_id, supplier_id) DO UPDATE SET
         supplier_sku       = EXCLUDED.supplier_sku,
         supplier_url       = EXCLUDED.supplier_url,
         supplier_price_aed = EXCLUDED.supplier_price_aed,
         min_order_qty      = EXCLUDED.min_order_qty,
-        priority           = EXCLUDED.priority,
+        priority           = CASE
+          WHEN $7::int IS NOT NULL THEN $7::int
+          WHEN product_suppliers.is_active AND product_suppliers.deleted_at IS NULL THEN product_suppliers.priority
+          ELSE $9::int END,
         notes              = EXCLUDED.notes,
         is_active          = TRUE,
         updated_at         = NOW()
       RETURNING *
     `, [product_id, req.params.id, supplier_sku, supplier_url,
-        supplier_price_aed, min_order_qty, priority, notes]);
+        supplier_price_aed, min_order_qty, explicitPriority, notes, nextPriority]);
 
     res.status(201).json(mapping);
   } catch(err) {

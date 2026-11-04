@@ -153,8 +153,24 @@ if (!process.env.DATABASE_URL) {
     const noPrice = await request(app).post(`/api/purchasing/suppliers/${created.body.id}/map`).set(...auth).send({ product_id: sku.productId, supplier_sku: 'L1' });
     expect(noPrice.status).toBe(400);
     const mapped = await request(app).post(`/api/purchasing/suppliers/${created.body.id}/map`).set(...auth)
-      .send({ product_id: sku.productId, supplier_sku: 'L1', supplier_price_aed: 30, priority: 50 });
+      .send({ product_id: sku.productId, supplier_sku: 'L1', supplier_price_aed: 30 });
     expect(mapped.status).toBe(201);
+    // Produit déjà associé à d'autres fournisseurs : priorité automatique = première libre après la plus haute,
+    // jamais un doublon (migration 395) ; un second appel (upsert) conserve la priorité attribuée.
+    const others = (await q('SELECT MAX(priority)::int AS m FROM product_suppliers WHERE product_id=$1 AND supplier_id<>$2 AND is_active AND deleted_at IS NULL',
+      [sku.productId, created.body.id])).rows[0].m;
+    expect(mapped.body.priority).toBe(others + 1);
+    const remapped = await request(app).post(`/api/purchasing/suppliers/${created.body.id}/map`).set(...auth)
+      .send({ product_id: sku.productId, supplier_sku: 'L1', supplier_price_aed: 31 });
+    expect(remapped.body.priority).toBe(others + 1);
+    // Priorité explicite déjà prise par une autre association active : 409 clair, aucune écriture.
+    const taken = await request(app).post(`/api/purchasing/suppliers/${created.body.id}/map`).set(...auth)
+      .send({ product_id: sku.productId, supplier_sku: 'L1', supplier_price_aed: 31, priority: 1 });
+    expect(taken.status).toBe(409);
+    expect(taken.body.code).toBe('PRODUCT_SUPPLIER_PRIORITY_CONFLICT');
+    const invalid = await request(app).post(`/api/purchasing/suppliers/${created.body.id}/map`).set(...auth)
+      .send({ product_id: sku.productId, supplier_sku: 'L1', supplier_price_aed: 31, priority: 0 });
+    expect(invalid.status).toBe(400);
 
     const globalSupplier = id();
     await q("INSERT INTO suppliers(id,name,platform,is_active) VALUES($1,$2,'local',true)", [globalSupplier, `Global ${tag}`]);

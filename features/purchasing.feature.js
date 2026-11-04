@@ -173,6 +173,7 @@ module.exports = {
       'tests/unit/purchase-line-snapshot.test.js',
       'tests/unit/supplier-source-resolution.test.js',
       'tests/integration/supplier-source-resolution-postgres.test.js',
+      'tests/integration/supplier-source-anomaly-postgres.test.js',
       'tests/unit/procurement-execution-context.test.js',
       'tests/unit/purchase-lines-parity-check.test.js',
       'tests/integration/purchase-lines-postgres.test.js',

@@ -363,7 +363,7 @@
     sourcingNeeds.forEach((n) => {
       const c = card('hlc-need is-dashed', { 'data-hlc-need': n.key }, selKey === `need:${n.key}`, rel.needs.has(n.key), () => select('need', n.key));
       const head = el(doc, 'div', 'hlc-row');
-      head.appendChild(el(doc, 'strong', 'hlc-need-title', `Anomalie · ${n.item.product || 'Article'} — fournisseur du SKU non rattaché aux achats`));
+      head.appendChild(el(doc, 'strong', 'hlc-need-title', `Sourcing requis — aucun fournisseur admissible · ${n.item.product || 'Article'}`));
       head.appendChild(el(doc, 'span', 'hlc-spacer'));
       head.appendChild(el(doc, 'span', 'hlc-ref', `${num(n.item.uncovered)} u`));
       c.appendChild(head);
@@ -575,7 +575,7 @@
           if (o.totals.received > 0) nodes.push(node('Réception', `${num(o.totals.received)}/${num(o.totals.requested)}`, cockpit.allocation_rule ? 'FIFO commande la plus ancienne' : '', o.totals.received >= o.totals.requested ? 'ok' : 'warn'));
           nodes = nodes.concat(bagBoxNodes([o.id]));
           nodes.push(node('Relais', o.relay_name || '—', 'à venir', '', o.relay_id ? `Relais · identifiant technique : ${o.relay_id}` : ''));
-          blocker = (o.totals.uncovered > 0 ? 'fournisseur du SKU non rattaché aux achats. ' : '') + (o.readiness.blockers || []).join(' · ');
+          blocker = (o.totals.uncovered > 0 ? 'Sourcing requis — aucun fournisseur admissible. ' : '') + (o.readiness.blockers || []).join(' · ');
         }
       } else if (sel.type === 'po') {
         const p = poById.get(sel.id);
@@ -601,8 +601,8 @@
           nodes.push(node('Regroupement', `${num(g.group.quantity)} u`, 'même SKU · même marché', 'on'), node('PO', 'à constituer', 'brouillon', ''));
         } else if (s) {
           title = `Besoin ${s.item.product || 'article'}`; sub = `${s.order.reference} · ${marketCode} · ${num(s.item.uncovered)} u`;
-          nodes = [node('Commande', s.order.reference, s.order.status.label, 'on'), node('Besoin', `${s.item.product} ×${num(s.item.uncovered)}`, 'sans ligne d’achat', 'warn'), node('Fournisseur', '—', 'à identifier', 'warn'), node('PO', '—', 'impossible', '')];
-          blocker = 'fournisseur du SKU non rattaché aux achats : aucune PO possible.';
+          nodes = [node('Commande', s.order.reference, s.order.status.label, 'on'), node('Besoin', `${s.item.product} ×${num(s.item.uncovered)}`, 'sans ligne d’achat', 'warn'), node('Fournisseur', '—', 'aucun admissible', 'warn'), node('PO', '—', 'impossible', '')];
+          blocker = 'Sourcing requis — aucun fournisseur admissible : aucune PO possible.';
         }
       } else if (sel.type === 'bag') {
         const b = allBags.find((x) => x.id === sel.id);
