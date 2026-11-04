@@ -194,6 +194,10 @@ beforeAll(async () => {
       );
     `);
     await client.query(migration233);
+    // HUB-001 utilise un schéma isolé au format migration 233.
+    // Reproduire les nouvelles colonnes passives du writer 392/393 sans modifier les invariants historiques.
+    await client.query('ALTER TABLE hub_physical_units ADD COLUMN order_id uuid, ADD COLUMN bag_plan jsonb');
+    await client.query('ALTER TABLE hub_physical_unit_placements ADD COLUMN evidence_method text, ADD COLUMN evidence_code text, ADD COLUMN evidence_ref text');
     await client.query(migration234);
     await client.query(migration309);
     for (const name of ['263_purchase_lines_foundation.sql', '264_purchase_line_progress_view.sql', '265_hub_allocations_purchase_line.sql', '266_purchase_orders_grouped_form.sql']) {

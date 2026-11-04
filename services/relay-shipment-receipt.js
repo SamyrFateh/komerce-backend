@@ -8,7 +8,7 @@
  * @outputs       shipment_content_tree, immutable_relay_receipts, traceable_incidents
  * @depends       db, services/incident-write-service.js
  * @used-by       routes/admin-operations-workspace.js
- * @db-read       international_shipments, international_shipment_hub_units, international_shipment_relay_receipts, hub_physical_units, hub_physical_unit_placements, hub_purchase_allocations, order_items, orders, products, relais, parcel_items, parcels
+ * @db-read       international_shipments, international_shipment_hub_units, international_shipment_relay_receipts, hub_physical_units, hub_physical_unit_placements, hub_box_bags, hub_box_effective_placements, hub_purchase_allocations, order_items, orders, products, relais, parcel_items, parcels
  * @db-write      international_shipment_relay_receipts, international_shipments, international_shipment_events, incidents
  * @db-txn        withTransaction
  * @doctrine      relay_reception_attested_by_relay, no_status_deduced_from_hub_or_admin, market_scope_server_owned
@@ -41,7 +41,7 @@ async function loadExpected(q, shipmentId, relaisId = null) {
            SUM(pl.quantity)::int AS in_box
       FROM international_shipment_hub_units h
       JOIN hub_physical_units u ON u.id = h.physical_unit_id AND u.unit_type = 'MARKET_PARCEL'
-      JOIN hub_physical_unit_placements pl ON pl.physical_unit_id = u.id AND pl.removed_at IS NULL
+      JOIN hub_box_effective_placements pl ON pl.box_unit_id = u.id
       JOIN hub_purchase_allocations a ON a.id = pl.allocation_id
       JOIN order_items oi ON oi.id = a.order_item_id
       JOIN orders o ON o.id = a.order_id
@@ -62,6 +62,24 @@ async function listRelayShipments({ market, relaisId = null }, q = db) {
   const out = [];
   for (const s of shipments) {
     const expected = await loadExpected(q, s.id, relaisId);
+    const { rows: packedBags } = await q.query(
+      `SELECT l.box_unit_id, b.id AS bag_unit_id, b.reference AS bag_reference, b.order_id,
+              pa.id AS parcel_id, pa.reference AS parcel_reference, o.reference AS order_reference
+         FROM hub_box_bags l
+         JOIN international_shipment_hub_units h ON h.physical_unit_id=l.box_unit_id
+         JOIN hub_physical_units b ON b.id=l.bag_unit_id
+         JOIN parcels pa ON pa.id=l.parcel_id
+         JOIN orders o ON o.id=b.order_id
+        WHERE h.shipment_id=$1 AND ($2::uuid IS NULL OR o.relais_id=$2)
+        ORDER BY b.reference`, [s.id, relaisId]
+    );
+    const bagsByBox = new Map();
+    for (const bag of packedBags) {
+      if (!bagsByBox.has(bag.box_unit_id)) bagsByBox.set(bag.box_unit_id, []);
+      bagsByBox.get(bag.box_unit_id).push({ unit_id: bag.bag_unit_id, reference: bag.bag_reference,
+        order_id: bag.order_id, order_reference: bag.order_reference,
+        parcel_id: bag.parcel_id, parcel_reference: bag.parcel_reference });
+    }
     if (relaisId && !expected.length) continue;
     const itemIds = [...new Set(expected.map((e) => e.order_item_id))];
     const { rows: receipts } = itemIds.length ? await q.query(
@@ -79,7 +97,8 @@ async function listRelayShipments({ market, relaisId = null }, q = db) {
 
     const boxes = new Map();
     for (const e of expected) {
-      if (!boxes.has(e.unit_id)) boxes.set(e.unit_id, { unit_id: e.unit_id, reference: e.unit_ref, state: e.unit_state, orders: new Map() });
+      if (!boxes.has(e.unit_id)) boxes.set(e.unit_id, { unit_id: e.unit_id, reference: e.unit_ref, state: e.unit_state,
+        bags: bagsByBox.get(e.unit_id) || [], orders: new Map() });
       const box = boxes.get(e.unit_id);
       if (!box.orders.has(e.order_id)) box.orders.set(e.order_id, { order_id: e.order_id, reference: e.order_ref, items: [] });
       const receipt = receiptBy.get(e.order_item_id);

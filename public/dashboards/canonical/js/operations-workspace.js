@@ -404,6 +404,22 @@
     head.appendChild(text(doc, 'span', 'kmc-workspace-muted',
       `PO ${String(po.purchase_order_id).slice(0, 8)} · ${po.supplier_order_ref || 'sans référence fournisseur'} · statut fournisseur : ${po.po_status} (information, pas une réception)`));
     card.appendChild(head);
+    // Douchette USB (mode clavier) : un scan reconnaît une référence, jamais un client.
+    const scannerPanel = doc.createElement('div');
+    scannerPanel.className = 'kmc-workspace-receive-scanner';
+    const scannerLabel = text(doc, 'label', 'kmc-workspace-receive-scan-label', 'Identifier la référence reçue');
+    const scannerInput = doc.createElement('input');
+    scannerInput.type = 'text';
+    scannerInput.autocomplete = 'off';
+    scannerInput.className = 'kmc-workspace-receive-scan-input';
+    scannerInput.placeholder = 'Scanner EAN / code fournisseur puis Entrée';
+    scannerInput.setAttribute('aria-label', 'Scanner le code physique de la référence fournisseur');
+    scannerLabel.appendChild(scannerInput);
+    scannerPanel.appendChild(scannerLabel);
+    const scannerResult = text(doc, 'span', 'kmc-workspace-receive-scan-result', 'Scanner la référence avant de déclarer sa quantité reçue.');
+    scannerResult.setAttribute('role', 'status');
+    scannerPanel.appendChild(scannerResult);
+    card.appendChild(scannerPanel);
 
     const wrap = doc.createElement('div');
     wrap.className = 'kmc-workspace-table-wrap';
@@ -416,6 +432,7 @@
     table.appendChild(thead);
     const tbody = doc.createElement('tbody');
     const inputs = [];
+    const scannedCodeBySku = new Map();
     po.lines.forEach((line, index) => {
       const row = doc.createElement('tr');
       row.appendChild(text(doc, 'td', '', line.product_name));
@@ -470,6 +487,8 @@
           contents.push({
             purchase_order_id: po.purchase_order_id,
             ...(line.product_sku_id ? { product_sku_id: line.product_sku_id } : {}),
+            ...(scannedCodeBySku.has(String(line.product_sku_id)) ?
+              { evidence_code: scannedCodeBySku.get(String(line.product_sku_id)) } : {}),
             quantity,
           });
         }
@@ -479,16 +498,55 @@
 
     function sync() {
       const { contents, invalid } = collect();
-      button.disabled = invalid || contents.length === 0;
+      const unverified = contents.some(item => !item.evidence_code);
+      button.disabled = invalid || contents.length === 0 || unverified;
       hint.textContent = invalid
         ? 'Quantité invalide : entier entre 0 et le restant attendu.'
-        : 'Saisissez la quantité réellement reçue. Aucune quantité n’est préremplie.';
+        : unverified ? 'Scanner toutes les références déclarées reçues avant validation.'
+        : 'Quantité réellement comptée et références scannées : prêt à enregistrer.';
     }
     inputs.forEach(({ input }) => input.addEventListener('input', sync));
+    let scanning = false;
+    scannerInput.addEventListener('keydown', async event => {
+      if (event.key !== 'Enter') return;
+      event.preventDefault();
+      const code = String(scannerInput.value || '').trim();
+      if (!code || scanning) return;
+      scanning = true;
+      scannerInput.disabled = true;
+      scannerResult.textContent = 'Identification en cours…';
+      scannerResult.dataset.scanTone = 'pending';
+      try {
+        const query = new URLSearchParams({ purchase_order_id: String(po.purchase_order_id), code });
+        const matched = await jsonRequest(context.fetch, `${endpointFor(context.marketCode, 'supply/physical-code')}?${query}`);
+        const candidate = inputs.find(({ line }) => String(line.product_sku_id || '') === String(matched.product_sku_id) && Number(line.remaining_quantity) > 0);
+        if (!candidate) {
+          scannerResult.textContent = 'Référence reconnue, mais aucune quantité attendue dans cette PO : traiter l’écart.';
+          scannerResult.dataset.scanTone = 'warning';
+          return;
+        }
+        scannerResult.textContent = matched.confirmed
+          ? `Référence confirmée : ${candidate.line.product_name}. Comptez puis saisissez la quantité réellement reçue.`
+          : `Référence fournisseur déclarée : ${candidate.line.product_name}. Vérification physique du code à confirmer.`;
+        scannerResult.dataset.scanTone = matched.confirmed ? 'success' : 'warning';
+        if (matched.confirmed) {
+          scannedCodeBySku.set(String(candidate.line.product_sku_id), String(matched.code));
+        }
+        sync();
+        candidate.input.focus();
+      } catch (error) {
+        scannerResult.textContent = `Code non reconnu ou incompatible avec cette PO (${error.code || 'contrôle requis'}).`;
+        scannerResult.dataset.scanTone = 'error';
+        scannerInput.focus();
+      } finally {
+        scanning = false;
+        scannerInput.disabled = false;
+      }
+    });
 
     button.addEventListener('click', () => {
       const { contents, invalid } = collect();
-      if (invalid || contents.length === 0) return;
+      if (invalid || !contents.length || contents.some(item => !item.evidence_code)) return;
       const total = contents.reduce((sum, item) => sum + item.quantity, 0);
       const trackingRef = String(tracking.value || '').trim();
       runAction(context, button, {
@@ -1156,30 +1214,179 @@
     [newRef, newBox].forEach(node => createBar.appendChild(node));
     boxes.appendChild(createBar);
 
+    // Préparation : un sac appartient à UNE commande et son contenu est figé
+    // à l'ouverture. Un seul scan physique par référence déposée.
+    const availableByOrder = new Map();
+    fillable.forEach(line => {
+      const key = String(line.order_id);
+      if (!availableByOrder.has(key)) availableByOrder.set(key, {
+        order_id: line.order_id, order_ref: line.order_ref, lines: [],
+      });
+      availableByOrder.get(key).lines.push(line);
+    });
+    const openBags = Array.isArray(d.bags_open) ? d.bags_open : [];
+    const readyBags = Array.isArray(d.bags_ready) ? d.bags_ready : [];
+    const activeOrders = new Set(openBags.map(bag => String(bag.order_id)));
+    const prep = doc.createElement('section');
+    prep.className = 'kmc-hub-bag-prep';
+    prep.setAttribute('data-hub-bag-preparation', '');
+    prep.appendChild(text(doc, 'h4', '', 'Préparer les sacs clients'));
+    prep.appendChild(text(doc, 'p', 'kmc-workspace-muted',
+      'Une commande par sac. Scanner la référence au dépôt, confirmer la quantité, puis fermer. Aucun second scan à la fermeture.'));
+    const orderChoices = [...availableByOrder.values()].filter(order => !activeOrders.has(String(order.order_id)));
+    if (orderChoices.length) {
+      const createRow = doc.createElement('div');
+      createRow.className = 'kmc-hub-bag-controls';
+      const orderSelect = doc.createElement('select');
+      orderSelect.setAttribute('aria-label', 'Commande dont préparer le sac');
+      orderChoices.forEach((order,i) => orderSelect.appendChild(Object.assign(doc.createElement('option'), {
+        value: String(i), textContent: order.order_ref + ' · ' +
+          order.lines.reduce((sum,line) => sum + Number(line.quantity), 0) + ' unité(s) disponible(s)',
+      })));
+      const createBag = makeActionButton(doc, 'Créer le sac client', 'create-customer-bag');
+      createBag.addEventListener('click', () => {
+        const order = orderChoices[Number(orderSelect.value)];
+        if (!order) return;
+        const plans = new Map();
+        order.lines.forEach(line => {
+          const key = String(line.order_item_id);
+          plans.set(key,(plans.get(key) || 0) + Number(line.quantity));
+        });
+        const bagPlan = [...plans].map(([order_item_id, quantity]) => ({order_item_id,quantity}));
+        runAction(context, createBag, {
+          url: endpointFor(context.marketCode, 'bags'),
+          body: {order_id:order.order_id,bag_plan:bagPlan},
+          runningMessage: 'Ouverture du sac client…',
+          successMessage: result => 'Sac ' + (result.physical_unit?.reference || '') + ' créé pour ' + order.order_ref,
+        }).catch(() => {});
+      });
+      createRow.appendChild(orderSelect); createRow.appendChild(createBag); prep.appendChild(createRow);
+    } else if (!openBags.length) {
+      prep.appendChild(text(doc, 'p', 'kmc-workspace-muted','Aucune quantité réceptionnée à préparer.'));
+    }
+    openBags.forEach(bag => {
+      const holder = doc.createElement('div');
+      holder.className = 'kmc-hub-bag-open';
+      holder.appendChild(text(doc, 'strong', '', bag.reference + ' · ' + bag.order_ref));
+      const actual = new Map((bag.actual_contents || []).map(item => [String(item.order_item_id), Number(item.quantity)]));
+      const planned = new Map((bag.bag_plan || []).map(item => [String(item.order_item_id), Number(item.quantity)]));
+      const totalPlanned = [...planned.values()].reduce((a,b) => a+b,0);
+      const totalActual = [...actual.values()].reduce((a,b) => a+b,0);
+      holder.appendChild(text(doc, 'span', 'kmc-workspace-muted',
+        totalActual + ' / ' + totalPlanned + ' unité(s) physiquement déposée(s)'));
+      const options = fillable.filter(line => String(line.order_id)===String(bag.order_id)
+        && (planned.get(String(line.order_item_id)) || 0) > (actual.get(String(line.order_item_id)) || 0));
+      if (options.length) {
+        const row = doc.createElement('div'); row.className='kmc-hub-bag-controls';
+        const source=doc.createElement('select');
+        source.setAttribute('aria-label','Référence disponible pour ' + bag.reference);
+        options.forEach((line,i)=>source.appendChild(Object.assign(doc.createElement('option'),{
+          value:String(i),
+          textContent:(line.product||'Article')+' · '+line.quantity+' disponible(s) ('+line.from_unit_ref+')',
+        })));
+        const barcode=field('Scanner EAN / référence physique','Code physique observé lors du dépôt dans '+bag.reference);
+        barcode.setAttribute('data-hub-bag-code','');
+        const qty=doc.createElement('input');qty.type='number';qty.min='1';qty.step='1';qty.value='1';
+        qty.setAttribute('aria-label','Quantité déposée dans '+bag.reference);
+        const put=makeActionButton(doc,'Déposer dans le sac','scan-bag-deposit');
+        const deposit=()=>{
+          const line=options[Number(source.value)];
+          if (!line || !barcode.value.trim()) return;
+          const left=(planned.get(String(line.order_item_id))||0)-(actual.get(String(line.order_item_id))||0);
+          const quantity=Number(qty.value);
+          if (!Number.isInteger(quantity)||quantity<1||quantity>Math.min(left,Number(line.quantity))) return;
+          runAction(context,put,{
+            url:endpointFor(context.marketCode, 'bags/'+encodeURIComponent(bag.unit_id)+'/deposit'),
+            body:{from_unit_id:line.from_unit_id,allocation_id:line.allocation_id,
+              quantity,evidence_method:'SCAN',evidence_code:barcode.value.trim()},
+            runningMessage:'Contrôle du scan et dépôt…',
+            successMessage:'Dépôt confirmé dans '+bag.reference,
+          }).catch(()=>{});
+        };
+        barcode.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();deposit();}});
+        put.addEventListener('click',deposit);
+        [source,barcode,qty,put].forEach(node=>row.appendChild(node));
+        holder.appendChild(row);
+      }
+      if (totalPlanned>0 && totalActual===totalPlanned && [...planned].every(([id,q])=>actual.get(id)===q)) {
+        const close=makeActionButton(doc,'Fermer le sac','close-customer-bag');
+        close.addEventListener('click',()=>runAction(context,close,{
+          url:endpointFor(context.marketCode,'bags/'+encodeURIComponent(bag.unit_id)+'/close'),
+          body:{},runningMessage:'Contrôle du contenu avant fermeture…',
+          successMessage:bag.reference+' fermé et prêt pour KOM-BOX.',
+        }).catch(()=>{}));
+        holder.appendChild(close);
+      }
+      prep.appendChild(holder);
+    });
+    boxes.appendChild(prep);
+
     const composeCell = box => {
       const cell = doc.createElement('div');
       cell.className = 'kmc-workspace-box-compose';
-      if (BOX_MUTABLE.has(box.state) && fillable.length) {
-        const source = doc.createElement('select');
-        source.setAttribute('aria-label', `Article reçu à mettre dans ${box.reference}`);
-        fillable.forEach((line, i) => source.appendChild(Object.assign(doc.createElement('option'), {
-          value: String(i), textContent: `${line.order_ref} · ${line.product || 'article'} · ${line.quantity} dispo (${line.from_unit_ref})`,
-        })));
-        const qty = doc.createElement('input');
-        qty.type = 'number'; qty.min = '1'; qty.step = '1'; qty.value = '1';
-        qty.setAttribute('aria-label', `Quantité à mettre dans ${box.reference}`);
-        const add = makeActionButton(doc, 'Ajouter au carton', 'fill-box');
-        add.addEventListener('click', () => {
-          const line = fillable[Number(source.value)];
-          if (!line) return;
-          runAction(context, add, {
-            url: endpointFor(context.marketCode, `boxes/${box.unit_id}/fill`),
-            body: { from_unit_id: line.from_unit_id, allocation_id: line.allocation_id, quantity: Number(qty.value) },
-            runningMessage: 'Mise en carton…',
-            successMessage: 'Quantité placée dans la KOM-BOX.',
-          }).catch(() => {});
-        });
-        [source, qty, add].forEach(node => cell.appendChild(node));
+      if (BOX_MUTABLE.has(box.state)) {
+        // V1 : on scanne le sac FERMÉ, pas les allocations en vrac.
+        // Le REPACK direct reste une API historique, mais n'est plus une action Hub Live.
+        if (readyBags.length) {
+          const boxScan=field('Scanner cette KOM-BOX une fois','Scanner référence de la KOM-BOX '+box.reference);
+          boxScan.setAttribute('data-hub-box-scan','');
+          context.hubVerifiedBoxes=context.hubVerifiedBoxes||{};
+          boxScan.value=context.hubVerifiedBoxes[String(box.unit_id)]||'';
+          const bagScan=field('Scanner le sac client','Scanner référence du sac client');
+          bagScan.setAttribute('data-hub-bag-scan','');
+          const parcel=doc.createElement('select');
+          parcel.setAttribute('aria-label','Colis client rattaché au sac scanné');
+          const add=makeActionButton(doc,'Placer le sac','put-bag-in-box');
+          const identify=()=>{
+            const bag=readyBags.find(b=>b.reference===bagScan.value.trim());
+            const previousParcel=parcel.value;
+            parcel.replaceChildren();
+            parcel.appendChild(Object.assign(doc.createElement('option'),{
+              value:'',textContent:bag?'Choisir le colis client…':'Scanner un sac identifié…',
+            }));
+            if(bag) (d.client_parcels||[]).filter(p=>String(p.order_id)===String(bag.order_id))
+              .forEach(p=>parcel.appendChild(Object.assign(doc.createElement('option'),{
+                value:p.id,textContent:p.reference+' · '+bag.order_ref,
+              })));
+            if([...parcel.options].some(opt=>opt.value===previousParcel))parcel.value=previousParcel;
+            else if(parcel.options.length===2)parcel.selectedIndex=1;
+            add.disabled=!(bag&&boxScan.value.trim()===box.reference&&parcel.value);
+            return bag;
+          };
+          boxScan.addEventListener('input',()=>{
+            if(boxScan.value.trim()===box.reference){
+              context.hubVerifiedBoxes[String(box.unit_id)]=box.reference;
+            }else{
+              delete context.hubVerifiedBoxes[String(box.unit_id)];
+            }
+            identify();
+          });
+          boxScan.addEventListener('keydown',event=>{
+            if(event.key==='Enter'){event.preventDefault();bagScan.focus();}
+          });
+          bagScan.addEventListener('input',identify);
+          bagScan.addEventListener('keydown',event=>{
+            if(event.key==='Enter'){event.preventDefault();identify();parcel.focus();}
+          });
+          parcel.addEventListener('change',identify);
+          add.addEventListener('click',()=>{
+            const bag=readyBags.find(b=>b.reference===bagScan.value.trim());
+            if(!bag||boxScan.value.trim()!==box.reference||!parcel.value)return;
+            runAction(context,add,{
+              url:endpointFor(context.marketCode,'boxes/'+encodeURIComponent(box.unit_id)+'/bags'),
+              body:{
+                bag_unit_id:bag.unit_id,parcel_id:parcel.value,
+                bag_reference_scan:bagScan.value.trim(),box_reference_scan:boxScan.value.trim(),
+              },
+              runningMessage:'Contrôle du sac et de la KOM-BOX…',
+              successMessage:bag.reference+' placé dans '+box.reference+' sans déplacement des articles.',
+            }).catch(()=>{});
+          });
+          [boxScan,bagScan,parcel,add].forEach(node=>cell.appendChild(node));
+          identify();
+        }else{
+          cell.appendChild(text(doc,'span','kmc-workspace-muted','Préparer puis fermer un sac client avant mise en KOM-BOX.'));
+        }
       }
       const next = BOX_NEXT_STATE[box.state];
       if (next && (box.contents || []).length) {
@@ -1470,12 +1677,45 @@
       card.setAttribute('data-relay-shipment', shipment.reference);
       card.appendChild(text(doc, 'summary', 'kmc-relay-shipment-title',
         'Expédition ' + shipment.reference + ' · ' + shipment.stage));
+      // Même sac physique que celui fermé au Hub : son scan ouvre la commande
+      // et le colis canonique, sans attester automatiquement la réception.
+      const scanBar=doc.createElement('div');
+      scanBar.className='kmc-hub-bag-controls';
+      scanBar.setAttribute('data-relay-bag-scanner','');
+      const bagCode=doc.createElement('input');
+      bagCode.type='text';bagCode.autocomplete='off';
+      bagCode.placeholder='Scanner un sac de cette expédition';
+      bagCode.setAttribute('aria-label','Scanner le sac client reçu au relais');
+      const scan=makeActionButton(doc,'Identifier le sac','relay-lookup-bag');
+      const result=text(doc,'span','kmc-workspace-muted','Scanner un sac pour retrouver la commande et le colis client.');
+      result.setAttribute('role','status');
+      const identify=async()=>{
+        const code=bagCode.value.trim();if(!code)return;
+        scan.disabled=true;result.textContent='Recherche du sac dans cette expédition…';
+        try{
+          const info=await jsonRequest(context.fetch,endpointFor(context.marketCode,
+            'relay-shipments/'+encodeURIComponent(shipment.reference)+'/bags/'+encodeURIComponent(code)));
+          result.textContent=info.bag_reference+' → commande '+info.order_reference+
+            ' · colis '+info.parcel_reference+' · '+
+            (info.contents||[]).map(item=>(item.product_name||'Article')+' ×'+item.quantity).join(', ');
+        }catch(err){
+          result.textContent='Sac non reconnu dans cette expédition ou non autorisé pour ce relais.';
+        }finally{scan.disabled=false;}
+      };
+      bagCode.addEventListener('keydown',event=>{
+        if(event.key==='Enter'){event.preventDefault();identify();}
+      });
+      scan.addEventListener('click',identify);
+      [bagCode,scan,result].forEach(node=>scanBar.appendChild(node));
+      card.appendChild(scanBar);
       const inputs = [];
       shipment.boxes.forEach(box => {
         const boxNode = doc.createElement('div');
         boxNode.className = 'kmc-relay-box';
         boxNode.setAttribute('data-relay-box', box.reference);
         boxNode.appendChild(text(doc, 'h4', 'kmc-relay-box-title', 'KOM-BOX ' + box.reference));
+        (box.bags || []).forEach(bag => boxNode.appendChild(text(doc, 'div', 'kmc-workspace-muted',
+          'Sac '+bag.reference+' · commande '+bag.order_reference+' · colis '+bag.parcel_reference)));
         box.orders.forEach(order => {
           boxNode.appendChild(text(doc, 'div', 'kmc-workspace-muted', 'Commande ' + order.reference));
           const table = doc.createElement('table');
