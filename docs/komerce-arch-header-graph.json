@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 1992,
-    "edges": 9785,
+    "edges": 9786,
     "dbTables": 229,
     "doctrines": 770,
     "impactAreas": 207,
@@ -20161,6 +20161,7 @@
         "purchase_order_authorizations",
         "hub_authorization_grants",
         "users",
+        "relais",
         "v_purchase_line_progress",
         "hub_purchase_allocations",
         "hub_physical_units",
@@ -75392,6 +75393,12 @@
     },
     {
       "from": "services/hub-procurement-dossier.js",
+      "to": "db:relais",
+      "type": "db-read",
+      "label": "relais"
+    },
+    {
+      "from": "services/hub-procurement-dossier.js",
       "to": "db:v_purchase_line_progress",
       "type": "db-read",
       "label": "v_purchase_line_progress"
@@ -123406,6 +123413,7 @@
         "purchase_order_authorizations",
         "hub_authorization_grants",
         "users",
+        "relais",
         "v_purchase_line_progress",
         "hub_purchase_allocations",
         "hub_physical_units",
@@ -123449,6 +123457,7 @@
         "db:purchase_lines",
         "db:purchase_order_authorizations",
         "db:purchase_orders",
+        "db:relais",
         "db:suppliers",
         "db:users",
         "db:v_purchase_line_progress",

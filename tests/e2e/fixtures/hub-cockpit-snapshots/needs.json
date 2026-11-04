@@ -1,0 +1,588 @@
+{
+ "market": {
+  "id": "09a73fea-2d26-4147-82ac-9fca1a183ea4",
+  "code": "XU"
+ },
+ "market_id": "09a73fea-2d26-4147-82ac-9fca1a183ea4",
+ "generated_at": "2026-11-04T17:40:16.017Z",
+ "kpis": {
+  "orders_waiting": 3,
+  "items_sourcing_required": 1,
+  "units_sourcing_required": 2,
+  "lines_open": 3,
+  "po_draft": 0,
+  "po_issued_not_sent": 0,
+  "po_sent_unconfirmed": 0,
+  "qty_missing": 0,
+  "qty_anomaly": 0,
+  "boxes_open": 0,
+  "boxes_unshipped": 0
+ },
+ "orders": [
+  {
+   "id": "15a7ac34-03ce-450b-bc94-f5f5b094dea7",
+   "reference": "KOM-103",
+   "status": {
+    "label": "Anomalie fournisseur",
+    "tone": "bad"
+   },
+   "created_at": "2026-11-04T17:29:58.562Z",
+   "relay_name": "Relais Moroni",
+   "items": [
+    {
+     "id": "6c97f7bd-482d-4ebc-9209-81a121a4b1bd",
+     "product_id": "e1f8f458-32e2-4b28-bfa8-94747dff2740",
+     "sku_id": "1bb04d25-6e42-46a3-bc4c-b79001c7611d",
+     "product": "Produit C",
+     "ordered": 2,
+     "fulfillment_source": "IMPORT",
+     "purchasing_covered": 0,
+     "purchasing_missing": 2,
+     "received": 0,
+     "supplier_mapping_present": false,
+     "sourcing_required": true,
+     "anomaly": 0,
+     "to_control": 0,
+     "controlled": 0,
+     "in_bags": 0,
+     "in_boxes": 0,
+     "shipped": 0,
+     "requested": 2,
+     "to_group": 0,
+     "covered": 0,
+     "uncovered": 2,
+     "remaining_to_deliver": 2,
+     "lines": [],
+     "po_ids": [],
+     "complete": false,
+     "units": [
+      {
+       "state": "sourcing",
+       "label": "Fournisseur du SKU non rattaché aux achats"
+      },
+      {
+       "state": "sourcing",
+       "label": "Fournisseur du SKU non rattaché aux achats"
+      }
+     ],
+     "unit_counts": {
+      "sourcing": 2
+     },
+     "where": "sans fournisseur"
+    }
+   ],
+   "po_ids": [],
+   "supplier_count": 0,
+   "readiness": {
+    "complete": false,
+    "partial": false,
+    "ready_to_pack": false,
+    "unbagged_received": 0,
+    "bag_open": false,
+    "pending_items": [
+     {
+      "order_item_id": "6c97f7bd-482d-4ebc-9209-81a121a4b1bd",
+      "product": "Produit C",
+      "missing": 2
+     }
+    ],
+    "blockers": [
+     "Besoin non couvert par une ligne d’achat",
+     "Articles non reçus : Produit C (2)"
+    ]
+   },
+   "totals": {
+    "requested": 2,
+    "covered": 0,
+    "to_group": 0,
+    "uncovered": 2,
+    "received": 0,
+    "remaining": 2,
+    "anomaly": 0,
+    "to_control": 0,
+    "controlled": 0,
+    "in_bags": 0,
+    "in_boxes": 0,
+    "shipped": 0
+   }
+  },
+  {
+   "id": "fb98929d-313a-4c4f-9439-4721d39dca1f",
+   "reference": "KOM-102",
+   "status": {
+    "label": "À regrouper",
+    "tone": "act"
+   },
+   "created_at": "2026-11-04T17:19:58.558Z",
+   "relay_name": "Relais Moroni",
+   "items": [
+    {
+     "id": "ad954ded-c29c-487b-9cb1-73834305a4c2",
+     "product_id": "3fac33df-5922-4918-8359-ff2f953e8831",
+     "sku_id": "3dfd3a3d-37b8-486a-b7cb-d7a131c2a591",
+     "product": "Produit A",
+     "ordered": 1,
+     "fulfillment_source": "IMPORT",
+     "purchasing_covered": 1,
+     "purchasing_missing": 0,
+     "received": 0,
+     "supplier_mapping_present": false,
+     "sourcing_required": false,
+     "anomaly": 0,
+     "to_control": 0,
+     "controlled": 0,
+     "in_bags": 0,
+     "in_boxes": 0,
+     "shipped": 0,
+     "requested": 1,
+     "to_group": 1,
+     "covered": 0,
+     "uncovered": 0,
+     "remaining_to_deliver": 1,
+     "lines": [
+      {
+       "line_id": "32ba2977-68ca-487b-b217-ad24e3327465",
+       "po_id": null,
+       "quantity": 1,
+       "effective": 1,
+       "received": 0,
+       "anomaly": 0,
+       "fifo_rank": null
+      }
+     ],
+     "po_ids": [],
+     "complete": false,
+     "units": [
+      {
+       "state": "none",
+       "label": "À acheter"
+      }
+     ],
+     "unit_counts": {
+      "none": 1
+     },
+     "where": "à regrouper"
+    }
+   ],
+   "po_ids": [],
+   "supplier_count": 0,
+   "readiness": {
+    "complete": false,
+    "partial": false,
+    "ready_to_pack": false,
+    "unbagged_received": 0,
+    "bag_open": false,
+    "pending_items": [
+     {
+      "order_item_id": "ad954ded-c29c-487b-9cb1-73834305a4c2",
+      "product": "Produit A",
+      "missing": 1
+     }
+    ],
+    "blockers": [
+     "Articles non reçus : Produit A (1)"
+    ]
+   },
+   "totals": {
+    "requested": 1,
+    "covered": 0,
+    "to_group": 1,
+    "uncovered": 0,
+    "received": 0,
+    "remaining": 1,
+    "anomaly": 0,
+    "to_control": 0,
+    "controlled": 0,
+    "in_bags": 0,
+    "in_boxes": 0,
+    "shipped": 0
+   }
+  },
+  {
+   "id": "aa0391f1-d3fd-4515-870f-709299813435",
+   "reference": "KOM-101",
+   "status": {
+    "label": "À regrouper",
+    "tone": "act"
+   },
+   "created_at": "2026-11-04T17:09:58.539Z",
+   "relay_name": "Relais Moroni",
+   "items": [
+    {
+     "id": "4c4ba77e-6559-4b61-ae45-8080f28d802d",
+     "product_id": "3fac33df-5922-4918-8359-ff2f953e8831",
+     "sku_id": "3dfd3a3d-37b8-486a-b7cb-d7a131c2a591",
+     "product": "Produit A",
+     "ordered": 2,
+     "fulfillment_source": "IMPORT",
+     "purchasing_covered": 2,
+     "purchasing_missing": 0,
+     "received": 0,
+     "supplier_mapping_present": false,
+     "sourcing_required": false,
+     "anomaly": 0,
+     "to_control": 0,
+     "controlled": 0,
+     "in_bags": 0,
+     "in_boxes": 0,
+     "shipped": 0,
+     "requested": 2,
+     "to_group": 2,
+     "covered": 0,
+     "uncovered": 0,
+     "remaining_to_deliver": 2,
+     "lines": [
+      {
+       "line_id": "0aa328a3-e9d3-4c6f-95e7-60e103c6bf18",
+       "po_id": null,
+       "quantity": 2,
+       "effective": 2,
+       "received": 0,
+       "anomaly": 0,
+       "fifo_rank": null
+      }
+     ],
+     "po_ids": [],
+     "complete": false,
+     "units": [
+      {
+       "state": "none",
+       "label": "À acheter"
+      },
+      {
+       "state": "none",
+       "label": "À acheter"
+      }
+     ],
+     "unit_counts": {
+      "none": 2
+     },
+     "where": "à regrouper"
+    },
+    {
+     "id": "fbc80d66-4153-4d6d-a965-0b687232f935",
+     "product_id": "ca2760b9-bdfd-4d34-839e-4824b5af518e",
+     "sku_id": "3f7aa63e-1936-4525-a8a5-b53e523bf4c9",
+     "product": "Produit B",
+     "ordered": 1,
+     "fulfillment_source": "IMPORT",
+     "purchasing_covered": 1,
+     "purchasing_missing": 0,
+     "received": 0,
+     "supplier_mapping_present": false,
+     "sourcing_required": false,
+     "anomaly": 0,
+     "to_control": 0,
+     "controlled": 0,
+     "in_bags": 0,
+     "in_boxes": 0,
+     "shipped": 0,
+     "requested": 1,
+     "to_group": 1,
+     "covered": 0,
+     "uncovered": 0,
+     "remaining_to_deliver": 1,
+     "lines": [
+      {
+       "line_id": "c6569f12-a780-4b96-a29f-754536d30bc5",
+       "po_id": null,
+       "quantity": 1,
+       "effective": 1,
+       "received": 0,
+       "anomaly": 0,
+       "fifo_rank": null
+      }
+     ],
+     "po_ids": [],
+     "complete": false,
+     "units": [
+      {
+       "state": "none",
+       "label": "À acheter"
+      }
+     ],
+     "unit_counts": {
+      "none": 1
+     },
+     "where": "à regrouper"
+    }
+   ],
+   "po_ids": [],
+   "supplier_count": 0,
+   "readiness": {
+    "complete": false,
+    "partial": false,
+    "ready_to_pack": false,
+    "unbagged_received": 0,
+    "bag_open": false,
+    "pending_items": [
+     {
+      "order_item_id": "4c4ba77e-6559-4b61-ae45-8080f28d802d",
+      "product": "Produit A",
+      "missing": 2
+     },
+     {
+      "order_item_id": "fbc80d66-4153-4d6d-a965-0b687232f935",
+      "product": "Produit B",
+      "missing": 1
+     }
+    ],
+    "blockers": [
+     "Articles non reçus : Produit A (2), Produit B (1)"
+    ]
+   },
+   "totals": {
+    "requested": 3,
+    "covered": 0,
+    "to_group": 3,
+    "uncovered": 0,
+    "received": 0,
+    "remaining": 3,
+    "anomaly": 0,
+    "to_control": 0,
+    "controlled": 0,
+    "in_bags": 0,
+    "in_boxes": 0,
+    "shipped": 0
+   }
+  }
+ ],
+ "cockpit": {
+  "allocation_rule": "FIFO : la commande la plus ancienne est servie en premier (par SKU dans la PO)",
+  "po_steps": [
+   "draft",
+   "validation",
+   "engaged",
+   "sent",
+   "received"
+  ],
+  "viewer": {
+   "user_id": "95c3d406-25c3-4388-90a9-80f028e9c450",
+   "role": "agent_hub",
+   "can_authorize_commitment": false,
+   "can_authorize_payment": false
+  },
+  "need_batches": [
+   {
+    "key": "444553c2-d0e9-4159-aff3-4e614ca1f491|DXB|09a73fea-2d26-4147-82ac-9fca1a183ea4",
+    "supplier_id": "444553c2-d0e9-4159-aff3-4e614ca1f491",
+    "supplier_name": "Fournisseur A",
+    "procurement_hub_ref": "DXB",
+    "market_id": "09a73fea-2d26-4147-82ac-9fca1a183ea4",
+    "quantity": 4,
+    "order_count": 2,
+    "groups": [
+     {
+      "key": "444553c2-d0e9-4159-aff3-4e614ca1f491|DXB|09a73fea-2d26-4147-82ac-9fca1a183ea4|3dfd3a3d-37b8-486a-b7cb-d7a131c2a591",
+      "product_sku_id": "3dfd3a3d-37b8-486a-b7cb-d7a131c2a591",
+      "product": "Produit A",
+      "supplier_sku": "e2emw2ejfbaa65a-s-f70b-A",
+      "quantity": 3,
+      "lines": [
+       {
+        "line_id": "0aa328a3-e9d3-4c6f-95e7-60e103c6bf18",
+        "order_id": "aa0391f1-d3fd-4515-870f-709299813435",
+        "order_ref": "KOM-101",
+        "order_item_id": "4c4ba77e-6559-4b61-ae45-8080f28d802d",
+        "quantity": 2
+       },
+       {
+        "line_id": "32ba2977-68ca-487b-b217-ad24e3327465",
+        "order_id": "fb98929d-313a-4c4f-9439-4721d39dca1f",
+        "order_ref": "KOM-102",
+        "order_item_id": "ad954ded-c29c-487b-9cb1-73834305a4c2",
+        "quantity": 1
+       }
+      ]
+     },
+     {
+      "key": "444553c2-d0e9-4159-aff3-4e614ca1f491|DXB|09a73fea-2d26-4147-82ac-9fca1a183ea4|3f7aa63e-1936-4525-a8a5-b53e523bf4c9",
+      "product_sku_id": "3f7aa63e-1936-4525-a8a5-b53e523bf4c9",
+      "product": "Produit B",
+      "supplier_sku": "SKU-B",
+      "quantity": 1,
+      "lines": [
+       {
+        "line_id": "c6569f12-a780-4b96-a29f-754536d30bc5",
+        "order_id": "aa0391f1-d3fd-4515-870f-709299813435",
+        "order_ref": "KOM-101",
+        "order_item_id": "fbc80d66-4153-4d6d-a965-0b687232f935",
+        "quantity": 1
+       }
+      ]
+     }
+    ],
+    "compatible_draft_po_ids": []
+   }
+  ],
+  "unit_legend": [
+   {
+    "state": "none",
+    "label": "À acheter"
+   },
+   {
+    "state": "draft",
+    "label": "Dans une PO brouillon"
+   },
+   {
+    "state": "pending",
+    "label": "Validation responsable"
+   },
+   {
+    "state": "shipped",
+    "label": "Chez / expédié fournisseur"
+   },
+   {
+    "state": "received",
+    "label": "Reçu au Hub"
+   },
+   {
+    "state": "boxed",
+    "label": "Sac fermé · KOM-BOX"
+   }
+  ],
+  "physical": [
+   {
+    "key": "received",
+    "title": "Reçu au Hub · non ensaché",
+    "tone": "ok",
+    "items": [],
+    "empty_text": "Rien de reçu pour l’instant."
+   },
+   {
+    "key": "bags",
+    "title": "Sacs clients",
+    "tone": "bag",
+    "items": [],
+    "empty_text": "Aucun sac ouvert."
+   },
+   {
+    "key": "boxes",
+    "title": "KOM-BOX",
+    "tone": "box",
+    "items": [],
+    "empty_text": "Aucune KOM-BOX en cours."
+   },
+   {
+    "key": "shipped",
+    "title": "Expédié au relais",
+    "tone": "grey",
+    "items": [],
+    "empty_text": "Aucun départ aujourd’hui."
+   },
+   {
+    "key": "reliquats",
+    "title": "Reliquats attendus",
+    "tone": "warn",
+    "items": [],
+    "empty_text": "Aucun reliquat."
+   }
+  ],
+  "todo": [
+   {
+    "id": "SOURCING_REQUIRED:15a7ac34-03ce-450b-bc94-f5f5b094dea7",
+    "kind": "SOURCING_REQUIRED",
+    "priority": 10,
+    "owner": "agent_hub",
+    "subject": {
+     "order_id": "15a7ac34-03ce-450b-bc94-f5f5b094dea7"
+    },
+    "severity": "anomaly",
+    "missing": "Anomalie KOM-103 : fournisseur du SKU non rattaché aux achats",
+    "why": "Aucun fournisseur associé au SKU.",
+    "action": {
+     "type": "resolve_sourcing",
+     "order_id": "15a7ac34-03ce-450b-bc94-f5f5b094dea7",
+     "label": "Ouvrir une ligne d’achat"
+    },
+    "viewer_can_act": true,
+    "blocked_reason": null
+   },
+   {
+    "id": "PREPARE_PO:444553c2-d0e9-4159-aff3-4e614ca1f491|DXB|09a73fea-2d26-4147-82ac-9fca1a183ea4",
+    "kind": "PREPARE_PO",
+    "priority": 20,
+    "owner": "agent_hub",
+    "subject": {
+     "batch_key": "444553c2-d0e9-4159-aff3-4e614ca1f491|DXB|09a73fea-2d26-4147-82ac-9fca1a183ea4"
+    },
+    "missing": "4 u à regrouper chez Fournisseur A",
+    "why": "2 commande(s) à regrouper en une PO.",
+    "action": {
+     "type": "prepare_po",
+     "batch_key": "444553c2-d0e9-4159-aff3-4e614ca1f491|DXB|09a73fea-2d26-4147-82ac-9fca1a183ea4",
+     "label": "Préparer la PO"
+    },
+    "viewer_can_act": true,
+    "blocked_reason": null
+   }
+  ]
+ },
+ "client_parcels": [],
+ "needs": [
+  {
+   "line_id": "0aa328a3-e9d3-4c6f-95e7-60e103c6bf18",
+   "supplier_id": "444553c2-d0e9-4159-aff3-4e614ca1f491",
+   "supplier_name": "Fournisseur A",
+   "product_sku_id": "3dfd3a3d-37b8-486a-b7cb-d7a131c2a591",
+   "supplier_sku": "e2emw2ejfbaa65a-s-f70b-A",
+   "product_name": "Produit A",
+   "quantity": 2,
+   "order_id": "aa0391f1-d3fd-4515-870f-709299813435",
+   "order_ref": "KOM-101",
+   "order_item_id": "4c4ba77e-6559-4b61-ae45-8080f28d802d",
+   "created_at": "2026-11-04T17:39:58.549Z",
+   "procurement_hub_ref": "DXB",
+   "order_created_at": "2026-11-04T17:09:58.539Z"
+  },
+  {
+   "line_id": "c6569f12-a780-4b96-a29f-754536d30bc5",
+   "supplier_id": "444553c2-d0e9-4159-aff3-4e614ca1f491",
+   "supplier_name": "Fournisseur A",
+   "product_sku_id": "3f7aa63e-1936-4525-a8a5-b53e523bf4c9",
+   "supplier_sku": "SKU-B",
+   "product_name": "Produit B",
+   "quantity": 1,
+   "order_id": "aa0391f1-d3fd-4515-870f-709299813435",
+   "order_ref": "KOM-101",
+   "order_item_id": "fbc80d66-4153-4d6d-a965-0b687232f935",
+   "created_at": "2026-11-04T17:39:58.556Z",
+   "procurement_hub_ref": "DXB",
+   "order_created_at": "2026-11-04T17:09:58.539Z"
+  },
+  {
+   "line_id": "32ba2977-68ca-487b-b217-ad24e3327465",
+   "supplier_id": "444553c2-d0e9-4159-aff3-4e614ca1f491",
+   "supplier_name": "Fournisseur A",
+   "product_sku_id": "3dfd3a3d-37b8-486a-b7cb-d7a131c2a591",
+   "supplier_sku": "e2emw2ejfbaa65a-s-f70b-A",
+   "product_name": "Produit A",
+   "quantity": 1,
+   "order_id": "fb98929d-313a-4c4f-9439-4721d39dca1f",
+   "order_ref": "KOM-102",
+   "order_item_id": "ad954ded-c29c-487b-9cb1-73834305a4c2",
+   "created_at": "2026-11-04T17:39:58.561Z",
+   "procurement_hub_ref": "DXB",
+   "order_created_at": "2026-11-04T17:19:58.558Z"
+  }
+ ],
+ "purchase_orders": [],
+ "receipts": [],
+ "boxes": [],
+ "bags_ready": [],
+ "bags_open": [],
+ "fillable": [],
+ "open_shipments": [],
+ "to_handle": [
+  {
+   "kind": "ORDER_SOURCING_REQUIRED",
+   "order_id": "15a7ac34-03ce-450b-bc94-f5f5b094dea7",
+   "order_ref": "KOM-103",
+   "order_item_id": "6c97f7bd-482d-4ebc-9209-81a121a4b1bd",
+   "product_name": "Produit C",
+   "missing_quantity": 2,
+   "supplier_mapping_present": false,
+   "reason": "KOM-103 · Produit C : 2 unité(s) sans ligne d'achat · fournisseur à identifier"
+  }
+ ]
+}

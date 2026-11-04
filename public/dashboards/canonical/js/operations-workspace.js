@@ -602,36 +602,26 @@
   // Dossier vivant : la projection serveur reste la seule source de vérité.
   // Les accordéons ne changent aucun état; chaque action existante garde son service propriétaire.
   function renderSupplySection(rootNode, ui, doc, context) {
-    const kpiSlot = createSection(rootNode, ui, 'Dossiers · Vue du jour',
-      'Dossier par commande : articles, achats fournisseur, réceptions, colis client, cartons et expédition.');
-    kpiSlot.setAttribute('data-hub-dossier-home', '');
+    // Concept C : aucun bloc KPI ni titre de section redondant au-dessus du cockpit (hero existant conservé).
+    const flowHost = doc.createElement('div');
+    flowHost.className = 'kmc-hub-flow';
+    rootNode.appendChild(flowHost);
+    flowHost.setAttribute('data-hub-dossier-home', '');
     if (context.dossierError) {
-      kpiSlot.appendChild(text(doc, 'div', 'kmc-workspace-empty', `Dossier indisponible : ${context.dossierError}`));
+      flowHost.appendChild(text(doc, 'div', 'kmc-workspace-empty', `Dossier indisponible : ${context.dossierError}`));
       return;
     }
     const d = context.dossier;
     if (!d) {
-      kpiSlot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Dossier non chargé.'));
+      flowHost.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Dossier non chargé.'));
       return;
     }
-    const k = d.kpis || {};
-    const strip = doc.createElement('div');
-    strip.className = 'kmc-hub-dossier-metrics';
-    kpiSlot.appendChild(strip);
-    const metric = (key, label, value, warn) => ({
-      key, label, value: formatNumber(value), tone: warn && Number(value) > 0 ? 'warning' : 'neutral',
-    });
-    ui.MetricStrip.render(strip, { items: [
-      metric('hub-needs', 'Commandes à approvisionner', k.orders_waiting, false),
-      metric('hub-po-unsent', 'PO à envoyer', k.po_issued_not_sent, false),
-      metric('hub-remaining', 'Unités encore attendues', k.qty_missing, false),
-      metric('hub-boxes', 'Cartons non expédiés', k.boxes_unshipped, false),
-    ] });
 
     // Hub Live concept C : le cockpit « flux du besoin » remplace l'ancien tableau de production.
     // Toutes les quantités et étapes viennent de la projection serveur (d.cockpit / d.orders / d.purchase_orders).
-    const ordersSlot = createSection(rootNode, ui, 'Flux du besoin',
-      'Commandes et besoins → Achats et PO → Suivi physique. Sélectionnez une commande ou une PO pour voir ce qui la relie.');
+    const ordersSlot = doc.createElement('div');
+    ordersSlot.className = 'kmc-hub-flow-body';
+    rootNode.appendChild(ordersSlot);
     ordersSlot.setAttribute('data-supply-pos', '');
     ordersSlot.setAttribute('data-hub-work-orders', '');
     const cockpitHost = doc.createElement('div');

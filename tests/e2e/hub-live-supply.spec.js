@@ -93,8 +93,7 @@ test.describe('Hub live · Approvisionnement — desktop 1440', () => {
     const pos = page.locator('[data-supply-pos]');
     const card = page.locator('[data-hlc-order="4def6c00-67b9-4584-85ed-00d2b8a24292"]');
     await expect(pos).not.toContainText('Envoyée');
-    await expect(card.locator('.hlc-nums')).toContainText('2 reçu');
-    await expect(card.locator('.hlc-nums')).toContainText('1 reste à livrer');
+    await expect(card).toContainText('Câble USB ×3');
     await expect(card).not.toContainText('remboursé');
     await expect(page.locator('[data-hlc-po]')).toHaveCount(1);
     await expect(page.locator('[data-hlc-po] [data-hlc-steps] [data-step]')).toHaveCount(5);
@@ -171,7 +170,7 @@ test.describe('Hub live · Approvisionnement — mobile 390', () => {
   test('la preuve physique du colis client reste lisible sans débordement horizontal', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await mount(page, [], false);
-    await expect(page.locator('[data-hlc-order]').first()).toContainText('1 reste à livrer');
+    await expect(page.locator('[data-hlc-order]').first()).toContainText('Câble USB');
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(1);
   });

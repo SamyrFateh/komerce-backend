@@ -111,9 +111,15 @@ if (!process.env.DATABASE_URL) {
   test('1. besoins : couverts / non couverts par ligne, regroupement fournisseur × marché × SKU, sourcing requis pour KOM-103', async () => {
     const d = await dossier(agent);
     const i101A = itemOf(d, s.k101, 0);
-    expect(i101A).toMatchObject({ requested: 2, covered: 2, uncovered: 0, received: 0, remaining_to_deliver: 2 });
+    expect(i101A).toMatchObject({ requested: 2, covered: 0, to_group: 2, uncovered: 0, received: 0, remaining_to_deliver: 2 });
     const i103 = itemOf(d, s.k103, 0);
-    expect(i103).toMatchObject({ requested: 2, covered: 0, uncovered: 2, sourcing_required: true });
+    expect(i103).toMatchObject({ requested: 2, covered: 0, to_group: 0, uncovered: 2, sourcing_required: true });
+    // Pavés par unité : un état par unité demandée, issu du serveur.
+    expect(i101A.units.map((u) => u.state)).toEqual(['none', 'none']);
+    expect(i103.units.map((u) => u.state)).toEqual(['sourcing', 'sourcing']);
+    expect(i103.where).toBe('sans fournisseur');
+    expect(orderOf(d, s.k103).status).toMatchObject({ label: 'Anomalie fournisseur', tone: 'bad' });
+    expect(d.cockpit.physical.map((p) => p.key)).toEqual(['received', 'bags', 'boxes', 'shipped', 'reliquats']);
     const batchA = d.cockpit.need_batches.find((b) => b.supplier_id === supplierA);
     expect(batchA.market_id).toBe(km);
     expect(batchA.procurement_hub_ref).toBe('DXB');
@@ -123,7 +129,9 @@ if (!process.env.DATABASE_URL) {
     // À faire maintenant : ce qui manque, pourquoi, qui agit, quelle action.
     const sourcing = d.cockpit.todo.find((t) => t.kind === 'SOURCING_REQUIRED' && t.subject.order_id === s.k103.orderId);
     expect(sourcing).toMatchObject({ owner: 'agent_hub', viewer_can_act: true });
-    expect(sourcing.missing).toContain('2 unité(s) sans ligne d’achat');
+    expect(sourcing).toMatchObject({ severity: 'anomaly' });
+    expect(sourcing.missing).toContain('fournisseur du SKU non rattaché aux achats');
+    expect(d.cockpit.unit_legend.map((g) => g.state)).not.toContain('sourcing');
     expect(sourcing.why).toBeTruthy();
     expect(d.cockpit.todo.find((t) => t.kind === 'PREPARE_PO' && t.subject.batch_key === batchA.key).action.type).toBe('prepare_po');
     expect(d.cockpit.allocation_rule).toMatch(/FIFO/);
@@ -155,6 +163,9 @@ if (!process.env.DATABASE_URL) {
     // Une commande dépend de plusieurs PO / fournisseurs.
     expect(orderOf(d, s.k101).po_ids.sort()).toEqual([s.po1, s.poB].sort());
     expect(orderOf(d, s.k101).supplier_count).toBe(2);
+    // Même définition des deux côtés : une fois en PO, plus rien « à regrouper » ni « sans ligne d'achat ».
+    expect(itemOf(d, s.k101, 0)).toMatchObject({ covered: 2, to_group: 0, uncovered: 0 });
+    expect(orderOf(d, s.k101).totals).toMatchObject({ covered: 3, to_group: 0, uncovered: 0 });
     // Besoin A consommé : plus de lot ouvert pour A.
     expect(d.cockpit.need_batches.find((b) => b.supplier_id === supplierA)).toBeUndefined();
   });
@@ -203,6 +214,12 @@ if (!process.env.DATABASE_URL) {
     const po1 = d.purchase_orders.find((p) => p.id === s.po1);
     expect(po1.totals).toMatchObject({ effective: 3, received: 2, missing: 1 });
     expect(po1.step).toMatchObject({ key: 'received', partial: true });
+    expect(po1.status_view).toMatchObject({ label: 'Reçue 2/3 · reliquat 1', tone: 'warn' });
+    expect(itemOf(d, s.k101, 0).units.map((u) => u.state)).toEqual(['received', 'received']);
+    expect(itemOf(d, s.k102, 0).units.map((u) => u.state)).toEqual(['shipped']);
+    expect(itemOf(d, s.k102, 0).where).toMatch(/^reliquat PO-/);
+    expect(d.cockpit.physical.find((p) => p.key === 'received').items.map((i) => i.ref)).toContain(orderOf(d, s.k101).reference);
+    expect(d.cockpit.physical.find((p) => p.key === 'reliquats').items.map((i) => i.order_id)).toContain(s.k102.orderId);
     const lines = Object.fromEntries(po1.lines.map((l) => [l.order_id, l]));
     expect(lines[s.k101.orderId]).toMatchObject({ fifo_rank: 1, received: 2, missing: 0, fifo_next: false });
     expect(lines[s.k102.orderId]).toMatchObject({ fifo_rank: 2, received: 0, missing: 1, fifo_next: true });
@@ -216,8 +233,8 @@ if (!process.env.DATABASE_URL) {
   test('6. KOM-101 n\'est PAS prête à emballer tant que B n\'est pas reçu ; ligne complète ≠ commande complète', async () => {
     const d = await dossier(agent);
     const o101 = orderOf(d, s.k101);
-    expect(o101.items[0].complete).toBe(true);
-    expect(o101.items[1]).toMatchObject({ received: 0, remaining_to_deliver: 1, complete: false });
+    expect(itemOf(d, s.k101, 0).complete).toBe(true);
+    expect(itemOf(d, s.k101, 1)).toMatchObject({ received: 0, remaining_to_deliver: 1, complete: false });
     expect(o101.readiness).toMatchObject({ complete: false, partial: true, ready_to_pack: false });
     expect(o101.readiness.pending_items).toEqual([expect.objectContaining({ missing: 1 })]);
     expect(d.cockpit.todo.find((t) => t.kind === 'PREPARE_BAG' && t.subject.order_id === s.k101.orderId)).toBeUndefined();

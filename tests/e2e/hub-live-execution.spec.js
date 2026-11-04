@@ -205,11 +205,9 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       await expect(page.locator('[data-workspace-view="supply"]')).toHaveAttribute('aria-selected', 'true');
       await expect(page.locator('[data-hub-cockpit] [data-hlc-zone]')).toHaveCount(3);
       await expect(page.locator('[data-hlc-order]')).toHaveCount(1);
-      await expect(page.locator('[data-hub-dossier-home] [data-metric-key="hub-remaining"]')).toContainText('3');
       const card = page.locator('[data-hlc-order="9d141f3c-0035-497b-8c60-3bf3808867a1"]');
       await expect(card).toContainText('K-ORDER-1');
-      await expect(card.locator('.hlc-nums')).toContainText('4 reçu');
-      await expect(card.locator('.hlc-nums')).toContainText('3 reste à livrer');
+      await expect(card.locator('[data-hlc-item]').first()).toBeVisible();
       await expect(card).not.toContainText('Remboursé');
       await expect(page.locator('[data-hlc-po]')).toHaveCount(2);
       await expect(page.locator('.hlc-table, table.kmc-hub-board')).toHaveCount(0);
@@ -220,9 +218,10 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       const posts = [];
       await mount(page, { view: null, dossier: UNSOURCED_DOSSIER, posts });
       const card = page.locator('[data-hlc-order="cf9520d0-84ff-4fe1-ab9b-a5e972b1365b"]');
-      await expect(card.locator('[data-hlc-order-state]')).toContainText('Sourcing requis');
-      await expect(card.locator('.hlc-nums')).toContainText('3 non couvert');
-      await card.locator('[data-hlc-action="resolve-sourcing"]').click();
+      await expect(card.locator('[data-hlc-order-state]')).toContainText('Anomalie fournisseur');
+      await expect(page.locator('.hlc-legend')).not.toContainText('Sourcing requis');
+      await card.click();
+      await page.locator('[data-hlc-actions] [data-hlc-action="resolve-sourcing"]').click();
       await expect(page.locator('[data-hub-sourcing-form="KRGNX5O"]')).toBeVisible();
       await expect(page.locator('[data-sourcing-item] option')).toHaveCount(2);
       expect(posts).toHaveLength(0); // aucun achat créé par le simple clic
@@ -231,7 +230,8 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
     test('L8 UX : sourcing en deux zones lisibles, responsive et fermable sans écriture', async ({ page }) => {
       const posts = [];
       await mount(page, { view: null, dossier: UNSOURCED_DOSSIER, posts });
-      await page.locator('[data-hlc-order="cf9520d0-84ff-4fe1-ab9b-a5e972b1365b"] [data-hlc-action="resolve-sourcing"]').click();
+      await page.locator('[data-hlc-order="cf9520d0-84ff-4fe1-ab9b-a5e972b1365b"]').click();
+      await page.locator('[data-hlc-actions] [data-hlc-action="resolve-sourcing"]').click();
 
       const panel = page.locator('[data-hub-sourcing-recovery]');
       const form = panel.locator('[data-hub-sourcing-form="KRGNX5O"]');
@@ -275,7 +275,8 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
     test('L8 : création via fournisseur + mapping + ligne manuelle, sans PO envoyée ni doublon', async ({ page }) => {
       const posts = [];
       await mount(page, { view: null, dossier: UNSOURCED_DOSSIER, posts });
-      await page.locator('[data-hlc-order="cf9520d0-84ff-4fe1-ab9b-a5e972b1365b"] [data-hlc-action="resolve-sourcing"]').click();
+      await page.locator('[data-hlc-order="cf9520d0-84ff-4fe1-ab9b-a5e972b1365b"]').click();
+      await page.locator('[data-hlc-actions] [data-hlc-action="resolve-sourcing"]').click();
       const form = page.locator('[data-hub-sourcing-form="KRGNX5O"]');
       await expect(form.locator('[data-sourcing-supplier]')).toBeEnabled();
       await form.locator('[data-sourcing-name]').fill('Fournisseur local de recette');
@@ -309,7 +310,8 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
           matching_product_supplier_id: 'mapping-existing-1', owner_scope: null,
         }],
       });
-      await page.locator('[data-hlc-order="cf9520d0-84ff-4fe1-ab9b-a5e972b1365b"] [data-hlc-action="resolve-sourcing"]').click();
+      await page.locator('[data-hlc-order="cf9520d0-84ff-4fe1-ab9b-a5e972b1365b"]').click();
+      await page.locator('[data-hlc-actions] [data-hlc-action="resolve-sourcing"]').click();
       const form = page.locator('[data-hub-sourcing-form="KRGNX5O"]');
       await expect(form.locator('[data-sourcing-supplier]')).toBeEnabled();
       await form.locator('[data-sourcing-supplier]').selectOption('supplier-existing-1');
@@ -338,7 +340,8 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
           matching_product_supplier_id: 'mapping-existing-1', owner_scope: null,
         }],
       });
-      await page.locator('[data-hlc-order="cf9520d0-84ff-4fe1-ab9b-a5e972b1365b"] [data-hlc-action="resolve-sourcing"]').click();
+      await page.locator('[data-hlc-order="cf9520d0-84ff-4fe1-ab9b-a5e972b1365b"]').click();
+      await page.locator('[data-hlc-actions] [data-hlc-action="resolve-sourcing"]').click();
       const form = page.locator('[data-hub-sourcing-form="KRGNX5O"]');
       await expect(form.locator('[data-sourcing-supplier]')).toBeEnabled();
       await form.locator('[data-sourcing-supplier]').selectOption('supplier-existing-1');

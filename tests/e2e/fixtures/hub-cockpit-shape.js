@@ -13,6 +13,8 @@ function shapeDossier(source, { viewer = { role: 'agent_hub', can_authorize_comm
   pos.forEach((po) => {
     po.authorizations = authFor(po);
     po.supplier_id = po.supplier_id || `sup-${po.supplier_name}`;
+    po.ref = `PO-${String(po.id).slice(0, 4).toUpperCase()}`;
+    po.status_view = po.status_view || { label: po.status === 'draft' ? 'Brouillon' : 'Chez le fournisseur', tone: 'wait' };
     po.order_ids = [...new Set((po.lines || []).map((l) => l.order_id))];
     po.amount = po.amount || { amount: null, currency: null, derived: false };
     if (!po.step) {
@@ -37,12 +39,20 @@ function shapeDossier(source, { viewer = { role: 'agent_hub', can_authorize_comm
         complete: received >= item.ordered, lines, po_ids: [...new Set(lines.map((l) => l.po_id))],
       };
     });
+    items.forEach((i) => {
+      const states = [...Array(Math.min(i.received, i.ordered)).fill('received'), ...Array(Math.max(i.ordered - i.received, 0)).fill(i.lines.length ? 'shipped' : i.uncovered ? 'sourcing' : 'none')];
+      i.units = states.map((state) => ({ state, label: state }));
+      i.unit_counts = states.reduce((t, st) => ({ ...t, [st]: (t[st] || 0) + 1 }), {});
+      i.where = i.lines.length ? 'PO' : 'à regrouper';
+    });
     const sum = (key) => items.reduce((t, i) => t + (i[key] || 0), 0);
     const pending = items.filter((i) => !i.complete).map((i) => ({ order_item_id: i.id, product: i.product, missing: i.remaining_to_deliver }));
     const complete = items.length > 0 && pending.length === 0;
     return {
       created_at: '2026-11-01T08:00:00Z', ...order, items,
       po_ids: [...new Set(items.flatMap((i) => i.po_ids))],
+      relay_name: order.relay_name || 'Relais',
+      status: sum('uncovered') > 0 ? { label: 'Anomalie fournisseur', tone: 'bad' } : { label: 'Attente fournisseur', tone: 'wait' },
       totals: {
         requested: sum('requested'), covered: sum('covered'), uncovered: sum('uncovered'), received: sum('received'), remaining: sum('remaining_to_deliver'),
         anomaly: sum('anomaly'), to_control: sum('to_control'), controlled: sum('controlled'), in_bags: sum('in_bags'), in_boxes: sum('in_boxes'), shipped: sum('shipped'),
@@ -56,6 +66,9 @@ function shapeDossier(source, { viewer = { role: 'agent_hub', can_authorize_comm
   });
   d.cockpit = {
     allocation_rule: 'FIFO : la commande la plus ancienne est servie en premier (par SKU dans la PO)',
+    unit_legend: ['none', 'draft', 'pending', 'shipped', 'received', 'boxed'].map((state) => ({ state, label: state })),
+    physical: [['received', 'Reçu au Hub · non ensaché'], ['bags', 'Sacs clients'], ['boxes', 'KOM-BOX'], ['shipped', 'Expédié au relais'], ['reliquats', 'Reliquats attendus']]
+      .map(([key, title]) => ({ key, title, tone: 'grey', items: [], empty_text: 'Rien.' })),
     po_steps: STEPS, viewer, need_batches: needBatches, todo, ...(source.cockpit || {}),
   };
   d.bags_open = d.bags_open || [];
