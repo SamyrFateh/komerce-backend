@@ -239,6 +239,42 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       expect(posts).toHaveLength(0); // aucun achat créé par le simple clic
     });
 
+    test('L8 UX : sourcing en deux zones lisibles, responsive et fermable sans écriture', async ({ page }) => {
+      const posts = [];
+      await mount(page, { view: null, dossier: UNSOURCED_DOSSIER, posts });
+      await page.locator('[data-hub-order="cf9520d0-84ff-4fe1-ab9b-a5e972b1365b"] [data-hub-stage="PO"]').click();
+      await page.locator('[data-hub-context-menu]').getByRole('button',
+        { name: 'Résoudre le sourcing / créer un achat manuel' }).click();
+
+      const panel = page.locator('[data-hub-sourcing-recovery]');
+      const form = panel.locator('[data-hub-sourcing-form="KRGNX5O"]');
+      const article = form.locator('.kmc-hub-sourcing-group').first();
+      const supplier = form.locator('.kmc-hub-sourcing-group').last();
+      await expect(article.getByText('Article concerné')).toBeVisible();
+      await expect(supplier.getByText('Fournisseur et conditions')).toBeVisible();
+      await expect(form.locator('[data-sourcing-quantity]')).toContainText('2 unité(s) restant à acheter');
+      await form.locator('[data-sourcing-item]').selectOption('81ad184a-2c4a-49a0-b128-c98809e24a35');
+      await expect(form.locator('[data-sourcing-quantity]')).toContainText('1 unité(s) restant à acheter');
+
+      const articleBox = await article.boundingBox();
+      const supplierBox = await supplier.boundingBox();
+      const footerBox = await form.locator('.kmc-hub-sourcing-footer').boundingBox();
+      const panelWidth = await panel.evaluate(node => ({
+        scroll: node.scrollWidth, client: node.clientWidth,
+      }));
+      expect(panelWidth.scroll).toBeLessThanOrEqual(panelWidth.client + 2);
+      expect(footerBox.y).toBeGreaterThan(articleBox.y);
+      if (name === 'desktop') {
+        expect(supplierBox.x).toBeGreaterThan(articleBox.x + articleBox.width - 2);
+        expect(Math.abs(supplierBox.y - articleBox.y)).toBeLessThan(3);
+      } else {
+        expect(supplierBox.y).toBeGreaterThan(articleBox.y + articleBox.height - 2);
+      }
+      await panel.locator('[data-sourcing-close]').click();
+      await expect(panel).toBeHidden();
+      expect(posts).toHaveLength(0);
+    });
+
     test('L8 : création via fournisseur + mapping + ligne manuelle, sans PO envoyée ni doublon', async ({ page }) => {
       const posts = [];
       await mount(page, { view: null, dossier: UNSOURCED_DOSSIER, posts });
@@ -284,6 +320,11 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       const form = page.locator('[data-hub-sourcing-form="KRGNX5O"]');
       await expect(form.locator('[data-sourcing-supplier]')).toBeEnabled();
       await form.locator('[data-sourcing-supplier]').selectOption('supplier-existing-1');
+      await expect(form.locator('[data-sourcing-name]')).toBeHidden();
+      await expect(form.locator('[data-sourcing-details]')).toHaveCount(0);
+      await expect(form.locator('[data-sourcing-ref]')).toBeHidden();
+      await expect(form.locator('[data-sourcing-price]')).toBeHidden();
+      await expect(form.locator('[data-sourcing-mapping-note]')).toBeVisible();
       await form.locator('[data-workspace-action="create-manual-purchase-line"]').click();
       await expect.poll(() => posts.length).toBe(1);
       expect(posts[0]).toEqual({
