@@ -5,7 +5,7 @@
 | Niveau | Compte |
 |---|---|
 | 🟢 PROTECTED | 743 |
-| ⚪ PUBLIC (légitime) | 55 |
+| ⚪ PUBLIC (légitime) | 58 |
 | 🟠 UNPROTECTED | 0 |
 | 🔴 ADMIN_NO_GUARD | 0 |
 | ❔ UNKNOWN (statique n'a pas atteint — à auditer) | 0 |
