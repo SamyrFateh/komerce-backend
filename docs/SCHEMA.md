@@ -854,25 +854,25 @@ Une réservation pour une quantité d'article réellement manquante au relais, r
 
 
 
-### Migration 391 — correspondance physique code/SKU (`intended_migration_schema`)
+### Migration 391 — correspondance physique code/SKU (appliquée Railway staging 2026-11-04)
 
-`product_sku_physical_codes` est une table prévue, non encore vérifiée dans le dump Railway. Elle conserve le lien code physique → variante Komerce, éventuellement sous fournisseur. Les référentiels commerciaux SKU fournisseur déjà présents restent autoritaires, et une validation manuelle est nécessaire avant d'utiliser un code déclaré comme constat physique. Les commandes clientes restent affectées via les allocations Hub.
+`product_sku_physical_codes` est appliquée sur Railway staging (`schema_migrations`, 2026-11-04 13:09 UTC). Elle conserve le lien code physique → variante Komerce, éventuellement sous fournisseur. Les référentiels commerciaux SKU fournisseur déjà présents restent autoritaires, et une validation manuelle est nécessaire avant d'utiliser un code déclaré comme constat physique. Les commandes clientes restent affectées via les allocations Hub.
 
-### Migration 392 — sac client mono-commande (intended_migration_schema)
+### Migration 392 — sac client mono-commande (appliquée Railway staging 2026-11-04)
 
 `hub_physical_units.order_id` (UUID nullable, FK orders) ne s'applique qu'aux `HANDLING_UNIT` utilisés comme sacs clients. L'identifiant de commande est immuable après affectation ; le trigger de placement refuse une quantité réservée à une autre commande. Ce contrôle opère dans PostgreSQL, même si l'appelant contourne l'interface.
 
-### Migration 393 — preuve de dépôt et plan figé du sac (intended_migration_schema)
+### Migration 393 — preuve de dépôt et plan figé du sac (appliquée Railway staging 2026-11-04)
 
 `hub_physical_units.bag_plan` (JSONB nullable) décrit les couples `order_item_id` / `quantity` destinés à cette préparation, y compris partielle. Le plan est immuable après création.
 
 `hub_physical_unit_placements` ajoute `evidence_method` (SCAN, MANUAL, COUNT_ON_MANIFEST), `evidence_code`, `evidence_ref` : toute insertion de quantité dans un sac client exige un code confirmé et conforme au SKU/fournisseur ou une preuve manuelle référencée. La preuve est immuable. Avant PACKED, PostgreSQL vérifie que le contenu actif correspond exactement au plan du sac. Les KOM-BOX restent soumises à leurs invariants existants ; le transport du sac fermé et son lien au relais constituent un jalon distinct à certifier.
 
 
-### Migration 394 — sac client physiquement contenu dans une KOM-BOX (intended_migration_schema)
+### Migration 394 — sac client physiquement contenu dans une KOM-BOX (appliquée Railway staging 2026-11-04)
 
 `hub_box_bags` matérialise le lien immuable entre `HANDLING_UNIT` sac client déjà PACKED, `MARKET_PARCEL` KOM-BOX, et `parcels` colis client. Le scan des références des deux contenants est exigé et vérifié, de même que la mono-commande, le marché, la destination et la correspondance des `parcel_items`.
 
 `hub_box_effective_placements` est une projection SQL de tous les articles physiquement présents dans un carton : placements directs de la KOM-BOX ou placements encore actifs dans les sacs réellement liés. Les allocations ne sont jamais dupliquées ou déplacées fictivement. Les calculs `hub_item_physical_proof`, `hub_item_handed_over`, `sync_parcel_items_from_physical`, la composition de l'expédition et la réception relais utilisent cette projection.
 
-Cette migration est déclarée prévue et n'est pas appliquée en Staging ; certificat E2E marché, réception relais et cas d'erreur obligatoire avant déploiement.
+Migrations 391–394 appliquées sur Railway staging le 2026-11-04 à 13:09 UTC (vérifié dans `public.schema_migrations`) ; ne pas les rejouer. Certification E2E staging (marché, réception relais, cas d'erreur) en cours.
