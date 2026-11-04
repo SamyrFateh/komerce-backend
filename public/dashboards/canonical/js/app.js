@@ -1036,6 +1036,13 @@
         }
       }
 
+      // The agent Action Center is an explicit role-scoped workspace, not
+      // a Dashboard N1 grant. Its visible sidebar link must not bounce back
+      // to Hub/Relais landing. All API authority remains server-side.
+      if (!authorized && surface === SURFACES.ACTION_CENTER
+        && typeof nav.canAccessSurface === 'function') {
+        authorized = nav.canAccessSurface(user, surface);
+      }
       if (!authorized) {
         const landing = defaultLandingSurface(user);
         global.location.replace(landing);

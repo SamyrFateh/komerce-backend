@@ -392,6 +392,22 @@
     return SURFACE_TO_SPACE[surface] || null;
   }
 
+  // Action Center has its own role-scoped agent endpoint. It is reachable from
+  // the field roles' "À traiter" sidebar link, WITHOUT opening Pilotage or
+  // granting the Dashboard N1 domain to those roles.
+  const FIELD_ACTION_CENTER_ROLES = Object.freeze([
+    'agent_hub', 'agent_relais', 'agent_transitaire',
+  ]);
+
+  function canAccessSurface(user, surface) {
+    const role = roleOf(user);
+    if (surface === 'action-center' && FIELD_ACTION_CENTER_ROLES.includes(role)) return true;
+    const domain = visibleDomainsFor(user).find(row => row.id === activePrimarySurface(surface));
+    if (!domain) return false;
+    const spaceId = activeSpaceFor(surface);
+    return !spaceId || visibleSpacesFor(domain, role).some(space => space.id === spaceId);
+  }
+
   function createLink(doc, item, href, isActive, className) {
     const link = doc.createElement('a');
     link.className = className;
@@ -1497,6 +1513,7 @@
     defaultLandingFor,
     activePrimarySurface,
     activeSpaceFor,
+    canAccessSurface,
     surfaceForPath,
     marketChoices,
     currentRequestedMarket,

@@ -1,0 +1,59 @@
+name: Staging field Action Center navigation smoke
+on:
+  workflow_dispatch: {}
+  issues:
+    types: [opened]
+permissions:
+  contents: read
+concurrency:
+  group: komerce-staging-field-action-center-smoke
+  cancel-in-progress: false
+jobs:
+  smoke:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issues' && github.actor == github.repository_owner &&
+       github.event.issue.title == '[staging-op] field-action-center-smoke')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    env:
+      CI: 'true'
+      E2E_STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      E2E_AGENT_HUB_EMAIL: \${{ secrets.E2E_AGENT_HUB_EMAIL }}
+      E2E_AGENT_HUB_PASSWORD: \${{ secrets.E2E_AGENT_HUB_PASSWORD }}
+      E2E_AGENT_RELAIS_EMAIL: \${{ secrets.E2E_AGENT_RELAIS_EMAIL }}
+      E2E_AGENT_RELAIS_PASSWORD: \${{ secrets.E2E_AGENT_RELAIS_PASSWORD }}
+      E2E_AGENT_TRANSITAIRE_EMAIL: \${{ secrets.E2E_AGENT_TRANSITAIRE_EMAIL }}
+      E2E_AGENT_TRANSITAIRE_PASSWORD: \${{ secrets.E2E_AGENT_TRANSITAIRE_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Pin exact deployed SHA and reject incompatible code
+        shell: bash
+        run: |
+          echo "E2E_EXPECTED_DEPLOY_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          test -n "$E2E_AGENT_HUB_EMAIL" && test -n "$E2E_AGENT_HUB_PASSWORD"
+          test -n "$E2E_AGENT_RELAIS_EMAIL" && test -n "$E2E_AGENT_RELAIS_PASSWORD"
+          test -n "$E2E_AGENT_TRANSITAIRE_EMAIL" && test -n "$E2E_AGENT_TRANSITAIRE_PASSWORD"
+      - name: Compare /health/version to pinned main
+        run: node scripts/recette/staging-chromium-deployment-preflight.js
+      - run: npm ci
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Real 1440px browser check for Hub, Relais and Transitaire
+        env:
+          E2E_AUDIT_ROLES: all
+        run: npx playwright test --config=playwright.staging-canonical.config.js --grep "field Action Center navigation"
+      - name: Archive real evidence and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-field-action-center-\${{ github.run_id }}
+          path: test-results/staging-chromium/
+          retention-days: 14
+          if-no-files-found: warn

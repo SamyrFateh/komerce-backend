@@ -159,6 +159,38 @@ describe('Canonical Navigation Policy V3.1', () => {
   });
 });
 
+describe('Action Center — rôles terrain, sans autorité Dashboard', () => {
+  test.each(['agent_hub', 'agent_relais', 'agent_transitaire'])(
+    'le profil %s peut ouvrir À traiter sans accéder à Pilotage ou aux équipes marché', role => {
+      const nav = loadPolicy();
+      const user = { role };
+      expect(domainIds(nav, role)).not.toContain('dashboard');
+      expect(nav.canAccessSurface(user, 'action-center')).toBe(true);
+      expect(nav.canAccessSurface(user, 'pilotage')).toBe(false);
+      expect(nav.canAccessSurface(user, 'settings')).toBe(false);
+      expect(nav.canAccessSurface(user, 'purchasing-workspace')).toBe(false);
+    }
+  );
+
+  test('Sourcing, Finance et profil inconnu ne gagnent aucun accès par exception', () => {
+    const nav = loadPolicy();
+    for (const role of ['finance', 'sourcing', 'support', 'unknown']) {
+      expect(nav.canAccessSurface({ role }, 'action-center')).toBe(false);
+    }
+    expect(nav.canAccessSurface({ role: 'admin' }, 'action-center')).toBe(true);
+    expect(nav.canAccessSurface({ role: 'market_operator' }, 'action-center')).toBe(true);
+  });
+
+  test('navigation client et démarrage direct utilisent le même garde', () => {
+    const client = fs.readFileSync(path.join(ROOT, 'public/dashboards/canonical/js/canonical-client-router-v4.js'), 'utf8');
+    const boot = fs.readFileSync(path.join(ROOT, 'public/dashboards/canonical/js/app.js'), 'utf8');
+    expect(client).toContain("surface === 'action-center' && nav");
+    expect(client).toContain('nav.canAccessSurface(user, surface)');
+    expect(boot).toContain('surface === SURFACES.ACTION_CENTER');
+    expect(boot).toContain('nav.canAccessSurface(user, surface)');
+  });
+});
+
 describe('Canonical Navigation Policy — utilitaires d\'administration', () => {
   test('Paramètres, Utilisateurs et Providers restent autorisés à l\'admin (le garde de landing ne les renvoie pas au Pilotage)', () => {
     const nav = loadPolicy();
