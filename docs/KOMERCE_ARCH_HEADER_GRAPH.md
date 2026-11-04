@@ -6,20 +6,20 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 776
-- Files with full headers: 725
+- Scanned code files: 780
+- Files with full headers: 729
 - Files with lite headers: 51
-- Files with any headers: 776
+- Files with any headers: 780
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1961
-- Edges: 9670
-- DB tables: 224
-- Doctrines: 754
+- Graph nodes: 1978
+- Edges: 9730
+- DB tables: 225
+- Doctrines: 766
 - Impact areas: 207
-- Unresolved code edges: 925
-- Tables multi-écrivains directs (>=2): 93
+- Unresolved code edges: 931
+- Tables multi-écrivains directs (>=2): 94
 - Avertissements db-write / db-write-via en chevauchement: 12
 
 ## Domains
@@ -45,7 +45,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - infrastructure: 25
 - inventory: 2
 - local-stock: 4
-- logistics: 64
+- logistics: 65
 - loyalty: 3
 - market: 9
 - market-autonomy: 4
@@ -54,14 +54,14 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - markets: 1
 - notification: 21
 - operations: 11
-- orders: 33
+- orders: 34
 - payment: 30
 - payments: 1
 - platform-ops: 2
 - providers-services: 7
 - purchasing: 51
 - recommendations: 6
-- refunds: 5
+- refunds: 7
 - settlement: 2
 - shared: 1
 - shared-cart: 25
@@ -92,7 +92,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 137
 - route-manifest: 1
 - schema: 1
-- service: 460
+- service: 464
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -173,6 +173,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/hub-operations.js — hub-operations (logistics, critical, full)
 - services/hub-physical-identity.js — hub-physical-identity (logistics, critical, full)
 - services/inventory-service.js — inventory-inventory-service (inventory, critical, full)
+- services/item-refund-psp-orchestrator.js — e7-sandbox-item-refund-orchestrator (refunds, critical, full)
+- services/item-refund-reservation-service.js — item-refund-reservation (refunds, critical, full)
 - services/local-relay-receipt-service.js — logistics-local-relay-receipt (logistics, critical, full)
 - services/market-cash-control-policy-service.js — market-cash-control-policy-service (market-delegation, critical, full)
 - services/market-delegation-structure-event-service.js — market-delegation-structure-event-service (market-delegation, critical, full)
@@ -191,6 +193,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/order-checkout-service.js — orders-checkout-orchestrator (orders, critical, full)
 - services/order-cost-snapshot.js — orders-order-cost-snapshot (orders, critical, full)
 - services/order-fx-snapshot.js — order-fx-snapshot (orders, critical, full)
+- services/order-item-refund-settlement.js — order-item-verified-refund-projection (orders, critical, full)
 - services/order-mutation-service.js — orders-cross-feature-mutation-boundary (orders, critical, full)
 - services/order-payment-confirmation.js — payment-to-stock-single-entry (orders, critical, full)
 - services/order-physical-coverage-service.js — order-physical-coverage-service (logistics, critical, full)
@@ -522,6 +525,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/parcel-order-membership.js — logistics-parcel-order-membership (logistics, high, full)
 - services/parcel-security.js — logistics-parcel-security (logistics, high, full)
 - services/parcel-service.js — logistics-parcel-service (logistics, high, full)
+- services/parcel-shipment-handover.js — international-handover-customer-parcel-status (logistics, high, full)
 - services/parcel-transition-guard.js — incident-management-transition-guard (incident-management, high, full)
 - services/parcelOptimizationService.js — logistics-parcel-optimization-service (logistics, high, full)
 - services/partner-admin-service.js — partner-admin-service (dashboard, high, full)
@@ -989,9 +993,10 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - scans: 12 écrivains directs — routes/admin/delete-order-cascade.js, routes/transit-dashboard.js, services/local-relay-receipt-service.js, services/pickup-collection-recorder.js, services/pickup-collection-service.js, services/relay-parcel-item-reconciliation.js, services/scan-operations.js, services/scan-write-service.js, services/simulator/cleanup.js, services/simulator/state-advancer.js, services/verify-qr-collection.js, utils/parcelSync.js
 - notification_log: 9 écrivains directs — services/notification-service.js, services/notifications/internals.js, services/notifications/loyalty.js, services/notifications/misc.js, services/notifications/notification-service.js, services/notifications/order.js, services/notifications/otp-auth.js, services/notifications/parcel.js, services/simulator/state-advancer.js
 - supplier_execution_events: 9 écrivains directs — services/supplier-execution-persistence.js, services/supplier-payment-orchestrator.js, services/supplier-payment-proof-persistence.js, services/supplier-payment-state.js, services/suppliers/cj-billing-history-reconciliation.js, services/suppliers/cj-payment-recovery.js, services/suppliers/cj-supplier-payment-runtime.js, services/suppliers/supplier-fulfillment-persistence.js, services/suppliers/supplier-fulfillment-runtime.js
-- order_items: 7 écrivains directs — routes/admin/delete-order-cascade.js, routes/admin/system.js, services/order-checkout-persistence.js, services/order-checkout-service.js, services/order-item-availability-service.js, services/order-status-machine.js, services/scan-engine.js
+- order_items: 8 écrivains directs — routes/admin/delete-order-cascade.js, routes/admin/system.js, services/order-checkout-persistence.js, services/order-checkout-service.js, services/order-item-availability-service.js, services/order-item-refund-settlement.js, services/order-status-machine.js, services/scan-engine.js
 - order_status_history: 7 écrivains directs — routes/admin/delete-order-cascade.js, routes/admin/system.js, routes/admin/users.js, routes/orders/cancel.js, services/order-checkout-persistence.js, services/order-checkout-service.js, services/order-status-machine.js
 - purchase_orders: 7 écrivains directs — services/purchasing-admin-service.js, services/purchasing-cancel-service.js, services/purchasing-completion-service.js, services/purchasing-engagement-service.js, services/purchasing-grouped-service.js, services/purchasing-receive-service.js, services/receive-purchase-order.js
+- parcel_events: 6 écrivains directs — services/local-relay-receipt-service.js, services/parcel-item-mutation-service.js, services/parcel-security.js, services/parcel-shipment-handover.js, services/relay-parcel-item-reconciliation.js, utils/parcelSync.js
 - pickup_print_tokens: 6 écrivains directs — bootstrap/crons.js, routes/pickup-secret.js, services/pickup-collection-recorder.js, services/pickup-collection-service.js, services/pickup-secret-access-service.js, services/pickup-secret-rotation-service.js
 - pickup_reveal_codes: 6 écrivains directs — bootstrap/crons.js, routes/pickup-secret.js, services/pickup-collection-recorder.js, services/pickup-collection-service.js, services/pickup-secret-access-service.js, services/pickup-secret-rotation-service.js
 - purchase_lines: 6 écrivains directs — services/purchase-line-snapshot.js, services/purchasing-admin-service.js, services/purchasing-cancel-service.js, services/purchasing-engagement-service.js, services/purchasing-grouped-service.js, services/purchasing-trigger-service.js
@@ -1003,7 +1008,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - finance_config: 5 écrivains directs — bootstrap/startup-migrations.js, routes/admin-costing.js, routes/admin-finance-config.js, services/economic-config.js, services/economic-engine-queries.js
 - invoices: 5 écrivains directs — routes/admin/system.js, routes/documents.js, routes/invoices.js, services/invoice-service.js, services/order-payment-confirmation.js
 - order_item_real_cost_allocations: 5 écrivains directs — services/cost-allocation/allocate.js, services/cost-allocation/index.js, services/cost-allocation/manual-cost-entry-service.js, services/customs-shipment-service.js, services/transport-cost-allocation.js
-- parcel_events: 5 écrivains directs — services/local-relay-receipt-service.js, services/parcel-item-mutation-service.js, services/parcel-security.js, services/relay-parcel-item-reconciliation.js, utils/parcelSync.js
 - shared_carts: 5 écrivains directs — services/cart-share-service.js, services/shared-cart-creation.js, services/shared-cart-engine.js, services/shared-cart-lifecycle.js, services/shared-cart-queries.js
 - sourcing_sources: 5 écrivains directs — services/provider-credential-service.js, services/sourcing-observation-shadow-service.js, services/sourcing-provider-control-policy.js, services/sourcing-source-autopilot.js, services/sourcing-source-registry.js
 - users: 5 écrivains directs — bootstrap/startup-migrations.js, routes/auth.js, routes/client-auth.js, routes/otp.js, services/user-mutation-service.js
@@ -1014,6 +1018,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - market_delegation_audit: 4 écrivains directs — middleware/require-market-delegated-capability.js, middleware/require-market-execution-capability.js, services/cash-deposit-service.js, services/market-delegation-service.js
 - product_skus: 4 écrivains directs — services/catalog-promotion.js, services/catalog-stock-sync-application.js, services/product-sku-service.js, services/product-stock-service.js
 - product_variants: 4 écrivains directs — services/catalog-product-mutation-service.js, services/catalog-promotion.js, services/product-stock-service.js, services/product-variant-service.js
+- refund_execution_intents: 4 écrivains directs — services/item-refund-psp-orchestrator.js, services/item-refund-reservation-service.js, services/refund-intent-ledger.js, services/refund-intent-reconciliation.js
 - sourcing_candidates: 4 écrivains directs — routes/sourcing-scanner.js, services/sourcing-candidate-actions.js, services/sourcing-candidate-import-service.js, services/suppliers/catalog-import-json.js
 - supplier_oauth_connections: 4 écrivains directs — routes/integrations-aliexpress.js, services/suppliers/aliexpress-oauth.js, services/suppliers/allegro-sandbox-client.js, services/suppliers/connectors/aliexpress-connected-connector.js
 - wallet_transactions: 4 écrivains directs — routes/admin/system.js, routes/admin/users.js, routes/wallet.js, services/wallet-service.js
@@ -1026,6 +1031,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - international_shipment_events: 3 écrivains directs — services/hub-box-shipment-service.js, services/international-shipment-journey.js, services/relay-shipment-receipt.js
 - order_comments: 3 écrivains directs — routes/hub-dashboard.js, routes/relay-dashboard.js, services/operations-workspace.js
 - price_history: 3 écrivains directs — services/economic-price-audit-service.js, services/pricing-apply.js, services/pricing-strategy-service.js
+- refunds: 3 écrivains directs — services/item-refund-psp-orchestrator.js, services/refund-service.js, utils/refunds.js
 - relais: 3 écrivains directs — routes/admin/system.js, services/relais-mutation-service.js, services/routing.js
 - sms_log: 3 écrivains directs — routes/admin/delete-order-cascade.js, routes/admin/system.js, routes/admin/users.js
 - sourcing_captures: 3 écrivains directs — services/sourcing-catalog-change-observation.js, services/sourcing-observation-shadow-service.js, services/sourcing-source-autopilot.js
@@ -1039,8 +1045,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - cart_shares: 2 écrivains directs — routes/shares.js, services/cart-share-service.js
 - cash_deposits: 2 écrivains directs — routes/cash.js, services/cash-deposit-service.js
 - client_notifications: 2 écrivains directs — routes/client-notifications.js, services/client-notification-service.js
-- customs_shipment_parcel_events: 2 écrivains directs — routes/admin-customs-shipments.js, services/customs-shipment-service.js
-- customs_shipment_parcels: 2 écrivains directs — routes/admin-customs-shipments.js, services/customs-shipment-service.js
 
 ## DB Write / Write-Via Overlap Warnings
 
