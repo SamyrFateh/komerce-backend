@@ -18,6 +18,7 @@ const RECEIVABLE = '/api/scans/hub/receivable';
 const RECEIVE = '/api/scans/hub/receive';
 const PO_ID = '6748895a-89bf-4236-9fb0-737fcf1e59ca';
 const SKU_ID = '0b9d2f4e-1111-4222-8333-444455556666';
+const PHYSICAL_CODE = '0012345678905';
 const RECEIVABLE_PAYLOAD = {
   generated_at: '2026-10-18T10:00:00Z',
   purchase_orders: [{
@@ -118,6 +119,11 @@ async function mount(page, { posts = [], failShip = false, receiveReply = null, 
     if (url.pathname === '/api/admin/dashboard/context') return json(FX.context);
     if (url.pathname === API) return json(emptyDistribution ? { ...WORKSPACE, distribution: { unassigned: [] } } : WORKSPACE);
     if (url.pathname === `${API}/supply`) return json(DOSSIER);
+    if (url.pathname === `${API}/supply/physical-code`) {
+      return url.searchParams.get('code') === PHYSICAL_CODE
+        ? json({ product_sku_id: SKU_ID, purchase_order_id: PO_ID, confirmed: true, code: PHYSICAL_CODE })
+        : json({ code: 'HUB_PHYSICAL_CODE_UNKNOWN', error: 'Code inconnu' }, 404);
+    }
     if (url.pathname === `${API}/supply/trace`) return json(TRACE);
     if (url.pathname === RECEIVABLE) return receivable === 'forbidden' ? json({ error: 'Accès refusé' }, 403) : json(receivable);
     return route.fulfill({ status: 404, body: '' });
@@ -134,6 +140,12 @@ async function mount(page, { posts = [], failShip = false, receiveReply = null, 
   if (view) await page.locator(`[data-workspace-view="${view}"]`).click();
 }
 
+async function scanConfirmedSku(card) {
+  const scanner = card.locator('.kmc-workspace-receive-scan-input');
+  await scanner.fill(PHYSICAL_CODE);
+  await scanner.press('Enter');
+  await expect(card.locator('.kmc-workspace-receive-scan-result')).toContainText('Référence confirmée');
+}
 for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mobile', { width: 390, height: 844 }]]) {
   test.describe(`Hub live · Exécution — ${name}`, () => {
     test.use({ viewport });
@@ -271,6 +283,7 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       await mount(page, { posts, view: 'reception' });
       const card = page.locator(`[data-receive-po="${PO_ID}"]`);
       await card.locator('[data-receive-line="0"]').fill('2');
+      await scanConfirmedSku(card);
       const button = card.locator('[data-workspace-action="receive-supplier"]');
       await expect(button).toBeEnabled();
       await button.dblclick();
@@ -278,7 +291,7 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       await page.waitForTimeout(300);
       expect(posts).toHaveLength(1);
       expect(posts[0].path).toBe(RECEIVE);
-      expect(posts[0].body.contents).toEqual([{ purchase_order_id: PO_ID, product_sku_id: SKU_ID, quantity: 2 }]);
+      expect(posts[0].body.contents).toEqual([{ purchase_order_id: PO_ID, product_sku_id: SKU_ID, evidence_code: PHYSICAL_CODE, quantity: 2 }]);
       expect(posts[0].body.reference).toMatch(/^SUPPLIER_PACKAGE-/);
       await expect(page.locator('[data-workspace-feedback]')).toContainText('Réception enregistrée');
     });
@@ -296,7 +309,8 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
     test('sur-réception : quarantaine annoncée clairement (202), stock non augmenté', async ({ page }) => {
       await mount(page, { view: 'reception', receiveReply: { status: 202, body: { quarantined: true, reason_code: 'HUB_ALLOCATION_OVERRECEIVED', unit: { id: 'u2' } } } });
       const card = page.locator(`[data-receive-po="${PO_ID}"]`);
-      await card.locator('[data-receive-line="1"]').fill('1');
+      await card.locator('[data-receive-line="0"]').fill('1');
+      await scanConfirmedSku(card);
       await card.locator('[data-workspace-action="receive-supplier"]').click();
       await expect(page.locator('[data-workspace-feedback]')).toContainText('quarantaine');
       await expect(page.locator('[data-workspace-feedback]')).toContainText('HUB_ALLOCATION_OVERRECEIVED');
@@ -306,6 +320,7 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       await mount(page, { view: 'reception', receiveReply: { status: 200, body: { idempotent_replay: true, quarantined: false, unit: { id: 'u1', reference: 'SUPPLIER_PACKAGE-abc' } } } });
       const card = page.locator(`[data-receive-po="${PO_ID}"]`);
       await card.locator('[data-receive-line="0"]').fill('1');
+      await scanConfirmedSku(card);
       await card.locator('[data-workspace-action="receive-supplier"]').click();
       await expect(page.locator('[data-workspace-feedback]')).toContainText('déjà traitée');
     });
@@ -314,6 +329,7 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       await mount(page, { view: 'reception', receiveReply: { status: 409, body: { error: 'Cette référence de réception a déjà été utilisée avec un contenu différent', code: 'HUB_RECEPTION_REFERENCE_CONFLICT' } } });
       const card = page.locator(`[data-receive-po="${PO_ID}"]`);
       await card.locator('[data-receive-line="0"]').fill('1');
+      await scanConfirmedSku(card);
       await card.locator('[data-workspace-action="receive-supplier"]').click();
       await expect(page.locator('[data-workspace-feedback]')).toContainText('contenu différent');
       await expect(card.locator('[data-workspace-action="receive-supplier"]')).toBeEnabled();
