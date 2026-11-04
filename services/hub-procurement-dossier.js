@@ -8,7 +8,7 @@
  * @outputs       market_procurement_dossier, physical_trace
  * @depends       db
  * @used-by       routes/hub.js
- * @db-read       markets, orders, order_items, products, suppliers, purchase_lines, purchase_orders, v_purchase_line_progress, hub_purchase_allocations, hub_physical_units, hub_physical_unit_placements, international_shipments, international_shipment_hub_units, parcels, parcel_items
+ * @db-read       markets, orders, order_items, products, product_suppliers, suppliers, purchase_lines, purchase_orders, v_purchase_line_progress, hub_purchase_allocations, hub_physical_units, hub_physical_unit_placements, international_shipments, international_shipment_hub_units, parcels, parcel_items
  * @db-write      (none)
  * @db-txn        @none
  * @doctrine      une décision, une autorité, un enregistrement ; projection en lecture seule, aucune seconde source de vérité
