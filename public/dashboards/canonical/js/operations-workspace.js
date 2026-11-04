@@ -769,7 +769,7 @@
     const sourcingHost = doc.createElement('section');
     sourcingHost.hidden = true;
     sourcingHost.setAttribute('data-hub-sourcing-recovery', '');
-    sourcingHost.className = 'kmc-hub-dossier-secondary';
+    sourcingHost.className = 'kmc-hub-sourcing-panel';
     ordersSlot.appendChild(sourcingHost);
 
     // Sourcing manuel via les API propriétaires : aucune création en SQL,
@@ -784,50 +784,105 @@
       if (!host) return;
       host.hidden = false;
       host.replaceChildren();
-      host.appendChild(text(doc, 'h3', 'kmc-workspace-subsection-title',
-        'Sourcing manuel · ' + group.reference));
-      host.appendChild(text(doc, 'p', 'kmc-workspace-muted',
-        'Choisir un fournisseur réel, sa référence et son prix. Le Hub crée une ligne d’achat ouverte, jamais une PO envoyée ou payée.'));
+
+      const heading = doc.createElement('div');
+      heading.className = 'kmc-hub-sourcing-heading';
+      const headingCopy = doc.createElement('div');
+      headingCopy.className = 'kmc-hub-sourcing-heading-copy';
+      headingCopy.appendChild(text(doc, 'h3', '', 'Résoudre le sourcing · ' + group.reference));
+      headingCopy.appendChild(text(doc, 'p', '',
+        'Ouvrir une ligne d’achat pour les articles non couverts. Aucun envoi de PO ni paiement fournisseur.'));
+      heading.appendChild(headingCopy);
+      const close = doc.createElement('button');
+      close.type = 'button';
+      close.className = 'kmc-hub-sourcing-close';
+      close.textContent = 'Fermer';
+      close.setAttribute('data-sourcing-close', '');
+      close.addEventListener('click', () => {
+        host.hidden = true;
+        host.replaceChildren();
+      });
+      heading.appendChild(close);
+      host.appendChild(heading);
+
       const form = doc.createElement('form');
       form.setAttribute('data-hub-sourcing-form', group.reference);
-      form.className = 'kmc-workspace-subsection';
+      form.className = 'kmc-hub-sourcing-form';
       host.appendChild(form);
-      const field = (label, element) => {
+
+      const layout = doc.createElement('div');
+      layout.className = 'kmc-hub-sourcing-layout';
+      form.appendChild(layout);
+      const articlePanel = doc.createElement('section');
+      articlePanel.className = 'kmc-hub-sourcing-group';
+      articlePanel.appendChild(text(doc, 'h4', '', 'Article concerné'));
+      layout.appendChild(articlePanel);
+      const supplierPanel = doc.createElement('section');
+      supplierPanel.className = 'kmc-hub-sourcing-group';
+      supplierPanel.appendChild(text(doc, 'h4', '', 'Fournisseur et conditions'));
+      layout.appendChild(supplierPanel);
+
+      const field = (label, element, parent) => {
         const wrapper = doc.createElement('label');
-        wrapper.className = 'kmc-workspace-field';
+        wrapper.className = 'kmc-hub-sourcing-field';
         wrapper.appendChild(text(doc, 'span', '', label));
         wrapper.appendChild(element);
-        form.appendChild(wrapper);
+        parent.appendChild(wrapper);
         return element;
       };
-      const itemSelect = field('Article à sourcer', doc.createElement('select'));
+      const itemSelect = field('Article à sourcer', doc.createElement('select'), articlePanel);
       itemSelect.setAttribute('data-sourcing-item', '');
       unresolved.forEach(item => {
         const option = doc.createElement('option');
         option.value = item.id;
-        option.textContent = item.product + ' · ' + formatNumber(item.purchasing_missing) + ' unité(s) sans achat';
+        option.textContent = item.product;
         itemSelect.appendChild(option);
       });
-      const supplierSelect = field('Fournisseur', doc.createElement('select'));
+      const itemSummary = text(doc, 'p', 'kmc-hub-sourcing-quantity', '');
+      itemSummary.setAttribute('data-sourcing-quantity', '');
+      articlePanel.appendChild(itemSummary);
+      articlePanel.appendChild(text(doc, 'p', 'kmc-hub-sourcing-help',
+        'La quantité à acheter est calculée depuis les lignes déjà engagées, sans doublon.'));
+
+      const supplierSelect = field('Fournisseur', doc.createElement('select'), supplierPanel);
       supplierSelect.setAttribute('data-sourcing-supplier', '');
-      const supplierName = field('Nouveau fournisseur local (si nécessaire)', doc.createElement('input'));
+      const supplierName = field('Nom du nouveau fournisseur local', doc.createElement('input'), supplierPanel);
       supplierName.placeholder = 'Nom réel du fournisseur';
       supplierName.setAttribute('data-sourcing-name', '');
-      const supplierRef = field('Référence réelle chez le fournisseur', doc.createElement('input'));
-      supplierRef.placeholder = 'Référence fournie par le fournisseur';
+      const supplierDetails = doc.createElement('div');
+      supplierDetails.className = 'kmc-hub-sourcing-details';
+      supplierPanel.appendChild(supplierDetails);
+      const supplierRef = field('Référence fournisseur', doc.createElement('input'), supplierDetails);
+      supplierRef.placeholder = 'Référence réelle';
       supplierRef.setAttribute('data-sourcing-ref', '');
-      const supplierPrice = field('Prix unitaire fournisseur (AED)', doc.createElement('input'));
+      const supplierPrice = field('Prix unitaire (AED)', doc.createElement('input'), supplierDetails);
       supplierPrice.type = 'number';
       supplierPrice.step = '0.01';
       supplierPrice.min = '0.01';
+      supplierPrice.placeholder = '0,00';
       supplierPrice.setAttribute('data-sourcing-price', '');
-      const status = text(doc, 'p', 'kmc-workspace-muted', '');
+      const mappingNote = text(doc, 'p', 'kmc-hub-sourcing-help', 
+        'Association existante : référence et prix enregistrés réutilisés.');
+      mappingNote.hidden = true;
+      mappingNote.setAttribute('data-sourcing-mapping-note', '');
+      supplierPanel.appendChild(mappingNote);
+
+      const footer = doc.createElement('div');
+      footer.className = 'kmc-hub-sourcing-footer';
+      form.appendChild(footer);
+      const footerCopy = doc.createElement('div');
+      footerCopy.className = 'kmc-hub-sourcing-footer-copy';
+      footerCopy.appendChild(text(doc, 'p', 'kmc-hub-sourcing-help',
+        'Étape suivante : préparer la PO, puis faire valider séparément l’engagement et le paiement.'));
+      const status = text(doc, 'p', 'kmc-hub-sourcing-status', '');
       status.setAttribute('role', 'status');
+      status.setAttribute('aria-live', 'polite');
       status.setAttribute('data-sourcing-status', '');
-      const submit = makeActionButton(doc, 'Créer la ligne d’achat manuelle', 'create-manual-purchase-line');
+      footerCopy.appendChild(status);
+      footer.appendChild(footerCopy);
+      const submit = makeActionButton(doc, 'Créer la ligne d’achat', 'create-manual-purchase-line');
       submit.type = 'submit';
-      form.appendChild(submit);
-      form.appendChild(status);
+      footer.appendChild(submit);
       let suppliers = [];
       let requestSerial = 0;
       let writing = false;
@@ -838,9 +893,15 @@
         const supplier = suppliers.find(row => row.id === supplierSelect.value);
         const mapped = !!supplier?.matching_product_supplier_id;
         supplierName.disabled = !!supplier;
+        supplierName.parentNode.hidden = !!supplier;
         supplierRef.disabled = mapped;
         supplierPrice.disabled = mapped;
-        supplierName.placeholder = supplier ? 'Fournisseur existant' : 'Nom réel du fournisseur local';
+        supplierDetails.hidden = mapped;
+        mappingNote.hidden = !mapped;
+      }
+      function updateItemSummary() {
+        const quantity = Number(chosenItem()?.purchasing_missing || 0);
+        itemSummary.textContent = formatNumber(quantity) + ' unité(s) restant à acheter';
       }
       async function loadSuppliers() {
         const serial = ++requestSerial;
@@ -876,7 +937,10 @@
           status.textContent = 'Fournisseurs indisponibles : ' + error.message;
         }
       }
-      itemSelect.addEventListener('change', () => { loadSuppliers().catch(() => {}); });
+      itemSelect.addEventListener('change', () => {
+        updateItemSummary();
+        loadSuppliers().catch(() => {});
+      });
       supplierSelect.addEventListener('change', updateForm);
       form.addEventListener('submit', async event => {
         event.preventDefault();
@@ -944,6 +1008,7 @@
           writing = false;
         }
       });
+      updateItemSummary();
       loadSuppliers().catch(() => {});
       host.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
     }
