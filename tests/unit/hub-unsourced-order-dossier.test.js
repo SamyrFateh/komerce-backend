@@ -1,6 +1,9 @@
 /**
  * Hub L8 — A paid imported order never disappears when the purchasing trigger
  * cannot source its items. Read-model only: no order, PO, or money mutation.
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
  */
 'use strict';
 
