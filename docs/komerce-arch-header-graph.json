@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 780,
-    "filesWithFullHeaders": 729,
+    "scannedCodeFiles": 784,
+    "filesWithFullHeaders": 733,
     "filesWithLiteHeaders": 51,
-    "filesWithAnyHeaders": 780,
+    "filesWithAnyHeaders": 784,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1978,
-    "edges": 9730,
-    "dbTables": 225,
-    "doctrines": 766,
+    "graphNodes": 1985,
+    "edges": 9748,
+    "dbTables": 226,
+    "doctrines": 768,
     "impactAreas": 207,
-    "unresolvedCodeEdges": 931,
+    "unresolvedCodeEdges": 937,
     "dbWriteViaOverlapWarnings": 12,
     "multiWriterTables": 94
   },
@@ -62,7 +62,7 @@
     "business-rules": 1,
     "orders": 34,
     "documents": 15,
-    "auth-identity": 7,
+    "auth-identity": 11,
     "operations": 11,
     "inventory": 2,
     "local-stock": 4,
@@ -98,7 +98,7 @@
     "util-ui": 1,
     "ui-infrastructure": 1,
     "state": 1,
-    "util": 31,
+    "util": 32,
     "domain-helper": 1,
     "adapter": 6,
     "ui-runtime": 2,
@@ -112,7 +112,7 @@
     "schema": 1,
     "route": 137,
     "entrypoint": 1,
-    "service": 464,
+    "service": 467,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -123,7 +123,7 @@
   "byCriticality": {
     "critical": 117,
     "medium": 154,
-    "high": 448,
+    "high": 452,
     "low": 60,
     "unknown": 1
   },
@@ -16559,6 +16559,109 @@
         "market-authorization"
       ],
       "version": "2026-09"
+    },
+    {
+      "id": "services/credential-action-store.js",
+      "file": "services/credential-action-store.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "credential-action-token-persistence",
+      "domain": "auth-identity",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "credential_token_or_verified_account_context"
+      ],
+      "outputs": [
+        "verified_token_or_authorized_result"
+      ],
+      "depends": [
+        "auth-identity"
+      ],
+      "usedBy": [
+        "V1 account activation and password recovery"
+      ],
+      "dbRead": [
+        "credential_action_tokens"
+      ],
+      "dbWrite": [
+        "credential_action_tokens"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "caller-owned"
+      ],
+      "doctrine": [
+        "credential_secret_never_persisted_in_cleartext"
+      ],
+      "impactAreas": [
+        "auth-identity",
+        "account-security"
+      ],
+      "version": "2026-11"
+    },
+    {
+      "id": "services/credential-invitation-email.js",
+      "file": "services/credential-invitation-email.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "credential-invitation-delivery",
+      "domain": "auth-identity",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [],
+      "outputs": [],
+      "depends": [],
+      "usedBy": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "secret_never_logged_or_returned_from_public_routes"
+      ],
+      "impactAreas": [],
+      "version": null
+    },
+    {
+      "id": "services/credential-link-token.js",
+      "file": "services/credential-link-token.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "credential-link-crypto",
+      "domain": "auth-identity",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "credential_token_or_verified_account_context"
+      ],
+      "outputs": [
+        "verified_token_or_authorized_result"
+      ],
+      "depends": [
+        "auth-identity"
+      ],
+      "usedBy": [
+        "V1 account activation and password recovery"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "credential_secret_never_persisted_in_cleartext"
+      ],
+      "impactAreas": [
+        "auth-identity",
+        "account-security"
+      ],
+      "version": "2026-11"
     },
     {
       "id": "services/customer-handoff-reconciliation.js",
@@ -36591,6 +36694,42 @@
       "version": "2026-09-v1"
     },
     {
+      "id": "utils/credential-session-guard.js",
+      "file": "utils/credential-session-guard.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "credential-session-version-guard",
+      "domain": "auth-identity",
+      "layer": "util",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "credential_token_or_verified_account_context"
+      ],
+      "outputs": [
+        "verified_token_or_authorized_result"
+      ],
+      "depends": [
+        "auth-identity"
+      ],
+      "usedBy": [
+        "V1 account activation and password recovery"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "credential_secret_never_persisted_in_cleartext"
+      ],
+      "impactAreas": [
+        "auth-identity",
+        "account-security"
+      ],
+      "version": "2026-11"
+    },
+    {
       "id": "utils/currency.js",
       "file": "utils/currency.js",
       "type": "file",
@@ -38502,6 +38641,11 @@
       "id": "db:cost_component_market_override_events",
       "type": "db-table",
       "table": "cost_component_market_override_events"
+    },
+    {
+      "id": "db:credential_action_tokens",
+      "type": "db-table",
+      "table": "credential_action_tokens"
     },
     {
       "id": "db:customs_effective_rates",
@@ -40582,6 +40726,16 @@
       "id": "doctrine:global_model_is_base_market_override_is_effective_value",
       "type": "doctrine",
       "doctrine": "global_model_is_base_market_override_is_effective_value"
+    },
+    {
+      "id": "doctrine:credential_secret_never_persisted_in_cleartext",
+      "type": "doctrine",
+      "doctrine": "credential_secret_never_persisted_in_cleartext"
+    },
+    {
+      "id": "doctrine:secret_never_logged_or_returned_from_public_routes",
+      "type": "doctrine",
+      "doctrine": "secret_never_logged_or_returned_from_public_routes"
     },
     {
       "id": "doctrine:docs/chantier/CUSTOMER_TO_CUSTOMER_CLOSURE.md",
@@ -43494,6 +43648,11 @@
       "area": "admin-costing"
     },
     {
+      "id": "impact:auth-identity",
+      "type": "impact-area",
+      "area": "auth-identity"
+    },
+    {
       "id": "impact:douane",
       "type": "impact-area",
       "area": "douane"
@@ -43597,11 +43756,6 @@
       "id": "impact:infrastructure",
       "type": "impact-area",
       "area": "infrastructure"
-    },
-    {
-      "id": "impact:auth-identity",
-      "type": "impact-area",
-      "area": "auth-identity"
     },
     {
       "id": "impact:operational-flow",
@@ -68810,6 +68964,84 @@
       "to": "impact:market-authorization",
       "type": "impact",
       "label": "market-authorization"
+    },
+    {
+      "from": "services/credential-action-store.js",
+      "to": "auth-identity",
+      "type": "depends",
+      "label": "auth-identity"
+    },
+    {
+      "from": "V1 account activation and password recovery",
+      "to": "services/credential-action-store.js",
+      "type": "uses",
+      "label": "V1 account activation and password recovery"
+    },
+    {
+      "from": "services/credential-action-store.js",
+      "to": "db:credential_action_tokens",
+      "type": "db-read",
+      "label": "credential_action_tokens"
+    },
+    {
+      "from": "services/credential-action-store.js",
+      "to": "db:credential_action_tokens",
+      "type": "db-write",
+      "label": "credential_action_tokens"
+    },
+    {
+      "from": "services/credential-action-store.js",
+      "to": "doctrine:credential_secret_never_persisted_in_cleartext",
+      "type": "doctrine",
+      "label": "credential_secret_never_persisted_in_cleartext"
+    },
+    {
+      "from": "services/credential-action-store.js",
+      "to": "impact:auth-identity",
+      "type": "impact",
+      "label": "auth-identity"
+    },
+    {
+      "from": "services/credential-action-store.js",
+      "to": "impact:account-security",
+      "type": "impact",
+      "label": "account-security"
+    },
+    {
+      "from": "services/credential-invitation-email.js",
+      "to": "doctrine:secret_never_logged_or_returned_from_public_routes",
+      "type": "doctrine",
+      "label": "secret_never_logged_or_returned_from_public_routes"
+    },
+    {
+      "from": "services/credential-link-token.js",
+      "to": "auth-identity",
+      "type": "depends",
+      "label": "auth-identity"
+    },
+    {
+      "from": "V1 account activation and password recovery",
+      "to": "services/credential-link-token.js",
+      "type": "uses",
+      "label": "V1 account activation and password recovery"
+    },
+    {
+      "from": "services/credential-link-token.js",
+      "to": "doctrine:credential_secret_never_persisted_in_cleartext",
+      "type": "doctrine",
+      "label": "credential_secret_never_persisted_in_cleartext"
+    },
+    {
+      "from": "services/credential-link-token.js",
+      "to": "impact:auth-identity",
+      "type": "impact",
+      "label": "auth-identity"
+    },
+    {
+      "from": "services/credential-link-token.js",
+      "to": "impact:account-security",
+      "type": "impact",
+      "label": "account-security"
     },
     {
       "from": "services/customer-handoff-reconciliation.js",
@@ -100341,6 +100573,36 @@
       "label": "ci"
     },
     {
+      "from": "utils/credential-session-guard.js",
+      "to": "auth-identity",
+      "type": "depends",
+      "label": "auth-identity"
+    },
+    {
+      "from": "V1 account activation and password recovery",
+      "to": "utils/credential-session-guard.js",
+      "type": "uses",
+      "label": "V1 account activation and password recovery"
+    },
+    {
+      "from": "utils/credential-session-guard.js",
+      "to": "doctrine:credential_secret_never_persisted_in_cleartext",
+      "type": "doctrine",
+      "label": "credential_secret_never_persisted_in_cleartext"
+    },
+    {
+      "from": "utils/credential-session-guard.js",
+      "to": "impact:auth-identity",
+      "type": "impact",
+      "label": "auth-identity"
+    },
+    {
+      "from": "utils/credential-session-guard.js",
+      "to": "impact:account-security",
+      "type": "impact",
+      "label": "account-security"
+    },
+    {
       "from": "utils/currency.js",
       "to": "db",
       "type": "depends",
@@ -119111,6 +119373,92 @@
         "impact:pricing",
         "routes/admin-pricing-workspace.js",
         "services/pricing-cdr.js"
+      ]
+    },
+    "services/credential-action-store.js": {
+      "role": "credential-action-token-persistence",
+      "domain": "auth-identity",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "auth-identity"
+      ],
+      "directUsedBy": [
+        "V1 account activation and password recovery"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "credential_action_tokens"
+      ],
+      "dbWrite": [
+        "credential_action_tokens"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "credential_secret_never_persisted_in_cleartext"
+      ],
+      "impactAreas": [
+        "auth-identity",
+        "account-security"
+      ],
+      "mustCheck": [
+        "db:credential_action_tokens",
+        "doctrine:credential_secret_never_persisted_in_cleartext",
+        "impact:account-security",
+        "impact:auth-identity"
+      ]
+    },
+    "services/credential-invitation-email.js": {
+      "role": "credential-invitation-delivery",
+      "domain": "auth-identity",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [],
+      "directUsedBy": [],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "secret_never_logged_or_returned_from_public_routes"
+      ],
+      "impactAreas": [],
+      "mustCheck": [
+        "doctrine:secret_never_logged_or_returned_from_public_routes"
+      ]
+    },
+    "services/credential-link-token.js": {
+      "role": "credential-link-crypto",
+      "domain": "auth-identity",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "auth-identity"
+      ],
+      "directUsedBy": [
+        "V1 account activation and password recovery"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "credential_secret_never_persisted_in_cleartext"
+      ],
+      "impactAreas": [
+        "auth-identity",
+        "account-security"
+      ],
+      "mustCheck": [
+        "doctrine:credential_secret_never_persisted_in_cleartext",
+        "impact:account-security",
+        "impact:auth-identity"
       ]
     },
     "services/customer-handoff-reconciliation.js": {
@@ -139020,6 +139368,36 @@
         "services/sourcing-certification.js"
       ]
     },
+    "utils/credential-session-guard.js": {
+      "role": "credential-session-version-guard",
+      "domain": "auth-identity",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "auth-identity"
+      ],
+      "directUsedBy": [
+        "V1 account activation and password recovery"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "credential_secret_never_persisted_in_cleartext"
+      ],
+      "impactAreas": [
+        "auth-identity",
+        "account-security"
+      ],
+      "mustCheck": [
+        "doctrine:credential_secret_never_persisted_in_cleartext",
+        "impact:account-security",
+        "impact:auth-identity"
+      ]
+    },
     "utils/currency.js": {
       "role": "currency-boundary",
       "domain": "market",
@@ -143784,6 +144162,30 @@
       "label": "db.js"
     },
     {
+      "from": "services/credential-action-store.js",
+      "to": "auth-identity",
+      "type": "depends",
+      "label": "auth-identity"
+    },
+    {
+      "from": "V1 account activation and password recovery",
+      "to": "services/credential-action-store.js",
+      "type": "uses",
+      "label": "V1 account activation and password recovery"
+    },
+    {
+      "from": "services/credential-link-token.js",
+      "to": "auth-identity",
+      "type": "depends",
+      "label": "auth-identity"
+    },
+    {
+      "from": "V1 account activation and password recovery",
+      "to": "services/credential-link-token.js",
+      "type": "uses",
+      "label": "V1 account activation and password recovery"
+    },
+    {
       "from": "services/customer-handoff-reconciliation.js",
       "to": "orders",
       "type": "depends",
@@ -146632,6 +147034,18 @@
       "to": "utils/auth-session.js",
       "type": "uses",
       "label": "magic-link validation"
+    },
+    {
+      "from": "utils/credential-session-guard.js",
+      "to": "auth-identity",
+      "type": "depends",
+      "label": "auth-identity"
+    },
+    {
+      "from": "V1 account activation and password recovery",
+      "to": "utils/credential-session-guard.js",
+      "type": "uses",
+      "label": "V1 account activation and password recovery"
     },
     {
       "from": "utils/currency.js",
