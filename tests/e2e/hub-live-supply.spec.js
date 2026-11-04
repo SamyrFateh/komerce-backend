@@ -8,6 +8,7 @@
 const fs = require('fs');
 const path = require('path');
 const { test, expect } = require('@playwright/test');
+const { shapeDossier } = require('./fixtures/hub-cockpit-shape');
 
 const CANONICAL = path.join(__dirname, '..', '..', 'public', 'dashboards', 'canonical');
 const FX = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'pricing-atelier-km.json'), 'utf8'));
@@ -57,7 +58,7 @@ const TRACE = { chain: [{
 
 test.use({ viewport: { width: 1440, height: 900 } });
 
-async function mount(page, posts) {
+async function mount(page, posts, openPhysical = true) {
   page.on('dialog', (dialog) => dialog.accept());
   await page.route(`${ORIGIN}/**`, async (route) => {
     const url = new URL(route.request().url());
@@ -75,7 +76,7 @@ async function mount(page, posts) {
     if (url.pathname === '/api/admin/dashboard/context') return json(FX.context);
     if (url.pathname === API) return json(WORKSPACE);
     if (url.pathname === '/api/scans/hub/receivable') return json({ purchase_orders: [] });
-    if (url.pathname === `${API}/supply`) return json(DOSSIER);
+    if (url.pathname === `${API}/supply`) return json(shapeDossier(DOSSIER));
     if (url.pathname === `${API}/supply/trace`) return json(TRACE);
     return route.fulfill({ status: 404, body: '' });
   });
@@ -83,41 +84,31 @@ async function mount(page, posts) {
   await page.locator('select').first().selectOption({ label: 'KM · Comores' });
   await expect(page.locator('h1')).toHaveText('Hub live · Dossiers');
   await page.locator('[data-workspace-view="supply"]').click();
+  if (openPhysical) await page.locator('[data-hub-physical-details] > summary').click();
 }
 
 test.describe('Hub live · Approvisionnement — desktop 1440', () => {
-  test('tableau compact : PO non envoyée, réception partielle, reliquat et rattachement distinct', async ({ page }) => {
-    await mount(page, []);
+  test('cockpit : PO non envoyée, réception partielle, reliquat et rattachement distinct', async ({ page }) => {
+    await mount(page, [], false);
     const pos = page.locator('[data-supply-pos]');
-    const row = page.locator('[data-hub-order="4def6c00-67b9-4584-85ed-00d2b8a24292"]');
-    await expect(pos).toContainText('Envoi à prouver');
+    const card = page.locator('[data-hlc-order="4def6c00-67b9-4584-85ed-00d2b8a24292"]');
     await expect(pos).not.toContainText('Envoyée');
-    await expect(row).toContainText('2 reçu(s)');
-    await expect(row).toContainText('1 non reçue(s)');
-    await expect(row).toContainText('1 KOM-BOX');
-    await expect(row).toContainText('1 expédition(s)');
-    await expect(row).not.toContainText('Câble USB');
-    await expect(row).not.toContainText('remboursé');
-    await expect(pos.locator('.kmc-hub-board thead th')).toHaveCount(7);
-    await expect(page.locator('[data-supply-to-handle]')).toContainText('1 unité(s) confirmée(s) non reçue(s)');
-    await expect(page.getByText('Unités encore attendues')).toBeVisible();
-    const coords = await pos.locator('.kmc-hub-board thead th').evaluateAll(nodes =>
-      nodes.map(n => n.getBoundingClientRect().x));
-    expect(coords.every((x, i) => i === 0 || x > coords[i - 1])).toBe(true);
+    await expect(card).toContainText('Câble USB ×3');
+    await expect(card).not.toContainText('remboursé');
+    await expect(page.locator('[data-hlc-po]')).toHaveCount(1);
+    await expect(page.locator('[data-hlc-po] [data-hlc-steps] [data-step]')).toHaveCount(5);
+    await expect(page.locator('.kmc-hub-board')).toHaveCount(0);
     await page.screenshot({ path: 'test-results/hub-live-supply-1440.png', fullPage: true });
   });
 
-  test('filiation : trace complète à la demande, sans mutation ni détail article dans le tableau', async ({ page }) => {
+  test('navigation bidirectionnelle commande ↔ PO, sans mutation', async ({ page }) => {
     const posts = [];
-    await mount(page, posts);
-    const row = page.locator('[data-hub-order="4def6c00-67b9-4584-85ed-00d2b8a24292"]');
-    await row.locator('[data-hub-stage="Cartons"]').click({ button: 'right' });
-    await expect(page.locator('[data-hub-context-menu]')).toBeVisible();
-    await page.locator('[data-hub-context-menu]').getByRole('button', { name: 'Voir les preuves / la filiation' }).click();
-    const trace = page.locator('[data-supply-trace]');
-    await expect(trace).toContainText('COLIS-1');
-    await expect(trace).toContainText('BOX-2');
-    await expect(trace).toContainText('SHIP-1');
+    await mount(page, posts, false);
+    await page.locator('[data-hlc-order="4def6c00-67b9-4584-85ed-00d2b8a24292"]').click();
+    await expect(page.locator(`[data-hlc-po="${PO}"]`)).toHaveClass(/is-related/);
+    await expect(page.locator(`[data-hlc-po="${PO}"] [data-hlc-po-line].is-highlight`)).toHaveCount(1);
+    await page.locator(`[data-hlc-po="${PO}"]`).click();
+    await expect(page.locator('[data-hlc-order="4def6c00-67b9-4584-85ed-00d2b8a24292"]')).toHaveClass(/is-related/);
     expect(posts).toHaveLength(0);
   });
 
@@ -178,9 +169,8 @@ test.describe('Hub live · Approvisionnement — desktop 1440', () => {
 test.describe('Hub live · Approvisionnement — mobile 390', () => {
   test('la preuve physique du colis client reste lisible sans débordement horizontal', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await mount(page, []);
-    await expect(page.locator('[data-hub-order]').first()).toContainText('1 non reçue(s)');
-    await expect(page.locator('[data-hub-order]').first()).not.toContainText('Câble USB');
+    await mount(page, [], false);
+    await expect(page.locator('[data-hlc-order]').first()).toContainText('Câble USB');
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(1);
   });

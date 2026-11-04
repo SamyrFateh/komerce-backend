@@ -357,17 +357,6 @@
   // Relais live · Exécution : actions Relais uniquement (encaisser, réceptionner, remettre) — jamais Hub.
   const RELAY_LIVE_TABS = Object.freeze([{ id: 'relay', label: 'Relais' }, { id: 'cash', label: 'Cash & dépôts' }]);
 
-  const PO_STAGE_LABELS = Object.freeze({
-    draft: 'Brouillon',
-    issued_not_sent: 'Bon émis, envoi non prouvé',
-    sent: 'Envoyée',
-    confirmed: 'Confirmée',
-    partially_received: 'Partiellement reçue',
-    received: 'Reçue',
-    cancelled: 'Annulée',
-  });
-  const SENT_CHANNEL_LABELS = Object.freeze({ email: 'e-mail', whatsapp: 'WhatsApp', phone: 'téléphone', api: 'API', other: 'autre' });
-
   function newReceptionReference() {
     const crypto = globalThis.crypto;
     const id = crypto && typeof crypto.randomUUID === 'function'
@@ -610,162 +599,34 @@
     return wrap;
   }
 
-  function createTraceButton(doc, context, label, query) {
-    const button = makeActionButton(doc, label, 'show-trace');
-    button.addEventListener('click', async () => {
-      button.disabled = true;
-      try {
-        context.trace = await jsonRequest(context.fetch, `${endpointFor(context.marketCode, 'supply/trace')}?${query}`);
-        const traceParams = new URLSearchParams(query);
-        context.openPOId = traceParams.get('po_id') || null;
-        context.traceOrderId = traceParams.get('order_id') || null;
-        if (context.traceOrderId) context.openOrderId = context.traceOrderId;
-        context.traceError = null;
-      } catch (error) {
-        context.trace = null;
-        context.traceError = error.message;
-      }
-      context.renderCurrent();
-    });
-    return button;
-  }
-
-  function renderTracePanel(rootNode, ui, doc, context) {
-    if (!context.trace && !context.traceError) return;
-    const slot = createSection(rootNode, ui, 'Filiation', 'Commande → ligne d’achat → PO → colis reçu → carton → expédition. Lecture seule.');
-    slot.setAttribute('data-supply-trace', '');
-    if (context.traceError) { slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', context.traceError)); return; }
-    const rows = [];
-    context.trace.chain.forEach(link => {
-      const po = link.purchase_order;
-      if (!link.placements.length) {
-        rows.push([link.order_ref, link.product, formatNumber(link.ordered), po ? (PO_STAGE_LABELS[po.status] || po.status) : 'Sans PO', '—', '—', '—']);
-      }
-      link.placements.forEach(placement => rows.push([
-        link.order_ref, link.product, formatNumber(link.ordered), po ? (PO_STAGE_LABELS[po.status] || po.status) : 'Sans PO',
-        `${placement.unit.reference} (${placement.unit.type === 'MARKET_PARCEL' ? 'carton' : 'colis'}) ×${formatNumber(placement.quantity)}${placement.active ? '' : ' · déplacé'}`,
-        placement.unit.state,
-        placement.shipment ? placement.shipment.reference : '—',
-      ]));
-    });
-    slot.appendChild(simpleTable(doc, ['Commande', 'Produit', 'Commandé', 'PO', 'Unité physique', 'État', 'Expédition'], rows, 'Aucune filiation trouvée.'));
-  }
-
   // Dossier vivant : la projection serveur reste la seule source de vérité.
   // Les accordéons ne changent aucun état; chaque action existante garde son service propriétaire.
   function renderSupplySection(rootNode, ui, doc, context) {
-    const kpiSlot = createSection(rootNode, ui, 'Dossiers · Vue du jour',
-      'Dossier par commande : articles, achats fournisseur, réceptions, colis client, cartons et expédition.');
-    kpiSlot.setAttribute('data-hub-dossier-home', '');
+    // Concept C : aucun bloc KPI ni titre de section redondant au-dessus du cockpit (hero existant conservé).
+    const flowHost = doc.createElement('div');
+    flowHost.className = 'kmc-hub-flow';
+    rootNode.appendChild(flowHost);
+    flowHost.setAttribute('data-hub-dossier-home', '');
     if (context.dossierError) {
-      kpiSlot.appendChild(text(doc, 'div', 'kmc-workspace-empty', `Dossier indisponible : ${context.dossierError}`));
+      flowHost.appendChild(text(doc, 'div', 'kmc-workspace-empty', `Dossier indisponible : ${context.dossierError}`));
       return;
     }
     const d = context.dossier;
     if (!d) {
-      kpiSlot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Dossier non chargé.'));
+      flowHost.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Dossier non chargé.'));
       return;
     }
-    const k = d.kpis || {};
-    const strip = doc.createElement('div');
-    strip.className = 'kmc-hub-dossier-metrics';
-    kpiSlot.appendChild(strip);
-    const metric = (key, label, value, warn) => ({
-      key, label, value: formatNumber(value), tone: warn && Number(value) > 0 ? 'warning' : 'neutral',
-    });
-    ui.MetricStrip.render(strip, { items: [
-      metric('hub-needs', 'Commandes à approvisionner', k.orders_waiting, false),
-      metric('hub-po-unsent', 'PO à envoyer', k.po_issued_not_sent, false),
-      metric('hub-remaining', 'Unités encore attendues', k.qty_missing, false),
-      metric('hub-boxes', 'Cartons non expédiés', k.boxes_unshipped, false),
-    ] });
 
-    // Pas de seconde frise décorative au-dessus du dossier : le trajet réel
-    // est une rangée de cinq colonnes directement dans chaque commande.
-
-
-    // Work : la COMMANDE est le dossier maître, pas la PO.
-    // Les jointures suivantes ne produisent aucun nouveau statut ou mouvement :
-    // elles rassemblent uniquement les références de la projection serveur.
-    const dossiers = new Map();
-    const byOrder = (id, reference) => {
-      const key = String(id || reference || '');
-      if (!key) return null;
-      if (!dossiers.has(key)) dossiers.set(key, {
-        id: id || null, reference: reference || key, status: null, items: [],
-        needs: [], lines: [], pos: new Map(), clientParcels: [], boxes: [],
-      });
-      return dossiers.get(key);
-    };
-    (d.orders || []).forEach(order => {
-      const group = byOrder(order.id, order.reference);
-      if (!group) return;
-      group.status = order.status || null;
-      group.items = Array.isArray(order.items) ? order.items : [];
-    });
-    (d.needs || []).forEach(need => {
-      const group = byOrder(need.order_id, need.order_ref);
-      if (group) group.needs.push(need);
-    });
-    (d.purchase_orders || []).forEach(po => {
-      (po.lines || []).forEach(line => {
-        const group = byOrder(line.order_id, line.order_ref);
-        if (!group) return;
-        group.lines.push({ ...line, po });
-        group.pos.set(String(po.id), po);
-      });
-    });
-    // Un colis local n'ouvre JAMAIS de dossier Hub à lui seul. Les seules
-    // racines admises proviennent des lignes IMPORT/achats déjà projetées.
-    const existingOrder = (id, reference) => dossiers.get(String(id || ''))
-      || [...dossiers.values()].find(g => reference && g.reference === reference) || null;
-    (d.client_parcels || []).forEach(parcel => {
-      const group = existingOrder(parcel.order_id, null);
-      if (group) group.clientParcels.push(parcel);
-    });
-    (d.boxes || []).forEach(box => {
-      const seen = new Set();
-      (box.contents || []).forEach(content => {
-        const group = existingOrder(content.order_id, content.order_ref);
-        if (group && !seen.has(group)) {
-          group.boxes.push(box);
-          seen.add(group);
-        }
-      });
-    });
-
-    // Tableau de production : une ligne par commande, cinq étapes opérationnelles.
-    // Les quantités et preuves sont exclusivement issues du dossier serveur.
-    // Le menu n'effectue AUCUNE transition d'état : il ouvre les writers propriétaires.
-    const ordersSlot = createSection(rootNode, ui, 'Tableau de production',
-      'Clic ou clic droit sur une étape : action autorisée et preuves. Le détail reste à la demande.');
+    // Hub Live concept C : le cockpit « flux du besoin » remplace l'ancien tableau de production.
+    // Toutes les quantités et étapes viennent de la projection serveur (d.cockpit / d.orders / d.purchase_orders).
+    const ordersSlot = doc.createElement('div');
+    ordersSlot.className = 'kmc-hub-flow-body';
+    rootNode.appendChild(ordersSlot);
     ordersSlot.setAttribute('data-supply-pos', '');
     ordersSlot.setAttribute('data-hub-work-orders', '');
-    const topBar = doc.createElement('div');
-    topBar.className = 'kmc-hub-board-toolbar';
-    topBar.appendChild(text(doc, 'span', 'kmc-workspace-muted',
-      String(dossiers.size) + ' commande(s) import · ' + context.marketCode));
-    const purchasing = text(doc, 'a', 'kmc-hub-dossier-link', 'Achats par fournisseur / PO');
-    purchasing.href = '/admin/workspaces/purchasing?market=' + encodeURIComponent(context.marketCode);
-    topBar.appendChild(purchasing);
-    ordersSlot.appendChild(topBar);
-
-    const scroll = doc.createElement('div');
-    scroll.className = 'kmc-hub-board-scroll';
-    const board = doc.createElement('table');
-    board.className = 'kmc-hub-board';
-    board.setAttribute('aria-label', 'Progression réelle des commandes import du Hub');
-    const thead = doc.createElement('thead');
-    const headings = doc.createElement('tr');
-    ['Commande', 'PO', 'Fournisseur', 'Réception', 'Cartons', 'Départ', 'Reste à solder'].forEach(label => {
-      headings.appendChild(text(doc, 'th', '', label));
-    });
-    thead.appendChild(headings);
-    board.appendChild(thead);
-    const tbody = doc.createElement('tbody');
-    board.appendChild(tbody);
-    scroll.appendChild(board);
-    ordersSlot.appendChild(scroll);
+    const cockpitHost = doc.createElement('div');
+    cockpitHost.setAttribute('data-hub-cockpit-host', '');
+    ordersSlot.appendChild(cockpitHost);
     const sourcingHost = doc.createElement('section');
     sourcingHost.hidden = true;
     sourcingHost.setAttribute('data-hub-sourcing-recovery', '');
@@ -1014,183 +875,41 @@
       host.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
     }
 
-    // Menu flottant unique : le clic gauche et le clavier sont équivalents au clic droit.
-    const menu = doc.createElement('div');
-    menu.className = 'kmc-hub-board-menu';
-    menu.setAttribute('data-hub-context-menu', '');
-    menu.setAttribute('role', 'dialog');
-    menu.setAttribute('aria-label', 'Actions de l’étape Hub');
-    menu.hidden = true;
-    ordersSlot.appendChild(menu);
-    const closeMenu = () => { menu.hidden = true; };
-    const menuLink = (label, href) => {
-      const link = text(doc, 'a', 'kmc-hub-board-menu-action', label);
-      link.href = href;
-      menu.appendChild(link);
-    };
-    const menuButton = (label, handler) => {
-      const button = text(doc, 'button', 'kmc-hub-board-menu-action', label);
-      button.type = 'button';
-      button.addEventListener('click', () => { closeMenu(); handler(); });
-      menu.appendChild(button);
-    };
-    const openMenu = (group, stageName, explanation, event) => {
-      menu.replaceChildren();
-      menu.appendChild(text(doc, 'strong', 'kmc-hub-board-menu-title',
-        group.reference + ' · ' + stageName));
-      menu.appendChild(text(doc, 'p', 'kmc-hub-board-menu-summary', explanation));
-      const market = encodeURIComponent(context.marketCode);
-      if (stageName === 'PO' || stageName === 'Fournisseur') {
-        const missingSourcing = (group.items || []).some(item =>
-          item.sourcing_required === true && Number(item.purchasing_missing) > 0);
-        if (missingSourcing && !isHubReadOnly(context)) {
-          menuButton('Résoudre le sourcing / créer un achat manuel',
-            () => showSourcingResolution(group));
-        }
-        menuLink('Ouvrir les achats fournisseurs', '/admin/workspaces/purchasing?market=' + market);
-      }
-      if (stageName === 'Réception') {
-        menuButton('Réceptionner une PO', () => {
-          rootNode.querySelector('[data-workspace-view="reception"]')?.click();
-        });
-      }
-      if (stageName === 'Cartons') {
-        menuButton('Affecter les articles reçus', () => {
-          rootNode.querySelector('[data-workspace-view="inventory"]')?.click();
-        });
-        menuButton('Gérer les KOM-BOX', () => {
-          doc.querySelector('[data-supply-boxes]')?.scrollIntoView({ block: 'start', behavior: 'smooth' });
-        });
-      }
-      if (stageName === 'Départ') {
-        menuButton('Gérer les expéditions et cartons', () => {
-          doc.querySelector('[data-supply-boxes]')?.scrollIntoView({ block: 'start', behavior: 'smooth' });
-        });
-      }
-      if (group.reference) {
-        menuLink('Ouvrir la commande 360', '/admin/orders/' + encodeURIComponent(group.reference));
-      }
-      if (group.id) {
-        const trace = createTraceButton(doc, context, 'Voir les preuves / la filiation',
-          'order_id=' + encodeURIComponent(group.id));
-        trace.classList.add('kmc-hub-board-menu-action');
-        menu.appendChild(trace);
-      }
-      menuButton('Fermer', closeMenu);
-      menu.hidden = false;
-      const win = doc.defaultView;
-      const rect = event?.currentTarget?.getBoundingClientRect?.();
-      const x = event?.type === 'contextmenu' ? event.clientX : (rect ? rect.left : 16);
-      const y = event?.type === 'contextmenu' ? event.clientY : (rect ? rect.bottom + 5 : 60);
-      const width = win?.innerWidth || 1440;
-      const height = win?.innerHeight || 900;
-      menu.style.left = Math.max(8, Math.min(x, width - 310)) + 'px';
-      menu.style.top = Math.max(8, Math.min(y, height - 340)) + 'px';
-      menu.querySelector('a,button')?.focus();
-    };
-    ordersSlot.addEventListener('keydown', event => {
-      if (event.key === 'Escape') closeMenu();
-    });
-    const stageCell = (row, group, stageName, label, hint, reason, attention) => {
-      const cell = doc.createElement('td');
-      const button = text(doc, 'button', 'kmc-hub-board-cell', label);
-      button.type = 'button';
-      button.setAttribute('data-hub-stage', stageName);
-      button.setAttribute('aria-label', group.reference + ' · ' + stageName + ' : ' + label + '. Actions et preuves');
-      if (attention) button.classList.add('is-attention');
-      if (hint) button.appendChild(text(doc, 'small', '', hint));
-      button.addEventListener('click', event => openMenu(group, stageName, reason, event));
-      button.addEventListener('contextmenu', event => {
-        event.preventDefault();
-        openMenu(group, stageName, reason, event);
+    const cockpitModule = globalThis.KomerceHubLiveCockpit;
+    if (!cockpitModule) {
+      cockpitHost.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Cockpit Hub indisponible : module non chargé.'));
+    } else {
+      if (!context.cockpitState) context.cockpitState = { sel: null, form: null, todoAll: false, picked: new Set() };
+      const physicalDetails = () => rootNode.querySelector('[data-hub-physical-details]');
+      try {
+      cockpitModule.render(cockpitHost, {
+        document: doc, dossier: d, marketCode: context.marketCode, state: context.cockpitState,
+        isReadOnly: isHubReadOnly(context),
+        endpoint: suffix => endpointFor(context.marketCode, suffix),
+        act: (button, options) => runAction(context, button, options),
+        reload: () => context.reload(),
+        feedback: (message, tone) => setFeedback(context.root, message, tone),
+        renderReception: purchaseOrderId => {
+          const po = ((context.receivable && context.receivable.purchase_orders) || [])
+            .find(row => String(row.purchase_order_id) === String(purchaseOrderId));
+          return po ? createReceptionCard(doc, context, po) : null;
+        },
+        openSourcing: orderId => {
+          const order = (d.orders || []).find(row => String(row.id) === String(orderId));
+          if (order) showSourcingResolution({ id: order.id, reference: order.reference, items: order.items || [] });
+        },
+        openPhysical: () => {
+          const details = physicalDetails();
+          if (details) { details.open = true; details.scrollIntoView?.({ block: 'start', behavior: 'smooth' }); }
+        },
       });
-      cell.appendChild(button);
-      row.appendChild(cell);
-    };
-
-    const groups = [...dossiers.values()];
-    if (!groups.length) ordersSlot.appendChild(text(doc, 'div', 'kmc-workspace-empty',
-      'Aucune commande d’import à traiter pour ce marché.'));
-    groups.forEach(group => {
-      const row = doc.createElement('tr');
-      row.setAttribute('data-hub-order', String(group.id || group.reference));
-      const orderCell = doc.createElement('td');
-      const identity = doc.createElement('div');
-      identity.className = 'kmc-hub-board-identity';
-      identity.appendChild(text(doc, 'strong', '', group.reference));
-      const itemKeys = new Set([
-        ...group.items.map(item => String(item.id || item.product)),
-        ...group.lines.map(line => String(line.order_item_id || line.product)),
-        ...group.needs.map(need => String(need.order_item_id || need.product_name)),
-      ]);
-      identity.appendChild(text(doc, 'small', '', String(itemKeys.size) + ' article(s)'));
-      orderCell.appendChild(identity);
-      row.appendChild(orderCell);
-      const ordered = group.items.reduce((total, item) => total + Math.max(0, Number(item.ordered) || 0), 0);
-      const purchasedReceived = group.lines.reduce((total, line) =>
-        total + Math.max(0, Number(line.received) || 0), 0);
-      const expected = group.lines.reduce((total, line) =>
-        total + Math.max(0, Number(line.confirmed) || 0), 0);
-      const openNeeds = group.needs.reduce((total, line) =>
-        total + Math.max(0, Number(line.quantity) || 0), 0);
-      const anomalies = group.lines.reduce((total, line) =>
-        total + Math.max(0, Number(line.anomaly) || 0), 0);
-      const pending = ordered ? Math.max(0, ordered - purchasedReceived) :
-        openNeeds + group.lines.reduce((total, line) => total + Math.max(0, Number(line.missing) || 0), 0);
-      const pos = [...group.pos.values()];
-      const toSource = group.items.reduce((total, item) =>
-        total + (item.sourcing_required === true ? Math.max(0, Number(item.purchasing_missing) || 0) : 0), 0);
-      const unsent = pos.some(po => !po.sent_at);
-      const draft = pos.some(po => po.stage === 'draft');
-      const shipments = [...new Set(group.boxes.filter(box => box.shipment_ref).map(box => box.shipment_ref))];
-
-      stageCell(row, group, 'PO',
-        toSource ? 'Sourcing requis' : !pos.length ? 'À constituer' : draft ? 'Brouillon' : pos.length + ' PO liées',
-        toSource ? formatNumber(toSource) + ' unité(s) sans achat' :
-          openNeeds ? formatNumber(openNeeds) + ' unité(s) à acheter' : '',
-        toSource ? 'Article(s) sans couverture d’achat : identifier le fournisseur et ouvrir une ligne manuelle.' :
-          'Constitution des PO par fournisseur et par marché ; validation d’engagement par la directrice.',
-        toSource > 0 || !pos.length || draft || openNeeds > 0);
-      stageCell(row, group, 'Fournisseur',
-        !pos.length ? 'Non commandé' : unsent ? 'Envoi à prouver' :
-          purchasedReceived >= expected && expected > 0 ? 'Reçu au Hub' : 'Attente fournisseur',
-        !pos.length ? '' : pos.length + ' PO liée(s)',
-        'La transmission de la PO ne prouve ni l’expédition fournisseur ni la réception physique. Consulter les preuves d’envoi et le suivi des fournisseurs.',
-        !pos.length || unsent);
-      stageCell(row, group, 'Réception',
-        purchasedReceived ? formatNumber(purchasedReceived) + ' reçu(s)' : 'Non reçue',
-        ordered ? 'sur ' + formatNumber(ordered) + ' commandée(s)' : '',
-        'Réception et contrôle des quantités réelles, sans déduire de stock du statut fournisseur.',
-        anomalies > 0);
-      stageCell(row, group, 'Cartons',
-        group.boxes.length ? group.boxes.length + ' KOM-BOX' :
-          group.clientParcels.length ? group.clientParcels.length + ' colis client' : 'À préparer',
-        group.boxes.length ? 'Contenu réel prouvé' : '',
-        'Colis client et carton transport sont deux enveloppes distinctes ; les affectations physiques conservent la filiation.',
-        false);
-      stageCell(row, group, 'Départ',
-        shipments.length ? shipments.length + ' expédition(s)' : 'Pas de départ',
-        shipments.length ? 'Rattachement prouvé' : '',
-        'Un carton rattaché à une expédition n’est pas nécessairement remis au transitaire. La preuve de remise reste distincte.',
-        false);
-      // Présenter simultanément le reliquat et le contrôle : une anomalie
-      // ne doit pas masquer un article encore attendu, et les deux nombres
-      // ne doivent pas être additionnés (ils peuvent concerner la même unité).
-      const remainingNotes = [];
-      if (anomalies) remainingNotes.push(formatNumber(anomalies) + ' à contrôler');
-      if (toSource) remainingNotes.push(formatNumber(toSource) + ' à sourcer');
-      if (openNeeds && pending) remainingNotes.push(formatNumber(openNeeds) + ' à acheter');
-      stageCell(row, group, 'Reste à solder',
-        pending ? formatNumber(pending) + ' non reçue(s)' :
-          anomalies ? formatNumber(anomalies) + ' à contrôler' :
-            shipments.length ? 'À suivre' : 'À préparer',
-        remainingNotes.join(' · '),
-        'Les unités non reçues restent suivies ; les anomalies à contrôler ne s’ajoutent pas automatiquement au reliquat. Aucun remboursement ni clôture automatique sans preuve canonique.',
-        anomalies > 0 || pending > 0);
-      tbody.appendChild(row);
-    });
+      } catch (error) {
+        cockpitHost.replaceChildren(text(doc, 'div', 'kmc-workspace-empty', 'Cockpit Hub illisible : rechargez la page (' + String((error && error.message) || error).slice(0, 120) + ').'));
+      }
+    }
+    // Tout ce qui suit (écarts, réceptions brutes, sacs, KOM-BOX, expéditions) est le panneau secondaire exhaustif.
+    const secondaryStart = rootNode.children.length;
     // La filiation détaillée est chargée à la demande, hors du tableau.
-    if (context.trace || context.traceError) renderTracePanel(ordersSlot, ui, doc, context);
     const points = d.to_handle || [];
     if (points.length) {
       const follow = doc.createElement('details');
@@ -1503,6 +1222,12 @@
         return [pick, box.reference, box.state, contents || '—', box.shipment_ref || '—', composeCell(box), action];
       }), 'Aucun carton.'));
 
+    const secondary = doc.createElement('details');
+    secondary.className = 'kmc-hub-physical-secondary';
+    secondary.setAttribute('data-hub-physical-details', '');
+    secondary.appendChild(text(doc, 'summary', '', 'Détails physiques exhaustifs · réceptions, sacs, KOM-BOX, expéditions'));
+    [...rootNode.children].slice(secondaryStart).forEach(node => secondary.appendChild(node));
+    rootNode.appendChild(secondary);
   }
 
   function createViewTabs(doc, activeView, onSelect, views = WORKSPACE_VIEWS) {

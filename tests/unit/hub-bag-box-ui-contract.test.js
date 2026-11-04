@@ -36,7 +36,7 @@ describe('Hub V1 — sac client physique / KOM-BOX / relais',()=>{
   test('POST de préparation autorisé seulement par le marché serveur et le rôle Hub',()=>{
     const i=routes.indexOf("'/market/:marketCode/bags',");
     expect(i).toBeGreaterThan(0);
-    const block=routes.slice(i,i+1300);
+    const block=routes.slice(i,i+3200);
     expect(block).toContain("attachHubExecutionCapability('execution.parcel.ship')");
     expect(block).toContain('requireHubWorkspaceAction');
     expect(block).toContain('market_id=$2');

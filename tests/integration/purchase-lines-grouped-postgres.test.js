@@ -71,6 +71,8 @@ describeDb('forme regroupée — migration 266 et services (REAL_DB)', () => {
           product_id uuid,
           quantity integer NOT NULL DEFAULT 1
         );
+        -- Décisions d'autorisation (migration 380) : le contenu d'une PO engagée est figé, le service le vérifie.
+        CREATE TABLE purchase_order_authorizations (purchase_order_id uuid NOT NULL, authorization_type text NOT NULL);
         CREATE TABLE purchase_orders (
           id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
           order_id uuid NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
