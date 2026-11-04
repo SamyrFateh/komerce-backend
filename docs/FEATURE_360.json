@@ -29253,7 +29253,7 @@
             ]
           },
           "tests": {
-            "count": 87,
+            "count": 88,
             "files": [
               {
                 "declared": "tests/e2e-api/purchasing.grouped-flow.e2e.test.js",
@@ -29343,6 +29343,11 @@
               {
                 "declared": "tests/integration/supplier-payment-settlements-real-db.test.js",
                 "resolvedPath": "tests/integration/supplier-payment-settlements-real-db.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/supplier-source-anomaly-postgres.test.js",
+                "resolvedPath": "tests/integration/supplier-source-anomaly-postgres.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -29693,7 +29698,7 @@
             ]
           }
         },
-        "totalFiles": 168,
+        "totalFiles": 169,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,

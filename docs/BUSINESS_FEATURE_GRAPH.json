@@ -18373,6 +18373,13 @@
       {
         "feature": "purchasing",
         "category": "tests",
+        "declared": "tests/integration/supplier-source-anomaly-postgres.test.js",
+        "resolvedPath": "tests/integration/supplier-source-anomaly-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
         "declared": "tests/unit/procurement-execution-context.test.js",
         "resolvedPath": "tests/unit/procurement-execution-context.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -45843,6 +45850,10 @@
                 "targetFile": "services/catalog-public-view.js"
               },
               {
+                "sourceFileId": "tests/integration/supplier-source-anomaly-postgres.test.js",
+                "targetFile": "services/catalog-public-view.js"
+              },
+              {
                 "sourceFileId": "tests/unit/allegro-seller-order-read.test.js",
                 "targetFile": "services/suppliers/allegro-sandbox-client.js"
               },
@@ -46084,6 +46095,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "tests/integration/supplier-source-anomaly-postgres.test.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "tests/integration/purchase-lines-grouped-postgres.test.js",
                 "targetFile": "db.js"
               },
@@ -46210,6 +46225,10 @@
               {
                 "sourceFileId": "services/purchasing-completion-service.js",
                 "targetFile": "services/scan-operations.js"
+              },
+              {
+                "sourceFileId": "tests/integration/supplier-source-anomaly-postgres.test.js",
+                "targetFile": "services/hub-procurement-dossier.js"
               },
               {
                 "sourceFileId": "tests/integration/hub-p0-procurement-chain-postgres.test.js",
@@ -48615,7 +48634,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2265
+        "filesObserved": 2266
       },
       "boutique": {
         "filesObserved": 214,

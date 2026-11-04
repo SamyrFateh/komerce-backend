@@ -590,7 +590,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - routes: 1
 - migrations: 14
 - scripts: 14
-- tests: 87
+- tests: 88
 - tables owned (lifecycle): 13 — `purchase_lines`, `purchase_orders`, `product_suppliers`, `purchase_order_authorizations`, `hub_authorization_grants`, `supplier_execution_payments`, `supplier_payment_settlements`, `suppliers`, `supplier_execution_events`, `supplier_execution_fulfillments`, `supplier_execution_order_lines`, `supplier_execution_orders`, `supplier_execution_payment_proofs`
 - tables written: 13
 - interfaces exposed: 20
@@ -2297,7 +2297,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 2265 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 2266 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 214 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 79 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -2608,12 +2608,12 @@ Meta Graph monté : oui.
 | providers-services | platform-ops | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | providers-services | recommendations | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | purchasing | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
-| purchasing | catalog | static-code, data-read | 20 | **DECLARED_AND_OBSERVED** |
+| purchasing | catalog | static-code, data-read | 21 | **DECLARED_AND_OBSERVED** |
 | purchasing | decision-signals | static-code | 1 | **OBSERVED_UNDECLARED** |
 | purchasing | economic-engine | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | purchasing | external-provider-contracts | static-code | 1 | **DECLARED_AND_OBSERVED** |
-| purchasing | infrastructure | static-code | 64 | **DECLARED_AND_OBSERVED** |
-| purchasing | logistics | static-code, data-read | 15 | **DECLARED_AND_OBSERVED** |
+| purchasing | infrastructure | static-code | 65 | **DECLARED_AND_OBSERVED** |
+| purchasing | logistics | static-code, data-read | 16 | **DECLARED_AND_OBSERVED** |
 | purchasing | notifications | static-code | 9 | **DECLARED_AND_OBSERVED** |
 | purchasing | orders | static-code, data-read | 8 | **DECLARED_AND_OBSERVED** |
 | purchasing | sourcing | static-code | 4 | **DECLARED_AND_OBSERVED** |
