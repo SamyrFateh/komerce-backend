@@ -1061,6 +1061,13 @@
       },
       {
         "feature": "auth-identity",
+        "category": "scripts",
+        "declared": "scripts/recette/l10-invite-e2e-identities.js",
+        "resolvedPath": "scripts/recette/l10-invite-e2e-identities.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "auth-identity",
         "category": "services",
         "declared": "services/otp-test-mode.js",
         "resolvedPath": "services/otp-test-mode.js",
@@ -1071,6 +1078,27 @@
         "category": "services",
         "declared": "services/user-mutation-service.js",
         "resolvedPath": "services/user-mutation-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "auth-identity",
+        "category": "services",
+        "declared": "services/credential-action-store.js",
+        "resolvedPath": "services/credential-action-store.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "auth-identity",
+        "category": "services",
+        "declared": "services/credential-invitation-email.js",
+        "resolvedPath": "services/credential-invitation-email.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "auth-identity",
+        "category": "services",
+        "declared": "services/credential-link-token.js",
+        "resolvedPath": "services/credential-link-token.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -1138,6 +1166,13 @@
       },
       {
         "feature": "auth-identity",
+        "category": "utils",
+        "declared": "utils/credential-session-guard.js",
+        "resolvedPath": "utils/credential-session-guard.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "auth-identity",
         "category": "migrations",
         "declared": "migrations/121_exceptional_pickup_authorization.sql",
         "resolvedPath": "migrations/121_exceptional_pickup_authorization.sql",
@@ -1148,6 +1183,27 @@
         "category": "migrations",
         "declared": "migrations/158_market_operator_user_role.sql",
         "resolvedPath": "migrations/158_market_operator_user_role.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "auth-identity",
+        "category": "migrations",
+        "declared": "migrations/367_credential_action_tokens.sql",
+        "resolvedPath": "migrations/367_credential_action_tokens.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "auth-identity",
+        "category": "migrations",
+        "declared": "migrations/368_internal_account_activation.sql",
+        "resolvedPath": "migrations/368_internal_account_activation.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "auth-identity",
+        "category": "tests",
+        "declared": "tests/unit/l10-invite-e2e-identities.test.js",
+        "resolvedPath": "tests/unit/l10-invite-e2e-identities.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -1183,6 +1239,27 @@
         "category": "tests",
         "declared": "tests/unit/user-mutation-service.test.js",
         "resolvedPath": "tests/unit/user-mutation-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "auth-identity",
+        "category": "tests",
+        "declared": "tests/unit/credential-action-store.test.js",
+        "resolvedPath": "tests/unit/credential-action-store.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "auth-identity",
+        "category": "tests",
+        "declared": "tests/unit/credential-link-token.test.js",
+        "resolvedPath": "tests/unit/credential-link-token.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "auth-identity",
+        "category": "tests",
+        "declared": "tests/unit/credential-session-guard.test.js",
+        "resolvedPath": "tests/unit/credential-session-guard.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -4079,6 +4156,13 @@
       {
         "feature": "catalog",
         "category": "tests",
+        "declared": "tests/unit/scan-engine-refund-pending.test.js",
+        "resolvedPath": "tests/unit/scan-engine-refund-pending.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
         "declared": "tests/unit/catalog-public-view.test.js",
         "resolvedPath": "tests/unit/catalog-public-view.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -5395,6 +5479,20 @@
       {
         "feature": "dashboard",
         "category": "dash",
+        "declared": "dashboards/canonical/js/hub-live-cockpit.js",
+        "resolvedPath": "public/dashboards/canonical/js/hub-live-cockpit.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/css/hub-live-cockpit.css",
+        "resolvedPath": "public/dashboards/canonical/css/hub-live-cockpit.css",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
         "declared": "dashboards/canonical/js/primitives.js",
         "resolvedPath": "public/dashboards/canonical/js/primitives.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -6424,6 +6522,20 @@
       {
         "feature": "dashboard",
         "category": "tests",
+        "declared": "tests/unit/staging-five-market-matrix.test.js",
+        "resolvedPath": "tests/unit/staging-five-market-matrix.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/staging-business/market-chromium-real-readonly.spec.js",
+        "resolvedPath": "tests/staging-business/market-chromium-real-readonly.spec.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
         "declared": "tests/integration/signal-simulation-scope-postgres.test.js",
         "resolvedPath": "tests/integration/signal-simulation-scope-postgres.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -6594,6 +6706,20 @@
         "category": "tests",
         "declared": "tests/e2e/hub-live-supply.spec.js",
         "resolvedPath": "tests/e2e/hub-live-supply.spec.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/e2e/hub-live-flux-cockpit.spec.js",
+        "resolvedPath": "tests/e2e/hub-live-flux-cockpit.spec.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/e2e/fixtures/hub-cockpit-shape.js",
+        "resolvedPath": "tests/e2e/fixtures/hub-cockpit-shape.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -12766,6 +12892,34 @@
       {
         "feature": "logistics",
         "category": "migrations",
+        "declared": "migrations/391_hub_sku_physical_codes.sql",
+        "resolvedPath": "migrations/391_hub_sku_physical_codes.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "migrations",
+        "declared": "migrations/392_hub_order_bag_ownership.sql",
+        "resolvedPath": "migrations/392_hub_order_bag_ownership.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "migrations",
+        "declared": "migrations/393_hub_order_bag_scan_evidence.sql",
+        "resolvedPath": "migrations/393_hub_order_bag_scan_evidence.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "migrations",
+        "declared": "migrations/394_hub_packed_bag_box_link.sql",
+        "resolvedPath": "migrations/394_hub_packed_bag_box_link.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "migrations",
         "declared": "migrations/309_hub_placement_guard_exclude_outcomes.sql",
         "resolvedPath": "migrations/309_hub_placement_guard_exclude_outcomes.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -13116,6 +13270,20 @@
       {
         "feature": "logistics",
         "category": "services",
+        "declared": "services/hub-physical-codes.js",
+        "resolvedPath": "services/hub-physical-codes.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "logistics",
+        "category": "services",
+        "declared": "services/hub-bag-box-service.js",
+        "resolvedPath": "services/hub-bag-box-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "logistics",
+        "category": "services",
         "declared": "services/order-physical-coverage-service.js",
         "resolvedPath": "services/order-physical-coverage-service.js",
         "status": "resolved-in-technical-graph"
@@ -13160,6 +13328,13 @@
         "category": "services",
         "declared": "services/international-shipment-journey.js",
         "resolvedPath": "services/international-shipment-journey.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "logistics",
+        "category": "services",
+        "declared": "services/parcel-shipment-handover.js",
+        "resolvedPath": "services/parcel-shipment-handover.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -13326,6 +13501,20 @@
       {
         "feature": "logistics",
         "category": "tests",
+        "declared": "tests/integration/hub-live-cockpit-postgres.test.js",
+        "resolvedPath": "tests/integration/hub-live-cockpit-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/e2e-api/logistics.hub-live-cockpit-roles.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/logistics.hub-live-cockpit-roles.e2e.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
         "declared": "tests/integration/hub-physical-proof-postgres.test.js",
         "resolvedPath": "tests/integration/hub-physical-proof-postgres.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -13375,6 +13564,13 @@
       {
         "feature": "logistics",
         "category": "tests",
+        "declared": "tests/unit/hub-unsourced-order-dossier.test.js",
+        "resolvedPath": "tests/unit/hub-unsourced-order-dossier.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
         "declared": "tests/e2e-api/orders.pickup-code-vs-authorized-name.e2e.test.js",
         "resolvedPath": "tests/e2e-api/orders.pickup-code-vs-authorized-name.e2e.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -13384,6 +13580,27 @@
         "category": "tests",
         "declared": "tests/integration/hub-physical-identity-postgres.test.js",
         "resolvedPath": "tests/integration/hub-physical-identity-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/integration/hub-order-bag-ownership-postgres.test.js",
+        "resolvedPath": "tests/integration/hub-order-bag-ownership-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/unit/hub-physical-codes.test.js",
+        "resolvedPath": "tests/unit/hub-physical-codes.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/unit/hub-bag-box-ui-contract.test.js",
+        "resolvedPath": "tests/unit/hub-bag-box-ui-contract.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -13825,6 +14042,13 @@
         "category": "tests",
         "declared": "tests/unit/international-shipment-journey.test.js",
         "resolvedPath": "tests/unit/international-shipment-journey.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/unit/parcel-shipment-handover.test.js",
+        "resolvedPath": "tests/unit/parcel-shipment-handover.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -14558,6 +14782,13 @@
       {
         "feature": "market-control-plane",
         "category": "scripts",
+        "declared": "scripts/recette/dj-canonical-activation.js",
+        "resolvedPath": "scripts/recette/dj-canonical-activation.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-control-plane",
+        "category": "scripts",
         "declared": "scripts/cm-cg-market-delegation-audit.js",
         "resolvedPath": "scripts/cm-cg-market-delegation-audit.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -14596,6 +14827,13 @@
         "declared": "routes/admin-market-control-plane.js",
         "resolvedPath": "routes/admin-market-control-plane.js",
         "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "market-control-plane",
+        "category": "tests",
+        "declared": "tests/unit/dj-canonical-activation.test.js",
+        "resolvedPath": "tests/unit/dj-canonical-activation.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
         "feature": "market-control-plane",
@@ -14826,6 +15064,13 @@
         "category": "migrations",
         "declared": "migrations/212_market_delegation_execution_ceiling.sql",
         "resolvedPath": "migrations/212_market_delegation_execution_ceiling.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "migrations",
+        "declared": "migrations/390_retire_mark_ordered_capability.sql",
+        "resolvedPath": "migrations/390_retire_mark_ordered_capability.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -15412,6 +15657,20 @@
       {
         "feature": "market-delegation",
         "category": "tests",
+        "declared": "tests/integration/retired-mark-ordered-capability-postgres.test.js",
+        "resolvedPath": "tests/integration/retired-mark-ordered-capability-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "tests",
+        "declared": "tests/unit/retired-mark-ordered-capability.test.js",
+        "resolvedPath": "tests/unit/retired-mark-ordered-capability.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "tests",
         "declared": "tests/e2e-api/market-delegation.structure.e2e.test.js",
         "resolvedPath": "tests/e2e-api/market-delegation.structure.e2e.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -15937,6 +16196,13 @@
       {
         "feature": "orders",
         "category": "services",
+        "declared": "services/order-item-refund-settlement.js",
+        "resolvedPath": "services/order-item-refund-settlement.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "orders",
+        "category": "services",
         "declared": "services/order-mutation-service.js",
         "resolvedPath": "services/order-mutation-service.js",
         "status": "resolved-in-technical-graph"
@@ -16247,6 +16513,13 @@
         "category": "tests",
         "declared": "tests/unit/order-item-availability-service.test.js",
         "resolvedPath": "tests/unit/order-item-availability-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "orders",
+        "category": "tests",
+        "declared": "tests/unit/order-item-refund-settlement.test.js",
+        "resolvedPath": "tests/unit/order-item-refund-settlement.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -18681,6 +18954,20 @@
       {
         "feature": "refunds",
         "category": "services",
+        "declared": "services/item-refund-reservation-service.js",
+        "resolvedPath": "services/item-refund-reservation-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "refunds",
+        "category": "services",
+        "declared": "services/item-refund-psp-orchestrator.js",
+        "resolvedPath": "services/item-refund-psp-orchestrator.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "refunds",
+        "category": "services",
         "declared": "services/refund-intent-ledger.js",
         "resolvedPath": "services/refund-intent-ledger.js",
         "status": "resolved-in-technical-graph"
@@ -18718,6 +19005,27 @@
         "category": "tests",
         "declared": "tests/unit/refund-service.test.js",
         "resolvedPath": "tests/unit/refund-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "refunds",
+        "category": "tests",
+        "declared": "tests/unit/item-refund-reservation-service.test.js",
+        "resolvedPath": "tests/unit/item-refund-reservation-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "refunds",
+        "category": "tests",
+        "declared": "tests/unit/item-refund-psp-orchestrator.test.js",
+        "resolvedPath": "tests/unit/item-refund-psp-orchestrator.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "refunds",
+        "category": "tests",
+        "declared": "tests/e2e-api/refunds.item-partial-physical.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/refunds.item-partial-physical.e2e.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -21206,6 +21514,30 @@
         "entry": "PUT /api/auth/me/password",
         "method": "PUT",
         "path": "/api/auth/me/password",
+        "routeFile": "routes/auth.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "auth-identity",
+        "entry": "POST /api/auth/activate-account",
+        "method": "POST",
+        "path": "/api/auth/activate-account",
+        "routeFile": "routes/auth.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "auth-identity",
+        "entry": "POST /api/auth/password-reset/request",
+        "method": "POST",
+        "path": "/api/auth/password-reset/request",
+        "routeFile": "routes/auth.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "auth-identity",
+        "entry": "POST /api/auth/password-reset/confirm",
+        "method": "POST",
+        "path": "/api/auth/password-reset/confirm",
         "routeFile": "routes/auth.js",
         "status": "resolved-owned"
       },
@@ -26229,6 +26561,12 @@
       },
       {
         "feature": "auth-identity",
+        "fn": "markUserPendingActivation",
+        "file": "services/user-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "auth-identity",
         "fn": "setUserRole",
         "file": "services/user-mutation-service.js",
         "status": "resolved"
@@ -29363,6 +29701,18 @@
       },
       {
         "from": "refunds",
+        "to": "logistics",
+        "raw": "logistics (attestation physique du manquant au relais ; source incident immuable)",
+        "resolved": true
+      },
+      {
+        "from": "refunds",
+        "to": "payments",
+        "raw": "payments (capture PSP, intention durable et réconciliation du remboursement en EUR)",
+        "resolved": true
+      },
+      {
+        "from": "refunds",
         "to": "wallet",
         "raw": "wallet (credit)",
         "resolved": true
@@ -32388,6 +32738,22 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "middleware/auth.js",
+                "targetFile": "utils/credential-session-guard.js"
+              },
+              {
+                "sourceFileId": "middleware/auth-guest.js",
+                "targetFile": "utils/credential-session-guard.js"
+              },
+              {
+                "sourceFileId": "middleware/soft-auth.js",
+                "targetFile": "utils/credential-session-guard.js"
+              },
+              {
+                "sourceFileId": "middleware/require-verified-identity.js",
+                "targetFile": "utils/credential-session-guard.js"
+              },
+              {
                 "sourceFileId": "tests/unit/auth-route.test.js",
                 "targetFile": "routes/auth.js"
               },
@@ -32642,6 +33008,10 @@
           {
             "channel": "static-code",
             "evidence": [
+              {
+                "sourceFileId": "scripts/recette/l10-invite-e2e-identities.js",
+                "targetFile": "db.js"
+              },
               {
                 "sourceFileId": "services/pickup-authorization-service.js",
                 "targetFile": "db.js"
@@ -33764,6 +34134,10 @@
               },
               {
                 "sourceFileId": "tests/unit/scan-engine-extras.test.js",
+                "targetFile": "services/scan-engine.js"
+              },
+              {
+                "sourceFileId": "tests/unit/scan-engine-refund-pending.test.js",
                 "targetFile": "services/scan-engine.js"
               },
               {
@@ -34933,7 +35307,23 @@
               },
               {
                 "sourceFileId": "routes/admin/users.js",
+                "targetFile": "services/credential-action-store.js"
+              },
+              {
+                "sourceFileId": "routes/admin/users.js",
+                "targetFile": "services/credential-invitation-email.js"
+              },
+              {
+                "sourceFileId": "routes/admin/users.js",
                 "targetFile": "services/user-mutation-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/users.test.js",
+                "targetFile": "services/credential-action-store.js"
+              },
+              {
+                "sourceFileId": "tests/unit/users.test.js",
+                "targetFile": "services/credential-invitation-email.js"
               }
             ]
           },
@@ -35826,6 +36216,14 @@
               },
               {
                 "sourceFileId": "routes/admin-operations-workspace.js",
+                "targetFile": "services/hub-bag-box-service.js"
+              },
+              {
+                "sourceFileId": "routes/admin-operations-workspace.js",
+                "targetFile": "services/hub-physical-identity.js"
+              },
+              {
+                "sourceFileId": "routes/admin-operations-workspace.js",
                 "targetFile": "services/hub-operations.js"
               },
               {
@@ -35835,6 +36233,10 @@
               {
                 "sourceFileId": "routes/admin-operations-workspace.js",
                 "targetFile": "services/relay-shipment-receipt.js"
+              },
+              {
+                "sourceFileId": "routes/admin-operations-workspace.js",
+                "targetFile": "services/hub-physical-codes.js"
               },
               {
                 "sourceFileId": "routes/admin-shipping-customs-workspace.js",
@@ -39629,6 +40031,10 @@
                 "targetFile": "services/outbox-producer.js"
               },
               {
+                "sourceFileId": "services/hub-bag-box-service.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "services/routing.js",
                 "targetFile": "utils/logger.js"
               },
@@ -39797,6 +40203,10 @@
                 "targetFile": "validators/index.js"
               },
               {
+                "sourceFileId": "tests/integration/hub-live-cockpit-postgres.test.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "tests/integration/hub-physical-proof-postgres.test.js",
                 "targetFile": "db.js"
               },
@@ -39806,6 +40216,10 @@
               },
               {
                 "sourceFileId": "tests/integration/market-transport-sale-rates-postgres.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/hub-order-bag-ownership-postgres.test.js",
                 "targetFile": "db.js"
               },
               {
@@ -40287,11 +40701,31 @@
                 "targetFile": "services/hub-administration-board.js"
               },
               {
+                "sourceFileId": "tests/integration/hub-live-cockpit-postgres.test.js",
+                "targetFile": "services/purchasing-grouped-service.js"
+              },
+              {
+                "sourceFileId": "tests/integration/hub-live-cockpit-postgres.test.js",
+                "targetFile": "services/purchasing-engagement-service.js"
+              },
+              {
+                "sourceFileId": "tests/integration/hub-live-cockpit-postgres.test.js",
+                "targetFile": "services/hub-authorization-service.js"
+              },
+              {
                 "sourceFileId": "tests/integration/hub-physical-proof-postgres.test.js",
                 "targetFile": "services/purchasing-grouped-service.js"
               },
               {
                 "sourceFileId": "tests/integration/hub-physical-proof-postgres.test.js",
+                "targetFile": "services/purchasing-engagement-service.js"
+              },
+              {
+                "sourceFileId": "tests/integration/hub-order-bag-ownership-postgres.test.js",
+                "targetFile": "services/purchasing-grouped-service.js"
+              },
+              {
+                "sourceFileId": "tests/integration/hub-order-bag-ownership-postgres.test.js",
                 "targetFile": "services/purchasing-engagement-service.js"
               }
             ]
@@ -40305,6 +40739,14 @@
               },
               {
                 "table": "product_suppliers",
+                "mode": "R"
+              },
+              {
+                "table": "purchase_order_authorizations",
+                "mode": "R"
+              },
+              {
+                "table": "hub_authorization_grants",
                 "mode": "R"
               }
             ]
@@ -40927,6 +41369,10 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "scripts/recette/dj-canonical-activation.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "scripts/cm-cg-market-delegation-audit.js",
                 "targetFile": "db.js"
               },
@@ -41419,6 +41865,10 @@
               },
               {
                 "sourceFileId": "tests/unit/market-delegation-market-config-route.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/retired-mark-ordered-capability-postgres.test.js",
                 "targetFile": "db.js"
               }
             ]
@@ -43243,6 +43693,14 @@
               {
                 "sourceFileId": "services/admin-order-refund.js",
                 "targetFile": "services/refund-service.js"
+              },
+              {
+                "sourceFileId": "routes/admin/orders.js",
+                "targetFile": "services/item-refund-reservation-service.js"
+              },
+              {
+                "sourceFileId": "routes/admin/orders.js",
+                "targetFile": "services/item-refund-psp-orchestrator.js"
               },
               {
                 "sourceFileId": "routes/orders/cancel.js",
@@ -46264,6 +46722,14 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "services/item-refund-reservation-service.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/item-refund-psp-orchestrator.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "services/refund-intent-ledger.js",
                 "targetFile": "db.js"
               },
@@ -46282,6 +46748,22 @@
       },
       {
         "from": "refunds",
+        "to": "logistics",
+        "channels": [
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "international_shipment_relay_receipts",
+                "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "refunds",
         "to": "orders",
         "channels": [
           {
@@ -46290,6 +46772,10 @@
               {
                 "sourceFileId": "services/refund-service.js",
                 "targetFile": "services/order-fx-snapshot.js"
+              },
+              {
+                "sourceFileId": "services/item-refund-psp-orchestrator.js",
+                "targetFile": "services/order-item-refund-settlement.js"
               },
               {
                 "sourceFileId": "tests/e2e-api/refunds.no-double-application.e2e.test.js",
@@ -46309,6 +46795,10 @@
             "channel": "data-read",
             "evidence": [
               {
+                "table": "order_items",
+                "mode": "R"
+              },
+              {
                 "table": "orders",
                 "mode": "R"
               }
@@ -46325,13 +46815,17 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "services/item-refund-psp-orchestrator.js",
+                "targetFile": "services/paypal-client.js"
+              },
+              {
                 "sourceFileId": "tests/e2e-api/refunds.no-double-application.e2e.test.js",
                 "targetFile": "routes/payments.js"
               }
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "refunds",
@@ -48023,7 +48517,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2224
+        "filesObserved": 2260
       },
       "boutique": {
         "filesObserved": 214,
@@ -48059,7 +48553,7 @@
     "familySummary": {
       "PROJECTION": 0,
       "COMPOSITION_ROOT_WIRING": 20,
-      "NON_RUNTIME_TEST": 19,
+      "NON_RUNTIME_TEST": 18,
       "TECHNICAL_PRIMITIVE": 0,
       "BUSINESS_TRANSVERSAL_SERVICE": 0,
       "CROSS_FEATURE_DIRECT_IMPORT": 0,
@@ -48594,21 +49088,6 @@
         "exceptionReasons": []
       },
       {
-        "from": "refunds",
-        "to": "payments",
-        "family": "NON_RUNTIME_TEST",
-        "evidenceRole": "TEST_ONLY",
-        "consumerKind": "business-transversal",
-        "providerKind": "business-feature",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "non-runtime-evidence",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
         "from": "sourcing",
         "to": "purchasing",
         "family": "NON_RUNTIME_TEST",
@@ -48656,7 +49135,7 @@
     ],
     "unclassified": [],
     "matrix": {
-      "NON_RUNTIME_TEST|TEST_ONLY|business-transversal|business-feature|business-file-import": 2,
+      "NON_RUNTIME_TEST|TEST_ONLY|business-transversal|business-feature|business-file-import": 1,
       "NON_RUNTIME_TEST|TEST_ONLY|business-transversal|frontend-transversal|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-feature|business-file-import": 8,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|import-mixed": 1,
@@ -48818,6 +49297,7 @@
         "platform-ops",
         "purchasing",
         "recommendations",
+        "refunds",
         "shared-cart"
       ],
       "lifecycleOwner": "orders",
@@ -48987,6 +49467,19 @@
       ],
       "lifecycleOwner": "logistics",
       "resolution": "declared-table-owner"
+    },
+    "credential_action_tokens": {
+      "writers": [
+        {
+          "feature": "auth-identity",
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "auth-identity",
+      "resolution": "single-writer"
     },
     "user_pickup_authorizations": {
       "writers": [
@@ -50699,6 +51192,19 @@
       "lifecycleOwner": "logistics",
       "resolution": "declared-table-owner"
     },
+    "hub_box_bags": {
+      "writers": [
+        {
+          "feature": "logistics",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "logistics",
+      "resolution": "declared-table-owner"
+    },
     "international_shipment_charges": {
       "writers": [
         {
@@ -50747,7 +51253,9 @@
           "technical": false
         }
       ],
-      "readers": [],
+      "readers": [
+        "refunds"
+      ],
       "lifecycleOwner": "logistics",
       "resolution": "declared-table-owner"
     },
@@ -50804,6 +51312,49 @@
       ],
       "lifecycleOwner": "purchasing",
       "resolution": "single-writer"
+    },
+    "product_sku_physical_codes": {
+      "writers": [
+        {
+          "feature": "logistics",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "logistics",
+      "resolution": "declared-table-owner"
+    },
+    "purchase_order_authorizations": {
+      "writers": [
+        {
+          "feature": "purchasing",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [
+        "logistics"
+      ],
+      "lifecycleOwner": "purchasing",
+      "resolution": "declared-table-owner"
+    },
+    "hub_authorization_grants": {
+      "writers": [
+        {
+          "feature": "purchasing",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [
+        "logistics"
+      ],
+      "lifecycleOwner": "purchasing",
+      "resolution": "declared-table-owner"
     },
     "shipments": {
       "writers": [
@@ -51426,32 +51977,6 @@
       "lifecycleOwner": "purchasing",
       "resolution": "single-writer"
     },
-    "hub_authorization_grants": {
-      "writers": [
-        {
-          "feature": "purchasing",
-          "mode": "RW",
-          "declaredOwner": true,
-          "technical": false
-        }
-      ],
-      "readers": [],
-      "lifecycleOwner": "purchasing",
-      "resolution": "declared-table-owner"
-    },
-    "purchase_order_authorizations": {
-      "writers": [
-        {
-          "feature": "purchasing",
-          "mode": "RW",
-          "declaredOwner": true,
-          "technical": false
-        }
-      ],
-      "readers": [],
-      "lifecycleOwner": "purchasing",
-      "resolution": "declared-table-owner"
-    },
     "supplier_execution_events": {
       "writers": [
         {
@@ -51518,6 +52043,19 @@
       "resolution": "declared-table-owner"
     },
     "refund_execution_intents": {
+      "writers": [
+        {
+          "feature": "refunds",
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "refunds",
+      "resolution": "single-writer"
+    },
+    "order_item_refund_reservations": {
       "writers": [
         {
           "feature": "refunds",
@@ -51844,8 +52382,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 672,
-        "technicalNodesOwned": 672,
+        "technicalNodesTotal": 682,
+        "technicalNodesOwned": 682,
         "technicalOrphans": 0
       },
       "dash": {
@@ -52196,11 +52734,6 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "refunds -> payments",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"refunds\" vers \"payments\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "sourcing -> purchasing",
         "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"sourcing\" vers \"purchasing\""
       },
@@ -52325,9 +52858,9 @@
     "summary": {
       "signals": 6,
       "debt": 6,
-      "expectedTopology": 50,
+      "expectedTopology": 49,
       "generatorLimitations": 12,
-      "classifiedCandidates": 68
+      "classifiedCandidates": 67
     }
   }
 }

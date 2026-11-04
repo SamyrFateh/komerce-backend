@@ -9,6 +9,7 @@
 const fs = require('fs');
 const path = require('path');
 const { test, expect } = require('@playwright/test');
+const { shapeDossier } = require('./fixtures/hub-cockpit-shape');
 
 const CANONICAL = path.join(__dirname, '..', '..', 'public', 'dashboards', 'canonical');
 const FX = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'pricing-atelier-km.json'), 'utf8'));
@@ -157,7 +158,7 @@ async function mount(page, { posts = [], failShip = false, receiveReply = null, 
     if (url.pathname === '/api/auth/me') return json(FX.auth_me);
     if (url.pathname === '/api/admin/dashboard/context') return json(FX.context);
     if (url.pathname === API) return json(emptyDistribution ? { ...WORKSPACE, distribution: { unassigned: [] } } : WORKSPACE);
-    if (url.pathname === `${API}/supply`) return json(dossier);
+    if (url.pathname === `${API}/supply`) return json(dossier.cockpit ? dossier : shapeDossier(dossier));
     if (url.pathname === `${API}/supply/physical-code`) {
       return url.searchParams.get('code') === PHYSICAL_CODE
         ? json({ product_sku_id: SKU_ID, purchase_order_id: PO_ID, confirmed: true, code: PHYSICAL_CODE })
@@ -198,42 +199,30 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       await expect(page.locator('[data-workspace-action="confirm-cash"], [data-workspace-action="receive"], [data-workspace-action="collect"]')).toHaveCount(0);
     });
 
-    test('entrée Hub : tableau compact, PO multiples et absence de preuves inventées', async ({ page }) => {
+    test('entrée Hub : cockpit flux du besoin, PO multiples et absence de preuves inventées', async ({ page }) => {
       const posts = [];
       await mount(page, { view: null, posts });
       await expect(page.locator('[data-workspace-view="supply"]')).toHaveAttribute('aria-selected', 'true');
-      await expect(page.locator('[data-hub-work-orders] [data-hub-order]')).toHaveCount(2);
-      await expect(page.locator('[data-hub-work-orders] [data-hub-order]').last()).toContainText('K-ORDER-2');
-      await expect(page.locator('[data-hub-work-orders] .kmc-hub-board thead')).toContainText('Reste à solder');
-      await expect(page.locator('[data-hub-work-orders] .kmc-hub-board thead')).toContainText('Fournisseur');
+      await expect(page.locator('[data-hub-cockpit] [data-hlc-zone]')).toHaveCount(3);
+      await expect(page.locator('[data-hlc-order]')).toHaveCount(1);
       await expect(page.locator('[data-hub-dossier-home] [data-metric-key="hub-remaining"]')).toContainText('3');
-      const row = page.locator('[data-hub-order="9d141f3c-0035-497b-8c60-3bf3808867a1"]');
-      await expect(row).toContainText('2 PO liées');
-      await expect(row).toContainText('4 reçu(s)');
-      await expect(row).toContainText('3 non reçue(s)');
-      await expect(row).toContainText('1 à contrôler');
-      await expect(row).toContainText('1 KOM-BOX');
-      await expect(row).not.toContainText('Coque téléphone');
-      await expect(row).not.toContainText('Remboursé');
-      await row.locator('[data-hub-stage="Réception"]').click();
-      await expect(page.locator('[data-hub-context-menu]')).toBeVisible();
-      await expect(page.locator('[data-hub-context-menu]')).toContainText('Réceptionner une PO');
-      await expect(page.locator('[data-hub-context-menu]')).toContainText('Voir les preuves / la filiation');
-      await page.locator('[data-hub-context-menu]').getByRole('button', { name: 'Voir les preuves / la filiation' }).click();
-      await expect(page.locator('[data-supply-trace]')).toContainText('SUP-1');
+      const card = page.locator('[data-hlc-order="9d141f3c-0035-497b-8c60-3bf3808867a1"]');
+      await expect(card).toContainText('K-ORDER-1');
+      await expect(card.locator('.hlc-nums')).toContainText('4 reçu');
+      await expect(card.locator('.hlc-nums')).toContainText('3 reste à livrer');
+      await expect(card).not.toContainText('Remboursé');
+      await expect(page.locator('[data-hlc-po]')).toHaveCount(2);
+      await expect(page.locator('.hlc-table, table.kmc-hub-board')).toHaveCount(0);
       expect(posts).toHaveLength(0);
     });
 
-    test('L8 : une commande payée sans lignes reste visible et le clic droit ouvre le sourcing', async ({ page }) => {
+    test('L8 : une commande payée sans lignes reste visible et le geste ouvre le sourcing', async ({ page }) => {
       const posts = [];
       await mount(page, { view: null, dossier: UNSOURCED_DOSSIER, posts });
-      const row = page.locator('[data-hub-order="cf9520d0-84ff-4fe1-ab9b-a5e972b1365b"]');
-      await expect(row.locator('[data-hub-stage="PO"]')).toContainText('Sourcing requis');
-      await expect(row.locator('[data-hub-stage="PO"]')).toContainText('3 unité(s) sans achat');
-      await row.locator('[data-hub-stage="PO"]').click({ button: 'right' });
-      await expect(page.locator('[data-hub-context-menu]')).toContainText('Résoudre le sourcing / créer un achat manuel');
-      await page.locator('[data-hub-context-menu]').getByRole('button',
-        { name: 'Résoudre le sourcing / créer un achat manuel' }).click();
+      const card = page.locator('[data-hlc-order="cf9520d0-84ff-4fe1-ab9b-a5e972b1365b"]');
+      await expect(card.locator('[data-hlc-order-state]')).toContainText('Sourcing requis');
+      await expect(card.locator('.hlc-nums')).toContainText('3 non couvert');
+      await card.locator('[data-hlc-action="resolve-sourcing"]').click();
       await expect(page.locator('[data-hub-sourcing-form="KRGNX5O"]')).toBeVisible();
       await expect(page.locator('[data-sourcing-item] option')).toHaveCount(2);
       expect(posts).toHaveLength(0); // aucun achat créé par le simple clic
@@ -242,9 +231,7 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
     test('L8 UX : sourcing en deux zones lisibles, responsive et fermable sans écriture', async ({ page }) => {
       const posts = [];
       await mount(page, { view: null, dossier: UNSOURCED_DOSSIER, posts });
-      await page.locator('[data-hub-order="cf9520d0-84ff-4fe1-ab9b-a5e972b1365b"] [data-hub-stage="PO"]').click();
-      await page.locator('[data-hub-context-menu]').getByRole('button',
-        { name: 'Résoudre le sourcing / créer un achat manuel' }).click();
+      await page.locator('[data-hlc-order="cf9520d0-84ff-4fe1-ab9b-a5e972b1365b"] [data-hlc-action="resolve-sourcing"]').click();
 
       const panel = page.locator('[data-hub-sourcing-recovery]');
       const form = panel.locator('[data-hub-sourcing-form="KRGNX5O"]');
@@ -288,9 +275,7 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
     test('L8 : création via fournisseur + mapping + ligne manuelle, sans PO envoyée ni doublon', async ({ page }) => {
       const posts = [];
       await mount(page, { view: null, dossier: UNSOURCED_DOSSIER, posts });
-      await page.locator('[data-hub-order="cf9520d0-84ff-4fe1-ab9b-a5e972b1365b"] [data-hub-stage="PO"]').click();
-      await page.locator('[data-hub-context-menu]').getByRole('button',
-        { name: 'Résoudre le sourcing / créer un achat manuel' }).click();
+      await page.locator('[data-hlc-order="cf9520d0-84ff-4fe1-ab9b-a5e972b1365b"] [data-hlc-action="resolve-sourcing"]').click();
       const form = page.locator('[data-hub-sourcing-form="KRGNX5O"]');
       await expect(form.locator('[data-sourcing-supplier]')).toBeEnabled();
       await form.locator('[data-sourcing-name]').fill('Fournisseur local de recette');
@@ -324,9 +309,7 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
           matching_product_supplier_id: 'mapping-existing-1', owner_scope: null,
         }],
       });
-      await page.locator('[data-hub-order="cf9520d0-84ff-4fe1-ab9b-a5e972b1365b"] [data-hub-stage="PO"]').click();
-      await page.locator('[data-hub-context-menu]').getByRole('button',
-        { name: 'Résoudre le sourcing / créer un achat manuel' }).click();
+      await page.locator('[data-hlc-order="cf9520d0-84ff-4fe1-ab9b-a5e972b1365b"] [data-hlc-action="resolve-sourcing"]').click();
       const form = page.locator('[data-hub-sourcing-form="KRGNX5O"]');
       await expect(form.locator('[data-sourcing-supplier]')).toBeEnabled();
       await form.locator('[data-sourcing-supplier]').selectOption('supplier-existing-1');
@@ -355,9 +338,7 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
           matching_product_supplier_id: 'mapping-existing-1', owner_scope: null,
         }],
       });
-      await page.locator('[data-hub-order="cf9520d0-84ff-4fe1-ab9b-a5e972b1365b"] [data-hub-stage="PO"]').click();
-      await page.locator('[data-hub-context-menu]').getByRole('button',
-        { name: 'Résoudre le sourcing / créer un achat manuel' }).click();
+      await page.locator('[data-hlc-order="cf9520d0-84ff-4fe1-ab9b-a5e972b1365b"] [data-hlc-action="resolve-sourcing"]').click();
       const form = page.locator('[data-hub-sourcing-form="KRGNX5O"]');
       await expect(form.locator('[data-sourcing-supplier]')).toBeEnabled();
       await form.locator('[data-sourcing-supplier]').selectOption('supplier-existing-1');
@@ -368,40 +349,27 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       expect(posts.filter(p => p.path === '/api/purchasing/lines')).toHaveLength(1);
     });
 
-    test('clic droit et clavier : actions contextuelles, sans mutation implicite', async ({ page }) => {
+    test('clavier : Entrée sélectionne la commande et relie ses PO, sans mutation implicite', async ({ page }) => {
       const posts = [];
       await mount(page, { view: null, posts });
-      const row = page.locator('[data-hub-order="9d141f3c-0035-497b-8c60-3bf3808867a1"]');
-      await row.locator('[data-hub-stage="PO"]').click({ button: 'right' });
-      await expect(page.locator('[data-hub-context-menu]')).toContainText('Ouvrir les achats fournisseurs');
-      await expect(page.locator('[data-hub-context-menu] a').first()).toHaveAttribute('href', '/admin/workspaces/purchasing?market=KM');
-      await page.keyboard.press('Escape');
-      await expect(page.locator('[data-hub-context-menu]')).toBeHidden();
-      await row.locator('[data-hub-stage="Réception"]').focus();
+      const card = page.locator('[data-hlc-order="9d141f3c-0035-497b-8c60-3bf3808867a1"]');
+      await card.focus();
       await page.keyboard.press('Enter');
-      await expect(page.locator('[data-hub-context-menu]')).toBeVisible();
-      await page.locator('[data-hub-context-menu]').getByRole('button', { name: 'Réceptionner une PO' }).click();
-      await expect(page.locator('[data-workspace-view="reception"]')).toHaveAttribute('aria-selected', 'true');
+      await expect(page.locator('[data-hub-cockpit]')).toHaveAttribute('data-hlc-selection', 'order:9d141f3c-0035-497b-8c60-3bf3808867a1');
+      await expect(page.locator('[data-hlc-po].is-related')).toHaveCount(2);
       expect(posts).toHaveLength(0);
     });
 
-    test('tableau Hub : lisible à largeur fixe, sans cellules article ni faux départ', async ({ page }) => {
+    test('cockpit : trois zones lisibles, sans débordement horizontal ni faux départ', async ({ page }) => {
       await mount(page, { view: null });
-      const board = page.locator('[data-hub-work-orders] .kmc-hub-board');
-      await expect(board.locator('thead th')).toHaveCount(7);
-      await expect(board.locator('tbody tr')).toHaveCount(2);
-      await expect(board.locator('[data-hub-stage="Départ"]').first()).toContainText('Pas de départ');
-      const layout = await board.evaluate(el => {
-        const wrap = el.closest('.kmc-hub-board-scroll');
-        return {
-          inside: el.getBoundingClientRect().left >= wrap.getBoundingClientRect().left - 1,
-          pageOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
-          scrollableOnSmallScreens: wrap.scrollWidth >= wrap.clientWidth,
-        };
-      });
-      expect(layout.inside).toBe(true);
+      const zones = page.locator('[data-hub-cockpit] [data-hlc-zone]');
+      await expect(zones).toHaveCount(3);
+      const layout = await page.evaluate(() => ({
+        pageOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        zones: [...document.querySelectorAll('[data-hlc-zone]')].map(z => z.getBoundingClientRect().width),
+      }));
       expect(layout.pageOverflow).toBeLessThanOrEqual(1);
-      expect(layout.scrollableOnSmallScreens).toBe(true);
+      expect(layout.zones.every(width => width > 0)).toBe(true);
     });
 
     test('L9a : « Répartir ce marché » est masqué quand aucune commande n’est à répartir', async ({ page }) => {

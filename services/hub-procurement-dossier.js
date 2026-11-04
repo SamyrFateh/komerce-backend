@@ -7,8 +7,8 @@
  * @inputs        market_id, optional_supplier_id, order_or_purchase_order_id
  * @outputs       market_procurement_dossier, physical_trace
  * @depends       db
- * @used-by       routes/hub.js
- * @db-read       markets, orders, order_items, products, product_suppliers, suppliers, purchase_lines, purchase_orders, v_purchase_line_progress, hub_purchase_allocations, hub_physical_units, hub_physical_unit_placements, hub_box_bags, hub_box_effective_placements, international_shipments, international_shipment_hub_units, parcels, parcel_items
+ * @used-by       routes/hub.js, routes/admin-operations-workspace.js
+ * @db-read       markets, orders, order_items, products, product_suppliers, suppliers, purchase_lines, purchase_orders, purchase_order_authorizations, hub_authorization_grants, users, v_purchase_line_progress, hub_purchase_allocations, hub_physical_units, hub_physical_unit_placements, hub_box_bags, hub_box_effective_placements, international_shipments, international_shipment_hub_units, parcels, parcel_items
  * @db-write      (none)
  * @db-txn        @none
  * @doctrine      une décision, une autorité, un enregistrement ; projection en lecture seule, aucune seconde source de vérité
@@ -52,14 +52,343 @@ function poStage(po, totals) {
   return 'confirmed';
 }
 
-async function getDossier({ marketId, supplierId = null, now = new Date() }, q = db) {
+
+const ALLOCATION_RULE = 'FIFO : la commande la plus ancienne est servie en premier (par SKU dans la PO)';
+const PO_STEPS = Object.freeze(['draft', 'validation', 'engaged', 'sent', 'received']);
+
+// Étape de la barre PO (brouillon → validation → engagé → envoyé/expédié → reçu), dérivée, jamais stockée.
+// « Validation » = engagement validé par la responsable Hub (la PO reste modifiable jusqu'à la soumission).
+// Le paiement fournisseur est une autorisation distincte, jamais une étape de cette barre.
+function poStep(po, commitment) {
+  if (po.status === 'cancelled') return { key: 'cancelled', index: 0 };
+  if (po.status === 'draft') return commitment ? { key: 'validation', index: 2 } : { key: 'draft', index: 1 };
+  // La réception physique prime sur le statut fournisseur (une PO peut être reçue avant d'être confirmée).
+  if (po.totals.effective > 0 && po.totals.received >= po.totals.effective) return { key: 'received', index: 5 };
+  if (po.totals.received > 0) return { key: 'received', index: 5, partial: true };
+  if (po.status === 'notified' && !po.sent_at) return { key: 'engaged', index: 3 };
+  return { key: 'sent', index: 4 };
+}
+
+function viewerRights(viewer, grants) {
+  if (!viewer) return null;
+  return {
+    user_id: viewer.id || null,
+    role: viewer.role || null,
+    can_authorize_commitment: grants.has('purchase_commitment'),
+    can_authorize_payment: grants.has('supplier_payment'),
+  };
+}
+
+// Commande prête / partielle : une ligne complète n'est pas une commande complète, et une commande partiellement
+// reçue n'est jamais « prête à emballer » (préparation partielle = geste explicite côté route).
+function orderReadiness(order, bagsOpenByOrder) {
+  const items = order.items;
+  const pending = items.filter((i) => i.received < i.ordered).map((i) => ({
+    order_item_id: i.id, product: i.product, missing: i.ordered - i.received,
+  }));
+  const complete = items.length > 0 && pending.length === 0;
+  const unbagged = items.reduce((t, i) => t + Math.max(0, i.received - i.in_bags - i.in_boxes), 0);
+  const bagOpen = bagsOpenByOrder.has(String(order.id));
+  const received = items.reduce((t, i) => t + i.received, 0);
+  const blockers = [];
+  if (items.some((i) => i.purchasing_missing > 0)) blockers.push('Besoin non couvert par une ligne d’achat');
+  if (items.some((i) => i.anomaly > 0)) blockers.push('Unité en quarantaine ou écart à traiter');
+  if (!complete) blockers.push('Articles non reçus : ' + pending.map((p) => `${p.product || 'article'} (${p.missing})`).join(', '));
+  return {
+    complete,
+    partial: !complete && received > 0,
+    ready_to_pack: complete && unbagged > 0 && !bagOpen && !items.some((i) => i.anomaly > 0),
+    unbagged_received: unbagged,
+    bag_open: bagOpen,
+    pending_items: pending,
+    blockers,
+  };
+}
+
+const PHYSICAL_BY_ITEM_SQL = `
+  SELECT a.order_item_id,
+         SUM(p.quantity) FILTER (WHERE f.ok)::int AS usable,
+         SUM(p.quantity) FILTER (WHERE NOT f.ok)::int AS anomaly,
+         SUM(p.quantity) FILTER (WHERE f.ok AND u.unit_type = 'SUPPLIER_PACKAGE' AND u.state IN ('RECEIVED','IDENTIFIED'))::int AS to_control,
+         SUM(p.quantity) FILTER (WHERE f.ok AND u.unit_type = 'SUPPLIER_PACKAGE' AND u.state NOT IN ('RECEIVED','IDENTIFIED'))::int AS controlled,
+         SUM(p.quantity) FILTER (WHERE f.ok AND u.unit_type = 'HANDLING_UNIT' AND bb.bag_unit_id IS NULL)::int AS in_bags,
+         SUM(p.quantity) FILTER (WHERE f.ok AND (bb.bag_unit_id IS NOT NULL OR u.unit_type = 'MARKET_PARCEL'))::int AS in_boxes,
+         SUM(p.quantity) FILTER (WHERE f.ok AND hs.physical_unit_id IS NOT NULL)::int AS shipped
+    FROM hub_purchase_allocations a
+    JOIN hub_physical_unit_placements p ON p.allocation_id = a.id AND p.removed_at IS NULL
+    JOIN hub_physical_units u ON u.id = p.physical_unit_id
+    CROSS JOIN LATERAL (SELECT (u.outcome_type IS NULL AND u.state NOT IN ('QUARANTINED','SUPERSEDED')) AS ok) f
+    LEFT JOIN hub_box_bags bb ON bb.bag_unit_id = u.id
+    LEFT JOIN international_shipment_hub_units hs
+           ON hs.physical_unit_id = COALESCE(bb.box_unit_id, CASE WHEN u.unit_type = 'MARKET_PARCEL' THEN u.id END)
+   WHERE a.market_id = $1 AND a.order_item_id = ANY($2::uuid[])
+   GROUP BY a.order_item_id`;
+
+function buildTodo({ orders, unsourced, needBatches, purchaseOrders, bagsOpen, bagsReady, boxes, viewer }) {
+  const todo = [];
+  const can = (flag, reason) => (viewer === null ? { viewer_can_act: null, blocked_reason: null }
+    : flag ? { viewer_can_act: true, blocked_reason: null } : { viewer_can_act: false, blocked_reason: reason });
+  const push = (item) => todo.push({ ...item });
+  const byOrder = new Map();
+  unsourced.forEach((u) => { byOrder.set(u.order_id, [...(byOrder.get(u.order_id) || []), u]); });
+  for (const [orderId, list] of byOrder) {
+    const units = list.reduce((t, u) => t + u.missing_quantity, 0);
+    push({
+      id: `SOURCING_REQUIRED:${orderId}`, kind: 'SOURCING_REQUIRED', priority: 10, owner: 'agent_hub', subject: { order_id: orderId },
+      missing: `${list[0].order_ref} : ${units} unité(s) sans ligne d’achat`,
+      why: list.some((u) => !u.supplier_mapping_present)
+        ? 'Aucun fournisseur actif n’est associé au produit : la commande ne peut pas être couverte.'
+        : 'Aucune ligne d’achat ne couvre l’article : il ne sera jamais commandé.',
+      action: { type: 'resolve_sourcing', order_id: orderId, label: 'Ouvrir une ligne d’achat' }, ...can(true),
+    });
+  }
+  for (const batch of needBatches) {
+    push({
+      id: `PREPARE_PO:${batch.key}`, kind: 'PREPARE_PO', priority: 20, owner: 'agent_hub', subject: { batch_key: batch.key },
+      missing: `${batch.supplier_name} : ${batch.quantity} unité(s) à regrouper en bon de commande`,
+      why: `Besoins de ${batch.order_count} commande(s) non couverts par un PO.`,
+      action: { type: 'prepare_po', batch_key: batch.key, label: batch.compatible_draft_po_ids.length ? 'Rattacher au brouillon' : 'Préparer la PO' },
+      ...can(true),
+    });
+  }
+  for (const po of purchaseOrders) {
+    const ref = `${po.supplier_name} · PO ${String(po.id).slice(0, 8)}`;
+    const subject = { po_id: po.id };
+    if (po.step.key === 'draft') {
+      push({ id: `AUTHORIZE_COMMITMENT:${po.id}`, kind: 'AUTHORIZE_COMMITMENT', priority: 30, owner: 'responsable_hub', subject,
+        missing: `${ref} : engagement d’achat non validé`,
+        why: 'Sans validation de la responsable Hub, la PO ne peut ni être soumise ni envoyée au fournisseur.',
+        action: { type: 'authorize_commitment', po_id: po.id, label: 'Valider l’engagement' },
+        ...can(viewer && viewer.can_authorize_commitment, 'Réservé à la responsable Hub (autorisation d’engagement attribuée par l’Admin central).') });
+    } else if (po.step.key === 'validation') {
+      push({ id: `SUBMIT_PO:${po.id}`, kind: 'SUBMIT_PO', priority: 31, owner: 'agent_hub', subject,
+        missing: `${ref} : engagement validé, PO à soumettre`,
+        why: 'La PO reste en brouillon tant qu’elle n’est pas soumise ; le fournisseur n’en sait rien.',
+        action: { type: 'submit_po', po_id: po.id, label: 'Soumettre la PO' }, ...can(true) });
+    } else if (po.step.key === 'engaged') {
+      push({ id: `RECORD_SENT:${po.id}`, kind: 'RECORD_SENT', priority: 32, owner: 'agent_hub', subject,
+        missing: `${ref} : envoi au fournisseur non enregistré`,
+        why: 'Une PO soumise n’est pas une PO envoyée : l’envoi réel (canal, auteur, heure) doit être prouvé.',
+        action: { type: 'record_sent', po_id: po.id, label: 'Enregistrer l’envoi' }, ...can(true) });
+    } else if (po.status === 'notified' && po.sent_at) {
+      push({ id: `CONFIRM_PO:${po.id}`, kind: 'CONFIRM_PO', priority: 33, owner: 'agent_hub', subject,
+        missing: `${ref} : confirmation fournisseur à enregistrer`,
+        why: 'Les quantités et le justificatif d’achat confirmés par le fournisseur ne sont pas encore saisis ; le reliquat éventuel reste ouvert.',
+        action: { type: 'confirm_po', po_id: po.id, label: 'Enregistrer la confirmation' }, ...can(true) });
+    }
+    if (po.status !== 'draft' && po.status !== 'cancelled' && po.authorizations.commitment && !po.authorizations.payment) {
+      push({ id: `AUTHORIZE_PAYMENT:${po.id}`, kind: 'AUTHORIZE_PAYMENT', priority: 40, owner: 'responsable_hub', subject,
+        missing: `${ref} : paiement fournisseur non autorisé`,
+        why: 'L’engagement validé n’autorise pas le paiement : deuxième décision distincte, avec justificatif.',
+        action: { type: 'authorize_payment', po_id: po.id, label: 'Autoriser le paiement' },
+        ...can(viewer && viewer.can_authorize_payment, 'Réservé à la responsable Hub (autorisation de paiement attribuée par l’Admin central).') });
+    }
+    if (po.status !== 'draft' && po.status !== 'cancelled' && po.totals.missing > 0) {
+      push({ id: `AWAIT_RECEIPT:${po.id}`, kind: 'AWAIT_RECEIPT', priority: 50, owner: 'agent_hub', subject,
+        missing: `${ref} : ${po.totals.missing} unité(s) attendue(s) non reçue(s)`,
+        why: 'Le statut fournisseur ne prouve aucune arrivée : seule la réception physique compte.',
+        action: { type: 'receive', po_id: po.id, label: 'Enregistrer une réception' }, ...can(true) });
+    }
+    if (po.totals.anomaly > 0) {
+      push({ id: `REVIEW_ANOMALY:${po.id}`, kind: 'REVIEW_ANOMALY', priority: 45, owner: 'agent_hub', subject,
+        missing: `${ref} : ${po.totals.anomaly} unité(s) en quarantaine ou en écart`,
+        why: 'Ces unités ne comptent pas comme reçues tant que l’écart n’est pas levé.',
+        action: { type: 'open_physical', po_id: po.id, label: 'Voir le détail physique' }, ...can(true) });
+    }
+  }
+  for (const order of orders) {
+    if (order.readiness.ready_to_pack) {
+      push({ id: `PREPARE_BAG:${order.id}`, kind: 'PREPARE_BAG', priority: 60, owner: 'agent_hub', subject: { order_id: order.id },
+        missing: `${order.reference} : commande complète, sac client à préparer`,
+        why: 'Tous les articles sont reçus : la commande peut être emballée.',
+        action: { type: 'create_bag', order_id: order.id, label: 'Créer le sac client' }, ...can(true) });
+    }
+  }
+  for (const bag of bagsOpen) {
+    const planned = (bag.bag_plan || []).reduce((t, x) => t + Number(x.quantity), 0);
+    const actual = (bag.actual_contents || []).reduce((t, x) => t + Number(x.quantity), 0);
+    if (planned > 0 && planned === actual) {
+      push({ id: `CLOSE_BAG:${bag.unit_id}`, kind: 'CLOSE_BAG', priority: 61, owner: 'agent_hub', subject: { order_id: bag.order_id, bag_unit_id: bag.unit_id },
+        missing: `${bag.order_ref} : sac ${bag.reference} entièrement déposé, à fermer`,
+        why: 'Un sac fermé est le seul objet qui peut entrer dans une KOM-BOX.',
+        action: { type: 'close_bag', bag_unit_id: bag.unit_id, label: 'Fermer le sac' }, ...can(true) });
+    } else if (planned > 0) {
+      push({ id: `DEPOSIT_BAG:${bag.unit_id}`, kind: 'DEPOSIT_BAG', priority: 62, owner: 'agent_hub', subject: { order_id: bag.order_id, bag_unit_id: bag.unit_id },
+        missing: `${bag.order_ref} : sac ${bag.reference} ${actual}/${planned} déposé(s)`,
+        why: 'Chaque dépôt exige le scan de la référence physique.',
+        action: { type: 'open_physical', label: 'Déposer dans le sac (scan)' }, ...can(true) });
+    }
+  }
+  if (bagsReady.length) {
+    push({ id: 'BOX_BAGS', kind: 'BOX_BAGS', priority: 63, owner: 'agent_hub', subject: {},
+      missing: `${bagsReady.length} sac(s) fermé(s) hors KOM-BOX`, why: 'Le sac doit être scanné avec sa KOM-BOX pour partir en expédition.',
+      action: { type: 'open_physical', label: 'Placer en KOM-BOX (scan)' }, ...can(true) });
+  }
+  for (const b of boxes) {
+    if (b.state === 'PACKED' && !b.shipment_ref) {
+      push({ id: `BOX_UNSHIPPED:${b.unit_id}`, kind: 'BOX_UNSHIPPED', priority: 64, owner: 'agent_hub', subject: { box_unit_id: b.unit_id },
+        missing: `Carton ${b.reference} emballé, sans expédition`, why: 'Un carton sans dossier d’expédition ne part pas.',
+        action: { type: 'open_physical', label: 'Rattacher à une expédition' }, ...can(true) });
+    }
+  }
+  return todo.sort((a, b) => a.priority - b.priority);
+}
+
+async function loadCockpit({
+  q, marketId, viewer, orderMap, needsRows, purchaseOrders, unsourcedItems, bagsOpen, bagsReady, boxes,
+}) {
+  const grants = new Set();
+  if (viewer && viewer.id) {
+    const { rows } = await q.query(
+      'SELECT authorization_type FROM hub_authorization_grants WHERE user_id = $1 AND revoked_at IS NULL', [viewer.id]);
+    (rows || []).forEach((r) => grants.add(r.authorization_type));
+  }
+  const rights = viewerRights(viewer, grants);
+
+  // Autorisations tracées (append-only) par PO.
+  const poIds = purchaseOrders.map((po) => po.id);
+  const authByPo = new Map();
+  if (poIds.length) {
+    const { rows } = await q.query(`
+      SELECT a.purchase_order_id, a.authorization_type, a.amount, a.currency, a.proof_ref, a.decided_at, u.full_name
+        FROM purchase_order_authorizations a LEFT JOIN users u ON u.id = a.decided_by
+       WHERE a.purchase_order_id = ANY($1::uuid[])`, [poIds]);
+    for (const r of rows || []) {
+      const entry = authByPo.get(r.purchase_order_id) || { commitment: null, payment: null };
+      const decision = { amount: Number(r.amount), currency: r.currency, proof_ref: r.proof_ref, decided_at: r.decided_at, decided_by_name: r.full_name || null };
+      if (r.authorization_type === 'purchase_commitment') entry.commitment = decision; else entry.payment = decision;
+      authByPo.set(r.purchase_order_id, entry);
+    }
+  }
+
+  // Ventilation physique par article de commande (une seule lecture, mêmes tables que le dossier).
+  const itemIds = [...orderMap.values()].flatMap((o) => o.items.map((i) => i.id));
+  const physical = new Map();
+  if (itemIds.length) {
+    const { rows } = await q.query(PHYSICAL_BY_ITEM_SQL, [marketId, itemIds]);
+    (rows || []).forEach((r) => physical.set(r.order_item_id, r));
+  }
+
+  // Lignes d'achat par article (ouvertes + rattachées) et rang FIFO par (PO, SKU).
+  const linesByItem = new Map();
+  const addLine = (itemId, line) => linesByItem.set(itemId, [...(linesByItem.get(itemId) || []), line]);
+  needsRows.forEach((n) => addLine(n.order_item_id, {
+    line_id: n.line_id, po_id: null, quantity: Number(n.quantity), effective: Number(n.quantity), received: 0, anomaly: 0, fifo_rank: null,
+  }));
+  for (const po of purchaseOrders) {
+    const bySku = new Map();
+    po.lines.forEach((l) => bySku.set(l.product_sku_id || '', [...(bySku.get(l.product_sku_id || '') || []), l]));
+    for (const group of bySku.values()) {
+      group.sort((a, b) => (new Date(a.order_created_at) - new Date(b.order_created_at)) || String(a.line_id).localeCompare(String(b.line_id)));
+      let nextFound = false;
+      group.forEach((l, index) => {
+        l.fifo_rank = index + 1;
+        l.fifo_next = !nextFound && l.missing > 0 && po.status !== 'draft' && po.status !== 'cancelled';
+        if (l.fifo_next) nextFound = true;
+      });
+    }
+    po.lines.forEach((l) => addLine(l.order_item_id, {
+      line_id: l.line_id, po_id: po.id, quantity: l.ordered, effective: l.confirmed, received: l.received, anomaly: l.anomaly,
+      fifo_rank: l.fifo_rank, fifo_next: l.fifo_next,
+    }));
+  }
+
+  for (const po of purchaseOrders) {
+    const auth = authByPo.get(po.id) || { commitment: null, payment: null };
+    po.authorizations = auth;
+    po.step = poStep(po, auth.commitment);
+    po.order_ids = [...new Set(po.lines.map((l) => l.order_id))];
+    const priced = po.lines.length > 0 && po.lines.every((l) => l.unit_price != null && l.currency)
+      && new Set(po.lines.map((l) => l.currency)).size === 1;
+    po.amount = priced
+      ? { amount: po.lines.reduce((t, l) => t + l.ordered * l.unit_price, 0), currency: po.lines[0].currency, derived: true }
+      : { amount: null, currency: null, derived: false };
+  }
+
+  const bagsOpenByOrder = new Set(bagsOpen.map((b) => String(b.order_id)));
+  const poById = new Map(purchaseOrders.map((po) => [po.id, po]));
+  for (const order of orderMap.values()) {
+    for (const item of order.items) {
+      const ph = physical.get(item.id) || {};
+      item.anomaly = Number(ph.anomaly || 0);
+      item.to_control = Number(ph.to_control || 0);
+      item.controlled = Number(ph.controlled || 0);
+      item.in_bags = Number(ph.in_bags || 0);
+      item.in_boxes = Number(ph.in_boxes || 0);
+      item.shipped = Number(ph.shipped || 0);
+      item.requested = item.ordered;
+      item.covered = item.purchasing_covered;
+      item.uncovered = item.purchasing_missing;
+      item.remaining_to_deliver = Math.max(item.ordered - item.received, 0);
+      item.lines = linesByItem.get(item.id) || [];
+      item.po_ids = [...new Set(item.lines.map((l) => l.po_id).filter(Boolean))];
+      item.complete = item.received >= item.ordered;
+    }
+    order.po_ids = [...new Set(order.items.flatMap((i) => i.po_ids))];
+    order.supplier_count = new Set(order.po_ids.map((id) => (poById.get(id) || {}).supplier_id).filter(Boolean)).size;
+    order.readiness = orderReadiness(order, bagsOpenByOrder);
+    order.totals = order.items.reduce((t, i) => ({
+      requested: t.requested + i.ordered, covered: t.covered + i.covered, uncovered: t.uncovered + i.uncovered,
+      received: t.received + i.received, remaining: t.remaining + i.remaining_to_deliver, anomaly: t.anomaly + i.anomaly,
+      to_control: t.to_control + i.to_control, controlled: t.controlled + i.controlled,
+      in_bags: t.in_bags + i.in_bags, in_boxes: t.in_boxes + i.in_boxes, shipped: t.shipped + i.shipped,
+    }), { requested: 0, covered: 0, uncovered: 0, received: 0, remaining: 0, anomaly: 0, to_control: 0, controlled: 0, in_bags: 0, in_boxes: 0, shipped: 0 });
+  }
+
+  // Besoins ouverts : fournisseur × Hub d'achat × marché (une PO) puis SKU. Le marché est celui de la route.
+  const batches = new Map();
+  for (const n of needsRows) {
+    const key = `${n.supplier_id}|${n.procurement_hub_ref || ''}|${marketId}`;
+    if (!batches.has(key)) batches.set(key, {
+      key, supplier_id: n.supplier_id, supplier_name: n.supplier_name, procurement_hub_ref: n.procurement_hub_ref || null,
+      market_id: marketId, quantity: 0, order_ids: new Set(), groups: new Map(),
+    });
+    const batch = batches.get(key);
+    batch.quantity += Number(n.quantity);
+    batch.order_ids.add(n.order_id);
+    const skuKey = n.product_sku_id || `ref:${n.supplier_sku || n.product_name}`;
+    if (!batch.groups.has(skuKey)) batch.groups.set(skuKey, {
+      key: `${key}|${skuKey}`, product_sku_id: n.product_sku_id || null, product: n.product_name, supplier_sku: n.supplier_sku || null,
+      quantity: 0, lines: [],
+    });
+    const group = batch.groups.get(skuKey);
+    group.quantity += Number(n.quantity);
+    group.lines.push({ line_id: n.line_id, order_id: n.order_id, order_ref: n.order_ref, order_item_id: n.order_item_id, quantity: Number(n.quantity) });
+  }
+  const needBatches = [...batches.values()].map((b) => ({
+    key: b.key, supplier_id: b.supplier_id, supplier_name: b.supplier_name, procurement_hub_ref: b.procurement_hub_ref,
+    market_id: b.market_id, quantity: b.quantity, order_count: b.order_ids.size,
+    groups: [...b.groups.values()],
+    // Une ligne ne se rattache qu'à un brouillon dont l'engagement n'est pas encore validé (même fournisseur, Hub et marché).
+    compatible_draft_po_ids: purchaseOrders.filter((po) => po.status === 'draft' && !po.authorizations.commitment
+      && po.supplier_id === b.supplier_id && (po.procurement_hub_ref || null) === b.procurement_hub_ref
+      && String(po.market_id) === String(b.market_id)).map((po) => po.id),
+  }));
+
+  const orders = [...orderMap.values()];
+  return {
+    allocation_rule: ALLOCATION_RULE,
+    po_steps: PO_STEPS,
+    viewer: rights,
+    need_batches: needBatches,
+    orders,
+    todo: buildTodo({ orders, unsourced: unsourcedItems, needBatches, purchaseOrders, bagsOpen, bagsReady, boxes, viewer: rights }),
+  };
+}
+
+async function getDossier({ marketId, supplierId = null, viewer = null, now = new Date() }, q = db) {
   // Entrée Work : la commande IMPORT reste visible même avant l'ouverture de
   // sa première ligne d'achat. LOCAL_STOCK et les sources inconnues ne sont
   // jamais projetées dans la file Hub. Aucun état métier calculé ici.
   const { rows: orderRows } = await q.query(`
     SELECT o.id AS order_id, o.reference AS order_ref, o.status AS order_status,
            oi.id AS order_item_id, oi.product_id, oi.sku_id, oi.quantity AS ordered,
-           p.name AS product_name, oi.fulfillment_source,
+           p.name AS product_name, oi.fulfillment_source, o.created_at AS order_created_at,
+           COALESCE((
+             SELECT SUM(v.received_quantity)::int
+               FROM v_purchase_line_progress v
+              WHERE v.order_item_id = oi.id AND NOT v.cancelled
+           ), 0) AS purchase_received,
            COALESCE((
              SELECT SUM(v.effective_quantity)::int
                FROM v_purchase_line_progress v
@@ -85,7 +414,7 @@ async function getDossier({ marketId, supplierId = null, now = new Date() }, q =
   const unsourcedItems = [];
   for (const r of orderRows) {
     if (!orders.has(r.order_id)) orders.set(r.order_id, {
-      id: r.order_id, reference: r.order_ref, status: r.order_status, items: [],
+      id: r.order_id, reference: r.order_ref, status: r.order_status, created_at: r.order_created_at || null, items: [],
     });
     // Le manque de sourcing est un fait calculé depuis la couverture achat
     // effective, pas un statut de commande ni une réception physique inventée.
@@ -97,6 +426,7 @@ async function getDossier({ marketId, supplierId = null, now = new Date() }, q =
       fulfillment_source: r.fulfillment_source,
       purchasing_covered: Number(r.purchase_covered || 0),
       purchasing_missing: uncovered,
+      received: Number(r.purchase_received || 0),
       supplier_mapping_present: supplierMapped,
       sourcing_required: uncovered > 0,
     });
@@ -137,7 +467,8 @@ async function getDossier({ marketId, supplierId = null, now = new Date() }, q =
 
   const { rows: needsRows } = await q.query(`
     SELECT pl.id AS line_id, pl.supplier_id, s.name AS supplier_name, pl.product_sku_id, pl.supplier_sku,
-           p.name AS product_name, pl.quantity, oi.order_id, o.reference AS order_ref, pl.order_item_id, pl.created_at
+           p.name AS product_name, pl.quantity, oi.order_id, o.reference AS order_ref, pl.order_item_id, pl.created_at,
+           pl.procurement_hub_ref, o.created_at AS order_created_at
       FROM purchase_lines pl
       JOIN order_items oi ON oi.id = pl.order_item_id
       JOIN orders o ON o.id = oi.order_id
@@ -151,7 +482,9 @@ async function getDossier({ marketId, supplierId = null, now = new Date() }, q =
     SELECT po.id AS po_id, po.status, po.sent_at, po.sent_channel, po.supplier_order_id, po.supplier_id,
            s.name AS supplier_name, po.procurement_hub_ref, po.created_at, po.updated_at, po.ordered_at,
            pl.id AS line_id, pl.order_item_id, oi.order_id, o.reference AS order_ref, p.name AS product_name,
-           pl.product_sku_id, pl.quantity AS ordered, vp.effective_quantity AS effective, vp.received_quantity AS received
+           pl.product_sku_id, pl.quantity AS ordered, vp.effective_quantity AS effective, vp.received_quantity AS received,
+           po.trigger_mode, po.confirmed_at, po.market_id AS po_market_id,
+           pl.supplier_unit_price, pl.supplier_currency, o.created_at AS order_created_at
       FROM purchase_orders po
       JOIN suppliers s ON s.id = po.supplier_id
       JOIN purchase_lines pl ON pl.purchase_order_id = po.id AND pl.cancelled_at IS NULL
@@ -182,6 +515,7 @@ async function getDossier({ marketId, supplierId = null, now = new Date() }, q =
         id: r.po_id, status: r.status, supplier_id: r.supplier_id, supplier_name: r.supplier_name,
         procurement_hub_ref: r.procurement_hub_ref, sent_at: r.sent_at, sent_channel: r.sent_channel,
         supplier_order_id: r.supplier_order_id, created_at: r.created_at, updated_at: r.updated_at, ordered_at: r.ordered_at,
+        trigger_mode: r.trigger_mode || null, confirmed_at: r.confirmed_at || null, market_id: r.po_market_id || marketId,
         lines: [],
       });
     }
@@ -192,6 +526,9 @@ async function getDossier({ marketId, supplierId = null, now = new Date() }, q =
       product: r.product_name, product_sku_id: r.product_sku_id,
       ordered: Number(r.ordered), confirmed: effective, received, missing: Math.max(effective - received, 0),
       anomaly: anomalyByLine.get(r.line_id) || 0,
+      order_created_at: r.order_created_at || null,
+      unit_price: r.supplier_unit_price == null ? null : Number(r.supplier_unit_price),
+      currency: r.supplier_currency || null,
     });
   }
   const purchaseOrders = [...pos.values()].map((po) => {
@@ -340,6 +677,11 @@ async function getDossier({ marketId, supplierId = null, now = new Date() }, q =
   }
 
   const count = (stage) => purchaseOrders.filter((po) => po.stage === stage).length;
+  // Cockpit : mêmes lectures, enrichies (couverture, réception, ventilation physique, autorisations, À faire maintenant).
+  const cockpit = await loadCockpit({
+    q, marketId, viewer, orderMap: orders, needsRows, purchaseOrders, unsourcedItems,
+    bagsOpen: bags_open, bagsReady: bags_ready, boxes: [...boxes.values()],
+  });
   return {
     market_id: marketId,
     generated_at: now.toISOString(),
@@ -356,7 +698,9 @@ async function getDossier({ marketId, supplierId = null, now = new Date() }, q =
       boxes_open: [...boxes.values()].filter((b) => !['DISPATCHED'].includes(b.state)).length,
       boxes_unshipped: [...boxes.values()].filter((b) => !b.shipment_ref).length,
     },
-    orders: [...orders.values()],
+    orders: cockpit.orders,
+    cockpit: { allocation_rule: cockpit.allocation_rule, po_steps: cockpit.po_steps, viewer: cockpit.viewer,
+      need_batches: cockpit.need_batches, todo: cockpit.todo },
     client_parcels: [...clientParcels.values()],
     needs: needsRows,
     purchase_orders: purchaseOrders,
@@ -424,4 +768,18 @@ async function getTrace({ orderId = null, purchaseOrderId = null, allowedMarketI
   return { order_id: orderId, purchase_order_id: purchaseOrderId, chain: [...items.values()] };
 }
 
-module.exports = { resolveMarket, getDossier, getTrace, poStage };
+// Complétude d'une commande IMPORT : chaque article doit être reçu (matière physique utilisable) à hauteur de la quantité commandée.
+async function getOrderCompleteness(orderId, q = db) {
+  const { rows } = await q.query(`
+    SELECT oi.id AS order_item_id, p.name AS product, oi.quantity AS ordered,
+           COALESCE((SELECT SUM(v.received_quantity)::int FROM v_purchase_line_progress v
+                      WHERE v.order_item_id = oi.id AND NOT v.cancelled), 0) AS received
+      FROM order_items oi LEFT JOIN products p ON p.id = oi.product_id
+     WHERE oi.order_id = $1 AND oi.fulfillment_source = 'IMPORT'`, [orderId]);
+  const pending = rows.filter((r) => Number(r.received) < Number(r.ordered)).map((r) => ({
+    order_item_id: r.order_item_id, product: r.product, missing: Number(r.ordered) - Number(r.received),
+  }));
+  return { has_import: rows.length > 0, complete: rows.length > 0 && pending.length === 0, pending_items: pending };
+}
+
+module.exports = { resolveMarket, getDossier, getTrace, poStage, getOrderCompleteness };

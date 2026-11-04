@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 1992,
-    "edges": 9780,
+    "edges": 9785,
     "dbTables": 229,
     "doctrines": 770,
     "impactAreas": 207,
@@ -20146,7 +20146,8 @@
         "db"
       ],
       "usedBy": [
-        "routes/hub.js"
+        "routes/hub.js",
+        "routes/admin-operations-workspace.js"
       ],
       "dbRead": [
         "markets",
@@ -20157,6 +20158,9 @@
         "suppliers",
         "purchase_lines",
         "purchase_orders",
+        "purchase_order_authorizations",
+        "hub_authorization_grants",
+        "users",
         "v_purchase_line_progress",
         "hub_purchase_allocations",
         "hub_physical_units",
@@ -29106,7 +29110,8 @@
         "markets",
         "products",
         "suppliers",
-        "v_purchase_line_market"
+        "v_purchase_line_market",
+        "purchase_order_authorizations"
       ],
       "dbWrite": [
         "purchase_lines",
@@ -75314,6 +75319,12 @@
       "label": "routes/hub.js"
     },
     {
+      "from": "routes/admin-operations-workspace.js",
+      "to": "services/hub-procurement-dossier.js",
+      "type": "uses",
+      "label": "routes/admin-operations-workspace.js"
+    },
+    {
       "from": "services/hub-procurement-dossier.js",
       "to": "db:markets",
       "type": "db-read",
@@ -75360,6 +75371,24 @@
       "to": "db:purchase_orders",
       "type": "db-read",
       "label": "purchase_orders"
+    },
+    {
+      "from": "services/hub-procurement-dossier.js",
+      "to": "db:purchase_order_authorizations",
+      "type": "db-read",
+      "label": "purchase_order_authorizations"
+    },
+    {
+      "from": "services/hub-procurement-dossier.js",
+      "to": "db:hub_authorization_grants",
+      "type": "db-read",
+      "label": "hub_authorization_grants"
+    },
+    {
+      "from": "services/hub-procurement-dossier.js",
+      "to": "db:users",
+      "type": "db-read",
+      "label": "users"
     },
     {
       "from": "services/hub-procurement-dossier.js",
@@ -89855,6 +89884,12 @@
       "to": "db:v_purchase_line_market",
       "type": "db-read",
       "label": "v_purchase_line_market"
+    },
+    {
+      "from": "services/purchasing-grouped-service.js",
+      "to": "db:purchase_order_authorizations",
+      "type": "db-read",
+      "label": "purchase_order_authorizations"
     },
     {
       "from": "services/purchasing-grouped-service.js",
@@ -109892,6 +109927,7 @@
         "impact:payments",
         "middleware/require-market-execution-capability.js",
         "services/hub-bag-box-service.js",
+        "services/hub-procurement-dossier.js",
         "services/operations-workspace.js",
         "services/relay-shipment-receipt.js"
       ]
@@ -123354,7 +123390,8 @@
         "db"
       ],
       "directUsedBy": [
-        "routes/hub.js"
+        "routes/hub.js",
+        "routes/admin-operations-workspace.js"
       ],
       "ownedFiles": [],
       "dbRead": [
@@ -123366,6 +123403,9 @@
         "suppliers",
         "purchase_lines",
         "purchase_orders",
+        "purchase_order_authorizations",
+        "hub_authorization_grants",
+        "users",
         "v_purchase_line_progress",
         "hub_purchase_allocations",
         "hub_physical_units",
@@ -123391,6 +123431,7 @@
         "market"
       ],
       "mustCheck": [
+        "db:hub_authorization_grants",
         "db:hub_box_bags",
         "db:hub_box_effective_placements",
         "db:hub_physical_unit_placements",
@@ -123406,8 +123447,10 @@
         "db:product_suppliers",
         "db:products",
         "db:purchase_lines",
+        "db:purchase_order_authorizations",
         "db:purchase_orders",
         "db:suppliers",
+        "db:users",
         "db:v_purchase_line_progress",
         "doctrine:aucune seconde source de vérité",
         "doctrine:un enregistrement ; projection en lecture seule",
@@ -123416,6 +123459,7 @@
         "impact:logistics",
         "impact:market",
         "impact:purchasing",
+        "routes/admin-operations-workspace.js",
         "routes/hub.js",
         "services/hub-administration-board.js",
         "services/hub-global-board.js"
@@ -132347,7 +132391,8 @@
         "markets",
         "products",
         "suppliers",
-        "v_purchase_line_market"
+        "v_purchase_line_market",
+        "purchase_order_authorizations"
       ],
       "dbWrite": [
         "purchase_lines",
@@ -132367,6 +132412,7 @@
         "db:orders",
         "db:products",
         "db:purchase_lines",
+        "db:purchase_order_authorizations",
         "db:purchase_orders",
         "db:suppliers",
         "db:v_purchase_line_market",

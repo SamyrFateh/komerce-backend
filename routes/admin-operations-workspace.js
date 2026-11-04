@@ -217,7 +217,7 @@ router.get(
   async (req, res, next) => {
     try {
       res.set('Cache-Control', 'private, no-store');
-      const dossier = await supply.getDossier({ marketId: req.workspaceMarket.id });
+      const dossier = await supply.getDossier({ marketId: req.workspaceMarket.id, viewer: req.user || null });
       return res.json({ market: { id: req.workspaceMarket.id, code: req.workspaceMarket.code }, ...dossier });
     } catch (err) {
       return sendWorkspaceError(err, res, next);
@@ -353,6 +353,20 @@ router.post(
         [body.order_id,req.workspaceMarket.id]
       );
       if (!rows.length) return res.status(404).json({code:'HUB_BAG_ORDER_NOT_IN_MARKET'});
+      // Préparation partielle : jamais implicite. Une commande dont tous les articles ne sont pas reçus
+      // n'est emballée que sur geste explicite (partial_preparation: true), le reliquat restant visible.
+      const readiness = await supply.getOrderCompleteness(body.order_id);
+      // Commande locale (aucun article IMPORT) : circuit direct relais, jamais un sac Hub.
+      if (!readiness.has_import) {
+        return res.status(409).json({ code: 'HUB_BAG_ORDER_NOT_IMPORT', error: 'Commande locale : elle ne passe pas par le Hub (circuit direct relais)' });
+      }
+      if (!readiness.complete && body.partial_preparation !== true) {
+        return res.status(409).json({
+          code: 'HUB_BAG_PARTIAL_NOT_ACKNOWLEDGED',
+          error: 'Commande incomplète : confirmer explicitement la préparation partielle (reliquat conservé)',
+          pending_items: readiness.pending_items,
+        });
+      }
       const result=await hubOps.createOperatorUnitCommand({
         unit_type:'HANDLING_UNIT',order_id:body.order_id,bag_plan:body.bag_plan,
       },req.user.id);

@@ -8,7 +8,7 @@
  * @outputs       open-line groups, draft grouped purchase order, detach/discard/cancel results
  * @depends       db, services/purchase-line-snapshot.js, utils/logger.js
  * @used-by       routes/purchasing.js, services/purchasing-admin-service.js, services/purchasing-receive-service.js
- * @db-read       purchase_lines, purchase_orders, order_items, orders, markets, products, suppliers, v_purchase_line_market
+ * @db-read       purchase_lines, purchase_orders, order_items, orders, markets, products, suppliers, v_purchase_line_market, purchase_order_authorizations
  * @db-write      purchase_lines, purchase_orders
  * @db-txn        owned
  * @doctrine      docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md
@@ -107,6 +107,16 @@ async function lockGroupedPo(client, poId, { requireDraft = true } = {}) {
     });
   }
   return po;
+}
+
+// Une fois l'engagement validé par la responsable Hub (montant autorisé figé), le contenu de la PO ne bouge plus :
+// rattacher ou détacher une ligne changerait silencieusement ce qui a été autorisé.
+async function assertCommitmentNotAuthorized(client, poId) {
+  const { rows } = await client.query(
+    "SELECT 1 FROM purchase_order_authorizations WHERE purchase_order_id = $1 AND authorization_type = 'purchase_commitment'", [poId]);
+  if (rows.length) {
+    throw fail(409, 'PURCHASE_ORDER_COMMITMENT_FROZEN', 'Engagement déjà validé : le contenu de la PO est figé');
+  }
 }
 
 // ─── Le marché est dérivé de la commande client et scelle la PO fournisseur ──────────────────────
@@ -349,6 +359,7 @@ async function attachDraftLines(poId, lineIds) {
     if (!po.market_id) {
       throw fail(409, 'PURCHASE_ORDER_MARKET_REQUIRED', 'Ancienne PO sans marché unique : ajout impossible');
     }
+    await assertCommitmentNotAuthorized(client, po.id);
     await client.query('SELECT id FROM purchase_lines WHERE id = ANY($1::uuid[]) ORDER BY id FOR UPDATE', [ids]);
     const { rows: attached } = await client.query(`
       UPDATE purchase_lines
@@ -374,6 +385,7 @@ async function detachLines(poId, lineIds) {
 
   return withTransaction(async (client) => {
     const po = await lockGroupedPo(client, poId);
+    await assertCommitmentNotAuthorized(client, po.id);
     await client.query('SELECT id FROM purchase_lines WHERE id = ANY($1::uuid[]) ORDER BY id FOR UPDATE', [ids]);
     const { rows: detached } = await client.query(`
       UPDATE purchase_lines SET purchase_order_id = NULL, updated_at = NOW()

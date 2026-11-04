@@ -151,4 +151,4 @@ async function assertPaymentAuthorized(client, purchaseOrderId, expectedAmount, 
   }
 }
 
-module.exports = { TYPES, HubAuthorizationError, grant, revoke, listGrants, decide, assertCommitmentAuthorized, assertPaymentAuthorized };
+module.exports = { TYPES, HubAuthorizationError, grant, revoke, listGrants, hasGrant, decide, assertCommitmentAuthorized, assertPaymentAuthorized };
