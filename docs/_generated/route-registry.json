@@ -1,7 +1,7 @@
 {
   "generatedAt": "2026-11-03T17:09:03.820Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 781,
+  "count": 785,
   "routes": [
     {
       "method": "GET",
@@ -2198,6 +2198,18 @@
       ]
     },
     {
+      "method": "POST",
+      "fullPath": "/api/admin/users/:id/resend-invitation",
+      "mountPrefix": "/api/admin",
+      "localPath": "/users/:id/resend-invitation",
+      "routeFile": "routes/admin/users.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js",
+        "routes/admin.js",
+        "routes/admin/index.js"
+      ]
+    },
+    {
       "method": "PUT",
       "fullPath": "/api/admin/users/:id/role",
       "mountPrefix": "/api/admin",
@@ -3693,6 +3705,16 @@
     },
     {
       "method": "POST",
+      "fullPath": "/api/auth/activate-account",
+      "mountPrefix": "/api/auth",
+      "localPath": "/activate-account",
+      "routeFile": "routes/auth.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
       "fullPath": "/api/auth/admin-reset",
       "mountPrefix": "/api/auth",
       "localPath": "/admin-reset",
@@ -3987,6 +4009,26 @@
       "mountPrefix": "/api/auth/passkey",
       "localPath": "/step-up/verify",
       "routeFile": "routes/auth-passkey.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/auth/password-reset/confirm",
+      "mountPrefix": "/api/auth",
+      "localPath": "/password-reset/confirm",
+      "routeFile": "routes/auth.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/auth/password-reset/request",
+      "mountPrefix": "/api/auth",
+      "localPath": "/password-reset/request",
+      "routeFile": "routes/auth.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
       ]
