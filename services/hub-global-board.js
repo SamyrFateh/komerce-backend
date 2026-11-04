@@ -36,12 +36,14 @@ function summarizeMarket(market, payload) {
     const notReceived = Math.max(0, ordered - received);
     const anomalies = sum(lines, line => line.anomaly);
     const openNeeds = sum(needs, need => need.quantity);
+    const toSource = sum(order.items, item => item.sourcing_required === true
+      ? item.purchasing_missing : 0);
     const notSent = po.some(p => !p.sent_at);
     const draft = po.some(p => p.stage === 'draft');
     const readyBoxes = boxes.filter(b => b.state === 'DISPATCHED' && !b.shipment_ref);
     // États visuels dérivés, jamais enregistrés comme des statuts métier.
     const stage_states = {
-      po: !po.length ? 'waiting' : draft ? 'progress' : openNeeds ? 'warning' : 'complete',
+      po: toSource ? 'warning' : !po.length ? 'waiting' : draft ? 'progress' : openNeeds ? 'warning' : 'complete',
       supplier: !po.length ? 'muted' : notSent ? 'warning' :
         notReceived ? 'progress' : 'complete',
       reception: !received ? 'muted' : notReceived ? 'warning' : 'complete',
@@ -50,6 +52,7 @@ function summarizeMarket(market, payload) {
       remaining: anomalies ? 'critical' : notReceived ? 'warning' : 'complete',
     };
     const next_action = anomalies ? 'Contrôler les écarts' :
+      toSource ? 'Résoudre le sourcing' :
       !po.length || openNeeds ? 'Constituer PO' :
       draft ? 'Compléter PO' :
       notSent ? 'Prouver l’envoi fournisseur' :
@@ -62,7 +65,7 @@ function summarizeMarket(market, payload) {
       reference: order.reference,
       market: market.code,
       market_name: market.name,
-      po: !po.length ? 'À constituer' : draft ? 'Brouillon' : po.length + ' PO liée(s)',
+      po: toSource ? 'Sourcing requis' : !po.length ? 'À constituer' : draft ? 'Brouillon' : po.length + ' PO liée(s)',
       supplier: !po.length ? 'Non commandé' : notSent ? 'Envoi à prouver' :
         notReceived ? 'Attente fournisseur' : 'Réception au Hub',
       reception: received ? received + ' / ' + ordered + ' reçu(s)' : 'Non reçue',
@@ -71,9 +74,9 @@ function summarizeMarket(market, payload) {
       departure: linkedShipments.size ? linkedShipments.size + ' expédition(s) liée(s)' : 'Pas de départ',
       remaining: notReceived ? notReceived + ' non reçue(s)' :
         anomalies ? anomalies + ' à contrôler' : 'À suivre',
-      remaining_detail: [anomalies && anomalies + ' à contrôler', openNeeds && openNeeds + ' à acheter']
+      remaining_detail: [anomalies && anomalies + ' à contrôler', toSource && toSource + ' à sourcer', openNeeds && openNeeds + ' à acheter']
         .filter(Boolean).join(' · '),
-      attention: Boolean(notReceived || anomalies || openNeeds || !po.length || notSent),
+      attention: Boolean(notReceived || anomalies || toSource || openNeeds || !po.length || notSent),
       stage_states, next_action,
     });
   }
