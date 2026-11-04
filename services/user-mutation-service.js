@@ -67,6 +67,13 @@ async function createAdminUser(executor, {
   );
 }
 
+async function markUserPendingActivation(executor, userId) {
+  return requireExecutor(executor).query(
+    'UPDATE users SET account_activation_required=TRUE, updated_at=NOW() WHERE id=$1::uuid',
+    [userId],
+  );
+}
+
 async function setUserRole(executor, {
   userId,
   role,
@@ -111,6 +118,7 @@ async function setUserPasswordHash(executor, {
   return requireExecutor(executor).query(
     `UPDATE users
      SET password_hash = $1,
+         credentials_changed_at = NOW(),
          updated_at = NOW()
      WHERE id = $2::uuid`,
     [passwordHash, userId],
@@ -183,6 +191,7 @@ async function recalculateUserLoyalty(executor, userId) {
 
 module.exports = {
   createAdminUser,
+  markUserPendingActivation,
   setUserRole,
   assignAgentRelais,
   setUserPasswordHash,

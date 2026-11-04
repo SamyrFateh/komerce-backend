@@ -22,6 +22,7 @@
 
 const db = require('../db');
 const scanEngine = require('./scan-engine');
+const { buildManualConfirmation } = require('./manual-scan-confirmation');
 const customs = require('./customs-shipment-service');
 
 const CUSTOMS_PARCEL_STATUSES = Object.freeze(['shipped', 'in_transit']);
@@ -255,8 +256,9 @@ async function resolveParcel(reference, marketId, allowedStatuses = null) {
   return rows[0];
 }
 
-async function confirmTransit(reference, market, actor = {}, notes = null) {
+async function confirmTransit(reference, market, actor = {}, notes = null, manualInput = null) {
   const resolved = requireMarket(market);
+  const manual = buildManualConfirmation(manualInput);
   const parcel = await resolveParcel(reference, resolved.id, ['shipped']);
   const result = await scanEngine.processScan({
     parcel_id: parcel.id,
@@ -265,8 +267,8 @@ async function confirmTransit(reference, market, actor = {}, notes = null) {
     actor_name: actor.full_name || actor.email || actor.role || 'Opérateur',
     actor_role: actor.role || 'system',
     location: resolved.code,
-    notes: notes || 'Transit confirmé depuis le Workspace Expéditions & Douane',
-    metadata: { source: 'canonical_shipping_customs_workspace', market_code: resolved.code },
+    notes: `${notes || 'Transit confirmé depuis le Workspace Expéditions & Douane'} · ${manual.notes}`,
+    metadata: { source: 'canonical_shipping_customs_workspace', market_code: resolved.code, ...manual.metadata },
   });
   if (!result || result.success !== true) {
     const scanError = result && result.error;

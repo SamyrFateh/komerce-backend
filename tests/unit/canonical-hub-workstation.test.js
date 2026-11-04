@@ -96,7 +96,7 @@ test('Administration charge le tableau PO de tous les marchés et les preuves sa
   const app=load(),root=el('main'),po={id:'10000000-0000-4000-8000-000000000001',
     supplier:'Alpha Trading',market:'KM',stage:'draft',order_count:3,expected:4,received:1,
     payment_count:1,verified_debit_count:0,payment_evidence:'Débit à rapprocher',
-    commitment_authorization:'Non tracée',payment_authorization:'Non tracée'};
+    commitment_authorization:'À valider',payment_authorization:'À autoriser'};
   const fetch=mockFetch({po:[po]});
   const payload=await app.renderAdministrationBoard(root,{document:doc,fetch,user:{role:'admin'}});
   expect(payload.scope).toBe('HUB_ADMINISTRATION_GLOBAL');

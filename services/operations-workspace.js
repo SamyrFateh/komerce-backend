@@ -27,6 +27,7 @@ const db = require('../db');
 const { transitionOrderStatus } = require('./order-status-machine');
 const autoParcel = require('./auto-parcel');
 const scanEngine = require('./scan-engine');
+const { buildManualConfirmation } = require('./manual-scan-confirmation');
 const inventory = require('./inventory-service');
 const { confirmCashByReference } = require('./payment-cash-confirm');
 const { countRelayParcels } = require('./operations-relay-projection');
@@ -296,7 +297,6 @@ async function querySignals(marketId) {
 function buildQueues(orders, parcels) {
   return {
     hub: {
-      to_order: orders.filter(row => row.status === 'confirmed'),
       to_ship: parcels.filter(row => row.status === 'preparation'),
     },
     relay: {
@@ -313,7 +313,6 @@ function buildQueues(orders, parcels) {
 
 function buildSummary(queues, distribution, inventoryState) {
   return Object.freeze({
-    hub_to_order: queues.hub.to_order.length,
     hub_unassigned: distribution.unassigned.length,
     hub_to_ship: queues.hub.to_ship.length,
     relay_cash_pending: queues.relay.cash_pending.length,
@@ -425,53 +424,6 @@ async function resolveParcelInMarket(reference, marketId) {
   return parcel;
 }
 
-async function markOrdered(reference, market, actor = {}) {
-  const resolvedMarket = requireMarket(market);
-  const order = await resolveOrderInMarket(reference, resolvedMarket.id);
-  if (order.status !== 'confirmed') {
-    throw new OperationsWorkspaceError(
-      'invalid_order_state',
-      `La commande doit être confirmed avant l'envoi au sourcing (actuel: ${order.status})`,
-      409
-    );
-  }
-
-  // La source de state machine décrit l'opération métier, pas l'écran qui la
-  // déclenche. Le Workspace réutilise donc la source forward-only historique
-  // `hub_mark_ordered`; la provenance UI/marché reste portée par la note.
-  const result = await transitionOrderStatus({
-    orderId: order.id,
-    newStatus: 'ordered',
-    actor: { id: actor.id || null, role: actor.role || 'admin' },
-    source: 'hub_mark_ordered',
-    note: `Workspace Opérations ${resolvedMarket.code}: commande envoyée au sourcing`,
-  });
-  if (!result.success) {
-    throw new OperationsWorkspaceError(
-      'order_transition_rejected',
-      result.error || 'Transition de commande refusée',
-      409
-    );
-  }
-
-  try {
-    await db.query(
-      `INSERT INTO order_comments (order_id, author_id, author_name, text)
-       VALUES ($1, $2, $3, $4)`,
-      [
-        order.id,
-        actor.id || null,
-        actor.full_name || 'Workspace Opérations',
-        `🛒 Commandé au sourcing · marché ${resolvedMarket.code}`,
-      ]
-    );
-  } catch (err) {
-    log.warn({ err, reference: order.reference }, '[operations-workspace] order comment skipped');
-  }
-
-  return Object.freeze({ reference: order.reference, status: 'ordered' });
-}
-
 async function runDistribution(market) {
   const resolvedMarket = requireMarket(market);
   const { rows } = await db.query(
@@ -538,7 +490,6 @@ async function runDistribution(market) {
 
 const SCAN_ACTIONS = Object.freeze({
   ship: Object.freeze({ event_type: 'shipped', notes: 'Expédié depuis le Hub · Workspace Opérations' }),
-  receive: Object.freeze({ event_type: 'relais_received', notes: 'Réceptionné au relais · Workspace Opérations' }),
   collect: Object.freeze({ event_type: 'customer_collected', notes: 'Remis au client · Workspace Opérations' }),
 });
 
@@ -547,10 +498,11 @@ const SCAN_ACTIONS = Object.freeze({
 // station qui exécute l'action est utilisé. Sans cette traduction, tout scan d'un acteur non-admin était
 // refusé par la contrainte (500).
 const SCAN_ACTOR_ROLE = Object.freeze({ admin: 'admin', agent_hub: 'hub_agent', agent_relais: 'relay_agent' });
-const SCAN_STATION_ROLE = Object.freeze({ ship: 'hub_agent', receive: 'relay_agent', collect: 'relay_agent' });
+const SCAN_STATION_ROLE = Object.freeze({ ship: 'hub_agent', collect: 'relay_agent' });
 
-async function scanParcel(reference, action, market, actor = {}) {
+async function scanParcel(reference, action, market, actor = {}, manualInput = null) {
   const resolvedMarket = requireMarket(market);
+  const manual = buildManualConfirmation(manualInput);
   const scan = SCAN_ACTIONS[action];
   if (!scan) {
     throw new OperationsWorkspaceError('invalid_scan_action', 'Action colis inconnue', 400);
@@ -563,10 +515,11 @@ async function scanParcel(reference, action, market, actor = {}) {
     actor_name: actor.full_name || 'Workspace Opérations',
     actor_role: SCAN_ACTOR_ROLE[actor.role] || SCAN_STATION_ROLE[action],
     location: resolvedMarket.code,
-    notes: scan.notes,
+    notes: `${scan.notes} · ${manual.notes}`,
     metadata: {
       source: 'canonical_operations_workspace',
       market_code: resolvedMarket.code,
+      ...manual.metadata,
     },
   });
   if (!result.success) {
@@ -680,7 +633,6 @@ module.exports = {
   buildWorkspace,
   resolveOrderInMarket,
   resolveParcelInMarket,
-  markOrdered,
   runDistribution,
   scanParcel,
   confirmCash,

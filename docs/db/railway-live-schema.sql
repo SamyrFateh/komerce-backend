@@ -947,21 +947,37 @@ $$;
 CREATE FUNCTION public.check_parcel_item_quantities() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
+DECLARE
+  local_receipt_proven BOOLEAN := FALSE;
 BEGIN
   IF NEW.qty_packed > NEW.qty_allocated THEN
-    RAISE EXCEPTION 'ANTI-ERREUR: qty_packed (%) > qty_allocated (%) pour parcel_item %', 
+    RAISE EXCEPTION 'ANTI-ERREUR: qty_packed (%) > qty_allocated (%) pour parcel_item %',
       NEW.qty_packed, NEW.qty_allocated, NEW.id;
   END IF;
   IF NEW.qty_shipped > NEW.qty_packed THEN
-    RAISE EXCEPTION 'ANTI-ERREUR: qty_shipped (%) > qty_packed (%) pour parcel_item %', 
+    RAISE EXCEPTION 'ANTI-ERREUR: qty_shipped (%) > qty_packed (%) pour parcel_item %',
       NEW.qty_shipped, NEW.qty_packed, NEW.id;
   END IF;
   IF NEW.qty_received > NEW.qty_shipped THEN
-    RAISE EXCEPTION 'ANTI-ERREUR: qty_received (%) > qty_shipped (%) pour parcel_item %', 
-      NEW.qty_received, NEW.qty_shipped, NEW.id;
+    SELECT EXISTS (
+      SELECT 1
+        FROM public.order_items oi
+        JOIN public.parcels p ON p.id = NEW.parcel_id
+        JOIN public.scans s ON s.parcel_id = p.id
+       WHERE oi.id = NEW.order_item_id
+         AND oi.order_id = p.order_id
+         AND oi.fulfillment_source = 'LOCAL_STOCK'
+         AND s.order_id = oi.order_id
+         AND s.step = 'relais_received'
+         AND s.scanned_by IS NOT NULL
+    ) INTO local_receipt_proven;
+    IF NOT local_receipt_proven THEN
+      RAISE EXCEPTION 'ANTI-ERREUR: qty_received (%) > qty_shipped (%) sans réception locale attestée pour parcel_item %',
+        NEW.qty_received, NEW.qty_shipped, NEW.id;
+    END IF;
   END IF;
   IF NEW.qty_collected > NEW.qty_received THEN
-    RAISE EXCEPTION 'ANTI-ERREUR: qty_collected (%) > qty_received (%) pour parcel_item %', 
+    RAISE EXCEPTION 'ANTI-ERREUR: qty_collected (%) > qty_received (%) pour parcel_item %',
       NEW.qty_collected, NEW.qty_received, NEW.id;
   END IF;
   RETURN NEW;
@@ -1566,6 +1582,30 @@ $$;
 
 
 --
+-- Name: guard_item_refund_pending_collection(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.guard_item_refund_pending_collection() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE v_reserved integer;
+BEGIN
+  IF NEW.qty_collected IS NOT DISTINCT FROM OLD.qty_collected
+     AND NEW.qty_refunded IS NOT DISTINCT FROM OLD.qty_refunded
+     AND NEW.quantity IS NOT DISTINCT FROM OLD.quantity THEN
+    RETURN NEW;
+  END IF;
+  SELECT COALESCE(SUM(r.quantity),0)::integer INTO v_reserved
+    FROM public.order_item_refund_reservations r
+   WHERE r.order_item_id=NEW.id AND r.status IN ('reserved','processing','unknown');
+  IF NEW.qty_collected + NEW.qty_refunded + v_reserved > NEW.quantity THEN
+    RAISE EXCEPTION 'ITEM_REFUND_PENDING_QTY_NOT_COLLECTABLE' USING ERRCODE='23514';
+  END IF;
+  RETURN NEW;
+END $$;
+
+
+--
 -- Name: hub_guard_allocation_purchase_line(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -1825,6 +1865,25 @@ BEGIN
 
   RETURN NEW;
 END;
+$$;
+
+
+--
+-- Name: hub_item_handed_over(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.hub_item_handed_over(p_order_item_id uuid) RETURNS integer
+    LANGUAGE sql STABLE
+    AS $$
+  SELECT COALESCE(SUM(p.quantity), 0)::integer
+    FROM public.hub_physical_unit_placements p
+    JOIN public.hub_purchase_allocations a ON a.id = p.allocation_id
+    JOIN public.hub_physical_units u ON u.id = p.physical_unit_id AND u.unit_type = 'MARKET_PARCEL'
+    JOIN public.international_shipment_hub_units h ON h.physical_unit_id = u.id
+    JOIN public.international_shipments s ON s.id = h.shipment_id
+   WHERE a.order_item_id = p_order_item_id
+     AND p.removed_at IS NULL
+     AND s.stage <> 'hub_ready';
 $$;
 
 
@@ -2190,6 +2249,31 @@ $$;
 
 
 --
+-- Name: parcel_items_guard_handed_over(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.parcel_items_guard_handed_over() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE v_source text; v_other integer; v_handed integer;
+BEGIN
+  IF NEW.qty_shipped = 0 THEN RETURN NEW; END IF;
+  IF TG_OP = 'UPDATE' AND NEW.qty_shipped = OLD.qty_shipped THEN RETURN NEW; END IF;
+  SELECT fulfillment_source INTO v_source FROM public.order_items WHERE id = NEW.order_item_id;
+  IF v_source IS DISTINCT FROM 'IMPORT' THEN RETURN NEW; END IF;
+  SELECT COALESCE(SUM(pi.qty_shipped), 0) INTO v_other
+    FROM public.parcel_items pi JOIN public.parcels pa ON pa.id = pi.parcel_id
+   WHERE pi.order_item_id = NEW.order_item_id AND pi.id <> NEW.id AND pa.cancelled_at IS NULL;
+  v_handed := public.hub_item_handed_over(NEW.order_item_id);
+  IF v_other + NEW.qty_shipped > v_handed THEN
+    RAISE EXCEPTION 'parcel_item_not_handed_over: qty_shipped % > remis au transitaire % pour l''article %', v_other + NEW.qty_shipped, v_handed, NEW.order_item_id
+      USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END $$;
+
+
+--
 -- Name: parcel_items_guard_physical_proof(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -2214,6 +2298,32 @@ BEGIN
   END IF;
   IF v_other_packed + NEW.qty_packed > v_boxed THEN
     RAISE EXCEPTION 'parcel_item_no_physical_proof: qty_packed % > placé en KOM-BOX % pour l''article %', v_other_packed + NEW.qty_packed, v_boxed, NEW.order_item_id
+      USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END $$;
+
+
+--
+-- Name: parcel_items_guard_relay_attested(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.parcel_items_guard_relay_attested() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE v_source text; v_other integer; v_attested integer;
+BEGIN
+  IF NEW.qty_received = 0 THEN RETURN NEW; END IF;
+  IF TG_OP = 'UPDATE' AND NEW.qty_received = OLD.qty_received THEN RETURN NEW; END IF;
+  SELECT fulfillment_source INTO v_source FROM public.order_items WHERE id = NEW.order_item_id;
+  IF v_source IS DISTINCT FROM 'IMPORT' THEN RETURN NEW; END IF;
+  SELECT COALESCE(SUM(pi.qty_received), 0) INTO v_other
+    FROM public.parcel_items pi JOIN public.parcels pa ON pa.id = pi.parcel_id
+   WHERE pi.order_item_id = NEW.order_item_id AND pi.id <> NEW.id AND pa.cancelled_at IS NULL;
+  SELECT COALESCE(SUM(received_qty), 0) INTO v_attested
+    FROM public.international_shipment_relay_receipts WHERE order_item_id = NEW.order_item_id;
+  IF v_other + NEW.qty_received > v_attested THEN
+    RAISE EXCEPTION 'parcel_item_not_relay_attested: qty_received % > attesté par le relais % pour l''article %', v_other + NEW.qty_received, v_attested, NEW.order_item_id
       USING ERRCODE = '23514';
   END IF;
   RETURN NEW;
@@ -2711,15 +2821,16 @@ BEGIN
 
   SELECT * INTO v_po FROM public.purchase_orders WHERE id = NEW.purchase_order_id FOR UPDATE;
   IF NOT FOUND OR v_po.order_id IS NOT NULL THEN
-    RETURN NEW; -- PO historique : écriture double 1:1, gardée par I3
+    RETURN NEW;
   END IF;
 
-  IF NEW.product_sku_id IS NULL
-     OR NEW.supplier_unit_ref IS NULL
-     OR NEW.supplier_order_identity IS NULL
-     OR NEW.supplier_unit_price IS NULL
-     OR NEW.supplier_currency IS NULL THEN
-    RAISE EXCEPTION 'purchase_line_not_groupable: seule une ligne à identité fournisseur exacte et prix connu est regroupable'
+  IF v_po.trigger_mode = 'auto'
+     AND (NEW.product_sku_id IS NULL
+          OR NEW.supplier_unit_ref IS NULL
+          OR NEW.supplier_order_identity IS NULL
+          OR NEW.supplier_unit_price IS NULL
+          OR NEW.supplier_currency IS NULL) THEN
+    RAISE EXCEPTION 'purchase_line_not_groupable: une PO en mode API exige une ligne à identité fournisseur exacte et prix connu'
       USING ERRCODE = '23514';
   END IF;
 
@@ -2734,6 +2845,8 @@ BEGIN
    WHERE pl.purchase_order_id = NEW.purchase_order_id
      AND pl.cancelled_at IS NULL
      AND pl.id IS DISTINCT FROM NEW.id
+     AND pl.supplier_currency IS NOT NULL
+     AND NEW.supplier_currency IS NOT NULL
      AND pl.supplier_currency IS DISTINCT FROM NEW.supplier_currency
    LIMIT 1;
   IF FOUND THEN
@@ -2784,6 +2897,18 @@ BEGIN
       USING ERRCODE = '23514';
   END IF;
   RETURN NEW;
+END $$;
+
+
+--
+-- Name: purchase_order_authorizations_immutable(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.purchase_order_authorizations_immutable() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RAISE EXCEPTION 'purchase_order_authorization_immutable' USING ERRCODE = '23514';
 END $$;
 
 
@@ -2857,6 +2982,22 @@ BEGIN
   IF OLD.sent_at IS NULL AND NEW.sent_at IS NOT NULL
      AND NEW.status NOT IN ('notified','confirmed','shipped','hub_received') THEN
     RAISE EXCEPTION 'purchase_order_sent_requires_submitted: seule une PO soumise peut être envoyée'
+      USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END $$;
+
+
+--
+-- Name: purchase_orders_guard_trigger_mode(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.purchase_orders_guard_trigger_mode() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF NEW.trigger_mode IS DISTINCT FROM OLD.trigger_mode THEN
+    RAISE EXCEPTION 'purchase_order_mode_immutable: le mode d''une PO ne change pas après création'
       USING ERRCODE = '23514';
   END IF;
   RETURN NEW;
@@ -3274,11 +3415,13 @@ CREATE FUNCTION public.sync_parcel_items_from_physical(p_order_item_id uuid) RET
     LANGUAGE plpgsql
     AS $$
 DECLARE
-  v_received integer; v_boxed integer; v_a integer; v_b integer; v_na integer; v_nb integer; r record;
+  v_received integer; v_boxed integer; v_handed integer;
+  v_a integer; v_b integer; v_h integer; v_na integer; v_nb integer; v_ns integer; r record;
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM public.order_items WHERE id = p_order_item_id AND fulfillment_source = 'IMPORT') THEN RETURN; END IF;
   SELECT received, boxed INTO v_received, v_boxed FROM public.hub_item_physical_proof(p_order_item_id);
-  v_a := v_received; v_b := v_boxed;
+  v_handed := public.hub_item_handed_over(p_order_item_id);
+  v_a := v_received; v_b := v_boxed; v_h := v_handed;
   FOR r IN
     SELECT pi.id, pi.quantity, pi.qty_allocated, pi.qty_packed, pi.qty_shipped
       FROM public.parcel_items pi JOIN public.parcels pa ON pa.id = pi.parcel_id
@@ -3288,11 +3431,14 @@ BEGIN
   LOOP
     v_na := LEAST(r.quantity, v_a);
     v_nb := LEAST(v_na, v_b);
+    v_ns := LEAST(v_nb, v_h);
     v_a := v_a - v_na;
     v_b := v_b - v_nb;
+    v_h := v_h - v_ns;
     IF v_nb < r.qty_shipped THEN CONTINUE; END IF; -- déjà expédié : la preuve passée ne se réécrit pas
-    IF v_na <> r.qty_allocated OR v_nb <> r.qty_packed THEN
-      UPDATE public.parcel_items SET qty_allocated = v_na, qty_packed = v_nb WHERE id = r.id;
+    IF v_ns < r.qty_shipped THEN v_ns := r.qty_shipped; END IF;
+    IF v_na <> r.qty_allocated OR v_nb <> r.qty_packed OR v_ns <> r.qty_shipped THEN
+      UPDATE public.parcel_items SET qty_allocated = v_na, qty_packed = v_nb, qty_shipped = v_ns WHERE id = r.id;
     END IF;
   END LOOP;
 END $$;
@@ -3322,6 +3468,28 @@ DECLARE v_item uuid;
 BEGIN
   SELECT order_item_id INTO v_item FROM public.hub_purchase_allocations WHERE id = NEW.allocation_id;
   IF v_item IS NOT NULL THEN PERFORM public.sync_parcel_items_from_physical(v_item); END IF;
+  RETURN NULL;
+END $$;
+
+
+--
+-- Name: sync_parcel_items_on_shipment_stage(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.sync_parcel_items_on_shipment_stage() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE v_item uuid;
+BEGIN
+  FOR v_item IN
+    SELECT DISTINCT a.order_item_id
+      FROM public.international_shipment_hub_units h
+      JOIN public.hub_physical_unit_placements p ON p.physical_unit_id = h.physical_unit_id
+      JOIN public.hub_purchase_allocations a ON a.id = p.allocation_id
+     WHERE h.shipment_id = NEW.id AND p.removed_at IS NULL
+  LOOP
+    PERFORM public.sync_parcel_items_from_physical(v_item);
+  END LOOP;
   RETURN NULL;
 END $$;
 
@@ -4724,6 +4892,23 @@ COMMENT ON COLUMN public.cost_components.provenance IS 'Provenance déclarée de
 
 
 --
+-- Name: credential_action_tokens; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.credential_action_tokens (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    token_hash character(64) NOT NULL,
+    purpose character varying(32) NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    expires_at timestamp with time zone NOT NULL,
+    consumed_at timestamp with time zone,
+    CONSTRAINT credential_action_tokens_check CHECK ((expires_at > created_at)),
+    CONSTRAINT credential_action_tokens_purpose_check CHECK (((purpose)::text = ANY ((ARRAY['account_activation'::character varying, 'password_reset'::character varying])::text[])))
+);
+
+
+--
 -- Name: currency_parities; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -5939,6 +6124,24 @@ CREATE TABLE public.garment_models (
 
 
 --
+-- Name: hub_authorization_grants; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.hub_authorization_grants (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    authorization_type text NOT NULL,
+    granted_by uuid NOT NULL,
+    granted_at timestamp with time zone DEFAULT now() NOT NULL,
+    revoked_by uuid,
+    revoked_at timestamp with time zone,
+    revoke_reason text,
+    CONSTRAINT chk_hub_auth_grants_revocation CHECK ((((revoked_at IS NULL) AND (revoked_by IS NULL)) OR ((revoked_at IS NOT NULL) AND (revoked_by IS NOT NULL)))),
+    CONSTRAINT hub_authorization_grants_authorization_type_check CHECK ((authorization_type = ANY (ARRAY['purchase_commitment'::text, 'supplier_payment'::text])))
+);
+
+
+--
 -- Name: hub_custody_events; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -6754,6 +6957,7 @@ CREATE TABLE public.market_delegation_audit (
     occurred_at timestamp with time zone DEFAULT now() NOT NULL,
     correlation_id text,
     market_id uuid,
+    retired_capability text,
     CONSTRAINT market_delegation_audit_action_check CHECK ((char_length(btrim(action)) > 0))
 );
 
@@ -7448,6 +7652,41 @@ COMMENT ON COLUMN public.order_item_real_cost_allocations.provenance IS 'Provena
 
 
 --
+-- Name: order_item_refund_reservations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.order_item_refund_reservations (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    order_id uuid NOT NULL,
+    order_item_id uuid NOT NULL,
+    source_incident_id uuid NOT NULL,
+    refund_intent_id uuid NOT NULL,
+    operation_key uuid NOT NULL,
+    quantity integer NOT NULL,
+    amount_kmf numeric(14,2) NOT NULL,
+    amount_eur numeric(12,2) NOT NULL,
+    reason text NOT NULL,
+    status text DEFAULT 'reserved'::text NOT NULL,
+    created_by uuid,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    provider_ref text,
+    resolved_at timestamp with time zone,
+    CONSTRAINT order_item_refund_reservations_amount_eur_check CHECK ((amount_eur > (0)::numeric)),
+    CONSTRAINT order_item_refund_reservations_amount_kmf_check CHECK ((amount_kmf > (0)::numeric)),
+    CONSTRAINT order_item_refund_reservations_quantity_check CHECK ((quantity > 0)),
+    CONSTRAINT order_item_refund_reservations_reason_check CHECK ((length(btrim(reason)) >= 8)),
+    CONSTRAINT order_item_refund_reservations_status_check CHECK ((status = ANY (ARRAY['reserved'::text, 'processing'::text, 'unknown'::text, 'confirmed'::text, 'failed'::text])))
+);
+
+
+--
+-- Name: TABLE order_item_refund_reservations; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.order_item_refund_reservations IS 'E7: reservations partielles adossees a une attestation relais et a une intention PSP durable ; aucune sortie de fonds ni annulation automatique lors de la reservation.';
+
+
+--
 -- Name: order_items; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -7487,8 +7726,10 @@ CREATE TABLE public.order_items (
     requested_transport_rail text,
     shared_cart_item_id uuid,
     fulfillment_source text,
+    qty_refunded integer DEFAULT 0 NOT NULL,
     CONSTRAINT chk_order_items_price CHECK ((price_kmf > (0)::numeric)),
     CONSTRAINT chk_order_items_qty CHECK ((quantity > 0)),
+    CONSTRAINT chk_order_items_qty_refunded CHECK (((qty_refunded >= 0) AND ((qty_refunded + qty_collected) <= quantity))),
     CONSTRAINT order_items_delivery_mode_check CHECK ((delivery_mode = ANY (ARRAY['sea'::text, 'air'::text]))),
     CONSTRAINT order_items_fulfillment_source_valid CHECK (((fulfillment_source IS NULL) OR (fulfillment_source = ANY (ARRAY['LOCAL_STOCK'::text, 'IMPORT'::text])))),
     CONSTRAINT order_items_requested_transport_rail_check CHECK ((requested_transport_rail = ANY (ARRAY['SEA_STANDARD'::text, 'AIR_EXPRESS'::text])))
@@ -9592,6 +9833,26 @@ CREATE TABLE public.purchase_lines (
 
 
 --
+-- Name: purchase_order_authorizations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.purchase_order_authorizations (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    purchase_order_id uuid NOT NULL,
+    authorization_type text NOT NULL,
+    decided_by uuid NOT NULL,
+    decided_at timestamp with time zone DEFAULT now() NOT NULL,
+    amount numeric(18,4) NOT NULL,
+    currency text NOT NULL,
+    proof_ref text NOT NULL,
+    CONSTRAINT purchase_order_authorizations_amount_check CHECK ((amount > (0)::numeric)),
+    CONSTRAINT purchase_order_authorizations_authorization_type_check CHECK ((authorization_type = ANY (ARRAY['purchase_commitment'::text, 'supplier_payment'::text]))),
+    CONSTRAINT purchase_order_authorizations_currency_check CHECK ((currency ~ '^[A-Z]{3}$'::text)),
+    CONSTRAINT purchase_order_authorizations_proof_ref_check CHECK ((btrim(proof_ref) <> ''::text))
+);
+
+
+--
 -- Name: purchase_orders; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -9977,7 +10238,10 @@ CREATE TABLE public.scan_events (
     corrects_event_id uuid,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     photo_urls text[] DEFAULT '{}'::text[],
+    entry_mode text GENERATED ALWAYS AS (COALESCE((metadata ->> 'entry_mode'::text), 'scan'::text)) STORED,
     CONSTRAINT scan_events_actor_role_check CHECK ((actor_role = ANY (ARRAY['hub_agent'::text, 'relay_agent'::text, 'driver'::text, 'system'::text, 'admin'::text]))),
+    CONSTRAINT scan_events_entry_mode_check CHECK ((entry_mode = ANY (ARRAY['scan'::text, 'manual_confirmation'::text]))),
+    CONSTRAINT scan_events_manual_reason_check CHECK (((entry_mode <> 'manual_confirmation'::text) OR (NULLIF(btrim((metadata ->> 'manual_reason'::text)), ''::text) IS NOT NULL))),
     CONSTRAINT scan_events_status_check CHECK ((status = ANY (ARRAY['applied'::text, 'rejected'::text, 'needs_review'::text, 'reversed'::text])))
 );
 
@@ -11634,7 +11898,9 @@ CREATE TABLE public.users (
     relais_id uuid,
     phone_payer character varying(20),
     big_basket_count integer DEFAULT 0 NOT NULL,
-    big_basket_last_notified_count integer DEFAULT 0 NOT NULL
+    big_basket_last_notified_count integer DEFAULT 0 NOT NULL,
+    account_activation_required boolean DEFAULT false NOT NULL,
+    credentials_changed_at timestamp with time zone
 );
 
 
@@ -12833,6 +13099,22 @@ ALTER TABLE ONLY public.cost_components
 
 
 --
+-- Name: credential_action_tokens credential_action_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.credential_action_tokens
+    ADD CONSTRAINT credential_action_tokens_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: credential_action_tokens credential_action_tokens_token_hash_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.credential_action_tokens
+    ADD CONSTRAINT credential_action_tokens_token_hash_key UNIQUE (token_hash);
+
+
+--
 -- Name: currency_parities currency_parities_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -13078,6 +13360,14 @@ ALTER TABLE ONLY public.fx_rate_observations
 
 ALTER TABLE ONLY public.garment_models
     ADD CONSTRAINT garment_models_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: hub_authorization_grants hub_authorization_grants_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_authorization_grants
+    ADD CONSTRAINT hub_authorization_grants_pkey PRIMARY KEY (id);
 
 
 --
@@ -13513,6 +13803,22 @@ ALTER TABLE ONLY public.order_item_real_cost_allocations
 
 
 --
+-- Name: order_item_refund_reservations order_item_refund_reservations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.order_item_refund_reservations
+    ADD CONSTRAINT order_item_refund_reservations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: order_item_refund_reservations order_item_refund_reservations_refund_intent_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.order_item_refund_reservations
+    ADD CONSTRAINT order_item_refund_reservations_refund_intent_id_key UNIQUE (refund_intent_id);
+
+
+--
 -- Name: order_items order_items_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -13934,6 +14240,14 @@ ALTER TABLE ONLY public.providers
 
 ALTER TABLE ONLY public.purchase_lines
     ADD CONSTRAINT purchase_lines_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: purchase_order_authorizations purchase_order_authorizations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.purchase_order_authorizations
+    ADD CONSTRAINT purchase_order_authorizations_pkey PRIMARY KEY (id);
 
 
 --
@@ -14601,6 +14915,14 @@ ALTER TABLE ONLY public.international_shipment_hub_units
 
 
 --
+-- Name: order_item_refund_reservations uq_item_refund_order_operation; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.order_item_refund_reservations
+    ADD CONSTRAINT uq_item_refund_order_operation UNIQUE (order_id, operation_key);
+
+
+--
 -- Name: orders uq_orders_reference; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -14678,6 +15000,14 @@ ALTER TABLE ONLY public.users
 
 ALTER TABLE ONLY public.users
     ADD CONSTRAINT users_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: purchase_order_authorizations ux_po_authorizations_type; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.purchase_order_authorizations
+    ADD CONSTRAINT ux_po_authorizations_type UNIQUE (purchase_order_id, authorization_type);
 
 
 --
@@ -15201,6 +15531,13 @@ CREATE INDEX idx_cost_components_scope ON public.cost_components USING btree (sc
 
 
 --
+-- Name: idx_credential_action_tokens_user_purpose; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_credential_action_tokens_user_purpose ON public.credential_action_tokens USING btree (user_id, purpose) WHERE (consumed_at IS NULL);
+
+
+--
 -- Name: idx_csf_shipment; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -15709,6 +16046,13 @@ CREATE INDEX idx_invoices_owner_created ON public.invoices USING btree (owner_us
 --
 
 CREATE UNIQUE INDEX idx_invoices_public_token ON public.invoices USING btree (public_token) WHERE (public_token IS NOT NULL);
+
+
+--
+-- Name: idx_item_refund_reservations_line; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_item_refund_reservations_line ON public.order_item_refund_reservations USING btree (order_item_id, created_at);
 
 
 --
@@ -17119,6 +17463,13 @@ CREATE INDEX idx_scan_events_created ON public.scan_events USING btree (created_
 
 
 --
+-- Name: idx_scan_events_entry_mode; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_scan_events_entry_mode ON public.scan_events USING btree (entry_mode) WHERE (entry_mode <> 'scan'::text);
+
+
+--
 -- Name: idx_scan_events_order; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -17742,6 +18093,13 @@ CREATE INDEX idx_users_loyalty ON public.users USING btree (loyalty_tier_id);
 
 
 --
+-- Name: idx_users_pending_activation; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_users_pending_activation ON public.users USING btree (id) WHERE (account_activation_required = true);
+
+
+--
 -- Name: idx_users_phone_payer; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -18246,6 +18604,13 @@ CREATE UNIQUE INDEX ux_catalog_media_source_identity ON public.catalog_media USI
 
 
 --
+-- Name: ux_hub_auth_grants_active; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX ux_hub_auth_grants_active ON public.hub_authorization_grants USING btree (user_id, authorization_type) WHERE (revoked_at IS NULL);
+
+
+--
 -- Name: ux_hub_purchase_allocations_line; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -18708,6 +19073,13 @@ CREATE TRIGGER trg_financial_movements_guard BEFORE DELETE OR UPDATE ON public.f
 
 
 --
+-- Name: order_items trg_guard_item_refund_pending_collection; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_guard_item_refund_pending_collection BEFORE UPDATE OF qty_collected, qty_refunded, quantity ON public.order_items FOR EACH ROW EXECUTE FUNCTION public.guard_item_refund_pending_collection();
+
+
+--
 -- Name: hub_purchase_allocations trg_hub_allocation_purchase_line; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -18890,10 +19262,24 @@ CREATE TRIGGER trg_orders_updated BEFORE UPDATE ON public.orders FOR EACH ROW EX
 
 
 --
+-- Name: parcel_items trg_parcel_items_handed_over; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_parcel_items_handed_over BEFORE INSERT OR UPDATE OF qty_shipped ON public.parcel_items FOR EACH ROW EXECUTE FUNCTION public.parcel_items_guard_handed_over();
+
+
+--
 -- Name: parcel_items trg_parcel_items_physical_proof; Type: TRIGGER; Schema: public; Owner: -
 --
 
 CREATE TRIGGER trg_parcel_items_physical_proof BEFORE INSERT OR UPDATE OF qty_allocated, qty_packed ON public.parcel_items FOR EACH ROW EXECUTE FUNCTION public.parcel_items_guard_physical_proof();
+
+
+--
+-- Name: parcel_items trg_parcel_items_relay_attested; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_parcel_items_relay_attested BEFORE INSERT OR UPDATE OF qty_received ON public.parcel_items FOR EACH ROW EXECUTE FUNCTION public.parcel_items_guard_relay_attested();
 
 
 --
@@ -18915,6 +19301,13 @@ CREATE TRIGGER trg_parcels_updated BEFORE UPDATE ON public.parcels FOR EACH ROW 
 --
 
 CREATE TRIGGER trg_partners_updated BEFORE UPDATE ON public.partners FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+
+--
+-- Name: purchase_order_authorizations trg_po_authorizations_immutable; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_po_authorizations_immutable BEFORE DELETE OR UPDATE ON public.purchase_order_authorizations FOR EACH ROW EXECUTE FUNCTION public.purchase_order_authorizations_immutable();
 
 
 --
@@ -19149,6 +19542,13 @@ CREATE TRIGGER trg_purchase_orders_sent_proof BEFORE UPDATE OF sent_at, sent_cha
 
 
 --
+-- Name: purchase_orders trg_purchase_orders_trigger_mode_immutable; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_purchase_orders_trigger_mode_immutable BEFORE UPDATE OF trigger_mode ON public.purchase_orders FOR EACH ROW EXECUTE FUNCTION public.purchase_orders_guard_trigger_mode();
+
+
+--
 -- Name: relais trg_relais_market_id_drift_guard; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -19230,6 +19630,13 @@ CREATE TRIGGER trg_sync_parcel_items_on_insert AFTER INSERT ON public.parcel_ite
 --
 
 CREATE TRIGGER trg_sync_parcel_items_on_placement AFTER INSERT OR UPDATE OF removed_at ON public.hub_physical_unit_placements FOR EACH ROW EXECUTE FUNCTION public.sync_parcel_items_on_placement();
+
+
+--
+-- Name: international_shipments trg_sync_parcel_items_on_shipment_stage; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_sync_parcel_items_on_shipment_stage AFTER UPDATE OF stage ON public.international_shipments FOR EACH ROW WHEN ((old.stage IS DISTINCT FROM new.stage)) EXECUTE FUNCTION public.sync_parcel_items_on_shipment_stage();
 
 
 --
@@ -19840,6 +20247,14 @@ ALTER TABLE ONLY public.cost_components
 
 
 --
+-- Name: credential_action_tokens credential_action_tokens_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.credential_action_tokens
+    ADD CONSTRAINT credential_action_tokens_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
 -- Name: customs_history customs_history_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -20085,6 +20500,30 @@ ALTER TABLE ONLY public.financial_movement_documents
 
 ALTER TABLE ONLY public.financial_movements
     ADD CONSTRAINT financial_movements_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id);
+
+
+--
+-- Name: hub_authorization_grants hub_authorization_grants_granted_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_authorization_grants
+    ADD CONSTRAINT hub_authorization_grants_granted_by_fkey FOREIGN KEY (granted_by) REFERENCES public.users(id);
+
+
+--
+-- Name: hub_authorization_grants hub_authorization_grants_revoked_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_authorization_grants
+    ADD CONSTRAINT hub_authorization_grants_revoked_by_fkey FOREIGN KEY (revoked_by) REFERENCES public.users(id);
+
+
+--
+-- Name: hub_authorization_grants hub_authorization_grants_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_authorization_grants
+    ADD CONSTRAINT hub_authorization_grants_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
 
 
 --
@@ -20620,7 +21059,7 @@ ALTER TABLE ONLY public.market_delegation_audit
 --
 
 ALTER TABLE ONLY public.market_delegation_audit
-    ADD CONSTRAINT market_delegation_audit_capability_fkey FOREIGN KEY (capability) REFERENCES public.capability_registry(capability);
+    ADD CONSTRAINT market_delegation_audit_capability_fkey FOREIGN KEY (capability) REFERENCES public.capability_registry(capability) ON DELETE SET NULL;
 
 
 --
@@ -21093,6 +21532,46 @@ ALTER TABLE ONLY public.order_item_real_cost_allocations
 
 ALTER TABLE ONLY public.order_item_real_cost_allocations
     ADD CONSTRAINT order_item_real_cost_allocations_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.customs_shipments(id) ON DELETE SET NULL;
+
+
+--
+-- Name: order_item_refund_reservations order_item_refund_reservations_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.order_item_refund_reservations
+    ADD CONSTRAINT order_item_refund_reservations_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: order_item_refund_reservations order_item_refund_reservations_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.order_item_refund_reservations
+    ADD CONSTRAINT order_item_refund_reservations_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: order_item_refund_reservations order_item_refund_reservations_order_item_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.order_item_refund_reservations
+    ADD CONSTRAINT order_item_refund_reservations_order_item_id_fkey FOREIGN KEY (order_item_id) REFERENCES public.order_items(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: order_item_refund_reservations order_item_refund_reservations_refund_intent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.order_item_refund_reservations
+    ADD CONSTRAINT order_item_refund_reservations_refund_intent_id_fkey FOREIGN KEY (refund_intent_id) REFERENCES public.refund_execution_intents(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: order_item_refund_reservations order_item_refund_reservations_source_incident_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.order_item_refund_reservations
+    ADD CONSTRAINT order_item_refund_reservations_source_incident_id_fkey FOREIGN KEY (source_incident_id) REFERENCES public.incidents(id) ON DELETE RESTRICT;
 
 
 --
@@ -21741,6 +22220,22 @@ ALTER TABLE ONLY public.purchase_lines
 
 ALTER TABLE ONLY public.purchase_lines
     ADD CONSTRAINT purchase_lines_supplier_id_fkey FOREIGN KEY (supplier_id) REFERENCES public.suppliers(id);
+
+
+--
+-- Name: purchase_order_authorizations purchase_order_authorizations_decided_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.purchase_order_authorizations
+    ADD CONSTRAINT purchase_order_authorizations_decided_by_fkey FOREIGN KEY (decided_by) REFERENCES public.users(id);
+
+
+--
+-- Name: purchase_order_authorizations purchase_order_authorizations_purchase_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.purchase_order_authorizations
+    ADD CONSTRAINT purchase_order_authorizations_purchase_order_id_fkey FOREIGN KEY (purchase_order_id) REFERENCES public.purchase_orders(id) ON DELETE RESTRICT;
 
 
 --

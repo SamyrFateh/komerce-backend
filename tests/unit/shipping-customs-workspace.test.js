@@ -76,7 +76,8 @@ test('transit utilise l id interne résolu et délègue à scan-engine', async (
     'PCL-CM-001',
     MARKET,
     { id: 'transit-1', role: 'agent_transitaire', full_name: 'Transit Test' },
-    'Départ confirmé'
+    'Départ confirmé',
+    { reason: 'label_unreadable' }
   );
 
   expect(mockQuery).toHaveBeenCalledWith(
@@ -88,7 +89,7 @@ test('transit utilise l id interne résolu et délègue à scan-engine', async (
     event_type: 'transit_confirmed',
     scanned_by: 'transit-1',
     actor_role: 'agent_transitaire',
-    metadata: { source: 'canonical_shipping_customs_workspace', market_code: 'CM' },
+    metadata: { source: 'canonical_shipping_customs_workspace', market_code: 'CM', entry_mode: 'manual_confirmation', manual_reason: 'label_unreadable' },
   }));
   expect(result).toEqual({ parcel_ref: 'PCL-CM-001', status: 'in_transit', event_applied: true });
 });

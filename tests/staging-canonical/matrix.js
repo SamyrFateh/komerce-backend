@@ -8,7 +8,8 @@
  * @impact-areas dashboard, market, staging-only
  */
 'use strict';
-const markets=['KM','CM','CG','DJ'];
+// Five commercial markets, not a KM clone; business matrices remain market-specific.
+const markets=['KM','CM','CG','DJ','YT'];
 const pages={
  admin:['/admin/pilotage','/admin/action-center','/admin/commerce','/admin/orders','/admin/operations','/admin/finance',
  '/admin/workspaces/pricing','/admin/workspaces/catalog','/admin/workspaces/sourcing','/admin/workspaces/purchasing',

@@ -36,22 +36,12 @@ const log = require('../utils/logger').child({ module: 'purchasing-grouped' });
 const GROUPED_ROUTE_CODE = 'PURCHASE_ORDER_GROUPED_USE_PO_ROUTES';
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-function isGroupedPurchasingEnabled(env = process.env) {
-  return String(env.KOMERCE_GROUPED_PURCHASING || '').trim() === '1';
-}
-
 function fail(status, code, message, extra = {}) {
   const err = new Error(message);
   err.status = status;
   err.code = code;
   Object.assign(err, extra);
   return err;
-}
-
-function requireEnabled() {
-  if (!isGroupedPurchasingEnabled()) {
-    throw fail(409, 'GROUPED_PURCHASING_DISABLED', 'Achats regroupés désactivés (KOMERCE_GROUPED_PURCHASING)');
-  }
 }
 
 function requireUuid(value, name) {
@@ -131,9 +121,10 @@ const LINE_COLUMNS = `
     pl.quantity, vm.effective_quantity, vm.cancelled, pl.supplier_unit_price, pl.supplier_currency, pl.created_at,
     pl.parent_line_id, pl.confirmed_quantity, pl.confirmed_unit_price, pl.confirmed_at,
     pl.settled_quantity, pl.settled_at, pl.settle_reason, pl.cancel_reason,
+    TRUE AS groupable,
     (pl.product_sku_id IS NOT NULL AND pl.supplier_unit_ref IS NOT NULL
        AND pl.supplier_order_identity IS NOT NULL AND pl.supplier_unit_price IS NOT NULL
-       AND pl.supplier_currency IS NOT NULL) AS groupable`;
+       AND pl.supplier_currency IS NOT NULL) AS api_eligible`;
 
 const LINE_JOINS = `
       FROM purchase_lines pl
@@ -165,6 +156,7 @@ function shapeLine(row) {
     expected_unit_price: row.supplier_unit_price === null ? null : Number(row.supplier_unit_price),
     supplier_currency: row.supplier_currency,
     groupable: row.groupable,
+    api_eligible: row.api_eligible,
     created_at: row.created_at,
     // PR 5 — engagement : null tant que la PO n'est pas confirmée ; reliquat = ligne dont parent_line_id est renseigné.
     parent_line_id: row.parent_line_id,
@@ -202,7 +194,6 @@ function summarizeMarkets(lines) {
  *   la clé de regroupement reste fournisseur + hub + marché (dérivé en base).
  */
 async function listOpenLines({ market_id: marketId } = {}, q = db) {
-  requireEnabled();
   const marketFilter = marketId === undefined || marketId === null || marketId === '' ? null : requireUuid(marketId, 'market_id');
   const { rows } = await q.query(`
     SELECT ${LINE_COLUMNS}
@@ -284,7 +275,6 @@ async function getGroupedPurchaseOrder(poId, q = db) {
 // ─── Préparation d'une PO regroupée (draft) ───────────────────────────────────────────────────────
 
 async function preparePurchaseOrder({ supplier_id, procurement_hub_ref, line_ids, execution_mode } = {}, { actor = null } = {}) {
-  requireEnabled();
   // Mode d'exécution de la PO (arbitrage Hub autonome) : `manual` par défaut, indépendant de la plateforme d'origine des SKU.
   // `api` = exécution distante par le provider du fournisseur ; trigger_mode 'auto' est son seul porteur (pas de nouveau statut).
   const mode = execution_mode === undefined || execution_mode === null ? 'manual' : String(execution_mode);
@@ -348,7 +338,6 @@ async function preparePurchaseOrder({ supplier_id, procurement_hub_ref, line_ids
 
 // ─── Enrichissement d'une PO ouverte : aucune création de nouvelle commande fournisseur ─────────
 async function attachDraftLines(poId, lineIds) {
-  requireEnabled();
   requireUuid(poId, 'po_id');
   const ids = requireLineIds(lineIds);
 
@@ -380,7 +369,6 @@ async function attachDraftLines(poId, lineIds) {
 // ─── Détachement, abandon, annulation de ligne ───────────────────────────────────────────────────
 
 async function detachLines(poId, lineIds) {
-  requireEnabled();
   requireUuid(poId, 'po_id');
   const ids = requireLineIds(lineIds);
 
@@ -407,7 +395,6 @@ async function detachLines(poId, lineIds) {
 }
 
 async function discardPurchaseOrder(poId) {
-  requireEnabled();
   requireUuid(poId, 'po_id');
 
   return withTransaction(async (client) => {
@@ -429,7 +416,6 @@ async function discardPurchaseOrder(poId) {
 }
 
 async function cancelLine(lineId, reason) {
-  requireEnabled();
   requireUuid(lineId, 'line_id');
   const cleanReason = typeof reason === 'string' ? reason.trim() : '';
   if (!cleanReason) throw fail(400, 'INVALID_INPUT', 'reason obligatoire');
@@ -468,14 +454,13 @@ async function cancelLine(lineId, reason) {
 
 // Partagé avec purchasing-engagement-service (PR 5) : mêmes erreurs, même transaction, même ordre de verrouillage.
 const shared = {
-  fail, requireEnabled, requireUuid, withTransaction, lockGroupedPo,
+  fail, requireUuid, withTransaction, lockGroupedPo,
   loadPurchaseOrderLines, summarizeMarkets, shapeLine, LINE_COLUMNS, LINE_JOINS,
 };
 
 module.exports = {
   shared,
   GROUPED_ROUTE_CODE,
-  isGroupedPurchasingEnabled,
   groupedRouteError,
   listOpenLines,
   getGroupedPurchaseOrder,

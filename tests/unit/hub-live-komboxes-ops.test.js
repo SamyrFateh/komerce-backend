@@ -1,0 +1,29 @@
+'use strict';
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+const fs = require('fs');
+const path = require('path');
+const ui = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/operations-workspace.js'), 'utf8');
+const route = fs.readFileSync(path.join(__dirname, '../../routes/admin-operations-workspace.js'), 'utf8');
+
+test('Hub Live compose les KOM-BOX uniquement via les routes Workspace marché', () => {
+  expect(ui).toContain("endpointFor(context.marketCode, 'boxes')");
+  expect(ui).toContain('/fill`');
+  expect(ui).toContain('/advance`');
+  expect(ui).not.toContain('/api/hub/');
+});
+
+test('les routes de composition sont gardées par la capacité parcel.ship et le marché serveur', () => {
+  for (const suffix of ['/market/:marketCode/boxes\'', '/boxes/:unitId/fill\'', '/boxes/:unitId/advance\'']) {
+    const i = route.indexOf(suffix);
+    expect(i).toBeGreaterThan(-1);
+    const block = route.slice(i, i + 220);
+    expect(block).toContain("attachHubExecutionCapability('execution.parcel.ship')");
+    expect(block).toContain('requireHubWorkspaceAction');
+  }
+  expect(route).toContain('BOX_MARKET_MISMATCH');
+  expect(route).toContain('ALLOCATION_MARKET_MISMATCH');
+});

@@ -158,8 +158,9 @@ async function insertHistoricalPurchaseLine(client, { purchaseOrderId, item, ps,
  */
 async function insertOpenPurchaseLine(client, { item, ps, snapshot, quantity, parentLineId = null }) {
   if (!item?.id) throw new Error('[insertOpenPurchaseLine] order_item requis');
-  if (!snapshot.productSkuId || !snapshot.supplierUnitRef || !snapshot.supplierOrderIdentity) {
-    throw new Error('[insertOpenPurchaseLine] identité exacte requise');
+  // Identité exacte : tout ou rien (ligne API-éligible) ; sans SKU exact la ligne reste achetable en mode manuel.
+  if (snapshot.productSkuId && (!snapshot.supplierUnitRef || !snapshot.supplierOrderIdentity)) {
+    throw new Error('[insertOpenPurchaseLine] identité exacte incomplète');
   }
   const { rows: [line] } = await client.query(`
     INSERT INTO purchase_lines
@@ -169,10 +170,11 @@ async function insertOpenPurchaseLine(client, { item, ps, snapshot, quantity, pa
     VALUES (NULL,$1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9,$10,$11,$12)
     RETURNING id
   `, [
-    item.id, ps.supplier_id, ps.id, snapshot.productSkuId,
-    snapshot.purchaseTarget.supplier_sku, snapshot.supplierUnitRef,
-    JSON.stringify(snapshot.supplierOrderIdentity),
-    quantity, snapshot.money.amount, snapshot.money.currency, resolveProcurementHubRef(), parentLineId,
+    item.id, ps.supplier_id, ps.id, snapshot.productSkuId || null,
+    snapshot.purchaseTarget.supplier_sku, snapshot.supplierUnitRef || null,
+    snapshot.supplierOrderIdentity ? JSON.stringify(snapshot.supplierOrderIdentity) : null,
+    quantity, snapshot.money ? snapshot.money.amount : null, snapshot.money ? snapshot.money.currency : null,
+    resolveProcurementHubRef(), parentLineId,
   ]);
   return line;
 }

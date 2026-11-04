@@ -8,14 +8,17 @@
  * @brief HUB lot 2 — une seule vérité physique : le colis client (parcel_items) d'un article d'import est dérivé des réceptions Hub et des placements en KOM-BOX ; aucune quantité affectée/emballée/expédiée sans preuve, expédié <= placé <= reçu.
  */
 
-process.env.KOMERCE_GROUPED_PURCHASING = '1';
 jest.setTimeout(60000);
 
 const crypto = require('crypto');
+
+const { submitAuthorized } = require('../helpers/submit-authorized');
 const db = require('../../db');
 const grouped = require('../../services/purchasing-grouped-service');
 const engagement = require('../../services/purchasing-engagement-service');
 const hubOps = require('../../services/hub-operations');
+const journey = require('../../services/international-shipment-journey');
+const scanEngine = require('../../services/scan-engine');
 
 const hasDb = Boolean(process.env.DATABASE_URL);
 const describeDb = hasDb ? describe : describe.skip;
@@ -70,7 +73,7 @@ describeDb('Hub lot 2 — preuve physique des quantités du colis client (REAL_D
 
   test('réception partielle : affecté = reçu (3 sur 5), emballé encore 0', async () => {
     po = (await grouped.preparePurchaseOrder({ supplier_id: supplier, procurement_hub_ref: 'DXB', line_ids: [lineId] }, { actor: { id: admin, role: 'admin' } })).purchase_order.id;
-    await engagement.submitPurchaseOrder(po, { actor: { id: admin, role: 'admin' } });
+    await submitAuthorized(engagement, po, { actor: { id: admin, role: 'admin' } });
     const r = await hubOps.receiveSupplierPackageCommand({ reference: `${tag}-COLIS`, location_ref: 'HUB-DXB-RECEIVE', contents: [{ purchase_order_id: po, product_sku_id: sku.id, quantity: 3 }] }, admin);
     expect(r.status).toBe(201);
     global.__unit = r.body.unit.id;
@@ -90,8 +93,33 @@ describeDb('Hub lot 2 — preuve physique des quantités du colis client (REAL_D
     expect(await qtys()).toEqual({ qty_allocated: 3, qty_packed: 2, qty_shipped: 0 });
     await expect(q('UPDATE parcel_items SET qty_packed = 3 WHERE id=$1', [parcelItemId])).rejects.toThrow(/parcel_item_no_physical_proof/);
     await expect(q('UPDATE parcel_items SET qty_shipped = 3 WHERE id=$1', [parcelItemId])).rejects.toThrow(/qty_shipped/);
-    await q('UPDATE parcel_items SET qty_shipped = 2 WHERE id=$1', [parcelItemId]);
+    global.__box = boxId;
+  });
+
+  test('P0-2 : carton en hub_ready = expédié 0 ; scan ship refusé ; la remise au transitaire pose expédié = placé', async () => {
+    const market = { id: km, code: 'KM' };
+    const actor = { id: admin, role: 'admin' };
+    await advance(global.__box, ['PACKED']);
+    const shipRef = `${tag}-SHIP`;
+    await journey.open(market, actor, { reference: shipRef, hub_unit_ids: [global.__box] });
+
+    // Rattaché mais pas parti : aucune quantité expédiée, et la base refuse de la poser à la main.
+    expect(await qtys()).toEqual({ qty_allocated: 3, qty_packed: 2, qty_shipped: 0 });
+    await expect(q('UPDATE parcel_items SET qty_shipped = 2 WHERE id=$1', [parcelItemId])).rejects.toThrow(/parcel_item_not_handed_over/);
+
+    // Le scan Hub « ship » n'est plus une preuve d'expédition d'un colis import.
+    const refused = await scanEngine.processScan({ parcel_id: parcelId, event_type: 'shipped', scanned_by: admin, actor_role: 'hub_agent' });
+    expect(refused.success).toBe(false);
+    expect(refused.error).toMatchObject({ code: 'IMPORT_NOT_HANDED_OVER' });
+    expect(await qtys()).toEqual({ qty_allocated: 3, qty_packed: 2, qty_shipped: 0 });
+
+    // Remise effective (carton DISPATCHED puis étape handed_over) : expédié dérivé = placé.
+    expect((await hubOps.transitionOperatorUnitCommand({ unit_id: global.__box, to_state: 'DISPATCHED', location_ref: 'HUB-DXB-OUT' }, admin)).status).toBe(200);
+    await journey.transition(market, actor, shipRef, { to_stage: 'handed_over', proof_ref: 'REMISE-HP2', forwarder_name: 'Transitaire', transport_mode: 'sea' });
     expect(await qtys()).toEqual({ qty_allocated: 3, qty_packed: 2, qty_shipped: 2 });
+
+    // Rejeu de la même remise / sur-affirmation : jamais au-delà du remis.
+    await expect(q('UPDATE parcel_items SET qty_shipped = 3 WHERE id=$1', [parcelItemId])).rejects.toThrow(/qty_shipped/);
   });
 
   test('hors import (stock local) : circuit direct relais, aucune preuve Hub exigée', async () => {

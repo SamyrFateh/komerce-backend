@@ -51,7 +51,6 @@ The Workspace never derives Market ID authority from `users.role`. A delegated m
 | Action | Exact authority | Compatibility role after proof |
 | --- | --- | --- |
 | read selected-market Workspace | `operations.read` (or explicit dashboard-global read grant; persisted `agent_relais` may use its server relay binding) | none |
-| mark order as ordered | `execution.order.mark_ordered` | `agent_hub` |
 | run automatic distribution | `execution.distribution.run` | `agent_hub` |
 | ship parcel | `execution.parcel.ship` | `agent_hub` |
 | assign inventory to parcel | `execution.inventory.assign` | `agent_hub` |

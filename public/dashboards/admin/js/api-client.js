@@ -320,14 +320,6 @@
   // ── Vague 1 — Hub & Relais (HubRelaisView) ───────────────────────────────
 
   /**
-   * Hub — marquer une commande comme "commandée" (confirmed → ordered)
-   * @param {string} ref  Référence commande
-   */
-  function hubMarkOrdered(ref) {
-    return fetchMutation(apiUrl('/hub/orders/mark-ordered'), 'POST', { reference: ref });
-  }
-
-  /**
    * Hub — expédier un colis depuis le Hub (scan shipped)
    * @param {string} ref  Référence colis
    */
@@ -597,7 +589,6 @@
     getOrders,
 
     // Hub / Relais / HubRelaisView (7)
-    hubMarkOrdered,
     hubShip,
     autoDistribute,
     getDistribution,

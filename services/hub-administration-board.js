@@ -8,7 +8,7 @@
  * @outputs       all-market PO administration read model
  * @depends       db, services/hub-procurement-dossier.js
  * @used-by       routes/hub.js
- * @db-read       markets, orders, purchase_orders, purchase_lines, supplier_execution_payments
+ * @db-read       hub_authorization_grants, markets, orders, purchase_order_authorizations, purchase_orders, purchase_lines, supplier_execution_payments, users
  * @db-write      none
  * @db-txn        none
  * @doctrine      one_po_one_supplier_one_market, supplier_payment_authorization_distinct_from_debit
@@ -59,10 +59,12 @@ function gatherPurchaseOrders(marketsAndDossiers) {
     multi_market_legacy: po.markets.size > 1,
     order_count: po.orders.size,
     expected: po.expected, received: po.received, anomalies: po.anomalies,
-    // No canonical director commitment approval fact is present in these dossiers.
-    // "not recorded" is not the same as "rejected" or "pending".
-    commitment_authorization: 'Non tracée',
-    payment_authorization: 'Non tracée',
+    // Décisions de la directrice (P04) : projetées depuis purchase_order_authorizations par attachAuthorizations.
+    // Sans décision, l'état est « À valider » / « À autoriser » : jamais déduit du statut de la PO.
+    commitment_authorization: 'À valider',
+    payment_authorization: 'À autoriser',
+    commitment_decision: null,
+    payment_decision: null,
     payment_evidence: 'Aucune preuve de débit',
     payment_count: 0, verified_debit_count: 0,
   })).sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')) || a.id.localeCompare(b.id));
@@ -85,8 +87,37 @@ function attachPaymentEvidence(orders, evidenceRows) {
   });
 }
 
+const dateLabel = value => value ? new Date(value).toISOString().slice(0, 10) : '';
+const decisionOf = row => row && {
+  decided_by: row.decided_by, decided_by_name: row.decided_by_name || null, decided_at: row.decided_at,
+  amount: Number(row.amount), currency: row.currency, proof_ref: row.proof_ref,
+};
+
+/** Rattache les décisions tracées de la directrice ; l'autorisation de paiement n'est proposée qu'après l'engagement. */
+function attachAuthorizations(orders, rows) {
+  const byPO = new Map();
+  for (const row of rows || []) {
+    const entry = byPO.get(String(row.purchase_order_id)) || {};
+    entry[row.authorization_type] = decisionOf(row);
+    byPO.set(String(row.purchase_order_id), entry);
+  }
+  return orders.map(po => {
+    const found = byPO.get(String(po.id)) || {};
+    const commitment = found.purchase_commitment || null;
+    const payment = found.supplier_payment || null;
+    return {
+      ...po,
+      commitment_decision: commitment,
+      payment_decision: payment,
+      commitment_authorization: commitment ? 'Validé · ' + dateLabel(commitment.decided_at) : 'À valider',
+      payment_authorization: payment ? 'Autorisé · ' + dateLabel(payment.decided_at) :
+        commitment ? 'À autoriser' : 'Après engagement',
+    };
+  });
+}
+
 async function getAdministrationBoard(query = db,
-  dossierReader = (marketId) => dossier.getDossier({marketId}, query)) {
+  dossierReader = (marketId) => dossier.getDossier({marketId}, query), viewerId = null) {
   const {rows: markets} = await query.query(
     'SELECT id, code, name FROM markets WHERE is_active = TRUE ORDER BY code'
   );
@@ -103,11 +134,24 @@ async function getAdministrationBoard(query = db,
        WHERE purchase_order_id = ANY($1::uuid[])
        GROUP BY purchase_order_id`, [ids]
   ) : { rows: [] };
-  const purchaseOrders = attachPaymentEvidence(pos, evidence);
+  const { rows: decisions } = ids.length ? await query.query(
+    `SELECT a.purchase_order_id, a.authorization_type, a.decided_by, a.decided_at, a.amount, a.currency, a.proof_ref,
+            u.full_name AS decided_by_name
+       FROM purchase_order_authorizations a LEFT JOIN users u ON u.id = a.decided_by
+      WHERE a.purchase_order_id = ANY($1::uuid[])`, [ids]
+  ) : { rows: [] };
+  const { rows: grants } = viewerId ? await query.query(
+    `SELECT authorization_type FROM hub_authorization_grants WHERE user_id = $1 AND revoked_at IS NULL`, [viewerId]
+  ) : { rows: [] };
+  const purchaseOrders = attachAuthorizations(attachPaymentEvidence(pos, evidence), decisions);
   return {
     scope: 'HUB_ADMINISTRATION_GLOBAL',
     markets: markets.map(m => m.code),
-    approval_trace_available: false,
+    approval_trace_available: true,
+    viewer_grants: {
+      purchase_commitment: grants.some(g => g.authorization_type === 'purchase_commitment'),
+      supplier_payment: grants.some(g => g.authorization_type === 'supplier_payment'),
+    },
     kpis: {
       purchase_orders: purchaseOrders.length,
       drafts: purchaseOrders.filter(p => p.stage === 'draft').length,
@@ -119,4 +163,4 @@ async function getAdministrationBoard(query = db,
   };
 }
 
-module.exports = { gatherPurchaseOrders, attachPaymentEvidence, getAdministrationBoard };
+module.exports = { gatherPurchaseOrders, attachPaymentEvidence, attachAuthorizations, getAdministrationBoard };

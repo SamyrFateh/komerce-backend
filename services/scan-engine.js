@@ -121,6 +121,13 @@ async function processScan(params) {
       throw new ScanError('UNKNOWN_EVENT', `Type de scan inconnu: ${params.event_type}`);
     }
 
+    if (params.event_type === 'shipped') {
+      await assertImportHandedOver(client, params.parcel_id);
+    }
+    if (params.event_type === 'relais_received') {
+      await assertNoImportRelayScan(client, params.parcel_id);
+    }
+
     const { valid } = await _validateAndCatchup(client, params, parcel, parcelItems, result);
     if (!valid) {
       await client.query('COMMIT');
@@ -283,6 +290,17 @@ async function _validateAndCatchup(client, params, parcel, parcelItems, result) 
     // Vérifier si l'étape a déjà été faite
     const alreadyDone = await isStepCompleted(client, params.parcel_id, catchupType);
     if (alreadyDone) continue;
+    if (catchupType === 'relais_received') {
+      // Import : la réception est l'attestation relais. Colis déjà disponible = reçu attesté, rien à rattraper
+      // (ne jamais cascader qty_shipped → qty_received) ; sinon la remise est refusée.
+      if (parcel.status === 'available') {
+        const { rows: imp } = await client.query(
+          `SELECT 1 FROM parcel_items pi JOIN order_items oi ON oi.id = pi.order_item_id
+            WHERE pi.parcel_id = $1 AND oi.fulfillment_source = 'IMPORT' LIMIT 1`, [params.parcel_id]);
+        if (imp.length) continue;
+      }
+      await assertNoImportRelayScan(client, params.parcel_id);
+    }
 
     // Appliquer le rattrapage
     const catchupQtyBefore = buildQtySnapshot(parcelItems);
@@ -564,6 +582,41 @@ async function _resolvePhysicalProofIncidents(client, params, result) {
 // HELPERS INTERNES
 // ════════════════════════════════════════════════════════════════
 
+/**
+ * P0-2 — « Expédié » d'un colis contenant de l'import = remis physiquement au transitaire.
+ * qty_shipped est dérivé de la remise (migration 370) : un scan Hub ne le pose jamais.
+ */
+async function assertImportHandedOver(client, parcelId) {
+  const { rows } = await client.query(
+    `SELECT pi.id, pi.qty_packed, pi.qty_shipped
+       FROM parcel_items pi JOIN order_items oi ON oi.id = pi.order_item_id
+      WHERE pi.parcel_id = $1 AND oi.fulfillment_source = 'IMPORT'`,
+    [parcelId]
+  );
+  if (!rows.length) return;
+  const handed = rows.some((r) => Number(r.qty_shipped) > 0) && rows.every((r) => Number(r.qty_shipped) >= Number(r.qty_packed));
+  if (!handed) {
+    throw new ScanError('IMPORT_NOT_HANDED_OVER',
+      'Colis import : l’expédition est constatée par la remise du carton au transitaire, pas par un scan Hub');
+  }
+}
+
+/**
+ * P0-1 — La réception d'un colis contenant de l'import n'est constatée que par l'attestation Relais (migration 371) :
+ * aucun scan ni rattrapage ne la pose ni ne l'écrase.
+ */
+async function assertNoImportRelayScan(client, parcelId) {
+  const { rows } = await client.query(
+    `SELECT 1 FROM parcel_items pi JOIN order_items oi ON oi.id = pi.order_item_id
+      WHERE pi.parcel_id = $1 AND oi.fulfillment_source = 'IMPORT' LIMIT 1`,
+    [parcelId]
+  );
+  if (rows.length) {
+    throw new ScanError('IMPORT_RECEIPT_REQUIRES_RELAY_ATTESTATION',
+      'Colis import : la réception se fait par l’attestation du relais sur l’expédition, pas par un scan');
+  }
+}
+
 /** Cascade les quantités vers le champ cible pour tous les items d'un colis */
 async function cascadeQuantities(client, parcelId, qtyField) {
   // Le champ source est toujours le champ précédent dans la chaîne
@@ -795,6 +848,7 @@ async function syncOrderFromParcels(client, orderId) {
   const { transitionOrderStatus } = require('./order-status-machine');
 
   // Agréger les quantités des parcel_items par order_item_id
+  try {
   await client.query(`
     UPDATE order_items oi SET
       qty_allocated = COALESCE(agg.total_allocated, 0),
@@ -818,6 +872,13 @@ async function syncOrderFromParcels(client, orderId) {
     ) agg
     WHERE oi.id = agg.order_item_id
   `, [orderId]);
+  } catch (err) {
+    // Remboursement E7 réservé/en cours : le retrait client est refusé (refus métier, pas une 500).
+    if (err && err.code === '23514' && /ITEM_REFUND_PENDING_QTY_NOT_COLLECTABLE/.test(err.message || '')) {
+      throw new ScanError('ITEM_REFUND_PENDING', 'Remise impossible : un remboursement article est réservé ou en cours pour cette commande');
+    }
+    throw err;
+  }
 
   // ── Recalculer le statut commande depuis les colis ──
   // ✅ FIX: Uses VALID statuses from the order_status ENUM only

@@ -1,7 +1,7 @@
 /**
  * @e2e   hub-live-execution.spec.js
  * @feature dashboard (Hub live · Exécution, /admin/hub-live?view=execute)
- * @brief Les opérations Hub (commander, répartir, expédier, affecter) sont exécutables depuis Hub live,
+ * @brief Les opérations Hub (répartir, expédier, affecter) sont exécutables depuis Hub live,
  *        via les routes canoniques du Workspace (une seule mutation par clic, marché conservé, aucune action Relais).
  *        API simulée : aucun serveur ni base requis, aucune donnée réelle modifiée.
  */
@@ -141,7 +141,7 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
     test('actions Hub uniquement : aucun onglet ni bouton Relais', async ({ page }) => {
       await mount(page);
       await expect(page.locator('[data-workspace-view]')).toHaveText(['Dossiers', 'Réceptions', 'Actions Hub', 'Stock à affecter']);
-      await expect(page.locator('[data-workspace-action="mark-ordered"]')).toHaveCount(1);
+      await expect(page.locator('[data-workspace-action="mark-ordered"]')).toHaveCount(0);
       await expect(page.locator('[data-workspace-action="run-distribution"]')).toHaveCount(1);
       await expect(page.locator('[data-workspace-action="ship"]')).toHaveCount(1);
       await expect(page.locator('[data-workspace-action="confirm-cash"], [data-workspace-action="receive"], [data-workspace-action="collect"]')).toHaveCount(0);
@@ -215,17 +215,14 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       await expect(page.getByText('Aucune commande à répartir.')).toBeVisible();
     });
 
-    test('commander, répartir, expédier : une mutation par clic, routes canoniques du marché', async ({ page }) => {
+    test('répartir, expédier : une mutation par clic, routes canoniques du marché', async ({ page }) => {
       const posts = [];
       await mount(page, { posts });
-      await page.locator('[data-workspace-action="mark-ordered"]').click();
-      await expect.poll(() => posts.length).toBe(1);
       await page.locator('[data-workspace-action="run-distribution"]').click();
-      await expect.poll(() => posts.length).toBe(2);
+      await expect.poll(() => posts.length).toBe(1);
       await page.locator('[data-workspace-action="ship"]').click();
-      await expect.poll(() => posts.length).toBe(3);
+      await expect.poll(() => posts.length).toBe(2);
       expect(posts.map((p) => p.path)).toEqual([
-        `${API}/orders/K-ORDER-1/mark-ordered`,
         `${API}/distribution/run`,
         `${API}/parcels/PCL-KM-1/ship`,
       ]);
@@ -348,7 +345,7 @@ test.describe('L9c — Hub live Exécution (l’ancien workspace Hub & Relais es
   test.use({ viewport: { width: 1536, height: 1024 } });
   test('Hub live Exécution propose tous les gestes Hub', async ({ page }) => {
     await mount(page);
-    for (const action of ['mark-ordered', 'run-distribution', 'ship']) await expect(page.locator(`[data-workspace-action="${action}"]`)).toHaveCount(1);
+    for (const action of ['run-distribution', 'ship']) await expect(page.locator(`[data-workspace-action="${action}"]`)).toHaveCount(1);
     await page.locator('[data-workspace-view="inventory"]').click();
     await expect(page.locator('[data-workspace-action="assign-inventory"]')).toHaveCount(1);
     await page.locator('[data-workspace-view="reception"]').click();

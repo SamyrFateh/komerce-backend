@@ -37,7 +37,7 @@
  *   POST /api/purchasing/:id/receive                  → 410 DECLARATIVE_RECEIVE_CLOSED (réception = POST /api/scans/hub/receive)
  *   DELETE /api/purchasing/po/:po_id                  → annuler une purchase order
  *
- * Forme regroupée (PR 4, KOMERCE_GROUPED_PURCHASING=1 ; sinon 409 GROUPED_PURCHASING_DISABLED) :
+ * Forme regroupée (modèle unique) :
  *   GET  /api/purchasing/open-lines[?market_id=]      → lignes ouvertes par (fournisseur, hub, marché), filtre opérateur
  *   GET  /api/purchasing/po/:po_id                    → lecture d'une PO regroupée (lignes + marchés)
  *   POST /api/purchasing/po/prepare                   → PO regroupée draft + rattachement des lignes
@@ -71,6 +71,7 @@ const grouped = require('../services/purchasing-grouped-service');
 const { getPurchaseOrderDetail } = require('../services/purchasing-order-detail');
 const engagement = require('../services/purchasing-engagement-service');
 const settlements = require('../services/supplier-payment-settlement-service');
+const hubAuth = require('../services/hub-authorization-service');
 
 const guard = [authenticate, requireRole(['admin'])];
 // Le Hub constitue et suit ses PO regroupées (mission #3247) ; le reste des achats reste réservé à l'admin.
@@ -167,6 +168,32 @@ router.post('/po/:po_id/sent', ...groupedGuard, async (req, res, next) => {
 router.post('/po/:po_id/confirm', ...groupedGuard, async (req, res, next) => {
   try {
     res.json(await engagement.confirmGroupedPurchaseOrder(req.params.po_id, req.body || {}, { actor: req.user }));
+  } catch (err) { groupedError(err, res, next); }
+});
+
+// P04 — autorisations de la directrice : grants (Admin central) et décisions tracées sur la PO (détenteur du grant actif).
+router.get('/authorizations/grants', ...guard, async (req, res, next) => {
+  try { res.json({ grants: await hubAuth.listGrants({ userId: req.query.user_id || null, activeOnly: req.query.all !== '1' }) }); } catch (err) { groupedError(err, res, next); }
+});
+router.post('/authorizations/grants', ...guard, async (req, res, next) => {
+  try {
+    const out = await hubAuth.grant({ userId: req.body && req.body.user_id, authorizationType: req.body && req.body.authorization_type, actor: req.user });
+    res.status(out.idempotent_replay ? 200 : 201).json(out);
+  } catch (err) { groupedError(err, res, next); }
+});
+router.post('/authorizations/grants/:grant_id/revoke', ...guard, async (req, res, next) => {
+  try { res.json(await hubAuth.revoke({ grantId: req.params.grant_id, reason: req.body && req.body.reason, actor: req.user })); } catch (err) { groupedError(err, res, next); }
+});
+router.post('/po/:po_id/authorize-commitment', ...groupedGuard, async (req, res, next) => {
+  try {
+    const out = await hubAuth.decide({ purchaseOrderId: req.params.po_id, authorizationType: 'purchase_commitment', actor: req.user, body: req.body || {} });
+    res.status(out.idempotent_replay ? 200 : 201).json(out);
+  } catch (err) { groupedError(err, res, next); }
+});
+router.post('/po/:po_id/authorize-payment', ...groupedGuard, async (req, res, next) => {
+  try {
+    const out = await hubAuth.decide({ purchaseOrderId: req.params.po_id, authorizationType: 'supplier_payment', actor: req.user, body: req.body || {} });
+    res.status(out.idempotent_replay ? 200 : 201).json(out);
   } catch (err) { groupedError(err, res, next); }
 });
 

@@ -26,6 +26,8 @@ const { authenticate, requireRole } = require('../../middleware/auth');
 const log = require('../../utils/logger').child({ module: 'admin/orders' });
 const { deleteOrderCascade } = require('./delete-order-cascade');
 const { refundCancelledOrder } = require('../../services/admin-order-refund');
+const { reserveVerifiedShortage } = require('../../services/item-refund-reservation-service');
+const { executeReservedItemRefund, reconcileUncertainItemRefund } = require('../../services/item-refund-psp-orchestrator');
 
 const guard = [authenticate, requireRole(['admin'])];
 
@@ -122,6 +124,55 @@ router.post('/orders/:id/refund', ...guard, async (req, res, next) => {
     });
     return res.status(result.status).json(result.body);
   } catch (err) { next(err); }
+});
+
+// E7 pilote : réserve une indemnisation de manquant article par article.
+// Ne déplace JAMAIS l'argent : la résolution PSP indépendante reste obligatoire.
+// Désactivé par défaut, aucun produit du legacy n'active implicitement cette route.
+router.post('/orders/:id/items/:itemId/refund-reservations', ...guard, async (req, res, next) => {
+  if (process.env.E7_ITEM_RESERVATIONS_ENABLED !== '1') {
+    return res.status(409).json({ code: 'E7_RESERVATIONS_NOT_CERTIFIED', error: 'Réservation E7 non activée' });
+  }
+  const { incident_id, quantity, operation_key, reason } = req.body || {};
+  try {
+    const result = await reserveVerifiedShortage({
+      orderId: req.params.id, orderItemId: req.params.itemId,
+      incidentId: incident_id, quantity, operationKey: operation_key,
+      reason, actor: req.user,
+    });
+    return res.status(result.replayed ? 200 : 202).json(result);
+  } catch (err) {
+    if (err.status && err.code) return res.status(err.status).json({ code: err.code, error: err.message });
+    return next(err);
+  }
+});
+
+// Exécution uniquement sur staging et PSP sandbox, après réservation committée.
+// Timeout, refus ou preuve PSP incertaine : 202 UNKNOWN, jamais de retry automatique.
+router.post('/orders/:id/items/:itemId/refund-reservations/:reservationId/execute', ...guard, async (req,res,next) => {
+  try {
+    const result = await executeReservedItemRefund({
+      reservationId:req.params.reservationId,orderId:req.params.id,orderItemId:req.params.itemId,actor:req.user
+    });
+    return res.status(result.paid?200:202).json(result);
+  }catch(err){
+    if(err.status&&err.code)return res.status(err.status).json({code:err.code,error:err.message});
+    return next(err);
+  }
+});
+
+// Rapprochement GET PSP seulement : aucune deuxième demande de remboursement.
+router.post('/orders/:id/items/:itemId/refund-reservations/:reservationId/reconcile', ...guard, async(req,res,next)=>{
+  try {
+    const result=await reconcileUncertainItemRefund({
+      reservationId:req.params.reservationId,orderId:req.params.id,orderItemId:req.params.itemId,
+      providerRefundId:req.body?.provider_ref,actor:req.user,
+    });
+    return res.status(result.status==='unknown'?202:200).json(result);
+  }catch(err) {
+    if(err.status&&err.code)return res.status(err.status).json({code:err.code,error:err.message});
+    return next(err);
+  }
 });
 
 module.exports = router;

@@ -48,13 +48,13 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 | Objet | Compte | Note |
 |---|---|---|
-| Tables | 222 | Vérifié sur le dump live Railway. |
+| Tables | 226 | Vérifié sur le dump live Railway. |
 | Vues | 20 | Vérifié sur le dump live Railway. |
 | ENUMs | 17 | Types métier présents dans le dump live Railway. |
-| Index | 510 | Performance + contraintes uniques |
-| Foreign keys | 427 | Cohérence relationnelle |
-| Fonctions | 105 | Fonctions présentes dans le dump live Railway. |
-| Triggers | 122 | Triggers présents dans le dump live Railway. |
+| Index | 515 | Performance + contraintes uniques |
+| Foreign keys | 438 | Cohérence relationnelle |
+| Fonctions | 112 | Fonctions présentes dans le dump live Railway. |
+| Triggers | 128 | Triggers présents dans le dump live Railway. |
 | Extensions | `pgcrypto`, `uuid-ossp` | UUID + chiffrement |
 
 ---
@@ -315,7 +315,7 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | Table | Rôle |
 |---|---|
 | `scans` | Scans terrain (legacy/compat). |
-| `scan_events` | Événements scan (modèle moderne, protégé par `prevent_scan_event_delete`). **Migration 096 (2026-07-02, `verified_live_schema` — vérifié live Railway)** : + `photo_urls` (text[], DEFAULT '{}', miroir de disputes.photo_urls). Usage doctrinal : event_type=seal_photo au scellé Dubaï = borne 1 des fenêtres de responsabilité (avant : fournisseur ; après : transport). Alimenté par POST /api/hub/photo. Doctrine : `docs/doctrine/DOCTRINE_NON_CONFORMITE.md` §2. |
+| `scan_events` | Événements scan (modèle moderne, protégé par `prevent_scan_event_delete`). **Migration 096 (2026-07-02, `verified_live_schema` — vérifié live Railway)** : + `photo_urls` (text[], DEFAULT '{}', miroir de disputes.photo_urls). Usage doctrinal : event_type=seal_photo au scellé Dubaï = borne 1 des fenêtres de responsabilité (avant : fournisseur ; après : transport). Alimenté par POST /api/hub/photo. Doctrine : `docs/doctrine/DOCTRINE_NON_CONFORMITE.md` §2. **Migration 381 (2026-11-03, `intended_migration_schema`)** : + `entry_mode` TEXT généré (stocké) depuis `metadata->>'entry_mode'`, défaut `scan` ; valeurs fermées `scan` | `manual_confirmation` ; une confirmation manuelle exige `metadata.manual_reason` (CHECK). Trace du mode dégradé : confirmation depuis l'interface via le même scan-engine, jamais un second writer. |
 | `relais` | Points relais. |
 | `inventory_items` | Inventaire hub. |
 | `carriers` | Transporteurs. |
@@ -324,13 +324,14 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 
 | Table | Rôle |
 |---|---|
-| `users` | Utilisateurs (rôle via ENUM `user_role`). **Migration 320 (`intended_migration_schema`)** : ajoute la valeur `finance` à `public.user_role` pour le portail interne, sans créer d'utilisateur ni accorder de membership ou de capability. `sourcing` provient de la migration 148a ; `agent_transitaire` existe dans l'ENUM historique. |
+| `users` **Migration 368 (`intended_migration_schema`)** : + `account_activation_required` BOOLEAN NOT NULL DEFAULT FALSE (nouveaux comptes collaborateurs invités bloqués avant consommation du lien) et + `credentials_changed_at` TIMESTAMPTZ nullable (borne serveur de révocation de tous les JWT antérieurs à un changement/récupération de mot de passe) ; les utilisateurs existants restent activés à l'application de la migration. | Utilisateurs (rôle via ENUM `user_role`). **Migration 320 (`intended_migration_schema`)** : ajoute la valeur `finance` à `public.user_role` pour le portail interne, sans créer d'utilisateur ni accorder de membership ou de capability. `sourcing` provient de la migration 148a ; `agent_transitaire` existe dans l'ENUM historique. |
 | `otp_codes` | Codes OTP. |
 | `user_pickup_authorizations` | Autorisation nominative courante de retrait exceptionnel, propriété auth-identity. Une ligne par utilisateur ; aucun numéro, copie ou donnée de pièce d’identité conservé. Migration 121. |
 | `revoked_tokens` | Révocation JWT (logout) : `jti` révoqué, `expires_at` pour purge. Câblage : `routes/auth.js` insère au logout, `middleware/auth.js` vérifie, cron de purge dans `bootstrap/crons.js`. Migration 072. |
 | `recipients` | Destinataires (peuvent être ≠ user). |
 | `loyalty_tiers` | Niveaux fidélité. |
 | `loyalty_rewards` | Récompenses. |
+| `credential_action_tokens` | Jetons d'activation et de récupération à usage unique (empreinte SHA-256 seulement, finalité et expiration, consommation atomique), propriété auth-identity. Migration 367, intended_migration_schema. **Migration 367 — promue le 2026-11-04 (schema-promote, dump live verifie).** |
 
 ### 4.12 bis — Marchés, autorisations globales, délégation et Passkeys
 
@@ -679,6 +680,18 @@ Migration 300 ajoute `customs_shipment_fees.post_closure` (boolean, défaut fals
 `cash_custody_provenance_edges` is a new, **not yet live** append-only table proposed by migration 304. It associates explicit collection-level cash portions with custody receipt events, with optional parent edges for multi-hop transfers, conservation ceilings and Market consistency. It is not a second custody balance authority and does not establish final financial closure. Migration remains draft and requires isolated PostgreSQL verification for reversals, losses, concurrency and end-to-end traceability before merge.
 <!-- /schema-pending -->
 
+<!-- schema-pending: hub_authorization_grants (migration 380, not yet live) -->
+### Hub authorization grants (migration 380 — intended_migration_schema)
+
+`hub_authorization_grants` is a new, **not yet live** table proposed by migration 380. It records which Hub account holds which directrice authorization (`purchase_commitment` or `supplier_payment`), granted and revoked by the central Admin (`granted_by`, `revoked_by`, `revoke_reason`). At most one active grant per user and type. It adds no role: it only states who may take the two distinct decisions recorded in `purchase_order_authorizations`.
+<!-- /schema-pending -->
+
+<!-- schema-pending: purchase_order_authorizations (migration 380, not yet live) -->
+### Purchase order authorizations (migration 380 — intended_migration_schema)
+
+`purchase_order_authorizations` is a new, **not yet live** append-only table proposed by migration 380. Each row is one directrice decision on a purchase order (`purchase_commitment` or `supplier_payment`) with decider, timestamp, amount, currency and proof reference. One decision per type and PO; UPDATE and DELETE are refused. A submitted PO is never an implicit commitment, and a payment is never implicitly authorized.
+<!-- /schema-pending -->
+
 <!-- schema-pending: market_delivery_attestations (migration 305, not yet live) -->
 ### Market delivery attestations (migration 305 — intended_migration_schema)
 
@@ -822,3 +835,16 @@ La projection N1 prévisionnelle du pricing reste intacte ; l'ajustement prévis
 ### Migration 366 — intention de schéma : réception locale sans expédition fictive
 
 Mode : `intended_migration_schema` (pas encore vérifié dans le dump live). La migration 366 remplace **la fonction existante** `public.check_parcel_item_quantities()` (déclencheur `trg_check_parcel_item_qty`, migration 022) sans créer de table ou de colonne. Elle conserve les contraintes quantités de l'import. Exception stricte : `parcel_items.qty_received > qty_shipped` est autorisée seulement si la ligne `order_items.fulfillment_source='LOCAL_STOCK'` et si un scan `relais_received` de ce même colis/commande, avec acteur identifié, existe dans la transaction. Les colis locaux restent à `qty_shipped=0` ; aucun passage fictif par Hub/transitaire/douane. Rollback : remettre la définition exacte de `check_parcel_item_quantities()` de la migration 022 après arrêt du flux local.
+
+
+### Migration 390 — retrait de la capacité `execution.order.mark_ordered`
+
+Le writer `mark-ordered` a été retiré par L1 : la commande import payée génère une ligne de besoin et la PO reste un objet distinct.
+La capability obsolète est supprimée de `capability_registry`, `membership_capabilities`, `assignment_capability_ceiling` et `ceiling_template_capabilities`. Les anciens audits conservent un snapshot `market_delegation_audit.retired_capability` (lecture historique uniquement, aucune autorité). La FK historique utilise `ON DELETE SET NULL` ; les grants actifs ne peuvent plus référencer cette capability.
+
+
+<!-- schema-pending: order_item_refund_reservations (migration 365, not yet live) -->
+### E7 — réservations de remboursement par article (migration 365 — intended_migration_schema)
+
+Une réservation pour une quantité d'article réellement manquante au relais, reliée à une attestation immuable `international_shipment_relay_receipts.incident_id` et à une intention PSP déjà enregistrée, avec `operation_key` UUID stable et unique par commande. Les montants KMF/EUR dérivent de l'encaissement d'origine ; aucune nouvelle conversion. Un verrou de commande sérialise les décisions concurrentes et interdit de dépasser la quantité manquante ou le montant capturé. `status=reserved` **ne signifie pas remboursé** ; paiement, preuve PSP et journal `refunds` doivent suivre un circuit distinct avant `confirmed`. La colonne `order_items.qty_refunded` est créée par la même migration, avec contrainte `qty_refunded + qty_collected <= quantity` ; elle n'augmente qu'au même COMMIT que la preuve PSP confirmée et l'écriture du journal financier. Un reliquat manquant peut être remboursé lorsque d'autres quantités ont déjà été remises.
+<!-- /schema-pending -->

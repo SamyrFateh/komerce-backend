@@ -96,12 +96,13 @@ describe('I-SWEEP invariants regression net', () => {
     expect(service).toContain('STRIPE_PAYMENT_INTENT_READBACK_FAILED');
   });
 
-  test('G2: triggerPurchasing prevents replay duplicates per order and product supplier mapping', () => {
+  test('G2: triggerPurchasing prevents replay duplicates per order item (coverage by purchase lines)', () => {
     // Après A-BE-05 : logique métier dans services/purchasing-trigger-service.js
     const triggerService = read('services/purchasing-trigger-service.js');
 
     expect(triggerService).toContain('already_exists');
-    expect(triggerService).toMatch(/WHERE\s+order_id\s*=\s*\$1[\s\S]*AND\s+product_supplier_id\s*=\s*\$2[\s\S]*AND\s+status\s*!=\s*'cancelled'/i);
+    expect(triggerService).toContain('findItemCoverage');
+    expect(triggerService).not.toContain('INSERT INTO purchase_orders');
   });
 
   // G3 mis à jour 2026-06-01 : le système collective_workspaces a été démonté (ZG-3, 2026-05-30).

@@ -64,288 +64,68 @@ function supplierRow(overrides = {}) {
   };
 }
 
-describe('purchasing-trigger-service — triggerPurchasing', () => {
+describe('purchasing-trigger-service — triggerPurchasing (modèle unique : ligne ouverte)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     delete process.env.ADMIN_PHONE;
     notifyText.mockResolvedValue(undefined);
   });
 
+  const itemWithId = { ...item, id: 'oi1' };
+
   it('commande introuvable → throw sans toucher au client', async () => {
     db.query.mockResolvedValueOnce({ rows: [] });
-
     await expect(triggerPurchasing('missing-order')).rejects.toThrow('Commande introuvable : missing-order');
     expect(db.getClient).not.toHaveBeenCalled();
   });
 
-  it('aucun fournisseur mappé → notifie admin (ADMIN_PHONE défini) et pousse no_supplier', async () => {
+  it('aucun fournisseur mappé → notifie admin et pousse no_supplier', async () => {
     process.env.ADMIN_PHONE = '+269900000';
-    db.query.mockResolvedValueOnce({ rows: [order] }).mockResolvedValueOnce({ rows: [item] });
-    const client = makeClient([{ rows: [] }]); // SELECT product_suppliers → vide
-    db.getClient.mockResolvedValue(client);
-
-    const result = await triggerPurchasing('o1');
-
-    expect(result.purchase_orders).toEqual([
-      { item: 'Sac Ali', status: 'no_supplier', purchase_order_id: null },
-    ]);
-    expect(notifyText).toHaveBeenCalledWith('+269900000', expect.stringContaining('Sourcing requis'), 'sourcing_alert', 'o1');
-    expect(client.release).toHaveBeenCalled();
-  });
-
-  it('aucun fournisseur mappé, ADMIN_PHONE absent → pas de notification SMS', async () => {
-    db.query.mockResolvedValueOnce({ rows: [order] }).mockResolvedValueOnce({ rows: [item] });
+    db.query.mockResolvedValueOnce({ rows: [order] }).mockResolvedValueOnce({ rows: [itemWithId] });
     const client = makeClient([{ rows: [] }]);
     db.getClient.mockResolvedValue(client);
 
     const result = await triggerPurchasing('o1');
 
-    expect(result.purchase_orders[0].status).toBe('no_supplier');
+    expect(result.purchase_orders).toEqual([{ item: 'Sac Ali', status: 'no_supplier', purchase_order_id: null }]);
+    expect(notifyText).toHaveBeenCalledTimes(1);
+    expect(client.released).toBe(true);
+  });
+
+  it('article LOCAL_STOCK → aucune ligne d\'achat', async () => {
+    db.query.mockResolvedValueOnce({ rows: [order] })
+      .mockResolvedValueOnce({ rows: [{ ...itemWithId, fulfillment_source: 'LOCAL_STOCK' }] });
+    db.getClient.mockResolvedValue(makeClient([]));
+    const result = await triggerPurchasing('o1');
+    expect(result.purchase_orders[0]).toMatchObject({ status: 'local_stock_no_purchase', purchase_order_id: null });
+  });
+
+  it.each([
+    ['manuel', { platform: 'local', auto_order: false }],
+    ['whatsapp', { platform: 'whatsapp', auto_order: false }],
+    ['auto_order=true (aucun appel fournisseur au paiement)', { platform: 'amazon_uae', auto_order: true }],
+  ])('fournisseur %s → exactement une ligne ouverte, aucune PO, aucune notification d\'achat', async (_label, overrides) => {
+    db.query.mockResolvedValueOnce({ rows: [order] }).mockResolvedValueOnce({ rows: [itemWithId] });
+    const client = makeClient([
+      { rows: [supplierRow(overrides)] },
+      { rows: [] },                       // couverture : item non couvert
+      { rows: [{ id: 'line-1' }] },       // INSERT purchase_lines
+    ]);
+    db.getClient.mockResolvedValue(client);
+
+    const result = await triggerPurchasing('o1');
+
+    expect(result.purchase_orders).toEqual([
+      { item: 'Sac Ali', status: 'line_opened', purchase_order_id: null, purchase_line_id: 'line-1' },
+    ]);
+    const sqls = client.calls.map((c) => String(c));
+    expect(sqls.some((q) => /INSERT INTO purchase_orders/i.test(q))).toBe(false);
+    expect(sqls.filter((q) => /INSERT INTO purchase_lines/i.test(q))).toHaveLength(1);
+    expect(sqls.some((q) => /UPDATE purchase_orders/i.test(q))).toBe(false);
     expect(notifyText).not.toHaveBeenCalled();
   });
 
-  it('purchase_order déjà existante (idempotence anti-replay) → already_exists', async () => {
-    db.query.mockResolvedValueOnce({ rows: [order] }).mockResolvedValueOnce({ rows: [item] });
-    const client = makeClient([
-      { rows: [supplierRow()] },
-      { rows: [{ id: '00000000-0000-0000-0000-000000000101', status: 'pending' }] },
-    ]);
-    db.getClient.mockResolvedValue(client);
-
-    const result = await triggerPurchasing('o1');
-
-    expect(result.purchase_orders).toEqual([{
-      item: 'Sac Ali', status: 'already_exists',
-      purchase_order_id: '00000000-0000-0000-0000-000000000101', purchase_order_status: 'pending',
-    inbound_tag: 'KOM-IN-00000000000000000000000000000101',
-    }]);
-  });
-
-  it('auto_order=true mais API fournisseur non implémentée (stub Phase 2) → api_failed_notified', async () => {
-    process.env.ADMIN_PHONE = '+269900000';
-    db.query.mockResolvedValueOnce({ rows: [order] }).mockResolvedValueOnce({ rows: [item] });
-    const client = makeClient([
-      { rows: [supplierRow({ auto_order: true, platform: 'noon' })] },
-      { rows: [] }, // pas de PO existante
-      { rows: [{ id: '00000000-0000-0000-0000-000000000102' }] }, // INSERT purchase_orders
-      {}, // UPDATE status notified
-    ]);
-    db.getClient.mockResolvedValue(client);
-
-    const result = await triggerPurchasing('o1');
-
-    expect(result.purchase_orders).toEqual([{
-      item: 'Sac Ali',
-      status: 'api_failed_notified',
-      purchase_order_id: '00000000-0000-0000-0000-000000000102',
-      inbound_tag: 'KOM-IN-00000000000000000000000000000102',
-      error: expect.stringContaining('Adapter d\'exécution absent ou invalide pour noon'),
-    }]);
-    expect(notifyText).toHaveBeenCalledWith('+269900000', expect.stringContaining('À commander'), 'purchase_manual', 'o1');
-  });
-
-  it('fournisseur WhatsApp (auto_order=false, platform=whatsapp) → whatsapp_sent', async () => {
-    db.query
-      .mockResolvedValueOnce({ rows: [order] })
-      .mockResolvedValueOnce({ rows: [item] });
-    const client = makeClient([
-      { rows: [supplierRow({ platform: 'whatsapp', auto_order: false })] },
-      { rows: [] },
-      { rows: [{ id: '00000000-0000-0000-0000-000000000103' }] },
-      {}, // UPDATE notes wa_url (LOT R3 : via le client transactionnel, plus le pool)
-      {}, // UPDATE status notified
-    ]);
-    db.getClient.mockResolvedValue(client);
-
-    const result = await triggerPurchasing('o1');
-
-    expect(result.purchase_orders).toEqual([{ item: 'Sac Ali', status: 'whatsapp_sent', purchase_order_id: '00000000-0000-0000-0000-000000000103', inbound_tag: 'KOM-IN-00000000000000000000000000000103' }]);
-    // LOT R3 (DEBT-03/FSF-03) : le wa_url doit être écrit via le client
-    // transactionnel (même transaction que l'INSERT purchase_orders), pas
-    // via db.query (le pool) — c'était la cause du wa_url perdu après COMMIT.
-    expect(client.calls).toEqual(
-      expect.arrayContaining([expect.stringContaining('UPDATE purchase_orders SET notes')])
-    );
-    expect(db.query).not.toHaveBeenCalledWith(expect.stringContaining('UPDATE purchase_orders SET notes'), expect.anything());
-  });
-
-  it('fournisseur générique (auto_order=false, platform≠whatsapp) → triggerMode manual → admin_notified', async () => {
-    process.env.ADMIN_PHONE = '+269900000';
-    db.query.mockResolvedValueOnce({ rows: [order] }).mockResolvedValueOnce({ rows: [item] });
-    const client = makeClient([
-      { rows: [supplierRow({ platform: 'local', auto_order: false })] },
-      { rows: [] },
-      { rows: [{ id: '00000000-0000-0000-0000-000000000104' }] },
-      {},
-    ]);
-    db.getClient.mockResolvedValue(client);
-
-    const result = await triggerPurchasing('o1');
-
-    expect(result.purchase_orders).toEqual([{ item: 'Sac Ali', status: 'admin_notified', purchase_order_id: '00000000-0000-0000-0000-000000000104', inbound_tag: 'KOM-IN-00000000000000000000000000000104' }]);
-  });
-
-  it('sans supplier_url (falsy) → notifyAdminManual n\'ajoute pas la ligne Lien', async () => {
-    process.env.ADMIN_PHONE = '+269900000';
-    db.query.mockResolvedValueOnce({ rows: [order] }).mockResolvedValueOnce({ rows: [item] });
-    const client = makeClient([
-      { rows: [supplierRow({ supplier_url: null })] },
-      { rows: [] },
-      { rows: [{ id: '00000000-0000-0000-0000-000000000105' }] },
-      {},
-    ]);
-    db.getClient.mockResolvedValue(client);
-
-    await triggerPurchasing('o1');
-
-    const msg = notifyText.mock.calls[0][1];
-    expect(msg).not.toMatch(/Lien :/);
-  });
-
-  it('erreur globale si la sélection du fournisseur échoue (hors try per-item) → rollback complet, propage', async () => {
-    db.query.mockResolvedValueOnce({ rows: [order] }).mockResolvedValueOnce({ rows: [item] });
-    const client = makeClient([
-      { error: new Error('select ps failed') }, // SELECT product_suppliers échoue — hors du try per-item
-    ]);
-    db.getClient.mockResolvedValue(client);
-
-    await expect(triggerPurchasing('o1')).rejects.toThrow('select ps failed');
-    expect(client.calls).toContain('ROLLBACK');
-    expect(client.release).toHaveBeenCalled();
-  });
-
-  it('erreur lors du traitement d\'un item (post-lookup fournisseur) → rollback au savepoint, insère une alerte, continue', async () => {
-    db.query.mockResolvedValueOnce({ rows: [order] }).mockResolvedValueOnce({ rows: [item] });
-    const client = makeClient([
-      { rows: [supplierRow()] },                     // SELECT product_suppliers OK
-      { error: new Error('existing po lookup failed') }, // SELECT purchase_orders échoue (dans le try per-item)
-      {}, // INSERT INTO alerts réussit
-    ]);
-    db.getClient.mockResolvedValue(client);
-
-    const result = await triggerPurchasing('o1');
-
-    expect(result.purchase_orders).toEqual([{ item: 'Sac Ali', status: 'error', error: 'existing po lookup failed' }]);
-    expect(client.calls.some(c => /^ROLLBACK TO SAVEPOINT/.test(c))).toBe(true);
-    expect(client.calls.some(c => /INSERT INTO alerts/.test(c))).toBe(true);
-    expect(client.release).toHaveBeenCalled();
-  });
-
-  it('erreur item + échec de l\'insertion d\'alerte → géré silencieusement (double catch)', async () => {
-    db.query.mockResolvedValueOnce({ rows: [order] }).mockResolvedValueOnce({ rows: [item] });
-    const client = makeClient([
-      { rows: [supplierRow()] },
-      { error: new Error('existing po lookup failed') },
-      { error: new Error('alerts insert failed') },
-    ]);
-    db.getClient.mockResolvedValue(client);
-
-    const result = await triggerPurchasing('o1');
-
-    expect(result.purchase_orders).toEqual([{ item: 'Sac Ali', status: 'error', error: 'existing po lookup failed' }]);
-  });
-
-  it('erreur globale (ex: BEGIN échoue) → rollback, propage l\'erreur, release appelé', async () => {
-    db.query.mockResolvedValueOnce({ rows: [order] }).mockResolvedValueOnce({ rows: [item] });
-    const client = {
-      calls: [],
-      query: jest.fn().mockRejectedValueOnce(new Error('begin failed')).mockResolvedValue({}),
-      release: jest.fn(),
-    };
-    db.getClient.mockResolvedValue(client);
-
-    await expect(triggerPurchasing('o1')).rejects.toThrow('begin failed');
-    expect(client.release).toHaveBeenCalled();
-  });
-
-  it('plusieurs items dans la même commande sont traités séquentiellement', async () => {
-    const item2 = { ...item, product_id: 'p2', product_name: 'Chaussures' };
-    db.query.mockResolvedValueOnce({ rows: [order] }).mockResolvedValueOnce({ rows: [item, item2] });
-    const client = makeClient([
-      { rows: [] }, // item1 : pas de fournisseur
-      { rows: [] }, // item2 : pas de fournisseur
-    ]);
-    db.getClient.mockResolvedValue(client);
-
-    const result = await triggerPurchasing('o1');
-
-    expect(result.purchase_orders.map(r => r.item)).toEqual(['Sac Ali', 'Chaussures']);
-    expect(result.purchase_orders.every(r => r.status === 'no_supplier')).toBe(true);
-  });
-
-  it('auto_order=true, plateforme amazon_uae → stub non implémentée → api_failed_notified', async () => {
-    db.query.mockResolvedValueOnce({ rows: [order] }).mockResolvedValueOnce({ rows: [item] });
-    const client = makeClient([
-      { rows: [supplierRow({ auto_order: true, platform: 'amazon_uae' })] },
-      { rows: [] },
-      { rows: [{ id: '00000000-0000-0000-0000-000000000106' }] },
-      {},
-    ]);
-    db.getClient.mockResolvedValue(client);
-
-    const result = await triggerPurchasing('o1');
-
-    expect(result.purchase_orders[0].status).toBe('api_failed_notified');
-  });
-
-  it('auto_order=true, plateforme aliexpress → stub non implémentée → api_failed_notified', async () => {
-    db.query.mockResolvedValueOnce({ rows: [order] }).mockResolvedValueOnce({ rows: [item] });
-    const client = makeClient([
-      { rows: [supplierRow({ auto_order: true, platform: 'aliexpress' })] },
-      { rows: [] },
-      { rows: [{ id: '00000000-0000-0000-0000-000000000107' }] },
-      {},
-    ]);
-    db.getClient.mockResolvedValue(client);
-
-    const result = await triggerPurchasing('o1');
-
-    expect(result.purchase_orders[0].status).toBe('api_failed_notified');
-  });
-
-  it('auto_order=true, plateforme inconnue → default "Plateforme sans API" → api_failed_notified', async () => {
-    db.query.mockResolvedValueOnce({ rows: [order] }).mockResolvedValueOnce({ rows: [item] });
-    const client = makeClient([
-      { rows: [supplierRow({ auto_order: true, platform: 'shopify' })] },
-      { rows: [] },
-      { rows: [{ id: '00000000-0000-0000-0000-000000000108' }] },
-      {},
-    ]);
-    db.getClient.mockResolvedValue(client);
-
-    const result = await triggerPurchasing('o1');
-
-    expect(result.purchase_orders[0].status).toBe('api_failed_notified');
-  });
-});
-
-describe('purchasing-trigger-service — couverture par les lignes (PR 2)', () => {
-  const itemWithId = { ...item, id: 'it-1', quantity: 2 };
-  beforeEach(() => {
-    jest.clearAllMocks();
-    delete process.env.ADMIN_PHONE;
-  });
-
-  it('item déjà couvert par les lignes (autre fournisseur) → already_exists, aucune nouvelle PO', async () => {
-    db.query.mockResolvedValueOnce({ rows: [order] }).mockResolvedValueOnce({ rows: [itemWithId] });
-    const client = makeClient([
-      { rows: [supplierRow()] },
-      { rows: [{ id: '00000000-0000-0000-0000-000000000202', status: 'confirmed', effective_quantity: 2 }] },
-      { rows: [{ id: '00000000-0000-0000-0000-000000000202', status: 'confirmed', trigger_mode: 'manual', supplier_order_id: null }] },
-    ]);
-    db.getClient.mockResolvedValue(client);
-
-    const result = await triggerPurchasing('o1');
-
-    expect(result.purchase_orders).toEqual([{
-      item: 'Sac Ali', status: 'already_exists',
-      purchase_order_id: '00000000-0000-0000-0000-000000000202', purchase_order_status: 'confirmed',
-      inbound_tag: 'KOM-IN-00000000000000000000000000000202',
-    }]);
-    expect(client.calls.some((s) => /INSERT INTO purchase_orders/.test(String(s)))).toBe(false);
-  });
-
-  it('item couvert par une ligne ouverte (sans PO) → already_exists sans tag colis', async () => {
+  it('rejeu : item déjà couvert par les lignes → already_exists, aucune insertion', async () => {
     db.query.mockResolvedValueOnce({ rows: [order] }).mockResolvedValueOnce({ rows: [itemWithId] });
     const client = makeClient([
       { rows: [supplierRow()] },
@@ -355,120 +135,23 @@ describe('purchasing-trigger-service — couverture par les lignes (PR 2)', () =
 
     const result = await triggerPurchasing('o1');
 
-    expect(result.purchase_orders[0]).toMatchObject({ status: 'already_exists', purchase_order_id: null, inbound_tag: null });
+    expect(result.purchase_orders[0]).toMatchObject({ status: 'already_exists' });
+    expect(client.calls.some((q) => /INSERT INTO purchase_lines/i.test(String(q)))).toBe(false);
   });
 
-  it('couverture partielle → repli sur la recherche historique de PO', async () => {
+  it('erreur d\'insertion → rollback au savepoint, alerte, les autres articles continuent', async () => {
     db.query.mockResolvedValueOnce({ rows: [order] }).mockResolvedValueOnce({ rows: [itemWithId] });
     const client = makeClient([
       { rows: [supplierRow()] },
-      { rows: [{ id: 'po-x', status: 'confirmed', effective_quantity: 1 }] },
-      { rows: [{ id: '00000000-0000-0000-0000-000000000303', status: 'pending' }] },
+      { rows: [] },
+      { error: new Error('boom') },
+      { rows: [] },                       // INSERT alerte
     ]);
     db.getClient.mockResolvedValue(client);
 
     const result = await triggerPurchasing('o1');
 
-    expect(result.purchase_orders[0]).toMatchObject({ status: 'already_exists', purchase_order_id: '00000000-0000-0000-0000-000000000303' });
+    expect(result.purchase_orders[0]).toMatchObject({ status: 'error', error: 'boom' });
+    expect(client.released).toBe(true);
   });
-});
-
-
-test('purchasing trigger transmet la vraie PO au contexte d exécution avant toute boundary provider', () => {
-  const fs = require('fs');
-  const path = require('path');
-  const src = fs.readFileSync(path.join(__dirname, '..', '..', 'services', 'purchasing-trigger-service.js'), 'utf8');
-  expect(src).toMatch(/buildProcurementExecutionContext\(\{ purchaseOrderId, purchaseLineId, item, supplierTagRequest \}\)/);
-  expect(src).toMatch(/resolveAutoOrderResult\([\s\S]*?task\.purchaseOrderId,[\s\S]*?task\.purchaseLineId,[\s\S]*?task\.supplierTagRequest/);
-});
-
-
-describe('auto-order externe — persistance avant mutation fournisseur', () => {
-  test('un adapter d exécution complet est appelé après COMMIT, jamais avant', () => {
-    const fs = require('fs');
-    const path = require('path');
-    const src = fs.readFileSync(
-      path.join(__dirname, '..', '..', 'services', 'purchasing-trigger-service.js'),
-      'utf8'
-    );
-
-    const queueAt = src.indexOf('autoExecutionTasks.push({');
-    const commitAt = src.indexOf("await client.query('COMMIT')");
-    const postCommitLoopAt = src.indexOf('for (const task of autoExecutionTasks)');
-    const providerCallAt = src.indexOf(
-      'const apiResult = await resolveAutoOrderResult(',
-      postCommitLoopAt
-    );
-
-    expect(queueAt).toBeGreaterThan(-1);
-    expect(commitAt).toBeGreaterThan(queueAt);
-    expect(postCommitLoopAt).toBeGreaterThan(commitAt);
-    expect(providerCallAt).toBeGreaterThan(postCommitLoopAt);
-  });
-
-  test('une tentative provider ambiguë ne rejoue automatiquement que si l adapter prouve son idempotence', () => {
-    const fs = require('fs');
-    const path = require('path');
-    const src = fs.readFileSync(
-      path.join(__dirname, '..', '..', 'services', 'purchasing-trigger-service.js'),
-      'utf8'
-    );
-
-    expect(src).toContain("status: replayBlocked ? 'api_ambiguous_blocked' : 'api_pending_retry'");
-    expect(src).toMatch(/apiResult\.place_order_invoked \|\| apiResult\.reason === 'PLACE_ORDER_ERROR'/);
-    expect(src).toContain('supportsIdempotentReplay(provider, adapter)');
-    expect(src).toContain('hasBlockingSupplierCreateAmbiguity(client');
-    expect(src).toContain("existingPo.trigger_mode === 'auto'");
-    expect(src).toContain("SET trigger_mode='manual'");
-    expect(src).toContain('recordSupplierCreateAmbiguity(db');
-  });
-
-  test('les adapters sans placeOrder complet conservent le fallback manuel historique', () => {
-    const fs = require('fs');
-    const path = require('path');
-    const src = fs.readFileSync(
-      path.join(__dirname, '..', '..', 'services', 'purchasing-trigger-service.js'),
-      'utf8'
-    );
-
-    expect(src).toContain('validateExecutionAdapter(');
-    expect(src).toContain("status: 'api_failed_notified'");
-    expect(src).toContain("trigger_mode='manual'");
-  });
-});
-
-
-test('un résultat ambigu conserve une evidence provider bornée sans secret', () => {
-  const fs = require('fs');
-  const path = require('path');
-  const src = fs.readFileSync(
-    path.join(__dirname, '..', '..', 'services', 'purchasing-trigger-service.js'),
-    'utf8'
-  );
-  expect(src).toContain('evidence: boundary.evidence || {}');
-  expect(src).toContain('evidence: apiResult.evidence || {}');
-});
-
-
-test('auto-order persiste supplier execution avant confirmation locale de la PO', () => {
-  const fs = require('fs');
-  const path = require('path');
-  const src = fs.readFileSync(
-    path.join(__dirname, '..', '..', 'services', 'purchasing-trigger-service.js'),
-    'utf8'
-  );
-
-  const loopAt = src.indexOf('for (const task of autoExecutionTasks)');
-  const persistAt = src.indexOf('await persistSupplierOrderExecution(autoClient', loopAt);
-  const updateAt = src.indexOf('UPDATE purchase_orders', persistAt);
-  const confirmAt = src.indexOf('await confirmHistoricalPurchaseLine', updateAt);
-  const commitAt = src.indexOf("await autoClient.query('COMMIT')", confirmAt);
-
-  expect(persistAt).toBeGreaterThan(loopAt);
-  expect(updateAt).toBeGreaterThan(persistAt);
-  expect(confirmAt).toBeGreaterThan(updateAt);
-  expect(commitAt).toBeGreaterThan(confirmAt);
-  expect(src).toContain('supplierOrderCode: apiResult.supplier_order_code');
-  expect(src).toContain('providerStatus: apiResult.provider_status');
-  expect(src).toContain('executionRecovery: apiResult.execution_recovery');
 });

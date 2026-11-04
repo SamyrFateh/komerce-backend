@@ -61,6 +61,21 @@ const DISPOSITIONS = Object.freeze({
     evidence: 'routes/auth.js',
     rationale: 'Ancienne voie non vérifiée retirée ; endpoint conservé uniquement comme tombstone HTTP 410.',
   },
+  'POST /api/auth/activate-account': {
+    kind: 'CAPABILITY_TOKEN',
+    evidence: 'routes/auth.js; services/credential-action-store.js; tests/unit/auth-route.test.js; tests/unit/credential-action-store.test.js',
+    rationale: 'Activation de compte sans session, uniquement par jeton à usage unique, empreinte SHA-256, expiration et consommation transactionnelle ; limite IP.',
+  },
+  'POST /api/auth/password-reset/request': {
+    kind: 'EXPECTED_PUBLIC',
+    evidence: 'routes/auth.js; tests/unit/auth-route.test.js',
+    rationale: 'Demande publique de récupération (aucune session préalable) : réponse uniforme anti-énumération, limite IP, lien éphémère par canal vérifié.',
+  },
+  'POST /api/auth/password-reset/confirm': {
+    kind: 'CAPABILITY_TOKEN',
+    evidence: 'routes/auth.js; services/credential-action-store.js; middleware/auth.js; tests/unit/credential-session-guard.test.js',
+    rationale: 'Réinitialisation sans session via jeton à usage unique et borné dans le temps ; consommation transactionnelle, invalidation des anciennes sessions, limite IP.',
+  },
   'POST /api/auth/admin-reset': {
     kind: 'APPLICATION_GUARD',
     evidence: 'routes/auth.js; tests/unit/auth-route.test.js',

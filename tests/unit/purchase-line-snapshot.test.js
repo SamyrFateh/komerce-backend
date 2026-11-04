@@ -126,12 +126,11 @@ describe('lignes historiques', () => {
     expect(c.query.mock.calls[0][0]).toContain('VALUES (NULL,');
     expect(c.query.mock.calls[0][1]).toEqual(['it', 'sup', 'ps', 'sk', 'S', 'R', JSON.stringify({ p: 1 }), 3, 2, 'AED', 'DXB', null]);
   });
-  test('ligne ouverte : refuse sans order_item ou sans identité exacte', async () => {
+  test('ligne ouverte : refuse sans order_item ou avec identité exacte incomplète', async () => {
     const c = { query: jest.fn() };
     await expect(snap.insertOpenPurchaseLine(c, { item: {}, ps, snapshot: snapshot(), quantity: 1 })).rejects.toThrow('order_item requis');
-    await expect(snap.insertOpenPurchaseLine(c, { item: base.item, ps, snapshot: snapshot({ productSkuId: null }), quantity: 1 })).rejects.toThrow('identité exacte requise');
-    await expect(snap.insertOpenPurchaseLine(c, { item: base.item, ps, snapshot: snapshot({ supplierUnitRef: null }), quantity: 1 })).rejects.toThrow('identité exacte requise');
-    await expect(snap.insertOpenPurchaseLine(c, { item: base.item, ps, snapshot: snapshot({ supplierOrderIdentity: null }), quantity: 1 })).rejects.toThrow('identité exacte requise');
+    await expect(snap.insertOpenPurchaseLine(c, { item: base.item, ps, snapshot: snapshot({ supplierUnitRef: null }), quantity: 1 })).rejects.toThrow('identité exacte incomplète');
+    await expect(snap.insertOpenPurchaseLine(c, { item: base.item, ps, snapshot: snapshot({ supplierOrderIdentity: null }), quantity: 1 })).rejects.toThrow('identité exacte incomplète');
     expect(c.query).not.toHaveBeenCalled();
   });
   test('confirmation (prix fourni ou par défaut)', async () => {

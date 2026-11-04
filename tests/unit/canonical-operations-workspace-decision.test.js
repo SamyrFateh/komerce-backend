@@ -14,7 +14,6 @@ const SOURCE = fs.readFileSync(path.join(__dirname,'..','..','public','dashboard
 
 function summaryFixture() {
   return {
-    hub_to_order: 2,
     hub_unassigned: 3,
     hub_to_ship: 4,
     relay_cash_pending: 5,
@@ -30,10 +29,10 @@ describe('Hub / Relais — decision-first visual', () => {
     const projected = decision.decisionItems(items);
 
     expect(projected).toEqual([
-      expect.objectContaining({ key: 'hub-order', label: 'Commandes à lancer', value: '2', tone: 'warning' }),
       expect.objectContaining({ key: 'distribution', label: 'Commandes à répartir', value: '3', tone: 'warning' }),
       expect.objectContaining({ key: 'ship', label: 'Colis à expédier', value: '4', tone: 'warning' }),
       expect.objectContaining({ key: 'cash', label: 'Cash à encaisser', value: '5', tone: 'warning' }),
+      expect.objectContaining({ key: 'receive', label: 'Colis à réceptionner', value: '6', tone: 'warning' }),
     ]);
   });
 
@@ -52,14 +51,13 @@ describe('Hub / Relais — decision-first visual', () => {
     const cards = decision.summaryCards(workspace.metricItems(summaryFixture()));
 
     expect(cards.map(card => card.title)).toEqual(['Hub', 'Relais', 'Inventaire']);
-    expect(cards[0].metrics.map(metric => metric.value)).toEqual(['2', '3', '4']);
+    expect(cards[0].metrics.map(metric => metric.value)).toEqual(['3', '4']);
     expect(cards[1].metrics.map(metric => metric.value)).toEqual(['5', '6', '7']);
     expect(cards[2].metrics.map(metric => metric.value)).toEqual(['8']);
   });
 
   test('une file vide reste neutre et ne devient pas une décision artificielle', () => {
     const items = workspace.metricItems({
-      hub_to_order: 0,
       hub_unassigned: 0,
       hub_to_ship: 0,
       relay_cash_pending: 0,

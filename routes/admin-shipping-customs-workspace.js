@@ -148,7 +148,8 @@ router.post('/market/:marketCode/parcels/:reference/confirm-transit', requireTra
       req.params.reference,
       req.workspaceMarket,
       actionActor(req),
-      req.body && req.body.notes
+      req.body && req.body.notes,
+      req.body
     );
     return res.json({ ok: true, action: 'confirm_transit', result });
   } catch (err) {

@@ -1214,6 +1214,13 @@
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
+        "feature": "auth-identity",
+        "category": "tests",
+        "declared": "tests/unit/staging-hub-e2e-market-grant.test.js",
+        "resolvedPath": "tests/unit/staging-hub-e2e-market-grant.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
         "feature": "auth-passkey",
         "category": "services",
         "declared": "services/webauthn-service.js",
@@ -4905,6 +4912,13 @@
       {
         "feature": "dashboard",
         "category": "services",
+        "declared": "services/manual-scan-confirmation.js",
+        "resolvedPath": "services/manual-scan-confirmation.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "dashboard",
+        "category": "services",
         "declared": "services/operations-relay-projection.js",
         "resolvedPath": "services/operations-relay-projection.js",
         "status": "resolved-in-technical-graph"
@@ -5360,6 +5374,27 @@
       {
         "feature": "dashboard",
         "category": "dash",
+        "declared": "dashboards/canonical/js/hub-workstation.js",
+        "resolvedPath": "public/dashboards/canonical/js/hub-workstation.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/js/hub-context-actions.js",
+        "resolvedPath": "public/dashboards/canonical/js/hub-context-actions.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/css/hub-workstation.css",
+        "resolvedPath": "public/dashboards/canonical/css/hub-workstation.css",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
         "declared": "dashboards/canonical/js/primitives.js",
         "resolvedPath": "public/dashboards/canonical/js/primitives.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -5514,6 +5549,20 @@
       {
         "feature": "dashboard",
         "category": "dash",
+        "declared": "dashboards/canonical/js/finance-journal-workspace.js",
+        "resolvedPath": "public/dashboards/canonical/js/finance-journal-workspace.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/js/international-journey-panel.js",
+        "resolvedPath": "public/dashboards/canonical/js/international-journey-panel.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
         "declared": "dashboards/canonical/js/finance-accounting-workspace-decision.js",
         "resolvedPath": "public/dashboards/canonical/js/finance-accounting-workspace-decision.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -5572,6 +5621,13 @@
         "category": "dash",
         "declared": "dashboards/canonical/js/operations-workspace.js",
         "resolvedPath": "public/dashboards/canonical/js/operations-workspace.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/js/operations-workspace-decision.js",
+        "resolvedPath": "public/dashboards/canonical/js/operations-workspace-decision.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -6487,6 +6543,20 @@
       {
         "feature": "dashboard",
         "category": "tests",
+        "declared": "tests/unit/canonical-hub-workstation.test.js",
+        "resolvedPath": "tests/unit/canonical-hub-workstation.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/hub-context-actions-authorizations.test.js",
+        "resolvedPath": "tests/unit/hub-context-actions-authorizations.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
         "declared": "tests/e2e/context-return-links.spec.js",
         "resolvedPath": "tests/e2e/context-return-links.spec.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -6517,6 +6587,34 @@
         "category": "tests",
         "declared": "tests/e2e/hub-live-cockpit.spec.js",
         "resolvedPath": "tests/e2e/hub-live-cockpit.spec.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/e2e/hub-live-supply.spec.js",
+        "resolvedPath": "tests/e2e/hub-live-supply.spec.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/e2e/hub-global-board.spec.js",
+        "resolvedPath": "tests/e2e/hub-global-board.spec.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/e2e/hub-administration-board.spec.js",
+        "resolvedPath": "tests/e2e/hub-administration-board.spec.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/e2e/hub-context-actions.spec.js",
+        "resolvedPath": "tests/e2e/hub-context-actions.spec.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -7397,6 +7495,20 @@
       {
         "feature": "dashboard",
         "category": "tests",
+        "declared": "tests/unit/hub-live-komboxes-ops.test.js",
+        "resolvedPath": "tests/unit/hub-live-komboxes-ops.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/manual-scan-confirmation.test.js",
+        "resolvedPath": "tests/unit/manual-scan-confirmation.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
         "declared": "tests/unit/admin-order-360-route.test.js",
         "resolvedPath": "tests/unit/admin-order-360-route.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -8202,6 +8314,27 @@
       {
         "feature": "economic-engine",
         "category": "services",
+        "declared": "services/financial-journal.js",
+        "resolvedPath": "services/financial-journal.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "services",
+        "declared": "services/financial-journal-projectors.js",
+        "resolvedPath": "services/financial-journal-projectors.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "services",
+        "declared": "services/financial-journal-reporting.js",
+        "resolvedPath": "services/financial-journal-reporting.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "services",
         "declared": "services/transport-pricing.js",
         "resolvedPath": "services/transport-pricing.js",
         "status": "resolved-in-technical-graph"
@@ -8580,6 +8713,20 @@
       {
         "feature": "economic-engine",
         "category": "migrations",
+        "declared": "migrations/361_canonical_kom_box_shipment_costs.sql",
+        "resolvedPath": "migrations/361_canonical_kom_box_shipment_costs.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "migrations",
+        "declared": "migrations/360_financial_journal.sql",
+        "resolvedPath": "migrations/360_financial_journal.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "migrations",
         "declared": "migrations/067_finance_config_provision_risque.sql",
         "resolvedPath": "migrations/067_finance_config_provision_risque.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -8869,6 +9016,13 @@
         "category": "tests",
         "declared": "tests/unit/international-n1-reconciliation.test.js",
         "resolvedPath": "tests/unit/international-n1-reconciliation.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/integration/financial-journal-postgres.test.js",
+        "resolvedPath": "tests/integration/financial-journal-postgres.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -11940,6 +12094,27 @@
       {
         "feature": "infrastructure",
         "category": "tests",
+        "declared": "tests/unit/staging-reset-classification.test.js",
+        "resolvedPath": "tests/unit/staging-reset-classification.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/staging-reset-entrypoint.test.js",
+        "resolvedPath": "tests/unit/staging-reset-entrypoint.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/integration/staging-reset-real-db.test.js",
+        "resolvedPath": "tests/integration/staging-reset-real-db.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
         "declared": "tests/unit/debt-zero-gate.test.js",
         "resolvedPath": "tests/unit/debt-zero-gate.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -12611,6 +12786,34 @@
       },
       {
         "feature": "logistics",
+        "category": "migrations",
+        "declared": "migrations/359_hub_draft_open_and_handover.sql",
+        "resolvedPath": "migrations/359_hub_draft_open_and_handover.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "migrations",
+        "declared": "migrations/366_local_relay_receipt_quantity_guard.sql",
+        "resolvedPath": "migrations/366_local_relay_receipt_quantity_guard.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "migrations",
+        "declared": "migrations/363_parcel_items_physical_proof.sql",
+        "resolvedPath": "migrations/363_parcel_items_physical_proof.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "migrations",
+        "declared": "migrations/364_shipment_relay_receipts.sql",
+        "resolvedPath": "migrations/364_shipment_relay_receipts.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
         "category": "docs",
         "declared": "docs/doctrine/DOCTRINE_DENSITE_VALEUR.md",
         "resolvedPath": "docs/doctrine/DOCTRINE_DENSITE_VALEUR.md",
@@ -12705,6 +12908,13 @@
         "category": "services",
         "declared": "services/parcel-item-mutation-service.js",
         "resolvedPath": "services/parcel-item-mutation-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "logistics",
+        "category": "services",
+        "declared": "services/local-relay-receipt-service.js",
+        "resolvedPath": "services/local-relay-receipt-service.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -12871,6 +13081,13 @@
       {
         "feature": "logistics",
         "category": "services",
+        "declared": "services/hub-global-board.js",
+        "resolvedPath": "services/hub-global-board.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "logistics",
+        "category": "services",
         "declared": "services/hub-receivable.js",
         "resolvedPath": "services/hub-receivable.js",
         "status": "resolved-in-technical-graph"
@@ -12943,6 +13160,20 @@
         "category": "services",
         "declared": "services/international-shipment-journey.js",
         "resolvedPath": "services/international-shipment-journey.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "logistics",
+        "category": "services",
+        "declared": "services/relay-shipment-receipt.js",
+        "resolvedPath": "services/relay-shipment-receipt.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "logistics",
+        "category": "services",
+        "declared": "services/relay-parcel-item-reconciliation.js",
+        "resolvedPath": "services/relay-parcel-item-reconciliation.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -13095,6 +13326,27 @@
       {
         "feature": "logistics",
         "category": "tests",
+        "declared": "tests/integration/hub-physical-proof-postgres.test.js",
+        "resolvedPath": "tests/integration/hub-physical-proof-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/integration/relay-shipment-receipt-postgres.test.js",
+        "resolvedPath": "tests/integration/relay-shipment-receipt-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/unit/relay-shipment-parcel-projection.test.js",
+        "resolvedPath": "tests/unit/relay-shipment-parcel-projection.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
         "declared": "tests/unit/market-transport-tariff-gate.test.js",
         "resolvedPath": "tests/unit/market-transport-tariff-gate.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -13111,6 +13363,13 @@
         "category": "tests",
         "declared": "tests/unit/hub-dubai-projection.test.js",
         "resolvedPath": "tests/unit/hub-dubai-projection.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/unit/hub-global-board.test.js",
+        "resolvedPath": "tests/unit/hub-global-board.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -15762,13 +16021,6 @@
       {
         "feature": "orders",
         "category": "routes",
-        "declared": "routes/hub-mark-ordered.js",
-        "resolvedPath": "routes/hub-mark-ordered.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "orders",
-        "category": "routes",
         "declared": "routes/order-api-v2.js",
         "resolvedPath": "routes/order-api-v2.js",
         "status": "resolved-in-technical-graph"
@@ -15820,6 +16072,27 @@
         "category": "tests",
         "declared": "tests/unit/order-status-machine-mobile-money.test.js",
         "resolvedPath": "tests/unit/order-status-machine-mobile-money.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "orders",
+        "category": "tests",
+        "declared": "tests/unit/local-relay-receipt-service.test.js",
+        "resolvedPath": "tests/unit/local-relay-receipt-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "orders",
+        "category": "tests",
+        "declared": "tests/unit/order-status-local-receipt.test.js",
+        "resolvedPath": "tests/unit/order-status-local-receipt.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "orders",
+        "category": "tests",
+        "declared": "tests/e2e-api/orders.local-relay-receipt.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/orders.local-relay-receipt.e2e.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -15904,13 +16177,6 @@
         "category": "tests",
         "declared": "tests/unit/delete-order-cascade.test.js",
         "resolvedPath": "tests/unit/delete-order-cascade.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "orders",
-        "category": "tests",
-        "declared": "tests/unit/hub-mark-ordered.test.js",
-        "resolvedPath": "tests/unit/hub-mark-ordered.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -17190,6 +17456,13 @@
       {
         "feature": "purchasing",
         "category": "services",
+        "declared": "services/hub-administration-board.js",
+        "resolvedPath": "services/hub-administration-board.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "purchasing",
+        "category": "services",
         "declared": "services/suppliers/allegro-fulfillment-adapter.js",
         "resolvedPath": "services/suppliers/allegro-fulfillment-adapter.js",
         "status": "resolved-in-technical-graph"
@@ -17512,6 +17785,13 @@
       {
         "feature": "purchasing",
         "category": "services",
+        "declared": "services/hub-authorization-service.js",
+        "resolvedPath": "services/hub-authorization-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "purchasing",
+        "category": "services",
         "declared": "services/purchasing-completion-service.js",
         "resolvedPath": "services/purchasing-completion-service.js",
         "status": "resolved-in-technical-graph"
@@ -17577,6 +17857,13 @@
         "category": "migrations",
         "declared": "migrations/358_hub_po_transmission_and_box_shipment.sql",
         "resolvedPath": "migrations/358_hub_po_transmission_and_box_shipment.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "migrations",
+        "declared": "migrations/362_suppliers_hub_scope.sql",
+        "resolvedPath": "migrations/362_suppliers_hub_scope.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -17722,6 +18009,13 @@
       {
         "feature": "purchasing",
         "category": "tests",
+        "declared": "tests/unit/hub-administration-board.test.js",
+        "resolvedPath": "tests/unit/hub-administration-board.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
         "declared": "tests/integration/purchasing-order-detail-postgres.test.js",
         "resolvedPath": "tests/integration/purchasing-order-detail-postgres.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -17778,8 +18072,43 @@
       {
         "feature": "purchasing",
         "category": "tests",
+        "declared": "tests/integration/hub-p0-procurement-chain-postgres.test.js",
+        "resolvedPath": "tests/integration/hub-p0-procurement-chain-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/integration/hub-autonomous-purchasing-postgres.test.js",
+        "resolvedPath": "tests/integration/hub-autonomous-purchasing-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/integration/hub-p0-authorization-postgres.test.js",
+        "resolvedPath": "tests/integration/hub-p0-authorization-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
         "declared": "tests/integration/purchase-lines-engagement-postgres.test.js",
         "resolvedPath": "tests/integration/purchase-lines-engagement-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/integration/hub-directrice-authorizations-postgres.test.js",
+        "resolvedPath": "tests/integration/hub-directrice-authorizations-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/unit/purchasing-authorizations-route.test.js",
+        "resolvedPath": "tests/unit/purchasing-authorizations-route.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -18046,13 +18375,6 @@
         "category": "tests",
         "declared": "tests/integration/purchasing-exact-sku-po.test.js",
         "resolvedPath": "tests/integration/purchasing-exact-sku-po.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "purchasing",
-        "category": "tests",
-        "declared": "tests/integration/purchasing-wa-url-w3-1.test.js",
-        "resolvedPath": "tests/integration/purchasing-wa-url-w3-1.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -22177,25 +22499,9 @@
       },
       {
         "feature": "dashboard",
-        "entry": "POST /api/admin/workspaces/operations/market/:marketCode/orders/:reference/mark-ordered",
-        "method": "POST",
-        "path": "/api/admin/workspaces/operations/market/{id}/orders/{id}/mark-ordered",
-        "routeFile": "routes/admin-operations-workspace.js",
-        "status": "resolved-owned"
-      },
-      {
-        "feature": "dashboard",
         "entry": "POST /api/admin/workspaces/operations/market/:marketCode/parcels/:reference/collect",
         "method": "POST",
         "path": "/api/admin/workspaces/operations/market/{id}/parcels/{id}/collect",
-        "routeFile": "routes/admin-operations-workspace.js",
-        "status": "resolved-owned"
-      },
-      {
-        "feature": "dashboard",
-        "entry": "POST /api/admin/workspaces/operations/market/:marketCode/parcels/:reference/receive",
-        "method": "POST",
-        "path": "/api/admin/workspaces/operations/market/{id}/parcels/{id}/receive",
         "routeFile": "routes/admin-operations-workspace.js",
         "status": "resolved-owned"
       },
@@ -24449,14 +24755,6 @@
       },
       {
         "feature": "orders",
-        "entry": "POST /api/hub/orders/mark-ordered",
-        "method": "POST",
-        "path": "/api/hub/orders/mark-ordered",
-        "routeFile": "routes/hub-mark-ordered.js",
-        "status": "resolved-owned"
-      },
-      {
-        "feature": "orders",
         "entry": "POST /api/orders/:id/cancel-backorder",
         "method": "POST",
         "path": "/api/orders/{id}/cancel-backorder",
@@ -24516,6 +24814,14 @@
         "entry": "PATCH /api/orders/:id/status",
         "method": "PATCH",
         "path": "/api/orders/{id}/status",
+        "routeFile": "routes/orders/status.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "orders",
+        "entry": "POST /api/orders/:id/local-relay-receipt",
+        "method": "POST",
+        "path": "/api/orders/{id}/local-relay-receipt",
         "routeFile": "routes/orders/status.js",
         "status": "resolved-owned"
       },
@@ -28145,6 +28451,12 @@
       },
       {
         "from": "logistics",
+        "to": "customs",
+        "raw": "customs (lien documentaire international : le service douane possède seul la déclaration des droits et taxes ; le Hub orchestre sa transaction)",
+        "resolved": true
+      },
+      {
+        "from": "logistics",
         "to": "documents",
         "raw": "documents (dépendance data cross-feature observée et gouvernée par O5)",
         "resolved": true
@@ -28171,6 +28483,12 @@
         "from": "logistics",
         "to": "orders",
         "raw": "orders (commande rattachée au colis ; HUB-001 ne lit que order_id/order_item_id/market_id/relais_id autoritatifs et ne les réassigne jamais)",
+        "resolved": true
+      },
+      {
+        "from": "logistics",
+        "to": "local-stock",
+        "raw": "local-stock (lecture par SKU et marché des allocations consommées pour la réception directe au relais, sans Hub fictif)",
         "resolved": true
       },
       {
@@ -29353,6 +29671,12 @@
         "from": "decision-signals",
         "to": "payments",
         "raw": "payments (services/cash-deposit-service.js — couverture cash canonique UNCOVERED_COLLECTIONS_CTE : seul un depot verifie couvre un encaissement ; lecture seule, aucune mutation de depot)",
+        "resolved": true
+      },
+      {
+        "from": "decision-signals",
+        "to": "economic-engine",
+        "raw": "economic-engine (services/financial-journal-reporting.js — lecture seule de la réconciliation du journal financier pour le signal financial_journal_gap ; aucune écriture du journal)",
         "resolved": true
       },
       {
@@ -32008,11 +32332,6 @@
                 "endpoint": "/api/orders",
                 "routeFile": "routes/orders/create.js",
                 "consumerFileId": "dash:dashboards/admin/js/views/ProblemsView.js"
-              },
-              {
-                "endpoint": "/api/hub/orders/mark-ordered",
-                "routeFile": "routes/hub-mark-ordered.js",
-                "consumerFileId": "dash:dashboards/admin/js/views/HubRelaisView.js"
               }
             ]
           }
@@ -34840,6 +35159,10 @@
                 "targetFile": "services/pricing-market-corridor.js"
               },
               {
+                "sourceFileId": "services/dashboard-commerce.js",
+                "targetFile": "services/financial-journal-reporting.js"
+              },
+              {
                 "sourceFileId": "services/dashboard-finance-canonical.js",
                 "targetFile": "services/simulation-scope-service.js"
               },
@@ -34850,6 +35173,10 @@
               {
                 "sourceFileId": "services/dashboard-finance-canonical.js",
                 "targetFile": "services/cost-allocation/variance.js"
+              },
+              {
+                "sourceFileId": "services/dashboard-finance-canonical.js",
+                "targetFile": "services/financial-journal-reporting.js"
               },
               {
                 "sourceFileId": "services/product-360.js",
@@ -34868,12 +35195,20 @@
                 "targetFile": "services/international-n1-reconciliation.js"
               },
               {
+                "sourceFileId": "routes/admin-finance-accounting-workspace.js",
+                "targetFile": "services/financial-journal-reporting.js"
+              },
+              {
                 "sourceFileId": "routes/dashboard.js",
                 "targetFile": "routes/dashboard-finance.js"
               },
               {
                 "sourceFileId": "tests/unit/admin-costing-full.test.js",
                 "targetFile": "routes/admin-costing.js"
+              },
+              {
+                "sourceFileId": "tests/unit/dashboard-commerce.test.js",
+                "targetFile": "services/financial-journal-reporting.js"
               },
               {
                 "sourceFileId": "tests/unit/dashboard-ops-queries.test.js",
@@ -35480,6 +35815,26 @@
               {
                 "sourceFileId": "routes/admin/users.js",
                 "targetFile": "services/scan-write-service.js"
+              },
+              {
+                "sourceFileId": "routes/admin-operations-workspace.js",
+                "targetFile": "services/hub-procurement-dossier.js"
+              },
+              {
+                "sourceFileId": "routes/admin-operations-workspace.js",
+                "targetFile": "services/hub-box-shipment-service.js"
+              },
+              {
+                "sourceFileId": "routes/admin-operations-workspace.js",
+                "targetFile": "services/hub-operations.js"
+              },
+              {
+                "sourceFileId": "routes/admin-operations-workspace.js",
+                "targetFile": "services/international-shipment-journey.js"
+              },
+              {
+                "sourceFileId": "routes/admin-operations-workspace.js",
+                "targetFile": "services/relay-shipment-receipt.js"
               },
               {
                 "sourceFileId": "routes/admin-shipping-customs-workspace.js",
@@ -36144,6 +36499,22 @@
       },
       {
         "from": "decision-signals",
+        "to": "economic-engine",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/signal-service.js",
+                "targetFile": "services/financial-journal-reporting.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "decision-signals",
         "to": "infrastructure",
         "channels": [
           {
@@ -36754,6 +37125,18 @@
                 "targetFile": "services/dashboard-cache.js"
               },
               {
+                "sourceFileId": "tests/integration/financial-journal-postgres.test.js",
+                "targetFile": "services/dashboard-metrics/index.js"
+              },
+              {
+                "sourceFileId": "tests/integration/financial-journal-postgres.test.js",
+                "targetFile": "services/dashboard-finance-canonical.js"
+              },
+              {
+                "sourceFileId": "tests/integration/financial-journal-postgres.test.js",
+                "targetFile": "services/dashboard-commerce.js"
+              },
+              {
                 "sourceFileId": "tests/unit/simulation-scope-service.test.js",
                 "targetFile": "services/dashboard-finance-canonical.js"
               },
@@ -37110,6 +37493,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "tests/integration/financial-journal-postgres.test.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "tests/unit/finance-annulations.test.js",
                 "targetFile": "db.js"
               },
@@ -37371,6 +37758,10 @@
                 "targetFile": "services/fx-engine-rates.js"
               },
               {
+                "sourceFileId": "services/financial-journal.js",
+                "targetFile": "services/fx-authority.js"
+              },
+              {
                 "sourceFileId": "services/pricing-parameters-status.js",
                 "targetFile": "services/fx-authority.js"
               },
@@ -37389,6 +37780,10 @@
               {
                 "sourceFileId": "routes/admin-finance-config.js",
                 "targetFile": "services/fx-observation-service.js"
+              },
+              {
+                "sourceFileId": "tests/integration/financial-journal-postgres.test.js",
+                "targetFile": "services/fx-authority.js"
               }
             ]
           }
@@ -37964,6 +38359,10 @@
               {
                 "sourceFileId": "bootstrap/api-routes.js",
                 "targetFile": "routes/admin-costing.js"
+              },
+              {
+                "sourceFileId": "bootstrap/crons.js",
+                "targetFile": "services/financial-journal-projectors.js"
               }
             ]
           }
@@ -38292,10 +38691,6 @@
               {
                 "sourceFileId": "bootstrap/api-routes.js",
                 "targetFile": "routes/order-api-v2.js"
-              },
-              {
-                "sourceFileId": "bootstrap/api-routes.js",
-                "targetFile": "routes/hub-mark-ordered.js"
               },
               {
                 "sourceFileId": "bootstrap/crons.js",
@@ -38954,11 +39349,40 @@
       },
       {
         "from": "logistics",
+        "to": "customs",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/international-shipment-journey.js",
+                "targetFile": "services/customs-shipment-service.js"
+              }
+            ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "customs_shipments",
+                "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "logistics",
         "to": "dashboard",
         "channels": [
           {
             "channel": "static-code",
             "evidence": [
+              {
+                "sourceFileId": "tests/integration/relay-shipment-receipt-postgres.test.js",
+                "targetFile": "services/operations-workspace.js"
+              },
               {
                 "sourceFileId": "tests/integration/txg05-parcel-items-product-id.test.js",
                 "targetFile": "routes/hub-dashboard.js"
@@ -39018,6 +39442,10 @@
               {
                 "sourceFileId": "services/hub-physical-identity.js",
                 "targetFile": "services/incident-write-service.js"
+              },
+              {
+                "sourceFileId": "services/relay-shipment-receipt.js",
+                "targetFile": "services/incident-write-service.js"
               }
             ]
           },
@@ -39070,6 +39498,18 @@
               },
               {
                 "sourceFileId": "services/parcel-operations.js",
+                "targetFile": "utils/logger.js"
+              },
+              {
+                "sourceFileId": "services/local-relay-receipt-service.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/local-relay-receipt-service.js",
+                "targetFile": "utils/reference.js"
+              },
+              {
+                "sourceFileId": "services/local-relay-receipt-service.js",
                 "targetFile": "utils/logger.js"
               },
               {
@@ -39169,6 +39609,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "services/hub-global-board.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "services/hub-receivable.js",
                 "targetFile": "db.js"
               },
@@ -39191,6 +39635,14 @@
               {
                 "sourceFileId": "services/international-shipment-journey.js",
                 "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/relay-shipment-receipt.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/relay-shipment-receipt.js",
+                "targetFile": "utils/logger.js"
               },
               {
                 "sourceFileId": "routes/parcels.js",
@@ -39345,6 +39797,14 @@
                 "targetFile": "validators/index.js"
               },
               {
+                "sourceFileId": "tests/integration/hub-physical-proof-postgres.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/relay-shipment-receipt-postgres.test.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "tests/integration/market-transport-sale-rates-postgres.test.js",
                 "targetFile": "db.js"
               },
@@ -39447,6 +39907,26 @@
       },
       {
         "from": "logistics",
+        "to": "local-stock",
+        "channels": [
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "local_stock",
+                "mode": "R"
+              },
+              {
+                "table": "local_stock_allocations",
+                "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "logistics",
         "to": "loyalty",
         "channels": [
           {
@@ -39529,6 +40009,10 @@
                 "targetFile": "services/notification-service.js"
               },
               {
+                "sourceFileId": "services/local-relay-receipt-service.js",
+                "targetFile": "services/client-notification-service.js"
+              },
+              {
                 "sourceFileId": "services/scan-operations.js",
                 "targetFile": "services/notification-service.js"
               },
@@ -39543,6 +40027,10 @@
               {
                 "sourceFileId": "services/pickup-exceptional-collection-service.js",
                 "targetFile": "services/notifications/notification-service.js"
+              },
+              {
+                "sourceFileId": "services/relay-shipment-receipt.js",
+                "targetFile": "services/client-notification-service.js"
               },
               {
                 "sourceFileId": "routes/parcel-api-v2/scans.js",
@@ -39594,6 +40082,14 @@
               },
               {
                 "sourceFileId": "services/parcel-operations.js",
+                "targetFile": "services/order-item-availability-service.js"
+              },
+              {
+                "sourceFileId": "services/local-relay-receipt-service.js",
+                "targetFile": "services/order-status-machine.js"
+              },
+              {
+                "sourceFileId": "services/local-relay-receipt-service.js",
                 "targetFile": "services/order-item-availability-service.js"
               },
               {
@@ -39655,6 +40151,10 @@
               {
                 "sourceFileId": "services/routing.js",
                 "targetFile": "services/order-mutation-service.js"
+              },
+              {
+                "sourceFileId": "services/relay-parcel-item-reconciliation.js",
+                "targetFile": "services/order-status-machine.js"
               },
               {
                 "sourceFileId": "routes/parcels.js",
@@ -39781,6 +40281,18 @@
               {
                 "sourceFileId": "routes/pickup-secret.js",
                 "targetFile": "services/purchasing-trigger-service.js"
+              },
+              {
+                "sourceFileId": "routes/hub.js",
+                "targetFile": "services/hub-administration-board.js"
+              },
+              {
+                "sourceFileId": "tests/integration/hub-physical-proof-postgres.test.js",
+                "targetFile": "services/purchasing-grouped-service.js"
+              },
+              {
+                "sourceFileId": "tests/integration/hub-physical-proof-postgres.test.js",
+                "targetFile": "services/purchasing-engagement-service.js"
               }
             ]
           },
@@ -41489,12 +42001,12 @@
                 "targetFile": "middleware/auth.js"
               },
               {
-                "sourceFileId": "routes/hub-mark-ordered.js",
+                "sourceFileId": "routes/order-api-v2.js",
                 "targetFile": "middleware/auth.js"
               },
               {
-                "sourceFileId": "routes/order-api-v2.js",
-                "targetFile": "middleware/auth.js"
+                "sourceFileId": "tests/e2e-api/orders.local-relay-receipt.e2e.test.js",
+                "targetFile": "utils/auth-session.js"
               },
               {
                 "sourceFileId": "tests/e2e-api/orders.single-collect.e2e.test.js",
@@ -41696,6 +42208,10 @@
               {
                 "sourceFileId": "services/order-checkout-persistence.js",
                 "targetFile": "services/customs-classification.js"
+              },
+              {
+                "sourceFileId": "tests/unit/order-status-local-receipt.test.js",
+                "targetFile": "services/customs-shipment-service.js"
               },
               {
                 "sourceFileId": "tests/e2e-api/customer-to-customer.golden.e2e.test.js",
@@ -42025,16 +42541,16 @@
                 "targetFile": "utils/logger.js"
               },
               {
-                "sourceFileId": "routes/hub-mark-ordered.js",
-                "targetFile": "db.js"
-              },
-              {
                 "sourceFileId": "routes/order-api-v2.js",
                 "targetFile": "db.js"
               },
               {
                 "sourceFileId": "routes/order-api-v2.js",
                 "targetFile": "utils/logger.js"
+              },
+              {
+                "sourceFileId": "tests/unit/local-relay-receipt-service.test.js",
+                "targetFile": "db.js"
               },
               {
                 "sourceFileId": "tests/unit/qr-collection-core-emission.test.js",
@@ -42211,12 +42727,40 @@
                 "targetFile": "services/parcel-operations.js"
               },
               {
+                "sourceFileId": "routes/orders/status.js",
+                "targetFile": "services/local-relay-receipt-service.js"
+              },
+              {
                 "sourceFileId": "routes/orders/list.js",
                 "targetFile": "services/pickup-secret-service.js"
               },
               {
                 "sourceFileId": "routes/order-api-v2.js",
                 "targetFile": "services/parcel-auto-create-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/local-relay-receipt-service.test.js",
+                "targetFile": "services/parcel-item-mutation-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/local-relay-receipt-service.test.js",
+                "targetFile": "services/parcel-operations.js"
+              },
+              {
+                "sourceFileId": "tests/unit/local-relay-receipt-service.test.js",
+                "targetFile": "services/local-relay-receipt-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/order-status-local-receipt.test.js",
+                "targetFile": "services/order-physical-coverage-service.js"
+              },
+              {
+                "sourceFileId": "tests/e2e-api/orders.local-relay-receipt.e2e.test.js",
+                "targetFile": "services/pickup-secret-service.js"
+              },
+              {
+                "sourceFileId": "tests/e2e-api/orders.local-relay-receipt.e2e.test.js",
+                "targetFile": "routes/pickup-secret.js"
               },
               {
                 "sourceFileId": "tests/e2e-api/orders.single-collect.e2e.test.js",
@@ -42429,6 +42973,10 @@
               {
                 "sourceFileId": "routes/order-api-v2.js",
                 "targetFile": "services/notification-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/local-relay-receipt-service.test.js",
+                "targetFile": "services/client-notification-service.js"
               },
               {
                 "sourceFileId": "tests/unit/order-post-commit-hooks.test.js",
@@ -44832,6 +45380,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "services/hub-administration-board.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "services/purchasing-trigger-service.js",
                 "targetFile": "db.js"
               },
@@ -44902,6 +45454,10 @@
               {
                 "sourceFileId": "services/purchasing-engagement-service.js",
                 "targetFile": "utils/logger.js"
+              },
+              {
+                "sourceFileId": "services/hub-authorization-service.js",
+                "targetFile": "db.js"
               },
               {
                 "sourceFileId": "services/purchasing-completion-service.js",
@@ -44976,7 +45532,35 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "tests/integration/hub-p0-procurement-chain-postgres.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/hub-autonomous-purchasing-postgres.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/hub-autonomous-purchasing-postgres.test.js",
+                "targetFile": "bootstrap/crons.js"
+              },
+              {
+                "sourceFileId": "tests/integration/hub-autonomous-purchasing-postgres.test.js",
+                "targetFile": "server.js"
+              },
+              {
+                "sourceFileId": "tests/integration/hub-p0-authorization-postgres.test.js",
+                "targetFile": "bootstrap/crons.js"
+              },
+              {
+                "sourceFileId": "tests/integration/hub-p0-authorization-postgres.test.js",
+                "targetFile": "server.js"
+              },
+              {
                 "sourceFileId": "tests/integration/purchase-lines-engagement-postgres.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/hub-directrice-authorizations-postgres.test.js",
                 "targetFile": "db.js"
               },
               {
@@ -45001,10 +45585,6 @@
               },
               {
                 "sourceFileId": "tests/integration/purchasing-exact-sku-po.test.js",
-                "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "tests/integration/purchasing-wa-url-w3-1.test.js",
                 "targetFile": "db.js"
               },
               {
@@ -45060,8 +45640,8 @@
             "channel": "static-code",
             "evidence": [
               {
-                "sourceFileId": "services/purchasing-trigger-service.js",
-                "targetFile": "services/hub-reference.js"
+                "sourceFileId": "services/hub-administration-board.js",
+                "targetFile": "services/hub-procurement-dossier.js"
               },
               {
                 "sourceFileId": "services/purchasing-receive-service.js",
@@ -45074,6 +45654,34 @@
               {
                 "sourceFileId": "services/purchasing-completion-service.js",
                 "targetFile": "services/scan-operations.js"
+              },
+              {
+                "sourceFileId": "tests/integration/hub-p0-procurement-chain-postgres.test.js",
+                "targetFile": "services/hub-operations.js"
+              },
+              {
+                "sourceFileId": "tests/integration/hub-p0-procurement-chain-postgres.test.js",
+                "targetFile": "services/hub-box-shipment-service.js"
+              },
+              {
+                "sourceFileId": "tests/integration/hub-p0-procurement-chain-postgres.test.js",
+                "targetFile": "services/international-shipment-journey.js"
+              },
+              {
+                "sourceFileId": "tests/integration/hub-p0-procurement-chain-postgres.test.js",
+                "targetFile": "services/hub-procurement-dossier.js"
+              },
+              {
+                "sourceFileId": "tests/integration/hub-autonomous-purchasing-postgres.test.js",
+                "targetFile": "services/hub-operations.js"
+              },
+              {
+                "sourceFileId": "tests/integration/hub-autonomous-purchasing-postgres.test.js",
+                "targetFile": "tests/integration/test-harness/seed-helpers.js"
+              },
+              {
+                "sourceFileId": "tests/integration/hub-p0-authorization-postgres.test.js",
+                "targetFile": "tests/integration/test-harness/seed-helpers.js"
               },
               {
                 "sourceFileId": "tests/unit/hub-operations-grouped-completion.test.js",
@@ -45238,10 +45846,6 @@
                 "targetFile": "services/suppliers/supplier-fulfillment-adapter-contract.js"
               },
               {
-                "sourceFileId": "services/purchasing-trigger-service.js",
-                "targetFile": "services/suppliers/supplier-fulfillment-adapter-contract.js"
-              },
-              {
                 "sourceFileId": "services/purchasing-canonical-money.js",
                 "targetFile": "services/suppliers/supplier-order-identity.js"
               },
@@ -45308,6 +45912,10 @@
               {
                 "sourceFileId": "services/purchase-line-snapshot.js",
                 "targetFile": "services/suppliers/supplier-order-identity.js"
+              },
+              {
+                "sourceFileId": "services/purchasing-grouped-service.js",
+                "targetFile": "services/suppliers/provider-authority.js"
               },
               {
                 "sourceFileId": "services/purchasing-engagement-service.js",
@@ -47415,7 +48023,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2186
+        "filesObserved": 2224
       },
       "boutique": {
         "filesObserved": 214,
@@ -48916,7 +49524,8 @@
       "readers": [
         "dashboard",
         "documents",
-        "economic-engine"
+        "economic-engine",
+        "logistics"
       ],
       "lifecycleOwner": "customs",
       "resolution": "single-writer"
@@ -49681,7 +50290,7 @@
       "lifecycleOwner": "economic-engine",
       "resolution": "multi-writer-resolved-by-classification-signal"
     },
-    "international_n1_allocation_links": {
+    "international_n1_reconciliations": {
       "writers": [
         {
           "feature": "economic-engine",
@@ -49694,7 +50303,20 @@
       "lifecycleOwner": "economic-engine",
       "resolution": "declared-table-owner"
     },
-    "international_n1_reconciliations": {
+    "financial_movements": {
+      "writers": [
+        {
+          "feature": "economic-engine",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "economic-engine",
+      "resolution": "declared-table-owner"
+    },
+    "financial_movement_documents": {
       "writers": [
         {
           "feature": "economic-engine",
@@ -50028,7 +50650,9 @@
           "technical": false
         }
       ],
-      "readers": [],
+      "readers": [
+        "logistics"
+      ],
       "lifecycleOwner": "local-stock",
       "resolution": "single-writer"
     },
@@ -50041,7 +50665,9 @@
           "technical": false
         }
       ],
-      "readers": [],
+      "readers": [
+        "logistics"
+      ],
       "lifecycleOwner": "local-stock",
       "resolution": "single-writer"
     },
@@ -50099,7 +50725,20 @@
       "lifecycleOwner": "logistics",
       "resolution": "declared-table-owner"
     },
-    "international_shipment_parcels": {
+    "international_shipment_hub_units": {
+      "writers": [
+        {
+          "feature": "logistics",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "logistics",
+      "resolution": "declared-table-owner"
+    },
+    "international_shipment_relay_receipts": {
       "writers": [
         {
           "feature": "logistics",
@@ -50130,13 +50769,13 @@
         {
           "feature": "logistics",
           "mode": "RW",
-          "declaredOwner": false,
+          "declaredOwner": true,
           "technical": false
         }
       ],
       "readers": [],
       "lifecycleOwner": "logistics",
-      "resolution": "single-writer"
+      "resolution": "declared-table-owner"
     },
     "pickup_verify_attempts": {
       "writers": [
@@ -50787,6 +51426,32 @@
       "lifecycleOwner": "purchasing",
       "resolution": "single-writer"
     },
+    "hub_authorization_grants": {
+      "writers": [
+        {
+          "feature": "purchasing",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "purchasing",
+      "resolution": "declared-table-owner"
+    },
+    "purchase_order_authorizations": {
+      "writers": [
+        {
+          "feature": "purchasing",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "purchasing",
+      "resolution": "declared-table-owner"
+    },
     "supplier_execution_events": {
       "writers": [
         {
@@ -51179,8 +51844,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 663,
-        "technicalNodesOwned": 663,
+        "technicalNodesTotal": 672,
+        "technicalNodesOwned": 672,
         "technicalOrphans": 0
       },
       "dash": {
@@ -51447,7 +52112,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "logistics -> dashboard",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"logistics\" vers \"dashboard\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"logistics\" vers \"dashboard\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",

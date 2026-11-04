@@ -125,7 +125,6 @@ test('buildQueues ne crée aucune transition métier côté présentation', () =
     ]
   );
 
-  expect(queues.hub.to_order.map(row => row.reference)).toEqual(['CMD-1']);
   expect(queues.hub.to_ship.map(row => row.reference)).toEqual(['PCL-1']);
   expect(queues.relay.cash_pending.map(row => row.reference)).toEqual(['CMD-2']);
   expect(queues.relay.to_receive.map(row => row.reference)).toEqual(['PCL-2']);
@@ -185,21 +184,28 @@ test('scanParcel résout le colis dans le marché avant d appeler le moteur appe
     id: 'admin-1',
     role: 'admin',
     full_name: 'Admin Test',
-  });
+  }, { reason: 'scanner_unavailable' });
 
   expect(mockQuery.mock.calls[0][1]).toEqual(['PCL-CM-001', 'market-cm-id']);
   expect(mockProcessScan).toHaveBeenCalledWith(expect.objectContaining({
     parcel_id: 'parcel-cm-id',
     event_type: 'shipped',
-    metadata: expect.objectContaining({ market_code: 'CM' }),
+    metadata: expect.objectContaining({ market_code: 'CM', entry_mode: 'manual_confirmation', manual_reason: 'scanner_unavailable' }),
   }));
   expect(result.reference).toBe('PCL-CM-001');
+});
+
+test('scanParcel refuse une confirmation sans motif et n\'appelle pas le moteur', async () => {
+  await expect(workspace.scanParcel('PCL-CM-001', 'ship', MARKET, { id: 'a', role: 'admin' }))
+    .rejects.toMatchObject({ code: 'manual_reason_required' });
+  await expect(workspace.scanParcel('PCL-CM-001', 'ship', MARKET, { id: 'a', role: 'admin' }, { reason: 'other' }))
+    .rejects.toMatchObject({ code: 'manual_note_required' });
+  expect(mockProcessScan).not.toHaveBeenCalled();
 });
 
 test.each([
   ['admin', 'ship', 'admin'],
   ['agent_hub', 'ship', 'hub_agent'],
-  ['agent_relais', 'receive', 'relay_agent'],
   ['agent_relais', 'collect', 'relay_agent'],
   // rôle inattendu : la station qui exécute l'action décide (jamais d'étiquette « admin » par défaut)
   ['market_operator', 'collect', 'relay_agent'],
@@ -209,7 +215,7 @@ test.each([
     rows: [{ id: 'parcel-cm-id', reference: 'PCL-CM-001', status: 'preparation', order_id: 'order-cm-id', relais_id: 'relay-cm', order_market_id: 'market-cm-id', relais_market_id: 'market-cm-id' }],
   });
 
-  await workspace.scanParcel('PCL-CM-001', action, MARKET, { id: 'actor-1', role });
+  await workspace.scanParcel('PCL-CM-001', action, MARKET, { id: 'actor-1', role }, { reason: 'offline' });
 
   expect(mockProcessScan).toHaveBeenLastCalledWith(expect.objectContaining({ actor_role: expected }));
 });

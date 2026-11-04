@@ -30,7 +30,7 @@ const { syncPurchaseOrdersOnOrderCancel } = require('../../services/purchasing-c
 const hasDb = Boolean(process.env.DATABASE_URL);
 const describeDb = hasDb ? describe : describe.skip;
 const id = () => crypto.randomUUID();
-const MIGRATIONS = ['263_purchase_lines_foundation.sql', '264_purchase_line_progress_view.sql', '266_purchase_orders_grouped_form.sql']
+const MIGRATIONS = ['263_purchase_lines_foundation.sql', '264_purchase_line_progress_view.sql', '266_purchase_orders_grouped_form.sql', '369_single_purchase_model.sql']
 const fs2 = fs; // (lecture des fichiers de migration);
 const IDENTITY = JSON.stringify({ provider: 'manual', version: 1, payload: { supplier_sku: 'U1' } });
 
@@ -148,10 +148,9 @@ describeDb('forme regroupée — migration 266 et services (REAL_DB)', () => {
   });
 
   beforeEach(() => {
-    process.env.KOMERCE_GROUPED_PURCHASING = '1';
     mockCreateAlert.mockClear();
   });
-  afterEach(() => { delete process.env.KOMERCE_GROUPED_PURCHASING; });
+  afterEach(() => { });
 
   // ─── fixtures ─────────────────────────────────────────────────────────────────────────────────
   async function seedSupplier({ platform = 'manual', name = 'Fournisseur' } = {}) {
@@ -266,8 +265,22 @@ describeDb('forme regroupée — migration 266 et services (REAL_DB)', () => {
       await expect(attach(await seedLine({ supplier }))).resolves.toBeTruthy();
     });
 
-    it('refuse une ligne sans identité exacte (purchase_line_not_groupable)', async () => {
-      await expect(attach(await seedLine({ supplier, exact: false }))).rejects.toThrow(/purchase_line_not_groupable/);
+    it('PO manuelle : accepte une ligne issue d\'un mapping fournisseur (sans identité exacte)', async () => {
+      await expect(attach(await seedLine({ supplier, exact: false }))).resolves.toBeTruthy();
+    });
+
+    it('PO en mode API : refuse une ligne sans identité exacte (purchase_line_not_groupable)', async () => {
+      const { rows: [{ id: apiPo }] } = await q(
+        `INSERT INTO purchase_orders(order_id, supplier_id, status, qty, supplier_sku, procurement_hub_ref, trigger_mode)
+         VALUES (NULL,$1,'draft',NULL,NULL,'DXB','auto') RETURNING id`, [supplier]);
+      const line = await seedLine({ supplier, exact: false });
+      await expect(q('UPDATE purchase_lines SET purchase_order_id = $1 WHERE id = $2', [apiPo, line]))
+        .rejects.toThrow(/purchase_line_not_groupable/);
+    });
+
+    it('le mode d\'une PO est immuable après création', async () => {
+      await expect(q(`UPDATE purchase_orders SET trigger_mode = 'auto' WHERE id = $1`, [po]))
+        .rejects.toThrow(/purchase_order_mode_immutable/);
     });
 
     it('refuse un autre fournisseur, un autre hub ou une autre devise (purchase_line_not_homogeneous)', async () => {
@@ -304,16 +317,6 @@ describeDb('forme regroupée — migration 266 et services (REAL_DB)', () => {
   describe('purchasing-grouped-service', () => {
     beforeEach(() => newSchema());
 
-    it('refuse tout quand le drapeau est éteint', async () => {
-      delete process.env.KOMERCE_GROUPED_PURCHASING;
-      expect(grouped.isGroupedPurchasingEnabled()).toBe(false);
-      await expect(grouped.listOpenLines()).rejects.toMatchObject({ status: 409, code: 'GROUPED_PURCHASING_DISABLED' });
-      await expect(grouped.preparePurchaseOrder({})).rejects.toMatchObject({ code: 'GROUPED_PURCHASING_DISABLED' });
-      await expect(grouped.detachLines(id(), [id()])).rejects.toMatchObject({ code: 'GROUPED_PURCHASING_DISABLED' });
-      await expect(grouped.discardPurchaseOrder(id())).rejects.toMatchObject({ code: 'GROUPED_PURCHASING_DISABLED' });
-      await expect(grouped.cancelLine(id(), 'x')).rejects.toMatchObject({ code: 'GROUPED_PURCHASING_DISABLED' });
-    });
-
     it('open-lines regroupe par (fournisseur, hub) avec agrégat par supplier_unit_ref', async () => {
       const s1 = await seedSupplier({ name: 'Alpha' });
       const s2 = await seedSupplier({ name: 'Beta' });
@@ -332,7 +335,7 @@ describeDb('forme regroupée — migration 266 et services (REAL_DB)', () => {
       expect(alphaDxb.currencies).toEqual(['USD']);
       expect(alphaDxb.lines[0]).toMatchObject({ groupable: true, expected_unit_price: 10, product_name: 'Produit' });
       const beta = result.groups.find((g) => g.supplier_name === 'Beta');
-      expect(beta.lines[0].groupable).toBe(false);
+      expect(beta.lines[0]).toMatchObject({ groupable: true, api_eligible: false });
     });
 
     it('P0 #3247 — refuse l’ajout inter-marché dans une PO ouverte, même en SQL brut', async () => {
@@ -396,12 +399,10 @@ describeDb('forme regroupée — migration 266 et services (REAL_DB)', () => {
       expect(await poCount()).toBe(1);
     });
 
-    it('prepare : refus lisibles (non regroupable, hétérogène, entrées invalides, fournisseur inconnu)', async () => {
+    it('prepare : refus lisibles (hétérogène, entrées invalides, fournisseur inconnu)', async () => {
       const supplier = await seedSupplier();
-      const inexact = await seedLine({ supplier, exact: false });
       const other = await seedLine({ supplier: await seedSupplier() });
       const base = { supplier_id: supplier, procurement_hub_ref: 'DXB' };
-      await expect(grouped.preparePurchaseOrder({ ...base, line_ids: [inexact] })).rejects.toMatchObject({ status: 409, code: 'PURCHASE_LINE_NOT_GROUPABLE' });
       await expect(grouped.preparePurchaseOrder({ ...base, line_ids: [other] })).rejects.toMatchObject({ status: 409, code: 'PURCHASE_LINE_NOT_HOMOGENEOUS' });
       await expect(grouped.preparePurchaseOrder({ ...base, line_ids: [] })).rejects.toMatchObject({ status: 400 });
       await expect(grouped.preparePurchaseOrder({ ...base, line_ids: [other, other] })).rejects.toMatchObject({ status: 400 });

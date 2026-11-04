@@ -18,7 +18,7 @@
  *
  * Couverture :
  *   ✓ token valide + jti révoqué → 401 "Session expirée"
- *   ✓ token valide + user en cache → req.user peuplé, next()
+ *   ✓ token valide + cache obsolète → lecture DB fraîche, req.user peuplé, next()
  *   ✓ token valide + user absent du cache → requête DB, peuple le cache
  *   ✓ token valide + user introuvable en DB → 401 identity_required
  *   ✓ token invalide/expiré → tombe vers le refus 401 identity_required (pas de log.error)
@@ -116,9 +116,10 @@ describe('authenticateOrCreateGuest — révocation (jti)', () => {
 });
 
 describe('authenticateOrCreateGuest — résolution utilisateur (cache partagé)', () => {
-  it('utilise le cache si présent, req.user peuplé, next()', async () => {
+  it('ne fait pas confiance au cache : rôle et credentials relus en DB', async () => {
     mockQuery.mockResolvedValueOnce({ rows: [] }); // révocation
-    mockCacheGet.mockReturnValueOnce({ id: 'user-1', role: 'client' });
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'user-1', role: 'client' }] }); // identité fraîche
+    mockCacheGet.mockReturnValueOnce({ id: 'user-1', role: 'admin' });
 
     const req = { headers: { authorization: `Bearer ${validToken()}` }, body: {} };
     const res = makeRes();
@@ -126,7 +127,7 @@ describe('authenticateOrCreateGuest — résolution utilisateur (cache partagé)
 
     await authenticateOrCreateGuest(req, res, next);
 
-    expect(mockQuery).toHaveBeenCalledTimes(1); // uniquement révocation
+    expect(mockQuery).toHaveBeenCalledTimes(2); // révocation + identité fraîche
     expect(req.user).toEqual({ id: 'user-1', role: 'client' });
     expect(next).toHaveBeenCalledTimes(1);
   });
@@ -202,8 +203,8 @@ describe('authenticateOrCreateGuest — token invalide/expiré', () => {
 
 describe('authenticateOrCreateGuest — extraction du token', () => {
   it('priorise le cookie kmrc_jwt même si un header Authorization est aussi présent', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [] });
-    mockCacheGet.mockReturnValueOnce({ id: 'from-cookie', role: 'client' });
+    mockQuery.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [{ id: 'from-cookie', role: 'client' }] });
+    mockCacheGet.mockReturnValueOnce({ id: 'from-cookie', role: 'admin' });
 
     const cookieToken = validToken({ id: 'from-cookie' });
     const req = {
@@ -221,8 +222,8 @@ describe('authenticateOrCreateGuest — extraction du token', () => {
   });
 
   it('gère req.cookies absent sans planter (passe au header)', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [] });
-    mockCacheGet.mockReturnValueOnce({ id: 'user-1', role: 'client' });
+    mockQuery.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [{ id: 'user-1', role: 'client' }] });
+    mockCacheGet.mockReturnValueOnce({ id: 'user-1', role: 'admin' });
 
     const req = { headers: { authorization: `Bearer ${validToken()}` }, body: {} };
     const res = makeRes();

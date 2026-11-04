@@ -102,7 +102,7 @@ test('rôles opérationnels réels sont admis sans ouvrir les dashboards admin',
   expect(workspaceRoute).toContain("requireHubWorkspaceAction = requireRole(['admin', 'agent_hub'])");
   expect(workspaceRoute).toContain("requireRelayWorkspaceAction = requireRole(['admin', 'agent_relais'])");
   expect(workspaceRoute).toContain('attachMarketExecutionRoleFor');
-  expect(workspaceRoute).toContain('execution.order.mark_ordered');
+  expect(workspaceRoute).not.toContain('execution.order.mark_ordered');
   expect(workspaceRoute).toContain('execution.cash.confirm');
   expect(workspaceRoute).toContain('forceCapability: true');
   expect(workspaceRoute).not.toContain('require-market-scope');
