@@ -63,6 +63,9 @@ const PUBLIC_BY_DESIGN = new Set([
   'POST /api/auth/login',            // point d'entrée avant authentification, par définition
   'POST /api/auth/register',         // idem
   'POST /api/auth/logout',           // idem — invalide une session, n'en exige pas une valide
+  'POST /api/auth/activate-account', // lien aléatoire 256 bits, consommation atomique, fenêtre 24 h, rate limit
+  'POST /api/auth/password-reset/request', // réponse uniforme, débit limité, aucun jeton retourné
+  'POST /api/auth/password-reset/confirm', // jeton 256 bits à usage unique, débit limité, session révoquée
 ]);
 
 const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);

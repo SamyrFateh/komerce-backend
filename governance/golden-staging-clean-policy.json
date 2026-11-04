@@ -93,6 +93,7 @@
       "products",
       "provider_credentials",
       "providers",
+      "order_item_refund_reservations",
       "refund_execution_intents",
       "relais",
       "revoked_tokens",

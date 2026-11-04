@@ -62,6 +62,7 @@ module.exports = {
 
   files: {
     scripts: [
+      'scripts/recette/dj-canonical-activation.js',
       'scripts/cm-cg-market-delegation-audit.js',
     ],
     services: [
@@ -74,6 +75,7 @@ module.exports = {
       'routes/admin-market-control-plane.js',
     ],
     tests: [
+      'tests/unit/dj-canonical-activation.test.js',
       'tests/unit/market-control-plane-service.test.js',
       'tests/unit/admin-market-control-plane-routes.test.js',
       'tests/unit/central-authority.test.js',
