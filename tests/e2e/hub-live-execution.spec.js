@@ -119,7 +119,7 @@ const TRACE = {
     }] }],
 };
 
-async function mount(page, { posts = [], failShip = false, receiveReply = null, receivable = RECEIVABLE_PAYLOAD, dossier = DOSSIER, suppliers = [], view = 'hub', emptyDistribution = false, pilot = false } = {}) {
+async function mount(page, { posts = [], failShip = false, receiveReply = null, receivable = RECEIVABLE_PAYLOAD, dossier = DOSSIER, suppliers = [], failManual = false, view = 'hub', emptyDistribution = false, pilot = false } = {}) {
   page.on('dialog', (dialog) => dialog.accept());
   await page.route(`${ORIGIN}/**`, async (route) => {
     const url = new URL(route.request().url());
@@ -142,7 +142,9 @@ async function mount(page, { posts = [], failShip = false, receiveReply = null, 
       posts.push({ path: url.pathname, body: route.request().postDataJSON() });
       if (url.pathname === '/api/purchasing/suppliers') return json({ id: 'supplier-test-1' }, 201);
       if (url.pathname.endsWith('/map')) return json({ id: 'mapping-test-1' }, 201);
-      if (url.pathname === '/api/purchasing/lines') return json({ line: { line_id: 'line-test-1' } }, 201);
+      if (url.pathname === '/api/purchasing/lines') return failManual
+        ? json({ error: 'Réponse réseau incertaine : vérifier le dossier' }, 503)
+        : json({ line: { line_id: 'line-test-1' } }, 201);
       return json({ error: 'route sourcing inconnue' }, 404);
     }
     if (route.request().method() === 'POST') {
@@ -280,6 +282,28 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
           quantity: 2, execution_mode: 'manual',
         },
       });
+    });
+
+    test('L8 : échec réseau sur création de ligne interdit tout second POST aveugle', async ({ page }) => {
+      const posts = [];
+      await mount(page, {
+        view: null, dossier: UNSOURCED_DOSSIER, posts, failManual: true,
+        suppliers: [{
+          id: 'supplier-existing-1', name: 'Fournisseur connu', is_active: true,
+          matching_product_supplier_id: 'mapping-existing-1', owner_scope: null,
+        }],
+      });
+      await page.locator('[data-hub-order="cf9520d0-84ff-4fe1-ab9b-a5e972b1365b"] [data-hub-stage="PO"]').click();
+      await page.locator('[data-hub-context-menu]').getByRole('button',
+        { name: 'Résoudre le sourcing / créer un achat manuel' }).click();
+      const form = page.locator('[data-hub-sourcing-form="KRGNX5O"]');
+      await expect(form.locator('[data-sourcing-supplier]')).toBeEnabled();
+      await form.locator('[data-sourcing-supplier]').selectOption('supplier-existing-1');
+      const save = form.locator('[data-workspace-action="create-manual-purchase-line"]');
+      await save.click();
+      await expect(form.locator('[data-sourcing-status]')).toContainText('Recharger et vérifier');
+      await expect(save).toBeDisabled();
+      expect(posts.filter(p => p.path === '/api/purchasing/lines')).toHaveLength(1);
     });
 
     test('clic droit et clavier : actions contextuelles, sans mutation implicite', async ({ page }) => {
