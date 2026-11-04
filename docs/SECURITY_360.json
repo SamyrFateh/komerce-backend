@@ -2,9 +2,9 @@
   "generatedAt": "2026-11-03T17:09:39.129Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 797,
-    "protected": 742,
-    "public": 55,
+    "total": 801,
+    "protected": 743,
+    "public": 58,
     "unprotected": 0,
     "admin_no_guard": 0,
     "unknown": 0
@@ -298,6 +298,24 @@
       "kind": "APPLICATION_GUARD",
       "evidence": "routes/meta-whatsapp.js; bootstrap/env.js; tests/unit/meta-whatsapp.test.js",
       "rationale": "Signature X-Hub-Signature-256 HMAC-SHA256 vérifiée en temps constant ; secret obligatoire en production."
+    },
+    {
+      "key": "POST /api/auth/activate-account",
+      "kind": "CAPABILITY_TOKEN",
+      "evidence": "routes/auth.js; services/credential-action-store.js; tests/unit/auth-route.test.js; tests/unit/credential-action-store.test.js",
+      "rationale": "Activation de compte sans session, uniquement par jeton à usage unique, empreinte SHA-256, expiration et consommation transactionnelle ; limite IP."
+    },
+    {
+      "key": "POST /api/auth/password-reset/confirm",
+      "kind": "CAPABILITY_TOKEN",
+      "evidence": "routes/auth.js; services/credential-action-store.js; middleware/auth.js; tests/unit/credential-session-guard.test.js",
+      "rationale": "Réinitialisation sans session via jeton à usage unique et borné dans le temps ; consommation transactionnelle, invalidation des anciennes sessions, limite IP."
+    },
+    {
+      "key": "POST /api/auth/password-reset/request",
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/auth.js; tests/unit/auth-route.test.js",
+      "rationale": "Demande publique de récupération (aucune session préalable) : réponse uniforme anti-énumération, limite IP, lien éphémère par canal vérifié."
     }
   ],
   "routes": [
@@ -1936,6 +1954,13 @@
       ]
     },
     {
+      "key": "POST /api/admin/users/{id}/resend-invitation",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
       "key": "PUT /api/admin/users/{id}/role",
       "level": "PROTECTED",
       "roles": [
@@ -3072,6 +3097,11 @@
       ]
     },
     {
+      "key": "POST /api/auth/activate-account",
+      "level": "PUBLIC",
+      "roles": []
+    },
+    {
       "key": "POST /api/auth/admin-reset",
       "level": "PUBLIC",
       "roles": []
@@ -3219,6 +3249,16 @@
     {
       "key": "POST /api/auth/passkey/step-up/verify",
       "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/auth/password-reset/confirm",
+      "level": "PUBLIC",
+      "roles": []
+    },
+    {
+      "key": "POST /api/auth/password-reset/request",
+      "level": "PUBLIC",
       "roles": []
     },
     {
