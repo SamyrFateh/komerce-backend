@@ -69,9 +69,10 @@ describe('authenticate', () => {
     expect(next).not.toHaveBeenCalled();
   });
 
-  it('token via cookie kmrc_jwt, jti non révoqué, user en cache → req.user peuplé, next() appelé', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [] }); // pas révoqué
-    mockCacheGet.mockReturnValueOnce({ id: 'user-1', role: 'client' });
+  it('token via cookie, stale cache ignoré : lecture fraîche DB et next()', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [] }) // pas révoqué
+      .mockResolvedValueOnce({ rows: [{ id: 'user-1', role: 'client' }] });
+    mockCacheGet.mockReturnValueOnce({ id: 'user-1', role: 'admin' });
 
     const req = makeReq({ cookies: { kmrc_jwt: validToken() } });
     const res = makeRes();
@@ -81,7 +82,8 @@ describe('authenticate', () => {
 
     expect(req.user).toEqual({ id: 'user-1', role: 'client' });
     expect(next).toHaveBeenCalledTimes(1);
-    expect(mockCacheSet).not.toHaveBeenCalled(); // déjà en cache, pas de re-set
+    expect(mockQuery).toHaveBeenCalledTimes(2);
+    expect(mockCacheSet).toHaveBeenCalledWith('user-1', { id: 'user-1', role: 'client' });
   });
 
   it('token via header Authorization Bearer, user absent du cache → requête DB + mise en cache', async () => {

@@ -73,8 +73,8 @@ describe('requireVerifiedIdentityForCheckout — extraction du token', () => {
   });
 
   it('extrait le token depuis le cookie kmrc_jwt', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [] }); // pas révoqué
-    mockCacheGet.mockReturnValueOnce({ id: 'user-1', role: 'client' });
+    mockQuery.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [{ id: 'user-1', role: 'client' }] }); // révocation + identité actuelle
+    mockCacheGet.mockReturnValueOnce({ id: 'user-1', role: 'admin' });
 
     const req = { headers: {}, cookies: { kmrc_jwt: validToken() } };
     const res = makeRes();
@@ -87,8 +87,8 @@ describe('requireVerifiedIdentityForCheckout — extraction du token', () => {
   });
 
   it('extrait le token depuis le header Authorization Bearer', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [] });
-    mockCacheGet.mockReturnValueOnce({ id: 'user-1', role: 'client' });
+    mockQuery.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [{ id: 'user-1', role: 'client' }] }); // révocation + identité actuelle
+    mockCacheGet.mockReturnValueOnce({ id: 'user-1', role: 'admin' });
 
     const req = { headers: { authorization: `Bearer ${validToken()}` } };
     const res = makeRes();
@@ -143,9 +143,10 @@ describe('requireVerifiedIdentityForCheckout — révocation', () => {
 });
 
 describe('requireVerifiedIdentityForCheckout — résolution utilisateur', () => {
-  it('utilise le cache si disponible (pas de requête DB users)', async () => {
+  it('ne réutilise pas un compte obsolète en cache (contrôle DB frais)', async () => {
     mockQuery.mockResolvedValueOnce({ rows: [] }); // révocation check
-    mockCacheGet.mockReturnValueOnce({ id: 'user-1', role: 'client' });
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'user-1', role: 'client' }] });
+    mockCacheGet.mockReturnValueOnce({ id: 'user-1', role: 'admin' });
 
     const req = { headers: { authorization: `Bearer ${validToken()}` } };
     const res = makeRes();
@@ -153,8 +154,8 @@ describe('requireVerifiedIdentityForCheckout — résolution utilisateur', () =>
 
     await requireVerifiedIdentityForCheckout(req, res, next);
 
-    expect(mockQuery).toHaveBeenCalledTimes(1); // seulement la requête de révocation
-    expect(mockCacheSet).not.toHaveBeenCalled();
+    expect(mockQuery).toHaveBeenCalledTimes(2); // révocation et identité DB
+    expect(mockCacheSet).toHaveBeenCalledWith('user-1', expect.objectContaining({ role: 'client' }));
     expect(next).toHaveBeenCalledTimes(1);
   });
 

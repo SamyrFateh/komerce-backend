@@ -73,8 +73,8 @@ describe('authenticate — extraction et frontière de session', () => {
   });
 
   it('priorise le cookie même si un Bearer est aussi présent', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [] });
-    mockCacheGet.mockReturnValueOnce({ id: 'from-cookie', role: 'client' });
+    mockQuery.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [{ id: 'from-cookie', role: 'client' }] });
+    mockCacheGet.mockReturnValueOnce({ id: 'from-cookie', role: 'admin' });
 
     const cookieToken = validToken({ id: 'from-cookie' });
     const req = {
@@ -89,8 +89,8 @@ describe('authenticate — extraction et frontière de session', () => {
   });
 
   it('accepte un Bearer seulement quand il est une session canonique', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [] });
-    mockCacheGet.mockReturnValueOnce({ id: 'user-1', role: 'client' });
+    mockQuery.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [{ id: 'user-1', role: 'client' }] });
+    mockCacheGet.mockReturnValueOnce({ id: 'user-1', role: 'admin' });
 
     const req = { headers: { authorization: `Bearer ${validToken()}` } };
     const res = makeRes();
@@ -143,8 +143,8 @@ describe('authenticate — extraction et frontière de session', () => {
   });
 
   it('gère req.cookies absent et utilise un Bearer canonique', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [] });
-    mockCacheGet.mockReturnValueOnce({ id: 'user-1', role: 'client' });
+    mockQuery.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [{ id: 'user-1', role: 'client' }] });
+    mockCacheGet.mockReturnValueOnce({ id: 'user-1', role: 'admin' });
     const req = { headers: { authorization: `Bearer ${validToken()}` } };
     const res = makeRes();
     const next = jest.fn();
@@ -167,16 +167,16 @@ describe('authenticate — révocation (jti)', () => {
 });
 
 describe('authenticate — résolution utilisateur (cache partagé)', () => {
-  it('utilise le cache si présent', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [] });
+  it('ignore un rôle admin obsolète en cache et recharge le rôle serveur', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [{ id: 'user-1', role: 'client' }] });
     mockCacheGet.mockReturnValueOnce({ id: 'user-1', role: 'admin' });
     const req = { headers: { authorization: `Bearer ${validToken()}` } };
     const res = makeRes();
     const next = jest.fn();
     await authenticate(req, res, next);
-    expect(mockQuery).toHaveBeenCalledTimes(1);
-    expect(mockCacheSet).not.toHaveBeenCalled();
-    expect(req.user).toEqual({ id: 'user-1', role: 'admin' });
+    expect(mockQuery).toHaveBeenCalledTimes(2);
+    expect(mockCacheSet).toHaveBeenCalledWith('user-1', { id: 'user-1', role: 'client' });
+    expect(req.user).toEqual({ id: 'user-1', role: 'client' });
     expect(next).toHaveBeenCalledTimes(1);
   });
 

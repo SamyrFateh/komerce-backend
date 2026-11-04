@@ -146,6 +146,7 @@ supplier_execution_groups supplier_payment_settlements unsold_items`.split(/\s+/
   S('catalog_global_access_grants', 'acces globaux (owner user_id)'), S('dashboard_global_access_grants', 'acces globaux (owner user_id)'),
   S('pricing_global_access_grants', 'acces globaux (owner user_id)'), S('sourcing_global_access_grants', 'acces globaux (owner user_id)'),
   S('decision_signal_global_access_grants', 'acces globaux (owner user_id)'), S('webauthn_credentials', 'passkeys (owner user_id)'),
+  S('credential_action_tokens', 'jetons activation/reset par utilisateur (retrait pour comptes test uniquement)'),
   S('hub_authorization_grants', 'droits d autorisation Hub (owner user_id) : conserves pour les comptes conserves'),
 ];
 
@@ -167,6 +168,7 @@ const FIXTURE_OWNER_COLUMNS = Object.freeze({
   decision_signal_global_access_grants: ['user_id'],
   webauthn_credentials: ['user_id'],
   hub_authorization_grants: ['user_id'],
+  credential_action_tokens: ['user_id'],
 });
 /** Racines de ciblage : leurs lignes sont designees par les regles ci-dessous. */
 const FIXTURE_ROOT_TABLES = Object.freeze(['users', 'relais', 'partners']);

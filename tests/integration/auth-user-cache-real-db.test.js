@@ -102,7 +102,7 @@ if (!hasIntegrationEnv) {
       expect(res.body.role).toBe('client');
     });
 
-    it("2 — FRAÎCHEUR DU CACHE : une promotion de rôle en DB directe n'est PAS vue avant invalidation", async () => {
+    it("2 — V1 sécurité : une promotion de rôle en DB est vue immédiatement même sans invalidation locale", async () => {
       const userId = await seedUser('stale_role', 'client');
       invalidateUserCache(userId);
       const token = signAuthToken({ id: userId, role: 'client' }, { method: 'e2e' });
@@ -111,12 +111,12 @@ if (!hasIntegrationEnv) {
       expect(before.body.role).toBe('client');
 
       // Promotion directe en base, hors du chemin applicatif normal
-      // (admin route) — donc sans appel à invalidateUserCache().
+      // (admin route) — volontairement sans appel à invalidateUserCache().
       await db.query('UPDATE users SET role = $1 WHERE id = $2', ['admin', userId]);
       expect(await dbRole(userId)).toBe('admin'); // la DB a bien changé...
 
       const stillCached = await request(appAuth).get('/probe').set('Authorization', `Bearer ${token}`);
-      expect(stillCached.body.role).toBe('client'); // ...mais le cache sert encore l'ancien rôle
+      expect(stillCached.body.role).toBe('admin'); // relecture DB : aucune autorité obsolète en cache
 
       invalidateUserCache(userId);
       const afterInvalidate = await request(appAuth).get('/probe').set('Authorization', `Bearer ${token}`);
@@ -124,7 +124,7 @@ if (!hasIntegrationEnv) {
     });
 
     it("3 — CORRECTIF N2 : invalider depuis auth-guest.js purge aussi le cache lu par auth.js", async () => {
-      // Le cœur du bug documenté : deux fichiers, un seul Map partagé.
+      // Régression : invalidation partagée conservée, même si la lecture auth est fraîche.
       // On peuple le cache via authenticate() (auth.js), puis on invalide
       // via l'API exposée par middleware/auth-guest.js — la lecture
       // suivante par authenticate() (auth.js, pas auth-guest.js) doit
