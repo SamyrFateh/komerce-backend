@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       db.js, middleware/auth.js, services/*
  * @used-by       bootstrap/api-routes.js
- * @db-read       loyalty_tiers, users
+ * @db-read       credential_action_tokens, loyalty_tiers, users
  * @db-write      revoked_tokens, users
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
