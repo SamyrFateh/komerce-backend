@@ -44,6 +44,12 @@ jest.mock('../../utils/logger', () => ({
   child: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }),
 }));
 
+// Garde de désactivation : testée à part (supplier-source-resolution + PG réel) ; ici elle est pilotable.
+let mockRemovalGuard = null;
+jest.mock('../../services/supplier-source-resolution', () => ({
+  assertSourceRemovable: (...args) => (mockRemovalGuard ? mockRemovalGuard(...args) : Promise.resolve({})),
+}));
+
 // Réconciliation fournisseur : réelle par défaut, pilotable pour les cas Allegro (preuve requise).
 let mockEvidence = null;
 jest.mock('../../services/suppliers/purchase-order-confirmation-boundary', () => {
@@ -136,6 +142,20 @@ describe('deleteSupplier', () => {
     mockGetClient.mockResolvedValue(client);
 
     await expect(deleteSupplier('sup-uuid')).rejects.toThrow('boom');
+    expect(client.released).toBe(true);
+  });
+
+  test('garde de désactivation refusée → 409 relayé, ROLLBACK, aucun UPDATE', async () => {
+    const client = makeClient([
+      { rows: [{ id: 'sup-uuid', name: 'AliExpress' }] }, // SELECT supplier
+      { rows: [] },                                         // SELECT confirmed POs → aucune
+    ]);
+    mockGetClient.mockResolvedValue(client);
+    mockRemovalGuard = jest.fn().mockRejectedValue(Object.assign(new Error('refus'), { status: 409, code: 'SUPPLIER_SOLE_SOURCE_OF_SELLABLE_PRODUCTS' }));
+    try {
+      await expect(deleteSupplier('sup-uuid')).rejects.toMatchObject({ status: 409, code: 'SUPPLIER_SOLE_SOURCE_OF_SELLABLE_PRODUCTS' });
+    } finally { mockRemovalGuard = null; }
+    expect(client.calls.some((c) => /^UPDATE/i.test(c.sql))).toBe(false);
     expect(client.released).toBe(true);
   });
 

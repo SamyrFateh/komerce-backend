@@ -6,9 +6,9 @@
  * @criticality   high
  * @inputs        product_db_row
  * @outputs       public_product_view
- * @depends       (none)
+ * @depends       services/supplier-source-resolution.js
  * @used-by       routes/products.js
- * @db-read       catalog_media, markets, product_market_exposure, product_market_price_drafts, product_skus, product_variants
+ * @db-read       catalog_media, markets, product_market_exposure, product_market_price_drafts, product_skus, product_suppliers, product_variants, suppliers
  * @db-write      (none)
  * @db-txn        (none)
  * @doctrine      docs/doctrine/DOCTRINE_CATALOGUE.md, only_LOCAL_ACTIVE_is_buyer_effective, visible_means_sellable
@@ -17,6 +17,8 @@
  */
 
 'use strict';
+
+const { skuSourceResolvedSql } = require('./supplier-source-resolution');
 
 const PUBLIC_CATALOG_EXCLUDED_REF_PREFIXES = Object.freeze([
   'SHOWCASE-V2-',
@@ -104,9 +106,11 @@ function canonicalProductImageSql(alias = 'p') {
   )`;
 }
 
+// Garde unique de résolution fournisseur (services/supplier-source-resolution.js) : un SKU SUPPLIER n'est
+// vendable que si une source admissible (association active, fournisseur actif) existe.
 function supplierOrderIdentitySql(skuAlias) {
   const s = assertSqlAlias(skuAlias);
-  return `(
+  return `((
     COALESCE(${s}.source, 'MANUAL') <> 'SUPPLIER'
     OR (
       NULLIF(BTRIM(${s}.supplier_sku), '') IS NOT NULL
@@ -120,7 +124,8 @@ function supplierOrderIdentitySql(skuAlias) {
       AND jsonb_typeof(${s}.supplier_order_identity->'payload') = 'object'
       AND ${s}.supplier_order_identity->'payload' <> '{}'::jsonb
     )
-  )`;
+  )
+  AND ${skuSourceResolvedSql(s)})`;
 }
 
 function sellableSkuSql(skuAlias) {

@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        market_id, optional_supplier_id, order_or_purchase_order_id
  * @outputs       market_procurement_dossier, physical_trace
- * @depends       db
+ * @depends       db, services/supplier-source-resolution.js
  * @used-by       routes/hub.js, routes/admin-operations-workspace.js
  * @db-read       markets, orders, order_items, products, product_suppliers, suppliers, purchase_lines, purchase_orders, purchase_order_authorizations, hub_authorization_grants, users, relais, v_purchase_line_progress, hub_purchase_allocations, hub_physical_units, hub_physical_unit_placements, hub_box_bags, hub_box_effective_placements, international_shipments, international_shipment_hub_units, parcels, parcel_items
  * @db-write      (none)
@@ -19,6 +19,7 @@
 'use strict';
 
 const db = require('../db');
+const { hasEligibleSourceSql } = require('./supplier-source-resolution');
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const HOUR = 3600 * 1000;
@@ -138,9 +139,11 @@ function buildTodo({ orders, unsourced, needBatches, purchaseOrders, bagsOpen, b
     push({
       id: `SOURCING_REQUIRED:${orderId}`, kind: 'SOURCING_REQUIRED', priority: 10, owner: 'agent_hub', subject: { order_id: orderId },
       severity: 'anomaly',
-      missing: `Anomalie ${list[0].order_ref} : fournisseur du SKU non rattaché aux achats`,
+      missing: list.some((u) => !u.supplier_mapping_present)
+        ? `Sourcing requis — aucun fournisseur admissible · ${list[0].order_ref}`
+        : `Anomalie ${list[0].order_ref} : fournisseur du SKU non rattaché aux achats`,
       why: list.some((u) => !u.supplier_mapping_present)
-        ? 'Aucun fournisseur associé au SKU.'
+        ? 'Aucun fournisseur admissible pour le produit et la plateforme du SKU.'
         : 'Aucune ligne d’achat créée.',
       action: { type: 'resolve_sourcing', order_id: orderId, label: 'Ouvrir une ligne d’achat' }, ...can(true),
     });
@@ -519,13 +522,10 @@ async function getDossier({ marketId, supplierId = null, viewer = null, now = ne
                FROM v_purchase_line_progress v
               WHERE v.order_item_id = oi.id AND NOT v.cancelled
            ), 0) AS purchase_covered,
-           EXISTS (
-             SELECT 1
-               FROM product_suppliers ps
-               JOIN suppliers s ON s.id = ps.supplier_id
-              WHERE ps.product_id = oi.product_id AND ps.is_active = TRUE
-                AND s.is_active = TRUE AND ps.deleted_at IS NULL AND s.deleted_at IS NULL
-           ) AS supplier_mapping_present
+           ${hasEligibleSourceSql({
+             productSql: 'oi.product_id',
+             providerSql: "(SELECT k.supplier_order_identity->>'provider' FROM product_skus k WHERE k.id = oi.sku_id)",
+           })} AS supplier_mapping_present
       FROM orders o
       JOIN order_items oi ON oi.order_id = o.id AND oi.fulfillment_source = 'IMPORT'
       LEFT JOIN products p ON p.id = oi.product_id
@@ -781,7 +781,7 @@ async function getDossier({ marketId, supplierId = null, viewer = null, now = ne
       kind: 'ORDER_SOURCING_REQUIRED',
       ...item,
       reason: `${item.order_ref} · ${item.product_name} : ${item.missing_quantity} unité(s) sans ligne d'achat` +
-        (item.supplier_mapping_present ? '' : ' · fournisseur à identifier'),
+        (item.supplier_mapping_present ? '' : ' · aucun fournisseur admissible'),
     });
   }
   for (const po of purchaseOrders) {

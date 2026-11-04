@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        product_skus_existing_rows, normalized_source_contract.sellable_units[]
  * @outputs       sku_reconciliation_plan (toCreate/toUpdate/toReactivate/toDeactivate)
- * @depends       services/suppliers/supplier-order-identity.js
+ * @depends       services/suppliers/supplier-order-identity.js, services/supplier-source-resolution.js
  * @used-by       services/catalog-promotion.js (Lot 6)
  * @db-read       none
  * @db-write      none
@@ -49,6 +49,7 @@ const {
   blockedSupplierIdentity,
   normalizeIdentity,
 } = require('../suppliers/supplier-order-identity');
+const { assertSkuProviderAllowed } = require('../supplier-source-resolution');
 
 function normalizeSupplierUnitRef(value, supplierSku) {
   if (value === undefined || value === null) return null;
@@ -66,6 +67,8 @@ function canonicalIdentityFromUnit(unit, supplierSku) {
   const supplierOrderIdentity = unit.supplier_order_identity == null
     ? null
     : normalizeIdentity(unit.supplier_order_identity, supplierUnitRef);
+  // eBay interdit comme source de SKU en V1 : refus à l'écriture (les données historiques ne sont pas touchées).
+  assertSkuProviderAllowed(supplierOrderIdentity);
 
   return {
     supplier_unit_ref: supplierUnitRef,

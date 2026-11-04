@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 786
-- Files with full headers: 735
+- Scanned code files: 787
+- Files with full headers: 736
 - Files with lite headers: 51
-- Files with any headers: 786
+- Files with any headers: 787
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1992
-- Edges: 9786
+- Graph nodes: 1993
+- Edges: 9808
 - DB tables: 229
 - Doctrines: 770
 - Impact areas: 207
-- Unresolved code edges: 939
+- Unresolved code edges: 940
 - Tables multi-écrivains directs (>=2): 94
 - Avertissements db-write / db-write-via en chevauchement: 12
 
@@ -59,7 +59,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - payments: 1
 - platform-ops: 2
 - providers-services: 7
-- purchasing: 51
+- purchasing: 52
 - recommendations: 6
 - refunds: 7
 - settlement: 2
@@ -92,7 +92,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 137
 - route-manifest: 1
 - schema: 1
-- service: 469
+- service: 470
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -625,6 +625,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/supplier-payment-settlement-service.js — supplier-payment-settlement-service (purchasing, high, full)
 - services/supplier-payment-state.js — supplier-payment-state (purchasing, high, full)
 - services/supplier-real-debit-verification.js — supplier-real-debit-verification (purchasing, high, full)
+- services/supplier-source-resolution.js — supplier-source-resolution (purchasing, high, full)
 - services/suppliers/aliexpress-discovery.js — aliexpress-source-discovery (sourcing, high, full)
 - services/suppliers/aliexpress-fulfillment-adapter.js — aliexpress-fulfillment-adapter (purchasing, high, full)
 - services/suppliers/aliexpress-fulfillment-reader.js — aliexpress-provider-fulfillment-reader (purchasing, high, full)

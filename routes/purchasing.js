@@ -366,7 +366,13 @@ router.post('/suppliers/:id/map', ...groupedGuard, async (req, res, next) => {
         supplier_price_aed, min_order_qty, priority, notes]);
 
     res.status(201).json(mapping);
-  } catch(err) { next(err); }
+  } catch(err) {
+    // Priorité unique par produit parmi les associations actives (ux_product_suppliers_active_priority).
+    if (err.code === '23505' && /ux_product_suppliers_active_priority/.test(err.constraint || err.message || '')) {
+      return res.status(409).json({ error: 'Priorité déjà utilisée par une autre association active de ce produit', code: 'PRODUCT_SUPPLIER_PRIORITY_CONFLICT' });
+    }
+    next(err);
+  }
 });
 
 // ─── DELETE /api/purchasing/suppliers/:id — supprimer un fournisseur ──────────
@@ -377,7 +383,7 @@ router.delete('/suppliers/:id', ...guard, async (req, res, next) => {
     const result = await deleteSupplier(req.params.id, forceDelete);
     res.json(result);
   } catch (err) {
-    if (err.status) return res.status(err.status).json({ error: err.message });
+    if (err.status) return res.status(err.status).json({ error: err.message, code: err.code, details: err.details });
     next(err);
   }
 });

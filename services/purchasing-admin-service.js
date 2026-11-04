@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        purchase order id, order id, supplier confirmation payload (supplier_order_id, tracking, notes)
  * @outputs       confirmed/cancelled purchase order, side_effects
- * @depends       db, utils/logger.js, services/order-mutation-service.js, services/suppliers/purchase-order-confirmation-boundary.js (confirmPurchaseOrder, GAP-5), services/suppliers/execution-adapter-registry.js (confirmPurchaseOrder, GAP-5)
+ * @depends       db, utils/logger.js, services/supplier-source-resolution.js, services/order-mutation-service.js, services/suppliers/purchase-order-confirmation-boundary.js (confirmPurchaseOrder, GAP-5), services/suppliers/execution-adapter-registry.js (confirmPurchaseOrder, GAP-5)
  * @used-by       routes/purchasing.js
  * @db-read       purchase_orders, suppliers
  * @db-write      orders, product_suppliers, purchase_lines, purchase_orders, suppliers
@@ -32,6 +32,7 @@
  */
 
 const db  = require('../db');
+const { assertSourceRemovable } = require('./supplier-source-resolution');
 const { setSupplierSnapshot } = require('./order-mutation-service');
 const { verifyProviderEvidenceForConfirmation, COMMITMENT_VERDICT } = require('./suppliers/purchase-order-confirmation-boundary');
 const { EXECUTION_ADAPTER_REGISTRY } = require('./suppliers/execution-adapter-registry');
@@ -75,6 +76,16 @@ async function deleteSupplier(id, forceDelete = false) {
       const err = new Error("Impossible de supprimer ce fournisseur : des commandes confirmées existent. Annulez-les d'abord.");
       err.status = 409;
       throw err;
+    }
+
+    // Garde de désactivation (services/supplier-source-resolution.js) : 409 explicite si des PO/lignes ouvertes
+    // subsistent ou si des produits vendables perdraient leur dernière source admissible. Le contournement
+    // [TEST] + force ne couvre que les engagements (nettoyage de fournisseurs de test), jamais les produits vendables.
+    try {
+      await assertSourceRemovable(client, { supplierId: id, ignoreEngagements: isTestSupplier && forceDelete });
+    } catch (guardErr) {
+      await client.query('ROLLBACK').catch(() => {});
+      throw guardErr;
     }
 
     // Les lignes d'achat des PO annulées sont annulées par le trigger trg_purchase_orders_cancel_lines.

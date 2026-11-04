@@ -81,7 +81,7 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 
 | Dépôt | Manifests découverts | Manifests connectés | Nœuds techniques | Owned | Orphelins |
 |---|---|---|---|---|---|
-| backend | 36 | 36 | 682 | 682 | 0 |
+| backend | 36 | 36 | 683 | 683 | 0 |
 | dash | 3 | 3 | N/A | N/A | N/A |
 | boutique | 16 | 16 | 104 | 104 | 0 |
 
@@ -586,11 +586,11 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 > Transformer un besoin d'approvisionnement issu d'une commande en engagement fournisseur traçable (bon de commande), puis constater sa réception.
 
-- services: 50
+- services: 52
 - routes: 1
 - migrations: 14
 - scripts: 14
-- tests: 85
+- tests: 87
 - tables owned (lifecycle): 13 — `purchase_lines`, `purchase_orders`, `product_suppliers`, `purchase_order_authorizations`, `hub_authorization_grants`, `supplier_execution_payments`, `supplier_payment_settlements`, `suppliers`, `supplier_execution_events`, `supplier_execution_fulfillments`, `supplier_execution_order_lines`, `supplier_execution_orders`, `supplier_execution_payment_proofs`
 - tables written: 13
 - interfaces exposed: 20
@@ -2297,7 +2297,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 2261 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 2265 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 214 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 79 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -2352,7 +2352,7 @@ Meta Graph monté : oui.
 | catalog | notifications | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | catalog | orders | static-code, data-read | 15 | **DECLARED_AND_OBSERVED** |
 | catalog | platform-ops | static-code | 74 | **DECLARED_AND_OBSERVED** |
-| catalog | purchasing | static-code | 6 | **DECLARED_AND_OBSERVED** |
+| catalog | purchasing | static-code | 8 | **DECLARED_AND_OBSERVED** |
 | catalog | shared-cart | static-code, interface | 13 | **DECLARED_AND_OBSERVED** |
 | catalog | sourcing | static-code, data-write, data-read | 39 | **DECLARED_AND_OBSERVED** |
 | catalog | supplier-connectivity | static-code | 7 | **DECLARED_AND_OBSERVED** |
@@ -2486,7 +2486,7 @@ Meta Graph monté : oui.
 | logistics | notifications | static-code | 14 | **DECLARED_AND_OBSERVED** |
 | logistics | orders | static-code, data-write, data-read | 40 | **DECLARED_AND_OBSERVED** |
 | logistics | payments | static-code | 2 | **DECLARED_AND_OBSERVED** |
-| logistics | purchasing | static-code, data-read | 15 | **DECLARED_AND_OBSERVED** |
+| logistics | purchasing | static-code, data-read | 16 | **DECLARED_AND_OBSERVED** |
 | logistics | refunds | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | loyalty | auth | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | loyalty | auth-identity | static-code, data-read | 3 | **DECLARED_AND_OBSERVED** |
@@ -2608,11 +2608,11 @@ Meta Graph monté : oui.
 | providers-services | platform-ops | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | providers-services | recommendations | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | purchasing | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
-| purchasing | catalog | static-code, data-read | 17 | **DECLARED_AND_OBSERVED** |
+| purchasing | catalog | static-code, data-read | 20 | **DECLARED_AND_OBSERVED** |
 | purchasing | decision-signals | static-code | 1 | **OBSERVED_UNDECLARED** |
 | purchasing | economic-engine | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | purchasing | external-provider-contracts | static-code | 1 | **DECLARED_AND_OBSERVED** |
-| purchasing | infrastructure | static-code | 63 | **DECLARED_AND_OBSERVED** |
+| purchasing | infrastructure | static-code | 64 | **DECLARED_AND_OBSERVED** |
 | purchasing | logistics | static-code, data-read | 15 | **DECLARED_AND_OBSERVED** |
 | purchasing | notifications | static-code | 9 | **DECLARED_AND_OBSERVED** |
 | purchasing | orders | static-code, data-read | 8 | **DECLARED_AND_OBSERVED** |

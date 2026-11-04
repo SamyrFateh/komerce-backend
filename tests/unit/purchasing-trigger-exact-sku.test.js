@@ -124,7 +124,7 @@ describe('purchasing exact SKU procurement', () => {
     expect(evaluateCanonicalProcurementReadiness).toHaveBeenCalledWith(expect.objectContaining({
       productSkuId: 'sku-black-m', quantity: 2, soldIdentity: IDENTITY,
     }));
-    expect(client.calls.find(c => c.sql.includes('FROM product_suppliers')).sql).toContain('lower(s.platform) = lower($2)');
+    expect(client.calls.find(c => c.sql.includes('FROM product_suppliers')).sql).toContain('lower(s.platform) = lower($2::text)');
     expect(client.calls.some(c => c.sql.includes('INSERT INTO purchase_orders'))).toBe(false);
     expect(lineParams[0]).toBe('oi-import');
     expect(lineParams[1]).toBe('sup1');

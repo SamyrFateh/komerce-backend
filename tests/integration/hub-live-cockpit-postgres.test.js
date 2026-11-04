@@ -130,7 +130,7 @@ if (!process.env.DATABASE_URL) {
     const sourcing = d.cockpit.todo.find((t) => t.kind === 'SOURCING_REQUIRED' && t.subject.order_id === s.k103.orderId);
     expect(sourcing).toMatchObject({ owner: 'agent_hub', viewer_can_act: true });
     expect(sourcing).toMatchObject({ severity: 'anomaly' });
-    expect(sourcing.missing).toContain('fournisseur du SKU non rattaché aux achats');
+    expect(sourcing.missing).toContain('Sourcing requis — aucun fournisseur admissible');
     expect(d.cockpit.unit_legend.map((g) => g.state)).not.toContain('sourcing');
     expect(sourcing.why).toBeTruthy();
     expect(d.cockpit.todo.find((t) => t.kind === 'PREPARE_PO' && t.subject.batch_key === batchA.key).action.type).toBe('prepare_po');
