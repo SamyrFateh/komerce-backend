@@ -12,7 +12,7 @@
  * @db-write      none
  * @db-txn        none
  * @doctrine      workspace_acts_dashboard_observes, canonical_admin_no_legacy_imports, browser_never_supplies_market_id_authority
- * @impact-areas  admin-dashboard, logistics, inventory, orders, payments
+ * @impact-areas  admin-dashboard, logistics, inventory, orders, payments, purchasing
  * @version       2026-08
  */
 
@@ -708,6 +708,187 @@
     board.appendChild(tbody);
     scroll.appendChild(board);
     ordersSlot.appendChild(scroll);
+    const sourcingHost = doc.createElement('section');
+    sourcingHost.hidden = true;
+    sourcingHost.setAttribute('data-hub-sourcing-recovery', '');
+    sourcingHost.className = 'kmc-hub-dossier-secondary';
+    ordersSlot.appendChild(sourcingHost);
+
+    // Sourcing manuel via les API propriétaires : aucune création en SQL,
+    // aucune fausse identité fournisseur, aucun envoi ou paiement implicite.
+    function showSourcingResolution(group) {
+      const unresolved = (group.items || []).filter(item =>
+        item.sourcing_required === true && Number(item.purchasing_missing) > 0 &&
+        item.id && item.product_id
+      );
+      if (!unresolved.length) return;
+      const host = ordersSlot.querySelector('[data-hub-sourcing-recovery]');
+      if (!host) return;
+      host.hidden = false;
+      host.replaceChildren();
+      host.appendChild(text(doc, 'h3', 'kmc-workspace-subsection-title',
+        'Sourcing manuel · ' + group.reference));
+      host.appendChild(text(doc, 'p', 'kmc-workspace-muted',
+        'Choisir un fournisseur réel, sa référence et son prix. Le Hub crée une ligne d’achat ouverte, jamais une PO envoyée ou payée.'));
+      const form = doc.createElement('form');
+      form.setAttribute('data-hub-sourcing-form', group.reference);
+      form.className = 'kmc-workspace-subsection';
+      host.appendChild(form);
+      const field = (label, element) => {
+        const wrapper = doc.createElement('label');
+        wrapper.className = 'kmc-workspace-field';
+        wrapper.appendChild(text(doc, 'span', '', label));
+        wrapper.appendChild(element);
+        form.appendChild(wrapper);
+        return element;
+      };
+      const itemSelect = field('Article à sourcer', doc.createElement('select'));
+      itemSelect.setAttribute('data-sourcing-item', '');
+      unresolved.forEach(item => {
+        const option = doc.createElement('option');
+        option.value = item.id;
+        option.textContent = item.product + ' · ' + formatNumber(item.purchasing_missing) + ' unité(s) sans achat';
+        itemSelect.appendChild(option);
+      });
+      const supplierSelect = field('Fournisseur', doc.createElement('select'));
+      supplierSelect.setAttribute('data-sourcing-supplier', '');
+      const supplierName = field('Nouveau fournisseur local (si nécessaire)', doc.createElement('input'));
+      supplierName.placeholder = 'Nom réel du fournisseur';
+      supplierName.setAttribute('data-sourcing-name', '');
+      const supplierRef = field('Référence réelle chez le fournisseur', doc.createElement('input'));
+      supplierRef.placeholder = 'Référence fournie par le fournisseur';
+      supplierRef.setAttribute('data-sourcing-ref', '');
+      const supplierPrice = field('Prix unitaire fournisseur (AED)', doc.createElement('input'));
+      supplierPrice.type = 'number';
+      supplierPrice.step = '0.01';
+      supplierPrice.min = '0.01';
+      supplierPrice.setAttribute('data-sourcing-price', '');
+      const status = text(doc, 'p', 'kmc-workspace-muted', '');
+      status.setAttribute('role', 'status');
+      status.setAttribute('data-sourcing-status', '');
+      const submit = makeActionButton(doc, 'Créer la ligne d’achat manuelle', 'create-manual-purchase-line');
+      submit.type = 'submit';
+      form.appendChild(submit);
+      form.appendChild(status);
+      let suppliers = [];
+      let requestSerial = 0;
+      let writing = false;
+      function chosenItem() {
+        return unresolved.find(item => item.id === itemSelect.value);
+      }
+      function updateForm() {
+        const supplier = suppliers.find(row => row.id === supplierSelect.value);
+        const mapped = !!supplier?.matching_product_supplier_id;
+        supplierName.disabled = !!supplier;
+        supplierRef.disabled = mapped;
+        supplierPrice.disabled = mapped;
+        supplierName.placeholder = supplier ? 'Fournisseur existant' : 'Nom réel du fournisseur local';
+      }
+      async function loadSuppliers() {
+        const serial = ++requestSerial;
+        const item = chosenItem();
+        supplierSelect.disabled = true;
+        submit.disabled = true;
+        status.textContent = 'Recherche des fournisseurs du produit…';
+        try {
+          const result = await jsonRequest(context.fetch,
+            '/api/purchasing/suppliers?active=true&product_id=' + encodeURIComponent(item.product_id));
+          if (serial !== requestSerial || writing) return;
+          suppliers = Array.isArray(result) ? result.filter(row =>
+            row.matching_product_supplier_id || row.owner_scope === 'hub' ||
+            (context.user && context.user.role === 'admin')) : [];
+          supplierSelect.replaceChildren();
+          const first = doc.createElement('option');
+          first.value = '';
+          first.textContent = 'Créer un fournisseur local';
+          supplierSelect.appendChild(first);
+          suppliers.forEach(supplier => {
+            const option = doc.createElement('option');
+            option.value = supplier.id;
+            option.textContent = supplier.name +
+              (supplier.matching_product_supplier_id ? ' · déjà associé' : ' · à associer');
+            supplierSelect.appendChild(option);
+          });
+          supplierSelect.disabled = false;
+          submit.disabled = false;
+          status.textContent = 'La quantité à acheter est déterminée par la couverture serveur ; aucun achat fournisseur ne sera envoyé automatiquement.';
+          updateForm();
+        } catch (error) {
+          if (serial !== requestSerial) return;
+          status.textContent = 'Fournisseurs indisponibles : ' + error.message;
+        }
+      }
+      itemSelect.addEventListener('change', () => { loadSuppliers().catch(() => {}); });
+      supplierSelect.addEventListener('change', updateForm);
+      form.addEventListener('submit', async event => {
+        event.preventDefault();
+        if (writing || submit.disabled) return;
+        const item = chosenItem();
+        const supplier = suppliers.find(row => row.id === supplierSelect.value);
+        const needsMapping = !supplier || !supplier.matching_product_supplier_id;
+        const quantity = Number(item?.purchasing_missing || 0);
+        const name = supplierName.value.trim();
+        const reference = supplierRef.value.trim();
+        const price = Number(supplierPrice.value);
+        if (!item || !Number.isSafeInteger(quantity) || quantity < 1 ||
+            (!supplier && !name) || (needsMapping && (!reference || !Number.isFinite(price) || price <= 0))) {
+          status.textContent = 'Préciser le fournisseur, sa référence et son prix AED positif.';
+          return;
+        }
+        if (!context.confirm('Ouvrir ' + quantity + ' unité(s) en achat manuel pour ' + group.reference + ' ?')) return;
+        writing = true;
+        submit.disabled = true;
+        status.textContent = 'Enregistrement du fournisseur et de la ligne d’achat…';
+        let wrote = false;
+        try {
+          let supplierId = supplier?.id || null;
+          if (!supplierId) {
+            wrote = true; // ne jamais rejouer une création après une erreur réseau
+            const created = await jsonRequest(context.fetch, '/api/purchasing/suppliers', {
+              method: 'POST', body: { name, platform: 'local', auto_order: false },
+            });
+            supplierId = created.id;
+            wrote = true;
+          }
+          let mappingId = supplier?.matching_product_supplier_id || null;
+          if (!mappingId) {
+            wrote = true;
+            const mapping = await jsonRequest(context.fetch,
+              '/api/purchasing/suppliers/' + encodeURIComponent(supplierId) + '/map', {
+                method: 'POST',
+                body: { product_id: item.product_id, supplier_sku: reference, supplier_price_aed: price },
+              });
+            mappingId = mapping.id;
+            wrote = true;
+          }
+          if (!mappingId) throw new Error('Association fournisseur absente après enregistrement');
+          wrote = true; // le POST de ligne peut être appliqué sans réponse
+          const createdLine = await jsonRequest(context.fetch, '/api/purchasing/lines', {
+            method: 'POST',
+            body: {
+              order_item_id: item.id, product_supplier_id: mappingId,
+              quantity, execution_mode: 'manual',
+            },
+          });
+          wrote = true;
+          if (!createdLine?.line?.line_id) throw new Error('Ligne créée mais réponse incomplète ; vérifier le dossier avant toute reprise');
+          await context.reload();
+          setFeedback(context.root,
+            'Ligne d’achat ouverte pour ' + group.reference + ' ; préparer ensuite la PO et obtenir les validations distinctes.',
+            'positive');
+        } catch (error) {
+          status.textContent = error.message + (wrote
+            ? ' · Des données peuvent déjà être enregistrées. Recharger et vérifier avant toute nouvelle tentative.'
+            : '');
+          setFeedback(context.root, status.textContent, 'critical');
+          if (!wrote) submit.disabled = false;
+        } finally {
+          writing = false;
+        }
+      });
+      loadSuppliers().catch(() => {});
+      host.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+    }
 
     // Menu flottant unique : le clic gauche et le clavier sont équivalents au clic droit.
     const menu = doc.createElement('div');
@@ -736,6 +917,12 @@
       menu.appendChild(text(doc, 'p', 'kmc-hub-board-menu-summary', explanation));
       const market = encodeURIComponent(context.marketCode);
       if (stageName === 'PO' || stageName === 'Fournisseur') {
+        const missingSourcing = (group.items || []).some(item =>
+          item.sourcing_required === true && Number(item.purchasing_missing) > 0);
+        if (missingSourcing && !isHubReadOnly(context)) {
+          menuButton('Résoudre le sourcing / créer un achat manuel',
+            () => showSourcingResolution(group));
+        }
         menuLink('Ouvrir les achats fournisseurs', '/admin/workspaces/purchasing?market=' + market);
       }
       if (stageName === 'Réception') {
@@ -827,15 +1014,19 @@
       const pending = ordered ? Math.max(0, ordered - purchasedReceived) :
         openNeeds + group.lines.reduce((total, line) => total + Math.max(0, Number(line.missing) || 0), 0);
       const pos = [...group.pos.values()];
+      const toSource = group.items.reduce((total, item) =>
+        total + (item.sourcing_required === true ? Math.max(0, Number(item.purchasing_missing) || 0) : 0), 0);
       const unsent = pos.some(po => !po.sent_at);
       const draft = pos.some(po => po.stage === 'draft');
       const shipments = [...new Set(group.boxes.filter(box => box.shipment_ref).map(box => box.shipment_ref))];
 
       stageCell(row, group, 'PO',
-        !pos.length ? 'À constituer' : draft ? 'Brouillon' : pos.length + ' PO liées',
-        openNeeds ? formatNumber(openNeeds) + ' unité(s) à acheter' : '',
-        'Constitution des PO par fournisseur et par marché ; validation d’engagement par la directrice.',
-        !pos.length || draft || openNeeds > 0);
+        toSource ? 'Sourcing requis' : !pos.length ? 'À constituer' : draft ? 'Brouillon' : pos.length + ' PO liées',
+        toSource ? formatNumber(toSource) + ' unité(s) sans achat' :
+          openNeeds ? formatNumber(openNeeds) + ' unité(s) à acheter' : '',
+        toSource ? 'Article(s) sans couverture d’achat : identifier le fournisseur et ouvrir une ligne manuelle.' :
+          'Constitution des PO par fournisseur et par marché ; validation d’engagement par la directrice.',
+        toSource > 0 || !pos.length || draft || openNeeds > 0);
       stageCell(row, group, 'Fournisseur',
         !pos.length ? 'Non commandé' : unsent ? 'Envoi à prouver' :
           purchasedReceived >= expected && expected > 0 ? 'Reçu au Hub' : 'Attente fournisseur',
@@ -863,6 +1054,7 @@
       // ne doivent pas être additionnés (ils peuvent concerner la même unité).
       const remainingNotes = [];
       if (anomalies) remainingNotes.push(formatNumber(anomalies) + ' à contrôler');
+      if (toSource) remainingNotes.push(formatNumber(toSource) + ' à sourcer');
       if (openNeeds && pending) remainingNotes.push(formatNumber(openNeeds) + ' à acheter');
       stageCell(row, group, 'Reste à solder',
         pending ? formatNumber(pending) + ' non reçue(s)' :
@@ -1470,6 +1662,7 @@
       fetch: fetchFn,
       marketCode,
       mode: ['execution', 'relay-execution'].includes(options.mode) ? options.mode : 'pilot',
+      user: options.user || null,
       view: options.mode === 'execution' ? 'supply' : undefined,
       confirm: typeof options.confirm === 'function'
         ? options.confirm

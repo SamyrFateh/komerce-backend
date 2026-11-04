@@ -178,6 +178,7 @@ module.exports = {
       'tests/integration/market-transport-sale-rates-postgres.test.js',
       'tests/unit/hub-dubai-projection.test.js',
       'tests/unit/hub-global-board.test.js',
+      'tests/unit/hub-unsourced-order-dossier.test.js',
       'tests/e2e-api/orders.pickup-code-vs-authorized-name.e2e.test.js',
       'tests/integration/hub-physical-identity-postgres.test.js',
       'tests/unit/order-physical-coverage-gate.test.js',
@@ -452,6 +453,8 @@ module.exports = {
   authority: 'backend-core — logistics possède la vérité physique et la custody ; scan-engine.js reste autorité de la machine de scan colis legacy, hub-physical-identity.js possède HUB-001 sans jamais réassigner les vérités Purchasing/Orders/Market',
 
   invariants: [
+    { statement: 'Une commande IMPORT payée dont le fournisseur n est pas identifié ou dont les lignes d achat ne couvrent pas la quantité reste visible dans le dossier et le tableau global Hub comme sourcing requis ; les quantités à sourcer proviennent des lignes d achat effectives, jamais du stock ni de preuves physiques inventées. La reprise manuelle passe uniquement par le propriétaire purchasing.',
+      test: 'tests/unit/hub-unsourced-order-dossier.test.js' },
     { statement: 'Relais live (lot 3, migration 364) : le contenu réellement expédié se lit Expédition → KOM-BOX → commandes → articles (attendu = placé en KOM-BOX de l\'expédition, manquant/reliquat, reçu, remis) ; la réception relais est attestée par un agent_relais article par article (attestation immuable, preuve obligatoire, uniquement ses propres articles, expédition au transport local), un écart ouvre un incident relay_agent traçable, et l\'étape relay_received découle des attestations de tous les articles attendus — ni admin ni agent_hub ne la posent (JOURNEY_RELAY_ATTESTATION_REQUIRED)',
       test: 'tests/integration/relay-shipment-receipt-postgres.test.js' },
     { statement: 'une seule vérité physique (lot 2, migration 363) : pour un article d\'import, parcel_items.qty_allocated ne dépasse jamais ce que le Hub a reçu (placements RECEIVE) et qty_packed ce qui est placé en KOM-BOX (MARKET_PARCEL), la chaîne expédié <= emballé <= affecté restant portée par trg_check_parcel_item_qty ; ces quantités sont dérivées des placements physiques (trigger), jamais préremplies à l\'encaissement ; un article hors import (stock local) suit le circuit direct relais sans preuve Hub',

@@ -233,7 +233,8 @@
     ]
   },
   "user_scoped_delete": {
-    "webauthn_credentials": "user_id"
+    "webauthn_credentials": "user_id",
+    "credential_action_tokens": "user_id"
   },
   "users": {
     "keep_roles": [],

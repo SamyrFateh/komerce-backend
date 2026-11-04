@@ -8,7 +8,7 @@
  * @outputs       market_procurement_dossier, physical_trace
  * @depends       db
  * @used-by       routes/hub.js
- * @db-read       markets, orders, order_items, products, suppliers, purchase_lines, purchase_orders, v_purchase_line_progress, hub_purchase_allocations, hub_physical_units, hub_physical_unit_placements, international_shipments, international_shipment_hub_units, parcels, parcel_items
+ * @db-read       markets, orders, order_items, products, product_suppliers, suppliers, purchase_lines, purchase_orders, v_purchase_line_progress, hub_purchase_allocations, hub_physical_units, hub_physical_unit_placements, international_shipments, international_shipment_hub_units, parcels, parcel_items
  * @db-write      (none)
  * @db-txn        @none
  * @doctrine      une décision, une autorité, un enregistrement ; projection en lecture seule, aucune seconde source de vérité
@@ -58,8 +58,20 @@ async function getDossier({ marketId, supplierId = null, now = new Date() }, q =
   // jamais projetées dans la file Hub. Aucun état métier calculé ici.
   const { rows: orderRows } = await q.query(`
     SELECT o.id AS order_id, o.reference AS order_ref, o.status AS order_status,
-           oi.id AS order_item_id, oi.quantity AS ordered,
-           p.name AS product_name, oi.fulfillment_source
+           oi.id AS order_item_id, oi.product_id, oi.sku_id, oi.quantity AS ordered,
+           p.name AS product_name, oi.fulfillment_source,
+           COALESCE((
+             SELECT SUM(v.effective_quantity)::int
+               FROM v_purchase_line_progress v
+              WHERE v.order_item_id = oi.id AND NOT v.cancelled
+           ), 0) AS purchase_covered,
+           EXISTS (
+             SELECT 1
+               FROM product_suppliers ps
+               JOIN suppliers s ON s.id = ps.supplier_id
+              WHERE ps.product_id = oi.product_id AND ps.is_active = TRUE
+                AND s.is_active = TRUE AND ps.deleted_at IS NULL AND s.deleted_at IS NULL
+           ) AS supplier_mapping_present
       FROM orders o
       JOIN order_items oi ON oi.order_id = o.id AND oi.fulfillment_source = 'IMPORT'
       LEFT JOIN products p ON p.id = oi.product_id
@@ -70,14 +82,31 @@ async function getDossier({ marketId, supplierId = null, now = new Date() }, q =
        ))
      ORDER BY o.created_at DESC, o.id, oi.id`, [marketId, supplierId]);
   const orders = new Map();
+  const unsourcedItems = [];
   for (const r of orderRows) {
     if (!orders.has(r.order_id)) orders.set(r.order_id, {
       id: r.order_id, reference: r.order_ref, status: r.order_status, items: [],
     });
+    // Le manque de sourcing est un fait calculé depuis la couverture achat
+    // effective, pas un statut de commande ni une réception physique inventée.
+    const uncovered = Math.max(0, Number(r.ordered) - Number(r.purchase_covered || 0));
+    const supplierMapped = r.supplier_mapping_present === true;
     orders.get(r.order_id).items.push({
-      id: r.order_item_id, product: r.product_name, ordered: Number(r.ordered),
+      id: r.order_item_id, product_id: r.product_id, sku_id: r.sku_id,
+      product: r.product_name, ordered: Number(r.ordered),
       fulfillment_source: r.fulfillment_source,
+      purchasing_covered: Number(r.purchase_covered || 0),
+      purchasing_missing: uncovered,
+      supplier_mapping_present: supplierMapped,
+      sourcing_required: uncovered > 0,
     });
+    if (uncovered > 0) {
+      unsourcedItems.push({
+        order_id: r.order_id, order_ref: r.order_ref, order_item_id: r.order_item_id,
+        product_name: r.product_name, missing_quantity: uncovered,
+        supplier_mapping_present: supplierMapped,
+      });
+    }
   }
 
   // Le colis client (parcels) n'est PAS un carton de transport KOM-BOX
@@ -239,6 +268,17 @@ async function getDossier({ marketId, supplierId = null, now = new Date() }, q =
 
   const hoursSince = (date) => (date ? (now.getTime() - new Date(date).getTime()) / HOUR : 0);
   const toHandle = [];
+  // Une commande payée sans purchase_line est un travail Hub à part entière.
+  // Les alertes de résolution restent visibles même lorsque le trigger initial
+  // a terminé avec « Stripe trigger OK » sans créer de besoin d'achat.
+  for (const item of unsourcedItems) {
+    toHandle.push({
+      kind: 'ORDER_SOURCING_REQUIRED',
+      ...item,
+      reason: `${item.order_ref} · ${item.product_name} : ${item.missing_quantity} unité(s) sans ligne d'achat` +
+        (item.supplier_mapping_present ? '' : ' · fournisseur à identifier'),
+    });
+  }
   for (const po of purchaseOrders) {
     if (po.stage === 'issued_not_sent' && hoursSince(po.ordered_at || po.updated_at) > ISSUED_NOT_SENT_AFTER_H) {
       toHandle.push({ kind: 'PO_ISSUED_NOT_SENT', po_id: po.id, supplier_name: po.supplier_name, reason: `Bon émis depuis plus de ${ISSUED_NOT_SENT_AFTER_H} h, envoi non enregistré` });
@@ -262,7 +302,9 @@ async function getDossier({ marketId, supplierId = null, now = new Date() }, q =
     market_id: marketId,
     generated_at: now.toISOString(),
     kpis: {
-      orders_waiting: new Set(needsRows.map((r) => r.order_id)).size,
+      orders_waiting: new Set([...needsRows.map((r) => r.order_id), ...unsourcedItems.map((r) => r.order_id)]).size,
+      items_sourcing_required: unsourcedItems.length,
+      units_sourcing_required: unsourcedItems.reduce((sum, r) => sum + r.missing_quantity, 0),
       lines_open: needsRows.length,
       po_draft: count('draft'),
       po_issued_not_sent: count('issued_not_sent'),
