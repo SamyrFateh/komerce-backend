@@ -26,12 +26,20 @@ test('resolveScope : fail-closed sans relais, relais repris de la session', asyn
   expect(await service.resolveScope({ role: 'agent_relais', relais_id: 'r1' })).toEqual({ ownerRoles: ['relais'], relaisId: 'r1', marketIds: null });
 });
 
-test('resolveScope : hub/transitaire bornés aux marchés explicitement rattachés, refus sans rattachement', async () => {
+test('resolveScope : Hub central voit ses signaux sur tous les marchés sans membership', async () => {
+  expect(await service.resolveScope({ id: 'u', role: 'agent_hub', relais_id: 'ignored' }))
+    .toEqual({ ownerRoles: ['hub'], relaisId: null, marketIds: null });
+  expect(mockQuery).not.toHaveBeenCalled();
+});
+
+test('resolveScope : transitaire borné aux marchés explicitement rattachés ; refus sans rattachement', async () => {
   mockQuery.mockResolvedValueOnce({ rows: [{ market_id: 'm1' }, { market_id: 'm2' }] });
-  expect(await service.resolveScope({ id: 'u', role: 'agent_hub', relais_id: 'ignored' })).toEqual({ ownerRoles: ['hub'], relaisId: null, marketIds: ['m1', 'm2'] });
+  expect(await service.resolveScope({ id: 'u', role: 'agent_transitaire' }))
+    .toEqual({ ownerRoles: ['customs'], relaisId: null, marketIds: ['m1', 'm2'] });
   expect(mockQuery.mock.calls[0][0]).toContain('revoked_at IS NULL');
   mockQuery.mockResolvedValueOnce({ rows: [] });
-  await expect(service.resolveScope({ id: 'u', role: 'agent_transitaire' })).rejects.toMatchObject({ status: 403, code: 'agent_action_center_market_scope_missing' });
+  await expect(service.resolveScope({ id: 'u', role: 'agent_transitaire' }))
+    .rejects.toMatchObject({ status: 403, code: 'agent_action_center_market_scope_missing' });
 });
 
 test('allowedActions : acquitter/reporter seulement, jamais résoudre', () => {
