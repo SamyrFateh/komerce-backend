@@ -843,6 +843,7 @@
         try {
           let supplierId = supplier?.id || null;
           if (!supplierId) {
+            wrote = true; // ne jamais rejouer une création après une erreur réseau
             const created = await jsonRequest(context.fetch, '/api/purchasing/suppliers', {
               method: 'POST', body: { name, platform: 'local', auto_order: false },
             });
@@ -851,6 +852,7 @@
           }
           let mappingId = supplier?.matching_product_supplier_id || null;
           if (!mappingId) {
+            wrote = true;
             const mapping = await jsonRequest(context.fetch,
               '/api/purchasing/suppliers/' + encodeURIComponent(supplierId) + '/map', {
                 method: 'POST',
@@ -860,6 +862,7 @@
             wrote = true;
           }
           if (!mappingId) throw new Error('Association fournisseur absente après enregistrement');
+          wrote = true; // le POST de ligne peut être appliqué sans réponse
           const createdLine = await jsonRequest(context.fetch, '/api/purchasing/lines', {
             method: 'POST',
             body: {
