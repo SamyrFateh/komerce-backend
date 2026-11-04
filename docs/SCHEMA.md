@@ -48,13 +48,13 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 | Objet | Compte | Note |
 |---|---|---|
-| Tables | 226 | Vérifié sur le dump live Railway. |
-| Vues | 20 | Vérifié sur le dump live Railway. |
+| Tables | 228 | Vérifié sur le dump live Railway. |
+| Vues | 21 | Vérifié sur le dump live Railway. |
 | ENUMs | 17 | Types métier présents dans le dump live Railway. |
-| Index | 515 | Performance + contraintes uniques |
-| Foreign keys | 438 | Cohérence relationnelle |
-| Fonctions | 112 | Fonctions présentes dans le dump live Railway. |
-| Triggers | 128 | Triggers présents dans le dump live Railway. |
+| Index | 521 | Performance + contraintes uniques |
+| Foreign keys | 446 | Cohérence relationnelle |
+| Fonctions | 123 | Fonctions présentes dans le dump live Railway. |
+| Triggers | 139 | Triggers présents dans le dump live Railway. |
 | Extensions | `pgcrypto`, `uuid-ossp` | UUID + chiffrement |
 
 ---
@@ -109,6 +109,9 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 | `hub_physical_units` | Identite physique HUB-001 ; inbound potentiellement multi-market, outbound PACKED/DISPATCHED force mono-market depuis les allocations actives. **Migration 233 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
 | `hub_physical_unit_placements` | Historique des placements physiques d allocations immuables ; SPLIT/MERGE/REPACK ferment les anciens placements et ajoutent les nouveaux sans reassignation economique. **Migration 233 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
 | `hub_custody_events` | Journal append-only de custody, transitions physiques, lineage SPLIT/MERGE/REPACK et constats physiques HUB-001. **Migration 233 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
+| `product_sku_physical_codes` | Code physique EAN/GTIN ou fournisseur identifié par SKU Komerce. Un code identifie une variante, jamais une unité ni une commande. Portée fournisseur nullable pour EAN universel, confiance DECLARED/CONFIRMED et preuve d'observation. **Migration 391 — promue le 2026-11-04 (schema-promote, dump live verifie).** |
+| `hub_box_bags` | Contenance immuable sac client scellé dans KOM-BOX, avec référence scannée et identifiant du colis canonique. **Migration 394 — promue le 2026-11-04 (schema-promote, dump live verifie).** |
+| `hub_box_effective_placements` | Projection des placements directs de KOM-BOX plus contenu des sacs clients physiquement rattachés, sans double comptage. **Migration 394 — promue le 2026-11-04 (schema-promote, dump live verifie).** |
 
 **Triggers de protection** : `trg_no_delete_parcels` (DELETE bloqué) + `trg_parcel_ship_guard` (transitions contrôlées) + `trg_check_parcel_item_qty` (cohérence quantités).
 
@@ -850,13 +853,6 @@ Une réservation pour une quantité d'article réellement manquante au relais, r
 <!-- /schema-pending -->
 
 
-<!-- schema-pending
-object: product_sku_physical_codes
-kind: table
-migration: 391
-section: ### 4.2 Logistique colis (5 tables)
-role: Code physique EAN/GTIN ou fournisseur identifié par SKU Komerce. Un code identifie une variante, jamais une unité ni une commande. Portée fournisseur nullable pour EAN universel, confiance DECLARED/CONFIRMED et preuve d'observation.
--->
 
 ### Migration 391 — correspondance physique code/SKU (`intended_migration_schema`)
 
@@ -880,19 +876,3 @@ role: Code physique EAN/GTIN ou fournisseur identifié par SKU Komerce. Un code 
 `hub_box_effective_placements` est une projection SQL de tous les articles physiquement présents dans un carton : placements directs de la KOM-BOX ou placements encore actifs dans les sacs réellement liés. Les allocations ne sont jamais dupliquées ou déplacées fictivement. Les calculs `hub_item_physical_proof`, `hub_item_handed_over`, `sync_parcel_items_from_physical`, la composition de l'expédition et la réception relais utilisent cette projection.
 
 Cette migration est déclarée prévue et n'est pas appliquée en Staging ; certificat E2E marché, réception relais et cas d'erreur obligatoire avant déploiement.
-
-<!-- schema-pending
-object: hub_box_bags
-kind: table
-migration: 394
-section: ### 4.2 Logistique colis (5 tables)
-role: Contenance immuable sac client scellé dans KOM-BOX, avec référence scannée et identifiant du colis canonique.
--->
-
-<!-- schema-pending
-object: hub_box_effective_placements
-kind: view
-migration: 394
-section: ### 4.2 Logistique colis (5 tables)
-role: Projection des placements directs de KOM-BOX plus contenu des sacs clients physiquement rattachés, sans double comptage.
--->
