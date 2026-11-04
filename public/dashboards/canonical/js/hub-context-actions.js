@@ -218,12 +218,29 @@
       const pos=(data.purchase_orders||[]).filter(po=>(po.lines||[]).some(l=>l.order_id===order.id));
       const poIds=pos.map(po=>po.id);
       const needs=(data.needs||[]).filter(n=>n.order_id===order.id);
+      // Confirmation côté dossier canonique : le tableau global ne suffit pas
+      // à autoriser une action sur un article non sourcé.
+      const detail=(data.orders||[]).find(o=>o.id===order.id);
+      const unitsToSource=(detail?.items||[]).reduce((sum,item)=>
+        sum+(item.sourcing_required===true
+          ? Math.max(0,Number(item.purchasing_missing)||0) : 0),0);
       const boxes=(data.boxes||[]).filter(box=>(box.contents||[]).some(c=>c.order_id===order.id));
       const received=pos.reduce((total,po)=>total+(po.lines||[])
         .filter(l=>l.order_id===order.id).reduce((s,l)=>s+(Number(l.received)||0),0),0);
       let count=0;
       let unavailable='';
       if(stage==='PO'){
+        if(unitsToSource>0 && validUuid(order.id) && /^[A-Z]{2}$/.test(String(order.market||''))){
+          // Une seule interface exécute les achats : accès ciblé à la vue
+          // marché, qui appelle Purchasing. Ici : navigation, pas de write.
+          const link=node(doc,'a','kmc-hub-board-menu-action is-primary',
+            'Résoudre le sourcing · '+unitsToSource+' unité(s)');
+          link.href='/admin/hub-live?view=execute&market='+encodeURIComponent(order.market)
+            +'&order='+encodeURIComponent(order.id);
+          link.setAttribute('data-hub-real-action','Résoudre le sourcing');
+          menu.appendChild(link);
+          count++;
+        }
         if(needs.length){
           count+=Number(await prepare(menu,doc,order,fetchFn,refresh,isCurrent));
           unavailable='Les lignes d’achat ouvertes ne sont pas encore groupables : renseigner le fournisseur, le Hub et les références d’achat.';

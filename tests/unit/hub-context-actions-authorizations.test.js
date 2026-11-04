@@ -17,6 +17,7 @@ function el(tag) {
     addEventListener(evt, fn) { handlers[evt] = fn; },
     click() { return handlers.click && handlers.click({ target: this }); },
     focus() {},
+    remove() { this.removed = true; },
   };
   return node;
 }
@@ -80,6 +81,64 @@ test('paiement déjà autorisé : décision affichée, aucune seconde action ; u
   const menu = run({ status: 'notified', commitment_decision: decision, payment_decision: { ...decision, proof_ref: 'VIR-1' } }, 'Autorisation', { supplier_payment: true });
   expect(actions(menu)).toEqual([]);
   expect(texts(menu)).toContain('Paiement fournisseur autorisé par Directrice');
+});
+
+test('L8 : Hub central guide le sourcing vers la commande exacte sans mutation', async () => {
+  const menu = el('div');
+  menu.setAttribute('data-hub-request', '1');
+  const orderId = 'cf9520d0-84ff-4fe1-ab9b-a5e972b1365b';
+  const fetchFn = jest.fn(async () => ({
+    ok: true,
+    json: async () => ({
+      market_id: 'KM',
+      orders: [{ id: orderId, reference: 'KRGNX5O', items: [
+        { sourcing_required: true, purchasing_missing: 2 },
+        { sourcing_required: true, purchasing_missing: 1 },
+      ] }],
+      purchase_orders: [], needs: [], boxes: [], open_shipments: [],
+    }),
+  }));
+  const result = await load().operations(menu, {
+    doc, fetch: fetchFn, user: { role: 'agent_hub' },
+    order: { id: orderId, reference: 'KRGNX5O', market: 'KM',
+      po: 'Sourcing requis' },
+    stage: 'PO', refresh: jest.fn(),
+  });
+  expect(result).toBe(true);
+  const links = walk(menu).filter(n => n.tagName === 'A');
+  expect(links).toHaveLength(1);
+  expect(links[0].href).toBe(
+    '/admin/hub-live?view=execute&market=KM&order=' + orderId
+  );
+  expect(links[0].textContent).toContain('3 unité(s)');
+  expect(fetchFn).toHaveBeenCalledTimes(1);
+  expect(fetchFn.mock.calls[0][1]).toMatchObject({ method: 'GET' });
+});
+
+test('L8 : aucune action sourcing depuis une commande couverte, ni depuis un rôle lecteur', async () => {
+  const orderId = 'cf9520d0-84ff-4fe1-ab9b-a5e972b1365b';
+  const fetchFn = jest.fn(async () => ({
+    ok: true, json: async () => ({
+      orders: [{ id: orderId, items: [{ sourcing_required: false, purchasing_missing: 0 }] }],
+      purchase_orders: [], needs: [], boxes: [],
+    }),
+  }));
+  const menu = el('div');
+  menu.setAttribute('data-hub-request', '2');
+  await load().operations(menu, {
+    doc, fetch: fetchFn, user: { role: 'agent_hub' },
+    order: { id: orderId, reference: 'KRGNX5O', market: 'KM' },
+    stage: 'PO',
+  });
+  expect(walk(menu).filter(n => n.tagName === 'A')).toHaveLength(0);
+  const observer = el('div');
+  const handled = await load().operations(observer, {
+    doc, fetch: fetchFn, user: { role: 'market_operator' },
+    order: { id: orderId, reference: 'KRGNX5O', market: 'KM' },
+    stage: 'PO',
+  });
+  expect(handled).toBe(false);
+  expect(fetchFn).toHaveBeenCalledTimes(1);
 });
 
 test('rôle non Hub : aucune écriture', () => {
