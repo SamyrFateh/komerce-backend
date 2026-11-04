@@ -296,7 +296,9 @@
       const c = card('hlc-order', { 'data-hlc-order': order.id }, selKey === `order:${order.id}`, rel.orders.has(order.id), () => select('order', order.id));
       const head = el(doc, 'div', 'hlc-row');
       head.appendChild(el(doc, 'span', 'hlc-ref', order.reference));
-      head.appendChild(el(doc, 'span', 'hlc-meta', `${marketCode} · ${order.relay_name || 'relais —'}`));
+      const relayMeta = el(doc, 'span', 'hlc-meta', `${marketCode} · ${order.relay_name || 'relais —'}`);
+      if (order.relay_id) relayMeta.title = `Relais · identifiant technique : ${order.relay_id}`;
+      head.appendChild(relayMeta);
       head.appendChild(el(doc, 'small', 'hlc-fifo', `n° ${index + 1} FIFO`));
       head.appendChild(el(doc, 'span', 'hlc-spacer'));
       const st = pill(order.status.label, order.status.tone);
@@ -552,7 +554,7 @@
     }
 
     // ── Panneau bas : fil de l'objet sélectionné + actions autorisées ──
-    const node = (kind, ref, st, tone) => ({ kind, ref, state: st, tone: tone || '' });
+    const node = (kind, ref, st, tone, title) => ({ kind, ref, state: st, tone: tone || '', title: title || '' });
     const TONE_NODE = { bad: 'bad', warn: 'warn', ok: 'ok', done: 'ok', act: 'on', amber: 'warn', wait: '' };
     function bagBoxNodes(orderIds) {
       const out = [];
@@ -572,7 +574,7 @@
           o.po_ids.forEach((id) => { const p = poById.get(id); if (p) nodes.push(node('PO', poRef(p), p.status_view.label, TONE_NODE[p.status_view.tone] || '')); });
           if (o.totals.received > 0) nodes.push(node('Réception', `${num(o.totals.received)}/${num(o.totals.requested)}`, cockpit.allocation_rule ? 'FIFO commande la plus ancienne' : '', o.totals.received >= o.totals.requested ? 'ok' : 'warn'));
           nodes = nodes.concat(bagBoxNodes([o.id]));
-          nodes.push(node('Relais', o.relay_name || '—', 'à venir', ''));
+          nodes.push(node('Relais', o.relay_name || '—', 'à venir', '', o.relay_id ? `Relais · identifiant technique : ${o.relay_id}` : ''));
           blocker = (o.totals.uncovered > 0 ? 'fournisseur du SKU non rattaché aux achats. ' : '') + (o.readiness.blockers || []).join(' · ');
         }
       } else if (sel.type === 'po') {
@@ -738,6 +740,7 @@
     chain.setAttribute('data-hlc-chain', '');
     fil.nodes.forEach((n, i) => {
       const nd = el(doc, 'div', `hlc-node${n.tone ? ' is-' + n.tone : ''}`);
+      if (n.title) nd.title = n.title;
       nd.setAttribute('data-hlc-node', n.kind);
       nd.appendChild(el(doc, 'span', 'hlc-node-kind', n.kind));
       nd.appendChild(el(doc, 'span', 'hlc-ref', n.ref));

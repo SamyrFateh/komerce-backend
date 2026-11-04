@@ -8029,7 +8029,7 @@
             ]
           },
           "tests": {
-            "count": 205,
+            "count": 210,
             "files": [
               {
                 "declared": "playwright.config.js",
@@ -8074,6 +8074,31 @@
               {
                 "declared": "tests/e2e/fixtures/hub-cockpit-shape.js",
                 "resolvedPath": "tests/e2e/fixtures/hub-cockpit-shape.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/e2e/fixtures/hub-cockpit-snapshots/draft.json",
+                "resolvedPath": "tests/e2e/fixtures/hub-cockpit-snapshots/draft.json",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/e2e/fixtures/hub-cockpit-snapshots/needs.json",
+                "resolvedPath": "tests/e2e/fixtures/hub-cockpit-snapshots/needs.json",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/e2e/fixtures/hub-cockpit-snapshots/partial.json",
+                "resolvedPath": "tests/e2e/fixtures/hub-cockpit-snapshots/partial.json",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/e2e/fixtures/hub-cockpit-snapshots/sent.json",
+                "resolvedPath": "tests/e2e/fixtures/hub-cockpit-snapshots/sent.json",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/e2e/fixtures/hub-cockpit-snapshots/validation.json",
+                "resolvedPath": "tests/e2e/fixtures/hub-cockpit-snapshots/validation.json",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -9059,7 +9084,7 @@
             ]
           }
         },
-        "totalFiles": 454,
+        "totalFiles": 459,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -18258,7 +18283,7 @@
             ]
           },
           "tests": {
-            "count": 80,
+            "count": 81,
             "files": [
               {
                 "declared": "tests/e2e-api/hub-membership-readers.e2e.test.js",
@@ -18398,6 +18423,11 @@
               {
                 "declared": "tests/unit/hub-operations.test.js",
                 "resolvedPath": "tests/unit/hub-operations.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/hub-order-status.test.js",
+                "resolvedPath": "tests/unit/hub-order-status.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -18683,7 +18713,7 @@
             ]
           }
         },
-        "totalFiles": 171,
+        "totalFiles": 172,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,

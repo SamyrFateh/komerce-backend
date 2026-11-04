@@ -236,6 +236,9 @@ if (!process.env.DATABASE_URL) {
     expect(itemOf(d, s.k101, 0).complete).toBe(true);
     expect(itemOf(d, s.k101, 1)).toMatchObject({ received: 0, remaining_to_deliver: 1, complete: false });
     expect(o101.readiness).toMatchObject({ complete: false, partial: true, ready_to_pack: false });
+    // B est sur une PO non livrée : le reliquat est réel (2/3), distinct d'un besoin « à regrouper ».
+    expect(o101.status).toMatchObject({ label: 'Reliquat 2/3', tone: 'warn' });
+    expect(orderOf(d, s.k102).status.label).toBe('Attente fournisseur');
     expect(o101.readiness.pending_items).toEqual([expect.objectContaining({ missing: 1 })]);
     expect(d.cockpit.todo.find((t) => t.kind === 'PREPARE_BAG' && t.subject.order_id === s.k101.orderId)).toBeUndefined();
     expect(await dossierService.getOrderCompleteness(s.k101.orderId)).toMatchObject({ complete: false });
@@ -266,6 +269,28 @@ if (!process.env.DATABASE_URL) {
     d = await dossier(agent);
     expect(orderOf(d, s.k101).readiness).toMatchObject({ complete: true, ready_to_pack: true });
     expect(orderOf(d, s.k101).totals).toMatchObject({ requested: 3, received: 3, remaining: 0 });
+  });
+
+  test('8b. sac ouvert ≠ sac fermé ≠ en KOM-BOX : états d\'unité distincts, jamais « boxed » pour un sac ouvert', async () => {
+    const unitId = (await q('SELECT id FROM hub_physical_units WHERE reference=$1', [`SUPPLIER_PACKAGE-${tag}-2`])).rows[0].id;
+    const move = async (id, states) => { for (const st of states) expect((await hubOps.transitionOperatorUnitCommand({ unit_id: id, to_state: st, location_ref: 'HUB-DXB-A1' }, admin.id)).status).toBe(200); };
+    await move(unitId, ['IDENTIFIED', 'QUALITY_CHECKED', 'LOCATED', 'ALLOCATED', 'PICKED']);
+    const bag = await hubOps.createOperatorUnitCommand({ unit_type: 'HANDLING_UNIT', order_id: s.k102.orderId, bag_plan: [{ order_item_id: s.k102.items[0].itemId, quantity: 1 }] }, admin.id);
+    expect(bag.status).toBe(201);
+    const bagId = bag.body.physical_unit.id;
+    const code = `0088${Date.now()}`;
+    await q("INSERT INTO product_sku_physical_codes (product_sku_id,supplier_id,code,code_type,trust,printed_on_pack,confirmed_by,confirmed_at,confirmation_proof_ref) VALUES($1,$2,$3,'SUPPLIER_BARCODE','CONFIRMED',true,$4,now(),'observation-emballage')", [skuA.id, supplierA, code, admin.id]);
+    const alloc = (await q('SELECT id FROM hub_purchase_allocations WHERE purchase_line_id=$1', [s.k102.items[0].lineId])).rows[0].id;
+    const moved = await hubOps.moveAllocationCommand({ from_unit_id: unitId, to_unit_id: bagId, allocation_id: alloc, quantity: 1, operation_type: 'REPACK', evidence_method: 'SCAN', evidence_code: code }, admin.id);
+    expect(JSON.stringify(moved)).toContain('"status":200');
+    let d = await dossier(agent);
+    expect(itemOf(d, s.k102, 0).units.map((u) => u.state)).toEqual(['bag_open']);
+    expect(d.cockpit.unit_legend.map((g) => g.state)).toEqual(expect.arrayContaining(['bag_open', 'bag_closed', 'boxed']));
+    expect(d.cockpit.unit_legend.find((g) => g.state === 'bag_open').label).toBe('En sac (ouvert)');
+    await move(bagId, ['IDENTIFIED', 'QUALITY_CHECKED', 'LOCATED', 'ALLOCATED', 'PICKED', 'PACKED']);
+    d = await dossier(agent);
+    expect(itemOf(d, s.k102, 0).units.map((u) => u.state)).toEqual(['bag_closed']);
+    expect(itemOf(d, s.k102, 0).units.map((u) => u.state)).not.toContain('boxed');
   });
 
   test('9. KOM-103 (sans fournisseur) reste un besoin sans ligne ni PO ; cohérence après rechargement (lecture déterministe)', async () => {

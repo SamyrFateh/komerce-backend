@@ -6725,6 +6725,41 @@
       {
         "feature": "dashboard",
         "category": "tests",
+        "declared": "tests/e2e/fixtures/hub-cockpit-snapshots/needs.json",
+        "resolvedPath": "tests/e2e/fixtures/hub-cockpit-snapshots/needs.json",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/e2e/fixtures/hub-cockpit-snapshots/draft.json",
+        "resolvedPath": "tests/e2e/fixtures/hub-cockpit-snapshots/draft.json",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/e2e/fixtures/hub-cockpit-snapshots/validation.json",
+        "resolvedPath": "tests/e2e/fixtures/hub-cockpit-snapshots/validation.json",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/e2e/fixtures/hub-cockpit-snapshots/sent.json",
+        "resolvedPath": "tests/e2e/fixtures/hub-cockpit-snapshots/sent.json",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/e2e/fixtures/hub-cockpit-snapshots/partial.json",
+        "resolvedPath": "tests/e2e/fixtures/hub-cockpit-snapshots/partial.json",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
         "declared": "tests/e2e/hub-global-board.spec.js",
         "resolvedPath": "tests/e2e/hub-global-board.spec.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -13566,6 +13601,13 @@
         "category": "tests",
         "declared": "tests/unit/hub-unsourced-order-dossier.test.js",
         "resolvedPath": "tests/unit/hub-unsourced-order-dossier.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/unit/hub-order-status.test.js",
+        "resolvedPath": "tests/unit/hub-order-status.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -48517,7 +48559,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2260
+        "filesObserved": 2261
       },
       "boutique": {
         "filesObserved": 214,

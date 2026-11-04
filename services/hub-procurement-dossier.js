@@ -112,6 +112,8 @@ const PHYSICAL_BY_ITEM_SQL = `
          SUM(p.quantity) FILTER (WHERE f.ok AND u.unit_type = 'SUPPLIER_PACKAGE' AND u.state IN ('RECEIVED','IDENTIFIED'))::int AS to_control,
          SUM(p.quantity) FILTER (WHERE f.ok AND u.unit_type = 'SUPPLIER_PACKAGE' AND u.state NOT IN ('RECEIVED','IDENTIFIED'))::int AS controlled,
          SUM(p.quantity) FILTER (WHERE f.ok AND u.unit_type = 'HANDLING_UNIT' AND bb.bag_unit_id IS NULL)::int AS in_bags,
+         SUM(p.quantity) FILTER (WHERE f.ok AND u.unit_type = 'HANDLING_UNIT' AND bb.bag_unit_id IS NULL AND u.state <> 'PACKED')::int AS in_bags_open,
+         SUM(p.quantity) FILTER (WHERE f.ok AND u.unit_type = 'HANDLING_UNIT' AND bb.bag_unit_id IS NULL AND u.state = 'PACKED')::int AS in_bags_closed,
          SUM(p.quantity) FILTER (WHERE f.ok AND (bb.bag_unit_id IS NOT NULL OR u.unit_type = 'MARKET_PARCEL'))::int AS in_boxes,
          SUM(p.quantity) FILTER (WHERE f.ok AND hs.physical_unit_id IS NOT NULL)::int AS shipped
     FROM hub_purchase_allocations a
@@ -243,14 +245,14 @@ function buildTodo({ orders, unsourced, needBatches, purchaseOrders, bagsOpen, b
 const poRef = (id) => `PO-${String(id || '').slice(0, 4).toUpperCase()}`;
 const UNIT_LABELS = Object.freeze({
   none: 'À acheter', sourcing: 'Fournisseur du SKU non rattaché aux achats', draft: 'Dans une PO brouillon', pending: 'Validation responsable',
-  shipped: 'Chez / expédié fournisseur', received: 'Reçu au Hub', boxed: 'Sac fermé · KOM-BOX',
+  shipped: 'Chez / expédié fournisseur', received: 'Reçu au Hub', bag_open: 'En sac (ouvert)', bag_closed: 'Sac fermé', boxed: 'En KOM-BOX',
 });
 
 function itemUnits(item, poById) {
   const units = [];
-  const boxed = Math.min(item.in_bags + item.in_boxes, item.received);
-  for (let i = 0; i < boxed; i += 1) units.push('boxed');
-  for (let i = 0; i < item.received - boxed; i += 1) units.push('received');
+  let left = item.received;
+  const take = (n, state) => { const k = Math.min(n, left); for (let i = 0; i < k; i += 1) units.push(state); left -= k; };
+  take(item.in_boxes, 'boxed'); take(item.in_bags_closed, 'bag_closed'); take(item.in_bags_open, 'bag_open'); take(left, 'received');
   const lines = [...item.lines].sort((a, b) => (a.fifo_rank || 0) - (b.fifo_rank || 0));
   for (const l of lines) {
     const po = l.po_id ? poById.get(l.po_id) : null;
@@ -270,7 +272,8 @@ function itemWhere(item, poById) {
   if (states.has('sourcing')) return 'sans fournisseur';
   const poReceiving = poIds.some((id) => poById.get(id) && poById.get(id).totals.received > 0);
   if (item.received < item.ordered && poIds.length && (item.received > 0 || poReceiving)) return `reliquat ${ref}`;
-  if (states.has('boxed') && !states.has('received')) return 'en sac · KOM-BOX';
+  if (states.has('boxed') && !states.has('received')) return 'en KOM-BOX';
+  if ((states.has('bag_open') || states.has('bag_closed')) && !states.has('received')) return states.has('bag_open') ? 'en sac ouvert' : 'sac fermé';
   if (item.received > 0) return `reçu · ${ref}`;
   if (states.size === 1 && states.has('none')) return 'à regrouper';
   return ref || 'à regrouper';
@@ -279,13 +282,15 @@ function itemWhere(item, poById) {
 function orderStatus(order) {
   const t = order.totals;
   const r = order.readiness;
+  const states = new Set(order.items.flatMap((i) => i.units.map((u) => u.state)));
+  // Cause dominante : anomalie > à regrouper/acheter > reliquat > attente fournisseur > prête.
   if (t.uncovered > 0) return { label: 'Anomalie fournisseur', tone: 'bad' };
+  if (t.anomaly > 0) return { label: 'Anomalie réception', tone: 'bad' };
+  if (states.has('none')) return { label: t.received > 0 ? `Partielle · ${t.requested - t.received} à acheter` : 'À regrouper', tone: 'act' };
+  if (r.partial && ['shipped', 'pending', 'draft'].some((k) => states.has(k))) return { label: `Reliquat ${t.received}/${t.requested}`, tone: 'warn' };
   if (t.in_boxes > 0 && r.complete) return { label: 'Dans KOM-BOX', tone: 'done' };
   if (r.bag_open) return { label: 'Sac en cours', tone: 'act' };
   if (r.ready_to_pack) return { label: 'Prête à ensacher', tone: 'act' };
-  if (r.partial) return { label: `Reliquat ${t.received}/${t.requested}`, tone: 'warn' };
-  const states = new Set(order.items.flatMap((i) => i.units.map((u) => u.state)));
-  if (states.has('none')) return { label: 'À regrouper', tone: 'act' };
   if (states.has('draft')) return { label: 'PO brouillon', tone: 'act' };
   if (states.has('pending')) return { label: 'En validation', tone: 'amber' };
   return { label: 'Attente fournisseur', tone: 'wait' };
@@ -419,6 +424,8 @@ async function loadCockpit({
       item.to_control = Number(ph.to_control || 0);
       item.controlled = Number(ph.controlled || 0);
       item.in_bags = Number(ph.in_bags || 0);
+      item.in_bags_open = Number(ph.in_bags_open || 0);
+      item.in_bags_closed = Number(ph.in_bags_closed || 0);
       item.in_boxes = Number(ph.in_boxes || 0);
       item.shipped = Number(ph.shipped || 0);
       item.requested = item.ordered;
@@ -501,7 +508,7 @@ async function getDossier({ marketId, supplierId = null, viewer = null, now = ne
     SELECT o.id AS order_id, o.reference AS order_ref, o.status AS order_status,
            oi.id AS order_item_id, oi.product_id, oi.sku_id, oi.quantity AS ordered,
            p.name AS product_name, oi.fulfillment_source, o.created_at AS order_created_at,
-           (SELECT rl.name FROM relais rl WHERE rl.id = o.relais_id) AS relay_name,
+           (SELECT rl.name FROM relais rl WHERE rl.id = o.relais_id) AS relay_name, o.relais_id AS relay_id,
            COALESCE((
              SELECT SUM(v.received_quantity)::int
                FROM v_purchase_line_progress v
@@ -532,7 +539,7 @@ async function getDossier({ marketId, supplierId = null, viewer = null, now = ne
   const unsourcedItems = [];
   for (const r of orderRows) {
     if (!orders.has(r.order_id)) orders.set(r.order_id, {
-      id: r.order_id, reference: r.order_ref, status: r.order_status, created_at: r.order_created_at || null, relay_name: r.relay_name || null, items: [],
+      id: r.order_id, reference: r.order_ref, status: r.order_status, created_at: r.order_created_at || null, relay_name: r.relay_name || null, relay_id: r.relay_id || null, items: [],
     });
     // Le manque de sourcing est un fait calculé depuis la couverture achat
     // effective, pas un statut de commande ni une réception physique inventée.
@@ -901,4 +908,4 @@ async function getOrderCompleteness(orderId, q = db) {
   return { has_import: rows.length > 0, complete: rows.length > 0 && pending.length === 0, pending_items: pending };
 }
 
-module.exports = { resolveMarket, getDossier, getTrace, poStage, getOrderCompleteness };
+module.exports = { resolveMarket, getDossier, getTrace, poStage, getOrderCompleteness, orderStatus };
