@@ -29,6 +29,7 @@ const jwt = require('jsonwebtoken');
 const db  = require('../db');
 const log = require('../utils/logger').child({ module: 'auth' });
 const userCache = require('../utils/user-cache');
+const { sessionPredatesCredentials } = require('../utils/credential-session-guard');
 const { sessionClaimsVerdict } = require('../utils/auth-token-policy');
 
 const _JWT_SECRET = process.env.JWT_SECRET;
@@ -67,11 +68,13 @@ async function authenticate(req, res, next) {
       }
     }
 
-    let user = getCachedUser(decoded.id);
+    // V1 security: force a fresh DB identity on every request. A 5-minute
+    // process-local cache cannot safely revoke staff roles or JWTs across workers.
+    let user = null;
 
     if (!user) {
       const { rows } = await db.query(
-        `SELECT id, full_name, email, phone, role, currency_pref, relais_id
+        `SELECT id, full_name, email, phone, role, currency_pref, relais_id, account_activation_required, credentials_changed_at
          FROM users WHERE id = $1`,
         [decoded.id]
       );
@@ -82,6 +85,13 @@ async function authenticate(req, res, next) {
 
       user = rows[0];
       setCachedUser(decoded.id, user);
+    }
+
+    if (sessionPredatesCredentials(decoded.auth_time, user.credentials_changed_at)) {
+      return res.status(401).json({ error: 'Session révoquée — reconnectez-vous', code: 'credentials_changed' });
+    }
+    if (user.account_activation_required === true) {
+      return res.status(401).json({ error: 'Compte non activé', code: 'account_activation_required' });
     }
 
     req.user = user;

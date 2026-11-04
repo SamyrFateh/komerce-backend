@@ -9,7 +9,7 @@ const {
 
 describe('Security 360 route dispositions', () => {
   test('historical signal inventory is explicit and structurally valid', () => {
-    expect(Object.keys(DISPOSITIONS)).toHaveLength(48);
+    expect(Object.keys(DISPOSITIONS)).toHaveLength(51);
     expect(validateDispositions()).toEqual([]);
     for (const [key, disposition] of Object.entries(DISPOSITIONS)) {
       expect(key).toMatch(/^(GET|POST|PUT|PATCH|DELETE) \//);
@@ -21,6 +21,9 @@ describe('Security 360 route dispositions', () => {
 
   test('sensitive public surfaces are never mislabeled as plain public by accident', () => {
     expect(getDisposition('POST /api/auth/admin-reset').kind).toBe('APPLICATION_GUARD');
+    expect(getDisposition('POST /api/auth/activate-account').kind).toBe('CAPABILITY_TOKEN');
+    expect(getDisposition('POST /api/auth/password-reset/confirm').kind).toBe('CAPABILITY_TOKEN');
+    expect(getDisposition('POST /api/auth/password-reset/request').kind).toBe('EXPECTED_PUBLIC');
     expect(getDisposition('POST /webhook/meta-whatsapp').kind).toBe('APPLICATION_GUARD');
     expect(getDisposition('GET /api/orders/retrait/{token}').kind).toBe('CAPABILITY_TOKEN');
     expect(getDisposition('POST /api/tracking/{token}/verify-pickup').kind).toBe('CAPABILITY_TOKEN');

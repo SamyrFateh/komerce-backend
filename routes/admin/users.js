@@ -24,15 +24,19 @@
 'use strict';
 
 const express = require('express');
+const { randomBytes } = require('crypto');
+const { createActionToken } = require('../../services/credential-action-store');
+const { sendCredentialLink } = require('../../services/credential-invitation-email');
 const router  = express.Router();
 const db      = require('../../db');
-const { authenticate, requireRole } = require('../../middleware/auth');
+const { authenticate, requireRole, invalidateUserCache } = require('../../middleware/auth');
 const { requireDashboardGlobalAuthority } = require('../../middleware/require-dashboard-global-authority');
 const { detachUserFromScans } = require('../../services/scan-write-service');
 const { detachUserFromIncidents } = require('../../services/incident-write-service');
 const { deleteUserBasketData } = require('../../services/shared-cart-user-cleanup');
 const {
   createAdminUser,
+  markUserPendingActivation,
   setUserRole,
   setUserPasswordHash,
   anonymizeUser,
@@ -110,6 +114,27 @@ function parseMarketScope(body) {
   return { marketCode, scopeRole };
 }
 
+// V1: API métier simple. L'autorité résulte exclusivement des codes résolus côté serveur.
+function parseMarketCodes(body) {
+  if (!Object.prototype.hasOwnProperty.call(body || {}, 'market_codes')) return null;
+  if (!Array.isArray(body.market_codes) || body.market_codes.length < 1 || body.market_codes.length > 20) {
+    throw new ProvisioningError(400, 'INVALID_MARKET_CODES', 'Sélectionnez entre 1 et 20 marchés.');
+  }
+  const codes = body.market_codes.map((value) => {
+    if (typeof value !== 'string') throw new ProvisioningError(400, 'INVALID_MARKET_CODE', 'Code marché invalide.');
+    const code = normalizeMarketCode(value);
+    if (!code) throw new ProvisioningError(400, 'INVALID_MARKET_CODE', 'Code marché invalide.');
+    return code;
+  });
+  if (new Set(codes).size !== codes.length) {
+    throw new ProvisioningError(400, 'DUPLICATE_MARKET_CODE', 'Un marché ne peut être sélectionné deux fois.');
+  }
+  if (body.market_scope || body.market_id != null) {
+    throw new ProvisioningError(400, 'MIXED_MARKET_SCOPE_FORMAT', 'Utilisez market_codes sans market_scope ni market_id.');
+  }
+  return codes;
+}
+
 async function withTransaction(work) {
   const client = await db.getClient();
   try {
@@ -150,7 +175,7 @@ router.get('/users', ...guard, async (req, res, next) => {
     }
     const where = conditions.join(' AND ');
     const { rows } = await db.query(
-      `SELECT u.id, u.full_name, u.email, u.phone, u.role, u.created_at, u.updated_at, u.last_login_at,
+      `SELECT u.id, u.full_name, u.email, u.phone, u.role, u.created_at, u.updated_at, u.last_login_at, u.account_activation_required,
          COALESCE(u.currency_pref, 'KMF') AS currency_pref,
          COALESCE(u.country, 'KM') AS country
        FROM users u WHERE ${where} ORDER BY u.created_at DESC
@@ -196,25 +221,44 @@ router.get('/users/:id/market-scopes', ...marketAuthorityGuard, async (req, res,
 });
 
 // ─── POST /api/admin/users ─────────────────────────────────────────
-router.post('/users', ...guard, async (req, res, next) => {
+router.post('/users', ...guard, (req, res, next) => {
+  // Les rôles et affectations marché sont une autorité centrale, pas un simple
+  // attribut d'identité. Refus explicite sans grant dashboard-global.
+  if ((req.body?.role && req.body.role !== 'client') || req.body?.market_codes || req.body?.market_scope) {
+    return requireDashboardGlobalAuthority(req, res, next);
+  }
+  next();
+}, async (req, res, next) => {
   const bcrypt = require('bcryptjs');
   try {
     const { full_name, email, phone, password, role = 'client', currency_pref = 'KMF' } = req.body;
-    if (!full_name || !email || !password) return res.status(400).json({ error: 'full_name, email et password sont obligatoires' });
+    const invite = req.body.invite === true;
+    if (!full_name || !email || (!invite && !password)) {
+      return res.status(400).json({ error: 'full_name, email et mot de passe (hors invitation) sont obligatoires' });
+    }
+    if (invite && !['admin','agent_hub','market_operator','agent_relais'].includes(role)) {
+      return res.status(400).json({ code: 'INVITATION_ROLE_NOT_SUPPORTED', error: 'Profil non éligible à cette invitation V1.' });
+    }
+    if (invite && password != null) {
+      return res.status(400).json({ code: 'INVITATION_PASSWORD_FORBIDDEN', error: 'Le destinataire choisit son mot de passe.' });
+    }
     if (!VALID_ROLES.includes(role)) return res.status(400).json({ error: `Rôle invalide. Utilisez : ${VALID_ROLES.join(', ')}` });
-    const passwordPolicyError = validatePasswordPolicy(password);
-    if (passwordPolicyError) {
-      return res.status(400).json({ error: passwordPolicyError, code: 'WEAK_PASSWORD' });
+    if (!invite) {
+      const passwordPolicyError = validatePasswordPolicy(password);
+      if (passwordPolicyError) {
+        return res.status(400).json({ error: passwordPolicyError, code: 'WEAK_PASSWORD' });
+      }
     }
 
-    const marketScope = parseMarketScope(req.body);
-    if (role === 'market_operator' && !marketScope) {
+    const marketCodes = parseMarketCodes(req.body);
+    const marketScope = marketCodes ? null : parseMarketScope(req.body);
+    if (role === 'market_operator' && !marketScope && !marketCodes) {
       return res.status(400).json({
-        error: 'Un market_operator doit être créé avec market_scope.market_code et market_scope.scope_role.',
+        error: 'Sélectionnez au moins un marché dans market_codes.',
         code: 'MARKET_SCOPE_REQUIRED',
       });
     }
-    if (role !== 'market_operator' && marketScope) {
+    if (role !== 'market_operator' && (marketScope || marketCodes)) {
       return res.status(400).json({
         error: 'market_scope est réservé au rôle market_operator.',
         code: 'MARKET_SCOPE_ROLE_MISMATCH',
@@ -224,10 +268,11 @@ router.post('/users', ...guard, async (req, res, next) => {
     const normalizedEmail = email.toLowerCase().trim();
     const { rows: existing } = await db.query('SELECT id FROM users WHERE email = $1', [normalizedEmail]);
     if (existing.length) return res.status(409).json({ error: 'Un utilisateur avec cet email existe déjà' });
-    const password_hash = await bcrypt.hash(password, PASSWORD_HASH_ROUNDS);
+    const password_hash = await bcrypt.hash(invite ? randomBytes(32).toString('hex') : password, PASSWORD_HASH_ROUNDS);
 
     let user;
     let createdScope = null;
+    let invitationToken = null;
     if (role === 'market_operator') {
       const result = await withTransaction(async (client) => {
         const { rows: [createdUser] } = await createAdminUser(client, {
@@ -238,22 +283,53 @@ router.post('/users', ...guard, async (req, res, next) => {
           currencyPref: currency_pref,
           passwordHash: password_hash,
         });
-        const grant = await grantOperatorScope(client, {
-          userId: createdUser.id,
-          marketCode: marketScope.marketCode,
-          scopeRole: marketScope.scopeRole,
-          grantedBy: req.user.id,
-        });
-        if (grant.status === 'market_not_found') {
-          throw new ProvisioningError(400, 'MARKET_NOT_FOUND', `Marché ${marketScope.marketCode} introuvable ou inactif.`);
+        const requested = marketCodes || [marketScope.marketCode];
+        const scopes = [];
+        for (const marketCode of requested) {
+          const grant = await grantOperatorScope(client, {
+            userId: createdUser.id,
+            marketCode,
+            scopeRole: marketCodes ? 'manager' : marketScope.scopeRole,
+            grantedBy: req.user.id,
+          });
+          if (grant.status === 'market_not_found') {
+            throw new ProvisioningError(400, 'MARKET_NOT_FOUND', `Marché ${marketCode} introuvable ou inactif.`);
+          }
+          if (grant.status === 'invalid_scope_role') {
+            throw new ProvisioningError(400, 'INVALID_SCOPE_ROLE', 'Le niveau de scope doit valoir viewer ou manager.');
+          }
+          scopes.push(grant.scope);
         }
-        if (grant.status === 'invalid_scope_role') {
-          throw new ProvisioningError(400, 'INVALID_SCOPE_ROLE', 'Le niveau de scope doit valoir viewer ou manager.');
+        let token = null;
+        if (invite) {
+          await markUserPendingActivation(client, createdUser.id);
+          token = (await createActionToken(client, {
+            userId: createdUser.id, purpose: 'account_activation',
+          })).token;
         }
-        return { user: createdUser, scope: grant.scope };
+        return { user: createdUser, scopes, token };
       });
       user = result.user;
-      createdScope = result.scope;
+      createdScope = result.scopes;
+      invitationToken = result.token;
+    } else if (invite) {
+      const result = await withTransaction(async (client) => {
+        const { rows: [createdUser] } = await createAdminUser(client, {
+          fullName: full_name,
+          email: normalizedEmail,
+          phone: phone || null,
+          role,
+          currencyPref: currency_pref,
+          passwordHash: password_hash,
+        });
+        await markUserPendingActivation(client, createdUser.id);
+        const token = (await createActionToken(client, {
+          userId: createdUser.id, purpose: 'account_activation',
+        })).token;
+        return { user: createdUser, token };
+      });
+      user = result.user;
+      invitationToken = result.token;
     } else {
       const { rows: [createdUser] } = await createAdminUser(db, {
         fullName: full_name,
@@ -266,23 +342,63 @@ router.post('/users', ...guard, async (req, res, next) => {
       user = createdUser;
     }
 
-    log.info(`👤 Admin created user ${user.email} (${role}) by ${req.user.email}`);
-    res.status(201).json({ ...user, market_scopes: createdScope ? [createdScope] : [] });
+    // L'envoi n'a lieu qu'après COMMIT. Le jeton ne quitte jamais le serveur
+    // par la réponse HTTP, même si Brevo est indisponible.
+    const delivery = invitationToken
+      ? await sendCredentialLink({ email: normalizedEmail, token: invitationToken, purpose: 'account_activation' })
+      : null;
+    log.info({ role, actorId: req.user.id, invited: invite, invitationSent: delivery?.sent || false },
+      '[admin/users] Identité créée');
+    res.status(201).json({
+      ...user, market_scopes: createdScope || [],
+      ...(invite ? { account_activation_required: true, invitation_sent: !!delivery?.sent } : {}),
+    });
   } catch(err) {
     if (sendProvisioningError(res, err)) return;
     next(err);
   }
 });
 
+// ─── POST /api/admin/users/:id/resend-invitation ──────────────────
+// Admin central peut renvoyer un lien à un compte encore non activé.
+// Ne renvoie jamais le secret; remplace tout ancien lien de même finalité.
+router.post('/users/:id/resend-invitation', ...marketAuthorityGuard, async (req, res, next) => {
+  try {
+    const result = await withTransaction(async (client) => {
+      const { rows: [user] } = await client.query(
+        'SELECT id, email, role, account_activation_required FROM users WHERE id=$1::uuid FOR UPDATE',
+        [req.params.id]
+      );
+      if (!user) throw new ProvisioningError(404, 'USER_NOT_FOUND', 'Utilisateur introuvable.');
+      if (!user.account_activation_required) {
+        throw new ProvisioningError(409, 'ACCOUNT_ALREADY_ACTIVATED', 'Compte déjà activé.');
+      }
+      if (!user.email) throw new ProvisioningError(409, 'INVITATION_EMAIL_REQUIRED', 'Email absent.');
+      const token = (await createActionToken(client, {
+        userId: user.id, purpose: 'account_activation',
+      })).token;
+      return { email: user.email, token };
+    });
+    const delivery = await sendCredentialLink({
+      email: result.email, token: result.token, purpose: 'account_activation',
+    });
+    res.json({ success: !!delivery.sent, invitation_sent: !!delivery.sent });
+  } catch (err) {
+    if (sendProvisioningError(res, err)) return;
+    next(err);
+  }
+});
+
 // ─── PUT /api/admin/users/:id/role ─────────────────────────────────
-router.put('/users/:id/role', ...guard, async (req, res, next) => {
+router.put('/users/:id/role', ...marketAuthorityGuard, async (req, res, next) => {
   try {
     const { id } = req.params;
     const { role } = req.body;
     if (!role || !VALID_ROLES.includes(role)) return res.status(400).json({ error: `Rôle invalide. Utilisez : ${VALID_ROLES.join(', ')}` });
     if (id === req.user.id && role !== 'admin') return res.status(400).json({ error: 'Vous ne pouvez pas modifier votre propre rôle' });
 
-    const marketScope = parseMarketScope(req.body);
+    const marketCodes = parseMarketCodes(req.body);
+    const marketScope = marketCodes ? null : parseMarketScope(req.body);
     const result = await withTransaction(async (client) => {
       const { rows: [existing] } = await client.query(
         'SELECT id, full_name, email, role FROM users WHERE id = $1::uuid FOR UPDATE',
@@ -290,39 +406,46 @@ router.put('/users/:id/role', ...guard, async (req, res, next) => {
       );
       if (!existing) throw new ProvisioningError(404, 'USER_NOT_FOUND', 'Utilisateur introuvable');
 
-      if (role === 'market_operator' && existing.role !== 'market_operator' && !marketScope) {
+      if (role === 'market_operator' && existing.role !== 'market_operator' && !marketScope && !marketCodes) {
         throw new ProvisioningError(
           400,
           'MARKET_SCOPE_REQUIRED',
-          'La promotion vers market_operator exige market_scope.market_code et market_scope.scope_role.'
+          'La promotion vers Responsable marché exige une sélection de marchés.'
         );
       }
-      if (role !== 'market_operator' && marketScope) {
+      if (role !== 'market_operator' && (marketScope || marketCodes)) {
         throw new ProvisioningError(400, 'MARKET_SCOPE_ROLE_MISMATCH', 'market_scope est réservé au rôle market_operator.');
       }
 
       const { rows: [updatedUser] } = await setUserRole(client, { userId: id, role });
-      let scope = null;
-      if (role === 'market_operator' && marketScope) {
-        const grant = await grantOperatorScope(client, {
-          userId: id,
-          marketCode: marketScope.marketCode,
-          scopeRole: marketScope.scopeRole,
-          grantedBy: req.user.id,
-        });
-        if (grant.status === 'market_not_found') {
-          throw new ProvisioningError(400, 'MARKET_NOT_FOUND', `Marché ${marketScope.marketCode} introuvable ou inactif.`);
+      const scopes = [];
+      if (role === 'market_operator' && (marketScope || marketCodes)) {
+        for (const marketCode of (marketCodes || [marketScope.marketCode])) {
+          const grant = await grantOperatorScope(client, {
+            userId: id,
+            marketCode,
+            scopeRole: marketCodes ? 'manager' : marketScope.scopeRole,
+            grantedBy: req.user.id,
+          });
+          if (grant.status === 'market_not_found') {
+            throw new ProvisioningError(400, 'MARKET_NOT_FOUND', `Marché ${marketCode} introuvable ou inactif.`);
+          }
+          scopes.push(grant.scope);
         }
-        scope = grant.scope;
       }
       if (role !== 'market_operator') {
         await revokeAllOperatorScopes(client, { userId: id, revokedBy: req.user.id });
       }
-      return { user: updatedUser, scope };
+      return { user: updatedUser, scopes };
     });
 
     log.info(`🔑 Admin changed role of ${result.user.email} to ${role} by ${req.user.email}`);
-    res.json({ success: true, user: result.user, market_scope: result.scope });
+    res.json({
+      success: true,
+      user: result.user,
+      market_scope: result.scopes[0] || null, // compatibilité appels historiques
+      market_scopes: result.scopes,
+    });
   } catch(err) {
     if (sendProvisioningError(res, err)) return;
     next(err);
@@ -399,7 +522,7 @@ router.delete('/users/:id/market-scopes/:marketCode', ...marketAuthorityGuard, a
 
 // ─── PUT /api/admin/users/:id/password ─────────────────────────────
 // V2.1: Password strength + self-change verification + same-password check
-router.put('/users/:id/password', ...guard, async (req, res, next) => {
+router.put('/users/:id/password', ...marketAuthorityGuard, async (req, res, next) => {
   const bcrypt = require('bcryptjs');
   try {
     const { id } = req.params;
@@ -446,6 +569,7 @@ router.put('/users/:id/password', ...guard, async (req, res, next) => {
       userId: id,
       passwordHash: password_hash,
     });
+    invalidateUserCache(id);
 
     const action = id === req.user.id ? 'self-changed' : 'admin-reset';
     log.info(`🔒 Password ${action} for ${existing.email} by ${req.user.email} (IP: ${req.ip})`);

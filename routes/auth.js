@@ -33,7 +33,7 @@ const { randomBytes } = require('crypto');
 const bcrypt   = require('bcryptjs');
 const jwt      = require('jsonwebtoken');
 const db       = require('../db');
-const { authenticate } = require('../middleware/auth');
+const { authenticate, invalidateUserCache } = require('../middleware/auth');
 const { requireRecentAuth } = require('../middleware/require-recent-auth');
 const { validate } = require('../middleware/validate');
 const { auth } = require('../validators');
@@ -50,6 +50,14 @@ const JWT_EXPIRES = process.env.JWT_EXPIRES || '30d';
 // AUTH-8a — cookie d'auth centralisé (utils/auth-cookie.js)
 const { setAuthCookie, clearAuthCookie, readAuthToken } = require('../utils/auth-cookie');
 const { signAuthToken } = require('../utils/auth-session');
+const { createActionToken, consumeActionToken } = require('../services/credential-action-store');
+const { sendCredentialLink } = require('../services/credential-invitation-email');
+// Small IP-bound limiter for credential recovery in addition to the global API limiter.
+const credentialLimiter = require('express-rate-limit')({
+  windowMs: 15 * 60 * 1000, limit: 5, standardHeaders: true, legacyHeaders: false,
+  message: { error: 'Trop de tentatives. Réessayez plus tard.', code: 'rate_limited' },
+});
+
 
 function generateToken(user) {
   return signAuthToken(user, { method: 'password', expiresIn: JWT_EXPIRES });
@@ -104,6 +112,11 @@ router.post('/login', validate(auth.login), async (req, res, next) => {
 
     if (!rows.length) return res.status(401).json({ error: 'Identifiants incorrects' });
     const user = rows[0];
+    // Un collaborateur invité ne se connecte pas par mot de passe ou OTP
+    // tant que la possession de son canal d'activation n'a pas été vérifiée.
+    if (user.account_activation_required === true) {
+      return res.status(401).json({ error: 'Identifiants incorrects' });
+    }
     if (!user.password_hash) return res.status(401).json({ error: 'Identifiants incorrects' });
     const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) return res.status(401).json({ error: 'Identifiants incorrects' });
@@ -112,6 +125,125 @@ router.post('/login', validate(auth.login), async (req, res, next) => {
     setAuthCookie(res, token);
     res.json({ user: userResponse(user) });
   } catch(err) { next(err); }
+});
+
+// Activation via one-time credential token. No session is minted here.
+router.post('/activate-account', credentialLimiter, async (req, res, next) => {
+  const token = req.body?.token;
+  const password = req.body?.password;
+  if (typeof token !== 'string' || typeof password !== 'string' ||
+      password.length < 8 || !/[A-Z]/.test(password) || !/[0-9]/.test(password)) {
+    return res.status(400).json({ code: 'INVALID_ACTIVATION_REQUEST', error: 'Lien ou mot de passe invalide.' });
+  }
+  const { consumeActionToken } = require('../services/credential-action-store');
+  const client = await db.getClient().catch(next);
+  if (!client) return;
+  try {
+    await client.query('BEGIN');
+    const userId = await consumeActionToken(client, { token, purpose: 'account_activation' });
+    if (!userId) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ code: 'INVALID_ACTIVATION_TOKEN', error: 'Lien invalide ou expiré.' });
+    }
+    const hash = await bcrypt.hash(password, 12);
+    const { rowCount } = await client.query(
+      'UPDATE users SET password_hash=$1, account_activation_required=FALSE, credentials_changed_at=NOW(), updated_at=NOW() WHERE id=$2::uuid AND account_activation_required=TRUE',
+      [hash, userId]
+    );
+    if (!rowCount) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ code: 'ACCOUNT_ALREADY_ACTIVATED', error: 'Compte déjà activé.' });
+    }
+    await client.query('COMMIT');
+    invalidateUserCache(userId);
+    return res.json({ success: true });
+  } catch (err) {
+    try { await client.query('ROLLBACK'); } catch (_) {}
+    return next(err);
+  } finally {
+    client.release();
+  }
+});
+
+// Public request deliberately returns the same response for unknown and known emails.
+router.post('/password-reset/request', credentialLimiter, async (req, res) => {
+  const accepted = () => res.status(202).json({ accepted: true });
+  const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+  if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return accepted();
+  let client;
+  let toSend = null;
+  try {
+    client = await db.getClient();
+    await client.query('BEGIN');
+    const { rows: [user] } = await client.query(
+      'SELECT id, email, account_activation_required FROM users WHERE email=$1 FOR UPDATE',
+      [email]
+    );
+    if (user && !user.account_activation_required) {
+      const { rows: recent } = await client.query(
+        `SELECT 1 FROM credential_action_tokens
+          WHERE user_id=$1::uuid AND purpose='password_reset'
+          AND created_at > NOW() - INTERVAL '15 minutes' LIMIT 1`,
+        [user.id]
+      );
+      if (!recent.length) {
+        const issued = await createActionToken(client, {
+          userId: user.id, purpose: 'password_reset',
+        });
+        toSend = { email: user.email, token: issued.token };
+      }
+    }
+    await client.query('COMMIT');
+  } catch (err) {
+    if (client) { try { await client.query('ROLLBACK'); } catch (_) {} }
+    // Do not reveal account existence or DB errors through this public endpoint.
+    log.warn({ name: err.name }, '[password-reset/request] échec masqué');
+  } finally {
+    if (client) client.release();
+  }
+  if (toSend) {
+    await sendCredentialLink({ ...toSend, purpose: 'password_reset' });
+  }
+  return accepted();
+});
+
+router.post('/password-reset/confirm', credentialLimiter, async (req, res, next) => {
+  const { token, new_password: newPassword } = req.body || {};
+  if (typeof token !== 'string' || typeof newPassword !== 'string' ||
+      newPassword.length < 8 || newPassword.length > 128 ||
+      !/[A-Z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
+    return res.status(400).json({ code: 'INVALID_RESET_REQUEST', error: 'Lien ou mot de passe invalide.' });
+  }
+  const hash = await bcrypt.hash(newPassword, 12).catch(next);
+  if (!hash) return;
+  let client;
+  try {
+    client = await db.getClient();
+    await client.query('BEGIN');
+    const userId = await consumeActionToken(client, { token, purpose: 'password_reset' });
+    if (!userId) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ code: 'INVALID_RESET_TOKEN', error: 'Lien invalide ou expiré.' });
+    }
+    const { rowCount } = await client.query(
+      `UPDATE users SET password_hash=$1, credentials_changed_at=NOW(), updated_at=NOW()
+       WHERE id=$2::uuid AND account_activation_required=FALSE`,
+      [hash, userId]
+    );
+    if (!rowCount) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ code: 'INVALID_RESET_TOKEN', error: 'Lien invalide ou expiré.' });
+    }
+    await client.query('COMMIT');
+    invalidateUserCache(userId);
+    clearAuthCookie(res);
+    return res.json({ success: true });
+  } catch (err) {
+    if (client) { try { await client.query('ROLLBACK'); } catch (_) {} }
+    return next(err);
+  } finally {
+    if (client) client.release();
+  }
 });
 
 // ─── GET /api/auth/me ──────────────────────────────────────────────────────────
@@ -219,8 +351,20 @@ router.put('/me/password', authenticate, requireRecentAuth, validate(auth.change
       return res.status(401).json({ error: 'Mot de passe actuel incorrect.' });
     }
 
+    // Harmonisé avec la politique Admin V1; le validator ne suffit pas à lui seul.
+    if (new_password.length < 8 || !/[A-Z]/.test(new_password) || !/[0-9]/.test(new_password)) {
+      return res.status(400).json({ code: 'WEAK_PASSWORD', error: '8 caractères minimum, une majuscule et un chiffre requis.' });
+    }
+    if (await bcrypt.compare(new_password, rows[0].password_hash)) {
+      return res.status(400).json({ code: 'SAME_PASSWORD', error: 'Choisissez un mot de passe différent.' });
+    }
     const hash = await bcrypt.hash(new_password, 12);
-    await db.query('UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2', [hash, req.user.id]);
+    await db.query(
+      'UPDATE users SET password_hash=$1, credentials_changed_at=NOW(), updated_at=NOW() WHERE id=$2',
+      [hash, req.user.id]
+    );
+    invalidateUserCache(req.user.id);
+    clearAuthCookie(res);
 
     log.info(`[me/password] ✅ Mot de passe changé → user=${req.user.id} (IP: ${req.ip})`);
     res.json({ success: true, message: 'Mot de passe mis à jour.' });

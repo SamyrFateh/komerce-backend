@@ -13,7 +13,7 @@
  *
  *   ✅ pas de token          → next() sans req.user
  *   ✅ token valide          → req.user peuplé, next()
- *   ✅ token valide (cache)  → req.user peuplé sans appel DB, next()
+ *   ✅ token valide (cache obsolète) → req.user provient de DB, next()
  *   ✅ token expiré          → next() sans req.user (pas de 401)
  *   ✅ token révoqué (jti)   → next() sans req.user
  *   ✅ utilisateur introuvable → next() sans req.user
@@ -97,13 +97,13 @@ test('token valide, utilisateur en DB → req.user peuplé, next()', async () =>
   expect(req.user).toEqual(USER);
 });
 
-test('token valide, utilisateur en cache → pas d\'appel DB SELECT users', async () => {
+test('token valide, utilisateur en cache → lecture fraîche en DB', async () => {
   userCache.set('user-001', USER);
   const token = makeToken({ jti: 'jti-cache' });
   const req   = makeReq(token);
   const next  = jest.fn();
 
-  db.query.mockResolvedValueOnce({ rows: [] }); // revoked_tokens
+  db.query.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [USER] }); // révocation + identité fraîche
 
   await softAuthenticate(req, makeRes(), next);
 

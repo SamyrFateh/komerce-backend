@@ -52,10 +52,16 @@ module.exports = {
 
   // ── Perimetre fichiers ───────────────────────────────────────────────────
   files: {
+    scripts: [
+      'scripts/recette/l10-invite-e2e-identities.js',
+    ],
     services: [
       'services/otp-test-mode.js',
       // LOT12 ? unique persistence boundary for the users lifecycle.
       'services/user-mutation-service.js',
+      'services/credential-action-store.js',
+      'services/credential-invitation-email.js',
+      'services/credential-link-token.js',
       // Lot 5 — autorisation nominative de retrait exceptionnel. Possède
       // user_pickup_authorizations ; expose getActiveAuthorizationForUpdate/
       // hasActiveAuthorization à logistics (jamais de requête directe côté
@@ -86,18 +92,25 @@ module.exports = {
       // domaine shared, listé ici car c'est auth-identity qui possède la
       // comparaison de noms sur laquelle repose l'autorisation nominative.
       'utils/name-normalize.js',
+      'utils/credential-session-guard.js',
     ],
     migrations: [
       'migrations/121_exceptional_pickup_authorization.sql',
       'migrations/158_market_operator_user_role.sql',
+      'migrations/367_credential_action_tokens.sql',
+      'migrations/368_internal_account_activation.sql',
     ],
       tests: [
+      'tests/unit/l10-invite-e2e-identities.test.js',
       'tests/e2e-api/auth-identity.pickup-authorization-staging.e2e.test.js',
       'tests/integration/admin-authz-probe.test.js',
       'tests/integration/otp-no-guest.test.js',
       // tests/unit/authkey-client.test.js retiré (O7.1) — suit services/authkey-client.js vers notifications.
       'tests/unit/otp-test-mode.test.js',
       'tests/unit/user-mutation-service.test.js',
+      'tests/unit/credential-action-store.test.js',
+      'tests/unit/credential-link-token.test.js',
+      'tests/unit/credential-session-guard.test.js',
       'tests/unit/client-auth.test.js',
       'tests/unit/pickup-authorization-service.test.js',
       'tests/unit/name-normalize.test.js',
@@ -128,6 +141,7 @@ module.exports = {
       'products: R',
       'relais: R',
       'revoked_tokens: W!',  // OWNER (arbitrage A, 2026-07-29 — campagne WRITER-NOT-OWNER, 2026-08)
+      'credential_action_tokens: RW',
       'users: RW!',   // OWNER ? LOT12 canonical users lifecycle persistence boundary
       'user_pickup_authorizations: RW',   // OWNER (Lot 5) — autorisation nominative de retrait exceptionnel
     ],
@@ -136,8 +150,8 @@ module.exports = {
   security: {
     status: 'CONFIRMED_MIXED',
     authedRoutesDetected: 7,
-    totalRoutes: 19,
-    note: "7/19 routes protégées. 12 routes publiques par design : OTP (cooldown 5 min/phone + plafond journalier DB, test-reset gaté par isOtpTestMode() → 404 en prod), magic-link (token mono-usage), guest-checkout (route historique 410), login/register/logout et admin-reset gaté applicativement. AUTH-8e supprime la délégation publique par téléphone : un numéro seul ne délivre plus aucun JWT.",
+    totalRoutes: 22,
+    note: "7/22 routes protégées. 15 routes publiques par design : OTP (cooldown 5 min/phone + plafond journalier DB, test-reset gaté par isOtpTestMode() → 404 en prod), magic-link (token mono-usage), guest-checkout (route historique 410), login/register/logout, activation par jeton à usage unique à forte entropie (24 h, 5 requêtes/15 min/IP), et récupération de compte avec réponse non énumérante, jeton SHA-256 à usage unique (30 min, 5 requêtes/15 min/IP) ; admin-reset gaté applicativement. AUTH-8e supprime la délégation publique par téléphone : un numéro seul ne délivre plus aucun JWT.",
   },
   contract: {
     exposes: [
@@ -167,6 +181,9 @@ module.exports = {
       'PUT /api/auth/me/pickup-authorization',
       'DELETE /api/auth/me/pickup-authorization',
       'PUT /api/auth/me/password',
+      'POST /api/auth/activate-account',
+      'POST /api/auth/password-reset/request',
+      'POST /api/auth/password-reset/confirm',
       'POST /api/auth/step-up/otp/request',
       'POST /api/auth/step-up/otp/verify',
     ],
@@ -179,6 +196,7 @@ module.exports = {
       { fn: 'makeIntlPhoneInput', file: 'public/boutique/js/b-phone.js' },
       // LOT12 ? capabilities de mutation users. Aucune API g?n?rique updateUser().
       { fn: 'createAdminUser', file: 'services/user-mutation-service.js' },
+      { fn: 'markUserPendingActivation', file: 'services/user-mutation-service.js' },
       { fn: 'setUserRole', file: 'services/user-mutation-service.js' },
       { fn: 'setUserPasswordHash', file: 'services/user-mutation-service.js' },
       { fn: 'anonymizeUser', file: 'services/user-mutation-service.js' },
