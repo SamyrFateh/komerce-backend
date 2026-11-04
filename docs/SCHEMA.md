@@ -48,13 +48,13 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 | Objet | Compte | Note |
 |---|---|---|
-| Tables | 226 | Vérifié sur le dump live Railway. |
-| Vues | 20 | Vérifié sur le dump live Railway. |
+| Tables | 228 | Vérifié sur le dump live Railway. |
+| Vues | 21 | Vérifié sur le dump live Railway. |
 | ENUMs | 17 | Types métier présents dans le dump live Railway. |
-| Index | 515 | Performance + contraintes uniques |
-| Foreign keys | 438 | Cohérence relationnelle |
-| Fonctions | 112 | Fonctions présentes dans le dump live Railway. |
-| Triggers | 128 | Triggers présents dans le dump live Railway. |
+| Index | 521 | Performance + contraintes uniques |
+| Foreign keys | 446 | Cohérence relationnelle |
+| Fonctions | 123 | Fonctions présentes dans le dump live Railway. |
+| Triggers | 139 | Triggers présents dans le dump live Railway. |
 | Extensions | `pgcrypto`, `uuid-ossp` | UUID + chiffrement |
 
 ---
@@ -109,6 +109,9 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 | `hub_physical_units` | Identite physique HUB-001 ; inbound potentiellement multi-market, outbound PACKED/DISPATCHED force mono-market depuis les allocations actives. **Migration 233 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
 | `hub_physical_unit_placements` | Historique des placements physiques d allocations immuables ; SPLIT/MERGE/REPACK ferment les anciens placements et ajoutent les nouveaux sans reassignation economique. **Migration 233 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
 | `hub_custody_events` | Journal append-only de custody, transitions physiques, lineage SPLIT/MERGE/REPACK et constats physiques HUB-001. **Migration 233 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
+| `product_sku_physical_codes` | Code physique EAN/GTIN ou fournisseur identifié par SKU Komerce. Un code identifie une variante, jamais une unité ni une commande. Portée fournisseur nullable pour EAN universel, confiance DECLARED/CONFIRMED et preuve d'observation. **Migration 391 — promue le 2026-11-04 (schema-promote, dump live verifie).** |
+| `hub_box_bags` | Contenance immuable sac client scellé dans KOM-BOX, avec référence scannée et identifiant du colis canonique. **Migration 394 — promue le 2026-11-04 (schema-promote, dump live verifie).** |
+| `hub_box_effective_placements` | Projection des placements directs de KOM-BOX plus contenu des sacs clients physiquement rattachés, sans double comptage. **Migration 394 — promue le 2026-11-04 (schema-promote, dump live verifie).** |
 
 **Triggers de protection** : `trg_no_delete_parcels` (DELETE bloqué) + `trg_parcel_ship_guard` (transitions contrôlées) + `trg_check_parcel_item_qty` (cohérence quantités).
 
@@ -848,3 +851,28 @@ La capability obsolète est supprimée de `capability_registry`, `membership_cap
 
 Une réservation pour une quantité d'article réellement manquante au relais, reliée à une attestation immuable `international_shipment_relay_receipts.incident_id` et à une intention PSP déjà enregistrée, avec `operation_key` UUID stable et unique par commande. Les montants KMF/EUR dérivent de l'encaissement d'origine ; aucune nouvelle conversion. Un verrou de commande sérialise les décisions concurrentes et interdit de dépasser la quantité manquante ou le montant capturé. `status=reserved` **ne signifie pas remboursé** ; paiement, preuve PSP et journal `refunds` doivent suivre un circuit distinct avant `confirmed`. La colonne `order_items.qty_refunded` est créée par la même migration, avec contrainte `qty_refunded + qty_collected <= quantity` ; elle n'augmente qu'au même COMMIT que la preuve PSP confirmée et l'écriture du journal financier. Un reliquat manquant peut être remboursé lorsque d'autres quantités ont déjà été remises.
 <!-- /schema-pending -->
+
+
+
+### Migration 391 — correspondance physique code/SKU (`intended_migration_schema`)
+
+`product_sku_physical_codes` est une table prévue, non encore vérifiée dans le dump Railway. Elle conserve le lien code physique → variante Komerce, éventuellement sous fournisseur. Les référentiels commerciaux SKU fournisseur déjà présents restent autoritaires, et une validation manuelle est nécessaire avant d'utiliser un code déclaré comme constat physique. Les commandes clientes restent affectées via les allocations Hub.
+
+### Migration 392 — sac client mono-commande (intended_migration_schema)
+
+`hub_physical_units.order_id` (UUID nullable, FK orders) ne s'applique qu'aux `HANDLING_UNIT` utilisés comme sacs clients. L'identifiant de commande est immuable après affectation ; le trigger de placement refuse une quantité réservée à une autre commande. Ce contrôle opère dans PostgreSQL, même si l'appelant contourne l'interface.
+
+### Migration 393 — preuve de dépôt et plan figé du sac (intended_migration_schema)
+
+`hub_physical_units.bag_plan` (JSONB nullable) décrit les couples `order_item_id` / `quantity` destinés à cette préparation, y compris partielle. Le plan est immuable après création.
+
+`hub_physical_unit_placements` ajoute `evidence_method` (SCAN, MANUAL, COUNT_ON_MANIFEST), `evidence_code`, `evidence_ref` : toute insertion de quantité dans un sac client exige un code confirmé et conforme au SKU/fournisseur ou une preuve manuelle référencée. La preuve est immuable. Avant PACKED, PostgreSQL vérifie que le contenu actif correspond exactement au plan du sac. Les KOM-BOX restent soumises à leurs invariants existants ; le transport du sac fermé et son lien au relais constituent un jalon distinct à certifier.
+
+
+### Migration 394 — sac client physiquement contenu dans une KOM-BOX (intended_migration_schema)
+
+`hub_box_bags` matérialise le lien immuable entre `HANDLING_UNIT` sac client déjà PACKED, `MARKET_PARCEL` KOM-BOX, et `parcels` colis client. Le scan des références des deux contenants est exigé et vérifié, de même que la mono-commande, le marché, la destination et la correspondance des `parcel_items`.
+
+`hub_box_effective_placements` est une projection SQL de tous les articles physiquement présents dans un carton : placements directs de la KOM-BOX ou placements encore actifs dans les sacs réellement liés. Les allocations ne sont jamais dupliquées ou déplacées fictivement. Les calculs `hub_item_physical_proof`, `hub_item_handed_over`, `sync_parcel_items_from_physical`, la composition de l'expédition et la réception relais utilisent cette projection.
+
+Cette migration est déclarée prévue et n'est pas appliquée en Staging ; certificat E2E marché, réception relais et cas d'erreur obligatoire avant déploiement.

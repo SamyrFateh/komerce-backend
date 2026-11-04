@@ -1606,6 +1606,153 @@ END $$;
 
 
 --
+-- Name: hub_box_bag_immutable(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.hub_box_bag_immutable() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RAISE EXCEPTION 'HUB_BOX_BAG_LINK_IMMUTABLE' USING ERRCODE='23514';
+END $$;
+
+
+--
+-- Name: hub_box_bag_link_guard(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.hub_box_bag_link_guard() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  v_bag public.hub_physical_units%ROWTYPE;
+  v_box public.hub_physical_units%ROWTYPE;
+  v_parcel_order uuid;
+  v_market uuid;
+  v_dest text;
+BEGIN
+  SELECT * INTO v_bag FROM public.hub_physical_units WHERE id=NEW.bag_unit_id FOR UPDATE;
+  SELECT * INTO v_box FROM public.hub_physical_units WHERE id=NEW.box_unit_id FOR UPDATE;
+  IF v_bag.id IS NULL OR v_bag.unit_type <> 'HANDLING_UNIT'
+     OR v_bag.order_id IS NULL OR v_bag.state <> 'PACKED' OR v_bag.outcome_type IS NOT NULL THEN
+    RAISE EXCEPTION 'HUB_BOX_BAG_NOT_PACKED' USING ERRCODE='23514';
+  END IF;
+  IF v_box.id IS NULL OR v_box.unit_type <> 'MARKET_PARCEL'
+     OR v_box.state NOT IN ('RECEIVED','IDENTIFIED','QUALITY_CHECKED','LOCATED','ALLOCATED','PICKED')
+     OR v_box.outcome_type IS NOT NULL THEN
+    RAISE EXCEPTION 'HUB_BOX_NOT_FILLABLE' USING ERRCODE='23514';
+  END IF;
+  IF NEW.bag_reference_scan IS DISTINCT FROM v_bag.reference
+     OR NEW.box_reference_scan IS DISTINCT FROM v_box.reference THEN
+    RAISE EXCEPTION 'HUB_BOX_BAG_SCAN_MISMATCH' USING ERRCODE='23514';
+  END IF;
+
+  SELECT p.order_id INTO v_parcel_order FROM public.parcels p
+   WHERE p.id=NEW.parcel_id AND p.cancelled_at IS NULL;
+  IF v_parcel_order IS DISTINCT FROM v_bag.order_id THEN
+    RAISE EXCEPTION 'HUB_BOX_BAG_PARCEL_ORDER_MISMATCH' USING ERRCODE='23514';
+  END IF;
+
+  -- Un colis canonique ne peut contenir plus d'unités que prévu, même
+  -- lorsque plusieurs sacs distincts sont rattachés au même colis.
+  IF EXISTS (
+    WITH all_bag_items AS (
+      SELECT a.order_item_id, pl.quantity
+        FROM public.hub_physical_unit_placements pl
+        JOIN public.hub_purchase_allocations a ON a.id=pl.allocation_id
+       WHERE pl.physical_unit_id=NEW.bag_unit_id AND pl.removed_at IS NULL
+      UNION ALL
+      SELECT a.order_item_id, pl.quantity
+        FROM public.hub_box_bags link
+        JOIN public.hub_physical_unit_placements pl
+          ON pl.physical_unit_id=link.bag_unit_id AND pl.removed_at IS NULL
+        JOIN public.hub_purchase_allocations a ON a.id=pl.allocation_id
+       WHERE link.parcel_id=NEW.parcel_id
+    )
+    SELECT 1
+      FROM all_bag_items i
+     GROUP BY i.order_item_id
+    HAVING SUM(i.quantity) > COALESCE((
+      SELECT SUM(pi.quantity) FROM public.parcel_items pi
+       WHERE pi.parcel_id=NEW.parcel_id AND pi.order_item_id=i.order_item_id
+    ), 0)
+  ) THEN
+    RAISE EXCEPTION 'HUB_BOX_BAG_PARCEL_QTY_EXCEEDED' USING ERRCODE='23514';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1
+      FROM public.hub_physical_unit_placements p
+      JOIN public.hub_purchase_allocations a ON a.id=p.allocation_id
+     WHERE p.physical_unit_id=v_bag.id AND p.removed_at IS NULL
+       AND NOT EXISTS (
+          SELECT 1 FROM public.parcel_items pi WHERE pi.parcel_id=NEW.parcel_id
+            AND pi.order_item_id=a.order_item_id
+       )
+  ) THEN
+    RAISE EXCEPTION 'HUB_BOX_BAG_PARCEL_ITEMS_MISMATCH' USING ERRCODE='23514';
+  END IF;
+
+  SELECT min(a.market_id::text)::uuid, min(a.destination_ref)
+    INTO v_market, v_dest
+    FROM public.hub_physical_unit_placements p
+    JOIN public.hub_purchase_allocations a ON a.id=p.allocation_id
+   WHERE p.physical_unit_id=v_bag.id AND p.removed_at IS NULL;
+
+  IF v_market IS NULL OR v_dest IS NULL
+     OR EXISTS (
+       SELECT 1 FROM public.hub_physical_unit_placements p
+       JOIN public.hub_purchase_allocations a ON a.id=p.allocation_id
+       WHERE p.physical_unit_id=v_bag.id AND p.removed_at IS NULL
+         AND (a.market_id IS DISTINCT FROM v_market OR a.destination_ref IS DISTINCT FROM v_dest)
+     ) THEN
+    RAISE EXCEPTION 'HUB_BOX_BAG_CONTENT_NOT_HOMOGENEOUS' USING ERRCODE='23514';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM public.hub_physical_unit_placements p
+      JOIN public.hub_purchase_allocations a ON a.id=p.allocation_id
+     WHERE p.physical_unit_id=v_box.id AND p.removed_at IS NULL
+       AND (a.market_id IS DISTINCT FROM v_market OR a.destination_ref IS DISTINCT FROM v_dest)
+  ) OR EXISTS (
+    SELECT 1 FROM public.hub_box_bags l
+      JOIN public.hub_physical_unit_placements p ON p.physical_unit_id=l.bag_unit_id AND p.removed_at IS NULL
+      JOIN public.hub_purchase_allocations a ON a.id=p.allocation_id
+     WHERE l.box_unit_id=v_box.id
+       AND (a.market_id IS DISTINCT FROM v_market OR a.destination_ref IS DISTINCT FROM v_dest)
+  ) THEN
+    RAISE EXCEPTION 'HUB_BOX_BAG_DESTINATION_MISMATCH' USING ERRCODE='23514';
+  END IF;
+
+  IF v_box.market_id IS NOT NULL AND v_box.market_id IS DISTINCT FROM v_market THEN
+    RAISE EXCEPTION 'HUB_BOX_BAG_MARKET_MISMATCH' USING ERRCODE='23514';
+  END IF;
+  RETURN NEW;
+END $$;
+
+
+--
+-- Name: hub_box_sealed_bag_departure_guard(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.hub_box_sealed_bag_departure_guard() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF NEW.unit_type='MARKET_PARCEL' AND NEW.state IN ('PACKED','DISPATCHED')
+     AND EXISTS (
+       SELECT 1 FROM public.hub_box_bags l
+       JOIN public.hub_physical_units bag ON bag.id=l.bag_unit_id
+       WHERE l.box_unit_id=NEW.id
+         AND (bag.state <> 'PACKED' OR bag.outcome_type IS NOT NULL)
+     ) THEN
+    RAISE EXCEPTION 'HUB_BOX_BAG_NOT_AVAILABLE_FOR_DEPARTURE' USING ERRCODE='23514';
+  END IF;
+  RETURN NEW;
+END $$;
+
+
+--
 -- Name: hub_guard_allocation_purchase_line(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -1743,10 +1890,17 @@ BEGIN
            MIN(a.market_id::text)::uuid,
            MIN(a.destination_ref)
       INTO active_count, market_count, destination_count, resolved_market_id, resolved_destination_ref
-      FROM hub_physical_unit_placements p
-      JOIN hub_purchase_allocations a ON a.id = p.allocation_id
-     WHERE p.physical_unit_id = NEW.id
-       AND p.removed_at IS NULL;
+      FROM (
+        SELECT p.allocation_id, p.quantity
+          FROM hub_physical_unit_placements p
+         WHERE NEW.unit_type = 'HANDLING_UNIT'
+           AND p.physical_unit_id = NEW.id AND p.removed_at IS NULL
+        UNION ALL
+        SELECT p.allocation_id, p.quantity
+          FROM hub_box_effective_placements p
+         WHERE NEW.unit_type = 'MARKET_PARCEL' AND p.box_unit_id = NEW.id
+      ) p
+      JOIN hub_purchase_allocations a ON a.id = p.allocation_id;
 
     IF active_count = 0 THEN
       RAISE EXCEPTION 'hub_outbound_unit_empty';
@@ -1876,13 +2030,11 @@ CREATE FUNCTION public.hub_item_handed_over(p_order_item_id uuid) RETURNS intege
     LANGUAGE sql STABLE
     AS $$
   SELECT COALESCE(SUM(p.quantity), 0)::integer
-    FROM public.hub_physical_unit_placements p
+    FROM public.hub_box_effective_placements p
     JOIN public.hub_purchase_allocations a ON a.id = p.allocation_id
-    JOIN public.hub_physical_units u ON u.id = p.physical_unit_id AND u.unit_type = 'MARKET_PARCEL'
-    JOIN public.international_shipment_hub_units h ON h.physical_unit_id = u.id
+    JOIN public.international_shipment_hub_units h ON h.physical_unit_id = p.box_unit_id
     JOIN public.international_shipments s ON s.id = h.shipment_id
    WHERE a.order_item_id = p_order_item_id
-     AND p.removed_at IS NULL
      AND s.stage <> 'hub_ready';
 $$;
 
@@ -1899,11 +2051,244 @@ BEGIN
     FROM public.hub_physical_unit_placements p
     JOIN public.hub_purchase_allocations a ON a.id = p.allocation_id
    WHERE a.order_item_id = p_order_item_id AND p.operation_type = 'RECEIVE';
+
   SELECT COALESCE(SUM(p.quantity), 0)::integer INTO boxed
-    FROM public.hub_physical_unit_placements p
+    FROM public.hub_box_effective_placements p
     JOIN public.hub_purchase_allocations a ON a.id = p.allocation_id
-    JOIN public.hub_physical_units u ON u.id = p.physical_unit_id
-   WHERE a.order_item_id = p_order_item_id AND p.removed_at IS NULL AND u.unit_type = 'MARKET_PARCEL';
+   WHERE a.order_item_id = p_order_item_id;
+END $$;
+
+
+--
+-- Name: hub_order_bag_evidence_guard(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.hub_order_bag_evidence_guard() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  v_order_id uuid;
+  v_sku uuid;
+  v_supplier uuid;
+BEGIN
+  SELECT u.order_id INTO v_order_id
+    FROM public.hub_physical_units u
+   WHERE u.id = NEW.physical_unit_id AND u.unit_type = 'HANDLING_UNIT';
+  IF v_order_id IS NULL THEN RETURN NEW; END IF;
+
+  IF NEW.evidence_method IS NULL THEN
+    RAISE EXCEPTION 'HUB_ORDER_BAG_DEPOSIT_EVIDENCE_REQUIRED' USING ERRCODE = '23514';
+  END IF;
+  IF NEW.operation_type NOT IN ('REPACK','SPLIT','MERGE') THEN
+    RAISE EXCEPTION 'HUB_ORDER_BAG_DEPOSIT_OPERATION_INVALID' USING ERRCODE = '23514';
+  END IF;
+
+  SELECT a.product_sku_id, a.supplier_id INTO v_sku, v_supplier
+    FROM public.hub_purchase_allocations a WHERE a.id = NEW.allocation_id;
+  IF NEW.evidence_method = 'SCAN' THEN
+    IF NEW.evidence_code IS NULL OR NEW.evidence_code = ''
+       OR NEW.evidence_code <> upper(btrim(NEW.evidence_code)) THEN
+      RAISE EXCEPTION 'HUB_ORDER_BAG_SCAN_CODE_REQUIRED' USING ERRCODE = '23514';
+    END IF;
+    IF NOT EXISTS (
+      SELECT 1 FROM public.product_sku_physical_codes c
+       WHERE c.code = NEW.evidence_code AND c.product_sku_id = v_sku
+         AND c.trust = 'CONFIRMED'
+         AND (c.supplier_id = v_supplier OR c.supplier_id IS NULL)
+    ) THEN
+      RAISE EXCEPTION 'HUB_ORDER_BAG_SCAN_SKU_MISMATCH' USING ERRCODE = '23514';
+    END IF;
+  ELSIF NEW.evidence_method = 'MANUAL' THEN
+    IF NEW.evidence_ref IS NULL OR length(btrim(NEW.evidence_ref)) < 6 THEN
+      RAISE EXCEPTION 'HUB_ORDER_BAG_MANUAL_PROOF_REQUIRED' USING ERRCODE = '23514';
+    END IF;
+    IF NEW.evidence_code IS NOT NULL THEN
+      RAISE EXCEPTION 'HUB_ORDER_BAG_MANUAL_CODE_FORBIDDEN' USING ERRCODE = '23514';
+    END IF;
+  ELSE
+    RAISE EXCEPTION 'HUB_ORDER_BAG_DEPOSIT_METHOD_INVALID' USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END $$;
+
+
+--
+-- Name: hub_order_bag_ownership_guard(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.hub_order_bag_ownership_guard() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF NEW.order_id IS NOT NULL AND NEW.unit_type <> 'HANDLING_UNIT' THEN
+    RAISE EXCEPTION 'HUB_ORDER_BAG_REQUIRES_HANDLING_UNIT' USING ERRCODE = '23514';
+  END IF;
+  IF TG_OP = 'UPDATE' AND OLD.order_id IS NULL AND NEW.order_id IS NOT NULL AND EXISTS (
+    SELECT 1 FROM public.hub_physical_unit_placements p
+    JOIN public.hub_purchase_allocations a ON a.id = p.allocation_id
+    WHERE p.physical_unit_id = NEW.id AND p.removed_at IS NULL AND a.order_id IS DISTINCT FROM NEW.order_id
+  ) THEN
+    RAISE EXCEPTION 'HUB_ORDER_BAG_EXISTING_CONTENT_MISMATCH' USING ERRCODE = '23514';
+  END IF;
+  IF TG_OP = 'UPDATE' AND OLD.order_id IS NOT NULL AND NEW.order_id IS DISTINCT FROM OLD.order_id THEN
+    RAISE EXCEPTION 'HUB_ORDER_BAG_OWNER_IMMUTABLE' USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END $$;
+
+
+--
+-- Name: hub_order_bag_pack_guard(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.hub_order_bag_pack_guard() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF NEW.state IS DISTINCT FROM 'PACKED'
+     OR OLD.state = 'PACKED'
+     OR OLD.order_id IS NULL OR OLD.unit_type <> 'HANDLING_UNIT' THEN
+    RETURN NEW;
+  END IF;
+
+  IF OLD.bag_plan IS NULL OR jsonb_array_length(OLD.bag_plan) = 0 THEN
+    RAISE EXCEPTION 'HUB_ORDER_BAG_PLAN_REQUIRED' USING ERRCODE = '23514';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM public.hub_physical_unit_placements p
+     WHERE p.physical_unit_id = OLD.id AND p.removed_at IS NULL
+       AND (p.evidence_method IS NULL OR p.evidence_method NOT IN ('SCAN','MANUAL'))
+  ) THEN
+    RAISE EXCEPTION 'HUB_ORDER_BAG_UNPROVEN_CONTENT' USING ERRCODE = '23514';
+  END IF;
+
+  IF EXISTS (
+    WITH planned AS (
+      SELECT x.order_item_id, sum(x.quantity)::integer AS qty
+        FROM jsonb_to_recordset(OLD.bag_plan) AS x(order_item_id uuid, quantity integer)
+       GROUP BY x.order_item_id
+    ), actual AS (
+      SELECT a.order_item_id, sum(p.quantity)::integer AS qty
+        FROM public.hub_physical_unit_placements p
+        JOIN public.hub_purchase_allocations a ON a.id = p.allocation_id
+       WHERE p.physical_unit_id = OLD.id AND p.removed_at IS NULL
+       GROUP BY a.order_item_id
+    )
+    SELECT 1 FROM planned FULL JOIN actual USING (order_item_id)
+     WHERE planned.qty IS DISTINCT FROM actual.qty
+  ) THEN
+    RAISE EXCEPTION 'HUB_ORDER_BAG_CONTENT_PLAN_MISMATCH' USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END $$;
+
+
+--
+-- Name: hub_order_bag_placement_evidence_immutable(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.hub_order_bag_placement_evidence_immutable() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF NEW.evidence_method IS DISTINCT FROM OLD.evidence_method
+    OR NEW.evidence_code IS DISTINCT FROM OLD.evidence_code
+    OR NEW.evidence_ref IS DISTINCT FROM OLD.evidence_ref THEN
+    RAISE EXCEPTION 'HUB_ORDER_BAG_EVIDENCE_IMMUTABLE' USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END $$;
+
+
+--
+-- Name: hub_order_bag_placement_guard(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.hub_order_bag_placement_guard() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  v_bag_order uuid;
+  v_allocation_order uuid;
+BEGIN
+  SELECT u.order_id INTO v_bag_order
+    FROM public.hub_physical_units u
+   WHERE u.id = NEW.physical_unit_id AND u.unit_type = 'HANDLING_UNIT';
+
+  IF v_bag_order IS NOT NULL THEN
+    SELECT a.order_id INTO v_allocation_order
+      FROM public.hub_purchase_allocations a WHERE a.id = NEW.allocation_id;
+    IF v_allocation_order IS DISTINCT FROM v_bag_order THEN
+      RAISE EXCEPTION 'HUB_ORDER_BAG_ALLOCATION_MISMATCH' USING ERRCODE = '23514';
+    END IF;
+  END IF;
+  RETURN NEW;
+END $$;
+
+
+--
+-- Name: hub_order_bag_plan_guard(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.hub_order_bag_plan_guard() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  v_item record;
+BEGIN
+  IF TG_OP = 'UPDATE' AND NEW.bag_plan IS DISTINCT FROM OLD.bag_plan THEN
+    RAISE EXCEPTION 'HUB_ORDER_BAG_PLAN_IMMUTABLE' USING ERRCODE = '23514';
+  END IF;
+
+  IF NEW.bag_plan IS NULL THEN RETURN NEW; END IF;
+  IF NEW.unit_type <> 'HANDLING_UNIT' OR NEW.order_id IS NULL THEN
+    RAISE EXCEPTION 'HUB_ORDER_BAG_PLAN_REQUIRES_ORDER' USING ERRCODE = '23514';
+  END IF;
+  IF jsonb_array_length(NEW.bag_plan) = 0 THEN
+    RAISE EXCEPTION 'HUB_ORDER_BAG_PLAN_EMPTY' USING ERRCODE = '23514';
+  END IF;
+  FOR v_item IN SELECT *
+      FROM jsonb_to_recordset(NEW.bag_plan) AS x(order_item_id uuid, quantity integer)
+  LOOP
+    IF v_item.order_item_id IS NULL OR v_item.quantity IS NULL OR v_item.quantity <= 0 THEN
+      RAISE EXCEPTION 'HUB_ORDER_BAG_PLAN_ITEM_INVALID' USING ERRCODE = '23514';
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM public.order_items oi
+                   WHERE oi.id = v_item.order_item_id AND oi.order_id = NEW.order_id
+                     AND oi.fulfillment_source IS DISTINCT FROM 'LOCAL_STOCK'
+                     AND oi.quantity >= v_item.quantity) THEN
+      RAISE EXCEPTION 'HUB_ORDER_BAG_PLAN_ITEM_WRONG_ORDER_OR_QTY' USING ERRCODE = '23514';
+    END IF;
+  END LOOP;
+  IF EXISTS (
+    SELECT 1 FROM jsonb_to_recordset(NEW.bag_plan) AS x(order_item_id uuid, quantity integer)
+    GROUP BY order_item_id HAVING count(*) > 1
+  ) THEN
+    RAISE EXCEPTION 'HUB_ORDER_BAG_PLAN_DUPLICATE_ITEM' USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END $$;
+
+
+--
+-- Name: hub_order_bag_sealed_placements_guard(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.hub_order_bag_sealed_placements_guard() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  v_state text;
+  v_order uuid;
+BEGIN
+  SELECT u.state, u.order_id INTO v_state, v_order
+    FROM public.hub_physical_units u
+   WHERE u.id = NEW.physical_unit_id;
+  IF v_order IS NOT NULL AND v_state IN ('PACKED','DISPATCHED') THEN
+    RAISE EXCEPTION 'HUB_ORDER_BAG_SEALED_CONTENT_IMMUTABLE' USING ERRCODE='23514';
+  END IF;
+  RETURN NEW;
 END $$;
 
 
@@ -3445,6 +3830,27 @@ END $$;
 
 
 --
+-- Name: sync_parcel_items_on_bag_box_link(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.sync_parcel_items_on_bag_box_link() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE v_item uuid;
+BEGIN
+  FOR v_item IN
+    SELECT DISTINCT a.order_item_id
+      FROM public.hub_physical_unit_placements p
+      JOIN public.hub_purchase_allocations a ON a.id=p.allocation_id
+     WHERE p.physical_unit_id=NEW.bag_unit_id AND p.removed_at IS NULL
+  LOOP
+    PERFORM public.sync_parcel_items_from_physical(v_item);
+  END LOOP;
+  RETURN NULL;
+END $$;
+
+
+--
 -- Name: sync_parcel_items_on_insert(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -3484,9 +3890,9 @@ BEGIN
   FOR v_item IN
     SELECT DISTINCT a.order_item_id
       FROM public.international_shipment_hub_units h
-      JOIN public.hub_physical_unit_placements p ON p.physical_unit_id = h.physical_unit_id
-      JOIN public.hub_purchase_allocations a ON a.id = p.allocation_id
-     WHERE h.shipment_id = NEW.id AND p.removed_at IS NULL
+      JOIN public.hub_box_effective_placements p ON p.box_unit_id=h.physical_unit_id
+      JOIN public.hub_purchase_allocations a ON a.id=p.allocation_id
+     WHERE h.shipment_id=NEW.id
   LOOP
     PERFORM public.sync_parcel_items_from_physical(v_item);
   END LOOP;
@@ -6142,6 +6548,114 @@ CREATE TABLE public.hub_authorization_grants (
 
 
 --
+-- Name: hub_box_bags; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.hub_box_bags (
+    bag_unit_id uuid NOT NULL,
+    box_unit_id uuid NOT NULL,
+    parcel_id uuid NOT NULL,
+    linked_by uuid NOT NULL,
+    bag_reference_scan text NOT NULL,
+    box_reference_scan text NOT NULL,
+    linked_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT hub_box_bags_bag_reference_scan_check CHECK ((btrim(bag_reference_scan) <> ''::text)),
+    CONSTRAINT hub_box_bags_box_reference_scan_check CHECK ((btrim(box_reference_scan) <> ''::text)),
+    CONSTRAINT hub_box_bags_different_units CHECK ((bag_unit_id <> box_unit_id))
+);
+
+
+--
+-- Name: hub_physical_unit_placements; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.hub_physical_unit_placements (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    physical_unit_id uuid NOT NULL,
+    allocation_id uuid NOT NULL,
+    quantity integer NOT NULL,
+    operation_id uuid,
+    operation_type text,
+    created_by uuid,
+    placed_at timestamp with time zone DEFAULT now() NOT NULL,
+    removed_at timestamp with time zone,
+    evidence_method text,
+    evidence_code text,
+    evidence_ref text,
+    CONSTRAINT chk_hub_placement_time_order CHECK (((removed_at IS NULL) OR (removed_at > placed_at))),
+    CONSTRAINT hub_physical_unit_placements_operation_type_check CHECK (((operation_type IS NULL) OR (operation_type = ANY (ARRAY['RECEIVE'::text, 'SPLIT'::text, 'MERGE'::text, 'REPACK'::text])))),
+    CONSTRAINT hub_physical_unit_placements_quantity_check CHECK ((quantity > 0)),
+    CONSTRAINT hub_placement_evidence_method_check CHECK (((evidence_method IS NULL) OR (evidence_method = ANY (ARRAY['SCAN'::text, 'MANUAL'::text, 'COUNT_ON_MANIFEST'::text]))))
+);
+
+
+--
+-- Name: TABLE hub_physical_unit_placements; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.hub_physical_unit_placements IS 'HUB-001 physical placement history. SPLIT/MERGE/REPACK close old placements and append new ones; allocation remains immutable.';
+
+
+--
+-- Name: hub_physical_units; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.hub_physical_units (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    reference text NOT NULL,
+    unit_type text NOT NULL,
+    state text DEFAULT 'RECEIVED'::text NOT NULL,
+    external_ref text,
+    market_id uuid,
+    current_location_ref text,
+    outcome_type text,
+    outcome_recorded_at timestamp with time zone,
+    created_by uuid,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    order_id uuid,
+    bag_plan jsonb,
+    CONSTRAINT chk_hub_physical_outcome_timestamp CHECK ((((outcome_type IS NULL) AND (outcome_recorded_at IS NULL)) OR ((outcome_type IS NOT NULL) AND (outcome_recorded_at IS NOT NULL)))),
+    CONSTRAINT hub_order_bag_plan_type_check CHECK (((bag_plan IS NULL) OR ((order_id IS NOT NULL) AND (unit_type = 'HANDLING_UNIT'::text) AND (jsonb_typeof(bag_plan) = 'array'::text)))),
+    CONSTRAINT hub_order_bag_type_check CHECK (((order_id IS NULL) OR (unit_type = 'HANDLING_UNIT'::text))),
+    CONSTRAINT hub_physical_units_outcome_type_check CHECK (((outcome_type IS NULL) OR (outcome_type = ANY (ARRAY['LOST'::text, 'STOLEN'::text, 'DESTROYED'::text, 'DAMAGED_UNUSABLE'::text])))),
+    CONSTRAINT hub_physical_units_reference_check CHECK ((btrim(reference) <> ''::text)),
+    CONSTRAINT hub_physical_units_state_check CHECK ((state = ANY (ARRAY['RECEIVED'::text, 'IDENTIFIED'::text, 'QUALITY_CHECKED'::text, 'LOCATED'::text, 'ALLOCATED'::text, 'PICKED'::text, 'PACKED'::text, 'DISPATCHED'::text, 'QUARANTINED'::text, 'SUPERSEDED'::text]))),
+    CONSTRAINT hub_physical_units_unit_type_check CHECK ((unit_type = ANY (ARRAY['SUPPLIER_PACKAGE'::text, 'HANDLING_UNIT'::text, 'MARKET_PARCEL'::text])))
+);
+
+
+--
+-- Name: TABLE hub_physical_units; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.hub_physical_units IS 'HUB-001 physical identity. Inbound may be multi-market; PACKED/DISPATCHED is forced mono-market from active allocations.';
+
+
+--
+-- Name: hub_box_effective_placements; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW public.hub_box_effective_placements AS
+ SELECT p.id AS placement_id,
+    p.physical_unit_id AS box_unit_id,
+    NULL::uuid AS bag_unit_id,
+    p.allocation_id,
+    p.quantity
+   FROM (public.hub_physical_unit_placements p
+     JOIN public.hub_physical_units u ON (((u.id = p.physical_unit_id) AND (u.unit_type = 'MARKET_PARCEL'::text))))
+  WHERE (p.removed_at IS NULL)
+UNION ALL
+ SELECT p.id AS placement_id,
+    l.box_unit_id,
+    l.bag_unit_id,
+    p.allocation_id,
+    p.quantity
+   FROM (public.hub_box_bags l
+     JOIN public.hub_physical_unit_placements p ON (((p.physical_unit_id = l.bag_unit_id) AND (p.removed_at IS NULL))));
+
+
+--
 -- Name: hub_custody_events; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -6170,65 +6684,6 @@ CREATE TABLE public.hub_custody_events (
 --
 
 COMMENT ON TABLE public.hub_custody_events IS 'HUB-001 append-only custody/lineage history for physical state and placement operations.';
-
-
---
--- Name: hub_physical_unit_placements; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.hub_physical_unit_placements (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    physical_unit_id uuid NOT NULL,
-    allocation_id uuid NOT NULL,
-    quantity integer NOT NULL,
-    operation_id uuid,
-    operation_type text,
-    created_by uuid,
-    placed_at timestamp with time zone DEFAULT now() NOT NULL,
-    removed_at timestamp with time zone,
-    CONSTRAINT chk_hub_placement_time_order CHECK (((removed_at IS NULL) OR (removed_at > placed_at))),
-    CONSTRAINT hub_physical_unit_placements_operation_type_check CHECK (((operation_type IS NULL) OR (operation_type = ANY (ARRAY['RECEIVE'::text, 'SPLIT'::text, 'MERGE'::text, 'REPACK'::text])))),
-    CONSTRAINT hub_physical_unit_placements_quantity_check CHECK ((quantity > 0))
-);
-
-
---
--- Name: TABLE hub_physical_unit_placements; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON TABLE public.hub_physical_unit_placements IS 'HUB-001 physical placement history. SPLIT/MERGE/REPACK close old placements and append new ones; allocation remains immutable.';
-
-
---
--- Name: hub_physical_units; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.hub_physical_units (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    reference text NOT NULL,
-    unit_type text NOT NULL,
-    state text DEFAULT 'RECEIVED'::text NOT NULL,
-    external_ref text,
-    market_id uuid,
-    current_location_ref text,
-    outcome_type text,
-    outcome_recorded_at timestamp with time zone,
-    created_by uuid,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT chk_hub_physical_outcome_timestamp CHECK ((((outcome_type IS NULL) AND (outcome_recorded_at IS NULL)) OR ((outcome_type IS NOT NULL) AND (outcome_recorded_at IS NOT NULL)))),
-    CONSTRAINT hub_physical_units_outcome_type_check CHECK (((outcome_type IS NULL) OR (outcome_type = ANY (ARRAY['LOST'::text, 'STOLEN'::text, 'DESTROYED'::text, 'DAMAGED_UNUSABLE'::text])))),
-    CONSTRAINT hub_physical_units_reference_check CHECK ((btrim(reference) <> ''::text)),
-    CONSTRAINT hub_physical_units_state_check CHECK ((state = ANY (ARRAY['RECEIVED'::text, 'IDENTIFIED'::text, 'QUALITY_CHECKED'::text, 'LOCATED'::text, 'ALLOCATED'::text, 'PICKED'::text, 'PACKED'::text, 'DISPATCHED'::text, 'QUARANTINED'::text, 'SUPERSEDED'::text]))),
-    CONSTRAINT hub_physical_units_unit_type_check CHECK ((unit_type = ANY (ARRAY['SUPPLIER_PACKAGE'::text, 'HANDLING_UNIT'::text, 'MARKET_PARCEL'::text])))
-);
-
-
---
--- Name: TABLE hub_physical_units; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON TABLE public.hub_physical_units IS 'HUB-001 physical identity. Inbound may be multi-market; PACKED/DISPATCHED is forced mono-market from active allocations.';
 
 
 --
@@ -9283,6 +9738,30 @@ CREATE TABLE public.product_sku_media (
 --
 
 COMMENT ON TABLE public.product_sku_media IS 'Association explicite SKU <-> média canonique (PDC-8 Lot 5), source : sellable_units[].media_refs (V2). Les références explicites gagnent toujours sur un matching option_values heuristique. Table neuve, aucun writer avant le service de promotion (Lot 6).';
+
+
+--
+-- Name: product_sku_physical_codes; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.product_sku_physical_codes (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    product_sku_id uuid NOT NULL,
+    supplier_id uuid,
+    code text NOT NULL,
+    code_type text NOT NULL,
+    trust text DEFAULT 'DECLARED'::text NOT NULL,
+    printed_on_pack boolean,
+    confirmed_by uuid,
+    confirmed_at timestamp with time zone,
+    confirmation_proof_ref text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT chk_physical_code_confirmation CHECK ((((trust = 'DECLARED'::text) AND (confirmed_by IS NULL) AND (confirmed_at IS NULL) AND (confirmation_proof_ref IS NULL)) OR ((trust = 'CONFIRMED'::text) AND (confirmed_by IS NOT NULL) AND (confirmed_at IS NOT NULL) AND (NULLIF(btrim(confirmation_proof_ref), ''::text) IS NOT NULL)))),
+    CONSTRAINT chk_physical_code_scope CHECK ((((code_type = 'EAN_GTIN'::text) AND (supplier_id IS NULL)) OR ((code_type = ANY (ARRAY['SUPPLIER_BARCODE'::text, 'KOM_LOT_LABEL'::text])) AND (supplier_id IS NOT NULL)))),
+    CONSTRAINT product_sku_physical_codes_code_check CHECK (((code <> ''::text) AND (length(code) <= 128) AND (code = upper(btrim(code))) AND (code !~ '[[:cntrl:]]'::text))),
+    CONSTRAINT product_sku_physical_codes_code_type_check CHECK ((code_type = ANY (ARRAY['EAN_GTIN'::text, 'SUPPLIER_BARCODE'::text, 'KOM_LOT_LABEL'::text]))),
+    CONSTRAINT product_sku_physical_codes_trust_check CHECK ((trust = ANY (ARRAY['DECLARED'::text, 'CONFIRMED'::text])))
+);
 
 
 --
@@ -13371,6 +13850,14 @@ ALTER TABLE ONLY public.hub_authorization_grants
 
 
 --
+-- Name: hub_box_bags hub_box_bags_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_box_bags
+    ADD CONSTRAINT hub_box_bags_pkey PRIMARY KEY (bag_unit_id);
+
+
+--
 -- Name: hub_custody_events hub_custody_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -14152,6 +14639,14 @@ ALTER TABLE ONLY public.product_market_price_drafts
 
 ALTER TABLE ONLY public.product_sku_media
     ADD CONSTRAINT product_sku_media_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: product_sku_physical_codes product_sku_physical_codes_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.product_sku_physical_codes
+    ADD CONSTRAINT product_sku_physical_codes_pkey PRIMARY KEY (id);
 
 
 --
@@ -18163,6 +18658,34 @@ CREATE INDEX idx_wtx_wallet ON public.wallet_transactions USING btree (wallet_id
 
 
 --
+-- Name: ix_hub_box_bags_box; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ix_hub_box_bags_box ON public.hub_box_bags USING btree (box_unit_id);
+
+
+--
+-- Name: ix_hub_box_bags_parcel; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ix_hub_box_bags_parcel ON public.hub_box_bags USING btree (parcel_id);
+
+
+--
+-- Name: ix_hub_physical_units_order_bag; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ix_hub_physical_units_order_bag ON public.hub_physical_units USING btree (order_id) WHERE (order_id IS NOT NULL);
+
+
+--
+-- Name: ix_physical_code_sku; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ix_physical_code_sku ON public.product_sku_physical_codes USING btree (product_sku_id);
+
+
+--
 -- Name: one_draft_per_order; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -18632,6 +19155,20 @@ CREATE UNIQUE INDEX ux_local_stock_product_market_location ON public.local_stock
 
 
 --
+-- Name: ux_physical_code_global; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX ux_physical_code_global ON public.product_sku_physical_codes USING btree (code) WHERE (supplier_id IS NULL);
+
+
+--
+-- Name: ux_physical_code_supplier; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX ux_physical_code_supplier ON public.product_sku_physical_codes USING btree (supplier_id, code) WHERE (supplier_id IS NOT NULL);
+
+
+--
 -- Name: ux_product_attributes_identity; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -19087,10 +19624,80 @@ CREATE TRIGGER trg_hub_allocation_purchase_line BEFORE INSERT ON public.hub_purc
 
 
 --
+-- Name: hub_box_bags trg_hub_box_bag_immutable; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_hub_box_bag_immutable BEFORE DELETE OR UPDATE ON public.hub_box_bags FOR EACH ROW EXECUTE FUNCTION public.hub_box_bag_immutable();
+
+
+--
+-- Name: hub_box_bags trg_hub_box_bag_link_guard; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_hub_box_bag_link_guard BEFORE INSERT ON public.hub_box_bags FOR EACH ROW EXECUTE FUNCTION public.hub_box_bag_link_guard();
+
+
+--
+-- Name: hub_physical_units trg_hub_box_sealed_bag_departure_guard; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_hub_box_sealed_bag_departure_guard BEFORE UPDATE OF state ON public.hub_physical_units FOR EACH ROW EXECUTE FUNCTION public.hub_box_sealed_bag_departure_guard();
+
+
+--
 -- Name: hub_custody_events trg_hub_custody_event_append_only; Type: TRIGGER; Schema: public; Owner: -
 --
 
 CREATE TRIGGER trg_hub_custody_event_append_only BEFORE DELETE OR UPDATE ON public.hub_custody_events FOR EACH ROW EXECUTE FUNCTION public.hub_reject_custody_event_mutation();
+
+
+--
+-- Name: hub_physical_unit_placements trg_hub_order_bag_evidence_guard; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_hub_order_bag_evidence_guard BEFORE INSERT ON public.hub_physical_unit_placements FOR EACH ROW EXECUTE FUNCTION public.hub_order_bag_evidence_guard();
+
+
+--
+-- Name: hub_physical_units trg_hub_order_bag_ownership_guard; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_hub_order_bag_ownership_guard BEFORE INSERT OR UPDATE OF order_id, unit_type ON public.hub_physical_units FOR EACH ROW EXECUTE FUNCTION public.hub_order_bag_ownership_guard();
+
+
+--
+-- Name: hub_physical_units trg_hub_order_bag_pack_guard; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_hub_order_bag_pack_guard BEFORE UPDATE OF state ON public.hub_physical_units FOR EACH ROW EXECUTE FUNCTION public.hub_order_bag_pack_guard();
+
+
+--
+-- Name: hub_physical_unit_placements trg_hub_order_bag_placement_evidence_immutable; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_hub_order_bag_placement_evidence_immutable BEFORE UPDATE ON public.hub_physical_unit_placements FOR EACH ROW EXECUTE FUNCTION public.hub_order_bag_placement_evidence_immutable();
+
+
+--
+-- Name: hub_physical_unit_placements trg_hub_order_bag_placement_guard; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_hub_order_bag_placement_guard BEFORE INSERT OR UPDATE OF physical_unit_id, allocation_id ON public.hub_physical_unit_placements FOR EACH ROW EXECUTE FUNCTION public.hub_order_bag_placement_guard();
+
+
+--
+-- Name: hub_physical_units trg_hub_order_bag_plan_guard; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_hub_order_bag_plan_guard BEFORE INSERT OR UPDATE OF bag_plan ON public.hub_physical_units FOR EACH ROW EXECUTE FUNCTION public.hub_order_bag_plan_guard();
+
+
+--
+-- Name: hub_physical_unit_placements trg_hub_order_bag_sealed_placements_guard; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_hub_order_bag_sealed_placements_guard BEFORE INSERT OR UPDATE OF removed_at, allocation_id, physical_unit_id, quantity ON public.hub_physical_unit_placements FOR EACH ROW EXECUTE FUNCTION public.hub_order_bag_sealed_placements_guard();
 
 
 --
@@ -19616,6 +20223,13 @@ CREATE TRIGGER trg_supplier_execution_payments_guard BEFORE INSERT OR UPDATE OF 
 --
 
 CREATE TRIGGER trg_sync_has_variants AFTER INSERT OR DELETE OR UPDATE OF product_id ON public.product_variants FOR EACH ROW EXECUTE FUNCTION public.sync_has_variants();
+
+
+--
+-- Name: hub_box_bags trg_sync_parcel_items_on_bag_box_link; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_sync_parcel_items_on_bag_box_link AFTER INSERT ON public.hub_box_bags FOR EACH ROW EXECUTE FUNCTION public.sync_parcel_items_on_bag_box_link();
 
 
 --
@@ -20527,6 +21141,38 @@ ALTER TABLE ONLY public.hub_authorization_grants
 
 
 --
+-- Name: hub_box_bags hub_box_bags_bag_unit_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_box_bags
+    ADD CONSTRAINT hub_box_bags_bag_unit_id_fkey FOREIGN KEY (bag_unit_id) REFERENCES public.hub_physical_units(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: hub_box_bags hub_box_bags_box_unit_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_box_bags
+    ADD CONSTRAINT hub_box_bags_box_unit_id_fkey FOREIGN KEY (box_unit_id) REFERENCES public.hub_physical_units(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: hub_box_bags hub_box_bags_linked_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_box_bags
+    ADD CONSTRAINT hub_box_bags_linked_by_fkey FOREIGN KEY (linked_by) REFERENCES public.users(id);
+
+
+--
+-- Name: hub_box_bags hub_box_bags_parcel_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_box_bags
+    ADD CONSTRAINT hub_box_bags_parcel_id_fkey FOREIGN KEY (parcel_id) REFERENCES public.parcels(id) ON DELETE RESTRICT;
+
+
+--
 -- Name: hub_custody_events hub_custody_events_actor_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -20588,6 +21234,14 @@ ALTER TABLE ONLY public.hub_physical_units
 
 ALTER TABLE ONLY public.hub_physical_units
     ADD CONSTRAINT hub_physical_units_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: hub_physical_units hub_physical_units_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_physical_units
+    ADD CONSTRAINT hub_physical_units_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id) ON DELETE RESTRICT;
 
 
 --
@@ -22116,6 +22770,30 @@ ALTER TABLE ONLY public.product_sku_media
 
 ALTER TABLE ONLY public.product_sku_media
     ADD CONSTRAINT product_sku_media_sku_id_fkey FOREIGN KEY (sku_id) REFERENCES public.product_skus(id) ON DELETE CASCADE;
+
+
+--
+-- Name: product_sku_physical_codes product_sku_physical_codes_confirmed_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.product_sku_physical_codes
+    ADD CONSTRAINT product_sku_physical_codes_confirmed_by_fkey FOREIGN KEY (confirmed_by) REFERENCES public.users(id);
+
+
+--
+-- Name: product_sku_physical_codes product_sku_physical_codes_product_sku_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.product_sku_physical_codes
+    ADD CONSTRAINT product_sku_physical_codes_product_sku_id_fkey FOREIGN KEY (product_sku_id) REFERENCES public.product_skus(id) ON DELETE CASCADE;
+
+
+--
+-- Name: product_sku_physical_codes product_sku_physical_codes_supplier_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.product_sku_physical_codes
+    ADD CONSTRAINT product_sku_physical_codes_supplier_id_fkey FOREIGN KEY (supplier_id) REFERENCES public.suppliers(id) ON DELETE CASCADE;
 
 
 --

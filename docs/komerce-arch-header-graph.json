@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 784,
-    "filesWithFullHeaders": 733,
+    "scannedCodeFiles": 786,
+    "filesWithFullHeaders": 735,
     "filesWithLiteHeaders": 51,
-    "filesWithAnyHeaders": 784,
+    "filesWithAnyHeaders": 786,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1985,
-    "edges": 9748,
-    "dbTables": 226,
-    "doctrines": 768,
+    "graphNodes": 1992,
+    "edges": 9780,
+    "dbTables": 229,
+    "doctrines": 770,
     "impactAreas": 207,
-    "unresolvedCodeEdges": 937,
+    "unresolvedCodeEdges": 939,
     "dbWriteViaOverlapWarnings": 12,
     "multiWriterTables": 94
   },
@@ -42,7 +42,7 @@
     "market": 9,
     "economic-engine": 67,
     "sourcing": 37,
-    "logistics": 65,
+    "logistics": 67,
     "boutique": 21,
     "checkout": 3,
     "shared-cart": 25,
@@ -112,7 +112,7 @@
     "schema": 1,
     "route": 137,
     "entrypoint": 1,
-    "service": 467,
+    "service": 469,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -121,9 +121,9 @@
     "validators": 1
   },
   "byCriticality": {
-    "critical": 117,
+    "critical": 118,
     "medium": 154,
-    "high": 452,
+    "high": 453,
     "low": 60,
     "unknown": 1
   },
@@ -6692,7 +6692,10 @@
         "dashboard_global_access_grants",
         "hub_physical_units",
         "hub_physical_unit_placements",
-        "hub_purchase_allocations"
+        "hub_purchase_allocations",
+        "hub_box_bags",
+        "orders",
+        "purchase_orders"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -8201,6 +8204,7 @@
         "bootstrap/api-routes.js"
       ],
       "dbRead": [
+        "credential_action_tokens",
         "loyalty_tiers",
         "users"
       ],
@@ -19627,6 +19631,58 @@
       "version": "2026-11"
     },
     {
+      "id": "services/hub-bag-box-service.js",
+      "file": "services/hub-bag-box-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "hub-bag-box",
+      "domain": "logistics",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "bag_scan",
+        "box_scan",
+        "canonical_parcel_id",
+        "trusted_market_scope"
+      ],
+      "outputs": [
+        "immutable_physical_bag_containment",
+        "relay_scannable_bag"
+      ],
+      "depends": [
+        "db.js"
+      ],
+      "usedBy": [
+        "routes/admin-operations-workspace.js"
+      ],
+      "dbRead": [
+        "hub_box_bags",
+        "hub_physical_units",
+        "hub_physical_unit_placements",
+        "hub_purchase_allocations",
+        "orders",
+        "parcels",
+        "international_shipment_hub_units",
+        "international_shipments",
+        "order_items",
+        "products"
+      ],
+      "dbWrite": [
+        "hub_box_bags"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "service_owned"
+      ],
+      "doctrine": [
+        "sealed_customer_bag_persists_inside_market_box; no_fake_repack_or_duplicate_allocation"
+      ],
+      "impactAreas": [],
+      "version": null
+    },
+    {
       "id": "services/hub-box-shipment-service.js",
       "file": "services/hub-box-shipment-service.js",
       "type": "file",
@@ -19948,6 +20004,49 @@
       "version": "2026-10"
     },
     {
+      "id": "services/hub-physical-codes.js",
+      "file": "services/hub-physical-codes.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "hub-physical-codes",
+      "domain": "logistics",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "scanned_code",
+        "purchase_order_id",
+        "optional_confirmation"
+      ],
+      "outputs": [
+        "scanned_reference_identity_not_customer_allocation"
+      ],
+      "depends": [
+        "db.js"
+      ],
+      "usedBy": [
+        "routes/hub.js"
+      ],
+      "dbRead": [
+        "product_sku_physical_codes",
+        "purchase_orders",
+        "purchase_lines"
+      ],
+      "dbWrite": [
+        "product_sku_physical_codes"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "caller_owned_transaction_for_confirmation"
+      ],
+      "doctrine": [
+        "code_identifies_sku_not_client; allocation_remains_in_hub_purchase_allocations"
+      ],
+      "impactAreas": [],
+      "version": null
+    },
+    {
       "id": "services/hub-physical-identity.js",
       "file": "services/hub-physical-identity.js",
       "type": "file",
@@ -20054,6 +20153,7 @@
         "orders",
         "order_items",
         "products",
+        "product_suppliers",
         "suppliers",
         "purchase_lines",
         "purchase_orders",
@@ -20061,6 +20161,8 @@
         "hub_purchase_allocations",
         "hub_physical_units",
         "hub_physical_unit_placements",
+        "hub_box_bags",
+        "hub_box_effective_placements",
         "international_shipments",
         "international_shipment_hub_units",
         "parcels",
@@ -20666,6 +20768,8 @@
         "international_shipment_hub_units",
         "hub_physical_units",
         "hub_physical_unit_placements",
+        "hub_box_bags",
+        "hub_box_effective_placements",
         "hub_purchase_allocations",
         "international_shipment_charges",
         "international_shipment_events",
@@ -30114,6 +30218,8 @@
         "international_shipment_relay_receipts",
         "hub_physical_units",
         "hub_physical_unit_placements",
+        "hub_box_bags",
+        "hub_box_effective_placements",
         "hub_purchase_allocations",
         "order_items",
         "orders",
@@ -38093,6 +38199,16 @@
       "table": "hub_purchase_allocations"
     },
     {
+      "id": "db:hub_box_bags",
+      "type": "db-table",
+      "table": "hub_box_bags"
+    },
+    {
+      "id": "db:purchase_orders",
+      "type": "db-table",
+      "table": "purchase_orders"
+    },
+    {
       "id": "db:pricing_components",
       "type": "db-table",
       "table": "pricing_components"
@@ -38141,11 +38257,6 @@
       "id": "db:product_suppliers",
       "type": "db-table",
       "table": "product_suppliers"
-    },
-    {
-      "id": "db:purchase_orders",
-      "type": "db-table",
-      "table": "purchase_orders"
     },
     {
       "id": "db:supplier_execution_orders",
@@ -38241,6 +38352,11 @@
       "id": "db:otp_codes",
       "type": "db-table",
       "table": "otp_codes"
+    },
+    {
+      "id": "db:credential_action_tokens",
+      "type": "db-table",
+      "table": "credential_action_tokens"
     },
     {
       "id": "db:loyalty_tiers",
@@ -38643,11 +38759,6 @@
       "table": "cost_component_market_override_events"
     },
     {
-      "id": "db:credential_action_tokens",
-      "type": "db-table",
-      "table": "credential_action_tokens"
-    },
-    {
       "id": "db:customs_effective_rates",
       "type": "db-table",
       "table": "customs_effective_rates"
@@ -38693,14 +38804,14 @@
       "table": "purchase_order_authorizations"
     },
     {
-      "id": "db:international_shipments",
-      "type": "db-table",
-      "table": "international_shipments"
-    },
-    {
       "id": "db:international_shipment_hub_units",
       "type": "db-table",
       "table": "international_shipment_hub_units"
+    },
+    {
+      "id": "db:international_shipments",
+      "type": "db-table",
+      "table": "international_shipments"
     },
     {
       "id": "db:international_shipment_events",
@@ -38721,6 +38832,16 @@
       "id": "db:outbox_events",
       "type": "db-table",
       "table": "outbox_events"
+    },
+    {
+      "id": "db:product_sku_physical_codes",
+      "type": "db-table",
+      "table": "product_sku_physical_codes"
+    },
+    {
+      "id": "db:hub_box_effective_placements",
+      "type": "db-table",
+      "table": "hub_box_effective_placements"
     },
     {
       "id": "db:import_runtime_item_events",
@@ -41098,6 +41219,11 @@
       "doctrine": "append_only_decisions"
     },
     {
+      "id": "doctrine:sealed_customer_bag_persists_inside_market_box; no_fake_repack_or_duplicate_allocation",
+      "type": "doctrine",
+      "doctrine": "sealed_customer_bag_persists_inside_market_box; no_fake_repack_or_duplicate_allocation"
+    },
+    {
       "id": "doctrine:Allocation & Custody; une KOM-BOX appartient à au plus une expédition du même marché",
       "type": "doctrine",
       "doctrine": "Allocation & Custody; une KOM-BOX appartient à au plus une expédition du même marché"
@@ -41136,6 +41262,11 @@
       "id": "doctrine:Allocation & Custody; HUB-002 Operator Execution Cutover; DOCTRINE_DENSITE_VALEUR",
       "type": "doctrine",
       "doctrine": "Allocation & Custody; HUB-002 Operator Execution Cutover; DOCTRINE_DENSITE_VALEUR"
+    },
+    {
+      "id": "doctrine:code_identifies_sku_not_client; allocation_remains_in_hub_purchase_allocations",
+      "type": "doctrine",
+      "doctrine": "code_identifies_sku_not_client; allocation_remains_in_hub_purchase_allocations"
     },
     {
       "id": "doctrine:Allocation & Custody; F2_INCIDENT_GOVERNANCE_CONTRACT; F3_PROOF_REVALIDATION_CONTRACT",
@@ -53509,6 +53640,24 @@
     },
     {
       "from": "routes/admin-operations-workspace.js",
+      "to": "db:hub_box_bags",
+      "type": "db-read",
+      "label": "hub_box_bags"
+    },
+    {
+      "from": "routes/admin-operations-workspace.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "routes/admin-operations-workspace.js",
+      "to": "db:purchase_orders",
+      "type": "db-read",
+      "label": "purchase_orders"
+    },
+    {
+      "from": "routes/admin-operations-workspace.js",
       "to": "doctrine:workspace_single_market_action_context",
       "type": "doctrine",
       "label": "workspace_single_market_action_context"
@@ -55978,6 +56127,12 @@
       "to": "routes/auth.js",
       "type": "uses",
       "label": "bootstrap/api-routes.js"
+    },
+    {
+      "from": "routes/auth.js",
+      "to": "db:credential_action_tokens",
+      "type": "db-read",
+      "label": "credential_action_tokens"
     },
     {
       "from": "routes/auth.js",
@@ -74233,6 +74388,90 @@
       "label": "finance"
     },
     {
+      "from": "services/hub-bag-box-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "routes/admin-operations-workspace.js",
+      "to": "services/hub-bag-box-service.js",
+      "type": "uses",
+      "label": "routes/admin-operations-workspace.js"
+    },
+    {
+      "from": "services/hub-bag-box-service.js",
+      "to": "db:hub_box_bags",
+      "type": "db-read",
+      "label": "hub_box_bags"
+    },
+    {
+      "from": "services/hub-bag-box-service.js",
+      "to": "db:hub_physical_units",
+      "type": "db-read",
+      "label": "hub_physical_units"
+    },
+    {
+      "from": "services/hub-bag-box-service.js",
+      "to": "db:hub_physical_unit_placements",
+      "type": "db-read",
+      "label": "hub_physical_unit_placements"
+    },
+    {
+      "from": "services/hub-bag-box-service.js",
+      "to": "db:hub_purchase_allocations",
+      "type": "db-read",
+      "label": "hub_purchase_allocations"
+    },
+    {
+      "from": "services/hub-bag-box-service.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/hub-bag-box-service.js",
+      "to": "db:parcels",
+      "type": "db-read",
+      "label": "parcels"
+    },
+    {
+      "from": "services/hub-bag-box-service.js",
+      "to": "db:international_shipment_hub_units",
+      "type": "db-read",
+      "label": "international_shipment_hub_units"
+    },
+    {
+      "from": "services/hub-bag-box-service.js",
+      "to": "db:international_shipments",
+      "type": "db-read",
+      "label": "international_shipments"
+    },
+    {
+      "from": "services/hub-bag-box-service.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
+    },
+    {
+      "from": "services/hub-bag-box-service.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/hub-bag-box-service.js",
+      "to": "db:hub_box_bags",
+      "type": "db-write",
+      "label": "hub_box_bags"
+    },
+    {
+      "from": "services/hub-bag-box-service.js",
+      "to": "doctrine:sealed_customer_bag_persists_inside_market_box; no_fake_repack_or_duplicate_allocation",
+      "type": "doctrine",
+      "label": "sealed_customer_bag_persists_inside_market_box; no_fake_repack_or_duplicate_allocation"
+    },
+    {
       "from": "services/hub-box-shipment-service.js",
       "to": "db",
       "type": "depends",
@@ -74875,6 +75114,48 @@
       "label": "incident-management"
     },
     {
+      "from": "services/hub-physical-codes.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "routes/hub.js",
+      "to": "services/hub-physical-codes.js",
+      "type": "uses",
+      "label": "routes/hub.js"
+    },
+    {
+      "from": "services/hub-physical-codes.js",
+      "to": "db:product_sku_physical_codes",
+      "type": "db-read",
+      "label": "product_sku_physical_codes"
+    },
+    {
+      "from": "services/hub-physical-codes.js",
+      "to": "db:purchase_orders",
+      "type": "db-read",
+      "label": "purchase_orders"
+    },
+    {
+      "from": "services/hub-physical-codes.js",
+      "to": "db:purchase_lines",
+      "type": "db-read",
+      "label": "purchase_lines"
+    },
+    {
+      "from": "services/hub-physical-codes.js",
+      "to": "db:product_sku_physical_codes",
+      "type": "db-write",
+      "label": "product_sku_physical_codes"
+    },
+    {
+      "from": "services/hub-physical-codes.js",
+      "to": "doctrine:code_identifies_sku_not_client; allocation_remains_in_hub_purchase_allocations",
+      "type": "doctrine",
+      "label": "code_identifies_sku_not_client; allocation_remains_in_hub_purchase_allocations"
+    },
+    {
       "from": "services/hub-physical-identity.js",
       "to": "services/outbox-producer.js",
       "type": "depends",
@@ -75058,6 +75339,12 @@
     },
     {
       "from": "services/hub-procurement-dossier.js",
+      "to": "db:product_suppliers",
+      "type": "db-read",
+      "label": "product_suppliers"
+    },
+    {
+      "from": "services/hub-procurement-dossier.js",
       "to": "db:suppliers",
       "type": "db-read",
       "label": "suppliers"
@@ -75097,6 +75384,18 @@
       "to": "db:hub_physical_unit_placements",
       "type": "db-read",
       "label": "hub_physical_unit_placements"
+    },
+    {
+      "from": "services/hub-procurement-dossier.js",
+      "to": "db:hub_box_bags",
+      "type": "db-read",
+      "label": "hub_box_bags"
+    },
+    {
+      "from": "services/hub-procurement-dossier.js",
+      "to": "db:hub_box_effective_placements",
+      "type": "db-read",
+      "label": "hub_box_effective_placements"
     },
     {
       "from": "services/hub-procurement-dossier.js",
@@ -76136,6 +76435,18 @@
       "to": "db:hub_physical_unit_placements",
       "type": "db-read",
       "label": "hub_physical_unit_placements"
+    },
+    {
+      "from": "services/international-shipment-journey.js",
+      "to": "db:hub_box_bags",
+      "type": "db-read",
+      "label": "hub_box_bags"
+    },
+    {
+      "from": "services/international-shipment-journey.js",
+      "to": "db:hub_box_effective_placements",
+      "type": "db-read",
+      "label": "hub_box_effective_placements"
     },
     {
       "from": "services/international-shipment-journey.js",
@@ -91124,6 +91435,18 @@
       "to": "db:hub_physical_unit_placements",
       "type": "db-read",
       "label": "hub_physical_unit_placements"
+    },
+    {
+      "from": "services/relay-shipment-receipt.js",
+      "to": "db:hub_box_bags",
+      "type": "db-read",
+      "label": "hub_box_bags"
+    },
+    {
+      "from": "services/relay-shipment-receipt.js",
+      "to": "db:hub_box_effective_placements",
+      "type": "db-read",
+      "label": "hub_box_effective_placements"
     },
     {
       "from": "services/relay-shipment-receipt.js",
@@ -109518,7 +109841,10 @@
         "dashboard_global_access_grants",
         "hub_physical_units",
         "hub_physical_unit_placements",
-        "hub_purchase_allocations"
+        "hub_purchase_allocations",
+        "hub_box_bags",
+        "orders",
+        "purchase_orders"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -109542,12 +109868,15 @@
         "db:assignment_capability_ceiling",
         "db:assignment_memberships",
         "db:dashboard_global_access_grants",
+        "db:hub_box_bags",
         "db:hub_physical_unit_placements",
         "db:hub_physical_units",
         "db:hub_purchase_allocations",
         "db:market_operating_assignments",
         "db:markets",
         "db:membership_capabilities",
+        "db:orders",
+        "db:purchase_orders",
         "db:relais",
         "db:users",
         "doctrine:capability_is_market_authority",
@@ -109562,6 +109891,7 @@
         "impact:orders",
         "impact:payments",
         "middleware/require-market-execution-capability.js",
+        "services/hub-bag-box-service.js",
         "services/operations-workspace.js",
         "services/relay-shipment-receipt.js"
       ]
@@ -111032,6 +111362,7 @@
       ],
       "ownedFiles": [],
       "dbRead": [
+        "credential_action_tokens",
         "loyalty_tiers",
         "users"
       ],
@@ -111048,6 +111379,7 @@
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
+        "db:credential_action_tokens",
         "db:loyalty_tiers",
         "db:revoked_tokens",
         "db:users",
@@ -112142,6 +112474,7 @@
         "services/hub-box-shipment-service.js",
         "services/hub-global-board.js",
         "services/hub-operations.js",
+        "services/hub-physical-codes.js",
         "services/hub-procurement-dossier.js"
       ]
     },
@@ -122506,6 +122839,55 @@
         "services/supplier-payment-orchestrator.js"
       ]
     },
+    "services/hub-bag-box-service.js": {
+      "role": "hub-bag-box",
+      "domain": "logistics",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js"
+      ],
+      "directUsedBy": [
+        "routes/admin-operations-workspace.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "hub_box_bags",
+        "hub_physical_units",
+        "hub_physical_unit_placements",
+        "hub_purchase_allocations",
+        "orders",
+        "parcels",
+        "international_shipment_hub_units",
+        "international_shipments",
+        "order_items",
+        "products"
+      ],
+      "dbWrite": [
+        "hub_box_bags"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "sealed_customer_bag_persists_inside_market_box; no_fake_repack_or_duplicate_allocation"
+      ],
+      "impactAreas": [],
+      "mustCheck": [
+        "db:hub_box_bags",
+        "db:hub_physical_unit_placements",
+        "db:hub_physical_units",
+        "db:hub_purchase_allocations",
+        "db:international_shipment_hub_units",
+        "db:international_shipments",
+        "db:order_items",
+        "db:orders",
+        "db:parcels",
+        "db:products",
+        "doctrine:sealed_customer_bag_persists_inside_market_box; no_fake_repack_or_duplicate_allocation",
+        "routes/admin-operations-workspace.js"
+      ]
+    },
     "services/hub-box-shipment-service.js": {
       "role": "hub-box-shipment",
       "domain": "logistics",
@@ -122848,6 +123230,41 @@
         "utils/parcelSync.js"
       ]
     },
+    "services/hub-physical-codes.js": {
+      "role": "hub-physical-codes",
+      "domain": "logistics",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js"
+      ],
+      "directUsedBy": [
+        "routes/hub.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "product_sku_physical_codes",
+        "purchase_orders",
+        "purchase_lines"
+      ],
+      "dbWrite": [
+        "product_sku_physical_codes"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "code_identifies_sku_not_client; allocation_remains_in_hub_purchase_allocations"
+      ],
+      "impactAreas": [],
+      "mustCheck": [
+        "db:product_sku_physical_codes",
+        "db:purchase_lines",
+        "db:purchase_orders",
+        "doctrine:code_identifies_sku_not_client; allocation_remains_in_hub_purchase_allocations",
+        "routes/hub.js"
+      ]
+    },
     "services/hub-physical-identity.js": {
       "role": "hub-physical-identity",
       "domain": "logistics",
@@ -122945,6 +123362,7 @@
         "orders",
         "order_items",
         "products",
+        "product_suppliers",
         "suppliers",
         "purchase_lines",
         "purchase_orders",
@@ -122952,6 +123370,8 @@
         "hub_purchase_allocations",
         "hub_physical_units",
         "hub_physical_unit_placements",
+        "hub_box_bags",
+        "hub_box_effective_placements",
         "international_shipments",
         "international_shipment_hub_units",
         "parcels",
@@ -122971,6 +123391,8 @@
         "market"
       ],
       "mustCheck": [
+        "db:hub_box_bags",
+        "db:hub_box_effective_placements",
         "db:hub_physical_unit_placements",
         "db:hub_physical_units",
         "db:hub_purchase_allocations",
@@ -122981,6 +123403,7 @@
         "db:orders",
         "db:parcel_items",
         "db:parcels",
+        "db:product_suppliers",
         "db:products",
         "db:purchase_lines",
         "db:purchase_orders",
@@ -123578,6 +124001,8 @@
         "international_shipment_hub_units",
         "hub_physical_units",
         "hub_physical_unit_placements",
+        "hub_box_bags",
+        "hub_box_effective_placements",
         "hub_purchase_allocations",
         "international_shipment_charges",
         "international_shipment_events",
@@ -123618,6 +124043,8 @@
         "db:customs_shipment_fees",
         "db:customs_shipment_parcels",
         "db:customs_shipments",
+        "db:hub_box_bags",
+        "db:hub_box_effective_placements",
         "db:hub_physical_unit_placements",
         "db:hub_physical_units",
         "db:hub_purchase_allocations",
@@ -132992,6 +133419,8 @@
         "international_shipment_relay_receipts",
         "hub_physical_units",
         "hub_physical_unit_placements",
+        "hub_box_bags",
+        "hub_box_effective_placements",
         "hub_purchase_allocations",
         "order_items",
         "orders",
@@ -133017,6 +133446,8 @@
         "relay"
       ],
       "mustCheck": [
+        "db:hub_box_bags",
+        "db:hub_box_effective_placements",
         "db:hub_physical_unit_placements",
         "db:hub_physical_units",
         "db:hub_purchase_allocations",
@@ -144804,6 +145235,12 @@
       "label": "db"
     },
     {
+      "from": "services/hub-bag-box-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
       "from": "services/hub-box-shipment-service.js",
       "to": "db",
       "type": "depends",
@@ -144886,6 +145323,12 @@
       "to": "db",
       "type": "depends",
       "label": "db"
+    },
+    {
+      "from": "services/hub-physical-codes.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
     },
     {
       "from": "HUB-001 internal logistics boundary",

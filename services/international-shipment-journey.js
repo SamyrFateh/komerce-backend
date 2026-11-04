@@ -6,7 +6,7 @@
  * @criticality high
  * @inputs authenticated_actor, server_resolved_market, physical_evidence, real_invoices
  * @outputs immutable_shipment_facts, read_only_cost_reconciliation
- * @db-read international_shipments, international_shipment_hub_units, hub_physical_units, hub_physical_unit_placements, hub_purchase_allocations, international_shipment_charges, international_shipment_events, orders, customs_shipments, customs_shipment_parcels, customs_shipment_fees, international_n1_reconciliations
+ * @db-read international_shipments, international_shipment_hub_units, hub_physical_units, hub_physical_unit_placements, hub_box_bags, hub_box_effective_placements, hub_purchase_allocations, international_shipment_charges, international_shipment_events, orders, customs_shipments, customs_shipment_parcels, customs_shipment_fees, international_n1_reconciliations
  * @db-write international_shipments, international_shipment_hub_units, international_shipment_events, international_shipment_charges
  * @db-write-via:parcel-shipment-handover parcel_events, parcels
  * @db-write-via:customs-shipment-service customs_shipments
@@ -320,7 +320,7 @@ async function detail(market,reference,database=db){
     database.query('SELECT fee_type,kind,amount_kmf,proof_ref,recorded_at,notes FROM international_shipment_charges WHERE shipment_id=$1 ORDER BY recorded_at,id',[s.id]),
     database.query(`SELECT u.id AS unit_id,u.reference,u.state,h.attached_at,a.purchase_order_id,a.purchase_line_id,a.product_sku_id,o.reference AS order_ref,p.quantity
       FROM international_shipment_hub_units h JOIN hub_physical_units u ON u.id=h.physical_unit_id
-      LEFT JOIN hub_physical_unit_placements p ON p.physical_unit_id=u.id AND p.removed_at IS NULL
+      LEFT JOIN hub_box_effective_placements p ON p.box_unit_id=u.id
       LEFT JOIN hub_purchase_allocations a ON a.id=p.allocation_id LEFT JOIN orders o ON o.id=a.order_id
       WHERE h.shipment_id=$1 ORDER BY u.reference,o.reference`,[s.id]),
     database.query('SELECT documented_total_kmf,financial_closed_at,reconciled_at,total_freight_kmf,total_customs_kmf,total_arrival_kmf,total_local_kmf FROM international_n1_reconciliations WHERE shipment_id=$1',[s.id]),

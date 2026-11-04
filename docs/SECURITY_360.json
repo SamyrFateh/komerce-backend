@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-11-03T17:09:39.129Z",
+  "generatedAt": "2026-11-04T12:36:01.869Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 801,
-    "protected": 743,
+    "total": 809,
+    "protected": 751,
     "public": 58,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -1374,7 +1374,14 @@
       ]
     },
     {
-      "key": "POST /api/admin/orders/{id}/refund",
+      "key": "POST /api/admin/orders/{id}/items/{itemId}/refund-reservations/{reservationId}/execute",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/orders/{id}/items/{itemId}/refund-reservations/{reservationId}/reconcile",
       "level": "PROTECTED",
       "roles": [
         "admin"
@@ -1388,14 +1395,7 @@
       ]
     },
     {
-      "key": "POST /api/admin/orders/{id}/items/{itemId}/refund-reservations/{reservationId}/execute",
-      "level": "PROTECTED",
-      "roles": [
-        "admin"
-      ]
-    },
-    {
-      "key": "POST /api/admin/orders/{id}/items/{itemId}/refund-reservations/{reservationId}/reconcile",
+      "key": "POST /api/admin/orders/{id}/refund",
       "level": "PROTECTED",
       "roles": [
         "admin"
@@ -2215,7 +2215,39 @@
       ]
     },
     {
+      "key": "POST /api/admin/workspaces/operations/market/{marketCode}/bags/{unitId}/close",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/operations/market/{marketCode}/bags/{unitId}/deposit",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/operations/market/{marketCode}/bags",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
       "key": "POST /api/admin/workspaces/operations/market/{marketCode}/boxes/{unitId}/advance",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/operations/market/{marketCode}/boxes/{unitId}/bags",
       "level": "PROTECTED",
       "roles": [
         "admin",
@@ -2303,6 +2335,14 @@
       ]
     },
     {
+      "key": "GET /api/admin/workspaces/operations/market/{marketCode}/relay-shipments/{reference}/bags/{bagRef}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_relais"
+      ]
+    },
+    {
       "key": "POST /api/admin/workspaces/operations/market/{marketCode}/relay-shipments/{reference}/receive",
       "level": "PROTECTED",
       "roles": [
@@ -2313,6 +2353,14 @@
       "key": "GET /api/admin/workspaces/operations/market/{marketCode}/relay-shipments",
       "level": "PROTECTED",
       "roles": []
+    },
+    {
+      "key": "GET /api/admin/workspaces/operations/market/{marketCode}/supply/physical-code",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
     },
     {
       "key": "GET /api/admin/workspaces/operations/market/{marketCode}/supply/trace",
@@ -3850,6 +3898,22 @@
     },
     {
       "key": "POST /api/hub/photo",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/hub/physical-codes/confirm",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "GET /api/hub/physical-codes/resolve",
       "level": "PROTECTED",
       "roles": [
         "admin",
