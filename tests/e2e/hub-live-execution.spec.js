@@ -256,19 +256,29 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       await form.locator('[data-sourcing-item]').selectOption('81ad184a-2c4a-49a0-b128-c98809e24a35');
       await expect(form.locator('[data-sourcing-quantity]')).toContainText('1 unité restante à acheter');
 
-      const articleBox = await article.boundingBox();
-      const supplierBox = await supplier.boundingBox();
-      const footerBox = await form.locator('.kmc-hub-sourcing-footer').boundingBox();
-      const panelWidth = await panel.evaluate(node => ({
-        scroll: node.scrollWidth, client: node.clientWidth,
-      }));
-      expect(panelWidth.scroll).toBeLessThanOrEqual(panelWidth.client + 2);
-      expect(footerBox.y).toBeGreaterThan(articleBox.y);
+      // Un seul instant de mesure : scrollIntoView({ behavior: 'smooth' })
+      // anime le viewport ; plusieurs boundingBox() successifs fabriquent
+      // un faux décalage vertical des colonnes pendant le scroll.
+      const geometry = await form.evaluate(node => {
+        const rect = el => {
+          const { x, y, width, height } = el.getBoundingClientRect();
+          return { x, y, width, height };
+        };
+        const [left, right] = node.querySelectorAll('.kmc-hub-sourcing-group');
+        const footer = node.querySelector('.kmc-hub-sourcing-footer');
+        const host = node.closest('[data-hub-sourcing-recovery]');
+        return {
+          article: rect(left), supplier: rect(right), footer: rect(footer),
+          scrollWidth: host.scrollWidth, clientWidth: host.clientWidth,
+        };
+      });
+      expect(geometry.scrollWidth).toBeLessThanOrEqual(geometry.clientWidth + 2);
+      expect(geometry.footer.y).toBeGreaterThan(geometry.article.y);
       if (name === 'desktop') {
-        expect(supplierBox.x).toBeGreaterThan(articleBox.x + articleBox.width - 2);
-        expect(Math.abs(supplierBox.y - articleBox.y)).toBeLessThan(3);
+        expect(geometry.supplier.x).toBeGreaterThan(geometry.article.x + geometry.article.width - 2);
+        expect(Math.abs(geometry.supplier.y - geometry.article.y)).toBeLessThan(3);
       } else {
-        expect(supplierBox.y).toBeGreaterThan(articleBox.y + articleBox.height - 2);
+        expect(geometry.supplier.y).toBeGreaterThan(geometry.article.y + geometry.article.height - 2);
       }
       await panel.locator('[data-sourcing-close]').click();
       await expect(panel).toBeHidden();
