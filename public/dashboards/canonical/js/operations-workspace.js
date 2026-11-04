@@ -12,7 +12,7 @@
  * @db-write      none
  * @db-txn        none
  * @doctrine      workspace_acts_dashboard_observes, canonical_admin_no_legacy_imports, browser_never_supplies_market_id_authority
- * @impact-areas  admin-dashboard, logistics, inventory, orders, payments
+ * @impact-areas  admin-dashboard, logistics, inventory, orders, payments, purchasing
  * @version       2026-08
  */
 
