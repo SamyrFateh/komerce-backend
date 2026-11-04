@@ -153,6 +153,7 @@
       "order_incidents",
       "order_item_cost_imputations",
       "order_items",
+      "order_item_refund_reservations",
       "order_status_history",
       "orders",
       "otp_codes",

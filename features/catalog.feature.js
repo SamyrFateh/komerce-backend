@@ -508,6 +508,7 @@ module.exports = {
       'tests/unit/catalog-eligibility.test.js',
       'tests/unit/scan-engine-content-verification.test.js',
       'tests/unit/scan-engine-extras.test.js',
+      'tests/unit/scan-engine-refund-pending.test.js',
       'tests/unit/catalog-public-view.test.js',
       'tests/unit/catalog-enrichment.test.js',
       'tests/unit/catalog-enrichment-extended.test.js',

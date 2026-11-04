@@ -848,6 +848,7 @@ async function syncOrderFromParcels(client, orderId) {
   const { transitionOrderStatus } = require('./order-status-machine');
 
   // Agréger les quantités des parcel_items par order_item_id
+  try {
   await client.query(`
     UPDATE order_items oi SET
       qty_allocated = COALESCE(agg.total_allocated, 0),
@@ -871,6 +872,13 @@ async function syncOrderFromParcels(client, orderId) {
     ) agg
     WHERE oi.id = agg.order_item_id
   `, [orderId]);
+  } catch (err) {
+    // Remboursement E7 réservé/en cours : le retrait client est refusé (refus métier, pas une 500).
+    if (err && err.code === '23514' && /ITEM_REFUND_PENDING_QTY_NOT_COLLECTABLE/.test(err.message || '')) {
+      throw new ScanError('ITEM_REFUND_PENDING', 'Remise impossible : un remboursement article est réservé ou en cours pour cette commande');
+    }
+    throw err;
+  }
 
   // ── Recalculer le statut commande depuis les colis ──
   // ✅ FIX: Uses VALID statuses from the order_status ENUM only
