@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 1993,
-    "edges": 9808,
+    "edges": 9809,
     "dbTables": 229,
     "doctrines": 770,
     "impactAreas": 207,
@@ -20160,6 +20160,7 @@
         "orders",
         "order_items",
         "products",
+        "product_skus",
         "product_suppliers",
         "suppliers",
         "purchase_lines",
@@ -75441,6 +75442,12 @@
     },
     {
       "from": "services/hub-procurement-dossier.js",
+      "to": "db:product_skus",
+      "type": "db-read",
+      "label": "product_skus"
+    },
+    {
+      "from": "services/hub-procurement-dossier.js",
       "to": "db:product_suppliers",
       "type": "db-read",
       "label": "product_suppliers"
@@ -123608,6 +123615,7 @@
         "orders",
         "order_items",
         "products",
+        "product_skus",
         "product_suppliers",
         "suppliers",
         "purchase_lines",
@@ -123654,6 +123662,7 @@
         "db:orders",
         "db:parcel_items",
         "db:parcels",
+        "db:product_skus",
         "db:product_suppliers",
         "db:products",
         "db:purchase_lines",

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-04T21:12:44.397Z",
+  "generatedAt": "2026-11-04T21:24:58.127Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
     "total": 809,
