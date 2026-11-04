@@ -6,20 +6,19 @@
  * @domain        auth-identity
  * @layer         tooling
  * @criticality   high
- * @inputs        dedicated E2E identities and passwords, ACTIVE market assignment, team delegation endpoints
- * @outputs       safe audit/result codes, single E2E Hub membership with scoped read capabilities
- * @depends       native fetch, auth API, team-delegation API, dashboard context API
+ * @inputs        dedicated E2E identities, staging, central Hub endpoints
+ * @outputs       read-only central Hub proof without market-team grants
+ * @depends       native fetch, auth API, Hub board and dossier, dashboard context
  * @used-by       .github/workflows/staging-hub-e2e-market-grant.yml
  * @db-read       none
  * @db-write      none
- * @db-txn        canonical API routes own all mutations
- * @doctrine      dedicated_e2e_only, staging_only, least_privilege, no_global_grant, immutable_audit
+ * @db-txn        none; POST login only; business calls GET
+ * @doctrine      central_hub_roles_remain_global, staging_only, read_only
  * @impact-areas  staging, auth-identity, market-delegation
  * @version       2026-11
  */
 const ORIGIN='https://komerce-backend-production.up.railway.app';
 const MARKET='KM';
-const CAPABILITIES=Object.freeze(['operations.read','logistics.read']);
 const {isDedicatedE2E}=require('./reconcile-staging-logistics-e2e');
 
 function checkEnv(env=process.env) {
@@ -64,88 +63,66 @@ async function deployedVersion(){
 async function execute(env=process.env){
   const settings=checkEnv(env);
   const sha=await deployedVersion();
-  const admin=await login(env.E2E_ADMIN_EMAIL,env.E2E_ADMIN_PASSWORD,'admin');
+  // Only login writes session state; all subsequent business requests are GET.
   const hub=await login(env.E2E_AGENT_HUB_EMAIL,env.E2E_AGENT_HUB_PASSWORD,'agent_hub');
+  const admin=await login(env.E2E_ADMIN_EMAIL,env.E2E_ADMIN_PASSWORD,'admin');
   const operator=await login(env.E2E_MARKET_OPERATOR_EMAIL,env.E2E_MARKET_OPERATOR_PASSWORD,'market_operator');
-  const lookup=await request('/api/admin/users?role=agent_hub&search='+
-    encodeURIComponent(env.E2E_AGENT_HUB_EMAIL)+'&limit=100',{cookie:admin});
-  if(lookup.status!==200)throw Error('E2E_HUB_USER_LOOKUP_FAILED');
-  const candidates=(lookup.data?.users||[]).filter(u=>
-    String(u.email||'').toLowerCase()===String(env.E2E_AGENT_HUB_EMAIL).toLowerCase()&&u.role==='agent_hub');
-  if(candidates.length!==1)throw Error('HUB_E2E_ACCOUNT_NOT_UNIQUE');
-  const memberUserId=candidates[0].id;
+  const checks=[];
+  const record=(name,response,expected,valid=()=>true)=>{
+    checks.push({name,pass:response.status===expected&&Boolean(valid(response.data)),http_status:response.status});
+  };
 
-  // Aucune lecture de membership via rôle ou scope legacy. Seuls des acteurs
-  // qui détiennent effectivement team.read sur l'affectation KM peuvent agir.
-  let grantActorCookie=operator;
-  let team=await request('/api/market-delegation/markets/'+MARKET+'/team',{cookie:operator});
-  if(team.status===403){
-    const centralTeam=await request('/api/market-delegation/markets/'+MARKET+'/team',{cookie:admin});
-    if(centralTeam.status===200){team=centralTeam;grantActorCookie=admin;}
-  }
-  if(team.status!==200){
-    // Matrice centrale = diagnostic strictement read-only : n'autorise aucune
-    // écriture ni aucun nouveau droit même lorsque l'admin est global.
-    const matrix=await request('/api/market-delegation/central/team-matrix',{cookie:admin});
-    const rows=Array.isArray(matrix.data)?matrix.data:(matrix.data?.markets||matrix.data?.rows||[]);
-    const active=Array.isArray(rows)&&rows.some(m=>m.market?.code===MARKET&&m.assignment?.status==='ACTIVE');
-    return {status:'HUB_E2E_TEAM_AUTHORITY_MISSING',changed:false,market:MARKET,
-      teamStatus:team.status,centralMatrixStatus:matrix.status,assignmentActive:active,
-      sha:sha.slice(0,12)};
-  }
-  if(team.data.market?.code!==MARKET)throw Error('MARKET_TEAM_MISMATCH');
-  const existing=(team.data.members||[]).filter(m=>m.user_id===memberUserId&&m.status==='ACTIVE');
-  if(existing.length>1)throw Error('HUB_MULTIPLE_ACTIVE_MEMBERSHIPS');
-  const hasCaps=existing.length===1&&CAPABILITIES.every(c=>existing[0].capabilities.includes(c));
-  const before=await request('/api/admin/dashboard/context',{cookie:hub});
-  const alreadyVisible=before.status===200 &&
-    Array.isArray(before.data?.access?.allowedMarkets)&&
-    before.data.access.allowedMarkets.includes(MARKET);
-  if(hasCaps&&alreadyVisible)return {status:'HUB_E2E_SCOPED_VERIFIED',changed:false,
-    memberActive:true,market:MARKET,sha:sha.slice(0,12)};
-  if(settings.HUB_MARKET_GRANT_MODE==='audit'){
-    return {status:'HUB_E2E_MARKET_GRANT_REQUIRED',changed:false,
-      memberActive:existing.length===1,contextStatus:before.status,market:MARKET,sha:sha.slice(0,12)};
+  const context=await request('/api/admin/dashboard/context',{cookie:hub});
+  record('HUB_CONTEXT_CENTRAL',context,200,d=>
+    d?.access?.mode==='hub' &&
+    Array.isArray(d.access.allowedMarkets) &&
+    d.access.allowedMarkets.includes(MARKET) &&
+    !d.access.capabilities?.includes('dashboard.global.read'));
+
+  const board=await request('/api/hub/board',{cookie:hub});
+  record('HUB_GLOBAL_BOARD',board,200,d=>
+    d?.scope==='HUB_GLOBAL' &&
+    Array.isArray(d.markets) && d.markets.includes(MARKET) &&
+    Array.isArray(d.orders));
+  const marketCodes=Array.isArray(board.data?.markets)?board.data.markets:[];
+  record('HUB_CONTEXT_COVERS_ACTIVE_MARKETS',context,200,d=>
+    Array.isArray(d?.access?.allowedMarkets) &&
+    marketCodes.every(m=>d.access.allowedMarkets.includes(m)));
+
+  // No market membership is granted or required. At least KM plus a second active market.
+  const secondary=marketCodes.find(code=>code!==MARKET);
+  const checkedMarkets=[MARKET,...(secondary?[secondary]:[])];
+  for(const marketCode of checkedMarkets){
+    const dossier=await request('/api/hub/dossier?market='+encodeURIComponent(marketCode),{cookie:hub});
+    record('HUB_DOSSIER_'+marketCode,dossier,200,d=>
+      d?.market?.code===marketCode && Array.isArray(d.orders));
   }
 
-  // Le membre délégant doit avoir team.grant/team.invite sur l'assignation
-  // ACTIVE. Même un admin global sans membership ne peut contourner le garde.
-  const grantable=team.data.actor_grantable_capabilities||[];
-  if(!CAPABILITIES.every(c=>grantable.includes(c)))
-    throw Error('ACTOR_CANNOT_GRANT_MINIMAL_HUB_CAPABILITIES');
-  if(existing.length===1){
-    const authority=team.data.actor_capabilities||[];
-    if(!authority.includes('team.grant')||!authority.includes('team.revoke'))
-      throw Error('ACTOR_CANNOT_REPLACE_MEMBERSHIP_CAPABILITIES');
-    const next=[...new Set([...existing[0].capabilities,...CAPABILITIES])].sort();
-    const res=await request('/api/market-delegation/markets/'+MARKET+'/team/'+
-      encodeURIComponent(existing[0].membership_id)+'/capabilities',{
-      method:'PUT',cookie:grantActorCookie,body:{capabilities:next}
-    });
-    if(res.status!==200)throw Error('HUB_MEMBERSHIP_GRANT_FAILED_'+res.status);
-  }else{
-    if(!(team.data.actor_capabilities||[]).includes('team.invite'))
-      throw Error('ACTOR_TEAM_INVITE_DENIED');
-    const res=await request('/api/market-delegation/markets/'+MARKET+'/team/invitations',{
-      method:'POST',cookie:grantActorCookie,body:{email:env.E2E_AGENT_HUB_EMAIL,
-        capabilities:CAPABILITIES}
-    });
-    if(res.status!==201||res.data?.kind!=='membership')
-      throw Error('HUB_DIRECT_MEMBERSHIP_FAILED_'+res.status);
-  }
-  const after=await request('/api/admin/dashboard/context',{cookie:hub});
-  if(after.status!==200 || !(after.data?.access?.allowedMarkets||[]).includes(MARKET))
-    throw Error('HUB_CONTEXT_NOT_AVAILABLE_AFTER_MEMBERSHIP');
-  const updated=await deployedVersion();
-  if(updated!==sha)throw Error('STAGING_SHA_CHANGED_DURING_GRANT');
-  return {status:'HUB_E2E_SCOPED_VERIFIED',changed:true,market:MARKET,
-    memberActive:true,sha:sha.slice(0,12)};
+  // Hub must not inherit market-team or central admin privileges.
+  record('HUB_TEAM_MARKET_FORBIDDEN',
+    await request('/api/market-delegation/markets/'+MARKET+'/team',{cookie:hub}),403);
+  record('HUB_GLOBAL_ADMIN_FORBIDDEN',
+    await request('/api/market-delegation/central/team-matrix',{cookie:hub}),403);
+  record('MARKET_OPERATOR_HUB_ADMIN_FORBIDDEN',
+    await request('/api/hub/administration',{cookie:operator}),403);
+  record('ADMIN_CENTRAL_MATRIX',
+    await request('/api/market-delegation/central/team-matrix',{cookie:admin}),200);
+  record('HUB_ADMINISTRATIVE_READ',
+    await request('/api/hub/administration',{cookie:hub}),200);
+
+  checks.push({name:'SHA_STABLE',pass:(await deployedVersion())===sha,http_status:null});
+  return {
+    status:checks.every(c=>c.pass)?'HUB_E2E_CENTRAL_VERIFIED':'HUB_E2E_CENTRAL_NOT_VERIFIED',
+    changed:false,
+    mode:settings.HUB_MARKET_GRANT_MODE==='reconcile'?'audit_only_no_grants':'audit',
+    market:MARKET,markets_checked:checkedMarkets,sha:sha.slice(0,12),checks,
+  };
 }
 async function main(){
   try {
     const result=await execute();
     console.log('[hub-e2e-scope] '+JSON.stringify(result));
-    if(result.status!=='HUB_E2E_SCOPED_VERIFIED')process.exitCode=2;
+    if(result.status!=='HUB_E2E_CENTRAL_VERIFIED')process.exitCode=2;
   }catch(e){
     // Fixed internal codes only; never serialize request bodies, cookies,
     // identities, membership IDs or passwords.
