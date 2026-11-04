@@ -80,5 +80,5 @@ jobs:
           echo "E2E_EXPECTED_DEPLOY_SHA=$DEPLOY_SHA" >> "$GITHUB_ENV"
       - name: Verify identities and reconcile only explicitly dedicated E2E Hub/Relay accounts
         run: node scripts/recette/reconcile-staging-logistics-e2e.js
-      - name: Audit dedicated Hub KM membership and capabilities (read-only)
+      - name: Audit central Hub routes and forbidden market-team grants (read-only)
         run: node scripts/recette/staging-hub-e2e-market-grant.js
