@@ -837,10 +837,6 @@
         }
         if (!context.confirm('Ouvrir ' + quantity + ' unité(s) en achat manuel pour ' + group.reference + ' ?')) return;
         writing = true;
-        // Un POST ou un retour incertain ne doit jamais rouvrir le formulaire
-        // automatiquement au rechargement : l'opérateur doit relire le dossier.
-        context.focusConsumed = true;
-        context.focusOrder = null;
         submit.disabled = true;
         status.textContent = 'Enregistrement du fournisseur et de la ligne d’achat…';
         let wrote = false;
@@ -1069,20 +1065,6 @@
         anomalies > 0 || pending > 0);
       tbody.appendChild(row);
     });
-    // Lien ciblé du Hub central : afficher le formulaire de la commande
-    // identifiée, sans mutation ni présélection fictive de fournisseur.
-    // La surface peut être rendue plusieurs fois pendant l'initialisation :
-    // garder le lien ciblé disponible jusqu'à une véritable action humaine.
-    const requestedOrder = context.focusOrder ||
-      new URLSearchParams(String(doc.defaultView?.location?.search || '')).get('order');
-    if (!context.focusConsumed && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-      String(requestedOrder || ''))) {
-      const target = groups.find(group => group.id === requestedOrder);
-      if (target && !isHubReadOnly(context) &&
-          target.items.some(item => item.sourcing_required === true && Number(item.purchasing_missing) > 0)) {
-        showSourcingResolution(target);
-      }
-    }
     // La filiation détaillée est chargée à la demande, hors du tableau.
     if (context.trace || context.traceError) renderTracePanel(ordersSlot, ui, doc, context);
     const points = d.to_handle || [];
@@ -1681,12 +1663,6 @@
       marketCode,
       mode: ['execution', 'relay-execution'].includes(options.mode) ? options.mode : 'pilot',
       user: options.user || null,
-      focusConsumed: false,
-      focusOrder: options.mode === 'execution' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-        String(options.focusOrder || new URLSearchParams(
-          String(doc.defaultView?.location?.search || '')).get('order') || '')
-      ) ? String(options.focusOrder || new URLSearchParams(
-        String(doc.defaultView?.location?.search || '')).get('order')) : null,
       view: options.mode === 'execution' ? 'supply' : undefined,
       confirm: typeof options.confirm === 'function'
         ? options.confirm
