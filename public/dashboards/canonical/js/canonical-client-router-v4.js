@@ -213,6 +213,11 @@
   }
 
   function authorized(nav, user, surface) {
+    // The role-scoped "À traiter" route is reachable by field operators.
+    // It does not confer the Dashboard/Pilotage N1 authority.
+    if (surface === 'action-center' && nav && typeof nav.canAccessSurface === 'function') {
+      return nav.canAccessSurface(user, surface);
+    }
     if (!nav || typeof nav.visibleNavigationFor !== 'function' || typeof nav.activePrimarySurface !== 'function') return true;
     const domains = nav.visibleNavigationFor(user, global.KOMERCE_CANONICAL_ADMIN_CONTEXT);
     const domainId = nav.activePrimarySurface(surface);
