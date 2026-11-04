@@ -213,11 +213,15 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       expect(posts).toHaveLength(0);
     });
 
-    test('L8 : lien du Hub central ouvre directement le sourcing du bon dossier, sans écriture', async ({ page }) => {
+    test('L8 : lien Hub central cible la commande ; ouverture explicite du sourcing sans écriture', async ({ page }) => {
       const posts = [];
       const id = 'cf9520d0-84ff-4fe1-ab9b-a5e972b1365b';
       await mount(page, { view: null, dossier: UNSOURCED_DOSSIER, posts, focusOrder: id });
-      await expect(page.locator('[data-hub-order="' + id + '"]')).toContainText('Sourcing requis');
+      const row = page.locator('[data-hub-order="' + id + '"]');
+      await expect(row).toContainText('Sourcing requis');
+      await row.locator('[data-hub-stage="PO"]').click();
+      await page.locator('[data-hub-context-menu]').getByRole('button',
+        { name: 'Résoudre le sourcing / créer un achat manuel' }).click();
       await expect(page.locator('[data-hub-sourcing-form="KRGNX5O"]')).toBeVisible();
       await expect(page.locator('[data-sourcing-item] option')).toHaveCount(2);
       await expect(page.locator('[data-sourcing-supplier]')).toBeEnabled();
