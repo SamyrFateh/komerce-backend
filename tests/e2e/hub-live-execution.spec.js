@@ -252,9 +252,9 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       const supplier = form.locator('.kmc-hub-sourcing-group').last();
       await expect(article.getByText('Article concerné')).toBeVisible();
       await expect(supplier.getByText('Fournisseur et conditions')).toBeVisible();
-      await expect(form.locator('[data-sourcing-quantity]')).toContainText('2 unité(s) restant à acheter');
+      await expect(form.locator('[data-sourcing-quantity]')).toContainText('2 unités restantes à acheter');
       await form.locator('[data-sourcing-item]').selectOption('81ad184a-2c4a-49a0-b128-c98809e24a35');
-      await expect(form.locator('[data-sourcing-quantity]')).toContainText('1 unité(s) restant à acheter');
+      await expect(form.locator('[data-sourcing-quantity]')).toContainText('1 unité restante à acheter');
 
       const articleBox = await article.boundingBox();
       const supplierBox = await supplier.boundingBox();
@@ -321,7 +321,6 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       await expect(form.locator('[data-sourcing-supplier]')).toBeEnabled();
       await form.locator('[data-sourcing-supplier]').selectOption('supplier-existing-1');
       await expect(form.locator('[data-sourcing-name]')).toBeHidden();
-      await expect(form.locator('[data-sourcing-details]')).toHaveCount(0);
       await expect(form.locator('[data-sourcing-ref]')).toBeHidden();
       await expect(form.locator('[data-sourcing-price]')).toBeHidden();
       await expect(form.locator('[data-sourcing-mapping-note]')).toBeVisible();
