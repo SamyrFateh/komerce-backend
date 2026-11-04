@@ -28,6 +28,24 @@ describe('Hub central : tous les marchés, lecture seule', () => {
     expect(JSON.stringify(rows)).not.toMatch(/Objet confidentiel|Privé|price|email|payment/);
   });
 
+  test('L8 : commande import non sourcée, action explicite sans détails privés', () => {
+    const input = empty([{
+      id: 'order-l8', reference: 'KRGNX5O',
+      items: [
+        { id: 'item1', product: 'Article confidentiel', ordered: 2,
+          sourcing_required: true, purchasing_missing: 2 },
+        { id: 'item2', product: 'Article confidentiel 2', ordered: 1,
+          sourcing_required: false, purchasing_missing: 0 },
+      ],
+    }]);
+    const [row] = summarizeMarket({ id: 'km', code: 'KM', name: 'Comores' }, input);
+    expect(row.po).toBe('Sourcing requis');
+    expect(row.next_action).toBe('Résoudre le sourcing');
+    expect(row.stage_states.po).toBe('warning');
+    expect(row.remaining_detail).toContain('2 à sourcer');
+    expect(JSON.stringify(row)).not.toMatch(/Article confidentiel|supplier_sku|payment_status|prix/);
+  });
+
   test('reliquat et anomalie sont tous deux lisibles, non additionnés', () => {
     const payload=empty([order('a','KM-2',3)]);
     payload.purchase_orders=[{
