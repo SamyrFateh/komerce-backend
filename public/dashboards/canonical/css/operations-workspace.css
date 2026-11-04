@@ -1730,7 +1730,7 @@
   box-shadow: 0 7px 20px rgb(22 45 64 / .04);
   color: #1c344b;
 }
-.kmc-hub-sourcing-panel [hidden] { display: none !important; }
+.kmc-hub-sourcing-panel [hidden] { display: none; }
 .kmc-hub-sourcing-heading {
   display: flex;
   flex-wrap: wrap;
