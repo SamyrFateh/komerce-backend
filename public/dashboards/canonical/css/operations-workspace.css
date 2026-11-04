@@ -1781,6 +1781,7 @@
 }
 .kmc-hub-sourcing-group {
   min-width: 0;
+  margin: 0; /* neutralise les marges génériques entre sections du workspace */
   display: flex;
   flex-direction: column;
   gap: 12px;
