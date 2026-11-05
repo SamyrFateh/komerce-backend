@@ -8,7 +8,7 @@
  * @outputs       quantity_proof_projection_on_customer_parcels
  * @depends       db
  * @used-by       services/relay-shipment-receipt.js
- * @db-read       order_items, international_shipment_hub_units, international_shipments, hub_physical_unit_placements, hub_purchase_allocations, international_shipment_relay_receipts, parcels, parcel_items
+ * @db-read       order_items, international_shipment_hub_units, international_shipments, hub_box_effective_placements, hub_purchase_allocations, international_shipment_relay_receipts, parcels, parcel_items
  * @db-write      parcel_events, parcel_items, scans
  * @db-txn        caller_transaction_with_order_item_lock
  * @doctrine      single_physical_truth, no_fabricated_quantities, receipt_regression_forbidden
@@ -37,8 +37,8 @@ async function projectRelayReceiptToClientParcels(client, orderItemId) {
       (SELECT COALESCE(SUM(placement.quantity), 0)::int
          FROM international_shipment_hub_units ship_box
          JOIN international_shipments ship ON ship.id = ship_box.shipment_id AND ship.stage <> 'hub_ready'
-         JOIN hub_physical_unit_placements placement
-           ON placement.physical_unit_id = ship_box.physical_unit_id AND placement.removed_at IS NULL
+         JOIN hub_box_effective_placements placement
+           ON placement.box_unit_id = ship_box.physical_unit_id
          JOIN hub_purchase_allocations alloc ON alloc.id = placement.allocation_id
         WHERE alloc.order_item_id = $1) AS physically_shipped,
       (SELECT COALESCE(SUM(receipt.received_qty), 0)::int

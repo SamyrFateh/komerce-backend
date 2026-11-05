@@ -6,7 +6,7 @@
  * @owner backend-core
  * @purpose Paiement fictif d'une commande E2E-HUB-V1 : aucune entrée caisse, PSP ou notification.
  * @db-read orders, users
- * @db-write orders, order_status_history (via capacités canoniques)
+ * @db-write orders, order_status_history, local_stock_allocations (via capacités canoniques)
  * @db-txn same_transaction
  */
 'use strict';
@@ -15,6 +15,7 @@ const db=require('../db');
 const { markPaid }=require('./payment-service');
 const { transitionOrderStatus }=require('./order-status-machine');
 const { extractRun }=require('./hub-v1-fixture-checkout-guard');
+const { consumeAllocationsForOrder }=require('./local-stock-service');
 
 function reject(code){return Object.assign(new Error(code),{code,status:409});}
 async function confirmFixturePayment({
@@ -70,6 +71,9 @@ async function confirmFixturePayment({
         throw reject('HUB_V1_FIXTURE_STATUS_TRANSITION_REFUSED');
       }
     }
+    // Même effet que la machine d'états sur une confirmation de paiement réelle : le stock local réservé au
+    // checkout est consommé (idempotent, sans effet sur une commande 100 % import).
+    await consumeAllocationsForOrder(client,order.id);
     await client.query('COMMIT');open=false;
     return {ok:true,idempotent_replay:false,order_ref:reference,proof:'SIMULATION_ONLY_NO_DEBIT'};
   }catch(error){

@@ -8,7 +8,7 @@
  * @outputs       transitioned_customer_parcels, immutable_parcel_events
  * @depends       services/parcel-operations.js
  * @used-by       services/international-shipment-journey.js
- * @db-read       international_shipment_hub_units, hub_physical_unit_placements, hub_purchase_allocations, parcels, parcel_items
+ * @db-read       international_shipment_hub_units, hub_box_effective_placements, hub_purchase_allocations, parcels, parcel_items
  * @db-write      parcel_events
  * @db-write-via:parcel-operations parcels
  * @db-txn        caller_owned_handover_transaction
@@ -53,9 +53,9 @@ async function markFullyHandedOverParcelsShipped(client, shipmentId, actor, proo
        AND EXISTS (
          SELECT 1 FROM parcel_items rel_pi
          JOIN hub_purchase_allocations a ON a.order_item_id=rel_pi.order_item_id
-         JOIN hub_physical_unit_placements placements ON placements.allocation_id=a.id
-         JOIN international_shipment_hub_units boxes ON boxes.physical_unit_id=placements.physical_unit_id
-          WHERE rel_pi.parcel_id=p.id AND boxes.shipment_id=$1 AND placements.removed_at IS NULL
+         JOIN hub_box_effective_placements placements ON placements.allocation_id=a.id
+         JOIN international_shipment_hub_units boxes ON boxes.physical_unit_id=placements.box_unit_id
+          WHERE rel_pi.parcel_id=p.id AND boxes.shipment_id=$1
        )
      ORDER BY p.id FOR UPDATE OF p`, [shipmentId]);
   const transitioned = [];

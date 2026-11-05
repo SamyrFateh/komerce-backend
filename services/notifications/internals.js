@@ -8,6 +8,7 @@
  * @outputs       helpers, log_entry, alert
  * @depends       db.js, services/authkey-client.js, utils/logger.js
  * @used-by       services/notifications/order.js, services/notifications/parcel.js, services/notifications/otp-auth.js, services/notifications/loyalty.js
+ * @db-read       orders
  * @db-write      notification_log
  * @db-txn        notification_non_blocking
  * @doctrine      notification_non_bloquante, fallback_trace
@@ -87,6 +88,21 @@ async function logNotification({ orderRef, parcelRef, channel, event, recipient,
   }
 }
 
+
+// Commande de simulation (simulation_scope) : aucun message externe, jamais — même si le numéro est autorisé.
+// Retourne true si le message a été supprimé (et journalisé « skipped »).
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+async function suppressForSimulatedOrder(orderId, event) {
+  if (!orderId || !UUID_RE.test(String(orderId))) return false;
+  const { rows: [row] } = await db.query('SELECT reference, simulation_scope FROM orders WHERE id = $1', [orderId]);
+  if (!row || row.simulation_scope == null) return false;
+  await logNotification({
+    orderRef: row.reference, channel: 'whatsapp', event, recipient: 'suppressed',
+    status: 'skipped', detail: { reason: 'simulation_scope', scope: row.simulation_scope },
+  });
+  return true;
+}
+
 // ─── Helpers ───────────────────────────────────────────────────────────
 
 function firstName(fullName) {
@@ -148,6 +164,7 @@ async function notifyText(phone, message, event, orderId = null) {
   }
 
   try {
+    if (await suppressForSimulatedOrder(orderId, event)) return { ok: false, skipped: true, reason: 'simulation_scope' };
     const result = await callAuthKeyText({ mobile: phone, message });
 
     // orderId est un UUID (36 chars) — order_ref est désormais text (migration 089)
@@ -184,6 +201,7 @@ module.exports = {
   _alertNotificationFailure,
   setNotificationOutcomeListener,
   logNotification,
+  suppressForSimulatedOrder,
   notifyText,
   firstName, formatAmount, pickPhone, pickRecipients,
 };

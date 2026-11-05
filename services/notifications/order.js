@@ -22,7 +22,7 @@ const {
   db, log,
   waOrderCreated, waPaymentConfirmed, waOrderShipped, waOrderDelivered, waOrderCancelled,
   callAuthKey, callAuthKeyText,
-  _alertNotificationFailure, logNotification,
+  _alertNotificationFailure, logNotification, suppressForSimulatedOrder,
   firstName, formatAmount, pickPhone, pickRecipients,
 } = require('./internals');
 const { formatRelayPoint } = require('./relay-location');
@@ -144,6 +144,7 @@ async function notifyPaymentConfirmed(orderId, orderReference) {
 //  3. Changement de statut (shipped, delivered, collected...)
 // ═══════════════════════════════════════════════════════════════════════
 async function notifyStatusChange(order, newStatus) {
+  if (order && await suppressForSimulatedOrder(order.id, `order_${newStatus}`)) return;
   // Map des statuts Komerce → fonction AuthKey
   const mapping = {
     shipped:   { fn: waOrderShipped,   event: 'order_shipped' },
