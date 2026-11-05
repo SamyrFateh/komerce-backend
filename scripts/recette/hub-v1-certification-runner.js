@@ -76,17 +76,22 @@ function installNetworkTripwire() {
   const http = require('http');
   const https = require('https');
   const attempts = [];
-  const saved = { http: http.request, https: https.request, fetch: global.fetch };
+  const saved = { http: http.request, https: https.request, httpGet: http.get, httpsGet: https.get, fetch: global.fetch };
   const trip = (kind) => (...args) => {
     const target = typeof args[0] === 'string' ? args[0] : (args[0] && (args[0].href || args[0].host || args[0].hostname)) || 'unknown';
     attempts.push({ kind, target: String(target).replace(/\/\/[^/@]*@/, '//***@').slice(0, 80) });
     throw Object.assign(new Error('HUB_V1_RUNNER_NETWORK_TRIPWIRE'), { code: 'HUB_V1_RUNNER_NETWORK_TRIPWIRE' });
   };
-  http.request = trip('http'); https.request = trip('https');
+  http.request = trip('http.request'); https.request = trip('https.request');
+  http.get = trip('http.get'); https.get = trip('https.get');
   if (saved.fetch) global.fetch = trip('fetch');
   return {
     attempts,
-    restore() { http.request = saved.http; https.request = saved.https; if (saved.fetch) global.fetch = saved.fetch; },
+    restore() {
+      http.request = saved.http; https.request = saved.https;
+      http.get = saved.httpGet; https.get = saved.httpsGet;
+      if (saved.fetch) global.fetch = saved.fetch;
+    },
   };
 }
 
@@ -419,6 +424,9 @@ async function linesOf(db, orderId) {
        FROM purchase_lines pl JOIN order_items oi ON oi.id=pl.order_item_id WHERE oi.order_id=$1 AND pl.cancelled_at IS NULL ORDER BY pl.id`, [orderId]);
   return rows;
 }
+function allTriggerStatuses(statuses, expected) {
+  return Array.isArray(statuses) && statuses.length > 0 && statuses.every((s) => s === expected);
+}
 async function step3(ctx, st) {
   const { db, manifest, svc } = ctx;
   const agent = actorOf(manifest.users.hub_agent);
@@ -438,12 +446,10 @@ async function step3(ctx, st) {
   const l103 = await linesOf(db, ctx.orders['KOM-103'].id);
   const lLocal = await linesOf(db, ctx.orders.LOCAL.id);
   // KOM-103 : « Sourcing requis » prouvé par le trigger réel, sans ligne ni PO ; LOCAL : aucune tâche Hub.
-  const sourcingRequired = trig['KOM-103'].every((s) => s === 'no_supplier') && l103.length === 0;
-  const localNoHub = trig.LOCAL.every((s) => s === 'local_stock_no_purchase') && lLocal.length === 0;
+  const sourcingRequired = allTriggerStatuses(trig['KOM-103'], 'no_supplier') && l103.length === 0;
+  const localNoHub = allTriggerStatuses(trig.LOCAL, 'local_stock_no_purchase') && lLocal.length === 0;
   st.evidence.push({ kom103_sourcing_required: sourcingRequired, trigger_statuses: trig, kom103_purchase_lines: l103.length, local_purchase_lines: lLocal.length });
-  if (!sourcingRequired) {
-    st.notes.push(`KOM-103 : anomalie non reproduite par le trigger (${trig['KOM-103']}) — certifiée par les tests de #3355`);
-  }
+  if (!sourcingRequired) throw Object.assign(new Error('KOM103_SOURCING_NOT_REPRODUCED'), { code: 'KOM103_SOURCING_NOT_REPRODUCED' });
   if (!localNoHub) throw new Error('LOCAL_ENTERED_HUB');
   const byProduct = (lines, label) => lines.filter((l) => l.product_id === manifest.products[label]);
   const lineA = [...byProduct(l101, 'A'), ...byProduct(l102, 'A')].map((l) => l.id);
@@ -624,6 +630,23 @@ async function countExternalTables(db) {
     try { out[name] = (await db.query(sql)).rows[0].n; } catch (e) { out[name] = null; }
   }
   return out;
+}
+
+function summarizeExternalEffects(before, after, attempts = []) {
+  const table_delta = Object.fromEntries(Object.keys(EXTERNAL_EFFECT_COUNTS).map((table) => {
+    const b = before && before[table];
+    const a = after && after[table];
+    const readable = Number.isSafeInteger(b) && b >= 0 && Number.isSafeInteger(a) && a >= 0;
+    return [table, readable ? a - b : null];
+  }));
+  const evidence_complete = Object.values(table_delta).every((n) => Number.isSafeInteger(n));
+  const zero_external_effects = evidence_complete && attempts.length === 0 &&
+    Object.values(table_delta).every((n) => n === 0);
+  return {
+    network_attempts: attempts.length, network_attempt_targets: attempts,
+    table_rows_before: before, table_rows_after: after, table_delta,
+    evidence_complete, zero_external_effects,
+  };
 }
 
 // ─── Étape 8 : réception partielle Hub (FIFO) ────────────────────────────────
@@ -1046,11 +1069,7 @@ async function runCertification({ db = require('../../db'), run = newRun8(), dry
       };
     } finally { client.release(); }
     const externalAfter = await countExternalTables(db);
-    report.external_effects = {
-      network_attempts: tripwire.attempts.length, network_attempt_targets: tripwire.attempts,
-      table_rows_before: externalBefore, table_rows_after: externalAfter,
-      table_delta: Object.fromEntries(Object.keys(externalAfter).map((t) => [t, externalAfter[t] === null ? null : externalAfter[t] - externalBefore[t]])),
-    };
+    report.external_effects = summarizeExternalEffects(externalBefore, externalAfter, tripwire.attempts);
   } finally {
     tripwire.restore();
     if (savedAdminPhone !== undefined) process.env.ADMIN_PHONE = savedAdminPhone;
@@ -1058,7 +1077,7 @@ async function runCertification({ db = require('../../db'), run = newRun8(), dry
   report.finished_at = new Date().toISOString();
   const allPass = report.steps.length === 13 && report.steps.every((x) => x.status === 'PASS');
   const fx = report.external_effects;
-  const effectsClean = Boolean(fx) && fx.network_attempts === 0 && Object.values(fx.table_delta).every((n) => n === 0 || n === null);
+  const effectsClean = Boolean(fx && fx.zero_external_effects);
   report.checks = { all_13_steps_pass: allPass, zero_external_effects: effectsClean, local_circuit_isolated: Boolean(report.local_circuit && report.local_circuit.circuit_only_local) };
   report.verdict = allPass && effectsClean && report.checks.local_circuit_isolated ? 'PASS_EPHEMERAL_13_STEPS' : 'FAIL_OR_BLOCKED';
   report.verdict_staging = 'HOLD_NO_STAGING_WRITES';
@@ -1152,5 +1171,5 @@ if (require.main === module) {
 
 module.exports = {
   SCOPE, SUFFIXES, RUN_RE, STEP_TITLES, newRun8, orderRef, emailOf, phoneOf, assertEphemeralTarget, installNetworkTripwire,
-  newStep, expectRefusal, runCertification, renderMarkdown, writeReports, main,
+  newStep, expectRefusal, allTriggerStatuses, summarizeExternalEffects, runCertification, renderMarkdown, writeReports, main,
 };

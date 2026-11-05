@@ -24,6 +24,7 @@ const REQUIRED_MIGRATIONS=[
   '393_hub_order_bag_scan_evidence.sql',
   '394_hub_packed_bag_box_link.sql',
   '395_product_suppliers_unique_active_priority.sql',
+  '396_parcel_ref_seq_realign.sql',
 ];
 
 function sourceGates(root=process.cwd()) {
@@ -108,7 +109,7 @@ async function databaseGates(client) {
     const byRole=Object.fromEntries(roles.map(x=>[x.role,x.n]));
     const applied=new Set(migrations.map(m=>m.filename));
     return [
-      {id:'MIGRATIONS_391_395',pass:REQUIRED_MIGRATIONS.every(m=>applied.has(m)),observed:applied.size},
+      {id:'MIGRATIONS_391_396',pass:REQUIRED_MIGRATIONS.every(m=>applied.has(m)),observed:applied.size},
       {id:'NEW_FIXTURE_REFERENCE_PREFIX_UNUSED',pass:existing.n===0,observed:existing.n},
       {id:'NO_DUPLICATE_SUPPLIER_PRIORITY',pass:duplicates.n===0,observed:duplicates.n},
       {id:'HUB_AND_RELAY_ROLES_EXIST',pass:(byRole.agent_hub||0)>0&&(byRole.agent_relais||0)>0,observed:byRole},
