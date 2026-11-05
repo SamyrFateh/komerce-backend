@@ -43,7 +43,6 @@ const GAP_MESSAGES = Object.freeze({
   NO_PAYMENT_PROVIDER: 'Aucun fournisseur de paiement activé pour ce marché.',
   NO_CASH_POLICY: 'Aucune politique de contrôle de caisse n’est définie.',
   NO_RELAIS: 'Aucun relais actif n’est rattaché au marché.',
-  NO_DELIVERY_PROOF: 'Aucune liaison de transport ni tarification attestée (ni livraison réelle abouties) : le marché ne peut pas accepter de commande payante.',
 });
 
 /** Pure : transforme un instantané en liste d'écarts ordonnée et stable. */
@@ -71,12 +70,11 @@ function computeGaps(snapshot) {
   if (!snapshot.paymentProviders.some(provider => provider.is_enabled)) add('NO_PAYMENT_PROVIDER');
   if (!snapshot.cashPolicy) add('NO_CASH_POLICY');
   if (!snapshot.relaisActive) add('NO_RELAIS');
-  if (!snapshot.deliveryProof || !snapshot.deliveryProof.proven) add('NO_DELIVERY_PROOF');
   return gaps;
 }
 
 const PLATFORM_BLOCKERS = new Set(['NO_CURRENCY_PARITY','NO_CENTRAL_REFERENT','EMPTY_CEILING','MISSING_AMOUNT_LIMIT','NO_PAYMENT_PROVIDER','NO_CASH_POLICY']);
-const OPERATIONS_BLOCKERS = new Set(['NO_DELIVERY_PROOF','NO_ASSIGNMENT','ASSIGNMENT_NOT_ACTIVE','NO_ACTIVE_MEMBERSHIP','NO_TEAM_GRANT_HOLDER','NO_OPERATING_LEAD','NO_RELAIS']);
+const OPERATIONS_BLOCKERS = new Set(['NO_ASSIGNMENT','ASSIGNMENT_NOT_ACTIVE','NO_ACTIVE_MEMBERSHIP','NO_TEAM_GRANT_HOLDER','NO_OPERATING_LEAD','NO_RELAIS']);
 
 function readinessFromGaps(gaps) {
   const platform = gaps.filter(gap => PLATFORM_BLOCKERS.has(gap.code));
@@ -177,7 +175,7 @@ async function getControlPlane(executor, marketCode) {
   const gaps = computeGaps(snapshot);
   // Choix du transporteur pour l'attestation de livrabilité : fourni uniquement quand la preuve manque
   // (aucune nouvelle route, l'écran de gestion des marchés ne lit que /api/admin/markets).
-  const carriers = gaps.some(gap => gap.code === 'NO_DELIVERY_PROOF')
+  const carriers = (!deliveryProof || !deliveryProof.proven)
     ? (await db.query('SELECT id, name FROM carriers WHERE is_active = TRUE ORDER BY name')).rows
     : [];
   return { ...snapshot, carriers, gaps, readiness: readinessFromGaps(gaps) };

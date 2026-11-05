@@ -54,13 +54,16 @@ describe('computeGaps — rapport d’écarts du Control Plane', () => {
     expect(codes(s)).toEqual(['NO_PAYMENT_PROVIDER', 'NO_CASH_POLICY', 'NO_RELAIS']);
   });
 
-  test('sans preuve de livrabilité : NO_DELIVERY_PROOF, bloquant côté exploitation', () => {
+  test('relais actif suffit : aucune attestation ni livraison historique obligatoire', () => {
     const s = healthy();
     s.deliveryProof = { proven: false, basis: null };
-    expect(codes(s)).toEqual(['NO_DELIVERY_PROOF']);
-    expect(readinessFromGaps(computeGaps(s)).ready_for_activation).toBe(false);
+    expect(codes(s)).toEqual([]);
+    expect(readinessFromGaps(computeGaps(s)).ready_for_activation).toBe(true);
     delete s.deliveryProof;
-    expect(codes(s)).toEqual(['NO_DELIVERY_PROOF']); // fail-closed : preuve absente ≠ preuve acquise
+    expect(codes(s)).toEqual([]);
+    s.relaisActive = 0;
+    expect(codes(s)).toEqual(['NO_RELAIS']);
+    expect(readinessFromGaps(computeGaps(s)).ready_for_activation).toBe(false);
   });
 
   test('chaque écart porte son message', () => {
@@ -121,7 +124,7 @@ describe('getControlPlane / listMarkets — lecture seule', () => {
     expect(view.assignment).toBeNull();
     expect(view.team).toEqual([]);
     expect(view.gaps.map(gap => gap.code)).toEqual(
-      ['MARKET_INACTIVE', 'NO_ASSIGNMENT', 'NO_PAYMENT_PROVIDER', 'NO_CASH_POLICY', 'NO_RELAIS', 'NO_DELIVERY_PROOF']
+      ['MARKET_INACTIVE', 'NO_ASSIGNMENT', 'NO_PAYMENT_PROVIDER', 'NO_CASH_POLICY', 'NO_RELAIS']
     );
   });
 

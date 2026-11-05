@@ -46,7 +46,7 @@ if (!hasIntegrationEnv) {
       const control = await getControlPlane(db, 'DJ');
       const codes = control.gaps.map(g => g.code);
       expect(codes).toEqual(expect.arrayContaining([
-        'MARKET_INACTIVE', 'NO_CURRENCY_PARITY', 'NO_ASSIGNMENT', 'NO_PAYMENT_PROVIDER', 'NO_CASH_POLICY', 'NO_RELAIS', 'NO_DELIVERY_PROOF',
+        'MARKET_INACTIVE', 'NO_CURRENCY_PARITY', 'NO_ASSIGNMENT', 'NO_PAYMENT_PROVIDER', 'NO_CASH_POLICY', 'NO_RELAIS',
       ]));
       expect(control.readiness.ready_for_activation).toBe(false);
       expect(control.readiness.platform.blockers.map(g => g.code)).toContain('NO_CURRENCY_PARITY');
