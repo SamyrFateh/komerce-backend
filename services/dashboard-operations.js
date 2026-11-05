@@ -48,6 +48,11 @@ function marketFilters(market) {
 
 async function getActiveOrders(filters = {}) {
   const { where, params } = buildFiltersClause(filters);
+  // An exact reference must be filtered BEFORE the top-30 list limit; otherwise
+  // the canonical order can be hidden by other active orders in a busy market.
+  const reference = typeof filters.reference === 'string' && filters.reference.trim() ? filters.reference.trim() : null;
+  const activeWhere = reference ? `${where} AND o.reference = ${params.length + 1}` : where;
+  const queryParams = reference ? [...params, reference, ACTIVE_ORDER_STATUSES] : [...params, ACTIVE_ORDER_STATUSES];
   const { rows } = await db.query(`
     SELECT
       o.reference,
@@ -77,15 +82,15 @@ async function getActiveOrders(filters = {}) {
          WHERE pi.parcel_id = p.id
            AND oi.order_id = o.id
       )
-    WHERE ${where}
-      AND o.status::text = ANY($${params.length + 1}::text[])
+    WHERE ${activeWhere}
+      AND o.status::text = ANY(${queryParams.length}::text[])
     GROUP BY
       o.reference, o.status, o.payment_status, o.total_kmf,
       o.destination_island, o.created_at, r.name,
       o.available_at, o.shipped_at, o.preparation_at, o.purchasing_at
     ORDER BY hours_since_last_event DESC, o.created_at ASC
     LIMIT 30
-  `, [...params, ACTIVE_ORDER_STATUSES]);
+  `, queryParams);
 
   return rows.map(row => ({
     reference: row.reference,
