@@ -23,21 +23,25 @@ function assertApproval({run,env=process.env}={}) {
   if (!/^[a-f0-9]{40}$/i.test(String(env.E2E_EXPECTED_DEPLOY_SHA||'')))
     throw Error('STAGING_EXACT_DEPLOY_SHA_REQUIRED');
 }
-async function checkSharedBaselines(db) {
+async function checkSharedBaselines(db, {
+  resolveFx = require('../../services/fx-chain-service').resolveObservation,
+  deliveryProof = require('../../services/market-delivery-proof-service').getDeliveryProof,
+} = {}) {
   const client=await db.getClient();
   try {
     await client.query('BEGIN READ ONLY');
-    const {rows:[row]}=await client.query(
-      `SELECT
-        EXISTS (SELECT 1 FROM fx_rate_observations
-                WHERE approved_by IS NOT NULL AND as_of>NOW()-INTERVAL '5 days') AS approved_fx,
-        EXISTS (SELECT 1 FROM market_delivery_attestations a
-                JOIN markets m ON m.id=a.market_id
-                WHERE m.code='KM' AND m.lifecycle_status='ACTIVE'
-                  AND a.revoked_at IS NULL AND a.valid_until>NOW()) AS delivery_attested`);
-    if (!row?.approved_fx || !row?.delivery_attested)
-      throw Error('STAGING_SHARED_COMMERCIAL_BASELINE_MISSING');
-    return { approved_fx:true, delivery_attested:true };
+    const {rows:[market]}=await client.query(
+      "SELECT id FROM markets WHERE code='KM' AND lifecycle_status='ACTIVE'");
+    if (!market) throw Error('STAGING_MARKET_KM_NOT_ACTIVE');
+    // Autorité FX réelle : priorité à la référence publique EUR/USD, repli sur
+    // une observation manuelle réellement approuvée selon la règle canonique.
+    const observation=await resolveFx({client});
+    // Preuve de livraison réelle : ATTESTATION active ou HISTORY collecté réel
+    // pour KM. N'invente ni transporteur ni justificatif commercial.
+    const proof=await deliveryProof(client,market.id);
+    if (!observation?.id || !proof?.proven)
+      throw Error('STAGING_CANONICAL_BASELINE_NOT_PROVEN');
+    return { fx_authority:observation.source_label, delivery_basis:proof.basis };
   } finally {
     await client.query('ROLLBACK').catch(()=>{});
     client.release();

@@ -42,12 +42,21 @@ test('deux HOLD historiques acceptés seulement par le protocole explicite; tout
     checks:checks().map(c=>c.id==='MIGRATIONS_391_396'?{...c,pass:false}:c)}),baselineImpl})).rejects.toThrow('STAGING_PREFLIGHT_UNEXPECTED_FAILURE');
   expect(db.getClient).not.toHaveBeenCalled();
 });
-test('référentiels FX et fret : contrôle strictement READ ONLY, refus des manques',async()=>{
-  const stm=[];
-  const db={getClient:async()=>({query:async(sql)=>{stm.push(sql);return {rows:[{approved_fx:false,delivery_attested:true}]};},
-    release:()=>stm.push('RELEASE')})};
-  await expect(checkSharedBaselines(db)).rejects.toThrow('STAGING_SHARED_COMMERCIAL_BASELINE_MISSING');
+test('référentiels FX et livraison : autorité canonique, transaction READ ONLY, aucune valeur inventée',async()=>{
+  const stm=[];const client={
+    query:async(sql)=>{stm.push(sql);return {rows:sql.startsWith('SELECT id FROM markets')?[{id:'market-id'}]:[]};},
+    release:()=>stm.push('RELEASE')
+  };
+  const db={getClient:async()=>client};
+  const resolveFx=jest.fn(async()=>({id:'official-quote-id',source_label:'ECB official EUR/USD'}));
+  const deliveryProof=jest.fn(async()=>({proven:true,basis:'HISTORY'}));
+  expect(await checkSharedBaselines(db,{resolveFx,deliveryProof})).toMatchObject({
+    fx_authority:'ECB official EUR/USD',delivery_basis:'HISTORY'});
+  expect(resolveFx).toHaveBeenCalledWith({client});
+  expect(deliveryProof).toHaveBeenCalledWith(client,'market-id');
   expect(stm[0]).toBe('BEGIN READ ONLY');
   expect(stm).toContain('ROLLBACK');
   expect(stm).toContain('RELEASE');
+  await expect(checkSharedBaselines(db,{resolveFx,deliveryProof:async()=>({proven:false})}))
+    .rejects.toThrow('STAGING_CANONICAL_BASELINE_NOT_PROVEN');
 });
