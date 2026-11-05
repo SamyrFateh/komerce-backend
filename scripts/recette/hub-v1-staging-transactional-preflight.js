@@ -31,6 +31,9 @@ function sourceGates(root=process.cwd()) {
   const checkout=read('services/order-checkout-service.js');
   const notifications=read('services/order-post-commit-hooks.js');
   const purchasing=read('services/purchasing-engagement-service.js');
+  const payment=read('services/hub-v1-fixture-payment.js');
+  const paymentDbTest=read('tests/integration/hub-v1-fixture-payment-postgres.test.js');
+  const certWorkflow=read('.github/workflows/hub-v1-certification-dual-proof.yml');
   return [
     {
       id:'DEDICATED_ATOMIC_CHECKOUT_SCOPE',
@@ -53,8 +56,21 @@ function sourceGates(root=process.cwd()) {
     },
     {
       id:'SIMULATED_CUSTOMER_PAYMENT_PROVIDER_BYPASS_VERIFIED',
-      pass:false,
-      detail:'Le paiement de commande simulé doit passer par un rail de test explicitement isolé (pas de PSP réel ni cash caisse)',
+      // Couverture de code + preuve PG16 incluse dans la campagne obligatoire :
+      // ceci ne prétend jamais qu'un paiement a été exécuté sur staging.
+      pass:payment.includes("env.KOMERCE_ENV!=='staging'") &&
+        payment.includes("env.NODE_ENV!=='test'") &&
+        payment.includes("env.HUB_V1_E2E_APPLY_MODE!=='approved'") &&
+        payment.includes("order.simulation_scope!=='E2E-HUB-V1'") &&
+        payment.includes("order.payment_mode!=='cash_relais'") &&
+        payment.includes('cashPaidAt:false') &&
+        payment.includes('source:\'hub_v1_fixture\',dbClient:client') &&
+        payment.includes("await client.query('COMMIT')") &&
+        paymentDbTest.includes('cash_paid_at:null,stripe_payment_id:null') &&
+        paymentDbTest.includes('SELECT count(*)::int AS n FROM cash_collections') &&
+        paymentDbTest.includes('idempotent_replay') &&
+        certWorkflow.includes('tests/integration/hub-v1-fixture-payment-postgres.test.js'),
+      detail:'Service interne sans PSP/caisse, source simulée, rollback et test PG16 obligatoirement exécuté en CI ; ce gate source ne certifie pas le staging',
     },
     {
       id:'STAGING_FIXTURE_OWNERSHIP_AND_CLEANUP_CERTIFIED',

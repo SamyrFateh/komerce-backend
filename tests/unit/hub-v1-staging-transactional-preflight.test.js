@@ -2,15 +2,15 @@
 /** @test-kind unit @test-runner jest @test-requires none */
 const { assess, databaseGates, sourceGates, SCOPE } = require('../../scripts/recette/hub-v1-staging-transactional-preflight');
 
-test('checkout atomique actif, mais les trois garde-fous restants bloquent les écritures staging', () => {
+test('checkout et paiement fictif en campagne PG16, mais nettoyage et runner bloquent staging', () => {
   const gates=sourceGates();
   expect(SCOPE).toBe('E2E-HUB-V1');
   expect(gates.find(c=>c.id==='DEDICATED_ATOMIC_CHECKOUT_SCOPE').pass).toBe(true);
-  expect(gates.filter(c=>!c.pass).map(c=>c.id)).toEqual(expect.arrayContaining([
-    'SIMULATED_CUSTOMER_PAYMENT_PROVIDER_BYPASS_VERIFIED',
+  expect(gates.find(c=>c.id==='SIMULATED_CUSTOMER_PAYMENT_PROVIDER_BYPASS_VERIFIED').pass).toBe(true);
+  expect(gates.filter(c=>!c.pass).map(c=>c.id)).toEqual([
     'STAGING_FIXTURE_OWNERSHIP_AND_CLEANUP_CERTIFIED',
     'STAGING_E2E_CROSS_SERVICE_RUNNER_REVIEWED',
-  ]));
+  ]);
 });
 
 test('la vérification SQL reste dans une transaction READ ONLY avec ROLLBACK', async () => {
