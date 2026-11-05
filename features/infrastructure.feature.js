@@ -397,6 +397,8 @@ module.exports = {
       'tests/unit/controlled-business-purge.test.js',
       'tests/unit/staging-reset-classification.test.js',
       'tests/unit/staging-reset-entrypoint.test.js',
+      'tests/unit/staging-e2e-provision.test.js',
+      'tests/e2e-api/staging-e2e-provision.e2e.test.js',
       'tests/integration/staging-reset-real-db.test.js',
       'tests/unit/debt-zero-gate.test.js',
       'tests/unit/feature-360-internal-api-projection.test.js',
