@@ -187,7 +187,7 @@ async function seedCanonicalUnit(db, { run, key, productId, supplierSku, unitRef
   return { canonical_unit_id: cu, source_id: sourceId };
 }
 
-async function seedFixture(db, run, services) {
+async function seedFixture(db, run, services, { officialStaging = false } = {}) {
   const { auth, local } = services;
   const priceKit = PRICE_KIT;
   const m = (await db.query("SELECT id FROM markets WHERE code='KM' AND lifecycle_status='ACTIVE'")).rows[0];
@@ -220,7 +220,7 @@ async function seedFixture(db, run, services) {
     if (!s) { s = { id: uuid() }; await db.query("INSERT INTO suppliers(id,name,platform,is_active) VALUES ($1,$2,'whatsapp',true)", [s.id, name]); }
     manifest.suppliers[label] = s.id;
   }
-  await priceKit.seedFx(db);
+  if (!officialStaging) await priceKit.seedFx(db);
   const defs = [['A', 'A'], ['B', 'B'], ['C', null]]; // C : aucun fournisseur mappé → « Sourcing requis »
   for (const [label, supplierLabel] of defs) {
     const ref = `${SCOPE}-${run}-P${label}`;
@@ -243,7 +243,7 @@ async function seedFixture(db, run, services) {
           `INSERT INTO product_suppliers(id,product_id,supplier_id,supplier_sku,supplier_price_aed,priority,is_active) VALUES ($1,$2,$3,$4,42,1,true)`,
           [uuid(), p.id, manifest.suppliers[supplierLabel], supplierSku]);
       }
-      await priceKit.activatePrice(db, { marketId: m.id, productId: p.id, amount: 10000, currency: 'KMF' });
+      await priceKit.activatePrice(db, { marketId: m.id, productId: p.id, amount: 10000, currency: 'KMF', skipAttestationSeed: officialStaging });
       // Code-barres fournisseur confirmé : preuve de scan à la préparation des sacs.
       await db.query(
         `INSERT INTO product_sku_physical_codes(product_sku_id,supplier_id,code,code_type,trust,printed_on_pack,confirmed_by,confirmed_at,confirmation_proof_ref)
@@ -261,7 +261,7 @@ async function seedFixture(db, run, services) {
     await db.query(
       `INSERT INTO products(id,name,product_ref,price_kmf,cost_kmf,stock,price_aed,weight_kg,volume_cm3,inventory_model,is_active)
        VALUES ($1,$2,$3,10000,3000,5,100,1,1000,'LEGACY_VARIANTS',TRUE)`, [lp.id, `${SCOPE} produit local ${run}`, lref]);
-    await priceKit.activatePrice(db, { marketId: m.id, productId: lp.id, amount: 10000, currency: 'KMF' });
+    await priceKit.activatePrice(db, { marketId: m.id, productId: lp.id, amount: 10000, currency: 'KMF', skipAttestationSeed: officialStaging });
     await local.setLocalStock({ productId: lp.id, marketId: m.id, qtyPhysical: 5, actorUserId: manifest.users.admin.id });
     await local.setLocalStockExposure(lp.id, m.id, 'ENABLED');
   }
@@ -281,7 +281,7 @@ const PRICE_KIT = {
        VALUES (1.10,'FIXTURE E2E-HUB-V1 — taux fictif non réel','e2e-hub-v1-fixture',now() - interval '1 hour','e2e-hub-v1-a') RETURNING id`);
     await db.query("UPDATE fx_rate_observations SET approved_by='e2e-hub-v1-b' WHERE id=$1", [o.id]);
   },
-  async activatePrice(db, { marketId, productId, amount, currency }) {
+  async activatePrice(db, { marketId, productId, amount, currency, skipAttestationSeed = false }) {
     await db.query(
       `INSERT INTO product_market_price_drafts(id,market_id,product_id,amount,currency,status,reason,authorized_at,authorization_snapshot,active_at)
        VALUES ($1,$2,$3,$4,$5,'LOCAL_ACTIVE','E2E-HUB-V1 fixture',NOW(),'{}'::jsonb,NOW())
@@ -290,6 +290,7 @@ const PRICE_KIT = {
     await db.query(
       `INSERT INTO product_market_exposure(id,product_id,market_id,commercial_exposure) VALUES ($1,$2,$3,'ENABLED')
        ON CONFLICT (product_id,market_id) DO UPDATE SET commercial_exposure='ENABLED',updated_at=NOW()`, [uuid(), productId, marketId]);
+    if (skipAttestationSeed) return; // Staging officiel : attestations et transporteurs réels préexistants seulement.
     const { rows } = await db.query('SELECT 1 FROM market_delivery_attestations WHERE market_id=$1 AND revoked_at IS NULL AND valid_until>NOW() LIMIT 1', [marketId]);
     if (rows.length) return;
     const carrier = uuid();
@@ -1020,9 +1021,12 @@ const STEP_FUNCTIONS = [step1, step2, step3, step4, step5, step6, step7, step8, 
 
 async function runCertification({ db = require('../../db'), run = newRun8(), dryRun = false, argv = process.argv } = {}) {
   if (!RUN_RE.test(run)) throw Object.assign(new Error('HUB_V1_RUNNER_RUN8_INVALID'), { code: 'HUB_V1_RUNNER_RUN8_INVALID' });
-  const target = assertEphemeralTarget(process.env.DATABASE_URL, argv);
+  const officialStaging = argv.includes('--allow-remote-staging');
+  const target = officialStaging
+    ? await require('./hub-v1-staging-target-authorization').authorizeOfficialStaging({ db, run })
+    : assertEphemeralTarget(process.env.DATABASE_URL, argv);
   const report = {
-    schema: 'hub-v1-certification-report/1', scope: SCOPE, run, mode: dryRun ? 'DRY_RUN' : 'APPLY_EPHEMERAL',
+    schema: 'hub-v1-certification-report/1', scope: SCOPE, run, mode: dryRun ? 'DRY_RUN' : (officialStaging ? 'APPLY_OFFICIAL_STAGING' : 'APPLY_EPHEMERAL'),
     target: { host: target.host, database: target.database }, started_at: new Date().toISOString(),
     verdict: 'HOLD_NO_STAGING_WRITES', staging_go: false, orders: orderRefs(run), steps: [], local_circuit: null, fixture: null,
     external_effects: null, cleanup: null, limits: [],
@@ -1039,7 +1043,7 @@ async function runCertification({ db = require('../../db'), run = newRun8(), dry
   const ctx = { db, run, svc, orders: {}, po: {}, report, manifest: null };
   const externalBefore = await countExternalTables(db);
   try {
-    ctx.manifest = await seedFixture(db, run, svc);
+    ctx.manifest = await seedFixture(db, run, svc, { officialStaging });
     ctx.market = { id: ctx.manifest.market_id, code: 'KM' };
     report.fixture = manifestForReport(ctx.manifest);
     let blocked = null;
@@ -1079,9 +1083,17 @@ async function runCertification({ db = require('../../db'), run = newRun8(), dry
   const fx = report.external_effects;
   const effectsClean = Boolean(fx && fx.zero_external_effects);
   report.checks = { all_13_steps_pass: allPass, zero_external_effects: effectsClean, local_circuit_isolated: Boolean(report.local_circuit && report.local_circuit.circuit_only_local) };
-  report.verdict = allPass && effectsClean && report.checks.local_circuit_isolated ? 'PASS_EPHEMERAL_13_STEPS' : 'FAIL_OR_BLOCKED';
-  report.verdict_staging = 'HOLD_NO_STAGING_WRITES';
-  report.limits = LIMITS;
+  report.verdict = allPass && effectsClean && report.checks.local_circuit_isolated
+    ? (officialStaging ? 'PASS_STAGING_TRANSACTION_13_STEPS' : 'PASS_EPHEMERAL_13_STEPS') : 'FAIL_OR_BLOCKED';
+  report.verdict_staging = officialStaging
+    ? (report.verdict === 'PASS_STAGING_TRANSACTION_13_STEPS' ? 'TRANSACTIONAL_PASS_CHROMIUM_PENDING' : 'TRANSACTIONAL_NO_GO')
+    : 'HOLD_NO_STAGING_WRITES';
+  report.limits = officialStaging
+    ? LIMITS.filter((x) => !x.includes('local éphémère uniquement') && !x.includes('sur un staging partagé') && !x.includes('sur la base éphémère'))
+      .concat(['Exécution sur staging Railway officiel, empreinte DB et SHA vérifiés avant toute écriture.',
+        'Verdict transactionnel uniquement : validation Chromium et GO production non encore prononcés.',
+        'Aucune suppression des preuves immuables : conservation du RUN8 de la fixture.'])
+    : LIMITS;
   return report;
 }
 
@@ -1156,13 +1168,14 @@ async function main(argv = process.argv.slice(2)) {
   const outArg = flag('--out');
   const run = runArg ? runArg.split('=')[1] : newRun8();
   const outDir = outArg ? outArg.split('=')[1] : path.join('test-results', 'hub-v1-cert');
-  assertEphemeralTarget(process.env.DATABASE_URL, process.argv); // échec fermé avant tout chargement du pool SQL
+  if (!argv.includes('--allow-remote-staging')) assertEphemeralTarget(process.env.DATABASE_URL, argv);
+  // Sur staging distant, la vérification stricte de cible intervient dans runCertification AVANT toute écriture.
   const db = require('../../db');
   try {
     const report = await runCertification({ db, run, dryRun, argv: process.argv });
     const files = writeReports(report, outDir);
     console.log(JSON.stringify({ verdict: report.verdict, run: report.run, mode: report.mode, steps: report.steps.map((s) => `${s.n}:${s.status}`), files }));
-    process.exitCode = report.verdict === 'PASS_EPHEMERAL_13_STEPS' || report.verdict === 'DRY_RUN_NO_WRITES' ? 0 : 1;
+    process.exitCode = ['PASS_EPHEMERAL_13_STEPS', 'PASS_STAGING_TRANSACTION_13_STEPS', 'DRY_RUN_NO_WRITES'].includes(report.verdict) ? 0 : 1;
   } finally { await db.pool.end().catch(() => {}); }
 }
 if (require.main === module) {
