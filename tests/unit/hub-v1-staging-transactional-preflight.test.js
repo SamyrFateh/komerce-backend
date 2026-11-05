@@ -24,6 +24,7 @@ test('la vérification SQL reste dans une transaction READ ONLY avec ROLLBACK', 
         {filename:'393_hub_order_bag_scan_evidence.sql'},
         {filename:'394_hub_packed_bag_box_link.sql'},
         {filename:'395_product_suppliers_unique_active_priority.sql'},
+        {filename:'396_parcel_ref_seq_realign.sql'},
       ]};
       if(sql.includes('FROM public.orders'))return{rows:[{n:0}]};
       if(sql.includes('FROM (SELECT product_id'))return{rows:[{n:0}]};

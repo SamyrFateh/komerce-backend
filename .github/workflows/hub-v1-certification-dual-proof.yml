@@ -66,6 +66,8 @@ jobs:
       - name: Prove E2E-HUB-V1 fixture inventory safety (pure unit)
         shell: bash
         run: node node_modules/jest/bin/jest.js tests/unit/hub-v1-fixture-dependency-inventory.test.js --runInBand --ci --forceExit
+      - name: Runner verdict safety gates (pure unit)
+        run: node node_modules/jest/bin/jest.js tests/unit/hub-v1-runner-evidence.test.js --runInBand --ci --forceExit
       - name: Real PG16 Hub stages (independent service suites)
         shell: bash
         run: |
