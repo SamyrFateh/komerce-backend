@@ -2,10 +2,10 @@
 /** @test-kind unit @test-runner jest @test-requires none */
 const { assess, databaseGates, sourceGates, SCOPE } = require('../../scripts/recette/hub-v1-staging-transactional-preflight');
 
-test('un checkout E2E-HUB-V1 non activé interdit toute écriture staging', () => {
+test('checkout atomique actif, mais les trois garde-fous restants bloquent les écritures staging', () => {
   const gates=sourceGates();
   expect(SCOPE).toBe('E2E-HUB-V1');
-  expect(gates.find(c=>c.id==='DEDICATED_ATOMIC_CHECKOUT_SCOPE').pass).toBe(false);
+  expect(gates.find(c=>c.id==='DEDICATED_ATOMIC_CHECKOUT_SCOPE').pass).toBe(true);
   expect(gates.filter(c=>!c.pass).map(c=>c.id)).toEqual(expect.arrayContaining([
     'SIMULATED_CUSTOMER_PAYMENT_PROVIDER_BYPASS_VERIFIED',
     'STAGING_FIXTURE_OWNERSHIP_AND_CLEANUP_CERTIFIED',
