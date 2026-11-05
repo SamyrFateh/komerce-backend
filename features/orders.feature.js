@@ -156,6 +156,7 @@ module.exports = {
       'tests/unit/order-checkout-service-relay-boundary.test.js',
       'tests/unit/hub-v1-fixture-checkout-guard.test.js',
       'tests/unit/hub-v1-fixture-payment.test.js',
+      'tests/integration/hub-v1-fixture-payment-postgres.test.js',
       'tests/unit/order-checkout-item-resolution.test.js',
       'tests/unit/order-checkout-persistence.test.js',
       'tests/unit/order-post-commit-hooks.test.js',
