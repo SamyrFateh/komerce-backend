@@ -177,6 +177,7 @@ module.exports = {
       'dashboards/admin/js/views/OrdersLogisticsView.js',
     ],
     tests: [
+      'tests/unit/hub-v1-fixture-dependency-inventory.test.js',
       'tests/integration/hub-live-cockpit-postgres.test.js',
       'tests/e2e-api/logistics.hub-live-cockpit-roles.e2e.test.js',
       'tests/integration/hub-physical-proof-postgres.test.js',
