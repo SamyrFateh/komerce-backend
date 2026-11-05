@@ -43,7 +43,7 @@ describeE2E('E2E-LOOP — écrivain canonique → vues consommatrices', ({ db })
     const order = { id: orderId, market_id: marketId, reference: REF };
     const status = (await q('SELECT status::text AS s FROM orders WHERE id=$1', [orderId])).rows[0].s;
     const control = await projection.getOrderControlSnapshot(order);
-    const ops = await opsQueries.getActiveOrders({});
+    const ops = await opsQueries.getActiveOrders({ reference: REF });
     const hub = await hubQueries.getQueue({ tab: 'all', limit: 100, search: REF });
     const relay = await relayQueries.getOrders({ role: 'admin' }, {
       status: 'confirmed,ordered,preparation,shipped,in_transit,available,collected', search: REF, limit: 100,
