@@ -38,7 +38,7 @@ async function assertHubFixtureOwnership(client,{reference,actorId,user,body}={}
   const items=body?.items;
   if(!Array.isArray(items)||items.length===0||!UUID.test(user?.id)||!UUID.test(actorId)||
      !UUID.test(body?.relais_id)||body?.payment_mode!=='cash_relais'||
-     body?.use_wallet===true||body?.stripe_payment_intent||body?.share_token||
+     Boolean(body?.use_wallet)||body?.stripe_payment_intent||body?.share_token||
      body?.tracking_phone){
     throw fail('HUB_V1_FIXTURE_ONLY_NO_PAYMENT_OR_SHARED_CART');
   }
