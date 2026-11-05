@@ -77,6 +77,45 @@ test('live screens read-only proof for certified orders', async ({ page }, info)
     };
     let n = 0;
     for (const target of ROLES[role]) { out.screens.push(await observe(target, 'screen-' + (++n))); save(); }
+    // Recette activée (admin uniquement) : « Afficher la recette » via ?sim=1 → include_simulation=1.
+    out.simulationProof = [];
+    if (role === 'admin') {
+      const shotText = async (t, f) => {
+        const o = await observe(t, f);
+        const text = await page.locator('body').innerText();
+        o.badges = await page.locator('.lk-sim-badge').count();
+        o.toggle = await page.locator('[data-sim-toggle]').getAttribute('aria-checked').catch(() => null);
+        o.actifs = (text.match(/(\d+)\s+colis actifs/) || [])[1] || null;
+        return o;
+      };
+      const hubOff = await shotText('/admin/hub-live?view=queue&tab=to_prepare', 'sim-hub-off');
+      const hubOn = await shotText('/admin/hub-live?view=queue&tab=to_prepare&sim=1', 'sim-hub-on');
+      const relOff = await shotText('/admin/relais-live?view=orders&list=all', 'sim-relais-off');
+      const relOn = await shotText('/admin/relais-live?view=orders&list=all&sim=1', 'sim-relais-on');
+      const kpiOff = await shotText('/admin/relais-live', 'sim-relais-kpi-off');
+      const kpiOn = await shotText('/admin/relais-live?sim=1', 'sim-relais-kpi-on');
+      out.simulationProof.push({ hubOff, hubOn, relOff, relOn, kpiOff, kpiOn });
+      save();
+      for (const o of [hubOff, relOff]) {
+        expect(o.toggle, 'filtre désactivé par défaut').toBe('false');
+        expect(o.badges).toBe(0);
+        for (const ref of REFS) expect(o.found[ref], `${ref} absent sans le filtre`).toBeNull();
+      }
+      for (const o of [hubOn, relOn]) { expect(o.toggle).toBe('true'); expect(o.badges).toBeGreaterThan(0); }
+      // Relais Live : les commandes retirées (KOM-101, KOM-102, LOCAL) ; Hub Live : KOM-103 (reliquat) ;
+      // LOCAL n'a jamais de tâche Hub.
+      for (const suffix of ['KOM-101', 'KOM-102', 'LOCAL']) {
+        const ref = REFS.find((r) => r.endsWith(suffix));
+        expect(relOn.found[ref], `${ref} dans Relais Live (recette)`).not.toBeNull();
+        expect(relOn.found[ref]).toContain('RECETTE');
+      }
+      const kom103 = REFS.find((r) => r.endsWith('KOM-103'));
+      expect(hubOn.found[kom103], `${kom103} dans Hub Live (recette)`).not.toBeNull();
+      expect(hubOn.found[kom103]).toContain('RECETTE');
+      expect(hubOn.found[REFS.find((r) => r.endsWith('LOCAL'))], 'LOCAL sans tâche Hub').toBeNull();
+      // Compteurs réels inchangés par le filtre.
+      expect(kpiOn.actifs).toBe(kpiOff.actifs);
+    }
     for (const ref of REFS) {
       const o = await observe('/admin/orders/' + encodeURIComponent(ref), 'order360-' + ref);
       out.orders.push({ ref, ...o, refVisible: Boolean(o.found[ref]) }); save();

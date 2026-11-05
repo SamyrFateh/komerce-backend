@@ -47,6 +47,7 @@
  * relais/commandes de son marché, jamais un relais unique.
  */
 
+const { simulationClause } = require('./simulation-visibility');
 const db  = require('../db');
 const { maskLast4 } = require('./pickup-secret-service');
 const { countRelayParcels } = require('./operations-relay-projection');
@@ -155,8 +156,8 @@ async function getDashboardKPIs(user, { authorizedMarkets = null } = {}) {
   };
 }
 
-async function getOrders(user, { status, search, limit = 50, offset = 0 }, { authorizedMarkets = null } = {}) {
-  let where = 'WHERE o.simulation_scope IS NULL';
+async function getOrders(user, { status, search, limit = 50, offset = 0 }, { authorizedMarkets = null, includeSimulation = false } = {}) {
+  let where = `WHERE ${simulationClause('o', includeSimulation)}`;
   const params = [];
   let pi = 1;
 
@@ -191,7 +192,7 @@ async function getOrders(user, { status, search, limit = 50, offset = 0 }, { aut
 
   const { rows } = await db.query(`
     SELECT
-      o.id, o.reference, o.status, o.total_kmf,
+      o.id, o.reference, o.status, o.total_kmf, o.simulation_scope,
       o.display_total_amount, o.display_currency,
       (SELECT m.currency FROM markets m WHERE m.id = o.market_id) AS market_currency,
       o.payment_mode, o.payment_status, o.pickup_secret_last4,

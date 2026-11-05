@@ -22,7 +22,7 @@
 (function initRelayLive(global) {
   const kit = global.KomerceLiveKit;
   if (!kit) throw new Error('live_kit_missing');
-  const { order360Link, esc, num, fmtDate, ageLabel, queryString, processBoard, tiles, table } = kit;
+  const { order360Link, setViewer, simParams, simToggle, simBadge, esc, num, fmtDate, ageLabel, queryString, processBoard, tiles, table } = kit;
 
   // Montant à encaisser dans la devise du MARCHÉ (API a_encaisser) — jamais le pivot interne KMF.
   const fmtCollect = a => (a && a.available) ? `${Math.round(Number(a.amount)).toLocaleString('fr-FR')} ${a.currency}` : 'montant local indisponible';
@@ -57,9 +57,9 @@
   const listOf = p => (LISTS[p.list] ? p.list : 'available');
   const fromOf = p => (LISTS[p.from] ? p.from : '');
   const offsetOf = p => Math.max(0, num(p.offset));
-  const listUrl = (list, offset = 0) => `${BASE}${queryString({ view:'orders', list, offset:offset > 0 ? offset : '' })}`;
-  const orderUrl = (id, from) => `${BASE}${queryString({ view:'order', order:id, from })}`;
-  const previewUrl = id => `${BASE}${queryString({ sel:id })}`;
+  const listUrl = (list, offset = 0) => `${BASE}${queryString({ view:'orders', list, offset:offset > 0 ? offset : '', ...simParams() })}`;
+  const orderUrl = (id, from) => `${BASE}${queryString({ view:'order', order:id, from, ...simParams() })}`;
+  const previewUrl = id => `${BASE}${queryString({ sel:id, ...simParams() })}`;
   const paymentLabel = o => (o.cash_pending ? 'Cash à encaisser' : o.payment_status === 'paid' ? 'Payée' : 'Paiement en attente');
 
   function relayTabs() {
@@ -74,7 +74,7 @@
     const waiting = order.status === 'available' ? ageLabel(order.heures_attente) : ageLabel(num(order.age_jours) * 24);
     const late = order.urgence === 'haute' || order.urgence === 'critique';
     return `<tr>
-      <td><a href="${orderUrl(order.id, from)}" data-cockpit-nav>${esc(order.reference)}</a>${order360Link(order.reference, 'Retour au Relais live')}</td>
+      <td><a href="${orderUrl(order.id, from)}" data-cockpit-nav>${esc(order.reference)}</a>${order360Link(order.reference, 'Retour au Relais live')}${simBadge(order.simulation_scope)}</td>
       <td>${esc(order.client_nom || order.user_name || '—')}</td>
       <td>${esc(order.relais_nom || '—')}${order.ile ? ` <small>${esc(order.ile)}</small>` : ''}</td>
       <td>${esc(STATUS[order.status] || order.status)}</td>
@@ -122,7 +122,7 @@
     const incidents = num(k.incidents_ouverts);
     const asCards = (list, from) => (Array.isArray(list?.orders) ? list.orders : []).map(order => ({
       label:order.reference,
-      sub:order.client_nom || order.user_name || order.relais_nom || '',
+      sub:`${order.simulation_scope ? `RECETTE · ${order.simulation_scope} · ` : ''}${order.client_nom || order.user_name || order.relais_nom || ''}`,
       href:orderUrl(order.id, from),
       tone:num(order.incidents_ouverts) > 0 ? 'blocked' : (order.urgence === 'haute' || order.urgence === 'critique') ? 'attention' : 'ok',
     }));
@@ -165,6 +165,7 @@
           { label:'Incidents ouverts', value:incidents, sub:incidents > 0 ? 'à traiter' : 'rien à faire', cls:incidents > 0 ? 'is-review is-attention' : 'is-review' },
         ])}
         <p class="kir-run-proof lk-signals">${signals}</p>
+        ${simToggle()}
         <section class="lk-block" aria-label="À retirer en premier">
           <div class="lk-block-head"><span class="kir-section-kicker">À RETIRER EN PREMIER</span><a href="${listUrl('available')}" data-cockpit-nav class="kir-subtle-link">Voir tous les colis disponibles →</a></div>
           ${table([...ORDER_COLUMNS, 'Détail'], first.map(order => orderRow(order, 'available', p.sel || '')), { empty:'Aucun colis disponible au retrait.' })}
@@ -186,7 +187,7 @@
     return {
       title:LISTS[list],
       copy:LIST_COPY[list],
-      body:`${table(ORDER_COLUMNS, rows.map(order => orderRow(order, list)), { empty:'Aucun colis dans cette liste.' })}${pager}`,
+      body:`${simToggle()}${table(ORDER_COLUMNS, rows.map(order => orderRow(order, list)), { empty:'Aucun colis dans cette liste.' })}${pager}`,
     };
   }
 
@@ -291,7 +292,7 @@
   const cockpit = kit.createCockpit({ basePath:BASE, domainLabel:'Relais', tabs:relayTabs(), views, defaultView:'overview' });
 
   global.KomerceCanonicalRelayLive = Object.freeze({
-    mount:options => cockpit.mount(options),
+    mount:options => { setViewer(options && options.user); return cockpit.mount(options); },
     renderHtml:cockpit.renderHtml,
     listUrl,
     orderUrl,

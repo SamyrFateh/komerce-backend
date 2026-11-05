@@ -42,6 +42,7 @@ const { attachMarketDelegatedRoleFor } = require('../middleware/require-market-d
 const { attachAuthorizedMarketsForCapability, requireMarketDelegatedCapability } = require('../middleware/require-market-delegated-capability');
 const log = require('../utils/logger').child({ module: 'relay-dashboard' });
 const { getDashboardKPIs, getOrders, getOrderDetail } = require('../services/relay-dashboard-queries');
+const { wantsSimulation } = require('../services/simulation-visibility');
 const { applyLiveProjection } = require('../services/live-projection');
 
 // D5 Market Control Plane — admin reste central, agent_relais reste borné par
@@ -140,7 +141,7 @@ router.get('/dashboard', ...relayRead, async (req, res, next) => {
 router.get('/orders', ...relayRead, async (req, res, next) => {
   try {
     const { status, search, limit = 50, offset = 0 } = req.query;
-    res.json(applyLiveProjection(req, await getOrders(req.user, { status, search, limit, offset }, { authorizedMarkets: req.authorizedMarkets })));
+    res.json(applyLiveProjection(req, await getOrders(req.user, { status, search, limit, offset }, { authorizedMarkets: req.authorizedMarkets, includeSimulation: wantsSimulation(req.user, req.query) })));
   } catch(err) { next(err); }
 });
 

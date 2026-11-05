@@ -273,3 +273,29 @@ describe('order360Link — lien direct vers la fiche Commande 360 avec retour ve
     expect(kit.order360Link('', 'x', { role:'admin' })).toBe('');
   });
 });
+
+describe('Recette Live (?sim=1, admin uniquement)', () => {
+  const loadKit = (search, user) => {
+    const win = { location: { search, pathname: '/admin/relais-live' }, fetch: jest.fn() };
+    const code = require('fs').readFileSync(require('path').join(__dirname, '../../public/dashboards/canonical/js/live-kit.js'), 'utf8');
+    new Function('window', 'globalThis', `${code}\nreturn 0;`).call(win, win, win);
+    const kit = win.KomerceLiveKit;
+    kit.setViewer(user);
+    return kit;
+  };
+  test('toggle visible pour admin seulement, éteint par défaut', () => {
+    expect(loadKit('', { role: 'admin' }).simToggle()).toContain('Afficher la recette');
+    expect(loadKit('', { role: 'admin' }).simToggle()).toContain('aria-checked="false"');
+    expect(loadKit('', { role: 'agent_relais' }).simToggle()).toBe('');
+    expect(loadKit('?sim=1', { role: 'agent_hub' }).simParams()).toEqual({});
+  });
+  test('?sim=1 : admin allume le toggle, badge RECETTE avec scope', () => {
+    const kit = loadKit('?sim=1&page=2', { role: 'admin' });
+    const html = kit.simToggle();
+    expect(html).toContain('aria-checked="true"');
+    expect(html).toContain('href="/admin/relais-live"');
+    expect(kit.simParams()).toEqual({ sim: '1' });
+    expect(kit.simBadge('E2E-HUB-V1')).toContain('RECETTE · E2E-HUB-V1');
+    expect(kit.simBadge(null)).toBe('');
+  });
+});

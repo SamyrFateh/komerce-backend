@@ -67,6 +67,7 @@ const {
 } = require('../services/parcel-mutation-service');
 const log = require('../utils/logger').child({ module: 'hub-dashboard' });
 const hubQueries = require('../services/hub-dashboard-queries');
+const { wantsSimulation } = require('../services/simulation-visibility');
 const hubDubai = require('../services/hub-dubai-projection');
 const { applyLiveProjection } = require('../services/live-projection');
 
@@ -153,7 +154,7 @@ router.get('/queue', ...hubRead, async (req, res, next) => {
   try {
     const data = req.user.role === 'market_operator'
       ? await hubQueries.getQueue(req.query, { authorizedMarkets: req.authorizedMarkets })
-      : await hubQueries.getQueue(req.query);
+      : await hubQueries.getQueue(req.query, { includeSimulation: wantsSimulation(req.user, req.query) });
     res.json(applyLiveProjection(req, data));
   } catch(e) { next(e); }
 });

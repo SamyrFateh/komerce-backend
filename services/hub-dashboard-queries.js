@@ -19,6 +19,7 @@
 'use strict';
 
 const log = require('../utils/logger').child({ module: 'hub-dashboard-queries' });
+const { simulationClause } = require('./simulation-visibility');
 const db  = require('../db');
 const { countRelayParcels } = require('./operations-relay-projection');
 
@@ -140,7 +141,7 @@ async function getDashboardKPIs({ authorizedMarkets = null } = {}) {
   return { orders: ordersData, parcels: parcelsData, incidents: incidentsData, stock: stockData, generated_at: new Date().toISOString() };
 }
 
-async function getQueue(filters = {}, { authorizedMarkets = null } = {}) {
+async function getQueue(filters = {}, { authorizedMarkets = null, includeSimulation = false } = {}) {
   const { scoped, marketIds } = getMarketScope(authorizedMarkets);
   const { tab = 'to_prepare', search, page = 1, limit = 50 } = filters;
   const safePage = Math.max(parseInt(page) || 1, 1);
@@ -158,7 +159,7 @@ async function getQueue(filters = {}, { authorizedMarkets = null } = {}) {
   }
 
   let searchClause = '';
-  let marketClause = 'AND o.simulation_scope IS NULL';
+  let marketClause = `AND ${simulationClause('o', includeSimulation)}`;
   const params = [];
   let idx = 1;
 
@@ -188,7 +189,7 @@ async function getQueue(filters = {}, { authorizedMarkets = null } = {}) {
 
   const { rows } = await db.query(`
     SELECT
-      o.id, o.reference, o.status, o.computed_status,
+      o.id, o.reference, o.status, o.computed_status, o.simulation_scope,
       o.payment_mode, o.payment_status, o.total_kmf,
       o.destination_island, o.routing_mode, o.transit_hub,
       o.created_at, o.updated_at,

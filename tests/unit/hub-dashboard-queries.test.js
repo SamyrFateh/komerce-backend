@@ -284,3 +284,26 @@ describe("colis groupés : lignes rattachées par order_items.order_id (S7b)", (
     expect(assignedSql).not.toContain('WHERE p.order_id = $1');
   });
 });
+
+// ─── Recette (simulation_scope) : filtre unique, KPI inchangés ───────────────
+describe('getQueue — visibilité de la recette', () => {
+  it('par défaut exclut la recette ; includeSimulation l\'inclut ; le SQL de comptage suit la même clause', async () => {
+    const svc = loadService();
+    mockQuery.mockResolvedValue({ rows: [{ count: '0' }] });
+    await svc.getQueue({});
+    expect(mockQuery.mock.calls[0][0]).toContain('o.simulation_scope IS NULL');
+    expect(mockQuery.mock.calls[1][0]).toContain('o.simulation_scope IS NULL');
+    expect(mockQuery.mock.calls[1][0]).toContain('o.simulation_scope,');
+    mockQuery.mockClear();
+    await svc.getQueue({}, { includeSimulation: true });
+    expect(mockQuery.mock.calls[0][0]).not.toContain('simulation_scope IS NULL');
+    expect(mockQuery.mock.calls[1][0]).not.toContain('simulation_scope IS NULL');
+  });
+
+  it('les KPI restent strictement réels (aucun paramètre de recette)', () => {
+    const src = require('fs').readFileSync(require('path').join(__dirname, '../../services/hub-dashboard-queries.js'), 'utf8');
+    const kpi = src.slice(src.indexOf('async function getDashboardKPIs'), src.indexOf('async function getQueue'));
+    expect(kpi).not.toMatch(/includeSimulation|simulationClause/);
+    expect(kpi).toContain('simulation_scope IS NULL');
+  });
+});

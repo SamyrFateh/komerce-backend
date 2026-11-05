@@ -175,7 +175,22 @@ describe('routes/hub-dashboard', () => {
       hubQueries.getQueue.mockResolvedValueOnce({ items: [] });
       const res = await request(buildApp()).get('/api/hub-dashboard/queue').query({ status: 'urgent' });
       expect(res.status).toBe(200);
-      expect(hubQueries.getQueue).toHaveBeenCalledWith(expect.objectContaining({ status: 'urgent' }));
+      expect(hubQueries.getQueue).toHaveBeenCalledWith(expect.objectContaining({ status: 'urgent' }), { includeSimulation: false });
+    });
+
+    test('include_simulation=1 : honoré pour admin uniquement, ignoré pour agent_hub', async () => {
+      const prev = mockUser;
+      try {
+        mockUser = { id: 'admin-1', role: 'admin' };
+        hubQueries.getQueue.mockResolvedValueOnce({ data: [] });
+        await request(buildApp()).get('/api/hub-dashboard/queue').query({ include_simulation: '1' });
+        expect(hubQueries.getQueue).toHaveBeenLastCalledWith(expect.any(Object), { includeSimulation: true });
+        mockUser = { id: 'op-1', role: 'agent_hub' };
+        hubQueries.getQueue.mockResolvedValueOnce({ data: [] });
+        const res = await request(buildApp()).get('/api/hub-dashboard/queue').query({ include_simulation: '1' });
+        expect(res.status).toBe(200);
+        expect(hubQueries.getQueue).toHaveBeenLastCalledWith(expect.any(Object), { includeSimulation: false });
+      } finally { mockUser = prev; }
     });
   });
 
