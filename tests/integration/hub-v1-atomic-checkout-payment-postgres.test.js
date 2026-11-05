@@ -38,7 +38,7 @@ describeDb('Hub V1 — commande canonique puis paiement fictif même objet (PG16
       [ids.admin,'E2E Admin '+run,run.toLowerCase()+'-admin@komerce.test','+2694000011']);
     await q("INSERT INTO relais(id,name,agent_name,phone,address,market_id,island,island_code,is_active) VALUES ($1,$2,'E2E agent','+2693000011','Moroni',$3,'Grande Comore','MORONI',TRUE)",
       [ids.relay,'E2E-HUB-V1-'+run+'-RELAIS',market.id]);
-    await q("INSERT INTO products(id,name,product_ref,price_kmf,cost_kmf,stock,price_aed,weight_kg,volume_cm3,inventory_model,is_active) VALUES ($1,$2,$3,10000,3000,10,100,1,1000,'PRODUCT',TRUE)",
+    await q("INSERT INTO products(id,name,product_ref,price_kmf,cost_kmf,stock,price_aed,weight_kg,volume_cm3,inventory_model,is_active) VALUES ($1,$2,$3,10000,3000,10,100,1,1000,'LEGACY_VARIANTS',TRUE)",
       [ids.product,'E2E product '+run,'E2E-HUB-V1-'+run+'-P1']);
     await activateLocalPrice(db,cleanup,{marketId:market.id,productId:ids.product,amount:10000,currency:'KMF'});
     await seedApprovedEurUsdObservationForTest(db);
