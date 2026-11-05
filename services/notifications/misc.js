@@ -33,7 +33,7 @@ async function notifyText(phone, message, event, orderId = null) {
   }
 
   try {
-    if (await suppressForSimulatedOrder(orderId, event)) return { ok: false, skipped: true, reason: 'simulation_scope' };
+    if (typeof suppressForSimulatedOrder === 'function' && await suppressForSimulatedOrder(orderId, event)) return { ok: false, skipped: true, reason: 'simulation_scope' };
     const result = await callAuthKeyText({ mobile: phone, message });
 
     // orderId est un UUID (36 chars) — order_ref est désormais text (migration 089)

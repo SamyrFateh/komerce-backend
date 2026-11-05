@@ -94,7 +94,11 @@ async function logNotification({ orderRef, parcelRef, channel, event, recipient,
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 async function suppressForSimulatedOrder(orderId, event) {
   if (!orderId || !UUID_RE.test(String(orderId))) return false;
-  const { rows: [row] } = await db.query('SELECT reference, simulation_scope FROM orders WHERE id = $1', [orderId]);
+  let row;
+  try {
+    const res = await db.query('SELECT reference, simulation_scope FROM orders WHERE id = $1', [orderId]);
+    row = res && res.rows && res.rows[0];
+  } catch (_err) { return false; } // notification non bloquante : en cas de doute, comportement historique
   if (!row || row.simulation_scope == null) return false;
   await logNotification({
     orderRef: row.reference, channel: 'whatsapp', event, recipient: 'suppressed',
