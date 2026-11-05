@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 1996,
-    "edges": 9823,
+    "edges": 9830,
     "dbTables": 230,
     "doctrines": 770,
     "impactAreas": 207,
@@ -13215,7 +13215,14 @@
         "parcel_items",
         "parcels",
         "relais",
-        "users"
+        "users",
+        "scan_events",
+        "scans",
+        "hub_box_bags",
+        "customs_shipment_parcels",
+        "incidents",
+        "invoices",
+        "order_item_real_cost_allocations"
       ],
       "dbWrite": [
         "parcel_items",
@@ -63835,6 +63842,48 @@
       "to": "db:users",
       "type": "db-read",
       "label": "users"
+    },
+    {
+      "from": "services/auto-parcel.js",
+      "to": "db:scan_events",
+      "type": "db-read",
+      "label": "scan_events"
+    },
+    {
+      "from": "services/auto-parcel.js",
+      "to": "db:scans",
+      "type": "db-read",
+      "label": "scans"
+    },
+    {
+      "from": "services/auto-parcel.js",
+      "to": "db:hub_box_bags",
+      "type": "db-read",
+      "label": "hub_box_bags"
+    },
+    {
+      "from": "services/auto-parcel.js",
+      "to": "db:customs_shipment_parcels",
+      "type": "db-read",
+      "label": "customs_shipment_parcels"
+    },
+    {
+      "from": "services/auto-parcel.js",
+      "to": "db:incidents",
+      "type": "db-read",
+      "label": "incidents"
+    },
+    {
+      "from": "services/auto-parcel.js",
+      "to": "db:invoices",
+      "type": "db-read",
+      "label": "invoices"
+    },
+    {
+      "from": "services/auto-parcel.js",
+      "to": "db:order_item_real_cost_allocations",
+      "type": "db-read",
+      "label": "order_item_real_cost_allocations"
     },
     {
       "from": "services/auto-parcel.js",
@@ -116723,7 +116772,14 @@
         "parcel_items",
         "parcels",
         "relais",
-        "users"
+        "users",
+        "scan_events",
+        "scans",
+        "hub_box_bags",
+        "customs_shipment_parcels",
+        "incidents",
+        "invoices",
+        "order_item_real_cost_allocations"
       ],
       "dbWrite": [
         "parcel_items",
@@ -116737,11 +116793,18 @@
         "logistics"
       ],
       "mustCheck": [
+        "db:customs_shipment_parcels",
+        "db:hub_box_bags",
+        "db:incidents",
+        "db:invoices",
+        "db:order_item_real_cost_allocations",
         "db:order_items",
         "db:orders",
         "db:parcel_items",
         "db:parcels",
         "db:relais",
+        "db:scan_events",
+        "db:scans",
         "db:users",
         "doctrine:resolve_before_behavior_change",
         "impact:logistics",

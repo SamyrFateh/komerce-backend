@@ -7,6 +7,8 @@
  * @test-requires none
  */
 jest.mock('../../db', () => ({ query: jest.fn() }));
+const mockTransition = jest.fn();
+jest.mock('../../services/parcel-operations', () => ({ transitionParcelStatus: (...a) => mockTransition(...a) }));
 
 jest.mock('../../utils/logger', () => ({
   child: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }),
@@ -175,17 +177,21 @@ describe('auto-parcel', () => {
   });
 
   describe('cleanupGhostParcels', () => {
-    it('supprime les colis fantomes auto et retourne les references nettoyees', async () => {
-      db.query
-        .mockResolvedValueOnce({ rows: [{ id: 'ghost-1', reference: 'KOM-P-2026-000100' }] })
-        .mockResolvedValueOnce({ rows: [], rowCount: 1 })
-        .mockResolvedValueOnce({ rows: [{ id: 'ghost-2', reference: 'KOM-P-2026-000101' }] })
-        .mockResolvedValueOnce({ rows: [], rowCount: 1 });
+    it('annule (jamais DELETE) les colis fantomes auto via le SSOT de transition et retourne { cancelled, references }', async () => {
+      db.query.mockResolvedValueOnce({ rows: [{ id: 'ghost-1', reference: 'KOM-P-2026-000100' }, { id: 'ghost-2', reference: 'KOM-P-2026-000101' }] });
+      mockTransition.mockResolvedValue({ ok: true });
 
       const result = await cleanupGhostParcels();
 
-      expect(result).toEqual({ deleted: 2, ghosts: ['KOM-P-2026-000100', 'KOM-P-2026-000101'] });
-      expect(db.query.mock.calls.filter(call => String(call[0]).startsWith('DELETE FROM parcels'))).toHaveLength(2);
+      expect(result).toEqual({ cancelled: 2, references: ['KOM-P-2026-000100', 'KOM-P-2026-000101'] });
+      expect(mockTransition).toHaveBeenCalledWith(db, 'ghost-1', 'cancelled', { cancelReason: 'ghost_auto_parcel_cleanup' });
+      expect(db.query).toHaveBeenCalledTimes(1);
+      expect(db.query.mock.calls[0][0]).toContain("p.label LIKE 'Auto-%'");
+      expect(db.query.mock.calls[0][0]).not.toMatch(/KOM-P-%|DELETE/);
+      expect(db.query.mock.calls[0][1]).toEqual([24]);
+      for (const proof of ['scan_events', 'scans', 'hub_box_bags', 'customs_shipment_parcels', 'incidents', 'invoices', 'order_item_real_cost_allocations']) {
+        expect(db.query.mock.calls[0][0]).toMatch(new RegExp(`NOT EXISTS \\(SELECT 1 FROM ${proof} `));
+      }
     });
   });
 });

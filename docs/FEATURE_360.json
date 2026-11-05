@@ -18283,7 +18283,7 @@
             ]
           },
           "tests": {
-            "count": 85,
+            "count": 86,
             "files": [
               {
                 "declared": "tests/e2e-api/hub-membership-readers.e2e.test.js",
@@ -18313,6 +18313,11 @@
               {
                 "declared": "tests/e2e-api/orders.pickup-code-vs-authorized-name.e2e.test.js",
                 "resolvedPath": "tests/e2e-api/orders.pickup-code-vs-authorized-name.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/auto-parcel-cleanup-postgres.test.js",
+                "resolvedPath": "tests/integration/auto-parcel-cleanup-postgres.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -18733,7 +18738,7 @@
             ]
           }
         },
-        "totalFiles": 176,
+        "totalFiles": 177,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
