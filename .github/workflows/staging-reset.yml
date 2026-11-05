@@ -28,6 +28,11 @@ on:
         required: false
         type: boolean
         default: false
+      allow_reference_drift:
+        description: 'execute : autoriser le seed a reecrire des referentiels existants divergents (rapport dry-run reference_drift a relire avant)'
+        required: false
+        type: boolean
+        default: false
       confirmation:
         description: 'Pour execute uniquement : saisir exactement RESET-STAGING-BUSINESS-DATA'
         required: false
@@ -57,6 +62,7 @@ jobs:
       KOMERCE_STAGING_RESET_MODE: ${{ inputs.scope || 'prudent' }}
       KOMERCE_STAGING_RESET_SIMULATE: ${{ inputs.simulate && inputs.mode == 'dry-run' && '1' || '0' }}
       RESET_CONFIRMATION: ${{ inputs.confirmation }}
+      KOMERCE_STAGING_RESET_ALLOW_REFERENCE_DRIFT: ${{ inputs.allow_reference_drift && inputs.mode == 'execute' && '1' || '0' }}
     steps:
       # Code execute = la ref depuis laquelle le workflow est lance (la PR avant merge : preuve dry-run, puis main).
       - uses: actions/checkout@v4
