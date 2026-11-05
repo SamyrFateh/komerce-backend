@@ -116,7 +116,8 @@ async function runOrderCheckout({ user, body, internalSimulation = null }) {
         (hubFixture && (!isAllowedHubFixtureReference(internalSimulation.reference) ||
           !Number.isSafeInteger(internalSimulation.expectedProductTotalKmf) ||
           internalSimulation.expectedProductTotalKmf <= 0))) {
-      throw Object.assign(new Error('SIMULATION_INTERNAL_CHECKOUT_FORBIDDEN'), { code: 'SIMULATION_INTERNAL_CHECKOUT_FORBIDDEN' });
+      const code = hubFixture ? 'HUB_V1_INTERNAL_CHECKOUT_FORBIDDEN' : 'RCT1_INTERNAL_CHECKOUT_FORBIDDEN';
+      throw Object.assign(new Error(code), { code });
     }
   }
   const client = await db.getClient();
@@ -140,7 +141,7 @@ async function runOrderCheckout({ user, body, internalSimulation = null }) {
         await client.query('ROLLBACK');
         return fail(409, { code: hubFixture ? 'HUB_V1_ORDER_ALREADY_EXISTS' : 'RCT1_ORDER_ALREADY_EXISTS',
           reference: internalSimulation.reference,
-          error: 'Commande de recette deja creee : utiliser la reference existante' });
+          error: hubFixture ? 'Commande de recette Hub V1 deja creee' : 'Commande RCT1 deja creee : utiliser la reference existante' });
       }
     }
 
