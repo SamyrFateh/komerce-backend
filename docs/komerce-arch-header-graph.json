@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 787,
+    "scannedCodeFiles": 789,
     "filesWithFullHeaders": 736,
-    "filesWithLiteHeaders": 51,
-    "filesWithAnyHeaders": 787,
+    "filesWithLiteHeaders": 53,
+    "filesWithAnyHeaders": 789,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1993,
-    "edges": 9809,
-    "dbTables": 229,
+    "graphNodes": 1996,
+    "edges": 9822,
+    "dbTables": 230,
     "doctrines": 770,
     "impactAreas": 207,
-    "unresolvedCodeEdges": 940,
+    "unresolvedCodeEdges": 942,
     "dbWriteViaOverlapWarnings": 12,
     "multiWriterTables": 94
   },
@@ -60,7 +60,7 @@
     "market-control-plane": 5,
     "settlement": 2,
     "business-rules": 1,
-    "orders": 34,
+    "orders": 36,
     "documents": 15,
     "auth-identity": 11,
     "operations": 11,
@@ -112,7 +112,7 @@
     "schema": 1,
     "route": 137,
     "entrypoint": 1,
-    "service": 470,
+    "service": 472,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -124,7 +124,7 @@
     "critical": 118,
     "medium": 154,
     "high": 454,
-    "low": 60,
+    "low": 62,
     "unknown": 1
   },
   "nodes": [
@@ -12915,7 +12915,7 @@
         "server_side_scope_is_authority",
         "role_alone_is_not_enough",
         "relay_scope_fail_closed",
-        "explicit_market_perimeter_for_central_roles",
+        "central_hub_all_markets_forwarder_market_scoped",
         "agent_actions_acknowledge_snooze_only",
         "no_agent_resolve_canonical_chain_resolves",
         "action_center_never_mutates_source_entities"
@@ -20333,6 +20333,68 @@
       "version": "2026-10"
     },
     {
+      "id": "services/hub-v1-fixture-checkout-guard.js",
+      "file": "services/hub-v1-fixture-checkout-guard.js",
+      "type": "file-lite",
+      "headerType": "lite",
+      "role": "hub-v1-fixture-checkout-guard",
+      "domain": "orders",
+      "layer": "service",
+      "criticality": "low",
+      "owner": "backend-core",
+      "purpose": "Réserver un checkout simulé Hub V1 (non exposé aux routes clients).",
+      "inputs": [],
+      "outputs": [],
+      "depends": [],
+      "usedBy": [],
+      "dbRead": [
+        "users",
+        "relais",
+        "products",
+        "orders"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "caller_transaction_preserved"
+      ],
+      "doctrine": [],
+      "impactAreas": [],
+      "version": null
+    },
+    {
+      "id": "services/hub-v1-fixture-payment.js",
+      "file": "services/hub-v1-fixture-payment.js",
+      "type": "file-lite",
+      "headerType": "lite",
+      "role": "hub-v1-fixture-payment",
+      "domain": "orders",
+      "layer": "service",
+      "criticality": "low",
+      "owner": "backend-core",
+      "purpose": "Paiement fictif d'une commande E2E-HUB-V1 : aucune entrée caisse, PSP ou notification.",
+      "inputs": [],
+      "outputs": [],
+      "depends": [],
+      "usedBy": [],
+      "dbRead": [
+        "orders",
+        "users"
+      ],
+      "dbWrite": [
+        "orders",
+        "order_status_history",
+        "local_stock_allocations (via capacités canoniques)"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "same_transaction"
+      ],
+      "doctrine": [],
+      "impactAreas": [],
+      "version": null
+    },
+    {
       "id": "services/import-lot-registry.js",
       "file": "services/import-lot-registry.js",
       "type": "file",
@@ -23778,7 +23840,9 @@
         "services/notifications/otp-auth.js",
         "services/notifications/loyalty.js"
       ],
-      "dbRead": [],
+      "dbRead": [
+        "orders"
+      ],
       "dbWrite": [
         "notification_log"
       ],
@@ -23872,7 +23936,9 @@
       "usedBy": [
         "services/notification-service.js"
       ],
-      "dbRead": [],
+      "dbRead": [
+        "orders"
+      ],
       "dbWrite": [
         "notification_log"
       ],
@@ -25794,7 +25860,7 @@
       ],
       "dbRead": [
         "international_shipment_hub_units",
-        "hub_physical_unit_placements",
+        "hub_box_effective_placements",
         "hub_purchase_allocations",
         "parcels",
         "parcel_items"
@@ -30171,7 +30237,7 @@
         "order_items",
         "international_shipment_hub_units",
         "international_shipments",
-        "hub_physical_unit_placements",
+        "hub_box_effective_placements",
         "hub_purchase_allocations",
         "international_shipment_relay_receipts",
         "parcels",
@@ -38911,6 +38977,11 @@
       "table": "hub_box_effective_placements"
     },
     {
+      "id": "db:local_stock_allocations (via capacités canoniques)",
+      "type": "db-table",
+      "table": "local_stock_allocations (via capacités canoniques)"
+    },
+    {
       "id": "db:import_runtime_item_events",
       "type": "db-table",
       "table": "import_runtime_item_events"
@@ -40456,9 +40527,9 @@
       "doctrine": "relay_scope_fail_closed"
     },
     {
-      "id": "doctrine:explicit_market_perimeter_for_central_roles",
+      "id": "doctrine:central_hub_all_markets_forwarder_market_scoped",
       "type": "doctrine",
-      "doctrine": "explicit_market_perimeter_for_central_roles"
+      "doctrine": "central_hub_all_markets_forwarder_market_scoped"
     },
     {
       "id": "doctrine:no_agent_resolve_canonical_chain_resolves",
@@ -63307,9 +63378,9 @@
     },
     {
       "from": "services/action-center-agent-scope.js",
-      "to": "doctrine:explicit_market_perimeter_for_central_roles",
+      "to": "doctrine:central_hub_all_markets_forwarder_market_scoped",
       "type": "doctrine",
-      "label": "explicit_market_perimeter_for_central_roles"
+      "label": "central_hub_all_markets_forwarder_market_scoped"
     },
     {
       "from": "services/action-center-agent-scope.js",
@@ -75795,6 +75866,72 @@
       "label": "supplier-integration"
     },
     {
+      "from": "services/hub-v1-fixture-checkout-guard.js",
+      "to": "backend-core",
+      "type": "owned-by",
+      "label": "backend-core"
+    },
+    {
+      "from": "services/hub-v1-fixture-checkout-guard.js",
+      "to": "db:users",
+      "type": "db-read",
+      "label": "users"
+    },
+    {
+      "from": "services/hub-v1-fixture-checkout-guard.js",
+      "to": "db:relais",
+      "type": "db-read",
+      "label": "relais"
+    },
+    {
+      "from": "services/hub-v1-fixture-checkout-guard.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/hub-v1-fixture-checkout-guard.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/hub-v1-fixture-payment.js",
+      "to": "backend-core",
+      "type": "owned-by",
+      "label": "backend-core"
+    },
+    {
+      "from": "services/hub-v1-fixture-payment.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/hub-v1-fixture-payment.js",
+      "to": "db:users",
+      "type": "db-read",
+      "label": "users"
+    },
+    {
+      "from": "services/hub-v1-fixture-payment.js",
+      "to": "db:orders",
+      "type": "db-write",
+      "label": "orders"
+    },
+    {
+      "from": "services/hub-v1-fixture-payment.js",
+      "to": "db:order_status_history",
+      "type": "db-write",
+      "label": "order_status_history"
+    },
+    {
+      "from": "services/hub-v1-fixture-payment.js",
+      "to": "db:local_stock_allocations (via capacités canoniques)",
+      "type": "db-write",
+      "label": "local_stock_allocations (via capacités canoniques)"
+    },
+    {
       "from": "services/import-lot-registry.js",
       "to": "db.js",
       "type": "depends",
@@ -81361,6 +81498,12 @@
     },
     {
       "from": "services/notifications/internals.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/notifications/internals.js",
       "to": "db:notification_log",
       "type": "db-write",
       "label": "notification_log"
@@ -81472,6 +81615,12 @@
       "to": "services/notifications/misc.js",
       "type": "uses",
       "label": "services/notification-service.js"
+    },
+    {
+      "from": "services/notifications/misc.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
     },
     {
       "from": "services/notifications/misc.js",
@@ -84723,9 +84872,9 @@
     },
     {
       "from": "services/parcel-shipment-handover.js",
-      "to": "db:hub_physical_unit_placements",
+      "to": "db:hub_box_effective_placements",
       "type": "db-read",
-      "label": "hub_physical_unit_placements"
+      "label": "hub_box_effective_placements"
     },
     {
       "from": "services/parcel-shipment-handover.js",
@@ -91457,9 +91606,9 @@
     },
     {
       "from": "services/relay-parcel-item-reconciliation.js",
-      "to": "db:hub_physical_unit_placements",
+      "to": "db:hub_box_effective_placements",
       "type": "db-read",
-      "label": "hub_physical_unit_placements"
+      "label": "hub_box_effective_placements"
     },
     {
       "from": "services/relay-parcel-item-reconciliation.js",
@@ -116266,7 +116415,7 @@
         "server_side_scope_is_authority",
         "role_alone_is_not_enough",
         "relay_scope_fail_closed",
-        "explicit_market_perimeter_for_central_roles",
+        "central_hub_all_markets_forwarder_market_scoped",
         "agent_actions_acknowledge_snooze_only",
         "no_agent_resolve_canonical_chain_resolves",
         "action_center_never_mutates_source_entities"
@@ -116283,7 +116432,7 @@
         "db:signals",
         "doctrine:action_center_never_mutates_source_entities",
         "doctrine:agent_actions_acknowledge_snooze_only",
-        "doctrine:explicit_market_perimeter_for_central_roles",
+        "doctrine:central_hub_all_markets_forwarder_market_scoped",
         "doctrine:no_agent_resolve_canonical_chain_resolves",
         "doctrine:relay_scope_fail_closed",
         "doctrine:role_alone_is_not_enough",
@@ -123818,6 +123967,64 @@
         "services/purchasing-trigger-service.js"
       ]
     },
+    "services/hub-v1-fixture-checkout-guard.js": {
+      "role": "hub-v1-fixture-checkout-guard",
+      "domain": "orders",
+      "criticality": "low",
+      "headerType": "lite",
+      "owner": "backend-core",
+      "purpose": "Réserver un checkout simulé Hub V1 (non exposé aux routes clients).",
+      "directDependsOn": [],
+      "directUsedBy": [],
+      "ownedFiles": [],
+      "dbRead": [
+        "users",
+        "relais",
+        "products",
+        "orders"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [],
+      "impactAreas": [],
+      "mustCheck": [
+        "backend-core",
+        "db:orders",
+        "db:products",
+        "db:relais",
+        "db:users"
+      ]
+    },
+    "services/hub-v1-fixture-payment.js": {
+      "role": "hub-v1-fixture-payment",
+      "domain": "orders",
+      "criticality": "low",
+      "headerType": "lite",
+      "owner": "backend-core",
+      "purpose": "Paiement fictif d'une commande E2E-HUB-V1 : aucune entrée caisse, PSP ou notification.",
+      "directDependsOn": [],
+      "directUsedBy": [],
+      "ownedFiles": [],
+      "dbRead": [
+        "orders",
+        "users"
+      ],
+      "dbWrite": [
+        "orders",
+        "order_status_history",
+        "local_stock_allocations (via capacités canoniques)"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [],
+      "impactAreas": [],
+      "mustCheck": [
+        "backend-core",
+        "db:local_stock_allocations (via capacités canoniques)",
+        "db:order_status_history",
+        "db:orders",
+        "db:users"
+      ]
+    },
     "services/import-lot-registry.js": {
       "role": "import-lot-registry-projection",
       "domain": "admin-dashboard",
@@ -127283,7 +127490,9 @@
         "services/notifications/loyalty.js"
       ],
       "ownedFiles": [],
-      "dbRead": [],
+      "dbRead": [
+        "orders"
+      ],
       "dbWrite": [
         "notification_log"
       ],
@@ -127303,6 +127512,7 @@
       "mustCheck": [
         "bootstrap/feature-wiring.js",
         "db:notification_log",
+        "db:orders",
         "doctrine:fallback_trace",
         "doctrine:notification_non_bloquante",
         "impact:checkout",
@@ -127372,7 +127582,9 @@
         "services/notification-service.js"
       ],
       "ownedFiles": [],
-      "dbRead": [],
+      "dbRead": [
+        "orders"
+      ],
       "dbWrite": [
         "notification_log"
       ],
@@ -127386,6 +127598,7 @@
       ],
       "mustCheck": [
         "db:notification_log",
+        "db:orders",
         "doctrine:notification_non_bloquante",
         "impact:customer-support",
         "impact:whatsapp",
@@ -129346,7 +129559,7 @@
       "ownedFiles": [],
       "dbRead": [
         "international_shipment_hub_units",
-        "hub_physical_unit_placements",
+        "hub_box_effective_placements",
         "hub_purchase_allocations",
         "parcels",
         "parcel_items"
@@ -129368,7 +129581,7 @@
       ],
       "impactAreas": [],
       "mustCheck": [
-        "db:hub_physical_unit_placements",
+        "db:hub_box_effective_placements",
         "db:hub_purchase_allocations",
         "db:international_shipment_hub_units",
         "db:parcel_events",
@@ -133627,7 +133840,7 @@
         "order_items",
         "international_shipment_hub_units",
         "international_shipments",
-        "hub_physical_unit_placements",
+        "hub_box_effective_placements",
         "hub_purchase_allocations",
         "international_shipment_relay_receipts",
         "parcels",
@@ -133650,7 +133863,7 @@
         "orders"
       ],
       "mustCheck": [
-        "db:hub_physical_unit_placements",
+        "db:hub_box_effective_placements",
         "db:hub_purchase_allocations",
         "db:international_shipment_hub_units",
         "db:international_shipment_relay_receipts",
@@ -141360,7 +141573,7 @@
   "multiWriterTables": [
     {
       "table": "orders",
-      "writerCount": 32,
+      "writerCount": 33,
       "writers": [
         "routes/admin-customs-shipments.js",
         "routes/admin/delete-order-cascade.js",
@@ -141374,6 +141587,7 @@
         "services/cash-reminder-service.js",
         "services/cost-allocation/canonical-margin-writer.js",
         "services/customs-shipment-service.js",
+        "services/hub-v1-fixture-payment.js",
         "services/inventory-service.js",
         "services/order-checkout-persistence.js",
         "services/order-checkout-service.js",
@@ -141545,12 +141759,13 @@
     },
     {
       "table": "order_status_history",
-      "writerCount": 7,
+      "writerCount": 8,
       "writers": [
         "routes/admin/delete-order-cascade.js",
         "routes/admin/system.js",
         "routes/admin/users.js",
         "routes/orders/cancel.js",
+        "services/hub-v1-fixture-payment.js",
         "services/order-checkout-persistence.js",
         "services/order-checkout-service.js",
         "services/order-status-machine.js"
@@ -145688,6 +145903,18 @@
       "to": "crypto",
       "type": "depends",
       "label": "crypto"
+    },
+    {
+      "from": "services/hub-v1-fixture-checkout-guard.js",
+      "to": "backend-core",
+      "type": "owned-by",
+      "label": "backend-core"
+    },
+    {
+      "from": "services/hub-v1-fixture-payment.js",
+      "to": "backend-core",
+      "type": "owned-by",
+      "label": "backend-core"
     },
     {
       "from": "services/import-lot-registry.js",

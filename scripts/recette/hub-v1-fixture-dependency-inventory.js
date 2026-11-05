@@ -6,7 +6,7 @@
  * @layer script
  * @owner backend-core
  * @purpose Découvrir le graphe FK de la fixture E2E-HUB-V1 sans jamais purger ou modifier des données.
- * @db-read orders, users, pg_catalog, relations FK liées
+ * @db-read orders, users, relais, suppliers, products, product_skus, product_suppliers, hub_physical_units, international_shipments, customs_shipments, purchase_lines, sourcing_candidates, pg_catalog, relations FK liées
  * @db-write none
  * @db-txn READ ONLY
  */
@@ -121,6 +121,65 @@ async function inspect(client,run){
     return report;
   }finally{await client.query('ROLLBACK');}
 }
+
+// ─── Inventaire de nettoyage étendu (lecture seule) : racines hors graphe FK + preuves immuables ───
+const DELETE_BLOCKERS = "\nSELECT c.relname AS table_name, t.tgname AS trigger_name, p.proname AS function_name,\n  (t.tgtype & 8) <> 0 AS on_delete, (t.tgtype & 16) <> 0 AS on_update\nFROM pg_trigger t\nJOIN pg_class c ON c.oid=t.tgrelid\nJOIN pg_namespace n ON n.oid=c.relnamespace\nJOIN pg_proc p ON p.oid=t.tgfoid\nWHERE NOT t.tgisinternal AND n.nspname='public' AND c.relname = ANY($1::text[])\n  AND (t.tgtype & 2) <> 0 AND ((t.tgtype & 8) <> 0 OR (t.tgtype & 16) <> 0)\n  AND p.prosrc ~* 'raise\\s+(exception|.*exception)'\nORDER BY c.relname, t.tgname\n";
+const FK_DELETE_RULES = "\nSELECT parent.relname AS parent_table, child.relname AS child_table, c.conname AS constraint_name, c.confdeltype::text AS delete_rule\nFROM pg_constraint c\nJOIN pg_class child ON child.oid=c.conrelid\nJOIN pg_class parent ON parent.oid=c.confrelid\nJOIN pg_namespace pn ON pn.oid=parent.relnamespace\nWHERE c.contype='f' AND pn.nspname='public' AND parent.relname = ANY($1::text[])\nORDER BY 1,2,3\n";
+// Racines propres à la fixture mais sans clé étrangère depuis orders : retrouvées par leurs marqueurs RUN8 exacts.
+const OWNED_ROOTS = (run) => [
+  ['users', "SELECT id::text AS id FROM users WHERE lower(email) LIKE $1", ['e2e-hub-v1-' + run.toLowerCase() + '%@komerce.test']],
+  ['relais', 'SELECT id::text AS id FROM relais WHERE name = $1', [SCOPE + '-' + run + '-RELAIS']],
+  ['suppliers', 'SELECT id::text AS id FROM suppliers WHERE name LIKE $1', [SCOPE + '-' + run + '-SUP-%']],
+  ['products', 'SELECT id::text AS id FROM products WHERE product_ref LIKE $1', [SCOPE + '-' + run + '-%']],
+  ['product_skus', 'SELECT s.id::text AS id FROM product_skus s JOIN products p ON p.id=s.product_id WHERE p.product_ref LIKE $1', [SCOPE + '-' + run + '-%']],
+  ['product_suppliers', 'SELECT ps.id::text AS id FROM product_suppliers ps JOIN products p ON p.id=ps.product_id WHERE p.product_ref LIKE $1', [SCOPE + '-' + run + '-%']],
+  ['local_stock', 'SELECT l.id::text AS id FROM local_stock l JOIN products p ON p.id=l.product_id WHERE p.product_ref LIKE $1', [SCOPE + '-' + run + '-%']],
+  ['product_market_price_drafts', 'SELECT d.id::text AS id FROM product_market_price_drafts d JOIN products p ON p.id=d.product_id WHERE p.product_ref LIKE $1', [SCOPE + '-' + run + '-%']],
+  ['product_sku_physical_codes', 'SELECT c.id::text AS id FROM product_sku_physical_codes c JOIN product_skus s ON s.id=c.product_sku_id JOIN products p ON p.id=s.product_id WHERE p.product_ref LIKE $1', [SCOPE + '-' + run + '-%']],
+  ['sourcing_candidates', 'SELECT id::text AS id FROM sourcing_candidates WHERE supplier_name = $1', [SCOPE + '-' + run]],
+  ['sourcing_sources', 'SELECT source_id::text AS id FROM sourcing_sources WHERE source_id = $1', ['api:whatsapp:' + SCOPE + '-' + run]],
+  ['purchase_orders', 'SELECT DISTINCT pl.purchase_order_id::text AS id FROM purchase_lines pl JOIN order_items oi ON oi.id=pl.order_item_id JOIN orders o ON o.id=oi.order_id WHERE o.reference LIKE $1 AND pl.purchase_order_id IS NOT NULL', [SCOPE + '-' + run + '-%']],
+  ['hub_physical_units', 'SELECT id::text AS id FROM hub_physical_units WHERE reference LIKE $1', [SCOPE + '-' + run + '-%']],
+  ['international_shipments', 'SELECT id::text AS id FROM international_shipments WHERE reference LIKE $1', [SCOPE + '-' + run + '-%']],
+  ['customs_shipments', 'SELECT id::text AS id FROM customs_shipments WHERE reference LIKE $1', [SCOPE + '-' + run + '-%']],
+];
+async function buildCleanupInventory(client, run) {
+  const report = await inspect(client, run);
+  await client.query('BEGIN READ ONLY');
+  try {
+    const owned = [];
+    for (const [table, sql, args] of OWNED_ROOTS(run)) {
+      const { rows } = await client.query(sql, args);
+      owned.push({ table, count: rows.length, ids: rows.map((r) => r.id).filter((v) => /^[A-Za-z0-9:_.-]{1,80}$/.test(v)).slice(0, MAX_IDS) });
+    }
+    const direct = [...new Set([...(report.discovered_tables || []).map((t) => t.table), ...owned.filter((o) => o.count).map((o) => o.table)])].sort();
+    const fkRules = (await client.query(FK_DELETE_RULES, [direct])).rows;
+    // Enfants (1 saut) des racines propres à la fixture : tables qui bloqueraient aussi la suppression (ex. autorisations, événements).
+    const tables = [...new Set([...direct, ...fkRules.map((r) => r.child_table)])].sort();
+    const blockers = (await client.query(DELETE_BLOCKERS, [tables])).rows;
+    const byTable = new Map(tables.map((t) => [t, { table: t, delete_blocking_triggers: [], update_guard_triggers: [] }]));
+    for (const b of blockers) {
+      const entry = byTable.get(b.table_name);
+      (b.on_delete ? entry.delete_blocking_triggers : entry.update_guard_triggers).push(b.trigger_name);
+    }
+    const immutableAll = [...byTable.values()].filter((t) => t.delete_blocking_triggers.length);
+    const holdsFixtureRows = new Set(direct);
+    const immutable = immutableAll.filter((t) => holdsFixtureRows.has(t.table));
+    report.owned_roots_outside_fk_graph = owned;
+    report.immutability = [...byTable.values()];
+    report.fk_delete_rules = fkRules;
+    report.tables_considered = tables;
+    report.cleanup_strategy = immutable.length
+      ? { decision: 'RETAIN_FIXTURE_PREFIX_NO_DELETE', reason: 'tables append-only/immuables portant des lignes de la fixture : suppression forcée interdite (ni disable trigger, ni session_replication_role=replica)',
+          immutable_tables: immutable.map((t) => t.table),
+          immutable_tables_potential_children: immutableAll.filter((t) => !holdsFixtureRows.has(t.table)).map((t) => t.table),
+          delete_performed: false }
+      : { decision: 'DELETE_ALLOWED_AFTER_DRY_RUN_REVIEW', immutable_tables: [],
+          immutable_tables_potential_children: immutableAll.map((t) => t.table), delete_performed: false };
+    report.verdict = immutable.length ? 'HOLD_IMMUTABLE_PROOFS_RETAINED' : report.verdict;
+    return report;
+  } finally { await client.query('ROLLBACK'); }
+}
 async function main(){
   const run=String(process.argv[2]||'');
   exactRefs(run); // fail before database access
@@ -155,4 +214,4 @@ if(require.main===module)main().catch(e=>{
   console.error('HUB_V1_CLEANUP_INVENTORY_REFUSED:'+String(e.message).slice(0,180));
   process.exitCode=2;
 });
-module.exports={exactRefs,validateRoots,inspect,FOREIGN_KEYS};
+module.exports={exactRefs,validateRoots,inspect,buildCleanupInventory,FOREIGN_KEYS,DELETE_BLOCKERS};

@@ -8,6 +8,7 @@
  * @outputs       whatsapp_message
  * @depends       services/authkey-client.js, services/notifications/internals.js
  * @used-by       services/notification-service.js
+ * @db-read       orders
  * @db-write      notification_log
  * @db-txn        notification_non_blocking
  * @doctrine      notification_non_bloquante
@@ -21,6 +22,7 @@ const {
   log,
   callAuthKeyText,
   logNotification,
+  suppressForSimulatedOrder,
   _alertNotificationFailure,
 } = require('./internals');
 
@@ -31,6 +33,7 @@ async function notifyText(phone, message, event, orderId = null) {
   }
 
   try {
+    if (typeof suppressForSimulatedOrder === 'function' && await suppressForSimulatedOrder(orderId, event)) return { ok: false, skipped: true, reason: 'simulation_scope' };
     const result = await callAuthKeyText({ mobile: phone, message });
 
     // orderId est un UUID (36 chars) — order_ref est désormais text (migration 089)

@@ -18283,7 +18283,7 @@
             ]
           },
           "tests": {
-            "count": 81,
+            "count": 84,
             "files": [
               {
                 "declared": "tests/e2e-api/hub-membership-readers.e2e.test.js",
@@ -18338,6 +18338,16 @@
               {
                 "declared": "tests/integration/hub-physical-proof-postgres.test.js",
                 "resolvedPath": "tests/integration/hub-physical-proof-postgres.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/hub-v1-certification-runner-postgres.test.js",
+                "resolvedPath": "tests/integration/hub-v1-certification-runner-postgres.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/hub-v1-fixture-dependency-inventory-postgres.test.js",
+                "resolvedPath": "tests/integration/hub-v1-fixture-dependency-inventory-postgres.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -18443,6 +18453,11 @@
               {
                 "declared": "tests/unit/hub-unsourced-order-dossier.test.js",
                 "resolvedPath": "tests/unit/hub-unsourced-order-dossier.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/hub-v1-fixture-dependency-inventory.test.js",
+                "resolvedPath": "tests/unit/hub-v1-fixture-dependency-inventory.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -18713,7 +18728,7 @@
             ]
           }
         },
-        "totalFiles": 172,
+        "totalFiles": 175,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -24572,7 +24587,7 @@
             ]
           },
           "services": {
-            "count": 23,
+            "count": 25,
             "files": [
               {
                 "declared": "services/admin-order-refund.js",
@@ -24592,6 +24607,16 @@
               {
                 "declared": "services/dispute-mutation-service.js",
                 "resolvedPath": "services/dispute-mutation-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/hub-v1-fixture-checkout-guard.js",
+                "resolvedPath": "services/hub-v1-fixture-checkout-guard.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/hub-v1-fixture-payment.js",
+                "resolvedPath": "services/hub-v1-fixture-payment.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -24692,7 +24717,7 @@
             ]
           },
           "tests": {
-            "count": 54,
+            "count": 58,
             "files": [
               {
                 "declared": "tests/e2e-api/customer-to-customer.golden.e2e.test.js",
@@ -24740,6 +24765,16 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/integration/hub-v1-atomic-checkout-payment-postgres.test.js",
+                "resolvedPath": "tests/integration/hub-v1-atomic-checkout-payment-postgres.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/hub-v1-fixture-payment-postgres.test.js",
+                "resolvedPath": "tests/integration/hub-v1-fixture-payment-postgres.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/integration/order-display-snapshot.test.js",
                 "resolvedPath": "tests/integration/order-display-snapshot.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -24777,6 +24812,16 @@
               {
                 "declared": "tests/unit/dispute-mutation-service.test.js",
                 "resolvedPath": "tests/unit/dispute-mutation-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/hub-v1-fixture-checkout-guard.test.js",
+                "resolvedPath": "tests/unit/hub-v1-fixture-checkout-guard.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/hub-v1-fixture-payment.test.js",
+                "resolvedPath": "tests/unit/hub-v1-fixture-payment.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -24977,7 +25022,7 @@
             ]
           }
         },
-        "totalFiles": 92,
+        "totalFiles": 98,
         "boutiqueManifest": "orders-client",
         "boutiqueFiles": {
           "count": 17,

@@ -13536,6 +13536,27 @@
       {
         "feature": "logistics",
         "category": "tests",
+        "declared": "tests/unit/hub-v1-fixture-dependency-inventory.test.js",
+        "resolvedPath": "tests/unit/hub-v1-fixture-dependency-inventory.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/integration/hub-v1-fixture-dependency-inventory-postgres.test.js",
+        "resolvedPath": "tests/integration/hub-v1-fixture-dependency-inventory-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/integration/hub-v1-certification-runner-postgres.test.js",
+        "resolvedPath": "tests/integration/hub-v1-certification-runner-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
         "declared": "tests/integration/hub-live-cockpit-postgres.test.js",
         "resolvedPath": "tests/integration/hub-live-cockpit-postgres.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -16168,6 +16189,20 @@
       {
         "feature": "orders",
         "category": "services",
+        "declared": "services/hub-v1-fixture-checkout-guard.js",
+        "resolvedPath": "services/hub-v1-fixture-checkout-guard.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "orders",
+        "category": "services",
+        "declared": "services/hub-v1-fixture-payment.js",
+        "resolvedPath": "services/hub-v1-fixture-payment.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "orders",
+        "category": "services",
         "declared": "services/dashboard-rct1-orders.js",
         "resolvedPath": "services/dashboard-rct1-orders.js",
         "status": "resolved-in-technical-graph"
@@ -16527,6 +16562,34 @@
         "category": "tests",
         "declared": "tests/unit/order-checkout-service-relay-boundary.test.js",
         "resolvedPath": "tests/unit/order-checkout-service-relay-boundary.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "orders",
+        "category": "tests",
+        "declared": "tests/unit/hub-v1-fixture-checkout-guard.test.js",
+        "resolvedPath": "tests/unit/hub-v1-fixture-checkout-guard.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "orders",
+        "category": "tests",
+        "declared": "tests/unit/hub-v1-fixture-payment.test.js",
+        "resolvedPath": "tests/unit/hub-v1-fixture-payment.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "orders",
+        "category": "tests",
+        "declared": "tests/integration/hub-v1-fixture-payment-postgres.test.js",
+        "resolvedPath": "tests/integration/hub-v1-fixture-payment-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "orders",
+        "category": "tests",
+        "declared": "tests/integration/hub-v1-atomic-checkout-payment-postgres.test.js",
+        "resolvedPath": "tests/integration/hub-v1-atomic-checkout-payment-postgres.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -40288,6 +40351,14 @@
                 "targetFile": "validators/index.js"
               },
               {
+                "sourceFileId": "tests/integration/hub-v1-fixture-dependency-inventory-postgres.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/hub-v1-certification-runner-postgres.test.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "tests/integration/hub-live-cockpit-postgres.test.js",
                 "targetFile": "db.js"
               },
@@ -42972,6 +43043,10 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "services/hub-v1-fixture-payment.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "services/dashboard-rct1-orders.js",
                 "targetFile": "db.js"
               },
@@ -43116,6 +43191,18 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "tests/unit/hub-v1-fixture-payment.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/hub-v1-fixture-payment-postgres.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/hub-v1-atomic-checkout-payment-postgres.test.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "tests/unit/parcels.test.js",
                 "targetFile": "utils/reference.js"
               },
@@ -43187,6 +43274,10 @@
               },
               {
                 "sourceFileId": "services/order-checkout-service.js",
+                "targetFile": "services/local-stock-service.js"
+              },
+              {
+                "sourceFileId": "services/hub-v1-fixture-payment.js",
                 "targetFile": "services/local-stock-service.js"
               },
               {
@@ -48504,6 +48595,16 @@
           "raw": "path.join(CANONICAL, 'js', 'action-center.js'"
         },
         {
+          "sourceFileId": "tests/unit/canonical-action-center-boundary.test.js",
+          "kind": "require",
+          "raw": "path.join(CANONICAL, 'js', 'action-center.js'"
+        },
+        {
+          "sourceFileId": "tests/unit/canonical-action-center-boundary.test.js",
+          "kind": "require",
+          "raw": "path.join(CANONICAL, 'js', 'action-center.js'"
+        },
+        {
           "sourceFileId": "tests/integration/txg01-pricing-matrices.test.js",
           "kind": "require",
           "raw": "TARGET"
@@ -48634,7 +48735,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2266
+        "filesObserved": 2275
       },
       "boutique": {
         "filesObserved": 214,
@@ -52499,8 +52600,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 683,
-        "technicalNodesOwned": 683,
+        "technicalNodesTotal": 685,
+        "technicalNodesOwned": 685,
         "technicalOrphans": 0
       },
       "dash": {
@@ -52914,7 +53015,7 @@
       {
         "type": "DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED",
         "ref": "scope:backend",
-        "msg": "29 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope backend (ex. tests/unit/modal-mobile-canonical.test.js: CSS_BUNDLES_PATH | tests/integration/txg03-hub-dashboard.test.js: TARGET | tests/unit/canonical-purchasing-workspace-boundary.test.js: path.join(ROOT, WORKSPACE) — limitation du modèle statique O5, jamais inventé"
+        "msg": "31 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope backend (ex. tests/unit/modal-mobile-canonical.test.js: CSS_BUNDLES_PATH | tests/integration/txg03-hub-dashboard.test.js: TARGET | tests/unit/canonical-purchasing-workspace-boundary.test.js: path.join(ROOT, WORKSPACE) — limitation du modèle statique O5, jamais inventé"
       },
       {
         "type": "DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED",
