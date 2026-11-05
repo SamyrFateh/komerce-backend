@@ -64,6 +64,7 @@
 const db      = require('../db');
 const { assignOrderSimulationScope } = require('./simulation-scope-service');
 const { reserveRct1OrderReference, expectedProductTotalKmf, isAllowedRct1Reference } = require('./rct1-checkout-reference-guard');
+const { reserveHubFixtureReference, isAllowedHubFixtureReference, assertHubFixtureOwnership } = require('./hub-v1-fixture-checkout-guard');
 const { getLoyaltyDiscount }             = require('./loyalty-service');
 const { getRates } = require('../utils/rates');
 const { getRule }                        = require('../utils/rules');
@@ -105,13 +106,17 @@ function fail(status, body) {
 async function runOrderCheckout({ user, body, internalSimulation = null }) {
   // Paramètre serveur uniquement : routes/orders/create.js ne transmet jamais ce contexte.
   // Validation avant tout accès DB ; un payload client simulation_scope n'est jamais lu.
+  const hubFixture = internalSimulation !== null && internalSimulation.scope === 'E2E-HUB-V1';
   if (internalSimulation !== null) {
     if (process.env.KOMERCE_ENV !== 'staging' ||
-        internalSimulation.scope !== 'RCT1' ||
+        (internalSimulation.scope !== 'RCT1' && internalSimulation.scope !== 'E2E-HUB-V1') ||
         !internalSimulation.actorId || !internalSimulation.reason ||
         typeof internalSimulation.reason !== 'string' ||
-        !isAllowedRct1Reference(internalSimulation.reference)) {
-      throw Object.assign(new Error('RCT1_INTERNAL_CHECKOUT_FORBIDDEN'), { code: 'RCT1_INTERNAL_CHECKOUT_FORBIDDEN' });
+        (internalSimulation.scope === 'RCT1' && !isAllowedRct1Reference(internalSimulation.reference)) ||
+        (hubFixture && (!isAllowedHubFixtureReference(internalSimulation.reference) ||
+          !Number.isSafeInteger(internalSimulation.expectedProductTotalKmf) ||
+          internalSimulation.expectedProductTotalKmf <= 0))) {
+      throw Object.assign(new Error('SIMULATION_INTERNAL_CHECKOUT_FORBIDDEN'), { code: 'SIMULATION_INTERNAL_CHECKOUT_FORBIDDEN' });
     }
   }
   const client = await db.getClient();
@@ -121,11 +126,21 @@ async function runOrderCheckout({ user, body, internalSimulation = null }) {
 
     if (internalSimulation) {
       // Verrou transactionnel + controle du scope, avant toute autre ecriture.
-      const reservation = await reserveRct1OrderReference(client, internalSimulation.reference);
+      const reservation = hubFixture
+        ? await reserveHubFixtureReference(client, internalSimulation.reference)
+        : await reserveRct1OrderReference(client, internalSimulation.reference);
+      if (hubFixture) {
+        // Buyer, produits et relais dédiés ; aucune commande commerciale réelle.
+        await assertHubFixtureOwnership(client, {
+          reference: internalSimulation.reference, actorId: internalSimulation.actorId,
+          user, body,
+        });
+      }
       if (reservation.already) {
         await client.query('ROLLBACK');
-        return fail(409, { code: 'RCT1_ORDER_ALREADY_EXISTS', reference: internalSimulation.reference,
-          error: 'Commande RCT1 deja creee : utiliser la reference existante' });
+        return fail(409, { code: hubFixture ? 'HUB_V1_ORDER_ALREADY_EXISTS' : 'RCT1_ORDER_ALREADY_EXISTS',
+          reference: internalSimulation.reference,
+          error: 'Commande de recette deja creee : utiliser la reference existante' });
       }
     }
 
@@ -448,11 +463,14 @@ async function runOrderCheckout({ user, body, internalSimulation = null }) {
     // et le seul supplement admis est le transport commercial du checkout (hypothese v4 : attendu =
     // prix produit + poids x tarif business_rules). L'echec annule la transaction avant toute insertion.
     if (internalSimulation) {
-      const expectedProductTotal = expectedProductTotalKmf(internalSimulation.reference);
+      const expectedProductTotal = hubFixture
+        ? internalSimulation.expectedProductTotalKmf
+        : expectedProductTotalKmf(internalSimulation.reference);
       if (payment_mode !== 'cash_relais' || Number(total_kmf) - Number(transport_price_kmf) !== expectedProductTotal ||
           Number(discountKmf) !== 0 || Number(creditApplied) !== 0) {
         await client.query('ROLLBACK');
-        return fail(409, { code: 'RCT1_CHECKOUT_TOTAL_MISMATCH', expected_product_total_kmf: expectedProductTotal,
+        return fail(409, { code: hubFixture ? 'HUB_V1_CHECKOUT_TOTAL_MISMATCH' : 'RCT1_CHECKOUT_TOTAL_MISMATCH',
+          expected_product_total_kmf: expectedProductTotal,
           observed_total_kmf: total_kmf, transport_price_kmf });
       }
     }
@@ -513,10 +531,10 @@ async function runOrderCheckout({ user, body, internalSimulation = null }) {
     // fenêtre de visibilité comme activité réelle avant le COMMIT.
     if (internalSimulation !== null) {
       await assignOrderSimulationScope(client, {
-        orderId: order.id, scope: 'RCT1', actorId: internalSimulation.actorId,
+        orderId: order.id, scope: internalSimulation.scope, actorId: internalSimulation.actorId,
         reason: internalSimulation.reason, env: { KOMERCE_ENV: 'staging' },
       });
-      order.simulation_scope = 'RCT1';
+      order.simulation_scope = internalSimulation.scope;
     }
     await recordInitialHistory(client, order.id, user.id);
 
