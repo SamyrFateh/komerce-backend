@@ -30,7 +30,7 @@ function fakeWorld() {
       if (/FROM users WHERE lower\(email\)/.test(sql)) {
         const u = w.users.get(String(params[0]).toLowerCase()); return { rows: u && u.role === 'admin' ? [{ id: u.id }] : [] };
       }
-      if (/FROM markets/.test(sql)) return { rows: [{ id: `m-${params[0]}` }] };
+      if (/FROM markets/.test(sql)) return { rows: [{ id: `m-${params[0]}`, is_active: params[0] !== 'DJ' }] };
       if (/sourcing_global_access_grants/.test(sql)) { const had = w.sourcing.has(params[0]); w.sourcing.add(params[0]); return { rowCount: had ? 0 : 1 }; }
       throw new Error(`SQL inattendu: ${sql}`);
     }),
@@ -108,12 +108,16 @@ describe('run', () => {
     expect(text).not.toContain('@komerce.test');
   });
 
-  test('execute : COMMIT, 7 profils + responsable Hub, 5 relais, droits attendus', async () => {
+  test('execute : COMMIT, 7 profils + responsable Hub, 4 relais (DJ inactif sauté), droits attendus', async () => {
     const { w, db, deps, guard } = fakeWorld();
     const env = baseEnv({ E2E_HUB_DIRECTOR_EMAIL: 'hd@komerce.test', E2E_HUB_DIRECTOR_PASSWORD: PW('hd'), KOMERCE_STAGING_E2E_PROVISION_ACK: ACK_VALUE });
     const report = await run({ db, mode: 'execute', env, deps, guard });
     expect(w.tx).toEqual(['BEGIN', 'COMMIT']);
     expect(Object.keys(report.relais)).toEqual(['KM', 'CM', 'CG', 'DJ', 'YT']);
+    // DJ présent mais inactif (migration 310) : jamais activé, aucun relais créé
+    expect(report.relais.DJ).toEqual({ status: 'skipped_market_inactive' });
+    expect(w.relais.map((r) => r.market_id)).not.toContain('m-DJ');
+    expect(w.relais).toHaveLength(4);
     const by = Object.fromEntries(report.profiles.map((p) => [p.profile, p]));
     expect(by.admin.password).toBe('not_touched');
     expect(by.market_operator.market_scope).toMatchObject({ market: 'KM', role: 'manager' });
@@ -138,7 +142,7 @@ describe('run', () => {
     expect(deps.users.setUserPasswordHash).not.toHaveBeenCalled();
     expect(again.profiles.find((p) => p.profile === 'finance')).toMatchObject({ user: 'existing', password: 'unchanged' });
     expect(again.profiles.find((p) => p.profile === 'hub_director').hub_grants).toEqual({ purchase_commitment: 'unchanged', supplier_payment: 'unchanged' });
-    expect(Object.values(again.relais).every((r) => r.status === 'unchanged')).toBe(true);
+    expect(Object.values(again.relais).every((r) => ['unchanged', 'skipped_market_inactive'].includes(r.status))).toBe(true);
   });
 
   test('mot de passe changé dans le secret : mis à jour via le writer canonique', async () => {

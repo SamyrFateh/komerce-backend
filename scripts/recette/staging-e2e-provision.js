@@ -134,8 +134,10 @@ async function ensureUser(client, deps, account) {
 async function ensureRelays(client, deps, actorId) {
   const out = {};
   for (const code of MARKET_CODES) {
-    const { rows: [market] } = await client.query('SELECT id FROM markets WHERE code = $1 AND is_active = true', [code]);
+    const { rows: [market] } = await client.query('SELECT id, is_active FROM markets WHERE code = $1', [code]);
     if (!market) throw new ProvisionRefusal('E2E_PROVISION_MARKET_MISSING', code);
+    // Marché présent mais inactif (ex. DJ, migration 310 : préparé seulement) : jamais activé ici, relais non créé.
+    if (market.is_active !== true) { out[code] = { status: 'skipped_market_inactive' }; continue; }
     const name = `E2E Relais ${code}`;
     const current = (await deps.relais.listRelais(client, { marketId: market.id })).find((r) => r.name === name);
     let relay = current; let status = 'unchanged';
