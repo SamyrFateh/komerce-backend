@@ -115,6 +115,48 @@ describe('garde-fous communs', () => {
 });
 
 describe('submitPurchaseOrder', () => {
+  it('PO simulée : ni notification admin, ni URL WhatsApp fournisseur', async () => {
+    process.env.ADMIN_PHONE = '+225111111111';
+    scripted([
+      [/FROM purchase_orders WHERE id = \$1 FOR UPDATE/, { rows: [poRow({ trigger_mode: 'whatsapp' })] }],
+      [/FROM purchase_lines pl/, { rows: [submitLine({ simulation_scope: 'E2E-HUB-V1', supplier_order_identity: { provider: 'whatsapp', version: 1, payload: { supplier_sku: 'FAKE-1' } } })] }],
+      [/FROM suppliers/, { rows: [{ name: 'Fictif', platform: 'whatsapp', contact_phone: '+971500000000' }] }],
+      [/SELECT trigger_mode/, { rows: [{ trigger_mode: 'whatsapp' }] }],
+    ]);
+    db.query.mockImplementation(async (sql) => (/FROM purchase_orders WHERE id/.test(sql) ? { rows: [{ id: PO, status: 'notified' }] } : { rows: [] }));
+    const out = await engagement.submitPurchaseOrder(PO);
+    expect(out.notification).toMatchObject({ channel: 'simulation_no_notification', wa_url: null });
+    expect(mockNotifyText).not.toHaveBeenCalled();
+    expect(mockReadiness).not.toHaveBeenCalled();
+  });
+
+  it('une PO mélangeant simulation et réel est refusée avant tout envoi', async () => {
+    const { calls } = scripted([
+      [/FROM purchase_orders WHERE id = \$1 FOR UPDATE/, { rows: [poRow({ trigger_mode: 'manual' })] }],
+      [/FROM purchase_lines pl/, { rows: [
+        submitLine({ id: L1, simulation_scope: 'E2E-HUB-V1' }),
+        submitLine({ id: L2, simulation_scope: null }),
+      ] }],
+    ]);
+    await expect(engagement.submitPurchaseOrder(PO)).rejects.toMatchObject({
+      status: 409, code: 'PURCHASE_ORDER_SIMULATION_SCOPE_MIXED',
+    });
+    expect(calls.some(c => /UPDATE purchase_orders SET status/.test(c.sql))).toBe(false);
+    expect(mockNotifyText).not.toHaveBeenCalled();
+  });
+
+  it('aucun provider auto sur une PO simulée, même si readiness paraît positive', async () => {
+    scripted([
+      [/FROM purchase_orders WHERE id = \$1 FOR UPDATE/, { rows: [poRow({ trigger_mode: 'auto' })] }],
+      [/FROM purchase_lines pl/, { rows: [submitLine({ simulation_scope: 'RCT1' })] }],
+    ]);
+    await expect(engagement.submitPurchaseOrder(PO)).rejects.toMatchObject({
+      status: 409, code: 'SIMULATED_PO_AUTO_ORDER_FORBIDDEN',
+    });
+    expect(mockReadiness).not.toHaveBeenCalled();
+    expect(mockNotifyText).not.toHaveBeenCalled();
+  });
+
   it('readiness absente → verdict UNKNOWN refusé ; provider sans buildOrderPayload ignoré ; ROLLBACK, jamais de notification', async () => {
     mockReadiness.mockResolvedValue(null);
     scripted([
