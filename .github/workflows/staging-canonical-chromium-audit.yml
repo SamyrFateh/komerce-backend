@@ -72,11 +72,11 @@ jobs:
           if [ -f test-results/staging-chromium/rapport.md ]; then
             cat test-results/staging-chromium/rapport.md >> "$GITHUB_STEP_SUMMARY"
           fi
-      - name: Archive screenshots, traces, JSON, CSV and HTML
+      - name: Archive summary only (never credentials/screenshots/traces)
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: real-canonical-chromium-${{ github.run_id }}
-          path: test-results/staging-chromium/
+          path: test-results/staging-chromium/rapport.md
           retention-days: 14
           if-no-files-found: warn
