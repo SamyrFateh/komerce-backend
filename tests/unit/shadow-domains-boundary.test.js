@@ -117,6 +117,7 @@ describe('Shadow boundary — local-stock & providers-services (Vague 1 + Vague 
     ...ALLOWED_COMPOSITION_CONSUMERS, ...ALLOWED_BOOTSTRAP_CONSUMERS,
     ...ALLOWED_WAVE3_ROUTE_CONSUMERS, ...ALLOWED_WAVE3_SERVICE_CONSUMERS,
     'services/pricing-engine.js', // L2 : provenance LOCAL_STOCK du CDR (lecture seule isStockExposable), revu RCT1
+    'services/hub-v1-fixture-payment.js', // #3382 : le paiement fictif Hub V1 consomme l'allocation de stock local comme une confirmation reelle (runner de certification)
   ];
 
   test('aucune route (routes/) ne require() les services shadow, sauf les points d\'intégration D2/D4 revus', () => {
