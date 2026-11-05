@@ -15,6 +15,7 @@ const {expectedPath}=require('./navigation-audit-policy');
 const {clickDiscoveredLink}=require('./link-replay');
 const ORIGIN=process.env.E2E_STAGING_BASE_URL||'https://komerce-backend-production.up.railway.app';
 const ROOT=path.resolve('test-results/staging-chromium/evidence');
+const QUICK=process.env.E2E_AUDIT_QUICK==='1';
 const pathname=u=>{try{const x=new URL(u,ORIGIN);return x.origin===ORIGIN?x.pathname:null;}catch{return null;}};
 const internal=u=>{const p=pathname(u);return p&&(p.startsWith('/admin')||p.startsWith('/dashboards/canonical/'))&&!/\.(css|js|svg|png|pdf|jpeg|jpg)$/.test(p)?p:null;};
 const short=x=>String(x||'').slice(0,170);
@@ -22,7 +23,7 @@ test('real staging: full navigation, market context and browser errors',async({p
  fs.mkdirSync(ROOT,{recursive:true});
  const role=info.project.name.replace(/-(mobile|desktop)$/,'');
  const mobile=info.project.name.endsWith('-mobile');
- const result={target:ORIGIN,role,viewport:mobile?'390x844':'1440x900',version:null,
+ const result={target:ORIGIN,role,mode:QUICK?'QUICK_READONLY':'EXHAUSTIVE_READONLY',viewport:mobile?'390x844':'1440x900',version:null,
   markets,dimensions,processes,context:null,routes:[],edges:[],marketViews:[],
   blockedWrites:[],apiErrors:[],jsErrors:[],canonicalRedirects:[],expectedDenials:[],findings:[]};
  const fail=(severity,code,detail)=>result.findings.push({severity,code,detail:short(detail)});
@@ -102,7 +103,8 @@ test('real staging: full navigation, market context and browser errors',async({p
      fail('P0','MARKET_MEMBERSHIP_MISSING','empty markets from server');
 
    // Declared destinations PLUS links discovered from the real rendered DOM.
-   const queue=[...pages[role]],seen=new Set(),limit=110;
+   const queue=QUICK?pages[role].slice(0,3):[...pages[role]];
+   const seen=new Set(),limit=QUICK?3:110;
    let edgeClicks=0;
    while(queue.length&&seen.size<limit){
      const route=queue.shift();
@@ -124,9 +126,11 @@ test('real staging: full navigation, market context and browser errors',async({p
            n3:document.querySelectorAll('[role=tab],.kmc-local-tab').length,links};
        });
        const actual=pathname(page.url());
-       const capture=info.project.name+'-'+String(seen.size).padStart(3,'0')+'.jpg';
-       try{await page.screenshot({path:path.join(ROOT,capture),type:'jpeg',quality:60,fullPage:true,timeout:9000});}
-       catch(e){fail('P2','SCREENSHOT_FAILED',route+': '+e.message);}
+       const capture=QUICK?null:info.project.name+'-'+String(seen.size).padStart(3,'0')+'.jpg';
+       if(!QUICK){
+         try{await page.screenshot({path:path.join(ROOT,capture),type:'jpeg',quality:60,fullPage:true,timeout:9000});}
+         catch(e){fail('P2','SCREENSHOT_FAILED',route+': '+e.message);}
+       }
        result.routes.push({expected:route,actual,http:response?.status(),capture,
          surface:data.surface,header:data.header,title:data.title,overflow:data.overflow,
          n1:data.n1,n2:data.n2,n3:data.n3,links:data.links.length});
@@ -144,8 +148,8 @@ test('real staging: full navigation, market context and browser errors',async({p
          const dest=internal(link.href);
          if(!dest)continue;
          result.edges.push({source:route,destination:dest,label:link.text,kind:'discovered'});
-         if(!seen.has(dest)&&!queue.includes(dest))queue.push(dest);
-         if(edgeClicks>=170||dest===route)continue;
+         if(!QUICK&&!seen.has(dest)&&!queue.includes(dest))queue.push(dest);
+         if(edgeClicks>=(QUICK?5:170)||dest===route)continue;
          edgeClicks++;
          const clicked=await clickDiscoveredLink(page,{
            href:link.href,sourcePath:route,pathname
@@ -170,7 +174,7 @@ test('real staging: full navigation, market context and browser errors',async({p
      }catch(e){fail('P1','ROUTE_EXCEPTION',route+': '+short(e.message));result.routes.push({expected:route,error:short(e.message)});}
      save();
    }
-   if(queue.length)fail('P1','UNVISITED_ROUTES','pending='+queue.length);
+   if(!QUICK&&queue.length)fail('P1','UNVISITED_ROUTES','pending='+queue.length);
    const endVersionResp=await page.request.get('/health/version',{timeout:20000}).catch(()=>null);
    const endVersion=endVersionResp&&endVersionResp.ok()
      ? await endVersionResp.json().catch(()=>({})) : {};
@@ -182,8 +186,8 @@ test('real staging: full navigation, market context and browser errors',async({p
 
    // Per-country overview is a read-only observation, not proof of price/checkout mutations.
    if(['admin','market_operator'].includes(role)){
-     for(const market of markets){
-       for(const surface of ['/admin/pilotage','/admin/commerce','/admin/orders','/admin/operations','/admin/finance']){
+     for(const market of (QUICK?markets.filter(m=>m==='KM'):markets)){
+       for(const surface of (QUICK?['/admin/pilotage','/admin/operations']:['/admin/pilotage','/admin/commerce','/admin/orders','/admin/operations','/admin/finance'])){
          const route=surface+'?market='+market+'&period=30';
          try{
            const r=await page.goto(ORIGIN+route,{waitUntil:'domcontentloaded'});
