@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       db, utils/logger.js, utils/reference.js
  * @used-by       routes/auto-distribute-api.js
- * @db-read       order_items, orders, parcel_items, parcels, relais, users
+ * @db-read       order_items, orders, parcel_items, parcels, relais, users, scan_events, scans, hub_box_bags, customs_shipment_parcels, incidents, invoices, order_item_real_cost_allocations
  * @db-write      parcel_items, parcels
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
@@ -344,40 +344,39 @@ async function getDistribution() {
 }
 
 
-// ── Cleanup: delete ghost parcels (0 items, auto-created) ───────
+// ── Cleanup: annule les colis fantômes (auto-créés, vides, anciens, sans preuve) ─────
+// Jamais de DELETE (trigger trg_no_delete_parcels) : transition vers « cancelled » par le SSOT
+// parcel-operations.transitionParcelStatus. Seul critère de ciblage : label « Auto-% » (colis créés par
+// distributeOrder), draft/preparation, sans parcel_items, âgés de plus de GHOST_MIN_AGE_HOURS, et sans aucune
+// preuve physique ou documentaire qui référence le colis.
+const GHOST_MIN_AGE_HOURS = 24;
 async function cleanupGhostParcels() {
+  const { transitionParcelStatus } = require('./parcel-operations');
   const { rows: ghosts } = await db.query(`
-    SELECT p.id, p.reference, p.status, p.created_at
+    SELECT p.id, p.reference
     FROM parcels p
     WHERE p.status IN ('draft', 'preparation')
       AND p.label LIKE 'Auto-%'
-      AND NOT EXISTS (
-        SELECT 1 FROM parcel_items pi WHERE pi.parcel_id = p.id
-      )
-  `);
-
-  let deleted = 0;
-  for (const g of ghosts) {
-    await db.query('DELETE FROM parcels WHERE id = $1', [g.id]);
-    deleted++;
-  }
-
-  // Also delete parcels with no items and no order that look auto-generated
-  const { rows: emptyAuto } = await db.query(`
-    SELECT p.id, p.reference FROM parcels p
-    WHERE p.status IN ('draft', 'preparation')
-      AND p.reference LIKE 'KOM-P-%'
+      AND p.created_at < NOW() - make_interval(hours => $1::int)
       AND NOT EXISTS (SELECT 1 FROM parcel_items pi WHERE pi.parcel_id = p.id)
-      AND p.created_at > NOW() - INTERVAL '7 days'
-  `);
+      AND NOT EXISTS (SELECT 1 FROM scan_events se WHERE se.parcel_id = p.id)
+      AND NOT EXISTS (SELECT 1 FROM scans sc WHERE sc.parcel_id = p.id)
+      AND NOT EXISTS (SELECT 1 FROM hub_box_bags hb WHERE hb.parcel_id = p.id)
+      AND NOT EXISTS (SELECT 1 FROM customs_shipment_parcels cp WHERE cp.parcel_id = p.id)
+      AND NOT EXISTS (SELECT 1 FROM incidents i WHERE i.parcel_id = p.id)
+      AND NOT EXISTS (SELECT 1 FROM invoices inv WHERE inv.parcel_id = p.id)
+      AND NOT EXISTS (SELECT 1 FROM order_item_real_cost_allocations a WHERE a.parcel_id = p.id)
+    ORDER BY p.created_at
+  `, [GHOST_MIN_AGE_HOURS]);
 
-  for (const g of emptyAuto) {
-    await db.query('DELETE FROM parcels WHERE id = $1', [g.id]);
-    deleted++;
+  const references = [];
+  for (const g of ghosts) {
+    const result = await transitionParcelStatus(db, g.id, 'cancelled', { cancelReason: 'ghost_auto_parcel_cleanup' });
+    if (result && result.ok) references.push(g.reference);
   }
 
-  log.info(`[AUTO-PARCEL] Cleanup: ${deleted} ghost parcels deleted`);
-  return { deleted, ghosts: ghosts.concat(emptyAuto).map(g => g.reference) };
+  log.info(`[AUTO-PARCEL] Cleanup: ${references.length} ghost parcels cancelled`);
+  return { cancelled: references.length, references };
 }
 
 

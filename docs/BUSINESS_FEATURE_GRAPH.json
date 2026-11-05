@@ -13564,6 +13564,13 @@
       {
         "feature": "logistics",
         "category": "tests",
+        "declared": "tests/integration/auto-parcel-cleanup-postgres.test.js",
+        "resolvedPath": "tests/integration/auto-parcel-cleanup-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
         "declared": "tests/integration/hub-live-cockpit-postgres.test.js",
         "resolvedPath": "tests/integration/hub-live-cockpit-postgres.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -40374,6 +40381,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "tests/integration/auto-parcel-cleanup-postgres.test.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "tests/integration/hub-live-cockpit-postgres.test.js",
                 "targetFile": "db.js"
               },
@@ -48750,7 +48761,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2276
+        "filesObserved": 2277
       },
       "boutique": {
         "filesObserved": 214,

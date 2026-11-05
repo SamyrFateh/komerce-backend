@@ -4,7 +4,7 @@
  * @test-runner jest
  * @test-requires postgres
  * @integration auto-parcel-reference-postgres.test.js
- * @brief Générateur unique de références colis (parcel_ref_seq) : concurrence, migration de réalignement, diagnostic cleanupGhostParcels.
+ * @brief Générateur unique de références colis (parcel_ref_seq) : concurrence, migration de réalignement.
  */
 const crypto = require('crypto');
 const fs = require('fs');
@@ -73,19 +73,5 @@ describeDb('Références colis — un seul générateur (PG16 jetable)', () => {
     const high = await read();
     await q(MIGRATION);
     expect(await read()).toBe(high); // jamais en arrière
-  });
-
-  describe('diagnostic cleanupGhostParcels (comportement ACTUEL, non corrigé)', () => {
-    test('critère du 2e SELECT : tout colis vide draft/preparation « KOM-P-% » < 7 jours, quel que soit label/créateur', async () => {
-      const id = crypto.randomUUID();
-      await q("INSERT INTO parcels(id,reference,status,type,label,order_id) VALUES ($1,$2,'preparation','standard','Colis manuel en préparation',$3)", [id, `KOM-P-2026-${String(800000 + Math.floor(Math.random() * 99999))}`, orders[0].order]);
-      const { rows } = await q(`SELECT p.id FROM parcels p WHERE p.status IN ('draft','preparation') AND p.reference LIKE 'KOM-P-%'
-        AND NOT EXISTS (SELECT 1 FROM parcel_items pi WHERE pi.parcel_id=p.id) AND p.created_at > NOW() - INTERVAL '7 days' AND p.id=$1`, [id]);
-      expect(rows).toHaveLength(1); // ce colis légitime vide est bien ciblé par le critère
-      await expect(autoParcel.cleanupGhostParcels()).rejects.toThrow(/Suppression interdite sur parcels/);
-      const { rows: still } = await q('SELECT status FROM parcels WHERE id=$1', [id]);
-      expect(still).toEqual([{ status: 'preparation' }]); // protégé uniquement par trg_no_delete_parcels
-      await q("UPDATE parcels SET status='cancelled' WHERE id=$1", [id]);
-    });
   });
 });

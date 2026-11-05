@@ -389,7 +389,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - routes: 18
 - boutique: 1
 - dash: 2
-- tests: 85
+- tests: 86
 - tables owned (lifecycle): 22 — `parcels`, `relais`, `parcel_items`, `hub_physical_unit_placements`, `hub_physical_units`, `hub_purchase_allocations`, `scan_events`, `scans`, `pickup_print_tokens`, `pickup_reveal_codes`, `carriers`, `hub_custody_events`, `hub_box_bags`, `international_shipment_charges`, `international_shipment_events`, `international_shipment_hub_units`, `international_shipment_relay_receipts`, `international_shipments`, `parcel_events`, `pickup_verify_attempts`, `product_sku_physical_codes`, `shipments`
 - tables written: 24
 - interfaces exposed: 78
@@ -2297,7 +2297,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 2276 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 2277 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 214 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 79 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -2478,7 +2478,7 @@ Meta Graph monté : oui.
 | logistics | documents | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | logistics | economic-engine | static-code | 1 | **OBSERVED_UNDECLARED** |
 | logistics | incident-management | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
-| logistics | infrastructure | static-code | 115 | **DECLARED_AND_OBSERVED** |
+| logistics | infrastructure | static-code | 116 | **DECLARED_AND_OBSERVED** |
 | logistics | local-stock | data-read | 2 | **DECLARED_AND_OBSERVED** |
 | logistics | loyalty | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | logistics | market | static-code | 2 | **DECLARED_AND_OBSERVED** |

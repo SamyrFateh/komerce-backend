@@ -1261,7 +1261,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 176 fichier(s) déclaré(s)
+**Implementation** : 177 fichier(s) déclaré(s)
   - boutique : 1
   - dash : 2
   - docs : 7
@@ -1269,7 +1269,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - migrations : 14
   - routes : 18
   - services : 45
-  - tests : 85
+  - tests : 86
   - utils : 3
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="logistics"]_

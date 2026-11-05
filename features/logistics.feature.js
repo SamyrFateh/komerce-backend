@@ -181,6 +181,7 @@ module.exports = {
       'tests/integration/hub-v1-fixture-dependency-inventory-postgres.test.js',
       'tests/integration/hub-v1-certification-runner-postgres.test.js',
       'tests/integration/auto-parcel-reference-postgres.test.js',
+      'tests/integration/auto-parcel-cleanup-postgres.test.js',
       'tests/integration/hub-live-cockpit-postgres.test.js',
       'tests/e2e-api/logistics.hub-live-cockpit-roles.e2e.test.js',
       'tests/integration/hub-physical-proof-postgres.test.js',
