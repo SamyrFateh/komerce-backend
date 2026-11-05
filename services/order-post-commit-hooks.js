@@ -66,6 +66,12 @@ function runOrderPostCommitHooks({
   walletPickupCode,
   share_token,
 }) {
+  // Les commandes de recette (RCT1, futurs scénarios Hub E2E) ne doivent
+  // JAMAIS produire de SMS/email, notification, conversion de partage, cache
+  // one-shot ou hook fidélité vers des comptes externes après leur COMMIT.
+  // Le périmètre simulé est posé dans la même transaction que le checkout.
+  if (order && order.simulation_scope != null) return;
+
   // ── Code de retrait wallet-100% : cache pour révélation one-shot ────────
   // Fait après COMMIT (comme Stripe/PayPal) : pickup_reveal_codes n'est pas
   // transactionnel avec la commande, un échec ici ne doit pas la faire échouer.
