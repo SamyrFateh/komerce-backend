@@ -63,12 +63,15 @@ jobs:
         run: |
           PGPASSWORD=komerce psql -v ON_ERROR_STOP=1 -h localhost -U komerce -d komerce_test -f docs/db/railway-live-schema.sql > /dev/null
           node scripts/ci-db-bootstrap.js
+      - name: Prove E2E-HUB-V1 fixture inventory safety (pure unit)
+        shell: bash
+        run: node node_modules/jest/bin/jest.js tests/unit/hub-v1-fixture-dependency-inventory.test.js --runInBand --ci --forceExit
       - name: Real PG16 Hub stages (independent service suites)
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p test-results/hub-v1-cert
-          node scripts/run-integration-tests.js --files=tests/integration/hub-v1-fixture-payment-postgres.test.js,tests/integration/hub-live-cockpit-postgres.test.js,tests/integration/hub-directrice-authorizations-postgres.test.js,tests/integration/hub-autonomous-purchasing-postgres.test.js,tests/integration/hub-p0-procurement-chain-postgres.test.js,tests/integration/hub-p0-authorization-postgres.test.js,tests/integration/hub-order-bag-ownership-postgres.test.js,tests/integration/hub-physical-hardening-postgres.test.js,tests/integration/hub-physical-identity-postgres.test.js,tests/integration/hub-physical-proof-postgres.test.js,tests/integration/hub-p0-transmission-box-shipment-postgres.test.js,tests/integration/relay-shipment-receipt-postgres.test.js,tests/integration/supplier-source-anomaly-postgres.test.js,tests/integration/supplier-source-resolution-postgres.test.js | tee test-results/hub-v1-cert/integration.log
+          node scripts/run-integration-tests.js --files=tests/integration/hub-v1-fixture-dependency-inventory-postgres.test.js,tests/integration/hub-v1-fixture-payment-postgres.test.js,tests/integration/hub-live-cockpit-postgres.test.js,tests/integration/hub-directrice-authorizations-postgres.test.js,tests/integration/hub-autonomous-purchasing-postgres.test.js,tests/integration/hub-p0-procurement-chain-postgres.test.js,tests/integration/hub-p0-authorization-postgres.test.js,tests/integration/hub-order-bag-ownership-postgres.test.js,tests/integration/hub-physical-hardening-postgres.test.js,tests/integration/hub-physical-identity-postgres.test.js,tests/integration/hub-physical-proof-postgres.test.js,tests/integration/hub-p0-transmission-box-shipment-postgres.test.js,tests/integration/relay-shipment-receipt-postgres.test.js,tests/integration/supplier-source-anomaly-postgres.test.js,tests/integration/supplier-source-resolution-postgres.test.js | tee test-results/hub-v1-cert/integration.log
       - name: E2E HTTP cross-role and local-order refusal on ephemeral PG16
         shell: bash
         run: |
