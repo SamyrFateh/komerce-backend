@@ -1,0 +1,70 @@
+name: Hub V1 — read-only fixture FK ownership inventory
+
+on:
+  workflow_dispatch:
+    inputs:
+      run8:
+        description: '8 caractères alphanumériques de la fixture E2E-HUB-V1'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hub-v1-fixture-fk-inventory
+  cancel-in-progress: false
+
+jobs:
+  inventory:
+    name: Exact fixture ownership and FK inventory (NO DELETE)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_TARGET_ENV: staging
+      HUB_V1_E2E_RUN8: ${{ inputs.run8 }}
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Pin source SHA
+        shell: bash
+        run: echo "E2E_EXPECTED_DEPLOY_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+      - run: npm ci
+      - name: Validate input and staging secret
+        shell: bash
+        run: |
+          [[ "$HUB_V1_E2E_RUN8" =~ ^[A-Z0-9]{8}$ ]]
+          test -n "$DATABASE_URL"
+      - name: Inspect E2E-HUB-V1 ownership and dependent FK graph (READ ONLY)
+        shell: bash
+        run: node scripts/recette/hub-v1-fixture-dependency-inventory.js "$HUB_V1_E2E_RUN8"
+      - name: Publish safety limit
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## Hub V1 — inventaire sans suppression'
+            echo ''
+            echo '- Uniquement RUN8 exact, scope/acheteur fictif vérifiés.'
+            echo '- Transactions SQL READ ONLY ; aucun DELETE, UPDATE ou INSERT.'
+            echo '- FK graphe : découverte partielle, pas une certification du nettoyage.'
+            echo '- Aucune autorisation d’apply staging n’est délivrée.'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Archive inventory report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hub-v1-fk-inventory-${{ github.run_id }}
+          path: test-results/hub-v1-cert/dependency-inventory-*.json
+          if-no-files-found: warn
+          retention-days: 14
