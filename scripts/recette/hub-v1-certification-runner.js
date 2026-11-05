@@ -960,11 +960,6 @@ async function step13(ctx, st) {
   st.quantities = { KOM_101: p1.parcel_items, KOM_102: p2.parcel_items, PO_A: { ordered: 3, received: 3 } };
   st.evidence.push({ wave: 'KOM-102 reliquat livré', ship_events: ship2.events.length, relay_receipts: relay2.receipts.length, after_pickup: p2 });
   st.notes.push('Reliquat traité par LIVRAISON (réception tardive 1/1 puis même circuit sac → KOM-BOX → expédition → relais → retrait). Le remboursement fictif n’est pas utilisé : un paiement fictif sans débit ne peut pas être remboursé sans créer de la monnaie interne (wallet) qui n’a jamais été encaissée.');
-  // Deux générateurs de références colis coexistent (auto-parcel « max + 1 » et parcel_ref_seq). On aligne uniquement
-  // le compteur de séquence (base éphémère) sur la plus haute référence existante, sans toucher au service ni aux données.
-  await db.query(`SELECT setval('parcel_ref_seq', GREATEST((SELECT last_value FROM parcel_ref_seq),
-    COALESCE((SELECT max(substring(reference from '^KOM-P-\\d+-(\\d+)$')::bigint) FROM parcels WHERE reference ~ '^KOM-P-\\d+-\\d+$'), 1)))`);
-  st.evidence.push({ parcel_ref_sequence_aligned: true, reason: 'AUTO_PARCEL_MAX_PLUS_ONE_VS_SEQUENCE' });
   ctx.localResult = await localCircuit(ctx, st);
 }
 
@@ -1072,7 +1067,6 @@ async function runCertification({ db = require('../../db'), run = newRun8(), dry
 }
 
 const LIMITS = Object.freeze([
-  "Dette hors périmètre : services/auto-parcel.js (max + 1) et utils/reference.generateParcelRef (parcel_ref_seq) génèrent des références colis par deux chemins ; le runner aligne uniquement le compteur de séquence (étape 13) sans modifier le service. À unifier dans un ticket dédié.",
   'Preuve sur PostgreSQL 16 local éphémère uniquement : aucun apply staging, aucun GO staging (HOLD_NO_STAGING_WRITES conservé).',
   "KOM-103 : « Sourcing requis » est observé via le trigger d'achat réel (aucune ligne, aucun PO, résultat no_supplier) ; la certification formelle de l'anomalie reste portée par les tests automatisés de #3355, rien n'est fabriqué.",
   "Référentiel commercial de la fixture (prix local actif, exposition, attestation de livraison, taux EUR/USD fictif) : créé sur la base éphémère ; sur un staging partagé ces lignes seraient des données partagées à contrôler par préflight avant tout apply.",
