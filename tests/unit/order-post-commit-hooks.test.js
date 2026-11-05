@@ -29,6 +29,32 @@ beforeEach(() => {
 });
 
 describe('order-post-commit-hooks', () => {
+  test.each(['RCT1', 'E2E-HUB-V1'])('simulation %s : aucun effet secondaire post-COMMIT, même avec contacts et paiement', (scope) => {
+    const order = { id: 'fixture-order', simulation_scope: scope, total_kmf: 0 };
+    runOrderPostCommitHooks({
+      order,
+      relais: { name: 'Relais de recette' },
+      items: [{ product_id: 'p1', quantity: 1 }],
+      productMap: { p1: { name: 'Produit', price_kmf: 1000 } },
+      payment_mode: 'cash_relais',
+      cash_ref_code: 'FICTIF-1',
+      reference: 'RCT1-FICTIF',
+      cashTimeout: 24,
+      tracking_phone: '+2690000000',
+      rPhone: '+2690000001',
+      user: { email: 'fixture@komerce.test', phone: '+2690000002' },
+      bodyEmail: 'fixture2@komerce.test',
+      creditApplied: 1000,
+      total_kmf: 0,
+      walletPickupCode: 'NOT-A-REAL-CODE',
+      share_token: 'not-a-real-share',
+    });
+    expect(notifyOrderCreated).not.toHaveBeenCalled();
+    expect(cacheCodeForReveal).not.toHaveBeenCalled();
+    expect(markShareConvertedToOrder).not.toHaveBeenCalled();
+    expect(loyaltyService.handleOrderConfirmed).not.toHaveBeenCalled();
+  });
+
   test('déclenche les side-effects post-commit sans réécrire la commande', () => {
     const order = { id: 'o1', total_kmf: 5000 };
     const items = [{ product_id: 'p1', quantity: 2, _effective_unit_price_kmf: 1200 }];
