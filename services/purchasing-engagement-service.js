@@ -283,7 +283,7 @@ async function submitPurchaseOrder(poId, { actor = null, context = {} } = {}) {
     const { rows: lineRows } = await client.query(`
       SELECT pl.id, pl.product_sku_id, pl.supplier_sku, pl.supplier_unit_ref, pl.supplier_order_identity,
              pl.quantity, pl.supplier_unit_price, pl.supplier_currency, p.name AS product_name,
-              o.simulation_scope
+              NULLIF(to_jsonb(o)->>'simulation_scope','') AS simulation_scope
         FROM purchase_lines pl
         JOIN order_items oi ON oi.id = pl.order_item_id
         JOIN orders o ON o.id = oi.order_id
