@@ -46,13 +46,14 @@ function listRows(markets) {
   mockQuery.mockResolvedValueOnce({ rows: [ROW] }).mockResolvedValueOnce({ rows: [{ total: '1', urgent: '0', warning: '1', info: '0' }] });
 }
 
-test('agent_hub : ne voit que les signaux hub de ses marchés rattachés, projection sans identifiants internes', async () => {
+test('agent_hub central : signaux hub sur tous les marchés sans operator_market_scopes ; pas de données internes', async () => {
   mockUser = { id: 'u1', role: 'agent_hub' };
-  listRows(HUB_MARKETS);
+  listRows();
   const res = await request(app()).get('/api/agent/action-center');
   expect(res.status).toBe(200);
-  expect(mockQuery.mock.calls[1][1]).toEqual([['hub'], null, ['mk-1'], 50, 0]);
-  expect(mockQuery.mock.calls[1][0]).toContain('s.market_id = ANY($3::uuid[])');
+  expect(mockQuery.mock.calls).toHaveLength(2);
+  expect(mockQuery.mock.calls[0][1]).toEqual([['hub'], null, null, 50, 0]);
+  expect(mockQuery.mock.calls[0][0]).toContain('s.market_id = ANY($3::uuid[])');
   expect(res.body.signals[0]).toEqual(expect.objectContaining({ signal_ref: 'KSG-000001', actions: ['acknowledge', 'snooze'] }));
   expect(JSON.stringify(res.body)).not.toContain('SECRET');
   expect(res.headers['cache-control']).toContain('no-store');
@@ -83,8 +84,8 @@ test('agent_transitaire : signaux customs uniquement', async () => {
   expect(mockQuery.mock.calls[1][1]).toEqual([['customs'], null, ['mk-1'], 100, 0]);
 });
 
-test('hub/transitaire sans marché rattaché : 403 fail-closed, aucun signal lu', async () => {
-  mockUser = { id: 'u5', role: 'agent_hub' };
+test('transitaire sans marché rattaché : 403 fail-closed, aucun signal lu', async () => {
+  mockUser = { id: 'u5', role: 'agent_transitaire' };
   mockQuery.mockResolvedValueOnce({ rows: [] });
   const res = await request(app()).get('/api/agent/action-center');
   expect(res.status).toBe(403);

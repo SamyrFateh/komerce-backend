@@ -62,19 +62,37 @@ test('field Action Center navigation is reachable without Dashboard authority', 
   expect((await loginResponse).status()).toBe(200);
   await page.waitForURL(url => url.pathname !== '/login.html', { timeout: 15000 });
 
+  // Separate permission truth from browser rendering. A transitaire without
+  // market membership must remain 403, with a readable blocked state.
+  const agentSignals = await page.request.get('/api/agent/action-center');
+  let expectedMode = 'agent';
+  if (role === 'agent_transitaire' && agentSignals.status() === 403) {
+    const denial = await agentSignals.json();
+    expect(denial.code).toBe('agent_action_center_market_scope_missing');
+    expectedMode = 'blocked';
+  } else {
+    expect(agentSignals.status(), 'Action Center agent API must be readable').toBe(200);
+  }
+  console.log('[field-action-center] ' + JSON.stringify({
+    role, scope_status: agentSignals.status(), expected_mode: expectedMode,
+  }));
+
   await page.goto('/admin/hub', { waitUntil: 'domcontentloaded' });
   const actionLink = page.locator('a[href="/admin/action-center"]').first();
   await expect(actionLink).toBeVisible({ timeout: 18000 });
   await actionLink.click();
   await expect(page).toHaveURL(/\/admin\/action-center(?:[?#]|$)/, { timeout: 12000 });
-  await expect(page.locator('#canonical-admin-root.kmc-action-center[data-action-center-mode="agent"]'))
+  await expect(page.locator('#canonical-admin-root.kmc-action-center[data-action-center-mode="' + expectedMode + '"]'))
     .toBeVisible({ timeout: 18000 });
 
   // Direct URL and clicking its visible link must follow the same role boundary.
   await page.goto('/admin/action-center', { waitUntil: 'domcontentloaded' });
-  await expect(page.locator('#canonical-admin-root.kmc-action-center[data-action-center-mode="agent"]'))
+  await expect(page.locator('#canonical-admin-root.kmc-action-center[data-action-center-mode="' + expectedMode + '"]'))
     .toBeVisible({ timeout: 18000 });
   await expect(page).toHaveURL(/\/admin\/action-center(?:[?#]|$)/);
+  if (expectedMode === 'blocked') {
+    await expect(page.getByText('Affectation marché requise')).toBeVisible();
+  }
 
   const matrix = await page.request.get('/api/market-delegation/central/team-matrix');
   expect(matrix.status()).toBe(403);

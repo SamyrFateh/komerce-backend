@@ -398,6 +398,27 @@
     });
   }
 
+  // Un transitaire sans affectation marché ne peut pas voir les signaux.
+  // Ce refus serveur reste fail-closed ; l'écran explique le blocage au lieu
+  // de laisser une page vide ou d'attribuer un scope par défaut.
+  function renderAgentScopeMissing(context, error) {
+    if (context.user?.role !== 'agent_transitaire'
+      || error?.status !== 403 || error?.code !== 'agent_action_center_market_scope_missing') {
+      return false;
+    }
+    const root = context.root;
+    root.replaceChildren();
+    root.classList.add('kmc-action-center');
+    root.dataset.actionCenterMode = 'blocked';
+    const panel = text(context.document, 'section', 'kmc-workspace-feedback is-warning', '');
+    panel.setAttribute('role', 'alert');
+    panel.appendChild(text(context.document, 'h1', 'kmc-workspace-title', 'Affectation marché requise'));
+    panel.appendChild(text(context.document, 'p', 'kmc-workspace-subtitle',
+      'Ce compte transitaire n’est rattaché à aucun marché. Les signaux restent inaccessibles tant que son affectation n’est pas vérifiée par l’administration.'));
+    root.appendChild(panel);
+    return true;
+  }
+
   async function mount(options) {
     const runtime = isAgentUser(options.user)
       ? { mode: 'agent', marketCode: null, severity: null, endpoint: AGENT_ENDPOINT, loadEndpoint: AGENT_ENDPOINT }
@@ -419,7 +440,13 @@
     };
 
     async function load() {
-      const payload = await jsonRequest(context.fetch, context.loadEndpoint);
+      let payload;
+      try {
+        payload = await jsonRequest(context.fetch, context.loadEndpoint);
+      } catch (error) {
+        if (renderAgentScopeMissing(context, error)) return { blocked: true };
+        throw error;
+      }
       const rootNode = context.root;
       rootNode.replaceChildren();
       rootNode.classList.add('kmc-action-center');

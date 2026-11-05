@@ -11,7 +11,7 @@
  * @db-read       signals, orders, parcels, operator_market_scopes
  * @db-write      signals
  * @db-txn        none
- * @doctrine      server_side_scope_is_authority, role_alone_is_not_enough, relay_scope_fail_closed, explicit_market_perimeter_for_central_roles, agent_actions_acknowledge_snooze_only, no_agent_resolve_canonical_chain_resolves, action_center_never_mutates_source_entities
+ * @doctrine      server_side_scope_is_authority, role_alone_is_not_enough, relay_scope_fail_closed, central_hub_all_markets_forwarder_market_scoped, agent_actions_acknowledge_snooze_only, no_agent_resolve_canonical_chain_resolves, action_center_never_mutates_source_entities
  * @impact-areas  decision-signals, admin-dashboard, relay-network
  * @version       2026-10
  */
@@ -24,10 +24,12 @@ const signalAdminService = require('./signal-admin-service');
 const { EXCLUDE_SIMULATED_ORDER_SIGNALS_SQL } = require('./signal-simulation-scope');
 // Propriétaires de signaux ouverts à chaque rôle agent. Le rôle ne suffit pas :
 // agent_relais est borné à SON relais (users.relais_id) via l'entité du signal ;
-// agent_hub / agent_transitaire sont bornés aux marchés explicitement rattachés
+// agent_hub est central sur tous les marchés actifs : il n'exige aucun
+// operator_market_scopes (doctrine FOUR_OPERATIONAL_PROFILES_V1).
+// agent_transitaire reste limité aux marchés explicitement rattachés
 // (operator_market_scopes, non révoqués) — sans rattachement : refus (fail-closed).
 const AGENT_SCOPES = Object.freeze({
-  agent_hub: Object.freeze({ ownerRoles: Object.freeze(['hub']), relayBound: false, marketBound: true }),
+  agent_hub: Object.freeze({ ownerRoles: Object.freeze(['hub']), relayBound: false, marketBound: false }),
   agent_relais: Object.freeze({ ownerRoles: Object.freeze(['relais']), relayBound: true }),
   agent_transitaire: Object.freeze({ ownerRoles: Object.freeze(['customs']), relayBound: false, marketBound: true }),
 });
