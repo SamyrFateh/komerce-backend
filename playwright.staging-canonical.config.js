@@ -21,6 +21,6 @@ module.exports=defineConfig({
  ['json',{outputFile:'test-results/staging-chromium/playwright.json'}]],
  // Admin dashboards are desktop-only in the current certification scope.
  projects:selected.map(role=>({name:role+'-desktop',use:{viewport:{width:1440,height:900}}})), 
- use:{baseURL,browserName:'chromium',headless:true,trace:'on',screenshot:'only-on-failure',
+ use:{baseURL,browserName:'chromium',headless:true,trace:'off',screenshot:'only-on-failure',
  actionTimeout:10000,navigationTimeout:20000}
 });
