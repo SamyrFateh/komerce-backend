@@ -42,17 +42,17 @@ describe('order-checkout-service market lifecycle', () => {
   });
 });
 
-describe('order-checkout-service — livrabilité du marché', () => {
-  test('le checkout importe la garde de livrabilité (preuve : tests/unit/order-checkout-delivery-proof.test.js)', () => {
-    const src = require('fs').readFileSync(require('path').join(__dirname, '../../services/order-checkout-service.js'), 'utf8');
-    expect(src).toMatch(/require\('\.\/market-delivery-proof-service'\)/);
-    expect(src).toMatch(/assertMarketDeliverable\(client, relais\.market_id\)/);
+describe('order-checkout-service — relais actif comme destination finale', () => {
+  test('relais explicite et marché actif, sans garde de livrabilité documentaire', () => {
+    expect(source).toMatch(/SELECT \* FROM relais WHERE id = \$1 AND is_active = TRUE/);
+    expect(source).toMatch(/checkoutMarket.lifecycle_status !== 'ACTIVE'/);
+    expect(source).not.toMatch(/assertMarketDeliverable|MARKET_DELIVERY_NOT_PROVEN/);
   });
-  test('lot 3 — encaissement central autorisé par marché, après livrabilité et avant routage', () => {
-    const delivery = source.indexOf('assertMarketDeliverable(client, relais.market_id)');
+  test('lot 3 — encaissement central après vérification du relais et avant routage', () => {
+    const relay = source.indexOf('SELECT * FROM relais WHERE id = $1 AND is_active = TRUE');
     const gate = source.indexOf('assertCentralCollectionAllowed(client, relais.market_id, payment_mode)');
     const routing = source.indexOf('resolveRoutingFromRelais(relais');
-    expect(gate).toBeGreaterThan(delivery);
+    expect(gate).toBeGreaterThan(relay);
     expect(routing).toBeGreaterThan(gate);
     expect(source).toMatch(/e\.code === 'PAYMENT_MODE_NOT_ALLOWED_FOR_MARKET'/);
   });

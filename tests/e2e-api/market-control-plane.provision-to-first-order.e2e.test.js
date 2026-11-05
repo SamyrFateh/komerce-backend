@@ -91,9 +91,9 @@ describeE2E('Market Control Plane H — provisioning -> première commande',({db
     if(res.status!==201) throw new Error(`PROVISION_FAILED:${res.status}:${JSON.stringify(res.body)}`);
     expect(res.status).toBe(201);
     expect(res.body.market.lifecycle_status).toBe('PROVISIONING');
-    // Livrabilité : un marché fraîchement provisionné n'a ni liaison ni tarif attestés → non prêt à l'activation.
-    expect(res.body.readiness.ready_for_activation).toBe(false);
-    expect(res.body.readiness.operations.blockers.map(b=>b.code)).toEqual(['NO_DELIVERY_PROOF']);
+    // Le relais initial actif suffit : aucune attestation transporteur ne conditionne l'ouverture.
+    expect(res.body.readiness.ready_for_activation).toBe(true);
+    expect(res.body.readiness.operations.blockers.map(b=>b.code)).toEqual([]);
     expect(res.body.lead.kind).toBe('membership');
     expect(res.body.initial_relais.id).toBeTruthy();
 
@@ -118,21 +118,11 @@ describeE2E('Market Control Plane H — provisioning -> première commande',({db
     expect(stored).toEqual(expect.objectContaining({lifecycle_status:'PROVISIONING',is_active:false}));
   });
 
-  it('1b — activation refusée sans preuve de livrabilité, puis attestation centrale',async()=>{
-    const refused=await request(app)
-      .post(`/api/admin/markets/${marketCode}/lifecycle`)
-      .set('Authorization',`Bearer ${adminToken}`)
-      .send({status:'ACTIVE'});
-    expect(refused.status).toBeGreaterThanOrEqual(400);
-    const carrierId=(await db.query(`INSERT INTO carriers(name,type,is_active) VALUES ('E2E carrier','maritime',TRUE) RETURNING id`)).rows[0].id;
-    cleanup.track('carriers','id',carrierId);
-    cleanup.trackSql('DELETE FROM market_delivery_attestations WHERE market_id=$1',[marketId]);
-    const att=await request(app)
-      .post(`/api/admin/markets/${marketCode}/delivery-attestations`)
-      .set('Authorization',`Bearer ${adminToken}`)
-      .send({carrier_id:carrierId,mode:'SEA',origin_ref:'DXB',freight_rate:2.5,rate_currency:'USD',rate_unit:'PER_KG',transit_days:30,evidence_ref:'E2E-CONTRAT-1',valid_until:new Date(Date.now()+30*864e5).toISOString()});
-    expect(att.status).toBe(201);
+  it('1b — aucun contrat transporteur nécessaire quand un relais actif existe',async()=>{
     const view=await request(app).get(`/api/admin/markets/${marketCode}/control-plane`).set('Authorization',`Bearer ${adminToken}`);
+    expect(view.status).toBe(200);
+    expect(view.body.relaisActive).toBeGreaterThan(0);
+    expect(view.body.deliveryProof.proven).toBe(false);
     expect(view.body.readiness.ready_for_activation).toBe(true);
   });
 

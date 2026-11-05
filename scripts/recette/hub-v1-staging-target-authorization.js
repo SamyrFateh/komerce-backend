@@ -25,7 +25,6 @@ function assertApproval({run,env=process.env}={}) {
 }
 async function checkSharedBaselines(db, {
   resolveFx = require('../../services/fx-chain-service').resolveObservation,
-  deliveryProof = require('../../services/market-delivery-proof-service').getDeliveryProof,
 } = {}) {
   const client=await db.getClient();
   try {
@@ -33,15 +32,12 @@ async function checkSharedBaselines(db, {
     const {rows:[market]}=await client.query(
       "SELECT id FROM markets WHERE code='KM' AND lifecycle_status='ACTIVE'");
     if (!market) throw Error('STAGING_MARKET_KM_NOT_ACTIVE');
-    // Autorité FX réelle : priorité à la référence publique EUR/USD, repli sur
-    // une observation manuelle réellement approuvée selon la règle canonique.
+    // La fixture crée son propre relais actif sur KM avant son checkout.
+    // Pas de condition de contrat, attestation ou historique transporteur.
+    // L'autorité FX reste réelle, sans taux fictif sur staging.
     const observation=await resolveFx({client});
-    // Preuve de livraison réelle : ATTESTATION active ou HISTORY collecté réel
-    // pour KM. N'invente ni transporteur ni justificatif commercial.
-    const proof=await deliveryProof(client,market.id);
-    if (!observation?.id || !proof?.proven)
-      throw Error('STAGING_CANONICAL_BASELINE_NOT_PROVEN');
-    return { fx_authority:observation.source_label, delivery_basis:proof.basis };
+    if (!observation?.id) throw Error('STAGING_FX_AUTHORITY_NOT_PROVEN');
+    return {fx_authority:observation.source_label,delivery_condition:'ACTIVE_RELAIS_AT_CHECKOUT'};
   } finally {
     await client.query('ROLLBACK').catch(()=>{});
     client.release();
