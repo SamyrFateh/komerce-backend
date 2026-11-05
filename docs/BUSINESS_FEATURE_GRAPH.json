@@ -13557,6 +13557,13 @@
       {
         "feature": "logistics",
         "category": "tests",
+        "declared": "tests/integration/auto-parcel-reference-postgres.test.js",
+        "resolvedPath": "tests/integration/auto-parcel-reference-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
         "declared": "tests/integration/hub-live-cockpit-postgres.test.js",
         "resolvedPath": "tests/integration/hub-live-cockpit-postgres.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -40091,6 +40098,10 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "services/auto-parcel.js",
+                "targetFile": "utils/reference.js"
+              },
+              {
                 "sourceFileId": "services/pickup-secret-service.js",
                 "targetFile": "db.js"
               },
@@ -40356,6 +40367,10 @@
               },
               {
                 "sourceFileId": "tests/integration/hub-v1-certification-runner-postgres.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/auto-parcel-reference-postgres.test.js",
                 "targetFile": "db.js"
               },
               {
@@ -48735,7 +48750,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2275
+        "filesObserved": 2276
       },
       "boutique": {
         "filesObserved": 214,

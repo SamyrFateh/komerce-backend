@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db, utils/logger.js
+ * @depends       db, utils/logger.js, utils/reference.js
  * @used-by       routes/auto-distribute-api.js
  * @db-read       order_items, orders, parcel_items, parcels, relais, users
  * @db-write      parcel_items, parcels
@@ -33,6 +33,7 @@
 
 const db = require('../db');
 const log = require('../utils/logger').child({ module: 'auto-parcel' });
+const { generateParcelRef } = require('../utils/reference');
 
 // ── Config ──────────────────────────────────────────────────────
 const MAX_ITEMS_PER_PARCEL = 30;
@@ -40,21 +41,9 @@ const MAX_ORDERS_PER_PARCEL = 10;
 const MAX_OPEN_PARCELS_PER_DEST = 3;
 
 // ── Generate parcel reference ───────────────────────────────────
+// Source unique : utils/reference.generateParcelRef (séquence parcel_ref_seq), sur le client de la transaction.
 async function nextParcelRef(client) {
-  const c = client || db;
-  // Find the max numeric suffix from existing refs
-  const { rows } = await c.query(`
-    SELECT reference FROM parcels
-    WHERE reference LIKE 'KOM-P-%'
-    ORDER BY reference DESC LIMIT 1
-  `);
-  let next = 1;
-  if (rows.length > 0) {
-    const match = rows[0].reference.match(/KOM-P-\d+-(\d+)/);
-    if (match) next = parseInt(match[1], 10) + 1;
-  }
-  const year = new Date().getFullYear();
-  return `KOM-P-${year}-${String(next).padStart(6, '0')}`;
+  return generateParcelRef(client || db);
 }
 
 // ── Core: distribute one order ──────────────────────────────────

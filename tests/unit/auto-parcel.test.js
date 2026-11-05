@@ -51,7 +51,7 @@ describe('auto-parcel', () => {
         .mockResolvedValueOnce({ rows: [] })
         .mockResolvedValueOnce({ rows: [makeItem()] })
         .mockResolvedValueOnce({ rows: [] })
-        .mockResolvedValueOnce({ rows: [{ reference: 'KOM-P-2026-000041' }] })
+        .mockResolvedValueOnce({ rows: [{ seq: '42' }] }) // nextval('parcel_ref_seq')
         .mockResolvedValueOnce({ rows: [{ id: 'parcel-001', reference: 'KOM-P-2026-000042' }] })
         .mockResolvedValueOnce({ rows: [], rowCount: 1 });
 
@@ -135,7 +135,7 @@ describe('auto-parcel', () => {
         .mockResolvedValueOnce({ rows: [] })
         .mockResolvedValueOnce({ rows: [makeItem()] })
         .mockResolvedValueOnce({ rows: [] })
-        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({ rows: [{ seq: '1' }] })
         .mockResolvedValueOnce({ rows: [{ id: 'parcel-001', reference: 'KOM-P-2026-000001' }] })
         .mockResolvedValueOnce({ rows: [], rowCount: 1 });
 

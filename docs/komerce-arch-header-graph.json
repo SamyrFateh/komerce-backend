@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 1996,
-    "edges": 9822,
+    "edges": 9823,
     "dbTables": 230,
     "doctrines": 770,
     "impactAreas": 207,
@@ -13203,7 +13203,8 @@
       ],
       "depends": [
         "db",
-        "utils/logger.js"
+        "utils/logger.js",
+        "utils/reference.js"
       ],
       "usedBy": [
         "routes/auto-distribute-api.js"
@@ -63786,6 +63787,12 @@
       "to": "utils/logger.js",
       "type": "depends",
       "label": "utils/logger.js"
+    },
+    {
+      "from": "services/auto-parcel.js",
+      "to": "utils/reference.js",
+      "type": "depends",
+      "label": "utils/reference.js"
     },
     {
       "from": "routes/auto-distribute-api.js",
@@ -116703,7 +116710,8 @@
       "purpose": null,
       "directDependsOn": [
         "db",
-        "utils/logger.js"
+        "utils/logger.js",
+        "utils/reference.js"
       ],
       "directUsedBy": [
         "routes/auto-distribute-api.js"
@@ -116739,7 +116747,8 @@
         "impact:logistics",
         "routes/auto-distribute-api.js",
         "services/operations-workspace.js",
-        "utils/logger.js"
+        "utils/logger.js",
+        "utils/reference.js"
       ]
     },
     "services/boutique-ranking-engine.js": {
@@ -141343,6 +141352,7 @@
         "routes/hub-dashboard.js",
         "routes/logistics.js",
         "routes/parcels.js",
+        "services/auto-parcel.js",
         "services/local-relay-receipt-service.js",
         "services/parcel-operations.js",
         "services/parcelOptimizationService.js",
