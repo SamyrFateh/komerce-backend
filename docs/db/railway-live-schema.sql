@@ -19225,6 +19225,13 @@ CREATE UNIQUE INDEX ux_product_skus_supplier_unit_ref ON public.product_skus USI
 
 
 --
+-- Name: ux_product_suppliers_active_priority; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX ux_product_suppliers_active_priority ON public.product_suppliers USING btree (product_id, priority) WHERE ((is_active = true) AND (deleted_at IS NULL));
+
+
+--
 -- Name: ux_purchase_orders_order_item_supplier_active; Type: INDEX; Schema: public; Owner: -
 --
 
