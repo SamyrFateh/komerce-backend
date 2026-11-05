@@ -35,7 +35,7 @@ describeDb('Références colis — un seul générateur (PG16 jetable)', () => {
     for (let i = 0; i < N; i += 1) {
       const relais = crypto.randomUUID(); const order = crypto.randomUUID(); const item = crypto.randomUUID();
       await q("INSERT INTO relais(id,name,phone,address,market_id,island,island_code,is_active) VALUES ($1,$2,$3,'Moroni',$4,'Grande Comore','MORONI',TRUE)", [relais, `Relais ref ${run}-${i}`, `+2698${String(i).padStart(2, '0')}${parseInt(run.slice(0, 5), 16) % 100000}`.slice(0, 12), marketId]);
-      await q("INSERT INTO orders(id,reference,user_id,relais_id,total_kmf,payment_mode,market_id,status) VALUES ($1,$2,$3,$4,1000,(SELECT (enum_range(NULL::payment_mode))[1]),$5,'preparation')", [order, `PREF-${run}-${i}`, userId, relais, marketId]);
+      await q("INSERT INTO orders(id,reference,user_id,relais_id,total_kmf,payment_mode,market_id,status,payment_status) VALUES ($1,$2,$3,$4,1000,(SELECT (enum_range(NULL::payment_mode))[1]),$5,'preparation','paid')", [order, `PREF-${run}-${i}`, userId, relais, marketId]);
       await q('INSERT INTO order_items(id,order_id,product_id,quantity,price_kmf) VALUES ($1,$2,$3,1,1000)', [item, order, productId]);
       orders.push({ order, relais });
     }
