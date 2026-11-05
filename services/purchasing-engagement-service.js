@@ -282,14 +282,26 @@ async function submitPurchaseOrder(poId, { actor = null, context = {} } = {}) {
     await require('./hub-authorization-service').assertCommitmentAuthorized(client, po.id);
     const { rows: lineRows } = await client.query(`
       SELECT pl.id, pl.product_sku_id, pl.supplier_sku, pl.supplier_unit_ref, pl.supplier_order_identity,
-             pl.quantity, pl.supplier_unit_price, pl.supplier_currency, p.name AS product_name
+             pl.quantity, pl.supplier_unit_price, pl.supplier_currency, p.name AS product_name,
+              o.simulation_scope
         FROM purchase_lines pl
         JOIN order_items oi ON oi.id = pl.order_item_id
+        JOIN orders o ON o.id = oi.order_id
         LEFT JOIN products p ON p.id = oi.product_id
        WHERE pl.purchase_order_id = $1 AND pl.cancelled_at IS NULL
        ORDER BY pl.id FOR UPDATE OF pl
     `, [po.id]);
     if (!lineRows.length) throw fail(409, 'PURCHASE_ORDER_EMPTY', 'Une PO sans ligne ne peut pas être soumise');
+    // Une PO simulée ne doit jamais contenir une vente réelle ou d'un autre
+    // scénario. Aucune simulation ne doit déclencher un adaptateur fournisseur.
+    const scopes = new Set(lineRows.map((line) => line.simulation_scope || null));
+    if (scopes.size !== 1) {
+      throw fail(409, 'PURCHASE_ORDER_SIMULATION_SCOPE_MIXED', 'PO mixte simulation et activité réelle interdite');
+    }
+    const simulationScope = [...scopes][0];
+    if (simulationScope && po.trigger_mode === 'auto') {
+      throw fail(409, 'SIMULATED_PO_AUTO_ORDER_FORBIDDEN', 'Achat API fournisseur interdit pour une PO simulée');
+    }
 
     const groups = groupBySupplierUnitRef(lineRows.map((r) => ({ ...r })));
     // Mode manuel : aucune dépendance API (ni préparation distante ni réconciliation) — le Hub achète puis enregistre.
@@ -316,16 +328,16 @@ async function submitPurchaseOrder(poId, { actor = null, context = {} } = {}) {
     );
     // Invariant 14 de la carte : le lien WhatsApp s'écrit APRÈS la persistance de la PO.
     let waUrl = null;
-    if (header.trigger_mode === 'whatsapp' && supplier.contact_phone) {
+    if (!simulationScope && header.trigger_mode === 'whatsapp' && supplier.contact_phone) {
       waUrl = `https://wa.me/${supplier.contact_phone}?text=${encodeURIComponent(messages.supplier)}`;
       await client.query('UPDATE purchase_orders SET notes = $1, updated_at = NOW() WHERE id = $2', [`wa_url:${waUrl}`, po.id]);
     }
-    return { po_id: po.id, verdicts, groups, adminMessage: messages.admin, waUrl, tag, actor };
+    return { po_id: po.id, verdicts, groups, adminMessage: messages.admin, waUrl, tag, actor, simulationScope };
   });
 
   // Notification admin après COMMIT : jamais pour une soumission annulée.
-  const channel = outcome.waUrl ? 'whatsapp' : 'admin_manual';
-  if (!outcome.waUrl && process.env.ADMIN_PHONE) {
+  const channel = outcome.simulationScope ? 'simulation_no_notification' : (outcome.waUrl ? 'whatsapp' : 'admin_manual');
+  if (!outcome.simulationScope && !outcome.waUrl && process.env.ADMIN_PHONE) {
     notifyText(process.env.ADMIN_PHONE, outcome.adminMessage, 'purchase_manual', outcome.po_id)
       .catch((err) => log.error({ err }, 'Notification purchase_manual (PO regroupée) failed'));
   }
