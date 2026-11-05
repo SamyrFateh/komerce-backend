@@ -141,7 +141,22 @@ describe('routes/relay-dashboard', () => {
       await request(buildApp()).get('/api/relay-dashboard/orders').query({ status: 'available' });
       expect(queries.getOrders).toHaveBeenCalledWith(mockUser, {
         status: 'available', search: undefined, limit: 50, offset: 0,
-      }, { authorizedMarkets: undefined });
+      }, { authorizedMarkets: undefined, includeSimulation: false });
+    });
+
+    test('include_simulation=1 : honoré pour admin uniquement, ignoré pour agent_relais', async () => {
+      const prev = mockUser;
+      try {
+        mockUser = { id: 'admin-1', role: 'admin' };
+        queries.getOrders.mockResolvedValueOnce({ count: 0, orders: [] });
+        await request(buildApp()).get('/api/relay-dashboard/orders').query({ include_simulation: '1' });
+        expect(queries.getOrders.mock.calls.at(-1)[2]).toEqual({ authorizedMarkets: undefined, includeSimulation: true });
+        mockUser = { id: 'agent-1', role: 'agent_relais', relais_id: 'relais-1' };
+        queries.getOrders.mockResolvedValueOnce({ count: 0, orders: [] });
+        const res = await request(buildApp()).get('/api/relay-dashboard/orders').query({ include_simulation: '1' });
+        expect(res.status).toBe(200);
+        expect(queries.getOrders.mock.calls.at(-1)[2]).toEqual({ authorizedMarkets: undefined, includeSimulation: false });
+      } finally { mockUser = prev; }
     });
   });
 

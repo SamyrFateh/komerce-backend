@@ -29,6 +29,7 @@ const DASHBOARD_SPECS = [
   'hub-live-cockpit',
   'hub-live-flux-cockpit',
   'relais-live-execution',
+  'live-simulation-toggle',
   'finance-journal-workspace',
   'relais-live-cockpit',
   'import-runtime-cockpit',

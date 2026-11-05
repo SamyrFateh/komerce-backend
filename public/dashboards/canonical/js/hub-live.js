@@ -22,7 +22,7 @@
 (function initHubLive(global) {
   const kit = global.KomerceLiveKit;
   if (!kit) throw new Error('live_kit_missing');
-  const { order360Link, esc, num, fmtDate, fmtKmf, ageLabel, queryString, processBoard, tiles, table, pager } = kit;
+  const { order360Link, setViewer, simParams, simToggle, simBadge, esc, num, fmtDate, fmtKmf, ageLabel, queryString, processBoard, tiles, table, pager } = kit;
 
   const BASE = '/admin/hub-live';
   const PAGE_SIZE = 25;
@@ -50,8 +50,8 @@
   });
   const COMPLETENESS = Object.freeze({ complete:'Complète', partial:'Partielle', unassigned:'Non affectée', empty:'Vide' });
 
-  const queueUrl = (tab, page = 1) => `${BASE}${queryString({ view:'queue', tab, page:page > 1 ? page : '' })}`;
-  const orderUrl = (id, from) => `${BASE}${queryString({ view:'order', order:id, from })}`;
+  const queueUrl = (tab, page = 1) => `${BASE}${queryString({ view:'queue', tab, page:page > 1 ? page : '', ...simParams() })}`;
+  const orderUrl = (id, from) => `${BASE}${queryString({ view:'order', order:id, from, ...simParams() })}`;
   const tabOf = p => (QUEUE_TABS[p.tab] ? p.tab : 'to_prepare');
   const fromOf = p => (QUEUE_TABS[p.from] ? p.from : '');
   const paymentLabel = o => (o.payment_mode === 'cash_relais'
@@ -76,7 +76,7 @@
   }
 
   const fluxUrl = () => BASE;
-  const suiviUrl = () => `${BASE}${queryString({ view:'overview' })}`;
+  const suiviUrl = () => `${BASE}${queryString({ view:'overview', ...simParams() })}`;
 
   function hubTabs() {
     return [
@@ -87,7 +87,7 @@
 
   function orderRow(order, from) {
     return `<tr>
-      <td><a href="${orderUrl(order.id, from)}" data-cockpit-nav>${esc(order.reference)}</a>${order360Link(order.reference, 'Retour au Hub live')}</td>
+      <td><a href="${orderUrl(order.id, from)}" data-cockpit-nav>${esc(order.reference)}</a>${order360Link(order.reference, 'Retour au Hub live')}${simBadge(order.simulation_scope)}</td>
       <td>${esc(order.client_name || '—')}</td>
       <td>${esc(order.relais_name || order.destination_island || '—')}</td>
       <td>${esc(STATUS[order.status] || order.status)}</td>
@@ -111,7 +111,7 @@
     const urgent = num(o.urgent);
     const asCards = (list, tab) => (Array.isArray(list?.data) ? list.data : []).map(order => ({
       label:order.reference,
-      sub:order.client_name || order.relais_name || '',
+      sub:`${order.simulation_scope ? `RECETTE · ${order.simulation_scope} · ` : ''}${order.client_name || order.relais_name || ''}`,
       href:orderUrl(order.id, tab),
       tone:num(order.open_incidents) > 0 ? 'blocked' : order.is_urgent ? 'attention' : 'ok',
     }));
@@ -156,6 +156,7 @@
           { label:'Commandes bloquées', value:blockedTotal, sub:attention ? 'Intervenir →' : 'rien à faire', href:queueUrl('blocked'), cls:attention ? 'is-review is-attention' : 'is-review' },
         ])}
         <p class="kir-run-proof lk-signals">${signals}</p>
+        ${simToggle()}
         <section class="lk-block" aria-label="À traiter en premier">
           <div class="lk-block-head"><span class="kir-section-kicker">À TRAITER EN PREMIER</span><a href="${queueUrl('to_prepare')}" data-cockpit-nav class="kir-subtle-link">Voir toutes les commandes à préparer →</a></div>
           ${table(ORDER_COLUMNS, first.map(order => orderRow(order, 'to_prepare')), { empty:'Aucune commande en attente de préparation.' })}
@@ -171,7 +172,7 @@
     return {
       title:QUEUE_TABS[tab],
       copy:`${QUEUE_COPY[tab]} ${num(pagination.total)} au total.`,
-      body:`${table(ORDER_COLUMNS, rows.map(order => orderRow(order, tab)), { empty:'Aucune commande dans cette file.' })}
+      body:`${simToggle()}${table(ORDER_COLUMNS, rows.map(order => orderRow(order, tab)), { empty:'Aucune commande dans cette file.' })}
         ${pager(num(pagination.page) || 1, num(pagination.pages) || 1, page => queueUrl(tab, page))}`,
     };
   }
@@ -326,6 +327,7 @@
   global.KomerceCanonicalHubLive = Object.freeze({
     mount:options => {
       viewerUser = (options && options.user) || null;
+      setViewer(viewerUser);
       const target = legacyOrdersRedirect(global.location && global.location.search);
       if (target && global.location && typeof global.location.replace === 'function') {
         global.location.replace(target);

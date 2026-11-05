@@ -63,7 +63,34 @@
     return text ? `?${text}` : '';
   }
 
-  async function api(path) {
+  // Recette (simulation_scope) : affichage opt-in, admin uniquement. L'état vit dans l'URL (?sim=1),
+  // jamais côté serveur ; le serveur ignore le paramètre pour tout autre rôle.
+  let simViewer = null;
+  const setViewer = user => { simViewer = user || null; };
+  const simOn = () => {
+    try { return new URLSearchParams(String(global.location?.search || '')).get('sim') === '1'; } catch (_) { return false; }
+  };
+  const simAllowed = () => Boolean(simViewer && simViewer.role === 'admin');
+  const simParams = () => (simAllowed() && simOn() ? { sim:'1' } : {});
+  const SIM_LISTS = /^\/api\/(?:hub-dash\/queue|relay\/orders)(?:\?|$)/;
+  function withSimulation(path) {
+    if (!simAllowed() || !simOn() || !SIM_LISTS.test(path)) return path;
+    return `${path}${path.includes('?') ? '&' : '?'}include_simulation=1`;
+  }
+  function simToggle() {
+    if (!simAllowed()) return '';
+    const q = new URLSearchParams(String(global.location?.search || ''));
+    const on = simOn();
+    if (on) q.delete('sim'); else q.set('sim', '1');
+    q.delete('page'); q.delete('offset');
+    const text = q.toString();
+    const href = `${String(global.location?.pathname || '')}${text ? `?${text}` : ''}`;
+    return `<p class="lk-sim-toggle"><a href="${esc(href)}" data-cockpit-nav data-sim-toggle role="switch" aria-checked="${on}">${on ? '☑' : '☐'} Afficher la recette</a>${on ? ' <small>Lignes de recette marquées RECETTE ; les compteurs restent réels.</small>' : ''}</p>`;
+  }
+  const simBadge = scope => (scope ? ` <b class="lk-sim-badge" data-sim-scope="${esc(scope)}">RECETTE · ${esc(scope)}</b>` : '');
+
+  async function api(rawPath) {
+    const path = withSimulation(rawPath);
     const res = await global.fetch(path, { method:'GET', credentials:'include', headers:{ Accept:'application/json' } });
     let body = null;
     try { body = await res.json(); } catch (_) { body = null; }
@@ -306,6 +333,6 @@
   }
 
   global.KomerceLiveKit = Object.freeze({
-    order360Link, createCockpit, esc, num, fmtDate, fmtKmf, ageLabel, queryString, flowTrack, processBoard, tiles, table, pager,
+    order360Link, setViewer, simParams, simToggle, simBadge, createCockpit, esc, num, fmtDate, fmtKmf, ageLabel, queryString, flowTrack, processBoard, tiles, table, pager,
   });
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -337,3 +337,20 @@ describe('cash à encaisser par devise du marché', () => {
     expect(res.alertes[0].message).toMatch(/XAF/);
   });
 });
+
+describe('getOrders — visibilité de la recette', () => {
+  it('par défaut exclut la recette ; includeSimulation l\'inclut et expose simulation_scope', async () => {
+    db.query.mockResolvedValue({ rows: [] });
+    await relayQueries.getOrders(ADMIN, {});
+    expect(db.query.mock.calls[0][0]).toContain('WHERE o.simulation_scope IS NULL');
+    expect(db.query.mock.calls[0][0]).toContain('o.simulation_scope,');
+    await relayQueries.getOrders(ADMIN, {}, { includeSimulation: true });
+    expect(db.query.mock.calls[1][0]).not.toContain('simulation_scope IS NULL');
+  });
+
+  it('les KPI restent réels : getDashboardKPIs filtre toujours simulation_scope IS NULL', async () => {
+    db.query.mockResolvedValue({ rows: [{ c: 0 }] });
+    await relayQueries.getDashboardKPIs(ADMIN, { includeSimulation: true });
+    expect(db.query.mock.calls[0][0]).toContain('WHERE simulation_scope IS NULL');
+  });
+});
