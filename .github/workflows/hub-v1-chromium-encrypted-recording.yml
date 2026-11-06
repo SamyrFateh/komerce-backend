@@ -1,0 +1,89 @@
+name: Hub V1 — encrypted Chromium recording on official staging
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: read
+concurrency:
+  group: hub-v1-chromium-record-${{ github.event.issue.title }}
+  cancel-in-progress: false
+jobs:
+  recording:
+    if: >-
+      github.event_name == 'issues' &&
+      github.event.issue.user.login == github.repository_owner &&
+      startsWith(github.event.issue.title, '[staging-op] hub-v1-chromium-record-')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        role: [admin, agent_hub, agent_relais]
+    env:
+      CI: 'true'
+      E2E_STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      E2E_CHROMIUM_SPEC_FILTER: hub-v1-recording-readonly
+      E2E_AUDIT_ROLES: all
+      RECORD_REQUEST_TITLE: ${{ github.event.issue.title }}
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      E2E_AGENT_HUB_EMAIL: ${{ secrets.E2E_AGENT_HUB_EMAIL }}
+      E2E_AGENT_HUB_PASSWORD: ${{ secrets.E2E_AGENT_HUB_PASSWORD }}
+      E2E_AGENT_RELAIS_EMAIL: ${{ secrets.E2E_AGENT_RELAIS_EMAIL }}
+      E2E_AGENT_RELAIS_PASSWORD: ${{ secrets.E2E_AGENT_RELAIS_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Enforce explicit E2E RUN8 and deployed SHA
+        shell: bash
+        run: |
+          RUN8="${RECORD_REQUEST_TITLE##*-}"
+          if [[ ! "$RUN8" =~ ^[A-F0-9]{8}$ ]]; then
+            echo "REFUSED: explicit uppercase RUN8 required"; exit 2
+          fi
+          echo "E2E_PROOF_RUN8=$RUN8" >> "$GITHUB_ENV"
+          echo "E2E_EXPECTED_DEPLOY_SHA=$(git rev-parse origin/main)" >> "$GITHUB_ENV"
+      - name: Check official staging SHA before Chromium installation
+        run: node scripts/recette/staging-chromium-deployment-preflight.js
+      - run: npm ci
+      - name: Crypto regression tests
+        run: node node_modules/jest/bin/jest.js tests/unit/chromium-video-crypto.test.js --runInBand --ci --forceExit
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Record real authenticated screens and navigation clicks (read-only)
+        env:
+          RECORDER_ROLE: ${{ matrix.role }}
+        run: |
+          xvfb-run -a npx playwright test --headed --workers=1 --config=playwright.staging-canonical.config.js hub-v1-recording-readonly --project="${RECORDER_ROLE}-desktop"
+      - name: Refuse any accidentally unencrypted outputs
+        if: always()
+        shell: bash
+        run: |
+          RAW=test-results/hub-v1-chromium-recording/private
+          if [ -d "$RAW" ]; then
+            rm -rf -- "$RAW"
+          fi
+          if find test-results/hub-v1-chromium-recording/encrypted -type f ! -name '*.enc' ! -name '*-timeline.json' -print -quit 2>/dev/null | grep -q .; then
+            echo "UNSAFE_UNENCRYPTED_ARTIFACT"; exit 2
+          fi
+      - name: Archive ciphertext only (video and trace; key is never on GitHub)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hub-v1-chromium-private-${{ matrix.role }}-${{ github.run_id }}
+          path: test-results/hub-v1-chromium-recording/encrypted/
+          retention-days: 30
+          if-no-files-found: warn
+      - name: Report limited proof scope
+        if: always()
+        shell: bash
+        run: |
+          echo '### Hub V1 — encrypted Chromium recording' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Video starts **after login**, shows real UI readback and clicks. ZIP/WEBM are AES-256-GCM encrypted using an X25519 public key; no private key in GitHub.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'This recording does **NOT** prove the 13 transactional UI action clicks. The transaction service-run certificate is separate; no GO global is implied.' >> "$GITHUB_STEP_SUMMARY"
