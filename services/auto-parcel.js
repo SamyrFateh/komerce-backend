@@ -134,7 +134,10 @@ async function assignLane({ client, order, orderId, relaisId, destLabel, lane, i
   const laneKind = lane === 'local' ? 'local' : 'import';
   // Colis ouverts du meme relais ET du meme circuit (un colis vide convient a tout circuit).
   const laneFilter = `AND (agg.lanes IS NULL OR agg.lanes = ARRAY['${laneKind}']::text[])`;
-  const scope = relaisId ? 'p.relais_id = $1' : 'p.order_id = $1';
+  // Import : un colis par commande. Le lien sac->KOM-BOX (trigger migration 394) exige parcel.order_id = sac.order_id ;
+  // un colis import multi-commandes ne peut donc pas etre range en KOM-BOX. Le circuit local garde le groupage par relais.
+  const perOrder = laneKind === 'import' || !relaisId;
+  const scope = perOrder ? 'p.order_id = $1' : 'p.relais_id = $1';
   const openQuery = `
       SELECT p.id, p.reference,
              COALESCE(agg.item_count, 0)::int AS item_count,
@@ -153,7 +156,7 @@ async function assignLane({ client, order, orderId, relaisId, destLabel, lane, i
         ${laneFilter}
       ORDER BY p.created_at ASC
     `;
-  const openParams = [relaisId || orderId];
+  const openParams = [perOrder ? orderId : relaisId];
 
   const { rows: openParcels } = await client.query(openQuery, openParams);
 
