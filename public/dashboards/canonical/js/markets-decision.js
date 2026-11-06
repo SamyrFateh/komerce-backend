@@ -350,26 +350,77 @@
     return dashboard;
   }
 
+  function renderCentralAccessOverview(host, matrix, doc) {
+    if (!host || !doc) return null;
+    const projection = centralProjection(matrix);
+    host.replaceChildren();
+    const dashboard = doc.createElement('article');
+    dashboard.className = 'kmc-markets-simple';
+    const heading = doc.createElement('header');
+    heading.className = 'kmc-markets-simple-heading';
+    heading.appendChild(text(doc, 'p', 'kmc-markets-simple-kicker', 'MARCHÉS'));
+    heading.appendChild(text(doc, 'h1', '', 'Gestion des marchés'));
+    heading.appendChild(text(doc, 'p', '', 'Responsables, accès et état de chaque marché.'));
+    dashboard.appendChild(heading);
+
+    if (projection.marketsWithoutLead.length) {
+      const notice = doc.createElement('div');
+      notice.className = 'kmc-markets-simple-notice';
+      notice.setAttribute('role', 'status');
+      notice.appendChild(text(doc, 'strong', '', projection.marketsWithoutLead.length + ' marché(s) sans responsable opérationnel'));
+      notice.appendChild(text(doc, 'span', '', 'Désigner le responsable avant de considérer le pilotage comme attribué.'));
+      dashboard.appendChild(notice);
+    }
+
+    const list = doc.createElement('section');
+    list.className = 'kmc-markets-simple-list';
+    list.setAttribute('aria-label', 'Responsables par marché');
+    projection.rows.forEach(row => {
+      const market = row && row.market || {};
+      const code = String(market.code || '').toUpperCase();
+      const members = Array.isArray(row && row.members) ? row.members : [];
+      const lead = members.find(member => member && member.is_operating_lead === true);
+      const item = doc.createElement('article');
+      item.className = 'kmc-markets-simple-row';
+      const identity = doc.createElement('div');
+      identity.className = 'kmc-markets-simple-identity';
+      identity.appendChild(text(doc, 'strong', '', (market.name || code || 'Marché') + (code ? ' · ' + code : '')));
+      identity.appendChild(text(doc, 'span', '', lead ? ('Responsable : ' + (lead.full_name || lead.email || lead.user_id)) : 'Responsable opérationnel non désigné'));
+      const aside = doc.createElement('div');
+      aside.className = 'kmc-markets-simple-actions';
+      const status = text(doc, 'span', 'kmc-markets-simple-status' + (lead ? ' is-ready' : ''), lead ? 'Responsable désigné' : 'À configurer');
+      aside.appendChild(status);
+      const action = doc.createElement('button');
+      action.type = 'button';
+      action.className = 'kmc-markets-simple-button';
+      action.textContent = lead ? 'Gérer les accès' : 'Configurer le responsable';
+      action.setAttribute('aria-label', action.textContent + ' — ' + (market.name || code));
+      action.addEventListener('click', () => {
+        const form = doc.querySelector('.kmc-access-form');
+        const target = doc.getElementById('market-access-management') || form;
+        if (!form || !target) return;
+        const selector = form.querySelector('[name="market_code"]');
+        if (selector && Array.from(selector.options).some(option => option.value === code)) selector.value = code;
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        const name = form.querySelector('[name="full_name"]');
+        if (name) name.focus({ preventScroll: true });
+      });
+      aside.appendChild(action);
+      item.appendChild(identity);
+      item.appendChild(aside);
+      list.appendChild(item);
+    });
+    dashboard.appendChild(list);
+    host.appendChild(dashboard);
+    return dashboard;
+  }
+
   function renderAdminOverview(host, data, options = {}) {
     const root = typeof window !== 'undefined' ? window : globalThis;
     const matrix = data && data.matrix;
     if (matrix) {
-      return renderOverview(host, {
-        document: options.document || (root && root.document),
-        ui: options.ui || (root && root.KomerceCanonicalUI),
-        decisionUi: options.decisionUi || (root && root.KomerceDecisionUI),
-        eyebrow: 'MARCHÉS',
-        title: 'Pilotage des marchés',
-        description: 'Voir qui pilote chaque marché et ce qui demande une décision.',
-        decisions: centralDecisionItems(matrix),
-        metrics: centralMetricItems(matrix),
-        metricTitle: 'Responsabilité des marchés',
-        metricDescription: 'Responsables actifs et couverture des marchés.',
-        rankedItems: centralMarketItems(matrix),
-        rankedTitle: 'Responsabilité par marché',
-        rankedDescription: 'Le responsable et l’état de chaque marché.',
-        trust: centralTrust(matrix),
-      });
+      return renderCentralAccessOverview(host, matrix, options.document || (root && root.document));
+
     }
     const markets = data && data.markets;
     const users = data && data.users;
