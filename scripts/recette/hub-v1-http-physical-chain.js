@@ -89,7 +89,7 @@ async function run({ env = process.env, db, run8 } = {}) {
   const bagOrder = orderOf('KOM-101');
   let bagId = null; let bagRef = null;
   if (bagOrder) {
-    const items = await q('SELECT id, quantity, product_sku_id FROM order_items WHERE order_id=$1 ORDER BY id', [bagOrder.id]);
+    const items = await q('SELECT oi.id, oi.quantity, (SELECT pl.product_sku_id FROM purchase_lines pl WHERE pl.order_item_id=oi.id AND pl.cancelled_at IS NULL LIMIT 1) AS product_sku_id FROM order_items oi WHERE oi.order_id=$1 ORDER BY oi.id', [bagOrder.id]);
     const plan = items.map((i) => ({ order_item_id: i.id, quantity: Number(i.quantity) }));
     const d0 = await dossierOf();
     const existing = (d0.bags_open || []).find((b) => String(b.order_id) === String(bagOrder.id));
