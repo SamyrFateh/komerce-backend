@@ -69,11 +69,13 @@ describeDb('Repartition automatique — eligibilite des colis (PG16 jetable)', (
     for (const k of ['101', '102', '103', 'LOCAL']) results.push(await autoParcel.distributeOrder(o[k]));
     const p101 = await parcelOf('101'); const p102 = await parcelOf('102'); const pLocal = await parcelOf('LOCAL');
     expect(p101).not.toBeNull(); expect(p102).not.toBeNull(); expect(pLocal).not.toBeNull();
-    expect(p101.id).toBe(p102.id);               // import prets : meme colis (meme relais)
+    expect(p101.id).not.toBe(p102.id);           // import : un colis par commande (trigger 394 sac->box)
+    expect((await q('SELECT order_id FROM parcels WHERE id=$1', [p101.id])).rows[0].order_id).toBe(o['101']);
     expect(pLocal.id).not.toBe(p101.id);         // local jamais avec import
     expect(await parcelOf('103')).toBeNull();    // non approvisionne / non recu : aucun colis
     expect(results[2]).toMatchObject({ success: true, nothing_eligible: true });
-    expect((await itemsIn(p101.id)).sort()).toEqual([item['101'], item['102']].sort());
+    expect(await itemsIn(p101.id)).toEqual([item['101']]);
+    expect(await itemsIn(p102.id)).toEqual([item['102']]);
     expect(await itemsIn(pLocal.id)).toEqual([item.LOCAL]);
   });
 
@@ -87,12 +89,12 @@ describeDb('Repartition automatique — eligibilite des colis (PG16 jetable)', (
     expect(after).toBe(before);
   });
 
-  test('une fois recu, l article 103 rejoint un colis import (jamais le colis local)', async () => {
+  test('une fois recu, l article 103 a son propre colis import (jamais le colis local)', async () => {
     await receive('103', 2);
     const r = await autoParcel.distributeOrder(o['103']);
     expect(r.success).toBe(true);
-    const p103 = await parcelOf('103'); const p101 = await parcelOf('101'); const pLocal = await parcelOf('LOCAL');
-    expect(p103.id).toBe(p101.id);
+    const p103 = await parcelOf('103'); const pLocal = await parcelOf('LOCAL');
+    expect(p103).not.toBeNull();
     expect(p103.id).not.toBe(pLocal.id);
   });
 });
