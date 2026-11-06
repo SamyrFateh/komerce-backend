@@ -488,6 +488,7 @@ async function runDistribution(market) {
 
 const SCAN_ACTIONS = Object.freeze({
   ship: Object.freeze({ event_type: 'shipped', notes: 'Expédié depuis le Hub · Workspace Opérations' }),
+  receive: Object.freeze({ event_type: 'relais_received', notes: 'Reçu au relais · Workspace Opérations' }),
   collect: Object.freeze({ event_type: 'customer_collected', notes: 'Remis au client · Workspace Opérations' }),
 });
 
@@ -496,7 +497,7 @@ const SCAN_ACTIONS = Object.freeze({
 // station qui exécute l'action est utilisé. Sans cette traduction, tout scan d'un acteur non-admin était
 // refusé par la contrainte (500).
 const SCAN_ACTOR_ROLE = Object.freeze({ admin: 'admin', agent_hub: 'hub_agent', agent_relais: 'relay_agent' });
-const SCAN_STATION_ROLE = Object.freeze({ ship: 'hub_agent', collect: 'relay_agent' });
+const SCAN_STATION_ROLE = Object.freeze({ ship: 'hub_agent', receive: 'relay_agent', collect: 'relay_agent' });
 
 async function scanParcel(reference, action, market, actor = {}, manualInput = null) {
   const resolvedMarket = requireMarket(market);

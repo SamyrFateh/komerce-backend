@@ -1342,6 +1342,17 @@
     });
 
     renderParcelActionSection(rootNode, ui, doc, context, {
+      title: 'Relais · Réceptionner',
+      description: 'Colis expédiés par le Hub (circuit local) : réception par scan append-only du moteur logistique. Les colis import se réceptionnent par attestation de l’expédition.',
+      rows: payload.queues.relay.to_receive,
+      action: 'receive',
+      actionLabel: 'Reçu au relais',
+      suffix: row => `parcels/${encodeURIComponent(row.reference)}/receive`,
+      confirm: row => `Confirmer la réception de ${row.reference} au relais ?`,
+      empty: 'Aucun colis à réceptionner.',
+    });
+
+    renderParcelActionSection(rootNode, ui, doc, context, {
       title: 'Relais · Distribuer',
       description: 'Remise client par scan append-only du moteur logistique.',
       rows: payload.queues.relay.to_collect,
