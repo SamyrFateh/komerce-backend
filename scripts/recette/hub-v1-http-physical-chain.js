@@ -90,7 +90,9 @@ async function run({ env = process.env, db, run8 } = {}) {
 
   // 2. Sac client puis depot/fermeture, comme l'ecran Preparer les sacs (le dossier GET supply est la source de l'UI).
   const dossierOf = async () => { const r = await actors.hub_agent.call('GET', `${WS}/supply`); return (r.json && (r.json.dossier || r.json)) || {}; };
-  const bagOrder = orderOf('KOM-101');
+  const prepareBag = async (suffix) => {
+  const start = report.actions.length;
+  const bagOrder = orderOf(suffix);
   let bagId = null; let bagRef = null;
   if (bagOrder) {
     const items = await q('SELECT oi.id, oi.quantity, (SELECT pl.product_sku_id FROM purchase_lines pl WHERE pl.order_item_id=oi.id AND pl.cancelled_at IS NULL LIMIT 1) AS product_sku_id FROM order_items oi WHERE oi.order_id=$1 ORDER BY oi.id', [bagOrder.id]);
@@ -114,7 +116,7 @@ async function run({ env = process.env, db, run8 } = {}) {
       // Une ligne du dossier par (article, unite source) : on depose pour l'article du plan, exactement sa quantite planifiee.
       const d = await dossierOf();
       const lines = (d.fillable || []).filter((l) => String(l.order_id) === String(bagOrder.id));
-      if (!lines.length) blocked('hub:bag-deposit', 'hub_agent', `POST ${WS}/bags/:id/deposit`, `${JS}:1084`, `aucune ligne fillable pour KOM-101 dans GET supply (cles ${Object.keys(d).join(',')})`);
+      if (!lines.length) blocked('hub:bag-deposit', 'hub_agent', `POST ${WS}/bags/:id/deposit`, `${JS}:1084`, `aucune ligne fillable pour ${suffix} dans GET supply (cles ${Object.keys(d).join(',')})`);
       const left = left0 || new Map(items.map((i) => [String(i.id), Number(i.quantity)]));
       for (const line of lines) {
         const need = left.get(String(line.order_item_id)) || 0; if (need < 1) continue;
@@ -127,7 +129,15 @@ async function run({ env = process.env, db, run8 } = {}) {
       }
       await rec('hub:bag-close', 'hub_agent', 'POST', `${WS}/bags/${bagId}/close`, {}, { http: [200, 201] }, `${JS}:1099`);
     }
-  } else blocked('hub:bag-create', 'hub_agent', `POST ${WS}/bags`, `${JS}:1042`, 'commande KOM-101 absente');
+  } else blocked('hub:bag-create', 'hub_agent', `POST ${WS}/bags`, `${JS}:1042`, `commande ${suffix} absente`);
+  report.actions.slice(start).forEach((x) => { x.order = suffix; });
+  return { bagOrder, bagId, bagRef };
+  };
+  const bags = [];
+  for (const suffix of ['KOM-101', 'KOM-102']) { const r = await prepareBag(suffix); if (r.bagId) bags.push(r); }
+  const bagOrder = (bags[0] || {}).bagOrder; const bagId = (bags[0] || {}).bagId;
+
+
 
   // 3. KOM-BOX : creation, sac dans la box (double scan sac + box), avancement jusqu'a PACKED, dossier d'expedition.
   let boxId = null; let boxRef = null;
@@ -142,11 +152,18 @@ async function run({ env = process.env, db, run8 } = {}) {
       await rec('hub:distribution-run', 'hub_agent', 'POST', `${WS}/distribution/run`, {}, { http: [200, 201] }, `${JS}:1295`);
       d = await dossierOf();
     }
-    const ready = (d.bags_ready || []).find((b) => String(b.unit_id) === String(bagId) || b.reference === bagRef);
-    const parcel = ready && (d.client_parcels || []).find((p) => String(p.order_id) === String(ready.order_id));
-    if (!ready || !parcel) blocked('hub:box-add-bag', 'hub_agent', `POST ${WS}/boxes/:id/bags`, `${JS}:1161`, `sac pret ou colis client absent du dossier (bags_ready=${(d.bags_ready || []).length}, client_parcels=${(d.client_parcels || []).length})`);
-    else {
-      await rec('hub:box-add-bag', 'hub_agent', 'POST', `${WS}/boxes/${boxId}/bags`, { bag_unit_id: ready.unit_id, parcel_id: parcel.id, bag_reference_scan: ready.reference, box_reference_scan: boxRef }, { http: [200, 201] }, `${JS}:1161`);
+    const placed = [];
+    for (const bg of bags) {
+      const ready = (d.bags_ready || []).find((b) => String(b.unit_id) === String(bg.bagId) || b.reference === bg.bagRef);
+      // Le colis client est consolide par relais : il porte l'id d'une autre commande ; on le retrouve par les lignes de CETTE commande.
+      const pid = ready ? (await q("SELECT DISTINCT pi.parcel_id AS id FROM parcel_items pi JOIN order_items oi ON oi.id=pi.order_item_id JOIN parcels p ON p.id=pi.parcel_id WHERE oi.order_id=$1 AND p.status::text<>'cancelled' LIMIT 1", [ready.order_id]))[0] : null;
+      const parcel = pid && (d.client_parcels || []).find((p) => String(p.id) === String(pid.id));
+      if (!ready || !parcel) { blocked('hub:box-add-bag', 'hub_agent', `POST ${WS}/boxes/:id/bags`, `${JS}:1161`, `sac pret ou colis client absent du dossier pour ${bg.bagOrder.reference} (bags_ready=${(d.bags_ready || []).length}, client_parcels=${(d.client_parcels || []).length})`); continue; }
+      const r = await rec('hub:box-add-bag', 'hub_agent', 'POST', `${WS}/boxes/${boxId}/bags`, { bag_unit_id: ready.unit_id, parcel_id: parcel.id, bag_reference_scan: ready.reference, box_reference_scan: boxRef }, { http: [200, 201] }, `${JS}:1161`);
+      report.actions[report.actions.length - 1].order = bg.bagOrder.reference;
+      if (r && [200, 201].includes(r.http)) placed.push(bg);
+    }
+    if (placed.length) {
       const NEXT = { RECEIVED: 'IDENTIFIED', IDENTIFIED: 'QUALITY_CHECKED', QUALITY_CHECKED: 'LOCATED', LOCATED: 'ALLOCATED', ALLOCATED: 'PICKED', PICKED: 'PACKED', PACKED: 'DISPATCHED' };
       for (let i = 0; i < 8; i++) {
         const cur = ((await dossierOf()).boxes || []).find((b) => String(b.unit_id) === String(boxId));
@@ -194,14 +211,10 @@ async function run({ env = process.env, db, run8 } = {}) {
     if (go) {
       const cust = `HTTP-DOU-${run8}`;
       const cbody = { reference: cust, shipment_date: new Date().toISOString().slice(0, 10), cif_value_kmf: 1000 };
-      let cc = await rec('customs:create', 'admin', 'POST', `${WSC}/customs/shipments`, { ...cbody, parcel_refs: parcelRefRow ? [parcelRefRow.reference] : [] }, { http: 201 }, `${JC}:497`);
-      if (!cc || cc.http !== 201) {
-        // Constat applicatif : avec colis rattaches la creation echoue (voir note) ; on poursuit sans colis pour atteindre le retrait.
-        report.actions[report.actions.length - 1].finding = 'APP_DEFECT_CUSTOMS_CREATE_WITH_PARCEL_REFS';
-        cc = await rec('customs:create:without-parcels', 'admin', 'POST', `${WSC}/customs/shipments`, { ...cbody, parcel_refs: [] }, { http: 201 }, `${JC}:497`);
-      }
+      // Flux KOM-BOX : le dossier douane est lie a l'expedition (link-customs), jamais a des colis historiques (JOURNEY_CUSTOMS_LEGACY_MEMBERSHIP).
+      const cc = await rec('customs:create', 'admin', 'POST', `${WSC}/customs/shipments`, { ...cbody, parcel_refs: [] }, { http: 201 }, `${JC}:497`);
       go = Boolean(cc && cc.http === 201);
-      go = go && ok(await rec('customs:declare', 'admin', 'POST', `${WSC}/customs/shipments/${cust}/declare`, { customs_paid_kmf: 0, freight_kmf: 0, reason: 'recette fixture' }, { http: 200 }, `${JC}:declare`));
+      // Pas de customs:declare legacy (exige des colis) : le montant est declare par journey:customs-amount (declareInternationalCustomsAmount).
       go = go && ok(await rec('journey:link-customs', 'admin', 'POST', `${J}/link-customs`, { customs_reference: cust, proof_ref: `SIM-LINK-${run8}` }, { http: 200 }, `${JP}:link-customs`));
       go = go && ok(await rec('journey:customs-amount', 'admin', 'POST', `${J}/customs-amount`, { amount_kmf: 0, proof_ref: `SIM-DROITS-${run8}` }, { http: 200 }, `${JP}:customs-amount`));
       go = go && ok(await step('customs_released', 'admin', {}));
@@ -218,14 +231,45 @@ async function run({ env = process.env, db, run8 } = {}) {
   if (!sh) blocked('relay:attest', 'agent_relais', `POST ${WS}/relay-shipments/:ref/receive`, `${JS}:1579`, `expedition ${shipmentRef || '(non ouverte)'} absente de la liste relais : l'etape de remise au transitaire / arrivee au relais n'a pas de geste UI cartographie`);
   else if (!sh.receivable) blocked('relay:attest', 'agent_relais', `POST ${WS}/relay-shipments/:ref/receive`, `${JS}:1579`, `expedition visible mais non recevable (etape ${sh.stage || '?'}, attendue local_delivery)`);
   else {
-    const lines = (sh.items || sh.lines || []).map((i) => ({ order_item_id: i.order_item_id, received_qty: Number(i.expected_qty || i.quantity) }));
+    // Forme UI (operations-workspace.js:1500-1580) : shipment.boxes[].orders[].items[] ; quantite recue = quantite expediee.
+    const lines = [];
+    for (const box of sh.boxes || []) for (const o of box.orders || []) for (const i of o.items || []) {
+      if (i.received === null || i.received === undefined) lines.push({ order_item_id: i.order_item_id, received_qty: Number(i.shipped) });
+    }
     await rec('relay:attest', 'agent_relais', 'POST', `${WS}/relay-shipments/${sh.reference}/receive`, { proof_ref: `SIM-RELAIS-${run8}`, lines }, { http: [200, 201] }, `${JS}:1579`);
   }
   const ws = await actors.agent_relais.call('GET', WS);
   const toCollect = (((ws.json || {}).queues || {}).relay || {}).to_collect || [];
-  const parcelRow = toCollect.find((x) => bagOrder && String(x.order_id || '') === String(bagOrder.id)) || null;
-  if (!parcelRow) blocked('relay:collect', 'agent_relais', `POST ${WS}/parcels/:ref/collect`, `${JS}:1350`, `colis KOM-101 absent de queues.relay.to_collect (${toCollect.length} colis a remettre)`);
-  else await rec('relay:collect', 'agent_relais', 'POST', `${WS}/parcels/${encodeURIComponent(parcelRow.reference)}/collect`, {}, { http: [200, 201] }, `${JS}:1350`);
+  const ownParcel = bagOrder ? (await q('SELECT reference FROM parcels WHERE order_id=$1 AND cancelled_at IS NULL ORDER BY created_at LIMIT 1', [bagOrder.id]).catch(() => []))[0] : null;
+  const parcelRow = toCollect.find((x) => ownParcel && x.reference === ownParcel.reference) || null;
+  // Les commandes E2E portent simulation_scope : la file UI (queryParcels) les masque par conception. On appelle donc la route que le bouton UI appelle,
+  // avec la reference lue en base, et on le consigne (ecart fixture, pas defaut applicatif).
+  const collectRef = parcelRow ? parcelRow.reference : ownParcel && ownParcel.reference;
+  if (!collectRef) blocked('relay:collect', 'agent_relais', `POST ${WS}/parcels/:ref/collect`, `${JS}:1350`, 'aucun colis pour la commande de la fixture');
+  else {
+    await rec('relay:collect', 'agent_relais', 'POST', `${WS}/parcels/${encodeURIComponent(collectRef)}/collect`, { reason: 'scanner_unavailable' }, { http: [200, 201] }, `${JS}:1350`);
+    if (!parcelRow) report.actions[report.actions.length - 1].note = 'colis absent de queues.relay.to_collect (orders.simulation_scope masque par queryParcels) ; route appelee avec la reference lue en base';
+  }
+
+  // 5. Circuit LOCAL (stock local, sans transitaire) : le colis existe deja (repartition) -> parcours colis du Workspace :
+  // Hub 'Expedier' (parcels/:ref/ship, scan shipped) puis Relais 'Remis au client' (scan customer_collected, autorise apres shipped).
+  // /api/orders/:id/local-relay-receipt est reserve au cas SANS colis (409 LOCAL_RECEIPT_PARCEL_ALREADY_EXISTS) et n'a aucun appelant UI.
+  const localOrder = orderOf('LOCAL');
+  const lp = localOrder ? (await q('SELECT reference, status::text AS status FROM parcels WHERE order_id=$1 AND cancelled_at IS NULL ORDER BY created_at LIMIT 1', [localOrder.id]).catch(() => []))[0] : null;
+  if (!lp) blocked('local:ship', 'hub_agent', `POST ${WS}/parcels/:ref/ship`, `${JS}:1322`, 'colis LOCAL absent de la fixture');
+  else {
+    const sr = await rec('local:ship', 'hub_agent', 'POST', `${WS}/parcels/${encodeURIComponent(lp.reference)}/ship`, { reason: 'scanner_unavailable' }, { http: [200, 201] }, `${JS}:1322`);
+    if (sr && sr.http === 500) {
+      const last = report.actions[report.actions.length - 1];
+      last.verdict = 'BLOCKED';
+      last.finding = 'APP_BLOCKAGE_LOCAL_SHIP_500_SCAN_CATCHUP_SELF_BLOCK';
+      last.note = "scan shipped depuis 'preparation' : le moteur rattrape l'etape packed en creant un incident scan_anomaly, puis sa gouvernance incident (OPEN_HUB_RELEVANT_INCIDENT) bloque la transition -> 500 non maitrise ; aucune route Workspace pour le scan packed. Circuit local inatteignable par l'UI.";
+    }
+    if (sr && [200, 201].includes(sr.http)) {
+      await rec('local:collect', 'agent_relais', 'POST', `${WS}/parcels/${encodeURIComponent(lp.reference)}/collect`, { reason: 'scanner_unavailable' }, { http: [200, 201] }, `${JS}:1350`);
+      report.actions[report.actions.length - 1].note = 'etape relay-received sans route Workspace : collect direct apres shipped (autorise par le moteur de scan)';
+    }
+  }
 
   report.finished_at = new Date().toISOString();
   report.counts = report.actions.reduce((m, a) => { m[a.verdict] = (m[a.verdict] || 0) + 1; return m; }, {});
