@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 789,
+    "scannedCodeFiles": 790,
     "filesWithFullHeaders": 736,
-    "filesWithLiteHeaders": 53,
-    "filesWithAnyHeaders": 789,
+    "filesWithLiteHeaders": 54,
+    "filesWithAnyHeaders": 790,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1996,
-    "edges": 9830,
+    "graphNodes": 1997,
+    "edges": 9834,
     "dbTables": 230,
     "doctrines": 770,
     "impactAreas": 207,
-    "unresolvedCodeEdges": 942,
+    "unresolvedCodeEdges": 943,
     "dbWriteViaOverlapWarnings": 12,
     "multiWriterTables": 94
   },
@@ -55,7 +55,7 @@
     "wallet": 3,
     "providers-services": 7,
     "customs": 8,
-    "dashboard": 31,
+    "dashboard": 32,
     "loyalty": 3,
     "market-control-plane": 5,
     "settlement": 2,
@@ -112,7 +112,7 @@
     "schema": 1,
     "route": 137,
     "entrypoint": 1,
-    "service": 472,
+    "service": 473,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -124,7 +124,7 @@
     "critical": 118,
     "medium": 154,
     "high": 454,
-    "low": 62,
+    "low": 63,
     "unknown": 1
   },
   "nodes": [
@@ -31362,6 +31362,33 @@
         "recette"
       ],
       "version": "2026-10"
+    },
+    {
+      "id": "services/simulation-visibility.js",
+      "file": "services/simulation-visibility.js",
+      "type": "file-lite",
+      "headerType": "lite",
+      "role": "live-simulation-visibility",
+      "domain": "dashboard",
+      "layer": "service",
+      "criticality": "low",
+      "owner": "backend-core",
+      "purpose": "Source unique du filtre « recette » (simulation_scope) des listes Hub Live / Relais Live.",
+      "inputs": [],
+      "outputs": [],
+      "depends": [],
+      "usedBy": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [],
+      "impactAreas": [
+        "dashboard",
+        "hub",
+        "relay"
+      ],
+      "version": null
     },
     {
       "id": "services/simulator/cleanup.js",
@@ -93705,6 +93732,30 @@
       "label": "recette"
     },
     {
+      "from": "services/simulation-visibility.js",
+      "to": "backend-core",
+      "type": "owned-by",
+      "label": "backend-core"
+    },
+    {
+      "from": "services/simulation-visibility.js",
+      "to": "impact:dashboard",
+      "type": "impact",
+      "label": "dashboard"
+    },
+    {
+      "from": "services/simulation-visibility.js",
+      "to": "impact:hub",
+      "type": "impact",
+      "label": "hub"
+    },
+    {
+      "from": "services/simulation-visibility.js",
+      "to": "impact:relay",
+      "type": "impact",
+      "label": "relay"
+    },
+    {
       "from": "services/simulator/cleanup.js",
       "to": "db",
       "type": "depends",
@@ -135075,6 +135126,32 @@
         "services/dashboard-metrics/_helpers.js"
       ]
     },
+    "services/simulation-visibility.js": {
+      "role": "live-simulation-visibility",
+      "domain": "dashboard",
+      "criticality": "low",
+      "headerType": "lite",
+      "owner": "backend-core",
+      "purpose": "Source unique du filtre « recette » (simulation_scope) des listes Hub Live / Relais Live.",
+      "directDependsOn": [],
+      "directUsedBy": [],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [],
+      "impactAreas": [
+        "dashboard",
+        "hub",
+        "relay"
+      ],
+      "mustCheck": [
+        "backend-core",
+        "impact:dashboard",
+        "impact:hub",
+        "impact:relay"
+      ]
+    },
     "services/simulator/cleanup.js": {
       "role": "cleanup",
       "domain": "operations",
@@ -147140,6 +147217,12 @@
       "to": "services/simulation-scope-service.js",
       "type": "uses",
       "label": "readers of cross-order aggregates"
+    },
+    {
+      "from": "services/simulation-visibility.js",
+      "to": "backend-core",
+      "type": "owned-by",
+      "label": "backend-core"
     },
     {
       "from": "services/simulator/cleanup.js",
