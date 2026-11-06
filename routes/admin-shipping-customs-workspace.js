@@ -43,7 +43,21 @@ const requireCustomsAction = requireRole(['admin']);
 const requireLogisticsRead = requireMarketDelegatedCapability('logistics.read', { audit: false });
 const requireTransitExecution = requireMarketDelegatedCapability('execution.transit.confirm');
 
+// Doctrine « Hub central multi-marchés sans attribution manuelle des marchés » (cf. admin-operations-workspace) :
+// agent_hub et agent_transitaire accèdent à ce workspace sur tout marché ACTIF sans membership. Cette garde ne donne
+// QUE la lecture du workspace et les gestes de transit (requireTransitAction + ordre des étapes du journey) ; les gestes
+// douane/coûts/clôture restent requireCustomsAction (admin) et market_operator est inchangé.
+const CENTRAL_TRANSIT_ROLES = Object.freeze(['agent_hub', 'agent_transitaire']);
+function isCentralTransitAccess(req) {
+  return Boolean(req.user && CENTRAL_TRANSIT_ROLES.includes(req.user.role)
+    && req.workspaceMarket && req.workspaceMarket.lifecycle_status === 'ACTIVE');
+}
+
 function requireWorkspaceMarketAccess(req, res, next) {
+  if (isCentralTransitAccess(req)) {
+    req.workspaceCentralTransit = true;
+    return next();
+  }
   return hasDashboardGlobalAuthority(req.user && req.user.id)
     .then(globalAllowed => {
       if (globalAllowed) {
@@ -57,6 +71,7 @@ function requireWorkspaceMarketAccess(req, res, next) {
 
 function requireTransitExecutionForTransitaire(req, res, next) {
   if (!req.user || req.user.role !== 'agent_transitaire') return next();
+  if (req.workspaceCentralTransit) return next();
   return requireTransitExecution(req, res, next);
 }
 
@@ -85,7 +100,7 @@ async function resolveRequestedMarket(req, res, next) {
 
   try {
     const { rows } = await db.query(
-      `SELECT id, code, name, currency
+      `SELECT id, code, name, currency, lifecycle_status
          FROM markets
         WHERE code = $1
           AND is_active = TRUE
@@ -277,6 +292,7 @@ module.exports._test = {
   rejectClientMarketAuthority,
   resolveRequestedMarket,
   requireWorkspaceMarketAccess,
+  isCentralTransitAccess,
   requireTransitExecutionForTransitaire,
   actionActor,
   sendWorkspaceError,

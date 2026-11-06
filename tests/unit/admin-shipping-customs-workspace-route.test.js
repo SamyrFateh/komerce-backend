@@ -107,9 +107,10 @@ jest.mock('../../db', () => ({
   query: jest.fn(async (sql, params) => {
     if (String(sql).includes('FROM markets')) {
       const code = params[0];
-      const ids = { CM: 'market-cm-id', CG: 'market-cg-id' };
+      const ids = { CM: 'market-cm-id', CG: 'market-cg-id', KM: 'market-km-id', ZZ: 'market-zz-id' };
+      const lifecycle = { KM: 'ACTIVE', ZZ: 'SUSPENDED' };
       return {
-        rows: ids[code] ? [{ id: ids[code], code, name: `Market ${code}`, currency: 'XAF' }] : [],
+        rows: ids[code] ? [{ id: ids[code], code, name: `Market ${code}`, currency: 'XAF', lifecycle_status: lifecycle[code] }] : [],
       };
     }
     return { rows: [] };
@@ -395,4 +396,38 @@ test('shipment financial reconciliation is Admin-only and market-scoped',async()
   expect((await request(app()).post(url).send({})).status).toBe(200);
   expect(mockInternationalN1).toHaveBeenCalledWith(
     expect.objectContaining({id:'market-cm-id'}),expect.objectContaining({role:'admin'}),'INT-CM-001',undefined,{});
+});
+
+describe('Hub central : transit sans membership sur marché ACTIF (doctrine #3438)', () => {
+  const base = '/api/admin/workspaces/shipping-customs/market';
+  beforeEach(() => { mockGrantedMarketCodes = new Set(); mockTransitMarketCodes = new Set(); });
+
+  test('agent_hub lit et remet au transitaire sur KM ACTIF sans membership', async () => {
+    mockUserRole = 'agent_hub';
+    expect((await request(app()).get(`${base}/KM`)).status).toBe(200);
+    const r = await request(app()).post(`${base}/KM/international/INT-1/transition`).send({ to_stage: 'handed_over', proof_ref: 'P' });
+    expect(r.status).toBe(200);
+    expect(mockJourneyTransition).toHaveBeenCalledWith(expect.objectContaining({ code: 'KM' }), expect.objectContaining({ role: 'agent_hub' }), 'INT-1', expect.anything());
+  });
+  test('agent_transitaire execute ses etapes sur KM ACTIF sans membership', async () => {
+    mockUserRole = 'agent_transitaire';
+    expect((await request(app()).post(`${base}/KM/international/INT-1/transition`).send({ to_stage: 'forwarder_received', proof_ref: 'P' })).status).toBe(200);
+    expect((await request(app()).post(`${base}/KM/international/INT-1/tracking`).send({ proof_ref: 'P', tracking_reference: 'T' })).status).toBe(200);
+  });
+  test.each(['agent_hub', 'agent_transitaire'])('%s : aucun droit douane/couts/cloture ajoute', async role => {
+    mockUserRole = role;
+    for (const tail of ['/international/INT-1/costs', '/international/INT-1/freight', '/international/INT-1/link-customs', '/international/INT-1/customs-amount', '/customs/shipments']) {
+      expect((await request(app()).post(`${base}/KM${tail}`).send({})).status).toBe(403);
+    }
+    expect(mockJourneyCost).not.toHaveBeenCalled();
+    expect(mockCreateCustomsShipment).not.toHaveBeenCalled();
+  });
+  test.each(['agent_hub', 'agent_transitaire'])('%s : marche non ACTIF refuse sans capability', async role => {
+    mockUserRole = role;
+    expect((await request(app()).get(`${base}/ZZ`)).status).toBe(403);
+  });
+  test('market_operator sans membership reste refuse sur KM', async () => {
+    mockUserRole = 'market_operator';
+    expect((await request(app()).get(`${base}/KM`)).status).toBe(403);
+  });
 });
