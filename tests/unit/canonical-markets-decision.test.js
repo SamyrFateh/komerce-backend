@@ -129,8 +129,7 @@ test('Marchés overview garde Hero + décisions + responsabilité dans un seul o
 
 test('les libellés Marchés restent métier et sans jargon de gouvernance interne', () => {
   const source = read('public/dashboards/canonical/js/markets-decision.js');
-  expect(source).toContain("'Pilotage des marchés'");
-  expect(source).toContain("'Voir qui pilote chaque marché et ce qui demande une décision.'");
+  // En-tête retiré volontairement (735816576 : lignes de marché actionnables à la place des KPI centraux).
   expect(source).not.toContain('memberships, capabilities');
   expect(source).not.toContain('scopes de compatibilité');
 });

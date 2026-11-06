@@ -498,6 +498,7 @@ module.exports = {
       'dashboards/canonical/css/base.css',
       'dashboards/canonical/css/decision-visual.css',
       'dashboards/canonical/css/tokens.css',
+      'dashboards/canonical/css/users-market-assignments-v1.css',
       'dashboards/canonical/css/visual-freeze-v1.css',
       'dashboards/canonical/css/canonical-theme-v2.css',
       'dashboards/canonical/css/canonical-shell-v4.css',

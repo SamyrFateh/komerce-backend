@@ -21,7 +21,12 @@ describe('canonical unified admin chrome', () => {
     filename => {
       const html = fs.readFileSync(path.join(canonical, filename), 'utf8');
       const stylesheets = [...html.matchAll(/<link\s+rel="stylesheet"\s+href="([^"]+)"/g)].map(m => m[1]);
-      expect(stylesheets.at(-1)).toMatch(new RegExp(`/css/${cssName.replace(/\./g, '\\.')}\\?v=`));
+      // Seules les feuilles de composant isolées (scopées par attribut, #3418) peuvent suivre le chrome partagé.
+      const SCOPED_AFTER_CHROME = ['/css/users-invitation-v1.css', '/css/users-market-assignments-v1.css'];
+      const core = stylesheets.filter(href => !SCOPED_AFTER_CHROME.some(s => href.includes(s)));
+      expect(core.at(-1)).toMatch(new RegExp(`/css/${cssName.replace(/\./g, '\\.')}\\?v=`));
+      const chromeIdx = stylesheets.findIndex(href => href.includes(cssName));
+      expect(stylesheets.slice(chromeIdx + 1).every(href => SCOPED_AFTER_CHROME.some(s => href.includes(s)))).toBe(true);
       expect(stylesheets.filter(href => href.includes(cssName))).toHaveLength(1);
     }
   );

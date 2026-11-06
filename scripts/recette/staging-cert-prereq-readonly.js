@@ -88,7 +88,8 @@ async function marketSection(client, code, controlPlane) {
     delivery_proof_proven: Boolean(controlPlane.deliveryProof && controlPlane.deliveryProof.proven),
   } : { error: controlPlane && controlPlane.error };
   const auditRows = audit.ok ? audit.rows : [];
-  const toActive = auditRows.some((a) => a.to_status === 'ACTIVE');
+  // Dernier evenement canonique (tri DESC) : un ACTIVE ancien ne valide pas un etat courant reecrit hors route.
+  const toActive = auditRows.length > 0 && auditRows[0].to_status === 'ACTIVE';
   const ready = Boolean(cp.readiness && cp.readiness.ready_for_activation === true);
   const checks = {
     parity_present: par.ok && par.rows.length === 1,
