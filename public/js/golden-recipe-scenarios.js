@@ -118,6 +118,11 @@ function restore(){
 function showMessage(value){$('scenarioMessage').textContent=value;}
 function hrefForStep(path){
  if(run&&path.includes(':ref'))path=path.replace(':ref',encodeURIComponent(run.ref));
+ // Sélecteur de marché = contexte UI uniquement. Jamais une autorité : le
+ // serveur contrôle les attributions et les droits de chaque opération.
+ if(run&&run.track.startsWith('v1_')&&run.market!=='DJ'&&
+    /^\/admin\/(?:workspaces\/pricing|commerce|finance|orders)(?:\?|$)/.test(path)&&!path.includes('?'))
+   path+='?market='+encodeURIComponent(run.market);
  if(!run||!/^RCT1(?:-|$)/.test(run.ref))return path;
  if(!/^\/admin\/(?:commerce|finance)(?:\?|$)/.test(path))return path;
  return path+(path.includes('?')?'&':'?')+'simulation_scope=RCT1';
@@ -128,8 +133,16 @@ function scopeNote(path){
   ? ' · RCT1 : filtre explicite sur cet écran.'
   : ' · RCT1 : écran sans filtre de simulation certifié ; rapprocher uniquement les références et faits canoniques.';
 }
-function record(status){
+async function record(status){
  if(!run)return;
+ const activeKey=key(),activeIndex=stepIndex;
+ // La session peut avoir changé dans l'onglet où l'opérateur a réellement
+ // travaillé. Refaire les deux GET au moment du constat, sans enregistrer
+ // une observation sous l'identité vérifiée à une étape précédente.
+ if(status==='observed'&&run.track.startsWith('v1_')){
+  await checkAuth();
+  if(!run||key()!==activeKey||stepIndex!==activeIndex)return;
+ }
  const note=$('scenarioNote').value.trim().slice(0,1600);
  const proof=$('scenarioProof').value.trim().slice(0,300);
  if(note.length<8){showMessage('Décris d’abord ce qui est réellement observé (8 caractères minimum).');return;}
