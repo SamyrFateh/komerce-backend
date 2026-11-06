@@ -107,58 +107,118 @@
     }
   }
 
-  // Invitation sans mot de passe : l'Admin choisit uniquement le profil et les marchés.
+  // Invitation sans mot de passe : les marchés sont les seuls périmètres choisis ici.
+  // Le POST reste le writer serveur existant, sans permissions individuelles.
   function renderInviteManager(rootNode, doc, { markets, fetchImpl, refresh }) {
     if (!Array.isArray(markets) || !markets.length) return;
-    const section = node(doc, 'section', 'kmc-decision-surface-card');
+    const section = node(doc, 'section', 'kmc-decision-surface-card kmc-users-invite-card');
     section.setAttribute('data-market-manager-invite', '');
-    section.appendChild(node(doc, 'h2', 'kmc-decision-dashboard-section-title', 'Inviter un responsable marché'));
+
+    const intro = node(doc, 'div', 'kmc-users-invite-intro');
+    const icon = node(doc, 'span', 'kmc-users-invite-icon');
+    icon.setAttribute('aria-hidden', 'true');
+    const introCopy = node(doc, 'div', 'kmc-users-invite-intro-copy');
+    const heading = node(doc, 'h2', 'kmc-users-invite-title', 'Inviter un responsable marché');
+    const description = node(doc, 'p', 'kmc-users-invite-description',
+      'Créez un compte responsable marché et définissez immédiatement son périmètre d’action.');
+    introCopy.appendChild(heading);
+    introCopy.appendChild(description);
+    intro.appendChild(icon);
+    intro.appendChild(introCopy);
+    section.appendChild(intro);
+
     const form = node(doc, 'form', 'kmc-users-invite-form');
+    const fieldGrid = node(doc, 'div', 'kmc-users-invite-fields');
+
+    const fullNameField = node(doc, 'div', 'kmc-users-invite-field');
+    const fullNameLabel = node(doc, 'label', 'kmc-users-invite-label', 'Nom complet');
+    fullNameLabel.htmlFor = 'kmc-users-invite-name';
     const fullName = node(doc, 'input', 'kmc-users-input');
+    fullName.id = 'kmc-users-invite-name';
     fullName.name = 'full_name';
     fullName.type = 'text';
     fullName.required = true;
     fullName.maxLength = 120;
-    fullName.placeholder = 'Nom complet';
-    fullName.setAttribute('aria-label', 'Nom complet');
+    fullName.autoComplete = 'name';
+    fullName.placeholder = 'Ex. : Jean Dupont';
+    fullNameField.appendChild(fullNameLabel);
+    fullNameField.appendChild(fullName);
+
+    const emailField = node(doc, 'div', 'kmc-users-invite-field');
+    const emailLabel = node(doc, 'label', 'kmc-users-invite-label', 'Adresse e-mail professionnelle');
+    emailLabel.htmlFor = 'kmc-users-invite-email';
     const email = node(doc, 'input', 'kmc-users-input');
+    email.id = 'kmc-users-invite-email';
     email.name = 'email';
     email.type = 'email';
     email.required = true;
     email.maxLength = 254;
-    email.placeholder = 'Adresse email professionnelle';
-    email.setAttribute('aria-label', 'Adresse email professionnelle');
-    const marketBox = node(doc, 'div', 'kmc-users-invite-markets');
-    marketBox.appendChild(node(doc, 'p', '', 'Marchés autorisés'));
+    email.autoComplete = 'email';
+    email.placeholder = 'Ex. : jean.dupont@komerce.km';
+    emailField.appendChild(emailLabel);
+    emailField.appendChild(email);
+
+    fieldGrid.appendChild(fullNameField);
+    fieldGrid.appendChild(emailField);
+    form.appendChild(fieldGrid);
+
+    const marketBox = node(doc, 'fieldset', 'kmc-users-invite-markets');
+    marketBox.appendChild(node(doc, 'legend', 'kmc-users-invite-label', 'Marchés autorisés'));
+    const marketGrid = node(doc, 'div', 'kmc-users-invite-market-grid');
     const choices = [];
     for (const market of markets) {
       const code = String(market.code || '').toUpperCase();
       if (!/^[A-Z]{2}$/.test(code)) continue;
       const label = node(doc, 'label', 'kmc-users-market-choice');
-      const checkbox = node(doc, 'input');
+      const checkbox = node(doc, 'input', 'kmc-users-market-checkbox');
       checkbox.type = 'checkbox';
+      checkbox.name = 'market_codes';
       checkbox.value = code;
+      checkbox.setAttribute('aria-label',
+        (market.name ? String(market.name) + ' (' + code + ')' : 'Marché ' + code));
       label.appendChild(checkbox);
-      label.appendChild(node(doc, 'span', '', code));
-      marketBox.appendChild(label);
+      label.appendChild(node(doc, 'span', 'kmc-users-market-code', code));
+      marketGrid.appendChild(label);
       choices.push(checkbox);
     }
-    const send = node(doc, 'button', 'kmc-users-invite-submit', 'Envoyer une invitation sécurisée');
-    send.type = 'submit';
-    const message = node(doc, 'p', 'kmc-users-action-message');
-    form.appendChild(fullName);
-    form.appendChild(email);
+    marketBox.appendChild(marketGrid);
     form.appendChild(marketBox);
-    form.appendChild(send);
+
+    const footer = node(doc, 'div', 'kmc-users-invite-footer');
+    const send = node(doc, 'button', 'kmc-users-invite-submit');
+    send.type = 'submit';
+    const sendIcon = node(doc, 'span', 'kmc-users-invite-send-icon');
+    sendIcon.setAttribute('aria-hidden', 'true');
+    send.appendChild(sendIcon);
+    send.appendChild(node(doc, 'span', '', 'Envoyer une invitation sécurisée'));
+    footer.appendChild(send);
+
+    const hint = node(doc, 'p', 'kmc-users-invite-hint');
+    const hintIcon = node(doc, 'span', 'kmc-users-invite-hint-icon', 'i');
+    hintIcon.setAttribute('aria-hidden', 'true');
+    hint.appendChild(hintIcon);
+    hint.appendChild(node(doc, 'span', '',
+      'Un e-mail d’activation sera envoyé au destinataire avec un lien sécurisé.'));
+    footer.appendChild(hint);
+    form.appendChild(footer);
+
+    const message = node(doc, 'p', 'kmc-users-action-message kmc-users-invite-message');
+    message.setAttribute('role', 'status');
+    message.setAttribute('aria-live', 'polite');
     form.appendChild(message);
     form.addEventListener('submit', async event => {
       event.preventDefault();
-      const codes = choices.filter(c => c.checked).map(c => c.value);
+      if (send.disabled) return;
+      const codes = choices.filter(choice => choice.checked).map(choice => choice.value);
+      message.textContent = '';
+      message.removeAttribute('data-tone');
       if (!codes.length) {
+        message.setAttribute('data-tone', 'error');
         message.textContent = 'Sélectionnez au moins un marché.';
         return;
       }
       send.disabled = true;
+      send.setAttribute('aria-busy', 'true');
       try {
         const response = await fetchImpl('/api/admin/users', {
           method: 'POST', credentials: 'include',
@@ -169,7 +229,8 @@
           }),
         });
         if (!response.ok) {
-          message.textContent = `Invitation refusée (${response.status}). Vérifiez le compte et les marchés.`;
+          message.setAttribute('data-tone', 'error');
+          message.textContent = 'Invitation refusée (' + response.status + '). Vérifiez le compte et les marchés.';
           return;
         }
         const result = await response.json();
@@ -177,9 +238,11 @@
           ? 'Compte créé et invitation envoyée.'
           : 'Compte créé, mais l’email n’est pas parti. Renvoyez l’invitation après configuration du service email.');
       } catch (_) {
+        message.setAttribute('data-tone', 'error');
         message.textContent = 'Invitation impossible. Vérifiez la connexion.';
       } finally {
         send.disabled = false;
+        send.removeAttribute('aria-busy');
       }
     });
     section.appendChild(form);
