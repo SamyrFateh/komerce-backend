@@ -243,5 +243,36 @@ if (!hasIntegrationEnv) {
 
       expect(second.shipped_at.getTime()).toBe(first.shipped_at.getTime());
     });
+
+    it("8 — TRACE DE RATTRAPAGE : un scan_anomaly low/system porteur de catchup_type ne bloque pas shipped", async () => {
+      const { parcelId, orderId } = await seedParcelInPreparation('catchup_trace');
+      const id = crypto.randomUUID();
+      incidentIds.push(id);
+      await db.query(
+        `INSERT INTO incidents (id, parcel_id, order_id, incident_type, severity, status, title, details, detected_source, origin_domain, resolver_domain, resolution_class)
+         VALUES ($1,$2,$3,'scan_anomaly','low','open','Etape packed rattrapee automatiquement','{"catchup_type":"packed","triggered_by":"shipped"}'::jsonb,'system','LOGISTICS','LOGISTICS','PHYSICAL_PROOF')`,
+        [id, parcelId, orderId]
+      );
+      const result = await transitionParcelStatus(db, parcelId, 'shipped');
+      expect(result.ok).toBe(true);
+      expect((await parcelStatus(parcelId)).status).toBe('shipped');
+    });
+
+    it("9 — LEGITIME : un scan_anomaly ouvert sans marque de rattrapage (ou de severite superieure) bloque toujours shipped", async () => {
+      const a = await seedParcelInPreparation('anomaly_plain');
+      await seedOpenIncident({ parcelId: a.parcelId, orderId: a.orderId, incidentType: 'scan_anomaly' });
+      await expect(transitionParcelStatus(db, a.parcelId, 'shipped')).rejects.toThrow(/OPEN_HUB_RELEVANT_INCIDENT/);
+      expect((await parcelStatus(a.parcelId)).status).toBe('preparation');
+
+      const b = await seedParcelInPreparation('anomaly_catchup_medium');
+      const id = crypto.randomUUID();
+      incidentIds.push(id);
+      await db.query(
+        `INSERT INTO incidents (id, parcel_id, order_id, incident_type, severity, status, title, details, detected_source, origin_domain, resolver_domain, resolution_class)
+         VALUES ($1,$2,$3,'scan_anomaly','medium','open','Anomalie','{"catchup_type":"packed"}'::jsonb,'system','LOGISTICS','LOGISTICS','PHYSICAL_PROOF')`,
+        [id, b.parcelId, b.orderId]
+      );
+      await expect(transitionParcelStatus(db, b.parcelId, 'shipped')).rejects.toThrow(/OPEN_HUB_RELEVANT_INCIDENT/);
+    });
   });
 }
