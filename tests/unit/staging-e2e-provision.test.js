@@ -49,6 +49,10 @@ function fakeWorld() {
       createRelais: jest.fn(async (_c, a) => { const r = { id: `r-${++w.seq}`, market_id: a.marketId, name: a.name, is_active: true }; w.relais.push(r); return r; }),
       setRelaisActive: jest.fn(),
     },
+    delegation: {
+      resolveActiveAssignmentByMarketCode: jest.fn(async (_c, code) => ({ assignment_id: `a-${code}` })),
+      addMembership: jest.fn(async (_c, a) => { w.calls.push(`addMembership:${a.assignmentId}:${a.capabilities.join('+')}:${a.actorIsCentral}`); return { id: 'm1' }; }),
+    },
     hubAuth: { grant: jest.fn(async ({ userId, authorizationType }) => { const k = `${userId}:${authorizationType}`; const had = w.grants.includes(k); if (!had) w.grants.push(k); return { idempotent_replay: had }; }) },
   };
   return { w, db, deps, guard: async () => ({ confirmed: true }) };
@@ -118,6 +122,8 @@ describe('run', () => {
     expect(report.relais.DJ).toEqual({ status: 'skipped_market_inactive' });
     expect(w.relais.map((r) => r.market_id)).not.toContain('m-DJ');
     expect(w.relais).toHaveLength(4);
+    // L'agent relais appartient au marche de son relais : membership d'execution via le writer canonique, bornee receive/collect.
+    expect(w.calls.filter((c) => c.startsWith('addMembership:'))).toEqual(['addMembership:a-KM:execution.parcel.receive+execution.parcel.collect:true']);
     const by = Object.fromEntries(report.profiles.map((p) => [p.profile, p]));
     expect(by.admin.password).toBe('not_touched');
     expect(by.market_operator.market_scope).toMatchObject({ market: 'KM', role: 'manager' });

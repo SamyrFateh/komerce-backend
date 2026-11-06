@@ -96,6 +96,7 @@ function defaultDeps() {
     operators: require('../../services/market-operator-provisioning'),
     relais: require('../../services/relais-mutation-service'),
     hubAuth: require('../../services/hub-authorization-service'),
+    delegation: require('../../services/market-delegation-service'),
   };
 }
 
@@ -129,6 +130,17 @@ async function ensureUser(client, deps, account) {
     passwordHash: await deps.bcrypt.hash(account.password, PASSWORD_ROUNDS),
   });
   return { id: created.id, user: 'created', password: 'set' };
+}
+
+// Un agent relais appartient au marche de son relais : membership d'execution (reception + remise) via le writer canonique
+// (addMembership ; borne par le plafond de l'assignment, jamais d'ecriture SQL directe). Idempotent.
+const RELAY_AGENT_CAPABILITIES = ['execution.parcel.receive', 'execution.parcel.collect'];
+async function ensureRelayAgentMembership(client, deps, { userId, marketCode, actorId }) {
+  const assignment = await deps.delegation.resolveActiveAssignmentByMarketCode(client, marketCode);
+  await deps.delegation.addMembership(client, {
+    assignmentId: assignment.assignment_id, userId, actorUserId: actorId, capabilities: RELAY_AGENT_CAPABILITIES, actorIsCentral: true,
+  });
+  return { market: marketCode, capabilities: RELAY_AGENT_CAPABILITIES };
 }
 
 async function ensureRelays(client, deps, actorId) {
@@ -185,6 +197,7 @@ async function run({ db, mode, env = process.env, deps = defaultDeps(), guard } 
         const a = await deps.users.assignAgentRelais(client, { userId: res.id, relaisId: report.relais[account.relayMarket].id });
         if (!['assigned', 'already'].includes(a.status)) throw new ProvisionRefusal('E2E_PROVISION_RELAY_ASSIGN_FAILED', `${account.key}:${a.status}`);
         entry.relais = { market: account.relayMarket, status: a.status };
+        entry.relay_membership = await ensureRelayAgentMembership(client, deps, { userId: res.id, marketCode: account.relayMarket, actorId: actor.id });
       }
       if (account.hubGrants) {
         entry.hub_grants = {};
@@ -222,4 +235,4 @@ if (require.main === module) {
   main().catch((e) => { process.stderr.write(`REFUS: ${e instanceof ProvisionRefusal ? e.message : (e.code || e.name || 'ERROR')}\n`); process.exit(1); });
 }
 
-module.exports = { ACK_VALUE, PROFILES, MARKET_CODES, ProvisionRefusal, assertProvisionAllowed, readProfiles, run, grantSourcingGlobalAuthority };
+module.exports = { ensureRelayAgentMembership, RELAY_AGENT_CAPABILITIES, ACK_VALUE, PROFILES, MARKET_CODES, ProvisionRefusal, assertProvisionAllowed, readProfiles, run, grantSourcingGlobalAuthority };
