@@ -11,6 +11,12 @@ on:
         description: 'RUN8 de la fixture KM (8 hex majuscules)'
         required: true
         type: string
+      chain:
+        description: 'po = chaine achats (une fois par fixture) ; physical = reception, sacs, KOM-BOX, relais (apres po)'
+        required: false
+        type: choice
+        default: po
+        options: [po, physical]
       confirmation:
         description: 'Saisir exactement RUN-HTTP-ACTIONS'
         required: true
@@ -73,7 +79,7 @@ jobs:
           STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
         run: node scripts/recette/resolve-staging-deploy-pin.js
       - name: Runner HTTP d'actions
-        run: node scripts/recette/hub-v1-http-action-runner.js
+        run: node scripts/recette/${{ inputs.chain == 'physical' && 'hub-v1-http-physical-chain.js' || 'hub-v1-http-action-runner.js' }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
