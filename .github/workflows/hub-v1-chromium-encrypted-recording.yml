@@ -19,7 +19,7 @@ jobs:
       fail-fast: false
       max-parallel: 1
       matrix:
-        role: [admin, agent_hub, agent_relais]
+        role: ${{ fromJSON(startsWith(github.event.issue.title, '[staging-op] hub-v1-chromium-record-relay-') && '["agent_relais"]' || '["admin","agent_hub","agent_relais"]') }}
     env:
       CI: 'true'
       E2E_STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
@@ -52,8 +52,8 @@ jobs:
       - name: Check official staging SHA before Chromium installation
         run: node scripts/recette/staging-chromium-deployment-preflight.js
       - run: npm ci
-      - name: Crypto regression tests
-        run: node node_modules/jest/bin/jest.js tests/unit/chromium-video-crypto.test.js --runInBand --ci --forceExit
+      - name: Crypto and scoped relay verdict regression tests
+        run: node node_modules/jest/bin/jest.js tests/unit/chromium-video-crypto.test.js tests/unit/hub-v1-recording-verdict.test.js --runInBand --ci --forceExit
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
       - name: Record real authenticated screens and navigation clicks (read-only)
