@@ -28,8 +28,9 @@ function inspect(env=process.env) {
   // A targeted Hub Director proof uses the admin runner but authenticates two
   // distinct agent_hub identities. An exhaustive unfiltered run includes it too.
   const filter=String(env.E2E_CHROMIUM_SPEC_FILTER||'').trim();
-  const directorIncluded=selectedRoles(env.E2E_AUDIT_ROLES||'all').includes('admin') &&
-    env.E2E_AUDIT_QUICK!=='1' && (!filter || filter.includes('hub-director-readonly'));
+  const directorIncluded=env.E2E_AUDIT_QUICK!=='1' &&
+    (filter.includes('hub-director-readonly') ||
+     (!filter && String(env.E2E_AUDIT_ROLES||'all').toLowerCase()==='all'));
   if(directorIncluded) {
     for(const prefix of ['E2E_HUB_DIRECTOR_','E2E_AGENT_HUB_']) {
       for(const suffix of ['EMAIL','PASSWORD']) {
