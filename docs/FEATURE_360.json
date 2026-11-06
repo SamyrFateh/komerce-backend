@@ -53,15 +53,15 @@
   },
   "summary": {
     "features": 40,
-    "healthy": 35,
-    "attention": 5,
+    "healthy": 34,
+    "attention": 6,
     "blocked": 0,
-    "businessDependencies": 323,
+    "businessDependencies": 322,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
     "ontologyGaps": 0,
-    "debtItemsTotal": 9,
+    "debtItemsTotal": 10,
     "gateHealthy": 37,
     "gateBlocked": 2
   },
@@ -6759,7 +6759,7 @@
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 173,
+            "count": 174,
             "files": [
               {
                 "declared": "chart.umd.min.js",
@@ -7282,6 +7282,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "dashboards/canonical/css/users-market-assignments-v1.css",
+                "resolvedPath": "public/dashboards/canonical/css/users-market-assignments-v1.css",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "dashboards/canonical/css/visual-freeze-v1.css",
                 "resolvedPath": "public/dashboards/canonical/css/visual-freeze-v1.css",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -7799,7 +7804,7 @@
             ]
           },
           "services": {
-            "count": 45,
+            "count": 46,
             "files": [
               {
                 "declared": "public/golden-e2e-cockpit.html",
@@ -8022,6 +8027,11 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/simulation-visibility.js",
+                "resolvedPath": "services/simulation-visibility.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/supplier-360.js",
                 "resolvedPath": "services/supplier-360.js",
                 "status": "resolved-in-technical-graph"
@@ -8029,7 +8039,7 @@
             ]
           },
           "tests": {
-            "count": 210,
+            "count": 211,
             "files": [
               {
                 "declared": "playwright.config.js",
@@ -9042,6 +9052,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/simulation-visibility.test.js",
+                "resolvedPath": "tests/unit/simulation-visibility.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/sourcing-handoff-clean-queue.test.js",
                 "resolvedPath": "tests/unit/sourcing-handoff-clean-queue.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -9084,7 +9099,7 @@
             ]
           }
         },
-        "totalFiles": 459,
+        "totalFiles": 462,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -15492,11 +15507,16 @@
             ]
           },
           "tests": {
-            "count": 104,
+            "count": 106,
             "files": [
               {
                 "declared": "tests/e2e-api/infrastructure.audit-logic-detectors.e2e.test.js",
                 "resolvedPath": "tests/e2e-api/infrastructure.audit-logic-detectors.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/e2e-api/staging-e2e-provision.e2e.test.js",
+                "resolvedPath": "tests/e2e-api/staging-e2e-provision.e2e.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -15975,6 +15995,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/staging-e2e-provision.test.js",
+                "resolvedPath": "tests/unit/staging-e2e-provision.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/staging-reset-classification.test.js",
                 "resolvedPath": "tests/unit/staging-reset-classification.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -16057,7 +16082,7 @@
             ]
           }
         },
-        "totalFiles": 397,
+        "totalFiles": 399,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -21890,15 +21915,7 @@
           ]
         }
       ],
-      "consumedBy": [
-        {
-          "consumer": "orders",
-          "disposition": "DECLARED_AND_OBSERVED",
-          "channels": [
-            "static-code"
-          ]
-        }
-      ],
+      "consumedBy": [],
       "projections": {
         "projectedBy": []
       },
@@ -25707,13 +25724,6 @@
           ]
         },
         {
-          "provider": "market-control-plane",
-          "disposition": "DECLARED_AND_OBSERVED",
-          "channels": [
-            "static-code"
-          ]
-        },
-        {
           "provider": "notifications",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -25958,12 +25968,14 @@
         "details": []
       },
       "boundaryHealth": {
-        "status": "HEALTHY",
+        "status": "ATTENTION",
         "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
-        "declaredNotObserved": 0,
-        "declaredNotObservedEvidence": []
+        "declaredNotObserved": 1,
+        "declaredNotObservedEvidence": [
+          "market-control-plane"
+        ]
       },
       "governanceHealth": {
         "status": "HEALTHY",
@@ -25983,8 +25995,14 @@
         "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 0,
-        "debtItems": []
+        "debtCount": 1,
+        "debtItems": [
+          {
+            "type": "DECLARED_NOT_OBSERVED",
+            "severity": "low",
+            "evidence": "contract.consumes déclare \"market-control-plane\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
+          }
+        ]
       },
       "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",

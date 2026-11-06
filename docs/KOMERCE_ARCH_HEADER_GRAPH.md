@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 789
+- Scanned code files: 790
 - Files with full headers: 736
-- Files with lite headers: 53
-- Files with any headers: 789
+- Files with lite headers: 54
+- Files with any headers: 790
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1996
-- Edges: 9830
+- Graph nodes: 1997
+- Edges: 9834
 - DB tables: 230
 - Doctrines: 770
 - Impact areas: 207
-- Unresolved code edges: 942
+- Unresolved code edges: 943
 - Tables multi-écrivains directs (>=2): 94
 - Avertissements db-write / db-write-via en chevauchement: 12
 
@@ -35,7 +35,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - catalog: 136
 - checkout: 3
 - customs: 8
-- dashboard: 31
+- dashboard: 32
 - decision-signals: 14
 - documents: 15
 - economic-engine: 67
@@ -92,7 +92,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 137
 - route-manifest: 1
 - schema: 1
-- service: 472
+- service: 473
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -745,6 +745,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/providers-inquiry-service.js -> owner services/providers-service.js (providers-services-contextual-inquiry)
 - services/providers-interaction-policy.js -> owner services/providers-service.js (providers-services-interaction-policy)
 - services/rct1-checkout-reference-guard.js -> owner backend-core (rct1-checkout-reference-guard)
+- services/simulation-visibility.js -> owner backend-core (live-simulation-visibility)
 
 ## DB Write Edges
 

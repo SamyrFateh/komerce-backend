@@ -4870,6 +4870,13 @@
       {
         "feature": "dashboard",
         "category": "services",
+        "declared": "services/simulation-visibility.js",
+        "resolvedPath": "services/simulation-visibility.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "dashboard",
+        "category": "services",
         "declared": "services/live-projection.js",
         "resolvedPath": "services/live-projection.js",
         "status": "resolved-in-technical-graph"
@@ -5334,6 +5341,13 @@
         "category": "dash",
         "declared": "dashboards/canonical/css/tokens.css",
         "resolvedPath": "public/dashboards/canonical/css/tokens.css",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/css/users-market-assignments-v1.css",
+        "resolvedPath": "public/dashboards/canonical/css/users-market-assignments-v1.css",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -7987,6 +8001,13 @@
         "category": "tests",
         "declared": "tests/unit/relay-collect-amount.test.js",
         "resolvedPath": "tests/unit/relay-collect-amount.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/simulation-visibility.test.js",
+        "resolvedPath": "tests/unit/simulation-visibility.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -12264,6 +12285,20 @@
         "category": "tests",
         "declared": "tests/unit/staging-reset-entrypoint.test.js",
         "resolvedPath": "tests/unit/staging-reset-entrypoint.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/staging-e2e-provision.test.js",
+        "resolvedPath": "tests/unit/staging-e2e-provision.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/e2e-api/staging-e2e-provision.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/staging-e2e-provision.e2e.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -29388,7 +29423,7 @@
       {
         "from": "orders",
         "to": "market-control-plane",
-        "raw": "market-control-plane (preuve de livrabilité du marché : assertMarketDeliverable, garde checkout Lot B ; refus 409 MARKET_DELIVERY_NOT_PROVEN sans preuve)",
+        "raw": "market-control-plane (destination relais actif : marché de rattachement et disponibilité du relais validés au checkout ; attestation transporteur non requise)",
         "resolved": true
       },
       {
@@ -43577,22 +43612,6 @@
       },
       {
         "from": "orders",
-        "to": "market-control-plane",
-        "channels": [
-          {
-            "channel": "static-code",
-            "evidence": [
-              {
-                "sourceFileId": "services/order-checkout-service.js",
-                "targetFile": "services/market-delivery-proof-service.js"
-              }
-            ]
-          }
-        ],
-        "conformanceStatus": "DECLARED_AND_OBSERVED"
-      },
-      {
-        "from": "orders",
         "to": "notifications",
         "channels": [
           {
@@ -48761,7 +48780,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2277
+        "filesObserved": 2281
       },
       "boutique": {
         "filesObserved": 214,
@@ -52626,8 +52645,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 685,
-        "technicalNodesOwned": 685,
+        "technicalNodesTotal": 686,
+        "technicalNodesOwned": 686,
         "technicalOrphans": 0
       },
       "dash": {
