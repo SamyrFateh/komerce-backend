@@ -13,6 +13,7 @@ const path=require('path');
 const crypto=require('crypto');
 const {test,expect}=require('@playwright/test');
 const {encryptFile}=require('../../scripts/recette/chromium-video-crypto');
+const {evaluateRecording}=require('../../scripts/recette/hub-v1-recording-verdict');
 const BASE='https://komerce-backend-production.up.railway.app';
 const ROOT=path.resolve('test-results/hub-v1-chromium-recording');
 const PRIVATE=path.join(ROOT,'private');
@@ -42,7 +43,8 @@ test('Hub V1 staging video, genuine read-only UI actions, post-login encryption'
  const evidence={schema:'komerce-chromium-recording/1',kind:'READONLY_UI_VIDEO',
    transactional_13_steps:'NOT_PROVEN_BY_THIS_VIDEO',sha,run8:RUN8,role,viewport:'1440x900',
    refs:REFS,route_reads:[],clicks:[],blocked_writes:0,blocked_external:0,browser_errors:0,
-   found_fixture_refs:[],video_encrypted:false,trace_encrypted:false,status:'HOLD'};
+   found_fixture_refs:[],fixture_visibility:'NOT_PROVEN',relay_scope:null,
+   video_encrypted:false,trace_encrypted:false,status:'HOLD'};
  const archive=()=>fs.writeFileSync(path.join(OUTPUT,role+'-timeline.json'),JSON.stringify(evidence,null,2)+'\n');
  const prefix='E2E_'+role.toUpperCase()+'_';
  const email=process.env[prefix+'EMAIL'],password=process.env[prefix+'PASSWORD'];
@@ -86,6 +88,19 @@ test('Hub V1 staging video, genuine read-only UI actions, post-login encryption'
   });
   page.on('pageerror',()=>evidence.browser_errors++);
   await ctx.tracing.start({screenshots:true,snapshots:true,sources:false});
+  if(role==='agent_relais'){
+    // This account is assigned to its own relay. An E2E fixture may belong
+    // to a different relay; never widen authority or pretend its orders are visible.
+    const me=await page.request.get('/api/auth/me');
+    expect(me.status()).toBe(200);
+    expect((await me.json()).role).toBe('agent_relais');
+    const signal=await page.request.get('/api/agent/action-center');
+    expect(signal.status()).toBe(200);
+    const central=await page.request.get('/api/market-delegation/central/team-matrix');
+    expect(central.status()).toBe(403);
+    evidence.relay_scope={identity_http:me.status(),role_verified:true,
+      action_center_http:signal.status(),central_admin_http:central.status()};
+  }
   for(const route of ROLES[role]){
     const response=await page.goto(route,{waitUntil:'domcontentloaded'});
     await page.waitForLoadState('networkidle',{timeout:8000}).catch(()=>{});
@@ -115,10 +130,11 @@ test('Hub V1 staging video, genuine read-only UI actions, post-login encryption'
    }
   }
   evidence.found_fixture_refs=[...new Set(names)];
+  evidence.fixture_visibility=evidence.found_fixture_refs.length>0?'OBSERVED':
+    (role==='agent_relais'?'NOT_PROVEN_FOR_ASSIGNED_RELAY':'NOT_PROVEN');
   const finish=await request.get(BASE+'/health/version');
   evidence.sha_stable=finish.status()===200&&String((await finish.json()).commit||'')===expected;
-  evidence.status=(evidence.sha_stable&&evidence.blocked_writes===0&&evidence.browser_errors===0&&
-    evidence.clicks.length>0&&evidence.found_fixture_refs.length>0)?'PASS_READONLY_RECORDING':'HOLD_NOT_PROVEN';
+  // Status is calculated only AFTER the video and trace have been encrypted.
  }catch(error){evidence.status='FAIL';evidence.error_code='RECORDING_FAILED';throw error;}
  finally{
   try{await ctx.tracing.stop({path:traceFile});}finally{await ctx.close();}
@@ -129,7 +145,8 @@ test('Hub V1 staging video, genuine read-only UI actions, post-login encryption'
   evidence.video_encrypted=true;
   encryptFile(traceFile,path.join(OUTPUT,role+'.trace.zip.enc'));
   evidence.trace_encrypted=true;
+  if(evidence.status!=='FAIL')evidence.status=evaluateRecording(evidence);
   archive();
  }
- expect(evidence.status).toBe('PASS_READONLY_RECORDING');
+ expect(['PASS_READONLY_RECORDING','PASS_SCOPED_READONLY_RECORDING']).toContain(evidence.status);
 });
