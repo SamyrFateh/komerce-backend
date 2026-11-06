@@ -147,14 +147,12 @@ async function queryDistribution(marketId) {
       WHERE o.market_id = $1
         AND (o.relais_id IS NULL OR r.market_id = $1)
         AND o.status IN ('ordered', 'preparation')
-        AND NOT EXISTS (
-          SELECT 1
-            FROM parcel_items pi
-            JOIN order_items oi ON oi.id = pi.order_item_id
-            JOIN parcels p ON p.id = pi.parcel_id AND p.status <> 'cancelled'
+        AND EXISTS (
+          SELECT 1 FROM order_items oi
            WHERE oi.order_id = o.id
+             AND NOT EXISTS (SELECT 1 FROM parcel_items pi JOIN parcels p ON p.id = pi.parcel_id AND p.status <> 'cancelled'
+                              WHERE pi.order_item_id = oi.id)
         )
-        AND EXISTS (SELECT 1 FROM order_items oi WHERE oi.order_id = o.id)
       ORDER BY o.created_at ASC`,
     [marketId]
   );

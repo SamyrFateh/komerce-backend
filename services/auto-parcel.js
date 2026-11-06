@@ -63,69 +63,97 @@ async function distributeOrder(orderId, dbClient) {
 
   if (!order) return { success: false, error: 'Order not found' };
 
-  // Check if order already has items in active parcels
+  // Deja entierement reparti ? (toutes les lignes ont un colis actif). Une repartition partielle laisse les lignes restantes
+  // eligibles a un passage ulterieur (ex. article importe recu apres coup).
   const { rows: existingItems } = await client.query(`
-    SELECT pi.id FROM parcel_items pi
-    JOIN order_items oi ON oi.id = pi.order_item_id
-    JOIN parcels p ON p.id = pi.parcel_id AND p.status NOT IN ('cancelled')
-    WHERE oi.order_id = $1
-    LIMIT 1
+    SELECT 1 AS assigned
+     WHERE EXISTS (
+             SELECT 1 FROM parcel_items pi
+               JOIN order_items oi ON oi.id = pi.order_item_id
+               JOIN parcels p ON p.id = pi.parcel_id AND p.status NOT IN ('cancelled')
+              WHERE oi.order_id = $1)
+       AND NOT EXISTS (
+             SELECT 1 FROM order_items oi
+              WHERE oi.order_id = $1
+                AND NOT EXISTS (SELECT 1 FROM parcel_items pi
+                                  JOIN parcels p ON p.id = pi.parcel_id AND p.status NOT IN ('cancelled')
+                                 WHERE pi.order_item_id = oi.id))
   `, [orderId]);
 
   if (existingItems.length > 0) {
     return { success: true, already_assigned: true, order_ref: order.reference };
   }
 
-  // Get order items
-  const { rows: items } = await client.query(
-    'SELECT id, quantity, product_id FROM order_items WHERE order_id = $1',
-    [orderId]
-  );
-  if (items.length === 0) return { success: false, error: 'No items in order' };
+  // Lignes SANS colis actif, avec leur circuit : LOCAL (hors import) ou IMPORT (recu / non recu au Hub).
+  const { rows: allItems } = await client.query(`
+    SELECT oi.id, oi.quantity, oi.product_id, oi.fulfillment_source,
+           COALESCE((SELECT SUM(v.received_quantity)::int FROM v_purchase_line_progress v
+                      WHERE v.order_item_id = oi.id AND NOT v.cancelled), 0) AS received
+      FROM order_items oi
+     WHERE oi.order_id = $1
+       AND NOT EXISTS (SELECT 1 FROM parcel_items pi JOIN parcels p ON p.id = pi.parcel_id AND p.status NOT IN ('cancelled')
+                        WHERE pi.order_item_id = oi.id)
+  `, [orderId]);
+  if (allItems.length === 0) return { success: false, error: 'No items in order' };
 
-  const totalQty = items.reduce((s, i) => s + (i.quantity || 1), 0);
+  // Doctrine d'eligibilite : un colis ne contient que des articles du MEME circuit et PRETS. Jamais de melange local/import,
+  // jamais d'article non approvisionne ou non recu avec des articles prets : ceux-la restent sans colis jusqu'a reception.
+  const laneOf = (item) => item.fulfillment_source === 'IMPORT'
+    ? (Number(item.received) >= Number(item.quantity || 1) ? 'import' : 'import_pending')
+    : 'local';
+  const groups = new Map();
+  const deferred = [];
+  for (const item of allItems) {
+    const lane = laneOf(item);
+    if (lane === 'import_pending') { deferred.push(item.id); continue; }
+    if (!groups.has(lane)) groups.set(lane, []);
+    groups.get(lane).push(item);
+  }
+  if (groups.size === 0) {
+    return { success: true, order_ref: order.reference, nothing_eligible: true, deferred_items: deferred.length,
+      reason: 'Aucun article pret (import non recu au Hub) : aucun colis cree' };
+  }
+
   const relaisId = order.relais_id;
   const destLabel = (order.relais_island || 'inconnue').toUpperCase();
-
-  // Find open parcels for same relais (or same island if no relais)
-  let openQuery, openParams;
-  if (relaisId) {
-    openQuery = `
-      SELECT p.id, p.reference,
-             COALESCE(agg.item_count, 0)::int AS item_count,
-             COALESCE(agg.order_count, 0)::int AS order_count
-      FROM parcels p
-      LEFT JOIN LATERAL (
-        SELECT COUNT(pi.id) AS item_count,
-               COUNT(DISTINCT oi.order_id) AS order_count
-        FROM parcel_items pi
-        JOIN order_items oi ON oi.id = pi.order_item_id
-        WHERE pi.parcel_id = p.id
-      ) agg ON true
-      WHERE p.status IN ('draft', 'preparation')
-        AND p.relais_id = $1
-      ORDER BY p.created_at ASC
-    `;
-    openParams = [relaisId];
-  } else {
-    openQuery = `
-      SELECT p.id, p.reference,
-             COALESCE(agg.item_count, 0)::int AS item_count,
-             COALESCE(agg.order_count, 0)::int AS order_count
-      FROM parcels p
-      LEFT JOIN LATERAL (
-        SELECT COUNT(pi.id) AS item_count,
-               COUNT(DISTINCT oi.order_id) AS order_count
-        FROM parcel_items pi
-        JOIN order_items oi ON oi.id = pi.order_item_id
-        WHERE pi.parcel_id = p.id
-      ) agg ON true
-      WHERE p.status IN ('draft', 'preparation')
-        AND p.order_id = $1
-      ORDER BY p.created_at ASC
-    `;
-    openParams = [orderId];
+  const outcomes = [];
+  for (const [lane, items] of groups) {
+    const outcome = await assignLane({ client, order, orderId, relaisId, destLabel, lane, items });
+    if (outcome.queued) return outcome;
+    outcomes.push({ ...outcome, lane });
   }
+  const { lane: _lane, ...first } = outcomes[0];
+  const extra = deferred.length ? { deferred_items: deferred.length } : {};
+  return outcomes.length === 1
+    ? { ...first, ...extra }
+    : { ...first, parcels: outcomes.map(o => ({ parcel_ref: o.parcel_ref, lane: o.lane, items_assigned: o.items_assigned })), ...extra };
+}
+
+async function assignLane({ client, order, orderId, relaisId, destLabel, lane, items }) {
+  const totalQty = items.reduce((s, i) => s + (i.quantity || 1), 0);
+  const laneKind = lane === 'local' ? 'local' : 'import';
+  // Colis ouverts du meme relais ET du meme circuit (un colis vide convient a tout circuit).
+  const laneFilter = `AND (agg.lanes IS NULL OR agg.lanes = ARRAY['${laneKind}']::text[])`;
+  const scope = relaisId ? 'p.relais_id = $1' : 'p.order_id = $1';
+  const openQuery = `
+      SELECT p.id, p.reference,
+             COALESCE(agg.item_count, 0)::int AS item_count,
+             COALESCE(agg.order_count, 0)::int AS order_count
+      FROM parcels p
+      LEFT JOIN LATERAL (
+        SELECT COUNT(pi.id) AS item_count,
+               COUNT(DISTINCT oi.order_id) AS order_count,
+               ARRAY_AGG(DISTINCT CASE WHEN oi.fulfillment_source = 'IMPORT' THEN 'import' ELSE 'local' END) AS lanes
+        FROM parcel_items pi
+        JOIN order_items oi ON oi.id = pi.order_item_id
+        WHERE pi.parcel_id = p.id
+      ) agg ON true
+      WHERE p.status IN ('draft', 'preparation')
+        AND ${scope}
+        ${laneFilter}
+      ORDER BY p.created_at ASC
+    `;
+  const openParams = [relaisId || orderId];
 
   const { rows: openParcels } = await client.query(openQuery, openParams);
 
@@ -152,7 +180,7 @@ async function distributeOrder(orderId, dbClient) {
     parcelId = newP.id;
     parcelRef = newP.reference;
     created = true;
-    log.info(`[AUTO-PARCEL] New parcel ${parcelRef} → ${destLabel} (${openParcels.length + 1}/${MAX_OPEN_PARCELS_PER_DEST})`);
+    log.info(`[AUTO-PARCEL] New parcel ${parcelRef} → ${destLabel} (${laneKind}, ${openParcels.length + 1}/${MAX_OPEN_PARCELS_PER_DEST})`);
   } else {
     // SATURATED — queue the order
     log.info(`[AUTO-PARCEL] ⚠️ ${destLabel}: ${openParcels.length} colis ouverts (max ${MAX_OPEN_PARCELS_PER_DEST}) — ${order.reference} en file`);
@@ -197,7 +225,7 @@ async function distributeOrder(orderId, dbClient) {
     }
   }
 
-  log.info(`[AUTO-PARCEL] ${order.reference} → ${parcelRef} (${assigned}/${items.length} items, ${created ? 'new' : 'existing'})`);
+  log.info(`[AUTO-PARCEL] ${order.reference} → ${parcelRef} (${assigned}/${items.length} items, ${laneKind}, ${created ? 'new' : 'existing'})`);
 
   return {
     success: true,
@@ -206,7 +234,7 @@ async function distributeOrder(orderId, dbClient) {
     parcel_id: parcelId,
     items_assigned: assigned,
     parcel_created: created,
-    destination: destLabel
+    destination: destLabel,
   };
 }
 
@@ -217,14 +245,11 @@ async function distributeAll() {
     SELECT o.id, o.reference
     FROM orders o
     WHERE o.status IN ('ordered', 'preparation')
-      AND NOT EXISTS (
-        SELECT 1 FROM parcel_items pi
-        JOIN order_items oi ON oi.id = pi.order_item_id
-        JOIN parcels p ON p.id = pi.parcel_id AND p.status NOT IN ('cancelled')
-        WHERE oi.order_id = o.id
-      )
       AND EXISTS (
-        SELECT 1 FROM order_items oi WHERE oi.order_id = o.id
+        SELECT 1 FROM order_items oi
+         WHERE oi.order_id = o.id
+           AND NOT EXISTS (SELECT 1 FROM parcel_items pi JOIN parcels p ON p.id = pi.parcel_id AND p.status NOT IN ('cancelled')
+                            WHERE pi.order_item_id = oi.id)
       )
     ORDER BY o.created_at ASC
   `);
