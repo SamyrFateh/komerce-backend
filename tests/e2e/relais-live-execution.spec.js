@@ -3,6 +3,8 @@
  * @feature dashboard (Relais live · Exécution, /admin/relais-live?view=execute)
  * @brief Les opérations Relais (encaisser, réceptionner, remettre) sont exécutables depuis Relais live,
  *        via les routes canoniques du Workspace (une seule mutation par clic, marché conservé, aucune action Hub).
+ *        Reception, regle a deux branches : colis IMPORT (rattache a une expedition) = attestation d'expedition, jamais de geste receive,
+ *        quel que soit son statut ; colis LOCAL expedie par le Hub = geste « Reçu au relais » (parcels/:ref/receive).
  *        API simulée : aucun serveur ni base requis, aucune donnée réelle modifiée.
  */
 'use strict';
@@ -33,7 +35,8 @@ const WORKSPACE = {
     },
     relay: {
       cash_pending: [{ reference: 'K-CASH-1' }],
-      to_receive: [{ reference: 'PCL-KM-2' }],
+      // PCL-KM-2 : colis import rattache a une expedition (reception = attestation) ; PCL-KM-4 : colis local expedie par le Hub.
+      to_receive: [{ reference: 'PCL-KM-2', local_receivable: false }, { reference: 'PCL-KM-4', local_receivable: true }],
       to_collect: [{ reference: 'PCL-KM-3' }],
     },
   },
@@ -95,20 +98,26 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
     test('actions Relais uniquement : aucune action Hub', async ({ page }) => {
       await mount(page);
       await expect(page.locator('[data-workspace-action="confirm-cash"]')).toHaveCount(1);
-      await expect(page.locator('[data-workspace-action="receive"]')).toHaveCount(0);
+      // Un seul geste receive : celui du colis local ; aucun sur le colis import PCL-KM-2.
+      await expect(page.locator('[data-workspace-action="receive"]')).toHaveCount(1);
+      await expect(page.locator('tr', { hasText: 'PCL-KM-4' }).locator('[data-workspace-action="receive"]')).toHaveCount(1);
+      await expect(page.locator('tr', { hasText: 'PCL-KM-2' }).locator('[data-workspace-action="receive"]')).toHaveCount(0);
       await expect(page.locator('[data-workspace-action="collect"]')).toHaveCount(1);
       await expect(page.locator('[data-workspace-action="mark-ordered"], [data-workspace-action="ship"], [data-workspace-action="run-distribution"]')).toHaveCount(0);
     });
 
-    test("encaisser, remettre (la réception passe par l'attestation d'expédition) : une mutation par clic sur les routes du marché", async ({ page }) => {
+    test("encaisser, réceptionner le colis local, remettre (colis import : attestation d'expédition) : une mutation par clic sur les routes du marché", async ({ page }) => {
       const posts = [];
       await mount(page, posts);
       await page.locator('[data-workspace-action="confirm-cash"]').click();
       await expect.poll(() => posts.length).toBe(1);
-      await page.locator('[data-workspace-action="collect"]').click();
+      await page.locator('[data-workspace-action="receive"]').click();
       await expect.poll(() => posts.length).toBe(2);
+      await page.locator('[data-workspace-action="collect"]').click();
+      await expect.poll(() => posts.length).toBe(3);
       expect(posts.map((p) => p.path)).toEqual([
         `${API}/orders/K-CASH-1/confirm-cash`,
+        `${API}/parcels/PCL-KM-4/receive`,
         `${API}/parcels/PCL-KM-3/collect`,
       ]);
     });

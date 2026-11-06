@@ -81,13 +81,21 @@ async function queryOrders(marketId) {
   return rows;
 }
 
+// Colis rattache a une expedition (import) : article IMPORT ou sac range dans une KOM-BOX. Sa reception = attestation d'expedition.
+const PARCEL_SHIPMENT_ATTACHED_SQL = `(
+  EXISTS (SELECT 1 FROM hub_box_bags hbb WHERE hbb.parcel_id = p.id)
+  OR EXISTS (SELECT 1 FROM parcel_items pi2 JOIN order_items oi2 ON oi2.id = pi2.order_item_id
+              WHERE pi2.parcel_id = p.id AND oi2.fulfillment_source = 'IMPORT')
+)`;
+
 async function queryParcels(marketId) {
   const { rows } = await db.query(
     `SELECT p.reference, p.status, p.created_at, p.updated_at, p.shipped_at,
             p.recipient_name, p.destination_island,
             o.reference AS order_ref, o.total_kmf,
             r.name AS relais_name, r.island AS relais_island,
-            COALESCE((SELECT COUNT(*)::int FROM parcel_items pi WHERE pi.parcel_id = p.id), 0) AS item_count
+            COALESCE((SELECT COUNT(*)::int FROM parcel_items pi WHERE pi.parcel_id = p.id), 0) AS item_count,
+            (p.status::text IN ('shipped', 'in_transit') AND NOT ${PARCEL_SHIPMENT_ATTACHED_SQL}) AS local_receivable
        FROM parcels p
        JOIN orders o ON o.id = p.order_id
        LEFT JOIN relais r ON r.id = p.relais_id
@@ -507,6 +515,18 @@ async function scanParcel(reference, action, market, actor = {}, manualInput = n
     throw new OperationsWorkspaceError('invalid_scan_action', 'Action colis inconnue', 400);
   }
   const parcel = await resolveParcelInMarket(reference, resolvedMarket.id);
+  if (action === 'receive') {
+    // Geste reserve au colis LOCAL expedie par le Hub : un colis rattache a une expedition se receptionne par attestation.
+    const { rows: [att] } = await db.query(
+      `SELECT ${PARCEL_SHIPMENT_ATTACHED_SQL} AS attached FROM parcels p WHERE p.id = $1`, [parcel.id]);
+    if (att && att.attached) {
+      throw new OperationsWorkspaceError(
+        'RELAY_RECEIVE_REQUIRES_SHIPMENT_ATTESTATION',
+        'Colis rattaché à une expédition : la réception se fait par l’attestation de l’expédition (relay-shipments/:ref/receive).',
+        409
+      );
+    }
+  }
   const result = await scanEngine.processScan({
     parcel_id: parcel.id,
     event_type: scan.event_type,
