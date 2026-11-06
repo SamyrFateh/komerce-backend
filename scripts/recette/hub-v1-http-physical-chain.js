@@ -266,8 +266,8 @@ async function run({ env = process.env, db, run8 } = {}) {
       last.note = "scan shipped depuis 'preparation' : le moteur rattrape l'etape packed en creant un incident scan_anomaly, puis sa gouvernance incident (OPEN_HUB_RELEVANT_INCIDENT) bloque la transition -> 500 non maitrise ; aucune route Workspace pour le scan packed. Circuit local inatteignable par l'UI.";
     }
     if (sr && [200, 201].includes(sr.http)) {
+      await rec('local:receive', 'agent_relais', 'POST', `${WS}/parcels/${encodeURIComponent(lp.reference)}/receive`, { reason: 'scanner_unavailable' }, { http: [200, 201] }, `${JS}:receive (section Relais · Réceptionner, colis local)`);
       await rec('local:collect', 'agent_relais', 'POST', `${WS}/parcels/${encodeURIComponent(lp.reference)}/collect`, { reason: 'scanner_unavailable' }, { http: [200, 201] }, `${JS}:1350`);
-      report.actions[report.actions.length - 1].note = 'etape relay-received sans route Workspace : collect direct apres shipped (autorise par le moteur de scan)';
     }
   }
 
