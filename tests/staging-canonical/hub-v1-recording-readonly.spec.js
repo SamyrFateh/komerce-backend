@@ -41,7 +41,7 @@ test('Hub V1 staging video, genuine read-only UI actions, post-login encryption'
  fs.mkdirSync(PRIVATE,{recursive:true});fs.mkdirSync(OUTPUT,{recursive:true});
  const evidence={schema:'komerce-chromium-recording/1',kind:'READONLY_UI_VIDEO',
    transactional_13_steps:'NOT_PROVEN_BY_THIS_VIDEO',sha,run8:RUN8,role,viewport:'1440x900',
-   refs:REFS,route_reads:[],clicks:[],blocked_writes:0,browser_errors:0,
+   refs:REFS,route_reads:[],clicks:[],blocked_writes:0,blocked_external:0,browser_errors:0,
    found_fixture_refs:[],video_encrypted:false,trace_encrypted:false,status:'HOLD'};
  const archive=()=>fs.writeFileSync(path.join(OUTPUT,role+'-timeline.json'),JSON.stringify(evidence,null,2)+'\n');
  const prefix='E2E_'+role.toUpperCase()+'_';
@@ -50,6 +50,12 @@ test('Hub V1 staging video, genuine read-only UI actions, post-login encryption'
  // Never record login: the unfilmed context is destroyed after transferring
  // only its in-memory session state to the filmed context.
  const auth=await browser.newContext({baseURL:BASE,viewport:{width:1440,height:900}});
+ await auth.route('**/*',route=>{
+  const req=route.request(),url=new URL(req.url());
+  if(url.origin===BASE && (['GET','HEAD','OPTIONS'].includes(req.method()) ||
+   (req.method()==='POST'&&url.pathname==='/api/auth/login')))return route.continue();
+  return route.abort('blockedbyclient');
+ });
  let state;
  try{
   const loginPage=await auth.newPage();
@@ -73,7 +79,8 @@ test('Hub V1 staging video, genuine read-only UI actions, post-login encryption'
  try{
   await ctx.route('**/*',route=>{
    const req=route.request(),url=new URL(req.url());
-   if(url.origin!==BASE||['GET','HEAD','OPTIONS'].includes(req.method()))return route.continue();
+   if(url.origin!==BASE){evidence.blocked_external++;return route.abort('blockedbyclient');}
+   if(['GET','HEAD','OPTIONS'].includes(req.method()))return route.continue();
    evidence.blocked_writes++;
    return route.abort('blockedbyclient');
   });
@@ -112,7 +119,7 @@ test('Hub V1 staging video, genuine read-only UI actions, post-login encryption'
   evidence.sha_stable=finish.status()===200&&String((await finish.json()).commit||'')===expected;
   evidence.status=(evidence.sha_stable&&evidence.blocked_writes===0&&evidence.browser_errors===0&&
     evidence.clicks.length>0&&evidence.found_fixture_refs.length>0)?'PASS_READONLY_RECORDING':'HOLD_NOT_PROVEN';
- }catch(error){evidence.status='FAIL';evidence.error_code=String(error.message||'ERROR').slice(0,120);throw error;}
+ }catch(error){evidence.status='FAIL';evidence.error_code='RECORDING_FAILED';throw error;}
  finally{
   try{await ctx.tracing.stop({path:traceFile});}finally{await ctx.close();}
   const videoFile=await video.path();
