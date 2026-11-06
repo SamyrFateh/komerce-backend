@@ -209,7 +209,7 @@
 [data-market-assignments] .kmc-users-assignment-save:hover:not(:disabled) { background: #164f9a; }
 [data-market-assignments] .kmc-users-assignment-secondary:hover:not(:disabled) { background: #edf5ff; }
 [data-market-assignments] button:disabled { opacity: .48; cursor: not-allowed; }
-[data-market-assignments] button[hidden] { display: none !important; }
+[data-market-assignments] button[hidden] { display: none; }
 [data-market-assignments] button:focus-visible,
 [data-market-assignments] select:focus-visible,
 [data-market-assignments] .kmc-users-assignment-tile:focus-within {
