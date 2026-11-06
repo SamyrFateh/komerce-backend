@@ -474,6 +474,14 @@
     heading.appendChild(make(doc,'h1','','Hub · Tous les marchés'));
     heading.appendChild(make(doc,'p','','Achats fournisseurs, réception, préparation et expéditions'));
     header.appendChild(heading);
+    // Point d'entrée vers la recette humaine existante. Aucune mutation, ni
+    // nouveau troisième poste de travail : le Hub garde ses deux branches.
+    const guide=make(doc,'a','kmc-hub-app-light-button','Recette guidée · Hub et marchés');
+    guide.href='/admin/golden-e2e';
+    guide.target='_blank';
+    guide.rel='noopener';
+    guide.setAttribute('data-hub-guided-recipe','');
+    header.appendChild(guide);
     root.appendChild(header);
     const nav=make(doc,'nav','kmc-hub-app-branches');
     nav.setAttribute('aria-label','Postes de travail Hub');
