@@ -69,6 +69,8 @@ jobs:
       - name: Refuse missing remote DB secret
         run: test -n "$DATABASE_URL"
       - name: Pin deploiement (staging == HEAD, ou ancetre avec seulement des chemins non deployes)
+        env:
+          STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
         run: node scripts/recette/resolve-staging-deploy-pin.js
       - name: Runner HTTP d'actions
         run: node scripts/recette/hub-v1-http-action-runner.js
