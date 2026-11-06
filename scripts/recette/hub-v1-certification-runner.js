@@ -44,6 +44,21 @@ const STEP_TITLES = Object.freeze([
   ['pickup_remainder', 'Retrait client et traitement du reliquat'],
 ]);
 
+const MARKET_RE = /^[A-Z]{2}$/;
+// Options de run : marché de la fixture (défaut KM, comportement historique) et arrêt après l'étape N
+// (les étapes suivantes sont alors réalisées par l'UI/HTTP réels ; aucun verdict 13/13 n'est prononcé).
+function parseRunOptions(argv = process.argv) {
+  const val = (name) => { const a = argv.find((x) => x.startsWith(name + '=')); return a ? a.slice(name.length + 1) : null; };
+  const market = (val('--market') || 'KM').toUpperCase();
+  if (!MARKET_RE.test(market)) throw Object.assign(new Error('HUB_V1_RUNNER_MARKET_INVALID'), { code: 'HUB_V1_RUNNER_MARKET_INVALID' });
+  const stopRaw = val('--stop-after');
+  const stopAfter = stopRaw === null ? null : Number(stopRaw);
+  if (stopAfter !== null && !(Number.isInteger(stopAfter) && stopAfter >= 1 && stopAfter <= 12)) {
+    throw Object.assign(new Error('HUB_V1_RUNNER_STOP_AFTER_INVALID'), { code: 'HUB_V1_RUNNER_STOP_AFTER_INVALID' });
+  }
+  return { market, stopAfter };
+}
+
 const uuid = () => crypto.randomUUID();
 const newRun8 = () => crypto.randomBytes(4).toString('hex').toUpperCase();
 const orderRef = (run, suffix) => `${SCOPE}-${run}-${suffix}`;
@@ -187,19 +202,26 @@ async function seedCanonicalUnit(db, { run, key, productId, supplierSku, unitRef
   return { canonical_unit_id: cu, source_id: sourceId };
 }
 
-async function seedFixture(db, run, services, { officialStaging = false } = {}) {
+async function seedFixture(db, run, services, { officialStaging = false, marketCode = 'KM' } = {}) {
   const { auth, local } = services;
   const priceKit = PRICE_KIT;
-  const m = (await db.query("SELECT id FROM markets WHERE code='KM' AND lifecycle_status='ACTIVE'")).rows[0];
-  if (!m) throw Object.assign(new Error('HUB_V1_RUNNER_MARKET_KM_MISSING'), { code: 'HUB_V1_RUNNER_MARKET_KM_MISSING' });
-  const manifest = { run, market_id: m.id, users: {}, relay: null, suppliers: {}, products: {}, skus: {}, canonical: {} };
+  const m = (await db.query("SELECT id, name, currency FROM markets WHERE code=$1 AND lifecycle_status='ACTIVE'", [marketCode])).rows[0];
+  if (!m) {
+    const code = marketCode === 'KM' ? 'HUB_V1_RUNNER_MARKET_KM_MISSING' : 'HUB_V1_RUNNER_MARKET_NOT_ACTIVE';
+    throw Object.assign(new Error(code), { code });
+  }
+  const manifest = { run, market_code: marketCode, market_currency: m.currency, market_id: m.id, users: {}, relay: null, suppliers: {}, products: {}, skus: {}, canonical: {} };
   const relayName = `${SCOPE}-${run}-RELAIS`;
   let relay = (await db.query('SELECT id FROM relais WHERE name=$1', [relayName])).rows[0];
   if (!relay) {
     relay = { id: uuid() };
     await db.query(
-      `INSERT INTO relais(id,name,agent_name,phone,address,market_id,island,island_code,is_active)
-       VALUES ($1,$2,'E2E agent relais',$3,'Moroni',$4,'Grande Comore','MORONI',TRUE)`, [relay.id, relayName, phoneOf(run, 90), m.id]);
+      `INSERT INTO relais(id,name,agent_name,phone,address,market_id,island,island_code,zone,is_active)
+       VALUES ($1,$2,'E2E agent relais',$3,$4,$5,$6,$7,$8,TRUE)`,
+      // Routage canonique (services/routing.js) : KM/YT par île, autres marchés par ville/zone du relais.
+      marketCode === 'KM' ? [relay.id, relayName, phoneOf(run, 90), 'Moroni', m.id, 'Grande Comore', 'MORONI', null]
+        : marketCode === 'YT' ? [relay.id, relayName, phoneOf(run, 90), 'Mamoudzou', m.id, 'Mayotte', 'MAYOTTE', null]
+          : [relay.id, relayName, phoneOf(run, 90), m.name, m.id, null, null, `E2E-${marketCode}`]);
   }
   manifest.relay = relay.id;
   const mk = (role, label, i, relaisId) => ensureUser(db, { run, role, label, i, relaisId });
@@ -243,7 +265,7 @@ async function seedFixture(db, run, services, { officialStaging = false } = {}) 
           `INSERT INTO product_suppliers(id,product_id,supplier_id,supplier_sku,supplier_price_aed,priority,is_active) VALUES ($1,$2,$3,$4,42,1,true)`,
           [uuid(), p.id, manifest.suppliers[supplierLabel], supplierSku]);
       }
-      await priceKit.activatePrice(db, { marketId: m.id, productId: p.id, amount: 10000, currency: 'KMF', skipAttestationSeed: officialStaging });
+      await priceKit.activatePrice(db, { marketId: m.id, productId: p.id, amount: 10000, currency: m.currency, skipAttestationSeed: officialStaging });
       // Code-barres fournisseur confirmé : preuve de scan à la préparation des sacs.
       await db.query(
         `INSERT INTO product_sku_physical_codes(product_sku_id,supplier_id,code,code_type,trust,printed_on_pack,confirmed_by,confirmed_at,confirmation_proof_ref)
@@ -261,7 +283,7 @@ async function seedFixture(db, run, services, { officialStaging = false } = {}) 
     await db.query(
       `INSERT INTO products(id,name,product_ref,price_kmf,cost_kmf,stock,price_aed,weight_kg,volume_cm3,inventory_model,is_active)
        VALUES ($1,$2,$3,10000,3000,5,100,1,1000,'LEGACY_VARIANTS',TRUE)`, [lp.id, `${SCOPE} produit local ${run}`, lref]);
-    await priceKit.activatePrice(db, { marketId: m.id, productId: lp.id, amount: 10000, currency: 'KMF', skipAttestationSeed: officialStaging });
+    await priceKit.activatePrice(db, { marketId: m.id, productId: lp.id, amount: 10000, currency: m.currency, skipAttestationSeed: officialStaging });
     await local.setLocalStock({ productId: lp.id, marketId: m.id, qtyPhysical: 5, actorUserId: manifest.users.admin.id });
     await local.setLocalStockExposure(lp.id, m.id, 'ENABLED');
   }
@@ -291,14 +313,23 @@ const PRICE_KIT = {
       `INSERT INTO product_market_exposure(id,product_id,market_id,commercial_exposure) VALUES ($1,$2,$3,'ENABLED')
        ON CONFLICT (product_id,market_id) DO UPDATE SET commercial_exposure='ENABLED',updated_at=NOW()`, [uuid(), productId, marketId]);
     if (skipAttestationSeed) return; // Staging officiel : attestations et transporteurs réels préexistants seulement.
+    // Base éphémère, marché hors KM : tarif de vente transport minimal (le checkout est fail-closed sans tarif).
+    // Jamais semé sur staging : l'absence de tarif y est un constat de certification, pas une lacune à masquer.
+    const { rows: [mk] } = await db.query('SELECT code FROM markets WHERE id=$1', [marketId]);
+    if (mk && mk.code !== 'KM') {
+      await db.query(
+        `INSERT INTO market_transport_sale_rates(market_id,rate_key,rate_per_kg,currency,evidence_ref)
+         SELECT $1,k,1000,$2,'E2E-HUB-V1-EPHEMERAL-TARIFF' FROM unnest(ARRAY['SEA_KMF_PER_KG_COMMERCIAL','AIR_KMF_PER_KG_TAXABLE']) k
+          WHERE NOT EXISTS (SELECT 1 FROM market_transport_sale_rates WHERE market_id=$1 AND revoked_at IS NULL)`, [marketId, currency]);
+    }
     const { rows } = await db.query('SELECT 1 FROM market_delivery_attestations WHERE market_id=$1 AND revoked_at IS NULL AND valid_until>NOW() LIMIT 1', [marketId]);
     if (rows.length) return;
     const carrier = uuid();
     await db.query("INSERT INTO carriers(id,name,type,is_active) VALUES ($1,'E2E-HUB-V1 transporteur','maritime',TRUE)", [carrier]);
     await db.query(
       `INSERT INTO market_delivery_attestations(id,market_id,carrier_id,mode,origin_ref,freight_rate,rate_currency,rate_unit,transit_days,evidence_ref,attested_by,valid_until)
-       VALUES ($1,$2,$3,'SEA','E2E-HUB-V1-ORIGIN',1,'KMF','PER_KG',30,'E2E-HUB-V1-EVIDENCE',(SELECT id FROM users ORDER BY created_at LIMIT 1),NOW()+INTERVAL '30 days')`,
-      [uuid(), marketId, carrier]);
+       VALUES ($1,$2,$3,'SEA','E2E-HUB-V1-ORIGIN',1,$4,'PER_KG',30,'E2E-HUB-V1-EVIDENCE',(SELECT id FROM users ORDER BY created_at LIMIT 1),NOW()+INTERVAL '30 days')`,
+      [uuid(), marketId, carrier, currency]);
   },
 };
 
@@ -355,7 +386,10 @@ async function step1(ctx, st) {
     for (const suffix of SUFFIXES) {
       const reference = orderRef(run, suffix);
       const items = PLAN[suffix].map(([label, quantity]) => ({ product_id: manifest.products[label], quantity }));
-      const total = PLAN[suffix].reduce((n, [, qty]) => n + qty * 10000, 0);
+      // Prix de fixture = 10000 dans la devise du marché ; le garde checkout compare un total KMF (projection canonique).
+      const unitKmf = manifest.market_currency === 'KMF' ? 10000
+        : await require('../../services/market-local-price-resolution-service').projectLocalToKmf(10000, manifest.market_currency);
+      const total = PLAN[suffix].reduce((n, [, qty]) => n + qty * unitKmf, 0);
       const body = { items, relais_id: manifest.relay, payment_mode: 'cash_relais', use_wallet: false };
       const internalSimulation = { scope: SCOPE, reference, actorId: adminId, expectedProductTotalKmf: total, reason: `Certification Hub V1 ${run}` };
       const before = await loadOrder(db, reference);
@@ -1022,11 +1056,12 @@ const STEP_FUNCTIONS = [step1, step2, step3, step4, step5, step6, step7, step8, 
 async function runCertification({ db = require('../../db'), run = newRun8(), dryRun = false, argv = process.argv } = {}) {
   if (!RUN_RE.test(run)) throw Object.assign(new Error('HUB_V1_RUNNER_RUN8_INVALID'), { code: 'HUB_V1_RUNNER_RUN8_INVALID' });
   const officialStaging = argv.includes('--allow-remote-staging');
+  const { market: marketCode, stopAfter } = parseRunOptions(argv);
   const target = officialStaging
     ? await require('./hub-v1-staging-target-authorization').authorizeOfficialStaging({ db, run })
     : assertEphemeralTarget(process.env.DATABASE_URL, argv);
   const report = {
-    schema: 'hub-v1-certification-report/1', scope: SCOPE, run, mode: dryRun ? 'DRY_RUN' : (officialStaging ? 'APPLY_OFFICIAL_STAGING' : 'APPLY_EPHEMERAL'),
+    schema: 'hub-v1-certification-report/1', scope: SCOPE, run, market: marketCode, stop_after: stopAfter, mode: dryRun ? 'DRY_RUN' : (officialStaging ? 'APPLY_OFFICIAL_STAGING' : 'APPLY_EPHEMERAL'),
     target: { host: target.host, database: target.database }, started_at: new Date().toISOString(),
     verdict: 'HOLD_NO_STAGING_WRITES', staging_go: false, orders: orderRefs(run), steps: [], local_circuit: null, fixture: null,
     external_effects: null, cleanup: null, limits: [],
@@ -1043,11 +1078,11 @@ async function runCertification({ db = require('../../db'), run = newRun8(), dry
   const ctx = { db, run, svc, orders: {}, po: {}, report, manifest: null };
   const externalBefore = await countExternalTables(db);
   try {
-    ctx.manifest = await seedFixture(db, run, svc, { officialStaging });
-    ctx.market = { id: ctx.manifest.market_id, code: 'KM' };
+    ctx.manifest = await seedFixture(db, run, svc, { officialStaging, marketCode });
+    ctx.market = { id: ctx.manifest.market_id, code: marketCode };
     report.fixture = manifestForReport(ctx.manifest);
     let blocked = null;
-    for (let n = 1; n <= 13; n++) {
+    for (let n = 1; n <= (stopAfter || 13); n++) {
       const st = newStep(n); report.steps.push(st);
       const fn = STEP_FUNCTIONS[n - 1];
       if (blocked) { st.status = 'SKIPPED'; st.blocker = `dépend de l'étape ${blocked}`; continue; }
@@ -1080,13 +1115,15 @@ async function runCertification({ db = require('../../db'), run = newRun8(), dry
   }
   report.finished_at = new Date().toISOString();
   const allPass = report.steps.length === 13 && report.steps.every((x) => x.status === 'PASS');
+  const stoppedClean = Boolean(stopAfter) && report.steps.length === stopAfter && report.steps.every((x) => x.status === 'PASS');
   const fx = report.external_effects;
   const effectsClean = Boolean(fx && fx.zero_external_effects);
   report.checks = { all_13_steps_pass: allPass, zero_external_effects: effectsClean, local_circuit_isolated: Boolean(report.local_circuit && report.local_circuit.circuit_only_local) };
-  report.verdict = allPass && effectsClean && report.checks.local_circuit_isolated
+  if (stopAfter) report.checks.stopped_after_step = stopAfter;
+  report.verdict = stoppedClean && effectsClean ? 'PARTIAL_STOP_AFTER_STEP_PASS' : stopAfter ? 'FAIL_OR_BLOCKED' : allPass && effectsClean && report.checks.local_circuit_isolated
     ? (officialStaging ? 'PASS_STAGING_TRANSACTION_13_STEPS' : 'PASS_EPHEMERAL_13_STEPS') : 'FAIL_OR_BLOCKED';
   report.verdict_staging = officialStaging
-    ? (report.verdict === 'PASS_STAGING_TRANSACTION_13_STEPS' ? 'TRANSACTIONAL_PASS_CHROMIUM_PENDING' : 'TRANSACTIONAL_NO_GO')
+    ? (report.verdict === 'PARTIAL_STOP_AFTER_STEP_PASS' ? 'FIXTURE_READY_REMAINING_STEPS_BY_UI_NOT_PROVEN' : report.verdict === 'PASS_STAGING_TRANSACTION_13_STEPS' ? 'TRANSACTIONAL_PASS_CHROMIUM_PENDING' : 'TRANSACTIONAL_NO_GO')
     : 'HOLD_NO_STAGING_WRITES';
   report.limits = officialStaging
     ? LIMITS.filter((x) => !x.includes('local éphémère uniquement') && !x.includes('sur un staging partagé') && !x.includes('sur la base éphémère'))
@@ -1175,7 +1212,7 @@ async function main(argv = process.argv.slice(2)) {
     const report = await runCertification({ db, run, dryRun, argv: process.argv });
     const files = writeReports(report, outDir);
     console.log(JSON.stringify({ verdict: report.verdict, run: report.run, mode: report.mode, steps: report.steps.map((s) => `${s.n}:${s.status}`), files }));
-    process.exitCode = ['PASS_EPHEMERAL_13_STEPS', 'PASS_STAGING_TRANSACTION_13_STEPS', 'DRY_RUN_NO_WRITES'].includes(report.verdict) ? 0 : 1;
+    process.exitCode = ['PASS_EPHEMERAL_13_STEPS', 'PASS_STAGING_TRANSACTION_13_STEPS', 'PARTIAL_STOP_AFTER_STEP_PASS', 'DRY_RUN_NO_WRITES'].includes(report.verdict) ? 0 : 1;
   } finally { await db.pool.end().catch(() => {}); }
 }
 if (require.main === module) {
@@ -1183,6 +1220,7 @@ if (require.main === module) {
 }
 
 module.exports = {
+  parseRunOptions,
   SCOPE, SUFFIXES, RUN_RE, STEP_TITLES, newRun8, orderRef, emailOf, phoneOf, assertEphemeralTarget, installNetworkTripwire,
   newStep, expectRefusal, allTriggerStatuses, summarizeExternalEffects, runCertification, renderMarkdown, writeReports, main,
 };
