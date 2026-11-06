@@ -156,7 +156,7 @@ describe('Invitation responsable marché — composant premium conservant le con
     const css = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/css/users-invitation-v1.css'), 'utf8');
     expect(html).toMatch(/users-invitation-v1\.css\?v=261106-1/);
     expect(html.indexOf('users-invitation-v1.css')).toBeGreaterThan(html.indexOf('canonical-unified-chrome-v1.css'));
-    expect(html).toContain('users-admin.js?v=261106-1');
+    expect(html).toContain('users-admin.js?v=261106-2');
     expect(css).toContain('[data-market-manager-invite]');
     expect(css).toContain('@media (max-width: 600px)');
     expect(css).toContain('.kmc-users-invite-fields');

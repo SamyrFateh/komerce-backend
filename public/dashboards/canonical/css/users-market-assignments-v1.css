@@ -1,0 +1,260 @@
+/* Administration Komerce — panneau d'affectations marché.
+ * Strictement scopé ; ne modifie ni le formulaire d'invitation ni les autres cartes.
+ */
+[data-market-assignments].kmc-users-assignment-card {
+  min-width: 0;
+  padding: clamp(22px, 2.6vw, 38px);
+  border: 1px solid #c8d9f5;
+  border-radius: 18px;
+  background: linear-gradient(115deg, #fff 0%, #fcfdff 52%, #f3f7ff 100%);
+  box-shadow: 0 8px 24px rgb(17 45 92 / .06);
+  color: #0c244b;
+  scroll-margin-top: 24px;
+}
+[data-market-assignments] .kmc-users-assignment-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 19px;
+  margin-bottom: 28px;
+}
+[data-market-assignments] .kmc-users-assignment-emblem {
+  display: grid;
+  place-items: center;
+  flex: 0 0 54px;
+  height: 54px;
+  border: 1px solid #d4e4fa;
+  border-radius: 14px;
+  background: #e9f1fe;
+}
+[data-market-assignments] .kmc-users-assignment-emblem::after {
+  content: "";
+  width: 27px;
+  height: 27px;
+  background: #123e82;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='9' cy='8' r='4'/%3E%3Cpath d='M3 21v-2a6 6 0 0 1 6-6h2'/%3E%3Cpath d='M19 13v8M15 17h8'/%3E%3C/svg%3E") center/contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='9' cy='8' r='4'/%3E%3Cpath d='M3 21v-2a6 6 0 0 1 6-6h2'/%3E%3Cpath d='M19 13v8M15 17h8'/%3E%3C/svg%3E") center/contain no-repeat;
+}
+[data-market-assignments] .kmc-users-assignment-heading-copy { min-width: 0; }
+[data-market-assignments] .kmc-users-assignment-title {
+  margin: 0 0 6px;
+  color: #0b244d;
+  font-weight: 800;
+  font-size: clamp(21px, 2vw, 27px);
+  letter-spacing: -.025em;
+  line-height: 1.2;
+}
+[data-market-assignments] .kmc-users-assignment-description {
+  margin: 0;
+  color: #536985;
+  font-size: 14px;
+  line-height: 1.5;
+}
+[data-market-assignments] .kmc-users-assignment-field { display: grid; gap: 10px; margin-bottom: 18px; }
+[data-market-assignments] .kmc-users-assignment-label {
+  margin: 0;
+  color: #13294d;
+  font-size: 14px;
+  font-weight: 750;
+}
+[data-market-assignments] .kmc-users-assignment-select {
+  width: 100%;
+  max-width: 770px;
+  min-width: 0;
+  min-height: 49px;
+  padding: 0 16px;
+  border: 1px solid #c3d3ec;
+  border-radius: 11px;
+  background: #fff;
+  color: #102b50;
+  box-shadow: 0 3px 10px rgb(17 45 92 / .035);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+[data-market-assignments] .kmc-users-assignment-identity {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  min-height: 69px;
+  margin-bottom: 27px;
+  padding: 12px 16px;
+  border: 1px solid #d9e5f7;
+  border-radius: 12px;
+  background: #f7faff;
+}
+[data-market-assignments] .kmc-users-assignment-avatar {
+  display: grid;
+  flex: 0 0 39px;
+  height: 39px;
+  place-items: center;
+  border-radius: 50%;
+  background: #e4eefb;
+  color: #1a4680;
+}
+[data-market-assignments] .kmc-users-assignment-avatar::after {
+  content: "";
+  width: 21px;
+  height: 21px;
+  background: #1b4c8c;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2'%3E%3Ccircle cx='12' cy='8' r='4'/%3E%3Cpath d='M4 21v-2a8 8 0 0 1 16 0v2'/%3E%3C/svg%3E") center/contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2'%3E%3Ccircle cx='12' cy='8' r='4'/%3E%3Cpath d='M4 21v-2a8 8 0 0 1 16 0v2'/%3E%3C/svg%3E") center/contain no-repeat;
+}
+[data-market-assignments] .kmc-users-assignment-identity-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+[data-market-assignments] .kmc-users-assignment-name { color: #102d56; font-size: 15px; }
+[data-market-assignments] .kmc-users-assignment-email {
+  overflow-wrap: anywhere;
+  color: #607695;
+  font-size: 12px;
+}
+[data-market-assignments] .kmc-users-assignment-badge {
+  flex: 0 0 auto;
+  padding: 6px 10px;
+  border: 1px solid #d4e1f5;
+  border-radius: 99px;
+  background: #fff;
+  color: #42648c;
+  font-size: 12px;
+  font-weight: 700;
+}
+[data-market-assignments] .kmc-users-assignment-markets {
+  min-width: 0;
+  margin: 0 0 26px;
+  padding: 0;
+  border: 0;
+}
+[data-market-assignments] .kmc-users-assignment-markets legend { margin-bottom: 6px; }
+[data-market-assignments] .kmc-users-assignment-help {
+  margin: 0 0 16px;
+  color: #69809d;
+  font-size: 13px;
+}
+[data-market-assignments] .kmc-users-assignment-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+[data-market-assignments] .kmc-users-assignment-tile {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  min-height: 64px;
+  margin: 0;
+  padding: 12px 16px;
+  border: 1px solid #cfdef3;
+  border-radius: 12px;
+  background: #fff;
+  color: #14325a;
+  cursor: pointer;
+  transition: border-color 150ms ease, box-shadow 150ms ease, background 150ms ease;
+}
+[data-market-assignments] .kmc-users-assignment-tile:hover {
+  border-color: #8baee0;
+  background: #f4f8ff;
+}
+[data-market-assignments] .kmc-users-assignment-tile:has(input:checked) {
+  border-color: #4e84cd;
+  background: #eaf2ff;
+  box-shadow: inset 0 0 0 1px rgb(54 105 185 / .12);
+}
+[data-market-assignments] .kmc-users-assignment-checkbox {
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  accent-color: #174583;
+  cursor: pointer;
+}
+[data-market-assignments] .kmc-users-assignment-tile-copy { display: grid; gap: 3px; min-width: 0; }
+[data-market-assignments] .kmc-users-assignment-code { font-size: 15px; font-weight: 800; }
+[data-market-assignments] .kmc-users-assignment-market-name { font-size: 12px; color: #657b99; }
+[data-market-assignments] .kmc-users-assignment-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding-top: 23px;
+  border-top: 1px solid #d8e4f6;
+}
+[data-market-assignments] .kmc-users-assignment-counter { color: #617994; font-size: 13px; }
+[data-market-assignments] .kmc-users-assignment-buttons { display: flex; flex-wrap: wrap; gap: 10px; }
+[data-market-assignments] .kmc-users-assignment-secondary,
+[data-market-assignments] .kmc-users-assignment-save {
+  box-sizing: border-box;
+  min-height: 44px;
+  margin: 0;
+  padding: 10px 18px;
+  border: 1px solid #b8cde9;
+  border-radius: 10px;
+  background: #fff;
+  color: #214677;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+[data-market-assignments] .kmc-users-assignment-save {
+  border-color: #0a3475;
+  background: #0d387e;
+  color: #fff;
+  box-shadow: 0 5px 12px rgb(11 52 120 / .11);
+}
+[data-market-assignments] .kmc-users-assignment-save:hover:not(:disabled) { background: #164f9a; }
+[data-market-assignments] .kmc-users-assignment-secondary:hover:not(:disabled) { background: #edf5ff; }
+[data-market-assignments] button:disabled { opacity: .48; cursor: not-allowed; }
+[data-market-assignments] button[hidden] { display: none !important; }
+[data-market-assignments] button:focus-visible,
+[data-market-assignments] select:focus-visible,
+[data-market-assignments] .kmc-users-assignment-tile:focus-within {
+  outline: 3px solid #94bdf0;
+  outline-offset: 2px;
+}
+[data-market-assignments] .kmc-users-assignment-message {
+  margin: 13px 0 0;
+  color: #286548;
+  font-size: 13px;
+  line-height: 1.5;
+}
+[data-market-assignments] .kmc-users-assignment-message[data-tone="error"] { color: #ae303b; }
+[data-market-assignments] .kmc-users-assignment-message:empty { display: none; }
+[data-users-readonly] .kmc-users-inline-edit {
+  display: block;
+  margin-top: 3px;
+  padding: 2px 0;
+  border: 0;
+  background: transparent;
+  color: #1553a1;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 750;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+[data-users-readonly] .kmc-users-inline-edit:focus-visible { outline: 2px solid #568ad6; outline-offset: 2px; }
+@media (max-width: 900px) {
+  [data-market-assignments] .kmc-users-assignment-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  [data-market-assignments] .kmc-users-assignment-footer { align-items: flex-start; flex-direction: column; }
+}
+@media (max-width: 600px) {
+  [data-market-assignments].kmc-users-assignment-card { padding: 20px 16px; border-radius: 14px; }
+  [data-market-assignments] .kmc-users-assignment-heading { gap: 12px; }
+  [data-market-assignments] .kmc-users-assignment-emblem { flex-basis: 42px; height: 42px; }
+  [data-market-assignments] .kmc-users-assignment-title { font-size: 20px; }
+  [data-market-assignments] .kmc-users-assignment-badge { display: none; }
+  [data-market-assignments] .kmc-users-assignment-grid { gap: 9px; }
+  [data-market-assignments] .kmc-users-assignment-tile { min-height: 55px; padding: 9px; gap: 8px; }
+  [data-market-assignments] .kmc-users-assignment-market-name { font-size: 11px; }
+  [data-market-assignments] .kmc-users-assignment-buttons { width: 100%; }
+  [data-market-assignments] .kmc-users-assignment-save { flex: 1 1 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-market-assignments] .kmc-users-assignment-tile { transition: none; }
+}
