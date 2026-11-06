@@ -25,6 +25,9 @@ const ROLES = {
 };
 
 test('live screens read-only proof for certified orders', async ({ page }, info) => {
+  // QUICK_READONLY certifies access/navigation, not the removed historical order corpus.
+  // The full business proof remains mandatory in EXHAUSTIVE_READONLY runs.
+  test.skip(process.env.E2E_AUDIT_QUICK === '1', 'Legacy certified orders are excluded from QUICK_READONLY only');
   const role = info.project.name.replace(/-desktop$/, '');
   test.skip(!ROLES[role], 'Only admin, agent_hub and agent_relais are proven here');
   expect(new URL(process.env.E2E_STAGING_BASE_URL || ORIGIN).origin).toBe(ORIGIN);
