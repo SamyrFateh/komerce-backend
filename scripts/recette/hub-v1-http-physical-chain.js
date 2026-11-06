@@ -25,7 +25,10 @@ const { Actor, assertTarget } = require('./hub-v1-http-action-runner');
 
 const WS = '/api/admin/workspaces/operations/market/KM';
 const JS = 'public/dashboards/canonical/js/operations-workspace.js';
-const ROLE_ENV = { hub_agent: 'E2E_AGENT_HUB_', agent_relais: 'E2E_AGENT_RELAIS_', market_operator: 'E2E_MARKET_OPERATOR_' };
+const ROLE_ENV = { hub_agent: 'E2E_AGENT_HUB_', agent_relais: 'E2E_AGENT_RELAIS_', market_operator: 'E2E_MARKET_OPERATOR_', admin: 'E2E_ADMIN_', transitaire: 'E2E_TRANSITAIRE_' };
+const WSC = '/api/admin/workspaces/shipping-customs/market/KM';
+const JP = 'public/dashboards/canonical/js/international-journey-panel.js';
+const JC = 'public/dashboards/canonical/js/shipping-customs-workspace.js';
 
 async function run({ env = process.env, db, run8 } = {}) {
   const { base, local } = assertTarget(env);
@@ -33,6 +36,7 @@ async function run({ env = process.env, db, run8 } = {}) {
   const report = { schema: 'hub-v1-http-physical/1', run8, base: local ? 'LOCAL_REHEARSAL' : 'OFFICIAL_STAGING', started_at: new Date().toISOString(), actions: [] };
   const actors = {};
   for (const [label, prefix] of Object.entries(ROLE_ENV)) {
+    if (label === 'transitaire' && !env[prefix + 'EMAIL']) { report.actions.push({ key: 'login:transitaire', actor: label, verdict: 'INFO', note: 'aucun compte E2E transitaire : les etapes transitaire sont jouees par admin (role autorise par la machine a etats), a signaler' }); continue; }
     const a = new Actor(label, base, env[prefix + 'EMAIL'], env[prefix + 'PASSWORD']);
     try { await a.login(); actors[label] = a; report.actions.push({ key: `login:${label}`, actor: label, route: 'POST /api/auth/login', http: 200, verdict: 'PASS' }); }
     catch (e) { report.actions.push({ key: `login:${label}`, actor: label, verdict: 'BLOCKED', note: String(e.message).slice(0, 120) }); }
@@ -130,17 +134,24 @@ async function run({ env = process.env, db, run8 } = {}) {
   await rec('hub:box-create', 'hub_agent', 'POST', `${WS}/boxes`, {}, { http: [200, 201] }, `${JS}:994`, async (x) => { boxId = unitId(x); boxRef = (x.json.physical_unit || {}).reference; if (!boxId) throw new Error('BOX_ID_ABSENT'); return { readback: { box_reference: boxRef } }; });
   let shipmentRef = null;
   if (boxId && bagId) {
-    const d = await dossierOf();
+    // Le colis client n'existe qu'apres la repartition automatique (bouton « Lancer la repartition », comme l'UI).
+    let d = await dossierOf();
+    const hasParcel = (d.client_parcels || []).some((p) => bagOrder && String(p.order_id) === String(bagOrder.id));
+    if (!hasParcel && env.HTTP_RUNNER_ALLOW_DISTRIBUTION !== '1') blocked('hub:distribution-run', 'hub_agent', `POST ${WS}/distribution/run`, `${JS}:1295`, 'la repartition automatique agit sur TOUT le marche (pas seulement la fixture) : exige HTTP_RUNNER_ALLOW_DISTRIBUTION=1');
+    else if (!hasParcel) {
+      await rec('hub:distribution-run', 'hub_agent', 'POST', `${WS}/distribution/run`, {}, { http: [200, 201] }, `${JS}:1295`);
+      d = await dossierOf();
+    }
     const ready = (d.bags_ready || []).find((b) => String(b.unit_id) === String(bagId) || b.reference === bagRef);
     const parcel = ready && (d.client_parcels || []).find((p) => String(p.order_id) === String(ready.order_id));
     if (!ready || !parcel) blocked('hub:box-add-bag', 'hub_agent', `POST ${WS}/boxes/:id/bags`, `${JS}:1161`, `sac pret ou colis client absent du dossier (bags_ready=${(d.bags_ready || []).length}, client_parcels=${(d.client_parcels || []).length})`);
     else {
       await rec('hub:box-add-bag', 'hub_agent', 'POST', `${WS}/boxes/${boxId}/bags`, { bag_unit_id: ready.unit_id, parcel_id: parcel.id, bag_reference_scan: ready.reference, box_reference_scan: boxRef }, { http: [200, 201] }, `${JS}:1161`);
-      const NEXT = { RECEIVED: 'IDENTIFIED', IDENTIFIED: 'QUALITY_CHECKED', QUALITY_CHECKED: 'LOCATED', LOCATED: 'ALLOCATED', ALLOCATED: 'PICKED', PICKED: 'PACKED' };
+      const NEXT = { RECEIVED: 'IDENTIFIED', IDENTIFIED: 'QUALITY_CHECKED', QUALITY_CHECKED: 'LOCATED', LOCATED: 'ALLOCATED', ALLOCATED: 'PICKED', PICKED: 'PACKED', PACKED: 'DISPATCHED' };
       for (let i = 0; i < 8; i++) {
         const cur = ((await dossierOf()).boxes || []).find((b) => String(b.unit_id) === String(boxId));
         if (!cur) { blocked('hub:box-advance', 'hub_agent', `POST ${WS}/boxes/:id/advance`, `${JS}:1181`, 'box absente du dossier'); break; }
-        if (['PACKED', 'DISPATCHED'].includes(cur.state)) break;
+        if (cur.state === 'DISPATCHED') break;
         const to = NEXT[cur.state]; if (!to) { blocked('hub:box-advance', 'hub_agent', `POST ${WS}/boxes/:id/advance`, `${JS}:1181`, `etat ${cur.state} sans suite connue`); break; }
         const r = await rec(`hub:box-advance:${to}`, 'hub_agent', 'POST', `${WS}/boxes/${boxId}/advance`, { to_state: to }, { http: [200, 201] }, `${JS}:1181`);
         if (!r || ![200, 201].includes(r.http)) break;
@@ -150,13 +161,62 @@ async function run({ env = process.env, db, run8 } = {}) {
     }
   }
 
+  // 3b. Parcours international (ecran Expeditions & Douane) : remise transitaire -> transport -> arrivee -> douane -> livraison locale.
+  if (shipmentRef) {
+    const tr = actors.transitaire ? 'transitaire' : 'admin';
+    const J = `${WSC}/international/${shipmentRef}`;
+    const parcelRefRow = bagOrder ? (await q('SELECT reference FROM parcels WHERE order_id=$1 AND cancelled_at IS NULL ORDER BY created_at LIMIT 1', [bagOrder.id]).catch(() => []))[0] : null;
+    const step = (to, who, extra, ui) => rec(`journey:${to}`, who, 'POST', `${J}/transition`, { to_stage: to, proof_ref: `SIM-${to.toUpperCase()}-${run8}`, ...extra }, { http: 200 }, ui || `${JP}:229`);
+    const ok = (r) => r && r.http === 200;
+    // Geste Hub dans le workspace Expeditions & Douane : si le Hub central y est refuse (pas de membership), c'est un BLOCAGE
+    // applicatif consigne ; la chaine continue avec admin (role autorise par la machine a etats) pour atteindre le retrait.
+    const hubStep = async (to, extra, who = 'hub_agent') => {
+      const r = await step(to, who, extra);
+      if (ok(r) || who === 'admin') return r;
+      report.actions[report.actions.length - 1].finding = `APP_BLOCKAGE_${who.toUpperCase()}_SHIPPING_CUSTOMS_WORKSPACE`;
+      const a = await step(to, 'admin', extra); report.actions[report.actions.length - 1].key += ':admin-proxy'; return a;
+    };
+    let go = ok(await hubStep('handed_over', { forwarder_name: 'E2E Transitaire', transport_mode: 'sea' }));
+    go = go && ok(await hubStep('forwarder_received', {}, tr));
+    let trk = await rec('journey:tracking', tr, 'POST', `${J}/tracking`, { proof_ref: `SIM-TRACKING-${run8}`, tracking_reference: `TRK-${run8}` }, { http: 200 }, `${JP}:235`);
+    if (!ok(trk) && tr !== 'admin') { report.actions[report.actions.length - 1].finding = 'APP_BLOCKAGE_TRANSITAIRE_SHIPPING_CUSTOMS_WORKSPACE'; trk = await rec('journey:tracking:admin-proxy', 'admin', 'POST', `${J}/tracking`, { proof_ref: `SIM-TRACKING-${run8}`, tracking_reference: `TRK-${run8}` }, { http: 200 }, `${JP}:235`); }
+    go = go && ok(trk);
+    go = go && ok(await hubStep('in_transit', {}, tr));
+    go = go && ok(await hubStep('arrived', {}, tr));
+    // Le colis client est CONSOLIDE (toutes les commandes du meme client/relais) : il ne passe 'shipped' que si TOUS ses articles
+    // sont remis (markFullyHandedOverParcelsShipped). Sinon l'ecran Douane ne le propose pas (statuts shipped/in_transit seuls).
+    const parcelNow = bagOrder ? (await q('SELECT p.reference, p.status::text AS status, (SELECT count(*)::int FROM parcel_items i WHERE i.parcel_id=p.id) AS items, (SELECT COALESCE(SUM(i.quantity-i.qty_shipped),0)::int FROM parcel_items i WHERE i.parcel_id=p.id) AS left_to_ship FROM parcels p WHERE p.order_id=$1 AND p.cancelled_at IS NULL ORDER BY p.created_at LIMIT 1', [bagOrder.id]).catch(() => []))[0] : null;
+    if (go && parcelNow && !['shipped', 'in_transit'].includes(parcelNow.status)) {
+      report.actions.push({ key: 'customs:parcel-eligibility', actor: 'admin', route: `POST ${WSC}/customs/shipments`, ui: `${JC}:497`, verdict: 'BLOCKED', finding: 'BUSINESS_PARCEL_CONSOLIDATED_NOT_SHIPPABLE',
+        readback: parcelNow, note: `colis ${parcelNow.reference} consolide en statut ${parcelNow.status} : ${parcelNow.left_to_ship} unite(s) non remises (autres commandes du client : sourcing requis KOM-103, circuit local LOCAL, KOM-102 non expediee). L'ecran Douane ne peut pas rattacher ce colis : douane, livraison locale, attestation relais et retrait sont inatteignables sur cette fixture par l'UI seule.` });
+      go = false;
+    }
+    if (go) {
+      const cust = `HTTP-DOU-${run8}`;
+      const cbody = { reference: cust, shipment_date: new Date().toISOString().slice(0, 10), cif_value_kmf: 1000 };
+      let cc = await rec('customs:create', 'admin', 'POST', `${WSC}/customs/shipments`, { ...cbody, parcel_refs: parcelRefRow ? [parcelRefRow.reference] : [] }, { http: 201 }, `${JC}:497`);
+      if (!cc || cc.http !== 201) {
+        // Constat applicatif : avec colis rattaches la creation echoue (voir note) ; on poursuit sans colis pour atteindre le retrait.
+        report.actions[report.actions.length - 1].finding = 'APP_DEFECT_CUSTOMS_CREATE_WITH_PARCEL_REFS';
+        cc = await rec('customs:create:without-parcels', 'admin', 'POST', `${WSC}/customs/shipments`, { ...cbody, parcel_refs: [] }, { http: 201 }, `${JC}:497`);
+      }
+      go = Boolean(cc && cc.http === 201);
+      go = go && ok(await rec('customs:declare', 'admin', 'POST', `${WSC}/customs/shipments/${cust}/declare`, { customs_paid_kmf: 0, freight_kmf: 0, reason: 'recette fixture' }, { http: 200 }, `${JC}:declare`));
+      go = go && ok(await rec('journey:link-customs', 'admin', 'POST', `${J}/link-customs`, { customs_reference: cust, proof_ref: `SIM-LINK-${run8}` }, { http: 200 }, `${JP}:link-customs`));
+      go = go && ok(await rec('journey:customs-amount', 'admin', 'POST', `${J}/customs-amount`, { amount_kmf: 0, proof_ref: `SIM-DROITS-${run8}` }, { http: 200 }, `${JP}:customs-amount`));
+      go = go && ok(await step('customs_released', 'admin', {}));
+      go = go && ok(await hubStep('local_delivery', {}));
+    }
+    if (!go) blocked('journey:chain', 'hub_agent', `POST ${J}/transition`, JP, 'chaine internationale interrompue : voir la derniere ligne journey/customs en echec');
+  }
+
   // 4. Relais : expedition visible/recevable ? attestation article par article, puis remise client.
   const rs = await rec('relay:shipments', 'agent_relais', 'GET', `${WS}/relay-shipments`, null, { http: 200 }, `${JS}:1724`,
     async (r) => ({ readback: { shipments: ((r.json && (r.json.shipments || r.json.items)) || []).length, keys: Object.keys(r.json || {}).slice(0, 6) } }));
   const shipments = (rs && rs.json && (rs.json.shipments || rs.json.items)) || [];
   const sh = shipments.find((x) => x.reference === shipmentRef) || null;
   if (!sh) blocked('relay:attest', 'agent_relais', `POST ${WS}/relay-shipments/:ref/receive`, `${JS}:1579`, `expedition ${shipmentRef || '(non ouverte)'} absente de la liste relais : l'etape de remise au transitaire / arrivee au relais n'a pas de geste UI cartographie`);
-  else if (!sh.receivable) blocked('relay:attest', 'agent_relais', `POST ${WS}/relay-shipments/:ref/receive`, `${JS}:1579`, `expedition visible mais non recevable (statut ${sh.status || '?'})`);
+  else if (!sh.receivable) blocked('relay:attest', 'agent_relais', `POST ${WS}/relay-shipments/:ref/receive`, `${JS}:1579`, `expedition visible mais non recevable (etape ${sh.stage || '?'}, attendue local_delivery)`);
   else {
     const lines = (sh.items || sh.lines || []).map((i) => ({ order_item_id: i.order_item_id, received_qty: Number(i.expected_qty || i.quantity) }));
     await rec('relay:attest', 'agent_relais', 'POST', `${WS}/relay-shipments/${sh.reference}/receive`, { proof_ref: `SIM-RELAIS-${run8}`, lines }, { http: [200, 201] }, `${JS}:1579`);

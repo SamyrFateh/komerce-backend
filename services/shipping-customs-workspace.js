@@ -236,7 +236,7 @@ async function resolveParcel(reference, marketId, allowedStatuses = null) {
   let statusSql = '';
   if (Array.isArray(allowedStatuses) && allowedStatuses.length) {
     params.push(allowedStatuses);
-    statusSql = ` AND p.status = ANY($${params.length}::text[])`;
+    statusSql = ` AND p.status::text = ANY($${params.length}::text[])`;
   }
   const { rows } = await db.query(
     `SELECT p.id, p.reference, p.status, p.relais_id, o.id AS order_id, o.market_id,
@@ -299,7 +299,7 @@ async function resolveParcelRefs(parcelRefs, marketId, allowedStatuses = CUSTOMS
       WHERE p.reference = ANY($1::text[])
         AND o.market_id = $2
         AND (r.id IS NULL OR r.market_id = $2)
-        AND p.status = ANY($3::text[])`,
+        AND p.status::text = ANY($3::text[])`,
     [refs, marketId, statuses]
   );
   if (rows.length !== refs.length) {
