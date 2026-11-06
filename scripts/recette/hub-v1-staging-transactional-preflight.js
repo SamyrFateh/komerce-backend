@@ -86,7 +86,9 @@ function sourceGates(root=process.cwd()) {
   ];
 }
 
-async function databaseGates(client) {
+// `run` (RUN8 hex) : l'unicite porte sur le RUN8 de CETTE fixture ; les fixtures anterieures sont immuables (HOLD_IMMUTABLE_PROOFS_RETAINED).
+// Sans run, la garde reste stricte (aucune commande E2E-HUB-V1 preexistante).
+async function databaseGates(client, run) {
   await client.query('BEGIN READ ONLY');
   try {
     const query=async(sql,params=[]) => (await client.query(sql,params)).rows;
@@ -96,7 +98,7 @@ async function databaseGates(client) {
     );
     const [existing]=await query(
       'SELECT COUNT(*)::int AS n FROM public.orders WHERE reference LIKE $1',
-      [PREFIX+'%']
+      [PREFIX+(/^[A-F0-9]{8}$/.test(String(run||'')) ? run : '')+'%']
     );
     const [duplicates]=await query(
       "SELECT COUNT(*)::int AS n FROM (SELECT product_id,priority FROM public.product_suppliers " +
@@ -134,7 +136,7 @@ async function assess({ db, fetchImpl=fetch, env=process.env, root=process.cwd()
   if(observed.toLowerCase()!==expected.toLowerCase())throw Error('STAGING_RUNTIME_SHA_DRIFT');
   const client=await db.getClient();
   let dbChecks;
-  try{dbChecks=await databaseGates(client);}finally{client.release();}
+  try{dbChecks=await databaseGates(client,env.HUB_V1_CERTIFICATION_RUN);}finally{client.release();}
   const checks=[...dbChecks,...sourceGates(root)];
   return {
     mode:'READ_ONLY',
