@@ -136,12 +136,16 @@ function scopeNote(path){
 async function record(status){
  if(!run)return;
  const activeKey=key(),activeIndex=stepIndex;
+ // Ne jamais perdre le constat saisi : checkAuth() redessine le formulaire.
+ const noteDraft=$('scenarioNote').value,proofDraft=$('scenarioProof').value;
  // La session peut avoir changé dans l'onglet où l'opérateur a réellement
  // travaillé. Refaire les deux GET au moment du constat, sans enregistrer
  // une observation sous l'identité vérifiée à une étape précédente.
  if(status==='observed'&&run.track.startsWith('v1_')){
   await checkAuth();
   if(!run||key()!==activeKey||stepIndex!==activeIndex)return;
+  $('scenarioNote').value=noteDraft;
+  $('scenarioProof').value=proofDraft;
  }
  const note=$('scenarioNote').value.trim().slice(0,1600);
  const proof=$('scenarioProof').value.trim().slice(0,300);
