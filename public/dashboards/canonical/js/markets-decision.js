@@ -420,23 +420,7 @@
     const matrix = data && data.matrix;
     if (matrix) {
       return renderCentralAccessOverview(host, matrix, options.document || (root && root.document));
-      /* Legacy overview retained for other integrations; central mode uses compact management. */
-      return renderOverview(host, {
-        document: options.document || (root && root.document),
-        ui: options.ui || (root && root.KomerceCanonicalUI),
-        decisionUi: options.decisionUi || (root && root.KomerceDecisionUI),
-        eyebrow: 'MARCHÉS',
-        title: 'Pilotage des marchés',
-        description: 'Voir qui pilote chaque marché et ce qui demande une décision.',
-        decisions: centralDecisionItems(matrix),
-        metrics: centralMetricItems(matrix),
-        metricTitle: 'Responsabilité des marchés',
-        metricDescription: 'Responsables actifs et couverture des marchés.',
-        rankedItems: centralMarketItems(matrix),
-        rankedTitle: 'Responsabilité par marché',
-        rankedDescription: 'Le responsable et l’état de chaque marché.',
-        trust: centralTrust(matrix),
-      });
+
     }
     const markets = data && data.markets;
     const users = data && data.users;
