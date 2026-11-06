@@ -18,6 +18,45 @@ const preflightFile=path.join(root,'credentials-preflight.json');
 const credentialPreflight=fs.existsSync(preflightFile)?JSON.parse(fs.readFileSync(preflightFile,'utf8')):null;
 const deploymentPreflightFile=path.join(root,'deployment-preflight.json');
 const deploymentPreflight=fs.existsSync(deploymentPreflightFile)?JSON.parse(fs.readFileSync(deploymentPreflightFile,'utf8')):null;
+// A filtered Hub Director run emits a different, strictly redacted evidence
+// format: booleans, HTTP codes and a SHA. It is not a navigation graph.
+if (process.env.E2E_CHROMIUM_SPEC_FILTER === 'hub-director-readonly') {
+  const file = path.join(dir,'hub-director-readonly.json');
+  if (!fs.existsSync(file)) throw new Error('HUB_DIRECTOR_PROOF_MISSING');
+  const proof=JSON.parse(fs.readFileSync(file,'utf8'));
+  const director=proof.director || {};
+  const agent=proof.ordinary_agent || {};
+  const actualSha=String(proof.sha || '');
+  const expectedSha=String(process.env.E2E_EXPECTED_DEPLOY_SHA || '');
+  const ok=proof.status==='PASS' &&
+    /^[0-9a-f]{40}$/i.test(expectedSha) && actualSha===expectedSha &&
+    proof.stable_sha===true && proof.changed===false &&
+    proof.total_blocked_writes===0 && proof.total_browser_errors===0 &&
+    director.login===true && director.role_agent_hub===true &&
+    director.administration_http===200 && director.board_http===200 &&
+    director.central_admin_denied===true && director.browser_navigation===true &&
+    director.purchase_commitment===true && director.supplier_payment===true &&
+    agent.login===true && agent.role_agent_hub===true &&
+    agent.administration_http===200 && agent.board_http===200 &&
+    agent.central_admin_denied===true && agent.browser_navigation===true &&
+    agent.purchase_commitment===false && agent.supplier_payment===false;
+  const report=[
+    '# Komerce — Hub Director staging READ ONLY','',
+    'Verdict Hub Director: '+(ok?'PASS':'FAIL'),
+    'Version deployee: '+(actualSha===expectedSha?expectedSha:'SHA_MISMATCH'),
+    'Directrice: deux grants distincts confirmes: '+(ok?'oui':'NON PROUVE'),
+    'Agent Hub ordinaire: aucun des deux grants: '+(ok?'oui':'NON PROUVE'),
+    'Hub Administration et Board: '+(ok?'HTTP 200 pour les deux profils':'NON PROUVE'),
+    'Administration centrale: '+(ok?'HTTP 403 pour les deux profils':'NON PROUVE'),
+    'Sessions Chromium distinctes, aucun writer metier: '+(ok?'PASS':'NON PROUVE'),
+    'Ce controle ne prouve pas les workflows transactionnels ni les cas limites.',
+    'E2E metier complet: NOT_PROVEN.',
+    'Aucun secret, cookie, donnees de PO ou capture dans ce rapport.'
+  ].join('\n')+'\n';
+  fs.writeFileSync(path.join(root,'rapport.md'),report);
+  console.log('[hub-director-summary] '+JSON.stringify({status:ok?'PASS':'FAIL',sha_match:actualSha===expectedSha}));
+  if(!ok) process.exitCode=2;
+} else {
 const q=x=>'"'+String(x??'').replace(/"/g,'""').replace(/[\r\n]/g,' ')+'"';
 const csv=rows=>rows.map(row=>row.map(q).join(',')).join('\n')+'\n';
 const allFindings=runs.flatMap(r=>r.findings.map(f=>({...f,role:r.role,viewport:r.viewport})));
@@ -73,3 +112,5 @@ const report=[
 ];
 fs.writeFileSync(path.join(root,'rapport.md'),report.join('\n')+'\n');
 console.log(JSON.stringify({runs:runs.length,routeCount,clicked,nominalRedirects,expectedDenied,findings:allFindings.length,matrixRows:matrix.length-1}));
+
+}
