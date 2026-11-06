@@ -21,6 +21,6 @@ describe('Market Control Plane M5 — market lifecycle schema', () => {
     expect(seed).toMatch(/columnExists\(client, 'markets', 'lifecycle_status'\)/);
     expect(seed).toMatch(/market\.is_active \? 'ACTIVE' : 'PROVISIONING'/);
     expect(seed).toMatch(/is_active, lifecycle_status/);
-    expect(seed).toMatch(/lifecycle_status = EXCLUDED\.lifecycle_status/);
+    expect(seed).not.toMatch(/lifecycle_status = EXCLUDED\.lifecycle_status/); // insert-only (doctrine reset ne touche pas au lifecycle)
   });
 });

@@ -69,6 +69,9 @@ async function columnExists(client, tableName, columnName) {
   return row?.present === true;
 }
 
+// Doctrine : le seed n'ouvre ni ne ferme jamais un marche existant. lifecycle_status / is_active ne sont
+// ecrits qu'a l'INSERT d'un marche absent ; toute transition passe par POST /api/admin/markets/:code/lifecycle
+// (readiness + audit). Un reset ne remet donc plus CM/CG/YT ACTIVE hors lifecycle canonique.
 async function seedMarkets(client) {
   if (!(await tableExists(client, 'markets'))) return { skipped: true, count: 0 };
 
@@ -83,9 +86,7 @@ async function seedMarkets(client) {
          ON CONFLICT (code) DO UPDATE SET
            name = EXCLUDED.name,
            currency = EXCLUDED.currency,
-           minor_unit = EXCLUDED.minor_unit,
-           is_active = EXCLUDED.is_active,
-           lifecycle_status = EXCLUDED.lifecycle_status`,
+           minor_unit = EXCLUDED.minor_unit`,
         [market.code, market.name, market.currency, market.minor_unit, market.is_active, lifecycleStatus]
       );
       continue;
@@ -97,8 +98,7 @@ async function seedMarkets(client) {
        ON CONFLICT (code) DO UPDATE SET
          name = EXCLUDED.name,
          currency = EXCLUDED.currency,
-         minor_unit = EXCLUDED.minor_unit,
-         is_active = EXCLUDED.is_active`,
+         minor_unit = EXCLUDED.minor_unit`,
       [market.code, market.name, market.currency, market.minor_unit, market.is_active]
     );
   }
