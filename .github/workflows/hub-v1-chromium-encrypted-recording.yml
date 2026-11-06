@@ -17,6 +17,7 @@ jobs:
     timeout-minutes: 45
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
         role: [admin, agent_hub, agent_relais]
     env:
@@ -59,7 +60,7 @@ jobs:
         env:
           RECORDER_ROLE: ${{ matrix.role }}
         run: |
-          npx playwright test --config=playwright.staging-canonical.config.js hub-v1-recording-readonly --project="${RECORDER_ROLE}-desktop"
+          xvfb-run -a npx playwright test --headed --workers=1 --config=playwright.staging-canonical.config.js hub-v1-recording-readonly --project="${RECORDER_ROLE}-desktop"
       - name: Refuse any accidentally unencrypted outputs
         if: always()
         shell: bash
