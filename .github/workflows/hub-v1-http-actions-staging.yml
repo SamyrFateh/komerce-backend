@@ -1,0 +1,80 @@
+name: Hub V1 — runner HTTP d'actions sur la fixture KM (staging)
+
+# Rejoue les actions metier par les memes appels HTTP que l'UI, avec les comptes E2E reels, sur UNE fixture existante
+# (RUN8 cree par hub-v1-km-fixture-stop-after-2). Ecrit uniquement sur les lignes de cette fixture (simulation, aucun
+# paiement ni message externe). Confirmation textuelle exigee.
+
+on:
+  workflow_dispatch:
+    inputs:
+      run8:
+        description: 'RUN8 de la fixture KM (8 hex majuscules)'
+        required: true
+        type: string
+      confirmation:
+        description: 'Saisir exactement RUN-HTTP-ACTIONS'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: komerce-hub-v1-http-actions-staging
+  cancel-in-progress: false
+
+jobs:
+  http-actions:
+    if: inputs.confirmation == 'RUN-HTTP-ACTIONS'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_TARGET_ENV: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      EXPECTED_RAILWAY_ENVIRONMENT: staging
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      HTTP_RUNNER_BASE_URL: https://komerce-backend-production.up.railway.app
+      HTTP_RUNNER_RUN8: ${{ inputs.run8 }}
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      E2E_AGENT_HUB_EMAIL: ${{ secrets.E2E_AGENT_HUB_EMAIL }}
+      E2E_AGENT_HUB_PASSWORD: ${{ secrets.E2E_AGENT_HUB_PASSWORD }}
+      E2E_HUB_DIRECTOR_EMAIL: ${{ secrets.E2E_HUB_DIRECTOR_EMAIL }}
+      E2E_HUB_DIRECTOR_PASSWORD: ${{ secrets.E2E_HUB_DIRECTOR_PASSWORD }}
+      E2E_MARKET_OPERATOR_EMAIL: ${{ secrets.E2E_MARKET_OPERATOR_EMAIL }}
+      E2E_MARKET_OPERATOR_PASSWORD: ${{ secrets.E2E_MARKET_OPERATOR_PASSWORD }}
+      E2E_AGENT_RELAIS_EMAIL: ${{ secrets.E2E_AGENT_RELAIS_EMAIL }}
+      E2E_AGENT_RELAIS_PASSWORD: ${{ secrets.E2E_AGENT_RELAIS_PASSWORD }}
+      STRIPE_SECRET_KEY: sk_test_certification_placeholder
+      STRIPE_WEBHOOK_SECRET: whsec_certification_placeholder
+      PAYPAL_CLIENT_ID: ci-certification-placeholder
+      PAYPAL_CLIENT_SECRET: ci-certification-placeholder
+      PAYPAL_WEBHOOK_ID: ci-certification-placeholder
+      META_WA_APP_SECRET: ci-certification-placeholder
+      AUTHKEY_API_KEY: ci-certification-placeholder
+      JWT_SECRET: ci-certification-placeholder
+      QR_SECRET: ci-certification-placeholder
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Refuse missing remote DB secret
+        run: test -n "$DATABASE_URL"
+      - name: Pin source commit
+        run: echo "E2E_EXPECTED_DEPLOY_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+      - name: Runner HTTP d'actions
+        run: node scripts/recette/hub-v1-http-action-runner.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: hub-v1-http-actions-${{ github.run_id }}
+          path: test-results/hub-v1-http/
+          if-no-files-found: warn
+          retention-days: 30
