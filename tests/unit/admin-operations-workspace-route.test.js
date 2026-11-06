@@ -93,7 +93,7 @@ jest.mock('../../db', () => ({
       const ids = { CM: 'market-cm-id', CG: 'market-cg-id' };
       return {
         rows: ids[code]
-          ? [{ id: ids[code], code, name: `Market ${code}`, currency: 'XAF' }]
+          ? [{ id: ids[code], code, name: `Market ${code}`, currency: 'XAF', lifecycle_status: code === 'ZZ' ? 'SUSPENDED' : 'ACTIVE' }]
           : [],
       };
     }
@@ -187,15 +187,32 @@ test('admin lit CM uniquement avec operations.read ou autorité globale explicit
   expect(global.status).toBe(200);
 });
 
-test('agent_hub ne tire aucun Market ID de son rôle : operations.read est obligatoire', async () => {
+test('Hub central : agent_hub lit tout marché ACTIVE sans membership ni capability marché', async () => {
   mockUserRole = 'agent_hub';
-  const ok = await request(app()).get('/api/admin/workspaces/operations/market/CM');
-  expect(ok.status).toBe(200);
+  mockGrantedCapabilities.clear();
+  mockResolveAuthorization.mockClear();
+  for (const code of ['CM', 'CG']) {
+    const res = await request(app()).get(`/api/admin/workspaces/operations/market/${code}`);
+    expect(res.status).toBe(200);
+  }
+  expect(mockResolveAuthorization).not.toHaveBeenCalled();
+});
 
-  mockGrantedCapabilities.delete('operations.read@CM');
-  const denied = await request(app()).get('/api/admin/workspaces/operations/market/CM');
-  expect(denied.status).toBe(403);
-  expect(denied.body.code).toBe('MARKET_CAPABILITY_REQUIRED');
+test('Hub central : action Hub autorisée sans membership, tracée central_hub ; rôles non Hub inchangés', async () => {
+  mockUserRole = 'agent_hub';
+  mockGrantedCapabilities.clear();
+  mockAudit.mockClear();
+  const hub = await request(app())
+    .post('/api/admin/workspaces/operations/market/CM/parcels/PCL-CM-001/ship').send({ reason: 'scanner_unavailable' });
+  expect(hub.status).toBe(200);
+  expect(mockAudit).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+    action: 'EXECUTION_AUTHORIZED', after: expect.objectContaining({ source: 'central_hub', market_code: 'CM' }),
+  }));
+  for (const role of ['finance', 'sourcing']) {
+    mockUserRole = role;
+    const denied = await request(app()).get('/api/admin/workspaces/operations/market/CM');
+    expect(denied.status).toBe(403);
+  }
 });
 
 test('agent_relais lit uniquement le marché de son relais serveur', async () => {
