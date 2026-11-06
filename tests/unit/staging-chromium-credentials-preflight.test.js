@@ -27,7 +27,7 @@ describe('preflight GitHub secrets pour Chromium staging',()=>{
    expect(r.missing_secret_names).toEqual([]);
    expect(r.selected_roles).toEqual(['admin','market_operator']);
  });
- test('all refuse les six secrets manquants avant Playwright, sans en exposer les valeurs',()=>{
+ test('all refuse les secrets manquants dont la directrice, sans en exposer les valeurs',()=>{
    const env=envFor('all');
    for(const role of ['finance','sourcing','agent_transitaire']){
      const prefix='E2E_'+role.toUpperCase()+'_';
@@ -38,7 +38,8 @@ describe('preflight GitHub secrets pour Chromium staging',()=>{
    expect(r.missing_secret_names).toEqual([
      'E2E_FINANCE_EMAIL','E2E_FINANCE_PASSWORD',
      'E2E_SOURCING_EMAIL','E2E_SOURCING_PASSWORD',
-     'E2E_AGENT_TRANSITAIRE_EMAIL','E2E_AGENT_TRANSITAIRE_PASSWORD'
+     'E2E_AGENT_TRANSITAIRE_EMAIL','E2E_AGENT_TRANSITAIRE_PASSWORD',
+     'E2E_HUB_DIRECTOR_EMAIL','E2E_HUB_DIRECTOR_PASSWORD'
    ]);
    expect(JSON.stringify(r)).not.toContain('opaque-credential');
  });
@@ -69,7 +70,10 @@ describe('preflight GitHub secrets pour Chromium staging',()=>{
    expect(r.missing_secret_names).toEqual(['E2E_HUB_DIRECTOR_EMAIL','E2E_HUB_DIRECTOR_PASSWORD']);
  });
  test('un secret non vide est une configuration, pas une preuve de login',()=>{
-   const r=inspect(envFor('all'));
+   const env=envFor('all');
+   env.E2E_HUB_DIRECTOR_EMAIL='director@example.test';
+   env.E2E_HUB_DIRECTOR_PASSWORD='opaque-secret';
+   const r=inspect(env);
    expect(r.status).toBe('CREDENTIAL_NAMES_CONFIGURED_LOGIN_UNVERIFIED');
    expect(r.note).toMatch(/does not prove/);
  });
