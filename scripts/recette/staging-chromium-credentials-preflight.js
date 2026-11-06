@@ -25,6 +25,20 @@ function inspect(env=process.env) {
       if(!String(env[key]||'').trim())missing.push(key);
     }
   }
+  // A targeted Hub Director proof uses the admin runner but authenticates two
+  // distinct agent_hub identities. An exhaustive unfiltered run includes it too.
+  const filter=String(env.E2E_CHROMIUM_SPEC_FILTER||'').trim();
+  const directorIncluded=env.E2E_AUDIT_QUICK!=='1' &&
+    (filter.includes('hub-director-readonly') ||
+     (!filter && String(env.E2E_AUDIT_ROLES||'all').toLowerCase()==='all'));
+  if(directorIncluded) {
+    for(const prefix of ['E2E_HUB_DIRECTOR_','E2E_AGENT_HUB_']) {
+      for(const suffix of ['EMAIL','PASSWORD']) {
+        const key=prefix+suffix;
+        if(!String(env[key]||'').trim() && !missing.includes(key))missing.push(key);
+      }
+    }
+  }
   return {
     status:missing.length?'MISSING_GITHUB_ACTIONS_SECRETS':'CREDENTIAL_NAMES_CONFIGURED_LOGIN_UNVERIFIED',
     selected_roles:roles,

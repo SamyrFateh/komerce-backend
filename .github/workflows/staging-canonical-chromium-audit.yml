@@ -31,15 +31,17 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'issues' && github.actor == github.repository_owner &&
        (github.event.issue.title == '[staging-op] canonical-chromium-audit' ||
-        github.event.issue.title == '[staging-op] canonical-chromium-audit-baseline'))
+        github.event.issue.title == '[staging-op] canonical-chromium-audit-baseline' ||
+        github.event.issue.title == '[staging-op] canonical-chromium-hub-director'))
     runs-on: ubuntu-24.04
     timeout-minutes: 180
     env:
       CI: 'true'
       E2E_STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
       E2E_AUDIT_QUICK: ${{ github.event_name == 'issues' && github.event.issue.title == '[staging-op] canonical-chromium-audit-baseline' && '1' || '0' }}
+      E2E_CHROMIUM_SPEC_FILTER: ${{ github.event_name == 'workflow_dispatch' && inputs.spec_filter || (github.event.issue.title == '[staging-op] canonical-chromium-hub-director' && 'hub-director-readonly' || '') }}
       E2E_PROOF_ORDER_REFS: ${{ github.event_name == 'workflow_dispatch' && inputs.proof_order_refs || '' }}
-      E2E_AUDIT_ROLES: ${{ github.event_name == 'workflow_dispatch' && inputs.roles || (github.event.issue.title == '[staging-op] canonical-chromium-audit-baseline' && 'baseline' || 'all') }}
+      E2E_AUDIT_ROLES: ${{ github.event_name == 'workflow_dispatch' && inputs.roles || (github.event.issue.title == '[staging-op] canonical-chromium-hub-director' && 'admin' || (github.event.issue.title == '[staging-op] canonical-chromium-audit-baseline' && 'baseline' || 'all')) }}
       E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
       E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
       E2E_MARKET_OPERATOR_EMAIL: ${{ secrets.E2E_MARKET_OPERATOR_EMAIL }}
@@ -50,6 +52,8 @@ jobs:
       E2E_SOURCING_PASSWORD: ${{ secrets.E2E_SOURCING_PASSWORD }}
       E2E_AGENT_HUB_EMAIL: ${{ secrets.E2E_AGENT_HUB_EMAIL }}
       E2E_AGENT_HUB_PASSWORD: ${{ secrets.E2E_AGENT_HUB_PASSWORD }}
+      E2E_HUB_DIRECTOR_EMAIL: ${{ secrets.E2E_HUB_DIRECTOR_EMAIL }}
+      E2E_HUB_DIRECTOR_PASSWORD: ${{ secrets.E2E_HUB_DIRECTOR_PASSWORD }}
       E2E_AGENT_RELAIS_EMAIL: ${{ secrets.E2E_AGENT_RELAIS_EMAIL }}
       E2E_AGENT_RELAIS_PASSWORD: ${{ secrets.E2E_AGENT_RELAIS_PASSWORD }}
       E2E_AGENT_TRANSITAIRE_EMAIL: ${{ secrets.E2E_AGENT_TRANSITAIRE_EMAIL }}
@@ -76,7 +80,7 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Audit actual staging in read-only Chromium
         env:
-          SPEC_FILTER: ${{ github.event_name == 'workflow_dispatch' && inputs.spec_filter || '' }}
+          SPEC_FILTER: ${{ env.E2E_CHROMIUM_SPEC_FILTER }}
         # SPEC_FILTER is passed through env (no expression injection in the script).
         run: npx playwright test --config=playwright.staging-canonical.config.js $SPEC_FILTER
       - name: Build graphs and coverage matrix even on failure
@@ -89,8 +93,16 @@ jobs:
           if [ -f test-results/staging-chromium/rapport.md ]; then
             cat test-results/staging-chromium/rapport.md >> "$GITHUB_STEP_SUMMARY"
           fi
+      - name: Archive sanitized Hub Director result (no screenshots or browser traces)
+        if: always() && env.E2E_CHROMIUM_SPEC_FILTER == 'hub-director-readonly'
+        uses: actions/upload-artifact@v4
+        with:
+          name: hub-director-readonly-${{ github.run_id }}
+          path: test-results/staging-chromium/evidence/hub-director-readonly.json
+          retention-days: 30
+          if-no-files-found: error
       - name: Archive staging evidence (captures, evidence json, report; traces are disabled)
-        if: always()
+        if: always() && env.E2E_CHROMIUM_SPEC_FILTER != 'hub-director-readonly'
         uses: actions/upload-artifact@v4
         with:
           name: real-canonical-chromium-${{ github.run_id }}
