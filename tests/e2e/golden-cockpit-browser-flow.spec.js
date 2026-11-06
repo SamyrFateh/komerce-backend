@@ -19,11 +19,12 @@ async function mount(page){
       headers:{'Content-Security-Policy':"default-src 'self'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; object-src 'none'"},
       body:html
     });
-    if(url.pathname==='/js/golden-e2e-cockpit-journey.js'||url.pathname==='/js/golden-e2e-cockpit-upstream.js'||url.pathname==='/js/golden-recipe-scenarios.js'){
+    if(url.pathname==='/js/golden-e2e-cockpit-journey.js'||url.pathname==='/js/golden-e2e-cockpit-upstream.js'||url.pathname==='/js/golden-recipe-scenarios.js'||url.pathname==='/js/guided-v1-tracks.js'){
       const file=path.join(__dirname,'..','..','public',url.pathname.slice(1));
       return route.fulfill({contentType:'application/javascript',body:fs.readFileSync(file,'utf8')});
     }
     if(url.pathname==='/health/version') return route.fulfill({contentType:'application/json',body:JSON.stringify({version:'test',commit:state.version})});
+    if(url.pathname==='/api/auth/me') return route.fulfill({contentType:'application/json',body:JSON.stringify({role:'admin'})});
     if(url.pathname==='/api/admin/entities/golden-create'&&req.method()==='POST'){
       state.creates.push(req.postDataJSON());
       return route.fulfill({status:201,contentType:'application/json',body:JSON.stringify({reference:'K-GOLDEN-BROWSER',marketCode:state.creates.at(-1).marketCode})});
@@ -41,6 +42,11 @@ async function mount(page){
   });
   await page.goto(ORIGIN+'/admin/golden-e2e');
   return state;
+}
+
+async function ensureRecipeOpen(page){
+ const details=page.locator('#extendedRecipe');
+ if(!(await details.evaluate(node=>node.open)))await details.locator('summary').click();
 }
 
 test.describe('Golden cockpit V4 — parcours guidé et preuves isolées',()=>{
@@ -239,7 +245,7 @@ test.describe('Golden cockpit V4 — parcours guidé et preuves isolées',()=>{
     await expect(page.locator('.wizard-grid')).toHaveAttribute('data-phase','guide');
   });  test('recette CJ 20/15/5 reste non certifiée sans session et sans preuve',async({page})=>{
     await mount(page);
-    await page.locator('#extendedRecipe summary').click();
+    await ensureRecipeOpen(page);
     await page.locator('#scenarioTrack').selectOption('cj');
     await page.locator('#scenarioRef').fill('CJ-20-15-5');
     await page.locator('#scenarioSha').fill('c2f3c1d051c637a8d917a3f3fd6dc63c50b404ad');
@@ -260,7 +266,7 @@ test.describe('Golden cockpit V4 — parcours guidé et preuves isolées',()=>{
 
   test('lots L1–L10 : preuve, session et constat restent distincts',async({page})=>{
     await mount(page);
-    await page.locator('#extendedRecipe summary').click();
+    await ensureRecipeOpen(page);
     await page.locator('#scenarioTrack').selectOption('l1l10');
     await page.locator('#scenarioMarket').selectOption('CM');
     await page.locator('#scenarioRef').fill('F02');
@@ -291,7 +297,7 @@ test.describe('Golden cockpit V4 — parcours guidé et preuves isolées',()=>{
 
   test('recette canonique : marché RCT1, cinq dashboards et trois Live gardent la vraie frontière de simulation',async({page})=>{
     await mount(page);
-    await page.locator('#extendedRecipe summary').click();
+    await ensureRecipeOpen(page);
     await page.locator('#scenarioTrack').selectOption('dashboards');
     await page.locator('#scenarioRef').fill('RCT1-E1');
     await page.locator('#scenarioSha').fill('c2f3c1d');
@@ -318,7 +324,7 @@ test.describe('Golden cockpit V4 — parcours guidé et preuves isolées',()=>{
   test('garde SHA : refuse tout constat si la version réellement déployée diffère',async({page})=>{
     const state=await mount(page);
     state.version='a23456789b123456789012345678901234567890';
-    await page.locator('#extendedRecipe summary').click();
+    await ensureRecipeOpen(page);
     await page.locator('#scenarioTrack').selectOption('process');
     await page.locator('#scenarioRef').fill('RCT1-E1');
     await page.locator('#scenarioSha').fill('c2f3c1d');
@@ -350,4 +356,48 @@ test.describe('Golden cockpit V4 — parcours guidé et preuves isolées',()=>{
     await expect(page.locator('#wizardNext')).toBeDisabled();
   });
 
+
+  test('Recette V1 Hub : le vrai écran est lié, le rôle est revalidé, aucun PASS technique automatique',async({page})=>{
+    await mount(page);
+    await expect(page.locator('#extendedRecipe')).toHaveAttribute('open','');
+    await page.locator('#scenarioTrack').selectOption('v1_manual');
+    await page.locator('#scenarioMarket').selectOption('KM');
+    await page.locator('#scenarioRef').fill('E2E-HUB-V1-DEADBEEF-KOM-101');
+    await page.locator('#scenarioSha').fill('c2f3c1d051c637a8d917a3f3fd6dc63c50b404ad');
+    await page.locator('#scenarioStart').click();
+    await expect(page.locator('#scenarioTitle')).toHaveText('Identifier commande et marché');
+    await page.locator('#scenarioNext').click();
+    await expect(page.locator('#scenarioOpen')).toHaveAttribute('href','/admin/orders/E2E-HUB-V1-DEADBEEF-KOM-101');
+    await page.locator('#scenarioNext').click();
+    await page.locator('#scenarioAuthButton').click();
+    await expect(page.locator('#scenarioAuth')).toContainText('rôle admin identifié');
+    await page.locator('#scenarioNote').fill('Commande payée et marché correspondant à la fixture.');
+    await page.locator('#scenarioProof').fill('https://github.com/SamyrFateh/komerce-backend/issues/3349');
+    await page.locator('#scenarioObserved').click();
+    await expect(page.locator('#scenarioState')).toContainText('OBSERVÉ');
+    await expect(page.locator('#scenarioState')).toContainText('automatique : NON PROUVÉ');
+    await page.locator('#scenarioNext').click();
+    await expect(page.locator('#scenarioTitle')).toHaveText('Besoin fournisseur déclenché');
+    await expect(page.locator('#scenarioObserved')).toBeDisabled();
+    await page.locator('#scenarioNext').click();
+    await page.locator('#scenarioNext').click();
+    await page.locator('#scenarioAuthButton').click();
+    await expect(page.locator('#scenarioAuth')).toContainText('BLOQUÉ');
+    await expect(page.locator('#scenarioObserved')).toBeDisabled();
+  });
+
+  test('DJ inactif : recette import interdite, guide de refus autorisé',async({page})=>{
+    await mount(page);
+    await page.locator('#scenarioTrack').selectOption('v1_manual');
+    await page.locator('#scenarioMarket').selectOption('DJ');
+    await page.locator('#scenarioRef').fill('DJ-CERTIF-READONLY');
+    await page.locator('#scenarioSha').fill('c2f3c1d051c637a8d917a3f3fd6dc63c50b404ad');
+    await page.locator('#scenarioStart').click();
+    await expect(page.locator('#scenarioMessage')).toContainText('DJ : refus uniquement');
+    await expect(page.locator('#scenarioStage')).toBeHidden();
+    await page.locator('#scenarioTrack').selectOption('v1_dj');
+    await page.locator('#scenarioStart').click();
+    await expect(page.locator('#scenarioTitle')).toHaveText('Constater le lifecycle inactif');
+    await expect(page.locator('#scenarioMarketRule')).toContainText('Djibouti');
+  });
 });
