@@ -22,6 +22,10 @@ const { resolveAuthorization, audit } = require('../services/market-delegation-s
 
 const NATIVE_OPERATIONAL_ROLES = new Set(['admin', 'agent_hub', 'agent_relais']);
 
+function isActiveWorkspaceMarket(req) {
+  return Boolean(req.workspaceMarket && req.workspaceMarket.id && req.workspaceMarket.lifecycle_status === 'ACTIVE');
+}
+
 function sendDelegationError(res, error) {
   if (!error || !error.code || !error.status) return false;
   res.status(error.status).json({ error: error.message, code: error.code });
@@ -39,12 +43,16 @@ function safeResourceParams(params = {}) {
     .map(([key, value]) => [key, value == null ? null : String(value).slice(0, 200)]));
 }
 
-function attachMarketExecutionRoleFor({ capability, compatibilityRole, nativeRoles = [], forceCapability = false }) {
+// Doctrine « Hub central multi-marchés sans attribution manuelle des marchés » : le Hub central (agent_hub, dont la
+// directrice) agit sur tout marché ACTIVE sans membership marché. Aucun autre rôle n'est concerné ; le bypass est
+// annoncé par la route (centralRoles), borné au marché ACTIVE de la route et audité (source central_hub).
+function attachMarketExecutionRoleFor({ capability, compatibilityRole, nativeRoles = [], forceCapability = false, centralRoles = [] }) {
   if (!String(capability || '').startsWith('execution.')) {
     throw new TypeError('execution capability requise');
   }
   if (!compatibilityRole) throw new TypeError('compatibilityRole requis');
   const native = new Set(nativeRoles);
+  const central = new Set(centralRoles);
 
   return async (req, res, next) => {
     if (!req.user) return res.status(401).json({ error: 'Authentification requise.', code: 'AUTH_REQUIRED' });
@@ -54,6 +62,36 @@ function attachMarketExecutionRoleFor({ capability, compatibilityRole, nativeRol
     // les capabilities exactes sur le Workspace Opérations, y compris pour
     // admin/agent_hub/agent_relais.
     if (!forceCapability && (native.has(req.user.role) || NATIVE_OPERATIONAL_ROLES.has(req.user.role))) return next();
+
+    if (central.has(req.user.role) && isActiveWorkspaceMarket(req)) {
+      try {
+        await audit(db, {
+          actorUserId: req.user.id,
+          marketId: req.workspaceMarket.id,
+          capability: null,
+          action: 'EXECUTION_AUTHORIZED',
+          after: {
+            source: 'central_hub',
+            market_code: req.workspaceMarket.code,
+            required_capability: capability,
+            method: req.method,
+            resource: safeResourceParams(req.params),
+          },
+          correlationId: correlationId(req),
+        });
+      } catch (error) {
+        return next(error);
+      }
+      req.marketExecution = {
+        capability,
+        source: 'central_hub',
+        market_id: req.workspaceMarket.id,
+        market_code: req.workspaceMarket.code,
+        persisted_role: req.user.role,
+        compatibility_role: compatibilityRole,
+      };
+      return next();
+    }
 
     try {
       const authz = await resolveAuthorization(db, {

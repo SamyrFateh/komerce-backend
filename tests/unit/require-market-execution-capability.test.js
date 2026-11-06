@@ -212,3 +212,33 @@ test('helpers bornent correlation id et retirent marketCode des ressources', () 
     nullable: null,
   });
 });
+
+describe('Hub central (centralRoles) — une seule garde canonique', () => {
+  const mk = (role, lifecycle = 'ACTIVE') => ({
+    user: { id: `${role}-1`, role },
+    workspaceMarket: { id: 'market-cm-id', code: 'CM', lifecycle_status: lifecycle },
+    headers: {}, params: { marketCode: 'CM' }, method: 'POST',
+  });
+  const guard = () => attachMarketExecutionRoleFor({ capability: 'execution.parcel.ship', compatibilityRole: 'agent_hub', forceCapability: true, centralRoles: ['agent_hub'] });
+
+  test('agent_hub passe sur un marché ACTIVE sans membership, audit source central_hub, aucune résolution de membership', async () => {
+    const req = mk('agent_hub'); const next = jest.fn();
+    await guard()(req, res(), next);
+    expect(mockResolveAuthorization).not.toHaveBeenCalled();
+    expect(mockAudit).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ marketId: 'market-cm-id', after: expect.objectContaining({ source: 'central_hub' }) }));
+    expect(req.marketExecution).toMatchObject({ source: 'central_hub', market_code: 'CM' });
+    expect(next).toHaveBeenCalledWith();
+  });
+  test('marché non ACTIVE : retombe sur la preuve de capability exacte', async () => {
+    const req = mk('agent_hub', 'SUSPENDED'); const next = jest.fn();
+    await guard()(req, res(), next);
+    expect(mockResolveAuthorization).toHaveBeenCalled();
+  });
+  test('admin, market_operator et agent_relais ne sont jamais exemptés', async () => {
+    for (const role of ['admin', 'market_operator', 'agent_relais']) {
+      mockResolveAuthorization.mockClear();
+      await guard()(mk(role), res(), jest.fn());
+      expect(mockResolveAuthorization).toHaveBeenCalledTimes(1);
+    }
+  });
+});

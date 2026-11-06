@@ -49,6 +49,7 @@ function attachHubExecutionCapability(capability) {
     capability,
     compatibilityRole: 'agent_hub',
     forceCapability: true,
+    centralRoles: ['agent_hub'],
   });
 }
 
@@ -85,7 +86,7 @@ async function resolveRequestedMarket(req, res, next) {
 
   try {
     const { rows } = await db.query(
-      `SELECT id, code, name, currency
+      `SELECT id, code, name, currency, lifecycle_status
          FROM markets
         WHERE code = $1
           AND is_active = TRUE
@@ -134,6 +135,11 @@ async function requireRelayMarketBinding(req, res, next) {
 function requireWorkspaceReadAccess(req, res, next) {
   if (req.user && req.user.role === 'agent_relais') {
     return requireRelayMarketBinding(req, res, next);
+  }
+  // Hub central : lecture de tout marché ACTIVE sans membership (le rôle ne confère aucun droit Admin ni marché).
+  if (req.user && req.user.role === 'agent_hub' && req.workspaceMarket && req.workspaceMarket.lifecycle_status === 'ACTIVE') {
+    req.workspaceCentralHub = true;
+    return next();
   }
   return hasDashboardGlobalAuthority(req.user && req.user.id)
     .then(globalAllowed => {
