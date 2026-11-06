@@ -39,7 +39,7 @@ test('resolveParcelRefs impose marché + statuts expédition/transit côté serv
 
   expect(rows).toHaveLength(1);
   expect(mockQuery).toHaveBeenCalledWith(
-    expect.stringContaining('p.status = ANY($3::text[])'),
+    expect.stringContaining('p.status::text = ANY($3::text[])'),
     [['PCL-CM-001'], MARKET.id, ['shipped', 'in_transit']]
   );
 });
