@@ -279,7 +279,7 @@ if(shaInput)fetch('/health/version',{cache:'no-store',headers:{Accept:'applicati
  }).catch(()=>{});
 try{
  const last=JSON.parse(localStorage.getItem(PREFIX+'last')||'null');
- if(last&&TRACKS[last.track]&&['KM','CM','CG','YT','DJ'].includes(last.market)&&typeof last.ref==='string&&/^[0-9a-f]{7,40}$/.test(last.sha||'')){
+ if(last&&TRACKS[last.track]&&['KM','CM','CG','YT','DJ'].includes(last.market)&&typeof last.ref==='string'&&/^[0-9a-f]{7,40}$/.test(last.sha||'')){
   $('scenarioTrack').value=last.track;$('scenarioMarket').value=last.market;
   $('scenarioRef').value=last.ref;$('scenarioSha').value=last.sha;
   begin();
