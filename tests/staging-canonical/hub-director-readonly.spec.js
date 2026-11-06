@@ -24,6 +24,9 @@ test('Hub Director has two distinct grants; ordinary agent_hub has neither', asy
   test.skip(info.project.name !== 'admin-desktop', 'The dedicated director proof runs once via admin project');
   test.skip(process.env.E2E_AUDIT_QUICK === '1',
     'QUICK_READONLY proves navigation; direct Hub grants require their dedicated/full proof');
+  test.skip(process.env.E2E_AUDIT_ROLES === 'baseline' &&
+    !String(process.env.E2E_CHROMIUM_SPEC_FILTER || '').includes('hub-director-readonly'),
+    'Legacy baseline scope excludes the dedicated Hub Director proof');
 
   expect(new URL(process.env.E2E_STAGING_BASE_URL || ORIGIN).origin).toBe(ORIGIN);
   const expectedSHA = process.env.E2E_EXPECTED_DEPLOY_SHA;
