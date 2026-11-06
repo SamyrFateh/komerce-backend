@@ -98,12 +98,26 @@
     section.appendChild(node(doc, 'h2', 'kmc-decision-dashboard-section-title', `${total} utilisateur(s)`));
     const body = node(doc, 'div');
     section.appendChild(body);
-    if (ui && ui.DenseTable) ui.DenseTable.render(body, { columns: COLUMNS, rows: rowsFor(payload) });
+    const table = ui && ui.DenseTable
+      ? ui.DenseTable.render(body, { columns: COLUMNS, rows: rowsFor(payload) }) : null;
     rootNode.appendChild(section);
     if (management) {
       if (management.notice) rootNode.appendChild(node(doc, 'p', 'kmc-users-action-message', management.notice));
       renderInviteManager(rootNode, doc, management);
-      renderMarketAssignments(rootNode, payload, doc, management);
+      const selectOperator = renderMarketAssignments(rootNode, payload, doc, management);
+      if (selectOperator && table && typeof table.querySelectorAll === 'function') {
+        const tableRows = table.querySelectorAll('tbody tr');
+        (payload.users || []).forEach((user, index) => {
+          if (user.role !== 'market_operator' || !tableRows[index]) return;
+          const scopeCell = tableRows[index].children[3];
+          if (!scopeCell) return;
+          const link = node(doc, 'button', 'kmc-users-inline-edit', 'Modifier le périmètre');
+          link.type = 'button';
+          link.setAttribute('aria-label', 'Modifier le périmètre de ' + (user.full_name || user.email));
+          link.addEventListener('click', () => selectOperator(user.id));
+          scopeCell.appendChild(link);
+        });
+      }
     }
   }
 
@@ -249,94 +263,209 @@
     rootNode.appendChild(section);
   }
 
-  // Le choix des marchés n'accorde aucun droit depuis le navigateur.
-  // Les POST/DELETE ci-dessous passent par les validations et audits serveur.
-  function renderMarketAssignments(rootNode, payload, doc, { markets, fetchImpl, refresh }) {
-    const operators = (payload?.users || []).filter(u => u.role === 'market_operator');
-    if (!operators.length || !Array.isArray(markets) || !markets.length) return;
-    const section = node(doc, 'section', 'kmc-decision-surface-card');
+
+  // Panneau de gestion : la sélection est locale, chaque mutation reste
+  // autorisée et auditée par les routes serveur canoniques.
+  function renderMarketAssignments(rootNode, payload, doc, management) {
+    const { markets, fetchImpl, refreshAssignment, selectedUserId, assignmentNotice, assignmentTone } = management;
+    const operators = (payload?.users || []).filter(user => user.role === 'market_operator');
+    const available = (Array.isArray(markets) ? markets : []).filter(market =>
+      /^[A-Z]{2}$/.test(String(market.code || '').toUpperCase()));
+    if (!operators.length || !available.length) return null;
+    const section = node(doc, 'section', 'kmc-decision-surface-card kmc-users-assignment-card');
     section.setAttribute('data-market-assignments', '');
-    section.appendChild(node(doc, 'h2', 'kmc-decision-dashboard-section-title', 'Responsables marché'));
-    section.appendChild(node(doc, 'p', '', 'Sélectionnez un responsable puis attribuez ou retirez un marché.'));
-    const chooser = node(doc, 'select', 'kmc-users-operator-select');
-    chooser.setAttribute('aria-label', 'Responsable marché');
-    for (const user of operators) {
-      const opt = node(doc, 'option', '', `${user.full_name || user.email} — ${user.email}`);
-      opt.value = user.id;
-      chooser.appendChild(opt);
-    }
-    section.appendChild(chooser);
-    const actions = node(doc, 'div', 'kmc-users-market-actions');
-    const message = node(doc, 'p', 'kmc-users-action-message');
-    section.appendChild(actions);
+    const heading = node(doc, 'div', 'kmc-users-assignment-heading');
+    const emblem = node(doc, 'span', 'kmc-users-assignment-emblem');
+    emblem.setAttribute('aria-hidden', 'true');
+    const headingCopy = node(doc, 'div', 'kmc-users-assignment-heading-copy');
+    headingCopy.appendChild(node(doc, 'h2', 'kmc-users-assignment-title', 'Gérer les responsables marché'));
+    headingCopy.appendChild(node(doc, 'p', 'kmc-users-assignment-description',
+      'Modifiez les marchés accessibles à chaque responsable, sans permissions individuelles.'));
+    heading.appendChild(emblem);
+    heading.appendChild(headingCopy);
+    section.appendChild(heading);
+
+    const field = node(doc, 'div', 'kmc-users-assignment-field');
+    const label = node(doc, 'label', 'kmc-users-assignment-label', 'Responsable sélectionné');
+    label.htmlFor = 'kmc-users-assignment-select';
+    const chooser = node(doc, 'select', 'kmc-users-assignment-select');
+    chooser.id = 'kmc-users-assignment-select';
+    operators.forEach(user => {
+      const option = node(doc, 'option', '', (user.full_name || user.email) + ' — ' + user.email);
+      option.value = String(user.id);
+      chooser.appendChild(option);
+    });
+    field.appendChild(label);
+    field.appendChild(chooser);
+    section.appendChild(field);
+
+    const identity = node(doc, 'div', 'kmc-users-assignment-identity');
+    const avatar = node(doc, 'span', 'kmc-users-assignment-avatar');
+    avatar.setAttribute('aria-hidden', 'true');
+    const identityCopy = node(doc, 'div', 'kmc-users-assignment-identity-copy');
+    const identityName = node(doc, 'strong', 'kmc-users-assignment-name');
+    const identityEmail = node(doc, 'span', 'kmc-users-assignment-email');
+    const badge = node(doc, 'span', 'kmc-users-assignment-badge');
+    identityCopy.appendChild(identityName);
+    identityCopy.appendChild(identityEmail);
+    identity.appendChild(avatar);
+    identity.appendChild(identityCopy);
+    identity.appendChild(badge);
+    section.appendChild(identity);
+
+    const marketField = node(doc, 'fieldset', 'kmc-users-assignment-markets');
+    marketField.appendChild(node(doc, 'legend', 'kmc-users-assignment-label', 'Marchés autorisés'));
+    marketField.appendChild(node(doc, 'p', 'kmc-users-assignment-help',
+      'Sélectionnez les marchés à administrer, puis enregistrez.'));
+    const grid = node(doc, 'div', 'kmc-users-assignment-grid');
+    marketField.appendChild(grid);
+    section.appendChild(marketField);
+
+    const footer = node(doc, 'div', 'kmc-users-assignment-footer');
+    const counter = node(doc, 'span', 'kmc-users-assignment-counter');
+    const buttons = node(doc, 'div', 'kmc-users-assignment-buttons');
+    const resend = node(doc, 'button', 'kmc-users-assignment-secondary', 'Renvoyer l’invitation');
+    resend.type = 'button';
+    const reset = node(doc, 'button', 'kmc-users-assignment-secondary', 'Annuler');
+    reset.type = 'button';
+    const save = node(doc, 'button', 'kmc-users-assignment-save', 'Enregistrer les modifications');
+    save.type = 'button';
+    buttons.appendChild(resend);
+    buttons.appendChild(reset);
+    buttons.appendChild(save);
+    footer.appendChild(counter);
+    footer.appendChild(buttons);
+    section.appendChild(footer);
+    const message = node(doc, 'p', 'kmc-users-assignment-message');
+    message.setAttribute('role', 'status');
+    message.setAttribute('aria-live', 'polite');
     section.appendChild(message);
+
+    let current = null, original = new Set(), choices = [], busy = false;
+    function selectedCodes() {
+      return new Set(choices.filter(choice => choice.checked).map(choice => choice.value));
+    }
+    function updateState() {
+      const chosen = selectedCodes();
+      const changed = chosen.size !== original.size || [...chosen].some(code => !original.has(code));
+      counter.textContent = chosen.size + ' marché' + (chosen.size === 1 ? '' : 's') +
+        ' sélectionné' + (chosen.size === 1 ? '' : 's');
+      badge.textContent = original.size + ' marché' + (original.size === 1 ? '' : 's') + ' actuel' + (original.size === 1 ? '' : 's');
+      save.disabled = busy || !changed;
+      reset.disabled = busy || !changed;
+    }
+    function setBusy(value) {
+      busy = value;
+      chooser.disabled = value;
+      resend.disabled = value;
+      choices.forEach(choice => { choice.disabled = value; });
+      section.setAttribute('aria-busy', String(value));
+      updateState();
+    }
+    function paint() {
+      current = operators.find(user => String(user.id) === String(chooser.value)) || operators[0];
+      if (!current) return;
+      grid.replaceChildren();
+      message.textContent = '';
+      message.removeAttribute('data-tone');
+      identityName.textContent = current.full_name || current.email;
+      identityEmail.textContent = current.email;
+      resend.hidden = current.account_activation_required !== true;
+      original = new Set((current.market_scopes || []).map(scope =>
+        String(scope.market_code || '').toUpperCase()).filter(Boolean));
+      choices = [];
+      available.forEach(market => {
+        const code = String(market.code).toUpperCase();
+        const tile = node(doc, 'label', 'kmc-users-assignment-tile');
+        const checkbox = node(doc, 'input', 'kmc-users-assignment-checkbox');
+        checkbox.type = 'checkbox';
+        checkbox.value = code;
+        checkbox.checked = original.has(code);
+        checkbox.setAttribute('aria-label', market.name ? String(market.name) + ' (' + code + ')' : 'Marché ' + code);
+        checkbox.addEventListener('change', () => {
+          message.textContent = '';
+          message.removeAttribute('data-tone');
+          updateState();
+        });
+        const copy = node(doc, 'span', 'kmc-users-assignment-tile-copy');
+        copy.appendChild(node(doc, 'strong', 'kmc-users-assignment-code', code));
+        if (market.name) copy.appendChild(node(doc, 'small', 'kmc-users-assignment-market-name', market.name));
+        tile.appendChild(checkbox);
+        tile.appendChild(copy);
+        grid.appendChild(tile);
+        choices.push(checkbox);
+      });
+      updateState();
+    }
     async function applyScope(userId, code, granted) {
-      const endpoint = `/api/admin/users/${encodeURIComponent(userId)}/market-scopes`;
-      const url = granted ? endpoint : `${endpoint}/${encodeURIComponent(code)}`;
+      const endpoint = '/api/admin/users/' + encodeURIComponent(userId) + '/market-scopes';
+      const url = granted ? endpoint : endpoint + '/' + encodeURIComponent(code);
       const headers = { Accept: 'application/json' };
       if (granted) headers['Content-Type'] = 'application/json';
       const response = await fetchImpl(url, {
-        method: granted ? 'POST' : 'DELETE', credentials: 'include',
-        headers,
+        method: granted ? 'POST' : 'DELETE', credentials: 'include', headers,
         ...(granted ? { body: JSON.stringify({ market_code: code, scope_role: 'manager' }) } : {}),
       });
-      if (!response.ok) {
-        message.textContent = `Action refusée (${response.status}). Vérifiez les autorisations du compte.`;
-        return;
-      }
-      await refresh();
-    }
-    function paint() {
-      actions.replaceChildren();
-      message.textContent = '';
-      const selected = operators.find(u => String(u.id) === String(chooser.value)) || operators[0];
-      if (!selected) return;
-      if (selected.account_activation_required === true) {
-        const resend = node(doc, 'button', 'kmc-users-market-action', 'Renvoyer l’invitation');
-        resend.type = 'button';
-        resend.addEventListener('click', async () => {
-          resend.disabled = true;
-          try {
-            const response = await fetchImpl(
-              `/api/admin/users/${encodeURIComponent(selected.id)}/resend-invitation`,
-              { method: 'POST', credentials: 'include', headers: { Accept: 'application/json' } }
-            );
-            if (!response.ok) {
-              message.textContent = `Envoi refusé (${response.status}).`;
-              return;
-            }
-            const body = await response.json();
-            message.textContent = body.invitation_sent
-              ? 'Invitation renvoyée.'
-              : 'Email non envoyé. Vérifiez la configuration Brevo.';
-          } catch (_) {
-            message.textContent = 'Impossible de renvoyer l’invitation.';
-          } finally { resend.disabled = false; }
-        });
-        actions.appendChild(resend);
-      }
-      const assigned = new Set((selected.market_scopes || []).map(x => x.market_code));
-      for (const market of markets) {
-        const code = String(market.code || '').toUpperCase();
-        if (!/^[A-Z]{2}$/.test(code)) continue;
-        const granted = assigned.has(code);
-        const btn = node(doc, 'button', 'kmc-users-market-action',
-          `${granted ? 'Retirer' : 'Attribuer'} ${code}`);
-        btn.type = 'button';
-        btn.setAttribute('aria-label', `${granted ? 'Retirer' : 'Attribuer'} ${code} pour ${selected.full_name || selected.email}`);
-        btn.addEventListener('click', async () => {
-          btn.disabled = true;
-          try { await applyScope(selected.id, code, !granted); }
-          catch (_) { message.textContent = 'Action impossible. Réessayez ou consultez les journaux serveur.'; }
-          finally { btn.disabled = false; }
-        });
-        actions.appendChild(btn);
-      }
+      if (!response.ok) throw new Error('HTTP ' + response.status);
     }
     chooser.addEventListener('change', paint);
-    if (operators[0]) chooser.value = operators[0].id;
+    reset.addEventListener('click', () => { if (!busy) paint(); });
+    save.addEventListener('click', async () => {
+      if (busy || save.disabled || !current) return;
+      const userId = String(current.id), chosen = selectedCodes();
+      const additions = [...chosen].filter(code => !original.has(code));
+      const removals = [...original].filter(code =>
+        available.some(market => String(market.code).toUpperCase() === code) && !chosen.has(code));
+      setBusy(true);
+      let done = 0, failed = null;
+      try {
+        for (const code of additions) { await applyScope(userId, code, true); done++; }
+        for (const code of removals) { await applyScope(userId, code, false); done++; }
+      } catch (error) { failed = error; }
+      const detail = failed
+        ? 'Mise à jour incomplète : ' + done + ' changement(s) appliqué(s), ' + failed.message +
+          '. Les droits réels sont rechargés ; vérifiez les marchés restants.'
+        : 'Périmètre mis à jour : ' + done + ' modification(s) enregistrée(s).';
+      try {
+        await refreshAssignment(userId, detail, failed ? 'error' : 'success');
+      } catch (_) {
+        setBusy(false);
+        message.setAttribute('data-tone', 'error');
+        message.textContent = 'Relecture impossible. Rechargez la page avant de poursuivre.';
+      }
+    });
+    resend.addEventListener('click', async () => {
+      if (busy || !current || current.account_activation_required !== true) return;
+      setBusy(true);
+      message.textContent = '';
+      try {
+        const response = await fetchImpl('/api/admin/users/' + encodeURIComponent(current.id) + '/resend-invitation', {
+          method: 'POST', credentials: 'include', headers: { Accept: 'application/json' },
+        });
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        const result = await response.json();
+        message.textContent = result.invitation_sent ? 'Invitation renvoyée.' :
+          'Email non envoyé. Vérifiez la configuration du service email.';
+        message.setAttribute('data-tone', result.invitation_sent ? 'success' : 'error');
+      } catch (_) {
+        message.setAttribute('data-tone', 'error');
+        message.textContent = 'Impossible de renvoyer l’invitation.';
+      } finally { setBusy(false); }
+    });
+    chooser.value = String(operators.some(user => String(user.id) === String(selectedUserId))
+      ? selectedUserId : operators[0].id);
     paint();
+    if (assignmentNotice) {
+      message.textContent = assignmentNotice;
+      message.setAttribute('data-tone', assignmentTone === 'error' ? 'error' : 'success');
+    }
     rootNode.appendChild(section);
+    return function selectOperator(userId) {
+      chooser.value = String(userId);
+      paint();
+      if (typeof section.scrollIntoView === 'function') section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (typeof chooser.focus === 'function') chooser.focus({ preventScroll: true });
+    };
   }
 
   async function render(rootNode, options = {}) {
@@ -363,6 +492,11 @@
           markets: Array.isArray(body.markets) ? body.markets : [],
           fetchImpl,
           refresh: notice => render(rootNode, { ...options, notice }),
+          refreshAssignment: (selectedUserId, assignmentNotice, assignmentTone) =>
+            render(rootNode, { ...options, selectedUserId, assignmentNotice, assignmentTone }),
+          selectedUserId: options.selectedUserId || null,
+          assignmentNotice: options.assignmentNotice || null,
+          assignmentTone: options.assignmentTone || null,
           notice: options.notice || null,
         };
       }
