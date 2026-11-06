@@ -1341,6 +1341,18 @@
       empty: 'Aucun paiement cash à encaisser.',
     });
 
+    // Geste reserve au colis LOCAL expedie par le Hub (local_receivable, calcule serveur). Colis import : attestation d'expedition ci-dessus.
+    renderParcelActionSection(rootNode, ui, doc, context, {
+      title: 'Relais · Réceptionner',
+      description: 'Colis local expédié par le Hub : réception par scan append-only. Les colis import se réceptionnent par attestation de l’expédition.',
+      rows: payload.queues.relay.to_receive.filter(row => row.local_receivable === true),
+      action: 'receive',
+      actionLabel: 'Reçu au relais',
+      suffix: row => `parcels/${encodeURIComponent(row.reference)}/receive`,
+      confirm: row => `Confirmer la réception de ${row.reference} au relais ?`,
+      empty: 'Aucun colis local à réceptionner.',
+    });
+
     renderParcelActionSection(rootNode, ui, doc, context, {
       title: 'Relais · Distribuer',
       description: 'Remise client par scan append-only du moteur logistique.',

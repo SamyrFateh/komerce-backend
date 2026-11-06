@@ -37,7 +37,11 @@ async function assertParcelTransitionAllowed(parcelId, targetStatus, executor = 
        ON i.parcel_id = p.id
        OR (i.parcel_id IS NULL AND i.order_id = p.order_id)
      WHERE p.id = $1
-       AND i.status IN ('open', 'investigating')`,
+       AND i.status IN ('open', 'investigating')
+       -- Trace informative du rattrapage automatique (scan-engine : etape packed rattrapee par un scan shipped) :
+       -- severite low, source system, details.catchup_type. Elle ne doit pas bloquer la transition qu'elle accompagne.
+       -- Tout autre scan_anomaly (ou toute autre severite/source) reste bloquant.
+       AND NOT (i.severity = 'low' AND i.detected_source = 'system' AND i.details ->> 'catchup_type' IS NOT NULL)`,
     [parcelId]
   );
 
