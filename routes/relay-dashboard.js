@@ -41,7 +41,7 @@ const { authenticate, requireRole } = require('../middleware/auth');
 const { attachMarketDelegatedRoleFor } = require('../middleware/require-market-delegated-role');
 const { attachAuthorizedMarketsForCapability, requireMarketDelegatedCapability } = require('../middleware/require-market-delegated-capability');
 const log = require('../utils/logger').child({ module: 'relay-dashboard' });
-const { getDashboardKPIs, getOrders, getOrderDetail } = require('../services/relay-dashboard-queries');
+const { getDashboardKPIs, getOrders, getOrderDetail, getRelayOperationalIncidents } = require('../services/relay-dashboard-queries');
 const { wantsSimulation } = require('../services/simulation-visibility');
 const { applyLiveProjection } = require('../services/live-projection');
 
@@ -135,6 +135,15 @@ router.get('/dashboard', ...relayRead, async (req, res, next) => {
   try {
     res.json(await getDashboardKPIs(req.user, { authorizedMarkets: req.authorizedMarkets }));
   } catch(err) { next(err); }
+});
+
+// Incidents opérationnels destinés au relais : lecture seule, filtrage serveur par relais/marché.
+// Aucune mutation ou droit Hub supplémentaire n'est accordé.
+router.get('/incidents', ...relayRead, async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'private, no-store');
+    res.json(await getRelayOperationalIncidents(req.user, { authorizedMarkets: req.authorizedMarkets }));
+  } catch (err) { next(err); }
 });
 
 // GET /orders
