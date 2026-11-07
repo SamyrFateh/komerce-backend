@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       db, services/relay-collect-amount.js, utils/logger.js
  * @used-by       routes/relay-dashboard.js
- * @db-read       markets, order_comments, order_incidents, order_items, order_status_history, orders, products, recipients, relais, sms_log, users
+ * @db-read       incidents, markets, order_comments, order_incidents, order_items, order_status_history, orders, products, recipients, relais, sms_log, users
  * @db-write      none
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change, market_operator_scoping (GAP-2)
