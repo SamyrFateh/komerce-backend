@@ -35,8 +35,8 @@ describe('frontière Hub vs Transitaire central', () => {
     expect(file).toMatch(/const hubSupervise = \[\s*authenticate,\s*denyTransitaireHub,\s*attachMarketDelegatedRoleFor/);
     expect(file).not.toMatch(/const hubAuth = \[authenticate, denyTransitaireHub/);
     const terrain = fs.readFileSync(path.join(__dirname, '../../routes/hub.js'),'utf8');
-    expect(terrain).toMatch(/const hubRead = \\[\\s*authenticate,\\s*denyTransitaireHub,\\s*attachMarketDelegatedRoleFor/);
-    expect(terrain).toMatch(/const hubBoardRead = \\[\\s*authenticate,\\s*denyTransitaireHub,\\s*attachMarketDelegatedRoleFor/);
+    expect(terrain).toMatch(/const hubRead = \[\s*authenticate,\s*denyTransitaireHub,\s*attachMarketDelegatedRoleFor/);
+    expect(terrain).toMatch(/const hubBoardRead = \[\s*authenticate,\s*denyTransitaireHub,\s*attachMarketDelegatedRoleFor/);
   });
   test('le refus est indépendant du marché ou de permissions de membre', () => {
     const a = invoke({ role: 'agent_transitaire', market_id:'CM' });
