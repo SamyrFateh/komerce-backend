@@ -21,8 +21,8 @@ const dashboard = { kpi:{ en_transit:4, disponibles:9, cash_a_encaisser:3, monta
 const detail = (n) => ({ order:{ id:`r-${n}`, reference:`KMC-0${100 + n}`, status:'available', heures_attente:80, age_jours:4, market_code:'KM' }, client:{ nom:`Client ${n}` },
   relais:{ nom:'Relais Mitsamiouli', ile:'Grande Comore' }, paiement:{ cash_pending:true, total_kmf:12000 }, items:[{ produit:'Coque', quantity:1, prix_kmf:12000 }], timeline:[], incidents:[] });
 
-async function mountRelay(page, search = '', { failDetail = false, empty = false } = {}) {
-  const state = { calls:[], writes:[] };
+async function mountRelay(page, search = '', { failDetail = false, empty = false, role = null } = {}) {
+  const state = { calls:[], writes:[], searchTerms:[], simQueries:[] };
   await page.route(`${ORIGIN}/**`, async (route) => {
     const req = route.request();
     const url = new URL(req.url());
@@ -39,6 +39,8 @@ async function mountRelay(page, search = '', { failDetail = false, empty = false
     if (url.pathname === '/api/relay/dashboard') { state.calls.push('dashboard'); const value=empty?{kpi:Object.fromEntries(Object.keys(dashboard.kpi).map(k=>[k,0])),alertes:[]}:dashboard; return route.fulfill({ contentType:'application/json', body:JSON.stringify(value) }); }
     if (url.pathname === '/api/relay/orders') {
       const status = url.searchParams.get('status');
+      state.searchTerms.push(url.searchParams.get('search'));
+      state.simQueries.push(url.searchParams.get('include_simulation'));
       const offset = Number(url.searchParams.get('offset') || 0);
       state.calls.push(`orders:${status || 'all'}:${offset}`);
       const limit = Number(url.searchParams.get('limit') || 25);
@@ -56,21 +58,23 @@ async function mountRelay(page, search = '', { failDetail = false, empty = false
   });
   await page.setViewportSize({ width:1672, height:941 });
   await page.goto(`${ORIGIN}/admin/relais-live${search}`);
-  await page.evaluate(() => window.KomerceCanonicalRelayLive.mount({ root:document.getElementById('root') }));
+  await page.evaluate(role => window.KomerceCanonicalRelayLive.mount({ root:document.getElementById('root'), user:role?{role}:null }),role);
   return state;
 }
 
 const crumb = (page) => page.locator('.kir-breadcrumb').innerText().then((s) => s.replace(/\s*›\s*/g, ' > ').replace(/\s+/g, ' ').trim());
 
 test.describe('Cockpit Relais — navigation canonique', () => {
-  test('Suivi : flux, chiffres, signaux, colis à retirer en premier', async ({ page }) => {
+  test('Suivi : poste de travail direct, trois actions, supervision en un seul volet', async ({ page }) => {
     await mountRelay(page);
     await expect(page.locator('.kir-hero h1')).toContainText('Suivi des Relais');
     await expect(page.locator('.kir-domain-nav .is-active')).toHaveText('Suivi');
     await expect(page.locator('.lk-pb-stage')).toHaveCount(3);
     await expect(page.locator('.kir-run-truth-grid > *')).toHaveCount(4);
-    await expect(page.locator('.lk-signals')).toContainText('14 retirés sur 7 jours');
-    await expect(page.locator('.lk-block tbody tr')).toHaveCount(5);
+    await expect(page.locator('.kmc-relay-action-tile')).toHaveCount(3);
+    await expect(page.locator('[data-relay-supervision]')).not.toHaveAttribute('open','');
+    await expect(page.locator('.kmc-relay-secondary-table tbody tr')).toHaveCount(5);
+    await expect(page.locator('.kmc-relay-compact-hero')).toHaveCSS('background-color','rgb(255, 255, 255)');
     await page.screenshot({ path:'test-results/relais-live-cockpit-suivi.png' });
   });
 
@@ -172,9 +176,9 @@ test.describe('Cockpit Relais — navigation canonique', () => {
     const board=page.locator('.kmc-relay-work');
     await expect(board).toContainText('Aucun dossier à traiter');
     await expect(board.locator('[data-relay-workboard-order]')).toHaveCount(0);
-    await expect(board.getByText('Aucune intervention dans cette file')).toBeVisible();
+    await expect(board.getByText('Aucune commande en cours dans cette file')).toBeVisible();
     await expect(page.locator('.kmc-relay-secondary').first()).not.toHaveAttribute('open','');
-    await expect(board.getByRole('link',{name:/Atelier Relais · encaisser/})).toHaveAttribute('href','/admin/relais-live?view=execute');
+    await expect(board.locator('[data-relay-shortcut="shipments"]')).toHaveAttribute('href','/admin/relais-live?view=execute&focus=shipments');
     expect(state.writes).toEqual([]);
   });
 
@@ -186,6 +190,41 @@ test.describe('Cockpit Relais — navigation canonique', () => {
     expect(style.position).toBe('sticky');
     await expect(page.locator('.kmc-relay-work-scroll')).toHaveCSS('overflow-x','auto');
     expect(state.writes).toHaveLength(0);
+  });
+
+
+  test('les trois raccourcis orientent vers le vrai atelier sans écrire ni inventer un reçu',async({page})=>{
+    const state=await mountRelay(page);
+    const rail=page.locator('.kmc-relay-action-rail');
+    await expect(rail.locator('[data-relay-shortcut="shipments"]')).toHaveAttribute('href','/admin/relais-live?view=execute&focus=shipments');
+    await expect(rail.locator('[data-relay-shortcut="cash"]')).toHaveAttribute('href','/admin/relais-live?view=execute&focus=cash');
+    await expect(rail.locator('[data-relay-shortcut="collect"]')).toHaveAttribute('href','/admin/relais-live?view=execute&focus=collect');
+    await expect(rail.locator('[data-relay-shortcut="cash"]')).toContainText('3');
+    expect(state.writes).toEqual([]);
+  });
+
+  test('mode recette réservé admin : contrôle lisible, activation explicitement marquée, compteurs conservés',async({page})=>{
+    const state=await mountRelay(page,'',{role:'admin'});
+    const toggle=page.locator('[data-sim-toggle]');
+    await expect(toggle).toHaveText('Inclure la recette');
+    await expect(toggle).toHaveAttribute('aria-checked','false');
+    await expect(toggle).toHaveCSS('text-decoration-line','none');
+    await toggle.click();
+    await expect(page).toHaveURL(/sim=1/);
+    await expect(page.locator('[data-sim-toggle]')).toHaveText('Recette incluse');
+    await expect(page.locator('[data-sim-toggle]')).toHaveAttribute('aria-checked','true');
+    expect(state.simQueries).toContain('1');
+    expect(state.writes).toEqual([]);
+  });
+
+  test('recherche dans les dossiers : filtre transmis au backend, pagination et retour préservés',async({page})=>{
+    const state=await mountRelay(page,'?view=orders&list=available&search=Moroni');
+    await expect(page.locator('#kmc-relay-search')).toHaveValue('Moroni');
+    expect(state.searchTerms).toContain('Moroni');
+    await page.getByText('Plus anciens →').click();
+    await expect(page).toHaveURL(/search=Moroni/);
+    await expect(page).toHaveURL(/offset=25/);
+    await expect(page.locator('#kmc-relay-search')).toHaveValue('Moroni');
   });
 
   for (const [name, width, height] of [['1280', 1280, 800], ['1024', 1024, 768], ['mobile', 390, 844]]) {
