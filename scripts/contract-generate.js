@@ -2148,6 +2148,9 @@ const KNOWN_RESPONSES = {
   '/api/relay/dashboard': {
     get: { fields: ['dashboard'], source: 'route-read' }
   },
+  '/api/relay/incidents': {
+    get: { fields: ['incidents'], source: 'route-read' }
+  },
   '/api/relay/orders': {
     get: { fields: ['orders'], source: 'route-read' }
   },

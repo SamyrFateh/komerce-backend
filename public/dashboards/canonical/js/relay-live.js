@@ -52,6 +52,10 @@
   const INCIDENT = Object.freeze({
     retard:'Retard', blocage:'Blocage', paiement:'Paiement', stock:'Stock', colis_endommage:'Colis endommagé',
     colis_perdu:'Colis perdu', client_absent:'Client absent', autre:'Autre',
+    content_mismatch:'Contenu différent', missing_item:'Article manquant', damaged_item:'Article endommagé',
+    unexpected_item:'Article non attendu', quantity_mismatch:'Écart de quantité',
+    delay:'Retard', blocked:'Blocage', payment_issue:'Problème de paiement',
+    reconciliation_error:'Écart de réconciliation',
   });
 
   const listOf = p => (LISTS[p.list] ? p.list : 'available');
@@ -146,6 +150,13 @@
       `<span><strong>${num(k.total_actives)}</strong> colis actifs</span>`,
     ].join('');
     const first = Array.isArray(data?.first?.orders) ? data.first.orders : [];
+    const operational = Array.isArray(data?.operational?.incidents) ? data.operational.incidents : [];
+    const opRows = operational.slice(0, 8).map(i =>
+      `<tr><td><a href="${orderUrl(i.order_id, '')}" data-cockpit-nav>${esc(i.order_reference)}</a></td>
+        <td>${esc(i.product_name || 'Commande')}</td>
+        <td>${esc(i.title || INCIDENT[i.incident_type] || i.incident_type)}</td>
+        <td>${esc(i.resolver_domain || '—')}</td></tr>`
+    );
     return {
       hero:`<header class="kir-hero kir-live-hero">
         <div>
@@ -166,6 +177,11 @@
         ])}
         <p class="kir-run-proof lk-signals">${signals}</p>
         ${simToggle()}
+        ${operational.length ? `<section class="lk-block" aria-label="Incidents opérationnels à connaître">
+          <div class="lk-block-head"><span class="kir-section-kicker">INCIDENTS À CONNAÎTRE</span><strong>${operational.length} dossier(s) en cours</strong></div>
+          <p>Informations confirmées de la chaîne de commande. Vérifier la fiche avant toute remise ou annonce au client.</p>
+          ${table(['Commande', 'Article', 'Information', 'Responsable'], opRows, { empty:'Aucun incident.' })}
+        </section>` : ''}
         <section class="lk-block" aria-label="À retirer en premier">
           <div class="lk-block-head"><span class="kir-section-kicker">À RETIRER EN PREMIER</span><a href="${listUrl('available')}" data-cockpit-nav class="kir-subtle-link">Voir tous les colis disponibles →</a></div>
           ${table([...ORDER_COLUMNS, 'Détail'], first.map(order => orderRow(order, 'available', p.sel || '')), { empty:'Aucun colis disponible au retrait.' })}
@@ -234,7 +250,7 @@
           ${table(['Produit', 'Quantité'], items.map(item => `<tr><td>${esc(item.produit || '—')}</td><td>${num(item.quantity)}</td></tr>`), { empty:'Aucun article.' })}
         </section>
         <section class="lk-block"><span class="kir-section-kicker">INCIDENTS</span>
-          ${table(['Type', 'Priorité', 'Statut', 'Signalé le'], incidents.map(i => `<tr><td>${esc(INCIDENT[i.type] || i.type)}</td><td>${esc(i.priority)}</td><td>${esc(i.status)}</td><td>${esc(fmtDate(i.created_at))}</td></tr>`), { empty:'Aucun incident.' })}
+          ${table(['Type', 'Article', 'Priorité', 'Statut', 'Information'], incidents.map(i => `<tr><td>${esc(INCIDENT[i.type] || i.type)}</td><td>${esc(i.product_name || '—')}</td><td>${esc(i.priority)}</td><td>${esc(i.status)}</td><td>${esc(i.description || '—')}</td></tr>`), { empty:'Aucun incident.' })}
         </section>
         <section class="lk-block"><span class="kir-section-kicker">CHRONOLOGIE</span>
           ${table(['Statut', 'Par', 'Date'], timeline.map(t => `<tr><td>${esc(STATUS[t.status] || t.status)}</td><td>${esc(t.changed_by_name || '—')}</td><td>${esc(fmtDate(t.created_at))}</td></tr>`), { empty:'Aucun changement enregistré.' })}
@@ -258,13 +274,14 @@
     overview:{
       tab:() => 'suivi',
       async load(p, api) {
-        const [dash, first, transit, detail] = await Promise.all([
+        const [dash, first, transit, detail, operational] = await Promise.all([
           api('/api/relay/dashboard'),
           api('/api/relay/orders?status=available&limit=5&projection=live'),
           api('/api/relay/orders?status=in_transit&limit=5&projection=live'),
           p.sel ? api(`/api/relay/orders/${encodeURIComponent(p.sel)}?projection=live`).catch(() => null) : null,
+          api('/api/relay/incidents').catch(() => ({ incidents:[] })),
         ]);
-        return { dash, first, transit, detail, fetched_at:dash?.generated_at || new Date().toISOString() };
+        return { dash, first, transit, detail, operational, fetched_at:dash?.generated_at || new Date().toISOString() };
       },
       render:renderOverview,
       nav:() => ({ crumbs:[], back:null }),
