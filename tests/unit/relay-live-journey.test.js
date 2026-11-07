@@ -35,7 +35,7 @@ test('Suivi : un seul poste de travail, accès directs et détails de supervisio
   expect(h).toContain('KOMERCE · EXPLOITATION');
   expect(h).toContain('Suivi des Relais');
   expect(h).toContain('data-relay-shortcut="shipments"');
-  expect(h).toContain('href="/admin/relais-live?view=execute&focus=shipments"');
+  expect(h).toContain('href="/admin/relais-live?view=execute&amp;focus=shipments"');
   expect(h).toContain('data-relay-shortcut="cash"');
   expect(h).toContain('data-relay-shortcut="collect"');
   expect(h).toContain('data-relay-supervision');
