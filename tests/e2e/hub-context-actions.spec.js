@@ -41,9 +41,10 @@ const receivable={
   }],
 };
 test.use({viewport:{width:1440,height:900}});
-async function mount(page,{role='agent_hub',row=baseOrder,dossierData=dossier,admin=false}={}){
+async function mount(page,{role='agent_hub',row=baseOrder,dossierData=dossier,admin=false,stageNotes=[]}={}){
   const posts=[];
   const reads=[];
+  const notes=[...stageNotes];
   const administration={scope:'HUB_ADMINISTRATION_GLOBAL',markets:['KM'],kpis:{
     purchase_orders:1,drafts:0,to_send:1,supplier_waiting:0,payment_to_reconcile:0,
   },purchase_orders:[{id:PO,supplier:'Alpha',market:'KM',order_count:1,stage:'issued_not_sent',
@@ -53,7 +54,14 @@ async function mount(page,{role='agent_hub',row=baseOrder,dossierData=dossier,ad
   await page.route(ORIGIN+'/**',async route=>{
     const request=route.request(),url=new URL(request.url());
     if(request.method()==='POST'){
-      posts.push({url:url.pathname,body:request.postDataJSON()});
+      const body=request.postDataJSON();
+      posts.push({url:url.pathname,body});
+      if(url.pathname==='/api/hub-dash/orders/'+ORDER+'/comment' && body.hub_stage_key){
+        const note={id:'00000000-0000-4000-8000-000000000034',hub_stage_key:body.hub_stage_key,
+          text:body.content,author_name:'Agent Hub test',created_at:'2026-11-07T12:35:00Z'};
+        notes.unshift(note);
+        return route.fulfill({status:201,contentType:'application/json',body:JSON.stringify({comment:note})});
+      }
       return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true})});
     }
     if(url.pathname==='/admin/hub')return route.fulfill({contentType:'text/html',path:path.join(ROOT,'index.html')});
@@ -66,6 +74,7 @@ async function mount(page,{role='agent_hub',row=baseOrder,dossierData=dossier,ad
     if(url.pathname==='/api/hub/board')data={scope:'HUB_GLOBAL',markets:['KM'],orders:[row]};
     if(url.pathname==='/api/hub/administration')data=administration;
     if(url.pathname==='/api/hub/dossier')data=dossierData;
+    if(url.pathname==='/api/hub-dash/orders/'+ORDER)data={id:ORDER,comments:notes};
     if(url.pathname==='/api/scans/hub/receivable')data=receivable;
     if(url.pathname==='/api/purchasing/open-lines')data={groups:[{
       supplier_id:SUPPLIER,supplier_name:'Alpha',procurement_hub_ref:'DXB-1',market_code:'KM',
@@ -258,4 +267,72 @@ test('clic extérieur et Échap ferment aussi le menu Administration sans acte m
   await page.keyboard.press('Escape');
   await expect(menu).toBeHidden();
   expect(posts).toHaveLength(0);
+});
+
+
+test.describe('Journal immuable par étape',()=>{
+  const existing=[
+    {id:'00000000-0000-4000-8000-000000000031',hub_stage_key:'supplier',
+      author_name:'Agent Hub',text:'Fournisseur relancé par WhatsApp.',
+      created_at:'2026-11-07T11:15:00Z'},
+    {id:'00000000-0000-4000-8000-000000000032',hub_stage_key:'cartons',
+      author_name:'Agent Hub',text:'Carton contrôlé et scellé.',
+      created_at:'2026-11-07T11:20:00Z'},
+  ];
+
+  test('journal daté par étape, sans mélange de phases ni édition de note',async({page})=>{
+    const {posts}=await mount(page,{stageNotes:existing});
+    await page.locator('[data-hub-global-stage="Fournisseur"]').click({button:'right'});
+    const menu=page.locator('[data-hub-global-menu]');
+    await menu.locator('[data-hub-stage-journal-toggle]').click();
+    const journal=menu.locator('[data-hub-stage-journal="supplier"]');
+    await expect(journal).toContainText('Fournisseur relancé par WhatsApp');
+    await expect(journal).not.toContainText('Carton contrôlé');
+    await expect(journal).toContainText('Agent Hub');
+    await expect(journal).toContainText('Publiée · non modifiable');
+    await expect(journal.locator('.kmc-hub-journal-item')).toHaveCount(1);
+    await expect(journal.getByRole('button',{name:/modifier|supprimer/i})).toHaveCount(0);
+    expect(posts).toHaveLength(0);
+  });
+
+  test('publication ajoutée à la chronologie, sans autre action métier',async({page})=>{
+    const {posts}=await mount(page,{stageNotes:existing});
+    await page.locator('[data-hub-global-stage="Fournisseur"]').click({button:'right'});
+    const journal=page.locator('[data-hub-stage-journal="supplier"]');
+    await journal.locator('[data-hub-stage-journal-toggle]').click();
+    await expect(journal).toContainText('Fournisseur relancé par WhatsApp');
+    await journal.locator('[data-hub-journal-input]').fill('Livraison annoncée lundi, à confirmer.');
+    expect(posts).toHaveLength(0);
+    await journal.locator('[data-hub-journal-publish]').click();
+    await expect(journal).toContainText('Livraison annoncée lundi, à confirmer');
+    await expect(journal.locator('.kmc-hub-journal-item')).toHaveCount(2);
+    expect(posts).toEqual([{url:'/api/hub-dash/orders/'+ORDER+'/comment',
+      body:{content:'Livraison annoncée lundi, à confirmer.',hub_stage_key:'supplier'}}]);
+    await expect(journal.getByRole('button',{name:/modifier|supprimer/i})).toHaveCount(0);
+  });
+
+  test('étape verrouillée : consulter et commenter sans rouvrir le geste physique',async({page})=>{
+    const locked={...baseOrder,current_key:'remaining',
+      stage_states:{...baseOrder.stage_states,departure:'locked'}};
+    const {posts}=await mount(page,{row:locked,stageNotes:existing});
+    const step=page.locator('[data-hub-global-stage="Départ"]');
+    await step.click();
+    const menu=page.locator('[data-hub-global-menu]');
+    await expect(menu).toContainText('Aucune réouverture');
+    await menu.locator('[data-hub-stage-journal-toggle]').click();
+    const journal=menu.locator('[data-hub-stage-journal="departure"]');
+    await expect(journal.locator('[data-hub-journal-input]')).toBeVisible();
+    await expect(menu.locator('[data-hub-real-action]')).toHaveCount(0);
+    expect(posts).toHaveLength(0);
+  });
+
+  test('profil marché : journal en lecture seule',async({page})=>{
+    await mount(page,{role:'market_operator',stageNotes:existing});
+    await page.locator('[data-hub-global-stage="Fournisseur"]').click();
+    const journal=page.locator('[data-hub-stage-journal="supplier"]');
+    await journal.locator('[data-hub-stage-journal-toggle]').click();
+    await expect(journal).toContainText('Fournisseur relancé');
+    await expect(journal).toContainText('Consultation seulement');
+    await expect(journal.locator('[data-hub-journal-publish]')).toHaveCount(0);
+  });
 });
