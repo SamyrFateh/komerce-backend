@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       db, services/incident-write-service.js, services/notification-service.js, services/order-status-machine.js, services/parcel-order-membership.js, utils/logger.js
  * @used-by       routes/parcel-api-v2/scans.js
- * @db-read       incidents, order_items, orders, parcel_items, parcels, products, relais, scan_events, users
+ * @db-read       incidents, order_items, orders, parcel_items, parcels, products, relais, scan_events, scans, users
  * @db-write      order_items, parcel_items, parcels, scan_events
  * @db-write-via:incident-write-service incidents
  * @db-write-via:order-status-machine product_variants, order_status_history, products
