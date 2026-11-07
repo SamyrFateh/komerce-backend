@@ -219,7 +219,7 @@ async function _loadScanContext(client, params) {
 
   // ── 2. Charger les items du colis ──
   const { rows: parcelItems } = await client.query(
-    `SELECT pi.*, oi.product_id, pr.name AS oi_product_name
+    `SELECT pi.*, oi.product_id, oi.fulfillment_source, pr.name AS oi_product_name
      FROM parcel_items pi
      LEFT JOIN order_items oi ON oi.id = pi.order_item_id
      LEFT JOIN products pr ON pr.id = oi.product_id
@@ -282,7 +282,12 @@ async function _validateAndCatchup(client, params, parcel, parcelItems, result) 
   }
 
   // ── 5. Smart Catchup — rattraper les étapes manquées ──
-  const catchups = CATCHUP_MAP[params.event_type] || [];
+  // Une réception LOCAL_STOCK attestée directement au relais est une preuve
+  // physique complète. Le retrait NE DOIT PAS fabriquer "packed/shipped" :
+  // ces étapes ne font pas partie de ce circuit (commande sans Hub).
+  const localDirect = params.event_type === 'customer_collected' &&
+    await hasCanonicalDirectLocalReceipt(client, parcel, parcelItems);
+  const catchups = localDirect ? [] : (CATCHUP_MAP[params.event_type] || []);
   for (const catchupType of catchups) {
     const catchupFlow = SCAN_FLOW[catchupType];
     if (!catchupFlow) continue;
@@ -615,6 +620,27 @@ async function assertNoImportRelayScan(client, parcelId) {
     throw new ScanError('IMPORT_RECEIPT_REQUIRES_RELAY_ATTESTATION',
       'Colis import : la réception se fait par l’attestation du relais sur l’expédition, pas par un scan');
   }
+}
+
+/**
+ * Réception canonique d'un colis 100 % local : aucune étape Hub à rattraper
+ * pendant le retrait. La preuve est persistée dans scans (et non scan_events),
+ * avec une ligne LOCAL_STOCK réellement reçue et aucun shipping fictif.
+ * Ne pas généraliser à un colis import ou à un colis local historique expédié.
+ */
+async function hasCanonicalDirectLocalReceipt(client, parcel, parcelItems) {
+  if (!parcel || parcel.status !== 'available' ||
+      parcel.shipment_id || parcel.shipped_at || parcel.in_transit_at ||
+      !Array.isArray(parcelItems) || parcelItems.length === 0 ||
+      parcelItems.some(item =>
+        item.fulfillment_source !== 'LOCAL_STOCK' ||
+        Number(item.qty_shipped) !== 0 ||
+        Number(item.qty_received) !== Number(item.quantity) ||
+        Number(item.quantity) <= 0)) return false;
+  const { rows } = await client.query(
+    "SELECT 1 FROM scans WHERE parcel_id=$1 AND step='relais_received' LIMIT 1",
+    [parcel.id]);
+  return rows.length === 1;
 }
 
 /** Cascade les quantités vers le champ cible pour tous les items d'un colis */
@@ -1146,4 +1172,5 @@ module.exports = {
   _processContentVerification: processContentVerification,
   _logScanEventDirect: logScanEventDirect,
   _resolvePhysicalProofIncidents,
+  _hasCanonicalDirectLocalReceipt: hasCanonicalDirectLocalReceipt,
 };
