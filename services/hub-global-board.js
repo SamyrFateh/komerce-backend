@@ -78,7 +78,7 @@ function summarizeMarket(market, payload) {
       current_expected = 'Identifier le fournisseur de ' + toSource + ' article(s)';
       next_action = 'Résoudre le sourcing';
     } else if (!po.length || openNeeds) {
-      current_status = 'À traiter · ' + openNeeds + ' article(s) sans PO';
+      current_status = openNeeds ? 'À traiter · ' + openNeeds + ' article(s) sans PO' : 'PO absente · achats à préparer';
       current_expected = 'Constituer les bons de commande nécessaires';
       next_action = 'Constituer PO';
     } else if (draft) {
