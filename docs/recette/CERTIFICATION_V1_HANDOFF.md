@@ -9,7 +9,7 @@ Prouver sur le staging Railway (`https://komerce-backend-production.up.railway.a
 
 - la chaîne achats (PO) ;
 - la chaîne physique : réception Hub, sacs, KOM-BOX, expédition internationale, transitaire, douane, livraison locale, attestation relais, retrait client ;
-- le circuit local : expédition Hub, réception relais, remise client.
+- le circuit local : préparation/disponibilité au relais, réception locale si nécessaire, puis preuve de remise client, **sans achat ni expédition Hub**.
 
 Chaque chaîne est prouvée deux fois, d'abord par les routes HTTP réelles, puis par des clics réels dans Chromium. Chaque geste est joué par le vrai rôle.
 
@@ -102,10 +102,25 @@ Spec des clics : `tests/staging-clicks/hub-v1-clicks.spec.js`, avec la config `p
 
 ## 7. Prochaines actions, dans l'ordre
 
-**Où on s'est arrêté (2026-11-07).** CM et CG sont ACTIVE. Les fixtures 82076FAA et B13C6D97 (CM) ont échoué à l'étape 1 du checkout : `CHECKOUT_REFUSED:KOM-101 … MARKET_TRANSPORT_TARIFF_MISSING` (« Aucun tarif de transport de vente n'est configuré pour ce marché »). Ces deux fixtures sont inutilisables (commandes non créées). Les runs `staging-e2e-relay-reassign` et `hub-v1-http-actions-staging` lancés ensuite sur elles ont échoué, ce qui est attendu : ce ne sont pas des preuves. Le run `chain=physical` de la fixture 82076FAA est marqué « success » alors que le `po` précédent a échoué : ne pas l'utiliser non plus.
+**Point d'arrêt connu (2026-11-07, avant implémentation de la voie tarifaire).** CM et CG sont ACTIVE. Les fixtures 82076FAA et B13C6D97 (CM) ont échoué à l'étape 1 du checkout : `CHECKOUT_REFUSED:KOM-101 … MARKET_TRANSPORT_TARIFF_MISSING` (« Aucun tarif de transport de vente n'est configuré pour ce marché »). Ces deux fixtures sont inutilisables (commandes non créées). Les runs `staging-e2e-relay-reassign` et `hub-v1-http-actions-staging` lancés ensuite sur elles ont échoué, ce qui est attendu : ce ne sont pas des preuves. Le run `chain=physical` de la fixture 82076FAA est marqué « success » alors que le `po` précédent a échoué : ne pas l'utiliser non plus.
 
 1. **Décision métier à obtenir (CM et CG) : le tarif de transport de vente.** Table `market_transport_sale_rates` (clés `SEA_KMF_PER_KG_COMMERCIAL` et `AIR_KMF_PER_KG_TAXABLE`, un tarif par kg, une devise, une référence de preuve). Il faut les valeurs par marché (valeurs provisoires de recette acceptables si l'utilisateur le dit), et la voie pour les poser. Constat : aucune route ni aucun service applicatif n'écrit `market_transport_sale_rates` (lecture seule dans `services/market-transport-sale-rates.js` ; seuls des tests e2e et le seed d'une base éphémère insèrent en SQL). Il n'existe donc pas de voie gouvernée : en créer une (route admin auditée) est une nouvelle fonctionnalité, à soumettre à l'utilisateur ; sinon il faut son accord explicite pour une écriture SQL ponctuelle de recette limitée aux marchés CM et CG. Sans cette décision, aucune commande ne peut être créée en CM ni en CG.
 2. **Dès que les tarifs sont posés.** Pour CM, puis CG : fixture neuve avec `market=<CODE>`, relais `to-fixture`, `chain=po`, `chain=physical` avec `allow_distribution`, puis une seconde fixture pour les clics. L'enchaînement exact est dans la section 3 ; le script de pilotage utilisé le 2026-11-07 est reproductible avec les mêmes workflows.
 3. **Isolation.** Faite (voir section 2). À rejouer après l'ouverture de tout nouveau marché ou compte cloisonné.
 4. **Rapport par marché.** Readiness, tableau API, tableau Clic, valeurs provisoires posées et résultat de l'isolation.
 5. **Ensuite.** Les cas limites, puis le seed partenaires visible avec plusieurs semaines d'historique par marché, puis les comptes partenaires par marché et par rôle.
+
+
+## 8. Reprise tarif de vente CM/CG — voie A autorisée le 2026-11-07
+
+Décision du propriétaire : **voie A** (route admin centrale, auditée) et **tarifs de vente KM courants convertis en XAF** uniquement pour la RECETTE. Ne pas confondre le tarif facturé au client avec le coût de fret du corridor (CM 1 500 XAF/kg, CG 1 700 XAF/kg, chiffres provisoires). Un prix de recette inférieur au coût ne vaut jamais GO économique ni ouverture aux partenaires.
+
+Implémentation sur la branche `feat/market-transport-sale-governed-recette` :
+- `GET /api/admin/markets/:marketCode/transport-sale-rates` (`?history=1` pour voir les versions révoquées) ;
+- `PUT /api/admin/markets/:marketCode/transport-sale-rates/:rateKey`, admin central uniquement, champs `rate_per_kg`, `currency`, `evidence_ref`, `reason`. Vérification de la devise du marché, versionnement (révocation de la précédente), identité de l'auteur et événement `MARKET_TRANSPORT_SALE_RATE_SET` dans une transaction unique. Aucune écriture SQL non gouvernée ;
+- outil `scripts/recette/staging-market-transport-sale-rates.js` : lit les vraies règles KM de staging, convertit KMF → EUR → XAF via `fx-authority` (parités certifiées et legs de preuve), arrondit à 4 décimales, ne touche qu'à CM/CG, refuse d'écraser un tarif non-RECETTE ;
+- workflow `staging-market-transport-sale-rates.yml` : dry-run sans confirmation ou application après la confirmation exacte `APPLY-RECETTE-TRANSPORT-CM` / `APPLY-RECETTE-TRANSPORT-CG` ; déclenchement alternatif par issue du propriétaire au titre exact `[staging-op] market-transport-sale-CM` ou `[staging-op] market-transport-sale-CG`. Résultat JSON archivé.
+
+**Ne pas considérer la branche comme déployée ou la certification CM/CG comme PASS tant que la PR n'est pas mergée, que le SHA staging n'est pas aligné et que les workflows n'ont pas produit de preuves.**
+
+Une fois le tarif CM réellement posé et relu, reprendre la procédure de la section 3 avec une fixture CM neuve (les précédentes sont inutilisables). Refaire sur CG, puis compléter les tests d'isolation avec comptes réellement cloisonnés. Ne pas ouvrir les comptes partenaires tant que les tarifs `RECETTE` subsistent. AIR_EXPRESS reste non commercialisé (registre logistics `INTERNAL/PENDING/DISABLED`) : poser le tarif ne l'expose pas.
