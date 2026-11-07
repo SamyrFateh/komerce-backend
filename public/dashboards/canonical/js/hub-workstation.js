@@ -243,7 +243,7 @@
       menu.hidden = true;
       menu.setAttribute('data-hub-request', String(++menuSerial));
     };
-    const openMenu = (order, label, value, event) => {
+    const openMenu = (order, label, value, event, launchSourcing = false) => {
       // Ce menu appartient à UNE étape. Aucun lien universel injecté à toutes
       // les cellules avant la lecture de l'autorité métier.
       const requestId = String(++menuSerial);
@@ -282,7 +282,7 @@
         // Le geste physique attesté est irréversible ; le détail reste consultable.
       } else if (canOperate && global.KomerceHubContextActions) {
         global.KomerceHubContextActions.operations(menu, {
-          doc, fetch:fetchFn, user, order, stage:label,
+          doc, fetch:fetchFn, user, order, stage:label, launchSourcing,
           refresh:()=>renderGlobalBoard(root,{document:doc,fetch:fetchFn,user}),
         });
       } else {
@@ -381,7 +381,27 @@
             event.preventDefault();
             openMenu(order, label, order[key], event);
           });
-          td.appendChild(button);
+          const actions = make(doc,'div','kmc-hub-kanban-stage-actions');
+          actions.appendChild(button);
+          // Une action in situ : le bouton ouvre les contrôles et le formulaire
+          // de l'étape. Aucune mutation ne part du simple clic.
+          const nextText = safe(order.next_action);
+          const isWaitingOnly = /^(attendr|attente|suivre|consulter|aucune)/i.test(nextText);
+          if (canOperate && order.current_key===key && state!=='locked' && !isWaitingOnly) {
+            const launch = key==='po' && order.po==='Sourcing requis';
+            const command = make(doc,'button','kmc-hub-kanban-action',launch
+              ?'Créer la ligne d’achat':nextText || 'Traiter l’étape');
+            command.type='button';
+            command.setAttribute('data-hub-inline-action',key);
+            command.setAttribute('aria-label',order.reference+' · '+(launch
+              ?'Créer la ligne d’achat':'Ouvrir les actions : '+(nextText||label)));
+            command.addEventListener('click',event=>{
+              event.stopPropagation();
+              openMenu(order,label,order[key],event,launch);
+            });
+            actions.appendChild(command);
+          }
+          td.appendChild(actions);
           tr.appendChild(td);
         }
         body.appendChild(tr);

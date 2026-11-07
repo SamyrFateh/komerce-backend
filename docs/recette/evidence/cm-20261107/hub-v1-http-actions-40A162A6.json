@@ -1,0 +1,472 @@
+{
+  "schema": "hub-v1-http-actions/1",
+  "run8": "40A162A6",
+  "base": "OFFICIAL_STAGING",
+  "started_at": "2026-11-07T14:38:35.881Z",
+  "actions": [
+    {
+      "key": "login:admin",
+      "actor": "admin",
+      "route": "POST /api/auth/login",
+      "http": 200,
+      "role_observed": "admin",
+      "verdict": "PASS"
+    },
+    {
+      "key": "login:hub_agent",
+      "actor": "hub_agent",
+      "route": "POST /api/auth/login",
+      "http": 200,
+      "role_observed": "agent_hub",
+      "verdict": "PASS"
+    },
+    {
+      "key": "login:hub_director",
+      "actor": "hub_director",
+      "route": "POST /api/auth/login",
+      "http": 200,
+      "role_observed": "agent_hub",
+      "verdict": "PASS"
+    },
+    {
+      "key": "login:market_operator",
+      "actor": "market_operator",
+      "route": "POST /api/auth/login",
+      "http": 200,
+      "role_observed": "market_operator",
+      "verdict": "PASS"
+    },
+    {
+      "key": "login:agent_relais",
+      "actor": "agent_relais",
+      "route": "POST /api/auth/login",
+      "http": 200,
+      "role_observed": "agent_relais",
+      "verdict": "PASS"
+    },
+    {
+      "key": "purchase-lines-open",
+      "actor": "service-seam",
+      "route": "purchasing-trigger-service.triggerPurchasing (aucune route HTTP dediee)",
+      "verdict": "SEAM_NOT_HTTP",
+      "note": "declenche par paiement/caisse en production ; paiement fixture simule"
+    },
+    {
+      "key": "po-A:prepare:deny:agent_relais",
+      "actor": "agent_relais",
+      "route": "POST /api/purchasing/po/prepare",
+      "expected_http": 403,
+      "verdict": "PASS",
+      "http": 403,
+      "code": null
+    },
+    {
+      "key": "po-A:prepare:deny:market_operator",
+      "actor": "market_operator",
+      "route": "POST /api/purchasing/po/prepare",
+      "expected_http": 403,
+      "verdict": "PASS",
+      "http": 403,
+      "code": null
+    },
+    {
+      "key": "po-A:prepare",
+      "actor": "hub_agent",
+      "route": "POST /api/purchasing/po/prepare",
+      "expected_http": 201,
+      "verdict": "PASS",
+      "http": 201,
+      "code": null,
+      "readback": {
+        "http": 200
+      },
+      "pg": {
+        "status": "draft"
+      }
+    },
+    {
+      "key": "po-A:commitment:deny:market_operator",
+      "actor": "market_operator",
+      "route": "POST /api/purchasing/po/:id/authorize-commitment",
+      "expected_http": 403,
+      "verdict": "PASS",
+      "http": 403,
+      "code": null
+    },
+    {
+      "key": "po-A:commitment:deny:hub_agent",
+      "actor": "hub_agent",
+      "route": "POST /api/purchasing/po/:id/authorize-commitment",
+      "expected_http": 403,
+      "verdict": "PASS",
+      "http": 403,
+      "code": "AUTHORIZATION_GRANT_REQUIRED"
+    },
+    {
+      "key": "po-A:commitment:deny:admin",
+      "actor": "admin",
+      "route": "POST /api/purchasing/po/:id/authorize-commitment",
+      "expected_http": 403,
+      "verdict": "PASS",
+      "http": 403,
+      "code": "AUTHORIZATION_GRANT_REQUIRED"
+    },
+    {
+      "key": "po-A:submit:before-commitment",
+      "actor": "hub_agent",
+      "route": "POST /api/purchasing/po/:id/submit",
+      "expected_http": 409,
+      "verdict": "PASS",
+      "http": 409,
+      "code": "PURCHASE_COMMITMENT_NOT_AUTHORIZED"
+    },
+    {
+      "key": "po-A:commitment",
+      "actor": "hub_director",
+      "route": "POST /api/purchasing/po/:id/authorize-commitment",
+      "expected_http": [
+        200,
+        201
+      ],
+      "verdict": "PASS",
+      "http": 201,
+      "code": null,
+      "readback": {
+        "http": 200
+      },
+      "pg": {
+        "rows": 1,
+        "amount": 21,
+        "currency": "USD"
+      }
+    },
+    {
+      "key": "po-A:submit",
+      "actor": "hub_agent",
+      "route": "POST /api/purchasing/po/:id/submit",
+      "expected_http": 200,
+      "verdict": "PASS",
+      "http": 200,
+      "code": null,
+      "pg": {
+        "status": "notified"
+      },
+      "channel": "simulation_no_notification",
+      "place_order_invoked": false
+    },
+    {
+      "key": "po-A:submit:replay",
+      "actor": "hub_agent",
+      "route": "POST /api/purchasing/po/:id/submit",
+      "expected_http": [
+        400,
+        409
+      ],
+      "verdict": "PASS",
+      "http": 409,
+      "code": "PURCHASE_ORDER_NOT_DRAFT"
+    },
+    {
+      "key": "po-A:sent",
+      "actor": "hub_agent",
+      "route": "POST /api/purchasing/po/:id/sent",
+      "expected_http": 200,
+      "verdict": "PASS",
+      "http": 200,
+      "code": null,
+      "pg": {
+        "status": "notified",
+        "sent_channel": "phone"
+      }
+    },
+    {
+      "key": "po-A:payment:deny:hub_agent",
+      "actor": "hub_agent",
+      "route": "POST /api/purchasing/po/:id/authorize-payment",
+      "expected_http": 403,
+      "verdict": "PASS",
+      "http": 403,
+      "code": "AUTHORIZATION_GRANT_REQUIRED"
+    },
+    {
+      "key": "po-A:payment",
+      "actor": "hub_director",
+      "route": "POST /api/purchasing/po/:id/authorize-payment",
+      "expected_http": [
+        200,
+        201
+      ],
+      "verdict": "PASS",
+      "http": 201,
+      "code": null,
+      "pg": {
+        "rows": 1,
+        "supplier_execution_payments_total": 0
+      }
+    },
+    {
+      "key": "po-A:confirm:no-proof",
+      "actor": "hub_agent",
+      "route": "POST /api/purchasing/po/:id/confirm",
+      "expected_http": [
+        400,
+        409,
+        422
+      ],
+      "verdict": "PASS",
+      "http": 400,
+      "code": "MANUAL_PURCHASE_PROOF_REQUIRED"
+    },
+    {
+      "key": "po-A:confirm",
+      "actor": "hub_agent",
+      "route": "POST /api/purchasing/po/:id/confirm",
+      "expected_http": 200,
+      "verdict": "PASS",
+      "http": 200,
+      "code": null,
+      "pg": {
+        "status": "confirmed"
+      }
+    },
+    {
+      "key": "po-B:prepare:deny:agent_relais",
+      "actor": "agent_relais",
+      "route": "POST /api/purchasing/po/prepare",
+      "expected_http": 403,
+      "verdict": "PASS",
+      "http": 403,
+      "code": null
+    },
+    {
+      "key": "po-B:prepare:deny:market_operator",
+      "actor": "market_operator",
+      "route": "POST /api/purchasing/po/prepare",
+      "expected_http": 403,
+      "verdict": "PASS",
+      "http": 403,
+      "code": null
+    },
+    {
+      "key": "po-B:prepare",
+      "actor": "hub_agent",
+      "route": "POST /api/purchasing/po/prepare",
+      "expected_http": 201,
+      "verdict": "PASS",
+      "http": 201,
+      "code": null,
+      "readback": {
+        "http": 200
+      },
+      "pg": {
+        "status": "draft"
+      }
+    },
+    {
+      "key": "po-B:commitment:deny:market_operator",
+      "actor": "market_operator",
+      "route": "POST /api/purchasing/po/:id/authorize-commitment",
+      "expected_http": 403,
+      "verdict": "PASS",
+      "http": 403,
+      "code": null
+    },
+    {
+      "key": "po-B:commitment:deny:hub_agent",
+      "actor": "hub_agent",
+      "route": "POST /api/purchasing/po/:id/authorize-commitment",
+      "expected_http": 403,
+      "verdict": "PASS",
+      "http": 403,
+      "code": "AUTHORIZATION_GRANT_REQUIRED"
+    },
+    {
+      "key": "po-B:commitment:deny:admin",
+      "actor": "admin",
+      "route": "POST /api/purchasing/po/:id/authorize-commitment",
+      "expected_http": 403,
+      "verdict": "PASS",
+      "http": 403,
+      "code": "AUTHORIZATION_GRANT_REQUIRED"
+    },
+    {
+      "key": "po-B:submit:before-commitment",
+      "actor": "hub_agent",
+      "route": "POST /api/purchasing/po/:id/submit",
+      "expected_http": 409,
+      "verdict": "PASS",
+      "http": 409,
+      "code": "PURCHASE_COMMITMENT_NOT_AUTHORIZED"
+    },
+    {
+      "key": "po-B:commitment",
+      "actor": "hub_director",
+      "route": "POST /api/purchasing/po/:id/authorize-commitment",
+      "expected_http": [
+        200,
+        201
+      ],
+      "verdict": "PASS",
+      "http": 201,
+      "code": null,
+      "readback": {
+        "http": 200
+      },
+      "pg": {
+        "rows": 1,
+        "amount": 7,
+        "currency": "USD"
+      }
+    },
+    {
+      "key": "po-B:submit",
+      "actor": "hub_agent",
+      "route": "POST /api/purchasing/po/:id/submit",
+      "expected_http": 200,
+      "verdict": "PASS",
+      "http": 200,
+      "code": null,
+      "pg": {
+        "status": "notified"
+      },
+      "channel": "simulation_no_notification",
+      "place_order_invoked": false
+    },
+    {
+      "key": "po-B:submit:replay",
+      "actor": "hub_agent",
+      "route": "POST /api/purchasing/po/:id/submit",
+      "expected_http": [
+        400,
+        409
+      ],
+      "verdict": "PASS",
+      "http": 409,
+      "code": "PURCHASE_ORDER_NOT_DRAFT"
+    },
+    {
+      "key": "po-B:sent",
+      "actor": "hub_agent",
+      "route": "POST /api/purchasing/po/:id/sent",
+      "expected_http": 200,
+      "verdict": "PASS",
+      "http": 200,
+      "code": null,
+      "pg": {
+        "status": "notified",
+        "sent_channel": "phone"
+      }
+    },
+    {
+      "key": "po-B:payment:deny:hub_agent",
+      "actor": "hub_agent",
+      "route": "POST /api/purchasing/po/:id/authorize-payment",
+      "expected_http": 403,
+      "verdict": "PASS",
+      "http": 403,
+      "code": "AUTHORIZATION_GRANT_REQUIRED"
+    },
+    {
+      "key": "po-B:payment",
+      "actor": "hub_director",
+      "route": "POST /api/purchasing/po/:id/authorize-payment",
+      "expected_http": [
+        200,
+        201
+      ],
+      "verdict": "PASS",
+      "http": 201,
+      "code": null,
+      "pg": {
+        "rows": 1,
+        "supplier_execution_payments_total": 0
+      }
+    },
+    {
+      "key": "po-B:confirm:no-proof",
+      "actor": "hub_agent",
+      "route": "POST /api/purchasing/po/:id/confirm",
+      "expected_http": [
+        400,
+        409,
+        422
+      ],
+      "verdict": "PASS",
+      "http": 400,
+      "code": "MANUAL_PURCHASE_PROOF_REQUIRED"
+    },
+    {
+      "key": "po-B:confirm",
+      "actor": "hub_agent",
+      "route": "POST /api/purchasing/po/:id/confirm",
+      "expected_http": 200,
+      "verdict": "PASS",
+      "http": 200,
+      "code": null,
+      "pg": {
+        "status": "confirmed"
+      }
+    }
+  ],
+  "not_covered": [
+    {
+      "action": "receive-supplier-package",
+      "role": "agent_hub",
+      "candidate_route": "POST /api/hub/... (hub-operations receiveSupplierPackageCommand) ou /api/purchasing/:id/receive",
+      "verdict": "NOT_COVERED"
+    },
+    {
+      "action": "identify-scan",
+      "role": "agent_hub",
+      "candidate_route": "POST /api/hub/scan | /api/hub/physical-codes/confirm",
+      "verdict": "NOT_COVERED"
+    },
+    {
+      "action": "create-bag / distribute",
+      "role": "agent_hub",
+      "candidate_route": "POST /api/hub/unit | /api/auto-distribute (auto-parcel)",
+      "verdict": "NOT_COVERED"
+    },
+    {
+      "action": "pack-box",
+      "role": "agent_hub",
+      "candidate_route": "POST /api/hub/pack | /api/hub/seal | bags -> box (admin-operations-workspace)",
+      "verdict": "NOT_COVERED"
+    },
+    {
+      "action": "ship / handover",
+      "role": "agent_hub|agent_transitaire",
+      "candidate_route": "POST /api/hub/box/:unit_id/shipment + journey transition (admin-operations-workspace)",
+      "verdict": "NOT_COVERED"
+    },
+    {
+      "action": "relay attestation",
+      "role": "agent_relais",
+      "candidate_route": "admin-operations-workspace relay receipts (relay-shipment-receipt)",
+      "verdict": "NOT_COVERED"
+    },
+    {
+      "action": "pickup",
+      "role": "agent_relais",
+      "candidate_route": "POST /api/scans/collect | /api/scans/verify-qr",
+      "verdict": "NOT_COVERED"
+    },
+    {
+      "action": "local circuit receipt + pickup",
+      "role": "agent_relais",
+      "candidate_route": "local-relay-receipt-service route + /api/scans/collect",
+      "verdict": "NOT_COVERED"
+    }
+  ],
+  "finished_at": "2026-11-07T14:38:38.221Z",
+  "counts": {
+    "PASS": 35,
+    "SEAM_NOT_HTTP": 1
+  },
+  "verdict": "HTTP_PO_CHAIN_PASS_PHYSICAL_CHAIN_NOT_COVERED",
+  "limits": [
+    "Seuls la chaine PO (preparation -> confirmation) et ses refus de roles sont couverts",
+    "Actions physiques, expedition, relais, retrait, circuit local : NOT_COVERED",
+    "Le declenchement des lignes d achat est un seam service, pas une route HTTP"
+  ]
+}

@@ -207,7 +207,7 @@
     }
     return true;
   }
-  async function operations(menu,{doc,fetch:fetchFn,user,order,stage,refresh}) {
+  async function operations(menu,{doc,fetch:fetchFn,user,order,stage,refresh,launchSourcing=false}) {
     if(!writableRoles.includes(user?.role))return false;
     // Une ouverture d'une autre cellule annule les requêtes de l'ancien menu.
     const serial=menu.getAttribute('data-hub-request')||'';
@@ -240,7 +240,33 @@
             n+(item.sourcing_required ? Math.max(0,Number(item.purchasing_missing)||0) : 0),0);
           if(missing>0 || order.po==='Sourcing requis'){
             unavailable='Sourcing requis : identifier un fournisseur et créer les lignes d’achat manquantes avant de constituer une PO. Cette commande n’a pas encore de PO.';
-            workflowLink(menu,doc,'Ouvrir le sourcing manuel · Vue opérations','/admin/workspaces/operations');
+            const reuse = global.KomerceCanonicalOperationsWorkspace;
+            const dossierOrder = (data.orders||[]).find(o=>o.id===order.id);
+            if (reuse && typeof reuse.openManualSourcing==='function' && dossierOrder) {
+              const launch = () => {
+                if(!isCurrent())return;
+                menu.classList.add('is-sourcing-inline','is-editing');
+                const viewport=doc.defaultView;
+                menu.style.left=Math.max(8,Math.round(((viewport?.innerWidth||1440)-780)/2))+'px';
+                menu.style.top='58px';
+                try {
+                  reuse.openManualSourcing(menu,{
+                    document:doc,fetch:fetchFn,user,order:dossierOrder,
+                    confirm:question=>Boolean(viewport?.confirm?.(question)),
+                    onClose:()=>{menu.hidden=true;menu.classList.remove('is-sourcing-inline','is-editing');},
+                    refresh:async()=>{menu.hidden=true;await refresh?.();},
+                  });
+                }catch(error){
+                  menu.classList.remove('is-sourcing-inline','is-editing');
+                  explanation(menu,doc,'Sourcing non disponible : '+error.message);
+                }
+              };
+              if (launchSourcing) launch();
+              else action(menu,doc,'Créer une ligne d’achat ici',
+                'Formulaire officiel : fournisseur, référence, prix réel et quantité non couverte.',launch);
+            } else {
+              workflowLink(menu,doc,'Ouvrir le sourcing manuel · Vue opérations','/admin/workspaces/operations');
+            }
           }else{
             unavailable='Aucune ligne d’achat préparée : identifier les lignes fournisseur avant de constituer la PO.';
           }

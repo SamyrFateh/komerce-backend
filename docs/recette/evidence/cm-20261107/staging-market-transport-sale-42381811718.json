@@ -1,0 +1,68 @@
+{
+  "market": "CM",
+  "apply": true,
+  "source": "live staging business_rules + fx-authority EUR pivot",
+  "nature": "RECETTE — prix de VENTE simulé, pas coût du corridor, pas tarif partenaire",
+  "tariff_lines": [
+    {
+      "key": "SEA_KMF_PER_KG_COMMERCIAL",
+      "kmf_per_kg": "65",
+      "xaf_per_kg": "86.6667",
+      "fx_legs": [
+        {
+          "pair": "EUR/KMF",
+          "rate": "491.96775",
+          "source": "currency_parities",
+          "id": "KMF@2026-11-05T23:18:19.713Z"
+        },
+        {
+          "pair": "EUR/XAF",
+          "rate": "655.95700",
+          "source": "currency_parities",
+          "id": "XAF@2026-11-05T23:18:19.713Z"
+        }
+      ]
+    },
+    {
+      "key": "AIR_KMF_PER_KG_TAXABLE",
+      "kmf_per_kg": "2500",
+      "xaf_per_kg": "3333.3333",
+      "fx_legs": [
+        {
+          "pair": "EUR/KMF",
+          "rate": "491.96775",
+          "source": "currency_parities",
+          "id": "KMF@2026-11-05T23:18:19.713Z"
+        },
+        {
+          "pair": "EUR/XAF",
+          "rate": "655.95700",
+          "source": "currency_parities",
+          "id": "XAF@2026-11-05T23:18:19.713Z"
+        }
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "rate_key": "SEA_KMF_PER_KG_COMMERCIAL",
+      "status": 201,
+      "code": null,
+      "changed": true
+    },
+    {
+      "rate_key": "AIR_KMF_PER_KG_TAXABLE",
+      "status": 201,
+      "code": null,
+      "changed": true
+    }
+  ],
+  "readback": {
+    "status": 200,
+    "matched": true,
+    "evidence_ref": "RECETTE-VENTE-TRANSPORT-CM-2026-11-07"
+  },
+  "verdict": "TARIFFS_APPLIED_AND_VERIFIED",
+  "github_actions_run_id": 42381811718,
+  "github_actions_run_url": "https://github.com/SamyrFateh/komerce-backend/actions/runs/42381811718"
+}

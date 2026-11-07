@@ -91,6 +91,45 @@ async function mount(page,{role='agent_hub',row=baseOrder,dossierData=dossier,ad
   return {posts,reads};
 }
 
+test('action PO dans le Kanban : sourcing en place, sans achat ni mutation au simple clic',async({page})=>{
+  const row={...baseOrder,po:'Sourcing requis',current_key:'po',
+    current_phase:'Achats',current_status:'Bloqué · sourcing requis',
+    current_expected:'Identifier le fournisseur de 2 articles',
+    next_action:'Résoudre le sourcing',
+    stage_states:{...baseOrder.stage_states,po:'warning'}};
+  const dossierData={...dossier,needs:[],purchase_orders:[],boxes:[],
+    orders:[{id:ORDER,reference:'KM-302',items:[{
+      id:'abc00000-0000-4000-8000-000000000012',
+      product_id:'abc00000-0000-4000-8000-000000000013',
+      product:'Article test',sourcing_required:true,purchasing_missing:2,
+    }]}]};
+  const {posts}=await mount(page,{row,dossierData});
+  await page.route('**/api/purchasing/suppliers?**',route=>route.fulfill({
+    contentType:'application/json',body:JSON.stringify([]),
+  }));
+  const inline=page.locator('[data-hub-global-order="KM-302"] [data-hub-inline-action="po"]');
+  await expect(inline).toHaveText('Créer la ligne d’achat');
+  await inline.click();
+  const menu=page.locator('[data-hub-global-menu]');
+  await expect(menu).toHaveClass(/is-sourcing-inline/);
+  await expect(menu.locator('[data-hub-sourcing-form]')).toBeVisible();
+  await expect(menu).toContainText('Résoudre le sourcing · KM-302');
+  await expect(menu).toContainText('La quantité à acheter est calculée');
+  await expect(menu.locator('[data-sourcing-quantity]')).toContainText('2 unités');
+  expect(posts).toHaveLength(0);
+  await menu.locator('[data-sourcing-close]').click();
+  await expect(menu).toBeHidden();
+  expect(posts).toHaveLength(0);
+});
+
+test('PO déjà liée ou lecteur : aucune action de sourcing manuel inadaptée',async({page})=>{
+  await mount(page,{role:'market_operator',row:{...baseOrder,
+    current_key:'po',next_action:'Résoudre le sourcing',po:'Sourcing requis'}});
+  await expect(page.locator('[data-hub-inline-action="po"]')).toHaveCount(0);
+  await page.locator('[data-hub-global-stage="PO"]').click();
+  await expect(page.locator('[data-hub-global-menu]')).toContainText('Consultation seule');
+});
+
 test('colors et prochaine action restent des faits lisibles, sans détail article',async({page})=>{
   const {posts}=await mount(page);
   const row=page.locator('[data-hub-global-order="KM-302"]');
@@ -335,4 +374,50 @@ test.describe('Journal immuable par étape',()=>{
     await expect(journal).toContainText('Consultation seulement');
     await expect(journal.locator('[data-hub-journal-publish]')).toHaveCount(0);
   });
+});
+
+
+test('Sourcing requis : le menu PO indique la dépendance et la vraie surface de résolution',async({page})=>{
+  const row={...baseOrder,po:'Sourcing requis',current_phase:'Achats',current_status:'Bloqué · sourcing requis',
+    current_key:'po',current_expected:'Identifier le fournisseur de 2 articles',
+    stage_states:{...baseOrder.stage_states,po:'warning'}};
+  const data={...dossier,purchase_orders:[],needs:[],
+    orders:[{id:ORDER,reference:'KM-302',items:[{id:'article-1',sourcing_required:true,purchasing_missing:2}]}]};
+  const {posts}=await mount(page,{row,dossierData:data});
+  await page.locator('[data-hub-global-stage="PO"]').click({button:'right'});
+  const menu=page.locator('[data-hub-global-menu]');
+  await expect(menu).toContainText('Sourcing requis : identifier un fournisseur');
+  await expect(menu).toContainText('Attendu : Identifier le fournisseur de 2 articles');
+  await expect(menu.locator('[data-hub-workflow-link]')).toHaveAttribute('href','/admin/workspaces/operations');
+  await expect(menu.locator('[data-hub-real-action]')).toHaveCount(0);
+  expect(posts).toHaveLength(0);
+});
+
+test('départ lié mais non remis : le menu distingue attestation du simple rattachement',async({page})=>{
+  const row={...baseOrder,departure:'Expédition préparée · remise non attestée',current_key:'departure',
+    current_phase:'Départ',current_status:'Expédition préparée',current_expected:'Attester la remise au transitaire',
+    stage_states:{...baseOrder.stage_states,departure:'ready'}};
+  const data={...dossier,boxes:[{...dossier.boxes[0],shipment_ref:'SH-77',shipment_stage:'hub_ready'}]};
+  const {posts}=await mount(page,{row,dossierData:data});
+  await page.locator('[data-hub-global-stage="Départ"]').click({button:'right'});
+  const menu=page.locator('[data-hub-global-menu]');
+  await expect(menu).toContainText('remise au transitaire non attestée');
+  await expect(menu.locator('[data-hub-workflow-link]')).toHaveAttribute('href','/admin/workspaces/shipping-customs');
+  await expect(menu.locator('[data-hub-real-action]')).toHaveCount(0);
+  expect(posts).toHaveLength(0);
+});
+
+test('clic extérieur et Échap ferment aussi le menu Administration sans acte métier',async({page})=>{
+  const {posts}=await mount(page,{admin:true});
+  const stage=page.locator('[data-hub-admin-stage="Fournisseur"]');
+  const menu=page.locator('[data-hub-admin-menu]');
+  await stage.click({button:'right'});
+  await expect(menu).toBeVisible();
+  await page.locator('.kmc-hub-admin-toolbar').click();
+  await expect(menu).toBeHidden();
+  await stage.click();
+  await expect(menu).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(menu).toBeHidden();
+  expect(posts).toHaveLength(0);
 });

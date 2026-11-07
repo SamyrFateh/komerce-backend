@@ -10,10 +10,10 @@
  * @outputs       JSON (statuts + ids relais avant/apres, jamais email ni secret)
  * @depends       scripts/recette/target-guard.js, services/user-mutation-service.js (assignAgentRelais, seul writer canonique)
  * @used-by       .github/workflows/staging-e2e-relay-reassign.yml
- * @db-read       users, relais
+ * @db-read       users, relais, markets, market_operating_assignments, assignment_memberships, membership_capabilities
  * @db-write      users.relais_id (compte E2E agent_relais uniquement) via assignAgentRelais
  * @db-txn        une transaction ; dry-run = ROLLBACK
- * @doctrine      e2e_account_only, reversible, no_rights_widening, staging_only
+ * @doctrine      e2e_account_only, reversible, no_rights_widening, cross_market_only_with_existing_grants, staging_only
  * @impact-areas  staging, auth-identity, relais-scope
  * @version       2026-11
  */
@@ -52,7 +52,31 @@ async function reassign({ db, env = process.env, fetchImpl = fetch, apply = fals
       dest = r.id;
       const { rows: [cur] } = await client.query('SELECT market_id FROM relais WHERE id=$1', [user.relais_id]);
       report.same_market = Boolean(cur && cur.market_id === r.market_id);
-      if (!report.same_market) throw new Error('RELAY_MARKET_MISMATCH');
+      if (!report.same_market) {
+        // Uniquement la recette multi-market E2E : le compte et le relais cible sont dédiés,
+        // les DEUX marchés sont KM/CM/CG et le membership de destination existe déjà.
+        // Aucun grant n'est ajouté. Toute autre mutation cross-market reste interdite.
+        const { rows: markets } = await client.query(
+          'SELECT id, code FROM markets WHERE id = ANY($1::uuid[])',
+          [[cur && cur.market_id, r.market_id].filter(Boolean)]
+        );
+        const codes = new Set(markets.map(x => x.code));
+        if (!cur || ![...codes].every(code => ['KM', 'CM', 'CG'].includes(code)) || codes.size !== 2) {
+          throw new Error('RELAY_MARKET_MISMATCH');
+        }
+        const { rows: [granted] } = await client.query(
+          `SELECT 1
+             FROM market_operating_assignments moa
+             JOIN assignment_memberships am ON am.assignment_id=moa.id AND am.status='ACTIVE'
+             JOIN membership_capabilities mc ON mc.membership_id=am.id
+                  AND mc.capability='execution.parcel.collect' AND mc.revoked_at IS NULL
+            WHERE moa.market_id=$1::uuid AND moa.status='ACTIVE' AND am.user_id=$2::uuid
+            LIMIT 1`,
+          [r.market_id, user.id]
+        );
+        if (!granted) throw new Error('RELAY_E2E_NO_MARKET_MEMBERSHIP');
+        report.recette_cross_market = true;
+      }
     } else if (mode === 'restore') {
       if (!UUID.test(String(env.RELAY_RESTORE_ID || ''))) throw new Error('RESTORE_ID_REQUIRED');
       dest = env.RELAY_RESTORE_ID;
