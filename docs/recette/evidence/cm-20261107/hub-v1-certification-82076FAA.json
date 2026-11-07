@@ -1,0 +1,1833 @@
+{
+  "schema": "hub-v1-certification-report/1",
+  "scope": "E2E-HUB-V1",
+  "run": "82076FAA",
+  "market": "CM",
+  "stop_after": 2,
+  "mode": "APPLY_OFFICIAL_STAGING",
+  "target": {
+    "host": "official-railway-staging",
+    "database": "railway"
+  },
+  "started_at": "2026-11-07T12:22:36.805Z",
+  "verdict": "FAIL_OR_BLOCKED",
+  "staging_go": false,
+  "orders": [
+    "E2E-HUB-V1-82076FAA-KOM-101",
+    "E2E-HUB-V1-82076FAA-KOM-102",
+    "E2E-HUB-V1-82076FAA-KOM-103",
+    "E2E-HUB-V1-82076FAA-LOCAL"
+  ],
+  "steps": [
+    {
+      "n": 1,
+      "key": "orders",
+      "title": "Commandes par checkout canonique",
+      "status": "FAIL",
+      "writers": [
+        "order-checkout-service.runOrderCheckout (internalSimulation E2E-HUB-V1)"
+      ],
+      "actors": {
+        "client": "2fba8564-7fb1-4077-a006-6beabcb1b243",
+        "admin_simulation_actor": "29ffe64a-8f09-4072-9b87-9673f4b2be7e"
+      },
+      "ids": {},
+      "quantities": {},
+      "statuses": {},
+      "evidence": [],
+      "refusals": [],
+      "idempotency": [],
+      "notes": [],
+      "blocker": "CHECKOUT_REFUSED: CHECKOUT_REFUSED:KOM-101:{\"error\":\"Aucun tarif de transport de vente n’est configuré pour ce marché : la commande ne peut pas être créée.\",\"code\":\"MARKET_TRANSPORT_TARIFF_MISSING\"}"
+    },
+    {
+      "n": 2,
+      "key": "payment",
+      "title": "Paiement client fictif sans débit",
+      "status": "SKIPPED",
+      "writers": [],
+      "actors": {},
+      "ids": {},
+      "quantities": {},
+      "statuses": {},
+      "evidence": [],
+      "refusals": [],
+      "idempotency": [],
+      "notes": [],
+      "blocker": "dépend de l'étape 1"
+    }
+  ],
+  "local_circuit": null,
+  "fixture": {
+    "run": "82076FAA",
+    "market_id": "3548567e-2e5c-4c11-b944-0358b0fa4b61",
+    "relay_id": "13930c58-48cf-4cc2-89ec-0ec63f2c7c25",
+    "users": {
+      "client": {
+        "id": "2fba8564-7fb1-4077-a006-6beabcb1b243",
+        "role": "client"
+      },
+      "admin": {
+        "id": "29ffe64a-8f09-4072-9b87-9673f4b2be7e",
+        "role": "admin"
+      },
+      "hub_director": {
+        "id": "cc9876cd-a5ea-4be2-8d9c-0313c93f26b7",
+        "role": "agent_hub"
+      },
+      "hub_agent": {
+        "id": "78f408fb-438a-4ff8-95d5-3267fa40f682",
+        "role": "agent_hub"
+      },
+      "market_manager": {
+        "id": "63cedc62-76f9-451b-a54d-7cd010bbbf2c",
+        "role": "market_operator"
+      },
+      "relay_agent": {
+        "id": "515ab3a6-c9d6-4fda-ad88-d858b26b5d1f",
+        "role": "agent_relais"
+      },
+      "forwarder": {
+        "id": "34b4d4f5-65fe-4a48-a339-33d708d9c6e6",
+        "role": "agent_transitaire"
+      }
+    },
+    "suppliers": {
+      "A": "6d9c0ca0-b80e-47a7-9de9-d4255869e511",
+      "B": "2f0c863e-806f-45d6-8c77-4d0be40bd821"
+    },
+    "products": {
+      "A": "d349ef21-a3b8-45e4-829e-5502570585df",
+      "B": "9acbc965-e3ed-4c6e-acb8-52bb1919a9ab",
+      "C": "15ce7742-bce2-4fbf-8087-5a576a06095a",
+      "LOCAL": "0de35d05-038b-4b42-8cef-b18d4d418fc2"
+    },
+    "skus": {
+      "A": "0c9e53eb-2ab9-4c88-8d33-979f64a6ed0b",
+      "B": "8747d378-493a-4eed-8506-b6b5707c341b",
+      "C": "9e886619-6953-41a4-8465-3396c996673d"
+    },
+    "grants": [
+      "purchase_commitment",
+      "supplier_payment"
+    ]
+  },
+  "external_effects": {
+    "network_attempts": 0,
+    "network_attempt_targets": [],
+    "table_rows_before": {
+      "cash_collections": 0,
+      "notification_log_attempts": 0,
+      "outbox_events": 0,
+      "loyalty_rewards": 0,
+      "supplier_execution_payments": 0,
+      "supplier_execution_payment_proofs": 0,
+      "supplier_payment_settlements": 0
+    },
+    "table_rows_after": {
+      "cash_collections": 0,
+      "notification_log_attempts": 0,
+      "outbox_events": 0,
+      "loyalty_rewards": 0,
+      "supplier_execution_payments": 0,
+      "supplier_execution_payment_proofs": 0,
+      "supplier_payment_settlements": 0
+    },
+    "table_delta": {
+      "cash_collections": 0,
+      "notification_log_attempts": 0,
+      "outbox_events": 0,
+      "loyalty_rewards": 0,
+      "supplier_execution_payments": 0,
+      "supplier_execution_payment_proofs": 0,
+      "supplier_payment_settlements": 0
+    },
+    "evidence_complete": true,
+    "zero_external_effects": true
+  },
+  "cleanup": {
+    "verdict": "EMPTY_FIXTURE_NO_CLEANUP_NEEDED",
+    "delete_performed": false,
+    "cleanup_certified": false,
+    "strategy": {
+      "decision": "DELETE_ALLOWED_AFTER_DRY_RUN_REVIEW",
+      "immutable_tables": [],
+      "immutable_tables_potential_children": [
+        "assignment_capability_ceiling",
+        "cash_custody_losses",
+        "cash_custody_receipts",
+        "cash_deposits",
+        "economic_risk_cost_events",
+        "economic_risk_watermark_events",
+        "economic_structure_cost_events",
+        "hub_box_bags",
+        "hub_custody_events",
+        "hub_physical_unit_placements",
+        "hub_purchase_allocations",
+        "incidents",
+        "international_shipment_hub_units",
+        "international_shipment_relay_receipts",
+        "market_cash_destinations",
+        "market_cost_attributions",
+        "market_settlement_events",
+        "market_settlements",
+        "parcels",
+        "pricing_market_decision_policy_events",
+        "purchase_lines",
+        "purchase_order_authorizations",
+        "scan_events"
+      ],
+      "delete_performed": false
+    },
+    "order_roots": [],
+    "opaque_dependencies": [],
+    "owned_roots_outside_fk_graph": [
+      {
+        "table": "users",
+        "count": 7,
+        "ids": [
+          "2fba8564-7fb1-4077-a006-6beabcb1b243",
+          "29ffe64a-8f09-4072-9b87-9673f4b2be7e",
+          "cc9876cd-a5ea-4be2-8d9c-0313c93f26b7",
+          "78f408fb-438a-4ff8-95d5-3267fa40f682",
+          "63cedc62-76f9-451b-a54d-7cd010bbbf2c",
+          "515ab3a6-c9d6-4fda-ad88-d858b26b5d1f",
+          "34b4d4f5-65fe-4a48-a339-33d708d9c6e6"
+        ]
+      },
+      {
+        "table": "relais",
+        "count": 1,
+        "ids": [
+          "13930c58-48cf-4cc2-89ec-0ec63f2c7c25"
+        ]
+      },
+      {
+        "table": "suppliers",
+        "count": 2,
+        "ids": [
+          "6d9c0ca0-b80e-47a7-9de9-d4255869e511",
+          "2f0c863e-806f-45d6-8c77-4d0be40bd821"
+        ]
+      },
+      {
+        "table": "products",
+        "count": 4,
+        "ids": [
+          "d349ef21-a3b8-45e4-829e-5502570585df",
+          "9acbc965-e3ed-4c6e-acb8-52bb1919a9ab",
+          "15ce7742-bce2-4fbf-8087-5a576a06095a",
+          "0de35d05-038b-4b42-8cef-b18d4d418fc2"
+        ]
+      },
+      {
+        "table": "product_skus",
+        "count": 3,
+        "ids": [
+          "0c9e53eb-2ab9-4c88-8d33-979f64a6ed0b",
+          "8747d378-493a-4eed-8506-b6b5707c341b",
+          "9e886619-6953-41a4-8465-3396c996673d"
+        ]
+      },
+      {
+        "table": "product_suppliers",
+        "count": 2,
+        "ids": [
+          "981aac06-bf80-4d22-a91c-7e4b95502d50",
+          "09c686b9-ee7c-4805-95e3-8accc5ba93ff"
+        ]
+      },
+      {
+        "table": "local_stock",
+        "count": 1,
+        "ids": [
+          "85333ea1-df5e-4637-9078-66be44615dc4"
+        ]
+      },
+      {
+        "table": "product_market_price_drafts",
+        "count": 4,
+        "ids": [
+          "56dd32c7-733c-4a6f-9c86-6643cc843af3",
+          "81cb2e17-eec5-455f-9814-8b6a5b84400b",
+          "7369a910-c473-42d7-a3f7-92e33acf990e",
+          "7b9b5a6b-7e93-47a6-9d98-6c76d1345d0c"
+        ]
+      },
+      {
+        "table": "product_sku_physical_codes",
+        "count": 3,
+        "ids": [
+          "e44a63c3-13c9-4772-b3b1-372c6f0d7a6a",
+          "822c6781-f2ae-4aed-bebf-1b7a749f3cca",
+          "f1a454e0-eee1-4c14-8c56-2fd7d0ee6e66"
+        ]
+      },
+      {
+        "table": "sourcing_candidates",
+        "count": 3,
+        "ids": [
+          "985e565a-801b-4211-80e3-51010501a71d",
+          "3ec59178-2d47-47dc-b522-5e5c7ffb2b27",
+          "1ad3408e-fe60-47ab-9f61-2c5bb52b15f7"
+        ]
+      },
+      {
+        "table": "sourcing_sources",
+        "count": 1,
+        "ids": [
+          "api:whatsapp:E2E-HUB-V1-82076FAA"
+        ]
+      },
+      {
+        "table": "purchase_orders",
+        "count": 0,
+        "ids": []
+      },
+      {
+        "table": "hub_physical_units",
+        "count": 0,
+        "ids": []
+      },
+      {
+        "table": "international_shipments",
+        "count": 0,
+        "ids": []
+      },
+      {
+        "table": "customs_shipments",
+        "count": 0,
+        "ids": []
+      }
+    ],
+    "tables_considered": [
+      "alerts",
+      "assignment_capability_ceiling",
+      "assignment_memberships",
+      "basket_items",
+      "baskets",
+      "business_rules_history",
+      "cash_confirmation_controls",
+      "cash_custody_losses",
+      "cash_custody_receipts",
+      "cash_deposits",
+      "catalog_enrichment_runs",
+      "catalog_field_overrides",
+      "catalog_global_access_grants",
+      "catalog_media",
+      "catalog_media_recovery_audit",
+      "catalog_publication_decision_audit",
+      "catalog_stock_sync_state",
+      "catalog_taxonomy_audit",
+      "client_notifications",
+      "competitor_prices",
+      "cost_component_events",
+      "cost_component_market_override_events",
+      "cost_component_market_overrides",
+      "cost_components",
+      "credential_action_tokens",
+      "customs_history",
+      "customs_shipments",
+      "dashboard_global_access_grants",
+      "decision_signal_global_access_grants",
+      "disputes",
+      "e2e_test_accounts",
+      "economic_risk_cost_events",
+      "economic_risk_watermark_events",
+      "economic_structure_cost_events",
+      "hub_authorization_grants",
+      "hub_box_bags",
+      "hub_custody_events",
+      "hub_physical_unit_placements",
+      "hub_physical_units",
+      "hub_purchase_allocations",
+      "import_runtime_item_events",
+      "import_runtime_runs",
+      "incidents",
+      "international_shipment_hub_units",
+      "international_shipment_relay_receipts",
+      "invoices",
+      "local_stock",
+      "local_stock_allocations",
+      "loyalty_rewards",
+      "market_cash_destinations",
+      "market_central_collection_modes",
+      "market_cost_attributions",
+      "market_delegation_audit",
+      "market_delivery_attestations",
+      "market_operating_assignments",
+      "market_payment_accounts",
+      "market_price_observation_events",
+      "market_price_observations",
+      "market_settlement_events",
+      "market_settlements",
+      "market_team_invitations",
+      "market_transport_sale_rates",
+      "membership_capabilities",
+      "operator_market_scopes",
+      "order_comments",
+      "order_incidents",
+      "order_item_cost_imputations",
+      "order_item_real_cost_allocations",
+      "order_item_refund_reservations",
+      "order_items",
+      "order_status_history",
+      "orders",
+      "parcel_events",
+      "parcel_items",
+      "parcels",
+      "partners",
+      "price_history",
+      "pricing_category_dims",
+      "pricing_category_taxes",
+      "pricing_global_access_grants",
+      "pricing_market_decision_policy_events",
+      "pricing_matrices_audit",
+      "pricing_maturity_disposition_events",
+      "pricing_strategies",
+      "pricing_strategy_history",
+      "product_attributes",
+      "product_content_profile",
+      "product_content_sections",
+      "product_market_exposure",
+      "product_market_price_draft_events",
+      "product_market_price_drafts",
+      "product_sku_media",
+      "product_sku_physical_codes",
+      "product_skus",
+      "product_suppliers",
+      "product_variants",
+      "products",
+      "purchase_lines",
+      "purchase_order_authorizations",
+      "purchase_orders",
+      "recipients",
+      "refunds",
+      "relais",
+      "scan_events",
+      "scans",
+      "shared_cart_items",
+      "shared_cart_saved_access",
+      "shared_carts",
+      "sourcing_candidate_events",
+      "sourcing_candidate_observations",
+      "sourcing_candidates",
+      "sourcing_canonical_entity_refs",
+      "sourcing_captures",
+      "sourcing_global_access_grants",
+      "sourcing_provider_control_events",
+      "sourcing_source_execution_modes",
+      "sourcing_source_principal_refs",
+      "sourcing_source_provides",
+      "sourcing_sources",
+      "store_credits",
+      "supplier_catalog_imports",
+      "suppliers",
+      "transaction_documents",
+      "unsold_items",
+      "user_pickup_authorizations",
+      "users",
+      "wallets",
+      "webauthn_challenges",
+      "webauthn_credentials"
+    ],
+    "immutable_tables_detail": [
+      {
+        "table": "assignment_capability_ceiling",
+        "delete_blocking_triggers": [
+          "trg_ceiling_removal_member_grants_guard"
+        ],
+        "update_guard_triggers": [
+          "trg_assignment_ceiling_amount_limit",
+          "trg_assignment_ceiling_capability_guard"
+        ]
+      },
+      {
+        "table": "cash_custody_losses",
+        "delete_blocking_triggers": [
+          "trg_prevent_cash_custody_losses_delete"
+        ],
+        "update_guard_triggers": [
+          "trg_prevent_cash_custody_losses_update"
+        ]
+      },
+      {
+        "table": "cash_custody_receipts",
+        "delete_blocking_triggers": [
+          "trg_prevent_cash_custody_receipts_delete"
+        ],
+        "update_guard_triggers": [
+          "trg_prevent_cash_custody_receipts_update"
+        ]
+      },
+      {
+        "table": "cash_deposits",
+        "delete_blocking_triggers": [
+          "trg_prevent_cash_deposits_delete"
+        ],
+        "update_guard_triggers": [
+          "trg_cash_deposits_guard_update"
+        ]
+      },
+      {
+        "table": "economic_risk_cost_events",
+        "delete_blocking_triggers": [
+          "trg_prevent_economic_risk_cost_event_mutation"
+        ],
+        "update_guard_triggers": []
+      },
+      {
+        "table": "economic_risk_watermark_events",
+        "delete_blocking_triggers": [
+          "trg_prevent_economic_risk_watermark_event_mutation"
+        ],
+        "update_guard_triggers": []
+      },
+      {
+        "table": "economic_structure_cost_events",
+        "delete_blocking_triggers": [
+          "trg_prevent_economic_structure_cost_event_mutation"
+        ],
+        "update_guard_triggers": []
+      },
+      {
+        "table": "hub_box_bags",
+        "delete_blocking_triggers": [
+          "trg_hub_box_bag_immutable"
+        ],
+        "update_guard_triggers": []
+      },
+      {
+        "table": "hub_custody_events",
+        "delete_blocking_triggers": [
+          "trg_hub_custody_event_append_only"
+        ],
+        "update_guard_triggers": []
+      },
+      {
+        "table": "hub_physical_unit_placements",
+        "delete_blocking_triggers": [
+          "trg_hub_placement_no_delete"
+        ],
+        "update_guard_triggers": [
+          "trg_hub_order_bag_placement_evidence_immutable",
+          "trg_hub_order_bag_placement_guard",
+          "trg_hub_order_bag_sealed_placements_guard",
+          "trg_hub_placement_update_guard"
+        ]
+      },
+      {
+        "table": "hub_purchase_allocations",
+        "delete_blocking_triggers": [
+          "trg_hub_purchase_allocation_immutable"
+        ],
+        "update_guard_triggers": []
+      },
+      {
+        "table": "incidents",
+        "delete_blocking_triggers": [
+          "trg_prevent_incident_delete"
+        ],
+        "update_guard_triggers": []
+      },
+      {
+        "table": "international_shipment_hub_units",
+        "delete_blocking_triggers": [
+          "trg_international_shipment_hub_units_guard"
+        ],
+        "update_guard_triggers": []
+      },
+      {
+        "table": "international_shipment_relay_receipts",
+        "delete_blocking_triggers": [
+          "trg_shipment_relay_receipts_immutable"
+        ],
+        "update_guard_triggers": []
+      },
+      {
+        "table": "market_cash_destinations",
+        "delete_blocking_triggers": [
+          "trg_prevent_market_cash_destinations_delete"
+        ],
+        "update_guard_triggers": [
+          "trg_market_cash_destinations_guard"
+        ]
+      },
+      {
+        "table": "market_cost_attributions",
+        "delete_blocking_triggers": [
+          "trg_mca_guard_immutable"
+        ],
+        "update_guard_triggers": []
+      },
+      {
+        "table": "market_settlement_events",
+        "delete_blocking_triggers": [
+          "trg_prevent_market_settlement_event_mutation"
+        ],
+        "update_guard_triggers": []
+      },
+      {
+        "table": "market_settlements",
+        "delete_blocking_triggers": [
+          "trg_prevent_market_settlement_delete"
+        ],
+        "update_guard_triggers": [
+          "trg_market_settlement_invariants"
+        ]
+      },
+      {
+        "table": "parcels",
+        "delete_blocking_triggers": [
+          "trg_no_delete_parcels"
+        ],
+        "update_guard_triggers": [
+          "trg_parcel_ship_guard"
+        ]
+      },
+      {
+        "table": "pricing_market_decision_policy_events",
+        "delete_blocking_triggers": [
+          "trg_prevent_pricing_market_decision_policy_mutation"
+        ],
+        "update_guard_triggers": []
+      },
+      {
+        "table": "purchase_lines",
+        "delete_blocking_triggers": [
+          "trg_purchase_lines_guard_delete"
+        ],
+        "update_guard_triggers": [
+          "trg_purchase_lines_a_groupable",
+          "trg_purchase_lines_b_market_scope",
+          "trg_purchase_lines_guard_attachment",
+          "trg_purchase_lines_guard_commitment",
+          "trg_purchase_lines_guard_freeze"
+        ]
+      },
+      {
+        "table": "purchase_order_authorizations",
+        "delete_blocking_triggers": [
+          "trg_po_authorizations_immutable"
+        ],
+        "update_guard_triggers": []
+      },
+      {
+        "table": "scan_events",
+        "delete_blocking_triggers": [
+          "trg_prevent_scan_event_delete"
+        ],
+        "update_guard_triggers": []
+      }
+    ],
+    "fk_delete_rules": [
+      {
+        "parent_table": "local_stock",
+        "child_table": "local_stock_allocations",
+        "constraint_name": "local_stock_allocations_local_stock_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "product_skus",
+        "child_table": "catalog_stock_sync_state",
+        "constraint_name": "catalog_stock_sync_state_product_sku_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "product_skus",
+        "child_table": "hub_purchase_allocations",
+        "constraint_name": "hub_purchase_allocations_product_sku_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "product_skus",
+        "child_table": "order_items",
+        "constraint_name": "order_items_sku_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "product_skus",
+        "child_table": "product_sku_media",
+        "constraint_name": "product_sku_media_sku_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "product_skus",
+        "child_table": "product_sku_physical_codes",
+        "constraint_name": "product_sku_physical_codes_product_sku_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "product_skus",
+        "child_table": "purchase_lines",
+        "constraint_name": "purchase_lines_product_sku_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "product_skus",
+        "child_table": "purchase_orders",
+        "constraint_name": "purchase_orders_product_sku_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "product_skus",
+        "child_table": "shared_cart_items",
+        "constraint_name": "shared_cart_items_sku_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "product_suppliers",
+        "child_table": "purchase_lines",
+        "constraint_name": "purchase_lines_product_supplier_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "product_suppliers",
+        "child_table": "purchase_orders",
+        "constraint_name": "purchase_orders_product_supplier_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "basket_items",
+        "constraint_name": "basket_items_product_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "catalog_enrichment_runs",
+        "constraint_name": "catalog_enrichment_runs_product_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "catalog_field_overrides",
+        "constraint_name": "catalog_field_overrides_product_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "catalog_media",
+        "constraint_name": "catalog_media_product_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "catalog_media_recovery_audit",
+        "constraint_name": "catalog_media_recovery_audit_product_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "catalog_publication_decision_audit",
+        "constraint_name": "catalog_publication_decision_audit_product_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "competitor_prices",
+        "constraint_name": "competitor_prices_product_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "local_stock",
+        "constraint_name": "local_stock_product_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "market_price_observation_events",
+        "constraint_name": "market_price_observation_events_product_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "market_price_observations",
+        "constraint_name": "market_price_observations_product_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "order_item_cost_imputations",
+        "constraint_name": "order_item_cost_imputations_product_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "order_items",
+        "constraint_name": "order_items_product_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "parcel_items",
+        "constraint_name": "parcel_items_product_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "price_history",
+        "constraint_name": "price_history_product_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "pricing_strategies",
+        "constraint_name": "pricing_strategies_product_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "pricing_strategy_history",
+        "constraint_name": "pricing_strategy_history_product_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "product_attributes",
+        "constraint_name": "product_attributes_product_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "product_content_profile",
+        "constraint_name": "product_content_profile_product_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "product_content_sections",
+        "constraint_name": "product_content_sections_product_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "product_market_exposure",
+        "constraint_name": "product_market_exposure_product_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "product_market_price_draft_events",
+        "constraint_name": "product_market_price_draft_events_product_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "product_market_price_drafts",
+        "constraint_name": "product_market_price_drafts_product_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "product_skus",
+        "constraint_name": "product_skus_product_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "product_suppliers",
+        "constraint_name": "product_suppliers_product_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "product_variants",
+        "constraint_name": "product_variants_product_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "shared_cart_items",
+        "constraint_name": "shared_cart_items_product_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "sourcing_candidates",
+        "constraint_name": "sourcing_candidates_product_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "unsold_items",
+        "constraint_name": "unsold_items_product_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "relais",
+        "child_table": "cash_confirmation_controls",
+        "constraint_name": "cash_confirmation_controls_relais_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "relais",
+        "child_table": "international_shipment_relay_receipts",
+        "constraint_name": "international_shipment_relay_receipts_relais_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "relais",
+        "child_table": "orders",
+        "constraint_name": "orders_relais_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "relais",
+        "child_table": "parcels",
+        "constraint_name": "parcels_relais_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "relais",
+        "child_table": "parcels",
+        "constraint_name": "parcels_relay_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "relais",
+        "child_table": "partners",
+        "constraint_name": "partners_relais_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "relais",
+        "child_table": "recipients",
+        "constraint_name": "recipients_relais_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "relais",
+        "child_table": "scans",
+        "constraint_name": "scans_pickup_relais_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "relais",
+        "child_table": "shared_carts",
+        "constraint_name": "shared_carts_delivery_relay_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "relais",
+        "child_table": "users",
+        "constraint_name": "users_relais_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "sourcing_candidates",
+        "child_table": "import_runtime_item_events",
+        "constraint_name": "import_runtime_item_events_candidate_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "sourcing_candidates",
+        "child_table": "sourcing_candidate_events",
+        "constraint_name": "sourcing_candidate_events_candidate_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "sourcing_candidates",
+        "child_table": "sourcing_candidate_observations",
+        "constraint_name": "sourcing_candidate_observations_candidate_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "sourcing_sources",
+        "child_table": "sourcing_canonical_entity_refs",
+        "constraint_name": "sourcing_canonical_entity_refs_source_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "sourcing_sources",
+        "child_table": "sourcing_captures",
+        "constraint_name": "sourcing_captures_source_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "sourcing_sources",
+        "child_table": "sourcing_provider_control_events",
+        "constraint_name": "sourcing_provider_control_events_source_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "sourcing_sources",
+        "child_table": "sourcing_source_execution_modes",
+        "constraint_name": "sourcing_source_execution_modes_source_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "sourcing_sources",
+        "child_table": "sourcing_source_principal_refs",
+        "constraint_name": "sourcing_source_principal_refs_source_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "sourcing_sources",
+        "child_table": "sourcing_source_provides",
+        "constraint_name": "sourcing_source_provides_source_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "suppliers",
+        "child_table": "hub_purchase_allocations",
+        "constraint_name": "hub_purchase_allocations_supplier_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "suppliers",
+        "child_table": "product_sku_physical_codes",
+        "constraint_name": "product_sku_physical_codes_supplier_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "suppliers",
+        "child_table": "product_suppliers",
+        "constraint_name": "product_suppliers_supplier_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "suppliers",
+        "child_table": "purchase_lines",
+        "constraint_name": "purchase_lines_supplier_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "suppliers",
+        "child_table": "purchase_orders",
+        "constraint_name": "purchase_orders_supplier_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "alerts",
+        "constraint_name": "alerts_resolved_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "assignment_capability_ceiling",
+        "constraint_name": "assignment_capability_ceiling_granted_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "assignment_capability_ceiling",
+        "constraint_name": "assignment_capability_ceiling_revoked_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "assignment_memberships",
+        "constraint_name": "assignment_memberships_granted_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "assignment_memberships",
+        "constraint_name": "assignment_memberships_revoked_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "assignment_memberships",
+        "constraint_name": "assignment_memberships_user_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "basket_items",
+        "constraint_name": "basket_items_added_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "baskets",
+        "constraint_name": "baskets_owner_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "business_rules_history",
+        "constraint_name": "business_rules_history_changed_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "cash_confirmation_controls",
+        "constraint_name": "cash_confirmation_controls_first_actor_user_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "cash_confirmation_controls",
+        "constraint_name": "cash_confirmation_controls_second_actor_user_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "cash_custody_losses",
+        "constraint_name": "cash_custody_losses_decided_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "cash_custody_losses",
+        "constraint_name": "cash_custody_losses_holder_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "cash_custody_receipts",
+        "constraint_name": "cash_custody_receipts_actor_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "cash_deposits",
+        "constraint_name": "cash_deposits_recipient_user_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "catalog_global_access_grants",
+        "constraint_name": "catalog_global_access_grants_granted_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "catalog_global_access_grants",
+        "constraint_name": "catalog_global_access_grants_revoked_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "catalog_global_access_grants",
+        "constraint_name": "catalog_global_access_grants_user_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "catalog_media_recovery_audit",
+        "constraint_name": "catalog_media_recovery_audit_actor_user_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "catalog_publication_decision_audit",
+        "constraint_name": "catalog_publication_decision_audit_actor_user_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "catalog_taxonomy_audit",
+        "constraint_name": "catalog_taxonomy_audit_actor_user_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "client_notifications",
+        "constraint_name": "client_notifications_user_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "cost_component_events",
+        "constraint_name": "cost_component_events_triggered_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "cost_component_market_override_events",
+        "constraint_name": "cost_component_market_override_events_triggered_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "cost_component_market_overrides",
+        "constraint_name": "cost_component_market_overrides_created_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "cost_component_market_overrides",
+        "constraint_name": "cost_component_market_overrides_updated_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "cost_components",
+        "constraint_name": "cost_components_created_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "cost_components",
+        "constraint_name": "cost_components_updated_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "credential_action_tokens",
+        "constraint_name": "credential_action_tokens_user_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "customs_history",
+        "constraint_name": "customs_history_recorded_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "customs_shipments",
+        "constraint_name": "customs_shipments_created_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "customs_shipments",
+        "constraint_name": "customs_shipments_declared_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "dashboard_global_access_grants",
+        "constraint_name": "dashboard_global_access_grants_granted_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "dashboard_global_access_grants",
+        "constraint_name": "dashboard_global_access_grants_revoked_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "dashboard_global_access_grants",
+        "constraint_name": "dashboard_global_access_grants_user_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "decision_signal_global_access_grants",
+        "constraint_name": "decision_signal_global_access_grants_granted_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "decision_signal_global_access_grants",
+        "constraint_name": "decision_signal_global_access_grants_user_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "disputes",
+        "constraint_name": "disputes_created_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "disputes",
+        "constraint_name": "disputes_resolved_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "e2e_test_accounts",
+        "constraint_name": "e2e_test_accounts_created_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "e2e_test_accounts",
+        "constraint_name": "e2e_test_accounts_user_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "economic_risk_cost_events",
+        "constraint_name": "economic_risk_cost_events_recorded_by_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "economic_risk_watermark_events",
+        "constraint_name": "economic_risk_watermark_events_recorded_by_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "economic_structure_cost_events",
+        "constraint_name": "economic_structure_cost_events_recorded_by_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "hub_authorization_grants",
+        "constraint_name": "hub_authorization_grants_granted_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "hub_authorization_grants",
+        "constraint_name": "hub_authorization_grants_revoked_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "hub_authorization_grants",
+        "constraint_name": "hub_authorization_grants_user_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "hub_box_bags",
+        "constraint_name": "hub_box_bags_linked_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "hub_custody_events",
+        "constraint_name": "hub_custody_events_actor_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "hub_physical_unit_placements",
+        "constraint_name": "hub_physical_unit_placements_created_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "hub_physical_units",
+        "constraint_name": "hub_physical_units_created_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "import_runtime_runs",
+        "constraint_name": "import_runtime_runs_started_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "incidents",
+        "constraint_name": "incidents_detected_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "incidents",
+        "constraint_name": "incidents_resolved_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "international_shipment_hub_units",
+        "constraint_name": "international_shipment_hub_units_attached_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "international_shipment_relay_receipts",
+        "constraint_name": "international_shipment_relay_receipts_received_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "invoices",
+        "constraint_name": "invoices_owner_user_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "local_stock",
+        "constraint_name": "local_stock_updated_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "loyalty_rewards",
+        "constraint_name": "loyalty_rewards_granted_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "loyalty_rewards",
+        "constraint_name": "loyalty_rewards_user_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "market_cash_destinations",
+        "constraint_name": "market_cash_destinations_activated_by_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "market_cash_destinations",
+        "constraint_name": "market_cash_destinations_proposed_by_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "market_central_collection_modes",
+        "constraint_name": "market_central_collection_modes_authorized_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "market_cost_attributions",
+        "constraint_name": "market_cost_attributions_recorded_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "market_delegation_audit",
+        "constraint_name": "market_delegation_audit_actor_user_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "market_delivery_attestations",
+        "constraint_name": "market_delivery_attestations_attested_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "market_delivery_attestations",
+        "constraint_name": "market_delivery_attestations_revoked_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "market_operating_assignments",
+        "constraint_name": "market_operating_assignments_central_referent_user_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "market_operating_assignments",
+        "constraint_name": "market_operating_assignments_granted_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "market_payment_accounts",
+        "constraint_name": "market_payment_accounts_created_by_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "market_payment_accounts",
+        "constraint_name": "market_payment_accounts_verified_by_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "market_price_observation_events",
+        "constraint_name": "market_price_observation_events_actor_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "market_price_observations",
+        "constraint_name": "market_price_observations_created_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "market_settlement_events",
+        "constraint_name": "market_settlement_events_actor_user_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "market_settlements",
+        "constraint_name": "market_settlements_attested_by_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "market_settlements",
+        "constraint_name": "market_settlements_paid_by_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "market_settlements",
+        "constraint_name": "market_settlements_received_by_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "market_settlements",
+        "constraint_name": "market_settlements_requested_by_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "market_team_invitations",
+        "constraint_name": "market_team_invitations_accepted_by_user_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "market_team_invitations",
+        "constraint_name": "market_team_invitations_invited_by_user_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "market_transport_sale_rates",
+        "constraint_name": "market_transport_sale_rates_set_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "membership_capabilities",
+        "constraint_name": "membership_capabilities_granted_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "membership_capabilities",
+        "constraint_name": "membership_capabilities_revoked_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "operator_market_scopes",
+        "constraint_name": "operator_market_scopes_granted_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "operator_market_scopes",
+        "constraint_name": "operator_market_scopes_revoked_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "operator_market_scopes",
+        "constraint_name": "operator_market_scopes_user_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "order_comments",
+        "constraint_name": "order_comments_author_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "order_incidents",
+        "constraint_name": "order_incidents_reporter_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "order_incidents",
+        "constraint_name": "order_incidents_resolved_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "order_item_real_cost_allocations",
+        "constraint_name": "order_item_real_cost_allocations_created_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "order_item_refund_reservations",
+        "constraint_name": "order_item_refund_reservations_created_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "order_status_history",
+        "constraint_name": "order_status_history_changed_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "orders",
+        "constraint_name": "orders_payment_received_by_agent_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "orders",
+        "constraint_name": "orders_pickup_code_recipient_user_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "orders",
+        "constraint_name": "orders_tracking_phone_confirmed_by_agent_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "orders",
+        "constraint_name": "orders_user_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "parcel_events",
+        "constraint_name": "parcel_events_actor_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "parcels",
+        "constraint_name": "parcels_created_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "price_history",
+        "constraint_name": "price_history_applied_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "pricing_category_dims",
+        "constraint_name": "pricing_category_dims_updated_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "pricing_category_taxes",
+        "constraint_name": "pricing_category_taxes_updated_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "pricing_global_access_grants",
+        "constraint_name": "pricing_global_access_grants_granted_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "pricing_global_access_grants",
+        "constraint_name": "pricing_global_access_grants_user_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "pricing_market_decision_policy_events",
+        "constraint_name": "pricing_market_decision_policy_events_recorded_by_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "pricing_matrices_audit",
+        "constraint_name": "pricing_matrices_audit_changed_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "pricing_maturity_disposition_events",
+        "constraint_name": "pricing_maturity_disposition_events_decided_by_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "pricing_strategies",
+        "constraint_name": "pricing_strategies_applied_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "pricing_strategy_history",
+        "constraint_name": "pricing_strategy_history_applied_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "product_market_exposure",
+        "constraint_name": "product_market_exposure_decided_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "product_market_price_draft_events",
+        "constraint_name": "product_market_price_draft_events_actor_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "product_market_price_drafts",
+        "constraint_name": "product_market_price_drafts_decided_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "product_sku_physical_codes",
+        "constraint_name": "product_sku_physical_codes_confirmed_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "purchase_lines",
+        "constraint_name": "purchase_lines_created_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "purchase_order_authorizations",
+        "constraint_name": "purchase_order_authorizations_decided_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "purchase_orders",
+        "constraint_name": "purchase_orders_sent_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "recipients",
+        "constraint_name": "recipients_user_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "refunds",
+        "constraint_name": "refunds_initiated_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "scan_events",
+        "constraint_name": "scan_events_scanned_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "scans",
+        "constraint_name": "scans_scanned_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "shared_cart_saved_access",
+        "constraint_name": "shared_cart_saved_access_user_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "shared_carts",
+        "constraint_name": "shared_carts_beneficiary_user_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "sourcing_candidate_events",
+        "constraint_name": "sourcing_candidate_events_triggered_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "sourcing_candidates",
+        "constraint_name": "sourcing_candidates_updated_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "sourcing_global_access_grants",
+        "constraint_name": "sourcing_global_access_grants_granted_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "sourcing_global_access_grants",
+        "constraint_name": "sourcing_global_access_grants_user_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "store_credits",
+        "constraint_name": "store_credits_user_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "supplier_catalog_imports",
+        "constraint_name": "supplier_catalog_imports_imported_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "suppliers",
+        "constraint_name": "suppliers_created_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "transaction_documents",
+        "constraint_name": "transaction_documents_issued_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "transaction_documents",
+        "constraint_name": "transaction_documents_owner_user_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "unsold_items",
+        "constraint_name": "unsold_items_reseller_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "user_pickup_authorizations",
+        "constraint_name": "user_pickup_authorizations_user_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "wallets",
+        "constraint_name": "wallets_user_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "webauthn_challenges",
+        "constraint_name": "webauthn_challenges_user_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "webauthn_credentials",
+        "constraint_name": "webauthn_credentials_user_id_fkey",
+        "delete_rule": "c"
+      }
+    ]
+  },
+  "limits": [
+    "KOM-103 : « Sourcing requis » est observé via le trigger d'achat réel (aucune ligne, aucun PO, résultat no_supplier) ; la certification formelle de l'anomalie reste portée par les tests automatisés de #3355, rien n'est fabriqué.",
+    "Paiement fournisseur : seule l'AUTORISATION (hub_authorization_grants + purchase_order_authorizations) est exercée ; aucun débit, aucune écriture supplier_execution_payments / settlements.",
+    "Reliquat KOM-102 traité par LIVRAISON tardive ; le remboursement fictif est volontairement non exécuté (un paiement fictif sans débit ne peut être remboursé sans créer de la monnaie interne jamais encaissée).",
+    "Création du colis client : répartiteur canonique auto-parcel.distributeOrder (aucun rôle Hub dédié n'existe pour cette action).",
+    "Nettoyage : la suppression de la fixture est INTERDITE (tables append-only) ; stratégie = conservation du préfixe E2E-HUB-V1-<RUN8>, jamais de suppression forcée ; cleanup_certified=false.",
+    "Correctifs de services découverts par le runner (commit isolé) : projection colis↔KOM-BOX des sacs (relay-parcel-item-reconciliation, parcel-shipment-handover), référence colis (auto-parcel), suppression des messages WhatsApp pour une commande en simulation_scope (notifications), consommation du stock local au paiement fictif.",
+    "Exécution sur staging Railway officiel, empreinte DB et SHA vérifiés avant toute écriture.",
+    "Verdict transactionnel uniquement : validation Chromium et GO production non encore prononcés.",
+    "Aucune suppression des preuves immuables : conservation du RUN8 de la fixture."
+  ],
+  "finished_at": "2026-11-07T12:22:38.338Z",
+  "checks": {
+    "all_13_steps_pass": false,
+    "zero_external_effects": true,
+    "local_circuit_isolated": false,
+    "stopped_after_step": 2
+  },
+  "verdict_staging": "TRANSACTIONAL_NO_GO"
+}
