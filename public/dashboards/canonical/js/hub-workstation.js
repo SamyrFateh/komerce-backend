@@ -326,7 +326,7 @@
         const idBox = make(doc, 'div', 'kmc-hub-board-identity');
         idBox.appendChild(make(doc, 'strong', '', order.reference));
         idBox.appendChild(make(doc, 'small', '', order.market + ' · ' + (order.market_name || order.market)));
-        if (order.current_key && order.stage_states?.[order.current_key] !== 'locked') {
+        if (order.current_key && !['locked','complete'].includes(order.stage_states?.[order.current_key])) {
           tr.classList.add('is-hub-active-order');
         }
         if (order.current_phase) {
@@ -359,7 +359,7 @@
           if (['muted','waiting','progress','warning','ready','complete','critical','locked'].includes(state)) {
             button.classList.add('is-stage-'+state);
           }
-          if (order.current_key === key && state !== 'locked') {
+          if (order.current_key === key && !['locked','complete'].includes(state)) {
             button.classList.add('is-stage-current');
             button.setAttribute('aria-current', 'step');
             // Le texte porte le sens indépendamment du halo et de la couleur.
@@ -400,7 +400,7 @@
           // de l'étape. Aucune mutation ne part du simple clic.
           const nextText = safe(order.next_action);
           const isWaitingOnly = /^(attendr|attente|suivre|consulter|aucune)/i.test(nextText);
-          if (canOperate && order.current_key===key && state!=='locked' && !isWaitingOnly) {
+          if (canOperate && order.current_key===key && !['locked','complete'].includes(state) && !isWaitingOnly) {
             const launch = key==='po' && order.po==='Sourcing requis';
             const command = make(doc,'button','kmc-hub-kanban-action',launch
               ?'Créer la ligne d’achat':nextText || 'Traiter l’étape');
