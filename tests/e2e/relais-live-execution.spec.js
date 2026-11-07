@@ -95,6 +95,40 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
   test.describe(`Relais live · Exécution — ${name}`, () => {
     test.use({ viewport });
 
+    test('poste de travail en trois files : actions dans les cartes, imports séparés', async ({ page }) => {
+      await mount(page);
+      const board = page.locator('[data-relay-operational-kanban]');
+      await expect(board).toBeVisible();
+      await expect(board.locator('[data-relay-agent-lane]')).toHaveCount(3);
+      await expect(board.locator('[data-relay-agent-lane="cash"] [data-workspace-action="confirm-cash"]')).toHaveCount(1);
+      await expect(board.locator('[data-relay-agent-lane="local-reception"] [data-workspace-action="receive"]')).toHaveCount(1);
+      await expect(board.locator('[data-relay-agent-lane="client-handover"] [data-workspace-action="collect"]')).toHaveCount(1);
+      await expect(board.locator('[data-relay-task-card]')).toHaveCount(3);
+      // Un import n'est jamais transformé en geste de réception locale.
+      await expect(board.getByText('PCL-KM-2')).toHaveCount(0);
+      const imports = page.locator('[data-relay-import-receptions]');
+      await expect(imports).toHaveAttribute('open', '');
+      await expect(imports.locator('[data-relay-shipment="SHIP-KM-1"]')).toBeVisible();
+      await expect(imports.locator('[data-workspace-action="relay-shipment-receive"]')).toHaveCount(1);
+    });
+
+    test('un responsable peut agrandir le Kanban puis retrouver le menu, sans mutation', async ({ page }) => {
+      const posts = [];
+      await mount(page, posts);
+      const toggle = page.locator('[data-relay-focus-toggle]');
+      await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+      await toggle.click();
+      await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+      await expect(page.locator('body')).toHaveClass(/kmc-relay-agent-focus/);
+      const width = await page.locator('#canonical-admin-root').evaluate(node=>node.getBoundingClientRect().width);
+      expect(width).toBeGreaterThan(viewport.width * 0.83);
+      await toggle.click();
+      await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+      await expect(page.locator('body')).not.toHaveClass(/kmc-relay-agent-focus/);
+      await expect(page.locator('[data-relay-operational-kanban]')).toBeVisible();
+      expect(posts).toHaveLength(0);
+    });
+
     test('actions Relais uniquement : aucune action Hub', async ({ page }) => {
       await mount(page);
       await expect(page.locator('[data-workspace-action="confirm-cash"]')).toHaveCount(1);
