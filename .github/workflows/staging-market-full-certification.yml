@@ -116,6 +116,7 @@ jobs:
           set -euo pipefail
           RUN8="$(node -p 'require("crypto").randomBytes(4).toString("hex").toUpperCase()')"
           echo "CERT_RUN8_API=$RUN8" >> "$GITHUB_ENV"
+          export HUB_V1_CERTIFICATION_RUN="$RUN8"
           echo "HUB_V1_MARKET=$CERT_MARKET" >> "$GITHUB_ENV"
           echo "HTTP_RUNNER_MARKET=$CERT_MARKET" >> "$GITHUB_ENV"
           echo "E2E_CLICKS_MARKET=$CERT_MARKET" >> "$GITHUB_ENV"
@@ -148,6 +149,7 @@ jobs:
           set -euo pipefail
           RUN8="$(node -p 'require("crypto").randomBytes(4).toString("hex").toUpperCase()')"
           echo "CERT_RUN8_CLICKS=$RUN8" >> "$GITHUB_ENV"
+          export HUB_V1_CERTIFICATION_RUN="$RUN8"
           node scripts/recette/hub-v1-certification-runner.js --allow-remote-staging --run="$RUN8" --market="$CERT_MARKET" --stop-after=2 --dry-run
           node scripts/recette/hub-v1-certification-runner.js --allow-remote-staging --run="$RUN8" --market="$CERT_MARKET" --stop-after=2
       - name: Réassigner le relais E2E à la fixture Chromium
