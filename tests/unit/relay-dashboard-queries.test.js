@@ -369,8 +369,8 @@ describe('couture incidents : visibilite relais de la chaine operationnelle', ()
     expect(sql).toContain('o.relais_id = $1');
     expect(sql).not.toContain("o.status IN ('shipped'");
     expect(sql).toContain('o.simulation_scope IS NULL');
-    expect(sql).toContain('LIMIT $2');
-    expect(args).toEqual([7, 40]);
+    expect(sql).toContain('LIMIT 40');
+    expect(args).toEqual([7]);
   });
 
   it('ne devoile aucune commande sans marche delegue', async () => {
@@ -378,7 +378,7 @@ describe('couture incidents : visibilite relais de la chaine operationnelle', ()
     await relayQueries.getRelayOperationalIncidents(MARKET_OPERATOR);
     const [sql, args] = db.query.mock.calls[0];
     expect(sql).toContain('o.market_id = ANY($1::uuid[])');
-    expect(args).toEqual([[], 40]);
+    expect(args).toEqual([[]]);
   });
 
   it('les compteurs incluent les anomalies canoniques sans copier le dossier', async () => {
