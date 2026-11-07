@@ -105,6 +105,18 @@ beforeEach(() => {
 });
 
 describe('GET /api/products — liste', () => {
+  it('uses canonical category-only projection without falling back to an unrelated customs leaf',async()=>{
+    mockDbQuery
+      .mockResolvedValueOnce({rows:[]})
+      .mockResolvedValueOnce({rows:[{count:'0'}]});
+    const res=await request(buildApp()).get('/api/products?category=Maison');
+    expect(res.status).toBe(200);
+    const sql=mockDbQuery.mock.calls[0][0];
+    expect(sql).toContain('COALESCE(p.boutique_category_key, p.category)');
+    expect(sql).toContain('CASE WHEN p.boutique_category_key IS NOT NULL THEN p.boutique_subcategory_key ELSE p.subcategory END AS subcategory');
+    expect(sql).not.toContain('COALESCE(p.boutique_subcategory_key, p.subcategory)');
+  });
+
   it('accès public, sans auth → 200', async () => {
     mockUser = null;
     mockDbQuery
@@ -185,7 +197,7 @@ describe('GET /api/products — liste', () => {
     await request(buildApp()).get('/api/products?category=electro&subcategory=phones&search=iphone&min_price=1000&max_price=5000&in_stock=true');
     const [sql, params] = mockDbQuery.mock.calls[0];
     expect(sql).toContain('COALESCE(p.boutique_category_key, p.category) = $1');
-    expect(sql).toContain('COALESCE(p.boutique_subcategory_key, p.subcategory) = $2');
+    expect(sql).toContain('CASE WHEN p.boutique_category_key IS NOT NULL THEN p.boutique_subcategory_key ELSE p.subcategory END = $2');
     expect(sql).toContain('p.name ILIKE $3 OR p.description ILIKE $3');
     expect(sql).toContain('p.price_kmf >= $4');
     expect(sql).toContain('p.price_kmf <= $5');

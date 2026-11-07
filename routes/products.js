@@ -93,7 +93,7 @@ router.get('/', async (req, res, next) => {
       params.push(category);
     }
     if (subcategory) {
-      conditions.push(`COALESCE(p.boutique_subcategory_key, p.subcategory) = $${pi++}`);
+      conditions.push(`CASE WHEN p.boutique_category_key IS NOT NULL THEN p.boutique_subcategory_key ELSE p.subcategory END = $${pi++}`);
       params.push(subcategory);
     }
     if (search) {
@@ -153,8 +153,8 @@ router.get('/categories', async (req, res, next) => {
     const { rows } = await db.query(
       `SELECT COALESCE(p.boutique_category_key, p.category) AS category,
               COUNT(*) AS count,
-              array_agg(DISTINCT COALESCE(p.boutique_subcategory_key, p.subcategory))
-                FILTER (WHERE COALESCE(p.boutique_subcategory_key, p.subcategory) IS NOT NULL) AS subcategories
+              array_agg(DISTINCT CASE WHEN p.boutique_category_key IS NOT NULL THEN p.boutique_subcategory_key ELSE p.subcategory END)
+                FILTER (WHERE CASE WHEN p.boutique_category_key IS NOT NULL THEN p.boutique_subcategory_key ELSE p.subcategory END IS NOT NULL) AS subcategories
          FROM products p
         WHERE ${publicCatalogVisibilitySql('p')}
         GROUP BY COALESCE(p.boutique_category_key, p.category)
@@ -171,7 +171,7 @@ router.get('/subcategories', async (req, res, next) => {
     const { category } = req.query;
     const conditions = [
       publicCatalogVisibilitySql('p'),
-      'COALESCE(p.boutique_subcategory_key, p.subcategory) IS NOT NULL',
+      'CASE WHEN p.boutique_category_key IS NOT NULL THEN p.boutique_subcategory_key ELSE p.subcategory END IS NOT NULL',
     ];
     const params = [];
     let pi = 1;
@@ -181,12 +181,12 @@ router.get('/subcategories', async (req, res, next) => {
     }
     const { rows } = await db.query(
       `SELECT COALESCE(p.boutique_category_key, p.category) AS category,
-              COALESCE(p.boutique_subcategory_key, p.subcategory) AS subcategory,
+              CASE WHEN p.boutique_category_key IS NOT NULL THEN p.boutique_subcategory_key ELSE p.subcategory END AS subcategory,
               COUNT(*) AS count
          FROM products p
         WHERE ${conditions.join(' AND ')}
         GROUP BY COALESCE(p.boutique_category_key, p.category),
-                 COALESCE(p.boutique_subcategory_key, p.subcategory)
+                 CASE WHEN p.boutique_category_key IS NOT NULL THEN p.boutique_subcategory_key ELSE p.subcategory END
         ORDER BY category, subcategory`,
       params
     );
