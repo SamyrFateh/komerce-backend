@@ -148,6 +148,7 @@ supplier_execution_groups supplier_payment_settlements unsold_items`.split(/\s+/
   S('decision_signal_global_access_grants', 'acces globaux (owner user_id)'), S('webauthn_credentials', 'passkeys (owner user_id)'),
   S('credential_action_tokens', 'jetons activation/reset par utilisateur (retrait pour comptes test uniquement)'),
   S('hub_authorization_grants', 'droits d autorisation Hub (owner user_id) : conserves pour les comptes conserves'),
+  S('e2e_test_accounts', 'marqueur des comptes de test E2E (owner user_id) : conserve avec les comptes conserves'),
 ];
 
 const TABLES = new Map();
@@ -168,6 +169,7 @@ const FIXTURE_OWNER_COLUMNS = Object.freeze({
   decision_signal_global_access_grants: ['user_id'],
   webauthn_credentials: ['user_id'],
   hub_authorization_grants: ['user_id'],
+  e2e_test_accounts: ['user_id'],
   credential_action_tokens: ['user_id'],
 });
 /** Racines de ciblage : leurs lignes sont designees par les regles ci-dessous. */

@@ -18,7 +18,7 @@ function baseEnv(over = {}) {
 }
 
 function fakeWorld() {
-  const w = { users: new Map(), relais: [], calls: [], tx: [], grants: [], sourcing: new Set(), seq: 0 };
+  const w = { users: new Map(), relais: [], calls: [], tx: [], grants: [], sourcing: new Set(), markers: new Set(), leads: new Set(), seq: 0 };
   w.users.set('admin@komerce.test', { id: 'u-admin', role: 'admin', password_hash: 'H:other', account_activation_required: false });
   const client = {
     release: jest.fn(),
@@ -31,6 +31,9 @@ function fakeWorld() {
         const u = w.users.get(String(params[0]).toLowerCase()); return { rows: u && u.role === 'admin' ? [{ id: u.id }] : [] };
       }
       if (/FROM markets/.test(sql)) return { rows: [{ id: `m-${params[0]}`, is_active: params[0] !== 'DJ' }] };
+      if (/FROM assignment_capability_ceiling/.test(sql)) return { rows: [{ capability: 'finance.act', limit_amount: '1000000.000000' }, { capability: 'other.cap', limit_amount: '5' }] };
+      if (/is_operating_lead FROM assignment_memberships/.test(sql)) return { rows: w.leads.has(`${params[0]}:${params[1]}`) ? [{ is_operating_lead: true }] : [] };
+      if (/e2e_test_accounts/.test(sql)) { const had = w.markers.has(params[0]); w.markers.add(params[0]); return { rowCount: had ? 0 : 1 }; }
       if (/sourcing_global_access_grants/.test(sql)) { const had = w.sourcing.has(params[0]); w.sourcing.add(params[0]); return { rowCount: had ? 0 : 1 }; }
       throw new Error(`SQL inattendu: ${sql}`);
     }),
@@ -43,7 +46,9 @@ function fakeWorld() {
       setUserPasswordHash: jest.fn(async (_c, a) => { for (const u of w.users.values()) if (u.id === a.userId) u.password_hash = a.passwordHash; w.calls.push('setUserPasswordHash'); }),
       assignAgentRelais: jest.fn(async () => ({ status: 'assigned' })),
     },
-    operators: { grantOperatorScope: jest.fn(async () => ({ status: 'granted' })) },
+    operators: { grantOperatorScope: jest.fn(async () => ({ status: 'granted' })), targetCapabilitiesForScope: jest.fn(async () => ['team.grant', 'finance.act']) },
+    projector: { projectAssignment: jest.fn(async () => {}) },
+    team: { inviteTeamMember: jest.fn(async (_c, a) => { w.calls.push(`lead:${a.assignmentId}:${a.grantsOperatingLead}:${a.actorIsCentral}`); w.leads.add(`${a.assignmentId}:u-?`); return { kind: 'membership' }; }) },
     relais: {
       listRelais: jest.fn(async (_c, { marketId }) => w.relais.filter((r) => r.market_id === marketId)),
       createRelais: jest.fn(async (_c, a) => { const r = { id: `r-${++w.seq}`, market_id: a.marketId, name: a.name, is_active: true }; w.relais.push(r); return r; }),
@@ -149,6 +154,18 @@ describe('run', () => {
     expect(again.profiles.find((p) => p.profile === 'finance')).toMatchObject({ user: 'existing', password: 'unchanged' });
     expect(again.profiles.find((p) => p.profile === 'hub_director').hub_grants).toEqual({ purchase_commitment: 'unchanged', supplier_payment: 'unchanged' });
     expect(Object.values(again.relais).every((r) => ['unchanged', 'skipped_market_inactive'].includes(r.status))).toBe(true);
+    // Marqueur E2E (e2e_test_accounts) : pose au premier execute pour chaque profil, inchange ensuite.
+    expect(again.profiles.every((p) => p.e2e_marker === 'unchanged')).toBe(true);
+    expect(w.markers.size).toBe(again.profiles.length);
+  });
+
+  test('execute pose le marqueur E2E pour chaque profil ; dry-run l\'annule (ROLLBACK)', async () => {
+    const { w, db, deps, guard } = fakeWorld();
+    const env = baseEnv({ KOMERCE_STAGING_E2E_PROVISION_ACK: ACK_VALUE });
+    const dry = await run({ db, mode: 'dry-run', env, deps, guard });
+    expect(dry.committed).toBe(false); expect(w.tx).toContain('ROLLBACK');
+    const exec = await run({ db, mode: 'execute', env, deps, guard });
+    expect(exec.profiles.every((p) => ['marked', 'unchanged'].includes(p.e2e_marker))).toBe(true);
   });
 
   test('mot de passe changé dans le secret : mis à jour via le writer canonique', async () => {
@@ -171,5 +188,33 @@ describe('run', () => {
     expect(b.w.tx.at(-1)).toBe('ROLLBACK');
     const c = fakeWorld(); c.w.users.delete('admin@komerce.test');
     await expect(run({ db: c.db, mode: 'dry-run', env: baseEnv(), deps: c.deps, guard: c.guard })).rejects.toThrow('ADMIN_MISSING');
+  });
+});
+
+describe('marches de recette supplementaires (CM, CG)', () => {
+  test('sans E2E_PROVISION_EXTRA_MARKETS : comportement KM inchange, aucun appel equipe', async () => {
+    const { w, db, deps, guard } = fakeWorld();
+    const r = await run({ db, mode: 'execute', env: baseEnv({ KOMERCE_STAGING_E2E_PROVISION_ACK: ACK_VALUE }), deps, guard });
+    expect(deps.team.inviteTeamMember).not.toHaveBeenCalled();
+    expect(r.profiles.every((p) => p.extra_markets === undefined && p.extra_relay_memberships === undefined)).toBe(true);
+    expect(w.calls.some((c) => c.startsWith('lead:'))).toBe(false);
+  });
+
+  test('CM,CG : responsable pays (manager) + responsable d\'exploitation, agent relais membre ; YT/DJ refuses', async () => {
+    const { w, db, deps, guard } = fakeWorld();
+    const env = baseEnv({ KOMERCE_STAGING_E2E_PROVISION_ACK: ACK_VALUE, E2E_PROVISION_EXTRA_MARKETS: 'CM,CG' });
+    const r = await run({ db, mode: 'execute', env, deps, guard });
+    const mo = r.profiles.find((p) => p.profile === 'market_operator');
+    expect(mo.extra_markets).toEqual([
+      { market: 'CM', capabilities: 2, amount_limits: { 'finance.act': 1000000 }, operating_lead: 'assigned' },
+      { market: 'CG', capabilities: 2, amount_limits: { 'finance.act': 1000000 }, operating_lead: 'assigned' },
+    ]);
+    expect(deps.projector.projectAssignment).toHaveBeenCalledTimes(2);
+    expect(w.calls.filter((c) => c.startsWith('lead:'))).toEqual(['lead:a-CM:true:true', 'lead:a-CG:true:true']);
+    const relay = r.profiles.find((p) => p.profile === 'agent_relais');
+    expect(relay.extra_relay_memberships.map((m) => m.market)).toEqual(['CM', 'CG']);
+    for (const bad of ['YT', 'DJ', 'KM']) {
+      await expect(run({ db, mode: 'dry-run', env: baseEnv({ E2E_PROVISION_EXTRA_MARKETS: bad }), deps, guard })).rejects.toMatchObject({ message: expect.stringContaining('E2E_PROVISION_EXTRA_MARKET_NOT_ALLOWED') });
+    }
   });
 });

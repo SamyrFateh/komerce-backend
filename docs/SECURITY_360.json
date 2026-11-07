@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-11-06T17:34:22.000Z",
+  "generatedAt": "2026-11-07T11:11:23.907Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 810,
-    "protected": 752,
+    "total": 811,
+    "protected": 753,
     "public": 58,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -3778,7 +3778,6 @@
         "agent_relais",
         "finance",
         "sourcing",
-        "agent_transitaire",
         "support"
       ]
     },
@@ -5293,6 +5292,15 @@
     },
     {
       "key": "GET /api/relay/orders/{id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_relais",
+        "market_operator"
+      ]
+    },
+    {
+      "key": "GET /api/relay/incidents",
       "level": "PROTECTED",
       "roles": [
         "admin",

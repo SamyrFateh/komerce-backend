@@ -20,13 +20,18 @@ const BOARD = {
     {id:'two',reference:'CM-101',market:'CM',market_name:'Cameroun',
       po:'1 PO liée(s)',supplier:'Attente fournisseur',reception:'1 / 2 reçu(s)',
       cartons:'1 KOM-BOX',departure:'1 expédition(s) liée(s)',
-      remaining:'1 non reçue(s)',remaining_detail:'1 à contrôler',attention:true},
+      remaining:'1 non reçue(s)',remaining_detail:'1 à contrôler',attention:true,
+      current_phase:'Réception Hub',current_status:'Partielle · 1/2 reçus',
+      current_expected:'Attendre 1 article(s) du fournisseur',current_key:'reception',
+      current_detail:'Transport : 1/2 · Réception attendue : 1/2',
+      stage_states:{po:'complete',supplier:'progress',reception:'warning',cartons:'complete',departure:'ready',remaining:'warning'},
+      stage_notes:{departure:'Expédition préparée · remise non attestée'}},
   ],
 };
 
 test.use({ viewport:{width:1440,height:900} });
 
-async function mount(page,role='agent_relais',search='') {
+async function mount(page,role='agent_relais',search='',board=BOARD) {
   const calls=[];
   await page.route(ORIGIN+'/**', async route=>{
     const req=route.request(),url=new URL(req.url());
@@ -39,7 +44,7 @@ async function mount(page,role='agent_relais',search='') {
     if(url.pathname==='/api/auth/me') return route.fulfill({contentType:'application/json',body:JSON.stringify({role,id:'f761a3ed-0000-4000-8000-000000000001'})});
     if(url.pathname==='/api/hub/board') {
       calls.push('GET /api/hub/board'+url.search);
-      return route.fulfill({contentType:'application/json',body:JSON.stringify(BOARD)});
+      return route.fulfill({contentType:'application/json',body:JSON.stringify(board)});
     }
     if(url.pathname==='/api/admin/dashboard/context') {
       calls.push('UNEXPECTED_ADMIN_CONTEXT');
@@ -48,12 +53,12 @@ async function mount(page,role='agent_relais',search='') {
     return route.fulfill({status:404,body:''});
   });
   await page.goto(ORIGIN+'/admin/hub'+search);
-  await expect(page.locator('[data-hub-global-order]')).toHaveCount(2);
+  await expect(page.locator('[data-hub-global-order]')).toHaveCount(board.orders.length);
   return calls;
 }
 
 test.describe('Hub global sans scope marché',()=>{
-  test.each(['admin','agent_hub','market_operator','agent_relais','finance','sourcing','agent_transitaire','support'])(
+  test.each(['admin','agent_hub','market_operator','agent_relais','finance','sourcing','support'])(
     '%s peut voir les commandes KM et CM sans contexte marché ni droit de mutation',async({page},role)=>{
       const calls=await mount(page,role);
       await expect(page.getByText('Toutes les commandes import · Tous les marchés')).toBeVisible();
@@ -87,6 +92,41 @@ test.describe('Hub global sans scope marché',()=>{
     await page.getByRole('searchbox',{name:'Rechercher une commande ou un marché'}).fill('CM');
     await expect(page.locator('[data-hub-global-order]')).toHaveCount(1);
     await expect(page.locator('[data-hub-global-order="CM-101"]')).toBeVisible();
+    expect(calls).toEqual(['GET /api/hub/board']);
+  });
+});
+
+
+test.describe('Étapes physiques explicites du Hub',()=>{
+  test('phase et attente se lisent à gauche, étape actuelle identifiable au clavier',async({page})=>{
+    await mount(page,'agent_hub');
+    const row=page.locator('[data-hub-global-order="CM-101"]');
+    await expect(row).toContainText('Réception Hub · Partielle · 1/2 reçus');
+    await expect(row).toContainText('Attendu : Attendre 1 article(s)');
+    await expect(row).toContainText('Transport : 1/2 · Réception attendue : 1/2');
+    const step=row.locator('[data-hub-global-stage="Réception"]');
+    await expect(step).toHaveClass(/is-stage-current/);
+    await expect(step).toContainText('Étape actuelle');
+    await step.focus();
+    await expect(step).toBeFocused();
+  });
+
+  test('étape verrouillée grisée, preuve consultable et aucune mutation ou réouverture',async({page})=>{
+    const locked={...BOARD.orders[1],current_phase:'Transitaire',current_key:'departure',
+      current_status:'Remise attestée',departure:'Remise attestée · 2/2',
+      current_expected:'Attendre réception au relais',
+      stage_states:{...BOARD.orders[1].stage_states,departure:'locked',remaining:'progress'},
+      stage_notes:{...BOARD.orders[1].stage_notes,departure:'Remise attestée : SH-KM-1'}};
+    const board={...BOARD,orders:[BOARD.orders[0],locked]};
+    const calls=await mount(page,'agent_hub','',board);
+    const step=page.locator('[data-hub-global-order="CM-101"] [data-hub-global-stage="Départ"]');
+    await expect(step).toHaveClass(/is-stage-locked/);
+    await expect(step).toContainText('Terminée · verrouillée');
+    await step.click();
+    const menu=page.locator('[data-hub-global-menu]');
+    await expect(menu).toContainText('Remise attestée : SH-KM-1');
+    await expect(menu).toContainText('Aucune réouverture');
+    await expect(menu.locator('a')).toHaveCount(0);
     expect(calls).toEqual(['GET /api/hub/board']);
   });
 });

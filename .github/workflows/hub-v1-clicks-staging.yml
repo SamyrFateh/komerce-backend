@@ -1,0 +1,97 @@
+name: Hub V1 — clics Chromium reels sur la fixture KM (staging)
+
+# Rejoue par de vrais clics Chromium (roles E2E reels, ecrans canoniques) les gestes Hub V1 deja prouves par API, sur UNE
+# fixture KM existante dont la chaine achats (chain=po) est faite. Ecrit uniquement sur les lignes de cette fixture
+# (simulation, aucun paiement ni message externe). Sans video ; une capture par etape. Confirmation textuelle exigee.
+
+on:
+  workflow_dispatch:
+    inputs:
+      run8:
+        description: 'RUN8 de la fixture KM (8 hex majuscules), chain=po deja jouee'
+        required: true
+        type: string
+      market:
+        description: 'Marche de la fixture (KM par defaut ; CM, CG)'
+        required: false
+        type: choice
+        default: KM
+        options: [KM, CM, CG]
+      allow_distribution:
+        description: 'autorise la repartition automatique (agit sur TOUT le marche KM, pas seulement la fixture)'
+        required: false
+        type: boolean
+        default: false
+      confirmation:
+        description: 'Saisir exactement RUN-HTTP-CLICKS'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: komerce-hub-v1-http-actions-staging
+  cancel-in-progress: false
+
+jobs:
+  clicks:
+    if: inputs.confirmation == 'RUN-HTTP-CLICKS'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_TARGET_ENV: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      EXPECTED_RAILWAY_ENVIRONMENT: staging
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      E2E_PROOF_RUN8: ${{ inputs.run8 }}
+      E2E_CLICKS_MARKET: ${{ inputs.market }}
+      E2E_CLICKS_ALLOW_DISTRIBUTION: ${{ inputs.allow_distribution && '1' || '0' }}
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      E2E_AGENT_HUB_EMAIL: ${{ secrets.E2E_AGENT_HUB_EMAIL }}
+      E2E_AGENT_HUB_PASSWORD: ${{ secrets.E2E_AGENT_HUB_PASSWORD }}
+      E2E_AGENT_RELAIS_EMAIL: ${{ secrets.E2E_AGENT_RELAIS_EMAIL }}
+      E2E_AGENT_RELAIS_PASSWORD: ${{ secrets.E2E_AGENT_RELAIS_PASSWORD }}
+      E2E_AGENT_TRANSITAIRE_EMAIL: ${{ secrets.E2E_AGENT_TRANSITAIRE_EMAIL }}
+      E2E_AGENT_TRANSITAIRE_PASSWORD: ${{ secrets.E2E_AGENT_TRANSITAIRE_PASSWORD }}
+      STRIPE_SECRET_KEY: sk_test_certification_placeholder
+      STRIPE_WEBHOOK_SECRET: whsec_certification_placeholder
+      PAYPAL_CLIENT_ID: ci-certification-placeholder
+      PAYPAL_CLIENT_SECRET: ci-certification-placeholder
+      PAYPAL_WEBHOOK_ID: ci-certification-placeholder
+      META_WA_APP_SECRET: ci-certification-placeholder
+      AUTHKEY_API_KEY: ci-certification-placeholder
+      JWT_SECRET: ci-certification-placeholder
+      QR_SECRET: ci-certification-placeholder
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Refuse missing remote DB secret
+        run: test -n "$DATABASE_URL"
+      - name: Pin deploiement (staging == HEAD, ou ancetre avec seulement des chemins non deployes)
+        env:
+          STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+        run: node scripts/recette/resolve-staging-deploy-pin.js
+      - run: npx playwright install --with-deps chromium
+      - name: Clics Chromium
+        run: npx playwright test --config=playwright.hub-v1-clicks.config.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: hub-v1-clicks-${{ github.run_id }}
+          path: |
+            test-results/hub-v1-clicks/captures/
+            test-results/hub-v1-clicks/evidence.json
+            test-results/hub-v1-clicks/playwright.json
+          if-no-files-found: warn
+          retention-days: 30

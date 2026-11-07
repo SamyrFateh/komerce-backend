@@ -20,9 +20,9 @@
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1997,
-    "edges": 9834,
-    "dbTables": 230,
+    "graphNodes": 1998,
+    "edges": 9837,
+    "dbTables": 231,
     "doctrines": 770,
     "impactAreas": 207,
     "unresolvedCodeEdges": 943,
@@ -24317,7 +24317,9 @@
         "relais",
         "users",
         "inventory_items",
-        "order_incidents"
+        "order_incidents",
+        "hub_box_bags",
+        "e2e_test_accounts"
       ],
       "dbWrite": [
         "order_comments"
@@ -31378,7 +31380,9 @@
       "outputs": [],
       "depends": [],
       "usedBy": [],
-      "dbRead": [],
+      "dbRead": [
+        "e2e_test_accounts"
+      ],
       "dbWrite": [],
       "dbWriteVia": [],
       "dbTxn": [],
@@ -39095,6 +39099,11 @@
       "id": "db:market_transport_sale_rates",
       "type": "db-table",
       "table": "market_transport_sale_rates"
+    },
+    {
+      "id": "db:e2e_test_accounts",
+      "type": "db-table",
+      "table": "e2e_test_accounts"
     },
     {
       "id": "db:physical_outcome_receipts",
@@ -82349,6 +82358,18 @@
     },
     {
       "from": "services/operations-workspace.js",
+      "to": "db:hub_box_bags",
+      "type": "db-read",
+      "label": "hub_box_bags"
+    },
+    {
+      "from": "services/operations-workspace.js",
+      "to": "db:e2e_test_accounts",
+      "type": "db-read",
+      "label": "e2e_test_accounts"
+    },
+    {
+      "from": "services/operations-workspace.js",
       "to": "db:order_comments",
       "type": "db-write",
       "label": "order_comments"
@@ -93736,6 +93757,12 @@
       "to": "backend-core",
       "type": "owned-by",
       "label": "backend-core"
+    },
+    {
+      "from": "services/simulation-visibility.js",
+      "to": "db:e2e_test_accounts",
+      "type": "db-read",
+      "label": "e2e_test_accounts"
     },
     {
       "from": "services/simulation-visibility.js",
@@ -128069,7 +128096,9 @@
         "relais",
         "users",
         "inventory_items",
-        "order_incidents"
+        "order_incidents",
+        "hub_box_bags",
+        "e2e_test_accounts"
       ],
       "dbWrite": [
         "order_comments"
@@ -128134,6 +128163,8 @@
         "market-authorization"
       ],
       "mustCheck": [
+        "db:e2e_test_accounts",
+        "db:hub_box_bags",
         "db:incidents",
         "db:inventory_items",
         "db:order_comments",
@@ -135136,7 +135167,9 @@
       "directDependsOn": [],
       "directUsedBy": [],
       "ownedFiles": [],
-      "dbRead": [],
+      "dbRead": [
+        "e2e_test_accounts"
+      ],
       "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [],
@@ -135147,6 +135180,7 @@
       ],
       "mustCheck": [
         "backend-core",
+        "db:e2e_test_accounts",
         "impact:dashboard",
         "impact:hub",
         "impact:relay"

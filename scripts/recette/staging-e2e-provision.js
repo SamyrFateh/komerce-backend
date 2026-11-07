@@ -10,8 +10,8 @@
  * @outputs       rapport JSON sans secret (statuts par profil, relais, droits)
  * @depends       db.js, scripts/recette/target-guard.js, services/user-mutation-service.js, services/market-operator-provisioning.js, services/relais-mutation-service.js, services/hub-authorization-service.js
  * @used-by       .github/workflows/staging-e2e-provision.yml
- * @db-read       users, markets, relais, delegation
- * @db-write      users, relais, assignment/membership (writers canoniques), hub_authorization_grants, sourcing_global_access_grants (writer manquant, voir ci-dessous)
+ * @db-read       users, markets, relais, delegation, e2e_test_accounts
+ * @db-write      e2e_test_accounts (marqueur compte E2E, seul writer), users, assignment_memberships (is_operating_lead via writer d'equipe), relais, assignment/membership (writers canoniques), hub_authorization_grants, sourcing_global_access_grants (writer manquant, voir ci-dessous)
  * @db-txn        owned (une transaction ; dry-run = ROLLBACK)
  * @doctrine      staging_only_guard_before_any_write_dry_run_default_canonical_writers_idempotent_no_secret_in_output
  * @impact-areas  staging, recette, authorization
@@ -29,6 +29,13 @@
 const ACK_VALUE = 'PROVISION-STAGING-E2E';
 const MARKET_CODES = Object.freeze(['KM', 'CM', 'CG', 'DJ', 'YT']);
 const HOME_MARKET = 'KM';
+// Marches de recette supplementaires (E2E_PROVISION_EXTRA_MARKETS, defaut vide = comportement KM historique). YT et DJ restent exclus.
+const EXTRA_MARKETS_ALLOWED = Object.freeze(['CM', 'CG']);
+function parseExtraMarkets(env = process.env) {
+  const list = String(env.E2E_PROVISION_EXTRA_MARKETS || '').split(',').map((s) => s.trim().toUpperCase()).filter(Boolean);
+  for (const code of list) if (!EXTRA_MARKETS_ALLOWED.includes(code)) throw new ProvisionRefusal('E2E_PROVISION_EXTRA_MARKET_NOT_ALLOWED', code);
+  return [...new Set(list)];
+}
 const PASSWORD_ROUNDS = 12;
 
 // Un profil = un couple E2E_<PREFIX>_EMAIL / _PASSWORD. `optional` : profil sauté (avertissement) si absent.
@@ -97,7 +104,16 @@ function defaultDeps() {
     relais: require('../../services/relais-mutation-service'),
     hubAuth: require('../../services/hub-authorization-service'),
     delegation: require('../../services/market-delegation-service'),
+    team: require('../../services/market-delegation-team-service'),
+    projector: require('../../services/market-scope-projector'),
   };
+}
+
+// Marqueur canonique des comptes E2E (migration 397) : seul writer, idempotent. Table absente (migration non appliquee) = refus net.
+async function markE2eTestAccount(client, { userId, actorId }) {
+  const { rowCount } = await client.query(
+    `INSERT INTO e2e_test_accounts (user_id, created_by) VALUES ($1::uuid, $2::uuid) ON CONFLICT (user_id) DO NOTHING`, [userId, actorId]);
+  return rowCount ? 'marked' : 'unchanged';
 }
 
 // WRITER MANQUANT (voir en-tête) : autorité Sourcing globale, grant explicite distinct.
@@ -143,6 +159,28 @@ async function ensureRelayAgentMembership(client, deps, { userId, marketCode, ac
   return { market: marketCode, capabilities: RELAY_AGENT_CAPABILITIES };
 }
 
+// Responsable pays E2E sur un marche supplementaire : membership manager (meme jeu que KM = tout le plafond DELEGABLE) par le writer
+// canonique addMembership, avec, pour les capacites a montant, la limite du PLAFOND du marche (jamais au-dela : le plafond est la
+// borne posee par le central ; ensureOperatorMembership ne passe aucune limite et echoue des que le plafond est fini), puis
+// responsable d'exploitation par le writer d'equipe (inviteTeamMember, utilisateur existant). Idempotent.
+async function ensureMarketOperatorLead(client, deps, { userId, email, marketCode, actorId }) {
+  const assignment = await deps.delegation.resolveActiveAssignmentByMarketCode(client, marketCode);
+  const assignmentId = assignment.assignment_id;
+  const capabilities = await deps.operators.targetCapabilitiesForScope(client, { assignmentId, scope: 'manager' });
+  const { rows: limited } = await client.query(
+    `SELECT capability, limit_amount FROM assignment_capability_ceiling WHERE assignment_id = $1::uuid AND revoked_at IS NULL AND limit_amount IS NOT NULL`, [assignmentId]);
+  const capabilityLimits = Object.fromEntries(limited.filter((r) => capabilities.includes(r.capability)).map((r) => [r.capability, Number(r.limit_amount)]));
+  await deps.delegation.addMembership(client, { assignmentId, userId, actorUserId: actorId, capabilities, capabilityLimits, actorIsCentral: true });
+  await deps.projector.projectAssignment(client, assignmentId);
+  const { rows: [m] } = await client.query(
+    `SELECT is_operating_lead FROM assignment_memberships WHERE assignment_id = $1::uuid AND user_id = $2::uuid AND status = 'ACTIVE'`, [assignmentId, userId]);
+  let lead = m && m.is_operating_lead === true ? 'unchanged' : 'assigned';
+  if (lead === 'assigned') {
+    await deps.team.inviteTeamMember(client, { assignmentId, actorUserId: actorId, email, channel: 'EMAIL', grantsOperatingLead: true, actorIsCentral: true, capabilities, capabilityLimits });
+  }
+  return { market: marketCode, capabilities: capabilities.length, amount_limits: capabilityLimits, operating_lead: lead };
+}
+
 async function ensureRelays(client, deps, actorId) {
   const out = {};
   for (const code of MARKET_CODES) {
@@ -168,6 +206,7 @@ async function ensureRelays(client, deps, actorId) {
 async function run({ db, mode, env = process.env, deps = defaultDeps(), guard } = {}) {
   assertProvisionAllowed(mode, env);
   const { accounts, skipped } = readProfiles(env);
+  const extraMarkets = parseExtraMarkets(env);
   const confirmTarget = guard || require('./target-guard').confirmTarget;
   const target = await confirmTarget({ db, env });
   if (!target || target.confirmed !== true) throw new ProvisionRefusal('E2E_PROVISION_TARGET_NOT_CONFIRMED');
@@ -187,6 +226,7 @@ async function run({ db, mode, env = process.env, deps = defaultDeps(), guard } 
       const entry = { profile: account.key, role: account.role };
       const res = await ensureUser(client, deps, account);
       Object.assign(entry, { user: res.user, password: res.password });
+      entry.e2e_marker = await markE2eTestAccount(client, { userId: res.id, actorId: actor.id });
       if (res.activation_pending) report.warnings.push(`${account.key} : activation en attente (compte invité) — non modifié`);
       if (account.scope) {
         const g = await deps.operators.grantOperatorScope(client, { userId: res.id, marketCode: account.scope.market, scopeRole: account.scope.scopeRole, grantedBy: actor.id });
@@ -198,6 +238,14 @@ async function run({ db, mode, env = process.env, deps = defaultDeps(), guard } 
         if (!['assigned', 'already'].includes(a.status)) throw new ProvisionRefusal('E2E_PROVISION_RELAY_ASSIGN_FAILED', `${account.key}:${a.status}`);
         entry.relais = { market: account.relayMarket, status: a.status };
         entry.relay_membership = await ensureRelayAgentMembership(client, deps, { userId: res.id, marketCode: account.relayMarket, actorId: actor.id });
+      }
+      if (extraMarkets.length && account.key === 'market_operator') {
+        entry.extra_markets = [];
+        for (const code of extraMarkets) entry.extra_markets.push(await ensureMarketOperatorLead(client, deps, { userId: res.id, email: account.email, marketCode: code, actorId: actor.id }));
+      }
+      if (extraMarkets.length && account.relayMarket) {
+        entry.extra_relay_memberships = [];
+        for (const code of extraMarkets) entry.extra_relay_memberships.push(await ensureRelayAgentMembership(client, deps, { userId: res.id, marketCode: code, actorId: actor.id }));
       }
       if (account.hubGrants) {
         entry.hub_grants = {};
@@ -232,7 +280,7 @@ async function main() {
 }
 
 if (require.main === module) {
-  main().catch((e) => { process.stderr.write(`REFUS: ${e instanceof ProvisionRefusal ? e.message : (e.code || e.name || 'ERROR')}\n`); process.exit(1); });
+  main().catch((e) => { process.stderr.write(`REFUS: ${e instanceof ProvisionRefusal ? e.message : (e.code || e.name || 'ERROR')}${!(e instanceof ProvisionRefusal) && (e.code === 'P0001' || /^MARKET_DELEGATION|^TEAM_|^TRANSITAIRE_/.test(String(e.code))) ? ' :: ' + String(e.message).slice(0, 240) : ''}\n`); process.exit(1); });
 }
 
 module.exports = { ensureRelayAgentMembership, RELAY_AGENT_CAPABILITIES, ACK_VALUE, PROFILES, MARKET_CODES, ProvisionRefusal, assertProvisionAllowed, readProfiles, run, grantSourcingGlobalAuthority };

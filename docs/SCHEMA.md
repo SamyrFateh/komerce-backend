@@ -48,11 +48,11 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 | Objet | Compte | Note |
 |---|---|---|
-| Tables | 228 | Vérifié sur le dump live Railway. |
+| Tables | 229 | Vérifié sur le dump live Railway. |
 | Vues | 21 | Vérifié sur le dump live Railway. |
 | ENUMs | 17 | Types métier présents dans le dump live Railway. |
 | Index | 522 | Performance + contraintes uniques |
-| Foreign keys | 446 | Cohérence relationnelle |
+| Foreign keys | 448 | Cohérence relationnelle |
 | Fonctions | 123 | Fonctions présentes dans le dump live Railway. |
 | Triggers | 139 | Triggers présents dans le dump live Railway. |
 | Extensions | `pgcrypto`, `uuid-ossp` | UUID + chiffrement |
@@ -687,6 +687,12 @@ Migration 300 ajoute `customs_shipment_fees.post_closure` (boolean, défaut fals
 ### Hub authorization grants (migration 380 — intended_migration_schema)
 
 `hub_authorization_grants` is a new, **not yet live** table proposed by migration 380. It records which Hub account holds which directrice authorization (`purchase_commitment` or `supplier_payment`), granted and revoked by the central Admin (`granted_by`, `revoked_by`, `revoke_reason`). At most one active grant per user and type. It adds no role: it only states who may take the two distinct decisions recorded in `purchase_order_authorizations`.
+<!-- /schema-pending -->
+
+<!-- schema-pending: e2e_test_accounts (migration 397, not yet live) -->
+### E2E test accounts (migration 397 — intended_migration_schema)
+
+`e2e_test_accounts` is a new, **not yet live** table proposed by migration 397. It marks the test accounts provisioned for E2E recette (`user_id` primary key referencing `users`, `created_by`, `created_at`). It is written only by `scripts/recette/staging-e2e-provision.js` (idempotent, staging guards); no route or screen writes to it. It is read by `services/simulation-visibility.js` (`isE2eTestAccount`): only a marked account sees `orders.simulation_scope` orders in the operations workspace queues. Empty table = nobody sees simulation.
 <!-- /schema-pending -->
 
 <!-- schema-pending: purchase_order_authorizations (migration 380, not yet live) -->

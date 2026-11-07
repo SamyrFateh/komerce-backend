@@ -354,3 +354,70 @@ describe('getOrders — visibilité de la recette', () => {
     expect(db.query.mock.calls[0][0]).toContain('WHERE simulation_scope IS NULL');
   });
 });
+
+
+describe('couture incidents : visibilite relais de la chaine operationnelle', () => {
+  it('rejette l association d un incident a un article d une autre commande dans toutes les projections', async () => {
+    db.query.mockResolvedValue({ rows: [] });
+    await relayQueries.getRelayOperationalIncidents(RELAY_USER);
+    await relayQueries.getOrders(RELAY_USER, { status: 'available' });
+    const [feedSql] = db.query.mock.calls[0];
+    const [ordersSql] = db.query.mock.calls[1];
+
+    const guard = /CASE\s+WHEN i\.order_item_id IS NULL THEN i\.order_id\s+WHEN i\.order_id IS NULL THEN \(SELECT oi\.order_id FROM order_items oi WHERE oi\.id = i\.order_item_id\)\s+ELSE \(SELECT oi\.order_id FROM order_items oi\s+WHERE oi\.id = i\.order_item_id AND oi\.order_id = i\.order_id\)\s+END/;
+    // Le CASE ne rattache pas une anomalie incoherente a l un ou l autre relais.
+    expect(feedSql).toMatch(guard);
+    expect(ordersSql).toMatch(guard);
+    expect(feedSql).toContain('o.relais_id = $1');
+  });
+
+  it('publie la file canonique avant expedition pour le relais uniquement', async () => {
+    db.query.mockResolvedValueOnce({ rows: [{
+      id: 'incident-1', order_id: 'order-1', order_reference: 'KOM-1',
+      product_name: 'Riz', client_impact: 'partial_delivery', status: 'open',
+    }] });
+    const data = await relayQueries.getRelayOperationalIncidents(RELAY_USER);
+    expect(data.incidents[0].product_name).toBe('Riz');
+    const [sql, args] = db.query.mock.calls[0];
+    expect(sql).toContain("i.client_impact IN ('delayed','partial_delivery','wrong_item','blocked')");
+    expect(sql).toContain('o.relais_id = $1');
+    expect(sql).not.toContain("o.status IN ('shipped'");
+    expect(sql).toContain('o.simulation_scope IS NULL');
+    expect(sql).toContain('LIMIT 40');
+    expect(args).toEqual([7]);
+  });
+
+  it('ne devoile aucune commande sans marche delegue', async () => {
+    db.query.mockResolvedValueOnce({ rows: [] });
+    await relayQueries.getRelayOperationalIncidents(MARKET_OPERATOR);
+    const [sql, args] = db.query.mock.calls[0];
+    expect(sql).toContain('o.market_id = ANY($1::uuid[])');
+    expect(args).toEqual([[]]);
+  });
+
+  it('les compteurs incluent les anomalies canoniques sans copier le dossier', async () => {
+    db.query.mockResolvedValueOnce({ rows: [] });
+    await relayQueries.getOrders(RELAY_USER, { status: 'available' });
+    const [sql] = db.query.mock.calls[0];
+    expect(sql).toContain('FROM order_incidents');
+    expect(sql).toContain('FROM incidents i');
+    expect(sql).toContain('i.client_impact IN');
+  });
+
+  it('le KPI relais lit les deux sources avec le meme scope', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [{
+        en_transit: 0, disponibles: 0, cash_a_encaisser: 0,
+        collectes_aujourd_hui: 0, collectes_7j: 0, en_attente_72h: 0,
+        total_actives: 0, montant_cash_pending: 0,
+      }] })
+      .mockResolvedValueOnce({ rows: [{ c: 2 }] });
+    const data = await relayQueries.getDashboardKPIs(RELAY_USER);
+    const [sql, args] = db.query.mock.calls[1];
+    expect(sql).toContain('FROM order_incidents li');
+    expect(sql).toContain('FROM incidents i');
+    expect(sql.match(/o.relais_id = \$1/g)).toHaveLength(2);
+    expect(args).toEqual([7]);
+    expect(data.kpi.incidents_ouverts).toBe(2);
+  });
+});

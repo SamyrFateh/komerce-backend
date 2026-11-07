@@ -16,6 +16,11 @@ on:
         options:
           - dry-run
           - execute
+      extra_markets:
+        description: 'Marches de recette supplementaires (sous-ensemble de CM,CG ; vide = KM seul)'
+        required: false
+        default: ''
+        type: string
       confirmation:
         description: 'Pour execute uniquement : saisir exactement PROVISION-STAGING-E2E'
         required: false
@@ -42,6 +47,7 @@ jobs:
       EXPECTED_RAILWAY_ENVIRONMENT: staging
       KOMERCE_STAGING_RESET_DB_PIN: ${{ vars.STAGING_DB_PIN }}
       PROVISION_MODE: ${{ inputs.mode }}
+      E2E_PROVISION_EXTRA_MARKETS: ${{ inputs.extra_markets }}
       PROVISION_CONFIRMATION: ${{ inputs.confirmation }}
       E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
       E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}

@@ -105,20 +105,32 @@ describe('dashboard-admin-context', () => {
     expect(params).toEqual([['KM']]);
   });
 
-  test('Transitaire: logistics.read actif est requis, un rôle seul ne suffit pas', async () => {
+  test('Transitaire central: tous les marchés ACTIFS, sans membership ni delegation', async () => {
     mockHasGlobal.mockResolvedValue(false);
-    mockListAuthorizedMarkets.mockResolvedValueOnce([{ market_code: 'KM' }]);
-    mockQuery.mockResolvedValueOnce({ rows: [{ code: 'KM' }] });
+    mockQuery.mockResolvedValueOnce({ rows: [{ code: 'CG' }, { code: 'KM' }] });
 
     const ctx = await resolveDashboardAdminContext({ id: 'transit-1', role: 'agent_transitaire' });
-    expect(ctx.access.allowedMarkets).toEqual(['KM']);
-    expect(mockListAuthorizedMarkets).toHaveBeenCalledWith(
-      expect.anything(), { userId: 'transit-1', requiredCapability: 'logistics.read' }
-    );
-    expect(ctx.access.delegatedCapabilities.KM).toEqual([]);
+    expect(ctx.actor.role).toBe('agent_transitaire');
+    expect(ctx.access.mode).toBe('market');
+    expect(ctx.access.allowedMarkets).toEqual(['CG', 'KM']);
+    expect(ctx.access.capabilities).not.toContain('dashboard.global.read');
+    expect(ctx.access.delegatedCapabilities).toEqual({});
+    expect(mockListAuthorizedMarkets).not.toHaveBeenCalled();
+    expect(mockResolveAuthorization).not.toHaveBeenCalled();
+    expect(mockQuery.mock.calls[0][0]).toContain('is_active = TRUE');
+  });
 
+  test('Transitaire: aucun marche actif -> refuse', async () => {
+    mockHasGlobal.mockResolvedValue(false);
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+    await expect(resolveDashboardAdminContext({ id: 'transit-2', role: 'agent_transitaire' }))
+      .rejects.toMatchObject({ code: 'dashboard_access_denied' });
+  });
+
+  test('Role non central sans membership (finance) reste refuse', async () => {
+    mockHasGlobal.mockResolvedValue(false);
     mockListAuthorizedMarkets.mockResolvedValueOnce([]);
-    await expect(resolveDashboardAdminContext({ id: 'transit-no-grant', role: 'agent_transitaire' }))
+    await expect(resolveDashboardAdminContext({ id: 'finance-no-grant', role: 'finance' }))
       .rejects.toMatchObject({ code: 'dashboard_access_denied' });
   });
 

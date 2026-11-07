@@ -47,7 +47,7 @@ const requireTransitExecution = requireMarketDelegatedCapability('execution.tran
 // agent_hub et agent_transitaire accèdent à ce workspace sur tout marché ACTIF sans membership. Cette garde ne donne
 // QUE la lecture du workspace et les gestes de transit (requireTransitAction + ordre des étapes du journey) ; les gestes
 // douane/coûts/clôture restent requireCustomsAction (admin) et market_operator est inchangé.
-const CENTRAL_TRANSIT_ROLES = Object.freeze(['agent_hub', 'agent_transitaire']);
+const { CENTRAL_TRANSIT_ROLES } = require('../config/central-transit-roles');
 function isCentralTransitAccess(req) {
   return Boolean(req.user && CENTRAL_TRANSIT_ROLES.includes(req.user.role)
     && req.workspaceMarket && req.workspaceMarket.lifecycle_status === 'ACTIVE');
