@@ -121,7 +121,7 @@
     const grid=orders.length?`<div class="kmc-relay-work-scroll"><table class="kmc-relay-work-table" aria-label="Poste Relais · statuts des commandes">
       <thead><tr><th>Commande / client</th>${WORK_STAGES.map(x=>'<th>'+esc(x.label)+'</th>').join('')}<th>À vérifier</th></tr></thead>
       <tbody>${records}</tbody></table></div>`:
-      `<div class="kmc-relay-work-empty"><strong>Aucun dossier nécessitant un suivi dans cette file</strong>
+      `<div class="kmc-relay-work-empty"><strong>Aucune intervention dans cette file</strong>
       <p>Les opérations physiques restent accessibles pour les réceptions et remises au relais, notamment pour le circuit local.</p>
       <a href="${executionUrl('')}">Ouvrir l’atelier Relais ↗</a></div>`;
     return `<section class="kmc-relay-work" aria-label="Poste de travail Relais">
