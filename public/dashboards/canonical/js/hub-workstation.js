@@ -68,7 +68,7 @@
     if(onMove) {
       doc.addEventListener('scroll', onMove, true);
       doc.defaultView?.addEventListener('resize',onMove);
-      menu.addEventListener('hub:menu-state',onMove);
+      menu.addEventListener?.('hub:menu-state',onMove);
     }
     boardDisposers.set(root, () => {
       doc.removeEventListener('pointerdown', outside, true);
@@ -76,7 +76,7 @@
       if(onMove) {
         doc.removeEventListener('scroll', onMove, true);
         doc.defaultView?.removeEventListener('resize',onMove);
-        menu.removeEventListener('hub:menu-state',onMove);
+        menu.removeEventListener?.('hub:menu-state',onMove);
       }
     });
   }
