@@ -54,6 +54,57 @@ const { countRelayParcels } = require('./operations-relay-projection');
 const { resolveCollectAmount } = require('./relay-collect-amount');
 const log = require('../utils/logger').child({ module: 'relay-dashboard-queries' });
 
+// Projection de lecture uniquement : order_incidents = signalements du relais ;
+// incidents = anomalies opérationnelles canoniques. Ne jamais recopier un dossier.
+const incidentOrderIdSql = "COALESCE((SELECT oi.order_id FROM order_items oi WHERE oi.id = i.order_item_id), i.order_id)";
+function relayIncidentCountSql(scope) {
+  return `SELECT COUNT(*)::int AS c FROM (
+    SELECT li.id::text AS id FROM order_incidents li
+      JOIN orders o ON o.id = li.order_id
+     WHERE li.status IN ('open','in_progress') AND o.simulation_scope IS NULL AND ${scope}
+    UNION ALL
+    SELECT i.id::text AS id FROM incidents i
+      JOIN orders o ON o.id = ${incidentOrderIdSql}
+     WHERE i.status IN ('open','investigating')
+       AND i.client_impact IN ('delayed','partial_delivery','wrong_item','blocked')
+       AND o.simulation_scope IS NULL AND ${scope}
+  ) relay_incidents`;
+}
+
+/** Files de connaissance : toutes les commandes du relais, pas uniquement les colis expédiés. */
+async function getRelayOperationalIncidents(user, { authorizedMarkets = null, limit = 40 } = {}) {
+  const params = [];
+  let scope = '';
+  if (user.role === 'agent_relais') {
+    params.push(user.relais_id);
+    scope = 'AND o.relais_id = $1';
+  } else if (user.role === 'market_operator') {
+    params.push(authorizedMarkets ? Array.from(authorizedMarkets) : []);
+    scope = 'AND o.market_id = ANY($1::uuid[])';
+  }
+  params.push(Math.max(1, Math.min(40, Number(limit) || 40)));
+  const { rows } = await db.query(`
+    SELECT i.id, o.id AS order_id, o.reference AS order_reference,
+           i.incident_type, i.severity, i.client_impact, i.title,
+           i.status, i.created_at, i.resolver_domain,
+           pr.name AS product_name
+      FROM incidents i
+      JOIN orders o ON o.id = ${incidentOrderIdSql}
+      LEFT JOIN order_items oi ON oi.id = i.order_item_id
+      LEFT JOIN products pr ON pr.id = oi.product_id
+     WHERE i.status IN ('open','investigating')
+       AND i.client_impact IN ('delayed','partial_delivery','wrong_item','blocked')
+       AND o.simulation_scope IS NULL
+       AND o.status::text NOT IN ('cancelled','refunded','collected')
+       AND o.relais_id IS NOT NULL
+       ${scope}
+     ORDER BY CASE i.severity WHEN 'critical' THEN 0 WHEN 'high' THEN 1 ELSE 2 END,
+              i.created_at DESC
+     LIMIT ${params.length}
+  `, params);
+  return { incidents: rows };
+}
+
 async function getDashboardKPIs(user, { authorizedMarkets = null } = {}) {
   const kpiParams = [];
   let kpiWhere = 'WHERE simulation_scope IS NULL';
@@ -92,17 +143,13 @@ async function getDashboardKPIs(user, { authorizedMarkets = null } = {}) {
   try {
     let incQuery, incParams;
     if (user.role === 'agent_relais') {
-      incQuery = `SELECT COUNT(*)::int AS c FROM order_incidents oi
-         JOIN orders o ON o.id = oi.order_id
-         WHERE oi.status IN ('open','in_progress') AND o.simulation_scope IS NULL AND o.relais_id = $1`;
+      incQuery = relayIncidentCountSql('o.relais_id = $1');
       incParams = [user.relais_id];
     } else if (user.role === 'market_operator') {
-      incQuery = `SELECT COUNT(*)::int AS c FROM order_incidents oi
-         JOIN orders o ON o.id = oi.order_id
-         WHERE oi.status IN ('open','in_progress') AND o.simulation_scope IS NULL AND o.market_id = ANY($1::uuid[])`;
+      incQuery = relayIncidentCountSql('o.market_id = ANY($1::uuid[])');
       incParams = [authorizedMarkets ? Array.from(authorizedMarkets) : []];
     } else {
-      incQuery = `SELECT COUNT(*)::int AS c FROM order_incidents oi JOIN orders o ON o.id = oi.order_id WHERE oi.status IN ('open','in_progress') AND o.simulation_scope IS NULL`;
+      incQuery = relayIncidentCountSql('TRUE');
       incParams = [];
     }
     const { rows: [inc] } = await db.query(incQuery, incParams);
@@ -206,7 +253,11 @@ async function getOrders(user, { status, search, limit = 50, offset = 0 }, { aut
       (SELECT COUNT(*) FROM order_items WHERE order_id = o.id)::int AS nb_items,
       (SELECT p.name FROM order_items oi JOIN products p ON p.id = oi.product_id
        WHERE oi.order_id = o.id ORDER BY oi.created_at ASC LIMIT 1) AS premier_produit,
-      (SELECT COUNT(*)::int FROM order_incidents WHERE order_id = o.id AND status IN ('open','in_progress')) AS incidents_ouverts,
+      ((SELECT COUNT(*)::int FROM order_incidents WHERE order_id = o.id AND status IN ('open','in_progress'))
+       + (SELECT COUNT(*)::int FROM incidents i
+            WHERE ${incidentOrderIdSql} = o.id
+              AND i.status IN ('open','investigating')
+              AND i.client_impact IN ('delayed','partial_delivery','wrong_item','blocked'))) AS incidents_ouverts,
       (SELECT COUNT(*)::int FROM order_comments WHERE order_id = o.id) AS nb_commentaires
     FROM orders o
     LEFT JOIN users u ON u.id = o.user_id
@@ -303,11 +354,25 @@ async function getOrderDetail(user, orderId, { authorizedMarkets = null } = {}) 
   let incidents = [];
   try {
     const { rows } = await db.query(`
-      SELECT i.*, u.full_name AS resolved_by_name
-      FROM order_incidents i
-      LEFT JOIN users u ON u.id = i.resolved_by
-      WHERE i.order_id = $1
-      ORDER BY i.created_at DESC
+      SELECT li.id::text AS id, li.type, li.priority, li.status,
+             li.description, li.created_at, u.full_name AS resolved_by_name,
+             'relay'::text AS source, NULL::text AS client_impact, NULL::text AS product_name
+        FROM order_incidents li
+        LEFT JOIN users u ON u.id = li.resolved_by
+       WHERE li.order_id = $1
+      UNION ALL
+      SELECT i.id::text AS id, i.incident_type AS type,
+             CASE WHEN i.severity IN ('critical','high') THEN 'high' ELSE 'normal' END AS priority,
+             i.status, COALESCE(i.description,i.title) AS description,
+             i.created_at, NULL::text AS resolved_by_name,
+             'operations'::text AS source, i.client_impact,
+             pr.name AS product_name
+        FROM incidents i
+        LEFT JOIN order_items oi ON oi.id = i.order_item_id
+        LEFT JOIN products pr ON pr.id = oi.product_id
+       WHERE ${incidentOrderIdSql} = $1
+         AND i.client_impact IN ('delayed','partial_delivery','wrong_item','blocked')
+      ORDER BY created_at DESC
     `, [order.id]);
     incidents = rows;
   } catch(e) {}
@@ -395,4 +460,4 @@ async function getOrderDetail(user, orderId, { authorizedMarkets = null } = {}) 
   };
 }
 
-module.exports = { getDashboardKPIs, getOrders, getOrderDetail };
+module.exports = { getDashboardKPIs, getOrders, getOrderDetail, getRelayOperationalIncidents };
