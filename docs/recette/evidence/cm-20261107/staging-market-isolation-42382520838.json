@@ -1,0 +1,38 @@
+{
+  "matrix": {
+    "admin": {
+      "role": "admin",
+      "KM": {
+        "read": 200,
+        "write_probe": 403
+      },
+      "CM": {
+        "read": 200,
+        "write_probe": 403
+      },
+      "CG": {
+        "read": 200,
+        "write_probe": 403
+      }
+    },
+    "agent_relais": {
+      "role": "agent_relais",
+      "KM": {
+        "read": 403,
+        "write_probe": 403
+      },
+      "CM": {
+        "read": 200,
+        "write_probe": 404
+      },
+      "CG": {
+        "read": 403,
+        "write_probe": 403
+      }
+    }
+  },
+  "relay_home_market": [
+    "CM"
+  ],
+  "verdict": "ISOLATION_PASS"
+}

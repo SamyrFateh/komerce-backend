@@ -1,7 +1,7 @@
 # Certification métier V1 multi-marché : note de reprise
 
 Cette note sert à reprendre la certification exactement où elle s'est arrêtée, sans autre contexte : tout ce qu'il faut est ici.
-État au 2026-11-07, fin d'après-midi (heure de Paris). Dernière mise à jour : CM et CG actifs, blocage tarif de transport de vente.
+État au 2026-11-07, fin d'après-midi (heure de Paris). Dernière mise à jour : KM, CM et CG certifiés sur les parcours nominaux API + Chromium ; preuves et limitations ci-dessous.
 
 ## 1. Objectif
 
@@ -20,8 +20,8 @@ Ensuite viendront un seed partenaires visible et des comptes partenaires cloison
 | Marché | Statut | Preuve API | Preuve clics | Reste à faire |
 |---|---|---|---|---|
 | KM | ACTIVE | 53/53 PASS, fixture 71B671EB | 36/36 CLICK_PASS, fixture 2C2EB181, run 42369442085 | Rien pour le nominal |
-| CM | ACTIVE (activé le 2026-11-07, audit `MARKET_LIFECYCLE_CHANGED`) | À faire | À faire | BLOQUÉ : aucun tarif de transport de vente (`MARKET_TRANSPORT_TARIFF_MISSING`), décision métier à obtenir (voir section 7) |
-| CG | ACTIVE (idem) | À faire | À faire | Même blocage attendu que CM (même cause, non rejouée) |
+| CM | ACTIVE ; tarifs RECETTE attestés | **53 PASS physiques**, 35 achats + 1 seam ; RUN8 40A162A6 | **36 CLICK_PASS**, RUN8 2B13C104 | ISOLATION_PASS ; nominal réussi, run #42382520838 |
+| CG | ACTIVE ; tarifs RECETTE attestés | **53 PASS physiques**, 35 achats + 1 seam ; RUN8 57030A02 | **36 CLICK_PASS**, RUN8 5D6F90EC | ISOLATION_PASS ; nominal réussi, run #42382886270 |
 | YT | SUSPENDED | Hors périmètre | Hors périmètre | Ne pas rouvrir sans décision |
 | DJ | PROVISIONING | Hors périmètre | Hors périmètre | Ne pas toucher |
 
@@ -30,7 +30,7 @@ L'audit économique du Hub, qui est un sujet connexe, se trouve dans `docs/audit
 
 Isolation croisée entre KM, CM et CG : JOUÉE le 2026-11-07, ISOLATION_PASS (run 42375312269, outil `staging-market-isolation` #3481, correctif de sonde #3484). L'agent relais, lié à un relais KM, obtient 200 sur KM et 403 sur CM et CG en lecture et en écriture ; l'admin lit les trois marchés. Preuve : `docs/recette/evidence/isolation-20261107/`. Limite : un seul rôle de terrain (agent relais) est croisé ; les rôles centraux (hub, transitaire, admin) ne sont pas cloisonnés par marché par conception, et le responsable pays E2E a des memberships dans les trois marchés, donc il ne peut pas servir à ce test.
 
-Preuves CM et CG déjà versionnées : `docs/recette/evidence/cm-20261107/` et `docs/recette/evidence/cg-20261107/` (readiness avant activation, rapport d'activation, rapports des fixtures CM en échec). L'index de `docs/recette/evidence/README.md` ne liste que les runs réussis.
+Preuves CM et CG déjà versionnées : `docs/recette/evidence/cm-20261107/` et `docs/recette/evidence/cg-20261107/` (readiness avant activation, rapports d'activation, certificats tarifs de vente RECETTE et anciennes fixtures CM en échec). L'index de `docs/recette/evidence/README.md` ne liste que les runs réussis.
 
 ## 3. Procédure : certifier un marché (KM, CM ou CG)
 
@@ -100,7 +100,7 @@ Spec des clics : `tests/staging-clicks/hub-v1-clicks.spec.js`, avec la config `p
 3. **Chemin nominal seulement.** Restent à couvrir : retards fournisseur, réceptions partielles, incidents, remboursements, annulations.
 4. **Paiement.** Il est simulé dans la fixture. L'ouverture des lignes d'achat passe par une couture de service (`SEAM_NOT_HTTP`), pas par une route HTTP.
 
-## 7. Prochaines actions, dans l'ordre
+## 7. Ancien point d'arrêt — historique, corrigé par la voie A
 
 **Point d'arrêt connu (2026-11-07, avant implémentation de la voie tarifaire).** CM et CG sont ACTIVE. Les fixtures 82076FAA et B13C6D97 (CM) ont échoué à l'étape 1 du checkout : `CHECKOUT_REFUSED:KOM-101 … MARKET_TRANSPORT_TARIFF_MISSING` (« Aucun tarif de transport de vente n'est configuré pour ce marché »). Ces deux fixtures sont inutilisables (commandes non créées). Les runs `staging-e2e-relay-reassign` et `hub-v1-http-actions-staging` lancés ensuite sur elles ont échoué, ce qui est attendu : ce ne sont pas des preuves. Le run `chain=physical` de la fixture 82076FAA est marqué « success » alors que le `po` précédent a échoué : ne pas l'utiliser non plus.
 
@@ -121,6 +121,44 @@ Implémentation sur la branche `feat/market-transport-sale-governed-recette` :
 - outil `scripts/recette/staging-market-transport-sale-rates.js` : lit les vraies règles KM de staging, convertit KMF → EUR → XAF via `fx-authority` (parités certifiées et legs de preuve), arrondit à 4 décimales, ne touche qu'à CM/CG, refuse d'écraser un tarif non-RECETTE ;
 - workflow `staging-market-transport-sale-rates.yml` : dry-run sans confirmation ou application après la confirmation exacte `APPLY-RECETTE-TRANSPORT-CM` / `APPLY-RECETTE-TRANSPORT-CG` ; déclenchement alternatif par issue du propriétaire au titre exact `[staging-op] market-transport-sale-CM` ou `[staging-op] market-transport-sale-CG`. Résultat JSON archivé.
 
-**Ne pas considérer la branche comme déployée ou la certification CM/CG comme PASS tant que la PR n'est pas mergée, que le SHA staging n'est pas aligné et que les workflows n'ont pas produit de preuves.**
+**État révisé :** la PR #3488 a été mergée et déployée sur staging (`afcca3e...`), les deux marchés ont reçu les tarifs RECETTE par les routes administratives. Cela n'atteste PAS les parcours commandes/physique/Chromium.
 
 Une fois le tarif CM réellement posé et relu, reprendre la procédure de la section 3 avec une fixture CM neuve (les précédentes sont inutilisables). Refaire sur CG, puis compléter les tests d'isolation avec comptes réellement cloisonnés. Ne pas ouvrir les comptes partenaires tant que les tarifs `RECETTE` subsistent. AIR_EXPRESS reste non commercialisé (registre logistics `INTERNAL/PENDING/DISABLED`) : poser le tarif ne l'expose pas.
+
+## 9. Point de reprise réel — 7 novembre 2026, après tarification
+
+**Fin du blocage tarifaire :**
+- CM : workflow GitHub Actions [42381811718](https://github.com/SamyrFateh/komerce-backend/actions/runs/42381811718), verdict `TARIFFS_APPLIED_AND_VERIFIED`, justification `RECETTE-VENTE-TRANSPORT-CM-2026-11-07`, écriture HTTP 201 × 2 et readback 200 vérifié.
+- CG : workflow [42382091838](https://github.com/SamyrFateh/komerce-backend/actions/runs/42382091838), même verdict, justification `RECETTE-VENTE-TRANSPORT-CG-2026-11-07`.
+- Source de calcul : staging `business_rules` KM : maritime 65 KMF/kg → **86.6667 XAF/kg**, aérien 2500 KMF/kg → **3333.3333 XAF/kg**, autorité `fx-authority` via EUR, legs documentés dans les deux fichiers JSON de preuve.
+- Coûts de corridors indépendants : CM 1500 XAF/kg, CG 1700 XAF/kg. Les tarifs RECETTE ne valent ni décision de rentabilité ni prix partenaire. AIR_EXPRESS demeure non commercialisé.
+
+**PRs intégrées :**
+- [#3488](https://github.com/SamyrFateh/komerce-backend/pull/3488) : tarif de vente admin gouverné avec traçabilité/versionnement, script FX et workflow staging.
+- [#3489](https://github.com/SamyrFateh/komerce-backend/pull/3489) : réaffectation du relais E2E entre marchés uniquement avec membership déjà existant, et workflow `staging-market-full-certification.yml` (CM/CG, API/Chromium).
+
+**Premier essai de certification complète CM, NON CERTIFIANT :**
+- Run [42382197263](https://github.com/SamyrFateh/komerce-backend/actions/runs/42382197263), refus immédiat à `Fixture HTTP neuve` : `STAGING_RUN8_NOT_EXPLICITLY_APPROVED`.
+- Cause : le harnais exige que chaque RUN8 généré soit exporté dans `HUB_V1_CERTIFICATION_RUN` en plus de `--run=RUN8`. Le workflow ne le faisait pas.
+- La [PR #3493](https://github.com/SamyrFateh/komerce-backend/pull/3493) corrige les deux fixtures (API et Chromium) ; attendre son `Required verdict` vert et son merge. Le RUN8 `D06C3C89` a échoué avant les écritures, ne pas le reprendre.
+- **Relancer CM via une NOUVELLE issue owner** au titre exact `[staging-op] full-cert-CM` (ou workflow_dispatch confirmé `RUN-FULL-CERT-CM`). Après un PASS réel sur CM, lancer CG avec le titre exact `[staging-op] full-cert-CG`. Chaque run doit produire les deux fixtures, les 53 PASS de chaîne physique et 36 CLICK_PASS, et une isolation `ISOLATION_PASS` ; tout BLOCKED ou FAIL est un non-GO.
+
+La note opératoire complète du nouveau workflow est dans `docs/recette/FULL_CERT_CM_CG_AUTOMATION.md`. Les preuves vérifiées et les artefacts réussis doivent être ajoutés à `docs/recette/evidence/` à chaque run. Pour une isolation complète des responsables de marché, créer des comptes E2E exclusifs CM et CG ; le compte « Responsable pays » mutualisé ne permet pas ce test.
+
+## 10. Certification nominale CM et CG terminée le 2026-11-07 — état vérifié
+
+Le correctif du garde RUN8 a été livré et mergé dans [#3493](https://github.com/SamyrFateh/komerce-backend/pull/3493) : il exporte `HUB_V1_CERTIFICATION_RUN` pour chaque fixture API/Chromium. Le premier essai en échec #42382197263 reste une preuve non certifiante historique, sans écriture.
+
+**CM : [run GitHub 42382520838](https://github.com/SamyrFateh/komerce-backend/actions/runs/42382520838)** — workflow complet `success`, achats 35 PASS + 1 `SEAM_NOT_HTTP` par fixture, chaîne physique 53/53 PASS, Chromium **36/36 CLICK_PASS** (10 tests Playwright réussis), isolation `ISOLATION_PASS`. Fixtures API `40A162A6`, Chromium `2B13C104`. Artefact : `staging-full-cert-CM-42382520838` (id 13578446399). Le relais E2E CM lit CM (200), KM et CG refusent (403).
+
+**CG : [run GitHub 42382886270](https://github.com/SamyrFateh/komerce-backend/actions/runs/42382886270)** — mêmes verdicts : achats 35 PASS + 1 seam par fixture ; physique 53/53 PASS ; Chromium **36/36 CLICK_PASS** (10 tests) ; isolation `ISOLATION_PASS`. Fixtures API `57030A02`, Chromium `5D6F90EC`. Artefact : `staging-full-cert-CG-42382886270` (id 13578726442). Le relais E2E CG lit CG (200), KM et CM refusent (403).
+
+**Preuves versionnées sur `main` (vérifiées le 2026-11-07).** La [PR #3495](https://github.com/SamyrFateh/komerce-backend/pull/3495) contient les rapports d'application des tarifs RECETTE CM et CG. Les PR [#3502 — CM](https://github.com/SamyrFateh/komerce-backend/pull/3502) et [#3504 — CG](https://github.com/SamyrFateh/komerce-backend/pull/3504), mergées avec `Required verdict` vert, contiennent les rapports **JSON complets** des deux fixtures, deux chaînes achats, chaîne physique, 36 gestes Chromium, isolation et synthèse par marché. Index dans `docs/recette/evidence/README.md`. Les captures demeurent dans les artefacts des runs GitHub ; rien d'autre à télécharger pour reprendre les résultats structurés. Le workflow [#3498](https://github.com/SamyrFateh/komerce-backend/pull/3498) permet de répéter cet archivage pour les futurs runs réussis. Ne pas rejouer des fixtures consommées.
+
+**Verdict exact :** *PASS nominal staging* pour KM, CM et CG sur les parcours actuels de la recette. Ce verdict ne vaut **pas** ouverture aux partenaires ni GO économique. Il reste :
+- remplacer les prix de vente et coûts des corridors `RECETTE` par les valeurs réelles, contrôler marge et contribution ;
+- certifier l'isolation avec de vrais comptes opérateurs exclusifs CM et CG : le « Responsable pays » E2E partagé ne prouve pas son cloisonnement ;
+- couvrir les cas non nominaux (ruptures fournisseur, réceptions partielles, reliquats, retards, remboursements, incidents, annulations) ;
+- **revoir le parcours LOCAL_STOCK** : les scripts nominaux historiques incluent encore un geste `local:ship` par le Hub, alors que la règle métier durable exige un circuit local sans Hub. Ne pas qualifier la couverture locale de conforme à cette règle sans recette spécifique distincte.
+
+La procédure de certification relançable demeure `docs/recette/FULL_CERT_CM_CG_AUTOMATION.md` et le référentiel des preuves `docs/recette/evidence/README.md`.
