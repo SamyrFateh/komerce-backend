@@ -32,6 +32,7 @@ const ROLES = Object.freeze({
   transitaire: 'E2E_TRANSITAIRE_',
 });
 const MARKETS = new Set(['KM', 'CM', 'CG']);
+const EXPECTED_ROLES = Object.freeze({ hub_agent: 'agent_hub', transitaire: 'agent_transitaire' });
 const UUID = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
 
 function assess(snapshot, phase) {
@@ -137,7 +138,7 @@ async function run({ env = process.env, db, run8 } = {}) {
       const a = new Actor(label, base, env[prefix + 'EMAIL'], env[prefix + 'PASSWORD']);
       await a.login();
       actors[label] = a;
-      add('login:' + label, a.role === label ? 'PASS' : 'FAIL',
+      add('login:' + label, a.role === (EXPECTED_ROLES[label] || label) ? 'PASS' : 'FAIL',
         { role_observed: a.role });
     }
     const route = '/api/orders/' + orderId + '/local-relay-receipt';
