@@ -1,0 +1,72 @@
+name: Staging — tarifs de vente transport RECETTE CM/CG (voie gouvernée)
+
+# Les données sont lues sur le staging réel : business_rules KM + fx-authority KMF -> EUR -> XAF.
+# Écritures par les routes Admin auditables uniquement, jamais en SQL.
+# Protection : owner seul, marché CM/CG, cible staging épinglée, confirmation exacte ou issue owner au titre exact.
+on:
+  workflow_dispatch:
+    inputs:
+      market:
+        description: 'Marché de recette'
+        required: true
+        type: choice
+        options: [CM, CG]
+      confirmation:
+        description: 'Appliquer : APPLY-RECETTE-TRANSPORT-<CODE>. Vide = dry-run'
+        required: false
+        default: ''
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: komerce-staging-transport-sale
+  cancel-in-progress: false
+
+jobs:
+  market-sale-rates:
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.actor == github.repository_owner) ||
+      (github.event_name == 'issues' &&
+       github.event.issue.user.login == github.repository_owner &&
+       (github.event.issue.title == '[staging-op] market-transport-sale-CM' ||
+        github.event.issue.title == '[staging-op] market-transport-sale-CG'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      EXPECTED_RAILWAY_ENVIRONMENT: staging
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      SALE_RATE_MARKET: ${{ github.event_name == 'issues' && (github.event.issue.title == '[staging-op] market-transport-sale-CM' && 'CM' || 'CG') || inputs.market }}
+      SALE_RATE_APPLY: ${{ github.event_name == 'issues' && '1' || (inputs.confirmation != '' && '1' || '0') }}
+      SALE_RATE_CONFIRMATION: ${{ github.event_name == 'issues' && (github.event.issue.title == '[staging-op] market-transport-sale-CM' && 'APPLY-RECETTE-TRANSPORT-CM' || 'APPLY-RECETTE-TRANSPORT-CG') || inputs.confirmation }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Verifier la version réellement servie
+        run: node scripts/recette/resolve-staging-deploy-pin.js
+      - name: Confirmer que la base visée est le vrai staging
+        run: node scripts/recette/target-guard.js
+      - name: Convertir KM courant et poser tarif RECETTE par API gouvernée
+        run: node scripts/recette/staging-market-transport-sale-rates.js
+      - name: Archiver les preuves sans secrets
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-market-transport-sale-${{ github.run_id }}
+          path: test-results/market-transport-sale/
+          if-no-files-found: warn
+          retention-days: 30
