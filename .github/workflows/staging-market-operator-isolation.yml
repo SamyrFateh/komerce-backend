@@ -1,0 +1,57 @@
+name: Staging — isolation responsables pays CM CG (comptes distincts)
+
+# Déclenchement par le propriétaire uniquement, issue exacte.
+# Deux identités E2E inédites, chacune un seul marché, écritures par les writers officiels.
+# Aucune commande réelle modifiée : une écriture négative porte sur une référence inexistante.
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: komerce-staging-market-operator-isolation
+  cancel-in-progress: false
+
+jobs:
+  isolate:
+    if: >-
+      github.event.issue.user.login == github.repository_owner &&
+      github.event.issue.title == '[staging-op] market-operator-isolation-CM-CG'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      EXPECTED_RAILWAY_ENVIRONMENT: staging
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      KOMERCE_STAGING_RESET_DB_PIN: ${{ vars.STAGING_DB_PIN }}
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      ISOLATION_RUN_ID: ${{ github.run_id }}
+      ISOLATION_CONFIRMATION: CERTIFY-ISOLATED-MARKET-OPERATORS
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Vérifier la version du staging servie
+        run: node scripts/recette/resolve-staging-deploy-pin.js
+      - name: Empreinte de la base staging obligatoire
+        run: node scripts/recette/target-guard.js
+      - name: Créer deux acteurs E2E cantonnés et certifier les refus inter-marchés
+        run: node scripts/recette/staging-market-operator-isolation.js
+      - name: Archiver la matrice HTTP sans identifiants ni secrets
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-market-operator-isolation-${{ github.run_id }}
+          path: test-results/market-operator-isolation/report.json
+          if-no-files-found: warn
+          retention-days: 30
