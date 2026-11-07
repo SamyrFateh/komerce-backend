@@ -27,6 +27,8 @@ const ACTORS = Object.freeze([
 const PROBES = Object.freeze([
   { name: 'hub_dashboard', method: 'GET', path: '/api/hub-dash/dashboard', admin: 200, hub: 200, transitaire: 403, relais: 403 },
   { name: 'hub_queue', method: 'GET', path: '/api/hub-dash/queue', admin: 200, hub: 200, transitaire: 403, relais: 403 },
+  { name: 'hub_terrain_week', method: 'GET', path: '/api/hub/stats/week', admin: 200, hub: 200, transitaire: 403 },
+  { name: 'hub_global_board', method: 'GET', path: '/api/hub/board', admin: 200, hub: 200, transitaire: 403 },
   { name: 'hub_start_prep_absent', method: 'POST', path: '/api/hub-dash/orders/' + ABSENT_ORDER + '/start-prep', admin: 404, hub: 404, transitaire: 403, relais: 403 },
   { name: 'hub_backorder_absent', method: 'POST', path: '/api/hub-dash/orders/' + ABSENT_ORDER + '/backorder', admin: 404, hub: 404, transitaire: 403, relais: 403 },
   { name: 'hub_ship_absent', method: 'POST', path: '/api/admin/workspaces/operations/market/CG/parcels/ISOLATION-PROBE-NONEXISTENT/ship', admin: 403, hub: 404, transitaire: 403, relais: 403 },
