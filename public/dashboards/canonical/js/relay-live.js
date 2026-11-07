@@ -67,9 +67,9 @@
   const paymentLabel = o => (o.cash_pending ? 'Cash à encaisser' : o.payment_status === 'paid' ? 'Payée' : 'Paiement en attente');
 
 
-  const executionUrl=market=>{
+  const executionUrl=(market,focus='')=>{
     const code=String(market||'').trim().toUpperCase();
-    return BASE+queryString({view:'execute',market:/^[A-Z]{2}$/.test(code)?code:''});
+    return BASE+queryString({view:'execute',market:/^[A-Z]{2}$/.test(code)?code:'',focus:/^(shipments|cash|receive|collect)$/.test(focus)?focus:''});
   };
   // Le cockpit lit des statuts de commande. Il n'atteste JAMAIS qu'un colis
   // a été reçu ou remis : cette écriture appartient à l'atelier Relais.
@@ -96,6 +96,23 @@
     }
     return o.status==='shipped'?'Expédiée · à suivre':'En route · à contrôler';
   }
+
+  function relayActionRail(k){
+    const choices=[
+      {kind:'receive',focus:'shipments',label:'Réceptionner',description:'Contrôler les arrivages'},
+      {kind:'cash',focus:'cash',label:'Encaisser',description:'Confirmer les paiements',count:num(k.cash_a_encaisser)},
+      {kind:'collect',focus:'collect',label:'Remettre',description:'Attester les retraits'},
+    ];
+    return '<nav class="kmc-relay-action-rail" aria-label="Actions du Relais">'+choices.map(c=>
+      '<a class="kmc-relay-action-tile is-'+c.kind+'" data-relay-shortcut="'+c.focus+'" href="'+esc(executionUrl('',c.focus))+'">'+
+      '<span class="kmc-relay-action-symbol" aria-hidden="true">'+({receive:'↓',cash:'€',collect:'✓'}[c.kind])+'</span>'+
+      '<span class="kmc-relay-action-copy"><strong>'+esc(c.label)+'</strong><small>'+esc(c.description)+'</small></span>'+
+      (c.count===undefined?'':'<b class="kmc-relay-action-count">'+c.count+'</b>')+
+      '<span class="kmc-relay-action-arrow" aria-hidden="true">›</span></a>'
+    ).join('')+
+    '<a class="kmc-relay-archive-link" href="'+esc(listUrl('collected'))+'" data-cockpit-nav>Historique des retraits <span aria-hidden="true">↗</span></a></nav>';
+  }
+
   function relayWorkboard(p,data){
     const k=data?.dash?.kpi||{};
     const orders=Array.isArray(data?.queue?.orders)?data.queue.orders:[];
@@ -121,26 +138,26 @@
     const grid=orders.length?`<div class="kmc-relay-work-scroll"><table class="kmc-relay-work-table" aria-label="Poste Relais · statuts des commandes">
       <thead><tr><th>Commande / client</th>${WORK_STAGES.map(x=>'<th>'+esc(x.label)+'</th>').join('')}<th>À vérifier</th></tr></thead>
       <tbody>${records}</tbody></table></div>`:
-      `<div class="kmc-relay-work-empty"><strong>Aucune intervention dans cette file</strong>
-      <p>Les opérations physiques restent accessibles pour les réceptions et remises au relais, notamment pour le circuit local.</p>
-      <a href="${executionUrl('')}">Ouvrir l’atelier Relais ↗</a></div>`;
+      `<div class="kmc-relay-work-empty"><span class="kmc-relay-empty-mark" aria-hidden="true">✓</span>
+      <div><strong>Aucune commande en cours dans cette file</strong>
+      <p>Les arrivages locaux et importés se contrôlent indépendamment dans l’atelier.</p></div>
+      <a href="${executionUrl('','shipments')}">Vérifier les arrivages ↗</a></div>`;
     return `<section class="kmc-relay-work" aria-label="Poste de travail Relais">
-      <header class="kmc-relay-work-header"><div><span class="kmc-relay-work-eyebrow">RELAIS · POSTE DE TRAVAIL</span>
-        <h2>${orders.length?'Colis et commandes à suivre':'Aucun dossier à traiter'}</h2>
-        <p>Une ligne = statut de commande. Les réceptions et remises réelles sont attestées dans l’atelier.</p></div>
+      <header class="kmc-relay-work-header"><div><span class="kmc-relay-work-eyebrow">FILE DES COMMANDES</span>
+        <h2>${orders.length?'Dossiers en cours':'Aucun dossier à traiter'}</h2>
+        <p>Statuts de commande. Les preuves physiques sont vérifiées dans l’atelier.</p></div>
         <nav class="kmc-relay-work-filters" aria-label="Files de travail">
           <a data-cockpit-nav href="${listUrl('available')}">À retirer <b>${num(k.disponibles)}</b></a>
           <a data-cockpit-nav href="${listUrl('in_transit')}">En route <b>${num(k.en_transit)}</b></a>
           <a data-cockpit-nav href="${listUrl('all')}">Toutes</a>
         </nav></header>
+      ${relayActionRail(k)}
       <div class="kmc-relay-work-layout${selected?' has-inspector':''}">
         <div class="kmc-relay-work-list">${grid}
           ${orders.length>=12?'<a class="kmc-relay-work-more" data-cockpit-nav href="'+listUrl('all')+'">Voir les autres dossiers →</a>':''}
         </div>
         ${renderPreview(p.sel,data?.detail)}
       </div>
-      <footer class="kmc-relay-work-footer"><span>Une commande peut avoir plusieurs colis. La preuve physique ne découle jamais de ce tableau.</span>
-        <a href="${executionUrl('')}">Atelier Relais · encaisser, recevoir, remettre ↗</a></footer>
     </section>`;
   }
 
