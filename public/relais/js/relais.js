@@ -59,6 +59,11 @@ const R = (() => {
     if (missing) parts.push(missing + ' sans montant local');
     return parts.length ? parts.join(' + ') : '0';
   }
+  function esc(value) {
+    return String(value ?? '').replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[c]);
+  }
   function ago(dt) { const h=(Date.now()-new Date(dt))/3600000; if(h<1)return Math.round(h*60)+'min'; if(h<24)return Math.round(h)+'h'; return Math.round(h/24)+'j'; }
   function slbl(s) { return {confirmed:'confirmé',ordered:'commandé',preparation:'prépa',shipped:'expédié',in_transit:'transit',available:'disponible',collected:'retiré',cancelled:'annulé'}[s]||s; }
   function urgClass(o) { return o.urgence==='critique'?'urgent':o.cash_pending?'cash-pending':''; }
@@ -104,8 +109,29 @@ const R = (() => {
       // Alertes strip
       const aw = document.getElementById('alertes-wrap');
       aw.innerHTML = (d.alertes||[]).map(a =>
-        `<div class="alert-strip ${a.type}">${a.type==='warning'?'⚠️':a.type==='danger'?'🚨':'ℹ️'} ${a.message}</div>`
+        `<div class="alert-strip ${a.type}">${a.type==='warning'?'⚠️':a.type==='danger'?'🚨':'ℹ️'} ${esc(a.message)}</div>`
       ).join('');
+      // Les incidents canoniques sont une file de connaissance distincte des signalements locaux.
+      // Une alerte doit rester visible même si la commande n'est pas encore expédiée.
+      try {
+        const feed = await api.get('/api/relay/incidents');
+        const incidents = Array.isArray(feed.incidents) ? feed.incidents : [];
+        const visible = incidents.slice(0, 5);
+        aw.insertAdjacentHTML('beforeend', visible.map(i =>
+          `<div class="alert-strip danger relay-operational-incident" data-order-id="${esc(i.order_id)}">
+            ⚠️ ${esc(i.order_reference)} · ${esc(i.product_name || 'Commande')}
+            — ${esc(i.title)} · Ouvrir la commande
+          </div>`
+        ).join(''));
+        aw.querySelectorAll('.relay-operational-incident').forEach(n =>
+          n.addEventListener('click', () => openDetail(n.dataset.orderId))
+        );
+        if (incidents.length > visible.length) {
+          aw.insertAdjacentHTML('beforeend', `<div class="alert-strip warning">
+            ${incidents.length - visible.length} autre(s) incident(s) à consulter dans le suivi Relais Live.
+          </div>`);
+        }
+      } catch (err) { console.warn('[RELAIS] Operational incidents temporarily unavailable', err); }
     } catch(e) { console.warn('Dashboard KPI error', e); }
   }
 
@@ -252,6 +278,7 @@ const R = (() => {
 
   function renderDetail(d) {
     const o = d.order, c = d.client||{}, p = d.paiement||{}, items = d.items||[], tl = d.timeline||[];
+    const incidents = (d.incidents || []).filter(i => ['open', 'in_progress', 'investigating'].includes(i.status));
     document.getElementById('detail-title').textContent = o.reference;
     document.getElementById('detail-status-badge').innerHTML = `<span class="badge ${scol(o.status)}">${slbl(o.status)}</span>`;
 
@@ -289,6 +316,16 @@ const R = (() => {
       </div>
       ${cashSection}
       ${pickupSection}
+      ${incidents.length ? `<div class="section" style="border-color:rgba(255,171,64,.35)">
+        <div class="section-head">⚠️ Incidents à connaître (${incidents.length})</div>
+        <div class="section-body">
+          ${incidents.slice(0, 8).map(i => `<div class="info-row">
+            <span class="info-label">${esc(i.source === 'operations' ? 'Chaîne opérationnelle' : 'Relais')}${i.product_name ? ' · ' + esc(i.product_name) : ''}</span>
+            <span class="info-val">${esc(i.description || i.type || 'Incident en cours')}</span>
+          </div>`).join('')}
+          <div class="info-row"><span class="info-label">Action</span><span class="info-val">Vérifier la situation avant remise. Faire confirmer toute décision par le responsable habilité.</span></div>
+        </div>
+      </div>` : ''}
       <div class="section">
         <div class="section-head">Articles (${items.length})</div>
         <div class="section-body" style="gap:0">
