@@ -41,12 +41,18 @@ async function login(browser, baseURL, role) {
   await page.locator('#btn-submit').click();
   expect((await resp).status()).toBe(200);
   await page.waitForURL((u) => u.pathname !== '/login.html', { timeout: 20000 });
+  await page.waitForLoadState('load').catch(() => {});
+  await page.waitForTimeout(1500);
   shared.states[role] = await ctx.storageState();
   return { ctx, page };
 }
 
 async function openMarket(page, url) {
-  await page.goto(url, { waitUntil: 'domcontentloaded' });
+  // ERR_ABORTED : une redirection client (login, portail) peut couper la navigation en cours -> on la laisse finir puis on reessaie.
+  for (let attempt = 0; ; attempt++) {
+    try { await page.goto(url, { waitUntil: 'domcontentloaded' }); break; }
+    catch (e) { if (attempt >= 3 || !/ERR_ABORTED|interrupted/i.test(String(e.message))) throw e; await page.waitForLoadState('load').catch(() => {}); await page.waitForTimeout(1500); }
+  }
   const sel = page.locator('select').first();
   await sel.waitFor({ timeout: 20000 });
   await sel.selectOption({ label: MARKET_LABEL }).catch(() => {});
@@ -295,7 +301,7 @@ test.describe.serial('Hub V1 : clics reels Chromium (KM, fixture E2E)', () => {
 
   test('Expeditions & Douane : transitaire reel (reception, suivi, transit, arrivee)', async ({ browser, baseURL }) => {
     const { ctx, page } = await login(browser, baseURL, 'transitaire');
-    await page.goto('/admin/workspaces/shipping-customs', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('load').catch(() => {}); await page.goto('/admin/workspaces/shipping-customs', { waitUntil: 'domcontentloaded' }).catch(() => {});
     await page.waitForTimeout(4000);
     if (new URL(page.url()).pathname === '/') {
       // Constat, pas un contournement : le portail renvoie le transitaire a la vitrine (GET /api/admin/dashboard/context -> 403 dashboard_access_denied).
