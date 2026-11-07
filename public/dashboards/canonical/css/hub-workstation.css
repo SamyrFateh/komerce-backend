@@ -435,7 +435,7 @@
   padding:10px 11px 11px 16px;
   border:2px solid #058bd8;
   border-radius:10px;
-  background:linear-gradient(132deg,#063969 0%,#086ca7 54%,#0b86c4 100%);
+  background:linear-gradient(132deg,#063969 0%,#086ca7 54%,#075f90 100%);
   color:#fff;
   text-align:left;
   box-shadow:0 0 0 3px var(--kmc-stage-halo),
@@ -458,6 +458,9 @@
 }
 .kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current > * {
   position:relative;z-index:1;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current:focus-visible {
+  outline:3px solid #ffe78c;outline-offset:3px;
 }
 .kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current .kmc-hub-stage-primary {
   font-size:13px;line-height:1.4;font-weight:850;
@@ -485,7 +488,7 @@
   --kmc-stage-halo:rgba(242,146,17,.38);
   --kmc-stage-light:rgba(255,186,57,.34);
   border-color:#e98b13;
-  background:linear-gradient(130deg,#754007 0%,#a25709 55%,#bd741a 100%);
+  background:linear-gradient(130deg,#754007 0%,#a25709 55%,#965007 100%);
 }
 .kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current.is-stage-warning::before {
   background:#ffe2a2;box-shadow:0 0 12px #ffcc60;
@@ -506,7 +509,7 @@
   --kmc-stage-halo:rgba(15,159,126,.33);
   --kmc-stage-light:rgba(63,223,186,.29);
   border-color:#0ca68e;
-  background:linear-gradient(130deg,#07584b 0%,#087d65 55%,#0ca181 100%);
+  background:linear-gradient(130deg,#07584b 0%,#087d65 55%,#0b6957 100%);
 }
 .kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current.is-stage-waiting {
   --kmc-stage-halo:rgba(97,130,169,.18);
