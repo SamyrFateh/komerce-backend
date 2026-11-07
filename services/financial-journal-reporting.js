@@ -8,7 +8,7 @@
  * @outputs       journal_summary, source_reconciliation
  * @depends       services/financial-journal.js
  * @used-by       finance projections, accounting workspace
- * @db-read       financial_movements, financial_movement_documents, orders, refunds, supplier_payment_settlements, supplier_execution_payments, purchase_orders, order_item_real_cost_allocations
+ * @db-read       financial_movements, financial_movement_documents, orders, refunds, supplier_payment_settlements, supplier_execution_payments, purchase_orders, order_item_real_cost_allocations, customs_shipments, international_shipment_charges, international_shipment_hub_units, international_shipments
  * @db-write      none
  * @db-txn        none
  * @doctrine      single_projection_rules, native_amounts_preserved, eur_never_invented, reconcile_before_validate, not_double_entry
@@ -43,7 +43,10 @@ async function summarize(client, scope = {}) {
   const eurUnavailable = rows.reduce((total, row) => total + row.eur_unavailable, 0);
   return {
     rows,
-    eur_total_known: rows.reduce((total, row) => total + (row.eur_total == null ? 0 : Number(row.eur_total)), 0),
+    // Les mouvements de garde ne sont jamais des recettes ou dépenses
+    // supplémentaires, même quand une contre-valeur EUR est disponible.
+    eur_total_known: rows.filter(row => row.direction !== 'custody')
+      .reduce((total, row) => total + (row.eur_total == null ? 0 : Number(row.eur_total)), 0),
     eur_unavailable_movements: eurUnavailable,
     eur_complete: eurUnavailable === 0,
   };
@@ -94,6 +97,7 @@ async function projection(client, scope = {}) {
 // Libellés métier : seule source (les écrans Finance et Comptabilité les lisent, ne les redéfinissent pas).
 const CATEGORY_LABELS = Object.freeze({
   sale: 'Encaissements clients', refund: 'Remboursements clients', supplier_purchase: 'Achats fournisseurs',
+  cash_custody_transfer: 'Transfert de garde (neutre)', cash_final_deposit: 'Dépôt final de garde (neutre)',
   supplier_refund: 'Remboursements fournisseurs', payment_fee: 'Frais de paiement', market_settlement: 'Règlements marché',
 });
 const STATE_LABELS = Object.freeze({ planned: 'Prévu', committed: 'Engagé', observed: 'Constaté', settled: 'Réglé', reversed: 'Annulé' });
@@ -106,6 +110,12 @@ const CHECK_LABELS = Object.freeze({
   cost_allocations_kmf: 'Coûts réels : journal ↔ allocations de coûts (KMF)',
   supplier_settlements_native: 'Règlements fournisseurs : journal ↔ règlements prouvés (natif)',
   movements_without_provenance: 'Mouvements sans provenance (doit être 0)',
+  custody_event_count: 'Garde cash : événements journalisés sans recette',
+  custody_abs_kmf: 'Garde cash : montants déplacés, sans recette',
+  custody_signed_kmf: 'Garde cash : conservation des soldes de détention',
+  shipment_freight_kmf: 'Factures de fret : journal ↔ expéditions',
+  shipment_charges_net_kmf: 'Charges et avoirs : journal ↔ expéditions',
+  shipment_customs_kmf: 'Douane : journal ↔ déclarations d’expédition',
 });
 
 // Niveaux de coût (doctrine N1/N2/N3) : classification unique, lue par Finance et Comptabilité.
@@ -122,13 +132,13 @@ function costLevels(lines, supplierRemaining) {
   return COST_LEVELS.map(def => {
     if (def.source_missing) return { level: def.level, label: def.label, source_missing: true, states: [], remaining_native: [] };
     const states = COST_STATES.map(state => {
-      const picked = lines.filter(line => line.state === state && ['outflow', 'cost'].includes(line.direction) && def.match(line.category));
+      const picked = lines.filter(line => line.state === state && ['outflow', 'cost', 'cost_reversal'].includes(line.direction) && def.match(line.category));
       const native = new Map();
-      picked.forEach(line => line.native.forEach(item => native.set(item.currency, (native.get(item.currency) || 0) + Number(item.total))));
+      picked.forEach(line => line.native.forEach(item => native.set(item.currency, (native.get(item.currency) || 0) + (line.direction === 'cost_reversal' ? -1 : 1) * Number(item.total))));
       return {
         state, state_label: stateLabel(state),
         movements: picked.reduce((n, line) => n + line.movements, 0),
-        eur_total: Math.round(picked.reduce((n, line) => n + line.eur_total, 0) * 100) / 100,
+        eur_total: Math.round(picked.reduce((n, line) => n + (line.direction === 'cost_reversal' ? -1 : 1) * line.eur_total, 0) * 100) / 100,
         eur_unavailable: picked.reduce((n, line) => n + line.eur_unavailable, 0),
         native: [...native.entries()].sort().map(([currency, total]) => ({ currency, total: total.toFixed(4) })),
       };
@@ -144,7 +154,7 @@ async function listMovements(client, scope = {}) {
   const params = [];
   let where = periodClause('m', scope, params);
   if (scope.state && MOVEMENT_STATES.has(scope.state)) { params.push(scope.state); where += ` AND m.state = $${params.length}`; }
-  if (scope.direction && ['inflow', 'outflow', 'cost'].includes(scope.direction)) { params.push(scope.direction); where += ` AND m.direction = $${params.length}`; }
+  if (scope.direction && ['inflow', 'outflow', 'cost', 'cost_reversal', 'custody'].includes(scope.direction)) { params.push(scope.direction); where += ` AND m.direction = $${params.length}`; }
   const limit = Math.min(Math.max(parseInt(scope.limit, 10) || 50, 1), 200);
   const offset = Math.max(parseInt(scope.offset, 10) || 0, 0);
   const total = (await client.query(`SELECT COUNT(*)::int AS n FROM financial_movements m WHERE true${where}`, params)).rows[0].n;
@@ -223,6 +233,72 @@ async function reconcileWithSources(client, scope = {}) {
     scope.marketId ? [scope.marketId] : [])).rows[0];
   // Montants natifs de devises différentes sommés ici uniquement pour la preuve d'égalité exacte source/journal (jamais affichés).
   add('supplier_settlements_native', sup.journal_native, sup.source_native);
+
+
+  // L7 — réconciliation stricte des mouvements de garde, hors chiffre d'affaires.
+  // Vérifier le nombre ET les montants absolus/signés : un transfert interne
+  // ne doit ni gonfler les recettes ni masquer un écart de détention.
+  const custody = (await client.query(
+    `SELECT
+       (SELECT COUNT(*)::int FROM financial_movements m
+         WHERE m.source_kind='cash_custody_movement'
+           ${scope.marketId ? 'AND m.market_id=$1' : ''}) AS journal_count,
+       (SELECT COUNT(*)::int FROM cash_custody_movements c
+         WHERE c.source IN ('TRANSFER_OUT','TRANSFER_IN','FINAL_CLOSURE')
+           AND c.delta_kmf<>0 AND c.market_id IS NOT NULL
+           ${scope.marketId ? 'AND c.market_id=$1' : ''}) AS source_count,
+       (SELECT COALESCE(SUM(m.amount_native),0)::text FROM financial_movements m
+         WHERE m.source_kind='cash_custody_movement'
+           ${scope.marketId ? 'AND m.market_id=$1' : ''}) AS journal_abs,
+       (SELECT COALESCE(SUM(ABS(c.delta_kmf)),0)::text FROM cash_custody_movements c
+         WHERE c.source IN ('TRANSFER_OUT','TRANSFER_IN','FINAL_CLOSURE')
+           AND c.delta_kmf<>0 AND c.market_id IS NOT NULL
+           ${scope.marketId ? 'AND c.market_id=$1' : ''}) AS source_abs,
+       (SELECT COALESCE(SUM(m.amount_native * COALESCE((m.provenance->>'delta_sign')::numeric,0)),0)::text
+          FROM financial_movements m
+         WHERE m.source_kind='cash_custody_movement'
+           ${scope.marketId ? 'AND m.market_id=$1' : ''}) AS journal_signed,
+       (SELECT COALESCE(SUM(c.delta_kmf),0)::text FROM cash_custody_movements c
+         WHERE c.source IN ('TRANSFER_OUT','TRANSFER_IN','FINAL_CLOSURE')
+           AND c.delta_kmf<>0 AND c.market_id IS NOT NULL
+           ${scope.marketId ? 'AND c.market_id=$1' : ''}) AS source_signed`,
+    scope.marketId ? [scope.marketId] : [])).rows[0];
+  add('custody_event_count', custody.journal_count, custody.source_count);
+  add('custody_abs_kmf', custody.journal_abs, custody.source_abs);
+  add('custody_signed_kmf', custody.journal_signed, custody.source_signed);
+
+  const freight = (await client.query(
+    `SELECT (SELECT COALESCE(SUM(m.amount_native),0)::text FROM financial_movements m
+             WHERE m.source_kind = 'shipment_freight' ${scope.marketId ? 'AND m.market_id = $1' : ''}) AS journal_kmf,
+            (SELECT COALESCE(SUM(s.freight_invoice_kmf),0)::text FROM international_shipments s
+             WHERE s.freight_invoice_kmf > 0 AND s.freight_invoice_ref IS NOT NULL
+               AND EXISTS(SELECT 1 FROM international_shipment_hub_units hu WHERE hu.shipment_id=s.id)
+               ${scope.marketId ? 'AND s.market_id = $1' : ''}) AS source_kmf`,
+    scope.marketId ? [scope.marketId] : [])).rows[0];
+  add('shipment_freight_kmf', freight.journal_kmf, freight.source_kmf);
+
+  const charges = (await client.query(
+    `SELECT (SELECT COALESCE(SUM(CASE WHEN m.direction='cost_reversal' THEN -m.amount_native ELSE m.amount_native END),0)::text
+               FROM financial_movements m WHERE m.source_kind='shipment_charge'
+               ${scope.marketId ? 'AND m.market_id=$1' : ''}) AS journal_kmf,
+            (SELECT COALESCE(SUM(CASE WHEN c.kind='credit' THEN -c.amount_kmf ELSE c.amount_kmf END),0)::text
+               FROM international_shipment_charges c JOIN international_shipments s ON s.id=c.shipment_id
+               WHERE c.amount_kmf > 0
+                 AND EXISTS(SELECT 1 FROM international_shipment_hub_units hu WHERE hu.shipment_id=s.id)
+                 ${scope.marketId ? 'AND s.market_id=$1' : ''}) AS source_kmf`,
+    scope.marketId ? [scope.marketId] : [])).rows[0];
+  add('shipment_charges_net_kmf', charges.journal_kmf, charges.source_kmf);
+
+  const customs = (await client.query(
+    `SELECT (SELECT COALESCE(SUM(m.amount_native),0)::text FROM financial_movements m
+              WHERE m.source_kind='shipment_customs' ${scope.marketId ? 'AND m.market_id=$1' : ''}) AS journal_kmf,
+            (SELECT COALESCE(SUM(cs.customs_paid_kmf),0)::text
+               FROM customs_shipments cs JOIN international_shipments s ON s.customs_shipment_id=cs.id AND s.market_id=cs.market_id
+              WHERE cs.declared_at IS NOT NULL AND cs.customs_paid_kmf>0
+                AND EXISTS(SELECT 1 FROM international_shipment_hub_units hu WHERE hu.shipment_id=s.id)
+                ${scope.marketId ? 'AND s.market_id=$1' : ''}) AS source_kmf`,
+    scope.marketId ? [scope.marketId] : [])).rows[0];
+  add('shipment_customs_kmf', customs.journal_kmf, customs.source_kmf);
 
   const orphans = (await client.query(
     `SELECT COUNT(*)::int AS n FROM financial_movements m
