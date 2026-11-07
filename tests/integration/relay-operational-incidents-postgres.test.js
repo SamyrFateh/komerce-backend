@@ -61,7 +61,7 @@ if (!process.env.DATABASE_URL) {
     for (const [incidentId, orderId, itemId, type, impact] of incidents) {
       await db.query(`INSERT INTO incidents (id,order_id,order_item_id,incident_type,title,severity,client_impact)
                       VALUES ($1,$2,$3,$4,$5,'high',$6)`,
-        [incidentId, orderId, itemId, `${tag}-${type}`, impact]);
+        [incidentId, orderId, itemId, type, `${tag}-${type}`, impact]);
     }
   });
 
