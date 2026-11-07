@@ -206,7 +206,7 @@ router.get(
   async (req, res, next) => {
     try {
       res.set('Cache-Control', 'private, no-store');
-      const payload = await workspace.buildWorkspace({ market: req.workspaceMarket });
+      const payload = await workspace.buildWorkspace({ market: req.workspaceMarket, viewer: req.user });
       return res.json(payload);
     } catch (err) {
       log.error({ err, market: req.workspaceMarket && req.workspaceMarket.code }, '[operations-workspace] read failed');
