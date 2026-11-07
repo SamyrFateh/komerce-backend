@@ -1,0 +1,186 @@
+name: Staging — certification métier V1 complète CM ou CG
+
+# Démarre uniquement après les tarifs de vente RECETTE. Une fixture HTTP, une fixture Chromium.
+# Chaque étape réutilise les runners certifiés sur KM, garde de cible et SHA inclus. Acteurs E2E réels.
+# Une issue doit être ouverte par le propriétaire avec le titre exact [staging-op] full-cert-CM ou full-cert-CG.
+on:
+  workflow_dispatch:
+    inputs:
+      market:
+        description: 'Marché de recette'
+        required: true
+        type: choice
+        options: [CM, CG]
+      confirmation:
+        description: 'Pour écrire : RUN-FULL-CERT-<CODE>'
+        required: true
+        type: string
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: komerce-staging-full-certification
+  cancel-in-progress: false
+
+jobs:
+  full-cert:
+    if: >-
+      (github.event_name == 'workflow_dispatch' &&
+       github.actor == github.repository_owner &&
+       inputs.confirmation == format('RUN-FULL-CERT-{0}', inputs.market)) ||
+      (github.event_name == 'issues' &&
+       github.event.issue.user.login == github.repository_owner &&
+       (github.event.issue.title == '[staging-op] full-cert-CM' ||
+        github.event.issue.title == '[staging-op] full-cert-CG'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_TARGET_ENV: staging
+      EXPECTED_RAILWAY_ENVIRONMENT: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      HUB_V1_E2E_APPLY_MODE: approved
+      CERT_MARKET: ${{ github.event_name == 'issues' && (github.event.issue.title == '[staging-op] full-cert-CM' && 'CM' || 'CG') || inputs.market }}
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      HTTP_RUNNER_BASE_URL: https://komerce-backend-production.up.railway.app
+      HTTP_RUNNER_ALLOW_DISTRIBUTION: '1'
+      E2E_CLICKS_ALLOW_DISTRIBUTION: '1'
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      E2E_MARKET_OPERATOR_EMAIL: ${{ secrets.E2E_MARKET_OPERATOR_EMAIL }}
+      E2E_MARKET_OPERATOR_PASSWORD: ${{ secrets.E2E_MARKET_OPERATOR_PASSWORD }}
+      E2E_AGENT_HUB_EMAIL: ${{ secrets.E2E_AGENT_HUB_EMAIL }}
+      E2E_AGENT_HUB_PASSWORD: ${{ secrets.E2E_AGENT_HUB_PASSWORD }}
+      E2E_HUB_DIRECTOR_EMAIL: ${{ secrets.E2E_HUB_DIRECTOR_EMAIL }}
+      E2E_HUB_DIRECTOR_PASSWORD: ${{ secrets.E2E_HUB_DIRECTOR_PASSWORD }}
+      E2E_AGENT_RELAIS_EMAIL: ${{ secrets.E2E_AGENT_RELAIS_EMAIL }}
+      E2E_AGENT_RELAIS_PASSWORD: ${{ secrets.E2E_AGENT_RELAIS_PASSWORD }}
+      E2E_AGENT_TRANSITAIRE_EMAIL: ${{ secrets.E2E_AGENT_TRANSITAIRE_EMAIL }}
+      E2E_AGENT_TRANSITAIRE_PASSWORD: ${{ secrets.E2E_AGENT_TRANSITAIRE_PASSWORD }}
+      E2E_TRANSITAIRE_EMAIL: ${{ secrets.E2E_AGENT_TRANSITAIRE_EMAIL }}
+      E2E_TRANSITAIRE_PASSWORD: ${{ secrets.E2E_AGENT_TRANSITAIRE_PASSWORD }}
+      STRIPE_SECRET_KEY: sk_test_certification_placeholder
+      STRIPE_WEBHOOK_SECRET: whsec_certification_placeholder
+      PAYPAL_CLIENT_ID: ci-certification-placeholder
+      PAYPAL_CLIENT_SECRET: ci-certification-placeholder
+      PAYPAL_WEBHOOK_ID: ci-certification-placeholder
+      META_WA_APP_SECRET: ci-certification-placeholder
+      AUTHKEY_API_KEY: ci-certification-placeholder
+      JWT_SECRET: ci-certification-placeholder
+      QR_SECRET: ci-certification-placeholder
+      ADMIN_PASSWORD: ci-certification-placeholder
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Version du code déployé, SHA pin
+        run: node scripts/recette/resolve-staging-deploy-pin.js
+      - name: Empreinte stricte de la base staging
+        run: node scripts/recette/target-guard.js
+      - name: Vérifier les prérequis des runners et éviter tout parcours sans tarifs
+        shell: bash
+        run: |
+          set -euo pipefail
+          [ -n "$DATABASE_URL" ] && [ -n "$E2E_ADMIN_PASSWORD" ] && [ -n "$E2E_AGENT_RELAIS_PASSWORD" ]
+          export HUB_V1_MARKET="$CERT_MARKET"
+          export HTTP_RUNNER_MARKET="$CERT_MARKET"
+          export E2E_CLICKS_MARKET="$CERT_MARKET"
+          node - <<'NODE'
+          const db = require('./db');
+          (async () => {
+            const { rows } = await db.query(
+              `SELECT rate_key FROM market_transport_sale_rates r
+                 JOIN markets m ON m.id=r.market_id
+                WHERE m.code=$1 AND r.revoked_at IS NULL AND r.evidence_ref LIKE 'RECETTE-%'`,
+              [process.env.CERT_MARKET]);
+            if (!['SEA_KMF_PER_KG_COMMERCIAL','AIR_KMF_PER_KG_TAXABLE'].every(k => rows.some(x=>x.rate_key===k))) {
+              throw new Error('RECETTE_TRANSPORT_SALE_RATES_MISSING');
+            }
+          })().then(()=>db.pool.end()).catch(e=>{console.error(e.message);process.exitCode=1;db.pool.end()});
+          NODE
+      - name: Fixture HTTP neuve
+        shell: bash
+        run: |
+          set -euo pipefail
+          RUN8="$(node -p 'require("crypto").randomBytes(4).toString("hex").toUpperCase()')"
+          echo "CERT_RUN8_API=$RUN8" >> "$GITHUB_ENV"
+          echo "HUB_V1_MARKET=$CERT_MARKET" >> "$GITHUB_ENV"
+          echo "HTTP_RUNNER_MARKET=$CERT_MARKET" >> "$GITHUB_ENV"
+          echo "E2E_CLICKS_MARKET=$CERT_MARKET" >> "$GITHUB_ENV"
+          node scripts/recette/hub-v1-certification-runner.js --allow-remote-staging --run="$RUN8" --market="$CERT_MARKET" --stop-after=2 --dry-run
+          node scripts/recette/hub-v1-certification-runner.js --allow-remote-staging --run="$RUN8" --market="$CERT_MARKET" --stop-after=2
+      - name: Réassigner le relais E2E à la fixture HTTP (scopes existants)
+        env:
+          RELAY_MODE: to-fixture
+          RELAY_RUN8: ${{ env.CERT_RUN8_API }}
+          RELAY_APPLY: '1'
+          RELAY_CONFIRMATION: REASSIGN-E2E-RELAY
+        run: node scripts/recette/staging-e2e-relay-reassign.js
+      - name: Actions API — chaîne achats
+        env:
+          HTTP_RUNNER_RUN8: ${{ env.CERT_RUN8_API }}
+        run: node scripts/recette/hub-v1-http-action-runner.js
+      - name: Actions API — chaîne physique et distribution
+        env:
+          HTTP_RUNNER_RUN8: ${{ env.CERT_RUN8_API }}
+        run: node scripts/recette/hub-v1-http-physical-chain.js
+      - name: Fixture Chromium indépendante
+        shell: bash
+        run: |
+          set -euo pipefail
+          RUN8="$(node -p 'require("crypto").randomBytes(4).toString("hex").toUpperCase()')"
+          echo "CERT_RUN8_CLICKS=$RUN8" >> "$GITHUB_ENV"
+          node scripts/recette/hub-v1-certification-runner.js --allow-remote-staging --run="$RUN8" --market="$CERT_MARKET" --stop-after=2 --dry-run
+          node scripts/recette/hub-v1-certification-runner.js --allow-remote-staging --run="$RUN8" --market="$CERT_MARKET" --stop-after=2
+      - name: Réassigner le relais E2E à la fixture Chromium
+        env:
+          RELAY_MODE: to-fixture
+          RELAY_RUN8: ${{ env.CERT_RUN8_CLICKS }}
+          RELAY_APPLY: '1'
+          RELAY_CONFIRMATION: REASSIGN-E2E-RELAY
+        run: node scripts/recette/staging-e2e-relay-reassign.js
+      - name: Actions API — chaîne achats, fixture Chromium
+        env:
+          HTTP_RUNNER_RUN8: ${{ env.CERT_RUN8_CLICKS }}
+        run: node scripts/recette/hub-v1-http-action-runner.js
+      - name: Installer Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Clics Chromium réels
+        env:
+          E2E_PROOF_RUN8: ${{ env.CERT_RUN8_CLICKS }}
+        run: npx playwright test --config=playwright.hub-v1-clicks.config.js
+      - name: Isolation transversale depuis le relais du marché cible
+        run: node scripts/recette/staging-market-isolation.js
+      - name: Résumé des preuves
+        if: always()
+        shell: bash
+        run: |
+          echo "## Marché $CERT_MARKET — certification staging" >> "$GITHUB_STEP_SUMMARY"
+          echo "Fixture HTTP: ${CERT_RUN8_API:-non créée}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Fixture Chromium: ${CERT_RUN8_CLICKS:-non créée}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Vérifier les verdicts JSON et captures dans les artefacts du run; aucun GO implicite." >> "$GITHUB_STEP_SUMMARY"
+      - name: Archiver toutes les preuves, même en échec
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-full-cert-${{ env.CERT_MARKET }}-${{ github.run_id }}
+          path: |
+            test-results/hub-v1-cert/
+            test-results/hub-v1-http/
+            test-results/hub-v1-clicks/
+            test-results/relay-reassign/
+            test-results/market-isolation/
+          if-no-files-found: warn
+          retention-days: 30
