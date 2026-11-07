@@ -43,11 +43,65 @@ body{background:#fafcff;color:#25364c}.shell{max-width:980px;padding:20px 22px}.
 .wizard-actions .btn{min-height:46px}.wizard-pass{background:#e2f7ed;color:#146444;border-color:#98dcb9!important}.wizard-actions .danger{background:#fff2f1;color:#ad3533;border-color:#eeb6b1}.wizard-grid .wizard-navigation{margin-top:12px;padding-top:10px;border-top:1px solid #ebf0f5}.wizard-navigation .btn{min-width:125px}
 .proof-deck{max-width:760px;margin:38px auto 7px;border-top:1px solid #e6edf5;padding-top:12px}.proof-deck h2{font-size:16px;margin:5px 0}.proof-deck .muted{font-size:12px}.detail-group{max-width:760px;margin:9px auto;border-color:#e2eaf2;border-radius:12px}.detail-group>summary{padding:13px 17px;font-size:13px;color:#3a5979}.detail-group>summary small{font-size:11px}.detail-group .up{margin:0 12px 14px}
 @media(max-width:760px){.shell{padding:13px}.top h1{font-size:21px}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.wizard-setup{padding:17px}.wizard-setup h2{font-size:21px}#wizardSetupControls{grid-template-columns:1fr}#wizardSetupControls form{display:flex;flex-wrap:wrap}#wizardSetupControls form input{min-width:150px}.wizard-grid>.panel:first-child{padding:19px}.wizard-grid h2{font-size:22px}.wizard-phases span{font-size:11px}.detail-group>summary small{display:none}}
+
+/* La recette métier V1 est le guide de premier niveau, Golden historique en dessous. */
+.scenario-hub{max-width:920px;margin:14px auto 20px;border:1px solid #c4d9e8;box-shadow:0 12px 34px rgba(26,65,106,.06)}
+.scenario-hub>summary{font-size:15px;color:#1f567e;background:#f0f8ff}
+.scenario-hub .scenario-inner{padding:6px 22px 23px}
+.scenario-market-rule{font-size:12px;font-weight:700;line-height:1.55;border:1px solid #cce3f5;background:#f2f9ff;border-radius:10px;padding:10px 12px;color:#215e82}
+.scenario-hub .scenario-validate .btn{margin-top:6px}
+@media(max-width:760px){.scenario-hub .scenario-inner{padding:5px 13px 16px}}
 </style>
 </head>
 <body>
 <main class="shell">
   <div class="top"><div><div class="eyebrow">KOMERCE · RECETTE GUIDÉE</div><h1>Suivre une commande de A à Z</h1><div class="sub">Une seule vérification à la fois, de la commande jusqu'à la clôture.</div></div><span id="global" class="badge">NON DÉMARRÉ</span></div>
+  <details id="extendedRecipe" class="detail-group scenario-hub" open>
+  <summary>Recette guidée V1 · Hub & marchés <small>Actions réelles · rôles · preuves · aucun GO automatique</small></summary>
+  <div class="scenario-inner">
+    <p class="muted">Sélectionne le marché, le parcours, la référence exacte de commande et le SHA déployé. À chaque étape : Comprendre → Voir le vrai écran → Se connecter avec le bon rôle → Consigner le résultat observé et sa preuve. Les actions elles-mêmes restent sur les écrans Komerce. Les marchés suspendus ne sont jamais activés par ce guide ; aucune simulation n'est certifiée.</p>
+    <div class="scenario-fields">
+      <label>Parcours<select id="scenarioTrack"><option value="v1_manual">Hub V1 · Achat manuel → livraison</option>
+       <option value="v1_api">Hub V1 · Achat API certifié → livraison</option>
+       <option value="v1_semi">Hub V1 · Achat semi-API → livraison</option>
+       <option value="v1_local">V1 · Commande locale sans Hub</option>
+       <option value="v1_partial">V1 · Réception partielle et reliquat</option>
+       <option value="v1_market">Marché V1 · Readiness, droits et isolation</option>
+       <option value="v1_dj">DJ · Refus sur marché inactif</option>
+       <option value="rct1">RCT1 × Golden · P1–P7 (historique)</option><option value="process">Parcours canonique · offre → clôture</option><option value="dashboards">5 dashboards de décision + 3 Live</option><option value="cj">CJ · 20 / 15 / 5</option><option value="collective">Partage / financement collectif</option><option value="l1l10">Backoffice · L1 à L10</option></select></label>
+      <label>Market<select id="scenarioMarket"><option value="KM">KM · Comores</option><option value="CM">CM · Cameroun</option><option value="CG">CG · Congo</option><option value="YT">YT · Mayotte</option><option value="DJ">DJ · Djibouti (refus)</option></select></label>
+      <label>Fixture / commande<input id="scenarioRef" maxlength="80" placeholder="ID de fixture / commande"></label>
+      <label>SHA staging vérifié<input id="scenarioSha" maxlength="40" placeholder="Commit déployé (7–40 hex)"></label>
+    </div>
+    <div class="actions"><button type="button" class="btn primary" id="scenarioStart">Ouvrir ce guide</button></div>
+    <p id="scenarioMessage" class="muted" aria-live="polite">Choisis un scénario puis sa version cible, sans modifier les données métier.</p>
+    <section id="scenarioStage" hidden aria-label="Parcours de recette complémentaire">
+      <div class="scenario-head"><strong id="scenarioHeading"></strong><span id="scenarioVersion" class="muted"></span></div>
+      <div class="scenario-head"><span id="scenarioCount"></span><span id="scenarioProgress"></span></div>
+      <nav id="scenarioPhases" class="scenario-phase" aria-label="Phase en cours">1 · Comprendre</nav>
+      <h3 id="scenarioTitle"></h3>
+      <p id="scenarioExpected"></p>
+      <p id="scenarioMarketRule" class="scenario-market-rule"></p>
+      <div class="scenario-view">
+        <p id="scenarioActor" class="muted"></p>
+        <p><strong>Preuve attendue :</strong> <span id="scenarioProofExpected"></span></p>
+        <p><a id="scenarioOpen" class="btn" target="_blank" rel="noopener">Ouvrir l'écran réel ↗</a> <a id="scenarioSource" target="_blank" rel="noopener">Source du contrôle ↗</a></p>
+      </div>
+      <div class="scenario-validate">
+        <p id="scenarioState" class="muted"></p>
+        <p id="scenarioAuth" class="muted">Accès authentifié : NON VÉRIFIÉ</p>
+        <button id="scenarioAuthButton" class="btn" type="button">Vérifier la lecture admin</button> <a href="/login.html" class="btn" target="_blank" rel="noopener">Ouvrir la connexion Backoffice ↗</a>
+        <label>Ce que j'ai réellement observé<textarea id="scenarioNote" rows="3" maxlength="1600" placeholder="Comportement vu, attendu / observé, rôle et écart éventuel"></textarea></label>
+        <label>Référence de preuve (URL capture, HAR, JSON, ID)<input id="scenarioProof" maxlength="300" placeholder="Lien ou identifiant vérifiable"></label>
+        <div class="actions"><button id="scenarioObserved" class="btn wizard-pass" type="button">Enregistrer observation humaine</button><button id="scenarioBlocked" class="btn danger" type="button">Signaler blocage</button><button id="scenarioExport" class="btn" type="button">Exporter les preuves humaines (JSON)</button></div>
+        <p id="scenarioSaved" class="muted">Sauvegarde locale par market, référence, SHA et guide. Ne colle ni OTP ni secret.</p>
+        <p class="muted">« Observé » ne signifie jamais « preuve backend validée » ni « recette certifiée ». Ne saisis aucun secret ni donnée personnelle dans les observations.</p>
+      </div>
+      <div class="wizard-navigation"><button id="scenarioBack" class="btn" type="button">← Précédent</button><button id="scenarioNext" class="btn primary" type="button">Voir l'écran →</button></div>
+      <p><button id="scenarioRestart" class="btn" type="button">Effacer le suivi local de ce scénario</button></p>
+    </section>
+  </div>
+</details>
   <div class="stats" id="goldenStats" hidden><div class="stat"><small>Market</small><strong id="marketStat">KM · Comores</strong></div><div class="stat"><small>Commande</small><strong id="orderRef">à renseigner</strong></div><div class="stat"><small>Validé</small><strong id="score">0 / 10</strong></div><div class="stat"><small>Verdict humain</small><strong id="verdict">En attente</strong></div></div>
   <section class="wizard-setup" id="wizardSetup" aria-label="Préparer la recette"><div><div class="eyebrow">ÉTAPE 0 · PRÉPARER</div><h2>Quelle commande veux-tu tester ?</h2><p>Crée une Golden de test ou reprends une commande existante.</p></div><div id="wizardSetupControls"></div><p class="setup-note">Une Golden de test ne certifie pas un véritable achat client. Les observations humaines et les preuves automatiques restent distinctes.</p></section>
   <div id="wizardStatus" aria-live="polite" role="status"><a id="goldenLogin" class="btn" target="_blank" rel="noopener" href="/login.html" hidden>Se connecter au Backoffice ↗</a><p id="caseSaveState" class="muted">Version de la recette en cours de vérification…</p></div>
@@ -75,44 +129,6 @@ body{background:#fafcff;color:#25364c}.shell{max-width:980px;padding:20px 22px}.
     </aside>
   </div>
   </section>
-  <details id="extendedRecipe" class="detail-group scenario-hub">
-  <summary>04 · Recettes de bout en bout <small>RCT1 × P1–P7 · processus canonique · 8 dashboards · CJ · collectif · remédiations historiques</small></summary>
-  <div class="scenario-inner">
-    <p class="muted">Parcours canoniques guidés : Comprendre → Visualiser → Valider. Chaque écran conserve sa vérité propriétaire et ses droits. Aucune preuve backend n'est déduite du constat humain ; RCT1 et activité réelle restent distincts. Le moteur collectif historique 48 h / 72 h peut différer du contrat Liste actif.</p>
-    <div class="scenario-fields">
-      <label>Parcours<select id="scenarioTrack"><option value="rct1">RCT1 × Golden · P1–P7</option><option value="process">Parcours canonique · offre → clôture</option><option value="dashboards">5 dashboards de décision + 3 Live</option><option value="cj">CJ · 20 / 15 / 5</option><option value="collective">Partage / financement collectif</option><option value="l1l10">Backoffice · L1 à L10</option></select></label>
-      <label>Market<select id="scenarioMarket"><option value="KM">KM · Comores</option><option value="CM">CM · Cameroun</option><option value="CG">CG · Congo</option></select></label>
-      <label>Fixture / commande<input id="scenarioRef" maxlength="80" placeholder="ID de fixture / commande"></label>
-      <label>SHA staging vérifié<input id="scenarioSha" maxlength="40" placeholder="Commit déployé (7–40 hex)"></label>
-    </div>
-    <div class="actions"><button type="button" class="btn primary" id="scenarioStart">Ouvrir ce guide</button></div>
-    <p id="scenarioMessage" class="muted" aria-live="polite">Choisis un scénario puis sa version cible, sans modifier les données métier.</p>
-    <section id="scenarioStage" hidden aria-label="Parcours de recette complémentaire">
-      <div class="scenario-head"><strong id="scenarioHeading"></strong><span id="scenarioVersion" class="muted"></span></div>
-      <div class="scenario-head"><span id="scenarioCount"></span><span id="scenarioProgress"></span></div>
-      <nav id="scenarioPhases" class="scenario-phase" aria-label="Phase en cours">1 · Comprendre</nav>
-      <h3 id="scenarioTitle"></h3>
-      <p id="scenarioExpected"></p>
-      <div class="scenario-view">
-        <p id="scenarioActor" class="muted"></p>
-        <p><strong>Preuve attendue :</strong> <span id="scenarioProofExpected"></span></p>
-        <p><a id="scenarioOpen" class="btn" target="_blank" rel="noopener">Ouvrir l'écran réel ↗</a> <a id="scenarioSource" target="_blank" rel="noopener">Source du contrôle ↗</a></p>
-      </div>
-      <div class="scenario-validate">
-        <p id="scenarioState" class="muted"></p>
-        <p id="scenarioAuth" class="muted">Accès authentifié : NON VÉRIFIÉ</p>
-        <button id="scenarioAuthButton" class="btn" type="button">Vérifier la lecture admin</button> <a href="/login.html" class="btn" target="_blank" rel="noopener">Ouvrir la connexion Backoffice ↗</a>
-        <label>Ce que j'ai réellement observé<textarea id="scenarioNote" rows="3" maxlength="1600" placeholder="Comportement vu, attendu / observé, rôle et écart éventuel"></textarea></label>
-        <label>Référence de preuve (URL capture, HAR, JSON, ID)<input id="scenarioProof" maxlength="300" placeholder="Lien ou identifiant vérifiable"></label>
-        <div class="actions"><button id="scenarioObserved" class="btn wizard-pass" type="button">Enregistrer observation humaine</button><button id="scenarioBlocked" class="btn danger" type="button">Signaler blocage</button></div>
-        <p id="scenarioSaved" class="muted">Sauvegarde locale par market, référence, SHA et guide. Ne colle ni OTP ni secret.</p>
-        <p class="muted">« Observé » ne signifie jamais « preuve backend validée » ni « recette certifiée ».</p>
-      </div>
-      <div class="wizard-navigation"><button id="scenarioBack" class="btn" type="button">← Précédent</button><button id="scenarioNext" class="btn primary" type="button">Voir l'écran →</button></div>
-      <p><button id="scenarioRestart" class="btn" type="button">Effacer le suivi local de ce scénario</button></p>
-    </section>
-  </div>
-</details>
 <div id="evidence-deep-dive" class="proof-deck"><div class="eyebrow">EN SAVOIR PLUS</div><h2>Détails et preuves (facultatif)</h2><p class="muted">Les preuves techniques restent distinctes de ton verdict humain.</p></div>
   <details class="detail-group"><summary>01 · Origine du produit <small>Sourcing → Raffinerie → Catalogue → Boutique</small></summary>
   <section class="up" aria-label="Parcours amont">
@@ -148,5 +164,6 @@ body{background:#fafcff;color:#25364c}.shell{max-width:980px;padding:20px 22px}.
 </main>
 <script defer src="/js/golden-e2e-cockpit-journey.js"></script>
 <script defer src="/js/golden-e2e-cockpit-upstream.js"></script>
+<script defer src="/js/guided-v1-tracks.js"></script>
 <script defer src="/js/golden-recipe-scenarios.js"></script>
 </body></html>

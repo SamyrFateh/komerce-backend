@@ -18,11 +18,12 @@
 'use strict';
 (()=>{
 const $=id=>document.getElementById(id);
-const RECIPE_VERSION='HUMAN-RECETTE-V1-2026-10-14';
+const RECIPE_VERSION='HUMAN-RECETTE-V1-2026-11-06';
 const PREFIX='komerce.recipe.scenarios.';
 const GITHUB='https://github.com/SamyrFateh/komerce-backend/blob/';
 const e=(title,actor,path,expected,proof,source)=>({title,actor,path,expected,proof,source});
 const TRACKS=Object.freeze({
+ ...((typeof window !== 'undefined' && window.KomerceGuidedV1?.tracks) || {}),
  cj:{label:'CJ · lot 20 / 15 / 5',steps:[
   e('Identifier la source CJ','Sourcing','/admin/workspaces/sourcing','Identifier le run CJ exact, le Market et les références fournisseur ; ne pas réutiliser un seed comme preuve réelle.','Run ID, fournisseur, SKU, Market, date UTC, état de lecture réel.','docs/audits/FULL_RECETTE_E2E_EVIDENCE_REGISTER.md'),
   e('Rapprocher les 20 entrées','Sourcing','/admin/workspaces/sourcing','Retrouver les 20 éléments attendus par la fixture 20/15/5 ; confronter les identifiants au run canonique.','Décompte, liste des 20 IDs distincts et origine de la fixture.','services/suppliers/connectors/cj-connector.js'),
@@ -116,6 +117,12 @@ function restore(){
 }
 function showMessage(value){$('scenarioMessage').textContent=value;}
 function hrefForStep(path){
+ if(run&&path.includes(':ref'))path=path.replace(':ref',encodeURIComponent(run.ref));
+ // Sélecteur de marché = contexte UI uniquement. Jamais une autorité : le
+ // serveur contrôle les attributions et les droits de chaque opération.
+ if(run&&run.track.startsWith('v1_')&&run.market!=='DJ'&&
+    /^\/admin\/(?:workspaces\/pricing|commerce|finance|orders)(?:\?|$)/.test(path)&&!path.includes('?'))
+   path+='?market='+encodeURIComponent(run.market);
  if(!run||!/^RCT1(?:-|$)/.test(run.ref))return path;
  if(!/^\/admin\/(?:commerce|finance)(?:\?|$)/.test(path))return path;
  return path+(path.includes('?')?'&':'?')+'simulation_scope=RCT1';
@@ -126,8 +133,20 @@ function scopeNote(path){
   ? ' · RCT1 : filtre explicite sur cet écran.'
   : ' · RCT1 : écran sans filtre de simulation certifié ; rapprocher uniquement les références et faits canoniques.';
 }
-function record(status){
+async function record(status){
  if(!run)return;
+ const activeKey=key(),activeIndex=stepIndex;
+ // Ne jamais perdre le constat saisi : checkAuth() redessine le formulaire.
+ const noteDraft=$('scenarioNote').value,proofDraft=$('scenarioProof').value;
+ // La session peut avoir changé dans l'onglet où l'opérateur a réellement
+ // travaillé. Refaire les deux GET au moment du constat, sans enregistrer
+ // une observation sous l'identité vérifiée à une étape précédente.
+ if(status==='observed'&&run.track.startsWith('v1_')){
+  await checkAuth();
+  if(!run||key()!==activeKey||stepIndex!==activeIndex)return;
+  $('scenarioNote').value=noteDraft;
+  $('scenarioProof').value=proofDraft;
+ }
  const note=$('scenarioNote').value.trim().slice(0,1600);
  const proof=$('scenarioProof').value.trim().slice(0,300);
  if(note.length<8){showMessage('Décris d’abord ce qui est réellement observé (8 caractères minimum).');return;}
@@ -146,6 +165,8 @@ function render(){
  $('scenarioHeading').textContent=track.label+' · '+run.market+' · '+run.ref;
  $('scenarioCount').textContent='Étape '+(stepIndex+1)+' / '+track.steps.length;
  $('scenarioTitle').textContent=s.title;
+ if($('scenarioMarketRule'))$('scenarioMarketRule').textContent=window.KomerceGuidedV1?.markets?.[run.market] || '';
+ $('scenarioAuthButton').textContent=run.track.startsWith('v1_')?'Vérifier cette session et son rôle':'Vérifier la lecture admin';
  $('scenarioExpected').textContent=s.expected;
  $('scenarioActor').textContent='Acteur : '+s.actor;
  $('scenarioProofExpected').textContent=s.proof+scopeNote(s.path);
@@ -181,6 +202,25 @@ async function checkAuth(){
    render();return;
   }
   verifiedCommit=actual;
+  if(run.track.startsWith('v1_')){
+   const step=TRACKS[run.track].steps[stepIndex];
+   // GET uniquement. Aucune lecture de session, SHA ou compte ne donne
+   // l'autorisation de passer une transition métier réelle.
+   const identity=await fetch('/api/auth/me',{credentials:'include',headers:{Accept:'application/json'}});
+   if(!run||key()!==expectedKey||currentProbe!==probeId)return;
+   const payload=await identity.json().catch(()=>({}));
+   const actualRole=String(payload.role||payload.user?.role||'');
+   if(!identity.ok||!step.roles.includes(actualRole)){
+    $('scenarioAuth').textContent='BLOQUÉ : acteur requis '+step.actor+
+      ', rôle connecté '+(actualRole||'inconnu')+' (HTTP '+identity.status+').';
+    showMessage('Ce rôle ne peut pas valider le constat de cette étape. Se connecter avec le profil métier prévu.');
+   }else{
+    authReady=true;
+    $('scenarioAuth').textContent='SHA '+actual.slice(0,12)+' vérifié · rôle '+actualRole+
+      ' identifié. Grants fins, action HTTP et résultat métier : À PROUVER séparément.';
+   }
+   render();return;
+  }
   const r=await fetch('/api/admin/entities/golden-upstream?market='+encodeURIComponent(run.market),{credentials:'include',headers:{Accept:'application/json'}});
   if(!run||key()!==expectedKey||currentProbe!==probeId)return;
   if(!r.ok){
@@ -199,8 +239,12 @@ function begin(){
  const track=$('scenarioTrack').value,market=$('scenarioMarket').value;
  const ref=$('scenarioRef').value.trim().slice(0,80).toUpperCase();
  const sha=$('scenarioSha').value.trim().toLowerCase();
- if(!TRACKS[track]||!['KM','CM','CG'].includes(market)||!ref||!/^[0-9a-f]{7,40}$/.test(sha)){
-  showMessage('Choisis un guide et un market, renseigne une référence de fixture/commande et un SHA staging valide.');
+ const v1=track.startsWith('v1_');
+ const validMarket=v1?['KM','CM','CG','YT','DJ'].includes(market):['KM','CM','CG'].includes(market);
+ const validCircuit=!(market==='DJ'&&track!=='v1_dj') &&
+   !(track==='v1_dj'&&market!=='DJ');
+ if(!TRACKS[track]||!validMarket||!validCircuit||!ref||!/^[0-9a-f]{7,40}$/.test(sha)){
+  showMessage('Choisis un parcours compatible avec ce marché (DJ : refus uniquement), une référence et un SHA staging valide.');
   return;
  }
  run={track,market,ref,sha};
@@ -216,11 +260,11 @@ $('scenarioObserved').addEventListener('click',()=>record('observed'));
 $('scenarioBlocked').addEventListener('click',()=>record('blocked'));
 $('scenarioNext').addEventListener('click',()=>{
  if(phase<2){phase++;render();return;}
- if(records[stepIndex].status==='observed'&&stepIndex<TRACKS[run.track].steps.length-1){stepIndex++;phase=0;render();}
+ if(records[stepIndex].status==='observed'&&stepIndex<TRACKS[run.track].steps.length-1){stepIndex++;phase=0;authReady=false;verifiedCommit=null;render();$('scenarioAuth').textContent='Rôle de cette nouvelle étape : NON VÉRIFIÉ';}
 });
 $('scenarioBack').addEventListener('click',()=>{
  if(phase>0)phase--;
- else if(stepIndex>0){stepIndex--;phase=2;}
+ else if(stepIndex>0){stepIndex--;phase=2;authReady=false;verifiedCommit=null;$('scenarioAuth').textContent='Rôle de cette étape : NON VÉRIFIÉ';}
  render();
 });
 $('scenarioRestart').addEventListener('click',()=>{
@@ -229,9 +273,30 @@ $('scenarioRestart').addEventListener('click',()=>{
  run=null;authReady=false;verifiedCommit=null;++probeId;$('scenarioStage').hidden=true;
  showMessage('Guide fermé ; les constats locaux de ce périmètre ont été effacés.');
 });
+
+const exportButton=$('scenarioExport');
+if(exportButton)exportButton.addEventListener('click',()=>{
+ if(!run)return;
+ const record={schema:'komerce-human-guided-v1/1',non_certifying:true,exported_at:new Date().toISOString(),
+  scope:{...run},steps:TRACKS[run.track].steps.map((step,i)=>({
+   title:step.title,actor:step.actor,path:hrefForStep(step.path),
+   required_proof:step.proof,observation:records[i],
+   backend_verdict:'NOT_PROVEN_BY_HUMAN_GUIDE',
+  }))};
+ const blob=new Blob([JSON.stringify(record,null,2)],{type:'application/json'});
+ const url=URL.createObjectURL(blob),a=document.createElement('a');
+ a.href=url;a.download='komerce-recette-humaine-'+run.market+'-'+run.track+'-'+run.sha.slice(0,10)+'.json';
+ a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+});
+const shaInput=$('scenarioSha');
+if(shaInput)fetch('/health/version',{cache:'no-store',headers:{Accept:'application/json'}})
+ .then(async res=>res.ok?res.json():null).then(v=>{
+  if(v&&/^[a-f0-9]{40}$/i.test(v.commit||'')&&!shaInput.value.trim())
+   shaInput.value=v.commit.toLowerCase();
+ }).catch(()=>{});
 try{
  const last=JSON.parse(localStorage.getItem(PREFIX+'last')||'null');
- if(last&&TRACKS[last.track]&&['KM','CM','CG'].includes(last.market)&&typeof last.ref==='string'&&/^[0-9a-f]{7,40}$/.test(last.sha||'')){
+ if(last&&TRACKS[last.track]&&['KM','CM','CG','YT','DJ'].includes(last.market)&&typeof last.ref==='string'&&/^[0-9a-f]{7,40}$/.test(last.sha||'')){
   $('scenarioTrack').value=last.track;$('scenarioMarket').value=last.market;
   $('scenarioRef').value=last.ref;$('scenarioSha').value=last.sha;
   begin();
