@@ -326,6 +326,9 @@
         const idBox = make(doc, 'div', 'kmc-hub-board-identity');
         idBox.appendChild(make(doc, 'strong', '', order.reference));
         idBox.appendChild(make(doc, 'small', '', order.market + ' · ' + (order.market_name || order.market)));
+        if (order.current_key && order.stage_states?.[order.current_key] !== 'locked') {
+          tr.classList.add('is-hub-active-order');
+        }
         if (order.current_phase) {
           const phase = make(doc, 'div', 'kmc-hub-phase-summary');
           phase.appendChild(make(doc, 'span', 'kmc-hub-phase-title',
@@ -359,6 +362,16 @@
           if (order.current_key === key && state !== 'locked') {
             button.classList.add('is-stage-current');
             button.setAttribute('aria-current', 'step');
+            // Le texte porte le sens indépendamment du halo et de la couleur.
+            const focusLabel = state === 'critical' ? 'INCIDENT À TRAITER'
+              : state === 'warning' ? 'POINT À RÉSOUDRE'
+              : state === 'waiting' ? 'EN ATTENTE'
+              : state === 'ready' ? 'PRÊT À AGIR'
+              : state === 'progress' ? 'EN COURS'
+              : 'À TRAITER';
+            const focusSignal = make(doc, 'span', 'kmc-hub-stage-focus-label', focusLabel);
+            focusSignal.setAttribute('data-hub-focus-signal', state || 'unknown');
+            button.insertBefore(focusSignal, button.firstChild);
           }
           if (state === 'locked') {
             button.setAttribute('aria-label', order.reference + ' · ' + label + ' · Terminée, verrouillée · ' + (order[key] || '—'));
