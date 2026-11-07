@@ -1304,7 +1304,17 @@
       ui.MetricStrip.render(metrics, { items: context.mode==='relay-execution' ? metricItems(payload.summary).filter(x=>['cash','receive','collect'].includes(x.key)) : metricItems(payload.summary) });
     }
 
-    if (context.mode === 'relay-execution') {
+    // UX-07 : une vue = une question. Un seul groupe de sections à la fois.
+    // Mode « execution » (Hub live) : uniquement les actions Hub ; les actions Relais restent hors de cette surface.
+    const views = context.mode === 'relay-execution' ? RELAY_LIVE_TABS
+      : context.mode === 'execution' ? EXECUTION_VIEWS : WORKSPACE_VIEWS;
+    const view = views.some(item => item.id === context.view) ? context.view : views[0].id;
+    rootNode.appendChild(createViewTabs(doc, view, nextView => {
+      context.view = nextView;
+      renderPayload(rootNode, ui, doc, payload, context);
+    }, views));
+
+    if (context.mode === 'relay-execution' && view === 'relay') {
       const relay=payload.queues?.relay||{};
       const shipments=Array.isArray(context.relayShipments?.shipments)?context.relayShipments.shipments.length:null;
       const shortcuts=[
@@ -1328,16 +1338,6 @@
       }
       rootNode.appendChild(dock);
     }
-
-    // UX-07 : une vue = une question. Un seul groupe de sections à la fois.
-    // Mode « execution » (Hub live) : uniquement les actions Hub ; les actions Relais restent hors de cette surface.
-    const views = context.mode === 'relay-execution' ? RELAY_LIVE_TABS
-      : context.mode === 'execution' ? EXECUTION_VIEWS : WORKSPACE_VIEWS;
-    const view = views.some(item => item.id === context.view) ? context.view : views[0].id;
-    rootNode.appendChild(createViewTabs(doc, view, nextView => {
-      context.view = nextView;
-      renderPayload(rootNode, ui, doc, payload, context);
-    }, views));
 
     if ((view === 'hub' || view === 'inventory') && isHubReadOnly(context)) renderExecuteLink(rootNode, doc, context);
 
@@ -1470,7 +1470,7 @@
 
   function renderOrderActionSection(rootNode, ui, doc, context, config) {
     const slot = createSection(rootNode, ui, config.title, config.description);
-    if (config.jumpId) slot.id=config.jumpId;
+    if (config.jumpId && slot.parentElement) slot.parentElement.id=config.jumpId;
     renderActionRows(slot, doc, context, config, 'order');
   }
 
@@ -1498,7 +1498,7 @@
 
   function renderParcelActionSection(rootNode, ui, doc, context, config) {
     const slot = createSection(rootNode, ui, config.title, config.description);
-    if (config.jumpId) slot.id=config.jumpId;
+    if (config.jumpId && slot.parentElement) slot.parentElement.id=config.jumpId;
     const manual = manualReasonControls(doc);
     if ((config.rows||[]).length) slot.appendChild(manual.wrap);
     renderActionRows(slot, doc, context, Object.assign({}, config, { manualBody: manual.body }), 'parcel');
@@ -1532,7 +1532,7 @@
   function renderRelayShipmentsSection(rootNode, ui, doc, context) {
     const slot = createSection(rootNode, ui, 'Relais · Expéditions en route',
       'Ce qui a réellement été expédié, carton par carton. La réception est constatée par le relais, jamais déduite d’un statut posé par le Hub.');
-    slot.id='relay-execution-shipments';
+    if(slot.parentElement)slot.parentElement.id='relay-execution-shipments';
     slot.setAttribute('data-relay-shipments', '');
     const data = context.relayShipments;
     if (!data) {
@@ -1776,6 +1776,7 @@
       marketCode,
       mode: ['execution', 'relay-execution'].includes(options.mode) ? options.mode : 'pilot',
       user: options.user || null,
+      initialFocus: options.mode==='relay-execution' ? String(new URLSearchParams(String(globalThis.location?.search||'')).get('focus')||'') : '',
       view: options.mode === 'execution' ? 'supply' : undefined,
       confirm: typeof options.confirm === 'function'
         ? options.confirm
@@ -1820,6 +1821,12 @@
     ui.UIState.render(rootNode, 'loading', `Chargement du Workspace Opérations · ${marketCode}…`);
     try {
       await reload();
+      // Orientation de l'agent vers la file demandée depuis le cockpit.
+      // Seules les files existantes sont navigables ; aucune action métier n'est exécutée ici.
+      if (context.mode==='relay-execution' && ['shipments','cash','receive','collect'].includes(context.initialFocus)) {
+        const anchor=rootNode.querySelector?.('#relay-execution-'+context.initialFocus);
+        anchor?.scrollIntoView?.({block:'start',behavior:'auto'});
+      }
       return Object.freeze({
         marketCode,
         endpoint: endpointFor(marketCode),
