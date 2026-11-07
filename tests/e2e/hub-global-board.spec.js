@@ -106,7 +106,7 @@ test.describe('Étapes physiques explicites du Hub',()=>{
     await expect(row).toContainText('Transport : 1/2 · Réception attendue : 1/2');
     const step=row.locator('[data-hub-global-stage="Réception"]');
     await expect(step).toHaveClass(/is-stage-current/);
-    await expect(step).toContainText('Étape actuelle');
+    await expect(step).toContainText('À faire / suivre maintenant');
     await step.focus();
     await expect(step).toBeFocused();
   });
@@ -128,5 +128,40 @@ test.describe('Étapes physiques explicites du Hub',()=>{
     await expect(menu).toContainText('Aucune réouverture');
     await expect(menu.locator('a')).toHaveCount(0);
     expect(calls).toEqual(['GET /api/hub/board']);
+  });
+});
+
+
+test.describe('Lisibilité et fermeture du menu contextuel Hub',()=>{
+  test('clic hors menu le ferme, clic à l’intérieur le conserve et Échap ferme partout',async({page})=>{
+    const calls=await mount(page,'market_operator');
+    const stage=page.locator('[data-hub-global-order="CM-101"] [data-hub-global-stage="Réception"]');
+    const menu=page.locator('[data-hub-global-menu]');
+    await stage.click();
+    await expect(menu).toBeVisible();
+    await expect(menu).toContainText('Étape actuelle · Réception Hub');
+    await menu.locator('.kmc-hub-board-menu-title').click();
+    await expect(menu).toBeVisible();
+    await page.locator('.kmc-hub-global-toolbar').click();
+    await expect(menu).toBeHidden();
+    await stage.click({button:'right'});
+    await expect(menu).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(menu).toBeHidden();
+    await stage.click();
+    await expect(menu).toBeVisible();
+    await page.getByRole('searchbox',{name:'Rechercher une commande ou un marché'}).click();
+    await expect(menu).toBeHidden();
+    expect(calls).toEqual(['GET /api/hub/board']);
+  });
+
+  test('la phase active et la mise en évidence sont textuelles en plus de la couleur',async({page})=>{
+    await mount(page,'market_operator');
+    const row=page.locator('[data-hub-global-order="CM-101"]');
+    const step=row.locator('[data-hub-global-stage="Réception"]');
+    await expect(step).toHaveAttribute('aria-current','step');
+    await expect(step.locator('.kmc-hub-stage-primary')).toHaveText('1 / 2 reçu(s)');
+    await expect(step.locator('.kmc-hub-stage-proof')).toContainText('À faire / suivre maintenant');
+    await expect(row.locator('.kmc-hub-phase-title')).toContainText('Réception Hub');
   });
 });
