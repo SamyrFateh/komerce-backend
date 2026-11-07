@@ -355,7 +355,7 @@
   ]);
 
   // Relais live · Exécution : actions Relais uniquement (encaisser, réceptionner, remettre) — jamais Hub.
-  const RELAY_LIVE_TABS = Object.freeze([{ id: 'relay', label: 'Relais' }, { id: 'cash', label: 'Cash & dépôts' }]);
+  const RELAY_LIVE_TABS = Object.freeze([{ id: 'relay', label: 'Opérations' }, { id: 'cash', label: 'Cash & dépôts' }]);
 
   function newReceptionReference() {
     const crypto = globalThis.crypto;
@@ -1301,7 +1301,32 @@
       const metrics = doc.createElement('section');
       metrics.className = 'kmc-workspace-metrics';
       rootNode.appendChild(metrics);
-      ui.MetricStrip.render(metrics, { items: metricItems(payload.summary) });
+      ui.MetricStrip.render(metrics, { items: context.mode==='relay-execution' ? metricItems(payload.summary).filter(x=>['cash','receive','collect'].includes(x.key)) : metricItems(payload.summary) });
+    }
+
+    if (context.mode === 'relay-execution') {
+      const relay=payload.queues?.relay||{};
+      const shipments=Array.isArray(context.relayShipments?.shipments)?context.relayShipments.shipments.length:null;
+      const shortcuts=[
+        {key:'shipments',label:'Arrivages importés',count:shipments,icon:'↓'},
+        {key:'cash',label:'Encaisser',count:(relay.cash_pending||[]).length,icon:'€'},
+        {key:'receive',label:'Réception locale',count:(relay.to_receive||[]).filter(x=>x.local_receivable===true).length,icon:'⌂'},
+        {key:'collect',label:'Remise client',count:(relay.to_collect||[]).length,icon:'✓'},
+      ];
+      const dock=doc.createElement('nav');
+      dock.className='kmc-relay-execution-jumpbar';
+      dock.setAttribute('aria-label','Accès direct aux opérations du relais');
+      for(const item of shortcuts) {
+        const link=doc.createElement('a');
+        link.className='kmc-relay-execution-jump';
+        link.href='#relay-execution-'+item.key;
+        link.setAttribute('data-relay-execution-jump',item.key);
+        link.appendChild(text(doc,'span','kmc-relay-execution-jump-icon',item.icon));
+        link.appendChild(text(doc,'strong','',item.label));
+        if(item.count!==null)link.appendChild(text(doc,'b','',String(item.count)));
+        dock.appendChild(link);
+      }
+      rootNode.appendChild(dock);
     }
 
     // UX-07 : une vue = une question. Un seul groupe de sections à la fois.
@@ -1374,6 +1399,7 @@
       description: 'Paiements cash en attente dans ce marché. La confirmation appelle l’autorité paiement + auto-colis existante.',
       rows: payload.queues.relay.cash_pending,
       action: 'confirm-cash',
+      jumpId:'relay-execution-cash',
       actionLabel: 'Encaisser',
       suffix: row => `orders/${encodeURIComponent(row.reference)}/confirm-cash`,
       confirm: row => `Confirmer l’encaissement cash de ${row.reference} ?`,
@@ -1386,6 +1412,7 @@
       description: 'Colis local expédié par le Hub : réception par scan append-only. Les colis import se réceptionnent par attestation de l’expédition.',
       rows: payload.queues.relay.to_receive.filter(row => row.local_receivable === true),
       action: 'receive',
+      jumpId:'relay-execution-receive',
       actionLabel: 'Reçu au relais',
       suffix: row => `parcels/${encodeURIComponent(row.reference)}/receive`,
       confirm: row => `Confirmer la réception de ${row.reference} au relais ?`,
@@ -1397,6 +1424,7 @@
       description: 'Remise client par scan append-only du moteur logistique.',
       rows: payload.queues.relay.to_collect,
       action: 'collect',
+      jumpId:'relay-execution-collect',
       actionLabel: 'Remis au client',
       suffix: row => `parcels/${encodeURIComponent(row.reference)}/collect`,
       confirm: row => `Confirmer la remise de ${row.reference} au client ?`,
@@ -1442,6 +1470,7 @@
 
   function renderOrderActionSection(rootNode, ui, doc, context, config) {
     const slot = createSection(rootNode, ui, config.title, config.description);
+    if (config.jumpId) slot.id=config.jumpId;
     renderActionRows(slot, doc, context, config, 'order');
   }
 
@@ -1469,8 +1498,9 @@
 
   function renderParcelActionSection(rootNode, ui, doc, context, config) {
     const slot = createSection(rootNode, ui, config.title, config.description);
+    if (config.jumpId) slot.id=config.jumpId;
     const manual = manualReasonControls(doc);
-    slot.appendChild(manual.wrap);
+    if ((config.rows||[]).length) slot.appendChild(manual.wrap);
     renderActionRows(slot, doc, context, Object.assign({}, config, { manualBody: manual.body }), 'parcel');
   }
 
@@ -1502,6 +1532,7 @@
   function renderRelayShipmentsSection(rootNode, ui, doc, context) {
     const slot = createSection(rootNode, ui, 'Relais · Expéditions en route',
       'Ce qui a réellement été expédié, carton par carton. La réception est constatée par le relais, jamais déduite d’un statut posé par le Hub.');
+    slot.id='relay-execution-shipments';
     slot.setAttribute('data-relay-shipments', '');
     const data = context.relayShipments;
     if (!data) {
@@ -1515,7 +1546,7 @@
     data.shipments.forEach(shipment => {
       const card = doc.createElement('details');
       card.className = 'kmc-relay-shipment';
-      card.open = true;
+      card.open = !slot.querySelector('details');
       card.setAttribute('data-relay-shipment', shipment.reference);
       card.appendChild(text(doc, 'summary', 'kmc-relay-shipment-title',
         'Expédition ' + shipment.reference + ' · ' + shipment.stage));
