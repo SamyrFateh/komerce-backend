@@ -551,3 +551,121 @@
     -webkit-print-color-adjust:exact;print-color-adjust:exact;
   }
 }
+
+
+/* Hub 07/11 · palette graphite/jade : focus fort, plus aucun pavé bleu ou marron.
+   La couleur de priorité reste portée par le liseré et le libellé, jamais seule. */
+.kmc-hub-app .kmc-hub-global-table tr.is-hub-active-order > td:first-child {
+  background:linear-gradient(90deg,#e7f5ee 0,#f7faf8 54%,transparent 100%);
+  box-shadow:inset 5px 0 #1f8b68;
+}
+.kmc-hub-app .kmc-hub-global-table tr.is-hub-active-order .kmc-hub-phase-summary {
+  border-left-color:#268b6b;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current {
+  --kmc-stage-halo:rgba(36,154,111,.30);
+  --kmc-stage-light:rgba(50,191,139,.27);
+  background:linear-gradient(135deg,#183e37 0%,#14644e 58%,#185442 100%);
+  border-color:#37bc90;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current::before {
+  background:#a2f5d2;box-shadow:0 0 12px rgba(108,242,188,.8);
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-stage-focus-label::before {
+  background:#aaf4ce;box-shadow:0 0 8px rgba(135,247,202,.75);
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current.is-stage-warning {
+  --kmc-stage-halo:rgba(242,196,79,.35);
+  --kmc-stage-light:rgba(232,192,100,.18);
+  background:linear-gradient(135deg,#253136 0%,#344047 58%,#25363a 100%);
+  border-color:#f5c958;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current.is-stage-warning::before {
+  background:#ffde82;box-shadow:0 0 12px rgba(255,211,106,.78);
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current.is-stage-warning .kmc-hub-stage-focus-label::before {
+  background:#ffe4a0;box-shadow:0 0 8px rgba(255,221,117,.8);
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current.is-stage-ready {
+  background:linear-gradient(135deg,#124938 0%,#0e7557 58%,#135f49 100%);
+  border-color:#48d4a4;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current.is-stage-waiting {
+  background:linear-gradient(135deg,#384248,#536068);
+  border-color:#8c999f;
+  --kmc-stage-halo:rgba(100,119,132,.18);
+  --kmc-stage-light:rgba(90,114,129,.10);
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-kanban-stage-actions:has(> .is-stage-current) > .kmc-hub-kanban-action {
+  background:linear-gradient(135deg,#126348,#168967);
+  border-color:#63d6a4;
+  box-shadow:0 3px 11px rgba(15,98,70,.22);
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-kanban-stage-actions:has(> .is-stage-current.is-stage-warning) > .kmc-hub-kanban-action {
+  background:linear-gradient(135deg,#344147,#455258);
+  border-color:#f3c866;
+  box-shadow:0 3px 10px rgba(33,43,48,.22);
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-kanban-stage-actions:has(> .is-stage-current.is-stage-critical) > .kmc-hub-kanban-action {
+  background:linear-gradient(135deg,#812b32,#a13b44);
+  border-color:#ed9799;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-kanban-action:hover {
+  filter:brightness(1.08);
+}
+.kmc-hub-app .kmc-hub-journal-publish {
+  background:#186749;border-color:#186749;
+}
+.kmc-hub-app .kmc-hub-journal-publish:hover{background:#105b41;}
+
+/* Menu contextuel arrimé à la cellule ; une saisie détaillée devient un inspecteur.
+   Toujours accessible, sans téléportation hors écran au scroll du Kanban. */
+.kmc-hub-app .kmc-hub-board-menu {
+  position:fixed;
+  z-index:1200;
+  background:#fff;
+  border:1px solid #bfcec6;
+  border-radius:12px;
+  box-shadow:0 18px 50px rgba(24,45,40,.20),0 2px 9px rgba(24,45,40,.10);
+}
+.kmc-hub-app .kmc-hub-board-menu.is-editing:not(.is-sourcing-inline) {
+  width:min(480px,calc(100vw - 18px));
+  max-height:calc(100dvh - 80px);
+  border:1px solid #9fc7b7;
+  box-shadow:0 16px 48px rgba(17,54,40,.22);
+}
+.kmc-hub-app .kmc-hub-board-menu.is-purchasing-flow {
+  gap:12px;
+  padding:15px;
+  align-content:start;
+}
+.kmc-hub-app .kmc-hub-po-choice {
+  display:grid;gap:7px;padding:12px;
+  background:#f7faf8;border:1px solid #d8e6dd;border-radius:10px;
+  min-width:0;
+}
+.kmc-hub-app .kmc-hub-po-choice-title {
+  font-size:13px;line-height:1.4;font-weight:850;color:#1d4136;
+  overflow-wrap:anywhere;
+}
+.kmc-hub-app .kmc-hub-po-choice-summary {
+  margin:0;font-size:12px;color:#38594c;line-height:1.45;
+}
+.kmc-hub-app .kmc-hub-po-choice-caption {
+  margin:2px 0;font-size:11px;color:#5f7169;line-height:1.45;
+}
+.kmc-hub-app .kmc-hub-po-choice .kmc-hub-board-menu-action.is-existing-po {
+  background:#e3f4ea;border-color:#8dc7aa;color:#155b43;
+}
+.kmc-hub-app .kmc-hub-po-choice .kmc-hub-board-menu-action[data-hub-po-target="new"] {
+  background:#fff;border:1px solid #76bba0;color:#155b43;
+  font-weight:800;
+}
+.kmc-hub-app .kmc-hub-action-confirm {
+  background:#176c4b;border-color:#176c4b;
+}
+@media(max-width:700px) {
+  .kmc-hub-app .kmc-hub-board-menu.is-editing:not(.is-sourcing-inline) {
+    width:calc(100vw - 16px);max-height:calc(100dvh - 72px);
+  }
+}

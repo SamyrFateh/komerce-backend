@@ -52,7 +52,7 @@
   // Une seule paire d'écouteurs par tableau : les rafraîchissements n'empilent pas
   // des handlers document (ouvertures/clics extérieurs) devenus obsolètes.
   const boardDisposers = new WeakMap();
-  function installMenuDismiss(root, doc, menu, close) {
+  function installMenuDismiss(root, doc, menu, close, onMove) {
     const previous = boardDisposers.get(root);
     if (previous) previous();
     const outside = event => {
@@ -63,10 +63,61 @@
     };
     doc.addEventListener('pointerdown', outside, true);
     doc.addEventListener('keydown', escape);
+    // Capture les scrolls horizontaux ET verticaux des parents du Kanban.
+    // Le menu est positionné à partir de la cellule, jamais des anciennes coordonnées souris.
+    if(onMove) {
+      doc.addEventListener('scroll', onMove, true);
+      doc.defaultView?.addEventListener('resize',onMove);
+      menu.addEventListener?.('hub:menu-state',onMove);
+    }
     boardDisposers.set(root, () => {
       doc.removeEventListener('pointerdown', outside, true);
       doc.removeEventListener('keydown', escape);
+      if(onMove) {
+        doc.removeEventListener('scroll', onMove, true);
+        doc.defaultView?.removeEventListener('resize',onMove);
+        menu.removeEventListener?.('hub:menu-state',onMove);
+      }
     });
+  }
+
+  function anchoredMenu(menu, scroll, doc, close) {
+    let target=null;
+    const move=()=>{
+      if(menu.hidden || !target || menu.classList.contains('is-sourcing-inline'))return;
+      const viewport=doc.defaultView;
+      const width=viewport?.innerWidth||1440;
+      const height=viewport?.innerHeight||900;
+      if(menu.classList.contains('is-editing')) {
+        // Saisie complexe : volet fixe à droite, en conservant la commande et l'étape en titre.
+        const panel=Math.min(menu.offsetWidth||470,width-16);
+        menu.style.left=Math.max(8,width-panel-12)+'px';
+        menu.style.top='64px';
+        return;
+      }
+      if(!target.isConnected){close();return;}
+      const cell=target.getBoundingClientRect();
+      const clip=scroll.getBoundingClientRect();
+      const visible=cell.right>Math.max(clip.left,0)+2 &&
+        cell.left<Math.min(clip.right,width)-2 &&
+        cell.bottom>Math.max(clip.top,0)+2 &&
+        cell.top<Math.min(clip.bottom,height)-2;
+      if(!visible){close();return;}
+      const popupWidth=Math.min(menu.offsetWidth||360,width-16);
+      const popupHeight=Math.min(menu.offsetHeight||260,height-16);
+      const x=Math.max(8,Math.min(cell.left,width-popupWidth-8));
+      const below=cell.bottom+6;
+      const above=cell.top-popupHeight-6;
+      const y=below+popupHeight<=height-8?below:
+        above>=8?above:Math.max(8,Math.min(below,height-popupHeight-8));
+      menu.style.left=Math.round(x)+'px';
+      menu.style.top=Math.round(y)+'px';
+    };
+    return {
+      select(element){target=element;move();},
+      move,
+      clear(){target=null;}
+    };
   }
   // Journal de suivi d'une étape : lecture de la vérité order_comments,
   // append-only, et jamais une preuve de transition métier.
@@ -238,10 +289,12 @@
     root.appendChild(menu);
 
     const canOperate = ['admin', 'agent_hub'].includes(user && user.role);
+    let anchor;
     let menuSerial = 0;
     const closeMenu = () => {
       menu.hidden = true;
       menu.setAttribute('data-hub-request', String(++menuSerial));
+      anchor?.clear();
     };
     const openMenu = (order, label, value, event, launchSourcing = false) => {
       // Ce menu appartient à UNE étape. Aucun lien universel injecté à toutes
@@ -249,7 +302,7 @@
       const requestId = String(++menuSerial);
       menu.setAttribute('data-hub-request', requestId);
       menu.replaceChildren();
-      menu.classList.remove('is-editing');
+      menu.classList.remove('is-editing','is-sourcing-inline','is-purchasing-flow');
       menu.removeAttribute('data-hub-menu-stage-state');
       menu.appendChild(make(doc, 'strong', 'kmc-hub-board-menu-title',
         order.reference + ' · ' + label));
@@ -293,16 +346,11 @@
       }
       mountStageJournal(menu, {doc, fetch:fetchFn, user, order, stageKey,
         isCurrent:()=>!menu.hidden && menu.getAttribute('data-hub-request')===requestId});
-      const box = event && event.currentTarget && event.currentTarget.getBoundingClientRect?.();
-      const width = doc.defaultView?.innerWidth || 1440;
-      const height = doc.defaultView?.innerHeight || 900;
-      const x = event?.type === 'contextmenu' ? event.clientX : (box ? box.left : 10);
-      const y = event?.type === 'contextmenu' ? event.clientY : (box ? box.bottom : 10);
-      menu.style.left = Math.max(8, Math.min(x, width - 310)) + 'px';
-      menu.style.top = Math.max(8, Math.min(y, height - 240)) + 'px';
+      anchor.select(event?.currentTarget);
       menu.querySelector?.('a,button')?.focus?.();
     };
-    installMenuDismiss(root, doc, menu, closeMenu);
+    anchor=anchoredMenu(menu,scroll,doc,closeMenu);
+    installMenuDismiss(root, doc, menu, closeMenu, anchor.move);
 
     let rows = [];
     const renderRows = () => {
@@ -402,8 +450,8 @@
           const isWaitingOnly = /^(attendr|attente|suivre|consulter|aucune)/i.test(nextText);
           if (canOperate && order.current_key===key && !['locked','complete'].includes(state) && !isWaitingOnly) {
             const launch = key==='po' && order.po==='Sourcing requis';
-            const command = make(doc,'button','kmc-hub-kanban-action',launch
-              ?'Créer la ligne d’achat':nextText || 'Traiter l’étape');
+            const command = make(doc,'button','kmc-hub-kanban-action',key==='po'
+              ?'Organiser l’achat fournisseur':nextText || 'Traiter l’étape');
             command.type='button';
             command.setAttribute('data-hub-inline-action',key);
             command.setAttribute('aria-label',order.reference+' · '+(launch
@@ -420,7 +468,7 @@
         body.appendChild(tr);
       }
     };
-    search.addEventListener('input', renderRows);
+    search.addEventListener('input', ()=>{closeMenu();renderRows();});
     try {
       const payload = await requestJSON(fetchFn, '/api/hub/board');
       if (payload.scope !== 'HUB_GLOBAL' || !Array.isArray(payload.orders)) {
@@ -514,14 +562,17 @@
     menu.setAttribute('data-hub-admin-menu', '');
     menu.hidden = true;
     root.appendChild(menu);
+    let anchor;
     const closeMenu = () => {
       menu.hidden = true;
       menu.setAttribute('data-hub-request', String(Date.now()) + '-closed');
+      anchor?.clear();
     };
-    installMenuDismiss(root, doc, menu, closeMenu);
+    anchor=anchoredMenu(menu,scroll,doc,closeMenu);
+    installMenuDismiss(root, doc, menu, closeMenu, anchor.move);
     const openMenu = (po, field, value, event) => {
       menu.replaceChildren();
-      menu.classList.remove('is-editing');
+      menu.classList.remove('is-editing','is-purchasing-flow');
       menu.appendChild(make(doc, 'strong', 'kmc-hub-board-menu-title',
         'PO ' + smallRef(po.id) + ' · ' + field));
       menu.appendChild(make(doc, 'p', 'kmc-hub-board-menu-summary', value));
@@ -541,13 +592,7 @@
         menu.appendChild(make(doc,'p','kmc-hub-action-explanation',
           'Les actions de cette étape ne sont pas chargées. Actualiser la page.'));
       }
-      const box = event?.currentTarget?.getBoundingClientRect?.();
-      const x = event?.type === 'contextmenu' ? event.clientX : (box ? box.left : 8);
-      const y = event?.type === 'contextmenu' ? event.clientY : (box ? box.bottom : 8);
-      const width = doc.defaultView?.innerWidth || 1440;
-      const height = doc.defaultView?.innerHeight || 900;
-      menu.style.left = Math.max(8, Math.min(x, width - 310)) + 'px';
-      menu.style.top = Math.max(8, Math.min(y, height - 265)) + 'px';
+      anchor.select(event?.currentTarget);
       menu.querySelector?.('a,button')?.focus?.();
     };
     // Échap et clic extérieur gérés par installMenuDismiss().

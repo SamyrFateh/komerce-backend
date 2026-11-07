@@ -124,7 +124,7 @@ async function assertCommitmentNotAuthorized(client, poId) {
 // Les dossiers historiques multi-marchés restent lisibles, jamais réattribués silencieusement.
 
 const LINE_COLUMNS = `
-    pl.id AS line_id, pl.supplier_id, s.name AS supplier_name, pl.procurement_hub_ref,
+    pl.id AS line_id, pl.supplier_id, s.name AS supplier_name, s.platform AS supplier_platform, pl.procurement_hub_ref,
     pl.purchase_order_id, pl.order_item_id, vm.order_id, o.reference AS order_reference,
     vm.market_id, mk.code AS market_code, mk.name AS market_name,
     p.name AS product_name, oi.product_id, pl.product_sku_id, pl.supplier_sku, pl.supplier_unit_ref,
@@ -220,6 +220,7 @@ async function listOpenLines({ market_id: marketId } = {}, q = db) {
       groups.set(key, {
         supplier_id: row.supplier_id,
         supplier_name: row.supplier_name,
+        supplier_platform: row.supplier_platform,
         procurement_hub_ref: row.procurement_hub_ref,
         market_id: row.market_id,
         market_code: row.market_code,
@@ -245,6 +246,7 @@ async function listOpenLines({ market_id: marketId } = {}, q = db) {
     groups: [...groups.values()].map((g) => ({
       supplier_id: g.supplier_id,
       supplier_name: g.supplier_name,
+      api_available: providerAuthority.remotePreflightRequirement(g.supplier_platform) === providerAuthority.PREFLIGHT_REQUIREMENT.REQUIRED,
       procurement_hub_ref: g.procurement_hub_ref,
       market_id: g.market_id,
       market_code: g.market_code,
