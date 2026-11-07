@@ -79,3 +79,18 @@ body.kmc-shell-v4.kmc-hub-agent-focus .kmc-hub-app>.kmc-hub-app-header{
   .kmc-hub-app .kmc-hub-board-scroll{max-height:calc(100dvh - 240px);}
   .kmc-hub-app .kmc-hub-global-table{min-width:1150px;}
 }
+
+
+/* Continuité de la palette du Kanban dans les contrôles du poste agent. */
+.kmc-hub-app .kmc-hub-focus-toggle{
+  border-color:#d7e0d9;background:#f3f6f3;color:#30473a;
+}
+.kmc-hub-app .kmc-hub-focus-toggle:hover{background:#eaf0eb;}
+.kmc-hub-app .kmc-hub-focus-toggle:focus-visible{outline-color:#d66d35;}
+.kmc-hub-app .kmc-hub-board-scroll{border-color:#dce3dd;}
+.kmc-hub-app .kmc-hub-board th{
+  background:#f2f4f2;box-shadow:0 1px 0 #dce3dd;color:#35433d;
+}
+.kmc-hub-app .kmc-hub-app-branch.is-active{
+  background:#f0f6f1;border-color:#bfd8c8;color:#275f48;
+}
