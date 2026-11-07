@@ -15,6 +15,7 @@ if (!process.env.DATABASE_URL) {
   const crypto = require('crypto');
   const db = require('../../db');
   const relay = require('../../services/relay-dashboard-queries');
+  const { resolveGovernanceOrThrow, computeDueAt } = require('../../services/incident-governance');
   const id = () => crypto.randomUUID();
   const tag = `ROI-${Date.now().toString(36)}-${crypto.randomBytes(3).toString('hex')}`;
   const originalQuery = db.query;
@@ -59,9 +60,14 @@ if (!process.env.DATABASE_URL) {
       [itemOnlyId, null, itemA, 'missing_item', 'partial_delivery'],
     ];
     for (const [incidentId, orderId, itemId, type, impact] of incidents) {
-      await db.query(`INSERT INTO incidents (id,order_id,order_item_id,incident_type,title,severity,client_impact)
-                      VALUES ($1,$2,$3,$4,$5,'high',$6)`,
-        [incidentId, orderId, itemId, type, `${tag}-${type}`, impact]);
+      const governance = resolveGovernanceOrThrow({ incident_type: type });
+      await db.query(`INSERT INTO incidents (
+                        id,order_id,order_item_id,incident_type,title,severity,client_impact,
+                        origin_domain,resolver_domain,resolution_class,due_at
+                      ) VALUES ($1,$2,$3,$4,$5,'high',$6,$7,$8,$9,$10)`,
+        [incidentId, orderId, itemId, type, `${tag}-${type}`, impact,
+          governance.origin_domain, governance.resolver_domain, governance.resolution_class,
+          computeDueAt(governance.resolution_class)]);
     }
   });
 
