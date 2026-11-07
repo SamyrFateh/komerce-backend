@@ -174,8 +174,9 @@
   function renderPreview(sel, detail) {
     if (!sel) return '';
     if (!detail) {
-      return `<aside class="lk-block lk-relay-detail" data-relay-detail aria-label="Détail du retrait"><span class="kir-section-kicker">DÉTAIL DU RETRAIT</span>
-        <div class="kir-empty">Détail non disponible pour ce colis.</div></aside>`;
+      return `<aside class="lk-block lk-relay-detail kmc-relay-work-inspector" data-relay-detail aria-label="Dossier contextuel">
+        <header class="kmc-relay-inspector-head"><strong>Dossier indisponible</strong><a href="${BASE+queryString(simParams())}" data-cockpit-nav>Fermer ×</a></header>
+        <p>Ce dossier est indisponible ou hors de votre périmètre.</p></aside>`;
     }
     const o = detail.order || {};
     const relais = detail.relais || {};
@@ -183,7 +184,8 @@
     const incidents = Array.isArray(detail.incidents) ? detail.incidents : [];
     const wait = o.status === 'available' ? ageLabel(o.heures_attente) : ageLabel(num(o.age_jours) * 24);
     const fact = (label, value) => `<div><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`;
-    return `<aside class="lk-block lk-relay-detail" data-relay-detail aria-label="Détail du retrait"><span class="kir-section-kicker">DÉTAIL DU RETRAIT</span>
+    return `<aside class="lk-block lk-relay-detail kmc-relay-work-inspector" data-relay-detail aria-label="Dossier contextuel">
+      <header class="kmc-relay-inspector-head"><span class="kmc-relay-work-eyebrow">DOSSIER CONTEXTUEL</span><a href="${BASE+queryString(simParams())}" data-cockpit-nav aria-label="Fermer le dossier">Fermer ×</a></header>
       <h3>${esc(o.reference || 'Colis')}</h3>
       <div class="lk-facts">
         ${fact('Statut', STATUS[o.status] || o.status || '—')}
@@ -193,7 +195,10 @@
         ${fact('Paiement', `${pay.cash_pending ? 'Cash à encaisser' : pay.is_paid ? 'Payée' : 'En attente'} · ${fmtCollect(pay.a_encaisser)}`)}
         ${fact('Incidents ouverts', incidents.filter(i => i.status !== 'resolved').length)}
       </div>
-      <p><a href="${orderUrl(detail.order?.id || sel, '')}" data-cockpit-nav>Ouvrir la fiche complète →</a>${order360Link(o.reference, 'Retour au Relais live')}</p>
+      <p class="kmc-relay-inspector-truth">Le statut de la commande ne remplace pas la preuve physique. Les articles et colis réellement reçus sont contrôlés dans l’atelier.</p>
+      <a class="kmc-relay-inspector-cta" href="${executionUrl(o.market_code)}" data-relay-action="execute">${esc(o.status==='available'?'Préparer la remise au client':o.status==='collected'?'Consulter les opérations du relais':'Contrôler la réception')} · Atelier Relais ↗</a>
+      <a class="kmc-relay-inspector-detail-link" href="${orderUrl(detail.order?.id || sel, '')}" data-cockpit-nav>Articles, incidents et chronologie →</a>
+      <p>${order360Link(o.reference, 'Retour au Relais live')}</p>
     </aside>`;
   }
 
