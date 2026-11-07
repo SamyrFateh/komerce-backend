@@ -20,6 +20,7 @@
 
 const db = require('../db');
 const { hasDashboardGlobalAuthority } = require('../middleware/require-dashboard-global-authority');
+const { CENTRAL_TRANSIT_ROLES } = require('../config/central-transit-roles');
 const { resolveAuthorization, listAuthorizedMarketsForCapability } = require('./market-delegation-service');
 
 class DashboardAccessDeniedError extends Error {
@@ -64,11 +65,10 @@ async function getScopedMarketCodes(userId) {
  */
 const WORKSPACE_READ_CAPABILITIES = Object.freeze({
   finance: Object.freeze(['finance.read']),
-  agent_transitaire: Object.freeze(['logistics.read']),
 });
 
 async function getWorkspaceMarketCodes(user) {
-  if (user.role === 'agent_hub') {
+  if (CENTRAL_TRANSIT_ROLES.includes(user.role)) {
     // Central Hub serves imported orders from all ACTIVE markets.
     // These codes are a read-only logistics filter, not an authorization
     // to access prices, teams, finance or market-scoped business actions.
@@ -184,7 +184,7 @@ async function resolveDashboardAdminContext(user) {
   // Un admin global voit déjà tout (dashboard.global.read) : cette projection
   // ne sert qu'à décider une visibilité UI pour un opérateur scopé, donc on
   // ne la calcule (et n'interroge la DELEGATION) qu'en mode market.
-  const delegatedCapabilities = mode === 'market'
+  const delegatedCapabilities = mode === 'market' && !CENTRAL_TRANSIT_ROLES.includes(user.role)
     ? await delegatedCapabilitiesByMarket(user.id, allowedMarkets)
     : {};
 

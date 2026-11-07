@@ -456,7 +456,7 @@
     if (typeof renderAdministrative !== 'function' || typeof renderOperations !== 'function')
       throw new Error('hub_workstation_renderers_missing');
     const role = safe(user.role);
-    const visibleRoles=['admin','agent_hub','market_operator','agent_relais','finance','sourcing','agent_transitaire','support'];
+    const visibleRoles=['admin','agent_hub','market_operator','agent_relais','finance','sourcing','support'];
     if(!visibleRoles.includes(role)) throw new Error('hub_workstation_role_not_allowed');
     const administrativeAllowed = role === 'admin' || role === 'agent_hub';
     const params = new URLSearchParams(safe(location?.search));
