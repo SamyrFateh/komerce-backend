@@ -50,7 +50,8 @@ function assess(snapshot, phase) {
   expect(Number(c.purchase_lines) === 0 && Number(c.purchase_orders) === 0 &&
     Number(c.hub_allocations) === 0 && Number(c.hub_units) === 0 &&
     Number(c.shipment_receipts) === 0, 'LOCAL_TOUCHED_HUB');
-  expect(Number(c.shipped_scans) === 0 && Number(c.shipping_history) === 0, 'LOCAL_ARTIFICIAL_SHIPPING');
+  expect(Number(c.shipped_scans) === 0 && Number(c.shipped_scan_events) === 0 &&
+    Number(c.shipping_history) === 0, 'LOCAL_ARTIFICIAL_SHIPPING');
   expect(Number(c.consumed_allocations) === lines.reduce((n, x) => n + Number(x.quantity || 0), 0),
     'LOCAL_PAID_ALLOCATIONS_NOT_COVERED');
   expect(Number(c.cash_collections) === 0 && !o.stripe_payment_id && !o.cash_paid_at,
@@ -99,6 +100,7 @@ async function snapshot(db, orderId) {
     '(SELECT count(*)::int FROM international_shipment_relay_receipts r JOIN order_items oi ON oi.id=r.order_item_id WHERE oi.order_id=$1) AS shipment_receipts, ' +
     "(SELECT count(*)::int FROM scans WHERE order_id=$1 AND step='relais_received') AS relay_receipts, " +
     "(SELECT count(*)::int FROM scans WHERE order_id=$1 AND step='shipped') AS shipped_scans, " +
+    "(SELECT count(*)::int FROM scan_events se JOIN parcels p ON p.id=se.parcel_id WHERE p.order_id=$1 AND se.event_type='shipped' AND se.status='applied') AS shipped_scan_events, " +
     "(SELECT count(*)::int FROM order_status_history WHERE order_id=$1 AND status::text IN ('shipped','in_transit')) AS shipping_history, " +
     "(SELECT count(*)::int FROM order_status_history WHERE order_id=$1 AND status::text='available') AS available_history, " +
     "(SELECT count(*)::int FROM order_status_history WHERE order_id=$1 AND status::text='collected') AS collected_history, " +
@@ -189,7 +191,8 @@ async function run({ env = process.env, db, run8 } = {}) {
     const collectedErrors = assess(collected, 'collected');
     add('final:collected-zero-hub', collectedErrors.length ? 'FAIL' : 'PASS',
       { failures: collectedErrors, readback: { counts: collected.counts,
-        order_status: collected.order.status, parcel_status: collected.parcels[0].status } });
+        order_status: collected.order.status, parcel_status: collected.parcels[0].status,
+        lines: collected.lines } });
     report.verdict = 'LOCAL_STOCK_HTTP_PASS';
   } catch (error) {
     report.failure = String(error && error.message || error).slice(0, 250);
