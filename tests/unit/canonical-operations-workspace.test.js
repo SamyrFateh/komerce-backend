@@ -106,3 +106,22 @@ test('réception fournisseur : route canonique, référence stable, aucune quant
   expect(SOURCE).toContain('(information, pas une réception)');
   expect(SOURCE).not.toMatch(/input\.value\s*=\s*String\(line\./);
 });
+
+
+test('le formulaire de sourcing partagé refuse les rôles sans écriture sans faire de requête', () => {
+  const fetch = jest.fn();
+  expect(typeof workspace.openManualSourcing).toBe('function');
+  expect(() => workspace.openManualSourcing({ replaceChildren:jest.fn() }, {
+    document:{}, fetch, user:{role:'market_operator'},
+    order:{id:'order-1',items:[]},
+  })).toThrow('hub_inline_sourcing_not_permitted');
+  expect(fetch).not.toHaveBeenCalled();
+});
+
+test('l’interface source les articles via les seules API purchasing existantes', () => {
+  expect(SOURCE).toContain('function renderManualSourcing');
+  expect(SOURCE).toContain('function openManualSourcing');
+  expect(SOURCE).toMatch(/\/api\/purchasing\/suppliers/);
+  expect(SOURCE).toMatch(/\/api\/purchasing\/lines/);
+  expect(SOURCE).not.toContain('createHubSourcingParallelWriter');
+});

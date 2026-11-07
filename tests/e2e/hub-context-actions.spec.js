@@ -82,6 +82,45 @@ async function mount(page,{role='agent_hub',row=baseOrder,dossierData=dossier,ad
   return {posts,reads};
 }
 
+test('action PO dans le Kanban : sourcing en place, sans achat ni mutation au simple clic',async({page})=>{
+  const row={...baseOrder,po:'Sourcing requis',current_key:'po',
+    current_phase:'Achats',current_status:'Bloqué · sourcing requis',
+    current_expected:'Identifier le fournisseur de 2 articles',
+    next_action:'Résoudre le sourcing',
+    stage_states:{...baseOrder.stage_states,po:'warning'}};
+  const dossierData={...dossier,needs:[],purchase_orders:[],boxes:[],
+    orders:[{id:ORDER,reference:'KM-302',items:[{
+      id:'abc00000-0000-4000-8000-000000000012',
+      product_id:'abc00000-0000-4000-8000-000000000013',
+      product:'Article test',sourcing_required:true,purchasing_missing:2,
+    }]}]};
+  const {posts}=await mount(page,{row,dossierData});
+  await page.route('**/api/purchasing/suppliers?**',route=>route.fulfill({
+    contentType:'application/json',body:JSON.stringify([]),
+  }));
+  const inline=page.locator('[data-hub-global-order="KM-302"] [data-hub-inline-action="po"]');
+  await expect(inline).toHaveText('Créer la ligne d’achat');
+  await inline.click();
+  const menu=page.locator('[data-hub-global-menu]');
+  await expect(menu).toHaveClass(/is-sourcing-inline/);
+  await expect(menu.locator('[data-hub-sourcing-form]')).toBeVisible();
+  await expect(menu).toContainText('Résoudre le sourcing · KM-302');
+  await expect(menu).toContainText('La quantité à acheter est calculée');
+  await expect(menu.locator('[data-sourcing-quantity]')).toContainText('2 unités');
+  expect(posts).toHaveLength(0);
+  await menu.locator('[data-sourcing-close]').click();
+  await expect(menu).toBeHidden();
+  expect(posts).toHaveLength(0);
+});
+
+test('PO déjà liée ou lecteur : aucune action de sourcing manuel inadaptée',async({page})=>{
+  await mount(page,{role:'market_operator',row:{...baseOrder,
+    current_key:'po',next_action:'Résoudre le sourcing',po:'Sourcing requis'}});
+  await expect(page.locator('[data-hub-inline-action="po"]')).toHaveCount(0);
+  await page.locator('[data-hub-global-stage="PO"]').click();
+  await expect(page.locator('[data-hub-global-menu]')).toContainText('Consultation seule');
+});
+
 test('colors et prochaine action restent des faits lisibles, sans détail article',async({page})=>{
   const {posts}=await mount(page);
   const row=page.locator('[data-hub-global-order="KM-302"]');
