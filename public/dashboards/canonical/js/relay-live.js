@@ -221,75 +221,52 @@
 
   // ── Suivi ───────────────────────────────────────────────────────────────────
   function renderOverview(p, data) {
-    const k = data?.dash?.kpi || {};
-    const late = num(k.en_attente_72h);
-    const incidents = num(k.incidents_ouverts);
-    const asCards = (list, from) => (Array.isArray(list?.orders) ? list.orders : []).map(order => ({
-      label:order.reference,
-      sub:`${order.simulation_scope ? `RECETTE · ${order.simulation_scope} · ` : ''}${order.client_nom || order.user_name || order.relais_nom || ''}`,
-      href:orderUrl(order.id, from),
-      tone:num(order.incidents_ouverts) > 0 ? 'blocked' : (order.urgence === 'haute' || order.urgence === 'critique') ? 'attention' : 'ok',
-    }));
-    const more = (n, shown, list) => (n > shown ? { href:listUrl(list), label:`Voir les ${n} colis →` } : null);
-    const transitCards = asCards(data?.transit, 'in_transit');
-    const availableCards = asCards(data?.first, 'available');
-    const stages = [
-      { label:'En transit', icon:'➤', hue:'blue', count:num(k.en_transit), href:listUrl('in_transit'), cards:transitCards,
-        more:more(num(k.en_transit), transitCards.length, 'in_transit'), countLabel:'Aucun colis en transit' },
-      { label:'Disponibles au retrait', icon:'⌂', hue:'teal', count:num(k.disponibles), tone:late > 0 ? 'attention' : 'ok', href:listUrl('available'), cards:availableCards,
-        more:more(num(k.disponibles), availableCards.length, 'available'), countLabel:'Aucun colis à retirer' },
-      { label:'Retirés aujourd’hui', icon:'✓', hue:'green', count:num(k.collectes_aujourd_hui), href:listUrl('collected'), cards:[],
-        countLabel:`${num(k.collectes_aujourd_hui)} colis retiré${num(k.collectes_aujourd_hui) > 1 ? 's' : ''} aujourd’hui` },
+    const k=data?.dash?.kpi||{};
+    const late=num(k.en_attente_72h);
+    const first=Array.isArray(data?.first?.orders)?data.first.orders:[];
+    const operational=Array.isArray(data?.operational?.incidents)?data.operational.incidents:[];
+    const opRows=operational.slice(0,8).map(i=>
+      `<tr><td><a href="${orderUrl(i.order_id,'')}" data-cockpit-nav>${esc(i.order_reference)}</a></td>
+        <td>${esc(i.product_name||'Commande')}</td><td>${esc(i.title||INCIDENT[i.incident_type]||i.incident_type)}</td>
+        <td>${esc(i.resolver_domain||'—')}</td></tr>`);
+    const stages=[
+      {label:'En transit',icon:'➤',hue:'blue',count:num(k.en_transit),href:listUrl('in_transit'),cards:[],countLabel:'Aucune commande en transit'},
+      {label:'Disponibles au retrait',icon:'⌂',hue:'teal',count:num(k.disponibles),href:listUrl('available'),cards:[],countLabel:'Aucune commande disponible'},
+      {label:'Retirés aujourd’hui',icon:'✓',hue:'green',count:num(k.collectes_aujourd_hui),href:listUrl('collected'),cards:[],countLabel:'Aucun retrait enregistré aujourd’hui'},
     ];
-    const title = late > 0
-      ? `${late} colis en attente de retrait depuis plus de 72 h`
-      : num(k.disponibles) > 0 ? 'Des colis attendent leur retrait' : 'Aucun colis à traiter';
-    const signals = [
-      `<span><strong>${late}</strong> en attente +72 h</span>`,
-      `<span><strong>${num(k.collectes_7j)}</strong> retiré${num(k.collectes_7j) > 1 ? 's' : ''} sur 7 jours</span>`,
-      `<span><strong>${num(k.total_actives)}</strong> colis actifs</span>`,
-    ].join('');
-    const first = Array.isArray(data?.first?.orders) ? data.first.orders : [];
-    const operational = Array.isArray(data?.operational?.incidents) ? data.operational.incidents : [];
-    const opRows = operational.slice(0, 8).map(i =>
-      `<tr><td><a href="${orderUrl(i.order_id, '')}" data-cockpit-nav>${esc(i.order_reference)}</a></td>
-        <td>${esc(i.product_name || 'Commande')}</td>
-        <td>${esc(i.title || INCIDENT[i.incident_type] || i.incident_type)}</td>
-        <td>${esc(i.resolver_domain || '—')}</td></tr>`
-    );
     return {
-      hero:`<header class="kir-hero kir-live-hero kmc-relay-compact-hero">
-        <div>
-          <div class="kir-live-titleline"><span class="kir-eyebrow">OPÉRATIONS · RELAIS</span></div>
-          <div class="kir-live-titlerow"><h1>Suivi des Relais — Tous circuits</h1><span class="kir-live-badge is-live">LIVE</span></div>
-          <p>Lecture en direct · mis à jour ${esc(fmtDate(data?.fetched_at))}</p>
+      hero:`<header class="kir-hero kir-live-hero kmc-relay-compact-hero" aria-label="Suivi opérationnel des Relais">
+        <div class="kmc-relay-heading">
+          <span class="kmc-relay-work-eyebrow">KOMERCE · EXPLOITATION</span>
+          <h1>Suivi des Relais <small>Tous circuits</small></h1>
+          <p>Actualisé ${esc(fmtDate(data?.fetched_at))} · Réception et retrait sur preuve</p>
+        </div>
+        <div class="kmc-relay-heading-controls">
+          <span class="kmc-relay-live-state"><i aria-hidden="true"></i> LIVE</span>
+          ${simToggle()}
         </div>
       </header>`,
       body:`${relayWorkboard(p,data)}
-        <details class="kmc-relay-secondary"><summary>Voir la représentation complète du flux</summary>
-        <section class="kir-run-flow is-live" aria-label="Flux des relais">
-          <div class="kir-run-flow-head"><div><span class="kir-section-kicker">FLUX DES RELAIS</span><strong>${esc(title)}</strong><small>Transit → disponible au retrait → retiré. Les chiffres ouvrent la liste exacte.</small></div></div>
-          ${processBoard(stages)}
-        </section></details>
-        <details class="kmc-relay-secondary"><summary>Indicateurs détaillés</summary>
-        ${tiles('RÉSULTAT DES RELAIS', [
-          { label:'En transit', value:num(k.en_transit), sub:'en route vers les relais', href:listUrl('in_transit'), cls:'is-received' },
-          { label:'Disponibles', value:num(k.disponibles), sub:late > 0 ? `dont ${late} depuis +72 h` : 'à retirer', href:listUrl('available'), cls:late > 0 ? 'is-delivered is-attention' : 'is-delivered' },
-          { label:'Cash à encaisser', value:num(k.cash_a_encaisser), sub:fmtCollectTotals(k.montant_cash_par_devise, k.cash_sans_montant_local), cls:'is-discarded' },
-          { label:'Incidents ouverts', value:incidents, sub:incidents > 0 ? 'à traiter' : 'rien à faire', cls:incidents > 0 ? 'is-review is-attention' : 'is-review' },
-        ])}</details>
-        <p class="kir-run-proof lk-signals">${signals}</p>
-        ${simToggle()}
-        ${operational.length ? `<section class="lk-block" aria-label="Incidents opérationnels à connaître">
-          <div class="lk-block-head"><span class="kir-section-kicker">INCIDENTS À CONNAÎTRE</span><strong>${operational.length} dossier(s) en cours</strong></div>
-          <p>Informations confirmées de la chaîne de commande. Vérifier la fiche avant toute remise ou annonce au client.</p>
-          ${table(['Commande', 'Article', 'Information', 'Responsable'], opRows, { empty:'Aucun incident.' })}
-        </section>` : ''}
-        <details class="kmc-relay-secondary"><summary>Liste détaillée des retraits prioritaires</summary>
-        <section class="lk-block" aria-label="À retirer en premier">
-          <div class="lk-block-head"><span class="kir-section-kicker">À RETIRER EN PREMIER</span><a href="${listUrl('available')}" data-cockpit-nav class="kir-subtle-link">Voir tous les colis disponibles →</a></div>
-          ${table([...ORDER_COLUMNS, 'Détail'], first.map(order => orderRow(order, 'available', p.sel || '')), { empty:'Aucun colis disponible au retrait.' })}
-        </section></details>`,
+        ${operational.length?`<section class="kmc-relay-operational-alerts" aria-label="Incidents opérationnels">
+          <header><strong>${operational.length} incident(s) à examiner</strong><span>À vérifier avant toute remise.</span></header>
+          ${table(['Commande','Article','Information','Responsable'],opRows,{empty:'Aucun incident.'})}
+        </section>`:''}
+        <details class="kmc-relay-secondary kmc-relay-secondary-unified" data-relay-supervision>
+          <summary><span>Indicateurs et suivi détaillé</span><small>Supervision et historique · ouvrir</small></summary>
+          <div class="kmc-relay-secondary-content">
+            ${tiles('INDICATEURS RELAIS',[
+              {label:'En transit',value:num(k.en_transit),sub:'à suivre',href:listUrl('in_transit'),cls:'is-received'},
+              {label:'Disponibles',value:num(k.disponibles),sub:late>0?late+' depuis +72 h':'à retirer',href:listUrl('available'),cls:'is-delivered'},
+              {label:'Cash à encaisser',value:num(k.cash_a_encaisser),sub:fmtCollectTotals(k.montant_cash_par_devise,k.cash_sans_montant_local),cls:'is-discarded'},
+              {label:'Incidents ouverts',value:num(k.incidents_ouverts),sub:'à examiner',cls:'is-review'},
+            ])}
+            <div class="kmc-relay-secondary-flow">${processBoard(stages)}</div>
+            <div class="kmc-relay-secondary-table">
+              <header><strong>Retraits prioritaires</strong><a href="${listUrl('available')}" data-cockpit-nav>Consulter la file →</a></header>
+              ${table([...ORDER_COLUMNS,'Détail'],first.map(order=>orderRow(order,'available',p.sel||'')),{empty:'Aucun retrait prioritaire.'})}
+            </div>
+          </div>
+        </details>`,
     };
   }
 
