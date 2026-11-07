@@ -413,3 +413,138 @@
 .kmc-hub-app .kmc-hub-journal-publish:disabled {opacity:.55;cursor:wait;}
 .kmc-hub-app .kmc-hub-journal-feedback {font-size:11px;color:#9a4d24;line-height:1.4;}
 .kmc-hub-app .kmc-hub-journal-error {font-size:12px;color:#9b3929;line-height:1.5;}
+
+
+/* Hub focus fort · une seule étape attirante par commande.
+   Contraste lisible sans couleur, halo non clignotant, aucune action simulée. */
+.kmc-hub-app .kmc-hub-global-table tr.is-hub-active-order > td:first-child {
+  background:linear-gradient(90deg,#e5f5ff 0,#f2faff 42%,transparent 100%);
+  box-shadow:inset 5px 0 #148aca;
+}
+.kmc-hub-app .kmc-hub-global-table tr.is-hub-active-order .kmc-hub-phase-summary {
+  border-left:3px solid #008dc8;
+  padding:5px 0 5px 10px;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current {
+  --kmc-stage-halo:rgba(0,151,240,.35);
+  --kmc-stage-light:rgba(63,201,255,.45);
+  position:relative;
+  isolation:isolate;
+  overflow:hidden;
+  min-height:82px;
+  padding:10px 11px 11px 16px;
+  border:2px solid #058bd8;
+  border-radius:10px;
+  background:linear-gradient(132deg,#063969 0%,#086ca7 54%,#0b86c4 100%);
+  color:#fff;
+  text-align:left;
+  box-shadow:0 0 0 3px var(--kmc-stage-halo),
+             0 0 17px 3px var(--kmc-stage-light),
+             inset 0 1px rgba(255,255,255,.6);
+  animation:kmc-hub-stage-breathe 3.6s ease-in-out infinite;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current::before {
+  content:"";
+  position:absolute;z-index:0;pointer-events:none;
+  left:0;top:8px;bottom:8px;width:5px;
+  background:#8ceaff;border-radius:0 5px 5px 0;
+  box-shadow:0 0 11px rgba(152,242,255,.8);
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current::after {
+  content:"";
+  position:absolute;z-index:0;pointer-events:none;
+  inset:0;
+  background:radial-gradient(circle at 90% 0%,rgba(255,255,255,.34),transparent 48%);
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current > * {
+  position:relative;z-index:1;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current .kmc-hub-stage-primary {
+  font-size:13px;line-height:1.4;font-weight:850;
+  color:#fff;text-shadow:0 1px 2px rgba(0,33,61,.45);
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current .kmc-hub-stage-proof {
+  font-size:11px;font-weight:790;color:#e8faff;opacity:1;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-stage-focus-label {
+  display:inline-flex;align-items:center;gap:6px;
+  max-width:100%;align-self:start;width:fit-content;
+  padding:4px 9px;border-radius:999px;
+  border:1px solid rgba(255,255,255,.62);
+  background:rgba(255,255,255,.18);
+  color:#fff;font-size:10px;line-height:1.3;
+  font-weight:900;letter-spacing:.055em;
+  box-shadow:inset 0 1px 1px rgba(255,255,255,.2);
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-stage-focus-label::before {
+  content:"";display:inline-block;flex:none;width:7px;height:7px;
+  border-radius:50%;background:#b9f5ff;box-shadow:0 0 8px #c1f8ff;
+}
+/* Un avertissement en cours n'est pas un bleu neutre : priorité ambre très visible. */
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current.is-stage-warning {
+  --kmc-stage-halo:rgba(242,146,17,.38);
+  --kmc-stage-light:rgba(255,186,57,.34);
+  border-color:#e98b13;
+  background:linear-gradient(130deg,#754007 0%,#a25709 55%,#bd741a 100%);
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current.is-stage-warning::before {
+  background:#ffe2a2;box-shadow:0 0 12px #ffcc60;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current.is-stage-warning .kmc-hub-stage-focus-label::before {
+  background:#ffe7a0;box-shadow:0 0 8px #ffdc70;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current.is-stage-critical {
+  --kmc-stage-halo:rgba(213,63,57,.36);
+  --kmc-stage-light:rgba(255,93,82,.30);
+  border-color:#d94a40;
+  background:linear-gradient(130deg,#711f20 0%,#a42e2d 55%,#c54133 100%);
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current.is-stage-critical::before {
+  background:#ffb8a0;box-shadow:0 0 12px #ff9f88;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current.is-stage-ready {
+  --kmc-stage-halo:rgba(15,159,126,.33);
+  --kmc-stage-light:rgba(63,223,186,.29);
+  border-color:#0ca68e;
+  background:linear-gradient(130deg,#07584b 0%,#087d65 55%,#0ca181 100%);
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current.is-stage-waiting {
+  --kmc-stage-halo:rgba(97,130,169,.18);
+  --kmc-stage-light:rgba(110,151,193,.13);
+  border-color:#7895ad;
+  background:linear-gradient(135deg,#35485d,#536b82);
+  animation:none;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-locked,
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-complete:not(.is-stage-current) {
+  box-shadow:none;
+  filter:saturate(.55);
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-kanban-stage-actions:has(> .is-stage-current) > .kmc-hub-kanban-action {
+  min-height:39px;
+  border-color:#72d8ff;background:linear-gradient(125deg,#005f98,#058ac5);
+  color:#fff;font-size:12px;font-weight:850;
+  box-shadow:0 3px 11px rgba(2,98,165,.3);
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-kanban-stage-actions:has(> .is-stage-current.is-stage-warning) > .kmc-hub-kanban-action {
+  border-color:#f5ca77;background:linear-gradient(125deg,#895000,#b06d12);
+  box-shadow:0 3px 11px rgba(154,92,12,.3);
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-kanban-stage-actions:has(> .is-stage-current.is-stage-critical) > .kmc-hub-kanban-action {
+  border-color:#ffb4a1;background:linear-gradient(125deg,#8e2829,#b53b35);
+}
+@keyframes kmc-hub-stage-breathe {
+  0%,100% {box-shadow:0 0 0 3px var(--kmc-stage-halo),0 0 17px 3px var(--kmc-stage-light),inset 0 1px rgba(255,255,255,.6);}
+  50% {box-shadow:0 0 0 4px var(--kmc-stage-halo),0 0 23px 5px var(--kmc-stage-light),inset 0 1px rgba(255,255,255,.6);}
+}
+@media (prefers-reduced-motion:reduce) {
+  .kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current {
+    animation:none;
+  }
+}
+@media print {
+  .kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current {
+    animation:none;box-shadow:none;
+    -webkit-print-color-adjust:exact;print-color-adjust:exact;
+  }
+}
