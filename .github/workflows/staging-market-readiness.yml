@@ -1,0 +1,37 @@
+name: Staging — readiness marche (lecture seule)
+
+# GET /api/admin/markets/:code/control-plane avec le compte E2E admin. Aucune ecriture, aucune base touchee.
+
+on:
+  workflow_dispatch:
+    inputs:
+      markets:
+        description: 'Marches (sous-ensemble de KM,CM,CG,YT)'
+        required: false
+        default: 'CM,CG'
+
+permissions:
+  contents: read
+
+jobs:
+  readiness:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      KOMERCE_ENV: staging
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      READINESS_MARKETS: ${{ inputs.markets }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node scripts/recette/staging-market-readiness.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: staging-market-readiness-${{ github.run_id }}
+          path: test-results/market-readiness/report.json
+          if-no-files-found: warn
