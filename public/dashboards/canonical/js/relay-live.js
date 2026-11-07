@@ -41,7 +41,7 @@
     all:'Tous les colis',
   });
   const LIST_COPY = Object.freeze({
-    in_transit:'Colis partis du Hub, en route vers leur relais.',
+    in_transit:'Commandes en acheminement vers leur relais, selon leur circuit. La réception physique se constate au relais.',
     available:'Colis arrivés au relais, en attente de retrait par le client. Les plus anciens d’abord.',
     collected:'Colis retirés par leur destinataire.',
     all:'Tous les colis suivis par les relais : expédiés, disponibles et retirés.',
@@ -126,7 +126,7 @@
       <a href="${executionUrl('')}">Ouvrir l’atelier Relais ↗</a></div>`;
     return `<section class="kmc-relay-work" aria-label="Poste de travail Relais">
       <header class="kmc-relay-work-header"><div><span class="kmc-relay-work-eyebrow">RELAIS · POSTE DE TRAVAIL</span>
-        <h2>${num(k.disponibles)+num(k.en_transit)>0?'Colis et commandes à suivre':'Aucun dossier à traiter'}</h2>
+        <h2>${orders.length?'Colis et commandes à suivre':'Aucun dossier à traiter'}</h2>
         <p>Une ligne = statut de commande. Les réceptions et remises réelles sont attestées dans l’atelier.</p></div>
         <nav class="kmc-relay-work-filters" aria-label="Files de travail">
           <a data-cockpit-nav href="${listUrl('available')}">À retirer <b>${num(k.disponibles)}</b></a>
@@ -244,7 +244,7 @@
       hero:`<header class="kir-hero kir-live-hero kmc-relay-compact-hero">
         <div>
           <div class="kir-live-titleline"><span class="kir-eyebrow">OPÉRATIONS · RELAIS</span></div>
-          <div class="kir-live-titlerow"><h1>Suivi des Relais — Hub → Client</h1><span class="kir-live-badge is-live">LIVE</span></div>
+          <div class="kir-live-titlerow"><h1>Suivi des Relais — Tous circuits</h1><span class="kir-live-badge is-live">LIVE</span></div>
           <p>Lecture en direct · mis à jour ${esc(fmtDate(data?.fetched_at))}</p>
         </div>
       </header>`,
