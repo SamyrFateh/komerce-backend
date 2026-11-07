@@ -97,6 +97,10 @@
     return o.status==='shipped'?'Expédiée · à suivre':'En route · à contrôler';
   }
 
+  // Affichage réservé au rôle admin par LiveKit : changement de présentation uniquement.
+  const relaySimToggle=()=>simToggle().replace('☑ Afficher la recette','Recette incluse')
+    .replace('☐ Afficher la recette','Inclure la recette');
+
   function relayActionRail(k){
     const choices=[
       {kind:'receive',focus:'shipments',label:'Réceptionner',description:'Contrôler les arrivages'},
@@ -243,7 +247,7 @@
         </div>
         <div class="kmc-relay-heading-controls">
           <span class="kmc-relay-live-state"><i aria-hidden="true"></i> LIVE</span>
-          ${simToggle()}
+          ${relaySimToggle()}
         </div>
       </header>`,
       body:`${relayWorkboard(p,data)}
@@ -292,7 +296,7 @@
             <div><input id="kmc-relay-search" name="search" type="search" value="${esc(search)}" maxlength="120" placeholder="Référence, client, téléphone…">
             <button type="submit">Rechercher</button></div>
           </form>
-          ${simToggle()}
+          ${relaySimToggle()}
         </div>
         <div class="kmc-relay-list-results"><strong>${rows.length} résultat(s) affiché(s)</strong>
           <a href="${BASE+queryString(simParams())}" data-cockpit-nav>← Poste de travail</a></div>
