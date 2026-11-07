@@ -6,7 +6,7 @@ const fake = (relayHome, leak) => async (url, o = {}) => {
   const u = url.replace(ENV.STAGING_BASE_URL, ''); const res = (s, j = {}) => ({ status: s, json: async () => j, headers: { get: () => `sid=${o.body && JSON.parse(o.body).email === 'r@x' ? 'r' : 'a'}` } });
   if (u === '/api/auth/login') return res(200, { user: { role: JSON.parse(o.body).email === 'r@x' ? 'agent_relais' : 'admin' } });
   const isRelay = (o.headers.cookie || '') === 'sid=r'; const m = u.match(/market\/([A-Z]{2})/)[1];
-  if (!isRelay) return res(o.method === 'POST' ? 404 : 200);
+  if (!isRelay) return res(o.method === 'POST' ? 403 : 200);
   if (m === relayHome) return res(o.method === 'POST' ? 404 : 200);
   return res(leak && o.method === 'POST' ? 404 : 403);
 };
