@@ -601,41 +601,9 @@
 
   // Dossier vivant : la projection serveur reste la seule source de vérité.
   // Les accordéons ne changent aucun état; chaque action existante garde son service propriétaire.
-  function renderSupplySection(rootNode, ui, doc, context) {
-    // Concept C : aucun bloc KPI ni titre de section redondant au-dessus du cockpit (hero existant conservé).
-    const flowHost = doc.createElement('div');
-    flowHost.className = 'kmc-hub-flow';
-    rootNode.appendChild(flowHost);
-    flowHost.setAttribute('data-hub-dossier-home', '');
-    if (context.dossierError) {
-      flowHost.appendChild(text(doc, 'div', 'kmc-workspace-empty', `Dossier indisponible : ${context.dossierError}`));
-      return;
-    }
-    const d = context.dossier;
-    if (!d) {
-      flowHost.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Dossier non chargé.'));
-      return;
-    }
-
-    // Hub Live concept C : le cockpit « flux du besoin » remplace l'ancien tableau de production.
-    // Toutes les quantités et étapes viennent de la projection serveur (d.cockpit / d.orders / d.purchase_orders).
-    const ordersSlot = doc.createElement('div');
-    ordersSlot.className = 'kmc-hub-flow-body';
-    rootNode.appendChild(ordersSlot);
-    ordersSlot.setAttribute('data-supply-pos', '');
-    ordersSlot.setAttribute('data-hub-work-orders', '');
-    const cockpitHost = doc.createElement('div');
-    cockpitHost.setAttribute('data-hub-cockpit-host', '');
-    ordersSlot.appendChild(cockpitHost);
-    const sourcingHost = doc.createElement('section');
-    sourcingHost.hidden = true;
-    sourcingHost.setAttribute('data-hub-sourcing-recovery', '');
-    sourcingHost.className = 'kmc-hub-sourcing-panel';
-    ordersSlot.appendChild(sourcingHost);
-
-    // Sourcing manuel via les API propriétaires : aucune création en SQL,
-    // aucune fausse identité fournisseur, aucun envoi ou paiement implicite.
-    function showSourcingResolution(group) {
+  // Réutilisé par le cockpit global : même formulaire, mêmes endpoints,
+  // mêmes garde-fous et mêmes protections contre les POST rejoués.
+  function renderManualSourcing(ordersSlot, doc, context, group) {
       const unresolved = (group.items || []).filter(item =>
         item.sourcing_required === true && Number(item.purchasing_missing) > 0 &&
         item.id && item.product_id
@@ -874,6 +842,75 @@
       loadSuppliers().catch(() => {});
       host.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
     }
+
+  function openManualSourcing(target, options = {}) {
+    const doc = options.document;
+    if (!target || !doc || typeof options.fetch !== 'function')
+      throw new Error('hub_inline_sourcing_context_missing');
+    const order = options.order;
+    if (!order || !order.id || !Array.isArray(order.items))
+      throw new Error('hub_inline_sourcing_order_missing');
+    const permitted = ['admin','agent_hub'].includes(options.user && options.user.role);
+    if (!permitted) throw new Error('hub_inline_sourcing_not_permitted');
+    target.replaceChildren();
+    const feedback = doc.createElement('p');
+    feedback.setAttribute('data-workspace-feedback','');
+    feedback.setAttribute('role','status');
+    target.appendChild(feedback);
+    const host = doc.createElement('section');
+    host.hidden = true;
+    host.className = 'kmc-hub-sourcing-panel';
+    host.setAttribute('data-hub-sourcing-recovery','');
+    target.appendChild(host);
+    const active = renderManualSourcing(target, doc, {
+      root:target,
+      user:options.user,
+      fetch:options.fetch,
+      confirm:typeof options.confirm === 'function' ? options.confirm : () => false,
+      reload:typeof options.refresh === 'function' ? options.refresh : async () => {},
+    }, order);
+    if (host.hidden) {
+      feedback.textContent = 'Aucun article éligible au sourcing manuel : vérifier le dossier fournisseur.';
+      return false;
+    }
+    return true;
+  }
+
+  function renderSupplySection(rootNode, ui, doc, context) {
+    // Concept C : aucun bloc KPI ni titre de section redondant au-dessus du cockpit (hero existant conservé).
+    const flowHost = doc.createElement('div');
+    flowHost.className = 'kmc-hub-flow';
+    rootNode.appendChild(flowHost);
+    flowHost.setAttribute('data-hub-dossier-home', '');
+    if (context.dossierError) {
+      flowHost.appendChild(text(doc, 'div', 'kmc-workspace-empty', `Dossier indisponible : ${context.dossierError}`));
+      return;
+    }
+    const d = context.dossier;
+    if (!d) {
+      flowHost.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Dossier non chargé.'));
+      return;
+    }
+
+    // Hub Live concept C : le cockpit « flux du besoin » remplace l'ancien tableau de production.
+    // Toutes les quantités et étapes viennent de la projection serveur (d.cockpit / d.orders / d.purchase_orders).
+    const ordersSlot = doc.createElement('div');
+    ordersSlot.className = 'kmc-hub-flow-body';
+    rootNode.appendChild(ordersSlot);
+    ordersSlot.setAttribute('data-supply-pos', '');
+    ordersSlot.setAttribute('data-hub-work-orders', '');
+    const cockpitHost = doc.createElement('div');
+    cockpitHost.setAttribute('data-hub-cockpit-host', '');
+    ordersSlot.appendChild(cockpitHost);
+    const sourcingHost = doc.createElement('section');
+    sourcingHost.hidden = true;
+    sourcingHost.setAttribute('data-hub-sourcing-recovery', '');
+    sourcingHost.className = 'kmc-hub-sourcing-panel';
+    ordersSlot.appendChild(sourcingHost);
+
+    // Sourcing manuel via les API propriétaires : aucune création en SQL,
+    // aucune fausse identité fournisseur, aucun envoi ou paiement implicite.
+    const showSourcingResolution = group => renderManualSourcing(ordersSlot, doc, context, group);
 
     const cockpitModule = globalThis.KomerceHubLiveCockpit;
     if (!cockpitModule) {
@@ -1771,6 +1808,7 @@
     metricItems,
     jsonRequest,
     renderPayload,
+    openManualSourcing,
     mount,
   });
 });
