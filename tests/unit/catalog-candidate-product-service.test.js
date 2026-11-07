@@ -484,3 +484,388 @@ describe('real supplier to inactive catalogue draft — independent commercial p
     expect(q.query.mock.calls.every(([sql])=>sql.trim().startsWith('SELECT'))).toBe(true);
   });
 });
+
+
+describe('progressive taxonomy — certified parent vs unverified Discovery',()=>{
+  const {resolveCommercialTaxonomyVerdict,
+    createDraftProductFromSourcingCandidate}=require('../../services/catalog-candidate-product-service');
+  const qFor=(rows,insert=true)=>({
+    query:jest.fn(async (sql)=>{
+      if(sql.includes('FROM supplier_commercial_category_mappings'))return {rows:[]};
+      if(sql.includes('object_classification_terms'))return {rows};
+      if(sql.includes('FROM boutique_categories WHERE key='))return {rows:[{key:'Maison'}]};
+      if(sql.includes('INSERT INTO products'))return {rows:insert?[{id:'draft-parent'}]:[]};
+      return {rows:[]};
+    }),
+  });
+  const candidate={supplier_name:'CJdropshipping',
+    product_name:'Storage Cube Organizer',supplier_category:'Unmapped > Unclear Objects',
+    raw_payload:{discovery:{target_category:'Tech',target_subcategory:'Phones'}}};
+  test('two equally strong object matches within one parent resolve CATEGORY, never a fictitious leaf',async()=>{
+    const q=qFor([
+      {category:'Maison',subcategory:'Cuisine',terms:{'storage cube':12}},
+      {category:'Maison',subcategory:'Déco',terms:{'storage cube':12}},
+    ]);
+    expect(await resolveCommercialTaxonomyVerdict(q,candidate)).toMatchObject({
+      status:'CATEGORY_CLASSIFIED',level:'CATEGORY',category:'Maison',
+      subcategory:null,source:'OBJECT_TERM_COMMON_PARENT'});
+    await expect(createDraftProductFromSourcingCandidate(q,{candidate,initialPrice:null}))
+      .resolves.toBe('draft-parent');
+    const insert=q.query.mock.calls.find(([sql])=>sql.includes('INSERT INTO products'));
+    expect(insert[1].slice(2,4)).toEqual(['Maison',null]);
+    expect(insert[1][5]).toBeNull();
+    expect(insert[0]).toContain("FALSE, FALSE, 'candidate'");
+  });
+  test('equally strong terms across root categories are not promoted to a parent',async()=>{
+    const q=qFor([
+      {category:'Maison',subcategory:'Déco',terms:{'storage cube':12}},
+      {category:'Tech',subcategory:'Audio',terms:{'storage cube':12}},
+    ]);
+    await expect(resolveCommercialTaxonomyVerdict(q,candidate)).resolves.toMatchObject({
+      status:'REVIEW_REQUIRED',source:'DISCOVERY_PRIOR',category:null,subcategory:null});
+    await expect(createDraftProductFromSourcingCandidate(q,{candidate,initialPrice:null}))
+      .rejects.toThrow('BOUTIQUE_TAXONOMY_UNRESOLVED');
+    expect(q.query.mock.calls.some(([sql])=>sql.includes('INSERT INTO products'))).toBe(false);
+  });
+  test('a parent absent from active boutique categories cannot be drafted',async()=>{
+    const q=qFor([
+      {category:'Maison',subcategory:'Cuisine',terms:{'storage cube':12}},
+      {category:'Maison',subcategory:'Déco',terms:{'storage cube':12}},
+    ]);
+    q.query.mockImplementation(async sql=>{
+      if(sql.includes('FROM supplier_commercial_category_mappings'))return {rows:[]};
+      if(sql.includes('object_classification_terms'))return {rows:[
+        {category:'Maison',subcategory:'Cuisine',terms:{'storage cube':12}},
+        {category:'Maison',subcategory:'Déco',terms:{'storage cube':12}}]};
+      return {rows:[]};
+    });
+    await expect(createDraftProductFromSourcingCandidate(q,{candidate,initialPrice:null}))
+      .rejects.toThrow('BOUTIQUE_CATEGORY_INACTIVE');
+  });
+});
+
+
+describe('supplier path + actual object corroborate category without inventing a leaf',()=>{
+  const {categoryCorroboratedByObject}=require('../../services/catalog-commercial-category-evidence');
+  const {resolveCommercialTaxonomyVerdict,
+    createDraftProductFromSourcingCandidate}=require('../../services/catalog-candidate-product-service');
+  const candidate=(product_name,supplier_category,discoveryCategory='Auto')=>({
+    supplier_name:'CJdropshipping',product_name,supplier_category,
+    raw_payload:{discovery:{target_category:discoveryCategory,
+      target_subcategory:'Éclairage'}},
+  });
+  const qFor=(active=true)=>({query:jest.fn(async (sql)=>{
+    if(sql.includes('FROM supplier_commercial_category_mappings'))return {rows:[]};
+    if(sql.includes('object_classification_terms'))return {rows:[]};
+    if(sql.includes('FROM boutique_categories WHERE key='))return {rows:active?[{key:'Maison'}]:[]};
+    if(sql.includes('INSERT INTO products'))return {rows:[{id:'inactive-only'}]};
+    return {rows:[]};
+  })});
+
+  test.each([
+    ['High Heels Catwalk Shoes Far Shoes Women',"Bags & Shoes > Women's Shoes > Slippers",'Mode & Beauté'],
+    ['Portable Makeup Brush Beauty Tools','Health, Beauty & Hair > Makeup > Makeup Brushes','Mode & Beauté'],
+    ['Diatomaceous Earth Sink Tray Kitchen Organizer','Home, Garden & Furniture > Home Storage > Office Storage','Maison'],
+    ['Ceramic Bedside Table Lamp','Home Improvement > Indoor Lighting > Night Lights','Maison'],
+    ['Cabin Air Filter fit for Sprinter','Automobiles & Motorcycles > Auto Replacement Parts > Other','Auto'],
+    ['Bluetooth Wireless Headphones','Consumer Electronics > Portable Audio & Video > Headphones','Tech'],
+    ['Type C Mobile Phone Charging Cable','Phones & Accessories > Mobile Accessories > Cables','Tech'],
+    ['Ratchet Screwdriver With Drill Bits','Home Improvement > Tools > Tool Sets','Bricolage'],
+  ])('category-only corroboration: %s', (name,path,expected)=>{
+    expect(categoryCorroboratedByObject(candidate(name,path))).toMatchObject({
+      category:expected,subcategory:null,level:'CATEGORY',source:'SUPPLIER_PATH_AND_OBJECT',
+    });
+  });
+
+  test.each([
+    ['Wireless Bluetooth Earbuds','Jewelry & Watches > Fashion Jewelry > Keychains'],
+    ['USB-C Wall Charger 45W','Home, Garden & Furniture > Home Storage > Home Office Storage'],
+    ['Ceramic Table Lamp','Home Improvement > Tools > Garden Tools'],
+    ['Car Phone Charger Bluetooth Wireless','Automobiles & Motorcycles > Car Electronics > Audio'],
+    ['Makeup Storage Box With LED Light','Home, Garden & Furniture > Home Storage > Office'],
+    ['Professional Portable Electric Nail Drill','Health, Beauty & Hair > Beauty Tools > Manicure'],
+
+  ])('no unjustified parent: %s', (name,path)=>{
+    expect(categoryCorroboratedByObject(candidate(name,path))).toBeNull();
+  });
+  test('Discovery can propose a competing category but never reverse the dual evidence',async()=>{
+    const c=candidate('Mobile Phone Holder','Phones & Accessories > Mobile Accessories > Holders','Maison');
+    const q=qFor();
+    await expect(resolveCommercialTaxonomyVerdict(q,c)).resolves.toMatchObject({
+      status:'CATEGORY_CLASSIFIED',category:'Tech',subcategory:null,
+      source:'SUPPLIER_PATH_AND_OBJECT',
+    });
+    expect(q.query.mock.calls.some(([sql])=>sql.includes('INSERT INTO products'))).toBe(false);
+  });
+  test('inactive parent rejected before draft INSERT',async()=>{
+    const c=candidate('Metal Shoe Rack Storage Shelf',
+      'Home, Garden & Furniture > Home Storage > Furniture','Tech');
+    // "shoe" (fashion) and "storage" (home) are competing title universes:
+    // corroboration must refuse a seemingly convenient parent.
+    expect(categoryCorroboratedByObject(c)).toBeNull();
+    const safe=candidate('Kitchen Cooking Utensil',
+      'Home, Garden & Furniture > Kitchen, Dining & Bar > Cooking Tools','Tech');
+    const q=qFor(false);
+    await expect(resolveCommercialTaxonomyVerdict(q,safe)).resolves.toMatchObject({
+      status:'REVIEW_REQUIRED',source:'CORROBORATED_CATEGORY_INACTIVE',category:null,
+    });
+    await expect(createDraftProductFromSourcingCandidate(q,{candidate:safe,initialPrice:null}))
+      .rejects.toThrow('BOUTIQUE_TAXONOMY_UNRESOLVED');
+    expect(q.query.mock.calls.some(([sql])=>sql.includes('INSERT INTO products'))).toBe(false);
+  });
+  test('category-only handoff creates an inactive unpriced draft, no publication',async()=>{
+    const c=candidate('Kitchen Cooking Utensil',
+      'Home, Garden & Furniture > Kitchen, Dining & Bar > Cooking Tools','Tech');
+    const q=qFor(true);
+    await expect(createDraftProductFromSourcingCandidate(q,{candidate:c,initialPrice:12999}))
+      .resolves.toBe('inactive-only');
+    const insert=q.query.mock.calls.find(([sql])=>sql.includes('INSERT INTO products'));
+    expect(insert[1].slice(2,4)).toEqual(['Maison',null]);
+    expect(insert[1][5]).toBeNull();
+    expect(insert[0]).toContain("FALSE, FALSE, 'candidate'");
+  });
+});
+
+
+describe('corroborated object protects reusable supplier mappings',()=>{
+  const {resolveCommercialTaxonomyVerdict,
+    createDraftProductFromSourcingCandidate}=require('../../services/catalog-candidate-product-service');
+  const candidate={supplier_name:'CJdropshipping',
+    product_name:'Kitchen Cooking Utensil',
+    supplier_category:'Home, Garden & Furniture > Home Storage > Home Office Storage',
+    raw_payload:{discovery:{target_category:'Tech',target_subcategory:'Phones'}}};
+  test('polluted generic path mapped to Tech cannot override a kitchen object',async()=>{
+    const q={query:jest.fn().mockResolvedValue({
+      rows:[{category:'Tech',subcategory:'Phones'}]})};
+    await expect(resolveCommercialTaxonomyVerdict(q,candidate)).resolves.toMatchObject({
+      status:'REVIEW_REQUIRED',category:null,subcategory:null,
+      source:'CONFIRMED_MAPPING_OBJECT_CONFLICT',
+      evidence:{mapping_category:'Tech',object_category:'Maison'},
+    });
+    await expect(createDraftProductFromSourcingCandidate(q,{candidate,initialPrice:null}))
+      .rejects.toThrow('BOUTIQUE_TAXONOMY_UNRESOLVED');
+    expect(q.query.mock.calls.some(([sql])=>sql.includes('INSERT INTO products'))).toBe(false);
+  });
+  test('compatible confirmed mapping keeps its pair (not downgraded)',async()=>{
+    const q={query:jest.fn().mockResolvedValue({
+      rows:[{category:'Maison',subcategory:'Cuisine'}]})};
+    await expect(resolveCommercialTaxonomyVerdict(q,candidate)).resolves.toMatchObject({
+      status:'AUTO_CLASSIFIED',category:'Maison',subcategory:'Cuisine',
+      source:'CONFIRMED_SUPPLIER_PATH',
+    });
+  });
+});
+
+
+describe('CJ real-world evidence generalization: no token-property confusion',()=>{
+  const {categoryCorroboratedByObject}=require('../../services/catalog-commercial-category-evidence');
+  const c=(product_name,supplier_category)=>({product_name,supplier_category});
+  test.each([
+    ['A17 Pro Max Smartphone, 256GB Storage, 72MP Camera',
+      'Phones & Accessories > Mobile Phones > Dual SIM Card','Tech'],
+    ['Silicone Kitchenware Set',
+      'Home, Garden & Furniture > Kitchen, Dining & Bar > Cooking Tools','Maison'],
+    ['Electric Hot Pot with Cooking Tools',
+      'Home, Garden & Furniture > Kitchen, Dining & Bar > Cooking Tools','Maison'],
+    ['Solar Wall Light Outdoor Wireless Lamps',
+      'Home Improvement > Outdoor Lighting > Solar Lamps','Maison'],
+    ['Solar Street Path Light Outdoor',
+      'Home Improvement > Outdoor Lighting > Solar Lamps','Maison'],
+    ['NM-B Wire 14AWG Copper Core Cable 50 Ft Electrical Wire With Ground',
+      'Home Improvement > Tools > Tool Sets','Bricolage'],
+    ['Solar Panel Extension Wire Female and Male Connectors',
+      'Home Improvement > Tools > Tool Sets','Bricolage'],
+    ['Cable Dispenser Mounted Portable For Electrical Industrial',
+      'Home Improvement > Tools > Tool Sets','Bricolage'],
+    ['Solar Connector Crimper Tool with Cable Storage Box',
+      'Home Improvement > Tools > Tool Sets','Bricolage'],
+  ])('two-source category proof %s', (product_name,supplier_category,category)=>{
+    expect(categoryCorroboratedByObject(c(product_name,supplier_category)))
+      .toMatchObject({category,subcategory:null,source:'SUPPLIER_PATH_AND_OBJECT'});
+  });
+  test.each([
+    ['Smartphone with 256GB Storage','Home, Garden & Furniture > Home Storage > Office'],
+    ['USB-C Charger with Storage','Home, Garden & Furniture > Home Storage > Office'],
+    ['Car Interior LED Lamp','Home Improvement > Outdoor Lighting > Solar Lamps'],
+    ['USB-C Cable','Home Improvement > Tools > Tool Sets'],
+    ['Audio Cable','Home Improvement > Tools > Tool Sets'],
+    ['Garden Toy with Solar Panel Wire','Home Improvement > Tools > Tool Sets'],
+    ['Solar Cable Organizer Cabinet','Home Improvement > Tools > Tool Sets'],
+  ])('adversarial conflict/unproved object stays review: %s',(product_name,supplier_category)=>{
+    expect(categoryCorroboratedByObject(c(product_name,supplier_category))).toBeNull();
+  });
+});
+
+
+describe('Object identity counter-audit: material is not an object and kits have multiple purposes',()=>{
+  const {categoryCorroboratedByObject}=require('../../services/catalog-commercial-category-evidence');
+  const {resolveCommercialTaxonomyVerdict}=require('../../services/catalog-candidate-product-service');
+  const toyPath='Toys, Kids & Babies > Toys & Hobbies > Action & Toy Figures';
+  const homePath='Home, Garden & Furniture > Kitchen, Dining & Bar > Cooking Tools';
+  test.each([
+    ['ins dinosaur children plush backpack',toyPath],
+    ['Plush Foam Cushion',toyPath],
+    ['Velvet Plush Baby Blanket',toyPath],
+    ['Tumbler Heat Press Machine And Sublimation Tumblers With Mug Press Cup Press',homePath],
+    ['Mug Press Machine + 8 Ceramic Mugs',homePath],
+  ])('rejects an object that a misleading secondary noun would put in Maison: %s',(product_name,supplier_category)=>{
+    expect(categoryCorroboratedByObject({product_name,supplier_category})).toBeNull();
+  });
+  test.each([
+    ['Plush Bunny Toy',toyPath],
+    ['Large Plush Teddy Bear',toyPath],
+    ['Plush Toy Doll',toyPath],
+    ['Baby Stroller Bag Organizer','Toys, Kids & Babies > Baby & Mother > Activity & Gear'],
+    ['Heat Resistant Ceramic Coffee Mug',homePath],
+    ['Dishwashing Mug Storage Cabinet',homePath],
+  ])('retains evidence for true item identity: %s',(product_name,supplier_category)=>{
+    expect(categoryCorroboratedByObject({product_name,supplier_category}))
+      .toMatchObject({category:'Maison',level:'CATEGORY'});
+  });
+  test.each([
+    ['ins dinosaur children plush backpack',toyPath],
+    ['Tumbler Heat Press Machine And Sublimation Tumblers With Mug Press Cup Press',homePath],
+  ])('uncertainty remains review and never becomes an authoritative draft: %s',
+    async(product_name,supplier_category)=>{
+      const q={query:jest.fn(async sql=>{
+        if(sql.includes('object_classification_terms'))return {rows:[]};
+        if(sql.includes('FROM supplier_commercial_category_mappings'))return {rows:[]};
+        return {rows:[]};
+      })};
+      const verdict=await resolveCommercialTaxonomyVerdict(q,{
+        supplier_name:'CJdropshipping',product_name,supplier_category,
+        raw_payload:{discovery:{target_category:'Maison',target_subcategory:'Enfants'}}});
+      expect(verdict).toMatchObject({status:'REVIEW_REQUIRED',category:null,subcategory:null,
+        source:'DISCOVERY_PRIOR'});
+    });
+});
+
+
+describe('toy vehicle is not an automotive part (frozen CJ object identities)',()=>{
+  const {categoryCorroboratedByObject}=require('../../services/catalog-commercial-category-evidence');
+  const {resolveCommercialTaxonomyVerdict}=require('../../services/catalog-candidate-product-service');
+  const toy='Toys, Kids & Babies > Toys & Hobbies > Action & Toy Figures';
+  test.each([
+    ['Remote Control Toy Car F1 Racing Style With Music And Light',toy],
+    ['Ride On Motorcycle 6V Ride on Bubble Car 3 Wheeled Electric Motorcycle for Kids',
+      'Toys, Kids & Babies > Toys & Hobbies > Blocks'],
+    ['Pink 6V Kids 3-Wheel Electric Ride On Motorcycle for Children',toy],
+  ])('explicit toy vehicle under actual toy breadcrumb proves Maison parent: %s',
+    async(product_name,supplier_category)=>{
+      const c={product_name,supplier_category};
+      expect(categoryCorroboratedByObject(c)).toMatchObject({
+        category:'Maison',subcategory:null,source:'SUPPLIER_PATH_AND_OBJECT'});
+      const q={query:jest.fn(async sql=>sql.includes('FROM boutique_categories WHERE key=')
+        ? {rows:[{key:'Maison'}]} : {rows:[]})};
+      await expect(resolveCommercialTaxonomyVerdict(q,{...c,
+        supplier_name:'CJdropshipping',
+        raw_payload:{discovery:{target_category:'Auto',target_subcategory:'Éclairage'}}}))
+        .resolves.toMatchObject({status:'CATEGORY_CLASSIFIED',category:'Maison',
+          subcategory:null,source:'SUPPLIER_PATH_AND_OBJECT'});
+    });
+  test.each([
+    ['Adult Ride On Motorcycle Helmet',toy],
+    ['Motorcycle Brake Rotor Spare Parts',toy],
+    ['Remote Control Car Brake Assembly',toy],
+    ['Toy Car Brake Rotor Repair Kit',toy],
+    ['Kids Electric Ride On Car',
+      'Home, Garden & Furniture > Home Storage > Furniture'],
+  ])('an uncorroborated or contradictory vehicle stays unresolved: %s',
+    (product_name,supplier_category)=>{
+      expect(categoryCorroboratedByObject({product_name,supplier_category})).toBeNull();
+    });
+});
+
+describe('separate classification counter-audit — risk signals are never decisions',()=>{
+  const {signalsFor,buildCounterAudit}=require('../../scripts/lib/cj-classification-counter-audit');
+  const check=(product_name,supplier_category,verdict='REVIEW_REQUIRED')=>
+    signalsFor({product_name,supplier_category,verdict}).map(x=>x.code);
+  test('detects off-hierarchy technology and tools, never emits automatic taxonomy',()=>{
+    expect(check('Wireless Bluetooth Earbuds Pastel Lavender','Jewelry & Watches > Keychains'))
+      .toContain('SOURCE_PATH_CONFLICT_TECH');
+    expect(check('MR-20G Drill Bits Sharpener','Home, Garden & Furniture > Furniture'))
+      .toContain('SOURCE_PATH_CONFLICT_TOOL');
+    expect(check('Car Brake Bleeder Kit','Home, Garden & Furniture > Furniture'))
+      .toContain('SOURCE_PATH_CONFLICT_AUTO');
+    expect(check('Electric Nail Drill Kit Manicure','Health, Beauty & Hair > Nail Art'))
+      .not.toContain('SOURCE_PATH_CONFLICT_TOOL');
+  });
+  test('distinguishes genuine customer assets, mixed bundles and plush material',()=>{
+    expect(check('Custom Mug Photo Gift - Must Upload The Image','Home Storage'))
+      .toContain('CUSTOMER_ASSET_OR_PHOTO');
+    expect(check('Tumbler Heat Press Machine With Blank Tumblers','Home Storage'))
+      .toContain('BUNDLED_EQUIPMENT_AND_GOODS');
+    expect(check('Children Plush Backpack','Toys, Kids & Babies > Toy Figures'))
+      .toContain('MATERIAL_NOT_PRODUCT_IDENTITY');
+    expect(check('Plush Bunny Toy','Toys, Kids & Babies > Toy Figures'))
+      .not.toContain('MATERIAL_NOT_PRODUCT_IDENTITY');
+    expect(check('Regular Coffee Mug','Home, Garden & Furniture > Kitchen'))
+      .not.toContain('CUSTOMER_ASSET_OR_PHOTO');
+  });
+  test('normalizes duplicate titles, exposes disagreements without inventing labels',()=>{
+    const corpus=[
+      {candidate_ref:'X1',product_name:'A17 Smartphone',supplier_category:'Phones > Mobile',
+        verdict:'CATEGORY_CLASSIFIED',category:'Tech',subcategory:null},
+      {candidate_ref:'X2',product_name:'A17  Smartphone',supplier_category:'Home Storage',
+        verdict:'REVIEW_REQUIRED',category:null,subcategory:null},
+    ];
+    const out=buildCounterAudit(corpus);
+    expect(out.data_count).toBe(2);
+    expect(out.duplicates).toEqual({groups:1,discordant_groups:1});
+    expect(out.duplicate_decision_disagreements[0].refs).toEqual(['X1','X2']);
+    expect(out).not.toHaveProperty('precision');
+    expect(out).not.toHaveProperty('accuracy');
+    expect(()=>buildCounterAudit([corpus[0],corpus[0]])).toThrow('COUNTER_AUDIT_DUPLICATE_REF');
+  });
+});
+
+
+describe('independent object identity is required: generic source category echo',()=>{
+  const {categoryCorroboratedByObject,genericObjectIdentityReason} =
+    require('../../services/catalog-commercial-category-evidence');
+  const {resolveCommercialTaxonomyVerdict}=require('../../services/catalog-candidate-product-service');
+  const path='Automobiles & Motorcycles > Motorcycle Accessories & Parts > Other';
+  const db={query:jest.fn(async sql=>sql.includes('FROM boutique_categories WHERE key=')
+    ? {rows:[{key:'Auto'}]} : {rows:[]})};
+  test.each([
+    ['Motorcycle accessories',path],
+    ['Universal Motorcycle Modification Accessories',path],
+    ['Car accessories','Automobiles & Motorcycles > Exterior Accessories'],
+    ['Generic vehicle parts','Automobiles & Motorcycles > Auto Replacement Parts'],
+  ])('cannot classify supplier hierarchy echo as an item: %s',async(product_name,supplier_category)=>{
+    const candidate={supplier_name:'CJdropshipping',product_name,supplier_category,
+      raw_payload:{discovery:{target_category:'Auto',target_subcategory:'Pièces'}}};
+    expect(genericObjectIdentityReason(candidate))
+      .toBe('GENERIC_ACCESSORIES_WITHOUT_ITEM_IDENTITY');
+    expect(categoryCorroboratedByObject(candidate)).toBeNull();
+    await expect(resolveCommercialTaxonomyVerdict(db,candidate)).resolves.toMatchObject({
+      status:'REVIEW_REQUIRED',category:null,subcategory:null,
+      source:'GENERIC_ACCESSORIES_WITHOUT_ITEM_IDENTITY'});
+  });
+  test.each([
+    'Motorcycle Air Filter Mushroom Head',
+    'Motorcycle Headlight Bulb',
+    'Rear View Mirror For Motorcycle',
+    'Car Window Wiper',
+    'Car Interior LED Lamp',
+    'Motorcycle Phone Holder Mount',
+    'Motorcycle Accessories Brake Rotor',
+  ])('specific object is not rejected: %s',(product_name)=>{
+    expect(genericObjectIdentityReason({product_name})).toBeNull();
+  });
+  test('human-confirmed mapping preserves explicit human authority',async()=>{
+    const candidate={product_name:'Motorcycle accessories',supplier_category:path,
+      commercial_taxonomy_review:{status:'CONFIRMED',category:'Auto',subcategory:'Pièces'}};
+    await expect(resolveCommercialTaxonomyVerdict(db,candidate)).resolves.toMatchObject({
+      status:'EXPLICIT_REVIEW',category:'Auto',subcategory:'Pièces',source:'OPERATOR_CONFIRMED'});
+  });
+  test('counter-audit flags generic identity without becoming taxonomy authority',()=>{
+    const {signalsFor}=require('../../scripts/lib/cj-classification-counter-audit');
+    const flags=signalsFor({product_name:'Motorcycle accessories',supplier_category:path,
+      verdict:'REVIEW_REQUIRED'});
+    expect(flags).toEqual(expect.arrayContaining([expect.objectContaining({
+      code:'INSUFFICIENT_OBJECT_IDENTITY',priority:'P0'})]));
+    expect(flags[0]).not.toHaveProperty('category');
+    expect(flags[0]).not.toHaveProperty('subcategory');
+  });
+});

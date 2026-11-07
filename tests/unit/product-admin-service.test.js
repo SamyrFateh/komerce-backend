@@ -660,3 +660,24 @@ describe('product-admin-service', () => {
     });
   });
 });
+
+
+describe('admin publication checks immutable supplier source identity',()=>{
+  beforeEach(()=>jest.clearAllMocks());
+  it('reads original name_source and sends it unchanged to publication guard',async()=>{
+    const before={id:'asset-photo',name:'Couverture photo',
+      name_source:'Custom Photo Blanket Personalized Fleece Throw',
+      category:'Maison',price_kmf:10000,stock:2,is_active:false,is_available:false,
+      content_source:'manual',lifecycle_status:'draft',source_locale:'fr'};
+    const db={query:jest.fn()
+      .mockResolvedValueOnce({rows:[before]})
+      .mockResolvedValueOnce({rows:[{...before,is_active:true}]})};
+    const result=await svc.updateProduct(db,'asset-photo',{is_active:true},{id:'admin'});
+    expect(result.status).toBe(200);
+    expect(db.query.mock.calls[0][0]).toContain('name_source');
+    expect(validatePublicationUpdate).toHaveBeenCalledWith(expect.objectContaining({
+      before:expect.objectContaining({name_source:before.name_source}),
+      patch:expect.objectContaining({is_active:true})
+    }));
+  });
+});
