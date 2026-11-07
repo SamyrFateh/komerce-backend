@@ -58,7 +58,7 @@ describe('Hub central : tous les marchés, lecture seule', () => {
     expect(row.remaining).toBe('1 à recevoir');
     expect(row.remaining_detail).toContain('1 à contrôler');
     expect(row.departure).toBe('Expédition préparée · remise non attestée');
-    expect(row.departure).not.toMatch(/livré|remis/i);
+    expect(row.departure).toContain('remise non attestée');
     expect(row.next_action).toBe('Contrôler les écarts');
     expect(row.stage_states).toMatchObject({reception:'critical',remaining:'critical',departure:'ready'});
   });
