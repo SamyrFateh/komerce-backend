@@ -35,4 +35,4 @@ Bilan pour KM : la chaîne achats, la chaîne physique et le circuit local sont 
 
 - **Les rapports de la chaîne achats des fixtures 50A59BFD et 2C2EB181.** Ils sont restés dans les artefacts de leurs runs, et le proxy de l'agent ne permet pas de les télécharger. Leur verdict est PASS (35 PASS et 1 étape hors HTTP pour chacune).
 - **Les runs locaux sur base éphémère et les essais en échec,** dont la fixture 8D2B143C, retirée parce qu'elle contenait un colis mixte. Ce dossier ne contient que les preuves staging réussies.
-- **CM et CG :** les deux tarifs de vente RECETTE sont désormais posés et relus, preuve versionnée ci-dessus. Les fixtures de certification précédentes en échec ne constituent pas des preuves de chaînes achats/physique/Chromium réussies ; les certificats métier complets restent à produire.
+- **CM et CG :** les certificats nominaux complets sont maintenant versionnés ci-dessus (API, physique, Chromium, isolation relais). Les anciennes fixtures en échec ne sont pas des preuves de réussite. Restent hors certification : prix partenaires définitifs, scénarios d'incident/refus et isolation de responsables pays dotés de comptes exclusifs à un marché.
