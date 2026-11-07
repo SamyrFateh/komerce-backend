@@ -283,4 +283,4 @@ if (require.main === module) {
   main().catch((e) => { process.stderr.write(`REFUS: ${e instanceof ProvisionRefusal ? e.message : (e.code || e.name || 'ERROR')}${!(e instanceof ProvisionRefusal) && (e.code === 'P0001' || /^MARKET_DELEGATION|^TEAM_|^TRANSITAIRE_/.test(String(e.code))) ? ' :: ' + String(e.message).slice(0, 240) : ''}\n`); process.exit(1); });
 }
 
-module.exports = { ensureRelayAgentMembership, RELAY_AGENT_CAPABILITIES, ACK_VALUE, PROFILES, MARKET_CODES, ProvisionRefusal, assertProvisionAllowed, readProfiles, run, grantSourcingGlobalAuthority };
+module.exports = { markE2eTestAccount, ensureRelayAgentMembership, RELAY_AGENT_CAPABILITIES, ACK_VALUE, PROFILES, MARKET_CODES, ProvisionRefusal, assertProvisionAllowed, readProfiles, run, grantSourcingGlobalAuthority };
