@@ -250,6 +250,12 @@ describe('pricing-maturity — verdict commande', () => {
     expect(sql).toContain('products.cost_kmf');
     expect(sql).toContain('pricing_maturity_disposition_events');
     expect(sql).toContain('LEFT JOIN LATERAL');
+    // HUB-A: maturity must use the same parcel ↔ order membership as customer handoff.
+    expect((sql.match(/EXISTS \(/g) || []).length).toBeGreaterThanOrEqual(8);
+    expect(sql).toContain('JOIN order_items moi ON moi.id = mpi.order_item_id');
+    expect(sql).toContain('moi.order_id = o.id');
+    expect(sql).toContain("p.status::text <> 'cancelled'");
+    expect(sql).not.toContain('WHERE p.order_id = o.id');
   });
 });
 
