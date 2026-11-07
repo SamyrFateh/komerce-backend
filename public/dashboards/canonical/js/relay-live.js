@@ -61,7 +61,7 @@
   const listOf = p => (LISTS[p.list] ? p.list : 'available');
   const fromOf = p => (LISTS[p.from] ? p.from : '');
   const offsetOf = p => Math.max(0, num(p.offset));
-  const listUrl = (list, offset = 0) => `${BASE}${queryString({ view:'orders', list, offset:offset > 0 ? offset : '', ...simParams() })}`;
+  const listUrl = (list, offset = 0, search = '') => `${BASE}${queryString({ view:'orders', list, offset:offset > 0 ? offset : '', search:search||'', ...simParams() })}`;
   const orderUrl = (id, from) => `${BASE}${queryString({ view:'order', order:id, from, ...simParams() })}`;
   const previewUrl = id => `${BASE}${queryString({ sel:id, ...simParams() })}`;
   const paymentLabel = o => (o.cash_pending ? 'Cash à encaisser' : o.payment_status === 'paid' ? 'Payée' : 'Paiement en attente');
@@ -275,15 +275,28 @@
     const list = listOf(p);
     const rows = Array.isArray(data?.orders) ? data.orders : [];
     const offset = offsetOf(p);
+    const search=String(p.search||'').slice(0,120);
     const pager = (offset > 0 || rows.length >= PAGE_SIZE) ? `<nav class="kir-passage-pagination" aria-label="Pagination">
-        ${offset > 0 ? `<a href="${listUrl(list, Math.max(0, offset - PAGE_SIZE))}" data-cockpit-nav>← Plus récents</a>` : '<span></span>'}
+        ${offset > 0 ? `<a href="${listUrl(list, Math.max(0, offset - PAGE_SIZE),search)}" data-cockpit-nav>← Plus récents</a>` : '<span></span>'}
         <span>${offset + 1}–${offset + rows.length}</span>
-        ${rows.length >= PAGE_SIZE ? `<a href="${listUrl(list, offset + PAGE_SIZE)}" data-cockpit-nav>Plus anciens →</a>` : '<span></span>'}
+        ${rows.length >= PAGE_SIZE ? `<a href="${listUrl(list, offset + PAGE_SIZE,search)}" data-cockpit-nav>Plus anciens →</a>` : '<span></span>'}
       </nav>` : '';
     return {
       title:LISTS[list],
       copy:LIST_COPY[list],
-      body:`${simToggle()}${table(ORDER_COLUMNS, rows.map(order => orderRow(order, list)), { empty:'Aucun colis dans cette liste.' })}${pager}`,
+      body:`<div class="kmc-relay-list-toolbar">
+          <form method="get" action="${BASE}" role="search" class="kmc-relay-list-search">
+            <input type="hidden" name="view" value="orders"><input type="hidden" name="list" value="${esc(list)}">
+            ${simParams().sim?'<input type="hidden" name="sim" value="1">':''}
+            <label for="kmc-relay-search">Rechercher une commande ou un destinataire</label>
+            <div><input id="kmc-relay-search" name="search" type="search" value="${esc(search)}" maxlength="120" placeholder="Référence, client, téléphone…">
+            <button type="submit">Rechercher</button></div>
+          </form>
+          ${simToggle()}
+        </div>
+        <div class="kmc-relay-list-results"><strong>${rows.length} résultat(s) affiché(s)</strong>
+          <a href="${BASE+queryString(simParams())}" data-cockpit-nav>← Poste de travail</a></div>
+        ${table(ORDER_COLUMNS,rows.map(order=>orderRow(order,list)),{empty:search?'Aucun résultat pour cette recherche.':'Aucun dossier dans cette file.'})}${pager}`,
     };
   }
 
@@ -320,7 +333,7 @@
     return {
       title:o.reference || 'Colis',
       copy:`${STATUS[o.status] || o.status || ''} · ${data?.client?.nom || 'client'} · ${relais.nom || 'relais non défini'}`,
-      body:`<p class="lk-360-line">${order360Link(o.reference, 'Retour au Relais live')}</p><div class="lk-facts">
+      body:`<div class="kmc-relay-order-toolbar"><div><strong>Dossier de commande · ${esc(o.reference||'—')}</strong><small>La remise se valide colis par colis avec justificatif.</small></div><a href="${executionUrl(o.market_code)}">Ouvrir l’atelier Relais ↗</a></div><p class="lk-360-line">${order360Link(o.reference, 'Retour au Relais live')}</p><div class="lk-facts">
           ${card(o.status === 'available' ? 'Attente au relais' : 'Âge', wait)}
           ${card('Relais', [relais.nom, relais.ile].filter(Boolean).join(' · ') || '—')}
           ${card('Articles', items.length)}
@@ -369,7 +382,7 @@
     },
     orders:{
       tab:p => (listOf(p) === 'all' ? 'colis' : 'suivi'),
-      load:(p, api) => api(`/api/relay/orders${queryString({ status:listOf(p) === 'all' ? '' : listOf(p), limit:PAGE_SIZE, offset:offsetOf(p), projection:'live' })}`),
+      load:(p, api) => api(`/api/relay/orders${queryString({ status:listOf(p) === 'all' ? '' : listOf(p), search:String(p.search||'').slice(0,120), limit:PAGE_SIZE, offset:offsetOf(p), projection:'live' })}`),
       render:renderOrders,
       nav:navOrders,
     },
