@@ -1,0 +1,62 @@
+name: Staging — refus de franchissement des rôles Hub Relais Transitaire
+
+# Uniquement sur le vrai staging ; déclenchement par une issue du propriétaire.
+# Les sondes d'écriture sont toutes refusées par rôle ou visent des objets inexistants.
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: komerce-staging-negative-role-boundaries
+  cancel-in-progress: false
+
+jobs:
+  negative-roles:
+    if: >-
+      github.event.issue.user.login == github.repository_owner &&
+      github.event.issue.title == '[staging-op] negative-role-boundaries'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      EXPECTED_RAILWAY_ENVIRONMENT: staging
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      KOMERCE_STAGING_RESET_DB_PIN: ${{ vars.STAGING_DB_PIN }}
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      E2E_AGENT_HUB_EMAIL: ${{ secrets.E2E_AGENT_HUB_EMAIL }}
+      E2E_AGENT_HUB_PASSWORD: ${{ secrets.E2E_AGENT_HUB_PASSWORD }}
+      E2E_AGENT_TRANSITAIRE_EMAIL: ${{ secrets.E2E_AGENT_TRANSITAIRE_EMAIL }}
+      E2E_AGENT_TRANSITAIRE_PASSWORD: ${{ secrets.E2E_AGENT_TRANSITAIRE_PASSWORD }}
+      E2E_AGENT_RELAIS_EMAIL: ${{ secrets.E2E_AGENT_RELAIS_EMAIL }}
+      E2E_AGENT_RELAIS_PASSWORD: ${{ secrets.E2E_AGENT_RELAIS_PASSWORD }}
+      NEGATIVE_ROLE_CONFIRMATION: CERTIFY-ROLE-REFUSALS
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Verifier version deploiement
+        run: node scripts/recette/resolve-staging-deploy-pin.js
+      - name: Garder l'empreinte exacte de la base staging (lecture seule)
+        run: node scripts/recette/target-guard.js
+      - name: Refus reels d'autorisation sur routes HTTP
+        run: node scripts/recette/staging-negative-role-boundaries.js
+      - name: Archiver le rapport sans secrets
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-negative-role-boundaries-${{ github.run_id }}
+          path: test-results/negative-role-boundaries/report.json
+          if-no-files-found: warn
+          retention-days: 30
