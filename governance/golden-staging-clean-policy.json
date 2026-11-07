@@ -137,7 +137,6 @@
       "customs_shipment_parcels",
       "customs_shipments",
       "disputes",
-      "e2e_test_accounts",
       "economic_snapshots",
       "hub_custody_events",
       "hub_physical_unit_placements",
@@ -236,8 +235,9 @@
     ]
   },
   "user_scoped_delete": {
-    "webauthn_credentials": "user_id",
-    "credential_action_tokens": "user_id"
+    "credential_action_tokens": "user_id",
+    "e2e_test_accounts": "user_id",
+    "webauthn_credentials": "user_id"
   },
   "users": {
     "keep_roles": [],

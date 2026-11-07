@@ -1,0 +1,81 @@
+/* Komerce Hub · poste de travail agent : le Kanban est prioritaire.
+ * Scope strict : uniquement le cockpit Hub. Aucun changement du shell global. */
+.kmc-hub-app {
+  grid-template-columns:minmax(0,1fr) auto;
+  grid-template-areas:'hub-title hub-branches' 'hub-kanban hub-kanban';
+  column-gap:12px; row-gap:8px;
+  padding:6px 12px 16px;
+  align-items:center;
+}
+.kmc-hub-app > .kmc-hub-app-header {grid-area:hub-title; min-width:0; padding:0;}
+.kmc-hub-app > .kmc-hub-app-branches {grid-area:hub-branches; margin:0; min-width:0; gap:5px;}
+.kmc-hub-app > .kmc-hub-app-layout {grid-area:hub-kanban;min-width:0;width:100%;}
+.kmc-hub-app .kmc-hub-app-title {display:flex; align-items:center;gap:12px;flex-wrap:wrap;}
+.kmc-hub-app .kmc-hub-app-title h1{font-size:19px;line-height:1.2;letter-spacing:-.025em;margin:0;}
+.kmc-hub-app .kmc-hub-app-title .kmc-hub-app-eyebrow {font-size:10px;white-space:nowrap;}
+.kmc-hub-app .kmc-hub-app-title p{display:none;}
+.kmc-hub-app .kmc-hub-app-header{gap:12px;flex-wrap:wrap;}
+.kmc-hub-app .kmc-hub-app-branch{min-width:0;min-height:40px;padding:7px 12px;}
+.kmc-hub-app .kmc-hub-app-branch-copy small{display:none;}
+.kmc-hub-app .kmc-hub-app-branch-copy strong {font-size:12px;}
+.kmc-hub-app .kmc-hub-focus-toggle{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  border:1px solid #9ccce4;border-radius:8px;background:#eaf7ff;color:#0d5980;
+  padding:8px 12px;min-height:37px;font-size:12px;font-weight:780;white-space:nowrap;
+}
+.kmc-hub-app .kmc-hub-focus-toggle:hover {background:#d9f0fd;}
+.kmc-hub-app .kmc-hub-focus-toggle:focus-visible{outline:2px solid #0783b6;outline-offset:2px;}
+.kmc-hub-app .kmc-hub-global-toolbar{padding:3px 0 7px;gap:8px;}
+.kmc-hub-app .kmc-hub-global-toolbar strong{font-size:13px;line-height:1.3;}
+.kmc-hub-app .kmc-hub-app-workspace>.kmc-hub-app-search{
+  min-height:38px;max-width:340px;margin:0 0 8px;
+}
+.kmc-hub-app .kmc-hub-board-scroll {
+  width:100%;overflow-x:auto;overflow-y:auto;overscroll-behavior:contain;
+  max-height:calc(100dvh - 202px);background:white;
+  border:1px solid #dce6ee;border-radius:10px;
+}
+.kmc-hub-app .kmc-hub-board th{
+  position:sticky;top:0;z-index:2;
+  background:#eef4f9;
+  box-shadow:0 1px 0 #cbd9e5;
+}
+.kmc-hub-app .kmc-hub-global-table{
+  width:100%;min-width:1320px;table-layout:fixed;
+}
+.kmc-hub-app .kmc-hub-global-table th:first-child {width:270px;}
+.kmc-hub-app .kmc-hub-global-table td{padding:6px 5px;}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell{
+  min-height:67px;padding:10px 10px;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-identity{gap:3px;}
+.kmc-hub-app .kmc-hub-phase-summary{gap:3px;margin:4px 0;}
+.kmc-hub-app .kmc-hub-admin-stats{margin:5px 0 8px;}
+.kmc-hub-app .kmc-hub-admin-toolbar{margin-bottom:8px;}
+
+/* L'agent Hub arrive directement dans son poste : aucune largeur perdue
+ * par la navigation N1. Le bouton dans le cockpit permet de la réafficher. */
+body.kmc-shell-v4.kmc-hub-agent-focus{padding-left:0 !important;}
+body.kmc-shell-v4.kmc-hub-agent-focus>.kmc-admin-navigation{display:none !important;}
+body.kmc-shell-v4.kmc-hub-agent-focus #canonical-admin-root{
+  width:100% !important;max-width:none !important;margin:0 !important;
+  padding:8px 9px 12px !important;
+}
+body.kmc-shell-v4.kmc-hub-agent-focus .kmc-hub-app{padding:0;}
+body.kmc-shell-v4.kmc-hub-agent-focus .kmc-hub-board-scroll{
+  max-height:calc(100dvh - 146px);
+}
+body.kmc-shell-v4.kmc-hub-agent-focus .kmc-hub-app>.kmc-hub-app-header{
+  position:relative;
+}
+@media(max-width:1000px){
+  .kmc-hub-app{grid-template-columns:1fr;grid-template-areas:'hub-title' 'hub-branches' 'hub-kanban';}
+  .kmc-hub-app .kmc-hub-board-scroll{max-height:calc(100dvh - 226px);}
+  body.kmc-shell-v4.kmc-hub-agent-focus .kmc-hub-board-scroll{max-height:calc(100dvh - 188px);}
+}
+@media(max-width:650px){
+  .kmc-hub-app{padding:4px 7px 16px;}
+  .kmc-hub-app .kmc-hub-app-branch{flex:1;justify-content:center;}
+  .kmc-hub-app .kmc-hub-board-scroll{max-height:calc(100dvh - 240px);}
+  .kmc-hub-app .kmc-hub-global-table{min-width:1150px;}
+}

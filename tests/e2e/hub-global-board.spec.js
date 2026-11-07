@@ -165,3 +165,38 @@ test.describe('Lisibilité et fermeture du menu contextuel Hub',()=>{
     await expect(row.locator('.kmc-hub-phase-title')).toContainText('Réception Hub');
   });
 });
+
+
+test.describe('Poste Hub optimisé pour le travail des agents',()=>{
+  test('agent Hub : focus actif par défaut, six actions du Kanban visibles et navigation récupérable',async({page})=>{
+    const calls=await mount(page,'agent_hub');
+    const toggle=page.locator('[data-hub-focus-toggle]');
+    await expect(toggle).toHaveAttribute('aria-pressed','true');
+    await expect(toggle).toContainText('Réafficher la navigation');
+    await expect(page.locator('body')).toHaveClass(/kmc-hub-agent-focus/);
+    const width=await page.locator('#canonical-admin-root').evaluate(node=>node.getBoundingClientRect().width);
+    expect(width).toBeGreaterThan(1350);
+    await expect(page.locator('.kmc-hub-global-table thead th')).toHaveCount(7);
+    await expect(page.locator('[data-hub-global-order="CM-101"] [data-hub-global-stage]')).toHaveCount(6);
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-pressed','false');
+    await expect(page.locator('body')).not.toHaveClass(/kmc-hub-agent-focus/);
+    await expect(page.locator('[data-hub-global-order]')).toHaveCount(2);
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-pressed','true');
+    expect(calls).toEqual(['GET /api/hub/board']);
+  });
+
+  test('autres profils : navigation normale par défaut, plein poste activable à la demande',async({page})=>{
+    await mount(page,'market_operator');
+    const toggle=page.locator('[data-hub-focus-toggle]');
+    await expect(toggle).toHaveAttribute('aria-pressed','false');
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-pressed','true');
+    await expect(page.locator('body')).toHaveClass(/kmc-hub-agent-focus/);
+    await page.locator('[data-hub-global-order="CM-101"] [data-hub-global-stage="Réception"]').click();
+    await expect(page.locator('[data-hub-global-menu]')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('[data-hub-global-menu]')).toBeHidden();
+  });
+});
