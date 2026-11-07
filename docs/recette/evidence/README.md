@@ -18,6 +18,7 @@ On ajoute ici chaque nouvelle preuve, dans un sous-dossier `<marché>-<AAAAMMJJ>
 | 2026-11-07 | KM | 50A59BFD | Clics Chromium réels (run 42362671815) | 32 CLICK_PASS, 5 NOT_REACHABLE_IN_UI | `km-20261107/hub-v1-clicks-50A59BFD-evidence.json` |
 | 2026-11-07 | KM | 2C2EB181 | Clics Chromium réels après #3473 (run 42369442085) | 36 CLICK_PASS sur 36 | `km-20261107/hub-v1-clicks-2C2EB181-evidence.json` |
 | 2026-11-07 | KM, CM, CG | - | Isolation croisée (agent relais KM : 200 sur KM, 403 sur CM et CG ; admin lit les trois) | ISOLATION_PASS | `isolation-20261107/staging-market-isolation-42375312269.json` |
+| 2026-11-07 | CM, CG, KM | - | Isolation réelle des responsables pays avec deux comptes E2E distincts, 18 sondes HTTP (lectures + mutation fictive) | MARKET_OPERATOR_ISOLATION_PASS | `isolation-20261107/staging-market-operator-isolation-42385877161.json` |
 | 2026-11-07 | CM | - | Tarifs vente RECETTE via API admin, source KM courante + pivot EUR | TARIFFS_APPLIED_AND_VERIFIED | `cm-20261107/staging-market-transport-sale-42381811718.json` |
 | 2026-11-07 | CG | - | Tarifs vente RECETTE via API admin, source KM courante + pivot EUR | TARIFFS_APPLIED_AND_VERIFIED | `cg-20261107/staging-market-transport-sale-42382091838.json` |
 
@@ -35,4 +36,4 @@ Bilan pour KM : la chaîne achats, la chaîne physique et le circuit local sont 
 
 - **Les rapports de la chaîne achats des fixtures 50A59BFD et 2C2EB181.** Ils sont restés dans les artefacts de leurs runs, et le proxy de l'agent ne permet pas de les télécharger. Leur verdict est PASS (35 PASS et 1 étape hors HTTP pour chacune).
 - **Les runs locaux sur base éphémère et les essais en échec,** dont la fixture 8D2B143C, retirée parce qu'elle contenait un colis mixte. Ce dossier ne contient que les preuves staging réussies.
-- **CM et CG :** les certificats nominaux complets sont maintenant versionnés ci-dessus (API, physique, Chromium, isolation relais). Les anciennes fixtures en échec ne sont pas des preuves de réussite. Restent hors certification : prix partenaires définitifs, scénarios d'incident/refus et isolation de responsables pays dotés de comptes exclusifs à un marché.
+- **CM et CG :** les certificats nominaux complets, l'isolation relais et l'isolation indépendante des responsables pays sont versionnés ci-dessus. Les anciennes fixtures en échec ne constituent pas des preuves positives. Restent hors certification : prix partenaires définitifs, scénarios métier non nominaux (incidents, réceptions partielles, annulations, remboursements) et recette LOCAL_STOCK strictement sans Hub.
