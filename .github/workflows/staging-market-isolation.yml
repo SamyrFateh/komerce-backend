@@ -1,0 +1,33 @@
+name: Staging — isolation entre marches (KM, CM, CG)
+
+# Sonde croisee en lecture + ecriture refusee sur reference inexistante : aucune donnee modifiee.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  isolation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      KOMERCE_ENV: staging
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      E2E_AGENT_RELAIS_EMAIL: ${{ secrets.E2E_AGENT_RELAIS_EMAIL }}
+      E2E_AGENT_RELAIS_PASSWORD: ${{ secrets.E2E_AGENT_RELAIS_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node scripts/recette/staging-market-isolation.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: staging-market-isolation-${{ github.run_id }}
+          path: test-results/market-isolation/report.json
+          if-no-files-found: warn
