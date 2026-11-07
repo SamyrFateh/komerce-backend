@@ -2802,6 +2802,28 @@ $$;
 
 
 --
+-- Name: prevent_hub_stage_comment_changes(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.prevent_hub_stage_comment_changes() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF OLD.hub_stage_key IS NOT NULL THEN
+    IF TG_OP = 'UPDATE' THEN
+      RAISE EXCEPTION 'HUB_STAGE_NOTE_IMMUTABLE'
+        USING ERRCODE = 'P0001';
+    END IF;
+    IF EXISTS (SELECT 1 FROM public.orders WHERE id = OLD.order_id) THEN
+      RAISE EXCEPTION 'HUB_STAGE_NOTE_IMMUTABLE'
+        USING ERRCODE = 'P0001';
+    END IF;
+  END IF;
+  RETURN OLD;
+END $$;
+
+
+--
 -- Name: prevent_incident_delete(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -8005,7 +8027,9 @@ CREATE TABLE public.order_comments (
     author_name text,
     author_role text,
     text text NOT NULL,
-    created_at timestamp with time zone DEFAULT now()
+    created_at timestamp with time zone DEFAULT now(),
+    hub_stage_key text,
+    CONSTRAINT order_comments_hub_stage_key_chk CHECK (((hub_stage_key IS NULL) OR (hub_stage_key = ANY (ARRAY['po'::text, 'supplier'::text, 'reception'::text, 'cartons'::text, 'departure'::text, 'remaining'::text]))))
 );
 
 
@@ -16920,6 +16944,13 @@ CREATE INDEX idx_operator_scope_market ON public.operator_market_scopes USING bt
 
 
 --
+-- Name: idx_order_comments_hub_stage; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_order_comments_hub_stage ON public.order_comments USING btree (order_id, hub_stage_key, created_at DESC, id DESC) WHERE (hub_stage_key IS NOT NULL);
+
+
+--
 -- Name: idx_order_cost_entry_events_order; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -19780,6 +19811,13 @@ CREATE TRIGGER trg_hub_purchase_allocation_immutable BEFORE DELETE OR UPDATE ON 
 --
 
 CREATE CONSTRAINT TRIGGER trg_hub_quarantine_incident_required AFTER INSERT OR UPDATE OF state, outcome_type ON public.hub_physical_units DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION public.hub_require_quarantine_incident();
+
+
+--
+-- Name: order_comments trg_immutable_hub_stage_note; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_immutable_hub_stage_note BEFORE DELETE OR UPDATE ON public.order_comments FOR EACH ROW WHEN ((old.hub_stage_key IS NOT NULL)) EXECUTE FUNCTION public.prevent_hub_stage_comment_changes();
 
 
 --
