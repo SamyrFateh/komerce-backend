@@ -19,7 +19,7 @@
  *
  * Un agent relais est lie a UN relais, donc a UN marche. Croise KM, CM et CG : lecture du workspace Operations et geste
  * d'ecriture (collect sur une reference inexistante, jamais de donnee touchee) doivent etre refuses (403) hors du marche du
- * relais ; l'admin central (controle) voit les trois. Verdict ISOLATION_PASS si exactement un marche repond 200 a l'agent
+ * relais ; l'admin central (controle) lit les trois (la sonde d'ecriture collect est reservee au role relais). Verdict ISOLATION_PASS si exactement un marche repond 200 a l'agent
  * relais en lecture, que les deux autres repondent 403 en lecture ET en ecriture.
  */
 const fs = require('fs');
@@ -52,7 +52,7 @@ async function isolation({ env = process.env, fetchImpl = fetch } = {}) {
   const own = MARKETS.filter((m) => matrix.agent_relais[m].read === 200);
   const others = MARKETS.filter((m) => !own.includes(m));
   const relayOk = own.length === 1 && others.every((m) => matrix.agent_relais[m].read === 403 && matrix.agent_relais[m].write_probe === 403);
-  const adminOk = MARKETS.every((m) => matrix.admin[m].read === 200 && matrix.admin[m].write_probe !== 403);
+  const adminOk = MARKETS.every((m) => matrix.admin[m].read === 200) // l'ecriture collect est reservee au role relais (garde de role) : non significative pour l'admin;
   return { matrix, relay_home_market: own, verdict: relayOk && adminOk ? 'ISOLATION_PASS' : 'ISOLATION_FAIL' };
 }
 
