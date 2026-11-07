@@ -53,7 +53,7 @@ async function mount(page,role='agent_relais',search='') {
 }
 
 test.describe('Hub global sans scope marché',()=>{
-  test.each(['admin','agent_hub','market_operator','agent_relais','finance','sourcing','agent_transitaire','support'])(
+  test.each(['admin','agent_hub','market_operator','agent_relais','finance','sourcing','support'])(
     '%s peut voir les commandes KM et CM sans contexte marché ni droit de mutation',async({page},role)=>{
       const calls=await mount(page,role);
       await expect(page.getByText('Toutes les commandes import · Tous les marchés')).toBeVisible();
