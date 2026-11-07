@@ -38,13 +38,16 @@ describe('staging role boundary guards', () => {
     const put=PROBES.find(p=>p.method==='PUT');
     expect(put).toBeTruthy();
     expect(Object.hasOwn(put,'admin')).toBe(false);
+    const hubShip=PROBES.find(p=>p.name==='hub_ship_absent');
+    expect(hubShip.admin).toBe(403); // admin central: pas de bypass execution implicite
+    expect(hubShip.hub).toBe(404);   // agent Hub autorisé, colis inexistant
     expect(PROBES.filter(p=>p.method==='POST').every(p=>p.path.includes('00000000-0000-4000-8000-000000000000')||p.path.includes('ISOLATION-PROBE-NONEXISTENT'))).toBe(true);
   });
-  test('31 sondes attendues avec rôles réels, aucun acte persistant',async()=>{
+  test('37 sondes attendues avec rôles réels, aucun acte persistant',async()=>{
     const api=fakeFetch();
     const result=await run({env:config,fetchImpl:api});
     expect(result.verdict).toBe('ROLE_BOUNDARY_PASS');
-    expect(result.checks).toBe(31);
+    expect(result.checks).toBe(37);
     expect(result.violations).toHaveLength(0);
   });
   test('une fuite Hub au transitaire rend le verdict rouge',async()=>{

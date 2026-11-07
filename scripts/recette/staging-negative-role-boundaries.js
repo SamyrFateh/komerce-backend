@@ -27,9 +27,11 @@ const ACTORS = Object.freeze([
 const PROBES = Object.freeze([
   { name: 'hub_dashboard', method: 'GET', path: '/api/hub-dash/dashboard', admin: 200, hub: 200, transitaire: 403, relais: 403 },
   { name: 'hub_queue', method: 'GET', path: '/api/hub-dash/queue', admin: 200, hub: 200, transitaire: 403, relais: 403 },
+  { name: 'hub_terrain_week', method: 'GET', path: '/api/hub/stats/week', admin: 200, hub: 200, transitaire: 403 },
+  { name: 'hub_global_board', method: 'GET', path: '/api/hub/board', admin: 200, hub: 200, transitaire: 403 },
   { name: 'hub_start_prep_absent', method: 'POST', path: '/api/hub-dash/orders/' + ABSENT_ORDER + '/start-prep', admin: 404, hub: 404, transitaire: 403, relais: 403 },
   { name: 'hub_backorder_absent', method: 'POST', path: '/api/hub-dash/orders/' + ABSENT_ORDER + '/backorder', admin: 404, hub: 404, transitaire: 403, relais: 403 },
-  { name: 'hub_ship_absent', method: 'POST', path: '/api/admin/workspaces/operations/market/CG/parcels/ISOLATION-PROBE-NONEXISTENT/ship', admin: 404, hub: 404, transitaire: 403, relais: 403 },
+  { name: 'hub_ship_absent', method: 'POST', path: '/api/admin/workspaces/operations/market/CG/parcels/ISOLATION-PROBE-NONEXISTENT/ship', admin: 403, hub: 404, transitaire: 403, relais: 403 },
   { name: 'market_control_plane', method: 'GET', path: '/api/admin/markets/CG/control-plane', admin: 200, hub: 403, transitaire: 403, relais: 403 },
   { name: 'market_transport_sale_rates', method: 'GET', path: '/api/admin/markets/CG/transport-sale-rates', admin: 200, hub: 403, transitaire: 403, relais: 403 },
   // Only non-admin actors: admin never calls the mutation route in this campaign.
@@ -67,7 +69,7 @@ async function run({ env = process.env, fetchImpl = fetch } = {}) {
       method: probe.method,
       headers: { origin: BASE, cookie: sessions[actor.name], 'content-type': 'application/json' },
       ...(probe.method === 'POST' || probe.method === 'PUT'
-        ? { body: JSON.stringify({ reason: 'RECETTE_NO_OBJECT', confirmation: false }) } : {}),
+        ? { body: JSON.stringify({ reason: 'scanner_unavailable', confirmation: false }) } : {}),
     });
     const got = response.status, expected = probe[actor.name];
     probes.push({ probe: probe.name, role: actor.name, expected, observed: got,
