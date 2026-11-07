@@ -8,7 +8,7 @@
  * @outputs       market_scoped_operations_work_queue, delegated_domain_mutations
  * @depends       db, services/order-status-machine.js, services/auto-parcel.js, services/scan-engine.js, services/inventory-service.js, services/parcel-auto-create-service.js, services/operations-relay-projection.js
  * @used-by       routes/admin-operations-workspace.js
- * @db-read       orders, order_items, parcels, parcel_items, products, relais, users, inventory_items, order_incidents, hub_box_bags
+ * @db-read       orders, order_items, parcels, parcel_items, products, relais, users, inventory_items, order_incidents, hub_box_bags, e2e_test_accounts
  * @db-write      order_comments
  * @db-write-via:order-status-machine product_variants, order_status_history, products
  * @db-write-via:auto-parcel parcel_items, parcels
@@ -31,6 +31,7 @@ const { buildManualConfirmation } = require('./manual-scan-confirmation');
 const inventory = require('./inventory-service');
 const { confirmCashByReference } = require('./payment-cash-confirm');
 const { countRelayParcels } = require('./operations-relay-projection');
+const { simulationClause, isE2eTestAccount } = require('./simulation-visibility');
 const { cacheCodeForReveal } = require('./pickup-secret-service');
 const log = require('../utils/logger').child({ module: 'operations-workspace' });
 
@@ -88,7 +89,7 @@ const PARCEL_SHIPMENT_ATTACHED_SQL = `(
               WHERE pi2.parcel_id = p.id AND oi2.fulfillment_source = 'IMPORT')
 )`;
 
-async function queryParcels(marketId) {
+async function queryParcels(marketId, includeSimulation = false) {
   const { rows } = await db.query(
     `SELECT p.reference, p.status, p.created_at, p.updated_at, p.shipped_at,
             p.recipient_name, p.destination_island,
@@ -103,7 +104,7 @@ async function queryParcels(marketId) {
         AND (p.relais_id IS NULL OR r.market_id = $1)
         AND p.status NOT IN ('cancelled', 'collected')
         -- Même périmètre que countRelayParcels (compteur ⇔ file) : commandes réelles et vivantes uniquement.
-        AND o.simulation_scope IS NULL
+        AND ${simulationClause('o', includeSimulation)}
         AND o.status::text NOT IN ('cancelled', 'refunded', 'collected')
       ORDER BY p.created_at ASC`,
     [marketId]
@@ -330,9 +331,10 @@ function buildSummary(queues, distribution, inventoryState) {
 
 async function buildWorkspace(options = {}) {
   const market = requireMarket(options.market);
+  const includeSimulation = await isE2eTestAccount(options.viewer && options.viewer.id);
   const [orders, parcels, distribution, inventoryState, signals] = await Promise.all([
     queryOrders(market.id),
-    queryParcels(market.id),
+    queryParcels(market.id, includeSimulation),
     queryDistribution(market.id),
     queryInventory(market.id),
     querySignals(market.id),

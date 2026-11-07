@@ -10,8 +10,8 @@
  * @outputs       rapport JSON sans secret (statuts par profil, relais, droits)
  * @depends       db.js, scripts/recette/target-guard.js, services/user-mutation-service.js, services/market-operator-provisioning.js, services/relais-mutation-service.js, services/hub-authorization-service.js
  * @used-by       .github/workflows/staging-e2e-provision.yml
- * @db-read       users, markets, relais, delegation
- * @db-write      users, relais, assignment/membership (writers canoniques), hub_authorization_grants, sourcing_global_access_grants (writer manquant, voir ci-dessous)
+ * @db-read       users, markets, relais, delegation, e2e_test_accounts
+ * @db-write      e2e_test_accounts (marqueur compte E2E, seul writer), users, relais, assignment/membership (writers canoniques), hub_authorization_grants, sourcing_global_access_grants (writer manquant, voir ci-dessous)
  * @db-txn        owned (une transaction ; dry-run = ROLLBACK)
  * @doctrine      staging_only_guard_before_any_write_dry_run_default_canonical_writers_idempotent_no_secret_in_output
  * @impact-areas  staging, recette, authorization
@@ -98,6 +98,13 @@ function defaultDeps() {
     hubAuth: require('../../services/hub-authorization-service'),
     delegation: require('../../services/market-delegation-service'),
   };
+}
+
+// Marqueur canonique des comptes E2E (migration 397) : seul writer, idempotent. Table absente (migration non appliquee) = refus net.
+async function markE2eTestAccount(client, { userId, actorId }) {
+  const { rowCount } = await client.query(
+    `INSERT INTO e2e_test_accounts (user_id, created_by) VALUES ($1::uuid, $2::uuid) ON CONFLICT (user_id) DO NOTHING`, [userId, actorId]);
+  return rowCount ? 'marked' : 'unchanged';
 }
 
 // WRITER MANQUANT (voir en-tête) : autorité Sourcing globale, grant explicite distinct.
@@ -187,6 +194,7 @@ async function run({ db, mode, env = process.env, deps = defaultDeps(), guard } 
       const entry = { profile: account.key, role: account.role };
       const res = await ensureUser(client, deps, account);
       Object.assign(entry, { user: res.user, password: res.password });
+      entry.e2e_marker = await markE2eTestAccount(client, { userId: res.id, actorId: actor.id });
       if (res.activation_pending) report.warnings.push(`${account.key} : activation en attente (compte invité) — non modifié`);
       if (account.scope) {
         const g = await deps.operators.grantOperatorScope(client, { userId: res.id, marketCode: account.scope.market, scopeRole: account.scope.scopeRole, grantedBy: actor.id });

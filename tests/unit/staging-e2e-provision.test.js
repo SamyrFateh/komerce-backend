@@ -18,7 +18,7 @@ function baseEnv(over = {}) {
 }
 
 function fakeWorld() {
-  const w = { users: new Map(), relais: [], calls: [], tx: [], grants: [], sourcing: new Set(), seq: 0 };
+  const w = { users: new Map(), relais: [], calls: [], tx: [], grants: [], sourcing: new Set(), markers: new Set(), seq: 0 };
   w.users.set('admin@komerce.test', { id: 'u-admin', role: 'admin', password_hash: 'H:other', account_activation_required: false });
   const client = {
     release: jest.fn(),
@@ -31,6 +31,7 @@ function fakeWorld() {
         const u = w.users.get(String(params[0]).toLowerCase()); return { rows: u && u.role === 'admin' ? [{ id: u.id }] : [] };
       }
       if (/FROM markets/.test(sql)) return { rows: [{ id: `m-${params[0]}`, is_active: params[0] !== 'DJ' }] };
+      if (/e2e_test_accounts/.test(sql)) { const had = w.markers.has(params[0]); w.markers.add(params[0]); return { rowCount: had ? 0 : 1 }; }
       if (/sourcing_global_access_grants/.test(sql)) { const had = w.sourcing.has(params[0]); w.sourcing.add(params[0]); return { rowCount: had ? 0 : 1 }; }
       throw new Error(`SQL inattendu: ${sql}`);
     }),
@@ -149,6 +150,18 @@ describe('run', () => {
     expect(again.profiles.find((p) => p.profile === 'finance')).toMatchObject({ user: 'existing', password: 'unchanged' });
     expect(again.profiles.find((p) => p.profile === 'hub_director').hub_grants).toEqual({ purchase_commitment: 'unchanged', supplier_payment: 'unchanged' });
     expect(Object.values(again.relais).every((r) => ['unchanged', 'skipped_market_inactive'].includes(r.status))).toBe(true);
+    // Marqueur E2E (e2e_test_accounts) : pose au premier execute pour chaque profil, inchange ensuite.
+    expect(again.profiles.every((p) => p.e2e_marker === 'unchanged')).toBe(true);
+    expect(w.markers.size).toBe(again.profiles.length);
+  });
+
+  test('execute pose le marqueur E2E pour chaque profil ; dry-run l\'annule (ROLLBACK)', async () => {
+    const { w, db, deps, guard } = fakeWorld();
+    const env = baseEnv({ KOMERCE_STAGING_E2E_PROVISION_ACK: ACK_VALUE });
+    const dry = await run({ db, mode: 'dry-run', env, deps, guard });
+    expect(dry.committed).toBe(false); expect(w.tx).toContain('ROLLBACK');
+    const exec = await run({ db, mode: 'execute', env, deps, guard });
+    expect(exec.profiles.every((p) => ['marked', 'unchanged'].includes(p.e2e_marker))).toBe(true);
   });
 
   test('mot de passe changé dans le secret : mis à jour via le writer canonique', async () => {
