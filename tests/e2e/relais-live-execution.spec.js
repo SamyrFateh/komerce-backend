@@ -64,7 +64,7 @@ const RELAY_SHIPMENTS = {
   }],
 };
 
-async function mount(page, posts = []) {
+async function mount(page, posts = [], role = 'admin') {
   page.on('dialog', (dialog) => dialog.accept());
   await page.route(`${ORIGIN}/**`, async (route) => {
     const url = new URL(route.request().url());
@@ -79,7 +79,7 @@ async function mount(page, posts = []) {
       await new Promise((resolve) => setTimeout(resolve, 150));
       return json({ ok: true, result: { receipts: [{ incident_id: 'inc-1' }] } });
     }
-    if (url.pathname === '/api/auth/me') return json(FX.auth_me);
+    if (url.pathname === '/api/auth/me') return json({ ...FX.auth_me, role });
     if (url.pathname === '/api/admin/dashboard/context') return json(FX.context);
     if (url.pathname === API) return json(WORKSPACE);
     if (url.pathname === `${API}/relay-shipments`) return json(RELAY_SHIPMENTS);
@@ -110,6 +110,19 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       await expect(imports).toHaveAttribute('open', '');
       await expect(imports.locator('[data-relay-shipment="SHIP-KM-1"]')).toBeVisible();
       await expect(imports.locator('[data-workspace-action="relay-shipment-receive"]')).toHaveCount(1);
+    });
+
+    test('agent Relais : poste concentré par défaut, navigation restaurable sans perdre les actions', async ({ page }) => {
+      const posts = [];
+      await mount(page, posts, 'agent_relais');
+      const toggle = page.locator('[data-relay-focus-toggle]');
+      await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+      await expect(page.locator('body')).toHaveClass(/kmc-relay-agent-focus/);
+      await expect(page.locator('[data-relay-agent-lane]')).toHaveCount(3);
+      await toggle.click();
+      await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+      await expect(page.locator('[data-relay-agent-lane="client-handover"] [data-workspace-action="collect"]')).toHaveCount(1);
+      expect(posts).toHaveLength(0);
     });
 
     test('un responsable peut agrandir le Kanban puis retrouver le menu, sans mutation', async ({ page }) => {
