@@ -13,7 +13,7 @@
  * @db-write-via:user-mutation-service users
  * @db-write-via:market-delegation-service assignment_memberships, membership_capabilities, market_delegation_audit
  * @db-write-via:market-scope-projector operator_market_scopes
- * @db-write       e2e_test_accounts (canonical staging E2E marker)
+ * @db-write-via:staging-e2e-provision e2e_test_accounts (canonical marker writer)
  * @db-txn        owned
  * @doctrine      staging_only, one_market_per_actor, no_customer_data_mutation, fail_closed, no_secrets_in_report
  */
@@ -70,11 +70,8 @@ async function authorizeActors(db, run, deps) {
         fullName: acct.name, email: acct.email, role: 'market_operator', currencyPref: 'XAF',
         passwordHash: await deps.bcrypt.hash(password, 12),
       });
-      const { rows: marker } = await client.query(
-        'INSERT INTO e2e_test_accounts (user_id, created_by) VALUES ($1::uuid,$2::uuid) RETURNING user_id',
-        [user.id, admin.id]
-      );
-      if (marker.length !== 1) throw new Error('E2E_MARKER_FAILED');
+      const marked = await deps.markE2eTestAccount(client, { userId: user.id, actorId: admin.id });
+      if (marked !== 'marked') throw new Error('E2E_MARKER_FAILED');
       const assignment = await deps.delegation.resolveActiveAssignmentByMarketCode(client, acct.code);
       if (assignment.lifecycle_status !== 'ACTIVE' || assignment.assignment_status !== 'ACTIVE') {
         throw new Error('MARKET_NOT_ACTIVE_' + acct.code);
@@ -172,6 +169,7 @@ async function run({ env = process.env, db, fetchImpl = fetch, deps, confirmTarg
     delegation: require('../../services/market-delegation-service'),
     operators: require('../../services/market-operator-provisioning'),
     projector: require('../../services/market-scope-projector'),
+    markE2eTestAccount: require('./staging-e2e-provision').markE2eTestAccount,
   };
   // The admin identity is used only as the canonical audit actor, not a bypass.
   const credentials = await authorizeActors(executor, runId, { ...libraries, adminEmail: env.E2E_ADMIN_EMAIL });
