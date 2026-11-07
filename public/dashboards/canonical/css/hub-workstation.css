@@ -295,3 +295,44 @@
 @media(max-width:1000px){
   .kmc-hub-app .kmc-hub-global-table {min-width:1320px;}
 }
+
+
+/* Action réelle affichée dans la cellule du Kanban, sans bouton imbriqué.
+   Un clic ouvre une saisie/confirmation ; il ne poste jamais de mutation. */
+.kmc-hub-app .kmc-hub-kanban-stage-actions {
+  display:grid; gap:5px; min-width:0;
+}
+.kmc-hub-app .kmc-hub-kanban-stage-actions>.kmc-hub-board-cell {
+  width:100%;min-width:0;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-kanban-action {
+  display:block;width:100%;min-height:35px;padding:7px 9px;
+  border-radius:7px;border:1px solid #0b729a;
+  background:#086b94;color:#fff;font-size:11px;font-weight:820;
+  line-height:1.35;text-align:center;white-space:normal;
+  box-shadow:0 2px 7px rgb(6 96 138 / .18);cursor:pointer;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-kanban-action:hover {
+  background:#035679;border-color:#034d6d;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-kanban-action:focus-visible {
+  outline:3px solid #83caed;outline-offset:2px;
+}
+.kmc-hub-app .kmc-hub-board-menu.is-sourcing-inline.is-editing {
+  width:min(790px,calc(100vw - 24px));max-height:calc(100dvh - 70px);
+  overflow:auto;overscroll-behavior:contain;padding:10px 14px;
+  border-color:#a4d2e5;box-shadow:0 24px 70px rgb(15 47 80 / .22);
+}
+.kmc-hub-app .kmc-hub-board-menu.is-sourcing-inline .kmc-hub-sourcing-panel {
+  border:none;box-shadow:none;margin:0;padding:4px 2px 12px;
+}
+.kmc-hub-app .kmc-hub-board-menu.is-sourcing-inline [data-workspace-feedback]:empty {display:none}
+@media(max-width:700px){
+  .kmc-hub-app .kmc-hub-board-menu.is-sourcing-inline.is-editing {
+    top:8px!important;left:8px!important;
+    width:calc(100vw - 16px);max-height:calc(100dvh - 16px);
+  }
+  .kmc-hub-app .kmc-hub-board-menu.is-sourcing-inline .kmc-hub-sourcing-layout{
+    grid-template-columns:1fr;
+  }
+}
