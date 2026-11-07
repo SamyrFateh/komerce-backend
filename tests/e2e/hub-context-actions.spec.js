@@ -82,6 +82,48 @@ async function mount(page,{role='agent_hub',row=baseOrder,dossierData=dossier,ad
   return {posts,reads};
 }
 
+
+test('Départ : preuve de remise transitaire dans le Kanban, jamais au simple clic',async({page})=>{
+  const row={...baseOrder,current_key:'departure',current_phase:'Départ',
+    current_status:'À remettre au transitaire',next_action:'Attester la remise au transitaire',
+    stage_states:{...baseOrder.stage_states,departure:'progress'}};
+  const dossierData={...dossier,boxes:[{...dossier.boxes[0],
+    shipment_ref:'KM-SHIP-7',shipment_stage:'hub_ready'}],
+    open_shipments:[{reference:'KM-SHIP-7',box_count:1,hub_draft:true,
+      forwarder_name:null,transport_mode:null}]};
+  const {posts}=await mount(page,{row,dossierData});
+  await page.locator('[data-hub-global-stage="Départ"]').click();
+  const menu=page.locator('[data-hub-global-menu]');
+  await expect(menu).toContainText('Attester la remise au transitaire · KM-SHIP-7');
+  expect(posts).toHaveLength(0);
+  await menu.getByRole('button',{name:/Attester la remise au transitaire/}).click();
+  await menu.locator('[name="forwarder_name"]').fill('Transitaire confirmé');
+  await menu.locator('[name="transport_mode"]').selectOption('sea');
+  expect(posts).toHaveLength(0);
+  await menu.locator('[name="proof_ref"]').fill('BORDEREAU-2026-11');
+  await menu.getByRole('button',{name:'Confirmer l’opération'}).click();
+  await expect.poll(()=>posts.length).toBe(1);
+  expect(posts[0].url).toBe('/api/admin/workspaces/shipping-customs/market/KM/international/KM-SHIP-7/transition');
+  expect(posts[0].body).toMatchObject({
+    to_stage:'handed_over',proof_ref:'BORDEREAU-2026-11',
+    forwarder_name:'Transitaire confirmé',transport_mode:'sea',
+  });
+});
+
+test('Départ : aucune attestation in situ si composition du départ non réconciliée',async({page})=>{
+  const row={...baseOrder,current_key:'departure',current_phase:'Départ',
+    next_action:'Attester la remise',stage_states:{...baseOrder.stage_states,departure:'progress'}};
+  const dossierData={...dossier,boxes:[{...dossier.boxes[0],
+    shipment_ref:'KM-SHIP-7',shipment_stage:'hub_ready'}],
+    open_shipments:[{reference:'KM-SHIP-7',box_count:2,hub_draft:true}]};
+  const {posts}=await mount(page,{row,dossierData});
+  await page.locator('[data-hub-global-stage="Départ"]').click();
+  const menu=page.locator('[data-hub-global-menu]');
+  await expect(menu).toContainText('Attester le transfert réel dans Expéditions & Douane');
+  await expect(menu.getByRole('button',{name:/Attester la remise au transitaire/})).toHaveCount(0);
+  expect(posts).toHaveLength(0);
+});
+
 test('action PO dans le Kanban : sourcing en place, sans achat ni mutation au simple clic',async({page})=>{
   const row={...baseOrder,po:'Sourcing requis',current_key:'po',
     current_phase:'Achats',current_status:'Bloqué · sourcing requis',
