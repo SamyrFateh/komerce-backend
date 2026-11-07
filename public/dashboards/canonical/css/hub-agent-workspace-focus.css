@@ -55,11 +55,11 @@
 
 /* L'agent Hub arrive directement dans son poste : aucune largeur perdue
  * par la navigation N1. Le bouton dans le cockpit permet de la réafficher. */
-body.kmc-shell-v4.kmc-hub-agent-focus{padding-left:0 !important;}
-body.kmc-shell-v4.kmc-hub-agent-focus>.kmc-admin-navigation{display:none !important;}
+body.kmc-shell-v4.kmc-hub-agent-focus{padding-left:0;}
+body.kmc-shell-v4.kmc-hub-agent-focus>.kmc-admin-navigation{display:none;}
 body.kmc-shell-v4.kmc-hub-agent-focus #canonical-admin-root{
-  width:100% !important;max-width:none !important;margin:0 !important;
-  padding:8px 9px 12px !important;
+  width:100%;max-width:none;margin:0;
+  padding:8px 9px 12px;
 }
 body.kmc-shell-v4.kmc-hub-agent-focus .kmc-hub-app{padding:0;}
 body.kmc-shell-v4.kmc-hub-agent-focus .kmc-hub-board-scroll{
