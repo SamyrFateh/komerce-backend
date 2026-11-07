@@ -53,7 +53,7 @@ describe('Canonical Navigation Policy V3.1', () => {
     expect(domainIds(nav, 'sourcing')).toEqual(['live']);
     expect(domainIds(nav, 'agent_hub')).toEqual(['operations', 'live']);
     expect(domainIds(nav, 'agent_relais')).toEqual(['live']);
-    expect(domainIds(nav, 'agent_transitaire')).toEqual(['operations', 'live']);
+    expect(domainIds(nav, 'agent_transitaire')).toEqual(['operations']); // Expeditions & Douane uniquement : ni Hub Live, ni Finance
     expect(domainIds(nav, 'support')).toEqual(['live']);
     for (const role of ['finance', 'sourcing', 'agent_hub', 'agent_relais', 'agent_transitaire', 'support']) {
       expect(domainIds(nav, role)).not.toContain('dashboard');
@@ -76,9 +76,10 @@ describe('Canonical Navigation Policy V3.1', () => {
     expect(spaceIds(nav, 'operations', 'agent_relais')).toEqual([]);
     expect(spaceIds(nav, 'operations', 'agent_transitaire')).toEqual(['shipping-customs-workspace']);
     expect(spaceIds(nav, 'operations', 'sourcing')).toEqual([]);
-    for (const role of ['admin','market_operator','finance','sourcing','agent_hub','agent_relais','agent_transitaire','support']) {
+    for (const role of ['admin','market_operator','finance','sourcing','agent_hub','agent_relais','support']) {
       expect(spaceIds(nav,'live',role)).toContain('hub-live');
     }
+    expect(spaceIds(nav,'live','agent_transitaire')).toEqual([]);
   });
 
   test('N2 Finance reflète Comptabilité terrain et vue pays', () => {

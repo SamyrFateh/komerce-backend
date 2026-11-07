@@ -105,9 +105,10 @@ describe('navigation-policy-v4 — domaine Live (coque noire des cockpits opéra
     expect(nav._localTabsFor('live', { role: 'sourcing' }, null).map(t => t.id)).toEqual(['import-runtime', 'hub-live']);
     expect(nav._localTabsFor('live', { role: 'agent_hub' }, null).map(t => t.id)).toEqual(['hub-live']);
     expect(nav._localTabsFor('live', { role: 'agent_relais' }, null).map(t => t.id)).toEqual(['hub-live', 'relais-live']);
-    for (const role of ['agent_transitaire', 'finance', 'market_operator', 'support']) {
+    for (const role of ['finance', 'market_operator', 'support']) {
       expect(nav._localTabsFor('live', { role }, null).map(t => t.id)).toEqual(['hub-live']);
     }
+    expect(nav._localTabsFor('live', { role: 'agent_transitaire' }, null)).toEqual([]);
   });
 
   test('le shell active body.kmc-shell-live uniquement pour le domaine Live', () => {
@@ -194,7 +195,7 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
     const nav = loadPolicy();
     const transitaire = nav.sidebarGroupsFor({ role: 'agent_transitaire' }, null);
     // Les agents voient l'Action Center canonique filtré par le serveur (périmètre + actions autorisées) et leur workspace.
-    expect(transitaire.map(group => group.id)).toEqual(['pilot', 'operations', 'live']);
+    expect(transitaire.map(group => group.id)).toEqual(['pilot', 'operations']);
     expect(transitaire[0].items.map(item => item.id)).toEqual(['action-center']);
     expect(transitaire[1].items.map(item => item.id)).toEqual(['workspace-shipping']);
 
@@ -203,7 +204,7 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
     expect(ids('agent_hub')).toContain('live-hub');
     expect(ids('agent_hub')).not.toContain('live-relais');
     expect(ids('agent_relais')).toContain('live-relais');
-    expect(ids('agent_transitaire').filter(id => id.startsWith('live-'))).toEqual(['live-hub']);
+    expect(ids('agent_transitaire').filter(id => id.startsWith('live-'))).toEqual([]);
     expect(ids('sourcing').filter(id => id.startsWith('live-'))).toEqual(['live-import-runtime', 'live-hub']);
 
     const finance = nav.sidebarGroupsFor({ role: 'finance' }, null);

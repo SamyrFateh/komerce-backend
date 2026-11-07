@@ -33,7 +33,7 @@ const EXPECTED = Object.freeze({
   ],
   agent_hub: ['action-center', 'workspace-shipping', 'live-hub'],
   agent_relais: ['action-center', 'live-hub', 'live-relais'],
-  agent_transitaire: ['action-center', 'workspace-shipping', 'live-hub'],
+  agent_transitaire: ['action-center', 'workspace-shipping'],
   finance: ['workspace-accounting', 'workspace-cash', 'live-hub'],
   sourcing: ['live-import-runtime', 'live-hub'],
   support: ['live-hub'],

@@ -153,7 +153,7 @@ test('le poste intégré est raccordé au vrai routeur, pas à une page de démo
 });
 
 
-test.each(['admin','agent_hub','market_operator','agent_relais','finance','sourcing','agent_transitaire','support'])(
+test.each(['admin','agent_hub','market_operator','agent_relais','finance','sourcing','support'])(
   'Hub global consultable par %s sans marché explicite', async role => {
     const app=load(),root=el('main'),admin=jest.fn(),ops=jest.fn();
     const fetch=mockFetch({orders:[]});
@@ -185,4 +185,10 @@ test('le tableau global n’expose aucune action Hub à un relais et agrège plu
   expect(root.querySelectorAll('[data-hub-global-menu]')).toHaveLength(1);
   expect(root.querySelectorAll('[data-hub-global-menu]')[0].children.some(x=>x.tagName==='A')).toBe(false);
   expect(JSON.stringify(data)).not.toContain('supplier_price');
+});
+
+test('Hub global refuse agent_transitaire (acces limite a Expeditions & Douane)', () => {
+  const app=load();
+  expect(() => app.mount({root:el('main'),user:{role:'agent_transitaire'},document:doc,location:{search:''},
+    fetch:mockFetch({orders:[]}),renderAdministrative:jest.fn(),renderOperations:jest.fn()})).toThrow('hub_workstation_role_not_allowed');
 });

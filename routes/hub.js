@@ -200,14 +200,14 @@ const administrationBoard = require('../services/hub-administration-board');
 // Les écritures Hub demeurent strictement gardées par hubAuth et leurs services.
 const HUB_VIEW_ROLES = Object.freeze([
   'admin', 'agent_hub', 'market_operator', 'agent_relais',
-  'finance', 'sourcing', 'agent_transitaire', 'support',
+  'finance', 'sourcing', 'support',
 ]);
 const hubBoardRead = [
   authenticate,
   attachMarketDelegatedRoleFor(HUB_VIEW_ROLES),
   // Explicit list retains Security 360's static proof of the allowed readers.
   requireRole(['admin', 'agent_hub', 'market_operator', 'agent_relais',
-    'finance', 'sourcing', 'agent_transitaire', 'support']),
+    'finance', 'sourcing', 'support']),
 ];
 
 // The administrative financial/PO projection is NOT the all-role Hub board.

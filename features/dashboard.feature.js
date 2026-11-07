@@ -428,6 +428,7 @@ module.exports = {
       'services/client-360.js',
       'services/client-index.js',
       'services/dashboard-admin-context.js',
+      'config/central-transit-roles.js',
       'services/dashboard-commerce.js',
       'services/market-business-day.js',
       'services/dashboard-finance-canonical.js',
