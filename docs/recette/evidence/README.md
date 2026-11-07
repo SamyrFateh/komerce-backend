@@ -21,6 +21,10 @@ On ajoute ici chaque nouvelle preuve, dans un sous-dossier `<marché>-<AAAAMMJJ>
 | 2026-11-07 | CM | - | Tarifs vente RECETTE via API admin, source KM courante + pivot EUR | TARIFFS_APPLIED_AND_VERIFIED | `cm-20261107/staging-market-transport-sale-42381811718.json` |
 | 2026-11-07 | CG | - | Tarifs vente RECETTE via API admin, source KM courante + pivot EUR | TARIFFS_APPLIED_AND_VERIFIED | `cg-20261107/staging-market-transport-sale-42382091838.json` |
 
+| 2026-11-07 | CM | 40A162A6 | Achats 35 PASS × 2 et physique 53 PASS | PO + PHYSICAL_PASS | `cm-20261107/hub-v1-http-physical-40A162A6.json` |
+| 2026-11-07 | CM | 2B13C104 | Chromium 36/36 et isolation relais | CLICK_PASS + ISOLATION_PASS | `cm-20261107/hub-v1-clicks-2B13C104-evidence.json` |
+| 2026-11-07 | CM | - | Synthèse de la certification nominale (run 42382520838) | CERT_NOMINAL_PASS | `cm-20261107/full-cert-42382520838-summary.json` |
+
 | 2026-11-07 | CG | 57030A02 | Achats 35 PASS × 2 et physique 53 PASS | PO + PHYSICAL_PASS | `cg-20261107/hub-v1-http-physical-57030A02.json` |
 | 2026-11-07 | CG | 5D6F90EC | Chromium 36/36 et isolation relais | CLICK_PASS + ISOLATION_PASS | `cg-20261107/hub-v1-clicks-5D6F90EC-evidence.json` |
 | 2026-11-07 | CG | - | Synthèse de la certification nominale (run 42382886270) | CERT_NOMINAL_PASS | `cg-20261107/full-cert-42382886270-summary.json` |
