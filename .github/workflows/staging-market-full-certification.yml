@@ -122,20 +122,11 @@ jobs:
           node scripts/recette/hub-v1-certification-runner.js --allow-remote-staging --run="$RUN8" --market="$CERT_MARKET" --stop-after=2 --dry-run
           node scripts/recette/hub-v1-certification-runner.js --allow-remote-staging --run="$RUN8" --market="$CERT_MARKET" --stop-after=2
       - name: Réassigner le relais E2E à la fixture HTTP (scopes existants)
-        env:
-          RELAY_MODE: to-fixture
-          RELAY_RUN8: ${{ env.CERT_RUN8_API }}
-          RELAY_APPLY: '1'
-          RELAY_CONFIRMATION: REASSIGN-E2E-RELAY
-        run: node scripts/recette/staging-e2e-relay-reassign.js
+        run: RELAY_MODE=to-fixture RELAY_RUN8="$CERT_RUN8_API" RELAY_APPLY=1 RELAY_CONFIRMATION=REASSIGN-E2E-RELAY node scripts/recette/staging-e2e-relay-reassign.js
       - name: Actions API — chaîne achats
-        env:
-          HTTP_RUNNER_RUN8: ${{ env.CERT_RUN8_API }}
-        run: node scripts/recette/hub-v1-http-action-runner.js
+        run: HTTP_RUNNER_RUN8="$CERT_RUN8_API" node scripts/recette/hub-v1-http-action-runner.js
       - name: Actions API — chaîne physique et distribution
-        env:
-          HTTP_RUNNER_RUN8: ${{ env.CERT_RUN8_API }}
-        run: node scripts/recette/hub-v1-http-physical-chain.js
+        run: HTTP_RUNNER_RUN8="$CERT_RUN8_API" node scripts/recette/hub-v1-http-physical-chain.js
       - name: Fixture Chromium indépendante
         shell: bash
         run: |
@@ -145,22 +136,13 @@ jobs:
           node scripts/recette/hub-v1-certification-runner.js --allow-remote-staging --run="$RUN8" --market="$CERT_MARKET" --stop-after=2 --dry-run
           node scripts/recette/hub-v1-certification-runner.js --allow-remote-staging --run="$RUN8" --market="$CERT_MARKET" --stop-after=2
       - name: Réassigner le relais E2E à la fixture Chromium
-        env:
-          RELAY_MODE: to-fixture
-          RELAY_RUN8: ${{ env.CERT_RUN8_CLICKS }}
-          RELAY_APPLY: '1'
-          RELAY_CONFIRMATION: REASSIGN-E2E-RELAY
-        run: node scripts/recette/staging-e2e-relay-reassign.js
+        run: RELAY_MODE=to-fixture RELAY_RUN8="$CERT_RUN8_CLICKS" RELAY_APPLY=1 RELAY_CONFIRMATION=REASSIGN-E2E-RELAY node scripts/recette/staging-e2e-relay-reassign.js
       - name: Actions API — chaîne achats, fixture Chromium
-        env:
-          HTTP_RUNNER_RUN8: ${{ env.CERT_RUN8_CLICKS }}
-        run: node scripts/recette/hub-v1-http-action-runner.js
+        run: HTTP_RUNNER_RUN8="$CERT_RUN8_CLICKS" node scripts/recette/hub-v1-http-action-runner.js
       - name: Installer Chromium
         run: npx playwright install --with-deps chromium
       - name: Clics Chromium réels
-        env:
-          E2E_PROOF_RUN8: ${{ env.CERT_RUN8_CLICKS }}
-        run: npx playwright test --config=playwright.hub-v1-clicks.config.js
+        run: E2E_PROOF_RUN8="$CERT_RUN8_CLICKS" npx playwright test --config=playwright.hub-v1-clicks.config.js
       - name: Isolation transversale depuis le relais du marché cible
         run: node scripts/recette/staging-market-isolation.js
       - name: Résumé des preuves
