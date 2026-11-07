@@ -31,7 +31,7 @@ On ajoute ici chaque nouvelle preuve, dans un sous-dossier `<marché>-<AAAAMMJJ>
 | 2026-11-07 | CG | 5D6F90EC | Chromium 36/36 et isolation relais | CLICK_PASS + ISOLATION_PASS | `cg-20261107/hub-v1-clicks-5D6F90EC-evidence.json` |
 | 2026-11-07 | CG | - | Synthèse de la certification nominale (run 42382886270) | CERT_NOMINAL_PASS | `cg-20261107/full-cert-42382886270-summary.json` |
 
-Bilan pour KM : la chaîne achats, la chaîne physique et le circuit local sont certifiés de bout en bout, à la fois par les routes HTTP et par des clics réels effectués avec les vrais rôles.
+Bilan pour KM : la chaîne achats et la chaîne physique du parcours **importé** sont certifiées par HTTP et par des clics réels. **Attention : le circuit LOCAL_STOCK n'est pas encore certifié conforme sur staging.** Le runner physique historique fait intervenir artificiellement une expédition Hub pour LOCAL ; ce passage ne prouve pas le contrat direct relais. Une campagne dédiée `staging-local-stock-certification.yml` (HTTP + lecture physique en base, sans mutation DB directe) a été préparée pour KM/CM/CG, mais son verdict n'entre dans ce registre qu'après exécution réussie, archivage et revue. La validation Chromium du geste local dans Relais Live demeure un gate distinct.
 
 ## Ce qui n'est pas versionné ici
 
