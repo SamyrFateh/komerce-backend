@@ -248,6 +248,7 @@ async function getOrders(user, { status, search, limit = 50, offset = 0 }, { aut
       o.id, o.reference, o.status, o.total_kmf, o.simulation_scope,
       o.display_total_amount, o.display_currency,
       (SELECT m.currency FROM markets m WHERE m.id = o.market_id) AS market_currency,
+       (SELECT m.code FROM markets m WHERE m.id = o.market_id) AS market_code,
       o.payment_mode, o.payment_status, o.pickup_secret_last4,
       o.created_at, o.ordered_at, o.shipped_at, o.in_transit_at,
       o.available_at, o.collected_at, o.cancelled_at, o.updated_at,
@@ -321,6 +322,7 @@ async function getOrderDetail(user, orderId, { authorizedMarkets = null } = {}) 
       r.name AS relais_nom, r.island AS ile, r.address AS relais_adresse,
       r.phone AS relais_phone,
       (SELECT m.currency FROM markets m WHERE m.id = o.market_id) AS market_currency,
+       (SELECT m.code FROM markets m WHERE m.id = o.market_id) AS market_code,
       EXTRACT(EPOCH FROM (NOW() - COALESCE(o.available_at, o.updated_at))) / 3600 AS heures_attente,
       EXTRACT(EPOCH FROM (NOW() - o.created_at)) / 86400 AS age_jours
     FROM orders o
@@ -439,6 +441,7 @@ async function getOrderDetail(user, orderId, { authorizedMarkets = null } = {}) 
   return {
     order: {
       id: order.id, reference: order.reference, status: order.status,
+      market_code: order.market_code,
       pickup_code: maskLast4(order.pickup_secret_last4),
       created_at: order.created_at, updated_at: order.updated_at,
       age_jours: Math.round(Number(order.age_jours)),

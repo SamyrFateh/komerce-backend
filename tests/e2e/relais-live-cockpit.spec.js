@@ -11,17 +11,17 @@ const { test, expect } = require('@playwright/test');
 
 const CANONICAL = path.join(__dirname, '..', '..', 'public', 'dashboards', 'canonical');
 const ORIGIN = 'http://komerce.test';
-const CSS = ['base', 'canonical-theme-v2', 'canonical-shell-v4', 'canonical-legacy-theme-v1', 'cockpit-legacy-v1', 'import-runtime', 'live-kit'];
+const CSS = ['base', 'canonical-theme-v2', 'canonical-shell-v4', 'canonical-legacy-theme-v1', 'cockpit-legacy-v1', 'import-runtime', 'live-kit', 'relay-workboard'];
 
 const order = (n, over = {}) => ({
   id:`r-${n}`, reference:`KMC-0${100 + n}`, status:'available', client_nom:`Client ${n}`, relais_nom:'Relais Mitsamiouli', ile:'Grande Comore',
-  heures_attente:80, age_jours:4, urgence:'haute', nb_items:2, cash_pending:true, payment_status:'pending', incidents_ouverts:0, ...over,
+  heures_attente:80, age_jours:4, urgence:'haute', nb_items:2, cash_pending:true, payment_status:'pending', incidents_ouverts:0, market_code:'KM', ...over,
 });
 const dashboard = { kpi:{ en_transit:4, disponibles:9, cash_a_encaisser:3, montant_cash_pending:45000, collectes_aujourd_hui:2, collectes_7j:14, en_attente_72h:2, total_actives:20, incidents_ouverts:1 }, alertes:[] };
-const detail = (n) => ({ order:{ id:`r-${n}`, reference:`KMC-0${100 + n}`, status:'available', heures_attente:80, age_jours:4 }, client:{ nom:`Client ${n}` },
+const detail = (n) => ({ order:{ id:`r-${n}`, reference:`KMC-0${100 + n}`, status:'available', heures_attente:80, age_jours:4, market_code:'KM' }, client:{ nom:`Client ${n}` },
   relais:{ nom:'Relais Mitsamiouli', ile:'Grande Comore' }, paiement:{ cash_pending:true, total_kmf:12000 }, items:[{ produit:'Coque', quantity:1, prix_kmf:12000 }], timeline:[], incidents:[] });
 
-async function mountRelay(page, search = '', { failDetail = false } = {}) {
+async function mountRelay(page, search = '', { failDetail = false, empty = false } = {}) {
   const state = { calls:[], writes:[] };
   await page.route(`${ORIGIN}/**`, async (route) => {
     const req = route.request();
@@ -36,14 +36,14 @@ async function mountRelay(page, search = '', { failDetail = false } = {}) {
       const file = path.join(CANONICAL, url.pathname.replace('/dashboards/canonical/', ''));
       return fs.existsSync(file) ? route.fulfill({ path:file }) : route.fulfill({ status:404, body:'' });
     }
-    if (url.pathname === '/api/relay/dashboard') { state.calls.push('dashboard'); return route.fulfill({ contentType:'application/json', body:JSON.stringify(dashboard) }); }
+    if (url.pathname === '/api/relay/dashboard') { state.calls.push('dashboard'); const value=empty?{kpi:Object.fromEntries(Object.keys(dashboard.kpi).map(k=>[k,0])),alertes:[]}:dashboard; return route.fulfill({ contentType:'application/json', body:JSON.stringify(value) }); }
     if (url.pathname === '/api/relay/orders') {
       const status = url.searchParams.get('status');
       const offset = Number(url.searchParams.get('offset') || 0);
       state.calls.push(`orders:${status || 'all'}:${offset}`);
       const limit = Number(url.searchParams.get('limit') || 25);
       const length = limit === 25 && offset > 0 ? 3 : limit;
-      const rows = Array.from({ length }, (_, i) => order(i + 1 + offset));
+      const rows = empty ? [] : Array.from({ length }, (_, i) => order(i + 1 + offset));
       return route.fulfill({ contentType:'application/json', body:JSON.stringify({ total:rows.length, orders:rows }) });
     }
     const m = url.pathname.match(/^\/api\/relay\/orders\/r-(\d+)$/);
@@ -76,7 +76,7 @@ test.describe('Cockpit Relais — navigation canonique', () => {
 
   test('Suivi → Disponibles → colis → Retour à la liste → Retour au suivi', async ({ page }) => {
     const state = await mountRelay(page);
-    await page.locator('.kir-run-truth-grid > a', { hasText:'Disponibles' }).click();
+    await page.locator('.kmc-relay-work-filters a', { hasText:'À retirer' }).click();
     await expect(page).toHaveURL(/view=orders.*list=available/);
     expect(await crumb(page)).toBe('Relais > Suivi > Disponibles au retrait');
     await expect(page.locator('.kir-back')).toHaveText('← Retour au suivi');
@@ -93,7 +93,7 @@ test.describe('Cockpit Relais — navigation canonique', () => {
 
   test('une fiche renvoyant HTTP 500 préserve la navigation vers la file Relais', async ({ page }) => {
     const state = await mountRelay(page, '', { failDetail:true });
-    await page.locator('.kir-run-truth-grid > a', { hasText:'En transit' }).click();
+    await page.locator('.kmc-relay-work-filters a', { hasText:'En route' }).click();
     await page.locator('.lk-table a').first().click();
     await expect(page.locator('.kir-drill-head h2')).toHaveText('Détail indisponible');
     await expect(page.locator('.kir-back')).toHaveText('← Retour à Colis en transit');
@@ -106,7 +106,7 @@ test.describe('Cockpit Relais — navigation canonique', () => {
 
   test('Back / Forward : Suivi → liste → colis → Back → Back → Forward', async ({ page }) => {
     await mountRelay(page);
-    await page.locator('.kir-run-truth-grid > a', { hasText:'En transit' }).click();
+    await page.locator('.kmc-relay-work-filters a', { hasText:'En route' }).click();
     await page.locator('.lk-table a').first().click();
     await expect(page.locator('.kir-drill-head h2')).toContainText('KMC-');
     await page.goBack();
@@ -143,6 +143,49 @@ test.describe('Cockpit Relais — navigation canonique', () => {
     await expect(page.locator('.kir-drill-head h2')).toHaveText('KMC-0101');
     await expect(page.locator('.kir-main button')).toHaveCount(0);
     expect(state.writes).toEqual([]);
+  });
+
+
+  test('Poste de travail : étapes visibles, dossier contextuel et lien vers le vrai atelier du marché', async ({ page }) => {
+    const state = await mountRelay(page);
+    const board=page.locator('.kmc-relay-work');
+    await expect(board).toBeVisible();
+    const row=board.locator('[data-relay-workboard-order="r-1"]');
+    await expect(row.locator('[data-relay-stage="available"]')).toHaveAttribute('data-relay-stage-signal','warning');
+    await expect(row.locator('[data-relay-stage="available"]')).toContainText('CASH À VÉRIFIER');
+    await row.locator('[data-relay-stage="available"]').click();
+    await expect(page).toHaveURL(/sel=r-1/);
+    const inspector=page.locator('[data-relay-detail]');
+    await expect(inspector).toBeVisible();
+    await expect(inspector).toContainText('KMC-0101');
+    await expect(inspector.locator('[data-relay-action="execute"]')).toHaveAttribute('href','/admin/relais-live?view=execute&market=KM');
+    expect(state.writes).toHaveLength(0);
+    await inspector.getByRole('link',{name:'Fermer le dossier'}).click();
+    await expect(inspector).toHaveCount(0);
+    await page.goBack();
+    await expect(page.locator('[data-relay-detail]')).toBeVisible();
+    expect(state.writes).toHaveLength(0);
+  });
+
+  test('Sans colis, la file reste compacte ; le flux ancien ne gaspille plus la surface', async ({ page }) => {
+    const state=await mountRelay(page, '', {empty:true});
+    const board=page.locator('.kmc-relay-work');
+    await expect(board).toContainText('Aucun dossier à traiter');
+    await expect(board.locator('[data-relay-workboard-order]')).toHaveCount(0);
+    await expect(board.getByText('Aucune intervention dans cette file')).toBeVisible();
+    await expect(page.locator('.kmc-relay-secondary').first()).not.toHaveAttribute('open','');
+    await expect(board.getByRole('link',{name:/Atelier Relais · encaisser/})).toHaveAttribute('href','/admin/relais-live?view=execute');
+    expect(state.writes).toEqual([]);
+  });
+
+  test('Le menu ne flotte pas au scroll : inspecteur dans la grille, statut seulement en lecture', async ({ page }) => {
+    const state=await mountRelay(page);
+    await page.locator('[data-relay-workboard-order="r-1"] [data-relay-stage="available"]').click();
+    const inspector=page.locator('.kmc-relay-work-inspector');
+    const style=await inspector.evaluate(el=>({position:getComputedStyle(el).position,left:getComputedStyle(el).left}));
+    expect(style.position).toBe('sticky');
+    await expect(page.locator('.kmc-relay-work-scroll')).toHaveCSS('overflow-x','auto');
+    expect(state.writes).toHaveLength(0);
   });
 
   for (const [name, width, height] of [['1280', 1280, 800], ['1024', 1024, 768], ['mobile', 390, 844]]) {

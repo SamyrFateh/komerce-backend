@@ -15,7 +15,8 @@ test('Relais live : chaque référence de commande porte un lien 360 direct avec
 test('Relais live : KPI, file et détail dans une seule vue, mêmes endpoints, lecture seule', () => {
   expect(src).toContain('data-relay-detail');
   expect(src).toContain("api(`/api/relay/orders/${encodeURIComponent(p.sel)}?projection=live`)");
-  expect(src).toContain('Ouvrir la fiche complète');
-  expect(src).toContain('Détail non disponible pour ce colis.');
+  expect(src).toContain('Articles, incidents et chronologie');
+  expect(src).toContain('data-relay-action="execute"');
+  expect(src).toContain('Ce dossier est indisponible ou hors de votre périmètre.');
   expect(src).not.toMatch(/method:\s*'(POST|PUT|PATCH|DELETE)'/);
 });
