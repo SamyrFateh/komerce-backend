@@ -16,10 +16,13 @@ describe('admin market control plane — lecture centrale + provisioning', () =>
     expect(source).toMatch(/router\.get\('\/:marketCode\/control-plane', \.\.\.centralAdmin/);
   });
 
-  test('une seule écriture centrale existe : POST / pour provisionner', () => {
+  test('provisioning central et seule nouvelle écriture tarifaire PUT admin explicitement auditée', () => {
     expect(source).toMatch(/router\.post\('\/', \.\.\.centralAdmin/);
-    expect(source).not.toMatch(/router\.(put|patch|delete)\(/);
     expect(source).toMatch(/provisionMarket/);
+    const nonPostMutations = source.match(/router\.(?:put|patch|delete)\('[^']+'/g) || [];
+    expect(nonPostMutations).toEqual(["router.put('/:marketCode/transport-sale-rates/:rateKey'"]);
+    expect(source).toMatch(/router\.put\('\/:marketCode\/transport-sale-rates\/:rateKey', \.\.\.centralAdmin/);
+    expect(source).toContain('withTransaction(client => transportSale.setSaleRate(client, {');
   });
 
   test('la liste répond { markets } et la vue répond le résultat du service tel quel', () => {

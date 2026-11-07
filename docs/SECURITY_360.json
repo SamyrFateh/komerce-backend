@@ -2,8 +2,8 @@
   "generatedAt": "2026-11-07T11:11:23.907Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 811,
-    "protected": 753,
+    "total": 813,
+    "protected": 755,
     "public": 58,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -1347,6 +1347,20 @@
     },
     {
       "key": "POST /api/admin/markets/{marketCode}/reprovision",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/markets/{marketCode}/transport-sale-rates",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "PUT /api/admin/markets/{marketCode}/transport-sale-rates/{rateKey}",
       "level": "PROTECTED",
       "roles": [
         "admin"
