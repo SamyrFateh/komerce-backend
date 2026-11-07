@@ -24,6 +24,8 @@ function el(tag) {
     replaceChildren(...nodes) { this.children=nodes; nodes.forEach(x=>x.parentNode=this); },
     setAttribute(k,v) { this.attrs[k]=String(v); },
     getAttribute(k) { return this.attrs[k] || null; },
+    removeAttribute(k) { delete this.attrs[k]; },
+    contains(child) { for (let node=child; node; node=node.parentNode) if(node===this) return true; return false; },
     addEventListener(evt,fn) { handlers[evt]=fn; },
     click() { if (handlers.click) handlers.click({target:this}); },
     change(target) { if (handlers.change) handlers.change({target}); },
