@@ -17,6 +17,12 @@ on:
         type: choice
         default: po
         options: [po, physical]
+      market:
+        description: 'Marche de la fixture (KM par defaut ; CM, CG)'
+        required: false
+        type: choice
+        default: KM
+        options: [KM, CM, CG]
       allow_distribution:
         description: 'physical : autorise la repartition automatique (agit sur TOUT le marche KM, pas seulement la fixture)'
         required: false
@@ -48,6 +54,7 @@ jobs:
       DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
       HTTP_RUNNER_BASE_URL: https://komerce-backend-production.up.railway.app
       HTTP_RUNNER_RUN8: ${{ inputs.run8 }}
+      HTTP_RUNNER_MARKET: ${{ inputs.market }}
       E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
       E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
       E2E_AGENT_HUB_EMAIL: ${{ secrets.E2E_AGENT_HUB_EMAIL }}

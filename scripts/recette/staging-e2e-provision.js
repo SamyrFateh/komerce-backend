@@ -11,7 +11,7 @@
  * @depends       db.js, scripts/recette/target-guard.js, services/user-mutation-service.js, services/market-operator-provisioning.js, services/relais-mutation-service.js, services/hub-authorization-service.js
  * @used-by       .github/workflows/staging-e2e-provision.yml
  * @db-read       users, markets, relais, delegation, e2e_test_accounts
- * @db-write      e2e_test_accounts (marqueur compte E2E, seul writer), users, relais, assignment/membership (writers canoniques), hub_authorization_grants, sourcing_global_access_grants (writer manquant, voir ci-dessous)
+ * @db-write      e2e_test_accounts (marqueur compte E2E, seul writer), users, assignment_memberships (is_operating_lead via writer d'equipe), relais, assignment/membership (writers canoniques), hub_authorization_grants, sourcing_global_access_grants (writer manquant, voir ci-dessous)
  * @db-txn        owned (une transaction ; dry-run = ROLLBACK)
  * @doctrine      staging_only_guard_before_any_write_dry_run_default_canonical_writers_idempotent_no_secret_in_output
  * @impact-areas  staging, recette, authorization
@@ -29,6 +29,13 @@
 const ACK_VALUE = 'PROVISION-STAGING-E2E';
 const MARKET_CODES = Object.freeze(['KM', 'CM', 'CG', 'DJ', 'YT']);
 const HOME_MARKET = 'KM';
+// Marches de recette supplementaires (E2E_PROVISION_EXTRA_MARKETS, defaut vide = comportement KM historique). YT et DJ restent exclus.
+const EXTRA_MARKETS_ALLOWED = Object.freeze(['CM', 'CG']);
+function parseExtraMarkets(env = process.env) {
+  const list = String(env.E2E_PROVISION_EXTRA_MARKETS || '').split(',').map((s) => s.trim().toUpperCase()).filter(Boolean);
+  for (const code of list) if (!EXTRA_MARKETS_ALLOWED.includes(code)) throw new ProvisionRefusal('E2E_PROVISION_EXTRA_MARKET_NOT_ALLOWED', code);
+  return [...new Set(list)];
+}
 const PASSWORD_ROUNDS = 12;
 
 // Un profil = un couple E2E_<PREFIX>_EMAIL / _PASSWORD. `optional` : profil sauté (avertissement) si absent.
@@ -97,6 +104,7 @@ function defaultDeps() {
     relais: require('../../services/relais-mutation-service'),
     hubAuth: require('../../services/hub-authorization-service'),
     delegation: require('../../services/market-delegation-service'),
+    team: require('../../services/market-delegation-team-service'),
   };
 }
 
@@ -150,6 +158,22 @@ async function ensureRelayAgentMembership(client, deps, { userId, marketCode, ac
   return { market: marketCode, capabilities: RELAY_AGENT_CAPABILITIES };
 }
 
+// Responsable pays E2E sur un marche supplementaire : memberships manager (meme jeu que KM) via grantOperatorScope, puis
+// responsable d'exploitation par le writer canonique de l'equipe (inviteTeamMember, utilisateur existant). Idempotent.
+async function ensureMarketOperatorLead(client, deps, { userId, email, marketCode, actorId }) {
+  const g = await deps.operators.grantOperatorScope(client, { userId, marketCode, scopeRole: 'manager', grantedBy: actorId });
+  if (!['granted', 'replaced', 'unchanged'].includes(g.status)) throw new ProvisionRefusal('E2E_PROVISION_SCOPE_FAILED', `market_operator:${marketCode}:${g.status}`);
+  const assignment = await deps.delegation.resolveActiveAssignmentByMarketCode(client, marketCode);
+  const { rows: [m] } = await client.query(
+    `SELECT is_operating_lead FROM assignment_memberships WHERE assignment_id = $1::uuid AND user_id = $2::uuid AND status = 'ACTIVE'`, [assignment.assignment_id, userId]);
+  let lead = m && m.is_operating_lead === true ? 'unchanged' : 'assigned';
+  if (lead === 'assigned') {
+    const capabilities = await deps.operators.targetCapabilitiesForScope(client, { assignmentId: assignment.assignment_id, scope: 'manager' });
+    await deps.team.inviteTeamMember(client, { assignmentId: assignment.assignment_id, actorUserId: actorId, email, channel: 'EMAIL', grantsOperatingLead: true, actorIsCentral: true, capabilities });
+  }
+  return { market: marketCode, scope: g.status, operating_lead: lead };
+}
+
 async function ensureRelays(client, deps, actorId) {
   const out = {};
   for (const code of MARKET_CODES) {
@@ -175,6 +199,7 @@ async function ensureRelays(client, deps, actorId) {
 async function run({ db, mode, env = process.env, deps = defaultDeps(), guard } = {}) {
   assertProvisionAllowed(mode, env);
   const { accounts, skipped } = readProfiles(env);
+  const extraMarkets = parseExtraMarkets(env);
   const confirmTarget = guard || require('./target-guard').confirmTarget;
   const target = await confirmTarget({ db, env });
   if (!target || target.confirmed !== true) throw new ProvisionRefusal('E2E_PROVISION_TARGET_NOT_CONFIRMED');
@@ -206,6 +231,14 @@ async function run({ db, mode, env = process.env, deps = defaultDeps(), guard } 
         if (!['assigned', 'already'].includes(a.status)) throw new ProvisionRefusal('E2E_PROVISION_RELAY_ASSIGN_FAILED', `${account.key}:${a.status}`);
         entry.relais = { market: account.relayMarket, status: a.status };
         entry.relay_membership = await ensureRelayAgentMembership(client, deps, { userId: res.id, marketCode: account.relayMarket, actorId: actor.id });
+      }
+      if (extraMarkets.length && account.key === 'market_operator') {
+        entry.extra_markets = [];
+        for (const code of extraMarkets) entry.extra_markets.push(await ensureMarketOperatorLead(client, deps, { userId: res.id, email: account.email, marketCode: code, actorId: actor.id }));
+      }
+      if (extraMarkets.length && account.relayMarket) {
+        entry.extra_relay_memberships = [];
+        for (const code of extraMarkets) entry.extra_relay_memberships.push(await ensureRelayAgentMembership(client, deps, { userId: res.id, marketCode: code, actorId: actor.id }));
       }
       if (account.hubGrants) {
         entry.hub_grants = {};
