@@ -17,6 +17,7 @@ On ajoute ici chaque nouvelle preuve, dans un sous-dossier `<marché>-<AAAAMMJJ>
 | 2026-11-07 | KM | 71B671EB | Chaîne physique HTTP avec le vrai transitaire | 53 PASS sur 53 | `km-20261107/hub-v1-http-physical-71B671EB.json` |
 | 2026-11-07 | KM | 50A59BFD | Clics Chromium réels (run 42362671815) | 32 CLICK_PASS, 5 NOT_REACHABLE_IN_UI | `km-20261107/hub-v1-clicks-50A59BFD-evidence.json` |
 | 2026-11-07 | KM | 2C2EB181 | Clics Chromium réels après #3473 (run 42369442085) | 36 CLICK_PASS sur 36 | `km-20261107/hub-v1-clicks-2C2EB181-evidence.json` |
+| 2026-11-07 | KM, CM, CG | - | Isolation croisée (agent relais KM : 200 sur KM, 403 sur CM et CG ; admin lit les trois) | ISOLATION_PASS | `isolation-20261107/staging-market-isolation-42375312269.json` |
 
 Bilan pour KM : la chaîne achats, la chaîne physique et le circuit local sont certifiés de bout en bout, à la fois par les routes HTTP et par des clics réels effectués avec les vrais rôles.
 
@@ -24,4 +25,4 @@ Bilan pour KM : la chaîne achats, la chaîne physique et le circuit local sont 
 
 - **Les rapports de la chaîne achats des fixtures 50A59BFD et 2C2EB181.** Ils sont restés dans les artefacts de leurs runs, et le proxy de l'agent ne permet pas de les télécharger. Leur verdict est PASS (35 PASS et 1 étape hors HTTP pour chacune).
 - **Les runs locaux sur base éphémère et les essais en échec,** dont la fixture 8D2B143C, retirée parce qu'elle contenait un colis mixte. Ce dossier ne contient que les preuves staging réussies.
-- **CM et CG :** certification en cours.
+- **CM et CG :** certification en cours, bloquée par l'absence de tarif de transport de vente. Pièces déjà versionnées (readiness, activation, fixtures en échec) dans `cm-20261107/` et `cg-20261107/` ; ce ne sont pas des runs réussis de certification.

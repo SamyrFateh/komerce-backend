@@ -1,7 +1,7 @@
 # Certification métier V1 multi-marché : note de reprise
 
 Cette note sert à reprendre la certification exactement où elle s'est arrêtée, sans autre contexte : tout ce qu'il faut est ici.
-État au 2026-11-07, 13 h 30 (heure de Paris).
+État au 2026-11-07, fin d'après-midi (heure de Paris). Dernière mise à jour : CM et CG actifs, blocage tarif de transport de vente.
 
 ## 1. Objectif
 
@@ -20,15 +20,17 @@ Ensuite viendront un seed partenaires visible et des comptes partenaires cloison
 | Marché | Statut | Preuve API | Preuve clics | Reste à faire |
 |---|---|---|---|---|
 | KM | ACTIVE | 53/53 PASS, fixture 71B671EB | 36/36 CLICK_PASS, fixture 2C2EB181, run 42369442085 | Rien pour le nominal |
-| CM | Réouvert par la procédure officielle | À faire | À faire | La première fixture B13C6D97 a échoué à l'étape 1 : cause à établir |
-| CG | Réouvert par la procédure officielle | À faire | À faire | Après CM |
+| CM | ACTIVE (activé le 2026-11-07, audit `MARKET_LIFECYCLE_CHANGED`) | À faire | À faire | BLOQUÉ : aucun tarif de transport de vente (`MARKET_TRANSPORT_TARIFF_MISSING`), décision métier à obtenir (voir section 7) |
+| CG | ACTIVE (idem) | À faire | À faire | Même blocage attendu que CM (même cause, non rejouée) |
 | YT | SUSPENDED | Hors périmètre | Hors périmètre | Ne pas rouvrir sans décision |
 | DJ | PROVISIONING | Hors périmètre | Hors périmètre | Ne pas toucher |
 
 Toutes les preuves staging réussies sont versionnées dans `docs/recette/evidence/` ; l'index se trouve dans `docs/recette/evidence/README.md`. Les captures restent dans les artefacts des runs.
 L'audit économique du Hub, qui est un sujet connexe, se trouve dans `docs/audits/hub-economics-20261106/`.
 
-PR ouverte à finir : #3481, test d'isolation croisée entre KM, CM et CG. Un compte d'un marché ne doit ni voir ni modifier les données d'un autre marché.
+Isolation croisée entre KM, CM et CG : JOUÉE le 2026-11-07, ISOLATION_PASS (run 42375312269, outil `staging-market-isolation` #3481, correctif de sonde #3484). L'agent relais, lié à un relais KM, obtient 200 sur KM et 403 sur CM et CG en lecture et en écriture ; l'admin lit les trois marchés. Preuve : `docs/recette/evidence/isolation-20261107/`. Limite : un seul rôle de terrain (agent relais) est croisé ; les rôles centraux (hub, transitaire, admin) ne sont pas cloisonnés par marché par conception, et le responsable pays E2E a des memberships dans les trois marchés, donc il ne peut pas servir à ce test.
+
+Preuves CM et CG déjà versionnées : `docs/recette/evidence/cm-20261107/` et `docs/recette/evidence/cg-20261107/` (readiness avant activation, rapport d'activation, rapports des fixtures CM en échec). L'index de `docs/recette/evidence/README.md` ne liste que les runs réussis.
 
 ## 3. Procédure : certifier un marché (KM, CM ou CG)
 
@@ -38,7 +40,7 @@ Tout passe par GitHub Actions en `workflow_dispatch`. Chaque écriture exige un 
    - `staging-cert-prereq-readonly` vérifie la cible et la version servie.
    - `staging-market-readiness`, avec `markets=CM,CG`, lit le plan de contrôle du marché.
 2. **Comptes de test et marqueurs.** `staging-e2e-provision` : `mode=dry-run`, puis `mode=execute` avec `extra_markets=CM,CG` et la confirmation `PROVISION-STAGING-E2E`. Ce workflow pose aussi les marqueurs dans `e2e_test_accounts`.
-3. **Activation d'un marché de recette (CM ou CG).** `staging-market-activate` avec `market=<CODE>` et la confirmation `ACTIVATE-RECETTE-<CODE>`. Il exécute l'attestation puis `POST /api/admin/markets/:code/lifecycle` ACTIVE, audité par `MARKET_LIFECYCLE_CHANGED`.
+3. **Activation d'un marché de recette (CM ou CG).** `staging-market-activate` (dry-run d'abord) avec `market=<CODE>` et la confirmation `ACTIVATE-RECETTE-<CODE>`. Il exécute l'attestation puis `POST /api/admin/markets/:code/lifecycle` ACTIVE, audité par `MARKET_LIFECYCLE_CHANGED`.
 4. **Fixture neuve.** Lancer `hub-v1-km-fixture-stop-after-2` avec `market=<CODE>`, ou ouvrir une issue dont le titre est exactement `[staging-op] hub-v1-km-fixture-stop-after-2` (elle vaut pour KM). Le run produit un RUN8 de 8 caractères hexadécimaux en majuscules.
 5. **Relais sur la fixture.** `staging-e2e-relay-reassign` en `dry-run-to-fixture`, puis en `to-fixture` avec `run8` et la confirmation `REASSIGN-E2E-RELAY`. Le mode `restore`, avec `restore_relay_id`, permet de revenir en arrière.
 6. **Chaîne achats.** `hub-v1-http-actions-staging` avec `run8`, `market`, `chain=po` et la confirmation `RUN-HTTP-ACTIONS`. Une seule fois par fixture.
@@ -68,8 +70,16 @@ Spec des clics : `tests/staging-clicks/hub-v1-clicks.spec.js`, avec la config `p
 - **Commandes de test.** Les commandes `simulation_scope` ne sont visibles que pour les comptes présents dans `e2e_test_accounts` (#3473, migration 397).
   - Le prédicat unique est `isE2eTestAccount` dans `services/simulation-visibility.js`.
   - Il n'y a pas de garde d'environnement, volontairement : le service Railway « production » est le staging. La sécurité vient de ce que seul le provisioning staging remplit cette table.
-- **Responsable opérationnel de recette pour CM et CG.** C'est le compte E2E `market_operator` (« Responsable pays »).
+- **Responsable opérationnel de recette pour CM et CG.** C'est le compte E2E `market_operator` (« Responsable pays »), posé par `staging-e2e-provision` avec `extra_markets=CM,CG` (#3477, #3480).
+  - Memberships manager (tout le plafond DELEGABLE du marché), plus responsable d'exploitation (`is_operating_lead`) par `inviteTeamMember`.
+  - Pour les 4 capacités à montant (`cash.custody.receive`, `execution.cash.confirm`, `finance.act`, `settlement.receive`), la limite du membership est celle du plafond du marché : 1 000 000 en CM et en CG. Jamais au-delà du plafond.
+  - L'agent relais E2E a aussi les memberships `execution.parcel.receive` et `execution.parcel.collect` en CM et CG.
 - **Corridors Dubaï → CM et Dubaï → CG.** Leurs valeurs sont provisoires et marquées « RECETTE » : transporteur, tarif en XAF, jours de transit, référence `RECETTE-PROVISOIRE-<marché>-<date>`. Elles doivent être remplacées par de vraies valeurs avant l'ouverture aux partenaires. Les transporteurs existants ne doivent pas être modifiés.
+- **Réouverture.** Passer par `staging-market-readiness` (lecture), puis `staging-market-activate` : readiness vert exigé (sinon arrêt sans écriture), transporteur dédié, attestation, `POST …/lifecycle` ACTIVE. Jamais par seed ni SQL. CM et CG ont été rouverts ainsi, le 2026-11-07, avec un seul manque à l'origine (`NO_ACTIVE_MEMBERSHIP`).
+- **Valeurs provisoires posées (RECETTE).** À remplacer avant l'ouverture aux partenaires :
+  - CM : transporteur « RECETTE — Maritime Dubaï→Douala », mode SEA, origine « Hub Dubaï », 1 500 XAF par kg, 35 jours, référence `RECETTE-PROVISOIRE-CM-2026-11-07`, validité 90 jours.
+  - CG : transporteur « RECETTE — Maritime Dubaï→Pointe-Noire », mode SEA, origine « Hub Dubaï », 1 700 XAF par kg, 40 jours, référence `RECETTE-PROVISOIRE-CG-2026-11-07`, validité 90 jours.
+- **Tarif de transport de vente.** Le code (`hub-v1-certification-runner.js`, commentaire du seed) pose en principe que l'absence de tarif sur staging est un constat de certification, jamais une lacune à masquer : ne pas le semer par SQL.
 - **Données.** Aucune donnée hors fixtures E2E. Aucun PSP activé. Les remboursements PSP restent désactivés (E7).
 - **Fixtures retirées.** 8D2B143C (colis mixte). 7DC2A4D9, 71B671EB, 50A59BFD et 2C2EB181 sont consommées.
 - **Relais E2E KM.** Il a été réaffecté et n'a pas été restauré. Son relais d'origine est `9f0e69b4-e772-4857-9a01-6b1083a745f0`.
@@ -92,8 +102,10 @@ Spec des clics : `tests/staging-clicks/hub-v1-clicks.spec.js`, avec la config `p
 
 ## 7. Prochaines actions, dans l'ordre
 
-1. **CM.** Établir la cause de l'échec de l'étape 1 de la fixture B13C6D97 (run « fixture KM neuve » du 2026-11-07, 12 h 25 UTC). Lire `test-results/hub-v1-cert/hub-v1-certification-B13C6D97.json` dans l'artefact. Corriger la configuration ou le script, en PR séparée. S'il s'agit d'un choix métier, le remonter.
-2. **CM, chaîne complète.** Fixture neuve, relais, `chain=po`, `chain=physical`, puis une autre fixture pour les clics. Ensuite, la même séquence pour CG.
-3. **#3481.** La finir, la merger, puis la jouer avec KM, CM et CG actifs.
+**Où on s'est arrêté (2026-11-07).** CM et CG sont ACTIVE. Les fixtures 82076FAA et B13C6D97 (CM) ont échoué à l'étape 1 du checkout : `CHECKOUT_REFUSED:KOM-101 … MARKET_TRANSPORT_TARIFF_MISSING` (« Aucun tarif de transport de vente n'est configuré pour ce marché »). Ces deux fixtures sont inutilisables (commandes non créées). Les runs `staging-e2e-relay-reassign` et `hub-v1-http-actions-staging` lancés ensuite sur elles ont échoué, ce qui est attendu : ce ne sont pas des preuves. Le run `chain=physical` de la fixture 82076FAA est marqué « success » alors que le `po` précédent a échoué : ne pas l'utiliser non plus.
+
+1. **Décision métier à obtenir (CM et CG) : le tarif de transport de vente.** Table `market_transport_sale_rates` (clés `SEA_KMF_PER_KG_COMMERCIAL` et `AIR_KMF_PER_KG_TAXABLE`, un tarif par kg, une devise, une référence de preuve). Il faut les valeurs par marché (valeurs provisoires de recette acceptables si l'utilisateur le dit), et la voie pour les poser. Constat : aucune route ni aucun service applicatif n'écrit `market_transport_sale_rates` (lecture seule dans `services/market-transport-sale-rates.js` ; seuls des tests e2e et le seed d'une base éphémère insèrent en SQL). Il n'existe donc pas de voie gouvernée : en créer une (route admin auditée) est une nouvelle fonctionnalité, à soumettre à l'utilisateur ; sinon il faut son accord explicite pour une écriture SQL ponctuelle de recette limitée aux marchés CM et CG. Sans cette décision, aucune commande ne peut être créée en CM ni en CG.
+2. **Dès que les tarifs sont posés.** Pour CM, puis CG : fixture neuve avec `market=<CODE>`, relais `to-fixture`, `chain=po`, `chain=physical` avec `allow_distribution`, puis une seconde fixture pour les clics. L'enchaînement exact est dans la section 3 ; le script de pilotage utilisé le 2026-11-07 est reproductible avec les mêmes workflows.
+3. **Isolation.** Faite (voir section 2). À rejouer après l'ouverture de tout nouveau marché ou compte cloisonné.
 4. **Rapport par marché.** Readiness, tableau API, tableau Clic, valeurs provisoires posées et résultat de l'isolation.
 5. **Ensuite.** Les cas limites, puis le seed partenaires visible avec plusieurs semaines d'historique par marché, puis les comptes partenaires par marché et par rôle.
