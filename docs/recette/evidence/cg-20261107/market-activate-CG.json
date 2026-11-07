@@ -1,0 +1,70 @@
+{
+  "market": "CG",
+  "apply": true,
+  "provisional_values": {
+    "carrier": "RECETTE — Maritime Dubaï→Pointe-Noire",
+    "origin": "Hub Dubaï",
+    "mode": "SEA",
+    "freight_rate": 1700,
+    "rate_currency": "XAF",
+    "rate_unit": "PER_KG",
+    "transit_days": 40,
+    "note": "PROVISOIRE RECETTE : a remplacer avant ouverture aux partenaires"
+  },
+  "steps": [
+    {
+      "step": "carrier:create",
+      "http": 201
+    },
+    {
+      "step": "attestation",
+      "http": 201,
+      "code": null
+    },
+    {
+      "step": "lifecycle:ACTIVE",
+      "http": 200,
+      "code": null
+    }
+  ],
+  "before": {
+    "lifecycle_status": "SUSPENDED",
+    "readiness": {
+      "platform": {
+        "ready": true,
+        "blockers": []
+      },
+      "operations": {
+        "ready": true,
+        "blockers": []
+      },
+      "ready_for_activation": true
+    },
+    "gaps": [],
+    "delivery_proof": {
+      "proven": false,
+      "basis": null,
+      "attestation": null,
+      "collected_orders": 0
+    }
+  },
+  "after": {
+    "lifecycle_status": "ACTIVE",
+    "readiness": {
+      "platform": {
+        "ready": true,
+        "blockers": []
+      },
+      "operations": {
+        "ready": true,
+        "blockers": []
+      },
+      "ready_for_activation": true
+    },
+    "delivery_proof": {
+      "proven": true,
+      "basis": "ATTESTATION"
+    }
+  },
+  "result": "ACTIVATED"
+}

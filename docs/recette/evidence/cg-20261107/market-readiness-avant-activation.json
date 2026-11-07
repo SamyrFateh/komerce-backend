@@ -1,0 +1,297 @@
+{
+  "code": "CG",
+  "http": 200,
+  "view": {
+    "market": {
+      "id": "15ee0197-b595-4c23-a32f-4c226b609c9d",
+      "code": "CG",
+      "name": "Congo",
+      "currency": "XAF",
+      "minor_unit": 0,
+      "is_active": true,
+      "lifecycle_status": "SUSPENDED",
+      "storefront_texts": {},
+      "has_currency_parity": true
+    },
+    "assignment": {
+      "id": "f2a45348-b332-45c3-8f25-1e41ae267eaf",
+      "status": "ACTIVE",
+      "effective_from": "2026-10-19T22:29:20.885Z",
+      "effective_until": null,
+      "central_referent_user_id": "51eda5e1-b915-4f08-bba6-ba825ee36001"
+    },
+    "ceiling": [
+      {
+        "capability": "cash_control.policy.manage",
+        "amount_bearing": false,
+        "limit_amount": null
+      },
+      {
+        "capability": "cash.custody.receive",
+        "amount_bearing": true,
+        "limit_amount": 1000000
+      },
+      {
+        "capability": "catalog.expose",
+        "amount_bearing": false,
+        "limit_amount": null
+      },
+      {
+        "capability": "catalog.read",
+        "amount_bearing": false,
+        "limit_amount": null
+      },
+      {
+        "capability": "client.case.handle",
+        "amount_bearing": false,
+        "limit_amount": null
+      },
+      {
+        "capability": "client.read",
+        "amount_bearing": false,
+        "limit_amount": null
+      },
+      {
+        "capability": "dashboard.market.read",
+        "amount_bearing": false,
+        "limit_amount": null
+      },
+      {
+        "capability": "decision_signal.manage",
+        "amount_bearing": false,
+        "limit_amount": null
+      },
+      {
+        "capability": "execution.cash.confirm",
+        "amount_bearing": true,
+        "limit_amount": 1000000
+      },
+      {
+        "capability": "execution.distribution.run",
+        "amount_bearing": false,
+        "limit_amount": null
+      },
+      {
+        "capability": "execution.inventory.assign",
+        "amount_bearing": false,
+        "limit_amount": null
+      },
+      {
+        "capability": "execution.parcel.collect",
+        "amount_bearing": false,
+        "limit_amount": null
+      },
+      {
+        "capability": "execution.parcel.receive",
+        "amount_bearing": false,
+        "limit_amount": null
+      },
+      {
+        "capability": "execution.parcel.ship",
+        "amount_bearing": false,
+        "limit_amount": null
+      },
+      {
+        "capability": "execution.transit.confirm",
+        "amount_bearing": false,
+        "limit_amount": null
+      },
+      {
+        "capability": "finance.act",
+        "amount_bearing": true,
+        "limit_amount": 1000000
+      },
+      {
+        "capability": "finance.read",
+        "amount_bearing": false,
+        "limit_amount": null
+      },
+      {
+        "capability": "hub.supervise",
+        "amount_bearing": false,
+        "limit_amount": null
+      },
+      {
+        "capability": "local_offer.manage",
+        "amount_bearing": false,
+        "limit_amount": null
+      },
+      {
+        "capability": "logistics.read",
+        "amount_bearing": false,
+        "limit_amount": null
+      },
+      {
+        "capability": "market_config.read",
+        "amount_bearing": false,
+        "limit_amount": null
+      },
+      {
+        "capability": "market.observation.record",
+        "amount_bearing": false,
+        "limit_amount": null
+      },
+      {
+        "capability": "network.create",
+        "amount_bearing": false,
+        "limit_amount": null
+      },
+      {
+        "capability": "network.read",
+        "amount_bearing": false,
+        "limit_amount": null
+      },
+      {
+        "capability": "network.suspend",
+        "amount_bearing": false,
+        "limit_amount": null
+      },
+      {
+        "capability": "network.update",
+        "amount_bearing": false,
+        "limit_amount": null
+      },
+      {
+        "capability": "operations.read",
+        "amount_bearing": false,
+        "limit_amount": null
+      },
+      {
+        "capability": "partners.manage",
+        "amount_bearing": false,
+        "limit_amount": null
+      },
+      {
+        "capability": "partners.read",
+        "amount_bearing": false,
+        "limit_amount": null
+      },
+      {
+        "capability": "pricing.activate",
+        "amount_bearing": false,
+        "limit_amount": null
+      },
+      {
+        "capability": "pricing.cost_component.reset",
+        "amount_bearing": false,
+        "limit_amount": null
+      },
+      {
+        "capability": "pricing.cost_component.update",
+        "amount_bearing": false,
+        "limit_amount": null
+      },
+      {
+        "capability": "pricing.decide",
+        "amount_bearing": false,
+        "limit_amount": null
+      },
+      {
+        "capability": "pricing.policy.set",
+        "amount_bearing": false,
+        "limit_amount": null
+      },
+      {
+        "capability": "pricing.read",
+        "amount_bearing": false,
+        "limit_amount": null
+      },
+      {
+        "capability": "pricing.simulate",
+        "amount_bearing": false,
+        "limit_amount": null
+      },
+      {
+        "capability": "provider.manage",
+        "amount_bearing": false,
+        "limit_amount": null
+      },
+      {
+        "capability": "settlement.receive",
+        "amount_bearing": true,
+        "limit_amount": 1000000
+      },
+      {
+        "capability": "structure.event.record",
+        "amount_bearing": false,
+        "limit_amount": null
+      },
+      {
+        "capability": "team.grant",
+        "amount_bearing": false,
+        "limit_amount": null
+      },
+      {
+        "capability": "team.invite",
+        "amount_bearing": false,
+        "limit_amount": null
+      },
+      {
+        "capability": "team.read",
+        "amount_bearing": false,
+        "limit_amount": null
+      },
+      {
+        "capability": "team.revoke",
+        "amount_bearing": false,
+        "limit_amount": null
+      }
+    ],
+    "team": [],
+    "paymentProviders": [
+      {
+        "provider": "mtn_momo",
+        "currency": "XAF",
+        "is_enabled": true,
+        "priority": 10
+      }
+    ],
+    "cashPolicy": {
+      "cash_enabled": true,
+      "confirmation_mode": "SINGLE"
+    },
+    "relaisActive": 2,
+    "deliveryProof": {
+      "proven": false,
+      "basis": null,
+      "attestation": null,
+      "collected_orders": 0
+    },
+    "carriers": [
+      {
+        "id": "43093eb3-40fd-495a-9308-76b9e317f9a7",
+        "name": "Conteneur maritime standard"
+      },
+      {
+        "id": "e7ffe875-dc92-4333-b3a9-012570365ae9",
+        "name": "Fret aÃ©rien express"
+      },
+      {
+        "id": "3ff3995e-a7ba-45bc-a86b-faa04925f816",
+        "name": "Transporteur mixte Comores"
+      }
+    ],
+    "gaps": [
+      {
+        "code": "NO_ACTIVE_MEMBERSHIP",
+        "message": "Aucune personne active n’est rattachée à l’affectation."
+      }
+    ],
+    "readiness": {
+      "platform": {
+        "ready": true,
+        "blockers": []
+      },
+      "operations": {
+        "ready": false,
+        "blockers": [
+          {
+            "code": "NO_ACTIVE_MEMBERSHIP",
+            "message": "Aucune personne active n’est rattachée à l’affectation."
+          }
+        ]
+      },
+      "ready_for_activation": false
+    }
+  }
+}
