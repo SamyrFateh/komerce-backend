@@ -1,0 +1,274 @@
+{
+  "schema": "staging-negative-role-boundaries/1",
+  "target": "OFFICIAL_STAGING",
+  "verdict": "ROLE_BOUNDARY_PASS",
+  "checks": 37,
+  "passed": 37,
+  "violations": [],
+  "probes": [
+    {
+      "probe": "hub_dashboard",
+      "role": "admin",
+      "expected": 200,
+      "observed": 200,
+      "verdict": "PASS"
+    },
+    {
+      "probe": "hub_dashboard",
+      "role": "hub",
+      "expected": 200,
+      "observed": 200,
+      "verdict": "PASS"
+    },
+    {
+      "probe": "hub_dashboard",
+      "role": "transitaire",
+      "expected": 403,
+      "observed": 403,
+      "verdict": "PASS"
+    },
+    {
+      "probe": "hub_dashboard",
+      "role": "relais",
+      "expected": 403,
+      "observed": 403,
+      "verdict": "PASS"
+    },
+    {
+      "probe": "hub_queue",
+      "role": "admin",
+      "expected": 200,
+      "observed": 200,
+      "verdict": "PASS"
+    },
+    {
+      "probe": "hub_queue",
+      "role": "hub",
+      "expected": 200,
+      "observed": 200,
+      "verdict": "PASS"
+    },
+    {
+      "probe": "hub_queue",
+      "role": "transitaire",
+      "expected": 403,
+      "observed": 403,
+      "verdict": "PASS"
+    },
+    {
+      "probe": "hub_queue",
+      "role": "relais",
+      "expected": 403,
+      "observed": 403,
+      "verdict": "PASS"
+    },
+    {
+      "probe": "hub_terrain_week",
+      "role": "admin",
+      "expected": 200,
+      "observed": 200,
+      "verdict": "PASS"
+    },
+    {
+      "probe": "hub_terrain_week",
+      "role": "hub",
+      "expected": 200,
+      "observed": 200,
+      "verdict": "PASS"
+    },
+    {
+      "probe": "hub_terrain_week",
+      "role": "transitaire",
+      "expected": 403,
+      "observed": 403,
+      "verdict": "PASS"
+    },
+    {
+      "probe": "hub_global_board",
+      "role": "admin",
+      "expected": 200,
+      "observed": 200,
+      "verdict": "PASS"
+    },
+    {
+      "probe": "hub_global_board",
+      "role": "hub",
+      "expected": 200,
+      "observed": 200,
+      "verdict": "PASS"
+    },
+    {
+      "probe": "hub_global_board",
+      "role": "transitaire",
+      "expected": 403,
+      "observed": 403,
+      "verdict": "PASS"
+    },
+    {
+      "probe": "hub_start_prep_absent",
+      "role": "admin",
+      "expected": 404,
+      "observed": 404,
+      "verdict": "PASS"
+    },
+    {
+      "probe": "hub_start_prep_absent",
+      "role": "hub",
+      "expected": 404,
+      "observed": 404,
+      "verdict": "PASS"
+    },
+    {
+      "probe": "hub_start_prep_absent",
+      "role": "transitaire",
+      "expected": 403,
+      "observed": 403,
+      "verdict": "PASS"
+    },
+    {
+      "probe": "hub_start_prep_absent",
+      "role": "relais",
+      "expected": 403,
+      "observed": 403,
+      "verdict": "PASS"
+    },
+    {
+      "probe": "hub_backorder_absent",
+      "role": "admin",
+      "expected": 404,
+      "observed": 404,
+      "verdict": "PASS"
+    },
+    {
+      "probe": "hub_backorder_absent",
+      "role": "hub",
+      "expected": 404,
+      "observed": 404,
+      "verdict": "PASS"
+    },
+    {
+      "probe": "hub_backorder_absent",
+      "role": "transitaire",
+      "expected": 403,
+      "observed": 403,
+      "verdict": "PASS"
+    },
+    {
+      "probe": "hub_backorder_absent",
+      "role": "relais",
+      "expected": 403,
+      "observed": 403,
+      "verdict": "PASS"
+    },
+    {
+      "probe": "hub_ship_absent",
+      "role": "admin",
+      "expected": 403,
+      "observed": 403,
+      "verdict": "PASS"
+    },
+    {
+      "probe": "hub_ship_absent",
+      "role": "hub",
+      "expected": 404,
+      "observed": 404,
+      "verdict": "PASS"
+    },
+    {
+      "probe": "hub_ship_absent",
+      "role": "transitaire",
+      "expected": 403,
+      "observed": 403,
+      "verdict": "PASS"
+    },
+    {
+      "probe": "hub_ship_absent",
+      "role": "relais",
+      "expected": 403,
+      "observed": 403,
+      "verdict": "PASS"
+    },
+    {
+      "probe": "market_control_plane",
+      "role": "admin",
+      "expected": 200,
+      "observed": 200,
+      "verdict": "PASS"
+    },
+    {
+      "probe": "market_control_plane",
+      "role": "hub",
+      "expected": 403,
+      "observed": 403,
+      "verdict": "PASS"
+    },
+    {
+      "probe": "market_control_plane",
+      "role": "transitaire",
+      "expected": 403,
+      "observed": 403,
+      "verdict": "PASS"
+    },
+    {
+      "probe": "market_control_plane",
+      "role": "relais",
+      "expected": 403,
+      "observed": 403,
+      "verdict": "PASS"
+    },
+    {
+      "probe": "market_transport_sale_rates",
+      "role": "admin",
+      "expected": 200,
+      "observed": 200,
+      "verdict": "PASS"
+    },
+    {
+      "probe": "market_transport_sale_rates",
+      "role": "hub",
+      "expected": 403,
+      "observed": 403,
+      "verdict": "PASS"
+    },
+    {
+      "probe": "market_transport_sale_rates",
+      "role": "transitaire",
+      "expected": 403,
+      "observed": 403,
+      "verdict": "PASS"
+    },
+    {
+      "probe": "market_transport_sale_rates",
+      "role": "relais",
+      "expected": 403,
+      "observed": 403,
+      "verdict": "PASS"
+    },
+    {
+      "probe": "forbidden_transport_price_write",
+      "role": "hub",
+      "expected": 403,
+      "observed": 403,
+      "verdict": "PASS"
+    },
+    {
+      "probe": "forbidden_transport_price_write",
+      "role": "transitaire",
+      "expected": 403,
+      "observed": 403,
+      "verdict": "PASS"
+    },
+    {
+      "probe": "forbidden_transport_price_write",
+      "role": "relais",
+      "expected": 403,
+      "observed": 403,
+      "verdict": "PASS"
+    }
+  ],
+  "guarantee": "all writes are forbidden by role or use nonexistent object references; no order, shipment, tariff or payment created",
+  "source_run_id": 42391311145,
+  "source_url": "https://github.com/SamyrFateh/komerce-backend/actions/runs/42391311145",
+  "verified_on": "2026-11-07",
+  "source_deployed_main_commit": "3cce0badfb9c4b4be2a42b683751232817179c87"
+}

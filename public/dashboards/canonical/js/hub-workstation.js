@@ -49,6 +49,186 @@
     if (textContent !== undefined) node.textContent = safe(textContent);
     return node;
   };
+  // Une seule paire d'écouteurs par tableau : les rafraîchissements n'empilent pas
+  // des handlers document (ouvertures/clics extérieurs) devenus obsolètes.
+  const boardDisposers = new WeakMap();
+  function installMenuDismiss(root, doc, menu, close, onMove) {
+    const previous = boardDisposers.get(root);
+    if (previous) previous();
+    const outside = event => {
+      if (!menu.hidden && !menu.contains(event.target)) close();
+    };
+    const escape = event => {
+      if (event.key === 'Escape' && !menu.hidden) close();
+    };
+    doc.addEventListener('pointerdown', outside, true);
+    doc.addEventListener('keydown', escape);
+    // Capture les scrolls horizontaux ET verticaux des parents du Kanban.
+    // Le menu est positionné à partir de la cellule, jamais des anciennes coordonnées souris.
+    if(onMove) {
+      doc.addEventListener('scroll', onMove, true);
+      doc.defaultView?.addEventListener('resize',onMove);
+      menu.addEventListener?.('hub:menu-state',onMove);
+    }
+    boardDisposers.set(root, () => {
+      doc.removeEventListener('pointerdown', outside, true);
+      doc.removeEventListener('keydown', escape);
+      if(onMove) {
+        doc.removeEventListener('scroll', onMove, true);
+        doc.defaultView?.removeEventListener('resize',onMove);
+        menu.removeEventListener?.('hub:menu-state',onMove);
+      }
+    });
+  }
+
+  function anchoredMenu(menu, scroll, doc, close) {
+    let target=null;
+    const move=()=>{
+      if(menu.hidden || !target || menu.classList.contains('is-sourcing-inline'))return;
+      const viewport=doc.defaultView;
+      const width=viewport?.innerWidth||1440;
+      const height=viewport?.innerHeight||900;
+      if(menu.classList.contains('is-editing')) {
+        // Saisie complexe : volet fixe à droite, en conservant la commande et l'étape en titre.
+        const panel=Math.min(menu.offsetWidth||470,width-16);
+        menu.style.left=Math.max(8,width-panel-12)+'px';
+        menu.style.top='64px';
+        return;
+      }
+      if(!target.isConnected){close();return;}
+      const cell=target.getBoundingClientRect();
+      const clip=scroll.getBoundingClientRect();
+      const visible=cell.right>Math.max(clip.left,0)+2 &&
+        cell.left<Math.min(clip.right,width)-2 &&
+        cell.bottom>Math.max(clip.top,0)+2 &&
+        cell.top<Math.min(clip.bottom,height)-2;
+      if(!visible){close();return;}
+      const popupWidth=Math.min(menu.offsetWidth||360,width-16);
+      const popupHeight=Math.min(menu.offsetHeight||260,height-16);
+      const x=Math.max(8,Math.min(cell.left,width-popupWidth-8));
+      const below=cell.bottom+6;
+      const above=cell.top-popupHeight-6;
+      const y=below+popupHeight<=height-8?below:
+        above>=8?above:Math.max(8,Math.min(below,height-popupHeight-8));
+      menu.style.left=Math.round(x)+'px';
+      menu.style.top=Math.round(y)+'px';
+    };
+    return {
+      select(element){target=element;move();},
+      move,
+      clear(){target=null;}
+    };
+  }
+  // Journal de suivi d'une étape : lecture de la vérité order_comments,
+  // append-only, et jamais une preuve de transition métier.
+  function mountStageJournal(menu, {doc, fetch:fetchFn, user, order, stageKey, isCurrent}) {
+    if (!stageKey || !['admin','agent_hub','market_operator'].includes(user?.role)) return;
+    const canWrite = ['admin','agent_hub'].includes(user?.role);
+    const section = make(doc,'section','kmc-hub-stage-journal');
+    section.setAttribute('data-hub-stage-journal',stageKey);
+    const heading = make(doc,'button','kmc-hub-journal-toggle','Journal de suivi · Voir les notes');
+    heading.type='button';
+    heading.setAttribute('aria-expanded','false');
+    heading.setAttribute('data-hub-stage-journal-toggle','');
+    section.appendChild(heading);
+    const content = make(doc,'div','kmc-hub-journal-content');
+    content.hidden=true;
+    section.appendChild(content);
+    menu.appendChild(section);
+
+    async function load() {
+      content.replaceChildren();
+      content.appendChild(make(doc,'p','kmc-hub-journal-hint','Chargement de la traçabilité…'));
+      try {
+        const detail=await requestJSON(fetchFn,'/api/hub-dash/orders/'+encodeURIComponent(order.id));
+        if (!isCurrent()) return;
+        const all=Array.isArray(detail.comments)?detail.comments:[];
+        const entries=all.filter(note=>note.hub_stage_key===stageKey).slice(0,50);
+        content.replaceChildren();
+        content.appendChild(make(doc,'p','kmc-hub-journal-hint',
+          entries.length ? entries.length+' note(s) enregistrée(s) · non modifiables'
+            : 'Aucun commentaire sur cette étape pour le moment.'));
+        if (entries.length) {
+          const list=make(doc,'ol','kmc-hub-journal-list');
+          list.setAttribute('aria-label','Historique immuable de cette étape');
+          entries.forEach(note=>{
+            const item=make(doc,'li','kmc-hub-journal-item');
+            const stamp=note.created_at ? new Date(note.created_at).toLocaleString('fr-FR',{
+              day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'
+            }) : 'Date indisponible';
+            item.appendChild(make(doc,'span','kmc-hub-journal-meta',
+              (note.author_name || 'Équipe Hub')+' · '+stamp));
+            item.appendChild(make(doc,'p','kmc-hub-journal-note',note.text||''));
+            item.appendChild(make(doc,'small','kmc-hub-journal-seal','✓ Publiée · non modifiable'));
+            list.appendChild(item);
+          });
+          content.appendChild(list);
+        }
+        if (!canWrite) {
+          content.appendChild(make(doc,'p','kmc-hub-journal-hint',
+            'Consultation seulement : publication réservée aux opérateurs Hub.'));
+          return;
+        }
+        const form=make(doc,'form','kmc-hub-journal-form');
+        form.setAttribute('data-hub-journal-form','');
+        const lbl=make(doc,'label','kmc-hub-journal-label','Ajouter une note de suivi');
+        const input=make(doc,'textarea','kmc-hub-journal-textarea');
+        input.setAttribute('aria-label','Commentaire de suivi immuable');
+        input.setAttribute('data-hub-journal-input','');
+        input.rows=3;
+        input.minLength=3;input.maxLength=1500;input.required=true;
+        input.placeholder='Ex. : Fournisseur relancé, réponse attendue lundi…';
+        lbl.appendChild(input);form.appendChild(lbl);
+        form.appendChild(make(doc,'p','kmc-hub-journal-help',
+          'Après publication, cette note ne pourra ni être modifiée ni supprimée. '+
+          'Elle ne valide aucune étape physique ou financière.'));
+        const footer=make(doc,'div','kmc-hub-journal-actions');
+        const submit=make(doc,'button','kmc-hub-journal-publish','Publier la note');
+        submit.type='submit';
+        submit.setAttribute('data-hub-journal-publish','');
+        footer.appendChild(submit);
+        const status=make(doc,'span','kmc-hub-journal-feedback');
+        status.setAttribute('role','status');status.setAttribute('aria-live','polite');
+        footer.appendChild(status);form.appendChild(footer);
+        form.addEventListener('submit',async event=>{
+          event.preventDefault();
+          const message=input.value.trim();
+          if(message.length<3||message.length>1500){
+            status.textContent='Saisir entre 3 et 1 500 caractères.';return;
+          }
+          submit.disabled=true;status.textContent='Publication…';
+          try {
+            const response=await fetchFn('/api/hub-dash/orders/'+encodeURIComponent(order.id)+'/comment',{
+              method:'POST',credentials:'include',
+              headers:{Accept:'application/json','Content-Type':'application/json'},
+              body:JSON.stringify({content:message,hub_stage_key:stageKey}),
+            });
+            const result=await response.json().catch(()=>({}));
+            if(!response.ok) throw new Error(result.error||'Publication refusée');
+            if(!isCurrent())return;
+            await load();
+          }catch(err){
+            if(!isCurrent())return;
+            status.textContent=err.message||'Publication impossible';
+            submit.disabled=false;
+          }
+        });
+        content.appendChild(form);
+      }catch(err){
+        if(!isCurrent())return;
+        content.replaceChildren();
+        content.appendChild(make(doc,'p','kmc-hub-journal-error',
+          'Journal indisponible : '+(err.message||'accès impossible')));
+      }
+    }
+    heading.addEventListener('click',()=>{
+      const open=content.hidden;
+      content.hidden=!open;
+      heading.setAttribute('aria-expanded',String(open));
+      heading.textContent=open?'Journal de suivi · Masquer les notes':'Journal de suivi · Voir les notes';
+      if(open) void load();
+    });
+  }
   const smallRef = value => safe(value).slice(0, 8);
   const getPO = location => new URLSearchParams(safe(location && location.search)).get('po') || '';
 
@@ -74,6 +254,8 @@
     if (!root || !doc || typeof fetchFn !== 'function') {
       throw new Error('hub_global_board_context_missing');
     }
+    boardDisposers.get(root)?.();
+    boardDisposers.delete(root);
     root.replaceChildren();
     const header = make(doc, 'div', 'kmc-hub-global-toolbar');
     header.appendChild(make(doc, 'strong', '', 'Toutes les commandes import · Tous les marchés'));
@@ -107,23 +289,36 @@
     root.appendChild(menu);
 
     const canOperate = ['admin', 'agent_hub'].includes(user && user.role);
+    let anchor;
     let menuSerial = 0;
     const closeMenu = () => {
       menu.hidden = true;
       menu.setAttribute('data-hub-request', String(++menuSerial));
+      anchor?.clear();
     };
-    const openMenu = (order, label, value, event) => {
+    const openMenu = (order, label, value, event, launchSourcing = false) => {
       // Ce menu appartient à UNE étape. Aucun lien universel injecté à toutes
       // les cellules avant la lecture de l'autorité métier.
       const requestId = String(++menuSerial);
       menu.setAttribute('data-hub-request', requestId);
       menu.replaceChildren();
-      menu.classList.remove('is-editing');
+      menu.classList.remove('is-editing','is-sourcing-inline','is-purchasing-flow');
+      menu.removeAttribute('data-hub-menu-stage-state');
       menu.appendChild(make(doc, 'strong', 'kmc-hub-board-menu-title',
         order.reference + ' · ' + label));
       menu.appendChild(make(doc, 'p', 'kmc-hub-board-menu-summary', value));
       const stageKey = ({ PO:'po', Fournisseur:'supplier', Réception:'reception', Cartons:'cartons', Départ:'departure', 'Reste à solder':'remaining' })[label];
-      const locked = stageKey && order.stage_states && order.stage_states[stageKey] === 'locked';
+      const state = stageKey && order.stage_states && order.stage_states[stageKey];
+      const locked = state === 'locked';
+      menu.setAttribute('data-hub-menu-stage-state', state || 'unknown');
+      if (stageKey === order.current_key && order.current_phase) {
+        menu.appendChild(make(doc, 'p', 'kmc-hub-board-menu-current',
+          '▶ Étape actuelle · ' + order.current_phase + ' — ' + (order.current_status || 'À vérifier')));
+        if (order.current_expected) {
+          menu.appendChild(make(doc, 'p', 'kmc-hub-board-menu-expected',
+            'Attendu : ' + order.current_expected));
+        }
+      }
       if (stageKey && order.stage_notes && order.stage_notes[stageKey]) {
         menu.appendChild(make(doc, 'p', 'kmc-hub-board-menu-summary', order.stage_notes[stageKey]));
       }
@@ -140,7 +335,7 @@
         // Le geste physique attesté est irréversible ; le détail reste consultable.
       } else if (canOperate && global.KomerceHubContextActions) {
         global.KomerceHubContextActions.operations(menu, {
-          doc, fetch:fetchFn, user, order, stage:label,
+          doc, fetch:fetchFn, user, order, stage:label, launchSourcing,
           refresh:()=>renderGlobalBoard(root,{document:doc,fetch:fetchFn,user}),
         });
       } else {
@@ -149,16 +344,13 @@
             ? 'Consultation seule : cette étape ne peut pas être modifiée avec ce profil.'
             : 'Les actions de cette étape ne sont pas chargées. Actualiser la page.'));
       }
-      const box = event && event.currentTarget && event.currentTarget.getBoundingClientRect?.();
-      const width = doc.defaultView?.innerWidth || 1440;
-      const height = doc.defaultView?.innerHeight || 900;
-      const x = event?.type === 'contextmenu' ? event.clientX : (box ? box.left : 10);
-      const y = event?.type === 'contextmenu' ? event.clientY : (box ? box.bottom : 10);
-      menu.style.left = Math.max(8, Math.min(x, width - 310)) + 'px';
-      menu.style.top = Math.max(8, Math.min(y, height - 240)) + 'px';
+      mountStageJournal(menu, {doc, fetch:fetchFn, user, order, stageKey,
+        isCurrent:()=>!menu.hidden && menu.getAttribute('data-hub-request')===requestId});
+      anchor.select(event?.currentTarget);
       menu.querySelector?.('a,button')?.focus?.();
     };
-    root.addEventListener('keydown', event => { if (event.key === 'Escape') closeMenu(); });
+    anchor=anchoredMenu(menu,scroll,doc,closeMenu);
+    installMenuDismiss(root, doc, menu, closeMenu, anchor.move);
 
     let rows = [];
     const renderRows = () => {
@@ -182,6 +374,9 @@
         const idBox = make(doc, 'div', 'kmc-hub-board-identity');
         idBox.appendChild(make(doc, 'strong', '', order.reference));
         idBox.appendChild(make(doc, 'small', '', order.market + ' · ' + (order.market_name || order.market)));
+        if (order.current_key && !['locked','complete'].includes(order.stage_states?.[order.current_key])) {
+          tr.classList.add('is-hub-active-order');
+        }
         if (order.current_phase) {
           const phase = make(doc, 'div', 'kmc-hub-phase-summary');
           phase.appendChild(make(doc, 'span', 'kmc-hub-phase-title',
@@ -203,7 +398,8 @@
           ['Cartons', 'cartons'], ['Départ', 'departure'], ['Reste à solder', 'remaining'],
         ]) {
           const td = make(doc, 'td');
-          const button = make(doc, 'button', 'kmc-hub-board-cell', order[key] || '—');
+          const button = make(doc, 'button', 'kmc-hub-board-cell');
+          button.appendChild(make(doc, 'strong', 'kmc-hub-stage-primary', order[key] || '—'));
           button.type = 'button';
           button.setAttribute('data-hub-global-stage', label);
           button.setAttribute('aria-label', order.reference + ' · ' + label + ' · ' + (order[key] || '—'));
@@ -211,14 +407,31 @@
           if (['muted','waiting','progress','warning','ready','complete','critical','locked'].includes(state)) {
             button.classList.add('is-stage-'+state);
           }
-          if (order.current_key === key && state !== 'locked') button.classList.add('is-stage-current');
+          if (order.current_key === key && !['locked','complete'].includes(state)) {
+            button.classList.add('is-stage-current');
+            button.setAttribute('aria-current', 'step');
+            // Le texte porte le sens indépendamment du halo et de la couleur.
+            const focusLabel = state === 'critical' ? 'INCIDENT À TRAITER'
+              : state === 'warning' ? 'POINT À RÉSOUDRE'
+              : state === 'waiting' ? 'EN ATTENTE'
+              : state === 'ready' ? 'PRÊT À AGIR'
+              : state === 'progress' ? 'EN COURS'
+              : 'À TRAITER';
+            const focusSignal = make(doc, 'span', 'kmc-hub-stage-focus-label', focusLabel);
+            focusSignal.setAttribute('data-hub-focus-signal', state || 'unknown');
+            button.insertBefore(focusSignal, button.firstChild);
+          }
           if (state === 'locked') {
             button.setAttribute('aria-label', order.reference + ' · ' + label + ' · Terminée, verrouillée · ' + (order[key] || '—'));
             button.appendChild(make(doc, 'small', 'kmc-hub-stage-proof', '✓ Terminée · verrouillée · voir la preuve'));
           } else if (state === 'complete') {
             button.appendChild(make(doc, 'small', 'kmc-hub-stage-proof', '✓ Terminée · consulter'));
           } else if (order.current_key === key) {
-            button.appendChild(make(doc, 'small', 'kmc-hub-stage-proof', '▶ Étape actuelle'));
+            button.appendChild(make(doc, 'small', 'kmc-hub-stage-proof', '▶ À faire / suivre maintenant'));
+          } else if (state === 'muted') {
+            button.appendChild(make(doc, 'small', 'kmc-hub-stage-proof', 'À venir'));
+          } else if (state === 'waiting') {
+            button.appendChild(make(doc, 'small', 'kmc-hub-stage-proof', '◷ En attente'));
           }
           if (key === 'remaining' && order.attention) button.classList.add('is-attention');
           if (key === 'remaining' && order.remaining_detail) {
@@ -229,13 +442,33 @@
             event.preventDefault();
             openMenu(order, label, order[key], event);
           });
-          td.appendChild(button);
+          const actions = make(doc,'div','kmc-hub-kanban-stage-actions');
+          actions.appendChild(button);
+          // Une action in situ : le bouton ouvre les contrôles et le formulaire
+          // de l'étape. Aucune mutation ne part du simple clic.
+          const nextText = safe(order.next_action);
+          const isWaitingOnly = /^(attendr|attente|suivre|consulter|aucune)/i.test(nextText);
+          if (canOperate && order.current_key===key && !['locked','complete'].includes(state) && !isWaitingOnly) {
+            const launch = key==='po' && order.po==='Sourcing requis';
+            const command = make(doc,'button','kmc-hub-kanban-action',key==='po'
+              ?'Organiser l’achat fournisseur':nextText || 'Traiter l’étape');
+            command.type='button';
+            command.setAttribute('data-hub-inline-action',key);
+            command.setAttribute('aria-label',order.reference+' · '+(launch
+              ?'Créer la ligne d’achat':'Ouvrir les actions : '+(nextText||label)));
+            command.addEventListener('click',event=>{
+              event.stopPropagation();
+              openMenu(order,label,order[key],event,launch);
+            });
+            actions.appendChild(command);
+          }
+          td.appendChild(actions);
           tr.appendChild(td);
         }
         body.appendChild(tr);
       }
     };
-    search.addEventListener('input', renderRows);
+    search.addEventListener('input', ()=>{closeMenu();renderRows();});
     try {
       const payload = await requestJSON(fetchFn, '/api/hub/board');
       if (payload.scope !== 'HUB_GLOBAL' || !Array.isArray(payload.orders)) {
@@ -271,6 +504,8 @@
   async function renderAdministrationBoard(root, {document:doc, fetch:fetchFn, user} = {}) {
     if (!root || !doc || typeof fetchFn !== 'function') throw new Error('hub_admin_board_context_missing');
     if (!['admin','agent_hub'].includes(user && user.role)) throw new Error('hub_admin_board_role_not_allowed');
+    boardDisposers.get(root)?.();
+    boardDisposers.delete(root);
     root.replaceChildren();
 
     const top = make(doc, 'div', 'kmc-hub-global-toolbar');
@@ -327,10 +562,17 @@
     menu.setAttribute('data-hub-admin-menu', '');
     menu.hidden = true;
     root.appendChild(menu);
-    const closeMenu = () => {menu.hidden = true;};
+    let anchor;
+    const closeMenu = () => {
+      menu.hidden = true;
+      menu.setAttribute('data-hub-request', String(Date.now()) + '-closed');
+      anchor?.clear();
+    };
+    anchor=anchoredMenu(menu,scroll,doc,closeMenu);
+    installMenuDismiss(root, doc, menu, closeMenu, anchor.move);
     const openMenu = (po, field, value, event) => {
       menu.replaceChildren();
-      menu.classList.remove('is-editing');
+      menu.classList.remove('is-editing','is-purchasing-flow');
       menu.appendChild(make(doc, 'strong', 'kmc-hub-board-menu-title',
         'PO ' + smallRef(po.id) + ' · ' + field));
       menu.appendChild(make(doc, 'p', 'kmc-hub-board-menu-summary', value));
@@ -350,16 +592,10 @@
         menu.appendChild(make(doc,'p','kmc-hub-action-explanation',
           'Les actions de cette étape ne sont pas chargées. Actualiser la page.'));
       }
-      const box = event?.currentTarget?.getBoundingClientRect?.();
-      const x = event?.type === 'contextmenu' ? event.clientX : (box ? box.left : 8);
-      const y = event?.type === 'contextmenu' ? event.clientY : (box ? box.bottom : 8);
-      const width = doc.defaultView?.innerWidth || 1440;
-      const height = doc.defaultView?.innerHeight || 900;
-      menu.style.left = Math.max(8, Math.min(x, width - 310)) + 'px';
-      menu.style.top = Math.max(8, Math.min(y, height - 265)) + 'px';
+      anchor.select(event?.currentTarget);
       menu.querySelector?.('a,button')?.focus?.();
     };
-    root.addEventListener('keydown', event => {if(event.key === 'Escape') closeMenu();});
+    // Échap et clic extérieur gérés par installMenuDismiss().
 
     let rows = [];
     let viewerGrants = {};
@@ -503,6 +739,27 @@
     heading.appendChild(make(doc,'h1','','Hub · Tous les marchés'));
     heading.appendChild(make(doc,'p','','Achats fournisseurs, réception, préparation et expéditions'));
     header.appendChild(heading);
+    // Mode plein poste : garder l'action dans le Kanban, libérer l'espace
+    // occupé par le menu de navigation, sans perdre l'accès à ce menu.
+    // Défaut pour les agents Hub sur la branche opérationnelle uniquement.
+    const focusToggle=make(doc,'button','kmc-hub-focus-toggle');
+    focusToggle.type='button';
+    focusToggle.setAttribute('data-hub-focus-toggle','');
+    let focusEnabled=role==='agent_hub' && branch==='operations';
+    const applyFocus=() => {
+      root.classList.toggle('is-focus-workspace',focusEnabled);
+      doc.body?.classList?.toggle('kmc-hub-agent-focus',focusEnabled);
+      focusToggle.setAttribute('aria-pressed',String(focusEnabled));
+      focusToggle.textContent=focusEnabled?'↙ Réafficher la navigation':'⤢ Agrandir le Kanban';
+      focusToggle.setAttribute('aria-label',focusEnabled
+        ?'Quitter le mode concentré et réafficher la navigation':'Activer le mode concentré du Hub');
+    };
+    focusToggle.addEventListener('click',()=>{
+      focusEnabled=!focusEnabled;
+      applyFocus();
+    });
+    header.appendChild(focusToggle);
+    applyFocus();
     root.appendChild(header);
     const nav=make(doc,'nav','kmc-hub-app-branches');
     nav.setAttribute('aria-label','Postes de travail Hub');

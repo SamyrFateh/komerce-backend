@@ -14,6 +14,7 @@ const PO='e2e00000-0000-4000-8000-000000000002';
 const SKU='e2e00000-0000-4000-8000-000000000003';
 const LINE='e2e00000-0000-4000-8000-000000000004';
 const SUPPLIER='e2e00000-0000-4000-8000-000000000005';
+const MARKET='e2e00000-0000-4000-8000-000000000007';
 const BOX='e2e00000-0000-4000-8000-000000000006';
 const baseOrder={
   id:ORDER, reference:'KM-302',market:'KM',market_name:'Comores',
@@ -41,9 +42,10 @@ const receivable={
   }],
 };
 test.use({viewport:{width:1440,height:900}});
-async function mount(page,{role='agent_hub',row=baseOrder,dossierData=dossier,admin=false}={}){
+async function mount(page,{role='agent_hub',row=baseOrder,dossierData=dossier,admin=false,stageNotes=[],openLines=null}={}){
   const posts=[];
   const reads=[];
+  const notes=[...stageNotes];
   const administration={scope:'HUB_ADMINISTRATION_GLOBAL',markets:['KM'],kpis:{
     purchase_orders:1,drafts:0,to_send:1,supplier_waiting:0,payment_to_reconcile:0,
   },purchase_orders:[{id:PO,supplier:'Alpha',market:'KM',order_count:1,stage:'issued_not_sent',
@@ -53,7 +55,14 @@ async function mount(page,{role='agent_hub',row=baseOrder,dossierData=dossier,ad
   await page.route(ORIGIN+'/**',async route=>{
     const request=route.request(),url=new URL(request.url());
     if(request.method()==='POST'){
-      posts.push({url:url.pathname,body:request.postDataJSON()});
+      const body=request.postDataJSON();
+      posts.push({url:url.pathname,body});
+      if(url.pathname==='/api/hub-dash/orders/'+ORDER+'/comment' && body.hub_stage_key){
+        const note={id:'00000000-0000-4000-8000-000000000034',hub_stage_key:body.hub_stage_key,
+          text:body.content,author_name:'Agent Hub test',created_at:'2026-11-07T12:35:00Z'};
+        notes.unshift(note);
+        return route.fulfill({status:201,contentType:'application/json',body:JSON.stringify({comment:note})});
+      }
       return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true})});
     }
     if(url.pathname==='/admin/hub')return route.fulfill({contentType:'text/html',path:path.join(ROOT,'index.html')});
@@ -66,10 +75,12 @@ async function mount(page,{role='agent_hub',row=baseOrder,dossierData=dossier,ad
     if(url.pathname==='/api/hub/board')data={scope:'HUB_GLOBAL',markets:['KM'],orders:[row]};
     if(url.pathname==='/api/hub/administration')data=administration;
     if(url.pathname==='/api/hub/dossier')data=dossierData;
+    if(url.pathname==='/api/hub-dash/orders/'+ORDER)data={id:ORDER,comments:notes};
     if(url.pathname==='/api/scans/hub/receivable')data=receivable;
-    if(url.pathname==='/api/purchasing/open-lines')data={groups:[{
-      supplier_id:SUPPLIER,supplier_name:'Alpha',procurement_hub_ref:'DXB-1',market_code:'KM',
-      lines:[{order_id:ORDER,line_id:LINE,groupable:true}],
+    if(url.pathname==='/api/purchasing/open-lines')data=openLines||{groups:[{
+      supplier_id:SUPPLIER,supplier_name:'Alpha',procurement_hub_ref:'DXB-1',
+      market_id:MARKET,market_code:'KM',api_available:false,
+      lines:[{order_id:ORDER,line_id:LINE,quantity:2,supplier_currency:'AED',groupable:true,api_eligible:false}],
     }]};
     if(data){
       reads.push(url.pathname+url.search);
@@ -81,6 +92,85 @@ async function mount(page,{role='agent_hub',row=baseOrder,dossierData=dossier,ad
   await expect(page.locator(admin?'[data-hub-admin-po]':'[data-hub-global-order]')).toHaveCount(1);
   return {posts,reads};
 }
+
+test('action PO dans le Kanban : sourcing en place, sans achat ni mutation au simple clic',async({page})=>{
+  const row={...baseOrder,po:'Sourcing requis',current_key:'po',
+    current_phase:'Achats',current_status:'Bloqué · sourcing requis',
+    current_expected:'Identifier le fournisseur de 2 articles',
+    next_action:'Résoudre le sourcing',
+    stage_states:{...baseOrder.stage_states,po:'warning'}};
+  const dossierData={...dossier,needs:[],purchase_orders:[],boxes:[],
+    orders:[{id:ORDER,reference:'KM-302',items:[{
+      id:'abc00000-0000-4000-8000-000000000012',
+      product_id:'abc00000-0000-4000-8000-000000000013',
+      product:'Article test',sourcing_required:true,purchasing_missing:2,
+    }]}]};
+  const {posts}=await mount(page,{row,dossierData});
+  await page.route('**/api/purchasing/suppliers?**',route=>route.fulfill({
+    contentType:'application/json',body:JSON.stringify([]),
+  }));
+  const inline=page.locator('[data-hub-global-order="KM-302"] [data-hub-inline-action="po"]');
+  await expect(inline).toHaveText('Organiser l’achat fournisseur');
+  await inline.click();
+  const menu=page.locator('[data-hub-global-menu]');
+  await expect(menu).toHaveClass(/is-sourcing-inline/);
+  await expect(menu.locator('[data-hub-sourcing-form]')).toBeVisible();
+  await expect(menu).toContainText('Résoudre le sourcing · KM-302');
+  await expect(menu).toContainText('La quantité à acheter est calculée');
+  await expect(menu.locator('[data-sourcing-quantity]')).toContainText('2 unités');
+  expect(posts).toHaveLength(0);
+  await menu.locator('[data-sourcing-close]').click();
+  await expect(menu).toBeHidden();
+  expect(posts).toHaveLength(0);
+});
+
+test('PO déjà liée ou lecteur : aucune action de sourcing manuel inadaptée',async({page})=>{
+  await mount(page,{role:'market_operator',row:{...baseOrder,
+    current_key:'po',next_action:'Résoudre le sourcing',po:'Sourcing requis'}});
+  await expect(page.locator('[data-hub-inline-action="po"]')).toHaveCount(0);
+  await page.locator('[data-hub-global-stage="PO"]').click();
+  await expect(page.locator('[data-hub-global-menu]')).toContainText('Consultation seule');
+});
+
+
+test('focus lumineux : étape actuelle contrastée, libellée et non confondue avec les étapes closes',async({page})=>{
+  const row={...baseOrder,current_key:'supplier',current_phase:'Fournisseur',
+    current_status:'Envoi à prouver',next_action:'Attester l’envoi fournisseur',
+    stage_states:{...baseOrder.stage_states,po:'locked',supplier:'warning'}};
+  const {posts}=await mount(page,{row});
+  const active=page.locator('[data-hub-global-order="KM-302"] [data-hub-global-stage="Fournisseur"]');
+  await expect(active).toHaveClass(/is-stage-current/);
+  await expect(active).toHaveAttribute('aria-current','step');
+  await expect(active.locator('[data-hub-focus-signal="warning"]')).toHaveText('POINT À RÉSOUDRE');
+  const activeStyle=await active.evaluate(node=>{
+    const css=getComputedStyle(node);
+    return {background:css.backgroundImage,foreground:css.color,shadow:css.boxShadow,
+      animation:css.animationName,font:css.fontSize};
+  });
+  expect(activeStyle.background).toContain('linear-gradient');
+  expect(activeStyle.foreground).toBe('rgb(255, 255, 255)');
+  expect(activeStyle.shadow).not.toBe('none');
+  expect(activeStyle.animation).toContain('kmc-hub-stage-breathe');
+  await expect(page.locator('[data-hub-global-order="KM-302"]')).toHaveClass(/is-hub-active-order/);
+  const completed=page.locator('[data-hub-global-order="KM-302"] [data-hub-global-stage="PO"]');
+  await expect(completed).toHaveClass(/is-stage-locked/);
+  await expect(completed).not.toHaveClass(/is-stage-current/);
+  await expect(completed.locator('[data-hub-focus-signal]')).toHaveCount(0);
+  expect(posts).toHaveLength(0);
+});
+
+test('focus atténué en attente, sans animation si mouvement réduit',async({page})=>{
+  await page.emulateMedia({reducedMotion:'reduce'});
+  const row={...baseOrder,current_key:'reception',current_phase:'Réception',
+    next_action:'Attendre le fournisseur',stage_states:{...baseOrder.stage_states,reception:'waiting'}};
+  const {posts}=await mount(page,{row});
+  const waiting=page.locator('[data-hub-global-stage="Réception"]');
+  await expect(waiting.locator('[data-hub-focus-signal="waiting"]')).toHaveText('EN ATTENTE');
+  const animation=await waiting.evaluate(node=>getComputedStyle(node).animationName);
+  expect(animation).toBe('none');
+  await expect(page.locator('[data-hub-inline-action="reception"]')).toHaveCount(0);
+  expect(posts).toHaveLength(0);
+});
 
 test('colors et prochaine action restent des faits lisibles, sans détail article',async({page})=>{
   const {posts}=await mount(page);
@@ -112,6 +202,7 @@ test('clic droit : PO, fournisseur, cartons et départ affichent des menus vraim
   await row.locator('[data-hub-global-stage="Cartons"]').click({button:'right'});
   await expect(menu).toContainText('Carton(s) présent(s)');
   await expect(menu.locator('[data-hub-real-action]')).toHaveCount(0);
+  await expect(menu.locator('[data-hub-workflow-link]')).toHaveAttribute('href','/admin/workspaces/operations');
 
   await row.locator('[data-hub-global-stage="Départ"]').click({button:'right'});
   await expect(menu.getByRole('button',{name:/Affecter KOM-BOX-302 à un départ/})).toBeVisible();
@@ -187,13 +278,89 @@ test('achat manuel : la constitution crée un brouillon sans soumettre ni payer'
   const data={...dossier,purchase_orders:[],needs:[{order_id:ORDER,supplier_id:SUPPLIER,line_id:LINE}]};
   const {posts}=await mount(page,{row,dossierData:data});
   await page.locator('[data-hub-global-stage="PO"]').click({button:'right'});
-  await page.getByRole('button',{name:/Préparer PO · Alpha/}).click();
+  await page.getByRole('button',{name:'Organiser l’achat fournisseur',exact:true}).last().click();
+   await page.locator('[data-hub-po-target="new"]').click();
   expect(posts).toHaveLength(0);
   await page.getByRole('button',{name:'Confirmer l’opération'}).click();
   await expect.poll(()=>posts.length).toBe(1);
   expect(posts[0]).toEqual({url:'/api/purchasing/po/prepare',body:{
     supplier_id:SUPPLIER,procurement_hub_ref:'DXB-1',line_ids:[LINE],execution_mode:'manual',
   }});
+});
+
+
+test('achat fournisseur : rattacher des lignes à une PO draft compatible sans créer de nouvelle PO',async({page})=>{
+  const row={...baseOrder,po:'Achats à organiser',current_key:'po',current_phase:'Achats',
+    next_action:'Organiser les achats',stage_states:{...baseOrder.stage_states,po:'ready'}};
+  const draft={id:PO,status:'draft',supplier_id:SUPPLIER,market_id:MARKET,
+    procurement_hub_ref:'DXB-1',lines:[{order_id:'autre-commande',currency:'AED'}],
+    authorizations:{commitment:null}};
+  const data={...dossier,needs:[{order_id:ORDER,line_id:LINE}],purchase_orders:[draft],
+    need_batches:[{market_id:MARKET,supplier_id:SUPPLIER,procurement_hub_ref:'DXB-1',
+      compatible_draft_po_ids:[PO]}]};
+  const {posts}=await mount(page,{row,dossierData:data});
+  await page.locator('[data-hub-global-stage="PO"]').click();
+  await page.getByRole('button',{name:'Organiser l’achat fournisseur',exact:true}).last().click();
+  const menu=page.locator('[data-hub-global-menu]');
+  await expect(menu.locator('[data-hub-po-target="'+PO+'"]')).toBeVisible();
+  await expect(menu.locator('[data-hub-po-target="new"]')).toBeVisible();
+  await menu.locator('[data-hub-po-target="'+PO+'"]').click();
+  expect(posts).toHaveLength(0);
+  await page.getByRole('button',{name:'Confirmer l’opération'}).click();
+  await expect.poll(()=>posts.length).toBe(1);
+  expect(posts[0]).toEqual({url:'/api/purchasing/po/'+PO+'/attach',body:{line_ids:[LINE]}});
+});
+
+test('PO existante engagée ou mauvais marché : aucun rattachement proposé',async({page})=>{
+  const row={...baseOrder,po:'Achats à organiser',current_key:'po',next_action:'Organiser les achats',
+    stage_states:{...baseOrder.stage_states,po:'ready'}};
+  const data={...dossier,needs:[{order_id:ORDER,line_id:LINE}],
+    purchase_orders:[{id:PO,status:'draft',market_id:'autre',supplier_id:SUPPLIER,
+      procurement_hub_ref:'DXB-1',lines:[],authorizations:{commitment:{id:'validé'}}}],
+    need_batches:[{market_id:MARKET,supplier_id:SUPPLIER,procurement_hub_ref:'DXB-1',
+      compatible_draft_po_ids:[PO]}]};
+  const {posts}=await mount(page,{row,dossierData:data});
+  await page.locator('[data-hub-global-stage="PO"]').click();
+  await page.getByRole('button',{name:'Organiser l’achat fournisseur',exact:true}).last().click();
+  const menu=page.locator('[data-hub-global-menu]');
+  await expect(menu.locator('[data-hub-po-target="'+PO+'"]')).toHaveCount(0);
+  await expect(menu.locator('[data-hub-po-target="new"]')).toBeVisible();
+  expect(posts).toHaveLength(0);
+});
+
+test('choix API fournisseur uniquement avec capacité backend et lignes éligibles',async({page})=>{
+  const row={...baseOrder,po:'Achats à organiser',current_key:'po',next_action:'Organiser les achats',
+    stage_states:{...baseOrder.stage_states,po:'ready'}};
+  const data={...dossier,needs:[{order_id:ORDER,line_id:LINE}],purchase_orders:[]};
+  const openLines={groups:[{supplier_id:SUPPLIER,supplier_name:'Alpha',
+    procurement_hub_ref:'DXB-1',market_id:MARKET,market_code:'KM',
+    api_available:true,lines:[{order_id:ORDER,line_id:LINE,
+      supplier_currency:'AED',quantity:2,groupable:true,api_eligible:true}]}]};
+  const {posts}=await mount(page,{row,dossierData:data,openLines});
+  await page.locator('[data-hub-global-stage="PO"]').click();
+  await page.getByRole('button',{name:'Organiser l’achat fournisseur',exact:true}).last().click();
+  await page.locator('[data-hub-po-target="new"]').click();
+  const choices=page.locator('select[name="execution_mode"] option');
+  await expect(choices).toHaveCount(2);
+  await page.locator('select[name="execution_mode"]').selectOption('api');
+  await page.getByRole('button',{name:'Confirmer l’opération'}).click();
+  await expect.poll(()=>posts.length).toBe(1);
+  expect(posts[0].body.execution_mode).toBe('api');
+});
+
+test('le menu suit la cellule lors du scroll puis disparaît si elle sort de la vue',async({page})=>{
+  await page.setViewportSize({width:900,height:790});
+  await mount(page);
+  const cell=page.locator('[data-hub-global-stage="PO"]');
+  await cell.click();
+  const menu=page.locator('[data-hub-global-menu]');
+  await expect(menu).toBeVisible();
+  const scroll=page.locator('.kmc-hub-board-scroll').first();
+  const before=await menu.evaluate(el=>parseFloat(el.style.left));
+  await scroll.evaluate(el=>{el.scrollLeft+=50;});
+  await expect.poll(()=>menu.evaluate(el=>parseFloat(el.style.left))).toBeLessThan(before);
+  await scroll.evaluate(el=>{el.scrollLeft=el.scrollWidth;});
+  await expect(menu).toBeHidden();
 });
 
 test('Administration : une PO transmise n’est pas une décision de la directrice',async({page})=>{
@@ -211,4 +378,118 @@ test('relais : aucun writer, aucun accès au dossier Hub privé',async({page})=>
   await expect(page.locator('[data-hub-real-action]')).toHaveCount(0);
   expect(posts).toHaveLength(0);
   expect(reads).toEqual(['/api/hub/board']);
+});
+
+
+test('Sourcing requis : le menu PO indique la dépendance et la vraie surface de résolution',async({page})=>{
+  const row={...baseOrder,po:'Sourcing requis',current_phase:'Achats',current_status:'Bloqué · sourcing requis',
+    current_key:'po',current_expected:'Identifier le fournisseur de 2 articles',
+    stage_states:{...baseOrder.stage_states,po:'warning'}};
+  const data={...dossier,purchase_orders:[],needs:[],
+    orders:[{id:ORDER,reference:'KM-302',items:[{id:'article-1',sourcing_required:true,purchasing_missing:2}]}]};
+  const {posts}=await mount(page,{row,dossierData:data});
+  await page.locator('[data-hub-global-stage="PO"]').click({button:'right'});
+  const menu=page.locator('[data-hub-global-menu]');
+  await expect(menu).toContainText('Sourcing requis : compléter les lignes fournisseur');
+  await expect(menu).toContainText('Attendu : Identifier le fournisseur de 2 articles');
+  await expect(menu.locator('[data-hub-workflow-link]')).toHaveAttribute('href','/admin/workspaces/operations');
+  await expect(menu.locator('[data-hub-real-action]')).toHaveCount(0);
+  expect(posts).toHaveLength(0);
+});
+
+test('départ lié mais non remis : le menu distingue attestation du simple rattachement',async({page})=>{
+  const row={...baseOrder,departure:'Expédition préparée · remise non attestée',current_key:'departure',
+    current_phase:'Départ',current_status:'Expédition préparée',current_expected:'Attester la remise au transitaire',
+    stage_states:{...baseOrder.stage_states,departure:'ready'}};
+  const data={...dossier,boxes:[{...dossier.boxes[0],shipment_ref:'SH-77',shipment_stage:'hub_ready'}]};
+  const {posts}=await mount(page,{row,dossierData:data});
+  await page.locator('[data-hub-global-stage="Départ"]').click({button:'right'});
+  const menu=page.locator('[data-hub-global-menu]');
+  await expect(menu).toContainText('remise au transitaire non attestée');
+  await expect(menu.locator('[data-hub-workflow-link]')).toHaveAttribute('href','/admin/workspaces/shipping-customs');
+  await expect(menu.locator('[data-hub-real-action]')).toHaveCount(0);
+  expect(posts).toHaveLength(0);
+});
+
+test('clic extérieur et Échap ferment aussi le menu Administration sans acte métier',async({page})=>{
+  const {posts}=await mount(page,{admin:true});
+  const stage=page.locator('[data-hub-admin-stage="Fournisseur"]');
+  const menu=page.locator('[data-hub-admin-menu]');
+  await stage.click({button:'right'});
+  await expect(menu).toBeVisible();
+  await page.locator('.kmc-hub-admin-toolbar').click();
+  await expect(menu).toBeHidden();
+  await stage.click();
+  await expect(menu).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(menu).toBeHidden();
+  expect(posts).toHaveLength(0);
+});
+
+
+test.describe('Journal immuable par étape',()=>{
+  const existing=[
+    {id:'00000000-0000-4000-8000-000000000031',hub_stage_key:'supplier',
+      author_name:'Agent Hub',text:'Fournisseur relancé par WhatsApp.',
+      created_at:'2026-11-07T11:15:00Z'},
+    {id:'00000000-0000-4000-8000-000000000032',hub_stage_key:'cartons',
+      author_name:'Agent Hub',text:'Carton contrôlé et scellé.',
+      created_at:'2026-11-07T11:20:00Z'},
+  ];
+
+  test('journal daté par étape, sans mélange de phases ni édition de note',async({page})=>{
+    const {posts}=await mount(page,{stageNotes:existing});
+    await page.locator('[data-hub-global-stage="Fournisseur"]').click({button:'right'});
+    const menu=page.locator('[data-hub-global-menu]');
+    await menu.locator('[data-hub-stage-journal-toggle]').click();
+    const journal=menu.locator('[data-hub-stage-journal="supplier"]');
+    await expect(journal).toContainText('Fournisseur relancé par WhatsApp');
+    await expect(journal).not.toContainText('Carton contrôlé');
+    await expect(journal).toContainText('Agent Hub');
+    await expect(journal).toContainText('Publiée · non modifiable');
+    await expect(journal.locator('.kmc-hub-journal-item')).toHaveCount(1);
+    await expect(journal.getByRole('button',{name:/modifier|supprimer/i})).toHaveCount(0);
+    expect(posts).toHaveLength(0);
+  });
+
+  test('publication ajoutée à la chronologie, sans autre action métier',async({page})=>{
+    const {posts}=await mount(page,{stageNotes:existing});
+    await page.locator('[data-hub-global-stage="Fournisseur"]').click({button:'right'});
+    const journal=page.locator('[data-hub-stage-journal="supplier"]');
+    await journal.locator('[data-hub-stage-journal-toggle]').click();
+    await expect(journal).toContainText('Fournisseur relancé par WhatsApp');
+    await journal.locator('[data-hub-journal-input]').fill('Livraison annoncée lundi, à confirmer.');
+    expect(posts).toHaveLength(0);
+    await journal.locator('[data-hub-journal-publish]').click();
+    await expect(journal).toContainText('Livraison annoncée lundi, à confirmer');
+    await expect(journal.locator('.kmc-hub-journal-item')).toHaveCount(2);
+    expect(posts).toEqual([{url:'/api/hub-dash/orders/'+ORDER+'/comment',
+      body:{content:'Livraison annoncée lundi, à confirmer.',hub_stage_key:'supplier'}}]);
+    await expect(journal.getByRole('button',{name:/modifier|supprimer/i})).toHaveCount(0);
+  });
+
+  test('étape verrouillée : consulter et commenter sans rouvrir le geste physique',async({page})=>{
+    const locked={...baseOrder,current_key:'remaining',
+      stage_states:{...baseOrder.stage_states,departure:'locked'}};
+    const {posts}=await mount(page,{row:locked,stageNotes:existing});
+    const step=page.locator('[data-hub-global-stage="Départ"]');
+    await step.click();
+    const menu=page.locator('[data-hub-global-menu]');
+    await expect(menu).toContainText('Aucune réouverture');
+    await menu.locator('[data-hub-stage-journal-toggle]').click();
+    const journal=menu.locator('[data-hub-stage-journal="departure"]');
+    await expect(journal.locator('[data-hub-journal-input]')).toBeVisible();
+    await expect(menu.locator('[data-hub-real-action]')).toHaveCount(0);
+    expect(posts).toHaveLength(0);
+  });
+
+  test('profil marché : journal en lecture seule',async({page})=>{
+    await mount(page,{role:'market_operator',stageNotes:existing});
+    await page.locator('[data-hub-global-stage="Fournisseur"]').click();
+    const journal=page.locator('[data-hub-stage-journal="supplier"]');
+    await journal.locator('[data-hub-stage-journal-toggle]').click();
+    await expect(journal).toContainText('Fournisseur relancé');
+    await expect(journal).toContainText('Consultation seulement');
+    await expect(journal.locator('[data-hub-journal-publish]')).toHaveCount(0);
+  });
 });

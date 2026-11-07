@@ -1,0 +1,655 @@
+{
+  "schema": "hub-v1-http-physical/1",
+  "run8": "40A162A6",
+  "base": "OFFICIAL_STAGING",
+  "started_at": "2026-11-07T14:38:38.334Z",
+  "actions": [
+    {
+      "key": "login:hub_agent",
+      "actor": "hub_agent",
+      "route": "POST /api/auth/login",
+      "http": 200,
+      "verdict": "PASS"
+    },
+    {
+      "key": "login:agent_relais",
+      "actor": "agent_relais",
+      "route": "POST /api/auth/login",
+      "http": 200,
+      "verdict": "PASS"
+    },
+    {
+      "key": "login:market_operator",
+      "actor": "market_operator",
+      "route": "POST /api/auth/login",
+      "http": 200,
+      "verdict": "PASS"
+    },
+    {
+      "key": "login:admin",
+      "actor": "admin",
+      "route": "POST /api/auth/login",
+      "http": 200,
+      "verdict": "PASS"
+    },
+    {
+      "key": "login:transitaire",
+      "actor": "transitaire",
+      "route": "POST /api/auth/login",
+      "http": 200,
+      "verdict": "PASS"
+    },
+    {
+      "key": "hub:receivable",
+      "actor": "hub_agent",
+      "route": "GET /api/scans/hub/receivable",
+      "ui": "public/dashboards/canonical/js/operations-workspace.js:1708",
+      "expected_http": 200,
+      "verdict": "PASS",
+      "http": 200,
+      "code": null,
+      "readback": {
+        "purchase_orders": 2
+      }
+    },
+    {
+      "key": "hub:physical-code:704a321f",
+      "actor": "hub_agent",
+      "route": "GET /api/admin/workspaces/operations/market/CM/supply/physical-code?purchase_order_id=:id&code=9103778542984",
+      "ui": "public/dashboards/canonical/js/operations-workspace.js:510",
+      "expected_http": 200,
+      "verdict": "PASS",
+      "http": 200,
+      "code": "9103778542984",
+      "readback": {
+        "confirmed": true,
+        "sku_match": true
+      }
+    },
+    {
+      "key": "hub:receive:deny:agent_relais",
+      "actor": "agent_relais",
+      "route": "POST /api/scans/hub/receive",
+      "ui": "public/dashboards/canonical/js/operations-workspace.js:542",
+      "expected_http": 403,
+      "verdict": "PASS",
+      "http": 403,
+      "code": null
+    },
+    {
+      "key": "hub:receive:deny:market_operator",
+      "actor": "market_operator",
+      "route": "POST /api/scans/hub/receive",
+      "ui": "public/dashboards/canonical/js/operations-workspace.js:542",
+      "expected_http": 403,
+      "verdict": "PASS",
+      "http": 403,
+      "code": null
+    },
+    {
+      "key": "hub:receive:704a321f",
+      "actor": "hub_agent",
+      "route": "POST /api/scans/hub/receive",
+      "ui": "public/dashboards/canonical/js/operations-workspace.js:542",
+      "expected_http": [
+        200,
+        201
+      ],
+      "verdict": "PASS",
+      "http": 201,
+      "code": null,
+      "readback": {
+        "quarantined": false
+      }
+    },
+    {
+      "key": "hub:physical-code:e4d8305d",
+      "actor": "hub_agent",
+      "route": "GET /api/admin/workspaces/operations/market/CM/supply/physical-code?purchase_order_id=:id&code=9896730603867",
+      "ui": "public/dashboards/canonical/js/operations-workspace.js:510",
+      "expected_http": 200,
+      "verdict": "PASS",
+      "http": 200,
+      "code": "9896730603867",
+      "readback": {
+        "confirmed": true,
+        "sku_match": true
+      }
+    },
+    {
+      "key": "hub:receive:deny:agent_relais",
+      "actor": "agent_relais",
+      "route": "POST /api/scans/hub/receive",
+      "ui": "public/dashboards/canonical/js/operations-workspace.js:542",
+      "expected_http": 403,
+      "verdict": "PASS",
+      "http": 403,
+      "code": null
+    },
+    {
+      "key": "hub:receive:deny:market_operator",
+      "actor": "market_operator",
+      "route": "POST /api/scans/hub/receive",
+      "ui": "public/dashboards/canonical/js/operations-workspace.js:542",
+      "expected_http": 403,
+      "verdict": "PASS",
+      "http": 403,
+      "code": null
+    },
+    {
+      "key": "hub:receive:e4d8305d",
+      "actor": "hub_agent",
+      "route": "POST /api/scans/hub/receive",
+      "ui": "public/dashboards/canonical/js/operations-workspace.js:542",
+      "expected_http": [
+        200,
+        201
+      ],
+      "verdict": "PASS",
+      "http": 201,
+      "code": null,
+      "readback": {
+        "quarantined": false
+      }
+    },
+    {
+      "key": "hub:bag-create:deny:agent_relais",
+      "actor": "agent_relais",
+      "route": "POST /api/admin/workspaces/operations/market/CM/bags",
+      "ui": "public/dashboards/canonical/js/operations-workspace.js:1042",
+      "expected_http": 403,
+      "verdict": "PASS",
+      "http": 403,
+      "code": "MARKET_CAPABILITY_REQUIRED",
+      "order": "KOM-101"
+    },
+    {
+      "key": "hub:bag-create:deny:market_operator",
+      "actor": "market_operator",
+      "route": "POST /api/admin/workspaces/operations/market/CM/bags",
+      "ui": "public/dashboards/canonical/js/operations-workspace.js:1042",
+      "expected_http": 403,
+      "verdict": "PASS",
+      "http": 403,
+      "code": "MARKET_CAPABILITY_REQUIRED",
+      "order": "KOM-101"
+    },
+    {
+      "key": "hub:bag-create",
+      "actor": "hub_agent",
+      "route": "POST /api/admin/workspaces/operations/market/CM/bags",
+      "ui": "public/dashboards/canonical/js/operations-workspace.js:1042",
+      "expected_http": [
+        200,
+        201
+      ],
+      "verdict": "PASS",
+      "http": 201,
+      "code": null,
+      "readback": {
+        "bag_reference": "KOM-ITEM-25721F016E456D425C"
+      },
+      "order": "KOM-101"
+    },
+    {
+      "key": "hub:bag-deposit",
+      "actor": "hub_agent",
+      "route": "POST /api/admin/workspaces/operations/market/CM/bags/:id/deposit",
+      "ui": "public/dashboards/canonical/js/operations-workspace.js:1084",
+      "expected_http": [
+        200,
+        201
+      ],
+      "verdict": "PASS",
+      "http": 200,
+      "code": null,
+      "order": "KOM-101"
+    },
+    {
+      "key": "hub:bag-deposit",
+      "actor": "hub_agent",
+      "route": "POST /api/admin/workspaces/operations/market/CM/bags/:id/deposit",
+      "ui": "public/dashboards/canonical/js/operations-workspace.js:1084",
+      "expected_http": [
+        200,
+        201
+      ],
+      "verdict": "PASS",
+      "http": 200,
+      "code": null,
+      "order": "KOM-101"
+    },
+    {
+      "key": "hub:bag-close",
+      "actor": "hub_agent",
+      "route": "POST /api/admin/workspaces/operations/market/CM/bags/:id/close",
+      "ui": "public/dashboards/canonical/js/operations-workspace.js:1099",
+      "expected_http": [
+        200,
+        201
+      ],
+      "verdict": "PASS",
+      "http": 200,
+      "code": null,
+      "order": "KOM-101"
+    },
+    {
+      "key": "hub:bag-create:deny:agent_relais",
+      "actor": "agent_relais",
+      "route": "POST /api/admin/workspaces/operations/market/CM/bags",
+      "ui": "public/dashboards/canonical/js/operations-workspace.js:1042",
+      "expected_http": 403,
+      "verdict": "PASS",
+      "http": 403,
+      "code": "MARKET_CAPABILITY_REQUIRED",
+      "order": "KOM-102"
+    },
+    {
+      "key": "hub:bag-create:deny:market_operator",
+      "actor": "market_operator",
+      "route": "POST /api/admin/workspaces/operations/market/CM/bags",
+      "ui": "public/dashboards/canonical/js/operations-workspace.js:1042",
+      "expected_http": 403,
+      "verdict": "PASS",
+      "http": 403,
+      "code": "MARKET_CAPABILITY_REQUIRED",
+      "order": "KOM-102"
+    },
+    {
+      "key": "hub:bag-create",
+      "actor": "hub_agent",
+      "route": "POST /api/admin/workspaces/operations/market/CM/bags",
+      "ui": "public/dashboards/canonical/js/operations-workspace.js:1042",
+      "expected_http": [
+        200,
+        201
+      ],
+      "verdict": "PASS",
+      "http": 201,
+      "code": null,
+      "readback": {
+        "bag_reference": "KOM-ITEM-13DA245E9C3D58F7C1"
+      },
+      "order": "KOM-102"
+    },
+    {
+      "key": "hub:bag-deposit",
+      "actor": "hub_agent",
+      "route": "POST /api/admin/workspaces/operations/market/CM/bags/:id/deposit",
+      "ui": "public/dashboards/canonical/js/operations-workspace.js:1084",
+      "expected_http": [
+        200,
+        201
+      ],
+      "verdict": "PASS",
+      "http": 200,
+      "code": null,
+      "order": "KOM-102"
+    },
+    {
+      "key": "hub:bag-close",
+      "actor": "hub_agent",
+      "route": "POST /api/admin/workspaces/operations/market/CM/bags/:id/close",
+      "ui": "public/dashboards/canonical/js/operations-workspace.js:1099",
+      "expected_http": [
+        200,
+        201
+      ],
+      "verdict": "PASS",
+      "http": 200,
+      "code": null,
+      "order": "KOM-102"
+    },
+    {
+      "key": "hub:box-create",
+      "actor": "hub_agent",
+      "route": "POST /api/admin/workspaces/operations/market/CM/boxes",
+      "ui": "public/dashboards/canonical/js/operations-workspace.js:994",
+      "expected_http": [
+        200,
+        201
+      ],
+      "verdict": "PASS",
+      "http": 201,
+      "code": null,
+      "readback": {
+        "box_reference": "KOM-BOX-BC8646A641BE072952"
+      }
+    },
+    {
+      "key": "hub:distribution-run",
+      "actor": "hub_agent",
+      "route": "POST /api/admin/workspaces/operations/market/CM/distribution/run",
+      "ui": "public/dashboards/canonical/js/operations-workspace.js:1295",
+      "expected_http": [
+        200,
+        201
+      ],
+      "verdict": "PASS",
+      "http": 200,
+      "code": null
+    },
+    {
+      "key": "hub:box-add-bag",
+      "actor": "hub_agent",
+      "route": "POST /api/admin/workspaces/operations/market/CM/boxes/:id/bags",
+      "ui": "public/dashboards/canonical/js/operations-workspace.js:1161",
+      "expected_http": [
+        200,
+        201
+      ],
+      "verdict": "PASS",
+      "http": 201,
+      "code": null,
+      "order": "E2E-HUB-V1-40A162A6-KOM-101"
+    },
+    {
+      "key": "hub:box-add-bag",
+      "actor": "hub_agent",
+      "route": "POST /api/admin/workspaces/operations/market/CM/boxes/:id/bags",
+      "ui": "public/dashboards/canonical/js/operations-workspace.js:1161",
+      "expected_http": [
+        200,
+        201
+      ],
+      "verdict": "PASS",
+      "http": 201,
+      "code": null,
+      "order": "E2E-HUB-V1-40A162A6-KOM-102"
+    },
+    {
+      "key": "hub:box-advance:IDENTIFIED",
+      "actor": "hub_agent",
+      "route": "POST /api/admin/workspaces/operations/market/CM/boxes/:id/advance",
+      "ui": "public/dashboards/canonical/js/operations-workspace.js:1181",
+      "expected_http": [
+        200,
+        201
+      ],
+      "verdict": "PASS",
+      "http": 200,
+      "code": null
+    },
+    {
+      "key": "hub:box-advance:QUALITY_CHECKED",
+      "actor": "hub_agent",
+      "route": "POST /api/admin/workspaces/operations/market/CM/boxes/:id/advance",
+      "ui": "public/dashboards/canonical/js/operations-workspace.js:1181",
+      "expected_http": [
+        200,
+        201
+      ],
+      "verdict": "PASS",
+      "http": 200,
+      "code": null
+    },
+    {
+      "key": "hub:box-advance:LOCATED",
+      "actor": "hub_agent",
+      "route": "POST /api/admin/workspaces/operations/market/CM/boxes/:id/advance",
+      "ui": "public/dashboards/canonical/js/operations-workspace.js:1181",
+      "expected_http": [
+        200,
+        201
+      ],
+      "verdict": "PASS",
+      "http": 200,
+      "code": null
+    },
+    {
+      "key": "hub:box-advance:ALLOCATED",
+      "actor": "hub_agent",
+      "route": "POST /api/admin/workspaces/operations/market/CM/boxes/:id/advance",
+      "ui": "public/dashboards/canonical/js/operations-workspace.js:1181",
+      "expected_http": [
+        200,
+        201
+      ],
+      "verdict": "PASS",
+      "http": 200,
+      "code": null
+    },
+    {
+      "key": "hub:box-advance:PICKED",
+      "actor": "hub_agent",
+      "route": "POST /api/admin/workspaces/operations/market/CM/boxes/:id/advance",
+      "ui": "public/dashboards/canonical/js/operations-workspace.js:1181",
+      "expected_http": [
+        200,
+        201
+      ],
+      "verdict": "PASS",
+      "http": 200,
+      "code": null
+    },
+    {
+      "key": "hub:box-advance:PACKED",
+      "actor": "hub_agent",
+      "route": "POST /api/admin/workspaces/operations/market/CM/boxes/:id/advance",
+      "ui": "public/dashboards/canonical/js/operations-workspace.js:1181",
+      "expected_http": [
+        200,
+        201
+      ],
+      "verdict": "PASS",
+      "http": 200,
+      "code": null
+    },
+    {
+      "key": "hub:box-advance:DISPATCHED",
+      "actor": "hub_agent",
+      "route": "POST /api/admin/workspaces/operations/market/CM/boxes/:id/advance",
+      "ui": "public/dashboards/canonical/js/operations-workspace.js:1181",
+      "expected_http": [
+        200,
+        201
+      ],
+      "verdict": "PASS",
+      "http": 200,
+      "code": null
+    },
+    {
+      "key": "hub:shipment-open",
+      "actor": "hub_agent",
+      "route": "POST /api/admin/workspaces/operations/market/CM/boxes/shipment",
+      "ui": "public/dashboards/canonical/js/operations-workspace.js:973",
+      "expected_http": [
+        200,
+        201
+      ],
+      "verdict": "PASS",
+      "http": 201,
+      "code": null,
+      "readback": {
+        "reference": "HTTP-EXP-40A162A6"
+      }
+    },
+    {
+      "key": "journey:handed_over",
+      "actor": "hub_agent",
+      "route": "POST /api/admin/workspaces/shipping-customs/market/CM/international/HTTP-EXP-40A162A6/transition",
+      "ui": "public/dashboards/canonical/js/international-journey-panel.js:229",
+      "expected_http": 200,
+      "verdict": "PASS",
+      "http": 200,
+      "code": null
+    },
+    {
+      "key": "journey:forwarder_received",
+      "actor": "transitaire",
+      "route": "POST /api/admin/workspaces/shipping-customs/market/CM/international/HTTP-EXP-40A162A6/transition",
+      "ui": "public/dashboards/canonical/js/international-journey-panel.js:229",
+      "expected_http": 200,
+      "verdict": "PASS",
+      "http": 200,
+      "code": null
+    },
+    {
+      "key": "journey:tracking",
+      "actor": "transitaire",
+      "route": "POST /api/admin/workspaces/shipping-customs/market/CM/international/HTTP-EXP-40A162A6/tracking",
+      "ui": "public/dashboards/canonical/js/international-journey-panel.js:235",
+      "expected_http": 200,
+      "verdict": "PASS",
+      "http": 200,
+      "code": null
+    },
+    {
+      "key": "journey:in_transit",
+      "actor": "transitaire",
+      "route": "POST /api/admin/workspaces/shipping-customs/market/CM/international/HTTP-EXP-40A162A6/transition",
+      "ui": "public/dashboards/canonical/js/international-journey-panel.js:229",
+      "expected_http": 200,
+      "verdict": "PASS",
+      "http": 200,
+      "code": null
+    },
+    {
+      "key": "journey:arrived",
+      "actor": "transitaire",
+      "route": "POST /api/admin/workspaces/shipping-customs/market/CM/international/HTTP-EXP-40A162A6/transition",
+      "ui": "public/dashboards/canonical/js/international-journey-panel.js:229",
+      "expected_http": 200,
+      "verdict": "PASS",
+      "http": 200,
+      "code": null
+    },
+    {
+      "key": "customs:create",
+      "actor": "admin",
+      "route": "POST /api/admin/workspaces/shipping-customs/market/CM/customs/shipments",
+      "ui": "public/dashboards/canonical/js/shipping-customs-workspace.js:497",
+      "expected_http": 201,
+      "verdict": "PASS",
+      "http": 201,
+      "code": null
+    },
+    {
+      "key": "journey:link-customs",
+      "actor": "admin",
+      "route": "POST /api/admin/workspaces/shipping-customs/market/CM/international/HTTP-EXP-40A162A6/link-customs",
+      "ui": "public/dashboards/canonical/js/international-journey-panel.js:link-customs",
+      "expected_http": 200,
+      "verdict": "PASS",
+      "http": 200,
+      "code": null
+    },
+    {
+      "key": "journey:customs-amount",
+      "actor": "admin",
+      "route": "POST /api/admin/workspaces/shipping-customs/market/CM/international/HTTP-EXP-40A162A6/customs-amount",
+      "ui": "public/dashboards/canonical/js/international-journey-panel.js:customs-amount",
+      "expected_http": 200,
+      "verdict": "PASS",
+      "http": 200,
+      "code": null
+    },
+    {
+      "key": "journey:customs_released",
+      "actor": "admin",
+      "route": "POST /api/admin/workspaces/shipping-customs/market/CM/international/HTTP-EXP-40A162A6/transition",
+      "ui": "public/dashboards/canonical/js/international-journey-panel.js:229",
+      "expected_http": 200,
+      "verdict": "PASS",
+      "http": 200,
+      "code": null
+    },
+    {
+      "key": "journey:local_delivery",
+      "actor": "hub_agent",
+      "route": "POST /api/admin/workspaces/shipping-customs/market/CM/international/HTTP-EXP-40A162A6/transition",
+      "ui": "public/dashboards/canonical/js/international-journey-panel.js:229",
+      "expected_http": 200,
+      "verdict": "PASS",
+      "http": 200,
+      "code": null
+    },
+    {
+      "key": "relay:shipments",
+      "actor": "agent_relais",
+      "route": "GET /api/admin/workspaces/operations/market/CM/relay-shipments",
+      "ui": "public/dashboards/canonical/js/operations-workspace.js:1724",
+      "expected_http": 200,
+      "verdict": "PASS",
+      "http": 200,
+      "code": null,
+      "readback": {
+        "shipments": 1,
+        "keys": [
+          "market",
+          "shipments"
+        ]
+      }
+    },
+    {
+      "key": "relay:attest",
+      "actor": "agent_relais",
+      "route": "POST /api/admin/workspaces/operations/market/CM/relay-shipments/HTTP-EXP-40A162A6/receive",
+      "ui": "public/dashboards/canonical/js/operations-workspace.js:1579",
+      "expected_http": [
+        200,
+        201
+      ],
+      "verdict": "PASS",
+      "http": 201,
+      "code": null
+    },
+    {
+      "key": "relay:collect",
+      "actor": "agent_relais",
+      "route": "POST /api/admin/workspaces/operations/market/CM/parcels/KOM-P-2026-000111/collect",
+      "ui": "public/dashboards/canonical/js/operations-workspace.js:1350",
+      "expected_http": [
+        200,
+        201
+      ],
+      "verdict": "PASS",
+      "http": 200,
+      "code": null
+    },
+    {
+      "key": "local:ship",
+      "actor": "hub_agent",
+      "route": "POST /api/admin/workspaces/operations/market/CM/parcels/KOM-P-2026-000113/ship",
+      "ui": "public/dashboards/canonical/js/operations-workspace.js:1322",
+      "expected_http": [
+        200,
+        201
+      ],
+      "verdict": "PASS",
+      "http": 200,
+      "code": null
+    },
+    {
+      "key": "local:receive",
+      "actor": "agent_relais",
+      "route": "POST /api/admin/workspaces/operations/market/CM/parcels/KOM-P-2026-000113/receive",
+      "ui": "public/dashboards/canonical/js/operations-workspace.js:receive (section Relais · Réceptionner, colis local)",
+      "expected_http": [
+        200,
+        201
+      ],
+      "verdict": "PASS",
+      "http": 200,
+      "code": null
+    },
+    {
+      "key": "local:collect",
+      "actor": "agent_relais",
+      "route": "POST /api/admin/workspaces/operations/market/CM/parcels/KOM-P-2026-000113/collect",
+      "ui": "public/dashboards/canonical/js/operations-workspace.js:1350",
+      "expected_http": [
+        200,
+        201
+      ],
+      "verdict": "PASS",
+      "http": 200,
+      "code": null
+    }
+  ],
+  "finished_at": "2026-11-07T14:38:42.805Z",
+  "counts": {
+    "PASS": 53
+  },
+  "verdict": "PHYSICAL_CHAIN_PASS"
+}

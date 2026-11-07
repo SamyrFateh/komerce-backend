@@ -90,6 +90,7 @@
       }
     });
     menu.appendChild(panel);
+    menu.dispatchEvent(new doc.defaultView.Event('hub:menu-state'));
     entries[fields[0]?.name]?.focus?.();
   }
 
@@ -106,6 +107,13 @@
     const line=node(doc,'p','kmc-hub-action-explanation',message);
     menu.appendChild(line);
   }
+  // Un lien de navigation n'est jamais une transition métier ni une validation.
+  function workflowLink(menu,doc,label,url) {
+    const link=node(doc,'a','kmc-hub-board-menu-action is-primary',label);
+    link.href=url;
+    link.setAttribute('data-hub-workflow-link','');
+    menu.appendChild(link);
+  }
   function sent(menu, doc, po, fetchFn, refresh) {
     if(!validUuid(po.id)||po.status !== 'notified'||po.sent_at)return false;
     action(menu,doc,'Attester l’envoi fournisseur','La PO doit avoir été réellement transmise.',()=>form(
@@ -120,33 +128,104 @@
     ));
     return true;
   }
-  async function prepare(menu,doc,order,fetchFn,refresh,isCurrent = () => true) {
-    const data=await request(fetchFn,'/api/purchasing/open-lines');
+  // Une intention métier, deux écritures canoniques : attacher à une PO draft
+  // ou préparer une nouvelle PO. Le canal (manuel / API certifiée) appartient à la PO,
+  // jamais à un circuit d'achat concurrent.
+  async function prepare(menu,doc,order,fetchFn,refresh,isCurrent = () => true,dossier = {}) {
+    const open=await request(fetchFn,'/api/purchasing/open-lines');
     if(!isCurrent())return false;
-    const candidates=(data.groups||[]).flatMap(group=>{
-      const lines=(group.lines||[]).filter(l=>l.order_id===order.id && l.groupable && validUuid(l.line_id));
-      if(!lines.length||!validUuid(group.supplier_id)||!group.procurement_hub_ref)return [];
-      return [{...group,lines}];
-    });
-    for(const group of candidates){
-      const lineIds=group.lines.map(l=>l.line_id);
-      action(menu,doc,'Préparer PO · '+group.supplier_name+' ('+lineIds.length+' ligne(s))',
-        'Créer un brouillon d’achat, sans validation d’engagement ni transmission.',()=>{
-          form(menu,doc,'Préparer une PO fournisseur',[
-            {name:'supplier',label:'Fournisseur',value:group.supplier_name,required:true},
-            {name:'hub',label:'Hub d’approvisionnement',value:group.procurement_hub_ref,required:true},
-            {name:'mode',label:'Mode d’exécution',choices:[{label:'Manuel',value:'manual'}]},
-          ],async values=>{
-            if(values.supplier!==group.supplier_name||values.hub!==group.procurement_hub_ref)
-              throw new Error('Pour changer le fournisseur ou le Hub, modifier les lignes dans Achats fournisseurs.');
-            return request(fetchFn,'/api/purchasing/po/prepare',{
-              supplier_id:group.supplier_id,procurement_hub_ref:group.procurement_hub_ref,
-              line_ids:lineIds,execution_mode:'manual',
-            });
-          },refresh);
-        });
+    const candidates=[];
+    for(const group of open.groups||[]){
+      const orderLines=(group.lines||[]).filter(l=>l.order_id===order.id && l.groupable && validUuid(l.line_id));
+      if(!orderLines.length||!validUuid(group.supplier_id)||!group.procurement_hub_ref)continue;
+      // Une PO a une devise fournisseur. Ne jamais masquer un mélange sous un seul clic.
+      const byCurrency=new Map();
+      for(const line of orderLines){
+        const currency=text(line.supplier_currency||'').trim().toUpperCase();
+        if(!byCurrency.has(currency))byCurrency.set(currency,[]);
+        byCurrency.get(currency).push(line);
+      }
+      for(const [currency,lines] of byCurrency){
+        candidates.push({group,currency,lines,lineIds:lines.map(l=>l.line_id)});
+      }
     }
-    return candidates.length>0;
+    if(!candidates.length)return false;
+    action(menu,doc,'Organiser l’achat fournisseur',
+      'Rattacher les lignes à une PO modifiable ou créer un nouveau brouillon, sans engager ni payer.',()=>{
+      if(!isCurrent())return;
+      menu.replaceChildren();
+      menu.classList.add('is-editing','is-purchasing-flow');
+      menu.appendChild(node(doc,'strong','kmc-hub-board-menu-title',
+        'Organiser l’achat · '+order.reference));
+      explanation(menu,doc,'1. Choisir une PO du même marché, fournisseur, Hub et devise. 2. Confirmer le rattachement. Le canal de commande se choisit sur une nouvelle PO.');
+      for(const candidate of candidates){
+        const {group,lines,lineIds,currency}=candidate;
+        const section=node(doc,'section','kmc-hub-po-choice');
+        section.setAttribute('data-hub-po-group',group.supplier_id);
+        section.appendChild(node(doc,'strong','kmc-hub-po-choice-title',
+          group.supplier_name+' · '+(group.market_code||order.market)+' · '+(currency||'Devise à vérifier')));
+        section.appendChild(node(doc,'p','kmc-hub-po-choice-summary',
+          lines.length+' ligne(s), '+lines.reduce((n,l)=>n+Number(l.quantity||0),0)+
+          ' unité(s) · Hub '+group.procurement_hub_ref));
+        const batch=(dossier.need_batches||[]).find(b=>b.supplier_id===group.supplier_id &&
+          String(b.procurement_hub_ref||'')===String(group.procurement_hub_ref||'') &&
+          String(b.market_id||'')===String(group.market_id||''));
+        const draftIds=new Set(batch?.compatible_draft_po_ids||[]);
+        const drafts=(dossier.purchase_orders||[]).filter(po=>
+          draftIds.has(po.id)&&po.status==='draft'&&!po.authorizations?.commitment&&
+          po.supplier_id===group.supplier_id &&
+          String(po.market_id||'')===String(group.market_id||'') &&
+          String(po.procurement_hub_ref||'')===String(group.procurement_hub_ref||'') &&
+          (po.lines||[]).every(l=>!currency||!l.currency||String(l.currency).toUpperCase()===currency)
+        );
+        if(drafts.length)section.appendChild(node(doc,'p','kmc-hub-po-choice-caption',
+          'PO existantes compatibles · brouillons non engagés'));
+        for(const po of drafts){
+          const button=action(section,doc,'Rattacher à PO '+po.id.slice(0,8),
+            'Cette PO existe et reste modifiable : aucun nouveau bon ne sera créé.',()=>{
+            form(menu,doc,'Rattacher à PO '+po.id.slice(0,8),[
+              {name:'confirmation',label:'Vérifier le rattachement',required:true,choices:[
+                {label:'Confirmer : même fournisseur, Hub, marché et devise',value:'confirm'},
+              ]},
+            ],async values=>{
+              if(values.confirmation!=='confirm')throw new Error('Confirmation requise.');
+              return request(fetchFn,'/api/purchasing/po/'+encodeURIComponent(po.id)+'/attach',
+                {line_ids:lineIds});
+            },refresh);
+            explanation(menu,doc,group.supplier_name+' · '+(group.market_code||order.market)+
+              ' · '+lineIds.length+' ligne(s). La PO reste en brouillon. La directrice validera séparément l’engagement.');
+          });
+          button.classList.add('is-existing-po');
+          button.setAttribute('data-hub-po-target',po.id);
+        }
+        if(!drafts.length)section.appendChild(node(doc,'p','kmc-hub-po-choice-caption',
+          'Aucun brouillon compatible modifiable : vous pouvez créer une nouvelle PO.'));
+        const newPO=action(section,doc,'Créer une nouvelle PO',
+          'Préparer une nouvelle PO brouillon sur les lignes sélectionnées.',()=>{
+          const executionChoices=[{label:'Manuel · WhatsApp, e-mail, téléphone ou déplacement',value:'manual'}];
+          if(group.api_available&&lines.every(l=>l.api_eligible)){
+            executionChoices.push({label:'API fournisseur · intégration éligible',value:'api'});
+          }
+          form(menu,doc,'Nouvelle PO · '+group.supplier_name,[
+            {name:'execution_mode',label:'Canal de commande fournisseur',required:true,choices:executionChoices},
+          ],values=>request(fetchFn,'/api/purchasing/po/prepare',{
+            supplier_id:group.supplier_id,procurement_hub_ref:group.procurement_hub_ref,
+            line_ids:lineIds,execution_mode:values.execution_mode,
+          }),refresh);
+          explanation(menu,doc,(group.market_code||order.market)+' · '+lineIds.length+
+            ' ligne(s) · brouillon uniquement. Le mode manuel n’est pas un autre type d’achat : il conserve toutes les validations de la PO.');
+        });
+        newPO.setAttribute('data-hub-po-target','new');
+        section.appendChild(newPO);
+        menu.appendChild(section);
+      }
+      const back=node(doc,'button','kmc-hub-board-menu-action is-dismiss','Fermer sans modifier');
+      back.type='button';
+      back.addEventListener('click',()=>{menu.hidden=true;menu.classList.remove('is-editing','is-purchasing-flow');});
+      menu.appendChild(back);
+      menu.dispatchEvent(new doc.defaultView.Event('hub:menu-state'));
+    });
+    return true;
   }
 
   async function receive(menu,doc,poIds,fetchFn,refresh,isCurrent = () => true) {
@@ -200,7 +279,7 @@
     }
     return true;
   }
-  async function operations(menu,{doc,fetch:fetchFn,user,order,stage,refresh}) {
+  async function operations(menu,{doc,fetch:fetchFn,user,order,stage,refresh,launchSourcing=false}) {
     if(!writableRoles.includes(user?.role))return false;
     // Une ouverture d'une autre cellule annule les requêtes de l'ancien menu.
     const serial=menu.getAttribute('data-hub-request')||'';
@@ -225,10 +304,45 @@
       let unavailable='';
       if(stage==='PO'){
         if(needs.length){
-          count+=Number(await prepare(menu,doc,order,fetchFn,refresh,isCurrent));
-          unavailable='Les lignes d’achat ouvertes ne sont pas encore groupables : renseigner le fournisseur, le Hub et les références d’achat.';
+          count+=Number(await prepare(menu,doc,order,fetchFn,refresh,isCurrent,data));
+          unavailable='Lignes d’achat ouvertes : choisir une PO existante compatible ou créer un nouveau brouillon. Si aucune ligne n’est groupable, vérifier fournisseur, Hub et références.';
         }else if(!pos.length){
-          unavailable='Aucune ligne d’achat préparée pour cette commande. Il faut d’abord rattacher les articles au fournisseur avant de constituer la PO.';
+          const dossierOrder=(data.orders||[]).find(o=>o.id===order.id);
+          const missing=(dossierOrder?.items||[]).reduce((n,item)=>
+            n+(item.sourcing_required ? Math.max(0,Number(item.purchasing_missing)||0) : 0),0);
+          if(missing>0 || order.po==='Sourcing requis'){
+            unavailable='Sourcing requis : compléter les lignes fournisseur avant de les rattacher à une PO existante ou nouvelle. Le manuel suit la même PO.';
+            const reuse = global.KomerceCanonicalOperationsWorkspace;
+            const dossierOrder = (data.orders||[]).find(o=>o.id===order.id);
+            if (reuse && typeof reuse.openManualSourcing==='function' && dossierOrder) {
+              const launch = () => {
+                if(!isCurrent())return;
+                menu.classList.add('is-sourcing-inline','is-editing');
+                const viewport=doc.defaultView;
+                const compact=Number(viewport?.innerWidth||1440)<=700;
+                menu.style.left=compact?'8px':Math.max(8,Math.round(((viewport?.innerWidth||1440)-780)/2))+'px';
+                menu.style.top=compact?'8px':'58px';
+                try {
+                  reuse.openManualSourcing(menu,{
+                    document:doc,fetch:fetchFn,user,order:dossierOrder,
+                    confirm:question=>Boolean(viewport?.confirm?.(question)),
+                    onClose:()=>{menu.hidden=true;menu.classList.remove('is-sourcing-inline','is-editing');},
+                    refresh:async()=>{menu.hidden=true;await refresh?.();},
+                  });
+                }catch(error){
+                  menu.classList.remove('is-sourcing-inline','is-editing');
+                  explanation(menu,doc,'Sourcing non disponible : '+error.message);
+                }
+              };
+              if (launchSourcing) launch();
+              else action(menu,doc,'Organiser l’achat fournisseur · compléter les lignes',
+                'Formulaire officiel : fournisseur, référence, prix réel et quantité non couverte.',launch);
+            } else {
+              workflowLink(menu,doc,'Ouvrir le sourcing manuel · Vue opérations','/admin/workspaces/operations');
+            }
+          }else{
+            unavailable='Aucune ligne d’achat préparée : identifier les lignes fournisseur avant de constituer la PO.';
+          }
         }else if(pos.some(p=>p.stage==='draft')){
           unavailable='PO brouillon existante : compléter les lignes et faire valider l’engagement avant de soumettre le bon.';
         }else{
@@ -241,27 +355,43 @@
           pos.every(p=>p.sent_at)?'Transmission déjà enregistrée pour les PO de cette commande.':
           'Aucun envoi attestable : vérifier le statut de la PO et son engagement.';
       }else if(stage==='Réception'){
-        if(poIds.length)count+=Number(await receive(menu,doc,poIds,fetchFn,refresh,isCurrent));
-        unavailable=!poIds.length?'Aucune PO associée : la réception exige une commande fournisseur.':
-          'Aucune quantité recevable actuellement : vérifier la PO et les quantités physiques restant à réceptionner.';
+        if(order.stage_states?.reception==='complete'){
+          unavailable='✓ Réception terminée : toutes les quantités attendues sont reçues. Consulter les preuves dans le dossier.';
+        }else{
+          if(poIds.length)count+=Number(await receive(menu,doc,poIds,fetchFn,refresh,isCurrent));
+          unavailable=!poIds.length?'Aucune PO associée : la réception exige une commande fournisseur.':
+            'Aucune quantité recevable actuellement : vérifier la PO et les quantités physiques restant à réceptionner.';
+        }
       }else if(stage==='Cartons'){
         // Une KOM-BOX vide ne prouve pas l'emballage. Ne pas proposer de création
         // trompeuse avant l'allocation physique et le contrôle du contenu.
         unavailable=received<=0?'Rien de réceptionné : préparer le carton seulement après le contrôle physique.':
           boxes.length?'Carton(s) présent(s) : contrôler le contenu et la preuve d’emballage avant la mise au départ.':
-          'Articles réceptionnés : constituer et contrôler leur carton physique depuis les allocations réelles du Hub.';
+          'Articles réceptionnés : préparer leur emballage dans le workspace Opérations du marché.';
+        if(received>0 && order.stage_states?.cartons!=='complete'){
+          workflowLink(menu,doc,'Ouvrir la préparation physique · Opérations','/admin/workspaces/operations');
+        }
       }else if(stage==='Départ'){
         count+=Number(ship(menu,doc,boxes,data.open_shipments,fetchFn,refresh));
         const ready=boxes.filter(box=>box.state==='DISPATCHED'&&!box.shipment_ref);
-        unavailable=!boxes.length?'Aucun carton constitué : la préparation physique doit précéder le départ.':
+        const planned=boxes.filter(box=>box.shipment_ref && (!box.shipment_stage || box.shipment_stage==='hub_ready'));
+        const attested=boxes.filter(box=>box.shipment_ref && box.shipment_stage && box.shipment_stage!=='hub_ready');
+        unavailable=planned.length?'Expédition créée ('+planned.map(b=>b.shipment_ref).filter(Boolean).join(', ')+') mais remise au transitaire non attestée. Attester le transfert réel dans Expéditions & Douane.':
+          attested.length && !ready.length?'Remise au transitaire déjà attestée : consulter le suivi et les justificatifs dans Expéditions & Douane.':
+          !boxes.length?'Aucun carton constitué : la préparation physique doit précéder le départ.':
           !ready.length?'Aucun carton prêt à rattacher : confirmer l’emballage et le scellage dans le Hub.':
           'Aucune expédition ouverte pour ce marché : créer le départ avant de rattacher le carton.';
+        if(planned.length || attested.length) workflowLink(menu,doc,
+          'Consulter le transport · Expéditions & Douane','/admin/workspaces/shipping-customs');
       }else if(stage==='Reste à solder'){
-        if(needs.length)count+=Number(await prepare(menu,doc,order,fetchFn,refresh,isCurrent));
+        if(needs.length)count+=Number(await prepare(menu,doc,order,fetchFn,refresh,isCurrent,data));
         if(isCurrent()&&poIds.length)count+=Number(await receive(menu,doc,poIds,fetchFn,refresh,isCurrent));
-        unavailable=needs.length?'Des articles restent à acheter : la préparation de PO nécessite des lignes fournisseur groupables.':
-          poIds.length?'Le reliquat ne possède aucune réception admissible pour le moment.':
+        unavailable=order.current_phase==='Remise client'?
+          'Colis arrivé au relais : seule la preuve de remise au client permettra de clore cette étape.':
+          needs.length?'Des articles restent à acheter : la préparation de PO nécessite des lignes fournisseur groupables.':
+          poIds.length?'Vérifier les quantités encore attendues ; la clôture ou le remboursement exige une décision traçable.':
           'Aucun reliquat engagé en achat. Remboursement et clôture restent soumis à une décision métier traçable.';
+        if(order.current_phase==='Remise client') workflowLink(menu,doc,'Voir le relais · suivi des remises','/admin/relais-live');
       }else{
         unavailable='Étape inconnue : aucune action disponible.';
       }

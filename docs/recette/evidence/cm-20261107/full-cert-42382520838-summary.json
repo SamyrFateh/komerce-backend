@@ -1,0 +1,21 @@
+{
+  "market": "CM",
+  "date": "2026-11-07",
+  "github_actions_run_id": 42382520838,
+  "url": "https://github.com/SamyrFateh/komerce-backend/actions/runs/42382520838",
+  "verdict": "CERT_NOMINAL_PASS",
+  "fixtures": {
+    "api": "40A162A6",
+    "chromium": "2B13C104"
+  },
+  "purchase_actions_per_fixture": 35,
+  "purchase_seam_per_fixture": 1,
+  "physical_pass": 53,
+  "chromium_pass": 36,
+  "isolation": "ISOLATION_PASS",
+  "limits": [
+    "tarifs RECETTE provisoires sans GO économique",
+    "isolation responsable pays partagée non démontrée",
+    "cas non nominaux non couverts"
+  ]
+}

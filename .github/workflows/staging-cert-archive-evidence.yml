@@ -1,0 +1,141 @@
+name: Staging — archiver les preuves réussies CM/CG dans le dépôt
+
+# Action manuelle par le propriétaire du dépôt seulement.
+# Une issue [staging-op] archive-cert-CM-1234567890 (ou CG) archive un RUN réussi,
+# après validation de sa provenance et de tous les verdicts métier.
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: staging-cert-archive
+  cancel-in-progress: false
+
+jobs:
+  archive:
+    if: >-
+      github.event.issue.user.login == github.repository_owner &&
+      startsWith(github.event.issue.title, '[staging-op] archive-cert-')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ARCHIVE_ISSUE: ${{ github.event.issue.title }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Valider le format exact de la demande
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import os,re
+          m=re.fullmatch(r'\[staging-op\] archive-cert-(CM|CG)-([1-9][0-9]{7,15})',os.environ['ARCHIVE_ISSUE'])
+          if not m: raise SystemExit('ARCHIVE_ISSUE_FORMAT_REFUSED')
+          with open(os.environ['GITHUB_ENV'],'a') as f:
+              f.write('ARCHIVE_MARKET='+m.group(1)+'\n')
+              f.write('ARCHIVE_RUN_ID='+m.group(2)+'\n')
+          PY
+      - name: Vérifier la source officielle et le succès du run
+        shell: bash
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$ARCHIVE_RUN_ID" > "$RUNNER_TEMP/run.json"
+          python3 - <<'PY'
+          import os,json
+          r=json.load(open(os.environ['RUNNER_TEMP']+'/run.json'))
+          assert r.get('name')=='Staging — certification métier V1 complète CM ou CG','WORKFLOW_NOT_OFFICIAL'
+          assert r.get('status')=='completed' and r.get('conclusion')=='success','RUN_NOT_SUCCESS'
+          assert (r.get('actor') or {}).get('login')==os.environ['GITHUB_REPOSITORY_OWNER'],'RUN_OWNER_MISMATCH'
+          assert (r.get('head_repository') or {}).get('full_name')==os.environ['GITHUB_REPOSITORY'],'RUN_REPOSITORY_MISMATCH'
+          assert r.get('event') in ('issues','workflow_dispatch'),'RUN_TRIGGER_INVALID'
+          PY
+      - name: Récupérer l'artefact officiel
+        shell: bash
+        run: |
+          gh run download "$ARCHIVE_RUN_ID" --repo "$GITHUB_REPOSITORY" --name "staging-full-cert-$ARCHIVE_MARKET-$ARCHIVE_RUN_ID" --dir "$RUNNER_TEMP/official-evidence"
+      - name: Valider tous les rapports et préparer le commit documentaire
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import os,re,json,shutil,pathlib
+          root=pathlib.Path(os.environ['RUNNER_TEMP'])/'official-evidence'
+          market=os.environ['ARCHIVE_MARKET']; run=os.environ['ARCHIVE_RUN_ID']
+          def report(p):
+              path=root/p
+              if not path.is_file(): raise ValueError('REPORT_MISSING:'+str(p))
+              raw=path.read_text()
+              if re.search(r'[A-Za-z0-9_.+%-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}|sk_(?:live|test)_[A-Za-z0-9]{8,}|whsec_[A-Za-z0-9]{8,}|Bearer\s+[A-Za-z0-9_.-]{12,}|"(?:password|access_token|refresh_token|secret)"\s*:',raw,re.I):
+                  raise ValueError('SENSITIVE_REPORT:'+str(p))
+              return json.loads(raw)
+          fixtures=sorted((root/'hub-v1-cert').glob('hub-v1-certification-*.json'))
+          assert len(fixtures)==2,'TWO_FIXTURES_REQUIRED'
+          certs=[report(p.relative_to(root)) for p in fixtures]
+          assert all(c.get('market')==market and c.get('verdict')=='PARTIAL_STOP_AFTER_STEP_PASS' and c.get('stop_after')==2 for c in certs),'FIXTURE_FAIL'
+          run8=[c['run'] for c in certs]
+          assert len(set(run8))==2 and all(re.fullmatch(r'[A-F0-9]{8}',r) for r in run8),'RUN8_INVALID'
+          for rid in run8:
+              a=report(pathlib.Path('hub-v1-http')/('hub-v1-http-actions-'+rid+'.json'))
+              assert a.get('run8')==rid and a.get('verdict')=='HTTP_PO_CHAIN_PASS_PHYSICAL_CHAIN_NOT_COVERED','PO_FAIL'
+              assert a.get('counts',{}).get('PASS')==35 and a.get('counts',{}).get('SEAM_NOT_HTTP')==1,'PO_COUNTS_INVALID'
+          physics=list((root/'hub-v1-http').glob('hub-v1-http-physical-*.json'))
+          assert len(physics)==1,'PHYSICAL_REPORT_COUNT_INVALID'
+          physical=report(physics[0].relative_to(root))
+          assert physical.get('run8') in run8 and physical.get('verdict')=='PHYSICAL_CHAIN_PASS' and physical.get('counts',{}).get('PASS',0)>=53,'PHYSICAL_FAIL'
+          clicks=report(pathlib.Path('hub-v1-clicks/evidence.json'))
+          gestures=clicks.get('gestures',[])
+          assert clicks.get('run8') in run8 and clicks['run8']!=physical['run8'] and len(gestures)==36 and all(g.get('verdict')=='CLICK_PASS' for g in gestures),'CLICK_FAIL'
+          iso=report(pathlib.Path('market-isolation/report.json'))
+          relay=iso.get('matrix',{}).get('agent_relais',{})
+          assert iso.get('verdict')=='ISOLATION_PASS' and market in iso.get('relay_home_market',[]),'ISOLATION_FAIL'
+          assert relay.get(market,{}).get('read')==200 and all(relay.get(m,{}).get('read')==403 for m in ('KM','CM','CG') if m!=market),'ISOLATION_READ_FAIL'
+          started=certs[0].get('started_at','')
+          date=started[:10]
+          assert re.fullmatch(r'20[0-9]{2}-[0-9]{2}-[0-9]{2}',date),'DATE_INVALID'
+          folder=market.lower()+'-'+date.replace('-','')
+          dest=pathlib.Path('docs/recette/evidence')/folder
+          dest.mkdir(parents=True,exist_ok=True)
+          for p in fixtures:
+              shutil.copyfile(p,dest/p.name)
+          for rid in run8:
+              p=root/'hub-v1-http'/('hub-v1-http-actions-'+rid+'.json')
+              shutil.copyfile(p,dest/p.name)
+          shutil.copyfile(physics[0],dest/physics[0].name)
+          shutil.copyfile(root/'hub-v1-clicks/evidence.json',dest/('hub-v1-clicks-'+clicks['run8']+'-evidence.json'))
+          shutil.copyfile(root/'market-isolation/report.json',dest/('staging-market-isolation-'+run+'.json'))
+          summary={'market':market,'date':date,'github_actions_run_id':int(run),'url':'https://github.com/'+os.environ['GITHUB_REPOSITORY']+'/actions/runs/'+run,
+                   'verdict':'CERT_NOMINAL_PASS','fixtures':{'api':physical['run8'],'chromium':clicks['run8']},
+                   'purchase_actions_per_fixture':35,'purchase_seam_per_fixture':1,'physical_pass':physical['counts']['PASS'],
+                   'chromium_pass':36,'isolation':'ISOLATION_PASS',
+                   'limits':['tarifs RECETTE provisoires sans GO économique','isolation responsable pays partagée non démontrée','cas non nominaux non couverts']}
+          summaryName='full-cert-'+run+'-summary.json'
+          (dest/summaryName).write_text(json.dumps(summary,ensure_ascii=False,indent=2)+'\n')
+          index=pathlib.Path('docs/recette/evidence/README.md')
+          old=index.read_text()
+          if summaryName not in old:
+              marker='Bilan pour KM :'
+              assert marker in old,'INDEX_ANCHOR_MISSING'
+              a='| '+date+' | '+market+' | '+physical['run8']+' | Achats 35 PASS × 2 et physique '+str(physical['counts']['PASS'])+' PASS | PO + PHYSICAL_PASS | `'+folder+'/'+physics[0].name+'` |\n'
+              b='| '+date+' | '+market+' | '+clicks['run8']+' | Chromium 36/36 et isolation relais | CLICK_PASS + ISOLATION_PASS | `'+folder+'/hub-v1-clicks-'+clicks['run8']+'-evidence.json` |\n'
+              d='| '+date+' | '+market+' | - | Synthèse de la certification nominale (run '+run+') | CERT_NOMINAL_PASS | `'+folder+'/'+summaryName+'` |\n\n'
+              index.write_text(old.replace(marker,a+b+d+marker))
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as out:
+              out.write('Preuves validées : '+market+', '+str(physical['counts']['PASS'])+' physique, 36 Chromium, isolation PASS.\n')
+              out.write('Branche cible : evidence/staging-'+market.lower()+'-'+run+'\n')
+          print(json.dumps(summary))
+          PY
+      - name: Pousser une branche de preuves, sans toucher à main
+        shell: bash
+        run: |
+          set -euo pipefail
+          BRANCH="evidence/staging-$(echo "$ARCHIVE_MARKET" | tr '[:upper:]' '[:lower:]')-$ARCHIVE_RUN_ID"
+          git config user.name "komerce-evidence-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$BRANCH"
+          git add docs/recette/evidence
+          git commit -m "docs(recette): preuves staging certifiées $ARCHIVE_MARKET run $ARCHIVE_RUN_ID"
+          git push --set-upstream origin "$BRANCH"

@@ -199,6 +199,14 @@ test.describe.serial('Fil commande → encaissement → garde — routes réelle
     const hist = (await histOf(ids.order)).map(h => h.s);
     for (const st of ['available', 'collected']) expect(hist, 'trace de transition').toContain(st);
     expect(hist).not.toContain('shipped'); // stock local : aucun faux passage au transitaire
+    const { rows: localQty } = await q(
+      'SELECT qty_shipped::int shipped,qty_received::int received,qty_collected::int collected FROM parcel_items WHERE parcel_id=$1',
+      [ids.parcel.id]);
+    expect(localQty).toEqual([{ shipped: 0, received: 2, collected: 2 }]);
+    const { rows: [shipCatchup] } = await q(
+      "SELECT COUNT(*)::int AS n FROM scan_events WHERE parcel_id=$1 AND event_type='shipped' AND status='applied'",
+      [ids.parcel.id]);
+    expect(shipCatchup.n).toBe(0); // pas de shipment fictif crée au moment du retrait
     expect(await collectionsOf()).toHaveLength(1);
     step('Relais : colis remis, commande collectée', `historique : ${hist.join(' → ')}`);
   });

@@ -30,6 +30,17 @@ describe('market-delegation runtime compatibility bridge', () => {
     expect(req.user.persisted_role).toBeUndefined();
   });
 
+  test('un Transitaire central ne devient jamais market_operator via une ancienne membership', async () => {
+    db.query.mockResolvedValue({ rows: [{ active: true }] });
+    const req = { user: { id: 'legacy-transit', role: 'agent_transitaire' } };
+    const next = jest.fn();
+    await roleBridge.attachMarketDelegatedRoleFor(['admin', 'agent_hub', 'market_operator'])(req, {}, next);
+    expect(next).toHaveBeenCalledTimes(1);
+    expect(req.user.role).toBe('agent_transitaire');
+    expect(req.user.persisted_role).toBeUndefined();
+    expect(db.query).not.toHaveBeenCalled(); // no delegation lookup or role laundering
+  });
+
   test('une membership projetée active fournit market_operator uniquement au runtime', async () => {
     db.query.mockResolvedValueOnce({ rows: [{ '?column?': 1 }] });
     const req = { user: { id: 'u2', role: 'client', email: 'member@example.com' } };

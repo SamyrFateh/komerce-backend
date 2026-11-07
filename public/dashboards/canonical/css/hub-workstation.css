@@ -188,3 +188,484 @@
 @media (max-width:1050px) {
   .kmc-hub-app .kmc-hub-global-table {min-width:1160px;}
 }
+
+
+/* Hub V1 · lisibilité opérationnelle 1440px et menus situés, sans nouveaux statuts. */
+.kmc-hub-app .kmc-hub-global-table {
+  min-width:1320px; table-layout:fixed;
+}
+.kmc-hub-app .kmc-hub-global-table th:first-child { width:292px; }
+.kmc-hub-app .kmc-hub-global-table th {
+  font-size:12px; line-height:1.3; color:#324f6a; letter-spacing:.01em;
+  background:#eef3f7; padding:12px 11px;
+}
+.kmc-hub-app .kmc-hub-global-table td {
+  padding:10px 6px; vertical-align:middle;
+}
+.kmc-hub-app .kmc-hub-global-table tbody tr {background:#fff}
+.kmc-hub-app .kmc-hub-global-table tbody tr:nth-child(even) {background:#fafcfe}
+.kmc-hub-app .kmc-hub-global-table tbody tr:hover {background:#eff7fc}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-identity {
+  gap:6px;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-identity > strong {
+  font-size:13px; font-weight:800; color:#12314c; line-height:1.3;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-identity > small {
+  font-size:11px; color:#456278;
+}
+.kmc-hub-app .kmc-hub-phase-summary {gap:6px;margin:7px 0 4px}
+.kmc-hub-app .kmc-hub-phase-title {
+  font-size:13px; line-height:1.4; font-weight:800; color:#16486c;
+}
+.kmc-hub-app .kmc-hub-phase-expected,
+.kmc-hub-app .kmc-hub-phase-detail {
+  font-size:12px; line-height:1.5; color:#3d536a; font-weight:550;
+}
+.kmc-hub-app .kmc-hub-phase-detail {color:#92551d;font-weight:700}
+.kmc-hub-app .kmc-hub-board-identity .kmc-hub-next-action {
+  font-size:11px; font-weight:750; padding:6px 10px;
+  color:#075f80; background:#dff3ff; border:1px solid #b5e4fb;
+  line-height:1.35;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell {
+  padding:11px 12px; min-height:69px; gap:7px; border-width:1.5px;
+  font-size:12px; line-height:1.4; font-weight:670;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell .kmc-hub-stage-primary {
+  font-size:12px; line-height:1.4; font-weight:750;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell small {
+  font-size:11px;line-height:1.35;color:inherit;opacity:.87;font-weight:650;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current {
+  background:#e0f4ff; border:2px solid #0873b8;
+  box-shadow:0 0 0 2px #aadff9, 0 3px 11px rgba(0,93,155,.12);
+  color:#084c75; font-weight:850;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current .kmc-hub-stage-proof {
+  color:#005e97; font-weight:850;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-warning:not(.is-stage-current) {
+  background:#fff0d4; border-color:#e0ae55; color:#7c4413;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-critical:not(.is-stage-current) {
+  background:#ffe4df; border-color:#e3a19a; color:#8e2e27;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-ready:not(.is-stage-current) {
+  background:#ddf7ed; border-color:#9ed2ba; color:#145b41;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-progress:not(.is-stage-current) {
+  background:#e7effb; border-color:#aecbed; color:#1b4e82;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-complete {
+  background:#f2f5f5; border-color:#d8e2e4; color:#53616d;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-locked {
+  opacity:1; background:#e9eef1; border-color:#ced9df; color:#505f6a;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-muted,
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-waiting {
+  background:#f0f3f7; border-color:#e4e9ee; color:#566675;
+}
+.kmc-hub-app .kmc-hub-board-menu {
+  width:min(425px,calc(100vw - 18px)); padding:17px; gap:10px;
+  border:1px solid #b8d1e2; box-shadow:0 18px 46px rgba(12,43,77,.2);
+}
+.kmc-hub-app .kmc-hub-board-menu-title {font-size:15px;line-height:1.4;color:#193b54;font-weight:800}
+.kmc-hub-app .kmc-hub-board-menu-summary {font-size:12px;line-height:1.5;color:#3b5269}
+.kmc-hub-app .kmc-hub-board-menu-current {
+  margin:2px 4px;padding:10px 12px;border:1px solid #7bc5e9;
+  border-radius:8px;background:#e5f5ff;color:#07577d;
+  font-size:13px;line-height:1.4;font-weight:800;
+}
+.kmc-hub-app .kmc-hub-board-menu-expected {
+  font-size:12px;line-height:1.5;color:#35556b;font-weight:650;margin:0 5px;
+}
+.kmc-hub-app .kmc-hub-board-menu-action,
+.kmc-hub-app .kmc-hub-action-explanation {
+  font-size:13px;line-height:1.5;
+}
+.kmc-hub-app .kmc-hub-action-explanation {color:#385168;}
+.kmc-hub-app .kmc-hub-board-menu-action.is-primary {
+  padding:11px 12px;background:#def3e9;border:1px solid #a7d4bd;
+  color:#105941;font-weight:800;border-radius:8px;text-decoration:none;
+}
+.kmc-hub-app .kmc-hub-board-menu-action.is-dismiss {color:#4b6070}
+@media(max-width:1000px){
+  .kmc-hub-app .kmc-hub-global-table {min-width:1320px;}
+}
+
+
+/* Action réelle affichée dans la cellule du Kanban, sans bouton imbriqué.
+   Un clic ouvre une saisie/confirmation ; il ne poste jamais de mutation. */
+.kmc-hub-app .kmc-hub-kanban-stage-actions {
+  display:grid; gap:5px; min-width:0;
+}
+.kmc-hub-app .kmc-hub-kanban-stage-actions>.kmc-hub-board-cell {
+  width:100%;min-width:0;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-kanban-action {
+  display:block;width:100%;min-height:35px;padding:7px 9px;
+  border-radius:7px;border:1px solid #0b729a;
+  background:#086b94;color:#fff;font-size:11px;font-weight:820;
+  line-height:1.35;text-align:center;white-space:normal;
+  box-shadow:0 2px 7px rgb(6 96 138 / .18);cursor:pointer;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-kanban-action:hover {
+  background:#035679;border-color:#034d6d;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-kanban-action:focus-visible {
+  outline:3px solid #83caed;outline-offset:2px;
+}
+.kmc-hub-app .kmc-hub-board-menu.is-sourcing-inline.is-editing {
+  width:min(790px,calc(100vw - 24px));max-height:calc(100dvh - 70px);
+  overflow:auto;overscroll-behavior:contain;padding:10px 14px;
+  border-color:#a4d2e5;box-shadow:0 24px 70px rgb(15 47 80 / .22);
+}
+.kmc-hub-app .kmc-hub-board-menu.is-sourcing-inline .kmc-hub-sourcing-panel {
+  border:none;box-shadow:none;margin:0;padding:4px 2px 12px;
+}
+.kmc-hub-app .kmc-hub-board-menu.is-sourcing-inline [data-workspace-feedback]:empty {display:none}
+@media(max-width:700px){
+  .kmc-hub-app .kmc-hub-board-menu.is-sourcing-inline.is-editing {
+    top:8px;left:8px;
+    width:calc(100vw - 16px);max-height:calc(100dvh - 16px);
+  }
+  .kmc-hub-app .kmc-hub-board-menu.is-sourcing-inline .kmc-hub-sourcing-layout{
+    grid-template-columns:1fr;
+  }
+}
+
+/* Journal d'étape · une trace lisible, discrète et consultable même après clôture. */
+.kmc-hub-app .kmc-hub-board-menu .kmc-hub-stage-journal {
+  order: 2; border:1px solid #cbddea; background:linear-gradient(180deg,#f8fbfe,#fff);
+  border-radius:12px; min-width:0; overflow:hidden; margin:5px 0;
+}
+.kmc-hub-app .kmc-hub-board-menu-action.is-dismiss {order:5;}
+.kmc-hub-app .kmc-hub-journal-toggle {
+  display:block; width:100%; border:0; background:transparent;
+  padding:13px 15px; text-align:left; color:#174d70; font:inherit;
+  font-size:13px; font-weight:800; cursor:pointer;
+}
+.kmc-hub-app .kmc-hub-journal-toggle::after {
+  content:'▾'; float:right; margin-left:10px; color:#2779ad;
+}
+.kmc-hub-app .kmc-hub-journal-toggle[aria-expanded="true"]::after {content:'▴';}
+.kmc-hub-app .kmc-hub-journal-toggle:focus-visible {
+  outline:2px solid #0873b8;outline-offset:-3px;
+}
+.kmc-hub-app .kmc-hub-journal-content {
+  display:grid;gap:12px;padding:0 14px 15px;
+  border-top:1px solid #e1ebf2;
+}
+.kmc-hub-app .kmc-hub-journal-content[hidden] {display:none;}
+.kmc-hub-app .kmc-hub-journal-hint {
+  margin:12px 0 2px; color:#405c71; font-size:12px; line-height:1.45;
+}
+.kmc-hub-app .kmc-hub-journal-list {
+  list-style:none; margin:3px 0 0; padding:0 0 0 18px;
+  border-left:2px solid #a7c7d8; display:grid;gap:15px;
+}
+.kmc-hub-app .kmc-hub-journal-item {position:relative;margin:0;padding:0 0 0 5px;}
+.kmc-hub-app .kmc-hub-journal-item::before {
+  content:'';position:absolute;width:9px;height:9px;border-radius:50%;
+  border:2px solid white;background:#3e85af;
+  left:-24px;top:4px;box-shadow:0 0 0 1px #76a5c1;
+}
+.kmc-hub-app .kmc-hub-journal-meta {
+  font-size:11px;font-weight:760;color:#275570;line-height:1.5;
+}
+.kmc-hub-app .kmc-hub-journal-note {
+  margin:4px 0 5px;font-size:13px;line-height:1.55;
+  color:#243d50;white-space:pre-wrap;overflow-wrap:anywhere;
+}
+.kmc-hub-app .kmc-hub-journal-seal {
+  font-size:10px;color:#536b75;font-weight:650;
+}
+.kmc-hub-app .kmc-hub-journal-form {
+  border-top:1px solid #d9e7ee; padding-top:14px;
+  display:grid;gap:8px;
+}
+.kmc-hub-app .kmc-hub-journal-label {
+  display:grid;gap:8px;font-size:12px;color:#26465c;font-weight:800;
+}
+.kmc-hub-app .kmc-hub-journal-textarea {
+  box-sizing:border-box;width:100%;resize:vertical;
+  min-height:84px;max-height:220px;padding:11px 12px;
+  border:1.5px solid #aebfcf;border-radius:9px;background:#fff;
+  font:inherit;font-size:13px;line-height:1.5;color:#19364a;
+}
+.kmc-hub-app .kmc-hub-journal-textarea:focus {
+  outline:2px solid #53a4d1;outline-offset:1px;
+}
+.kmc-hub-app .kmc-hub-journal-help {
+  font-size:11px;line-height:1.5;color:#647581;margin:0;
+}
+.kmc-hub-app .kmc-hub-journal-actions {
+  display:flex;align-items:center;gap:11px;flex-wrap:wrap;
+}
+.kmc-hub-app .kmc-hub-journal-publish {
+  padding:10px 13px;background:#086b95;color:white;border:1px solid #086b95;
+  border-radius:8px;cursor:pointer;font-size:12px;font-weight:800;
+}
+.kmc-hub-app .kmc-hub-journal-publish:hover {background:#065778;}
+.kmc-hub-app .kmc-hub-journal-publish:disabled {opacity:.55;cursor:wait;}
+.kmc-hub-app .kmc-hub-journal-feedback {font-size:11px;color:#9a4d24;line-height:1.4;}
+.kmc-hub-app .kmc-hub-journal-error {font-size:12px;color:#9b3929;line-height:1.5;}
+
+
+/* Hub focus fort · une seule étape attirante par commande.
+   Contraste lisible sans couleur, halo non clignotant, aucune action simulée. */
+.kmc-hub-app .kmc-hub-global-table tr.is-hub-active-order > td:first-child {
+  background:linear-gradient(90deg,#e5f5ff 0,#f2faff 42%,transparent 100%);
+  box-shadow:inset 5px 0 #148aca;
+}
+.kmc-hub-app .kmc-hub-global-table tr.is-hub-active-order .kmc-hub-phase-summary {
+  border-left:3px solid #008dc8;
+  padding:5px 0 5px 10px;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current {
+  --kmc-stage-halo:rgba(0,151,240,.35);
+  --kmc-stage-light:rgba(63,201,255,.45);
+  position:relative;
+  isolation:isolate;
+  overflow:hidden;
+  min-height:82px;
+  padding:10px 11px 11px 16px;
+  border:2px solid #058bd8;
+  border-radius:10px;
+  background:linear-gradient(132deg,#063969 0%,#086ca7 54%,#075f90 100%);
+  color:#fff;
+  text-align:left;
+  box-shadow:0 0 0 3px var(--kmc-stage-halo),
+             0 0 17px 3px var(--kmc-stage-light),
+             inset 0 1px rgba(255,255,255,.6);
+  animation:kmc-hub-stage-breathe 3.6s ease-in-out infinite;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current::before {
+  content:"";
+  position:absolute;z-index:0;pointer-events:none;
+  left:0;top:8px;bottom:8px;width:5px;
+  background:#8ceaff;border-radius:0 5px 5px 0;
+  box-shadow:0 0 11px rgba(152,242,255,.8);
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current::after {
+  content:"";
+  position:absolute;z-index:0;pointer-events:none;
+  inset:0;
+  background:radial-gradient(circle at 90% 0%,rgba(255,255,255,.34),transparent 48%);
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current > * {
+  position:relative;z-index:1;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current:focus-visible {
+  outline:3px solid #ffe78c;outline-offset:3px;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current .kmc-hub-stage-primary {
+  font-size:13px;line-height:1.4;font-weight:850;
+  color:#fff;text-shadow:0 1px 2px rgba(0,33,61,.45);
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current .kmc-hub-stage-proof {
+  font-size:11px;font-weight:790;color:#e8faff;opacity:1;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-stage-focus-label {
+  display:inline-flex;align-items:center;gap:6px;
+  max-width:100%;align-self:start;width:fit-content;
+  padding:4px 9px;border-radius:999px;
+  border:1px solid rgba(255,255,255,.62);
+  background:rgba(255,255,255,.18);
+  color:#fff;font-size:10px;line-height:1.3;
+  font-weight:900;letter-spacing:.055em;
+  box-shadow:inset 0 1px 1px rgba(255,255,255,.2);
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-stage-focus-label::before {
+  content:"";display:inline-block;flex:none;width:7px;height:7px;
+  border-radius:50%;background:#b9f5ff;box-shadow:0 0 8px #c1f8ff;
+}
+/* Un avertissement en cours n'est pas un bleu neutre : priorité ambre très visible. */
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current.is-stage-warning {
+  --kmc-stage-halo:rgba(242,146,17,.38);
+  --kmc-stage-light:rgba(255,186,57,.34);
+  border-color:#e98b13;
+  background:linear-gradient(130deg,#754007 0%,#a25709 55%,#965007 100%);
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current.is-stage-warning::before {
+  background:#ffe2a2;box-shadow:0 0 12px #ffcc60;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current.is-stage-warning .kmc-hub-stage-focus-label::before {
+  background:#ffe7a0;box-shadow:0 0 8px #ffdc70;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current.is-stage-critical {
+  --kmc-stage-halo:rgba(213,63,57,.36);
+  --kmc-stage-light:rgba(255,93,82,.30);
+  border-color:#d94a40;
+  background:linear-gradient(130deg,#711f20 0%,#a42e2d 55%,#c54133 100%);
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current.is-stage-critical::before {
+  background:#ffb8a0;box-shadow:0 0 12px #ff9f88;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current.is-stage-ready {
+  --kmc-stage-halo:rgba(15,159,126,.33);
+  --kmc-stage-light:rgba(63,223,186,.29);
+  border-color:#0ca68e;
+  background:linear-gradient(130deg,#07584b 0%,#087d65 55%,#0b6957 100%);
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current.is-stage-waiting {
+  --kmc-stage-halo:rgba(97,130,169,.18);
+  --kmc-stage-light:rgba(110,151,193,.13);
+  border-color:#7895ad;
+  background:linear-gradient(135deg,#35485d,#536b82);
+  animation:none;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-locked,
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-complete:not(.is-stage-current) {
+  box-shadow:none;
+  filter:saturate(.55);
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-kanban-stage-actions:has(> .is-stage-current) > .kmc-hub-kanban-action {
+  min-height:39px;
+  border-color:#72d8ff;background:linear-gradient(125deg,#005f98,#058ac5);
+  color:#fff;font-size:12px;font-weight:850;
+  box-shadow:0 3px 11px rgba(2,98,165,.3);
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-kanban-stage-actions:has(> .is-stage-current.is-stage-warning) > .kmc-hub-kanban-action {
+  border-color:#f5ca77;background:linear-gradient(125deg,#895000,#b06d12);
+  box-shadow:0 3px 11px rgba(154,92,12,.3);
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-kanban-stage-actions:has(> .is-stage-current.is-stage-critical) > .kmc-hub-kanban-action {
+  border-color:#ffb4a1;background:linear-gradient(125deg,#8e2829,#b53b35);
+}
+@keyframes kmc-hub-stage-breathe {
+  0%,100% {box-shadow:0 0 0 3px var(--kmc-stage-halo),0 0 17px 3px var(--kmc-stage-light),inset 0 1px rgba(255,255,255,.6);}
+  50% {box-shadow:0 0 0 4px var(--kmc-stage-halo),0 0 23px 5px var(--kmc-stage-light),inset 0 1px rgba(255,255,255,.6);}
+}
+@media (prefers-reduced-motion:reduce) {
+  .kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current {
+    animation:none;
+  }
+}
+@media print {
+  .kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current {
+    animation:none;box-shadow:none;
+    -webkit-print-color-adjust:exact;print-color-adjust:exact;
+  }
+}
+
+
+/* Hub 07/11 · palette graphite/jade : focus fort, plus aucun pavé bleu ou marron.
+   La couleur de priorité reste portée par le liseré et le libellé, jamais seule. */
+.kmc-hub-app .kmc-hub-global-table tr.is-hub-active-order > td:first-child {
+  background:linear-gradient(90deg,#e7f5ee 0,#f7faf8 54%,transparent 100%);
+  box-shadow:inset 5px 0 #1f8b68;
+}
+.kmc-hub-app .kmc-hub-global-table tr.is-hub-active-order .kmc-hub-phase-summary {
+  border-left-color:#268b6b;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current {
+  --kmc-stage-halo:rgba(36,154,111,.30);
+  --kmc-stage-light:rgba(50,191,139,.27);
+  background:linear-gradient(135deg,#183e37 0%,#14644e 58%,#185442 100%);
+  border-color:#37bc90;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current::before {
+  background:#a2f5d2;box-shadow:0 0 12px rgba(108,242,188,.8);
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-stage-focus-label::before {
+  background:#aaf4ce;box-shadow:0 0 8px rgba(135,247,202,.75);
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current.is-stage-warning {
+  --kmc-stage-halo:rgba(242,196,79,.35);
+  --kmc-stage-light:rgba(232,192,100,.18);
+  background:linear-gradient(135deg,#253136 0%,#344047 58%,#25363a 100%);
+  border-color:#f5c958;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current.is-stage-warning::before {
+  background:#ffde82;box-shadow:0 0 12px rgba(255,211,106,.78);
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current.is-stage-warning .kmc-hub-stage-focus-label::before {
+  background:#ffe4a0;box-shadow:0 0 8px rgba(255,221,117,.8);
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current.is-stage-ready {
+  background:linear-gradient(135deg,#124938 0%,#0e7557 58%,#135f49 100%);
+  border-color:#48d4a4;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current.is-stage-waiting {
+  background:linear-gradient(135deg,#384248,#536068);
+  border-color:#8c999f;
+  --kmc-stage-halo:rgba(100,119,132,.18);
+  --kmc-stage-light:rgba(90,114,129,.10);
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-kanban-stage-actions:has(> .is-stage-current) > .kmc-hub-kanban-action {
+  background:linear-gradient(135deg,#126348,#168967);
+  border-color:#63d6a4;
+  box-shadow:0 3px 11px rgba(15,98,70,.22);
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-kanban-stage-actions:has(> .is-stage-current.is-stage-warning) > .kmc-hub-kanban-action {
+  background:linear-gradient(135deg,#344147,#455258);
+  border-color:#f3c866;
+  box-shadow:0 3px 10px rgba(33,43,48,.22);
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-kanban-stage-actions:has(> .is-stage-current.is-stage-critical) > .kmc-hub-kanban-action {
+  background:linear-gradient(135deg,#812b32,#a13b44);
+  border-color:#ed9799;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-kanban-action:hover {
+  filter:brightness(1.08);
+}
+.kmc-hub-app .kmc-hub-journal-publish {
+  background:#186749;border-color:#186749;
+}
+.kmc-hub-app .kmc-hub-journal-publish:hover{background:#105b41;}
+
+/* Menu contextuel arrimé à la cellule ; une saisie détaillée devient un inspecteur.
+   Toujours accessible, sans téléportation hors écran au scroll du Kanban. */
+.kmc-hub-app .kmc-hub-board-menu {
+  position:fixed;
+  z-index:1200;
+  background:#fff;
+  border:1px solid #bfcec6;
+  border-radius:12px;
+  box-shadow:0 18px 50px rgba(24,45,40,.20),0 2px 9px rgba(24,45,40,.10);
+}
+.kmc-hub-app .kmc-hub-board-menu.is-editing:not(.is-sourcing-inline) {
+  width:min(480px,calc(100vw - 18px));
+  max-height:calc(100dvh - 80px);
+  border:1px solid #9fc7b7;
+  box-shadow:0 16px 48px rgba(17,54,40,.22);
+}
+.kmc-hub-app .kmc-hub-board-menu.is-purchasing-flow {
+  gap:12px;
+  padding:15px;
+  align-content:start;
+}
+.kmc-hub-app .kmc-hub-po-choice {
+  display:grid;gap:7px;padding:12px;
+  background:#f7faf8;border:1px solid #d8e6dd;border-radius:10px;
+  min-width:0;
+}
+.kmc-hub-app .kmc-hub-po-choice-title {
+  font-size:13px;line-height:1.4;font-weight:850;color:#1d4136;
+  overflow-wrap:anywhere;
+}
+.kmc-hub-app .kmc-hub-po-choice-summary {
+  margin:0;font-size:12px;color:#38594c;line-height:1.45;
+}
+.kmc-hub-app .kmc-hub-po-choice-caption {
+  margin:2px 0;font-size:11px;color:#5f7169;line-height:1.45;
+}
+.kmc-hub-app .kmc-hub-po-choice .kmc-hub-board-menu-action.is-existing-po {
+  background:#e3f4ea;border-color:#8dc7aa;color:#155b43;
+}
+.kmc-hub-app .kmc-hub-po-choice .kmc-hub-board-menu-action[data-hub-po-target="new"] {
+  background:#fff;border:1px solid #76bba0;color:#155b43;
+  font-weight:800;
+}
+.kmc-hub-app .kmc-hub-action-confirm {
+  background:#176c4b;border-color:#176c4b;
+}
+@media(max-width:700px) {
+  .kmc-hub-app .kmc-hub-board-menu.is-editing:not(.is-sourcing-inline) {
+    width:calc(100vw - 16px);max-height:calc(100dvh - 72px);
+  }
+}
