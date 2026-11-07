@@ -28,7 +28,7 @@ Ensuite viendront un seed partenaires visible et des comptes partenaires cloison
 Toutes les preuves staging réussies sont versionnées dans `docs/recette/evidence/` ; l'index se trouve dans `docs/recette/evidence/README.md`. Les captures restent dans les artefacts des runs.
 L'audit économique du Hub, qui est un sujet connexe, se trouve dans `docs/audits/hub-economics-20261106/`.
 
-Isolation croisée entre KM, CM et CG : JOUÉE le 2026-11-07, ISOLATION_PASS (run 42375312269, outil `staging-market-isolation` #3481, correctif de sonde #3484). L'agent relais, lié à un relais KM, obtient 200 sur KM et 403 sur CM et CG en lecture et en écriture ; l'admin lit les trois marchés. Preuve : `docs/recette/evidence/isolation-20261107/`. Limite : un seul rôle de terrain (agent relais) est croisé ; les rôles centraux (hub, transitaire, admin) ne sont pas cloisonnés par marché par conception, et le responsable pays E2E a des memberships dans les trois marchés, donc il ne peut pas servir à ce test.
+Isolation croisée entre KM, CM et CG : JOUÉE le 2026-11-07, ISOLATION_PASS (run 42375312269, outil `staging-market-isolation` #3481, correctif de sonde #3484). L'agent relais, lié à un relais KM, obtient 200 sur KM et 403 sur CM et CG en lecture et en écriture ; l'admin lit les trois marchés. Preuve : `docs/recette/evidence/isolation-20261107/`. Limite historique du run relais : seul l'agent relais était croisé. Cette limite a été levée pour les responsables pays par la campagne de comptes E2E exclusifs CM/CG du run #42385877161 (section 11). Les rôles Hub, transitaire et admin restent centraux par conception.
 
 Preuves CM et CG déjà versionnées : `docs/recette/evidence/cm-20261107/` et `docs/recette/evidence/cg-20261107/` (readiness avant activation, rapports d'activation, certificats tarifs de vente RECETTE et anciennes fixtures CM en échec). L'index de `docs/recette/evidence/README.md` ne liste que les runs réussis.
 
@@ -143,7 +143,7 @@ Une fois le tarif CM réellement posé et relu, reprendre la procédure de la se
 - La [PR #3493](https://github.com/SamyrFateh/komerce-backend/pull/3493) corrige les deux fixtures (API et Chromium) ; attendre son `Required verdict` vert et son merge. Le RUN8 `D06C3C89` a échoué avant les écritures, ne pas le reprendre.
 - **Relancer CM via une NOUVELLE issue owner** au titre exact `[staging-op] full-cert-CM` (ou workflow_dispatch confirmé `RUN-FULL-CERT-CM`). Après un PASS réel sur CM, lancer CG avec le titre exact `[staging-op] full-cert-CG`. Chaque run doit produire les deux fixtures, les 53 PASS de chaîne physique et 36 CLICK_PASS, et une isolation `ISOLATION_PASS` ; tout BLOCKED ou FAIL est un non-GO.
 
-La note opératoire complète du nouveau workflow est dans `docs/recette/FULL_CERT_CM_CG_AUTOMATION.md`. Les preuves vérifiées et les artefacts réussis doivent être ajoutés à `docs/recette/evidence/` à chaque run. Pour une isolation complète des responsables de marché, créer des comptes E2E exclusifs CM et CG ; le compte « Responsable pays » mutualisé ne permet pas ce test.
+La note opératoire complète du nouveau workflow est dans `docs/recette/FULL_CERT_CM_CG_AUTOMATION.md`. Les preuves vérifiées et les artefacts réussis doivent être ajoutés à `docs/recette/evidence/` à chaque run. Cette limitation historique du compte « Responsable pays » mutualisé est levée par le run #42385877161 (section 11).
 
 ## 10. Certification nominale CM et CG terminée le 2026-11-07 — état vérifié
 
@@ -157,8 +157,26 @@ Le correctif du garde RUN8 a été livré et mergé dans [#3493](https://github.
 
 **Verdict exact :** *PASS nominal staging* pour KM, CM et CG sur les parcours actuels de la recette. Ce verdict ne vaut **pas** ouverture aux partenaires ni GO économique. Il reste :
 - remplacer les prix de vente et coûts des corridors `RECETTE` par les valeurs réelles, contrôler marge et contribution ;
-- certifier l'isolation avec de vrais comptes opérateurs exclusifs CM et CG : le « Responsable pays » E2E partagé ne prouve pas son cloisonnement ;
+- isolation des vrais comptes opérateurs exclusifs CM et CG : **certifiée** (run #42385877161, section 11) ;
 - couvrir les cas non nominaux (ruptures fournisseur, réceptions partielles, reliquats, retards, remboursements, incidents, annulations) ;
 - **revoir le parcours LOCAL_STOCK** : les scripts nominaux historiques incluent encore un geste `local:ship` par le Hub, alors que la règle métier durable exige un circuit local sans Hub. Ne pas qualifier la couverture locale de conforme à cette règle sans recette spécifique distincte.
 
 La procédure de certification relançable demeure `docs/recette/FULL_CERT_CM_CG_AUTOMATION.md` et le référentiel des preuves `docs/recette/evidence/README.md`.
+
+
+## 11. Isolation CM/CG des responsables pays, rôles distincts — 2026-11-07
+
+**Verdict : MARKET_OPERATOR_ISOLATION_PASS**, preuve réelle sur le staging, run officiel [42385877161](https://github.com/SamyrFateh/komerce-backend/actions/runs/42385877161), 18 sondes HTTP / 18 conformes, aucune fuite de données ni écriture métier.
+
+Deux comptes `market_operator` E2E neufs, identifiants et mots de passe générés uniquement pendant le workflow, chacun avec **une seule membership active** (CM ou CG). Le provisionnement utilise les writers canoniques, et le garde du workflow refuse un environnement non staging, une empreinte DB incorrecte ou un SHA de déploiement différent. Aucun compte partenaire réel n'a été modifié.
+
+La matrice, pour chaque acteur CM et CG, couvre `KM`, `CM`, `CG` :
+- `GET /api/admin/workspaces/operations/market/:code` : `200` uniquement sur son propre marché ; `403` ailleurs ;
+- `GET …/supply/trace?order_id=00000000-0000-4000-8000-000000000000` : `200` pour son marché, `403` ailleurs ; requête valide mais sur une commande inexistante ;
+- `POST …/parcels/ISOLATION-PROBE-NONEXISTENT/ship` : `404` sur son marché (identifiant volontairement inexistant), `403` ailleurs. Aucune mutation de colis réel.
+
+Rapport JSON original sans secrets : `docs/recette/evidence/isolation-20261107/staging-market-operator-isolation-42385877161.json`. Code et workflow : PR [#3508](https://github.com/SamyrFateh/komerce-backend/pull/3508) ; correction du paramètre de la sonde trace : PR [#3511](https://github.com/SamyrFateh/komerce-backend/pull/3511).
+
+Les runs précédents [42385279726](https://github.com/SamyrFateh/komerce-backend/actions/runs/42385279726) (refus de SHA, avant toute écriture) et [42385392225](https://github.com/SamyrFateh/komerce-backend/actions/runs/42385392225) (12 refus croisés 403 mais 2 traces propres 400 dues à une requête sans clé) ne sont pas des GO.
+
+**Point de reprise opérationnel suivant :** certifier les refus de franchissement de rôle (Relais → actions Hub ; Transitaire → achats et colis Hub), la chaîne locale sans Hub, puis les non-nominaux (incident fournisseur, manquant, reliquat, annulation, remboursement). Les prix et coûts provisoires `RECETTE` restent **non commercialisables**, aucune activation PSP réelle ni ouverture aux partenaires sans GO économique.

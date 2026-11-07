@@ -1,0 +1,60 @@
+{
+  "schema": "market-operator-cross-isolation/1",
+  "staging": true,
+  "run_id": "42385877161",
+  "actors": [
+    "CM",
+    "CG"
+  ],
+  "markets_tested": [
+    "KM",
+    "CM",
+    "CG"
+  ],
+  "identities": "new distinct market_operator E2E accounts; each one active membership only",
+  "probes": "GET workspace; GET trace; POST ship on guaranteed nonexistent ref",
+  "matrix": {
+    "CM": {
+      "KM": {
+        "read": 403,
+        "write_probe": 403,
+        "trace_read": 403
+      },
+      "CM": {
+        "read": 200,
+        "write_probe": 404,
+        "trace_read": 200
+      },
+      "CG": {
+        "read": 403,
+        "write_probe": 403,
+        "trace_read": 403
+      }
+    },
+    "CG": {
+      "KM": {
+        "read": 403,
+        "write_probe": 403,
+        "trace_read": 403
+      },
+      "CM": {
+        "read": 403,
+        "write_probe": 403,
+        "trace_read": 403
+      },
+      "CG": {
+        "read": 200,
+        "write_probe": 404,
+        "trace_read": 200
+      }
+    }
+  },
+  "checks": 18,
+  "failures": [],
+  "verdict": "MARKET_OPERATOR_ISOLATION_PASS",
+  "limits": [
+    "Only staging E2E accounts created",
+    "Each account has scoped execution.parcel.ship for a harmless negative probe",
+    "No permanent partner pricing or real payment"
+  ]
+}
