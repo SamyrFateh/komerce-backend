@@ -10,10 +10,10 @@
  * @outputs       JSON (statuts + ids relais avant/apres, jamais email ni secret)
  * @depends       scripts/recette/target-guard.js, services/user-mutation-service.js (assignAgentRelais, seul writer canonique)
  * @used-by       .github/workflows/staging-e2e-relay-reassign.yml
- * @db-read       users, relais
+ * @db-read       users, relais, markets, market_operating_assignments, assignment_memberships, membership_capabilities
  * @db-write      users.relais_id (compte E2E agent_relais uniquement) via assignAgentRelais
  * @db-txn        une transaction ; dry-run = ROLLBACK
- * @doctrine      e2e_account_only, reversible, no_rights_widening, staging_only
+ * @doctrine      e2e_account_only, reversible, no_rights_widening, cross_market_only_with_existing_grants, staging_only
  * @impact-areas  staging, auth-identity, relais-scope
  * @version       2026-11
  */
