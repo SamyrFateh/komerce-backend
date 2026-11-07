@@ -85,7 +85,7 @@
     search.setAttribute('aria-label', search.placeholder);
     root.appendChild(search);
     const scroll = make(doc, 'div', 'kmc-hub-board-scroll');
-    const table = make(doc, 'table', 'kmc-hub-board');
+    const table = make(doc, 'table', 'kmc-hub-board kmc-hub-global-table');
     table.setAttribute('aria-label', 'Tableau central Hub, tous les marchés');
     const head = make(doc, 'thead');
     const titleRow = make(doc, 'tr');
@@ -122,12 +122,23 @@
       menu.appendChild(make(doc, 'strong', 'kmc-hub-board-menu-title',
         order.reference + ' · ' + label));
       menu.appendChild(make(doc, 'p', 'kmc-hub-board-menu-summary', value));
+      const stageKey = ({ PO:'po', Fournisseur:'supplier', Réception:'reception', Cartons:'cartons', Départ:'departure', 'Reste à solder':'remaining' })[label];
+      const locked = stageKey && order.stage_states && order.stage_states[stageKey] === 'locked';
+      if (stageKey && order.stage_notes && order.stage_notes[stageKey]) {
+        menu.appendChild(make(doc, 'p', 'kmc-hub-board-menu-summary', order.stage_notes[stageKey]));
+      }
+      if (locked) {
+        menu.appendChild(make(doc, 'p', 'kmc-hub-action-explanation',
+          '✓ Étape terminée et verrouillée : consultation des faits uniquement. Aucune réouverture depuis ce tableau.'));
+      }
       const close = make(doc, 'button', 'kmc-hub-board-menu-action is-dismiss', 'Fermer');
       close.type = 'button';
       close.addEventListener('click', closeMenu);
       menu.appendChild(close);
       menu.hidden = false;
-      if (canOperate && global.KomerceHubContextActions) {
+      if (locked) {
+        // Le geste physique attesté est irréversible ; le détail reste consultable.
+      } else if (canOperate && global.KomerceHubContextActions) {
         global.KomerceHubContextActions.operations(menu, {
           doc, fetch:fetchFn, user, order, stage:label,
           refresh:()=>renderGlobalBoard(root,{document:doc,fetch:fetchFn,user}),
@@ -171,6 +182,15 @@
         const idBox = make(doc, 'div', 'kmc-hub-board-identity');
         idBox.appendChild(make(doc, 'strong', '', order.reference));
         idBox.appendChild(make(doc, 'small', '', order.market + ' · ' + (order.market_name || order.market)));
+        if (order.current_phase) {
+          const phase = make(doc, 'div', 'kmc-hub-phase-summary');
+          phase.appendChild(make(doc, 'span', 'kmc-hub-phase-title',
+            order.current_phase + ' · ' + (order.current_status || 'Situation à vérifier')));
+          if (order.current_detail) phase.appendChild(make(doc, 'small', 'kmc-hub-phase-detail', order.current_detail));
+          if (order.current_expected) phase.appendChild(make(doc, 'small', 'kmc-hub-phase-expected',
+            'Attendu : ' + order.current_expected));
+          idBox.appendChild(phase);
+        }
         if (order.next_action) {
           const next = make(doc, 'small', 'kmc-hub-next-action', order.next_action);
           next.setAttribute('data-hub-next-action','');
@@ -188,8 +208,17 @@
           button.setAttribute('data-hub-global-stage', label);
           button.setAttribute('aria-label', order.reference + ' · ' + label + ' · ' + (order[key] || '—'));
           const state = order.stage_states && order.stage_states[key];
-          if (['muted','waiting','progress','warning','ready','complete','critical'].includes(state)) {
+          if (['muted','waiting','progress','warning','ready','complete','critical','locked'].includes(state)) {
             button.classList.add('is-stage-'+state);
+          }
+          if (order.current_key === key && state !== 'locked') button.classList.add('is-stage-current');
+          if (state === 'locked') {
+            button.setAttribute('aria-label', order.reference + ' · ' + label + ' · Terminée, verrouillée · ' + (order[key] || '—'));
+            button.appendChild(make(doc, 'small', 'kmc-hub-stage-proof', '✓ Terminée · verrouillée · voir la preuve'));
+          } else if (state === 'complete') {
+            button.appendChild(make(doc, 'small', 'kmc-hub-stage-proof', '✓ Terminée · consulter'));
+          } else if (order.current_key === key) {
+            button.appendChild(make(doc, 'small', 'kmc-hub-stage-proof', '▶ Étape actuelle'));
           }
           if (key === 'remaining' && order.attention) button.classList.add('is-attention');
           if (key === 'remaining' && order.remaining_detail) {
