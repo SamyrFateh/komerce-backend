@@ -105,7 +105,9 @@ const hubRead = [
 ];
 const hubSupervise = [
   authenticate,
+  forbidTransitHubAccess,
   attachMarketDelegatedRoleFor(['admin', 'agent_hub', 'market_operator']),
+  forbidTransitHubAccess,
   requireRole(['admin', 'agent_hub', 'market_operator']),
 ];
 
