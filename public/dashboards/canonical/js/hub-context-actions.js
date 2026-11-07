@@ -207,6 +207,56 @@
     }
     return true;
   }
+
+  // Remise physique : réutilise la transition internationale canonique.
+  // Elle concerne TOUS les cartons d'une expédition, jamais un simple statut de commande.
+  function attestHandover(menu,doc,market,orderBoxes,allBoxes,shipments,fetchFn,refresh) {
+    if(!/^[A-Z]{2}$/.test(String(market||'')))return 0;
+    const available=new Map((shipments||[])
+      .filter(sh=>sh.reference && Number(sh.box_count)>0)
+      .map(sh=>[sh.reference,sh]));
+    const refs=new Set((orderBoxes||[])
+      .filter(box=>box.state==='DISPATCHED'&&box.shipment_ref&&box.shipment_stage==='hub_ready')
+      .map(box=>box.shipment_ref));
+    let offered=0;
+    for(const reference of refs) {
+      const shipment=available.get(reference);
+      if(!shipment)continue;
+      // Contrôle de toutes les KOM-BOX, pas seulement celles de cette commande.
+      // Si le dossier est incomplet, conserver le formulaire canonique Expéditions & Douane.
+      const linked=(allBoxes||[]).filter(box=>box.shipment_ref===reference);
+      const ids=new Set(linked.map(box=>String(box.unit_id)));
+      if(ids.size!==Number(shipment.box_count) ||
+          linked.some(box=>box.state!=='DISPATCHED'))continue;
+      const draft=shipment.hub_draft===true;
+      action(menu,doc,'Attester la remise au transitaire · '+reference,
+        'La preuve concerne les '+ids.size+' KOM-BOX de l’expédition entière, pas uniquement cette commande.',()=>{
+          const fields=[
+            ...(draft ? [
+              {name:'forwarder_name',label:'Transitaire prenant physiquement les cartons',
+                required:true,value:shipment.forwarder_name||''},
+              {name:'transport_mode',label:'Transport',required:true,
+                choices:[{label:'Bateau',value:'sea'},{label:'Avion',value:'air'}],
+                value:shipment.transport_mode||'sea'},
+            ] : []),
+            {name:'proof_ref',label:'Référence du justificatif de remise réelle',required:true},
+            {name:'notes',label:'Observations sur la remise (facultatif)'},
+          ];
+          form(menu,doc,'Remise physique · '+reference+' · '+ids.size+' KOM-BOX',
+            fields,values=>request(fetchFn,
+              '/api/admin/workspaces/shipping-customs/market/'+encodeURIComponent(market)+
+              '/international/'+encodeURIComponent(reference)+'/transition',{
+                to_stage:'handed_over',proof_ref:values.proof_ref.trim(),
+                ...(draft?{forwarder_name:values.forwarder_name.trim(),
+                  transport_mode:values.transport_mode}:{}),
+                ...(values.notes.trim()?{notes:values.notes.trim()}:{}),
+              }),refresh);
+        });
+      offered++;
+    }
+    return offered;
+  }
+
   async function operations(menu,{doc,fetch:fetchFn,user,order,stage,refresh,launchSourcing=false}) {
     if(!writableRoles.includes(user?.role))return false;
     // Une ouverture d'une autre cellule annule les requêtes de l'ancien menu.
@@ -300,6 +350,7 @@
         }
       }else if(stage==='Départ'){
         count+=Number(ship(menu,doc,boxes,data.open_shipments,fetchFn,refresh));
+        count+=attestHandover(menu,doc,order.market,boxes,data.boxes,data.open_shipments,fetchFn,refresh);
         const ready=boxes.filter(box=>box.state==='DISPATCHED'&&!box.shipment_ref);
         const planned=boxes.filter(box=>box.shipment_ref && (!box.shipment_stage || box.shipment_stage==='hub_ready'));
         const attested=boxes.filter(box=>box.shipment_ref && box.shipment_stage && box.shipment_stage!=='hub_ready');
