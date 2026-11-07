@@ -5878,6 +5878,24 @@ COMMENT ON COLUMN public.disputes.confection_type IS 'Si litige liÃ© Ã  un s
 
 
 --
+-- Name: e2e_test_accounts; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.e2e_test_accounts (
+    user_id uuid NOT NULL,
+    created_by uuid,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: TABLE e2e_test_accounts; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.e2e_test_accounts IS 'Comptes de test E2E. Ecrit uniquement par scripts/recette/staging-e2e-provision.js. Lecture : services/simulation-visibility.js.';
+
+
+--
 -- Name: economic_risk_cost_events; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -13698,6 +13716,14 @@ ALTER TABLE ONLY public.disputes
 
 
 --
+-- Name: e2e_test_accounts e2e_test_accounts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.e2e_test_accounts
+    ADD CONSTRAINT e2e_test_accounts_pkey PRIMARY KEY (user_id);
+
+
+--
 -- Name: economic_risk_cost_events economic_risk_cost_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -21017,6 +21043,22 @@ ALTER TABLE ONLY public.disputes
 
 ALTER TABLE ONLY public.disputes
     ADD CONSTRAINT disputes_resolved_by_fkey FOREIGN KEY (resolved_by) REFERENCES public.users(id);
+
+
+--
+-- Name: e2e_test_accounts e2e_test_accounts_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.e2e_test_accounts
+    ADD CONSTRAINT e2e_test_accounts_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: e2e_test_accounts e2e_test_accounts_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.e2e_test_accounts
+    ADD CONSTRAINT e2e_test_accounts_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
 
 
 --
