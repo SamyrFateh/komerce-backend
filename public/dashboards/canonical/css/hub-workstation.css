@@ -329,7 +329,7 @@
 .kmc-hub-app .kmc-hub-board-menu.is-sourcing-inline [data-workspace-feedback]:empty {display:none}
 @media(max-width:700px){
   .kmc-hub-app .kmc-hub-board-menu.is-sourcing-inline.is-editing {
-    top:8px!important;left:8px!important;
+    top:8px;left:8px;
     width:calc(100vw - 16px);max-height:calc(100dvh - 16px);
   }
   .kmc-hub-app .kmc-hub-board-menu.is-sourcing-inline .kmc-hub-sourcing-layout{
