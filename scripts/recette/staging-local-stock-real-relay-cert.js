@@ -51,6 +51,8 @@ function assess(snapshot, phase) {
     Number(c.hub_allocations) === 0 && Number(c.hub_units) === 0 &&
     Number(c.shipment_receipts) === 0, 'LOCAL_TOUCHED_HUB');
   expect(Number(c.shipped_scans) === 0 && Number(c.shipping_history) === 0, 'LOCAL_ARTIFICIAL_SHIPPING');
+  expect(Number(c.consumed_allocations) === lines.reduce((n, x) => n + Number(x.quantity || 0), 0),
+    'LOCAL_PAID_ALLOCATIONS_NOT_COVERED');
   expect(Number(c.cash_collections) === 0 && !o.stripe_payment_id && !o.cash_paid_at,
     'SIMULATED_PAYMENT_EXTERNAL_EFFECT');
   if (phase === 'before') {
@@ -62,13 +64,17 @@ function assess(snapshot, phase) {
     expect(Number(c.relay_receipts) === 1, 'LOCAL_RECEIPT_PROOF_COUNT');
     expect(Number(c.available_history) === 1, 'LOCAL_AVAILABLE_HISTORY_COUNT');
     if (p.length === 1) {
+      expect(String(p[0].relais_id) === String(o.relais_id), 'LOCAL_PARCEL_WRONG_RELAIS');
       expect(p[0].shipment_id == null && p[0].shipped_at == null && p[0].in_transit_at == null,
         'LOCAL_PARCEL_LINKED_TO_SHIPMENT');
       expect(p[0].status === (phase === 'collected' ? 'collected' : 'available'), 'LOCAL_PARCEL_STATUS');
       expect(lines.every(x => Number(x.qty_shipped) === 0 &&
         Number(x.qty_received) === Number(x.quantity)), 'LOCAL_RECEIPT_QUANTITIES');
+      expect(lines.every(x => Number(x.qty_collected) === (phase === 'collected' ? Number(x.quantity) : 0)),
+        'LOCAL_COLLECTED_QUANTITIES');
     }
     expect(o.status === (phase === 'collected' ? 'collected' : 'available'), 'LOCAL_ORDER_STATUS');
+    if (phase === 'collected') expect(Number(c.collected_history) === 1, 'LOCAL_PICKUP_HISTORY_COUNT');
   }
   return errors;
 }
@@ -79,10 +85,10 @@ async function snapshot(db, orderId) {
     'SELECT id, market_id, relais_id, status::text AS status, payment_status::text AS payment_status, stripe_payment_id, cash_paid_at FROM orders WHERE id=$1',
     [orderId]);
   const parcels = await q(
-    'SELECT id, reference, status::text AS status, shipment_id, shipped_at, in_transit_at FROM parcels WHERE order_id=$1 AND cancelled_at IS NULL ORDER BY created_at',
+    'SELECT id, reference, relais_id, status::text AS status, shipment_id, shipped_at, in_transit_at FROM parcels WHERE order_id=$1 AND cancelled_at IS NULL ORDER BY created_at',
     [orderId]);
   const lines = await q(
-    'SELECT oi.quantity, oi.fulfillment_source, pi.qty_shipped, pi.qty_received FROM order_items oi LEFT JOIN parcel_items pi ON pi.order_item_id=oi.id AND pi.parcel_id=$2 WHERE oi.order_id=$1',
+    'SELECT oi.quantity, oi.fulfillment_source, pi.qty_shipped, pi.qty_received, pi.qty_collected FROM order_items oi LEFT JOIN parcel_items pi ON pi.order_item_id=oi.id AND pi.parcel_id=$2 WHERE oi.order_id=$1',
     [orderId, parcels[0] ? parcels[0].id : null]);
   const [counts] = await q(
     'SELECT ' +
@@ -95,6 +101,8 @@ async function snapshot(db, orderId) {
     "(SELECT count(*)::int FROM scans WHERE order_id=$1 AND step='shipped') AS shipped_scans, " +
     "(SELECT count(*)::int FROM order_status_history WHERE order_id=$1 AND status::text IN ('shipped','in_transit')) AS shipping_history, " +
     "(SELECT count(*)::int FROM order_status_history WHERE order_id=$1 AND status::text='available') AS available_history, " +
+    "(SELECT count(*)::int FROM order_status_history WHERE order_id=$1 AND status::text='collected') AS collected_history, " +
+    '(SELECT COALESCE(SUM(quantity),0)::int FROM local_stock_allocations WHERE order_id=$1 AND consumed_at IS NOT NULL AND released_at IS NULL) AS consumed_allocations, ' +
     '(SELECT count(*)::int FROM cash_collections WHERE order_id=$1) AS cash_collections',
     [orderId]);
   return { order, parcels, lines, counts };
@@ -145,7 +153,8 @@ async function run({ env = process.env, db, run8 } = {}) {
     const proof = { physical_received: true, note: 'CERT LOCAL ' + run8 + ' reception attestee au relais' };
     const rec = async (key, who, method, routePath, body, http, code) => {
       const result = await actors[who].call(method, routePath, body);
-      const verdict = result.http === http && (!code || result.code === code) ? 'PASS' : 'FAIL';
+      const verdict = result.http === http && result.code !== 'csrf_origin_required' &&
+        (!code || result.code === code) ? 'PASS' : 'FAIL';
       add(key, verdict, { actor: who, method, route: routePath.replace(orderId, ':order_id'),
         expected_http: http, http: result.http, code: result.code });
       return result;
