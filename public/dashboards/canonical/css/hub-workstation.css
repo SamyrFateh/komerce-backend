@@ -669,3 +669,150 @@
     width:calc(100vw - 16px);max-height:calc(100dvh - 72px);
   }
 }
+
+
+/* Hub UX · palette sobre : contraste net, couleurs fonctionnelles et surfaces claires.
+   Le statut reste aussi annoncé en toutes lettres (aucune dépendance à la couleur).
+   Aucun changement aux transitions, droits, actions ou états métiers. */
+.kmc-hub-app {
+  --hub-ux-ink:#26332e;
+  --hub-ux-muted:#596860;
+  --hub-ux-orange:#d66d35;
+  --hub-ux-jade:#188064;
+  --hub-ux-critical:#b8454d;
+}
+.kmc-hub-app .kmc-hub-global-table th {
+  background:#f2f4f2;
+  color:#35433d;
+  box-shadow:0 1px 0 #dee4df;
+}
+.kmc-hub-app .kmc-hub-global-table tbody tr:nth-child(even){background:#fafbfa;}
+.kmc-hub-app .kmc-hub-global-table tbody tr:hover{background:#f8faf8;}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-identity>strong{color:#24342e;}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-identity>small{color:#62736a;}
+.kmc-hub-app .kmc-hub-phase-title{color:#263b32;}
+.kmc-hub-app .kmc-hub-phase-detail{color:#685b48;}
+.kmc-hub-app .kmc-hub-phase-expected{color:#586b61;}
+.kmc-hub-app .kmc-hub-board-identity .kmc-hub-next-action {
+  background:#f1f5f2;
+  border:1px solid #d5e1d9;
+  color:#2e624c;
+}
+.kmc-hub-app .kmc-hub-global-table tr.is-hub-active-order>td:first-child {
+  background:linear-gradient(90deg,#fff8f0 0%,#fffdf9 66%,transparent 100%);
+  box-shadow:inset 4px 0 var(--hub-ux-orange);
+}
+.kmc-hub-app .kmc-hub-global-table tr.is-hub-active-order .kmc-hub-phase-summary{
+  border-left-color:var(--hub-ux-orange);
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-muted,
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-waiting:not(.is-stage-current){
+  background:#f3f5f3;border-color:#e3e8e3;color:#5c6961;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-complete:not(.is-stage-current){
+  background:#f1f3f1;border-color:#e1e5e1;color:#68746c;
+  box-shadow:none;filter:none;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-locked{
+  background:#f4f5f4;border-color:#e4e8e5;color:#748078;
+  box-shadow:none;filter:none;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-warning:not(.is-stage-current){
+  background:#fff8ee;border-color:#edcf9e;color:#865522;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-critical:not(.is-stage-current){
+  background:#fff1f0;border-color:#ebc3c2;color:#953b41;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-ready:not(.is-stage-current){
+  background:#eef7f1;border-color:#c9e4d5;color:#26674f;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-progress:not(.is-stage-current){
+  background:#eff5f1;border-color:#d5e5da;color:#3e6c55;
+}
+
+/* Un seul point focal : bord net, liseré, micro-éclat statique.
+   Suppression des dégradés sombres et des halos pulsants. */
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current {
+  --hub-focus-accent:#d66d35;
+  --hub-focus-bg:#fff8f0;
+  --hub-focus-ink:#6e3d1e;
+  --hub-focus-chip:#fdebdc;
+  --hub-focus-border:#eec49c;
+  position:relative;
+  isolation:isolate;
+  background:var(--hub-focus-bg);
+  border:2px solid var(--hub-focus-accent);
+  color:var(--hub-ux-ink);
+  padding:10px 11px 11px 16px;
+  box-shadow:0 2px 8px rgba(36,52,44,.07),inset 0 1px 0 rgba(255,255,255,.9);
+  animation:none;
+  min-height:80px;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current::before{
+  left:0;top:0;bottom:0;width:5px;border-radius:8px 0 0 8px;
+  background:var(--hub-focus-accent);
+  box-shadow:none;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current::after{content:none;}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current .kmc-hub-stage-primary{
+  color:var(--hub-ux-ink);text-shadow:none;font-weight:850;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current .kmc-hub-stage-proof{
+  color:var(--hub-focus-ink);opacity:1;font-weight:750;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-stage-focus-label {
+  background:var(--hub-focus-chip);
+  color:var(--hub-focus-ink);
+  border:1px solid var(--hub-focus-border);
+  box-shadow:none;
+  font-weight:850;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-stage-focus-label::before{
+  background:var(--hub-focus-accent);box-shadow:none;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current:focus-visible{
+  outline:3px solid #344a3f;outline-offset:3px;
+}
+/* L'état métier pilote la nuance du liseré sans recolorer toute la cellule. */
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current.is-stage-warning{
+  --hub-focus-accent:#d66d35;--hub-focus-bg:#fff8f0;
+  --hub-focus-ink:#754019;--hub-focus-chip:#fdebdc;--hub-focus-border:#eec49c;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current.is-stage-critical{
+  --hub-focus-accent:#b8454d;--hub-focus-bg:#fff5f4;
+  --hub-focus-ink:#86353b;--hub-focus-chip:#fce5e5;--hub-focus-border:#ebc0c1;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current.is-stage-ready{
+  --hub-focus-accent:#188064;--hub-focus-bg:#f0faf5;
+  --hub-focus-ink:#126147;--hub-focus-chip:#dbf3e6;--hub-focus-border:#a7d7bf;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current.is-stage-waiting{
+  --hub-focus-accent:#8d9b93;--hub-focus-bg:#f4f6f4;
+  --hub-focus-ink:#536158;--hub-focus-chip:#e7ede8;--hub-focus-border:#cad5cc;
+}
+/* Les anciens styles de priorité plus spécifiques ne doivent plus remettre
+   de fond sombre, de bord néon ou de brillant jaune. */
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current:is(.is-stage-warning,.is-stage-critical,.is-stage-ready,.is-stage-waiting){
+  background:var(--hub-focus-bg);
+  border-color:var(--hub-focus-accent);
+  box-shadow:0 2px 8px rgba(36,52,44,.07),inset 0 1px 0 rgba(255,255,255,.9);
+  animation:none;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current:is(.is-stage-warning,.is-stage-critical)::before{
+  background:var(--hub-focus-accent);box-shadow:none;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current.is-stage-warning .kmc-hub-stage-focus-label::before{
+  background:var(--hub-focus-accent);box-shadow:none;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-kanban-stage-actions:has(>.is-stage-current)>.kmc-hub-kanban-action{
+  background:#2a3a32;border:1px solid #2a3a32;
+  box-shadow:0 2px 7px rgba(35,52,42,.14);
+  color:#fff;font-weight:780;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-kanban-stage-actions:has(>.is-stage-current:is(.is-stage-warning,.is-stage-critical))>.kmc-hub-kanban-action{
+  background:#2a3a32;border-color:#2a3a32;
+  box-shadow:0 2px 7px rgba(35,52,42,.14);
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-kanban-action:hover{
+  background:#384b40;filter:none;
+}
