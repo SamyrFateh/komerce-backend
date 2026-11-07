@@ -295,3 +295,81 @@
 @media(max-width:1000px){
   .kmc-hub-app .kmc-hub-global-table {min-width:1320px;}
 }
+
+
+/* Journal d'étape · une trace lisible, discrète et consultable même après clôture. */
+.kmc-hub-app .kmc-hub-board-menu .kmc-hub-stage-journal {
+  order: 2; border:1px solid #cbddea; background:linear-gradient(180deg,#f8fbfe,#fff);
+  border-radius:12px; min-width:0; overflow:hidden; margin:5px 0;
+}
+.kmc-hub-app .kmc-hub-board-menu-action.is-dismiss {order:5;}
+.kmc-hub-app .kmc-hub-journal-toggle {
+  display:block; width:100%; border:0; background:transparent;
+  padding:13px 15px; text-align:left; color:#174d70; font:inherit;
+  font-size:13px; font-weight:800; cursor:pointer;
+}
+.kmc-hub-app .kmc-hub-journal-toggle::after {
+  content:'▾'; float:right; margin-left:10px; color:#2779ad;
+}
+.kmc-hub-app .kmc-hub-journal-toggle[aria-expanded="true"]::after {content:'▴';}
+.kmc-hub-app .kmc-hub-journal-toggle:focus-visible {
+  outline:2px solid #0873b8;outline-offset:-3px;
+}
+.kmc-hub-app .kmc-hub-journal-content {
+  display:grid;gap:12px;padding:0 14px 15px;
+  border-top:1px solid #e1ebf2;
+}
+.kmc-hub-app .kmc-hub-journal-content[hidden] {display:none;}
+.kmc-hub-app .kmc-hub-journal-hint {
+  margin:12px 0 2px; color:#405c71; font-size:12px; line-height:1.45;
+}
+.kmc-hub-app .kmc-hub-journal-list {
+  list-style:none; margin:3px 0 0; padding:0 0 0 18px;
+  border-left:2px solid #a7c7d8; display:grid;gap:15px;
+}
+.kmc-hub-app .kmc-hub-journal-item {position:relative;margin:0;padding:0 0 0 5px;}
+.kmc-hub-app .kmc-hub-journal-item::before {
+  content:'';position:absolute;width:9px;height:9px;border-radius:50%;
+  border:2px solid white;background:#3e85af;
+  left:-24px;top:4px;box-shadow:0 0 0 1px #76a5c1;
+}
+.kmc-hub-app .kmc-hub-journal-meta {
+  font-size:11px;font-weight:760;color:#275570;line-height:1.5;
+}
+.kmc-hub-app .kmc-hub-journal-note {
+  margin:4px 0 5px;font-size:13px;line-height:1.55;
+  color:#243d50;white-space:pre-wrap;overflow-wrap:anywhere;
+}
+.kmc-hub-app .kmc-hub-journal-seal {
+  font-size:10px;color:#536b75;font-weight:650;
+}
+.kmc-hub-app .kmc-hub-journal-form {
+  border-top:1px solid #d9e7ee; padding-top:14px;
+  display:grid;gap:8px;
+}
+.kmc-hub-app .kmc-hub-journal-label {
+  display:grid;gap:8px;font-size:12px;color:#26465c;font-weight:800;
+}
+.kmc-hub-app .kmc-hub-journal-textarea {
+  box-sizing:border-box;width:100%;resize:vertical;
+  min-height:84px;max-height:220px;padding:11px 12px;
+  border:1.5px solid #aebfcf;border-radius:9px;background:#fff;
+  font:inherit;font-size:13px;line-height:1.5;color:#19364a;
+}
+.kmc-hub-app .kmc-hub-journal-textarea:focus {
+  outline:2px solid #53a4d1;outline-offset:1px;
+}
+.kmc-hub-app .kmc-hub-journal-help {
+  font-size:11px;line-height:1.5;color:#647581;margin:0;
+}
+.kmc-hub-app .kmc-hub-journal-actions {
+  display:flex;align-items:center;gap:11px;flex-wrap:wrap;
+}
+.kmc-hub-app .kmc-hub-journal-publish {
+  padding:10px 13px;background:#086b95;color:white;border:1px solid #086b95;
+  border-radius:8px;cursor:pointer;font-size:12px;font-weight:800;
+}
+.kmc-hub-app .kmc-hub-journal-publish:hover {background:#065778;}
+.kmc-hub-app .kmc-hub-journal-publish:disabled {opacity:.55;cursor:wait;}
+.kmc-hub-app .kmc-hub-journal-feedback {font-size:11px;color:#9a4d24;line-height:1.4;}
+.kmc-hub-app .kmc-hub-journal-error {font-size:12px;color:#9b3929;line-height:1.5;}
