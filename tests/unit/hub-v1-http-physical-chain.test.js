@@ -37,7 +37,7 @@ function localSnapshot(phase = 'before') {
     lines: [{ quantity: 2, fulfillment_source: 'LOCAL_STOCK',
       qty_shipped: after ? 0 : null, qty_received: after ? 2 : null, qty_collected: collected ? 2 : 0 }],
     counts: { purchase_lines: 0, purchase_orders: 0, hub_allocations: 0,
-      hub_units: 0, shipment_receipts: 0, shipped_scans: 0, shipping_history: 0,
+      hub_units: 0, shipment_receipts: 0, shipped_scans: 0, shipped_scan_events: 0, shipping_history: 0,
       cash_collections: 0, consumed_allocations: 2, collected_history: collected ? 1 : 0,
       relay_receipts: after ? 1 : 0, available_history: after ? 1 : 0 },
   };
