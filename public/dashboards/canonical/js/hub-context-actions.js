@@ -106,6 +106,13 @@
     const line=node(doc,'p','kmc-hub-action-explanation',message);
     menu.appendChild(line);
   }
+  // Un lien de navigation n'est jamais une transition métier ni une validation.
+  function workflowLink(menu,doc,label,url) {
+    const link=node(doc,'a','kmc-hub-board-menu-action is-primary',label);
+    link.href=url;
+    link.setAttribute('data-hub-workflow-link','');
+    menu.appendChild(link);
+  }
   function sent(menu, doc, po, fetchFn, refresh) {
     if(!validUuid(po.id)||po.status !== 'notified'||po.sent_at)return false;
     action(menu,doc,'Attester l’envoi fournisseur','La PO doit avoir été réellement transmise.',()=>form(
@@ -228,7 +235,15 @@
           count+=Number(await prepare(menu,doc,order,fetchFn,refresh,isCurrent));
           unavailable='Les lignes d’achat ouvertes ne sont pas encore groupables : renseigner le fournisseur, le Hub et les références d’achat.';
         }else if(!pos.length){
-          unavailable='Aucune ligne d’achat préparée pour cette commande. Il faut d’abord rattacher les articles au fournisseur avant de constituer la PO.';
+          const dossierOrder=(data.orders||[]).find(o=>o.id===order.id);
+          const missing=(dossierOrder?.items||[]).reduce((n,item)=>
+            n+(item.sourcing_required ? Math.max(0,Number(item.purchasing_missing)||0) : 0),0);
+          if(missing>0 || order.po==='Sourcing requis'){
+            unavailable='Sourcing requis : identifier un fournisseur et créer les lignes d’achat manquantes avant de constituer une PO. Cette commande n’a pas encore de PO.';
+            workflowLink(menu,doc,'Ouvrir le sourcing manuel · Vue opérations','/admin/workspaces/operations');
+          }else{
+            unavailable='Aucune ligne d’achat préparée : identifier les lignes fournisseur avant de constituer la PO.';
+          }
         }else if(pos.some(p=>p.stage==='draft')){
           unavailable='PO brouillon existante : compléter les lignes et faire valider l’engagement avant de soumettre le bon.';
         }else{
@@ -241,27 +256,43 @@
           pos.every(p=>p.sent_at)?'Transmission déjà enregistrée pour les PO de cette commande.':
           'Aucun envoi attestable : vérifier le statut de la PO et son engagement.';
       }else if(stage==='Réception'){
-        if(poIds.length)count+=Number(await receive(menu,doc,poIds,fetchFn,refresh,isCurrent));
-        unavailable=!poIds.length?'Aucune PO associée : la réception exige une commande fournisseur.':
-          'Aucune quantité recevable actuellement : vérifier la PO et les quantités physiques restant à réceptionner.';
+        if(order.stage_states?.reception==='complete'){
+          unavailable='✓ Réception terminée : toutes les quantités attendues sont reçues. Consulter les preuves dans le dossier.';
+        }else{
+          if(poIds.length)count+=Number(await receive(menu,doc,poIds,fetchFn,refresh,isCurrent));
+          unavailable=!poIds.length?'Aucune PO associée : la réception exige une commande fournisseur.':
+            'Aucune quantité recevable actuellement : vérifier la PO et les quantités physiques restant à réceptionner.';
+        }
       }else if(stage==='Cartons'){
         // Une KOM-BOX vide ne prouve pas l'emballage. Ne pas proposer de création
         // trompeuse avant l'allocation physique et le contrôle du contenu.
         unavailable=received<=0?'Rien de réceptionné : préparer le carton seulement après le contrôle physique.':
           boxes.length?'Carton(s) présent(s) : contrôler le contenu et la preuve d’emballage avant la mise au départ.':
-          'Articles réceptionnés : constituer et contrôler leur carton physique depuis les allocations réelles du Hub.';
+          'Articles réceptionnés : préparer leur emballage dans le workspace Opérations du marché.';
+        if(received>0 && order.stage_states?.cartons!=='complete'){
+          workflowLink(menu,doc,'Ouvrir la préparation physique · Opérations','/admin/workspaces/operations');
+        }
       }else if(stage==='Départ'){
         count+=Number(ship(menu,doc,boxes,data.open_shipments,fetchFn,refresh));
         const ready=boxes.filter(box=>box.state==='DISPATCHED'&&!box.shipment_ref);
-        unavailable=!boxes.length?'Aucun carton constitué : la préparation physique doit précéder le départ.':
+        const planned=boxes.filter(box=>box.shipment_ref && (!box.shipment_stage || box.shipment_stage==='hub_ready'));
+        const attested=boxes.filter(box=>box.shipment_ref && box.shipment_stage && box.shipment_stage!=='hub_ready');
+        unavailable=planned.length?'Expédition créée ('+planned.map(b=>b.shipment_ref).filter(Boolean).join(', ')+') mais remise au transitaire non attestée. Attester le transfert réel dans Expéditions & Douane.':
+          attested.length && !ready.length?'Remise au transitaire déjà attestée : consulter le suivi et les justificatifs dans Expéditions & Douane.':
+          !boxes.length?'Aucun carton constitué : la préparation physique doit précéder le départ.':
           !ready.length?'Aucun carton prêt à rattacher : confirmer l’emballage et le scellage dans le Hub.':
           'Aucune expédition ouverte pour ce marché : créer le départ avant de rattacher le carton.';
+        if(planned.length || attested.length) workflowLink(menu,doc,
+          'Consulter le transport · Expéditions & Douane','/admin/workspaces/shipping-customs');
       }else if(stage==='Reste à solder'){
         if(needs.length)count+=Number(await prepare(menu,doc,order,fetchFn,refresh,isCurrent));
         if(isCurrent()&&poIds.length)count+=Number(await receive(menu,doc,poIds,fetchFn,refresh,isCurrent));
-        unavailable=needs.length?'Des articles restent à acheter : la préparation de PO nécessite des lignes fournisseur groupables.':
-          poIds.length?'Le reliquat ne possède aucune réception admissible pour le moment.':
+        unavailable=order.current_phase==='Remise client'?
+          'Colis arrivé au relais : seule la preuve de remise au client permettra de clore cette étape.':
+          needs.length?'Des articles restent à acheter : la préparation de PO nécessite des lignes fournisseur groupables.':
+          poIds.length?'Vérifier les quantités encore attendues ; la clôture ou le remboursement exige une décision traçable.':
           'Aucun reliquat engagé en achat. Remboursement et clôture restent soumis à une décision métier traçable.';
+        if(order.current_phase==='Remise client') workflowLink(menu,doc,'Voir le relais · suivi des remises','/admin/relais-live');
       }else{
         unavailable='Étape inconnue : aucune action disponible.';
       }
