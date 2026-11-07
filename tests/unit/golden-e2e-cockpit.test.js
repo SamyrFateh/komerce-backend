@@ -33,6 +33,9 @@ test('projette 10 preuves réelles sans mutation DB', async () => {
   expect(result.doctrine).toBe('read_only_projection_no_business_authority');
   expect(db.query).toHaveBeenCalledTimes(3);
   expect(db.query.mock.calls.every(([sql]) => /^SELECT/i.test(sql.trim()))).toBe(true);
+  const purchaseSql = db.query.mock.calls[0][0];
+  expect(purchaseSql.match(/pl\.product_sku_id\s*=\s*oi\.sku_id/g)).toHaveLength(2);
+  expect(purchaseSql.match(/oi\.sku_id IS NOT NULL/g)).toHaveLength(2);
 });
 
 
