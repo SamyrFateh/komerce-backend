@@ -13,17 +13,17 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 790,
-    "filesWithFullHeaders": 736,
+    "scannedCodeFiles": 792,
+    "filesWithFullHeaders": 738,
     "filesWithLiteHeaders": 54,
-    "filesWithAnyHeaders": 790,
+    "filesWithAnyHeaders": 792,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1998,
-    "edges": 9837,
-    "dbTables": 231,
-    "doctrines": 770,
+    "graphNodes": 2006,
+    "edges": 9857,
+    "dbTables": 232,
+    "doctrines": 775,
     "impactAreas": 207,
     "unresolvedCodeEdges": 943,
     "dbWriteViaOverlapWarnings": 12,
@@ -34,15 +34,15 @@
     "bootstrap": 2,
     "notification": 21,
     "auth": 14,
+    "market-delegation": 36,
     "platform-ops": 2,
     "catalog": 136,
     "admin-dashboard": 39,
     "decision-signals": 14,
-    "market-delegation": 35,
     "market": 9,
     "economic-engine": 67,
     "sourcing": 37,
-    "logistics": 67,
+    "logistics": 68,
     "boutique": 21,
     "checkout": 3,
     "shared-cart": 25,
@@ -84,7 +84,7 @@
     "cron": 1,
     "composition-root": 1,
     "manual-test": 1,
-    "middleware": 26,
+    "middleware": 27,
     "ui-bootstrap": 4,
     "ui-component": 40,
     "ui-enhancer": 3,
@@ -112,7 +112,7 @@
     "schema": 1,
     "route": 137,
     "entrypoint": 1,
-    "service": 473,
+    "service": 474,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -121,9 +121,9 @@
     "validators": 1
   },
   "byCriticality": {
-    "critical": 118,
+    "critical": 119,
     "medium": 154,
-    "high": 454,
+    "high": 455,
     "low": 63,
     "unknown": 1
   },
@@ -792,6 +792,37 @@
         "all-api"
       ],
       "version": "2026-08"
+    },
+    {
+      "id": "middleware/deny-transitaire-hub.js",
+      "file": "middleware/deny-transitaire-hub.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "deny-transitaire-hub-scope",
+      "domain": "market-delegation",
+      "layer": "middleware",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated session role",
+        "persisted role"
+      ],
+      "outputs": [
+        "403 or next"
+      ],
+      "depends": [],
+      "usedBy": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "transit_role_never_enters_hub_live",
+        "persisted_role_wins_over_compat_projection"
+      ],
+      "impactAreas": [],
+      "version": null
     },
     {
       "id": "middleware/error-handler.js",
@@ -6510,6 +6541,13 @@
           "via": "market-delivery-proof-service",
           "tables": [
             "market_delivery_attestations",
+            "market_delegation_audit"
+          ]
+        },
+        {
+          "via": "market-transport-sale-rate-command",
+          "tables": [
+            "market_transport_sale_rates",
             "market_delegation_audit"
           ]
         },
@@ -23425,6 +23463,63 @@
       "version": null
     },
     {
+      "id": "services/market-transport-sale-rate-command.js",
+      "file": "services/market-transport-sale-rate-command.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "market-transport-sale-rate-command",
+      "domain": "logistics",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "central admin actor",
+        "market code",
+        "rate key",
+        "positive local rate",
+        "currency",
+        "evidence",
+        "reason"
+      ],
+      "outputs": [
+        "current and historical commercial transport sale rates",
+        "audited versioned write"
+      ],
+      "depends": [
+        "services/market-delegation-service.js"
+      ],
+      "usedBy": [
+        "routes/admin-market-control-plane.js"
+      ],
+      "dbRead": [
+        "markets",
+        "market_transport_sale_rates"
+      ],
+      "dbWrite": [
+        "market_transport_sale_rates",
+        "market_delegation_audit (via delegation.audit)"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "caller-owned transaction for writes"
+      ],
+      "doctrine": [
+        "transport_sale_price_not_freight_cost",
+        "local_currency_only",
+        "audit_required",
+        "fail_closed",
+        "no_country_branch"
+      ],
+      "impactAreas": [
+        "checkout",
+        "transport",
+        "market",
+        "finance"
+      ],
+      "version": "2026-11"
+    },
+    {
       "id": "services/market-transport-sale-rates.js",
       "file": "services/market-transport-sale-rates.js",
       "type": "file",
@@ -30190,6 +30285,7 @@
         "routes/relay-dashboard.js"
       ],
       "dbRead": [
+        "incidents",
         "markets",
         "order_comments",
         "order_incidents",
@@ -38331,6 +38427,11 @@
       "table": "market_delivery_attestations"
     },
     {
+      "id": "db:market_transport_sale_rates",
+      "type": "db-table",
+      "table": "market_transport_sale_rates"
+    },
+    {
       "id": "db:market_cash_control_policies",
       "type": "db-table",
       "table": "market_cash_control_policies"
@@ -39096,9 +39197,9 @@
       "table": "central authority grant tables"
     },
     {
-      "id": "db:market_transport_sale_rates",
+      "id": "db:market_delegation_audit (via delegation.audit)",
       "type": "db-table",
-      "table": "market_transport_sale_rates"
+      "table": "market_delegation_audit (via delegation.audit)"
     },
     {
       "id": "db:e2e_test_accounts",
@@ -39329,6 +39430,16 @@
       "id": "doctrine:bearer_not_csrf_surface",
       "type": "doctrine",
       "doctrine": "bearer_not_csrf_surface"
+    },
+    {
+      "id": "doctrine:transit_role_never_enters_hub_live",
+      "type": "doctrine",
+      "doctrine": "transit_role_never_enters_hub_live"
+    },
+    {
+      "id": "doctrine:persisted_role_wins_over_compat_projection",
+      "type": "doctrine",
+      "doctrine": "persisted_role_wins_over_compat_projection"
     },
     {
       "id": "doctrine:public_static_serves_app_assets_only",
@@ -42049,6 +42160,21 @@
       "id": "doctrine:zero_reference_is_not_a_fact",
       "type": "doctrine",
       "doctrine": "zero_reference_is_not_a_fact"
+    },
+    {
+      "id": "doctrine:transport_sale_price_not_freight_cost",
+      "type": "doctrine",
+      "doctrine": "transport_sale_price_not_freight_cost"
+    },
+    {
+      "id": "doctrine:local_currency_only",
+      "type": "doctrine",
+      "doctrine": "local_currency_only"
+    },
+    {
+      "id": "doctrine:audit_required",
+      "type": "doctrine",
+      "doctrine": "audit_required"
     },
     {
       "id": "doctrine:attested_cost_is_not_a_sale_price",
@@ -45540,6 +45666,18 @@
       "to": "impact:all-api",
       "type": "impact",
       "label": "all-api"
+    },
+    {
+      "from": "middleware/deny-transitaire-hub.js",
+      "to": "doctrine:transit_role_never_enters_hub_live",
+      "type": "doctrine",
+      "label": "transit_role_never_enters_hub_live"
+    },
+    {
+      "from": "middleware/deny-transitaire-hub.js",
+      "to": "doctrine:persisted_role_wins_over_compat_projection",
+      "type": "doctrine",
+      "label": "persisted_role_wins_over_compat_projection"
     },
     {
       "from": "middleware/error-handler.js",
@@ -53466,6 +53604,20 @@
       "type": "db-write-via",
       "label": "market_delegation_audit",
       "via": "market-delivery-proof-service"
+    },
+    {
+      "from": "routes/admin-market-control-plane.js",
+      "to": "db:market_transport_sale_rates",
+      "type": "db-write-via",
+      "label": "market_transport_sale_rates",
+      "via": "market-transport-sale-rate-command"
+    },
+    {
+      "from": "routes/admin-market-control-plane.js",
+      "to": "db:market_delegation_audit",
+      "type": "db-write-via",
+      "label": "market_delegation_audit",
+      "via": "market-transport-sale-rate-command"
     },
     {
       "from": "routes/admin-market-control-plane.js",
@@ -81055,6 +81207,96 @@
       "label": "zero_reference_is_not_a_fact"
     },
     {
+      "from": "services/market-transport-sale-rate-command.js",
+      "to": "services/market-delegation-service.js",
+      "type": "depends",
+      "label": "services/market-delegation-service.js"
+    },
+    {
+      "from": "routes/admin-market-control-plane.js",
+      "to": "services/market-transport-sale-rate-command.js",
+      "type": "uses",
+      "label": "routes/admin-market-control-plane.js"
+    },
+    {
+      "from": "services/market-transport-sale-rate-command.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "services/market-transport-sale-rate-command.js",
+      "to": "db:market_transport_sale_rates",
+      "type": "db-read",
+      "label": "market_transport_sale_rates"
+    },
+    {
+      "from": "services/market-transport-sale-rate-command.js",
+      "to": "db:market_transport_sale_rates",
+      "type": "db-write",
+      "label": "market_transport_sale_rates"
+    },
+    {
+      "from": "services/market-transport-sale-rate-command.js",
+      "to": "db:market_delegation_audit (via delegation.audit)",
+      "type": "db-write",
+      "label": "market_delegation_audit (via delegation.audit)"
+    },
+    {
+      "from": "services/market-transport-sale-rate-command.js",
+      "to": "doctrine:transport_sale_price_not_freight_cost",
+      "type": "doctrine",
+      "label": "transport_sale_price_not_freight_cost"
+    },
+    {
+      "from": "services/market-transport-sale-rate-command.js",
+      "to": "doctrine:local_currency_only",
+      "type": "doctrine",
+      "label": "local_currency_only"
+    },
+    {
+      "from": "services/market-transport-sale-rate-command.js",
+      "to": "doctrine:audit_required",
+      "type": "doctrine",
+      "label": "audit_required"
+    },
+    {
+      "from": "services/market-transport-sale-rate-command.js",
+      "to": "doctrine:fail_closed",
+      "type": "doctrine",
+      "label": "fail_closed"
+    },
+    {
+      "from": "services/market-transport-sale-rate-command.js",
+      "to": "doctrine:no_country_branch",
+      "type": "doctrine",
+      "label": "no_country_branch"
+    },
+    {
+      "from": "services/market-transport-sale-rate-command.js",
+      "to": "impact:checkout",
+      "type": "impact",
+      "label": "checkout"
+    },
+    {
+      "from": "services/market-transport-sale-rate-command.js",
+      "to": "impact:transport",
+      "type": "impact",
+      "label": "transport"
+    },
+    {
+      "from": "services/market-transport-sale-rate-command.js",
+      "to": "impact:market",
+      "type": "impact",
+      "label": "market"
+    },
+    {
+      "from": "services/market-transport-sale-rate-command.js",
+      "to": "impact:finance",
+      "type": "impact",
+      "label": "finance"
+    },
+    {
       "from": "services/market-transport-sale-rates.js",
       "to": "utils/currency.js",
       "type": "depends",
@@ -91581,6 +91823,12 @@
       "to": "services/relay-dashboard-queries.js",
       "type": "uses",
       "label": "routes/relay-dashboard.js"
+    },
+    {
+      "from": "services/relay-dashboard-queries.js",
+      "to": "db:incidents",
+      "type": "db-read",
+      "label": "incidents"
     },
     {
       "from": "services/relay-dashboard-queries.js",
@@ -104367,6 +104615,29 @@
         "utils/auth-cookie.js"
       ]
     },
+    "middleware/deny-transitaire-hub.js": {
+      "role": "deny-transitaire-hub-scope",
+      "domain": "market-delegation",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [],
+      "directUsedBy": [],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "transit_role_never_enters_hub_live",
+        "persisted_role_wins_over_compat_projection"
+      ],
+      "impactAreas": [],
+      "mustCheck": [
+        "doctrine:persisted_role_wins_over_compat_projection",
+        "doctrine:transit_role_never_enters_hub_live"
+      ]
+    },
     "middleware/error-handler.js": {
       "role": "auth-error-handler",
       "domain": "infrastructure",
@@ -110184,6 +110455,13 @@
           ]
         },
         {
+          "via": "market-transport-sale-rate-command",
+          "tables": [
+            "market_transport_sale_rates",
+            "market_delegation_audit"
+          ]
+        },
+        {
           "via": "market-provisioning-service",
           "tables": [
             "markets",
@@ -110216,6 +110494,7 @@
         "db:market_delivery_attestations",
         "db:market_operating_assignments",
         "db:market_payment_providers",
+        "db:market_transport_sale_rates",
         "db:markets",
         "db:membership_capabilities",
         "db:relais",
@@ -110229,7 +110508,8 @@
         "services/central-authority.js",
         "services/market-control-plane.js",
         "services/market-delivery-proof-service.js",
-        "services/market-provisioning-service.js"
+        "services/market-provisioning-service.js",
+        "services/market-transport-sale-rate-command.js"
       ]
     },
     "routes/admin-market-payment-accounts.js": {
@@ -126148,7 +126428,8 @@
         "services/market-delivery-proof-service.js",
         "services/market-operator-provisioning.js",
         "services/market-payment-account-service.js",
-        "services/market-provisioning-service.js"
+        "services/market-provisioning-service.js",
+        "services/market-transport-sale-rate-command.js"
       ]
     },
     "services/market-delegation-settlement-service.js": {
@@ -127240,6 +127521,59 @@
         "doctrine:accounting_truth_is_append_only",
         "doctrine:market_scope_from_resolved_route",
         "doctrine:zero_reference_is_not_a_fact"
+      ]
+    },
+    "services/market-transport-sale-rate-command.js": {
+      "role": "market-transport-sale-rate-command",
+      "domain": "logistics",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/market-delegation-service.js"
+      ],
+      "directUsedBy": [
+        "routes/admin-market-control-plane.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "markets",
+        "market_transport_sale_rates"
+      ],
+      "dbWrite": [
+        "market_transport_sale_rates",
+        "market_delegation_audit (via delegation.audit)"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "transport_sale_price_not_freight_cost",
+        "local_currency_only",
+        "audit_required",
+        "fail_closed",
+        "no_country_branch"
+      ],
+      "impactAreas": [
+        "checkout",
+        "transport",
+        "market",
+        "finance"
+      ],
+      "mustCheck": [
+        "db:market_delegation_audit (via delegation.audit)",
+        "db:market_transport_sale_rates",
+        "db:markets",
+        "doctrine:audit_required",
+        "doctrine:fail_closed",
+        "doctrine:local_currency_only",
+        "doctrine:no_country_branch",
+        "doctrine:transport_sale_price_not_freight_cost",
+        "impact:checkout",
+        "impact:finance",
+        "impact:market",
+        "impact:transport",
+        "routes/admin-market-control-plane.js",
+        "services/market-delegation-service.js"
       ]
     },
     "services/market-transport-sale-rates.js": {
@@ -133930,6 +134264,7 @@
       ],
       "ownedFiles": [],
       "dbRead": [
+        "incidents",
         "markets",
         "order_comments",
         "order_incidents",
@@ -133954,6 +134289,7 @@
         "market"
       ],
       "mustCheck": [
+        "db:incidents",
         "db:markets",
         "db:order_comments",
         "db:order_incidents",
