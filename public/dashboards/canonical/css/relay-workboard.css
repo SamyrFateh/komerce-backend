@@ -290,21 +290,16 @@ body.kmc-shell-v4 .kmc-domain-cockpit .kir-hero.kmc-relay-compact-hero p:not(.lk
   background:#f7f9f7;border-radius:7px;
 }
 .kmc-domain-cockpit .lk-sim-toggle a[data-sim-toggle]::before {
-  display:block;content:"";width:18px;height:10px;
-  border-radius:6px;background:#a5b3a9;
-  box-shadow:inset 0 0 0 1px rgba(0,0,0,.06);
+  display:block;content:"";flex:0 0 9px;width:9px;height:9px;
+  border:2px solid #9aad9e;border-radius:50%;background:#fff;
 }
-.kmc-domain-cockpit .lk-sim-toggle a[data-sim-toggle]::after {
-  content:"";width:7px;height:7px;background:#fff;
-  border-radius:50%;margin-left:-26px;margin-right:9px;
-  box-shadow:0 1px 3px rgba(0,0,0,.12);
-}
+.kmc-domain-cockpit .lk-sim-toggle a[data-sim-toggle]::after {display:none;}
 .kmc-domain-cockpit .lk-sim-toggle a[data-sim-toggle][aria-checked="true"] {
   background:#fdf5e9;border-color:#e7c48b;color:#785320;
 }
-.kmc-domain-cockpit .lk-sim-toggle a[data-sim-toggle][aria-checked="true"]::before {background:#ce9233;}
-.kmc-domain-cockpit .lk-sim-toggle a[data-sim-toggle][aria-checked="true"]::after {
-  transform:translateX(7px);
+.kmc-domain-cockpit .lk-sim-toggle a[data-sim-toggle][aria-checked="true"]::before {
+  background:#d99d42;border-color:#d99d42;
+  box-shadow:0 0 0 3px rgba(217,157,66,.12);
 }
 .kmc-domain-cockpit .lk-sim-toggle small {
   max-width:255px;color:#785320;font-size:11px;line-height:1.35;
