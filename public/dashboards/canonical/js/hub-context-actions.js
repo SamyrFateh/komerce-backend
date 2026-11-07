@@ -240,7 +240,31 @@
             n+(item.sourcing_required ? Math.max(0,Number(item.purchasing_missing)||0) : 0),0);
           if(missing>0 || order.po==='Sourcing requis'){
             unavailable='Sourcing requis : identifier un fournisseur et créer les lignes d’achat manquantes avant de constituer une PO. Cette commande n’a pas encore de PO.';
-            workflowLink(menu,doc,'Ouvrir le sourcing manuel · Vue opérations','/admin/workspaces/operations');
+            const reuse = global.KomerceCanonicalOperationsWorkspace;
+            const dossierOrder = (data.orders||[]).find(o=>o.id===order.id);
+            if (reuse && typeof reuse.openManualSourcing==='function' && dossierOrder) {
+              action(menu,doc,'Créer une ligne d’achat ici',
+                'Réutiliser le formulaire officiel : fournisseur, référence, prix réel et quantité non couverte.',
+                () => {
+                  if(!isCurrent())return;
+                  menu.classList.add('is-sourcing-inline','is-editing');
+                  const viewport = doc.defaultView;
+                  menu.style.left=Math.max(8,Math.round(((viewport?.innerWidth||1440)-780)/2))+'px';
+                  menu.style.top='58px';
+                  try {
+                    reuse.openManualSourcing(menu,{
+                      document:doc,fetch:fetchFn,user,order:dossierOrder,
+                      confirm:question=>Boolean(viewport?.confirm?.(question)),
+                      refresh:async()=>{menu.hidden=true;await refresh?.();},
+                    });
+                  }catch(error){
+                    menu.classList.remove('is-sourcing-inline','is-editing');
+                    explanation(menu,doc,'Sourcing non disponible : '+error.message);
+                  }
+                });
+            } else {
+              workflowLink(menu,doc,'Ouvrir le sourcing manuel · Vue opérations','/admin/workspaces/operations');
+            }
           }else{
             unavailable='Aucune ligne d’achat préparée : identifier les lignes fournisseur avant de constituer la PO.';
           }
