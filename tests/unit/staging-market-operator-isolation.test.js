@@ -54,6 +54,7 @@ describe('preuve HTTP par les vrais endpoints', () => {
     expect(report.matrix.CM.CG).toEqual({ read:403, write_probe:403, trace_read:403 });
     expect(report.matrix.CG.KM).toEqual({ read:403, write_probe:403, trace_read:403 });
     expect(f.mock.calls.filter(([url,opts])=>opts.method==='POST' && url.includes('ISOLATION-PROBE-NONEXISTENT'))).toHaveLength(6);
+    expect(f.mock.calls.filter(([url,opts]) => opts.method==='GET' && url.includes('/supply/trace?order_id=00000000-0000-4000-8000-000000000000'))).toHaveLength(6);
   });
   test('échec fermé si accès hors marché en lecture', async () => {
     const f=mockHTTP({status:({owner,target,url,status}) =>

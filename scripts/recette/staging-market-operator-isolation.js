@@ -138,7 +138,8 @@ async function exerciseHttp(credentials, fetchImpl = fetch) {
       const post = await fetchImpl(BASE + root + '/parcels/ISOLATION-PROBE-NONEXISTENT/ship', {
         method: 'POST', headers, body: JSON.stringify({ reason: 'scanner_unavailable' }),
       });
-      const trace = await fetchImpl(BASE + root + '/supply/trace', { method: 'GET', headers });
+      // A valid but guaranteed absent UUID exercises the authorized trace service without any data mutation.
+      const trace = await fetchImpl(BASE + root + '/supply/trace?order_id=00000000-0000-4000-8000-000000000000', { method: 'GET', headers });
       matrix[owner][target] = { read: responseStatus(get), write_probe: responseStatus(post), trace_read: responseStatus(trace) };
     }
   }
