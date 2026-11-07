@@ -49,6 +49,25 @@
     if (textContent !== undefined) node.textContent = safe(textContent);
     return node;
   };
+  // Une seule paire d'écouteurs par tableau : les rafraîchissements n'empilent pas
+  // des handlers document (ouvertures/clics extérieurs) devenus obsolètes.
+  const boardDisposers = new WeakMap();
+  function installMenuDismiss(root, doc, menu, close) {
+    const previous = boardDisposers.get(root);
+    if (previous) previous();
+    const outside = event => {
+      if (!menu.hidden && !menu.contains(event.target)) close();
+    };
+    const escape = event => {
+      if (event.key === 'Escape' && !menu.hidden) close();
+    };
+    doc.addEventListener('pointerdown', outside, true);
+    doc.addEventListener('keydown', escape);
+    boardDisposers.set(root, () => {
+      doc.removeEventListener('pointerdown', outside, true);
+      doc.removeEventListener('keydown', escape);
+    });
+  }
   const smallRef = value => safe(value).slice(0, 8);
   const getPO = location => new URLSearchParams(safe(location && location.search)).get('po') || '';
 
@@ -74,6 +93,8 @@
     if (!root || !doc || typeof fetchFn !== 'function') {
       throw new Error('hub_global_board_context_missing');
     }
+    boardDisposers.get(root)?.();
+    boardDisposers.delete(root);
     root.replaceChildren();
     const header = make(doc, 'div', 'kmc-hub-global-toolbar');
     header.appendChild(make(doc, 'strong', '', 'Toutes les commandes import · Tous les marchés'));
@@ -119,11 +140,22 @@
       menu.setAttribute('data-hub-request', requestId);
       menu.replaceChildren();
       menu.classList.remove('is-editing');
+      menu.removeAttribute('data-hub-menu-stage-state');
       menu.appendChild(make(doc, 'strong', 'kmc-hub-board-menu-title',
         order.reference + ' · ' + label));
       menu.appendChild(make(doc, 'p', 'kmc-hub-board-menu-summary', value));
       const stageKey = ({ PO:'po', Fournisseur:'supplier', Réception:'reception', Cartons:'cartons', Départ:'departure', 'Reste à solder':'remaining' })[label];
-      const locked = stageKey && order.stage_states && order.stage_states[stageKey] === 'locked';
+      const state = stageKey && order.stage_states && order.stage_states[stageKey];
+      const locked = state === 'locked';
+      menu.setAttribute('data-hub-menu-stage-state', state || 'unknown');
+      if (stageKey === order.current_key && order.current_phase) {
+        menu.appendChild(make(doc, 'p', 'kmc-hub-board-menu-current',
+          '▶ Étape actuelle · ' + order.current_phase + ' — ' + (order.current_status || 'À vérifier')));
+        if (order.current_expected) {
+          menu.appendChild(make(doc, 'p', 'kmc-hub-board-menu-expected',
+            'Attendu : ' + order.current_expected));
+        }
+      }
       if (stageKey && order.stage_notes && order.stage_notes[stageKey]) {
         menu.appendChild(make(doc, 'p', 'kmc-hub-board-menu-summary', order.stage_notes[stageKey]));
       }
@@ -158,7 +190,7 @@
       menu.style.top = Math.max(8, Math.min(y, height - 240)) + 'px';
       menu.querySelector?.('a,button')?.focus?.();
     };
-    root.addEventListener('keydown', event => { if (event.key === 'Escape') closeMenu(); });
+    installMenuDismiss(root, doc, menu, closeMenu);
 
     let rows = [];
     const renderRows = () => {
@@ -203,7 +235,8 @@
           ['Cartons', 'cartons'], ['Départ', 'departure'], ['Reste à solder', 'remaining'],
         ]) {
           const td = make(doc, 'td');
-          const button = make(doc, 'button', 'kmc-hub-board-cell', order[key] || '—');
+          const button = make(doc, 'button', 'kmc-hub-board-cell');
+          button.appendChild(make(doc, 'strong', 'kmc-hub-stage-primary', order[key] || '—'));
           button.type = 'button';
           button.setAttribute('data-hub-global-stage', label);
           button.setAttribute('aria-label', order.reference + ' · ' + label + ' · ' + (order[key] || '—'));
@@ -211,14 +244,21 @@
           if (['muted','waiting','progress','warning','ready','complete','critical','locked'].includes(state)) {
             button.classList.add('is-stage-'+state);
           }
-          if (order.current_key === key && state !== 'locked') button.classList.add('is-stage-current');
+          if (order.current_key === key && state !== 'locked') {
+            button.classList.add('is-stage-current');
+            button.setAttribute('aria-current', 'step');
+          }
           if (state === 'locked') {
             button.setAttribute('aria-label', order.reference + ' · ' + label + ' · Terminée, verrouillée · ' + (order[key] || '—'));
             button.appendChild(make(doc, 'small', 'kmc-hub-stage-proof', '✓ Terminée · verrouillée · voir la preuve'));
           } else if (state === 'complete') {
             button.appendChild(make(doc, 'small', 'kmc-hub-stage-proof', '✓ Terminée · consulter'));
           } else if (order.current_key === key) {
-            button.appendChild(make(doc, 'small', 'kmc-hub-stage-proof', '▶ Étape actuelle'));
+            button.appendChild(make(doc, 'small', 'kmc-hub-stage-proof', '▶ À faire / suivre maintenant'));
+          } else if (state === 'muted') {
+            button.appendChild(make(doc, 'small', 'kmc-hub-stage-proof', 'À venir'));
+          } else if (state === 'waiting') {
+            button.appendChild(make(doc, 'small', 'kmc-hub-stage-proof', '◷ En attente'));
           }
           if (key === 'remaining' && order.attention) button.classList.add('is-attention');
           if (key === 'remaining' && order.remaining_detail) {
@@ -271,6 +311,8 @@
   async function renderAdministrationBoard(root, {document:doc, fetch:fetchFn, user} = {}) {
     if (!root || !doc || typeof fetchFn !== 'function') throw new Error('hub_admin_board_context_missing');
     if (!['admin','agent_hub'].includes(user && user.role)) throw new Error('hub_admin_board_role_not_allowed');
+    boardDisposers.get(root)?.();
+    boardDisposers.delete(root);
     root.replaceChildren();
 
     const top = make(doc, 'div', 'kmc-hub-global-toolbar');
@@ -327,7 +369,11 @@
     menu.setAttribute('data-hub-admin-menu', '');
     menu.hidden = true;
     root.appendChild(menu);
-    const closeMenu = () => {menu.hidden = true;};
+    const closeMenu = () => {
+      menu.hidden = true;
+      menu.setAttribute('data-hub-request', String(Date.now()) + '-closed');
+    };
+    installMenuDismiss(root, doc, menu, closeMenu);
     const openMenu = (po, field, value, event) => {
       menu.replaceChildren();
       menu.classList.remove('is-editing');
@@ -359,7 +405,7 @@
       menu.style.top = Math.max(8, Math.min(y, height - 265)) + 'px';
       menu.querySelector?.('a,button')?.focus?.();
     };
-    root.addEventListener('keydown', event => {if(event.key === 'Escape') closeMenu();});
+    // Échap et clic extérieur gérés par installMenuDismiss().
 
     let rows = [];
     let viewerGrants = {};
@@ -503,6 +549,27 @@
     heading.appendChild(make(doc,'h1','','Hub · Tous les marchés'));
     heading.appendChild(make(doc,'p','','Achats fournisseurs, réception, préparation et expéditions'));
     header.appendChild(heading);
+    // Mode plein poste : garder l'action dans le Kanban, libérer l'espace
+    // occupé par le menu de navigation, sans perdre l'accès à ce menu.
+    // Défaut pour les agents Hub sur la branche opérationnelle uniquement.
+    const focusToggle=make(doc,'button','kmc-hub-focus-toggle');
+    focusToggle.type='button';
+    focusToggle.setAttribute('data-hub-focus-toggle','');
+    let focusEnabled=role==='agent_hub' && branch==='operations';
+    const applyFocus=() => {
+      root.classList.toggle('is-focus-workspace',focusEnabled);
+      doc.body?.classList?.toggle('kmc-hub-agent-focus',focusEnabled);
+      focusToggle.setAttribute('aria-pressed',String(focusEnabled));
+      focusToggle.textContent=focusEnabled?'↙ Réafficher la navigation':'⤢ Agrandir le Kanban';
+      focusToggle.setAttribute('aria-label',focusEnabled
+        ?'Quitter le mode concentré et réafficher la navigation':'Activer le mode concentré du Hub');
+    };
+    focusToggle.addEventListener('click',()=>{
+      focusEnabled=!focusEnabled;
+      applyFocus();
+    });
+    header.appendChild(focusToggle);
+    applyFocus();
     root.appendChild(header);
     const nav=make(doc,'nav','kmc-hub-app-branches');
     nav.setAttribute('aria-label','Postes de travail Hub');
