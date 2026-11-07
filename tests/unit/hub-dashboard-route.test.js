@@ -847,6 +847,40 @@ describe('routes/hub-dashboard', () => {
       expect(res.status).toBe(404);
     });
 
+    test('une note d’étape est publiée uniquement par un agent Hub, auteur et étape déterminés côté serveur', async () => {
+      mockDbQuery
+        .mockResolvedValueOnce({ rows: [VALID_ORDER] })
+        .mockResolvedValueOnce({ rows: [{
+          id: 'note-1', text: 'Fournisseur relancé', hub_stage_key: 'supplier',
+          author_name: 'Opérateur Un', author_role: 'agent_hub',
+        }] });
+      const res = await request(buildApp())
+        .post('/api/hub-dashboard/orders/order-1/comment')
+        .send({ content: '  Fournisseur relancé  ', hub_stage_key: 'supplier',
+          author_name: 'Usurpateur', author_role: 'admin' });
+      expect(res.status).toBe(201);
+      expect(res.body.comment.hub_stage_key).toBe('supplier');
+      expect(res.body.comment.author_name).toBe('Opérateur Un');
+      expect(mockDbQuery).toHaveBeenCalledTimes(2);
+      const [statement, params] = mockDbQuery.mock.calls[1];
+      expect(statement).toMatch(/INSERT INTO order_comments/);
+      expect(statement).toMatch(/hub_stage_key/);
+      expect(params).toEqual([VALID_ORDER.id, 'op-1', 'Opérateur Un', 'agent_hub',
+        'Fournisseur relancé', 'supplier']);
+    });
+
+    test.each([
+      ['étape hors nomenclature', { content:'Vérifier fournisseur', hub_stage_key:'payment' }],
+      ['vide', { content:'  ', hub_stage_key:'po' }],
+      ['trop longue', { content:'X'.repeat(1501), hub_stage_key:'po' }],
+    ])('rejette la note d’étape %s sans INSERT', async (_label, body) => {
+      mockDbQuery.mockResolvedValueOnce({ rows: [VALID_ORDER] });
+      const res = await request(buildApp())
+        .post('/api/hub-dashboard/orders/order-1/comment').send(body);
+      expect(res.status).toBe(400);
+      expect(mockDbQuery).toHaveBeenCalledTimes(1);
+    });
+
     test('ajoute le commentaire', async () => {
       mockDbQuery
         .mockResolvedValueOnce({ rows: [VALID_ORDER] })
@@ -909,6 +943,16 @@ describe('routes/hub-dashboard', () => {
         .send({ reason: 'stock manquant' });
       expect(res.status).toBe(403);
       expect(res.body.code).toBe('MARKET_CAPABILITY_REQUIRED');
+    });
+
+    test('un responsable marché ne peut pas écrire dans le journal interne Hub', async () => {
+      mockDbQuery.mockResolvedValueOnce({ rows: [ORDER_WITH_MARKET] });
+      const res = await request(buildApp())
+        .post('/api/hub-dashboard/orders/order-1/comment')
+        .send({ content:'Suivi interne du Hub', hub_stage_key:'supplier' });
+      expect(res.status).toBe(403);
+      expect(res.body.code).toBe('HUB_STAGE_NOTE_FORBIDDEN');
+      expect(mockDbQuery).toHaveBeenCalledTimes(1);
     });
 
     test('comment : refusé sans hub.supervise', async () => {
