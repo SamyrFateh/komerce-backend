@@ -161,3 +161,30 @@
  .kmc-hub-app .kmc-hub-board {min-width:940px;}
  .kmc-hub-app .kmc-hub-board-cell {padding:7px 8px;}
 }
+
+
+/* Hub · états fondés sur les preuves canoniques, sans action sur les étapes irréversibles. */
+.kmc-hub-app .kmc-hub-global-table { min-width: 1160px; }
+.kmc-hub-app .kmc-hub-global-table th:first-child { width: 245px; }
+.kmc-hub-app .kmc-hub-phase-summary { display:grid; gap:3px; margin:5px 0 1px; }
+.kmc-hub-app .kmc-hub-phase-title { display:block; font-size:12px; font-weight:780; color:#234764; line-height:1.3; }
+.kmc-hub-app .kmc-hub-phase-detail { color:#456172; font-weight:650; }
+.kmc-hub-app .kmc-hub-phase-expected { color:#566b7c; line-height:1.35; }
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current {
+  box-shadow:inset 0 0 0 2px #24749b; border-color:#24749b; background:#eef7fb;
+  font-weight:770;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-complete {
+  background:#f2f5f5; border-color:#dce4e5; color:#526876;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-locked {
+  background:#eef1f3; border-color:#e1e6e9; color:#667782; opacity:.82;
+  cursor:pointer;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-locked:hover {
+  opacity:1; border-color:#cbd5da;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-stage-proof { font-weight:550; }
+@media (max-width:1050px) {
+  .kmc-hub-app .kmc-hub-global-table {min-width:1160px;}
+}

@@ -357,6 +357,20 @@ describe('getOrders — visibilité de la recette', () => {
 
 
 describe('couture incidents : visibilite relais de la chaine operationnelle', () => {
+  it('rejette l association d un incident a un article d une autre commande dans toutes les projections', async () => {
+    db.query.mockResolvedValue({ rows: [] });
+    await relayQueries.getRelayOperationalIncidents(RELAY_USER);
+    await relayQueries.getOrders(RELAY_USER, { status: 'available' });
+    const [feedSql] = db.query.mock.calls[0];
+    const [ordersSql] = db.query.mock.calls[1];
+
+    const guard = /CASE\s+WHEN i\.order_item_id IS NULL THEN i\.order_id\s+WHEN i\.order_id IS NULL THEN \(SELECT oi\.order_id FROM order_items oi WHERE oi\.id = i\.order_item_id\)\s+ELSE \(SELECT oi\.order_id FROM order_items oi\s+WHERE oi\.id = i\.order_item_id AND oi\.order_id = i\.order_id\)\s+END/;
+    // Le CASE ne rattache pas une anomalie incoherente a l un ou l autre relais.
+    expect(feedSql).toMatch(guard);
+    expect(ordersSql).toMatch(guard);
+    expect(feedSql).toContain('o.relais_id = $1');
+  });
+
   it('publie la file canonique avant expedition pour le relais uniquement', async () => {
     db.query.mockResolvedValueOnce({ rows: [{
       id: 'incident-1', order_id: 'order-1', order_reference: 'KOM-1',

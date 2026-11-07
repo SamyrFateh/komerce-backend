@@ -56,7 +56,14 @@ const log = require('../utils/logger').child({ module: 'relay-dashboard-queries'
 
 // Projection de lecture uniquement : order_incidents = signalements du relais ;
 // incidents = anomalies opérationnelles canoniques. Ne jamais recopier un dossier.
-const incidentOrderIdSql = "COALESCE((SELECT oi.order_id FROM order_items oi WHERE oi.id = i.order_item_id), i.order_id)";
+// Une incohérence order_id / order_item_id doit être invisible côté relais.
+// Les incidents uniquement rattachés à une commande ou à un article restent visibles.
+const incidentOrderIdSql = `CASE
+  WHEN i.order_item_id IS NULL THEN i.order_id
+  WHEN i.order_id IS NULL THEN (SELECT oi.order_id FROM order_items oi WHERE oi.id = i.order_item_id)
+  ELSE (SELECT oi.order_id FROM order_items oi
+        WHERE oi.id = i.order_item_id AND oi.order_id = i.order_id)
+END`;
 function relayIncidentCountSql(scope) {
   return `SELECT COUNT(*)::int AS c FROM (
     SELECT li.id::text AS id FROM order_incidents li

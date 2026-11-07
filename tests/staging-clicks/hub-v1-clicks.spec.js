@@ -19,7 +19,11 @@ const RUN8 = String(process.env.E2E_PROOF_RUN8 || '').toUpperCase();
 const OUT = path.resolve('test-results/hub-v1-clicks');
 const SHOTS = path.join(OUT, 'captures');
 const EVID = path.join(OUT, 'evidence.json');
-const MARKET_LABEL = 'KM · Comores';
+// Marche de la fixture (defaut KM = comportement historique). Libelles du selecteur de marche du back-office.
+const MARKET_CODE = String(process.env.E2E_CLICKS_MARKET || 'KM').toUpperCase();
+const MARKET_LABELS = { KM: 'KM · Comores', CM: 'CM · Cameroun', CG: 'CG · Congo-Brazzaville' };
+const MARKET_LABEL = MARKET_LABELS[MARKET_CODE];
+if (!MARKET_LABEL) throw new Error('E2E_CLICKS_MARKET invalide : ' + MARKET_CODE);
 const evidence = { schema: 'komerce-hub-v1-clicks/1', run8: RUN8, base: null, gestures: [] };
 const save = () => { fs.mkdirSync(OUT, { recursive: true }); fs.writeFileSync(EVID, JSON.stringify(evidence, (k, v) => (k === 'json' ? undefined : v), 2) + '\n'); };
 const shared = { bagRefs: {}, box: null, shipment: null, states: {} }; // states : une connexion par role (evite le rate-limit du login)
@@ -94,9 +98,9 @@ async function gesture(page, { key, role, route, ui, match, method = 'POST', cli
 
 let db;
 const q = async (sql, params) => (await db.query(sql, params)).rows;
-const KM = '/api/admin/workspaces/operations/market/KM';
+const KM = `/api/admin/workspaces/operations/market/${MARKET_CODE}`; // nom historique : prefixe du marche de la fixture
 
-test.describe.serial('Hub V1 : clics reels Chromium (KM, fixture E2E)', () => {
+test.describe.serial(`Hub V1 : clics reels Chromium (${MARKET_CODE}, fixture E2E)`, () => {
   test.beforeAll(async () => {
     expect(RUN8).toMatch(/^[A-F0-9]{8}$/);
     db = require('../../db');
@@ -260,7 +264,7 @@ test.describe.serial('Hub V1 : clics reels Chromium (KM, fixture E2E)', () => {
   });
 
   // ---------- Expeditions & Douane : parcours international (clics, role par role) ----------
-  const SC = '/api/admin/workspaces/shipping-customs/market/KM/international';
+  const SC = `/api/admin/workspaces/shipping-customs/market/${MARKET_CODE}/international`;
   const SHIP = () => `HTTP-EXP-${RUN8}`;
   async function openJourney(page, tab) {
     await openMarket(page, '/admin/workspaces/shipping-customs');
