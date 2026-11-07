@@ -41,6 +41,7 @@ const router  = express.Router();
 const db      = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { attachMarketDelegatedRoleFor } = require('../middleware/require-market-delegated-role');
+const denyTransitaireHub = require('../middleware/deny-transitaire-hub');
 const { attachAuthorizedMarketsForCapability } = require('../middleware/require-market-delegated-capability');
 const { validate } = require('../middleware/validate');
 const { hub } = require('../validators');
@@ -59,6 +60,7 @@ function attachHubReadAuthority(req, res, next) {
 
 const hubRead = [
   authenticate,
+  denyTransitaireHub,
   attachMarketDelegatedRoleFor(['admin', 'agent_hub', 'market_operator']),
   requireRole(['admin', 'agent_hub', 'market_operator']),
   attachHubReadAuthority,
@@ -204,6 +206,7 @@ const HUB_VIEW_ROLES = Object.freeze([
 ]);
 const hubBoardRead = [
   authenticate,
+  denyTransitaireHub,
   attachMarketDelegatedRoleFor(HUB_VIEW_ROLES),
   // Explicit list retains Security 360's static proof of the allowed readers.
   requireRole(['admin', 'agent_hub', 'market_operator', 'agent_relais',
