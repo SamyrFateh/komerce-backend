@@ -25,7 +25,7 @@ Ensuite viendront un seed partenaires visible et des comptes partenaires cloison
 | YT | SUSPENDED | Hors périmètre | Hors périmètre | Ne pas rouvrir sans décision |
 | DJ | PROVISIONING | Hors périmètre | Hors périmètre | Ne pas toucher |
 
-Les preuves JSON KM sont versionnées dans `docs/recette/evidence/km-20261107/` : la chaîne achats, la chaîne physique et les 36 clics. Les captures restent dans les artefacts des runs.
+Toutes les preuves staging réussies sont versionnées dans `docs/recette/evidence/` ; l'index se trouve dans `docs/recette/evidence/README.md`. Les captures restent dans les artefacts des runs.
 L'audit économique du Hub, qui est un sujet connexe, se trouve dans `docs/audits/hub-economics-20261106/`.
 
 PR ouverte à finir : #3481, test d'isolation croisée entre KM, CM et CG. Un compte d'un marché ne doit ni voir ni modifier les données d'un autre marché.

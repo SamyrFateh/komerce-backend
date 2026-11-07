@@ -1,0 +1,3833 @@
+{
+  "schema": "hub-v1-certification-report/1",
+  "scope": "E2E-HUB-V1",
+  "run": "43BE86B3",
+  "mode": "APPLY_OFFICIAL_STAGING",
+  "target": {
+    "host": "official-railway-staging",
+    "database": "railway"
+  },
+  "started_at": "2026-11-06T09:17:47.702Z",
+  "verdict": "PASS_STAGING_TRANSACTION_13_STEPS",
+  "staging_go": false,
+  "orders": [
+    "E2E-HUB-V1-43BE86B3-KOM-101",
+    "E2E-HUB-V1-43BE86B3-KOM-102",
+    "E2E-HUB-V1-43BE86B3-KOM-103",
+    "E2E-HUB-V1-43BE86B3-LOCAL"
+  ],
+  "steps": [
+    {
+      "n": 1,
+      "key": "orders",
+      "title": "Commandes par checkout canonique",
+      "status": "PASS",
+      "writers": [
+        "order-checkout-service.runOrderCheckout (internalSimulation E2E-HUB-V1)"
+      ],
+      "actors": {
+        "client": "c6a1c48b-1ea4-411e-9355-5af263e58a2b",
+        "admin_simulation_actor": "51230920-3a58-4737-a9a4-68482e448088"
+      },
+      "ids": {
+        "KOM-101": "09fa498d-ef83-4085-ab59-4e0003e0754d",
+        "KOM-102": "279510c1-3d82-435c-a7da-e903e87fc165",
+        "KOM-103": "84686cb6-3c7c-4542-99cb-adb851635f7a",
+        "LOCAL": "f2d9ecf5-3bbd-4f13-be1c-610a43a9f942"
+      },
+      "quantities": {
+        "KOM-101": [
+          1,
+          2
+        ],
+        "KOM-102": [
+          1
+        ],
+        "KOM-103": [
+          2
+        ],
+        "LOCAL": [
+          1
+        ]
+      },
+      "statuses": {
+        "KOM-101": "pending/pending",
+        "KOM-102": "pending/pending",
+        "KOM-103": "pending/pending",
+        "LOCAL": "pending/pending"
+      },
+      "evidence": [
+        {
+          "order": "KOM-101",
+          "reference": "E2E-HUB-V1-43BE86B3-KOM-101",
+          "simulation_scope": "E2E-HUB-V1",
+          "payment_mode": "cash_relais",
+          "fulfillment": [
+            "IMPORT",
+            "IMPORT"
+          ],
+          "replay_of_existing": false
+        },
+        {
+          "order": "KOM-102",
+          "reference": "E2E-HUB-V1-43BE86B3-KOM-102",
+          "simulation_scope": "E2E-HUB-V1",
+          "payment_mode": "cash_relais",
+          "fulfillment": [
+            "IMPORT"
+          ],
+          "replay_of_existing": false
+        },
+        {
+          "order": "KOM-103",
+          "reference": "E2E-HUB-V1-43BE86B3-KOM-103",
+          "simulation_scope": "E2E-HUB-V1",
+          "payment_mode": "cash_relais",
+          "fulfillment": [
+            "IMPORT"
+          ],
+          "replay_of_existing": false
+        },
+        {
+          "order": "LOCAL",
+          "reference": "E2E-HUB-V1-43BE86B3-LOCAL",
+          "simulation_scope": "E2E-HUB-V1",
+          "payment_mode": "cash_relais",
+          "fulfillment": [
+            "LOCAL_STOCK"
+          ],
+          "replay_of_existing": false
+        }
+      ],
+      "refusals": [
+        {
+          "label": "checkout rejoué KOM-101",
+          "code": "HUB_V1_ORDER_ALREADY_EXISTS",
+          "status": 409,
+          "refused": true
+        },
+        {
+          "label": "checkout rejoué KOM-102",
+          "code": "HUB_V1_ORDER_ALREADY_EXISTS",
+          "status": 409,
+          "refused": true
+        },
+        {
+          "label": "checkout rejoué KOM-103",
+          "code": "HUB_V1_ORDER_ALREADY_EXISTS",
+          "status": 409,
+          "refused": true
+        },
+        {
+          "label": "checkout rejoué LOCAL",
+          "code": "HUB_V1_ORDER_ALREADY_EXISTS",
+          "status": 409,
+          "refused": true
+        },
+        {
+          "label": "référence hors fixture",
+          "code": "HUB_V1_INTERNAL_CHECKOUT_FORBIDDEN",
+          "status": null,
+          "refused": true
+        }
+      ],
+      "idempotency": [
+        {
+          "what": "checkout KOM-101",
+          "rows_after_replay": 1,
+          "no_duplicate": true
+        },
+        {
+          "what": "checkout KOM-102",
+          "rows_after_replay": 1,
+          "no_duplicate": true
+        },
+        {
+          "what": "checkout KOM-103",
+          "rows_after_replay": 1,
+          "no_duplicate": true
+        },
+        {
+          "what": "checkout LOCAL",
+          "rows_after_replay": 1,
+          "no_duplicate": true
+        }
+      ],
+      "notes": [],
+      "blocker": null
+    },
+    {
+      "n": 2,
+      "key": "payment",
+      "title": "Paiement client fictif sans débit",
+      "status": "PASS",
+      "writers": [
+        "hub-v1-fixture-payment.confirmFixturePayment → payment-service.markPaid + order-status-machine"
+      ],
+      "actors": {
+        "admin_simulation_actor": "51230920-3a58-4737-a9a4-68482e448088"
+      },
+      "ids": {
+        "KOM-101": "09fa498d-ef83-4085-ab59-4e0003e0754d",
+        "KOM-102": "279510c1-3d82-435c-a7da-e903e87fc165",
+        "KOM-103": "84686cb6-3c7c-4542-99cb-adb851635f7a",
+        "LOCAL": "f2d9ecf5-3bbd-4f13-be1c-610a43a9f942"
+      },
+      "quantities": {},
+      "statuses": {
+        "KOM-101": "ordered/paid",
+        "KOM-102": "ordered/paid",
+        "KOM-103": "ordered/paid",
+        "LOCAL": "ordered/paid"
+      },
+      "evidence": [
+        {
+          "order": "KOM-101",
+          "proof": "SIMULATION_ONLY_NO_DEBIT",
+          "first_was_replay": false,
+          "cash_collections": 0,
+          "stripe_payment_id": null,
+          "cash_paid_at": null,
+          "status_history": []
+        },
+        {
+          "order": "KOM-102",
+          "proof": "SIMULATION_ONLY_NO_DEBIT",
+          "first_was_replay": false,
+          "cash_collections": 0,
+          "stripe_payment_id": null,
+          "cash_paid_at": null,
+          "status_history": []
+        },
+        {
+          "order": "KOM-103",
+          "proof": "SIMULATION_ONLY_NO_DEBIT",
+          "first_was_replay": false,
+          "cash_collections": 0,
+          "stripe_payment_id": null,
+          "cash_paid_at": null,
+          "status_history": []
+        },
+        {
+          "order": "LOCAL",
+          "proof": "SIMULATION_ONLY_NO_DEBIT",
+          "first_was_replay": false,
+          "cash_collections": 0,
+          "stripe_payment_id": null,
+          "cash_paid_at": null,
+          "status_history": []
+        }
+      ],
+      "refusals": [
+        {
+          "label": "paiement par un non-admin (client)",
+          "code": "HUB_V1_FIXTURE_PAYMENT_ADMIN_REQUIRED",
+          "status": 409,
+          "refused": true
+        },
+        {
+          "label": "paiement hors mode approuvé",
+          "code": "HUB_V1_FIXTURE_PAYMENT_ENV_FORBIDDEN",
+          "status": 409,
+          "refused": true
+        }
+      ],
+      "idempotency": [
+        {
+          "what": "paiement KOM-101",
+          "second_call_idempotent_replay": true
+        },
+        {
+          "what": "paiement KOM-102",
+          "second_call_idempotent_replay": true
+        },
+        {
+          "what": "paiement KOM-103",
+          "second_call_idempotent_replay": true
+        },
+        {
+          "what": "paiement LOCAL",
+          "second_call_idempotent_replay": true
+        }
+      ],
+      "notes": [],
+      "blocker": null
+    },
+    {
+      "n": 3,
+      "key": "po_prepare",
+      "title": "Préparation et regroupement des PO",
+      "status": "PASS",
+      "writers": [
+        "purchasing-trigger-service.triggerPurchasing",
+        "purchasing-grouped-service.preparePurchaseOrder"
+      ],
+      "actors": {
+        "hub_agent": "de8b02c2-d46b-41e8-8c96-57a98ca59927"
+      },
+      "ids": {
+        "PO_A": "48c651c2-1f5a-4a2d-b955-8d162dd243ba",
+        "PO_B": "fb2207a2-6a3b-472f-8547-d074952759fe",
+        "lines_A": [
+          "1d9094ec-4d4e-4e79-899e-49e6c0a6a364",
+          "efe04d60-2469-4f7f-af57-1df225bee807"
+        ],
+        "lines_B": [
+          "4972ef69-41ea-468c-b9f9-0c84bdaa260b"
+        ]
+      },
+      "quantities": {
+        "PO_A_ordered": 3,
+        "PO_B_ordered": 1
+      },
+      "statuses": {
+        "PO_A": "draft",
+        "PO_B": "draft"
+      },
+      "evidence": [
+        {
+          "kom103_sourcing_required": true,
+          "trigger_statuses": {
+            "KOM-101": [
+              "line_opened",
+              "line_opened"
+            ],
+            "KOM-102": [
+              "line_opened"
+            ],
+            "KOM-103": [
+              "no_supplier"
+            ],
+            "LOCAL": [
+              "local_stock_no_purchase"
+            ]
+          },
+          "kom103_purchase_lines": 0,
+          "local_purchase_lines": 0
+        },
+        {
+          "po": "A",
+          "id": "48c651c2-1f5a-4a2d-b955-8d162dd243ba",
+          "status": "draft",
+          "trigger_mode": "whatsapp",
+          "market_id": "0bcfde48-1aab-45fa-b5bf-5a6a8b1835bf",
+          "supplier_id": "a10add7a-1868-4101-895c-07dcca8da438"
+        },
+        {
+          "po": "B",
+          "id": "fb2207a2-6a3b-472f-8547-d074952759fe",
+          "status": "draft",
+          "trigger_mode": "whatsapp",
+          "market_id": "0bcfde48-1aab-45fa-b5bf-5a6a8b1835bf",
+          "supplier_id": "dd98e12f-6488-4f4b-8daf-01aa75590a15"
+        }
+      ],
+      "refusals": [
+        {
+          "label": "rattacher à nouveau des lignes déjà en PO",
+          "code": "PURCHASE_LINES_ALREADY_ATTACHED",
+          "status": 409,
+          "refused": true
+        },
+        {
+          "label": "ligne déjà engagée dans PO-B réutilisée dans une PO fournisseur A",
+          "code": "PURCHASE_LINES_ALREADY_ATTACHED",
+          "status": 409,
+          "refused": true
+        }
+      ],
+      "idempotency": [
+        {
+          "what": "triggerPurchasing KOM-101",
+          "first": [
+            "line_opened",
+            "line_opened"
+          ],
+          "replay": [
+            "already_exists",
+            "already_exists"
+          ]
+        },
+        {
+          "what": "triggerPurchasing KOM-102",
+          "first": [
+            "line_opened"
+          ],
+          "replay": [
+            "already_exists"
+          ]
+        },
+        {
+          "what": "triggerPurchasing KOM-103",
+          "first": [
+            "no_supplier"
+          ],
+          "replay": [
+            "no_supplier"
+          ]
+        },
+        {
+          "what": "triggerPurchasing LOCAL",
+          "first": [
+            "local_stock_no_purchase"
+          ],
+          "replay": [
+            "local_stock_no_purchase"
+          ]
+        },
+        {
+          "what": "preparePurchaseOrder rejoué",
+          "purchase_orders_for_fixture": 2,
+          "no_duplicate": true
+        }
+      ],
+      "notes": [],
+      "blocker": null
+    },
+    {
+      "n": 4,
+      "key": "commitment",
+      "title": "Autorisation d'engagement (responsable Hub)",
+      "status": "PASS",
+      "writers": [
+        "hub-authorization-service.decide(purchase_commitment)",
+        "hub-authorization-service.grant"
+      ],
+      "actors": {
+        "hub_director": "73be32c0-5561-41d2-9098-8e647e03cfe3",
+        "hub_agent": "de8b02c2-d46b-41e8-8c96-57a98ca59927",
+        "market_manager": "e003b96a-3a10-4513-b479-653b61021f8f",
+        "admin": "51230920-3a58-4737-a9a4-68482e448088"
+      },
+      "ids": {
+        "PO_A_commitment": "27392702-9ff2-4b01-90c2-70857d68d66b",
+        "PO_B_commitment": "94a6ccdb-15e0-4fe5-b55c-db52cb798547"
+      },
+      "quantities": {
+        "PO_A_amount": "21 USD",
+        "PO_B_amount": "7 USD"
+      },
+      "statuses": {
+        "PO_A": "draft",
+        "PO_B": "draft"
+      },
+      "evidence": [
+        {
+          "grants_active": [
+            {
+              "id": "483ea827-6b21-428f-81e1-d29db77eb80c",
+              "type": "supplier_payment",
+              "granted_by": "51230920-3a58-4737-a9a4-68482e448088"
+            },
+            {
+              "id": "fece4e3e-93b3-4343-a49e-4f34d94c1bea",
+              "type": "purchase_commitment",
+              "granted_by": "51230920-3a58-4737-a9a4-68482e448088"
+            }
+          ]
+        },
+        {
+          "po": "A",
+          "authorization_id": "27392702-9ff2-4b01-90c2-70857d68d66b",
+          "decided_by": "73be32c0-5561-41d2-9098-8e647e03cfe3",
+          "amount": 21,
+          "currency": "USD",
+          "proof_ref": "SIM-ENGAGEMENT-43BE86B3-A",
+          "first_was_replay": false
+        },
+        {
+          "po": "B",
+          "authorization_id": "94a6ccdb-15e0-4fe5-b55c-db52cb798547",
+          "decided_by": "73be32c0-5561-41d2-9098-8e647e03cfe3",
+          "amount": 7,
+          "currency": "USD",
+          "proof_ref": "SIM-ENGAGEMENT-43BE86B3-B",
+          "first_was_replay": false
+        }
+      ],
+      "refusals": [
+        {
+          "label": "PO-A soumise sans engagement",
+          "code": "PURCHASE_COMMITMENT_NOT_AUTHORIZED",
+          "status": 409,
+          "refused": true
+        },
+        {
+          "label": "PO-A engagement par agent Hub",
+          "code": "AUTHORIZATION_GRANT_REQUIRED",
+          "status": 403,
+          "refused": true
+        },
+        {
+          "label": "PO-A engagement par responsable marché",
+          "code": "AUTHORIZATION_GRANT_REQUIRED",
+          "status": 403,
+          "refused": true
+        },
+        {
+          "label": "PO-A engagement par admin sans grant",
+          "code": "AUTHORIZATION_GRANT_REQUIRED",
+          "status": 403,
+          "refused": true
+        },
+        {
+          "label": "PO-A engagement immuable (UPDATE)",
+          "code": "23514",
+          "status": null,
+          "refused": true
+        },
+        {
+          "label": "PO-B soumise sans engagement",
+          "code": "PURCHASE_COMMITMENT_NOT_AUTHORIZED",
+          "status": 409,
+          "refused": true
+        },
+        {
+          "label": "PO-B engagement par agent Hub",
+          "code": "AUTHORIZATION_GRANT_REQUIRED",
+          "status": 403,
+          "refused": true
+        },
+        {
+          "label": "PO-B engagement par responsable marché",
+          "code": "AUTHORIZATION_GRANT_REQUIRED",
+          "status": 403,
+          "refused": true
+        },
+        {
+          "label": "PO-B engagement par admin sans grant",
+          "code": "AUTHORIZATION_GRANT_REQUIRED",
+          "status": 403,
+          "refused": true
+        },
+        {
+          "label": "PO-B engagement immuable (UPDATE)",
+          "code": "23514",
+          "status": null,
+          "refused": true
+        }
+      ],
+      "idempotency": [
+        {
+          "what": "engagement PO-A",
+          "replay_idempotent": true,
+          "rows": 1
+        },
+        {
+          "what": "engagement PO-B",
+          "replay_idempotent": true,
+          "rows": 1
+        }
+      ],
+      "notes": [],
+      "blocker": null
+    },
+    {
+      "n": 5,
+      "key": "submit_send",
+      "title": "Soumission et envoi fournisseur simulé",
+      "status": "PASS",
+      "writers": [
+        "purchasing-engagement-service.submitPurchaseOrder",
+        "purchasing-engagement-service.recordPurchaseOrderSent"
+      ],
+      "actors": {
+        "hub_agent": "de8b02c2-d46b-41e8-8c96-57a98ca59927"
+      },
+      "ids": {
+        "PO_A": "48c651c2-1f5a-4a2d-b955-8d162dd243ba",
+        "PO_B": "fb2207a2-6a3b-472f-8547-d074952759fe"
+      },
+      "quantities": {},
+      "statuses": {
+        "PO_A": "notified",
+        "PO_B": "notified"
+      },
+      "evidence": [
+        {
+          "po": "A",
+          "status": "notified",
+          "sent_channel": "phone",
+          "sent_at": "2026-11-06T09:17:50.906Z",
+          "notification_channel": "simulation_no_notification",
+          "place_order_invoked": false,
+          "first_send_replay": false
+        },
+        {
+          "po": "B",
+          "status": "notified",
+          "sent_channel": "phone",
+          "sent_at": "2026-11-06T09:17:51.036Z",
+          "notification_channel": "simulation_no_notification",
+          "place_order_invoked": false,
+          "first_send_replay": false
+        }
+      ],
+      "refusals": [
+        {
+          "label": "PO-A soumission rejouée",
+          "code": "PURCHASE_ORDER_NOT_DRAFT",
+          "status": 409,
+          "refused": true
+        },
+        {
+          "label": "PO-A second canal d'envoi",
+          "code": "PURCHASE_ORDER_ALREADY_SENT",
+          "status": 409,
+          "refused": true
+        },
+        {
+          "label": "PO-B soumission rejouée",
+          "code": "PURCHASE_ORDER_NOT_DRAFT",
+          "status": 409,
+          "refused": true
+        },
+        {
+          "label": "PO-B second canal d'envoi",
+          "code": "PURCHASE_ORDER_ALREADY_SENT",
+          "status": 409,
+          "refused": true
+        }
+      ],
+      "idempotency": [
+        {
+          "what": "envoi PO-A",
+          "second_call_already_sent": true
+        },
+        {
+          "what": "envoi PO-B",
+          "second_call_already_sent": true
+        }
+      ],
+      "notes": [],
+      "blocker": null
+    },
+    {
+      "n": 6,
+      "key": "supplier_payment_auth",
+      "title": "Autorisation distincte du paiement fournisseur (sans débit)",
+      "status": "PASS",
+      "writers": [
+        "hub-authorization-service.decide(supplier_payment)",
+        "hub-authorization-service.assertPaymentAuthorized"
+      ],
+      "actors": {
+        "hub_director": "73be32c0-5561-41d2-9098-8e647e03cfe3",
+        "hub_agent": "de8b02c2-d46b-41e8-8c96-57a98ca59927"
+      },
+      "ids": {
+        "PO_A_payment_authorization": "bb7610e3-cd83-44d9-b8e0-a9837f9a38f2",
+        "PO_B_payment_authorization": "55de9b10-5a52-454b-bc58-bc537b74ea3f"
+      },
+      "quantities": {},
+      "statuses": {
+        "PO_A_payment_authorization": "granted",
+        "PO_B_payment_authorization": "granted"
+      },
+      "evidence": [
+        {
+          "po": "A",
+          "distinct_authorizations": [
+            {
+              "id": "27392702-9ff2-4b01-90c2-70857d68d66b",
+              "type": "purchase_commitment",
+              "decided_by": "73be32c0-5561-41d2-9098-8e647e03cfe3",
+              "amount": 21,
+              "currency": "USD",
+              "proof_ref": "SIM-ENGAGEMENT-43BE86B3-A"
+            },
+            {
+              "id": "bb7610e3-cd83-44d9-b8e0-a9837f9a38f2",
+              "type": "supplier_payment",
+              "decided_by": "73be32c0-5561-41d2-9098-8e647e03cfe3",
+              "amount": 21,
+              "currency": "USD",
+              "proof_ref": "SIM-PAIEMENT-FOURNISSEUR-43BE86B3-A"
+            }
+          ],
+          "first_was_replay": false
+        },
+        {
+          "po": "B",
+          "distinct_authorizations": [
+            {
+              "id": "94a6ccdb-15e0-4fe5-b55c-db52cb798547",
+              "type": "purchase_commitment",
+              "decided_by": "73be32c0-5561-41d2-9098-8e647e03cfe3",
+              "amount": 7,
+              "currency": "USD",
+              "proof_ref": "SIM-ENGAGEMENT-43BE86B3-B"
+            },
+            {
+              "id": "55de9b10-5a52-454b-bc58-bc537b74ea3f",
+              "type": "supplier_payment",
+              "decided_by": "73be32c0-5561-41d2-9098-8e647e03cfe3",
+              "amount": 7,
+              "currency": "USD",
+              "proof_ref": "SIM-PAIEMENT-FOURNISSEUR-43BE86B3-B"
+            }
+          ],
+          "first_was_replay": false
+        },
+        {
+          "supplier_debit_tables_rows": {
+            "supplier_execution_payments": 0,
+            "supplier_execution_payment_proofs": 0,
+            "supplier_payment_settlements": 0
+          },
+          "no_debit": true
+        }
+      ],
+      "refusals": [
+        {
+          "label": "PO-A paiement autorisé par agent Hub",
+          "code": "AUTHORIZATION_GRANT_REQUIRED",
+          "status": 403,
+          "refused": true
+        },
+        {
+          "label": "PO-A paiement sans montant",
+          "code": "AUTHORIZATION_AMOUNT_REQUIRED",
+          "status": 400,
+          "refused": true
+        },
+        {
+          "label": "PO-A paiement au-delà du plafond",
+          "code": "SUPPLIER_PAYMENT_EXCEEDS_AUTHORIZATION",
+          "status": 409,
+          "refused": true
+        },
+        {
+          "label": "PO-B paiement autorisé par agent Hub",
+          "code": "AUTHORIZATION_GRANT_REQUIRED",
+          "status": 403,
+          "refused": true
+        },
+        {
+          "label": "PO-B paiement sans montant",
+          "code": "AUTHORIZATION_AMOUNT_REQUIRED",
+          "status": 400,
+          "refused": true
+        },
+        {
+          "label": "PO-B paiement au-delà du plafond",
+          "code": "SUPPLIER_PAYMENT_EXCEEDS_AUTHORIZATION",
+          "status": 409,
+          "refused": true
+        }
+      ],
+      "idempotency": [
+        {
+          "what": "autorisation paiement PO-A",
+          "replay_idempotent": true
+        },
+        {
+          "what": "autorisation paiement PO-B",
+          "replay_idempotent": true
+        }
+      ],
+      "notes": [],
+      "blocker": null
+    },
+    {
+      "n": 7,
+      "key": "supplier_confirm",
+      "title": "Confirmation fournisseur",
+      "status": "PASS",
+      "writers": [
+        "purchasing-engagement-service.confirmGroupedPurchaseOrder"
+      ],
+      "actors": {
+        "hub_agent": "de8b02c2-d46b-41e8-8c96-57a98ca59927"
+      },
+      "ids": {
+        "PO_A": "48c651c2-1f5a-4a2d-b955-8d162dd243ba",
+        "PO_B": "fb2207a2-6a3b-472f-8547-d074952759fe"
+      },
+      "quantities": {
+        "PO_A_confirmed": 3,
+        "PO_B_confirmed": 1
+      },
+      "statuses": {
+        "PO_A": "confirmed",
+        "PO_B": "confirmed"
+      },
+      "evidence": [
+        {
+          "po": "A",
+          "status": "confirmed",
+          "supplier_order_id": "SIM-SO-43BE86B3-A",
+          "proof_ref": "SIM-RECU-43BE86B3-A",
+          "lines": [
+            {
+              "id": "1d9094ec-4d4e-4e79-899e-49e6c0a6a364",
+              "quantity": 2,
+              "confirmed_quantity": 2
+            },
+            {
+              "id": "efe04d60-2469-4f7f-af57-1df225bee807",
+              "quantity": 1,
+              "confirmed_quantity": 1
+            }
+          ]
+        },
+        {
+          "po": "B",
+          "status": "confirmed",
+          "supplier_order_id": "SIM-SO-43BE86B3-B",
+          "proof_ref": "SIM-RECU-43BE86B3-B",
+          "lines": [
+            {
+              "id": "4972ef69-41ea-468c-b9f9-0c84bdaa260b",
+              "quantity": 1,
+              "confirmed_quantity": 1
+            }
+          ]
+        }
+      ],
+      "refusals": [
+        {
+          "label": "PO-A confirmation sans justificatif",
+          "code": "MANUAL_PURCHASE_PROOF_REQUIRED",
+          "status": 400,
+          "refused": true
+        },
+        {
+          "label": "PO-A confirmation rejouée",
+          "code": "PURCHASE_ORDER_NOT_NOTIFIED",
+          "status": 409,
+          "refused": true
+        },
+        {
+          "label": "PO-B confirmation sans justificatif",
+          "code": "MANUAL_PURCHASE_PROOF_REQUIRED",
+          "status": 400,
+          "refused": true
+        },
+        {
+          "label": "PO-B confirmation rejouée",
+          "code": "PURCHASE_ORDER_NOT_NOTIFIED",
+          "status": 409,
+          "refused": true
+        }
+      ],
+      "idempotency": [
+        {
+          "what": "confirmation PO-A",
+          "replay_refused_not_duplicated": true
+        },
+        {
+          "what": "confirmation PO-B",
+          "replay_refused_not_duplicated": true
+        }
+      ],
+      "notes": [],
+      "blocker": null
+    },
+    {
+      "n": 8,
+      "key": "partial_receipt",
+      "title": "Réception partielle Hub (FIFO)",
+      "status": "PASS",
+      "writers": [
+        "hub-operations.receiveSupplierPackageCommand → hub-physical-identity (allocation FIFO par ligne)"
+      ],
+      "actors": {
+        "hub_agent": "de8b02c2-d46b-41e8-8c96-57a98ca59927"
+      },
+      "ids": {
+        "PO_A": "48c651c2-1f5a-4a2d-b955-8d162dd243ba",
+        "PO_B": "fb2207a2-6a3b-472f-8547-d074952759fe",
+        "inbound_unit_A": "4c0ac4a8-5d6d-4af9-9ece-b29e6d0d23e1",
+        "inbound_unit_B": "df12274a-1b2e-4441-bfe7-174f2198a9f0",
+        "allocations": [
+          "ad62b63f-2eca-4324-8cad-6541b1de07ac",
+          "12d05d64-efb1-40e0-a18f-c55793009e0a"
+        ]
+      },
+      "quantities": {
+        "PO_A": {
+          "ordered": 3,
+          "received": 2,
+          "remainder": 1
+        },
+        "PO_B": {
+          "ordered": 1,
+          "received": 1,
+          "remainder": 0
+        },
+        "fifo": {
+          "kom101_A": 2,
+          "kom102_A": 0,
+          "kom101_B": 1
+        }
+      },
+      "statuses": {
+        "PO_A": "confirmed",
+        "PO_B": "hub_received"
+      },
+      "evidence": [
+        {
+          "fifo_rule": "la plus ancienne commande est servie en premier : KOM-101 reçoit 2/2, le reliquat (1) reste porté par KOM-102",
+          "received_by_line": {
+            "kom101_A": 2,
+            "kom102_A": 0,
+            "kom101_B": 1
+          },
+          "receipts": [
+            {
+              "ref": "E2E-HUB-V1-43BE86B3-IN-A",
+              "http": 201
+            },
+            {
+              "ref": "E2E-HUB-V1-43BE86B3-IN-B",
+              "http": 201
+            }
+          ]
+        }
+      ],
+      "refusals": [
+        {
+          "label": "sur-réception PO-A (2 de plus alors que 1 attendu)",
+          "status": 202,
+          "code": null,
+          "quarantined": true,
+          "replay": false,
+          "refused": true
+        },
+        {
+          "label": "mauvais SKU dans PO-A",
+          "status": 202,
+          "code": null,
+          "quarantined": true,
+          "replay": false,
+          "refused": true
+        }
+      ],
+      "idempotency": [
+        {
+          "what": "réception PO-A rejouée (même référence)",
+          "http_status": 200,
+          "received_after_replay": 2,
+          "no_duplicate": true
+        }
+      ],
+      "notes": [
+        "Le libellé « reliquat 1 → FIFO KOM-101 » du mandat est lu comme : KOM-101 (la plus ancienne) est servie d’abord ; le reliquat de 1 est celui de KOM-102."
+      ],
+      "blocker": null
+    },
+    {
+      "n": 9,
+      "key": "identify_scan_bags",
+      "title": "Identification, scans et sacs clients",
+      "status": "PASS",
+      "writers": [
+        "hub-operations.transitionOperatorUnitCommand",
+        "hub-operations.createOperatorUnitCommand (HANDLING_UNIT / KOM-SAC)",
+        "hub-operations.moveAllocationCommand (REPACK, preuve SCAN)"
+      ],
+      "actors": {
+        "hub_agent": "de8b02c2-d46b-41e8-8c96-57a98ca59927"
+      },
+      "ids": {
+        "bag_KOM101": "1bb9eca5-e3e8-4029-952d-609a560cd487",
+        "inbound_unit_A": "4c0ac4a8-5d6d-4af9-9ece-b29e6d0d23e1",
+        "inbound_unit_B": "df12274a-1b2e-4441-bfe7-174f2198a9f0"
+      },
+      "quantities": {
+        "bag_KOM101": {
+          "A": 2,
+          "B": 1,
+          "scans_by_item": [
+            {
+              "order_item_id": "0baabde9-96e8-41ad-89c6-612a158feebe",
+              "qty": 1,
+              "scans": 1
+            },
+            {
+              "order_item_id": "c607ea52-0c67-429a-b1aa-838c6679dd8d",
+              "qty": 2,
+              "scans": 1
+            }
+          ]
+        }
+      },
+      "statuses": {
+        "bag_KOM101": "PACKED",
+        "inbound_units": "épuisées après REPACK (SUPERSEDED)"
+      },
+      "evidence": [
+        {
+          "barcodes_confirmed_per_sku": true,
+          "bag_plan_items": 2,
+          "local_hub_rows": {
+            "allocations": 0,
+            "units": 0,
+            "purchase_lines": 0
+          },
+          "kom102_bag": "aucun sac à ce stade : rien de reçu pour KOM-102 (reliquat traité à l’étape 13)"
+        }
+      ],
+      "refusals": [
+        {
+          "label": "scan du code-barres d’un autre produit",
+          "code": "HUB_ORDER_BAG_SCAN_INVALID",
+          "status": 409,
+          "refused": true
+        },
+        {
+          "label": "changer le propriétaire du sac",
+          "code": "23514",
+          "status": null,
+          "refused": true
+        }
+      ],
+      "idempotency": [],
+      "notes": [],
+      "blocker": null
+    },
+    {
+      "n": 10,
+      "key": "pack_box",
+      "title": "Emballage et rattachement KOM-BOX",
+      "status": "PASS",
+      "writers": [
+        "auto-parcel.distributeOrder",
+        "hub-operations.createOperatorUnitCommand (KOM-BOX)",
+        "hub-bag-box-service.attachBagToBox",
+        "hub-operations.transitionOperatorUnitCommand (PACKED)"
+      ],
+      "actors": {
+        "hub_agent": "de8b02c2-d46b-41e8-8c96-57a98ca59927"
+      },
+      "ids": {
+        "KOM_BOX": "d15a4e4d-a338-4fdd-b037-a1b22314edd7",
+        "bag": "1bb9eca5-e3e8-4029-952d-609a560cd487",
+        "parcel_KOM101": "e5e92100-ab3a-49c7-ba17-f2b9f6987f72",
+        "parcel_reference": "KOM-P-2026-000093"
+      },
+      "quantities": {
+        "parcel_KOM101": {
+          "packed": 3,
+          "shipped": 0,
+          "quantity": 3
+        },
+        "box_effective_content": {
+          "lines": 2,
+          "qty": 3
+        }
+      },
+      "statuses": {
+        "KOM_BOX": "PACKED",
+        "parcel_KOM101": "preparation"
+      },
+      "evidence": [
+        {
+          "attach_first_already_linked": false,
+          "attach_replay_already_linked": true,
+          "kom102_gate": "KOM-102 reste ordered (reliquat non reçu) : 0 colis, aucune préparation"
+        }
+      ],
+      "refusals": [
+        {
+          "label": "scan du sac non conforme",
+          "code": "HUB_BOX_BAG_SCAN_MISMATCH",
+          "status": 409,
+          "refused": true
+        }
+      ],
+      "idempotency": [
+        {
+          "what": "distributeOrder KOM-101 rejoué",
+          "already_assigned": true
+        },
+        {
+          "what": "attachBagToBox W1 rejoué",
+          "bag_rows_in_box": 1,
+          "already_linked": true
+        }
+      ],
+      "notes": [],
+      "blocker": null
+    },
+    {
+      "n": 11,
+      "key": "ship_handover",
+      "title": "Expédition et remise au transitaire",
+      "status": "PASS",
+      "writers": [
+        "international-shipment-journey.open / transition (handed_over, forwarder_received)",
+        "hub-operations.transitionOperatorUnitCommand (DISPATCHED)"
+      ],
+      "actors": {
+        "hub_agent": "de8b02c2-d46b-41e8-8c96-57a98ca59927",
+        "forwarder": "0ba4d1c6-06a2-469c-9790-03a2b01c9f3f"
+      },
+      "ids": {
+        "shipment": "E2E-HUB-V1-43BE86B3-SHIP-1",
+        "KOM_BOX": "d15a4e4d-a338-4fdd-b037-a1b22314edd7",
+        "parcel": "e5e92100-ab3a-49c7-ba17-f2b9f6987f72"
+      },
+      "quantities": {
+        "parcel_items": {
+          "shipped": 3,
+          "quantity": 3
+        }
+      },
+      "statuses": {
+        "shipment": "forwarder_received",
+        "KOM_BOX": [
+          "DISPATCHED"
+        ],
+        "parcel": "shipped"
+      },
+      "evidence": [
+        {
+          "events": [
+            {
+              "to_stage": "hub_ready",
+              "proof_ref": null,
+              "actor_id": "de8b02c2-d46b-41e8-8c96-57a98ca59927"
+            },
+            {
+              "to_stage": "handed_over",
+              "proof_ref": "SIM-REMISE-43BE86B3-W1",
+              "actor_id": "de8b02c2-d46b-41e8-8c96-57a98ca59927"
+            },
+            {
+              "to_stage": "forwarder_received",
+              "proof_ref": "SIM-RECEPTION-TRANSITAIRE-43BE86B3-W1",
+              "actor_id": "0ba4d1c6-06a2-469c-9790-03a2b01c9f3f"
+            }
+          ]
+        }
+      ],
+      "refusals": [
+        {
+          "label": "remise avant expédition du carton (DISPATCHED)",
+          "code": "JOURNEY_HUB_UNITS_NOT_DISPATCHED",
+          "status": 409,
+          "refused": true
+        },
+        {
+          "label": "remise rejouée / étape hors ordre",
+          "code": "JOURNEY_STAGE_ORDER",
+          "status": 409,
+          "refused": true
+        },
+        {
+          "label": "réception transitaire par un agent Hub (W1)",
+          "code": "JOURNEY_ROLE_FORBIDDEN",
+          "status": 403,
+          "refused": true
+        }
+      ],
+      "idempotency": [],
+      "notes": [],
+      "blocker": null
+    },
+    {
+      "n": 12,
+      "key": "relay_attestation",
+      "title": "Réception attestée au relais",
+      "status": "PASS",
+      "writers": [
+        "international-shipment-journey (in_transit … local_delivery)",
+        "customs-shipment-service.createShipment",
+        "relay-shipment-receipt.receiveShipment (agent relais)"
+      ],
+      "actors": {
+        "forwarder": "0ba4d1c6-06a2-469c-9790-03a2b01c9f3f",
+        "admin_customs": "51230920-3a58-4737-a9a4-68482e448088",
+        "hub_agent": "de8b02c2-d46b-41e8-8c96-57a98ca59927",
+        "relay_agent": "3a2cc933-ce9d-4b87-bfe4-4904146c1074"
+      },
+      "ids": {
+        "shipment": "E2E-HUB-V1-43BE86B3-SHIP-1",
+        "receipts": [
+          "72fcc029-b59b-4616-b548-d11442fe01b4",
+          "3cdadeef-9709-43dc-b312-10ddf034eded"
+        ]
+      },
+      "quantities": {
+        "receipts": [
+          {
+            "expected": 1,
+            "received": 1,
+            "incident": null
+          },
+          {
+            "expected": 2,
+            "received": 2,
+            "incident": null
+          }
+        ],
+        "parcel_items": {
+          "received": 3,
+          "quantity": 3
+        }
+      },
+      "statuses": {
+        "shipment": "relay_received",
+        "order_KOM101": "available",
+        "parcel_KOM101": "available"
+      },
+      "evidence": [
+        {
+          "attested_by_relay_agent": "3a2cc933-ce9d-4b87-bfe4-4904146c1074",
+          "receipts": [
+            {
+              "id": "72fcc029-b59b-4616-b548-d11442fe01b4",
+              "order_item_id": "0baabde9-96e8-41ad-89c6-612a158feebe",
+              "expected_qty": 1,
+              "received_qty": 1,
+              "incident_id": null,
+              "received_by": "3a2cc933-ce9d-4b87-bfe4-4904146c1074",
+              "proof_ref": "SIM-BORDEREAU-RELAIS-43BE86B3-W1",
+              "relais_id": "d2af1992-bcae-48af-8f72-6565c5964c29"
+            },
+            {
+              "id": "3cdadeef-9709-43dc-b312-10ddf034eded",
+              "order_item_id": "c607ea52-0c67-429a-b1aa-838c6679dd8d",
+              "expected_qty": 2,
+              "received_qty": 2,
+              "incident_id": null,
+              "received_by": "3a2cc933-ce9d-4b87-bfe4-4904146c1074",
+              "proof_ref": "SIM-BORDEREAU-RELAIS-43BE86B3-W1",
+              "relais_id": "d2af1992-bcae-48af-8f72-6565c5964c29"
+            }
+          ]
+        }
+      ],
+      "refusals": [
+        {
+          "label": "relay_received posé par le Hub",
+          "code": "JOURNEY_RELAY_ATTESTATION_REQUIRED",
+          "status": 409,
+          "refused": true
+        },
+        {
+          "label": "attestation par un admin",
+          "code": "RELAY_RECEIPT_ROLE_FORBIDDEN",
+          "status": 403,
+          "refused": true
+        },
+        {
+          "label": "attestation sans justificatif",
+          "code": "RELAY_RECEIPT_PROOF_REQUIRED",
+          "status": 400,
+          "refused": true
+        },
+        {
+          "label": "attestation d’un article non attendu",
+          "code": "RELAY_RECEIPT_ITEM_NOT_EXPECTED",
+          "status": 409,
+          "refused": true
+        },
+        {
+          "label": "quantité négative",
+          "code": "RELAY_RECEIPT_INVALID",
+          "status": 400,
+          "refused": true
+        },
+        {
+          "label": "attestation rejouée (W1)",
+          "code": "RELAY_SHIPMENT_NOT_AT_RELAY",
+          "status": 409,
+          "refused": true
+        },
+        {
+          "label": "attestation immuable (W1)",
+          "code": "23514",
+          "status": null,
+          "refused": true
+        }
+      ],
+      "idempotency": [],
+      "notes": [],
+      "blocker": null
+    },
+    {
+      "n": 13,
+      "key": "pickup_remainder",
+      "title": "Retrait client et traitement du reliquat",
+      "status": "PASS",
+      "writers": [
+        "scan-engine.processScan(customer_collected)",
+        "hub-operations.receiveSupplierPackageCommand (reliquat)",
+        "local-relay-receipt-service.recordLocalRelayReceipt (LOCAL)"
+      ],
+      "actors": {
+        "relay_agent": "3a2cc933-ce9d-4b87-bfe4-4904146c1074",
+        "hub_agent": "de8b02c2-d46b-41e8-8c96-57a98ca59927"
+      },
+      "ids": {
+        "reliquat_inbound_unit": "f82933a8-8387-4de5-a3cb-fb217e8d6fb9",
+        "reliquat_bag": "97c1d885-ffc9-4c4d-bf79-c89220f586ab",
+        "reliquat_box": "1d0517ab-d9e5-427f-8139-3b6b10eefdf6",
+        "reliquat_shipment": "E2E-HUB-V1-43BE86B3-SHIP-2",
+        "parcel_KOM101": "e5e92100-ab3a-49c7-ba17-f2b9f6987f72",
+        "parcel_KOM102": "813c53bd-43bd-4c62-beff-ce47c1bcd40d"
+      },
+      "quantities": {
+        "KOM_101": {
+          "received": 3,
+          "collected": 3,
+          "quantity": 3
+        },
+        "KOM_102": {
+          "received": 1,
+          "collected": 1,
+          "quantity": 1
+        },
+        "PO_A": {
+          "ordered": 3,
+          "received": 3
+        }
+      },
+      "statuses": {
+        "PO_A": "hub_received",
+        "KOM_101": "collected",
+        "KOM_102": "collected",
+        "reliquat_shipment": "relay_received"
+      },
+      "evidence": [
+        {
+          "wave": "KOM-101",
+          "after_pickup": {
+            "order_status": "collected",
+            "parcel_items": {
+              "received": 3,
+              "collected": 3,
+              "quantity": 3
+            }
+          }
+        },
+        {
+          "wave": "KOM-102 reliquat livré",
+          "ship_events": 3,
+          "relay_receipts": 1,
+          "after_pickup": {
+            "order_status": "collected",
+            "parcel_items": {
+              "received": 1,
+              "collected": 1,
+              "quantity": 1
+            }
+          }
+        },
+        {
+          "local_circuit": {
+            "writers": [
+              "local-relay-receipt-service.recordLocalRelayReceipt",
+              "scan-engine.processScan(customer_collected)"
+            ],
+            "order_id": "f2d9ecf5-3bbd-4f13-be1c-610a43a9f942",
+            "status": "collected",
+            "parcel_id": "1238586e-9b71-43df-af9f-00efb5e5e1f3",
+            "replay_refused": {
+              "code": "LOCAL_RECEIPT_PARCEL_ALREADY_EXISTS"
+            },
+            "hub_rows": {
+              "hub_allocations": 0,
+              "hub_units": 0,
+              "purchase_lines": 0,
+              "shipment_receipts": 0
+            },
+            "circuit_only_local": true
+          }
+        }
+      ],
+      "refusals": [
+        {
+          "label": "réception transitaire par un agent Hub (W2)",
+          "code": "JOURNEY_ROLE_FORBIDDEN",
+          "status": 403,
+          "refused": true
+        },
+        {
+          "label": "attestation rejouée (W2)",
+          "code": "RELAY_SHIPMENT_NOT_AT_RELAY",
+          "status": 409,
+          "refused": true
+        },
+        {
+          "label": "attestation immuable (W2)",
+          "code": "23514",
+          "status": null,
+          "refused": true
+        }
+      ],
+      "idempotency": [
+        {
+          "what": "retrait W1 rejoué",
+          "second_success": false,
+          "collected_after": 3
+        },
+        {
+          "what": "distributeOrder KOM-102 rejoué",
+          "already_assigned": true
+        },
+        {
+          "what": "attachBagToBox W2 rejoué",
+          "bag_rows_in_box": 1,
+          "already_linked": true
+        },
+        {
+          "what": "retrait W2 rejoué",
+          "second_success": false,
+          "collected_after": 1
+        }
+      ],
+      "notes": [
+        "Reliquat traité par LIVRAISON (réception tardive 1/1 puis même circuit sac → KOM-BOX → expédition → relais → retrait). Le remboursement fictif n’est pas utilisé : un paiement fictif sans débit ne peut pas être remboursé sans créer de la monnaie interne (wallet) qui n’a jamais été encaissée."
+      ],
+      "blocker": null
+    }
+  ],
+  "local_circuit": {
+    "writers": [
+      "local-relay-receipt-service.recordLocalRelayReceipt",
+      "scan-engine.processScan(customer_collected)"
+    ],
+    "order_id": "f2d9ecf5-3bbd-4f13-be1c-610a43a9f942",
+    "status": "collected",
+    "parcel_id": "1238586e-9b71-43df-af9f-00efb5e5e1f3",
+    "replay_refused": {
+      "code": "LOCAL_RECEIPT_PARCEL_ALREADY_EXISTS"
+    },
+    "hub_rows": {
+      "hub_allocations": 0,
+      "hub_units": 0,
+      "purchase_lines": 0,
+      "shipment_receipts": 0
+    },
+    "circuit_only_local": true
+  },
+  "fixture": {
+    "run": "43BE86B3",
+    "market_id": "0bcfde48-1aab-45fa-b5bf-5a6a8b1835bf",
+    "relay_id": "d2af1992-bcae-48af-8f72-6565c5964c29",
+    "users": {
+      "client": {
+        "id": "c6a1c48b-1ea4-411e-9355-5af263e58a2b",
+        "role": "client"
+      },
+      "admin": {
+        "id": "51230920-3a58-4737-a9a4-68482e448088",
+        "role": "admin"
+      },
+      "hub_director": {
+        "id": "73be32c0-5561-41d2-9098-8e647e03cfe3",
+        "role": "agent_hub"
+      },
+      "hub_agent": {
+        "id": "de8b02c2-d46b-41e8-8c96-57a98ca59927",
+        "role": "agent_hub"
+      },
+      "market_manager": {
+        "id": "e003b96a-3a10-4513-b479-653b61021f8f",
+        "role": "market_operator"
+      },
+      "relay_agent": {
+        "id": "3a2cc933-ce9d-4b87-bfe4-4904146c1074",
+        "role": "agent_relais"
+      },
+      "forwarder": {
+        "id": "0ba4d1c6-06a2-469c-9790-03a2b01c9f3f",
+        "role": "agent_transitaire"
+      }
+    },
+    "suppliers": {
+      "A": "a10add7a-1868-4101-895c-07dcca8da438",
+      "B": "dd98e12f-6488-4f4b-8daf-01aa75590a15"
+    },
+    "products": {
+      "A": "4b3e6759-e72f-4971-a1b5-a270493a26f1",
+      "B": "39e6ad21-9c9d-4727-a61e-e35da6beaebc",
+      "C": "59bf4405-47fb-4ad6-b680-95865319708a",
+      "LOCAL": "472675ca-2033-4056-91d6-dadd9c41443d"
+    },
+    "skus": {
+      "A": "27b089ba-b07a-47ec-b48b-b518ce473ade",
+      "B": "f9734886-7047-4144-a881-d70548797f31",
+      "C": "ac55cf8f-3228-4562-b50d-3b7d51e43682"
+    },
+    "grants": [
+      "purchase_commitment",
+      "supplier_payment"
+    ]
+  },
+  "external_effects": {
+    "network_attempts": 0,
+    "network_attempt_targets": [],
+    "table_rows_before": {
+      "cash_collections": 0,
+      "notification_log_attempts": 0,
+      "outbox_events": 0,
+      "loyalty_rewards": 0,
+      "supplier_execution_payments": 0,
+      "supplier_execution_payment_proofs": 0,
+      "supplier_payment_settlements": 0
+    },
+    "table_rows_after": {
+      "cash_collections": 0,
+      "notification_log_attempts": 0,
+      "outbox_events": 0,
+      "loyalty_rewards": 0,
+      "supplier_execution_payments": 0,
+      "supplier_execution_payment_proofs": 0,
+      "supplier_payment_settlements": 0
+    },
+    "table_delta": {
+      "cash_collections": 0,
+      "notification_log_attempts": 0,
+      "outbox_events": 0,
+      "loyalty_rewards": 0,
+      "supplier_execution_payments": 0,
+      "supplier_execution_payment_proofs": 0,
+      "supplier_payment_settlements": 0
+    },
+    "evidence_complete": true,
+    "zero_external_effects": true
+  },
+  "cleanup": {
+    "verdict": "HOLD_IMMUTABLE_PROOFS_RETAINED",
+    "delete_performed": false,
+    "cleanup_certified": false,
+    "strategy": {
+      "decision": "RETAIN_FIXTURE_PREFIX_NO_DELETE",
+      "reason": "tables append-only/immuables portant des lignes de la fixture : suppression forcée interdite (ni disable trigger, ni session_replication_role=replica)",
+      "immutable_tables": [
+        "hub_custody_events",
+        "hub_physical_unit_placements",
+        "hub_purchase_allocations",
+        "incidents",
+        "international_shipment_relay_receipts",
+        "parcels",
+        "purchase_lines",
+        "scan_events"
+      ],
+      "immutable_tables_potential_children": [
+        "assignment_capability_ceiling",
+        "cash_custody_losses",
+        "cash_custody_receipts",
+        "cash_deposits",
+        "customs_shipment_fees",
+        "economic_risk_cost_events",
+        "economic_risk_watermark_events",
+        "economic_structure_cost_events",
+        "hub_box_bags",
+        "international_shipment_charges",
+        "international_shipment_events",
+        "international_shipment_hub_units",
+        "market_cash_destinations",
+        "market_cost_attributions",
+        "market_settlement_events",
+        "market_settlements",
+        "pricing_market_decision_policy_events",
+        "purchase_order_authorizations"
+      ],
+      "delete_performed": false
+    },
+    "order_roots": [
+      {
+        "id": "09fa498d-ef83-4085-ab59-4e0003e0754d",
+        "reference": "E2E-HUB-V1-43BE86B3-KOM-101"
+      },
+      {
+        "id": "279510c1-3d82-435c-a7da-e903e87fc165",
+        "reference": "E2E-HUB-V1-43BE86B3-KOM-102"
+      },
+      {
+        "id": "84686cb6-3c7c-4542-99cb-adb851635f7a",
+        "reference": "E2E-HUB-V1-43BE86B3-KOM-103"
+      },
+      {
+        "id": "f2d9ecf5-3bbd-4f13-be1c-610a43a9f942",
+        "reference": "E2E-HUB-V1-43BE86B3-LOCAL"
+      }
+    ],
+    "fk_graph_tables": [
+      {
+        "table": "hub_custody_events",
+        "count": 23
+      },
+      {
+        "table": "hub_physical_unit_placements",
+        "count": 6
+      },
+      {
+        "table": "hub_physical_units",
+        "count": 2
+      },
+      {
+        "table": "hub_purchase_allocations",
+        "count": 3
+      },
+      {
+        "table": "incidents",
+        "count": 7
+      },
+      {
+        "table": "international_shipment_relay_receipts",
+        "count": 3
+      },
+      {
+        "table": "local_stock_allocations",
+        "count": 1
+      },
+      {
+        "table": "order_items",
+        "count": 5
+      },
+      {
+        "table": "order_status_history",
+        "count": 20
+      },
+      {
+        "table": "orders",
+        "count": 4
+      },
+      {
+        "table": "parcel_events",
+        "count": 6
+      },
+      {
+        "table": "parcel_items",
+        "count": 4
+      },
+      {
+        "table": "parcels",
+        "count": 3
+      },
+      {
+        "table": "purchase_lines",
+        "count": 3
+      },
+      {
+        "table": "scan_events",
+        "count": 12
+      },
+      {
+        "table": "scans",
+        "count": 3
+      }
+    ],
+    "opaque_dependencies": [
+      {
+        "table": "hub_box_bags",
+        "column": "bag_unit_id",
+        "parent": "hub_physical_units",
+        "constraint": "hub_box_bags_bag_unit_id_fkey",
+        "rows": 2,
+        "reason": "NO_UUID_ID_CANNOT_ATTRIBUTE_RECURSIVELY"
+      },
+      {
+        "table": "hub_box_bags",
+        "column": "parcel_id",
+        "parent": "parcels",
+        "constraint": "hub_box_bags_parcel_id_fkey",
+        "rows": 2,
+        "reason": "NO_UUID_ID_CANNOT_ATTRIBUTE_RECURSIVELY"
+      }
+    ],
+    "owned_roots_outside_fk_graph": [
+      {
+        "table": "users",
+        "count": 7,
+        "ids": [
+          "de8b02c2-d46b-41e8-8c96-57a98ca59927",
+          "e003b96a-3a10-4513-b479-653b61021f8f",
+          "3a2cc933-ce9d-4b87-bfe4-4904146c1074",
+          "0ba4d1c6-06a2-469c-9790-03a2b01c9f3f",
+          "c6a1c48b-1ea4-411e-9355-5af263e58a2b",
+          "51230920-3a58-4737-a9a4-68482e448088",
+          "73be32c0-5561-41d2-9098-8e647e03cfe3"
+        ]
+      },
+      {
+        "table": "relais",
+        "count": 1,
+        "ids": [
+          "d2af1992-bcae-48af-8f72-6565c5964c29"
+        ]
+      },
+      {
+        "table": "suppliers",
+        "count": 2,
+        "ids": [
+          "a10add7a-1868-4101-895c-07dcca8da438",
+          "dd98e12f-6488-4f4b-8daf-01aa75590a15"
+        ]
+      },
+      {
+        "table": "products",
+        "count": 4,
+        "ids": [
+          "4b3e6759-e72f-4971-a1b5-a270493a26f1",
+          "39e6ad21-9c9d-4727-a61e-e35da6beaebc",
+          "59bf4405-47fb-4ad6-b680-95865319708a",
+          "472675ca-2033-4056-91d6-dadd9c41443d"
+        ]
+      },
+      {
+        "table": "product_skus",
+        "count": 3,
+        "ids": [
+          "27b089ba-b07a-47ec-b48b-b518ce473ade",
+          "f9734886-7047-4144-a881-d70548797f31",
+          "ac55cf8f-3228-4562-b50d-3b7d51e43682"
+        ]
+      },
+      {
+        "table": "product_suppliers",
+        "count": 2,
+        "ids": [
+          "abe2a198-7d71-40ca-b299-c7d3c71401e6",
+          "b6c9d2a3-3f84-42d6-a506-0205e5911ad5"
+        ]
+      },
+      {
+        "table": "local_stock",
+        "count": 1,
+        "ids": [
+          "f1236f84-04c0-4bdb-a637-148434871b62"
+        ]
+      },
+      {
+        "table": "product_market_price_drafts",
+        "count": 4,
+        "ids": [
+          "3a73c208-ef6c-459b-816a-f1440b4248b7",
+          "bb3d0864-ead4-474d-8034-e79b08e00a3f",
+          "49f170d3-b3f9-4e0e-99e1-d4acc1c22461",
+          "6db94d13-5fb1-4787-8de0-b47b6adf1eac"
+        ]
+      },
+      {
+        "table": "product_sku_physical_codes",
+        "count": 3,
+        "ids": [
+          "1d6aed17-28af-43fe-9b22-16a6bcf0b795",
+          "bfbc0c36-931b-4e50-94a4-019682c83bca",
+          "fe92ce04-45d7-4151-9bc8-bb62d767ef49"
+        ]
+      },
+      {
+        "table": "sourcing_candidates",
+        "count": 3,
+        "ids": [
+          "68799765-65dd-47e9-af5c-0ede6f8b0782",
+          "7543b797-c463-4e41-8a33-35133fafcdf6",
+          "c5d1d487-b9b4-482b-8694-3325649a15de"
+        ]
+      },
+      {
+        "table": "sourcing_sources",
+        "count": 1,
+        "ids": [
+          "api:whatsapp:E2E-HUB-V1-43BE86B3"
+        ]
+      },
+      {
+        "table": "purchase_orders",
+        "count": 2,
+        "ids": [
+          "48c651c2-1f5a-4a2d-b955-8d162dd243ba",
+          "fb2207a2-6a3b-472f-8547-d074952759fe"
+        ]
+      },
+      {
+        "table": "hub_physical_units",
+        "count": 9,
+        "ids": [
+          "4b36d35f-bf4e-40b1-b7c8-d0b8511f93ae",
+          "8c9d4b1e-7c0e-406b-929d-f33c1e977cbf",
+          "4c0ac4a8-5d6d-4af9-9ece-b29e6d0d23e1",
+          "df12274a-1b2e-4441-bfe7-174f2198a9f0",
+          "1bb9eca5-e3e8-4029-952d-609a560cd487",
+          "d15a4e4d-a338-4fdd-b037-a1b22314edd7",
+          "f82933a8-8387-4de5-a3cb-fb217e8d6fb9",
+          "97c1d885-ffc9-4c4d-bf79-c89220f586ab",
+          "1d0517ab-d9e5-427f-8139-3b6b10eefdf6"
+        ]
+      },
+      {
+        "table": "international_shipments",
+        "count": 2,
+        "ids": [
+          "75b625fe-ef91-4dbf-af32-b162a7bdd080",
+          "5370f1f7-7bf4-4e64-ac2a-b0a9742cf780"
+        ]
+      },
+      {
+        "table": "customs_shipments",
+        "count": 2,
+        "ids": [
+          "013a5962-ad18-48ef-b861-c6dcb426e71a",
+          "1f323cec-a79d-41e9-8c9d-bf48d7fe33ba"
+        ]
+      }
+    ],
+    "tables_considered": [
+      "alerts",
+      "assignment_capability_ceiling",
+      "assignment_memberships",
+      "basket_items",
+      "baskets",
+      "business_rules_history",
+      "cart_shares",
+      "cash_collections",
+      "cash_confirmation_controls",
+      "cash_custody_losses",
+      "cash_custody_receipts",
+      "cash_deposits",
+      "catalog_enrichment_runs",
+      "catalog_field_overrides",
+      "catalog_global_access_grants",
+      "catalog_media",
+      "catalog_media_recovery_audit",
+      "catalog_publication_decision_audit",
+      "catalog_stock_sync_state",
+      "catalog_taxonomy_audit",
+      "client_notifications",
+      "competitor_prices",
+      "cost_component_events",
+      "cost_component_market_override_events",
+      "cost_component_market_overrides",
+      "cost_components",
+      "credential_action_tokens",
+      "customs_history",
+      "customs_shipment_fees",
+      "customs_shipment_parcels",
+      "customs_shipments",
+      "dashboard_global_access_grants",
+      "decision_signal_global_access_grants",
+      "disputes",
+      "economic_risk_cost_events",
+      "economic_risk_watermark_events",
+      "economic_structure_cost_events",
+      "hub_authorization_grants",
+      "hub_box_bags",
+      "hub_custody_events",
+      "hub_physical_unit_placements",
+      "hub_physical_units",
+      "hub_purchase_allocations",
+      "import_runtime_item_events",
+      "import_runtime_runs",
+      "incidents",
+      "international_n1_reconciliations",
+      "international_shipment_charges",
+      "international_shipment_events",
+      "international_shipment_hub_units",
+      "international_shipment_relay_receipts",
+      "international_shipments",
+      "invoices",
+      "local_stock",
+      "local_stock_allocations",
+      "loyalty_rewards",
+      "market_cash_destinations",
+      "market_central_collection_modes",
+      "market_cost_attributions",
+      "market_delegation_audit",
+      "market_delivery_attestations",
+      "market_operating_assignments",
+      "market_payment_accounts",
+      "market_price_observation_events",
+      "market_price_observations",
+      "market_settlement_events",
+      "market_settlements",
+      "market_team_invitations",
+      "market_transport_sale_rates",
+      "membership_capabilities",
+      "mobile_money_transactions",
+      "operator_market_scopes",
+      "order_comments",
+      "order_incidents",
+      "order_item_cost_imputations",
+      "order_item_real_cost_allocations",
+      "order_item_refund_reservations",
+      "order_items",
+      "order_status_history",
+      "orders",
+      "parcel_events",
+      "parcel_items",
+      "parcels",
+      "partners",
+      "pickup_print_tokens",
+      "pickup_reveal_codes",
+      "price_history",
+      "pricing_category_dims",
+      "pricing_category_taxes",
+      "pricing_global_access_grants",
+      "pricing_market_decision_policy_events",
+      "pricing_matrices_audit",
+      "pricing_maturity_disposition_events",
+      "pricing_strategies",
+      "pricing_strategy_history",
+      "product_attributes",
+      "product_content_profile",
+      "product_content_sections",
+      "product_market_exposure",
+      "product_market_price_draft_events",
+      "product_market_price_drafts",
+      "product_sku_media",
+      "product_sku_physical_codes",
+      "product_skus",
+      "product_suppliers",
+      "product_variants",
+      "products",
+      "purchase_lines",
+      "purchase_order_authorizations",
+      "purchase_orders",
+      "recipients",
+      "refund_execution_intents",
+      "refunds",
+      "relais",
+      "scan_events",
+      "scans",
+      "shared_cart_items",
+      "shared_cart_saved_access",
+      "shared_carts",
+      "sms_log",
+      "sourcing_candidate_events",
+      "sourcing_candidate_observations",
+      "sourcing_candidates",
+      "sourcing_canonical_entity_refs",
+      "sourcing_captures",
+      "sourcing_global_access_grants",
+      "sourcing_provider_control_events",
+      "sourcing_source_execution_modes",
+      "sourcing_source_principal_refs",
+      "sourcing_source_provides",
+      "sourcing_sources",
+      "store_credits",
+      "supplier_catalog_imports",
+      "supplier_execution_events",
+      "supplier_execution_groups",
+      "supplier_execution_order_lines",
+      "supplier_execution_orders",
+      "supplier_execution_payments",
+      "suppliers",
+      "transaction_documents",
+      "unsold_items",
+      "user_pickup_authorizations",
+      "users",
+      "wallets",
+      "webauthn_challenges",
+      "webauthn_credentials"
+    ],
+    "immutable_tables_detail": [
+      {
+        "table": "assignment_capability_ceiling",
+        "delete_blocking_triggers": [
+          "trg_ceiling_removal_member_grants_guard"
+        ],
+        "update_guard_triggers": [
+          "trg_assignment_ceiling_amount_limit",
+          "trg_assignment_ceiling_capability_guard"
+        ]
+      },
+      {
+        "table": "cash_custody_losses",
+        "delete_blocking_triggers": [
+          "trg_prevent_cash_custody_losses_delete"
+        ],
+        "update_guard_triggers": [
+          "trg_prevent_cash_custody_losses_update"
+        ]
+      },
+      {
+        "table": "cash_custody_receipts",
+        "delete_blocking_triggers": [
+          "trg_prevent_cash_custody_receipts_delete"
+        ],
+        "update_guard_triggers": [
+          "trg_prevent_cash_custody_receipts_update"
+        ]
+      },
+      {
+        "table": "cash_deposits",
+        "delete_blocking_triggers": [
+          "trg_prevent_cash_deposits_delete"
+        ],
+        "update_guard_triggers": [
+          "trg_cash_deposits_guard_update"
+        ]
+      },
+      {
+        "table": "customs_shipment_fees",
+        "delete_blocking_triggers": [
+          "trg_csf_immutable"
+        ],
+        "update_guard_triggers": []
+      },
+      {
+        "table": "economic_risk_cost_events",
+        "delete_blocking_triggers": [
+          "trg_prevent_economic_risk_cost_event_mutation"
+        ],
+        "update_guard_triggers": []
+      },
+      {
+        "table": "economic_risk_watermark_events",
+        "delete_blocking_triggers": [
+          "trg_prevent_economic_risk_watermark_event_mutation"
+        ],
+        "update_guard_triggers": []
+      },
+      {
+        "table": "economic_structure_cost_events",
+        "delete_blocking_triggers": [
+          "trg_prevent_economic_structure_cost_event_mutation"
+        ],
+        "update_guard_triggers": []
+      },
+      {
+        "table": "hub_box_bags",
+        "delete_blocking_triggers": [
+          "trg_hub_box_bag_immutable"
+        ],
+        "update_guard_triggers": []
+      },
+      {
+        "table": "hub_custody_events",
+        "delete_blocking_triggers": [
+          "trg_hub_custody_event_append_only"
+        ],
+        "update_guard_triggers": []
+      },
+      {
+        "table": "hub_physical_unit_placements",
+        "delete_blocking_triggers": [
+          "trg_hub_placement_no_delete"
+        ],
+        "update_guard_triggers": [
+          "trg_hub_order_bag_placement_evidence_immutable",
+          "trg_hub_order_bag_placement_guard",
+          "trg_hub_order_bag_sealed_placements_guard",
+          "trg_hub_placement_update_guard"
+        ]
+      },
+      {
+        "table": "hub_purchase_allocations",
+        "delete_blocking_triggers": [
+          "trg_hub_purchase_allocation_immutable"
+        ],
+        "update_guard_triggers": []
+      },
+      {
+        "table": "incidents",
+        "delete_blocking_triggers": [
+          "trg_prevent_incident_delete"
+        ],
+        "update_guard_triggers": []
+      },
+      {
+        "table": "international_shipment_charges",
+        "delete_blocking_triggers": [
+          "international_charges_immutable"
+        ],
+        "update_guard_triggers": []
+      },
+      {
+        "table": "international_shipment_events",
+        "delete_blocking_triggers": [
+          "international_events_immutable"
+        ],
+        "update_guard_triggers": []
+      },
+      {
+        "table": "international_shipment_hub_units",
+        "delete_blocking_triggers": [
+          "trg_international_shipment_hub_units_guard"
+        ],
+        "update_guard_triggers": []
+      },
+      {
+        "table": "international_shipment_relay_receipts",
+        "delete_blocking_triggers": [
+          "trg_shipment_relay_receipts_immutable"
+        ],
+        "update_guard_triggers": []
+      },
+      {
+        "table": "market_cash_destinations",
+        "delete_blocking_triggers": [
+          "trg_prevent_market_cash_destinations_delete"
+        ],
+        "update_guard_triggers": [
+          "trg_market_cash_destinations_guard"
+        ]
+      },
+      {
+        "table": "market_cost_attributions",
+        "delete_blocking_triggers": [
+          "trg_mca_guard_immutable"
+        ],
+        "update_guard_triggers": []
+      },
+      {
+        "table": "market_settlement_events",
+        "delete_blocking_triggers": [
+          "trg_prevent_market_settlement_event_mutation"
+        ],
+        "update_guard_triggers": []
+      },
+      {
+        "table": "market_settlements",
+        "delete_blocking_triggers": [
+          "trg_prevent_market_settlement_delete"
+        ],
+        "update_guard_triggers": [
+          "trg_market_settlement_invariants"
+        ]
+      },
+      {
+        "table": "parcels",
+        "delete_blocking_triggers": [
+          "trg_no_delete_parcels"
+        ],
+        "update_guard_triggers": [
+          "trg_parcel_ship_guard"
+        ]
+      },
+      {
+        "table": "pricing_market_decision_policy_events",
+        "delete_blocking_triggers": [
+          "trg_prevent_pricing_market_decision_policy_mutation"
+        ],
+        "update_guard_triggers": []
+      },
+      {
+        "table": "purchase_lines",
+        "delete_blocking_triggers": [
+          "trg_purchase_lines_guard_delete"
+        ],
+        "update_guard_triggers": [
+          "trg_purchase_lines_a_groupable",
+          "trg_purchase_lines_b_market_scope",
+          "trg_purchase_lines_guard_attachment",
+          "trg_purchase_lines_guard_commitment",
+          "trg_purchase_lines_guard_freeze"
+        ]
+      },
+      {
+        "table": "purchase_order_authorizations",
+        "delete_blocking_triggers": [
+          "trg_po_authorizations_immutable"
+        ],
+        "update_guard_triggers": []
+      },
+      {
+        "table": "scan_events",
+        "delete_blocking_triggers": [
+          "trg_prevent_scan_event_delete"
+        ],
+        "update_guard_triggers": []
+      }
+    ],
+    "fk_delete_rules": [
+      {
+        "parent_table": "customs_shipments",
+        "child_table": "customs_shipment_fees",
+        "constraint_name": "customs_shipment_fees_shipment_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "customs_shipments",
+        "child_table": "customs_shipment_parcels",
+        "constraint_name": "customs_shipment_parcels_shipment_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "customs_shipments",
+        "child_table": "international_shipments",
+        "constraint_name": "international_shipments_customs_shipment_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "customs_shipments",
+        "child_table": "order_item_real_cost_allocations",
+        "constraint_name": "order_item_real_cost_allocations_shipment_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "hub_physical_units",
+        "child_table": "hub_box_bags",
+        "constraint_name": "hub_box_bags_bag_unit_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "hub_physical_units",
+        "child_table": "hub_box_bags",
+        "constraint_name": "hub_box_bags_box_unit_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "hub_physical_units",
+        "child_table": "hub_custody_events",
+        "constraint_name": "hub_custody_events_physical_unit_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "hub_physical_units",
+        "child_table": "hub_physical_unit_placements",
+        "constraint_name": "hub_physical_unit_placements_physical_unit_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "hub_physical_units",
+        "child_table": "international_shipment_hub_units",
+        "constraint_name": "international_shipment_hub_units_physical_unit_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "hub_purchase_allocations",
+        "child_table": "hub_custody_events",
+        "constraint_name": "hub_custody_events_allocation_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "hub_purchase_allocations",
+        "child_table": "hub_physical_unit_placements",
+        "constraint_name": "hub_physical_unit_placements_allocation_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "incidents",
+        "child_table": "incidents",
+        "constraint_name": "incidents_parent_incident_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "incidents",
+        "child_table": "international_shipment_relay_receipts",
+        "constraint_name": "international_shipment_relay_receipts_incident_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "incidents",
+        "child_table": "order_item_refund_reservations",
+        "constraint_name": "order_item_refund_reservations_source_incident_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "international_shipments",
+        "child_table": "international_n1_reconciliations",
+        "constraint_name": "international_n1_reconciliations_shipment_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "international_shipments",
+        "child_table": "international_shipment_charges",
+        "constraint_name": "international_shipment_charges_shipment_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "international_shipments",
+        "child_table": "international_shipment_events",
+        "constraint_name": "international_shipment_events_shipment_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "international_shipments",
+        "child_table": "international_shipment_hub_units",
+        "constraint_name": "international_shipment_hub_units_shipment_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "international_shipments",
+        "child_table": "international_shipment_relay_receipts",
+        "constraint_name": "international_shipment_relay_receipts_shipment_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "local_stock",
+        "child_table": "local_stock_allocations",
+        "constraint_name": "local_stock_allocations_local_stock_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "order_items",
+        "child_table": "hub_purchase_allocations",
+        "constraint_name": "hub_purchase_allocations_order_item_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "order_items",
+        "child_table": "international_shipment_relay_receipts",
+        "constraint_name": "international_shipment_relay_receipts_order_item_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "order_items",
+        "child_table": "order_item_cost_imputations",
+        "constraint_name": "order_item_cost_imputations_order_item_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "order_items",
+        "child_table": "order_item_real_cost_allocations",
+        "constraint_name": "order_item_real_cost_allocations_order_item_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "order_items",
+        "child_table": "order_item_refund_reservations",
+        "constraint_name": "order_item_refund_reservations_order_item_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "order_items",
+        "child_table": "parcel_items",
+        "constraint_name": "parcel_items_order_item_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "order_items",
+        "child_table": "purchase_lines",
+        "constraint_name": "purchase_lines_order_item_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "order_items",
+        "child_table": "purchase_orders",
+        "constraint_name": "purchase_orders_order_item_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "order_items",
+        "child_table": "scans",
+        "constraint_name": "scans_order_item_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "orders",
+        "child_table": "cart_shares",
+        "constraint_name": "cart_shares_converted_order_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "orders",
+        "child_table": "cash_collections",
+        "constraint_name": "cash_collections_order_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "orders",
+        "child_table": "cash_confirmation_controls",
+        "constraint_name": "cash_confirmation_controls_order_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "orders",
+        "child_table": "customs_history",
+        "constraint_name": "customs_history_order_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "orders",
+        "child_table": "disputes",
+        "constraint_name": "disputes_order_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "orders",
+        "child_table": "economic_risk_cost_events",
+        "constraint_name": "economic_risk_cost_events_order_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "orders",
+        "child_table": "hub_physical_units",
+        "constraint_name": "hub_physical_units_order_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "orders",
+        "child_table": "hub_purchase_allocations",
+        "constraint_name": "hub_purchase_allocations_order_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "orders",
+        "child_table": "incidents",
+        "constraint_name": "incidents_order_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "orders",
+        "child_table": "invoices",
+        "constraint_name": "invoices_order_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "orders",
+        "child_table": "local_stock_allocations",
+        "constraint_name": "local_stock_allocations_order_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "orders",
+        "child_table": "loyalty_rewards",
+        "constraint_name": "loyalty_rewards_triggered_by_order_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "orders",
+        "child_table": "mobile_money_transactions",
+        "constraint_name": "mobile_money_transactions_order_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "orders",
+        "child_table": "order_comments",
+        "constraint_name": "order_comments_order_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "orders",
+        "child_table": "order_incidents",
+        "constraint_name": "order_incidents_order_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "orders",
+        "child_table": "order_item_cost_imputations",
+        "constraint_name": "order_item_cost_imputations_order_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "orders",
+        "child_table": "order_item_real_cost_allocations",
+        "constraint_name": "order_item_real_cost_allocations_order_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "orders",
+        "child_table": "order_item_refund_reservations",
+        "constraint_name": "order_item_refund_reservations_order_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "orders",
+        "child_table": "order_items",
+        "constraint_name": "order_items_order_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "orders",
+        "child_table": "order_status_history",
+        "constraint_name": "order_status_history_order_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "orders",
+        "child_table": "parcels",
+        "constraint_name": "parcels_order_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "orders",
+        "child_table": "pickup_print_tokens",
+        "constraint_name": "pickup_print_tokens_order_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "orders",
+        "child_table": "pickup_reveal_codes",
+        "constraint_name": "pickup_reveal_codes_order_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "orders",
+        "child_table": "pricing_maturity_disposition_events",
+        "constraint_name": "pricing_maturity_disposition_events_order_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "orders",
+        "child_table": "purchase_orders",
+        "constraint_name": "purchase_orders_order_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "orders",
+        "child_table": "refund_execution_intents",
+        "constraint_name": "refund_execution_intents_order_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "orders",
+        "child_table": "refunds",
+        "constraint_name": "refunds_order_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "orders",
+        "child_table": "scan_events",
+        "constraint_name": "scan_events_order_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "orders",
+        "child_table": "scans",
+        "constraint_name": "scans_order_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "orders",
+        "child_table": "shared_carts",
+        "constraint_name": "shared_carts_source_order_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "orders",
+        "child_table": "sms_log",
+        "constraint_name": "sms_log_order_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "orders",
+        "child_table": "store_credits",
+        "constraint_name": "store_credits_source_order_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "orders",
+        "child_table": "transaction_documents",
+        "constraint_name": "transaction_documents_order_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "orders",
+        "child_table": "unsold_items",
+        "constraint_name": "unsold_items_order_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "parcels",
+        "child_table": "customs_shipment_parcels",
+        "constraint_name": "customs_shipment_parcels_parcel_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "parcels",
+        "child_table": "hub_box_bags",
+        "constraint_name": "hub_box_bags_parcel_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "parcels",
+        "child_table": "incidents",
+        "constraint_name": "incidents_parcel_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "parcels",
+        "child_table": "invoices",
+        "constraint_name": "invoices_parcel_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "parcels",
+        "child_table": "order_item_real_cost_allocations",
+        "constraint_name": "order_item_real_cost_allocations_parcel_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "parcels",
+        "child_table": "parcel_events",
+        "constraint_name": "parcel_events_parcel_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "parcels",
+        "child_table": "parcel_items",
+        "constraint_name": "parcel_items_parcel_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "parcels",
+        "child_table": "scan_events",
+        "constraint_name": "scan_events_parcel_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "parcels",
+        "child_table": "scans",
+        "constraint_name": "scans_parcel_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "product_skus",
+        "child_table": "catalog_stock_sync_state",
+        "constraint_name": "catalog_stock_sync_state_product_sku_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "product_skus",
+        "child_table": "hub_purchase_allocations",
+        "constraint_name": "hub_purchase_allocations_product_sku_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "product_skus",
+        "child_table": "order_items",
+        "constraint_name": "order_items_sku_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "product_skus",
+        "child_table": "product_sku_media",
+        "constraint_name": "product_sku_media_sku_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "product_skus",
+        "child_table": "product_sku_physical_codes",
+        "constraint_name": "product_sku_physical_codes_product_sku_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "product_skus",
+        "child_table": "purchase_lines",
+        "constraint_name": "purchase_lines_product_sku_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "product_skus",
+        "child_table": "purchase_orders",
+        "constraint_name": "purchase_orders_product_sku_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "product_skus",
+        "child_table": "shared_cart_items",
+        "constraint_name": "shared_cart_items_sku_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "product_suppliers",
+        "child_table": "purchase_lines",
+        "constraint_name": "purchase_lines_product_supplier_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "product_suppliers",
+        "child_table": "purchase_orders",
+        "constraint_name": "purchase_orders_product_supplier_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "basket_items",
+        "constraint_name": "basket_items_product_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "catalog_enrichment_runs",
+        "constraint_name": "catalog_enrichment_runs_product_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "catalog_field_overrides",
+        "constraint_name": "catalog_field_overrides_product_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "catalog_media",
+        "constraint_name": "catalog_media_product_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "catalog_media_recovery_audit",
+        "constraint_name": "catalog_media_recovery_audit_product_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "catalog_publication_decision_audit",
+        "constraint_name": "catalog_publication_decision_audit_product_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "competitor_prices",
+        "constraint_name": "competitor_prices_product_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "local_stock",
+        "constraint_name": "local_stock_product_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "market_price_observation_events",
+        "constraint_name": "market_price_observation_events_product_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "market_price_observations",
+        "constraint_name": "market_price_observations_product_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "order_item_cost_imputations",
+        "constraint_name": "order_item_cost_imputations_product_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "order_items",
+        "constraint_name": "order_items_product_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "parcel_items",
+        "constraint_name": "parcel_items_product_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "price_history",
+        "constraint_name": "price_history_product_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "pricing_strategies",
+        "constraint_name": "pricing_strategies_product_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "pricing_strategy_history",
+        "constraint_name": "pricing_strategy_history_product_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "product_attributes",
+        "constraint_name": "product_attributes_product_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "product_content_profile",
+        "constraint_name": "product_content_profile_product_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "product_content_sections",
+        "constraint_name": "product_content_sections_product_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "product_market_exposure",
+        "constraint_name": "product_market_exposure_product_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "product_market_price_draft_events",
+        "constraint_name": "product_market_price_draft_events_product_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "product_market_price_drafts",
+        "constraint_name": "product_market_price_drafts_product_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "product_skus",
+        "constraint_name": "product_skus_product_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "product_suppliers",
+        "constraint_name": "product_suppliers_product_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "product_variants",
+        "constraint_name": "product_variants_product_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "shared_cart_items",
+        "constraint_name": "shared_cart_items_product_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "sourcing_candidates",
+        "constraint_name": "sourcing_candidates_product_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "products",
+        "child_table": "unsold_items",
+        "constraint_name": "unsold_items_product_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "purchase_lines",
+        "child_table": "hub_purchase_allocations",
+        "constraint_name": "hub_purchase_allocations_purchase_line_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "purchase_lines",
+        "child_table": "purchase_lines",
+        "constraint_name": "purchase_lines_parent_line_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "purchase_lines",
+        "child_table": "supplier_execution_order_lines",
+        "constraint_name": "supplier_execution_order_lines_purchase_line_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "purchase_orders",
+        "child_table": "hub_purchase_allocations",
+        "constraint_name": "hub_purchase_allocations_purchase_order_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "purchase_orders",
+        "child_table": "purchase_lines",
+        "constraint_name": "purchase_lines_purchase_order_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "purchase_orders",
+        "child_table": "purchase_order_authorizations",
+        "constraint_name": "purchase_order_authorizations_purchase_order_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "purchase_orders",
+        "child_table": "supplier_execution_events",
+        "constraint_name": "supplier_execution_events_purchase_order_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "purchase_orders",
+        "child_table": "supplier_execution_groups",
+        "constraint_name": "supplier_execution_groups_purchase_order_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "purchase_orders",
+        "child_table": "supplier_execution_orders",
+        "constraint_name": "supplier_execution_orders_purchase_order_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "purchase_orders",
+        "child_table": "supplier_execution_payments",
+        "constraint_name": "supplier_execution_payments_purchase_order_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "relais",
+        "child_table": "cash_confirmation_controls",
+        "constraint_name": "cash_confirmation_controls_relais_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "relais",
+        "child_table": "international_shipment_relay_receipts",
+        "constraint_name": "international_shipment_relay_receipts_relais_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "relais",
+        "child_table": "orders",
+        "constraint_name": "orders_relais_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "relais",
+        "child_table": "parcels",
+        "constraint_name": "parcels_relais_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "relais",
+        "child_table": "parcels",
+        "constraint_name": "parcels_relay_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "relais",
+        "child_table": "partners",
+        "constraint_name": "partners_relais_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "relais",
+        "child_table": "recipients",
+        "constraint_name": "recipients_relais_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "relais",
+        "child_table": "scans",
+        "constraint_name": "scans_pickup_relais_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "relais",
+        "child_table": "shared_carts",
+        "constraint_name": "shared_carts_delivery_relay_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "relais",
+        "child_table": "users",
+        "constraint_name": "users_relais_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "scan_events",
+        "child_table": "incidents",
+        "constraint_name": "incidents_scan_event_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "scan_events",
+        "child_table": "scan_events",
+        "constraint_name": "scan_events_corrects_event_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "scans",
+        "child_table": "order_status_history",
+        "constraint_name": "order_status_history_scan_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "sourcing_candidates",
+        "child_table": "import_runtime_item_events",
+        "constraint_name": "import_runtime_item_events_candidate_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "sourcing_candidates",
+        "child_table": "sourcing_candidate_events",
+        "constraint_name": "sourcing_candidate_events_candidate_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "sourcing_candidates",
+        "child_table": "sourcing_candidate_observations",
+        "constraint_name": "sourcing_candidate_observations_candidate_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "sourcing_sources",
+        "child_table": "sourcing_canonical_entity_refs",
+        "constraint_name": "sourcing_canonical_entity_refs_source_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "sourcing_sources",
+        "child_table": "sourcing_captures",
+        "constraint_name": "sourcing_captures_source_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "sourcing_sources",
+        "child_table": "sourcing_provider_control_events",
+        "constraint_name": "sourcing_provider_control_events_source_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "sourcing_sources",
+        "child_table": "sourcing_source_execution_modes",
+        "constraint_name": "sourcing_source_execution_modes_source_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "sourcing_sources",
+        "child_table": "sourcing_source_principal_refs",
+        "constraint_name": "sourcing_source_principal_refs_source_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "sourcing_sources",
+        "child_table": "sourcing_source_provides",
+        "constraint_name": "sourcing_source_provides_source_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "suppliers",
+        "child_table": "hub_purchase_allocations",
+        "constraint_name": "hub_purchase_allocations_supplier_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "suppliers",
+        "child_table": "product_sku_physical_codes",
+        "constraint_name": "product_sku_physical_codes_supplier_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "suppliers",
+        "child_table": "product_suppliers",
+        "constraint_name": "product_suppliers_supplier_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "suppliers",
+        "child_table": "purchase_lines",
+        "constraint_name": "purchase_lines_supplier_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "suppliers",
+        "child_table": "purchase_orders",
+        "constraint_name": "purchase_orders_supplier_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "alerts",
+        "constraint_name": "alerts_resolved_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "assignment_capability_ceiling",
+        "constraint_name": "assignment_capability_ceiling_granted_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "assignment_capability_ceiling",
+        "constraint_name": "assignment_capability_ceiling_revoked_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "assignment_memberships",
+        "constraint_name": "assignment_memberships_granted_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "assignment_memberships",
+        "constraint_name": "assignment_memberships_revoked_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "assignment_memberships",
+        "constraint_name": "assignment_memberships_user_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "basket_items",
+        "constraint_name": "basket_items_added_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "baskets",
+        "constraint_name": "baskets_owner_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "business_rules_history",
+        "constraint_name": "business_rules_history_changed_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "cash_confirmation_controls",
+        "constraint_name": "cash_confirmation_controls_first_actor_user_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "cash_confirmation_controls",
+        "constraint_name": "cash_confirmation_controls_second_actor_user_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "cash_custody_losses",
+        "constraint_name": "cash_custody_losses_decided_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "cash_custody_losses",
+        "constraint_name": "cash_custody_losses_holder_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "cash_custody_receipts",
+        "constraint_name": "cash_custody_receipts_actor_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "cash_deposits",
+        "constraint_name": "cash_deposits_recipient_user_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "catalog_global_access_grants",
+        "constraint_name": "catalog_global_access_grants_granted_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "catalog_global_access_grants",
+        "constraint_name": "catalog_global_access_grants_revoked_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "catalog_global_access_grants",
+        "constraint_name": "catalog_global_access_grants_user_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "catalog_media_recovery_audit",
+        "constraint_name": "catalog_media_recovery_audit_actor_user_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "catalog_publication_decision_audit",
+        "constraint_name": "catalog_publication_decision_audit_actor_user_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "catalog_taxonomy_audit",
+        "constraint_name": "catalog_taxonomy_audit_actor_user_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "client_notifications",
+        "constraint_name": "client_notifications_user_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "cost_component_events",
+        "constraint_name": "cost_component_events_triggered_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "cost_component_market_override_events",
+        "constraint_name": "cost_component_market_override_events_triggered_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "cost_component_market_overrides",
+        "constraint_name": "cost_component_market_overrides_created_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "cost_component_market_overrides",
+        "constraint_name": "cost_component_market_overrides_updated_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "cost_components",
+        "constraint_name": "cost_components_created_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "cost_components",
+        "constraint_name": "cost_components_updated_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "credential_action_tokens",
+        "constraint_name": "credential_action_tokens_user_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "customs_history",
+        "constraint_name": "customs_history_recorded_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "customs_shipments",
+        "constraint_name": "customs_shipments_created_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "customs_shipments",
+        "constraint_name": "customs_shipments_declared_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "dashboard_global_access_grants",
+        "constraint_name": "dashboard_global_access_grants_granted_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "dashboard_global_access_grants",
+        "constraint_name": "dashboard_global_access_grants_revoked_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "dashboard_global_access_grants",
+        "constraint_name": "dashboard_global_access_grants_user_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "decision_signal_global_access_grants",
+        "constraint_name": "decision_signal_global_access_grants_granted_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "decision_signal_global_access_grants",
+        "constraint_name": "decision_signal_global_access_grants_user_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "disputes",
+        "constraint_name": "disputes_created_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "disputes",
+        "constraint_name": "disputes_resolved_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "economic_risk_cost_events",
+        "constraint_name": "economic_risk_cost_events_recorded_by_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "economic_risk_watermark_events",
+        "constraint_name": "economic_risk_watermark_events_recorded_by_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "economic_structure_cost_events",
+        "constraint_name": "economic_structure_cost_events_recorded_by_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "hub_authorization_grants",
+        "constraint_name": "hub_authorization_grants_granted_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "hub_authorization_grants",
+        "constraint_name": "hub_authorization_grants_revoked_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "hub_authorization_grants",
+        "constraint_name": "hub_authorization_grants_user_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "hub_box_bags",
+        "constraint_name": "hub_box_bags_linked_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "hub_custody_events",
+        "constraint_name": "hub_custody_events_actor_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "hub_physical_unit_placements",
+        "constraint_name": "hub_physical_unit_placements_created_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "hub_physical_units",
+        "constraint_name": "hub_physical_units_created_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "import_runtime_runs",
+        "constraint_name": "import_runtime_runs_started_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "incidents",
+        "constraint_name": "incidents_detected_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "incidents",
+        "constraint_name": "incidents_resolved_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "international_shipment_hub_units",
+        "constraint_name": "international_shipment_hub_units_attached_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "international_shipment_relay_receipts",
+        "constraint_name": "international_shipment_relay_receipts_received_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "invoices",
+        "constraint_name": "invoices_owner_user_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "local_stock",
+        "constraint_name": "local_stock_updated_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "loyalty_rewards",
+        "constraint_name": "loyalty_rewards_granted_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "loyalty_rewards",
+        "constraint_name": "loyalty_rewards_user_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "market_cash_destinations",
+        "constraint_name": "market_cash_destinations_activated_by_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "market_cash_destinations",
+        "constraint_name": "market_cash_destinations_proposed_by_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "market_central_collection_modes",
+        "constraint_name": "market_central_collection_modes_authorized_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "market_cost_attributions",
+        "constraint_name": "market_cost_attributions_recorded_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "market_delegation_audit",
+        "constraint_name": "market_delegation_audit_actor_user_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "market_delivery_attestations",
+        "constraint_name": "market_delivery_attestations_attested_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "market_delivery_attestations",
+        "constraint_name": "market_delivery_attestations_revoked_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "market_operating_assignments",
+        "constraint_name": "market_operating_assignments_central_referent_user_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "market_operating_assignments",
+        "constraint_name": "market_operating_assignments_granted_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "market_payment_accounts",
+        "constraint_name": "market_payment_accounts_created_by_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "market_payment_accounts",
+        "constraint_name": "market_payment_accounts_verified_by_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "market_price_observation_events",
+        "constraint_name": "market_price_observation_events_actor_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "market_price_observations",
+        "constraint_name": "market_price_observations_created_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "market_settlement_events",
+        "constraint_name": "market_settlement_events_actor_user_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "market_settlements",
+        "constraint_name": "market_settlements_attested_by_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "market_settlements",
+        "constraint_name": "market_settlements_paid_by_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "market_settlements",
+        "constraint_name": "market_settlements_received_by_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "market_settlements",
+        "constraint_name": "market_settlements_requested_by_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "market_team_invitations",
+        "constraint_name": "market_team_invitations_accepted_by_user_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "market_team_invitations",
+        "constraint_name": "market_team_invitations_invited_by_user_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "market_transport_sale_rates",
+        "constraint_name": "market_transport_sale_rates_set_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "membership_capabilities",
+        "constraint_name": "membership_capabilities_granted_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "membership_capabilities",
+        "constraint_name": "membership_capabilities_revoked_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "operator_market_scopes",
+        "constraint_name": "operator_market_scopes_granted_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "operator_market_scopes",
+        "constraint_name": "operator_market_scopes_revoked_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "operator_market_scopes",
+        "constraint_name": "operator_market_scopes_user_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "order_comments",
+        "constraint_name": "order_comments_author_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "order_incidents",
+        "constraint_name": "order_incidents_reporter_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "order_incidents",
+        "constraint_name": "order_incidents_resolved_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "order_item_real_cost_allocations",
+        "constraint_name": "order_item_real_cost_allocations_created_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "order_item_refund_reservations",
+        "constraint_name": "order_item_refund_reservations_created_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "order_status_history",
+        "constraint_name": "order_status_history_changed_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "orders",
+        "constraint_name": "orders_payment_received_by_agent_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "orders",
+        "constraint_name": "orders_pickup_code_recipient_user_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "orders",
+        "constraint_name": "orders_tracking_phone_confirmed_by_agent_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "orders",
+        "constraint_name": "orders_user_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "parcel_events",
+        "constraint_name": "parcel_events_actor_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "parcels",
+        "constraint_name": "parcels_created_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "price_history",
+        "constraint_name": "price_history_applied_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "pricing_category_dims",
+        "constraint_name": "pricing_category_dims_updated_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "pricing_category_taxes",
+        "constraint_name": "pricing_category_taxes_updated_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "pricing_global_access_grants",
+        "constraint_name": "pricing_global_access_grants_granted_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "pricing_global_access_grants",
+        "constraint_name": "pricing_global_access_grants_user_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "pricing_market_decision_policy_events",
+        "constraint_name": "pricing_market_decision_policy_events_recorded_by_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "pricing_matrices_audit",
+        "constraint_name": "pricing_matrices_audit_changed_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "pricing_maturity_disposition_events",
+        "constraint_name": "pricing_maturity_disposition_events_decided_by_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "pricing_strategies",
+        "constraint_name": "pricing_strategies_applied_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "pricing_strategy_history",
+        "constraint_name": "pricing_strategy_history_applied_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "product_market_exposure",
+        "constraint_name": "product_market_exposure_decided_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "product_market_price_draft_events",
+        "constraint_name": "product_market_price_draft_events_actor_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "product_market_price_drafts",
+        "constraint_name": "product_market_price_drafts_decided_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "product_sku_physical_codes",
+        "constraint_name": "product_sku_physical_codes_confirmed_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "purchase_lines",
+        "constraint_name": "purchase_lines_created_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "purchase_order_authorizations",
+        "constraint_name": "purchase_order_authorizations_decided_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "purchase_orders",
+        "constraint_name": "purchase_orders_sent_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "recipients",
+        "constraint_name": "recipients_user_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "refunds",
+        "constraint_name": "refunds_initiated_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "scan_events",
+        "constraint_name": "scan_events_scanned_by_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "scans",
+        "constraint_name": "scans_scanned_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "shared_cart_saved_access",
+        "constraint_name": "shared_cart_saved_access_user_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "shared_carts",
+        "constraint_name": "shared_carts_beneficiary_user_id_fkey",
+        "delete_rule": "r"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "sourcing_candidate_events",
+        "constraint_name": "sourcing_candidate_events_triggered_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "sourcing_candidates",
+        "constraint_name": "sourcing_candidates_updated_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "sourcing_global_access_grants",
+        "constraint_name": "sourcing_global_access_grants_granted_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "sourcing_global_access_grants",
+        "constraint_name": "sourcing_global_access_grants_user_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "store_credits",
+        "constraint_name": "store_credits_user_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "supplier_catalog_imports",
+        "constraint_name": "supplier_catalog_imports_imported_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "suppliers",
+        "constraint_name": "suppliers_created_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "transaction_documents",
+        "constraint_name": "transaction_documents_issued_by_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "transaction_documents",
+        "constraint_name": "transaction_documents_owner_user_id_fkey",
+        "delete_rule": "n"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "unsold_items",
+        "constraint_name": "unsold_items_reseller_id_fkey",
+        "delete_rule": "a"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "user_pickup_authorizations",
+        "constraint_name": "user_pickup_authorizations_user_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "wallets",
+        "constraint_name": "wallets_user_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "webauthn_challenges",
+        "constraint_name": "webauthn_challenges_user_id_fkey",
+        "delete_rule": "c"
+      },
+      {
+        "parent_table": "users",
+        "child_table": "webauthn_credentials",
+        "constraint_name": "webauthn_credentials_user_id_fkey",
+        "delete_rule": "c"
+      }
+    ]
+  },
+  "limits": [
+    "KOM-103 : « Sourcing requis » est observé via le trigger d'achat réel (aucune ligne, aucun PO, résultat no_supplier) ; la certification formelle de l'anomalie reste portée par les tests automatisés de #3355, rien n'est fabriqué.",
+    "Paiement fournisseur : seule l'AUTORISATION (hub_authorization_grants + purchase_order_authorizations) est exercée ; aucun débit, aucune écriture supplier_execution_payments / settlements.",
+    "Reliquat KOM-102 traité par LIVRAISON tardive ; le remboursement fictif est volontairement non exécuté (un paiement fictif sans débit ne peut être remboursé sans créer de la monnaie interne jamais encaissée).",
+    "Création du colis client : répartiteur canonique auto-parcel.distributeOrder (aucun rôle Hub dédié n'existe pour cette action).",
+    "Nettoyage : la suppression de la fixture est INTERDITE (tables append-only) ; stratégie = conservation du préfixe E2E-HUB-V1-<RUN8>, jamais de suppression forcée ; cleanup_certified=false.",
+    "Correctifs de services découverts par le runner (commit isolé) : projection colis↔KOM-BOX des sacs (relay-parcel-item-reconciliation, parcel-shipment-handover), référence colis (auto-parcel), suppression des messages WhatsApp pour une commande en simulation_scope (notifications), consommation du stock local au paiement fictif.",
+    "Exécution sur staging Railway officiel, empreinte DB et SHA vérifiés avant toute écriture.",
+    "Verdict transactionnel uniquement : validation Chromium et GO production non encore prononcés.",
+    "Aucune suppression des preuves immuables : conservation du RUN8 de la fixture."
+  ],
+  "finished_at": "2026-11-06T09:17:56.619Z",
+  "checks": {
+    "all_13_steps_pass": true,
+    "zero_external_effects": true,
+    "local_circuit_isolated": true
+  },
+  "verdict_staging": "TRANSACTIONAL_PASS_CHROMIUM_PENDING"
+}
