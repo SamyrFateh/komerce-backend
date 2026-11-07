@@ -244,14 +244,21 @@
           if (['muted','waiting','progress','warning','ready','complete','critical','locked'].includes(state)) {
             button.classList.add('is-stage-'+state);
           }
-          if (order.current_key === key && state !== 'locked') button.classList.add('is-stage-current');
+          if (order.current_key === key && state !== 'locked') {
+            button.classList.add('is-stage-current');
+            button.setAttribute('aria-current', 'step');
+          }
           if (state === 'locked') {
             button.setAttribute('aria-label', order.reference + ' · ' + label + ' · Terminée, verrouillée · ' + (order[key] || '—'));
             button.appendChild(make(doc, 'small', 'kmc-hub-stage-proof', '✓ Terminée · verrouillée · voir la preuve'));
           } else if (state === 'complete') {
             button.appendChild(make(doc, 'small', 'kmc-hub-stage-proof', '✓ Terminée · consulter'));
           } else if (order.current_key === key) {
-            button.appendChild(make(doc, 'small', 'kmc-hub-stage-proof', '▶ Étape actuelle'));
+            button.appendChild(make(doc, 'small', 'kmc-hub-stage-proof', '▶ À faire / suivre maintenant'));
+          } else if (state === 'muted') {
+            button.appendChild(make(doc, 'small', 'kmc-hub-stage-proof', 'À venir'));
+          } else if (state === 'waiting') {
+            button.appendChild(make(doc, 'small', 'kmc-hub-stage-proof', '◷ En attente'));
           }
           if (key === 'remaining' && order.attention) button.classList.add('is-attention');
           if (key === 'remaining' && order.remaining_detail) {
