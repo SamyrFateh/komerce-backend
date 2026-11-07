@@ -127,6 +127,21 @@ jobs:
         run: HTTP_RUNNER_RUN8="$CERT_RUN8_API" node scripts/recette/hub-v1-http-action-runner.js
       - name: Actions API — chaîne physique et distribution
         run: HTTP_RUNNER_RUN8="$CERT_RUN8_API" node scripts/recette/hub-v1-http-physical-chain.js
+      - name: Gate métier — chaîne physique HTTP 53/53, aucun BLOCKED
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const run = process.env.CERT_RUN8_API;
+          const path = 'test-results/hub-v1-http/hub-v1-http-physical-' + run + '.json';
+          if (!fs.existsSync(path)) throw new Error('PHYSICAL_PROOF_MISSING');
+          const report = JSON.parse(fs.readFileSync(path, 'utf8'));
+          const counts = report.counts || {};
+          if (report.verdict !== 'PHYSICAL_CHAIN_PASS' || (counts.PASS || 0) < 53 ||
+              (counts.FAIL || 0) || (counts.BLOCKED || 0)) {
+            throw new Error('PHYSICAL_CHAIN_NOT_CERTIFIED:' + report.verdict);
+          }
+          NODE
       - name: Fixture Chromium indépendante
         shell: bash
         run: |
@@ -143,6 +158,19 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Clics Chromium réels
         run: E2E_PROOF_RUN8="$CERT_RUN8_CLICKS" npx playwright test --config=playwright.hub-v1-clicks.config.js
+      - name: Gate métier — 36 gestes Chromium réellement réussis
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const path = 'test-results/hub-v1-clicks/evidence.json';
+          if (!fs.existsSync(path)) throw new Error('CLICK_EVIDENCE_MISSING');
+          const report = JSON.parse(fs.readFileSync(path, 'utf8'));
+          const gestures = report.gestures || [];
+          if (gestures.length !== 36 || gestures.some(g => g.verdict !== 'CLICK_PASS')) {
+            throw new Error('CHROMIUM_NOT_36_OF_36');
+          }
+          NODE
       - name: Isolation transversale depuis le relais du marché cible
         run: node scripts/recette/staging-market-isolation.js
       - name: Résumé des preuves
