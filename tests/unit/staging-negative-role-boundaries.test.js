@@ -58,3 +58,24 @@ describe('staging role boundary guards', () => {
     expect((await run({env:config,fetchImpl:api})).verdict).toBe('ROLE_BOUNDARY_FAIL');
   });
 });
+
+
+test('Hub Live refuse explicitement le rôle transitaire persistant, y compris avant et après projection', () => {
+  const fs=require('fs'), path=require('path');
+  const source=fs.readFileSync(path.join(__dirname,'..','..','routes','hub-dashboard.js'),'utf8');
+  const guard=source.match(/function forbidTransitHubAccess\([\s\S]+?\n\}/);
+  expect(guard).toBeTruthy();
+  expect(guard[0]).toContain("req.user.persisted_role === 'agent_transitaire'");
+  expect(guard[0]).toContain('res.status(403)');
+  for(const name of ['hubRead','hubSupervise']){
+    const list=source.match(new RegExp('const '+name+' = \\[([\\s\\S]*?)\\];'));
+    expect(list).toBeTruthy();
+    expect(list[1].match(/forbidTransitHubAccess/g)).toHaveLength(2);
+  }
+});
+test('sonde expédition valide passe par le writer Hub et un UUID absent, pas un endpoint de validation commerciale', () => {
+  const p=PROBES.find(p=>p.name==='hub_ship_absent');
+  expect(p.path).toBe('/api/hub-dash/parcels/00000000-0000-4000-8000-000000000000/ship');
+  expect(p.admin).toBe(404);
+  expect(p.hub).toBe(404);
+});
