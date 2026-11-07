@@ -137,6 +137,7 @@
       "customs_shipment_parcels",
       "customs_shipments",
       "disputes",
+      "e2e_test_accounts",
       "economic_snapshots",
       "hub_custody_events",
       "hub_physical_unit_placements",
