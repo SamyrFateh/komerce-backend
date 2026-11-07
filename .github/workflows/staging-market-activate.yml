@@ -1,0 +1,50 @@
+name: Staging — reouverture officielle d'un marche de recette (CM, CG)
+
+# Dry-run par defaut. Ecriture (confirmation ACTIVATE-RECETTE-<CODE>) : readiness vert exige, puis transporteur dedie +
+# attestation de livrabilite (valeurs PROVISOIRES de recette), puis POST /api/admin/markets/:code/lifecycle ACTIVE.
+# Jamais KM, DJ ni YT. Aucune ecriture directe en base.
+
+on:
+  workflow_dispatch:
+    inputs:
+      market:
+        description: 'Marche de recette'
+        required: true
+        type: choice
+        options: [CM, CG]
+      confirmation:
+        description: 'Ecriture uniquement : saisir exactement ACTIVATE-RECETTE-<CODE>'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: komerce-staging-market-activate
+  cancel-in-progress: false
+
+jobs:
+  activate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      KOMERCE_ENV: staging
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      ACTIVATE_MARKET: ${{ inputs.market }}
+      ACTIVATE_CONFIRMATION: ${{ inputs.confirmation }}
+      ACTIVATE_APPLY: ${{ inputs.confirmation != '' && '1' || '0' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node scripts/recette/staging-market-activate.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: staging-market-activate-${{ github.run_id }}
+          path: test-results/market-activate/report.json
+          if-no-files-found: warn

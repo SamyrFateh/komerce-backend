@@ -3,6 +3,14 @@ name: Hub V1 — fixture KM neuve, arret apres l'etape 2 (staging)
 on:
   issues:
     types: [opened]
+  workflow_dispatch:
+    inputs:
+      market:
+        description: 'Marche de la fixture (KM par defaut ; CM, CG)'
+        required: false
+        type: choice
+        default: KM
+        options: [KM, CM, CG]
 
 permissions:
   contents: read
@@ -15,9 +23,10 @@ jobs:
   final-staging:
     name: One RUN8 · KM · steps 1-2 only · no external payment
     if: >-
-      github.event_name == 'issues' &&
-      github.event.issue.user.login == github.repository_owner &&
-      github.event.issue.title == '[staging-op] hub-v1-km-fixture-stop-after-2'
+      (github.event_name == 'workflow_dispatch' && github.actor == github.repository_owner) ||
+      (github.event_name == 'issues' &&
+       github.event.issue.user.login == github.repository_owner &&
+       github.event.issue.title == '[staging-op] hub-v1-km-fixture-stop-after-2')
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
@@ -27,6 +36,7 @@ jobs:
       KOMERCE_TARGET_ENV: staging
       KOMERCE_DISABLE_CRONS: 'true'
       HUB_V1_E2E_APPLY_MODE: approved
+      HUB_V1_MARKET: ${{ inputs.market || 'KM' }}
       EXPECTED_RAILWAY_ENVIRONMENT: staging
       DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
       STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
@@ -66,11 +76,11 @@ jobs:
         shell: bash
         run: |
           mkdir -p test-results/hub-v1-cert
-          node scripts/recette/hub-v1-certification-runner.js --allow-remote-staging --run="$HUB_V1_CERTIFICATION_RUN" --market=KM --stop-after=2 --dry-run
+          node scripts/recette/hub-v1-certification-runner.js --allow-remote-staging --run="$HUB_V1_CERTIFICATION_RUN" --market="$HUB_V1_MARKET" --stop-after=2 --dry-run
       - name: Official staging — KM fixture, steps 1-2 (checkout + relay), no payment
         shell: bash
         run: |
-          node scripts/recette/hub-v1-certification-runner.js --allow-remote-staging --run="$HUB_V1_CERTIFICATION_RUN" --market=KM --stop-after=2
+          node scripts/recette/hub-v1-certification-runner.js --allow-remote-staging --run="$HUB_V1_CERTIFICATION_RUN" --market="$HUB_V1_MARKET" --stop-after=2
       - name: Archive transactional verdict and evidence
         if: always()
         uses: actions/upload-artifact@v4

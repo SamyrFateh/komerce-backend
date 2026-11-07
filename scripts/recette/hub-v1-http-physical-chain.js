@@ -23,10 +23,12 @@ const fs = require('fs');
 const path = require('path');
 const { Actor, assertTarget } = require('./hub-v1-http-action-runner');
 
-const WS = '/api/admin/workspaces/operations/market/KM';
+const MARKET = String(process.env.HTTP_RUNNER_MARKET || 'KM').toUpperCase(); // defaut KM = comportement historique
+if (!/^[A-Z]{2}$/.test(MARKET)) throw new Error('HTTP_RUNNER_MARKET_INVALID');
+const WS = `/api/admin/workspaces/operations/market/${MARKET}`;
 const JS = 'public/dashboards/canonical/js/operations-workspace.js';
 const ROLE_ENV = { hub_agent: 'E2E_AGENT_HUB_', agent_relais: 'E2E_AGENT_RELAIS_', market_operator: 'E2E_MARKET_OPERATOR_', admin: 'E2E_ADMIN_', transitaire: 'E2E_TRANSITAIRE_' };
-const WSC = '/api/admin/workspaces/shipping-customs/market/KM';
+const WSC = `/api/admin/workspaces/shipping-customs/market/${MARKET}`;
 const JP = 'public/dashboards/canonical/js/international-journey-panel.js';
 const JC = 'public/dashboards/canonical/js/shipping-customs-workspace.js';
 
