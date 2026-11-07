@@ -1,0 +1,55 @@
+name: Staging — prix de vente transport RECETTE CM ou CG
+
+on:
+  workflow_dispatch:
+    inputs:
+      market:
+        description: 'Marché à configurer (CM puis CG)'
+        required: true
+        type: choice
+        options: [CM, CG]
+      confirmation:
+        description: 'Ecriture uniquement avec SET-RECETTE-TRANSPORT-<CODE>'
+        required: false
+        default: ''
+      km_sea_per_kg:
+        description: 'KM maritime KMF/kg vérifié sur staging (laisser vide = valeur par défaut 65)'
+        required: false
+        default: ''
+      km_air_per_kg:
+        description: 'KM aérien KMF/kg vérifié sur staging (laisser vide = valeur par défaut 2500)'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: komerce-staging-market-transport-recette
+  cancel-in-progress: false
+
+jobs:
+  set-rates:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      KOMERCE_ENV: staging
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      RECETTE_MARKET: ${{ inputs.market }}
+      RECETTE_CONFIRMATION: ${{ inputs.confirmation }}
+      RECETTE_KM_SEA_PER_KG: ${{ inputs.km_sea_per_kg }}
+      RECETTE_KM_AIR_PER_KG: ${{ inputs.km_air_per_kg }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node scripts/recette/staging-market-transport-sale.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: staging-market-transport-${{ github.run_id }}
+          path: test-results/market-transport/report.json
+          if-no-files-found: warn
