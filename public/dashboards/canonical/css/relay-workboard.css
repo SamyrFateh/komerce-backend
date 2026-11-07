@@ -1,0 +1,234 @@
+/*
+ * Relais Live — poste de travail graphite / jade.
+ * Le cockpit ne fabrique aucune attestation : la saisie reste dans l'atelier canonique.
+ * Contraste et libellés explicites : aucun statut transmis par couleur seule.
+ */
+.kmc-domain-cockpit .kir-main:has(.kmc-relay-work) {
+  width:100%;max-width:1600px;min-width:0;
+}
+.kmc-domain-cockpit .kmc-relay-compact-hero {
+  min-height:0;padding:13px 18px;margin:4px 0 12px;
+  border:1px solid #d7e5dd;border-radius:13px;background:#fff;
+  box-shadow:none;
+}
+.kmc-domain-cockpit .kmc-relay-compact-hero h1 {
+  font-size:clamp(18px,1.7vw,24px);line-height:1.2;
+  color:#20392f;
+}
+.kmc-domain-cockpit .kmc-relay-compact-hero p {margin:3px 0 0;color:#647468;font-size:11px;}
+.kmc-domain-cockpit .kmc-relay-work {
+  --relay-line:#d9e5dd;--relay-ink:#1c352b;--relay-muted:#64796f;
+  display:grid;gap:0;min-width:0;background:#fff;
+  border:1px solid #cdded3;border-radius:13px;
+  box-shadow:0 8px 28px rgba(25,55,41,.065);
+  overflow:visible;color:var(--relay-ink);
+}
+.kmc-domain-cockpit .kmc-relay-work * {box-sizing:border-box;}
+.kmc-domain-cockpit .kmc-relay-work-header {
+  display:flex;gap:16px;align-items:center;justify-content:space-between;
+  padding:15px 17px 12px;border-bottom:1px solid var(--relay-line);
+}
+.kmc-domain-cockpit .kmc-relay-work-eyebrow {
+  display:block;color:#52705f;font-size:10px;font-weight:850;
+  letter-spacing:.095em;text-transform:uppercase;
+}
+.kmc-domain-cockpit .kmc-relay-work-header h2 {
+  font-size:16px;line-height:1.3;font-weight:820;
+  margin:4px 0;color:#193b2e;
+}
+.kmc-domain-cockpit .kmc-relay-work-header p {
+  margin:3px 0 0;font-size:11px;line-height:1.45;color:#65776c;
+}
+.kmc-domain-cockpit .kmc-relay-work-filters {
+  display:flex;flex-wrap:wrap;gap:7px;justify-content:flex-end;
+}
+.kmc-domain-cockpit .kmc-relay-work-filters a {
+  display:inline-flex;align-items:center;gap:7px;
+  color:#245443;text-decoration:none;font-size:11px;font-weight:780;
+  border:1px solid #d2e1d7;border-radius:8px;
+  background:#f6faf7;padding:8px 10px;
+}
+.kmc-domain-cockpit .kmc-relay-work-filters a:hover {background:#e6f3eb;border-color:#8fbda5;}
+.kmc-domain-cockpit .kmc-relay-work-filters a b {
+  display:inline-flex;align-items:center;justify-content:center;
+  min-width:22px;min-height:20px;border-radius:6px;
+  padding:2px 5px;background:#e4eee6;color:#255e45;font-size:11px;
+}
+.kmc-domain-cockpit .kmc-relay-work-layout {
+  display:grid;grid-template-columns:minmax(0,1fr);align-items:start;
+  gap:12px;padding:12px;min-width:0;
+}
+.kmc-domain-cockpit .kmc-relay-work-layout.has-inspector {
+  grid-template-columns:minmax(0,1fr) minmax(270px,330px);
+}
+.kmc-domain-cockpit .kmc-relay-work-list {min-width:0;}
+.kmc-domain-cockpit .kmc-relay-work-scroll {
+  overflow-x:auto;max-width:100%;border:1px solid #dde8e0;
+  border-radius:10px;background:#fff;overscroll-behavior-x:contain;
+}
+.kmc-domain-cockpit .kmc-relay-work-table {
+  min-width:870px;width:100%;border-spacing:0;border-collapse:separate;
+  table-layout:fixed;font-size:11px;
+}
+.kmc-domain-cockpit .kmc-relay-work-table th {
+  background:#f5f9f6;color:#50685b;text-align:left;
+  font-size:10px;text-transform:uppercase;letter-spacing:.055em;
+  font-weight:850;padding:9px 9px;position:sticky;top:0;z-index:1;
+  border-bottom:1px solid #dce8df;
+}
+.kmc-domain-cockpit .kmc-relay-work-table th:first-child {width:174px;}
+.kmc-domain-cockpit .kmc-relay-work-table th:last-child {width:139px;}
+.kmc-domain-cockpit .kmc-relay-work-table td {
+  padding:7px 5px;vertical-align:top;border-bottom:1px solid #e9eee9;
+}
+.kmc-domain-cockpit .kmc-relay-work-table tr:last-child td {border-bottom:0;}
+.kmc-domain-cockpit .kmc-relay-work-table tr.is-selected td {background:#f5faf6;}
+.kmc-domain-cockpit .kmc-relay-work-identity {
+  display:table-cell;padding:12px 9px;color:#273d31;
+}
+.kmc-domain-cockpit .kmc-relay-work-reference {
+  display:block;width:fit-content;color:#234a3a;text-decoration:none;
+  font:800 12px ui-monospace,SFMono-Regular,Consolas,monospace;
+}
+.kmc-domain-cockpit .kmc-relay-work-reference:hover {text-decoration:underline;}
+.kmc-domain-cockpit .kmc-relay-work-identity small {
+  display:block;margin-top:4px;font-size:11px;
+  line-height:1.45;color:#718174;overflow-wrap:anywhere;
+}
+.kmc-domain-cockpit .kmc-relay-work-simulation {
+  display:inline-block;font-size:9px;color:#856122;
+  background:#faf0d9;border:1px solid #ecd4a1;border-radius:5px;
+  padding:2px 6px;margin-top:4px;
+}
+.kmc-domain-cockpit .kmc-relay-work-stage {
+  display:flex;flex-direction:column;gap:5px;min-height:55px;
+  padding:9px 10px;border-radius:8px;
+  border:1px solid #e2e7e3;background:#f5f7f5;
+  color:#758279;text-decoration:none;transition:border-color .13s,box-shadow .13s;
+}
+.kmc-domain-cockpit .kmc-relay-work-stage strong {
+  font-weight:850;font-size:11px;line-height:1.35;overflow-wrap:anywhere;
+}
+.kmc-domain-cockpit .kmc-relay-work-stage small {font-size:10px;opacity:.93;}
+.kmc-domain-cockpit .kmc-relay-work-stage.is-complete {
+  background:#eff3f0;color:#637569;border-color:#e3eae5;
+}
+.kmc-domain-cockpit .kmc-relay-work-stage.is-current {
+  background:linear-gradient(135deg,#1a4736,#15684d);
+  border:2px solid #53c89b;color:#fff;
+  box-shadow:0 0 0 2px rgba(25,145,94,.12),0 2px 12px rgba(19,99,66,.16);
+}
+.kmc-domain-cockpit .kmc-relay-work-stage.is-current.is-warning {
+  background:linear-gradient(125deg,#26383a,#374548);
+  border-color:#efca6d;color:#fff;
+  box-shadow:0 0 0 2px rgba(232,197,100,.20),0 2px 10px rgba(24,44,48,.15);
+}
+.kmc-domain-cockpit .kmc-relay-work-stage.is-current.is-critical {
+  background:linear-gradient(125deg,#7a3033,#a54043);
+  border-color:#ed9d9b;color:#fff;
+}
+.kmc-domain-cockpit .kmc-relay-work-stage.is-current.is-waiting {
+  background:linear-gradient(125deg,#45504e,#65716e);
+  border-color:#9aa9a1;box-shadow:none;
+}
+.kmc-domain-cockpit .kmc-relay-work-stage:hover {border-color:#9bb7a6;filter:brightness(1.03);}
+.kmc-domain-cockpit .kmc-relay-work-stage:focus-visible,
+.kmc-domain-cockpit .kmc-relay-work-filters a:focus-visible,
+.kmc-domain-cockpit .kmc-relay-inspector-cta:focus-visible {
+  outline:3px solid #edc55a;outline-offset:2px;
+}
+.kmc-domain-cockpit .kmc-relay-work-followup {font-size:10.5px;line-height:1.55;}
+.kmc-domain-cockpit .kmc-relay-work-followup span {display:block;color:#5d7165;}
+.kmc-domain-cockpit .kmc-relay-work-followup a {
+  display:inline-block;margin-top:5px;color:#1b7655;
+  font-weight:800;text-decoration:none;
+}
+.kmc-domain-cockpit .kmc-relay-work-followup .is-incident {color:#a13c39;}
+.kmc-domain-cockpit .kmc-relay-work-more {
+  display:inline-block;padding:10px 3px;color:#176f50;font-size:12px;
+}
+.kmc-domain-cockpit .kmc-relay-work-empty {
+  display:grid;gap:6px;align-content:center;min-height:112px;
+  padding:16px 20px;background:#f7faf8;border:1px dashed #d6e3da;
+  border-radius:10px;color:#274b3a;
+}
+.kmc-domain-cockpit .kmc-relay-work-empty strong {font-size:13px;}
+.kmc-domain-cockpit .kmc-relay-work-empty p {
+  font-size:11px;color:#617469;margin:0;line-height:1.5;
+}
+.kmc-domain-cockpit .kmc-relay-work-empty a {
+  color:#176a4d;font-size:12px;font-weight:800;text-decoration:none;
+}
+.kmc-domain-cockpit .kmc-relay-work-inspector {
+  min-width:0;position:sticky;top:95px;
+  border:1px solid #b7d5c4;background:#f7fbf8;border-radius:10px;
+  margin:0;box-shadow:0 9px 24px rgba(26,71,46,.10);
+  padding:14px;display:grid;gap:10px;
+}
+.kmc-domain-cockpit .kmc-relay-inspector-head {
+  display:flex;align-items:center;gap:10px;justify-content:space-between;
+}
+.kmc-domain-cockpit .kmc-relay-inspector-head a {
+  font-size:11px;font-weight:700;color:#516c5e;text-decoration:none;
+}
+.kmc-domain-cockpit .kmc-relay-work-inspector h3 {
+  margin:0;font:850 17px ui-monospace,Menlo,Consolas,monospace;
+  color:#1e4533;
+}
+.kmc-domain-cockpit .kmc-relay-work-inspector .lk-facts {
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;
+}
+.kmc-domain-cockpit .kmc-relay-work-inspector .lk-facts>div {
+  padding:8px;background:white;border:1px solid #e2eae3;
+  border-radius:7px;min-width:0;overflow-wrap:anywhere;
+}
+.kmc-domain-cockpit .kmc-relay-work-inspector .lk-facts strong {
+  font-size:11px;color:#243f30;
+}
+.kmc-domain-cockpit .kmc-relay-inspector-truth {
+  font-size:11px;color:#596c61;line-height:1.5;margin:0;
+  padding:9px 10px;background:#ecf3ef;border-radius:7px;
+}
+.kmc-domain-cockpit .kmc-relay-inspector-cta {
+  display:block;text-align:center;padding:11px;
+  border-radius:8px;background:#146c4c;color:#fff;
+  font-size:11.5px;font-weight:860;text-decoration:none;
+}
+.kmc-domain-cockpit .kmc-relay-inspector-cta:hover {background:#115f43;}
+.kmc-domain-cockpit .kmc-relay-inspector-detail-link {
+  color:#225f49;text-decoration:none;font-size:11px;font-weight:770;
+}
+.kmc-domain-cockpit .kmc-relay-work-footer {
+  display:flex;align-items:center;gap:10px;justify-content:space-between;
+  padding:11px 17px;background:#f6f9f7;
+  border-top:1px solid var(--relay-line);
+  font-size:11px;line-height:1.45;color:#5c6e61;
+}
+.kmc-domain-cockpit .kmc-relay-work-footer a {
+  display:inline-block;color:#126b4c;font-weight:850;text-decoration:none;
+  white-space:nowrap;
+}
+.kmc-domain-cockpit .kmc-relay-secondary {
+  margin-top:9px;border:1px solid #e3eae5;border-radius:9px;
+  padding:7px 12px;background:#fff;
+}
+.kmc-domain-cockpit .kmc-relay-secondary>summary {
+  cursor:pointer;color:#52675a;font-size:11px;
+  padding:5px 0;font-weight:760;
+}
+.kmc-domain-cockpit .kmc-relay-secondary .lk-block {margin:6px 0;}
+.kmc-domain-cockpit .kmc-relay-secondary .kir-run-flow {margin-top:7px;}
+.kmc-domain-cockpit .lk-signals {margin:9px 1px;font-size:11px;}
+@media(max-width:1200px){
+  .kmc-domain-cockpit .kmc-relay-work-layout.has-inspector{grid-template-columns:minmax(0,1fr);}
+  .kmc-domain-cockpit .kmc-relay-work-inspector{position:static;}
+}
+@media(max-width:700px){
+  .kmc-domain-cockpit .kmc-relay-work-header{align-items:stretch;flex-direction:column;}
+  .kmc-domain-cockpit .kmc-relay-work-filters{justify-content:flex-start;}
+  .kmc-domain-cockpit .kmc-relay-work-footer{align-items:flex-start;flex-direction:column;}
+  .kmc-domain-cockpit .kmc-relay-work-layout{padding:7px;}
+}
+@media(prefers-reduced-motion:reduce){
+  .kmc-domain-cockpit .kmc-relay-work-stage{transition:none;}
+}
