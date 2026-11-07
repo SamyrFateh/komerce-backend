@@ -19,6 +19,7 @@ On ajoute ici chaque nouvelle preuve, dans un sous-dossier `<marché>-<AAAAMMJJ>
 | 2026-11-07 | KM | 2C2EB181 | Clics Chromium réels après #3473 (run 42369442085) | 36 CLICK_PASS sur 36 | `km-20261107/hub-v1-clicks-2C2EB181-evidence.json` |
 | 2026-11-07 | KM, CM, CG | - | Isolation croisée (agent relais KM : 200 sur KM, 403 sur CM et CG ; admin lit les trois) | ISOLATION_PASS | `isolation-20261107/staging-market-isolation-42375312269.json` |
 | 2026-11-07 | CM, CG, KM | - | Isolation réelle des responsables pays avec deux comptes E2E distincts, 18 sondes HTTP (lectures + mutation fictive) | MARKET_OPERATOR_ISOLATION_PASS | `isolation-20261107/staging-market-operator-isolation-42385877161.json` |
+| 2026-11-07 | KM, CM, CG | - | Frontières Admin/Hub/Transitaire/Relais : 37 sondes HTTP sur staging, 0 franchissement de rôle | ROLE_BOUNDARY_PASS (37/37) | `isolation-20261107/staging-negative-role-boundaries-42391311145.json` |
 | 2026-11-07 | CM | - | Tarifs vente RECETTE via API admin, source KM courante + pivot EUR | TARIFFS_APPLIED_AND_VERIFIED | `cm-20261107/staging-market-transport-sale-42381811718.json` |
 | 2026-11-07 | CG | - | Tarifs vente RECETTE via API admin, source KM courante + pivot EUR | TARIFFS_APPLIED_AND_VERIFIED | `cg-20261107/staging-market-transport-sale-42382091838.json` |
 
