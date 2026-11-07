@@ -353,7 +353,7 @@ async function getOrderDetail(user, orderId, { authorizedMarkets = null } = {}) 
   let incidents = [];
   try {
     const { rows } = await db.query(`
-      SELECT li.id::text AS id, li.type, li.priority, li.status,
+      SELECT li.id::text AS id, li.type::text AS type, li.priority::text AS priority, li.status::text AS status,
              li.description, li.created_at, u.full_name AS resolved_by_name,
              'relay'::text AS source, NULL::text AS client_impact, NULL::text AS product_name
         FROM order_incidents li
@@ -362,7 +362,7 @@ async function getOrderDetail(user, orderId, { authorizedMarkets = null } = {}) 
       UNION ALL
       SELECT i.id::text AS id, i.incident_type AS type,
              CASE WHEN i.severity IN ('critical','high') THEN 'high' ELSE 'normal' END AS priority,
-             i.status, COALESCE(i.description,i.title) AS description,
+             i.status::text AS status, COALESCE(i.description,i.title) AS description,
              i.created_at, NULL::text AS resolved_by_name,
              'operations'::text AS source, i.client_impact,
              pr.name AS product_name
