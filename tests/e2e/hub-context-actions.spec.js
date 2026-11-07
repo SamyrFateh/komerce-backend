@@ -130,6 +130,46 @@ test('PO déjà liée ou lecteur : aucune action de sourcing manuel inadaptée',
   await expect(page.locator('[data-hub-global-menu]')).toContainText('Consultation seule');
 });
 
+
+test('focus lumineux : étape actuelle contrastée, libellée et non confondue avec les étapes closes',async({page})=>{
+  const row={...baseOrder,current_key:'supplier',current_phase:'Fournisseur',
+    current_status:'Envoi à prouver',next_action:'Attester l’envoi fournisseur',
+    stage_states:{...baseOrder.stage_states,po:'locked',supplier:'warning'}};
+  const {posts}=await mount(page,{row});
+  const active=page.locator('[data-hub-global-order="KM-302"] [data-hub-global-stage="Fournisseur"]');
+  await expect(active).toHaveClass(/is-stage-current/);
+  await expect(active).toHaveAttribute('aria-current','step');
+  await expect(active.locator('[data-hub-focus-signal="warning"]')).toHaveText('POINT À RÉSOUDRE');
+  const activeStyle=await active.evaluate(node=>{
+    const css=getComputedStyle(node);
+    return {background:css.backgroundImage,foreground:css.color,shadow:css.boxShadow,
+      animation:css.animationName,font:css.fontSize};
+  });
+  expect(activeStyle.background).toContain('linear-gradient');
+  expect(activeStyle.foreground).toBe('rgb(255, 255, 255)');
+  expect(activeStyle.shadow).not.toBe('none');
+  expect(activeStyle.animation).toContain('kmc-hub-stage-breathe');
+  await expect(page.locator('[data-hub-global-order="KM-302"]')).toHaveClass(/is-hub-active-order/);
+  const completed=page.locator('[data-hub-global-order="KM-302"] [data-hub-global-stage="PO"]');
+  await expect(completed).toHaveClass(/is-stage-locked/);
+  await expect(completed).not.toHaveClass(/is-stage-current/);
+  await expect(completed.locator('[data-hub-focus-signal]')).toHaveCount(0);
+  expect(posts).toHaveLength(0);
+});
+
+test('focus atténué en attente, sans animation si mouvement réduit',async({page})=>{
+  await page.emulateMedia({reducedMotion:'reduce'});
+  const row={...baseOrder,current_key:'reception',current_phase:'Réception',
+    next_action:'Attendre le fournisseur',stage_states:{...baseOrder.stage_states,reception:'waiting'}};
+  const {posts}=await mount(page,{row});
+  const waiting=page.locator('[data-hub-global-stage="Réception"]');
+  await expect(waiting.locator('[data-hub-focus-signal="waiting"]')).toHaveText('EN ATTENTE');
+  const animation=await waiting.evaluate(node=>getComputedStyle(node).animationName);
+  expect(animation).toBe('none');
+  await expect(page.locator('[data-hub-inline-action="reception"]')).toHaveCount(0);
+  expect(posts).toHaveLength(0);
+});
+
 test('colors et prochaine action restent des faits lisibles, sans détail article',async({page})=>{
   const {posts}=await mount(page);
   const row=page.locator('[data-hub-global-order="KM-302"]');
