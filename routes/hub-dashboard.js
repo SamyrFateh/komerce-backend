@@ -85,9 +85,21 @@ function attachHubReadAuthority(req, res, next) {
   return attachOperationsReadMarkets(req, res, next);
 }
 
+// Le rôle de transitaire est central pour Expéditions & Douane, jamais Hub Live.
+// Un membership projeté ne doit pas convertir ce rôle terrain en lecture Hub.
+// Vérifier aussi le rôle persistant avant et après projection de marché.
+function forbidTransitHubAccess(req, res, next) {
+  if (req.user && (req.user.role === 'agent_transitaire' || req.user.persisted_role === 'agent_transitaire')) {
+    return res.status(403).json({ error: 'Accès Hub réservé aux acteurs Hub ou responsables marché autorisés', code: 'HUB_ROLE_FORBIDDEN' });
+  }
+  return next();
+}
+
 const hubRead = [
   authenticate,
+  forbidTransitHubAccess,
   attachMarketDelegatedRoleFor(['admin', 'agent_hub', 'market_operator']),
+  forbidTransitHubAccess,
   requireRole(['admin', 'agent_hub', 'market_operator']),
   attachHubReadAuthority,
 ];
