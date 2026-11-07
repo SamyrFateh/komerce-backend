@@ -316,7 +316,11 @@ async function getOrderDetail(orderId, { authorizedMarkets = null } = {}) {
   `, [order.id]);
 
   const { rows: comments } = await db.query(`
-    SELECT c.*, COALESCE(NULLIF(u.full_name, ''), NULLIF(c.author_name, ''), 'Équipe Hub') AS author_name
+    SELECT c.*,
+           CASE WHEN c.hub_stage_key IS NOT NULL
+             THEN COALESCE(NULLIF(c.author_name, ''), NULLIF(u.full_name, ''), 'Équipe Hub')
+             ELSE COALESCE(NULLIF(u.full_name, ''), NULLIF(c.author_name, ''), 'Équipe Hub')
+           END AS author_name
     FROM order_comments c
     LEFT JOIN users u ON u.id = c.author_id
     WHERE c.order_id = $1
