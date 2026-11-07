@@ -496,3 +496,136 @@ body.kmc-shell-v4 .kmc-domain-cockpit .kir-hero.kmc-relay-compact-hero p:not(.lk
 @media(prefers-reduced-motion:reduce){
   .kmc-domain-cockpit .kmc-relay-action-tile {transition:none;}
 }
+
+
+/* Même philosophie dans l'atelier canonique (writers/permissions inchangés). */
+body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-mode="relay-execution"] {
+  gap:11px;max-width:1600px;margin:auto;padding-top:0;
+}
+body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-mode="relay-execution"] > .kmc-workspace-header {
+  display:flex;min-height:0;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:12px;padding:13px 18px;
+  border:1px solid #dbe8de;background:#fff;border-radius:11px;
+  box-shadow:0 2px 12px rgba(19,50,35,.04);
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-workspace-kicker {
+  display:inline-flex;margin:0 0 4px;padding:2px 0;
+  background:transparent;color:#396e50;font-size:10px;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-workspace-kicker::before {
+  background:#15905e;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-workspace-title {
+  color:#1a392a;font-size:clamp(19px,2vw,25px);
+  line-height:1.17;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-workspace-subtitle {
+  font-size:12px;color:#64786a;margin:5px 0 0;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-workspace-nav-link {
+  background:#f6faf7;border-color:#d5e3d8;
+  color:#205f44;border-radius:8px;font-size:12px;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-workspace-feedback {
+  flex-basis:100%;min-height:0;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-workspace-feedback:empty {
+  display:none;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-workspace-metrics {
+  max-width:100%;min-width:0;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-workspace-tabs {
+  gap:5px;border-bottom:1px solid #dfe8e0;
+  padding:0 1px;min-height:40px;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-workspace-tab {
+  min-height:39px;padding:8px 15px;
+  color:#50695a;font-size:12px;font-weight:750;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-workspace-tab.is-active {
+  color:#156a49;border-bottom:3px solid #1b8860;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-execution-jumpbar {
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:9px;min-width:0;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-execution-jump {
+  display:flex;gap:8px;align-items:center;
+  padding:11px 12px;min-width:0;
+  border-radius:9px;background:#fff;
+  border:1px solid #d6e4db;
+  text-decoration:none;color:#1d4832;box-shadow:0 2px 9px rgba(24,66,44,.04);
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-execution-jump:hover {
+  background:#f0f8f3;border-color:#94c5a9;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-execution-jump:focus-visible {
+  outline:3px solid #cea74c;outline-offset:1px;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-execution-jump-icon {
+  display:grid;place-items:center;flex:0 0 29px;
+  height:29px;border-radius:7px;background:#e9f4ec;color:#277553;
+  font-size:15px;font-weight:820;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-execution-jump strong {
+  font-size:12px;font-weight:840;line-height:1.4;flex:1;min-width:0;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-execution-jump b {
+  font-size:11px;font-weight:850;border-radius:6px;
+  min-width:23px;min-height:22px;padding:3px 6px;
+  background:#edf4ee;color:#286146;text-align:center;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] > .kmc-section {
+  min-width:0;scroll-margin-top:96px;
+  padding:14px;border:1px solid #dfe9e2;
+  border-radius:10px;background:#fff;
+  box-shadow:0 3px 11px rgba(17,44,32,.03);
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] > .kmc-section .kmc-section-header {
+  display:grid;gap:4px;min-width:0;margin:0 0 10px;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] > .kmc-section .kmc-section-title {
+  color:#234b34;font-size:15px;line-height:1.3;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] > .kmc-section .kmc-section-description {
+  color:#60776a;font-size:12px;line-height:1.45;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-workspace-empty {
+  min-height:0;border:1px dashed #dbe7de;
+  background:#f9fbf9;border-radius:8px;
+  font-size:12px;color:#617469;padding:12px 14px;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-workspace-manual-reason {
+  background:#f7faf8;border-color:#dfe9e2;border-radius:8px;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-workspace-action {
+  background:#175e43;border-color:#175e43;color:#fff;
+  border-radius:7px;font-size:12px;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-workspace-action:hover {
+  background:#104e37;border-color:#104e37;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-shipment {
+  border:1px solid #dbe7df;border-radius:9px;background:#fff;
+  padding:10px 12px;margin:7px 0;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-shipment>summary {
+  color:#235238;font-size:12px;font-weight:850;cursor:pointer;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-shipment[open] {
+  border-color:#98c7ad;background:#fbfdfb;
+}
+@media(max-width:1050px) {
+  .kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-execution-jumpbar {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+}
+@media(max-width:650px) {
+  .kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-execution-jumpbar {
+    grid-template-columns:minmax(0,1fr);
+  }
+  body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-mode="relay-execution"] > .kmc-workspace-header {
+    align-items:flex-start;
+  }
+}
