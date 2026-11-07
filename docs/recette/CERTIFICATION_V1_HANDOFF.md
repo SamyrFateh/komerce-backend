@@ -1,7 +1,7 @@
 # Certification métier V1 multi-marché : note de reprise
 
 Cette note sert à reprendre la certification exactement où elle s'est arrêtée, sans autre contexte : tout ce qu'il faut est ici.
-État au 2026-11-07, fin d'après-midi (heure de Paris). Dernière mise à jour : CM et CG actifs, tarifs de vente RECETTE appliqués et attestés ; reprise de la certification métier.
+État au 2026-11-07, fin d'après-midi (heure de Paris). Dernière mise à jour : KM, CM et CG certifiés sur les parcours nominaux API + Chromium ; preuves et limitations ci-dessous.
 
 ## 1. Objectif
 
@@ -20,8 +20,8 @@ Ensuite viendront un seed partenaires visible et des comptes partenaires cloison
 | Marché | Statut | Preuve API | Preuve clics | Reste à faire |
 |---|---|---|---|---|
 | KM | ACTIVE | 53/53 PASS, fixture 71B671EB | 36/36 CLICK_PASS, fixture 2C2EB181, run 42369442085 | Rien pour le nominal |
-| CM | ACTIVE (2026-11-07) ; tarifs RECETTE posés et attestés | À refaire sur fixture neuve | À faire | RUN #42382197263 refusé avant écriture : harnais RUN8 non déclaré ; correctif PR #3493 en contrôle |
-| CG | ACTIVE (2026-11-07) ; tarifs RECETTE posés et attestés | À faire | À faire | En attente de la certification CM réussie, puis même parcours CG |
+| CM | ACTIVE ; tarifs RECETTE attestés | **53 PASS physiques**, 35 achats + 1 seam ; RUN8 40A162A6 | **36 CLICK_PASS**, RUN8 2B13C104 | ISOLATION_PASS ; nominal réussi, run #42382520838 |
+| CG | ACTIVE ; tarifs RECETTE attestés | **53 PASS physiques**, 35 achats + 1 seam ; RUN8 57030A02 | **36 CLICK_PASS**, RUN8 5D6F90EC | ISOLATION_PASS ; nominal réussi, run #42382886270 |
 | YT | SUSPENDED | Hors périmètre | Hors périmètre | Ne pas rouvrir sans décision |
 | DJ | PROVISIONING | Hors périmètre | Hors périmètre | Ne pas toucher |
 
@@ -144,3 +144,21 @@ Une fois le tarif CM réellement posé et relu, reprendre la procédure de la se
 - **Relancer CM via une NOUVELLE issue owner** au titre exact `[staging-op] full-cert-CM` (ou workflow_dispatch confirmé `RUN-FULL-CERT-CM`). Après un PASS réel sur CM, lancer CG avec le titre exact `[staging-op] full-cert-CG`. Chaque run doit produire les deux fixtures, les 53 PASS de chaîne physique et 36 CLICK_PASS, et une isolation `ISOLATION_PASS` ; tout BLOCKED ou FAIL est un non-GO.
 
 La note opératoire complète du nouveau workflow est dans `docs/recette/FULL_CERT_CM_CG_AUTOMATION.md`. Les preuves vérifiées et les artefacts réussis doivent être ajoutés à `docs/recette/evidence/` à chaque run. Pour une isolation complète des responsables de marché, créer des comptes E2E exclusifs CM et CG ; le compte « Responsable pays » mutualisé ne permet pas ce test.
+
+## 10. Certification nominale CM et CG terminée le 2026-11-07 — état vérifié
+
+Le correctif du garde RUN8 a été livré et mergé dans [#3493](https://github.com/SamyrFateh/komerce-backend/pull/3493) : il exporte `HUB_V1_CERTIFICATION_RUN` pour chaque fixture API/Chromium. Le premier essai en échec #42382197263 reste une preuve non certifiante historique, sans écriture.
+
+**CM : [run GitHub 42382520838](https://github.com/SamyrFateh/komerce-backend/actions/runs/42382520838)** — workflow complet `success`, achats 35 PASS + 1 `SEAM_NOT_HTTP` par fixture, chaîne physique 53/53 PASS, Chromium **36/36 CLICK_PASS** (10 tests Playwright réussis), isolation `ISOLATION_PASS`. Fixtures API `40A162A6`, Chromium `2B13C104`. Artefact : `staging-full-cert-CM-42382520838` (id 13578446399). Le relais E2E CM lit CM (200), KM et CG refusent (403).
+
+**CG : [run GitHub 42382886270](https://github.com/SamyrFateh/komerce-backend/actions/runs/42382886270)** — mêmes verdicts : achats 35 PASS + 1 seam par fixture ; physique 53/53 PASS ; Chromium **36/36 CLICK_PASS** (10 tests) ; isolation `ISOLATION_PASS`. Fixtures API `57030A02`, Chromium `5D6F90EC`. Artefact : `staging-full-cert-CG-42382886270` (id 13578726442). Le relais E2E CG lit CG (200), KM et CM refusent (403).
+
+La [PR #3495](https://github.com/SamyrFateh/komerce-backend/pull/3495) a déjà versionné les rapports complets des tarifs de vente RECETTE de CM et CG. Le [workflow d'archivage des succès](https://github.com/SamyrFateh/komerce-backend/pull/3498) prépare la copie des rapports JSON des deux certifications nominales dans `docs/recette/evidence/`; les captures restent dans les artefacts GitHub. Ne pas assimiler « workflow archive ouvert » à « preuves versionnées » avant son exécution et la fusion de ses branches de résultats.
+
+**Verdict exact :** *PASS nominal staging* pour KM, CM et CG sur les parcours actuels de la recette. Ce verdict ne vaut **pas** ouverture aux partenaires ni GO économique. Il reste :
+- remplacer les prix de vente et coûts des corridors `RECETTE` par les valeurs réelles, contrôler marge et contribution ;
+- certifier l'isolation avec de vrais comptes opérateurs exclusifs CM et CG : le « Responsable pays » E2E partagé ne prouve pas son cloisonnement ;
+- couvrir les cas non nominaux (ruptures fournisseur, réceptions partielles, reliquats, retards, remboursements, incidents, annulations) ;
+- **revoir le parcours LOCAL_STOCK** : les scripts nominaux historiques incluent encore un geste `local:ship` par le Hub, alors que la règle métier durable exige un circuit local sans Hub. Ne pas qualifier la couverture locale de conforme à cette règle sans recette spécifique distincte.
+
+La procédure de certification relançable demeure `docs/recette/FULL_CERT_CM_CG_AUTOMATION.md` et le référentiel des preuves `docs/recette/evidence/README.md`.
