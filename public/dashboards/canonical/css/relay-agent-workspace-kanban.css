@@ -1,0 +1,173 @@
+/* Komerce Relais — Kanban d'exécution physique, pas un second moteur métier.
+   Colonnes = files canoniques ; chaque bouton continue d'appeler le writer existant. */
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] {
+  width:100%;min-width:0;max-width:none;gap:10px;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] > .kmc-workspace-header {
+  min-height:0;padding:12px 18px !important;gap:12px;
+  border-radius:11px;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-workspace-title {
+  font-size:clamp(19px,2vw,25px);line-height:1.2;margin:0;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-workspace-subtitle {
+  font-size:12px;line-height:1.4;margin:4px 0 0;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-workspace-kicker {
+  font-size:10px;letter-spacing:.07em;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-workspace-nav {gap:7px;flex-wrap:wrap;}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-focus-toggle {
+  min-height:38px;padding:8px 12px;background:#e3f3ff;border:1px solid #9fcee8;
+  color:#075780;font-size:12px;font-weight:800;box-shadow:none;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-focus-toggle:hover {background:#d6ecfb;}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-workspace-metrics {
+  margin:0;min-height:0;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-workspace-tabs {
+  margin:1px 0 0;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-operational-kanban {
+  width:100%;min-width:0;display:grid;gap:9px;
+}
+.kmc-relay-operational-kanban .kmc-relay-board-title {
+  font-size:17px;line-height:1.3;font-weight:850;color:#193953;margin:4px 0 0;
+}
+.kmc-relay-operational-kanban .kmc-relay-board-intro {
+  font-size:12px;line-height:1.45;color:#557083;margin:0 0 2px;
+}
+.kmc-relay-operational-kanban .kmc-relay-kanban-lanes {
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px;align-items:start;width:100%;min-width:0;
+}
+.kmc-relay-operational-kanban .kmc-relay-kanban-lane {
+  display:grid;align-content:start;gap:7px;min-width:0;
+  padding:12px;background:#fff;border:1px solid #d8e4ed;
+  border-radius:12px;box-shadow:0 2px 12px rgb(20 54 83 / .045);
+}
+.kmc-relay-operational-kanban .kmc-relay-lane-signal {
+  width:fit-content;font-size:11px;line-height:1.4;font-weight:820;
+  padding:5px 10px;background:#eef5fb;color:#325c7b;
+  border:1px solid #d7e7f1;border-radius:7px;
+}
+.kmc-relay-operational-kanban [data-relay-lane-tone="warning"] {
+  background:#fff0d8;color:#8c5515;border-color:#efcf94;
+}
+.kmc-relay-operational-kanban [data-relay-lane-tone="info"] {
+  background:#e0f3ff;color:#085f8c;border-color:#abd7ef;
+}
+.kmc-relay-operational-kanban [data-relay-lane-tone="positive"] {
+  background:#e0f7ed;color:#17674e;border-color:#a4d9bf;
+}
+.kmc-relay-operational-kanban .kmc-relay-kanban-lane>.kmc-section {
+  min-width:0;margin:0;border:0;background:transparent;box-shadow:none;padding:0;
+}
+.kmc-relay-operational-kanban .kmc-section-header {
+  padding:5px 0 8px;background:transparent;min-width:0;
+}
+.kmc-relay-operational-kanban .kmc-section-title {
+  font-size:15px;font-weight:830;line-height:1.3;color:#163e5a;
+}
+.kmc-relay-operational-kanban .kmc-section-description {
+  font-size:11px;color:#567085;line-height:1.4;margin:4px 0 0;
+}
+.kmc-relay-operational-kanban .kmc-section-body {
+  min-width:0;padding:0 !important;display:grid;gap:8px;
+}
+.kmc-relay-operational-kanban .kmc-workspace-empty {
+  padding:17px 11px;border:1px dashed #d7e3eb;border-radius:9px;
+  background:#f8fafc;color:#637a8d;font-size:12px;line-height:1.45;
+}
+.kmc-relay-operational-kanban .kmc-relay-kanban-task-list {
+  overflow:visible;border:none;background:transparent;min-width:0;
+}
+.kmc-relay-operational-kanban .kmc-relay-kanban-task-list .kmc-workspace-table {
+  display:block;min-width:0;width:100%;border:0;
+}
+.kmc-relay-operational-kanban .kmc-relay-kanban-task-list thead {
+  position:absolute;overflow:hidden;width:1px;height:1px;
+  clip-path:inset(50%);white-space:nowrap;
+}
+.kmc-relay-operational-kanban .kmc-relay-kanban-task-list tbody {
+  display:grid;gap:8px;
+}
+.kmc-relay-operational-kanban .kmc-relay-kanban-task-list tr[data-relay-task-card] {
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  gap:8px 9px;border:1px solid #d5e2eb;border-radius:9px;
+  padding:12px;background:#fbfdff;min-width:0;
+}
+.kmc-relay-operational-kanban .kmc-relay-kanban-task-list td {
+  display:grid;gap:3px;min-width:0;padding:0 !important;
+  font-size:12px;color:#314b60;line-height:1.4;
+  border:0 !important;background:transparent !important;
+  overflow-wrap:anywhere;
+}
+.kmc-relay-operational-kanban .kmc-relay-kanban-task-list td[data-relay-field]::before {
+  content:attr(data-relay-field);display:block;
+  font-size:10px;font-weight:700;color:#6e8397;line-height:1.25;
+}
+.kmc-relay-operational-kanban .kmc-relay-kanban-task-list td:first-child,
+.kmc-relay-operational-kanban .kmc-relay-kanban-task-list td:last-child {
+  grid-column:1 / -1;
+}
+.kmc-relay-operational-kanban .kmc-relay-kanban-task-list td:first-child::before,
+.kmc-relay-operational-kanban .kmc-relay-kanban-task-list td:last-child::before {display:none;}
+.kmc-relay-operational-kanban .kmc-relay-kanban-task-list td:first-child {
+  font-size:14px;color:#173a57;font-weight:850;
+  padding-bottom:7px !important;border-bottom:1px solid #dce7ef !important;
+}
+.kmc-relay-operational-kanban .kmc-relay-kanban-task-list td:last-child .kmc-workspace-action {
+  width:100%;min-height:40px;font-size:12px;font-weight:820;
+  white-space:normal;line-height:1.3;
+}
+.kmc-relay-operational-kanban .kmc-workspace-manual-reason {
+  display:flex;flex-wrap:wrap;gap:6px;align-items:center;
+  padding:8px;border:1px solid #e3ebf1;border-radius:8px;background:#f4f8fa;
+}
+.kmc-relay-operational-kanban .kmc-workspace-manual-reason select,
+.kmc-relay-operational-kanban .kmc-workspace-manual-reason input {
+  flex:1 1 120px;min-width:0;max-width:100%;font-size:12px;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-import-receptions {
+  min-width:0;margin:1px 0 10px;border:1px solid #c8dce8;
+  background:white;border-radius:11px;overflow:hidden;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-import-summary {
+  padding:15px 18px;cursor:pointer;color:#144f72;
+  background:#edf8fd;font-size:13px;font-weight:820;line-height:1.5;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-import-summary:focus-visible {
+  outline:2px solid #1683bb;outline-offset:-3px;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-import-content {
+  padding:12px;min-width:0;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-import-content .kmc-section {
+  border:0;margin:0;min-width:0;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-import-content .kmc-workspace-table-wrap {
+  max-width:100%;overflow-x:auto;
+}
+/* Écran agent : pas de colonne latérale, mais retour au shell en un clic. */
+body.kmc-shell-v4.kmc-relay-agent-focus {padding-left:0 !important;}
+body.kmc-shell-v4.kmc-relay-agent-focus>.kmc-admin-navigation {display:none !important;}
+body.kmc-shell-v4.kmc-relay-agent-focus #canonical-admin-root {
+  width:100% !important;max-width:none !important;margin:0 !important;
+  padding:8px 10px 14px !important;
+}
+body.kmc-shell-v4.kmc-relay-agent-focus .kmc-operations-workspace[data-workspace-mode="relay-execution"] {
+  max-width:none !important;width:100% !important;margin:0;
+}
+@media(max-width:1000px) {
+  .kmc-relay-operational-kanban .kmc-relay-kanban-lanes {grid-template-columns:1fr 1fr;}
+  .kmc-relay-operational-kanban .kmc-relay-kanban-lane:last-child {grid-column:1 / -1;}
+}
+@media(max-width:660px) {
+  .kmc-relay-operational-kanban .kmc-relay-kanban-lanes{grid-template-columns:minmax(0,1fr);}
+  .kmc-relay-operational-kanban .kmc-relay-kanban-lane:last-child{grid-column:auto;}
+  .kmc-operations-workspace[data-workspace-mode="relay-execution"] >.kmc-workspace-header {
+    padding:10px 12px !important;
+  }
+  body.kmc-shell-v4.kmc-relay-agent-focus #canonical-admin-root {padding:6px 7px 12px !important;}
+}

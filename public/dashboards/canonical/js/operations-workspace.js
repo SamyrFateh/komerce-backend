@@ -1293,7 +1293,22 @@
     rootNode.setAttribute('data-workspace-kind', 'hub-relay');
     rootNode.setAttribute('data-workspace-mode', context.mode);
     rootNode.replaceChildren();
-    rootNode.appendChild(createHeader(doc, payload, context.mode));
+    const header = createHeader(doc, payload, context.mode);
+    if (context.mode === 'relay-execution' && context.user?.role !== 'finance') {
+      const focus = makeActionButton(doc, 'Agrandir le poste de travail', 'relay-focus-mode');
+      focus.classList.add('kmc-relay-focus-toggle');
+      focus.setAttribute('data-relay-focus-toggle', '');
+      const apply = () => {
+        rootNode.classList.toggle('is-relay-focused', Boolean(context.focusEnabled));
+        doc.body?.classList?.toggle('kmc-relay-agent-focus', Boolean(context.focusEnabled));
+        focus.setAttribute('aria-pressed', String(Boolean(context.focusEnabled)));
+        focus.textContent = context.focusEnabled ? 'Réafficher la navigation' : 'Agrandir le poste de travail';
+      };
+      focus.addEventListener('click', () => { context.focusEnabled = !context.focusEnabled; apply(); });
+      header.querySelector('.kmc-workspace-nav')?.appendChild(focus);
+      apply();
+    }
+    rootNode.appendChild(header);
 
     // En Hub Live le dossier porte déjà les quatre indicateurs de sa projection
     // serveur. Ne pas répéter les métriques Relais ni repousser la file sous le pli.
@@ -1368,40 +1383,80 @@
     if (view === 'supply') renderSupplySection(rootNode, ui, doc, context);
 
     if (view === 'relay') {
-    renderRelayShipmentsSection(rootNode, ui, doc, context);
-    renderOrderActionSection(rootNode, ui, doc, context, {
-      title: 'Relais · Encaisser',
-      description: 'Paiements cash en attente dans ce marché. La confirmation appelle l’autorité paiement + auto-colis existante.',
-      rows: payload.queues.relay.cash_pending,
-      action: 'confirm-cash',
-      actionLabel: 'Encaisser',
-      suffix: row => `orders/${encodeURIComponent(row.reference)}/confirm-cash`,
-      confirm: row => `Confirmer l’encaissement cash de ${row.reference} ?`,
-      empty: 'Aucun paiement cash à encaisser.',
-    });
+      // Une même surface de travail, quatre gestes conservant leurs writers
+      // canoniques. Le flux importé ne devient jamais un colis local à recevoir.
+      const board = doc.createElement('section');
+      board.className = 'kmc-relay-operational-kanban';
+      board.setAttribute('data-relay-operational-kanban', '');
+      board.appendChild(text(doc, 'h2', 'kmc-relay-board-title', 'Relais · Poste de travail'));
+      board.appendChild(text(doc, 'p', 'kmc-relay-board-intro',
+        'Agissez sur les dossiers de votre relais. Encaissement, réception locale et remise client restent trois preuves distinctes.'));
+      const cashRows = payload.queues.relay.cash_pending;
+      const localRows = payload.queues.relay.to_receive.filter(row => row.local_receivable === true);
+      const collectRows = payload.queues.relay.to_collect;
+      const grid = doc.createElement('div');
+      grid.className = 'kmc-relay-kanban-lanes';
+      const lane = (key, count, status) => {
+        const surface = doc.createElement('div');
+        surface.className = 'kmc-relay-kanban-lane';
+        surface.setAttribute('data-relay-agent-lane', key);
+        const countLabel = text(doc, 'div', 'kmc-relay-lane-signal',
+          count ? count + ' dossier(s) à traiter' : 'Aucune action en attente');
+        countLabel.setAttribute('data-relay-lane-count', String(count));
+        countLabel.setAttribute('data-relay-lane-tone', count ? status : 'idle');
+        surface.appendChild(countLabel);
+        grid.appendChild(surface);
+        return surface;
+      };
+      renderOrderActionSection(lane('cash', cashRows.length, 'warning'), ui, doc, context, {
+        title: '01 · Encaisser',
+        description: 'Commande avec encaissement local encore attendu. Aucun paiement ne se déduit du statut colis.',
+        rows: cashRows,
+        action: 'confirm-cash',
+        actionLabel: 'Encaisser',
+        suffix: row => `orders/${encodeURIComponent(row.reference)}/confirm-cash`,
+        confirm: row => `Confirmer l’encaissement cash de ${row.reference} ?`,
+        empty: 'Aucun paiement cash à encaisser.',
+      });
+      renderParcelActionSection(lane('local-reception', localRows.length, 'info'), ui, doc, context, {
+        title: '02 · Réception locale',
+        description: 'Uniquement les colis locaux autorisés par le serveur. Les imports passent par l’attestation d’expédition.',
+        rows: localRows,
+        action: 'receive',
+        actionLabel: 'Reçu au relais',
+        suffix: row => `parcels/${encodeURIComponent(row.reference)}/receive`,
+        confirm: row => `Confirmer la réception de ${row.reference} au relais ?`,
+        empty: 'Aucun colis local à réceptionner.',
+      });
+      renderParcelActionSection(lane('client-handover', collectRows.length, 'positive'), ui, doc, context, {
+        title: '03 · Remise client',
+        description: 'Remise au client : scan ou motif du mode dégradé, puis preuve append-only.',
+        rows: collectRows,
+        action: 'collect',
+        actionLabel: 'Remis au client',
+        suffix: row => `parcels/${encodeURIComponent(row.reference)}/collect`,
+        confirm: row => `Confirmer la remise de ${row.reference} au client ?`,
+        empty: 'Aucun colis à remettre.',
+      });
+      board.appendChild(grid);
+      rootNode.appendChild(board);
 
-    // Geste reserve au colis LOCAL expedie par le Hub (local_receivable, calcule serveur). Colis import : attestation d'expedition ci-dessus.
-    renderParcelActionSection(rootNode, ui, doc, context, {
-      title: 'Relais · Réceptionner',
-      description: 'Colis local expédié par le Hub : réception par scan append-only. Les colis import se réceptionnent par attestation de l’expédition.',
-      rows: payload.queues.relay.to_receive.filter(row => row.local_receivable === true),
-      action: 'receive',
-      actionLabel: 'Reçu au relais',
-      suffix: row => `parcels/${encodeURIComponent(row.reference)}/receive`,
-      confirm: row => `Confirmer la réception de ${row.reference} au relais ?`,
-      empty: 'Aucun colis local à réceptionner.',
-    });
-
-    renderParcelActionSection(rootNode, ui, doc, context, {
-      title: 'Relais · Distribuer',
-      description: 'Remise client par scan append-only du moteur logistique.',
-      rows: payload.queues.relay.to_collect,
-      action: 'collect',
-      actionLabel: 'Remis au client',
-      suffix: row => `parcels/${encodeURIComponent(row.reference)}/collect`,
-      confirm: row => `Confirmer la remise de ${row.reference} au client ?`,
-      empty: 'Aucun colis à remettre.',
-    });
+      const imports = doc.createElement('details');
+      imports.className = 'kmc-relay-import-receptions';
+      imports.setAttribute('data-relay-import-receptions', '');
+      const shipments = context.relayShipments?.shipments || [];
+      const receivable = shipments.filter(shipment => shipment.receivable);
+      const summary = text(doc, 'summary', 'kmc-relay-import-summary',
+        'Réception des expéditions importées · ' +
+        shipments.length + ' expédition(s) en suivi · ' + receivable.length + ' à attester');
+      imports.appendChild(summary);
+      // La liste est visible d'office lorsqu'une attestation import est possible.
+      imports.open = receivable.length > 0;
+      const host = doc.createElement('div');
+      host.className = 'kmc-relay-import-content';
+      renderRelayShipmentsSection(host, ui, doc, context);
+      imports.appendChild(host);
+      rootNode.appendChild(imports);
     }
 
     if (view === 'inventory') renderInventorySection(rootNode, ui, doc, payload, context);
@@ -1480,6 +1535,16 @@
       emptyText: config.empty,
       columns: actionColumns({ referenceKind: kind }),
     });
+    if (context.mode === 'relay-execution') {
+      const wrap = slot.querySelector('.kmc-workspace-table-wrap');
+      wrap?.classList.add('kmc-relay-kanban-task-list');
+      slot.querySelectorAll('tbody tr').forEach(row => {
+        row.setAttribute('data-relay-task-card', '');
+        [...row.children].forEach((cell, index) => {
+          cell.setAttribute('data-relay-field', ['Référence','Client','Relais','Montant comptable','Depuis',''][index]);
+        });
+      });
+    }
     slot.querySelectorAll('tbody tr').forEach((rowNode, index) => {
       const row = config.rows[index];
       const actionCell = rowNode.lastChild;
@@ -1746,6 +1811,7 @@
       mode: ['execution', 'relay-execution'].includes(options.mode) ? options.mode : 'pilot',
       user: options.user || null,
       view: options.mode === 'execution' ? 'supply' : undefined,
+      focusEnabled: options.mode === 'relay-execution' && options.user?.role === 'agent_relais',
       confirm: typeof options.confirm === 'function'
         ? options.confirm
         : (typeof globalThis.confirm === 'function' ? globalThis.confirm.bind(globalThis) : () => true),
