@@ -38,7 +38,7 @@ async function loadOrderBase(db,reference) {
   const r = await safeQuery(db, `SELECT o.id,o.reference,o.user_id,o.status::text AS status,o.payment_status::text AS payment_status,o.payment_mode,o.recipient_id,o.relais_id,o.total_kmf,o.stripe_payment_id,o.created_at,m.code AS market_code FROM orders o LEFT JOIN markets m ON m.id=o.market_id WHERE o.reference=$1 LIMIT 1`,[reference]);
   return r.error ? {error:r.error} : {order:r.rows[0]||null};
 }
-async function loadCheckoutOriginGate(db,{orderReference,productId,base,storefrontGate}) {
+async function loadCheckoutOriginGate(db,{orderReference,productId,marketCode,base,storefrontGate}) {
   const next='Effectuer OTP et checkout depuis la vraie boutique, puis relire les preuves.';
   if (!orderReference) return unproved(ORIGIN.key,ORIGIN.label,ORIGIN.link,ORIGIN.expected,'order_reference_missing',next);
   if (SYNTHETIC_RX.test(orderReference)) return settle({...ORIGIN,nextAction:next,checks:[check('not_synthetic',false)],anomalies:['Commande synthétique non probante']});
@@ -55,6 +55,7 @@ async function loadCheckoutOriginGate(db,{orderReference,productId,base,storefro
     check('birth_event',!!(ev&&ev.note===BIRTH_NOTE&&ev.status==='pending')),
     check('born_by_customer',!!(ev?.changed_by&&ev.changed_by===o.user_id)),
     check('relais_and_recipient',!!(o.relais_id&&o.recipient_id)),
+    check('order_matches_selected_market', Boolean(marketCode && o.market_code && String(o.market_code).toUpperCase() === String(marketCode).toUpperCase())),
     check('customs_frozen',items.rows.length>0&&items.rows.every(i=>i.customs_category_key)),
     check('line_is_expected_product',!!productId&&mine.length>0),
     check('line_sku_belongs_to_product',mine.length>0&&mine.every(i=>i.sku_id&&i.sku_product_id===i.product_id)),
@@ -62,6 +63,9 @@ async function loadCheckoutOriginGate(db,{orderReference,productId,base,storefro
     check('price_matches_storefront',mine.length>0&&shown!=null&&mine.every(i=>Number(i.price_kmf)===Number(shown)))
   ];
   const anomalies=mine.some(i=>i.sku_id&&i.sku_product_id&&i.sku_product_id!==i.product_id)?['SKU divergent du produit']: [];
+  if (marketCode && o.market_code && String(o.market_code).toUpperCase() !== String(marketCode).toUpperCase()) {
+    anomalies.push('ORDER_MARKET_MISMATCH: commande hors marché sélectionné');
+  }
   return settle({...ORIGIN,checks,anomalies,nextAction:next,evidence:{order_id:o.id,market_code:o.market_code,sku_ids:mine.map(i=>i.sku_id).filter(Boolean),price_kmf:mine.map(i=>Number(i.price_kmf))},humanChecks:['Parcours boutique observé en navigateur','OTP sandbox observé']});
 }
 async function loadPaymentFinalGate(db,{orderReference,base}) {
@@ -108,7 +112,7 @@ function buildOperatorScript({gates=[]}={}) {
 }
 async function loadCheckoutThread(db,{orderReference,productId,marketCode,upstreamGates=[]}) {
   const ref=orderReference||null,base=ref&&!SYNTHETIC_RX.test(ref)?await loadOrderBase(db,ref):{order:null};
-  const origin=await loadCheckoutOriginGate(db,{orderReference:ref,productId,base,storefrontGate:upstreamGates.find(g=>g.key==='STOREFRONT_PROVED')});
+  const origin=await loadCheckoutOriginGate(db,{orderReference:ref,productId,marketCode,base,storefrontGate:upstreamGates.find(g=>g.key==='STOREFRONT_PROVED')});
   const payment=await loadPaymentFinalGate(db,{orderReference:ref,base});
   const src=upstreamGates.find(g=>g.key==='SOURCE_PROVED')?.evidence||{},cat=upstreamGates.find(g=>g.key==='CATALOG_RELEASE_PROVED')?.evidence||{};
   const skuIds=(cat.skus||[]).map(s=>s.product_sku_id).filter(Boolean),soiRefs=(cat.skus||[]).map(s=>s.supplier_unit_ref).filter(Boolean);
