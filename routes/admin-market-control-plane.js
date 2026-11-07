@@ -26,6 +26,7 @@ const db = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const controlPlane = require('../services/market-control-plane');
 const deliveryProof = require('../services/market-delivery-proof-service');
+const transportSale = require('../services/market-transport-sale-rate-command');
 const centralAuthority = require('../services/central-authority');
 const { provisionMarket, reprovisionMarket, setMarketLifecycle, setAssignmentLifecycle } = require('../services/market-provisioning-service');
 
@@ -185,6 +186,37 @@ router.get('/', ...centralAdmin, async (req, res, next) => {
 router.get('/central-authority', ...centralAdmin, async (req, res, next) => {
   try {
     res.json(await centralAuthority.overview(db));
+  } catch (error) {
+    if (!sendKnownError(res, error)) next(error);
+  }
+});
+
+// Tarifs commerciaux de transport (prix client, jamais coût du corridor), lisibles avec historique.
+router.get('/:marketCode/transport-sale-rates', ...centralAdmin, async (req, res, next) => {
+  try {
+    const includeHistory = req.query.history === '1';
+    res.json(await transportSale.listSaleRates(db, { marketCode: req.params.marketCode, includeHistory }));
+  } catch (error) {
+    if (!sendKnownError(res, error)) next(error);
+  }
+});
+
+// Une modification crée une nouvelle version ; l'ancienne est révoquée et l'audit
+// est écrit dans la MÊME transaction. Seul l'admin central peut l'effectuer.
+router.put('/:marketCode/transport-sale-rates/:rateKey', ...centralAdmin, async (req, res, next) => {
+  try {
+    const body = req.body || {};
+    const result = await withTransaction(client => transportSale.setSaleRate(client, {
+      marketCode: req.params.marketCode,
+      rateKey: req.params.rateKey,
+      ratePerKg: body.rate_per_kg,
+      currency: body.currency,
+      evidenceRef: body.evidence_ref,
+      reason: body.reason,
+      actorUserId: req.user.id,
+      correlationId: req.headers['x-correlation-id'],
+    }));
+    res.status(result.changed ? 201 : 200).json(result);
   } catch (error) {
     if (!sendKnownError(res, error)) next(error);
   }
