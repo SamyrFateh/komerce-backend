@@ -160,7 +160,7 @@ test.describe('Cockpit Relais — navigation canonique', () => {
     await expect(inspector).toContainText('KMC-0101');
     await expect(inspector.locator('[data-relay-action="execute"]')).toHaveAttribute('href','/admin/relais-live?view=execute&market=KM');
     expect(state.writes).toHaveLength(0);
-    await inspector.getByRole('link',{name:'Fermer ×'}).click();
+    await inspector.getByRole('link',{name:'Fermer le dossier'}).click();
     await expect(inspector).toHaveCount(0);
     await page.goBack();
     await expect(page.locator('[data-relay-detail]')).toBeVisible();
