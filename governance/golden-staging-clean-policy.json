@@ -235,8 +235,9 @@
     ]
   },
   "user_scoped_delete": {
-    "webauthn_credentials": "user_id",
-    "credential_action_tokens": "user_id"
+    "credential_action_tokens": "user_id",
+    "e2e_test_accounts": "user_id",
+    "webauthn_credentials": "user_id"
   },
   "users": {
     "keep_roles": [],
