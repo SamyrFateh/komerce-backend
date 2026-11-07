@@ -1,6 +1,6 @@
 name: Staging — LOCAL_STOCK direct relais (KM CM CG)
 
-# Independent of the historical Hub physical chain. Runs only with manual owner approval.
+# Independent of the historical Hub physical chain. An owner-only exact issue title can trigger the same guarded workflow.
 # Creates an isolated E2E fixture with simulated payment; never charges a real PSP.
 on:
   workflow_dispatch:
@@ -14,6 +14,8 @@ on:
         description: 'Saisir exactement RUN-LOCAL-CERT-<MARCHÉ>'
         required: true
         type: string
+  issues:
+    types: [opened]
 
 permissions:
   contents: read
@@ -24,7 +26,15 @@ concurrency:
 
 jobs:
   local-stock:
-    if: github.actor == github.repository_owner && inputs.confirmation == format('RUN-LOCAL-CERT-{0}', inputs.market)
+    if: >-
+      (github.event_name == 'workflow_dispatch' &&
+       github.actor == github.repository_owner &&
+       inputs.confirmation == format('RUN-LOCAL-CERT-{0}', inputs.market)) ||
+      (github.event_name == 'issues' &&
+       github.event.issue.user.login == github.repository_owner &&
+       (github.event.issue.title == '[staging-op] local-stock-KM' ||
+        github.event.issue.title == '[staging-op] local-stock-CM' ||
+        github.event.issue.title == '[staging-op] local-stock-CG'))
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
@@ -35,7 +45,7 @@ jobs:
       EXPECTED_RAILWAY_ENVIRONMENT: staging
       KOMERCE_DISABLE_CRONS: 'true'
       HUB_V1_E2E_APPLY_MODE: approved
-      HTTP_RUNNER_MARKET: ${{ inputs.market }}
+      HTTP_RUNNER_MARKET: ${{ github.event_name == 'issues' && (github.event.issue.title == '[staging-op] local-stock-KM' && 'KM' || github.event.issue.title == '[staging-op] local-stock-CM' && 'CM' || 'CG') || inputs.market }}
       DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
       STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
       HTTP_RUNNER_BASE_URL: https://komerce-backend-production.up.railway.app
@@ -130,7 +140,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: staging-local-stock-${{ inputs.market }}-${{ github.run_id }}
+          name: staging-local-stock-${{ env.HTTP_RUNNER_MARKET }}-${{ github.run_id }}
           path: |
             test-results/local-stock-cert/
             test-results/hub-v1-cert/
