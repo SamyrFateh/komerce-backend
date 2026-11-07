@@ -28,6 +28,7 @@ const db = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const controlPlane = require('../services/market-control-plane');
 const deliveryProof = require('../services/market-delivery-proof-service');
+const transportSaleRates = require('../services/market-transport-sale-rate-writer');
 const transportSale = require('../services/market-transport-sale-rate-command');
 const centralAuthority = require('../services/central-authority');
 const { provisionMarket, reprovisionMarket, setMarketLifecycle, setAssignmentLifecycle } = require('../services/market-provisioning-service');
@@ -161,6 +162,33 @@ router.post('/:marketCode/assignment/status', ...centralAdmin, async (req, res, 
       targetStatus: req.body && req.body.status,
       reason: req.body && req.body.reason,
       correlationId: req.headers['x-correlation-id'] ? String(req.headers['x-correlation-id']).slice(0, 200) : null,
+    }));
+    res.json(result);
+  } catch (error) {
+    if (!sendKnownError(res, error)) next(error);
+  }
+});
+
+
+// Prix de VENTE du transport, distinct du coût du transporteur attesté.
+// Valeurs par marché dans la devise locale ; toutes les écritures sont
+// central-admin, transactionnelles, avec preuve et journal d'audit.
+router.get('/:marketCode/transport-sale-rates', ...centralAdmin, async (req, res, next) => {
+  try {
+    res.json(await transportSaleRates.list(db, { code: req.params.marketCode }));
+  } catch (error) {
+    if (!sendKnownError(res, error)) next(error);
+  }
+});
+
+router.put('/:marketCode/transport-sale-rates/:rateKey', ...centralAdmin, async (req, res, next) => {
+  try {
+    const body = req.body || {};
+    const result = await withTransaction(client => transportSaleRates.set(client, {
+      actorUserId: req.user.id, code: req.params.marketCode, key: req.params.rateKey,
+      ratePerKg: body.rate_per_kg, currency: body.currency,
+      evidence: body.evidence_ref, reason: body.reason,
+      correlationId: req.headers['x-correlation-id'],
     }));
     res.json(result);
   } catch (error) {
