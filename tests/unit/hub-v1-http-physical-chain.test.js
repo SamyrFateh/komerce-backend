@@ -30,15 +30,16 @@ function localSnapshot(phase = 'before') {
   const after = phase !== 'before';
   const collected = phase === 'collected';
   return {
-    order: { status: collected ? 'collected' : after ? 'available' : 'ordered',
+    order: { relais_id: 'r', status: collected ? 'collected' : after ? 'available' : 'ordered',
       payment_status: 'paid', stripe_payment_id: null, cash_paid_at: null },
-    parcels: after ? [{ id: 'p', reference: 'LOCAL-P', status: collected ? 'collected' : 'available',
+    parcels: after ? [{ id: 'p', reference: 'LOCAL-P', relais_id: 'r', status: collected ? 'collected' : 'available',
       shipment_id: null, shipped_at: null, in_transit_at: null }] : [],
     lines: [{ quantity: 2, fulfillment_source: 'LOCAL_STOCK',
-      qty_shipped: after ? 0 : null, qty_received: after ? 2 : null }],
+      qty_shipped: after ? 0 : null, qty_received: after ? 2 : null, qty_collected: collected ? 2 : 0 }],
     counts: { purchase_lines: 0, purchase_orders: 0, hub_allocations: 0,
       hub_units: 0, shipment_receipts: 0, shipped_scans: 0, shipping_history: 0,
-      cash_collections: 0, relay_receipts: after ? 1 : 0, available_history: after ? 1 : 0 },
+      cash_collections: 0, consumed_allocations: 2, collected_history: collected ? 1 : 0,
+      relay_receipts: after ? 1 : 0, available_history: after ? 1 : 0 },
   };
 }
 
@@ -63,6 +64,8 @@ describe('LOCAL_STOCK: preuve dediee sans detour Hub', () => {
       s => { s.counts.shipped_scans = 1; },
       s => { s.counts.shipping_history = 1; },
       s => { s.lines[0].qty_shipped = 2; },
+      s => { s.counts.consumed_allocations = 1; },
+      s => { s.parcels[0].relais_id = 'other'; },
     ];
     for (const mutate of cases) {
       const s = localSnapshot('available');
