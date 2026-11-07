@@ -549,6 +549,27 @@
     heading.appendChild(make(doc,'h1','','Hub · Tous les marchés'));
     heading.appendChild(make(doc,'p','','Achats fournisseurs, réception, préparation et expéditions'));
     header.appendChild(heading);
+    // Mode plein poste : garder l'action dans le Kanban, libérer l'espace
+    // occupé par le menu de navigation, sans perdre l'accès à ce menu.
+    // Défaut pour les agents Hub sur la branche opérationnelle uniquement.
+    const focusToggle=make(doc,'button','kmc-hub-focus-toggle');
+    focusToggle.type='button';
+    focusToggle.setAttribute('data-hub-focus-toggle','');
+    let focusEnabled=role==='agent_hub' && branch==='operations';
+    const applyFocus=() => {
+      root.classList.toggle('is-focus-workspace',focusEnabled);
+      doc.body?.classList?.toggle('kmc-hub-agent-focus',focusEnabled);
+      focusToggle.setAttribute('aria-pressed',String(focusEnabled));
+      focusToggle.textContent=focusEnabled?'↙ Réafficher la navigation':'⤢ Agrandir le Kanban';
+      focusToggle.setAttribute('aria-label',focusEnabled
+        ?'Quitter le mode concentré et réafficher la navigation':'Activer le mode concentré du Hub');
+    };
+    focusToggle.addEventListener('click',()=>{
+      focusEnabled=!focusEnabled;
+      applyFocus();
+    });
+    header.appendChild(focusToggle);
+    applyFocus();
     root.appendChild(header);
     const nav=make(doc,'nav','kmc-hub-app-branches');
     nav.setAttribute('aria-label','Postes de travail Hub');
