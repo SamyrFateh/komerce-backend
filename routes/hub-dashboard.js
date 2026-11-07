@@ -68,6 +68,7 @@ const {
 const log = require('../utils/logger').child({ module: 'hub-dashboard' });
 const hubQueries = require('../services/hub-dashboard-queries');
 const { wantsSimulation } = require('../services/simulation-visibility');
+const denyTransitaireHub = require('../middleware/deny-transitaire-hub');
 const hubDubai = require('../services/hub-dubai-projection');
 const { applyLiveProjection } = require('../services/live-projection');
 
@@ -87,12 +88,14 @@ function attachHubReadAuthority(req, res, next) {
 
 const hubRead = [
   authenticate,
+  denyTransitaireHub,
   attachMarketDelegatedRoleFor(['admin', 'agent_hub', 'market_operator']),
   requireRole(['admin', 'agent_hub', 'market_operator']),
   attachHubReadAuthority,
 ];
 const hubSupervise = [
   authenticate,
+  denyTransitaireHub,
   attachMarketDelegatedRoleFor(['admin', 'agent_hub', 'market_operator']),
   requireRole(['admin', 'agent_hub', 'market_operator']),
 ];

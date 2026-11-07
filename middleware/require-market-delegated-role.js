@@ -61,6 +61,14 @@ function attachMarketDelegatedRoleFor(roles) {
       return next();
     }
 
+    // Rôle de transit CENTRAL : d'anciennes memberships résiduelles ne doivent
+    // jamais requalifier un transitaire en responsable marché sur les vues Hub,
+    // Finance, Client 360 ou tout autre endpoint de lecture déléguée.
+    // Une route qui autorise réellement le Transitaire doit nommer ce rôle.
+    if ((req.user.persisted_role || req.user.role) === 'agent_transitaire') {
+      return next();
+    }
+
     try {
       const delegated = await hasActiveProjectedMarketDelegation(req.user.id);
       if (!delegated) return next();

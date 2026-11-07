@@ -247,8 +247,9 @@
                 if(!isCurrent())return;
                 menu.classList.add('is-sourcing-inline','is-editing');
                 const viewport=doc.defaultView;
-                menu.style.left=Math.max(8,Math.round(((viewport?.innerWidth||1440)-780)/2))+'px';
-                menu.style.top=(viewport?.innerWidth||1440)<700?'8px':'58px';
+                const compact=Number(viewport?.innerWidth||1440)<=700;
+                menu.style.left=compact?'8px':Math.max(8,Math.round(((viewport?.innerWidth||1440)-780)/2))+'px';
+                menu.style.top=compact?'8px':'58px';
                 try {
                   reuse.openManualSourcing(menu,{
                     document:doc,fetch:fetchFn,user,order:dossierOrder,

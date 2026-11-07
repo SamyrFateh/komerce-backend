@@ -180,3 +180,20 @@ Rapport JSON original sans secrets : `docs/recette/evidence/isolation-20261107/s
 Les runs précédents [42385279726](https://github.com/SamyrFateh/komerce-backend/actions/runs/42385279726) (refus de SHA, avant toute écriture) et [42385392225](https://github.com/SamyrFateh/komerce-backend/actions/runs/42385392225) (12 refus croisés 403 mais 2 traces propres 400 dues à une requête sans clé) ne sont pas des GO.
 
 **Point de reprise opérationnel suivant :** certifier les refus de franchissement de rôle (Relais → actions Hub ; Transitaire → achats et colis Hub), la chaîne locale sans Hub, puis les non-nominaux (incident fournisseur, manquant, reliquat, annulation, remboursement). Les prix et coûts provisoires `RECETTE` restent **non commercialisables**, aucune activation PSP réelle ni ouverture aux partenaires sans GO économique.
+
+## 12. Certification négative des frontières Admin/Hub/Transitaire/Relais — 2026-11-07
+
+**Verdict `ROLE_BOUNDARY_PASS`, 37/37 tests HTTP réels**, sans écriture métier, sur staging Railway :
+- Run officiel réussi : [42391311145](https://github.com/SamyrFateh/komerce-backend/actions/runs/42391311145), après déploiement du correctif `3cce0badfb9c4b4be2a42b683751232817179c87` (PR [#3517](https://github.com/SamyrFateh/komerce-backend/pull/3517)).
+- Rapport complet original, sans secrets : `docs/recette/evidence/isolation-20261107/staging-negative-role-boundaries-42391311145.json`.
+- Acteurs vérifiés : sessions réelles E2E `admin`, `agent_hub`, `agent_transitaire` et `agent_relais`.
+- `GET /api/hub-dash/dashboard`, `/queue`, `/api/hub/stats/week`, `/api/hub/board` : Hub/Admin autorisés, Transitaire refusé HTTP 403 ; Relais refusé sur les routes qui lui sont interdites.
+- Actions préparation/backorder sur commande inexistante, expédition sur colis inexistant : 404 pour acteurs autorisés (sauf `execution.parcel.ship` qui refuse explicitement Admin 403), 403 pour rôles non autorisés. Aucun colis réel touché.
+- Lecture du contrôle marché/tarifs réservée Admin ; PUT tarif de vente refusé 403 à Hub, Transitaire et Relais (aucun PUT émis en tant qu'Admin).
+- Une ancienne délégation marché ne requalifie plus `agent_transitaire` en responsable pays via le bridge global ; la garde des postes Hub reste explicite et fail-closed.
+
+**Historique du défaut :** run initial [42386763928](https://github.com/SamyrFateh/komerce-backend/actions/runs/42386763928), 27/31 seulement, avec deux lectures Hub du transitaire renvoyant 200. Il n'est pas certifiant. La PR #3517 corrige également les régressions CSS du mode Hub plein écran sans assouplissement de la règle `!important`.
+
+**Verdict consolidé :** KM, CM et CG ont un PASS nominal staging ; responsables pays CM/CG isolés 18/18 ; frontières de rôles Hub/Relais/Transitaire/Admin certifiées 37/37. **Pas de GO commercial** : les tarifs de vente et les coûts de corridors CM/CG restent `RECETTE` ; les scénarios rupture/retard fournisseur, réceptions partielles, incidents, remboursements et annulations ne sont pas certifiés ; le circuit `LOCAL_STOCK` sans Hub doit faire l'objet d'une recette distincte.
+
+**Point de reprise suivant :** bâtir des fixtures locales et fournisseur à effets externes désactivés, puis certifier sur vrai staging (API et Chromium à rôle réel) le circuit local sans Hub, les quantités partielles/reliquats et les incidents. Conserver des preuves JSON versionnées pour chaque verdict. Ne jamais transformer une ligne de prix `RECETTE` en tarif partenaire sans validation économique et références fournisseur réelles.
