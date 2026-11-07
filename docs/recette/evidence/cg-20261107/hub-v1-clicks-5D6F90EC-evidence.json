@@ -1,0 +1,331 @@
+{
+  "schema": "komerce-hub-v1-clicks/1",
+  "run8": "5D6F90EC",
+  "base": "https://komerce-backend-production.up.railway.app",
+  "gestures": [
+    {
+      "key": "hub:receive:5687b42c",
+      "role": "agent_hub",
+      "route": "POST /api/scans/hub/receive",
+      "ui": "operations-workspace.js:createReceptionCard (Enregistrer la réception)",
+      "verdict": "CLICK_PASS",
+      "http": 201,
+      "capture": "01-hub_receive_5687b42c.png"
+    },
+    {
+      "key": "hub:receive:1775a157",
+      "role": "agent_hub",
+      "route": "POST /api/scans/hub/receive",
+      "ui": "operations-workspace.js:createReceptionCard (Enregistrer la réception)",
+      "verdict": "CLICK_PASS",
+      "http": 201,
+      "capture": "02-hub_receive_1775a157.png"
+    },
+    {
+      "key": "hub:bag-create:KOM-101",
+      "role": "agent_hub",
+      "route": "POST /api/admin/workspaces/operations/market/CG/bags",
+      "ui": "hub-live-cockpit.js:673 (Préparer le sac)",
+      "verdict": "CLICK_PASS",
+      "http": 201,
+      "capture": "03-hub_bag_create_KOM_101.png"
+    },
+    {
+      "key": "hub:bag-deposit:KOM-101",
+      "role": "agent_hub",
+      "route": "POST /api/admin/workspaces/operations/market/CG/bags/:id/deposit",
+      "ui": "operations-workspace.js:1084 (Déposer dans le sac)",
+      "verdict": "CLICK_PASS",
+      "http": 200,
+      "capture": "04-hub_bag_deposit_KOM_101.png"
+    },
+    {
+      "key": "hub:bag-deposit:KOM-101",
+      "role": "agent_hub",
+      "route": "POST /api/admin/workspaces/operations/market/CG/bags/:id/deposit",
+      "ui": "operations-workspace.js:1084 (Déposer dans le sac)",
+      "verdict": "CLICK_PASS",
+      "http": 200,
+      "capture": "05-hub_bag_deposit_KOM_101.png"
+    },
+    {
+      "key": "hub:bag-close:KOM-101",
+      "role": "agent_hub",
+      "route": "POST /api/admin/workspaces/operations/market/CG/bags/:id/close",
+      "ui": "operations-workspace.js:1100 (Fermer le sac)",
+      "verdict": "CLICK_PASS",
+      "http": 200,
+      "capture": "06-hub_bag_close_KOM_101.png"
+    },
+    {
+      "key": "hub:bag-create:KOM-102",
+      "role": "agent_hub",
+      "route": "POST /api/admin/workspaces/operations/market/CG/bags",
+      "ui": "hub-live-cockpit.js:673 (Préparer le sac)",
+      "verdict": "CLICK_PASS",
+      "http": 201,
+      "capture": "07-hub_bag_create_KOM_102.png"
+    },
+    {
+      "key": "hub:bag-deposit:KOM-102",
+      "role": "agent_hub",
+      "route": "POST /api/admin/workspaces/operations/market/CG/bags/:id/deposit",
+      "ui": "operations-workspace.js:1084 (Déposer dans le sac)",
+      "verdict": "CLICK_PASS",
+      "http": 200,
+      "capture": "08-hub_bag_deposit_KOM_102.png"
+    },
+    {
+      "key": "hub:bag-close:KOM-102",
+      "role": "agent_hub",
+      "route": "POST /api/admin/workspaces/operations/market/CG/bags/:id/close",
+      "ui": "operations-workspace.js:1100 (Fermer le sac)",
+      "verdict": "CLICK_PASS",
+      "http": 200,
+      "capture": "09-hub_bag_close_KOM_102.png"
+    },
+    {
+      "key": "hub:distribution-run",
+      "role": "agent_hub",
+      "route": "POST /api/admin/workspaces/operations/market/CG/distribution/run",
+      "ui": "operations-workspace.js:1289 (Répartir ce marché)",
+      "verdict": "CLICK_PASS",
+      "http": 200,
+      "capture": "10-hub_distribution_run.png"
+    },
+    {
+      "key": "hub:box-create",
+      "role": "agent_hub",
+      "route": "POST /api/admin/workspaces/operations/market/CG/boxes",
+      "ui": "operations-workspace.js:992 (Créer une KOM-BOX)",
+      "verdict": "CLICK_PASS",
+      "http": 201,
+      "capture": "11-hub_box_create.png"
+    },
+    {
+      "key": "hub:box-add-bag:KOM-101",
+      "role": "agent_hub",
+      "route": "POST /api/admin/workspaces/operations/market/CG/boxes/:id/bags",
+      "ui": "operations-workspace.js:1160 (Placer le sac)",
+      "verdict": "CLICK_PASS",
+      "http": 201,
+      "capture": "12-hub_box_add_bag_KOM_101.png"
+    },
+    {
+      "key": "hub:box-add-bag:KOM-102",
+      "role": "agent_hub",
+      "route": "POST /api/admin/workspaces/operations/market/CG/boxes/:id/bags",
+      "ui": "operations-workspace.js:1160 (Placer le sac)",
+      "verdict": "CLICK_PASS",
+      "http": 201,
+      "capture": "13-hub_box_add_bag_KOM_102.png"
+    },
+    {
+      "key": "hub:box-advance:1",
+      "role": "agent_hub",
+      "route": "POST /api/admin/workspaces/operations/market/CG/boxes/:id/advance",
+      "ui": "operations-workspace.js:1170 (Étape suivante · IDENTIFIED)",
+      "verdict": "CLICK_PASS",
+      "http": 200,
+      "capture": "14-hub_box_advance_1.png"
+    },
+    {
+      "key": "hub:box-advance:2",
+      "role": "agent_hub",
+      "route": "POST /api/admin/workspaces/operations/market/CG/boxes/:id/advance",
+      "ui": "operations-workspace.js:1170 (Étape suivante · QUALITY_CHECKED)",
+      "verdict": "CLICK_PASS",
+      "http": 200,
+      "capture": "15-hub_box_advance_2.png"
+    },
+    {
+      "key": "hub:box-advance:3",
+      "role": "agent_hub",
+      "route": "POST /api/admin/workspaces/operations/market/CG/boxes/:id/advance",
+      "ui": "operations-workspace.js:1170 (Étape suivante · LOCATED)",
+      "verdict": "CLICK_PASS",
+      "http": 200,
+      "capture": "16-hub_box_advance_3.png"
+    },
+    {
+      "key": "hub:box-advance:4",
+      "role": "agent_hub",
+      "route": "POST /api/admin/workspaces/operations/market/CG/boxes/:id/advance",
+      "ui": "operations-workspace.js:1170 (Étape suivante · ALLOCATED)",
+      "verdict": "CLICK_PASS",
+      "http": 200,
+      "capture": "17-hub_box_advance_4.png"
+    },
+    {
+      "key": "hub:box-advance:5",
+      "role": "agent_hub",
+      "route": "POST /api/admin/workspaces/operations/market/CG/boxes/:id/advance",
+      "ui": "operations-workspace.js:1170 (Étape suivante · PICKED)",
+      "verdict": "CLICK_PASS",
+      "http": 200,
+      "capture": "18-hub_box_advance_5.png"
+    },
+    {
+      "key": "hub:box-advance:6",
+      "role": "agent_hub",
+      "route": "POST /api/admin/workspaces/operations/market/CG/boxes/:id/advance",
+      "ui": "operations-workspace.js:1170 (Étape suivante · PACKED)",
+      "verdict": "CLICK_PASS",
+      "http": 200,
+      "capture": "19-hub_box_advance_6.png"
+    },
+    {
+      "key": "hub:box-advance:7",
+      "role": "agent_hub",
+      "route": "POST /api/admin/workspaces/operations/market/CG/boxes/:id/advance",
+      "ui": "operations-workspace.js:1170 (Prêt à remettre au transitaire)",
+      "verdict": "CLICK_PASS",
+      "http": 200,
+      "capture": "20-hub_box_advance_7.png"
+    },
+    {
+      "key": "hub:shipment-open",
+      "role": "agent_hub",
+      "route": "POST /api/admin/workspaces/operations/market/CG/boxes/shipment",
+      "ui": "operations-workspace.js:960 (Ouvrir le dossier)",
+      "verdict": "CLICK_PASS",
+      "http": 201,
+      "capture": "21-hub_shipment_open.png"
+    },
+    {
+      "key": "journey:handed_over",
+      "role": "agent_hub",
+      "route": "POST /api/admin/workspaces/shipping-customs/market/CG/international/:ref/transition",
+      "ui": "international-journey-panel.js (formulaire de tache)",
+      "verdict": "CLICK_PASS",
+      "http": 200,
+      "capture": "22-journey_handed_over.png"
+    },
+    {
+      "key": "journey:forwarder_received",
+      "role": "agent_transitaire",
+      "route": "POST /api/admin/workspaces/shipping-customs/market/CG/international/:ref/transition",
+      "ui": "international-journey-panel.js (formulaire de tache)",
+      "verdict": "CLICK_PASS",
+      "http": 200,
+      "capture": "23-journey_forwarder_received.png"
+    },
+    {
+      "key": "journey:tracking",
+      "role": "agent_transitaire",
+      "route": "POST /api/admin/workspaces/shipping-customs/market/CG/international/:ref/tracking",
+      "ui": "international-journey-panel.js (formulaire de tache)",
+      "verdict": "CLICK_PASS",
+      "http": 200,
+      "capture": "24-journey_tracking.png"
+    },
+    {
+      "key": "journey:in_transit",
+      "role": "agent_transitaire",
+      "route": "POST /api/admin/workspaces/shipping-customs/market/CG/international/:ref/transition",
+      "ui": "international-journey-panel.js (formulaire de tache)",
+      "verdict": "CLICK_PASS",
+      "http": 200,
+      "capture": "25-journey_in_transit.png"
+    },
+    {
+      "key": "journey:arrived",
+      "role": "agent_transitaire",
+      "route": "POST /api/admin/workspaces/shipping-customs/market/CG/international/:ref/transition",
+      "ui": "international-journey-panel.js (formulaire de tache)",
+      "verdict": "CLICK_PASS",
+      "http": 200,
+      "capture": "26-journey_arrived.png"
+    },
+    {
+      "key": "customs:create",
+      "role": "admin",
+      "route": "POST /api/admin/workspaces/shipping-customs/market/CG/customs/shipments",
+      "ui": "shipping-customs-workspace.js:497 (Nouvelle expédition douane)",
+      "verdict": "CLICK_PASS",
+      "http": 201,
+      "capture": "27-customs_create.png"
+    },
+    {
+      "key": "journey:link-customs",
+      "role": "admin",
+      "route": "POST /api/admin/workspaces/shipping-customs/market/CG/international/:ref/link-customs",
+      "ui": "international-journey-panel.js (formulaire de tache)",
+      "verdict": "CLICK_PASS",
+      "http": 200,
+      "capture": "28-journey_link_customs.png"
+    },
+    {
+      "key": "journey:customs-amount",
+      "role": "admin",
+      "route": "POST /api/admin/workspaces/shipping-customs/market/CG/international/:ref/customs-amount",
+      "ui": "international-journey-panel.js (formulaire de tache)",
+      "verdict": "CLICK_PASS",
+      "http": 200,
+      "capture": "29-journey_customs_amount.png"
+    },
+    {
+      "key": "journey:customs_released",
+      "role": "admin",
+      "route": "POST /api/admin/workspaces/shipping-customs/market/CG/international/:ref/transition",
+      "ui": "international-journey-panel.js (formulaire de tache)",
+      "verdict": "CLICK_PASS",
+      "http": 200,
+      "capture": "30-journey_customs_released.png"
+    },
+    {
+      "key": "journey:local_delivery",
+      "role": "agent_hub",
+      "route": "POST /api/admin/workspaces/shipping-customs/market/CG/international/:ref/transition",
+      "ui": "international-journey-panel.js (formulaire de tache)",
+      "verdict": "CLICK_PASS",
+      "http": 200,
+      "capture": "31-journey_local_delivery.png"
+    },
+    {
+      "key": "relay:attest",
+      "role": "agent_relais",
+      "route": "POST /api/admin/workspaces/operations/market/CG/relay-shipments/HTTP-EXP-5D6F90EC/receive",
+      "ui": "operations-workspace.js:1571 (Attester la reception)",
+      "verdict": "CLICK_PASS",
+      "http": 201,
+      "capture": "32-relay_attest.png"
+    },
+    {
+      "key": "relay:collect",
+      "role": "agent_relais",
+      "route": "POST /api/admin/workspaces/operations/market/CG/parcels/:ref/collect",
+      "ui": "operations-workspace.js:1356 (Remis au client)",
+      "verdict": "CLICK_PASS",
+      "http": 200,
+      "capture": "33-relay_collect.png"
+    },
+    {
+      "key": "local:ship",
+      "role": "agent_hub",
+      "route": "POST /api/admin/workspaces/operations/market/CG/parcels/:ref/ship",
+      "ui": "operations-workspace.js:1322 (Hub · Expédier)",
+      "verdict": "CLICK_PASS",
+      "http": 200,
+      "capture": "34-local_ship.png"
+    },
+    {
+      "key": "local:receive",
+      "role": "agent_relais",
+      "route": "POST /api/admin/workspaces/operations/market/CG/parcels/:ref/receive",
+      "ui": "operations-workspace.js:1346 (Relais · Réceptionner)",
+      "verdict": "CLICK_PASS",
+      "http": 200,
+      "capture": "35-local_receive.png"
+    },
+    {
+      "key": "local:collect",
+      "role": "agent_relais",
+      "route": "POST /api/admin/workspaces/operations/market/CG/parcels/:ref/collect",
+      "ui": "operations-workspace.js:1356 (Relais · Distribuer)",
+      "verdict": "CLICK_PASS",
+      "http": 200,
+      "capture": "36-local_collect.png"
+    }
+  ]
+}
