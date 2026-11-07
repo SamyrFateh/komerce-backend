@@ -30,10 +30,26 @@ const WSC = '/api/admin/workspaces/shipping-customs/market/KM';
 const JP = 'public/dashboards/canonical/js/international-journey-panel.js';
 const JC = 'public/dashboards/canonical/js/shipping-customs-workspace.js';
 
-async function run({ env = process.env, db, run8 } = {}) {
+// Arret volontaire apres une action (preparation d'etat pour la repetition Chromium) : HTTP_RUNNER_STOP_AFTER=<cle d'action>.
+function finalizeReport(report) {
+  report.finished_at = new Date().toISOString();
+  report.counts = report.actions.reduce((m, a) => { m[a.verdict] = (m[a.verdict] || 0) + 1; return m; }, {});
+  report.verdict = report.actions.some((a) => a.verdict === 'FAIL') ? 'PHYSICAL_CHAIN_FAIL' : (report.actions.some((a) => a.verdict === 'BLOCKED') ? 'PHYSICAL_CHAIN_BLOCKED_STEPS' : 'PHYSICAL_CHAIN_PASS');
+  return report;
+}
+async function run(args = {}) {
+  const holder = {};
+  try { return await runInner(args, holder); } catch (e) {
+    if (e && e.stopRun && holder.report) { holder.report.stopped_after = e.stopRun; return finalizeReport(holder.report); }
+    throw e;
+  }
+}
+
+async function runInner({ env = process.env, db, run8 } = {}, holder = {}) {
   const { base, local } = assertTarget(env);
   if (!/^[A-F0-9]{8}$/.test(run8 || '')) throw new Error('RUN8_REQUIRED');
   const report = { schema: 'hub-v1-http-physical/1', run8, base: local ? 'LOCAL_REHEARSAL' : 'OFFICIAL_STAGING', started_at: new Date().toISOString(), actions: [] };
+  holder.report = report;
   const actors = {};
   for (const [label, prefix] of Object.entries(ROLE_ENV)) {
     if (label === 'transitaire' && !env[prefix + 'EMAIL']) { report.actions.push({ key: 'login:transitaire', actor: label, verdict: 'INFO', note: 'aucun compte E2E transitaire : les etapes transitaire sont jouees par admin (role autorise par la machine a etats), a signaler' }); continue; }
@@ -46,7 +62,17 @@ async function run({ env = process.env, db, run8 } = {}) {
   const orderOf = (s) => orders.find((o) => o.reference.endsWith(s));
 
   // rec : attendu vs observe ; `ui` = fichier:ligne du front qui appelle cette route.
-  const rec = async (key, actorLabel, method, route, body, expect, ui, after) => {
+  // Forme : <cle>[*][#n] (prefixe si '*', n-ieme occurrence, 1 par defaut).
+  const stopSpec = String(env.HTTP_RUNNER_STOP_AFTER || '').match(/^(.*?)(\*)?(?:#(\d+))?$/);
+  let stopSeen = 0;
+  const rec = async (...a) => {
+    const r = await rec0(...a);
+    if (stopSpec && stopSpec[1] && (stopSpec[2] ? a[0].startsWith(stopSpec[1]) : a[0] === stopSpec[1]) && ++stopSeen >= Number(stopSpec[3] || 1)) {
+      throw Object.assign(new Error('STOP_RUN'), { stopRun: a[0] });
+    }
+    return r;
+  };
+  const rec0 = async (key, actorLabel, method, route, body, expect, ui, after) => {
     const row = { key, actor: actorLabel, route: `${method} ${route.replace(/[0-9a-f]{8}-[0-9a-f-]{27}/gi, ':id')}`, ui, expected_http: expect.http, verdict: 'FAIL' };
     report.actions.push(row);
     const actor = actors[actorLabel];
