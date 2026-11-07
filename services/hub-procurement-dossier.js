@@ -766,7 +766,7 @@ async function getDossier({ marketId, supplierId = null, viewer = null, now = ne
 
   // Expéditions encore ouvertes (hub_ready) du marché : cibles de rattachement proposées au Hub, sans ressaisie.
   const { rows: shipmentRows } = await q.query(
-    `SELECT s.reference, s.forwarder_name, s.transport_mode,
+    `SELECT s.reference, s.forwarder_name, s.transport_mode, s.hub_draft,
             (SELECT COUNT(*)::int FROM international_shipment_hub_units h WHERE h.shipment_id = s.id) AS box_count
        FROM international_shipments s WHERE s.market_id = $1 AND s.stage = 'hub_ready'
       ORDER BY s.created_at DESC LIMIT 50`, [marketId]);
