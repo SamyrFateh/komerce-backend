@@ -44,7 +44,10 @@ function el(tag) {
   };
   return node;
 }
-const doc = { createElement: el };
+const doc = { createElement: el,
+  addEventListener: jest.fn(),
+  removeEventListener: jest.fn(),
+};
 const load = () => {
   jest.resetModules();
   delete global.KomerceCanonicalHubWorkstation;
