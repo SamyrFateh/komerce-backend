@@ -55,7 +55,7 @@ describe('Hub central : tous les marchés, lecture seule', () => {
     payload.boxes=[{unit_id:'box1',shipment_ref:'SHIP1',contents:[{order_id:'a'}]}];
     const [row]=summarizeMarket({id:'km',code:'KM',name:'Comores'},payload);
     expect(row.reception).toBe('2 / 3 reçu(s)');
-    expect(row.remaining).toBe('1 non reçue(s)');
+    expect(row.remaining).toBe('1 à recevoir');
     expect(row.remaining_detail).toContain('1 à contrôler');
     expect(row.departure).toBe('Expédition préparée · remise non attestée');
     expect(row.departure).not.toMatch(/livré|remis/i);
@@ -172,7 +172,7 @@ describe('Tableau Hub : phase prouvée et tâches verrouillées', () => {
     expect(r.current_phase).toBe('Réception Hub');
     expect(r.current_key).toBe('reception');
     expect(r.stage_states.reception).toBe('critical');
-    expect(r.remaining).toContain('à contrôler');
+    expect(r.remaining_detail).toContain('à contrôler');
   });
 
   test('aucun identifiant fournisseur, produit ou prix exposé dans le tableau', () => {
