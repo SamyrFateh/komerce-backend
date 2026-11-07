@@ -11,8 +11,10 @@
  * @db-read       none
  * @db-write      none
  * @db-write-via:market-delivery-proof-service market_delivery_attestations, market_delegation_audit
+ * @db-write-via:market-transport-sale-rate-command market_transport_sale_rates, market_delegation_audit
  * @db-write-via:market-provisioning-service markets, market_operating_assignments, assignment_capability_ceiling, assignment_memberships, membership_capabilities, market_cash_control_policies, market_payment_providers, relais
  * @db-read-via:market-control-plane markets, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, market_payment_providers, market_cash_control_policies, relais, market_delivery_attestations, orders
+ * @db-read-via:market-transport-sale-rate-command market_transport_sale_rates, markets
  * @db-txn        explicit for mutation routes
  * @doctrine      control_plane_orchestrates_owned_writers, central_by_role_declared, no_second_authorization_engine
  * @impact-areas  market-delegation, market, authorization
