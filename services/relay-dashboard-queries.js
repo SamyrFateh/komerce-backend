@@ -72,7 +72,7 @@ function relayIncidentCountSql(scope) {
 }
 
 /** Files de connaissance : toutes les commandes du relais, pas uniquement les colis expédiés. */
-async function getRelayOperationalIncidents(user, { authorizedMarkets = null, limit = 40 } = {}) {
+async function getRelayOperationalIncidents(user, { authorizedMarkets = null } = {}) {
   const params = [];
   let scope = '';
   if (user.role === 'agent_relais') {
@@ -82,7 +82,6 @@ async function getRelayOperationalIncidents(user, { authorizedMarkets = null, li
     params.push(authorizedMarkets ? Array.from(authorizedMarkets) : []);
     scope = 'AND o.market_id = ANY($1::uuid[])';
   }
-  params.push(Math.max(1, Math.min(40, Number(limit) || 40)));
   const { rows } = await db.query(`
     SELECT i.id, o.id AS order_id, o.reference AS order_reference,
            i.incident_type, i.severity, i.client_impact, i.title,
@@ -100,7 +99,7 @@ async function getRelayOperationalIncidents(user, { authorizedMarkets = null, li
        ${scope}
      ORDER BY CASE i.severity WHEN 'critical' THEN 0 WHEN 'high' THEN 1 ELSE 2 END,
               i.created_at DESC
-     LIMIT ${params.length}
+     LIMIT 40
   `, params);
   return { incidents: rows };
 }
