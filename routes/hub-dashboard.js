@@ -648,16 +648,37 @@ function validateCommentBody(req, res, next) {
 
 router.post('/orders/:id/comment', ...hubSupervise, validateCommentBody, resolveOrderMarket, requireHubSupervise, async (req, res, next) => {
   try {
-    const { content } = req.body;
+    const { content, hub_stage_key: stageKey } = req.body;
     const order = req.order;
-
+    // Les commentaires Hub d'étape sont internes et append-only. Ne pas faire
+    // dériver un commentaire vers une preuve physique ou une décision financière.
+    if (stageKey !== undefined && stageKey !== null) {
+      if (!['admin', 'agent_hub'].includes(req.user.role)) {
+        return res.status(403).json({ error: 'Écriture réservée aux opérateurs Hub', code: 'HUB_STAGE_NOTE_FORBIDDEN' });
+      }
+      const validStages = ['po', 'supplier', 'reception', 'cartons', 'departure', 'remaining'];
+      if (!validStages.includes(stageKey)) {
+        return res.status(400).json({ error: 'Étape Hub inconnue', code: 'HUB_STAGE_INVALID' });
+      }
+      const noteText = typeof content === 'string' ? content.trim() : '';
+      if (noteText.length < 3 || noteText.length > 1500) {
+        return res.status(400).json({ error: 'Commentaire requis (3 à 1 500 caractères)', code: 'HUB_STAGE_NOTE_LENGTH' });
+      }
+      const { rows: [comment] } = await db.query(`
+        INSERT INTO order_comments (order_id, author_id, author_name, author_role, text, hub_stage_key)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        RETURNING id, order_id, author_name, author_role, text, created_at, hub_stage_key
+      `, [order.id, req.user.id, req.user.full_name || req.user.email || 'Équipe Hub', req.user.role, noteText, stageKey]);
+      res.set('Cache-Control', 'private, no-store');
+      return res.status(201).json({ message: 'Commentaire de suivi ajouté (non modifiable)', comment });
+    }
+    // Le contrat historique des commentaires sans étape reste inchangé.
     const { rows: [comment] } = await db.query(`
       INSERT INTO order_comments (order_id, author_id, author_name, text)
       VALUES ($1, $2, 'Hub', $3)
       RETURNING *
-    `, [order.id, req.user.id, req.body.content]);
-
-    res.json({ message: 'Commentaire ajouté', comment });
+    `, [order.id, req.user.id, content]);
+    return res.json({ message: 'Commentaire ajouté', comment });
   } catch(e) { next(e); }
 });
 
