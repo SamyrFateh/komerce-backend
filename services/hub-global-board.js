@@ -181,7 +181,7 @@ function summarizeMarket(market, payload) {
       departure: handed.length ? 'Remise attestée · ' + handedQty + '/' + ordered :
         linkedShipments.length ? 'Expédition préparée · remise non attestée' :
           readyBoxes.length ? 'Prêt à rattacher' : 'Pas de départ attesté',
-      remaining: anomalies ? anomalies + ' à contrôler' : notReceived ? notReceived + ' à recevoir' :
+      remaining: notReceived ? notReceived + ' à recevoir' : anomalies ? anomalies + ' à contrôler' :
         fullyCollected ? 'Aucun reliquat · remise attestée' : 'Remise client à confirmer',
       remaining_detail: [anomalies && anomalies + ' à contrôler', toSource && toSource + ' à sourcer',
         openNeeds && openNeeds + ' à acheter', mixedDetail].filter(Boolean).join(' · '),
