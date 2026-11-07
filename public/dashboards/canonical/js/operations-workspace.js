@@ -631,6 +631,7 @@
         if (writing) return; // une mutation en cours ne doit pas être dissimulée
         host.hidden = true;
         host.replaceChildren();
+        context.close?.();
       });
       heading.appendChild(close);
       host.appendChild(heading);
@@ -867,6 +868,7 @@
       user:options.user,
       fetch:options.fetch,
       confirm:typeof options.confirm === 'function' ? options.confirm : () => false,
+      close:typeof options.onClose === 'function' ? options.onClose : null,
       reload:typeof options.refresh === 'function' ? options.refresh : async () => {},
     }, order);
     if (host.hidden) {
