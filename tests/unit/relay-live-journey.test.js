@@ -30,25 +30,33 @@ const crumbs = h => (h.match(/<nav class="kir-breadcrumb"[^>]*>([\s\S]*?)<\/nav>
 const back = h => { const m = h.match(/<a href="([^"]+)" data-cockpit-nav class="kir-back">([^<]+)<\/a>/); return m ? { href:m[1], label:m[2] } : null; };
 const activeTab = h => (h.match(/is-active[^>]*>([^<]+)</) || [])[1];
 
-test('Suivi : flux, chiffres cliquables vers la liste exacte, attente +72 h en attention', () => {
-  const h = html('', OVERVIEW);
-  expect(h).toContain('OPÉRATIONS · RELAIS');
-  expect(h).toContain('2 colis en attente de retrait depuis plus de 72 h');
+test('Suivi : un seul poste de travail, accès directs et détails de supervision', () => {
+  const h = html('', { ...OVERVIEW, queue:{ orders:[ORDER()] } });
+  expect(h).toContain('KOMERCE · EXPLOITATION');
+  expect(h).toContain('Suivi des Relais');
+  expect(h).toContain('data-relay-shortcut="shipments"');
+  expect(h).toContain('href="/admin/relais-live?view=execute&amp;focus=shipments"');
+  expect(h).toContain('data-relay-shortcut="cash"');
+  expect(h).toContain('data-relay-shortcut="collect"');
+  expect(h).toContain('data-relay-supervision');
+  expect(h).toContain('Indicateurs et suivi détaillé');
   expect(h).toContain('href="/admin/relais-live?view=orders&list=in_transit"');
   expect(h).toContain('href="/admin/relais-live?view=orders&list=available"');
-  expect(h).toContain('dont 2 depuis +72 h');
+  expect(h).toContain('2 depuis +72 h');
   expect(h.replace(/\s/g, ' ')).toMatch(/45 000 KMF/);
-  expect(h).toMatch(/<strong>14<\/strong> retirés sur 7 jours/);
   expect(h).toContain('KMC-0101');
   expect(activeTab(h)).toBe('Suivi');
   expect(h).not.toContain('kir-back');
 });
 
-test('Suivi calme : aucune alerte inventée', () => {
-  const h = html('', { dash:{ kpi:{} }, first:{ orders:[] } });
-  expect(h).toContain('Aucun colis à traiter');
+test('Suivi calme : actions physiques accessibles même si la file commande est vide', () => {
+  const h = html('', { dash:{ kpi:{} }, first:{ orders:[] }, queue:{orders:[]} });
+  expect(h).toContain('Aucun dossier à traiter');
+  expect(h).toContain('Aucune commande en cours dans cette file');
+  expect(h).toContain('Vérifier les arrivages');
+  expect(h).toContain('href="/admin/relais-live?view=execute&focus=shipments"');
   expect(h).not.toContain('is-attention');
-  expect(h).toContain('Aucun colis disponible au retrait.');
+  expect(h).toContain('Aucun retrait prioritaire.');
 });
 
 test('liste : Relais › Suivi › liste, retour au suivi, pagination par décalage', () => {
@@ -98,14 +106,16 @@ test('LIVE-02/07 : l’écran lit les endpoints en projection Live et affiche l�
   expect((src.match(/projection=live|projection:'live'/g) || []).length).toBeGreaterThanOrEqual(3);
 });
 
-test('Suivi : chaîne de processus En transit → Disponibles → Retirés avec les colis réels par étape', () => {
-  const h = html('', { ...OVERVIEW, transit:{ orders:[ORDER({ id:'r-9', reference:'KMC-0109', status:'in_transit', urgence:'normale', incidents_ouverts:1 })] } });
+test('Suivi : étapes traçables sans extrapoler les réceptions physiques', () => {
+  const row=ORDER({ id:'r-9', reference:'KMC-0109', status:'in_transit', urgence:'normale', incidents_ouverts:1 });
+  const h=html('', { ...OVERVIEW, queue:{orders:[row]}, transit:{orders:[row]} });
   expect((h.match(/lk-pb-stage is-/g) || []).length).toBe(3);
   expect(h).toContain('lk-pb lk-pb-n3');
-  expect(h).toContain('href="/admin/relais-live?view=order&order=r-9&from=in_transit"');
-  expect(h).toContain('lk-pb-card is-blocked');
-  expect(h).toContain('lk-pb-card is-attention');
+  expect(h).toContain('data-relay-workboard-order="r-9"');
+  expect(h).toContain('data-relay-stage="transit"');
+  expect(h).toContain('data-relay-stage-signal="critical"');
+  expect(h).toContain('href="/admin/relais-live?sel=r-9"');
   expect(h).toContain('href="/admin/relais-live?view=orders&list=collected"');
-  expect(h).toContain('2 colis retirés aujourd’hui');
-  expect(h).toContain('Voir les 9 colis →');
+  expect(h).not.toContain('data-workspace-action="receive"');
 });
+

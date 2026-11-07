@@ -95,6 +95,22 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
   test.describe(`Relais live · Exécution — ${name}`, () => {
     test.use({ viewport });
 
+    test('atelier : accès directs vers les 4 files physiques, sans compteurs Hub ni action fictive', async ({page})=>{
+      await mount(page);
+      const dock=page.locator('.kmc-relay-execution-jumpbar');
+      await expect(dock.locator('[data-relay-execution-jump]')).toHaveCount(4);
+      for(const key of ['shipments','cash','receive','collect']){
+        const jump=dock.locator('[data-relay-execution-jump="'+key+'"]');
+        await expect(jump).toHaveAttribute('href','#relay-execution-'+key);
+        await expect(page.locator('#relay-execution-'+key)).toHaveCount(1);
+      }
+      await expect(dock.locator('[data-relay-execution-jump="shipments"]')).toContainText('1');
+      await expect(dock.locator('[data-relay-execution-jump="receive"]')).toContainText('1');
+      await expect(page.locator('[data-workspace-mode="relay-execution"] .kmc-workspace-metrics')).not.toContainText('Hub · Expédier');
+      await dock.locator('[data-relay-execution-jump="collect"]').click();
+      await expect(page).toHaveURL(/#relay-execution-collect/);
+    });
+
     test('actions Relais uniquement : aucune action Hub', async ({ page }) => {
       await mount(page);
       await expect(page.locator('[data-workspace-action="confirm-cash"]')).toHaveCount(1);
