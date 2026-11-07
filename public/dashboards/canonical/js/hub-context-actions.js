@@ -90,6 +90,7 @@
       }
     });
     menu.appendChild(panel);
+    menu.dispatchEvent(new doc.defaultView.Event('hub:menu-state'));
     entries[fields[0]?.name]?.focus?.();
   }
 
@@ -222,6 +223,7 @@
       back.type='button';
       back.addEventListener('click',()=>{menu.hidden=true;menu.classList.remove('is-editing','is-purchasing-flow');});
       menu.appendChild(back);
+      menu.dispatchEvent(new doc.defaultView.Event('hub:menu-state'));
     });
     return true;
   }
