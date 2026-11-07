@@ -105,6 +105,7 @@ function defaultDeps() {
     hubAuth: require('../../services/hub-authorization-service'),
     delegation: require('../../services/market-delegation-service'),
     team: require('../../services/market-delegation-team-service'),
+    projector: require('../../services/market-scope-projector'),
   };
 }
 
@@ -158,20 +159,26 @@ async function ensureRelayAgentMembership(client, deps, { userId, marketCode, ac
   return { market: marketCode, capabilities: RELAY_AGENT_CAPABILITIES };
 }
 
-// Responsable pays E2E sur un marche supplementaire : memberships manager (meme jeu que KM) via grantOperatorScope, puis
-// responsable d'exploitation par le writer canonique de l'equipe (inviteTeamMember, utilisateur existant). Idempotent.
+// Responsable pays E2E sur un marche supplementaire : membership manager (meme jeu que KM = tout le plafond DELEGABLE) par le writer
+// canonique addMembership, avec, pour les capacites a montant, la limite du PLAFOND du marche (jamais au-dela : le plafond est la
+// borne posee par le central ; ensureOperatorMembership ne passe aucune limite et echoue des que le plafond est fini), puis
+// responsable d'exploitation par le writer d'equipe (inviteTeamMember, utilisateur existant). Idempotent.
 async function ensureMarketOperatorLead(client, deps, { userId, email, marketCode, actorId }) {
-  const g = await deps.operators.grantOperatorScope(client, { userId, marketCode, scopeRole: 'manager', grantedBy: actorId });
-  if (!['granted', 'replaced', 'unchanged'].includes(g.status)) throw new ProvisionRefusal('E2E_PROVISION_SCOPE_FAILED', `market_operator:${marketCode}:${g.status}`);
   const assignment = await deps.delegation.resolveActiveAssignmentByMarketCode(client, marketCode);
+  const assignmentId = assignment.assignment_id;
+  const capabilities = await deps.operators.targetCapabilitiesForScope(client, { assignmentId, scope: 'manager' });
+  const { rows: limited } = await client.query(
+    `SELECT capability, limit_amount FROM assignment_capability_ceiling WHERE assignment_id = $1::uuid AND revoked_at IS NULL AND limit_amount IS NOT NULL`, [assignmentId]);
+  const capabilityLimits = Object.fromEntries(limited.filter((r) => capabilities.includes(r.capability)).map((r) => [r.capability, Number(r.limit_amount)]));
+  await deps.delegation.addMembership(client, { assignmentId, userId, actorUserId: actorId, capabilities, capabilityLimits, actorIsCentral: true });
+  await deps.projector.projectAssignment(client, assignmentId);
   const { rows: [m] } = await client.query(
-    `SELECT is_operating_lead FROM assignment_memberships WHERE assignment_id = $1::uuid AND user_id = $2::uuid AND status = 'ACTIVE'`, [assignment.assignment_id, userId]);
+    `SELECT is_operating_lead FROM assignment_memberships WHERE assignment_id = $1::uuid AND user_id = $2::uuid AND status = 'ACTIVE'`, [assignmentId, userId]);
   let lead = m && m.is_operating_lead === true ? 'unchanged' : 'assigned';
   if (lead === 'assigned') {
-    const capabilities = await deps.operators.targetCapabilitiesForScope(client, { assignmentId: assignment.assignment_id, scope: 'manager' });
-    await deps.team.inviteTeamMember(client, { assignmentId: assignment.assignment_id, actorUserId: actorId, email, channel: 'EMAIL', grantsOperatingLead: true, actorIsCentral: true, capabilities });
+    await deps.team.inviteTeamMember(client, { assignmentId, actorUserId: actorId, email, channel: 'EMAIL', grantsOperatingLead: true, actorIsCentral: true, capabilities, capabilityLimits });
   }
-  return { market: marketCode, scope: g.status, operating_lead: lead };
+  return { market: marketCode, capabilities: capabilities.length, amount_limits: capabilityLimits, operating_lead: lead };
 }
 
 async function ensureRelays(client, deps, actorId) {

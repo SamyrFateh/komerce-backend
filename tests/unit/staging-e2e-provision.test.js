@@ -31,6 +31,7 @@ function fakeWorld() {
         const u = w.users.get(String(params[0]).toLowerCase()); return { rows: u && u.role === 'admin' ? [{ id: u.id }] : [] };
       }
       if (/FROM markets/.test(sql)) return { rows: [{ id: `m-${params[0]}`, is_active: params[0] !== 'DJ' }] };
+      if (/FROM assignment_capability_ceiling/.test(sql)) return { rows: [{ capability: 'finance.act', limit_amount: '1000000.000000' }, { capability: 'other.cap', limit_amount: '5' }] };
       if (/is_operating_lead FROM assignment_memberships/.test(sql)) return { rows: w.leads.has(`${params[0]}:${params[1]}`) ? [{ is_operating_lead: true }] : [] };
       if (/e2e_test_accounts/.test(sql)) { const had = w.markers.has(params[0]); w.markers.add(params[0]); return { rowCount: had ? 0 : 1 }; }
       if (/sourcing_global_access_grants/.test(sql)) { const had = w.sourcing.has(params[0]); w.sourcing.add(params[0]); return { rowCount: had ? 0 : 1 }; }
@@ -45,7 +46,8 @@ function fakeWorld() {
       setUserPasswordHash: jest.fn(async (_c, a) => { for (const u of w.users.values()) if (u.id === a.userId) u.password_hash = a.passwordHash; w.calls.push('setUserPasswordHash'); }),
       assignAgentRelais: jest.fn(async () => ({ status: 'assigned' })),
     },
-    operators: { grantOperatorScope: jest.fn(async () => ({ status: 'granted' })), targetCapabilitiesForScope: jest.fn(async () => ['team.grant', 'logistics.read']) },
+    operators: { grantOperatorScope: jest.fn(async () => ({ status: 'granted' })), targetCapabilitiesForScope: jest.fn(async () => ['team.grant', 'finance.act']) },
+    projector: { projectAssignment: jest.fn(async () => {}) },
     team: { inviteTeamMember: jest.fn(async (_c, a) => { w.calls.push(`lead:${a.assignmentId}:${a.grantsOperatingLead}:${a.actorIsCentral}`); w.leads.add(`${a.assignmentId}:u-?`); return { kind: 'membership' }; }) },
     relais: {
       listRelais: jest.fn(async (_c, { marketId }) => w.relais.filter((r) => r.market_id === marketId)),
@@ -204,9 +206,10 @@ describe('marches de recette supplementaires (CM, CG)', () => {
     const r = await run({ db, mode: 'execute', env, deps, guard });
     const mo = r.profiles.find((p) => p.profile === 'market_operator');
     expect(mo.extra_markets).toEqual([
-      { market: 'CM', scope: 'granted', operating_lead: 'assigned' },
-      { market: 'CG', scope: 'granted', operating_lead: 'assigned' },
+      { market: 'CM', capabilities: 2, amount_limits: { 'finance.act': 1000000 }, operating_lead: 'assigned' },
+      { market: 'CG', capabilities: 2, amount_limits: { 'finance.act': 1000000 }, operating_lead: 'assigned' },
     ]);
+    expect(deps.projector.projectAssignment).toHaveBeenCalledTimes(2);
     expect(w.calls.filter((c) => c.startsWith('lead:'))).toEqual(['lead:a-CM:true:true', 'lead:a-CG:true:true']);
     const relay = r.profiles.find((p) => p.profile === 'agent_relais');
     expect(relay.extra_relay_memberships.map((m) => m.market)).toEqual(['CM', 'CG']);
