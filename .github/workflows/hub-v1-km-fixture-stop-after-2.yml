@@ -44,6 +44,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: main
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -52,8 +53,11 @@ jobs:
       - name: Pin source commit and choose one unique RUN8
         shell: bash
         run: |
-          echo "E2E_EXPECTED_DEPLOY_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
           echo "HUB_V1_CERTIFICATION_RUN=$(node -p 'require("crypto").randomBytes(4).toString("hex").toUpperCase()')" >> "$GITHUB_ENV"
+      - name: Pin deploiement (staging == HEAD, ou ancetre avec seulement des chemins non deployes)
+        env:
+          STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+        run: node scripts/recette/resolve-staging-deploy-pin.js
       - name: Refuse missing remote DB secret
         run: test -n "$DATABASE_URL"
       - name: Mandatory pure guard tests
