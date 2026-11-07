@@ -68,6 +68,116 @@
       doc.removeEventListener('keydown', escape);
     });
   }
+  // Journal de suivi d'une étape : lecture de la vérité order_comments,
+  // append-only, et jamais une preuve de transition métier.
+  function mountStageJournal(menu, {doc, fetch:fetchFn, user, order, stageKey, isCurrent}) {
+    if (!stageKey || !['admin','agent_hub','market_operator'].includes(user?.role)) return;
+    const canWrite = ['admin','agent_hub'].includes(user?.role);
+    const section = make(doc,'section','kmc-hub-stage-journal');
+    section.setAttribute('data-hub-stage-journal',stageKey);
+    const heading = make(doc,'button','kmc-hub-journal-toggle','Journal de suivi · Voir les notes');
+    heading.type='button';
+    heading.setAttribute('aria-expanded','false');
+    heading.setAttribute('data-hub-stage-journal-toggle','');
+    section.appendChild(heading);
+    const content = make(doc,'div','kmc-hub-journal-content');
+    content.hidden=true;
+    section.appendChild(content);
+    menu.appendChild(section);
+
+    async function load() {
+      content.replaceChildren();
+      content.appendChild(make(doc,'p','kmc-hub-journal-hint','Chargement de la traçabilité…'));
+      try {
+        const detail=await requestJSON(fetchFn,'/api/hub-dash/orders/'+encodeURIComponent(order.id));
+        if (!isCurrent()) return;
+        const all=Array.isArray(detail.comments)?detail.comments:[];
+        const entries=all.filter(note=>note.hub_stage_key===stageKey).slice(0,50);
+        content.replaceChildren();
+        content.appendChild(make(doc,'p','kmc-hub-journal-hint',
+          entries.length ? entries.length+' note(s) enregistrée(s) · non modifiables'
+            : 'Aucun commentaire sur cette étape pour le moment.'));
+        if (entries.length) {
+          const list=make(doc,'ol','kmc-hub-journal-list');
+          list.setAttribute('aria-label','Historique immuable de cette étape');
+          entries.forEach(note=>{
+            const item=make(doc,'li','kmc-hub-journal-item');
+            const stamp=note.created_at ? new Date(note.created_at).toLocaleString('fr-FR',{
+              day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'
+            }) : 'Date indisponible';
+            item.appendChild(make(doc,'span','kmc-hub-journal-meta',
+              (note.author_name || 'Équipe Hub')+' · '+stamp));
+            item.appendChild(make(doc,'p','kmc-hub-journal-note',note.text||''));
+            item.appendChild(make(doc,'small','kmc-hub-journal-seal','✓ Publiée · non modifiable'));
+            list.appendChild(item);
+          });
+          content.appendChild(list);
+        }
+        if (!canWrite) {
+          content.appendChild(make(doc,'p','kmc-hub-journal-hint',
+            'Consultation seulement : publication réservée aux opérateurs Hub.'));
+          return;
+        }
+        const form=make(doc,'form','kmc-hub-journal-form');
+        form.setAttribute('data-hub-journal-form','');
+        const lbl=make(doc,'label','kmc-hub-journal-label','Ajouter une note de suivi');
+        const input=make(doc,'textarea','kmc-hub-journal-textarea');
+        input.setAttribute('aria-label','Commentaire de suivi immuable');
+        input.setAttribute('data-hub-journal-input','');
+        input.rows=3;
+        input.minLength=3;input.maxLength=1500;input.required=true;
+        input.placeholder='Ex. : Fournisseur relancé, réponse attendue lundi…';
+        lbl.appendChild(input);form.appendChild(lbl);
+        form.appendChild(make(doc,'p','kmc-hub-journal-help',
+          'Après publication, cette note ne pourra ni être modifiée ni supprimée. '+
+          'Elle ne valide aucune étape physique ou financière.'));
+        const footer=make(doc,'div','kmc-hub-journal-actions');
+        const submit=make(doc,'button','kmc-hub-journal-publish','Publier la note');
+        submit.type='submit';
+        submit.setAttribute('data-hub-journal-publish','');
+        footer.appendChild(submit);
+        const status=make(doc,'span','kmc-hub-journal-feedback');
+        status.setAttribute('role','status');status.setAttribute('aria-live','polite');
+        footer.appendChild(status);form.appendChild(footer);
+        form.addEventListener('submit',async event=>{
+          event.preventDefault();
+          const message=input.value.trim();
+          if(message.length<3||message.length>1500){
+            status.textContent='Saisir entre 3 et 1 500 caractères.';return;
+          }
+          submit.disabled=true;status.textContent='Publication…';
+          try {
+            const response=await fetchFn('/api/hub-dash/orders/'+encodeURIComponent(order.id)+'/comment',{
+              method:'POST',credentials:'include',
+              headers:{Accept:'application/json','Content-Type':'application/json'},
+              body:JSON.stringify({content:message,hub_stage_key:stageKey}),
+            });
+            const result=await response.json().catch(()=>({}));
+            if(!response.ok) throw new Error(result.error||'Publication refusée');
+            if(!isCurrent())return;
+            await load();
+          }catch(err){
+            if(!isCurrent())return;
+            status.textContent=err.message||'Publication impossible';
+            submit.disabled=false;
+          }
+        });
+        content.appendChild(form);
+      }catch(err){
+        if(!isCurrent())return;
+        content.replaceChildren();
+        content.appendChild(make(doc,'p','kmc-hub-journal-error',
+          'Journal indisponible : '+(err.message||'accès impossible')));
+      }
+    }
+    heading.addEventListener('click',()=>{
+      const open=content.hidden;
+      content.hidden=!open;
+      heading.setAttribute('aria-expanded',String(open));
+      heading.textContent=open?'Journal de suivi · Masquer les notes':'Journal de suivi · Voir les notes';
+      if(open) void load();
+    });
+  }
   const smallRef = value => safe(value).slice(0, 8);
   const getPO = location => new URLSearchParams(safe(location && location.search)).get('po') || '';
 
@@ -181,6 +291,8 @@
             ? 'Consultation seule : cette étape ne peut pas être modifiée avec ce profil.'
             : 'Les actions de cette étape ne sont pas chargées. Actualiser la page.'));
       }
+      mountStageJournal(menu, {doc, fetch:fetchFn, user, order, stageKey,
+        isCurrent:()=>!menu.hidden && menu.getAttribute('data-hub-request')===requestId});
       const box = event && event.currentTarget && event.currentTarget.getBoundingClientRect?.();
       const width = doc.defaultView?.innerWidth || 1440;
       const height = doc.defaultView?.innerHeight || 900;
@@ -214,6 +326,9 @@
         const idBox = make(doc, 'div', 'kmc-hub-board-identity');
         idBox.appendChild(make(doc, 'strong', '', order.reference));
         idBox.appendChild(make(doc, 'small', '', order.market + ' · ' + (order.market_name || order.market)));
+        if (order.current_key && !['locked','complete'].includes(order.stage_states?.[order.current_key])) {
+          tr.classList.add('is-hub-active-order');
+        }
         if (order.current_phase) {
           const phase = make(doc, 'div', 'kmc-hub-phase-summary');
           phase.appendChild(make(doc, 'span', 'kmc-hub-phase-title',
@@ -244,9 +359,19 @@
           if (['muted','waiting','progress','warning','ready','complete','critical','locked'].includes(state)) {
             button.classList.add('is-stage-'+state);
           }
-          if (order.current_key === key && state !== 'locked') {
+          if (order.current_key === key && !['locked','complete'].includes(state)) {
             button.classList.add('is-stage-current');
             button.setAttribute('aria-current', 'step');
+            // Le texte porte le sens indépendamment du halo et de la couleur.
+            const focusLabel = state === 'critical' ? 'INCIDENT À TRAITER'
+              : state === 'warning' ? 'POINT À RÉSOUDRE'
+              : state === 'waiting' ? 'EN ATTENTE'
+              : state === 'ready' ? 'PRÊT À AGIR'
+              : state === 'progress' ? 'EN COURS'
+              : 'À TRAITER';
+            const focusSignal = make(doc, 'span', 'kmc-hub-stage-focus-label', focusLabel);
+            focusSignal.setAttribute('data-hub-focus-signal', state || 'unknown');
+            button.insertBefore(focusSignal, button.firstChild);
           }
           if (state === 'locked') {
             button.setAttribute('aria-label', order.reference + ' · ' + label + ' · Terminée, verrouillée · ' + (order[key] || '—'));
@@ -275,7 +400,7 @@
           // de l'étape. Aucune mutation ne part du simple clic.
           const nextText = safe(order.next_action);
           const isWaitingOnly = /^(attendr|attente|suivre|consulter|aucune)/i.test(nextText);
-          if (canOperate && order.current_key===key && state!=='locked' && !isWaitingOnly) {
+          if (canOperate && order.current_key===key && !['locked','complete'].includes(state) && !isWaitingOnly) {
             const launch = key==='po' && order.po==='Sourcing requis';
             const command = make(doc,'button','kmc-hub-kanban-action',launch
               ?'Créer la ligne d’achat':nextText || 'Traiter l’étape');

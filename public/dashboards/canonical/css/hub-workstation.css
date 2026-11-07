@@ -336,3 +336,218 @@
     grid-template-columns:1fr;
   }
 }
+
+/* Journal d'étape · une trace lisible, discrète et consultable même après clôture. */
+.kmc-hub-app .kmc-hub-board-menu .kmc-hub-stage-journal {
+  order: 2; border:1px solid #cbddea; background:linear-gradient(180deg,#f8fbfe,#fff);
+  border-radius:12px; min-width:0; overflow:hidden; margin:5px 0;
+}
+.kmc-hub-app .kmc-hub-board-menu-action.is-dismiss {order:5;}
+.kmc-hub-app .kmc-hub-journal-toggle {
+  display:block; width:100%; border:0; background:transparent;
+  padding:13px 15px; text-align:left; color:#174d70; font:inherit;
+  font-size:13px; font-weight:800; cursor:pointer;
+}
+.kmc-hub-app .kmc-hub-journal-toggle::after {
+  content:'▾'; float:right; margin-left:10px; color:#2779ad;
+}
+.kmc-hub-app .kmc-hub-journal-toggle[aria-expanded="true"]::after {content:'▴';}
+.kmc-hub-app .kmc-hub-journal-toggle:focus-visible {
+  outline:2px solid #0873b8;outline-offset:-3px;
+}
+.kmc-hub-app .kmc-hub-journal-content {
+  display:grid;gap:12px;padding:0 14px 15px;
+  border-top:1px solid #e1ebf2;
+}
+.kmc-hub-app .kmc-hub-journal-content[hidden] {display:none;}
+.kmc-hub-app .kmc-hub-journal-hint {
+  margin:12px 0 2px; color:#405c71; font-size:12px; line-height:1.45;
+}
+.kmc-hub-app .kmc-hub-journal-list {
+  list-style:none; margin:3px 0 0; padding:0 0 0 18px;
+  border-left:2px solid #a7c7d8; display:grid;gap:15px;
+}
+.kmc-hub-app .kmc-hub-journal-item {position:relative;margin:0;padding:0 0 0 5px;}
+.kmc-hub-app .kmc-hub-journal-item::before {
+  content:'';position:absolute;width:9px;height:9px;border-radius:50%;
+  border:2px solid white;background:#3e85af;
+  left:-24px;top:4px;box-shadow:0 0 0 1px #76a5c1;
+}
+.kmc-hub-app .kmc-hub-journal-meta {
+  font-size:11px;font-weight:760;color:#275570;line-height:1.5;
+}
+.kmc-hub-app .kmc-hub-journal-note {
+  margin:4px 0 5px;font-size:13px;line-height:1.55;
+  color:#243d50;white-space:pre-wrap;overflow-wrap:anywhere;
+}
+.kmc-hub-app .kmc-hub-journal-seal {
+  font-size:10px;color:#536b75;font-weight:650;
+}
+.kmc-hub-app .kmc-hub-journal-form {
+  border-top:1px solid #d9e7ee; padding-top:14px;
+  display:grid;gap:8px;
+}
+.kmc-hub-app .kmc-hub-journal-label {
+  display:grid;gap:8px;font-size:12px;color:#26465c;font-weight:800;
+}
+.kmc-hub-app .kmc-hub-journal-textarea {
+  box-sizing:border-box;width:100%;resize:vertical;
+  min-height:84px;max-height:220px;padding:11px 12px;
+  border:1.5px solid #aebfcf;border-radius:9px;background:#fff;
+  font:inherit;font-size:13px;line-height:1.5;color:#19364a;
+}
+.kmc-hub-app .kmc-hub-journal-textarea:focus {
+  outline:2px solid #53a4d1;outline-offset:1px;
+}
+.kmc-hub-app .kmc-hub-journal-help {
+  font-size:11px;line-height:1.5;color:#647581;margin:0;
+}
+.kmc-hub-app .kmc-hub-journal-actions {
+  display:flex;align-items:center;gap:11px;flex-wrap:wrap;
+}
+.kmc-hub-app .kmc-hub-journal-publish {
+  padding:10px 13px;background:#086b95;color:white;border:1px solid #086b95;
+  border-radius:8px;cursor:pointer;font-size:12px;font-weight:800;
+}
+.kmc-hub-app .kmc-hub-journal-publish:hover {background:#065778;}
+.kmc-hub-app .kmc-hub-journal-publish:disabled {opacity:.55;cursor:wait;}
+.kmc-hub-app .kmc-hub-journal-feedback {font-size:11px;color:#9a4d24;line-height:1.4;}
+.kmc-hub-app .kmc-hub-journal-error {font-size:12px;color:#9b3929;line-height:1.5;}
+
+
+/* Hub focus fort · une seule étape attirante par commande.
+   Contraste lisible sans couleur, halo non clignotant, aucune action simulée. */
+.kmc-hub-app .kmc-hub-global-table tr.is-hub-active-order > td:first-child {
+  background:linear-gradient(90deg,#e5f5ff 0,#f2faff 42%,transparent 100%);
+  box-shadow:inset 5px 0 #148aca;
+}
+.kmc-hub-app .kmc-hub-global-table tr.is-hub-active-order .kmc-hub-phase-summary {
+  border-left:3px solid #008dc8;
+  padding:5px 0 5px 10px;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current {
+  --kmc-stage-halo:rgba(0,151,240,.35);
+  --kmc-stage-light:rgba(63,201,255,.45);
+  position:relative;
+  isolation:isolate;
+  overflow:hidden;
+  min-height:82px;
+  padding:10px 11px 11px 16px;
+  border:2px solid #058bd8;
+  border-radius:10px;
+  background:linear-gradient(132deg,#063969 0%,#086ca7 54%,#075f90 100%);
+  color:#fff;
+  text-align:left;
+  box-shadow:0 0 0 3px var(--kmc-stage-halo),
+             0 0 17px 3px var(--kmc-stage-light),
+             inset 0 1px rgba(255,255,255,.6);
+  animation:kmc-hub-stage-breathe 3.6s ease-in-out infinite;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current::before {
+  content:"";
+  position:absolute;z-index:0;pointer-events:none;
+  left:0;top:8px;bottom:8px;width:5px;
+  background:#8ceaff;border-radius:0 5px 5px 0;
+  box-shadow:0 0 11px rgba(152,242,255,.8);
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current::after {
+  content:"";
+  position:absolute;z-index:0;pointer-events:none;
+  inset:0;
+  background:radial-gradient(circle at 90% 0%,rgba(255,255,255,.34),transparent 48%);
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current > * {
+  position:relative;z-index:1;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current:focus-visible {
+  outline:3px solid #ffe78c;outline-offset:3px;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current .kmc-hub-stage-primary {
+  font-size:13px;line-height:1.4;font-weight:850;
+  color:#fff;text-shadow:0 1px 2px rgba(0,33,61,.45);
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current .kmc-hub-stage-proof {
+  font-size:11px;font-weight:790;color:#e8faff;opacity:1;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-stage-focus-label {
+  display:inline-flex;align-items:center;gap:6px;
+  max-width:100%;align-self:start;width:fit-content;
+  padding:4px 9px;border-radius:999px;
+  border:1px solid rgba(255,255,255,.62);
+  background:rgba(255,255,255,.18);
+  color:#fff;font-size:10px;line-height:1.3;
+  font-weight:900;letter-spacing:.055em;
+  box-shadow:inset 0 1px 1px rgba(255,255,255,.2);
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-stage-focus-label::before {
+  content:"";display:inline-block;flex:none;width:7px;height:7px;
+  border-radius:50%;background:#b9f5ff;box-shadow:0 0 8px #c1f8ff;
+}
+/* Un avertissement en cours n'est pas un bleu neutre : priorité ambre très visible. */
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current.is-stage-warning {
+  --kmc-stage-halo:rgba(242,146,17,.38);
+  --kmc-stage-light:rgba(255,186,57,.34);
+  border-color:#e98b13;
+  background:linear-gradient(130deg,#754007 0%,#a25709 55%,#965007 100%);
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current.is-stage-warning::before {
+  background:#ffe2a2;box-shadow:0 0 12px #ffcc60;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current.is-stage-warning .kmc-hub-stage-focus-label::before {
+  background:#ffe7a0;box-shadow:0 0 8px #ffdc70;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current.is-stage-critical {
+  --kmc-stage-halo:rgba(213,63,57,.36);
+  --kmc-stage-light:rgba(255,93,82,.30);
+  border-color:#d94a40;
+  background:linear-gradient(130deg,#711f20 0%,#a42e2d 55%,#c54133 100%);
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current.is-stage-critical::before {
+  background:#ffb8a0;box-shadow:0 0 12px #ff9f88;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current.is-stage-ready {
+  --kmc-stage-halo:rgba(15,159,126,.33);
+  --kmc-stage-light:rgba(63,223,186,.29);
+  border-color:#0ca68e;
+  background:linear-gradient(130deg,#07584b 0%,#087d65 55%,#0b6957 100%);
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current.is-stage-waiting {
+  --kmc-stage-halo:rgba(97,130,169,.18);
+  --kmc-stage-light:rgba(110,151,193,.13);
+  border-color:#7895ad;
+  background:linear-gradient(135deg,#35485d,#536b82);
+  animation:none;
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-locked,
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-complete:not(.is-stage-current) {
+  box-shadow:none;
+  filter:saturate(.55);
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-kanban-stage-actions:has(> .is-stage-current) > .kmc-hub-kanban-action {
+  min-height:39px;
+  border-color:#72d8ff;background:linear-gradient(125deg,#005f98,#058ac5);
+  color:#fff;font-size:12px;font-weight:850;
+  box-shadow:0 3px 11px rgba(2,98,165,.3);
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-kanban-stage-actions:has(> .is-stage-current.is-stage-warning) > .kmc-hub-kanban-action {
+  border-color:#f5ca77;background:linear-gradient(125deg,#895000,#b06d12);
+  box-shadow:0 3px 11px rgba(154,92,12,.3);
+}
+.kmc-hub-app .kmc-hub-global-table .kmc-hub-kanban-stage-actions:has(> .is-stage-current.is-stage-critical) > .kmc-hub-kanban-action {
+  border-color:#ffb4a1;background:linear-gradient(125deg,#8e2829,#b53b35);
+}
+@keyframes kmc-hub-stage-breathe {
+  0%,100% {box-shadow:0 0 0 3px var(--kmc-stage-halo),0 0 17px 3px var(--kmc-stage-light),inset 0 1px rgba(255,255,255,.6);}
+  50% {box-shadow:0 0 0 4px var(--kmc-stage-halo),0 0 23px 5px var(--kmc-stage-light),inset 0 1px rgba(255,255,255,.6);}
+}
+@media (prefers-reduced-motion:reduce) {
+  .kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current {
+    animation:none;
+  }
+}
+@media print {
+  .kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell.is-stage-current {
+    animation:none;box-shadow:none;
+    -webkit-print-color-adjust:exact;print-color-adjust:exact;
+  }
+}
