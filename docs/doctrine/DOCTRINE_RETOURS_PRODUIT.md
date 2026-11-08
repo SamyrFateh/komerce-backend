@@ -1,13 +1,43 @@
 # Doctrine — Retours produit via le relais
 
-> **Version** : 0.2 — 2026-11-08
-> **Statut** : lot V1-1 (ouverture de demande par article remis) codé sur branche PR, sous réserve de certification. Reprise physique, décision financière et disposition produit non implémentées.
+> **Version** : 0.3 — 2026-11-08
+> **Statut** : V1-1 intégré sur main (demande, remarque, gel Catalogue). Lot V1-2 de reprise physique sur PR séparée, à certifier avant utilisation. Décision financière et disposition produit non implémentées.
 > **Feature propriétaire** : `orders` (owner de `disputes` — le retour est une **issue** d'un litige, pas un objet parallèle)
 > **Features impliquées** : `logistics` (mouvement physique par scans), `refunds` (décision financière), `local-stock` / `inventory` (remise en stock), `purchasing` (retour fournisseur éventuel)
 > **Doctrines existantes à respecter** : `refund_authority_never_delegated`, machine à états des litiges (`open → processing → resolved | closed`)
 
 ---
 
+
+## Lot V1-2 — Reprise physique explicite par un agent Relais
+
+La reprise physique est une attestation distincte de la demande et de la
+validation financière. `relay_product_return_receipts` (migration 401) en
+conserve **un seul constat immuable par dossier SAV** : dossier, relais, quantité
+déjà déclarée, état observé, commentaire, agent, horodatage, et lettre facultative
+A–Z. La lettre est une zone **non exclusive** : plusieurs produits peuvent être
+rangés sous A ; elle ne remplace jamais l'identité du dossier ni de l'article.
+Aucun rangement n'est imposé au relais.
+
+Seul l'agent affecté au relais peut attester la réception. Le serveur verrouille
+la demande pendant la transaction et recontrôle le relais, la commande non
+simulée, le type product_return, les quantités remises au client et le statut
+encore ouvert ou en traitement. Un second enregistrement différent est refusé ;
+un rejeu strictement identique rend la preuve précédente.
+
+**Limite volontaire de la V1-2 :** l'attestation porte sur la quantité entière
+de la demande de retour ; la réception physique fractionnée reste hors périmètre.
+Les articles reçus sont en **quarantaine logique** : aucun stock vendable ni
+nouvelle exposition Catalogue n'est créé à partir d'une attestation. Une
+attestation ne valide pas la demande, ne clôt pas le litige, ne crédite aucun
+wallet et ne déclenche aucun remboursement.
+
+Les tests et la recette doivent vérifier l'absence de double attestation,
+l'isolation d'un autre relais et les refus lorsque le dossier n'est plus actif,
+ainsi que le contrôle DB direct indépendant du backend. La preuve PostgreSQL
+staging reste distincte de la CI sur base reconstruite.
+
+---
 
 ## 0. Décision de lancement — SAV simple, deux boucles autonomes (2026-11-08)
 
@@ -18,11 +48,10 @@ de demander plus que les unités effectivement collectées. Le dossier est un
 `disputes.type='product_return'` ; l'identité article se trouve dans
 `disputes.return_order_item_id`, avec `return_quantity` et `return_reason`.
 
-**Statut du lot V1-1 :** API de lecture et de création de demande + onglet de
-l'atelier Relais. Aucun bouton « produit physiquement repris », « remboursement
-validé », « wallet crédité » ou « article revendable » n'est ajouté. Tant que les
-lots suivants ne sont pas certifiés, le client conserve l'article, sauf procédure
-explicite hors de ce module.
+**Statut du lot V1-1 :** API de lecture et création de demande intégrée. La V1-2
+ajoute le geste distinct « produit physiquement repris » sur branche, sans
+validation financière, wallet, revente ou disposition produit. Ne pas utiliser
+la reprise sur un environnement opérationnel avant recette spécifique.
 
 **Boucle client, à livrer ensuite :**
 1. Komerce examine/valide la demande (ou refuse avec motif).
