@@ -8,7 +8,7 @@
  * @outputs       catalog_work_queue, delegated_catalog_mutations
  * @depends       db, utils/rules.js, services/catalog-product-quality-service.js, services/product-admin-service.js, services/catalog-approval.js, services/catalog-overrides.js, services/boutique-taxonomy-admin.js, services/catalog-commercial-assortment.js, services/pricing-parameters-status.js
  * @used-by       routes/admin-catalog-workspace.js
- * @db-read       products, sourcing_candidates, boutique_categories, boutique_subcategories, import_runtime_runs, markets, product_market_exposure, product_market_price_drafts, catalog_media, product_skus, product_variants, finance_config, currency_parities, exchange_rates, cost_components
+ * @db-read       catalog_product_sale_holds, catalog_product_quality_notes, disputes, order_items, products, sourcing_candidates, boutique_categories, boutique_subcategories, import_runtime_runs, markets, product_market_exposure, product_market_price_drafts, catalog_media, product_skus, product_variants, finance_config, currency_parities, exchange_rates, cost_components
  * @db-write      none
  * @db-write-via  product-admin-service, catalog-approval, catalog-overrides, boutique-taxonomy-admin
  * @db-txn        delegated_to_domain_authority
