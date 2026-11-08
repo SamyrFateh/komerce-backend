@@ -66,8 +66,14 @@ function publicMarket(market) {
 
 async function queryOrders(marketId) {
   const { rows } = await db.query(
-    `SELECT o.reference, o.status, o.payment_mode, o.payment_status,
+    `SELECT o.id, o.relais_id, o.reference, o.status, o.payment_mode, o.payment_status,
             o.total_kmf, o.created_at, o.updated_at,
+            (o.payment_status = 'paid'
+              AND o.status::text IN ('confirmed','ordered','preparation','shipped','in_transit','available')
+              AND EXISTS (SELECT 1 FROM order_items local_oi WHERE local_oi.order_id = o.id AND local_oi.fulfillment_source = 'LOCAL_STOCK')
+              AND NOT EXISTS (SELECT 1 FROM order_items unknown_oi WHERE unknown_oi.order_id = o.id AND (unknown_oi.fulfillment_source IS NULL OR unknown_oi.fulfillment_source NOT IN ('LOCAL_STOCK','IMPORT')))
+              AND NOT EXISTS (SELECT 1 FROM parcel_items local_pi JOIN order_items linked_oi ON linked_oi.id = local_pi.order_item_id WHERE linked_oi.order_id = o.id AND linked_oi.fulfillment_source = 'LOCAL_STOCK')
+            ) AS local_receipt_candidate,
             u.full_name AS client_name,
             r.name AS relais_name, r.island AS relais_island,
             (SELECT COUNT(*)::int FROM order_items oi WHERE oi.order_id = o.id) AS item_count
@@ -301,7 +307,7 @@ async function querySignals(marketId) {
   });
 }
 
-function buildQueues(orders, parcels) {
+function buildQueues(orders, parcels, viewer = null) {
   return {
     hub: {
       to_ship: parcels.filter(row => row.status === 'preparation'),
@@ -312,6 +318,12 @@ function buildQueues(orders, parcels) {
         ['cash_relais', 'cash_relay'].includes(row.payment_mode) &&
         row.payment_status !== 'paid'
       ),
+      // Circuit direct : ni Hub ni colis expédié artificiel.
+      // Les agents ne voient ici que les réceptions de leur relais.
+      // L'autorité métier revalide ensuite paiement et allocations en transaction.
+      local_receipt_pending: orders.filter(row => row.local_receipt_candidate === true && viewer &&
+        (viewer.role === 'admin' || (viewer.role === 'agent_relais' && viewer.relais_id &&
+          String(viewer.relais_id) === String(row.relais_id)))),
       to_receive: parcels.filter(row => ['shipped', 'in_transit'].includes(row.status)),
       to_collect: parcels.filter(row => row.status === 'available'),
     },
@@ -323,7 +335,8 @@ function buildSummary(queues, distribution, inventoryState) {
     hub_unassigned: distribution.unassigned.length,
     hub_to_ship: queues.hub.to_ship.length,
     relay_cash_pending: queues.relay.cash_pending.length,
-    relay_to_receive: queues.relay.to_receive.length,
+    relay_to_receive: queues.relay.to_receive.length + queues.relay.local_receipt_pending.length,
+    relay_local_receipt_pending: queues.relay.local_receipt_pending.length,
     relay_to_collect: queues.relay.to_collect.length,
     inventory_to_assign: inventoryState.items.length,
   });
@@ -339,7 +352,7 @@ async function buildWorkspace(options = {}) {
     queryInventory(market.id),
     querySignals(market.id),
   ]);
-  const queues = buildQueues(orders, parcels);
+  const queues = buildQueues(orders, parcels, options.viewer);
   // LIVE-06 : « À remettre au client » vient de la projection unique consommée aussi par les Live.
   const relayCounts = await countRelayParcels({ marketIds: [market.id] });
   const summary = Object.freeze({
