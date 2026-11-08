@@ -1427,6 +1427,7 @@
     if (view === 'supply') renderSupplySection(rootNode, ui, doc, context);
 
     if (view === 'relay') {
+    context.relayCollectCount=payload.queues?.relay?.to_collect?.length||0;
     renderRelayShipmentsSection(rootNode, ui, doc, context);
     renderOrderActionSection(rootNode, ui, doc, context, {
       title: 'Encaisser les paiements',
@@ -1465,7 +1466,6 @@
       empty: 'Aucun colis à remettre.',
     });
       if(context.mode==='relay-execution') {
-        context.relayCollectCount=payload.queues?.relay?.to_collect?.length||0;
         showRelayOperation(rootNode,context.activeRelayQueue);
       }
     }
