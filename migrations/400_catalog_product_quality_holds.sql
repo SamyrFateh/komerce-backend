@@ -40,6 +40,50 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_catalog_sale_hold_one_active
 CREATE INDEX IF NOT EXISTS idx_catalog_sale_holds_product_time
   ON public.catalog_product_sale_holds (product_id, frozen_at DESC);
 
+-- Quality notes cannot be silently rewritten after they have been recorded.
+CREATE OR REPLACE FUNCTION public.prevent_catalog_quality_note_mutation()
+RETURNS trigger LANGUAGE plpgsql AS $
+BEGIN
+  RAISE EXCEPTION 'CATALOG_QUALITY_NOTE_IMMUTABLE'
+    USING ERRCODE = 'P0001';
+END;
+$;
+DROP TRIGGER IF EXISTS trg_immutable_catalog_quality_note ON public.catalog_product_quality_notes;
+CREATE TRIGGER trg_immutable_catalog_quality_note
+BEFORE UPDATE OR DELETE ON public.catalog_product_quality_notes
+FOR EACH ROW EXECUTE FUNCTION public.prevent_catalog_quality_note_mutation();
+
+-- A hold is an immutable decision. Only its one-time RELEASE may complete the
+-- existing row, preserving the original actor, reason, date and justification.
+CREATE OR REPLACE FUNCTION public.prevent_catalog_sale_hold_rewrite()
+RETURNS trigger LANGUAGE plpgsql AS $
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    RAISE EXCEPTION 'CATALOG_SALE_HOLD_IMMUTABLE'
+      USING ERRCODE = 'P0001';
+  END IF;
+  IF OLD.released_at IS NOT NULL
+    OR NEW.released_at IS NULL
+    OR NEW.released_by IS NULL
+    OR NEW.release_comment IS NULL
+    OR NEW.id IS DISTINCT FROM OLD.id
+    OR NEW.product_id IS DISTINCT FROM OLD.product_id
+    OR NEW.reason IS DISTINCT FROM OLD.reason
+    OR NEW.comment IS DISTINCT FROM OLD.comment
+    OR NEW.frozen_by IS DISTINCT FROM OLD.frozen_by
+    OR NEW.frozen_at IS DISTINCT FROM OLD.frozen_at
+  THEN
+    RAISE EXCEPTION 'CATALOG_SALE_HOLD_IMMUTABLE'
+      USING ERRCODE = 'P0001';
+  END IF;
+  RETURN NEW;
+END;
+$;
+DROP TRIGGER IF EXISTS trg_immutable_catalog_sale_hold ON public.catalog_product_sale_holds;
+CREATE TRIGGER trg_immutable_catalog_sale_hold
+BEFORE UPDATE OR DELETE ON public.catalog_product_sale_holds
+FOR EACH ROW EXECUTE FUNCTION public.prevent_catalog_sale_hold_rewrite();
+
 -- Central transactional guard against bypassing the product gate via another
 -- checkout route: a NEW order line cannot be created while its reference is frozen.
 -- Existing orders, parcels, receipts and collections remain untouched.
