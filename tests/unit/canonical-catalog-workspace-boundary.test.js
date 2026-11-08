@@ -195,8 +195,8 @@ function candidate(overrides = {}) {
 test('Catalogue charge les assets business-truth versionnés', () => {
   const index = read('public/dashboards/canonical/index.html');
   expect(index).toContain('/dashboards/canonical/js/catalog-control-tower.js?v=260929-2');
-  expect(index).toContain('/dashboards/canonical/css/catalog-control-tower.css?v=261010-9');
-  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261102-arbitration-1');
+  expect(index).toContain('/dashboards/canonical/css/catalog-control-tower.css?v=261108-quality-freeze-1');
+  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261108-quality-freeze-1');
   expect(index).toContain('/dashboards/canonical/css/operations-workspace.css?v=261108-sav-request-1');
 });
 
