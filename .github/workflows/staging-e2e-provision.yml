@@ -1,3 +1,6 @@
+# The owner-only exact-title issue path is a one-shot post-reset convenience. It
+# requires the canonical empty-state verifier and an actual rollback dry-run
+# before running the EXISTING official provisioner. Other issue titles skip.
 # Provisionnement des identites E2E du staging (apres un reset) : 7 profils de l'audit Chromium, une
 # responsable Hub (optionnelle) et un relais actif par marche. Aucune donnee metier.
 # Declenchement MANUEL, proprietaire du depot uniquement. dry-run par defaut (meme code, transaction annulee) ;
@@ -6,6 +9,8 @@
 name: Staging E2E provision
 
 on:
+  issues:
+    types: [opened]
   workflow_dispatch:
     inputs:
       mode:
@@ -36,7 +41,12 @@ concurrency:
 jobs:
   provision:
     name: Staging E2E provision - ${{ inputs.mode }}
-    if: github.actor == github.repository_owner
+    if: >-
+      github.actor == github.repository_owner &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event_name == 'issues' &&
+        github.event.issue.user.login == github.repository_owner &&
+        github.event.issue.title == '[staging-op] provision-e2e-after-reset-approved'))
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
@@ -46,10 +56,10 @@ jobs:
       STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
       EXPECTED_RAILWAY_ENVIRONMENT: staging
       KOMERCE_STAGING_RESET_DB_PIN: ${{ vars.STAGING_DB_PIN }}
-      PROVISION_MODE: ${{ inputs.mode }}
+      PROVISION_MODE: ${{ github.event_name == 'issues' && 'execute' || inputs.mode }}
       E2E_PROVISION_EXTRA_MARKETS: ${{ inputs.extra_markets }}
-      PROVISION_CONFIRMATION: ${{ inputs.confirmation }}
-      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      PROVISION_CONFIRMATION: ${{ github.event_name == 'issues' && 'PROVISION-STAGING-E2E' || inputs.confirmation }}
+      E2E_ADMIN_EMAIL: ${{ github.event_name == 'issues' && 'admin@komerce.km' || secrets.E2E_ADMIN_EMAIL }}
       E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
       E2E_MARKET_OPERATOR_EMAIL: ${{ secrets.E2E_MARKET_OPERATOR_EMAIL }}
       E2E_MARKET_OPERATOR_PASSWORD: ${{ secrets.E2E_MARKET_OPERATOR_PASSWORD }}
@@ -91,7 +101,13 @@ jobs:
           esac
       - name: Guard live staging identity
         run: node scripts/recette/target-guard.js
-      - name: Provision report (${{ inputs.mode }})
+      - name: Verify empty staging before issue-triggered provisioning
+        if: github.event_name == 'issues'
+        run: node scripts/recette/staging-verify-empty.js
+      - name: Prove E2E provisioning in rollback before issue-triggered write
+        if: github.event_name == 'issues'
+        run: node scripts/recette/staging-e2e-provision.js --dry-run
+      - name: Provision report (${{ env.PROVISION_MODE }})
         shell: bash
         run: |
           set -euo pipefail
