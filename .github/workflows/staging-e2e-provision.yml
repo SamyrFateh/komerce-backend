@@ -3,7 +3,8 @@
 # before running the EXISTING official provisioner. Other issue titles skip.
 # Provisionnement des identites E2E du staging (apres un reset) : 7 profils de l'audit Chromium, une
 # responsable Hub (optionnelle) et un relais actif par marche. Aucune donnee metier.
-# Declenchement MANUEL, proprietaire du depot uniquement. dry-run par defaut (meme code, transaction annulee) ;
+# Declenchement MANUEL ou issue EXACTE creee par le proprietaire apres reset confirme.
+# La voie issue impose verifier-base-vide puis dry-run en rollback avant execute; la voie manuelle reste inchangee.
 # execute exige la confirmation texte PROVISION-STAGING-E2E et l'epingle de base STAGING_DB_PIN.
 # Les mots de passe viennent des secrets E2E_*_PASSWORD et ne sont jamais affiches. Code : scripts/recette/staging-e2e-provision.js.
 name: Staging E2E provision
@@ -40,7 +41,7 @@ concurrency:
 
 jobs:
   provision:
-    name: Staging E2E provision - ${{ inputs.mode }}
+    name: Staging E2E provision - ${{ github.event_name == 'issues' && 'execute / KM after reset' || inputs.mode }}
     if: >-
       github.actor == github.repository_owner &&
       (github.event_name == 'workflow_dispatch' ||
@@ -120,7 +121,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: staging-e2e-provision-${{ inputs.mode }}-${{ github.run_id }}
+          name: staging-e2e-provision-${{ env.PROVISION_MODE }}-${{ github.run_id }}
           path: test-results/staging-e2e-provision
           retention-days: 14
           if-no-files-found: warn
