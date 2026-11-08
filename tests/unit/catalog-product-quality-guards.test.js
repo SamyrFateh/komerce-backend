@@ -39,6 +39,8 @@ test('retour SAV automatiquement signalé sans gel automatique',()=>{
   expect(catalogUI).toContain('data-catalog-quality-signal');
   expect(catalogUI).toContain('data-catalog-quality-frozen');
   expect(catalogUI).toContain("attachQualityControls(context, doc, panel, row)");
+  expect(catalogUI).toContain("details.addEventListener('toggle'");
+  expect(catalogUI).toContain('const quality = row.quality || {}');
   expect(catalogUI).toContain("actionEndpoint + '/' + action");
   expect(migration).toContain("released_at IS NULL");
   expect(migration).toContain("release_comment");
