@@ -177,7 +177,7 @@
   }
 
   function createCockpit(config) {
-    const { basePath, domainLabel, tabs, views, defaultView } = config;
+    const { basePath, domainLabel, tabs, views, defaultView, ownsNavigation = false } = config;
     let mountedRoot = null;
     let timer = null;
     let epoch = 0;
@@ -212,8 +212,9 @@
     const urlFor = (view, extra = {}) => `${basePath}${queryString({ view:view === defaultView ? '' : view, ...extra })}`;
 
     function domainNav(activeTab) {
-      // Le shell canonique est seul propriétaire du rail métier supérieur.
-      if (global.document?.querySelector?.('#canonical-admin-domain-tabs')) return '';
+      // Un cockpit qui possède déjà son rail métier ne doit jamais recréer le rail de repli,
+      // même si le shell Canonical ne rend aucun onglet (0 ou 1 onglet local).
+      if (ownsNavigation || global.document?.querySelector?.('#canonical-admin-domain-tabs')) return '';
       return `<nav class="kir-domain-nav" aria-label="Domaine ${esc(domainLabel)}"><strong>${esc(domainLabel)}</strong>
         ${tabs.map(tab => `<a class="${tab.key === activeTab ? 'is-active' : ''}" href="${tab.href}" data-cockpit-nav ${tab.key === activeTab ? 'aria-current="page"' : ''}>${esc(tab.label)}</a>`).join('')}
       </nav>`;

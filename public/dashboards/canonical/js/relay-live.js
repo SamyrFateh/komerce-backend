@@ -445,7 +445,7 @@
     },
   };
 
-  const cockpit = kit.createCockpit({ basePath:BASE, domainLabel:'Relais', tabs:relayTabs(), views, defaultView:'overview' });
+  const cockpit = kit.createCockpit({ basePath:BASE, domainLabel:'Relais', tabs:relayTabs(), views, defaultView:'overview', ownsNavigation:true });
 
   const incidentListeners=new WeakSet();
   function attachIncidentReporting(options){
