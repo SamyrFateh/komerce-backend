@@ -160,6 +160,22 @@ router.get('/returns', ...relayReturnActors, async (req, res, next) => {
   } catch (err) { if (!returnRequestError(res, err)) next(err); }
 });
 
+router.post('/returns/remarks', ...relayReturnActors, async (req,res,next)=>{
+  try{
+    res.set('Cache-Control','private, no-store');
+    const remark=await relayReturns.addRemark({
+      actor:req.user,reference:req.body?.order_reference,
+      orderItemId:req.body?.order_item_id,note:req.body?.note,executor:db,
+    });
+    return res.status(201).json({ok:true,remark});
+  }catch(err){
+    if(!returnRequestError(res,err)){
+      if(err.status&&err.code)return res.status(err.status).json({error:err.message,code:err.code});
+      next(err);
+    }
+  }
+});
+
 router.post('/returns', ...relayReturnActors, async (req, res, next) => {
   try {
     res.set('Cache-Control', 'private, no-store');
