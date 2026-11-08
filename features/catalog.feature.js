@@ -273,6 +273,7 @@ module.exports = {
       'migrations/259_products_draft_price_deferred.sql',
       'migrations/282_catalog_taxonomy_audit.sql',
       'migrations/283_catalog_publication_decision_audit.sql',
+      'migrations/400_catalog_product_quality_holds.sql',
     ],
     config: [
       'config/import-profiles/komerce-test-dummyjson.v1.json',
@@ -605,6 +606,9 @@ module.exports = {
       'catalog_field_sync_state: RW!',
       'catalog_media_visual_fr_reviews: RW!',
       'catalog_publication_decision_audit: RW!',
+      'catalog_product_sale_holds: RW!',
+      'catalog_product_quality_notes: RW!',
+      'disputes: R',
       'catalog_stock_sync_state: RW!',
       'supplier_catalog_import_rejections: RW!',
     ],
