@@ -14,7 +14,9 @@
  */
 'use strict';
 // Force read-only PostgreSQL before db.js creates any connections.
-process.env.PGOPTIONS = [process.env.PGOPTIONS, '-c default_transaction_read_only=on'].filter(Boolean).join(' ');
+if (require.main === module) {
+  process.env.PGOPTIONS = [process.env.PGOPTIONS, '-c default_transaction_read_only=on'].filter(Boolean).join(' ');
+}
 const fs = require('node:fs');
 const path = require('node:path');
 const db = require('../../db');
@@ -66,10 +68,20 @@ async function audit() {
     const units = unitsOf(c);
     const skuOrderable = units.filter(u => u && (u.supplier_order_identity || u.supplier_unit_ref || u.supplier_sku)).length;
     const reasons = [...certification.reasons];
+    // Exact exception owned by sourcing-candidate-actions.handoffCertifiedImport():
+    // a WATCH caused exclusively by unresolved Komerce category may create an
+    // INACTIVE draft once the canonical boutique taxonomy resolves. This is
+    // NOT sourcing certification, customs approval or publication approval.
+    const classificationOnlyWatch = !certification.sourcing_certified
+      && certification.decision === 'WATCH'
+      && String(c.scan_result?.reason || '').startsWith('Catégorie Komerce non résolue')
+      && String(c.normalized_source_contract?.schema_version) === '2'
+      && taxonomy.status === 'AUTO_CLASSIFIED'
+      && Boolean(taxonomy.category && taxonomy.subcategory);
     if (EXPECTED.get(c.candidate_ref) !== c.supplier_product_id)
       reasons.push('ORIGINAL_SUPPLIER_IDENTITY_DRIFT');
     if (c.product_id) reasons.push('ALREADY_LINKED_TO_PRODUCT');
-    if (!certification.sourcing_certified) reasons.push('NOT_SOURCE_CERTIFIED');
+    if (!certification.sourcing_certified && !classificationOnlyWatch) reasons.push('NOT_SOURCE_CERTIFIED');
     if (!['AUTO_CLASSIFIED','EXPLICIT_REVIEW'].includes(taxonomy.status)
       || !taxonomy.category || !taxonomy.subcategory) reasons.push('COMMERCIAL_TAXONOMY_NOT_RESOLVED');
     const ready = reasons.length === 0;
@@ -78,6 +90,8 @@ async function audit() {
       candidate_ref:c.candidate_ref, supplier_product_id:c.supplier_product_id,
       state:c.state, sourcing_decision:certification.decision, sourcing_outcome:certification.outcome,
       certified:certification.sourcing_certified,
+      draft_handoff_via_classification_only_watch:classificationOnlyWatch,
+      customs_review_still_required:c.scan_result?.customs_review?.status === 'REQUIRED',
       source_contract_version:c.normalized_source_contract?.schema_version || null,
       scan_reason: String(c.scan_result?.reason || '').slice(0,240),
       customs_review_status: c.scan_result?.customs_review?.status || null,
@@ -98,7 +112,7 @@ async function audit() {
     verdict:blockers.length===0?'FOUR_INACTIVE_DRAFTS_READINESS_PASS':'CATALOGUE_HANDOFF_BLOCKED',
   };
 }
-(async ()=>{
+async function main(){
   fs.mkdirSync(path.dirname(OUT),{recursive:true});
   let report;
   try {
@@ -117,4 +131,6 @@ async function audit() {
     }));
     await db.pool.end();
   }
-})();
+}
+if (require.main === module) main();
+module.exports = { audit, EXPECTED, RUN_REF };
