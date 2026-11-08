@@ -58,7 +58,7 @@ async function addRelayObservation({actorId,relayId,reference,orderItemId,note},
   const ref=String(reference||'').trim();
   if(!/^[A-Za-z0-9][A-Za-z0-9._-]{1,79}$/.test(ref))
     reject('QUALITY_ORDER_REF_INVALID','Référence de commande invalide.');
-  if(!/^[0-9a-f-]{36}$/i.test(String(orderItemId||'')))
+  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(orderItemId||'')))
     reject('QUALITY_ITEM_INVALID','Article commandé invalide.');
   const {rows:[row]}=await executor.query(`
     WITH eligible AS (
