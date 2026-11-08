@@ -95,7 +95,7 @@ test('stockage facultatif, lettres seulement; observations et pièces requises',
  expect(intake.normalizeInput(REQUEST,'damaged','b', 'Retour constaté et reçu.').storageZone).toBe('B');
  expect(()=>intake.normalizeInput(REQUEST,'opened','AB','Retour constaté et reçu.'))
   .toThrow(expect.objectContaining({code:'RETURN_INTAKE_ZONE_INVALID'}));
- expect(()=>intake.normalizeInput(REQUEST,'opened','', 'Trop court'))
+ expect(()=>intake.normalizeInput(REQUEST,'opened','', 'Court'))
   .toThrow(expect.objectContaining({code:'RETURN_INTAKE_OBSERVATION_REQUIRED'}));
 });
 test('contrat migration : preuve unique, append-only, garde DB du relais et sans wallet',()=>{
