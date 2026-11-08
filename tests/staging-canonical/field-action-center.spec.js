@@ -77,7 +77,20 @@ test('field Action Center navigation is reachable without Dashboard authority', 
     role, scope_status: agentSignals.status(), expected_mode: expectedMode,
   }));
 
-  await page.goto('/admin/hub', { waitUntil: 'domcontentloaded' });
+  // Chaque agent commence dans SON poste de travail, pas dans le Hub pour
+  // un transitaire dont la landing officielle est Expéditions & Douane.
+  const entry = role === 'agent_transitaire' ? '/admin/workspaces/shipping-customs'
+    : role === 'agent_relais' ? '/admin/relais-live' : '/admin/hub';
+  await page.goto(entry, { waitUntil: 'domcontentloaded' });
+  await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+  // Hub : menu N1 caché intentionnellement en mode plein poste. L'agent doit
+  // d'abord pouvoir le réafficher via le contrôle réellement prévu.
+  const focusToggle = page.locator('[data-hub-focus-toggle][aria-pressed="true"]');
+  if (role === 'agent_hub') {
+    await expect(focusToggle).toBeVisible({ timeout: 18000 });
+    await focusToggle.click();
+    await expect(page.locator('body')).not.toHaveClass(/kmc-hub-agent-focus/);
+  }
   const actionLink = page.locator('a[href="/admin/action-center"]').first();
   await expect(actionLink).toBeVisible({ timeout: 18000 });
   await actionLink.click();
