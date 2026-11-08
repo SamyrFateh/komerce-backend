@@ -1625,6 +1625,10 @@
     rootNode.setAttribute('data-relay-counter',context.focusOnly?'true':'false');
     rootNode.replaceChildren();
     const header=createHeader(doc,payload,context.mode);
+    if(context.mode==='relay-execution') {
+      const back=header.querySelector('.kmc-workspace-nav-link');
+      if(back)back.href='/admin/relais-live'+(context.marketCode?'?market='+encodeURIComponent(context.marketCode):'');
+    }
     if(context.focusOnly) {
       header.querySelector('.kmc-workspace-kicker').textContent='RELAIS · COMPTOIR';
       header.querySelector('.kmc-workspace-title').textContent='Remises client';
@@ -1632,15 +1636,15 @@
         context.marketCode+' · Identifier le bon colis, vérifier les conditions de retrait, attester la remise.';
     }
     rootNode.appendChild(header);
-    if(context.focusOnly) {
+    if(context.mode==='relay-execution') {
       const nav=doc.createElement('nav');
       nav.className='kmc-relay-main-nav';
       nav.setAttribute('aria-label','Espaces de travail du relais');
       const links=[
-        ['Flux Relais','/admin/relais-live',false],
+        ['Flux Relais','/admin/relais-live'+(context.marketCode?'?market='+encodeURIComponent(context.marketCode):''),false],
         ['Remises','/admin/relais-live?view=remises&market='+encodeURIComponent(context.marketCode),true],
-        ['Incidents & SAV','/admin/relais-live?view=incidents',false],
-        ['Historique','/admin/relais-live?view=orders&list=collected',false],
+        ['Incidents & SAV','/admin/relais-live?view=incidents&market='+encodeURIComponent(context.marketCode),false],
+        ['Historique','/admin/relais-live?view=orders&list=collected&market='+encodeURIComponent(context.marketCode),false],
       ];
       for(const [title,href,active] of links) {
         const link=text(doc,'a','kmc-relay-main-tab',title);
