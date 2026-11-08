@@ -39,7 +39,7 @@ test.each([
   const h=html(search,data);
   expect(h).not.toContain('class="kir-domain-nav"');
   expect((h.match(/<nav class="kmc-relay-main-nav"/g)||[])).toHaveLength(1);
-  const menu=h.match(/<nav class="kmc-relay-main-nav"[^>]*>([\\s\\S]*?)<\\/nav>/)?.[1]||'';
+  const menu=h.split('<nav class="kmc-relay-main-nav"')[1]?.split('</nav>')[0]||'';
   expect((menu.match(/class="kmc-relay-main-tab/g)||[])).toHaveLength(4);
 });
 
