@@ -36,7 +36,7 @@ async function mountRelay(page, search = '', { failDetail = false, empty = false
       const file = path.join(CANONICAL, url.pathname.replace('/dashboards/canonical/', ''));
       return fs.existsSync(file) ? route.fulfill({ path:file }) : route.fulfill({ status:404, body:'' });
     }
-    if (url.pathname === '/api/relay/dashboard') { state.calls.push('dashboard'); const value=empty?{kpi:Object.fromEntries(Object.keys(dashboard.kpi).map(k=>[k,0])),alertes:[]}:dashboard; return route.fulfill({ contentType:'application/json', body:JSON.stringify(value) }); }
+    if (url.pathname === '/api/relay/dashboard') { state.calls.push('dashboard'); const value=empty?{kpi:{...Object.fromEntries(Object.keys(dashboard.kpi).map(k=>[k,0])),collectes_aujourd_hui:completed?1:0},alertes:[]}:dashboard; return route.fulfill({ contentType:'application/json', body:JSON.stringify(value) }); }
     if (url.pathname === '/api/relay/orders') {
       const status = url.searchParams.get('status');
       state.searchTerms.push(url.searchParams.get('search'));
@@ -54,7 +54,9 @@ async function mountRelay(page, search = '', { failDetail = false, empty = false
     if (m) {
       state.calls.push(`order:r-${m[1]}`);
       if (failDetail) return route.fulfill({ status:500, contentType:'application/json', body:'{"error":"Erreur interne du serveur"}' });
-      return route.fulfill({ contentType:'application/json', body:JSON.stringify(detail(Number(m[1]))) });
+      const value=detail(Number(m[1]));
+      if (completed && m[1]==='99') { value.order.status='collected'; value.paiement.cash_pending=false; }
+      return route.fulfill({ contentType:'application/json', body:JSON.stringify(value) });
     }
     return route.fulfill({ status:404, body:'{}' });
   });
