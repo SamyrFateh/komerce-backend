@@ -1464,7 +1464,10 @@
       confirm: row => `Confirmer la remise de ${row.reference} au client ?`,
       empty: 'Aucun colis à remettre.',
     });
-      if(context.mode==='relay-execution')showRelayOperation(rootNode,context.activeRelayQueue);
+      if(context.mode==='relay-execution') {
+        context.relayCollectCount=payload.queues?.relay?.to_collect?.length||0;
+        showRelayOperation(rootNode,context.activeRelayQueue);
+      }
     }
 
     if (view === 'inventory') renderInventorySection(rootNode, ui, doc, payload, context);
@@ -1580,16 +1583,32 @@
     }
     const pending=data.shipments.filter(isShipmentReceivable);
     const other=data.shipments.filter(shipment=>!isShipmentReceivable(shipment));
+    slot.setAttribute('data-relay-arrivals-pending',String(pending.length));
     if(!pending.length) {
-      slot.appendChild(text(doc,'div','kmc-relay-work-done','Aucune réception importée à effectuer pour ce marché.'));
+      const done=doc.createElement('div');
+      done.className='kmc-relay-work-done kmc-relay-arrival-empty';
+      done.appendChild(text(doc,'strong','', 'Aucun arrivage à réceptionner'));
+      done.appendChild(text(doc,'span','',other.length+' expédition(s) sans réception à effectuer, consultables dans l’historique.'));
+      const collectCount=Number(context.relayCollectCount||0);
+      if(collectCount>0) {
+        const next=text(doc,'a','kmc-relay-arrival-next',collectCount+' remise(s) client en attente · Ouvrir');
+        next.href='#relay-execution-collect';
+        next.setAttribute('data-relay-next-operation','collect');
+        next.addEventListener('click',()=>{
+          context.activeRelayQueue='collect';
+          showRelayOperation(rootNode,'collect');
+        });
+        done.appendChild(next);
+      }
+      slot.appendChild(done);
     } else {
-      const info=text(doc,'p','kmc-relay-work-count',pending.length+' expédition(s) nécessitant une réception physique.');
-      slot.appendChild(info);
+      slot.appendChild(text(doc,'p','kmc-relay-work-count',
+        pending.length+' expédition(s) nécessitant une réception. Ouvrez uniquement l’arrivage à contrôler.'));
     }
     const archive=doc.createElement('details');
     archive.className='kmc-relay-shipment-archive';
     archive.setAttribute('data-relay-shipment-archive','');
-    archive.appendChild(text(doc,'summary','', 'Sans réception à effectuer · '+other.length+' expédition(s)'));
+    archive.appendChild(text(doc,'summary','', 'Historique · '+other.length+' expédition(s)'));
     [...pending,...other].forEach(shipment => {
       const actionable=isShipmentReceivable(shipment);
       const card=doc.createElement('details');
@@ -1597,8 +1616,26 @@
       card.open=actionable && pending[0]===shipment;
       card.setAttribute('data-relay-shipment',shipment.reference);
       card.setAttribute('data-relay-receivable',String(actionable));
-      card.appendChild(text(doc,'summary','kmc-relay-shipment-title',
-        shipment.reference+' · '+(actionable?'Réception à confirmer':shipment.stage==='relay_received'?'Réception attestée':'Aucune réception à effectuer')));
+      const summary=doc.createElement('summary');
+      summary.className='kmc-relay-shipment-title';
+      summary.appendChild(text(doc,'strong','kmc-relay-shipment-reference',shipment.reference));
+      summary.appendChild(text(doc,'span','kmc-relay-shipment-subtitle',
+        (shipment.boxes||[]).length+' carton(s) · '+
+        (shipment.boxes||[]).reduce((count,box)=>count+(box.orders||[]).length,0)+' commande(s)'));
+      summary.appendChild(text(doc,'span','kmc-relay-shipment-status',
+        actionable?'À réceptionner':shipment.stage==='relay_received'?'Réception attestée':'Aucune réception en attente'));
+      card.appendChild(summary);
+      // Un premier clic historique ne déplie PAS les tableaux d’articles.
+      // La traçabilité complète reste accessible par un second niveau, sur demande.
+      let detailHost=card;
+      if(!actionable) {
+        const detailed=doc.createElement('details');
+        detailed.className='kmc-relay-archive-detail';
+        detailed.setAttribute('data-relay-archive-detail','');
+        detailed.appendChild(text(doc,'summary','','Voir colis, articles et retrouver un sac'));
+        card.appendChild(detailed);
+        detailHost=detailed;
+      }
       // Même sac physique que celui fermé au Hub : son scan ouvre la commande
       // et le colis canonique, sans attester automatiquement la réception.
       const scanBar=doc.createElement('div');
@@ -1629,7 +1666,7 @@
       });
       scan.addEventListener('click',identify);
       [bagCode,scan,result].forEach(node=>scanBar.appendChild(node));
-      card.appendChild(scanBar);
+      detailHost.appendChild(scanBar);
       const inputs = [];
       shipment.boxes.forEach(box => {
         const boxNode = doc.createElement('div');
@@ -1675,7 +1712,7 @@
           wrap.appendChild(table);
           boxNode.appendChild(wrap);
         });
-        card.appendChild(boxNode);
+        detailHost.appendChild(boxNode);
       });
       if (inputs.length) {
         const form = doc.createElement('form');
@@ -1714,7 +1751,7 @@
               ? 'Réception attestée · écart enregistré en incident.' : 'Réception attestée.',
           }).catch(() => {});
         });
-        card.appendChild(form);
+        detailHost.appendChild(form);
       }
       (actionable?slot:archive).appendChild(card);
     });
