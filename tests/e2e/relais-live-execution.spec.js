@@ -130,7 +130,7 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
     test('arrivages déjà réceptionnés : rien de déplié, historique disponible à la demande',async({page})=>{
       await mount(page,[],{shipments:ARCHIVED_SHIPMENTS,focus:'shipments'});
       await expect(page.locator('#relay-execution-shipments')).toBeVisible();
-      await expect(page.locator('.kmc-relay-work-done')).toContainText('Aucune réception importée à effectuer');
+      await expect(page.locator('.kmc-relay-work-done')).toContainText('Aucun arrivage à réceptionner');
       await expect(page.locator('[data-relay-execution-jump="shipments"]')).toContainText('0');
       const archive=page.locator('[data-relay-shipment-archive]');
       await expect(archive).toBeVisible();
