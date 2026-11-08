@@ -1,0 +1,63 @@
+# Bounded real supplier intake for the official four-product KM certification.
+# Owner-only exact issue trigger, preserved source ids, no publishing and no payments.
+name: CJ four real supplier candidates — staging intake
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: komerce-cj-four-canonical-staging
+  cancel-in-progress: false
+
+jobs:
+  four-real-candidates:
+    name: Acquire exactly four genuine CJ offers (canonical sourcing only)
+    if: >-
+      github.repository == 'SamyrFateh/komerce-backend' &&
+      github.actor == github.repository_owner &&
+      github.event.issue.user.login == github.repository_owner &&
+      github.event.issue.title == '[staging-op] cj-four-canonical-intake-approved'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    env:
+      GITHUB_ACTIONS: 'true'
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      KOMERCE_ALLOW_CJ_CANONICAL_4_STAGING: '1'
+      CJ_STAGING_COHORT_COUNT: '4'
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      EXPECTED_RAILWAY_ENVIRONMENT: staging
+      KOMERCE_STAGING_RESET_DB_PIN: ${{ vars.STAGING_DB_PIN }}
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      CJ_ACCESS_TOKEN: ${{ secrets.KOMERCE_CJ_PROOF_ACCESS_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Assert official staging identity and secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${DATABASE_URL:-}" || { echo '::error::RAILWAY_DATABASE_URL missing'; exit 1; }
+          test -n "${CJ_ACCESS_TOKEN:-}" || { echo '::error::KOMERCE_CJ_PROOF_ACCESS_TOKEN missing'; exit 1; }
+          node scripts/recette/target-guard.js
+      - name: Acquire four distinct live CJ supplier identities through canonical sourcing (never publish)
+        run: node scripts/cj-20-canonical-staging-replay.js
+      - name: Publish source identity, FX and classification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cj-four-real-staging-${{ github.run_id }}
+          path: test-results/cj-canonical-4-staging/report.json
+          retention-days: 21
+          if-no-files-found: warn
