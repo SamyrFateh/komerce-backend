@@ -6,7 +6,7 @@
  * @criticality   critical
  * @inputs        authenticated_relay_actor, order_reference, purchased_order_item_id, return_quantity, return_reason
  * @outputs       relay_scoped_eligible_lines_and_dispute_return_requests
- * @depends       db (transaction supplied), canonical disputes, orders, order_items, products
+ * @depends       db (transaction supplied), services/dispute-mutation-service.js, orders, order_items, products
  * @used-by       routes/relay-dashboard.js
  * @db-read       orders, order_items, products, disputes
  * @db-write      none
@@ -155,15 +155,10 @@ async function createReturnRequest({ actor, reference, orderItemId, quantity, re
     }
     // This mutation lives in the canonical disputes owner, not in a new returns
     // lifecycle table and not in any financial writer.
-    const { rows: [dispute] } = await client.query(
-      `INSERT INTO disputes
-        (order_id, type, status, description, return_order_item_id,
-         return_quantity, return_reason, created_by)
-       VALUES ($1, 'product_return', 'open', $2, $3, $4, $5, $6)
-       RETURNING id, order_id, type, status, description,
-                 return_order_item_id, return_quantity, return_reason, created_at`,
-      [order.id, description || null, orderItemId, qty, normalizedReason, actor.id]
-    );
+    const dispute = await require('./dispute-mutation-service').createProductReturnRequest(client, {
+      orderId: order.id, orderItemId, quantity: qty, reason: normalizedReason,
+      description, actorId: actor.id,
+    });
     await client.query('COMMIT');
     return { request: { ...dispute, order_reference: order.reference } };
   } catch (err) {
