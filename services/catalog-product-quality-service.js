@@ -8,7 +8,7 @@
  * @outputs       append-only quality note, sale hold state and SAV signals
  * @depends       db.js
  * @used-by       routes/admin-catalog-workspace.js, services/catalog-workspace.js, services/relay-return-request-service.js
- * @db-read       products, catalog_product_sale_holds, catalog_product_quality_notes, disputes, order_items
+ * @db-read       products, catalog_product_sale_holds, catalog_product_quality_notes, disputes, orders, order_items
  * @db-write      catalog_product_sale_holds, catalog_product_quality_notes
  * @db-txn        explicit
  * @doctrine      return_signal_not_automatic_freeze, catalog_global_authority, freeze_does_not_change_committed_orders
