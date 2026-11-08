@@ -33,6 +33,8 @@
   };
 
   const BASE = '/admin/relais-live';
+  let relayViewer = null;
+  const canReportIncident=()=>Boolean(relayViewer && ['agent_relais','admin','market_operator'].includes(relayViewer.role));
   const PAGE_SIZE = 25;
   const LISTS = Object.freeze({
     in_transit:'Colis en transit',
@@ -352,6 +354,26 @@
         </section>
         <section class="lk-block"><span class="kir-section-kicker">INCIDENTS</span>
           ${table(['Type', 'Article', 'Priorité', 'Statut', 'Information'], incidents.map(i => `<tr><td>${esc(INCIDENT[i.type] || i.type)}</td><td>${esc(i.product_name || '—')}</td><td>${esc(i.priority)}</td><td>${esc(i.status)}</td><td>${esc(i.description || '—')}</td></tr>`), { empty:'Aucun incident.' })}
+          ${canReportIncident()?`<details class="kmc-relay-report-disclosure"><summary>Signaler un incident sur cette commande</summary>
+            <form data-relay-incident-form data-order-id="${esc(o.id)}">
+              <label>Nature du problème <select name="type" required>
+                <option value="">Choisir…</option>
+                <option value="colis_endommage">Colis endommagé</option>
+                <option value="colis_perdu">Colis perdu</option>
+                <option value="stock">Écart de produit / quantité</option>
+                <option value="paiement">Paiement</option>
+                <option value="retard">Retard</option>
+                <option value="blocage">Blocage</option>
+                <option value="client_absent">Client absent</option>
+                <option value="autre">Autre / retour produit à examiner</option>
+              </select></label>
+              <label>Description factuelle <textarea name="description" maxlength="2000" required
+                placeholder="Produit, état constaté, demande client, référence du colis…"></textarea></label>
+              <button type="submit">Enregistrer le signalement</button>
+              <span role="status" data-relay-incident-feedback aria-live="polite"></span>
+            </form>
+            <p>Un signalement ne déclenche pas de remboursement, de retour en stock ou de dégel catalogue.</p>
+          </details>`:''}
         </section>
         <section class="lk-block"><span class="kir-section-kicker">CHRONOLOGIE</span>
           ${table(['Statut', 'Par', 'Date'], timeline.map(t => `<tr><td>${esc(STATUS[t.status] || t.status)}</td><td>${esc(t.changed_by_name || '—')}</td><td>${esc(fmtDate(t.created_at))}</td></tr>`), { empty:'Aucun changement enregistré.' })}
@@ -416,8 +438,48 @@
 
   const cockpit = kit.createCockpit({ basePath:BASE, domainLabel:'Relais', tabs:relayTabs(), views, defaultView:'overview' });
 
+  const incidentListeners=new WeakSet();
+  function attachIncidentReporting(options){
+    const root=options?.root;
+    if(!root || incidentListeners.has(root))return;
+    incidentListeners.add(root);
+    root.addEventListener('submit',async event=>{
+      const form=event.target?.closest?.('[data-relay-incident-form]');
+      if(!form || !root.contains(form))return;
+      event.preventDefault();
+      const button=form.querySelector('button[type="submit"]');
+      const feedback=form.querySelector('[data-relay-incident-feedback]');
+      const type=form.querySelector('select[name="type"]')?.value;
+      const description=form.querySelector('textarea[name="description"]')?.value?.trim();
+      const orderId=form.getAttribute('data-order-id');
+      if(!type || !description || !orderId){if(feedback)feedback.textContent='Compléter le type et la description.';return;}
+      if(button)button.disabled=true;
+      if(feedback)feedback.textContent='Enregistrement…';
+      try {
+        const fetchFn=options.fetch || global.fetch.bind(global);
+        const response=await fetchFn('/api/relay/orders/'+encodeURIComponent(orderId)+'/incident',{
+          method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({type,description}),
+        });
+        const result=await response.json().catch(()=>({}));
+        if(!response.ok)throw new Error(result.error||'Signalement refusé par les autorisations Relais.');
+        form.reset();
+        if(feedback)feedback.textContent='Signalement enregistré. Ouvrez Incidents & SAV pour le suivre.';
+      } catch(error){
+        if(feedback)feedback.textContent=error.message||'Enregistrement impossible.';
+      } finally {
+        if(button)button.disabled=false;
+      }
+    });
+  }
+
   global.KomerceCanonicalRelayLive = Object.freeze({
-    mount:options => { setViewer(options && options.user); return cockpit.mount(options); },
+    mount:options => {
+      relayViewer=options?.user||null;
+      setViewer(relayViewer);
+      attachIncidentReporting(options);
+      return cockpit.mount(options);
+    },
     renderHtml:cockpit.renderHtml,
     listUrl,
     orderUrl,
