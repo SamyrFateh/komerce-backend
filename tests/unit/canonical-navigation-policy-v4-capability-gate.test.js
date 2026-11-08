@@ -338,7 +338,8 @@ test('Hub et Relais Live utilisent leur navigation locale sans onglets concurren
   const hub = fs.readFileSync(require('node:path').join(__dirname, '../../public/dashboards/canonical/js/hub-live.js'), 'utf8');
   const relay = fs.readFileSync(require('node:path').join(__dirname, '../../public/dashboards/canonical/js/relay-live.js'), 'utf8');
   expect(hub).not.toContain("key:'commandes'");
-  expect(relay).toContain("label:'Colis'");
+  for(const label of ["label:'Flux Relais'","label:'Remises'","label:'Incidents & SAV'","label:'Historique'"])
+    expect(relay).toContain(label);
 });
 
 describe('Navigation Live — trois métiers, onglets contextuels uniques', () => {
@@ -349,8 +350,10 @@ describe('Navigation Live — trois métiers, onglets contextuels uniques', () =
     ['/admin/hub-live', '?view=flux', ['Hub Live · Dossiers'], 'hub-dossiers'],
     ['/admin/hub-live', '?view=queue&tab=all', ['Hub Live · Dossiers'], 'hub-dossiers'],
     ['/admin/hub-live', '?view=execute', ['Hub Live · Dossiers'], 'hub-dossiers'],
-    ['/admin/relais-live', '', ['Suivi', 'Colis'], 'relais-suivi'],
-    ['/admin/relais-live', '?view=orders&list=all', ['Suivi', 'Colis'], 'relais-colis'],
+    ['/admin/relais-live', '', ['Relais · Poste de travail'], 'relais-workstation'],
+    ['/admin/relais-live', '?view=orders&list=all', ['Relais · Poste de travail'], 'relais-workstation'],
+    ['/admin/relais-live', '?view=remises&market=KM', ['Relais · Poste de travail'], 'relais-workstation'],
+    ['/admin/relais-live', '?view=incidents', ['Relais · Poste de travail'], 'relais-workstation'],
   ])('%s %s respecte ses onglets métier', (pathname, search, labels, active) => {
     global.location = { pathname, search, hash: '' };
     const nav = loadPolicy();
