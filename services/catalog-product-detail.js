@@ -8,7 +8,7 @@
  * @outputs       public_product_detail_v1
  * @depends       services/transport-rails.js, services/transport-pricing.js, utils/rules.js, schemas/catalog/product-detail.v1.schema.json
  * @used-by       routes/catalog-product-detail.js
- * @db-read       business_rules, catalog_media, product_attributes, product_content_profile, product_content_sections, product_sku_media, product_skus, product_variants, products
+ * @db-read       business_rules, catalog_product_sale_holds, catalog_media, product_attributes, product_content_profile, product_content_sections, product_sku_media, product_skus, product_variants, products
  * @db-write      none
  * @db-txn        none
  * @doctrine      docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md, docs/specs/DECISION_MODELE_STOCK_SKU.md, docs/doctrine/DOCTRINE_TRANSPORT_RAILS.md
