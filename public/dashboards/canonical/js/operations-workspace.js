@@ -1679,13 +1679,19 @@
           boxNode.appendChild(text(doc, 'div', 'kmc-workspace-muted', 'Commande ' + order.reference));
           const table = doc.createElement('table');
           table.className = 'kmc-workspace-table';
-          table.innerHTML = '<thead><tr><th>Article</th><th>Attendu</th><th>Expédié</th><th>Manquant</th><th>Reçu</th><th>Remis</th></tr></thead>';
+          table.innerHTML = actionable
+            ? '<thead><tr><th>Article</th><th>Expédié</th><th>Manquant</th><th>Reçu</th></tr></thead>'
+            : '<thead><tr><th>Article</th><th>Expédié</th><th>Reçu</th><th>Remis</th></tr></thead>';
           const tbody = doc.createElement('tbody');
           order.items.forEach(item => {
             const tr = doc.createElement('tr');
             tr.setAttribute('data-relay-item', item.order_item_id);
-            [item.product, formatNumber(item.expected), formatNumber(item.shipped), formatNumber(item.missing)]
-              .forEach(value => tr.appendChild(text(doc, 'td', '', value)));
+            const productLabel=item.product+(!actionable && Number(item.missing)>0
+              ? ' · reste '+formatNumber(item.missing)+' à livrer' : '');
+            const columns=actionable
+              ? [productLabel,formatNumber(item.shipped),formatNumber(item.missing)]
+              : [productLabel,formatNumber(item.shipped)];
+            columns.forEach(value=>tr.appendChild(text(doc,'td','',value)));
             const receivedCell = doc.createElement('td');
             if (item.received !== null) {
               receivedCell.textContent = formatNumber(item.received) + (item.incident_id ? ' · incident ouvert' : '');
@@ -1703,7 +1709,7 @@
               receivedCell.textContent = 'Non attesté';
             }
             tr.appendChild(receivedCell);
-            tr.appendChild(text(doc, 'td', '', formatNumber(item.handed)));
+            if(!actionable)tr.appendChild(text(doc,'td','',formatNumber(item.handed)));
             tbody.appendChild(tr);
           });
           table.appendChild(tbody);
