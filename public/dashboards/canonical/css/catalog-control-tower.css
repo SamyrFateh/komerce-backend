@@ -324,3 +324,44 @@ body.kmc-shell-v4 .kmc-catalog-decision-overview .kmc-dashboard-description {
   color: #64748b;
   font-size: 13.5px;
 }
+
+
+/* SAV / Produit : visibilité immédiate sans alourdir le registre Catalogue. */
+.kmc-catalog-quality-badge {
+  display: inline-flex; align-self: flex-start; align-items: center;
+  max-width: 100%; margin-top: 5px; padding: 3px 8px; border-radius: 6px;
+  font-size: 11px; font-weight: 750; letter-spacing: .015em;
+}
+.kmc-catalog-quality-badge.is-frozen {
+  background: #f2f4f6; color: #404e5b; border: 1px solid #c8d0d7;
+}
+.kmc-catalog-quality-badge.is-signal {
+  background: #fff8e8; color: #76540b; border: 1px solid #e6d4a5;
+}
+.kmc-catalog-quality-control {
+  margin: 10px 0 14px; padding: 13px 15px;
+  border: 1px solid #d9e3e9; border-radius: 12px;
+  background: #f9fbfc; min-width: 0;
+}
+.kmc-catalog-quality-state { display: block; color: #29485a; font-size: 13px; }
+.kmc-catalog-quality-state[data-quality-frozen="true"] { color: #9a3e26; }
+.kmc-catalog-quality-details { margin-top: 8px; }
+.kmc-catalog-quality-details summary {
+  cursor: pointer; font-size: 13px; font-weight: 650; color: #304b61;
+}
+.kmc-catalog-quality-content { display: grid; gap: 10px; margin-top: 12px; }
+.kmc-catalog-quality-content textarea {
+  display: block; width: 100%; min-width: 0; box-sizing: border-box;
+  border: 1px solid #bdccd6; border-radius: 8px;
+  padding: 10px; min-height: 72px; resize: vertical; font: inherit;
+}
+.kmc-catalog-quality-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.kmc-catalog-quality-actions select {
+  min-height: 37px; padding: 6px 10px; border: 1px solid #bdccd6;
+  border-radius: 8px; background: white; color: #29485a;
+}
+.kmc-catalog-quality-comment { margin: 0; font-size: 13px; color: #7a3c28; }
+@media (max-width: 700px) {
+  .kmc-catalog-quality-actions { flex-direction: column; }
+  .kmc-catalog-quality-actions :is(select, button) { width: 100%; }
+}
