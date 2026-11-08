@@ -498,6 +498,14 @@ section: ## 4. Tables par domaine
 role: Décisions Catalogue centrales gel/dégel global d'une référence avec justification, acteur et historique ; garde des nouvelles commandes, migration 400 non encore vérifiée live.
 -->
 
+<!-- schema-pending
+object: relay_product_return_receipts
+kind: table
+migration: 401
+section: ## 4. Tables par domaine
+role: Preuve immuable de reprise physique d un dossier de retour article au relais ; une attestation par dossier, quantite exacte, zone A-Z facultative et non exclusive, sans stock ni mouvement wallet. Non verifiee live.
+-->
+
 ## 10. Règle de divergence schéma ↔ code ↔ doc
 
 Voir `AGENTS.md` § "Règle de divergence". En résumé :
