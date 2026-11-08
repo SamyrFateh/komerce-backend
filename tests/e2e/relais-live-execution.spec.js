@@ -64,7 +64,7 @@ const RELAY_SHIPMENTS = {
   }],
 };
 
-async function mount(page, posts = [], { shipments = RELAY_SHIPMENTS, focus = '' } = {}) {
+async function mount(page, posts = [], { shipments = RELAY_SHIPMENTS, focus = '', counter = false } = {}) {
   page.on('dialog', (dialog) => dialog.accept());
   await page.route(`${ORIGIN}/**`, async (route) => {
     const url = new URL(route.request().url());
@@ -86,9 +86,9 @@ async function mount(page, posts = [], { shipments = RELAY_SHIPMENTS, focus = ''
     if (url.pathname === CASH_API) return json(CASH);
     return route.fulfill({ status: 404, body: '' });
   });
-  await page.goto(`${ORIGIN}/admin/relais-live?view=execute${focus?'&focus='+focus:''}`);
+  await page.goto(`${ORIGIN}/admin/relais-live?view=${counter?'remises':'execute'}${focus?'&focus='+focus:''}`);
   await page.locator('select').first().selectOption({ label: 'KM · Comores' });
-  await expect(page.locator('h1')).toHaveText('Poste de travail Relais');
+  await expect(page.locator('h1')).toHaveText(counter?'Remises client':'Poste de travail Relais');
 }
 
 
@@ -185,6 +185,23 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       for(const key of ['shipments','cash','receive']) await expect(page.locator('#relay-execution-'+key)).toBeHidden();
       await expect(page.locator('[data-relay-execution-jump="collect"]')).toHaveAttribute('aria-current','true');
       await expect(page.locator('[data-workspace-action="collect"]')).toBeVisible();
+    });
+
+    test('comptoir autonome : aucune tâche arrivage ni cash, une remise via writer canonique',async({page})=>{
+      const posts=[];
+      await mount(page,posts,{counter:true});
+      const ws=page.locator('[data-relay-counter="true"]');
+      await expect(ws).toBeVisible();
+      await expect(ws.locator('.kmc-relay-main-nav a[aria-current="page"]')).toHaveText('Remises');
+      await expect(ws.locator('.kmc-relay-execution-jumpbar')).toHaveCount(0);
+      await expect(ws.locator('#relay-execution-shipments')).toHaveCount(0);
+      await expect(ws.locator('#relay-execution-receive')).toHaveCount(0);
+      await expect(ws.locator('#relay-execution-cash')).toHaveCount(0);
+      await expect(ws.locator('#relay-execution-collect')).toBeVisible();
+      await ws.locator('[data-workspace-action="collect"]').click();
+      await expect.poll(()=>posts.length).toBe(1);
+      expect(posts[0].path).toBe(API+'/parcels/PCL-KM-3/collect');
+      await expect(ws.locator('a',{hasText:'Flux Relais'})).toHaveAttribute('href','/admin/relais-live');
     });
 
     test('actions Relais uniquement : aucune action Hub', async ({ page }) => {
