@@ -72,7 +72,10 @@ async function resolveCheckoutItems({
   const productIds = items.map(i => i.product_id);
 
   const { rows: products } = await client.query(
-    'SELECT * FROM products WHERE id = ANY($1) AND is_active = TRUE FOR UPDATE',
+    `SELECT * FROM products p WHERE p.id = ANY($1) AND p.is_active = TRUE AND p.is_available = TRUE
+      AND NOT EXISTS (SELECT 1 FROM catalog_product_sale_holds h
+                       WHERE h.product_id = p.id AND h.released_at IS NULL)
+     FOR UPDATE OF p`,
     [productIds]
   );
   const productMap = Object.fromEntries(products.map(p => [p.id, p]));
