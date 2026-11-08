@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 794
-- Files with full headers: 740
+- Scanned code files: 795
+- Files with full headers: 741
 - Files with lite headers: 54
-- Files with any headers: 794
+- Files with any headers: 795
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 2017
-- Edges: 9911
-- DB tables: 235
-- Doctrines: 781
+- Graph nodes: 2022
+- Edges: 9932
+- DB tables: 236
+- Doctrines: 784
 - Impact areas: 207
-- Unresolved code edges: 948
+- Unresolved code edges: 953
 - Tables multi-écrivains directs (>=2): 94
 - Avertissements db-write / db-write-via en chevauchement: 12
 
@@ -45,7 +45,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - infrastructure: 25
 - inventory: 2
 - local-stock: 4
-- logistics: 68
+- logistics: 69
 - loyalty: 3
 - market: 9
 - market-autonomy: 4
@@ -92,7 +92,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 137
 - route-manifest: 1
 - schema: 1
-- service: 476
+- service: 477
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -226,6 +226,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/refund-evidence-verifier.js — external-refund-evidence-verifier (refunds, critical, full)
 - services/refund-intent-ledger.js — durable-refund-intent-reservation (refunds, critical, full)
 - services/refund-intent-reconciliation.js — durable-refund-evidence-reconciliation (refunds, critical, full)
+- services/relay-product-return-intake-service.js — relay-product-return-intake-service (logistics, critical, full)
 - services/relay-return-request-service.js — orders-product-return-request-service (orders, critical, full)
 - services/repair-ordered-purchasing.js — orders-repair-ordered-purchasing (purchasing, critical, full)
 - services/repair-ordered-without-purchase-orders.js — orders-repair-ordered-without-purchase-orders (purchasing, critical, full)
@@ -899,7 +900,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/international-shipment-journey.js -> customs_shipments (via customs-shipment-service)
 - WRITE services/order-status-machine.js -> customs_shipments (via customs-shipment-service)
 - WRITE services/shipping-customs-workspace.js -> customs_shipments (via customs-shipment-service)
-- WRITE routes/relay-dashboard.js -> disputes; catalog-product-quality-service catalog_product_quality_notes (via dispute-mutation-service)
+- WRITE routes/relay-dashboard.js -> disputes; catalog-product-quality-service catalog_product_quality_notes; relay-product-return-intake-service relay_product_return_receipts (via dispute-mutation-service)
 - WRITE routes/market-delegation-client-case.js -> disputes (via dispute-mutation-service)
 - WRITE services/market-delegation-client-case-service.js -> disputes (via dispute-mutation-service)
 - WRITE services/relay-return-request-service.js -> disputes (via dispute-mutation-service)
