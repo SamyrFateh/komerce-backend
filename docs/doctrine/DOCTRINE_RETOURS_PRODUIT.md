@@ -1,10 +1,86 @@
 # Doctrine — Retours produit via le relais
 
-> **Version** : 0.1 — 2026-09-23
-> **Statut** : doctrine proposée, non implémentée
+> **Version** : 0.2 — 2026-11-08
+> **Statut** : lot V1-1 (ouverture de demande par article remis) codé sur branche PR, sous réserve de certification. Reprise physique, décision financière et disposition produit non implémentées.
 > **Feature propriétaire** : `orders` (owner de `disputes` — le retour est une **issue** d'un litige, pas un objet parallèle)
 > **Features impliquées** : `logistics` (mouvement physique par scans), `refunds` (décision financière), `local-stock` / `inventory` (remise en stock), `purchasing` (retour fournisseur éventuel)
 > **Doctrines existantes à respecter** : `refund_authority_never_delegated`, machine à états des litiges (`open → processing → resolved | closed`)
+
+---
+
+
+## 0. Décision de lancement — SAV simple, deux boucles autonomes (2026-11-08)
+
+**Une demande n'est pas encore un retour physique.** Le relais peut ouvrir un dossier
+sur un article de commande **effectivement remis** (avec quantité, motif et note).
+Le serveur impose son propre `relais_id`, bloque les doublons actifs et refuse
+de demander plus que les unités effectivement collectées. Le dossier est un
+`disputes.type='product_return'` ; l'identité article se trouve dans
+`disputes.return_order_item_id`, avec `return_quantity` et `return_reason`.
+
+**Statut du lot V1-1 :** API de lecture et de création de demande + onglet de
+l'atelier Relais. Aucun bouton « produit physiquement repris », « remboursement
+validé », « wallet crédité » ou « article revendable » n'est ajouté. Tant que les
+lots suivants ne sont pas certifiés, le client conserve l'article, sauf procédure
+explicite hors de ce module.
+
+**Boucle client, à livrer ensuite :**
+1. Komerce examine/valide la demande (ou refuse avec motif).
+2. Le dépôt physique au relais est autorisé si nécessaire ; scan et preuve
+   distincts, pièce isolée du stock vendable.
+3. Après validation financière centrale, le client reçoit un **avoir wallet
+   en priorité** ou un remboursement si autorisé et possible. Aucun crédit
+   n'est déduit d'un changement de statut du litige ; l'autorité `refunds/wallet`
+   reste seule responsable, avec idempotence et justificatif.
+
+**Boucle produit, indépendante du règlement du client :**
+1. Stock physiquement isolé, non vendable.
+2. Inspection par Komerce.
+3. Décision documentée : **réparation**, **revente locale déclassée à prix
+   explicitement réduit et état clairement décrit**, ou **écartement**.
+4. Réparation ne vaut pas automatiquement homologation à la revente ;
+   activation du stock et prix suivent les owners `inventory/local-stock` et
+   `pricing`, jamais le bouton de reprise. Aucune revente d'article dangereux
+   ou non conforme à la sécurité.
+
+**Gates avant activation complète :** preuve POST/RBAC (agent de l'autre
+relais interdit), un article de commande mixte partiellement remis, doublon
+concurrent, inspection/refus, compensation idempotente et sans double paiement,
+quantité bloquée en quarantaine, décision de revente avec étiquette d'état
+et contrôle prix local.
+
+---
+
+## 0.1. Signal qualité et gel du Catalogue (2026-11-08)
+
+**Retour ou remarque ≠ gel automatique.** Un dossier SAV ouvert pour un
+`order_item` réellement remis remonte par jointure de
+`disputes.return_order_item_id → order_items.product_id` vers la référence
+Catalogue globale. Un relais peut aussi transmettre une simple remarque sur
+l'article remis, sans ouvrir de retour : la trace est stockée dans
+`catalog_product_quality_notes` (source `relay`, `order_item_id`, acteur,
+date, commentaire) sous contrôle de son `relais_id`. Les notes manuelles du
+responsable Catalogue utilisent la même table, source `catalog`.
+
+**Gel global explicite uniquement.** Un administrateur détenteur de
+`requireCatalogGlobalAuthority` peut geler la référence, avec motif et
+commentaire obligatoire, puis lever ce gel avec commentaire obligatoire.
+L'historique est append-only par cycle dans `catalog_product_sale_holds` ;
+un seul cycle peut rester actif à un instant donné. La décision ne modifie
+ni les commandes déjà validées, ni les stocks, les prix, la remise client ou
+les paiements. Le gel bloque les nouvelles lignes d'achat au niveau de
+la base et des chemins checkout, et masque le produit à l'acheteur.
+
+**Réexamen.** Un gel qualité ne remplace pas la décision financière SAV ni
+la remise en stock d'un article repris. La revue du produit réparé ou
+déclassé est distincte du dégel de la référence catalogue. La sécurité d'un
+article rappelé, dangereux ou non conforme doit rester une condition
+obligatoire avant toute revente ou réactivation.
+
+**Lot technique :** migrations 399 (liaison demande retour/produit) et 400
+(notes/gel de vente, garde DB). Aucune activation commerciale n'est
+autorisée avant E2E de transaction gelée, contrôle marché et revue du
+périmètre global de gel.
 
 ---
 

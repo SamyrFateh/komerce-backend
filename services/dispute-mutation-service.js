@@ -7,7 +7,7 @@
  * @inputs        db_or_transaction_executor, dispute workflow payload
  * @outputs       dispute read model, mutated dispute row
  * @depends       none (executor fourni par l'appelant)
- * @used-by       services/market-delegation-client-case-service.js
+ * @used-by       services/market-delegation-client-case-service.js, services/relay-return-request-service.js
  * @db-read       disputes, orders
  * @db-write      disputes
  * @db-txn        caller_transaction_preserved
@@ -44,6 +44,26 @@ const ALLOWED_TRANSITIONS = Object.freeze({
 
 const DISPUTE_COLUMNS = `id, order_id, type, level, status, description, photo_urls, resolution,
             refund_kmf, refund_eur, created_by, resolved_by, resolved_at, created_at, updated_at`;
+
+/**
+ * Owner write boundary for a product-return REQUEST. No receipt, credit or
+ * resale is inferred from this write. Called inside the relay transaction.
+ */
+async function createProductReturnRequest(executor, {
+  orderId, orderItemId, quantity, reason, description, actorId,
+}) {
+  const db = requireExecutor(executor);
+  const { rows: [request] } = await db.query(
+    `INSERT INTO disputes
+      (order_id, type, status, description, return_order_item_id,
+       return_quantity, return_reason, created_by)
+     VALUES ($1, 'product_return', 'open', $2, $3, $4, $5, $6)
+     RETURNING id, order_id, type, status, description,
+               return_order_item_id, return_quantity, return_reason, created_at`,
+    [orderId, description || null, orderItemId, quantity, reason, actorId]
+  );
+  return request;
+}
 
 async function listDisputesForMarket(marketId, executor) {
   const db = requireExecutor(executor);
@@ -139,6 +159,7 @@ module.exports = {
   ALLOWED_TRANSITIONS,
   DisputeValidationError,
   listDisputesForMarket,
+  createProductReturnRequest,
   getOwnedDispute,
   updateDisputeWorkflow,
 };

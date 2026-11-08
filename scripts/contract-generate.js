@@ -2144,6 +2144,17 @@ const KNOWN_RESPONSES = {
     delete: { fields: ['ok','deleted'], source: 'route-read' }
   },
 
+  // relay-dashboard.js — SAV requests, eligible purchased lines and quality notes
+  '/api/relay/returns': {
+    get: { fields: ['requests'], source: 'route-read' },
+    post: { fields: ['request'], source: 'route-read' },
+  },
+  '/api/relay/returns/eligible': {
+    get: { fields: ['order','items'], source: 'service-read' },
+  },
+  '/api/relay/returns/remarks': {
+    post: { fields: ['ok','remark'], source: 'route-read' },
+  },
   // relay-dashboard.js
   '/api/relay/dashboard': {
     get: { fields: ['dashboard'], source: 'route-read' }
@@ -2783,6 +2794,8 @@ if (inventory.length < 150) {
 }
 
 const SUCCESS_STATUS_OVERRIDES = Object.freeze({
+  'POST /api/relay/returns': '201',
+  'POST /api/relay/returns/remarks': '201',
   'POST /api/auth/password-reset/request': '202',
   'POST /api/admin/market-settlements/markets/{marketCode}/settlements/ready': '201',
   'POST /api/market-delegation/markets/{marketCode}/network/providers': '201',

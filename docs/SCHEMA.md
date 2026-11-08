@@ -152,7 +152,7 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `cash_reconciliation` | Réconciliation cash. |
 | `invoices` | Factures / mini-factures. Contrainte UNIQUE(order_id) — une seule facture par commande. **Migration 169 (2026-09-07, `intended_migration_schema`)** : + `payment_total_amount` NUMERIC(18,4), `payment_currency` TEXT et `payment_minor_unit` INTEGER pour figer la devise réellement encaissée par les rails natifs comme Mobile Money XAF, sans réinterpréter `display_total_amount`. |
 | `refunds` | Remboursements. Contraintes UNIQUE(order_id, refund_type) et UNIQUE(stripe_refund_id) pour idempotence ON CONFLICT. |
-| `disputes` | Litiges. |
+| `disputes` | Litiges. **Migration 399 (`intended_migration_schema`, non vérifiée live)** : + `return_order_item_id` UUID FK `order_items(id)`, `return_quantity` INTEGER positif, `return_reason` TEXT contrôlé ; toute demande `product_return` doit référencer un article et sa quantité, un seul dossier actif par ligne. Ce n’est ni une réception physique ni une autorisation wallet. |
 | `stripe_events_processed` | Idempotence webhooks Stripe (anti-double-traitement). |
 | `paypal_events_processed` | Idempotence webhooks PayPal (PK `event_id`, `status` ∈ processed/ignored/rejected/noop). Pendant PayPal de `stripe_events_processed`. |
 | `transaction_documents` | Documents transactionnels hors facture : reçu remboursement (`refund_receipt`), reçu contribution panier partagé (`contribution_receipt`), reçu wallet (`wallet_receipt`), preuve retrait (`pickup_proof`), bon fournisseur (`purchase_order`), **facture douane classifiée** (`customs_invoice` — migration 093, Lot B keystone douane). Idempotence UNIQUE(document_type, subject_type, subject_id). Séquences dédiées : `refund_receipt_seq`, `wallet_receipt_seq`, `pickup_proof_seq`, `customs_invoice_seq`. |
@@ -481,6 +481,22 @@ Au-delà du code applicatif, la DB enforce elle-même plusieurs invariants :
 - **`ADR-009-source-verite-unifiee.md`** — `finance_config` comme singleton.
 
 ---
+
+
+<!-- schema-pending
+object: catalog_product_quality_notes
+kind: table
+migration: 400
+section: ## 4. Tables par domaine
+role: Remarques qualité traçables (acteur, provenance Catalogue ou Relais, article remis, commentaire daté et immuable) ; migration 400 non encore vérifiée live.
+-->
+<!-- schema-pending
+object: catalog_product_sale_holds
+kind: table
+migration: 400
+section: ## 4. Tables par domaine
+role: Décisions Catalogue centrales gel/dégel global d'une référence avec justification, acteur et historique ; garde des nouvelles commandes, migration 400 non encore vérifiée live.
+-->
 
 ## 10. Règle de divergence schéma ↔ code ↔ doc
 
