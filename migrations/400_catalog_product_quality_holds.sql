@@ -7,7 +7,13 @@ CREATE TABLE IF NOT EXISTS public.catalog_product_quality_notes (
   product_id uuid NOT NULL REFERENCES public.products(id),
   author_id uuid NOT NULL REFERENCES public.users(id),
   note text NOT NULL CHECK (length(btrim(note)) BETWEEN 5 AND 2000),
-  created_at timestamptz NOT NULL DEFAULT now()
+  source text NOT NULL DEFAULT 'catalog' CHECK (source IN ('catalog','relay')),
+  order_item_id uuid REFERENCES public.order_items(id),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT catalog_quality_note_origin CHECK (
+    (source='catalog' AND order_item_id IS NULL)
+    OR (source='relay' AND order_item_id IS NOT NULL)
+  )
 );
 CREATE INDEX IF NOT EXISTS idx_catalog_quality_notes_product_time
   ON public.catalog_product_quality_notes (product_id, created_at DESC);
