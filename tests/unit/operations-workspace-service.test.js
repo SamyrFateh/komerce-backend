@@ -96,6 +96,7 @@ test('agent relais : chaque lecture opérationnelle est limitée au relais serve
   for (const [sql, params] of mockQuery.mock.calls) {
     expect(params).toEqual([MARKET.id, relaisId]);
     expect(String(sql)).toMatch(/AND (o\.relais_id|p\.relais_id|r\.id) = \$2/);
+    expect(String(sql)).toContain('o.simulation_scope IS NULL');
   }
   expect(projection.queues.hub.to_ship).toEqual([]);
   expect(projection.distribution).toEqual({ parcels: [], unassigned: [] });
