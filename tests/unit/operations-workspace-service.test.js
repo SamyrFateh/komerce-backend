@@ -131,6 +131,22 @@ test('buildQueues ne crée aucune transition métier côté présentation', () =
   expect(queues.relay.to_collect.map(row => row.reference)).toEqual(['PCL-3']);
 });
 
+test('LOCAL_STOCK direct : seule la file du relais autorisé est projetée, sans action Hub', () => {
+  const orders = [
+    { id:'11111111-1111-4111-8111-111111111111', reference:'LOCAL-A', relais_id:'relay-A', local_receipt_candidate:true },
+    { id:'22222222-2222-4222-8222-222222222222', reference:'LOCAL-B', relais_id:'relay-B', local_receipt_candidate:true },
+    { id:'33333333-3333-4333-8333-333333333333', reference:'IMPORT-C', relais_id:'relay-A', local_receipt_candidate:false },
+  ];
+  const relay = workspace.buildQueues(orders, [], { role:'agent_relais', relais_id:'relay-A' });
+  expect(relay.relay.local_receipt_pending.map(row => row.reference)).toEqual(['LOCAL-A']);
+  expect(workspace.buildQueues(orders, [], { role:'agent_relais', relais_id:'relay-B' })
+    .relay.local_receipt_pending.map(row => row.reference)).toEqual(['LOCAL-B']);
+  expect(workspace.buildQueues(orders, [], { role:'agent_hub' }).relay.local_receipt_pending).toHaveLength(0);
+  expect(workspace.buildQueues(orders, [], { role:'market_operator' }).relay.local_receipt_pending).toHaveLength(0);
+  expect(workspace.buildQueues(orders, [], { role:'admin' }).relay.local_receipt_pending).toHaveLength(2);
+  expect(workspace.buildQueues(orders, []).relay.local_receipt_pending).toHaveLength(0);
+});
+
 test('runDistribution ne distribue que les commandes présélectionnées dans le marché', async () => {
   mockQuery.mockResolvedValueOnce({
     rows: [
