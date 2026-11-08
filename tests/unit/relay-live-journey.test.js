@@ -59,7 +59,7 @@ test('Suivi calme : Kanban permanent, files et réception sans dossiers actifs',
     expect(h).toContain('data-relay-empty-lane="'+lane+'"');
   }
   expect(h).toContain('Contrôler les arrivages physiques');
-  expect(h).toContain('href="/admin/relais-live?view=execute&focus=shipments"');
+  expect(h).toContain('href="/admin/relais-live?view=execute&amp;focus=shipments"');
   expect(h).not.toContain('is-attention');
   expect(h).toContain('Aucun retrait prioritaire.');
 });
