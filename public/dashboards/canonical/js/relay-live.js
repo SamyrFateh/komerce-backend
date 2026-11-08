@@ -264,7 +264,7 @@
       <td>${esc(i.severity==='critical'?'Critique':i.severity==='high'?'Haute':'À examiner')}</td>
       <td>${esc(i.status==='in_progress'||i.status==='investigating'?'En traitement':'Ouvert')}</td>
       <td><a href="${esc(orderUrl(i.order_id,'incidents'))}" data-cockpit-nav>Ouvrir le dossier →</a></td>
-    </tr>`).join('');
+    </tr>`);
     return {
       hero:`<header class="kmc-relay-flow-heading"><div><span class="kmc-relay-work-eyebrow">RELAIS · EXCEPTIONS</span>
         <h1>Incidents & SAV</h1><p>Signaler, retrouver et suivre les anomalies sur une commande.</p></div></header>`,
