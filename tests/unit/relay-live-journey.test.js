@@ -30,6 +30,19 @@ const crumbs = h => (h.match(/<nav class="kir-breadcrumb"[^>]*>([\s\S]*?)<\/nav>
 const back = h => { const m = h.match(/<a href="([^"]+)" data-cockpit-nav class="kir-back">([^<]+)<\/a>/); return m ? { href:m[1], label:m[2] } : null; };
 const activeTab = h => (h.match(/is-active[^>]*>([^<]+)</) || [])[1];
 
+test.each([
+  ['Flux', '', { ...OVERVIEW, queue:{ orders:[] } }],
+  ['Incidents', '?view=incidents', { incidents:[] }],
+  ['Historique', '?view=orders&list=collected', LIST],
+  ['Dossier', '?view=order&order=r-1', DETAIL],
+])('%s : le rendu ne crée jamais la navigation supérieure de repli', (_name, search, data) => {
+  const h=html(search,data);
+  expect(h).not.toContain('class="kir-domain-nav"');
+  expect((h.match(/<nav class="kmc-relay-main-nav"/g)||[])).toHaveLength(1);
+  const menu=h.match(/<nav class="kmc-relay-main-nav"[^>]*>([\\s\\S]*?)<\\/nav>/)?.[1]||'';
+  expect((menu.match(/class="kmc-relay-main-tab/g)||[])).toHaveLength(4);
+});
+
 test('Flux : quatre étapes visibles, pas de fausse attestation physique', () => {
   const h=html('',{...OVERVIEW,queue:{orders:[ORDER()]}});
   expect(h).toContain('Préparer les colis');
