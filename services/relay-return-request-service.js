@@ -6,7 +6,7 @@
  * @criticality   critical
  * @inputs        authenticated_relay_actor, order_reference, purchased_order_item_id, return_quantity, return_reason
  * @outputs       relay_scoped_eligible_lines_and_dispute_return_requests
- * @depends       db (transaction supplied), services/dispute-mutation-service.js, orders, order_items, products
+ * @depends       db (transaction supplied), services/dispute-mutation-service.js, services/catalog-product-quality-service.js, orders, order_items, products
  * @used-by       routes/relay-dashboard.js
  * @db-read       orders, order_items, products, disputes
  * @db-write      none
@@ -109,6 +109,16 @@ async function listReturnRequests({ actor, executor, limit = 50 }) {
   return { requests: rows };
 }
 
+async function addRemark({actor,reference,orderItemId,note,executor}){
+  const scope=relayScope(actor);
+  const ref=normalizeReference(reference);
+  if(!UUID.test(String(orderItemId||'')))
+    fail('RETURN_ITEM_INVALID','Article commandé invalide.');
+  return require('./catalog-product-quality-service').addRelayObservation({
+    actorId:actor.id,relayId:scope,reference:ref,orderItemId,note,
+  },executor);
+}
+
 async function createReturnRequest({ actor, reference, orderItemId, quantity, reason, note, db }) {
   const scope = relayScope(actor);
   const ref = normalizeReference(reference);
@@ -178,4 +188,5 @@ module.exports = {
   eligibleOrder,
   listReturnRequests,
   createReturnRequest,
+  addRemark,
 };
