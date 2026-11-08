@@ -121,4 +121,26 @@ if (!process.env.DATABASE_URL) {
     expect(ids).not.toContain(incidentA);
     expect(ids).toEqual(expect.arrayContaining([orderOnlyId, itemOnlyId]));
   });
+  test('signalements locaux : visibles en file SAV avec cloisonnement relais/marché et résolution',async()=>{
+    const localA=id(),localB=id();
+    await db.query("INSERT INTO order_incidents (id,order_id,type,description,priority,status) VALUES ($1,$2,'colis_endommage',$3,'high','open'),($4,$5,'autre',$6,'normal','open')",
+      [localA,orderA,tag+'-endommage',localB,orderB,tag+'-autre']);
+    const a=await relay.getRelayOperationalIncidents({role:'agent_relais',relais_id:relayA});
+    expect(a.incidents.find(x=>x.id===localA)).toMatchObject({
+      order_id:orderA,source:'relay_report',incident_type:'colis_endommage',severity:'high'
+    });
+    expect(a.incidents.map(x=>x.id)).not.toContain(localB);
+    const b=await relay.getRelayOperationalIncidents({role:'agent_relais',relais_id:relayB});
+    expect(b.incidents.map(x=>x.id)).toContain(localB);
+    expect(b.incidents.map(x=>x.id)).not.toContain(localA);
+    const operator={role:'market_operator'};
+    const none=await relay.getRelayOperationalIncidents(operator);
+    expect(none.incidents.map(x=>x.id)).not.toContain(localA);
+    const km=await relay.getRelayOperationalIncidents(operator,{authorizedMarkets:new Set([marketId])});
+    expect(km.incidents.map(x=>x.id)).toEqual(expect.arrayContaining([localA,localB]));
+    await db.query("UPDATE order_incidents SET status='resolved' WHERE id=$1",[localA]);
+    const later=await relay.getRelayOperationalIncidents({role:'agent_relais',relais_id:relayA});
+    expect(later.incidents.map(x=>x.id)).not.toContain(localA);
+  });
+
 }

@@ -80,6 +80,7 @@ module.exports = {
       'migrations/392_hub_order_bag_ownership.sql',
       'migrations/393_hub_order_bag_scan_evidence.sql',
       'migrations/394_hub_packed_bag_box_link.sql',
+      'migrations/401_relay_product_return_intake.sql',
       'migrations/309_hub_placement_guard_exclude_outcomes.sql',
       'migrations/313_market_transport_sale_rates.sql',
       'migrations/354_international_shipment_journey.sql',
@@ -148,6 +149,7 @@ module.exports = {
       'services/international-shipment-journey.js',
       'services/parcel-shipment-handover.js',
       'services/relay-shipment-receipt.js',
+      'services/relay-product-return-intake-service.js',
       'services/relay-parcel-item-reconciliation.js',
     ],
     routes: [
@@ -187,6 +189,8 @@ module.exports = {
       'tests/e2e-api/logistics.hub-live-cockpit-roles.e2e.test.js',
       'tests/integration/hub-physical-proof-postgres.test.js',
       'tests/integration/relay-shipment-receipt-postgres.test.js',
+      'tests/unit/relay-product-return-intake.test.js',
+      'tests/integration/relay-return-intake-postgres.test.js',
       'tests/unit/relay-shipment-parcel-projection.test.js',
       'tests/unit/market-transport-tariff-gate.test.js',
       'tests/integration/market-transport-sale-rates-postgres.test.js',
@@ -276,6 +280,7 @@ module.exports = {
 
   db: {
     tables: [
+      'relay_product_return_receipts: RW!',
       'business_rules: R',
       'customs_shipments: R',
       'carriers: RW',

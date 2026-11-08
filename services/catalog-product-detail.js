@@ -8,7 +8,7 @@
  * @outputs       public_product_detail_v1
  * @depends       services/transport-rails.js, services/transport-pricing.js, utils/rules.js, schemas/catalog/product-detail.v1.schema.json
  * @used-by       routes/catalog-product-detail.js
- * @db-read       business_rules, catalog_media, product_attributes, product_content_profile, product_content_sections, product_sku_media, product_skus, product_variants, products
+ * @db-read       business_rules, catalog_product_sale_holds, catalog_media, product_attributes, product_content_profile, product_content_sections, product_sku_media, product_skus, product_variants, products
  * @db-write      none
  * @db-txn        none
  * @doctrine      docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md, docs/specs/DECISION_MODELE_STOCK_SKU.md, docs/doctrine/DOCTRINE_TRANSPORT_RAILS.md
@@ -417,7 +417,9 @@ async function getProductDetail(dbClient, productId) {
             price_kmf, promo_pct, is_promo, promo_until, image_url, images, has_variants, inventory_model,
             air_eligibility_status, weight_kg, volume_cm3
        FROM products
-      WHERE id = $1 AND is_active = TRUE`,
+      WHERE id = $1 AND is_active = TRUE AND is_available = TRUE
+        AND NOT EXISTS(SELECT 1 FROM catalog_product_sale_holds h
+          WHERE h.product_id=products.id AND h.released_at IS NULL)`,
     [productId]
   );
   if (!product) return null;

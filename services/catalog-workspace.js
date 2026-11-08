@@ -6,9 +6,9 @@
  * @criticality   high
  * @inputs        authenticated_central_actor, product_ref, category_key, catalog_action_payload
  * @outputs       catalog_work_queue, delegated_catalog_mutations
- * @depends       db, utils/rules.js, services/product-admin-service.js, services/catalog-approval.js, services/catalog-overrides.js, services/boutique-taxonomy-admin.js, services/catalog-commercial-assortment.js, services/pricing-parameters-status.js
+ * @depends       db, utils/rules.js, services/catalog-product-quality-service.js, services/product-admin-service.js, services/catalog-approval.js, services/catalog-overrides.js, services/boutique-taxonomy-admin.js, services/catalog-commercial-assortment.js, services/pricing-parameters-status.js
  * @used-by       routes/admin-catalog-workspace.js
- * @db-read       products, sourcing_candidates, boutique_categories, boutique_subcategories, import_runtime_runs, markets, product_market_exposure, product_market_price_drafts, catalog_media, product_skus, product_variants, finance_config, currency_parities, exchange_rates, cost_components
+ * @db-read       catalog_product_sale_holds, catalog_product_quality_notes, disputes, order_items, products, sourcing_candidates, boutique_categories, boutique_subcategories, import_runtime_runs, markets, product_market_exposure, product_market_price_drafts, catalog_media, product_skus, product_variants, finance_config, currency_parities, exchange_rates, cost_components
  * @db-write      none
  * @db-write-via  product-admin-service, catalog-approval, catalog-overrides, boutique-taxonomy-admin
  * @db-txn        delegated_to_domain_authority
@@ -27,6 +27,7 @@ const { certifyCatalogProduct } = require('./catalog-certification');
 const catalogOverrides = require('./catalog-overrides');
 const taxonomy = require('./boutique-taxonomy-admin');
 const commercialAssortment = require('./catalog-commercial-assortment');
+const quality = require('./catalog-product-quality-service');
 const catalogRegistry = require('./catalog-registry');
 const catalogUnifiedRegistry = require('./catalog-unified-registry');
 const catalogMediaRecovery = require('./catalog-media-recovery');
@@ -387,6 +388,18 @@ async function buildWorkspace(query = {}) {
         };
       }))
     : approval.map(({ product_id, ...row }) => row);
+  // Only enrich the visible, already-scoped Catalogue page. A SAV report is a
+  // signal, not a publication decision, and never freezes the product by itself.
+  const qualityByRef = isRefinery ? new Map() : await quality.batchSignals([
+    ...registry.products.map(row => row.product_ref),
+    ...commercialProducts.map(row => row.product_ref),
+  ]);
+  const withQuality = rows => rows.map(row => ({
+    ...row,
+    quality: qualityByRef.get(row.product_ref) || {
+      quality_frozen: false, quality_note_count: 0, quality_return_count: 0,
+    },
+  }));
   const refinery = isRefinery ? await refineryWorklist.buildRefineryWorklist(query) : null;
   const approvalTotal = Number(summary.approval_pending) || 0;
   const commercialSummary = {
@@ -411,9 +424,9 @@ async function buildWorkspace(query = {}) {
     commercial: commercialSummary,
     curation: buildCurationState(commercialCurationSummary, catalogCap),
     categories,
-    products: registry.products,
+    products: withQuality(registry.products),
     registry_page: registry.page,
-    commercial_products: commercialProducts,
+    commercial_products: withQuality(commercialProducts),
     approval: approvalWithReadiness,
     ...(isRefinery ? { refinery } : {}),
     focused_handoff: focusedHandoff,

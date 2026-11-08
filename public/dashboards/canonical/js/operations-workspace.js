@@ -91,12 +91,12 @@
     const relayExec = mode === 'relay-execution';
     const execution = mode === 'execution' || relayExec;
     copy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', relayExec ? 'RELAIS LIVE · EXÉCUTION' : execution ? 'HUB LIVE · EXÉCUTION' : 'HUB & RELAIS'));
-    copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', relayExec ? 'Exécuter les opérations Relais' : execution ? 'Hub live · Dossiers' : 'Flux à traiter'));
+    copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', relayExec ? 'Poste de travail Relais' : execution ? 'Hub live · Dossiers' : 'Flux à traiter'));
     copy.appendChild(text(
       doc,
       'p',
       'kmc-workspace-subtitle',
-      `${payload.scope.code} · ${payload.scope.name} · ${relayExec ? 'encaisser, réceptionner, remettre au client' : execution ? 'suivre les PO, réceptionner, affecter et préparer les expéditions' : 'voir ce qui attend une action'}`
+      `${payload.scope.code} · ${payload.scope.name} · ${relayExec ? 'Réceptionner · Encaisser · Remettre — uniquement sur preuve' : execution ? 'suivre les PO, réceptionner, affecter et préparer les expéditions' : 'voir ce qui attend une action'}`
     ));
     header.appendChild(copy);
 
@@ -355,7 +355,7 @@
   ]);
 
   // Relais live · Exécution : actions Relais uniquement (encaisser, réceptionner, remettre) — jamais Hub.
-  const RELAY_LIVE_TABS = Object.freeze([{ id: 'relay', label: 'Opérations' }, { id: 'cash', label: 'Cash & dépôts' }]);
+  const RELAY_LIVE_TABS = Object.freeze([{ id: 'relay', label: 'Opérations' }, { id: 'cash', label: 'Cash & dépôts' }, { id: 'returns', label: 'Retours & SAV' }]);
 
   function newReceptionReference() {
     const crypto = globalThis.crypto;
@@ -1288,16 +1288,372 @@
     return bar;
   }
 
+  // Côté Relais, une opération à la fois : les autres files restent dans le DOM,
+  // mais sont masquées (et inaccessibles au clavier) jusqu'à sélection explicite.
+  // Aucune requête ou mutation métier n'est déclenchée par cet aiguillage.
+  const RELAY_OPERATION_KEYS=Object.freeze(['shipments','cash','receive','collect']);
+  const isShipmentReceivable=shipment=>Boolean(shipment?.receivable && (shipment.boxes||[]).some(
+    box=>(box.orders||[]).some(order=>(order.items||[]).some(item=>item.received===null))
+  ));
+  function showRelayOperation(rootNode, key) {
+    if(!RELAY_OPERATION_KEYS.includes(key))return;
+    for(const candidate of RELAY_OPERATION_KEYS) {
+      const section=rootNode.querySelector('#relay-execution-'+candidate);
+      if(section) {
+        section.hidden=candidate!==key;
+        section.setAttribute('data-relay-operation-visible',String(candidate===key));
+      }
+      const link=rootNode.querySelector('[data-relay-execution-jump="'+candidate+'"]');
+      if(link) {
+        if(candidate===key)link.setAttribute('aria-current','true');
+        else link.removeAttribute('aria-current');
+      }
+    }
+    rootNode.setAttribute('data-relay-active-operation',key);
+  }
+
+  // V1 SAV — une demande rattachée au VRAI article remis, sans réception
+  // physique implicite ni opération financière. Les décisions restent dans
+  // les litiges / autorités Komerce ; ce formulaire sert uniquement à signaler.
+  function renderRelayReturnRequests(rootNode, ui, doc, context) {
+    const slot = createSection(rootNode, ui, 'Retours & SAV',
+      'Ouvrir un dossier, signaler une anomalie ou attester séparément la reprise physique. Aucun paiement automatique.');
+    slot.setAttribute('data-relay-return-requests', '');
+
+    const notice = text(doc, 'p', 'kmc-workspace-note',
+      'La reprise est une preuve de dépôt, pas une décision de remboursement. Les articles repris restent isolés de la vente.');
+    slot.appendChild(notice);
+
+    const searchForm = doc.createElement('form');
+    searchForm.setAttribute('data-relay-return-lookup', '');
+    searchForm.className = 'kmc-workspace-section-actions';
+    const reference = doc.createElement('input');
+    reference.type = 'text';
+    reference.required = true;
+    reference.maxLength = 80;
+    reference.placeholder = 'Référence commande';
+    reference.setAttribute('aria-label', 'Référence de commande');
+    reference.setAttribute('data-relay-return-reference', '');
+    searchForm.appendChild(reference);
+    const lookup = text(doc, 'button', 'kmc-workspace-action', 'Rechercher');
+    lookup.type = 'submit';
+    searchForm.appendChild(lookup);
+    slot.appendChild(searchForm);
+
+    const selection = doc.createElement('form');
+    selection.setAttribute('data-relay-return-create', '');
+    selection.className = 'kmc-workspace-inventory-list';
+    selection.hidden = true;
+    const product = doc.createElement('select');
+    product.required = true;
+    product.setAttribute('aria-label', 'Article réellement remis au client');
+    product.setAttribute('data-relay-return-product', '');
+    const qty = doc.createElement('input');
+    qty.type = 'number';
+    qty.min = '1';
+    qty.value = '1';
+    qty.required = true;
+    qty.setAttribute('aria-label', 'Quantité concernée');
+    const reason = doc.createElement('select');
+    reason.required = true;
+    reason.setAttribute('aria-label', 'Motif de retour');
+    for (const [value, label] of [
+      ['defective', 'Produit défectueux'],
+      ['damaged', 'Produit cassé'],
+      ['wrong_item', 'Mauvais article'],
+      ['not_as_described', 'Non conforme'],
+      ['other', 'Autre motif'],
+    ]) {
+      const option = text(doc, 'option', '', label);
+      option.value = value;
+      reason.appendChild(option);
+    }
+    const note = doc.createElement('textarea');
+    note.maxLength = 500;
+    note.rows = 2;
+    note.placeholder = 'Commentaire complémentaire (obligatoire pour Autre)';
+    note.setAttribute('aria-label', 'Commentaire SAV');
+    const create = text(doc, 'button', 'kmc-workspace-action', 'Ouvrir le dossier SAV');
+    create.type = 'submit';
+    create.setAttribute('data-relay-return-submit', '');
+    for (const [caption, control] of [
+      ['Article', product], ['Quantité', qty], ['Motif', reason], ['Commentaire', note],
+    ]) {
+      const label = text(doc, 'label', 'kmc-workspace-note', caption);
+      label.appendChild(control);
+      selection.appendChild(label);
+    }
+    selection.appendChild(create);
+    const remark = text(doc, 'button', 'kmc-workspace-action is-secondary',
+      'Signaler une remarque sans retour');
+    remark.type = 'button';
+    remark.setAttribute('data-relay-quality-remark', '');
+    selection.appendChild(remark);
+    slot.appendChild(selection);
+    const result = text(doc, 'p', 'kmc-workspace-note', '');
+    result.setAttribute('role', 'status');
+    result.setAttribute('data-relay-return-feedback', '');
+    slot.appendChild(result);
+
+    const list = doc.createElement('div');
+    list.setAttribute('data-relay-return-list', '');
+    slot.appendChild(list);
+
+    // Physical attestation is a separate gesture from opening the SAV dossier.
+    // A letter groups many parcels; the immutable receipt id identifies the unit.
+    const intake = doc.createElement('form');
+    intake.className = 'kmc-workspace-inventory-list';
+    intake.setAttribute('data-relay-return-intake', '');
+    intake.hidden = true;
+    const intakeTitle = text(doc, 'h3', '', 'Attester une reprise physique');
+    intake.appendChild(intakeTitle);
+    const intakeRequest = doc.createElement('select');
+    intakeRequest.required = true;
+    intakeRequest.setAttribute('aria-label', 'Dossier SAV à reprendre');
+    intakeRequest.setAttribute('data-relay-intake-request', '');
+    const intakeCondition = doc.createElement('select');
+    intakeCondition.required = true;
+    intakeCondition.setAttribute('aria-label', 'État physique constaté');
+    for (const [value, label] of [
+      ['unknown', 'État à examiner'],
+      ['sealed', 'Emballage fermé'],
+      ['opened', 'Emballage ouvert'],
+      ['damaged', 'Produit ou emballage endommagé'],
+    ]) {
+      const option = text(doc, 'option', '', label);
+      option.value = value;
+      intakeCondition.appendChild(option);
+    }
+    const intakeZone = doc.createElement('input');
+    intakeZone.type = 'text';
+    intakeZone.maxLength = 1;
+    intakeZone.placeholder = 'A (facultatif)';
+    intakeZone.setAttribute('aria-label', 'Lettre de zone facultative');
+    const intakeNote = doc.createElement('textarea');
+    intakeNote.required = true;
+    intakeNote.minLength = 10;
+    intakeNote.maxLength = 1000;
+    intakeNote.rows = 2;
+    intakeNote.placeholder = 'Constat physique au dépôt (10 caractères minimum)';
+    intakeNote.setAttribute('aria-label', 'Constat physique de reprise');
+    for (const [caption, control] of [
+      ['Dossier', intakeRequest], ['État constaté', intakeCondition],
+      ['Zone (facultative)', intakeZone], ['Constat', intakeNote],
+    ]) {
+      const label = text(doc, 'label', 'kmc-workspace-note', caption);
+      label.appendChild(control);
+      intake.appendChild(label);
+    }
+    const intakeSubmit = text(doc, 'button', 'kmc-workspace-action', 'Confirmer la réception');
+    intakeSubmit.type = 'submit';
+    intakeSubmit.setAttribute('data-relay-intake-submit', '');
+    intake.appendChild(intakeSubmit);
+    slot.appendChild(intake);
+    let order = null;
+    let items = [];
+
+    const updateQuantity = () => {
+      const chosen = items.find(item => item.id === product.value);
+      qty.max = String(chosen?.remaining_returnable || 1);
+      qty.value = '1';
+    };
+    product.addEventListener('change', updateQuantity);
+
+    async function loadRequests() {
+      try {
+        const data = await jsonRequest(context.fetch, '/api/relay/returns');
+        list.replaceChildren();
+        const rows = Array.isArray(data.requests) ? data.requests : [];
+        if (!rows.length) {
+          list.appendChild(text(doc, 'p', 'kmc-workspace-empty', 'Aucun dossier SAV ouvert.'));
+          return;
+        }
+        const wrap = doc.createElement('div');
+        list.appendChild(wrap);
+        ui.DataTable.render(wrap, {
+          columns: [
+            { key:'order_reference', label:'Commande' },
+            { key:'product_name', label:'Article' },
+            { key:'return_quantity', label:'Quantité' },
+            { key:'return_reason', label:'Motif', render: row =>
+              ({defective:'Défectueux',damaged:'Cassé',wrong_item:'Mauvais article',not_as_described:'Non conforme',other:'Autre'})[row.return_reason] || 'Autre' },
+            { key:'status', label:'Dossier', render: row =>
+              ({open:'À examiner',processing:'En traitement',resolved:'Résolu',closed:'Clôturé'})[row.status] || row.status },
+            { key:'received_at', label:'Reprise physique', render: row =>
+              row.receipt_id ? ('Reçu · ' + row.received_quantity + ' unité(s)' +
+                (row.storage_zone ? ' · zone ' + row.storage_zone : '')) : 'Non repris' },
+          ],
+          rows,
+          emptyText: 'Aucun dossier SAV.',
+        });
+        // Only open/processing requests without physical evidence may be received.
+        const pendingIntakes = rows.filter(row => !row.receipt_id &&
+          (row.status === 'open' || row.status === 'processing'));
+        intakeRequest.replaceChildren();
+        for (const pending of pendingIntakes) {
+          const option = text(doc, 'option', '',
+            pending.order_reference + ' · ' + pending.product_name +
+            ' · ' + pending.return_quantity + ' unité(s)');
+          option.value = pending.id;
+          intakeRequest.appendChild(option);
+        }
+        intake.hidden = pendingIntakes.length === 0;
+      } catch (error) { result.textContent = 'Liste SAV indisponible : ' + error.message; }
+    }
+
+    intake.addEventListener('submit', async event => {
+      event.preventDefault();
+      if (!intakeRequest.value) return;
+      const evidence = intakeNote.value.trim();
+      if (evidence.length < 10) {
+        result.textContent = 'Décrivez le constat physique de la reprise.';
+        return;
+      }
+      intakeSubmit.disabled = true;
+      result.textContent = 'Enregistrement de la reprise physique…';
+      try {
+        await jsonRequest(context.fetch, '/api/relay/returns/intake', {
+          method: 'POST', body: {
+            request_id: intakeRequest.value,
+            condition_code: intakeCondition.value,
+            storage_zone: intakeZone.value.trim().toUpperCase() || null,
+            observation: evidence,
+          },
+        });
+        intakeNote.value = '';
+        intakeZone.value = '';
+        result.textContent = 'Reprise attestée. Produit isolé : aucun crédit wallet, remboursement ni stock vendable.';
+        await loadRequests();
+      } catch (error) {
+        result.textContent = error.message;
+      } finally {
+        intakeSubmit.disabled = false;
+      }
+    });
+
+    searchForm.addEventListener('submit', async event => {
+      event.preventDefault();
+      selection.hidden = true;
+      order = null;
+      items = [];
+      lookup.disabled = true;
+      result.textContent = 'Recherche de la commande…';
+      try {
+        const data = await jsonRequest(context.fetch,
+          '/api/relay/returns/eligible?reference=' + encodeURIComponent(reference.value.trim()));
+        order = data.order;
+        items = (data.items || []).filter(item => item.remaining_returnable > 0);
+        product.replaceChildren();
+        for (const item of items) {
+          const option = text(doc, 'option', '',
+            item.product_name + ' · ' + item.remaining_returnable + ' unité(s) remises disponibles');
+          option.value = item.id;
+          product.appendChild(option);
+        }
+        if (!items.length) {
+          result.textContent = 'Aucun article remis éligible ou une demande est déjà en cours.';
+        } else {
+          updateQuantity();
+          selection.hidden = false;
+          result.textContent = 'Sélectionnez l’article et le motif ; aucun crédit n’est créé.';
+        }
+      } catch (error) { result.textContent = error.message; }
+      finally { lookup.disabled = false; }
+    });
+
+    remark.addEventListener('click', async () => {
+      const chosen = items.find(item => item.id === product.value);
+      if (!order || !chosen) return;
+      if (note.value.trim().length < 5) {
+        result.textContent = 'Décrivez votre remarque en quelques mots.';
+        return;
+      }
+      remark.disabled = true;
+      result.textContent = 'Envoi de la remarque au Catalogue…';
+      try {
+        await jsonRequest(context.fetch, '/api/relay/returns/remarks', {
+          method: 'POST', body: {
+            order_reference: order.reference, order_item_id: chosen.id,
+            note: note.value.trim(),
+          },
+        });
+        note.value = '';
+        result.textContent = 'Remarque enregistrée sur la référence Catalogue. Aucun retour, gel ou paiement déclenché.';
+      } catch (error) {
+        result.textContent = error.message;
+      } finally { remark.disabled = false; }
+    });
+
+    selection.addEventListener('submit', async event => {
+      event.preventDefault();
+      const chosen = items.find(item => item.id === product.value);
+      if (!order || !chosen) return;
+      const count = Number(qty.value);
+      if (!Number.isSafeInteger(count) || count < 1 || count > chosen.remaining_returnable) {
+        result.textContent = 'Quantité supérieure aux articles remis disponibles.';
+        return;
+      }
+      if (reason.value === 'other' && note.value.trim().length < 3) {
+        result.textContent = 'Précisez le motif du retour.';
+        return;
+      }
+      create.disabled = true;
+      result.textContent = 'Enregistrement de la demande…';
+      try {
+        await jsonRequest(context.fetch, '/api/relay/returns', {
+          method: 'POST', body: {
+            order_reference: order.reference, order_item_id: chosen.id,
+            quantity: count, reason: reason.value, note: note.value.trim(),
+          },
+        });
+        selection.hidden = true;
+        order = null;
+        items = [];
+        result.textContent = 'Dossier SAV enregistré. À examiner par Komerce ; aucun retour physique ou wallet confirmé.';
+        await loadRequests();
+      } catch (error) { result.textContent = error.message; }
+      finally { create.disabled = false; }
+    });
+
+    loadRequests().catch(() => {});
+  }
+
   function renderPayload(rootNode, ui, doc, payload, context) {
     rootNode.className = 'kmc-operations-workspace';
     rootNode.setAttribute('data-workspace-kind', 'hub-relay');
     rootNode.setAttribute('data-workspace-mode', context.mode);
+    rootNode.setAttribute('data-relay-counter',context.focusOnly?'true':'false');
     rootNode.replaceChildren();
-    rootNode.appendChild(createHeader(doc, payload, context.mode));
+    const header=createHeader(doc,payload,context.mode);
+    if(context.focusOnly) {
+      header.querySelector('.kmc-workspace-kicker').textContent='RELAIS · COMPTOIR';
+      header.querySelector('.kmc-workspace-title').textContent='Remises client';
+      header.querySelector('.kmc-workspace-subtitle').textContent=
+        context.marketCode+' · Identifier le bon colis, vérifier les conditions de retrait, attester la remise.';
+    }
+    rootNode.appendChild(header);
+    if(context.focusOnly) {
+      const nav=doc.createElement('nav');
+      nav.className='kmc-relay-main-nav';
+      nav.setAttribute('aria-label','Espaces de travail du relais');
+      const links=[
+        ['Flux Relais','/admin/relais-live',false],
+        ['Remises','/admin/relais-live?view=remises&market='+encodeURIComponent(context.marketCode),true],
+        ['Incidents & SAV','/admin/relais-live?view=incidents',false],
+        ['Historique','/admin/relais-live?view=orders&list=collected',false],
+      ];
+      for(const [title,href,active] of links) {
+        const link=text(doc,'a','kmc-relay-main-tab',title);
+        link.href=href;
+        if(active)link.setAttribute('aria-current','page');
+        nav.appendChild(link);
+      }
+      rootNode.appendChild(nav);
+    }
 
     // En Hub Live le dossier porte déjà les quatre indicateurs de sa projection
     // serveur. Ne pas répéter les métriques Relais ni repousser la file sous le pli.
-    if (context.mode !== 'execution') {
+    if (context.mode !== 'execution' && context.mode !== 'relay-execution') {
       const metrics = doc.createElement('section');
       metrics.className = 'kmc-workspace-metrics';
       rootNode.appendChild(metrics);
@@ -1309,31 +1665,41 @@
     const views = context.mode === 'relay-execution' ? RELAY_LIVE_TABS
       : context.mode === 'execution' ? EXECUTION_VIEWS : WORKSPACE_VIEWS;
     const view = views.some(item => item.id === context.view) ? context.view : views[0].id;
-    rootNode.appendChild(createViewTabs(doc, view, nextView => {
+    if(!context.focusOnly)rootNode.appendChild(createViewTabs(doc, view, nextView => {
       context.view = nextView;
       renderPayload(rootNode, ui, doc, payload, context);
     }, views));
 
-    if (context.mode === 'relay-execution' && view === 'relay') {
+    if (context.mode==='relay-execution' && view==='relay' && !context.focusOnly) {
       const relay=payload.queues?.relay||{};
-      const shipments=Array.isArray(context.relayShipments?.shipments)?context.relayShipments.shipments.length:null;
-      const shortcuts=[
-        {key:'shipments',label:'Arrivages importés',count:shipments,icon:'↓'},
-        {key:'cash',label:'Encaisser',count:(relay.cash_pending||[]).length,icon:'€'},
-        {key:'receive',label:'Réception locale',count:(relay.to_receive||[]).filter(x=>x.local_receivable===true).length,icon:'⌂'},
-        {key:'collect',label:'Remise client',count:(relay.to_collect||[]).length,icon:'✓'},
+      const allShipments=context.relayShipments?.shipments;
+      const pending=Array.isArray(allShipments)?allShipments.filter(isShipmentReceivable).length:null;
+      const choices=[
+        {key:'shipments',label:'Arrivages',count:pending},
+        {key:'cash',label:'Encaisser',count:(relay.cash_pending||[]).length},
+        {key:'receive',label:'Réception locale',count:(relay.to_receive||[]).filter(x=>x.local_receivable===true).length},
+        {key:'collect',label:'Remise client',count:(relay.to_collect||[]).length},
       ];
+      if(!RELAY_OPERATION_KEYS.includes(context.activeRelayQueue)) {
+        context.activeRelayQueue=RELAY_OPERATION_KEYS.includes(context.initialFocus)?context.initialFocus:
+          (pending>0?'shipments':relay.to_collect?.length?'collect':
+          relay.cash_pending?.length?'cash':
+          relay.to_receive?.some(x=>x.local_receivable===true)?'receive':'shipments');
+      }
       const dock=doc.createElement('nav');
       dock.className='kmc-relay-execution-jumpbar';
-      dock.setAttribute('aria-label','Accès direct aux opérations du relais');
-      for(const item of shortcuts) {
+      dock.setAttribute('aria-label','Choisir une opération du relais');
+      for(const choice of choices) {
         const link=doc.createElement('a');
         link.className='kmc-relay-execution-jump';
-        link.href='#relay-execution-'+item.key;
-        link.setAttribute('data-relay-execution-jump',item.key);
-        link.appendChild(text(doc,'span','kmc-relay-execution-jump-icon',item.icon));
-        link.appendChild(text(doc,'strong','',item.label));
-        if(item.count!==null)link.appendChild(text(doc,'b','',String(item.count)));
+        link.href='#relay-execution-'+choice.key;
+        link.setAttribute('data-relay-execution-jump',choice.key);
+        link.appendChild(text(doc,'strong','',choice.label));
+        if(choice.count!==null)link.appendChild(text(doc,'b','',String(choice.count)));
+        link.addEventListener('click',()=>{
+          context.activeRelayQueue=choice.key;
+          showRelayOperation(rootNode,choice.key);
+        });
         dock.appendChild(link);
       }
       rootNode.appendChild(dock);
@@ -1393,10 +1759,12 @@
     if (view === 'supply') renderSupplySection(rootNode, ui, doc, context);
 
     if (view === 'relay') {
+    context.relayCollectCount=payload.queues?.relay?.to_collect?.length||0;
+    if(!context.focusOnly) {
     renderRelayShipmentsSection(rootNode, ui, doc, context);
     renderOrderActionSection(rootNode, ui, doc, context, {
-      title: 'Relais · Encaisser',
-      description: 'Paiements cash en attente dans ce marché. La confirmation appelle l’autorité paiement + auto-colis existante.',
+      title: 'Encaisser les paiements',
+      description: 'Confirmer uniquement les paiements cash réellement reçus.',
       rows: payload.queues.relay.cash_pending,
       action: 'confirm-cash',
       jumpId:'relay-execution-cash',
@@ -1408,8 +1776,8 @@
 
     // Geste reserve au colis LOCAL expedie par le Hub (local_receivable, calcule serveur). Colis import : attestation d'expedition ci-dessus.
     renderParcelActionSection(rootNode, ui, doc, context, {
-      title: 'Relais · Réceptionner',
-      description: 'Colis local expédié par le Hub : réception par scan append-only. Les colis import se réceptionnent par attestation de l’expédition.',
+      title: 'Réception locale',
+      description: 'Réceptionner les colis locaux autorisés, avec preuve.',
       rows: payload.queues.relay.to_receive.filter(row => row.local_receivable === true),
       action: 'receive',
       jumpId:'relay-execution-receive',
@@ -1418,10 +1786,11 @@
       confirm: row => `Confirmer la réception de ${row.reference} au relais ?`,
       empty: 'Aucun colis local à réceptionner.',
     });
+    }
 
     renderParcelActionSection(rootNode, ui, doc, context, {
-      title: 'Relais · Distribuer',
-      description: 'Remise client par scan append-only du moteur logistique.',
+      title: 'Remettre au client',
+      description: 'Confirmer la remise physique de chaque colis.',
       rows: payload.queues.relay.to_collect,
       action: 'collect',
       jumpId:'relay-execution-collect',
@@ -1430,7 +1799,12 @@
       confirm: row => `Confirmer la remise de ${row.reference} au client ?`,
       empty: 'Aucun colis à remettre.',
     });
+      if(context.mode==='relay-execution' && !context.focusOnly) {
+        showRelayOperation(rootNode,context.activeRelayQueue);
+      }
     }
+
+    if (view === 'returns' && context.mode === 'relay-execution') renderRelayReturnRequests(rootNode, ui, doc, context);
 
     if (view === 'inventory') renderInventorySection(rootNode, ui, doc, payload, context);
 
@@ -1530,8 +1904,8 @@
   // Relais live — contenu réellement expédié, déroulable Expédition → KOM-BOX → commandes → articles.
   // Le reçu n'est jamais prérempli : il n'existe que par attestation du relais, article par article.
   function renderRelayShipmentsSection(rootNode, ui, doc, context) {
-    const slot = createSection(rootNode, ui, 'Relais · Expéditions en route',
-      'Ce qui a réellement été expédié, carton par carton. La réception est constatée par le relais, jamais déduite d’un statut posé par le Hub.');
+    const slot = createSection(rootNode, ui, 'Arrivages importés',
+      'Choisissez une expédition à réceptionner. Les expéditions sans intervention sont dans les archives ci-dessous.');
     if(slot.parentElement)slot.parentElement.id='relay-execution-shipments';
     slot.setAttribute('data-relay-shipments', '');
     const data = context.relayShipments;
@@ -1543,13 +1917,61 @@
       slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucune expédition en route vers ce relais.'));
       return;
     }
-    data.shipments.forEach(shipment => {
-      const card = doc.createElement('details');
-      card.className = 'kmc-relay-shipment';
-      card.open = !slot.querySelector('details');
-      card.setAttribute('data-relay-shipment', shipment.reference);
-      card.appendChild(text(doc, 'summary', 'kmc-relay-shipment-title',
-        'Expédition ' + shipment.reference + ' · ' + shipment.stage));
+    const pending=data.shipments.filter(isShipmentReceivable);
+    const other=data.shipments.filter(shipment=>!isShipmentReceivable(shipment));
+    slot.setAttribute('data-relay-arrivals-pending',String(pending.length));
+    if(!pending.length) {
+      const done=doc.createElement('div');
+      done.className='kmc-relay-work-done kmc-relay-arrival-empty';
+      done.appendChild(text(doc,'strong','', 'Aucun arrivage à réceptionner'));
+      done.appendChild(text(doc,'span','',other.length+' expédition(s) sans réception à effectuer, consultables dans l’historique.'));
+      const collectCount=Number(context.relayCollectCount||0);
+      if(collectCount>0) {
+        const next=text(doc,'a','kmc-relay-arrival-next',collectCount+' remise(s) client en attente · Ouvrir');
+        next.href='#relay-execution-collect';
+        next.setAttribute('data-relay-next-operation','collect');
+        next.addEventListener('click',()=>{
+          context.activeRelayQueue='collect';
+          showRelayOperation(rootNode,'collect');
+        });
+        done.appendChild(next);
+      }
+      slot.appendChild(done);
+    } else {
+      slot.appendChild(text(doc,'p','kmc-relay-work-count',
+        pending.length+' expédition(s) nécessitant une réception. Ouvrez uniquement l’arrivage à contrôler.'));
+    }
+    const archive=doc.createElement('details');
+    archive.className='kmc-relay-shipment-archive';
+    archive.setAttribute('data-relay-shipment-archive','');
+    archive.appendChild(text(doc,'summary','', 'Historique · '+other.length+' expédition(s)'));
+    [...pending,...other].forEach(shipment => {
+      const actionable=isShipmentReceivable(shipment);
+      const card=doc.createElement('details');
+      card.className='kmc-relay-shipment';
+      card.open=actionable && pending[0]===shipment;
+      card.setAttribute('data-relay-shipment',shipment.reference);
+      card.setAttribute('data-relay-receivable',String(actionable));
+      const summary=doc.createElement('summary');
+      summary.className='kmc-relay-shipment-title';
+      summary.appendChild(text(doc,'strong','kmc-relay-shipment-reference',shipment.reference));
+      summary.appendChild(text(doc,'span','kmc-relay-shipment-subtitle',
+        (shipment.boxes||[]).length+' carton(s) · '+
+        (shipment.boxes||[]).reduce((count,box)=>count+(box.orders||[]).length,0)+' commande(s)'));
+      summary.appendChild(text(doc,'span','kmc-relay-shipment-status',
+        actionable?'À réceptionner':shipment.stage==='relay_received'?'Réception attestée':'Aucune réception en attente'));
+      card.appendChild(summary);
+      // Un premier clic historique ne déplie PAS les tableaux d’articles.
+      // La traçabilité complète reste accessible par un second niveau, sur demande.
+      let detailHost=card;
+      if(!actionable) {
+        const detailed=doc.createElement('details');
+        detailed.className='kmc-relay-archive-detail';
+        detailed.setAttribute('data-relay-archive-detail','');
+        detailed.appendChild(text(doc,'summary','','Voir colis, articles et retrouver un sac'));
+        card.appendChild(detailed);
+        detailHost=detailed;
+      }
       // Même sac physique que celui fermé au Hub : son scan ouvre la commande
       // et le colis canonique, sans attester automatiquement la réception.
       const scanBar=doc.createElement('div');
@@ -1580,7 +2002,7 @@
       });
       scan.addEventListener('click',identify);
       [bagCode,scan,result].forEach(node=>scanBar.appendChild(node));
-      card.appendChild(scanBar);
+      detailHost.appendChild(scanBar);
       const inputs = [];
       shipment.boxes.forEach(box => {
         const boxNode = doc.createElement('div');
@@ -1593,13 +2015,19 @@
           boxNode.appendChild(text(doc, 'div', 'kmc-workspace-muted', 'Commande ' + order.reference));
           const table = doc.createElement('table');
           table.className = 'kmc-workspace-table';
-          table.innerHTML = '<thead><tr><th>Article</th><th>Attendu</th><th>Expédié</th><th>Manquant</th><th>Reçu</th><th>Remis</th></tr></thead>';
+          table.innerHTML = actionable
+            ? '<thead><tr><th>Article</th><th>Expédié</th><th>Manquant</th><th>Reçu</th></tr></thead>'
+            : '<thead><tr><th>Article</th><th>Expédié</th><th>Reçu</th><th>Remis</th></tr></thead>';
           const tbody = doc.createElement('tbody');
           order.items.forEach(item => {
             const tr = doc.createElement('tr');
             tr.setAttribute('data-relay-item', item.order_item_id);
-            [item.product, formatNumber(item.expected), formatNumber(item.shipped), formatNumber(item.missing)]
-              .forEach(value => tr.appendChild(text(doc, 'td', '', value)));
+            const productLabel=item.product+(!actionable && Number(item.missing)>0
+              ? ' · reste '+formatNumber(item.missing)+' à livrer' : '');
+            const columns=actionable
+              ? [productLabel,formatNumber(item.shipped),formatNumber(item.missing)]
+              : [productLabel,formatNumber(item.shipped)];
+            columns.forEach(value=>tr.appendChild(text(doc,'td','',value)));
             const receivedCell = doc.createElement('td');
             if (item.received !== null) {
               receivedCell.textContent = formatNumber(item.received) + (item.incident_id ? ' · incident ouvert' : '');
@@ -1617,7 +2045,7 @@
               receivedCell.textContent = 'Non attesté';
             }
             tr.appendChild(receivedCell);
-            tr.appendChild(text(doc, 'td', '', formatNumber(item.handed)));
+            if(!actionable)tr.appendChild(text(doc,'td','',formatNumber(item.handed)));
             tbody.appendChild(tr);
           });
           table.appendChild(tbody);
@@ -1626,7 +2054,7 @@
           wrap.appendChild(table);
           boxNode.appendChild(wrap);
         });
-        card.appendChild(boxNode);
+        detailHost.appendChild(boxNode);
       });
       if (inputs.length) {
         const form = doc.createElement('form');
@@ -1665,10 +2093,11 @@
               ? 'Réception attestée · écart enregistré en incident.' : 'Réception attestée.',
           }).catch(() => {});
         });
-        card.appendChild(form);
+        detailHost.appendChild(form);
       }
-      slot.appendChild(card);
+      (actionable?slot:archive).appendChild(card);
     });
+    if(other.length)slot.appendChild(archive);
   }
 
   function renderInventorySection(rootNode, ui, doc, payload, context) {
@@ -1751,6 +2180,15 @@
     }
     if (!MARKET_CODE.test(marketCode)) throw new Error('canonical_operations_workspace_market_required');
 
+    if(options.mode==='relay-execution' && options.focusOnly && options.user?.role==='finance') {
+      rootNode.replaceChildren();
+      const notice=doc.createElement('p');
+      notice.className='kmc-workspace-empty';
+      notice.textContent='Le comptoir des remises est réservé aux agents autorisés du Relais.';
+      rootNode.appendChild(notice);
+      return Object.freeze({marketCode,denied:true});
+    }
+
     // Finance : accès au seul module Cash & dépôts (pas de file opérationnelle), hébergé dans Relais live.
     if (options.mode === 'relay-execution' && options.user && options.user.role === 'finance') {
       rootNode.className = 'kmc-operations-workspace';
@@ -1776,8 +2214,10 @@
       marketCode,
       mode: ['execution', 'relay-execution'].includes(options.mode) ? options.mode : 'pilot',
       user: options.user || null,
-      initialFocus: options.mode==='relay-execution' ? String(new URLSearchParams(String(globalThis.location?.search||'')).get('focus')||'') : '',
-      view: options.mode === 'execution' ? 'supply' : undefined,
+      initialFocus: options.forcedRelayFocus || (options.mode==='relay-execution' ? String(new URLSearchParams(String(globalThis.location?.search||'')).get('focus')||'') : ''),
+      focusOnly:Boolean(options.focusOnly),
+      activeRelayQueue:null,
+      view: options.focusOnly?'relay':options.mode === 'execution' ? 'supply' : options.mode === 'relay-execution' && new URLSearchParams(String(globalThis.location?.search || '')).get('focus') === 'returns' ? 'returns' : undefined,
       confirm: typeof options.confirm === 'function'
         ? options.confirm
         : (typeof globalThis.confirm === 'function' ? globalThis.confirm.bind(globalThis) : () => true),
@@ -1823,7 +2263,7 @@
       await reload();
       // Orientation de l'agent vers la file demandée depuis le cockpit.
       // Seules les files existantes sont navigables ; aucune action métier n'est exécutée ici.
-      if (context.mode==='relay-execution' && ['shipments','cash','receive','collect'].includes(context.initialFocus)) {
+      if (context.mode==='relay-execution' && !context.focusOnly && ['shipments','cash','receive','collect'].includes(context.initialFocus)) {
         const anchor=rootNode.querySelector?.('#relay-execution-'+context.initialFocus);
         anchor?.scrollIntoView?.({block:'start',behavior:'auto'});
       }

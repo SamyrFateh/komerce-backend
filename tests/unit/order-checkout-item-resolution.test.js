@@ -32,6 +32,22 @@ describe('order-checkout-item-resolution', () => {
     expect(result).toEqual({ ok: false, status: 400, body: { error: 'product_id invalide' } });
   });
 
+  test('panier ancien : gel qualité refuse la commande avec statut 409 sans aucune écriture', async () => {
+    const client={query:jest.fn().mockResolvedValueOnce({rows:[{
+      id:'p1',name:'Produit suspect',is_active:true,is_available:true,
+      catalog_quality_frozen:true,inventory_model:'LEGACY_VARIANTS',stock:99,
+    }]})};
+    const result=await resolveCheckoutItems({
+      client,items:[{product_id:'p1',quantity:1}],maxQty:10,
+      fretPerKg:0,aedKmf:0,customsPct:0,
+      pickupCodeRecipient:'buyer',userId:'u1'
+    });
+    expect(result).toMatchObject({
+      ok:false,status:409,body:{code:'catalog_product_quality_frozen',product_id:'p1'}
+    });
+    expect(client.query).toHaveBeenCalledTimes(1);
+  });
+
   test('refuse une quantité hors borne avant toute écriture', async () => {
     const client = {
       query: jest.fn().mockResolvedValueOnce({ rows: [{

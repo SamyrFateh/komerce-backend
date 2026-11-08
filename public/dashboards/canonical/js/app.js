@@ -631,17 +631,31 @@
   }
 
   // Relais live · Exécution : même module d'exécution canonique, restreint aux actions Relais.
-  function renderRelayExecution(root, user, adminContext, requestedMarket) {
+  function renderRelayExecution(root, user, adminContext, requestedMarket, executionOptions = {}) {
     const moduleApi = global.KomerceCanonicalOperationsWorkspace;
     if (!moduleApi) throw new Error('canonical_operations_workspace_module_missing');
     return moduleApi.mount({
       root, user, adminContext, requestedMarket, mode: 'relay-execution',
+      focusOnly: Boolean(executionOptions.focusOnly),
+      forcedRelayFocus: executionOptions.focusOnly ? 'collect' : null,
       contextContract: global.KomerceAdminContext, document: global.document, fetch: global.fetch.bind(global),
       renderer: global.KomerceDashboardRenderer, ui: global.KomerceCanonicalUI,
     });
   }
 
   function renderRelayLive(root, user, adminContext) {
+    // Le comptoir de remise est une surface métier autonome mais réutilise
+    // exactement le writer canonique /collect et ses autorisations serveur.
+    const relayView=new URLSearchParams(String(global.location?.search||'')).get('view');
+    if (relayView === 'remises') {
+      return renderMarketSurfaceShell(root, user, adminContext, {
+        surface: 'relais-live-remises',
+        title: 'Relais · Comptoir des remises',
+        requireMarket: true,
+        render: (surface, actor, context, market) =>
+          renderRelayExecution(surface, actor, context, market, { focusOnly:true }),
+      });
+    }
     if (isHubExecutionRequest()) {
       return renderMarketSurfaceShell(root, user, adminContext, {
         surface: 'relais-live-execution',

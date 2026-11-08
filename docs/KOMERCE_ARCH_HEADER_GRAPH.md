@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 792
-- Files with full headers: 738
+- Scanned code files: 795
+- Files with full headers: 741
 - Files with lite headers: 54
-- Files with any headers: 792
+- Files with any headers: 795
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 2006
-- Edges: 9857
-- DB tables: 232
-- Doctrines: 775
+- Graph nodes: 2022
+- Edges: 9932
+- DB tables: 236
+- Doctrines: 784
 - Impact areas: 207
-- Unresolved code edges: 943
+- Unresolved code edges: 953
 - Tables multi-écrivains directs (>=2): 94
 - Avertissements db-write / db-write-via en chevauchement: 12
 
@@ -32,7 +32,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - bootstrap: 2
 - boutique: 21
 - business-rules: 1
-- catalog: 136
+- catalog: 137
 - checkout: 3
 - customs: 8
 - dashboard: 32
@@ -45,7 +45,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - infrastructure: 25
 - inventory: 2
 - local-stock: 4
-- logistics: 68
+- logistics: 69
 - loyalty: 3
 - market: 9
 - market-autonomy: 4
@@ -54,7 +54,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - markets: 1
 - notification: 21
 - operations: 11
-- orders: 36
+- orders: 37
 - payment: 30
 - payments: 1
 - platform-ops: 2
@@ -92,7 +92,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 137
 - route-manifest: 1
 - schema: 1
-- service: 474
+- service: 477
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -158,6 +158,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/cash-reminder-service.js — payment-cash-reminder-service (payment, critical, full)
 - services/catalog-field-sync-application.js — catalog-field-sync-application (catalog, critical, full)
 - services/catalog-field-sync-decision.js — catalog-field-sync-decision (catalog, critical, full)
+- services/catalog-product-quality-service.js — catalog-product-quality-hold-service (catalog, critical, full)
 - services/catalog-stock-sync-application.js — catalog-stock-sync-application (catalog, critical, full)
 - services/catalog-stock-sync-decision.js — catalog-stock-sync-decision (catalog, critical, full)
 - services/confirm-pickup-cash-payment.js — payment-confirm-pickup-cash-payment (payment, critical, full)
@@ -225,6 +226,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/refund-evidence-verifier.js — external-refund-evidence-verifier (refunds, critical, full)
 - services/refund-intent-ledger.js — durable-refund-intent-reservation (refunds, critical, full)
 - services/refund-intent-reconciliation.js — durable-refund-evidence-reconciliation (refunds, critical, full)
+- services/relay-product-return-intake-service.js — relay-product-return-intake-service (logistics, critical, full)
+- services/relay-return-request-service.js — orders-product-return-request-service (orders, critical, full)
 - services/repair-ordered-purchasing.js — orders-repair-ordered-purchasing (purchasing, critical, full)
 - services/repair-ordered-without-purchase-orders.js — orders-repair-ordered-without-purchase-orders (purchasing, critical, full)
 - services/scan-write-service.js — logistics-scan-write-service (logistics, critical, full)
@@ -811,6 +814,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/catalog-media-recovery.js -> catalog_media_recovery_audit
 - WRITE services/catalog-visual-fr-human-review-write.js -> catalog_media_visual_fr_reviews
 - WRITE services/catalog-promotion.js -> catalog_media
+- WRITE services/catalog-product-quality-service.js -> catalog_product_quality_notes
+- WRITE services/catalog-product-quality-service.js -> catalog_product_sale_holds
 - WRITE services/catalog-publication-decision-audit.js -> catalog_publication_decision_audit
 - WRITE services/catalog-stock-sync-application.js -> catalog_stock_sync_state
 - WRITE services/catalog-taxonomy-audit.js -> catalog_taxonomy_audit
@@ -869,8 +874,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/import-runtime-runs.js -> import_runtime_runs
 - WRITE services/incident-escalation.js -> incidents
 - WRITE services/incident-service.js -> incidents
-- WRITE services/incident-write-service.js -> incidents
-- WRITE services/relay-shipment-receipt.js -> incidents
 
 ## DB Write-Via Edges (délégation déclarée)
 
@@ -897,8 +900,10 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/international-shipment-journey.js -> customs_shipments (via customs-shipment-service)
 - WRITE services/order-status-machine.js -> customs_shipments (via customs-shipment-service)
 - WRITE services/shipping-customs-workspace.js -> customs_shipments (via customs-shipment-service)
+- WRITE routes/relay-dashboard.js -> disputes; catalog-product-quality-service catalog_product_quality_notes; relay-product-return-intake-service relay_product_return_receipts (via dispute-mutation-service)
 - WRITE routes/market-delegation-client-case.js -> disputes (via dispute-mutation-service)
 - WRITE services/market-delegation-client-case-service.js -> disputes (via dispute-mutation-service)
+- WRITE services/relay-return-request-service.js -> disputes (via dispute-mutation-service)
 - WRITE routes/market-delegation-structure-event.js -> economic_structure_cost_events (via pricing-period-structure)
 - WRITE services/market-delegation-structure-event-service.js -> economic_structure_cost_events (via pricing-period-structure)
 - WRITE services/market-structure-charge-reference.js -> economic_structure_cost_events (via pricing-period-structure)
@@ -992,8 +997,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/operations-workspace.js -> order_items (via scan-engine)
 - WRITE services/parcel-operations.js -> order_items (via order-item-availability-service)
 - WRITE routes/orders/create.js -> order_status_history (via order-checkout-service)
-- WRITE services/local-relay-receipt-service.js -> order_status_history (via order-status-machine)
-- WRITE services/operations-workspace.js -> order_status_history (via order-status-machine)
 
 ## Multi-Writer Tables (>=2 écrivains directs, hors délégations)
 
