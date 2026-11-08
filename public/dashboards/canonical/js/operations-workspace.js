@@ -1316,6 +1316,7 @@
     rootNode.className = 'kmc-operations-workspace';
     rootNode.setAttribute('data-workspace-kind', 'hub-relay');
     rootNode.setAttribute('data-workspace-mode', context.mode);
+    rootNode.setAttribute('data-relay-counter',context.focusOnly?'true':'false');
     rootNode.replaceChildren();
     const header=createHeader(doc,payload,context.mode);
     if(context.focusOnly) {
