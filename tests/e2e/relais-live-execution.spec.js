@@ -201,7 +201,7 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       await ws.locator('[data-workspace-action="collect"]').click();
       await expect.poll(()=>posts.length).toBe(1);
       expect(posts[0].path).toBe(API+'/parcels/PCL-KM-3/collect');
-      await expect(ws.locator('a',{hasText:'Flux Relais'})).toHaveAttribute('href','/admin/relais-live');
+      await expect(ws.locator('.kmc-relay-main-nav a',{hasText:'Flux Relais'})).toHaveAttribute('href','/admin/relais-live?market=KM');
     });
 
     test('actions Relais uniquement : aucune action Hub', async ({ page }) => {
