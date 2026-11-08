@@ -130,14 +130,29 @@
     const phase=(o,key)=>{
       const at=WORK_STAGES.findIndex(x=>x.key===relayStageKey(o));
       const index=WORK_STAGES.findIndex(x=>x.key===key);
-      const current=at===index;
-      const state=current?relaySignal(o):index<at?'complete':'waiting';
-      const label=current?relayNext(o):index<at?'✓ Étape passée':'À venir';
-      return `<td><a href="${esc(previewUrl(o.id))}" data-cockpit-nav data-relay-stage="${key}" data-relay-stage-signal="${state}"
-        class="kmc-relay-work-stage is-${state}${current?' is-current':''}" ${current?'aria-current="step"':''}>
-          <strong>${esc(label)}</strong>${current?'<small>Examiner et agir</small>':''}</a></td>`;
+      // Une commande « collected » ne possède plus d'étape exécutable.
+      const finished=o.status==='collected';
+      const current=at===index&&!finished;
+      const done=index<at||(finished&&index===at);
+      const state=done?'complete':current?relaySignal(o):'waiting';
+      const label=done?(finished&&index===at?'✓ Remise enregistrée':'✓ Étape passée'):current?relayNext(o):'À venir';
+      const classes=`kmc-relay-work-stage is-${state}${current?' is-current':''}`;
+      const attrs=`data-relay-stage="${key}" data-relay-stage-signal="${state}" class="${classes}"`;
+      // Le clic sert uniquement à ouvrir une file canonique ou le dossier.
+      // Aucun scan, paiement ou remise ne s'exécute dans le cockpit de lecture.
+      if(!current)return `<td><div ${attrs}><strong>${esc(label)}</strong></div></td>`;
+      const incident=num(o.incidents_ouverts)>0;
+      const focus=o.status==='available'?(o.cash_pending?'cash':'collect'):'shipments';
+      const href=incident?previewUrl(o.id):executionUrl(o.market_code,focus);
+      const hint=incident?'Voir le dossier et les incidents'
+        :focus==='cash'?'Ouvrir la file d’encaissement'
+        :focus==='collect'?'Ouvrir les remises'
+        :'Examiner les arrivages';
+      return `<td><a href="${esc(href)}" ${incident?'data-cockpit-nav':''}
+        data-relay-stage-action="${incident?'inspect':focus}" ${attrs} aria-current="step">
+          <strong>${esc(label)}</strong><small>${esc(hint)} →</small></a></td>`;
     };
-    const records=orders.slice(0,12).map(o=>`<tr data-relay-workboard-order="${esc(o.id)}" class="${String(o.id)===selected?'is-selected':''}">
+    const records=orders.map(o=>`<tr data-relay-workboard-order="${esc(o.id)}" class="${String(o.id)===selected?'is-selected':''}">
       <td class="kmc-relay-work-identity"><a href="${esc(previewUrl(o.id))}" data-cockpit-nav class="kmc-relay-work-reference">${esc(o.reference)}</a>
         <small>${esc(o.client_nom||o.user_name||'Client')} · ${esc(o.relais_nom||'Relais')}</small>
         ${o.simulation_scope?'<span class="kmc-relay-work-simulation">RECETTE</span>':''}</td>
