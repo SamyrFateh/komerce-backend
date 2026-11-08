@@ -192,6 +192,9 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       await mount(page,posts,{counter:true});
       const ws=page.locator('[data-relay-counter="true"]');
       await expect(ws).toBeVisible();
+      await expect(ws.locator('.kmc-relay-main-nav')).toHaveCount(1);
+      await expect(ws.locator('.kmc-relay-main-nav a')).toHaveCount(4);
+      await expect(ws.locator('.kmc-workspace-nav')).toHaveCount(0);
       await expect(ws.locator('.kmc-relay-main-nav a[aria-current="page"]')).toHaveText('Remises');
       await expect(ws.locator('.kmc-relay-execution-jumpbar')).toHaveCount(0);
       await expect(ws.locator('#relay-execution-shipments')).toHaveCount(0);
