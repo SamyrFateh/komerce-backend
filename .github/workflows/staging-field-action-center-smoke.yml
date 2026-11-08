@@ -55,7 +55,9 @@ jobs:
           ')"
           git cat-file -e "$DEPLOY_SHA^{commit}" || { echo STAGING_SHA_NOT_IN_MAIN; exit 2; }
           git merge-base --is-ancestor "$DEPLOY_SHA" HEAD || { echo STAGING_SHA_NOT_ANCESTOR; exit 2; }
-          DRIFT="$(git diff --name-only "$DEPLOY_SHA" HEAD | grep -Ev '^(docs/|\.github/workflows/)' || true)"
+          # Only the updated non-deployed smoke test may differ from the serving
+          # SHA. All application sources still require an exact runtime pin.
+          DRIFT="$(git diff --name-only "$DEPLOY_SHA" HEAD | grep -Ev '^(docs/|\.github/workflows/|tests/staging-canonical/field-action-center\.spec\.js$)' || true)"
           if [ -n "$DRIFT" ]; then echo STAGING_RUNTIME_DRIFT_DENIED; exit 2; fi
           echo "E2E_EXPECTED_DEPLOY_SHA=$DEPLOY_SHA" >> "$GITHUB_ENV"
       - name: Compare /health/version to pinned runtime
