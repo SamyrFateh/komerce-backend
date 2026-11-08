@@ -417,7 +417,9 @@ async function getProductDetail(dbClient, productId) {
             price_kmf, promo_pct, is_promo, promo_until, image_url, images, has_variants, inventory_model,
             air_eligibility_status, weight_kg, volume_cm3
        FROM products
-      WHERE id = $1 AND is_active = TRUE`,
+      WHERE id = $1 AND is_active = TRUE AND is_available = TRUE
+        AND NOT EXISTS(SELECT 1 FROM catalog_product_sale_holds h
+          WHERE h.product_id=products.id AND h.released_at IS NULL)`,
     [productId]
   );
   if (!product) return null;
