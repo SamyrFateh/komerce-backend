@@ -83,3 +83,31 @@ test('aucune action sur référence absente, rollback de la décision',async()=>
     .rejects.toMatchObject({code:'QUALITY_PRODUCT_NOT_FOUND',status:404});
   expect(calls.some(x=>x.sql==='ROLLBACK')).toBe(true);
 });
+
+
+test('signal produit : les retours et commentaires sont visibles, mais ne gèlent pas sans décision explicite', async()=>{
+  db.query
+    .mockResolvedValueOnce({rows:[{id:PRODUCT,product_ref:'KPR-000458',name:'Produit test'}]})
+    .mockResolvedValueOnce({rows:[]})
+    .mockResolvedValueOnce({rows:[{note:'Batterie faible',created_at:'2026-11-08'}]})
+    .mockResolvedValueOnce({rows:[{reports:2,active_reports:1}]});
+  const state=await quality.qualityByRef('KPR-000458');
+  expect(state.frozen).toBe(false);
+  expect(state.reports).toBe(2);
+  expect(state.active_reports).toBe(1);
+  expect(state.notes[0].note).toBe('Batterie faible');
+  expect(db.query).toHaveBeenCalledTimes(4);
+});
+
+test('signal agrégé Catalogue : seulement les références demandées, sans changer le gel', async()=>{
+  db.query.mockResolvedValueOnce({rows:[{
+    product_ref:'KPR-000458',quality_frozen:true,
+    quality_note_count:3,quality_return_count:2,
+  }]});
+  const batch=await quality.batchSignals(['KPR-000458','KPR-000458']);
+  expect(batch.get('KPR-000458')).toEqual({
+    quality_frozen:true,quality_note_count:3,quality_return_count:2,
+  });
+  expect(db.query).toHaveBeenCalledTimes(1);
+  expect(db.query.mock.calls[0][1]).toEqual([['KPR-000458']]);
+});
