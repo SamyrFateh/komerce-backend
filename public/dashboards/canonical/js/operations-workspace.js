@@ -1361,6 +1361,11 @@
       selection.appendChild(label);
     }
     selection.appendChild(create);
+    const remark = text(doc, 'button', 'kmc-workspace-action is-secondary',
+      'Signaler une remarque sans retour');
+    remark.type = 'button';
+    remark.setAttribute('data-relay-quality-remark', '');
+    selection.appendChild(remark);
     slot.appendChild(selection);
     const result = text(doc, 'p', 'kmc-workspace-note', '');
     result.setAttribute('role', 'status');
@@ -1435,6 +1440,29 @@
         }
       } catch (error) { result.textContent = error.message; }
       finally { lookup.disabled = false; }
+    });
+
+    remark.addEventListener('click', async () => {
+      const chosen = items.find(item => item.id === product.value);
+      if (!order || !chosen) return;
+      if (note.value.trim().length < 5) {
+        result.textContent = 'Décrivez votre remarque en quelques mots.';
+        return;
+      }
+      remark.disabled = true;
+      result.textContent = 'Envoi de la remarque au Catalogue…';
+      try {
+        await jsonRequest(context.fetch, '/api/relay/returns/remarks', {
+          method: 'POST', body: {
+            order_reference: order.reference, order_item_id: chosen.id,
+            note: note.value.trim(),
+          },
+        });
+        note.value = '';
+        result.textContent = 'Remarque enregistrée sur la référence Catalogue. Aucun retour, gel ou paiement déclenché.';
+      } catch (error) {
+        result.textContent = error.message;
+      } finally { remark.disabled = false; }
     });
 
     selection.addEventListener('submit', async event => {
