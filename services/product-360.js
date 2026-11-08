@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        stable_product_ref, server_market_scope, global_authority
  * @outputs       product_360_projection, market_p1_thread_projection, central_supplier_purchasing_mode_evidence
- * @depends       db, services/suppliers/provider-capability-certifications.js
+ * @depends       db, services/catalog-product-quality-service.js, services/suppliers/provider-capability-certifications.js
  * @used-by       routes/admin-product-360.js
  * @db-read       products, product_variants, product_skus, order_items, orders, markets, order_item_cost_imputations, order_item_real_cost_allocations, product_suppliers, suppliers, price_history, alerts, users, product_market_price_drafts, product_market_exposure
  * @db-write      none
@@ -21,6 +21,7 @@
 const db = require('../db');
 const { notLegacyUnjustifiedSql } = require('./cost-allocation/cost-expectation');
 const capabilityEvidence = require('./suppliers/provider-capability-certifications');
+const catalogQuality = require('./catalog-product-quality-service');
 
 const PRODUCT_REF = /^KPR-\d{6,}$/i;
 
@@ -387,8 +388,23 @@ async function loadProduct360(product, options = {}) {
     buyer_visible: row.commercial_exposure === 'ENABLED' && row.price_status === 'LOCAL_ACTIVE',
   }));
 
+  // Global sale hold is authoritative even when historical is_available=true.
+  // Markets can see the freeze status, not unscoped internal note contents.
+  const qualityRead = await catalogQuality.qualityByRef(product.product_ref);
+  const quality = Object.freeze({
+    frozen: qualityRead.frozen,
+    reports: qualityRead.reports,
+    active_reports: qualityRead.active_reports,
+    note_count_recent: qualityRead.notes.length,
+    ...(includeCentral && qualityRead.active_hold ? {
+      hold_reason: qualityRead.active_hold.reason,
+      hold_comment: qualityRead.active_hold.comment,
+    } : {}),
+  });
+
   return Object.freeze({
     product: publicIdentity(product),
+    quality,
     scope: buildScope(mode, performance.map(row => row.market)),
     summary: Object.freeze({
       ...summary,
