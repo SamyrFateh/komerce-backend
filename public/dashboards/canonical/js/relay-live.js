@@ -276,7 +276,7 @@
             {empty:'Aucun incident ouvert dans votre périmètre.'})}</div>
           <div class="kmc-relay-returns-action">
             <strong>Retour produit ou remarque qualité ?</strong>
-            <p>Ouvrez une demande sur l'article réellement remis. Un dossier n'atteste pas la reprise physique ni le remboursement.</p>
+            <p>Ouvrez une demande sur l'article réellement remis. Un dossier n’atteste pas la reprise physique ni le remboursement.</p>
             ${relayViewer && ['agent_relais','admin'].includes(relayViewer.role)
               ?`<a href="${esc(executionUrl('','returns'))}" data-relay-returns-link>Ouvrir les demandes de retour & SAV →</a>`
               :'<span>Demandes de retour réservées aux agents habilités du Relais.</span>'}
