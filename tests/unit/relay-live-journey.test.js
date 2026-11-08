@@ -87,7 +87,7 @@ test('Historique : consultation distincte du comptoir et du flux',()=>{
   const h=html('?view=orders&list=collected',LIST);
   expect(h).toContain('Historique des remises');
   expect(activeTab(h)).toBe('Historique');
-  expect(h).toContain('Retour au suivi');
+  expect(h).toContain('Flux Relais');
 });
 
 test('Détail commande : aucune donnée sensible divulguée dans la projection',()=>{
