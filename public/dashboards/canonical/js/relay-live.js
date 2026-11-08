@@ -119,7 +119,13 @@
 
   function relayWorkboard(p,data){
     const k=data?.dash?.kpi||{};
-    const orders=Array.isArray(data?.queue?.orders)?data.queue.orders:[];
+    const pending=Array.isArray(data?.queue?.orders)?data.queue.orders:[];
+    // La liste active n'inclut pas « collected » : une lecture courte de
+    // l'historique alimente la dernière colonne sans masquer les dossiers actifs.
+    const completed=Array.isArray(data?.recentCollected?.orders)
+      ?data.recentCollected.orders.filter(o=>o.status==='collected').slice(0,3):[];
+    const ids=new Set(pending.map(o=>String(o.id)));
+    const orders=[...pending.slice(0,12),...completed.filter(o=>!ids.has(String(o.id)))];
     const selected=String(p.sel||'');
     const phase=(o,key)=>{
       const at=WORK_STAGES.findIndex(x=>x.key===relayStageKey(o));
@@ -385,15 +391,16 @@
     overview:{
       tab:() => 'suivi',
       async load(p, api) {
-        const [dash, first, transit, detail, operational, queue] = await Promise.all([
+        const [dash, first, transit, detail, operational, queue, recentCollected] = await Promise.all([
           api('/api/relay/dashboard'),
           api('/api/relay/orders?status=available&limit=5&projection=live'),
           api('/api/relay/orders?status=in_transit&limit=5&projection=live'),
           p.sel ? api(`/api/relay/orders/${encodeURIComponent(p.sel)}?projection=live`).catch(() => null) : null,
           api('/api/relay/incidents').catch(() => ({ incidents:[] })),
           api('/api/relay/orders?status=shipped,in_transit,available&limit=12&projection=live'),
+          api('/api/relay/orders?status=collected&limit=3&projection=live').catch(() => ({orders:[]})),
         ]);
-        return { dash, first, transit, detail, operational, queue, fetched_at:dash?.generated_at || new Date().toISOString() };
+        return { dash, first, transit, detail, operational, queue, recentCollected, fetched_at:dash?.generated_at || new Date().toISOString() };
       },
       render:renderOverview,
       nav:() => ({ crumbs:[], back:null }),
