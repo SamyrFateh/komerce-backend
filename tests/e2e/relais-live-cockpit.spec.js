@@ -163,7 +163,9 @@ test.describe('Cockpit Relais — navigation canonique', () => {
     const row=board.locator('[data-relay-workboard-order="r-1"]');
     await expect(row.locator('[data-relay-stage="available"]')).toHaveAttribute('data-relay-stage-signal','warning');
     await expect(row.locator('[data-relay-stage="available"]')).toContainText('CASH À VÉRIFIER');
-    await row.locator('[data-relay-stage="available"]').click();
+    await expect(row.locator('[data-relay-stage="available"]')).toHaveAttribute('href','/admin/relais-live?view=execute&market=KM&focus=cash');
+    await expect(row.locator('[data-relay-stage="transit"]')).not.toHaveAttribute('href',/./);
+    await row.locator('.kmc-relay-work-reference').click();
     await expect(page).toHaveURL(/sel=r-1/);
     const inspector=page.locator('[data-relay-detail]');
     await expect(inspector).toBeVisible();
@@ -180,7 +182,7 @@ test.describe('Cockpit Relais — navigation canonique', () => {
   test('Sans colis, la file reste compacte ; le flux ancien ne gaspille plus la surface', async ({ page }) => {
     const state=await mountRelay(page, '', {empty:true});
     const board=page.locator('.kmc-relay-work');
-    await expect(board).toContainText('Aucun dossier à traiter');
+    await expect(board).toContainText('Aucun dossier actif dans cette file');
     await expect(board.locator('[data-relay-workboard-order]')).toHaveCount(0);
     await expect(board.getByText('Aucune commande en cours dans cette file')).toBeVisible();
     // Pas de disparition du tableau lorsqu'il n'y a plus de dossiers actifs.
@@ -202,16 +204,27 @@ test.describe('Cockpit Relais — navigation canonique', () => {
     const board=page.locator('.kmc-relay-work');
     const row=board.locator('[data-relay-workboard-order="r-99"]');
     await expect(row).toBeVisible();
-    await expect(row.locator('[data-relay-stage="collected"]')).toHaveAttribute('aria-current','step');
+    await expect(row.locator('[data-relay-stage="collected"]')).toHaveClass(/is-complete/);
+    await expect(row.locator('[data-relay-stage="collected"]')).not.toHaveAttribute('href',/./);
     await expect(row.locator('[data-relay-stage="transit"]')).toHaveClass(/is-complete/);
-    await row.locator('[data-relay-stage="collected"]').click();
+    await row.locator('.kmc-relay-work-reference').click();
     await expect(page).toHaveURL(/sel=r-99/);
+    expect(state.writes).toEqual([]);
+  });
+
+  test('Étape active : accès direct à la vraie file d’action, jamais une mutation depuis le Kanban', async ({ page }) => {
+    const state=await mountRelay(page);
+    const row=page.locator('[data-relay-workboard-order="r-1"]');
+    const active=row.locator('[data-relay-stage="available"]');
+    await expect(active).toHaveAttribute('data-relay-stage-action','cash');
+    await active.click();
+    await expect(page).toHaveURL(/\/admin\/relais-live\?view=execute&market=KM&focus=cash/);
     expect(state.writes).toEqual([]);
   });
 
   test('Le menu ne flotte pas au scroll : inspecteur dans la grille, statut seulement en lecture', async ({ page }) => {
     const state=await mountRelay(page);
-    await page.locator('[data-relay-workboard-order="r-1"] [data-relay-stage="available"]').click();
+    await page.locator('[data-relay-workboard-order="r-1"] .kmc-relay-work-reference').click();
     const inspector=page.locator('.kmc-relay-work-inspector');
     const style=await inspector.evaluate(el=>({position:getComputedStyle(el).position,left:getComputedStyle(el).left}));
     expect(style.position).toBe('sticky');
