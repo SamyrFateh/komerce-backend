@@ -44,6 +44,16 @@ test('retour SAV automatiquement signalé sans gel automatique',()=>{
   expect(migration).toContain("release_comment");
 });
 
+test('les commentaires d origine sont scellés, seul le premier dégel motive peut modifier le cycle',()=>{
+  expect(migration).toContain('CREATE TRIGGER trg_immutable_catalog_quality_note');
+  expect(migration).toContain('BEFORE UPDATE OR DELETE ON public.catalog_product_quality_notes');
+  expect(migration).toContain('CATALOG_QUALITY_NOTE_IMMUTABLE');
+  expect(migration).toContain('CREATE TRIGGER trg_immutable_catalog_sale_hold');
+  expect(migration).toContain('NEW.reason IS DISTINCT FROM OLD.reason');
+  expect(migration).toContain('OLD.released_at IS NOT NULL');
+  expect(migration).toContain('NEW.release_comment IS NULL');
+});
+
 test('gel sans suppression de stock, commandes historiques ni retours fournisseurs',()=>{
   expect(migration).not.toMatch(/DELETE FROM (orders|order_items|products)/i);
   expect(migration).not.toMatch(/TRUNCATE/i);
