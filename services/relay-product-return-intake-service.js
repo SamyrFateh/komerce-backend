@@ -8,7 +8,7 @@
  * @outputs       one_immutable_physical_receipt_per_return_request
  * @depends       db.js, disputes, orders, order_items, relay_product_return_receipts
  * @used-by       routes/relay-dashboard.js
- * @db-read       disputes, orders, order_items, relay_product_return_receipts
+ * @db-read       disputes, orders, order_items, products, relay_product_return_receipts
  * @db-write      relay_product_return_receipts
  * @db-txn        owns_transaction_with_dispute_row_lock
  * @doctrine      no_implicit_refund_no_sellable_stock, physical_custody_is_explicit, relay_scope_from_session
