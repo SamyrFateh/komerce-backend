@@ -355,7 +355,7 @@
   ]);
 
   // Relais live · Exécution : actions Relais uniquement (encaisser, réceptionner, remettre) — jamais Hub.
-  const RELAY_LIVE_TABS = Object.freeze([{ id: 'relay', label: 'Opérations' }, { id: 'cash', label: 'Cash & dépôts' }]);
+  const RELAY_LIVE_TABS = Object.freeze([{ id: 'relay', label: 'Opérations' }, { id: 'cash', label: 'Cash & dépôts' }, { id: 'returns', label: 'Retours & SAV' }]);
 
   function newReceptionReference() {
     const crypto = globalThis.crypto;
@@ -1312,6 +1312,216 @@
     rootNode.setAttribute('data-relay-active-operation',key);
   }
 
+  // V1 SAV — une demande rattachée au VRAI article remis, sans réception
+  // physique implicite ni opération financière. Les décisions restent dans
+  // les litiges / autorités Komerce ; ce formulaire sert uniquement à signaler.
+  function renderRelayReturnRequests(rootNode, ui, doc, context) {
+    const slot = createSection(rootNode, ui, 'Retours & SAV',
+      'Signaler un article défectueux, erroné ou non conforme. Aucune reprise physique ni compensation n’est validée ici.');
+    slot.setAttribute('data-relay-return-requests', '');
+
+    const notice = text(doc, 'p', 'kmc-workspace-note',
+      'Demande uniquement : l’article reste chez le client jusqu’aux instructions de Komerce. Wallet et remboursement nécessitent une validation distincte.');
+    slot.appendChild(notice);
+
+    const searchForm = doc.createElement('form');
+    searchForm.setAttribute('data-relay-return-lookup', '');
+    searchForm.className = 'kmc-workspace-section-actions';
+    const reference = doc.createElement('input');
+    reference.type = 'text';
+    reference.required = true;
+    reference.maxLength = 80;
+    reference.placeholder = 'Référence commande';
+    reference.setAttribute('aria-label', 'Référence de commande');
+    reference.setAttribute('data-relay-return-reference', '');
+    searchForm.appendChild(reference);
+    const lookup = text(doc, 'button', 'kmc-workspace-action', 'Rechercher');
+    lookup.type = 'submit';
+    searchForm.appendChild(lookup);
+    slot.appendChild(searchForm);
+
+    const selection = doc.createElement('form');
+    selection.setAttribute('data-relay-return-create', '');
+    selection.className = 'kmc-workspace-inventory-list';
+    selection.hidden = true;
+    const product = doc.createElement('select');
+    product.required = true;
+    product.setAttribute('aria-label', 'Article réellement remis au client');
+    product.setAttribute('data-relay-return-product', '');
+    const qty = doc.createElement('input');
+    qty.type = 'number';
+    qty.min = '1';
+    qty.value = '1';
+    qty.required = true;
+    qty.setAttribute('aria-label', 'Quantité concernée');
+    const reason = doc.createElement('select');
+    reason.required = true;
+    reason.setAttribute('aria-label', 'Motif de retour');
+    for (const [value, label] of [
+      ['defective', 'Produit défectueux'],
+      ['damaged', 'Produit cassé'],
+      ['wrong_item', 'Mauvais article'],
+      ['not_as_described', 'Non conforme'],
+      ['other', 'Autre motif'],
+    ]) {
+      const option = text(doc, 'option', '', label);
+      option.value = value;
+      reason.appendChild(option);
+    }
+    const note = doc.createElement('textarea');
+    note.maxLength = 500;
+    note.rows = 2;
+    note.placeholder = 'Commentaire complémentaire (obligatoire pour Autre)';
+    note.setAttribute('aria-label', 'Commentaire SAV');
+    const create = text(doc, 'button', 'kmc-workspace-action', 'Ouvrir le dossier SAV');
+    create.type = 'submit';
+    create.setAttribute('data-relay-return-submit', '');
+    for (const [caption, control] of [
+      ['Article', product], ['Quantité', qty], ['Motif', reason], ['Commentaire', note],
+    ]) {
+      const label = text(doc, 'label', 'kmc-workspace-note', caption);
+      label.appendChild(control);
+      selection.appendChild(label);
+    }
+    selection.appendChild(create);
+    const remark = text(doc, 'button', 'kmc-workspace-action is-secondary',
+      'Signaler une remarque sans retour');
+    remark.type = 'button';
+    remark.setAttribute('data-relay-quality-remark', '');
+    selection.appendChild(remark);
+    slot.appendChild(selection);
+    const result = text(doc, 'p', 'kmc-workspace-note', '');
+    result.setAttribute('role', 'status');
+    result.setAttribute('data-relay-return-feedback', '');
+    slot.appendChild(result);
+
+    const list = doc.createElement('div');
+    list.setAttribute('data-relay-return-list', '');
+    slot.appendChild(list);
+    let order = null;
+    let items = [];
+
+    const updateQuantity = () => {
+      const chosen = items.find(item => item.id === product.value);
+      qty.max = String(chosen?.remaining_returnable || 1);
+      qty.value = '1';
+    };
+    product.addEventListener('change', updateQuantity);
+
+    async function loadRequests() {
+      try {
+        const data = await jsonRequest(context.fetch, '/api/relay/returns');
+        list.replaceChildren();
+        const rows = Array.isArray(data.requests) ? data.requests : [];
+        if (!rows.length) {
+          list.appendChild(text(doc, 'p', 'kmc-workspace-empty', 'Aucun dossier SAV ouvert.'));
+          return;
+        }
+        const wrap = doc.createElement('div');
+        list.appendChild(wrap);
+        ui.DataTable.render(wrap, {
+          columns: [
+            { key:'order_reference', label:'Commande' },
+            { key:'product_name', label:'Article' },
+            { key:'return_quantity', label:'Quantité' },
+            { key:'return_reason', label:'Motif', render: row =>
+              ({defective:'Défectueux',damaged:'Cassé',wrong_item:'Mauvais article',not_as_described:'Non conforme',other:'Autre'})[row.return_reason] || 'Autre' },
+            { key:'status', label:'Dossier', render: row =>
+              ({open:'À examiner',processing:'En traitement',resolved:'Résolu',closed:'Clôturé'})[row.status] || row.status },
+          ],
+          rows,
+          emptyText: 'Aucun dossier SAV.',
+        });
+      } catch (error) { result.textContent = 'Liste SAV indisponible : ' + error.message; }
+    }
+
+    searchForm.addEventListener('submit', async event => {
+      event.preventDefault();
+      selection.hidden = true;
+      order = null;
+      items = [];
+      lookup.disabled = true;
+      result.textContent = 'Recherche de la commande…';
+      try {
+        const data = await jsonRequest(context.fetch,
+          '/api/relay/returns/eligible?reference=' + encodeURIComponent(reference.value.trim()));
+        order = data.order;
+        items = (data.items || []).filter(item => item.remaining_returnable > 0);
+        product.replaceChildren();
+        for (const item of items) {
+          const option = text(doc, 'option', '',
+            item.product_name + ' · ' + item.remaining_returnable + ' unité(s) remises disponibles');
+          option.value = item.id;
+          product.appendChild(option);
+        }
+        if (!items.length) {
+          result.textContent = 'Aucun article remis éligible ou une demande est déjà en cours.';
+        } else {
+          updateQuantity();
+          selection.hidden = false;
+          result.textContent = 'Sélectionnez l’article et le motif ; aucun crédit n’est créé.';
+        }
+      } catch (error) { result.textContent = error.message; }
+      finally { lookup.disabled = false; }
+    });
+
+    remark.addEventListener('click', async () => {
+      const chosen = items.find(item => item.id === product.value);
+      if (!order || !chosen) return;
+      if (note.value.trim().length < 5) {
+        result.textContent = 'Décrivez votre remarque en quelques mots.';
+        return;
+      }
+      remark.disabled = true;
+      result.textContent = 'Envoi de la remarque au Catalogue…';
+      try {
+        await jsonRequest(context.fetch, '/api/relay/returns/remarks', {
+          method: 'POST', body: {
+            order_reference: order.reference, order_item_id: chosen.id,
+            note: note.value.trim(),
+          },
+        });
+        note.value = '';
+        result.textContent = 'Remarque enregistrée sur la référence Catalogue. Aucun retour, gel ou paiement déclenché.';
+      } catch (error) {
+        result.textContent = error.message;
+      } finally { remark.disabled = false; }
+    });
+
+    selection.addEventListener('submit', async event => {
+      event.preventDefault();
+      const chosen = items.find(item => item.id === product.value);
+      if (!order || !chosen) return;
+      const count = Number(qty.value);
+      if (!Number.isSafeInteger(count) || count < 1 || count > chosen.remaining_returnable) {
+        result.textContent = 'Quantité supérieure aux articles remis disponibles.';
+        return;
+      }
+      if (reason.value === 'other' && note.value.trim().length < 3) {
+        result.textContent = 'Précisez le motif du retour.';
+        return;
+      }
+      create.disabled = true;
+      result.textContent = 'Enregistrement de la demande…';
+      try {
+        await jsonRequest(context.fetch, '/api/relay/returns', {
+          method: 'POST', body: {
+            order_reference: order.reference, order_item_id: chosen.id,
+            quantity: count, reason: reason.value, note: note.value.trim(),
+          },
+        });
+        selection.hidden = true;
+        order = null;
+        items = [];
+        result.textContent = 'Dossier SAV enregistré. À examiner par Komerce ; aucun retour physique ou wallet confirmé.';
+        await loadRequests();
+      } catch (error) { result.textContent = error.message; }
+      finally { create.disabled = false; }
+    });
+
+    loadRequests().catch(() => {});
+  }
+
   function renderPayload(rootNode, ui, doc, payload, context) {
     rootNode.className = 'kmc-operations-workspace';
     rootNode.setAttribute('data-workspace-kind', 'hub-relay');
@@ -1497,6 +1707,8 @@
         showRelayOperation(rootNode,context.activeRelayQueue);
       }
     }
+
+    if (view === 'returns' && context.mode === 'relay-execution') renderRelayReturnRequests(rootNode, ui, doc, context);
 
     if (view === 'inventory') renderInventorySection(rootNode, ui, doc, payload, context);
 
@@ -1872,6 +2084,15 @@
     }
     if (!MARKET_CODE.test(marketCode)) throw new Error('canonical_operations_workspace_market_required');
 
+    if(options.mode==='relay-execution' && options.focusOnly && options.user?.role==='finance') {
+      rootNode.replaceChildren();
+      const notice=doc.createElement('p');
+      notice.className='kmc-workspace-empty';
+      notice.textContent='Le comptoir des remises est réservé aux agents autorisés du Relais.';
+      rootNode.appendChild(notice);
+      return Object.freeze({marketCode,denied:true});
+    }
+
     // Finance : accès au seul module Cash & dépôts (pas de file opérationnelle), hébergé dans Relais live.
     if (options.mode === 'relay-execution' && options.user && options.user.role === 'finance') {
       rootNode.className = 'kmc-operations-workspace';
@@ -1898,9 +2119,9 @@
       mode: ['execution', 'relay-execution'].includes(options.mode) ? options.mode : 'pilot',
       user: options.user || null,
       initialFocus: options.forcedRelayFocus || (options.mode==='relay-execution' ? String(new URLSearchParams(String(globalThis.location?.search||'')).get('focus')||'') : ''),
-      focusOnly: Boolean(options.focusOnly),
+      focusOnly:Boolean(options.focusOnly),
       activeRelayQueue:null,
-      view: options.mode === 'execution' ? 'supply' : undefined,
+      view: options.focusOnly?'relay':options.mode === 'execution' ? 'supply' : options.mode === 'relay-execution' && new URLSearchParams(String(globalThis.location?.search || '')).get('focus') === 'returns' ? 'returns' : undefined,
       confirm: typeof options.confirm === 'function'
         ? options.confirm
         : (typeof globalThis.confirm === 'function' ? globalThis.confirm.bind(globalThis) : () => true),
