@@ -1640,10 +1640,11 @@
       const nav=doc.createElement('nav');
       nav.className='kmc-relay-main-nav';
       nav.setAttribute('aria-label','Espaces de travail du relais');
+      const activeRelayTab=context.focusOnly?'Remises':context.view==='returns'?'Incidents & SAV':'Flux Relais';
       const links=[
-        ['Flux Relais','/admin/relais-live'+(context.marketCode?'?market='+encodeURIComponent(context.marketCode):''),false],
-        ['Remises','/admin/relais-live?view=remises&market='+encodeURIComponent(context.marketCode),true],
-        ['Incidents & SAV','/admin/relais-live?view=incidents&market='+encodeURIComponent(context.marketCode),false],
+        ['Flux Relais','/admin/relais-live'+(context.marketCode?'?market='+encodeURIComponent(context.marketCode):''),activeRelayTab==='Flux Relais'],
+        ['Remises','/admin/relais-live?view=remises&market='+encodeURIComponent(context.marketCode),activeRelayTab==='Remises'],
+        ['Incidents & SAV','/admin/relais-live?view=incidents&market='+encodeURIComponent(context.marketCode),activeRelayTab==='Incidents & SAV'],
         ['Historique','/admin/relais-live?view=orders&list=collected&market='+encodeURIComponent(context.marketCode),false],
       ];
       for(const [title,href,active] of links) {
