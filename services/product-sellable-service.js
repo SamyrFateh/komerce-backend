@@ -9,7 +9,7 @@
  * @depends       services/product-sku-service.js
  * @used-by       services/product-admin-service.js (réexport), services/order-checkout-item-resolution.js,
  *                routes/orders/create.js (via product-admin-service.js), services/shared-cart-creation.js (via product-admin-service.js)
- * @db-read       catalog_media, product_sku_media, product_variants, products
+ * @db-read       catalog_product_sale_holds, catalog_media, product_sku_media, product_variants, products
  * @db-write      none
  * @db-txn        none
  * @doctrine      docs/specs/DECISION_MODELE_STOCK_SKU.md, GAP-07
