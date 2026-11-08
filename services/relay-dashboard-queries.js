@@ -89,23 +89,48 @@ async function getRelayOperationalIncidents(user, { authorizedMarkets = null } =
     params.push(authorizedMarkets ? Array.from(authorizedMarkets) : []);
     scope = 'AND o.market_id = ANY($1::uuid[])';
   }
+  // Signalements locaux et incidents canoniques : même file de travail,
+  // mêmes frontières relais/marché. Les retours après remise restent visibles.
   const { rows } = await db.query(`
-    SELECT i.id, o.id AS order_id, o.reference AS order_reference,
-           i.incident_type, i.severity, i.client_impact, i.title,
-           i.status, i.created_at, i.resolver_domain,
-           pr.name AS product_name
-      FROM incidents i
-      JOIN orders o ON o.id = ${incidentOrderIdSql}
-      LEFT JOIN order_items oi ON oi.id = i.order_item_id
-      LEFT JOIN products pr ON pr.id = oi.product_id
-     WHERE i.status IN ('open','investigating')
-       AND i.client_impact IN ('delayed','partial_delivery','wrong_item','blocked')
-       AND o.simulation_scope IS NULL
-       AND o.status::text NOT IN ('cancelled','refunded','collected')
-       AND o.relais_id IS NOT NULL
-       ${scope}
-     ORDER BY CASE i.severity WHEN 'critical' THEN 0 WHEN 'high' THEN 1 ELSE 2 END,
-              i.created_at DESC
+    SELECT x.id, x.order_id, x.order_reference,
+           x.incident_type, x.severity, x.client_impact, x.title,
+           x.status, x.created_at, x.resolver_domain, x.product_name, x.source
+      FROM (
+        SELECT i.id::text AS id, o.id AS order_id, o.reference AS order_reference,
+               i.incident_type::text AS incident_type, i.severity::text AS severity,
+               i.client_impact::text AS client_impact, i.title::text AS title,
+               i.status::text AS status, i.created_at,
+               i.resolver_domain::text AS resolver_domain,
+               pr.name::text AS product_name, 'canonical'::text AS source
+          FROM incidents i
+          JOIN orders o ON o.id = ${incidentOrderIdSql}
+          LEFT JOIN order_items oi ON oi.id = i.order_item_id
+          LEFT JOIN products pr ON pr.id = oi.product_id
+         WHERE i.status IN ('open','investigating')
+           AND i.client_impact IN ('delayed','partial_delivery','wrong_item','blocked')
+           AND o.simulation_scope IS NULL
+           AND o.status::text NOT IN ('cancelled','refunded','collected')
+           AND o.relais_id IS NOT NULL
+           ${scope}
+        UNION ALL
+        SELECT li.id::text AS id, o.id AS order_id, o.reference AS order_reference,
+               li.type::text AS incident_type,
+               (CASE li.priority::text WHEN 'urgent' THEN 'critical'
+                 WHEN 'high' THEN 'high' ELSE 'medium' END)::text AS severity,
+               'blocked'::text AS client_impact,
+               COALESCE(NULLIF(li.description::text,''),li.type::text) AS title,
+               li.status::text AS status, li.created_at,
+               NULL::text AS resolver_domain, NULL::text AS product_name,
+               'relay_report'::text AS source
+          FROM order_incidents li
+          JOIN orders o ON o.id = li.order_id
+         WHERE li.status IN ('open','in_progress')
+           AND o.simulation_scope IS NULL
+           AND o.relais_id IS NOT NULL
+           ${scope}
+      ) x
+     ORDER BY CASE x.severity WHEN 'critical' THEN 0 WHEN 'high' THEN 1 ELSE 2 END,
+              x.created_at DESC
      LIMIT 40
   `, params);
   return { incidents: rows };
