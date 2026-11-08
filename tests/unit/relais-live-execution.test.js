@@ -20,7 +20,7 @@ test('Relais live · Exécution : mode relay-execution limité aux actions Relai
 
 test('Relais live expose Flux et Remises sans perdre le routeur canonique d’exécution', () => {
   expect(read('relay-live.js')).toContain("label:'Flux Relais'");
-  expect(read('relay-live.js')).toContain("label:'Remises'");
+  expect(read('relay-live.js')).toContain("name:'Remises'");
   expect(read('relay-live.js')).toContain("label:'Incidents & SAV'");
   const app = read('app.js');
   expect(app).toContain("surface: 'relais-live-execution'");

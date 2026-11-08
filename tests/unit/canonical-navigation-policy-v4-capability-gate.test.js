@@ -338,7 +338,7 @@ test('Hub et Relais Live utilisent leur navigation locale sans onglets concurren
   const hub = fs.readFileSync(require('node:path').join(__dirname, '../../public/dashboards/canonical/js/hub-live.js'), 'utf8');
   const relay = fs.readFileSync(require('node:path').join(__dirname, '../../public/dashboards/canonical/js/relay-live.js'), 'utf8');
   expect(hub).not.toContain("key:'commandes'");
-  for(const label of ["label:'Flux Relais'","label:'Remises'","label:'Incidents & SAV'","label:'Historique'"])
+  for(const label of ["label:'Flux Relais'","name:'Remises'","label:'Incidents & SAV'","label:'Historique'"])
     expect(relay).toContain(label);
 });
 
