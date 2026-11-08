@@ -393,12 +393,15 @@ async function loadProduct360(product, options = {}) {
   const qualityRead = await catalogQuality.qualityByRef(product.product_ref);
   const quality = Object.freeze({
     frozen: qualityRead.frozen,
-    reports: qualityRead.reports,
-    active_reports: qualityRead.active_reports,
-    note_count_recent: qualityRead.notes.length,
-    ...(includeCentral && qualityRead.active_hold ? {
-      hold_reason: qualityRead.active_hold.reason,
-      hold_comment: qualityRead.active_hold.comment,
+    // A market-scoped reader must not infer return activity in other markets.
+    ...(includeCentral ? {
+      reports: qualityRead.reports,
+      active_reports: qualityRead.active_reports,
+      note_count_recent: qualityRead.notes.length,
+      ...(qualityRead.active_hold ? {
+        hold_reason: qualityRead.active_hold.reason,
+        hold_comment: qualityRead.active_hold.comment,
+      } : {}),
     } : {}),
   });
 
