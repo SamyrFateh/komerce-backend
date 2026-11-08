@@ -159,16 +159,24 @@ async function _resolveCanonicalImage(dbClient, { product, skuId }) {
  */
 async function resolveSellableUnit(dbClient, { productId, variantCombo = null, quantity = 1 }) {
   const { rows: [product] } = await dbClient.query(
-    `SELECT id, name, image_url, category, price_kmf, is_active,
-            inventory_model, has_variants, stock,
-            promo_pct, is_promo, promo_until
-       FROM products
-      WHERE id = $1`,
+    `SELECT p.id, p.name, p.image_url, p.category, p.price_kmf, p.is_active, p.is_available,
+            p.inventory_model, p.has_variants, p.stock,
+            p.promo_pct, p.is_promo, p.promo_until,
+            EXISTS(SELECT 1 FROM catalog_product_sale_holds h
+              WHERE h.product_id=p.id AND h.released_at IS NULL) AS catalog_quality_frozen
+       FROM products p
+      WHERE p.id = $1`,
     [productId]
   );
   if (!product || !product.is_active) {
     const e = new Error(`Produit introuvable ou inactif : ${productId}`);
     e.status = 404; e.code = 'product_not_found';
+    throw e;
+  }
+
+  if (product.catalog_quality_frozen || product.is_available !== true) {
+    const e = new Error('Produit temporairement indisponible à la vente (contrôle qualité).');
+    e.status = 409; e.code = product.catalog_quality_frozen ? 'catalog_product_quality_frozen' : 'product_unavailable';
     throw e;
   }
 
