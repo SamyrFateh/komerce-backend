@@ -1,5 +1,5 @@
 /** @komerce-arch-lite
- * @role cj-real-twenty-canonical-staging-replay
+ * @role cj-bounded-canonical-staging-replay
  * @domain sourcing
  * @layer tooling
  * @owner backend-core
@@ -19,11 +19,13 @@ const {confirmTarget}=require('./recette/target-guard');
 const {audit}=require('./audit-kir-unified-commercial-coverage');
 const {assess}=require('./lib/supplier-import-proof-gates');
 const HOST='https://komerce-backend-production.up.railway.app';
-const OUT=path.resolve('test-results/cj-canonical-20-staging/report.json');
+const COUNT=Number(process.env.CJ_STAGING_COHORT_COUNT||20);
+const OUT=path.resolve(`test-results/cj-canonical-${COUNT}-staging/report.json`);
 
 function guard(env=process.env){
-  if(env.GITHUB_ACTIONS!=='true'||env.NODE_ENV!=='test'||env.KOMERCE_ENV!=='staging'
-    ||env.STAGING_BASE_URL!==HOST||env.KOMERCE_ALLOW_CJ_CANONICAL_20_STAGING!=='1')
+  const authorization=COUNT===4?'KOMERCE_ALLOW_CJ_CANONICAL_4_STAGING':'KOMERCE_ALLOW_CJ_CANONICAL_20_STAGING';
+  if(![4,20].includes(COUNT)||env.GITHUB_ACTIONS!=='true'||env.NODE_ENV!=='test'||env.KOMERCE_ENV!=='staging'
+    ||env.STAGING_BASE_URL!==HOST||env[authorization]!=='1')
     throw Error('CJ_CANONICAL_STAGING_OWNER_GATE_REQUIRED');
   if(!env.DATABASE_URL||!env.CJ_ACCESS_TOKEN)throw Error('CJ_STAGING_SECRETS_MISSING');
 }
@@ -42,15 +44,21 @@ async function replay({database=db,confirm=confirmTarget,dispatch=dispatchToConn
   // Do not mutate or re-associate any pre-existing CJ candidates.
   if(Number(before.n)!==0)throw Error('CJ_CANDIDATES_ALREADY_EXIST_REVIEW_FIRST');
   const {rows:[productsBefore]}=await database.query('SELECT COUNT(*)::int AS n FROM products');
+  // A four-product post-reset certification needs a completely clean sourcing AND catalogue baseline.
+  if(COUNT===4){
+    const {rows:[allBefore]}=await database.query('SELECT COUNT(*)::int AS n FROM sourcing_candidates');
+    if(Number(allBefore.n)!==0||Number(productsBefore.n)!==0)
+      throw Error('CJ_FOUR_INTAKE_REQUIRES_EMPTY_CATALOGUE_AND_SOURCING');
+  }
   const body={supplier_name:cj.SUPPLIER_NAME,supplier_id:cj.PROVIDER_ID,
-    source_type:'api',page:1,size:20,include_commandable_units:true,
-    is_full_snapshot:false,notes:'Bounded CJ 20 staging FX deferral and commercial classification proof; never publish'};
+    source_type:'api',page:1,size:COUNT,include_commandable_units:true,
+    is_full_snapshot:false,notes:`Bounded CJ ${COUNT} staging FX deferral and commercial classification proof; never publish`};
   // One provider acquisition only; refuse partial/duplicate cohorts BEFORE the write.
   const batch=await dispatch(body);
   const data=Array.isArray(batch?.products)?batch.products:[];
   const identities=new Set(data.map(p=>String(p?.supplier_product_id||'')).filter(Boolean));
-  if(data.length!==20||identities.size!==20||(batch.invalid||[]).length)
-    throw Error('CJ_PROVIDER_COHORT_NOT_EXACT_20_UNIQUE_VALID');
+  if(data.length!==COUNT||identities.size!==COUNT||(batch.invalid||[]).length)
+    throw Error(`CJ_PROVIDER_COHORT_NOT_EXACT_${COUNT}_UNIQUE_VALID`);
   const result=await importer(body,null,async()=>batch);
   const runRef=result.body?.run_ref||null;
   if(!/^KIR-\d{6}$/.test(runRef||''))throw Error('CJ_CANONICAL_RUN_REF_MISSING');
@@ -78,21 +86,23 @@ async function replay({database=db,confirm=confirmTarget,dispatch=dispatchToConn
       status:p.status,category:p.category,subcategory:p.subcategory,source:p.source}))
   }:null;
   const proof=assess({
-    provider:cj.SUPPLIER_NAME,expected:20,scope:'sourcing_only',
+    provider:cj.SUPPLIER_NAME,expected:COUNT,scope:'sourcing_only',
     source:{products:data,invalid_count:(batch.invalid||[]).length},
     run,events,candidates,classification:classificationReport,
     publishedDelta:productsAfter.n-productsBefore.n
   });
   return {mode:'GUARDED_STAGING_CANONICAL_INTAKE',target:HOST,run_ref:runRef,
-    supplier:'CJdropshipping',requested:20,fetched:20,distinct:identities.size,
+    supplier:'CJdropshipping',requested:COUNT,fetched:COUNT,distinct:identities.size,
     created:Number(result.body?.created||0),updated:Number(result.body?.updated||0),
     accepted:Number(result.body?.accepted||0),rejected:Number(result.body?.rejected||0),
     fx_pending:Number(result.body?.fx_pending||0),
     pipeline_status:result.body?.pipeline_status||null,
-    candidate_count:persisted.n,source_reasons:safeReasons(result.body?.errors),
+    candidate_count:persisted.n,
+    source_products:candidates.map(c=>({candidate_ref:c.candidate_ref,supplier_product_id:c.supplier_product_id,fx_quote_pending:c.purchase_price_kmf===null})),
+    source_reasons:safeReasons(result.body?.errors),
     products_created:productsAfter.n-productsBefore.n,
     classification,proof,
-    verdict:proof.passed?'CJ_20_CLASSIFICATION_CERTIFIED_NOT_SELLABILITY'
+    verdict:proof.passed?`CJ_${COUNT}_CLASSIFICATION_CERTIFIED_NOT_SELLABILITY`
       :'CJ_PROOF_GATES_FAILED'};
 }
 async function main(){
@@ -100,19 +110,19 @@ async function main(){
   try{
     const r=await replay();
     fs.writeFileSync(OUT,JSON.stringify(r,null,2)+'\n');
-    console.log('[CJ_CANONICAL_20] '+JSON.stringify({
+    console.log(`[CJ_CANONICAL_${COUNT}] `+JSON.stringify({
       run:r.run_ref,verdict:r.verdict,accepted:r.accepted,rejected:r.rejected,
       fx_pending:r.fx_pending,persisted:r.candidate_count,
       classification:r.classification&&{automatic:r.classification.automatic,
         unresolved:r.classification.unresolved},
       errors:r.source_reasons,failed_gates:r.proof.failed_gates
     }));
-    if(r.verdict!=='CJ_20_CLASSIFICATION_CERTIFIED_NOT_SELLABILITY')process.exitCode=2;
+    if(r.verdict!==`CJ_${COUNT}_CLASSIFICATION_CERTIFIED_NOT_SELLABILITY`)process.exitCode=2;
   }catch(err){
     const report={verdict:'CJ_CANONICAL_REPLAY_ERROR',
       reason:String(err.code||err.message).slice(0,160)};
     fs.writeFileSync(OUT,JSON.stringify(report,null,2)+'\n');
-    console.error('[CJ_CANONICAL_20] '+report.reason);
+    console.error(`[CJ_CANONICAL_${COUNT}] `+report.reason);
     process.exitCode=1;
   }finally{await db.pool.end();}
 }
