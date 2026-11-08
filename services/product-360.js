@@ -8,7 +8,7 @@
  * @outputs       product_360_projection, market_p1_thread_projection, central_supplier_purchasing_mode_evidence
  * @depends       db, services/suppliers/provider-capability-certifications.js
  * @used-by       routes/admin-product-360.js
- * @db-read       products, product_variants, product_skus, order_items, orders, markets, order_item_cost_imputations, order_item_real_cost_allocations, product_suppliers, suppliers, price_history, alerts, users, product_market_price_drafts, product_market_exposure
+ * @db-read       catalog_product_sale_holds, products, product_variants, product_skus, order_items, orders, markets, order_item_cost_imputations, order_item_real_cost_allocations, product_suppliers, suppliers, price_history, alerts, users, product_market_price_drafts, product_market_exposure
  * @db-write      none
  * @db-txn        none
  * @doctrine      entity_360_reunites_without_recomputing, server_market_scope_is_authority, product_ref_is_business_identity, sourcing_and_audit_global_only
@@ -21,6 +21,7 @@
 const db = require('../db');
 const { notLegacyUnjustifiedSql } = require('./cost-allocation/cost-expectation');
 const capabilityEvidence = require('./suppliers/provider-capability-certifications');
+
 
 const PRODUCT_REF = /^KPR-\d{6,}$/i;
 
@@ -48,7 +49,9 @@ async function resolveProduct(productRef) {
       price_kmf, stock, inventory_model, is_active, is_available,
       has_variants, lifecycle_status, content_source, enrichment_version,
       sourcing_source, fragility, weight_kg, dimensions_cm, image_url,
-      created_at, updated_at
+      created_at, updated_at,
+      EXISTS(SELECT 1 FROM catalog_product_sale_holds h
+             WHERE h.product_id=products.id AND h.released_at IS NULL) AS catalog_quality_frozen
     FROM products
     WHERE UPPER(product_ref) = UPPER($1)
     LIMIT 1
@@ -387,8 +390,13 @@ async function loadProduct360(product, options = {}) {
     buyer_visible: row.commercial_exposure === 'ENABLED' && row.price_status === 'LOCAL_ACTIVE',
   }));
 
+  // The sale hold is an authoritative flag resolved with the existing product
+  // lookup, without an extra unscoped query when a market operator opens 360.
+  const quality = Object.freeze({ frozen: product.catalog_quality_frozen === true });
+
   return Object.freeze({
     product: publicIdentity(product),
+    quality,
     scope: buildScope(mode, performance.map(row => row.market)),
     summary: Object.freeze({
       ...summary,

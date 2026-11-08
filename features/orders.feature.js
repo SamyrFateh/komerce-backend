@@ -33,6 +33,7 @@ module.exports = {
       'collecte QR au retrait',
       'projection checkout boutique : finalisation d’une sélection en commande, sans ownership de l’encaissement',
       'workflow de litige (disputes) : statut open/processing/resolved/closed et note de résolution — services/dispute-mutation-service.js, jamais refund_kmf/refund_eur, qui restent hors de ce workflow (voir refunds ci-dessous)',
+      'SAV V1 : demande de retour rattachée à un article réellement remis, sans preuve de reprise physique ni mouvement financier',
     ],
     out: [
       'encaissement du paiement (feature payments)',
@@ -51,6 +52,7 @@ module.exports = {
     'docs/doctrine/DOCTRINE_ANNULATION.md',
     'docs/doctrine/CHECKOUT_UNIFIED_ATTACK.md',
     'docs/contract/LOCAL_RELAY_RECEIPT_P0_20261102.md',
+    'docs/doctrine/DOCTRINE_RETOURS_PRODUIT.md',
   ],
 
   files: {
@@ -77,6 +79,7 @@ module.exports = {
       'services/order-post-commit-hooks.js',
       'services/admin-order-refund.js',
       'services/dispute-mutation-service.js',
+      'services/relay-return-request-service.js',
       'services/cancel-order-purchase-orders.js',
       'services/order-payment-confirmation.js',
       'services/order-item-availability-service.js',
@@ -165,6 +168,7 @@ module.exports = {
       'tests/unit/order-item-refund-settlement.test.js',
       'tests/unit/order-mutation-service.test.js',
       'tests/unit/dispute-mutation-service.test.js',
+      'tests/unit/relay-return-request-service.test.js',
       'tests/unit/payment-service.test.js',
       'tests/unit/order-service.test.js',
       'tests/unit/orderParcelLinkRules.test.js',

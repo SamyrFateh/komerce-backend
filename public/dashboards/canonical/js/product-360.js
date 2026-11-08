@@ -271,6 +271,19 @@
     rootNode.className = 'kmc-admin-shell kmc-entity-shell';
     rootNode.replaceChildren();
     rootNode.appendChild(createHeader(doc, payload));
+    if (payload.quality?.frozen) {
+      const banner = text(doc, 'div', 'kmc-entity-quality-alert',
+        'VENTE GELÉE · toutes nouvelles commandes bloquées' +
+        (payload.quality.hold_comment ? ' · ' + payload.quality.hold_comment : ''));
+      banner.setAttribute('data-product-quality-frozen','true');
+      rootNode.appendChild(banner);
+    } else if (payload.quality?.reports || payload.quality?.note_count_recent) {
+      const banner = text(doc, 'div', 'kmc-entity-quality-alert is-signal',
+        'Qualité à examiner · ' + Number(payload.quality.reports || 0) +
+        ' retour(s) · ' + Number(payload.quality.note_count_recent || 0) + ' remarque(s)');
+      banner.setAttribute('data-product-quality-signal','true');
+      rootNode.appendChild(banner);
+    }
 
     const metrics = doc.createElement('section');
     metrics.className = 'kmc-entity-metrics';
@@ -290,7 +303,7 @@
         { champ: 'Prix boutique', valeur: product.price_kmf == null ? 'À définir' : formatKmf(product.price_kmf) },
         { champ: 'Lifecycle', valeur: product.lifecycle_status },
         { champ: 'Actif', valeur: product.is_active ? 'Oui' : 'Non' },
-        { champ: 'Disponible', valeur: product.is_available ? 'Oui' : 'Non' },
+        { champ: 'Disponible', valeur: payload.quality?.frozen ? 'Non · gel qualité' : product.is_available ? 'Oui' : 'Non' },
         { champ: 'Fragilité', valeur: product.fragility },
         { champ: 'Poids', valeur: product.weight_kg == null ? '—' : `${formatNumber(product.weight_kg, 3)} kg` },
         { champ: 'Mis à jour', valeur: formatDate(product.updated_at) },

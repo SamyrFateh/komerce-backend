@@ -7,7 +7,7 @@
   },
   "x-contract-debt": {
     "unknown_responses": 51,
-    "total_routes": 724,
+    "total_routes": 727,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -33667,6 +33667,128 @@
                       "x-observed": true
                     },
                     "parcel_id": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/relay/returns": {
+      "get": {
+        "summary": "GET /api/relay/returns",
+        "x-route-file": "routes/relay-dashboard.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "requests": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      },
+      "post": {
+        "summary": "POST /api/relay/returns",
+        "x-route-file": "routes/relay-dashboard.js",
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "request": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/relay/returns/eligible": {
+      "get": {
+        "summary": "GET /api/relay/returns/eligible",
+        "x-route-file": "routes/relay-dashboard.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "service-read",
+                  "description": "Champs observés (source: service-read)",
+                  "type": "object",
+                  "properties": {
+                    "order": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "items": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/relay/returns/remarks": {
+      "post": {
+        "summary": "POST /api/relay/returns/remarks",
+        "x-route-file": "routes/relay-dashboard.js",
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "remark": {
                       "type": "string",
                       "x-observed": true
                     }

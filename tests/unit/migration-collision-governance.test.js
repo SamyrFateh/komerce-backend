@@ -115,7 +115,9 @@ describe('migration collision governance — immutable history', () => {
       env: { ...process.env, ROOT },
     });
 
-    expect(result.status).toBe(0);
+    if (result.status !== 0) {
+      throw new Error('backend:audit échoué :\\n' + String(result.stdout || '').slice(-10000) + '\\n' + String(result.stderr || '').slice(-2500));
+    }
     expect(result.stderr).toBe('');
     expect(result.stdout).toContain('9 collision(s) historique(s) de migrations immuables');
     expect(result.stdout).not.toContain('── Collisions numéros migrations ──');

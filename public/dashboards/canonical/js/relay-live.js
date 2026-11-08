@@ -69,7 +69,7 @@
 
   const executionUrl=(market,focus='')=>{
     const code=String(market||'').trim().toUpperCase();
-    return BASE+queryString({view:'execute',market:/^[A-Z]{2}$/.test(code)?code:'',focus:/^(shipments|cash|receive|collect)$/.test(focus)?focus:''});
+    return BASE+queryString({view:'execute',market:/^[A-Z]{2}$/.test(code)?code:'',focus:/^(shipments|cash|receive|collect|returns)$/.test(focus)?focus:''});
   };
   // Le cockpit lit des statuts de commande. Il n'atteste JAMAIS qu'un colis
   // a été reçu ou remis : cette écriture appartient à l'atelier Relais.
@@ -114,6 +114,7 @@
       (c.count===undefined?'':'<b class="kmc-relay-action-count">'+c.count+'</b>')+
       '<span class="kmc-relay-action-arrow" aria-hidden="true">›</span></a>'
     ).join('')+
+    '<a class="kmc-relay-archive-link" href="'+esc(executionUrl('','returns'))+'" data-relay-returns-link>Retours & SAV <span aria-hidden="true">↗</span></a>'+
     '<a class="kmc-relay-archive-link" href="'+esc(listUrl('collected'))+'" data-cockpit-nav>Historique des retraits <span aria-hidden="true">↗</span></a></nav>';
   }
 

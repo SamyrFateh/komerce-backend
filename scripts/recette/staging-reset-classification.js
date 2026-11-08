@@ -62,6 +62,8 @@ const ENTRIES = [
   R('sourcing_candidates', 'sourcing'), R('sourcing_observations', 'sourcing'), R('sourcing_candidate_events', 'sourcing'),
   R('sourcing_canonical_entities', 'sourcing'),
   R('sourcing_canonical_entity_refs', 'sourcing'), R('products', 'catalogue produits (reconstruit par API)'),
+  R('catalog_product_quality_notes', 'observations SAV et qualité historisées, purgées avec les produits de recette'),
+  R('catalog_product_sale_holds', 'gel qualité de produits de recette, purgé sans toucher les référentiels globaux'),
   // sourcing_captures : sourcing_sources.production_certified_capture_id y pointe ; TRUNCATE tronquerait le registre protege.
   R('sourcing_captures', 'captures sourcing : DELETE (FK retour sourcing_sources) et non TRUNCATE', { mode: 'delete' }),
   // ── purge_root : ajouts LOT 1 (constat Opus, ecrivains verifies) ──
