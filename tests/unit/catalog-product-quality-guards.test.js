@@ -16,7 +16,9 @@ test('un gel est une vraie interdiction de nouvelle vente, pas un badge seulemen
   expect(migration).toContain('BEFORE INSERT ON public.order_items');
   expect(migration).toContain('FOR SHARE');
   expect(migration).toContain('WHERE h.product_id = NEW.product_id AND h.released_at IS NULL');
-  expect(guard).toContain('NOT EXISTS (SELECT 1 FROM catalog_product_sale_holds');
+  expect(guard).toContain('EXISTS (SELECT 1 FROM catalog_product_sale_holds');
+  expect(guard).toContain('catalog_quality_frozen');
+  expect(guard).toContain('status: 409');
   expect(guard).toContain('FOR UPDATE OF p');
   expect(sellable).toContain('catalog_quality_frozen');
   expect(sellable).toContain("e.code = product.catalog_quality_frozen ? 'catalog_product_quality_frozen'");
