@@ -1317,7 +1317,32 @@
     rootNode.setAttribute('data-workspace-kind', 'hub-relay');
     rootNode.setAttribute('data-workspace-mode', context.mode);
     rootNode.replaceChildren();
-    rootNode.appendChild(createHeader(doc, payload, context.mode));
+    const header=createHeader(doc,payload,context.mode);
+    if(context.focusOnly) {
+      header.querySelector('.kmc-workspace-kicker').textContent='RELAIS · COMPTOIR';
+      header.querySelector('.kmc-workspace-title').textContent='Remises client';
+      header.querySelector('.kmc-workspace-subtitle').textContent=
+        context.marketCode+' · Identifier le bon colis, vérifier les conditions de retrait, attester la remise.';
+    }
+    rootNode.appendChild(header);
+    if(context.focusOnly) {
+      const nav=doc.createElement('nav');
+      nav.className='kmc-relay-main-nav';
+      nav.setAttribute('aria-label','Espaces de travail du relais');
+      const links=[
+        ['Flux Relais','/admin/relais-live',false],
+        ['Remises','/admin/relais-live?view=remises&market='+encodeURIComponent(context.marketCode),true],
+        ['Incidents & SAV','/admin/relais-live?view=incidents',false],
+        ['Historique','/admin/relais-live?view=orders&list=collected',false],
+      ];
+      for(const [title,href,active] of links) {
+        const link=text(doc,'a','kmc-relay-main-tab',title);
+        link.href=href;
+        if(active)link.setAttribute('aria-current','page');
+        nav.appendChild(link);
+      }
+      rootNode.appendChild(nav);
+    }
 
     // En Hub Live le dossier porte déjà les quatre indicateurs de sa projection
     // serveur. Ne pas répéter les métriques Relais ni repousser la file sous le pli.
@@ -1333,12 +1358,12 @@
     const views = context.mode === 'relay-execution' ? RELAY_LIVE_TABS
       : context.mode === 'execution' ? EXECUTION_VIEWS : WORKSPACE_VIEWS;
     const view = views.some(item => item.id === context.view) ? context.view : views[0].id;
-    rootNode.appendChild(createViewTabs(doc, view, nextView => {
+    if(!context.focusOnly)rootNode.appendChild(createViewTabs(doc, view, nextView => {
       context.view = nextView;
       renderPayload(rootNode, ui, doc, payload, context);
     }, views));
 
-    if (context.mode==='relay-execution' && view==='relay') {
+    if (context.mode==='relay-execution' && view==='relay' && !context.focusOnly) {
       const relay=payload.queues?.relay||{};
       const allShipments=context.relayShipments?.shipments;
       const pending=Array.isArray(allShipments)?allShipments.filter(isShipmentReceivable).length:null;
@@ -1428,6 +1453,7 @@
 
     if (view === 'relay') {
     context.relayCollectCount=payload.queues?.relay?.to_collect?.length||0;
+    if(!context.focusOnly) {
     renderRelayShipmentsSection(rootNode, ui, doc, context);
     renderOrderActionSection(rootNode, ui, doc, context, {
       title: 'Encaisser les paiements',
@@ -1453,6 +1479,7 @@
       confirm: row => `Confirmer la réception de ${row.reference} au relais ?`,
       empty: 'Aucun colis local à réceptionner.',
     });
+    }
 
     renderParcelActionSection(rootNode, ui, doc, context, {
       title: 'Remettre au client',
@@ -1465,7 +1492,7 @@
       confirm: row => `Confirmer la remise de ${row.reference} au client ?`,
       empty: 'Aucun colis à remettre.',
     });
-      if(context.mode==='relay-execution') {
+      if(context.mode==='relay-execution' && !context.focusOnly) {
         showRelayOperation(rootNode,context.activeRelayQueue);
       }
     }
@@ -1869,7 +1896,8 @@
       marketCode,
       mode: ['execution', 'relay-execution'].includes(options.mode) ? options.mode : 'pilot',
       user: options.user || null,
-      initialFocus: options.mode==='relay-execution' ? String(new URLSearchParams(String(globalThis.location?.search||'')).get('focus')||'') : '',
+      initialFocus: options.forcedRelayFocus || (options.mode==='relay-execution' ? String(new URLSearchParams(String(globalThis.location?.search||'')).get('focus')||'') : ''),
+      focusOnly: Boolean(options.focusOnly),
       activeRelayQueue:null,
       view: options.mode === 'execution' ? 'supply' : undefined,
       confirm: typeof options.confirm === 'function'
@@ -1917,7 +1945,7 @@
       await reload();
       // Orientation de l'agent vers la file demandée depuis le cockpit.
       // Seules les files existantes sont navigables ; aucune action métier n'est exécutée ici.
-      if (context.mode==='relay-execution' && ['shipments','cash','receive','collect'].includes(context.initialFocus)) {
+      if (context.mode==='relay-execution' && !context.focusOnly && ['shipments','cash','receive','collect'].includes(context.initialFocus)) {
         const anchor=rootNode.querySelector?.('#relay-execution-'+context.initialFocus);
         anchor?.scrollIntoView?.({block:'start',behavior:'auto'});
       }
