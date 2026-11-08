@@ -7,7 +7,7 @@
   },
   "x-contract-debt": {
     "unknown_responses": 51,
-    "total_routes": 727,
+    "total_routes": 728,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -33789,6 +33789,42 @@
                       "x-observed": true
                     },
                     "remark": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/relay/returns/intake": {
+      "post": {
+        "summary": "POST /api/relay/returns/intake",
+        "x-route-file": "routes/relay-dashboard.js",
+        "responses": {
+          "200": {
+            "description": "Attestation existante, rejeu identique"
+          },
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "receipt": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "replayed": {
                       "type": "string",
                       "x-observed": true
                     }
