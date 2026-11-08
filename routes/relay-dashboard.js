@@ -10,7 +10,7 @@
  * @used-by       bootstrap/api-routes.js
  * @db-read       markets, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, orders
  * @db-write      order_comments, order_incidents
- * @db-write-via:dispute-mutation-service disputes
+ * @db-write-via:dispute-mutation-service disputes; catalog-product-quality-service catalog_product_quality_notes
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change, capability_is_the_authority_not_role, relay_id_is_server_boundary
  * @impact-areas  dashboard, admin-dashboard, market
