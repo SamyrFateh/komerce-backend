@@ -890,3 +890,124 @@ body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-mode="relay-execution
     grid-template-columns:minmax(0,1fr);
   }
 }
+
+
+/* Arrivages utiles · couche finale neutre : blanc/gris, signal orange discret. */
+body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-execution-jumpbar {
+  gap:8px;border-bottom-color:#e9ecef;
+}
+body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-execution-jump {
+  background:#fff;color:#45515b;border:1px solid #e1e6ea;box-shadow:none;border-radius:8px;
+}
+body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-execution-jump[aria-current="true"] {
+  background:#fff;color:#9e4216;border:1px solid #edcdbb;
+  border-bottom:3px solid #e6681b;
+  box-shadow:0 2px 8px rgba(145,74,27,.05);
+}
+body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-execution-jump[aria-current="true"] b {
+  background:#fff0e6;color:#9e4216;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-arrival-empty {
+  display:flex;align-items:center;flex-wrap:wrap;gap:8px 16px;
+  background:#f9fafb;border:1px solid #e4e9ec;
+  border-radius:8px;padding:16px;box-shadow:none;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-arrival-empty strong {
+  color:#27323d;font-size:14px;font-weight:800;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-arrival-empty span {
+  color:#6c7883;font-size:12px;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-arrival-next {
+  display:inline-flex;align-items:center;justify-content:center;
+  min-height:33px;padding:7px 12px;border:1px solid #ecd4c4;border-radius:7px;
+  color:#9f4214;background:#fff7f2;text-decoration:none;font-size:12px;font-weight:800;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-arrival-next:hover {
+  background:#ffede2;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-arrival-next:focus-visible {
+  outline:3px solid #e6681b;outline-offset:2px;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-shipment-archive {
+  background:transparent;border:0;border-top:1px solid #e7eaed;border-radius:0;
+  padding:9px 0 0;margin:13px 0 0;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-shipment-archive>summary {
+  display:list-item;font-size:12px;color:#5b6772;font-weight:740;
+  padding:7px 4px;cursor:pointer;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-shipment {
+  border:1px solid #e0e6e9;background:#fff;border-radius:8px;
+  padding:10px 12px;margin:7px 0;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-shipment-title {
+  display:flex;flex-wrap:wrap;align-items:center;gap:7px 16px;
+  padding:4px 2px;cursor:pointer;
+  list-style-position:inside;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-shipment-reference {
+  color:#24323e;font:800 12px ui-monospace,SFMono-Regular,Consolas,monospace;
+  overflow-wrap:anywhere;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-shipment-subtitle {
+  color:#65717c;font-size:12px;font-weight:550;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-shipment-status {
+  display:inline-block;padding:4px 7px;border:1px solid #e0e6e9;border-radius:6px;
+  color:#5f6b75;background:#f7f9fa;font-size:11px;font-weight:770;
+  margin-left:auto;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-shipment[data-relay-receivable="true"] .kmc-relay-shipment-status {
+  border-color:#eed1be;background:#fff4ed;color:#a24416;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-shipment[data-relay-receivable="true"]>summary::after {
+  content:none;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-archive-detail {
+  border-top:1px solid #eef0f2;margin:9px 0 0;padding:9px 0 0;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-archive-detail>summary {
+  display:list-item;color:#566774;font-weight:730;font-size:12px;
+  cursor:pointer;padding:5px 2px;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-archive-detail>summary:hover {
+  color:#a34918;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-box {
+  margin:9px 0 0;padding:7px 0;border-top:1px solid #e9edf0;
+  color:#4d5862;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-box-title {
+  margin:6px 0;color:#25313d;font-size:12px;font-weight:820;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-hub-bag-controls {
+  margin:8px 0;gap:9px;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-hub-bag-controls input {
+  min-height:37px;border:1px solid #d8e0e5;border-radius:7px;
+  color:#26313c;font-size:12px;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-hub-bag-controls button {
+  border-radius:7px;min-height:37px;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-workspace-table {
+  border-spacing:0;background:#fff;border-color:#e1e6e9;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-workspace-table th {
+  background:#f7f9fa;color:#697580;font-size:11px;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-workspace-table td {
+  padding:9px 11px;font-size:12px;color:#27333e;
+}
+@media(max-width:700px) {
+  .kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-arrival-empty {
+    align-items:flex-start;flex-direction:column;
+  }
+  .kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-shipment-title {
+    gap:6px 9px;
+  }
+  .kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-shipment-status {
+    margin-left:0;
+  }
+}
