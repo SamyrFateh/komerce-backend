@@ -35,9 +35,9 @@ afterEach(() => jest.restoreAllMocks());
 
 test('refuse tout acteur hors relais/admin et tout rattachement relais absent', async () => {
   const db=makeDb().db;
-  await expect(returns.createReturnRequest(args(db,{actor:{id:USER,role:'market_operator'}}))
+  await expect(returns.createReturnRequest(args(db,{actor:{id:USER,role:'market_operator'}})))
     .rejects.toMatchObject({code:'RETURN_ROLE_FORBIDDEN',status:403});
-  await expect(returns.createReturnRequest(args(db,{actor:{id:USER,role:'agent_relais'}}))
+  await expect(returns.createReturnRequest(args(db,{actor:{id:USER,role:'agent_relais'}})))
     .rejects.toMatchObject({code:'RETURN_RELAY_MISSING',status:403});
   expect(db.getClient).not.toHaveBeenCalled();
 });
