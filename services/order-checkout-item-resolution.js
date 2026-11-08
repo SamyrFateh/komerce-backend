@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result
  * @depends       services/product-sku-service.js, services/product-sellable-service.js
  * @used-by       services/order-checkout-service.js
- * @db-read       product_variants, products, shared_cart_items, shared_carts, order_items
+ * @db-read       catalog_product_sale_holds, product_variants, products, shared_cart_items, shared_carts, order_items
  * @db-write      none
  * @db-txn        participant (reçoit le client transactionnel de l'appelant, ne BEGIN/COMMIT/ROLLBACK jamais lui-même)
  * @doctrine      resolve_before_behavior_change
