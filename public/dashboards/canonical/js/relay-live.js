@@ -247,8 +247,7 @@
         ${num(k.incidents_ouverts)>0?`<div class="kmc-relay-attention">
           <strong>${num(k.incidents_ouverts)} incident(s) ouvert(s)</strong>
           <a href="${BASE}?view=incidents" data-cockpit-nav>Consulter les anomalies →</a></div>`:''}
-        <div class="kmc-relay-overview-tail"><a href="${esc(remisesUrl(''))}">Ouvrir le comptoir Remises →</a>
-          <a href="${esc(listUrl('collected'))}" data-cockpit-nav>Historique des remises →</a></div>`,
+        `,
     };
   }
 
@@ -446,7 +445,7 @@
     },
   };
 
-  const cockpit = kit.createCockpit({ basePath:BASE, domainLabel:'Relais', tabs:relayTabs(), views, defaultView:'overview' });
+  const cockpit = kit.createCockpit({ basePath:BASE, domainLabel:'Relais', tabs:relayTabs(), views, defaultView:'overview', ownsNavigation:true });
 
   const incidentListeners=new WeakSet();
   function attachIncidentReporting(options){

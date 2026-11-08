@@ -78,6 +78,24 @@ async function mountRelay(page, search = '', { failDetail = false, empty = false
 const crumb = (page) => page.locator('.kir-breadcrumb').innerText().then((s) => s.replace(/\s*›\s*/g, ' > ').replace(/\s+/g, ' ').trim());
 
 test.describe('Cockpit Relais — navigation canonique', () => {
+  for(const [label,search] of [
+    ['Flux', ''],
+    ['Incidents', '?view=incidents'],
+    ['Historique', '?view=orders&list=collected'],
+    ['Dossier', '?view=order&order=r-1'],
+  ]) {
+    test('Un seul rail Relais visible, quatre destinations — '+label, async ({page})=>{
+      await mountRelay(page,search);
+      // En production le shell masque ses onglets s'il y en a moins de deux :
+      // le fallback live-kit ne doit jamais créer un deuxième rail au-dessus du Kanban.
+      await expect(page.locator('.kir-domain-nav')).toHaveCount(0);
+      await expect(page.locator('.kmc-relay-main-nav')).toHaveCount(1);
+      await expect(page.locator('.kmc-relay-main-nav a')).toHaveText([
+        'Flux Relais','Remises','Incidents & SAV','Historique',
+      ]);
+    });
+  }
+
   test('Flux Relais : Kanban quatre étapes et états physiques non inventés', async ({page})=>{
     const state=await mountRelay(page);
     await expect(page.locator('.kmc-relay-flow-heading h1')).toHaveText('Préparer les colis');
