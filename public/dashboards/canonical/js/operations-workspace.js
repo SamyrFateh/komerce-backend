@@ -1565,8 +1565,8 @@
   // Relais live — contenu réellement expédié, déroulable Expédition → KOM-BOX → commandes → articles.
   // Le reçu n'est jamais prérempli : il n'existe que par attestation du relais, article par article.
   function renderRelayShipmentsSection(rootNode, ui, doc, context) {
-    const slot = createSection(rootNode, ui, 'Relais · Expéditions en route',
-      'Ce qui a réellement été expédié, carton par carton. La réception est constatée par le relais, jamais déduite d’un statut posé par le Hub.');
+    const slot = createSection(rootNode, ui, 'Arrivages importés',
+      'Choisissez une expédition à réceptionner. Les expéditions sans intervention sont dans les archives ci-dessous.');
     if(slot.parentElement)slot.parentElement.id='relay-execution-shipments';
     slot.setAttribute('data-relay-shipments', '');
     const data = context.relayShipments;
@@ -1578,13 +1578,27 @@
       slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucune expédition en route vers ce relais.'));
       return;
     }
-    data.shipments.forEach(shipment => {
-      const card = doc.createElement('details');
-      card.className = 'kmc-relay-shipment';
-      card.open = !slot.querySelector('details');
-      card.setAttribute('data-relay-shipment', shipment.reference);
-      card.appendChild(text(doc, 'summary', 'kmc-relay-shipment-title',
-        'Expédition ' + shipment.reference + ' · ' + shipment.stage));
+    const pending=data.shipments.filter(isShipmentReceivable);
+    const other=data.shipments.filter(shipment=>!isShipmentReceivable(shipment));
+    if(!pending.length) {
+      slot.appendChild(text(doc,'div','kmc-relay-work-done','Aucune réception importée à effectuer pour ce marché.'));
+    } else {
+      const info=text(doc,'p','kmc-relay-work-count',pending.length+' expédition(s) nécessitant une réception physique.');
+      slot.appendChild(info);
+    }
+    const archive=doc.createElement('details');
+    archive.className='kmc-relay-shipment-archive';
+    archive.setAttribute('data-relay-shipment-archive','');
+    archive.appendChild(text(doc,'summary','', 'Sans réception à effectuer · '+other.length+' expédition(s)'));
+    [...pending,...other].forEach(shipment => {
+      const actionable=isShipmentReceivable(shipment);
+      const card=doc.createElement('details');
+      card.className='kmc-relay-shipment';
+      card.open=actionable && pending[0]===shipment;
+      card.setAttribute('data-relay-shipment',shipment.reference);
+      card.setAttribute('data-relay-receivable',String(actionable));
+      card.appendChild(text(doc,'summary','kmc-relay-shipment-title',
+        shipment.reference+' · '+(actionable?'Réception à confirmer':shipment.stage==='relay_received'?'Réception attestée':'Aucune réception à effectuer')));
       // Même sac physique que celui fermé au Hub : son scan ouvre la commande
       // et le colis canonique, sans attester automatiquement la réception.
       const scanBar=doc.createElement('div');
@@ -1702,8 +1716,9 @@
         });
         card.appendChild(form);
       }
-      slot.appendChild(card);
+      (actionable?slot:archive).appendChild(card);
     });
+    if(other.length)slot.appendChild(archive);
   }
 
   function renderInventorySection(rootNode, ui, doc, payload, context) {
