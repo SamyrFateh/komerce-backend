@@ -191,6 +191,25 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
     expect(ids(marketAdminContext(['client.read']))).toContain('entity-clients');
   });
 
+  test('un contexte market sans délégations ne cache jamais À traiter aux agents terrain', () => {
+    const nav = loadPolicy();
+    const ctx = marketAdminContext([]); // ne donne ni decision_signal.manage ni operations.read
+    for (const role of ['agent_hub', 'agent_relais', 'agent_transitaire']) {
+      const groups = nav.sidebarGroupsFor({ role }, ctx);
+      const items = groups.flatMap(group => group.items.map(item => item.id));
+      expect(items).toContain('action-center');
+      // Chaque rôle reste limité à ses destinations déclarées.
+      expect(items).not.toContain('control-tower');
+      expect(items).not.toContain('workspace-pricing');
+      if (role === 'agent_relais') expect(items).not.toContain('workspace-shipping');
+      else expect(items).toContain('workspace-shipping');
+    }
+    // Le responsable marché n'obtient toujours PAS des liens par sa seule identité.
+    const responsible = nav.sidebarGroupsFor({ role: 'market_operator' }, ctx).flatMap(g => g.items.map(i => i.id));
+    expect(responsible).not.toContain('action-center');
+    expect(responsible).not.toContain('workspace-shipping');
+  });
+
   test('field roles stay limited to their server-authorized workspace destinations', () => {
     const nav = loadPolicy();
     const transitaire = nav.sidebarGroupsFor({ role: 'agent_transitaire' }, null);
