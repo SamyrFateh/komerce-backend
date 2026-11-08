@@ -194,11 +194,11 @@ router.post('/returns', ...relayReturnActors, async (req, res, next) => {
 });
 
 // A physical receipt is an independent append-only attestation.
-router.post('/returns/:requestId/intake', authenticate, requireRole(['agent_relais']), async(req,res,next)=>{
+router.post('/returns/intake', authenticate, requireRole(['agent_relais']), async(req,res,next)=>{
   try{
     res.set('Cache-Control','private, no-store');
     const result=await returnIntake.recordIntake({
-      actor:req.user,requestId:req.params.requestId,
+      actor:req.user,requestId:req.body?.request_id,
       condition:req.body?.condition_code,zone:req.body?.storage_zone,
       observation:req.body?.observation,db,
     });
