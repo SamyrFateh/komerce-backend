@@ -6,11 +6,11 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       services/relay-return-request-service.js, db.js, middleware/auth.js, middleware/require-market-delegated-role.js, middleware/require-market-delegated-capability.js, services/*, services/live-projection.js
+ * @depends       services/relay-return-request-service.js, services/relay-product-return-intake-service.js, db.js, middleware/auth.js, middleware/require-market-delegated-role.js, middleware/require-market-delegated-capability.js, services/*, services/live-projection.js
  * @used-by       bootstrap/api-routes.js
  * @db-read       markets, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, orders
  * @db-write      order_comments, order_incidents
- * @db-write-via:dispute-mutation-service disputes; catalog-product-quality-service catalog_product_quality_notes
+ * @db-write-via:dispute-mutation-service disputes; catalog-product-quality-service catalog_product_quality_notes; relay-product-return-intake-service relay_product_return_receipts
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change, capability_is_the_authority_not_role, relay_id_is_server_boundary
  * @impact-areas  dashboard, admin-dashboard, market
@@ -44,6 +44,7 @@ const { attachAuthorizedMarketsForCapability, requireMarketDelegatedCapability }
 const log = require('../utils/logger').child({ module: 'relay-dashboard' });
 const { getDashboardKPIs, getOrders, getOrderDetail, getRelayOperationalIncidents } = require('../services/relay-dashboard-queries');
 const relayReturns = require('../services/relay-return-request-service');
+const returnIntake = require('../services/relay-product-return-intake-service');
 const { wantsSimulation } = require('../services/simulation-visibility');
 const { applyLiveProjection } = require('../services/live-projection');
 
@@ -190,6 +191,23 @@ router.post('/returns', ...relayReturnActors, async (req, res, next) => {
     });
     res.status(201).json(result);
   } catch (err) { if (!returnRequestError(res, err)) next(err); }
+});
+
+// A physical receipt is an independent append-only attestation.
+router.post('/returns/intake', authenticate, requireRole(['agent_relais']), async(req,res,next)=>{
+  try{
+    res.set('Cache-Control','private, no-store');
+    const result=await returnIntake.recordIntake({
+      actor:req.user,requestId:req.body?.request_id,
+      condition:req.body?.condition_code,zone:req.body?.storage_zone,
+      observation:req.body?.observation,db,
+    });
+    res.status(result.replayed?200:201).json(result);
+  }catch(err){
+    if(err instanceof returnIntake.ReturnIntakeError)
+      return res.status(err.status).json({error:err.message,code:err.code});
+    next(err);
+  }
 });
 
 // GET /dashboard

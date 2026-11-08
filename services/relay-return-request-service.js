@@ -8,7 +8,7 @@
  * @outputs       relay_scoped_eligible_lines_and_dispute_return_requests
  * @depends       db (transaction supplied), services/dispute-mutation-service.js, services/catalog-product-quality-service.js, orders, order_items, products
  * @used-by       routes/relay-dashboard.js
- * @db-read       orders, order_items, products, disputes
+ * @db-read       orders, order_items, products, disputes, relay_product_return_receipts
  * @db-write      none
  * @db-write-via:dispute-mutation-service disputes
  * @db-txn        owns_request_transaction; queries_accept_executor
@@ -96,11 +96,15 @@ async function listReturnRequests({ actor, executor, limit = 50 }) {
     `SELECT d.id, d.status, d.return_quantity, d.return_reason, d.description,
             d.resolution, d.created_at,
             o.reference AS order_reference, o.relais_id,
-            p.name AS product_name
+            p.name AS product_name,
+            rr.id AS receipt_id, rr.quantity AS received_quantity,
+            rr.condition_code AS received_condition, rr.storage_zone,
+            rr.received_at
        FROM disputes d
        JOIN orders o ON o.id = d.order_id
        JOIN order_items oi ON oi.id = d.return_order_item_id AND oi.order_id = o.id
        JOIN products p ON p.id = oi.product_id
+       LEFT JOIN relay_product_return_receipts rr ON rr.request_id=d.id
       WHERE d.type = 'product_return' AND o.simulation_scope IS NULL
         AND ($1::uuid IS NULL OR o.relais_id = $1::uuid)
       ORDER BY d.created_at DESC LIMIT $2`,
