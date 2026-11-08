@@ -8,7 +8,7 @@
  * @outputs       public_product_view
  * @depends       services/supplier-source-resolution.js
  * @used-by       routes/products.js
- * @db-read       catalog_media, markets, product_market_exposure, product_market_price_drafts, product_skus, product_suppliers, product_variants, suppliers
+ * @db-read       catalog_product_sale_holds, catalog_media, markets, product_market_exposure, product_market_price_drafts, product_skus, product_suppliers, product_variants, suppliers
  * @db-write      (none)
  * @db-txn        (none)
  * @doctrine      docs/doctrine/DOCTRINE_CATALOGUE.md, only_LOCAL_ACTIVE_is_buyer_effective, visible_means_sellable
