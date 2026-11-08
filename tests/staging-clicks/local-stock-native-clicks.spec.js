@@ -35,6 +35,7 @@ test('LOCAL_STOCK : un agent atteste puis remet au client par les vrais clics (H
   expect(EXPECTED_SHA).toMatch(/^[a-f0-9]{40}$/i);
   const ref='E2E-HUB-V1-'+RUN8+'-LOCAL';
   let orderId;
+  fs.mkdirSync(OUT,{recursive:true});
   try {
     const versionResponse=await page.request.get('/health/version');
     expect(versionResponse.status()).toBe(200);
