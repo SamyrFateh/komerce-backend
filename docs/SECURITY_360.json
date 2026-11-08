@@ -2,8 +2,8 @@
   "generatedAt": "2026-11-07T11:11:23.907Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 813,
-    "protected": 755,
+    "total": 820,
+    "protected": 762,
     "public": 58,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -5949,6 +5949,59 @@
       "key": "POST /webhook/meta-whatsapp",
       "level": "PUBLIC",
       "roles": []
+    },
+    {
+      "key": "POST /api/admin/workspaces/catalog/products/{productRef}/quality/{action}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/workspaces/catalog/products/{productRef}/quality",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/relay/returns/eligible",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "POST /api/relay/returns/remarks",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "GET /api/relay/returns",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "POST /api/relay/returns",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "POST /api/relay/returns/intake",
+      "level": "PROTECTED",
+      "roles": [
+        "agent_relais"
+      ]
     }
   ]
 }

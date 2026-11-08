@@ -14,7 +14,7 @@ function relay() {
 
 const ORDER = (over = {}) => ({
   id:'r-1', reference:'KMC-0101', status:'available', client_nom:'Fatima', relais_nom:'Relais Mitsamiouli', ile:'Grande Comore',
-  heures_attente:80, age_jours:4, urgence:'haute', nb_items:2, cash_pending:true, payment_status:'pending', incidents_ouverts:0, ...over,
+  heures_attente:80, age_jours:4, urgence:'haute', nb_items:2, cash_pending:true, payment_status:'pending', incidents_ouverts:0, market_code:'KM', ...over,
 });
 const DASH = { kpi:{ en_transit:4, disponibles:9, cash_a_encaisser:3, montant_cash_pending:45000, montant_cash_par_devise:[{ currency:'KMF', amount:45000 }], cash_sans_montant_local:0, collectes_aujourd_hui:2, collectes_7j:14, en_attente_72h:2, total_actives:20, incidents_ouverts:1 }, alertes:[] };
 const OVERVIEW = { dash:DASH, first:{ orders:[ORDER(), ORDER({ id:'r-2', reference:'KMC-0102', heures_attente:10, urgence:'normale' })] }, fetched_at:'2026-10-01T10:00:00Z' };
@@ -30,113 +30,110 @@ const crumbs = h => (h.match(/<nav class="kir-breadcrumb"[^>]*>([\s\S]*?)<\/nav>
 const back = h => { const m = h.match(/<a href="([^"]+)" data-cockpit-nav class="kir-back">([^<]+)<\/a>/); return m ? { href:m[1], label:m[2] } : null; };
 const activeTab = h => (h.match(/is-active[^>]*>([^<]+)</) || [])[1];
 
-test('Suivi : un seul poste de travail, accès directs et détails de supervision', () => {
-  const h = html('', { ...OVERVIEW, queue:{ orders:[ORDER()] } });
-  expect(h).toContain('KOMERCE · EXPLOITATION');
-  expect(h).toContain('Suivi des Relais');
-  expect(h).toContain('data-relay-shortcut="shipments"');
-  expect(h).toContain('href="/admin/relais-live?view=execute&amp;focus=shipments"');
-  expect(h).toContain('data-relay-shortcut="cash"');
-  expect(h).toContain('data-relay-shortcut="collect"');
-  expect(h).toContain('data-relay-supervision');
-  expect(h).toContain('Indicateurs et suivi détaillé');
-  expect(h).toContain('href="/admin/relais-live?view=orders&list=in_transit"');
-  expect(h).toContain('href="/admin/relais-live?view=orders&list=available"');
-  expect(h).toContain('2 depuis +72 h');
-  expect(h.replace(/\s/g, ' ')).toMatch(/45 000 KMF/);
-  expect(h).toContain('KMC-0101');
-  expect(activeTab(h)).toBe('Suivi');
-  expect(h).not.toContain('kir-back');
+test.each([
+  ['Flux', '', { ...OVERVIEW, queue:{ orders:[] } }],
+  ['Incidents', '?view=incidents', { incidents:[] }],
+  ['Historique', '?view=orders&list=collected', LIST],
+  ['Dossier', '?view=order&order=r-1', DETAIL],
+])('%s : le rendu ne crée jamais la navigation supérieure de repli', (_name, search, data) => {
+  const h=html(search,data);
+  expect(h).not.toContain('class="kir-domain-nav"');
+  expect((h.match(/<nav class="kmc-relay-main-nav"/g)||[])).toHaveLength(1);
+  const menu=h.split('<nav class="kmc-relay-main-nav"')[1]?.split('</nav>')[0]||'';
+  expect((menu.match(/class="kmc-relay-main-tab/g)||[])).toHaveLength(4);
 });
 
-test('Suivi calme : Kanban permanent, files et réception sans dossiers actifs', () => {
-  const h = html('', { dash:{ kpi:{} }, first:{ orders:[] }, queue:{orders:[]} });
-  expect(h).toContain('Aucun dossier actif dans cette file');
-  expect(h).toContain('Aucune commande en cours dans cette file');
-  expect(h).toContain('aria-label="Kanban Relais · parcours des commandes"');
-  for (const lane of ['transit', 'available', 'collected']) {
-    expect(h).toContain('data-relay-lane="'+lane+'"');
-    expect(h).toContain('data-relay-empty-lane="'+lane+'"');
+test('Flux : quatre étapes visibles, pas de fausse attestation physique', () => {
+  const h=html('',{...OVERVIEW,queue:{orders:[ORDER()]}});
+  expect(h).toContain('Préparer les colis');
+  expect(h).toContain('aria-label="Kanban Relais · étapes et actions"');
+  for(const key of ['transit','receive','organize','available']) {
+    expect(h).toContain('data-relay-lane="'+key+'"');
+    expect(h).toContain('data-relay-stage="'+key+'"');
   }
-  expect(h).toContain('Contrôler les arrivages physiques');
-  expect(h).toContain('href="/admin/relais-live?view=execute&amp;focus=shipments"');
-  expect(h).not.toContain('is-attention');
-  expect(h).toContain('Aucun retrait prioritaire.');
-});
-
-test('Kanban : étape active cash ouvre la bonne file sans écrire ; étape passée non cliquable', () => {
-  const h = html('', { ...OVERVIEW, queue:{ orders:[ORDER({market_code:'KM'})] } });
-  expect(h).toContain('data-relay-stage-action="cash"');
-  expect(h).toContain('href="/admin/relais-live?view=execute&amp;market=KM&amp;focus=cash"');
-  expect(h).toContain('class="kmc-relay-work-stage is-complete"');
-  expect(h).not.toContain('data-workspace-action="confirm-cash"');
-});
-
-test('Kanban : dernière remise en lecture seule, sans simuler une remise physique', () => {
-  const h = html('', { ...OVERVIEW, queue:{ orders:[] }, recentCollected:{ orders:[ORDER({id:'r-88',reference:'KMC-0188',status:'collected', cash_pending:false})] } });
-  expect(h).toContain('data-relay-workboard-order="r-88"');
-  expect(h).toContain('✓ Remise enregistrée');
-  expect(h).not.toContain('data-relay-stage-action="collect"');
+  expect(h).toContain('Rangement libre');
+  expect(h).toContain('Emplacement facultatif · non attesté');
+  expect(h).toContain('href="/admin/relais-live?view=remises&amp;market=KM"');
   expect(h).not.toContain('data-workspace-action="collect"');
+  expect(activeTab(h)).toBe('Flux Relais');
 });
 
-test('liste : Relais › Suivi › liste, retour au suivi, pagination par décalage', () => {
-  const h = html('?view=orders&list=available&offset=25', { orders:Array.from({ length:25 }, (_, i) => ORDER({ id:`r-${i}`, reference:`KMC-${i}` })) });
-  expect(crumbs(h)).toBe('Relais > Suivi > Disponibles au retrait');
-  expect(back(h)).toEqual({ href:'/admin/relais-live', label:'← Retour au suivi' });
-  expect(activeTab(h)).toBe('Suivi');
-  expect(h).toContain('href="/admin/relais-live?view=orders&list=available"');
-  expect(h).toContain('href="/admin/relais-live?view=orders&list=available&offset=50"');
-});
-
-test('Colis : vue de 1er niveau, onglet actif, aucun retour', () => {
-  const h = html('?view=orders&list=all', LIST);
-  expect(crumbs(h)).toBe('Relais > Colis');
-  expect(back(h)).toBeNull();
-  expect(activeTab(h)).toBe('Colis');
-});
-
-test('colis : retour à sa liste d’origine ; jamais le Suivi quand il vient d’une liste', () => {
-  const fromList = html('?view=order&order=r-1&from=in_transit', DETAIL);
-  expect(crumbs(fromList)).toBe('Relais > Suivi > Colis en transit > KMC-0101');
-  expect(back(fromList)).toEqual({ href:'/admin/relais-live?view=orders&list=in_transit', label:'← Retour à Colis en transit' });
-  const fromAll = html('?view=order&order=r-1&from=all', DETAIL);
-  expect(back(fromAll)).toEqual({ href:'/admin/relais-live?view=orders&list=all', label:'← Retour à Colis' });
-  expect(activeTab(fromAll)).toBe('Colis');
-  expect(back(html('?view=order&order=r-1', DETAIL))).toEqual({ href:'/admin/relais-live', label:'← Retour au suivi' });
-});
-
-test('colis : jamais de contact client, de code de retrait ni de SMS ; aucune action', () => {
-  const h = html('?view=order&order=r-1&from=available', DETAIL);
-  expect(h).toContain('Coque');
-  expect(h).toContain('Client absent');
-  for (const secret of ['+269000000', 'f@x.km', '+269111111', '••1234', 'Votre colis est prêt']) expect(h).not.toContain(secret);
-  expect(h).not.toMatch(/<button/);
-});
-
-test('le module Relais est en lecture seule', () => {
-  const source = read('relay-live.js');
-  expect(source).not.toMatch(/method:\s*'(POST|PUT|PATCH|DELETE)'/);
-  expect(source).not.toMatch(/\/(collect|pay-cash|incident|comment|verify)\b/);
-  expect(source).toContain('/api/relay/dashboard');
-});
-
-test('LIVE-02/07 : l’écran lit les endpoints en projection Live et affiche l’heure serveur', () => {
-  const src = fs.readFileSync(require.resolve('../../public/dashboards/canonical/js/relay-live.js'), 'utf8');
-  expect(src).toContain('fetched_at:dash?.generated_at');
-  expect((src.match(/projection=live|projection:'live'/g) || []).length).toBeGreaterThanOrEqual(3);
-});
-
-test('Suivi : étapes traçables sans extrapoler les réceptions physiques', () => {
-  const row=ORDER({ id:'r-9', reference:'KMC-0109', status:'in_transit', urgence:'normale', incidents_ouverts:1 });
-  const h=html('', { ...OVERVIEW, queue:{orders:[row]}, transit:{orders:[row]} });
-  expect((h.match(/lk-pb-stage is-/g) || []).length).toBe(3);
-  expect(h).toContain('lk-pb lk-pb-n3');
-  expect(h).toContain('data-relay-workboard-order="r-9"');
-  expect(h).toContain('data-relay-stage="transit"');
-  expect(h).toContain('data-relay-stage-signal="critical"');
-  expect(h).toContain('href="/admin/relais-live?sel=r-9"');
-  expect(h).toContain('href="/admin/relais-live?view=orders&list=collected"');
+test('Flux : en transit peut ouvrir une réception canonique, sans exécuter de writer', () => {
+  const h=html('',{...OVERVIEW,queue:{orders:[ORDER({status:'shipped'})]}});
+  expect(h).toContain('data-relay-stage-action="shipments"');
+  expect(h).toContain('href="/admin/relais-live?view=execute&amp;market=KM&amp;focus=shipments"');
+  expect(h).toContain('Après réception');
+  expect(h).toContain('data-relay-stage-signal="waiting"');
   expect(h).not.toContain('data-workspace-action="receive"');
 });
 
+test('Flux vide : le parcours et les liens restent présents sans dossier fictif', () => {
+  const h=html('',{...OVERVIEW,queue:{orders:[]}});
+  expect(h).toContain('Flux sans commande active');
+  for(const key of ['transit','receive','organize','available']) {
+    expect(h).toContain('data-relay-empty-lane="'+key+'"');
+  }
+  expect(h).toContain('Contrôler les arrivages');
+  expect(h).toContain('Ouvrir les remises');
+});
+
+test('La remise enregistrée ne réapparaît pas dans le flux de préparation', () => {
+  const h=html('',{...OVERVIEW,queue:{orders:[ORDER({status:'collected',id:'r-99'})]}});
+  expect(h).not.toContain('data-relay-workboard-order="r-99"');
+  expect(h).toContain('Historique');
+});
+
+test('Incidents : anomalies reliées au dossier et signalements du relais', () => {
+  const data={incidents:[{id:'i-1',order_id:'r-1',order_reference:'KMC-0101',
+    incident_type:'colis_endommage',title:'Emballage abîmé',severity:'high',status:'open',
+    source:'relay_report'}]};
+  const h=html('?view=incidents',data);
+  expect(h).toContain('Incidents &amp; SAV');
+  expect(h).toContain('KMC-0101');
+  expect(h).toContain('Emballage abîmé');
+  expect(h).toContain('href="/admin/relais-live?view=order&amp;order=r-1&amp;from=incidents"');
+  expect(h).toContain('Un dossier n’atteste pas la reprise physique ni le remboursement.');
+  expect(h).toContain('Demandes de retour réservées aux agents habilités du Relais.');
+  expect(read('relay-live.js')).toContain('data-relay-returns-link');
+  expect(activeTab(h)).toBe('Incidents &amp; SAV');
+});
+
+test('Historique : consultation distincte du comptoir et du flux',()=>{
+  const h=html('?view=orders&list=collected',LIST);
+  expect(h).toContain('Historique des remises');
+  expect(activeTab(h)).toBe('Historique');
+  expect(h).toContain('Flux Relais');
+});
+
+test('Détail commande : aucune donnée sensible divulguée dans la projection',()=>{
+  const h=html('?view=order&order=r-1',DETAIL);
+  expect(h).toContain('Coque');
+  expect(h).toContain('Client absent');
+  for(const secret of ['+269000000','f@x.km','+269111111','••1234','Votre colis est prêt']) {
+    expect(h).not.toContain(secret);
+  }
+});
+
+test('Détail venant des incidents : le retour garde la file d’origine',()=>{
+  const h=html('?view=order&order=r-1&from=incidents',DETAIL);
+  expect(h).toContain('Retour aux incidents');
+  expect(h).toContain('href="/admin/relais-live?view=incidents"');
+});
+
+test('Signalement : seul un POST incident est ajouté au cockpit de lecture',()=>{
+  const src=read('relay-live.js');
+  expect(src).toContain("method:'POST'");
+  expect(src).toContain("+'/incident'");
+  expect(src).toContain('data-relay-incident-form');
+  expect(src).toContain('relayViewer=options?.user||null');
+  expect(src).not.toContain("method:'DELETE'");
+  expect(src).not.toContain('data-workspace-action="collect"');
+});
+
+test('Projection et simulation : mêmes sources et même cloisonnement rôle/marché',()=>{
+  const src=read('relay-live.js');
+  expect(src).toContain("api('/api/relay/dashboard')");
+  expect(src).toContain("api('/api/relay/incidents')");
+  expect(src).toContain("projection=live");
+  expect(src).toContain('setViewer(relayViewer)');
+});

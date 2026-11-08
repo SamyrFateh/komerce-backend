@@ -1606,6 +1606,64 @@ END $$;
 
 
 --
+-- Name: guard_new_order_item_catalog_hold(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.guard_new_order_item_catalog_hold() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  -- Lock products before inspecting holds, serializing with freeze/unfreeze
+  -- transactions that lock the same parent products row FOR UPDATE.
+  PERFORM 1 FROM public.products WHERE id = NEW.product_id FOR SHARE;
+  IF EXISTS (
+    SELECT 1 FROM public.catalog_product_sale_holds h
+     WHERE h.product_id = NEW.product_id AND h.released_at IS NULL
+  ) THEN
+    RAISE EXCEPTION 'product_catalog_quality_hold: %', NEW.product_id
+      USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: guard_relay_product_return_receipt(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.guard_relay_product_return_receipt() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  request_row record;
+BEGIN
+  SELECT d.id,d.type,d.status,d.return_quantity,oi.qty_collected,
+         o.relais_id,o.simulation_scope
+    INTO request_row
+    FROM public.disputes d
+    JOIN public.orders o ON o.id=d.order_id
+    JOIN public.order_items oi
+      ON oi.id=d.return_order_item_id AND oi.order_id=o.id
+   WHERE d.id=NEW.request_id
+   FOR SHARE OF d,o,oi;
+  IF NOT FOUND
+     OR request_row.type IS DISTINCT FROM 'product_return'
+     OR request_row.status NOT IN ('open','processing')
+     OR request_row.relais_id IS DISTINCT FROM NEW.relay_id
+     OR request_row.simulation_scope IS NOT NULL
+     OR request_row.return_quantity IS DISTINCT FROM NEW.quantity
+     OR request_row.qty_collected < NEW.quantity
+  THEN
+    RAISE EXCEPTION 'RELAY_RETURN_RECEIPT_NOT_ELIGIBLE'
+      USING ERRCODE='23514';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+--
 -- Name: hub_box_bag_immutable(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -2716,6 +2774,51 @@ END $$;
 
 
 --
+-- Name: prevent_catalog_quality_note_mutation(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.prevent_catalog_quality_note_mutation() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RAISE EXCEPTION 'CATALOG_QUALITY_NOTE_IMMUTABLE'
+    USING ERRCODE = 'P0001';
+END;
+$$;
+
+
+--
+-- Name: prevent_catalog_sale_hold_rewrite(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.prevent_catalog_sale_hold_rewrite() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    RAISE EXCEPTION 'CATALOG_SALE_HOLD_IMMUTABLE'
+      USING ERRCODE = 'P0001';
+  END IF;
+  IF OLD.released_at IS NOT NULL
+    OR NEW.released_at IS NULL
+    OR NEW.released_by IS NULL
+    OR NEW.release_comment IS NULL
+    OR NEW.id IS DISTINCT FROM OLD.id
+    OR NEW.product_id IS DISTINCT FROM OLD.product_id
+    OR NEW.reason IS DISTINCT FROM OLD.reason
+    OR NEW.comment IS DISTINCT FROM OLD.comment
+    OR NEW.frozen_by IS DISTINCT FROM OLD.frozen_by
+    OR NEW.frozen_at IS DISTINCT FROM OLD.frozen_at
+  THEN
+    RAISE EXCEPTION 'CATALOG_SALE_HOLD_IMMUTABLE'
+      USING ERRCODE = 'P0001';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+--
 -- Name: prevent_ceiling_removal_with_active_member_grants(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -3008,6 +3111,19 @@ $$;
 --
 
 COMMENT ON FUNCTION public.prevent_referenced_relais_market_drift() IS 'F1.3 — un relais déjà référencé par une commande ne peut plus changer de Market.';
+
+
+--
+-- Name: prevent_relay_product_return_receipt_mutation(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.prevent_relay_product_return_receipt_mutation() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RAISE EXCEPTION 'RELAY_RETURN_RECEIPT_IMMUTABLE' USING ERRCODE='P0001';
+END;
+$$;
 
 
 --
@@ -4885,6 +5001,58 @@ COMMENT ON TABLE public.catalog_media_visual_fr_reviews IS 'Explicit source-link
 
 
 --
+-- Name: catalog_product_quality_notes; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.catalog_product_quality_notes (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    product_id uuid NOT NULL,
+    author_id uuid NOT NULL,
+    note text NOT NULL,
+    source text DEFAULT 'catalog'::text NOT NULL,
+    order_item_id uuid,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT catalog_product_quality_notes_note_check CHECK (((length(btrim(note)) >= 5) AND (length(btrim(note)) <= 2000))),
+    CONSTRAINT catalog_product_quality_notes_source_check CHECK ((source = ANY (ARRAY['catalog'::text, 'relay'::text]))),
+    CONSTRAINT catalog_quality_note_origin CHECK ((((source = 'catalog'::text) AND (order_item_id IS NULL)) OR ((source = 'relay'::text) AND (order_item_id IS NOT NULL))))
+);
+
+
+--
+-- Name: TABLE catalog_product_quality_notes; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.catalog_product_quality_notes IS 'Observations qualité historisées par le Catalogue, indépendantes des litiges SAV.';
+
+
+--
+-- Name: catalog_product_sale_holds; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.catalog_product_sale_holds (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    product_id uuid NOT NULL,
+    reason text NOT NULL,
+    comment text NOT NULL,
+    frozen_by uuid NOT NULL,
+    frozen_at timestamp with time zone DEFAULT now() NOT NULL,
+    released_by uuid,
+    released_at timestamp with time zone,
+    release_comment text,
+    CONSTRAINT catalog_product_hold_release_complete CHECK ((((released_at IS NULL) AND (released_by IS NULL) AND (release_comment IS NULL)) OR ((released_at IS NOT NULL) AND (released_by IS NOT NULL) AND (release_comment IS NOT NULL) AND ((length(btrim(release_comment)) >= 10) AND (length(btrim(release_comment)) <= 2000))))),
+    CONSTRAINT catalog_product_sale_holds_comment_check CHECK (((length(btrim(comment)) >= 10) AND (length(btrim(comment)) <= 2000))),
+    CONSTRAINT catalog_product_sale_holds_reason_check CHECK ((reason = ANY (ARRAY['safety'::text, 'defect'::text, 'repeated_returns'::text, 'quality_review'::text, 'other'::text])))
+);
+
+
+--
+-- Name: TABLE catalog_product_sale_holds; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.catalog_product_sale_holds IS 'Historique de gels globaux de vente explicites du Catalogue. Un signalement SAV ne gèle jamais automatiquement.';
+
+
+--
 -- Name: catalog_publication_decision_audit; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -5887,7 +6055,11 @@ CREATE TABLE public.disputes (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     confection_type text,
+    return_order_item_id uuid,
+    return_quantity integer,
+    return_reason text,
     CONSTRAINT disputes_level_check CHECK ((level = ANY (ARRAY[1, 2, 3]))),
+    CONSTRAINT disputes_return_request_shape CHECK (((type <> 'product_return'::text) OR ((return_order_item_id IS NOT NULL) AND (return_quantity IS NOT NULL) AND (return_quantity > 0) AND (return_reason = ANY (ARRAY['defective'::text, 'damaged'::text, 'wrong_item'::text, 'not_as_described'::text, 'other'::text]))))),
     CONSTRAINT disputes_status_check CHECK ((status = ANY (ARRAY['open'::text, 'processing'::text, 'resolved'::text, 'closed'::text])))
 );
 
@@ -5897,6 +6069,27 @@ CREATE TABLE public.disputes (
 --
 
 COMMENT ON COLUMN public.disputes.confection_type IS 'Si litige liÃ© Ã  un service couture : type du service concernÃ©';
+
+
+--
+-- Name: COLUMN disputes.return_order_item_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.disputes.return_order_item_id IS 'Article précis de la commande concerné par une DEMANDE de retour, pas une preuve de reprise physique.';
+
+
+--
+-- Name: COLUMN disputes.return_quantity; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.disputes.return_quantity IS 'Quantité déclarée dans la demande, bornée côté serveur par les unités remises au client.';
+
+
+--
+-- Name: COLUMN disputes.return_reason; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.disputes.return_reason IS 'Motif de demande déclaré, distinct du verdict qualité, de l’autorisation wallet et de la destination du produit.';
 
 
 --
@@ -10692,6 +10885,34 @@ COMMENT ON COLUMN public.relais.photo_url IS 'Photo publique permettant au clien
 
 
 --
+-- Name: relay_product_return_receipts; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.relay_product_return_receipts (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    request_id uuid NOT NULL,
+    relay_id uuid NOT NULL,
+    quantity integer NOT NULL,
+    condition_code text NOT NULL,
+    storage_zone text,
+    observation text NOT NULL,
+    received_by uuid NOT NULL,
+    received_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT relay_product_return_receipts_condition_code_check CHECK ((condition_code = ANY (ARRAY['sealed'::text, 'opened'::text, 'damaged'::text, 'unknown'::text]))),
+    CONSTRAINT relay_product_return_receipts_observation_check CHECK (((length(btrim(observation)) >= 10) AND (length(btrim(observation)) <= 1000))),
+    CONSTRAINT relay_product_return_receipts_quantity_check CHECK ((quantity > 0)),
+    CONSTRAINT relay_product_return_receipts_storage_zone_check CHECK ((storage_zone ~ '^[A-Z]$'::text))
+);
+
+
+--
+-- Name: TABLE relay_product_return_receipts; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.relay_product_return_receipts IS 'Preuve append-only de reprise physique SAV par relais : la zone A-Z reste facultative et non exclusive. Aucune disponibilité stock ou compensation financière implicite.';
+
+
+--
 -- Name: revoked_tokens; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -13460,6 +13681,22 @@ ALTER TABLE ONLY public.catalog_media_visual_fr_reviews
 
 
 --
+-- Name: catalog_product_quality_notes catalog_product_quality_notes_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.catalog_product_quality_notes
+    ADD CONSTRAINT catalog_product_quality_notes_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: catalog_product_sale_holds catalog_product_sale_holds_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.catalog_product_sale_holds
+    ADD CONSTRAINT catalog_product_sale_holds_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: catalog_publication_decision_audit catalog_publication_decision_audit_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -14852,6 +15089,22 @@ ALTER TABLE ONLY public.relais
 
 
 --
+-- Name: relay_product_return_receipts relay_product_return_receipts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.relay_product_return_receipts
+    ADD CONSTRAINT relay_product_return_receipts_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: relay_product_return_receipts relay_product_return_receipts_request_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.relay_product_return_receipts
+    ADD CONSTRAINT relay_product_return_receipts_request_id_key UNIQUE (request_id);
+
+
+--
 -- Name: revoked_tokens revoked_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -15922,6 +16175,20 @@ CREATE INDEX idx_catalog_publication_decision_audit_product ON public.catalog_pu
 
 
 --
+-- Name: idx_catalog_quality_notes_product_time; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_catalog_quality_notes_product_time ON public.catalog_product_quality_notes USING btree (product_id, created_at DESC);
+
+
+--
+-- Name: idx_catalog_sale_holds_product_time; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_catalog_sale_holds_product_time ON public.catalog_product_sale_holds USING btree (product_id, frozen_at DESC);
+
+
+--
 -- Name: idx_catalog_stock_sync_state_observation; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -16248,6 +16515,13 @@ CREATE INDEX idx_decision_signal_global_access_active ON public.decision_signal_
 --
 
 CREATE INDEX idx_disputes_order ON public.disputes USING btree (order_id);
+
+
+--
+-- Name: idx_disputes_product_return_order; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_disputes_product_return_order ON public.disputes USING btree (order_id, created_at DESC) WHERE (type = 'product_return'::text);
 
 
 --
@@ -17938,6 +18212,13 @@ CREATE INDEX idx_relais_market ON public.relais USING btree (market_id);
 
 
 --
+-- Name: idx_relay_product_return_receipts_relay; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_relay_product_return_receipts_relay ON public.relay_product_return_receipts USING btree (relay_id, received_at DESC);
+
+
+--
 -- Name: idx_risk_provisions_active; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -19030,6 +19311,20 @@ CREATE UNIQUE INDEX uniq_sc_supplier_ref ON public.sourcing_candidates USING btr
 
 
 --
+-- Name: uq_catalog_sale_hold_one_active; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX uq_catalog_sale_hold_one_active ON public.catalog_product_sale_holds USING btree (product_id) WHERE (released_at IS NULL);
+
+
+--
+-- Name: uq_disputes_product_return_active_line; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX uq_disputes_product_return_active_line ON public.disputes USING btree (return_order_item_id) WHERE ((type = 'product_return'::text) AND (status = ANY (ARRAY['open'::text, 'processing'::text])));
+
+
+--
 -- Name: uq_market_transport_sale_rates_active; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -19681,6 +19976,20 @@ CREATE TRIGGER trg_guard_item_refund_pending_collection BEFORE UPDATE OF qty_col
 
 
 --
+-- Name: order_items trg_guard_new_order_item_catalog_hold; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_guard_new_order_item_catalog_hold BEFORE INSERT ON public.order_items FOR EACH ROW EXECUTE FUNCTION public.guard_new_order_item_catalog_hold();
+
+
+--
+-- Name: relay_product_return_receipts trg_guard_relay_product_return_receipt; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_guard_relay_product_return_receipt BEFORE INSERT ON public.relay_product_return_receipts FOR EACH ROW EXECUTE FUNCTION public.guard_relay_product_return_receipt();
+
+
+--
 -- Name: hub_purchase_allocations trg_hub_allocation_purchase_line; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -19814,10 +20123,31 @@ CREATE CONSTRAINT TRIGGER trg_hub_quarantine_incident_required AFTER INSERT OR U
 
 
 --
+-- Name: catalog_product_quality_notes trg_immutable_catalog_quality_note; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_immutable_catalog_quality_note BEFORE DELETE OR UPDATE ON public.catalog_product_quality_notes FOR EACH ROW EXECUTE FUNCTION public.prevent_catalog_quality_note_mutation();
+
+
+--
+-- Name: catalog_product_sale_holds trg_immutable_catalog_sale_hold; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_immutable_catalog_sale_hold BEFORE DELETE OR UPDATE ON public.catalog_product_sale_holds FOR EACH ROW EXECUTE FUNCTION public.prevent_catalog_sale_hold_rewrite();
+
+
+--
 -- Name: order_comments trg_immutable_hub_stage_note; Type: TRIGGER; Schema: public; Owner: -
 --
 
 CREATE TRIGGER trg_immutable_hub_stage_note BEFORE DELETE OR UPDATE ON public.order_comments FOR EACH ROW WHEN ((old.hub_stage_key IS NOT NULL)) EXECUTE FUNCTION public.prevent_hub_stage_comment_changes();
+
+
+--
+-- Name: relay_product_return_receipts trg_immutable_relay_product_return_receipt; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_immutable_relay_product_return_receipt BEFORE DELETE OR UPDATE ON public.relay_product_return_receipts FOR EACH ROW EXECUTE FUNCTION public.prevent_relay_product_return_receipt_mutation();
 
 
 --
@@ -20764,6 +21094,54 @@ ALTER TABLE ONLY public.catalog_media_visual_fr_reviews
 
 
 --
+-- Name: catalog_product_quality_notes catalog_product_quality_notes_author_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.catalog_product_quality_notes
+    ADD CONSTRAINT catalog_product_quality_notes_author_id_fkey FOREIGN KEY (author_id) REFERENCES public.users(id);
+
+
+--
+-- Name: catalog_product_quality_notes catalog_product_quality_notes_order_item_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.catalog_product_quality_notes
+    ADD CONSTRAINT catalog_product_quality_notes_order_item_id_fkey FOREIGN KEY (order_item_id) REFERENCES public.order_items(id);
+
+
+--
+-- Name: catalog_product_quality_notes catalog_product_quality_notes_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.catalog_product_quality_notes
+    ADD CONSTRAINT catalog_product_quality_notes_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id);
+
+
+--
+-- Name: catalog_product_sale_holds catalog_product_sale_holds_frozen_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.catalog_product_sale_holds
+    ADD CONSTRAINT catalog_product_sale_holds_frozen_by_fkey FOREIGN KEY (frozen_by) REFERENCES public.users(id);
+
+
+--
+-- Name: catalog_product_sale_holds catalog_product_sale_holds_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.catalog_product_sale_holds
+    ADD CONSTRAINT catalog_product_sale_holds_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id);
+
+
+--
+-- Name: catalog_product_sale_holds catalog_product_sale_holds_released_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.catalog_product_sale_holds
+    ADD CONSTRAINT catalog_product_sale_holds_released_by_fkey FOREIGN KEY (released_by) REFERENCES public.users(id);
+
+
+--
 -- Name: catalog_publication_decision_audit catalog_publication_decision_audit_actor_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -21081,6 +21459,14 @@ ALTER TABLE ONLY public.disputes
 
 ALTER TABLE ONLY public.disputes
     ADD CONSTRAINT disputes_resolved_by_fkey FOREIGN KEY (resolved_by) REFERENCES public.users(id);
+
+
+--
+-- Name: disputes disputes_return_order_item_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.disputes
+    ADD CONSTRAINT disputes_return_order_item_id_fkey FOREIGN KEY (return_order_item_id) REFERENCES public.order_items(id);
 
 
 --
@@ -23105,6 +23491,30 @@ ALTER TABLE ONLY public.refunds
 
 ALTER TABLE ONLY public.relais
     ADD CONSTRAINT relais_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id);
+
+
+--
+-- Name: relay_product_return_receipts relay_product_return_receipts_received_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.relay_product_return_receipts
+    ADD CONSTRAINT relay_product_return_receipts_received_by_fkey FOREIGN KEY (received_by) REFERENCES public.users(id);
+
+
+--
+-- Name: relay_product_return_receipts relay_product_return_receipts_relay_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.relay_product_return_receipts
+    ADD CONSTRAINT relay_product_return_receipts_relay_id_fkey FOREIGN KEY (relay_id) REFERENCES public.relais(id);
+
+
+--
+-- Name: relay_product_return_receipts relay_product_return_receipts_request_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.relay_product_return_receipts
+    ADD CONSTRAINT relay_product_return_receipts_request_id_fkey FOREIGN KEY (request_id) REFERENCES public.disputes(id);
 
 
 --

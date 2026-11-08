@@ -1156,10 +1156,9 @@
       return [{ id: 'hub-dossiers', label: 'Hub Live · Dossiers', href: '/admin/hub-live?view=execute' }];
     }
     if (domainId === 'live' && String(global.location?.pathname || '') === '/admin/relais-live') {
-      return [
-        { id: 'relais-suivi', label: 'Suivi', href: '/admin/relais-live' },
-        { id: 'relais-colis', label: 'Colis', href: '/admin/relais-live?view=orders&list=all' },
-      ];
+      // Seul point d'entrée shell ; les quatre espaces métier sont gérés dans
+      // le cockpit Relais (Flux / Remises / Incidents / Historique).
+      return []; // Le rail Flux / Remises / Incidents / Historique vit dans le poste Relais.
     }
     const local = LOCAL_TABS[domainId];
     if (local) {
@@ -1185,7 +1184,7 @@
       return 'sourcing-live';
     if (domainId === 'live' && path === '/admin/hub-live') return 'hub-dossiers';
     if (domainId === 'live' && path === '/admin/relais-live') {
-      return search.get('view') === 'orders' && search.get('list') === 'all' || search.get('view') === 'order' && search.get('from') === 'all' ? 'relais-colis' : 'relais-suivi';
+      return 'relais-workstation';
     }
     if (domainId === 'pricing') {
       if (hash && ['pricing-products', 'pricing-costs', 'pricing-strategy'].includes(hash)) return hash;

@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        authenticated_central_admin, catalog_action_payload
  * @outputs       catalog_workspace_projection, catalog_mutation_result
- * @depends       middleware/auth.js, middleware/require-catalog-global-authority.js, services/catalog-workspace.js
+ * @depends       middleware/auth.js, middleware/require-catalog-global-authority.js, services/catalog-workspace.js, services/catalog-product-quality-service.js
  * @used-by       bootstrap/api-routes.js
  * @db-read       catalog_global_access_grants
  * @db-write      none
@@ -23,6 +23,7 @@ const { authenticate, requireRole } = require('../middleware/auth');
 const { requireCatalogGlobalAuthority } = require('../middleware/require-catalog-global-authority');
 const { requireSourcingGlobalAuthority } = require('../middleware/require-sourcing-global-authority');
 const workspace = require('../services/catalog-workspace');
+const quality = require('../services/catalog-product-quality-service');
 const refineryFrench = require('../services/refinery-fr-recheck');
 const taxonomy = require('../services/boutique-taxonomy-admin');
 const log = require('../utils/logger').child({ module: 'admin-catalog-workspace' });
@@ -75,6 +76,28 @@ router.get('/', (req, res, next) => {
     }
     return res.json(await workspace.buildWorkspace(req.query));
   } catch (err) { next(err); }
+});
+
+// Signals from return requests are READ-ONLY; an authorized central Catalogue
+// reviewer alone may record an observation, freeze or release a global sale hold.
+router.get('/products/:productRef/quality', async (req,res,next)=>{
+  try{
+    res.set('Cache-Control','private, no-store');
+    res.json(await quality.qualityByRef(req.params.productRef));
+  }catch(err){sendError(err,res,next);}
+});
+
+router.post('/products/:productRef/quality/:action', async (req,res,next)=>{
+  try{
+    const allowed=['note','freeze','release'];
+    if(!allowed.includes(req.params.action))
+      return res.status(404).json({error:'Action qualité inconnue',code:'quality_action_unknown'});
+    res.set('Cache-Control','private, no-store');
+    res.json({ok:true,result:await quality.change({
+      actor:req.user,productRef:req.params.productRef,action:req.params.action,
+      reason:req.body?.reason,comment:req.body?.comment
+    })});
+  }catch(err){sendError(err,res,next);}
 });
 
 router.post('/products', async (req, res, next) => {
