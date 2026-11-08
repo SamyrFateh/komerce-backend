@@ -1317,11 +1317,11 @@
   // les litiges / autorités Komerce ; ce formulaire sert uniquement à signaler.
   function renderRelayReturnRequests(rootNode, ui, doc, context) {
     const slot = createSection(rootNode, ui, 'Retours & SAV',
-      'Signaler un article défectueux, erroné ou non conforme. Aucune reprise physique ni compensation n’est validée ici.');
+      'Ouvrir un dossier, signaler une anomalie ou attester séparément la reprise physique. Aucun paiement automatique.');
     slot.setAttribute('data-relay-return-requests', '');
 
     const notice = text(doc, 'p', 'kmc-workspace-note',
-      'Demande uniquement : l’article reste chez le client jusqu’aux instructions de Komerce. Wallet et remboursement nécessitent une validation distincte.');
+      'La reprise est une preuve de dépôt, pas une décision de remboursement. Les articles repris restent isolés de la vente.');
     slot.appendChild(notice);
 
     const searchForm = doc.createElement('form');
@@ -1398,6 +1398,57 @@
     const list = doc.createElement('div');
     list.setAttribute('data-relay-return-list', '');
     slot.appendChild(list);
+
+    // Physical attestation is a separate gesture from opening the SAV dossier.
+    // A letter groups many parcels; the immutable receipt id identifies the unit.
+    const intake = doc.createElement('form');
+    intake.className = 'kmc-workspace-inventory-list';
+    intake.setAttribute('data-relay-return-intake', '');
+    intake.hidden = true;
+    const intakeTitle = text(doc, 'h3', '', 'Attester une reprise physique');
+    intake.appendChild(intakeTitle);
+    const intakeRequest = doc.createElement('select');
+    intakeRequest.required = true;
+    intakeRequest.setAttribute('aria-label', 'Dossier SAV à reprendre');
+    intakeRequest.setAttribute('data-relay-intake-request', '');
+    const intakeCondition = doc.createElement('select');
+    intakeCondition.required = true;
+    intakeCondition.setAttribute('aria-label', 'État physique constaté');
+    for (const [value, label] of [
+      ['unknown', 'État à examiner'],
+      ['sealed', 'Emballage fermé'],
+      ['opened', 'Emballage ouvert'],
+      ['damaged', 'Produit ou emballage endommagé'],
+    ]) {
+      const option = text(doc, 'option', '', label);
+      option.value = value;
+      intakeCondition.appendChild(option);
+    }
+    const intakeZone = doc.createElement('input');
+    intakeZone.type = 'text';
+    intakeZone.maxLength = 1;
+    intakeZone.placeholder = 'A (facultatif)';
+    intakeZone.setAttribute('aria-label', 'Lettre de zone facultative');
+    const intakeNote = doc.createElement('textarea');
+    intakeNote.required = true;
+    intakeNote.minLength = 10;
+    intakeNote.maxLength = 1000;
+    intakeNote.rows = 2;
+    intakeNote.placeholder = 'Constat physique au dépôt (10 caractères minimum)';
+    intakeNote.setAttribute('aria-label', 'Constat physique de reprise');
+    for (const [caption, control] of [
+      ['Dossier', intakeRequest], ['État constaté', intakeCondition],
+      ['Zone (facultative)', intakeZone], ['Constat', intakeNote],
+    ]) {
+      const label = text(doc, 'label', 'kmc-workspace-note', caption);
+      label.appendChild(control);
+      intake.appendChild(label);
+    }
+    const intakeSubmit = text(doc, 'button', 'kmc-workspace-action', 'Confirmer la réception');
+    intakeSubmit.type = 'submit';
+    intakeSubmit.setAttribute('data-relay-intake-submit', '');
+    intake.appendChild(intakeSubmit);
+    slot.appendChild(intake);
     let order = null;
     let items = [];
 
@@ -1428,12 +1479,57 @@
               ({defective:'Défectueux',damaged:'Cassé',wrong_item:'Mauvais article',not_as_described:'Non conforme',other:'Autre'})[row.return_reason] || 'Autre' },
             { key:'status', label:'Dossier', render: row =>
               ({open:'À examiner',processing:'En traitement',resolved:'Résolu',closed:'Clôturé'})[row.status] || row.status },
+            { key:'received_at', label:'Reprise physique', render: row =>
+              row.receipt_id ? ('Reçu · ' + row.received_quantity + ' unité(s)' +
+                (row.storage_zone ? ' · zone ' + row.storage_zone : '')) : 'Non repris' },
           ],
           rows,
           emptyText: 'Aucun dossier SAV.',
         });
+        // Only open/processing requests without physical evidence may be received.
+        const pendingIntakes = rows.filter(row => !row.receipt_id &&
+          (row.status === 'open' || row.status === 'processing'));
+        intakeRequest.replaceChildren();
+        for (const pending of pendingIntakes) {
+          const option = text(doc, 'option', '',
+            pending.order_reference + ' · ' + pending.product_name +
+            ' · ' + pending.return_quantity + ' unité(s)');
+          option.value = pending.id;
+          intakeRequest.appendChild(option);
+        }
+        intake.hidden = pendingIntakes.length === 0;
       } catch (error) { result.textContent = 'Liste SAV indisponible : ' + error.message; }
     }
+
+    intake.addEventListener('submit', async event => {
+      event.preventDefault();
+      if (!intakeRequest.value) return;
+      const evidence = intakeNote.value.trim();
+      if (evidence.length < 10) {
+        result.textContent = 'Décrivez le constat physique de la reprise.';
+        return;
+      }
+      intakeSubmit.disabled = true;
+      result.textContent = 'Enregistrement de la reprise physique…';
+      try {
+        await jsonRequest(context.fetch, '/api/relay/returns/intake', {
+          method: 'POST', body: {
+            request_id: intakeRequest.value,
+            condition_code: intakeCondition.value,
+            storage_zone: intakeZone.value.trim().toUpperCase() || null,
+            observation: evidence,
+          },
+        });
+        intakeNote.value = '';
+        intakeZone.value = '';
+        result.textContent = 'Reprise attestée. Produit isolé : aucun crédit wallet, remboursement ni stock vendable.';
+        await loadRequests();
+      } catch (error) {
+        result.textContent = error.message;
+      } finally {
+        intakeSubmit.disabled = false;
+      }
+    });
 
     searchForm.addEventListener('submit', async event => {
       event.preventDefault();
