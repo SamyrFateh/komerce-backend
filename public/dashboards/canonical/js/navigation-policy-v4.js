@@ -1158,7 +1158,7 @@
     if (domainId === 'live' && String(global.location?.pathname || '') === '/admin/relais-live') {
       // Seul point d'entrée shell ; les quatre espaces métier sont gérés dans
       // le cockpit Relais (Flux / Remises / Incidents / Historique).
-      return [{ id:'relais-workstation', label:'Relais · Poste de travail', href:'/admin/relais-live' }];
+      return []; // Le rail Flux / Remises / Incidents / Historique vit dans le poste Relais.
     }
     const local = LOCAL_TABS[domainId];
     if (local) {
