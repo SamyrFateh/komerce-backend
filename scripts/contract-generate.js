@@ -2794,6 +2794,8 @@ if (inventory.length < 150) {
 }
 
 const SUCCESS_STATUS_OVERRIDES = Object.freeze({
+  'POST /api/relay/returns': '201',
+  'POST /api/relay/returns/remarks': '201',
   'POST /api/auth/password-reset/request': '202',
   'POST /api/admin/market-settlements/markets/{marketCode}/settlements/ready': '201',
   'POST /api/market-delegation/markets/{marketCode}/network/providers': '201',
