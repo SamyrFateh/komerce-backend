@@ -27,7 +27,7 @@ const CASH = {
 };
 const WORKSPACE = {
   scope: { code: 'KM', name: 'Comores' },
-  summary: { hub_to_order: 1, hub_unassigned: 1, hub_to_ship: 1, relay_cash_pending: 1, relay_to_receive: 1, relay_to_collect: 1, inventory_to_assign: 1 },
+  summary: { hub_to_order: 1, hub_unassigned: 1, hub_to_ship: 1, relay_cash_pending: 1, relay_to_receive: 2, relay_local_receipt_pending: 1, relay_to_collect: 1, inventory_to_assign: 1 },
   queues: {
     hub: {
       to_order: [{ reference: 'K-ORDER-1', client_name: 'Client A', relais_name: 'Relais Moroni', total_kmf: 25000 }],
@@ -37,6 +37,7 @@ const WORKSPACE = {
       cash_pending: [{ reference: 'K-CASH-1' }],
       // PCL-KM-2 : colis import rattache a une expedition (reception = attestation) ; PCL-KM-4 : colis local expedie par le Hub.
       to_receive: [{ reference: 'PCL-KM-2', local_receivable: false }, { reference: 'PCL-KM-4', local_receivable: true }],
+      local_receipt_pending: [{ id:'11111111-1111-4111-8111-111111111111', reference:'K-LOCAL-1', client_name:'Client local', relais_name:'Relais Moroni', item_count:1 }],
       to_collect: [{ reference: 'PCL-KM-3' }],
     },
   },
@@ -105,10 +106,32 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
         await expect(page.locator('#relay-execution-'+key)).toHaveCount(1);
       }
       await expect(dock.locator('[data-relay-execution-jump="shipments"]')).toContainText('1');
-      await expect(dock.locator('[data-relay-execution-jump="receive"]')).toContainText('1');
+      await expect(dock.locator('[data-relay-execution-jump="receive"]')).toContainText('2');
       await expect(page.locator('[data-workspace-mode="relay-execution"] .kmc-workspace-metrics')).not.toContainText('Hub · Expédier');
       await dock.locator('[data-relay-execution-jump="collect"]').click();
       await expect(page).toHaveURL(/#relay-execution-collect/);
+    });
+
+    test('LOCAL_STOCK direct : preuve physique explicite puis un seul POST sur la route canonique', async ({ page }) => {
+      const posts=[];
+      await mount(page,posts);
+      const card=page.locator('[data-relay-local-order="K-LOCAL-1"]');
+      await expect(card).toHaveCount(1);
+      const button=card.locator('[data-workspace-action="local-relay-receipt"]');
+      await button.click();
+      expect(posts).toHaveLength(0);
+      await expect(page.locator('[data-workspace-feedback]')).toContainText('Confirmez la réception physique');
+      await card.locator('[data-local-physical-proof]').check();
+      await button.click();
+      expect(posts).toHaveLength(0);
+      await card.locator('[data-local-receipt-note]').fill('BORD-LOCAL-1');
+      await button.dblclick();
+      await expect.poll(()=>posts.filter(p=>p.path.includes('/local-relay-receipt')).length).toBe(1);
+      expect(posts.find(p=>p.path.includes('/local-relay-receipt'))).toEqual({
+        path:'/api/orders/11111111-1111-4111-8111-111111111111/local-relay-receipt',
+        body:{physical_received:true,note:'BORD-LOCAL-1'},
+      });
+      await expect(page.locator('[data-workspace-feedback]')).toContainText('réception physique attestée');
     });
 
     test('actions Relais uniquement : aucune action Hub', async ({ page }) => {
