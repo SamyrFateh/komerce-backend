@@ -232,53 +232,49 @@
   }
 
   // ── Suivi ───────────────────────────────────────────────────────────────────
-  function renderOverview(p, data) {
+  function renderOverview(p,data){
     const k=data?.dash?.kpi||{};
-    const late=num(k.en_attente_72h);
-    const first=Array.isArray(data?.first?.orders)?data.first.orders:[];
-    const operational=Array.isArray(data?.operational?.incidents)?data.operational.incidents:[];
-    const opRows=operational.slice(0,8).map(i=>
-      `<tr><td><a href="${orderUrl(i.order_id,'')}" data-cockpit-nav>${esc(i.order_reference)}</a></td>
-        <td>${esc(i.product_name||'Commande')}</td><td>${esc(i.title||INCIDENT[i.incident_type]||i.incident_type)}</td>
-        <td>${esc(i.resolver_domain||'—')}</td></tr>`);
-    const stages=[
-      {label:'En transit',icon:'➤',hue:'blue',count:num(k.en_transit),href:listUrl('in_transit'),cards:[],countLabel:'Aucune commande en transit'},
-      {label:'Disponibles au retrait',icon:'⌂',hue:'teal',count:num(k.disponibles),href:listUrl('available'),cards:[],countLabel:'Aucune commande disponible'},
-      {label:'Retirés aujourd’hui',icon:'✓',hue:'green',count:num(k.collectes_aujourd_hui),href:listUrl('collected'),cards:[],countLabel:'Aucun retrait enregistré aujourd’hui'},
-    ];
     return {
-      hero:`<header class="kir-hero kir-live-hero kmc-relay-compact-hero" aria-label="Suivi opérationnel des Relais">
-        <div class="kmc-relay-heading">
-          <span class="kmc-relay-work-eyebrow">KOMERCE · EXPLOITATION</span>
-          <h1>Suivi des Relais <small>Tous circuits</small></h1>
-          <p>Actualisé ${esc(fmtDate(data?.fetched_at))} · Réception et retrait sur preuve</p>
-        </div>
-        <div class="kmc-relay-heading-controls">
-          <span class="kmc-relay-live-state"><i aria-hidden="true"></i> LIVE</span>
-          ${relaySimToggle()}
-        </div>
+      hero:`<header class="kmc-relay-flow-heading" aria-label="Flux opérationnel du Relais">
+        <div><span class="kmc-relay-work-eyebrow">KOMERCE · RELAIS</span><h1>Préparer les colis</h1>
+          <p>Arrivages, contrôles et mise à disposition · dernière lecture ${esc(fmtDate(data?.fetched_at))}</p></div>
+        <div class="kmc-relay-heading-controls"><span class="kmc-relay-live-state">LIVE</span>${relaySimToggle()}</div>
       </header>`,
-      body:`${relayWorkboard(p,data)}
-        ${operational.length?`<section class="kmc-relay-operational-alerts" aria-label="Incidents opérationnels">
-          <header><strong>${operational.length} incident(s) à examiner</strong><span>À vérifier avant toute remise.</span></header>
-          ${table(['Commande','Article','Information','Responsable'],opRows,{empty:'Aucun incident.'})}
-        </section>`:''}
-        <details class="kmc-relay-secondary kmc-relay-secondary-unified" data-relay-supervision>
-          <summary><span>Indicateurs et suivi détaillé</span><small>Supervision et historique · ouvrir</small></summary>
-          <div class="kmc-relay-secondary-content">
-            ${tiles('INDICATEURS RELAIS',[
-              {label:'En transit',value:num(k.en_transit),sub:'à suivre',href:listUrl('in_transit'),cls:'is-received'},
-              {label:'Disponibles',value:num(k.disponibles),sub:late>0?late+' depuis +72 h':'à retirer',href:listUrl('available'),cls:'is-delivered'},
-              {label:'Cash à encaisser',value:num(k.cash_a_encaisser),sub:fmtCollectTotals(k.montant_cash_par_devise,k.cash_sans_montant_local),cls:'is-discarded'},
-              {label:'Incidents ouverts',value:num(k.incidents_ouverts),sub:'à examiner',cls:'is-review'},
-            ])}
-            <div class="kmc-relay-secondary-flow">${processBoard(stages)}</div>
-            <div class="kmc-relay-secondary-table">
-              <header><strong>Retraits prioritaires</strong><a href="${listUrl('available')}" data-cockpit-nav>Consulter la file →</a></header>
-              ${table([...ORDER_COLUMNS,'Détail'],first.map(order=>orderRow(order,'available',p.sel||'')),{empty:'Aucun retrait prioritaire.'})}
-            </div>
-          </div>
-        </details>`,
+      body:`${relayMainNav('flux')}
+        ${relayWorkboard(p,data)}
+        ${num(k.incidents_ouverts)>0?`<div class="kmc-relay-attention">
+          <strong>${num(k.incidents_ouverts)} incident(s) ouvert(s)</strong>
+          <a href="${BASE}?view=incidents" data-cockpit-nav>Consulter les anomalies →</a></div>`:''}
+        <div class="kmc-relay-overview-tail"><a href="${esc(remisesUrl(''))}">Ouvrir le comptoir Remises →</a>
+          <a href="${esc(listUrl('collected'))}" data-cockpit-nav>Historique des remises →</a></div>`,
+    };
+  }
+
+  // Incidents opérationnels existants + signalements locaux du Relais. Les retours
+  // produits n'ont pas encore de writer SAV certifié : aucun bouton ne promet
+  // un remboursement ou une remise en stock sans cette autorité.
+  function renderIncidents(p,data){
+    const items=Array.isArray(data?.incidents)?data.incidents:[];
+    const rows=items.slice(0,40).map(i=>`<tr data-relay-incident="${esc(i.id)}">
+      <td><a href="${esc(orderUrl(i.order_id,''))}" data-cockpit-nav>${esc(i.order_reference||'Commande')}</a></td>
+      <td><strong>${esc(INCIDENT[i.incident_type]||i.title||i.incident_type||'Incident')}</strong>
+        <small>${esc(i.product_name||i.title||'—')}</small></td>
+      <td>${esc(i.severity==='critical'?'Critique':i.severity==='high'?'Haute':'À examiner')}</td>
+      <td>${esc(i.status==='in_progress'||i.status==='investigating'?'En traitement':'Ouvert')}</td>
+      <td><a href="${esc(orderUrl(i.order_id,''))}" data-cockpit-nav>Ouvrir le dossier →</a></td>
+    </tr>`).join('');
+    return {
+      hero:`<header class="kmc-relay-flow-heading"><div><span class="kmc-relay-work-eyebrow">RELAIS · EXCEPTIONS</span>
+        <h1>Incidents & SAV</h1><p>Signaler, retrouver et suivre les anomalies sur une commande.</p></div></header>`,
+      body:`${relayMainNav('incidents')}
+        <section class="kmc-relay-case-file" aria-label="File des incidents ouverts">
+          <header><strong>${items.length} signalement(s) en cours</strong>
+            <a href="${esc(listUrl('all'))}" data-cockpit-nav>Rechercher une commande pour signaler un incident →</a></header>
+          <div class="kmc-relay-work-scroll">${table(['Commande','Problème','Priorité','État','Dossier'],rows,
+            {empty:'Aucun incident ouvert dans votre périmètre.'})}</div>
+          <p>Les remboursements, reprises de stock et décisions de réparation ne sont pas déclenchés ici.
+            Un retour produit commence par un signalement tracé.</p>
+        </section>`,
     };
   }
 
@@ -296,7 +292,7 @@
     return {
       title:LISTS[list],
       copy:LIST_COPY[list],
-      body:`<div class="kmc-relay-list-toolbar">
+      body:`${relayMainNav(list==='collected'?'history':'flux')}<div class="kmc-relay-list-toolbar">
           <form method="get" action="${BASE}" role="search" class="kmc-relay-list-search">
             <input type="hidden" name="view" value="orders"><input type="hidden" name="list" value="${esc(list)}">
             ${simParams().sim?'<input type="hidden" name="sim" value="1">':''}
@@ -345,7 +341,7 @@
     return {
       title:o.reference || 'Colis',
       copy:`${STATUS[o.status] || o.status || ''} · ${data?.client?.nom || 'client'} · ${relais.nom || 'relais non défini'}`,
-      body:`<div class="kmc-relay-order-toolbar"><div><strong>Dossier de commande · ${esc(o.reference||'—')}</strong><small>La remise se valide colis par colis avec justificatif.</small></div><a href="${executionUrl(o.market_code)}">Ouvrir l’atelier Relais ↗</a></div><p class="lk-360-line">${order360Link(o.reference, 'Retour au Relais live')}</p><div class="lk-facts">
+      body:`${relayMainNav(fromOf(p)==='collected'?'history':'flux')}<div class="kmc-relay-order-toolbar"><div><strong>Dossier de commande · ${esc(o.reference||'—')}</strong><small>La remise se valide colis par colis avec justificatif.</small></div><a href="${executionUrl(o.market_code)}">Ouvrir l’atelier Relais ↗</a></div><p class="lk-360-line">${order360Link(o.reference, 'Retour au Relais live')}</p><div class="lk-facts">
           ${card(o.status === 'available' ? 'Attente au relais' : 'Âge', wait)}
           ${card('Relais', [relais.nom, relais.ile].filter(Boolean).join(' · ') || '—')}
           ${card('Articles', items.length)}
@@ -377,30 +373,35 @@
 
   const views = {
     overview:{
-      tab:() => 'suivi',
+      tab:() => 'flux',
       async load(p, api) {
-        const [dash, first, transit, detail, operational, queue, recentCollected] = await Promise.all([
+        const [dash, first, transit, detail, operational, queue] = await Promise.all([
           api('/api/relay/dashboard'),
           api('/api/relay/orders?status=available&limit=5&projection=live'),
           api('/api/relay/orders?status=in_transit&limit=5&projection=live'),
           p.sel ? api(`/api/relay/orders/${encodeURIComponent(p.sel)}?projection=live`).catch(() => null) : null,
           api('/api/relay/incidents').catch(() => ({ incidents:[] })),
           api('/api/relay/orders?status=shipped,in_transit,available&limit=12&projection=live'),
-          api('/api/relay/orders?status=collected&limit=3&projection=live').catch(() => ({orders:[]})),
         ]);
-        return { dash, first, transit, detail, operational, queue, recentCollected, fetched_at:dash?.generated_at || new Date().toISOString() };
+        return { dash, first, transit, detail, operational, queue, fetched_at:dash?.generated_at || new Date().toISOString() };
       },
       render:renderOverview,
       nav:() => ({ crumbs:[], back:null }),
     },
+    incidents:{
+      tab:()=>'incidents',
+      load:(_p,api)=>api('/api/relay/incidents'),
+      render:renderIncidents,
+      nav:()=>({crumbs:[],back:null}),
+    },
     orders:{
-      tab:p => (listOf(p) === 'all' ? 'colis' : 'suivi'),
+      tab:p => listOf(p)==='collected'?'history':'flux',
       load:(p, api) => api(`/api/relay/orders${queryString({ status:listOf(p) === 'all' ? '' : listOf(p), search:String(p.search||'').slice(0,120), limit:PAGE_SIZE, offset:offsetOf(p), projection:'live' })}`),
       render:renderOrders,
       nav:navOrders,
     },
     order:{
-      tab:p => (fromOf(p) === 'all' ? 'colis' : 'suivi'),
+      tab:p => fromOf(p)==='collected'?'history':'flux',
       async load(p, api) {
         try {
           return await api(`/api/relay/orders/${encodeURIComponent(p.order || '')}?projection=live`);
