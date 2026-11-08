@@ -2155,6 +2155,9 @@ const KNOWN_RESPONSES = {
   '/api/relay/returns/remarks': {
     post: { fields: ['ok','remark'], source: 'route-read' },
   },
+  '/api/relay/returns/intake': {
+    post: { fields: ['receipt','replayed'], source: 'route-read' },
+  },
   // relay-dashboard.js
   '/api/relay/dashboard': {
     get: { fields: ['dashboard'], source: 'route-read' }
@@ -2796,6 +2799,7 @@ if (inventory.length < 150) {
 const SUCCESS_STATUS_OVERRIDES = Object.freeze({
   'POST /api/relay/returns': '201',
   'POST /api/relay/returns/remarks': '201',
+  'POST /api/relay/returns/intake': '201',
   'POST /api/auth/password-reset/request': '202',
   'POST /api/admin/market-settlements/markets/{marketCode}/settlements/ready': '201',
   'POST /api/market-delegation/markets/{marketCode}/network/providers': '201',
@@ -2812,6 +2816,7 @@ const SUCCESS_STATUS_OVERRIDES = Object.freeze({
 // KNOWN_RESPONSES (pas un schéma de corps, juste un code de statut documenté en plus).
 // Format : "METHOD /chemin/{param}" → { [code]: { description } }
 const RESPONSE_OVERRIDES = {
+  'POST /api/relay/returns/intake': { '200': { description: 'Attestation existante, rejeu identique' } },
   'POST /api/payments/mobile-money/initiate': {
     '201': { description: 'Nouvelle tentative Mobile Money créée' },
   },
