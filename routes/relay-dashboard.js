@@ -6,10 +6,11 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db.js, middleware/auth.js, middleware/require-market-delegated-role.js, middleware/require-market-delegated-capability.js, services/*, services/live-projection.js
+ * @depends       services/relay-return-request-service.js, db.js, middleware/auth.js, middleware/require-market-delegated-role.js, middleware/require-market-delegated-capability.js, services/*, services/live-projection.js
  * @used-by       bootstrap/api-routes.js
  * @db-read       markets, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, orders
  * @db-write      order_comments, order_incidents
+ * @db-write-via:dispute-mutation-service disputes
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change, capability_is_the_authority_not_role, relay_id_is_server_boundary
  * @impact-areas  dashboard, admin-dashboard, market
@@ -42,6 +43,7 @@ const { attachMarketDelegatedRoleFor } = require('../middleware/require-market-d
 const { attachAuthorizedMarketsForCapability, requireMarketDelegatedCapability } = require('../middleware/require-market-delegated-capability');
 const log = require('../utils/logger').child({ module: 'relay-dashboard' });
 const { getDashboardKPIs, getOrders, getOrderDetail, getRelayOperationalIncidents } = require('../services/relay-dashboard-queries');
+const relayReturns = require('../services/relay-return-request-service');
 const { wantsSimulation } = require('../services/simulation-visibility');
 const { applyLiveProjection } = require('../services/live-projection');
 
@@ -129,6 +131,50 @@ async function assertOrderBelongsToRelais(req, res, orderId) {
   // admin : aucun check, comportement inchangé.
   return order;
 }
+
+
+// Retours & SAV V1 : ouverture d'une DEMANDE sur un article déjà remis.
+// Aucun mouvement de colis, crédit wallet, remboursement ou mise en stock ici.
+// Agent relais borné par req.user.relais_id; le traitement financier reste central.
+const relayReturnActors = [authenticate, requireRole(['admin', 'agent_relais'])];
+
+function returnRequestError(res, err) {
+  if (!(err instanceof relayReturns.ReturnRequestError)) return false;
+  res.status(err.status).json({ error: err.message, code: err.code });
+  return true;
+}
+
+router.get('/returns/eligible', ...relayReturnActors, async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'private, no-store');
+    res.json(await relayReturns.eligibleOrder({
+      actor: req.user, reference: req.query.reference, executor: db,
+    }));
+  } catch (err) { if (!returnRequestError(res, err)) next(err); }
+});
+
+router.get('/returns', ...relayReturnActors, async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'private, no-store');
+    res.json(await relayReturns.listReturnRequests({ actor: req.user, executor: db }));
+  } catch (err) { if (!returnRequestError(res, err)) next(err); }
+});
+
+router.post('/returns', ...relayReturnActors, async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'private, no-store');
+    const result = await relayReturns.createReturnRequest({
+      actor: req.user,
+      reference: req.body?.order_reference,
+      orderItemId: req.body?.order_item_id,
+      quantity: req.body?.quantity,
+      reason: req.body?.reason,
+      note: req.body?.note,
+      db,
+    });
+    res.status(201).json(result);
+  } catch (err) { if (!returnRequestError(res, err)) next(err); }
+});
 
 // GET /dashboard
 router.get('/dashboard', ...relayRead, async (req, res, next) => {
