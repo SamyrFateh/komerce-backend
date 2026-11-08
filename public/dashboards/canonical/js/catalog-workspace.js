@@ -2237,7 +2237,18 @@
     const section = doc.createElement('section');
     section.className = 'kmc-catalog-quality-control';
     section.setAttribute('data-catalog-quality-control', row.product_ref);
-    const state = text(doc, 'strong', 'kmc-catalog-quality-state', 'Qualité · vérification…');
+    // La liste Catalogue a déjà calculé le signal qualité. Un inspecteur
+    // ne charge les commentaires détaillés que si l'opérateur les demande.
+    const quality = row.quality || {};
+    const hasSignal = Number(quality.quality_return_count || 0) +
+      Number(quality.quality_note_count || 0);
+    const state = text(doc, 'strong', 'kmc-catalog-quality-state',
+      quality.quality_frozen
+        ? 'VENTE GELÉE · tous marchés'
+        : hasSignal
+          ? 'À SURVEILLER · ' + hasSignal + ' signalement(s)'
+          : 'Qualité · aucun signalement connu');
+    state.setAttribute('data-quality-frozen', String(quality.quality_frozen === true));
     section.appendChild(state);
     const details = doc.createElement('details');
     details.className = 'kmc-catalog-quality-details';
@@ -2332,11 +2343,20 @@
       saveRemark.addEventListener('click',()=>apply('note',saveRemark));
       toggle.addEventListener('click',()=>apply(data.frozen ? 'release' : 'freeze',toggle));
     }
-    load().catch(err=>{
-      if (section.isConnected) {
-        state.textContent='Qualité · lecture indisponible';
-        content.appendChild(text(doc,'p','kmc-catalog-inspector-feedback',actionErrorMessage(err)));
-      }
+    // L'ouverture du panneau est une intention de consulter les commentaires.
+    // Évite une requête supplémentaire pour chaque fiche simplement ouverte,
+    // et préserve le comportement des autres actions Catalogue.
+    let loaded = false;
+    let loading = false;
+    details.addEventListener('toggle', () => {
+      if (!details.open || loaded || loading) return;
+      loading = true;
+      content.replaceChildren(text(doc,'p','kmc-catalog-correction-hint','Lecture des signalements…'));
+      load().then(() => { loaded = true; }).catch(err => {
+        if (section.isConnected) {
+          content.replaceChildren(text(doc,'p','kmc-catalog-inspector-feedback',actionErrorMessage(err)));
+        }
+      }).finally(() => { loading = false; });
     });
   }
 
