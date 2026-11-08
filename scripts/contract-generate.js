@@ -2144,6 +2144,17 @@ const KNOWN_RESPONSES = {
     delete: { fields: ['ok','deleted'], source: 'route-read' }
   },
 
+  // relay-dashboard.js — SAV requests, eligible purchased lines and quality notes
+  '/api/relay/returns': {
+    get: { fields: ['requests'], source: 'route-read' },
+    post: { fields: ['request'], source: 'route-read' },
+  },
+  '/api/relay/returns/eligible': {
+    get: { fields: ['order','items'], source: 'service-read' },
+  },
+  '/api/relay/returns/remarks': {
+    post: { fields: ['ok','remark'], source: 'route-read' },
+  },
   // relay-dashboard.js
   '/api/relay/dashboard': {
     get: { fields: ['dashboard'], source: 'route-read' }
