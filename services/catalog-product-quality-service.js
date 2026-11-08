@@ -7,7 +7,7 @@
  * @inputs        global_catalog_admin, product_ref, note, freeze/release decision
  * @outputs       append-only quality note, sale hold state and SAV signals
  * @depends       db.js
- * @used-by       routes/admin-catalog-workspace.js, services/catalog-workspace.js
+ * @used-by       routes/admin-catalog-workspace.js, services/catalog-workspace.js, services/relay-return-request-service.js
  * @db-read       products, catalog_product_sale_holds, catalog_product_quality_notes, disputes, order_items
  * @db-write      catalog_product_sale_holds, catalog_product_quality_notes
  * @db-txn        explicit
@@ -43,6 +43,44 @@ async function lockProduct(client,productRef){
     `SELECT id,product_ref,is_active,is_available FROM products WHERE product_ref=$1 FOR UPDATE`,[productRef]);
   if(!product)reject('QUALITY_PRODUCT_NOT_FOUND','Produit introuvable.',404);
   return product;
+}
+
+/**
+ * Narrow, non-financial note writer. A relay can ONLY report a purchased item
+ * already collected in its own order; this has no freeze authority. The
+ * Orders/Relais route provides actor validation, this SQL independently proves
+ * the physical receipt and relay boundary before writing the Catalog-owned row.
+ */
+async function addRelayObservation({actorId,relayId,reference,orderItemId,note},executor=db){
+  const content=String(note||'').trim();
+  if(content.length<5||content.length>2000)
+    reject('QUALITY_COMMENT_REQUIRED','Remarque de 5 à 2000 caractères obligatoire.');
+  const ref=String(reference||'').trim();
+  if(!/^[A-Za-z0-9][A-Za-z0-9._-]{1,79}$/.test(ref))
+    reject('QUALITY_ORDER_REF_INVALID','Référence de commande invalide.');
+  if(!/^[0-9a-f-]{36}$/i.test(String(orderItemId||'')))
+    reject('QUALITY_ITEM_INVALID','Article commandé invalide.');
+  const {rows:[row]}=await executor.query(`
+    WITH eligible AS (
+      SELECT oi.id AS order_item_id,oi.product_id
+      FROM order_items oi
+      JOIN orders o ON o.id=oi.order_id
+      WHERE oi.id=$1::uuid AND o.reference=$2 AND o.simulation_scope IS NULL
+        AND ($3::uuid IS NULL OR o.relais_id=$3::uuid)
+        AND oi.qty_collected > 0
+    ), written AS (
+      INSERT INTO catalog_product_quality_notes
+        (product_id,author_id,note,source,order_item_id)
+      SELECT e.product_id,$4::uuid,$5,'relay',e.order_item_id FROM eligible e
+      RETURNING id,product_id,created_at
+    )
+    SELECT w.id,w.created_at,p.product_ref
+    FROM written w JOIN products p ON p.id=w.product_id`,
+    [orderItemId,ref,relayId,actorId,content]
+  );
+  if(!row)reject('QUALITY_RELAY_ITEM_FORBIDDEN',
+    'Article non remis ou commande hors du relais autorisé.',403);
+  return {id:row.id,created_at:row.created_at,product_ref:row.product_ref};
 }
 
 async function qualityByRef(productRef,executor=db){
@@ -139,4 +177,4 @@ async function change({actor,productRef,action,comment,reason}, pool=db){
   }finally{client.release();}
 }
 
-module.exports={CatalogQualityError,REASONS,qualityByRef,batchSignals,change};
+module.exports={CatalogQualityError,REASONS,addRelayObservation,qualityByRef,batchSignals,change};
