@@ -228,6 +228,20 @@ test('agent_relais lit uniquement le marché de son relais serveur', async () =>
   expect(mockResolveAuthorization).not.toHaveBeenCalled();
 });
 
+test('un relais ne peut lire les dossiers privés Hub ni les traces achats via le workspace marché', async () => {
+  mockUserRole = 'agent_relais';
+  mockGrantedCapabilities.clear();
+  for (const suffix of ['/supply', '/supply/trace?order_id=00000000-0000-4000-8000-000000000000']) {
+    const response = await request(app()).get('/api/admin/workspaces/operations/market/CM' + suffix);
+    expect(response.status).toBe(403);
+    expect(response.body.code).toBe('relay_hub_private_dossier_forbidden');
+  }
+  // La consultation du vrai poste Relais reste possible à travers sa projection
+  // propre, limitée côté service aux données du relais affecté.
+  const relay = await request(app()).get('/api/admin/workspaces/operations/market/CM');
+  expect(relay.status).toBe(200);
+});
+
 test('market_operator CM ne peut pas lire CG', async () => {
   mockUserRole = 'market_operator';
   const res = await request(app()).get('/api/admin/workspaces/operations/market/CG');
