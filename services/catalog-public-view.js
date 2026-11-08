@@ -213,7 +213,7 @@ function publicCatalogVisibilitySql(alias = 'p', options = {}) {
   const conditions = [
     `${a}.is_active = TRUE`,
     `${a}.is_available = TRUE`,
-    `NOT EXISTS (SELECT 1 FROM catalog_product_sale_holds h WHERE h.product_id=${a}.id AND h.released_at IS NULL)`,
+    'NOT EXISTS (SELECT 1 FROM catalog_product_sale_holds h WHERE h.product_id=' + a + '.id AND h.released_at IS NULL)',
     excludedRefs,
     `${canonicalProductImageSql(a)} IS NOT NULL`,
     sellableCatalogUnitSql(a),
