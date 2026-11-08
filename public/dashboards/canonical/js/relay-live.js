@@ -177,7 +177,7 @@
   function relayTabs(){
     return [
       {key:'flux',label:'Flux Relais',href:BASE},
-      {key:'remises',label:'Remises',href:remisesUrl('')},
+      // « Remises » vit hors du routeur lecture seule ; seul relayMainNav l'ouvre en navigation réelle.
       {key:'incidents',label:'Incidents & SAV',href:BASE+queryString({view:'incidents'})},
       {key:'history',label:'Historique',href:listUrl('collected')},
     ];
