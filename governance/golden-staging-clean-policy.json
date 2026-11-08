@@ -98,6 +98,7 @@
       "providers",
       "refund_execution_intents",
       "relais",
+      "relay_product_return_receipts",
       "revoked_tokens",
       "schema_migrations",
       "services",

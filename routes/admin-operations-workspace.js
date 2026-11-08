@@ -152,6 +152,19 @@ function requireWorkspaceReadAccess(req, res, next) {
     .catch(next);
 }
 
+// Le Hub reste consultable en supervision via sa projection publique /api/hub/board.
+ // Les détails achats/PO/fournisseurs et leurs traces ne sont pas une donnée
+ // terrain du relais, même quand le relais appartient au même marché.
+function requireHubSupplyReadAccess(req, res, next) {
+  if (req.user && req.user.role === 'agent_relais') {
+    return res.status(403).json({
+      code: 'relay_hub_private_dossier_forbidden',
+      error: 'Les dossiers achats du Hub ne sont pas accessibles à un relais',
+    });
+  }
+  return requireWorkspaceReadAccess(req, res, next);
+}
+
 function requireRelayPhysicalMarket(req, res, next) {
   const persistedRole = req.user && (req.user.persisted_role || req.user.role);
   if (persistedRole !== 'agent_relais') return next();
@@ -219,7 +232,7 @@ router.get(
 // rattachement d'un carton à une expédition. Même services que /api/hub/*, une seule autorité.
 router.get(
   '/market/:marketCode/supply',
-  requireWorkspaceReadAccess,
+  requireHubSupplyReadAccess,
   async (req, res, next) => {
     try {
       res.set('Cache-Control', 'private, no-store');
@@ -233,7 +246,7 @@ router.get(
 
 router.get(
   '/market/:marketCode/supply/trace',
-  requireWorkspaceReadAccess,
+  requireHubSupplyReadAccess,
   async (req, res, next) => {
     try {
       res.set('Cache-Control', 'private, no-store');
