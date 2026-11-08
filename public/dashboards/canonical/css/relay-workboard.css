@@ -624,3 +624,105 @@ body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-mode="relay-execution
     align-items:flex-start;
   }
 }
+
+/* Kanban Relais — parcours visible même quand la file est vide.
+   Même signal opérationnel que le Hub : fond clair, contour net, texte explicite.
+   Les compteurs restent des agrégats API ; aucune déduction de preuve physique. */
+.kmc-domain-cockpit .kmc-relay-work-header {
+  background:#fff;padding:14px 17px 12px;
+}
+.kmc-domain-cockpit .kmc-relay-work-header h2 {color:#26352d;font-size:16px;}
+.kmc-domain-cockpit .kmc-relay-work-header p{color:#62726a;}
+.kmc-domain-cockpit .kmc-relay-work-layout{padding:12px 14px 14px;}
+.kmc-domain-cockpit .kmc-relay-work-scroll{
+  border:1px solid #dae3dc;border-radius:10px;overflow-x:auto;
+}
+.kmc-domain-cockpit .kmc-relay-work-table{
+  min-width:990px;font-size:12px;
+}
+.kmc-domain-cockpit .kmc-relay-work-table th:first-child {width:230px;}
+.kmc-domain-cockpit .kmc-relay-work-table th:last-child {width:156px;}
+.kmc-domain-cockpit .kmc-relay-work-table th{
+  background:#f2f5f2;color:#35493d;
+  padding:11px;border-color:#dfe7e0;
+  text-transform:none;letter-spacing:normal;
+}
+.kmc-domain-cockpit .kmc-relay-kanban-head{
+  display:flex;gap:5px;align-items:center;justify-content:space-between;flex-wrap:wrap;
+}
+.kmc-domain-cockpit .kmc-relay-kanban-head>strong{
+  color:#26392f;font-size:12px;line-height:1.3;font-weight:860;
+}
+.kmc-domain-cockpit .kmc-relay-kanban-count{
+  display:inline-flex;gap:5px;align-items:center;padding:3px 7px;
+  background:#fff;border:1px solid #dce5df;color:#345b46;
+  border-radius:7px;font-size:12px;font-variant-numeric:tabular-nums;
+  font-weight:880;white-space:normal;
+}
+.kmc-domain-cockpit .kmc-relay-kanban-count small{
+  color:#63756a;font-size:10px;font-weight:650;
+}
+.kmc-domain-cockpit .kmc-relay-work-table td{vertical-align:middle;}
+.kmc-domain-cockpit .kmc-relay-work-stage{
+  min-height:72px;gap:7px;padding:12px 11px;
+  background:#f5f7f5;border:1px solid #e1e7e1;color:#68756c;
+}
+.kmc-domain-cockpit .kmc-relay-work-stage.is-complete{
+  background:#f1f3f1;border-color:#e0e5e0;color:#66736a;
+}
+.kmc-domain-cockpit .kmc-relay-work-stage.is-current{
+  background:#eff8f3;border:2px solid #188064;
+  box-shadow:inset 4px 0 #188064,0 2px 6px rgba(30,61,45,.06);
+  color:#194c37;
+}
+.kmc-domain-cockpit .kmc-relay-work-stage.is-current.is-warning{
+  background:#fff8ef;border-color:#d66d35;
+  box-shadow:inset 4px 0 #d66d35,0 2px 6px rgba(70,44,23,.06);
+  color:#75451f;
+}
+.kmc-domain-cockpit .kmc-relay-work-stage.is-current.is-critical{
+  background:#fff4f3;border-color:#b8454d;
+  box-shadow:inset 4px 0 #b8454d,0 2px 6px rgba(79,26,32,.06);
+  color:#88383f;
+}
+.kmc-domain-cockpit .kmc-relay-work-stage.is-current.is-waiting{
+  background:#f2f5f3;border-color:#87998b;
+  box-shadow:inset 4px 0 #87998b;
+  color:#455a4c;
+}
+.kmc-domain-cockpit .kmc-relay-work-stage:hover{filter:none;background:#edf5ee;}
+.kmc-domain-cockpit .kmc-relay-work-stage.is-current.is-warning:hover{background:#fff2e3;}
+.kmc-domain-cockpit .kmc-relay-work-stage.is-current.is-critical:hover{background:#ffebe9;}
+.kmc-domain-cockpit .kmc-relay-work-stage.is-current strong{font-size:12px;}
+.kmc-domain-cockpit .kmc-relay-kanban-empty-row td{
+  background:#fff;padding:8px;vertical-align:middle;
+}
+.kmc-domain-cockpit .kmc-relay-kanban-empty-intro strong{
+  display:block;color:#304b3a;font-size:12px;line-height:1.45;
+}
+.kmc-domain-cockpit .kmc-relay-kanban-empty-intro small{
+  display:block;color:#68796d;font-size:11px;line-height:1.5;margin-top:7px;
+}
+.kmc-domain-cockpit .kmc-relay-kanban-empty-stage{
+  min-height:116px;display:flex;flex-direction:column;justify-content:space-between;
+  gap:13px;background:#f8faf8;border:1px dashed #dce6dd;
+  border-radius:8px;padding:12px;
+}
+.kmc-domain-cockpit .kmc-relay-kanban-empty-stage span{
+  color:#647369;font-size:11.5px;line-height:1.45;
+}
+.kmc-domain-cockpit .kmc-relay-kanban-empty-stage a,
+.kmc-domain-cockpit .kmc-relay-kanban-empty-followup a{
+  color:#21664a;font-size:11px;font-weight:800;text-decoration:none;
+  line-height:1.4;
+}
+.kmc-domain-cockpit .kmc-relay-kanban-empty-stage a:hover,
+.kmc-domain-cockpit .kmc-relay-kanban-empty-followup a:hover{text-decoration:underline;}
+.kmc-domain-cockpit .kmc-relay-kanban-empty-followup{line-height:1.55;}
+.kmc-domain-cockpit .kmc-relay-action-rail{
+  border-top:1px solid #e2e9e3;border-bottom:0;background:#fbfcfb;
+}
+@media(max-width:700px) {
+  .kmc-domain-cockpit .kmc-relay-work-table{min-width:900px;}
+  .kmc-domain-cockpit .kmc-relay-work-header h2{font-size:15px;}
+}

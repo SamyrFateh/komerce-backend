@@ -119,19 +119,40 @@
 
   function relayWorkboard(p,data){
     const k=data?.dash?.kpi||{};
-    const orders=Array.isArray(data?.queue?.orders)?data.queue.orders:[];
+    const pending=Array.isArray(data?.queue?.orders)?data.queue.orders:[];
+    // La liste active n'inclut pas « collected » : une lecture courte de
+    // l'historique alimente la dernière colonne sans masquer les dossiers actifs.
+    const completed=Array.isArray(data?.recentCollected?.orders)
+      ?data.recentCollected.orders.filter(o=>o.status==='collected').slice(0,3):[];
+    const ids=new Set(pending.map(o=>String(o.id)));
+    const orders=[...pending.slice(0,12),...completed.filter(o=>!ids.has(String(o.id)))];
     const selected=String(p.sel||'');
     const phase=(o,key)=>{
       const at=WORK_STAGES.findIndex(x=>x.key===relayStageKey(o));
       const index=WORK_STAGES.findIndex(x=>x.key===key);
-      const current=at===index;
-      const state=current?relaySignal(o):index<at?'complete':'waiting';
-      const label=current?relayNext(o):index<at?'✓ Étape passée':'À venir';
-      return `<td><a href="${esc(previewUrl(o.id))}" data-cockpit-nav data-relay-stage="${key}" data-relay-stage-signal="${state}"
-        class="kmc-relay-work-stage is-${state}${current?' is-current':''}" ${current?'aria-current="step"':''}>
-          <strong>${esc(label)}</strong>${current?'<small>Examiner et agir</small>':''}</a></td>`;
+      // Une commande « collected » ne possède plus d'étape exécutable.
+      const finished=o.status==='collected';
+      const current=at===index&&!finished;
+      const done=index<at||(finished&&index===at);
+      const state=done?'complete':current?relaySignal(o):'waiting';
+      const label=done?(finished&&index===at?'✓ Remise enregistrée':'✓ Étape passée'):current?relayNext(o):'À venir';
+      const classes=`kmc-relay-work-stage is-${state}${current?' is-current':''}`;
+      const attrs=`data-relay-stage="${key}" data-relay-stage-signal="${state}" class="${classes}"`;
+      // Le clic sert uniquement à ouvrir une file canonique ou le dossier.
+      // Aucun scan, paiement ou remise ne s'exécute dans le cockpit de lecture.
+      if(!current)return `<td><div ${attrs}><strong>${esc(label)}</strong></div></td>`;
+      const incident=num(o.incidents_ouverts)>0;
+      const focus=o.status==='available'?(o.cash_pending?'cash':'collect'):'shipments';
+      const href=incident?previewUrl(o.id):executionUrl(o.market_code,focus);
+      const hint=incident?'Voir le dossier et les incidents'
+        :focus==='cash'?'Ouvrir la file d’encaissement'
+        :focus==='collect'?'Ouvrir les remises'
+        :'Examiner les arrivages';
+      return `<td><a href="${esc(href)}" ${incident?'data-cockpit-nav':''}
+        data-relay-stage-action="${incident?'inspect':focus}" ${attrs} aria-current="step">
+          <strong>${esc(label)}</strong><small>${esc(hint)} →</small></a></td>`;
     };
-    const records=orders.slice(0,12).map(o=>`<tr data-relay-workboard-order="${esc(o.id)}" class="${String(o.id)===selected?'is-selected':''}">
+    const records=orders.map(o=>`<tr data-relay-workboard-order="${esc(o.id)}" class="${String(o.id)===selected?'is-selected':''}">
       <td class="kmc-relay-work-identity"><a href="${esc(previewUrl(o.id))}" data-cockpit-nav class="kmc-relay-work-reference">${esc(o.reference)}</a>
         <small>${esc(o.client_nom||o.user_name||'Client')} · ${esc(o.relais_nom||'Relais')}</small>
         ${o.simulation_scope?'<span class="kmc-relay-work-simulation">RECETTE</span>':''}</td>
@@ -139,29 +160,43 @@
       <td class="kmc-relay-work-followup"><span>${num(o.incidents_ouverts)>0?'<b class="is-incident">'+num(o.incidents_ouverts)+' incident(s)</b>':'Aucun incident'}</span>
         <span>${esc(paymentLabel(o))}</span>
         <a href="${esc(previewUrl(o.id))}" data-cockpit-nav data-relay-preview="${esc(o.id)}">Dossier →</a></td></tr>`).join('');
-    const grid=orders.length?`<div class="kmc-relay-work-scroll"><table class="kmc-relay-work-table" aria-label="Poste Relais · statuts des commandes">
-      <thead><tr><th>Commande / client</th>${WORK_STAGES.map(x=>'<th>'+esc(x.label)+'</th>').join('')}<th>À vérifier</th></tr></thead>
-      <tbody>${records}</tbody></table></div>`:
-      `<div class="kmc-relay-work-empty"><span class="kmc-relay-empty-mark" aria-hidden="true">✓</span>
-      <div><strong>Aucune commande en cours dans cette file</strong>
-      <p>Les arrivages locaux et importés se contrôlent indépendamment dans l’atelier.</p></div>
-      <a href="${executionUrl('','shipments')}">Vérifier les arrivages ↗</a></div>`;
+
+    // Les compteurs proviennent du serveur. Le Kanban conserve ses colonnes même
+    // quand la projection de commandes est vide : une file vide n'efface pas le parcours.
+    const stageMetrics=[
+      {key:'transit',count:num(k.en_transit),detail:'En transit',empty:'Aucun dossier en transit dans la file',href:listUrl('in_transit'),action:'Voir les acheminements'},
+      {key:'available',count:num(k.disponibles),detail:'Disponibles',empty:'Aucun retrait en attente',href:listUrl('available'),action:'Voir les retraits'},
+      {key:'collected',count:num(k.collectes_aujourd_hui),detail:"Retirés aujourd’hui",empty:'Aucun retrait dans la file',href:listUrl('collected'),action:'Consulter les remises'},
+    ];
+    const heads=stageMetrics.map((stage,i)=>`<th scope="col" data-relay-lane="${stage.key}">
+      <span class="kmc-relay-kanban-head"><strong>${esc(WORK_STAGES[i].label)}</strong>
+      <span class="kmc-relay-kanban-count" title="${esc(stage.detail)}">${stage.count}<small>${esc(stage.detail)}</small></span></span></th>`).join('');
+    const emptyRow=`<tr class="kmc-relay-kanban-empty-row"><td class="kmc-relay-kanban-empty-intro">
+      <strong>Aucune commande en cours dans cette file</strong>
+      <small>Le suivi reste accessible. Les preuves physiques sont traitées dans l’atelier.</small>
+    </td>${stageMetrics.map(stage=>`<td><div class="kmc-relay-kanban-empty-stage" data-relay-empty-lane="${stage.key}">
+      <span>${esc(stage.empty)}</span><a data-cockpit-nav href="${esc(stage.href)}">${esc(stage.action)} →</a>
+    </div></td>`).join('')}
+    <td class="kmc-relay-kanban-empty-followup"><a href="${esc(executionUrl('','shipments'))}">Contrôler les arrivages physiques ↗</a></td></tr>`;
+    const grid=`<div class="kmc-relay-work-scroll"><table class="kmc-relay-work-table" aria-label="Kanban Relais · parcours des commandes">
+      <thead><tr><th scope="col">Commande / client</th>${heads}<th scope="col">À vérifier</th></tr></thead>
+      <tbody>${orders.length?records:emptyRow}</tbody></table></div>`;
     return `<section class="kmc-relay-work" aria-label="Poste de travail Relais">
-      <header class="kmc-relay-work-header"><div><span class="kmc-relay-work-eyebrow">FILE DES COMMANDES</span>
-        <h2>${orders.length?'Dossiers en cours':'Aucun dossier à traiter'}</h2>
-        <p>Statuts de commande. Les preuves physiques sont vérifiées dans l’atelier.</p></div>
+      <header class="kmc-relay-work-header"><div><span class="kmc-relay-work-eyebrow">KANBAN RELAIS · SUIVI DES COMMANDES</span>
+        <h2>${orders.length?'Dossiers en cours':'Aucun dossier actif dans cette file'}</h2>
+        <p>Une ligne par commande · étape actuelle signalée · preuves de réception et de remise dans l’atelier.</p></div>
         <nav class="kmc-relay-work-filters" aria-label="Files de travail">
           <a data-cockpit-nav href="${listUrl('available')}">À retirer <b>${num(k.disponibles)}</b></a>
           <a data-cockpit-nav href="${listUrl('in_transit')}">En route <b>${num(k.en_transit)}</b></a>
           <a data-cockpit-nav href="${listUrl('all')}">Toutes</a>
         </nav></header>
-      ${relayActionRail(k)}
       <div class="kmc-relay-work-layout${selected?' has-inspector':''}">
         <div class="kmc-relay-work-list">${grid}
           ${orders.length>=12?'<a class="kmc-relay-work-more" data-cockpit-nav href="'+listUrl('all')+'">Voir les autres dossiers →</a>':''}
         </div>
         ${renderPreview(p.sel,data?.detail)}
       </div>
+      ${relayActionRail(k)}
     </section>`;
   }
 
@@ -217,7 +252,7 @@
         ${fact('Incidents ouverts', incidents.filter(i => i.status !== 'resolved').length)}
       </div>
       <p class="kmc-relay-inspector-truth">Le statut de la commande ne remplace pas la preuve physique. Les articles et colis réellement reçus sont contrôlés dans l’atelier.</p>
-      <a class="kmc-relay-inspector-cta" href="${executionUrl(o.market_code)}" data-relay-action="execute">${esc(o.status==='available'?'Préparer la remise au client':o.status==='collected'?'Consulter les opérations du relais':'Contrôler la réception')} · Atelier Relais ↗</a>
+      <a class="kmc-relay-inspector-cta" href="${executionUrl(o.market_code, o.status==='available' ? (pay.cash_pending?'cash':'collect') : o.status==='collected' ? 'collect' : 'shipments')}" data-relay-action="execute">${esc(o.status==='available'?'Préparer la remise au client':o.status==='collected'?'Consulter les opérations du relais':'Contrôler la réception')} · Atelier Relais ↗</a>
       <a class="kmc-relay-inspector-detail-link" href="${orderUrl(detail.order?.id || sel, '')}" data-cockpit-nav>Articles, incidents et chronologie →</a>
       <p>${order360Link(o.reference, 'Retour au Relais live')}</p>
     </aside>`;
@@ -371,15 +406,16 @@
     overview:{
       tab:() => 'suivi',
       async load(p, api) {
-        const [dash, first, transit, detail, operational, queue] = await Promise.all([
+        const [dash, first, transit, detail, operational, queue, recentCollected] = await Promise.all([
           api('/api/relay/dashboard'),
           api('/api/relay/orders?status=available&limit=5&projection=live'),
           api('/api/relay/orders?status=in_transit&limit=5&projection=live'),
           p.sel ? api(`/api/relay/orders/${encodeURIComponent(p.sel)}?projection=live`).catch(() => null) : null,
           api('/api/relay/incidents').catch(() => ({ incidents:[] })),
           api('/api/relay/orders?status=shipped,in_transit,available&limit=12&projection=live'),
+          api('/api/relay/orders?status=collected&limit=3&projection=live').catch(() => ({orders:[]})),
         ]);
-        return { dash, first, transit, detail, operational, queue, fetched_at:dash?.generated_at || new Date().toISOString() };
+        return { dash, first, transit, detail, operational, queue, recentCollected, fetched_at:dash?.generated_at || new Date().toISOString() };
       },
       render:renderOverview,
       nav:() => ({ crumbs:[], back:null }),

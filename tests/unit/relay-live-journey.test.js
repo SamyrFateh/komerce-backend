@@ -49,14 +49,35 @@ test('Suivi : un seul poste de travail, accès directs et détails de supervisio
   expect(h).not.toContain('kir-back');
 });
 
-test('Suivi calme : actions physiques accessibles même si la file commande est vide', () => {
+test('Suivi calme : Kanban permanent, files et réception sans dossiers actifs', () => {
   const h = html('', { dash:{ kpi:{} }, first:{ orders:[] }, queue:{orders:[]} });
-  expect(h).toContain('Aucun dossier à traiter');
+  expect(h).toContain('Aucun dossier actif dans cette file');
   expect(h).toContain('Aucune commande en cours dans cette file');
-  expect(h).toContain('Vérifier les arrivages');
-  expect(h).toContain('href="/admin/relais-live?view=execute&focus=shipments"');
+  expect(h).toContain('aria-label="Kanban Relais · parcours des commandes"');
+  for (const lane of ['transit', 'available', 'collected']) {
+    expect(h).toContain('data-relay-lane="'+lane+'"');
+    expect(h).toContain('data-relay-empty-lane="'+lane+'"');
+  }
+  expect(h).toContain('Contrôler les arrivages physiques');
+  expect(h).toContain('href="/admin/relais-live?view=execute&amp;focus=shipments"');
   expect(h).not.toContain('is-attention');
   expect(h).toContain('Aucun retrait prioritaire.');
+});
+
+test('Kanban : étape active cash ouvre la bonne file sans écrire ; étape passée non cliquable', () => {
+  const h = html('', { ...OVERVIEW, queue:{ orders:[ORDER({market_code:'KM'})] } });
+  expect(h).toContain('data-relay-stage-action="cash"');
+  expect(h).toContain('href="/admin/relais-live?view=execute&amp;market=KM&amp;focus=cash"');
+  expect(h).toContain('class="kmc-relay-work-stage is-complete"');
+  expect(h).not.toContain('data-workspace-action="confirm-cash"');
+});
+
+test('Kanban : dernière remise en lecture seule, sans simuler une remise physique', () => {
+  const h = html('', { ...OVERVIEW, queue:{ orders:[] }, recentCollected:{ orders:[ORDER({id:'r-88',reference:'KMC-0188',status:'collected', cash_pending:false})] } });
+  expect(h).toContain('data-relay-workboard-order="r-88"');
+  expect(h).toContain('✓ Remise enregistrée');
+  expect(h).not.toContain('data-relay-stage-action="collect"');
+  expect(h).not.toContain('data-workspace-action="collect"');
 });
 
 test('liste : Relais › Suivi › liste, retour au suivi, pagination par décalage', () => {

@@ -21,7 +21,7 @@ const dashboard = { kpi:{ en_transit:4, disponibles:9, cash_a_encaisser:3, monta
 const detail = (n) => ({ order:{ id:`r-${n}`, reference:`KMC-0${100 + n}`, status:'available', heures_attente:80, age_jours:4, market_code:'KM' }, client:{ nom:`Client ${n}` },
   relais:{ nom:'Relais Mitsamiouli', ile:'Grande Comore' }, paiement:{ cash_pending:true, total_kmf:12000 }, items:[{ produit:'Coque', quantity:1, prix_kmf:12000 }], timeline:[], incidents:[] });
 
-async function mountRelay(page, search = '', { failDetail = false, empty = false, role = null } = {}) {
+async function mountRelay(page, search = '', { failDetail = false, empty = false, role = null, completed = false } = {}) {
   const state = { calls:[], writes:[], searchTerms:[], simQueries:[] };
   await page.route(`${ORIGIN}/**`, async (route) => {
     const req = route.request();
@@ -36,7 +36,7 @@ async function mountRelay(page, search = '', { failDetail = false, empty = false
       const file = path.join(CANONICAL, url.pathname.replace('/dashboards/canonical/', ''));
       return fs.existsSync(file) ? route.fulfill({ path:file }) : route.fulfill({ status:404, body:'' });
     }
-    if (url.pathname === '/api/relay/dashboard') { state.calls.push('dashboard'); const value=empty?{kpi:Object.fromEntries(Object.keys(dashboard.kpi).map(k=>[k,0])),alertes:[]}:dashboard; return route.fulfill({ contentType:'application/json', body:JSON.stringify(value) }); }
+    if (url.pathname === '/api/relay/dashboard') { state.calls.push('dashboard'); const value=empty?{kpi:{...Object.fromEntries(Object.keys(dashboard.kpi).map(k=>[k,0])),collectes_aujourd_hui:completed?1:0},alertes:[]}:dashboard; return route.fulfill({ contentType:'application/json', body:JSON.stringify(value) }); }
     if (url.pathname === '/api/relay/orders') {
       const status = url.searchParams.get('status');
       state.searchTerms.push(url.searchParams.get('search'));
@@ -45,14 +45,18 @@ async function mountRelay(page, search = '', { failDetail = false, empty = false
       state.calls.push(`orders:${status || 'all'}:${offset}`);
       const limit = Number(url.searchParams.get('limit') || 25);
       const length = limit === 25 && offset > 0 ? 3 : limit;
-      const rows = empty ? [] : Array.from({ length }, (_, i) => order(i + 1 + offset));
+      const rows = status==='collected' && completed && limit===3
+        ? [order(99,{status:'collected',cash_pending:false,payment_status:'paid'})]
+        : empty ? [] : Array.from({ length }, (_, i) => order(i + 1 + offset));
       return route.fulfill({ contentType:'application/json', body:JSON.stringify({ total:rows.length, orders:rows }) });
     }
     const m = url.pathname.match(/^\/api\/relay\/orders\/r-(\d+)$/);
     if (m) {
       state.calls.push(`order:r-${m[1]}`);
       if (failDetail) return route.fulfill({ status:500, contentType:'application/json', body:'{"error":"Erreur interne du serveur"}' });
-      return route.fulfill({ contentType:'application/json', body:JSON.stringify(detail(Number(m[1]))) });
+      const value=detail(Number(m[1]));
+      if (completed && m[1]==='99') { value.order.status='collected'; value.paiement.cash_pending=false; }
+      return route.fulfill({ contentType:'application/json', body:JSON.stringify(value) });
     }
     return route.fulfill({ status:404, body:'{}' });
   });
@@ -72,6 +76,8 @@ test.describe('Cockpit Relais — navigation canonique', () => {
     await expect(page.locator('.lk-pb-stage')).toHaveCount(3);
     await expect(page.locator('.kir-run-truth-grid > *')).toHaveCount(4);
     await expect(page.locator('.kmc-relay-action-tile')).toHaveCount(3);
+    await expect(page.locator('.kmc-relay-work-table th[data-relay-lane]')).toHaveCount(3);
+    await expect(page.locator('.kmc-relay-work-table')).toHaveAttribute('aria-label','Kanban Relais · parcours des commandes');
     await expect(page.locator('[data-relay-supervision]')).not.toHaveAttribute('open','');
     await expect(page.locator('.kmc-relay-secondary-table tbody tr')).toHaveCount(5);
     await expect(page.locator('.kmc-relay-compact-hero')).toHaveCSS('background-color','rgb(255, 255, 255)');
@@ -157,12 +163,14 @@ test.describe('Cockpit Relais — navigation canonique', () => {
     const row=board.locator('[data-relay-workboard-order="r-1"]');
     await expect(row.locator('[data-relay-stage="available"]')).toHaveAttribute('data-relay-stage-signal','warning');
     await expect(row.locator('[data-relay-stage="available"]')).toContainText('CASH À VÉRIFIER');
-    await row.locator('[data-relay-stage="available"]').click();
+    await expect(row.locator('[data-relay-stage="available"]')).toHaveAttribute('href','/admin/relais-live?view=execute&market=KM&focus=cash');
+    await expect(row.locator('[data-relay-stage="transit"]')).not.toHaveAttribute('href',/./);
+    await row.locator('.kmc-relay-work-reference').click();
     await expect(page).toHaveURL(/sel=r-1/);
     const inspector=page.locator('[data-relay-detail]');
     await expect(inspector).toBeVisible();
     await expect(inspector).toContainText('KMC-0101');
-    await expect(inspector.locator('[data-relay-action="execute"]')).toHaveAttribute('href','/admin/relais-live?view=execute&market=KM');
+    await expect(inspector.locator('[data-relay-action="execute"]')).toHaveAttribute('href','/admin/relais-live?view=execute&market=KM&focus=cash');
     expect(state.writes).toHaveLength(0);
     await inspector.getByRole('link',{name:'Fermer le dossier'}).click();
     await expect(inspector).toHaveCount(0);
@@ -174,17 +182,49 @@ test.describe('Cockpit Relais — navigation canonique', () => {
   test('Sans colis, la file reste compacte ; le flux ancien ne gaspille plus la surface', async ({ page }) => {
     const state=await mountRelay(page, '', {empty:true});
     const board=page.locator('.kmc-relay-work');
-    await expect(board).toContainText('Aucun dossier à traiter');
+    await expect(board).toContainText('Aucun dossier actif dans cette file');
     await expect(board.locator('[data-relay-workboard-order]')).toHaveCount(0);
     await expect(board.getByText('Aucune commande en cours dans cette file')).toBeVisible();
+    // Pas de disparition du tableau lorsqu'il n'y a plus de dossiers actifs.
+    await expect(board.locator('.kmc-relay-work-table')).toBeVisible();
+    await expect(board.locator('[data-relay-empty-lane]')).toHaveCount(3);
+    for (const lane of ['transit','available','collected']) {
+      await expect(board.locator('[data-relay-lane="'+lane+'"]')).toBeVisible();
+    }
+    await expect(board.locator('[data-relay-empty-lane="available"] a')).toHaveAttribute('href',/list=available/);
+    await expect(board.locator('.kmc-relay-kanban-empty-followup a')).toHaveAttribute('href','/admin/relais-live?view=execute&focus=shipments');
     await expect(page.locator('.kmc-relay-secondary').first()).not.toHaveAttribute('open','');
     await expect(board.locator('[data-relay-shortcut="shipments"]')).toHaveAttribute('href','/admin/relais-live?view=execute&focus=shipments');
     expect(state.writes).toEqual([]);
   });
 
+
+  test('Dernières remises : étape terminée grisée et dossier consultable sans mutation', async ({ page }) => {
+    const state=await mountRelay(page,'',{empty:true,completed:true});
+    const board=page.locator('.kmc-relay-work');
+    const row=board.locator('[data-relay-workboard-order="r-99"]');
+    await expect(row).toBeVisible();
+    await expect(row.locator('[data-relay-stage="collected"]')).toHaveClass(/is-complete/);
+    await expect(row.locator('[data-relay-stage="collected"]')).not.toHaveAttribute('href',/./);
+    await expect(row.locator('[data-relay-stage="transit"]')).toHaveClass(/is-complete/);
+    await row.locator('.kmc-relay-work-reference').click();
+    await expect(page).toHaveURL(/sel=r-99/);
+    expect(state.writes).toEqual([]);
+  });
+
+  test('Étape active : accès direct à la vraie file d’action, jamais une mutation depuis le Kanban', async ({ page }) => {
+    const state=await mountRelay(page);
+    const row=page.locator('[data-relay-workboard-order="r-1"]');
+    const active=row.locator('[data-relay-stage="available"]');
+    await expect(active).toHaveAttribute('data-relay-stage-action','cash');
+    await active.click();
+    await expect(page).toHaveURL(/\/admin\/relais-live\?view=execute&market=KM&focus=cash/);
+    expect(state.writes).toEqual([]);
+  });
+
   test('Le menu ne flotte pas au scroll : inspecteur dans la grille, statut seulement en lecture', async ({ page }) => {
     const state=await mountRelay(page);
-    await page.locator('[data-relay-workboard-order="r-1"] [data-relay-stage="available"]').click();
+    await page.locator('[data-relay-workboard-order="r-1"] .kmc-relay-work-reference').click();
     const inspector=page.locator('.kmc-relay-work-inspector');
     const style=await inspector.evaluate(el=>({position:getComputedStyle(el).position,left:getComputedStyle(el).left}));
     expect(style.position).toBe('sticky');
