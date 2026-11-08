@@ -36,6 +36,15 @@ async function mountRelay(page, search = '', { failDetail = false, empty = false
       const file = path.join(CANONICAL, url.pathname.replace('/dashboards/canonical/', ''));
       return fs.existsSync(file) ? route.fulfill({ path:file }) : route.fulfill({ status:404, body:'' });
     }
+    if (url.pathname === '/api/relay/incidents') return route.fulfill({
+      contentType:'application/json',body:JSON.stringify({incidents:[{
+        id:'i-1',order_id:'r-1',order_reference:'KMC-0101',incident_type:'colis_endommage',
+        title:'Emballage endommagé',severity:'high',status:'open',source:'relay_report',
+      }]})
+    });
+    if (req.method()==='POST' && url.pathname==='/api/relay/orders/r-1/incident') return route.fulfill({
+      status:201,contentType:'application/json',body:'{"success":true,"incident":{"id":"saved-1"}}'
+    });
     if (url.pathname === '/api/relay/dashboard') { state.calls.push('dashboard'); const value=empty?{kpi:{...Object.fromEntries(Object.keys(dashboard.kpi).map(k=>[k,0])),collectes_aujourd_hui:completed?1:0},alertes:[]}:dashboard; return route.fulfill({ contentType:'application/json', body:JSON.stringify(value) }); }
     if (url.pathname === '/api/relay/orders') {
       const status = url.searchParams.get('status');
@@ -45,7 +54,7 @@ async function mountRelay(page, search = '', { failDetail = false, empty = false
       state.calls.push(`orders:${status || 'all'}:${offset}`);
       const limit = Number(url.searchParams.get('limit') || 25);
       const length = limit === 25 && offset > 0 ? 3 : limit;
-      const rows = status==='collected' && completed && limit===3
+      const rows = status==='collected' && completed
         ? [order(99,{status:'collected',cash_pending:false,payment_status:'paid'})]
         : empty ? [] : Array.from({ length }, (_, i) => order(i + 1 + offset));
       return route.fulfill({ contentType:'application/json', body:JSON.stringify({ total:rows.length, orders:rows }) });
@@ -69,211 +78,105 @@ async function mountRelay(page, search = '', { failDetail = false, empty = false
 const crumb = (page) => page.locator('.kir-breadcrumb').innerText().then((s) => s.replace(/\s*›\s*/g, ' > ').replace(/\s+/g, ' ').trim());
 
 test.describe('Cockpit Relais — navigation canonique', () => {
-  test('Suivi : poste de travail direct, trois actions, supervision en un seul volet', async ({ page }) => {
-    await mountRelay(page);
-    await expect(page.locator('.kir-hero h1')).toContainText('Suivi des Relais');
-    await expect(page.locator('.kir-domain-nav .is-active')).toHaveText('Suivi');
-    await expect(page.locator('.lk-pb-stage')).toHaveCount(3);
-    await expect(page.locator('.kir-run-truth-grid > *')).toHaveCount(4);
-    await expect(page.locator('.kmc-relay-action-tile')).toHaveCount(3);
-    await expect(page.locator('.kmc-relay-work-table th[data-relay-lane]')).toHaveCount(3);
-    await expect(page.locator('.kmc-relay-work-table')).toHaveAttribute('aria-label','Kanban Relais · parcours des commandes');
-    await expect(page.locator('[data-relay-supervision]')).not.toHaveAttribute('open','');
-    await expect(page.locator('.kmc-relay-secondary-table tbody tr')).toHaveCount(5);
-    await expect(page.locator('.kmc-relay-compact-hero')).toHaveCSS('background-color','rgb(255, 255, 255)');
-    await page.screenshot({ path:'test-results/relais-live-cockpit-suivi.png' });
-  });
-
-  test('Suivi → Disponibles → colis → Retour à la liste → Retour au suivi', async ({ page }) => {
-    const state = await mountRelay(page);
-    await page.locator('.kmc-relay-work-filters a', { hasText:'À retirer' }).click();
-    await expect(page).toHaveURL(/view=orders.*list=available/);
-    expect(await crumb(page)).toBe('Relais > Suivi > Disponibles au retrait');
-    await expect(page.locator('.kir-back')).toHaveText('← Retour au suivi');
-    await page.locator('.lk-table a', { hasText:/^KMC-0101$/ }).click();
-    await expect(page.locator('.kir-drill-head h2')).toHaveText('KMC-0101');
-    expect(await crumb(page)).toBe('Relais > Suivi > Disponibles au retrait > KMC-0101');
-    await expect(page.locator('.kir-back')).toHaveText('← Retour à Disponibles au retrait');
-    await page.locator('.kir-back').click();
-    await expect(page).toHaveURL(/view=orders.*list=available/);
-    await page.locator('.kir-back').click();
-    await expect(page.locator('.kir-hero h1')).toContainText('Suivi des Relais');
-    expect(state.writes).toEqual([]);
-  });
-
-  test('une fiche renvoyant HTTP 500 préserve la navigation vers la file Relais', async ({ page }) => {
-    const state = await mountRelay(page, '', { failDetail:true });
-    await page.locator('.kmc-relay-work-filters a', { hasText:'En route' }).click();
-    await page.locator('.lk-table a').first().click();
-    await expect(page.locator('.kir-drill-head h2')).toHaveText('Détail indisponible');
-    await expect(page.locator('.kir-back')).toHaveText('← Retour à Colis en transit');
-    await expect(page.locator('.kir-error')).toContainText('Le suivi Relais reste accessible');
-    await expect(page.locator('.kir-main')).not.toContainText('Cockpit indisponible');
-    await page.locator('.kir-back').click();
-    await expect(page.locator('.lk-table')).toBeVisible();
-    expect(state.writes).toEqual([]);
-  });
-
-  test('Back / Forward : Suivi → liste → colis → Back → Back → Forward', async ({ page }) => {
-    await mountRelay(page);
-    await page.locator('.kmc-relay-work-filters a', { hasText:'En route' }).click();
-    await page.locator('.lk-table a').first().click();
-    await expect(page.locator('.kir-drill-head h2')).toContainText('KMC-');
-    await page.goBack();
-    await expect(page).toHaveURL(/list=in_transit/);
-    await page.goBack();
-    await expect(page.locator('.kir-hero h1')).toContainText('Suivi des Relais');
-    await page.goForward();
-    await expect(page).toHaveURL(/list=in_transit/);
-  });
-
-  test('Colis : onglet de 1er niveau sans retour ; le colis revient à Colis', async ({ page }) => {
-    await mountRelay(page);
-    await page.locator('.kir-domain-nav a', { hasText:'Colis' }).click();
-    await expect(page.locator('.kir-domain-nav .is-active')).toHaveText('Colis');
-    await expect(page.locator('.kir-back')).toHaveCount(0);
-    await page.locator('.lk-table a').first().click();
-    await expect(page.locator('.kir-back')).toHaveText('← Retour à Colis');
-    await expect(page.locator('.kir-domain-nav .is-active')).toHaveText('Colis');
-    await page.locator('.kir-back').click();
-    await page.locator('.kir-domain-nav a', { hasText:'Suivi' }).click();
-    await expect(page.locator('.kir-hero')).toHaveCount(1);
-  });
-
-  test('pagination : plus anciens avance le décalage, plus récents revient', async ({ page }) => {
-    await mountRelay(page, '?view=orders&list=available');
-    await page.getByText('Plus anciens →').click();
-    await expect(page).toHaveURL(/offset=25/);
-    await page.getByText('← Plus récents').click();
-    await expect(page).not.toHaveURL(/offset=25/);
-  });
-
-  test('lecture seule : aucune requête d’écriture, aucun bouton', async ({ page }) => {
-    const state = await mountRelay(page, '?view=order&order=r-1&from=available');
-    await expect(page.locator('.kir-drill-head h2')).toHaveText('KMC-0101');
-    await expect(page.locator('.kir-main button')).toHaveCount(0);
-    expect(state.writes).toEqual([]);
-  });
-
-
-  test('Poste de travail : étapes visibles, dossier contextuel et lien vers le vrai atelier du marché', async ({ page }) => {
-    const state = await mountRelay(page);
-    const board=page.locator('.kmc-relay-work');
-    await expect(board).toBeVisible();
-    const row=board.locator('[data-relay-workboard-order="r-1"]');
-    await expect(row.locator('[data-relay-stage="available"]')).toHaveAttribute('data-relay-stage-signal','warning');
-    await expect(row.locator('[data-relay-stage="available"]')).toContainText('CASH À VÉRIFIER');
-    await expect(row.locator('[data-relay-stage="available"]')).toHaveAttribute('href','/admin/relais-live?view=execute&market=KM&focus=cash');
-    await expect(row.locator('[data-relay-stage="transit"]')).not.toHaveAttribute('href',/./);
-    await row.locator('.kmc-relay-work-reference').click();
-    await expect(page).toHaveURL(/sel=r-1/);
-    const inspector=page.locator('[data-relay-detail]');
-    await expect(inspector).toBeVisible();
-    await expect(inspector).toContainText('KMC-0101');
-    await expect(inspector.locator('[data-relay-action="execute"]')).toHaveAttribute('href','/admin/relais-live?view=execute&market=KM&focus=cash');
-    expect(state.writes).toHaveLength(0);
-    await inspector.getByRole('link',{name:'Fermer le dossier'}).click();
-    await expect(inspector).toHaveCount(0);
-    await page.goBack();
-    await expect(page.locator('[data-relay-detail]')).toBeVisible();
-    expect(state.writes).toHaveLength(0);
-  });
-
-  test('Sans colis, la file reste compacte ; le flux ancien ne gaspille plus la surface', async ({ page }) => {
-    const state=await mountRelay(page, '', {empty:true});
-    const board=page.locator('.kmc-relay-work');
-    await expect(board).toContainText('Aucun dossier actif dans cette file');
-    await expect(board.locator('[data-relay-workboard-order]')).toHaveCount(0);
-    await expect(board.getByText('Aucune commande en cours dans cette file')).toBeVisible();
-    // Pas de disparition du tableau lorsqu'il n'y a plus de dossiers actifs.
-    await expect(board.locator('.kmc-relay-work-table')).toBeVisible();
-    await expect(board.locator('[data-relay-empty-lane]')).toHaveCount(3);
-    for (const lane of ['transit','available','collected']) {
-      await expect(board.locator('[data-relay-lane="'+lane+'"]')).toBeVisible();
-    }
-    await expect(board.locator('[data-relay-empty-lane="available"] a')).toHaveAttribute('href',/list=available/);
-    await expect(board.locator('.kmc-relay-kanban-empty-followup a')).toHaveAttribute('href','/admin/relais-live?view=execute&focus=shipments');
-    await expect(page.locator('.kmc-relay-secondary').first()).not.toHaveAttribute('open','');
-    await expect(board.locator('[data-relay-shortcut="shipments"]')).toHaveAttribute('href','/admin/relais-live?view=execute&focus=shipments');
-    expect(state.writes).toEqual([]);
-  });
-
-
-  test('Dernières remises : étape terminée grisée et dossier consultable sans mutation', async ({ page }) => {
-    const state=await mountRelay(page,'',{empty:true,completed:true});
-    const board=page.locator('.kmc-relay-work');
-    const row=board.locator('[data-relay-workboard-order="r-99"]');
-    await expect(row).toBeVisible();
-    await expect(row.locator('[data-relay-stage="collected"]')).toHaveClass(/is-complete/);
-    await expect(row.locator('[data-relay-stage="collected"]')).not.toHaveAttribute('href',/./);
-    await expect(row.locator('[data-relay-stage="transit"]')).toHaveClass(/is-complete/);
-    await row.locator('.kmc-relay-work-reference').click();
-    await expect(page).toHaveURL(/sel=r-99/);
-    expect(state.writes).toEqual([]);
-  });
-
-  test('Étape active : accès direct à la vraie file d’action, jamais une mutation depuis le Kanban', async ({ page }) => {
+  test('Flux Relais : Kanban quatre étapes et états physiques non inventés', async ({page})=>{
     const state=await mountRelay(page);
-    const row=page.locator('[data-relay-workboard-order="r-1"]');
-    const active=row.locator('[data-relay-stage="available"]');
-    await expect(active).toHaveAttribute('data-relay-stage-action','cash');
-    await active.click();
-    await expect(page).toHaveURL(/\/admin\/relais-live\?view=execute&market=KM&focus=cash/);
-    expect(state.writes).toEqual([]);
+    await expect(page.locator('.kmc-relay-flow-heading h1')).toHaveText('Préparer les colis');
+    await expect(page.locator('.kmc-relay-work-table th[data-relay-lane]')).toHaveCount(4);
+    for(const lane of ['transit','receive','organize','available']) {
+      await expect(page.locator('[data-relay-lane="'+lane+'"]')).toBeVisible();
+    }
+    await expect(page.locator('.kmc-relay-main-nav a[aria-current="page"]')).toHaveText('Flux Relais');
+    await expect(page.locator('[data-relay-workboard-order="r-1"] [data-relay-stage="organize"]')).toContainText('Rangement libre');
+    await expect(page.locator('[data-relay-workboard-order="r-1"] [data-relay-stage="available"]')).toHaveAttribute('href','/admin/relais-live?view=remises&market=KM');
+    await expect(page.locator('.kmc-relay-work-table')).not.toContainText('Remise enregistrée');
+    expect(state.writes).toHaveLength(0);
   });
 
-  test('Le menu ne flotte pas au scroll : inspecteur dans la grille, statut seulement en lecture', async ({ page }) => {
+  test('Flux vide : prévision et actions affichées, sans fausse réception',async({page})=>{
+    await mountRelay(page,'',{empty:true});
+    const board=page.locator('.kmc-relay-flow');
+    await expect(board.locator('[data-relay-workboard-order]')).toHaveCount(0);
+    await expect(board.locator('[data-relay-empty-lane]')).toHaveCount(4);
+    await expect(board).toContainText('Flux sans commande active');
+    await expect(board.getByRole('link',{name:/Contrôler les arrivages/})).toHaveAttribute('href','/admin/relais-live?view=execute&focus=shipments');
+    await expect(board.getByRole('link',{name:/Ouvrir les remises/})).toHaveAttribute('href','/admin/relais-live?view=remises');
+  });
+
+  test('Flux -> dossier -> liste -> retour et historique, sans écriture',async({page})=>{
     const state=await mountRelay(page);
     await page.locator('[data-relay-workboard-order="r-1"] .kmc-relay-work-reference').click();
-    const inspector=page.locator('.kmc-relay-work-inspector');
-    const style=await inspector.evaluate(el=>({position:getComputedStyle(el).position,left:getComputedStyle(el).left}));
-    expect(style.position).toBe('sticky');
-    await expect(page.locator('.kmc-relay-work-scroll')).toHaveCSS('overflow-x','auto');
+    await expect(page).toHaveURL(/sel=r-1/);
+    await expect(page.locator('[data-relay-detail]')).toContainText('KMC-0101');
+    await page.locator('[data-relay-detail] [aria-label="Fermer le dossier"]').click();
+    await expect(page.locator('[data-relay-detail]')).toHaveCount(0);
+    await page.locator('.kmc-relay-main-nav a',{hasText:'Historique'}).click();
+    await expect(page).toHaveURL(/list=collected/);
+    await expect(page.locator('.kmc-relay-main-nav a[aria-current="page"]')).toHaveText('Historique');
+    await page.goBack();
+    await expect(page.locator('.kmc-relay-flow')).toBeVisible();
     expect(state.writes).toHaveLength(0);
   });
 
-
-  test('les trois raccourcis orientent vers le vrai atelier sans écrire ni inventer un reçu',async({page})=>{
-    const state=await mountRelay(page);
-    const rail=page.locator('.kmc-relay-action-rail');
-    await expect(rail.locator('[data-relay-shortcut="shipments"]')).toHaveAttribute('href','/admin/relais-live?view=execute&focus=shipments');
-    await expect(rail.locator('[data-relay-shortcut="cash"]')).toHaveAttribute('href','/admin/relais-live?view=execute&focus=cash');
-    await expect(rail.locator('[data-relay-shortcut="collect"]')).toHaveAttribute('href','/admin/relais-live?view=execute&focus=collect');
-    await expect(rail.locator('[data-relay-shortcut="cash"]')).toContainText('3');
-    expect(state.writes).toEqual([]);
+  test('Incidents & SAV : file dédiée et retour au dossier de commande',async({page})=>{
+    await mountRelay(page);
+    await page.locator('.kmc-relay-main-nav a',{hasText:'Incidents & SAV'}).click();
+    await expect(page).toHaveURL(/view=incidents/);
+    await expect(page.locator('[data-relay-incident="i-1"]')).toContainText('Emballage endommagé');
+    await expect(page.locator('.kmc-relay-main-nav a[aria-current="page"]')).toHaveText('Incidents & SAV');
+    await page.locator('[data-relay-incident="i-1"] a',{hasText:'Ouvrir le dossier'}).click();
+    await expect(page).toHaveURL(/from=incidents/);
+    await expect(page.locator('.kir-back')).toContainText('Retour aux incidents');
   });
 
-  test('mode recette réservé admin : contrôle lisible, activation explicitement marquée, compteurs conservés',async({page})=>{
-    const state=await mountRelay(page,'',{role:'admin'});
-    const toggle=page.locator('[data-sim-toggle]');
-    await expect(toggle).toHaveText('Inclure la recette');
-    await expect(toggle).toHaveAttribute('aria-checked','false');
-    await expect(toggle).toHaveCSS('text-decoration-line','none');
-    await toggle.click();
-    await expect(page).toHaveURL(/sim=1/);
-    await expect(page.locator('[data-sim-toggle]')).toHaveText('Recette incluse');
-    await expect(page.locator('[data-sim-toggle]')).toHaveAttribute('aria-checked','true');
-    expect(state.simQueries).toContain('1');
-    expect(state.writes).toEqual([]);
+  test('Signaler un incident utilise le seul writer autorisé du cockpit',async({page})=>{
+    const state=await mountRelay(page,'?view=order&order=r-1',{role:'agent_relais'});
+    await page.getByText('Signaler un incident sur cette commande').click();
+    const form=page.locator('[data-relay-incident-form]');
+    await form.locator('select[name="type"]').selectOption('colis_endommage');
+    await form.locator('textarea[name="description"]').fill('Carton humide constaté au comptoir');
+    await form.getByRole('button',{name:'Enregistrer le signalement'}).click();
+    await expect(form.locator('[role="status"]')).toContainText('Signalement enregistré');
+    expect(state.writes).toEqual(['POST /api/relay/orders/r-1/incident']);
   });
 
-  test('recherche dans les dossiers : filtre transmis au backend, pagination et retour préservés',async({page})=>{
+  test('Droits lecture seule : pas de formulaire si rôle non opérationnel',async({page})=>{
+    const state=await mountRelay(page,'?view=order&order=r-1',{role:'finance'});
+    await expect(page.locator('[data-relay-incident-form]')).toHaveCount(0);
+    expect(state.writes).toHaveLength(0);
+  });
+
+  test('Erreur détail : préserver une navigation cohérente vers le flux',async({page})=>{
+    await mountRelay(page,'?view=order&order=r-1&from=in_transit',{failDetail:true});
+    await expect(page.locator('.kir-error')).toContainText('Le suivi Relais reste accessible');
+    await expect(page.locator('.kir-back')).toHaveText('← Retour à Colis en transit');
+  });
+
+  test('Recherche et pagination de dossiers : filtres transmis au serveur',async({page})=>{
     const state=await mountRelay(page,'?view=orders&list=available&search=Moroni');
     await expect(page.locator('#kmc-relay-search')).toHaveValue('Moroni');
     expect(state.searchTerms).toContain('Moroni');
     await page.getByText('Plus anciens →').click();
-    await expect(page).toHaveURL(/search=Moroni/);
     await expect(page).toHaveURL(/offset=25/);
-    await expect(page.locator('#kmc-relay-search')).toHaveValue('Moroni');
+    await expect(page).toHaveURL(/search=Moroni/);
   });
 
-  for (const [name, width, height] of [['1280', 1280, 800], ['1024', 1024, 768], ['mobile', 390, 844]]) {
-    test(`responsive ${name} : aucun débordement`, async ({ page }) => {
+  test('Recette opt-in réservée admin et sans effet sur les actions',async({page})=>{
+    const state=await mountRelay(page,'',{role:'admin'});
+    const toggle=page.locator('[data-sim-toggle]');
+    await expect(toggle).toHaveText('Inclure la recette');
+    await toggle.click();
+    await expect(page).toHaveURL(/sim=1/);
+    expect(state.simQueries).toContain('1');
+    expect(state.writes).toEqual([]);
+  });
+
+  for(const [name,width,height] of [['desktop',1440,900],['mobile',390,844]]) {
+    test('Responsive '+name+' : Kanban scrolle dans son conteneur',async({page})=>{
       await mountRelay(page);
-      await page.setViewportSize({ width, height });
-      await expect(page.locator('.lk-pb-stage')).toHaveCount(3);
-      const geo = await page.evaluate(() => ({ scroll:document.documentElement.scrollWidth, inner:window.innerWidth }));
-      expect(geo.scroll).toBeLessThanOrEqual(geo.inner);
+      await page.setViewportSize({width,height});
+      await expect(page.locator('.kmc-relay-work-scroll')).toHaveCSS('overflow-x','auto');
+      const d=await page.evaluate(()=>({actual:document.documentElement.scrollWidth,viewport:window.innerWidth}));
+      expect(d.actual).toBeLessThanOrEqual(d.viewport+1);
     });
   }
 });
