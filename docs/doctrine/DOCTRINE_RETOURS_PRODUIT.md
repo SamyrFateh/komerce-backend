@@ -51,6 +51,39 @@ et contrôle prix local.
 
 ---
 
+## 0.1. Signal qualité et gel du Catalogue (2026-11-08)
+
+**Retour ou remarque ≠ gel automatique.** Un dossier SAV ouvert pour un
+`order_item` réellement remis remonte par jointure de
+`disputes.return_order_item_id → order_items.product_id` vers la référence
+Catalogue globale. Un relais peut aussi transmettre une simple remarque sur
+l'article remis, sans ouvrir de retour : la trace est stockée dans
+`catalog_product_quality_notes` (source `relay`, `order_item_id`, acteur,
+date, commentaire) sous contrôle de son `relais_id`. Les notes manuelles du
+responsable Catalogue utilisent la même table, source `catalog`.
+
+**Gel global explicite uniquement.** Un administrateur détenteur de
+`requireCatalogGlobalAuthority` peut geler la référence, avec motif et
+commentaire obligatoire, puis lever ce gel avec commentaire obligatoire.
+L'historique est append-only par cycle dans `catalog_product_sale_holds` ;
+un seul cycle peut rester actif à un instant donné. La décision ne modifie
+ni les commandes déjà validées, ni les stocks, les prix, la remise client ou
+les paiements. Le gel bloque les nouvelles lignes d'achat au niveau de
+la base et des chemins checkout, et masque le produit à l'acheteur.
+
+**Réexamen.** Un gel qualité ne remplace pas la décision financière SAV ni
+la remise en stock d'un article repris. La revue du produit réparé ou
+déclassé est distincte du dégel de la référence catalogue. La sécurité d'un
+article rappelé, dangereux ou non conforme doit rester une condition
+obligatoire avant toute revente ou réactivation.
+
+**Lot technique :** migrations 399 (liaison demande retour/produit) et 400
+(notes/gel de vente, garde DB). Aucune activation commerciale n'est
+autorisée avant E2E de transaction gelée, contrôle marché et revue du
+périmètre global de gel.
+
+---
+
 ## 1. Phrase de vérité
 
 Le client rapporte l'article là où il l'a retiré. Chaque étape physique est un scan. L'argent ne bouge qu'après inspection, et seulement par l'autorité de remboursement.
