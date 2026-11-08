@@ -72,10 +72,10 @@ async function resolveCheckoutItems({
   const productIds = items.map(i => i.product_id);
 
   const { rows: products } = await client.query(
-    `SELECT * FROM products p WHERE p.id = ANY($1) AND p.is_active = TRUE AND p.is_available = TRUE
-      AND NOT EXISTS (SELECT 1 FROM catalog_product_sale_holds h
-                       WHERE h.product_id = p.id AND h.released_at IS NULL)
-     FOR UPDATE OF p`,
+    `SELECT p.*, EXISTS (SELECT 1 FROM catalog_product_sale_holds h
+        WHERE h.product_id = p.id AND h.released_at IS NULL) AS catalog_quality_frozen
+       FROM products p WHERE p.id = ANY($1) AND p.is_active = TRUE
+       FOR UPDATE OF p`,
     [productIds]
   );
   const productMap = Object.fromEntries(products.map(p => [p.id, p]));
@@ -99,6 +99,19 @@ async function resolveCheckoutItems({
     const product = productMap[item.product_id];
     if (!product) {
       return { ok: false, status: 404, body: { error: `Produit introuvable : ${item.product_id}` } };
+    }
+    // Un panier ancien peut encore contenir une référence gelée. Le vrai
+    // contrôle vendeur reste serveur ; donner un motif clair plutôt qu'un 404.
+    if (product.catalog_quality_frozen === true || product.is_available === false) {
+      return {
+        ok: false, status: 409,
+        body: {
+          code: product.catalog_quality_frozen === true
+            ? 'catalog_product_quality_frozen' : 'product_unavailable',
+          error: 'Produit temporairement indisponible à la vente. Veuillez modifier votre panier.',
+          product_id: item.product_id,
+        },
+      };
     }
 
     const qty = parseInt(item.quantity, 10) || 1;
