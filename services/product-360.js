@@ -8,7 +8,7 @@
  * @outputs       product_360_projection, market_p1_thread_projection, central_supplier_purchasing_mode_evidence
  * @depends       db, services/suppliers/provider-capability-certifications.js
  * @used-by       routes/admin-product-360.js
- * @db-read       products, product_variants, product_skus, order_items, orders, markets, order_item_cost_imputations, order_item_real_cost_allocations, product_suppliers, suppliers, price_history, alerts, users, product_market_price_drafts, product_market_exposure
+ * @db-read       catalog_product_sale_holds, products, product_variants, product_skus, order_items, orders, markets, order_item_cost_imputations, order_item_real_cost_allocations, product_suppliers, suppliers, price_history, alerts, users, product_market_price_drafts, product_market_exposure
  * @db-write      none
  * @db-txn        none
  * @doctrine      entity_360_reunites_without_recomputing, server_market_scope_is_authority, product_ref_is_business_identity, sourcing_and_audit_global_only
