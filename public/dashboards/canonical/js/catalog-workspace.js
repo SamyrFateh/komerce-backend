@@ -2230,8 +2230,119 @@
     }
   }
 
+  // SAV -> Catalogue quality dossier: a report raises a visible signal;
+  // only a central Catalogue action can freeze/unfreeze the global reference.
+  function attachQualityControls(context, doc, panel, row) {
+    if (!row.product_ref) return;
+    const section = doc.createElement('section');
+    section.className = 'kmc-catalog-quality-control';
+    section.setAttribute('data-catalog-quality-control', row.product_ref);
+    const state = text(doc, 'strong', 'kmc-catalog-quality-state', 'Qualité · vérification…');
+    section.appendChild(state);
+    const details = doc.createElement('details');
+    details.className = 'kmc-catalog-quality-details';
+    details.appendChild(text(doc, 'summary', '', 'Signaler / geler cette référence'));
+    const content = doc.createElement('div');
+    content.className = 'kmc-catalog-quality-content';
+    details.appendChild(content);
+    section.appendChild(details);
+    const anchor = panel.querySelector('[data-catalog-action-dock]');
+    panel.insertBefore(section, anchor || panel.firstChild);
+
+    const actionEndpoint = ENDPOINT + '/products/' + encodeURIComponent(row.product_ref) + '/quality';
+    async function load() {
+      const data = await jsonRequest(context.fetch, actionEndpoint);
+      if (!section.isConnected) return;
+      state.textContent = data.frozen
+        ? 'VENTE GELÉE · tous marchés · ' + (data.active_hold?.reason || 'Contrôle qualité')
+        : (data.reports || data.notes.length)
+          ? 'À SURVEILLER · ' + data.reports + ' retour(s) · ' + data.notes.length + ' remarque(s) récente(s)'
+          : 'Qualité · aucun signalement connu';
+      state.setAttribute('data-quality-frozen', String(data.frozen));
+      content.replaceChildren();
+      if (data.active_hold) {
+        content.appendChild(text(doc, 'p', 'kmc-catalog-quality-comment',
+          'Motif du gel : ' + data.active_hold.comment));
+      }
+      content.appendChild(text(doc,'p','kmc-catalog-correction-hint',
+        'Signalements SAV : ' + data.reports + ' dont ' + data.active_reports +
+        ' en cours. Aucun gel automatique. Les commandes déjà engagées ne changent pas.'));
+      const recent = (data.notes || []).slice(0,5);
+      if (recent.length) {
+        const list = doc.createElement('ul');
+        for (const item of recent) list.appendChild(text(doc, 'li', '', item.note));
+        content.appendChild(list);
+      }
+      const note = doc.createElement('textarea');
+      note.maxLength = 2000;
+      note.rows = 3;
+      note.placeholder = data.frozen
+        ? 'Motif précis de réouverture de la vente…'
+        : 'Constat qualité, défaillance ou motif de gel…';
+      note.setAttribute('aria-label', 'Commentaire qualité');
+      content.appendChild(note);
+      const controls = doc.createElement('div');
+      controls.className = 'kmc-catalog-quality-actions';
+      let reason = null;
+      if (!data.frozen) {
+        reason = doc.createElement('select');
+        reason.setAttribute('aria-label', 'Motif du gel');
+        for (const [value,label] of [
+          ['quality_review','À vérifier'],['defect','Défaut produit'],
+          ['safety','Sécurité'],['repeated_returns','Retours répétés'],['other','Autre'],
+        ]) {
+          const opt = text(doc,'option','',label);
+          opt.value=value;
+          reason.appendChild(opt);
+        }
+        controls.appendChild(reason);
+      }
+      const saveRemark = makeButton(doc, 'Ajouter la remarque', 'catalog-quality-note', true);
+      controls.appendChild(saveRemark);
+      const toggle = makeButton(doc, data.frozen ? 'Lever le gel' : 'Geler les ventes',
+        data.frozen ? 'catalog-quality-release' : 'catalog-quality-freeze');
+      controls.appendChild(toggle);
+      content.appendChild(controls);
+      const response = text(doc,'p','kmc-catalog-inspector-feedback','');
+      response.setAttribute('role','status');
+      content.appendChild(response);
+
+      async function apply(action, button) {
+        const comment = note.value.trim();
+        if (comment.length < (action === 'note' ? 5 : 10)) {
+          response.textContent = 'Un commentaire explicite est obligatoire.';
+          return;
+        }
+        if (action !== 'note' && !context.confirm(
+          (action === 'freeze' ? 'Geler toutes les nouvelles ventes de ' :
+            'Lever le gel de ') + row.product_ref + ' ? Le commentaire sera conservé.')) return;
+        button.disabled=true;
+        response.textContent='Enregistrement en cours…';
+        try {
+          await jsonRequest(context.fetch, actionEndpoint + '/' + action, {
+            method:'POST',body:{comment,...(reason && action === 'freeze' ? {reason:reason.value} : {})},
+          });
+          await context.reload();
+          setFeedback(context.root, row.product_ref + ' · Décision qualité enregistrée et tracée.', 'positive');
+        } catch (error) {
+          response.textContent = actionErrorMessage(error);
+          button.disabled=false;
+        }
+      }
+      saveRemark.addEventListener('click',()=>apply('note',saveRemark));
+      toggle.addEventListener('click',()=>apply(data.frozen ? 'release' : 'freeze',toggle));
+    }
+    load().catch(err=>{
+      if (section.isConnected) {
+        state.textContent='Qualité · lecture indisponible';
+        content.appendChild(text(doc,'p','kmc-catalog-inspector-feedback',actionErrorMessage(err)));
+      }
+    });
+  }
+
   function openProductInspector(context, slot, doc, row, categories) {
     const { panel, actions, feedback } = inspectorFrame(slot, doc, row, 'product');
+    attachQualityControls(context, doc, panel, row);
     const dossierSlot = doc.createElement('section');
     dossierSlot.className = 'kmc-catalog-dossier';
     dossierSlot.setAttribute('data-catalog-product-dossier', '');
@@ -2628,6 +2739,17 @@
         productCopy.className = 'kmc-catalog-product-copy';
         productCopy.appendChild(link);
         productCopy.appendChild(text(doc, 'small', 'kmc-catalog-product-reference', ref));
+        if (row.quality?.quality_frozen) {
+          const badge = text(doc, 'strong', 'kmc-catalog-quality-badge is-frozen', 'VENTE GELÉE');
+          badge.setAttribute('data-catalog-quality-frozen', 'true');
+          productCopy.appendChild(badge);
+        } else if (row.quality?.quality_return_count || row.quality?.quality_note_count) {
+          const badge = text(doc, 'span', 'kmc-catalog-quality-badge is-signal',
+            'Qualité à examiner · ' +
+            (Number(row.quality.quality_return_count) + Number(row.quality.quality_note_count)));
+          badge.setAttribute('data-catalog-quality-signal', 'true');
+          productCopy.appendChild(badge);
+        }
         productCopy.appendChild(text(doc, 'small', 'kmc-catalog-product-helper',
           row.supplier_category || 'Désignation fournisseur'));
         productWrap.appendChild(productCopy);
