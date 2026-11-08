@@ -61,7 +61,7 @@
   });
 
   const listOf = p => (LISTS[p.list] ? p.list : 'available');
-  const fromOf = p => (LISTS[p.from] ? p.from : '');
+  const fromOf = p => p.from==='incidents'?'incidents':(LISTS[p.from]?p.from:'');
   const offsetOf = p => Math.max(0, num(p.offset));
   const listUrl = (list, offset = 0, search = '') => `${BASE}${queryString({ view:'orders', list, offset:offset > 0 ? offset : '', search:search||'', ...simParams() })}`;
   const orderUrl = (id, from) => `${BASE}${queryString({ view:'order', order:id, from, ...simParams() })}`;
@@ -227,7 +227,7 @@
         ${fact('Incidents ouverts', incidents.filter(i => i.status !== 'resolved').length)}
       </div>
       <p class="kmc-relay-inspector-truth">Le statut de la commande ne remplace pas la preuve physique. Les articles et colis réellement reçus sont contrôlés dans l’atelier.</p>
-      <a class="kmc-relay-inspector-cta" href="${executionUrl(o.market_code, o.status==='available' ? (pay.cash_pending?'cash':'collect') : o.status==='collected' ? 'collect' : 'shipments')}" data-relay-action="execute">${esc(o.status==='available'?'Préparer la remise au client':o.status==='collected'?'Consulter les opérations du relais':'Contrôler la réception')} · Atelier Relais ↗</a>
+      <a class="kmc-relay-inspector-cta" href="${o.status==='available'?remisesUrl(o.market_code):executionUrl(o.market_code, o.status==='collected'?'collect':'shipments')}" data-relay-action="execute">${esc(o.status==='available'?'Préparer la remise au client':o.status==='collected'?'Consulter les opérations du relais':'Contrôler la réception')} · Atelier Relais ↗</a>
       <a class="kmc-relay-inspector-detail-link" href="${orderUrl(detail.order?.id || sel, '')}" data-cockpit-nav>Articles, incidents et chronologie →</a>
       <p>${order360Link(o.reference, 'Retour au Relais live')}</p>
     </aside>`;
@@ -258,12 +258,12 @@
   function renderIncidents(p,data){
     const items=Array.isArray(data?.incidents)?data.incidents:[];
     const rows=items.slice(0,40).map(i=>`<tr data-relay-incident="${esc(i.id)}">
-      <td><a href="${esc(orderUrl(i.order_id,''))}" data-cockpit-nav>${esc(i.order_reference||'Commande')}</a></td>
+      <td><a href="${esc(orderUrl(i.order_id,'incidents'))}" data-cockpit-nav>${esc(i.order_reference||'Commande')}</a></td>
       <td><strong>${esc(INCIDENT[i.incident_type]||i.title||i.incident_type||'Incident')}</strong>
         <small>${esc(i.product_name||i.title||'—')}</small></td>
       <td>${esc(i.severity==='critical'?'Critique':i.severity==='high'?'Haute':'À examiner')}</td>
       <td>${esc(i.status==='in_progress'||i.status==='investigating'?'En traitement':'Ouvert')}</td>
-      <td><a href="${esc(orderUrl(i.order_id,''))}" data-cockpit-nav>Ouvrir le dossier →</a></td>
+      <td><a href="${esc(orderUrl(i.order_id,'incidents'))}" data-cockpit-nav>Ouvrir le dossier →</a></td>
     </tr>`).join('');
     return {
       hero:`<header class="kmc-relay-flow-heading"><div><span class="kmc-relay-work-eyebrow">RELAIS · EXCEPTIONS</span>
@@ -312,10 +312,11 @@
 
   function navOrders(p) {
     const list = listOf(p);
-    if (list === 'all') return { crumbs:[{ label:'Relais', plain:true }, { label:'Colis' }], back:null };
+    if (list === 'all') return { crumbs:[{ label:'Relais', plain:true }, { label:'Toutes les commandes' }], back:null };
+    if (list === 'collected') return { crumbs:[{ label:'Relais', plain:true }, { label:'Historique des remises' }], back:{href:BASE,label:'← Flux Relais'} };
     return {
       crumbs:[{ label:'Relais', plain:true }, { label:'Suivi', href:BASE }, { label:LISTS[list] }],
-      back:{ href:BASE, label:'← Retour au suivi' },
+      back:{ href:BASE, label:'← Retour au flux' },
     };
   }
 
@@ -343,7 +344,7 @@
     return {
       title:o.reference || 'Colis',
       copy:`${STATUS[o.status] || o.status || ''} · ${data?.client?.nom || 'client'} · ${relais.nom || 'relais non défini'}`,
-      body:`${relayMainNav(fromOf(p)==='collected'?'history':'flux')}<div class="kmc-relay-order-toolbar"><div><strong>Dossier de commande · ${esc(o.reference||'—')}</strong><small>La remise se valide colis par colis avec justificatif.</small></div><a href="${executionUrl(o.market_code)}">Ouvrir l’atelier Relais ↗</a></div><p class="lk-360-line">${order360Link(o.reference, 'Retour au Relais live')}</p><div class="lk-facts">
+      body:`${relayMainNav(fromOf(p)==='incidents'?'incidents':fromOf(p)==='collected'?'history':'flux')}<div class="kmc-relay-order-toolbar"><div><strong>Dossier de commande · ${esc(o.reference||'—')}</strong><small>La remise se valide colis par colis avec justificatif.</small></div><a href="${o.status==='available'?remisesUrl(o.market_code):executionUrl(o.market_code)}">${o.status==='available'?'Ouvrir le comptoir Remises':'Ouvrir l’atelier Relais'} ↗</a></div><p class="lk-360-line">${order360Link(o.reference, 'Retour au Relais live')}</p><div class="lk-facts">
           ${card(o.status === 'available' ? 'Attente au relais' : 'Âge', wait)}
           ${card('Relais', [relais.nom, relais.ile].filter(Boolean).join(' · ') || '—')}
           ${card('Articles', items.length)}
@@ -385,10 +386,14 @@
     const from = fromOf(p);
     const ref = data?.order?.reference || 'Colis';
     const domain = { label:'Relais', plain:true };
-    if (!from) return { crumbs:[domain, { label:'Suivi', href:BASE }, { label:ref }], back:{ href:BASE, label:'← Retour au suivi' } };
-    if (from === 'all') return { crumbs:[domain, { label:'Colis', href:listUrl('all') }, { label:ref }], back:{ href:listUrl('all'), label:'← Retour à Colis' } };
+    if (!from) return { crumbs:[domain, { label:'Flux', href:BASE }, { label:ref }], back:{ href:BASE, label:'← Retour au flux' } };
+    if (from==='incidents')return {crumbs:[domain,{label:'Incidents & SAV',href:BASE+'?view=incidents'},{label:ref}],
+      back:{href:BASE+'?view=incidents',label:'← Retour aux incidents'}};
+    if (from==='collected')return {crumbs:[domain,{label:'Historique',href:listUrl('collected')},{label:ref}],
+      back:{href:listUrl('collected'),label:'← Retour à l’historique'}};
+    if (from === 'all') return { crumbs:[domain, { label:'Toutes les commandes', href:listUrl('all') }, { label:ref }], back:{ href:listUrl('all'), label:'← Retour aux commandes' } };
     return {
-      crumbs:[domain, { label:'Suivi', href:BASE }, { label:LISTS[from], href:listUrl(from) }, { label:ref }],
+      crumbs:[domain, { label:'Flux', href:BASE }, { label:LISTS[from], href:listUrl(from) }, { label:ref }],
       back:{ href:listUrl(from), label:`← Retour à ${LISTS[from]}` },
     };
   }
