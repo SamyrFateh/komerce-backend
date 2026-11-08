@@ -487,14 +487,14 @@ Au-delà du code applicatif, la DB enforce elle-même plusieurs invariants :
 object: catalog_product_quality_notes
 kind: table
 migration: 400
-section: ## 4. Catalogue / Produits
+section: ## 4. Tables par domaine
 role: Remarques qualité traçables (acteur, provenance Catalogue ou Relais, article remis, commentaire daté et immuable) ; migration 400 non encore vérifiée live.
 -->
 <!-- schema-pending
 object: catalog_product_sale_holds
 kind: table
 migration: 400
-section: ## 4. Catalogue / Produits
+section: ## 4. Tables par domaine
 role: Décisions Catalogue centrales gel/dégel global d'une référence avec justification, acteur et historique ; garde des nouvelles commandes, migration 400 non encore vérifiée live.
 -->
 
