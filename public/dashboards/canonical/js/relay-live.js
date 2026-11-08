@@ -71,140 +71,113 @@
     const code=String(market||'').trim().toUpperCase();
     return BASE+queryString({view:'execute',market:/^[A-Z]{2}$/.test(code)?code:'',focus:/^(shipments|cash|receive|collect)$/.test(focus)?focus:''});
   };
-  // Le cockpit lit des statuts de commande. Il n'atteste JAMAIS qu'un colis
-  // a été reçu ou remis : cette écriture appartient à l'atelier Relais.
+  // Flux de préparation et comptoir sont indépendants. Les statuts des commandes
+  // n'attestent PAS un scan physique. Le rangement ne produit pas de statut métier.
   const WORK_STAGES=Object.freeze([
-    {key:'transit',label:'En acheminement'},
-    {key:'available',label:'Au relais · retrait'},
-    {key:'collected',label:'Remis au client'},
+    {key:'transit',label:'Annoncés'},
+    {key:'receive',label:'Réception'},
+    {key:'organize',label:'Organisation'},
+    {key:'available',label:'Disponibles'},
   ]);
-  function relayStageKey(o){
-    return o.status==='collected'?'collected':o.status==='available'?'available':'transit';
-  }
-  function relaySignal(o){
-    return num(o.incidents_ouverts)>0?'critical':
-      o.status==='available'&&(o.cash_pending||o.urgence==='haute'||o.urgence==='critique')?'warning':
-      o.status==='available'?'ready':'waiting';
-  }
-  function relayNext(o){
-    if(o.status==='collected')return 'Remise enregistrée';
-    if(o.status==='available'){
-      if(num(o.incidents_ouverts)>0)return 'INCIDENT À TRAITER';
-      if(o.cash_pending)return 'CASH À VÉRIFIER';
-      if(o.urgence==='critique'||o.urgence==='haute')return 'RETRAIT EN RETARD';
-      return 'PRÊT À REMETTRE';
-    }
-    return o.status==='shipped'?'Expédiée · à suivre':'En route · à contrôler';
-  }
-
-  // Affichage réservé au rôle admin par LiveKit : changement de présentation uniquement.
+  const remisesUrl=market=>BASE+queryString({view:'remises',market:/^[A-Z]{2}$/.test(String(market||''))?market:''});
   const relaySimToggle=()=>simToggle().replace('☑ Afficher la recette','Recette incluse')
     .replace('☐ Afficher la recette','Inclure la recette');
-
-  function relayActionRail(k){
-    const choices=[
-      {kind:'receive',focus:'shipments',label:'Réceptionner',description:'Contrôler les arrivages'},
-      {kind:'cash',focus:'cash',label:'Encaisser',description:'Confirmer les paiements',count:num(k.cash_a_encaisser)},
-      {kind:'collect',focus:'collect',label:'Remettre',description:'Attester les retraits'},
+  function relayMainNav(active) {
+    const items=[
+      {id:'flux',name:'Flux Relais',url:BASE},
+      {id:'remises',name:'Remises',url:remisesUrl('')},
+      {id:'incidents',name:'Incidents & SAV',url:BASE+queryString({view:'incidents',...simParams()})},
+      {id:'history',name:'Historique',url:listUrl('collected')},
     ];
-    return '<nav class="kmc-relay-action-rail" aria-label="Actions du Relais">'+choices.map(c=>
-      '<a class="kmc-relay-action-tile is-'+c.kind+'" data-relay-shortcut="'+c.focus+'" href="'+esc(executionUrl('',c.focus))+'">'+
-      '<span class="kmc-relay-action-symbol" aria-hidden="true">'+({receive:'↓',cash:'€',collect:'✓'}[c.kind])+'</span>'+
-      '<span class="kmc-relay-action-copy"><strong>'+esc(c.label)+'</strong><small>'+esc(c.description)+'</small></span>'+
-      (c.count===undefined?'':'<b class="kmc-relay-action-count">'+c.count+'</b>')+
-      '<span class="kmc-relay-action-arrow" aria-hidden="true">›</span></a>'
-    ).join('')+
-    '<a class="kmc-relay-archive-link" href="'+esc(listUrl('collected'))+'" data-cockpit-nav>Historique des retraits <span aria-hidden="true">↗</span></a></nav>';
+    return `<nav class="kmc-relay-main-nav" aria-label="Espaces de travail du Relais">
+      ${items.map(item=>`<a class="kmc-relay-main-tab${active===item.id?' is-active':''}"
+        href="${esc(item.url)}" ${item.id==='remises'?'':'data-cockpit-nav'}
+        ${active===item.id?'aria-current="page"':''}>${esc(item.name)}</a>`).join('')}
+    </nav>`;
   }
-
   function relayWorkboard(p,data){
     const k=data?.dash?.kpi||{};
-    const pending=Array.isArray(data?.queue?.orders)?data.queue.orders:[];
-    // La liste active n'inclut pas « collected » : une lecture courte de
-    // l'historique alimente la dernière colonne sans masquer les dossiers actifs.
-    const completed=Array.isArray(data?.recentCollected?.orders)
-      ?data.recentCollected.orders.filter(o=>o.status==='collected').slice(0,3):[];
-    const ids=new Set(pending.map(o=>String(o.id)));
-    const orders=[...pending.slice(0,12),...completed.filter(o=>!ids.has(String(o.id)))];
+    const orders=(Array.isArray(data?.queue?.orders)?data.queue.orders:[]).filter(o=>o.status!=='collected');
     const selected=String(p.sel||'');
-    const phase=(o,key)=>{
-      const at=WORK_STAGES.findIndex(x=>x.key===relayStageKey(o));
-      const index=WORK_STAGES.findIndex(x=>x.key===key);
-      // Une commande « collected » ne possède plus d'étape exécutable.
-      const finished=o.status==='collected';
-      const current=at===index&&!finished;
-      const done=index<at||(finished&&index===at);
-      const state=done?'complete':current?relaySignal(o):'waiting';
-      const label=done?(finished&&index===at?'✓ Remise enregistrée':'✓ Étape passée'):current?relayNext(o):'À venir';
-      const classes=`kmc-relay-work-stage is-${state}${current?' is-current':''}`;
-      const attrs=`data-relay-stage="${key}" data-relay-stage-signal="${state}" class="${classes}"`;
-      // Le clic sert uniquement à ouvrir une file canonique ou le dossier.
-      // Aucun scan, paiement ou remise ne s'exécute dans le cockpit de lecture.
-      if(!current)return `<td><div ${attrs}><strong>${esc(label)}</strong></div></td>`;
-      const incident=num(o.incidents_ouverts)>0;
-      const focus=o.status==='available'?(o.cash_pending?'cash':'collect'):'shipments';
-      const href=incident?previewUrl(o.id):executionUrl(o.market_code,focus);
-      const hint=incident?'Voir le dossier et les incidents'
-        :focus==='cash'?'Ouvrir la file d’encaissement'
-        :focus==='collect'?'Ouvrir les remises'
-        :'Examiner les arrivages';
-      return `<td><a href="${esc(href)}" ${incident?'data-cockpit-nav':''}
-        data-relay-stage-action="${incident?'inspect':focus}" ${attrs} aria-current="step">
-          <strong>${esc(label)}</strong><small>${esc(hint)} →</small></a></td>`;
-    };
-    const records=orders.map(o=>`<tr data-relay-workboard-order="${esc(o.id)}" class="${String(o.id)===selected?'is-selected':''}">
-      <td class="kmc-relay-work-identity"><a href="${esc(previewUrl(o.id))}" data-cockpit-nav class="kmc-relay-work-reference">${esc(o.reference)}</a>
+    function stage(o,key){
+      const ready=o.status==='available',market=o.market_code;
+      const ref=`data-relay-stage="${key}"`;
+      if(key==='transit'){
+        return ready?`<td><div class="kmc-relay-work-stage is-complete" ${ref} data-relay-stage-signal="complete"><strong>✓ Acheminement déclaré</strong></div></td>`:
+          `<td><a class="kmc-relay-work-stage is-waiting is-current" ${ref}
+            data-relay-stage-signal="waiting" href="${esc(previewUrl(o.id))}" data-cockpit-nav
+            aria-current="step"><strong>En route</strong><small>Voir la commande →</small></a></td>`;
+      }
+      if(key==='receive'){
+        return ready?`<td><div class="kmc-relay-work-stage is-neutral" ${ref} data-relay-stage-signal="reference">
+          <strong>À vérifier sur preuve</strong><small>Disponibilité déclarée</small></div></td>`:
+          `<td><a href="${esc(executionUrl(market,'shipments'))}" class="kmc-relay-work-stage is-action"
+             ${ref} data-relay-stage-action="shipments" data-relay-stage-signal="action">
+             <strong>Contrôler l'arrivage</strong><small>Réception importée / locale →</small></a></td>`;
+      }
+      if(key==='organize')return `<td><div class="kmc-relay-work-stage is-optional"
+        ${ref} data-relay-stage-signal="optional"><strong>${ready?'Rangement libre':'Après réception'}</strong>
+        <small>Emplacement facultatif · non attesté</small></div></td>`;
+      return ready?`<td><a href="${esc(remisesUrl(market))}" class="kmc-relay-work-stage is-ready is-current"
+        ${ref} data-relay-stage-signal="${o.cash_pending?'warning':'ready'}"
+        data-relay-stage-action="collect" aria-current="step"><strong>${o.cash_pending?'Paiement à vérifier':'Prêt au retrait'}</strong>
+        <small>Ouvrir le comptoir Remises →</small></a></td>`:
+        `<td><div class="kmc-relay-work-stage is-future" ${ref} data-relay-stage-signal="waiting">
+          <strong>À venir</strong><small>Après contrôle au relais</small></div></td>`;
+    }
+    const rows=orders.slice(0,20).map(o=>`<tr data-relay-workboard-order="${esc(o.id)}"
+      class="${String(o.id)===selected?'is-selected':''}">
+      <td class="kmc-relay-work-identity"><a class="kmc-relay-work-reference"
+        data-cockpit-nav href="${esc(previewUrl(o.id))}">${esc(o.reference)}</a>
         <small>${esc(o.client_nom||o.user_name||'Client')} · ${esc(o.relais_nom||'Relais')}</small>
         ${o.simulation_scope?'<span class="kmc-relay-work-simulation">RECETTE</span>':''}</td>
-      ${WORK_STAGES.map(x=>phase(o,x.key)).join('')}
+      ${WORK_STAGES.map(st=>stage(o,st.key)).join('')}
       <td class="kmc-relay-work-followup"><span>${num(o.incidents_ouverts)>0?'<b class="is-incident">'+num(o.incidents_ouverts)+' incident(s)</b>':'Aucun incident'}</span>
-        <span>${esc(paymentLabel(o))}</span>
-        <a href="${esc(previewUrl(o.id))}" data-cockpit-nav data-relay-preview="${esc(o.id)}">Dossier →</a></td></tr>`).join('');
-
-    // Les compteurs proviennent du serveur. Le Kanban conserve ses colonnes même
-    // quand la projection de commandes est vide : une file vide n'efface pas le parcours.
-    const stageMetrics=[
-      {key:'transit',count:num(k.en_transit),detail:'En transit',empty:'Aucun dossier en transit dans la file',href:listUrl('in_transit'),action:'Voir les acheminements'},
-      {key:'available',count:num(k.disponibles),detail:'Disponibles',empty:'Aucun retrait en attente',href:listUrl('available'),action:'Voir les retraits'},
-      {key:'collected',count:num(k.collectes_aujourd_hui),detail:"Retirés aujourd’hui",empty:'Aucun retrait dans la file',href:listUrl('collected'),action:'Consulter les remises'},
-    ];
-    const heads=stageMetrics.map((stage,i)=>`<th scope="col" data-relay-lane="${stage.key}">
-      <span class="kmc-relay-kanban-head"><strong>${esc(WORK_STAGES[i].label)}</strong>
-      <span class="kmc-relay-kanban-count" title="${esc(stage.detail)}">${stage.count}<small>${esc(stage.detail)}</small></span></span></th>`).join('');
-    const emptyRow=`<tr class="kmc-relay-kanban-empty-row"><td class="kmc-relay-kanban-empty-intro">
-      <strong>Aucune commande en cours dans cette file</strong>
-      <small>Le suivi reste accessible. Les preuves physiques sont traitées dans l’atelier.</small>
-    </td>${stageMetrics.map(stage=>`<td><div class="kmc-relay-kanban-empty-stage" data-relay-empty-lane="${stage.key}">
-      <span>${esc(stage.empty)}</span><a data-cockpit-nav href="${esc(stage.href)}">${esc(stage.action)} →</a>
-    </div></td>`).join('')}
-    <td class="kmc-relay-kanban-empty-followup"><a href="${esc(executionUrl('','shipments'))}">Contrôler les arrivages physiques ↗</a></td></tr>`;
-    const grid=`<div class="kmc-relay-work-scroll"><table class="kmc-relay-work-table" aria-label="Kanban Relais · parcours des commandes">
-      <thead><tr><th scope="col">Commande / client</th>${heads}<th scope="col">À vérifier</th></tr></thead>
-      <tbody>${orders.length?records:emptyRow}</tbody></table></div>`;
-    return `<section class="kmc-relay-work" aria-label="Poste de travail Relais">
-      <header class="kmc-relay-work-header"><div><span class="kmc-relay-work-eyebrow">KANBAN RELAIS · SUIVI DES COMMANDES</span>
-        <h2>${orders.length?'Dossiers en cours':'Aucun dossier actif dans cette file'}</h2>
-        <p>Une ligne par commande · étape actuelle signalée · preuves de réception et de remise dans l’atelier.</p></div>
-        <nav class="kmc-relay-work-filters" aria-label="Files de travail">
-          <a data-cockpit-nav href="${listUrl('available')}">À retirer <b>${num(k.disponibles)}</b></a>
-          <a data-cockpit-nav href="${listUrl('in_transit')}">En route <b>${num(k.en_transit)}</b></a>
-          <a data-cockpit-nav href="${listUrl('all')}">Toutes</a>
-        </nav></header>
+        <span>${esc(o.cash_pending?'Cash à vérifier':o.payment_status==='paid'?'Payé':'Paiement à consulter')}</span>
+        <a href="${esc(previewUrl(o.id))}" data-cockpit-nav>Dossier →</a></td></tr>`).join('');
+    const heads=WORK_STAGES.map(st=>`<th data-relay-lane="${st.key}" scope="col">
+      <strong>${esc(st.label)}</strong><small>${esc(st.key==='transit'?num(k.en_transit)+' en route':
+      st.key==='available'?num(k.disponibles)+' déclarés disponibles':
+      st.key==='receive'?'Contrôle physique':'Libre au relais')}</small></th>`).join('');
+    const empty=`<tr class="kmc-relay-kanban-empty-row">
+      <td class="kmc-relay-kanban-empty-intro"><strong>Flux sans commande active</strong>
+        <small>Les réceptions physiques se consultent indépendamment de cette file.</small></td>
+      ${WORK_STAGES.map(st=>`<td><div class="kmc-relay-kanban-empty-stage" data-relay-empty-lane="${st.key}">
+        ${st.key==='receive'?'<a href="'+esc(executionUrl('','shipments'))+'">Contrôler les arrivages →</a>':
+          st.key==='available'?'<a href="'+esc(remisesUrl(''))+'">Ouvrir les remises →</a>':
+          '<span>Aucune action dans cette file</span>'}</div></td>`).join('')}
+      <td><a data-cockpit-nav href="${esc(listUrl('all'))}">Tous les dossiers →</a></td>
+    </tr>`;
+    return `<section class="kmc-relay-work kmc-relay-flow" aria-label="Kanban des opérations du Relais">
+      <header class="kmc-relay-work-header"><div>
+        <span class="kmc-relay-work-eyebrow">PRÉPARATION · SUIVI DES COMMANDES</span>
+        <h2>Du colis annoncé à la disponibilité</h2>
+        <p>Le comptoir Remises reste accessible indépendamment de ce flux.</p></div>
+        <nav class="kmc-relay-work-filters" aria-label="Files opérationnelles">
+          <a data-cockpit-nav href="${esc(listUrl('in_transit'))}">En route <b>${num(k.en_transit)}</b></a>
+          <a data-cockpit-nav href="${esc(listUrl('available'))}">Disponibles <b>${num(k.disponibles)}</b></a>
+          <a href="${esc(executionUrl('','shipments'))}">Atelier réception →</a>
+        </nav>
+      </header>
       <div class="kmc-relay-work-layout${selected?' has-inspector':''}">
-        <div class="kmc-relay-work-list">${grid}
-          ${orders.length>=12?'<a class="kmc-relay-work-more" data-cockpit-nav href="'+listUrl('all')+'">Voir les autres dossiers →</a>':''}
+        <div class="kmc-relay-work-list"><div class="kmc-relay-work-scroll">
+          <table class="kmc-relay-work-table" aria-label="Kanban Relais · étapes et actions">
+          <thead><tr><th scope="col">Commande · client</th>${heads}<th scope="col">Suivi</th></tr></thead>
+          <tbody>${rows||empty}</tbody></table></div>
+          ${orders.length>20?'<a class="kmc-relay-work-more" href="'+esc(listUrl('all'))+'" data-cockpit-nav>Voir les autres dossiers →</a>':''}
         </div>
         ${renderPreview(p.sel,data?.detail)}
       </div>
-      ${relayActionRail(k)}
+      <footer class="kmc-relay-flow-footnote">Une commande ne prouve pas la réception d'un colis.
+        Le rangement est facultatif et ne bloque jamais la disponibilité.</footer>
     </section>`;
   }
-
-  function relayTabs() {
+  function relayTabs(){
     return [
-      { key:'suivi', label:'Suivi', href:BASE },
-      { key:'colis', label:'Colis', href:listUrl('all') },
-      { key:'execution', label:'Exécution', href:`${BASE}?view=execute` },
+      {key:'flux',label:'Flux Relais',href:BASE},
+      {key:'remises',label:'Remises',href:remisesUrl('')},
+      {key:'incidents',label:'Incidents & SAV',href:BASE+queryString({view:'incidents'})},
+      {key:'history',label:'Historique',href:listUrl('collected')},
     ];
   }
 
