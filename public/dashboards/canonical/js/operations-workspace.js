@@ -1626,8 +1626,8 @@
     rootNode.replaceChildren();
     const header=createHeader(doc,payload,context.mode);
     if(context.mode==='relay-execution') {
-      const back=header.querySelector('.kmc-workspace-nav-link');
-      if(back)back.href='/admin/relais-live'+(context.marketCode?'?market='+encodeURIComponent(context.marketCode):'');
+      // Le rail métier fournit déjà l'accès Flux Relais : pas de deuxième lien identique.
+      header.querySelector('.kmc-workspace-nav')?.remove();
     }
     if(context.focusOnly) {
       header.querySelector('.kmc-workspace-kicker').textContent='RELAIS · COMPTOIR';
