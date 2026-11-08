@@ -64,7 +64,7 @@ const RELAY_SHIPMENTS = {
   }],
 };
 
-async function mount(page, posts = []) {
+async function mount(page, posts = [], { shipments = RELAY_SHIPMENTS, focus = '' } = {}) {
   page.on('dialog', (dialog) => dialog.accept());
   await page.route(`${ORIGIN}/**`, async (route) => {
     const url = new URL(route.request().url());
@@ -82,14 +82,25 @@ async function mount(page, posts = []) {
     if (url.pathname === '/api/auth/me') return json(FX.auth_me);
     if (url.pathname === '/api/admin/dashboard/context') return json(FX.context);
     if (url.pathname === API) return json(WORKSPACE);
-    if (url.pathname === `${API}/relay-shipments`) return json(RELAY_SHIPMENTS);
+    if (url.pathname === `${API}/relay-shipments`) return json(shipments);
     if (url.pathname === CASH_API) return json(CASH);
     return route.fulfill({ status: 404, body: '' });
   });
-  await page.goto(`${ORIGIN}/admin/relais-live?view=execute`);
+  await page.goto(`${ORIGIN}/admin/relais-live?view=execute${focus?'&focus='+focus:''}`);
   await page.locator('select').first().selectOption({ label: 'KM · Comores' });
-  await expect(page.locator('h1')).toHaveText('Exécuter les opérations Relais');
+  await expect(page.locator('h1')).toHaveText('Poste de travail Relais');
 }
+
+
+const ARCHIVED_SHIPMENTS={
+  market:{code:'KM'},
+  shipments:[{
+    reference:'SHIP-KM-DONE',stage:'relay_received',receivable:false,
+    boxes:[{reference:'BOX-KM-DONE',orders:[{reference:'K-DONE',items:[
+      {order_item_id:ITEM_A,product:'Coque',expected:2,shipped:2,missing:0,received:2,incident_id:null,handed:2},
+    ]}]}],
+  }],
+};
 
 for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mobile', { width: 390, height: 844 }]]) {
   test.describe(`Relais live · Exécution — ${name}`, () => {
@@ -106,9 +117,37 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       }
       await expect(dock.locator('[data-relay-execution-jump="shipments"]')).toContainText('1');
       await expect(dock.locator('[data-relay-execution-jump="receive"]')).toContainText('1');
-      await expect(page.locator('[data-workspace-mode="relay-execution"] .kmc-workspace-metrics')).not.toContainText('Hub · Expédier');
+      await expect(page.locator('[data-workspace-mode="relay-execution"] .kmc-workspace-metrics')).toHaveCount(0);
       await dock.locator('[data-relay-execution-jump="collect"]').click();
       await expect(page).toHaveURL(/#relay-execution-collect/);
+      await expect(page.locator('#relay-execution-collect')).toBeVisible();
+      await expect(page.locator('#relay-execution-shipments')).toBeHidden();
+      await expect(dock.locator('[data-relay-execution-jump="collect"]')).toHaveAttribute('aria-current','true');
+      await expect(dock.locator('[data-relay-execution-jump="shipments"]')).not.toHaveAttribute('aria-current','true');
+    });
+
+
+    test('arrivages déjà réceptionnés : rien de déplié, historique disponible à la demande',async({page})=>{
+      await mount(page,[],{shipments:ARCHIVED_SHIPMENTS,focus:'shipments'});
+      await expect(page.locator('#relay-execution-shipments')).toBeVisible();
+      await expect(page.locator('.kmc-relay-work-done')).toContainText('Aucune réception importée à effectuer');
+      await expect(page.locator('[data-relay-execution-jump="shipments"]')).toContainText('0');
+      const archive=page.locator('[data-relay-shipment-archive]');
+      await expect(archive).toBeVisible();
+      await expect(archive).not.toHaveAttribute('open','');
+      await expect(page.locator('[data-relay-shipment="SHIP-KM-DONE"]')).toBeHidden();
+      await archive.locator('summary').first().click();
+      await expect(page.locator('[data-relay-shipment="SHIP-KM-DONE"]')).toBeVisible();
+      await expect(page.locator('[data-relay-shipment="SHIP-KM-DONE"]')).not.toHaveAttribute('open','');
+      await expect(page.locator('[data-workspace-action="relay-shipment-receive"]')).toHaveCount(0);
+    });
+
+    test('sélection directe par URL : seule l’opération demandée est visible',async({page})=>{
+      await mount(page,[],{focus:'collect'});
+      await expect(page.locator('#relay-execution-collect')).toBeVisible();
+      for(const key of ['shipments','cash','receive']) await expect(page.locator('#relay-execution-'+key)).toBeHidden();
+      await expect(page.locator('[data-relay-execution-jump="collect"]')).toHaveAttribute('aria-current','true');
+      await expect(page.locator('[data-workspace-action="collect"]')).toBeVisible();
     });
 
     test('actions Relais uniquement : aucune action Hub', async ({ page }) => {
@@ -125,10 +164,13 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
     test("encaisser, réceptionner le colis local, remettre (colis import : attestation d'expédition) : une mutation par clic sur les routes du marché", async ({ page }) => {
       const posts = [];
       await mount(page, posts);
+      await page.locator('[data-relay-execution-jump="cash"]').click();
       await page.locator('[data-workspace-action="confirm-cash"]').click();
       await expect.poll(() => posts.length).toBe(1);
+      await page.locator('[data-relay-execution-jump="receive"]').click();
       await page.locator('[data-workspace-action="receive"]').click();
       await expect.poll(() => posts.length).toBe(2);
+      await page.locator('[data-relay-execution-jump="collect"]').click();
       await page.locator('[data-workspace-action="collect"]').click();
       await expect.poll(() => posts.length).toBe(3);
       expect(posts.map((p) => p.path)).toEqual([
@@ -170,6 +212,7 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
     test('double clic : une seule mutation', async ({ page }) => {
       const posts = [];
       await mount(page, posts);
+      await page.locator('[data-relay-execution-jump="collect"]').click();
       await page.locator('[data-workspace-action="collect"]').dblclick();
       await page.waitForTimeout(400);
       expect(posts.filter((p) => p.path.endsWith('/collect'))).toHaveLength(1);

@@ -91,12 +91,12 @@
     const relayExec = mode === 'relay-execution';
     const execution = mode === 'execution' || relayExec;
     copy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', relayExec ? 'RELAIS LIVE · EXÉCUTION' : execution ? 'HUB LIVE · EXÉCUTION' : 'HUB & RELAIS'));
-    copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', relayExec ? 'Exécuter les opérations Relais' : execution ? 'Hub live · Dossiers' : 'Flux à traiter'));
+    copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', relayExec ? 'Poste de travail Relais' : execution ? 'Hub live · Dossiers' : 'Flux à traiter'));
     copy.appendChild(text(
       doc,
       'p',
       'kmc-workspace-subtitle',
-      `${payload.scope.code} · ${payload.scope.name} · ${relayExec ? 'encaisser, réceptionner, remettre au client' : execution ? 'suivre les PO, réceptionner, affecter et préparer les expéditions' : 'voir ce qui attend une action'}`
+      `${payload.scope.code} · ${payload.scope.name} · ${relayExec ? 'Réceptionner · Encaisser · Remettre — uniquement sur preuve' : execution ? 'suivre les PO, réceptionner, affecter et préparer les expéditions' : 'voir ce qui attend une action'}`
     ));
     header.appendChild(copy);
 
@@ -1288,6 +1288,30 @@
     return bar;
   }
 
+  // Côté Relais, une opération à la fois : les autres files restent dans le DOM,
+  // mais sont masquées (et inaccessibles au clavier) jusqu'à sélection explicite.
+  // Aucune requête ou mutation métier n'est déclenchée par cet aiguillage.
+  const RELAY_OPERATION_KEYS=Object.freeze(['shipments','cash','receive','collect']);
+  const isShipmentReceivable=shipment=>Boolean(shipment?.receivable && (shipment.boxes||[]).some(
+    box=>(box.orders||[]).some(order=>(order.items||[]).some(item=>item.received===null))
+  ));
+  function showRelayOperation(rootNode, key) {
+    if(!RELAY_OPERATION_KEYS.includes(key))return;
+    for(const candidate of RELAY_OPERATION_KEYS) {
+      const section=rootNode.querySelector('#relay-execution-'+candidate);
+      if(section) {
+        section.hidden=candidate!==key;
+        section.setAttribute('data-relay-operation-visible',String(candidate===key));
+      }
+      const link=rootNode.querySelector('[data-relay-execution-jump="'+candidate+'"]');
+      if(link) {
+        if(candidate===key)link.setAttribute('aria-current','true');
+        else link.removeAttribute('aria-current');
+      }
+    }
+    rootNode.setAttribute('data-relay-active-operation',key);
+  }
+
   function renderPayload(rootNode, ui, doc, payload, context) {
     rootNode.className = 'kmc-operations-workspace';
     rootNode.setAttribute('data-workspace-kind', 'hub-relay');
@@ -1297,7 +1321,7 @@
 
     // En Hub Live le dossier porte déjà les quatre indicateurs de sa projection
     // serveur. Ne pas répéter les métriques Relais ni repousser la file sous le pli.
-    if (context.mode !== 'execution') {
+    if (context.mode !== 'execution' && context.mode !== 'relay-execution') {
       const metrics = doc.createElement('section');
       metrics.className = 'kmc-workspace-metrics';
       rootNode.appendChild(metrics);
@@ -1314,26 +1338,36 @@
       renderPayload(rootNode, ui, doc, payload, context);
     }, views));
 
-    if (context.mode === 'relay-execution' && view === 'relay') {
+    if (context.mode==='relay-execution' && view==='relay') {
       const relay=payload.queues?.relay||{};
-      const shipments=Array.isArray(context.relayShipments?.shipments)?context.relayShipments.shipments.length:null;
-      const shortcuts=[
-        {key:'shipments',label:'Arrivages importés',count:shipments,icon:'↓'},
-        {key:'cash',label:'Encaisser',count:(relay.cash_pending||[]).length,icon:'€'},
-        {key:'receive',label:'Réception locale',count:(relay.to_receive||[]).filter(x=>x.local_receivable===true).length,icon:'⌂'},
-        {key:'collect',label:'Remise client',count:(relay.to_collect||[]).length,icon:'✓'},
+      const allShipments=context.relayShipments?.shipments;
+      const pending=Array.isArray(allShipments)?allShipments.filter(isShipmentReceivable).length:null;
+      const choices=[
+        {key:'shipments',label:'Arrivages',count:pending},
+        {key:'cash',label:'Encaisser',count:(relay.cash_pending||[]).length},
+        {key:'receive',label:'Réception locale',count:(relay.to_receive||[]).filter(x=>x.local_receivable===true).length},
+        {key:'collect',label:'Remise client',count:(relay.to_collect||[]).length},
       ];
+      if(!RELAY_OPERATION_KEYS.includes(context.activeRelayQueue)) {
+        context.activeRelayQueue=RELAY_OPERATION_KEYS.includes(context.initialFocus)?context.initialFocus:
+          (pending>0?'shipments':relay.to_collect?.length?'collect':
+          relay.cash_pending?.length?'cash':
+          relay.to_receive?.some(x=>x.local_receivable===true)?'receive':'shipments');
+      }
       const dock=doc.createElement('nav');
       dock.className='kmc-relay-execution-jumpbar';
-      dock.setAttribute('aria-label','Accès direct aux opérations du relais');
-      for(const item of shortcuts) {
+      dock.setAttribute('aria-label','Choisir une opération du relais');
+      for(const choice of choices) {
         const link=doc.createElement('a');
         link.className='kmc-relay-execution-jump';
-        link.href='#relay-execution-'+item.key;
-        link.setAttribute('data-relay-execution-jump',item.key);
-        link.appendChild(text(doc,'span','kmc-relay-execution-jump-icon',item.icon));
-        link.appendChild(text(doc,'strong','',item.label));
-        if(item.count!==null)link.appendChild(text(doc,'b','',String(item.count)));
+        link.href='#relay-execution-'+choice.key;
+        link.setAttribute('data-relay-execution-jump',choice.key);
+        link.appendChild(text(doc,'strong','',choice.label));
+        if(choice.count!==null)link.appendChild(text(doc,'b','',String(choice.count)));
+        link.addEventListener('click',()=>{
+          context.activeRelayQueue=choice.key;
+          showRelayOperation(rootNode,choice.key);
+        });
         dock.appendChild(link);
       }
       rootNode.appendChild(dock);
@@ -1395,8 +1429,8 @@
     if (view === 'relay') {
     renderRelayShipmentsSection(rootNode, ui, doc, context);
     renderOrderActionSection(rootNode, ui, doc, context, {
-      title: 'Relais · Encaisser',
-      description: 'Paiements cash en attente dans ce marché. La confirmation appelle l’autorité paiement + auto-colis existante.',
+      title: 'Encaisser les paiements',
+      description: 'Confirmer uniquement les paiements cash réellement reçus.',
       rows: payload.queues.relay.cash_pending,
       action: 'confirm-cash',
       jumpId:'relay-execution-cash',
@@ -1408,8 +1442,8 @@
 
     // Geste reserve au colis LOCAL expedie par le Hub (local_receivable, calcule serveur). Colis import : attestation d'expedition ci-dessus.
     renderParcelActionSection(rootNode, ui, doc, context, {
-      title: 'Relais · Réceptionner',
-      description: 'Colis local expédié par le Hub : réception par scan append-only. Les colis import se réceptionnent par attestation de l’expédition.',
+      title: 'Réception locale',
+      description: 'Réceptionner les colis locaux autorisés, avec preuve.',
       rows: payload.queues.relay.to_receive.filter(row => row.local_receivable === true),
       action: 'receive',
       jumpId:'relay-execution-receive',
@@ -1420,8 +1454,8 @@
     });
 
     renderParcelActionSection(rootNode, ui, doc, context, {
-      title: 'Relais · Distribuer',
-      description: 'Remise client par scan append-only du moteur logistique.',
+      title: 'Remettre au client',
+      description: 'Confirmer la remise physique de chaque colis.',
       rows: payload.queues.relay.to_collect,
       action: 'collect',
       jumpId:'relay-execution-collect',
@@ -1430,6 +1464,7 @@
       confirm: row => `Confirmer la remise de ${row.reference} au client ?`,
       empty: 'Aucun colis à remettre.',
     });
+      if(context.mode==='relay-execution')showRelayOperation(rootNode,context.activeRelayQueue);
     }
 
     if (view === 'inventory') renderInventorySection(rootNode, ui, doc, payload, context);
@@ -1530,8 +1565,8 @@
   // Relais live — contenu réellement expédié, déroulable Expédition → KOM-BOX → commandes → articles.
   // Le reçu n'est jamais prérempli : il n'existe que par attestation du relais, article par article.
   function renderRelayShipmentsSection(rootNode, ui, doc, context) {
-    const slot = createSection(rootNode, ui, 'Relais · Expéditions en route',
-      'Ce qui a réellement été expédié, carton par carton. La réception est constatée par le relais, jamais déduite d’un statut posé par le Hub.');
+    const slot = createSection(rootNode, ui, 'Arrivages importés',
+      'Choisissez une expédition à réceptionner. Les expéditions sans intervention sont dans les archives ci-dessous.');
     if(slot.parentElement)slot.parentElement.id='relay-execution-shipments';
     slot.setAttribute('data-relay-shipments', '');
     const data = context.relayShipments;
@@ -1543,13 +1578,27 @@
       slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucune expédition en route vers ce relais.'));
       return;
     }
-    data.shipments.forEach(shipment => {
-      const card = doc.createElement('details');
-      card.className = 'kmc-relay-shipment';
-      card.open = !slot.querySelector('details');
-      card.setAttribute('data-relay-shipment', shipment.reference);
-      card.appendChild(text(doc, 'summary', 'kmc-relay-shipment-title',
-        'Expédition ' + shipment.reference + ' · ' + shipment.stage));
+    const pending=data.shipments.filter(isShipmentReceivable);
+    const other=data.shipments.filter(shipment=>!isShipmentReceivable(shipment));
+    if(!pending.length) {
+      slot.appendChild(text(doc,'div','kmc-relay-work-done','Aucune réception importée à effectuer pour ce marché.'));
+    } else {
+      const info=text(doc,'p','kmc-relay-work-count',pending.length+' expédition(s) nécessitant une réception physique.');
+      slot.appendChild(info);
+    }
+    const archive=doc.createElement('details');
+    archive.className='kmc-relay-shipment-archive';
+    archive.setAttribute('data-relay-shipment-archive','');
+    archive.appendChild(text(doc,'summary','', 'Sans réception à effectuer · '+other.length+' expédition(s)'));
+    [...pending,...other].forEach(shipment => {
+      const actionable=isShipmentReceivable(shipment);
+      const card=doc.createElement('details');
+      card.className='kmc-relay-shipment';
+      card.open=actionable && pending[0]===shipment;
+      card.setAttribute('data-relay-shipment',shipment.reference);
+      card.setAttribute('data-relay-receivable',String(actionable));
+      card.appendChild(text(doc,'summary','kmc-relay-shipment-title',
+        shipment.reference+' · '+(actionable?'Réception à confirmer':shipment.stage==='relay_received'?'Réception attestée':'Aucune réception à effectuer')));
       // Même sac physique que celui fermé au Hub : son scan ouvre la commande
       // et le colis canonique, sans attester automatiquement la réception.
       const scanBar=doc.createElement('div');
@@ -1667,8 +1716,9 @@
         });
         card.appendChild(form);
       }
-      slot.appendChild(card);
+      (actionable?slot:archive).appendChild(card);
     });
+    if(other.length)slot.appendChild(archive);
   }
 
   function renderInventorySection(rootNode, ui, doc, payload, context) {
@@ -1777,6 +1827,7 @@
       mode: ['execution', 'relay-execution'].includes(options.mode) ? options.mode : 'pilot',
       user: options.user || null,
       initialFocus: options.mode==='relay-execution' ? String(new URLSearchParams(String(globalThis.location?.search||'')).get('focus')||'') : '',
+      activeRelayQueue:null,
       view: options.mode === 'execution' ? 'supply' : undefined,
       confirm: typeof options.confirm === 'function'
         ? options.confirm

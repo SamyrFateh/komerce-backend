@@ -726,3 +726,167 @@ body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-mode="relay-execution
   .kmc-domain-cockpit .kmc-relay-work-table{min-width:900px;}
   .kmc-domain-cockpit .kmc-relay-work-header h2{font-size:15px;}
 }
+
+
+/* Relais execution V4 — neutral command surface.
+   One operation visible at a time; only active action uses Komerce orange. */
+body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-mode="relay-execution"] {
+  --relay-neutral-text:#202833;--relay-neutral-muted:#636e7b;
+  --relay-neutral-border:#dfe4e8;--relay-neutral-surface:#fff;
+  --relay-neutral-orange:#e45b13;
+  gap:11px;color:var(--relay-neutral-text);
+  background:transparent;
+}
+body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-mode="relay-execution"] > .kmc-workspace-header {
+  background:#fff;border-color:#e2e6e9;
+  border-radius:8px;box-shadow:none;
+  min-height:0;padding:12px 16px;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-workspace-title {
+  color:#202833;font-size:clamp(20px,2.2vw,26px);
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-workspace-kicker {
+  color:#656c76;background:transparent;font-size:10px;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-workspace-kicker::before {
+  background:#e45b13;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-workspace-subtitle {
+  color:#6a7580;font-size:12.5px;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-workspace-nav-link {
+  color:#3d4852;border:1px solid #dfe4e8;
+  background:#fff;box-shadow:none;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-workspace-tabs {
+  margin-top:0;border-color:#e3e7eb;min-height:34px;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-workspace-tab {
+  color:#646f79;font-size:12px;font-weight:700;min-height:36px;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-workspace-tab.is-active {
+  color:#252d36;border-bottom-color:#e45b13;
+}
+body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-execution-jumpbar {
+  display:flex;flex-wrap:wrap;gap:6px;align-items:center;
+  padding:5px 0 12px;margin:0;border-bottom:1px solid #e5e9ec;
+}
+body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-execution-jump {
+  display:inline-flex;align-items:center;justify-content:center;
+  flex:1 1 150px;min-height:42px;padding:9px 12px;
+  gap:9px;border:1px solid #dde3e7;border-radius:7px;
+  background:#fff;box-shadow:none;color:#37424e;text-decoration:none;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-execution-jump:hover {
+  background:#f6f7f8;border-color:#adb6be;color:#242c34;
+}
+body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-execution-jump[aria-current="true"] {
+  background:#252d35;color:#fff;border-color:#252d35;
+  box-shadow:inset 0 -3px 0 #f36b1b;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-execution-jump strong {
+  font-size:13px;line-height:1.3;color:inherit;font-weight:750;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-execution-jump b {
+  border-radius:5px;min-width:23px;padding:3px 5px;
+  text-align:center;font-size:11px;
+  background:#eff2f4;color:#424d56;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-execution-jump[aria-current="true"] b {
+  background:rgba(255,255,255,.16);color:#fff;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-execution-jump-icon {
+  display:none;
+}
+body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-mode="relay-execution"] > .kmc-section {
+  border:1px solid #dfe4e8;border-radius:9px;box-shadow:none;
+  background:#fff;padding:15px 17px;
+  scroll-margin-top:24px;min-height:120px;
+}
+body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-mode="relay-execution"] > .kmc-section[hidden] {
+  display:none;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] > .kmc-section .kmc-section-header {
+  margin-bottom:12px;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] > .kmc-section .kmc-section-title {
+  color:#252d36;font-size:17px;font-weight:790;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] > .kmc-section .kmc-section-description {
+  font-size:12.5px;color:#66717e;max-width:900px;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-workspace-empty {
+  background:#f8f9fa;color:#5c6772;
+  border:1px dashed #dce1e5;padding:15px;border-radius:7px;
+  font-size:12.5px;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-workspace-action {
+  color:#fff;background:#2b3239;border-color:#2b3239;
+  border-radius:7px;font-weight:760;min-height:39px;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-workspace-action:hover {
+  background:#151a20;border-color:#151a20;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-workspace-action:focus-visible,
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-execution-jump:focus-visible {
+  outline:3px solid #e96d25;outline-offset:2px;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-work-done {
+  padding:19px 16px;border:1px solid #e1e6e9;border-radius:8px;
+  background:#f9fafb;color:#4e5963;font-size:13px;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-work-count {
+  color:#323c46;font-weight:750;font-size:13px;margin:2px 0 12px;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-shipment {
+  background:#fff;border:1px solid #dfe4e7;border-radius:7px;
+  padding:10px 12px;margin:6px 0;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-shipment[open] {
+  background:#fff;border-color:#b6c1c9;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-shipment>summary {
+  color:#26313b;font-size:13px;font-weight:770;
+  cursor:pointer;line-height:1.45;overflow-wrap:anywhere;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-shipment[data-relay-receivable="true"]>summary::after {
+  content:"  · À contrôler";font-size:11px;color:#a94a17;font-weight:700;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-shipment-archive {
+  margin:13px 0 0;border:1px solid #e3e7eb;border-radius:7px;
+  padding:10px 12px;background:#fafbfc;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-shipment-archive>summary {
+  color:#596570;font-size:12px;font-weight:730;cursor:pointer;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-shipment-archive .kmc-relay-shipment {
+  background:#fff;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-box {
+  color:#4b5562;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-box-title {
+  color:#252d36;font-size:13px;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-workspace-table {
+  font-size:12px;color:#26313b;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-workspace-table th {
+  background:#f6f8f9;color:#66717e;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-workspace-manual-reason {
+  background:#f8f9fa;border-color:#e3e7eb;
+}
+@media(max-width:720px) {
+  body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-execution-jumpbar {
+    display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+  .kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-execution-jump {
+    min-width:0;
+  }
+}
+@media(max-width:420px) {
+  body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-execution-jumpbar {
+    grid-template-columns:minmax(0,1fr);
+  }
+}
