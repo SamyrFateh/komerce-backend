@@ -1034,6 +1034,12 @@
   function sidebarItemVisible(item, user, adminContext) {
     const role = roleOf(user);
     if (!(item.roles || []).includes(role)) return false;
+    // Les rôles terrain ont une autorité serveur dédiée, indépendante des
+    // délégations commerciales d'un marché. Ne pas masquer leurs destinations
+    // réelles lorsque le contexte admin est projeté en mode "market".
+    // Seuls les guards backend décident de l'accès aux données et mutations.
+    if (item.id === 'action-center' && FIELD_ACTION_CENTER_ROLES.includes(role)) return true;
+    if (item.id === 'workspace-shipping' && ['agent_hub','agent_transitaire'].includes(role)) return true;
     return tabCapabilityGranted(item, adminContext);
   }
 
