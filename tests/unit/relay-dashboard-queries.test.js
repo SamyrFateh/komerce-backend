@@ -404,6 +404,21 @@ describe('couture incidents : visibilite relais de la chaine operationnelle', ()
     expect(sql).toContain('i.client_impact IN');
   });
 
+  it('SAV : la file des incidents unit signalements locaux et canoniques, chaque source scopée',async()=>{
+    db.query.mockResolvedValueOnce({rows:[]});
+    await relayQueries.getRelayOperationalIncidents(RELAY_USER);
+    const [sql,args]=db.query.mock.calls[0];
+    expect(sql).toContain('UNION ALL');
+    expect(sql).toContain('FROM incidents i');
+    expect(sql).toContain('FROM order_incidents li');
+    expect(sql.match(/o.relais_id = \$1/g)).toHaveLength(2);
+    expect(sql).toContain("'relay_report'::text AS source");
+    expect(sql).toContain("li.status IN ('open','in_progress')");
+    const afterLocal=sql.split('FROM order_incidents li')[1];
+    expect(afterLocal).not.toContain("o.status::text NOT IN ('cancelled','refunded','collected')");
+    expect(args).toEqual([7]);
+  });
+
   it('le KPI relais lit les deux sources avec le meme scope', async () => {
     db.query
       .mockResolvedValueOnce({ rows: [{
