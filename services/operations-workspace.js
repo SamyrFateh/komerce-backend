@@ -64,7 +64,7 @@ function publicMarket(market) {
   });
 }
 
-async function queryOrders(marketId, relaisId = null) {
+async function queryOrders(marketId, relaisId = null, includeSimulation = false) {
   const relayFilter = relaisId ? 'AND o.relais_id = $2' : '';
   const params = relaisId ? [marketId, relaisId] : [marketId];
   const { rows } = await db.query(
@@ -78,6 +78,7 @@ async function queryOrders(marketId, relaisId = null) {
        LEFT JOIN relais r ON r.id = o.relais_id
       WHERE o.market_id = $1
         ${relayFilter}
+        AND ${simulationClause('o', includeSimulation)}
         AND o.status NOT IN ('cancelled', 'refunded', 'collected')
       ORDER BY o.created_at ASC`,
     params
@@ -227,7 +228,7 @@ async function queryInventory(marketId) {
  * dans aucune table du schéma aujourd'hui. L'inventer aurait affiché un
  * chiffre qui a l'air réel sans l'être.
  */
-async function querySignals(marketId, relaisId = null) {
+async function querySignals(marketId, relaisId = null, includeSimulation = false) {
   const orderRelayFilter = relaisId ? 'AND o.relais_id = $2' : '';
   const relayIdentityFilter = relaisId ? 'AND r.id = $2' : '';
   const params = relaisId ? [marketId, relaisId] : [marketId];
@@ -244,7 +245,8 @@ async function querySignals(marketId, relaisId = null) {
         COUNT(DISTINCT o.relais_id) FILTER (WHERE o.status NOT IN ('cancelled', 'refunded', 'collected'))::int AS relais_actifs
        FROM orders o
       WHERE o.market_id = $1
-        ${orderRelayFilter}`,
+        ${orderRelayFilter}
+        AND ${simulationClause('o', includeSimulation)}`,
     params
   );
 
@@ -256,6 +258,7 @@ async function querySignals(marketId, relaisId = null) {
        LEFT JOIN relais r ON r.id = o.relais_id
       WHERE o.market_id = $1
         ${orderRelayFilter}
+        AND ${simulationClause('o', includeSimulation)}
         AND oi.status IN ('open', 'in_progress')
       ORDER BY
         CASE oi.priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 WHEN 'normal' THEN 2 ELSE 3 END,
@@ -278,6 +281,7 @@ async function querySignals(marketId, relaisId = null) {
        JOIN orders o ON o.relais_id = r.id
       WHERE r.market_id = $1
         ${relayIdentityFilter}
+        AND ${simulationClause('o', includeSimulation)}
         AND o.status NOT IN ('cancelled', 'refunded')
       GROUP BY r.id, r.name, r.island
      HAVING COUNT(*) FILTER (WHERE o.status NOT IN ('cancelled', 'refunded')) > 0
@@ -353,11 +357,11 @@ async function buildWorkspace(options = {}) {
   }
   const includeSimulation = await isE2eTestAccount(viewer && viewer.id);
   const [orders, parcels, distribution, inventoryState, signals] = await Promise.all([
-    queryOrders(market.id, relaisId),
+    queryOrders(market.id, relaisId, includeSimulation),
     queryParcels(market.id, includeSimulation, relaisId),
     isRelayAgent ? Promise.resolve({ parcels: [], unassigned: [] }) : queryDistribution(market.id),
     isRelayAgent ? Promise.resolve({ items: [], open_parcels: [] }) : queryInventory(market.id),
-    querySignals(market.id, relaisId),
+    querySignals(market.id, relaisId, includeSimulation),
   ]);
   const fullQueues = buildQueues(orders, parcels);
   // Ni données Hub, ni comptages d'autres relais dans le payload de l'agent.
