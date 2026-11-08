@@ -1629,6 +1629,41 @@ $$;
 
 
 --
+-- Name: guard_relay_product_return_receipt(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.guard_relay_product_return_receipt() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  request_row record;
+BEGIN
+  SELECT d.id,d.type,d.status,d.return_quantity,oi.qty_collected,
+         o.relais_id,o.simulation_scope
+    INTO request_row
+    FROM public.disputes d
+    JOIN public.orders o ON o.id=d.order_id
+    JOIN public.order_items oi
+      ON oi.id=d.return_order_item_id AND oi.order_id=o.id
+   WHERE d.id=NEW.request_id
+   FOR SHARE OF d,o,oi;
+  IF NOT FOUND
+     OR request_row.type IS DISTINCT FROM 'product_return'
+     OR request_row.status NOT IN ('open','processing')
+     OR request_row.relais_id IS DISTINCT FROM NEW.relay_id
+     OR request_row.simulation_scope IS NOT NULL
+     OR request_row.return_quantity IS DISTINCT FROM NEW.quantity
+     OR request_row.qty_collected < NEW.quantity
+  THEN
+    RAISE EXCEPTION 'RELAY_RETURN_RECEIPT_NOT_ELIGIBLE'
+      USING ERRCODE='23514';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+--
 -- Name: hub_box_bag_immutable(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -3076,6 +3111,19 @@ $$;
 --
 
 COMMENT ON FUNCTION public.prevent_referenced_relais_market_drift() IS 'F1.3 — un relais déjà référencé par une commande ne peut plus changer de Market.';
+
+
+--
+-- Name: prevent_relay_product_return_receipt_mutation(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.prevent_relay_product_return_receipt_mutation() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RAISE EXCEPTION 'RELAY_RETURN_RECEIPT_IMMUTABLE' USING ERRCODE='P0001';
+END;
+$$;
 
 
 --
@@ -10837,6 +10885,34 @@ COMMENT ON COLUMN public.relais.photo_url IS 'Photo publique permettant au clien
 
 
 --
+-- Name: relay_product_return_receipts; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.relay_product_return_receipts (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    request_id uuid NOT NULL,
+    relay_id uuid NOT NULL,
+    quantity integer NOT NULL,
+    condition_code text NOT NULL,
+    storage_zone text,
+    observation text NOT NULL,
+    received_by uuid NOT NULL,
+    received_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT relay_product_return_receipts_condition_code_check CHECK ((condition_code = ANY (ARRAY['sealed'::text, 'opened'::text, 'damaged'::text, 'unknown'::text]))),
+    CONSTRAINT relay_product_return_receipts_observation_check CHECK (((length(btrim(observation)) >= 10) AND (length(btrim(observation)) <= 1000))),
+    CONSTRAINT relay_product_return_receipts_quantity_check CHECK ((quantity > 0)),
+    CONSTRAINT relay_product_return_receipts_storage_zone_check CHECK ((storage_zone ~ '^[A-Z]$'::text))
+);
+
+
+--
+-- Name: TABLE relay_product_return_receipts; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.relay_product_return_receipts IS 'Preuve append-only de reprise physique SAV par relais : la zone A-Z reste facultative et non exclusive. Aucune disponibilité stock ou compensation financière implicite.';
+
+
+--
 -- Name: revoked_tokens; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -15013,6 +15089,22 @@ ALTER TABLE ONLY public.relais
 
 
 --
+-- Name: relay_product_return_receipts relay_product_return_receipts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.relay_product_return_receipts
+    ADD CONSTRAINT relay_product_return_receipts_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: relay_product_return_receipts relay_product_return_receipts_request_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.relay_product_return_receipts
+    ADD CONSTRAINT relay_product_return_receipts_request_id_key UNIQUE (request_id);
+
+
+--
 -- Name: revoked_tokens revoked_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -18120,6 +18212,13 @@ CREATE INDEX idx_relais_market ON public.relais USING btree (market_id);
 
 
 --
+-- Name: idx_relay_product_return_receipts_relay; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_relay_product_return_receipts_relay ON public.relay_product_return_receipts USING btree (relay_id, received_at DESC);
+
+
+--
 -- Name: idx_risk_provisions_active; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -19884,6 +19983,13 @@ CREATE TRIGGER trg_guard_new_order_item_catalog_hold BEFORE INSERT ON public.ord
 
 
 --
+-- Name: relay_product_return_receipts trg_guard_relay_product_return_receipt; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_guard_relay_product_return_receipt BEFORE INSERT ON public.relay_product_return_receipts FOR EACH ROW EXECUTE FUNCTION public.guard_relay_product_return_receipt();
+
+
+--
 -- Name: hub_purchase_allocations trg_hub_allocation_purchase_line; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -20035,6 +20141,13 @@ CREATE TRIGGER trg_immutable_catalog_sale_hold BEFORE DELETE OR UPDATE ON public
 --
 
 CREATE TRIGGER trg_immutable_hub_stage_note BEFORE DELETE OR UPDATE ON public.order_comments FOR EACH ROW WHEN ((old.hub_stage_key IS NOT NULL)) EXECUTE FUNCTION public.prevent_hub_stage_comment_changes();
+
+
+--
+-- Name: relay_product_return_receipts trg_immutable_relay_product_return_receipt; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_immutable_relay_product_return_receipt BEFORE DELETE OR UPDATE ON public.relay_product_return_receipts FOR EACH ROW EXECUTE FUNCTION public.prevent_relay_product_return_receipt_mutation();
 
 
 --
@@ -23378,6 +23491,30 @@ ALTER TABLE ONLY public.refunds
 
 ALTER TABLE ONLY public.relais
     ADD CONSTRAINT relais_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id);
+
+
+--
+-- Name: relay_product_return_receipts relay_product_return_receipts_received_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.relay_product_return_receipts
+    ADD CONSTRAINT relay_product_return_receipts_received_by_fkey FOREIGN KEY (received_by) REFERENCES public.users(id);
+
+
+--
+-- Name: relay_product_return_receipts relay_product_return_receipts_relay_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.relay_product_return_receipts
+    ADD CONSTRAINT relay_product_return_receipts_relay_id_fkey FOREIGN KEY (relay_id) REFERENCES public.relais(id);
+
+
+--
+-- Name: relay_product_return_receipts relay_product_return_receipts_request_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.relay_product_return_receipts
+    ADD CONSTRAINT relay_product_return_receipts_request_id_fkey FOREIGN KEY (request_id) REFERENCES public.disputes(id);
 
 
 --

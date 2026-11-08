@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 794,
-    "filesWithFullHeaders": 740,
+    "scannedCodeFiles": 795,
+    "filesWithFullHeaders": 741,
     "filesWithLiteHeaders": 54,
-    "filesWithAnyHeaders": 794,
+    "filesWithAnyHeaders": 795,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 2017,
-    "edges": 9911,
-    "dbTables": 235,
-    "doctrines": 781,
+    "graphNodes": 2022,
+    "edges": 9932,
+    "dbTables": 236,
+    "doctrines": 784,
     "impactAreas": 207,
-    "unresolvedCodeEdges": 948,
+    "unresolvedCodeEdges": 953,
     "dbWriteViaOverlapWarnings": 12,
     "multiWriterTables": 94
   },
@@ -42,7 +42,7 @@
     "market": 9,
     "economic-engine": 67,
     "sourcing": 37,
-    "logistics": 68,
+    "logistics": 69,
     "boutique": 21,
     "checkout": 3,
     "shared-cart": 25,
@@ -112,7 +112,7 @@
     "schema": 1,
     "route": 137,
     "entrypoint": 1,
-    "service": 476,
+    "service": 477,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -121,7 +121,7 @@
     "validators": 1
   },
   "byCriticality": {
-    "critical": 121,
+    "critical": 122,
     "medium": 154,
     "high": 455,
     "low": 63,
@@ -12157,6 +12157,7 @@
       ],
       "depends": [
         "services/relay-return-request-service.js",
+        "services/relay-product-return-intake-service.js",
         "db.js",
         "middleware/auth.js",
         "middleware/require-market-delegated-role.js",
@@ -12183,7 +12184,7 @@
         {
           "via": "dispute-mutation-service",
           "tables": [
-            "disputes; catalog-product-quality-service catalog_product_quality_notes"
+            "disputes; catalog-product-quality-service catalog_product_quality_notes; relay-product-return-intake-service relay_product_return_receipts"
           ]
         }
       ],
@@ -30450,6 +30451,64 @@
       "version": "2026-11"
     },
     {
+      "id": "services/relay-product-return-intake-service.js",
+      "file": "services/relay-product-return-intake-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "relay-product-return-intake-service",
+      "domain": "logistics",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "assigned_relay_agent",
+        "existing_dispute_id",
+        "observation",
+        "condition",
+        "optional_zone"
+      ],
+      "outputs": [
+        "one_immutable_physical_receipt_per_return_request"
+      ],
+      "depends": [
+        "db.js",
+        "disputes",
+        "orders",
+        "order_items",
+        "relay_product_return_receipts"
+      ],
+      "usedBy": [
+        "routes/relay-dashboard.js"
+      ],
+      "dbRead": [
+        "disputes",
+        "orders",
+        "order_items",
+        "products",
+        "relay_product_return_receipts"
+      ],
+      "dbWrite": [
+        "relay_product_return_receipts"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "owns_transaction_with_dispute_row_lock"
+      ],
+      "doctrine": [
+        "no_implicit_refund_no_sellable_stock",
+        "physical_custody_is_explicit",
+        "relay_scope_from_session"
+      ],
+      "impactAreas": [
+        "orders",
+        "logistics",
+        "dashboard",
+        "refunds"
+      ],
+      "version": "2026-11"
+    },
+    {
       "id": "services/relay-return-request-service.js",
       "file": "services/relay-return-request-service.js",
       "type": "file",
@@ -30485,7 +30544,8 @@
         "orders",
         "order_items",
         "products",
-        "disputes"
+        "disputes",
+        "relay_product_return_receipts"
       ],
       "dbWrite": [],
       "dbWriteVia": [
@@ -38955,9 +39015,9 @@
       "table": "supplier_payment_settlements"
     },
     {
-      "id": "db:disputes; catalog-product-quality-service catalog_product_quality_notes",
+      "id": "db:disputes; catalog-product-quality-service catalog_product_quality_notes; relay-product-return-intake-service relay_product_return_receipts",
       "type": "db-table",
-      "table": "disputes; catalog-product-quality-service catalog_product_quality_notes"
+      "table": "disputes; catalog-product-quality-service catalog_product_quality_notes; relay-product-return-intake-service relay_product_return_receipts"
     },
     {
       "id": "db:cart_shares",
@@ -39453,6 +39513,11 @@
       "id": "db:supplier_execution_events",
       "type": "db-table",
       "table": "supplier_execution_events"
+    },
+    {
+      "id": "db:relay_product_return_receipts",
+      "type": "db-table",
+      "table": "relay_product_return_receipts"
     },
     {
       "id": "db:shared_cart_saved_access",
@@ -42928,6 +42993,21 @@
       "id": "doctrine:receipt_regression_forbidden",
       "type": "doctrine",
       "doctrine": "receipt_regression_forbidden"
+    },
+    {
+      "id": "doctrine:no_implicit_refund_no_sellable_stock",
+      "type": "doctrine",
+      "doctrine": "no_implicit_refund_no_sellable_stock"
+    },
+    {
+      "id": "doctrine:physical_custody_is_explicit",
+      "type": "doctrine",
+      "doctrine": "physical_custody_is_explicit"
+    },
+    {
+      "id": "doctrine:relay_scope_from_session",
+      "type": "doctrine",
+      "doctrine": "relay_scope_from_session"
     },
     {
       "id": "doctrine:return_is_dispute_not_parallel_object",
@@ -62426,6 +62506,12 @@
     },
     {
       "from": "routes/relay-dashboard.js",
+      "to": "services/relay-product-return-intake-service.js",
+      "type": "depends",
+      "label": "services/relay-product-return-intake-service.js"
+    },
+    {
+      "from": "routes/relay-dashboard.js",
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
@@ -62516,9 +62602,9 @@
     },
     {
       "from": "routes/relay-dashboard.js",
-      "to": "db:disputes; catalog-product-quality-service catalog_product_quality_notes",
+      "to": "db:disputes; catalog-product-quality-service catalog_product_quality_notes; relay-product-return-intake-service relay_product_return_receipts",
       "type": "db-write-via",
-      "label": "disputes; catalog-product-quality-service catalog_product_quality_notes",
+      "label": "disputes; catalog-product-quality-service catalog_product_quality_notes; relay-product-return-intake-service relay_product_return_receipts",
       "via": "dispute-mutation-service"
     },
     {
@@ -92434,6 +92520,120 @@
       "label": "orders"
     },
     {
+      "from": "services/relay-product-return-intake-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/relay-product-return-intake-service.js",
+      "to": "disputes",
+      "type": "depends",
+      "label": "disputes"
+    },
+    {
+      "from": "services/relay-product-return-intake-service.js",
+      "to": "orders",
+      "type": "depends",
+      "label": "orders"
+    },
+    {
+      "from": "services/relay-product-return-intake-service.js",
+      "to": "order_items",
+      "type": "depends",
+      "label": "order_items"
+    },
+    {
+      "from": "services/relay-product-return-intake-service.js",
+      "to": "relay_product_return_receipts",
+      "type": "depends",
+      "label": "relay_product_return_receipts"
+    },
+    {
+      "from": "routes/relay-dashboard.js",
+      "to": "services/relay-product-return-intake-service.js",
+      "type": "uses",
+      "label": "routes/relay-dashboard.js"
+    },
+    {
+      "from": "services/relay-product-return-intake-service.js",
+      "to": "db:disputes",
+      "type": "db-read",
+      "label": "disputes"
+    },
+    {
+      "from": "services/relay-product-return-intake-service.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/relay-product-return-intake-service.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
+    },
+    {
+      "from": "services/relay-product-return-intake-service.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/relay-product-return-intake-service.js",
+      "to": "db:relay_product_return_receipts",
+      "type": "db-read",
+      "label": "relay_product_return_receipts"
+    },
+    {
+      "from": "services/relay-product-return-intake-service.js",
+      "to": "db:relay_product_return_receipts",
+      "type": "db-write",
+      "label": "relay_product_return_receipts"
+    },
+    {
+      "from": "services/relay-product-return-intake-service.js",
+      "to": "doctrine:no_implicit_refund_no_sellable_stock",
+      "type": "doctrine",
+      "label": "no_implicit_refund_no_sellable_stock"
+    },
+    {
+      "from": "services/relay-product-return-intake-service.js",
+      "to": "doctrine:physical_custody_is_explicit",
+      "type": "doctrine",
+      "label": "physical_custody_is_explicit"
+    },
+    {
+      "from": "services/relay-product-return-intake-service.js",
+      "to": "doctrine:relay_scope_from_session",
+      "type": "doctrine",
+      "label": "relay_scope_from_session"
+    },
+    {
+      "from": "services/relay-product-return-intake-service.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
+    },
+    {
+      "from": "services/relay-product-return-intake-service.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
+    },
+    {
+      "from": "services/relay-product-return-intake-service.js",
+      "to": "impact:dashboard",
+      "type": "impact",
+      "label": "dashboard"
+    },
+    {
+      "from": "services/relay-product-return-intake-service.js",
+      "to": "impact:refunds",
+      "type": "impact",
+      "label": "refunds"
+    },
+    {
       "from": "services/relay-return-request-service.js",
       "to": "db (transaction supplied)",
       "type": "depends",
@@ -92498,6 +92698,12 @@
       "to": "db:disputes",
       "type": "db-read",
       "label": "disputes"
+    },
+    {
+      "from": "services/relay-return-request-service.js",
+      "to": "db:relay_product_return_receipts",
+      "type": "db-read",
+      "label": "relay_product_return_receipts"
     },
     {
       "from": "services/relay-return-request-service.js",
@@ -116520,6 +116726,7 @@
       "purpose": null,
       "directDependsOn": [
         "services/relay-return-request-service.js",
+        "services/relay-product-return-intake-service.js",
         "db.js",
         "middleware/auth.js",
         "middleware/require-market-delegated-role.js",
@@ -116547,7 +116754,7 @@
         {
           "via": "dispute-mutation-service",
           "tables": [
-            "disputes; catalog-product-quality-service catalog_product_quality_notes"
+            "disputes; catalog-product-quality-service catalog_product_quality_notes; relay-product-return-intake-service relay_product_return_receipts"
           ]
         }
       ],
@@ -116565,7 +116772,7 @@
         "bootstrap/api-routes.js",
         "db:assignment_capability_ceiling",
         "db:assignment_memberships",
-        "db:disputes; catalog-product-quality-service catalog_product_quality_notes",
+        "db:disputes; catalog-product-quality-service catalog_product_quality_notes; relay-product-return-intake-service relay_product_return_receipts",
         "db:market_operating_assignments",
         "db:markets",
         "db:membership_capabilities",
@@ -116583,6 +116790,7 @@
         "middleware/require-market-delegated-role.js",
         "services/live-projection.js",
         "services/relay-dashboard-queries.js",
+        "services/relay-product-return-intake-service.js",
         "services/relay-return-request-service.js",
         "utils/logger.js"
       ]
@@ -134981,6 +135189,62 @@
         "services/relay-shipment-receipt.js"
       ]
     },
+    "services/relay-product-return-intake-service.js": {
+      "role": "relay-product-return-intake-service",
+      "domain": "logistics",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "disputes",
+        "orders",
+        "order_items",
+        "relay_product_return_receipts"
+      ],
+      "directUsedBy": [
+        "routes/relay-dashboard.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "disputes",
+        "orders",
+        "order_items",
+        "products",
+        "relay_product_return_receipts"
+      ],
+      "dbWrite": [
+        "relay_product_return_receipts"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "no_implicit_refund_no_sellable_stock",
+        "physical_custody_is_explicit",
+        "relay_scope_from_session"
+      ],
+      "impactAreas": [
+        "orders",
+        "logistics",
+        "dashboard",
+        "refunds"
+      ],
+      "mustCheck": [
+        "db:disputes",
+        "db:order_items",
+        "db:orders",
+        "db:products",
+        "db:relay_product_return_receipts",
+        "doctrine:no_implicit_refund_no_sellable_stock",
+        "doctrine:physical_custody_is_explicit",
+        "doctrine:relay_scope_from_session",
+        "impact:dashboard",
+        "impact:logistics",
+        "impact:orders",
+        "impact:refunds",
+        "routes/relay-dashboard.js"
+      ]
+    },
     "services/relay-return-request-service.js": {
       "role": "orders-product-return-request-service",
       "domain": "orders",
@@ -135004,7 +135268,8 @@
         "orders",
         "order_items",
         "products",
-        "disputes"
+        "disputes",
+        "relay_product_return_receipts"
       ],
       "dbWrite": [],
       "dbWriteVia": [
@@ -135031,6 +135296,7 @@
         "db:order_items",
         "db:orders",
         "db:products",
+        "db:relay_product_return_receipts",
         "doctrine:financial_authority_never_delegated",
         "doctrine:relay_scope_is_server_authority",
         "doctrine:return_is_dispute_not_parallel_object",
@@ -148158,6 +148424,36 @@
       "to": "db",
       "type": "depends",
       "label": "db"
+    },
+    {
+      "from": "services/relay-product-return-intake-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/relay-product-return-intake-service.js",
+      "to": "disputes",
+      "type": "depends",
+      "label": "disputes"
+    },
+    {
+      "from": "services/relay-product-return-intake-service.js",
+      "to": "orders",
+      "type": "depends",
+      "label": "orders"
+    },
+    {
+      "from": "services/relay-product-return-intake-service.js",
+      "to": "order_items",
+      "type": "depends",
+      "label": "order_items"
+    },
+    {
+      "from": "services/relay-product-return-intake-service.js",
+      "to": "relay_product_return_receipts",
+      "type": "depends",
+      "label": "relay_product_return_receipts"
     },
     {
       "from": "services/relay-return-request-service.js",
