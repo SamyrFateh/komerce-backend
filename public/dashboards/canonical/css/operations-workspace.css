@@ -1875,3 +1875,76 @@
   .kmc-hub-sourcing-details { grid-template-columns: minmax(0, 1fr); }
   .kmc-hub-sourcing-footer .kmc-workspace-action { width: 100%; }
 }
+
+
+/* Relais · Retours & SAV V1 — demande de retour, pas une validation financière. */
+[data-relay-return-requests] {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+[data-relay-return-requests] [hidden] { display: none; }
+[data-relay-return-requests] [data-relay-return-lookup] {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 0;
+}
+[data-relay-return-reference] {
+  flex: 1 1 260px;
+}
+[data-relay-return-requests] :is(input, select, textarea) {
+  min-width: 0;
+  box-sizing: border-box;
+  min-height: 42px;
+  border: 1px solid var(--kmc-line-strong, #c7d7e3);
+  border-radius: 9px;
+  background: #fff;
+  color: var(--kmc-navy, #172f4a);
+  padding: 9px 12px;
+  font: inherit;
+  font-size: 14px;
+}
+[data-relay-return-requests] :is(input, select, textarea):focus-visible {
+  outline: 2px solid var(--kmc-teal, #248a82);
+  outline-offset: 2px;
+}
+[data-relay-return-create] {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(110px, .4fr) minmax(0, 1fr);
+  gap: 14px;
+  padding: 17px;
+  border: 1px solid var(--kmc-line, #e0e9ee);
+  border-radius: 13px;
+  background: #f8fafc;
+}
+[data-relay-return-create] label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--kmc-navy, #1b344a);
+  font-weight: 700;
+  font-size: 13px;
+}
+[data-relay-return-create] :is(input, select, textarea) {
+  width: 100%;
+  font-weight: 500;
+}
+[data-relay-return-create] label:has(textarea) {
+  grid-column: 1 / -1;
+}
+[data-relay-return-create] button {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+[data-relay-return-feedback]:not(:empty) {
+  padding: 10px 13px;
+  border-left: 3px solid var(--kmc-teal, #248a82);
+  background: #f4f8fa;
+}
+@media (max-width: 820px) {
+  [data-relay-return-create] { grid-template-columns: minmax(0, 1fr); }
+  [data-relay-return-create] label:has(textarea), [data-relay-return-create] button { grid-column: 1; }
+  [data-relay-return-create] button { justify-self: stretch; }
+}
