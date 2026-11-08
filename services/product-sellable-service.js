@@ -174,7 +174,7 @@ async function resolveSellableUnit(dbClient, { productId, variantCombo = null, q
     throw e;
   }
 
-  if (product.catalog_quality_frozen || product.is_available !== true) {
+  if (product.catalog_quality_frozen === true || product.is_available === false) {
     const e = new Error('Produit temporairement indisponible à la vente (contrôle qualité).');
     e.status = 409; e.code = product.catalog_quality_frozen ? 'catalog_product_quality_frozen' : 'product_unavailable';
     throw e;
