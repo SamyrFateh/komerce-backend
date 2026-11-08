@@ -71,7 +71,7 @@
 
   const executionUrl=(market,focus='')=>{
     const code=String(market||'').trim().toUpperCase();
-    return BASE+queryString({view:'execute',market:/^[A-Z]{2}$/.test(code)?code:'',focus:/^(shipments|cash|receive|collect)$/.test(focus)?focus:''});
+    return BASE+queryString({view:'execute',market:/^[A-Z]{2}$/.test(code)?code:'',focus:/^(shipments|cash|receive|collect|returns)$/.test(focus)?focus:''});
   };
   // Flux de préparation et comptoir sont indépendants. Les statuts des commandes
   // n'attestent PAS un scan physique. Le rangement ne produit pas de statut métier.
@@ -274,8 +274,11 @@
             <a href="${esc(listUrl('all'))}" data-cockpit-nav>Rechercher une commande pour signaler un incident →</a></header>
           <div class="kmc-relay-work-scroll">${table(['Commande','Problème','Priorité','État','Dossier'],rows,
             {empty:'Aucun incident ouvert dans votre périmètre.'})}</div>
-          <p>Les remboursements, reprises de stock et décisions de réparation ne sont pas déclenchés ici.
-            Un retour produit commence par un signalement tracé.</p>
+          <div class="kmc-relay-returns-action">
+            <strong>Retour produit ou remarque qualité ?</strong>
+            <p>Ouvrez une demande sur l'article réellement remis. Un dossier n'atteste pas la reprise physique ni le remboursement.</p>
+            <a href="${esc(executionUrl('','returns'))}" data-relay-returns-link>Ouvrir les demandes de retour & SAV →</a>
+          </div>
         </section>`,
     };
   }
