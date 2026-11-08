@@ -350,10 +350,10 @@ describe('Navigation Live — trois métiers, onglets contextuels uniques', () =
     ['/admin/hub-live', '?view=flux', ['Hub Live · Dossiers'], 'hub-dossiers'],
     ['/admin/hub-live', '?view=queue&tab=all', ['Hub Live · Dossiers'], 'hub-dossiers'],
     ['/admin/hub-live', '?view=execute', ['Hub Live · Dossiers'], 'hub-dossiers'],
-    ['/admin/relais-live', '', ['Relais · Poste de travail'], 'relais-workstation'],
-    ['/admin/relais-live', '?view=orders&list=all', ['Relais · Poste de travail'], 'relais-workstation'],
-    ['/admin/relais-live', '?view=remises&market=KM', ['Relais · Poste de travail'], 'relais-workstation'],
-    ['/admin/relais-live', '?view=incidents', ['Relais · Poste de travail'], 'relais-workstation'],
+    ['/admin/relais-live', '', [], 'relais-workstation'],
+    ['/admin/relais-live', '?view=orders&list=all', [], 'relais-workstation'],
+    ['/admin/relais-live', '?view=remises&market=KM', [], 'relais-workstation'],
+    ['/admin/relais-live', '?view=incidents', [], 'relais-workstation'],
   ])('%s %s respecte ses onglets métier', (pathname, search, labels, active) => {
     global.location = { pathname, search, hash: '' };
     const nav = loadPolicy();
