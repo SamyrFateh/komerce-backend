@@ -48,13 +48,13 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 | Objet | Compte | Note |
 |---|---|---|
-| Tables | 229 | Vérifié sur le dump live Railway. |
+| Tables | 231 | Vérifié sur le dump live Railway. |
 | Vues | 21 | Vérifié sur le dump live Railway. |
 | ENUMs | 17 | Types métier présents dans le dump live Railway. |
-| Index | 523 | Performance + contraintes uniques |
-| Foreign keys | 448 | Cohérence relationnelle |
-| Fonctions | 124 | Fonctions présentes dans le dump live Railway. |
-| Triggers | 140 | Triggers présents dans le dump live Railway. |
+| Index | 528 | Performance + contraintes uniques |
+| Foreign keys | 455 | Cohérence relationnelle |
+| Fonctions | 127 | Fonctions présentes dans le dump live Railway. |
+| Triggers | 143 | Triggers présents dans le dump live Railway. |
 | Extensions | `pgcrypto`, `uuid-ossp` | UUID + chiffrement |
 
 ---
@@ -79,6 +79,12 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 ---
 
 ## 4. Tables par domaine
+
+| Objet | Rôle |
+|---|---|
+| `catalog_product_quality_notes` | Remarques qualité traçables (acteur, provenance Catalogue ou Relais, article remis, commentaire daté et immuable) ; migration 400 non encore vérifiée live. **Migration 400 — promue le 2026-11-08 (schema-promote, dump live verifie).** |
+| `catalog_product_sale_holds` | Décisions Catalogue centrales gel/dégel global d'une référence avec justification, acteur et historique ; garde des nouvelles commandes, migration 400 non encore vérifiée live. **Migration 400 — promue le 2026-11-08 (schema-promote, dump live verifie).** |
+
 
 ### 4.1 Logistique commande (7 tables)
 
@@ -483,20 +489,6 @@ Au-delà du code applicatif, la DB enforce elle-même plusieurs invariants :
 ---
 
 
-<!-- schema-pending
-object: catalog_product_quality_notes
-kind: table
-migration: 400
-section: ## 4. Tables par domaine
-role: Remarques qualité traçables (acteur, provenance Catalogue ou Relais, article remis, commentaire daté et immuable) ; migration 400 non encore vérifiée live.
--->
-<!-- schema-pending
-object: catalog_product_sale_holds
-kind: table
-migration: 400
-section: ## 4. Tables par domaine
-role: Décisions Catalogue centrales gel/dégel global d'une référence avec justification, acteur et historique ; garde des nouvelles commandes, migration 400 non encore vérifiée live.
--->
 
 ## 10. Règle de divergence schéma ↔ code ↔ doc
 
