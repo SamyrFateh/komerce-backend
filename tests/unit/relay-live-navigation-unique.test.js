@@ -24,7 +24,7 @@ describe('Relais Live — navigation unifiée', () => {
   test('le comptoir et l atelier métier offrent les mêmes liens de retour Relais', () => {
     const workspace = read('operations-workspace.js');
     expect(workspace).toContain("if(context.mode==='relay-execution') {\n      const nav=doc.createElement('nav');");
-    expect(workspace).toContain("if(back)back.href='/admin/relais-live'");
+    expect(workspace).toContain("header.querySelector('.kmc-workspace-nav')?.remove()");
     for (const label of ['Flux Relais', 'Remises', 'Incidents & SAV', 'Historique']) {
       expect(workspace).toContain("['" + label + "'");
     }
