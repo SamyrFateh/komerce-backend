@@ -80,7 +80,8 @@ test('Incidents : anomalies reliées au dossier et signalements du relais', () =
   expect(h).toContain('Emballage abîmé');
   expect(h).toContain('href="/admin/relais-live?view=order&amp;order=r-1&amp;from=incidents"');
   expect(h).toContain('Un dossier n’atteste pas la reprise physique ni le remboursement.');
-  expect(h).toContain('data-relay-returns-link');
+  expect(h).toContain('Demandes de retour réservées aux agents habilités du Relais.');
+  expect(read('relay-live.js')).toContain('data-relay-returns-link');
   expect(activeTab(h)).toBe('Incidents &amp; SAV');
 });
 
