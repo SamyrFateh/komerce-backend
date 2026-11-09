@@ -48,6 +48,17 @@ Operation : Create / Read / Update / Delete-Archive-Deprecate
 - [ ] Les tests lourds non reproductibles localement restent à la CI.
 - [ ] `npm run map:check` si reconstruction globale explicitement nécessaire.
 
+### Certification métier — si un PASS métier est revendiqué
+
+Ne pas cocher cette section pour une simple correction de code sans revendication de certification ; noter alors `NON APPLICABLE — aucune certification revendiquée` dans « Elements A REVOIR ».
+
+- [ ] Les tests techniques pertinents (positifs, négatifs, habilitations, idempotence) sont verts, avec run/SHA.
+- [ ] Le parcours métier complet a été exercé **par les vrais écrans Chromium sur staging**, sous les rôles concernés, sans mock d'API ni SQL seed d'états.
+- [ ] Les effets sont prouvés par readback **indépendant API + PostgreSQL**, sur les **mêmes références** (run_id / SHA / UUID / acteur / marché), avec état avant/après et traces anonymisées.
+- [ ] Toutes les cellules obligatoires sont `PASS`; les `SKIP`, `BLOCKED` et `NOT_PROVEN` ne sont pas annoncées comme certifiées.
+- [ ] Les gardes de staging (fixtures, isolation, cleanup, absence d'effets externes) sont prouvés avant mutation.
+- [ ] Les étapes précédemment certifiées sont conservées ; les non-régressions rejouées correspondent au périmètre réellement impacté. Le GO production reste séparé.
+
 ### Cloture autonome
 
 - [ ] Si les checks requis sont verts et la PR mergeable, l'agent merge sans demander une validation humaine supplementaire.
