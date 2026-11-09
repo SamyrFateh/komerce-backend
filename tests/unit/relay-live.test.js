@@ -18,5 +18,9 @@ test('Relais live : KPI, file et détail dans une seule vue, mêmes endpoints, l
   expect(src).toContain('Articles, incidents et chronologie');
   expect(src).toContain('data-relay-action="execute"');
   expect(src).toContain('Ce dossier est indisponible ou hors de votre périmètre.');
-  expect(src).not.toMatch(/method:\s*'(POST|PUT|PATCH|DELETE)'/);
+  // Seule mutation locale du cockpit : signalement via le writer serveur autorisé.
+  expect(src).toContain("method:'POST'");
+  expect(src).toContain('data-relay-incident-form');
+  expect(src).not.toMatch(/method:\\s*'(PUT|PATCH|DELETE)'/);
+  expect(src).toContain("relayViewer=options?.user||null");
 });

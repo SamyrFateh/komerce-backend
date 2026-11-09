@@ -17,11 +17,6 @@ on:
         type: choice
         default: KM
         options: [KM, CM, CG]
-      allow_distribution:
-        description: 'autorise la repartition automatique (agit sur TOUT le marche KM, pas seulement la fixture)'
-        required: false
-        type: boolean
-        default: false
       confirmation:
         description: 'Saisir exactement RUN-HTTP-CLICKS'
         required: true
@@ -47,8 +42,11 @@ jobs:
       EXPECTED_RAILWAY_ENVIRONMENT: staging
       DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
       E2E_PROOF_RUN8: ${{ inputs.run8 }}
+      HUB_V1_CERTIFICATION_RUN: ${{ inputs.run8 }}
+      HUB_V1_E2E_APPLY_MODE: approved
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
       E2E_CLICKS_MARKET: ${{ inputs.market }}
-      E2E_CLICKS_ALLOW_DISTRIBUTION: ${{ inputs.allow_distribution && '1' || '0' }}
+      E2E_CLICKS_ALLOW_DISTRIBUTION: '0'
       E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
       E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
       E2E_AGENT_HUB_EMAIL: ${{ secrets.E2E_AGENT_HUB_EMAIL }}
@@ -82,6 +80,10 @@ jobs:
         env:
           STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
         run: node scripts/recette/resolve-staging-deploy-pin.js
+      - name: HARD HOLD before all Chromium business clicks on staging
+        run: |
+          test -n "$HUB_V1_CERTIFICATION_RUN"
+          node scripts/recette/hub-v1-staging-transactional-preflight.js
       - run: npx playwright install --with-deps chromium
       - name: Clics Chromium
         run: npx playwright test --config=playwright.hub-v1-clicks.config.js

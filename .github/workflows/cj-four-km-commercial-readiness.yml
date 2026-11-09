@@ -1,0 +1,52 @@
+# The audit never mutates business data. Owner-only exact-title issue trigger.
+name: CJ four KM commercial readiness — read only
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: read
+concurrency:
+  group: komerce-cj-four-km-commercial-readonly
+  cancel-in-progress: false
+jobs:
+  workpack:
+    name: Four CJ real products — editorial, SOI, media, customs and KM pricing workpack
+    if: >-
+      github.repository == 'SamyrFateh/komerce-backend' &&
+      github.actor == github.repository_owner &&
+      github.event.issue.user.login == github.repository_owner &&
+      github.event.issue.title == '[staging-op] cj-four-km-commercial-readiness-readonly'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    env:
+      GITHUB_ACTIONS: 'true'
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      CJ_FOUR_COMMERCIAL_AUDIT_APPROVED: '1'
+      EXPECTED_RAILWAY_ENVIRONMENT: staging
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      KOMERCE_STAGING_RESET_DB_PIN: ${{ vars.STAGING_DB_PIN }}
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      PGOPTIONS: '-c default_transaction_read_only=on'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Verify staging target identity
+        run: node scripts/recette/target-guard.js
+      - name: Run commercial readiness audit without any mutation
+        run: node scripts/recette/cj-four-km-commercial-readiness.js
+      - name: Preserve exact blockers and evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cj-four-km-readiness-${{ github.run_id }}
+          path: test-results/cj-four-km-commercial-readiness/report.json
+          retention-days: 21
+          if-no-files-found: warn

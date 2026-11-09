@@ -392,10 +392,8 @@
       list.appendChild(item);
     });
     card.appendChild(list);
-    const docLink = el(doc, 'a', 'kmc-cockpit-principle-link', 'Voir la documentation \u2197');
-    docLink.href = '/admin/docs/pricing-doctrine';
-    docLink.target = '_blank';
-    card.appendChild(docLink);
+    // Pas de lien vers /admin/docs/pricing-doctrine : aucune route réelle ne le sert.
+    // Garder la doctrine affichée dans cette carte plutôt qu'un cul-de-sac 404.
     return card;
   }
 

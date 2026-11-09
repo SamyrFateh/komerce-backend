@@ -60,7 +60,6 @@
       label: 'Opérations',
       spaces: Object.freeze([
         Object.freeze({ id: 'operations-overview', label: 'Vue d’ensemble', href: '/admin/operations', roles: Object.freeze(['admin', 'market_operator']) }),
-        Object.freeze({ id: 'relais-execution', label: 'Relais · Cash & dépôts', href: '/admin/relais-live?view=execute', roles: Object.freeze(['market_operator']) }),
         Object.freeze({ id: 'shipping-customs-workspace', label: 'Expéditions & Douane', href: '/admin/workspaces/shipping-customs', roles: Object.freeze(['admin', 'agent_hub', 'agent_transitaire', 'market_operator']) }),
         Object.freeze({ id: 'purchasing-workspace', label: 'Achats fournisseurs', href: '/admin/workspaces/purchasing', roles: Object.freeze(['admin']) }),
       ]),
@@ -83,7 +82,6 @@
       spaces: Object.freeze([
         Object.freeze({ id: 'finance-overview', label: 'Vue d’ensemble', href: '/admin/finance', roles: Object.freeze(['admin', 'market_operator']) }),
         Object.freeze({ id: 'accounting-workspace', label: 'Comptabilité', href: '/admin/workspaces/accounting', roles: Object.freeze(['admin', 'finance', 'market_operator']) }),
-        Object.freeze({ id: 'cash-deposits', label: 'Cash & dépôts', href: '/admin/relais-live?view=execute', roles: Object.freeze(['finance']) }),
       ]),
     }),
   ]);
@@ -912,7 +910,6 @@
       label: 'Opérations',
       items: Object.freeze([
         Object.freeze({ id: 'flow-operations', label: 'Vue opérations', href: '/admin/operations', roles: ['admin', 'market_operator'], capability: 'operations.read', surfaces: ['operations'] }),
-        Object.freeze({ id: 'workspace-relais-exec', label: 'Relais · Cash & dépôts', href: '/admin/relais-live?view=execute', roles: ['market_operator'], capability: 'operations.read', surfaces: [] }),
         Object.freeze({ id: 'workspace-shipping', label: 'Expéditions & Douane', href: '/admin/workspaces/shipping-customs', roles: ['admin', 'agent_hub', 'agent_transitaire', 'market_operator'], capability: 'operations.read', surfaces: ['shipping-customs-workspace'] }),
 
         Object.freeze({ id: 'workspace-purchasing', label: 'Achats fournisseurs', href: '/admin/workspaces/purchasing', roles: ['admin'], surfaces: ['purchasing-workspace'] }),
@@ -924,7 +921,6 @@
       items: Object.freeze([
         Object.freeze({ id: 'flow-finance', label: 'Vue finance', href: '/admin/finance', roles: ['admin', 'market_operator'], capability: 'finance.read', surfaces: ['finance'] }),
         Object.freeze({ id: 'workspace-accounting', label: 'Comptabilité', href: '/admin/workspaces/accounting', roles: ['admin', 'finance', 'market_operator'], capability: 'finance.read', surfaces: ['accounting-workspace'] }),
-        Object.freeze({ id: 'workspace-cash', label: 'Cash & dépôts', href: '/admin/relais-live?view=execute', roles: ['finance'], surfaces: [] }),
       ]),
     }),
     Object.freeze({
@@ -1034,6 +1030,10 @@
   function sidebarItemVisible(item, user, adminContext) {
     const role = roleOf(user);
     if (!(item.roles || []).includes(role)) return false;
+    // Les agents terrain possèdent leur propre garde serveur /api/agent/action-center.
+    // Une délégation commerciale de marché n'est pas l'autorité de cette page.
+    if (item.id === 'action-center' && FIELD_ACTION_CENTER_ROLES.includes(role)) return true;
+    if (item.id === 'workspace-shipping' && ['agent_hub', 'agent_transitaire'].includes(role)) return true;
     return tabCapabilityGranted(item, adminContext);
   }
 
@@ -1156,10 +1156,9 @@
       return [{ id: 'hub-dossiers', label: 'Hub Live · Dossiers', href: '/admin/hub-live?view=execute' }];
     }
     if (domainId === 'live' && String(global.location?.pathname || '') === '/admin/relais-live') {
-      return [
-        { id: 'relais-suivi', label: 'Suivi', href: '/admin/relais-live' },
-        { id: 'relais-colis', label: 'Colis', href: '/admin/relais-live?view=orders&list=all' },
-      ];
+      // Seul point d'entrée shell ; les quatre espaces métier sont gérés dans
+      // le cockpit Relais (Flux / Remises / Incidents / Historique).
+      return []; // Le rail Flux / Remises / Incidents / Historique vit dans le poste Relais.
     }
     const local = LOCAL_TABS[domainId];
     if (local) {
@@ -1185,7 +1184,7 @@
       return 'sourcing-live';
     if (domainId === 'live' && path === '/admin/hub-live') return 'hub-dossiers';
     if (domainId === 'live' && path === '/admin/relais-live') {
-      return search.get('view') === 'orders' && search.get('list') === 'all' || search.get('view') === 'order' && search.get('from') === 'all' ? 'relais-colis' : 'relais-suivi';
+      return 'relais-workstation';
     }
     if (domainId === 'pricing') {
       if (hash && ['pricing-products', 'pricing-costs', 'pricing-strategy'].includes(hash)) return hash;

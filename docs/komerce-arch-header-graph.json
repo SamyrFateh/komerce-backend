@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 792,
-    "filesWithFullHeaders": 738,
+    "scannedCodeFiles": 795,
+    "filesWithFullHeaders": 741,
     "filesWithLiteHeaders": 54,
-    "filesWithAnyHeaders": 792,
+    "filesWithAnyHeaders": 795,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 2006,
-    "edges": 9857,
-    "dbTables": 232,
-    "doctrines": 775,
+    "graphNodes": 2022,
+    "edges": 9932,
+    "dbTables": 236,
+    "doctrines": 784,
     "impactAreas": 207,
-    "unresolvedCodeEdges": 943,
+    "unresolvedCodeEdges": 953,
     "dbWriteViaOverlapWarnings": 12,
     "multiWriterTables": 94
   },
@@ -36,13 +36,13 @@
     "auth": 14,
     "market-delegation": 36,
     "platform-ops": 2,
-    "catalog": 136,
+    "catalog": 137,
     "admin-dashboard": 39,
     "decision-signals": 14,
     "market": 9,
     "economic-engine": 67,
     "sourcing": 37,
-    "logistics": 68,
+    "logistics": 69,
     "boutique": 21,
     "checkout": 3,
     "shared-cart": 25,
@@ -60,7 +60,7 @@
     "market-control-plane": 5,
     "settlement": 2,
     "business-rules": 1,
-    "orders": 36,
+    "orders": 37,
     "documents": 15,
     "auth-identity": 11,
     "operations": 11,
@@ -112,7 +112,7 @@
     "schema": 1,
     "route": 137,
     "entrypoint": 1,
-    "service": 474,
+    "service": 477,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -121,7 +121,7 @@
     "validators": 1
   },
   "byCriticality": {
-    "critical": 119,
+    "critical": 122,
     "medium": 154,
     "high": 455,
     "low": 63,
@@ -5885,7 +5885,8 @@
       "depends": [
         "middleware/auth.js",
         "middleware/require-catalog-global-authority.js",
-        "services/catalog-workspace.js"
+        "services/catalog-workspace.js",
+        "services/catalog-product-quality-service.js"
       ],
       "usedBy": [
         "bootstrap/api-routes.js"
@@ -12155,6 +12156,8 @@
         "side_effects"
       ],
       "depends": [
+        "services/relay-return-request-service.js",
+        "services/relay-product-return-intake-service.js",
         "db.js",
         "middleware/auth.js",
         "middleware/require-market-delegated-role.js",
@@ -12177,7 +12180,14 @@
         "order_comments",
         "order_incidents"
       ],
-      "dbWriteVia": [],
+      "dbWriteVia": [
+        {
+          "via": "dispute-mutation-service",
+          "tables": [
+            "disputes; catalog-product-quality-service catalog_product_quality_notes; relay-product-return-intake-service relay_product_return_receipts"
+          ]
+        }
+      ],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -14628,6 +14638,7 @@
       ],
       "dbRead": [
         "business_rules",
+        "catalog_product_sale_holds",
         "catalog_media",
         "product_attributes",
         "product_content_profile",
@@ -14706,6 +14717,65 @@
         "economic-engine"
       ],
       "version": "2026-09"
+    },
+    {
+      "id": "services/catalog-product-quality-service.js",
+      "file": "services/catalog-product-quality-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "catalog-product-quality-hold-service",
+      "domain": "catalog",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "global_catalog_admin",
+        "product_ref",
+        "note",
+        "freeze/release decision"
+      ],
+      "outputs": [
+        "append-only quality note",
+        "sale hold state and SAV signals"
+      ],
+      "depends": [
+        "db.js"
+      ],
+      "usedBy": [
+        "routes/admin-catalog-workspace.js",
+        "services/catalog-workspace.js",
+        "services/relay-return-request-service.js"
+      ],
+      "dbRead": [
+        "products",
+        "catalog_product_sale_holds",
+        "catalog_product_quality_notes",
+        "disputes",
+        "orders",
+        "order_items"
+      ],
+      "dbWrite": [
+        "catalog_product_sale_holds",
+        "catalog_product_quality_notes"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "explicit"
+      ],
+      "doctrine": [
+        "return_signal_not_automatic_freeze",
+        "catalog_global_authority",
+        "freeze_does_not_change_committed_orders"
+      ],
+      "impactAreas": [
+        "catalog",
+        "checkout",
+        "orders",
+        "product-discovery",
+        "admin-dashboard"
+      ],
+      "version": "2026-11"
     },
     {
       "id": "services/catalog-product-read-cutover-trial.js",
@@ -15152,6 +15222,7 @@
         "routes/products.js"
       ],
       "dbRead": [
+        "catalog_product_sale_holds",
         "catalog_media",
         "markets",
         "product_market_exposure",
@@ -15654,6 +15725,7 @@
       "depends": [
         "db",
         "utils/rules.js",
+        "services/catalog-product-quality-service.js",
         "services/product-admin-service.js",
         "services/catalog-approval.js",
         "services/catalog-overrides.js",
@@ -15665,6 +15737,10 @@
         "routes/admin-catalog-workspace.js"
       ],
       "dbRead": [
+        "catalog_product_sale_holds",
+        "catalog_product_quality_notes",
+        "disputes",
+        "order_items",
         "products",
         "sourcing_candidates",
         "boutique_categories",
@@ -18095,7 +18171,8 @@
         "none (executor fourni par l'appelant)"
       ],
       "usedBy": [
-        "services/market-delegation-client-case-service.js"
+        "services/market-delegation-client-case-service.js",
+        "services/relay-return-request-service.js"
       ],
       "dbRead": [
         "disputes",
@@ -24577,6 +24654,7 @@
         "services/order-checkout-service.js"
       ],
       "dbRead": [
+        "catalog_product_sale_holds",
         "product_variants",
         "products",
         "shared_cart_items",
@@ -28256,6 +28334,7 @@
         "routes/admin-product-360.js"
       ],
       "dbRead": [
+        "catalog_product_sale_holds",
         "products",
         "product_variants",
         "product_skus",
@@ -28470,6 +28549,7 @@
         "services/order-checkout-item-resolution.js"
       ],
       "dbRead": [
+        "catalog_product_sale_holds",
         "catalog_media",
         "product_sku_media",
         "product_variants",
@@ -30371,6 +30451,128 @@
       "version": "2026-11"
     },
     {
+      "id": "services/relay-product-return-intake-service.js",
+      "file": "services/relay-product-return-intake-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "relay-product-return-intake-service",
+      "domain": "logistics",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "assigned_relay_agent",
+        "existing_dispute_id",
+        "observation",
+        "condition",
+        "optional_zone"
+      ],
+      "outputs": [
+        "one_immutable_physical_receipt_per_return_request"
+      ],
+      "depends": [
+        "db.js",
+        "disputes",
+        "orders",
+        "order_items",
+        "relay_product_return_receipts"
+      ],
+      "usedBy": [
+        "routes/relay-dashboard.js"
+      ],
+      "dbRead": [
+        "disputes",
+        "orders",
+        "order_items",
+        "products",
+        "relay_product_return_receipts"
+      ],
+      "dbWrite": [
+        "relay_product_return_receipts"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "owns_transaction_with_dispute_row_lock"
+      ],
+      "doctrine": [
+        "no_implicit_refund_no_sellable_stock",
+        "physical_custody_is_explicit",
+        "relay_scope_from_session"
+      ],
+      "impactAreas": [
+        "orders",
+        "logistics",
+        "dashboard",
+        "refunds"
+      ],
+      "version": "2026-11"
+    },
+    {
+      "id": "services/relay-return-request-service.js",
+      "file": "services/relay-return-request-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "orders-product-return-request-service",
+      "domain": "orders",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated_relay_actor",
+        "order_reference",
+        "purchased_order_item_id",
+        "return_quantity",
+        "return_reason"
+      ],
+      "outputs": [
+        "relay_scoped_eligible_lines_and_dispute_return_requests"
+      ],
+      "depends": [
+        "db (transaction supplied)",
+        "services/dispute-mutation-service.js",
+        "services/catalog-product-quality-service.js",
+        "orders",
+        "order_items",
+        "products"
+      ],
+      "usedBy": [
+        "routes/relay-dashboard.js"
+      ],
+      "dbRead": [
+        "orders",
+        "order_items",
+        "products",
+        "disputes",
+        "relay_product_return_receipts"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [
+        {
+          "via": "dispute-mutation-service",
+          "tables": [
+            "disputes"
+          ]
+        }
+      ],
+      "dbTxn": [
+        "owns_request_transaction; queries_accept_executor"
+      ],
+      "doctrine": [
+        "return_is_dispute_not_parallel_object",
+        "relay_scope_is_server_authority",
+        "financial_authority_never_delegated"
+      ],
+      "impactAreas": [
+        "orders",
+        "logistics",
+        "dashboard",
+        "refunds"
+      ],
+      "version": "2026-11"
+    },
+    {
       "id": "services/relay-shipment-receipt.js",
       "file": "services/relay-shipment-receipt.js",
       "type": "file",
@@ -30609,6 +30811,7 @@
         "products",
         "relais",
         "scan_events",
+        "scans",
         "users"
       ],
       "dbWrite": [
@@ -38812,6 +39015,11 @@
       "table": "supplier_payment_settlements"
     },
     {
+      "id": "db:disputes; catalog-product-quality-service catalog_product_quality_notes; relay-product-return-intake-service relay_product_return_receipts",
+      "type": "db-table",
+      "table": "disputes; catalog-product-quality-service catalog_product_quality_notes; relay-product-return-intake-service relay_product_return_receipts"
+    },
+    {
       "id": "db:cart_shares",
       "type": "db-table",
       "table": "cart_shares"
@@ -38952,6 +39160,11 @@
       "table": "catalog_media_recovery_audit"
     },
     {
+      "id": "db:catalog_product_sale_holds",
+      "type": "db-table",
+      "table": "catalog_product_sale_holds"
+    },
+    {
       "id": "db:product_attributes",
       "type": "db-table",
       "table": "product_attributes"
@@ -38970,6 +39183,11 @@
       "id": "db:product_sku_media",
       "type": "db-table",
       "table": "product_sku_media"
+    },
+    {
+      "id": "db:catalog_product_quality_notes",
+      "type": "db-table",
+      "table": "catalog_product_quality_notes"
     },
     {
       "id": "db:sourcing_canonical_entities",
@@ -39295,6 +39513,11 @@
       "id": "db:supplier_execution_events",
       "type": "db-table",
       "table": "supplier_execution_events"
+    },
+    {
+      "id": "db:relay_product_return_receipts",
+      "type": "db-table",
+      "table": "relay_product_return_receipts"
     },
     {
       "id": "db:shared_cart_saved_access",
@@ -40945,6 +41168,21 @@
       "id": "doctrine:WRITES != OWNS — catalog owns products/product_variants lifecycle",
       "type": "doctrine",
       "doctrine": "WRITES != OWNS — catalog owns products/product_variants lifecycle"
+    },
+    {
+      "id": "doctrine:return_signal_not_automatic_freeze",
+      "type": "doctrine",
+      "doctrine": "return_signal_not_automatic_freeze"
+    },
+    {
+      "id": "doctrine:catalog_global_authority",
+      "type": "doctrine",
+      "doctrine": "catalog_global_authority"
+    },
+    {
+      "id": "doctrine:freeze_does_not_change_committed_orders",
+      "type": "doctrine",
+      "doctrine": "freeze_does_not_change_committed_orders"
     },
     {
       "id": "doctrine:docs/doctrine/DOCTRINE_CATALOG_PRODUCT_READ_CUTOVER_TRIAL.md",
@@ -42755,6 +42993,36 @@
       "id": "doctrine:receipt_regression_forbidden",
       "type": "doctrine",
       "doctrine": "receipt_regression_forbidden"
+    },
+    {
+      "id": "doctrine:no_implicit_refund_no_sellable_stock",
+      "type": "doctrine",
+      "doctrine": "no_implicit_refund_no_sellable_stock"
+    },
+    {
+      "id": "doctrine:physical_custody_is_explicit",
+      "type": "doctrine",
+      "doctrine": "physical_custody_is_explicit"
+    },
+    {
+      "id": "doctrine:relay_scope_from_session",
+      "type": "doctrine",
+      "doctrine": "relay_scope_from_session"
+    },
+    {
+      "id": "doctrine:return_is_dispute_not_parallel_object",
+      "type": "doctrine",
+      "doctrine": "return_is_dispute_not_parallel_object"
+    },
+    {
+      "id": "doctrine:relay_scope_is_server_authority",
+      "type": "doctrine",
+      "doctrine": "relay_scope_is_server_authority"
+    },
+    {
+      "id": "doctrine:financial_authority_never_delegated",
+      "type": "doctrine",
+      "doctrine": "financial_authority_never_delegated"
     },
     {
       "id": "doctrine:relay_reception_attested_by_relay",
@@ -52394,6 +52662,12 @@
       "to": "services/catalog-workspace.js",
       "type": "depends",
       "label": "services/catalog-workspace.js"
+    },
+    {
+      "from": "routes/admin-catalog-workspace.js",
+      "to": "services/catalog-product-quality-service.js",
+      "type": "depends",
+      "label": "services/catalog-product-quality-service.js"
     },
     {
       "from": "bootstrap/api-routes.js",
@@ -62226,6 +62500,18 @@
     },
     {
       "from": "routes/relay-dashboard.js",
+      "to": "services/relay-return-request-service.js",
+      "type": "depends",
+      "label": "services/relay-return-request-service.js"
+    },
+    {
+      "from": "routes/relay-dashboard.js",
+      "to": "services/relay-product-return-intake-service.js",
+      "type": "depends",
+      "label": "services/relay-product-return-intake-service.js"
+    },
+    {
+      "from": "routes/relay-dashboard.js",
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
@@ -62313,6 +62599,13 @@
       "to": "db:order_incidents",
       "type": "db-write",
       "label": "order_incidents"
+    },
+    {
+      "from": "routes/relay-dashboard.js",
+      "to": "db:disputes; catalog-product-quality-service catalog_product_quality_notes; relay-product-return-intake-service relay_product_return_receipts",
+      "type": "db-write-via",
+      "label": "disputes; catalog-product-quality-service catalog_product_quality_notes; relay-product-return-intake-service relay_product_return_receipts",
+      "via": "dispute-mutation-service"
     },
     {
       "from": "routes/relay-dashboard.js",
@@ -66222,6 +66515,12 @@
     },
     {
       "from": "services/catalog-product-detail.js",
+      "to": "db:catalog_product_sale_holds",
+      "type": "db-read",
+      "label": "catalog_product_sale_holds"
+    },
+    {
+      "from": "services/catalog-product-detail.js",
       "to": "db:catalog_media",
       "type": "db-read",
       "label": "catalog_media"
@@ -66417,6 +66716,126 @@
       "to": "impact:economic-engine",
       "type": "impact",
       "label": "economic-engine"
+    },
+    {
+      "from": "services/catalog-product-quality-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "routes/admin-catalog-workspace.js",
+      "to": "services/catalog-product-quality-service.js",
+      "type": "uses",
+      "label": "routes/admin-catalog-workspace.js"
+    },
+    {
+      "from": "services/catalog-workspace.js",
+      "to": "services/catalog-product-quality-service.js",
+      "type": "uses",
+      "label": "services/catalog-workspace.js"
+    },
+    {
+      "from": "services/relay-return-request-service.js",
+      "to": "services/catalog-product-quality-service.js",
+      "type": "uses",
+      "label": "services/relay-return-request-service.js"
+    },
+    {
+      "from": "services/catalog-product-quality-service.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/catalog-product-quality-service.js",
+      "to": "db:catalog_product_sale_holds",
+      "type": "db-read",
+      "label": "catalog_product_sale_holds"
+    },
+    {
+      "from": "services/catalog-product-quality-service.js",
+      "to": "db:catalog_product_quality_notes",
+      "type": "db-read",
+      "label": "catalog_product_quality_notes"
+    },
+    {
+      "from": "services/catalog-product-quality-service.js",
+      "to": "db:disputes",
+      "type": "db-read",
+      "label": "disputes"
+    },
+    {
+      "from": "services/catalog-product-quality-service.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/catalog-product-quality-service.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
+    },
+    {
+      "from": "services/catalog-product-quality-service.js",
+      "to": "db:catalog_product_sale_holds",
+      "type": "db-write",
+      "label": "catalog_product_sale_holds"
+    },
+    {
+      "from": "services/catalog-product-quality-service.js",
+      "to": "db:catalog_product_quality_notes",
+      "type": "db-write",
+      "label": "catalog_product_quality_notes"
+    },
+    {
+      "from": "services/catalog-product-quality-service.js",
+      "to": "doctrine:return_signal_not_automatic_freeze",
+      "type": "doctrine",
+      "label": "return_signal_not_automatic_freeze"
+    },
+    {
+      "from": "services/catalog-product-quality-service.js",
+      "to": "doctrine:catalog_global_authority",
+      "type": "doctrine",
+      "label": "catalog_global_authority"
+    },
+    {
+      "from": "services/catalog-product-quality-service.js",
+      "to": "doctrine:freeze_does_not_change_committed_orders",
+      "type": "doctrine",
+      "label": "freeze_does_not_change_committed_orders"
+    },
+    {
+      "from": "services/catalog-product-quality-service.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "services/catalog-product-quality-service.js",
+      "to": "impact:checkout",
+      "type": "impact",
+      "label": "checkout"
+    },
+    {
+      "from": "services/catalog-product-quality-service.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
+    },
+    {
+      "from": "services/catalog-product-quality-service.js",
+      "to": "impact:product-discovery",
+      "type": "impact",
+      "label": "product-discovery"
+    },
+    {
+      "from": "services/catalog-product-quality-service.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
     },
     {
       "from": "services/catalog-product-read-cutover-trial.js",
@@ -66951,6 +67370,12 @@
       "to": "services/catalog-public-view.js",
       "type": "uses",
       "label": "routes/products.js"
+    },
+    {
+      "from": "services/catalog-public-view.js",
+      "to": "db:catalog_product_sale_holds",
+      "type": "db-read",
+      "label": "catalog_product_sale_holds"
     },
     {
       "from": "services/catalog-public-view.js",
@@ -67722,6 +68147,12 @@
     },
     {
       "from": "services/catalog-workspace.js",
+      "to": "services/catalog-product-quality-service.js",
+      "type": "depends",
+      "label": "services/catalog-product-quality-service.js"
+    },
+    {
+      "from": "services/catalog-workspace.js",
       "to": "services/product-admin-service.js",
       "type": "depends",
       "label": "services/product-admin-service.js"
@@ -67761,6 +68192,30 @@
       "to": "services/catalog-workspace.js",
       "type": "uses",
       "label": "routes/admin-catalog-workspace.js"
+    },
+    {
+      "from": "services/catalog-workspace.js",
+      "to": "db:catalog_product_sale_holds",
+      "type": "db-read",
+      "label": "catalog_product_sale_holds"
+    },
+    {
+      "from": "services/catalog-workspace.js",
+      "to": "db:catalog_product_quality_notes",
+      "type": "db-read",
+      "label": "catalog_product_quality_notes"
+    },
+    {
+      "from": "services/catalog-workspace.js",
+      "to": "db:disputes",
+      "type": "db-read",
+      "label": "disputes"
+    },
+    {
+      "from": "services/catalog-workspace.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
     },
     {
       "from": "services/catalog-workspace.js",
@@ -72036,6 +72491,12 @@
       "to": "services/dispute-mutation-service.js",
       "type": "uses",
       "label": "services/market-delegation-client-case-service.js"
+    },
+    {
+      "from": "services/relay-return-request-service.js",
+      "to": "services/dispute-mutation-service.js",
+      "type": "uses",
+      "label": "services/relay-return-request-service.js"
     },
     {
       "from": "services/dispute-mutation-service.js",
@@ -83013,6 +83474,12 @@
     },
     {
       "from": "services/order-checkout-item-resolution.js",
+      "to": "db:catalog_product_sale_holds",
+      "type": "db-read",
+      "label": "catalog_product_sale_holds"
+    },
+    {
+      "from": "services/order-checkout-item-resolution.js",
       "to": "db:product_variants",
       "type": "db-read",
       "label": "product_variants"
@@ -88839,6 +89306,12 @@
     },
     {
       "from": "services/product-360.js",
+      "to": "db:catalog_product_sale_holds",
+      "type": "db-read",
+      "label": "catalog_product_sale_holds"
+    },
+    {
+      "from": "services/product-360.js",
       "to": "db:products",
       "type": "db-read",
       "label": "products"
@@ -89217,6 +89690,12 @@
       "to": "services/product-sellable-service.js",
       "type": "uses",
       "label": "services/order-checkout-item-resolution.js"
+    },
+    {
+      "from": "services/product-sellable-service.js",
+      "to": "db:catalog_product_sale_holds",
+      "type": "db-read",
+      "label": "catalog_product_sale_holds"
     },
     {
       "from": "services/product-sellable-service.js",
@@ -92041,6 +92520,241 @@
       "label": "orders"
     },
     {
+      "from": "services/relay-product-return-intake-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/relay-product-return-intake-service.js",
+      "to": "disputes",
+      "type": "depends",
+      "label": "disputes"
+    },
+    {
+      "from": "services/relay-product-return-intake-service.js",
+      "to": "orders",
+      "type": "depends",
+      "label": "orders"
+    },
+    {
+      "from": "services/relay-product-return-intake-service.js",
+      "to": "order_items",
+      "type": "depends",
+      "label": "order_items"
+    },
+    {
+      "from": "services/relay-product-return-intake-service.js",
+      "to": "relay_product_return_receipts",
+      "type": "depends",
+      "label": "relay_product_return_receipts"
+    },
+    {
+      "from": "routes/relay-dashboard.js",
+      "to": "services/relay-product-return-intake-service.js",
+      "type": "uses",
+      "label": "routes/relay-dashboard.js"
+    },
+    {
+      "from": "services/relay-product-return-intake-service.js",
+      "to": "db:disputes",
+      "type": "db-read",
+      "label": "disputes"
+    },
+    {
+      "from": "services/relay-product-return-intake-service.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/relay-product-return-intake-service.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
+    },
+    {
+      "from": "services/relay-product-return-intake-service.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/relay-product-return-intake-service.js",
+      "to": "db:relay_product_return_receipts",
+      "type": "db-read",
+      "label": "relay_product_return_receipts"
+    },
+    {
+      "from": "services/relay-product-return-intake-service.js",
+      "to": "db:relay_product_return_receipts",
+      "type": "db-write",
+      "label": "relay_product_return_receipts"
+    },
+    {
+      "from": "services/relay-product-return-intake-service.js",
+      "to": "doctrine:no_implicit_refund_no_sellable_stock",
+      "type": "doctrine",
+      "label": "no_implicit_refund_no_sellable_stock"
+    },
+    {
+      "from": "services/relay-product-return-intake-service.js",
+      "to": "doctrine:physical_custody_is_explicit",
+      "type": "doctrine",
+      "label": "physical_custody_is_explicit"
+    },
+    {
+      "from": "services/relay-product-return-intake-service.js",
+      "to": "doctrine:relay_scope_from_session",
+      "type": "doctrine",
+      "label": "relay_scope_from_session"
+    },
+    {
+      "from": "services/relay-product-return-intake-service.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
+    },
+    {
+      "from": "services/relay-product-return-intake-service.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
+    },
+    {
+      "from": "services/relay-product-return-intake-service.js",
+      "to": "impact:dashboard",
+      "type": "impact",
+      "label": "dashboard"
+    },
+    {
+      "from": "services/relay-product-return-intake-service.js",
+      "to": "impact:refunds",
+      "type": "impact",
+      "label": "refunds"
+    },
+    {
+      "from": "services/relay-return-request-service.js",
+      "to": "db (transaction supplied)",
+      "type": "depends",
+      "label": "db (transaction supplied)"
+    },
+    {
+      "from": "services/relay-return-request-service.js",
+      "to": "services/dispute-mutation-service.js",
+      "type": "depends",
+      "label": "services/dispute-mutation-service.js"
+    },
+    {
+      "from": "services/relay-return-request-service.js",
+      "to": "services/catalog-product-quality-service.js",
+      "type": "depends",
+      "label": "services/catalog-product-quality-service.js"
+    },
+    {
+      "from": "services/relay-return-request-service.js",
+      "to": "orders",
+      "type": "depends",
+      "label": "orders"
+    },
+    {
+      "from": "services/relay-return-request-service.js",
+      "to": "order_items",
+      "type": "depends",
+      "label": "order_items"
+    },
+    {
+      "from": "services/relay-return-request-service.js",
+      "to": "products",
+      "type": "depends",
+      "label": "products"
+    },
+    {
+      "from": "routes/relay-dashboard.js",
+      "to": "services/relay-return-request-service.js",
+      "type": "uses",
+      "label": "routes/relay-dashboard.js"
+    },
+    {
+      "from": "services/relay-return-request-service.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/relay-return-request-service.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
+    },
+    {
+      "from": "services/relay-return-request-service.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/relay-return-request-service.js",
+      "to": "db:disputes",
+      "type": "db-read",
+      "label": "disputes"
+    },
+    {
+      "from": "services/relay-return-request-service.js",
+      "to": "db:relay_product_return_receipts",
+      "type": "db-read",
+      "label": "relay_product_return_receipts"
+    },
+    {
+      "from": "services/relay-return-request-service.js",
+      "to": "db:disputes",
+      "type": "db-write-via",
+      "label": "disputes",
+      "via": "dispute-mutation-service"
+    },
+    {
+      "from": "services/relay-return-request-service.js",
+      "to": "doctrine:return_is_dispute_not_parallel_object",
+      "type": "doctrine",
+      "label": "return_is_dispute_not_parallel_object"
+    },
+    {
+      "from": "services/relay-return-request-service.js",
+      "to": "doctrine:relay_scope_is_server_authority",
+      "type": "doctrine",
+      "label": "relay_scope_is_server_authority"
+    },
+    {
+      "from": "services/relay-return-request-service.js",
+      "to": "doctrine:financial_authority_never_delegated",
+      "type": "doctrine",
+      "label": "financial_authority_never_delegated"
+    },
+    {
+      "from": "services/relay-return-request-service.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
+    },
+    {
+      "from": "services/relay-return-request-service.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
+    },
+    {
+      "from": "services/relay-return-request-service.js",
+      "to": "impact:dashboard",
+      "type": "impact",
+      "label": "dashboard"
+    },
+    {
+      "from": "services/relay-return-request-service.js",
+      "to": "impact:refunds",
+      "type": "impact",
+      "label": "refunds"
+    },
+    {
       "from": "services/relay-shipment-receipt.js",
       "to": "db",
       "type": "depends",
@@ -92435,6 +93149,12 @@
       "to": "db:scan_events",
       "type": "db-read",
       "label": "scan_events"
+    },
+    {
+      "from": "services/scan-engine.js",
+      "to": "db:scans",
+      "type": "db-read",
+      "label": "scans"
     },
     {
       "from": "services/scan-engine.js",
@@ -109773,7 +110493,8 @@
       "directDependsOn": [
         "middleware/auth.js",
         "middleware/require-catalog-global-authority.js",
-        "services/catalog-workspace.js"
+        "services/catalog-workspace.js",
+        "services/catalog-product-quality-service.js"
       ],
       "directUsedBy": [
         "bootstrap/api-routes.js"
@@ -109805,6 +110526,7 @@
         "impact:catalog",
         "middleware/auth.js",
         "middleware/require-catalog-global-authority.js",
+        "services/catalog-product-quality-service.js",
         "services/catalog-workspace.js"
       ]
     },
@@ -116003,6 +116725,8 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
+        "services/relay-return-request-service.js",
+        "services/relay-product-return-intake-service.js",
         "db.js",
         "middleware/auth.js",
         "middleware/require-market-delegated-role.js",
@@ -116026,7 +116750,14 @@
         "order_comments",
         "order_incidents"
       ],
-      "dbWriteVia": [],
+      "dbWriteVia": [
+        {
+          "via": "dispute-mutation-service",
+          "tables": [
+            "disputes; catalog-product-quality-service catalog_product_quality_notes; relay-product-return-intake-service relay_product_return_receipts"
+          ]
+        }
+      ],
       "doctrines": [
         "resolve_before_behavior_change",
         "capability_is_the_authority_not_role",
@@ -116041,6 +116772,7 @@
         "bootstrap/api-routes.js",
         "db:assignment_capability_ceiling",
         "db:assignment_memberships",
+        "db:disputes; catalog-product-quality-service catalog_product_quality_notes; relay-product-return-intake-service relay_product_return_receipts",
         "db:market_operating_assignments",
         "db:markets",
         "db:membership_capabilities",
@@ -116058,6 +116790,8 @@
         "middleware/require-market-delegated-role.js",
         "services/live-projection.js",
         "services/relay-dashboard-queries.js",
+        "services/relay-product-return-intake-service.js",
+        "services/relay-return-request-service.js",
         "utils/logger.js"
       ]
     },
@@ -118509,6 +119243,7 @@
       "ownedFiles": [],
       "dbRead": [
         "business_rules",
+        "catalog_product_sale_holds",
         "catalog_media",
         "product_attributes",
         "product_content_profile",
@@ -118534,6 +119269,7 @@
       "mustCheck": [
         "db:business_rules",
         "db:catalog_media",
+        "db:catalog_product_sale_holds",
         "db:product_attributes",
         "db:product_content_profile",
         "db:product_content_sections",
@@ -118608,6 +119344,67 @@
         "services/pricing-apply.js",
         "services/pricing-strategy-service.js",
         "services/sourcing-mutations.js"
+      ]
+    },
+    "services/catalog-product-quality-service.js": {
+      "role": "catalog-product-quality-hold-service",
+      "domain": "catalog",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js"
+      ],
+      "directUsedBy": [
+        "routes/admin-catalog-workspace.js",
+        "services/catalog-workspace.js",
+        "services/relay-return-request-service.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "products",
+        "catalog_product_sale_holds",
+        "catalog_product_quality_notes",
+        "disputes",
+        "orders",
+        "order_items"
+      ],
+      "dbWrite": [
+        "catalog_product_sale_holds",
+        "catalog_product_quality_notes"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "return_signal_not_automatic_freeze",
+        "catalog_global_authority",
+        "freeze_does_not_change_committed_orders"
+      ],
+      "impactAreas": [
+        "catalog",
+        "checkout",
+        "orders",
+        "product-discovery",
+        "admin-dashboard"
+      ],
+      "mustCheck": [
+        "db:catalog_product_quality_notes",
+        "db:catalog_product_sale_holds",
+        "db:disputes",
+        "db:order_items",
+        "db:orders",
+        "db:products",
+        "doctrine:catalog_global_authority",
+        "doctrine:freeze_does_not_change_committed_orders",
+        "doctrine:return_signal_not_automatic_freeze",
+        "impact:admin-dashboard",
+        "impact:catalog",
+        "impact:checkout",
+        "impact:orders",
+        "impact:product-discovery",
+        "routes/admin-catalog-workspace.js",
+        "services/catalog-workspace.js",
+        "services/relay-return-request-service.js"
       ]
     },
     "services/catalog-product-read-cutover-trial.js": {
@@ -119008,6 +119805,7 @@
       ],
       "ownedFiles": [],
       "dbRead": [
+        "catalog_product_sale_holds",
         "catalog_media",
         "markets",
         "product_market_exposure",
@@ -119033,6 +119831,7 @@
       ],
       "mustCheck": [
         "db:catalog_media",
+        "db:catalog_product_sale_holds",
         "db:markets",
         "db:product_market_exposure",
         "db:product_market_price_drafts",
@@ -119513,6 +120312,7 @@
       "directDependsOn": [
         "db",
         "utils/rules.js",
+        "services/catalog-product-quality-service.js",
         "services/product-admin-service.js",
         "services/catalog-approval.js",
         "services/catalog-overrides.js",
@@ -119525,6 +120325,10 @@
       ],
       "ownedFiles": [],
       "dbRead": [
+        "catalog_product_sale_holds",
+        "catalog_product_quality_notes",
+        "disputes",
+        "order_items",
         "products",
         "sourcing_candidates",
         "boutique_categories",
@@ -119560,12 +120364,16 @@
         "db:boutique_categories",
         "db:boutique_subcategories",
         "db:catalog_media",
+        "db:catalog_product_quality_notes",
+        "db:catalog_product_sale_holds",
         "db:cost_components",
         "db:currency_parities",
+        "db:disputes",
         "db:exchange_rates",
         "db:finance_config",
         "db:import_runtime_runs",
         "db:markets",
+        "db:order_items",
         "db:product_market_exposure",
         "db:product_market_price_drafts",
         "db:product_skus",
@@ -119586,6 +120394,7 @@
         "services/catalog-approval.js",
         "services/catalog-commercial-assortment.js",
         "services/catalog-overrides.js",
+        "services/catalog-product-quality-service.js",
         "services/catalog-registry.js",
         "services/pricing-parameters-status.js",
         "services/product-admin-service.js",
@@ -122032,7 +122841,8 @@
         "none (executor fourni par l'appelant)"
       ],
       "directUsedBy": [
-        "services/market-delegation-client-case-service.js"
+        "services/market-delegation-client-case-service.js",
+        "services/relay-return-request-service.js"
       ],
       "ownedFiles": [],
       "dbRead": [
@@ -122058,7 +122868,8 @@
         "doctrine:refund_authority_never_delegated",
         "impact:market-delegation",
         "impact:orders",
-        "services/market-delegation-client-case-service.js"
+        "services/market-delegation-client-case-service.js",
+        "services/relay-return-request-service.js"
       ]
     },
     "services/documents/customs-invoice.js": {
@@ -128635,6 +129446,7 @@
       ],
       "ownedFiles": [],
       "dbRead": [
+        "catalog_product_sale_holds",
         "product_variants",
         "products",
         "shared_cart_items",
@@ -128652,6 +129464,7 @@
         "shared-cart"
       ],
       "mustCheck": [
+        "db:catalog_product_sale_holds",
         "db:order_items",
         "db:product_variants",
         "db:products",
@@ -132302,6 +133115,7 @@
       ],
       "ownedFiles": [],
       "dbRead": [
+        "catalog_product_sale_holds",
         "products",
         "product_variants",
         "product_skus",
@@ -132339,6 +133153,7 @@
       ],
       "mustCheck": [
         "db:alerts",
+        "db:catalog_product_sale_holds",
         "db:markets",
         "db:order_item_cost_imputations",
         "db:order_item_real_cost_allocations",
@@ -132530,6 +133345,7 @@
       ],
       "ownedFiles": [],
       "dbRead": [
+        "catalog_product_sale_holds",
         "catalog_media",
         "product_sku_media",
         "product_variants",
@@ -132549,6 +133365,7 @@
       ],
       "mustCheck": [
         "db:catalog_media",
+        "db:catalog_product_sale_holds",
         "db:product_sku_media",
         "db:product_variants",
         "db:products",
@@ -134372,6 +135189,126 @@
         "services/relay-shipment-receipt.js"
       ]
     },
+    "services/relay-product-return-intake-service.js": {
+      "role": "relay-product-return-intake-service",
+      "domain": "logistics",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "disputes",
+        "orders",
+        "order_items",
+        "relay_product_return_receipts"
+      ],
+      "directUsedBy": [
+        "routes/relay-dashboard.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "disputes",
+        "orders",
+        "order_items",
+        "products",
+        "relay_product_return_receipts"
+      ],
+      "dbWrite": [
+        "relay_product_return_receipts"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "no_implicit_refund_no_sellable_stock",
+        "physical_custody_is_explicit",
+        "relay_scope_from_session"
+      ],
+      "impactAreas": [
+        "orders",
+        "logistics",
+        "dashboard",
+        "refunds"
+      ],
+      "mustCheck": [
+        "db:disputes",
+        "db:order_items",
+        "db:orders",
+        "db:products",
+        "db:relay_product_return_receipts",
+        "doctrine:no_implicit_refund_no_sellable_stock",
+        "doctrine:physical_custody_is_explicit",
+        "doctrine:relay_scope_from_session",
+        "impact:dashboard",
+        "impact:logistics",
+        "impact:orders",
+        "impact:refunds",
+        "routes/relay-dashboard.js"
+      ]
+    },
+    "services/relay-return-request-service.js": {
+      "role": "orders-product-return-request-service",
+      "domain": "orders",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db (transaction supplied)",
+        "services/dispute-mutation-service.js",
+        "services/catalog-product-quality-service.js",
+        "orders",
+        "order_items",
+        "products"
+      ],
+      "directUsedBy": [
+        "routes/relay-dashboard.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "orders",
+        "order_items",
+        "products",
+        "disputes",
+        "relay_product_return_receipts"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [
+        {
+          "via": "dispute-mutation-service",
+          "tables": [
+            "disputes"
+          ]
+        }
+      ],
+      "doctrines": [
+        "return_is_dispute_not_parallel_object",
+        "relay_scope_is_server_authority",
+        "financial_authority_never_delegated"
+      ],
+      "impactAreas": [
+        "orders",
+        "logistics",
+        "dashboard",
+        "refunds"
+      ],
+      "mustCheck": [
+        "db:disputes",
+        "db:order_items",
+        "db:orders",
+        "db:products",
+        "db:relay_product_return_receipts",
+        "doctrine:financial_authority_never_delegated",
+        "doctrine:relay_scope_is_server_authority",
+        "doctrine:return_is_dispute_not_parallel_object",
+        "impact:dashboard",
+        "impact:logistics",
+        "impact:orders",
+        "impact:refunds",
+        "routes/relay-dashboard.js",
+        "services/catalog-product-quality-service.js",
+        "services/dispute-mutation-service.js"
+      ]
+    },
     "services/relay-shipment-receipt.js": {
       "role": "relay-shipment-receipt-owner",
       "domain": "logistics",
@@ -134591,6 +135528,7 @@
         "products",
         "relais",
         "scan_events",
+        "scans",
         "users"
       ],
       "dbWrite": [
@@ -134632,6 +135570,7 @@
         "db:products",
         "db:relais",
         "db:scan_events",
+        "db:scans",
         "db:users",
         "doctrine:resolve_before_behavior_change",
         "impact:logistics",
@@ -145297,6 +146236,12 @@
       "label": "scripts/catalog-taxonomy-provenance-backfill.js"
     },
     {
+      "from": "services/catalog-product-quality-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
       "from": "services/catalog-product-read-cutover-trial.js",
       "to": "db.js",
       "type": "depends",
@@ -147479,6 +148424,60 @@
       "to": "db",
       "type": "depends",
       "label": "db"
+    },
+    {
+      "from": "services/relay-product-return-intake-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/relay-product-return-intake-service.js",
+      "to": "disputes",
+      "type": "depends",
+      "label": "disputes"
+    },
+    {
+      "from": "services/relay-product-return-intake-service.js",
+      "to": "orders",
+      "type": "depends",
+      "label": "orders"
+    },
+    {
+      "from": "services/relay-product-return-intake-service.js",
+      "to": "order_items",
+      "type": "depends",
+      "label": "order_items"
+    },
+    {
+      "from": "services/relay-product-return-intake-service.js",
+      "to": "relay_product_return_receipts",
+      "type": "depends",
+      "label": "relay_product_return_receipts"
+    },
+    {
+      "from": "services/relay-return-request-service.js",
+      "to": "db (transaction supplied)",
+      "type": "depends",
+      "label": "db (transaction supplied)"
+    },
+    {
+      "from": "services/relay-return-request-service.js",
+      "to": "orders",
+      "type": "depends",
+      "label": "orders"
+    },
+    {
+      "from": "services/relay-return-request-service.js",
+      "to": "order_items",
+      "type": "depends",
+      "label": "order_items"
+    },
+    {
+      "from": "services/relay-return-request-service.js",
+      "to": "products",
+      "type": "depends",
+      "label": "products"
     },
     {
       "from": "services/relay-shipment-receipt.js",

@@ -327,13 +327,13 @@ describe('canonical admin navigation — N2 domaine Opérations (doctrine V2 §4
     }
   });
 
-  test('market_operator voit Vue d’ensemble, Relais · Cash & dépôts, Expéditions & Douane — Hub global est dans Live', () => {
+  test('market_operator voit Vue d’ensemble et Expéditions & Douane — sans entrée Relais hors rôle', () => {
     const env = loadNavigation('/admin/operations', 'operations');
     const header = mountFor(env, '/admin/operations', 'operations', { role: 'market_operator' });
 
     const n2 = secondaryNav(header);
     const ids = n2.children.map(link => link.attributes['data-dashboard']);
-    expect(ids).toEqual(['operations-overview', 'relais-execution', 'shipping-customs-workspace']);
+    expect(ids).toEqual(['operations-overview', 'shipping-customs-workspace']);
     expect(ids).not.toContain('sourcing-workspace');
 
     const overview = n2.children.find(link => link.attributes['data-dashboard'] === 'operations-overview');
@@ -390,7 +390,7 @@ describe('canonical admin navigation — N2 domaine Finance (doctrine V2 §4)', 
     });
   });
 
-  test('finance voit Comptabilité et Cash & dépôts ; agent_relais n’a plus de domaine Finance', () => {
+  test('finance voit Comptabilité sans renvoi non autorisé au Relais ; agent_relais n’a pas de Finance', () => {
     const env = loadNavigation('/admin/pilotage', 'pilotage');
     const header = mountFor(env, '/admin/pilotage', 'pilotage', { role: 'finance' });
     const finance = header.children[0].children[1].children.find(link => link.attributes['data-dashboard'] === 'finance');

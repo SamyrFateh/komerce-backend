@@ -86,6 +86,34 @@ test('buildWorkspace scope toutes ses lectures DB par le market id serveur', asy
   }
 });
 
+test('agent relais : chaque lecture opérationnelle est limitée au relais serveur, sans fichier Hub', async () => {
+  const relaisId = '11111111-1111-4111-8111-111111111111';
+  const projection = await workspace.buildWorkspace({
+    market: MARKET, viewer: { role: 'agent_relais', relais_id: relaisId },
+  });
+
+  expect(mockQuery).toHaveBeenCalledTimes(5); // commandes, colis, 3 signaux ; aucun Hub/distribution/inventaire
+  for (const [sql, params] of mockQuery.mock.calls) {
+    expect(params).toEqual([MARKET.id, relaisId]);
+    expect(String(sql)).toMatch(/AND (o\.relais_id|p\.relais_id|r\.id) = \$2/);
+    expect(String(sql)).toContain('o.simulation_scope IS NULL');
+  }
+  expect(projection.queues.hub.to_ship).toEqual([]);
+  expect(projection.distribution).toEqual({ parcels: [], unassigned: [] });
+  expect(projection.inventory).toEqual({ items: [], open_parcels: [] });
+  expect(projection.data_quality.scope_mode).toBe('relay');
+  const { countRelayParcels } = require('../../services/operations-relay-projection');
+  expect(countRelayParcels).toHaveBeenCalledWith({ marketIds: [MARKET.id], relaisId });
+});
+
+test('agent relais : aucun rattachement valide signifie refus avant toute lecture', async () => {
+  await expect(workspace.buildWorkspace({ market: MARKET, viewer: { role: 'agent_relais' } }))
+    .rejects.toMatchObject({ code: 'relay_scope_required', status: 403 });
+  await expect(workspace.buildWorkspace({ market: MARKET, viewer: { role: 'agent_relais', relais_id: 'autre' } }))
+    .rejects.toMatchObject({ code: 'relay_scope_required', status: 403 });
+  expect(mockQuery).not.toHaveBeenCalled();
+});
+
 test('la file des colis a le même périmètre que le compteur relais : commandes réelles et vivantes', async () => {
   await workspace.buildWorkspace({ market: MARKET });
   const parcelSql = mockQuery.mock.calls.map(c => String(c[0])).find(sql => sql.includes('FROM parcels p') && sql.includes('p.recipient_name'));
@@ -131,20 +159,38 @@ test('buildQueues ne crée aucune transition métier côté présentation', () =
   expect(queues.relay.to_collect.map(row => row.reference)).toEqual(['PCL-3']);
 });
 
-test('LOCAL_STOCK direct : seule la file du relais autorisé est projetée, sans action Hub', () => {
+
+test('G3 LOCAL_STOCK : réception directe exposée au seul relais affecté, sans file Hub', () => {
   const orders = [
     { id:'11111111-1111-4111-8111-111111111111', reference:'LOCAL-A', relais_id:'relay-A', local_receipt_candidate:true },
     { id:'22222222-2222-4222-8222-222222222222', reference:'LOCAL-B', relais_id:'relay-B', local_receipt_candidate:true },
     { id:'33333333-3333-4333-8333-333333333333', reference:'IMPORT-C', relais_id:'relay-A', local_receipt_candidate:false },
   ];
-  const relay = workspace.buildQueues(orders, [], { role:'agent_relais', relais_id:'relay-A' });
-  expect(relay.relay.local_receipt_pending.map(row => row.reference)).toEqual(['LOCAL-A']);
+  const a = workspace.buildQueues(orders, [], { role:'agent_relais', relais_id:'relay-A' });
+  expect(a.relay.local_receipt_pending.map(row => row.reference)).toEqual(['LOCAL-A']);
+  expect(a.hub.to_ship).toEqual([]);
   expect(workspace.buildQueues(orders, [], { role:'agent_relais', relais_id:'relay-B' })
     .relay.local_receipt_pending.map(row => row.reference)).toEqual(['LOCAL-B']);
-  expect(workspace.buildQueues(orders, [], { role:'agent_hub' }).relay.local_receipt_pending).toHaveLength(0);
-  expect(workspace.buildQueues(orders, [], { role:'market_operator' }).relay.local_receipt_pending).toHaveLength(0);
+  expect(workspace.buildQueues(orders, [], { role:'agent_relais', relais_id:'relay-C' })
+    .relay.local_receipt_pending).toHaveLength(0);
+  for (const role of ['agent_hub', 'market_operator', 'agent_transitaire']) {
+    expect(workspace.buildQueues(orders, [], { role })
+      .relay.local_receipt_pending).toHaveLength(0);
+  }
   expect(workspace.buildQueues(orders, [], { role:'admin' }).relay.local_receipt_pending).toHaveLength(2);
   expect(workspace.buildQueues(orders, []).relay.local_receipt_pending).toHaveLength(0);
+});
+
+test('G3 LOCAL_STOCK : la requête candidate conserve le scope, paiement, provenance et filtre de simulation', async () => {
+  const relaisId = '11111111-1111-4111-8111-111111111111';
+  await workspace.buildWorkspace({ market: MARKET, viewer: {role:'agent_relais', relais_id:relaisId} });
+  const sql = mockQuery.mock.calls.map(call => String(call[0]))
+    .find(source => source.includes('local_receipt_candidate'));
+  expect(sql).toContain('o.payment_status = \'paid\'');
+  expect(sql).toContain("local_oi.fulfillment_source = 'LOCAL_STOCK'");
+  expect(sql).toContain('local_pi.order_item_id');
+  expect(sql).toContain('AND o.relais_id = $2');
+  expect(sql).toContain('o.simulation_scope IS NULL');
 });
 
 test('runDistribution ne distribue que les commandes présélectionnées dans le marché', async () => {

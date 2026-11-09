@@ -38,6 +38,20 @@ describe('Canonical Client Router V4.2 — no flash + tabs fonctionnels', () => 
     expect(router.canonicalPath('/admin/orders')).toBe(true);
   });
 
+  test('Sourcing Live → Hub central ne demande jamais le contexte Dashboard interdit au rôle sourcing', () => {
+    // Le client router doit suivre exactement la règle de démarrage app.js :
+    // ces deux écrans sont accessibles via leur autorité métier indépendante.
+    expect(router.canonicalPath('/admin/hub')).toBe(true);
+    expect(router._requiresAdminContext('import-runtime')).toBe(false);
+    expect(router._requiresAdminContext('hub-workstation')).toBe(false);
+    expect(router._requiresAdminContext('catalog-workspace')).toBe(false);
+    expect(router._requiresAdminContext('action-center')).toBe(false);
+    // Les vues commerciales et financières restent strictement contextualisées.
+    expect(router._requiresAdminContext('pricing-workspace')).toBe(true);
+    expect(router._requiresAdminContext('accounting-workspace')).toBe(true);
+    expect(router._requiresAdminContext('finance')).toBe(true);
+  });
+
   test('/admin/suppliers n’est plus une route canonique (aucune liste fournisseurs, NAV-08)', () => {
     expect(router.canonicalPath('/admin/suppliers')).toBe(false);
   });
@@ -148,7 +162,7 @@ describe('Canonical Client Router V4.2 — no flash + tabs fonctionnels', () => 
   test('index charge le routeur après le shell V4', () => {
     const html = read('public/dashboards/canonical/index.html');
     const shell = html.search(/\/dashboards\/canonical\/js\/navigation-shell-v4-sync\.js\?v=[^"'<>\s]+/);
-    const clientRouter = html.indexOf('/dashboards/canonical/js/canonical-client-router-v4.js?v=261010-3');
+    const clientRouter = html.indexOf('/dashboards/canonical/js/canonical-client-router-v4.js?v=261109-1');
     expect(shell).toBeGreaterThanOrEqual(0);
     expect(clientRouter).toBeGreaterThan(shell);
   });

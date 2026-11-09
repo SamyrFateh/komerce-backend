@@ -241,9 +241,18 @@ test('live-kit.css : plancher typographique (aucun texte sous 10 px)', () => {
   expect(require('../helpers/fontFloor').tinyFonts('live-kit.css')).toEqual([]);
 });
 
-test('Le moteur Live évite un deuxième rail quand le shell canonique fournit les onglets', () => {
-  const source = require('fs').readFileSync(require('path').join(__dirname, '../../public/dashboards/canonical/js/live-kit.js'), 'utf8');
-  expect(source).toContain("if (global.document?.querySelector?.('#canonical-admin-domain-tabs')) return '';");
+test('Le moteur Live évite un deuxième rail : cockpit propriétaire ou shell canonique, sinon repli', () => {
+  const tabs = [{ key:'a', label:'A', href:'/admin/x-live' }];
+  const config = { basePath:'/admin/x-live', domainLabel:'X', defaultView:'home', tabs, views:VIEWS };
+  // Le cockpit Relais possède son rail même si le shell externe n'en crée aucun.
+  const { kit:ownKit } = loadKit({ document:{ querySelector:() => null } });
+  expect(ownKit.createCockpit({ ...config, ownsNavigation:true }).renderHtml('', {}))
+    .not.toContain('kir-domain-nav');
+  // Quand le shell fournit déjà ses onglets, aucun deuxième rail de repli.
+  const { kit:shellKit } = loadKit({ document:{ querySelector:selector => selector === '#canonical-admin-domain-tabs' ? {} : null } });
+  expect(shellKit.createCockpit(config).renderHtml('', {})).not.toContain('kir-domain-nav');
+  // Les autres pages conservent leur navigation lorsque personne ne la possède.
+  expect(ownKit.createCockpit(config).renderHtml('', {})).toContain('kir-domain-nav');
 });
 
 describe('order360Link — lien direct vers la fiche Commande 360 avec retour vers le cockpit', () => {

@@ -65,6 +65,22 @@ Le rappel mental permanent est :
 
 `Contexte sticky : gouvernance active + feature owner + headers/mustCheck + dette non croissante + scope minimal + preuve adaptée au risque.`
 
+## 0.3. Certification métier — triple preuve, statut exact et non-régression ciblée
+
+Pour annoncer une **fonctionnalité métier certifiée**, réunir **trois preuves cumulatives sur le même scénario et la même version réellement servie** :
+
+1. **Technique** : tests unitaires/intégration/E2E API pertinents verts, avec cas négatifs, règles d'autorisation et idempotence. Une base PostgreSQL jetable prouve le moteur, pas le comportement de staging.
+2. **Opérationnelle** : gestes réels de bout en bout dans **Chromium sur staging**, via les écrans effectivement utilisés par les bons profils (desktop 1440 px pour la campagne en cours). Pas de mock Playwright des API, ni de transitions d'état fabriquées en SQL pour simuler les clics.
+3. **Vérité persistée** : après chaque geste, contrôle indépendant API et PostgreSQL du même objet et des effets attendus (statut, quantités, traçabilité, justificatifs, habilitations). L'affichage seul ne fait pas foi.
+
+Lier les preuves par `run_id`, SHA de `/health/version`, empreinte de la cible, acteur/rôle, marché, références métier et UUID ; conserver **avant → geste UI → requête canonique → après/readback**, capture/trace expurgée, refus attendus et verdict explicite `PASS | FAIL | BLOCKED | NOT_PROVEN`. Un test non joué, skippé ou une preuve manquante **n'est jamais PASS**. L'exécution d'un E2E HTTP n'est pas une exécution Chromium ; une navigation Chromium verte n'est pas une transaction métier certifiée.
+
+**Sécurité staging avant toute écriture** : cible isolée et fingerprint prouvés, fixtures possédées par un run, nettoyage sélectif vérifié, interdiction d'effets externes réels (paiement, fournisseur, messages, webhooks), préflight et autorisations explicites. Aucun bypass des gates, `UPDATE` manuel de statut, `INSERT` d'état final, désactivation de trigger, purge générale ou faux PASS pour débloquer la recette.
+
+**Capitaliser sans répéter** : conserver les preuves et versions des jalons déjà acquis ; sur correction, rejouer les tests directement impactés et les dépendances signalées par `arch:impact`, en élargissant si le risque l'exige. Le grand E2E transversal final reste obligatoire et distinct des preuves unitaires par fonctionnalité. Distinguer `G1 navigation`, `G2+ gestes métier`, `G6 transversal` et **GO commercial/production**, qui exige une décision séparée.
+
+Références opérationnelles : [plan directeur #2902](https://github.com/SamyrFateh/komerce-backend/issues/2902), [certification Hub Chromium #3611](https://github.com/SamyrFateh/komerce-backend/issues/3611) et [garde staging #3382](https://github.com/SamyrFateh/komerce-backend/issues/3382). Les issues précisent les scénarios, sans pouvoir abaisser les critères ci-dessus.
+
 ## 1. Plan d'attaque obligatoire
 
 Avant toute modification substantielle, l'agent doit annoncer un plan d'attaque court avant de coder.

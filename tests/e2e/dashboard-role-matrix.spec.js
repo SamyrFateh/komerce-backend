@@ -27,14 +27,14 @@ const EXPECTED = Object.freeze({
   market_operator: [
     'control-tower', 'action-center',
     'flow-commerce', 'flow-orders', 'entity-clients', 'workspace-pricing',
-    'flow-operations', 'workspace-relais-exec', 'workspace-shipping',
+    'flow-operations', 'workspace-shipping',
     'flow-finance', 'workspace-accounting', 'live-hub',
     'market-autonomy', 'market-catalog',
   ],
   agent_hub: ['action-center', 'workspace-shipping', 'live-hub'],
   agent_relais: ['action-center', 'live-hub', 'live-relais'],
   agent_transitaire: ['action-center', 'workspace-shipping'],
-  finance: ['workspace-accounting', 'workspace-cash', 'live-hub'],
+  finance: ['workspace-accounting', 'live-hub'],
   sourcing: ['live-import-runtime', 'live-hub'],
   support: ['live-hub'],
 });

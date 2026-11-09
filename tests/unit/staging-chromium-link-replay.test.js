@@ -4,7 +4,7 @@ const {clickDiscoveredLink}=require('../../tests/staging-canonical/link-replay')
 const ORIGIN='https://komerce-backend-production.up.railway.app';
 const SRC='/admin/operations', DEST='/admin/orders/AUDIT-NORMAL';
 const pathname=value=>new URL(String(value),ORIGIN).pathname;
-function fakePage({reappear=true,click=true,asyncNavigation=true}={}){
+function fakePage({reappear=true,click=true,asyncNavigation=true,transientRoot=false}={}){
   const events=[];
   let at=ORIGIN+SRC;
   const locator={
@@ -18,6 +18,7 @@ function fakePage({reappear=true,click=true,asyncNavigation=true}={}){
       events.push('click');
       if(!click)throw Error('intercepted pointer');
       if(!asyncNavigation)at=ORIGIN+DEST;
+      else if(transientRoot)at=ORIGIN+'/';
     }),
   };
   const page={
@@ -56,4 +57,23 @@ test('synchronous navigations do not waste a timeout waiting again',async()=>{
   const outcome=await clickDiscoveredLink(page,{href:DEST,sourcePath:SRC,pathname});
   expect(outcome.actual).toBe(DEST);
   expect(events).toEqual(['await-visible','click']);
+});
+
+test('une racine / qui reste la destination ne devient jamais un PASS',async()=>{
+  const {page}=fakePage({transientRoot:true});
+  page.waitForURL=jest.fn(async()=>{throw Error('redirect target never reached');});
+  const outcome=await clickDiscoveredLink(page,{
+    href:DEST,sourcePath:SRC,pathname,expectedDestination:DEST,
+  });
+  expect(outcome.actual).toBe('/');
+  expect(page.waitForURL).toHaveBeenCalledWith(expect.any(Function),{timeout:8000});
+});
+
+test('un saut transitoire vers / ne constitue pas une mauvaise destination avant le redirect final',async()=>{
+  const {page,events}=fakePage({transientRoot:true});
+  const outcome=await clickDiscoveredLink(page,{
+    href:DEST,sourcePath:SRC,pathname,expectedDestination:DEST,
+  });
+  expect(outcome).toMatchObject({kind:'CLICKED',actual:DEST});
+  expect(events).toEqual(['await-visible','click','await-destination']);
 });

@@ -279,3 +279,22 @@ body.kmc-shell-v4[data-kmc-surface="client-360"] .kmc-admin-back {
 .kmc-action-signal-more summary { cursor: pointer; opacity: .6; list-style: none; padding: 0 .3rem; }
 .kmc-action-group { margin-bottom: .45rem; }
 .kmc-action-group > summary { cursor: pointer; display: flex; gap: .6rem; padding: .4rem .2rem; }
+
+
+/* Catalogue / Produit 360 — gel effectif, non confondu avec la disponibilité historique. */
+.kmc-entity-quality-alert {
+  border: 1px solid #dbc4bc;
+  border-left: 4px solid #9d5136;
+  border-radius: 10px;
+  padding: 12px 15px;
+  background: #fdf8f6;
+  color: #733f30;
+  font-size: 13px;
+  font-weight: 750;
+}
+.kmc-entity-quality-alert.is-signal {
+  border-color: #e6d8b0;
+  border-left-color: #b58925;
+  background: #fffaf0;
+  color: #735c23;
+}

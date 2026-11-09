@@ -814,10 +814,30 @@ jobs:
         if: always()
         run: git diff --exit-code
 
+  preflight:
+    name: Reproduce canonical PR preflight on exact head
+    needs: changes
+    if: needs.changes.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.head_sha || github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Execute real npm run pr:preflight on clean PR SHA
+        env:
+          PREFLIGHT_BASE: ${{ inputs.base_sha || github.event.pull_request.base.sha }}
+        run: npm run pr:preflight -- --base "$PREFLIGHT_BASE"
   verdict:
     name: Required verdict
     if: always()
-    needs: [changes, provider_contracts, backend, migrations, from_scratch, dashboard, boutique, governance]
+    needs: [changes, preflight, provider_contracts, backend, migrations, from_scratch, dashboard, boutique, governance]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -849,6 +869,7 @@ jobs:
         id: aggregate
         env:
           CHANGES_RESULT: ${{ needs.changes.result }}
+          PREFLIGHT_RESULT: ${{ needs.preflight.result }}
           BACKEND_RESULT: ${{ needs.backend.result }}
           PROVIDER_CONTRACTS_RESULT: ${{ needs.provider_contracts.result }}
           MIGRATIONS_RESULT: ${{ needs.migrations.result }}
@@ -858,6 +879,7 @@ jobs:
           GOVERNANCE_RESULT: ${{ needs.governance.result }}
         run: |
           echo "changes=$CHANGES_RESULT"
+          echo "preflight=$PREFLIGHT_RESULT"
           echo "backend=$BACKEND_RESULT"
           echo "provider_contracts=$PROVIDER_CONTRACTS_RESULT"
           echo "migrations=$MIGRATIONS_RESULT"
@@ -866,6 +888,7 @@ jobs:
           echo "boutique=$BOUTIQUE_RESULT"
           echo "governance=$GOVERNANCE_RESULT"
           test "$CHANGES_RESULT" = "success"
+          test "$PREFLIGHT_RESULT" = "success"
           for result in "$PROVIDER_CONTRACTS_RESULT" "$BACKEND_RESULT" "$MIGRATIONS_RESULT" "$FROM_SCRATCH_RESULT" "$DASHBOARD_RESULT" "$BOUTIQUE_RESULT" "$GOVERNANCE_RESULT"; do
             if [ "$result" != "success" ] && [ "$result" != "skipped" ]; then
               echo "Scoped enforcement failed: $result"
