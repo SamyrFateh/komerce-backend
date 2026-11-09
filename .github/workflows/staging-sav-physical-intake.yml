@@ -1,0 +1,61 @@
+name: Staging SAV V1-2 — reprise physique contrôlée sans données persistantes
+
+# Déclenchement : issue ouverte par le propriétaire avec le titre EXACT.
+# Test des refus HTTP réels et du service + triggers PostgreSQL staging
+# dans une transaction externe TOUJOURS ROLLBACK, sans wallet ni stock créé.
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: komerce-staging-sav-physical-intake
+  cancel-in-progress: false
+
+jobs:
+  sav-intake:
+    name: Reprise physique SAV staging (rollback-only + HTTP refus)
+    if: >-
+      github.event.issue.user.login == github.repository_owner &&
+      github.event.issue.title == '[staging-op] sav-physical-intake-v1-2'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      KOMERCE_ENV: staging
+      KOMERCE_TARGET_ENV: staging
+      NODE_ENV: test
+      KOMERCE_DISABLE_CRONS: 'true'
+      EXPECTED_RAILWAY_ENVIRONMENT: staging
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      SAV_CERT_CONFIRMATION: SAV-ROLLBACK-ONLY
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      E2E_AGENT_RELAIS_EMAIL: ${{ secrets.E2E_AGENT_RELAIS_EMAIL }}
+      E2E_AGENT_RELAIS_PASSWORD: ${{ secrets.E2E_AGENT_RELAIS_PASSWORD }}
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Épingler le SHA du service sur la cible staging
+        run: node scripts/recette/resolve-staging-deploy-pin.js
+      - name: Confirmer la base staging et le service (empreinte)
+        run: node scripts/recette/target-guard.js
+      - name: Reprise SAV physique réelle en transaction annulée + refus HTTP
+        run: node scripts/recette/staging-sav-physical-intake-proof.js
+      - name: Archiver les preuves sans secrets
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-sav-physical-intake-${{ github.run_id }}
+          path: test-results/staging-sav-physical-intake/report.json
+          if-no-files-found: warn
+          retention-days: 30
