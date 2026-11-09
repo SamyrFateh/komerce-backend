@@ -73,7 +73,7 @@ jobs:
             echo '- Uniquement RUN8 exact, scope/acheteur fictif vérifiés.'
             echo '- Transactions SQL READ ONLY ; aucun DELETE, UPDATE ou INSERT.'
             echo '- Photographie PG REPEATABLE READ READ ONLY : racines indépendantes, FK, triggers immuables, SHA256 du manifeste.'
-          echo '- Aucun DELETE autorisé par cet inventaire ; les preuves append-only sont retenues.'
+            echo '- Aucun DELETE autorisé par cet inventaire ; les preuves append-only sont retenues.'
             echo '- Aucune autorisation d’apply staging n’est délivrée.'
           } >> "$GITHUB_STEP_SUMMARY"
       - name: Archive inventory report
