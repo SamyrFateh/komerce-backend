@@ -38,6 +38,14 @@ async function mount(page,payload=data(),search='?run=KIR-000013'){
      </head><body><main id="root"></main>
      <script src="/dashboards/canonical/js/import-runtime.js"></script></body></html>`
    });
+   if(pathname==='/dashboards/canonical/js/import-runtime.js'){
+     // Le vrai mount() renseigne le rôle après connexion ; ce mock appelle
+     // render() directement, donc simuler ici un agent Sourcing identifié.
+     const src=fs.readFileSync(path.join(BASE,'js','import-runtime.js'),'utf8');
+     if(!src.includes('let viewer = null;'))throw Error('SOURCE_VIEWER_FIXTURE_MISSING');
+     return route.fulfill({contentType:'application/javascript',
+       body:src.replace('let viewer = null;', "let viewer = {role:'sourcing'};")});
+   }
    if(pathname.startsWith('/dashboards/canonical/')){
      const file=path.join(BASE,pathname.replace('/dashboards/canonical/',''));
      return fs.existsSync(file)?route.fulfill({path:file}):route.fulfill({status:404,body:''});
@@ -69,10 +77,11 @@ test('Suivi : un seul écran, trois onglets locaux et un seul panneau visible',a
  const dimensions=await page.evaluate(()=>({width:innerWidth,document:document.documentElement.scrollWidth}));
  expect(dimensions.document).toBeLessThanOrEqual(dimensions.width+2);
 });
-test('les exceptions guident vers la bonne autorité métier',async({page})=>{
+test('les exceptions restent traçables sans envoyer Sourcing vers un atelier interdit',async({page})=>{
  await mount(page);
- await expect(page.locator('a[href="/admin/workspaces/catalog?search=KSC-000194"]')).toBeVisible();
- await expect(page.locator('a[href="/admin/workspaces/sourcing?candidate_ref=KSC-000195"]')).toBeVisible();
+ await expect(page.locator('a[href="/admin/workspaces/catalog?search=KSC-000194"]')).toHaveCount(0);
+ await expect(page.getByText('À compléter au Catalogue central')).toBeVisible();
+ await expect(page.locator('a[href="/admin/import-runtime?run=KIR-000013&view=sources"]')).toBeVisible();
  await expect(page.getByRole('button',{name:'Classer'})).toHaveCount(0);
 });
 test('une source s’ouvre sur demande et ses commandes utilisent son identité exacte',async({page})=>{
