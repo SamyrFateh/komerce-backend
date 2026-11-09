@@ -1253,12 +1253,17 @@
   }
 
   function itemHref(run, item) {
-    if (item?.product_ref) {
+    if (item?.product_ref && viewer?.role === 'admin') {
       return withReturnTo(
         `/admin/products/${encodeURIComponent(item.product_ref)}`,
         urlFor(run.run_ref),
         'Retour au suivi'
       );
+    }
+    // Un agent Sourcing suit la provenance dans son cockpit, sans accéder
+    // à la fiche Product 360 réservée au rôle Catalogue central.
+    if (item?.product_ref && item?.supplier_product_id) {
+      return itemUrl(run.run_ref, item.supplier_product_id, 'received');
     }
     return stageUrl(run.run_ref, item?.stage || run.current_stage);
   }
@@ -1323,8 +1328,8 @@
       ? `<img src="${esc(item.image_url)}" alt="" loading="lazy">`
       : `<div class="kir-current-image-placeholder">${ico('box')}</div>`;
     return `<section class="kir-live-panel kir-current-item" aria-label="${esc(currentItemTitle(run))}">
-      <header><div>${ico('box')}<strong>${esc(currentItemTitle(run))}</strong></div><a href="${href}" ${item.product_ref ? '' : 'data-cockpit-nav'}>Voir le détail →</a></header>
-      <a class="kir-current-item-body" href="${href}" ${item.product_ref ? '' : 'data-cockpit-nav'}>
+      <header><div>${ico('box')}<strong>${esc(currentItemTitle(run))}</strong></div><a href="${href}" ${item.product_ref && viewer?.role === 'admin' ? '' : 'data-cockpit-nav'}>Voir le détail →</a></header>
+      <a class="kir-current-item-body" href="${href}" ${item.product_ref && viewer?.role === 'admin' ? '' : 'data-cockpit-nav'}>
         <div class="kir-current-image">${image}</div>
         <div class="kir-current-copy">
           <h3>${esc(item.product_name || item.supplier_product_id || 'Produit')}</h3>
@@ -1354,7 +1359,7 @@
           return `<tr data-stage="${esc(item.stage || '')}">
             <td class="kir-live-seq">${esc(item.seq != null ? item.seq : index + 1)}</td>
             <td class="kir-live-thumb">${item.image_url ? `<img src="${esc(item.image_url)}" alt="" loading="lazy">` : ico('box')}</td>
-            <td><a href="${href}" ${item.product_ref ? '' : 'data-cockpit-nav'}>${esc(item.product_name || item.product_ref || 'Produit')}</a>${item.supplier_product_id ? `<small class="kir-live-sub">${esc(item.supplier_product_id)}</small>` : ''}</td>
+            <td><a href="${href}" ${item.product_ref && viewer?.role === 'admin' ? '' : 'data-cockpit-nav'}>${esc(item.product_name || item.product_ref || 'Produit')}</a>${item.supplier_product_id ? `<small class="kir-live-sub">${esc(item.supplier_product_id)}</small>` : ''}</td>
             <td><a class="kir-stage-link" href="${stageUrl(run.run_ref, userStageKey(item.stage))}" data-cockpit-nav>${esc(userStageLabel(item.stage))}</a></td>
             <td>${status}</td>
             <td class="kir-live-time">${esc(time)}</td>
