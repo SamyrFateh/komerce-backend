@@ -152,7 +152,8 @@ test('real staging: full navigation, market context and browser errors',async({p
          if(edgeClicks>=(QUICK?5:170)||dest===route)continue;
          edgeClicks++;
          const clicked=await clickDiscoveredLink(page,{
-           href:link.href,sourcePath:route,pathname
+           href:link.href,sourcePath:route,pathname,
+           expectedDestination:expectedPath(link.href,ORIGIN,{role})
          });
          result.edges.push({source:route,destination:clicked.actual,expected:dest,
            kind:clicked.kind==='CLICKED'?'clicked':'replay_issue',
