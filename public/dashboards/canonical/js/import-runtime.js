@@ -2049,14 +2049,16 @@
       const href = accounting ? urlFor(run.run_ref, 'history')
         : !ref ? urlFor(run.run_ref, 'control')
           : supplierIssue
-            ? '/admin/workspaces/sourcing?candidate_ref=' + encodeURIComponent(ref)
+            ? urlFor(run.run_ref, 'sources')
             : '/admin/workspaces/catalog?search=' + encodeURIComponent(ref);
       const label = accounting ? 'Diagnostic' : supplierIssue
-        ? 'Corriger la source' : ref ? 'Compléter dans le Catalogue' : 'Diagnostic';
+        ? 'Consulter la source' : ref ? 'Compléter dans le Catalogue' : 'Diagnostic';
       return `<li class="kir-one-issue">
         <span><strong>${esc(item.product_name || ref || 'Anomalie du passage')}</strong>
         <small>${esc(item.reason || 'Contrôle à examiner')}</small></span>
-        <a href="${esc(href)}">${esc(label)} →</a></li>`;
+        ${!accounting && !supplierIssue && ref && viewer?.role !== 'admin'
+          ? '<span class="kir-item-note">À compléter au Catalogue central</span>'
+          : `<a href="${esc(href)}"${supplierIssue ? ' data-cockpit-nav' : ''}>${esc(label)} →</a>`}</li>`;
     }).join('');
     return `<section class="kir-one-issues" id="sourcing-actions" aria-label="Actions utiles">
       <h2>${count} action${count > 1 ? 's' : ''} signalée${count > 1 ? 's' : ''} sur ce passage</h2>
@@ -2105,11 +2107,7 @@
         ${activationStrip(sources)}
         ${wizardMarkup(sources)}
         <p class="kir-one-note">Importer = créer un nouveau passage KIR. Activer = autoriser l’alimentation automatique.</p>
-        <p class="kir-one-note">
-          <a href="/admin/workspaces/sourcing?mode=manual&tab=imports">Import manuel / CSV →</a>
-          &nbsp;·&nbsp;
-          <a href="/admin/workspaces/sourcing?mode=partners&tab=suppliers">Administration des partenaires →</a>
-        </p>
+        <p class="kir-one-note">Le suivi des sources et les acquisitions s'effectuent dans cet espace. Les anciens raccourcis manuels et partenaires ne sont plus des pages distinctes.</p>
       </div></details>`;
   }
 
