@@ -96,12 +96,29 @@ test('LOCAL_STOCK : un agent atteste puis remet au client par les vrais clics (H
     const button=card.locator('[data-workspace-action="local-relay-receipt"]');
     await expect(button).toBeVisible();
     const note='RECETTE NATIVE '+MARKET+' '+RUN8;
-    await card.locator('[data-local-physical-proof]').check();
-    await card.locator('[data-local-receipt-note]').fill(note);
-    page.on('dialog',d=>d.accept());
-    const receiptResponse=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/orders/'+orderId+'/local-relay-receipt'&&r.request().method()==='POST');
+    const physicalProof=card.locator('[data-local-physical-proof]');
+    const receiptNote=card.locator('[data-local-receipt-note]');
+    const receiptPath='/api/orders/'+orderId+'/local-relay-receipt';
+    const receiptRequests=[];
+    page.on('request',request=>{
+      if(request.method()==='POST'&&new URL(request.url()).pathname===receiptPath)
+        receiptRequests.push(request.url());
+    });
+    // G3 : clics Chromium sans preuve physique ou sans observation = aucun POST.
+    await expect(physicalProof).not.toBeChecked();
     await button.click();
+    await expect(page.locator('[data-workspace-feedback]')).toContainText('Confirmez la réception physique');
+    assert(receiptRequests.length===0,'receipt-no-request-without-physical-proof');
+    await physicalProof.check();
+    await button.click();
+    await expect(page.locator('[data-workspace-feedback]')).toContainText('Confirmez la réception physique');
+    assert(receiptRequests.length===0,'receipt-no-request-without-observation');
+    await receiptNote.fill(note);
+    page.on('dialog',d=>d.accept());
+    const receiptResponse=page.waitForResponse(r=>new URL(r.url()).pathname===receiptPath&&r.request().method()==='POST');
+    await button.dblclick();
     const receipt=await receiptResponse;
+    assert(receiptRequests.length===1,'receipt-double-click-single-post',receiptRequests.length);
     assert(receipt.status()===200,'receipt-click-http-200',receipt.status());
     const receiptBody=await receipt.json();
     assert(receiptBody.success===true,'receipt-canonical-response');
@@ -128,6 +145,8 @@ test('LOCAL_STOCK : un agent atteste puis remet au client par les vrais clics (H
     await wait(350);
     const done=await snapshot(db,orderId);
     assert(assess(done,'collected').length===0,'pickup-db-zero-hub',assess(done,'collected'));
+    // Verify again after both server round-trips: no delayed duplicate POST.
+    assert(receiptRequests.length===1,'receipt-single-post-after-pickup',receiptRequests.length);
     assert(record.blockedWrites.length===0,'no-unexpected-write',record.blockedWrites);
     assert(record.jsErrors.length===0,'no-browser-js-error',record.jsErrors);
     await page.screenshot({path:path.join(OUT,'03-retrait-confirme.png'),fullPage:true});
