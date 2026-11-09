@@ -23,6 +23,7 @@ const describeDb=isolated?describe:describe.skip;
 describeDb('G4 A/B: canonical identities proven and rolled back on disposable PostgreSQL 16',()=>{
   const db=require('../../db');
   const relayWriter=require('../../services/relais-mutation-service');
+  const canonicalMembership=require('../../scripts/recette/staging-e2e-provision').ensureRelayAgentMembership;
   const RUN=()=>randomBytes(4).toString('hex').toUpperCase();
   jest.setTimeout(60000);
   afterAll(async()=>db.pool.end());
@@ -45,8 +46,10 @@ describeDb('G4 A/B: canonical identities proven and rolled back on disposable Po
       run8,mode:'EPHEMERAL_ONLY_ROLLBACK',
       dedicated_agents:2,distinct_relais:2,market:'KM',
       role:'agent_relais',e2e_markers:2,
-      post_rollback:{agents:0,relais:0},
-      membership:'NOT_PROVEN',order_fixtures:'NOT_CREATED',
+      post_rollback:{agents:0,relais:0,memberships:0,markers:0},
+      membership:'EPHEMERAL_KM_ONLY_PROVEN',
+      granted_capabilities:['execution.parcel.collect','execution.parcel.receive'],
+      order_fixtures:'NOT_CREATED',
       chromium:'NOT_RUN',staging:'NOT_MODIFIED',
       certification:'NOT_PROVEN',committed:false,
     });
@@ -69,5 +72,25 @@ describeDb('G4 A/B: canonical identities proven and rolled back on disposable Po
       .rejects.toThrow('TEST_FAILURE_BEFORE_CREATING_RELAY_B');
     expect(calls).toBe(2);
     expect(await counts(run8)).toEqual([0,0]);
+  });
+
+  test('second membership grant failure rolls back A membership and both accounts',async()=>{
+    const run8=RUN();
+    let grants=0;
+    const writer=async (...args)=>{
+      if(++grants===2)throw Error('TEST_DENY_SECOND_RELAY_MEMBERSHIP');
+      return canonicalMembership(...args);
+    };
+    await expect(prove({db,run8,membershipWriter:writer}))
+      .rejects.toThrow('TEST_DENY_SECOND_RELAY_MEMBERSHIP');
+    expect(grants).toBe(2);
+    expect(await counts(run8)).toEqual([0,0]);
+    // A third connection must find no lingering marker or delegation by run8.
+    const {rows:[r]}=await db.query(
+      "SELECT COUNT(*)::int AS n FROM assignment_memberships am "+
+      "JOIN users u ON u.id=am.user_id WHERE lower(u.email) LIKE $1",
+      ['e2e-g4-ab-'+run8.toLowerCase()+'-%@komerce.test']
+    );
+    expect(r.n).toBe(0);
   });
 });
