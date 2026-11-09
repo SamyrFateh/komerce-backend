@@ -303,7 +303,7 @@ test('12 mis de côté dont 3 corrigeables : sous-ensemble et non sixième popul
   expect(exceptions).toContain('data-product-name="À classer"');
   expect(exceptions).toContain('Classer →');
   expect(exceptions).toContain("Prix d'achat manquant");
-  expect(exceptions).toContain('Corriger la donnée fournisseur →');
+  expect(exceptions).toContain('Consulter la source fournisseur →');
   expect(exceptions).not.toContain('data-action-choose');
   expect((exceptions.match(/kir-row-action/g)||[])).toHaveLength(3);
 });
