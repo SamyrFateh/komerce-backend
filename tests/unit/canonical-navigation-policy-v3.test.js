@@ -70,7 +70,7 @@ describe('Canonical Navigation Policy V3.1', () => {
     expect(spaceIds(nav, 'live', 'agent_hub')).toEqual(['hub-live']);
     expect(spaceIds(nav, 'live', 'agent_relais')).toEqual(['hub-live', 'relais-live']);
     expect(spaceIds(nav, 'operations', 'market_operator')).toEqual([
-      'operations-overview', 'relais-execution', 'shipping-customs-workspace',
+      'operations-overview', 'shipping-customs-workspace',
     ]);
     expect(spaceIds(nav, 'operations', 'agent_hub')).toEqual(['shipping-customs-workspace']);
     expect(spaceIds(nav, 'operations', 'agent_relais')).toEqual([]);
@@ -86,7 +86,7 @@ describe('Canonical Navigation Policy V3.1', () => {
     const nav = loadPolicy();
     expect(spaceIds(nav, 'finance', 'admin')).toEqual(['finance-overview', 'accounting-workspace']);
     expect(spaceIds(nav, 'finance', 'market_operator')).toEqual(['finance-overview', 'accounting-workspace']);
-    expect(spaceIds(nav, 'finance', 'finance')).toEqual(['accounting-workspace', 'cash-deposits']);
+    expect(spaceIds(nav, 'finance', 'finance')).toEqual(['accounting-workspace']);
     expect(spaceIds(nav, 'finance', 'agent_relais')).toEqual([]);
   });
 
