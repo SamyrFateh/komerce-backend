@@ -14,6 +14,15 @@ const CANONICAL = path.join(__dirname, '..', '..', 'public', 'dashboards', 'cano
 const ORIGIN = 'http://komerce.test';
 const CSS = ['base', 'canonical-theme-v2', 'canonical-shell-v4', 'canonical-legacy-theme-v1', 'cockpit-legacy-v1', 'import-runtime'];
 
+// Les pages isolées montent render() sans session ; fournir le rôle admin
+// dans la fixture JS plutôt que d'élargir les droits de l'application.
+function fixtureScriptForRole(role) {
+  const src = fs.readFileSync(path.join(CANONICAL, 'js', 'import-runtime.js'), 'utf8');
+  const marker = 'let viewer = null;';
+  if (!src.includes(marker)) throw new Error('IMPORT_RUNTIME_VIEWER_FIXTURE_MISSING');
+  return src.replace(marker, 'let viewer = {role:' + JSON.stringify(role) + '};');
+}
+
 const now = Date.now();
 const iso = (minutesAgo) => new Date(now - minutesAgo * 60000).toISOString();
 
@@ -65,6 +74,9 @@ async function mountCockpit(page, data = payload) {
           <script>window.__KOMERCE_LEGACY_PROOF__ = true;</script>
           <script src="/dashboards/canonical/js/import-runtime.js"></script></body></html>`,
       });
+    }
+    if (url.pathname === '/dashboards/canonical/js/import-runtime.js') {
+      return route.fulfill({contentType:'application/javascript',body:fixtureScriptForRole('admin')});
     }
     if (url.pathname.startsWith('/dashboards/canonical/')) {
       const file = path.join(CANONICAL, url.pathname.replace('/dashboards/canonical/', ''));
@@ -418,6 +430,9 @@ async function mountLive(page, data) {
         <body><main id="canonical-admin-root"><h1>Produit Catalogue P-42</h1></main>
         <script>window.KomerceCanonicalAdmin={surfaceForPath:()=> 'product-360'};window.KOMERCE_CANONICAL_AUTH_USER={role:'catalog_manager'};</script>
         <script src="/dashboards/canonical/js/navigation-policy-v4.js"></script></body></html>` });
+    }
+    if (url.pathname === '/dashboards/canonical/js/import-runtime.js') {
+      return route.fulfill({contentType:'application/javascript',body:fixtureScriptForRole('admin')});
     }
     if (url.pathname.startsWith('/dashboards/canonical/')) {
       const file = path.join(CANONICAL, url.pathname.replace('/dashboards/canonical/', ''));
