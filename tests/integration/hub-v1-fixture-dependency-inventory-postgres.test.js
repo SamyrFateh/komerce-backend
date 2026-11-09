@@ -8,7 +8,7 @@
  */
 const crypto=require('crypto');
 const db=require('../../db');
-const {inspect,exactRefs}=require('../../scripts/recette/hub-v1-fixture-dependency-inventory');
+const {inspect,exactRefs,buildCleanupInventory}=require('../../scripts/recette/hub-v1-fixture-dependency-inventory');
 jest.setTimeout(60000);
 const describeDb=process.env.DATABASE_URL?describe:describe.skip;
 const id=()=>crypto.randomUUID();
@@ -34,6 +34,31 @@ describeDb('Hub V1 fixture cleanup discovery — PostgreSQL 16 isolé',()=>{
     }
   });
   afterAll(async()=>{await db.pool.end().catch(()=>{});});
+
+  test('inventaire complet cohérent sur snapshot PostgreSQL, sans écriture ni DELETE',async()=>{
+    const client=await db.getClient();
+    let report;
+    try{report=await buildCleanupInventory(client,run);}finally{client.release();}
+    expect(report.roots).toHaveLength(4);
+    expect(report.missing).toEqual([]);
+    expect(report.snapshot_sha256).toMatch(/^[a-f0-9]{64}$/);
+    const owned=Object.fromEntries(report.owned_roots_outside_fk_graph.map(x=>[x.table,x]));
+    expect(owned.users.count).toBe(1);
+    expect(owned.relais.count).toBe(1);
+    expect(owned.products.count).toBe(1);
+    expect(owned.users.ids).toContain(ids.buyer);
+    expect(owned.relais.ids).toContain(ids.relais);
+    expect(owned.products.ids).toContain(ids.product);
+    expect(report.cleanup_strategy.decision).toMatch(/^(HOLD_|RETAIN_)/);
+    expect(report.cleanup_certified).toBe(false);
+    expect(report.delete_performed).toBe(false);
+    expect(report.cleanup_scope_checks).toMatchObject({
+      exact_roots:true,no_truncation:true,valid_owned_root_ids:true,
+    });
+    const stored=(await q("SELECT COUNT(*)::int AS n FROM orders WHERE reference=ANY($1::text[])",[exactRefs(run)])).rows[0].n;
+    expect(stored).toBe(4);
+  });
+
   test('identités exactes, quatre commandes, quatre lignes réelles détectées sans suppression',async()=>{
     const client=await db.getClient();
     let report;

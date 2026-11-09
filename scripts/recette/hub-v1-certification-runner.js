@@ -1103,6 +1103,7 @@ async function runCertification({ db = require('../../db'), run = newRun8(), dry
         verdict: inv.verdict, delete_performed: false, cleanup_certified: false, strategy: inv.cleanup_strategy,
         order_roots: inv.roots, fk_graph_tables: inv.discovered_tables, opaque_dependencies: inv.opaque_dependencies,
         owned_roots_outside_fk_graph: inv.owned_roots_outside_fk_graph, tables_considered: inv.tables_considered,
+        inventory_snapshot_sha256: inv.snapshot_sha256, cleanup_scope_checks: inv.cleanup_scope_checks,
         immutable_tables_detail: inv.immutability.filter((t) => t.delete_blocking_triggers.length),
         fk_delete_rules: inv.fk_delete_rules,
       };
