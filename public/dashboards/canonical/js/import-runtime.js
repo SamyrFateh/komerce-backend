@@ -1517,7 +1517,7 @@
     const items = Array.isArray(run.action_items) ? run.action_items : [];
     const count = num(run.accounting?.action_required);
     const back = urlFor(run.run_ref, 'exceptions');
-    const workspace = withReturnTo('/admin/workspaces/sourcing', back, 'Retour à Action requise');
+    const workspace = withReturnTo('/admin/import-runtime', back, 'Retour à Action requise');
     const rows = items.map(item => {
       const title = item.product_name || item.supplier_product_id || (item.reason === 'Anomalie de comptage' ? 'Comptage du passage' : 'Produit à examiner');
       const candidateRef = item.candidate_ref || '';
@@ -1527,10 +1527,10 @@
         ? urlFor(run.run_ref, 'history')
         : !candidateRef ? urlFor(run.run_ref, 'control')
           : isSupplierFact
-            ? '/admin/workspaces/sourcing?candidate_ref=' + encodeURIComponent(candidateRef)
+            ? urlFor(run.run_ref, 'sources')
             : '/admin/workspaces/catalog?search=' + encodeURIComponent(candidateRef);
       const label = isAccounting ? 'Voir le diagnostic'
-        : isSupplierFact ? 'Corriger la donnée fournisseur'
+        : isSupplierFact ? 'Consulter la source fournisseur'
           : candidateRef ? 'Corriger dans le Catalogue' : 'Voir le diagnostic';
       // Historical mocked proof remains available only for technical regression
       // tests. Mounted Sourcing Live and all operator links always use Catalogue.
