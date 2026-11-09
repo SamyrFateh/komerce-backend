@@ -50,6 +50,10 @@ async function run(args = {}) {
 async function runInner({ env = process.env, db, run8 } = {}, holder = {}) {
   const { base, local } = assertTarget(env);
   if (!/^[A-F0-9]{8}$/.test(run8 || '')) throw new Error('RUN8_REQUIRED');
+  if (local) {
+    // Le serveur local doit également reposer sur une base jetable et locale.
+    require('./hub-v1-certification-runner').assertEphemeralTarget(env.DATABASE_URL, []);
+  }
   if (!local) {
     // Autorisation avant authentification, et avant le moindre POST metier.
     await require('./hub-v1-staging-target-authorization').authorizeOfficialStaging({ db, run: run8, env });
