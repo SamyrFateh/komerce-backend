@@ -11,7 +11,7 @@
 const fs=require('fs'),path=require('path');
 const {test,expect}=require('@playwright/test');
 const {markets,pages,dimensions,processes}=require('./matrix');
-const {expectedPath}=require('./navigation-audit-policy');
+const {expectedPath,resolveNavigationHttp}=require('./navigation-audit-policy');
 const {clickDiscoveredLink}=require('./link-replay');
 const ORIGIN=process.env.E2E_STAGING_BASE_URL||'https://komerce-backend-production.up.railway.app';
 const ROOT=path.resolve('test-results/staging-chromium/evidence');
