@@ -85,15 +85,18 @@ test('aucune fixture présente : aucune suppression et aucun GO implicite',async
   expect(report.cleanup_certified).toBe(false);
 });
 
-function cleanupClient({orders=roots, owned={}, fkEdges=[], immutable=[]}={}) {
+function cleanupClient({orders=roots, owned={}, fkEdges=[], graphEdges=[], children={}, immutable=[]}={}) {
   const statements=[];
   const client={query:jest.fn(async(sql)=>{
     statements.push(sql);
     if(sql.startsWith('BEGIN TRANSACTION')||sql==='ROLLBACK')return{rows:[]};
     if(sql.includes('FROM public.orders o JOIN public.users'))return{rows:orders};
-    if(sql.includes('FROM pg_constraint c')&&sql.includes('array_to_json'))return{rows:[]};
+    if(sql.includes('FROM pg_constraint c')&&sql.includes('array_to_json'))return{rows:graphEdges};
     if(sql.includes('FROM pg_constraint c')&&sql.includes('AS delete_rule'))return{rows:fkEdges};
     if(sql.includes('FROM pg_trigger t'))return{rows:immutable};
+    for(const [table, rows] of Object.entries(children)){
+      if(sql.includes('FROM public."'+table+'"'))return{rows};
+    }
     for(const [table, data] of Object.entries(owned)){
       const tableQuery={
         users:'FROM users WHERE lower(email)',relais:'FROM relais WHERE name =',
@@ -168,4 +171,37 @@ test('workflow d’inventaire conserve le SHA staging vérifié et reste read on
   expect(y).toContain('node scripts/recette/hub-v1-fixture-dependency-inventory.js');
   expect(y).not.toContain('E2E_EXPECTED_DEPLOY_SHA=$(git rev-parse HEAD)');
   expect(y).not.toMatch(/TRUNCATE|DELETE FROM|session_replication_role/);
+});
+
+
+test('une dependance differente avec le MEME nombre de lignes change l empreinte du manifeste',async()=>{
+  const edge={constraint_name:'order_items_order_fk',parent_table:'orders',
+    child_table:'order_items',child_columns:['order_id'],parent_columns:['id'],
+    child_has_uuid_id:true};
+  const first=cleanupClient({graphEdges:[edge],children:{order_items:[{id:uuid(101)}]}});
+  const second=cleanupClient({graphEdges:[edge],children:{order_items:[{id:uuid(102)}]}});
+  const a=await buildCleanupInventory(first.client,RUN);
+  const b=await buildCleanupInventory(second.client,RUN);
+  expect(a.discovered_tables).toEqual(b.discovered_tables);
+  expect(a.discovered_tables).toContainEqual({table:'order_items',count:1});
+  expect(a.dependency_identity_fingerprints.find(x=>x.table==='order_items').ids_sha256)
+    .not.toBe(b.dependency_identity_fingerprints.find(x=>x.table==='order_items').ids_sha256);
+  expect(a.snapshot_sha256).not.toBe(b.snapshot_sha256);
+  expect(a.cleanup_certified).toBe(false);
+  expect(b.cleanup_certified).toBe(false);
+  expect(first.statements.filter(x=>x==='ROLLBACK')).toHaveLength(1);
+  expect(second.statements.filter(x=>x==='ROLLBACK')).toHaveLength(1);
+});
+
+test('trigger de preuve immuable seulement dans enfant FK potentiel impose RETAIN sans aucun DELETE',async()=>{
+  const fks=[{parent_table:'orders',child_table:'hub_v1_append_only_evidence',constraint_name:'evidence_fk',delete_rule:'a'}];
+  const triggers=[{table_name:'hub_v1_append_only_evidence',trigger_name:'no_delete_evidence',on_delete:true,on_update:false}];
+  const {client,statements}=cleanupClient({fkEdges:fks,immutable:triggers});
+  const report=await buildCleanupInventory(client,RUN);
+  expect(report.verdict).toBe('HOLD_IMMUTABLE_PROOFS_POTENTIAL');
+  expect(report.cleanup_strategy.decision).toBe('RETAIN_FIXTURE_PREFIX_NO_DELETE');
+  expect(report.cleanup_strategy.immutable_tables_potential_children).toContain('hub_v1_append_only_evidence');
+  expect(report.cleanup_strategy.delete_performed).toBe(false);
+  expect(report.cleanup_certified).toBe(false);
+  expect(statements.slice(1,-1).every(x=>/^\s*SELECT\b/.test(x))).toBe(true);
 });

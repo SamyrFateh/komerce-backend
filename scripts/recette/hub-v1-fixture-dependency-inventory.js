@@ -115,6 +115,14 @@ async function inspect(client,run,{transactionManaged=true}={}){
     // of non-FK references, append-only triggers or ownership of shared parents.
     report.discovered_tables=[...ids.entries()].map(([table,set])=>({table,count:set.size}))
       .sort((a,b)=>a.table.localeCompare(b.table));
+    // Deux ensembles de dependances peuvent avoir le MEME count avec des UUID
+    // differents. Le manifeste doit alors changer. Publier seulement une
+    // empreinte de chaque ensemble (pas les UUID des preuves dans les logs).
+    report.dependency_identity_fingerprints=[...ids.entries()].map(([table,set])=>({
+      table,count:set.size,
+      ids_sha256:crypto.createHash('sha256')
+        .update(JSON.stringify({table,ids:[...set].sort()})).digest('hex'),
+    })).sort((a,b)=>a.table.localeCompare(b.table));
     report.verdict=report.truncated?'HOLD_DEPENDENCY_GRAPH_TOO_LARGE'
       :report.opaque_dependencies.length?'HOLD_OPAQUE_RELATIONS'
       :ownership.missing.length?'HOLD_INCOMPLETE_FIXTURE'
@@ -179,6 +187,7 @@ async function buildCleanupInventory(client, run) {
     // autorisation de suppression. Les preuves append-only sont conservées.
     const snapshot={scope:SCOPE,run,roots:report.roots,
       discovered_tables:report.discovered_tables||[],
+      dependency_identity_fingerprints:report.dependency_identity_fingerprints||[],
       owned_roots:owned.map(({table,count,ids})=>({table,count,ids:ids.slice().sort()})),
       opaque_dependencies:report.opaque_dependencies,
       immutable_tables:immutable.map((t)=>t.table).sort()};
@@ -190,20 +199,24 @@ async function buildCleanupInventory(client, run) {
       valid_owned_root_ids:owned.every((o)=>o.invalid_ids===0),
       immutable_evidence_retained:true,
     };
-    report.cleanup_strategy = immutable.length
+    // Un trigger de suppression sur un ENFANT d'une racine est au minimum
+    // une preuve potentielle : conserver le RUN8 en bloc. Ne jamais transformer
+    // une absence de match direct en permission DELETE.
+    report.cleanup_strategy = immutableAll.length
       ? {decision:'RETAIN_FIXTURE_PREFIX_NO_DELETE',
-          reason:'preuves append-only : ne supprimer aucune ligne, ne pas désactiver les triggers',
+          reason:'preuves append-only directes ou potentielles : conserver le RUN8 ; ne pas supprimer ni desactiver les triggers',
           immutable_tables:immutable.map((t)=>t.table),
           immutable_tables_potential_children:immutableAll.filter((t)=>!holdsFixtureRows.has(t.table)).map((t)=>t.table),
           delete_performed:false}
       : {decision:'HOLD_DISCOVERY_ONLY_NO_APPLY',
-          reason:'absence de trigger de blocage ne prouve ni exclusivité des relations ni permission DELETE',
+          reason:'absence de trigger de blocage ne prouve ni exclusivite des relations ni permission DELETE',
           immutable_tables:[],
-          immutable_tables_potential_children:immutableAll.map((t)=>t.table),
+          immutable_tables_potential_children:[],
           delete_performed:false};
     if(report.roots.length===0&&owned.some((o)=>o.count>0))report.verdict='HOLD_ORPHANED_FIXTURE_ROOTS';
     else if(!Object.values(report.cleanup_scope_checks).every(Boolean))report.verdict='HOLD_INCOMPLETE_OWNERSHIP_INVENTORY';
     else if(immutable.length)report.verdict='HOLD_IMMUTABLE_PROOFS_RETAINED';
+    else if(immutableAll.length)report.verdict='HOLD_IMMUTABLE_PROOFS_POTENTIAL';
     report.cleanup_certified=false;
     report.delete_performed=false;
     return report;
