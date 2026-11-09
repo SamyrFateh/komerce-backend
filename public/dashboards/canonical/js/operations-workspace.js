@@ -1684,14 +1684,14 @@
       const choices=[
         {key:'shipments',label:'Arrivages',count:pending},
         {key:'cash',label:'Encaisser',count:(relay.cash_pending||[]).length},
-        {key:'receive',label:'Réception locale',count:(relay.to_receive||[]).filter(x=>x.local_receivable===true).length},
+        {key:'receive',label:'Réception locale',count:(relay.local_receipt_pending||[]).length+(relay.to_receive||[]).filter(x=>x.local_receivable===true).length},
         {key:'collect',label:'Remise client',count:(relay.to_collect||[]).length},
       ];
       if(!RELAY_OPERATION_KEYS.includes(context.activeRelayQueue)) {
         context.activeRelayQueue=RELAY_OPERATION_KEYS.includes(context.initialFocus)?context.initialFocus:
           (pending>0?'shipments':relay.to_collect?.length?'collect':
           relay.cash_pending?.length?'cash':
-          relay.to_receive?.some(x=>x.local_receivable===true)?'receive':'shipments');
+          relay.local_receipt_pending?.length || relay.to_receive?.some(x=>x.local_receivable===true)?'receive':'shipments');
       }
       const dock=doc.createElement('nav');
       dock.className='kmc-relay-execution-jumpbar';
@@ -1781,13 +1781,22 @@
       empty: 'Aucun paiement cash à encaisser.',
     });
 
-    // Geste reserve au colis LOCAL expedie par le Hub (local_receivable, calcule serveur). Colis import : attestation d'expedition ci-dessus.
-    renderParcelActionSection(rootNode, ui, doc, context, {
+    // Deux circuits de réception sous UN seul aiguillage. Une commande
+    // LOCAL_STOCK directe n'est jamais assimilée à un colis expédié.
+    const localReceiveLane = doc.createElement('div');
+    localReceiveLane.id = 'relay-execution-receive';
+    localReceiveLane.setAttribute('data-relay-local-receive-lane', '');
+    rootNode.appendChild(localReceiveLane);
+    renderDirectLocalReceiptSection(localReceiveLane, ui, doc, context,
+      payload.queues.relay.local_receipt_pending || []);
+
+    // Geste réservé au colis local déjà expédié par le Hub (ancien circuit).
+    // Le tableau reste dans la même file de réception, sans doublon de navigation.
+    renderParcelActionSection(localReceiveLane, ui, doc, context, {
       title: 'Réception locale',
       description: 'Réceptionner les colis locaux autorisés, avec preuve.',
       rows: payload.queues.relay.to_receive.filter(row => row.local_receivable === true),
       action: 'receive',
-      jumpId:'relay-execution-receive',
       actionLabel: 'Reçu au relais',
       suffix: row => `parcels/${encodeURIComponent(row.reference)}/receive`,
       confirm: row => `Confirmer la réception de ${row.reference} au relais ?`,
@@ -1853,6 +1862,58 @@
     const slot = createSection(rootNode, ui, config.title, config.description);
     if (config.jumpId && slot.parentElement) slot.parentElement.id=config.jumpId;
     renderActionRows(slot, doc, context, config, 'order');
+  }
+
+  // Attestation réelle au relais : le statut d'une commande n'est jamais une
+  // preuve physique. L'agent coche explicitement la possession et ajoute une
+  // référence/observation ; le serveur conserve la preuve canonique dans scans.
+  function renderDirectLocalReceiptSection(rootNode, ui, doc, context, rows) {
+    const slot = createSection(rootNode, ui, 'Relais · Réception locale directe',
+      'Commande payée avec articles en stock local : réception physique au relais, sans Hub ni expédition fictive.');
+    slot.setAttribute('data-relay-direct-local-receipts', '');
+    if (!rows.length) {
+      slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucune commande locale en attente de réception physique.'));
+      return;
+    }
+    rows.forEach(row => {
+      // Seul l'identifiant serveur est utilisé ; le marché client n'est jamais
+      // une source d'autorité pour cette mutation.
+      if (!/^[0-9a-f]{8}-[0-9a-f-]{27,36}$/i.test(String(row.id || ''))) return;
+      const card = doc.createElement('div');
+      card.className = 'kmc-workspace-manual-reason';
+      card.setAttribute('data-relay-local-order', row.reference);
+      const heading = text(doc, 'strong', 'kmc-workspace-ref-text', row.reference);
+      const meta = text(doc, 'span', 'kmc-workspace-muted',
+        [row.client_name, row.relais_name, 'Articles ' + (row.item_count || '—')].filter(Boolean).join(' · '));
+      const label = doc.createElement('label');
+      const received = doc.createElement('input');
+      received.type = 'checkbox';
+      received.setAttribute('data-local-physical-proof', '');
+      label.append(received, doc.createTextNode(' Articles physiquement reçus et contrôlés'));
+      const note = doc.createElement('input');
+      note.type = 'text';
+      note.maxLength = 500;
+      note.placeholder = 'Référence ou observation de réception (obligatoire)';
+      note.setAttribute('aria-label', 'Référence ou observation de réception pour ' + row.reference);
+      note.setAttribute('data-local-receipt-note', '');
+      const button = makeActionButton(doc, 'Attester la réception', 'local-relay-receipt');
+      button.addEventListener('click', () => {
+        if (button.disabled) return;
+        if (!received.checked || !note.value.trim()) {
+          setFeedback(context.root, 'Confirmez la réception physique et renseignez une référence ou observation.', 'critical');
+          return;
+        }
+        runAction(context, button, {
+          url: '/api/orders/' + encodeURIComponent(row.id) + '/local-relay-receipt',
+          body: { physical_received: true, note: note.value.trim() },
+          confirmMessage: 'Attester la réception physique de ' + row.reference + ' dans ce relais ?',
+          runningMessage: row.reference + ' · réception en cours…',
+          successMessage: row.reference + ' · réception physique attestée. Colis disponible au relais.',
+        }).catch(() => {});
+      });
+      card.append(heading, meta, label, note, button);
+      slot.appendChild(card);
+    });
   }
 
   // Mode dégradé : la confirmation depuis l'interface remplace le scan matériel ; le motif est obligatoire et tracé.
