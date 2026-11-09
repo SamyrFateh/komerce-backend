@@ -78,10 +78,18 @@ test('field Action Center navigation is reachable without Dashboard authority', 
   }));
 
   await page.goto('/admin/hub', { waitUntil: 'domcontentloaded' });
-  // Le Hub arrive volontairement en mode concentré : sa navigation reste dans
-  // le DOM mais est masquée. Tester le vrai geste utilisateur avant À traiter.
-  const restoreNavigation = page.getByRole('button', { name: /réafficher la navigation/i });
-  if (await restoreNavigation.isVisible()) await restoreNavigation.click();
+  // Le Hub monte sa barre de commande de manière asynchrone après DOMContentLoaded.
+  // isVisible() ne patiente pas : ne jamais conclure que le bouton est absent
+  // avant que le vrai poste de travail soit prêt.
+  if (role === 'agent_hub') {
+    const restoreNavigation = page.locator('[data-hub-focus-toggle]');
+    await expect(restoreNavigation).toBeVisible({ timeout: 18000 });
+    await expect(restoreNavigation).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('body')).toHaveClass(/kmc-hub-agent-focus/);
+    await restoreNavigation.click();
+    await expect(restoreNavigation).toHaveAttribute('aria-pressed', 'false');
+    await expect(page.locator('body')).not.toHaveClass(/kmc-hub-agent-focus/);
+  }
   const actionLink = page.locator('a[href="/admin/action-center"]').first();
   await expect(actionLink).toBeVisible({ timeout: 18000 });
   await actionLink.click();
