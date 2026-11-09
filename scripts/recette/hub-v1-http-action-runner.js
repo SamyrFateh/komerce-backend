@@ -70,6 +70,9 @@ async function run({ env = process.env, db, run8 } = {}) {
   const { base, local } = assertTarget(env);
   if (!/^[A-F0-9]{8}$/.test(run8 || '')) throw new Error('RUN8_REQUIRED');
   if (!local) {
+    // Le chemin HTTP ecrit via les vraies routes : meme garde bloquante que
+    // l'executeur officiel, avant tout login ou action sur staging.
+    await require('./hub-v1-staging-target-authorization').authorizeOfficialStaging({ db, run: run8, env });
     const v = await (await fetch(base + '/health/version')).json();
     if (!/^[a-f0-9]{40}$/i.test(env.E2E_EXPECTED_DEPLOY_SHA || '') || String(v.commit).toLowerCase() !== env.E2E_EXPECTED_DEPLOY_SHA.toLowerCase()) throw new Error('STAGING_SHA_MISMATCH');
   }
