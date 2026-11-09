@@ -27,7 +27,7 @@ const CASH = {
 };
 const WORKSPACE = {
   scope: { code: 'KM', name: 'Comores' },
-  summary: { hub_to_order: 1, hub_unassigned: 1, hub_to_ship: 1, relay_cash_pending: 1, relay_to_receive: 1, relay_to_collect: 1, inventory_to_assign: 1 },
+  summary: { hub_to_order: 1, hub_unassigned: 1, hub_to_ship: 1, relay_cash_pending: 1, relay_to_receive: 2, relay_local_receipt_pending: 1, relay_to_collect: 1, inventory_to_assign: 1 },
   queues: {
     hub: {
       to_order: [{ reference: 'K-ORDER-1', client_name: 'Client A', relais_name: 'Relais Moroni', total_kmf: 25000 }],
@@ -35,6 +35,10 @@ const WORKSPACE = {
     },
     relay: {
       cash_pending: [{ reference: 'K-CASH-1' }],
+      local_receipt_pending: [{
+        id:'11111111-1111-4111-8111-111111111111',
+        reference:'K-LOCAL-1',client_name:'Client local',relais_name:'Relais Moroni',item_count:1,
+      }],
       // PCL-KM-2 : colis import rattache a une expedition (reception = attestation) ; PCL-KM-4 : colis local expedie par le Hub.
       to_receive: [{ reference: 'PCL-KM-2', local_receivable: false }, { reference: 'PCL-KM-4', local_receivable: true }],
       to_collect: [{ reference: 'PCL-KM-3' }],
@@ -167,6 +171,37 @@ test('SAV physique : Chromium agent Relais confirme une reprise puis retrouve la
   expect(posts.filter(p=>/wallet|refund|stock|returns/i.test(p.path))).toHaveLength(0);
 });
 
+
+test('G3 LOCAL_STOCK : réception directe dans le Kanban conservé, preuve obligatoire et POST unique (API simulée)', async ({ page }) => {
+  await page.setViewportSize({ width:1440, height:900 });
+  const posts=[];
+  await mount(page,posts,{focus:'receive'});
+  const dock=page.locator('[data-relay-execution-jump="receive"]');
+  await expect(dock).toContainText('2');
+  await expect(page.locator('#relay-execution-receive')).toHaveCount(1);
+  await expect(page.locator('[data-relay-local-receive-lane]')).toBeVisible();
+  const card=page.locator('[data-relay-local-order="K-LOCAL-1"]');
+  await expect(card).toBeVisible();
+  // La branche colis déjà expédié et la branche directe restent dans la même file.
+  await expect(page.locator('#relay-execution-receive [data-workspace-action="receive"]')).toHaveCount(1);
+  const button=card.locator('[data-workspace-action="local-relay-receipt"]');
+  await button.click();
+  expect(posts).toHaveLength(0);
+  await expect(page.locator('[data-workspace-feedback]')).toContainText('Confirmez la réception physique');
+  await card.locator('[data-local-physical-proof]').check();
+  await button.click();
+  expect(posts).toHaveLength(0);
+  await card.locator('[data-local-receipt-note]').fill('RECU-G3-LOCAL');
+  await button.dblclick();
+  await expect.poll(()=>posts.filter(item=>item.path.endsWith('/local-relay-receipt')).length).toBe(1);
+  expect(posts.find(item=>item.path.endsWith('/local-relay-receipt'))).toEqual({
+    path:'/api/orders/11111111-1111-4111-8111-111111111111/local-relay-receipt',
+    body:{physical_received:true,note:'RECU-G3-LOCAL'},
+  });
+  await expect(page.locator('[data-workspace-feedback]')).toContainText('réception physique attestée');
+  expect(posts).toHaveLength(1);
+});
+
 for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mobile', { width: 390, height: 844 }]]) {
   test.describe(`Relais live · Exécution — ${name}`, () => {
     test.use({ viewport });
@@ -181,7 +216,7 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
         await expect(page.locator('#relay-execution-'+key)).toHaveCount(1);
       }
       await expect(dock.locator('[data-relay-execution-jump="shipments"]')).toContainText('1');
-      await expect(dock.locator('[data-relay-execution-jump="receive"]')).toContainText('1');
+      await expect(dock.locator('[data-relay-execution-jump="receive"]')).toContainText('2');
       await expect(page.locator('[data-workspace-mode="relay-execution"] .kmc-workspace-metrics')).toHaveCount(0);
       await dock.locator('[data-relay-execution-jump="collect"]').click();
       await expect(page).toHaveURL(/#relay-execution-collect/);

@@ -159,6 +159,40 @@ test('buildQueues ne crée aucune transition métier côté présentation', () =
   expect(queues.relay.to_collect.map(row => row.reference)).toEqual(['PCL-3']);
 });
 
+
+test('G3 LOCAL_STOCK : réception directe exposée au seul relais affecté, sans file Hub', () => {
+  const orders = [
+    { id:'11111111-1111-4111-8111-111111111111', reference:'LOCAL-A', relais_id:'relay-A', local_receipt_candidate:true },
+    { id:'22222222-2222-4222-8222-222222222222', reference:'LOCAL-B', relais_id:'relay-B', local_receipt_candidate:true },
+    { id:'33333333-3333-4333-8333-333333333333', reference:'IMPORT-C', relais_id:'relay-A', local_receipt_candidate:false },
+  ];
+  const a = workspace.buildQueues(orders, [], { role:'agent_relais', relais_id:'relay-A' });
+  expect(a.relay.local_receipt_pending.map(row => row.reference)).toEqual(['LOCAL-A']);
+  expect(a.hub.to_ship).toEqual([]);
+  expect(workspace.buildQueues(orders, [], { role:'agent_relais', relais_id:'relay-B' })
+    .relay.local_receipt_pending.map(row => row.reference)).toEqual(['LOCAL-B']);
+  expect(workspace.buildQueues(orders, [], { role:'agent_relais', relais_id:'relay-C' })
+    .relay.local_receipt_pending).toHaveLength(0);
+  for (const role of ['agent_hub', 'market_operator', 'agent_transitaire']) {
+    expect(workspace.buildQueues(orders, [], { role })
+      .relay.local_receipt_pending).toHaveLength(0);
+  }
+  expect(workspace.buildQueues(orders, [], { role:'admin' }).relay.local_receipt_pending).toHaveLength(2);
+  expect(workspace.buildQueues(orders, []).relay.local_receipt_pending).toHaveLength(0);
+});
+
+test('G3 LOCAL_STOCK : la requête candidate conserve le scope, paiement, provenance et filtre de simulation', async () => {
+  const relaisId = '11111111-1111-4111-8111-111111111111';
+  await workspace.buildWorkspace({ market: MARKET, viewer: {role:'agent_relais', relais_id:relaisId} });
+  const sql = mockQuery.mock.calls.map(call => String(call[0]))
+    .find(source => source.includes('local_receipt_candidate'));
+  expect(sql).toContain('o.payment_status = \'paid\'');
+  expect(sql).toContain("local_oi.fulfillment_source = 'LOCAL_STOCK'");
+  expect(sql).toContain('local_pi.order_item_id');
+  expect(sql).toContain('AND o.relais_id = $2');
+  expect(sql).toContain('o.simulation_scope IS NULL');
+});
+
 test('runDistribution ne distribue que les commandes présélectionnées dans le marché', async () => {
   mockQuery.mockResolvedValueOnce({
     rows: [
