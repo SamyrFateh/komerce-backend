@@ -12,8 +12,19 @@ const fs=require('fs'),path=require('path');
 const {markets,dimensions,processes}=require('../../tests/staging-canonical/matrix');
 const root=path.resolve('test-results/staging-chromium'),dir=path.join(root,'evidence');
 fs.mkdirSync(root,{recursive:true});
-const files=fs.existsSync(dir)?fs.readdirSync(dir).filter(x=>x.endsWith('.json')):[];
-const runs=files.map(f=>JSON.parse(fs.readFileSync(path.join(dir,f),'utf8')));
+// La preuve Hub Director a son propre schéma et ne représente pas un graphe
+// de navigation. Ne pas l'interpréter comme un profil Chromium ordinaire.
+const files=fs.existsSync(dir)?fs.readdirSync(dir)
+  .filter(x=>x.endsWith('.json')&&x!=='hub-director-readonly.json'):[];
+const runs=files.map(f=>{
+  const evidence=JSON.parse(fs.readFileSync(path.join(dir,f),'utf8'));
+  if(!evidence.role || !Array.isArray(evidence.findings) ||
+      !Array.isArray(evidence.routes) || !Array.isArray(evidence.edges) ||
+      !Array.isArray(evidence.marketViews)) {
+    throw new Error('NAVIGATION_EVIDENCE_SCHEMA_INVALID: '+f);
+  }
+  return evidence;
+});
 const preflightFile=path.join(root,'credentials-preflight.json');
 const credentialPreflight=fs.existsSync(preflightFile)?JSON.parse(fs.readFileSync(preflightFile,'utf8')):null;
 const deploymentPreflightFile=path.join(root,'deployment-preflight.json');
