@@ -186,8 +186,8 @@ async function run() {
   ok(/^[a-f0-9]{40}$/i.test(String(version.commit||'')),'DEPLOY_SHA_UNAVAILABLE');
   report.runtime_sha=version.commit;
   step('runtime_version','SHA staging identifié');
-  await probeHttp(process.env);
-
+  // Prove the physical service and DB gates before optional HTTP account checks;
+  // failures still leave no fixture, and their individual checks remain visible.
   const client=await db.getClient();
   let tx=false,ids=null;
   try{
@@ -204,6 +204,7 @@ async function run() {
     }
     client.release();
   }
+  await probeHttp(process.env);
   report.verdict='PASS_TRANSACTIONAL_AND_NEGATIVE_HTTP';
   report.remaining='Une attestation HTTP positive avec dossier de recette persistant et le contrôle Chromium authentifié restent à certifier séparément.';
   return report;
