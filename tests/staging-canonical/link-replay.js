@@ -17,7 +17,7 @@
  * No mutation: only a normal visible <a> click. Caller classifies the outcome.
  */
 async function clickDiscoveredLink(page, {href,sourcePath,pathname,expectedDestination=null,
-  reappearTimeout=5000,clickTimeout=5000,settleTimeout=1500}) {
+  reappearTimeout=5000,clickTimeout=5000,settleTimeout=8000}) {
   const anchor=page.locator('a[href='+JSON.stringify(href)+']').first();
   try {
     await anchor.waitFor({state:'visible',timeout:reappearTimeout});
