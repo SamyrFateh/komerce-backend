@@ -102,6 +102,71 @@ const ARCHIVED_SHIPMENTS={
   }],
 };
 
+test('SAV physique : Chromium agent Relais confirme une reprise puis retrouve la preuve après rechargement (API simulée)', async ({page})=>{
+  const REQUEST='33333333-3333-4333-8333-333333333333';
+  const observations=[];
+  let receipt=null;
+  const posts=[];
+  await mount(page,posts);
+
+  // Le navigateur fonctionne avec un agent Relais simulé ; les appels SAV seuls
+  // sont simulés, jamais envoyés au vrai serveur staging.
+  const user={...FX.auth_me,role:'agent_relais',relais_id:'44444444-4444-4444-8444-444444444444'};
+  const ctx={...FX.context,actor:{...FX.context.actor,role:'agent_relais'},access:{
+    ...FX.context.access,defaultMarket:'KM',allowedMarkets:['KM'],
+  }};
+  await page.route(ORIGIN+'/api/auth/me', route=>route.fulfill({
+    status:200,contentType:'application/json',body:JSON.stringify(user),
+  }));
+  await page.route(ORIGIN+'/api/admin/dashboard/context', route=>route.fulfill({
+    status:200,contentType:'application/json',body:JSON.stringify(ctx),
+  }));
+  await page.route(ORIGIN+'/api/relay/returns',route=>route.fulfill({
+    status:200,contentType:'application/json',body:JSON.stringify({requests:[{
+      id:REQUEST,status:'open',return_quantity:1,return_reason:'defective',
+      order_reference:'E2E-SAV-001',product_name:'Article de recette',
+      receipt_id:receipt?.id||null,received_quantity:receipt?.quantity||null,
+      storage_zone:receipt?.storage_zone||null,received_at:receipt?.received_at||null,
+    }]}),
+  }));
+  await page.route(ORIGIN+'/api/relay/returns/intake',async route=>{
+    const body=route.request().postDataJSON();
+    observations.push(body);
+    if(receipt)return route.fulfill({status:409,contentType:'application/json',
+      body:JSON.stringify({code:'RETURN_INTAKE_ALREADY_RECORDED'})});
+    receipt={id:'55555555-5555-4555-8555-555555555555',request_id:REQUEST,
+      quantity:1,storage_zone:body.storage_zone,condition_code:body.condition_code,
+      received_at:'2026-11-09T00:00:00Z'};
+    return route.fulfill({status:201,contentType:'application/json',
+      body:JSON.stringify({receipt,replayed:false})});
+  });
+
+  await page.goto(ORIGIN+'/admin/relais-live?view=execute&focus=returns&market=KM');
+  const slot=page.locator('[data-relay-return-requests]');
+  await expect(slot).toBeVisible();
+  const form=slot.locator('[data-relay-return-intake]');
+  await expect(form).toBeVisible();
+  await form.locator('[data-relay-intake-request]').selectOption(REQUEST);
+  await form.getByLabel('État physique constaté').selectOption('opened');
+  await form.getByLabel('Lettre de zone facultative').fill('A');
+  await form.getByLabel('Constat physique de reprise').fill('Produit E2E reçu au comptoir ; emballage ouvert.');
+  const response=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/relay/returns/intake'
+    && r.request().method()==='POST');
+  await form.locator('[data-relay-intake-submit]').click();
+  expect((await response).status()).toBe(201);
+  expect(observations).toEqual([{
+    request_id:REQUEST,condition_code:'opened',storage_zone:'A',
+    observation:'Produit E2E reçu au comptoir ; emballage ouvert.',
+  }]);
+  await expect(slot.locator('[data-relay-return-list]')).toContainText('Reçu · 1 unité(s) · zone A');
+  await expect(slot.locator('[data-relay-return-feedback]')).toContainText('Reprise attestée');
+  await page.reload();
+  await expect(page.locator('[data-relay-return-list]')).toContainText('Reçu · 1 unité(s) · zone A');
+  await expect(page.locator('[data-relay-return-intake]')).toBeHidden();
+  expect(observations).toHaveLength(1);
+  expect(posts.filter(p=>/wallet|refund|stock|returns/i.test(p.path))).toHaveLength(0);
+});
+
 for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mobile', { width: 390, height: 844 }]]) {
   test.describe(`Relais live · Exécution — ${name}`, () => {
     test.use({ viewport });
