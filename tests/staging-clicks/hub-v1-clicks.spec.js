@@ -101,9 +101,23 @@ const q = async (sql, params) => (await db.query(sql, params)).rows;
 const KM = `/api/admin/workspaces/operations/market/${MARKET_CODE}`; // nom historique : prefixe du marche de la fixture
 
 test.describe.serial(`Hub V1 : clics reels Chromium (${MARKET_CODE}, fixture E2E)`, () => {
-  test.beforeAll(async () => {
+  test.beforeAll(async ({ baseURL }) => {
     expect(RUN8).toMatch(/^[A-F0-9]{8}$/);
     db = require('../../db');
+    // Les gestes de cette spec sont des mutations métier, même si le
+    // navigateur se contente de cliquer : vérification avant le premier login.
+    const origin = new URL(baseURL).origin;
+    if (origin === 'https://komerce-backend-production.up.railway.app') {
+      await require('../../scripts/recette/hub-v1-staging-target-authorization')
+        .authorizeOfficialStaging({ db, run: RUN8 });
+      expect(process.env.E2E_CLICKS_ALLOW_DISTRIBUTION, 'aucune distribution globale marché')
+        .not.toBe('1');
+    } else {
+      // La répétition locale doit utiliser une base jetable, jamais un backend
+      // localhost connecté silencieusement à Railway staging.
+      require('../../scripts/recette/hub-v1-certification-runner')
+        .assertEphemeralTarget(process.env.DATABASE_URL, []);
+    }
   });
   test.afterAll(async () => { save(); if (db && db.pool && db.pool.end) await db.pool.end(); });
 
