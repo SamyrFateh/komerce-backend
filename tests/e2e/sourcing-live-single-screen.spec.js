@@ -81,7 +81,7 @@ test('les exceptions restent traçables sans envoyer Sourcing vers un atelier in
  await mount(page);
  await expect(page.locator('a[href="/admin/workspaces/catalog?search=KSC-000194"]')).toHaveCount(0);
  await expect(page.getByText('À compléter au Catalogue central')).toBeVisible();
- await expect(page.locator('a[href="/admin/import-runtime?run=KIR-000013&view=sources"]')).toBeVisible();
+ await expect(page.locator('.kir-one-issues a[href="/admin/import-runtime?run=KIR-000013&view=sources"]')).toHaveCount(1);
  await expect(page.getByRole('button',{name:'Classer'})).toHaveCount(0);
 });
 test('une source s’ouvre sur demande et ses commandes utilisent son identité exacte',async({page})=>{
