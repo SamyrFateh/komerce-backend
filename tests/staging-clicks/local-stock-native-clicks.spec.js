@@ -74,13 +74,24 @@ test('LOCAL_STOCK : un agent atteste puis remet au client par les vrais clics (H
     await page.locator('#btn-submit').click();
     assert((await login).status()===200,'agent-login-200');
     await page.waitForURL(u=>u.pathname!=='/login.html',{timeout:20000});
-    await page.goto('/admin/relais-live?view=execute&market='+MARKET+'&focus=receive');
-    const selector=page.locator('select').first();
-    await selector.waitFor({timeout:20000});
-    await selector.selectOption({label:LABELS[MARKET]}).catch(()=>{});
-    const card=page.locator('[data-relay-local-order="'+ref+'"]');
+    // G3 / Kanban officiel : commencer sur Flux Relais, puis activer
+    // explicitement la file « Réception locale » par le VRAI aiguillage UI.
+    // Le paramètre focus=receive seul ne constitue pas un geste Chromium.
+    await page.goto('/admin/relais-live?market='+MARKET);
+    const workspace=page.locator('[data-workspace-mode="relay-execution"]');
+    await expect(workspace).toBeVisible({timeout:25000});
+    const localQueue=workspace.locator('[data-relay-execution-jump="receive"]');
+    await expect(localQueue).toBeVisible({timeout:20000});
+    await localQueue.click();
+    await expect(workspace).toHaveAttribute('data-relay-active-operation','receive');
+    await expect(localQueue).toHaveAttribute('aria-current','true');
+    const localLane=workspace.locator('#relay-execution-receive');
+    await expect(localLane).toBeVisible();
+    assert(await workspace.locator('#relay-execution-shipments').isHidden(),
+      'kanban-other-arrivals-hidden');
+    const card=localLane.locator('[data-relay-local-order="'+ref+'"]');
     await expect(card).toBeVisible({timeout:25000});
-    assert(await card.count()===1,'ui-direct-local-row');
+    assert(await card.count()===1,'ui-direct-local-row-in-kanban');
     await page.screenshot({path:path.join(OUT,'01-before-reception.png'),fullPage:true});
     const button=card.locator('[data-workspace-action="local-relay-receipt"]');
     await expect(button).toBeVisible();
