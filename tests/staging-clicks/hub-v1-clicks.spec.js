@@ -101,7 +101,8 @@ const q = async (sql, params) => (await db.query(sql, params)).rows;
 const KM = `/api/admin/workspaces/operations/market/${MARKET_CODE}`; // nom historique : prefixe du marche de la fixture
 
 test.describe.serial(`Hub V1 : clics reels Chromium (${MARKET_CODE}, fixture E2E)`, () => {
-  test.beforeAll(async ({ baseURL }) => {
+  test.beforeAll(async () => {
+    const baseURL = process.env.E2E_CLICKS_BASE_URL || 'https://komerce-backend-production.up.railway.app';
     expect(RUN8).toMatch(/^[A-F0-9]{8}$/);
     db = require('../../db');
     // Les gestes de cette spec sont des mutations métier, même si le
