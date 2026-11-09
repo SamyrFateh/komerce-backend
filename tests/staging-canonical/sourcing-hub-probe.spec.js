@@ -95,7 +95,8 @@ test('Sourcing → Hub vrai clic, refus de contexte distinct et navigation traç
       proof.direct_url={http:direct?.status(),path:pathname(page.url())};
     }
     const end=await page.request.get('/health/version');
-    proof.after_sha=end.ok()?String((await end.json()).commit||(await end.json()).sha||''):null;
+    const endBody=end.ok()?await end.json():{};
+    proof.after_sha=String(endBody.commit||endBody.sha||'');
     proof.status=proof.after_click==='/admin/hub'&&proof.after_sha===sha&&proof.blocked_writes.length===0&&proof.errors.length===0?'PASS':'FAIL';
     expect(proof.after_sha,'Le code serveur a changé pendant le diagnostic').toBe(sha);
     expect(proof.blocked_writes,'Aucune écriture métier permise').toEqual([]);
