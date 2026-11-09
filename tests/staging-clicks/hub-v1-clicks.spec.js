@@ -119,7 +119,18 @@ test.describe.serial(`Hub V1 : clics reels Chromium (${MARKET_CODE}, fixture E2E
         .assertEphemeralTarget(process.env.DATABASE_URL, []);
     }
   });
-  test.afterAll(async () => { save(); if (db && db.pool && db.pool.end) await db.pool.end(); });
+  test.afterAll(async () => {
+    const failures=evidence.gestures.filter((row)=>row.verdict!=='CLICK_PASS');
+    evidence.verdict=failures.length||!evidence.gestures.length
+      ? 'CHROMIUM_CLICKS_BLOCKED_NOT_PROVEN'
+      : 'CHROMIUM_CLICKS_RECORDED_SQL_READBACK_PENDING';
+    evidence.blockers=failures.map((row)=>({key:row.key,verdict:row.verdict,note:row.note}));
+    evidence.never_claims='G2_CHROMIUM_STAGING_PASS';
+    save();
+    if(db && db.pool && db.pool.end)await db.pool.end();
+    if(evidence.verdict==='CHROMIUM_CLICKS_BLOCKED_NOT_PROVEN')
+      throw new Error('HUB_V1_CHROMIUM_GESTURES_NOT_PROVEN:'+failures.map((row)=>row.key).join(','));
+  });
 
   test('Hub : reception fournisseur (ecran Receptions)', async ({ browser, baseURL }) => {
     evidence.base = baseURL;
