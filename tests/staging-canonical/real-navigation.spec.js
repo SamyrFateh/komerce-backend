@@ -126,15 +126,26 @@ test('real staging: full navigation, market context and browser errors',async({p
            n3:document.querySelectorAll('[role=tab],.kmc-local-tab').length,links};
        });
        const actual=pathname(page.url());
+       // A canonical legacy page may redirect with location.replace() before
+       // page.goto() produces a Response. Never count null as HTTP success:
+       // verify the terminal, role-authorized route independently (no redirects).
+       const routeHttp=await resolveNavigationHttp({
+         entryResponse:response,source:route,actual,
+         expected:expectedPath(route,ORIGIN,{role}),
+         readFinalStatus:async target=>{
+           const final=await page.request.get(ORIGIN+target,{maxRedirects:0,timeout:15000});
+           return final.status();
+         }
+       });
        const capture=QUICK?null:info.project.name+'-'+String(seen.size).padStart(3,'0')+'.jpg';
        if(!QUICK){
          try{await page.screenshot({path:path.join(ROOT,capture),type:'jpeg',quality:60,fullPage:true,timeout:9000});}
          catch(e){fail('P2','SCREENSHOT_FAILED',route+': '+e.message);}
        }
-       result.routes.push({expected:route,actual,http:response?.status(),capture,
+       result.routes.push({expected:route,actual,http:routeHttp.status,httpProof:routeHttp.proof,capture,
          surface:data.surface,header:data.header,title:data.title,overflow:data.overflow,
          n1:data.n1,n2:data.n2,n3:data.n3,links:data.links.length});
-       if(response?.status()!==200)fail('P1','PAGE_HTTP',route+' '+response?.status());
+       if(routeHttp.status!==200)fail('P1','PAGE_HTTP',route+' '+(routeHttp.status??'UNVERIFIED')+' ['+routeHttp.proof+']');
        if(actual!==route){
          const expected=expectedPath(route,ORIGIN,{role});
          if(actual===expected)result.canonicalRedirects.push({source:route,destination:actual,kind:'canonical_alias'});
