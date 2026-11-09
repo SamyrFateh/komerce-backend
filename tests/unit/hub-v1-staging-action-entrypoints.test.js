@@ -48,7 +48,7 @@ test.each([
 
 test('real Chromium spec checks official staging authorization before first login',()=>{
   const src=fs.readFileSync(path.join(ROOT,'tests/staging-clicks/hub-v1-clicks.spec.js'),'utf8');
-  const before=src.indexOf('test.beforeAll(async ({ baseURL })');
+  const before=src.indexOf('test.beforeAll(async () =>');
   const gate=src.indexOf('.authorizeOfficialStaging({ db, run: RUN8 })');
   const login=src.indexOf("test('Hub : reception fournisseur");
   expect(before).toBeGreaterThan(0);
