@@ -69,3 +69,19 @@ test('Chromium cannot hide NOT_REACHABLE_IN_UI or NOT_RUN under a green suite',(
   expect(persist).toBeGreaterThan(0);
   expect(refusal).toBeGreaterThan(persist);
 });
+
+test('localhost cannot reuse Railway database even with HTTP_RUNNER_ALLOW_LOCAL=1',async()=>{
+  const {assertEphemeralTarget}=require('../../scripts/recette/hub-v1-certification-runner');
+  const db={query:jest.fn(),getClient:jest.fn()};
+  const remote='postgres://u:password@railway.example:5432/railway';
+  const env={
+    HTTP_RUNNER_BASE_URL:'http://localhost:3987',
+    HTTP_RUNNER_ALLOW_LOCAL:'1',
+    DATABASE_URL:remote,
+  };
+  expect(()=>assertEphemeralTarget(remote,[])).toThrow('HUB_V1_RUNNER_LOCAL_EPHEMERAL_DATABASE_ONLY');
+  await expect(http.run({db,run8:RUN,env})).rejects.toThrow('HUB_V1_RUNNER_LOCAL_EPHEMERAL_DATABASE_ONLY');
+  await expect(physical.run({db,run8:RUN,env})).rejects.toThrow('HUB_V1_RUNNER_LOCAL_EPHEMERAL_DATABASE_ONLY');
+  expect(db.query).not.toHaveBeenCalled();
+  expect(db.getClient).not.toHaveBeenCalled();
+});
