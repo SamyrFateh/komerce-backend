@@ -1523,6 +1523,8 @@
         intakeNote.value = '';
         intakeZone.value = '';
         result.textContent = 'Reprise attestée. Produit isolé : aucun crédit wallet, remboursement ni stock vendable.';
+        // Après un POST réussi, ne jamais laisser confirmer une seconde fois si la relecture échoue.
+        intake.hidden = true;
         await loadRequests();
       } catch (error) {
         result.textContent = error.message;
