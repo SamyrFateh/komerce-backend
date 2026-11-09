@@ -27,6 +27,14 @@ test('redirection Operations tenant compte du rôle, sans masquer les refus de d
   expect(expectedPath('/admin/hub-live',origin,{role:'agent_hub'})).toBe('/admin/hub-live');
   expect(expectedPath('/admin/relais-live',origin,{role:'agent_relais'})).toBe('/admin/relais-live');
 });
+test('Sourcing Live remplace le workspace historique uniquement pour ses acteurs autorisés',()=>{
+  const origin='https://komerce-backend-production.up.railway.app';
+  for(const role of ['admin','sourcing'])
+    expect(expectedPath('/admin/workspaces/sourcing',origin,{role})).toBe('/admin/import-runtime');
+  for(const role of ['finance','agent_relais','market_operator'])
+    expect(expectedPath('/admin/workspaces/sourcing',origin,{role})).toBe('/admin/workspaces/sourcing');
+});
+
 test('legacy=1 désactive le traitement d alias',()=>{
   expect(expectedPath('/admin/orders-logistics?legacy=1')).toBe('/admin/orders-logistics');
 });

@@ -14,9 +14,8 @@ const { test, expect } = require('@playwright/test');
 
 const ORIGIN = 'https://komerce-backend-production.up.railway.app';
 const ROOT = path.resolve('test-results/staging-chromium/live-proof');
-const RUN8 = String(process.env.E2E_PROOF_RUN8 || '9BF9BA04').toUpperCase();
-const REFS = (process.env.E2E_PROOF_ORDER_REFS
-  || ['KOM-101', 'KOM-102', 'KOM-103', 'LOCAL'].map(s => `E2E-HUB-V1-${RUN8}-${s}`).join(','))
+// Jamais de références historiques implicites après une purge staging.
+const REFS = String(process.env.E2E_PROOF_ORDER_REFS || '')
   .split(',').map(s => s.trim()).filter(Boolean);
 const ROLES = {
   admin: ['/admin/hub-live', '/admin/hub-live?view=execute', '/admin/relais-live', '/admin/relais-live?view=orders&list=all'],
@@ -25,9 +24,11 @@ const ROLES = {
 };
 
 test('live screens read-only proof for certified orders', async ({ page }, info) => {
-  // QUICK_READONLY certifies access/navigation, not the removed historical order corpus.
-  // The full business proof remains mandatory in EXHAUSTIVE_READONLY runs.
-  test.skip(process.env.E2E_AUDIT_QUICK === '1', 'Legacy certified orders are excluded from QUICK_READONLY only');
+  // La purge staging a retiré les anciens objets E2E-HUB-V1. Sans références
+  // explicitement fournies et corrélées au run de recette courant, ce test
+  // est NOT_PROVEN : un skip explicite, jamais une preuve d'ordre certifié.
+  test.skip(!REFS.length, 'NOT_PROVEN: aucune commande certifiée fournie pour ce staging');
+  test.skip(process.env.E2E_AUDIT_QUICK === '1', 'QUICK_READONLY : aucune preuve transactionnelle');
   const role = info.project.name.replace(/-desktop$/, '');
   test.skip(!ROLES[role], 'Only admin, agent_hub and agent_relais are proven here');
   expect(new URL(process.env.E2E_STAGING_BASE_URL || ORIGIN).origin).toBe(ORIGIN);

@@ -16,8 +16,8 @@
  *
  * No mutation: only a normal visible <a> click. Caller classifies the outcome.
  */
-async function clickDiscoveredLink(page, {href,sourcePath,pathname,
-  reappearTimeout=5000,clickTimeout=5000,settleTimeout=1200}) {
+async function clickDiscoveredLink(page, {href,sourcePath,pathname,expectedDestination=null,
+  reappearTimeout=5000,clickTimeout=5000,settleTimeout=1500}) {
   const anchor=page.locator('a[href='+JSON.stringify(href)+']').first();
   try {
     await anchor.waitFor({state:'visible',timeout:reappearTimeout});
@@ -31,9 +31,13 @@ async function clickDiscoveredLink(page, {href,sourcePath,pathname,
     return {kind:'CLICK_FAILED_ON_VISIBLE_LINK',source:sourcePath,href,
       actual:pathname(page.url()),detail:String(error.message||error).slice(0,170)};
   }
-  // Browser/client-side routers may commit location.replace asynchronously.
-  // Do not treat the initial 160 ms after clicking as authoritative.
-  if(pathname(page.url())===sourcePath){
+  // Le clic peut transiter par / avant que le routeur de rôle n'atteigne
+  // l'écran final. Attendre la destination autorisée connue, mais conserver
+  // toute divergence finale comme FAIL (aucune correction artificielle d'URL).
+  if(expectedDestination && pathname(page.url())!==expectedDestination){
+    await page.waitForURL(url=>pathname(String(url))===expectedDestination,{timeout:settleTimeout})
+      .catch(()=>{});
+  } else if(pathname(page.url())===sourcePath){
     await page.waitForURL(url=>pathname(String(url))!==sourcePath,{timeout:settleTimeout})
       .catch(()=>{});
   }
