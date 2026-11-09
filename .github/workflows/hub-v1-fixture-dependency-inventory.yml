@@ -7,6 +7,8 @@ on:
         description: '8 caractères alphanumériques de la fixture E2E-HUB-V1'
         required: true
         type: string
+  issues:
+    types: [opened]
 
 permissions:
   contents: read
@@ -17,7 +19,11 @@ concurrency:
 
 jobs:
   inventory:
-    name: Exact fixture ownership and FK inventory (NO DELETE)
+    name: Exact fixture ownership and immutable evidence inventory (NO DELETE)
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issues' && github.event.issue.user.login == github.repository_owner &&
+       startsWith(github.event.issue.title, '[staging-op] hub-v1-fixture-inventory-'))
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
@@ -26,26 +32,35 @@ jobs:
       KOMERCE_ENV: staging
       KOMERCE_TARGET_ENV: staging
       HUB_V1_E2E_RUN8: ${{ inputs.run8 }}
+      INVENTORY_REQUEST_TITLE: ${{ github.event.issue.title }}
       DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
       STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
     steps:
       - uses: actions/checkout@v4
         with:
           ref: main
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: npm
-      - name: Pin source SHA
-        shell: bash
-        run: echo "E2E_EXPECTED_DEPLOY_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+      - name: Pin actual staging deploy SHA; refuse application drift
+        run: node scripts/recette/resolve-staging-deploy-pin.js
       - run: npm ci
-      - name: Validate input and staging secret
+      - name: Validate exact RUN8 and staging secret
         shell: bash
         run: |
-          [[ "$HUB_V1_E2E_RUN8" =~ ^[A-Z0-9]{8}$ ]]
+          set -euo pipefail
+          if [[ "${{ github.event_name }}" == 'issues' ]]; then
+            if [[ ! "$INVENTORY_REQUEST_TITLE" =~ ^\[staging-op\]\ hub-v1-fixture-inventory-([A-F0-9]{8})$ ]]; then
+              echo 'INVALID_OWNER_TRIGGER_TITLE'; exit 2
+            fi
+            echo "HUB_V1_E2E_RUN8=${BASH_REMATCH[1]}" >> "$GITHUB_ENV"
+          else
+            [[ "$HUB_V1_E2E_RUN8" =~ ^[A-Z0-9]{8}$ ]]
+          fi
           test -n "$DATABASE_URL"
-      - name: Inspect E2E-HUB-V1 ownership and dependent FK graph (READ ONLY)
+      - name: Snapshot all E2E-HUB-V1 owned roots, FK and immutable triggers (READ ONLY)
         shell: bash
         run: node scripts/recette/hub-v1-fixture-dependency-inventory.js "$HUB_V1_E2E_RUN8"
       - name: Publish safety limit
@@ -57,7 +72,8 @@ jobs:
             echo ''
             echo '- Uniquement RUN8 exact, scope/acheteur fictif vérifiés.'
             echo '- Transactions SQL READ ONLY ; aucun DELETE, UPDATE ou INSERT.'
-            echo '- FK graphe : découverte partielle, pas une certification du nettoyage.'
+            echo '- Photographie PG REPEATABLE READ READ ONLY : racines indépendantes, FK, triggers immuables, SHA256 du manifeste.'
+            echo '- Aucun DELETE autorisé par cet inventaire ; les preuves append-only sont retenues.'
             echo '- Aucune autorisation d’apply staging n’est délivrée.'
           } >> "$GITHUB_STEP_SUMMARY"
       - name: Archive inventory report

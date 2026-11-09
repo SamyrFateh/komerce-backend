@@ -31,13 +31,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: main
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: npm
-      - name: Pin source SHA to the deployed backend
-        shell: bash
-        run: echo "E2E_EXPECTED_DEPLOY_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+      - name: Pin actual deployed staging SHA (reject application drift)
+        run: node scripts/recette/resolve-staging-deploy-pin.js
       - run: npm ci
       - name: Require staging secret without disclosing it
         run: test -n "$DATABASE_URL"

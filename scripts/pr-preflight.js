@@ -92,6 +92,7 @@ const CI_RESTORED_PROJECTIONS = Object.freeze([
 // Toute autre commande de la CI doit être rejouée par le preflight : le test de
 // parité (tests/unit/pr-preflight-ci-parity.test.js) échoue sinon.
 const CI_ONLY = Object.freeze({
+  'pr:preflight': 'Le préflight s’exécute lui-même comme job CI obligatoire sur le SHA exact de la PR : pas de récursion ni de gate omis.',
   'scripts/pr-governance-check.js': 'lit le corps de PR via l’API GitHub : n’existe qu’après ouverture de la PR',
   'scripts/pr-enforcement-scope.js': 'classification du diff : réutilisée en processus par le preflight (classifyDiff)',
   'scripts/ci-unit-repair-scope.js': 'optimisation CI des pushes de réparation de tests (saute les jobs lourds) : aucun gate à rejouer',

@@ -142,6 +142,7 @@ module.exports = {
       'config/market-delegation-capabilities.js',
     ],
     middleware: [
+      'middleware/deny-transitaire-hub.js',
       'middleware/require-market-delegated-role.js',
       'middleware/require-market-execution-capability.js',
       'middleware/require-market-delegated-capability.js',

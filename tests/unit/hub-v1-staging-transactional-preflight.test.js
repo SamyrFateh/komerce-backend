@@ -46,3 +46,14 @@ test('le garde refuse tout autre environnement et une version non épinglée ava
   expect(db.getClient).not.toHaveBeenCalled();
   expect(db.query).not.toHaveBeenCalled();
 });
+
+test('le préflight staging utilise le SHA applicatif prouvé et non HEAD arbitraire', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const yaml = fs.readFileSync(path.join(__dirname, '../../.github/workflows/hub-v1-staging-transactional-preflight.yml'), 'utf8');
+  expect(yaml).toContain('fetch-depth: 0');
+  expect(yaml).toContain('node scripts/recette/resolve-staging-deploy-pin.js');
+  expect(yaml).toContain('node scripts/recette/hub-v1-staging-transactional-preflight.js');
+  expect(yaml).not.toContain('E2E_EXPECTED_DEPLOY_SHA=$(git rev-parse HEAD)');
+  expect(yaml).toContain('No-write staging fixture preflight');
+});

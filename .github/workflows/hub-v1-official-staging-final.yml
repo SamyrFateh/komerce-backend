@@ -44,20 +44,23 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: main
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: npm
+      - name: Pin the actual staging application SHA without accepting code drift
+        run: node scripts/recette/resolve-staging-deploy-pin.js
       - run: npm ci
-      - name: Pin source commit and choose one unique RUN8
+      - name: Choose one unique RUN8
         shell: bash
-        run: |
-          echo "E2E_EXPECTED_DEPLOY_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
-          echo "HUB_V1_CERTIFICATION_RUN=$(node -p 'require("crypto").randomBytes(4).toString("hex").toUpperCase()')" >> "$GITHUB_ENV"
+        run: echo "HUB_V1_CERTIFICATION_RUN=$(node -p 'require("crypto").randomBytes(4).toString("hex").toUpperCase()')" >> "$GITHUB_ENV"
       - name: Refuse missing remote DB secret
         run: test -n "$DATABASE_URL"
       - name: Mandatory pure guard tests
         run: node node_modules/jest/bin/jest.js tests/unit/hub-v1-staging-target-authorization.test.js tests/unit/hub-v1-runner-evidence.test.js --runInBand --ci --forceExit
+      - name: HARD HOLD — no transaction before all ten staging gates PASS
+        run: node scripts/recette/hub-v1-staging-transactional-preflight.js
       - name: First pass — strict fingerprint + SHA + market baseline + dry run
         shell: bash
         run: |

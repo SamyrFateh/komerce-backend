@@ -28,4 +28,23 @@ function expectedPath(rawUrl,origin='https://komerce-backend-production.up.railw
   }
   return KNOWN_CANONICAL_ALIASES[url.pathname]||url.pathname;
 }
-module.exports={KNOWN_CANONICAL_ALIASES,expectedPath};
+/**
+ * Playwright page.goto() can return null when a server-rendered legacy entry
+ * calls location.replace() during bootstrap. Prove that the final canonical
+ * route actually serves HTTP 200; an unexpected destination, 401/403 or a
+ * missing response must never be converted into a successful navigation.
+ */
+async function resolveNavigationHttp({entryResponse,source,actual,expected,readFinalStatus}) {
+  const entryStatus=entryResponse?.status?.();
+  if(Number.isInteger(entryStatus)) return {status:entryStatus,proof:'entry_response'};
+  if(!source || !actual || !expected || actual!==expected || source===expected) {
+    return {status:null,proof:'unverified_navigation'};
+  }
+  try {
+    const status=await readFinalStatus(actual);
+    return {status:Number.isInteger(status)?status:null,proof:'canonical_final_response'};
+  } catch(_) {
+    return {status:null,proof:'canonical_final_unavailable'};
+  }
+}
+module.exports={KNOWN_CANONICAL_ALIASES,expectedPath,resolveNavigationHttp};

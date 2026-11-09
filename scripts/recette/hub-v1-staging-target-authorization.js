@@ -7,7 +7,12 @@
 const { assess } = require('./hub-v1-staging-transactional-preflight');
 const BASE = 'https://komerce-backend-production.up.railway.app';
 const RUN = /^[A-Z0-9]{8}$/;
-const EXCEPTIONS = new Set([
+const REQUIRED_CHECKS = Object.freeze([
+  'MIGRATIONS_391_396','NEW_FIXTURE_REFERENCE_PREFIX_UNUSED',
+  'NO_DUPLICATE_SUPPLIER_PRIORITY','HUB_AND_RELAY_ROLES_EXIST',
+  'DEDICATED_ATOMIC_CHECKOUT_SCOPE','SIMULATED_CHECKOUT_HAS_NO_EXTERNAL_HOOKS',
+  'SIMULATED_PO_NO_PROVIDER_OR_NOTIFICATION',
+  'SIMULATED_CUSTOMER_PAYMENT_PROVIDER_BYPASS_VERIFIED',
   'STAGING_FIXTURE_OWNERSHIP_AND_CLEANUP_CERTIFIED',
   'STAGING_E2E_CROSS_SERVICE_RUNNER_REVIEWED',
 ]);
@@ -47,17 +52,18 @@ async function authorizeOfficialStaging({db,run,env=process.env,assessImpl=asses
   assertApproval({run,env});
   if (!db || typeof db.getClient!=='function')throw Error('STAGING_DB_EXECUTOR_MISSING');
   const check=await assessImpl({db,env});
-  if (!Array.isArray(check?.checks) || check.checks.length!==10 || check.mode!=='READ_ONLY' ||
-      check.verdict!=='HOLD_NO_STAGING_WRITES')
+  if (!Array.isArray(check?.checks) || check.mode!=='READ_ONLY' ||
+      check.checks.length!==REQUIRED_CHECKS.length)
     throw Error('STAGING_PREFLIGHT_SHAPE_NOT_REVIEWED');
+  // Une autorisation d'apply ne peut JAMAIS transformer deux HOLD connus en
+  // exemptions : les dix preuves doivent être vraies sur la cible épinglée.
+  if (check.verdict!=='READY_FOR_EXPLICIT_APPLY_REVIEW')
+    throw Error('STAGING_PREFLIGHT_HOLD_BLOCKS_ALL_WRITES');
   const ids=new Set(check.checks.map((c)=>c.id));
-  if (ids.size!==10 || [...EXCEPTIONS].some((id)=>!ids.has(id)) ||
-      check.checks.some((c)=>!c.pass&&!EXCEPTIONS.has(c.id)) ||
-      check.checks.some((c)=>EXCEPTIONS.has(c.id)&&c.pass))
+  if (ids.size!==REQUIRED_CHECKS.length ||
+      REQUIRED_CHECKS.some((id)=>!ids.has(id)) ||
+      check.checks.some((c)=>c.pass!==true))
     throw Error('STAGING_PREFLIGHT_UNEXPECTED_FAILURE');
-  // Deux portes générales restent volontairement HOLD : leur remplacement ici
-  // est un protocole de recette explicitement autorisé, pas une certification du nettoyage.
-  // Il n'autorise JAMAIS le DELETE des tables de preuves.
   await baselineImpl(db);
   const parsed=new URL(String(env.DATABASE_URL||''));
   if (['localhost','127.0.0.1','::1','[::1]'].includes(parsed.hostname))
