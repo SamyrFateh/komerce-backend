@@ -2,7 +2,7 @@
 /** @test-kind unit @test-runner jest @test-requires none */
 const fs=require('fs');
 const path=require('path');
-const {KNOWN_CANONICAL_ALIASES,expectedPath}=
+const {KNOWN_CANONICAL_ALIASES,expectedPath,resolveNavigationHttp}=
   require('../../tests/staging-canonical/navigation-audit-policy');
 
 test('les trois alias opérationnels proviennent de la déclaration serveur canonique',()=>{
