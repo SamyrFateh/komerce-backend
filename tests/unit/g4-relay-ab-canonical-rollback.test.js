@@ -36,7 +36,9 @@ test('zero COMMIT, source only invokes canonical writers and ROLLBACK',()=>{
   expect(source).not.toMatch(/client\.query\('COMMIT'\)|\bTRUNCATE\b|session_replication_role/);
   expect(source).toContain("require('../../services/user-mutation-service')");
   expect(source).toContain("require('../../services/relais-mutation-service')");
-  expect(source).toContain("require('./staging-e2e-provision').markE2eTestAccount");
+  expect(source).toContain("require('./staging-e2e-provision')");
+  expect(source).toContain('provision.markE2eTestAccount');
+  expect(source).toContain('provision.ensureRelayAgentMembership');
   expect(source).toContain('users.assignAgentRelais');
   expect(source).toContain('relays.createRelais');
   expect(source).toContain('assignments.resolveOrCreateAssignment');
