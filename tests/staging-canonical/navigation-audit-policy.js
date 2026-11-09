@@ -15,6 +15,10 @@ function expectedPath(rawUrl,origin='https://komerce-backend-production.up.railw
   const url=new URL(rawUrl,origin);
   if(url.origin!==origin)throw new Error('OUT_OF_SCOPE_NAVIGATION_ORIGIN');
   if(url.searchParams.get('legacy')==='1')return url.pathname;
+  // Le cockpit Sourcing Live remplace l'ancien workspace de sourcing pour
+  // les acteurs autorisés. La redirection se fait après boot(), sans 302 HTTP.
+  if(url.pathname==='/admin/workspaces/sourcing' && ['admin','sourcing'].includes(options.role))
+    return '/admin/import-runtime';
   // L'ancien écran opérationnel est retiré par app.js::boot(), après résolution
   // du rôle. Ce redirect ne doit pas masquer un 403 sur la destination finale.
   if(url.pathname==='/admin/workspaces/operations') {

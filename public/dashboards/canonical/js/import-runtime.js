@@ -1253,12 +1253,17 @@
   }
 
   function itemHref(run, item) {
-    if (item?.product_ref) {
+    if (item?.product_ref && viewer?.role === 'admin') {
       return withReturnTo(
         `/admin/products/${encodeURIComponent(item.product_ref)}`,
         urlFor(run.run_ref),
         'Retour au suivi'
       );
+    }
+    // Un agent Sourcing suit la provenance dans son cockpit, sans accéder
+    // à la fiche Product 360 réservée au rôle Catalogue central.
+    if (item?.product_ref && item?.supplier_product_id) {
+      return itemUrl(run.run_ref, item.supplier_product_id, 'received');
     }
     return stageUrl(run.run_ref, item?.stage || run.current_stage);
   }
@@ -1323,8 +1328,8 @@
       ? `<img src="${esc(item.image_url)}" alt="" loading="lazy">`
       : `<div class="kir-current-image-placeholder">${ico('box')}</div>`;
     return `<section class="kir-live-panel kir-current-item" aria-label="${esc(currentItemTitle(run))}">
-      <header><div>${ico('box')}<strong>${esc(currentItemTitle(run))}</strong></div><a href="${href}" ${item.product_ref ? '' : 'data-cockpit-nav'}>Voir le détail →</a></header>
-      <a class="kir-current-item-body" href="${href}" ${item.product_ref ? '' : 'data-cockpit-nav'}>
+      <header><div>${ico('box')}<strong>${esc(currentItemTitle(run))}</strong></div><a href="${href}" ${item.product_ref && viewer?.role === 'admin' ? '' : 'data-cockpit-nav'}>Voir le détail →</a></header>
+      <a class="kir-current-item-body" href="${href}" ${item.product_ref && viewer?.role === 'admin' ? '' : 'data-cockpit-nav'}>
         <div class="kir-current-image">${image}</div>
         <div class="kir-current-copy">
           <h3>${esc(item.product_name || item.supplier_product_id || 'Produit')}</h3>
@@ -1354,7 +1359,7 @@
           return `<tr data-stage="${esc(item.stage || '')}">
             <td class="kir-live-seq">${esc(item.seq != null ? item.seq : index + 1)}</td>
             <td class="kir-live-thumb">${item.image_url ? `<img src="${esc(item.image_url)}" alt="" loading="lazy">` : ico('box')}</td>
-            <td><a href="${href}" ${item.product_ref ? '' : 'data-cockpit-nav'}>${esc(item.product_name || item.product_ref || 'Produit')}</a>${item.supplier_product_id ? `<small class="kir-live-sub">${esc(item.supplier_product_id)}</small>` : ''}</td>
+            <td><a href="${href}" ${item.product_ref && viewer?.role === 'admin' ? '' : 'data-cockpit-nav'}>${esc(item.product_name || item.product_ref || 'Produit')}</a>${item.supplier_product_id ? `<small class="kir-live-sub">${esc(item.supplier_product_id)}</small>` : ''}</td>
             <td><a class="kir-stage-link" href="${stageUrl(run.run_ref, userStageKey(item.stage))}" data-cockpit-nav>${esc(userStageLabel(item.stage))}</a></td>
             <td>${status}</td>
             <td class="kir-live-time">${esc(time)}</td>
@@ -1392,7 +1397,7 @@
     return `<section class="kir-exception-banner" data-fx-remediation role="status">
       <strong>${esc(title)}</strong>
       <p>${esc(detail)}</p>
-      <a href="/admin/workspaces/pricing#fx-authority">Consulter l’autorité des taux officiels →</a>
+      ${viewer?.role === 'admin' ? `<a href="/admin/workspaces/pricing#fx-authority">Consulter l’autorité des taux officiels →</a>` : ''}
       <a href="${urlFor(run?.run_ref, 'sources')}" data-cockpit-nav>Retour aux sources →</a>
     </section>`;
   }
@@ -1512,7 +1517,7 @@
     const items = Array.isArray(run.action_items) ? run.action_items : [];
     const count = num(run.accounting?.action_required);
     const back = urlFor(run.run_ref, 'exceptions');
-    const workspace = withReturnTo('/admin/workspaces/sourcing', back, 'Retour à Action requise');
+    const workspace = withReturnTo('/admin/import-runtime', back, 'Retour à Action requise');
     const rows = items.map(item => {
       const title = item.product_name || item.supplier_product_id || (item.reason === 'Anomalie de comptage' ? 'Comptage du passage' : 'Produit à examiner');
       const candidateRef = item.candidate_ref || '';
@@ -1522,10 +1527,10 @@
         ? urlFor(run.run_ref, 'history')
         : !candidateRef ? urlFor(run.run_ref, 'control')
           : isSupplierFact
-            ? '/admin/workspaces/sourcing?candidate_ref=' + encodeURIComponent(candidateRef)
+            ? urlFor(run.run_ref, 'sources')
             : '/admin/workspaces/catalog?search=' + encodeURIComponent(candidateRef);
       const label = isAccounting ? 'Voir le diagnostic'
-        : isSupplierFact ? 'Corriger la donnée fournisseur'
+        : isSupplierFact ? 'Consulter la source fournisseur'
           : candidateRef ? 'Corriger dans le Catalogue' : 'Voir le diagnostic';
       // Historical mocked proof remains available only for technical regression
       // tests. Mounted Sourcing Live and all operator links always use Catalogue.
@@ -1535,7 +1540,9 @@
         ? `<button type="button" class="kir-row-action kir-classify-btn" data-action-classify
             data-candidate-ref="${esc(candidateRef)}" data-product-name="${esc(title)}"
             data-action-reason="${esc(item.reason || '')}">Classer →</button>`
-        : `<a class="kir-row-action" href="${esc(destination)}">${esc(label)} →</a>`;
+        : !isAccounting && !isSupplierFact && candidateRef && viewer?.role !== 'admin'
+          ? '<span class="kir-item-note">Correction réservée au Catalogue</span>'
+          : `<a class="kir-row-action" href="${esc(destination)}">${esc(label)} →</a>`;
       return `<tr>
         <td>${item.image_url ? `<img class="kir-action-thumb" src="${esc(item.image_url)}" alt="" loading="lazy">` : ''}<strong>${esc(title)}</strong>${item.supplier_product_id ? `<small>${esc(item.supplier_product_id)}</small>` : ''}</td>
         <td>${esc(item.reason)}${item.action_origin === 'deferred' ? '<small>Mis de côté · correction humaine possible</small>' : ''}</td>
@@ -1680,9 +1687,9 @@
     const catalogueHref = trace.product_ref && viewer && viewer.role === 'admin'
       ? withReturnTo(`/admin/workspaces/catalog?product_ref=${encodeURIComponent(trace.product_ref)}`, itemUrl(run.run_ref, trace.supplier_product_id, kind, origin), 'Retour au produit Sourcing')
       : '';
-    const catalogue = trace.product_ref
+    const catalogue = trace.product_ref && viewer?.role === 'admin'
       ? `<a class="kir-subtle-link" href="${withReturnTo('/admin/products/' + encodeURIComponent(trace.product_ref), itemUrl(run.run_ref, trace.supplier_product_id, kind, origin), 'Retour au produit Sourcing')}">Ouvrir la fiche Catalogue →</a>${catalogueHref ? ` <a class="kir-subtle-link" data-next-step="catalogue" href="${catalogueHref}">Compléter dans le Catalogue global</a>` : ''}`
-      : `<span class="kir-item-note">${halted ? 'Aucune fiche Catalogue créée pour ce passage.' : 'Aucune fiche Catalogue créée à ce stade.'}</span>`;
+      : `<span class="kir-item-note">${trace.product_ref ? 'Produit remis au Catalogue — correction réservée au responsable Catalogue.' : halted ? 'Aucune fiche Catalogue créée pour ce passage.' : 'Aucune fiche Catalogue créée à ce stade.'}</span>`;
     return drillHeader(run, title, 'Détail métier de ce produit dans le passage sélectionné.')
       + itemVerdict(trace, situation)
       + `<div class="kir-simple-list">
@@ -2012,7 +2019,7 @@
         <div class="kir-hero-actions kir-live-hero-actions">
           <div class="kir-live-time"><span>Démarré ${fmtDate(run.started_at)}</span><strong>${elapsedLabel(run.started_at, run.finished_at)}</strong></div>
           <span class="kir-status-large is-${sourcingStatusView(run).tone}">${ico('clock')}${esc(sourcingStatusView(run).label)}</span>
-          <a href="${withReturnTo('/admin/workspaces/catalog', urlFor(run.run_ref), 'Retour au suivi')}" class="kir-global-link">Catalogue global →</a>
+          ${viewer?.role === 'admin' ? `<a href="${withReturnTo('/admin/workspaces/catalog', urlFor(run.run_ref), 'Retour au suivi')}" class="kir-global-link">Catalogue global →</a>` : ''}
         </div>
       </header>
 
@@ -2042,14 +2049,16 @@
       const href = accounting ? urlFor(run.run_ref, 'history')
         : !ref ? urlFor(run.run_ref, 'control')
           : supplierIssue
-            ? '/admin/workspaces/sourcing?candidate_ref=' + encodeURIComponent(ref)
+            ? urlFor(run.run_ref, 'sources')
             : '/admin/workspaces/catalog?search=' + encodeURIComponent(ref);
       const label = accounting ? 'Diagnostic' : supplierIssue
-        ? 'Corriger la source' : ref ? 'Compléter dans le Catalogue' : 'Diagnostic';
+        ? 'Consulter la source' : ref ? 'Compléter dans le Catalogue' : 'Diagnostic';
       return `<li class="kir-one-issue">
         <span><strong>${esc(item.product_name || ref || 'Anomalie du passage')}</strong>
         <small>${esc(item.reason || 'Contrôle à examiner')}</small></span>
-        <a href="${esc(href)}">${esc(label)} →</a></li>`;
+        ${!accounting && !supplierIssue && ref && viewer?.role !== 'admin'
+          ? '<span class="kir-item-note">À compléter au Catalogue central</span>'
+          : `<a href="${esc(href)}"${supplierIssue ? ' data-cockpit-nav' : ''}>${esc(label)} →</a>`}</li>`;
     }).join('');
     return `<section class="kir-one-issues" id="sourcing-actions" aria-label="Actions utiles">
       <h2>${count} action${count > 1 ? 's' : ''} signalée${count > 1 ? 's' : ''} sur ce passage</h2>
@@ -2098,11 +2107,7 @@
         ${activationStrip(sources)}
         ${wizardMarkup(sources)}
         <p class="kir-one-note">Importer = créer un nouveau passage KIR. Activer = autoriser l’alimentation automatique.</p>
-        <p class="kir-one-note">
-          <a href="/admin/workspaces/sourcing?mode=manual&tab=imports">Import manuel / CSV →</a>
-          &nbsp;·&nbsp;
-          <a href="/admin/workspaces/sourcing?mode=partners&tab=suppliers">Administration des partenaires →</a>
-        </p>
+        <p class="kir-one-note">Le suivi des sources et les acquisitions s'effectuent dans cet espace. Les anciens raccourcis manuels et partenaires ne sont plus des pages distinctes.</p>
       </div></details>`;
   }
 
@@ -2140,7 +2145,7 @@
     return `<section class="kir-page kir-one-screen" data-sourcing-single-screen>
       <header class="kir-one-hero"><div><span class="kir-eyebrow">SOURCING</span>
         <h1>Sourcing Live</h1><p>Acquérir des produits et les remettre au Catalogue global.</p></div>
-        <a href="/admin/workspaces/catalog">Catalogue global →</a></header>
+        ${viewer?.role === 'admin' ? '<a href="/admin/workspaces/catalog">Catalogue global →</a>' : ''}</header>
       ${unifiedSourcingTabs(run, view)}
       <main class="kir-one-body" data-sourcing-active-view="${view}">
         <div class="kir-one-pane" data-sourcing-panel="overview" ${view === 'overview' ? '' : 'hidden'}>${summary}</div>

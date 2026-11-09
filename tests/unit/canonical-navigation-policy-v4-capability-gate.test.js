@@ -158,7 +158,6 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
       'entity-clients': 'client.read',
       'workspace-pricing': 'pricing.read',
       'flow-operations': 'operations.read',
-      'workspace-relais-exec': 'operations.read',
       'workspace-shipping': 'operations.read',
       'flow-finance': 'finance.read',
       'workspace-accounting': 'finance.read',
@@ -191,6 +190,22 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
     expect(ids(marketAdminContext(['client.read']))).toContain('entity-clients');
   });
 
+  test('À traiter et Expéditions restent visibles aux agents terrain malgré un contexte marché sans délégations', () => {
+    const nav = loadPolicy();
+    const ctx = marketAdminContext([]);
+    for (const role of ['agent_hub', 'agent_relais', 'agent_transitaire']) {
+      const items = nav.sidebarGroupsFor({ role }, ctx).flatMap(group => group.items.map(item => item.id));
+      expect(items).toContain('action-center');
+      expect(items).not.toContain('control-tower');
+      if (role === 'agent_relais') expect(items).not.toContain('workspace-shipping');
+      else expect(items).toContain('workspace-shipping');
+    }
+    const market = nav.sidebarGroupsFor({ role: 'market_operator' }, ctx).flatMap(g => g.items.map(i => i.id));
+    expect(market).not.toContain('action-center');
+    expect(market).not.toContain('workspace-shipping');
+    expect(market).not.toContain('workspace-relais-exec');
+  });
+
   test('field roles stay limited to their server-authorized workspace destinations', () => {
     const nav = loadPolicy();
     const transitaire = nav.sidebarGroupsFor({ role: 'agent_transitaire' }, null);
@@ -209,7 +224,7 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
 
     const finance = nav.sidebarGroupsFor({ role: 'finance' }, null);
     expect(finance.map(group => group.id)).toEqual(['finance', 'live']);
-    expect(finance[0].items.map(item => item.id)).toEqual(['workspace-accounting', 'workspace-cash']);
+    expect(finance[0].items.map(item => item.id)).toEqual(['workspace-accounting']);
   });
 });
 

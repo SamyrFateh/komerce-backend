@@ -86,6 +86,34 @@ test('buildWorkspace scope toutes ses lectures DB par le market id serveur', asy
   }
 });
 
+test('agent relais : chaque lecture opérationnelle est limitée au relais serveur, sans fichier Hub', async () => {
+  const relaisId = '11111111-1111-4111-8111-111111111111';
+  const projection = await workspace.buildWorkspace({
+    market: MARKET, viewer: { role: 'agent_relais', relais_id: relaisId },
+  });
+
+  expect(mockQuery).toHaveBeenCalledTimes(5); // commandes, colis, 3 signaux ; aucun Hub/distribution/inventaire
+  for (const [sql, params] of mockQuery.mock.calls) {
+    expect(params).toEqual([MARKET.id, relaisId]);
+    expect(String(sql)).toMatch(/AND (o\.relais_id|p\.relais_id|r\.id) = \$2/);
+    expect(String(sql)).toContain('o.simulation_scope IS NULL');
+  }
+  expect(projection.queues.hub.to_ship).toEqual([]);
+  expect(projection.distribution).toEqual({ parcels: [], unassigned: [] });
+  expect(projection.inventory).toEqual({ items: [], open_parcels: [] });
+  expect(projection.data_quality.scope_mode).toBe('relay');
+  const { countRelayParcels } = require('../../services/operations-relay-projection');
+  expect(countRelayParcels).toHaveBeenCalledWith({ marketIds: [MARKET.id], relaisId });
+});
+
+test('agent relais : aucun rattachement valide signifie refus avant toute lecture', async () => {
+  await expect(workspace.buildWorkspace({ market: MARKET, viewer: { role: 'agent_relais' } }))
+    .rejects.toMatchObject({ code: 'relay_scope_required', status: 403 });
+  await expect(workspace.buildWorkspace({ market: MARKET, viewer: { role: 'agent_relais', relais_id: 'autre' } }))
+    .rejects.toMatchObject({ code: 'relay_scope_required', status: 403 });
+  expect(mockQuery).not.toHaveBeenCalled();
+});
+
 test('la file des colis a le même périmètre que le compteur relais : commandes réelles et vivantes', async () => {
   await workspace.buildWorkspace({ market: MARKET });
   const parcelSql = mockQuery.mock.calls.map(c => String(c[0])).find(sql => sql.includes('FROM parcels p') && sql.includes('p.recipient_name'));

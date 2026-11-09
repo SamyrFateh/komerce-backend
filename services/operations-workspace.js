@@ -64,7 +64,9 @@ function publicMarket(market) {
   });
 }
 
-async function queryOrders(marketId) {
+async function queryOrders(marketId, relaisId = null, includeSimulation = false) {
+  const relayFilter = relaisId ? 'AND o.relais_id = $2' : '';
+  const params = relaisId ? [marketId, relaisId] : [marketId];
   const { rows } = await db.query(
     `SELECT o.reference, o.status, o.payment_mode, o.payment_status,
             o.total_kmf, o.created_at, o.updated_at,
@@ -75,9 +77,11 @@ async function queryOrders(marketId) {
        LEFT JOIN users u ON u.id = o.user_id
        LEFT JOIN relais r ON r.id = o.relais_id
       WHERE o.market_id = $1
+        ${relayFilter}
+        AND ${simulationClause('o', includeSimulation)}
         AND o.status NOT IN ('cancelled', 'refunded', 'collected')
       ORDER BY o.created_at ASC`,
-    [marketId]
+    params
   );
   return rows;
 }
@@ -89,7 +93,9 @@ const PARCEL_SHIPMENT_ATTACHED_SQL = `(
               WHERE pi2.parcel_id = p.id AND oi2.fulfillment_source = 'IMPORT')
 )`;
 
-async function queryParcels(marketId, includeSimulation = false) {
+async function queryParcels(marketId, includeSimulation = false, relaisId = null) {
+  const relayFilter = relaisId ? 'AND p.relais_id = $2' : '';
+  const params = relaisId ? [marketId, relaisId] : [marketId];
   const { rows } = await db.query(
     `SELECT p.reference, p.status, p.created_at, p.updated_at, p.shipped_at,
             p.recipient_name, p.destination_island,
@@ -102,12 +108,13 @@ async function queryParcels(marketId, includeSimulation = false) {
        LEFT JOIN relais r ON r.id = p.relais_id
       WHERE o.market_id = $1
         AND (p.relais_id IS NULL OR r.market_id = $1)
+        ${relayFilter}
         AND p.status NOT IN ('cancelled', 'collected')
         -- Même périmètre que countRelayParcels (compteur ⇔ file) : commandes réelles et vivantes uniquement.
         AND ${simulationClause('o', includeSimulation)}
         AND o.status::text NOT IN ('cancelled', 'refunded', 'collected')
       ORDER BY p.created_at ASC`,
-    [marketId]
+    params
   );
   return rows;
 }
@@ -221,7 +228,10 @@ async function queryInventory(marketId) {
  * dans aucune table du schéma aujourd'hui. L'inventer aurait affiché un
  * chiffre qui a l'air réel sans l'être.
  */
-async function querySignals(marketId) {
+async function querySignals(marketId, relaisId = null, includeSimulation = false) {
+  const orderRelayFilter = relaisId ? 'AND o.relais_id = $2' : '';
+  const relayIdentityFilter = relaisId ? 'AND r.id = $2' : '';
+  const params = relaisId ? [marketId, relaisId] : [marketId];
   const { rows: [totals] } = await db.query(
     `SELECT
         COUNT(*) FILTER (WHERE o.status = 'available'
@@ -234,8 +244,10 @@ async function querySignals(marketId) {
           AND o.payment_status = 'pending'), 0)::bigint AS cash_a_securiser_kmf,
         COUNT(DISTINCT o.relais_id) FILTER (WHERE o.status NOT IN ('cancelled', 'refunded', 'collected'))::int AS relais_actifs
        FROM orders o
-      WHERE o.market_id = $1`,
-    [marketId]
+      WHERE o.market_id = $1
+        ${orderRelayFilter}
+        AND ${simulationClause('o', includeSimulation)}`,
+    params
   );
 
   const { rows: incidents } = await db.query(
@@ -245,12 +257,14 @@ async function querySignals(marketId) {
        JOIN orders o ON o.id = oi.order_id
        LEFT JOIN relais r ON r.id = o.relais_id
       WHERE o.market_id = $1
+        ${orderRelayFilter}
+        AND ${simulationClause('o', includeSimulation)}
         AND oi.status IN ('open', 'in_progress')
       ORDER BY
         CASE oi.priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 WHEN 'normal' THEN 2 ELSE 3 END,
         oi.created_at ASC
       LIMIT 20`,
-    [marketId]
+    params
   );
 
   const { rows: byRelais } = await db.query(
@@ -266,12 +280,14 @@ async function querySignals(marketId) {
        FROM relais r
        JOIN orders o ON o.relais_id = r.id
       WHERE r.market_id = $1
+        ${relayIdentityFilter}
+        AND ${simulationClause('o', includeSimulation)}
         AND o.status NOT IN ('cancelled', 'refunded')
       GROUP BY r.id, r.name, r.island
      HAVING COUNT(*) FILTER (WHERE o.status NOT IN ('cancelled', 'refunded')) > 0
       ORDER BY en_retard DESC, disponibles DESC
       LIMIT 20`,
-    [marketId]
+    params
   );
 
   return Object.freeze({
@@ -331,17 +347,27 @@ function buildSummary(queues, distribution, inventoryState) {
 
 async function buildWorkspace(options = {}) {
   const market = requireMarket(options.market);
-  const includeSimulation = await isE2eTestAccount(options.viewer && options.viewer.id);
+  const viewer = options.viewer || null;
+  const isRelayAgent = viewer && viewer.role === 'agent_relais';
+  // Le rattachement est issu de la session relue en DB (middleware/auth),
+  // jamais d'un market/relais_id demandé par le navigateur.
+  const relaisId = isRelayAgent ? viewer.relais_id : null;
+  if (isRelayAgent && (!relaisId || !/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(String(relaisId)))) {
+    throw new OperationsWorkspaceError('relay_scope_required', 'Aucun relais valide affecté à cet agent', 403);
+  }
+  const includeSimulation = await isE2eTestAccount(viewer && viewer.id);
   const [orders, parcels, distribution, inventoryState, signals] = await Promise.all([
-    queryOrders(market.id),
-    queryParcels(market.id, includeSimulation),
-    queryDistribution(market.id),
-    queryInventory(market.id),
-    querySignals(market.id),
+    queryOrders(market.id, relaisId, includeSimulation),
+    queryParcels(market.id, includeSimulation, relaisId),
+    isRelayAgent ? Promise.resolve({ parcels: [], unassigned: [] }) : queryDistribution(market.id),
+    isRelayAgent ? Promise.resolve({ items: [], open_parcels: [] }) : queryInventory(market.id),
+    querySignals(market.id, relaisId, includeSimulation),
   ]);
-  const queues = buildQueues(orders, parcels);
-  // LIVE-06 : « À remettre au client » vient de la projection unique consommée aussi par les Live.
-  const relayCounts = await countRelayParcels({ marketIds: [market.id] });
+  const fullQueues = buildQueues(orders, parcels);
+  // Ni données Hub, ni comptages d'autres relais dans le payload de l'agent.
+  const queues = isRelayAgent ? { ...fullQueues, hub: { to_ship: [] } } : fullQueues;
+  // LIVE-06 : même source de compteurs, avec portée relais en lecture agent.
+  const relayCounts = await countRelayParcels({ marketIds: [market.id], ...(relaisId ? { relaisId } : {}) });
   const summary = Object.freeze({
     ...buildSummary(queues, distribution, inventoryState),
     relay_to_collect: relayCounts.available,
@@ -357,7 +383,7 @@ async function buildWorkspace(options = {}) {
     data_quality: Object.freeze({
       generated_at: new Date().toISOString(),
       scope_enforced: true,
-      scope_mode: 'market',
+      scope_mode: isRelayAgent ? 'relay' : 'market',
       action_context: 'single_market_only',
       source_tables: Object.freeze([
         'orders',

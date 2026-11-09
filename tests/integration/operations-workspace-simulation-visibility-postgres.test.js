@@ -26,8 +26,8 @@ if (!hasEnv) {
   async function mkUser(label, role) {
     const id = crypto.randomUUID();
     ids.users.push(id);
-    await db.query(`INSERT INTO users (id, full_name, email, password_hash, role) VALUES ($1,$2,$3,'x',$4)`, [id, `${TAG}-${label}`, `${TAG}-${label}@komerce.test`, role]);
-    return { id, role };
+    await db.query(`INSERT INTO users (id, full_name, email, password_hash, role, relais_id) VALUES ($1,$2,$3,'x',$4,$5)`, [id, `${TAG}-${label}`, `${TAG}-${label}@komerce.test`, role, role === 'agent_relais' ? relaisId : null]);
+    return { id, role, relais_id: role === 'agent_relais' ? relaisId : null };
   }
   async function seed(label, scope, status) {
     const productId = crypto.randomUUID(); ids.products.push(productId);
@@ -71,7 +71,8 @@ if (!hasEnv) {
   test('table vide pour ces comptes : personne ne voit la simulation (admin compris)', async () => {
     for (const viewer of [u.e2eRelay, u.realRelay, u.realAdmin, undefined]) {
       const r = await refs(viewer);
-      expect(r.ship).toContain(real);
+      if (viewer?.role === 'agent_relais') expect(r.ship).toEqual([]); // jamais de tâche Hub pour un relais
+      else expect(r.ship).toContain(real);
       for (const k of ['ship', 'receive', 'collect']) expect(r[k]).not.toContain(sim[k]);
     }
     expect(await isE2eTestAccount(u.e2eRelay.id)).toBe(false);
@@ -80,7 +81,7 @@ if (!hasEnv) {
   test('compte E2E marque : voit le colis simule dans Expedier, Receptionner et Distribuer', async () => {
     await db.query('INSERT INTO e2e_test_accounts (user_id) VALUES ($1)', [u.e2eRelay.id]);
     const r = await refs(u.e2eRelay);
-    expect(r.ship).toContain(sim.ship);
+    expect(r.ship).toEqual([]); // agent relais : l'E2E n'accorde pas un droit Hub
     expect(r.receive).toContain(sim.receive);
     expect(r.collect).toContain(sim.collect);
   });
@@ -88,6 +89,20 @@ if (!hasEnv) {
   test('compte reel du meme role et du meme marche : ne le voit pas', async () => {
     const r = await refs(u.realRelay);
     for (const k of ['ship', 'receive', 'collect']) expect(r[k]).not.toContain(sim[k]);
+  });
+
+  test('portée par relais : un second relais du même marché ne voit ni commandes, ni colis, ni compteurs du premier', async () => {
+    const otherId = crypto.randomUUID(); ids.relais.push(otherId);
+    await db.query(`INSERT INTO relais (id, name, agent_name, phone, address, island, market_id) VALUES ($1,$2,'E2E','+269000112','Moroni','Ngazidja',$3)`, [otherId, `${TAG}-second-relais`, market.id]);
+    const outsider = await mkUser('other-relay', 'agent_relais');
+    await db.query('UPDATE users SET relais_id=$2 WHERE id=$1', [outsider.id, otherId]);
+    outsider.relais_id = otherId;
+    const view = await workspace.buildWorkspace({market,viewer:outsider});
+    expect(view.queues.relay.to_receive.map(x=>x.reference)).not.toContain(sim.receive);
+    expect(view.queues.relay.to_collect.map(x=>x.reference)).not.toContain(sim.collect);
+    expect(view.queues.relay.cash_pending).toEqual([]);
+    expect(view.signals.par_relais.every(x=>String(x.id)===String(otherId))).toBe(true);
+    expect(view.queues.hub.to_ship).toEqual([]);
   });
 
   test('admin reel sans marqueur ni opt-in : ne le voit pas', async () => {
