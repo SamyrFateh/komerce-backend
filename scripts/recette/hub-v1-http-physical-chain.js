@@ -50,6 +50,16 @@ async function run(args = {}) {
 async function runInner({ env = process.env, db, run8 } = {}, holder = {}) {
   const { base, local } = assertTarget(env);
   if (!/^[A-F0-9]{8}$/.test(run8 || '')) throw new Error('RUN8_REQUIRED');
+  if (local) {
+    // Le serveur local doit également reposer sur une base jetable et locale.
+    require('./hub-v1-certification-runner').assertEphemeralTarget(env.DATABASE_URL, []);
+  }
+  if (!local) {
+    // Autorisation avant authentification, et avant le moindre POST metier.
+    await require('./hub-v1-staging-target-authorization').authorizeOfficialStaging({ db, run: run8, env });
+    if (env.HTTP_RUNNER_ALLOW_DISTRIBUTION === '1')
+      throw new Error('HUB_V1_MARKET_WIDE_DISTRIBUTION_FORBIDDEN');
+  }
   const report = { schema: 'hub-v1-http-physical/1', run8, base: local ? 'LOCAL_REHEARSAL' : 'OFFICIAL_STAGING', started_at: new Date().toISOString(), actions: [] };
   holder.report = report;
   const actors = {};

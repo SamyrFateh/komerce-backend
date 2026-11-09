@@ -102,10 +102,36 @@ const KM = `/api/admin/workspaces/operations/market/${MARKET_CODE}`; // nom hist
 
 test.describe.serial(`Hub V1 : clics reels Chromium (${MARKET_CODE}, fixture E2E)`, () => {
   test.beforeAll(async () => {
+    const baseURL = process.env.E2E_CLICKS_BASE_URL || 'https://komerce-backend-production.up.railway.app';
     expect(RUN8).toMatch(/^[A-F0-9]{8}$/);
     db = require('../../db');
+    // Les gestes de cette spec sont des mutations métier, même si le
+    // navigateur se contente de cliquer : vérification avant le premier login.
+    const origin = new URL(baseURL).origin;
+    if (origin === 'https://komerce-backend-production.up.railway.app') {
+      await require('../../scripts/recette/hub-v1-staging-target-authorization')
+        .authorizeOfficialStaging({ db, run: RUN8 });
+      expect(process.env.E2E_CLICKS_ALLOW_DISTRIBUTION, 'aucune distribution globale marché')
+        .not.toBe('1');
+    } else {
+      // La répétition locale doit utiliser une base jetable, jamais un backend
+      // localhost connecté silencieusement à Railway staging.
+      require('../../scripts/recette/hub-v1-certification-runner')
+        .assertEphemeralTarget(process.env.DATABASE_URL, []);
+    }
   });
-  test.afterAll(async () => { save(); if (db && db.pool && db.pool.end) await db.pool.end(); });
+  test.afterAll(async () => {
+    const failures=evidence.gestures.filter((row)=>row.verdict!=='CLICK_PASS');
+    evidence.verdict=failures.length||!evidence.gestures.length
+      ? 'CHROMIUM_CLICKS_BLOCKED_NOT_PROVEN'
+      : 'CHROMIUM_CLICKS_RECORDED_SQL_READBACK_PENDING';
+    evidence.blockers=failures.map((row)=>({key:row.key,verdict:row.verdict,note:row.note}));
+    evidence.never_claims='G2_CHROMIUM_STAGING_PASS';
+    save();
+    if(db && db.pool && db.pool.end)await db.pool.end();
+    if(evidence.verdict==='CHROMIUM_CLICKS_BLOCKED_NOT_PROVEN')
+      throw new Error('HUB_V1_CHROMIUM_GESTURES_NOT_PROVEN:'+failures.map((row)=>row.key).join(','));
+  });
 
   test('Hub : reception fournisseur (ecran Receptions)', async ({ browser, baseURL }) => {
     evidence.base = baseURL;
