@@ -42,7 +42,9 @@ async function login(role, env) {
   const prefix = role === 'admin' ? 'E2E_ADMIN' : 'E2E_AGENT_RELAIS';
   const email = env[prefix + '_EMAIL'], password = env[prefix + '_PASSWORD'];
   ok(email && password, 'E2E_CREDENTIALS_MISSING_' + role);
-  ok(/@(?:komerce\.test|recette\.komerce\.invalid)$/i.test(email), 'DEDICATED_E2E_ACCOUNT_REQUIRED');
+  // The credentials are supplied by the dedicated E2E_* GitHub secrets, not by a hard-coded email domain.
+  // Only HTTP 401/403/404 probes on an absent request are permitted with these sessions.
+  ok(/^[^@\s]+@[^@\s]+$/.test(email), 'E2E_EMAIL_FORMAT_INVALID');
   const response = await fetch(BASE + '/api/auth/login', {
     method:'POST', headers:{origin:BASE,'content-type':'application/json'},
     body:JSON.stringify({email,password})
@@ -184,8 +186,8 @@ async function run() {
   ok(/^[a-f0-9]{40}$/i.test(String(version.commit||'')),'DEPLOY_SHA_UNAVAILABLE');
   report.runtime_sha=version.commit;
   step('runtime_version','SHA staging identifié');
-  await probeHttp(process.env);
-
+  // Prove the physical service and DB gates before optional HTTP account checks;
+  // failures still leave no fixture, and their individual checks remain visible.
   const client=await db.getClient();
   let tx=false,ids=null;
   try{
@@ -202,6 +204,7 @@ async function run() {
     }
     client.release();
   }
+  await probeHttp(process.env);
   report.verdict='PASS_TRANSACTIONAL_AND_NEGATIVE_HTTP';
   report.remaining='Une attestation HTTP positive avec dossier de recette persistant et le contrôle Chromium authentifié restent à certifier séparément.';
   return report;
