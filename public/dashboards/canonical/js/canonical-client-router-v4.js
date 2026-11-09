@@ -32,6 +32,11 @@
     'catalog-workspace',
     'sourcing-workspace',
     'purchasing-workspace',
+    // Les postes live sont pilotés par leur autorité propre (et non le Dashboard).
+    // app.js::boot() les classe déjà contextless : le routeur interne doit
+    // appliquer la même règle lors d'un clic sans rechargement du document.
+    'import-runtime',
+    'hub-workstation',
     'action-center',
     'settings',
   ]);
