@@ -1,6 +1,6 @@
 'use strict';
 /** @test-kind unit @test-runner jest @test-requires none */
-const {exactRefs,validateRoots,inspect}=require('../../scripts/recette/hub-v1-fixture-dependency-inventory');
+const {exactRefs,validateRoots,inspect,buildCleanupInventory}=require('../../scripts/recette/hub-v1-fixture-dependency-inventory');
 const RUN='ABC12345';
 const uuid=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0');
 const roots=exactRefs(RUN).map((reference,i)=>({
@@ -83,4 +83,89 @@ test('aucune fixture présente : aucune suppression et aucun GO implicite',async
   expect(report.roots).toHaveLength(0);
   expect(report.delete_performed).toBe(false);
   expect(report.cleanup_certified).toBe(false);
+});
+
+function cleanupClient({orders=roots, owned={}, fkEdges=[], immutable=[]}={}) {
+  const statements=[];
+  const client={query:jest.fn(async(sql)=>{
+    statements.push(sql);
+    if(sql.startsWith('BEGIN TRANSACTION')||sql==='ROLLBACK')return{rows:[]};
+    if(sql.includes('FROM public.orders o JOIN public.users'))return{rows:orders};
+    if(sql.includes('FROM pg_constraint c')&&sql.includes('array_to_json'))return{rows:[]};
+    if(sql.includes('FROM pg_constraint c')&&sql.includes('AS delete_rule'))return{rows:fkEdges};
+    if(sql.includes('FROM pg_trigger t'))return{rows:immutable};
+    for(const [table, data] of Object.entries(owned)){
+      const tableQuery={
+        users:'FROM users WHERE lower(email)',relais:'FROM relais WHERE name =',
+        suppliers:'FROM suppliers WHERE name LIKE',products:'FROM products WHERE product_ref LIKE',
+      }[table];
+      if(tableQuery&&sql.includes(tableQuery))return{rows:data};
+    }
+    if(/^\s*SELECT\b/.test(sql))return{rows:[]};
+    throw Error('UNEXPECTED_NON_READ_QUERY:'+sql);
+  })};
+  return{client,statements};
+}
+
+test('inventaire complet : une seule photographie READ ONLY, racines hors FK, preuve immuable et empreinte',async()=>{
+  const immutable=[{table_name:'orders',trigger_name:'order_evidence_no_delete',on_delete:true,on_update:false}];
+  const {client,statements}=cleanupClient({
+    owned:{users:[{id:uuid(10)}],relais:[{id:uuid(11)}],products:[{id:uuid(12)}]},
+    immutable,
+  });
+  const report=await buildCleanupInventory(client,RUN);
+  expect(report.verdict).toBe('HOLD_IMMUTABLE_PROOFS_RETAINED');
+  expect(report.cleanup_strategy.decision).toBe('RETAIN_FIXTURE_PREFIX_NO_DELETE');
+  expect(report.cleanup_strategy.immutable_tables).toContain('orders');
+  expect(report.owned_roots_outside_fk_graph).toEqual(expect.arrayContaining([
+    expect.objectContaining({table:'users',count:1,ids:[uuid(10)]}),
+    expect.objectContaining({table:'products',count:1,ids:[uuid(12)]}),
+  ]));
+  expect(report.snapshot_sha256).toMatch(/^[a-f0-9]{64}$/);
+  expect(report.cleanup_scope_checks).toMatchObject({
+    exact_roots:true,no_opaque_fk:true,no_truncation:true,valid_owned_root_ids:true,
+  });
+  expect(report.delete_performed).toBe(false);
+  expect(report.cleanup_certified).toBe(false);
+  expect(statements.filter(x=>x.startsWith('BEGIN'))).toEqual(['BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY']);
+  expect(statements.filter(x=>x==='ROLLBACK')).toHaveLength(1);
+  expect(statements.slice(1,-1).every(x=>/^\s*SELECT\b/.test(x))).toBe(true);
+});
+
+test('racines orphelines après interruption : HOLD et aucun cleanup même sans commande',async()=>{
+  const {client}=cleanupClient({orders:[],owned:{products:[{id:uuid(12)}]}});
+  const report=await buildCleanupInventory(client,RUN);
+  expect(report.roots).toHaveLength(0);
+  expect(report.verdict).toBe('HOLD_ORPHANED_FIXTURE_ROOTS');
+  expect(report.cleanup_strategy.decision).toBe('HOLD_DISCOVERY_ONLY_NO_APPLY');
+  expect(report.cleanup_certified).toBe(false);
+});
+
+test('pas de trigger apparent != DELETE autorisé ; inventaire seul = HOLD',async()=>{
+  const {client}=cleanupClient();
+  const report=await buildCleanupInventory(client,RUN);
+  expect(report.cleanup_strategy.decision).toBe('HOLD_DISCOVERY_ONLY_NO_APPLY');
+  expect(report.verdict).toBe('HOLD_FK_GRAPH_ONLY_NOT_CERTIFIED_FOR_DELETE');
+  expect(report.cleanup_certified).toBe(false);
+});
+
+test('identifiants invalides ou inventaire tronqué = garde fail closed',async()=>{
+  const big=Array.from({length:2501},(_,i)=>({id:uuid(i+1000)}));
+  const {client}=cleanupClient({owned:{users:big,products:[{id:'INVALID UUID WITH SPACES'}]}});
+  const report=await buildCleanupInventory(client,RUN);
+  expect(report.verdict).toBe('HOLD_INCOMPLETE_OWNERSHIP_INVENTORY');
+  expect(report.cleanup_scope_checks.no_truncation).toBe(false);
+  expect(report.cleanup_scope_checks.valid_owned_root_ids).toBe(false);
+  expect(report.owned_roots_outside_fk_graph.find(x=>x.table==='users').ids).toHaveLength(2500);
+  expect(report.cleanup_certified).toBe(false);
+});
+
+test('workflow d’inventaire conserve le SHA staging vérifié et reste read only',()=>{
+  const fs=require('fs');const path=require('path');
+  const y=fs.readFileSync(path.join(__dirname,'../../.github/workflows/hub-v1-fixture-dependency-inventory.yml'),'utf8');
+  expect(y).toContain('fetch-depth: 0');
+  expect(y).toContain('node scripts/recette/resolve-staging-deploy-pin.js');
+  expect(y).toContain('node scripts/recette/hub-v1-fixture-dependency-inventory.js');
+  expect(y).not.toContain('E2E_EXPECTED_DEPLOY_SHA=$(git rev-parse HEAD)');
+  expect(y).not.toMatch(/TRUNCATE|DELETE FROM|session_replication_role/);
 });
