@@ -69,6 +69,10 @@ function assertTarget(env) {
 async function run({ env = process.env, db, run8 } = {}) {
   const { base, local } = assertTarget(env);
   if (!/^[A-F0-9]{8}$/.test(run8 || '')) throw new Error('RUN8_REQUIRED');
+  if (local) {
+    // Un serveur de test localhost ne peut pas écrire dans la vraie base staging.
+    require('./hub-v1-certification-runner').assertEphemeralTarget(env.DATABASE_URL, []);
+  }
   if (!local) {
     // Le chemin HTTP ecrit via les vraies routes : meme garde bloquante que
     // l'executeur officiel, avant tout login ou action sur staging.
