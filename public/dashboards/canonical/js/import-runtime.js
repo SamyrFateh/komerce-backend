@@ -2147,7 +2147,7 @@
     return `<section class="kir-page kir-one-screen" data-sourcing-single-screen>
       <header class="kir-one-hero"><div><span class="kir-eyebrow">SOURCING</span>
         <h1>Sourcing Live</h1><p>Acquérir des produits et les remettre au Catalogue global.</p></div>
-        ${viewer?.role === 'admin' ? `<a href="/admin/workspaces/catalog">Catalogue global →</a></header>` : ''}
+        ${viewer?.role === 'admin' ? '<a href="/admin/workspaces/catalog">Catalogue global →</a>' : ''}</header>
       ${unifiedSourcingTabs(run, view)}
       <main class="kir-one-body" data-sourcing-active-view="${view}">
         <div class="kir-one-pane" data-sourcing-panel="overview" ${view === 'overview' ? '' : 'hidden'}>${summary}</div>
