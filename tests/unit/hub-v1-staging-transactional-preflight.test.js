@@ -54,6 +54,6 @@ test('le préflight staging utilise le SHA applicatif prouvé et non HEAD arbitr
   expect(yaml).toContain('fetch-depth: 0');
   expect(yaml).toContain('node scripts/recette/resolve-staging-deploy-pin.js');
   expect(yaml).toContain('node scripts/recette/hub-v1-staging-transactional-preflight.js');
-  expect(yaml).not.toMatch(/E2E_EXPECTED_DEPLOY_SHA=\\$\\(git rev-parse HEAD\\)/);
+  expect(yaml).not.toContain('E2E_EXPECTED_DEPLOY_SHA=$(git rev-parse HEAD)');
   expect(yaml).toContain('No-write staging fixture preflight');
 });
