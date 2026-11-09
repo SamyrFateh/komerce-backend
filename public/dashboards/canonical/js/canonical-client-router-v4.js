@@ -372,5 +372,6 @@
     _primeCatalogFrenchTranslator: primeCatalogFrenchTranslator,
     _normalizeSourceLanguage: normalizeSourceLanguage,
     _localNavigation: localNavigation,
+    _requiresAdminContext: requiresAdminContext,
   });
 });
