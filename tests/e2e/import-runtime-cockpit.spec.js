@@ -412,7 +412,9 @@ async function mountLiveWhenReady(page) {
     typeof window.KomerceCanonicalImportRuntime?.mount === 'function'
     && Boolean(document.getElementById('root'))
   ));
-  await page.evaluate(() => window.KomerceCanonicalImportRuntime.mount({ root: document.getElementById('root') }));
+  await page.evaluate(() => window.KomerceCanonicalImportRuntime.mount({
+    root: document.getElementById('root'), user:{role:'admin'}
+  }));
 }
 
 async function mountLive(page, data) {
