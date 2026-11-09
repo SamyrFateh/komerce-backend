@@ -14,6 +14,7 @@
 
 const fs=require('fs');
 const path=require('path');
+const crypto=require('crypto');
 const {confirmTarget}=require('./target-guard');
 const SCOPE='E2E-HUB-V1';
 const SUFFIXES=Object.freeze(['KOM-101','KOM-102','KOM-103','LOCAL']);
@@ -48,12 +49,12 @@ function validateRoots(orders,run){
 
 const FOREIGN_KEYS="\nSELECT c.conname AS constraint_name,child.relname AS child_table,parent.relname AS parent_table,\n  array_to_json(ARRAY(SELECT a.attname::text FROM unnest(c.conkey) WITH ORDINALITY k(n,ord)\n    JOIN pg_attribute a ON a.attrelid=c.conrelid AND a.attnum=k.n ORDER BY k.ord)) AS child_columns,\n  array_to_json(ARRAY(SELECT a.attname::text FROM unnest(c.confkey) WITH ORDINALITY k(n,ord)\n    JOIN pg_attribute a ON a.attrelid=c.confrelid AND a.attnum=k.n ORDER BY k.ord)) AS parent_columns,\n  EXISTS (SELECT 1 FROM pg_attribute a WHERE a.attrelid=c.conrelid\n          AND a.attname='id' AND a.atttypid='uuid'::regtype AND NOT a.attisdropped) AS child_has_uuid_id\nFROM pg_constraint c\nJOIN pg_class child ON child.oid=c.conrelid\nJOIN pg_class parent ON parent.oid=c.confrelid\nJOIN pg_namespace cn ON cn.oid=child.relnamespace\nJOIN pg_namespace pn ON pn.oid=parent.relnamespace\nWHERE c.contype='f' AND cn.nspname='public' AND pn.nspname='public'\nORDER BY parent.relname,child.relname,c.conname\n";
 
-async function inspect(client,run){
+async function inspect(client,run,{transactionManaged=true}={}){
   const refs=exactRefs(run);
   const report={scope:SCOPE,run,mode:'READ_ONLY',delete_performed:false,
     cleanup_certified:false,roots:[],missing:refs,dependencies:[],
     opaque_dependencies:[],truncated:false,verdict:'HOLD_NO_CLEANUP'};
-  await client.query('BEGIN READ ONLY');
+  if(transactionManaged)await client.query('BEGIN READ ONLY');
   try{
     const {rows:orders}=await client.query(
       'SELECT o.id,o.reference,o.simulation_scope,o.payment_mode,u.email AS buyer_email '+
@@ -119,7 +120,7 @@ async function inspect(client,run){
       :ownership.missing.length?'HOLD_INCOMPLETE_FIXTURE'
       :'HOLD_FK_GRAPH_ONLY_NOT_CERTIFIED_FOR_DELETE';
     return report;
-  }finally{await client.query('ROLLBACK');}
+  }finally{if(transactionManaged)await client.query('ROLLBACK');}
 }
 
 // ─── Inventaire de nettoyage étendu (lecture seule) : racines hors graphe FK + preuves immuables ───
@@ -144,13 +145,18 @@ const OWNED_ROOTS = (run) => [
   ['customs_shipments', 'SELECT id::text AS id FROM customs_shipments WHERE reference LIKE $1', [SCOPE + '-' + run + '-%']],
 ];
 async function buildCleanupInventory(client, run) {
-  const report = await inspect(client, run);
-  await client.query('BEGIN READ ONLY');
+  // Une seule photographie MVCC : les commandes, dépendances et preuves immuables
+  // ne peuvent pas provenir de deux états différents de staging.
+  await client.query('BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY');
   try {
+    const report = await inspect(client, run, {transactionManaged:false});
     const owned = [];
     for (const [table, sql, args] of OWNED_ROOTS(run)) {
       const { rows } = await client.query(sql, args);
-      owned.push({ table, count: rows.length, ids: rows.map((r) => r.id).filter((v) => /^[A-Za-z0-9:_.-]{1,80}$/.test(v)).slice(0, MAX_IDS) });
+      const ids=rows.map((r)=>String(r.id||''));
+      const validIds=ids.filter((v)=>/^[A-Za-z0-9:_.-]{1,80}$/.test(v));
+      owned.push({ table, count:rows.length, ids:validIds.slice(0,MAX_IDS),
+        truncated:rows.length>MAX_IDS, invalid_ids:rows.length-validIds.length });
     }
     const direct = [...new Set([...(report.discovered_tables || []).map((t) => t.table), ...owned.filter((o) => o.count).map((o) => o.table)])].sort();
     const fkRules = (await client.query(FK_DELETE_RULES, [direct])).rows;
@@ -169,14 +175,37 @@ async function buildCleanupInventory(client, run) {
     report.immutability = [...byTable.values()];
     report.fk_delete_rules = fkRules;
     report.tables_considered = tables;
+    // Empreinte de l'état observé : utile au contrôle avant/après, mais jamais une
+    // autorisation de suppression. Les preuves append-only sont conservées.
+    const snapshot={scope:SCOPE,run,roots:report.roots,
+      discovered_tables:report.discovered_tables||[],
+      owned_roots:owned.map(({table,count,ids})=>({table,count,ids:ids.slice().sort()})),
+      opaque_dependencies:report.opaque_dependencies,
+      immutable_tables:immutable.map((t)=>t.table).sort()};
+    report.snapshot_sha256=crypto.createHash('sha256').update(JSON.stringify(snapshot)).digest('hex');
+    report.cleanup_scope_checks={
+      exact_roots:report.roots.length===0||report.missing.length===0,
+      no_opaque_fk:(report.opaque_dependencies||[]).length===0,
+      no_truncation:!report.truncated&&!owned.some((o)=>o.truncated),
+      valid_owned_root_ids:owned.every((o)=>o.invalid_ids===0),
+      immutable_evidence_retained:true,
+    };
     report.cleanup_strategy = immutable.length
-      ? { decision: 'RETAIN_FIXTURE_PREFIX_NO_DELETE', reason: 'tables append-only/immuables portant des lignes de la fixture : suppression forcée interdite (ni disable trigger, ni session_replication_role=replica)',
-          immutable_tables: immutable.map((t) => t.table),
-          immutable_tables_potential_children: immutableAll.filter((t) => !holdsFixtureRows.has(t.table)).map((t) => t.table),
-          delete_performed: false }
-      : { decision: 'DELETE_ALLOWED_AFTER_DRY_RUN_REVIEW', immutable_tables: [],
-          immutable_tables_potential_children: immutableAll.map((t) => t.table), delete_performed: false };
-    report.verdict = immutable.length ? 'HOLD_IMMUTABLE_PROOFS_RETAINED' : report.verdict;
+      ? {decision:'RETAIN_FIXTURE_PREFIX_NO_DELETE',
+          reason:'preuves append-only : ne supprimer aucune ligne, ne pas désactiver les triggers',
+          immutable_tables:immutable.map((t)=>t.table),
+          immutable_tables_potential_children:immutableAll.filter((t)=>!holdsFixtureRows.has(t.table)).map((t)=>t.table),
+          delete_performed:false}
+      : {decision:'HOLD_DISCOVERY_ONLY_NO_APPLY',
+          reason:'absence de trigger de blocage ne prouve ni exclusivité des relations ni permission DELETE',
+          immutable_tables:[],
+          immutable_tables_potential_children:immutableAll.map((t)=>t.table),
+          delete_performed:false};
+    if(report.roots.length===0&&owned.some((o)=>o.count>0))report.verdict='HOLD_ORPHANED_FIXTURE_ROOTS';
+    else if(!Object.values(report.cleanup_scope_checks).every(Boolean))report.verdict='HOLD_INCOMPLETE_OWNERSHIP_INVENTORY';
+    else if(immutable.length)report.verdict='HOLD_IMMUTABLE_PROOFS_RETAINED';
+    report.cleanup_certified=false;
+    report.delete_performed=false;
     return report;
   } finally { await client.query('ROLLBACK'); }
 }
@@ -199,7 +228,7 @@ async function main(){
       throw Error('HUB_V1_RUNTIME_SHA_DRIFT');
     const client=await db.getClient();
     let report;
-    try{report=await inspect(client,run);}finally{client.release();}
+    try{report=await buildCleanupInventory(client,run);}finally{client.release();}
     report.runtime_sha=sha;
     const dir=path.join('test-results','hub-v1-cert');
     fs.mkdirSync(dir,{recursive:true});
@@ -207,6 +236,9 @@ async function main(){
     fs.writeFileSync(file,JSON.stringify(report,null,2)+'\n');
     console.log(JSON.stringify({verdict:report.verdict,roots:report.roots.length,
       dependencies:report.dependencies.length,opaque:report.opaque_dependencies.length,
+      owned_root_tables:report.owned_roots_outside_fk_graph.length,
+      immutable_tables:report.cleanup_strategy.immutable_tables,
+      snapshot_sha256:report.snapshot_sha256,
       delete_performed:false,cleanup_certified:false,artifact:file}));
   }finally{await db.pool.end();}
 }
