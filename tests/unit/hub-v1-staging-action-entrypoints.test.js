@@ -56,3 +56,16 @@ test('real Chromium spec checks official staging authorization before first logi
   expect(login).toBeGreaterThan(gate);
   expect(src).toContain('.assertEphemeralTarget(process.env.DATABASE_URL, [])');
 });
+
+test('Chromium cannot hide NOT_REACHABLE_IN_UI or NOT_RUN under a green suite',()=>{
+  const src=fs.readFileSync(path.join(ROOT,'tests/staging-clicks/hub-v1-clicks.spec.js'),'utf8');
+  expect(src).toContain("row.verdict!=='CLICK_PASS'");
+  expect(src).toContain("CHROMIUM_CLICKS_BLOCKED_NOT_PROVEN");
+  expect(src).toContain("HUB_V1_CHROMIUM_GESTURES_NOT_PROVEN");
+  expect(src).toContain("SQL_READBACK_PENDING");
+  expect(src).toContain("evidence.never_claims='G2_CHROMIUM_STAGING_PASS'");
+  const persist=src.indexOf('save();',src.indexOf('test.afterAll(async () =>'));
+  const refusal=src.indexOf("throw new Error('HUB_V1_CHROMIUM_GESTURES_NOT_PROVEN:");
+  expect(persist).toBeGreaterThan(0);
+  expect(refusal).toBeGreaterThan(persist);
+});
