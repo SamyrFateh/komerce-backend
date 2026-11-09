@@ -36,7 +36,7 @@ test('une panne aval ne transforme jamais un import terminé en faux zéro', asy
   expect(after.accounting).toEqual(before.accounting);
 });
 
-function cockpit(search = '?run=KIR-000004') {
+function cockpit(search = '?run=KIR-000004', role = 'admin') {
   const context = {
     URLSearchParams,
     window: {
@@ -46,7 +46,13 @@ function cockpit(search = '?run=KIR-000004') {
       addEventListener:jest.fn(),
     },
   };
-  vm.runInNewContext(fs.readFileSync(require.resolve('../../public/dashboards/canonical/js/import-runtime.js'), 'utf8'), context);
+  // Les tests unitaires appellent render() directement, sans mount() qui pose
+  // l'identité de session. Simuler explicitement le rôle du cas de test :
+  // aucune route Catalogue/Pricing ne doit être visible par défaut à un agent.
+  const script = fs.readFileSync(require.resolve('../../public/dashboards/canonical/js/import-runtime.js'), 'utf8');
+  const marker = 'let viewer = null;';
+  if (!script.includes(marker)) throw new Error('IMPORT_RUNTIME_VIEWER_FIXTURE_MISSING');
+  vm.runInNewContext(script.replace(marker, 'let viewer = { role: ' + JSON.stringify(role) + ' };'), context);
   return context.window.KomerceCanonicalImportRuntime;
 }
 
@@ -1176,4 +1182,14 @@ test('import après correctif : 20 prix USD sans observation restent en Mis de c
   expect(node.innerHTML).toContain('synchronisation BCE fonctionne automatiquement');
   expect(node.innerHTML).toContain('/admin/workspaces/pricing#fx-authority');
   expect(node.innerHTML).not.toContain('20 rejet(s) de réception');
+});
+
+test('l’agent Sourcing garde le suivi fournisseur sans lien vers les ateliers Catalogue et Prix interdits', () => {
+  const agent = cockpit('?run=KIR-000012', 'sourcing');
+  const p = scenario({}, { run_ref:'KIR-000012', diagnostics:{ fx_pending:20, reject_reasons:{} } });
+  const node = root();
+  agent.render(node, p);
+  expect(node.innerHTML).not.toContain('href="/admin/workspaces/pricing#fx-authority"');
+  expect(node.innerHTML).not.toContain('class="kir-global-link"');
+  expect(node.innerHTML).toContain('Retour aux sources');
 });
