@@ -53,11 +53,13 @@ test('Un seul écran Sourcing Live avec trois onglets métier',()=>{
   expect(html).not.toContain('Mettre à jour maintenant');
   expect(html).not.toContain('Redémarrer');
 });
-test('Une catégorie va au Catalogue, un fait fournisseur à la correction source',()=>{
+test('Un rôle sans droit Catalogue ne reçoit pas de lien de correction, et la source reste consultable',()=>{
   const html=rendered(sample());
-  expect(html).toContain('/admin/workspaces/catalog?search=KSC-000194');
-  expect(html).toContain('/admin/workspaces/sourcing?candidate_ref=KSC-000195');
-  expect(html).toContain('Compléter dans le Catalogue');
+  // render() sans session administrateur ne doit pas donner un lien Catalogue.
+  expect(html).toContain('À compléter au Catalogue central');
+  expect(html).not.toContain('/admin/workspaces/catalog?search=KSC-000194');
+  expect(html).toContain('/admin/import-runtime?run=KIR-000013&amp;view=sources');
+  expect(html).toContain('Consulter la source');
   expect(html).not.toContain('data-category-remediation');
 });
 test('Le contrôle actif correspond à une source exacte et propose un import explicite',()=>{

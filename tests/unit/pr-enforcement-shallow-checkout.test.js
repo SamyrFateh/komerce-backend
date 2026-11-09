@@ -16,7 +16,15 @@ const workflow = fs.readFileSync(
 
 describe('PR enforcement — shallow checkout ratchet', () => {
   test('aucun checkout ne réclame tout l’historique Git', () => {
-    expect(workflow).not.toContain('fetch-depth: 0');
+    // Le préflight canonique exige un historique complet pour analyser les impacts.
+    // Tous les autres checkouts restent shallow : aucun second full fetch autorisé.
+    expect(workflow.match(/fetch-depth: 0/g) || []).toHaveLength(1);
+    const preflightStart = workflow.indexOf('  preflight:');
+    const preflightEnd = workflow.indexOf('  verdict:', preflightStart);
+    expect(preflightStart).toBeGreaterThan(-1);
+    expect(preflightEnd).toBeGreaterThan(preflightStart);
+    const preflight = workflow.slice(preflightStart, preflightEnd);
+    expect(preflight).toContain('fetch-depth: 0');
   });
 
   test('les gates hors migration qui comparent base/head fetchent uniquement le commit de base', () => {
