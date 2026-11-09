@@ -1392,7 +1392,7 @@
     return `<section class="kir-exception-banner" data-fx-remediation role="status">
       <strong>${esc(title)}</strong>
       <p>${esc(detail)}</p>
-      <a href="/admin/workspaces/pricing#fx-authority">Consulter l’autorité des taux officiels →</a>
+      ${viewer?.role === 'admin' ? `<a href="/admin/workspaces/pricing#fx-authority">Consulter l’autorité des taux officiels →</a>` : ''}
       <a href="${urlFor(run?.run_ref, 'sources')}" data-cockpit-nav>Retour aux sources →</a>
     </section>`;
   }
@@ -1535,7 +1535,9 @@
         ? `<button type="button" class="kir-row-action kir-classify-btn" data-action-classify
             data-candidate-ref="${esc(candidateRef)}" data-product-name="${esc(title)}"
             data-action-reason="${esc(item.reason || '')}">Classer →</button>`
-        : `<a class="kir-row-action" href="${esc(destination)}">${esc(label)} →</a>`;
+        : !isAccounting && !isSupplierFact && candidateRef && viewer?.role !== 'admin'
+          ? '<span class="kir-item-note">Correction réservée au Catalogue</span>'
+          : `<a class="kir-row-action" href="${esc(destination)}">${esc(label)} →</a>`;
       return `<tr>
         <td>${item.image_url ? `<img class="kir-action-thumb" src="${esc(item.image_url)}" alt="" loading="lazy">` : ''}<strong>${esc(title)}</strong>${item.supplier_product_id ? `<small>${esc(item.supplier_product_id)}</small>` : ''}</td>
         <td>${esc(item.reason)}${item.action_origin === 'deferred' ? '<small>Mis de côté · correction humaine possible</small>' : ''}</td>
@@ -1680,9 +1682,9 @@
     const catalogueHref = trace.product_ref && viewer && viewer.role === 'admin'
       ? withReturnTo(`/admin/workspaces/catalog?product_ref=${encodeURIComponent(trace.product_ref)}`, itemUrl(run.run_ref, trace.supplier_product_id, kind, origin), 'Retour au produit Sourcing')
       : '';
-    const catalogue = trace.product_ref
+    const catalogue = trace.product_ref && viewer?.role === 'admin'
       ? `<a class="kir-subtle-link" href="${withReturnTo('/admin/products/' + encodeURIComponent(trace.product_ref), itemUrl(run.run_ref, trace.supplier_product_id, kind, origin), 'Retour au produit Sourcing')}">Ouvrir la fiche Catalogue →</a>${catalogueHref ? ` <a class="kir-subtle-link" data-next-step="catalogue" href="${catalogueHref}">Compléter dans le Catalogue global</a>` : ''}`
-      : `<span class="kir-item-note">${halted ? 'Aucune fiche Catalogue créée pour ce passage.' : 'Aucune fiche Catalogue créée à ce stade.'}</span>`;
+      : `<span class="kir-item-note">${trace.product_ref ? 'Produit remis au Catalogue — correction réservée au responsable Catalogue.' : halted ? 'Aucune fiche Catalogue créée pour ce passage.' : 'Aucune fiche Catalogue créée à ce stade.'}</span>`;
     return drillHeader(run, title, 'Détail métier de ce produit dans le passage sélectionné.')
       + itemVerdict(trace, situation)
       + `<div class="kir-simple-list">
@@ -2012,7 +2014,7 @@
         <div class="kir-hero-actions kir-live-hero-actions">
           <div class="kir-live-time"><span>Démarré ${fmtDate(run.started_at)}</span><strong>${elapsedLabel(run.started_at, run.finished_at)}</strong></div>
           <span class="kir-status-large is-${sourcingStatusView(run).tone}">${ico('clock')}${esc(sourcingStatusView(run).label)}</span>
-          <a href="${withReturnTo('/admin/workspaces/catalog', urlFor(run.run_ref), 'Retour au suivi')}" class="kir-global-link">Catalogue global →</a>
+          ${viewer?.role === 'admin' ? `<a href="${withReturnTo('/admin/workspaces/catalog', urlFor(run.run_ref), 'Retour au suivi')}" class="kir-global-link">Catalogue global →</a>` : ''}
         </div>
       </header>
 
@@ -2140,7 +2142,7 @@
     return `<section class="kir-page kir-one-screen" data-sourcing-single-screen>
       <header class="kir-one-hero"><div><span class="kir-eyebrow">SOURCING</span>
         <h1>Sourcing Live</h1><p>Acquérir des produits et les remettre au Catalogue global.</p></div>
-        <a href="/admin/workspaces/catalog">Catalogue global →</a></header>
+        ${viewer?.role === 'admin' ? `<a href="/admin/workspaces/catalog">Catalogue global →</a></header>` : ''}
       ${unifiedSourcingTabs(run, view)}
       <main class="kir-one-body" data-sourcing-active-view="${view}">
         <div class="kir-one-pane" data-sourcing-panel="overview" ${view === 'overview' ? '' : 'hidden'}>${summary}</div>
