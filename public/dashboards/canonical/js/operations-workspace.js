@@ -1475,11 +1475,11 @@
             { key:'order_reference', label:'Commande' },
             { key:'product_name', label:'Article' },
             { key:'return_quantity', label:'Quantité' },
-            { key:'return_reason', label:'Motif', render: row =>
+            { key:'return_reason', label:'Motif', format: (_raw, row) =>
               ({defective:'Défectueux',damaged:'Cassé',wrong_item:'Mauvais article',not_as_described:'Non conforme',other:'Autre'})[row.return_reason] || 'Autre' },
-            { key:'status', label:'Dossier', render: row =>
+            { key:'status', label:'Dossier', format: (_raw, row) =>
               ({open:'À examiner',processing:'En traitement',resolved:'Résolu',closed:'Clôturé'})[row.status] || row.status },
-            { key:'received_at', label:'Reprise physique', render: row =>
+            { key:'received_at', label:'Reprise physique', format: (_raw, row) =>
               row.receipt_id ? ('Reçu · ' + row.received_quantity + ' unité(s)' +
                 (row.storage_zone ? ' · zone ' + row.storage_zone : '')) : 'Non repris' },
           ],
