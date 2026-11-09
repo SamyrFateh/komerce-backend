@@ -99,7 +99,14 @@ test('LOCAL_STOCK : un agent atteste puis remet au client par les vrais clics (H
     assert(assess(received,'available').length===0,'receipt-db-zero-hub',assess(received,'available'));
     const parcel=received.parcels[0];
     await page.screenshot({path:path.join(OUT,'02-reception-confirmee.png'),fullPage:true});
-    const collectRow=page.locator('tr').filter({hasText:parcel.reference});
+    // Le Comptoir Remises est indépendant du flux de réception : c'est l'écran
+    // métier réel du retrait. Ne pas chercher une action dans une file cachée.
+    await page.goto('/admin/relais-live?view=remises&market='+MARKET);
+    await expect(page.locator('[data-workspace-mode="relay-execution"]')).toBeVisible({timeout:25000});
+    await expect(page.locator('h1')).toHaveText('Remises client');
+    await expect(page.locator('#relay-execution-collect')).toBeVisible();
+    assert(await page.locator('#relay-execution-shipments').count()===0,'counter-no-hub-arrivals');
+    const collectRow=page.locator('#relay-execution-collect tr').filter({hasText:parcel.reference});
     await expect(collectRow.locator('[data-workspace-action="collect"]')).toBeVisible({timeout:20000});
     const collectResponse=page.waitForResponse(r=>
       new URL(r.url()).pathname==='/api/admin/workspaces/operations/market/'+MARKET+'/parcels/'+encodeURIComponent(parcel.reference)+'/collect'
