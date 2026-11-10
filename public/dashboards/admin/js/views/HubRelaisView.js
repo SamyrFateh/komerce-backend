@@ -237,7 +237,7 @@
   function orderRow(o, btnLabel, btnDataAction) {
     let items = [];
     try { items = typeof o.items === 'string' ? JSON.parse(o.items) : (o.items || []); } catch (_) {}
-    const desc = `${items.length || o.nb_items || 0} art. · ${fmtKmf(o.total_kmf)} · ${esc(o.relais_island || '—')}`;
+    const desc = `${items.length || o.nb_items || 0} art. · ${fmtKmf(o.total_kmf)} · ${o.relais_island || '—'}`;
     return `<tr>
       <td class="hr-td-ref">${esc(o.reference)}</td>
       <td>${esc(o.client_name || 'Client')}</td>
@@ -251,7 +251,7 @@
   }
 
   function parcelRow(p, btnLabel, btnDataAction, btnColor) {
-    const desc = `${esc(p.main_order_ref || '—')} · ${p.nb_items || 0} art. · ${esc(p.destination_island || p.relais_island || '—')}`;
+    const desc = `${p.main_order_ref || '—'} · ${p.nb_items || 0} art. · ${p.destination_island || p.relais_island || '—'}`;
     return `<tr>
       <td class="hr-td-ref">${esc(p.reference)}</td>
       <td>${esc(p.recipient_name || 'Client')}</td>
@@ -505,7 +505,7 @@
 
         const ordRows = orders.map(o => `
           <tr>
-            <td class="hr-td-ref-sm">${o.ref || '—'}</td>
+            <td class="hr-td-ref-sm">${esc(o.ref || '—')}</td>
             <td>${o.customer || '—'}</td>
             <td class="hr-td-secondary">${o.items_count || o.items || '?'} art.</td>
             <td class="hr-td-right">${fmtKmf(o.total_kmf || o.total || 0)}</td>
@@ -517,7 +517,7 @@
               <div class="hr-dist-card-info">
                 <strong class="hr-dist-ref">📦 ${esc(p.reference)}</strong>
                 <span class="hr-dist-status-badge" style="background:${stBg};color:${stColor}">
-                  ${p.relais_name || p.relais_island || p.destination || '—'}
+                  ${esc(p.relais_name || p.relais_island || p.destination || '—')}
                 </span>
                 <span class="hr-td-secondary">
                   ${p.orders_count || 0} cmd · ${p.items_count || 0} art. · ${fmtKmf(p.total_kmf || 0)}
