@@ -21,6 +21,15 @@ G2 Chromium réel : la [PR #3727](https://github.com/SamyrFateh/komerce-backend/
 
 G3 SAV intégral : doctrine `docs/doctrine/DOCTRINE_RETOURS_PRODUIT.md`, lot actuel V1-1 demande/gel et V1-2 réception physique ; **la décision financière, le crédit wallet, le remboursement et la disposition produit ne sont pas encore implémentés intégralement**, donc aucun GO SAV de bout en bout.
 
+## Verdict de certification transactionnelle du 10/11/2026 — source de vérité
+
+- **G4 GO sur KM, CM et CG** : deux comptes et deux relais distincts par marché, vrais Chromium A/B, 4 refus croisés 403, 4 gestes propres, readbacks HTTP/PostgreSQL ; runs [KM #42839641685](https://github.com/SamyrFateh/komerce-backend/actions/runs/42839641685), [CM #42845366245](https://github.com/SamyrFateh/komerce-backend/actions/runs/42845366245), [CG #42845978686](https://github.com/SamyrFateh/komerce-backend/actions/runs/42845978686).
+- **G2 GO uniquement transactionnel service/PG KM (13/13)** [#42826612419](https://github.com/SamyrFateh/komerce-backend/actions/runs/42826612419). **NO-GO Chromium complet** : le run [#42849164483](https://github.com/SamyrFateh/komerce-backend/actions/runs/42849164483) a prouvé 4/10 tests Playwright et 22 clics HTTP, puis échoué à afficher `data-international-journey` pour le rôle transitaire après remise Hub. Ne pas confondre une commande physique correctement persistée avec la réussite de tous les gestes.
+- **G3 GO LOCAL_STOCK KM/CM/CG** : réception/remise client Chromium avec relecture PG/HTTP, runs 42826889006, 42828913515, 42829199967. **NO-GO SAV intégral** : décision financière, avoir/remboursement et disposition produit ne sont pas livrés de bout en bout, d'après `docs/doctrine/DOCTRINE_RETOURS_PRODUIT.md`.
+- **Nettoyage global prudent non exécuté** : tant que G2 Chromium et SAV complet restent à terminer, les données et preuves restent disponibles. En fin de campagne seulement, `staging-reset.js --dry-run` sur état actuel, puis `--execute` prudent via workflow propriétaire, preuve d'état final et reprovisionnement E2E.
+
+Lire le détail chiffré, les limites et liens d'artefacts dans [STAGING_G234_20261110](evidence/STAGING_G234_20261110.md). Aucune certification globale d'une marketplace commercialement ouverte n'est revendiquée.
+
 ## 1. Objectif
 
 Prouver sur le staging Railway (`https://komerce-backend-production.up.railway.app`, qui est le staging malgré son nom) que chaque marché V1 fonctionne de bout en bout :
