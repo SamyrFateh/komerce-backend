@@ -230,7 +230,7 @@ test('un produit ou relais de recette utilisé par un dossier étranger impose H
   expect(after.delete_performed).toBe(false);
   expect(before.snapshot_sha256).not.toBe(after.snapshot_sha256);
   expect(borrowed.statements.filter(x=>x==='ROLLBACK')).toHaveLength(1);
-  expect(borrowed.statements.slice(1,-1).every(x=>/^\\s*SELECT\\b/.test(x))).toBe(true);
+  expect(borrowed.statements.slice(1,-1).every(x=>/^\s*SELECT\b/.test(x))).toBe(true);
 });
 
 test('les consommateurs externes restent strictement des comptages non identifiants',async()=>{
@@ -243,5 +243,5 @@ test('les consommateurs externes restent strictement des comptages non identifia
   const serialized=JSON.stringify(out.external_fixture_consumers);
   expect(serialized).not.toContain('email');
   expect(serialized).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-/i);
-  expect(statements.join('\\n')).not.toMatch(/\\b(DELETE|TRUNCATE|UPDATE|DROP)\\b/i);
+  expect(statements.join('\n')).not.toMatch(/\b(DELETE|TRUNCATE|UPDATE|DROP)\b/i);
 });
