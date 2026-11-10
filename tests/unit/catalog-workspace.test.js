@@ -676,6 +676,32 @@ test('Dossier canonique : une fiche source, son achat et ses preuves sans UUID n
   expect(JSON.stringify(result)).not.toContain('private-uuid');
   expect(JSON.stringify(result)).not.toContain('market_price_decided');
 });
+test('Dossier sourcing autorisé : IDs canoniques, variante et revue exacte sans prix local fictif', () => {
+  const { publicProductDossier } = workspace._test;
+  const source = { id: 'canonical-product-uuid', product_ref: 'KPR-000099', lifecycle_status: 'candidate', is_active: false };
+  const details = {
+    media: [{ media_id: 'canonical-media-uuid', url: 'https://supplier.test/source.png',
+      alt: 'Ne vaut pas revue des pixels', source_media_id: 'CJ-image-1',
+      option_values: { size: 'M' }, review_source_media_id: 'CJ-image-1',
+      review_source_url: 'https://supplier.test/source.png',
+      review_option_values: { size: 'M' }, text_presence: 'NONE',
+      reviewed_by: 'catalog-admin-1', reviewed_at: '2026-11-10T20:00:00Z' }],
+    visual: { ready: true, code: 'VISUAL_FR_REVIEWED', results: [
+      { source_media_id: 'CJ-image-1', state: 'NO_RELEVANT_TEXT_REVIEWED', ready: true },
+    ] },
+  };
+  const result = publicProductDossier({ row: {
+    has_sourcing_candidate: true, active_media: 1, name: 'Produit', source_locale: 'fr',
+  }, certification: { certified: true, reasons: [] } }, source, null, details);
+  expect(result.media).toMatchObject({ product_id: 'canonical-product-uuid',
+    sourcing_linked: true, visual_fr: { ready: true }, gallery: [{
+      media_id: 'canonical-media-uuid', source_media_id: 'CJ-image-1',
+      option_values: { size: 'M' }, review: { text_presence: 'NONE', reviewed_by: 'catalog-admin-1' },
+    }] });
+  expect(result.market_data_scope).toBe('not_queried_before_approval');
+  expect(JSON.stringify(result)).not.toContain('local_price_amount');
+});
+
 test('Produit déjà actif : état marché explicite, pas de fausse recertification candidat', () => {
   const {publicProductDossier}=workspace._test;
   const result=publicProductDossier(
