@@ -13,13 +13,13 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 2022
-- Edges: 9932
-- DB tables: 236
+- Graph nodes: 2019
+- Edges: 9936
+- DB tables: 233
 - Doctrines: 784
 - Impact areas: 207
 - Unresolved code edges: 953
-- Tables multi-écrivains directs (>=2): 94
+- Tables multi-écrivains directs (>=2): 95
 - Avertissements db-write / db-write-via en chevauchement: 12
 
 ## Domains
@@ -1022,6 +1022,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - transaction_documents: 6 écrivains directs — routes/documents.js, services/documents/customs-invoice.js, services/documents/document-service.js, services/documents/pickup-proof.js, services/documents/refund-receipt.js, services/documents/wallet-receipt.js
 - finance_config: 5 écrivains directs — bootstrap/startup-migrations.js, routes/admin-costing.js, routes/admin-finance-config.js, services/economic-config.js, services/economic-engine-queries.js
 - invoices: 5 écrivains directs — routes/admin/system.js, routes/documents.js, routes/invoices.js, services/invoice-service.js, services/order-payment-confirmation.js
+- market_delegation_audit: 5 écrivains directs — middleware/require-market-delegated-capability.js, middleware/require-market-execution-capability.js, services/cash-deposit-service.js, services/market-delegation-service.js, services/market-transport-sale-rate-command.js
 - order_item_real_cost_allocations: 5 écrivains directs — services/cost-allocation/allocate.js, services/cost-allocation/index.js, services/cost-allocation/manual-cost-entry-service.js, services/customs-shipment-service.js, services/transport-cost-allocation.js
 - shared_carts: 5 écrivains directs — services/cart-share-service.js, services/shared-cart-creation.js, services/shared-cart-engine.js, services/shared-cart-lifecycle.js, services/shared-cart-queries.js
 - sourcing_sources: 5 écrivains directs — services/provider-credential-service.js, services/sourcing-observation-shadow-service.js, services/sourcing-provider-control-policy.js, services/sourcing-source-autopilot.js, services/sourcing-source-registry.js
@@ -1030,7 +1031,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - baskets: 4 écrivains directs — routes/admin/system.js, services/shared-cart-creation.js, services/shared-cart-engine.js, services/shared-cart-user-cleanup.js
 - cash_confirmation_controls: 4 écrivains directs — services/cash-confirmation-control-service.js, services/cash-operations.js, services/confirm-pickup-cash-payment.js, services/payment-cash-confirm.js
 - incidents: 4 écrivains directs — services/incident-escalation.js, services/incident-service.js, services/incident-write-service.js, services/relay-shipment-receipt.js
-- market_delegation_audit: 4 écrivains directs — middleware/require-market-delegated-capability.js, middleware/require-market-execution-capability.js, services/cash-deposit-service.js, services/market-delegation-service.js
 - product_skus: 4 écrivains directs — services/catalog-promotion.js, services/catalog-stock-sync-application.js, services/product-sku-service.js, services/product-stock-service.js
 - product_variants: 4 écrivains directs — services/catalog-product-mutation-service.js, services/catalog-promotion.js, services/product-stock-service.js, services/product-variant-service.js
 - refund_execution_intents: 4 écrivains directs — services/item-refund-psp-orchestrator.js, services/item-refund-reservation-service.js, services/refund-intent-ledger.js, services/refund-intent-reconciliation.js

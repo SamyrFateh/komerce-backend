@@ -8,7 +8,7 @@
  * @outputs       PROVISIONING market, ACTIVE assignment, first lead invitation/membership, readiness
  * @depends       services/market-lifecycle-service.js, services/market-delegation-service.js, services/market-operator-provisioning.js, services/market-delegation-team-service.js, services/market-scope-projector.js, services/market-cash-control-policy-service.js, services/market-payment-provider-config-service.js, services/relais-mutation-service.js, services/central-authority.js, services/market-control-plane.js
  * @used-by       routes/admin-market-control-plane.js
- * @db-read       central authority grant tables, markets, market_operating_assignments
+ * @db-read       catalog_global_access_grants, dashboard_global_access_grants, decision_signal_global_access_grants, pricing_global_access_grants, sourcing_global_access_grants, markets, market_operating_assignments
  * @db-write      none
  * @db-write-via:market-lifecycle-service markets
  * @db-write-via:market-delegation-service market_operating_assignments, assignment_capability_ceiling, market_delegation_audit
