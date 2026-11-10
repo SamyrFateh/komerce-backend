@@ -70,3 +70,7 @@ playwright-report/
 
 # Captures de revue générées par les specs dashboards (non versionnées)
 /test-results/
+
+# B1 — outillage k6 téléchargé/installe localement, jamais versionné ni servi
+public/boutique/k6/
+tools/boutique-k6/
