@@ -54,6 +54,72 @@ async function main(){
       WHERE revoked_at IS NULL AND user_id=ANY($1::uuid[])`,
     [[proof.fixture.users.hub_agent.id,proof.fixture.users.relay_agent.id,proof.fixture.users.forwarder.id]]);
   if(others.n!==0)throw Error('HUB_LOCAL_CHROMIUM_UNEXPECTED_NONADMIN_GLOBAL_GRANT');
+  // This local physical Chromium run needs the SAME authorized visibility
+  // and KM-only relay grants that a real E2E agent receives. Never grant these
+  // capabilities merely from users.role or relax a production authorization.
+  // The target is verified disposable PG16 above BEFORE this transaction.
+  const provision=require('./staging-e2e-provision');
+  const delegation=require('../../services/market-delegation-service');
+  const assignments=require('../../services/market-operator-provisioning');
+  const {isE2eTestAccount}=require('../../services/simulation-visibility');
+  const relayActor=proof.fixture.users.relay_agent;
+  if(relayActor?.role!=='agent_relais'||!relayActor.id||!proof.fixture.market_id)
+    throw Error('G2_LOCAL_RELAY_IDENTITY_OR_MARKET_INVALID');
+  const expectedCaps=provision.RELAY_AGENT_CAPABILITIES.slice().sort();
+  if(JSON.stringify(expectedCaps)!==JSON.stringify(
+    ['execution.parcel.collect','execution.parcel.receive']))
+    throw Error('G2_LOCAL_RELAY_CAPABILITY_DOCTRINE_DRIFT');
+  const grantClient=await db.getClient();
+  let granting=false;
+  const markerRoles=['admin','hub_agent','relay_agent'];
+  try{
+    await grantClient.query('BEGIN');granting=true;
+    const {assignmentId}=await assignments.resolveOrCreateAssignment(grantClient,{
+      marketId:proof.fixture.market_id,marketCode:'KM',
+    });
+    if(!assignmentId)throw Error('G2_LOCAL_KM_ASSIGNMENT_NOT_ACTIVE');
+    const {rows:ceiling}=await grantClient.query(
+      'SELECT capability FROM assignment_capability_ceiling '+
+      'WHERE assignment_id=$1::uuid AND revoked_at IS NULL '+
+      'AND capability=ANY($2::text[]) ORDER BY capability',
+      [assignmentId,expectedCaps]);
+    if(JSON.stringify(ceiling.map(x=>x.capability))!==JSON.stringify(expectedCaps))
+      throw Error('G2_LOCAL_RELAY_CAPABILITIES_NOT_IN_CEILING');
+    await provision.ensureRelayAgentMembership(grantClient,{delegation},{
+      userId:relayActor.id,marketCode:'KM',actorId:fixtureAdmin.id,
+    });
+    for(const role of markerRoles){
+      const actor=proof.fixture.users[role];
+      if(!actor?.id)throw Error('G2_LOCAL_SIMULATION_ACTOR_MISSING:'+role);
+      await provision.markE2eTestAccount(grantClient,{
+        userId:actor.id,actorId:fixtureAdmin.id,
+      });
+    }
+    await grantClient.query('COMMIT');granting=false;
+  }catch(error){
+    if(granting)await grantClient.query('ROLLBACK').catch(()=>{});
+    throw error;
+  }finally{grantClient.release();}
+  // Independent readback: exact KM membership + two delegated execution
+  // capabilities, and E2E markers for the three workspace viewers only.
+  const {rows:grants}=await db.query(
+    "SELECT am.id,mc.capability FROM market_operating_assignments ma "+
+    "JOIN assignment_memberships am ON am.assignment_id=ma.id AND am.status='ACTIVE' "+
+    "JOIN membership_capabilities mc ON mc.membership_id=am.id AND mc.revoked_at IS NULL "+
+    "WHERE ma.market_id=$1::uuid AND ma.status='ACTIVE' AND am.user_id=$2::uuid "+
+    "ORDER BY mc.capability",
+    [proof.fixture.market_id,relayActor.id]);
+  if(grants.length!==2||new Set(grants.map(g=>String(g.id))).size!==1||
+     JSON.stringify(grants.map(g=>g.capability))!==JSON.stringify(expectedCaps))
+    throw Error('G2_LOCAL_RELAY_MEMBERSHIP_READBACK_FAILED');
+  for(const role of markerRoles){
+    if(!await isE2eTestAccount(proof.fixture.users[role].id))
+      throw Error('G2_LOCAL_SIMULATION_MARKER_READBACK_FAILED:'+role);
+  }
+  if(await isE2eTestAccount(proof.fixture.users.forwarder.id))
+    throw Error('G2_LOCAL_FORWARDER_SIMULATION_SCOPE_UNEXPECTED');
+  const relayGrantProof={market:'KM',role:'agent_relais',
+    capabilities:expectedCaps,simulation_viewers:markerRoles};
   const labels=[
     ['admin','admin','E2E_ADMIN_'],
     ['hub_agent','agent-hub','E2E_AGENT_HUB_'],
@@ -90,7 +156,7 @@ async function main(){
     mode:'EPHEMERAL_PG16_LOCALHOST_ONLY',run,orders,pos,
     steps:proof.steps.map(s=>({n:s.n,status:s.status})),
     zero_external_effects:true,
-    admin_dashboard_global_grant:true,
+    admin_dashboard_global_grant:true,relay_e2e_grants:relayGrantProof,
     staging_go:false,chromium_proven:false};
   fs.mkdirSync(OUT,{recursive:true});fs.writeFileSync(FILE,JSON.stringify(state,null,2)+'\n');
   process.stdout.write(JSON.stringify({verdict:'PREPARED_LOCAL_ONLY',run,orders:orders.length,pos:pos.length,steps:7})+'\n');
