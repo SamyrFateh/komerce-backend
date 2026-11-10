@@ -24,7 +24,7 @@ const MARKET_CODE = String(process.env.E2E_CLICKS_MARKET || 'KM').toUpperCase();
 const MARKET_LABELS = { KM: 'KM · Comores', CM: 'CM · Cameroun', CG: 'CG · Congo-Brazzaville' };
 const MARKET_LABEL = MARKET_LABELS[MARKET_CODE];
 if (!MARKET_LABEL) throw new Error('E2E_CLICKS_MARKET invalide : ' + MARKET_CODE);
-const evidence = { schema: 'komerce-hub-v1-clicks/1', run8: RUN8, base: null, gestures: [] };
+const evidence = { schema: 'komerce-hub-v1-clicks/1', run8: RUN8, base: null, gestures: [], tests: [] };
 const save = () => { fs.mkdirSync(OUT, { recursive: true }); fs.writeFileSync(EVID, JSON.stringify(evidence, (k, v) => (k === 'json' ? undefined : v), 2) + '\n'); };
 const shared = { bagRefs: {}, box: null, shipment: null, states: {} }; // states : une connexion par role (evite le rate-limit du login)
 let counter = 0;
@@ -56,6 +56,17 @@ async function openMarket(page, url) {
   for (let attempt = 0; ; attempt++) {
     try { await page.goto(url, { waitUntil: 'domcontentloaded' }); break; }
     catch (e) { if (attempt >= 3 || !/ERR_ABORTED|interrupted/i.test(String(e.message))) throw e; await page.waitForLoadState('load').catch(() => {}); await page.waitForTimeout(1500); }
+  }
+  // Expéditions & Douane n'utilise pas toujours le <select> du Workspace
+  // opérations : c'est le dossier international visible qui fait foi.
+  // Ne jamais valider une redirection vers la vitrine ou une page vide.
+  if (url.startsWith('/admin/workspaces/shipping-customs')) {
+    await expect(page).toHaveURL(/\/admin\/workspaces\/shipping-customs(?:\/|\?|$)/, { timeout: 20000 });
+    await page.locator('[data-international-journey]').first().waitFor({ timeout: 20000 });
+    const select = page.locator('select').first();
+    if (await select.count()) await select.selectOption({ label: MARKET_LABEL }).catch(() => {});
+    await page.waitForLoadState('networkidle').catch(() => {});
+    return;
   }
   const sel = page.locator('select').first();
   await sel.waitFor({ timeout: 20000 });
@@ -120,7 +131,28 @@ test.describe.serial(`Hub V1 : clics reels Chromium (${MARKET_CODE}, fixture E2E
         .assertEphemeralTarget(process.env.DATABASE_URL, []);
     }
   });
+  test.afterEach(async ({}, info) => {
+    evidence.tests.push({ title: info.title, status: info.status });
+    // Une exception de navigation AVANT le helper gesture() est aussi un FAIL.
+    // Sans cette preuve, toutes les requêtes précédentes peuvent laisser un
+    // evidence.json trompeusement vert malgré un test Playwright en erreur.
+    if (info.status !== 'passed') {
+      evidence.gestures.push({
+        key: 'test:' + info.title.slice(0, 90), role: 'harness', route: null,
+        verdict: info.status === 'skipped' ? 'NOT_RUN' : 'CLICK_FAIL',
+        http: null, note: String(info.error?.message || info.status).split('\n')[0].slice(0, 250),
+      });
+    }
+    save();
+  });
   test.afterAll(async () => {
+    if (process.env.E2E_CLICKS_ALLOW_DISTRIBUTION === '1') {
+      const successfulTests = evidence.tests.filter(t => t.status === 'passed').length;
+      if (successfulTests !== 10) evidence.gestures.push({
+        key: 'full-suite:coverage', role: 'harness', route: null, verdict: 'NOT_RUN', http: null,
+        note: 'campagne physique incomplète : ' + successfulTests + '/10 tests Playwright réussis',
+      });
+    }
     const failures=evidence.gestures.filter((row)=>row.verdict!=='CLICK_PASS');
     evidence.verdict=failures.length||!evidence.gestures.length
       ? 'CHROMIUM_CLICKS_BLOCKED_NOT_PROVEN'
