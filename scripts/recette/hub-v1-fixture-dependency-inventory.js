@@ -152,6 +152,55 @@ const OWNED_ROOTS = (run) => [
   ['international_shipments', 'SELECT id::text AS id FROM international_shipments WHERE reference LIKE $1', [SCOPE + '-' + run + '-%']],
   ['customs_shipments', 'SELECT id::text AS id FROM customs_shipments WHERE reference LIKE $1', [SCOPE + '-' + run + '-%']],
 ];
+/**
+ * Conservative read-only guard against fixture-owned objects reused by ANY
+ * other order. A FK-only walk outward from owned orders cannot discover these
+ * incoming references, so it cannot authorize safe cleanup of shared parents.
+ * Counts only: never publish unrelated customer IDs or emails.
+ * This deliberately does NOT certify complete cleanup coverage.
+ */
+async function detectExternalFixtureConsumers(client, run) {
+  const prefix=SCOPE+'-'+run+'-%';
+  const owners=[
+    ['products',
+      "SELECT COUNT(*)::int AS n FROM order_items oi " +
+      "JOIN orders o ON o.id=oi.order_id " +
+      "JOIN products p ON p.id=oi.product_id " +
+      "WHERE p.product_ref LIKE $1 AND o.reference NOT LIKE $2",
+      [prefix,prefix]],
+    ['relais',
+      "SELECT COUNT(*)::int AS n FROM orders o " +
+      "JOIN relais r ON r.id=o.relais_id " +
+      "WHERE r.name=$1 AND o.reference NOT LIKE $2",
+      [SCOPE+'-'+run+'-RELAIS',prefix]],
+    ['users',
+      "SELECT COUNT(*)::int AS n FROM orders o " +
+      "JOIN users u ON u.id=o.user_id " +
+      "WHERE lower(u.email) LIKE $1 AND o.reference NOT LIKE $2",
+      ['e2e-hub-v1-'+run.toLowerCase()+'%@komerce.test',prefix]],
+    ['purchase_orders',
+      "SELECT COUNT(*)::int AS n FROM purchase_lines pl " +
+      "JOIN order_items oi ON oi.id=pl.order_item_id " +
+      "JOIN orders o ON o.id=oi.order_id " +
+      "WHERE pl.purchase_order_id IN (" +
+        "SELECT DISTINCT pl2.purchase_order_id FROM purchase_lines pl2 " +
+        "JOIN order_items oi2 ON oi2.id=pl2.order_item_id " +
+        "JOIN orders o2 ON o2.id=oi2.order_id " +
+        "WHERE o2.reference LIKE $1 AND pl2.purchase_order_id IS NOT NULL" +
+      ") AND o.reference NOT LIKE $2",
+      [prefix,prefix]],
+  ];
+  const seen=[];
+  for(const [parent,sql,params] of owners){
+    const {rows}=await client.query(sql,params);
+    const n=rows[0]?.n;
+    if(!Number.isSafeInteger(Number(n)) || Number(n)<0)
+      throw Error('HUB_V1_EXTERNAL_CONSUMER_COUNT_UNVERIFIED:'+parent);
+    seen.push({parent,external_rows:Number(n)});
+  }
+  return seen;
+}
+
 async function buildCleanupInventory(client, run) {
   // Une seule photographie MVCC : les commandes, dépendances et preuves immuables
   // ne peuvent pas provenir de deux états différents de staging.
@@ -166,6 +215,11 @@ async function buildCleanupInventory(client, run) {
       owned.push({ table, count:rows.length, ids:validIds.slice(0,MAX_IDS),
         truncated:rows.length>MAX_IDS, invalid_ids:rows.length-validIds.length });
     }
+    // A fixture product, relay, buyer or PO may be referenced outside this RUN8.
+    // Deleting such shared parents would damage unrelated orders.
+    const externalConsumers=await detectExternalFixtureConsumers(client,run);
+    const sharedParents=externalConsumers.filter(x=>x.external_rows>0);
+    report.external_fixture_consumers=externalConsumers;
     const direct = [...new Set([...(report.discovered_tables || []).map((t) => t.table), ...owned.filter((o) => o.count).map((o) => o.table)])].sort();
     const fkRules = (await client.query(FK_DELETE_RULES, [direct])).rows;
     // Enfants (1 saut) des racines propres à la fixture : tables qui bloqueraient aussi la suppression (ex. autorisations, événements).
@@ -190,6 +244,7 @@ async function buildCleanupInventory(client, run) {
       dependency_identity_fingerprints:report.dependency_identity_fingerprints||[],
       owned_roots:owned.map(({table,count,ids})=>({table,count,ids:ids.slice().sort()})),
       opaque_dependencies:report.opaque_dependencies,
+      external_fixture_consumers:externalConsumers,
       immutable_tables:immutable.map((t)=>t.table).sort()};
     report.snapshot_sha256=crypto.createHash('sha256').update(JSON.stringify(snapshot)).digest('hex');
     report.cleanup_scope_checks={
@@ -197,6 +252,7 @@ async function buildCleanupInventory(client, run) {
       no_opaque_fk:(report.opaque_dependencies||[]).length===0,
       no_truncation:!report.truncated&&!owned.some((o)=>o.truncated),
       valid_owned_root_ids:owned.every((o)=>o.invalid_ids===0),
+      no_external_fixture_consumers:sharedParents.length===0,
       immutable_evidence_retained:true,
     };
     // Un trigger de suppression sur un ENFANT d'une racine est au minimum
@@ -214,6 +270,7 @@ async function buildCleanupInventory(client, run) {
           immutable_tables_potential_children:[],
           delete_performed:false};
     if(report.roots.length===0&&owned.some((o)=>o.count>0))report.verdict='HOLD_ORPHANED_FIXTURE_ROOTS';
+    else if(sharedParents.length)report.verdict='HOLD_SHARED_FIXTURE_PARENTS';
     else if(!Object.values(report.cleanup_scope_checks).every(Boolean))report.verdict='HOLD_INCOMPLETE_OWNERSHIP_INVENTORY';
     else if(immutable.length)report.verdict='HOLD_IMMUTABLE_PROOFS_RETAINED';
     else if(immutableAll.length)report.verdict='HOLD_IMMUTABLE_PROOFS_POTENTIAL';
@@ -259,4 +316,4 @@ if(require.main===module)main().catch(e=>{
   console.error('HUB_V1_CLEANUP_INVENTORY_REFUSED:'+String(e.message).slice(0,180));
   process.exitCode=2;
 });
-module.exports={exactRefs,validateRoots,inspect,buildCleanupInventory,FOREIGN_KEYS,DELETE_BLOCKERS};
+module.exports={exactRefs,validateRoots,inspect,buildCleanupInventory,detectExternalFixtureConsumers,FOREIGN_KEYS,DELETE_BLOCKERS};
