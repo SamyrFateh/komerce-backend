@@ -1594,3 +1594,159 @@ body.kmc-shell-v4[data-kmc-surface="catalog-workspace"]:has(.kmc-catalog-tabs)
     opacity: .18;
   }
 }
+
+
+/* G6 — un seul geste de revue à la fois; le tiroir se ferme toujours. */
+.kmc-catalog-inspector-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1095;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: rgb(18 27 40 / .24);
+  cursor: default;
+}
+.kmc-catalog-candidate-inspector .kmc-catalog-inspector-head {
+  position: sticky;
+  top: -20px;
+  z-index: 25;
+  margin: -20px -20px 13px;
+  padding: 17px 20px;
+  background: #fff;
+  border-bottom: 1px solid #d6dce5;
+}
+.kmc-catalog-inspector-head [data-workspace-action="close-inspector"] {
+  min-height: 42px;
+  padding: 8px 14px;
+  color: #192537;
+  border: 1px solid #bac4d1;
+  background: #f4f6f9;
+  font-weight: 750;
+}
+.kmc-catalog-inspector-head [data-workspace-action="close-inspector"]:focus-visible,
+.kmc-catalog-review-navigation button:focus-visible {
+  outline: 3px solid #e49a45;
+  outline-offset: 2px;
+}
+.kmc-catalog-candidate-inspector[data-catalog-product-inspector] {
+  background: #fff;
+}
+.kmc-catalog-candidate-inspector[data-catalog-product-inspector]
+ .kmc-catalog-inspector-action-dock {
+  position: static;
+  margin: 10px 0;
+  padding: 10px;
+  background: #f5f6f8;
+  border-color: #d7dee7;
+  box-shadow: none;
+}
+.kmc-catalog-media-review-slot {
+  min-width: 0;
+  margin: 4px 0 14px;
+}
+.kmc-catalog-media-review-slot .kmc-catalog-dossier-gallery {
+  margin: 0;
+  padding: 14px;
+  border: 1px solid #d4dce6;
+  border-radius: 12px;
+  background: #fff;
+}
+.kmc-catalog-media-review-slot .kmc-catalog-dossier-gallery > strong {
+  color: #1d2838;
+  font-size: 16px;
+  font-weight: 800;
+}
+.kmc-catalog-review-progress {
+  margin: 5px 0 12px;
+  color: #333e4d;
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 750;
+}
+.kmc-catalog-review-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 8px 0 12px;
+}
+.kmc-catalog-review-navigation strong {
+  font-size: 13px;
+  color: #1d2838;
+  white-space: nowrap;
+}
+.kmc-catalog-review-navigation button {
+  min-height: 40px;
+  padding: 7px 10px;
+  font-size: 12px;
+  border: 1px solid #bac4d1;
+  background: #f6f7f9;
+  color: #172338;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.kmc-catalog-review-navigation button:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+.kmc-catalog-media-review-slot .kmc-catalog-dossier-image-strip {
+  display: block;
+  overflow: visible;
+  padding: 0;
+}
+.kmc-catalog-media-review-slot .kmc-catalog-dossier-image-strip figure {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  border-color: #d9e0e9;
+  overflow: visible;
+}
+.kmc-catalog-media-review-slot .kmc-catalog-dossier-image-strip figure[hidden] {
+  display: none;
+}
+.kmc-catalog-media-review-slot .kmc-catalog-dossier-image-strip img {
+  height: min(38vh, 330px);
+  min-height: 210px;
+  border-radius: 8px 8px 0 0;
+  object-fit: contain;
+}
+.kmc-catalog-media-review-slot .kmc-catalog-visual-fr-review {
+  padding: 11px;
+  background: #f8f9fb;
+}
+.kmc-catalog-media-review-slot .kmc-catalog-visual-fr-review summary {
+  min-height: 36px;
+  font-size: 13px;
+  color: #172338;
+}
+.kmc-catalog-media-review-slot .kmc-catalog-visual-fr-field[hidden] {
+  display: none;
+}
+.kmc-catalog-secondary-editor {
+  margin: 11px 0;
+  background: #f7f8fa;
+  border-color: #d5dce5;
+}
+@media (max-width: 700px) {
+  .kmc-catalog-candidate-inspector {
+    box-sizing: border-box;
+    position: fixed;
+    inset: 0;
+    z-index: 1100;
+    overflow-y: auto;
+    width: 100%;
+    height: 100dvh;
+    max-height: 100dvh;
+    padding: 20px;
+    margin: 0;
+    border-radius: 0;
+  }
+  .kmc-catalog-review-navigation button {
+    min-height: 44px;
+  }
+}

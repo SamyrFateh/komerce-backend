@@ -15,7 +15,7 @@ test('Catalogue: pleine largeur limitée au registre, sans modifier Raffinerie',
   expect(css).toContain('.kmc-catalog-registry-table.kmc-workspace-table');
   expect(css).toContain('table-layout: fixed');
   expect(ui).toContain("' kmc-catalog-main-panel'");
-  expect(index).toContain('catalog-workspace-wide-v1.css?v=261110-visual-fr-review-1');
+  expect(index).toContain('catalog-workspace-wide-v1.css?v=261110-review-focus-2');
 });
 
 test('Catalogue: nom/references/diagnostics/actions sont distincts et bornés', () => {
@@ -208,7 +208,7 @@ test('Dossier opérateur : correction source accessible sans chiffres économiqu
   expect(ui).toContain("method: 'POST'");
   expect(css).toContain('width: min(660px, calc(100vw - 40px))');
   expect(ui).not.toContain('appendCatalogEconomicSummary');
-  expect(index).toContain('catalog-workspace.js?v=261110-visual-fr-review-1');
+  expect(index).toContain('catalog-workspace.js?v=261110-review-focus-2');
 });
 
 test('Catalogue : dossier produit complet, y compris les produits approuvés', () => {
@@ -244,7 +244,7 @@ test('Revues visuelles FR : état explicite sans présélection, POST canonique,
 
 test('Fiche commerciale complète : galerie, variantes et correction FR disponibles depuis Catalogue', () => {
   expect(ui).toContain("data-catalog-canonical-gallery");
-  expect(ui).toContain("Images canoniques actives");
+  expect(ui).toContain("1 · Inspecter les images fournisseur");
   expect(ui).toContain("img.loading = 'lazy'");
   expect(ui).toContain("data-catalog-variants");
   expect(ui).toContain("stock_semantics");
@@ -277,8 +277,8 @@ test('Actions éditoriales toujours visibles avant lecture longue de la fiche', 
   expect(css).toContain(".kmc-catalog-inspector-action-dock");
   expect(css).toContain("position: sticky");
   expect(css).toContain('min-height: 42px');
-  expect(index).toContain('catalog-workspace.js?v=261110-visual-fr-review-1');
-  expect(index).toContain('catalog-workspace-wide-v1.css?v=261110-visual-fr-review-1');
+  expect(index).toContain('catalog-workspace.js?v=261110-review-focus-2');
+  expect(index).toContain('catalog-workspace-wide-v1.css?v=261110-review-focus-2');
 });
 
 test('Validation Catalogue : la préparation française et le contrôle sont distincts de la décision humaine',()=>{
@@ -293,7 +293,7 @@ test('Validation Catalogue : la préparation française et le contrôle sont dis
   expect(ui).toContain("ENDPOINT + '/approval/'");
   expect(ui).toContain('Validation refusée : ');
   expect(ui).not.toContain("status: 'À valider en Raffinerie'");
-  expect(index).toContain('catalog-workspace.js?v=261110-visual-fr-review-1');
+  expect(index).toContain('catalog-workspace.js?v=261110-review-focus-2');
 });
 
 test('G6 : corriger la fiche française ne publie jamais automatiquement le Catalogue', () => {
@@ -347,4 +347,38 @@ test('Registre : seuls les vrais arbitrages produisent un statut humain',()=>{
   expect(ui).not.toContain('Catégorie économique manquante');
   expect(ui).not.toContain('Classement boutique à confirmer');
   expect(ui).not.toContain('Candidat fournisseur · aucune validation Catalogue implicite.');
+});
+
+test('G6 UI: fermeture toujours accessible, masque et Escape, retour au catalogue', () => {
+  expect(ui).toContain("const backdrop = makeButton(doc, '', 'close-inspector-backdrop'");
+  expect(ui).toContain("backdrop.addEventListener('click', closeInspector)");
+  expect(ui).toContain("close.addEventListener('click', closeInspector)");
+  expect(ui).toContain("event.key === 'Escape'");
+  expect(ui).toContain("doc.removeEventListener('keydown', onKeydown)");
+  expect(ui).toContain("originFocus.focus()");
+  expect(css).toContain('.kmc-catalog-candidate-inspector .kmc-catalog-inspector-head {');
+  expect(css).toContain('position: sticky;');
+  expect(css).toContain('.kmc-catalog-inspector-backdrop {');
+  expect(css).toContain('z-index: 1095;');
+  expect(css).toContain('.kmc-catalog-inspector-head [data-workspace-action="close-inspector"]');
+});
+
+test('G6 UI: une image visible par étape, progression signée source, détail technique replié', () => {
+  expect(ui).toContain("mediaSlot.setAttribute('data-catalog-media-review-slot', '')");
+  expect(ui).toContain("if (mediaSlot) mediaSlot.replaceChildren(photos)");
+  expect(ui).toContain("progress.setAttribute('data-catalog-media-progress', '')");
+  expect(ui).toContain("navigator.setAttribute('data-catalog-review-navigation', '')");
+  expect(ui).toContain("figure.hidden = i !== index");
+  expect(ui).toContain("'Image ' + (index + 1) + ' / ' + navigable.length");
+  expect(ui).toContain("row._catalogMediaIndex = Math.min(index + 1, count - 1)");
+  expect(ui).toContain("editing.setAttribute('data-catalog-secondary-editor', '')");
+  expect(ui).toContain("additional.appendChild(dossierSlot)");
+  expect(css).toContain('.kmc-catalog-media-review-slot .kmc-catalog-dossier-image-strip figure[hidden]');
+  expect(css).toContain('.kmc-catalog-secondary-editor');
+  expect(ui).toContain("transcription.parentNode.hidden = !present");
+  expect(ui).toContain("translation.parentNode.hidden = !present");
+  expect(ui).toContain("localizedUrl.parentNode.hidden = !present || kind.value !== 'localized_image'");
+  expect(ui).toContain("!confirmed.checked");
+  expect(ui).toContain("text_presence: presence.value");
+  expect(ui).toContain("'/visual-fr-review'");
 });
