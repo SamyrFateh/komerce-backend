@@ -2843,41 +2843,13 @@
           main.className = 'kmc-workspace-action kmc-catalog-primary-action';
           actionCell.setAttribute('data-label', readyCandidate ? 'Finaliser' :
             hasMissingContent ? 'Compléter' : 'Consulter');
-          main.addEventListener('click', async () => {
-            if (!readyCandidate) {
-              openProductInspector(context, slot, doc, row, categories);
-              return;
-            }
-            // Un geste de finalisation unique, sans second bouton Enregistrer
-            // ou Confirmer. Le backend contrôle tous ses invariants avant écriture.
-            main.disabled = true;
-            try {
-              const diagnosis = await jsonRequest(context.fetch,
-                ENDPOINT + '?diagnose_product_ref=' + encodeURIComponent(row.product_ref),
-                { method: 'GET' });
-              if (diagnosis?.phase !== 'catalog_approval' ||
-                  diagnosis?.certification?.certified !== true) {
-                const reasons = (diagnosis?.certification?.reasons || [])
-                  .map(certificationReasonLabel);
-                openProductInspector(context, slot, doc, row, categories);
-                const panel = slot.querySelector('[data-catalog-product-inspector]');
-                const feedback = panel?.querySelector('.kmc-catalog-inspector-feedback');
-                if (feedback) feedback.textContent = reasons.length
-                  ? 'Encore nécessaire : ' + reasons.join(' · ')
-                  : 'La certification n’est pas encore acquise.';
-                return;
-              }
-              const approved = await jsonRequest(context.fetch,
-                ENDPOINT + '/approval/' + encodeURIComponent(row.product_ref) + '/approve',
-                { method: 'POST' });
-              if (!approved?.ok) throw new Error('Approbation non confirmée.');
-              await context.reload();
-              setFeedback(context.root, row.product_ref +
-                ' · Catalogue conforme et approuvé. Aucun marché publié.', 'positive');
-            } catch (error) {
-              setFeedback(context.root, 'Finalisation impossible : ' +
-                actionErrorMessage(error), 'critical');
-            } finally { main.disabled = false; }
+          // A "Finaliser" gesture opens the product dossier. Even when the
+          // server certifies all technical prerequisites, this click does not
+          // approve/publish: the human review and explicit confirmation live
+          // behind "Contrôler les prérequis" -> "Valider le Catalogue".
+          // No asynchronous preflight is allowed to hide the edit surface.
+          main.addEventListener('click', () => {
+            openProductInspector(context, slot, doc, row, categories);
           });
           actionCell.appendChild(main);
           statusChip.addEventListener('click', () => main.click());
