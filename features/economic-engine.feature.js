@@ -55,6 +55,7 @@ module.exports = {
       'gate de couverture économique par marché, fail-closed sur maturité, risque et charges de structure attribuées',
       'politique canonique de décision par marché : fenêtre, seuils de maturité/couverture et plafond de dispositions versionnés append-only',
       'corridor de prix issu de preuves marché locales, sans fallback silencieux depuis une référence globale',
+      'les coûts et références économiques sont consultables avant le premier prix local ; selected.price_kmf reste null et buyer_effective=false tant qu aucune décision acheteur ne le porte, sans publication implicite',
       'Exception ciblée Catalogue pays : un admin central vérifié peut prévisualiser, fixer, activer et repricer un prix local sur marché explicitement sélectionné ; mêmes gates économiques, aucune ouverture des observations/politiques locales par rôle seul, opérateurs toujours soumis aux capabilities.',
       'explicabilité canonique de chaque ligne de coût : source, hypothèse, mouvement, nature économique, périmètre d allocation et impact',
       'strategies tarifaires et matrices admin',
