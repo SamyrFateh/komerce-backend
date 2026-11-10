@@ -61,7 +61,7 @@ test('scan lit les FK et colonnes source sans supprimer et détecte les référe
   expect(out.refs).toEqual([{run8:run,table:'purchase_lines',column:'supplier_id',relation:'FOREIGN_KEY',rows:2}]);
   expect(out.fk_edges_checked).toBe(1);
   expect(c.queries.filter(s=>s.includes('FROM public."purchase_lines"'))).toHaveLength(1);
-  expect(c.queries.every(sql=>/^SELECT\b/.test(sql))).toBe(true);
+  expect(c.queries.every(sql=>/^\s*SELECT\b/.test(sql))).toBe(true);
   expect(out.trigger_tables).toEqual([]);
 });
 test('une table cible avec trigger DELETE devient un HOLD visible',async()=>{
