@@ -237,28 +237,28 @@
   function orderRow(o, btnLabel, btnDataAction) {
     let items = [];
     try { items = typeof o.items === 'string' ? JSON.parse(o.items) : (o.items || []); } catch (_) {}
-    const desc = `${items.length || o.nb_items || 0} art. · ${fmtKmf(o.total_kmf)} · ${o.relais_island || '—'}`;
+    const desc = `${items.length || o.nb_items || 0} art. · ${fmtKmf(o.total_kmf)} · ${esc(o.relais_island || '—')}`;
     return `<tr>
-      <td class="hr-td-ref">${o.reference}</td>
-      <td>${o.client_name || 'Client'}</td>
-      <td class="hr-td-secondary">${desc}</td>
+      <td class="hr-td-ref">${esc(o.reference)}</td>
+      <td>${esc(o.client_name || 'Client')}</td>
+      <td class="hr-td-secondary">${esc(desc)}</td>
       <td class="hr-td-muted hr-td-nowrap">${fmtAgo(o.created_at)}</td>
       <td class="hr-td-action">
-        ${btnLabel ? `<button data-action="${btnDataAction}" data-ref="${o.reference}"
+        ${btnLabel ? `<button data-action="${btnDataAction}" data-ref="${esc(o.reference)}"
           class="btn btn-sm hr-btn-action">${btnLabel}</button>` : ''}
       </td>
     </tr>`;
   }
 
   function parcelRow(p, btnLabel, btnDataAction, btnColor) {
-    const desc = `${p.main_order_ref || '—'} · ${p.nb_items || 0} art. · ${p.destination_island || p.relais_island || '—'}`;
+    const desc = `${esc(p.main_order_ref || '—')} · ${p.nb_items || 0} art. · ${esc(p.destination_island || p.relais_island || '—')}`;
     return `<tr>
-      <td class="hr-td-ref">${p.reference}</td>
-      <td>${p.recipient_name || 'Client'}</td>
-      <td class="hr-td-secondary">${desc}</td>
+      <td class="hr-td-ref">${esc(p.reference)}</td>
+      <td>${esc(p.recipient_name || 'Client')}</td>
+      <td class="hr-td-secondary">${esc(desc)}</td>
       <td class="hr-td-muted"></td>
       <td class="hr-td-action">
-        <button data-action="${btnDataAction}" data-ref="${p.reference}"
+        <button data-action="${btnDataAction}" data-ref="${esc(p.reference)}"
           class="btn btn-sm hr-btn-action" style="background:${btnColor}18;color:${btnColor}">${btnLabel}</button>
       </td>
     </tr>`;
@@ -406,22 +406,22 @@
     wrapperEl.querySelector('.forecast-content').innerHTML = `
       <div class="hr-forecast-label">🛍️ Attente paiement (${pending.length})</div>
       ${miniTable(pending, [
-        o => `<strong>${o.reference}</strong>`,
-        o => o.client_name || '—',
+        o => `<strong>${esc(o.reference)}</strong>`,
+        o => esc(o.client_name || '—'),
         o => o.payment_mode === 'stripe_eur' ? '💳' : '💰',
         o => fmtAgo(o.created_at),
       ])}
       <div class="hr-forecast-label">📋 À répartir (${ordered.length})</div>
       ${miniTable(ordered, [
-        o => `<strong>${o.reference}</strong>`,
-        o => o.client_name || '—',
+        o => `<strong>${esc(o.reference)}</strong>`,
+        o => esc(o.client_name || '—'),
         o => `${o.nb_items || '—'} art.`,
         o => fmtAgo(o.created_at),
       ])}
       <div class="hr-forecast-label">🚀 En route (${enRoute.length})</div>
       ${miniTable(enRoute, [
-        p => `<strong>${p.reference}</strong>`,
-        p => `🏝️ ${p.destination_island || '—'}`,
+        p => `<strong>${esc(p.reference)}</strong>`,
+        p => `🏝️ ${esc(p.destination_island || '—')}`,
         p => fmtAgo(p.shipped_at || p.created_at),
       ])}`;
 
@@ -500,7 +500,7 @@
         const stColor = st === 'draft' ? '#880e4f' : st === 'preparation' ? '#1e40af' : '#065f46';
         const stBg    = st === 'draft' ? '#fce4ec' : st === 'preparation' ? '#dbeafe'  : '#d1fae5';
         const shipBtn = st === 'preparation'
-          ? `<button data-action="dist-ship" data-ref="${p.reference}" class="btn btn-primary btn-sm">✈️ Expédier</button>`
+          ? `<button data-action="dist-ship" data-ref="${esc(p.reference)}" class="btn btn-primary btn-sm">✈️ Expédier</button>`
           : '';
 
         const ordRows = orders.map(o => `
@@ -515,7 +515,7 @@
           <div class="hr-dist-card">
             <div class="hr-dist-card-head">
               <div class="hr-dist-card-info">
-                <strong class="hr-dist-ref">📦 ${p.reference}</strong>
+                <strong class="hr-dist-ref">📦 ${esc(p.reference)}</strong>
                 <span class="hr-dist-status-badge" style="background:${stBg};color:${stColor}">
                   ${p.relais_name || p.relais_island || p.destination || '—'}
                 </span>
@@ -554,8 +554,8 @@
             <div class="hr-alert-unassigned-title">⏳ ${unassigned.length} commande(s) non assignée(s)</div>
             ${unassigned.map(o => `
               <div class="hr-unassigned-row">
-                <span><strong>${o.reference}</strong> — ${o.client_name || '?'}</span>
-                <span class="hr-td-secondary">${o.items_count || '?'} art. · ${o.relais_name || o.relais_island || '?'}</span>
+                <span><strong>${esc(o.reference)}</strong> — ${esc(o.client_name || '?')}</span>
+                <span class="hr-td-secondary">${o.items_count || '?'} art. · ${esc(o.relais_name || o.relais_island || '?')}</span>
               </div>`).join('')}
             <div class="hr-alert-unassigned-hint">
               Cliquez « 🤖 Répartir maintenant » pour les assigner automatiquement.
@@ -665,14 +665,14 @@
     const panelEncaisser = denseTable(
       ['Réf', 'Client', 'Détails', 'Âge', ''],
       cashPending.length ? cashPending.map(o => {
-        const desc = `${o.nb_items || 0} art. · ${fmtKmf(o.total_kmf)}${o.cash_code ? ` · 🔑 ${o.cash_code}` : ''}`;
+        const desc = `${o.nb_items || 0} art. · ${fmtKmf(o.total_kmf)}${o.cash_code ? ` · 🔑 ${esc(o.cash_code)}` : ''}`;
         return `<tr>
-          <td class="hr-td-ref">${o.reference}</td>
-          <td>${o.client_name || 'Client'}</td>
-          <td class="hr-td-secondary">${desc}</td>
+          <td class="hr-td-ref">${esc(o.reference)}</td>
+          <td>${esc(o.client_name || 'Client')}</td>
+          <td class="hr-td-secondary">${esc(desc)}</td>
           <td class="hr-td-muted hr-td-nowrap">${fmtAgo(o.created_at)}</td>
           <td class="hr-td-action">
-            <button data-action="relais-confirm-cash" data-ref="${o.reference}"
+            <button data-action="relais-confirm-cash" data-ref="${esc(o.reference)}"
               class="btn btn-sm hr-btn-action">💰 Encaisser</button>
           </td>
         </tr>`;
@@ -689,14 +689,14 @@
     const panelDistribuer = denseTable(
       ['Colis', 'Client', 'Détails', 'Dispo', ''],
       availableP.length ? availableP.map(p => {
-        const desc = `${p.nb_items || 0} art. · ${fmtKmf(p.total_kmf)}${p.pickup_code ? ` · 🔑 ${p.pickup_code}` : ''}`;
+        const desc = `${p.nb_items || 0} art. · ${fmtKmf(p.total_kmf)}${p.pickup_code ? ` · 🔑 ${esc(p.pickup_code)}` : ''}`;
         return `<tr>
-          <td class="hr-td-ref">${p.reference}</td>
-          <td>${p.recipient_name || 'Client'}</td>
-          <td class="hr-td-secondary">${desc}</td>
+          <td class="hr-td-ref">${esc(p.reference)}</td>
+          <td>${esc(p.recipient_name || 'Client')}</td>
+          <td class="hr-td-secondary">${esc(desc)}</td>
           <td class="hr-td-muted hr-td-nowrap">${fmtAgo(p.updated_at || p.created_at)}</td>
           <td class="hr-td-action">
-            <button data-action="relais-collected" data-ref="${p.reference}"
+            <button data-action="relais-collected" data-ref="${esc(p.reference)}"
               class="btn btn-sm hr-btn-action" style="background:var(--kmc-green-bg,#06504618);color:var(--kmc-green,#065f46)">✅ Remis</button>
           </td>
         </tr>`;
@@ -719,16 +719,16 @@
     wrapperEl.querySelector('.forecast-content').innerHTML = `
       <div class="hr-forecast-label">✈️ En route (${shippedP.length})</div>
       ${miniTable(shippedP, [
-        p => `<strong>${p.reference}</strong>`,
-        p => p.recipient_name || '—',
-        p => `🏝️ ${p.destination_island || '—'}`,
+        p => `<strong>${esc(p.reference)}</strong>`,
+        p => esc(p.recipient_name || '—'),
+        p => `🏝️ ${esc(p.destination_island || '—')}`,
         p => fmtAgo(p.shipped_at || p.created_at),
       ])}
       <div class="hr-forecast-label">✅ Récentes (${collectedP.length})</div>
       ${miniTable(collectedP, [
-        p => `<strong>${p.reference}</strong>`,
-        p => p.recipient_name || '—',
-        p => `🏝️ ${p.destination_island || '—'}`,
+        p => `<strong>${esc(p.reference)}</strong>`,
+        p => esc(p.recipient_name || '—'),
+        p => `🏝️ ${esc(p.destination_island || '—')}`,
         p => fmtAgo(p.updated_at || p.created_at),
       ])}`;
 
