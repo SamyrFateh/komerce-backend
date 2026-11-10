@@ -109,7 +109,7 @@ const R = (() => {
       // Alertes strip
       const aw = document.getElementById('alertes-wrap');
       aw.innerHTML = (d.alertes||[]).map(a =>
-        `<div class="alert-strip ${a.type}">${a.type==='warning'?'⚠️':a.type==='danger'?'🚨':'ℹ️'} ${esc(a.message)}</div>`
+        `<div class="alert-strip ${esc(a.type)}">${a.type==='warning'?'⚠️':a.type==='danger'?'🚨':'ℹ️'} ${esc(a.message)}</div>`
       ).join('');
       // Les incidents canoniques sont une file de connaissance distincte des signalements locaux.
       // Une alerte doit rester visible même si la commande n'est pas encore expédiée.
@@ -153,7 +153,7 @@ const R = (() => {
       el.innerHTML = rows.map(o => orderCard(o)).join('');
       el.querySelectorAll('.order-card').forEach(c => c.addEventListener('click', () => openDetail(c.dataset.id)));
     } catch(e) {
-      el.innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div>' + (e.error||'Erreur réseau') + '</div>';
+      el.innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div>'  + esc(e.error||'Erreur réseau') + '</div>';
     }
   }
 
@@ -162,12 +162,12 @@ const R = (() => {
     const cashBadge = o.cash_pending ? '<span class="badge amber">💰 Cash</span>' : '';
     const incBadge = o.incidents_ouverts > 0 ? '<span class="badge red">⚠ incident</span>' : '';
     const urgBadge = o.urgence === 'critique' ? '<span class="badge red">+120h</span>' : o.urgence === 'haute' ? '<span class="badge amber">+72h</span>' : '';
-    return `<div class="order-card ${uc}" data-id="${o.id}">
-      <div class="card-top"><div class="card-ref">${o.reference}</div><div class="card-age">${ago(o.created_at)}</div></div>
-      <div class="card-client">${o.client_nom||'—'}</div>
+    return `<div class="order-card ${uc}" data-id="${esc(o.id)}">
+      <div class="card-top"><div class="card-ref">${esc(o.reference)}</div><div class="card-age">${ago(o.created_at)}</div></div>
+      <div class="card-client">${esc(o.client_nom||'—')}</div>
       <div class="card-meta">
-        <span class="badge ${scol(o.status)}">${slbl(o.status)}</span>
-        <span class="badge gray">${o.nb_items||0} art.</span>
+        <span class="badge ${scol(o.status)}">${esc(slbl(o.status))}</span>
+        <span class="badge gray">${esc(o.nb_items||0)} art.</span>
         ${cashBadge}${incBadge}${urgBadge}
       </div>
     </div>`;
@@ -222,7 +222,7 @@ const R = (() => {
         if (!pin || pin.length < 4) { toast('Code PIN requis', 'error'); btn.disabled=false; btn.innerHTML='✅ Confirmer'; return; }
         const r = await api.post('/api/scans/collect', { pickup_code: pin });
         res.className = 'scan-result ok';
-        res.innerHTML = `🤝 <strong>${r.order?.reference||''}</strong> remis au client · statut : ${slbl(r.order?.status||'collected')}`;
+        res.innerHTML = `🤝 <strong>${esc(r.order?.reference||'')}</strong> remis au client · statut : ${esc(slbl(r.order?.status||'collected'))}`;
         toast('✅ Remise confirmée', 'success');
         refreshAll();
       } else {
@@ -231,7 +231,7 @@ const R = (() => {
         if (!ref) { toast('Référence requise', 'error'); btn.disabled=false; btn.innerHTML='✅ Confirmer'; return; }
         const r = await api.post('/api/scans', { scan_code: ref, step: 'relais_received', location: 'Point Relais' });
         res.className = 'scan-result ok';
-        res.innerHTML = `📥 <strong>${ref}</strong> réceptionné · statut → ${slbl(r.order?.status||r.new_status||'available')}`;
+        res.innerHTML = `📥 <strong>${esc(ref)}</strong> réceptionné · statut → ${esc(slbl(r.order?.status||r.new_status||'available'))}`;
         toast('📥 Réception enregistrée', 'success');
         refreshAll();
       }
@@ -272,7 +272,7 @@ const R = (() => {
       _order = d;
       renderDetail(d);
     } catch(e) {
-      document.getElementById('detail-body').innerHTML = '<div class="empty">' + (e.error||'Erreur') + '</div>';
+      document.getElementById('detail-body').innerHTML = '<div class="empty">'  + esc(e.error||'Erreur') + '</div>';
     }
   }
 
@@ -280,14 +280,14 @@ const R = (() => {
     const o = d.order, c = d.client||{}, p = d.paiement||{}, items = d.items||[], tl = d.timeline||[];
     const incidents = (d.incidents || []).filter(i => ['open', 'in_progress', 'investigating'].includes(i.status));
     document.getElementById('detail-title').textContent = o.reference;
-    document.getElementById('detail-status-badge').innerHTML = `<span class="badge ${scol(o.status)}">${slbl(o.status)}</span>`;
+    document.getElementById('detail-status-badge').innerHTML = `<span class="badge ${scol(o.status)}">${esc(slbl(o.status))}</span>`;
 
     const cashSection = p.cash_pending ? `
       <div class="section" style="border-color:rgba(255,171,64,.35)">
         <div class="section-head" style="color:var(--amber)">💰 Cash à encaisser</div>
         <div class="section-body">
-          <div class="info-row"><span class="info-label">Montant</span><span class="info-val" style="color:var(--amber);font-size:18px">${money(p.a_encaisser)}</span></div>
-          <div class="info-row"><span class="info-label">Code PIN</span><span class="info-val"><div class="pin-display">${o.pickup_code||'—'}</div></span></div>
+          <div class="info-row"><span class="info-label">Montant</span><span class="info-val" style="color:var(--amber);font-size:18px">${esc(money(p.a_encaisser))}</span></div>
+          <div class="info-row"><span class="info-label">Code PIN</span><span class="info-val"><div class="pin-display">${esc(o.pickup_code||'—')}</div></span></div>
         </div>
       </div>` : '';
 
@@ -295,22 +295,22 @@ const R = (() => {
       <div class="section">
         <div class="section-head">Timeline</div>
         <div class="section-body" style="gap:0">
-          ${tl.map((t,i) => `<div class="timeline-row"><div class="timeline-dot ${i===tl.length-1?'active':''}"></div><div class="timeline-content"><div class="timeline-status">${slbl(t.status)}</div><div class="timeline-date">${new Date(t.created_at).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div></div></div>`).join('')}
+          ${tl.map((t,i) => `<div class="timeline-row"><div class="timeline-dot ${i===tl.length-1?'active':''}"></div><div class="timeline-content"><div class="timeline-status">${esc(slbl(t.status))}</div><div class="timeline-date">${new Date(t.created_at).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div></div></div>`).join('')}
         </div>
       </div>` : '';
 
     const pickupSection = o.status === 'available' ? `
       <div class="section" style="border-color:rgba(0,230,118,.2)">
         <div class="section-head" style="color:var(--green)">Code PIN remise</div>
-        <div class="section-body"><div class="pin-display">${o.pickup_code||'—'}</div></div>
+        <div class="section-body"><div class="pin-display">${esc(o.pickup_code||'—')}</div></div>
       </div>` : '';
 
     document.getElementById('detail-body').innerHTML = `
       <div class="section">
         <div class="section-head">Client</div>
         <div class="section-body">
-          <div class="info-row"><span class="info-label">Nom</span><span class="info-val">${c.nom||'—'}</span></div>
-          <div class="info-row"><span class="info-label">Téléphone</span><span class="info-val">${c.phone||'—'}</span></div>
+          <div class="info-row"><span class="info-label">Nom</span><span class="info-val">${esc(c.nom||'—')}</span></div>
+          <div class="info-row"><span class="info-label">Téléphone</span><span class="info-val">${esc(c.phone||'—')}</span></div>
           ${c.history?.is_recurring ? `<div class="info-row"><span class="info-label">Historique</span><span class="info-val">${c.history.total_orders} commandes</span></div>` : ''}
         </div>
       </div>
@@ -329,15 +329,15 @@ const R = (() => {
       <div class="section">
         <div class="section-head">Articles (${items.length})</div>
         <div class="section-body" style="gap:0">
-          ${items.map(it => `<div class="item-row"><div class="item-qty">×${it.quantity}</div><div class="item-name">${it.produit||'—'}</div></div>`).join('')}
+          ${items.map(it => `<div class="item-row"><div class="item-qty">×${esc(it.quantity)}</div><div class="item-name">${esc(it.produit||'—')}</div></div>`).join('')}
         </div>
       </div>
       <div class="section">
         <div class="section-head">Paiement</div>
         <div class="section-body">
-          <div class="info-row"><span class="info-label">Mode</span><span class="info-val">${p.mode||'—'}</span></div>
+          <div class="info-row"><span class="info-label">Mode</span><span class="info-val">${esc(p.mode||'—')}</span></div>
           <div class="info-row"><span class="info-label">Statut</span><span class="info-val">${p.is_paid?'<span class="badge green">payé</span>':'<span class="badge amber">en attente</span>'}</span></div>
-          <div class="info-row"><span class="info-label">Total</span><span class="info-val">${money(p.a_encaisser)}</span></div>
+          <div class="info-row"><span class="info-label">Total</span><span class="info-val">${esc(money(p.a_encaisser))}</span></div>
         </div>
       </div>
       ${tlHtml}
@@ -350,7 +350,7 @@ const R = (() => {
     let html = '';
     if (o.status === 'available') {
       if (p.cash_pending) {
-        html += `<button class="btn btn-amber" data-act="open-cash">💰 Encaisser ${money(p.a_encaisser)}</button>`;
+        html += `<button class="btn btn-amber" data-act="open-cash">💰 Encaisser ${esc(money(p.a_encaisser))}</button>`;
       }
       html += `<button class="btn btn-secondary" data-act="open-inc">🚨 Signaler incident</button>`;
       html += `<button class="btn btn-secondary" data-act="client-absent">👤 Client absent</button>`;
@@ -377,7 +377,7 @@ const R = (() => {
     document.getElementById('cash-detail').innerHTML = `
       Commande <strong>${_order.order.reference}</strong><br>
       Montant à encaisser : <strong style="color:var(--amber)">${money(_order.paiement.a_encaisser)}</strong><br>
-      Client : ${_order.client?.nom||'—'}
+      Client : ${esc(_order.client?.nom||'—')}
     `;
     document.getElementById('cash-modal').classList.add('open');
   }
