@@ -94,6 +94,7 @@ async function provisionTestWalletViaAdmin(page, targetBalance = 50_000) {
             amount_kmf: args.amount,
             reason: 'e2e-wallet-provision',
             note: 'Provisionnement déterministe Playwright staging',
+            idempotency_key: `e2e-wallet-provision-${args.userId}-${Date.now()}`,
           }),
         });
         const body = await response.json().catch(() => ({}));
