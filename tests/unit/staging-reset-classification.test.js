@@ -200,3 +200,55 @@ describe('staging reset fixtures : graphe de suppression (pur)', () => {
     expect(fixtures.maskEmail(null)).toBeNull();
   });
 });
+
+
+describe('staging prudent — conservation des auteurs d audit immuable', () => {
+  const actors = [
+    { id: '00000000-0000-4000-8000-000000000001', email: 'e2e.audit.a@komerce.test', full_name: 'E2E Audit A', role: 'agent_relais' },
+    { id: '00000000-0000-4000-8000-000000000002', email: 'e2e.audit.b@komerce.test', full_name: 'E2E Audit B', role: 'agent_relais' },
+    { id: '00000000-0000-4000-8000-000000000003', email: 'admin@komerce.km', full_name: 'Admin Komerce', role: 'admin' },
+  ];
+  function fixtureDb(auditedIds) {
+    const statements = [];
+    return {
+      statements,
+      query: jest.fn(async (sql, params = []) => {
+        statements.push(sql);
+        if (sql.includes('FROM users ORDER BY id')) return { rows: actors };
+        if (sql.includes('FROM relais r LEFT JOIN markets')) return { rows: [] };
+        if (sql.includes('FROM partners ORDER BY id')) return { rows: [] };
+        if (sql.includes('FROM market_delegation_audit')) {
+          const selected = new Set(params[0]);
+          return { rows: auditedIds.filter(id => selected.has(id)).map(actor_user_id => ({ actor_user_id })) };
+        }
+        throw Error('UNEXPECTED_QUERY:' + sql.slice(0, 90));
+      }),
+    };
+  }
+
+  test('prudent conserve uniquement acteur E2E lié à audit, ne touche jamais audit', async () => {
+    const db = fixtureDb([actors[0].id]);
+    const result = await fixtures.findFixtures(db, { KOMERCE_STAGING_RESET_MODE: 'prudent' });
+    expect(result.ids.users).toEqual([actors[1].id]);
+    expect(result.summary.users_retained_due_to_delegation_audit).toBe(1);
+    expect(result.summary.users_retained_audit_sample).toEqual([{ email: 'e2***@komerce.test', role: 'agent_relais' }]);
+    expect(result.admins_remaining).toBe(1);
+    expect(db.statements.some(sql => sql.includes('FROM market_delegation_audit'))).toBe(true);
+    expect(db.statements.every(sql => /^SELECT\b/.test(sql))).toBe(true);
+  });
+
+  test('full reste explicitement distinct du prudent et n effectue pas l exception', async () => {
+    const db = fixtureDb([actors[0].id]);
+    const result = await fixtures.findFixtures(db, { KOMERCE_STAGING_RESET_MODE: 'full' });
+    expect(result.ids.users).toEqual([actors[0].id, actors[1].id]);
+    expect(result.summary.users_retained_due_to_delegation_audit).toBe(0);
+    expect(db.statements.some(sql => sql.includes('FROM market_delegation_audit'))).toBe(false);
+  });
+
+  test('sans référence audit, les comptes E2E sont toujours des fixtures suppressibles', async () => {
+    const db = fixtureDb([]);
+    const result = await fixtures.findFixtures(db, { KOMERCE_STAGING_RESET_MODE: 'prudent' });
+    expect(result.ids.users).toEqual([actors[0].id, actors[1].id]);
+    expect(result.summary.users_retained_due_to_delegation_audit).toBe(0);
+  });
+});
