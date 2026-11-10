@@ -258,9 +258,11 @@ async function buildCleanupInventory(client, run) {
     // Un trigger de suppression sur un ENFANT d'une racine est au minimum
     // une preuve potentielle : conserver le RUN8 en bloc. Ne jamais transformer
     // une absence de match direct en permission DELETE.
-    report.cleanup_strategy = immutableAll.length
+    report.cleanup_strategy = immutableAll.length || sharedParents.length
       ? {decision:'RETAIN_FIXTURE_PREFIX_NO_DELETE',
-          reason:'preuves append-only directes ou potentielles : conserver le RUN8 ; ne pas supprimer ni desactiver les triggers',
+          reason:sharedParents.length
+            ? 'objets E2E partagés avec commandes hors RUN8 : conserver la fixture, aucune suppression'
+            : 'preuves append-only directes ou potentielles : conserver le RUN8 ; ne pas supprimer ni desactiver les triggers',
           immutable_tables:immutable.map((t)=>t.table),
           immutable_tables_potential_children:immutableAll.filter((t)=>!holdsFixtureRows.has(t.table)).map((t)=>t.table),
           delete_performed:false}
