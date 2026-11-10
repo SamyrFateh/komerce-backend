@@ -28,9 +28,10 @@
  */
 'use strict';
 
-const INTERNAL_STATIC_EXTENSIONS = /\.(md|txt)$/i;
+const INTERNAL_STATIC_EXTENSIONS = /\.(md|txt|exe|sh|py)$/i;
 const INTERNAL_STATIC_DIR_SEGMENTS = new Set([
   'tests', 'docs', 'scripts', 'governance', 'coverage', 'test-results',
+  'k6', 'harnais',
 ]);
 const INTERNAL_STATIC_FILENAMES = new Set(['package.json', 'package-lock.json']);
 

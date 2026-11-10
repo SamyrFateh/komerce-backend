@@ -26,7 +26,7 @@ npm i -D playwright && npx playwright install chromium
 | `repro-search-grid.js` | `_balancedPick()` sur une liste étroite (aucun navigateur requis) | Grille vide après une recherche |
 
 ```bash
-node public/boutique/harnais/geometry/verify-sticky.js
+node tools/boutique-harnais/geometry/verify-sticky.js
 ```
 
 ## Règle de robustesse

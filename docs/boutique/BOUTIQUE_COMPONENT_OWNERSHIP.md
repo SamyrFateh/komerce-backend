@@ -192,7 +192,7 @@ Invariant B4 :
 
 - chaque fichier applicatif `public/boutique/**/*.{js,mjs,cjs,ts,css,html}` doit être rattaché à une carte `features/*.feature.js` ;
 - le gate s'exécute en `--strict` et la cible est **0 fichier applicatif orphelin** ;
-- `public/boutique/harnais/**` est explicitement hors périmètre : ce sont des outils/repros de mesure navigateur, pas des owners runtime ;
+- `tools/boutique-harnais/**` est explicitement hors périmètre : ce sont des outils/repros de mesure navigateur, pas des owners runtime ;
 - tests, artefacts générés, docs et scripts infra restent exclus par le même contrat ;
 - toute nouvelle source runtime Boutique sans feature owner fait échouer la CI.
 
