@@ -8,7 +8,7 @@
  * @outputs       plan (lecture seule) et retrait transactionnel des comptes/relais/partenaires de test
  * @depends       scripts/recette/staging-reset-classification.js
  * @used-by       scripts/controlled-business-purge.js
- * @db-read       users, relais, partners, pg_catalog, tables fixture_scoped
+ * @db-read       users, relais, partners, market_delegation_audit, pg_catalog, tables fixture_scoped
  * @db-write      users, relais, partners, assignment_memberships, membership_capabilities, operator_market_scopes, market_team_invitations, webauthn_credentials, *_global_access_grants
  * @db-txn        caller-owned (transaction ouverte par controlled-business-purge)
  * @doctrine      staging_environment_reset_not_a_business_transaction_targeted_delete_fk_respected_blockers_never_forced
@@ -70,12 +70,31 @@ async function findFixtures(q, env = process.env) {
   const { rows: relais } = await q.query(
     `SELECT r.id, r.name, r.address, r.island, r.is_active, m.code AS market_code FROM relais r LEFT JOIN markets m ON m.id = r.market_id ORDER BY r.id`);
   const { rows: partners } = await q.query(`SELECT id, name, email FROM partners ORDER BY id`);
+  const fixtureUsers = users.map((u) => ({
+    u,
+    reason: userFixtureReason(u, allow)
+      || (full && !allow.has(String(u.email || '').toLowerCase()) ? 'full_mode_not_allowlisted' : null),
+  })).filter((x) => x.reason);
+
+  // The prudent reset must preserve the immutable delegation audit. Keep the
+  // precise fixture actor referenced by the ledger instead of deleting the
+  // audit, nulling actor_user_id or bypassing a FK. Those accounts are reused
+  // by staging authentication tests; a separate explicit retirement workflow
+  // is needed if the owner ultimately wants to revoke them.
+  let auditRetainedUsers = [];
+  if (!full && fixtureUsers.length) {
+    const ids = fixtureUsers.map(({ u }) => u.id);
+    const { rows } = await q.query(
+      'SELECT DISTINCT actor_user_id FROM market_delegation_audit ' +
+      'WHERE actor_user_id = ANY($1::uuid[]) AND actor_user_id IS NOT NULL',
+      [ids]
+    );
+    const retained = new Set(rows.map((row) => String(row.actor_user_id)));
+    auditRetainedUsers = fixtureUsers.filter(({ u }) => retained.has(String(u.id)));
+  }
+  const auditRetainedIds = new Set(auditRetainedUsers.map(({ u }) => String(u.id)));
   const fx = {
-    users: users.map((u) => ({
-      u,
-      reason: userFixtureReason(u, allow)
-        || (full && !allow.has(String(u.email || '').toLowerCase()) ? 'full_mode_not_allowlisted' : null),
-    })).filter((x) => x.reason),
+    users: fixtureUsers.filter(({ u }) => !auditRetainedIds.has(String(u.id))),
     relais: relais.map((r) => ({ r, reason: relaisFixtureReason(r) })).filter((x) => x.reason),
     partners: partners.map((p) => ({ p, reason: partnerFixtureReason(p) })).filter((x) => x.reason),
   };
@@ -87,6 +106,8 @@ async function findFixtures(q, env = process.env) {
     ids: { users: fx.users.map((x) => x.u.id), relais: fx.relais.map((x) => x.r.id), partners: fx.partners.map((x) => x.p.id) },
     summary: {
       users: fx.users.length,
+      users_retained_due_to_delegation_audit: auditRetainedUsers.length,
+      users_retained_audit_sample: auditRetainedUsers.slice(0, 20).map(({ u }) => ({ email: maskEmail(u.email), role: u.role })),
       relais: fx.relais.length,
       relais_removed: fx.relais.map((x) => ({ id: x.r.id, market: x.r.market_code, name: x.r.name, island: x.r.island, reason: x.reason })),
       partners: fx.partners.length,
