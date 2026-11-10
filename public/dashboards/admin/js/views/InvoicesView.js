@@ -31,6 +31,7 @@
 
 (function (global) {
   'use strict';
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
   async function render(rootEl) {
     const filters = KmcFilters.get();
@@ -89,7 +90,7 @@
       console.error('[InvoicesView] error:', err);
       if (!rootEl || !document.contains(rootEl)) return;
       document.getElementById('inv-kpis').innerHTML =
-        `<div class="error-state">❌ Erreur : ${err.message || 'inconnue'}</div>`;
+        `<div class="error-state">❌ Erreur : ${esc(err.message || 'inconnue')}</div>`;
     }
   }
 
