@@ -82,12 +82,19 @@ test('Customs page requires its actual international journey component, not unre
   expect(src).toContain("url.startsWith('/admin/workspaces/shipping-customs')");
   expect(src).toContain("await expect(page).toHaveURL(/\\/admin\\/workspaces\\/shipping-customs");
   expect(src).toContain("page.locator('[data-international-journey]').first().waitFor");
-  expect(src).toContain("if (await marketOption.count()) await select.selectOption");
+  // #3740: shipping customs selects the market through the explicit URL.
+  // An arbitrary form <select> must not be used as market authority.
+  expect(src).toContain("const selectedUrl = url.startsWith('/admin/workspaces/shipping-customs')");
+  expect(src).toContain("'market=' + MARKET_CODE");
+  expect(src).toContain("await page.goto(selectedUrl, { waitUntil: 'domcontentloaded' })");
   const customsStart=src.indexOf("if (url.startsWith('/admin/workspaces/shipping-customs'))");
   const customsEnd=src.indexOf("  const sel = page.locator('select').first();",customsStart);
   const customs=src.slice(customsStart,customsEnd);
-  expect(customs.indexOf("await select.selectOption")).toBeLessThan(customs.indexOf("page.locator('[data-international-journey]').first().waitFor"));
-  expect(customs).not.toContain("selectOption({ label: MARKET_LABEL }).catch");
+  const marketGuard="await expect(page).toHaveURL(new RegExp('(?:[?&])market='+MARKET_CODE+'(?:&|$)'))";
+  const journeyGuard="page.locator('[data-international-journey]').first().waitFor";
+  expect(customs).toContain(marketGuard);
+  expect(customs.indexOf(marketGuard)).toBeLessThan(customs.indexOf(journeyGuard));
+  expect(customs).not.toContain('selectOption(');
   expect(src).toContain('test.afterEach(async ({}, info) =>');
   expect(src).toContain("info.status !== 'passed'");
   expect(src).toContain("verdict: info.status === 'skipped' ? 'NOT_RUN' : 'CLICK_FAIL'");
