@@ -69,7 +69,7 @@ function buildHelmetOptions() {
         defaultSrc:  ["'self'"],
         // FRESH-030 / AUD-04: 'unsafe-inline' retiré — script QR externalisé dans public/js/qr-viewer.js.
         //   Si un nouveau script inline est nécessaire, utiliser un nonce CSP généré par le serveur.
-        scriptSrc:   ["'self'", "https://cdnjs.cloudflare.com", "https://cdn.jsdelivr.net", "https://js.stripe.com", "https://www.paypal.com", "https://www.paypalobjects.com"],
+        scriptSrc:   ["'self'", "https://cdnjs.cloudflare.com", "https://js.stripe.com", "https://www.paypal.com", "https://www.paypalobjects.com"],
         styleSrc:    ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
         fontSrc:     ["'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com", "data:"],
         imgSrc:      ["'self'", "data:", "https:"],

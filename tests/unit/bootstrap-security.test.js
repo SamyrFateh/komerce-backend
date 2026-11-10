@@ -197,13 +197,24 @@ describe('bootstrap/security', () => {
       );
     });
 
-    test('CSP : unpkg non utilisé et images http interdites, Chart.js jsDelivr reste autorisé pour compatibilité', () => {
+    test('CSP : unpkg et jsDelivr non autorisés, images HTTP interdites', () => {
       expect(csp.scriptSrc).not.toContain('https://unpkg.com');
       expect(csp.connectSrc).not.toContain('https://unpkg.com');
       expect(csp.imgSrc).not.toContain('http:');
       expect(csp.imgSrc).toContain('https:');
-      // Restant à traiter : remplacer Chart.js sur admin/index.html puis retirer jsDelivr.
-      expect(csp.scriptSrc).toContain('https://cdn.jsdelivr.net');
+      expect(csp.scriptSrc).not.toContain('https://cdn.jsdelivr.net');
+    });
+
+    test('Chart.js admin 4.4.0 : ressource cdnjs épinglée et SRI présente', () => {
+      const fs = require('fs');
+      const path = require('path');
+      const html = fs.readFileSync(path.join(__dirname, '../../public/dashboards/admin/index.html'), 'utf8');
+      expect(html).toContain('https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js');
+      expect(html).toContain('integrity="sha512-SIMGYRUjwY8+gKg7nn9EItdD8LCADSDfJNutF9TPrvEo86sQmFMh6MyralfIyhADlajSxqc7G0gs7+MwWF/ogQ=="');
+      expect(html).toContain('crossorigin="anonymous"');
+      expect(html).not.toContain('https://cdn.jsdelivr.net');
+      expect(csp.scriptSrc).not.toContain('https://cdn.jsdelivr.net');
+      expect(csp.connectSrc).not.toContain('https://cdn.jsdelivr.net');
     });
 
     test('defaultSrc et baseUri restreints à self', () => {
