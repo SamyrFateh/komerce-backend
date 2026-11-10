@@ -14,14 +14,10 @@
  *        — ce spec câble la même mesure (elementFromPoint) dans la suite.
  */
 'use strict';
-const fs = require('fs');
-const path = require('path');
 const { test, expect } = require('@playwright/test');
-const modalMarkup = require('../../harnais/geometry/extract').modal();
+const modalMarkup = require('../../../../tools/boutique-harnais/geometry/extract').modal();
 
-const FIXTURE_NAME = '.modal-backtop-fixture.html';
-const FIXTURE_PATH = path.join(__dirname, '..', '..', 'harnais', 'geometry', FIXTURE_NAME);
-const FIXTURE_URL = `harnais/geometry/${FIXTURE_NAME}`;
+const FIXTURE_URL = '__b1_modal_fixture.html';
 
 function pageHtml() {
   return `<!DOCTYPE html><html class="k-home-premium-v1"><head><meta charset=utf-8>
@@ -34,15 +30,9 @@ function pageHtml() {
 }
 
 test.describe('Modale produit — bouton retour en haut (volet P0-A #4)', () => {
-  test.beforeAll(() => {
-    fs.writeFileSync(FIXTURE_PATH, pageHtml());
-  });
-  test.afterAll(() => {
-    fs.rmSync(FIXTURE_PATH, { force: true });
-  });
-
   test('le bouton est réellement atteignable au clic quand la modale est ouverte', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 860 });
+    await page.route('**/boutique/' + FIXTURE_URL, route => route.fulfill({ status: 200, contentType: 'text/html', body: pageHtml() }));
     await page.goto(FIXTURE_URL);
     await page.waitForTimeout(150);
 

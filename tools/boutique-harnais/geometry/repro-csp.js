@@ -1,6 +1,6 @@
 const http=require('http'),fs=require('fs'),path=require('path');
 const {chromium}=require('playwright');
-const PUB=path.resolve(__dirname,'..','public');
+const PUB=path.resolve(__dirname,'..','..','public');
 const M={'.css':'text/css','.html':'text/html','.js':'text/javascript','.webp':'image/webp','.png':'image/png','.json':'application/json','.ico':'image/x-icon','.svg':'image/svg+xml'};
 // CSP IDENTIQUE à bootstrap/security.js (scriptSrc sans 'unsafe-inline')
 const CSP="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com https://unpkg.com https://cdn.jsdelivr.net https://js.stripe.com https://www.paypal.com https://www.paypalobjects.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https: http:; script-src-attr 'none'";
