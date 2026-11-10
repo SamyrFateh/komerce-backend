@@ -45,6 +45,7 @@ jobs:
       EXPECTED_RAILWAY_ENVIRONMENT: staging
       KOMERCE_DISABLE_CRONS: 'true'
       HUB_V1_E2E_APPLY_MODE: approved
+      HUB_V1_STAGING_DISPOSABLE_MODE: '1'
       HTTP_RUNNER_MARKET: ${{ github.event_name == 'issues' && (github.event.issue.title == '[staging-op] relay-native-KM' && 'KM' || github.event.issue.title == '[staging-op] relay-native-CM' && 'CM' || 'CG') || inputs.market }}
       DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
       E2E_STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
