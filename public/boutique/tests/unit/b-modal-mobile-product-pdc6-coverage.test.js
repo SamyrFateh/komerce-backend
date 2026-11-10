@@ -240,6 +240,7 @@ describe('b-modal-mobile-product — PDC-6 renderer coverage closure', () => {
     expect(buildCarouselSlides).toHaveBeenCalledWith({
       name: 'Robe Dubaï',
       images: ['/selected-1.jpg', '/selected-2.jpg'],
+      media: selection.selected_media,
       image_url: '/selected-1.jpg',
     });
     expect(goToSlide).toHaveBeenCalledWith(0);
@@ -296,6 +297,7 @@ describe('b-modal-mobile-product — PDC-6 renderer coverage closure', () => {
     expect(buildCarouselSlides).toHaveBeenCalledWith({
       name: 'Produit simple',
       images: ['/fallback.jpg'],
+      media: detail.media,
       image_url: '/fallback.jpg',
     });
 
