@@ -35,6 +35,7 @@ const express = require('express');
 const router  = express.Router();
 const { authenticate, requireRole } = require('../../middleware/auth');
 const catalogApproval = require('../../services/catalog-approval');
+const { requireCatalogGlobalAuthority } = require('../../middleware/require-catalog-global-authority');
 const db = require('../../db');
 const { certifyCatalogProductWithVisualEvidence } = require('../../services/catalog-refinery-combined-proof');
 const { recordVisualFrReview } = require('../../services/catalog-visual-fr-human-review-write');
@@ -51,7 +52,7 @@ router.get('/catalog/approval-queue', ...guard, async (req, res, next) => {
 });
 
 // Read-only evidence for the refinery review UI; never publishes a candidate.
-router.get('/catalog/approval-queue/:id/visual-fr-proof', ...guard, async (req, res, next) => {
+router.get('/catalog/approval-queue/:id/visual-fr-proof', ...guard, requireCatalogGlobalAuthority, async (req, res, next) => {
   try {
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(req.params.id)) {
       return res.status(400).json({ code: 'INVALID_PRODUCT_ID' });
@@ -63,7 +64,7 @@ router.get('/catalog/approval-queue/:id/visual-fr-proof', ...guard, async (req, 
 });
 
 // Separate explicit human review action; never changes product publication state.
-router.post('/catalog/approval-queue/:id/media/:mediaId/visual-fr-review', ...guard, async (req, res, next) => {
+router.post('/catalog/approval-queue/:id/media/:mediaId/visual-fr-review', ...guard, requireCatalogGlobalAuthority, async (req, res, next) => {
   try {
     const result = await recordVisualFrReview(db, {
       productId: req.params.id,
