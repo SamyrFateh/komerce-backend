@@ -284,6 +284,18 @@ test('Validation Catalogue : la préparation française et le contrôle sont dis
   expect(index).toContain('catalog-workspace.js?v=261108-quality-freeze-1');
 });
 
+test('G6 : corriger la fiche française ne publie jamais automatiquement le Catalogue', () => {
+  const start=ui.indexOf('async function finishCatalogueAfterCorrection(context, row)');
+  const end=ui.indexOf('function wrapTable(',start);
+  expect(start).toBeGreaterThan(0);
+  const helper=ui.slice(start,end);
+  expect(helper).toContain('?diagnose_product_ref=');
+  expect(helper).not.toContain("'/approve'");
+  expect(helper).toContain('Validation Catalogue humaine et distincte requise');
+  expect(ui).toContain("actions.appendChild(btn);");
+  expect(ui).toContain("action === 'inspector-prepare-fr' && issues.includes('editorial_to_complete')");
+});
+
 test('Examiner V4 : aucun double Enregistrer/Confirmer visible et conformité garantie par serveur', () => {
   expect(ui).toContain('save.hidden = true;');
   expect(ui).toContain('validate.hidden = true;');
