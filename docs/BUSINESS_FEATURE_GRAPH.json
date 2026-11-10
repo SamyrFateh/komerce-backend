@@ -5745,6 +5745,13 @@
       {
         "feature": "dashboard",
         "category": "dash",
+        "declared": "dashboards/canonical/css/catalog-workspace-wide-v1.css",
+        "resolvedPath": "public/dashboards/canonical/css/catalog-workspace-wide-v1.css",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
         "declared": "dashboards/canonical/css/operations-workspace.css",
         "resolvedPath": "public/dashboards/canonical/css/operations-workspace.css",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
