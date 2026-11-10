@@ -14,9 +14,10 @@ const {test,expect}=require('@playwright/test');
 const db=require('../../db');
 const {snapshot,assess}=require('../../scripts/recette/staging-local-stock-real-relay-cert');
 const BASE='https://komerce-backend-production.up.railway.app';
+const MARKET=process.env.G4_MARKET;
 const OUT='test-results/g4-staging';
 const report={schema:'g4-two-relays-real-staging-chromium/1',
-  verdict:'G4_NOT_PROVEN',market:'KM',session_count:2,checks:[],errors:[],http:[],
+  verdict:'G4_NOT_PROVEN',market:MARKET,session_count:2,checks:[],errors:[],http:[],
   chromium:true,postgresql:true,runtime_sha:process.env.E2E_EXPECTED_DEPLOY_SHA};
 function check(ok,key,detail) {
   report.checks.push({key,pass:!!ok,...(detail==null?{}:{detail})});
@@ -27,18 +28,18 @@ function save() {
   fs.writeFileSync(path.join(OUT,'g4-ab-chromium.json'),JSON.stringify(report,null,2)+'\n');
 }
 async function login(page,actor){
-  await page.goto('/login.html?next='+encodeURIComponent('/admin/relais-live?view=execute&market=KM'));
+  await page.goto('/login.html?next='+encodeURIComponent('/admin/relais-live?view=execute&market='+MARKET'));
   await page.locator('#email').fill(actor.email);
   await page.locator('#password').fill(actor.password);
   const res=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/auth/login'&&r.request().method()==='POST');
   await page.locator('#btn-submit').click();
   check((await res).status()===200,'login-'+actor.label);
   await page.waitForURL(u=>u.pathname==='/admin/relais-live'&&
-    u.searchParams.get('market')==='KM',{timeout:25000});
+    u.searchParams.get('market')===MARKET,{timeout:25000});
   await expect(page.locator('[data-workspace-mode="relay-execution"]')).toBeVisible({timeout:25000});
 }
 async function workspaceReadback(page,ownRef,otherRef,label,phase) {
-  const r=await page.request.get('/api/admin/workspaces/operations/market/KM');
+  const r=await page.request.get('/api/admin/workspaces/operations/market/'+MARKET);
   check(r.status()===200,'workspace-api-'+label+'-'+phase,r.status());
   const body=await r.json();
   const serial=JSON.stringify(body);
@@ -86,7 +87,7 @@ async function receipt(page,actor,other) {
   return ownAfter.parcels[0].reference;
 }
 async function collect(page,actor,other,ownParcel,foreignParcel) {
-  const url='/api/admin/workspaces/operations/market/KM/parcels/'+
+  const url='/api/admin/workspaces/operations/market/'+MARKET+'/parcels/'+
     encodeURIComponent(foreignParcel)+'/collect';
   const before=await snapshot(db,other.orderId);
   const denied=await page.request.post(url,{data:{}});
@@ -94,14 +95,14 @@ async function collect(page,actor,other,ownParcel,foreignParcel) {
   check(denied.status()===403,'cross-pickup-403-'+actor.label,denied.status());
   check(JSON.stringify(await snapshot(db,other.orderId))===JSON.stringify(before),
     'cross-pickup-no-other-write-'+actor.label);
-  await page.goto('/admin/relais-live?view=remises&market=KM');
+  await page.goto('/admin/relais-live?view=remises&market='+MARKET');
   await expect(page.locator('#relay-execution-collect')).toBeVisible({timeout:25000});
   const row=page.locator('#relay-execution-collect tr').filter({hasText:ownParcel});
   const action=row.locator('[data-workspace-action="collect"]');
   await expect(action).toBeVisible({timeout:25000});
   check((await page.locator('#relay-execution-collect tr').filter({hasText:foreignParcel}).count())===0,
     'foreign-collect-hidden-ui-'+actor.label);
-  const ownRoute='/api/admin/workspaces/operations/market/KM/parcels/'+encodeURIComponent(ownParcel)+'/collect';
+  const ownRoute='/api/admin/workspaces/operations/market/'+MARKET+'/parcels/'+encodeURIComponent(ownParcel)+'/collect';
   const response=page.waitForResponse(r=>new URL(r.url()).pathname===ownRoute&&r.request().method()==='POST');
   await action.click();
   const res=await response;
@@ -114,6 +115,7 @@ async function collect(page,actor,other,ownParcel,foreignParcel) {
 }
 test('G4 staging KM : A et B, deux navigateurs isolés, refus croisés et réception/remise vraies',async({browser})=>{
   const labels=['A','B'];const actors={};
+  check(['KM','CM','CG'].includes(MARKET),'permitted-staging-market');
   const contexts=[];
   try{
     check(process.env.HUB_V1_STAGING_DISPOSABLE_MODE==='1','disposable-owner-mode');
@@ -144,7 +146,7 @@ test('G4 staging KM : A et B, deux navigateurs isolés, refus croisés et récep
     await collect(pages.A,actors.A,actors.B,pA,pB);
     await collect(pages.B,actors.B,actors.A,pB,pA);
     check(report.errors.length===0,'no-js-errors',report.errors);
-    report.verdict='G4_STAGING_KM_TWO_RELAIS_CHROMIUM_HTTP_PG_PASS';
+    report.verdict='G4_STAGING_TWO_RELAIS_CHROMIUM_HTTP_PG_PASS';
     report.run8s=[process.env.G4_A_RUN8,process.env.G4_B_RUN8];
     report.agents=2;report.relais=2;
     report.refusals=report.http.filter(x=>x.operation.startsWith('cross')).length;
