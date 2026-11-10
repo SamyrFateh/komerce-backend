@@ -31,7 +31,7 @@ function mockDb({ product } = {}) {
   const q = {
     query: jest.fn(async (sql, params) => {
       calls.push({ sql, params });
-      if (sql.startsWith('SELECT content_source, source_locale FROM products')) {
+      if (sql.startsWith('SELECT content_source, source_locale, name_source, description_source FROM products')) {
         return { rows: product ? [{ ...product }] : [] };
       }
       if (sql.includes('INSERT INTO catalog_field_overrides')) {
@@ -191,6 +191,29 @@ describe('upsertOverrides (batch)', () => {
       description: 'Bluetooth headphones for daily use with the best sound and the battery for all day.',
     })).rejects.toMatchObject({ code: 'FRENCH_NOT_DETECTED', status: 422 });
     expect(calls.filter((c) => /INSERT|UPDATE/.test(c.sql))).toHaveLength(0);
+  });
+
+  it('G6 : refuse le titre brut anglais malgré une description française pour bloquer la validation prématurée', async () => {
+    const source = {id:PRODUCT_ID,content_source:'connector_raw',source_locale:'en',
+      name_source:'American Retro Pickle Green Short Sleeve Shirt',
+      description_source:'Product information: Cotton, short sleeve'};
+    const {q,calls}=mockDb({product:source});
+    await expect(upsertOverrides(q,PRODUCT_ID,{
+      name:source.name_source,
+      description:'Chemise pour femme à manches courtes, dont la matière annoncée est le coton.'}
+    )).rejects.toMatchObject({code:'SOURCE_TEXT_NOT_TRANSLATED',status:422});
+    expect(calls.some(c=>/INSERT INTO|UPDATE products/.test(c.sql))).toBe(false);
+  });
+
+  it('G6 : refuse la description brute du fournisseur malgré un titre français', async () => {
+    const source={id:PRODUCT_ID,content_source:'connector_raw',source_locale:'en',
+      name_source:'Printed dress',description_source:'Product information: A-line skirt, long'};
+    const {q,calls}=mockDb({product:source});
+    await expect(upsertOverrides(q,PRODUCT_ID,{
+      name:'Robe longue pour femme à coupe évasée',
+      description:source.description_source
+    })).rejects.toMatchObject({code:'SOURCE_TEXT_NOT_TRANSLATED',status:422});
+    expect(calls.some(c=>/INSERT INTO|UPDATE products/.test(c.sql))).toBe(false);
   });
 
   it('C3 : produit déjà français (locale fr) ou sans lignage connecteur → pas de contrôle de langue', async () => {

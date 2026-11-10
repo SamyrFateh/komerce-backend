@@ -115,14 +115,23 @@ async function run(env=process.env){
       record.before={content_source:before.content_source,needs_review:before.needs_review,
         lifecycle_status:before.lifecycle_status,is_active:before.is_active,
         signed_french_overrides:before.signed_french_overrides};
+      let partialFrenchTitle=false;
       if(before.content_source==='manual' && before.needs_review===false){
-        if(before.name!==plan.name||before.description!==plan.description)
-          throw Error('PREVIOUS_DIFFERENT_MANUAL_REVIEW:'+plan.ref);
-        record.status='ALREADY_PREPARED_EXACT_MATCH';
-        continue;
-      }
-      if(before.content_source!=='connector_raw'||before.needs_review!==true)
+        if(before.name===plan.name&&before.description===plan.description){
+          record.status='ALREADY_PREPARED_EXACT_MATCH';
+          continue;
+        }
+        // First real Chromium attempt saved the translated description while
+        // the original English source title was still in the inline field.
+        // Recover ONLY this exact observed partial state through the human UI.
+        if(before.name!==plan.sourceName||before.description!==plan.description
+          ||Number(before.signed_french_overrides)<2)
+            throw Error('PREVIOUS_DIFFERENT_MANUAL_REVIEW:'+plan.ref);
+        partialFrenchTitle=true;
+        record.partial_french_repair=true;
+      }else if(before.content_source!=='connector_raw'||before.needs_review!==true){
         throw Error('EXPECTED_RAW_FRENCH_CANDIDATE:'+plan.ref);
+      }
       const context=await browser.newContext({viewport:{width:1440,height:900},locale:'fr-FR'});
       try{
         const login=await context.request.post(ORIGIN+'/api/auth/login',
@@ -156,22 +165,41 @@ async function run(env=process.env){
         const open=row.locator('[data-workspace-action="open-catalog-inspector"]');
         if(await open.count()!==1)throw Error('INSPECTOR_BUTTON_NOT_UNIQUE');
         await open.click();
-        const name=page.locator('[data-catalog-quick-field="name"]');
-        const description=page.locator('[data-catalog-quick-field="description"]');
+        let name=page.locator('[data-catalog-quick-field="name"]');
+        let description=page.locator('[data-catalog-quick-field="description"]');
+        let mode='inline';
+        if(await name.count()!==1 || partialFrenchTitle){
+          // Canonical editor remains explicitly available for a source-linked
+          // candidate, even after an incomplete previous manual preparation.
+          const edit=page.locator('[data-workspace-action="inspector-prepare-fr"]');
+          if(await edit.count()!==1)throw Error('REPAIR_FR_EDITOR_NOT_FOUND:'+plan.ref);
+          await edit.click();
+          mode='dialog';
+          name=page.locator('[data-catalog-fr-field="name"]');
+          description=page.locator('[data-catalog-fr-field="description"]');
+        }
+        record.editor_mode=mode;
         await name.waitFor({state:'visible',timeout:15000});
         await description.waitFor({state:'visible',timeout:15000});
         await page.screenshot({path:path.join(OUT,plan.ref+'-before.png'),
           fullPage:false,timeout:12000});
         record.screenshots.push(plan.ref+'-before.png');
-        // Actual keyboard/edit field gestures. First blur may legitimately fail
-        // French-language guard while the other field still contains English.
-        await description.fill(plan.description);
-        await name.click();
-        await page.waitForTimeout(1100);
-        await name.fill(plan.name);
+        if(partialFrenchTitle){
+          if(await name.inputValue()!==plan.sourceName
+            ||await description.inputValue()!==plan.description)
+              throw Error('PARTIAL_UI_SOURCE_DIFFERENT_FROM_PG');
+          await name.fill(plan.name);
+        }else{
+          // Field-level blur with English source should now be REFUSED by the
+          // stricter backend before the fully translated second field is saved.
+          await description.fill(plan.description);
+          await name.click();
+          await page.waitForTimeout(850);
+          await name.fill(plan.name);
+        }
         const postOK=page.waitForResponse(resp=>resp.request().method()==='POST'
           &&new URL(resp.url()).pathname===expectedPath&&resp.status()===200,
-          {timeout:20000});
+          {timeout:25000});
         await name.press('Tab');
         const saved=await postOK;
         const payload=await saved.json().catch(()=>null);

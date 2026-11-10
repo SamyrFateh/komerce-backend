@@ -490,7 +490,7 @@ test('Catalogue unique : produit remis a correction de catégorie, français et 
   expect(fetchFn).toHaveBeenCalledTimes(2);
 });
 
-test('Finaliser un candidat prêt : blocage serveur visible, aucun POST si non certifié',async()=>{
+test('Finaliser un candidat prêt ouvre la fiche ; refus serveur visible seulement après Contrôler',async()=>{
   const workspace=require('../../public/dashboards/canonical/js/catalog-workspace.js');
   const doc=fakeDocument(),root=doc.createElement('main'),ui=fakeUi(doc);
   const payload=workspacePayload([]);
@@ -508,15 +508,20 @@ test('Finaliser un candidat prêt : blocage serveur visible, aucun POST si non c
   await workspace.mount({root,document:doc,ui,fetch:fetchFn,location:{search:''}});
   const button=root.querySelector('[data-workspace-action="open-catalog-inspector"]');
   expect(button.textContent).toBe('Finaliser');
-  expect(fetchFn.mock.calls.filter(([,opts={}])=>opts.method==='POST')).toHaveLength(0);
   await button.click();
   const panel=root.querySelector('[data-catalog-product-inspector="KPR-000447"]');
   expect(panel).not.toBeNull();
-  expect(panel.textContent).toContain('Encore nécessaire');
+  expect(panel.querySelector('[data-workspace-action="inspector-prepare-fr"]')).not.toBeNull();
+  expect(fetchFn.mock.calls.filter(([url])=>url.includes('diagnose_product_ref='))).toHaveLength(0);
+  expect(fetchFn.mock.calls.filter(([,opts={}])=>opts.method==='POST')).toHaveLength(0);
+  await panel.querySelector('[data-workspace-action="inspector-check-approval"]').click();
+  expect(panel.textContent).toContain('À compléter');
+  expect(fetchFn.mock.calls.filter(([url])=>url.includes('diagnose_product_ref='))).toHaveLength(1);
+  expect(panel.querySelector('[data-workspace-action="inspector-approve"]')).toBeNull();
   expect(fetchFn.mock.calls.filter(([,opts={}])=>opts.method==='POST')).toHaveLength(0);
 });
 
-test('Finalisation candidate certifiée : GET, approbation auditée, rafraîchissement sans deuxième confirmation',async()=>{
+test('Candidat certifié : ouverture, contrôle, puis clic Valider ET confirmation humaine explicites',async()=>{
   const workspace=require('../../public/dashboards/canonical/js/catalog-workspace.js');
   const doc=fakeDocument(),root=doc.createElement('main'),ui=fakeUi(doc);
   const payload=workspacePayload([]);
@@ -545,10 +550,18 @@ test('Finalisation candidate certifiée : GET, approbation auditée, rafraîchis
   const button=root.querySelector('[data-workspace-action="open-catalog-inspector"]');
   expect(button.textContent).toBe('Finaliser');
   await button.click();
+  let posts=fetchFn.mock.calls.filter(([,opts={}])=>opts.method==='POST');
+  expect(posts).toHaveLength(0);
   expect(confirm).not.toHaveBeenCalled();
-  const calls=fetchFn.mock.calls;
-  expect(calls.filter(([url])=>url.includes('diagnose_product_ref='))).toHaveLength(1);
-  const posts=calls.filter(([,opts={}])=>opts.method==='POST');
+  const panel=root.querySelector('[data-catalog-product-inspector="KPR-000448"]');
+  expect(panel).not.toBeNull();
+  await panel.querySelector('[data-workspace-action="inspector-check-approval"]').click();
+  expect(fetchFn.mock.calls.filter(([url])=>url.includes('diagnose_product_ref='))).toHaveLength(1);
+  expect(panel.querySelector('[data-workspace-action="inspector-approve"]')).not.toBeNull();
+  expect(fetchFn.mock.calls.filter(([,opts={}])=>opts.method==='POST')).toHaveLength(0);
+  await panel.querySelector('[data-workspace-action="inspector-approve"]').click();
+  expect(confirm).toHaveBeenCalledTimes(1);
+  posts=fetchFn.mock.calls.filter(([,opts={}])=>opts.method==='POST');
   expect(posts).toHaveLength(1);
   expect(posts[0][0]).toContain('/api/admin/workspaces/catalog/approval/KPR-000448/approve');
   const refreshed=root.querySelector('[data-product-ref="KPR-000448"]');
@@ -841,7 +854,7 @@ test('Catalogue: la correction française est visible AVANT les coûts et ouvre 
   expect(fetchFn.mock.calls.filter(([,opts={}])=>opts.method==='POST')).toHaveLength(0);
 });
 
-test.each([true, false])('Examiner autosave FR : certification serveur=%s, approbation uniquement si conforme', async (certified) => {
+test.each([true, false])('Examiner autosave FR : certification serveur=%s, approbation humaine toujours distincte', async (certified) => {
   const workspace = require('../../public/dashboards/canonical/js/catalog-workspace.js');
   const doc = fakeDocument(), root = doc.createElement('main'), ui = fakeUi(doc);
   const payload = workspacePayload([]);
@@ -885,7 +898,9 @@ test.each([true, false])('Examiner autosave FR : certification serveur=%s, appro
     '/api/admin/workspaces/catalog/approval/KPR-AUTOSAVE-FR/prepare-fr'
   );
   expect(requests.some(({ url }) => url.includes('diagnose_product_ref=KPR-AUTOSAVE-FR'))).toBe(true);
-  expect(posts.some(({ url }) => url.endsWith('/approve'))).toBe(certified);
+  // G6: an editorial save must NEVER implicitly publish, even if all technical
+  // certification guards already pass. The explicit human button remains separate.
+  expect(posts.some(({ url }) => url.endsWith('/approve'))).toBe(false);
   expect(confirm).not.toHaveBeenCalled();
 });
 

@@ -257,30 +257,23 @@
     }
   }
 
-  // Only an operator-initiated correction may finish Catalogue automatically.
-  // This reuses the canonical server certification + audited approval writers.
-  // Merely opening a dossier (GET) must never mutate a product.
+  // A correction is not a publication decision. Always leave the explicitly
+  // labeled "Valider le Catalogue" gesture to the authorized reviewer.
   async function finishCatalogueAfterCorrection(context, row) {
     if (!row?.product_ref || row.lifecycle_status !== 'candidate' || !row.candidate_ref) return null;
     try {
-      // Méthode explicite : il s'agit d'une lecture, jamais d'un POST.
-      // Les contrôles de contrat API doivent distinguer ce GET du POST d'approbation suivant.
       const diagnosis = await jsonRequest(context.fetch,
         ENDPOINT + '?diagnose_product_ref=' + encodeURIComponent(row.product_ref),
         { method: 'GET' });
       if (diagnosis?.phase !== 'catalog_approval' || diagnosis?.certification?.certified !== true)
-        return null; // unresolved server prerequisites remain visible after reload
-      const result = await jsonRequest(context.fetch,
-        ENDPOINT + '/approval/' + encodeURIComponent(row.product_ref) + '/approve',
-        { method: 'POST' });
-      if (!result?.ok) throw new Error('Approbation Catalogue non acquise.');
+        return null;
       return { message: row.product_ref +
-        ' : toutes les corrections sont conformes. Catalogue approuvé et audité ; aucun marché publié.',
+        ' : corrections conformes. Validation Catalogue humaine et distincte requise ; aucun marché publié.',
         tone: 'positive' };
     } catch (error) {
       return { message: row.product_ref +
-        ' : correction enregistrée, mais approbation Catalogue non acquise : ' +
-        actionErrorMessage(error), tone: 'warning' };
+        ' : correction enregistrée, contrôle à refaire : ' + actionErrorMessage(error),
+        tone: 'warning' };
     }
   }
 
@@ -2497,8 +2490,9 @@
         }
       });
       // Une fiche déjà correcte garde l'édition volontaire dans le menu secondaire.
-      if (issues.includes('editorial_to_complete')) actions.appendChild(btn);
-      else additional.insertBefore(btn, dossierSlot);
+      // Keep the FR editor reachable after an incomplete save or from a
+      // previously reviewed candidate; the inline quick fields may be absent.
+      actions.appendChild(btn);
     }
     // The classification may also be corrected before an issue is raised,
     // but the server still validates the active Boutique pair and operator grant.
@@ -2569,8 +2563,10 @@
     }
     if (inlineEditor) {
       Array.from(actions.children).forEach(button => {
-        if (['inspector-prepare-fr','inspector-classify'].includes(
-          button.getAttribute('data-workspace-action'))) button.hidden = true;
+        const action = button.getAttribute('data-workspace-action');
+        if (action === 'inspector-classify' ||
+            (action === 'inspector-prepare-fr' && issues.includes('editorial_to_complete')))
+          button.hidden = true;
       });
     }
     if (!Array.from(actions.children).some(button => !button.hidden)) {
@@ -2847,41 +2843,13 @@
           main.className = 'kmc-workspace-action kmc-catalog-primary-action';
           actionCell.setAttribute('data-label', readyCandidate ? 'Finaliser' :
             hasMissingContent ? 'Compléter' : 'Consulter');
-          main.addEventListener('click', async () => {
-            if (!readyCandidate) {
-              openProductInspector(context, slot, doc, row, categories);
-              return;
-            }
-            // Un geste de finalisation unique, sans second bouton Enregistrer
-            // ou Confirmer. Le backend contrôle tous ses invariants avant écriture.
-            main.disabled = true;
-            try {
-              const diagnosis = await jsonRequest(context.fetch,
-                ENDPOINT + '?diagnose_product_ref=' + encodeURIComponent(row.product_ref),
-                { method: 'GET' });
-              if (diagnosis?.phase !== 'catalog_approval' ||
-                  diagnosis?.certification?.certified !== true) {
-                const reasons = (diagnosis?.certification?.reasons || [])
-                  .map(certificationReasonLabel);
-                openProductInspector(context, slot, doc, row, categories);
-                const panel = slot.querySelector('[data-catalog-product-inspector]');
-                const feedback = panel?.querySelector('.kmc-catalog-inspector-feedback');
-                if (feedback) feedback.textContent = reasons.length
-                  ? 'Encore nécessaire : ' + reasons.join(' · ')
-                  : 'La certification n’est pas encore acquise.';
-                return;
-              }
-              const approved = await jsonRequest(context.fetch,
-                ENDPOINT + '/approval/' + encodeURIComponent(row.product_ref) + '/approve',
-                { method: 'POST' });
-              if (!approved?.ok) throw new Error('Approbation non confirmée.');
-              await context.reload();
-              setFeedback(context.root, row.product_ref +
-                ' · Catalogue conforme et approuvé. Aucun marché publié.', 'positive');
-            } catch (error) {
-              setFeedback(context.root, 'Finalisation impossible : ' +
-                actionErrorMessage(error), 'critical');
-            } finally { main.disabled = false; }
+          // A "Finaliser" gesture opens the product dossier. Even when the
+          // server certifies all technical prerequisites, this click does not
+          // approve/publish: the human review and explicit confirmation live
+          // behind "Contrôler les prérequis" -> "Valider le Catalogue".
+          // No asynchronous preflight is allowed to hide the edit surface.
+          main.addEventListener('click', () => {
+            openProductInspector(context, slot, doc, row, categories);
           });
           actionCell.appendChild(main);
           statusChip.addEventListener('click', () => main.click());

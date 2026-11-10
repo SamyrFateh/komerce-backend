@@ -59,10 +59,24 @@ async function assertFrenchPreparation(q, productId, fields) {
   const description = fields && fields.description;
   if (name == null && description == null) return;
   const { rows: [product] } = await q.query(
-    'SELECT content_source, source_locale FROM products WHERE id = $1',
+    'SELECT content_source, source_locale, name_source, description_source FROM products WHERE id = $1',
     [productId]
   );
   if (!product || product.content_source !== 'connector_raw' || isFrenchLocale(product.source_locale)) return;
+  // A source-English title or description copied verbatim must not become
+  // "reviewed manual French" merely because the other field is French.
+  // This can occur from the canonical inline editor's per-field blur.
+  const normalized = value => String(value || '').replace(/\s+/g, ' ').trim().toLocaleLowerCase('fr');
+  const unchangedTitle = normalized(product.name_source)
+    && normalized(name) === normalized(product.name_source);
+  const unchangedDescription = normalized(product.description_source)
+    && normalized(description) === normalized(product.description_source);
+  if (unchangedTitle || unchangedDescription) {
+    const err = new Error('Préparation française incomplète : traduire les champs fournisseur originaux avant validation');
+    err.code = 'SOURCE_TEXT_NOT_TRANSLATED';
+    err.status = 422;
+    throw err;
+  }
   const problems = frenchLanguageProblems({ title: name, description });
   if (problems.length) {
     const err = new Error(`Préparation française refusée : ${describeFrenchProblems(problems)}.`);
