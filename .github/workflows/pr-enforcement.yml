@@ -719,6 +719,9 @@ jobs:
       - name: Boutique architecture
         if: needs.changes.outputs.boutique_css == 'true' || needs.changes.outputs.boutique_js == 'true' || needs.changes.outputs.boutique_html == 'true'
         run: node public/boutique/scripts/audit-boutique-arch.js
+      - name: Boutique 360 baseline
+        if: needs.changes.outputs.boutique_js == 'true' || needs.changes.outputs.boutique_html == 'true'
+        run: node scripts/gen-boutique-360.js --check
       - name: Sanitization on added front lines
         if: needs.changes.outputs.boutique_js == 'true'
         env:

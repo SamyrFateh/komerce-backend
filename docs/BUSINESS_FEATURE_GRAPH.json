@@ -1902,6 +1902,13 @@
       {
         "feature": "catalog",
         "category": "services",
+        "declared": "services/catalog-product-quality-service.js",
+        "resolvedPath": "services/catalog-product-quality-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
         "declared": "services/catalog-certification.js",
         "resolvedPath": "services/catalog-certification.js",
         "status": "resolved-in-technical-graph"
@@ -2629,6 +2636,13 @@
       },
       {
         "feature": "catalog",
+        "category": "migrations",
+        "declared": "migrations/400_catalog_product_quality_holds.sql",
+        "resolvedPath": "migrations/400_catalog_product_quality_holds.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
         "category": "config",
         "declared": "config/import-profiles/komerce-test-dummyjson.v1.json",
         "resolvedPath": "config/import-profiles/komerce-test-dummyjson.v1.json",
@@ -3192,6 +3206,13 @@
         "category": "tests",
         "declared": "tests/integration/catalog-stock-sync-decision-real-db.test.js",
         "resolvedPath": "tests/integration/catalog-stock-sync-decision-real-db.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/integration/catalog-product-quality-hold-postgres.test.js",
+        "resolvedPath": "tests/integration/catalog-product-quality-hold-postgres.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -3934,6 +3955,20 @@
         "category": "tests",
         "declared": "tests/unit/product-sellable-service.test.js",
         "resolvedPath": "tests/unit/product-sellable-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/catalog-product-quality-service.test.js",
+        "resolvedPath": "tests/unit/catalog-product-quality-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/catalog-product-quality-guards.test.js",
+        "resolvedPath": "tests/unit/catalog-product-quality-guards.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -4915,6 +4950,13 @@
         "declared": "services/dashboard-admin-context.js",
         "resolvedPath": "services/dashboard-admin-context.js",
         "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "dashboard",
+        "category": "services",
+        "declared": "config/central-transit-roles.js",
+        "resolvedPath": "config/central-transit-roles.js",
+        "status": "resolved-on-disk-no-header"
       },
       {
         "feature": "dashboard",
@@ -12990,6 +13032,13 @@
       {
         "feature": "logistics",
         "category": "migrations",
+        "declared": "migrations/401_relay_product_return_intake.sql",
+        "resolvedPath": "migrations/401_relay_product_return_intake.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "migrations",
         "declared": "migrations/309_hub_placement_guard_exclude_outcomes.sql",
         "resolvedPath": "migrations/309_hub_placement_guard_exclude_outcomes.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -13125,6 +13174,13 @@
         "category": "services",
         "declared": "services/market-transport-sale-rates.js",
         "resolvedPath": "services/market-transport-sale-rates.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "logistics",
+        "category": "services",
+        "declared": "services/market-transport-sale-rate-command.js",
+        "resolvedPath": "services/market-transport-sale-rate-command.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -13417,6 +13473,13 @@
       {
         "feature": "logistics",
         "category": "services",
+        "declared": "services/relay-product-return-intake-service.js",
+        "resolvedPath": "services/relay-product-return-intake-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "logistics",
+        "category": "services",
         "declared": "services/relay-parcel-item-reconciliation.js",
         "resolvedPath": "services/relay-parcel-item-reconciliation.js",
         "status": "resolved-in-technical-graph"
@@ -13634,6 +13697,20 @@
       {
         "feature": "logistics",
         "category": "tests",
+        "declared": "tests/unit/relay-product-return-intake.test.js",
+        "resolvedPath": "tests/unit/relay-product-return-intake.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/integration/relay-return-intake-postgres.test.js",
+        "resolvedPath": "tests/integration/relay-return-intake-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
         "declared": "tests/unit/relay-shipment-parcel-projection.test.js",
         "resolvedPath": "tests/unit/relay-shipment-parcel-projection.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -13650,6 +13727,20 @@
         "category": "tests",
         "declared": "tests/integration/market-transport-sale-rates-postgres.test.js",
         "resolvedPath": "tests/integration/market-transport-sale-rates-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/unit/market-transport-sale-rate-command.test.js",
+        "resolvedPath": "tests/unit/market-transport-sale-rate-command.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/unit/staging-market-transport-sale-rates.test.js",
+        "resolvedPath": "tests/unit/staging-market-transport-sale-rates.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -15195,6 +15286,13 @@
       {
         "feature": "market-delegation",
         "category": "middleware",
+        "declared": "middleware/deny-transitaire-hub.js",
+        "resolvedPath": "middleware/deny-transitaire-hub.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "middleware",
         "declared": "middleware/require-market-delegated-role.js",
         "resolvedPath": "middleware/require-market-delegated-role.js",
         "status": "resolved-in-technical-graph"
@@ -16301,6 +16399,13 @@
       {
         "feature": "orders",
         "category": "services",
+        "declared": "services/relay-return-request-service.js",
+        "resolvedPath": "services/relay-return-request-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "orders",
+        "category": "services",
         "declared": "services/cancel-order-purchase-orders.js",
         "resolvedPath": "services/cancel-order-purchase-orders.js",
         "status": "resolved-in-technical-graph"
@@ -16688,6 +16793,13 @@
         "category": "tests",
         "declared": "tests/unit/dispute-mutation-service.test.js",
         "resolvedPath": "tests/unit/dispute-mutation-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "orders",
+        "category": "tests",
+        "declared": "tests/unit/relay-return-request-service.test.js",
+        "resolvedPath": "tests/unit/relay-return-request-service.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -33021,6 +33133,10 @@
               },
               {
                 "sourceFileId": "middleware/verify-authkey-webhook.js",
+                "targetFile": "middleware/require-non-production.js"
+              },
+              {
+                "sourceFileId": "middleware/verify-authkey-webhook.js",
                 "targetFile": "utils/logger.js"
               },
               {
@@ -33202,6 +33318,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "services/otp-test-mode.js",
+                "targetFile": "middleware/require-non-production.js"
+              },
+              {
                 "sourceFileId": "services/pickup-authorization-service.js",
                 "targetFile": "db.js"
               },
@@ -33224,6 +33344,10 @@
               {
                 "sourceFileId": "routes/auth.js",
                 "targetFile": "middleware/validate.js"
+              },
+              {
+                "sourceFileId": "routes/auth.js",
+                "targetFile": "middleware/require-non-production.js"
               },
               {
                 "sourceFileId": "routes/auth.js",
@@ -34026,6 +34150,10 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "services/catalog-product-quality-service.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "services/catalog-certification.js",
                 "targetFile": "utils/certification-accounting.js"
               },
@@ -34162,6 +34290,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "tests/integration/catalog-product-quality-hold-postgres.test.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "tests/integration/catalog-stock-sync-application-real-db.test.js",
                 "targetFile": "db.js"
               },
@@ -34204,6 +34336,10 @@
               {
                 "sourceFileId": "tests/unit/product-admin-service.test.js",
                 "targetFile": "tests/integration/test-harness/mock-db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/catalog-product-quality-service.test.js",
+                "targetFile": "db.js"
               },
               {
                 "sourceFileId": "tests/unit/catalog-product-detail.test.js",
@@ -34485,6 +34621,10 @@
               },
               {
                 "table": "orders",
+                "mode": "R"
+              },
+              {
+                "table": "disputes",
                 "mode": "R"
               }
             ]
@@ -35920,6 +36060,10 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "services/simulation-visibility.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "services/finance-accounting-workspace.js",
                 "targetFile": "db.js"
               },
@@ -36472,6 +36616,10 @@
                 "targetFile": "services/parcel-security.js"
               },
               {
+                "sourceFileId": "routes/relay-dashboard.js",
+                "targetFile": "services/relay-product-return-intake-service.js"
+              },
+              {
                 "sourceFileId": "tests/unit/admin-facades-route.test.js",
                 "targetFile": "routes/parcel-api-v2.js"
               },
@@ -36711,6 +36859,10 @@
                 "targetFile": "middleware/require-market-delegated-capability.js"
               },
               {
+                "sourceFileId": "routes/hub-dashboard.js",
+                "targetFile": "middleware/deny-transitaire-hub.js"
+              },
+              {
                 "sourceFileId": "routes/relay-dashboard.js",
                 "targetFile": "middleware/require-market-delegated-role.js"
               },
@@ -36794,6 +36946,10 @@
               {
                 "sourceFileId": "routes/hub-dashboard.js",
                 "targetFile": "services/order-status-machine.js"
+              },
+              {
+                "sourceFileId": "routes/relay-dashboard.js",
+                "targetFile": "services/relay-return-request-service.js"
               },
               {
                 "sourceFileId": "tests/unit/admin-orders-route.test.js",
@@ -40432,6 +40588,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "tests/integration/relay-return-intake-postgres.test.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "tests/integration/market-transport-sale-rates-postgres.test.js",
                 "targetFile": "db.js"
               },
@@ -40594,6 +40754,10 @@
               {
                 "sourceFileId": "tests/integration/market-transport-sale-rates-postgres.test.js",
                 "targetFile": "utils/currency.js"
+              },
+              {
+                "sourceFileId": "tests/unit/staging-market-transport-sale-rates.test.js",
+                "targetFile": "services/fx-authority.js"
               }
             ]
           }
@@ -40608,6 +40772,10 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "services/market-transport-sale-rate-command.js",
+                "targetFile": "services/market-delegation-service.js"
+              },
+              {
                 "sourceFileId": "routes/transitaire-api.js",
                 "targetFile": "middleware/require-market-delegated-capability.js"
               },
@@ -40617,7 +40785,15 @@
               },
               {
                 "sourceFileId": "routes/hub.js",
+                "targetFile": "middleware/deny-transitaire-hub.js"
+              },
+              {
+                "sourceFileId": "routes/hub.js",
                 "targetFile": "middleware/require-market-delegated-capability.js"
+              },
+              {
+                "sourceFileId": "tests/unit/market-transport-sale-rate-command.test.js",
+                "targetFile": "services/market-delegation-service.js"
               }
             ]
           }
@@ -41616,6 +41792,10 @@
               {
                 "sourceFileId": "services/market-provisioning-service.js",
                 "targetFile": "services/relais-mutation-service.js"
+              },
+              {
+                "sourceFileId": "routes/admin-market-control-plane.js",
+                "targetFile": "services/market-transport-sale-rate-command.js"
               }
             ]
           },
@@ -42536,6 +42716,10 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "services/authkey-client.js",
+                "targetFile": "middleware/require-non-production.js"
+              },
+              {
                 "sourceFileId": "services/notifications/internals.js",
                 "targetFile": "db.js"
               },
@@ -42826,6 +43010,10 @@
               {
                 "sourceFileId": "services/order-checkout-item-resolution.js",
                 "targetFile": "services/product-sellable-service.js"
+              },
+              {
+                "sourceFileId": "services/relay-return-request-service.js",
+                "targetFile": "services/catalog-product-quality-service.js"
               },
               {
                 "sourceFileId": "services/order-payment-confirmation.js",
@@ -48780,7 +48968,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2281
+        "filesObserved": 2295
       },
       "boutique": {
         "filesObserved": 214,
@@ -50201,6 +50389,48 @@
       "lifecycleOwner": "catalog",
       "resolution": "declared-table-owner"
     },
+    "catalog_product_sale_holds": {
+      "writers": [
+        {
+          "feature": "catalog",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "catalog",
+      "resolution": "declared-table-owner"
+    },
+    "catalog_product_quality_notes": {
+      "writers": [
+        {
+          "feature": "catalog",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "catalog",
+      "resolution": "declared-table-owner"
+    },
+    "disputes": {
+      "writers": [
+        {
+          "feature": "orders",
+          "mode": "W",
+          "declaredOwner": false,
+          "technical": false
+        }
+      ],
+      "readers": [
+        "catalog",
+        "market-delegation"
+      ],
+      "lifecycleOwner": "orders",
+      "resolution": "single-writer"
+    },
     "catalog_stock_sync_state": {
       "writers": [
         {
@@ -51427,6 +51657,19 @@
       "lifecycleOwner": "local-stock",
       "resolution": "single-writer"
     },
+    "relay_product_return_receipts": {
+      "writers": [
+        {
+          "feature": "logistics",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "logistics",
+      "resolution": "declared-table-owner"
+    },
     "carriers": {
       "writers": [
         {
@@ -51523,6 +51766,19 @@
       "resolution": "declared-table-owner"
     },
     "international_shipments": {
+      "writers": [
+        {
+          "feature": "logistics",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "logistics",
+      "resolution": "declared-table-owner"
+    },
+    "market_transport_sale_rates": {
       "writers": [
         {
           "feature": "logistics",
@@ -51968,21 +52224,6 @@
         "market-delegation"
       ],
       "lifecycleOwner": "providers-services",
-      "resolution": "single-writer"
-    },
-    "disputes": {
-      "writers": [
-        {
-          "feature": "orders",
-          "mode": "W",
-          "declaredOwner": false,
-          "technical": false
-        }
-      ],
-      "readers": [
-        "market-delegation"
-      ],
-      "lifecycleOwner": "orders",
       "resolution": "single-writer"
     },
     "market_settlements": {
@@ -52645,8 +52886,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 686,
-        "technicalNodesOwned": 686,
+        "technicalNodesTotal": 691,
+        "technicalNodesOwned": 691,
         "technicalOrphans": 0
       },
       "dash": {

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-01T17:45:48.595Z",
+  "generatedAt": "2026-11-10T15:16:41.818Z",
   "summary": {
     "modules": 103,
     "withHeader": 103,
@@ -16,7 +16,7 @@
     "dynamicEndpoints": 24,
     "ownedEvents": 5,
     "ownershipRed": 0,
-    "ownershipOrange": 1
+    "ownershipOrange": 0
   },
   "modules": [
     {
@@ -2864,7 +2864,7 @@
       "id": "product-image-loading-ux",
       "hasHeader": true,
       "role": "boutique-product-image-loading-ux",
-      "domain": "boutique",
+      "domain": "catalog",
       "layer": "ui-behavior",
       "criticality": null,
       "doctrine": [],
@@ -4352,7 +4352,8 @@
         "b-modal-discovery-detail",
         "b-pager",
         "group-side-cart",
-        "local-stock-badge-mount"
+        "local-stock-badge-mount",
+        "discovery-rail"
       ],
       "modal:composition-synced": [
         "b-modal-desktop-enhancers",
@@ -4461,9 +4462,7 @@
       "/api/shares"
     ],
     "ownershipRed": [],
-    "ownershipOrange": [
-      "modal:closed"
-    ]
+    "ownershipOrange": []
   },
   "ownership": {
     "modal:opened": {
@@ -4522,7 +4521,8 @@
         "b-modal-discovery-detail",
         "b-pager",
         "group-side-cart",
-        "local-stock-badge-mount"
+        "local-stock-badge-mount",
+        "discovery-rail"
       ],
       "actualConsumers": [
         "b-modal-discovery-detail",
@@ -4531,9 +4531,7 @@
         "group-side-cart",
         "local-stock-badge-mount"
       ],
-      "consumerUndeclared": [
-        "discovery-rail"
-      ],
+      "consumerUndeclared": [],
       "payload": "none",
       "payloadMismatches": []
     },
@@ -4588,8 +4586,8 @@
       "msg": "propriété saine"
     },
     "modal:closed": {
-      "level": "orange",
-      "msg": "consommateur non déclaré : discovery-rail"
+      "level": "green",
+      "msg": "propriété saine"
     },
     "modal:composition-synced": {
       "level": "green",

@@ -2988,7 +2988,7 @@
             ]
           },
           "migrations": {
-            "count": 24,
+            "count": 25,
             "files": [
               {
                 "declared": "migrations/098_catalog_refinery_foundation.sql",
@@ -3108,6 +3108,11 @@
               {
                 "declared": "migrations/283_catalog_publication_decision_audit.sql",
                 "resolvedPath": "migrations/283_catalog_publication_decision_audit.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/400_catalog_product_quality_holds.sql",
+                "resolvedPath": "migrations/400_catalog_product_quality_holds.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -3353,7 +3358,7 @@
             ]
           },
           "services": {
-            "count": 83,
+            "count": 84,
             "files": [
               {
                 "declared": "services/boutique-taxonomy-admin.js",
@@ -3443,6 +3448,11 @@
               {
                 "declared": "services/catalog-product-mutation-service.js",
                 "resolvedPath": "services/catalog-product-mutation-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/catalog-product-quality-service.js",
+                "resolvedPath": "services/catalog-product-quality-service.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -3773,7 +3783,7 @@
             ]
           },
           "tests": {
-            "count": 205,
+            "count": 208,
             "files": [
               {
                 "declared": "tests/e2e-api/products.kmf-numeric.e2e.test.js",
@@ -3793,6 +3803,11 @@
               {
                 "declared": "tests/integration/catalog-import-json.integration.test.js",
                 "resolvedPath": "tests/integration/catalog-import-json.integration.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/catalog-product-quality-hold-postgres.test.js",
+                "resolvedPath": "tests/integration/catalog-product-quality-hold-postgres.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -4218,6 +4233,16 @@
               {
                 "declared": "tests/unit/catalog-product-mutation-service.test.js",
                 "resolvedPath": "tests/unit/catalog-product-mutation-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/catalog-product-quality-guards.test.js",
+                "resolvedPath": "tests/unit/catalog-product-quality-guards.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/catalog-product-quality-service.test.js",
+                "resolvedPath": "tests/unit/catalog-product-quality-service.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -4813,7 +4838,7 @@
             ]
           }
         },
-        "totalFiles": 443,
+        "totalFiles": 448,
         "boutiqueManifest": "modal-product",
         "boutiqueFiles": {
           "count": 33,
@@ -5087,6 +5112,14 @@
             "resolution": "declared-table-owner"
           },
           {
+            "table": "catalog_product_quality_notes",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "catalog_product_sale_holds",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "catalog_publication_decision_audit",
             "resolution": "declared-table-owner"
           },
@@ -5196,6 +5229,18 @@
           },
           {
             "table": "catalog_media_visual_fr_reviews",
+            "mode": "RW",
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "catalog_product_quality_notes",
+            "mode": "RW",
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "catalog_product_sale_holds",
             "mode": "RW",
             "lifecycleOwner": "catalog",
             "ownershipStatus": "owner"
@@ -5311,6 +5356,10 @@
           {
             "table": "catalog_glossary",
             "lifecycleOwner": null
+          },
+          {
+            "table": "disputes",
+            "lifecycleOwner": "orders"
           },
           {
             "table": "import_runtime_runs",
@@ -5369,6 +5418,14 @@
             "resolution": "declared-table-owner"
           },
           {
+            "table": "catalog_product_quality_notes",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "catalog_product_sale_holds",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "catalog_publication_decision_audit",
             "resolution": "declared-table-owner"
           },
@@ -5478,6 +5535,18 @@
           },
           {
             "table": "catalog_media_visual_fr_reviews",
+            "mode": "RW",
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "catalog_product_quality_notes",
+            "mode": "RW",
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "catalog_product_sale_holds",
             "mode": "RW",
             "lifecycleOwner": "catalog",
             "ownershipStatus": "owner"
@@ -5593,6 +5662,10 @@
           {
             "table": "catalog_glossary",
             "lifecycleOwner": null
+          },
+          {
+            "table": "disputes",
+            "lifecycleOwner": "orders"
           },
           {
             "table": "import_runtime_runs",
@@ -7804,8 +7877,13 @@
             ]
           },
           "services": {
-            "count": 46,
+            "count": 47,
             "files": [
+              {
+                "declared": "config/central-transit-roles.js",
+                "resolvedPath": "config/central-transit-roles.js",
+                "status": "resolved-on-disk-no-header"
+              },
               {
                 "declared": "public/golden-e2e-cockpit.html",
                 "resolvedPath": "public/golden-e2e-cockpit.html",
@@ -9099,7 +9177,7 @@
             ]
           }
         },
-        "totalFiles": 462,
+        "totalFiles": 463,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -17908,7 +17986,7 @@
             ]
           },
           "migrations": {
-            "count": 14,
+            "count": 15,
             "files": [
               {
                 "declared": "migrations/095_value_density_foundation.sql",
@@ -17978,6 +18056,11 @@
               {
                 "declared": "migrations/394_hub_packed_bag_box_link.sql",
                 "resolvedPath": "migrations/394_hub_packed_bag_box_link.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/401_relay_product_return_intake.sql",
+                "resolvedPath": "migrations/401_relay_product_return_intake.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -18078,7 +18161,7 @@
             ]
           },
           "services": {
-            "count": 45,
+            "count": 47,
             "files": [
               {
                 "declared": "services/auto-parcel.js",
@@ -18158,6 +18241,11 @@
               {
                 "declared": "services/local-relay-receipt-service.js",
                 "resolvedPath": "services/local-relay-receipt-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/market-transport-sale-rate-command.js",
+                "resolvedPath": "services/market-transport-sale-rate-command.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -18276,6 +18364,11 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/relay-product-return-intake-service.js",
+                "resolvedPath": "services/relay-product-return-intake-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/relay-shipment-receipt.js",
                 "resolvedPath": "services/relay-shipment-receipt.js",
                 "status": "resolved-in-technical-graph"
@@ -18308,7 +18401,7 @@
             ]
           },
           "tests": {
-            "count": 86,
+            "count": 90,
             "files": [
               {
                 "declared": "tests/e2e-api/hub-membership-readers.e2e.test.js",
@@ -18393,6 +18486,11 @@
               {
                 "declared": "tests/integration/market-transport-sale-rates-postgres.test.js",
                 "resolvedPath": "tests/integration/market-transport-sale-rates-postgres.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/relay-return-intake-postgres.test.js",
+                "resolvedPath": "tests/integration/relay-return-intake-postgres.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -18513,6 +18611,11 @@
               {
                 "declared": "tests/unit/logistics.test.js",
                 "resolvedPath": "tests/unit/logistics.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/market-transport-sale-rate-command.test.js",
+                "resolvedPath": "tests/unit/market-transport-sale-rate-command.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -18676,6 +18779,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/relay-product-return-intake.test.js",
+                "resolvedPath": "tests/unit/relay-product-return-intake.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/relay-shipment-parcel-projection.test.js",
                 "resolvedPath": "tests/unit/relay-shipment-parcel-projection.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -18713,6 +18821,11 @@
               {
                 "declared": "tests/unit/scans.test.js",
                 "resolvedPath": "tests/unit/scans.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/staging-market-transport-sale-rates.test.js",
+                "resolvedPath": "tests/unit/staging-market-transport-sale-rates.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -18763,7 +18876,7 @@
             ]
           }
         },
-        "totalFiles": 177,
+        "totalFiles": 184,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -18817,6 +18930,10 @@
             "resolution": "declared-table-owner"
           },
           {
+            "table": "market_transport_sale_rates",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "parcel_events",
             "resolution": "declared-table-owner"
           },
@@ -18846,6 +18963,10 @@
           },
           {
             "table": "relais",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "relay_product_return_receipts",
             "resolution": "declared-table-owner"
           },
           {
@@ -18929,6 +19050,12 @@
             "ownershipStatus": "owner"
           },
           {
+            "table": "market_transport_sale_rates",
+            "mode": "RW",
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "owner"
+          },
+          {
             "table": "order_items",
             "mode": "RW",
             "lifecycleOwner": "orders",
@@ -18984,6 +19111,12 @@
           },
           {
             "table": "relais",
+            "mode": "RW",
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "relay_product_return_receipts",
             "mode": "RW",
             "lifecycleOwner": "logistics",
             "ownershipStatus": "owner"
@@ -19113,6 +19246,10 @@
             "resolution": "declared-table-owner"
           },
           {
+            "table": "market_transport_sale_rates",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "parcel_events",
             "resolution": "declared-table-owner"
           },
@@ -19142,6 +19279,10 @@
           },
           {
             "table": "relais",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "relay_product_return_receipts",
             "resolution": "declared-table-owner"
           },
           {
@@ -19225,6 +19366,12 @@
             "ownershipStatus": "owner"
           },
           {
+            "table": "market_transport_sale_rates",
+            "mode": "RW",
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "owner"
+          },
+          {
             "table": "order_items",
             "mode": "RW",
             "lifecycleOwner": "orders",
@@ -19280,6 +19427,12 @@
           },
           {
             "table": "relais",
+            "mode": "RW",
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "relay_product_return_receipts",
             "mode": "RW",
             "lifecycleOwner": "logistics",
             "ownershipStatus": "owner"
@@ -22240,8 +22393,13 @@
             ]
           },
           "middleware": {
-            "count": 3,
+            "count": 4,
             "files": [
+              {
+                "declared": "middleware/deny-transitaire-hub.js",
+                "resolvedPath": "middleware/deny-transitaire-hub.js",
+                "status": "resolved-in-technical-graph"
+              },
               {
                 "declared": "middleware/require-market-delegated-capability.js",
                 "resolvedPath": "middleware/require-market-delegated-capability.js",
@@ -22805,7 +22963,7 @@
             ]
           }
         },
-        "totalFiles": 109,
+        "totalFiles": 110,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -24477,7 +24635,8 @@
           "rattachement aux colis et aux achats fournisseurs",
           "collecte QR au retrait",
           "projection checkout boutique : finalisation d’une sélection en commande, sans ownership de l’encaissement",
-          "workflow de litige (disputes) : statut open/processing/resolved/closed et note de résolution — services/dispute-mutation-service.js, jamais refund_kmf/refund_eur, qui restent hors de ce workflow (voir refunds ci-dessous)"
+          "workflow de litige (disputes) : statut open/processing/resolved/closed et note de résolution — services/dispute-mutation-service.js, jamais refund_kmf/refund_eur, qui restent hors de ce workflow (voir refunds ci-dessous)",
+          "SAV V1 : demande de retour rattachée à un article réellement remis, sans preuve de reprise physique ni mouvement financier"
         ],
         "out": [
           "encaissement du paiement (feature payments)",
@@ -24614,7 +24773,7 @@
             ]
           },
           "services": {
-            "count": 25,
+            "count": 26,
             "files": [
               {
                 "declared": "services/admin-order-refund.js",
@@ -24737,6 +24896,11 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/relay-return-request-service.js",
+                "resolvedPath": "services/relay-return-request-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/verify-qr-collection.js",
                 "resolvedPath": "services/verify-qr-collection.js",
                 "status": "resolved-in-technical-graph"
@@ -24744,7 +24908,7 @@
             ]
           },
           "tests": {
-            "count": 58,
+            "count": 59,
             "files": [
               {
                 "declared": "tests/e2e-api/customer-to-customer.golden.e2e.test.js",
@@ -25032,6 +25196,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/relay-return-request-service.test.js",
+                "resolvedPath": "tests/unit/relay-return-request-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/verify-qr-collection.test.js",
                 "resolvedPath": "tests/unit/verify-qr-collection.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -25049,7 +25218,7 @@
             ]
           }
         },
-        "totalFiles": 98,
+        "totalFiles": 100,
         "boutiqueManifest": "orders-client",
         "boutiqueFiles": {
           "count": 17,
