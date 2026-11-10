@@ -118,6 +118,42 @@ describeDb('Hub V1 fixture cleanup discovery — PostgreSQL 16 isolé',()=>{
     }
   });
 
+  test('un autre dossier qui emprunte produit et relais E2E bloque tout cleanup, sans toucher au dossier étranger',async()=>{
+    const c=await db.getClient();
+    let baseline;
+    try{baseline=await buildCleanupInventory(c,run);}finally{c.release();}
+    expect(baseline.external_fixture_consumers.every(x=>x.external_rows===0)).toBe(true);
+    const foreignUser=id(),foreignOrder=id(),foreignItem=id();
+    await q("INSERT INTO users(id,full_name,email,phone,role) VALUES($1,$2,$3,$4,'client')",
+      [foreignUser,'G2 foreign witness '+run,'g2-foreign-'+run.toLowerCase()+'@komerce.test',
+        '+2698'+String(Date.now()).slice(-7)]);
+    const {rows:[market]}=await q("SELECT id FROM markets WHERE code='KM'");
+    await q("INSERT INTO orders(id,user_id,relais_id,market_id,reference,status,payment_status,payment_mode,total_kmf,total_eur) VALUES($1,$2,$3,$4,$5,'pending','pending','cash_relais',10000,20)",
+      [foreignOrder,foreignUser,ids.relais,market.id,'OUTSIDE-G2-'+run]);
+    await q("INSERT INTO order_items(id,order_id,product_id,quantity,price_kmf,fulfillment_source) VALUES($1,$2,$3,1,10000,'IMPORT')",
+      [foreignItem,foreignOrder,ids.product]);
+    const client=await db.getClient();
+    let contaminated;
+    try{contaminated=await buildCleanupInventory(client,run);}finally{client.release();}
+    expect(contaminated.verdict).toBe('HOLD_SHARED_FIXTURE_PARENTS');
+    expect(contaminated.cleanup_scope_checks.no_external_fixture_consumers).toBe(false);
+    expect(contaminated.external_fixture_consumers).toEqual(expect.arrayContaining([
+      {parent:'products',external_rows:1},
+      {parent:'relais',external_rows:1},
+    ]));
+    expect(contaminated.cleanup_strategy.decision).toBe('RETAIN_FIXTURE_PREFIX_NO_DELETE');
+    expect(contaminated.snapshot_sha256).not.toBe(baseline.snapshot_sha256);
+    expect(contaminated.delete_performed).toBe(false);
+    expect(contaminated.cleanup_certified).toBe(false);
+    const {rows:[rows]}=await q(
+      'SELECT (SELECT COUNT(*)::int FROM orders WHERE id=$1) AS foreign_order,'+
+      ' (SELECT COUNT(*)::int FROM order_items WHERE id=$2) AS foreign_item,'+
+      ' (SELECT COUNT(*)::int FROM orders WHERE reference=ANY($3::text[])) AS fixture_orders',
+      [foreignOrder,foreignItem,exactRefs(run)]
+    );
+    expect(rows).toMatchObject({foreign_order:1,foreign_item:1,fixture_orders:4});
+  });
+
   test('identités exactes, quatre commandes, quatre lignes réelles détectées sans suppression',async()=>{
     const client=await db.getClient();
     let report;

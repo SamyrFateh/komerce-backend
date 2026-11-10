@@ -85,7 +85,7 @@ test('aucune fixture présente : aucune suppression et aucun GO implicite',async
   expect(report.cleanup_certified).toBe(false);
 });
 
-function cleanupClient({orders=roots, owned={}, fkEdges=[], graphEdges=[], children={}, immutable=[]}={}) {
+function cleanupClient({orders=roots, owned={}, fkEdges=[], graphEdges=[], children={}, immutable=[], externalConsumers={}}={}) {
   const statements=[];
   const client={query:jest.fn(async(sql)=>{
     statements.push(sql);
@@ -94,6 +94,11 @@ function cleanupClient({orders=roots, owned={}, fkEdges=[], graphEdges=[], child
     if(sql.includes('FROM pg_constraint c')&&sql.includes('array_to_json'))return{rows:graphEdges};
     if(sql.includes('FROM pg_constraint c')&&sql.includes('AS delete_rule'))return{rows:fkEdges};
     if(sql.includes('FROM pg_trigger t'))return{rows:immutable};
+    // Every scalar SQL count returns exactly one row, as PostgreSQL does.
+    if(sql.includes('COUNT(*)::int AS n FROM order_items oi'))return{rows:[{n:externalConsumers.products||0}]};
+    if(sql.includes('COUNT(*)::int AS n FROM orders o JOIN relais r'))return{rows:[{n:externalConsumers.relais||0}]};
+    if(sql.includes('COUNT(*)::int AS n FROM orders o JOIN users u'))return{rows:[{n:externalConsumers.users||0}]};
+    if(sql.includes('COUNT(*)::int AS n FROM purchase_lines pl'))return{rows:[{n:externalConsumers.purchase_orders||0}]};
     for(const [table, rows] of Object.entries(children)){
       if(sql.includes('FROM public."'+table+'"'))return{rows};
     }
@@ -204,4 +209,39 @@ test('trigger de preuve immuable seulement dans enfant FK potentiel impose RETAI
   expect(report.cleanup_strategy.delete_performed).toBe(false);
   expect(report.cleanup_certified).toBe(false);
   expect(statements.slice(1,-1).every(x=>/^\s*SELECT\b/.test(x))).toBe(true);
+});
+
+test('un produit ou relais de recette utilisé par un dossier étranger impose HOLD_SHARED_FIXTURE_PARENTS',async()=>{
+  const clean=cleanupClient();
+  const borrowed=cleanupClient({externalConsumers:{products:1,relais:2}});
+  const before=await buildCleanupInventory(clean.client,RUN);
+  const after=await buildCleanupInventory(borrowed.client,RUN);
+  expect(before.cleanup_scope_checks.no_external_fixture_consumers).toBe(true);
+  expect(after.cleanup_scope_checks.no_external_fixture_consumers).toBe(false);
+  expect(after.external_fixture_consumers).toEqual([
+    {parent:'products',external_rows:1},
+    {parent:'relais',external_rows:2},
+    {parent:'users',external_rows:0},
+    {parent:'purchase_orders',external_rows:0},
+  ]);
+  expect(after.verdict).toBe('HOLD_SHARED_FIXTURE_PARENTS');
+  expect(after.cleanup_strategy.decision).toBe('RETAIN_FIXTURE_PREFIX_NO_DELETE');
+  expect(after.cleanup_certified).toBe(false);
+  expect(after.delete_performed).toBe(false);
+  expect(before.snapshot_sha256).not.toBe(after.snapshot_sha256);
+  expect(borrowed.statements.filter(x=>x==='ROLLBACK')).toHaveLength(1);
+  expect(borrowed.statements.slice(1,-1).every(x=>/^\s*SELECT\b/.test(x))).toBe(true);
+});
+
+test('les consommateurs externes restent strictement des comptages non identifiants',async()=>{
+  const {client,statements}=cleanupClient({externalConsumers:{users:1,purchase_orders:3}});
+  const out=await buildCleanupInventory(client,RUN);
+  expect(out.verdict).toBe('HOLD_SHARED_FIXTURE_PARENTS');
+  expect(out.external_fixture_consumers).toEqual(expect.arrayContaining([
+    {parent:'users',external_rows:1},{parent:'purchase_orders',external_rows:3},
+  ]));
+  const serialized=JSON.stringify(out.external_fixture_consumers);
+  expect(serialized).not.toContain('email');
+  expect(serialized).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-/i);
+  expect(statements.join('\n')).not.toMatch(/\b(DELETE|TRUNCATE|UPDATE|DROP)\b/i);
 });
