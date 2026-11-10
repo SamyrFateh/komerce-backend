@@ -139,13 +139,16 @@
         const cached = dq.is_cached ? `(cache ${dq.cache_age_seconds}s)` : '(données fraîches)';
         meta.textContent = `Généré ${new Date(dq.generated_at).toLocaleTimeString('fr-FR')} ${cached}`;
         if (dq.warnings && dq.warnings.length) {
-          meta.innerHTML += '<br>⚠️ ' + dq.warnings.join('<br>⚠️ ');
+          dq.warnings.forEach(warning => {
+            meta.appendChild(document.createElement('br'));
+            meta.appendChild(document.createTextNode('⚠️ ' + String(warning)));
+          });
         }
       }
     } catch (err) {
       console.error('[Logistics] error:', err);
       document.getElementById('ops-kpis').innerHTML = `<div class="error-state">
-        ❌ Erreur: ${err.message || 'inconnue'}
+        ❌ Erreur: ${esc(err.message || 'inconnue')}
         ${err.status === 401 ? ' — connectez-vous comme admin' : ''}
       </div>`;
     }
