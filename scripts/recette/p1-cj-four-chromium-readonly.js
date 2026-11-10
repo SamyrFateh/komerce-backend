@@ -174,7 +174,7 @@ async function run(env=process.env){
             const previousImage=navigator.locator('[data-workspace-action="catalog-media-previous"]');
             const progress=page.locator('[data-catalog-media-progress]');
             const initialProgress=String(await progress.innerText());
-            if(!/^\\d+\\/\\d+ images attestées/.test(initialProgress))
+            if(!/^\d+\/\d+ images attestées/.test(initialProgress))
               throw Error('CATALOG_REVIEW_PROGRESS_MISSING:'+ref);
             const figures=gallery.locator('figure');
             const expected=EXPECTED_MEDIA[ref];
