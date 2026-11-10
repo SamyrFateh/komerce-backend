@@ -290,7 +290,7 @@ if (!process.env.DATABASE_URL) {
         'market_cash_destinations.activated_by',
       ]);
       expect(dry.report.fixtures.summary.users_retained_due_to_delegation_audit).toBe(1);
-      expect(dry.report.fixtures.summary.users_kept_unmatched.map((u) => u.role)).toEqual(['market_operator', 'client']);
+      expect(dry.report.fixtures.summary.users_kept_unmatched.map((u) => u.role).sort()).toEqual(['client', 'market_operator']);
       expect(dry.report.scope).toBe('prudent');
     });
 
