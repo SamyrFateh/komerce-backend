@@ -53,8 +53,11 @@ async function login(browser, baseURL, role) {
 
 async function openMarket(page, url) {
   // ERR_ABORTED : une redirection client (login, portail) peut couper la navigation en cours -> on la laisse finir puis on reessaie.
+  const destination = url.startsWith('/admin/workspaces/shipping-customs')
+    ? '/admin/workspaces/shipping-customs?market='+encodeURIComponent(MARKET_CODE)
+    : url;
   for (let attempt = 0; ; attempt++) {
-    try { await page.goto(url, { waitUntil: 'domcontentloaded' }); break; }
+    try { await page.goto(destination, { waitUntil: 'domcontentloaded' }); break; }
     catch (e) { if (attempt >= 3 || !/ERR_ABORTED|interrupted/i.test(String(e.message))) throw e; await page.waitForLoadState('load').catch(() => {}); await page.waitForTimeout(1500); }
   }
   // Expéditions & Douane n'utilise pas toujours le <select> du Workspace
@@ -64,12 +67,27 @@ async function openMarket(page, url) {
     await expect(page).toHaveURL(/\/admin\/workspaces\/shipping-customs(?:\/|\?|$)/, { timeout: 20000 });
     // Le panneau des expéditions n'est créé qu'APRÈS la sélection du marché
     // lorsqu'un sélecteur est présent. Ne jamais attendre le panneau d'abord.
-    const select = page.locator('select').first();
+    const select = page.locator('.kmc-market-context-select');
     if (await select.count()) {
       const marketOption = select.locator('option').filter({ hasText: MARKET_LABEL });
       if (await marketOption.count()) await select.selectOption({ label: MARKET_LABEL });
     }
-    await page.locator('[data-international-journey]').first().waitFor({ timeout: 20000 });
+    try {
+      await page.locator('[data-international-journey]').first().waitFor({ timeout: 20000 });
+    } catch (error) {
+      // Real staging finding: expose the actual shipping API and page route
+      // instead of disguising an unreachable transitaire screen as a PASS.
+      const path = '/api/admin/workspaces/shipping-customs/market/'+MARKET_CODE+'/international';
+      const response = await page.request.get(path).catch(() => null);
+      const status = response ? response.status() : 'NETWORK_ERROR';
+      const capture = await shot(page, 'shipping-journey-unavailable-'+MARKET_CODE);
+      evidence.gestures.push({key:'shipping:journey-unavailable',
+        role:'agent_transitaire', route:'GET '+path,
+        verdict:'CLICK_FAIL',http:status,capture,
+        note:'shipping journey missing from UI, current route '+new URL(page.url()).pathname});
+      save();
+      throw error;
+    }
     await page.waitForLoadState('networkidle').catch(() => {});
     return;
   }
