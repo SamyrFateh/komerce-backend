@@ -841,7 +841,7 @@ test('Catalogue: la correction française est visible AVANT les coûts et ouvre 
   expect(fetchFn.mock.calls.filter(([,opts={}])=>opts.method==='POST')).toHaveLength(0);
 });
 
-test.each([true, false])('Examiner autosave FR : certification serveur=%s, approbation uniquement si conforme', async (certified) => {
+test.each([true, false])('Examiner autosave FR : certification serveur=%s, approbation humaine toujours distincte', async (certified) => {
   const workspace = require('../../public/dashboards/canonical/js/catalog-workspace.js');
   const doc = fakeDocument(), root = doc.createElement('main'), ui = fakeUi(doc);
   const payload = workspacePayload([]);
@@ -885,7 +885,9 @@ test.each([true, false])('Examiner autosave FR : certification serveur=%s, appro
     '/api/admin/workspaces/catalog/approval/KPR-AUTOSAVE-FR/prepare-fr'
   );
   expect(requests.some(({ url }) => url.includes('diagnose_product_ref=KPR-AUTOSAVE-FR'))).toBe(true);
-  expect(posts.some(({ url }) => url.endsWith('/approve'))).toBe(certified);
+  // G6: an editorial save must NEVER implicitly publish, even if all technical
+  // certification guards already pass. The explicit human button remains separate.
+  expect(posts.some(({ url }) => url.endsWith('/approve'))).toBe(false);
   expect(confirm).not.toHaveBeenCalled();
 });
 
