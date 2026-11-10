@@ -67,11 +67,29 @@ test('disposable relay actor is marked using the official E2E identity writer on
   expect(p).toContain("actor.role!=='agent_relais'");
   expect(p).toContain("String(scope.relais_id)!==String(before.order.relais_id)");
   expect(p).toContain("require('./staging-e2e-provision')");
-  expect(p).toContain("await markE2eTestAccount(markerClient,");
+  expect(p).toContain("await provision.markE2eTestAccount(grantClient,");
   expect(p).toContain("userId:actor.id,actorId:proof.fixture.users.admin.id");
   expect(p).toContain("await isE2eTestAccount(actor.id)");
   expect(p).not.toContain('INSERT INTO e2e_test_accounts');
   expect(p).not.toContain('UPDATE orders SET');
+});
+
+test('pickup actor has only canonical capabilities in ACTIVE KM assignment',()=>{
+  const p=read(PREP);
+  expect(p).toContain("assignments.resolveOrCreateAssignment(grantClient,{");
+  expect(p).toContain("marketId:before.order.market_id,marketCode:'KM'");
+  expect(p).toContain("await provision.ensureRelayAgentMembership(grantClient,{delegation},{");
+  expect(p).toContain("provision.RELAY_AGENT_CAPABILITIES.slice().sort()");
+  expect(p).toContain('assignment_capability_ceiling');
+  expect(p).toContain("await grantClient.query('BEGIN')");
+  expect(p).toContain("await grantClient.query('COMMIT')");
+  expect(p).toContain("await grantClient.query('ROLLBACK')");
+  expect(p).toContain('G3_LOCAL_RELAY_MEMBERSHIP_PROOF_FAILED');
+  expect(p).toContain("ma.status='ACTIVE'");
+  expect(p).toContain("am.status='ACTIVE'");
+  expect(p).not.toContain('INSERT INTO assignment_memberships');
+  expect(p).not.toContain('UPDATE market_operating_assignments');
+  expect(p).not.toContain('session_replication_role');
 });
 
 test('local config rejects missing target proof and preserves staging-only Playwright config',()=>{
