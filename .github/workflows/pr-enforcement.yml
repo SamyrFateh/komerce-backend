@@ -349,6 +349,13 @@ jobs:
           cache: npm
       - run: npm ci
 
+      # A backend PR can touch Boutique source. The strict coverage gate
+      # measures real Jest coverage in each source workspace, not root-only.
+      # Installing the Boutique test runner prevents a false non-measurable veto.
+      - name: Install Boutique Jest for strict touched-tests measurement
+        if: needs.changes.outputs.boutique_js == 'true' && needs.changes.outputs.unit_repair_only != 'true'
+        run: npm --prefix public/boutique ci --ignore-scripts --no-audit --no-fund
+
       # ── Touched-tests (ex pr-governance.yml) ─────────────────────────────────
       # Vérifie que tout code touché a un signal test. --strict active la
       # complétion au contact (couverture Jest). Nécessite npm ci, donc ici

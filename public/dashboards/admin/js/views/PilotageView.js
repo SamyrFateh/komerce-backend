@@ -158,10 +158,12 @@
       console.error('[pilotage] error:', err);
       const main = rootEl.querySelector('#pilotage-kpis');
       if (main) {
-        main.innerHTML = `<div class="error-state">
-          ❌ Erreur de chargement: ${err.message || 'inconnue'}
-          ${err.status === 401 ? ' — connectez-vous comme admin' : ''}
-        </div>`;
+        // B2: never interpolate server errors in innerHTML.
+        const errorState = document.createElement('div');
+        errorState.className = 'error-state';
+        errorState.textContent = '❌ Erreur de chargement: ' + (err.message || 'inconnue') +
+          (err.status === 401 ? ' — connectez-vous comme admin' : '');
+        main.replaceChildren(errorState);
       }
     }
   }

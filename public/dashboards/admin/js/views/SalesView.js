@@ -778,12 +778,21 @@
     } catch (err) {
       const isApiError = typeof KmcApi !== 'undefined' && err instanceof KmcApi.ApiError;
       kpisEl.innerHTML = '';
-      sectionsEl.innerHTML = `
-        <div class="error-state">
-          <strong>Erreur lors du chargement des ventes</strong><br>
-          ${err.message || String(err)}
-          ${isApiError && err.status === 401 ? '<br><em>Session expirée — rechargez la page.</em>' : ''}
-        </div>`;
+      // B2: DOM nodes preserve the error heading while treating API text as inert.
+      const errorState = document.createElement('div');
+      errorState.className = 'error-state';
+      const heading = document.createElement('strong');
+      heading.textContent = 'Erreur lors du chargement des ventes';
+      errorState.appendChild(heading);
+      errorState.appendChild(document.createElement('br'));
+      errorState.appendChild(document.createTextNode(err.message || String(err)));
+      if (isApiError && err.status === 401) {
+        errorState.appendChild(document.createElement('br'));
+        const hint = document.createElement('em');
+        hint.textContent = 'Session expirée — rechargez la page.';
+        errorState.appendChild(hint);
+      }
+      sectionsEl.replaceChildren(errorState);
       console.error('[SalesView]', err);
     }
   }

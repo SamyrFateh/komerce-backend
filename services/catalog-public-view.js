@@ -8,7 +8,7 @@
  * @outputs       public_product_view
  * @depends       services/supplier-source-resolution.js
  * @used-by       routes/products.js
- * @db-read       catalog_product_sale_holds, catalog_media, markets, product_market_exposure, product_market_price_drafts, product_skus, product_suppliers, product_variants, suppliers
+ * @db-read       catalog_product_sale_holds, catalog_media, catalog_media_visual_fr_reviews, sourcing_candidates, markets, product_market_exposure, product_market_price_drafts, product_skus, product_suppliers, product_variants, suppliers
  * @db-write      (none)
  * @db-txn        (none)
  * @doctrine      docs/doctrine/DOCTRINE_CATALOGUE.md, only_LOCAL_ACTIVE_is_buyer_effective, visible_means_sellable
@@ -76,6 +76,26 @@ function isExcludedPublicProductRef(value) {
 function canonicalProductImageSql(alias = 'p') {
   const a = assertSqlAlias(alias);
   return `COALESCE(
+    (
+      SELECT CASE
+        WHEN vrev.text_presence='PRESENT'
+         AND vrev.source_media_id=cm.source_media_id AND vrev.source_url=cm.url
+         AND COALESCE(vrev.option_values,'{}'::jsonb)=COALESCE(cm.option_values,'{}'::jsonb)
+         AND vrev.french_presentation->>'kind'='localized_image'
+         AND vrev.french_presentation->>'reviewed'='true'
+         AND vrev.french_presentation->>'url' ~* '^https://'
+         AND vrev.french_presentation->>'url' <> cm.url
+        THEN vrev.french_presentation->>'url'
+        ELSE cm.url
+      END
+        FROM catalog_media cm
+        LEFT JOIN catalog_media_visual_fr_reviews vrev ON vrev.media_id=cm.id
+       WHERE cm.product_id=${a}.id AND cm.is_active=TRUE
+         AND EXISTS (SELECT 1 FROM sourcing_candidates ssrc
+                      WHERE ssrc.product_id=${a}.id AND ssrc.state='imported_to_catalog')
+       ORDER BY cm.display_order ASC NULLS LAST, cm.created_at ASC
+       LIMIT 1
+    ),
     CASE
       WHEN NULLIF(BTRIM(${a}.image_url), '') NOT ILIKE 'data:image/%'
         THEN NULLIF(BTRIM(${a}.image_url), '')
@@ -204,6 +224,52 @@ function sellableCatalogUnitSql(alias = 'p') {
  * unité vendable, et — lorsqu'un marché est fourni — est exposé avec un prix
  * LOCAL_ACTIVE sur CE MÊME marché.
  */
+/**
+ * One buyer-facing visibility guard for real source-linked media. Rechecks
+ * every active image even after Catalogue approval, including its identity,
+ * reviewed pixel text and French customer presentation. Legacy catalogues
+ * without a Sourcing lineage retain their existing visibility rules.
+ */
+function sourceVisualFrPublicReadySql(a) {
+  return `NOT EXISTS (
+    SELECT 1 FROM sourcing_candidates src
+    WHERE src.product_id=${a}.id AND src.state='imported_to_catalog'
+      AND (
+        NOT EXISTS (SELECT 1 FROM catalog_media vm
+                    WHERE vm.product_id=${a}.id AND vm.is_active=TRUE)
+        OR EXISTS (
+          SELECT 1 FROM catalog_media vm
+          LEFT JOIN catalog_media_visual_fr_reviews vrev ON vrev.media_id=vm.id
+          WHERE vm.product_id=${a}.id AND vm.is_active=TRUE
+          AND NOT (
+            vm.source_media_id IS NOT NULL AND vm.url ~* '^https://'
+            AND vrev.source_media_id=vm.source_media_id AND vrev.source_url=vm.url
+            AND COALESCE(vrev.option_values,'{}'::jsonb)=COALESCE(vm.option_values,'{}'::jsonb)
+            AND NULLIF(BTRIM(vrev.reviewed_by),'') IS NOT NULL
+            AND vrev.reviewed_at IS NOT NULL
+            AND (
+              vrev.text_presence='NONE'
+              OR (
+                vrev.text_presence='PRESENT'
+                AND NULLIF(BTRIM(vrev.source_transcription),'') IS NOT NULL
+                AND NULLIF(BTRIM(vrev.french_translation),'') IS NOT NULL
+                AND vrev.french_presentation->>'reviewed'='true'
+                AND (
+                  (vrev.french_presentation->>'kind'='caption'
+                   AND vrev.french_presentation->>'text'=vrev.french_translation)
+                  OR
+                  (vrev.french_presentation->>'kind'='localized_image'
+                   AND vrev.french_presentation->>'url' ~* '^https://'
+                   AND vrev.french_presentation->>'url'<>vm.url)
+                )
+              )
+            )
+          )
+        )
+      )
+  )`;
+}
+
 function publicCatalogVisibilitySql(alias = 'p', options = {}) {
   const a = assertSqlAlias(alias);
   const excludedRefs = PUBLIC_CATALOG_EXCLUDED_REF_PREFIXES
@@ -217,6 +283,7 @@ function publicCatalogVisibilitySql(alias = 'p', options = {}) {
     excludedRefs,
     `${canonicalProductImageSql(a)} IS NOT NULL`,
     sellableCatalogUnitSql(a),
+    sourceVisualFrPublicReadySql(a),
   ].filter(Boolean);
 
   if (options.marketCodeParamIndex != null) {

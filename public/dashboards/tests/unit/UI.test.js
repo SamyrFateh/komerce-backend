@@ -51,6 +51,29 @@ describe('UI.js components', () => {
       expect(bare.querySelector('.alert-action')).toBeNull();
     });
 
+
+    it('B2: les données hostiles restent des textes et les URL javascript sont refusées', () => {
+      const hostile = '<img src=x onerror=alert(1)>';
+      const el = window.AlertList.render({
+        level: 'critical', label: hostile, source: hostile, count: hostile,
+        action_url: 'javascript:alert(1)', action_label: hostile,
+      });
+      expect(el.querySelector('img')).toBeNull();
+      expect(el.querySelector('.alert-title').textContent).toBe(hostile);
+      expect(el.querySelector('.alert-meta').textContent).toContain(hostile);
+      expect(el.querySelector('a')).toBeNull();
+
+      const withLink = window.AlertList.render({
+        message: hostile, action_url: '/admin/orders?filter=a&b=1',
+        action_label: hostile,
+      });
+      expect(withLink.querySelector('.alert-action').getAttribute('href')).toBe('/admin/orders?filter=a&b=1');
+      expect(withLink.querySelector('.alert-action').textContent).toBe(hostile);
+      expect(withLink.querySelector('img')).toBeNull();
+      expect(window.AlertList.render({ message: 'safe', action_url: '//evil.test/' }).querySelector('a')).toBeNull();
+      expect(window.AlertList.render({ message: 'safe', action_url: '/\\evil.test/' }).querySelector('a')).toBeNull();
+    });
+
     it('rend empty state ou une liste limitée', () => {
       const root = document.getElementById('root');
       window.AlertList.renderList(root, [], { emptyText: 'RAS' });

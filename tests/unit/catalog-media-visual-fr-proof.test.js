@@ -21,6 +21,13 @@ const REVIEW = {
     reviewed: true,
   },
 };
+test('a source image with an insecure URL can never have a valid visual proof', () => {
+  expect(inspectOne({ ...IMAGE, url: 'http://example.test/image.jpg' },
+    { ...REVIEW, source_url: 'http://example.test/image.jpg' }))
+    .toMatchObject({ state: STATES.BLOCKED_UNREADABLE_OR_UNSUPPORTED, ready: false,
+      reason: 'SOURCE_MEDIA_IDENTITY_OR_URL_MISSING' });
+});
+
 test('an untouched image remains NOT_INSPECTED even with a French-looking alt or source locale', () => {
   expect(inspectOne({ ...IMAGE, alt: 'Câble USB-C', source_locale: 'fr' })).toMatchObject({
     state: STATES.NOT_INSPECTED, ready: false, reason: 'VISUAL_REVIEW_MISSING',
