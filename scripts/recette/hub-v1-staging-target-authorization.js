@@ -13,8 +13,8 @@ const REQUIRED_CHECKS = Object.freeze([
   'DEDICATED_ATOMIC_CHECKOUT_SCOPE','SIMULATED_CHECKOUT_HAS_NO_EXTERNAL_HOOKS',
   'SIMULATED_PO_NO_PROVIDER_OR_NOTIFICATION',
   'SIMULATED_CUSTOMER_PAYMENT_PROVIDER_BYPASS_VERIFIED',
-  'STAGING_FIXTURE_OWNERSHIP_AND_CLEANUP_CERTIFIED',
-  'STAGING_E2E_CROSS_SERVICE_RUNNER_REVIEWED',
+  'STAGING_DISPOSABLE_DATA_MODE_CONFIRMED',
+  'STAGING_EXISTING_RUNNER_OWNER_AUTHORIZED',
 ]);
 function assertApproval({run,env=process.env}={}) {
   if (!RUN.test(String(run||'')) || env.HUB_V1_CERTIFICATION_RUN!==run)
@@ -55,8 +55,9 @@ async function authorizeOfficialStaging({db,run,env=process.env,assessImpl=asses
   if (!Array.isArray(check?.checks) || check.mode!=='READ_ONLY' ||
       check.checks.length!==REQUIRED_CHECKS.length)
     throw Error('STAGING_PREFLIGHT_SHAPE_NOT_REVIEWED');
-  // Une autorisation d'apply ne peut JAMAIS transformer deux HOLD connus en
-  // exemptions : les dix preuves doivent être vraies sur la cible épinglée.
+  // On ne valide pas fictivement une certification de nettoyage future : la
+  // permission de données jetables est propre au staging et au propriétaire.
+  // Les dix conditions réelles, notamment SHA, DB et isolement PSP, restent obligatoires.
   if (check.verdict!=='READY_FOR_EXPLICIT_APPLY_REVIEW')
     throw Error('STAGING_PREFLIGHT_HOLD_BLOCKS_ALL_WRITES');
   const ids=new Set(check.checks.map((c)=>c.id));
