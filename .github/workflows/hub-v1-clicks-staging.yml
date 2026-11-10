@@ -56,6 +56,7 @@ jobs:
       E2E_CLICKS_MARKET: ${{ github.event_name == 'issues' && (github.event.issue.title == '[staging-op] hub-v1-clicks-KM' && 'KM' || github.event.issue.title == '[staging-op] hub-v1-clicks-CM' && 'CM' || 'CG') || inputs.market }}
       HTTP_RUNNER_MARKET: ${{ github.event_name == 'issues' && (github.event.issue.title == '[staging-op] hub-v1-clicks-KM' && 'KM' || github.event.issue.title == '[staging-op] hub-v1-clicks-CM' && 'CM' || 'CG') || inputs.market }}
       HUB_V1_STAGING_DISPOSABLE_MODE: '1'
+      HUB_V1_STAGING_EXISTING_FIXTURE_ACTIONS: '1'
       E2E_CLICKS_ALLOW_DISTRIBUTION: ${{ github.event_name == 'issues' && '1' || '0' }}
       HTTP_RUNNER_BASE_URL: https://komerce-backend-production.up.railway.app
       HTTP_RUNNER_ALLOW_DISTRIBUTION: '0'
