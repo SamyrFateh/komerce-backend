@@ -7,7 +7,7 @@
  * @owner backend-core
  * @purpose Prepare fresh four-order G2 proof only on disposable PG16, then handoff to real localhost Chromium.
  * @db-read orders, purchase_orders, purchase_lines, v_purchase_line_progress
- * @db-write users, dashboard_global_access_grants (ephemeral only), plus canonical Hub V1 service writers
+ * @db-write users, dashboard_global_access_grants, e2e_test_accounts (disposable only); assignment/membership via canonical writers
  * @impact-areas logistics, dashboard, test-only
  */
 'use strict';
@@ -54,6 +54,67 @@ async function main(){
       WHERE revoked_at IS NULL AND user_id=ANY($1::uuid[])`,
     [[proof.fixture.users.hub_agent.id,proof.fixture.users.relay_agent.id,proof.fixture.users.forwarder.id]]);
   if(others.n!==0)throw Error('HUB_LOCAL_CHROMIUM_UNEXPECTED_NONADMIN_GLOBAL_GRANT');
+  // The canonical Operations Workspace intentionally hides all simulated
+  // orders unless the VIEWER is registered in e2e_test_accounts. A Relay
+  // also needs a real, ACTIVE market assignment with exactly two execution
+  // capabilities. Reuse the proven G3 canonical writers; never invent a
+  // role-based bypass, market permission, or broad simulation flag.
+  const provision=require('./staging-e2e-provision');
+  const delegation=require('../../services/market-delegation-service');
+  const assignments=require('../../services/market-operator-provisioning');
+  const {isE2eTestAccount}=require('../../services/simulation-visibility');
+  const expectedCaps=provision.RELAY_AGENT_CAPABILITIES.slice().sort();
+  if(JSON.stringify(expectedCaps)!==JSON.stringify(['execution.parcel.collect','execution.parcel.receive']))
+    throw Error('HUB_LOCAL_CHROMIUM_RELAY_CAPABILITY_DOCTRINE_DRIFT');
+  const relayActor=proof.fixture.users.relay_agent;
+  if(relayActor?.role!=='agent_relais'||!proof.fixture.market_id||!proof.fixture.relay)
+    throw Error('HUB_LOCAL_CHROMIUM_RELAY_IDENTITY_REQUIRED');
+  const grantClient=await db.getClient();
+  let inTransaction=false;
+  try{
+    await grantClient.query('BEGIN');inTransaction=true;
+    const {assignmentId}=await assignments.resolveOrCreateAssignment(grantClient,{
+      marketId:proof.fixture.market_id,marketCode:'KM',
+    });
+    if(!assignmentId)throw Error('HUB_LOCAL_CHROMIUM_KM_ASSIGNMENT_NOT_ACTIVE');
+    const {rows:ceiling}=await grantClient.query(
+      'SELECT capability FROM assignment_capability_ceiling '+
+      'WHERE assignment_id=$1::uuid AND revoked_at IS NULL '+
+      'AND capability=ANY($2::text[]) ORDER BY capability',
+      [assignmentId,expectedCaps]);
+    if(JSON.stringify(ceiling.map(x=>x.capability))!==JSON.stringify(expectedCaps))
+      throw Error('HUB_LOCAL_CHROMIUM_RELAY_CAPABILITY_CEILING_MISSING');
+    await provision.ensureRelayAgentMembership(grantClient,{delegation},{
+      userId:relayActor.id,marketCode:'KM',actorId:fixtureAdmin.id,
+    });
+    for(const key of ['admin','hub_agent','relay_agent']){
+      await provision.markE2eTestAccount(grantClient,{
+        userId:proof.fixture.users[key].id,actorId:fixtureAdmin.id,
+      });
+    }
+    await grantClient.query('COMMIT');inTransaction=false;
+  }catch(error){
+    if(inTransaction)await grantClient.query('ROLLBACK');
+    throw error;
+  }finally{grantClient.release();}
+  // Independent truth: only two ACTIVE Relay capabilities, one membership,
+  // and explicit E2E visibility for the three fixture viewers.
+  const {rows:grants}=await db.query(
+    "SELECT am.id,mc.capability FROM market_operating_assignments ma "+
+    "JOIN assignment_memberships am ON am.assignment_id=ma.id AND am.status='ACTIVE' "+
+    "JOIN membership_capabilities mc ON mc.membership_id=am.id AND mc.revoked_at IS NULL "+
+    "WHERE ma.market_id=$1::uuid AND ma.status='ACTIVE' AND am.user_id=$2::uuid "+
+    "ORDER BY mc.capability",
+    [proof.fixture.market_id,relayActor.id]);
+  if(!grants.length||new Set(grants.map(x=>x.id)).size!==1||
+      JSON.stringify(grants.map(x=>x.capability))!==JSON.stringify(expectedCaps))
+    throw Error('HUB_LOCAL_CHROMIUM_RELAY_MEMBERSHIP_NOT_PROVEN');
+  for(const key of ['admin','hub_agent','relay_agent']){
+    if(!await isE2eTestAccount(proof.fixture.users[key].id))
+      throw Error('HUB_LOCAL_CHROMIUM_E2E_VISIBILITY_NOT_PROVEN:'+key);
+  }
+  if(await isE2eTestAccount(proof.fixture.users.forwarder.id))
+    throw Error('HUB_LOCAL_CHROMIUM_UNRELATED_FORWARDER_MARKED');
   const labels=[
     ['admin','admin','E2E_ADMIN_'],
     ['hub_agent','agent-hub','E2E_AGENT_HUB_'],
@@ -91,6 +152,8 @@ async function main(){
     steps:proof.steps.map(s=>({n:s.n,status:s.status})),
     zero_external_effects:true,
     admin_dashboard_global_grant:true,
+    relay_capabilities:expectedCaps,
+    operations_simulation_visibility:'EXPLICIT_E2E_IDENTITIES_ONLY',
     staging_go:false,chromium_proven:false};
   fs.mkdirSync(OUT,{recursive:true});fs.writeFileSync(FILE,JSON.stringify(state,null,2)+'\n');
   process.stdout.write(JSON.stringify({verdict:'PREPARED_LOCAL_ONLY',run,orders:orders.length,pos:pos.length,steps:7})+'\n');
