@@ -123,3 +123,28 @@ test('independent API readback requires a persisted global grant, not an admin r
   expect(src).toContain('&&report.admin_dashboard_authority_verified');
   expect(src).not.toContain('secrets.RAILWAY_DATABASE_URL');
 });
+
+test('G2 disposable Relay gets exactly canonical execution grants and simulated parcels are visible only to registered fixture actors',()=>{
+  const src=get('scripts/recette/hub-v1-local-chromium-prepare.js');
+  expect(src).toContain('assertEphemeralTarget(process.env.DATABASE_URL,[])');
+  expect(src).toContain("require('./staging-e2e-provision')");
+  expect(src).toContain("assignments.resolveOrCreateAssignment(grantClient,{");
+  expect(src).toContain('marketId:proof.fixture.market_id,marketCode:\'KM\'');
+  expect(src).toContain('provision.RELAY_AGENT_CAPABILITIES.slice().sort()');
+  expect(src).toContain('assignment_capability_ceiling');
+  expect(src).toContain('await provision.ensureRelayAgentMembership(grantClient,{delegation},{');
+  expect(src).toContain("userId:relayActor.id,marketCode:'KM',actorId:fixtureAdmin.id");
+  expect(src).toContain("for(const key of ['admin','hub_agent','relay_agent'])");
+  expect(src).toContain('await provision.markE2eTestAccount(grantClient,{');
+  expect(src).toContain('await isE2eTestAccount(proof.fixture.users[key].id)');
+  expect(src).toContain('HUB_LOCAL_CHROMIUM_RELAY_MEMBERSHIP_NOT_PROVEN');
+  expect(src).toContain('HUB_LOCAL_CHROMIUM_UNRELATED_FORWARDER_MARKED');
+  expect(src).toContain("operations_simulation_visibility:'EXPLICIT_E2E_IDENTITIES_ONLY'");
+  expect(src).toContain("await grantClient.query('BEGIN')");
+  expect(src).toContain("await grantClient.query('COMMIT')");
+  expect(src).toContain("await grantClient.query('ROLLBACK')");
+  expect(src).not.toContain('INSERT INTO e2e_test_accounts');
+  expect(src).not.toContain('INSERT INTO assignment_memberships');
+  expect(src).not.toContain('UPDATE orders SET');
+  expect(src).not.toContain('session_replication_role');
+});
