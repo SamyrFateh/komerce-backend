@@ -40,8 +40,8 @@
  * (CDN, cache, config d'environnement).
  *
  * Usage :
- *   node harnais/geometry/audit-fronts-csp.js            ← rapport
- *   node harnais/geometry/audit-fronts-csp.js --strict    ← exit 1 si > 0 bloqué
+ *   node tools/boutique-harnais/geometry/audit-fronts-csp.js            ← rapport
+ *   node tools/boutique-harnais/geometry/audit-fronts-csp.js --strict    ← exit 1 si > 0 bloqué
  */
 
 const http = require('http');
