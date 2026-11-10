@@ -1,6 +1,6 @@
 'use strict';
 /** @test-kind unit @test-runner jest @test-requires none */
-const {assertStaging,assessProduct,expectedDatabasePin,QUERY} = require('../../scripts/recette/cj-four-km-commercial-readiness');
+const {assertStaging,assessProduct,expectedDatabasePin,cohortIdentitiesMatch,EXPECTED,QUERY} = require('../../scripts/recette/cj-four-km-commercial-readiness');
 const mk = (override={})=>({
   candidate_ref:'KSC-000256',supplier_product_id:'4978336F-15C5-476B-BFE8-C907659B70BB',
   state:'imported_to_catalog',product_id:'x',
@@ -47,4 +47,15 @@ test('foreign or unpinned target rejected',()=>{
 test('SQL audit contains no writes',()=>{
   expect(QUERY).toMatch(/FROM import_runtime_runs/);
   expect(QUERY).not.toMatch(/\b(UPDATE|DELETE|INSERT|TRUNCATE)\b/i);
+});
+
+test('G5 audit isolates KIR-000014 four identities from unrelated staging fixture products',()=>{
+  const rows=[...EXPECTED.keys()].map(candidate_ref=>({candidate_ref}));
+  expect(cohortIdentitiesMatch(rows)).toBe(true); // other 68 staging products are outside QUERY run_ref scope
+  expect(cohortIdentitiesMatch(rows.slice(1))).toBe(false);
+  expect(cohortIdentitiesMatch([...rows,rows[0]])).toBe(false);
+  expect(cohortIdentitiesMatch([...rows.slice(0,3),{candidate_ref:'KSC-UNRELATED'}])).toBe(false);
+  const source=require('node:fs').readFileSync(require('node:path').resolve(__dirname,'../../scripts/recette/cj-four-km-commercial-readiness.js'),'utf8');
+  expect(source).not.toContain('report.total_products !== EXPECTED.size');
+  expect(source).toContain('cohortIdentitiesMatch(rows)');
 });
