@@ -1440,6 +1440,13 @@
       {
         "feature": "catalog",
         "category": "ci",
+        "declared": ".github/workflows/staging-p1-cj-commercial-chromium.yml",
+        "resolvedPath": ".github/workflows/staging-p1-cj-commercial-chromium.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "ci",
         "declared": ".github/workflows/showcase-v2-staging-deploy.yml",
         "resolvedPath": ".github/workflows/showcase-v2-staging-deploy.yml",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -1611,6 +1618,20 @@
         "declared": "utils/categories-cache.js",
         "resolvedPath": "utils/categories-cache.js",
         "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "catalog",
+        "category": "scripts",
+        "declared": "scripts/recette/p1-cj-commercial-chromium.js",
+        "resolvedPath": "scripts/recette/p1-cj-commercial-chromium.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "scripts",
+        "declared": "scripts/recette/p1-cj-media-inspection.json",
+        "resolvedPath": "scripts/recette/p1-cj-media-inspection.json",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
         "feature": "catalog",
@@ -33890,6 +33911,14 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "scripts/recette/p1-cj-commercial-chromium.js",
+                "targetFile": "services/pricing-cdr.js"
+              },
+              {
+                "sourceFileId": "scripts/recette/p1-cj-commercial-chromium.js",
+                "targetFile": "services/pricing-engine.js"
+              },
+              {
                 "sourceFileId": "scripts/aliexpress-incremental-e2e-200.js",
                 "targetFile": "services/pricing-engine.js"
               },
@@ -33992,6 +34021,10 @@
               {
                 "sourceFileId": "utils/categories-cache.js",
                 "targetFile": "utils/logger.js"
+              },
+              {
+                "sourceFileId": "scripts/recette/p1-cj-commercial-chromium.js",
+                "targetFile": "db.js"
               },
               {
                 "sourceFileId": "scripts/allegro-sandbox-check.js",
@@ -48964,7 +48997,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2294
+        "filesObserved": 2295
       },
       "boutique": {
         "filesObserved": 214,

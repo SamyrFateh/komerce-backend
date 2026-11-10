@@ -2433,6 +2433,7 @@
           "modal produit catalogue : un fetch Product Detail, un etat de selection SKU, deux compositions responsive mobile/desktop",
           "raffinerie catalogue : donnee source EN conservee, eligibilite douane/transport (catalog_exclusions), enrichissement FR, overrides traces, approbation humaine unique",
           "contrat de revue du texte incruste dans les medias fournisseur : preuve attachee a la source et variante, traduction FR revue sans dependance IA specifique (verification pure, sans publication automatique)",
+          "recette propriétaire staging : revue Chromium automatisée explicitement attribuée au run GitHub et au compte authentifié sur candidats Sourcing TEST ; jamais une attestation humaine, jamais recevable hors staging, jamais une publication sans geste explicite",
           "projection par lot KIR : préparation Catalogue, publication et visibilité par marché depuis les produits réellement promus ; lecture seule, sans automatiser une décision",
           "Catalogue global maître : registre paginé de toutes les fiches réellement remises depuis Sourcing/Raffinerie ; fournisseurs, taxonomie boutique, écarts actionnables et corrections par autorité sans confondre remise et vente",
           "Catalogue pré-publication : contrôle canonique des prérequis candidat à la demande en lecture seule, sans déclencher de publication ni confondre approbation Catalogue, revue visuelle FR et décisions marchés",
@@ -2733,7 +2734,7 @@
             ]
           },
           "ci": {
-            "count": 24,
+            "count": 25,
             "files": [
               {
                 "declared": ".github/workflows-disabled/README-CJ-SHOWCASE.md",
@@ -2838,6 +2839,11 @@
               {
                 "declared": ".github/workflows/staging-catalog-ops.yml",
                 "resolvedPath": ".github/workflows/staging-catalog-ops.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows/staging-p1-cj-commercial-chromium.yml",
+                "resolvedPath": ".github/workflows/staging-p1-cj-commercial-chromium.yml",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -3188,7 +3194,7 @@
             ]
           },
           "scripts": {
-            "count": 33,
+            "count": 35,
             "files": [
               {
                 "declared": "scripts/aliexpress-500-catalog-sync.js",
@@ -3353,6 +3359,16 @@
               {
                 "declared": "scripts/real-supplier-1000-stress-staging.js",
                 "resolvedPath": "scripts/real-supplier-1000-stress-staging.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "scripts/recette/p1-cj-commercial-chromium.js",
+                "resolvedPath": "scripts/recette/p1-cj-commercial-chromium.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "scripts/recette/p1-cj-media-inspection.json",
+                "resolvedPath": "scripts/recette/p1-cj-media-inspection.json",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -4838,7 +4854,7 @@
             ]
           }
         },
-        "totalFiles": 448,
+        "totalFiles": 451,
         "boutiqueManifest": "modal-product",
         "boutiqueFiles": {
           "count": 33,

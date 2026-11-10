@@ -346,6 +346,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - modal produit catalogue : un fetch Product Detail, un etat de selection SKU, deux compositions responsive mobile/desktop
   - raffinerie catalogue : donnee source EN conservee, eligibilite douane/transport (catalog_exclusions), enrichissement FR, overrides traces, approbation humaine unique
   - contrat de revue du texte incruste dans les medias fournisseur : preuve attachee a la source et variante, traduction FR revue sans dependance IA specifique (verification pure, sans publication automatique)
+  - recette propriétaire staging : revue Chromium automatisée explicitement attribuée au run GitHub et au compte authentifié sur candidats Sourcing TEST ; jamais une attestation humaine, jamais recevable hors staging, jamais une publication sans geste explicite
   - projection par lot KIR : préparation Catalogue, publication et visibilité par marché depuis les produits réellement promus ; lecture seule, sans automatiser une décision
   - Catalogue global maître : registre paginé de toutes les fiches réellement remises depuis Sourcing/Raffinerie ; fournisseurs, taxonomie boutique, écarts actionnables et corrections par autorité sans confondre remise et vente
   - Catalogue pré-publication : contrôle canonique des prérequis candidat à la demande en lecture seule, sans déclencher de publication ni confondre approbation Catalogue, revue visuelle FR et décisions marchés
@@ -446,9 +447,9 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 448 fichier(s) déclaré(s), boutique: 33 fichier(s)
+**Implementation** : 451 fichier(s) déclaré(s), boutique: 33 fichier(s)
   - boutique : 39
-  - ci : 24
+  - ci : 25
   - config : 1
   - dash : 1
   - docs : 19
@@ -456,7 +457,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - migrations : 25
   - routes : 7
   - schemas : 5
-  - scripts : 33
+  - scripts : 35
   - services : 84
   - tests : 208
   - utils : 1
