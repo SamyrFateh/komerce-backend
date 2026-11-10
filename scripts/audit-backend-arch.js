@@ -825,6 +825,28 @@ function checkI15_stateMachineCoherence() {
   }
 }
 
+// ════════════════════════════════════════════════════════════════
+// I-BACK-16 — Identité runtime : KOMERCE_ENV via resolveRuntimeEnvironment()
+// Interdit `process.env.NODE_ENV === 'production'` dans services|routes|middleware
+// (doctrine bootstrap/env.js ; le fallback documenté vit dans utils/auth-cookie.js).
+// ════════════════════════════════════════════════════════════════
+function checkI16_runtimeEnvIdentity() {
+  const pattern = /process\.env\.NODE_ENV\s*===\s*['"]production['"]/;
+  const files = [...walkJs(ROUTES_DIR), ...walkJs(SERVICES_DIR), ...walkJs(path.join(ROOT, 'middleware'))];
+  for (const file of files) {
+    const lines = readFile(file).split('\n');
+    for (let i = 0; i < lines.length; i++) {
+      const t = lines[i].trim();
+      if (pattern.test(lines[i]) && !t.startsWith('//') && !t.startsWith('*')) {
+        violate('I-BACK-16',
+          `${rel(file)}:${i + 1} — test direct de NODE_ENV === 'production'`,
+          "Utiliser resolveRuntimeEnvironment().env (middleware/require-non-production.js, KOMERCE_ENV prioritaire)"
+        );
+      }
+    }
+  }
+}
+
 console.log('\n  🔍  Audit architecture Komerce backend\n');
 
 checkI1_noDuplicates();
@@ -839,6 +861,7 @@ checkI10_noMigrationCollisions();
 checkI11_webhookSignature();
 checkI13_destructiveSql();
 checkI15_stateMachineCoherence();
+checkI16_runtimeEnvIdentity();
 
 // ════════════════════════════════════════════════════════════════
 // RAPPORT
@@ -860,6 +883,7 @@ const RULE_LABELS = {
   'I-BACK-13': 'DELETE/TRUNCATE non borné',
   'I-BACK-14': 'Propriété parcels.status',
   'I-BACK-15': 'Cohérence state machine orders (sources + transitions)',
+  'I-BACK-16': 'Identité runtime (KOMERCE_ENV, pas NODE_ENV)',
 };
 
 if (warnings.length > 0) {
