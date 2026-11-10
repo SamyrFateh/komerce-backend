@@ -162,9 +162,20 @@ async function run(env=process.env){
             // JSON-only / screenshot-only route check. No approval POST here.
             const complementary=page.locator('[data-catalog-complementary-info]');
             await complementary.waitFor({state:'attached',timeout:20000});
-            await complementary.locator(':scope > summary').click();
             const gallery=page.locator('[data-catalog-canonical-gallery]');
+            // New focused UX puts the image reviewer above the technical fold.
+            // Legacy rendering is still supported during controlled deployment.
+            if(!await gallery.isVisible())
+              await complementary.locator(':scope > summary').click();
             await gallery.waitFor({state:'visible',timeout:20000});
+            const navigator=page.locator('[data-catalog-review-navigation]');
+            await navigator.waitFor({state:'visible',timeout:20000});
+            const nextImage=navigator.locator('[data-workspace-action="catalog-media-next"]');
+            const previousImage=navigator.locator('[data-workspace-action="catalog-media-previous"]');
+            const progress=page.locator('[data-catalog-media-progress]');
+            const initialProgress=String(await progress.innerText());
+            if(!/^\\d+\\/\\d+ images attestées/.test(initialProgress))
+              throw Error('CATALOG_REVIEW_PROGRESS_MISSING:'+ref);
             const figures=gallery.locator('figure');
             const expected=EXPECTED_MEDIA[ref];
             const actual=await figures.count();
@@ -175,7 +186,14 @@ async function run(env=process.env){
             row.media_review_probe={status:'INSPECTION_IN_PROGRESS',expected,observed:actual,
               evidence:[],saved_reviews:0,source_image_screenshots:[]};
             for(let i=0;i<actual;i++){
+              if(i>0)await nextImage.click();
               const figure=figures.nth(i);
+              await figure.waitFor({state:'visible',timeout:10000});
+              const positionText=String(await navigator.locator('[data-catalog-media-position]').innerText());
+              if(positionText!=='Image '+(i+1)+' / '+actual)
+                throw Error('MEDIA_NAVIGATION_STEP_DRIFT:'+ref+':'+i);
+              if(i===0 && !await previousImage.isDisabled())
+                throw Error('MEDIA_PREVIOUS_NOT_DISABLED_ON_FIRST:'+ref);
               const image=figure.locator('img');
               await image.scrollIntoViewIfNeeded();
               const imageUrl=await image.getAttribute('src');
@@ -221,8 +239,32 @@ async function run(env=process.env){
                 human_signature_attempt:'EMPTY_REVIEW_REFUSED_NO_WRITE'
               });
             }
+            if(!await nextImage.isDisabled())
+              throw Error('MEDIA_NEXT_NOT_DISABLED_ON_LAST:'+ref);
+            if(actual>1){
+              await previousImage.click();
+              await figures.nth(actual-2).waitFor({state:'visible',timeout:10000});
+              await nextImage.click();
+              await figures.nth(actual-1).waitFor({state:'visible',timeout:10000});
+            }
             if(row.blocked_requests.length!==0)
               throw Error('UNEXPECTED_MEDIA_REVIEW_BUSINESS_MUTATION');
+            // An operator must always be able to leave a 5- or 6-image review.
+            const drawer=page.locator('[data-catalog-product-inspector="'+ref+'"]');
+            await drawer.locator('[data-workspace-action="close-inspector"]').click();
+            if(await drawer.count()!==0 || await page.locator('[data-catalog-inspector-backdrop]').count()!==0)
+              throw Error('MEDIA_DRAWER_CLOSE_BUTTON_FAILED:'+ref);
+            await open.click();
+            await page.locator('[data-catalog-product-inspector="'+ref+'"]').waitFor({state:'visible'});
+            await page.keyboard.press('Escape');
+            if(await drawer.count()!==0 || await page.locator('[data-catalog-inspector-backdrop]').count()!==0)
+              throw Error('MEDIA_DRAWER_ESCAPE_FAILED:'+ref);
+            await open.click();
+            await page.locator('[data-catalog-product-inspector="'+ref+'"]').waitFor({state:'visible'});
+            await page.locator('[data-catalog-inspector-backdrop]').click({position:{x:12,y:100}});
+            if(await drawer.count()!==0 || await page.locator('[data-catalog-inspector-backdrop]').count()!==0)
+              throw Error('MEDIA_DRAWER_BACKDROP_FAILED:'+ref);
+            row.media_review_probe.close_proof=['button','escape','backdrop'];
             row.media_review_probe.status='REAL_CHROMIUM_ALL_MEDIA_INSPECTED_NO_SIGNATURE';
           }else{
             throw Error('CATALOG_INSPECTOR_OPEN_CONTROL_MISSING:'+ref);
