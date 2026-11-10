@@ -300,6 +300,46 @@ async function run(env=process.env){
     }
     for(const ref of REFS)
       await inspect('admin','/admin/workspaces/catalog?search='+ref+'&product_ref='+ref,ref,'catalogue');
+    // Independent responsive check: mobile must have reachable image navigation
+    // and an Escape/close mechanism, with ZERO business writes.
+    {
+      const ref=REFS[0];
+      const context=await browser.newContext({viewport:{width:390,height:844},locale:'fr-FR'});
+      try{
+        const auth=await context.request.post(BASE+'/api/auth/login',{data:{
+          email:env.E2E_ADMIN_EMAIL,password:env.E2E_ADMIN_PASSWORD},timeout:15000});
+        if(auth.status()!==200)throw Error('MOBILE_ADMIN_AUTH_REFUSED');
+        const page=await context.newPage();
+        const blocked=[];
+        await page.route('**/*',route=>{
+          if(['GET','HEAD','OPTIONS'].includes(route.request().method()))return route.continue();
+          blocked.push(route.request().method()+' '+new URL(route.request().url()).pathname);
+          return route.abort('blockedbyclient');
+        });
+        const response=await page.goto(BASE+'/admin/workspaces/catalog?search='+ref+'&product_ref='+ref,
+          {waitUntil:'domcontentloaded',timeout:35000});
+        if(response?.status()!==200)throw Error('MOBILE_CATALOG_HTTP_NOT_200');
+        const open=page.locator('tr[data-product-ref="'+ref+'"] [data-workspace-action="open-catalog-inspector"]');
+        await open.waitFor({state:'visible',timeout:25000});
+        await open.click();
+        const drawer=page.locator('[data-catalog-product-inspector="'+ref+'"]');
+        await drawer.waitFor({state:'visible',timeout:20000});
+        const gallery=drawer.locator('[data-catalog-canonical-gallery]');
+        await gallery.waitFor({state:'visible',timeout:20000});
+        const first=gallery.locator('figure').first();
+        await first.waitFor({state:'visible',timeout:10000});
+        const next=drawer.locator('[data-workspace-action="catalog-media-next"]');
+        await next.click();
+        await gallery.locator('figure').nth(1).waitFor({state:'visible',timeout:10000});
+        const file='mobile-390px-focused-review-'+safeName(ref)+'.png';
+        await page.screenshot({path:path.join(OUT,file),timeout:15000});
+        await page.keyboard.press('Escape');
+        if(await drawer.count()!==0 || blocked.length>0)
+          throw Error('MOBILE_DRAWER_OR_WRITE_GUARD_FAILED');
+        report.mobile_ux={width:390,height:844,ref,status:'PASS_ONE_IMAGE_AT_A_TIME_ESCAPE',
+          screenshot:file,business_writes:0};
+      }finally{await context.close();}
+    }
     for(const ref of REFS)
       await inspect('market_operator','/admin/workspaces/pricing?market=KM&product_ref='+ref,ref,'pricing');
     await inspect('market_operator','/dashboards/canonical/market-catalog.html?market=KM&product_ref=KPR-000099','KPR-000099','market-catalog');
@@ -315,8 +355,11 @@ async function run(env=process.env){
     const mediaProven=catalogueRows.length===REFS.length &&
       catalogueRows.every(row=>
         row.verdict!=='BLOCKED' &&
-        row.media_review_probe?.status==='REAL_CHROMIUM_ALL_MEDIA_INSPECTED_NO_SIGNATURE') &&
-      report.media_review_evidence_count===16 && report.business_writes===0;
+        row.media_review_probe?.status==='REAL_CHROMIUM_ALL_MEDIA_INSPECTED_NO_SIGNATURE' &&
+        row.media_review_probe?.close_proof?.length===3) &&
+      report.media_review_evidence_count===16 &&
+      report.mobile_ux?.status==='PASS_ONE_IMAGE_AT_A_TIME_ESCAPE' &&
+      report.business_writes===0;
     report.verdict=!mediaProven ? 'CHROMIUM_MEDIA_REVIEW_UI_NOT_PROVEN'
       : buyer?.buyer_matching_product_refs?.length
         ?'PUBLIC_KM_MATCH_REQUIRES_INDEPENDENT_APPROVAL_READBACK'
@@ -338,7 +381,8 @@ async function run(env=process.env){
       business_writes:report.business_writes,
       media_review_evidence_count:report.media_review_evidence_count||0,
       media_review_screenshots:report.media_review_screenshots?.length||0,
-      human_reviews_written:0
+      human_reviews_written:0,
+      mobile_ux:report.mobile_ux?.status||'NOT_PROVEN'
     }));
   }
   return report;
