@@ -10512,13 +10512,6 @@
       {
         "feature": "infrastructure",
         "category": "scripts",
-        "declared": "scripts/check-boutique.mjs",
-        "resolvedPath": "scripts/check-boutique.mjs",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "scripts",
         "declared": "scripts/check-no-market-id-mutation.js",
         "resolvedPath": "scripts/check-no-market-id-mutation.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -48968,7 +48961,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2295
+        "filesObserved": 2294
       },
       "boutique": {
         "filesObserved": 214,

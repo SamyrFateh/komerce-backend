@@ -123,7 +123,6 @@ module.exports = {
       'scripts/boutique-ownership-check.js',
       'scripts/boutique-ownership-full-check.js',
       'scripts/check-boutique-doc-ack.js',
-      'scripts/check-boutique.mjs',
       'scripts/check-no-market-id-mutation.js',
       'scripts/check-schema-freshness.js',
       'scripts/schema-sync-summary.js',

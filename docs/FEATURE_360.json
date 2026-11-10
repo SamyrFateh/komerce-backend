@@ -15000,7 +15000,7 @@
             ]
           },
           "scripts": {
-            "count": 112,
+            "count": 111,
             "files": [
               {
                 "declared": ".claude/settings.json",
@@ -15155,11 +15155,6 @@
               {
                 "declared": "scripts/check-boutique-doc-ack.js",
                 "resolvedPath": "scripts/check-boutique-doc-ack.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
-                "declared": "scripts/check-boutique.mjs",
-                "resolvedPath": "scripts/check-boutique.mjs",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -16160,7 +16155,7 @@
             ]
           }
         },
-        "totalFiles": 399,
+        "totalFiles": 398,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
