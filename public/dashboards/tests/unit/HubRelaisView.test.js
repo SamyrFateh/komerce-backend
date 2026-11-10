@@ -106,6 +106,28 @@ describe('HubRelaisView', () => {
     await new Promise((r) => setTimeout(r, 0));
   }
 
+  it('échappe les données client et destinataire dans les tables Hub/Relais (pas de HTML injecté)', async () => {
+    const malicious = '<img src=x data-injected="yes">';
+    global.KmcApi.getPipeline.mockResolvedValue({
+      pipeline: {
+        pending: { orders: [] },
+        confirmed: { orders: [makeOrder({ client_name: malicious, reference: 'CMD-X' })] },
+        ordered: { orders: [] },
+      },
+    });
+    global.KmcApi.getParcels.mockResolvedValue({
+      parcels: [makeParcel({ recipient_name: malicious, status: 'in_transit' })],
+    });
+    await window.HubRelaisView.render(root);
+    await flush();
+    expect(root.querySelector('img[data-injected="yes"]')).toBeNull();
+    expect(root.textContent).toContain(malicious);
+    root.querySelector('.hr-mode-btn[data-mode="relais"]').click();
+    await flush();
+    expect(root.querySelector('img[data-injected="yes"]')).toBeNull();
+    expect(root.textContent).toContain(malicious);
+  });
+
   it('expose render() (contrat app.js#invokeView)', () => {
     expect(typeof window.HubRelaisView).toBe('object');
     expect(typeof window.HubRelaisView.render).toBe('function');

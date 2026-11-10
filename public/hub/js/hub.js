@@ -41,6 +41,8 @@ const Hub=(()=>{
   function ccls(c){return{complete:'green',partial:'amber',unassigned:'red',empty:'red'}[c]||'gray';}
   function clbl(c){return{complete:'✓ complet',partial:'⚠ partiel',unassigned:'○ non-assigné',empty:'✗ vide'}[c]||c;}
   function kmf(n){return Number(n||0).toLocaleString('fr-FR')+' KMF';}
+  // Toute valeur serveur injectée dans du HTML doit être échappée, y compris en attribut.
+  function esc(value){return String(value ?? '').replace(/[&<>"']/g, ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
 
   function toast(msg,type='',dur=3000){const e=document.getElementById('toast');e.textContent=msg;e.className='show '+(type||'');clearTimeout(e._t);e._t=setTimeout(()=>{e.className='';},dur);}
 
@@ -86,19 +88,19 @@ const Hub=(()=>{
         const cu=document.getElementById('chip-urgent');
         if(urg>0){cu.textContent='⚡ '+urg+' urgent';cu.style.display='';}else cu.style.display='none';
       }
-    }catch(e){el.innerHTML='<div class="empty"><div class="empty-icon">⚠️</div>'+(e.error||'Erreur réseau')+'</div>';}
+    }catch(e){el.innerHTML='<div class="empty"><div class="empty-icon">⚠️</div>' + esc(e.error||'Erreur réseau') +'</div>';}
   }
 
   function setBadge(id,n){const b=document.getElementById(id);if(!b)return;b.textContent=n>0?n:'';b.className=n>0?'tab-badge on':'tab-badge off';}
 
   function card(o){
     const urg=o.age_hours>48,inc=o.open_incidents>0;
-    return `<div class="order-card${inc?' incident':urg?' urgent':''}" data-id="${o.id}">
-      <div class="card-top"><div class="card-ref">${o.reference}</div><div class="card-age">${ago(o.created_at)}</div></div>
-      <div class="card-client">${o.client_name||'—'} · ${o.destination_island||'?'}</div>
+    return `<div class="order-card${inc?' incident':urg?' urgent':''}" data-id="${esc(o.id)}">
+      <div class="card-top"><div class="card-ref">${esc(o.reference)}</div><div class="card-age">${ago(o.created_at)}</div></div>
+      <div class="card-client">${esc(o.client_name||'—')} · ${esc(o.destination_island||'?')}</div>
       <div class="card-meta">
         <span class="badge ${ccls(o.completeness)}">${clbl(o.completeness)}</span>
-        <span class="badge gray">${o.items_qty||0} art.</span>
+        <span class="badge gray">${esc(o.items_qty||0)} art.</span>
         ${o.payment_status==='paid'?'<span class="badge green">payé</span>':'<span class="badge amber">paiement en attente</span>'}
         ${inc?'<span class="badge red">⚠ incident</span>':''}
         ${urg?'<span class="badge red">+48h</span>':''}
@@ -114,11 +116,11 @@ const Hub=(()=>{
       const [kd,wk]=await Promise.all([api.get('/api/hub-dash/dashboard').catch(()=>({})),api.get('/api/hub/stats/week').catch(()=>({}))]);
       const o=kd.orders||{},p=kd.parcels||{},i=kd.incidents||{},ws=wk.summary||{};
       g.innerHTML=`
-        <div class="stat-card hl"><div class="stat-val">${p.shipped_today||0}</div><div class="stat-lbl">Expédiés aujourd'hui</div></div>
+        <div class="stat-card hl"><div class="stat-val">${esc(p.shipped_today||0)}</div><div class="stat-lbl">Expédiés aujourd'hui</div></div>
         <div class="stat-card"><div class="stat-val">${(o.to_prepare||0)+(o.in_preparation||0)}</div><div class="stat-lbl">En attente</div></div>
-        <div class="stat-card"><div class="stat-val">${o.in_preparation||0}</div><div class="stat-lbl">En préparation</div></div>
-        <div class="stat-card"><div class="stat-val">${i.open||0}</div><div class="stat-lbl">Incidents ouverts</div></div>
-        <div class="stat-card" style="grid-column:1/-1"><div class="stat-val" style="font-size:20px">${ws.avg_processing_hours?ws.avg_processing_hours+'h':'—'}</div><div class="stat-lbl">Délai moyen traitement (7j)</div></div>`;
+        <div class="stat-card"><div class="stat-val">${esc(o.in_preparation||0)}</div><div class="stat-lbl">En préparation</div></div>
+        <div class="stat-card"><div class="stat-val">${esc(i.open||0)}</div><div class="stat-lbl">Incidents ouverts</div></div>
+        <div class="stat-card" style="grid-column:1/-1"><div class="stat-val" style="font-size:20px">${esc(ws.avg_processing_hours?ws.avg_processing_hours+'h':'—')}</div><div class="stat-lbl">Délai moyen traitement (7j)</div></div>`;
     }catch(e){g.innerHTML='<div class="empty">Stats indisponibles</div>';}
   }
 
@@ -130,7 +132,7 @@ const Hub=(()=>{
     document.getElementById('detail-title').textContent='Chargement…';
     dp.classList.add('open');
     try{const d=await api.get('/api/hub-dash/orders/'+id);_order=d;renderDetail(d);}
-    catch(e){document.getElementById('detail-body').innerHTML='<div class="empty">'+(e.error||'Erreur')+'</div>';}
+    catch(e){document.getElementById('detail-body').innerHTML='<div class="empty">' + esc(e.error||'Erreur') +'</div>';}
   }
 
   function renderDetail(d){
@@ -140,21 +142,21 @@ const Hub=(()=>{
     const assigned=new Set((d.parcels||[]).flatMap(p=>(p.items||[]).map(i=>i.order_item_id)));
     document.getElementById('detail-body').innerHTML=`
       <div class="section"><div class="section-head">Commande</div><div class="section-body">
-        <div class="info-row"><span class="info-label">Client</span><span class="info-val">${o.client_name||'—'}</span></div>
-        <div class="info-row"><span class="info-label">Téléphone</span><span class="info-val">${o.client_phone||'—'}</span></div>
-        <div class="info-row"><span class="info-label">Destination</span><span class="info-val">${o.destination_island||'—'} · ${o.routing_mode||'—'}</span></div>
-        <div class="info-row"><span class="info-label">Relais</span><span class="info-val">${o.relais_name||'—'}</span></div>
+        <div class="info-row"><span class="info-label">Client</span><span class="info-val">${esc(o.client_name||'—')}</span></div>
+        <div class="info-row"><span class="info-label">Téléphone</span><span class="info-val">${esc(o.client_phone||'—')}</span></div>
+        <div class="info-row"><span class="info-label">Destination</span><span class="info-val">${esc(o.destination_island||'—')} · ${esc(o.routing_mode||'—')}</span></div>
+        <div class="info-row"><span class="info-label">Relais</span><span class="info-val">${esc(o.relais_name||'—')}</span></div>
         <div class="info-row"><span class="info-label">Total</span><span class="info-val">${kmf(o.total_kmf)}</span></div>
-        <div class="info-row"><span class="info-label">Statut</span><span class="info-val">${slbl(o.status)}</span></div>
+        <div class="info-row"><span class="info-label">Statut</span><span class="info-val">${esc(slbl(o.status))}</span></div>
       </div></div>
       <div class="section"><div class="section-head">Articles (${items.length})</div><div class="section-body" style="gap:0">
-        ${items.map(it=>`<div class="item-row"><div class="item-qty">×${it.quantity}</div><div class="item-name">${it.product_name||'Produit'}</div><div class="item-check ${assigned.has(it.id)?'assigned':''}">${assigned.has(it.id)?'✓':''}</div></div>`).join('')}
+        ${items.map(it=>`<div class="item-row"><div class="item-qty">×${esc(it.quantity)}</div><div class="item-name">${esc(it.product_name||'Produit')}</div><div class="item-check ${assigned.has(it.id)?'assigned':''}">${assigned.has(it.id)?'✓':''}</div></div>`).join('')}
       </div></div>
       ${parcels.length?`<div class="section"><div class="section-head">Colis (${parcels.length})</div><div class="section-body" style="gap:0">
-        ${parcels.map(p=>`<div class="parcel-row"><div><div class="parcel-ref">${p.reference}</div><div class="parcel-status">${p.items?p.items.length:'?'} art. · ${slbl(p.status)}</div></div><span class="badge ${p.status==='shipped'?'green':p.status==='preparation'?'amber':'gray'}">${slbl(p.status)}</span></div>`).join('')}
+        ${parcels.map(p=>`<div class="parcel-row"><div><div class="parcel-ref">${esc(p.reference)}</div><div class="parcel-status">${p.items?p.items.length:'?'} art. · ${esc(slbl(p.status))}</div></div><span class="badge ${p.status==='shipped'?'green':p.status==='preparation'?'amber':'gray'}">${esc(slbl(p.status))}</span></div>`).join('')}
       </div></div>`:''}
       ${(d.incidents||[]).filter(i=>i.status==='open').length?`<div class="section" style="border-color:rgba(255,171,64,.3)"><div class="section-head" style="color:var(--amber)">⚠ Incidents ouverts</div><div class="section-body">
-        ${d.incidents.filter(i=>i.status==='open').map(i=>`<div class="info-row"><span class="info-label">${i.type}</span><span class="info-val" style="color:var(--amber)">${i.description||'—'}</span></div>`).join('')}
+        ${d.incidents.filter(i=>i.status==='open').map(i=>`<div class="info-row"><span class="info-label">${esc(i.type)}</span><span class="info-val" style="color:var(--amber)">${esc(i.description||'—')}</span></div>`).join('')}
       </div></div>`:''}
     `;
     renderActions(o,items,parcels,assigned);
@@ -168,20 +170,20 @@ const Hub=(()=>{
     const isPaid=o.payment_status==='paid';
     let html='';
     if(['confirmed','ordered'].includes(o.status)||(!allOk&&o.status==='preparation')){
-      html+=`<button class="btn btn-primary" id="bap" data-act="auto-prepare" data-id="${o.id}">📦 Préparer automatiquement</button>`;
+      html+=`<button class="btn btn-primary" id="bap" data-act="auto-prepare" data-id="${esc(o.id)}">📦 Préparer automatiquement</button>`;
     }
     if(hasDraft&&allOk&&!hasReady){
       const dp=parcels.find(p=>p.status==='draft');
-      html+=`<button class="btn btn-amber" data-act="mark-ready" data-id="${dp.id}">✓ Marquer colis prêt</button>`;
+      html+=`<button class="btn btn-amber" data-act="mark-ready" data-id="${esc(dp.id)}">✓ Marquer colis prêt</button>`;
     }
     if(hasReady){
       const rp=parcels.find(p=>p.status==='preparation');
       _parcelId=rp.id;
       html+=isPaid
-        ?`<button class="btn btn-primary" data-act="open-ship" data-id="${rp.id}">✈️ Expédier ${rp.reference}</button>`
+        ?`<button class="btn btn-primary" data-act="open-ship" data-id="${esc(rp.id)}">✈️ Expédier ${rp.reference}</button>`
         :`<button class="btn btn-secondary" disabled>✈️ Expédier (paiement manquant)</button>`;
     }
-    html+=`<div class="btn-row"><button class="btn btn-secondary" data-act="open-incident">🚨 Incident</button><button class="btn btn-secondary" data-act="backorder" data-id="${o.id}">📋 Backorder</button></div>`;
+    html+=`<div class="btn-row"><button class="btn btn-secondary" data-act="open-incident">🚨 Incident</button><button class="btn btn-secondary" data-act="backorder" data-id="${esc(o.id)}">📋 Backorder</button></div>`;
     el.innerHTML=html;
   }
 
@@ -206,7 +208,7 @@ const Hub=(()=>{
     _parcelId=pid;
     const sel=document.getElementById('ship-carrier');
     sel.innerHTML=_carriers.length
-      ?'<option value="">— Transporteur —</option>'+_carriers.map(c=>`<option value="${c.id}" data-name="${c.name}">${c.name}${c.type?' · '+c.type:''}</option>`).join('')
+      ?'<option value="">— Transporteur —</option>'+_carriers.map(c=>`<option value="${esc(c.id)}" data-name="${esc(c.name)}">${esc(c.name)}${esc(c.type?' · '+c.type:'')}</option>`).join('')
       :'<option value="">Aucun transporteur configuré</option>';
     document.getElementById('ship-tracking').value='';
     document.getElementById('ship-notes').value='';
