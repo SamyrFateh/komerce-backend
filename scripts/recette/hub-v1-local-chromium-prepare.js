@@ -7,7 +7,7 @@
  * @owner backend-core
  * @purpose Prepare fresh four-order G2 proof only on disposable PG16, then handoff to real localhost Chromium.
  * @db-read orders, purchase_orders, purchase_lines, v_purchase_line_progress
- * @db-write users (ephemeral credentials only), plus canonical Hub V1 service writers
+ * @db-write users, dashboard_global_access_grants (ephemeral only), plus canonical Hub V1 service writers
  * @impact-areas logistics, dashboard, test-only
  */
 'use strict';
@@ -35,6 +35,25 @@ async function main(){
      proof.steps.some(s=>s.status!=='PASS') ||
      proof.external_effects?.zero_external_effects!==true)
     throw Error('HUB_LOCAL_CHROMIUM_CANONICAL_PRECONDITION_FAILED');
+  // A fixture Admin has no global authority merely by having the 'admin' role.
+  // This explicit grant exists ONLY in disposable localhost PG16, after the
+  // assertEphemeralTarget() guard above; never in shared Railway staging.
+  const fixtureAdmin=proof.fixture?.users?.admin;
+  if(fixtureAdmin?.role!=='admin')throw Error('HUB_LOCAL_CHROMIUM_ADMIN_IDENTITY_REQUIRED');
+  await db.query(
+    `INSERT INTO dashboard_global_access_grants(user_id,reason)
+       SELECT u.id,$2 FROM users u WHERE u.id=$1 AND u.role='admin'
+       ON CONFLICT (user_id) WHERE revoked_at IS NULL DO NOTHING`,
+    [fixtureAdmin.id,'E2E-HUB-V1-'+run+' disposable Chromium Admin context']);
+  const {rows:[grant]}=await db.query(
+    'SELECT COUNT(*)::int AS n FROM dashboard_global_access_grants WHERE user_id=$1 AND revoked_at IS NULL',
+    [fixtureAdmin.id]);
+  if(grant.n!==1)throw Error('HUB_LOCAL_CHROMIUM_ADMIN_GLOBAL_GRANT_NOT_PROVEN');
+  const {rows:[others]}=await db.query(
+    `SELECT COUNT(*)::int AS n FROM dashboard_global_access_grants
+      WHERE revoked_at IS NULL AND user_id=ANY($1::uuid[])`,
+    [[proof.fixture.users.hub_agent.id,proof.fixture.users.relay_agent.id,proof.fixture.users.forwarder.id]]);
+  if(others.n!==0)throw Error('HUB_LOCAL_CHROMIUM_UNEXPECTED_NONADMIN_GLOBAL_GRANT');
   const labels=[
     ['admin','admin','E2E_ADMIN_'],
     ['hub_agent','agent-hub','E2E_AGENT_HUB_'],
@@ -71,6 +90,7 @@ async function main(){
     mode:'EPHEMERAL_PG16_LOCALHOST_ONLY',run,orders,pos,
     steps:proof.steps.map(s=>({n:s.n,status:s.status})),
     zero_external_effects:true,
+    admin_dashboard_global_grant:true,
     staging_go:false,chromium_proven:false};
   fs.mkdirSync(OUT,{recursive:true});fs.writeFileSync(FILE,JSON.stringify(state,null,2)+'\n');
   process.stdout.write(JSON.stringify({verdict:'PREPARED_LOCAL_ONLY',run,orders:orders.length,pos:pos.length,steps:7})+'\n');
