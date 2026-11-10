@@ -1,0 +1,60 @@
+name: Staging public runtime — read-only SHA verification
+
+# Reusable public probe. No credentials, no staging writes, no forced deploy.
+# The public SHA check is a prerequisite, not a substitute for human image review or Chromium.
+# The only purpose of the PR event is to validate this workflow's introduction.
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/staging-public-runtime-version-proof.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: staging-public-runtime-version-proof-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  public-version-proof:
+    name: Public /health/version ↔ main HEAD (read only)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    env:
+      E2E_STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+    steps:
+      - name: Checkout verified main runtime comparator
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Pin current main SHA
+        shell: bash
+        run: echo "E2E_EXPECTED_DEPLOY_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+      - name: Public network diagnosis (no auth)
+        shell: bash
+        run: |
+          set +e
+          curl --silent --show-error --location --max-time 15 \
+            --output /tmp/komerce-version.json \
+            --write-out 'Public HTTP status: %{http_code}; DNS: %{time_namelookup}s; TLS: %{time_appconnect}s\n' \
+            "$E2E_STAGING_BASE_URL/health/version"
+          result=$?
+          if [ "$result" -eq 0 ]; then
+            node -e 'try{const j=require("/tmp/komerce-version.json"); console.log("Public deployed SHA:",String(j.commit||j.sha||"NOT_PRESENT"))}catch(e){console.log("Public endpoint returned unreadable JSON")}'
+          else
+            echo "Public network probe error code: $result"
+          fi
+          exit 0
+      - name: Canonical fail-closed SHA and tooling-equivalence proof
+        shell: bash
+        run: node scripts/recette/staging-chromium-deployment-preflight.js
+      - name: Preserve exact report when PASS or FAIL
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-public-runtime-version-${{ github.run_id }}
+          path: test-results/staging-chromium/deployment-preflight.json
+          retention-days: 14
+          if-no-files-found: warn
