@@ -283,7 +283,10 @@ function buildPlan(scope, baseSha, headSha = 'HEAD', options = {}) {
       command('Boutique fast gates', npmBin, ['--prefix', 'public/boutique', 'run', 'check:fast']),
       nodeRun('Boutique global ownership', 'scripts/boutique-ownership-full-check.js', ['--strict']),
       nodeRun('Boutique selector ownership', 'public/boutique/scripts/check-selector-ownership.js'),
-      nodeRun('Boutique runtime CSS var ownership', 'public/boutique/scripts/check-runtime-css-var-ownership.js')
+      nodeRun('Boutique runtime CSS var ownership', 'public/boutique/scripts/check-runtime-css-var-ownership.js'),
+      // Baseline hand-saved (non hydratee par la CI) : sans ce gate, une derive (ex. consommateur
+      // d'evenement non declare) restait invisible jusqu'au prochain boutique:360:check manuel.
+      nodeRun('Boutique 360 baseline', 'scripts/gen-boutique-360.js', ['--check'])
     );
     if (scope.boutiqueCss) {
       plan.push(

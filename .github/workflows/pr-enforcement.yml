@@ -719,6 +719,9 @@ jobs:
       - name: Boutique architecture
         if: needs.changes.outputs.boutique_css == 'true' || needs.changes.outputs.boutique_js == 'true' || needs.changes.outputs.boutique_html == 'true'
         run: node public/boutique/scripts/audit-boutique-arch.js
+      - name: Boutique 360 baseline
+        if: needs.changes.outputs.boutique_js == 'true' || needs.changes.outputs.boutique_html == 'true'
+        run: node scripts/gen-boutique-360.js --check
       - name: Sanitization on added front lines
         if: needs.changes.outputs.boutique_js == 'true'
         env:
@@ -830,6 +833,8 @@ jobs:
           node-version: '20'
           cache: npm
       - run: npm ci
+      # Le preflight rejoue « Boutique fast gates » (jest + jsdom du workspace boutique) quand le diff touche public/boutique.
+      - run: npm --prefix public/boutique ci
       - name: Execute real npm run pr:preflight on clean PR SHA
         # Le gate touched-tests accepte une section ## Tests du body PR (preuve C) ;
         # sans PR_BODY, le preflight CI refusait un diff d'en-tetes que le job
