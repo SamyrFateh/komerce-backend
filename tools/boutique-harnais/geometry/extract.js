@@ -8,7 +8,7 @@ const fs = require('fs'), path = require('path');
 // harnais/public/boutique/index.html, qui n'a jamais existé : measure-hero.js
 // et verify-backtop-zindex.js (correctifs #3 et #4 du tableau P0-A)
 // crashaient tous les deux en ENOENT avant ce correctif.
-const IDX = path.resolve(__dirname, '..', '..', 'index.html');
+const IDX = path.resolve(__dirname, '..', '..', 'public', 'boutique', 'index.html');
 function between(startRe, endRe) {
   const s = fs.readFileSync(IDX, 'utf8');
   const a = s.search(startRe);
