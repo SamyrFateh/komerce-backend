@@ -1,0 +1,132 @@
+name: G2 — real Chromium supplier receipt against disposable PG16
+
+# No shared staging secret, no remote app, no provider calls or existing fixtures.
+# Executes real routes and browser clicks against localhost only; NOT a staging GO.
+on:
+  workflow_dispatch: {}
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hub-v1-isolated-chromium-receipt
+  cancel-in-progress: false
+
+jobs:
+  isolated-chromium:
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.actor == github.repository_owner) ||
+      (github.event_name == 'issues' && github.event.issue.user.login == github.repository_owner &&
+       github.event.issue.title == '[cert-op] hub-v1-isolated-chromium-receipt')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_test
+        ports: [5432:5432]
+        options: >-
+          --health-cmd "pg_isready -U komerce -d komerce_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 6
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      KOMERCE_ENV: test
+      KOMERCE_DISABLE_CRONS: 'true'
+      DATABASE_URL: postgresql://komerce:komerce@localhost:5432/komerce_test
+      E2E_CLICKS_BASE_URL: http://localhost:3917
+      E2E_CLICKS_ALLOW_LOCAL: '1'
+      E2E_CLICKS_MARKET: KM
+      E2E_CLICKS_ALLOW_DISTRIBUTION: '0'
+      PORT: '3917'
+      JWT_SECRET: isolated-ci-hub-v1-test-token-only
+      ADMIN_PASSWORD: isolated-ci-hub-v1-no-real-admin
+      STRIPE_SECRET_KEY: sk_test_ci_placeholder
+      STRIPE_WEBHOOK_SECRET: whsec_ci_placeholder
+      QR_SECRET: isolated-ci-hub-v1-qr
+      AUTHKEY_API_KEY: isolated-ci-hub-v1-no-provider
+      PAYPAL_CLIENT_ID: isolated-ci-client
+      PAYPAL_CLIENT_SECRET: isolated-ci-secret
+      PAYPAL_WEBHOOK_ID: isolated-ci-webhook
+      META_WA_APP_SECRET: isolated-ci-meta
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Enforce no Railway secret or remote staging binding
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$DATABASE_URL" = 'postgresql://komerce:komerce@localhost:5432/komerce_test'
+          test "$E2E_CLICKS_BASE_URL" = 'http://localhost:3917'
+          test "$E2E_CLICKS_ALLOW_DISTRIBUTION" = '0'
+          node -e "require('./scripts/recette/hub-v1-certification-runner').assertEphemeralTarget(process.env.DATABASE_URL, [])"
+      - name: Rebuild isolated PostgreSQL schema from canonical snapshot
+        shell: bash
+        run: |
+          PGPASSWORD=komerce psql -v ON_ERROR_STOP=1 -h localhost -U komerce -d komerce_test -f docs/db/railway-live-schema.sql > /dev/null
+          node scripts/ci-db-bootstrap.js
+      - name: Prepare fresh four orders and PO by canonical services, no provider effects
+        run: node scripts/recette/hub-v1-local-chromium-prepare.js
+      - name: Start actual localhost Komerce server
+        shell: bash
+        run: |
+          set -euo pipefail
+          node server.js > "$RUNNER_TEMP/hub-v1-local-server.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/hub-v1-local-server.pid"
+          READY=0
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:3917/health/version > /dev/null; then READY=1; break; fi
+            sleep 2
+          done
+          if [[ "$READY" != 1 ]]; then
+            tail -n 45 "$RUNNER_TEMP/hub-v1-local-server.log"
+            exit 2
+          fi
+          echo 'LOCAL_SERVER_READY (localhost only)'
+      - name: Install genuine Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Click actual Hub supplier receipt UI (no API mocks)
+        run: |
+          npx playwright test --config=playwright.hub-v1-clicks.config.js --grep 'Hub : reception fournisseur'
+      - name: Independent authenticated API and PostgreSQL readbacks on identical PO UUIDs
+        if: always()
+        run: |
+          if [ -f test-results/hub-v1-local-chromium/prepare.json ]; then
+            node scripts/recette/hub-v1-local-chromium-readback.js
+          else
+            echo 'HUB_LOCAL_CHROMIUM_NO_PREPARED_FIXTURE'; exit 2
+          fi
+      - name: Archive evidence, never credentials or login sessions
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hub-v1-isolated-real-chromium-${{ github.run_id }}
+          path: |
+            test-results/hub-v1-local-chromium/prepare.json
+            test-results/hub-v1-local-chromium/receipt-readback.json
+            test-results/hub-v1-clicks/evidence.json
+            test-results/hub-v1-clicks/playwright.json
+            test-results/hub-v1-clicks/captures/
+          if-no-files-found: warn
+          retention-days: 21
+      - name: Safety verdict and scope
+        if: always()
+        run: |
+          echo '### G2 — isolated Chromium, not a staging certification' >> "$GITHUB_STEP_SUMMARY"
+          echo 'PostgreSQL 16 disposable and localhost backend only. No Railway connection, no PSP/provider, no market-wide distribution.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Steps 1–7 preconditioned by canonical service writers. Real browser clicks cover supplier receipt ONLY; readback checks independent HTTP and PostgreSQL for the same two PO UUIDs.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'G2 staging 13/13 triple proof remains NOT_PROVEN until the complete workflow is certified on official staging.' >> "$GITHUB_STEP_SUMMARY"
