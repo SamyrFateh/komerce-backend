@@ -14,7 +14,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const db = require('../../db');
+const defaultDb = () => require('../../db');
 const { confirmTarget } = require('./target-guard');
 const { buildCleanupInventory } = require('./hub-v1-fixture-dependency-inventory');
 const BASE = 'https://komerce-backend-production.up.railway.app';
@@ -76,9 +76,10 @@ function assertEnvironment(env) {
     throw Error('HUB_V1_RUN_CENSUS_DEPLOY_PIN_REQUIRED');
 }
 
-async function run({ database = db, env = process.env, fetchImpl = fetch } = {}) {
+async function run({ database, env = process.env, fetchImpl = fetch } = {}) {
   assertEnvironment(env);
-  const target = await confirmTarget({ db: database, fetchImpl, env });
+  const executor = database || defaultDb();
+  const target = await confirmTarget({ db: executor, fetchImpl, env });
   if (!target?.confirmed) throw Error('HUB_V1_RUN_CENSUS_DB_PIN_MISMATCH');
   const response = await fetchImpl(BASE + '/health/version');
   if (!response.ok) throw Error('HUB_V1_RUN_CENSUS_RUNTIME_UNAVAILABLE');
@@ -86,7 +87,7 @@ async function run({ database = db, env = process.env, fetchImpl = fetch } = {})
   const sha = String(version.commit || version.sha || '');
   if (sha.toLowerCase() !== env.E2E_EXPECTED_DEPLOY_SHA.toLowerCase())
     throw Error('HUB_V1_RUN_CENSUS_SHA_DRIFT');
-  const client = await database.getClient();
+  const client = await executor.getClient();
   try {
     const markers = await listMarkers(client);
     const runs = [];
@@ -124,8 +125,9 @@ async function run({ database = db, env = process.env, fetchImpl = fetch } = {})
 }
 
 async function main() {
+  const database = defaultDb();
   try {
-    const result = await run();
+    const result = await run({ database });
     const dir = path.join('test-results', 'hub-v1-cert');
     fs.mkdirSync(dir, { recursive: true });
     const file = path.join(dir, 'staging-run-census.json');
@@ -138,7 +140,7 @@ async function main() {
       })),
       delete_performed: false, cleanup_certified: false, file,
     }));
-  } finally { if (db.pool?.end) await db.pool.end(); }
+  } finally { if (database.pool?.end) await database.pool.end(); }
 }
 
 if (require.main === module) main().catch((error) => {
