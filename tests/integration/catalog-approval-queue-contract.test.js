@@ -37,6 +37,7 @@ if (!hasIntegrationEnv) {
   let db;
   let adminUser;
   let clientUser;
+  let ungrantedAdmin;
   const productIds = new Set();
 
   const BASE = '/api/admin/catalog/approval-queue';
@@ -92,6 +93,7 @@ if (!hasIntegrationEnv) {
 
     adminUser = await createUser({ role: 'admin' });
     clientUser = await createUser({ role: 'client' });
+    ungrantedAdmin = await createUser({ role: 'admin' });
     // Visual FR proof endpoints require an explicit global Catalogue grant.
     await db.query(`INSERT INTO catalog_global_access_grants (user_id, reason)
       VALUES ($1, 'catalog-approval-contract-visual-fr')`, [adminUser.id]);
@@ -156,6 +158,12 @@ if (!hasIntegrationEnv) {
       const client = await request(app).get(`${BASE}/${nilUuid}/visual-fr-proof`).set(...bearer(clientUser.token));
       expect([401,403]).toContain(client.status);
     });
+    test('403 admin without explicit global Catalogue grant', async () => {
+      const result = await request(app).get(`${BASE}/${nilUuid}/visual-fr-proof`)
+        .set(...bearer(ungrantedAdmin.token));
+      expect(result.status).toBe(403);
+      expect(result.body.code).toBe('catalog_global_access_denied');
+    });
     test('400 malformed id, 404 nonexistent product for admin', async () => {
       const malformed = await request(app).get(`${BASE}/not-uuid/visual-fr-proof`).set(...bearer(adminUser.token));
       expect(malformed.status).toBe(400);
@@ -172,6 +180,12 @@ if (!hasIntegrationEnv) {
       const url = `${BASE}/${nilUuid}/media/${mediaId}/visual-fr-review`;
       expect((await request(app).post(url).send({text_presence:'NONE'})).status).toBe(401);
       expect([401,403]).toContain((await request(app).post(url).set(...bearer(clientUser.token)).send({text_presence:'NONE'})).status);
+    });
+    test('403 admin without Catalogue grant cannot attest a visual review', async () => {
+      const result = await request(app).post(`${BASE}/${nilUuid}/media/${mediaId}/visual-fr-review`)
+        .set(...bearer(ungrantedAdmin.token)).send({ text_presence: 'NONE' });
+      expect(result.status).toBe(403);
+      expect(result.body.code).toBe('catalog_global_access_denied');
     });
     test('admin cannot create review for malformed or absent media', async () => {
       const bad = await request(app).post(`${BASE}/${nilUuid}/media/not-uuid/visual-fr-review`)
