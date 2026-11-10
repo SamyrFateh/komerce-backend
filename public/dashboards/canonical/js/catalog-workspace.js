@@ -1730,7 +1730,8 @@
   function inspectorFrame(slot, doc, row, mode) {
     // Fermer proprement l'ancien tiroir, y compris son masque et ses
     // événements clavier, avant d'ouvrir un autre produit.
-    const previous = slot.querySelector('[data-catalog-candidate-inspector], [data-catalog-product-inspector]');
+    const previous = slot.querySelector('[data-catalog-candidate-inspector]') ||
+      slot.querySelector('[data-catalog-product-inspector]');
     if (previous) {
       const existingClose = previous.querySelector('[data-workspace-action="close-inspector"]');
       if (existingClose) existingClose.click();
@@ -2280,8 +2281,10 @@
       if (media.gallery_truncated) photos.appendChild(text(doc, 'small',
         'kmc-catalog-correction-hint', 'Galerie partielle : plus de 24 médias actifs.'));
     }
-    const mediaSlot = slot.closest('[data-catalog-product-inspector]')
-      ?.querySelector('[data-catalog-media-review-slot]');
+    let panel = slot.parentNode;
+    while (panel && panel.getAttribute?.('data-catalog-product-inspector') === null)
+      panel = panel.parentNode;
+    const mediaSlot = panel?.querySelector('[data-catalog-media-review-slot]');
     if (mediaSlot) mediaSlot.replaceChildren(photos);
     else slot.appendChild(photos);
     const facts = (title, entries) => {
