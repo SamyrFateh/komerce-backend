@@ -54,7 +54,16 @@ async function login(browser, baseURL, role) {
 async function openMarket(page, url) {
   // ERR_ABORTED : une redirection client (login, portail) peut couper la navigation en cours -> on la laisse finir puis on reessaie.
   for (let attempt = 0; ; attempt++) {
-    try { await page.goto(url, { waitUntil: 'domcontentloaded' }); break; }
+    try {
+      // Shipping & Customs is explicitly market-scoped for ALL central roles,
+      // including the transitaire: with no ?market=, the canonical shell
+      // correctly stays on "Choisir un marché…" (L1 no implicit fallback).
+      // This is only a UI selection, not an authorization bypass.
+      const selectedUrl = url.startsWith('/admin/workspaces/shipping-customs')
+        ? url + (url.includes('?') ? '&' : '?') + 'market=' + MARKET_CODE
+        : url;
+      await page.goto(selectedUrl, { waitUntil: 'domcontentloaded' }); break;
+    }
     catch (e) { if (attempt >= 3 || !/ERR_ABORTED|interrupted/i.test(String(e.message))) throw e; await page.waitForLoadState('load').catch(() => {}); await page.waitForTimeout(1500); }
   }
   // Expéditions & Douane n'utilise pas toujours le <select> du Workspace
@@ -64,11 +73,9 @@ async function openMarket(page, url) {
     await expect(page).toHaveURL(/\/admin\/workspaces\/shipping-customs(?:\/|\?|$)/, { timeout: 20000 });
     // Le panneau des expéditions n'est créé qu'APRÈS la sélection du marché
     // lorsqu'un sélecteur est présent. Ne jamais attendre le panneau d'abord.
-    const select = page.locator('select').first();
-    if (await select.count()) {
-      const marketOption = select.locator('option').filter({ hasText: MARKET_LABEL });
-      if (await marketOption.count()) await select.selectOption({ label: MARKET_LABEL });
-    }
+    // Market already selected through the URL; do not operate an arbitrary
+    // first <select> (it might belong to a customs form, not market picker).
+    await expect(page).toHaveURL(new RegExp('(?:[?&])market='+MARKET_CODE+'(?:&|$)'));
     await page.locator('[data-international-journey]').first().waitFor({ timeout: 20000 });
     await page.waitForLoadState('networkidle').catch(() => {});
     return;
