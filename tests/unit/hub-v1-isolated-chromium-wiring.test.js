@@ -101,3 +101,35 @@ test('Full physical harness cannot silently run unrelated LOCAL_STOCK spec',()=>
   const cmd="npx playwright test --config=playwright.hub-v1-clicks.config.js tests/staging-clicks/hub-v1-clicks.spec.js";
   expect(y.split(cmd)).toHaveLength(3);
 });
+
+test('local Chromium Admin receives an explicit REAL dashboard grant, never implicit admin-role privilege',()=>{
+  const source=get('scripts/recette/hub-v1-local-chromium-prepare.js');
+  // The target is checked BEFORE grants or credentials are created.
+  expect(source.indexOf('assertEphemeralTarget(process.env.DATABASE_URL,[])'))
+    .toBeLessThan(source.indexOf('INSERT INTO dashboard_global_access_grants'));
+  expect(source.indexOf('GITHUB_ENV_REQUIRED'))
+    .toBeLessThan(source.indexOf('INSERT INTO dashboard_global_access_grants'));
+  expect(source).toContain("admin.role!=='admin'");
+  expect(source).toContain('G2_ISOLATED_ADMIN_IDENTITY_MISMATCH');
+  expect(source).toContain("existing?.n!==0");
+  expect(source).toContain('G2_ISOLATED_ADMIN_GRANT_ALREADY_EXISTS');
+  expect(source).toContain("INSERT INTO dashboard_global_access_grants(user_id,reason)");
+  expect(source).toContain("'-ISOLATED-CHROMIUM-EXPLICIT-DASHBOARD'");
+  expect(source).toContain('hasDashboardGlobalAuthority(admin.id)');
+  expect(source).toContain("context.access.mode!=='global'");
+  expect(source).toContain("context.access.allowedMarkets.includes('KM')");
+  expect(source).toContain("for(const other of ['hub_agent','relay_agent','forwarder'])");
+  expect(source).toContain('G2_ISOLATED_NONADMIN_GLOBAL_GRANT_FORBIDDEN');
+  expect(source).not.toMatch(/UPDATE\\s+dashboard_global_access_grants\\s+SET\\s+revoked_at\\s*=\\s*NULL/i);
+  expect(source).not.toContain('session_replication_role');
+  expect(source).not.toContain('secrets.RAILWAY_DATABASE_URL');
+});
+
+test('dashboard resolver still requires a real scoped or explicit central grant',()=>{
+  const resolver=get('services/dashboard-admin-context.js');
+  expect(resolver).toContain('hasDashboardGlobalAuthority(user.id)');
+  expect(resolver).toContain('throw new DashboardAccessDeniedError()');
+  const middleware=get('middleware/require-dashboard-global-authority.js');
+  expect(middleware).toContain('FROM dashboard_global_access_grants');
+  expect(middleware).toContain('revoked_at IS NULL');
+});
