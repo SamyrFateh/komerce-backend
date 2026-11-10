@@ -117,8 +117,8 @@
     DataTable.render(el, {
       emptyText: 'Aucune facture sur la période',
       columns: [
-        { key: 'reference',    label: 'Référence',   render: (r) => r.reference || r.invoice_number || r.id || '—' },
-        { key: 'client',       label: 'Client',      render: (r) => r.client_name || r.recipient_name || '—' },
+        { key: 'reference',    label: 'Référence',   render: (r) => esc(r.reference || r.invoice_number || r.id || '—') },
+        { key: 'client',       label: 'Client',      render: (r) => esc(r.client_name || r.recipient_name || '—') },
         { key: 'amount',       label: 'Montant',     align: 'right',
           render: (r) => Number(r.amount_kmf || r.total_kmf || r.amount || 0).toLocaleString('fr-FR') + ' KMF' },
         { key: 'status',       label: 'Statut',      render: (r) => BadgeStatus.status(r.status || 'pending') },
@@ -137,9 +137,9 @@
     DataTable.render(el, {
       emptyText: 'Aucun impayé livré',
       columns: [
-        { key: 'reference',    label: 'Commande',    render: (r) => r.reference || r.order_ref || r.id || '—' },
-        { key: 'client',       label: 'Client',      render: (r) => r.client_name || r.recipient_name || '—' },
-        { key: 'relais',       label: 'Relais',      render: (r) => r.relais_name || r.relais_id || '—' },
+        { key: 'reference',    label: 'Commande',    render: (r) => esc(r.reference || r.order_ref || r.id || '—') },
+        { key: 'client',       label: 'Client',      render: (r) => esc(r.client_name || r.recipient_name || '—') },
+        { key: 'relais',       label: 'Relais',      render: (r) => esc(r.relais_name || r.relais_id || '—') },
         { key: 'total',        label: 'Total',       align: 'right',
           render: (r) => Number(r.total_kmf || r.total || 0).toLocaleString('fr-FR') + ' KMF' },
         { key: 'delivered_at', label: 'Livré le',
@@ -180,7 +180,7 @@
       columns: [
         { key: 'date',       label: 'Date',
           render: (r) => r.date || r.created_at ? new Date(r.date || r.created_at).toLocaleDateString('fr-FR') : '—' },
-        { key: 'relais',     label: 'Relais',    render: (r) => r.relais_name || r.relais_id || '—' },
+        { key: 'relais',     label: 'Relais',    render: (r) => esc(r.relais_name || r.relais_id || '—') },
         { key: 'theoretical', label: 'Théorique', align: 'right',
           render: (r) => Number(r.theoretical_kmf || r.expected || 0).toLocaleString('fr-FR') + ' KMF' },
         { key: 'actual',     label: 'Réel',      align: 'right',
