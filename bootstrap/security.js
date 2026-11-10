@@ -73,7 +73,7 @@ function buildHelmetOptions() {
         styleSrc:    ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
         fontSrc:     ["'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com", "data:"],
         imgSrc:      ["'self'", "data:", "https:"],
-        connectSrc:  ["'self'", "https://fonts.googleapis.com", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com", "https://cdn.jsdelivr.net", "https://api.stripe.com", "https://www.paypal.com", "https://api.paypal.com", "https://api.sandbox.paypal.com"],
+        connectSrc:  ["'self'", "https://fonts.googleapis.com", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com", "https://api.stripe.com", "https://www.paypal.com", "https://api.paypal.com", "https://api.sandbox.paypal.com"],
         // Checkout : la carte visible du point relais est un iframe Google Maps.
         // Autoriser uniquement l'hôte utilisé par l'URL d'embed, sans élargir
         // frame-src à un wildcard externe.
