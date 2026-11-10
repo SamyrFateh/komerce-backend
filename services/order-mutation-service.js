@@ -343,7 +343,10 @@ async function recordPickupRegeneration(executor, { orderId, reason }) {
 
 async function markPickupSecretRevealed(executor, orderId) {
   return requireExecutor(executor).query(
-    'UPDATE orders SET pickup_secret_revealed_at = NOW() WHERE id = $1',
+    // Garde one-shot : n'écrit que si jamais révélé ; rowCount 0 = déjà révélé.
+    `UPDATE orders SET pickup_secret_revealed_at = NOW()
+      WHERE id = $1 AND pickup_secret_revealed_at IS NULL
+      RETURNING id`,
     [orderId],
   );
 }
