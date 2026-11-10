@@ -589,14 +589,26 @@ router.delete('/users/:id', ...guard, async (req, res, next) => {
     if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
     const { rows: [{ count: orderCount }] } = await db.query('SELECT COUNT(*) FROM orders WHERE user_id = $1::uuid', [id]);
     const hasScopeHistory = await hasUserMarketScopeHistory(db, id);
+    // Wallet : jamais supprimer. Un wallet avec ≥ 1 mouvement impose l'anonymisation.
+    const { rows: [walletRow] } = await db.query(
+      `SELECT EXISTS (
+         SELECT 1 FROM wallet_transactions wt
+           JOIN wallets w ON w.id = wt.wallet_id
+          WHERE w.user_id = $1::uuid
+       ) AS has_movements`,
+      [id]
+    );
+    const hasWalletMovements = walletRow?.has_movements === true;
 
-    if (Number(orderCount) > 0 || hasScopeHistory) {
+    if (Number(orderCount) > 0 || hasScopeHistory || hasWalletMovements) {
       await withTransaction(async (client) => {
         await revokeAllOperatorScopes(client, { userId: id, revokedBy: req.user.id });
         await anonymizeUser(client, id);
       });
       log.info(`🗑️ Admin soft-deleted user ${user.email} by ${req.user.email}`);
-      const reason = hasScopeHistory ? 'historique de droits marché conservé' : `${orderCount} commande(s) conservée(s)`;
+      const reason = hasScopeHistory ? 'historique de droits marché conservé'
+        : hasWalletMovements && !(Number(orderCount) > 0) ? 'historique wallet conservé'
+        : `${orderCount} commande(s) conservée(s)`;
       return res.json({
         success: true,
         message: `Utilisateur anonymisé (${reason})`,
@@ -607,8 +619,6 @@ router.delete('/users/:id', ...guard, async (req, res, next) => {
 
     const cleanupQueries = [
       'UPDATE sms_log SET user_id = NULL WHERE user_id = $1::uuid',
-      'DELETE FROM wallet_transactions WHERE wallet_id IN (SELECT id FROM wallets WHERE user_id = $1::uuid)',
-      'DELETE FROM wallets WHERE user_id = $1::uuid',
       'DELETE FROM loyalty_points WHERE user_id = $1::uuid',
       'DELETE FROM loyalty_history WHERE user_id = $1::uuid',
       () => deleteUserBasketData(db, id),
