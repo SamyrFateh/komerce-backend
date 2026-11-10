@@ -2039,7 +2039,128 @@
     return panel;
   }
 
-  function renderProductDossierDetails(slot, doc, dossier, row) {
+  // Explicit source-image review by the authorized Catalogue operator.
+  // An image without a reviewed source identity is always NOT_PROVEN.
+  function renderVisualFrenchReview(context, doc, slot, dossier) {
+    const media = dossier.media || {};
+    const images = Array.isArray(media.gallery) ? media.gallery : [];
+    if (!dossier.product_id || !images.length) return;
+    const group = doc.createElement('details');
+    group.className = 'kmc-catalog-dossier-group kmc-catalog-visual-fr-review';
+    group.setAttribute('data-catalog-visual-fr-review', dossier.product_ref || '');
+    group.appendChild(text(doc, 'summary', '',
+      'Contrôler le texte des images · ' + images.length + ' source(s)'));
+    group.appendChild(text(doc, 'p', 'kmc-catalog-correction-hint',
+      'Examinez réellement chaque image et sa variante. Aucun statut sans revue visuelle. ' +
+      'La décision enregistrée reste distincte de la validation Catalogue et des marchés.'));
+    const endpoint = '/api/admin/catalog/approval-queue/' +
+      encodeURIComponent(dossier.product_id);
+    const overview = text(doc, 'p', 'kmc-catalog-correction-hint',
+      'Preuves visuelles FR : non vérifiées dans cet écran.');
+    overview.setAttribute('data-catalog-visual-fr-overview', '');
+    group.appendChild(overview);
+    async function refreshProof() {
+      try {
+        const result = await jsonRequest(context.fetch, endpoint + '/visual-fr-proof');
+        const inspected = Array.isArray(result?.visual_fr_results)
+          ? result.visual_fr_results.filter(item => item.ready === true).length : 0;
+        overview.textContent = result?.visual_fr_certified === true
+          ? 'Revue visuelle FR complète : ' + inspected + '/' + images.length +
+            '. Publication Catalogue humaine encore requise.'
+          : 'Revue visuelle FR à compléter : ' + inspected + '/' + images.length +
+            ' · ' + (result?.visual_fr_reason || 'NOT_PROVEN');
+      } catch(error) {
+        overview.textContent = 'État de preuve visuelle indisponible : ' + actionErrorMessage(error);
+      }
+    }
+    images.forEach((mediaItem, index) => {
+      const mediaId = String(mediaItem.media_id || '');
+      const sourceId = String(mediaItem.source_media_id || '');
+      const url = String(mediaItem.url || '');
+      if (!/^[0-9a-f-]{36}$/i.test(mediaId) || !sourceId || !/^https:\/\//i.test(url))
+        return;
+      const card = doc.createElement('section');
+      card.className = 'kmc-catalog-visual-fr-item';
+      card.setAttribute('data-visual-fr-media', mediaId);
+      const img = doc.createElement('img');
+      img.src = url; img.loading = 'lazy';
+      img.alt = 'Image source fournisseur à vérifier ' + (index + 1);
+      card.appendChild(img);
+      card.appendChild(text(doc, 'p', 'kmc-catalog-correction-hint',
+        sourceId + (mediaItem.option_values
+          ? ' · variante : ' + JSON.stringify(mediaItem.option_values) : '')));
+      const field = (label,kind,multiline=false) => {
+        const wrapper = doc.createElement('label');
+        wrapper.className = 'kmc-catalog-inline-field';
+        wrapper.appendChild(text(doc, 'span', '', label));
+        const input = doc.createElement(multiline ? 'textarea' : 'input');
+        if (!multiline) input.type='text';
+        input.setAttribute('data-visual-fr-field',kind);
+        if(multiline)input.rows=2;
+        wrapper.appendChild(input);card.appendChild(wrapper);
+        return input;
+      };
+      const selectLabel=doc.createElement('label');
+      selectLabel.className='kmc-catalog-inline-field';
+      selectLabel.appendChild(text(doc, 'span', '', 'Présence de texte client dans cette image'));
+      const choice=doc.createElement('select');
+      choice.setAttribute('data-visual-fr-text-presence','');
+      [['','Non examiné'],['NONE','Aucun texte client pertinent'],['PRESENT','Texte présent'],
+        ['UNREADABLE','Texte essentiel illisible']].forEach(([value,label])=>{
+        const option=doc.createElement('option');
+        option.value=value;option.textContent=label;choice.appendChild(option);
+      });
+      choice.value='';
+      selectLabel.appendChild(choice);card.appendChild(selectLabel);
+      const transcription=field('Transcription fidèle du texte source','transcription',true);
+      const translation=field('Traduction française vérifiée (légende client)','translation',true);
+      const status=text(doc,'p','kmc-catalog-correction-hint',
+        'Décision non enregistrée : le contrôle est une opération humaine explicite.');
+      status.setAttribute('data-visual-fr-status','');
+      card.appendChild(status);
+      const save=makeButton(doc,'Enregistrer ma revue visuelle FR','save-visual-fr-review');
+      save.addEventListener('click',async()=>{
+        const presence=choice.value;
+        if(!['NONE','PRESENT','UNREADABLE'].includes(presence)){
+          status.textContent='Choisissez explicitement le résultat de votre inspection de l’image.';
+          return;
+        }
+        const sourceText=String(transcription.value||'').trim();
+        const frenchText=String(translation.value||'').trim();
+        if(presence==='PRESENT'&&(!sourceText||!frenchText)){
+          status.textContent='Texte présent : transcription et légende FR obligatoires.';
+          return;
+        }
+        if (!context.confirm('Enregistrer votre revue pour la source ' + sourceId +
+          ' ? Cette décision sera attribuée à votre compte et ne publie rien.')) return;
+        save.disabled=true;status.textContent='Enregistrement de la preuve visuelle…';
+        const review={source_media_id:sourceId,source_url:url,
+          option_values:mediaItem.option_values??null,text_presence:presence,
+          source_transcription:presence==='PRESENT'?sourceText:null,
+          french_translation:presence==='PRESENT'?frenchText:null,
+          french_presentation:presence==='PRESENT'
+            ?{kind:'caption',text:frenchText,reviewed:true}:null};
+        try{
+          const result=await jsonRequest(context.fetch,endpoint+'/media/'+
+            encodeURIComponent(mediaId)+'/visual-fr-review',{method:'POST',body:review});
+          if(result?.code!=='VISUAL_FR_REVIEW_RECORDED')
+            throw Error('Attestation source-image non confirmée.');
+          status.textContent=presence==='UNREADABLE'
+            ?'Image marquée illisible : publication bloquée.'
+            :'Revue enregistrée, liée à la source et à votre compte.';
+          await refreshProof();
+        }catch(error){
+          status.textContent='Revue refusée : '+actionErrorMessage(error);
+        }finally{save.disabled=false;}
+      });
+      card.appendChild(save);group.appendChild(card);
+    });
+    slot.appendChild(group);
+    // Evidence is a READ ONLY GET on dossier load; it never records a decision.
+    void refreshProof();
+  }
+
+  function renderProductDossierDetails(context, slot, doc, dossier, row) {
     slot.replaceChildren();
     const header = text(doc, 'strong', 'kmc-catalog-inspector-section',
       'Fiche commerciale · état réel du produit');
@@ -2085,6 +2206,7 @@
         'kmc-catalog-correction-hint', 'Galerie partielle : plus de 24 médias actifs.'));
     }
     slot.appendChild(photos);
+    renderVisualFrenchReview(context, doc, slot, dossier);
     const facts = (title, entries) => {
       const group = doc.createElement('section');
       group.className = 'kmc-catalog-dossier-group';
@@ -2215,7 +2337,7 @@
       // A closed inspector must not resurrect content on a different product.
       if (!slot.isConnected) return;
       row._catalogueDossier = dossier; // local read-only projection, never persisted
-      renderProductDossierDetails(slot, doc, dossier, row);
+      renderProductDossierDetails(context, slot, doc, dossier, row);
     } catch (err) {
       if (!slot.isConnected) return;
       slot.replaceChildren(text(doc, 'p', 'kmc-catalog-correction-hint',
