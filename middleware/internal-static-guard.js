@@ -47,11 +47,19 @@ function isInternalStaticPath(reqPath) {
   return false;
 }
 
+function isLegacyDashboardPath(reqPath) {
+  let normalized = String(reqPath || '');
+  try { normalized = decodeURIComponent(normalized); } catch { return false; }
+  return /^\/dashboards\/admin-legacy(?:\/|$)/i.test(normalized);
+}
+
 function internalStaticGuard(req, res, next) {
-  if ((req.method === 'GET' || req.method === 'HEAD') && isInternalStaticPath(req.path)) {
+  if ((req.method === 'GET' || req.method === 'HEAD') &&
+      (isInternalStaticPath(req.path) ||
+        (isLegacyDashboardPath(req.path) && process.env.ADMIN_LEGACY_ENABLED !== '1'))) {
     return res.status(404).end();
   }
   next();
 }
 
-module.exports = { isInternalStaticPath, internalStaticGuard };
+module.exports = { isInternalStaticPath, isLegacyDashboardPath, internalStaticGuard };
