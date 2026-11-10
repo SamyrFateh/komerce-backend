@@ -93,22 +93,28 @@ test('LOCAL_STOCK : un agent atteste puis remet au client par les vrais clics (H
     });
     const email=process.env.E2E_AGENT_RELAIS_EMAIL,password=process.env.E2E_AGENT_RELAIS_PASSWORD;
     assert(Boolean(email&&password),'test-role-credentials-present');
-    await page.goto('/login.html');
+    // The login runtime owns the post-auth window.location.replace().
+    // Supply its documented same-origin next parameter instead of issuing a
+    // competing page.goto while that redirect is still in flight.
+    const canonicalTarget='/admin/relais-live?view=execute&market='+MARKET;
+    await page.goto('/login.html?next='+encodeURIComponent(canonicalTarget));
     await page.locator('#email').fill(email);
     await page.locator('#password').fill(password);
     const login=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/auth/login'&&r.request().method()==='POST');
+    const canonicalResponse=page.waitForResponse(r=>{
+      const u=new URL(r.url());
+      return r.request().method()==='GET'&&u.pathname==='/admin/relais-live'&&
+        u.searchParams.get('view')==='execute'&&u.searchParams.get('market')===MARKET;
+    });
     await page.locator('#btn-submit').click();
     assert((await login).status()===200,'agent-login-200');
-    await page.waitForURL(u=>u.pathname!=='/login.html',{timeout:20000,waitUntil:'domcontentloaded'});
-    // G3 / Kanban officiel : commencer sur Flux Relais, puis activer
-    // explicitement la file « Réception locale » par le VRAI aiguillage UI.
-    // Le paramètre focus=receive seul ne constitue pas un geste Chromium.
-    // The canonical Kanban is explicitly routed by view=execute in app.js.
-    // Commit first: avoid ERR_ABORTED if the login landing redirects while loading.
-    const relayPage=await page.goto('/admin/relais-live?view=execute&market='+MARKET,
-      {waitUntil:'commit'});
-    assert(Boolean(relayPage&&relayPage.status()===200),'canonical-relay-navigation-200',
-      relayPage&&relayPage.status());
+    const relayPage=await canonicalResponse;
+    assert(relayPage.status()===200,'canonical-relay-navigation-200',relayPage.status());
+    await page.waitForURL(u=>u.pathname==='/admin/relais-live'&&
+      u.searchParams.get('view')==='execute'&&u.searchParams.get('market')===MARKET,
+      {timeout:20000,waitUntil:'domcontentloaded'});
+    // G3 / Kanban officiel : Flux Relais, then activate "Réception locale"
+    // using the real UI queue; focus=receive alone is not a Chromium gesture.
     const workspace=page.locator('[data-workspace-mode="relay-execution"]');
     await expect(workspace).toBeVisible({timeout:25000});
     const localQueue=workspace.locator('[data-relay-execution-jump="receive"]');
