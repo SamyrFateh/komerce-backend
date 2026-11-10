@@ -484,11 +484,25 @@ test.describe.serial(`Hub V1 : clics reels Chromium (${MARKET_CODE}, fixture E2E
       const { ctx, page } = await login(browser, baseURL, st.who);
       await openMarket(page, st.url);
       if (st.who === 'hub') { const t = page.getByRole('tab', { name: 'Actions Hub' }); if (await t.count()) await t.click(); }
-      await page.waitForTimeout(2500);
+      if (st.who === 'relais') {
+        // The four-column Relay Kanban is exclusive: after an imported pickup
+        // it may open on "Remise client" even though "Réception locale" has 1.
+        // This must be an actual Chromium click, not a URL/query shortcut.
+        const operation=st.suffix === 'receive' ? 'receive' : 'collect';
+        const workspace=page.locator('[data-workspace-mode="relay-execution"]');
+        await expect(workspace).toBeVisible({timeout:25000});
+        const jump=workspace.locator('[data-relay-execution-jump="'+operation+'"]');
+        await expect(jump).toBeVisible({timeout:20000});
+        await jump.click();
+        await expect(workspace).toHaveAttribute('data-relay-active-operation',operation);
+        await expect(jump).toHaveAttribute('aria-current','true');
+        await expect(workspace.locator('#relay-execution-'+operation)).toBeVisible();
+      }
+      await page.waitForTimeout(800);
       const btn = rowButton(page, loc.reference, st.label);
       await gesture(page, { key: st.key, role: st.role, route: `POST ${KM}/parcels/:ref/${st.suffix}`, ui: st.ui,
         match: (pp) => pp === `${KM}/parcels/${loc.reference}/${st.suffix}`, click: () => btn.first().click(),
-        absent: (await btn.count()) === 0 ? `colis local ${loc.reference} absent de la file (orders.simulation_scope exclu par queryParcels)` : null });
+        absent: (await btn.count()) === 0 ? `colis ${loc.reference} absent après clic sur la file Kanban ${st.suffix}` : null });
       await ctx.close();
     }
   });
