@@ -217,10 +217,10 @@
       DataTable.render(el, {
         emptyText: 'Aucune charge enregistrée',
         columns: [
-          { key: 'family', label: 'Famille', render: r => r.family || r.category || '—' },
-          { key: 'label',  label: 'Libellé', render: r => r.label || r.name || '—' },
+          { key: 'family', label: 'Famille', render: r => esc(r.family || r.category || '—') },
+          { key: 'label',  label: 'Libellé', render: r => esc(r.label || r.name || '—') },
           { key: 'amount_kmf', label: 'Montant', align: 'right', render: r => fmt(r.amount_kmf || r.amount || 0) },
-          { key: 'period', label: 'Période', render: r => r.period || r.month || '—' },
+          { key: 'period', label: 'Période', render: r => esc(r.period || r.month || '—') },
         ],
         rows: list,
       });

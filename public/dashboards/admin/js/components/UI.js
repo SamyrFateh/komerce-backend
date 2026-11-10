@@ -35,29 +35,48 @@
     info: 'ℹ️',
   };
 
+  function safeActionHref(raw) {
+    const href = String(raw || '').trim();
+    // Only same-origin application paths; reject protocol-relative and backslash URLs.
+    return href.startsWith('/') && !href.startsWith('//') && !href.includes('\\') &&
+      !/[\u0000-\u001f\u007f]/.test(href) ? href : '';
+  }
+
   function render(alert) {
     const div = document.createElement('div');
-    const level = alert.level || 'info';
+    const rawLevel = String(alert.level || 'info');
+    const level = /^[a-z0-9_-]+$/i.test(rawLevel) ? rawLevel : 'info';
     div.className = `alert-item is-${level}`;
 
     const icon = ICONS[alert.key] || ICONS[level] || 'ℹ️';
-    const action = alert.action_url
-      ? `<a href="${alert.action_url}" class="alert-action">${alert.action_label || 'Voir'}</a>`
-      : '';
+    const iconEl = document.createElement('div');
+    iconEl.className = 'alert-icon';
+    iconEl.textContent = icon;
+    div.appendChild(iconEl);
 
-    div.innerHTML = `
-      <div class="alert-icon">${icon}</div>
-      <div class="alert-content">
-        <div class="alert-title">${alert.label || alert.message || alert.source || 'Alerte'}</div>
-        <div class="alert-meta">
-          ${alert.count != null ? `${alert.count} concerné(s)` : ''}
-          ${alert.created_at ? ` · ${new Date(alert.created_at).toLocaleDateString('fr-FR')}` : ''}
-          ${alert.source ? ` · ${alert.source}` : ''}
-        </div>
-      </div>
-      ${action}
-    `;
+    const content = document.createElement('div');
+    content.className = 'alert-content';
+    const title = document.createElement('div');
+    title.className = 'alert-title';
+    title.textContent = alert.label || alert.message || alert.source || 'Alerte';
+    content.appendChild(title);
 
+    const meta = document.createElement('div');
+    meta.className = 'alert-meta';
+    meta.textContent = (alert.count != null ? `${alert.count} concerné(s)` : '') +
+      (alert.created_at ? ` · ${new Date(alert.created_at).toLocaleDateString('fr-FR')}` : '') +
+      (alert.source ? ` · ${alert.source}` : '');
+    content.appendChild(meta);
+    div.appendChild(content);
+
+    const href = safeActionHref(alert.action_url);
+    if (href) {
+      const link = document.createElement('a');
+      link.className = 'alert-action';
+      link.setAttribute('href', href);
+      link.textContent = alert.action_label || 'Voir';
+      div.appendChild(link);
+    }
     return div;
   }
 
