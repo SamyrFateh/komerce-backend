@@ -138,4 +138,11 @@ describe('order-mutation-service', () => {
       mutations.markCashReminderSent(q, { orderId: 'o1', reminder: 'other' }),
     ).rejects.toThrow('reminder invalide');
   });
+
+  test('markPickupSecretRevealed est gardé one-shot (IS NULL ... RETURNING)', async () => {
+    const q = executor();
+    await mutations.markPickupSecretRevealed(q, 'o1');
+    expect(q.query.mock.calls[0][0]).toMatch(/pickup_secret_revealed_at IS NULL[\s\S]*RETURNING id/);
+    expect(q.query.mock.calls[0][1]).toEqual(['o1']);
+  });
 });

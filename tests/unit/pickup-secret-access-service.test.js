@@ -6,8 +6,12 @@
  * @test-requires none
  */
 
-jest.mock('../../db', () => ({ query: jest.fn() }));
-jest.mock('../../services/order-mutation-service', () => ({ markPickupSecretRevealed: jest.fn() }));
+jest.mock('../../db', () => {
+  const query = jest.fn();
+  return { query, withTransaction: jest.fn((cb) => cb({ query })) };
+});
+const mockMarkRevealed = jest.fn();
+jest.mock('../../services/order-mutation-service', () => ({ markPickupSecretRevealed: (...a) => mockMarkRevealed(...a) }));
 jest.mock('../../utils/pickup-receipt-html', () => ({ buildReceiptHTML: jest.fn(() => '<html>receipt</html>') }));
 jest.mock('../../utils/logger', () => ({ child: () => ({ info: jest.fn(), warn: jest.fn() }) }));
 
@@ -17,11 +21,13 @@ const {
   issuePrintToken,
   getReceiptHTML,
   revealOnce,
+  consumeRevealCodeOnce,
 } = require('../../services/pickup-secret-access-service');
 
 beforeEach(() => {
   jest.clearAllMocks();
   db.query.mockReset();
+  mockMarkRevealed.mockReset();
 });
 
 describe('pickup-secret-access-service', () => {
@@ -49,5 +55,50 @@ describe('pickup-secret-access-service', () => {
       status: 404,
       body: { error: 'Commande introuvable' },
     });
+  });
+
+  const freshOrder = (over = {}) => ({
+    id: 'o1', reference: 'R1', user_id: 'u1', pickup_code_recipient_user_id: null,
+    pickup_secret_channel: 'stripe', pickup_secret_emitted_at: new Date().toISOString(),
+    pickup_secret_revealed_at: null, pickup_secret_last4: 'AB12', pickup_secret_hash: 'h', total_kmf: 100,
+    ...over,
+  });
+
+  test('revealOnce : commande sans destinataire ni propriétaire -> 403 (jamais d\'accès ouvert)', async () => {
+    db.query.mockResolvedValueOnce({ rows: [freshOrder({ user_id: null })] });
+    const r = await revealOnce({ orderId: 'o1', userId: 'u1' });
+    expect(r.status).toBe(403);
+    expect(mockMarkRevealed).not.toHaveBeenCalled();
+  });
+
+  test('revealOnce : 2 appels concurrents -> exactement un 200 (garde IS NULL)', async () => {
+    db.query.mockResolvedValue({ rows: [freshOrder()] });
+    mockMarkRevealed.mockResolvedValueOnce({ rowCount: 1 }).mockResolvedValue({ rowCount: 0 });
+    db.withTransaction.mockImplementation((cb) => cb({ query: jest.fn().mockResolvedValue({ rows: [{ code: 'A7K-3M9-P2' }] }) }));
+    const [a, b] = await Promise.all([
+      revealOnce({ orderId: 'o1', userId: 'u1' }),
+      revealOnce({ orderId: 'o1', userId: 'u1' }),
+    ]);
+    expect([a.status, b.status].sort()).toEqual([200, 410]);
+    expect(mockMarkRevealed).toHaveBeenCalledTimes(2);
+  });
+
+  test('revealOnce : code absent -> 410 et rollback (revealed_at non conservé)', async () => {
+    db.query.mockResolvedValueOnce({ rows: [freshOrder()] });
+    mockMarkRevealed.mockResolvedValueOnce({ rowCount: 1 });
+    let rolledBack = false;
+    db.withTransaction.mockImplementationOnce(async (cb) => {
+      try { return await cb({ query: jest.fn().mockResolvedValue({ rows: [] }) }); }
+      catch (e) { rolledBack = true; throw e; }
+    });
+    const r = await revealOnce({ orderId: 'o1', userId: 'u1' });
+    expect(r.status).toBe(410);
+    expect(rolledBack).toBe(true);
+  });
+
+  test('consumeRevealCodeOnce propage une erreur SQL inattendue', async () => {
+    mockMarkRevealed.mockRejectedValueOnce(new Error('db down'));
+    db.withTransaction.mockImplementationOnce((cb) => cb({ query: jest.fn() }));
+    await expect(consumeRevealCodeOnce('o1')).rejects.toThrow('db down');
   });
 });
