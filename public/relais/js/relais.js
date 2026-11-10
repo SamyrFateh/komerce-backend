@@ -109,7 +109,7 @@ const R = (() => {
       // Alertes strip
       const aw = document.getElementById('alertes-wrap');
       aw.innerHTML = (d.alertes||[]).map(a =>
-        `<div class="alert-strip ${a.type}">${a.type==='warning'?'⚠️':a.type==='danger'?'🚨':'ℹ️'} ${esc(a.message)}</div>`
+        `<div class="alert-strip ${esc(a.type)}">${a.type==='warning'?'⚠️':a.type==='danger'?'🚨':'ℹ️'} ${esc(a.message)}</div>`
       ).join('');
       // Les incidents canoniques sont une file de connaissance distincte des signalements locaux.
       // Une alerte doit rester visible même si la commande n'est pas encore expédiée.
@@ -164,7 +164,7 @@ const R = (() => {
     const urgBadge = o.urgence === 'critique' ? '<span class="badge red">+120h</span>' : o.urgence === 'haute' ? '<span class="badge amber">+72h</span>' : '';
     return `<div class="order-card ${uc}" data-id="${esc(o.id)}">
       <div class="card-top"><div class="card-ref">${esc(o.reference)}</div><div class="card-age">${ago(o.created_at)}</div></div>
-      <div class="card-client">${o.client_nom||'—'}</div>
+      <div class="card-client">${esc(o.client_nom||'—')}</div>
       <div class="card-meta">
         <span class="badge ${scol(o.status)}">${esc(slbl(o.status))}</span>
         <span class="badge gray">${o.nb_items||0} art.</span>
@@ -375,9 +375,9 @@ const R = (() => {
     if (!_order.paiement?.a_encaisser?.available) { toast('Montant local indisponible — contactez le responsable pays', 'error'); return; }
     _cashAmount = _order.paiement.a_encaisser.amount;
     document.getElementById('cash-detail').innerHTML = `
-      Commande <strong>${_order.order.reference}</strong><br>
+      Commande <strong>${esc(_order.order.reference)}</strong><br>
       Montant à encaisser : <strong style="color:var(--amber)">${money(_order.paiement.a_encaisser)}</strong><br>
-      Client : ${_order.client?.nom||'—'}
+      Client : ${esc(_order.client?.nom||'—')}
     `;
     document.getElementById('cash-modal').classList.add('open');
   }
