@@ -244,7 +244,7 @@ test('Revues visuelles FR : état explicite sans présélection, POST canonique,
 
 test('Fiche commerciale complète : galerie, variantes et correction FR disponibles depuis Catalogue', () => {
   expect(ui).toContain("data-catalog-canonical-gallery");
-  expect(ui).toContain("Images canoniques actives");
+  expect(ui).toContain("1 · Inspecter les images fournisseur");
   expect(ui).toContain("img.loading = 'lazy'");
   expect(ui).toContain("data-catalog-variants");
   expect(ui).toContain("stock_semantics");
