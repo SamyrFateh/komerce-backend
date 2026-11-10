@@ -78,6 +78,24 @@ test('G6 real Chromium verifies exactly 16 individual supplier images and their 
   expect(source).toContain('if(!mediaProven)process.exitCode=2');
 });
 
+test('G6 focused UX: real browser checks sequential navigation, 3 close methods and 390px mobile',()=>{
+  expect(source).toContain("'[data-catalog-review-navigation]'");
+  expect(source).toContain("'[data-catalog-media-progress]'");
+  expect(source).toContain("'[data-workspace-action=\"catalog-media-next\"]'");
+  expect(source).toContain("'[data-workspace-action=\"catalog-media-previous\"]'");
+  expect(source).toContain("await nextImage.click()");
+  expect(source).toContain("await figure.waitFor({state:'visible'");
+  expect(source).toContain("MEDIA_NAVIGATION_STEP_DRIFT");
+  expect(source).toContain("MEDIA_DRAWER_CLOSE_BUTTON_FAILED");
+  expect(source).toContain("MEDIA_DRAWER_ESCAPE_FAILED");
+  expect(source).toContain("MEDIA_DRAWER_BACKDROP_FAILED");
+  expect(source).toContain("await page.keyboard.press('Escape')");
+  expect(source).toContain("viewport:{width:390,height:844}");
+  expect(source).toContain("PASS_ONE_IMAGE_AT_A_TIME_ESCAPE");
+  expect(source).toContain("report.mobile_ux?.status==='PASS_ONE_IMAGE_AT_A_TIME_ESCAPE'");
+  expect(source).toContain('blocked.length>0');
+});
+
 test('review proof is human-only: Chromium rejects empty consent, never signs or posts decisions',()=>{
   expect(source).toContain("['','NONE','PRESENT','UNREADABLE']");
   expect(source).toContain("await state.inputValue()!==''");
