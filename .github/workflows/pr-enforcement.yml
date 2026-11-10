@@ -830,6 +830,8 @@ jobs:
           node-version: '20'
           cache: npm
       - run: npm ci
+      # Le preflight rejoue « Boutique fast gates » (jest + jsdom du workspace boutique) quand le diff touche public/boutique.
+      - run: npm --prefix public/boutique ci
       - name: Execute real npm run pr:preflight on clean PR SHA
         # Le gate touched-tests accepte une section ## Tests du body PR (preuve C) ;
         # sans PR_BODY, le preflight CI refusait un diff d'en-tetes que le job
