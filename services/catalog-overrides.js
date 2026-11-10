@@ -66,7 +66,7 @@ async function assertFrenchPreparation(q, productId, fields) {
   // A source-English title or description copied verbatim must not become
   // "reviewed manual French" merely because the other field is French.
   // This can occur from the canonical inline editor's per-field blur.
-  const normalized = value => String(value || '').replace(/\\s+/g, ' ').trim().toLocaleLowerCase('fr');
+  const normalized = value => String(value || '').replace(/\s+/g, ' ').trim().toLocaleLowerCase('fr');
   const unchangedTitle = normalized(product.name_source)
     && normalized(name) === normalized(product.name_source);
   const unchangedDescription = normalized(product.description_source)
