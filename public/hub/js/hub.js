@@ -173,13 +173,13 @@ const Hub=(()=>{
     }
     if(hasDraft&&allOk&&!hasReady){
       const dp=parcels.find(p=>p.status==='draft');
-      html+=`<button class="btn btn-amber" data-act="mark-ready" data-id="${dp.id}">✓ Marquer colis prêt</button>`;
+      html+=`<button class="btn btn-amber" data-act="mark-ready" data-id="${esc(dp.id)}">✓ Marquer colis prêt</button>`;
     }
     if(hasReady){
       const rp=parcels.find(p=>p.status==='preparation');
       _parcelId=rp.id;
       html+=isPaid
-        ?`<button class="btn btn-primary" data-act="open-ship" data-id="${rp.id}">✈️ Expédier ${rp.reference}</button>`
+        ?`<button class="btn btn-primary" data-act="open-ship" data-id="${esc(rp.id)}">✈️ Expédier ${esc(rp.reference)}</button>`
         :`<button class="btn btn-secondary" disabled>✈️ Expédier (paiement manquant)</button>`;
     }
     html+=`<div class="btn-row"><button class="btn btn-secondary" data-act="open-incident">🚨 Incident</button><button class="btn btn-secondary" data-act="backorder" data-id="${esc(o.id)}">📋 Backorder</button></div>`;
