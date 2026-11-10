@@ -27,6 +27,7 @@ jobs:
       KOMERCE_TARGET_ENV: staging
       KOMERCE_DISABLE_CRONS: 'true'
       HUB_V1_E2E_APPLY_MODE: approved
+      HUB_V1_STAGING_DISPOSABLE_MODE: '1'
       EXPECTED_RAILWAY_ENVIRONMENT: staging
       DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
       STAGING_BASE_URL: https://komerce-backend-production.up.railway.app

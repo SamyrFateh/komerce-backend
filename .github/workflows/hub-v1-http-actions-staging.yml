@@ -51,6 +51,7 @@ jobs:
       HTTP_RUNNER_RUN8: ${{ inputs.run8 }}
       HUB_V1_CERTIFICATION_RUN: ${{ inputs.run8 }}
       HUB_V1_E2E_APPLY_MODE: approved
+      HUB_V1_STAGING_DISPOSABLE_MODE: '1'
       STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
       HTTP_RUNNER_MARKET: ${{ inputs.market }}
       E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
