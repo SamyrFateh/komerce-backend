@@ -4,6 +4,12 @@ Ce dossier réunit, pour chaque run de certification sur le staging, le rapport 
 
 On ajoute ici chaque nouvelle preuve, dans un sous-dossier `<marché>-<AAAAMMJJ>/`. La procédure se trouve dans `docs/recette/CERTIFICATION_V1_HANDOFF.md`.
 
+## Campagnes et décisions du 10 novembre 2026
+
+[Staging G2/G3/G4 — décision propriétaire, preuves vérifiées et limites](STAGING_G234_20261110.md).
+Ce rapport indexe les runs réels KM/CM/CG et les artefacts Github Actions.
+La campagne G4 a un verdict indépendant : ne pas annoncer son GO avant une exécution Chromium réussie.
+
 ## Runs réussis
 
 | Date | Marché | Fixture | Preuve | Verdict | Fichier |

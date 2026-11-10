@@ -8,8 +8,8 @@ test('sans activation propriétaire, le staging n autorise pas les écritures de
   expect(gates.find(c=>c.id==='DEDICATED_ATOMIC_CHECKOUT_SCOPE').pass).toBe(true);
   expect(gates.find(c=>c.id==='SIMULATED_CUSTOMER_PAYMENT_PROVIDER_BYPASS_VERIFIED').pass).toBe(true);
   expect(gates.filter(c=>!c.pass).map(c=>c.id)).toEqual([
-    'STAGING_DISPOSABLE_DATA_MODE_CONFIRMED',
-    'STAGING_EXISTING_RUNNER_OWNER_AUTHORIZED',
+    'STAGING_FIXTURE_OWNERSHIP_AND_CLEANUP_CERTIFIED',
+    'STAGING_E2E_CROSS_SERVICE_RUNNER_REVIEWED',
   ]);
 });
 
@@ -32,7 +32,7 @@ test('mode jetable owner-only autorise les workflows existants tout en préserva
     {STAGING_BASE_URL:'https://example.com'},
   ]){
     const g=sourceGates(process.cwd(),{...owner,...changed});
-    expect(g.find(x=>x.id==='STAGING_DISPOSABLE_DATA_MODE_CONFIRMED').pass).toBe(false);
+    expect(g.find(x=>x.id==='STAGING_FIXTURE_OWNERSHIP_AND_CLEANUP_CERTIFIED').pass).toBe(false);
   }
 });
 

@@ -91,14 +91,14 @@ function sourceGates(root=process.cwd(),env=process.env) {
       detail:'Service interne sans PSP/caisse, source simulée, rollback et test PG16 obligatoirement exécuté en CI ; ce gate source ne certifie pas le staging',
     },
     {
-      id:'STAGING_DISPOSABLE_DATA_MODE_CONFIRMED',
+      id:'STAGING_FIXTURE_OWNERSHIP_AND_CLEANUP_CERTIFIED',
       pass:disposableStagingAuthorized(env),
-      detail:'Données staging jetables, mode de recette explicitement activé par le propriétaire ; reset existant après campagne',
+      detail:'Décision propriétaire 10/11/2026 : dispense du nettoyage selectif par campagne, donnees staging jetables ; cette approbation ne signifie PAS qu un cleanup a deja ete execute',
     },
     {
-      id:'STAGING_EXISTING_RUNNER_OWNER_AUTHORIZED',
+      id:'STAGING_E2E_CROSS_SERVICE_RUNNER_REVIEWED',
       pass:disposableStagingAuthorized(env),
-      detail:'Exécution du runner métier existant uniquement sur staging par le propriétaire ; les 13 étapes restent à prouver',
+      detail:'Décision propriétaire 10/11/2026 : autorisation du runner multi-services existant en staging reel, preuve des etapes a etablir par le run lui-meme',
     },
   ];
 }
