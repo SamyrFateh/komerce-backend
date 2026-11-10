@@ -426,3 +426,22 @@
     transform: scale(var(--k-modal-subject-scale, 1));
   }
 }
+
+/* Source-linked French customer presentation, shared by desktop and mobile.
+   A caption is readable below the image, never inferred from source alt text. */
+.k-modal-media-fr-caption {
+  display: block;
+  box-sizing: border-box;
+  margin: 6px 0 10px;
+  padding: 9px 12px;
+  background: #f4f5f6;
+  border: 1px solid #cbd1d9;
+  border-radius: 7px;
+  color: #161b20;
+  font-weight: 650;
+  font-size: 13px;
+  line-height: 1.45;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+.k-modal-media-fr-caption[hidden] { display: none !important; }
