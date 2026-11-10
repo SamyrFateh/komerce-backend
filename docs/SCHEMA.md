@@ -334,7 +334,7 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 
 | Table | Rôle |
 |---|---|
-| `users` **Migration 368 (`intended_migration_schema`)** : + `account_activation_required` BOOLEAN NOT NULL DEFAULT FALSE (nouveaux comptes collaborateurs invités bloqués avant consommation du lien) et + `credentials_changed_at` TIMESTAMPTZ nullable (borne serveur de révocation de tous les JWT antérieurs à un changement/récupération de mot de passe) ; les utilisateurs existants restent activés à l'application de la migration. | Utilisateurs (rôle via ENUM `user_role`). **Migration 320 (`intended_migration_schema`)** : ajoute la valeur `finance` à `public.user_role` pour le portail interne, sans créer d'utilisateur ni accorder de membership ou de capability. `sourcing` provient de la migration 148a ; `agent_transitaire` existe dans l'ENUM historique. |
+| `users` | Utilisateurs (rôle via ENUM `user_role`). **Migration 320 (`intended_migration_schema`)** : ajoute la valeur `finance` à `public.user_role` pour le portail interne, sans créer d'utilisateur ni accorder de membership ou de capability. `sourcing` provient de la migration 148a ; `agent_transitaire` existe dans l'ENUM historique. **Migration 368 (`intended_migration_schema`)** : + `account_activation_required` BOOLEAN NOT NULL DEFAULT FALSE (nouveaux comptes collaborateurs invités bloqués avant consommation du lien) et + `credentials_changed_at` TIMESTAMPTZ nullable (borne serveur de révocation de tous les JWT antérieurs à un changement/récupération de mot de passe) ; les utilisateurs existants restent activés à l'application de la migration. |
 | `otp_codes` | Codes OTP. |
 | `user_pickup_authorizations` | Autorisation nominative courante de retrait exceptionnel, propriété auth-identity. Une ligne par utilisateur ; aucun numéro, copie ou donnée de pièce d’identité conservé. Migration 121. |
 | `revoked_tokens` | Révocation JWT (logout) : `jti` révoqué, `expires_at` pour purge. Câblage : `routes/auth.js` insère au logout, `middleware/auth.js` vérifie, cron de purge dans `bootstrap/crons.js`. Migration 072. |
@@ -409,6 +409,34 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 
 
 ---
+
+### 4.16 Tables promues depuis les blocs schema-pending (lot C, dump live vérifié)
+
+| Table | Rôle |
+|---|---|
+| `cash_custody_provenance_edges` | Revendications de provenance explicites (portions de collecte cash rattachées aux réceptions de garde), append-only ; ne certifie pas la clôture financière. Migration 304. |
+| `catalog_media_recovery_audit` | Preuve append-only de la restauration explicite de médias fournisseur sur un ensemble `catalog_media` vide ; ni décision de publication ni autorisation marché. Migration 351. |
+| `demo_kpr_backup_20261024` | Sauvegarde ponctuelle de démo du 2026-10-24 ; vidage validé par l'utilisateur (classification staging-reset), pas de DROP. Hors flux applicatif. |
+| `demo_kpr_exposure_backup_20261024` | Sauvegarde ponctuelle de démo du 2026-10-24 (exposition) ; vidage validé par l'utilisateur (classification staging-reset), pas de DROP. Hors flux applicatif. |
+| `e2e_test_accounts` | Comptes de test E2E marqués ; écrit uniquement par `scripts/recette/staging-e2e-provision.js`, lu par `services/simulation-visibility.js`. Migration 397. |
+| `financial_movement_documents` | Pièces justificatives d'un mouvement financier (plusieurs par mouvement, sans doublon). Migration 360. |
+| `financial_movements` | Journal financier canonique : projection idempotente des faits métier (natif + EUR + taux figés + état + provenance), pas de partie double. Migration 360. |
+| `fx_pegs` | Seul peg admis USD→DJF (Banque centrale de Djibouti), append-only, daté (`valid_from`). Migration 311. |
+| `fx_public_reference_quotes` | Cotations EUR/XXX BCE datées, sourcées, ingérées automatiquement et immuables ; distinctes des observations manuelles. Migration 319. |
+| `fx_rate_observations` | EUR→USD flottant sourcé, daté, approuvé par une 2e personne ; distinct de `currency_parities`. Migration 311. |
+| `hub_authorization_grants` | Grants d'autorisation directrice Hub (`purchase_commitment`, `supplier_payment`) attribués/révoqués par l'Admin central ; aucun rôle ajouté. Migration 380. |
+| `international_n1_reconciliations` | Snapshot idempotent du N1 international réel par expédition ; ne prévoit ni N3 ni prévision. Migration 355. |
+| `international_shipment_charges` | Faits de frais documentaires d'expédition internationale, non ventilés au N1 tant que le rapprochement douane n'est pas certifié. Migration 354. |
+| `international_shipment_events` | Journal d'événements/preuves de l'expédition internationale. Migration 354. |
+| `international_shipment_hub_units` | Lien carton KOM-BOX (`hub_physical_units`) → expédition internationale du même marché. Migration 358. |
+| `international_shipment_relay_receipts` | Attestations de réception relais par article d'expédition (attendu/reçu), écart traçable via `incidents`. Migration 364. |
+| `international_shipments` | Transport international réel séparé des déclarations douanières ; progression par preuves et frais de fret facturés. Migration 354. |
+| `market_central_collection_modes` | Moyens d'encaissement central (`stripe_eur`, `paypal_eur`) autorisés par marché ; absence ou `revoked_at` = refus. Migration 307. |
+| `market_delivery_attestations` | Preuve centrale, vérifiable et révocable, qu'une liaison de transport et un tarif applicable existent pour un marché. Migration 305. |
+| `market_transport_sale_rates` | Tarif de vente transport par Market (devise du marché, par kg) ; absent = refus hors KMF ; distinct du coût de fret attesté. Migration 313. |
+| `order_item_refund_reservations` | Réservations partielles de remboursement par article adossées à une attestation relais et à une intention PSP durable ; aucune sortie de fonds automatique. Migration 365. |
+| `purchase_order_authorizations` | Décisions append-only de la directrice Hub sur un bon de commande (`purchase_commitment` ou `supplier_payment`) ; UPDATE/DELETE refusés. Migration 380. |
+| `refund_execution_intents` | Intention de remboursement durable avant appel Stripe/PayPal ; aucun backfill legacy automatique. Migration 317. |
 
 ## 5. Vues critiques
 
@@ -687,76 +715,76 @@ Migration 300 ajoute `customs_shipment_fees.post_closure` (boolean, défaut fals
 `customs_shipment_parcel_events` is an append-only journal of parcel attach/detach events on an open customs shipment (groupage). Every event carries actor, date and a mandatory reason; UPDATE/DELETE are refused. It deliberately has no foreign key (like `customs_shipment_financial_audit`) so the evidence survives deactivation. Cost lines are re-allocated by the existing conserving allocator in the same transaction; prices and margin writers are untouched.
 
 
-<!-- schema-pending: cash_custody_provenance_edges (migration 304, not yet live) -->
+<!-- schema-pending: cash_custody_provenance_edges (migration 304, now live) -->
 ### Cash custody provenance edges (migration 304 — intended_migration_schema)
 
-`cash_custody_provenance_edges` is a new, **not yet live** append-only table proposed by migration 304. It associates explicit collection-level cash portions with custody receipt events, with optional parent edges for multi-hop transfers, conservation ceilings and Market consistency. It is not a second custody balance authority and does not establish final financial closure. Migration remains draft and requires isolated PostgreSQL verification for reversals, losses, concurrency and end-to-end traceability before merge.
+`cash_custody_provenance_edges` is a new append-only table proposed by migration 304. It associates explicit collection-level cash portions with custody receipt events, with optional parent edges for multi-hop transfers, conservation ceilings and Market consistency. It is not a second custody balance authority and does not establish final financial closure. Migration remains draft and requires isolated PostgreSQL verification for reversals, losses, concurrency and end-to-end traceability before merge.
 <!-- /schema-pending -->
 
-<!-- schema-pending: hub_authorization_grants (migration 380, not yet live) -->
+<!-- schema-pending: hub_authorization_grants (migration 380, now live) -->
 ### Hub authorization grants (migration 380 — intended_migration_schema)
 
-`hub_authorization_grants` is a new, **not yet live** table proposed by migration 380. It records which Hub account holds which directrice authorization (`purchase_commitment` or `supplier_payment`), granted and revoked by the central Admin (`granted_by`, `revoked_by`, `revoke_reason`). At most one active grant per user and type. It adds no role: it only states who may take the two distinct decisions recorded in `purchase_order_authorizations`.
+`hub_authorization_grants` is a new table proposed by migration 380. It records which Hub account holds which directrice authorization (`purchase_commitment` or `supplier_payment`), granted and revoked by the central Admin (`granted_by`, `revoked_by`, `revoke_reason`). At most one active grant per user and type. It adds no role: it only states who may take the two distinct decisions recorded in `purchase_order_authorizations`.
 <!-- /schema-pending -->
 
-<!-- schema-pending: e2e_test_accounts (migration 397, not yet live) -->
+<!-- schema-pending: e2e_test_accounts (migration 397, now live) -->
 ### E2E test accounts (migration 397 — intended_migration_schema)
 
-`e2e_test_accounts` is a new, **not yet live** table proposed by migration 397. It marks the test accounts provisioned for E2E recette (`user_id` primary key referencing `users`, `created_by`, `created_at`). It is written only by `scripts/recette/staging-e2e-provision.js` (idempotent, staging guards); no route or screen writes to it. It is read by `services/simulation-visibility.js` (`isE2eTestAccount`): only a marked account sees `orders.simulation_scope` orders in the operations workspace queues. Empty table = nobody sees simulation.
+`e2e_test_accounts` is a new table proposed by migration 397. It marks the test accounts provisioned for E2E recette (`user_id` primary key referencing `users`, `created_by`, `created_at`). It is written only by `scripts/recette/staging-e2e-provision.js` (idempotent, staging guards); no route or screen writes to it. It is read by `services/simulation-visibility.js` (`isE2eTestAccount`): only a marked account sees `orders.simulation_scope` orders in the operations workspace queues. Empty table = nobody sees simulation.
 <!-- /schema-pending -->
 
-<!-- schema-pending: purchase_order_authorizations (migration 380, not yet live) -->
+<!-- schema-pending: purchase_order_authorizations (migration 380, now live) -->
 ### Purchase order authorizations (migration 380 — intended_migration_schema)
 
-`purchase_order_authorizations` is a new, **not yet live** append-only table proposed by migration 380. Each row is one directrice decision on a purchase order (`purchase_commitment` or `supplier_payment`) with decider, timestamp, amount, currency and proof reference. One decision per type and PO; UPDATE and DELETE are refused. A submitted PO is never an implicit commitment, and a payment is never implicitly authorized.
+`purchase_order_authorizations` is a new append-only table proposed by migration 380. Each row is one directrice decision on a purchase order (`purchase_commitment` or `supplier_payment`) with decider, timestamp, amount, currency and proof reference. One decision per type and PO; UPDATE and DELETE are refused. A submitted PO is never an implicit commitment, and a payment is never implicitly authorized.
 <!-- /schema-pending -->
 
-<!-- schema-pending: market_delivery_attestations (migration 305, not yet live) -->
+<!-- schema-pending: market_delivery_attestations (migration 305, now live) -->
 ### Market delivery attestations (migration 305 — intended_migration_schema)
 
-`market_delivery_attestations` is a new, **not yet live** table proposed by migration 305 (Lot B, audit P1–P7). It carries the central proof that a Market is deliverable: a referenced carrier (`carriers`), mode, origin, strictly positive freight rate with currency/unit, transit days, documentary evidence reference, bounded validity and the central attestor; revocation is explicit (`revoked_at/by/reason`). It is not a boolean flag and has no backfill. Checkout refuses a Market without a valid attestation (or, for Markets with real collected-order history, the HISTORY basis). Writers: `services/market-delivery-proof-service.js` via central-admin routes only.
+`market_delivery_attestations` is a new table proposed by migration 305 (Lot B, audit P1–P7). It carries the central proof that a Market is deliverable: a referenced carrier (`carriers`), mode, origin, strictly positive freight rate with currency/unit, transit days, documentary evidence reference, bounded validity and the central attestor; revocation is explicit (`revoked_at/by/reason`). It is not a boolean flag and has no backfill. Checkout refuses a Market without a valid attestation (or, for Markets with real collected-order history, the HISTORY basis). Writers: `services/market-delivery-proof-service.js` via central-admin routes only.
 <!-- /schema-pending -->
 
-<!-- schema-pending: market_central_collection_modes (migration 307, not yet live) -->
+<!-- schema-pending: market_central_collection_modes (migration 307, now live) -->
 ### Market central collection modes (migration 307 — intended_migration_schema)
 
-`market_central_collection_modes` is a new, **not yet live** table proposed by migration 307 (lot 3, stabilisation multi-pays). It states, per Market, which central collection mode (`stripe_eur`, `paypal_eur`) is authorised, with a mandatory `evidence_ref`, the authoriser and an explicit `revoked_at`. Absence of a row means refusal (fail-closed). Backfill: KM only, to preserve current behaviour; CM/CG/DJ receive no authorisation until the owner defines the fund holder. Reader: `services/market-payment-collection-gate.js` (checkout, Stripe intent, PayPal create-order).
+`market_central_collection_modes` is a new table proposed by migration 307 (lot 3, stabilisation multi-pays). It states, per Market, which central collection mode (`stripe_eur`, `paypal_eur`) is authorised, with a mandatory `evidence_ref`, the authoriser and an explicit `revoked_at`. Absence of a row means refusal (fail-closed). Backfill: KM only, to preserve current behaviour; CM/CG/DJ receive no authorisation until the owner defines the fund holder. Reader: `services/market-payment-collection-gate.js` (checkout, Stripe intent, PayPal create-order).
 <!-- /schema-pending -->
 
-<!-- schema-pending: fx_rate_observations (migration 311, not yet live) -->
+<!-- schema-pending: fx_rate_observations (migration 311, now live) -->
 ### Taux EUR→USD observés (migration 311 — intended_migration_schema)
 
 `fx_rate_observations` est une nouvelle table **not yet live** : EUR→USD flottant, sourcé, daté, approuvé par une deuxième personne, append-only, aucune valeur pré-remplie. Lecteur : `services/fx-chain-service.js` (fail-closed `fx_rate_unavailable`). Doctrine : `docs/doctrine/FX_CHAIN_DJF.md`.
 <!-- /schema-pending -->
 
-<!-- schema-pending: fx_pegs (migration 311, not yet live) -->
+<!-- schema-pending: fx_pegs (migration 311, now live) -->
 ### Pegs de change (migration 311 — intended_migration_schema)
 
 `fx_pegs` est une nouvelle table **not yet live** : seul peg admis USD→DJF (Banque centrale de Djibouti), daté, append-only. Lecteur : `services/fx-chain-service.js`. Migration 312 : bande 100–300, TRUNCATE interdit. Migration 314 : 2e peg USD→AED (3,6725, bande 3–4,5), unicité (devise, valid_from).
 <!-- /schema-pending -->
 
-<!-- schema-pending: market_transport_sale_rates (migration 313, not yet live) -->
+<!-- schema-pending: market_transport_sale_rates (migration 313, now live) -->
 ### Tarifs de vente transport par Market (migration 313 — intended_migration_schema)
 
 `market_transport_sale_rates` est une nouvelle table **not yet live** : tarif de vente du transport par Market (clés `SEA_KMF_PER_KG_COMMERCIAL` / `AIR_KMF_PER_KG_TAXABLE` de `business_rules`, par kg dans la devise du marché, convertis en KMF de base par la voie gouvernée : parités fixes ou chaîne FX DJF), avec pièce justificative obligatoire, un seul tarif actif par (Market, clé), révocable. Absence de tarif = refus fail-closed hors marché KMF ; le coût de fret attesté n'est jamais un prix. Lecteur : `services/market-transport-sale-rates.js` (checkout).
 <!-- /schema-pending -->
 
 
-<!-- schema-pending: refund_execution_intents (migration 317, not yet live) -->
+<!-- schema-pending: refund_execution_intents (migration 317, now live) -->
 ### Intentions de remboursement (migration 317 — intended_migration_schema)
 
 `refund_execution_intents` est une nouvelle table **not yet live**. Elle conserve l'intention avant tout appel PSP Stripe/PayPal : commande, marché, capture, événement stable, montant EUR et statut. Les anciennes lignes `refunds` sont à rapprocher avant activation. Service propriétaire : `services/refund-intent-ledger.js` (non activé). Contrat : `docs/architecture/REFUND_EXECUTION_AUTHORITY.md`.
 <!-- /schema-pending -->
 
 
-<!-- schema-pending: fx_public_reference_quotes (migration 319, not yet live) -->
+<!-- schema-pending: fx_public_reference_quotes (migration 319, now live) -->
 ### Cotations officielles EUR/XXX — migration 319 (`intended_migration_schema`)
 
 `fx_public_reference_quotes` est une nouvelle table **not yet live**, déclarée par `migrations/319_fx_public_reference_quotes.sql`. Cotations publiques BCE EUR/XXX ingérées automatiquement, identifiées par `(base_ccy, quote_ccy, as_of)` ; champs `id`, `rate`, `source_label`, `source_ref`, `ingested_at`. Seules les cotations BCE officielles datées sont acceptées, sans imposer de validation humaine fictive. Invariants : append-only, pas de DELETE/TRUNCATE, pas de réécriture rétroactive, horodatage de collecte ; parités fixes KMF/XAF maintenues exclusivement dans `currency_parities`. Écrivain : `services/fx-public-reference-feed.js` ; lecteur : `services/fx-chain-service.js` ; snapshot transactionnel via `services/fx-authority.js`. Le bloc doit être promu par `schema-promote` lorsque la migration est réellement attestée dans le dump live Railway.
 <!-- /schema-pending -->
 
 
-<!-- schema-pending: catalog_media_recovery_audit (migration 351, not yet live) -->
+<!-- schema-pending: catalog_media_recovery_audit (migration 351, now live) -->
 ### Catalogue — audit de réintégration des médias (migration 351, en attente de promotion)
 
 `catalog_media_recovery_audit` conserve l'identité produit, la référence candidat fournisseur, l'acteur, la liste des identités médias fournisseur et l'empreinte SHA-256 du sous-ensemble média, avec les comptages avant/après. Le service `catalog-media-recovery` n'ajoute des médias à un brouillon inactif précédemment vide qu'après preuve source V2, sous autorisation Catalogue + Sourcing et transaction commune avec la ligne d'audit. Aucune publication ni exposition marché. Migration en PR, **non appliquée au staging** à ce stade.
@@ -764,7 +792,7 @@ Migration 300 ajoute `customs_shipment_fees.post_closure` (boolean, défaut fals
 
 ### Expéditions internationales — migration 354 (intended_migration_schema)
 
-<!-- schema-pending: international_shipments (migration 354, not yet live) -->
+<!-- schema-pending: international_shipments (migration 354, now live) -->
 
 `international_shipments` — Transport international réel : transitaire, mode, étape prouvée, volume, facture fret, suivi conteneur/BL et ETA ; dossier douane distinct.
 
@@ -776,13 +804,13 @@ Migration 300 ajoute `customs_shipment_fees.post_closure` (boolean, défaut fals
 
 <!-- /schema-pending -->
 
-<!-- schema-pending: international_shipment_events (migration 354, not yet live) -->
+<!-- schema-pending: international_shipment_events (migration 354, now live) -->
 
 `international_shipment_events` — Preuves append-only de transitions, acteur et horodatage ; ETA révisable avec historique.
 
 <!-- /schema-pending -->
 
-<!-- schema-pending: international_shipment_charges (migration 354, not yet live) -->
+<!-- schema-pending: international_shipment_charges (migration 354, now live) -->
 
 `international_shipment_charges` — Frais réels d'arrivée et de transport local, documentés, idempotents et append-only ; non ventilés en N1 sans rapprochement.
 
@@ -790,7 +818,7 @@ Migration 300 ajoute `customs_shipment_fees.post_closure` (boolean, défaut fals
 
 ### Rapprochement économique N1 international — migration 355 (pending live)
 
-<!-- schema-pending: international_n1_reconciliations (migration 355, not yet live) -->
+<!-- schema-pending: international_n1_reconciliations (migration 355, now live) -->
 
 `international_n1_reconciliations` — Dernière empreinte documentaire réconciliée par expédition internationale, conservation du fret, frais d'arrivée et transport local ; reprise idempotente, jamais estimation N3.
 
@@ -809,10 +837,10 @@ Migration 300 ajoute `customs_shipment_fees.post_closure` (boolean, défaut fals
 
 La migration 356 ajoute des libellés et descriptions spécifiques aux marchés, historisés et sans mutation du référentiel global.
 
-<!-- schema-pending: international_shipment_hub_units (migration 358, not yet live) -->
+<!-- schema-pending: international_shipment_hub_units (migration 358, now live) -->
 ### Hub P0 — lien carton KOM-BOX → expédition (migration 358 — intended_migration_schema)
 
-`international_shipment_hub_units` is a new, **not yet live** table proposed by migration 358 (#3247). It links a packed single-market KOM-BOX (`hub_physical_units`, `unit_type = MARKET_PARCEL`) to at most one `international_shipments` row of the same market while the shipment is still `hub_ready`. Columns: `shipment_id`, `physical_unit_id` (UNIQUE), `attached_by`, `attached_at`. Triggers refuse a non-packed unit, a cross-market link, a closed shipment, any UPDATE, and a DELETE after handover.
+`international_shipment_hub_units` is a new table proposed by migration 358 (#3247). It links a packed single-market KOM-BOX (`hub_physical_units`, `unit_type = MARKET_PARCEL`) to at most one `international_shipments` row of the same market while the shipment is still `hub_ready`. Columns: `shipment_id`, `physical_unit_id` (UNIQUE), `attached_by`, `attached_at`. Triggers refuse a non-packed unit, a cross-market link, a closed shipment, any UPDATE, and a DELETE after handover.
 <!-- /schema-pending -->
 
 
@@ -826,11 +854,11 @@ Le journal `international_shipment_events` accepte les événements `opened`, `b
 
 La migration 362 ajoute **`suppliers.owner_scope`** (`NULL` = catalogue global géré par l'admin ; `hub` = fournisseur local créé par le Hub, plateforme `local`/`whatsapp`, sans `auto_order`) et **`suppliers.created_by`** (utilisateur créateur). Le périmètre Hub ne modifie jamais le catalogue global et le déclencheur d'achat automatique ignore les fournisseurs `owner_scope = 'hub'`.
 
-<!-- schema-pending: financial_movements (migration 360, not yet live) -->
-<!-- schema-pending: financial_movement_documents (migration 360, not yet live) -->
+<!-- schema-pending: financial_movements (migration 360, now live) -->
+<!-- schema-pending: financial_movement_documents (migration 360, now live) -->
 ### Journal financier canonique — migration 360 (intended_migration_schema)
 
-`financial_movements` is a new, **not yet live** append-only journal (migration 360, Lot 5). One row per projected business fact, idempotent on `movement_key = source_kind:source_id:facet`. It keeps the **native amount and currency**, the EUR amount (`amount_eur`, `fx_status` ∈ snapshot / converted / native_eur / unavailable) with the frozen FX `fx_legs`, the business `state` (planned → committed → observed → settled → reversed, forward-only), the `provenance` and the links (market, order, purchase order, shipment, parcel, supplier, relay). A trigger freezes identity, native amounts, EUR and rates, forbids DELETE and any state regression. It is **not a double-entry ledger** (no debit/credit accounts). `financial_movement_documents` stores the supporting documents (proof references) of a movement, unique per (movement, kind, reference).
+`financial_movements` is a new append-only journal (migration 360, Lot 5). One row per projected business fact, idempotent on `movement_key = source_kind:source_id:facet`. It keeps the **native amount and currency**, the EUR amount (`amount_eur`, `fx_status` ∈ snapshot / converted / native_eur / unavailable) with the frozen FX `fx_legs`, the business `state` (planned → committed → observed → settled → reversed, forward-only), the `provenance` and the links (market, order, purchase order, shipment, parcel, supplier, relay). A trigger freezes identity, native amounts, EUR and rates, forbids DELETE and any state regression. It is **not a double-entry ledger** (no debit/credit accounts). `financial_movement_documents` stores the supporting documents (proof references) of a movement, unique per (movement, kind, reference).
 <!-- /schema-pending -->
 
 
@@ -845,10 +873,10 @@ La **migration 361** harmonise le transport canonique KOM-BOX et la projection �
 - `international_shipment_parcels` et `international_n1_allocation_links` : anciennes tables de jointure **retirées uniquement si vides** ; abort explicite de migration sinon. Le modèle canonique physique est `international_shipment_hub_units`. Toute imputation automatique de fret/douane aux lignes de commande est supprimée pour les expéditions internationales.
 La projection N1 prévisionnelle du pricing reste intacte ; l'ajustement prévision/réel se lit au niveau expédition/marché/période sans doubler les charges.
 
-<!-- schema-pending: international_shipment_relay_receipts (migration 364, not yet live) -->
+<!-- schema-pending: international_shipment_relay_receipts (migration 364, now live) -->
 ### Attestations de réception relais (migration 364 — intended_migration_schema)
 
-`international_shipment_relay_receipts` est une nouvelle table **pas encore live** (migration 364, Relais live). Une ligne = l'attestation immuable d'un agent relais pour un article d'une expédition internationale : `expected_qty` (placé en KOM-BOX de l'expédition), `received_qty`, `proof_ref` obligatoire, `incident_id` en cas d'écart. Unicité `(shipment_id, order_item_id)` ; UPDATE/DELETE refusés par trigger. L'étape `relay_received` du parcours en découle ; elle n'est posée ni par l'admin ni par l'agent Hub.
+`international_shipment_relay_receipts` est une nouvelle table (migration 364, Relais live). Une ligne = l'attestation immuable d'un agent relais pour un article d'une expédition internationale : `expected_qty` (placé en KOM-BOX de l'expédition), `received_qty`, `proof_ref` obligatoire, `incident_id` en cas d'écart. Unicité `(shipment_id, order_item_id)` ; UPDATE/DELETE refusés par trigger. L'étape `relay_received` du parcours en découle ; elle n'est posée ni par l'admin ni par l'agent Hub.
 <!-- /schema-pending -->
 
 ### Migration 366 — intention de schéma : réception locale sans expédition fictive
@@ -862,7 +890,7 @@ Le writer `mark-ordered` a été retiré par L1 : la commande import payée gén
 La capability obsolète est supprimée de `capability_registry`, `membership_capabilities`, `assignment_capability_ceiling` et `ceiling_template_capabilities`. Les anciens audits conservent un snapshot `market_delegation_audit.retired_capability` (lecture historique uniquement, aucune autorité). La FK historique utilise `ON DELETE SET NULL` ; les grants actifs ne peuvent plus référencer cette capability.
 
 
-<!-- schema-pending: order_item_refund_reservations (migration 365, not yet live) -->
+<!-- schema-pending: order_item_refund_reservations (migration 365, now live) -->
 ### E7 — réservations de remboursement par article (migration 365 — intended_migration_schema)
 
 Une réservation pour une quantité d'article réellement manquante au relais, reliée à une attestation immuable `international_shipment_relay_receipts.incident_id` et à une intention PSP déjà enregistrée, avec `operation_key` UUID stable et unique par commande. Les montants KMF/EUR dérivent de l'encaissement d'origine ; aucune nouvelle conversion. Un verrou de commande sérialise les décisions concurrentes et interdit de dépasser la quantité manquante ou le montant capturé. `status=reserved` **ne signifie pas remboursé** ; paiement, preuve PSP et journal `refunds` doivent suivre un circuit distinct avant `confirmed`. La colonne `order_items.qty_refunded` est créée par la même migration, avec contrainte `qty_refunded + qty_collected <= quantity` ; elle n'augmente qu'au même COMMIT que la preuve PSP confirmée et l'écriture du journal financier. Un reliquat manquant peut être remboursé lorsque d'autres quantités ont déjà été remises.

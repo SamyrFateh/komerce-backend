@@ -9,7 +9,7 @@
  * @depends       services/market-delegation-service.js
  * @used-by       routes/admin-market-control-plane.js
  * @db-read       markets, market_transport_sale_rates
- * @db-write      market_transport_sale_rates, market_delegation_audit (via delegation.audit)
+ * @db-write      market_transport_sale_rates, market_delegation_audit
  * @db-txn        caller-owned transaction for writes
  * @doctrine      transport_sale_price_not_freight_cost, local_currency_only, audit_required, fail_closed, no_country_branch
  * @impact-areas  checkout, transport, market, finance

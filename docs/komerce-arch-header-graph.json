@@ -20,14 +20,14 @@
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 2022,
-    "edges": 9932,
-    "dbTables": 236,
+    "graphNodes": 2019,
+    "edges": 9936,
+    "dbTables": 233,
     "doctrines": 784,
     "impactAreas": 207,
     "unresolvedCodeEdges": 953,
     "dbWriteViaOverlapWarnings": 12,
-    "multiWriterTables": 94
+    "multiWriterTables": 95
   },
   "byDomain": {
     "infrastructure": 25,
@@ -20507,7 +20507,7 @@
       "dbWrite": [
         "orders",
         "order_status_history",
-        "local_stock_allocations (via capacités canoniques)"
+        "local_stock_allocations"
       ],
       "dbWriteVia": [],
       "dbTxn": [
@@ -23232,7 +23232,11 @@
         "routes/admin-market-control-plane.js"
       ],
       "dbRead": [
-        "central authority grant tables",
+        "catalog_global_access_grants",
+        "dashboard_global_access_grants",
+        "decision_signal_global_access_grants",
+        "pricing_global_access_grants",
+        "sourcing_global_access_grants",
         "markets",
         "market_operating_assignments"
       ],
@@ -23575,7 +23579,7 @@
       ],
       "dbWrite": [
         "market_transport_sale_rates",
-        "market_delegation_audit (via delegation.audit)"
+        "market_delegation_audit"
       ],
       "dbWriteVia": [],
       "dbTxn": [
@@ -39335,9 +39339,9 @@
       "table": "hub_box_effective_placements"
     },
     {
-      "id": "db:local_stock_allocations (via capacités canoniques)",
+      "id": "db:local_stock_allocations",
       "type": "db-table",
-      "table": "local_stock_allocations (via capacités canoniques)"
+      "table": "local_stock_allocations"
     },
     {
       "id": "db:import_runtime_item_events",
@@ -39380,11 +39384,6 @@
       "table": "local_stock"
     },
     {
-      "id": "db:local_stock_allocations",
-      "type": "db-table",
-      "table": "local_stock_allocations"
-    },
-    {
       "id": "db:product_market_price_draft_events",
       "type": "db-table",
       "table": "product_market_price_draft_events"
@@ -39408,16 +39407,6 @@
       "id": "db:market_central_collection_modes",
       "type": "db-table",
       "table": "market_central_collection_modes"
-    },
-    {
-      "id": "db:central authority grant tables",
-      "type": "db-table",
-      "table": "central authority grant tables"
-    },
-    {
-      "id": "db:market_delegation_audit (via delegation.audit)",
-      "type": "db-table",
-      "table": "market_delegation_audit (via delegation.audit)"
     },
     {
       "id": "db:e2e_test_accounts",
@@ -76632,9 +76621,9 @@
     },
     {
       "from": "services/hub-v1-fixture-payment.js",
-      "to": "db:local_stock_allocations (via capacités canoniques)",
+      "to": "db:local_stock_allocations",
       "type": "db-write",
-      "label": "local_stock_allocations (via capacités canoniques)"
+      "label": "local_stock_allocations"
     },
     {
       "from": "services/import-lot-registry.js",
@@ -81190,9 +81179,33 @@
     },
     {
       "from": "services/market-provisioning-service.js",
-      "to": "db:central authority grant tables",
+      "to": "db:catalog_global_access_grants",
       "type": "db-read",
-      "label": "central authority grant tables"
+      "label": "catalog_global_access_grants"
+    },
+    {
+      "from": "services/market-provisioning-service.js",
+      "to": "db:dashboard_global_access_grants",
+      "type": "db-read",
+      "label": "dashboard_global_access_grants"
+    },
+    {
+      "from": "services/market-provisioning-service.js",
+      "to": "db:decision_signal_global_access_grants",
+      "type": "db-read",
+      "label": "decision_signal_global_access_grants"
+    },
+    {
+      "from": "services/market-provisioning-service.js",
+      "to": "db:pricing_global_access_grants",
+      "type": "db-read",
+      "label": "pricing_global_access_grants"
+    },
+    {
+      "from": "services/market-provisioning-service.js",
+      "to": "db:sourcing_global_access_grants",
+      "type": "db-read",
+      "label": "sourcing_global_access_grants"
     },
     {
       "from": "services/market-provisioning-service.js",
@@ -81699,9 +81712,9 @@
     },
     {
       "from": "services/market-transport-sale-rate-command.js",
-      "to": "db:market_delegation_audit (via delegation.audit)",
+      "to": "db:market_delegation_audit",
       "type": "db-write",
-      "label": "market_delegation_audit (via delegation.audit)"
+      "label": "market_delegation_audit"
     },
     {
       "from": "services/market-transport-sale-rate-command.js",
@@ -125253,14 +125266,14 @@
       "dbWrite": [
         "orders",
         "order_status_history",
-        "local_stock_allocations (via capacités canoniques)"
+        "local_stock_allocations"
       ],
       "dbWriteVia": [],
       "doctrines": [],
       "impactAreas": [],
       "mustCheck": [
         "backend-core",
-        "db:local_stock_allocations (via capacités canoniques)",
+        "db:local_stock_allocations",
         "db:order_status_history",
         "db:orders",
         "db:users"
@@ -128011,7 +128024,11 @@
       ],
       "ownedFiles": [],
       "dbRead": [
-        "central authority grant tables",
+        "catalog_global_access_grants",
+        "dashboard_global_access_grants",
+        "decision_signal_global_access_grants",
+        "pricing_global_access_grants",
+        "sourcing_global_access_grants",
         "markets",
         "market_operating_assignments"
       ],
@@ -128072,7 +128089,9 @@
       "mustCheck": [
         "db:assignment_capability_ceiling",
         "db:assignment_memberships",
-        "db:central authority grant tables",
+        "db:catalog_global_access_grants",
+        "db:dashboard_global_access_grants",
+        "db:decision_signal_global_access_grants",
         "db:market_cash_control_policies",
         "db:market_delegation_audit",
         "db:market_operating_assignments",
@@ -128080,7 +128099,9 @@
         "db:market_team_invitations",
         "db:markets",
         "db:membership_capabilities",
+        "db:pricing_global_access_grants",
         "db:relais",
+        "db:sourcing_global_access_grants",
         "doctrine:compose_existing_primitives",
         "doctrine:provisioning_is_not_activation",
         "doctrine:readiness_precedes_activation",
@@ -128354,7 +128375,7 @@
       ],
       "dbWrite": [
         "market_transport_sale_rates",
-        "market_delegation_audit (via delegation.audit)"
+        "market_delegation_audit"
       ],
       "dbWriteVia": [],
       "doctrines": [
@@ -128371,7 +128392,7 @@
         "finance"
       ],
       "mustCheck": [
-        "db:market_delegation_audit (via delegation.audit)",
+        "db:market_delegation_audit",
         "db:market_transport_sale_rates",
         "db:markets",
         "doctrine:audit_required",
@@ -143374,6 +143395,17 @@
       ]
     },
     {
+      "table": "market_delegation_audit",
+      "writerCount": 5,
+      "writers": [
+        "middleware/require-market-delegated-capability.js",
+        "middleware/require-market-execution-capability.js",
+        "services/cash-deposit-service.js",
+        "services/market-delegation-service.js",
+        "services/market-transport-sale-rate-command.js"
+      ]
+    },
+    {
       "table": "order_item_real_cost_allocations",
       "writerCount": 5,
       "writers": [
@@ -143455,16 +143487,6 @@
         "services/incident-service.js",
         "services/incident-write-service.js",
         "services/relay-shipment-receipt.js"
-      ]
-    },
-    {
-      "table": "market_delegation_audit",
-      "writerCount": 4,
-      "writers": [
-        "middleware/require-market-delegated-capability.js",
-        "middleware/require-market-execution-capability.js",
-        "services/cash-deposit-service.js",
-        "services/market-delegation-service.js"
       ]
     },
     {
@@ -143807,6 +143829,14 @@
       "writers": [
         "services/international-shipment-journey.js",
         "services/relay-shipment-receipt.js"
+      ]
+    },
+    {
+      "table": "local_stock_allocations",
+      "writerCount": 2,
+      "writers": [
+        "services/hub-v1-fixture-payment.js",
+        "services/local-stock-service.js"
       ]
     },
     {
