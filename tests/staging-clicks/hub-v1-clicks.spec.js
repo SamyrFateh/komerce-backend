@@ -127,8 +127,14 @@ test.describe.serial(`Hub V1 : clics reels Chromium (${MARKET_CODE}, fixture E2E
     if (origin === 'https://komerce-backend-production.up.railway.app') {
       await require('../../scripts/recette/hub-v1-staging-target-authorization')
         .authorizeOfficialStaging({ db, run: RUN8 });
-      expect(process.env.E2E_CLICKS_ALLOW_DISTRIBUTION, 'aucune distribution globale marché')
-        .not.toBe('1');
+      // The owner expressly accepted all staging data as disposable on
+      // 10 November 2026. Full visual certification may distribute this
+      // staging market only in the guarded, owner-run E2E campaign.
+      if(process.env.E2E_CLICKS_ALLOW_DISTRIBUTION==='1'){
+        const authorized=require('../../scripts/recette/hub-v1-staging-transactional-preflight')
+          .disposableStagingAuthorized(process.env);
+        expect(authorized,'owner-only disposable staging required for full distribution').toBe(true);
+      }
     } else {
       // La répétition locale doit utiliser une base jetable, jamais un backend
       // localhost connecté silencieusement à Railway staging.

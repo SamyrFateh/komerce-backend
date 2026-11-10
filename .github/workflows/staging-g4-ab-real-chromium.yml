@@ -1,0 +1,108 @@
+name: Staging G4 — 2 real same-market relay agents A/B, Chromium + HTTP + PostgreSQL
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: read
+concurrency:
+  group: komerce-staging-g4-two-relay-real-chromium
+  cancel-in-progress: false
+jobs:
+  certify:
+    name: Two sessions, four cross denials, four own actions, independent PG readbacks
+    if: >-
+      github.event.issue.user.login == github.repository_owner &&
+      (github.event.issue.title == '[staging-op] g4-ab-chromium-KM' ||
+       github.event.issue.title == '[staging-op] g4-ab-chromium-CM' ||
+       github.event.issue.title == '[staging-op] g4-ab-chromium-CG')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_TARGET_ENV: staging
+      EXPECTED_RAILWAY_ENVIRONMENT: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      HUB_V1_E2E_APPLY_MODE: approved
+      HUB_V1_STAGING_DISPOSABLE_MODE: '1'
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      E2E_STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      GITHUB_ISSUE_TITLE: ${{ github.event.issue.title }}
+      G4_MARKET: ${{ github.event.issue.title == '[staging-op] g4-ab-chromium-KM' && 'KM' || github.event.issue.title == '[staging-op] g4-ab-chromium-CM' && 'CM' || 'CG' }}
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      STRIPE_SECRET_KEY: sk_test_certification_placeholder
+      STRIPE_WEBHOOK_SECRET: whsec_certification_placeholder
+      PAYPAL_CLIENT_ID: ci-certification-placeholder
+      PAYPAL_CLIENT_SECRET: ci-certification-placeholder
+      PAYPAL_WEBHOOK_ID: ci-certification-placeholder
+      META_WA_APP_SECRET: ci-certification-placeholder
+      AUTHKEY_API_KEY: ci-certification-placeholder
+      JWT_SECRET: ci-certification-placeholder
+      QR_SECRET: ci-certification-placeholder
+      ADMIN_PASSWORD: ci-certification-placeholder
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Prove exact deployed SHA + DB fingerprint, before writes
+        run: |
+          test -n "$DATABASE_URL"
+          node scripts/recette/resolve-staging-deploy-pin.js
+          node scripts/recette/target-guard.js
+      - name: Create two different paid-simulated LOCAL_STOCK orders via canonical checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          RUN_A="$(node -p 'require("crypto").randomBytes(4).toString("hex").toUpperCase()')"
+          RUN_B="$(node -p 'require("crypto").randomBytes(4).toString("hex").toUpperCase()')"
+          test "$RUN_A" != "$RUN_B"
+          echo "G4_A_RUN8=$RUN_A" >> "$GITHUB_ENV"
+          echo "G4_B_RUN8=$RUN_B" >> "$GITHUB_ENV"
+          for RUN8 in "$RUN_A" "$RUN_B"; do
+            export HUB_V1_CERTIFICATION_RUN="$RUN8"
+            node scripts/recette/hub-v1-certification-runner.js \
+              --allow-remote-staging --run="$RUN8" --market="$G4_MARKET" --stop-after=2 --dry-run
+            node scripts/recette/hub-v1-certification-runner.js \
+              --allow-remote-staging --run="$RUN8" --market="$G4_MARKET" --stop-after=2
+          done
+      - name: Provision two separate E2E agents and relay memberships by canonical writers
+        run: node scripts/recette/staging-g4-ab-provision.js
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Two simultaneous authenticated browser profiles, own actions and cross-refusals
+        run: npx playwright test --config=playwright.g4-staging-ab.config.js
+      - name: Require real G4 proof, no counts from isolated PG16
+        run: |
+          node - <<'NODE'
+          const r=require('./test-results/g4-staging/g4-ab-chromium.json');
+          if(r.verdict!=='G4_STAGING_TWO_RELAIS_CHROMIUM_HTTP_PG_PASS'||
+             r.session_count!==2||r.relais!==2||r.refusals!==4||
+             r.own_actions!==4||r.checks.some(x=>!x.pass)||
+             r.errors.length)throw Error('G4_REAL_STAGING_NOT_CERTIFIED');
+          console.log(JSON.stringify({verdict:r.verdict,market:r.market,
+            sessions:r.session_count,relais:r.relais,cross_refusals:r.refusals,
+            own_browser_business_actions:r.own_actions,checks:r.checks.length}));
+          NODE
+      - name: Archive the evidence even on a failed real gesture
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g4-staging-ab-chromium-${{ github.run_id }}
+          path: |
+            test-results/g4-staging/
+            test-results/hub-v1-cert/
+            test-results/hub-v1-http/deploy-pin.json
+          retention-days: 30
+          if-no-files-found: warn
+      - name: Limit conclusion
+        if: always()
+        run: echo "G4 one-market two-relay A/B only. No G2 Hub UI or SAV certification implied." >> "$GITHUB_STEP_SUMMARY"
