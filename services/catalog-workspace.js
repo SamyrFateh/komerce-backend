@@ -576,6 +576,7 @@ function publicProductDossier(facts, product, marketHandoff = null, details = {}
       // UUIDs exposed only through the authenticated Catalogue + Sourcing dossier.
       product_id: row.has_sourcing_candidate === true ? product.id : null,
       sourcing_linked: row.has_sourcing_candidate === true,
+      automated_staging_review_allowed: process.env.KOMERCE_ENV === 'staging',
       visual_fr: details.visual || null,
       active_canonical: count(row.active_media),
       gallery: (Array.isArray(details.media) ? details.media : [])

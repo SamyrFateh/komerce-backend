@@ -29,13 +29,22 @@ function sameOptions(a, b) {
   const kx = Object.keys(x).sort(), ky = Object.keys(y).sort();
   return kx.length === ky.length && kx.every((key, i) => key === ky[i] && x[key] === y[key]);
 }
-function inspectOne(media, review) {
+function inspectOne(media, review, { runtime = process.env.KOMERCE_ENV } = {}) {
   const sourceId = media?.supplier_media_id ?? media?.source_media_id;
   const result = { source_media_id: sourceId || null, state: STATES.NOT_INSPECTED, ready: false };
   if (!nonempty(sourceId) || !nonempty(media?.url) || !/^https:\/\//i.test(media.url)) {
     return { ...result, state: STATES.BLOCKED_UNREADABLE_OR_UNSUPPORTED, reason: 'SOURCE_MEDIA_IDENTITY_OR_URL_MISSING' };
   }
   if (!review) return { ...result, reason: 'VISUAL_REVIEW_MISSING' };
+  // Automated staging evidence is deliberately NOT a human signature. It is
+  // unusable if the same data is ever read outside the explicit staging runtime.
+  if (String(review.reviewed_by || '').startsWith('automation:github-actions:')) {
+    if (runtime !== 'staging' || !/^automation:github-actions:\d{5,20}:[0-9a-f-]{36}$/i.test(review.reviewed_by)) {
+      return { ...result, reason: 'AUTOMATED_REVIEW_STAGING_ONLY' };
+    }
+    result.execution_mode = 'AUTOMATED_STAGING';
+    result.human_attestation = false;
+  }
   // Review MUST refer to the same media and exact original URL. A changed supplier
   // image, however subtle, invalidates the review automatically.
   if (review.source_media_id !== sourceId || review.source_url !== media.url
@@ -93,7 +102,7 @@ function inspectMediaSet(media, reviews = []) {
     return { ready: false, code: 'VISUAL_REVIEW_SOURCE_NOT_IN_MEDIA_SET', results: [] };
   }
   const results = media.map(m => inspectOne(m, reviews.find(r =>
-    r?.source_media_id === (m.supplier_media_id ?? m.source_media_id)
+    r.source_media_id === (m.supplier_media_id ?? m.source_media_id)
   )));
   const ready = results.every(r => r.ready);
   return { ready, code: ready ? 'VISUAL_FR_REVIEWED' : 'VISUAL_FR_REVIEW_PENDING', results };

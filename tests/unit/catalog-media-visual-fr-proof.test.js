@@ -21,6 +21,13 @@ const REVIEW = {
     reviewed: true,
   },
 };
+test('automated evidence is staging-only, never a human attestation',()=>{
+ const review={...REVIEW,reviewed_by:'automation:github-actions:42919260151:00000000-0000-0000-0000-000000000003'};
+ for(const runtime of [undefined,'','production','test'])
+  expect(inspectOne(IMAGE,review,{runtime})).toMatchObject({ready:false,reason:'AUTOMATED_REVIEW_STAGING_ONLY'});
+ expect(inspectOne(IMAGE,review,{runtime:'staging'})).toMatchObject({ready:true,execution_mode:'AUTOMATED_STAGING',human_attestation:false});
+ expect(inspectOne(IMAGE,{...review,reviewed_by:'automation:github-actions:fake'},{runtime:'staging'})).toMatchObject({ready:false});
+});
 test('a source image with an insecure URL can never have a valid visual proof', () => {
   expect(inspectOne({ ...IMAGE, url: 'http://example.test/image.jpg' },
     { ...REVIEW, source_url: 'http://example.test/image.jpg' }))
@@ -84,4 +91,14 @@ test('orphaned reviews cannot make a media set certified', () => {
   expect(inspectMediaSet([IMAGE], [REVIEW, { ...REVIEW,
     source_media_id:'ali:orphan:999', source_url:'https://ae01.alicdn.com/kf/orphan.jpg',
   }])).toMatchObject({ready:false, code:'VISUAL_REVIEW_SOURCE_NOT_IN_MEDIA_SET'});
+});
+
+test('all visual evidence validation branches remain fail-closed',()=>{
+ expect(inspectOne(IMAGE,{...REVIEW,french_presentation:{reviewed:true,kind:'other'}}).ready).toBe(false);
+ expect(inspectOne(IMAGE,{...REVIEW,french_presentation:{reviewed:true,kind:'localized_image',url:'https://fr.test/valid.jpg'}}).ready).toBe(true);
+ for(const url of ['', 'http://fr.test/image.jpg'])expect(inspectOne(IMAGE,{...REVIEW,french_presentation:{reviewed:true,kind:'localized_image',url}}).ready).toBe(false);
+ expect(inspectMediaSet([IMAGE]).ready).toBe(false);
+ expect(inspectMediaSet([IMAGE],null).ready).toBe(false);
+ expect(inspectMediaSet([IMAGE],[undefined]).ready).toBe(false);
+ expect(inspectMediaSet([undefined],[]).ready).toBe(false);
 });
