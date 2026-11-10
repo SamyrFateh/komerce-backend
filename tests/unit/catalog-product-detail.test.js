@@ -24,6 +24,7 @@ const { listCommercialTransportRails } = require('../../services/transport-rails
 const {
   getProductDetail,
   _buildMedia,
+  _buildCanonicalMedia,
   _buildDeliveryOptions,
   _assertContract,
 } = require('../../services/catalog-product-detail');
@@ -166,6 +167,50 @@ describe('catalog product detail contract v1', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     commercialSeaOnly();
+  });
+
+  test('une source sans revue humaine exacte reste fermée même si le produit est actif', async () => {
+    const original = { id: 'media-1', source_media_id: 'CJ-1',
+      url: 'https://supplier.example/1.jpg', role: 'PRODUCT', option_values: { taille: 'M' } };
+    expect(_buildCanonicalMedia([original], true)).toBeNull();
+    expect(_buildCanonicalMedia([{ ...original, review_source_media_id: 'CJ-1',
+      review_source_url: original.url, review_option_values: { taille: 'L' },
+      text_presence: 'NONE', reviewed_by: 'editor',
+      reviewed_at: '2026-11-10T20:00:00Z' }], true)).toBeNull();
+    const blocked = await getProductDetail(dbFor({
+      product: skuProduct({ has_sourcing_candidate: true, inventory_model: 'LEGACY_VARIANTS' }),
+      skus: [], catalogMedia: [original],
+    }), PRODUCT_ID);
+    expect(blocked).toBeNull();
+  });
+
+  test('NONE conserve l original et PRESENT montre seulement la présentation client FR', async () => {
+    const media = { id: 'media-1', source_media_id: 'CJ-1',
+      url: 'https://supplier.example/1.jpg', role: 'PRODUCT', alt: 'Photo',
+      option_values: { taille: 'M' }, review_source_media_id: 'CJ-1',
+      review_source_url: 'https://supplier.example/1.jpg', review_option_values: { taille: 'M' },
+      reviewed_by: 'catalog-reviewer', reviewed_at: '2026-11-10T20:00:00Z' };
+    const none = _buildCanonicalMedia([{ ...media, text_presence: 'NONE' }], true);
+    expect(none[0].url).toBe(media.url);
+    expect(none[0]).not.toHaveProperty('presentation_fr');
+
+    const caption = _buildCanonicalMedia([{ ...media, text_presence: 'PRESENT',
+      source_transcription: '1PCS', french_translation: 'Un exemplaire',
+      french_presentation: { kind: 'caption', text: 'Un exemplaire', reviewed: true },
+    }], true);
+    expect(caption[0]).toMatchObject({ url: media.url,
+      presentation_fr: { kind: 'caption', text: 'Un exemplaire' } });
+    expect(JSON.stringify(caption)).not.toContain('catalog-reviewer');
+    expect(JSON.stringify(caption)).not.toContain('1PCS');
+
+    const localized = _buildCanonicalMedia([{ ...media, text_presence: 'PRESENT',
+      source_transcription: '1PCS', french_translation: 'Un exemplaire',
+      french_presentation: { kind: 'localized_image',
+        url: 'https://cdn.example/fr.png', reviewed: true },
+    }], true);
+    expect(localized[0]).toMatchObject({ url: 'https://cdn.example/fr.png',
+      presentation_fr: { kind: 'localized_image' } });
+    expect(JSON.stringify(localized)).not.toContain('https://supplier.example/1.jpg');
   });
 
   test('compose un produit SKU sans reconstruire un stock par axe', async () => {

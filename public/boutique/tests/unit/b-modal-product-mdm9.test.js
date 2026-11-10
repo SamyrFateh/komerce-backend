@@ -13,7 +13,7 @@ jest.mock('../../js/b-utils.js', () => ({
 }));
 
 const { state, dom } = require('../../js/b-store.js');
-const { buildCarouselSlides } = require('../../js/b-modal-product.js');
+const { buildCarouselSlides, goToSlide } = require('../../js/b-modal-product.js');
 
 function resetDom() {
   document.body.innerHTML = '';
@@ -119,6 +119,30 @@ describe('b-modal-product — MDM-9 subject scale', () => {
     const { wrap } = renderLoadedSingle({ width: 4, height: 4, pixels, throws: true });
 
     expect(wrap.style.getPropertyValue('--k-modal-subject-scale')).toBe('');
+  });
+
+  test('French caption is bound to the visible slide and never rendered as HTML', () => {
+    resetDom();
+    buildCarouselSlides({
+      name: 'Produit testé',
+      media: [
+        { id: 'a', url: '/a.png', presentation_fr: {
+          kind: 'caption', text: '<script>alerte</script> · Notice française' } },
+        { id: 'b', url: '/b.png' },
+      ],
+    });
+    goToSlide(0);
+    const caption = dom.modal.querySelector('[data-customer-french-media]');
+    expect(caption.hidden).toBe(false);
+    expect(caption.textContent).toContain('Notice française');
+    expect(caption.querySelector('script')).toBeNull();
+    goToSlide(1);
+    expect(caption.hidden).toBe(true);
+    expect(caption.textContent).toBe('');
+    // A new SKU selection must not reuse the old caption.
+    buildCarouselSlides({ name: 'Produit testé', media: [{ id: 'new', url: '/new.png' }] });
+    goToSlide(0);
+    expect(caption.hidden).toBe(true);
   });
 
   test('does not invoke canvas scaling for a multiple-image gallery', () => {

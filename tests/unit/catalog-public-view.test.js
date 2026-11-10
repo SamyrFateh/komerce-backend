@@ -96,6 +96,21 @@ describe('public catalog visibility', () => {
     expect(sql).toContain("cm.url NOT ILIKE 'data:image/%'");
   });
 
+  it('le SQL Boutique refuse toute image sourcing non relue et le rendu localisé prime en vitrine', () => {
+    const sql = publicCatalogVisibilitySql('p', { marketCodeParamIndex: 2 });
+    expect(sql).toContain("src.state='imported_to_catalog'");
+    expect(sql).toContain('LEFT JOIN catalog_media_visual_fr_reviews vrev');
+    expect(sql).toContain('vrev.source_media_id=vm.source_media_id');
+    expect(sql).toContain("vrev.text_presence='NONE'");
+    expect(sql).toContain("vrev.french_presentation->>'kind'='caption'");
+    expect(sql).toContain("vrev.french_presentation->>'kind'='localized_image'");
+    expect(sql).toContain("vrev.french_presentation->>'text'=vrev.french_translation");
+    expect(sql).toContain("pmpd.status = 'LOCAL_ACTIVE'");
+    const cols = publicProductColumns('p');
+    expect(cols).toContain("vrev.french_presentation->>'url'");
+    expect(cols).toContain("ssrc.state='imported_to_catalog'");
+  });
+
   it('réutilise la galerie JSONB comme hero réel quand le média principal manque', () => {
     const sql = publicCatalogVisibilitySql('p');
     expect(sql).toContain('jsonb_array_elements_text');
