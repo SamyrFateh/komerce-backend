@@ -3,7 +3,7 @@
 > **Nature :** contre-revue documentaire en lecture du dépôt, **sans refonte de l'architecture « colis-first »**.  
 > **Base inspectée :** `main` @ `af094725c9320ca53598b74dad05a93936961bc3` (10/11/2026).  
 > **Origine historique :** synthèse communiquée par le propriétaire de l'audit Opus du 11/06/2026, addendum §11 de `AUDIT_KOMERCE_3D.md`. Le fichier source exact n'a **pas été retrouvé** dans l'arbre de `main` au SHA ci-dessus, ni dans les historiques interrogés des chemins racine, `docs/` et `docs/audits/`. On réévalue les constats transmis ; **on ne prétend pas avoir relu l'original**.  
-> **Méthode :** lecture statique des routes, services, migrations, tests et documents cités ci-dessous. **Présence de code ≠ preuve d'usage réel, de couverture UI complète ou de certification staging.** L'audit Chromium full staging est suivi dans #3787 ; ne pas en anticiper le verdict.
+> **Méthode :** lecture statique des routes, services, migrations, tests et documents cités ci-dessous. **Présence de code ≠ preuve d'usage réel, de couverture UI complète ou de certification staging.** L'audit Chromium full staging est suivi dans #3787. Depuis le contrôle initial, son run #42896580140 a terminé **SUCCESS** sur le SHA audité, avec **12 passed / 30 skipped**, **0 finding**, 103 routes et 282 clics. Les 30 skipped ne doivent pas être comptés comme exécutés ; cette navigation en lecture seule ne démontre pas à elle seule les mutations SAV, uploads ou atomicité PostgreSQL.
 
 ## 1. Principe directeur
 
@@ -31,7 +31,7 @@ Le circuit existant — **sourcing → produit publié → achat client → comm
 ### R13 — Persistance des images : **OUVERT, priorité avant go-live**
 
 - **Risque encore prouvé dans l'arbre courant :** `middleware/upload.js` utilise `multer.diskStorage` vers `public/uploads/products/` et porte toujours `TODO #387` « stockage objet persistant ».
-- **Routes actives repérées :** `routes/products.js` : `POST /:id/image` et `POST /:id/images` appellent ce middleware et enregistrent des URL `/uploads/products/...\` locales. Cela ne garantit pas la survie des images aux redéploiements Railway.
+- **Routes actives repérées :** `routes/products.js` : `POST /:id/image` et `POST /:id/images` appellent ce middleware et enregistrent des URL locales commençant par `/uploads/products/`. Cela ne garantit pas la survie des images aux redéploiements Railway.
 - **Nuance provider :** Cloudinary **et** ImageKit existent déjà pour le showcase/certaines chaînes d'import : `scripts/showcase-media-mirror.js`. Le sélecteur `scripts/showcase-media-provider.js` a **`DEFAULT_MEDIA_PROVIDER = 'imagekit'`**, Cloudinary est une option. La présence de Cloudinary **ne prouve donc pas** la migration de **toutes** les routes produits.
 - **Correctif minimal :** remplacer les sorties locales de ces routes par une URL HTTPS persistante via le provider canonique choisi, conserver les validations de fichier existantes, journaliser provenance/erreurs, empêcher l'écriture de nouvelles URL `/uploads/products/`, traiter les anciennes références sans suppression aveugle.
 - **Preuve exigible :** vrai upload image → URL persistante retrouvée depuis l'API et Boutique → redéploiement/restart → URL toujours disponible. Tests refus de format, taille, suppression de temporaire et panne du provider. Ne pas insérer de secrets en frontend.
@@ -82,5 +82,6 @@ L'[issue #387](https://github.com/SamyrFateh/komerce-backend/issues/387) reste *
 - L'original `AUDIT_KOMERCE_3D.md` n'a pas été retrouvé ; le périmètre historique est celui de la synthèse du propriétaire.
 - Aucun lancement de test, aucune écriture en base, aucun upload réel, aucune manipulation Railway commerciale ni test de navigateur n'a été exécuté pour **cette** revue documentaire.
 - La migration SQL existe dans Git mais son application dans chaque environnement n'a pas été certifiée ici.
+- Le run Chromium staging [#42896580140](https://github.com/SamyrFateh/komerce-backend/actions/runs/42896580140) a conclu SUCCESS : SHA `af094725` égal à `/health/version`, 12 tests passés, 30 ignorés, 7 profils/run, 103 routes, 282 clics, 0 finding, 665 lignes de matrice. Il établit une preuve de navigation **en lecture seule**, et ne valide ni les retours clients écrits ni la persistance des images ni les transactions `auto-parcel`.
 - Une fonctionnalité « en code » peut rester non exposée selon les rôles et les écrans. Les points notés « non identifié » signifient **non prouvé par les chemins inspectés**, pas preuve formelle d'absence globale.
 - Ne fusionner cette PR documentaire sur `main` **qu'après** la campagne Chromium #3787 afin de ne pas casser sa parité SHA pendant son exécution.
