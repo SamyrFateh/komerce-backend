@@ -152,6 +152,25 @@ async function audit() {
     report.market = km || null;
     report.total_products = totals.products;
     report.products = rows.map(assessProduct);
+    // Consume the exact canonical publication and media-review contracts.
+    // Neither test data nor an English source can masquerade as approved FR.
+    const { certifyCatalogProduct } = require('../../services/catalog-certification');
+    const { inspectCatalogVisualFrEvidence } = require('../../services/catalog-visual-fr-evidence-read');
+    report.publication_gates = [];
+    for (const row of rows) {
+      if (!EXPECTED.has(row.candidate_ref) || !row.product_id) continue;
+      const technical = await certifyCatalogProduct(client, row.product_id);
+      const visual = await inspectCatalogVisualFrEvidence(client, row.product_id);
+      report.publication_gates.push({
+        candidate_ref: row.candidate_ref,
+        product_ref: row.product?.product_ref || null,
+        technical_certified: technical?.certification?.certified === true,
+        technical_reasons: technical?.certification?.reasons || ['CATALOG_CERTIFICATION_MISSING'],
+        visual_fr_certified: visual?.ready === true,
+        visual_fr_reason: visual?.code || 'VISUAL_FR_EVIDENCE_MISSING',
+        allowed_to_approve_from_this_report: false,
+      });
+    }
     report.hard_blockers = [];
     report.cohort_products = rows.length;
     report.other_staging_products = Math.max(0, report.total_products - rows.length);

@@ -1,0 +1,72 @@
+name: P1 CJ four — real Catalogue and Market Chromium gates (staging READ ONLY)
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: read
+concurrency:
+  group: komerce-g6-p1-cj-four-readonly
+  cancel-in-progress: false
+jobs:
+  p1-cj-readiness:
+    if: >-
+      github.repository == 'SamyrFateh/komerce-backend' &&
+      github.actor == github.repository_owner &&
+      github.event.issue.user.login == github.repository_owner &&
+      github.event.issue.title == '[staging-op] p1-cj-four-commercial-chromium-readonly'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      GITHUB_ACTIONS: 'true'
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_TARGET_ENV: staging
+      EXPECTED_RAILWAY_ENVIRONMENT: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      CJ_FOUR_COMMERCIAL_AUDIT_APPROVED: '1'
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      KOMERCE_STAGING_RESET_DB_PIN: ${{ vars.STAGING_DB_PIN }}
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      PGOPTIONS: '-c default_transaction_read_only=on'
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      E2E_MARKET_OPERATOR_EMAIL: ${{ secrets.E2E_MARKET_OPERATOR_EMAIL }}
+      E2E_MARKET_OPERATOR_PASSWORD: ${{ secrets.E2E_MARKET_OPERATOR_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Pin actual deployed SHA (reject deployed path drift)
+        run: node scripts/recette/resolve-staging-deploy-pin.js
+      - name: Verify exact protected staging DB fingerprint
+        run: node scripts/recette/target-guard.js
+      - name: Read canonical Catalogue + visual FR certification reasons, no writes
+        run: node scripts/recette/cj-four-km-commercial-readiness.js
+      - name: Install Chromium for real 1440px admin and market screens
+        run: npx playwright install --with-deps chromium
+      - name: Inspect real Catalogue approval, market price, exposure and buyer UI
+        run: node scripts/recette/p1-cj-four-chromium-readonly.js
+      - name: Archive P1 blocking decisions and actual browser screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-p1-cj-four-browser-gates-${{ github.run_id }}
+          path: |
+            test-results/cj-four-km-commercial-readiness/report.json
+            test-results/p1-cj-chromium/
+            test-results/hub-v1-http/deploy-pin.json
+          if-no-files-found: warn
+          retention-days: 21
+      - name: State proof level (never business GO)
+        if: always()
+        shell: bash
+        run: |
+          echo '### G6 / P1 — observation seulement' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Chromium + certification canonique READ ONLY ; aucune publication, aucun prix, aucune exposition.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Un job vert ici prouve uniquement l audit, pas la vente ni un Full E2E client.' >> "$GITHUB_STEP_SUMMARY"
