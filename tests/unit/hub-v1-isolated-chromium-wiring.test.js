@@ -101,3 +101,25 @@ test('Full physical harness cannot silently run unrelated LOCAL_STOCK spec',()=>
   const cmd="npx playwright test --config=playwright.hub-v1-clicks.config.js tests/staging-clicks/hub-v1-clicks.spec.js";
   expect(y.split(cmd)).toHaveLength(3);
 });
+
+test('disposable Chromium Admin receives an EXPLICIT global dashboard grant, other roles do not',()=>{
+  const src=get('scripts/recette/hub-v1-local-chromium-prepare.js');
+  const guard=src.indexOf('assertEphemeralTarget(process.env.DATABASE_URL,[])');
+  const grant=src.indexOf('INSERT INTO dashboard_global_access_grants(user_id,reason)');
+  expect(guard).toBeGreaterThan(0);
+  expect(grant).toBeGreaterThan(guard);
+  expect(src).toContain("WHERE u.id=$1 AND u.role='admin'");
+  expect(src).toContain('ON CONFLICT (user_id) WHERE revoked_at IS NULL DO NOTHING');
+  expect(src).toContain('HUB_LOCAL_CHROMIUM_UNEXPECTED_NONADMIN_GLOBAL_GRANT');
+  expect(src).toContain('admin_dashboard_global_grant:true');
+  expect(src).not.toContain('UPDATE dashboard_global_access_grants SET revoked_at=NULL');
+});
+test('independent API readback requires a persisted global grant, not an admin role alone',()=>{
+  const src=get('scripts/recette/hub-v1-local-chromium-readback.js');
+  expect(src).toContain("fetch(origin+'/api/admin/dashboard/context'");
+  expect(src).toContain("dashboard.status===200");
+  expect(src).toContain(".mode==='global'");
+  expect(src).toContain("market_KM_allowed===true");
+  expect(src).toContain('&&report.admin_dashboard_authority_verified');
+  expect(src).not.toContain('secrets.RAILWAY_DATABASE_URL');
+});
