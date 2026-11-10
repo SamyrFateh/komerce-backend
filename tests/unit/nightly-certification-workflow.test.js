@@ -20,6 +20,16 @@ describe('nightly-e2e-certification.yml', () => {
     expect(code).not.toMatch(/contents: write/);
   });
 
+  test('runner Chromium supporté et relance GitHub issue réservée au propriétaire', () => {
+    expect(code).toContain('runs-on: ubuntu-24.04');
+    expect(code).not.toContain('runs-on: ubuntu-latest');
+    expect(code).toContain('issues:');
+    expect(code).toContain('types: [opened]');
+    expect(code).toContain("github.event.issue.title == '[cert-op] nightly-e2e-edge-replay'");
+    expect(code).toContain('github.event.issue.user.login == github.repository_owner');
+    expect(code).toContain('github.actor == github.repository_owner');
+  });
+
   test('aucun secret ni cible partagée : environnement éphémère local uniquement', () => {
     expect(code).not.toMatch(/secrets\./);
     expect(code).not.toMatch(/railway\.app/i);
