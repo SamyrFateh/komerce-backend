@@ -17,6 +17,7 @@ const { chromium } = require('playwright');
 const BASE = 'https://komerce-backend-production.up.railway.app';
 const REFS = Object.freeze(['KPR-000099','KPR-000100','KPR-000101']);
 const ALL = Object.freeze(['KPR-000098',...REFS]);
+const EXPECTED_MEDIA = Object.freeze({ 'KPR-000099':5, 'KPR-000100':5, 'KPR-000101':6 });
 const OUT = path.resolve('test-results/p1-cj-chromium');
 function guard(env=process.env){
   if (env.GITHUB_ACTIONS!=='true' || env.GITHUB_EVENT_NAME!=='issues'
@@ -157,6 +158,116 @@ async function run(env=process.env){
             };
             await page.screenshot({path:path.join(OUT,'inspector-'+safeName(ref)+'.png'),
               fullPage:false,timeout:12000});
+            // L5: real Chromium clicks on the actual media inspector, not a
+            // JSON-only / screenshot-only route check. No approval POST here.
+            const complementary=page.locator('[data-catalog-complementary-info]');
+            await complementary.waitFor({state:'attached',timeout:20000});
+            const gallery=page.locator('[data-catalog-canonical-gallery]');
+            // New focused UX puts the image reviewer above the technical fold.
+            // Legacy rendering is still supported during controlled deployment.
+            if(!await gallery.isVisible())
+              await complementary.locator(':scope > summary').click();
+            await gallery.waitFor({state:'visible',timeout:20000});
+            const navigator=page.locator('[data-catalog-review-navigation]');
+            await navigator.waitFor({state:'visible',timeout:20000});
+            const nextImage=navigator.locator('[data-workspace-action="catalog-media-next"]');
+            const previousImage=navigator.locator('[data-workspace-action="catalog-media-previous"]');
+            const progress=page.locator('[data-catalog-media-progress]');
+            const initialProgress=String(await progress.innerText());
+            if(!/^\d+\/\d+ images attestées/.test(initialProgress))
+              throw Error('CATALOG_REVIEW_PROGRESS_MISSING:'+ref);
+            const figures=gallery.locator('figure');
+            const expected=EXPECTED_MEDIA[ref];
+            const actual=await figures.count();
+            if(actual!==expected)throw Error('MEDIA_GALLERY_COUNT_DRIFT:'+ref+':'+actual+'/'+expected);
+            const dossierMedia=row.dossier?.media?.gallery||[];
+            if(dossierMedia.length!==expected)
+              throw Error('MEDIA_CONTRACT_COUNT_DRIFT:'+ref);
+            row.media_review_probe={status:'INSPECTION_IN_PROGRESS',expected,observed:actual,
+              evidence:[],saved_reviews:0,source_image_screenshots:[]};
+            for(let i=0;i<actual;i++){
+              if(i>0)await nextImage.click();
+              const figure=figures.nth(i);
+              await figure.waitFor({state:'visible',timeout:10000});
+              const positionText=String(await navigator.locator('[data-catalog-media-position]').innerText());
+              if(positionText!=='Image '+(i+1)+' / '+actual)
+                throw Error('MEDIA_NAVIGATION_STEP_DRIFT:'+ref+':'+i);
+              if(i===0 && !await previousImage.isDisabled())
+                throw Error('MEDIA_PREVIOUS_NOT_DISABLED_ON_FIRST:'+ref);
+              const image=figure.locator('img');
+              await image.scrollIntoViewIfNeeded();
+              const imageUrl=await image.getAttribute('src');
+              const canonical=dossierMedia[i];
+              if(!canonical?.source_media_id || !canonical?.media_id ||
+                 !imageUrl || new URL(imageUrl,BASE).href!==canonical.url)
+                throw Error('MEDIA_SOURCE_OR_ORDER_DRIFT:'+ref+':'+i);
+              const pixels=await image.evaluate(async img=>{
+                try{await img.decode();}catch(_){/* report broken source below */}
+                return {complete:img.complete,width:img.naturalWidth,height:img.naturalHeight};
+              });
+              if(!pixels.complete || !pixels.width || !pixels.height)
+                throw Error('SUPPLIER_PIXELS_NOT_LOADED:'+ref+':'+i);
+              const review=figure.locator('[data-catalog-visual-fr-media]');
+              if(await review.count()!==1 ||
+                 await review.getAttribute('data-catalog-visual-fr-media')!==canonical.media_id)
+                throw Error('VISUAL_REVIEW_IDENTITY_MISSING:'+ref+':'+i);
+              await review.locator(':scope > summary').click();
+              const original=review.getByRole('link',{name:'Agrandir l’image fournisseur originale'});
+              if(await original.count()!==1 || await original.getAttribute('href')!==canonical.url)
+                throw Error('ORIGINAL_SUPPLIER_URL_NOT_EXPOSED:'+ref+':'+i);
+              const state=review.locator('select').first();
+              const choices=await state.locator('option').evaluateAll(nodes=>nodes.map(n=>n.value));
+              if(JSON.stringify(choices)!==JSON.stringify(['','NONE','PRESENT','UNREADABLE']))
+                throw Error('VISUAL_REVIEW_CHOICES_CHANGED:'+ref+':'+i);
+              if(await state.inputValue()!=='' ||
+                 await review.locator('input[type="checkbox"]').isChecked())
+                throw Error('VISUAL_REVIEW_PRESELECTED_OR_PRECONFIRMED:'+ref+':'+i);
+              if(await review.locator('textarea').count()!==2)
+                throw Error('VISUAL_REVIEW_FR_FIELDS_MISSING:'+ref+':'+i);
+              // Exercise the negative human-signature guard. A blank review
+              // must fail locally, with ZERO POSTs (all writes blocked anyway).
+              await review.getByRole('button',{name:'Enregistrer la revue humaine'}).click();
+              const feedback=String(await review.locator('[role="status"]').innerText());
+              if(!feedback.includes('Inspecter l’image, choisir un état et confirmer'))
+                throw Error('HUMAN_REVIEW_EMPTY_CLICK_NOT_REFUSED:'+ref+':'+i);
+              const file='source-media-'+safeName(ref)+'-'+String(i+1).padStart(2,'0')+'.png';
+              await figure.screenshot({path:path.join(OUT,file),timeout:18000});
+              row.media_review_probe.source_image_screenshots.push(file);
+              row.media_review_probe.evidence.push({
+                media_id:canonical.media_id,source_media_id:canonical.source_media_id,
+                source_url:canonical.url,pixels,review_ui_present:true,
+                human_signature_attempt:'EMPTY_REVIEW_REFUSED_NO_WRITE'
+              });
+            }
+            if(!await nextImage.isDisabled())
+              throw Error('MEDIA_NEXT_NOT_DISABLED_ON_LAST:'+ref);
+            if(actual>1){
+              await previousImage.click();
+              await figures.nth(actual-2).waitFor({state:'visible',timeout:10000});
+              await nextImage.click();
+              await figures.nth(actual-1).waitFor({state:'visible',timeout:10000});
+            }
+            if(row.blocked_requests.length!==0)
+              throw Error('UNEXPECTED_MEDIA_REVIEW_BUSINESS_MUTATION');
+            // An operator must always be able to leave a 5- or 6-image review.
+            const drawer=page.locator('[data-catalog-product-inspector="'+ref+'"]');
+            await drawer.locator('[data-workspace-action="close-inspector"]').click();
+            if(await drawer.count()!==0 || await page.locator('[data-catalog-inspector-backdrop]').count()!==0)
+              throw Error('MEDIA_DRAWER_CLOSE_BUTTON_FAILED:'+ref);
+            await open.click();
+            await page.locator('[data-catalog-product-inspector="'+ref+'"]').waitFor({state:'visible'});
+            await page.keyboard.press('Escape');
+            if(await drawer.count()!==0 || await page.locator('[data-catalog-inspector-backdrop]').count()!==0)
+              throw Error('MEDIA_DRAWER_ESCAPE_FAILED:'+ref);
+            await open.click();
+            await page.locator('[data-catalog-product-inspector="'+ref+'"]').waitFor({state:'visible'});
+            await page.locator('[data-catalog-inspector-backdrop]').click({position:{x:12,y:100}});
+            if(await drawer.count()!==0 || await page.locator('[data-catalog-inspector-backdrop]').count()!==0)
+              throw Error('MEDIA_DRAWER_BACKDROP_FAILED:'+ref);
+            row.media_review_probe.close_proof=['button','escape','backdrop'];
+            row.media_review_probe.status='REAL_CHROMIUM_ALL_MEDIA_INSPECTED_NO_SIGNATURE';
+          }else{
+            throw Error('CATALOG_INSPECTOR_OPEN_CONTROL_MISSING:'+ref);
           }
         }
         if(role==='admin'&&ref&&label==='catalogue'){
@@ -189,6 +300,46 @@ async function run(env=process.env){
     }
     for(const ref of REFS)
       await inspect('admin','/admin/workspaces/catalog?search='+ref+'&product_ref='+ref,ref,'catalogue');
+    // Independent responsive check: mobile must have reachable image navigation
+    // and an Escape/close mechanism, with ZERO business writes.
+    {
+      const ref=REFS[0];
+      const context=await browser.newContext({viewport:{width:390,height:844},locale:'fr-FR'});
+      try{
+        const auth=await context.request.post(BASE+'/api/auth/login',{data:{
+          email:env.E2E_ADMIN_EMAIL,password:env.E2E_ADMIN_PASSWORD},timeout:15000});
+        if(auth.status()!==200)throw Error('MOBILE_ADMIN_AUTH_REFUSED');
+        const page=await context.newPage();
+        const blocked=[];
+        await page.route('**/*',route=>{
+          if(['GET','HEAD','OPTIONS'].includes(route.request().method()))return route.continue();
+          blocked.push(route.request().method()+' '+new URL(route.request().url()).pathname);
+          return route.abort('blockedbyclient');
+        });
+        const response=await page.goto(BASE+'/admin/workspaces/catalog?search='+ref+'&product_ref='+ref,
+          {waitUntil:'domcontentloaded',timeout:35000});
+        if(response?.status()!==200)throw Error('MOBILE_CATALOG_HTTP_NOT_200');
+        const open=page.locator('tr[data-product-ref="'+ref+'"] [data-workspace-action="open-catalog-inspector"]');
+        await open.waitFor({state:'visible',timeout:25000});
+        await open.click();
+        const drawer=page.locator('[data-catalog-product-inspector="'+ref+'"]');
+        await drawer.waitFor({state:'visible',timeout:20000});
+        const gallery=drawer.locator('[data-catalog-canonical-gallery]');
+        await gallery.waitFor({state:'visible',timeout:20000});
+        const first=gallery.locator('figure').first();
+        await first.waitFor({state:'visible',timeout:10000});
+        const next=drawer.locator('[data-workspace-action="catalog-media-next"]');
+        await next.click();
+        await gallery.locator('figure').nth(1).waitFor({state:'visible',timeout:10000});
+        const file='mobile-390px-focused-review-'+safeName(ref)+'.png';
+        await page.screenshot({path:path.join(OUT,file),timeout:15000});
+        await page.keyboard.press('Escape');
+        if(await drawer.count()!==0 || blocked.length>0)
+          throw Error('MOBILE_DRAWER_OR_WRITE_GUARD_FAILED');
+        report.mobile_ux={width:390,height:844,ref,status:'PASS_ONE_IMAGE_AT_A_TIME_ESCAPE',
+          screenshot:file,business_writes:0};
+      }finally{await context.close();}
+    }
     for(const ref of REFS)
       await inspect('market_operator','/admin/workspaces/pricing?market=KM&product_ref='+ref,ref,'pricing');
     await inspect('market_operator','/dashboards/canonical/market-catalog.html?market=KM&product_ref=KPR-000099','KPR-000099','market-catalog');
@@ -196,9 +347,24 @@ async function run(env=process.env){
     report.business_writes=0; // Every attempted browser business mutation is explicitly blocked.
     report.blocked_mutation_attempts=report.browser.flatMap(row=>row.blocked_requests.map(x=>({...x,stage:row.stage})));
     const buyer=report.browser.find(x=>x.stage==='boutique');
-    report.verdict=buyer?.buyer_matching_product_refs?.length
-      ?'PUBLIC_KM_MATCH_REQUIRES_INDEPENDENT_APPROVAL_READBACK'
-      :'P1_KM_NOT_YET_VISIBLE';
+    const catalogueRows=report.browser.filter(row=>row.role==='admin'&&row.stage==='catalogue');
+    report.media_review_evidence_count=catalogueRows.reduce(
+      (sum,row)=>sum+(row.media_review_probe?.evidence?.length||0),0);
+    report.media_review_screenshots=catalogueRows.flatMap(
+      row=>row.media_review_probe?.source_image_screenshots||[]);
+    const mediaProven=catalogueRows.length===REFS.length &&
+      catalogueRows.every(row=>
+        row.verdict!=='BLOCKED' &&
+        row.media_review_probe?.status==='REAL_CHROMIUM_ALL_MEDIA_INSPECTED_NO_SIGNATURE' &&
+        row.media_review_probe?.close_proof?.length===3) &&
+      report.media_review_evidence_count===16 &&
+      report.mobile_ux?.status==='PASS_ONE_IMAGE_AT_A_TIME_ESCAPE' &&
+      report.business_writes===0;
+    report.verdict=!mediaProven ? 'CHROMIUM_MEDIA_REVIEW_UI_NOT_PROVEN'
+      : buyer?.buyer_matching_product_refs?.length
+        ?'PUBLIC_KM_MATCH_REQUIRES_INDEPENDENT_APPROVAL_READBACK'
+        :'P1_KM_NOT_YET_VISIBLE';
+    if(!mediaProven)process.exitCode=2;
   }catch(error){
     report.verdict='DIAGNOSTIC_FAILED';
     report.error_code=String(error.message||error).slice(0,160);
@@ -212,10 +378,14 @@ async function run(env=process.env){
       screenshots:report.browser.filter(x=>x.screenshot).length,
       stages:report.browser.map(x=>({role:x.role,stage:x.stage,ref:x.ref,
         http:x.http,verdict:x.verdict,error:x.error_code||null})),
-      business_writes:report.business_writes
+      business_writes:report.business_writes,
+      media_review_evidence_count:report.media_review_evidence_count||0,
+      media_review_screenshots:report.media_review_screenshots?.length||0,
+      human_reviews_written:0,
+      mobile_ux:report.mobile_ux?.status||'NOT_PROVEN'
     }));
   }
   return report;
 }
 if(require.main===module)run().catch(e=>{console.error(String(e.message));process.exitCode=2});
-module.exports={BASE,REFS,ALL,guard,run};
+module.exports={BASE,REFS,ALL,EXPECTED_MEDIA,guard,run};

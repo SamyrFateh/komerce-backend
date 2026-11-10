@@ -9,7 +9,7 @@
  * @outputs       read-only per-product editorial/media/SOI/cost/market-pricing blockers
  * @depends       scripts/recette/target-guard.js
  * @db-read       import_runtime_runs, sourcing_candidates, products, product_skus, catalog_media,
- *                product_market_exposure, product_market_price_drafts, markets
+ *                catalog_field_overrides, product_market_exposure, product_market_price_drafts, markets
  * @db-write      none
  * @db-txn        BEGIN READ ONLY
  * @doctrine      exact_real_source_not_sellability_no_invented_cost_or_price
@@ -64,8 +64,15 @@ function assessProduct(row) {
     hard.push('SUPPLIER_ORDER_IDENTITY_UNPROVEN');
   const activeMedia = media.filter(m => m.is_active === true && /^https:\/\//i.test(m.url || ''));
   if (!activeMedia.length) decisions.push('CATALOGUE_MEDIA_REVIEW_REQUIRED');
-  if (!p.name || !p.description || p.needs_review !== false || p.source_locale !== 'fr')
-    decisions.push('FRENCH_EDITORIAL_REVIEW_REQUIRED');
+  // source_locale is immutable *supplier* provenance. It stays 'en' after a
+  // French editorial approval and must never be used as the output language.
+  // For non-FR supplier content, require an actual canonical manual curation
+  // and independently recorded name+description overrides, not a mere claim.
+  const signedFrenchFields = safeCount(row.signed_french_overrides);
+  const editorialVerified = Boolean(p.name && p.description && p.needs_review === false
+    && (p.source_locale === 'fr'
+      || (p.content_source === 'manual' && signedFrenchFields >= 2)));
+  if (!editorialVerified) decisions.push('FRENCH_EDITORIAL_REVIEW_REQUIRED');
   const scan = row.scan_result || {};
   const customsStatus = scan.customs_review?.status || null;
   if (customsStatus === 'REQUIRED') decisions.push('CUSTOMS_REVIEW_REQUIRED');
@@ -86,7 +93,9 @@ function assessProduct(row) {
     boutique_category: p.boutique_category_key || null,
     boutique_subcategory: p.boutique_subcategory_key || null,
     source_locale: p.source_locale || null,
-    needs_editorial_review: p.needs_review !== false,
+    french_editorial_verified: editorialVerified,
+    signed_french_overrides: signedFrenchFields,
+    needs_editorial_review: !editorialVerified,
     description_present: Boolean(p.description),
     source_decision: scan.sourcing_decision || null,
     customs_review_status: customsStatus,
@@ -108,6 +117,9 @@ function assessProduct(row) {
 const QUERY = [
   'SELECT c.candidate_ref, c.supplier_product_id, c.state, c.product_id,',
   '       c.normalized_source_contract, c.scan_result, to_jsonb(p) AS product,',
+  '       (SELECT count(DISTINCT o.field_name)::int FROM catalog_field_overrides o',
+  "         WHERE o.product_id=p.id AND o.field_name IN ('name','description')",
+  '           AND o.set_by IS NOT NULL) AS signed_french_overrides,',
   '       (SELECT coalesce(jsonb_agg(jsonb_build_object(',
   "          'supplier_sku',s.supplier_sku, 'supplier_unit_ref',s.supplier_unit_ref,",
   "          'supplier_order_identity',s.supplier_order_identity, 'source',s.source)), '[]'::jsonb)",

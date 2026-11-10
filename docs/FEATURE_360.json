@@ -6832,7 +6832,7 @@
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 174,
+            "count": 175,
             "files": [
               {
                 "declared": "chart.umd.min.js",
@@ -7207,6 +7207,11 @@
               {
                 "declared": "dashboards/canonical/css/catalog-control-tower.css",
                 "resolvedPath": "public/dashboards/canonical/css/catalog-control-tower.css",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/css/catalog-workspace-wide-v1.css",
+                "resolvedPath": "public/dashboards/canonical/css/catalog-workspace-wide-v1.css",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -9177,7 +9182,7 @@
             ]
           }
         },
-        "totalFiles": 463,
+        "totalFiles": 464,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,

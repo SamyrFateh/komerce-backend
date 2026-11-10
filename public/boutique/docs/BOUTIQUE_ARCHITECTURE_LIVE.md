@@ -38,7 +38,7 @@
 | `modal-cart-sku-guard.css` | 20 | components.css |
 | `modal-desktop-density.css` | 50 | components.css |
 | `modal-enriched-content.css` | 223 | components.css |
-| `modal-media.css` | 429 | components.css |
+| `modal-media.css` | 447 | components.css |
 | `modal-mobile-canonical.css` | 831 | components.css |
 | `modal-mobile-suggestion-actions.css` | 68 | components.css |
 | `modal-product.css` | 1510 | components.css |
@@ -69,8 +69,8 @@ Cascade réelle des bundles livrés :
 ```
  1. /boutique/css/dist/base.css?v=266
  2. /boutique/css/dist/critical-home.css?v=5
- 3. /boutique/css/dist/components.css?v=645
- 4. /boutique/css/dist/components.css?v=645
+ 3. /boutique/css/dist/components.css?v=646
+ 4. /boutique/css/dist/components.css?v=646
  5. /boutique/css/dist/desktop.css?v=155
 ```
 

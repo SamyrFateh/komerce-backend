@@ -4,6 +4,10 @@
 
 jest.mock('../../services/catalog-overrides', () => ({ upsertOverrides: jest.fn(), finalizeReviewedManualPreparation: jest.fn() }));
 jest.mock('../../utils/rules', () => ({ getRuleNumber: jest.fn() }));
+const mockVisualEvidence = jest.fn();
+jest.mock('../../services/catalog-visual-fr-evidence-read', () => ({
+  inspectCatalogVisualFrEvidence: (...args) => mockVisualEvidence(...args),
+}));
 jest.mock('../../services/product-sku-service', () => ({
   activateProductSkuInventoryModel: jest.fn(),
 }));
@@ -101,6 +105,8 @@ beforeEach(() => {
   activateProductSkuInventoryModel.mockReset();
   activateProductSkuInventoryModel.mockResolvedValue({ ready: true, inventory_model: 'SKU' });
   mockDecisionAudit.mockClear();
+  mockVisualEvidence.mockReset();
+  mockVisualEvidence.mockResolvedValue({ ready: true, code: 'VISUAL_FR_REVIEWED', results: [] });
 });
 
 describe('getApprovalQueue', () => {
@@ -208,6 +214,43 @@ describe('approveProduct', () => {
     expect(activateProductSkuInventoryModel).not.toHaveBeenCalled();
   });
 
+  it('422 sourcing : aucune publication si une des images manque de revue humaine', async () => {
+    const { q, calls } = mockDb({ product: candidateRow(), sourceMapped: true });
+    mockVisualEvidence.mockResolvedValueOnce({ ready: false, code: 'VISUAL_FR_REVIEW_PENDING',
+      results: [{ source_media_id: 'CJ-01', state: 'NOT_INSPECTED', ready: false, reason: 'VISUAL_REVIEW_MISSING' }] });
+    const result = await approval.approveProduct(q, PRODUCT_ID, { id: 'admin-1' });
+    expect(result).toMatchObject({ status: 422, body: {
+      code: 'visual_fr_review_required', visual_fr_reason: 'VISUAL_FR_REVIEW_PENDING',
+      reasons: expect.arrayContaining(['VISUAL_REVIEW_MISSING']),
+    } });
+    expect(mockVisualEvidence).toHaveBeenCalledWith(q, PRODUCT_ID);
+    expect(activateProductSkuInventoryModel).not.toHaveBeenCalled();
+    expect(calls.find(call => call.sql.startsWith('UPDATE products'))).toBeUndefined();
+  });
+
+  it.each(['SOURCE_IMAGE_OR_VARIANT_CHANGED','CRITICAL_TEXT_UNREADABLE'])(
+    '422 sourcing : garde fermé pour %s', async reason => {
+      const { q, calls } = mockDb({ product: candidateRow(), sourceMapped: true });
+      mockVisualEvidence.mockResolvedValueOnce({ ready: false, code: 'VISUAL_FR_REVIEW_PENDING',
+        results: [{ source_media_id: 'CJ-01', state: 'BLOCKED_UNREADABLE_OR_UNSUPPORTED', ready: false, reason }] });
+      const result = await approval.approveProduct(q, PRODUCT_ID, { id: 'admin-1' });
+      expect(result.body).toMatchObject({ code: 'visual_fr_review_required',
+        reasons: expect.arrayContaining([reason]) });
+      expect(calls.find(call => call.sql.startsWith('UPDATE products'))).toBeUndefined();
+    }
+  );
+
+  it('la voie override ne peut pas contourner la revue humaine des médias', async () => {
+    const { q, calls } = mockDb({ product: candidateRow(), sourceMapped: true });
+    upsertOverrides.mockResolvedValue({ overridden: ['name'], product: candidateRow() });
+    mockVisualEvidence.mockResolvedValueOnce({ ready: false, code: 'VISUAL_FR_REVIEW_PENDING', results: [] });
+    const result = await approval.overrideAndApprove(q, PRODUCT_ID,
+      { fields: { name: 'Batterie externe' }, reason: 'correction de nom' }, { id: 'admin-1' });
+    expect(result.status).toBe(422);
+    expect(result.body.code).toBe('visual_fr_review_required');
+    expect(calls.find(call => call.sql.startsWith('UPDATE products'))).toBeUndefined();
+  });
+
   it('un produit fournisseur certifié bascule en SKU dans la même décision de publication', async () => {
     const { q, calls } = mockDb({
       product: candidateRow(),
@@ -220,6 +263,7 @@ describe('approveProduct', () => {
     const result = await approval.approveProduct(q, PRODUCT_ID, { id: 'admin-1' });
 
     expect(result.status).toBe(200);
+    expect(mockVisualEvidence).toHaveBeenCalledWith(q, PRODUCT_ID);
     expect(activateProductSkuInventoryModel).toHaveBeenCalledWith(q, PRODUCT_ID);
     expect(calls.find(call => call.sql.startsWith('UPDATE products'))).toBeDefined();
   });
