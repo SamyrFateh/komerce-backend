@@ -13,7 +13,7 @@
 
 const express = require('express');
 const request = require('supertest');
-const { isInternalStaticPath, internalStaticGuard } = require('../../middleware/internal-static-guard');
+const { isInternalStaticPath, isLegacyDashboardPath, internalStaticGuard } = require('../../middleware/internal-static-guard');
 
 describe('isInternalStaticPath — fonction pure', () => {
   test.each([
@@ -93,5 +93,50 @@ describe('internalStaticGuard — comportement HTTP', () => {
   test('HEAD est filtré comme GET — express.static répond normalement à HEAD, la règle ne doit pas dépendre de la méthode pour être sûre', async () => {
     const res = await request(buildApp()).head('/README.md');
     expect(res.status).toBe(404);
+  });
+});
+
+
+describe('B3 — legacy 0 inaccessible sans activation explicite', () => {
+  const path = require('path');
+  const originalFlag = process.env.ADMIN_LEGACY_ENABLED;
+  const legacyHtml = '/dashboards/admin-legacy/control-tower.html';
+  const legacyJs = '/dashboards/admin-legacy/js/ct-app.js';
+  function buildPublicApp() {
+    const app = express();
+    app.use(internalStaticGuard);
+    app.use(express.static(path.join(__dirname, '..', '..', 'public')));
+    return app;
+  }
+  afterEach(() => {
+    if (originalFlag === undefined) delete process.env.ADMIN_LEGACY_ENABLED;
+    else process.env.ADMIN_LEGACY_ENABLED = originalFlag;
+  });
+
+  test.each([legacyHtml, legacyJs, '/dashboards/admin-legacy/manifest.json'])(
+    '%s renvoie 404 par défaut pour GET et HEAD', async url => {
+      delete process.env.ADMIN_LEGACY_ENABLED;
+      expect((await request(buildPublicApp()).get(url)).status).toBe(404);
+      expect((await request(buildPublicApp()).head(url)).status).toBe(404);
+    }
+  );
+
+  test('les variantes encodées et la casse ne contournent pas le garde', () => {
+    expect(isLegacyDashboardPath('/dashboards/%61dmin-legacy/control-tower.html')).toBe(true);
+    expect(isLegacyDashboardPath('/DASHBOARDS/ADMIN-LEGACY/js/ct-app.js')).toBe(true);
+    expect(isLegacyDashboardPath('/dashboards/admin-legacyish/index.html')).toBe(false);
+    expect(isLegacyDashboardPath('/hub/index.html')).toBe(false);
+  });
+
+  test('la réactivation explicite conserve le HTML et les JS historiques', async () => {
+    process.env.ADMIN_LEGACY_ENABLED = '1';
+    expect((await request(buildPublicApp()).get(legacyHtml)).status).toBe(200);
+    expect((await request(buildPublicApp()).get(legacyJs)).status).toBe(200);
+  });
+
+  test('Hub et Admin Canonical restent servis quand Legacy 0 est fermé', async () => {
+    process.env.ADMIN_LEGACY_ENABLED = '0';
+    expect((await request(buildPublicApp()).get('/hub/index.html')).status).toBe(200);
+    expect((await request(buildPublicApp()).get('/dashboards/canonical/index.html')).status).toBe(200);
   });
 });
