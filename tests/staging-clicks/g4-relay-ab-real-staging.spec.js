@@ -62,7 +62,8 @@ async function receipt(page,actor,other) {
   check(denied.status()===403,'cross-receipt-403-'+actor.label,denied.status());
   const ownerBefore=await snapshot(db,actor.orderId), otherBefore=await snapshot(db,other.orderId);
   check(assess(ownerBefore,'before').length===0,'owner-before-'+actor.label);
-  check(assess(otherBefore,'before').length===0,'other-before-'+actor.label);
+  const otherExpected=other.label==='A'?'available':'before';
+  check(assess(otherBefore,otherExpected).length===0,'other-untouched-'+actor.label);
   await workspaceReadback(page,actor.reference,other.reference,actor.label,'before');
   const physical=own.locator('[data-local-physical-proof]');
   const note=own.locator('[data-local-receipt-note]');
