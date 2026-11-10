@@ -71,8 +71,28 @@ test('physical mode is owner-issue-only on localhost, receipt-only remains the d
   expect(y).toContain("github.event.issue.title == '[cert-op] hub-v1-isolated-chromium-receipt'");
   expect(y).toContain("github.event.issue.title == '[cert-op] hub-v1-isolated-chromium-physical'");
   expect(y).toContain("test \"$GITHUB_EVENT_NAME\" = 'issues'");
-  expect(y).toContain("npx playwright test --config=playwright.hub-v1-clicks.config.js\n");
+  expect(y).toContain("npx playwright test --config=playwright.hub-v1-clicks.config.js tests/staging-clicks/hub-v1-clicks.spec.js\n");
   expect(y).toContain("--grep 'Hub : reception fournisseur'");
   expect(y).toContain('HUB_LOCAL_CHROMIUM_NO_PREPARED_FIXTURE');
   expect(y).not.toContain('secrets.RAILWAY_DATABASE_URL');
+});
+
+test('Customs page requires its actual international journey component, not unrelated operations select',()=>{
+  const src=get('tests/staging-clicks/hub-v1-clicks.spec.js');
+  expect(src).toContain("url.startsWith('/admin/workspaces/shipping-customs')");
+  expect(src).toContain("await expect(page).toHaveURL(/\\/admin\\/workspaces\\/shipping-customs");
+  expect(src).toContain("page.locator('[data-international-journey]').first().waitFor");
+  expect(src).toContain("if (await select.count()) await select.selectOption");
+  expect(src).toContain('test.afterEach(async ({}, info) =>');
+  expect(src).toContain("info.status !== 'passed'");
+  expect(src).toContain("verdict: info.status === 'skipped' ? 'NOT_RUN' : 'CLICK_FAIL'");
+  expect(src).toContain("key: 'full-suite:coverage'");
+  expect((src.match(/^\s*test\('/gm)||[])).toHaveLength(10);
+  expect(src).toContain("if (successfulTests !== 10)");
+});
+test('Full physical harness cannot silently run unrelated LOCAL_STOCK spec',()=>{
+  const y=get('.github/workflows/hub-v1-isolated-chromium-receipt.yml');
+  expect(y).not.toContain('local-stock-native-clicks.spec.js');
+  const cmd="npx playwright test --config=playwright.hub-v1-clicks.config.js tests/staging-clicks/hub-v1-clicks.spec.js";
+  expect(y.split(cmd)).toHaveLength(3);
 });

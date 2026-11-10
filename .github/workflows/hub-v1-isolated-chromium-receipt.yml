@@ -112,9 +112,9 @@ jobs:
           set -euo pipefail
           if [[ "$E2E_CLICKS_ALLOW_DISTRIBUTION" == '1' ]]; then
             # Whole isolated market consists solely of this disposable PG16 fixture.
-            npx playwright test --config=playwright.hub-v1-clicks.config.js
+            npx playwright test --config=playwright.hub-v1-clicks.config.js tests/staging-clicks/hub-v1-clicks.spec.js
           else
-            npx playwright test --config=playwright.hub-v1-clicks.config.js --grep 'Hub : reception fournisseur'
+            npx playwright test --config=playwright.hub-v1-clicks.config.js tests/staging-clicks/hub-v1-clicks.spec.js --grep 'Hub : reception fournisseur'
           fi
       - name: Independent authenticated API and PostgreSQL readbacks on identical PO UUIDs
         if: always()
