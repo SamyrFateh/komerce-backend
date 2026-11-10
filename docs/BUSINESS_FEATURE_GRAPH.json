@@ -40973,10 +40973,6 @@
                 "targetFile": "services/order-status-machine.js"
               },
               {
-                "sourceFileId": "routes/pickup-secret.js",
-                "targetFile": "services/order-mutation-service.js"
-              },
-              {
                 "sourceFileId": "tests/unit/order-physical-coverage-gate.test.js",
                 "targetFile": "services/order-status-machine.js"
               },
