@@ -37,6 +37,7 @@ const { createAlert } = require('../utils/alerts');
 const { getRuleNumber } = require('../utils/rules');
 const { upsertOverrides, finalizeReviewedManualPreparation } = require('./catalog-overrides');
 const { certifyCatalogProduct } = require('./catalog-certification');
+const { inspectCatalogVisualFrEvidence } = require('./catalog-visual-fr-evidence-read');
 const { validatePublicationUpdate } = require('./product-publication-guard');
 const { activateProductSkuInventoryModel } = require('./product-sku-service');
 const { recordCatalogPublicationDecision } = require('./catalog-publication-decision-audit');
@@ -153,6 +154,27 @@ async function preparePublication(q, before) {
           code: guardReason ? guardCode : 'catalog_certification_failed',
           reasons: verdict.certification.reasons,
           certification_version: verdict.certification.certification_version,
+        },
+      },
+    };
+  }
+
+  // Source-linked first publication is forbidden until EACH active original
+  // image has a real, source- and variant-matched human review. Re-evaluate
+  // inside the same publication transaction: the UI/GET is never the authority.
+  const visual = await inspectCatalogVisualFrEvidence(q, before.id);
+  if (visual.ready !== true) {
+    return {
+      ok: false,
+      result: {
+        status: 422,
+        body: {
+          error: 'Publication refusée : revue visuelle française des images fournisseur incomplète',
+          code: 'visual_fr_review_required',
+          reasons: [visual.code, ...visual.results.filter(item => !item.ready)
+            .map(item => item.reason || item.state)],
+          visual_fr_reason: visual.code,
+          visual_fr_results: visual.results,
         },
       },
     };

@@ -8,7 +8,7 @@
  * @outputs       public_product_detail_v1
  * @depends       services/transport-rails.js, services/transport-pricing.js, utils/rules.js, schemas/catalog/product-detail.v1.schema.json
  * @used-by       routes/catalog-product-detail.js
- * @db-read       business_rules, catalog_product_sale_holds, catalog_media, product_attributes, product_content_profile, product_content_sections, product_sku_media, product_skus, product_variants, products
+ * @db-read       business_rules, catalog_product_sale_holds, catalog_media, catalog_media_visual_fr_reviews, sourcing_candidates, product_attributes, product_content_profile, product_content_sections, product_sku_media, product_skus, product_variants, products
  * @db-write      none
  * @db-txn        none
  * @doctrine      docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md, docs/specs/DECISION_MODELE_STOCK_SKU.md, docs/doctrine/DOCTRINE_TRANSPORT_RAILS.md
@@ -26,6 +26,7 @@ const { getRule } = require('../utils/rules');
 const { quoteTransportPriceForItem, TransportPricingError } = require('./transport-pricing');
 const { applyCanonicalPromotion } = require('./product-admin-service');
 
+const { inspectOne } = require('./catalog-media-visual-fr-proof');
 const CONTRACT_VERSION = '1';
 
 // Le label public appartient à la projection catalogue. Un nouveau rail rendu
@@ -214,14 +215,42 @@ function buildContent(profileRow, sectionRows, attributeRows) {
  * le fallback legacy (buildMedia) reste alors la seule source, jamais un
  * mélange des deux dans la même réponse.
  */
-function buildCanonicalMedia(catalogMediaRows) {
-  return (catalogMediaRows || []).map((row) => ({
-    id: row.id,
-    url: row.url,
-    role: row.role,
-    alt: row.alt || null,
-    option_values: canonicalOptionValues(row.option_values || {}),
-  }));
+function buildCanonicalMedia(catalogMediaRows, requireSourceReview = false) {
+  const media = [];
+  for (const row of catalogMediaRows || []) {
+    const review = row.review_source_media_id ? {
+      source_media_id: row.review_source_media_id,
+      source_url: row.review_source_url,
+      option_values: row.review_option_values,
+      text_presence: row.text_presence,
+      source_transcription: row.source_transcription,
+      french_translation: row.french_translation,
+      french_presentation: row.french_presentation,
+      reviewed_by: row.reviewed_by,
+      reviewed_at: row.reviewed_at,
+    } : null;
+    // Do not trust a review if its exact supplier source or options changed.
+    const inspected = requireSourceReview
+      ? inspectOne({ source_media_id: row.source_media_id, url: row.url,
+        option_values: row.option_values }, review) : null;
+    if (requireSourceReview && inspected.ready !== true) return null;
+    const presentation = inspected?.ready === true && review?.text_presence === 'PRESENT'
+      ? review.french_presentation : null;
+    const localized = presentation?.kind === 'localized_image';
+    const publicPresentation = presentation?.kind === 'caption'
+      ? { kind: 'caption', text: presentation.text }
+      : localized ? { kind: 'localized_image' } : null;
+    media.push({
+      id: row.id,
+      // A checked localized image is used for buyers, never the supplier original.
+      url: localized ? presentation.url : row.url,
+      role: row.role,
+      alt: row.alt || null,
+      option_values: canonicalOptionValues(row.option_values || {}),
+      ...(publicPresentation ? { presentation_fr: publicPresentation } : {}),
+    });
+  }
+  return media;
 }
 
 function buildMedia(product, variantRows) {
@@ -415,7 +444,9 @@ async function getProductDetail(dbClient, productId) {
   const { rows: [product] } = await dbClient.query(
     `SELECT id, product_ref, sku, name, description, category, subcategory, series,
             price_kmf, promo_pct, is_promo, promo_until, image_url, images, has_variants, inventory_model,
-            air_eligibility_status, weight_kg, volume_cm3
+            air_eligibility_status, weight_kg, volume_cm3,
+            EXISTS (SELECT 1 FROM sourcing_candidates sc
+                     WHERE sc.product_id=products.id AND sc.state='imported_to_catalog') AS has_sourcing_candidate
        FROM products
       WHERE id = $1 AND is_active = TRUE AND is_available = TRUE
         AND NOT EXISTS(SELECT 1 FROM catalog_product_sale_holds h
@@ -458,10 +489,15 @@ async function getProductDetail(dbClient, productId) {
       )
       : Promise.resolve({ rows: [] }),
     dbClient.query(
-      `SELECT id, url, role, alt, option_values
-         FROM catalog_media
-        WHERE product_id = $1 AND is_active = TRUE
-        ORDER BY display_order ASC NULLS LAST, created_at ASC`,
+      `SELECT cm.id, cm.url, cm.role, cm.alt, cm.option_values, cm.source_media_id,
+              vr.source_media_id AS review_source_media_id,
+              vr.source_url AS review_source_url, vr.option_values AS review_option_values,
+              vr.text_presence, vr.source_transcription, vr.french_translation,
+              vr.french_presentation, vr.reviewed_by, vr.reviewed_at
+         FROM catalog_media cm
+         LEFT JOIN catalog_media_visual_fr_reviews vr ON vr.media_id=cm.id
+        WHERE cm.product_id = $1 AND cm.is_active = TRUE
+        ORDER BY cm.display_order ASC NULLS LAST, cm.created_at ASC`,
       [productId]
     ),
     dbClient.query(
@@ -491,7 +527,10 @@ async function getProductDetail(dbClient, productId) {
 
   // Média canonique (PDC-8) prioritaire ; fallback legacy uniquement si le
   // produit n'a jamais été promu — jamais un mélange des deux sources.
-  const canonicalMedia = buildCanonicalMedia(catalogMediaRows);
+  const canonicalMedia = buildCanonicalMedia(catalogMediaRows, product.has_sourcing_candidate === true);
+  // An edited/absent review can never silently reopen the public product detail.
+  if (canonicalMedia === null || (product.has_sourcing_candidate === true && !canonicalMedia.length))
+    return null;
   const usingCanonicalMedia = canonicalMedia.length > 0;
   const media = usingCanonicalMedia ? canonicalMedia : buildMedia(product, variantRows);
 

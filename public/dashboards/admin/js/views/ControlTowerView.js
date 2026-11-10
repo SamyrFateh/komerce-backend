@@ -501,7 +501,7 @@
           {
             key: 'relais_name',
             label: 'Relais',
-            render: (row) => row.relais_name || '—',
+            render: (row) => esc(row.relais_name || '—'),
           },
         ],
         rows: orders,
@@ -556,10 +556,12 @@
       console.error('[ControlTower] error:', err);
       const main = document.getElementById('ct-kpis');
       if (main) {
-        main.innerHTML = `<div class="error-state">
-          ❌ Erreur de chargement : ${err.message || 'inconnue'}
-          ${err.status === 401 ? ' — connectez-vous comme admin' : ''}
-        </div>`;
+        // B2: untrusted errors must be text-only.
+        const errorState = document.createElement('div');
+        errorState.className = 'error-state';
+        errorState.textContent = '❌ Erreur de chargement : ' + (err.message || 'inconnue') +
+          (err.status === 401 ? ' — connectez-vous comme admin' : '');
+        main.replaceChildren(errorState);
       }
     }
   }

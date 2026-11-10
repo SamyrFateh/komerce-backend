@@ -118,6 +118,58 @@ jobs:
       - name: Existing PO HTTP chain with GET and PostgreSQL readbacks
         if: github.event_name == 'issues'
         run: node scripts/recette/hub-v1-http-action-runner.js
+      - name: Bind existing E2E Relais agent to this disposable fixture
+        if: github.event_name == 'issues'
+        shell: bash
+        run: |
+          set -euo pipefail
+          RELAY_MODE=to-fixture RELAY_RUN8="$HUB_V1_CERTIFICATION_RUN" \
+          RELAY_APPLY=1 RELAY_CONFIRMATION=REASSIGN-E2E-RELAY \
+            node scripts/recette/staging-e2e-relay-reassign.js
+          cp test-results/relay-reassign/report.json test-results/relay-reassign/assignment-original.json
+      - name: Register exactly the admin and Relay test actors for canonical simulated queues
+        if: github.event_name == 'issues'
+        run: |
+          node - <<'NODE'
+          const db=require('./db');
+          const {confirmTarget}=require('./scripts/recette/target-guard');
+          const {markE2eTestAccount}=require('./scripts/recette/staging-e2e-provision');
+          const {isE2eTestAccount}=require('./services/simulation-visibility');
+          (async()=>{
+            const env=process.env;
+            if(env.KOMERCE_ENV!=='staging'||env.KOMERCE_TARGET_ENV!=='staging'||
+               env.NODE_ENV!=='test'||env.HUB_V1_STAGING_DISPOSABLE_MODE!=='1'||
+               env.GITHUB_EVENT_NAME!=='issues'||
+               env.GITHUB_ACTOR!==env.GITHUB_REPOSITORY_OWNER)
+              throw Error('G2_E2E_OWNER_STAGING_ONLY');
+            if(!(await confirmTarget({db,env})).confirmed)throw Error('G2_STAGING_TARGET_MISMATCH');
+            const client=await db.getClient();
+            let opened=false;
+            try{
+              await client.query('BEGIN');opened=true;
+              const identities=[];
+              for(const [key,role] of [['E2E_ADMIN_EMAIL','admin'],['E2E_AGENT_RELAIS_EMAIL','agent_relais']]){
+                const {rows}=await client.query(
+                  'SELECT id,role::text AS role,email FROM users WHERE lower(email)=lower($1)',
+                  [env[key]]);
+                if(rows.length!==1||rows[0].role!==role)throw Error('G2_VIEWER_ROLE_MISMATCH:'+key);
+                if(role==='agent_relais'&&!/^[^@]*(e2e|recette)[^@]*@(komerce.test|recette.komerce.invalid)$/i.test(rows[0].email))
+                  throw Error('G2_RELAY_NOT_DEDICATED_E2E');
+                identities.push(rows[0]);
+              }
+              for(const user of identities)
+                await markE2eTestAccount(client,{userId:user.id,actorId:identities[0].id});
+              await client.query('COMMIT');opened=false;
+              for(const user of identities)
+                if(!await isE2eTestAccount(user.id))throw Error('G2_E2E_VIEWER_MARKER_NOT_VISIBLE');
+              console.log('G2_CANONICAL_E2E_VIEWERS_READY');
+            }finally{
+              if(opened)await client.query('ROLLBACK').catch(()=>{});
+              client.release();
+            }
+          })().catch(e=>{console.error(String(e.message));process.exitCode=2})
+            .finally(()=>db.pool?.end?.());
+          NODE
       - name: HARD HOLD before all Chromium business clicks on staging
         run: |
           test -n "$HUB_V1_CERTIFICATION_RUN"
@@ -125,6 +177,19 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - name: Clics Chromium
         run: npx playwright test --config=playwright.hub-v1-clicks.config.js tests/staging-clicks/hub-v1-clicks.spec.js
+      - name: Restore existing Relais account to its original assignment
+        if: always() && github.event_name == 'issues'
+        shell: bash
+        run: |
+          if [ -f test-results/relay-reassign/assignment-original.json ]; then
+            BEFORE="$(node -p "require('./test-results/relay-reassign/assignment-original.json').relais_before || ''")"
+            if [[ "$BEFORE" =~ ^[0-9a-fA-F-]{36}$ ]]; then
+              RELAY_MODE=restore RELAY_RESTORE_ID="$BEFORE" RELAY_APPLY=1 \
+                RELAY_CONFIRMATION=REASSIGN-E2E-RELAY node scripts/recette/staging-e2e-relay-reassign.js
+            else
+              echo "G2_RELAY_ORIGINAL_ASSIGNMENT_INVALID" >&2; exit 1
+            fi
+          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:

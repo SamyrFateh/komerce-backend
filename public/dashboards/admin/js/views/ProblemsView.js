@@ -440,8 +440,8 @@
         const days   = o._days ? `(${o._days}j)` : '';
         itemsHtml += `<div class="prob-item">
           <span>▸</span>
-          <span class="prob-item-ref">${ref}</span>
-          ${name ? `<span class="prob-item-name">— ${name}</span>` : ''}
+          <span class="prob-item-ref">${esc(ref)}</span>
+          ${name ? `<span class="prob-item-name">— ${esc(name)}</span>` : ''}
           <span class="prob-item-meta">${[amount, days].filter(Boolean).join(' ')}</span>
         </div>`;
       });
@@ -709,17 +709,17 @@
           html += `<div style="background:white;border:1px solid #e2e8f0;border-left:4px solid ${color};
             border-radius:8px;padding:12px 16px;font-size:13px">
             <div style="display:flex;justify-content:space-between;align-items:center">
-              <strong>${p.reference || '—'}</strong>
+              <strong>${esc(p.reference || '—')}</strong>
               <span style="background:${color}22;color:${color};padding:2px 10px;border-radius:10px;font-size:var(--fs-xs);font-weight:700">
-                ${status.toUpperCase()}
+                ${esc(status.toUpperCase())}
               </span>
             </div>
             <div style="color:#64748b;margin-top:4px">
-              ${p.status || '—'} · ${p.destination_label || p.destination_id || '—'}
+              ${esc(p.status || '—')} · ${esc(p.destination_label || p.destination_id || '—')}
             </div>
             ${reco.issues && reco.issues.length
               ? `<ul style="margin:6px 0 0;padding-left:18px;color:#dc2626;font-size:var(--fs-sm)">
-                  ${reco.issues.map(i => `<li>${i}</li>`).join('')}
+                  ${reco.issues.map(i => `<li>${esc(i)}</li>`).join('')}
                 </ul>`
               : ''}
           </div>`;

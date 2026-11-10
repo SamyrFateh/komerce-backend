@@ -257,30 +257,23 @@
     }
   }
 
-  // Only an operator-initiated correction may finish Catalogue automatically.
-  // This reuses the canonical server certification + audited approval writers.
-  // Merely opening a dossier (GET) must never mutate a product.
+  // A correction is not a publication decision. Always leave the explicitly
+  // labeled "Valider le Catalogue" gesture to the authorized reviewer.
   async function finishCatalogueAfterCorrection(context, row) {
     if (!row?.product_ref || row.lifecycle_status !== 'candidate' || !row.candidate_ref) return null;
     try {
-      // Méthode explicite : il s'agit d'une lecture, jamais d'un POST.
-      // Les contrôles de contrat API doivent distinguer ce GET du POST d'approbation suivant.
       const diagnosis = await jsonRequest(context.fetch,
         ENDPOINT + '?diagnose_product_ref=' + encodeURIComponent(row.product_ref),
         { method: 'GET' });
       if (diagnosis?.phase !== 'catalog_approval' || diagnosis?.certification?.certified !== true)
-        return null; // unresolved server prerequisites remain visible after reload
-      const result = await jsonRequest(context.fetch,
-        ENDPOINT + '/approval/' + encodeURIComponent(row.product_ref) + '/approve',
-        { method: 'POST' });
-      if (!result?.ok) throw new Error('Approbation Catalogue non acquise.');
+        return null;
       return { message: row.product_ref +
-        ' : toutes les corrections sont conformes. Catalogue approuvé et audité ; aucun marché publié.',
+        ' : corrections conformes. Validation Catalogue humaine et distincte requise ; aucun marché publié.',
         tone: 'positive' };
     } catch (error) {
       return { message: row.product_ref +
-        ' : correction enregistrée, mais approbation Catalogue non acquise : ' +
-        actionErrorMessage(error), tone: 'warning' };
+        ' : correction enregistrée, contrôle à refaire : ' + actionErrorMessage(error),
+        tone: 'warning' };
     }
   }
 
@@ -1735,10 +1728,18 @@
   // its canonical domain route, which checks its own grant and business gate.
   // Supplier originals always remain read-only.
   function inspectorFrame(slot, doc, row, mode) {
-    const previous = slot.querySelector('[data-catalog-candidate-inspector]');
-    if (previous) previous.remove();
-    const oldProduct = slot.querySelector('[data-catalog-product-inspector]');
-    if (oldProduct) oldProduct.remove();
+    // Fermer proprement l'ancien tiroir, y compris son masque et ses
+    // événements clavier, avant d'ouvrir un autre produit.
+    const previous = slot.querySelector('[data-catalog-candidate-inspector]') ||
+      slot.querySelector('[data-catalog-product-inspector]');
+    if (previous) {
+      const existingClose = previous.querySelector('[data-workspace-action="close-inspector"]');
+      if (existingClose) existingClose.click();
+      else previous.remove();
+    }
+    const staleBackdrop = slot.querySelector('[data-catalog-inspector-backdrop]');
+    if (staleBackdrop) staleBackdrop.remove();
+    const originFocus = doc.activeElement;
     const panel = doc.createElement('aside');
     panel.className = 'kmc-catalog-candidate-inspector';
     panel.setAttribute(mode === 'candidate'
@@ -1750,8 +1751,30 @@
     const head = doc.createElement('div');
     head.className = 'kmc-catalog-inspector-head';
     head.appendChild(text(doc, 'strong', '', row.name || row.product_ref || row.candidate_ref));
-    const close = makeButton(doc, 'Fermer', 'close-inspector', true);
-    close.addEventListener('click', () => panel.remove());
+    const close = makeButton(doc, '✕ Fermer', 'close-inspector', true);
+    close.setAttribute('aria-label', 'Fermer l’inspecteur et revenir au Catalogue');
+    const backdrop = makeButton(doc, '', 'close-inspector-backdrop', true);
+    backdrop.className = 'kmc-catalog-inspector-backdrop';
+    backdrop.setAttribute('data-catalog-inspector-backdrop', '');
+    backdrop.setAttribute('aria-label', 'Fermer l’inspecteur');
+    const onKeydown = event => {
+      if (event.key === 'Escape' && panel.isConnected) {
+        event.preventDefault();
+        closeInspector();
+      }
+    };
+    const closeInspector = () => {
+      if (typeof doc.removeEventListener === 'function')
+        doc.removeEventListener('keydown', onKeydown);
+      backdrop.remove();
+      panel.remove();
+      if (originFocus && originFocus.isConnected && typeof originFocus.focus === 'function')
+        originFocus.focus();
+    };
+    close.addEventListener('click', closeInspector);
+    backdrop.addEventListener('click', closeInspector);
+    if (typeof doc.addEventListener === 'function')
+      doc.addEventListener('keydown', onKeydown);
     head.appendChild(close);
     panel.appendChild(head);
     panel.appendChild(text(doc, 'small', 'kmc-workspace-subtitle',
@@ -1791,7 +1814,9 @@
     sourceDetails.appendChild(text(doc, 'summary', '', 'Informations fournisseur · Lecture seule'));
     sourceDetails.appendChild(facts);
     panel.appendChild(sourceDetails);
+    slot.appendChild(backdrop);
     slot.appendChild(panel);
+    if (typeof close.focus === 'function') close.focus({ preventScroll: true });
     if (typeof panel.scrollIntoView === 'function') panel.scrollIntoView({ block: 'nearest' });
     return { panel, actions, feedback };
   }
@@ -2046,7 +2071,135 @@
     return panel;
   }
 
-  function renderProductDossierDetails(slot, doc, dossier, row) {
+  // A media review is a deliberate human act on the original pixels. The form
+  // intentionally has NO default text-presence answer, even for prior reviews.
+  function appendVisualFrReviewControls(context, doc, figure, item, media, slot, row, index, count) {
+    if (!media.sourcing_linked || !media.product_id || !item.media_id || !item.source_media_id) return;
+    const evidence = media.visual_fr || {};
+    const result = (evidence.results || []).find(v => v.source_media_id === item.source_media_id) || {};
+    const review = item.review || {};
+    const detail = doc.createElement('details');
+    detail.className = 'kmc-catalog-visual-fr-review';
+    detail.setAttribute('data-catalog-visual-fr-media', item.media_id);
+    detail.appendChild(text(doc, 'summary', '', 'Inspecter et attester l’image · ' +
+      (result.state || 'NOT_INSPECTED') + (result.ready ? ' ✓' : ' · BLOQUÉ')));
+    const info = doc.createElement('p');
+    info.className = 'kmc-catalog-correction-hint';
+    info.textContent = 'Source : ' + item.source_media_id + ' · Variante : ' +
+      JSON.stringify(item.option_values || {}) + ' · ' + (result.reason || 'preuve à contrôler');
+    detail.appendChild(info);
+    const source = doc.createElement('a');
+    source.href = item.url;
+    source.target = '_blank';
+    source.rel = 'noopener noreferrer';
+    source.textContent = 'Agrandir l’image fournisseur originale';
+    detail.appendChild(source);
+    if (review.reviewed_by) detail.appendChild(text(doc, 'p', 'kmc-catalog-correction-hint',
+      'Dernière attestation par ' + review.reviewed_by + ' · ' + (review.reviewed_at || 'date absente') +
+      ' · choix : ' + (review.text_presence || 'indéterminé')));
+    const field = (label, tag) => {
+      const wrapper = doc.createElement('label');
+      wrapper.className = 'kmc-catalog-visual-fr-field';
+      wrapper.appendChild(text(doc, 'span', '', label));
+      const input = doc.createElement(tag);
+      wrapper.appendChild(input);
+      detail.appendChild(wrapper);
+      return input;
+    };
+    const presence = field('Texte destiné au client visible dans les pixels (choix obligatoire)', 'select');
+    [['', '— Choisir après inspection —'], ['NONE', 'Aucun texte pertinent'],
+      ['PRESENT', 'Texte présent'], ['UNREADABLE', 'Illisible / douteux : bloquer']]
+      .forEach(([value, label]) => {
+        const option = doc.createElement('option');
+        option.value = value;
+        option.textContent = label;
+        presence.appendChild(option);
+      });
+    presence.value = '';
+    const transcription = field('Transcription exacte du texte fournisseur', 'textarea');
+    const translation = field('Traduction française vérifiée', 'textarea');
+    const kind = field('Présentation française au client', 'select');
+    [['caption', 'Légende française'], ['localized_image', 'Nouvelle image FR contrôlée']]
+      .forEach(([value, label]) => {
+        const option = doc.createElement('option');
+        option.value = value;
+        option.textContent = label;
+        kind.appendChild(option);
+      });
+    const localizedUrl = field('URL HTTPS de l’image française (si applicable)', 'input');
+    localizedUrl.type = 'url';
+    const confirmation = doc.createElement('label');
+    const confirmed = doc.createElement('input');
+    confirmed.type = 'checkbox';
+    confirmation.appendChild(confirmed);
+    confirmation.appendChild(text(doc, 'span', '',
+      ' Je confirme avoir réellement examiné les pixels de CETTE source et variante.'));
+    detail.appendChild(confirmation);
+    const feedback = text(doc, 'p', 'kmc-catalog-correction-hint', 'Aucune attestation enregistrée automatiquement.');
+    feedback.setAttribute('role', 'status');
+    const save = doc.createElement('button');
+    save.type = 'button';
+    save.className = 'kmc-btn kmc-btn-primary';
+    save.textContent = 'Enregistrer la revue humaine';
+    const refresh = () => {
+      const present = presence.value === 'PRESENT';
+      transcription.disabled = !present;
+      translation.disabled = !present;
+      kind.disabled = !present;
+      localizedUrl.disabled = !present || kind.value !== 'localized_image';
+      transcription.parentNode.hidden = !present;
+      translation.parentNode.hidden = !present;
+      kind.parentNode.hidden = !present;
+      localizedUrl.parentNode.hidden = !present || kind.value !== 'localized_image';
+    };
+    presence.addEventListener('change', refresh);
+    kind.addEventListener('change', refresh);
+    refresh();
+    save.addEventListener('click', async () => {
+      if (!['NONE', 'PRESENT', 'UNREADABLE'].includes(presence.value) || !confirmed.checked) {
+        feedback.textContent = 'Inspecter l’image, choisir un état et confirmer la revue humaine.';
+        return;
+      }
+      if (presence.value === 'PRESENT' &&
+        (!transcription.value.trim() || !translation.value.trim() ||
+          (kind.value === 'localized_image' && !/^https:\/\//i.test(localizedUrl.value.trim())))) {
+        feedback.textContent = 'Transcription, traduction et présentation française vérifiables obligatoires.';
+        return;
+      }
+      const body = {
+        source_media_id: item.source_media_id,
+        source_url: item.url,
+        option_values: item.option_values || {},
+        text_presence: presence.value,
+        source_transcription: presence.value === 'PRESENT' ? transcription.value.trim() : null,
+        french_translation: presence.value === 'PRESENT' ? translation.value.trim() : null,
+        french_presentation: presence.value !== 'PRESENT' ? null : {
+          reviewed: true,
+          kind: kind.value,
+          ...(kind.value === 'caption' ? { text: translation.value.trim() }
+            : { url: localizedUrl.value.trim() }),
+        },
+      };
+      save.disabled = true;
+      feedback.textContent = 'Enregistrement de la décision…';
+      try {
+        await jsonRequest(context.fetch, '/api/admin/catalog/approval-queue/' +
+          encodeURIComponent(media.product_id) + '/media/' + encodeURIComponent(item.media_id) +
+          '/visual-fr-review', { method: 'POST', body });
+        feedback.textContent = 'Revue enregistrée · relecture des preuves serveur…';
+        row._catalogMediaIndex = Math.min(index + 1, count - 1);
+        await loadProductDossier(context, doc, slot, row);
+      } catch (error) {
+        feedback.textContent = 'Revue refusée : ' + actionErrorMessage(error);
+        save.disabled = false;
+      }
+    });
+    detail.appendChild(save);
+    detail.appendChild(feedback);
+    figure.appendChild(detail);
+  }
+
+  function renderProductDossierDetails(context, slot, doc, dossier, row) {
     slot.replaceChildren();
     const header = text(doc, 'strong', 'kmc-catalog-inspector-section',
       'Fiche commerciale · état réel du produit');
@@ -2068,15 +2221,49 @@
     const photos = doc.createElement('section');
     photos.className = 'kmc-catalog-dossier-gallery';
     photos.setAttribute('data-catalog-canonical-gallery', '');
-    photos.appendChild(text(doc, 'strong', '', 'Images canoniques actives'));
+    photos.appendChild(text(doc, 'strong', '', '1 · Inspecter les images fournisseur'));
+    if (media.sourcing_linked) {
+      const evidence = media.visual_fr || {};
+      const results = Array.isArray(evidence.results) ? evidence.results : [];
+      const reviewed = gallery.filter(item =>
+        results.some(result => result.source_media_id === item.source_media_id && result.ready)).length;
+      const progress = text(doc, 'p', 'kmc-catalog-review-progress',
+        reviewed + '/' + gallery.length + ' images attestées · ' +
+        (gallery.length - reviewed) + ' à examiner');
+      progress.setAttribute('data-catalog-media-progress', '');
+      photos.appendChild(progress);
+    }
     if (!gallery.length) {
       photos.appendChild(text(doc, 'p', 'kmc-catalog-correction-hint',
         'Aucune image canonique HTTPS à afficher. Les aperçus fournisseur ne sont pas des médias validés.'));
     } else {
       const strip = doc.createElement('div');
       strip.className = 'kmc-catalog-dossier-image-strip';
-      gallery.forEach((item, index) => {
-        if (!/^https:\/\//i.test(item.url || '')) return;
+      const navigable = gallery.filter(item => /^https:\/\//i.test(item.url || ''));
+      const chosen = Math.min(Math.max(Number(row._catalogMediaIndex) || 0, 0),
+        Math.max(navigable.length - 1, 0));
+      const navigator = doc.createElement('div');
+      navigator.className = 'kmc-catalog-review-navigation';
+      navigator.setAttribute('data-catalog-review-navigation', '');
+      const previousMedia = makeButton(doc, '← Précédente', 'catalog-media-previous', true);
+      const nextMedia = makeButton(doc, 'Suivante →', 'catalog-media-next', true);
+      const position = text(doc, 'strong', '', '');
+      position.setAttribute('data-catalog-media-position', '');
+      const show = nextIndex => {
+        const index = Math.max(0, Math.min(navigable.length - 1, nextIndex));
+        row._catalogMediaIndex = index;
+        Array.from(strip.children).forEach((figure, i) => { figure.hidden = i !== index; });
+        position.textContent = 'Image ' + (index + 1) + ' / ' + navigable.length;
+        previousMedia.disabled = index === 0;
+        nextMedia.disabled = index === navigable.length - 1;
+      };
+      previousMedia.addEventListener('click', () => show((row._catalogMediaIndex || 0) - 1));
+      nextMedia.addEventListener('click', () => show((row._catalogMediaIndex || 0) + 1));
+      navigator.appendChild(previousMedia);
+      navigator.appendChild(position);
+      navigator.appendChild(nextMedia);
+      photos.appendChild(navigator);
+      navigable.forEach((item, index) => {
         const figure = doc.createElement('figure');
         const img = doc.createElement('img');
         img.src = item.url;
@@ -2085,13 +2272,21 @@
         figure.appendChild(img);
         figure.appendChild(text(doc, 'figcaption', '',
           (item.role || 'PRODUCT') + (item.alt ? ' · ' + item.alt : '')));
+        appendVisualFrReviewControls(context, doc, figure, item, media, slot, row, index,
+          navigable.length);
         strip.appendChild(figure);
       });
+      show(chosen);
       photos.appendChild(strip);
       if (media.gallery_truncated) photos.appendChild(text(doc, 'small',
         'kmc-catalog-correction-hint', 'Galerie partielle : plus de 24 médias actifs.'));
     }
-    slot.appendChild(photos);
+    let panel = slot.parentNode;
+    while (panel && panel.getAttribute?.('data-catalog-product-inspector') === null)
+      panel = panel.parentNode;
+    const mediaSlot = panel?.querySelector('[data-catalog-media-review-slot]');
+    if (mediaSlot) mediaSlot.replaceChildren(photos);
+    else slot.appendChild(photos);
     const facts = (title, entries) => {
       const group = doc.createElement('section');
       group.className = 'kmc-catalog-dossier-group';
@@ -2222,7 +2417,7 @@
       // A closed inspector must not resurrect content on a different product.
       if (!slot.isConnected) return;
       row._catalogueDossier = dossier; // local read-only projection, never persisted
-      renderProductDossierDetails(slot, doc, dossier, row);
+      renderProductDossierDetails(context, slot, doc, dossier, row);
     } catch (err) {
       if (!slot.isConnected) return;
       slot.replaceChildren(text(doc, 'p', 'kmc-catalog-correction-hint',
@@ -2363,6 +2558,12 @@
   function openProductInspector(context, slot, doc, row, categories) {
     const { panel, actions, feedback } = inspectorFrame(slot, doc, row, 'product');
     attachQualityControls(context, doc, panel, row);
+    const mediaSlot = doc.createElement('section');
+    mediaSlot.setAttribute('data-catalog-media-review-slot', '');
+    mediaSlot.className = 'kmc-catalog-media-review-slot';
+    mediaSlot.appendChild(text(doc, 'p', 'kmc-catalog-correction-hint',
+      'Lecture des images et attestations fournisseur…'));
+    panel.insertBefore(mediaSlot, panel.querySelector('[data-catalog-action-dock]'));
     const dossierSlot = doc.createElement('section');
     dossierSlot.className = 'kmc-catalog-dossier';
     dossierSlot.setAttribute('data-catalog-product-dossier', '');
@@ -2371,7 +2572,7 @@
     const additional = doc.createElement('details');
     additional.className = 'kmc-catalog-complementary';
     additional.setAttribute('data-catalog-complementary-info', '');
-    additional.appendChild(text(doc, 'summary', '', 'Informations complémentaires'));
+    additional.appendChild(text(doc, 'summary', '', 'Dossier technique · fournisseur, stock et preuves'));
     additional.appendChild(dossierSlot);
     const supplierInfo = panel.querySelector('[data-catalog-source-details]');
     if (supplierInfo) additional.insertBefore(supplierInfo, dossierSlot);
@@ -2414,6 +2615,15 @@
     }
 
     const inlineEditor = renderProductQuickFields(context, doc, panel, row, categories, feedback);
+    if (inlineEditor && !issues.includes('editorial_to_complete') &&
+        row.work_status === 'approval_pending') {
+      const editing = doc.createElement('details');
+      editing.className = 'kmc-catalog-complementary kmc-catalog-secondary-editor';
+      editing.setAttribute('data-catalog-secondary-editor', '');
+      editing.appendChild(text(doc, 'summary', '', 'Modifier le titre ou la catégorie'));
+      panel.insertBefore(editing, inlineEditor);
+      editing.appendChild(inlineEditor);
+    }
     if (issues.includes('media_missing')) {
       additional.insertBefore(text(doc, 'strong', 'kmc-catalog-inspector-section',
         'Contrôle média · informations vérifiées'), dossierSlot);
@@ -2497,8 +2707,9 @@
         }
       });
       // Une fiche déjà correcte garde l'édition volontaire dans le menu secondaire.
-      if (issues.includes('editorial_to_complete')) actions.appendChild(btn);
-      else additional.insertBefore(btn, dossierSlot);
+      // Keep the FR editor reachable after an incomplete save or from a
+      // previously reviewed candidate; the inline quick fields may be absent.
+      actions.appendChild(btn);
     }
     // The classification may also be corrected before an issue is raised,
     // but the server still validates the active Boutique pair and operator grant.
@@ -2569,8 +2780,10 @@
     }
     if (inlineEditor) {
       Array.from(actions.children).forEach(button => {
-        if (['inspector-prepare-fr','inspector-classify'].includes(
-          button.getAttribute('data-workspace-action'))) button.hidden = true;
+        const action = button.getAttribute('data-workspace-action');
+        if (action === 'inspector-classify' ||
+            (action === 'inspector-prepare-fr' && issues.includes('editorial_to_complete')))
+          button.hidden = true;
       });
     }
     if (!Array.from(actions.children).some(button => !button.hidden)) {
@@ -2847,41 +3060,13 @@
           main.className = 'kmc-workspace-action kmc-catalog-primary-action';
           actionCell.setAttribute('data-label', readyCandidate ? 'Finaliser' :
             hasMissingContent ? 'Compléter' : 'Consulter');
-          main.addEventListener('click', async () => {
-            if (!readyCandidate) {
-              openProductInspector(context, slot, doc, row, categories);
-              return;
-            }
-            // Un geste de finalisation unique, sans second bouton Enregistrer
-            // ou Confirmer. Le backend contrôle tous ses invariants avant écriture.
-            main.disabled = true;
-            try {
-              const diagnosis = await jsonRequest(context.fetch,
-                ENDPOINT + '?diagnose_product_ref=' + encodeURIComponent(row.product_ref),
-                { method: 'GET' });
-              if (diagnosis?.phase !== 'catalog_approval' ||
-                  diagnosis?.certification?.certified !== true) {
-                const reasons = (diagnosis?.certification?.reasons || [])
-                  .map(certificationReasonLabel);
-                openProductInspector(context, slot, doc, row, categories);
-                const panel = slot.querySelector('[data-catalog-product-inspector]');
-                const feedback = panel?.querySelector('.kmc-catalog-inspector-feedback');
-                if (feedback) feedback.textContent = reasons.length
-                  ? 'Encore nécessaire : ' + reasons.join(' · ')
-                  : 'La certification n’est pas encore acquise.';
-                return;
-              }
-              const approved = await jsonRequest(context.fetch,
-                ENDPOINT + '/approval/' + encodeURIComponent(row.product_ref) + '/approve',
-                { method: 'POST' });
-              if (!approved?.ok) throw new Error('Approbation non confirmée.');
-              await context.reload();
-              setFeedback(context.root, row.product_ref +
-                ' · Catalogue conforme et approuvé. Aucun marché publié.', 'positive');
-            } catch (error) {
-              setFeedback(context.root, 'Finalisation impossible : ' +
-                actionErrorMessage(error), 'critical');
-            } finally { main.disabled = false; }
+          // A "Finaliser" gesture opens the product dossier. Even when the
+          // server certifies all technical prerequisites, this click does not
+          // approve/publish: the human review and explicit confirmation live
+          // behind "Contrôler les prérequis" -> "Valider le Catalogue".
+          // No asynchronous preflight is allowed to hide the edit surface.
+          main.addEventListener('click', () => {
+            openProductInspector(context, slot, doc, row, categories);
           });
           actionCell.appendChild(main);
           statusChip.addEventListener('click', () => main.click());

@@ -1,0 +1,221 @@
+#!/usr/bin/env node
+'use strict';
+/**
+ * @komerce-arch-lite
+ * @role p1-cj-four-real-chromium-commercial-boundaries-readonly
+ * @domain catalog
+ * @layer tooling
+ * @owner backend-core
+ * @purpose Inspect exact real CJ candidates in authenticated Catalogue/Pricing/Market and anonymous boutique at 1440px.
+ * @db-read none
+ * @db-write none
+ * @impact-areas catalog,market,economic-engine,boutique,staging-only,e2e-certification
+ */
+const fs = require('node:fs');
+const path = require('node:path');
+const { chromium } = require('playwright');
+const BASE = 'https://komerce-backend-production.up.railway.app';
+const REFS = Object.freeze(['KPR-000099','KPR-000100','KPR-000101']);
+const ALL = Object.freeze(['KPR-000098',...REFS]);
+const OUT = path.resolve('test-results/p1-cj-chromium');
+function guard(env=process.env){
+  if (env.GITHUB_ACTIONS!=='true' || env.GITHUB_EVENT_NAME!=='issues'
+    || env.GITHUB_ACTOR!==env.GITHUB_REPOSITORY_OWNER
+    || env.KOMERCE_ENV!=='staging' || env.KOMERCE_TARGET_ENV!=='staging'
+    || env.EXPECTED_RAILWAY_ENVIRONMENT!=='staging'
+    || env.STAGING_BASE_URL!==BASE || env.NODE_ENV!=='test'
+    || !/^[a-f0-9]{40}$/i.test(env.E2E_EXPECTED_DEPLOY_SHA||''))
+      throw Error('P1_CJ_STAGING_OWNER_READONLY_GUARD');
+}
+function safeName(s){return String(s).replace(/[^a-z0-9_-]/gi,'-').slice(0,90);}
+async function run(env=process.env){
+  guard(env);
+  fs.mkdirSync(OUT,{recursive:true});
+  const report = {
+    schema:'p1-cj-four-browser-boundary/1',
+    scope:'KIR-000014',products:ALL,
+    target:BASE,viewport:{width:1440,height:900},
+    mode:'READ_ONLY',business_writes:0,
+    verdict:'NOT_PROVEN',started_at:new Date().toISOString(),
+    browser:[],market:'KM',future_markets:['CM','CG'],never_claims:'P1_PUBLICATION_OR_PRICE_GO'
+  };
+  let browser;
+  try{
+    const v=await fetch(BASE+'/health/version').then(r=>r.json());
+    const sha=String(v.commit||v.sha||'');
+    if(sha!==env.E2E_EXPECTED_DEPLOY_SHA)throw Error('P1_CJ_RUNTIME_SHA_DRIFT');
+    report.runtime_sha=sha;
+    browser=await chromium.launch({headless:true});
+    async function inspect(role,where,ref,label){
+      const context=await browser.newContext({
+        viewport:{width:1440,height:900},locale:'fr-FR',ignoreHTTPSErrors:false,
+      });
+      const row={role,stage:label,ref:ref||null,route:where,http:null,
+        visible_ref:false,body_excerpt:null,api:[],blocked_requests:[],verdict:'NOT_PROVEN'};
+      try{
+        if(role!=='anonymous'){
+          const prefix=role==='admin'?'E2E_ADMIN':'E2E_MARKET_OPERATOR';
+          const email=env[prefix+'_EMAIL'],password=env[prefix+'_PASSWORD'];
+          if(!email||!password)throw Error('DEDICATED_E2E_ROLE_CREDENTIALS_MISSING');
+          const login=await context.request.post(BASE+'/api/auth/login',{
+            data:{email,password},timeout:15000
+          });
+          row.login_http=login.status();
+          if(login.status()!==200)throw Error('DEDICATED_E2E_ROLE_LOGIN_REFUSED_'+login.status());
+          const me=await context.request.get(BASE+'/api/auth/me',{timeout:15000});
+          const who=me.status()===200?await me.json():{};
+          row.observed_role=String(who.role||'');
+          if(row.observed_role!==role)throw Error('E2E_ROLE_MISMATCH');
+        }
+        const page=await context.newPage();
+        page.on('response',res=>{
+          const url=new URL(res.url());
+          if(url.hostname===new URL(BASE).hostname && url.pathname.startsWith('/api/')){
+            if(row.api.length<45)
+              row.api.push({path:url.pathname,status:res.status(),method:res.request().method()});
+          }
+        });
+        await page.route('**/*',async route=>{
+          const method=route.request().method();
+          if(!['GET','HEAD','OPTIONS'].includes(method)){
+            row.blocked_requests.push({method,path:new URL(route.request().url()).pathname});
+            return route.abort('blockedbyclient');
+          }
+          return route.continue();
+        });
+        const response=await page.goto(BASE+where,{waitUntil:'domcontentloaded',timeout:35000});
+        row.http=response?.status()||null;
+        await page.locator('body').waitFor({state:'visible',timeout:20000});
+        if(label==='catalogue'){
+          const control=page.locator('input[aria-label="Recherche"]');
+          if(await control.count()){
+            await control.fill(ref);
+            const button=page.getByRole('button',{name:'Filtrer',exact:true});
+            if(await button.count())await button.first().click();
+          }
+        }
+        await page.waitForTimeout(1400);
+        const text=String(await page.locator('body').innerText()).slice(0,12000);
+        row.visible_ref=Boolean(ref&&text.includes(ref));
+        row.body_excerpt=text.slice(0,440);
+        row.dom_product_count=ref?await page.locator('[data-product-ref="'+ref+'"]').count():null;
+        row.url_path=new URL(page.url()).pathname;
+        row.verdict=row.http===200&&row.blocked_requests.length===0
+          ?'SCREEN_OBSERVED_NOT_BUSINESS_APPROVAL':'SCREEN_OR_BUSINESS_WRITE_BLOCKED';
+        const filename=safeName(label+'-'+role+'-'+(ref||'market'))+'.png';
+        await page.screenshot({path:path.join(OUT,filename),fullPage:false,timeout:12000});
+        row.screenshot=filename;
+        // Ground any future French curation in the actual source texts visible
+        // to the authorized Catalogue owner; never infer product claims from
+        // product reference or source language alone.
+        if(role==='admin'&&ref&&label==='catalogue'){
+          const registry=await context.request.get(BASE+
+            '/api/admin/workspaces/catalog?unified=1&search='+encodeURIComponent(ref)+
+            '&catalog_limit=50&catalog_offset=0',{timeout:20000});
+          row.registry_http=registry.status();
+          if(registry.status()===200){
+            const data=await registry.json();
+            const matches=(data.products||[]).filter(item=>item.product_ref===ref);
+            row.registry_identity_count=matches.length;
+            if(matches.length===1){
+              const item=matches[0];
+              row.source_record={
+                name_source:item.name_source||null,
+                description_source:item.description_source||null,
+                current_name:item.name||null,
+                current_description:item.description||null,
+                content_source:item.content_source||null,
+                source_locale:item.source_locale||null,
+                issues:item.issues||[],
+                status:item.work_status||null,
+              };
+            }
+          }
+          const dossier=await context.request.get(BASE+
+            '/api/admin/workspaces/catalog?dossier_product_ref='+encodeURIComponent(ref),
+            {timeout:20000});
+          row.dossier_http=dossier.status();
+          if(dossier.status()===200){
+            const data=await dossier.json();
+            row.dossier={
+              product_ref:data.product_ref||null,
+              identity:data.identity||null,
+              supplier:data.supplier||null,
+              availability:data.availability||null,
+              media:data.media||null,
+              variants:data.variants||null,
+              catalogue_gate:data.catalogue_gate||null,
+            };
+          }
+          const open=page.locator('tr[data-product-ref="'+ref+'"] [data-workspace-action="open-catalog-inspector"]');
+          if(await open.count()){
+            await open.first().click();
+            await page.locator('[data-catalog-inline-editor]').waitFor({state:'visible',timeout:10000}).catch(()=>{});
+            row.inline_french_proposal={
+              name:await page.locator('[data-catalog-quick-field="name"]').first().inputValue().catch(()=>null),
+              description:await page.locator('[data-catalog-quick-field="description"]').first().inputValue().catch(()=>null),
+            };
+            await page.screenshot({path:path.join(OUT,'inspector-'+safeName(ref)+'.png'),
+              fullPage:false,timeout:12000});
+          }
+        }
+        if(role==='admin'&&ref&&label==='catalogue'){
+          const diag=await context.request.get(BASE+
+            '/api/admin/workspaces/catalog?diagnose_product_ref='+encodeURIComponent(ref),{timeout:15000});
+          row.canonical_diagnostic_http=diag.status();
+          if(diag.status()===200){
+            const data=await diag.json();
+            row.canonical_diagnostic={
+              phase:data.phase||null,
+              certification:{
+                certified:data.certification?.certified===true,
+                reasons:data.certification?.reasons||[]
+              }
+            };
+          }
+        }
+        if(role==='anonymous'){
+          const res=await context.request.get(BASE+'/api/products?market=KM&limit=1000',{timeout:15000});
+          row.buyer_api_http=res.status();
+          if(res.status()===200){
+            const payload=await res.json();
+            const products=Array.isArray(payload.products)?payload.products:[];
+            row.buyer_result_count=products.length;
+            row.buyer_matching_product_refs=products.filter(x=>ALL.includes(String(x.product_ref))).map(x=>x.product_ref);
+          }
+        }
+      }catch(error){row.verdict='BLOCKED';row.error_code=String(error.message||error).slice(0,150);}
+      finally{report.browser.push(row);await context.close();}
+    }
+    for(const ref of REFS)
+      await inspect('admin','/admin/workspaces/catalog?search='+ref+'&product_ref='+ref,ref,'catalogue');
+    for(const ref of REFS)
+      await inspect('market_operator','/admin/workspaces/pricing?market=KM&product_ref='+ref,ref,'pricing');
+    await inspect('market_operator','/dashboards/canonical/market-catalog.html?market=KM&product_ref=KPR-000099','KPR-000099','market-catalog');
+    await inspect('anonymous','/boutique/?market=KM',null,'boutique');
+    report.business_writes=0; // Every attempted browser business mutation is explicitly blocked.
+    report.blocked_mutation_attempts=report.browser.flatMap(row=>row.blocked_requests.map(x=>({...x,stage:row.stage})));
+    const buyer=report.browser.find(x=>x.stage==='boutique');
+    report.verdict=buyer?.buyer_matching_product_refs?.length
+      ?'PUBLIC_KM_MATCH_REQUIRES_INDEPENDENT_APPROVAL_READBACK'
+      :'P1_KM_NOT_YET_VISIBLE';
+  }catch(error){
+    report.verdict='DIAGNOSTIC_FAILED';
+    report.error_code=String(error.message||error).slice(0,160);
+    process.exitCode=2;
+  }finally{
+    if(browser)await browser.close().catch(()=>{});
+    report.finished_at=new Date().toISOString();
+    fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2)+'\n');
+    console.log('[P1_CJ_CHROMIUM_READONLY] '+JSON.stringify({
+      verdict:report.verdict,sha:report.runtime_sha,
+      screenshots:report.browser.filter(x=>x.screenshot).length,
+      stages:report.browser.map(x=>({role:x.role,stage:x.stage,ref:x.ref,
+        http:x.http,verdict:x.verdict,error:x.error_code||null})),
+      business_writes:report.business_writes
+    }));
+  }
+  return report;
+}
+if(require.main===module)run().catch(e=>{console.error(String(e.message));process.exitCode=2});
+module.exports={BASE,REFS,ALL,guard,run};

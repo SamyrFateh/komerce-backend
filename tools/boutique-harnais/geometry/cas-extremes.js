@@ -1,6 +1,6 @@
 const http=require('http'),fs=require('fs'),path=require('path');
 const {chromium}=require('playwright');
-const PUB=path.resolve(__dirname,'..','public');
+const PUB=path.resolve(__dirname,'..','..','public');
 const M={'.css':'text/css','.html':'text/html','.js':'text/javascript','.png':'image/png','.json':'application/json'};
 const srv=http.createServer((q,r)=>{const p=decodeURIComponent(q.url.split('?')[0]);
  if(p.startsWith('/api/')){r.writeHead(200,{'Content-Type':'application/json'});return r.end('{"ok":true}');}

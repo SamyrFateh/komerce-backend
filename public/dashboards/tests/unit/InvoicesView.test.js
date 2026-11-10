@@ -259,6 +259,32 @@ describe('InvoicesView', () => {
       expect(global.BadgeStatus.status).toHaveBeenCalledWith('pending');
     });
 
+    it('B2: noms et références hostiles sont échappés dans les tableaux HTML', async () => {
+      const hostile = '<img src=x onerror=alert(1)>';
+      setupApi({
+        getInvoices: jest.fn().mockResolvedValue({ invoices: [{ reference: hostile, client_name: hostile }] }),
+        getCashUncollected: jest.fn().mockResolvedValue({ orders: [{ reference: hostile, client_name: hostile, relais_name: hostile }] }),
+        getCashReconciliation: jest.fn().mockResolvedValue({ summary: {}, entries: [{ relais_name: hostile }] }),
+      });
+      makeKmcFilters();
+      await View.render(root);
+
+      const invoice = dataTableCallFor(root.querySelector('#inv-table'));
+      const uncollected = dataTableCallFor(root.querySelector('#inv-uncollected'));
+      const reconciliation = dataTableCallFor(root.querySelector('#inv-reconciliation').querySelector('div:last-child'));
+      for (const [config, keys] of [
+        [invoice, ['reference', 'client']],
+        [uncollected, ['reference', 'client', 'relais']],
+        [reconciliation, ['relais']],
+      ]) {
+        for (const key of keys) {
+          const value = config.columns.find(c => c.key === key).render(config.rows[0]);
+          expect(value).toContain('&lt;img');
+          expect(value).not.toContain('<img');
+        }
+      }
+    });
+
     it('fallback [] si invoices est null', async () => {
       setupApi({ getInvoices: jest.fn().mockResolvedValue(null) });
       makeKmcFilters();

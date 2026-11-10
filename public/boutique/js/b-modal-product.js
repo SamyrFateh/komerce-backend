@@ -263,10 +263,37 @@ import { optimizeImgUrl, fmtPrice, applyProductImageFallback } from './b-utils.j
     // rester cohérente avec la carte — jamais faire apparaître en premier
     // une photo lifestyle/mannequin de la galerie brute fournisseur avant
     // le visuel réellement représentatif du produit.
-    let images = [product.image_url, ...(Array.isArray(product.images) ? product.images : [])]
-      .filter(Boolean)
-      .filter((url, i, arr) => arr.indexOf(url) === i);
+    // The Product Detail Contract carries the exact approved presentation per
+    // selected SKU media. Legacy callers still pass images without captions.
+    const selectedMedia = Array.isArray(product.media) && product.media.length
+      ? product.media.filter(item => item && typeof item.url === 'string' && item.url.trim())
+      : null;
+    let images = selectedMedia
+      ? selectedMedia.map(item => item.url)
+      : [product.image_url, ...(Array.isArray(product.images) ? product.images : [])]
+          .filter(Boolean).filter((url, i, arr) => arr.indexOf(url) === i);
     if (!images.length) images = [product.image_url || ''];
+    state.carouselCaptionsFr = images.map((url, i) => {
+      const presentation = selectedMedia?.[i]?.presentation_fr;
+      return presentation?.kind === 'caption' && typeof presentation.text === 'string'
+        ? presentation.text : '';
+    });
+    // Captions belong to the active slide, not to the product as a whole.
+    let caption = dom.modal?.querySelector('.k-modal-media-fr-caption');
+    if (!caption && dom.modal) {
+      const wrap = dom.modal.querySelector('.k-modal-img-wrap');
+      if (wrap && wrap.parentNode) {
+        caption = document.createElement('p');
+        caption.className = 'k-modal-media-fr-caption';
+        caption.setAttribute('data-customer-french-media', '');
+        caption.hidden = true;
+        wrap.parentNode.insertBefore(caption, wrap.nextSibling);
+      }
+    }
+    if (caption) {
+      caption.textContent = state.carouselCaptionsFr[0] || '';
+      caption.hidden = !caption.textContent;
+    }
 
     // ── Slides principales ─────────────────────────────────────
     track.innerHTML = '';
@@ -422,6 +449,13 @@ import { optimizeImgUrl, fmtPrice, applyProductImageFallback } from './b-utils.j
     // Sync compteur mobile "3/12"
     let counter = dom.modal.querySelector('.k-modal-counter');
     if (counter) counter.textContent = (index + 1) + '/' + state.carouselCount;
+    // The caption is rendered as text, never HTML, and follows the selected
+    // media even when variants recompose the slide list.
+    const caption = dom.modal?.querySelector('.k-modal-media-fr-caption');
+    if (caption) {
+      caption.textContent = state.carouselCaptionsFr?.[index] || '';
+      caption.hidden = !caption.textContent;
+    }
     // PR-3 — notifier b-modal-image-ux du changement de slide
     bus.emit('carousel:changed', index);
   }

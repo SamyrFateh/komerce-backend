@@ -31,6 +31,8 @@
 'use strict';
 
 const AccountingView = (function () {
+  // B2: never interpolate API-supplied labels or client data into raw HTML.
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
   /* ── Styles (injectés une seule fois) ─────────────────────────────────── */
   function injectStyles() {
@@ -313,18 +315,18 @@ const AccountingView = (function () {
     famKeys.forEach(fk => {
       const fam    = families[fk];
       const isOpen = state.openFamilies[fk] === true;
-      html += `<div class="acct-ledger-family${isOpen ? ' open' : ''}" data-fam="${fk}">
-        <div class="acct-ledger-family-head" data-toggle="${fk}">
-          <h4><span class="acct-ledger-arrow">▶</span>${fam.emoji || '📦'} ${fam.label || fk}
+      html += `<div class="acct-ledger-family${isOpen ? ' open' : ''}" data-fam="${esc(fk)}">
+        <div class="acct-ledger-family-head" data-toggle="${esc(fk)}">
+          <h4><span class="acct-ledger-arrow">▶</span>${esc(fam.emoji || '📦')} ${esc(fam.label || fk)}
             <span class="acct-fam-count">(${fam.charges.length} ligne${fam.charges.length > 1 ? 's' : ''})</span></h4>
           <div class="acct-ledger-family-total">${fmt(Math.round(fam.total_kmf))} KMF</div>
         </div>
         <div class="acct-ledger-family-body">`;
       (fam.charges || []).forEach(c => {
         html += `<div class="acct-ledger-line${c.is_active ? '' : ' inactive'}">
-          <div class="acct-ledger-line-name">${c.name || '—'}
-            ${c.notes ? `<div class="acct-notes">${c.notes}</div>` : ''}</div>
-          <div class="acct-ledger-line-recurrence">${c.recurrence_period || '—'}</div>
+          <div class="acct-ledger-line-name">${esc(c.name || '—')}
+            ${c.notes ? `<div class="acct-notes">${esc(c.notes)}</div>` : ''}</div>
+          <div class="acct-ledger-line-recurrence">${esc(c.recurrence_period || '—')}</div>
           <div class="acct-ledger-line-amount">${fmt(Math.round(c.amount_kmf || 0))} KMF</div>
           <div class="acct-ledger-line-status">${c.is_active ? '✅' : '⊘'}</div>
         </div>`;
@@ -372,8 +374,8 @@ const AccountingView = (function () {
       const gColl  = a.gap_collection || 0;
       const gCls   = gColl > (a.expected_kmf || 0) * 0.1 ? 'acct-reco-gap-alert'
                    : (Math.abs(gColl) > 0 ? 'acct-reco-gap-warn' : '');
-      html += `<div class="acct-reco-card status-${status}">
-        <h5>${a.agent_name || (a.agent_id ? a.agent_id.slice(0, 8) : 'Agent ?')}</h5>
+      html += `<div class="acct-reco-card status-${esc(status)}">
+        <h5>${esc(a.agent_name || (a.agent_id ? a.agent_id.slice(0, 8) : 'Agent ?'))}</h5>
         <div class="acct-reco-row"><span>Attendu</span><strong>${fmt(Math.round(a.expected_kmf))} KMF</strong></div>
         <div class="acct-reco-row"><span>Collecté</span><strong>${fmt(Math.round(a.declared_kmf))} KMF</strong></div>
         <div class="acct-reco-row"><span>Déposé vérifié</span><strong>${fmt(Math.round(a.verified_kmf || 0))} KMF</strong></div>
@@ -424,10 +426,10 @@ const AccountingView = (function () {
       const dateStr = o.created_at ? new Date(o.created_at).toLocaleDateString('fr-FR') : '—';
       html += `<tr>
         <td><span class="acct-age-badge ${ageCls}">${ageLabel}</span></td>
-        <td><strong>${o.reference || '—'}</strong></td>
-        <td>${o.client_name || '—'}${o.client_phone ? `<br><span class="acct-phone">${o.client_phone}</span>` : ''}</td>
+        <td><strong>${esc(o.reference || '—')}</strong></td>
+        <td>${esc(o.client_name || '—')}${o.client_phone ? `<br><span class="acct-phone">${esc(o.client_phone)}</span>` : ''}</td>
         <td><strong>${fmt(Math.round(o.total_kmf || 0))} KMF</strong></td>
-        <td>${o.status || '—'}</td>
+        <td>${esc(o.status || '—')}</td>
         <td>${dateStr}</td>
       </tr>`;
     });
@@ -455,8 +457,8 @@ const AccountingView = (function () {
     prods.forEach((p, i) => {
       html += `<tr>
         <td><strong>${i + 1}</strong></td>
-        <td>${p.nom || '—'}</td>
-        <td class="acct-cat">${p.categorie || '—'}</td>
+        <td>${esc(p.nom || '—')}</td>
+        <td class="acct-cat">${esc(p.categorie || '—')}</td>
         <td>${p.qty || 0}</td>
         <td><strong>${fmt(p.ca_kmf)}</strong></td>
       </tr>`;

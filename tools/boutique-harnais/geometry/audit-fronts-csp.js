@@ -40,8 +40,8 @@
  * (CDN, cache, config d'environnement).
  *
  * Usage :
- *   node harnais/geometry/audit-fronts-csp.js            ← rapport
- *   node harnais/geometry/audit-fronts-csp.js --strict    ← exit 1 si > 0 bloqué
+ *   node tools/boutique-harnais/geometry/audit-fronts-csp.js            ← rapport
+ *   node tools/boutique-harnais/geometry/audit-fronts-csp.js --strict    ← exit 1 si > 0 bloqué
  */
 
 const http = require('http');
@@ -49,8 +49,8 @@ const fs = require('fs');
 const path = require('path');
 const { chromium } = require('playwright');
 
-const BOUTIQUE = path.resolve(__dirname, '..', '..');
-const REPO = path.resolve(BOUTIQUE, '..', '..');
+const REPO = path.resolve(__dirname, '..', '..');
+const BOUTIQUE = path.join(REPO, 'public', 'boutique');
 const PUBLIC = path.join(REPO, 'public');
 const strict = process.argv.includes('--strict');
 

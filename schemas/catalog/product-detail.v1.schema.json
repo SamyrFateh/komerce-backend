@@ -13,30 +13,104 @@
     "delivery_options"
   ],
   "properties": {
-    "contract_version": { "const": "1" },
-    "inventory_model": { "enum": ["LEGACY_VARIANTS", "SKU"] },
+    "contract_version": {
+      "const": "1"
+    },
+    "inventory_model": {
+      "enum": [
+        "LEGACY_VARIANTS",
+        "SKU"
+      ]
+    },
     "product": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "reference", "name", "description", "category", "subcategory"],
+      "required": [
+        "id",
+        "reference",
+        "name",
+        "description",
+        "category",
+        "subcategory"
+      ],
       "properties": {
-        "id": { "type": "string", "format": "uuid" },
-        "reference": { "type": ["string", "null"], "maxLength": 200 },
-        "name": { "type": "string", "minLength": 1, "maxLength": 300 },
-        "description": { "type": ["string", "null"], "maxLength": 10000 },
-        "category": { "type": ["string", "null"], "maxLength": 200 },
-        "subcategory": { "type": ["string", "null"], "maxLength": 200 },
-        "series": { "type": ["string", "null"], "maxLength": 300 }
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "reference": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 200
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 10000
+        },
+        "category": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 200
+        },
+        "subcategory": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 200
+        },
+        "series": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 300
+        }
       }
     },
     "pricing": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["price_kmf", "old_price_kmf", "promo_pct"],
+      "required": [
+        "price_kmf",
+        "old_price_kmf",
+        "promo_pct"
+      ],
       "properties": {
-        "price_kmf": { "type": ["integer", "null"], "minimum": 0 },
-        "old_price_kmf": { "type": ["integer", "null"], "minimum": 0 },
-        "promo_pct": { "type": ["number", "null"], "minimum": 0, "maximum": 100 }
+        "price_kmf": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "old_price_kmf": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "promo_pct": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        }
       }
     },
     "media": {
@@ -45,16 +119,82 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "url", "role", "alt", "option_values"],
+        "required": [
+          "id",
+          "url",
+          "role",
+          "alt",
+          "option_values"
+        ],
         "properties": {
-          "id": { "type": "string", "minLength": 1, "maxLength": 300 },
-          "url": { "type": "string", "minLength": 1, "maxLength": 2000 },
-          "role": { "enum": ["PRODUCT", "SCENE", "DETAIL", "SIZE_GUIDE", "OTHER"] },
-          "alt": { "type": ["string", "null"], "maxLength": 500 },
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "url": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "role": {
+            "enum": [
+              "PRODUCT",
+              "SCENE",
+              "DETAIL",
+              "SIZE_GUIDE",
+              "OTHER"
+            ]
+          },
+          "alt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 500
+          },
           "option_values": {
             "type": "object",
             "maxProperties": 20,
-            "additionalProperties": { "type": "string", "minLength": 1, "maxLength": 200 }
+            "additionalProperties": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
+          },
+          "presentation_fr": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "text"
+                ],
+                "properties": {
+                  "kind": {
+                    "const": "caption"
+                  },
+                  "text": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind"
+                ],
+                "properties": {
+                  "kind": {
+                    "const": "localized_image"
+                  }
+                }
+              }
+            ]
           }
         }
       }
@@ -65,20 +205,45 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["key", "display_name", "values"],
+        "required": [
+          "key",
+          "display_name",
+          "values"
+        ],
         "properties": {
-          "key": { "type": "string", "minLength": 1, "maxLength": 128 },
-          "display_name": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "display_name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
           "values": {
             "type": "array",
             "maxItems": 100,
             "items": {
               "type": "object",
               "additionalProperties": false,
-              "required": ["value", "thumbnail_url"],
+              "required": [
+                "value",
+                "thumbnail_url"
+              ],
               "properties": {
-                "value": { "type": "string", "minLength": 1, "maxLength": 200 },
-                "thumbnail_url": { "type": ["string", "null"], "maxLength": 2000 }
+                "value": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "thumbnail_url": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 2000
+                }
               }
             }
           }
@@ -101,21 +266,52 @@
           "media_ids"
         ],
         "properties": {
-          "sku_id": { "type": "string", "format": "uuid" },
-          "sku": { "type": ["string", "null"], "maxLength": 200 },
+          "sku_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sku": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 200
+          },
           "option_values": {
             "type": "object",
             "maxProperties": 20,
-            "additionalProperties": { "type": "string", "minLength": 1, "maxLength": 200 }
+            "additionalProperties": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
           },
-          "stock_status": { "enum": ["AVAILABLE", "OUT_OF_STOCK"] },
-          "available_quantity": { "type": "integer", "minimum": 0 },
-          "price_kmf": { "type": ["integer", "null"], "minimum": 0 },
+          "stock_status": {
+            "enum": [
+              "AVAILABLE",
+              "OUT_OF_STOCK"
+            ]
+          },
+          "available_quantity": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "price_kmf": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
           "media_ids": {
             "type": "array",
             "maxItems": 500,
             "uniqueItems": true,
-            "items": { "type": "string", "minLength": 1, "maxLength": 300 }
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 300
+            }
           }
         }
       }
@@ -135,12 +331,40 @@
           "unavailable_reason"
         ],
         "properties": {
-          "code": { "type": "string", "minLength": 1, "maxLength": 100 },
-          "label": { "type": "string", "minLength": 1, "maxLength": 200 },
-          "available": { "type": "boolean" },
-          "price_kmf": { "type": ["integer", "null"], "minimum": 0 },
-          "eta_label": { "type": ["string", "null"], "maxLength": 500 },
-          "unavailable_reason": { "type": ["string", "null"], "maxLength": 500 }
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "available": {
+            "type": "boolean"
+          },
+          "price_kmf": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "eta_label": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 500
+          },
+          "unavailable_reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 500
+          }
         }
       }
     },
@@ -159,18 +383,41 @@
         "provenance"
       ],
       "properties": {
-        "brand": { "type": ["string", "null"], "maxLength": 200 },
-        "short_description": { "type": ["string", "null"], "maxLength": 500 },
+        "brand": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 200
+        },
+        "short_description": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 500
+        },
         "highlights": {
           "type": "array",
           "maxItems": 12,
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["key", "label"],
+            "required": [
+              "key",
+              "label"
+            ],
             "properties": {
-              "key": { "type": "string", "minLength": 1, "maxLength": 128 },
-              "label": { "type": "string", "minLength": 1, "maxLength": 200 }
+              "key": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              }
             }
           }
         },
@@ -180,14 +427,48 @@
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["group", "key", "label", "value", "unit", "display_order"],
+            "required": [
+              "group",
+              "key",
+              "label",
+              "value",
+              "unit",
+              "display_order"
+            ],
             "properties": {
-              "group": { "type": ["string", "null"], "maxLength": 128 },
-              "key": { "type": "string", "minLength": 1, "maxLength": 128 },
-              "label": { "type": "string", "minLength": 1, "maxLength": 200 },
-              "value": { "type": "string", "minLength": 1, "maxLength": 500 },
-              "unit": { "type": ["string", "null"], "maxLength": 50 },
-              "display_order": { "type": "integer", "minimum": 0 }
+              "group": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 128
+              },
+              "key": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "value": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              "unit": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 50
+              },
+              "display_order": {
+                "type": "integer",
+                "minimum": 0
+              }
             }
           }
         },
@@ -197,16 +478,48 @@
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["key", "title", "type", "text", "items", "entries", "display_order"],
+            "required": [
+              "key",
+              "title",
+              "type",
+              "text",
+              "items",
+              "entries",
+              "display_order"
+            ],
             "properties": {
-              "key": { "type": "string", "minLength": 1, "maxLength": 128 },
-              "title": { "type": "string", "minLength": 1, "maxLength": 200 },
-              "type": { "enum": ["TEXT", "BULLETS", "KEY_VALUE"] },
-              "text": { "type": ["string", "null"], "maxLength": 10000 },
+              "key": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "type": {
+                "enum": [
+                  "TEXT",
+                  "BULLETS",
+                  "KEY_VALUE"
+                ]
+              },
+              "text": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 10000
+              },
               "items": {
                 "type": "array",
                 "maxItems": 100,
-                "items": { "type": "string", "minLength": 1, "maxLength": 500 }
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 500
+                }
               },
               "entries": {
                 "type": "array",
@@ -214,40 +527,84 @@
                 "items": {
                   "type": "object",
                   "additionalProperties": false,
-                  "required": ["label", "value"],
+                  "required": [
+                    "label",
+                    "value"
+                  ],
                   "properties": {
-                    "label": { "type": "string", "minLength": 1, "maxLength": 200 },
-                    "value": { "type": "string", "minLength": 1, "maxLength": 500 }
+                    "label": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    },
+                    "value": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 500
+                    }
                   }
                 }
               },
-              "display_order": { "type": "integer", "minimum": 0 }
+              "display_order": {
+                "type": "integer",
+                "minimum": 0
+              }
             }
           }
         },
         "materials": {
           "type": "array",
           "maxItems": 20,
-          "items": { "type": "string", "minLength": 1, "maxLength": 200 }
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
         },
         "care": {
           "type": "array",
           "maxItems": 20,
-          "items": { "type": "string", "minLength": 1, "maxLength": 200 }
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
         },
         "warnings": {
           "type": "array",
           "maxItems": 20,
-          "items": { "type": "string", "minLength": 1, "maxLength": 300 }
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          }
         },
         "provenance": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["source", "enrichment_version", "reviewed"],
+          "required": [
+            "source",
+            "enrichment_version",
+            "reviewed"
+          ],
           "properties": {
-            "source": { "enum": ["SUPPLIER", "AI_ENRICHED", "MANUAL"] },
-            "enrichment_version": { "type": ["string", "null"], "maxLength": 50 },
-            "reviewed": { "type": "boolean" }
+            "source": {
+              "enum": [
+                "SUPPLIER",
+                "AI_ENRICHED",
+                "MANUAL"
+              ]
+            },
+            "enrichment_version": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 50
+            },
+            "reviewed": {
+              "type": "boolean"
+            }
           }
         }
       }
