@@ -8,9 +8,9 @@
  * @criticality   high
  * @inputs        disposable CI PostgreSQL 16, run8 hex
  * @outputs       sanitized two-relay/two-agent READBACK + ROLLBACK evidence
- * @depends       services/user-mutation-service.js, services/relais-mutation-service.js, scripts/recette/staging-e2e-provision.js
+ * @depends       services/user-mutation-service.js, services/relais-mutation-service.js, services/market-delegation-service.js, services/market-operator-provisioning.js, scripts/recette/staging-e2e-provision.js
  * @used-by       tests/integration/g4-relay-ab-canonical-identity-rollback-postgres.test.js
- * @db-read       markets, relais, users, e2e_test_accounts
+ * @db-read       markets, relais, users, e2e_test_accounts, assignment_capability_ceiling, assignment_memberships, membership_capabilities
  * @db-write      none persistent; writers create disposable rows in a transaction ALWAYS rolled back
  * @db-txn        BEGIN, ROLLBACK only; no COMMIT
  * @doctrine      no_staging_mode, canonical_writers_only, two_independent_accounts, fail_closed
@@ -45,18 +45,23 @@ function fixtureNames(run8) {
 }
 
 async function prove({ db, env=process.env, run8, userWriter, relayWriter,
-                      markE2e, bcrypt }={}) {
+                      markE2e, bcrypt, membershipWriter, assignmentWriter }={}) {
   assertDisposable(env);
   const actors=fixtureNames(run8);
   if (!db || typeof db.getClient!=='function') throw Error('G4_DB_REQUIRED');
   // The same wrappers used in the official staging E2E provisioner.
   const users=userWriter||require('../../services/user-mutation-service');
   const relays=relayWriter||require('../../services/relais-mutation-service');
-  const mark=markE2e||require('./staging-e2e-provision').markE2eTestAccount;
+  const provision=require('./staging-e2e-provision');
+  const mark=markE2e||provision.markE2eTestAccount;
+  const ensureMembership=membershipWriter||provision.ensureRelayAgentMembership;
+  const delegation=require('../../services/market-delegation-service');
+  const assignments=assignmentWriter||require('../../services/market-operator-provisioning');
   const hash=bcrypt||require('bcryptjs');
   const client=await db.getClient();
   let opened=false;
   let report;
+  const createdUserIds=[];
   try {
     await client.query('BEGIN');opened=true;
     const {rows:[market]}=await client.query(
@@ -79,6 +84,19 @@ async function prove({ db, env=process.env, run8, userWriter, relayWriter,
       passwordHash:await hash.hash(token,10),
     });
     if(!admin?.id)throw Error('G4_EPHEMERAL_ACTOR_NOT_CREATED');
+    const { assignmentId }=await assignments.resolveOrCreateAssignment(client, {
+      marketId:market.id,marketCode:'KM',
+    });
+    if(!assignmentId)throw Error('G4_KM_ASSIGNMENT_NOT_ACTIVE');
+    const expectedCapabilities=provision.RELAY_AGENT_CAPABILITIES.slice().sort();
+    const {rows:ceiling}=await client.query(
+      'SELECT capability FROM assignment_capability_ceiling '+
+      'WHERE assignment_id=$1::uuid AND revoked_at IS NULL '+
+      'AND capability=ANY($2::text[]) ORDER BY capability',
+      [assignmentId,expectedCapabilities]
+    );
+    if(JSON.stringify(ceiling.map(x=>x.capability))!==JSON.stringify(expectedCapabilities))
+      throw Error('G4_RELAY_CAPABILITIES_NOT_IN_KM_CEILING');
     const facts=[];
     for(const a of actors){
       const relais=await relays.createRelais(client,{
@@ -97,6 +115,8 @@ async function prove({ db, env=process.env, run8, userWriter, relayWriter,
       if(marker!=='marked')throw Error('G4_E2E_MARKER_WRITER_FAILED');
       const assign=await users.assignAgentRelais(client,{userId:agent.id,relaisId:relais.id});
       if(assign.status!=='assigned')throw Error('G4_RELAY_ASSIGN_WRITER_FAILED');
+      createdUserIds.push(agent.id);
+      await ensureMembership(client,{delegation},{userId:agent.id,marketCode:'KM',actorId:admin.id});
       facts.push({label:a.label,userId:agent.id,relaisId:relais.id});
     }
     const {rows:actual}=await client.query(
@@ -114,13 +134,28 @@ async function prove({ db, env=process.env, run8, userWriter, relayWriter,
        facts.some(f=>!actual.some(x=>String(x.user_id)===String(f.userId)&&
          String(x.relais_id)===String(f.relaisId))))
       throw Error('G4_AB_CANONICAL_READBACK_MISMATCH');
+    const {rows:grants}=await client.query(
+      "SELECT am.user_id, a.market_id, am.status, mc.capability "+
+      "FROM assignment_memberships am "+
+      "JOIN market_operating_assignments a ON a.id=am.assignment_id "+
+      "LEFT JOIN membership_capabilities mc ON mc.membership_id=am.id AND mc.revoked_at IS NULL "+
+      "WHERE am.user_id=ANY($1::uuid[]) AND am.status='ACTIVE' "+
+      "ORDER BY am.user_id,mc.capability", [createdUserIds]
+    );
+    if(grants.length!==4||new Set(grants.map(g=>String(g.user_id))).size!==2 ||
+       grants.some(g=>String(g.market_id)!==String(market.id)||g.status!=='ACTIVE')||
+       facts.some(f=>JSON.stringify(grants.filter(g=>String(g.user_id)===String(f.userId))
+         .map(g=>g.capability).sort())!==JSON.stringify(expectedCapabilities)))
+      throw Error('G4_KM_RELAY_MEMBERSHIP_READBACK_MISMATCH');
     report={schema:'g4-canonical-relay-ab-rollback/1',
       run8,mode:'EPHEMERAL_ONLY_ROLLBACK',
       dedicated_agents:2,distinct_relais:2,market:'KM',
       role:'agent_relais',e2e_markers:2,
       per_actor_readback:facts.map(({label})=>({label,role:'agent_relais',
         active_relais:true,e2e_marker:true})),
-      membership:'NOT_PROVEN',order_fixtures:'NOT_CREATED',
+      membership:'EPHEMERAL_KM_ONLY_PROVEN',
+      granted_capabilities:expectedCapabilities,
+      order_fixtures:'NOT_CREATED',
       chromium:'NOT_RUN',staging:'NOT_MODIFIED',
       certification:'NOT_PROVEN',committed:false};
   } finally {
@@ -130,12 +165,15 @@ async function prove({ db, env=process.env, run8, userWriter, relayWriter,
   // Independent post-rollback readback: no owned E2E account or relay survives.
   const {rows:[remaining]}=await db.query(
     'SELECT (SELECT COUNT(*)::int FROM users WHERE lower(email)=ANY($1::text[])) AS agents,'+
-    ' (SELECT COUNT(*)::int FROM relais WHERE name=ANY($2::text[])) AS relais',
-    [actors.map(a=>a.email),actors.map(a=>a.relaisName)]
+    ' (SELECT COUNT(*)::int FROM relais WHERE name=ANY($2::text[])) AS relais,'+
+    ' (SELECT COUNT(*)::int FROM assignment_memberships WHERE user_id=ANY($3::uuid[])) AS memberships,'+
+    ' (SELECT COUNT(*)::int FROM e2e_test_accounts WHERE user_id=ANY($3::uuid[])) AS markers',
+    [actors.map(a=>a.email),actors.map(a=>a.relaisName),createdUserIds]
   );
-  if(Number(remaining.agents)!==0||Number(remaining.relais)!==0)
+  if(Number(remaining.agents)!==0||Number(remaining.relais)!==0||
+     Number(remaining.memberships)!==0||Number(remaining.markers)!==0)
     throw Error('G4_ROLLBACK_POSTCONDITION_FAILED');
-  report.post_rollback={agents:0,relais:0};
+  report.post_rollback={agents:0,relais:0,memberships:0,markers:0};
   return report;
 }
 async function main(){

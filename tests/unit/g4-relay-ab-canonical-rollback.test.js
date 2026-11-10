@@ -36,7 +36,19 @@ test('zero COMMIT, source only invokes canonical writers and ROLLBACK',()=>{
   expect(source).not.toMatch(/client\.query\('COMMIT'\)|\bTRUNCATE\b|session_replication_role/);
   expect(source).toContain("require('../../services/user-mutation-service')");
   expect(source).toContain("require('../../services/relais-mutation-service')");
-  expect(source).toContain("require('./staging-e2e-provision').markE2eTestAccount");
+  expect(source).toContain("require('./staging-e2e-provision')");
+  expect(source).toContain('provision.markE2eTestAccount');
+  expect(source).toContain('provision.ensureRelayAgentMembership');
   expect(source).toContain('users.assignAgentRelais');
   expect(source).toContain('relays.createRelais');
+  expect(source).toContain('assignments.resolveOrCreateAssignment');
+  expect(source).toContain('ensureMembership(client,{delegation}');
+  expect(source).toContain('G4_KM_RELAY_MEMBERSHIP_READBACK_MISMATCH');
+  expect(source).toContain("membership:'EPHEMERAL_KM_ONLY_PROVEN'");
+  expect(source).toContain('Number(remaining.memberships)!==0');
+  expect(source).toContain('Number(remaining.markers)!==0');
+  // Two capabilities only, and never an implicit market-wide/admin grant.
+  expect(source).toContain('provision.RELAY_AGENT_CAPABILITIES.slice().sort()');
+  expect(source).not.toMatch(/team\.grant.*(?:true|granted)|finance\.act.*(?:true|granted)/);
 });
+
