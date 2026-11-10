@@ -92,6 +92,9 @@ if (!hasIntegrationEnv) {
 
     adminUser = await createUser({ role: 'admin' });
     clientUser = await createUser({ role: 'client' });
+    // Visual FR proof endpoints require an explicit global Catalogue grant.
+    await db.query(`INSERT INTO catalog_global_access_grants (user_id, reason)
+      VALUES ($1, 'catalog-approval-contract-visual-fr')`, [adminUser.id]);
   }, 30000);
 
   afterAll(async () => {
@@ -104,6 +107,10 @@ if (!hasIntegrationEnv) {
         await db.query(`DELETE FROM products WHERE id = ANY($1::uuid[])`, [ids]);
       }
     } catch (_) {}
+    if (adminUser?.id) await db.query(
+      `DELETE FROM catalog_global_access_grants WHERE user_id=$1 AND reason='catalog-approval-contract-visual-fr'`,
+      [adminUser.id]
+    ).catch(() => {});
     await cleanup();
     if (db.end) await db.end().catch(() => {});
   }, 20000);
