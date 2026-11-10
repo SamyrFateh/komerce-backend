@@ -36,6 +36,24 @@ module.exports = {
 
   // ── Perimetre fichiers ───────────────────────────────────────────────────
   files: {
+    // B1 #3721 : harnais Chromium maintenu hors des assets web publics.
+    // Ownership explicite, sans exemption ni allowlist de gouvernance.
+    tools: [
+      'tools/boutique-harnais/geometry/audit-fronts-csp.js',
+      'tools/boutique-harnais/geometry/audit-sticky-reference.js',
+      'tools/boutique-harnais/geometry/cas-extremes.js',
+      'tools/boutique-harnais/geometry/extract.js',
+      'tools/boutique-harnais/geometry/measure-hero.js',
+      'tools/boutique-harnais/geometry/repro-csp.js',
+      'tools/boutique-harnais/geometry/repro-search-grid.js',
+      'tools/boutique-harnais/geometry/sticky-repro.html',
+      'tools/boutique-harnais/geometry/trace-hero-throttled.js',
+      'tools/boutique-harnais/geometry/triage-conflicts.js',
+      'tools/boutique-harnais/geometry/verif-largeur.js',
+      'tools/boutique-harnais/geometry/verif-mobile.js',
+      'tools/boutique-harnais/geometry/verify-backtop-zindex.js',
+      'tools/boutique-harnais/geometry/verify-sticky.js',
+    ],
     middleware: [
       'middleware/internal-static-guard.js',
       'middleware/versioned-asset-cache.js',

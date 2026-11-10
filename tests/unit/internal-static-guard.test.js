@@ -36,6 +36,13 @@ describe('isInternalStaticPath — fonction pure', () => {
     ['/dashboards/coverage/coverage-final.json', true],
     ['/boutique/test-results/.last-run.json', true],
     ['/CHANGELOG-lot1.md', true],
+    ['/boutique/k6/k6-v0.56.0-windows-amd64/k6.exe', true],
+    ['/boutique/harnais/komerce-test-env-setup.sh', true],
+    ['/boutique/harnais/geometry/verify-sticky.js', true],
+    ['/boutique/harnais/manifest.json', true],
+    ['/boutique/run.sh', true],
+    ['/boutique/audit.py', true],
+    ['/boutique/installer.exe', true],
   ])('%s est un chemin interne', (p, expected) => {
     expect(isInternalStaticPath(p)).toBe(expected);
   });
@@ -52,10 +59,10 @@ describe('isInternalStaticPath — fonction pure', () => {
     expect(isInternalStaticPath(p)).toBe(expected);
   });
 
-  test('manifest.json reste servi même sous un dossier docs/tests homonyme improbable', () => {
-    // Le nom de fichier gagne sur tout segment de dossier : seule règle
-    // de priorité explicite du module.
+  test('manifest.json canonique reste servi sans contourner un répertoire interne', () => {
     expect(isInternalStaticPath('/manifest.json')).toBe(false);
+    expect(isInternalStaticPath('/boutique/manifest.json')).toBe(false);
+    expect(isInternalStaticPath('/boutique/harnais/manifest.json')).toBe(true);
   });
 });
 
@@ -76,6 +83,15 @@ describe('internalStaticGuard — comportement HTTP', () => {
   test('un asset applicatif légitime reste servi normalement', async () => {
     const res = await request(buildApp()).get('/app.js');
     expect(res.status).toBe(200);
+  });
+
+  test.each(['/boutique/k6/tool.exe', '/boutique/harnais/setup.sh', '/boutique/test.py'])('un outillage interne %s retourne 404 avant le serveur de fichiers', async (blockedPath) => {
+    const app = express();
+    app.use(internalStaticGuard);
+    app.use((_req, res) => res.status(200).send('exposed'));
+    const res = await request(app).get(blockedPath);
+    expect(res.status).toBe(404);
+    expect(res.text).not.toContain('exposed');
   });
 
   test('HEAD est filtré comme GET — express.static répond normalement à HEAD, la règle ne doit pas dépendre de la méthode pour être sûre', async () => {

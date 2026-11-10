@@ -24,9 +24,9 @@ for arg in "$@"; do
   [[ "$arg" == "--skip-playwright" ]] && SKIP_PW=true
 done
 
-# Le script vit dans public/boutique/harnais/ — remonter 3 niveaux vers la racine.
+# Le script vit dans tools/boutique-harnais/ — remonter 2 niveaux vers la racine.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 # Garde-fou : vérifier qu'on est bien à la racine du repo Komerce.
 if [[ ! -f "$REPO_ROOT/package.json" ]] || [[ ! -d "$REPO_ROOT/migrations" ]]; then

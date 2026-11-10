@@ -70,3 +70,7 @@ playwright-report/
 
 # Captures de revue générées par les specs dashboards (non versionnées)
 /test-results/
+
+# B1 : outillage de charge externe uniquement, jamais dans l'arborescence web
+/public/boutique/k6/
+/k6/

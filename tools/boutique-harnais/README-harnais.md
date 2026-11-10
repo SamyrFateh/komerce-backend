@@ -22,7 +22,7 @@ python -m playwright install chromium
 Depuis `public/boutique` :
 
 ```
-python render-modal.py
+python ../../tools/boutique-harnais/render-modal.py
 ```
 
 Sortie console : état `A/B/C` (positions px des boutons, stepper, pill livraison).
@@ -86,3 +86,7 @@ Ces points ont coûté cher à découvrir — les ignorer = « rien ne bouge à 
 - `add` / `stepper` / `buy` : bounding box (null si `display:none`) → vérifie le côte-à-côte
   (même `y`) et les largeurs (Ajouter ~38 %, Acheter ~62 %).
 - `deliveryText` / `deliveryAir` : la pill de livraison et son accent aérien.
+
+## k6 — installation hors du dépôt
+
+L'exécutable k6 n'est plus livré dans `public/`. Si un test de charge est nécessaire, installer k6 localement via `bash scripts/install-k6.sh` depuis la racine du dépôt (Go requis) ; ne jamais copier le binaire dans les assets servis par Express.

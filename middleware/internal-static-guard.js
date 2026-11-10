@@ -28,18 +28,20 @@
  */
 'use strict';
 
-const INTERNAL_STATIC_EXTENSIONS = /\.(md|txt)$/i;
+const INTERNAL_STATIC_EXTENSIONS = /\.(md|txt|exe|sh|py)$/i;
 const INTERNAL_STATIC_DIR_SEGMENTS = new Set([
   'tests', 'docs', 'scripts', 'governance', 'coverage', 'test-results',
+  'k6', 'harnais',
 ]);
 const INTERNAL_STATIC_FILENAMES = new Set(['package.json', 'package-lock.json']);
 
 function isInternalStaticPath(reqPath) {
   const segments = String(reqPath || '').split('/').filter(Boolean);
   const filename = segments[segments.length - 1] || '';
-  if (filename === 'manifest.json') return false;
   if (segments.some(seg => seg.startsWith('.'))) return true;
-  if (segments.some(seg => INTERNAL_STATIC_DIR_SEGMENTS.has(seg))) return true;
+  // Ne pas laisser le manifest contourner le filtrage d'un répertoire interne.
+  if (segments.some(seg => INTERNAL_STATIC_DIR_SEGMENTS.has(seg.toLowerCase()))) return true;
+  if (filename === 'manifest.json') return false;
   if (INTERNAL_STATIC_FILENAMES.has(filename)) return true;
   if (INTERNAL_STATIC_EXTENSIONS.test(filename)) return true;
   if (/^audit-.*\.json$/i.test(filename)) return true;

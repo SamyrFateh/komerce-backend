@@ -56,7 +56,9 @@ function git(args, allowFailure = false) {
   const r = cp.spawnSync('git', args, { encoding: 'utf8' });
   if (r.status !== 0) {
     if (allowFailure) return null;
-    throw new Error((r.stderr || r.stdout || 'git failed').trim());
+    // Ne jamais remonter stdout/stderr d'un diff binaire volumineux dans le verdict.
+    // Echec ferme : le contrôle CI complet sera rejoué, sans casser $GITHUB_OUTPUT.
+    throw new Error(`git-${args[0]}-${r.error?.code || r.status || 'failed'}`);
   }
   return String(r.stdout || '').trim();
 }
@@ -118,7 +120,8 @@ function appendOutput(path, result) {
   if (!path) return;
   fs.appendFileSync(path, [
     'rebase_no_impact=' + (result.qualifies ? 'true' : 'false'),
-    'rebase_no_impact_reason=' + result.reason,
+    // Une sortie GitHub Actions doit être mono-ligne et bornée (diff binaire > 64 Mo).
+    'rebase_no_impact_reason=' + String(result.reason || 'proof-unavailable').replaceAll(String.fromCharCode(10), ' ').replaceAll(String.fromCharCode(13), ' ').slice(0, 240),
   ].join('\n') + '\n', 'utf8');
 }
 function main(argv = process.argv.slice(2)) {
@@ -185,4 +188,5 @@ module.exports = {
   qualifiesNoImpact,
   sameSet,
   sortedUnique,
+  appendOutput,
 };

@@ -19,9 +19,9 @@ PRÉREQUIS
 
 LANCEMENT (depuis N'IMPORTE QUEL répertoire — le script se replace lui-même
 dans public/boutique, il n'est plus sensible au cwd d'appel) :
-    python harnais/render-4-etats.py
-    python harnais/render-4-etats.py --states C,D      # itère plus vite sur un sous-ensemble
-    python harnais/render-4-etats.py --out /tmp/shots2  # change le dossier de sortie
+    python tools/boutique-harnais/render-4-etats.py
+    python tools/boutique-harnais/render-4-etats.py --states C,D      # itère plus vite sur un sous-ensemble
+    python tools/boutique-harnais/render-4-etats.py --out /tmp/shots2  # change le dossier de sortie
 
 SORTIES :
     - impression console : mesures DOM + verdict PASS/FAIL par état
@@ -43,12 +43,12 @@ import time
 from playwright.sync_api import sync_playwright
 
 # --- Rendre le script indépendant du répertoire d'appel -----------------------
-# Le script vit dans public/boutique/harnais/. On se replace toujours dans
+# Le script vit dans tools/boutique-harnais/. On se replace toujours dans
 # public/boutique (comme render-modal.py l'exige), quel que soit le cwd d'où on
 # l'a lancé — c'est ce qui avait planté la session précédente (MODULE_NOT_FOUND
 # en lançant depuis harnais/ au lieu de public/boutique).
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-BOUTIQUE_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
+BOUTIQUE_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, "..", "..", "public", "boutique"))
 os.chdir(BOUTIQUE_DIR)
 
 PUBLIC_DIR = ".."   # racine servie = public/ (parent de boutique/), comme render-modal.py

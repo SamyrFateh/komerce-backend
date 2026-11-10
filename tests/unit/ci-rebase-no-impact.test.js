@@ -6,6 +6,7 @@ const path = require('path');
 const {
   qualifiesNoImpact,
   previousRunGreen,
+  appendOutput,
 } = require('../../scripts/ci-rebase-no-impact');
 
 const ROOT = path.resolve(__dirname, '../..');
@@ -25,6 +26,20 @@ function base(overrides = {}) {
 }
 
 describe('CI rebase no-impact proof', () => {
+  test('erreur de preuve volumineuse : GITHUB_OUTPUT reste sur une ligne et échoue fermé', () => {
+    const dir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'ci-rebase-'));
+    try {
+      const output = path.join(dir, 'github_output');
+      const newline = String.fromCharCode(10);
+      appendOutput(output, { qualifies:false, reason:'proof-error:diff --git a/file b/file' + newline + 'index X' + newline + 'A'.repeat(2000) });
+      const lines = fs.readFileSync(output, 'utf8').trim().split(newline);
+      expect(lines).toHaveLength(2);
+      expect(lines[0]).toBe('rebase_no_impact=false');
+      expect(lines[1]).toMatch(/^rebase_no_impact_reason=proof-error:/);
+      expect(lines[1].length).toBeLessThan(300);
+    } finally { fs.rmSync(dir, { recursive:true, force:true }); }
+  });
+
   test('réutilise le vert uniquement pour un base-sync réellement sans impact', () => {
     expect(qualifiesNoImpact(base())).toEqual({
       qualifies:true,

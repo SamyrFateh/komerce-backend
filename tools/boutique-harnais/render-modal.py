@@ -14,7 +14,7 @@ PRÉREQUIS
     (node doit être dispo — sert à extraire la fixture golden, contrat détail valide)
 
 LANCEMENT (depuis public/boutique) :
-    python render-modal.py
+    python ../../tools/boutique-harnais/render-modal.py
 
 SORTIES :
     - impression console : état A/B/C (positions boutons, stepper, pill livraison)

@@ -82,12 +82,16 @@ test('Customs page requires its actual international journey component, not unre
   expect(src).toContain("url.startsWith('/admin/workspaces/shipping-customs')");
   expect(src).toContain("await expect(page).toHaveURL(/\\/admin\\/workspaces\\/shipping-customs");
   expect(src).toContain("page.locator('[data-international-journey]').first().waitFor");
-  expect(src).toContain("if (await marketOption.count()) await select.selectOption");
+  // Le workspace douane choisit maintenant le marché dans l'URL canonique,
+  // avant l'attente du panneau ; aucun select arbitraire ne doit être actionné.
+  expect(src).toContain("const selectedUrl = url.startsWith('/admin/workspaces/shipping-customs')");
+  expect(src).toContain("'market=' + MARKET_CODE");
   const customsStart=src.indexOf("if (url.startsWith('/admin/workspaces/shipping-customs'))");
   const customsEnd=src.indexOf("  const sel = page.locator('select').first();",customsStart);
   const customs=src.slice(customsStart,customsEnd);
-  expect(customs.indexOf("await select.selectOption")).toBeLessThan(customs.indexOf("page.locator('[data-international-journey]').first().waitFor"));
-  expect(customs).not.toContain("selectOption({ label: MARKET_LABEL }).catch");
+  expect(customs).toContain("await expect(page).toHaveURL(new RegExp('(?:[?&])market='+MARKET_CODE+'(?:&|$)'))");
+  expect(customs.indexOf("await expect(page).toHaveURL(new RegExp")).toBeLessThan(customs.indexOf("page.locator('[data-international-journey]').first().waitFor"));
+  expect(customs).not.toContain("select.selectOption");
   expect(src).toContain('test.afterEach(async ({}, info) =>');
   expect(src).toContain("info.status !== 'passed'");
   expect(src).toContain("verdict: info.status === 'skipped' ? 'NOT_RUN' : 'CLICK_FAIL'");
