@@ -37,6 +37,7 @@
  */
 
 const crypto = require('crypto');
+const { resolveRuntimeEnvironment } = require('./require-non-production');
 const log    = require('../utils/logger').child({ module: 'verify-authkey-webhook' });
 
 const AUTHKEY_WEBHOOK_SECRET = process.env.AUTHKEY_WEBHOOK_SECRET || '';
@@ -61,7 +62,7 @@ function safeCompare(a, b) {
 function verifyAuthkeyWebhook(req, res, next) {
   // ── Pas de secret configuré ──────────────────────────────────────────────
   if (!AUTHKEY_WEBHOOK_SECRET) {
-    if (process.env.NODE_ENV === 'production') {
+    if (resolveRuntimeEnvironment().env === 'production') {
       log.error('[AUTHKEY-WA] AUTHKEY_WEBHOOK_SECRET absent en production — webhook rejeté (503)');
       return res.status(503).json({ error: 'Webhook non configuré' });
     }

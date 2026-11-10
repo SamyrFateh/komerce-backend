@@ -40,6 +40,15 @@ describe('otp-test-mode', () => {
     expect(otpTestMode.isOtpTestMode()).toBe(false);
   });
 
+  it('KOMERCE_ENV=production prime sur NODE_ENV=development : mode test refusé', () => {
+    process.env.KOMERCE_ENV = 'production';
+    process.env.NODE_ENV = 'development';
+    process.env.OTP_TEST_MODE = 'true';
+    otpTestMode = require('../../services/otp-test-mode');
+    expect(otpTestMode.isOtpTestMode()).toBe(false);
+    expect(otpTestMode.isMasterCode('424242')).toBe(false);
+  });
+
   // ── Cas 2 : prod + env absent → false ───────────────────────────────────
   it('isOtpTestMode() renvoie false en production sans OTP_TEST_MODE', () => {
     process.env.NODE_ENV = 'production';

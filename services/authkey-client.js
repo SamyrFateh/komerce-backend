@@ -37,6 +37,7 @@
 const AUTHKEY_URL = 'https://authkey.io/restapi/requestjson.php';
 const API_KEY = process.env.AUTHKEY_API_KEY;
 const log = require('../utils/logger').child({ module: 'authkey-client' });
+const { resolveRuntimeEnvironment } = require('../middleware/require-non-production');
 // O7.2 (Cycle A) : l'import de invoice-public-token.js a été retiré — c'était la
 // seule preuve cross-feature notifications -> orders. Voir docs/O7_2_CYCLE_ANALYSIS.md.
 
@@ -45,7 +46,7 @@ const log = require('../utils/logger').child({ module: 'authkey-client' });
 // les numéros listés dans AUTHKEY_ALLOWED_PHONES (séparés par virgule).
 // Ex : AUTHKEY_ALLOWED_PHONES="+2693301234,+33612345678"
 // Si la variable est absente en staging, AUCUN message ne part (fail-safe).
-const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+const IS_PRODUCTION = resolveRuntimeEnvironment().env === 'production';
 const _allowedPhones = IS_PRODUCTION
   ? null  // prod : pas de filtre
   : new Set(

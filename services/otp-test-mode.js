@@ -18,6 +18,8 @@
 
 'use strict';
 
+const { resolveRuntimeEnvironment } = require('../middleware/require-non-production');
+
 /**
  * KOMERCE — services/otp-test-mode.js
  * ════════════════════════════════════════════════════════════════════
@@ -53,7 +55,7 @@ let _warned = false;
  * → JAMAIS en production, quel que soit l'env.
  */
 function isOtpTestMode() {
-  if (process.env.NODE_ENV === 'production') {
+  if (resolveRuntimeEnvironment().env === 'production') {
     if (process.env.OTP_TEST_MODE === 'true' && !_warned) {
       _warned = true;
       // eslint-disable-next-line no-console
