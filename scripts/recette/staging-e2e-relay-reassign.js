@@ -11,9 +11,9 @@
  * @depends       scripts/recette/target-guard.js, services/user-mutation-service.js (assignAgentRelais, seul writer canonique)
  * @used-by       .github/workflows/staging-e2e-relay-reassign.yml
  * @db-read       users, relais, markets, market_operating_assignments, assignment_memberships, membership_capabilities
- * @db-write      users.relais_id (compte E2E agent_relais uniquement) via assignAgentRelais
+ * @db-write      users.relais_id via assignAgentRelais, owner-approved staging-only relay membership via market-delegation-service
  * @db-txn        une transaction ; dry-run = ROLLBACK
- * @doctrine      e2e_account_only, reversible, no_rights_widening, cross_market_only_with_existing_grants, staging_only
+ * @doctrine      e2e_account_only, reversible_relay_assignment, staging_owner_grant_via_canonical_writer_when_missing, cross_market_isolation, staging_only
  * @impact-areas  staging, auth-identity, relais-scope
  * @version       2026-11
  */
@@ -74,7 +74,40 @@ async function reassign({ db, env = process.env, fetchImpl = fetch, apply = fals
             LIMIT 1`,
           [r.market_id, user.id]
         );
-        if (!granted) throw new Error('RELAY_E2E_NO_MARKET_MEMBERSHIP');
+        if (!granted) {
+          // Disposable staging: grant only the two canonical relay capabilities
+          // using the same service as E2E provisioning, under the existing
+          // active market ceiling. Never bypass delegation or cross-market
+          // isolation: the grant is recorded by the canonical writer.
+          const targetCode = markets.find(m => m.id === r.market_id)?.code;
+          const ownerApproved = env.HUB_V1_STAGING_DISPOSABLE_MODE === '1' &&
+            env.NODE_ENV === 'test' &&
+            env.EXPECTED_RAILWAY_ENVIRONMENT === 'staging' &&
+            env.GITHUB_REPOSITORY === 'SamyrFateh/komerce-backend' &&
+            env.GITHUB_ACTOR && env.GITHUB_ACTOR === env.GITHUB_REPOSITORY_OWNER &&
+            ['issues', 'workflow_dispatch'].includes(env.GITHUB_EVENT_NAME);
+          if (!ownerApproved || !['CM', 'CG'].includes(targetCode))
+            throw new Error('RELAY_E2E_NO_MARKET_MEMBERSHIP');
+          const { rows: [admin] } = await client.query(
+            "SELECT id, role::text AS role FROM users WHERE lower(email)=lower($1)",
+            [env.E2E_ADMIN_EMAIL]
+          );
+          if (!admin || admin.role !== 'admin') throw new Error('RELAY_E2E_ADMIN_AUTHORITY_MISSING');
+          const { ensureRelayAgentMembership } = require('./staging-e2e-provision');
+          await ensureRelayAgentMembership(client,
+            { delegation: require('../../services/market-delegation-service') },
+            { userId: user.id, marketCode: targetCode, actorId: admin.id });
+          report.recette_market_membership_granted = targetCode;
+          const { rows: [verified] } = await client.query(
+            `SELECT 1 FROM market_operating_assignments moa
+               JOIN assignment_memberships am ON am.assignment_id=moa.id AND am.status='ACTIVE'
+               JOIN membership_capabilities mc ON mc.membership_id=am.id
+                    AND mc.capability='execution.parcel.collect' AND mc.revoked_at IS NULL
+              WHERE moa.market_id=$1::uuid AND moa.status='ACTIVE' AND am.user_id=$2::uuid LIMIT 1`,
+            [r.market_id, user.id]
+          );
+          if (!verified) throw new Error('RELAY_E2E_MARKET_MEMBERSHIP_NOT_PROVEN');
+        }
         report.recette_cross_market = true;
       }
     } else if (mode === 'restore') {
