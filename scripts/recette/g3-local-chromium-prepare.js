@@ -7,7 +7,7 @@
  * @owner backend-core
  * @purpose Prepare canonical paid LOCAL_STOCK order exclusively on disposable PG16 for real relay Chromium clicks.
  * @db-read orders, order_items, parcels, scans, purchase_lines, cash_collections
- * @db-write users (test credentials only), plus canonical Hub V1 fixture writers on disposable PG16
+ * @db-write users (test credentials only), e2e_test_accounts via staging-e2e-provision writer, plus canonical Hub V1 fixture writers on disposable PG16
  * @db-txn canonical services own transactions, disposable DB destroyed by GitHub runner
  * @impact-areas logistics, dashboard, test-only
  */
@@ -64,6 +64,20 @@ async function main(){
     'UPDATE users SET password_hash=$1,account_activation_required=FALSE WHERE id=$2 AND lower(email)=lower($3)',
     [hash,actor.id,email]);
   if(rowCount!==1)throw Error('G3_LOCAL_E2E_CREDENTIAL_TARGET_MISMATCH');
+  // Canonical Workspace intentionally hides simulated orders unless its actor
+  // is registered as E2E. Use the SAME approved writer as staging-e2e-provision,
+  // after validating the unique actor/relais/market/fixture identity above.
+  // This write occurs ONLY on disposable PG16 (guarded at entry), never Railway.
+  const {markE2eTestAccount}=require('./staging-e2e-provision');
+  const {isE2eTestAccount}=require('../../services/simulation-visibility');
+  const markerClient=await db.getClient();
+  try {
+    await markE2eTestAccount(markerClient,{
+      userId:actor.id,actorId:proof.fixture.users.admin.id
+    });
+  } finally {markerClient.release();}
+  if(!await isE2eTestAccount(actor.id))
+    throw Error('G3_LOCAL_E2E_ACTOR_VISIBILITY_NOT_REGISTERED');
   fs.appendFileSync(process.env.GITHUB_ENV,[
     'HTTP_RUNNER_RUN8='+run,
     'E2E_AGENT_RELAIS_EMAIL='+email,
