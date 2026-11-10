@@ -197,6 +197,15 @@ describe('bootstrap/security', () => {
       );
     });
 
+    test('CSP : unpkg non utilisé et images http interdites, Chart.js jsDelivr reste autorisé pour compatibilité', () => {
+      expect(csp.scriptSrc).not.toContain('https://unpkg.com');
+      expect(csp.connectSrc).not.toContain('https://unpkg.com');
+      expect(csp.imgSrc).not.toContain('http:');
+      expect(csp.imgSrc).toContain('https:');
+      // Restant à traiter : remplacer Chart.js sur admin/index.html puis retirer jsDelivr.
+      expect(csp.scriptSrc).toContain('https://cdn.jsdelivr.net');
+    });
+
     test('defaultSrc et baseUri restreints à self', () => {
       expect(csp.defaultSrc).toEqual(["'self'"]);
       expect(csp.baseUri).toEqual(["'self'"]);
