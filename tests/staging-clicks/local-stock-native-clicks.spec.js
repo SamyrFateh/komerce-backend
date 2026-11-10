@@ -34,7 +34,7 @@ const LABELS = { KM:'KM · Comores', CM:'CM · Cameroun', CG:'CG · Congo-Brazza
 const OUT = path.resolve('test-results/local-stock-native-clicks');
 const record = { schema:'relay-local-native-click-proof/1', market:MARKET, run8:RUN8,
   staging:STAGING, target_mode:ISOLATED_LOCAL ? 'DISPOSABLE_LOCAL_PG16' : 'OFFICIAL_STAGING',
-  staging_go:false, verdict:'NOT_CERTIFIED', checks:[], http:[], jsErrors:[], blockedWrites:[] };
+  staging_go:false, verdict:'NOT_CERTIFIED', checks:[], http:[], jsErrors:[], blockedWrites:[], navigation:[] };
 const save = () => { fs.mkdirSync(OUT,{recursive:true}); fs.writeFileSync(path.join(OUT,'evidence.json'),JSON.stringify(record,null,2)+'\n'); };
 const assert = (condition,key,detail=null) => {
   record.checks.push({key,verdict:condition?'PASS':'FAIL',...(detail==null?{}:{detail})});
@@ -65,6 +65,14 @@ test('LOCAL_STOCK : un agent atteste puis remet au client par les vrais clics (H
       '/api/orders/'+orderId+'/local-relay-receipt',
     ]);
     page.on('pageerror',error=>record.jsErrors.push(String(error.message).slice(0,180)));
+    page.on('framenavigated',frame=>{
+      if(frame!==page.mainFrame())return;
+      try{
+        const url=new URL(frame.url());
+        record.navigation.push({path:url.pathname,
+          view:url.searchParams.get('view'),market:url.searchParams.get('market')});
+      }catch(_){}
+    });
     await page.route('**/*',route=>{
       const request=route.request(),u=new URL(request.url()),method=request.method();
       if(u.origin!==STAGING){
@@ -91,11 +99,16 @@ test('LOCAL_STOCK : un agent atteste puis remet au client par les vrais clics (H
     const login=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/auth/login'&&r.request().method()==='POST');
     await page.locator('#btn-submit').click();
     assert((await login).status()===200,'agent-login-200');
-    await page.waitForURL(u=>u.pathname!=='/login.html',{timeout:20000});
+    await page.waitForURL(u=>u.pathname!=='/login.html',{timeout:20000,waitUntil:'domcontentloaded'});
     // G3 / Kanban officiel : commencer sur Flux Relais, puis activer
     // explicitement la file « Réception locale » par le VRAI aiguillage UI.
     // Le paramètre focus=receive seul ne constitue pas un geste Chromium.
-    await page.goto('/admin/relais-live?market='+MARKET);
+    // The canonical Kanban is explicitly routed by view=execute in app.js.
+    // Commit first: avoid ERR_ABORTED if the login landing redirects while loading.
+    const relayPage=await page.goto('/admin/relais-live?view=execute&market='+MARKET,
+      {waitUntil:'commit'});
+    assert(Boolean(relayPage&&relayPage.status()===200),'canonical-relay-navigation-200',
+      relayPage&&relayPage.status());
     const workspace=page.locator('[data-workspace-mode="relay-execution"]');
     await expect(workspace).toBeVisible({timeout:25000});
     const localQueue=workspace.locator('[data-relay-execution-jump="receive"]');
@@ -173,6 +186,9 @@ test('LOCAL_STOCK : un agent atteste puis remet au client par les vrais clics (H
     record.verdict='LOCAL_STOCK_RELAIS_LIVE_CLICK_PASS';
   } catch(error) {
     record.failure=String(error?.message||error).slice(0,320);
+    try{const url=new URL(page.url());record.failure_navigation={
+      path:url.pathname,view:url.searchParams.get('view'),market:url.searchParams.get('market')};
+    }catch(_){}
     record.verdict='LOCAL_STOCK_RELAIS_LIVE_CLICK_FAIL';
     throw error;
   } finally {save();await db.pool?.end?.();}
