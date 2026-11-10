@@ -1,0 +1,69 @@
+name: Hub V1 — selective orphan retire (51 E2E only)
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: read
+concurrency:
+  group: komerce-hub-v1-orphan-selective-retire
+  cancel-in-progress: false
+jobs:
+  retire:
+    name: Retire exact 51 E2E roots, validate transaction rollback first
+    if: >-
+      github.event.issue.user.login == github.repository_owner &&
+      (github.event.issue.title == '[staging-op] hub-v1-orphan-selective-dry-run' ||
+       github.event.issue.title == '[staging-op] hub-v1-orphan-selective-retire-51')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_TARGET_ENV: staging
+      EXPECTED_RAILWAY_ENVIRONMENT: staging
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      KOMERCE_STAGING_RESET_DB_PIN: ${{ vars.STAGING_DB_PIN }}
+      HUB_V1_ORPHAN_EXPECTED_MANIFEST: 439fb559dca1400209ac71ed7c4251e297c6c37c21fb0787dd44fd32b0aaf1b0
+      HUB_V1_ORPHAN_CLEANUP_ACK: RETIRE-EXACT-51-ORPHANED-E2E
+      GITHUB_ISSUE_TITLE: ${{ github.event.issue.title }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Verify deployed backend SHA matches the repo
+        run: node scripts/recette/resolve-staging-deploy-pin.js
+      - name: Verify real staging database fingerprint and pin
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$DATABASE_URL"
+          test -n "$KOMERCE_STAGING_RESET_DB_PIN"
+          node scripts/recette/target-guard.js
+      - name: Prove full transaction can delete 51 rows then rolls back
+        run: node scripts/recette/hub-v1-orphan-selective-retire.js --dry-run
+      - name: Owner-approved selective cleanup ONLY after rollback rehearsal PASS
+        if: github.event.issue.title == '[staging-op] hub-v1-orphan-selective-retire-51'
+        run: node scripts/recette/hub-v1-orphan-selective-retire.js --execute
+      - name: Archive immutable operator evidence, even on refusal
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hub-v1-selective-retire-${{ github.run_id }}
+          path: |
+            test-results/hub-v1-cert/orphan-selective-*.json
+            test-results/hub-v1-http/deploy-pin.json
+          if-no-files-found: warn
+          retention-days: 45
+      - name: Explicit verdict scope
+        if: always()
+        run: |
+          echo 'Only 17 exact RUN8 supplier/source roots; no orders, product, users or Relay deletion.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'No staging transaction certification (G2/G3/G4) implied by fixture retirement.' >> "$GITHUB_STEP_SUMMARY"
