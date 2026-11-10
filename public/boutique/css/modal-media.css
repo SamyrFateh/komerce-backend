@@ -434,10 +434,10 @@
   box-sizing: border-box;
   margin: 6px 0 10px;
   padding: 9px 12px;
-  background: #f4f5f6;
-  border: 1px solid #cbd1d9;
+  background: var(--white);
+  border: 1px solid var(--border-text-15);
   border-radius: 7px;
-  color: #161b20;
+  color: var(--text);
   font-weight: 650;
   font-size: 13px;
   line-height: 1.45;
