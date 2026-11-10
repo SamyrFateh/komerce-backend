@@ -7,7 +7,7 @@
  * @owner backend-core
  * @purpose Prepare canonical paid LOCAL_STOCK order exclusively on disposable PG16 for real relay Chromium clicks.
  * @db-read orders, order_items, parcels, scans, purchase_lines, cash_collections
- * @db-write users (test credentials only), e2e_test_accounts via staging-e2e-provision writer, plus canonical Hub V1 fixture writers on disposable PG16
+ * @db-write users (test credentials only), E2E marker + KM assignment + Relay membership via canonical writers, plus canonical Hub V1 fixture writers on disposable PG16
  * @db-txn canonical services own transactions, disposable DB destroyed by GitHub runner
  * @impact-areas logistics, dashboard, test-only
  */
@@ -64,18 +64,54 @@ async function main(){
     'UPDATE users SET password_hash=$1,account_activation_required=FALSE WHERE id=$2 AND lower(email)=lower($3)',
     [hash,actor.id,email]);
   if(rowCount!==1)throw Error('G3_LOCAL_E2E_CREDENTIAL_TARGET_MISMATCH');
-  // Canonical Workspace intentionally hides simulated orders unless its actor
-  // is registered as E2E. Use the SAME approved writer as staging-e2e-provision,
-  // after validating the unique actor/relais/market/fixture identity above.
-  // This write occurs ONLY on disposable PG16 (guarded at entry), never Railway.
-  const {markE2eTestAccount}=require('./staging-e2e-provision');
+  // Pickup requires explicit market assignment and capability membership;
+  // fixture visibility alone is insufficient. Use G4/official canonical writers
+  // exclusively on the PG16 target protected at the beginning of this script.
+  const provision=require('./staging-e2e-provision');
+  const delegation=require('../../services/market-delegation-service');
+  const assignments=require('../../services/market-operator-provisioning');
   const {isE2eTestAccount}=require('../../services/simulation-visibility');
-  const markerClient=await db.getClient();
+  const expectedCaps=provision.RELAY_AGENT_CAPABILITIES.slice().sort();
+  if(JSON.stringify(expectedCaps)!==JSON.stringify(
+    ['execution.parcel.collect','execution.parcel.receive']))
+    throw Error('G3_LOCAL_RELAY_CAPABILITY_DOCTRINE_DRIFT');
+  const grantClient=await db.getClient();
+  let inTransaction=false;
   try {
-    await markE2eTestAccount(markerClient,{
-      userId:actor.id,actorId:proof.fixture.users.admin.id
+    await grantClient.query('BEGIN');inTransaction=true;
+    const {assignmentId}=await assignments.resolveOrCreateAssignment(grantClient,{
+      marketId:before.order.market_id,marketCode:'KM',
     });
-  } finally {markerClient.release();}
+    if(!assignmentId)throw Error('G3_LOCAL_KM_ASSIGNMENT_NOT_ACTIVE');
+    const {rows:ceiling}=await grantClient.query(
+      'SELECT capability FROM assignment_capability_ceiling '+
+      'WHERE assignment_id=$1::uuid AND revoked_at IS NULL '+
+      'AND capability=ANY($2::text[]) ORDER BY capability',
+      [assignmentId,expectedCaps]);
+    if(JSON.stringify(ceiling.map(x=>x.capability))!==JSON.stringify(expectedCaps))
+      throw Error('G3_LOCAL_RELAY_CAPABILITIES_NOT_IN_CEILING');
+    await provision.ensureRelayAgentMembership(grantClient,{delegation},{
+      userId:actor.id,marketCode:'KM',actorId:proof.fixture.users.admin.id,
+    });
+    await provision.markE2eTestAccount(grantClient,{
+      userId:actor.id,actorId:proof.fixture.users.admin.id,
+    });
+    await grantClient.query('COMMIT');inTransaction=false;
+  } catch(error) {
+    if(inTransaction)await grantClient.query('ROLLBACK');
+    throw error;
+  } finally {grantClient.release();}
+  // Independent SQL readback: only the two exact execution capabilities.
+  const {rows:grants}=await db.query(
+    "SELECT am.id, mc.capability FROM market_operating_assignments ma "+
+    "JOIN assignment_memberships am ON am.assignment_id=ma.id AND am.status='ACTIVE' "+
+    "JOIN membership_capabilities mc ON mc.membership_id=am.id AND mc.revoked_at IS NULL "+
+    "WHERE ma.market_id=$1::uuid AND ma.status='ACTIVE' AND am.user_id=$2::uuid "+
+    "ORDER BY mc.capability",
+    [before.order.market_id,actor.id]);
+  if(!grants.length||new Set(grants.map(x=>x.id)).size!==1||
+     JSON.stringify(grants.map(x=>x.capability))!==JSON.stringify(expectedCaps))
+    throw Error('G3_LOCAL_RELAY_MEMBERSHIP_PROOF_FAILED');
   if(!await isE2eTestAccount(actor.id))
     throw Error('G3_LOCAL_E2E_ACTOR_VISIBILITY_NOT_REGISTERED');
   fs.appendFileSync(process.env.GITHUB_ENV,[
