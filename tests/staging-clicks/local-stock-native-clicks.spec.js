@@ -34,7 +34,7 @@ const LABELS = { KM:'KM · Comores', CM:'CM · Cameroun', CG:'CG · Congo-Brazza
 const OUT = path.resolve('test-results/local-stock-native-clicks');
 const record = { schema:'relay-local-native-click-proof/1', market:MARKET, run8:RUN8,
   staging:STAGING, target_mode:ISOLATED_LOCAL ? 'DISPOSABLE_LOCAL_PG16' : 'OFFICIAL_STAGING',
-  staging_go:false, verdict:'NOT_CERTIFIED', checks:[], http:[], jsErrors:[], blockedWrites:[] };
+  staging_go:false, verdict:'NOT_CERTIFIED', checks:[], http:[], jsErrors:[], blockedWrites:[], navigation:[] };
 const save = () => { fs.mkdirSync(OUT,{recursive:true}); fs.writeFileSync(path.join(OUT,'evidence.json'),JSON.stringify(record,null,2)+'\n'); };
 const assert = (condition,key,detail=null) => {
   record.checks.push({key,verdict:condition?'PASS':'FAIL',...(detail==null?{}:{detail})});
@@ -65,6 +65,14 @@ test('LOCAL_STOCK : un agent atteste puis remet au client par les vrais clics (H
       '/api/orders/'+orderId+'/local-relay-receipt',
     ]);
     page.on('pageerror',error=>record.jsErrors.push(String(error.message).slice(0,180)));
+    page.on('framenavigated',frame=>{
+      if(frame!==page.mainFrame())return;
+      try{
+        const url=new URL(frame.url());
+        record.navigation.push({path:url.pathname,
+          view:url.searchParams.get('view'),market:url.searchParams.get('market')});
+      }catch(_){}
+    });
     await page.route('**/*',route=>{
       const request=route.request(),u=new URL(request.url()),method=request.method();
       if(u.origin!==STAGING){
@@ -85,17 +93,28 @@ test('LOCAL_STOCK : un agent atteste puis remet au client par les vrais clics (H
     });
     const email=process.env.E2E_AGENT_RELAIS_EMAIL,password=process.env.E2E_AGENT_RELAIS_PASSWORD;
     assert(Boolean(email&&password),'test-role-credentials-present');
-    await page.goto('/login.html');
+    // The login runtime owns the post-auth window.location.replace().
+    // Supply its documented same-origin next parameter instead of issuing a
+    // competing page.goto while that redirect is still in flight.
+    const canonicalTarget='/admin/relais-live?view=execute&market='+MARKET;
+    await page.goto('/login.html?next='+encodeURIComponent(canonicalTarget));
     await page.locator('#email').fill(email);
     await page.locator('#password').fill(password);
     const login=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/auth/login'&&r.request().method()==='POST');
+    const canonicalResponse=page.waitForResponse(r=>{
+      const u=new URL(r.url());
+      return r.request().method()==='GET'&&u.pathname==='/admin/relais-live'&&
+        u.searchParams.get('view')==='execute'&&u.searchParams.get('market')===MARKET;
+    });
     await page.locator('#btn-submit').click();
     assert((await login).status()===200,'agent-login-200');
-    await page.waitForURL(u=>u.pathname!=='/login.html',{timeout:20000});
-    // G3 / Kanban officiel : commencer sur Flux Relais, puis activer
-    // explicitement la file « Réception locale » par le VRAI aiguillage UI.
-    // Le paramètre focus=receive seul ne constitue pas un geste Chromium.
-    await page.goto('/admin/relais-live?market='+MARKET);
+    const relayPage=await canonicalResponse;
+    assert(relayPage.status()===200,'canonical-relay-navigation-200',relayPage.status());
+    await page.waitForURL(u=>u.pathname==='/admin/relais-live'&&
+      u.searchParams.get('view')==='execute'&&u.searchParams.get('market')===MARKET,
+      {timeout:20000,waitUntil:'domcontentloaded'});
+    // G3 / Kanban officiel : Flux Relais, then activate "Réception locale"
+    // using the real UI queue; focus=receive alone is not a Chromium gesture.
     const workspace=page.locator('[data-workspace-mode="relay-execution"]');
     await expect(workspace).toBeVisible({timeout:25000});
     const localQueue=workspace.locator('[data-relay-execution-jump="receive"]');
@@ -159,6 +178,19 @@ test('LOCAL_STOCK : un agent atteste puis remet au client par les vrais clics (H
       &&r.request().method()==='POST');
     await collectRow.locator('[data-workspace-action="collect"]').click();
     const collectedHttp=await collectResponse;
+    if(collectedHttp.status()!==200){
+      // Persist sanitized business rejection for the NEXT iteration; never
+      // relax the expected 200 or invent a successful pickup status.
+      let rejection={};
+      try{rejection=await collectedHttp.json();}catch(_){}
+      const code=rejection.code||rejection.error?.code||
+        (typeof rejection.error==='string' ? rejection.error : 'UNKNOWN');
+      record.pickup_failure={http:collectedHttp.status(),
+        code:String(code).slice(0,100),
+        message:String(rejection.message||rejection.error?.message||'').slice(0,160)};
+      console.error('G3_PICKUP_REJECTED:'+record.pickup_failure.http+
+        ':'+record.pickup_failure.code);
+    }
     assert(collectedHttp.status()===200,'pickup-click-http-200',collectedHttp.status());
     await wait(350);
     const done=await snapshot(db,orderId);
@@ -173,6 +205,9 @@ test('LOCAL_STOCK : un agent atteste puis remet au client par les vrais clics (H
     record.verdict='LOCAL_STOCK_RELAIS_LIVE_CLICK_PASS';
   } catch(error) {
     record.failure=String(error?.message||error).slice(0,320);
+    try{const url=new URL(page.url());record.failure_navigation={
+      path:url.pathname,view:url.searchParams.get('view'),market:url.searchParams.get('market')};
+    }catch(_){}
     record.verdict='LOCAL_STOCK_RELAIS_LIVE_CLICK_FAIL';
     throw error;
   } finally {save();await db.pool?.end?.();}

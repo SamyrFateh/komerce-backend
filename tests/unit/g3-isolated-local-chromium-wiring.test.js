@@ -61,6 +61,19 @@ test('fixture uses canonical checkout and simulated payment, never directly sets
   expect(p).not.toContain("'--stop-after=7'");
 });
 
+test('disposable relay actor is marked using the official E2E identity writer only',()=>{
+  const p=read(PREP);
+  expect(p).toContain("runner.assertEphemeralTarget(process.env.DATABASE_URL,[])");
+  expect(p).toContain("actor.role!=='agent_relais'");
+  expect(p).toContain("String(scope.relais_id)!==String(before.order.relais_id)");
+  expect(p).toContain("require('./staging-e2e-provision')");
+  expect(p).toContain("await markE2eTestAccount(markerClient,");
+  expect(p).toContain("userId:actor.id,actorId:proof.fixture.users.admin.id");
+  expect(p).toContain("await isE2eTestAccount(actor.id)");
+  expect(p).not.toContain('INSERT INTO e2e_test_accounts');
+  expect(p).not.toContain('UPDATE orders SET');
+});
+
 test('local config rejects missing target proof and preserves staging-only Playwright config',()=>{
   const config=read(CONF), official=read('playwright.staging-relay-local-native.config.js');
   expect(()=>new Function(config)).not.toThrow();
