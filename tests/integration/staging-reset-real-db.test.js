@@ -280,12 +280,13 @@ if (!process.env.DATABASE_URL) {
       if (eph) await eph.drop().catch(() => {});
     });
 
-    test('prudent (defaut) : les 5 blocages sont rapportes, le client reel est conserve', () => {
+    test('prudent (defaut) : auteur d audit conserve (#3687), seul le blocage activated_by subsiste, le client reel est conserve', () => {
       const dry = drive(eph.url, 'dry-run');
       expect(dry.report.status).toBe('DRY_RUN_BLOCKED');
+      // Depuis #3687, le compte fixture auteur de l'audit de delegation (rows.fix) est conserve en prudent :
+      // ses lignes (granted_by, proposed_by, actor_user_id) ne bloquent plus ; rows.fix2 (activated_by) reste bloque.
       expect(dry.report.fixture_blockers.map((b) => `${b.table}.${b.columns.join('+')}`).sort()).toEqual([
-        'assignment_capability_ceiling.granted_by', 'market_cash_destinations.activated_by', 'market_cash_destinations.proposed_by',
-        'market_delegation_audit.actor_user_id', 'market_operating_assignments.granted_by',
+        'market_cash_destinations.activated_by',
       ]);
       expect(dry.report.fixtures.summary.users_kept_unmatched.map((u) => u.role)).toEqual(['client']);
       expect(dry.report.scope).toBe('prudent');
