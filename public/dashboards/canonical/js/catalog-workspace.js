@@ -2095,7 +2095,9 @@
     source.textContent = 'Agrandir l’image fournisseur originale';
     detail.appendChild(source);
     if (review.reviewed_by) detail.appendChild(text(doc, 'p', 'kmc-catalog-correction-hint',
-      'Dernière attestation par ' + review.reviewed_by + ' · ' + (review.reviewed_at || 'date absente') +
+      (String(review.reviewed_by).startsWith('automation:github-actions:')
+        ? 'Dernière revue automatisée de recette (sans attestation humaine) par '
+        : 'Dernière attestation humaine par ') + review.reviewed_by + ' · ' + (review.reviewed_at || 'date absente') +
       ' · choix : ' + (review.text_presence || 'indéterminé')));
     const field = (label, tag) => {
       const wrapper = doc.createElement('label');
@@ -2135,12 +2137,35 @@
     confirmation.appendChild(text(doc, 'span', '',
       ' Je confirme avoir réellement examiné les pixels de CETTE source et variante.'));
     detail.appendChild(confirmation);
+    let execution = null;
+    let runId = null;
+    if (media.automated_staging_review_allowed === true) {
+      execution = field('Origine de la revue (staging)', 'select');
+      execution.setAttribute('data-review-execution-mode', '');
+      [['', '— Choisir —'], ['HUMAN', 'Revue humaine'],
+        ['AUTOMATED_STAGING', 'Recette Chromium automatisée · sans attestation humaine']]
+        .forEach(([value, label]) => {
+          const option = doc.createElement('option');
+          option.value = value;
+          option.textContent = label;
+          execution.appendChild(option);
+        });
+      runId = field('Run GitHub Actions de recette', 'input');
+      runId.setAttribute('data-review-run-id', '');
+      runId.inputMode = 'numeric';
+      runId.parentNode.hidden = true;
+    }
     const feedback = text(doc, 'p', 'kmc-catalog-correction-hint', 'Aucune attestation enregistrée automatiquement.');
     feedback.setAttribute('role', 'status');
     const save = doc.createElement('button');
     save.type = 'button';
     save.className = 'kmc-btn kmc-btn-primary';
     save.textContent = 'Enregistrer la revue humaine';
+    if (execution) execution.addEventListener('change', () => {
+      const automated = execution.value === 'AUTOMATED_STAGING';
+      runId.parentNode.hidden = !automated;
+      save.textContent = automated ? 'Enregistrer la revue automatisée de recette' : 'Enregistrer la revue humaine';
+    });
     const refresh = () => {
       const present = presence.value === 'PRESENT';
       transcription.disabled = !present;
@@ -2160,6 +2185,11 @@
         feedback.textContent = 'Inspecter l’image, choisir un état et confirmer la revue humaine.';
         return;
       }
+      if (execution && (!execution.value ||
+        (execution.value === 'AUTOMATED_STAGING' && !/^\d{5,20}$/.test(runId.value.trim())))) {
+        feedback.textContent = 'Choisir l’origine de la revue et renseigner le run de recette automatisée.';
+        return;
+      }
       if (presence.value === 'PRESENT' &&
         (!transcription.value.trim() || !translation.value.trim() ||
           (kind.value === 'localized_image' && !/^https:\/\//i.test(localizedUrl.value.trim())))) {
@@ -2167,6 +2197,8 @@
         return;
       }
       const body = {
+        ...(execution ? { execution_mode: execution.value,
+          run_id: execution.value === 'AUTOMATED_STAGING' ? runId.value.trim() : null } : {}),
         source_media_id: item.source_media_id,
         source_url: item.url,
         option_values: item.option_values || {},
