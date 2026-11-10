@@ -21,6 +21,44 @@ test('real draft stays blocked for commercial decision, never called sellable',(
   expect(r.human_or_economic_decisions).toContain('KM_MARKET_PRICE_DECISION_MISSING');
   expect(r.safe_to_sell).toBe(false);
 });
+test('English CJ supplier provenance stays en after independently signed French curation',()=>{
+  const base=mk();
+  const row=mk({
+    candidate_ref:'KSC-000257',
+    supplier_product_id:'1396999123722440704',
+    signed_french_overrides:2,
+    product:{...base.product,product_ref:'KPR-000099',source_locale:'en',
+      content_source:'manual',name:'Chemise femme verte',
+      description:'Chemise femme avec taille et composition précisées',needs_review:false},
+    scan_result:{sourcing_decision:'TEST'},
+  });
+  const result=assessProduct(row);
+  expect(result.source_locale).toBe('en'); // provenance preserved, not buyer language
+  expect(result.french_editorial_verified).toBe(true);
+  expect(result.needs_editorial_review).toBe(false);
+  expect(result.signed_french_overrides).toBe(2);
+  expect(result.human_or_economic_decisions).not.toContain('FRENCH_EDITORIAL_REVIEW_REQUIRED');
+  expect(result.human_or_economic_decisions).toContain('KM_MARKET_PRICE_DECISION_MISSING');
+  expect(result.safe_to_sell).toBe(false);
+});
+test('English source with unsanctioned, incomplete or unsigned French content remains blocked',()=>{
+  const draft={...mk().product,source_locale:'en',content_source:'manual',needs_review:false};
+  for (const [count,contentSource,needsReview] of [
+    [0,'manual',false],[1,'manual',false],[2,'supplier',false],[2,'manual',true]
+  ]) {
+    const row=mk({product:{...draft,content_source:contentSource,needs_review:needsReview},
+      signed_french_overrides:count});
+    const result=assessProduct(row);
+    expect(result.french_editorial_verified).toBe(false);
+    expect(result.human_or_economic_decisions).toContain('FRENCH_EDITORIAL_REVIEW_REQUIRED');
+  }
+});
+test('native French source is not forced into an artificial English-to-French rewrite',()=>{
+  const row=mk({product:{...mk().product,source_locale:'fr',needs_review:false}});
+  const result=assessProduct(row);
+  expect(result.french_editorial_verified).toBe(true);
+  expect(result.safe_to_sell).toBe(false);
+});
 test('altered source supplier identity fails closed',()=>{
   expect(assessProduct(mk({supplier_product_id:'different'})).hard_blockers)
     .toContain('SOURCE_PRODUCT_IDENTITY_DRIFT');
@@ -46,6 +84,9 @@ test('foreign or unpinned target rejected',()=>{
 });
 test('SQL audit contains no writes',()=>{
   expect(QUERY).toMatch(/FROM import_runtime_runs/);
+  expect(QUERY).toContain('FROM catalog_field_overrides o');
+  expect(QUERY).toContain('count(DISTINCT o.field_name)::int');
+  expect(QUERY).toContain('o.set_by IS NOT NULL');
   expect(QUERY).not.toMatch(/\b(UPDATE|DELETE|INSERT|TRUNCATE)\b/i);
 });
 
