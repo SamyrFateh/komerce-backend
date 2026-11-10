@@ -13,7 +13,10 @@ test('isolated Chromium workflow uses only disposable PG16/localhost; no staging
   expect(y).toContain('postgresql://komerce:komerce@localhost:5432/komerce_test');
   expect(y).toContain('E2E_CLICKS_BASE_URL: http://localhost:3917');
   expect(y).toContain('E2E_CLICKS_ALLOW_LOCAL:');
-  expect(y).toContain("E2E_CLICKS_ALLOW_DISTRIBUTION: '0'");
+  expect(y).toContain("E2E_CLICKS_ALLOW_DISTRIBUTION: ${{ github.event_name == 'issues'");
+  expect(y).toContain("github.event.issue.title == '[cert-op] hub-v1-isolated-chromium-physical'");
+  expect(y).toContain("test \"$TRIGGER_TITLE\" = '[cert-op] hub-v1-isolated-chromium-physical'");
+  expect(y).toContain("test \"$E2E_CLICKS_ALLOW_DISTRIBUTION\" = '0'");
   expect(y).toContain("github.event.issue.user.login == github.repository_owner");
   expect(y).not.toContain('secrets.RAILWAY_DATABASE_URL');
   expect(y).not.toContain('allow-remote-staging');
@@ -59,4 +62,17 @@ test('result requires a real UI receipt, independent authenticated API and PG UU
   expect(src).toContain("'PASS_LOCAL_CHROMIUM_HTTP_PG_RECEIPT_ONLY'");
   expect(src).toContain("scope:'LOCAL_DISPOSABLE_PG16_ONLY',staging_go:false");
   expect(src).not.toContain('PASS_STAGING_TRANSACTION_13_STEPS');
+});
+
+
+test('physical mode is owner-issue-only on localhost, receipt-only remains the default',()=>{
+  const y=get('.github/workflows/hub-v1-isolated-chromium-receipt.yml');
+  expect(y).toContain("github.event.issue.user.login == github.repository_owner");
+  expect(y).toContain("github.event.issue.title == '[cert-op] hub-v1-isolated-chromium-receipt'");
+  expect(y).toContain("github.event.issue.title == '[cert-op] hub-v1-isolated-chromium-physical'");
+  expect(y).toContain("test \"$GITHUB_EVENT_NAME\" = 'issues'");
+  expect(y).toContain("npx playwright test --config=playwright.hub-v1-clicks.config.js\n");
+  expect(y).toContain("--grep 'Hub : reception fournisseur'");
+  expect(y).toContain('HUB_LOCAL_CHROMIUM_NO_PREPARED_FIXTURE');
+  expect(y).not.toContain('secrets.RAILWAY_DATABASE_URL');
 });

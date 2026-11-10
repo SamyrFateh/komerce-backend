@@ -14,14 +14,27 @@ const { test, expect } = require('@playwright/test');
 const db = require('../../db');
 const { snapshot, assess } = require('../../scripts/recette/staging-local-stock-real-relay-cert');
 
-const STAGING = 'https://komerce-backend-production.up.railway.app';
+// G3 local certification is explicitly separate from official staging.
+// The shared browser scenario keeps the same selectors and HTTP/PG assertions.
+const ISOLATED_LOCAL = process.env.G3_ISOLATED_LOCAL === '1';
+const STAGING = ISOLATED_LOCAL ? 'http://localhost:3917' : 'https://komerce-backend-production.up.railway.app';
+if (ISOLATED_LOCAL) {
+  require('../../scripts/recette/hub-v1-certification-runner')
+    .assertEphemeralTarget(process.env.DATABASE_URL, []);
+  if (process.env.NODE_ENV !== 'test' || process.env.KOMERCE_ENV !== 'test' ||
+      process.env.KOMERCE_TARGET_ENV === 'staging' ||
+      process.env.E2E_CLICKS_BASE_URL !== STAGING ||
+      process.env.E2E_STAGING_BASE_URL || process.env.STAGING_BASE_URL)
+    throw Error('G3_LOCAL_CHROMIUM_DISPOSABLE_TARGET_ONLY');
+}
 const MARKET = String(process.env.HTTP_RUNNER_MARKET || '').toUpperCase();
 const RUN8 = String(process.env.HTTP_RUNNER_RUN8 || '').toUpperCase();
 const EXPECTED_SHA = String(process.env.E2E_EXPECTED_DEPLOY_SHA || '');
 const LABELS = { KM:'KM · Comores', CM:'CM · Cameroun', CG:'CG · Congo-Brazzaville' };
 const OUT = path.resolve('test-results/local-stock-native-clicks');
 const record = { schema:'relay-local-native-click-proof/1', market:MARKET, run8:RUN8,
-  staging:STAGING, verdict:'NOT_CERTIFIED', checks:[], http:[], jsErrors:[], blockedWrites:[] };
+  staging:STAGING, target_mode:ISOLATED_LOCAL ? 'DISPOSABLE_LOCAL_PG16' : 'OFFICIAL_STAGING',
+  staging_go:false, verdict:'NOT_CERTIFIED', checks:[], http:[], jsErrors:[], blockedWrites:[] };
 const save = () => { fs.mkdirSync(OUT,{recursive:true}); fs.writeFileSync(path.join(OUT,'evidence.json'),JSON.stringify(record,null,2)+'\n'); };
 const assert = (condition,key,detail=null) => {
   record.checks.push({key,verdict:condition?'PASS':'FAIL',...(detail==null?{}:{detail})});
@@ -54,7 +67,12 @@ test('LOCAL_STOCK : un agent atteste puis remet au client par les vrais clics (H
     page.on('pageerror',error=>record.jsErrors.push(String(error.message).slice(0,180)));
     await page.route('**/*',route=>{
       const request=route.request(),u=new URL(request.url()),method=request.method();
-      if(u.origin!==STAGING||['GET','HEAD','OPTIONS'].includes(method))return route.continue();
+      if(u.origin!==STAGING){
+        // The disposable run must never reach Railway or third-party servers.
+        if(ISOLATED_LOCAL){record.blockedWrites.push('EXTERNAL '+method+' '+u.origin);return route.abort('blockedbyclient');}
+        return route.continue();
+      }
+      if(['GET','HEAD','OPTIONS'].includes(method))return route.continue();
       if(method==='POST'&&(permitted.has(u.pathname)||
         /^\/api\/admin\/workspaces\/operations\/market\/[A-Z]{2}\/parcels\/[^/]+\/collect$/.test(u.pathname)))
         return route.continue();

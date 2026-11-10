@@ -1,0 +1,136 @@
+name: G3 — real Chromium Relay LOCAL_STOCK against disposable PG16
+
+# Real agent-relay browser gestures + canonical HTTP + PostgreSQL 16 on localhost.
+# Never connects to Railway staging, uses no Railway secret and does not claim staging GO.
+on:
+  workflow_dispatch: {}
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: g3-isolated-local-chromium-relay
+  cancel-in-progress: false
+
+jobs:
+  isolated-relay:
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.actor == github.repository_owner) ||
+      (github.event_name == 'issues' && github.event.issue.user.login == github.repository_owner &&
+       github.event.issue.title == '[cert-op] g3-isolated-local-chromium-relay')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_test
+        ports: [5432:5432]
+        options: >-
+          --health-cmd "pg_isready -U komerce -d komerce_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 6
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      KOMERCE_ENV: test
+      KOMERCE_DISABLE_CRONS: 'true'
+      DATABASE_URL: postgresql://komerce:komerce@localhost:5432/komerce_test
+      E2E_CLICKS_BASE_URL: http://localhost:3917
+      G3_ISOLATED_LOCAL: '1'
+      HTTP_RUNNER_MARKET: KM
+      PORT: '3917'
+      JWT_SECRET: isolated-ci-g3-test-token-only
+      ADMIN_PASSWORD: isolated-ci-g3-no-real-admin
+      STRIPE_SECRET_KEY: sk_test_ci_placeholder
+      STRIPE_WEBHOOK_SECRET: whsec_ci_placeholder
+      QR_SECRET: isolated-ci-g3-qr
+      AUTHKEY_API_KEY: isolated-ci-g3-no-provider
+      PAYPAL_CLIENT_ID: isolated-ci-client
+      PAYPAL_CLIENT_SECRET: isolated-ci-secret
+      PAYPAL_WEBHOOK_ID: isolated-ci-webhook
+      META_WA_APP_SECRET: isolated-ci-meta
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Enforce isolated scope and pin exact checked-out SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$DATABASE_URL" = 'postgresql://komerce:komerce@localhost:5432/komerce_test'
+          test "$E2E_CLICKS_BASE_URL" = 'http://localhost:3917'
+          test "$G3_ISOLATED_LOCAL" = '1'
+          node -e "require('./scripts/recette/hub-v1-certification-runner').assertEphemeralTarget(process.env.DATABASE_URL, [])"
+          SOURCE_SHA="$(git rev-parse HEAD)"
+          echo "GIT_SHA=$SOURCE_SHA" >> "$GITHUB_ENV"
+          echo "E2E_EXPECTED_DEPLOY_SHA=$SOURCE_SHA" >> "$GITHUB_ENV"
+      - name: Rebuild disposable PG16 from canonical schema
+        shell: bash
+        run: |
+          PGPASSWORD=komerce psql -v ON_ERROR_STOP=1 -h localhost -U komerce -d komerce_test -f docs/db/railway-live-schema.sql > /dev/null
+          node scripts/ci-db-bootstrap.js
+      - name: Prepare fresh canonical paid LOCAL_STOCK (no Hub, PSP or fake status)
+        run: node scripts/recette/g3-local-chromium-prepare.js
+      - name: Start actual Komerce localhost backend
+        shell: bash
+        run: |
+          set -euo pipefail
+          node server.js > "$RUNNER_TEMP/g3-local-server.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/g3-local-server.pid"
+          READY=0
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:3917/health/version > /dev/null; then READY=1; break; fi
+            sleep 2
+          done
+          if [[ "$READY" != 1 ]]; then tail -n 45 "$RUNNER_TEMP/g3-local-server.log"; exit 2; fi
+          curl -fsS http://localhost:3917/health/version | node -e "
+            let b='';process.stdin.on('data',x=>b+=x).on('end',()=>{
+              const j=JSON.parse(b);if(j.commit!==process.env.E2E_EXPECTED_DEPLOY_SHA)
+                process.exit(2);
+            })"
+          echo 'G3_LOCAL_SERVER_READY_SHA_PINNED'
+      - name: Install genuine Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Click real Relay Live reception, negatives, pickup — no mocks
+        run: npx playwright test --config=playwright.g3-isolated-local.config.js
+      - name: Independent authenticated API + PostgreSQL 16 readbacks
+        if: always()
+        run: |
+          if [ -f test-results/g3-local-chromium/prepare.json ]; then
+            node scripts/recette/g3-local-chromium-readback.js
+          else
+            echo 'G3_LOCAL_NO_PREPARED_FIXTURE'; exit 2
+          fi
+      - name: Archive non-secret real-browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g3-isolated-real-chromium-${{ github.run_id }}
+          path: |
+            test-results/g3-local-chromium/prepare.json
+            test-results/g3-local-chromium/readback.json
+            test-results/local-stock-native-clicks/evidence.json
+            test-results/local-stock-native-clicks/playwright.json
+            test-results/local-stock-native-clicks/01-before-reception.png
+            test-results/local-stock-native-clicks/02-reception-confirmee.png
+            test-results/local-stock-native-clicks/03-retrait-confirme.png
+          if-no-files-found: warn
+          retention-days: 21
+      - name: Explicit scope of certification
+        if: always()
+        run: |
+          echo '### G3 — isolated Chromium, not a staging certification' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Actual localhost Komerce backend + disposable PostgreSQL 16. Real UI clicks, canonical HTTP writes, API and independent SQL readback.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'The shared Railway staging preflight and cleanup holds remain unchanged. G3 on Railway staging is NOT_PROVEN.' >> "$GITHUB_STEP_SUMMARY"
