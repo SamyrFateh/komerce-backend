@@ -1,7 +1,13 @@
 # Certification métier V1 multi-marché : note de reprise
 
 Cette note sert à reprendre la certification exactement où elle s'est arrêtée, sans autre contexte : tout ce qu'il faut est ici.
-État au 2026-11-07, fin d'après-midi (heure de Paris). Dernière mise à jour : KM, CM et CG certifiés sur les parcours nominaux API + Chromium ; preuves et limitations ci-dessous.
+**Mise à jour 2026-11-10 : décision staging jetable et campagne réelle G2/G3/G4.** Lire en priorité [la preuve transactionnelle et ses limites](evidence/STAGING_G234_20261110.md) avant les historiques du 7 novembre. Les résultats antérieurs restent traçables mais ne dispensent pas des nouvelles preuves demandées.
+
+## Décision de conduite du 10/11/2026
+
+Le propriétaire autorise les créations/modifications des données **sur Railway staging uniquement**, sans cleanup sélectif par campagne. Les deux gates historiques préflight restent conditionnés à l'identité du propriétaire et à l'environnement jetable ; ils ne certifient pas le résultat métier. Après l'archivage des preuves : reset global `prudent` via `staging-reset.js` (dry-run actuel obligatoire), puis `staging-e2e-provision` pour remettre les comptes. Aucune nouvelle campagne sur PG16 isolé sauf pour diagnostiquer un défaut précis apparu sur staging. Aucun effet externe réel (PSP, SMS, WhatsApp).
+
+**Preuves du 10/11/2026** : G2 13 étapes services/PG KM PASS (run [42826612419](https://github.com/SamyrFateh/komerce-backend/actions/runs/42826612419)). G3 LOCAL_STOCK Chromium + HTTP/PG PASS KM [42826889006](https://github.com/SamyrFateh/komerce-backend/actions/runs/42826889006), CM [42828913515](https://github.com/SamyrFateh/komerce-backend/actions/runs/42828913515), CG [42829199967](https://github.com/SamyrFateh/komerce-backend/actions/runs/42829199967). G4 A/B KM, G2 Chromium chaque geste et G3 SAV intégral ont des verdicts **distincts non déduits** de ces résultats.
 
 ## 1. Objectif
 
