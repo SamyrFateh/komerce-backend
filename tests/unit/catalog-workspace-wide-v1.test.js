@@ -15,7 +15,7 @@ test('Catalogue: pleine largeur limitée au registre, sans modifier Raffinerie',
   expect(css).toContain('.kmc-catalog-registry-table.kmc-workspace-table');
   expect(css).toContain('table-layout: fixed');
   expect(ui).toContain("' kmc-catalog-main-panel'");
-  expect(index).toContain('catalog-workspace-wide-v1.css?v=261031-hero-1');
+  expect(index).toContain('catalog-workspace-wide-v1.css?v=261110-visual-fr-review-1');
 });
 
 test('Catalogue: nom/references/diagnostics/actions sont distincts et bornés', () => {
@@ -208,11 +208,11 @@ test('Dossier opérateur : correction source accessible sans chiffres économiqu
   expect(ui).toContain("method: 'POST'");
   expect(css).toContain('width: min(660px, calc(100vw - 40px))');
   expect(ui).not.toContain('appendCatalogEconomicSummary');
-  expect(index).toContain('catalog-workspace.js?v=261108-quality-freeze-1');
+  expect(index).toContain('catalog-workspace.js?v=261110-visual-fr-review-1');
 });
 
 test('Catalogue : dossier produit complet, y compris les produits approuvés', () => {
-  expect(ui).toContain("function renderProductDossierDetails(slot, doc, dossier, row)");
+  expect(ui).toContain("function renderProductDossierDetails(context, slot, doc, dossier, row)");
   expect(ui).toContain("?dossier_product_ref=");
   expect(ui).toContain("title_fr");
   expect(ui).toContain("description_fr");
@@ -228,6 +228,18 @@ test('Catalogue : dossier produit complet, y compris les produits approuvés', (
   expect(ui).toContain("openProductInspector(context, slot, doc, row, categories)");
   expect(css).toContain(".kmc-catalog-dossier-group");
   expect(css).toContain(".kmc-catalog-market-row");
+});
+
+test('Revues visuelles FR : état explicite sans présélection, POST canonique, aucune auto-publication', () => {
+  expect(ui).toContain('appendVisualFrReviewControls');
+  expect(ui).toContain("presence.value = ''");
+  expect(ui).toContain("['NONE', 'PRESENT', 'UNREADABLE']");
+  expect(ui).toContain("confirmed.checked");
+  expect(ui).toContain("'/visual-fr-review'");
+  expect(ui).toContain("source_media_id: item.source_media_id");
+  expect(ui).toContain("option_values: item.option_values || {}");
+  expect(ui).toContain('await loadProductDossier(context, doc, slot, row)');
+  expect(css).toContain('.kmc-catalog-visual-fr-review');
 });
 
 test('Fiche commerciale complète : galerie, variantes et correction FR disponibles depuis Catalogue', () => {
@@ -265,8 +277,8 @@ test('Actions éditoriales toujours visibles avant lecture longue de la fiche', 
   expect(css).toContain(".kmc-catalog-inspector-action-dock");
   expect(css).toContain("position: sticky");
   expect(css).toContain('min-height: 42px');
-  expect(index).toContain('catalog-workspace.js?v=261108-quality-freeze-1');
-  expect(index).toContain('catalog-workspace-wide-v1.css?v=261031-hero-1');
+  expect(index).toContain('catalog-workspace.js?v=261110-visual-fr-review-1');
+  expect(index).toContain('catalog-workspace-wide-v1.css?v=261110-visual-fr-review-1');
 });
 
 test('Validation Catalogue : la préparation française et le contrôle sont distincts de la décision humaine',()=>{
@@ -281,7 +293,7 @@ test('Validation Catalogue : la préparation française et le contrôle sont dis
   expect(ui).toContain("ENDPOINT + '/approval/'");
   expect(ui).toContain('Validation refusée : ');
   expect(ui).not.toContain("status: 'À valider en Raffinerie'");
-  expect(index).toContain('catalog-workspace.js?v=261108-quality-freeze-1');
+  expect(index).toContain('catalog-workspace.js?v=261110-visual-fr-review-1');
 });
 
 test('G6 : corriger la fiche française ne publie jamais automatiquement le Catalogue', () => {
