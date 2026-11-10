@@ -1286,16 +1286,40 @@ body.kmc-shell-v4:has(.kmc-catalog-main-panel) .kmc-catalog-registry-table.kmc-w
   display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px;
 }
 .kmc-catalog-dossier-image-strip figure {
-  margin: 0; width: 110px; flex: 0 0 110px; min-width: 0;
+  margin: 0; width: 320px; flex: 0 0 320px; min-width: 0;
   border-radius: 8px; overflow: hidden; border: 1px solid #e3eaf3;
 }
 .kmc-catalog-dossier-image-strip img {
-  display: block; width: 100%; height: 108px;
+  display: block; width: 100%; height: 240px;
   object-fit: contain; background: #f5f8fc;
 }
 .kmc-catalog-dossier-image-strip figcaption {
   font-size: 10px; line-height: 1.3; color: #556b86;
   max-height: 42px; overflow: hidden; padding: 6px;
+}
+.kmc-catalog-visual-fr-review {
+  padding: 9px; border-top: 1px solid #cdd5dd;
+  background: #f5f6f7; color: #20252b; font-size: 12px;
+}
+.kmc-catalog-visual-fr-review summary {
+  font-weight: 750; cursor: pointer; padding: 6px 0; color: #17202b;
+}
+.kmc-catalog-visual-fr-review > a { display: inline-block; margin-bottom: 9px; }
+.kmc-catalog-visual-fr-field {
+  display: block; margin: 9px 0; font-weight: 650;
+}
+.kmc-catalog-visual-fr-field > span { display: block; margin-bottom: 4px; }
+.kmc-catalog-visual-fr-field > input,
+.kmc-catalog-visual-fr-field > select,
+.kmc-catalog-visual-fr-field > textarea {
+  box-sizing: border-box; width: 100%; min-height: 37px;
+  border: 1px solid #9daab9; border-radius: 5px; padding: 6px;
+  font: inherit; background: #fff; color: #111;
+}
+.kmc-catalog-visual-fr-field > textarea { min-height: 70px; resize: vertical; }
+.kmc-catalog-visual-fr-review > button { margin: 9px 0; }
+@media (max-width: 560px) {
+  .kmc-catalog-dossier-image-strip figure { width: 270px; flex-basis: 270px; }
 }
 .kmc-catalog-variant-details summary {
   font-size: 14px; font-weight: 700; cursor: pointer;

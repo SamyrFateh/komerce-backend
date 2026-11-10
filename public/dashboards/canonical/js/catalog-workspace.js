@@ -2039,7 +2039,130 @@
     return panel;
   }
 
-  function renderProductDossierDetails(slot, doc, dossier, row) {
+  // A media review is a deliberate human act on the original pixels. The form
+  // intentionally has NO default text-presence answer, even for prior reviews.
+  function appendVisualFrReviewControls(context, doc, figure, item, media, slot, row) {
+    if (!media.sourcing_linked || !media.product_id || !item.media_id || !item.source_media_id) return;
+    const evidence = media.visual_fr || {};
+    const result = (evidence.results || []).find(v => v.source_media_id === item.source_media_id) || {};
+    const review = item.review || {};
+    const detail = doc.createElement('details');
+    detail.className = 'kmc-catalog-visual-fr-review';
+    detail.setAttribute('data-catalog-visual-fr-media', item.media_id);
+    detail.appendChild(text(doc, 'summary', '', 'Inspecter et attester l’image · ' +
+      (result.state || 'NOT_INSPECTED') + (result.ready ? ' ✓' : ' · BLOQUÉ')));
+    const info = doc.createElement('p');
+    info.className = 'kmc-catalog-correction-hint';
+    info.textContent = 'Source : ' + item.source_media_id + ' · Variante : ' +
+      JSON.stringify(item.option_values || {}) + ' · ' + (result.reason || 'preuve à contrôler');
+    detail.appendChild(info);
+    const source = doc.createElement('a');
+    source.href = item.url;
+    source.target = '_blank';
+    source.rel = 'noopener noreferrer';
+    source.textContent = 'Agrandir l’image fournisseur originale';
+    detail.appendChild(source);
+    if (review.reviewed_by) detail.appendChild(text(doc, 'p', 'kmc-catalog-correction-hint',
+      'Dernière attestation par ' + review.reviewed_by + ' · ' + (review.reviewed_at || 'date absente') +
+      ' · choix : ' + (review.text_presence || 'indéterminé')));
+    const field = (label, tag) => {
+      const wrapper = doc.createElement('label');
+      wrapper.className = 'kmc-catalog-visual-fr-field';
+      wrapper.appendChild(text(doc, 'span', '', label));
+      const input = doc.createElement(tag);
+      wrapper.appendChild(input);
+      detail.appendChild(wrapper);
+      return input;
+    };
+    const presence = field('Texte destiné au client visible dans les pixels (choix obligatoire)', 'select');
+    [['', '— Choisir après inspection —'], ['NONE', 'Aucun texte pertinent'],
+      ['PRESENT', 'Texte présent'], ['UNREADABLE', 'Illisible / douteux : bloquer']]
+      .forEach(([value, label]) => {
+        const option = doc.createElement('option');
+        option.value = value;
+        option.textContent = label;
+        presence.appendChild(option);
+      });
+    presence.value = '';
+    const transcription = field('Transcription exacte du texte fournisseur', 'textarea');
+    const translation = field('Traduction française vérifiée', 'textarea');
+    const kind = field('Présentation française au client', 'select');
+    [['caption', 'Légende française'], ['localized_image', 'Nouvelle image FR contrôlée']]
+      .forEach(([value, label]) => {
+        const option = doc.createElement('option');
+        option.value = value;
+        option.textContent = label;
+        kind.appendChild(option);
+      });
+    const localizedUrl = field('URL HTTPS de l’image française (si applicable)', 'input');
+    localizedUrl.type = 'url';
+    const confirmation = doc.createElement('label');
+    const confirmed = doc.createElement('input');
+    confirmed.type = 'checkbox';
+    confirmation.appendChild(confirmed);
+    confirmation.appendChild(text(doc, 'span', '',
+      ' Je confirme avoir réellement examiné les pixels de CETTE source et variante.'));
+    detail.appendChild(confirmation);
+    const feedback = text(doc, 'p', 'kmc-catalog-correction-hint', 'Aucune attestation enregistrée automatiquement.');
+    feedback.setAttribute('role', 'status');
+    const save = doc.createElement('button');
+    save.type = 'button';
+    save.className = 'kmc-btn kmc-btn-primary';
+    save.textContent = 'Enregistrer la revue humaine';
+    const refresh = () => {
+      const present = presence.value === 'PRESENT';
+      transcription.disabled = !present;
+      translation.disabled = !present;
+      kind.disabled = !present;
+      localizedUrl.disabled = !present || kind.value !== 'localized_image';
+    };
+    presence.addEventListener('change', refresh);
+    kind.addEventListener('change', refresh);
+    refresh();
+    save.addEventListener('click', async () => {
+      if (!['NONE', 'PRESENT', 'UNREADABLE'].includes(presence.value) || !confirmed.checked) {
+        feedback.textContent = 'Inspecter l’image, choisir un état et confirmer la revue humaine.';
+        return;
+      }
+      if (presence.value === 'PRESENT' &&
+        (!transcription.value.trim() || !translation.value.trim() ||
+          (kind.value === 'localized_image' && !/^https:\/\//i.test(localizedUrl.value.trim())))) {
+        feedback.textContent = 'Transcription, traduction et présentation française vérifiables obligatoires.';
+        return;
+      }
+      const body = {
+        source_media_id: item.source_media_id,
+        source_url: item.url,
+        option_values: item.option_values || {},
+        text_presence: presence.value,
+        source_transcription: presence.value === 'PRESENT' ? transcription.value.trim() : null,
+        french_translation: presence.value === 'PRESENT' ? translation.value.trim() : null,
+        french_presentation: presence.value !== 'PRESENT' ? null : {
+          reviewed: true,
+          kind: kind.value,
+          ...(kind.value === 'caption' ? { text: translation.value.trim() }
+            : { url: localizedUrl.value.trim() }),
+        },
+      };
+      save.disabled = true;
+      feedback.textContent = 'Enregistrement de la décision…';
+      try {
+        await jsonRequest(context.fetch, '/api/admin/catalog/approval-queue/' +
+          encodeURIComponent(media.product_id) + '/media/' + encodeURIComponent(item.media_id) +
+          '/visual-fr-review', { method: 'POST', body });
+        feedback.textContent = 'Revue enregistrée · relecture des preuves serveur…';
+        await loadProductDossier(context, doc, slot, row);
+      } catch (error) {
+        feedback.textContent = 'Revue refusée : ' + actionErrorMessage(error);
+        save.disabled = false;
+      }
+    });
+    detail.appendChild(save);
+    detail.appendChild(feedback);
+    figure.appendChild(detail);
+  }
+
+  function renderProductDossierDetails(context, slot, doc, dossier, row) {
     slot.replaceChildren();
     const header = text(doc, 'strong', 'kmc-catalog-inspector-section',
       'Fiche commerciale · état réel du produit');
@@ -2062,6 +2185,14 @@
     photos.className = 'kmc-catalog-dossier-gallery';
     photos.setAttribute('data-catalog-canonical-gallery', '');
     photos.appendChild(text(doc, 'strong', '', 'Images canoniques actives'));
+    if (media.sourcing_linked) {
+      const evidence = media.visual_fr || {};
+      const results = Array.isArray(evidence.results) ? evidence.results : [];
+      photos.appendChild(text(doc, 'p', 'kmc-catalog-correction-hint',
+        'Revue visuelle FR : ' + results.filter(item => item.ready).length + '/' +
+        results.length + ' sources prouvées · ' + (evidence.code || 'NOT_INSPECTED') +
+        '. Aucune activation Catalogue automatique.'));
+    }
     if (!gallery.length) {
       photos.appendChild(text(doc, 'p', 'kmc-catalog-correction-hint',
         'Aucune image canonique HTTPS à afficher. Les aperçus fournisseur ne sont pas des médias validés.'));
@@ -2078,6 +2209,7 @@
         figure.appendChild(img);
         figure.appendChild(text(doc, 'figcaption', '',
           (item.role || 'PRODUCT') + (item.alt ? ' · ' + item.alt : '')));
+        appendVisualFrReviewControls(context, doc, figure, item, media, slot, row);
         strip.appendChild(figure);
       });
       photos.appendChild(strip);
@@ -2215,7 +2347,7 @@
       // A closed inspector must not resurrect content on a different product.
       if (!slot.isConnected) return;
       row._catalogueDossier = dossier; // local read-only projection, never persisted
-      renderProductDossierDetails(slot, doc, dossier, row);
+      renderProductDossierDetails(context, slot, doc, dossier, row);
     } catch (err) {
       if (!slot.isConnected) return;
       slot.replaceChildren(text(doc, 'p', 'kmc-catalog-correction-hint',

@@ -32,7 +32,7 @@ function sameOptions(a, b) {
 function inspectOne(media, review) {
   const sourceId = media?.supplier_media_id ?? media?.source_media_id;
   const result = { source_media_id: sourceId || null, state: STATES.NOT_INSPECTED, ready: false };
-  if (!nonempty(sourceId) || !nonempty(media?.url)) {
+  if (!nonempty(sourceId) || !nonempty(media?.url) || !/^https:\/\//i.test(media.url)) {
     return { ...result, state: STATES.BLOCKED_UNREADABLE_OR_UNSUPPORTED, reason: 'SOURCE_MEDIA_IDENTITY_OR_URL_MISSING' };
   }
   if (!review) return { ...result, reason: 'VISUAL_REVIEW_MISSING' };
