@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { chromium } = require('playwright');
 
-const PUB = path.resolve(__dirname, '..', 'public');
+const PUB = path.resolve(__dirname, '..', '..', 'public');
 const M = { '.css':'text/css','.html':'text/html','.js':'text/javascript','.webp':'image/webp',
             '.png':'image/png','.json':'application/json','.ico':'image/x-icon','.svg':'image/svg+xml' };
 const srv = http.createServer((q, r) => {

@@ -124,6 +124,13 @@ const QUERY = [
   '  LEFT JOIN products p ON p.id=c.product_id',
   ' WHERE r.run_ref=$1 ORDER BY c.candidate_ref',
 ].join('\n');
+// La cohorte est définie par le RUN fournisseur exact KIR-000014, jamais par le
+// total Catalogue : d'autres produits de recette peuvent coexister sur staging.
+function cohortIdentitiesMatch(rows) {
+  const refs = new Set(rows.map(row => row.candidate_ref));
+  return rows.length === EXPECTED.size && refs.size === EXPECTED.size
+    && [...refs].every(ref => EXPECTED.has(ref));
+}
 async function audit() {
   assertStaging(process.env);
   // All connections, including the guard, are read-only at PostgreSQL server level.
@@ -146,8 +153,9 @@ async function audit() {
     report.total_products = totals.products;
     report.products = rows.map(assessProduct);
     report.hard_blockers = [];
-    if (rows.length !== EXPECTED.size || report.total_products !== EXPECTED.size
-        || new Set(rows.map(r=>r.candidate_ref)).size !== EXPECTED.size)
+    report.cohort_products = rows.length;
+    report.other_staging_products = Math.max(0, report.total_products - rows.length);
+    if (!cohortIdentitiesMatch(rows))
       report.hard_blockers.push('EXACT_FOUR_PRODUCT_COHORT_NOT_MATCHED');
     if (!km || km.is_active !== true || km.currency !== 'KMF')
       report.hard_blockers.push('KM_MARKET_NOT_READY');
@@ -177,4 +185,4 @@ async function main() {
     process.exitCode = 2;
 }
 if (require.main === module) main().catch(e=>{console.error(String(e.code||e.message));process.exitCode=1;});
-module.exports = { assertStaging, expectedDatabasePin, assessProduct, RUN, EXPECTED, QUERY };
+module.exports = { assertStaging, expectedDatabasePin, assessProduct, cohortIdentitiesMatch, RUN, EXPECTED, QUERY };

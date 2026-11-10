@@ -709,11 +709,18 @@ describe('GET /api/pickup/reveal-once/:orderId', () => {
     expect(res.status).toBe(410);
   });
 
+  test('403 si la commande n\'a aucun propriétaire (jamais d\'accès ouvert)', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'O1', user_id: null, pickup_secret_hash: 'h' }] });
+    const res = await request(app).get('/api/pickup/reveal-once/O1');
+    expect(res.status).toBe(403);
+  });
+
   test('410 si revealRow absent (TTL expiré / redémarrage serveur)', async () => {
     const recent = new Date().toISOString();
     mockQuery
       .mockResolvedValueOnce({ rows: [{ id: 'O1', user_id: 'u-agent', pickup_secret_hash: 'h', pickup_secret_revealed_at: null, pickup_secret_emitted_at: recent, pickup_secret_last4: 'XY12' }] })
-      .mockResolvedValueOnce({ rows: [] }); // SELECT pickup_reveal_codes vide
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 }) // UPDATE revealed_at (garde IS NULL)
+      .mockResolvedValueOnce({ rows: [] }); // DELETE ... RETURNING vide -> rollback
 
     const res = await request(app).get('/api/pickup/reveal-once/O1');
     expect(res.status).toBe(410);
@@ -724,9 +731,8 @@ describe('GET /api/pickup/reveal-once/:orderId', () => {
     const recent = new Date().toISOString();
     mockQuery
       .mockResolvedValueOnce({ rows: [{ id: 'O1', reference: 'ORD1', user_id: 'u-agent', pickup_secret_hash: 'h', pickup_secret_revealed_at: null, pickup_secret_emitted_at: recent, pickup_secret_channel: 'stripe', total_kmf: 5000 }] })
-      .mockResolvedValueOnce({ rows: [{ code: 'A7K-3M9-P2' }] }) // SELECT pickup_reveal_codes
-      .mockResolvedValueOnce({ rows: [] }) // UPDATE revealed_at
-      .mockResolvedValueOnce({ rows: [] }); // DELETE pickup_reveal_codes
+      .mockResolvedValueOnce({ rows: [{ id: 'O1' }], rowCount: 1 }) // UPDATE revealed_at (garde IS NULL)
+      .mockResolvedValueOnce({ rows: [{ code: 'A7K-3M9-P2' }] }); // DELETE ... RETURNING code
 
     const res = await request(app).get('/api/pickup/reveal-once/O1');
 

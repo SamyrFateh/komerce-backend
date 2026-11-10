@@ -36,6 +36,12 @@ describe('isInternalStaticPath — fonction pure', () => {
     ['/dashboards/coverage/coverage-final.json', true],
     ['/boutique/test-results/.last-run.json', true],
     ['/CHANGELOG-lot1.md', true],
+    ['/boutique/k6/k6-v0.56.0-windows-amd64/k6.exe', true],
+    ['/boutique/harnais/geometry/verify-sticky.js', true],
+    ['/boutique/harnais/komerce-test-env-setup.sh', true],
+    ['/boutique/tools/run.py', true],
+    ['/boutique/tools/run.sh', true],
+    ['/boutique/tools/run.exe', true],
   ])('%s est un chemin interne', (p, expected) => {
     expect(isInternalStaticPath(p)).toBe(expected);
   });
@@ -46,6 +52,7 @@ describe('isInternalStaticPath — fonction pure', () => {
     ['/boutique/css/dist/base.css', false],
     ['/boutique/js/main.js', false],
     ['/manifest.json', false],
+    ['/boutique/manifest.json', false],
     ['/dashboards/canonical/index.html', false],
     ['/images/hero.webp', false],
   ])('%s reste servi', (p, expected) => {
@@ -71,6 +78,11 @@ describe('internalStaticGuard — comportement HTTP', () => {
     const res = await request(buildApp()).get('/README.md');
     expect(res.status).toBe(404);
     expect(res.text).not.toMatch(/secret interne/i);
+  });
+
+  test.each(['/boutique/k6/k6-v0.56.0-windows-amd64/k6.exe', '/boutique/harnais/geometry/verify-sticky.js', '/unsafe.exe', '/unsafe.sh', '/unsafe.py'])('bloque %s en HTTP GET/HEAD', async (url) => {
+    expect((await request(buildApp()).get(url)).status).toBe(404);
+    expect((await request(buildApp()).head(url)).status).toBe(404);
   });
 
   test('un asset applicatif légitime reste servi normalement', async () => {

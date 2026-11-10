@@ -17,7 +17,9 @@ jobs:
     if: >-
       github.event_name == 'issues' &&
       github.event.issue.user.login == github.repository_owner &&
-      github.event.issue.title == '[staging-op] hub-v1-final-transaction-13'
+      (github.event.issue.title == '[staging-op] hub-v1-final-transaction-13' ||
+       github.event.issue.title == '[staging-op] hub-v1-final-transaction-13-CM' ||
+       github.event.issue.title == '[staging-op] hub-v1-final-transaction-13-CG')
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
@@ -28,6 +30,7 @@ jobs:
       KOMERCE_DISABLE_CRONS: 'true'
       HUB_V1_E2E_APPLY_MODE: approved
       HUB_V1_STAGING_DISPOSABLE_MODE: '1'
+      HUB_V1_MARKET: ${{ github.event.issue.title == '[staging-op] hub-v1-final-transaction-13-CM' && 'CM' || github.event.issue.title == '[staging-op] hub-v1-final-transaction-13-CG' && 'CG' || 'KM' }}
       EXPECTED_RAILWAY_ENVIRONMENT: staging
       DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
       STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
@@ -66,11 +69,11 @@ jobs:
         shell: bash
         run: |
           mkdir -p test-results/hub-v1-cert
-          node scripts/recette/hub-v1-certification-runner.js --allow-remote-staging --run="$HUB_V1_CERTIFICATION_RUN" --dry-run
+          node scripts/recette/hub-v1-certification-runner.js --allow-remote-staging --run="$HUB_V1_CERTIFICATION_RUN" --market="$HUB_V1_MARKET" --dry-run
       - name: Official staging — execute real 13 steps on one fixture
         shell: bash
         run: |
-          node scripts/recette/hub-v1-certification-runner.js --allow-remote-staging --run="$HUB_V1_CERTIFICATION_RUN"
+          node scripts/recette/hub-v1-certification-runner.js --allow-remote-staging --run="$HUB_V1_CERTIFICATION_RUN" --market="$HUB_V1_MARKET"
       - name: Archive transactional verdict and evidence
         if: always()
         uses: actions/upload-artifact@v4

@@ -9,6 +9,27 @@ Le propriétaire autorise les créations/modifications des données **sur Railwa
 
 **Preuves du 10/11/2026** : G2 13 étapes services/PG KM PASS (run [42826612419](https://github.com/SamyrFateh/komerce-backend/actions/runs/42826612419)). G3 LOCAL_STOCK Chromium + HTTP/PG PASS KM [42826889006](https://github.com/SamyrFateh/komerce-backend/actions/runs/42826889006), CM [42828913515](https://github.com/SamyrFateh/komerce-backend/actions/runs/42828913515), CG [42829199967](https://github.com/SamyrFateh/komerce-backend/actions/runs/42829199967). G4 A/B KM, G2 Chromium chaque geste et G3 SAV intégral ont des verdicts **distincts non déduits** de ces résultats.
 
+## Résultats G4 A/B supplémentaires, staging réel
+
+- G4 KM : run [#42839641685](https://github.com/SamyrFateh/komerce-backend/actions/runs/42839641685) — deux comptes/relais KM, 4 refus HTTP 403, 4 gestes Chromium propres, 58 contrôles.
+- G4 CM : run [#42845366245](https://github.com/SamyrFateh/komerce-backend/actions/runs/42845366245) — **SUCCESS après relance au SHA servi**, 4 refus croisés, 4 gestes propres, 59 contrôles HTTP/PG.
+- G4 CG : run [#42845978686](https://github.com/SamyrFateh/komerce-backend/actions/runs/42845978686) — **SUCCESS après relance au SHA servi**, 4 refus croisés, 4 gestes propres, 59 contrôles HTTP/PG.
+
+**Verdict G4** : GO **strictement** pour l'isolation de deux relais du même marché et la réception/remise par leurs agents sur KM, CM et CG. Ce verdict n'inclut aucun SAV ni un parcours Hub Chromium complet.
+
+G2 Chromium réel : la [PR #3727](https://github.com/SamyrFateh/komerce-backend/pull/3727) expose les gestes déjà codés sur staging ; le premier run [#42847445543](https://github.com/SamyrFateh/komerce-backend/actions/runs/42847445543) a créé les 4 commandes puis bloqué sur un garde qui exigeait zéro commande ; correction [#3730](https://github.com/SamyrFateh/komerce-backend/pull/3730). **Aucun GO Chromium G2 avant le résultat réel.**
+
+G3 SAV intégral : doctrine `docs/doctrine/DOCTRINE_RETOURS_PRODUIT.md`, lot actuel V1-1 demande/gel et V1-2 réception physique ; **la décision financière, le crédit wallet, le remboursement et la disposition produit ne sont pas encore implémentés intégralement**, donc aucun GO SAV de bout en bout.
+
+## Verdict de certification transactionnelle du 10/11/2026 — source de vérité
+
+- **G4 GO sur KM, CM et CG** : deux comptes et deux relais distincts par marché, vrais Chromium A/B, 4 refus croisés 403, 4 gestes propres, readbacks HTTP/PostgreSQL ; runs [KM #42839641685](https://github.com/SamyrFateh/komerce-backend/actions/runs/42839641685), [CM #42845366245](https://github.com/SamyrFateh/komerce-backend/actions/runs/42845366245), [CG #42845978686](https://github.com/SamyrFateh/komerce-backend/actions/runs/42845978686).
+- **G2 GO uniquement transactionnel service/PG KM (13/13)** [#42826612419](https://github.com/SamyrFateh/komerce-backend/actions/runs/42826612419). **NO-GO Chromium complet** : le run [#42849164483](https://github.com/SamyrFateh/komerce-backend/actions/runs/42849164483) a prouvé 4/10 tests Playwright et 22 clics HTTP, puis échoué à afficher `data-international-journey` pour le rôle transitaire après remise Hub. Ne pas confondre une commande physique correctement persistée avec la réussite de tous les gestes.
+- **G3 GO LOCAL_STOCK KM/CM/CG** : réception/remise client Chromium avec relecture PG/HTTP, runs 42826889006, 42828913515, 42829199967. **NO-GO SAV intégral** : décision financière, avoir/remboursement et disposition produit ne sont pas livrés de bout en bout, d'après `docs/doctrine/DOCTRINE_RETOURS_PRODUIT.md`.
+- **Nettoyage global prudent non exécuté** : tant que G2 Chromium et SAV complet restent à terminer, les données et preuves restent disponibles. En fin de campagne seulement, `staging-reset.js --dry-run` sur état actuel, puis `--execute` prudent via workflow propriétaire, preuve d'état final et reprovisionnement E2E.
+
+Lire le détail chiffré, les limites et liens d'artefacts dans [STAGING_G234_20261110](evidence/STAGING_G234_20261110.md). Aucune certification globale d'une marketplace commercialement ouverte n'est revendiquée.
+
 ## 1. Objectif
 
 Prouver sur le staging Railway (`https://komerce-backend-production.up.railway.app`, qui est le staging malgré son nom) que chaque marché V1 fonctionne de bout en bout :

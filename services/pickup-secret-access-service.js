@@ -11,7 +11,7 @@
  * @db-read       orders, order_items, products, relais, users, pickup_reveal_codes, pickup_print_tokens
  * @db-write      orders, pickup_reveal_codes, pickup_print_tokens
  * @db-write-via:order-mutation-service orders
- * @db-txn        none (pool global db, comme avant l'extraction — aucune transaction ajoutée)
+ * @db-txn        reveal_once_atomic (UPDATE garde IS NULL + DELETE reveal code dans une seule transaction)
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  logistics
  * @version       2026-08 (extrait de pickup-secret-service.js, LOT 5B — nettoyage architectural)
@@ -145,6 +145,31 @@ async function getReceiptHTML({ orderId, token }) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
+// consumeRevealCodeOnce
+// ══════════════════════════════════════════════════════════════════════════════
+// Consommation atomique one-shot : une seule requête concurrente gagne.
+// Retourne le code clair, ou null (déjà révélé / code absent ou expiré).
+
+async function consumeRevealCodeOnce(orderId) {
+  const NOT_AVAILABLE = Symbol('reveal-not-available');
+  try {
+    return await db.withTransaction(async (tx) => {
+      const marked = await markPickupSecretRevealed(tx, orderId);
+      if (!marked.rowCount) throw NOT_AVAILABLE;
+      const { rows: [row] } = await tx.query(
+        'DELETE FROM pickup_reveal_codes WHERE order_id = $1 AND expires_at > NOW() RETURNING code',
+        [orderId]
+      );
+      if (!row) throw NOT_AVAILABLE; // ROLLBACK : la trace revealed_at n'est pas posée sans code servi
+      return row.code;
+    });
+  } catch (err) {
+    if (err === NOT_AVAILABLE) return null;
+    throw err;
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
 // revealOnce
 // ══════════════════════════════════════════════════════════════════════════════
 // Révélation one-shot du code clair au destinataire choisi au checkout.
@@ -170,7 +195,7 @@ async function revealOnce({ orderId, userId }) {
   const authorizedRecipientUserId =
     order.pickup_code_recipient_user_id || order.user_id;
 
-  if (authorizedRecipientUserId && String(authorizedRecipientUserId) !== String(userId)) {
+  if (!authorizedRecipientUserId || String(authorizedRecipientUserId) !== String(userId)) {
     return { status: 403, body: { error: 'Vous n’êtes pas le destinataire du code de retrait' } };
   }
 
@@ -204,36 +229,27 @@ async function revealOnce({ orderId, userId }) {
     }};
   }
 
-  const { rows: [revealRow] } = await db.query(
-    'SELECT code FROM pickup_reveal_codes WHERE order_id = $1 AND expires_at > NOW()',
-    [orderId]
-  );
-  if (!revealRow) {
+  const revealedCode = await consumeRevealCodeOnce(orderId);
+  if (!revealedCode) {
     return { status: 410, body: {
       error:   'Code non disponible',
-      message: 'Le code n\'est plus disponible (redémarrage serveur ou expiration). Utilisez la procédure de perte.',
+      message: 'Le code n\'est plus disponible (déjà révélé, redémarrage serveur ou expiration). Utilisez la procédure de perte.',
       masked:  order.pickup_secret_last4
                  ? ('•••-•••-' + order.pickup_secret_last4.slice(-2))
                  : null,
     }};
   }
 
-  // Marquer révélé + purger le cache (one-shot)
-  await Promise.all([
-    markPickupSecretRevealed(db, orderId),
-    db.query('DELETE FROM pickup_reveal_codes WHERE order_id = $1', [orderId]),
-  ]);
-
   log.info(`[PICKUP-SECRET] 👁 Code révélé (one-shot) order=${orderId} channel=${order.pickup_secret_channel}`);
 
-  const qrPayloadRaw = JSON.stringify({ c: revealRow.code, o: order.reference });
+  const qrPayloadRaw = JSON.stringify({ c: revealedCode, o: order.reference });
   const qrPayload = 'KMR1.' + Buffer.from(qrPayloadRaw)
     .toString('base64')
     .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
   return { status: 200, body: {
     order_ref:       order.reference,
-    code:            revealRow.code,
+    code:            revealedCode,
     qr_payload:      qrPayload,
     channel:         order.pickup_secret_channel,
     total_kmf:       Number(order.total_kmf || 0),
@@ -247,4 +263,5 @@ module.exports = {
   issuePrintToken,
   getReceiptHTML,
   revealOnce,
+  consumeRevealCodeOnce,
 };
