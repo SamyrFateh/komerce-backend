@@ -288,7 +288,7 @@ if (!process.env.DATABASE_URL) {
       expect(dry.report.fixture_blockers.map((b) => `${b.table}.${b.columns.join('+')}`).sort()).toEqual([
         'market_cash_destinations.activated_by',
       ]);
-      expect(dry.report.fixtures.summary.users_kept_unmatched.map((u) => u.role)).toEqual(['client']);
+      expect(dry.report.fixtures.summary.users_kept_unmatched.map((u) => u.role).sort()).toEqual(['client', 'market_operator']);
       expect(dry.report.scope).toBe('prudent');
     });
 
