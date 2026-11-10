@@ -105,6 +105,60 @@ async function run(env=process.env){
         const filename=safeName(label+'-'+role+'-'+(ref||'market'))+'.png';
         await page.screenshot({path:path.join(OUT,filename),fullPage:false,timeout:12000});
         row.screenshot=filename;
+        // Ground any future French curation in the actual source texts visible
+        // to the authorized Catalogue owner; never infer product claims from
+        // product reference or source language alone.
+        if(role==='admin'&&ref&&label==='catalogue'){
+          const registry=await context.request.get(BASE+
+            '/api/admin/workspaces/catalog?unified=1&search='+encodeURIComponent(ref)+
+            '&catalog_limit=50&catalog_offset=0',{timeout:20000});
+          row.registry_http=registry.status();
+          if(registry.status()===200){
+            const data=await registry.json();
+            const matches=(data.products||[]).filter(item=>item.product_ref===ref);
+            row.registry_identity_count=matches.length;
+            if(matches.length===1){
+              const item=matches[0];
+              row.source_record={
+                name_source:item.name_source||null,
+                description_source:item.description_source||null,
+                current_name:item.name||null,
+                current_description:item.description||null,
+                content_source:item.content_source||null,
+                source_locale:item.source_locale||null,
+                issues:item.issues||[],
+                status:item.work_status||null,
+              };
+            }
+          }
+          const dossier=await context.request.get(BASE+
+            '/api/admin/workspaces/catalog?dossier_product_ref='+encodeURIComponent(ref),
+            {timeout:20000});
+          row.dossier_http=dossier.status();
+          if(dossier.status()===200){
+            const data=await dossier.json();
+            row.dossier={
+              product_ref:data.product_ref||null,
+              identity:data.identity||null,
+              supplier:data.supplier||null,
+              availability:data.availability||null,
+              media:data.media||null,
+              variants:data.variants||null,
+              catalogue_gate:data.catalogue_gate||null,
+            };
+          }
+          const open=page.locator('tr[data-product-ref="'+ref+'"] [data-workspace-action="open-catalog-inspector"]');
+          if(await open.count()){
+            await open.first().click();
+            await page.locator('[data-catalog-inline-editor]').waitFor({state:'visible',timeout:10000}).catch(()=>{});
+            row.inline_french_proposal={
+              name:await page.locator('[data-catalog-quick-field="name"]').first().inputValue().catch(()=>null),
+              description:await page.locator('[data-catalog-quick-field="description"]').first().inputValue().catch(()=>null),
+            };
+            await page.screenshot({path:path.join(OUT,'inspector-'+safeName(ref)+'.png'),
+              fullPage:false,timeout:12000});
+          }
+        }
         if(role==='admin'&&ref&&label==='catalogue'){
           const diag=await context.request.get(BASE+
             '/api/admin/workspaces/catalog?diagnose_product_ref='+encodeURIComponent(ref),{timeout:15000});
