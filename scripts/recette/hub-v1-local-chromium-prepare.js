@@ -67,8 +67,19 @@ async function main(){
   if(JSON.stringify(expectedCaps)!==JSON.stringify(['execution.parcel.collect','execution.parcel.receive']))
     throw Error('HUB_LOCAL_CHROMIUM_RELAY_CAPABILITY_DOCTRINE_DRIFT');
   const relayActor=proof.fixture.users.relay_agent;
-  if(relayActor?.role!=='agent_relais'||!proof.fixture.market_id||!proof.fixture.relay)
+  // The canonical fixture REPORT exposes relay_id (not internal manifest.relay).
+  // Refuse a mismatched role or relay before writing an assignment.
+  if(relayActor?.role!=='agent_relais'||!proof.fixture.market_id||!proof.fixture.relay_id)
     throw Error('HUB_LOCAL_CHROMIUM_RELAY_IDENTITY_REQUIRED');
+  const {rows:[actualRelay]}=await db.query(
+    "SELECT u.relais_id,r.market_id FROM users u "+
+    "JOIN relais r ON r.id=u.relais_id "+
+    "WHERE u.id=$1::uuid AND u.role='agent_relais' AND r.is_active=TRUE",
+    [relayActor.id]);
+  if(!actualRelay||
+     String(actualRelay.relais_id)!==String(proof.fixture.relay_id)||
+     String(actualRelay.market_id)!==String(proof.fixture.market_id))
+    throw Error('HUB_LOCAL_CHROMIUM_RELAY_BINDING_MISMATCH');
   const grantClient=await db.getClient();
   let inTransaction=false;
   try{

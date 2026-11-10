@@ -138,6 +138,13 @@ test('G2 disposable Relay gets exactly canonical execution grants and simulated 
   expect(src).toContain('await provision.markE2eTestAccount(grantClient,{');
   expect(src).toContain('await isE2eTestAccount(proof.fixture.users[key].id)');
   expect(src).toContain('HUB_LOCAL_CHROMIUM_RELAY_MEMBERSHIP_NOT_PROVEN');
+  const runner=get('scripts/recette/hub-v1-certification-runner.js');
+  expect(runner).toContain('relay_id: m.relay');
+  expect(src).toContain('!proof.fixture.relay_id');
+  expect(src).not.toContain('!proof.fixture.relay)');
+  expect(src).toContain('String(actualRelay.relais_id)!==String(proof.fixture.relay_id)');
+  expect(src).toContain('String(actualRelay.market_id)!==String(proof.fixture.market_id)');
+  expect(src).toContain('HUB_LOCAL_CHROMIUM_RELAY_BINDING_MISMATCH');
   expect(src).toContain('HUB_LOCAL_CHROMIUM_UNRELATED_FORWARDER_MARKED');
   expect(src).toContain("operations_simulation_visibility:'EXPLICIT_E2E_IDENTITIES_ONLY'");
   expect(src).toContain("await grantClient.query('BEGIN')");
