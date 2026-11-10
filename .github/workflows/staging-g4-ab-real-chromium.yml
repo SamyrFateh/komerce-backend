@@ -1,4 +1,4 @@
-name: Staging G4 — 2 real KM relay agents A/B, Chromium + HTTP + PostgreSQL
+name: Staging G4 — 2 real same-market relay agents A/B, Chromium + HTTP + PostgreSQL
 on:
   issues:
     types: [opened]
@@ -12,7 +12,9 @@ jobs:
     name: Two sessions, four cross denials, four own actions, independent PG readbacks
     if: >-
       github.event.issue.user.login == github.repository_owner &&
-      github.event.issue.title == '[staging-op] g4-ab-chromium-KM'
+      (github.event.issue.title == '[staging-op] g4-ab-chromium-KM' ||
+       github.event.issue.title == '[staging-op] g4-ab-chromium-CM' ||
+       github.event.issue.title == '[staging-op] g4-ab-chromium-CG')
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
@@ -28,6 +30,7 @@ jobs:
       E2E_STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
       DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
       GITHUB_ISSUE_TITLE: ${{ github.event.issue.title }}
+      G4_MARKET: ${{ github.event.issue.title == '[staging-op] g4-ab-chromium-KM' && 'KM' || github.event.issue.title == '[staging-op] g4-ab-chromium-CM' && 'CM' || 'CG' }}
       E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
       E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
       STRIPE_SECRET_KEY: sk_test_certification_placeholder
@@ -67,9 +70,9 @@ jobs:
           for RUN8 in "$RUN_A" "$RUN_B"; do
             export HUB_V1_CERTIFICATION_RUN="$RUN8"
             node scripts/recette/hub-v1-certification-runner.js \
-              --allow-remote-staging --run="$RUN8" --market=KM --stop-after=2 --dry-run
+              --allow-remote-staging --run="$RUN8" --market="$G4_MARKET" --stop-after=2 --dry-run
             node scripts/recette/hub-v1-certification-runner.js \
-              --allow-remote-staging --run="$RUN8" --market=KM --stop-after=2
+              --allow-remote-staging --run="$RUN8" --market="$G4_MARKET" --stop-after=2
           done
       - name: Provision two separate E2E agents and relay memberships by canonical writers
         run: node scripts/recette/staging-g4-ab-provision.js
@@ -81,7 +84,7 @@ jobs:
         run: |
           node - <<'NODE'
           const r=require('./test-results/g4-staging/g4-ab-chromium.json');
-          if(r.verdict!=='G4_STAGING_KM_TWO_RELAIS_CHROMIUM_HTTP_PG_PASS'||
+          if(r.verdict!=='G4_STAGING_TWO_RELAIS_CHROMIUM_HTTP_PG_PASS'||
              r.session_count!==2||r.relais!==2||r.refusals!==4||
              r.own_actions!==4||r.checks.some(x=>!x.pass)||
              r.errors.length)throw Error('G4_REAL_STAGING_NOT_CERTIFIED');
@@ -102,4 +105,4 @@ jobs:
           if-no-files-found: warn
       - name: Limit conclusion
         if: always()
-        run: echo "G4 KM two-relay A/B only. No G2 Hub UI or SAV certification implied." >> "$GITHUB_STEP_SUMMARY"
+        run: echo "G4 one-market two-relay A/B only. No G2 Hub UI or SAV certification implied." >> "$GITHUB_STEP_SUMMARY"
