@@ -499,11 +499,22 @@ async function getRegistryReadiness(productRef) {
       note: 'Fiche inactive hors file candidat : points techniques indicatifs, aucune certification de publication.',
     };
   }
+  const visual = facts?.row?.has_sourcing_candidate === true
+    ? await inspectCatalogVisualFrEvidence(db, product.id) : null;
+  const technical = facts?.certification || null;
+  const certification = technical && visual ? {
+    ...technical,
+    certified: technical.certified === true && visual.ready === true,
+    reasons: [...technical.reasons, ...(visual.ready ? [] : ['visual_fr_review_required'])],
+    visual_fr_ready: visual.ready,
+    visual_fr_reason: visual.code,
+    visual_fr_results: visual.results,
+  } : technical;
   return {
     product_ref: product.product_ref,
     phase: 'catalog_approval',
-    certification: facts?.certification || null,
-    note: 'Contrôle technique de validation Catalogue ; la revue visuelle FR et les prix locaux relèvent de leurs validations propres.',
+    certification,
+    note: 'Contrôle des prérequis Catalogue incluant chaque image fournisseur. Prix et exposition restent distincts.',
   };
 }
 
