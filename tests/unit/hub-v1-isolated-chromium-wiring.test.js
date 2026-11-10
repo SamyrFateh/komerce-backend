@@ -95,6 +95,18 @@ test('Customs page requires its actual international journey component, not unre
   expect((src.match(/^\s*test\('/gm)||[])).toHaveLength(10);
   expect(src).toContain("if (successfulTests !== 10)");
 });
+test('physical Relay flow clicks the canonical exclusive Kanban queue before each action',()=>{
+  const src=get('tests/staging-clicks/hub-v1-clicks.spec.js');
+  expect(src).toContain("const operation=st.suffix === 'receive' ? 'receive' : 'collect'");
+  expect(src).toContain("workspace.locator('[data-relay-execution-jump=\"'+operation+'\"]')");
+  expect(src).toContain("await jump.click()");
+  expect(src).toContain("await expect(workspace).toHaveAttribute('data-relay-active-operation',operation)");
+  expect(src).toContain("await expect(jump).toHaveAttribute('aria-current','true')");
+  expect(src.indexOf('await jump.click()')).toBeLessThan(src.indexOf('const btn = rowButton(page, loc.reference, st.label)'));
+  expect(src).not.toContain('orders.simulation_scope exclu par queryParcels');
+  expect(src).toContain("absent: (await btn.count()) === 0");
+});
+
 test('Full physical harness cannot silently run unrelated LOCAL_STOCK spec',()=>{
   const y=get('.github/workflows/hub-v1-isolated-chromium-receipt.yml');
   expect(y).not.toContain('local-stock-native-clicks.spec.js');
