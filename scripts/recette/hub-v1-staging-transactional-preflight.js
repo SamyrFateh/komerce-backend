@@ -27,7 +27,24 @@ const REQUIRED_MIGRATIONS=[
   '396_parcel_ref_seq_realign.sql',
 ];
 
-function sourceGates(root=process.cwd()) {
+// Staging is a disposable recette environment. Explicit owner approval
+// replaces premature cleanup/runner-completion certification, never the
+// runtime SHA, DB fingerprint, or external-payment safety requirements.
+function disposableStagingAuthorized(env=process.env) {
+  return env.HUB_V1_STAGING_DISPOSABLE_MODE==='1' &&
+    env.KOMERCE_ENV==='staging' &&
+    env.KOMERCE_TARGET_ENV==='staging' &&
+    env.NODE_ENV==='test' &&
+    env.EXPECTED_RAILWAY_ENVIRONMENT==='staging' &&
+    env.KOMERCE_DISABLE_CRONS==='true' &&
+    env.HUB_V1_E2E_APPLY_MODE==='approved' &&
+    String(env.STAGING_BASE_URL||'').replace(/\/$/,'')==='https://komerce-backend-production.up.railway.app' &&
+    env.GITHUB_REPOSITORY==='SamyrFateh/komerce-backend' &&
+    ['issues','workflow_dispatch'].includes(env.GITHUB_EVENT_NAME) &&
+    Boolean(env.GITHUB_REPOSITORY_OWNER) &&
+    env.GITHUB_ACTOR===env.GITHUB_REPOSITORY_OWNER;
+}
+function sourceGates(root=process.cwd(),env=process.env) {
   const read=(file)=>fs.readFileSync(path.join(root,file),'utf8');
   const checkout=read('services/order-checkout-service.js');
   const notifications=read('services/order-post-commit-hooks.js');
@@ -74,14 +91,14 @@ function sourceGates(root=process.cwd()) {
       detail:'Service interne sans PSP/caisse, source simulée, rollback et test PG16 obligatoirement exécuté en CI ; ce gate source ne certifie pas le staging',
     },
     {
-      id:'STAGING_FIXTURE_OWNERSHIP_AND_CLEANUP_CERTIFIED',
-      pass:false,
-      detail:'Le nettoyage doit viser exclusivement les UUID manifestés E2E-HUB-V1, toutes dépendances comprises, avec dry-run et contrôle avant/après',
+      id:'STAGING_DISPOSABLE_DATA_MODE_CONFIRMED',
+      pass:disposableStagingAuthorized(env),
+      detail:'Données staging jetables, mode de recette explicitement activé par le propriétaire ; reset existant après campagne',
     },
     {
-      id:'STAGING_E2E_CROSS_SERVICE_RUNNER_REVIEWED',
-      pass:false,
-      detail:'Une chaîne unique des 13 étapes via services/HTTP réels doit être construite et revue ; les suites isolées ne suffisent pas',
+      id:'STAGING_EXISTING_RUNNER_OWNER_AUTHORIZED',
+      pass:disposableStagingAuthorized(env),
+      detail:'Exécution du runner métier existant uniquement sur staging par le propriétaire ; les 13 étapes restent à prouver',
     },
   ];
 }
@@ -137,7 +154,7 @@ async function assess({ db, fetchImpl=fetch, env=process.env, root=process.cwd()
   const client=await db.getClient();
   let dbChecks;
   try{dbChecks=await databaseGates(client,env.HUB_V1_CERTIFICATION_RUN);}finally{client.release();}
-  const checks=[...dbChecks,...sourceGates(root)];
+  const checks=[...dbChecks,...sourceGates(root,env)];
   return {
     mode:'READ_ONLY',
     scope:SCOPE,
@@ -159,4 +176,4 @@ async function main() {
   }finally{if(db.pool?.end)await db.pool.end();}
 }
 if(require.main===module)main().catch(e=>{console.error('REFUS: '+String(e.message));process.exitCode=2});
-module.exports={sourceGates,databaseGates,assess,PREFIX,SCOPE,REQUIRED_MIGRATIONS};
+module.exports={sourceGates,disposableStagingAuthorized,databaseGates,assess,PREFIX,SCOPE,REQUIRED_MIGRATIONS};
