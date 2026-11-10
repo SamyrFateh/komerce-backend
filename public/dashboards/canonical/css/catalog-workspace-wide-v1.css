@@ -1570,3 +1570,32 @@ body.kmc-shell-v4[data-kmc-surface="catalog-workspace"]:has(.kmc-catalog-tabs)
     opacity: .18;
   }
 }
+
+/* G6 P1 · Revue visuelle FR source-liée, un geste explicite par média. */
+.kmc-catalog-visual-fr-review { margin-top: 12px; }
+.kmc-catalog-visual-fr-review > summary { cursor: pointer; font-weight: 800; }
+.kmc-catalog-visual-fr-item {
+  display: grid;
+  grid-template-columns: minmax(140px, 200px) minmax(0, 1fr);
+  gap: 10px 14px;
+  align-items: start;
+  padding: 16px 0;
+  border-top: 1px solid var(--kmc-border, #d6dce4);
+}
+.kmc-catalog-visual-fr-item > img {
+  width: 100%;
+  height: auto;
+  max-height: 240px;
+  object-fit: contain;
+  grid-row: span 7;
+  border-radius: 8px;
+  background: #f7f7f7;
+}
+.kmc-catalog-visual-fr-item .kmc-catalog-inline-field { min-width: 0; }
+.kmc-catalog-visual-fr-item .kmc-catalog-inline-field input,
+.kmc-catalog-visual-fr-item .kmc-catalog-inline-field select,
+.kmc-catalog-visual-fr-item .kmc-catalog-inline-field textarea { width: 100%; }
+@media (max-width: 750px) {
+  .kmc-catalog-visual-fr-item { grid-template-columns: minmax(0, 1fr); }
+  .kmc-catalog-visual-fr-item > img { max-width: 260px; grid-row: auto; }
+}
