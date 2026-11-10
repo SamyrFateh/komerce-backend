@@ -162,7 +162,7 @@ async function run(env=process.env){
             // JSON-only / screenshot-only route check. No approval POST here.
             const complementary=page.locator('[data-catalog-complementary-info]');
             await complementary.waitFor({state:'attached',timeout:20000});
-            await complementary.locator('> summary').click();
+            await complementary.locator(':scope > summary').click();
             const gallery=page.locator('[data-catalog-canonical-gallery]');
             await gallery.waitFor({state:'visible',timeout:20000});
             const figures=gallery.locator('figure');
@@ -193,7 +193,7 @@ async function run(env=process.env){
               if(await review.count()!==1 ||
                  await review.getAttribute('data-catalog-visual-fr-media')!==canonical.media_id)
                 throw Error('VISUAL_REVIEW_IDENTITY_MISSING:'+ref+':'+i);
-              await review.locator('> summary').click();
+              await review.locator(':scope > summary').click();
               const original=review.getByRole('link',{name:'Agrandir l’image fournisseur originale'});
               if(await original.count()!==1 || await original.getAttribute('href')!==canonical.url)
                 throw Error('ORIGINAL_SUPPLIER_URL_NOT_EXPOSED:'+ref+':'+i);
