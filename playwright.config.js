@@ -23,6 +23,8 @@ const { defineConfig } = require('@playwright/test');
 // Gate officiel : specs du dashboard canonique, API simulée (aucun serveur, aucune base).
 // Les specs boutique historiques de tests/e2e (dépendent d'un helper absent) n'en font pas partie.
 const DASHBOARD_SPECS = [
+  // B2/B4 #3721 — vrai Chromium, DOM malveillant et politique CSP navigateur.
+  'b2-b4-surface-security',
   'live-ops-shell',
   'dashboards-consolidation',
   'context-return-links',
