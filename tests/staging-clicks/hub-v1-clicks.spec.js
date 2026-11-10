@@ -62,9 +62,14 @@ async function openMarket(page, url) {
   // Ne jamais valider une redirection vers la vitrine ou une page vide.
   if (url.startsWith('/admin/workspaces/shipping-customs')) {
     await expect(page).toHaveURL(/\/admin\/workspaces\/shipping-customs(?:\/|\?|$)/, { timeout: 20000 });
-    await page.locator('[data-international-journey]').first().waitFor({ timeout: 20000 });
+    // Le panneau des expéditions n'est créé qu'APRÈS la sélection du marché
+    // lorsqu'un sélecteur est présent. Ne jamais attendre le panneau d'abord.
     const select = page.locator('select').first();
-    if (await select.count()) await select.selectOption({ label: MARKET_LABEL }).catch(() => {});
+    if (await select.count()) {
+      const marketOption = select.locator('option').filter({ hasText: MARKET_LABEL });
+      if (await marketOption.count()) await select.selectOption({ label: MARKET_LABEL });
+    }
+    await page.locator('[data-international-journey]').first().waitFor({ timeout: 20000 });
     await page.waitForLoadState('networkidle').catch(() => {});
     return;
   }
