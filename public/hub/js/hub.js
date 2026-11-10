@@ -98,7 +98,7 @@ const Hub=(()=>{
       <div class="card-top"><div class="card-ref">${esc(o.reference)}</div><div class="card-age">${ago(o.created_at)}</div></div>
       <div class="card-client">${esc(o.client_name||'—')} · ${esc(o.destination_island||'?')}</div>
       <div class="card-meta">
-        <span class="badge ${ccls(o.completeness)}">${clbl(o.completeness)}</span>
+        <span class="badge ${ccls(o.completeness)}">${esc(clbl(o.completeness))}</span>
         <span class="badge gray">${o.items_qty||0} art.</span>
         ${o.payment_status==='paid'?'<span class="badge green">payé</span>':'<span class="badge amber">paiement en attente</span>'}
         ${inc?'<span class="badge red">⚠ incident</span>':''}
@@ -149,7 +149,7 @@ const Hub=(()=>{
         <div class="info-row"><span class="info-label">Statut</span><span class="info-val">${esc(slbl(o.status))}</span></div>
       </div></div>
       <div class="section"><div class="section-head">Articles (${items.length})</div><div class="section-body" style="gap:0">
-        ${items.map(it=>`<div class="item-row"><div class="item-qty">×${it.quantity}</div><div class="item-name">${esc(it.product_name||'Produit')}</div><div class="item-check ${assigned.has(it.id)?'assigned':''}">${assigned.has(it.id)?'✓':''}</div></div>`).join('')}
+        ${items.map(it=>`<div class="item-row"><div class="item-qty">×${esc(it.quantity)}</div><div class="item-name">${esc(it.product_name||'Produit')}</div><div class="item-check ${assigned.has(it.id)?'assigned':''}">${assigned.has(it.id)?'✓':''}</div></div>`).join('')}
       </div></div>
       ${parcels.length?`<div class="section"><div class="section-head">Colis (${parcels.length})</div><div class="section-body" style="gap:0">
         ${parcels.map(p=>`<div class="parcel-row"><div><div class="parcel-ref">${esc(p.reference)}</div><div class="parcel-status">${p.items?p.items.length:'?'} art. · ${esc(slbl(p.status))}</div></div><span class="badge ${p.status==='shipped'?'green':p.status==='preparation'?'amber':'gray'}">${esc(slbl(p.status))}</span></div>`).join('')}
