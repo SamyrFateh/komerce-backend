@@ -1,7 +1,7 @@
 # Boutique 360 — carte d'architecture front (générée)
 
 > ⚠️ Généré par `scripts/gen-boutique-360.js`. Ne pas éditer à la main.
-> Régénéré le 2026-10-01T17:45:48.595Z.
+> Régénéré le 2026-11-10T15:16:41.818Z.
 > Couplage par **bus d'événements**. Couture backend par **endpoints → contrat OpenAPI**.
 
 ## Synthèse
@@ -97,7 +97,7 @@
 | `favorites:view-refresh` | b-catalog | b-favs | 🟢 sain |
 | `komerce:show` | b-komerce | b-nav | 🟢 sain |
 | `modal:close` | b-cart, b-checkout | b-modal-core | 🟢 sain |
-| `modal:closed` | b-modal-core | b-modal-discovery-detail, b-modal-product-detail-bootstrap, discovery-rail, group-side-cart, local-stock-badge-mount | 🟠 consommateur non déclaré : discovery-rail |
+| `modal:closed` | b-modal-core | b-modal-discovery-detail, b-modal-product-detail-bootstrap, discovery-rail, group-side-cart, local-stock-badge-mount | 🟢 sain (propriétaire: modal-product) |
 | `modal:composition-synced` | b-modal-product-detail-bootstrap | b-modal-core, b-modal-desktop-enhancers, b-modal-suggestions | 🟢 sain (propriétaire: modal-product) |
 | `modal:detail-ready` | b-modal-product-detail-bootstrap | b-modal-cart, b-modal-suggestions, local-stock-badge-mount | 🟢 sain |
 | `modal:discovery-opened` | b-modal-core | b-modal-discovery-detail | 🟢 sain (propriétaire: catalog) |
@@ -192,7 +192,7 @@ graph LR
 |---|---|---|---|---|---|
 | `modal:opened` | modal-product | b-modal-core | b-modal-desktop-enhancers, b-modal-product-detail-bootstrap, b-pdp-curation-suggestions, boutique | value | 🟢 propriété saine |
 | `modal:discovery-opened` | catalog | b-modal-core | b-modal-discovery-detail | value | 🟢 propriété saine |
-| `modal:closed` | modal-product | b-modal-core | b-modal-discovery-detail, b-modal-product-detail-bootstrap, discovery-rail, group-side-cart, local-stock-badge-mount | none | 🟠 consommateur non déclaré : discovery-rail |
+| `modal:closed` | modal-product | b-modal-core | b-modal-discovery-detail, b-modal-product-detail-bootstrap, discovery-rail, group-side-cart, local-stock-badge-mount | none | 🟢 propriété saine |
 | `modal:composition-synced` | modal-product | b-modal-product-detail-bootstrap | b-modal-core, b-modal-desktop-enhancers, b-modal-suggestions | none | 🟢 propriété saine |
 | `discovery:request` | catalog | discovery-actions | discovery-inquiry | value | 🟢 propriété saine |
 

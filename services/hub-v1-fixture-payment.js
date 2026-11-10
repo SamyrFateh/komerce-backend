@@ -6,7 +6,7 @@
  * @owner backend-core
  * @purpose Paiement fictif d'une commande E2E-HUB-V1 : aucune entrée caisse, PSP ou notification.
  * @db-read orders, users
- * @db-write orders, order_status_history, local_stock_allocations (via capacités canoniques)
+ * @db-write orders, order_status_history, local_stock_allocations
  * @db-txn same_transaction
  */
 'use strict';

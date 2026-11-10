@@ -8,8 +8,8 @@ test('sans activation propriétaire, le staging n autorise pas les écritures de
   expect(gates.find(c=>c.id==='DEDICATED_ATOMIC_CHECKOUT_SCOPE').pass).toBe(true);
   expect(gates.find(c=>c.id==='SIMULATED_CUSTOMER_PAYMENT_PROVIDER_BYPASS_VERIFIED').pass).toBe(true);
   expect(gates.filter(c=>!c.pass).map(c=>c.id)).toEqual([
-    'STAGING_DISPOSABLE_DATA_MODE_CONFIRMED',
-    'STAGING_EXISTING_RUNNER_OWNER_AUTHORIZED',
+    'STAGING_FIXTURE_OWNERSHIP_AND_CLEANUP_CERTIFIED',
+    'STAGING_E2E_CROSS_SERVICE_RUNNER_REVIEWED',
   ]);
 });
 
@@ -32,7 +32,7 @@ test('mode jetable owner-only autorise les workflows existants tout en préserva
     {STAGING_BASE_URL:'https://example.com'},
   ]){
     const g=sourceGates(process.cwd(),{...owner,...changed});
-    expect(g.find(x=>x.id==='STAGING_DISPOSABLE_DATA_MODE_CONFIRMED').pass).toBe(false);
+    expect(g.find(x=>x.id==='STAGING_FIXTURE_OWNERSHIP_AND_CLEANUP_CERTIFIED').pass).toBe(false);
   }
 });
 
@@ -60,6 +60,37 @@ test('la vérification SQL reste dans une transaction READ ONLY avec ROLLBACK', 
   expect(statements[0]).toBe('BEGIN READ ONLY');
   expect(statements.at(-1)).toBe('ROLLBACK');
   expect(statements.slice(1,-1).every(s=>/^\s*SELECT\b/.test(s))).toBe(true);
+});
+
+test('une fixture existante de 4 commandes E2E est autorisée pour les vrais gestes HTTP/Chromium seulement', async()=>{
+ const owner={
+   HUB_V1_STAGING_DISPOSABLE_MODE:'1',HUB_V1_STAGING_EXISTING_FIXTURE_ACTIONS:'1',
+   KOMERCE_ENV:'staging',KOMERCE_TARGET_ENV:'staging',NODE_ENV:'test',
+   EXPECTED_RAILWAY_ENVIRONMENT:'staging',KOMERCE_DISABLE_CRONS:'true',
+   HUB_V1_E2E_APPLY_MODE:'approved',STAGING_BASE_URL:'https://komerce-backend-production.up.railway.app',
+   GITHUB_REPOSITORY:'SamyrFateh/komerce-backend',GITHUB_REPOSITORY_OWNER:'SamyrFateh',
+   GITHUB_ACTOR:'SamyrFateh',GITHUB_EVENT_NAME:'issues',
+ };
+ const sql=[];
+ const client={query:jest.fn(async(q)=>{
+   sql.push(q);
+   if(q.includes('FROM public.schema_migrations'))return {rows:[
+      '391_hub_sku_physical_codes.sql','392_hub_order_bag_ownership.sql',
+      '393_hub_order_bag_scan_evidence.sql','394_hub_packed_bag_box_link.sql',
+      '395_product_suppliers_unique_active_priority.sql','396_parcel_ref_seq_realign.sql'
+   ].map(filename=>({filename}))};
+   if(q.includes('AND simulation_scope IS DISTINCT'))return {rows:[{n:0}]};
+   if(q.includes('FROM public.orders'))return {rows:[{n:4}]};
+   if(q.includes('FROM (SELECT product_id'))return {rows:[{n:0}]};
+   if(q.includes('FROM public.users'))return {rows:[{role:'agent_hub',n:1},{role:'agent_relais',n:1}]};
+   return{rows:[]};
+ })};
+ const allowed=await databaseGates(client,'ABCD1234',owner);
+ expect(allowed.every(g=>g.pass)).toBe(true);
+ expect(allowed.find(g=>g.id==='NEW_FIXTURE_REFERENCE_PREFIX_UNUSED').existing_scoped_reuse).toBe(true);
+ expect(sql.at(-1)).toBe('ROLLBACK');
+ const refused=await databaseGates(client,'ABCD1234',{...owner,GITHUB_ACTOR:'imposter'});
+ expect(refused.find(g=>g.id==='NEW_FIXTURE_REFERENCE_PREFIX_UNUSED').pass).toBe(false);
 });
 
 test('le garde refuse tout autre environnement et une version non épinglée avant de toucher à la base', async () => {

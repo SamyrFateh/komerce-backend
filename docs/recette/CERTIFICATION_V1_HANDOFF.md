@@ -1,7 +1,25 @@
 # Certification métier V1 multi-marché : note de reprise
 
 Cette note sert à reprendre la certification exactement où elle s'est arrêtée, sans autre contexte : tout ce qu'il faut est ici.
-État au 2026-11-07, fin d'après-midi (heure de Paris). Dernière mise à jour : KM, CM et CG certifiés sur les parcours nominaux API + Chromium ; preuves et limitations ci-dessous.
+**Mise à jour 2026-11-10 : décision staging jetable et campagne réelle G2/G3/G4.** Lire en priorité [la preuve transactionnelle et ses limites](evidence/STAGING_G234_20261110.md) avant les historiques du 7 novembre. Les résultats antérieurs restent traçables mais ne dispensent pas des nouvelles preuves demandées.
+
+## Décision de conduite du 10/11/2026
+
+Le propriétaire autorise les créations/modifications des données **sur Railway staging uniquement**, sans cleanup sélectif par campagne. Les deux gates historiques préflight restent conditionnés à l'identité du propriétaire et à l'environnement jetable ; ils ne certifient pas le résultat métier. Après l'archivage des preuves : reset global `prudent` via `staging-reset.js` (dry-run actuel obligatoire), puis `staging-e2e-provision` pour remettre les comptes. Aucune nouvelle campagne sur PG16 isolé sauf pour diagnostiquer un défaut précis apparu sur staging. Aucun effet externe réel (PSP, SMS, WhatsApp).
+
+**Preuves du 10/11/2026** : G2 13 étapes services/PG KM PASS (run [42826612419](https://github.com/SamyrFateh/komerce-backend/actions/runs/42826612419)). G3 LOCAL_STOCK Chromium + HTTP/PG PASS KM [42826889006](https://github.com/SamyrFateh/komerce-backend/actions/runs/42826889006), CM [42828913515](https://github.com/SamyrFateh/komerce-backend/actions/runs/42828913515), CG [42829199967](https://github.com/SamyrFateh/komerce-backend/actions/runs/42829199967). G4 A/B KM, G2 Chromium chaque geste et G3 SAV intégral ont des verdicts **distincts non déduits** de ces résultats.
+
+## Résultats G4 A/B supplémentaires, staging réel
+
+- G4 KM : run [#42839641685](https://github.com/SamyrFateh/komerce-backend/actions/runs/42839641685) — deux comptes/relais KM, 4 refus HTTP 403, 4 gestes Chromium propres, 58 contrôles.
+- G4 CM : run [#42845366245](https://github.com/SamyrFateh/komerce-backend/actions/runs/42845366245) — **SUCCESS après relance au SHA servi**, 4 refus croisés, 4 gestes propres, 59 contrôles HTTP/PG.
+- G4 CG : run [#42845978686](https://github.com/SamyrFateh/komerce-backend/actions/runs/42845978686) — **SUCCESS après relance au SHA servi**, 4 refus croisés, 4 gestes propres, 59 contrôles HTTP/PG.
+
+**Verdict G4** : GO **strictement** pour l'isolation de deux relais du même marché et la réception/remise par leurs agents sur KM, CM et CG. Ce verdict n'inclut aucun SAV ni un parcours Hub Chromium complet.
+
+G2 Chromium réel : la [PR #3727](https://github.com/SamyrFateh/komerce-backend/pull/3727) expose les gestes déjà codés sur staging ; le premier run [#42847445543](https://github.com/SamyrFateh/komerce-backend/actions/runs/42847445543) a créé les 4 commandes puis bloqué sur un garde qui exigeait zéro commande ; correction [#3730](https://github.com/SamyrFateh/komerce-backend/pull/3730). **Aucun GO Chromium G2 avant le résultat réel.**
+
+G3 SAV intégral : doctrine `docs/doctrine/DOCTRINE_RETOURS_PRODUIT.md`, lot actuel V1-1 demande/gel et V1-2 réception physique ; **la décision financière, le crédit wallet, le remboursement et la disposition produit ne sont pas encore implémentés intégralement**, donc aucun GO SAV de bout en bout.
 
 ## 1. Objectif
 

@@ -338,6 +338,29 @@ describe('routes/wallet', () => {
       expect(walletService.credit).not.toHaveBeenCalled();
     });
 
+    test.each([
+      ['sans clé d\'idempotence', { user_id: 'u9', amount_kmf: 5000 }],
+      ['montant non entier', { user_id: 'u9', amount_kmf: 10.5, idempotency_key: 'k1' }],
+      ['montant en chaîne', { user_id: 'u9', amount_kmf: '5000', idempotency_key: 'k1' }],
+    ])('400 %s', async (_l, body) => {
+      mockUser = { id: 'admin-1', role: 'admin' };
+      db.getClient.mockResolvedValueOnce(makeClient([]));
+      const res = await request(buildApp()).post('/api/wallet/admin/credit').send(body);
+      expect(res.status).toBe(400);
+      expect(walletService.credit).not.toHaveBeenCalled();
+    });
+
+    test('clé header préfixée admin_credit: et rejouée → idempotent sans nouveau reçu', async () => {
+      mockUser = { id: 'admin-1', role: 'admin' };
+      db.getClient.mockResolvedValueOnce(makeClient([{ rows: [{ id: 'u9', full_name: 'F', phone: '1' }] }]));
+      walletService.credit.mockResolvedValueOnce({ transaction: { id: 'tx3' }, lot: null, duplicate: true });
+      const res = await request(buildApp()).post('/api/wallet/admin/credit')
+        .set('Idempotency-Key', 'abc').send({ user_id: 'u9', amount_kmf: 5000 });
+      expect(res.status).toBe(200);
+      expect(res.body.idempotent).toBe(true);
+      expect(walletService.credit.mock.calls.at(-1)[1].idempotencyKey).toBe('admin_credit:u9:abc');
+    });
+
     test('404 si utilisateur introuvable (admin)', async () => {
       mockUser = { id: 'admin-1', role: 'admin' };
       const client = makeClient([{ rows: [] }]);
@@ -345,7 +368,7 @@ describe('routes/wallet', () => {
 
       const res = await request(buildApp())
         .post('/api/wallet/admin/credit')
-        .send({ user_id: 'u9', amount_kmf: 5000 });
+        .send({ user_id: 'u9', amount_kmf: 5000, idempotency_key: 'k1' });
 
       expect(res.status).toBe(404);
       expectTransactionRolledBack(client);
@@ -361,7 +384,7 @@ describe('routes/wallet', () => {
 
       const res = await request(buildApp())
         .post('/api/wallet/admin/credit')
-        .send({ user_id: 'u9', amount_kmf: 5000, reason: 'geste_commercial' });
+        .send({ user_id: 'u9', amount_kmf: 5000, reason: 'geste_commercial', idempotency_key: 'k1' });
 
       expect(res.status).toBe(201);
       expect(res.body.success).toBe(true);
@@ -378,7 +401,7 @@ describe('routes/wallet', () => {
         transaction: { id: 'tx3' }, lot: null, duplicate: true,
       });
 
-      await request(buildApp()).post('/api/wallet/admin/credit').send({ user_id: 'u9', amount_kmf: 5000 });
+      await request(buildApp()).post('/api/wallet/admin/credit').send({ user_id: 'u9', amount_kmf: 5000, idempotency_key: 'k1' });
 
       expect(walletReceiptService.issue).not.toHaveBeenCalled();
     });
@@ -390,7 +413,7 @@ describe('routes/wallet', () => {
       walletService.credit.mockResolvedValueOnce({ transaction: { id: 'tx3' }, lot: {}, duplicate: false });
       walletReceiptService.issue.mockRejectedValueOnce(new Error('pdf down'));
 
-      const res = await request(buildApp()).post('/api/wallet/admin/credit').send({ user_id: 'u9', amount_kmf: 5000 });
+      const res = await request(buildApp()).post('/api/wallet/admin/credit').send({ user_id: 'u9', amount_kmf: 5000, idempotency_key: 'k1' });
 
       expect(res.status).toBe(201);
     });

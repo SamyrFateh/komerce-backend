@@ -719,6 +719,9 @@ jobs:
       - name: Boutique architecture
         if: needs.changes.outputs.boutique_css == 'true' || needs.changes.outputs.boutique_js == 'true' || needs.changes.outputs.boutique_html == 'true'
         run: node public/boutique/scripts/audit-boutique-arch.js
+      - name: Boutique 360 baseline
+        if: needs.changes.outputs.boutique_js == 'true' || needs.changes.outputs.boutique_html == 'true'
+        run: node scripts/gen-boutique-360.js --check
       - name: Sanitization on added front lines
         if: needs.changes.outputs.boutique_js == 'true'
         env:
@@ -830,10 +833,22 @@ jobs:
           node-version: '20'
           cache: npm
       - run: npm ci
+      # Le preflight rejoue « Boutique fast gates » (jest + jsdom du workspace boutique) quand le diff touche public/boutique.
+      - run: npm --prefix public/boutique ci
       - name: Execute real npm run pr:preflight on clean PR SHA
+        # Le gate touched-tests accepte une section ## Tests du body PR (preuve C) ;
+        # sans PR_BODY, le preflight CI refusait un diff d'en-tetes que le job
+        # Touched-tests-signal acceptait. Meme source de verite : l'API GitHub.
         env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ inputs.pr_number || github.event.pull_request.number }}
           PREFLIGHT_BASE: ${{ inputs.base_sha || github.event.pull_request.base.sha }}
-        run: npm run pr:preflight -- --base "$PREFLIGHT_BASE"
+        run: |
+          set -euo pipefail
+          [[ "$PR_NUMBER" =~ ^[0-9]+$ ]] || { echo 'Invalid PR_NUMBER'; exit 2; }
+          PR_BODY="$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq '.body // ""')"
+          export PR_BODY
+          npm run pr:preflight -- --base "$PREFLIGHT_BASE"
   verdict:
     name: Required verdict
     if: always()

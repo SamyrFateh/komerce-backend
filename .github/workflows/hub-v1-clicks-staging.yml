@@ -5,6 +5,8 @@ name: Hub V1 — clics Chromium reels sur la fixture KM (staging)
 # (simulation, aucun paiement ni message externe). Sans video ; une capture par etape. Confirmation textuelle exigee.
 
 on:
+  issues:
+    types: [opened]
   workflow_dispatch:
     inputs:
       run8:
@@ -31,7 +33,12 @@ concurrency:
 
 jobs:
   clicks:
-    if: inputs.confirmation == 'RUN-HTTP-CLICKS'
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.actor == github.repository_owner && inputs.confirmation == 'RUN-HTTP-CLICKS') ||
+      (github.event_name == 'issues' && github.event.issue.user.login == github.repository_owner &&
+       (github.event.issue.title == '[staging-op] hub-v1-clicks-KM' ||
+        github.event.issue.title == '[staging-op] hub-v1-clicks-CM' ||
+        github.event.issue.title == '[staging-op] hub-v1-clicks-CG'))
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
@@ -44,13 +51,23 @@ jobs:
       E2E_PROOF_RUN8: ${{ inputs.run8 }}
       HUB_V1_CERTIFICATION_RUN: ${{ inputs.run8 }}
       HUB_V1_E2E_APPLY_MODE: approved
+      KOMERCE_STAGING_RESET_DB_PIN: ${{ vars.STAGING_DB_PIN }}
       STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
-      E2E_CLICKS_MARKET: ${{ inputs.market }}
-      E2E_CLICKS_ALLOW_DISTRIBUTION: '0'
+      E2E_CLICKS_MARKET: ${{ github.event_name == 'issues' && (github.event.issue.title == '[staging-op] hub-v1-clicks-KM' && 'KM' || github.event.issue.title == '[staging-op] hub-v1-clicks-CM' && 'CM' || 'CG') || inputs.market }}
+      HTTP_RUNNER_MARKET: ${{ github.event_name == 'issues' && (github.event.issue.title == '[staging-op] hub-v1-clicks-KM' && 'KM' || github.event.issue.title == '[staging-op] hub-v1-clicks-CM' && 'CM' || 'CG') || inputs.market }}
+      HUB_V1_STAGING_DISPOSABLE_MODE: '1'
+      HUB_V1_STAGING_EXISTING_FIXTURE_ACTIONS: '1'
+      E2E_CLICKS_ALLOW_DISTRIBUTION: ${{ github.event_name == 'issues' && '1' || '0' }}
+      HTTP_RUNNER_BASE_URL: https://komerce-backend-production.up.railway.app
+      HTTP_RUNNER_ALLOW_DISTRIBUTION: '0'
       E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
       E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
       E2E_AGENT_HUB_EMAIL: ${{ secrets.E2E_AGENT_HUB_EMAIL }}
       E2E_AGENT_HUB_PASSWORD: ${{ secrets.E2E_AGENT_HUB_PASSWORD }}
+      E2E_HUB_DIRECTOR_EMAIL: ${{ secrets.E2E_HUB_DIRECTOR_EMAIL }}
+      E2E_HUB_DIRECTOR_PASSWORD: ${{ secrets.E2E_HUB_DIRECTOR_PASSWORD }}
+      E2E_MARKET_OPERATOR_EMAIL: ${{ secrets.E2E_MARKET_OPERATOR_EMAIL }}
+      E2E_MARKET_OPERATOR_PASSWORD: ${{ secrets.E2E_MARKET_OPERATOR_PASSWORD }}
       E2E_AGENT_RELAIS_EMAIL: ${{ secrets.E2E_AGENT_RELAIS_EMAIL }}
       E2E_AGENT_RELAIS_PASSWORD: ${{ secrets.E2E_AGENT_RELAIS_PASSWORD }}
       E2E_AGENT_TRANSITAIRE_EMAIL: ${{ secrets.E2E_AGENT_TRANSITAIRE_EMAIL }}
@@ -80,13 +97,34 @@ jobs:
         env:
           STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
         run: node scripts/recette/resolve-staging-deploy-pin.js
+      - name: Choose new RUN8 for owner-triggered realistic Chromium campaign
+        if: github.event_name == 'issues'
+        shell: bash
+        run: |
+          set -euo pipefail
+          RUN8="$(node -p 'require("crypto").randomBytes(4).toString("hex").toUpperCase()')"
+          echo "E2E_PROOF_RUN8=$RUN8" >> "$GITHUB_ENV"
+          echo "HUB_V1_CERTIFICATION_RUN=$RUN8" >> "$GITHUB_ENV"
+          echo "HTTP_RUNNER_RUN8=$RUN8" >> "$GITHUB_ENV"
+      - name: Require precise Railway database target
+        run: node scripts/recette/target-guard.js
+      - name: Existing canonical fixture two-step checkout on real staging
+        if: github.event_name == 'issues'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/recette/hub-v1-certification-runner.js --allow-remote-staging --run="$HUB_V1_CERTIFICATION_RUN" --market="$E2E_CLICKS_MARKET" --stop-after=2 --dry-run
+          node scripts/recette/hub-v1-certification-runner.js --allow-remote-staging --run="$HUB_V1_CERTIFICATION_RUN" --market="$E2E_CLICKS_MARKET" --stop-after=2
+      - name: Existing PO HTTP chain with GET and PostgreSQL readbacks
+        if: github.event_name == 'issues'
+        run: node scripts/recette/hub-v1-http-action-runner.js
       - name: HARD HOLD before all Chromium business clicks on staging
         run: |
           test -n "$HUB_V1_CERTIFICATION_RUN"
           node scripts/recette/hub-v1-staging-transactional-preflight.js
       - run: npx playwright install --with-deps chromium
       - name: Clics Chromium
-        run: npx playwright test --config=playwright.hub-v1-clicks.config.js
+        run: npx playwright test --config=playwright.hub-v1-clicks.config.js tests/staging-clicks/hub-v1-clicks.spec.js
       - uses: actions/upload-artifact@v4
         if: always()
         with:

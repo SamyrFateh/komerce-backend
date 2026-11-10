@@ -1,0 +1,80 @@
+name: Refresh governance projections
+
+# Cause racine (lot C2) : la CI hydrate puis restaure FEATURE_360 / BUSINESS_FEATURE_GRAPH
+# (doctrine : une projection non régénérée ne rend jamais une PR rouge), donc les copies
+# versionnées dérivaient sur main sans qu'aucun gate ne les compare. Ce workflow les
+# régénère après chaque merge sur main, dans l'ordre exigé (graphe métier puis Feature 360),
+# et ouvre une PR auto-mergée si elles ont changé.
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'docs/FEATURE_360.json'
+      - 'docs/FEATURE_360.md'
+      - 'docs/BUSINESS_FEATURE_GRAPH.json'
+      - 'docs/BUSINESS_FEATURE_GRAPH.md'
+      - 'docs/O6_INVENTORY.md'
+  workflow_dispatch:
+
+concurrency:
+  group: projections-refresh
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  refresh:
+    name: Régénérer les projections dérivées → PR
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Régénérer (graphe métier puis Feature 360)
+        run: |
+          set -euo pipefail
+          npm run business-graph:gen
+          npm run feature:360:gen
+          npm run feature:360:check
+      - name: Changements ?
+        id: diff
+        run: |
+          if [ -z "$(git status --porcelain)" ]; then echo "changed=false" >> "$GITHUB_OUTPUT"; else echo "changed=true" >> "$GITHUB_OUTPUT"; git status --short; fi
+      - name: Vérifier le token PR
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          if [ -z "${{ secrets.SCHEMA_REFRESH_PR_TOKEN }}" ]; then
+            echo "::error::secrets.SCHEMA_REFRESH_PR_TOKEN absent — impossible de créer une PR qui déclenche les checks pull_request."
+            exit 1
+          fi
+      - name: Ouvrir la PR
+        id: cpr
+        if: steps.diff.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.SCHEMA_REFRESH_PR_TOKEN }}
+          commit-message: 'chore(governance): régénérer les projections dérivées (Feature 360, graphe métier)'
+          branch: chore/projections-refresh-auto
+          delete-branch: true
+          title: 'chore(governance): régénérer les projections dérivées'
+          body: |
+            ## Pourquoi
+            Les copies versionnées de FEATURE_360 et BUSINESS_FEATURE_GRAPH dérivent sur main (la CI les hydrate puis les restaure).
+
+            ## Quoi
+            `business-graph:gen` puis `feature:360:gen` (workflow `projections-refresh`) ; `feature:360:check` vert avant ouverture.
+
+            ## Tests
+            `feature:360:check` exécuté par le workflow ; checks PR obligatoires.
+          labels: automated
+      - name: Auto-merge
+        if: steps.diff.outputs.changed == 'true' && steps.cpr.outputs.pull-request-number
+        env:
+          GH_TOKEN: ${{ secrets.SCHEMA_REFRESH_PR_TOKEN }}
+        run: gh pr merge "${{ steps.cpr.outputs.pull-request-number }}" --auto --squash --repo "${{ github.repository }}"

@@ -230,10 +230,16 @@ router.post('/admin/credit', requireAdmin, async (req, res, next) => {
   try {
     await client.query('BEGIN');
     const { user_id, amount_kmf, reason, note, expires_days } = req.body;
+    const rawKey = req.get('Idempotency-Key') || req.body.idempotency_key;
+    const callerKey = typeof rawKey === 'string' ? rawKey.trim() : '';
 
-    if (!user_id || !amount_kmf || amount_kmf <= 0) {
+    if (!user_id || !Number.isInteger(amount_kmf) || amount_kmf <= 0) {
       await client.query('ROLLBACK');
-      return res.status(400).json({ error: 'user_id et amount_kmf (> 0) requis' });
+      return res.status(400).json({ error: 'user_id et amount_kmf (entier > 0) requis' });
+    }
+    if (!callerKey || callerKey.length > 200) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Idempotency-Key (header ou idempotency_key) requis' });
     }
 
     const { rows: [user] } = await client.query(
@@ -255,7 +261,7 @@ router.post('/admin/credit', requireAdmin, async (req, res, next) => {
       note:           note || 'Crédit manuel admin',
       createdBy:      req.user.id,
       expiresAt,
-      idempotencyKey: `admin_${user_id}_${Date.now()}`,
+      idempotencyKey: `admin_credit:${user_id}:${callerKey}`,
     });
     await client.query('COMMIT');
 
@@ -266,8 +272,9 @@ router.post('/admin/credit', requireAdmin, async (req, res, next) => {
       });
     }
 
-    res.status(201).json({
+    res.status(result.duplicate ? 200 : 201).json({
       success: true,
+      idempotent: !!result.duplicate,
       message: `${Number(amount_kmf).toLocaleString('fr-FR')} KMF crédités à ${user.full_name}`,
       transaction: result.transaction,
       lot:         result.lot,

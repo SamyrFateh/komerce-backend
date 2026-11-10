@@ -36,6 +36,7 @@ const db       = require('../db');
 const { authenticate, invalidateUserCache } = require('../middleware/auth');
 const { requireRecentAuth } = require('../middleware/require-recent-auth');
 const { validate } = require('../middleware/validate');
+const { resolveRuntimeEnvironment } = require('../middleware/require-non-production');
 const { auth } = require('../validators');
 const log = require('../utils/logger').child({ module: 'auth' });
 
@@ -470,7 +471,7 @@ router.post('/admin-reset', validate(auth.adminReset), async (req, res, next) =>
     }
 
     // Sécurité 3 : bloqué en production sauf si ALLOW_ADMIN_RESET=true explicitement
-    if (process.env.NODE_ENV === 'production' && process.env.ALLOW_ADMIN_RESET !== 'true') {
+    if (resolveRuntimeEnvironment().env === 'production' && process.env.ALLOW_ADMIN_RESET !== 'true') {
       log.warn(`[admin-reset] ⛔ Tentative en production sans ALLOW_ADMIN_RESET=true (IP: ${req.ip})`);
       return res.status(403).json({
         error: 'Route désactivée en production',

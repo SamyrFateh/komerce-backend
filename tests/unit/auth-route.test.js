@@ -622,6 +622,16 @@ describe('POST /api/auth/admin-reset', () => {
     expect(res.status).toBe(403);
   });
 
+  it('403 si KOMERCE_ENV=production même avec NODE_ENV=development (sans ALLOW_ADMIN_RESET)', async () => {
+    process.env.ADMIN_RESET_KEY = 'a'.repeat(32);
+    process.env.KOMERCE_ENV = 'production';
+    process.env.NODE_ENV = 'development';
+    app = buildApp();
+    const res = await request(app).post('/api/auth/admin-reset').send({ key: 'a'.repeat(32), new_password: 'azertyuiopaz' });
+    expect(res.status).toBe(403);
+    delete process.env.KOMERCE_ENV;
+  });
+
   it('403 si clé fournie invalide', async () => {
     process.env.ADMIN_RESET_KEY = 'a'.repeat(32);
     app = buildApp();
