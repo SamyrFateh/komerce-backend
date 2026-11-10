@@ -105,7 +105,7 @@ function sourceGates(root=process.cwd(),env=process.env) {
 
 // `run` (RUN8 hex) : l'unicite porte sur le RUN8 de CETTE fixture ; les fixtures anterieures sont immuables (HOLD_IMMUTABLE_PROOFS_RETAINED).
 // Sans run, la garde reste stricte (aucune commande E2E-HUB-V1 preexistante).
-async function databaseGates(client, run) {
+async function databaseGates(client, run, env=process.env) {
   await client.query('BEGIN READ ONLY');
   try {
     const query=async(sql,params=[]) => (await client.query(sql,params)).rows;
@@ -117,6 +117,19 @@ async function databaseGates(client, run) {
       'SELECT COUNT(*)::int AS n FROM public.orders WHERE reference LIKE $1',
       [PREFIX+(/^[A-F0-9]{8}$/.test(String(run||'')) ? run : '')+'%']
     );
+    // Existing fixture actions run AFTER canonical checkout. The original
+    // fresh-only gate must not block their PO/UI actions, but reuse is allowed
+    // solely for four scoped E2E orders of the exact owner-approved RUN8.
+    const reuseAllowed=env.HUB_V1_STAGING_EXISTING_FIXTURE_ACTIONS==='1' &&
+      disposableStagingAuthorized(env) && /^[A-F0-9]{8}$/.test(String(run||'')) &&
+      Number(existing.n)===4;
+    let foreignRows=0;
+    if(reuseAllowed){
+      const [unscoped]=await query(
+        "SELECT COUNT(*)::int AS n FROM public.orders WHERE reference LIKE $1 " +
+        "AND simulation_scope IS DISTINCT FROM 'E2E-HUB-V1'",[PREFIX+run+'-%']);
+      foreignRows=Number(unscoped.n);
+    }
     const [duplicates]=await query(
       "SELECT COUNT(*)::int AS n FROM (SELECT product_id,priority FROM public.product_suppliers " +
       "WHERE is_active=TRUE AND deleted_at IS NULL GROUP BY product_id,priority HAVING COUNT(*)>1) d"
@@ -129,7 +142,7 @@ async function databaseGates(client, run) {
     const applied=new Set(migrations.map(m=>m.filename));
     return [
       {id:'MIGRATIONS_391_396',pass:REQUIRED_MIGRATIONS.every(m=>applied.has(m)),observed:applied.size},
-      {id:'NEW_FIXTURE_REFERENCE_PREFIX_UNUSED',pass:existing.n===0,observed:existing.n},
+      {id:'NEW_FIXTURE_REFERENCE_PREFIX_UNUSED',pass:existing.n===0||(reuseAllowed&&foreignRows===0),observed:existing.n,existing_scoped_reuse:reuseAllowed&&foreignRows===0},
       {id:'NO_DUPLICATE_SUPPLIER_PRIORITY',pass:duplicates.n===0,observed:duplicates.n},
       {id:'HUB_AND_RELAY_ROLES_EXIST',pass:(byRole.agent_hub||0)>0&&(byRole.agent_relais||0)>0,observed:byRole},
     ];
@@ -153,7 +166,7 @@ async function assess({ db, fetchImpl=fetch, env=process.env, root=process.cwd()
   if(observed.toLowerCase()!==expected.toLowerCase())throw Error('STAGING_RUNTIME_SHA_DRIFT');
   const client=await db.getClient();
   let dbChecks;
-  try{dbChecks=await databaseGates(client,env.HUB_V1_CERTIFICATION_RUN);}finally{client.release();}
+  try{dbChecks=await databaseGates(client,env.HUB_V1_CERTIFICATION_RUN,env);}finally{client.release();}
   const checks=[...dbChecks,...sourceGates(root,env)];
   return {
     mode:'READ_ONLY',
