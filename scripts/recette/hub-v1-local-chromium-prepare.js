@@ -56,6 +56,40 @@ async function main(){
     if(rowCount!==1)throw Error('HUB_LOCAL_CHROMIUM_ACTOR_ID_MISMATCH:'+key);
     lines.push(envName+'EMAIL='+email,envName+'PASSWORD='+password);
   }
+  // Explicit bootstrap of dashboard authority for THIS disposable CI Admin.
+  // An `admin` role alone never grants global dashboard access. Without this
+  // actual row, the canonical app correctly redirects the isolated Admin to "/".
+  // This fixture writer is guarded above by assertEphemeralTarget and GITHUB_ENV;
+  // it MUST NOT be reused on Railway staging or any shared database.
+  const admin=proof.fixture.users.admin;
+  if(!admin || admin.role!=='admin')throw Error('G2_ISOLATED_ADMIN_ROLE_REQUIRED');
+  const {rows:[adminIdentity]}=await db.query(
+    "SELECT id,role::text AS role,email FROM users WHERE id=$1::uuid",[admin.id]);
+  if(!adminIdentity || adminIdentity.role!=='admin' ||
+     String(adminIdentity.email).toLowerCase()!==runner.emailOf(run,'admin').toLowerCase())
+    throw Error('G2_ISOLATED_ADMIN_IDENTITY_MISMATCH');
+  const {rows:[existing]}=await db.query(
+    'SELECT COUNT(*)::int AS n FROM dashboard_global_access_grants '+
+    'WHERE user_id=$1::uuid AND revoked_at IS NULL',[admin.id]);
+  if(existing?.n!==0)throw Error('G2_ISOLATED_ADMIN_GRANT_ALREADY_EXISTS');
+  const {rowCount}=await db.query(
+    'INSERT INTO dashboard_global_access_grants(user_id,reason) VALUES($1::uuid,$2)',
+    [admin.id,'E2E-HUB-V1-'+run+'-ISOLATED-CHROMIUM-EXPLICIT-DASHBOARD']);
+  if(rowCount!==1)throw Error('G2_ISOLATED_ADMIN_GRANT_FAILED');
+  const {hasDashboardGlobalAuthority}=require('../../middleware/require-dashboard-global-authority');
+  const {resolveDashboardAdminContext}=require('../../services/dashboard-admin-context');
+  if(!(await hasDashboardGlobalAuthority(admin.id)))
+    throw Error('G2_ISOLATED_ADMIN_GRANT_READBACK_FAILED');
+  const context=await resolveDashboardAdminContext({id:admin.id,role:'admin'});
+  if(context.access.mode!=='global'||!context.access.allowedMarkets.includes('KM'))
+    throw Error('G2_ISOLATED_ADMIN_DASHBOARD_CONTEXT_INVALID');
+  for(const other of ['hub_agent','relay_agent','forwarder']){
+    const account=proof.fixture.users[other];
+    if(!account || await hasDashboardGlobalAuthority(account.id))
+      throw Error('G2_ISOLATED_NONADMIN_GLOBAL_GRANT_FORBIDDEN:'+other);
+  }
+  // Only the isolated Admin receives an explicit global dashboard grant.
+  // Hub, Relais and Transitaire retain their exact server-side role boundaries.
   // The runner's GITHUB_ENV file is private to the Actions job; never print it
   // or attach it to artifacts. Credentials exist only in disposable PG16.
   fs.appendFileSync(process.env.GITHUB_ENV,lines.join('\n')+'\n',{mode:0o600});
