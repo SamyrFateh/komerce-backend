@@ -82,7 +82,12 @@ test('Customs page requires its actual international journey component, not unre
   expect(src).toContain("url.startsWith('/admin/workspaces/shipping-customs')");
   expect(src).toContain("await expect(page).toHaveURL(/\\/admin\\/workspaces\\/shipping-customs");
   expect(src).toContain("page.locator('[data-international-journey]').first().waitFor");
-  expect(src).toContain("if (await select.count()) await select.selectOption");
+  expect(src).toContain("if (await marketOption.count()) await select.selectOption");
+  const customsStart=src.indexOf("if (url.startsWith('/admin/workspaces/shipping-customs'))");
+  const customsEnd=src.indexOf("  const sel = page.locator('select').first();",customsStart);
+  const customs=src.slice(customsStart,customsEnd);
+  expect(customs.indexOf("await select.selectOption")).toBeLessThan(customs.indexOf("page.locator('[data-international-journey]').first().waitFor"));
+  expect(customs).not.toContain("selectOption({ label: MARKET_LABEL }).catch");
   expect(src).toContain('test.afterEach(async ({}, info) =>');
   expect(src).toContain("info.status !== 'passed'");
   expect(src).toContain("verdict: info.status === 'skipped' ? 'NOT_RUN' : 'CLICK_FAIL'");
