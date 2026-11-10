@@ -19,8 +19,8 @@ const checks=()=>[
   'HUB_AND_RELAY_ROLES_EXIST','DEDICATED_ATOMIC_CHECKOUT_SCOPE','SIMULATED_CHECKOUT_HAS_NO_EXTERNAL_HOOKS',
   'SIMULATED_PO_NO_PROVIDER_OR_NOTIFICATION','SIMULATED_CUSTOMER_PAYMENT_PROVIDER_BYPASS_VERIFIED']
     .map((id)=>({id,pass:true})),
-  {id:'STAGING_DISPOSABLE_DATA_MODE_CONFIRMED',pass:false},
-  {id:'STAGING_EXISTING_RUNNER_OWNER_AUTHORIZED',pass:false}
+  {id:'STAGING_FIXTURE_OWNERSHIP_AND_CLEANUP_CERTIFIED',pass:false},
+  {id:'STAGING_E2E_CROSS_SERVICE_RUNNER_REVIEWED',pass:false}
 ];
 test('refuse tout autre environnement, URL, SHA ou RUN8 avant connexion',()=>{
   assertApproval({run:RUN,env:env()});
@@ -53,7 +53,7 @@ test('seulement dix gates PASS et verdict READY permettent de poursuivre la revu
     checks:validChecks.map(c=>c.id==='MIGRATIONS_391_396'?{...c,pass:false}:c)}),baselineImpl}))
     .rejects.toThrow('STAGING_PREFLIGHT_UNEXPECTED_FAILURE');
   await expect(authorizeOfficialStaging({db,run:RUN,env:env(),assessImpl:async()=>({...ready,
-    checks:validChecks.map(c=>c.id==='STAGING_EXISTING_RUNNER_OWNER_AUTHORIZED'?{...c,id:'UNKNOWN_GATE'}:c)}),baselineImpl}))
+    checks:validChecks.map(c=>c.id==='STAGING_E2E_CROSS_SERVICE_RUNNER_REVIEWED'?{...c,id:'UNKNOWN_GATE'}:c)}),baselineImpl}))
     .rejects.toThrow('STAGING_PREFLIGHT_UNEXPECTED_FAILURE');
   expect(baselineImpl).toHaveBeenCalledTimes(1);
 });
