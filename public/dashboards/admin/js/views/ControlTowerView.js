@@ -501,7 +501,7 @@
           {
             key: 'relais_name',
             label: 'Relais',
-            render: (row) => row.relais_name || '—',
+            render: (row) => esc(row.relais_name || '—'),
           },
         ],
         rows: orders,
