@@ -120,6 +120,22 @@ async function run(e=process.env){
   try{for(const ref of REFS){
    const record={ref,actor:admin.who.id,checkpoints:[],gestures:[],blocked_mutations:[],status:'NOT_PROVEN'};report.records.push(record);
    const before=await checkpoint(record,'BEFORE_REVIEW',admin.ctx);
+   if(before.is_active===true&&before.lifecycle_status==='active'){
+    const plans=INSPECTIONS.filter(x=>x.ref===ref);
+    if(before.media?.length!==plans.length||!before.publication_audit?.length||
+      record.checkpoints.at(-1).canonical.visual_fr_certified!==true||
+      !plans.every(plan=>before.media.some(m=>m.source_media_id===plan.source_media_id&&m.url===plan.source_url&&
+        m.review?.source_url===plan.source_url&&m.review?.text_presence===plan.text_presence&&
+        /^automation:github-actions:\d{5,20}:[0-9a-f-]{36}$/i.test(m.review?.reviewed_by||''))))
+     throw Error('PREVIOUS_CATALOG_APPROVAL_NOT_PROVEN:'+ref);
+    for(const plan of plans){
+     const raw=await admin.ctx.request.get(plan.source_url);
+     if(!raw.ok()||crypto.createHash('sha256').update(await raw.body()).digest('hex')!==plan.sha256)
+      throw Error('PREVIOUS_SOURCE_PIXELS_CHANGED:'+ref);
+    }
+    record.capitalized_review_runs=[...new Set(before.media.map(m=>m.review.reviewed_by.split(':')[2]))];
+    record.status='CATALOG_APPROVAL_CAPITALIZED_NOT_REPLAYED';save();continue;
+   }
    if(before.is_active!==false||before.lifecycle_status!=='candidate')throw Error('EXPECTED_INACTIVE_CANDIDATE:'+ref);
    const page=await admin.ctx.newPage();
    await page.route('**/*',route=>{
@@ -170,8 +186,9 @@ async function run(e=process.env){
    const ref=record.ref;record.market_actor=market.who.id;
    const before=await state(db,ref);
    const corridorResponse=await market.ctx.request.get(BASE+'/api/admin/workspaces/pricing/market/KM/corridor?product_ref='+ref);
-   if(!corridorResponse.ok())throw Error('ECONOMICS_UNAVAILABLE:'+ref);
-   const corridor=await corridorResponse.json();record.economic_price_source=corridor;
+   const corridor=await corridorResponse.json();record.corridor_read={http:corridorResponse.status(),body:corridor};save();
+   if(!corridorResponse.ok())throw Error('ECONOMICS_UNAVAILABLE:'+ref+':'+corridorResponse.status()+':'+(corridor.code||''));
+   record.economic_price_source=corridor;
    const amount=choosePrice(corridor);record.selected_price_kmf=amount;save();
    const page=await market.ctx.newPage();
    await page.route('**/*',route=>{
