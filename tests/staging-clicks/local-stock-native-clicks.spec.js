@@ -178,6 +178,19 @@ test('LOCAL_STOCK : un agent atteste puis remet au client par les vrais clics (H
       &&r.request().method()==='POST');
     await collectRow.locator('[data-workspace-action="collect"]').click();
     const collectedHttp=await collectResponse;
+    if(collectedHttp.status()!==200){
+      // Persist sanitized business rejection for the NEXT iteration; never
+      // relax the expected 200 or invent a successful pickup status.
+      let rejection={};
+      try{rejection=await collectedHttp.json();}catch(_){}
+      const code=rejection.code||rejection.error?.code||
+        (typeof rejection.error==='string' ? rejection.error : 'UNKNOWN');
+      record.pickup_failure={http:collectedHttp.status(),
+        code:String(code).slice(0,100),
+        message:String(rejection.message||rejection.error?.message||'').slice(0,160)};
+      console.error('G3_PICKUP_REJECTED:'+record.pickup_failure.http+
+        ':'+record.pickup_failure.code);
+    }
     assert(collectedHttp.status()===200,'pickup-click-http-200',collectedHttp.status());
     await wait(350);
     const done=await snapshot(db,orderId);
