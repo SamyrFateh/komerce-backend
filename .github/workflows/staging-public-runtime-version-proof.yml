@@ -1,6 +1,7 @@
 name: Staging public runtime — read-only SHA verification
 
 # Reusable public probe. No credentials, no staging writes, no forced deploy.
+# The public SHA check is a prerequisite, not a substitute for human image review or Chromium.
 # The only purpose of the PR event is to validate this workflow's introduction.
 on:
   workflow_dispatch:
