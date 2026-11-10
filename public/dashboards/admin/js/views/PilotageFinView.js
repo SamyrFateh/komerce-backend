@@ -93,8 +93,11 @@
 
     } catch (err) {
       console.error('[PilotageFinView] error:', err);
-      document.getElementById('pf-kpis').innerHTML =
-        `<div class="error-state">❌ Erreur : ${err.message || 'inconnue'}</div>`;
+      // B2: an API error is untrusted text, not HTML.
+      const errorState = document.createElement('div');
+      errorState.className = 'error-state';
+      errorState.textContent = '❌ Erreur : ' + (err.message || 'inconnue');
+      document.getElementById('pf-kpis').replaceChildren(errorState);
     }
   }
 

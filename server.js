@@ -122,6 +122,11 @@ app.use('/api/dashboard', dashboardLimiter);
 app.use('/api/admin/', adminLimiter);
 
 
+// GAP-F2 / B3 : filtrer les assets internes et la surface Legacy 0 AVANT
+// l'injection auth-guard et express.static (sinon le HTML direct contourne le filtre).
+const { internalStaticGuard } = require('./middleware/internal-static-guard');
+app.use(internalStaticGuard);
+
 // ── Auth guard injection — auto-injects session checker into admin pages ────
 // FRESH-081 : allowlist explicite pour éviter tout path traversal.
 // Express normalise req.path (decode + normalize) mais on ajoute une seconde
@@ -153,11 +158,6 @@ app.get('/*.html', (req, res, next) => {
     res.send(html);
   });
 });
-
-// GAP-F2 (docs/gaps/GAP_BOUTIQUE_FRONTEND_CORRECTIONS.md) — cf.
-// middleware/internal-static-guard.js pour le détail et les tests.
-const { internalStaticGuard } = require('./middleware/internal-static-guard');
-app.use(internalStaticGuard);
 
 // GAP-F4 (docs/gaps/GAP_BOUTIQUE_FRONTEND_CORRECTIONS.md) — cf.
 // middleware/versioned-asset-cache.js pour le détail et les tests.
