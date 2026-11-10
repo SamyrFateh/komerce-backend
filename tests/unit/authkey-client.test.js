@@ -63,6 +63,15 @@ describe('authkey-client — staging whitelist guard', () => {
     expect(typeof client.notifyOrderCreated).toBe('function');
   });
 
+  it('KOMERCE_ENV=staging prime sur NODE_ENV=production : whitelist appliquée (0 envoi)', async () => {
+    process.env.NODE_ENV = 'production';
+    process.env.KOMERCE_ENV = 'staging';
+    delete process.env.AUTHKEY_ALLOWED_PHONES;
+    const client = require('../../services/authkey-client');
+    await client.notifyOrderCreated({ mobile: '+2693301234', name: 'Test', orderRef: 'REF001', amount: '1000 KMF' });
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
   // ── Cas B : staging sans AUTHKEY_ALLOWED_PHONES → 0 envoi ───────────────
   it('B — en staging sans AUTHKEY_ALLOWED_PHONES, notifyOrderCreated ne fait pas d\'appel réseau', async () => {
     process.env.NODE_ENV = 'staging';

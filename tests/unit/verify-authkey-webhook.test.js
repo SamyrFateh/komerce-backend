@@ -72,6 +72,18 @@ describe('verifyAuthkeyWebhook — pas de secret configuré', () => {
   });
 });
 
+describe('verifyAuthkeyWebhook — KOMERCE_ENV prime sur NODE_ENV', () => {
+  afterEach(() => { delete process.env.KOMERCE_ENV; });
+  it('KOMERCE_ENV=production + NODE_ENV=development, sans secret → 503 (pas de fail-open)', () => {
+    process.env.KOMERCE_ENV = 'production';
+    const { verifyAuthkeyWebhook } = loadMiddleware({ secret: undefined, nodeEnv: 'development' });
+    const { req, res, next } = fakeReqRes();
+    verifyAuthkeyWebhook(req, res, next);
+    expect(res.status).toHaveBeenCalledWith(503);
+    expect(next).not.toHaveBeenCalled();
+  });
+});
+
 describe('verifyAuthkeyWebhook — secret configuré', () => {
   const SECRET = 'a-very-secret-shared-token-value';
 
