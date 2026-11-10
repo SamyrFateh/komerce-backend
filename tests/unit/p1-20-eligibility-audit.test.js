@@ -1,3 +1,4 @@
+/** @test-kind unit @test-runner jest @test-requires none */
 /**
  * @test-kind unit
  * @komerce-arch-lite

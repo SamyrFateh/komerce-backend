@@ -1,3 +1,4 @@
+/** @test-kind unit @test-runner jest @test-requires none */
 'use strict';
 
 const { TRACKED_SELECTORS, selectorMap } = require('../../scripts/gen-boutique-arch-live.js');

@@ -1,3 +1,4 @@
+/** @test-kind unit @test-runner jest @test-requires none */
 'use strict';
 
 const { main } = require('../../scripts/paypal-sandbox-order-contract-proof');

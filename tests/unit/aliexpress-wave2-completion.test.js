@@ -1,3 +1,4 @@
+/** @test-kind unit @test-runner jest @test-requires none */
 'use strict';
 
 const wave2 = require('../../scripts/aliexpress-wave2-sourcing');

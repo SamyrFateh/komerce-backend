@@ -1,3 +1,4 @@
+/** @test-kind unit @test-runner jest @test-requires none */
 'use strict';
 
 jest.mock('../../services/suppliers/connectors/aliexpress-connected-connector', () => ({ managedRuntimeEnv: jest.fn() }));

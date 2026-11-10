@@ -1,3 +1,4 @@
+/** @test-kind unit @test-runner jest @test-requires none */
 'use strict';
 /**
  * Catalogue -> Sourcing category gate -> pricing authority.

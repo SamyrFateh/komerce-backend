@@ -1,3 +1,4 @@
+/** @test-kind unit @test-runner jest @test-requires none */
 /**
  * @unit navigation-shell-v4-sync.test.js
  * @feature dashboard

@@ -1,3 +1,4 @@
+/** @test-kind unit @test-runner jest @test-requires none */
 'use strict';
 const adapter = require('../../services/suppliers/allegro-fulfillment-adapter');
 const gate = require('../../services/suppliers/canonical-unit-purchasing-gate');

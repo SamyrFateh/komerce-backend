@@ -1,6 +1,7 @@
 'use strict';
 
-/** @test-kind unit @test-runner jest @test-requires none — RC-3/RC-4 */
+/** @test-kind unit @test-runner jest @test-requires none */
+// RC-3/RC-4
 jest.mock('../../db', () => ({
   connect: jest.fn(), query: jest.fn(),
 }));

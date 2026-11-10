@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * @test-kind e2e-api
+ * @test-kind e2e
  * @test-runner jest
  * @test-requires postgres
  * @feature dashboard
