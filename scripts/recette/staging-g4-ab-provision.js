@@ -30,10 +30,11 @@ function requireOwner(env=process.env) {
       !/^[A-F0-9]{8}$/.test(String(env.G4_B_RUN8||'')) ||
       env.G4_A_RUN8===env.G4_B_RUN8 ||
       env.GITHUB_EVENT_NAME!=='issues' ||
-      env.GITHUB_ISSUE_TITLE!=='[staging-op] g4-ab-chromium-KM')
+      !['KM','CM','CG'].includes(env.G4_MARKET) ||
+      env.GITHUB_ISSUE_TITLE!=='[staging-op] g4-ab-chromium-'+env.G4_MARKET)
     throw Error('G4_STAGING_OWNER_TWO_RUNS_REQUIRED');
 }
-async function inspect(db,accounts) {
+async function inspect(db,accounts,marketCode) {
   const {rows}=await db.query(
     "SELECT u.id AS user_id,u.role::text AS role,u.relais_id,r.market_id, "+
     "m.code AS market_code,(e.user_id IS NOT NULL) AS e2e, "+
@@ -49,7 +50,7 @@ async function inspect(db,accounts) {
   );
   if(rows.length!==2||new Set(rows.map(x=>String(x.relais_id))).size!==2||
      new Set(rows.map(x=>String(x.user_id))).size!==2||
-     rows.some(x=>x.role!=='agent_relais'||x.market_code!=='KM'||x.e2e!==true||Number(x.caps)!==2))
+     rows.some(x=>x.role!=='agent_relais'||x.market_code!==marketCode||x.e2e!==true||Number(x.caps)!==2))
     throw Error('G4_REAL_KM_TWO_RELAY_READBACK_MISMATCH');
   for(const a of accounts)if(!rows.some(x=>String(x.user_id)===a.user_id&&
       String(x.relais_id)===a.relais_id))throw Error('G4_PROVISION_USER_RELAY_MISMATCH');
@@ -81,7 +82,7 @@ async function provision({db,env=process.env,fetchImpl=fetch}={}) {
         "JOIN relais r ON r.id=o.relais_id WHERE o.reference=$1 "+
         "AND o.simulation_scope='E2E-HUB-V1' AND r.is_active=TRUE",
         [reference]);
-      if(orders.length!==1||orders[0].market_code!=='KM')throw Error('G4_EXPECTED_CANONICAL_LOCAL_FIXTURE:'+label);
+      if(orders.length!==1||orders[0].market_code!==env.G4_MARKET)throw Error('G4_EXPECTED_CANONICAL_LOCAL_FIXTURE:'+label);
       const email='e2e-g4-staging-'+run8.toLowerCase()+'-'+label.toLowerCase()+'@komerce.test';
       const {rows:[existing]}=await client.query('SELECT id FROM users WHERE lower(email)=$1',[email]);
       if(existing)throw Error('G4_IDENTITY_COLLISION');
@@ -98,13 +99,13 @@ async function provision({db,env=process.env,fetchImpl=fetch}={}) {
       if(assignment.status!=='assigned')throw Error('G4_CANONICAL_RELAY_ASSIGNMENT_FAILED');
       await ensureRelayAgentMembership(client,
         {delegation:require('../../services/market-delegation-service')},
-        {userId:user.id,marketCode:'KM',actorId:admin.id});
+        {userId:user.id,marketCode:env.G4_MARKET,actorId:admin.id});
       accounts.push({label,run8,email,password,user_id:String(user.id),
         relais_id:orders[0].relais_id,order_id:orders[0].order_id,reference});
     }
     if(new Set(accounts.map(a=>a.relais_id)).size!==2)throw Error('G4_NOT_TWO_DISTINCT_RELAYS');
     await client.query('COMMIT');opened=false;
-    await inspect(db,accounts);
+    await inspect(db,accounts,env.G4_MARKET);
     // Never print credentials or store them in evidence artifacts.
     const vars=accounts.flatMap(a=>[
       'G4_'+a.label+'_EMAIL='+a.email,
@@ -114,13 +115,13 @@ async function provision({db,env=process.env,fetchImpl=fetch}={}) {
     ]);
     fs.appendFileSync(env.GITHUB_ENV,vars.join('\n')+'\n',{mode:0o600});
     const report={schema:'g4-real-staging-ab-provision/1',verdict:'G4_AB_TWO_AGENTS_TWO_RELAIS_PROVISIONED',
-      market:'KM',staging_sha:env.E2E_EXPECTED_DEPLOY_SHA,accounts:accounts.map(
+      market:env.G4_MARKET,staging_sha:env.E2E_EXPECTED_DEPLOY_SHA,accounts:accounts.map(
         ({label,run8,user_id,relais_id,order_id,reference})=>
           ({label,run8,user_id,relais_id,order_id,reference})),
       separate_agents:true,separate_relays:true,payment_provider:'SIMULATED_ONLY',chromium:'NOT_YET_RUN'};
     fs.mkdirSync('test-results/g4-staging',{recursive:true});
     fs.writeFileSync('test-results/g4-staging/provision.json',JSON.stringify(report,null,2)+'\n');
-    console.log(JSON.stringify({verdict:report.verdict,market:'KM',agents:2,relais:2,orders:2}));
+    console.log(JSON.stringify({verdict:report.verdict,market:env.G4_MARKET,agents:2,relais:2,orders:2}));
     return report;
   }catch(e){if(opened)await client.query('ROLLBACK').catch(()=>{});throw e;
   }finally{client.release();}
