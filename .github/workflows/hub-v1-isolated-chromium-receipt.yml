@@ -1,4 +1,4 @@
-name: G2 — real Chromium supplier receipt against disposable PG16
+name: G2 — real Chromium physical chain against disposable PG16
 
 # No shared staging secret, no remote app, no provider calls or existing fixtures.
 # Executes real routes and browser clicks against localhost only; NOT a staging GO.
@@ -19,7 +19,8 @@ jobs:
     if: >-
       (github.event_name == 'workflow_dispatch' && github.actor == github.repository_owner) ||
       (github.event_name == 'issues' && github.event.issue.user.login == github.repository_owner &&
-       github.event.issue.title == '[cert-op] hub-v1-isolated-chromium-receipt')
+       (github.event.issue.title == '[cert-op] hub-v1-isolated-chromium-receipt' ||
+        github.event.issue.title == '[cert-op] hub-v1-isolated-chromium-physical'))
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     services:
@@ -44,8 +45,9 @@ jobs:
       E2E_CLICKS_BASE_URL: http://localhost:3917
       E2E_CLICKS_ALLOW_LOCAL: '1'
       E2E_CLICKS_MARKET: KM
-      E2E_CLICKS_ALLOW_DISTRIBUTION: '0'
+      E2E_CLICKS_ALLOW_DISTRIBUTION: ${{ github.event_name == 'issues' && github.event.issue.title == '[cert-op] hub-v1-isolated-chromium-physical' && '1' || '0' }}
       PORT: '3917'
+      TRIGGER_TITLE: ${{ github.event.issue.title }}
       JWT_SECRET: isolated-ci-hub-v1-test-token-only
       ADMIN_PASSWORD: isolated-ci-hub-v1-no-real-admin
       STRIPE_SECRET_KEY: sk_test_ci_placeholder
@@ -72,7 +74,12 @@ jobs:
           set -euo pipefail
           test "$DATABASE_URL" = 'postgresql://komerce:komerce@localhost:5432/komerce_test'
           test "$E2E_CLICKS_BASE_URL" = 'http://localhost:3917'
-          test "$E2E_CLICKS_ALLOW_DISTRIBUTION" = '0'
+          if [[ "$E2E_CLICKS_ALLOW_DISTRIBUTION" == '1' ]]; then
+            test "$GITHUB_EVENT_NAME" = 'issues'
+            test "$TRIGGER_TITLE" = '[cert-op] hub-v1-isolated-chromium-physical'
+          else
+            test "$E2E_CLICKS_ALLOW_DISTRIBUTION" = '0'
+          fi
           node -e "require('./scripts/recette/hub-v1-certification-runner').assertEphemeralTarget(process.env.DATABASE_URL, [])"
       - name: Rebuild isolated PostgreSQL schema from canonical snapshot
         shell: bash
@@ -99,9 +106,16 @@ jobs:
           echo 'LOCAL_SERVER_READY (localhost only)'
       - name: Install genuine Chromium
         run: npx playwright install --with-deps chromium
-      - name: Click actual Hub supplier receipt UI (no API mocks)
+      - name: Click actual Hub physical workflow UI (no API mocks)
+        shell: bash
         run: |
-          npx playwright test --config=playwright.hub-v1-clicks.config.js --grep 'Hub : reception fournisseur'
+          set -euo pipefail
+          if [[ "$E2E_CLICKS_ALLOW_DISTRIBUTION" == '1' ]]; then
+            # Whole isolated market consists solely of this disposable PG16 fixture.
+            npx playwright test --config=playwright.hub-v1-clicks.config.js
+          else
+            npx playwright test --config=playwright.hub-v1-clicks.config.js --grep 'Hub : reception fournisseur'
+          fi
       - name: Independent authenticated API and PostgreSQL readbacks on identical PO UUIDs
         if: always()
         run: |
@@ -128,5 +142,5 @@ jobs:
         run: |
           echo '### G2 — isolated Chromium, not a staging certification' >> "$GITHUB_STEP_SUMMARY"
           echo 'PostgreSQL 16 disposable and localhost backend only. No Railway connection, no PSP/provider, no market-wide distribution.' >> "$GITHUB_STEP_SUMMARY"
-          echo 'Steps 1–7 preconditioned by canonical service writers. Real browser clicks cover supplier receipt ONLY; readback checks independent HTTP and PostgreSQL for the same two PO UUIDs.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Steps 1–7 preconditioned by canonical service writers. Receipt mode proves Chromium + API/PG16. Physical mode tries ALL remaining UI gestures on a fresh isolated market and keeps missing actions FAIL/BLOCKED, with independent readback currently limited to supplier receipt.' >> "$GITHUB_STEP_SUMMARY"
           echo 'G2 staging 13/13 triple proof remains NOT_PROVEN until the complete workflow is certified on official staging.' >> "$GITHUB_STEP_SUMMARY"
