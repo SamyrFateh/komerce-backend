@@ -520,6 +520,8 @@ function publicProductDossier(facts, product, marketHandoff = null, details = {}
     ? null : (Number.isFinite(Number(value)) ? Math.max(0, Number(value)) : null);
   return {
     product_ref: product.product_ref,
+    // Admin-only canonical UUID required by the source-linked visual review writer.
+    product_id: product.id,
     identity: {
       title_fr: row.name || null,
       description_fr: row.description || null,
@@ -569,6 +571,8 @@ function publicProductDossier(facts, product, marketHandoff = null, details = {}
           alt: item.alt || null,
           role: item.role || 'PRODUCT',
           source_media_id: item.source_media_id || null,
+          media_id: item.id || null,
+          option_values: item.option_values || null,
         })),
       gallery_truncated: (details.media || []).length > 24,
     },
@@ -626,7 +630,7 @@ async function getProductDossier(productRef) {
   );
   const skuStockAuthority = facts.row.inventory_model === 'SKU';
   const [mediaResult, variantResult] = await Promise.all([
-    db.query(`SELECT url, alt, role, source_media_id, display_order
+    db.query(`SELECT id, url, alt, role, source_media_id, option_values, display_order
        FROM catalog_media WHERE product_id=$1 AND is_active=TRUE
        ORDER BY display_order ASC NULLS LAST, created_at ASC LIMIT 25`, [product.id]),
     skuStockAuthority
