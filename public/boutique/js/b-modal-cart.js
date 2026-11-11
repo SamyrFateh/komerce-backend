@@ -437,7 +437,9 @@ function setupModalCart() {
     const pid = String(state.modalProduct.id);
     const item = currentModalCartItem();
     if (item) setQty(pid, item.qty - 1, item);
-    else quickRemove(pid, dom.qtyMinus);
+    // SKU : sans ligne correspondant à cette variante, ne jamais retirer
+    // une autre taille via le raccourci product-id-first.
+    else if (state.modalProductDetail?.inventory_model !== 'SKU') quickRemove(pid, dom.qtyMinus);
     _syncModalQtyUI();
   });
 
@@ -446,7 +448,9 @@ function setupModalCart() {
     const pid = String(state.modalProduct.id);
     const item = currentModalCartItem();
     if (item) setQty(pid, item.qty + 1, item);
-    else quickAdd(pid, dom.qtyPlus);
+    // SKU : le premier ajout passe exclusivement par « Ajouter » avec le
+    // selected_sku_id courant, jamais par quickAdd d'une autre variante.
+    else if (state.modalProductDetail?.inventory_model !== 'SKU') quickAdd(pid, dom.qtyPlus);
     _syncModalQtyUI();
   });
 
