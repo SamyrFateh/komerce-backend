@@ -32,8 +32,8 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 |-----------|:---:|:-------:|:-----------:|-------------------|
 | `b-cart.js` | 95 | 24 | 5/8 | Modal produit, Side-cart desktop, Panier, Carte produit, Chips catégories, Bottom-nav mobile |
 | `b-checkout.js` | 106 | 6 | 0/5 | Bottom-nav mobile |
-| `b-modal-desktop-product.js` | 95 | 1 | 0/0 | Modal produit |
-| `b-modal-mobile-product.js` | 87 | 1 | 0/0 | Modal produit |
+| `b-modal-desktop-product.js` | 95 | 1 | 0/1 | Modal produit |
+| `b-modal-mobile-product.js` | 87 | 1 | 0/1 | Modal produit |
 | `b-modal-core.js` | 17 | 70 | 4/5 | Modal produit, Side-cart desktop, Carte produit, Grille produits |
 | `b-checkout-render.js` | 79 | 0 | 0/0 | — |
 | `boutique.js` | 15 | 49 | 3/0 | Modal produit, Grille produits, Chips catégories |
@@ -67,7 +67,7 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 | `komerce-api.js` | 4 | 0 | 0/0 | — |
 | `local-stock-badge.js` | 4 | 0 | 0/0 | — |
 | `b-catalog-desktop-enhancers.js` | 0 | 3 | 1/0 | Header, Chips catégories |
-| `b-modal-cart.js` | 1 | 2 | 2/0 | Modal produit |
+| `b-modal-cart.js` | 1 | 2 | 3/0 | Modal produit |
 | `b-passkey-enrollment.js` | 3 | 0 | 0/0 | — |
 | `b-passkey-login.js` | 3 | 0 | 0/0 | — |
 | `b-utils.js` | 3 | 0 | 0/0 | Carte produit |

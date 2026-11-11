@@ -21,6 +21,10 @@ describe('b-bus — registre des événements', () => {
     );
   });
 
+  test('modal:selection-rendered a un contrat standard après le rerender SKU', () => {
+    expect(source.split('Événements standard Komerce')[1] || '').toContain('modal:selection-rendered');
+  });
+
   test('modal:detail-ready n’est pas déclaré comme événement retiré', () => {
     const retiredSection = source.split(
       'Événements retirés du JSDoc'
