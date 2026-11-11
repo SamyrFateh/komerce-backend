@@ -2056,19 +2056,83 @@
   function renderParcelActionSection(rootNode, ui, doc, context, config) {
     const slot = createSection(rootNode, ui, config.title, config.description);
     if (config.jumpId && slot.parentElement) slot.parentElement.id=config.jumpId;
-    // P0 #3900 : pas de fausse attestation de retrait via un simple motif
-    // « scanner indisponible ». La remise exige le parcours pickup sécurisé.
+    // P0 #3900 : retrait au clavier = code secret vérifié dans la transaction
+    // canonique pickup. Un motif de scan ne constitue jamais une identité.
     if (config.action === 'collect') {
       slot.appendChild(text(doc, 'p', 'kmc-workspace-note',
-        'Remise protégée : la saisie manuelle du code de retrait doit être vérifiée par le serveur. Sans code, utiliser la procédure exceptionnelle habilitée. Le raccourci de remise sans preuve est désactivé.'));
+        'Scanner facultatif : saisissez le code remis au client. La validation serveur est indispensable. Sans code, utilisez uniquement la procédure exceptionnelle autorisée.'));
       renderActionTable(slot, {
         rows: config.rows,
         emptyText: config.empty,
         columns: actionColumns({ referenceKind: 'parcel' }),
       });
-      slot.querySelectorAll('tbody tr').forEach(rowNode => {
-        const actionCell = rowNode.lastChild;
-        actionCell.replaceChildren(text(doc, 'span', 'kmc-workspace-muted', 'Code de retrait requis'));
+      slot.querySelectorAll('tbody tr').forEach((rowNode, index) => {
+        const row = config.rows[index];
+        const cell = rowNode.lastChild;
+        cell.replaceChildren();
+        const count = Number(row.available_parcel_count);
+        // Le writer pickup collecte un lot disponible par ordre canonique.
+        // Ne jamais faire passer un autre colis pour celui sélectionné.
+        if (!row.order_id || count !== 1) {
+          cell.appendChild(text(doc, 'span', 'kmc-workspace-muted',
+            count > 1 ? 'Plusieurs colis : sélection exacte requise' : 'Retrait indisponible : dossier à vérifier'));
+          return;
+        }
+        const form = doc.createElement('form');
+        form.className = 'kmc-workspace-section-actions';
+        form.setAttribute('data-pickup-manual-code', row.reference);
+        const codeInput = doc.createElement('input');
+        codeInput.type = 'password';
+        codeInput.autocomplete = 'off';
+        codeInput.autocapitalize = 'characters';
+        codeInput.maxLength = 16;
+        codeInput.required = true;
+        codeInput.placeholder = 'Code de retrait';
+        codeInput.setAttribute('aria-label', 'Code de retrait pour ' + row.order_ref);
+        const button = makeActionButton(doc, 'Vérifier et remettre', 'pickup-with-code');
+        button.type = 'submit';
+        form.append(codeInput, button);
+        form.addEventListener('submit', async event => {
+          event.preventDefault();
+          if (button.disabled) return;
+          const code = codeInput.value.trim();
+          if (!code) {
+            setFeedback(context.root, 'Le code de retrait client est requis.', 'critical');
+            return;
+          }
+          const confirmed = (context.confirm || (() => true))(
+            'Code vérifié par le serveur lors de la remise : confirmer la remise de ' +
+            row.reference + ' (commande ' + row.order_ref + ') ?');
+          if (!confirmed) return;
+          const previous = button.textContent;
+          button.disabled = true;
+          button.textContent = 'Vérification serveur…';
+          setFeedback(context.root, row.reference + ' · validation de remise en cours…', 'neutral');
+          try {
+            const result = await jsonRequest(context.fetch,
+              '/api/pickup/collect/' + encodeURIComponent(row.order_id),
+              { method: 'POST', body: { pickup_code: code } });
+            codeInput.value = '';
+            if (!result.success || result.parcel_reference !== row.reference) {
+              setFeedback(context.root,
+                'Réponse de remise à contrôler : recharger le dossier avant toute autre opération.', 'critical');
+            } else {
+              await context.reload();
+              setFeedback(context.root,
+                row.reference + ' · remise confirmée par le serveur.', 'positive');
+            }
+          } catch (error) {
+            // Une coupure réseau peut arriver APRÈS commit : ne pas réessayer
+            // aveuglément, ni annoncer une remise serveur sans réponse.
+            codeInput.value = '';
+            setFeedback(context.root,
+              'Remise non confirmée dans cet écran : ' + error.message +
+              '. Vérifiez le statut serveur avant toute nouvelle tentative.', 'critical');
+            button.disabled = false;
+            button.textContent = previous;
+          }
+        });
+        cell.appendChild(form);
       });
       return;
     }
