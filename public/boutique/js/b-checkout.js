@@ -198,9 +198,10 @@ export function buildCheckoutSelection(
   }, 0);
 
   const shared = context?.origin === 'SHARED_LIST';
+  const buyNow = context?.origin === 'BUY_NOW';
 
   return {
-    source: shared ? 'shared-list' : 'personal-cart',
+    source: shared ? 'shared-list' : (buyNow ? 'buy-now' : 'personal-cart'),
     sourceId: shared ? (context.sharedCartId || null) : null,
     items: normalizedItems,
     total,
@@ -895,6 +896,10 @@ export function checkoutCart(checkoutSelection = null) {
     if (!selection.items.length) {
       showToast('Votre panier est vide.', 'error');
       return;
+    }
+    if (selection.source === 'buy-now') {
+      // Écarte tout ancien contexte de liste partagée pour ce checkout isolé.
+      state.checkoutDisplayContext = { origin: 'BUY_NOW' };
     }
     // FIX 2026-05-19 : si on commande depuis la fiche produit Temu, fermer d'abord
     // la modale produit. Sans ça, deux overlays s'empilent (k-modal-overlay +
@@ -1599,6 +1604,9 @@ function _checkoutOriginPresentation(
   displayContext = null
 ) {
   const fromSharedList = source === 'shared-list';
+  if (source === 'buy-now') {
+    return { fromSharedList: false, title: 'Achat immédiat', badge: null };
+  }
 
   if (!fromSharedList) {
     return {
