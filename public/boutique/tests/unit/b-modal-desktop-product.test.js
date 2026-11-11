@@ -335,6 +335,28 @@ describe('desktop product detail renderer', () => {
     expect(dom.modal.querySelector('.k-modal-actions').classList.contains('k-modal-actions--filled')).toBe(true);
   });
 
+  test('P0 — autre taille en panier : desktop ne masque jamais Ajouter pour un SKU distinct', () => {
+    const product = detail();
+    const selection = createModalSelection(product);
+    selection.selected_options = { Couleur: 'Beige', Taille: 'L' };
+    selection.selected_sku_id = SKU_BEI_L;
+    state.cart = [{
+      product: { id: PRODUCT_ID, sku_id: SKU_MAR_M },
+      sku_id: SKU_MAR_M,
+      variant_combo: { Couleur: 'Marron', Taille: 'M' },
+      qty: 1,
+    }];
+
+    // Reproduit le --filled du rendu précédent, avant changement de taille.
+    const actions = dom.modal.querySelector('.k-modal-actions');
+    actions.classList.add('k-modal-actions--filled');
+    renderDesktopProductDetail(product, selection);
+
+    expect(actions.classList.contains('k-modal-actions--filled')).toBe(false);
+    expect(dom.addCartBtn.disabled).toBe(false);
+    expect(dom.addCartBtn.hidden).toBe(false);
+  });
+
   test('T-023/D11 — entrée panier avec qty 0 : reste AVAILABLE_EMPTY', () => {
     const product = detail({ inventory_model: 'LEGACY_VARIANTS' });
     state.cart = [{ product: { id: PRODUCT_ID }, qty: 0 }];
