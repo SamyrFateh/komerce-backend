@@ -350,9 +350,9 @@ router.post('/market/:marketCode/products/:productRef/forecast-preview',
       const productRef = String(req.params.productRef || '').trim().slice(0, 120);
       if (!productRef) return res.status(400).json({ code: 'pricing_forecast_product_required' });
       const { rows } = await db.query(
-        \`SELECT product_ref, cost_kmf, weight_kg,
+        `SELECT product_ref, cost_kmf, weight_kg,
                 volume_cm3 / 1000000.0 AS volume_m3, is_active
-           FROM products WHERE product_ref = $1 LIMIT 1\`,
+           FROM products WHERE product_ref = $1 LIMIT 1`,
         [productRef]
       );
       if (!rows[0] || rows[0].is_active !== true) {
