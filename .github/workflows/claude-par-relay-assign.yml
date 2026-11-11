@@ -1,0 +1,56 @@
+name: Claude PAR — rattacher NOTRE agent relais à NOTRE relais (staging KM)
+
+# Certification parallèle Claude (#3868). Aucun écran ni route ne rattache un agent à un relais :
+# on utilise le writer canonique assignAgentRelais (services/user-mutation-service.js), comme les
+# scripts de recette. Cible unique : claude-par-agent-relais@komerce-recette.test → CLAUDE-PAR Relais KM.
+on:
+  push:
+    branches: [cert/claude-par-accounts]
+    paths:
+      - '.github/workflows/claude-par-relay-assign.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  assign:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      KOMERCE_ENV: staging
+      NODE_ENV: test
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      EXPECTED_RAILWAY_ENVIRONMENT: staging
+      AGENT_EMAIL: claude-par-agent-relais@komerce-recette.test
+      RELAIS_ID: 8f75adf3-cce9-4cd6-add8-81de87654e3a
+      RELAIS_NAME: CLAUDE-PAR Relais KM
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Vérifier la cible staging
+        run: node scripts/recette/target-guard.js
+      - name: Rattacher l'agent (writer canonique, transaction unique)
+        run: |
+          node -e "
+          const db = require('./db');
+          const { assignAgentRelais } = require('./services/user-mutation-service');
+          (async () => {
+            const c = await db.pool.connect();
+            try {
+              await c.query('BEGIN');
+              const { rows: [r] } = await c.query('SELECT id, name, is_active FROM relais WHERE id = \$1::uuid', [process.env.RELAIS_ID]);
+              if (!r || r.name !== process.env.RELAIS_NAME || r.is_active !== true) throw Error('RELAIS_CIBLE_INATTENDU');
+              const { rows: [u] } = await c.query(\"SELECT u.id FROM users u JOIN e2e_test_accounts e ON e.user_id = u.id WHERE lower(u.email) = lower(\$1) AND u.role = 'agent_relais'\", [process.env.AGENT_EMAIL]);
+              if (!u) throw Error('AGENT_CIBLE_INTROUVABLE');
+              const res = await assignAgentRelais(c, { userId: u.id, relaisId: r.id });
+              if (!['assigned', 'already'].includes(res.status)) throw Error('ASSIGN_' + res.status);
+              await c.query('COMMIT');
+              console.log(JSON.stringify({ status: res.status, relais: r.name }));
+            } catch (e) { await c.query('ROLLBACK'); console.error('REFUS', e.message); process.exitCode = 1; }
+            finally { c.release(); await db.pool.end(); }
+          })();"
