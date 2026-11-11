@@ -315,6 +315,7 @@ function projectUnitEconomics(pricing = {}, selectedPriceKmf = null) {
     variable_cost_outside_purchase_kmf: pricing.variable_cost_outside_purchase_kmf ?? null,
     variable_cost_complete_kmf: pricing.variable_cost_complete_kmf ?? null,
     landed_relay_cost_kmf: pricing.landed_relay_cost_kmf ?? null,
+    business_variable_cost_kmf: pricing.business_variable_cost_kmf ?? null,
     // Contrat canonique (2026-09) : cdr_complete_kmf → fully_loaded_cost_reference_kmf
     cdr_reference_kmf: pricing.fully_loaded_cost_reference_kmf ?? null,
     contribution_unit_kmf: pricing.contribution_kmf ?? null,
