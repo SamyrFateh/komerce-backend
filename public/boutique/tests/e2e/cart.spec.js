@@ -136,6 +136,21 @@ test.describe('P0 variantes — parcours vrai Chromium desktop', () => {
     'Campagne staging explicite : BASE_URL distant et E2E_MULTI_VARIANT_PRODUCT_NAME requis (un skip ne vaut pas PASS)');
 
   test('même produit en deux tailles : ajout, quantités isolées, libellés et persistance', async ({ page }) => {
+    page.on('response', async (response) => {
+      if (!/\\/api\\/products\\/[^/?]+\\/detail/.test(response.url())) return;
+      try {
+        const detail = await response.json();
+        console.log('[P0 DETAIL]', JSON.stringify({
+          status: response.status(), product_id: response.url().split('/').slice(-2)[0],
+          inventory_model: detail.inventory_model,
+          option_axes: (detail.option_axes || []).map(a => a.key),
+          sellable_count: detail.sellable_units?.length || 0,
+          units: (detail.sellable_units || []).slice(0, 4).map(u => ({
+            sku_id: u.sku_id, combo: u.variant_combo, stock_status: u.stock_status,
+          })),
+        }));
+      } catch (err) { console.log('[P0 DETAIL ERROR]', String(err)); }
+    });
     await page.goto(BASE_URL);
     await page.locator('#k-search-input').fill(MULTISIZE_TARGET);
     const suggestion = page.locator('#k-search-dropdown .k-search-item').first();
@@ -177,6 +192,15 @@ test.describe('P0 variantes — parcours vrai Chromium desktop', () => {
 
     await sizeButton(sizeA).click();
     await expect(add).toBeVisible();
+    console.log('[P0 BUTTON]', JSON.stringify(await page.locator('#k-modal-variants').evaluate(root => ({
+      axes: Array.from(root.querySelectorAll('[data-axis-key]')).map(el => ({
+        key: el.dataset.axisKey,
+        selected: Array.from(el.querySelectorAll('button[aria-pressed="true"]')).map(b => b.dataset.optionValue),
+      })),
+      buttonClass: document.querySelector('#k-add-cart-btn')?.className,
+      ariaDisabled: document.querySelector('#k-add-cart-btn')?.getAttribute('aria-disabled'),
+      purchaseMessage: document.querySelector('#k-modal-selection-message')?.textContent,
+    }))));
     await expect(add).toBeEnabled();
     await add.click();
     await expect(rows).toHaveCount(1);
