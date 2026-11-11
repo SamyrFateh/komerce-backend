@@ -48,15 +48,31 @@ const check=(ok,code)=>{if(!ok)throw Error(code)};
    [REFERENCE]);
   check(rows.length===1,'G6_REFERENCE_NOT_UNIQUE_OR_MISSING');
   const o=rows[0];
-  check(o.user_id===EXPECTED_BUYER,'G6_ORDER_BUYER_MISMATCH');
-  check(o.simulation_scope==='G6-BUYER'&&o.market==='KM'&&
-    Number(o.total_kmf)===17990&&o.payment_mode==='cash_relais'&&
-    o.status==='pending'&&o.payment_status!=='paid'&&
-    Number(o.lines)===1&&Number(o.qty)===1&&Array.isArray(o.products)&&o.products.includes(PRODUCT),
-    'G6_POSTGRES_CANONICAL_ORDER_MISMATCH');
-  report.order={reference:o.reference,status:o.status,payment_status:o.payment_status,
+  const observed={
+    buyer_match:o.user_id===EXPECTED_BUYER,
     scope:o.simulation_scope,market:o.market,total_kmf:Number(o.total_kmf),
-    payment_mode:o.payment_mode,lines:Number(o.lines),quantity:Number(o.qty),products:o.products};
+    payment_mode:o.payment_mode,status:o.status,payment_status:o.payment_status,
+    lines:Number(o.lines),quantity:Number(o.qty),products:o.products
+  };
+  const expected={scope:'G6-BUYER',market:'KM',total_kmf:17990,
+    payment_mode:'cash_relais',status:'pending',payment_unpaid:true,
+    lines:1,quantity:1,product:PRODUCT};
+  report.observed=observed;
+  report.invariant_failures=[
+    ...(!observed.buyer_match?['buyer_match']:[]),
+    ...(observed.scope!==expected.scope?['scope']:[]),
+    ...(observed.market!==expected.market?['market']:[]),
+    ...(observed.total_kmf!==expected.total_kmf?['total_kmf']:[]),
+    ...(observed.payment_mode!==expected.payment_mode?['payment_mode']:[]),
+    ...(observed.status!==expected.status?['status']:[]),
+    ...(observed.payment_status==='paid'?['payment_status']:[]),
+    ...(observed.lines!==expected.lines?['lines']:[]),
+    ...(observed.quantity!==expected.quantity?['quantity']:[]),
+    ...(!Array.isArray(observed.products)||!observed.products.includes(expected.product)?['products']:[])
+  ];
+  save();
+  check(report.invariant_failures.length===0,'G6_POSTGRES_CANONICAL_ORDER_MISMATCH');
+  report.order={reference:o.reference,...observed};
   report.verdict='G6_EXISTING_ORDER_POSTGRES_READBACK_PASS';
  }catch(e){
   report.verdict='BLOCKED';report.error=String(e.message||e).slice(0,350);process.exitCode=2;
