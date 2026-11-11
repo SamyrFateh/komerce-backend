@@ -21154,7 +21154,7 @@
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 20,
+            "count": 22,
             "files": [
               {
                 "declared": "dashboards/canonical/access.html",
@@ -21174,6 +21174,11 @@
               {
                 "declared": "dashboards/canonical/css/market-catalog-essential.css",
                 "resolvedPath": "public/dashboards/canonical/css/market-catalog-essential.css",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/css/market-catalog-pricing-list.css",
+                "resolvedPath": "public/dashboards/canonical/css/market-catalog-pricing-list.css",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -21204,6 +21209,11 @@
               {
                 "declared": "dashboards/canonical/js/market-cash-control.js",
                 "resolvedPath": "public/dashboards/canonical/js/market-cash-control.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/js/market-catalog-pricing-list.js",
+                "resolvedPath": "public/dashboards/canonical/js/market-catalog-pricing-list.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -21304,7 +21314,7 @@
             ]
           },
           "tests": {
-            "count": 10,
+            "count": 11,
             "files": [
               {
                 "declared": "tests/e2e/market-readonly-views.spec.js",
@@ -21324,6 +21334,11 @@
               {
                 "declared": "tests/unit/market-cash-control-ui.test.js",
                 "resolvedPath": "tests/unit/market-cash-control-ui.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/market-catalog-pricing-list.test.js",
+                "resolvedPath": "tests/unit/market-catalog-pricing-list.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -21359,7 +21374,7 @@
             ]
           }
         },
-        "totalFiles": 37,
+        "totalFiles": 40,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
