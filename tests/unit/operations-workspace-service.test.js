@@ -296,9 +296,9 @@ test('scanParcel refuse une confirmation sans motif et n\'appelle pas le moteur'
 test.each([
   ['admin', 'ship', 'admin'],
   ['agent_hub', 'ship', 'hub_agent'],
-  ['agent_relais', 'collect', 'relay_agent'],
+  ['agent_relais', 'receive', 'relay_agent'],
   // rôle inattendu : la station qui exécute l'action décide (jamais d'étiquette « admin » par défaut)
-  ['market_operator', 'collect', 'relay_agent'],
+  ['market_operator', 'receive', 'relay_agent'],
   [undefined, 'ship', 'hub_agent'],
 ])('scanParcel traduit le rôle %s (%s) en actor_role %s accepté par scan_events', async (role, action, expected) => {
   mockQuery.mockResolvedValueOnce({
