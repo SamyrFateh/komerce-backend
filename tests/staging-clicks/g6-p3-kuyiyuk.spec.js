@@ -103,7 +103,7 @@ test.describe.serial('G6 P3 KUYIYUK — Chromium Relais cash + Hub UI',()=>{
       await test.skip();
     }
     if(before.status==='pending'){
-      const {ctx:relayCtx,page:relayPage}=await login(browser,baseURL,'admin');
+      const {ctx:relayCtx,page:relayPage}=await login(browser,baseURL,'relay');
       try{
         await relayPage.goto('/admin/relais-live?view=execute',{waitUntil:'domcontentloaded'});
         await relayPage.locator('select').first().waitFor({timeout:20000});
