@@ -49,8 +49,12 @@ const check=(ok,code)=>{if(!ok)throw Error(code)};
   check(rows.length===1,'G6_REFERENCE_NOT_UNIQUE_OR_MISSING');
   const o=rows[0];
   const observed={
-    buyer_match:o.user_id===EXPECTED_BUYER,
+    order_id:o.id,buyer_match:o.user_id===EXPECTED_BUYER,
     scope:o.simulation_scope,market:o.market,total_kmf:Number(o.total_kmf),
+    product_total_kmf:Number(o.product_total_kmf),
+    transport_price_kmf:Number(o.transport_price_kmf),
+    transport_sum_matches:Number(o.total_kmf)===Number(o.product_total_kmf)+Number(o.transport_price_kmf),
+    item_details:o.item_details,
     payment_mode:o.payment_mode,status:o.status,payment_status:o.payment_status,
     lines:Number(o.lines),quantity:Number(o.qty),products:o.products
   };
