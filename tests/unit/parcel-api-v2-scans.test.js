@@ -124,7 +124,6 @@ describe('POST /:ref/scan — mapping event_type → scan-engine', () => {
     ['in_transit', 'transit_confirmed'],
     ['arrived', 'relais_received'],
     ['available', 'relais_received'],
-    ['collected', 'customer_collected'],
   ])('event_type=%s → engine event_type=%s', async (v2Type, engineType) => {
     setParcelQuery({ id: 'PID1', reference: 'P1', status: 'preparation' });
     scanEngine.processScan.mockResolvedValueOnce({ success: true, event_id: 'EV1', parcel: { status: 'x' } });
@@ -152,18 +151,15 @@ describe('POST /:ref/scan — résolution actor', () => {
     );
   });
 
-  test('role admin → acteur admin même si body prétend être relais', async () => {
-    setParcelQuery({ id: 'PID1', reference: 'P1', status: 'available' });
-    scanEngine.processScan.mockResolvedValueOnce({
-      success: true, event_id: 'EV1', parcel: { status: 'collected' },
-    });
+  test('même admin : un scan logistique ne peut pas remettre sans code', async () => {
     const res = await request(app).post('/api/v2/parcels/P1/scan')
       .set('x-test-role', 'admin')
       .send({ event_type: 'collected', actor_role: 'relay_agent' });
-    expect(res.status).toBe(200);
-    expect(scanEngine.processScan).toHaveBeenCalledWith(
-      expect.objectContaining({ actor_role: 'admin' })
-    );
+    expect(res.status).toBe(409);
+    expect(res.body.code).toBe('PICKUP_CODE_REQUIRED');
+    expect(db.query).not.toHaveBeenCalled();
+    expect(scanEngine.processScan).not.toHaveBeenCalled();
+    expect(notif.notifyParcelScan).not.toHaveBeenCalled();
   });
 
   test('role agent_hub → actor_role déduit "hub_agent" si non fourni', async () => {
