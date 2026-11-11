@@ -32,6 +32,8 @@ function isDedicatedE2E(email) {
 async function reassign({ db, env = process.env, fetchImpl = fetch, apply = false }) {
   if (env.KOMERCE_ENV !== 'staging' || env.KOMERCE_TARGET_ENV !== 'staging') throw new Error('STAGING_ONLY');
   const mode = env.RELAY_MODE || 'dry-run-to-fixture';
+  const ownerApproved = env.GITHUB_REPOSITORY === 'SamyrFateh/komerce-backend' && env.GITHUB_ACTOR && env.GITHUB_ACTOR === env.GITHUB_REPOSITORY_OWNER && ['issues', 'workflow_dispatch'].includes(env.GITHUB_EVENT_NAME);
+  if (apply && !ownerApproved) throw new Error('OWNER_APPROVAL_REQUIRED');
   const email = env.E2E_AGENT_RELAIS_EMAIL;
   if (!isDedicatedE2E(email)) throw new Error('E2E_ACCOUNT_REQUIRED');
   const target = await confirmTarget({ db, fetchImpl, env });
@@ -110,6 +112,33 @@ async function reassign({ db, env = process.env, fetchImpl = fetch, apply = fals
         }
         report.recette_cross_market = true;
       }
+    } else if (mode === 'to-order') {
+      const reference = String(env.RELAY_ORDER_REFERENCE || '').trim().toUpperCase();
+      if (reference !== 'KUYIYUK') throw new Error('ORDER_REFERENCE_NOT_ALLOWED');
+      const { rows: [order] } = await client.query(
+        `SELECT id, market_id, relais_id, simulation_scope, status::text AS status,
+                payment_mode::text AS payment_mode, payment_status::text AS payment_status
+           FROM orders WHERE reference=$1 LIMIT 1`,
+        [reference]
+      );
+      if (!order || !order.relais_id || order.simulation_scope !== 'G6-BUYER' ||
+          order.status !== 'pending' || order.payment_mode !== 'cash_relais' || order.payment_status !== 'pending') {
+        throw new Error('TARGET_ORDER_NOT_ELIGIBLE');
+      }
+      const { rows: [targetRelay] } = await client.query(
+        'SELECT id, market_id FROM relais WHERE id=$1::uuid AND is_active=TRUE LIMIT 1',
+        [order.relais_id]
+      );
+      const { rows: [currentRelay] } = await client.query(
+        'SELECT market_id FROM relais WHERE id=$1::uuid LIMIT 1',
+        [user.relais_id]
+      );
+      if (!targetRelay || !currentRelay || targetRelay.market_id !== order.market_id ||
+          currentRelay.market_id !== order.market_id) throw new Error('RELAY_MARKET_MISMATCH');
+      dest = targetRelay.id;
+      report.order_reference = reference;
+      report.order_id = order.id;
+      report.same_market = true;
     } else if (mode === 'restore') {
       if (!UUID.test(String(env.RELAY_RESTORE_ID || ''))) throw new Error('RESTORE_ID_REQUIRED');
       dest = env.RELAY_RESTORE_ID;
