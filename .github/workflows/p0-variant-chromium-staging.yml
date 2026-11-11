@@ -22,28 +22,16 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Checkout proposed P0 post-render fix for browser-only preview
-        uses: actions/checkout@v4
-        with:
-          repository: SamyrFateh/komerce-backend
-          ref: cd6310d8b2427cb9eff67b84f002861912b14ad5 # HEAD exact PR #3901 : preview, pas main
-          path: p0-fix
-          fetch-depth: 1
-
-      - name: Record preview source
-        run: |
-          echo "Preview modules from $(git -C p0-fix rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
-
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: npm
           cache-dependency-path: public/boutique/package-lock.json
 
-      - name: Require real deployed staging containing P0 merge
+      - name: Require real deployed staging containing P0 #3901 merge
         env:
           ORIGIN: https://komerce-backend-production.up.railway.app
-          MINIMUM_SHA: a0f287d24b2a8fde5717b4b0466975442fce6fb2
+          MINIMUM_SHA: e3e85ec771957697293c77a16e6f4d32fd912a2e
         run: |
           set -euo pipefail
           curl -fsS --retry 3 --retry-delay 2 "$ORIGIN/health/version" > /tmp/staging-version.json
@@ -65,7 +53,7 @@ jobs:
           KOMERCE_ENV: staging
           BASE_URL: https://komerce-backend-production.up.railway.app/boutique/?market=KM
           E2E_MULTI_VARIANT_PRODUCT_NAME: Robe longue femme
-          E2E_PREVIEW_ROOT: ${{ github.workspace }}/p0-fix/public/boutique/js
+          E2E_PREVIEW_ROOT: '' # Post-merge : modules réellement servis, aucune superposition Playwright
         run: |
           set -euo pipefail
           cd public/boutique
