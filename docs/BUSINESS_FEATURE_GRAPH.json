@@ -14831,6 +14831,20 @@
       {
         "feature": "market-autonomy",
         "category": "dash",
+        "declared": "dashboards/canonical/js/market-catalog-pricing-list.js",
+        "resolvedPath": "public/dashboards/canonical/js/market-catalog-pricing-list.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "dash",
+        "declared": "dashboards/canonical/css/market-catalog-pricing-list.css",
+        "resolvedPath": "public/dashboards/canonical/css/market-catalog-pricing-list.css",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "dash",
         "declared": "dashboards/canonical/js/market-prompt.js",
         "resolvedPath": "public/dashboards/canonical/js/market-prompt.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -14931,6 +14945,13 @@
         "category": "dash",
         "declared": "dashboards/canonical/js/team-invite.js",
         "resolvedPath": "public/dashboards/canonical/js/team-invite.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "tests",
+        "declared": "tests/unit/market-catalog-pricing-list.test.js",
+        "resolvedPath": "tests/unit/market-catalog-pricing-list.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -41608,6 +41629,18 @@
               {
                 "sourceFileId": "services/market-local-price-activation-service.js",
                 "targetFile": "services/pricing-market-corridor.js"
+              },
+              {
+                "sourceFileId": "tests/unit/market-catalog-pricing-list.test.js",
+                "targetFile": "services/pricing-engine.js"
+              },
+              {
+                "sourceFileId": "tests/unit/market-catalog-pricing-list.test.js",
+                "targetFile": "services/pricing-cdr.js"
+              },
+              {
+                "sourceFileId": "tests/unit/market-catalog-pricing-list.test.js",
+                "targetFile": "services/pricing-market-corridor.js"
               }
             ]
           }
@@ -41631,6 +41664,10 @@
               },
               {
                 "sourceFileId": "services/market-local-price-state-transition.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/market-catalog-pricing-list.test.js",
                 "targetFile": "db.js"
               },
               {
@@ -48997,7 +49034,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2295
+        "filesObserved": 2297
       },
       "boutique": {
         "filesObserved": 214,
