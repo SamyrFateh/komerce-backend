@@ -51,6 +51,17 @@ async function mount(page, { caps = {}, access = null, posts = [], search = '', 
       posts.push({ path: url.pathname, body: posted, method: 'PATCH' });
       return json({ ok:true, action:'update_market_direct_structure_details' });
     }
+    if (url.pathname.endsWith('/forecast-preview') && route.request().method() === 'POST') {
+      const posted = route.request().postDataJSON();
+      posts.push({ path: url.pathname, body: posted, method: 'POST' });
+      return json({ simulation_only: true, writes: false, forecast: {
+        status: 'PROVISOIRE', plancher_central_kmf: 7280, plancher_prudent_kmf: 8909,
+        cases: { central: { n1_kmf: 6361, n2_fixed_kmf: 919, sale_pct: 0,
+          lines: [{ code: 'supplier_delivery', evidence: 'ASSUMED', amount_kmf: 738 }] } },
+        prices: [{ price_kmf: 9000, verdict: 'ROBUSTE_DANS_LES_SCENARIOS',
+          contribution_centrale_kmf: 1720 }], diagnostics: [],
+      } });
+    }
     if (route.request().method() === 'POST') {
       const posted = route.request().postDataJSON();
       posts.push({ path: url.pathname, body: posted });
@@ -122,6 +133,46 @@ for (const [name, viewport] of [['1440', { width: 1440, height: 900 }], ['390', 
       expect(body).not.toMatch(/\bnull\b|\bundefined\b|NaN/);
       await noOverflow(page);
       await shot(page, '1-vue-economique', name);
+    });
+
+    test('Prévision avant vente : trois scénarios explicites, lecture seule, aucun prix choisi', async ({ page }) => {
+      const posts = [];
+      await mount(page, { posts, search: '?market=KM&product_ref=KPR-900002' });
+      const detail = page.locator('[data-atelier-forecast]');
+      await expect(detail).toHaveCount(1);
+      await expect(detail).toContainText('NON VÉRIFIÉES');
+      expect(posts).toHaveLength(0);
+      await detail.locator('summary').first().click();
+      await detail.locator('[name="commission_basis"]').selectOption('fixed_unit');
+      const numeric = {
+        supplier_delivery: 738, bank_pct: 1.5, hub_packaging: 56,
+        freight: 88552.8, lot_volume_m3: 3, minimum_billable_m3: 1,
+        lot_fee: 110000, insurance_pct: .5, customs_duties: 20,
+        last_mile: 500, relay_commission: 600, payment: 200, payment_pct: 0,
+        risk_damage_pct: 1, risk_pickup_pct: 5,
+      };
+      await detail.locator('form').evaluate((form, values) => {
+        for (const input of form.querySelectorAll('input[name]')) {
+          const key = input.name.replace(/_(favorable|central|defavorable)$/, '');
+          if (Object.prototype.hasOwnProperty.call(values, key)) input.value = String(values[key]);
+        }
+      }, numeric);
+      await detail.locator('[name="customs_duties_favorable"]').fill('0');
+      await detail.locator('[name="customs_duties_defavorable"]').fill('42');
+      await detail.locator('[name="candidate_price"]').fill('9000');
+      await detail.getByRole('button', { name: 'Calculer sans enregistrer' }).click();
+      await expect(detail.locator('[data-atelier-forecast-output]')).toContainText('Plancher central');
+      await expect(detail.locator('[data-atelier-forecast-output]')).toContainText('PROVISOIRE');
+      await expect(detail.locator('[data-atelier-forecast-output]')).toContainText(/8\s*909/);
+      expect(posts.filter(item => item.path.endsWith('/forecast-preview'))).toHaveLength(1);
+      expect(posts.filter(item => /\/local-price|\/activate/.test(item.path))).toHaveLength(0);
+      const sent = posts.find(item => item.path.endsWith('/forecast-preview')).body;
+      expect(sent.circuit).toBe('import');
+      expect(sent.commission_basis).toBe('fixed_unit');
+      expect(sent.scenarios.central.customs_duties).toBe(20);
+      expect(sent.scenarios.defavorable.freight).toBe(88552.8);
+      expect(sent.market_code).toBeUndefined();
+      await noOverflow(page);
     });
 
     test('Produits à décider : file triée par urgence, une action principale par ligne', async ({ page }) => {
