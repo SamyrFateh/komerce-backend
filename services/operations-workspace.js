@@ -578,6 +578,16 @@ const SCAN_ACTOR_ROLE = Object.freeze({ admin: 'admin', agent_hub: 'hub_agent', 
 const SCAN_STATION_ROLE = Object.freeze({ ship: 'hub_agent', receive: 'relay_agent', collect: 'relay_agent' });
 
 async function scanParcel(reference, action, market, actor = {}, manualInput = null) {
+  // P0 #3900: le code de retrait (ou l'autorisation exceptionnelle) est une preuve
+  // d'identité, pas un scan logistique. Aucun mode dégradé ne peut le remplacer.
+  // Le comptoir appelle désormais le writer canonique /api/scans/collect.
+  if (action === 'collect') {
+    throw new OperationsWorkspaceError(
+      'PICKUP_CODE_REQUIRED',
+      'Remise client : saisissez le code de retrait dans le comptoir, ou utilisez la procédure exceptionnelle autorisée.',
+      409
+    );
+  }
   const resolvedMarket = requireMarket(market);
   const manual = buildManualConfirmation(manualInput);
   const scan = SCAN_ACTIONS[action];
