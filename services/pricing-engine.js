@@ -8,7 +8,7 @@
  * @outputs       economic_reference_and_market_decision_inputs
  * @depends       db, services/pricing-cdr.js, services/pricing-output.js
  * @used-by       routes/modules.js, routes/pricing.js, routes/sourcing-scanner.js, services/apply-pricing-updates.js, services/order-cost-snapshot.js, services/pricing-dashboard.js, services/pricing-recommend.js, services/supplier-catalog-scanner.js, services/suppliers/catalog-import-orchestrator.js
- * @db-read       order_items, orders, products
+ * @db-read       order_items, orders, products, relais
  * @db-write      none
  * @db-txn        none
  * @doctrine      fixed_structure_never_fabricates_sku_price, market_bounds_possible_human_decides, contribution_covers_structure_collectively
@@ -132,7 +132,7 @@ async function recommend(input, options = {}) {
   const inputVolumeM3 = Number(input.volume_m3) > 0 ? Number(input.volume_m3) : null;
   const merged = {
     id: input.product_id || product?.id || null,
-    category: input.category || product?.category || 'phones',
+    category: input.category || product?.category || null,
     cost_kmf: input.cost_kmf != null ? input.cost_kmf : product?.cost_kmf,
     weight_kg: input.weight_kg != null ? input.weight_kg : product?.weight_kg,
     volume_m3: inputVolumeM3 ?? productVolumeM3,
@@ -145,9 +145,19 @@ async function recommend(input, options = {}) {
       if (await isStockExposable(product.id, config.market_id)) provenance = 'LOCAL_STOCK';
     } catch (_) { provenance = null; }
   }
+  // Île de destination : explicite, sinon celle du relais (même marché). Inconnue → surcoûts inter-îles UNKNOWN.
+  let destinationIsland = input.destination_island || null;
+  if (!destinationIsland && input.relais_id) {
+    try {
+      const rel = await db.query('SELECT island, market_id FROM relais WHERE id = $1', [input.relais_id]);
+      const row = rel?.rows?.[0];
+      if (row && (!config.market_id || String(row.market_id) === String(config.market_id))) destinationIsland = row.island || null;
+    } catch (_) { destinationIsland = null; }
+  }
   const ctx = {
     config,
     provenance,
+    destination_island: destinationIsland,
     volume_m3: merged.volume_m3,
     channel: input.channel || 'cash_relais',
   };
@@ -371,6 +381,8 @@ async function recommend(input, options = {}) {
     // n'est pas une preuve (champs existants inchangés, ajouts seulement).
     health_status_confidence: cdr.input_quality?.level || 'low',
     input_quality: cdr.input_quality || null,
+    category_status: cdr.category_status || 'UNKNOWN',
+    cost_scope: cdr.cost_scope || null,
     customs_estimate_status: cdr.customs_estimate_status || 'not_estimated',
     customs_inspection_kmf: cdr.customs_inspection_kmf || 0,
     customs_duties_kmf: cdr.customs_duties_kmf || 0,

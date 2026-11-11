@@ -139,6 +139,17 @@ describe('computeRecommend', () => {
     );
   });
 
+  it('catégorie absente : UNKNOWN explicite et avertissement, jamais « phones » (#3830 P0-2)', async () => {
+    mockGlobalParams();
+    mockRecommend.mockRejectedValue(new Error('engine down'));
+    const result = await computeRecommend({ prix_aed: 100 });
+    expect(result.context.category).toBeNull();
+    expect(result.context.category_status).toBe('UNKNOWN');
+    expect(result.warnings).toEqual(expect.arrayContaining([expect.stringContaining('Catégorie absente')]));
+    const [engineInput] = mockRecommend.mock.calls[0];
+    expect(engineInput.category).toBeNull();
+  });
+
   it('calcule niveau1/niveau2/niveau3 et un prix recommande coherent (fallback legacy, doctrine indisponible)', async () => {
     mockGlobalParams({
       fc: { taux_aed_kmf: 138, taux_change_eur_kmf: 492, fret_eur_per_m3: 180, target_marge_brute_pct: 40, objectif_commandes_mois: 100 },
@@ -242,6 +253,21 @@ describe('computeRecommendBatch', () => {
     expect(result.count).toBe(1);
     expect(['aligned', 'underpriced', 'overpriced', 'unset']).toContain(result.items[0].status);
     expect(result.summary.aligned + result.summary.underpriced + result.summary.overpriced).toBe(1);
+  });
+
+  it('batch : catégorie absente → category_status UNKNOWN, pas de bascule vers phones (#3830 P0-2)', async () => {
+    mockDbQuery
+      .mockResolvedValueOnce({ rows: [{ id: 'p1', name: 'A', category: null, price_kmf: 1000, cost_kmf: 500, weight_kg: 0.5 }] })
+      .mockImplementation((sql) => {
+        if (sql.includes('FROM finance_config')) return Promise.resolve({ rows: [{}] });
+        return Promise.resolve({ rows: [] });
+      });
+    mockLoadGlobalConfig.mockRejectedValue(new Error('no doctrine'));
+
+    const result = await computeRecommendBatch({});
+
+    expect(result.items[0].category).toBeNull();
+    expect(result.items[0].category_status).toBe('UNKNOWN');
   });
 
   it('batch utilise le volume canonique persistant quand il existe', async () => {

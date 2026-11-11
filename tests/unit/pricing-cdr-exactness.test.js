@@ -41,7 +41,7 @@ const COMPONENTS = [
   mk('charges_fixes_mensuelles_kmf', 'fixed_overhead', 100, 'kmf_per_order'),
 ];
 const cfg = (components = COMPONENTS, extra = {}) => ({
-  finance, categories: { phones: cat }, components, provisions: [], charges: [], ...extra,
+  finance, categories: { phones: cat }, components, provisions: [], charges: [], market_code: 'KM', ...extra,
 });
 const run = (config, product = { category: 'phones', cost_kmf: 3000, weight_kg: 1 }, volume = 0.001, channel = 'cash_relais') =>
   computeCDR(product, { config, volume_m3: volume, channel });

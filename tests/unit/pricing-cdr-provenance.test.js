@@ -23,12 +23,13 @@ const config = {
 const product = { category: 'mariage', cost_kmf: 3000 };
 
 describe('CDR applicabilité par provenance (L2)', () => {
-  it('LOCAL_STOCK : fret/douane/port non applicables, hub conservé', () => {
+  it('LOCAL_STOCK : fret/douane/port et coûts Hub non applicables (#3830 P0-2)', () => {
     const r = computeCDR(product, { config, volume_m3: 0.01, provenance: 'LOCAL_STOCK' });
     expect(r.details.freight).toBe(0);
     expect(r.details.customs).toBe(0);
     expect(r.details.port_transitaire).toBe(0);
-    expect(r.details.hub).toBe(50);
+    expect(r.details.hub).toBe(0);
+    expect(r.cost_scope.not_applicable_components.map(x => x.reason)).toContain('LOCAL_STOCK');
     expect(r.import_chain_not_applicable).toBe(true);
   });
 
