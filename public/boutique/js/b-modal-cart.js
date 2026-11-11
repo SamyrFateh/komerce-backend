@@ -303,7 +303,10 @@ function currentModalCartItem() {
   const selectedCombo = normalizedCombo(state.modalSelection?.selected_options);
   if (!selectedCombo) return null;
   return candidates.find(
-    (item) => normalizedCombo(item.variant_combo) === selectedCombo
+    // Compatibilité ancienne ligne sans SKU seulement : un SKU explicite
+    // différent ne doit jamais être confondu avec la variante sélectionnée.
+    (item) => itemSkuId(item) == null
+      && normalizedCombo(item.variant_combo) === selectedCombo
   ) || null;
 }
 
