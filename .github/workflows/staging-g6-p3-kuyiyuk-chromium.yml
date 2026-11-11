@@ -21,6 +21,7 @@ jobs:
       KOMERCE_ENV: staging
       KOMERCE_DISABLE_CRONS: 'true'
       EXPECTED_RAILWAY_ENVIRONMENT: staging
+      KOMERCE_TARGET_ENV: staging
       STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
       E2E_CLICKS_BASE_URL: https://komerce-backend-production.up.railway.app
       DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
@@ -46,10 +47,27 @@ jobs:
         run: |
           node scripts/recette/resolve-staging-deploy-pin.js
           node scripts/recette/target-guard.js
+      - name: Temporarily align E2E relay agent with KUYIYUK
+        env:
+          RELAY_MODE: to-order
+          RELAY_ORDER_REFERENCE: KUYIYUK
+          RELAY_APPLY: '1'
+          RELAY_CONFIRMATION: REASSIGN-E2E-RELAY
+          PGOPTIONS: ''
+        run: node scripts/recette/staging-e2e-relay-reassign.js
       - name: Install Chromium
         run: npx playwright install chromium
       - name: P3 same-order Hub UI gestures
         run: npx playwright test --config=playwright.hub-v1-clicks.config.js tests/staging-clicks/g6-p3-kuyiyuk.spec.js
+      - name: Restore E2E relay agent assignment
+        if: always() && env.RELAY_RESTORE_ID != ''
+        env:
+          RELAY_MODE: restore
+          RELAY_APPLY: '1'
+          RELAY_CONFIRMATION: REASSIGN-E2E-RELAY
+          RELAY_RESTORE_ID: ${{ env.RELAY_RESTORE_ID }}
+          PGOPTIONS: ''
+        run: node scripts/recette/staging-e2e-relay-reassign.js
       - uses: actions/upload-artifact@v4
         if: always()
         with:
