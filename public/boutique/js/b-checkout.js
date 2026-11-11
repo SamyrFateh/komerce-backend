@@ -1719,8 +1719,19 @@ function _buildRecapItemsBlock(
 
     const info = document.createElement('span');
     info.className = 'ck-recap-item-info';
+    const variantCombo = it.variant_combo
+      && typeof it.variant_combo === 'object'
+      && !Array.isArray(it.variant_combo)
+      ? Object.entries(it.variant_combo)
+      : [];
+    const variantText = variantCombo.length
+      ? variantCombo.map(([axis, value]) => axis + ' : ' + String(value)).join(' · ')
+      : (it.variant_label || product.variant_label || '');
     info.innerHTML =
       '<span class="ck-recap-item-name">' + sanitize(product.name || '') + '</span>'
+      + (variantText
+        ? '<span class="ck-recap-item-qty ck-recap-item-variant">' + sanitize(variantText) + '</span>'
+        : '')
       + '<span class="ck-recap-item-qty">'
       + qty + ' \u00D7 ' + fmt(unitPrice, 'KMF')
       + '</span>';
