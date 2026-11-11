@@ -279,36 +279,21 @@ describe('POST /:ref/scan — succès', () => {
   });
 });
 
-describe('RC-3/RC-4 — autorisations remontées au contrat HTTP', () => {
-  test('RC-3 : cash non payé → HTTP 409, code stable, sans notification', async () => {
-    setParcelQuery({ id: 'PID1', reference: 'P1', status: 'available' });
-    scanEngine.processScan.mockResolvedValueOnce({
-      success: false,
-      error: { code: 'COLLECTION_PAYMENT_REQUIRED', message: 'Commande non payée' },
-    });
+describe('RC-3/RC-4 — remise client protégée par code canonique', () => {
+  test.each([
+    ['cash non payé', 'agent_relais'],
+    ['agent hors relais', 'agent_relais'],
+  ])('P0 #3900 : collected via scan V2 est toujours refusé avant toute écriture (%s)', async (_cas, role) => {
     const res = await request(app).post('/api/v2/parcels/P1/scan')
-      .set('x-test-role', 'agent_relais')
+      .set('x-test-role', role)
       .send({ event_type: 'collected', actor_role: 'admin' });
     expect(res.status).toBe(409);
     expect(res.body).toEqual({
-      error: 'Commande non payée', code: 'COLLECTION_PAYMENT_REQUIRED', incidents: [],
+      code: 'PICKUP_CODE_REQUIRED',
+      error: 'Remise client : code de retrait ou procédure nominative exceptionnelle obligatoire.',
     });
-    expect(notif.notifyParcelScan).not.toHaveBeenCalled();
-  });
-
-  test('RC-4 : agent hors relais → HTTP 403, aucune confirmation', async () => {
-    setParcelQuery({ id: 'PID1', reference: 'P1', status: 'available' });
-    scanEngine.processScan.mockResolvedValueOnce({
-      success: false,
-      error: { code: 'COLLECTION_RELAY_FORBIDDEN', message: 'Autre relais' },
-    });
-    const res = await request(app).post('/api/v2/parcels/P1/scan')
-      .set('x-test-role', 'agent_relais')
-      .send({ event_type: 'collected', actor_role: 'admin' });
-    expect(res.status).toBe(403);
-    expect(res.body).toEqual({
-      error: 'Autre relais', code: 'COLLECTION_RELAY_FORBIDDEN', incidents: [],
-    });
+    expect(db.query).not.toHaveBeenCalled();
+    expect(scanEngine.processScan).not.toHaveBeenCalled();
     expect(notif.notifyParcelScan).not.toHaveBeenCalled();
   });
 });
