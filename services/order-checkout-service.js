@@ -103,7 +103,9 @@ function fail(status, body) {
   return { ok: false, status, body };
 }
 
-async function runOrderCheckout({ user, body, internalSimulation = null }) {
+// previewOnly : même calcul que la création (prix, transport, remise, wallet) puis ROLLBACK avant toute écriture
+// de commande — source unique du total présenté au client (aucun recalcul côté navigateur).
+async function runOrderCheckout({ user, body, internalSimulation = null, previewOnly = false }) {
   // Paramètre serveur uniquement : routes/orders/create.js ne transmet jamais ce contexte.
   // Validation avant tout accès DB ; un payload client simulation_scope n'est jamais lu.
   const hubFixture = internalSimulation !== null && internalSimulation.scope === 'E2E-HUB-V1';
@@ -464,6 +466,21 @@ async function runOrderCheckout({ user, body, internalSimulation = null }) {
         creditApplied = Math.min(walletBalance, total_kmf);
         total_kmf -= creditApplied;
       }
+    }
+
+    if (previewOnly) {
+      await client.query('ROLLBACK');
+      return {
+        ok: true,
+        preview: {
+          items_total_kmf: marketPricing.total_kmf,
+          transport_price_kmf,
+          discount_pct: discountPct,
+          discount_kmf: discountKmf,
+          credit_applied_kmf: creditApplied,
+          total_kmf,
+        },
+      };
     }
 
     // RCT1 : ni remise ni credit ; le prix produit reste exactement l'attendu independant de la reference

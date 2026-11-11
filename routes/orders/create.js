@@ -51,6 +51,18 @@ const orderCreateSchema = {
   body: orders.create.body.fork(['relais_id'], schema => schema.required()),
 };
 
+// POST /api/orders/preview — aperçu serveur du total (même calcul que la création, rien n'est persisté).
+router.post('/preview', authenticateOrCreateGuest, validate(orderCreateSchema), async (req, res, next) => {
+  let result;
+  try {
+    result = await runOrderCheckout({ user: req.user, body: { ...req.body, use_wallet: false }, previewOnly: true });
+  } catch (err) {
+    return next(err);
+  }
+  if (!result.ok) return res.status(result.status).json(result.body);
+  return res.json(result.preview);
+});
+
 router.post('/', authenticateOrCreateGuest, validate(orderCreateSchema), async (req, res, next) => {
   let result;
   try {
