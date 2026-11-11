@@ -48,12 +48,25 @@ const check=(ok,code)=>{if(!ok)throw Error(code)};
    [REFERENCE]);
   check(rows.length===1,'G6_REFERENCE_NOT_UNIQUE_OR_MISSING');
   const o=rows[0];
-  check(o.user_id===EXPECTED_BUYER,'G6_ORDER_BUYER_MISMATCH');
-  check(o.simulation_scope==='G6-BUYER'&&o.market==='KM'&&
-    Number(o.total_kmf)===17990&&o.payment_mode==='cash_relais'&&
-    o.status==='pending'&&o.payment_status!=='paid'&&
-    Number(o.lines)===1&&Number(o.qty)===1&&Array.isArray(o.products)&&o.products.includes(PRODUCT),
-    'G6_POSTGRES_CANONICAL_ORDER_MISMATCH');
+  const checks={
+   buyer_matches:o.user_id===EXPECTED_BUYER,
+   correct_scope:o.simulation_scope==='G6-BUYER',
+   market_is_KM:o.market==='KM',
+   total_is_17990:Number(o.total_kmf)===17990,
+   payment_mode_is_cash_relais:o.payment_mode==='cash_relais',
+   status_is_pending:o.status==='pending',
+   payment_not_paid:o.payment_status!=='paid',
+   one_line:Number(o.lines)===1,
+   one_unit:Number(o.qty)===1,
+   product_is_KPR_000099:Array.isArray(o.products)&&o.products.includes(PRODUCT)
+  };
+  report.observed={reference:o.reference,buyer_matches:checks.buyer_matches,
+   status:o.status,payment_status:o.payment_status,scope:o.simulation_scope,market:o.market,
+   total_kmf:Number(o.total_kmf),payment_mode:o.payment_mode,lines:Number(o.lines),
+   quantity:Number(o.qty),products:o.products};
+  report.checks=checks;save();
+  check(Object.values(checks).every(Boolean),
+   'G6_POSTGRES_CANONICAL_ORDER_MISMATCH:'+Object.entries(checks).filter(([,ok])=>!ok).map(([key])=>key).join(','));
   report.order={reference:o.reference,status:o.status,payment_status:o.payment_status,
     scope:o.simulation_scope,market:o.market,total_kmf:Number(o.total_kmf),
     payment_mode:o.payment_mode,lines:Number(o.lines),quantity:Number(o.qty),products:o.products};
