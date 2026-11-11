@@ -104,9 +104,9 @@ test.describe('Catalogue pays — Chromium desktop 1440', () => {
     await mount(page);
     const surface=page.locator('[data-market-price-catalog]');
     await expect(surface).toBeVisible();
-    await expect(surface.locator('tbody tr')).toHaveCount(2);
+    await expect(surface.locator('table.kmc-price-list-table > tbody > tr[data-product-ref]')).toHaveCount(2);
     for(const header of ['Produit','Rendu relais','Coût variable','Repères marché','Notre prix','Contribution','Publication'])
-      await expect(surface.locator('thead')).toContainText(header);
+      await expect(surface.locator('table.kmc-price-list-table > thead')).toContainText(header);
     await expect(surface).not.toContainText('Charges fixes par article');
     const row = surface.locator('tr[data-product-ref="KPR-1"]');
     await expect(row.locator('.kmc-price-landed')).toContainText('14 800 KMF');
