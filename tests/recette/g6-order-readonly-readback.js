@@ -43,7 +43,10 @@ const check=(ok,code)=>{if(!ok)throw Error(code)};
    'm.code AS market,'+
    '(SELECT COUNT(*)::int FROM order_items i WHERE i.order_id=o.id) AS lines,'+
    '(SELECT COALESCE(SUM(i.quantity),0)::int FROM order_items i WHERE i.order_id=o.id) AS qty,'+
-   "(SELECT ARRAY_AGG(DISTINCT p.product_ref) FROM order_items i JOIN products p ON p.id=i.product_id WHERE i.order_id=o.id) AS products,(SELECT COALESCE(SUM(i.price_kmf*i.quantity),0)::numeric FROM order_items i WHERE i.order_id=o.id) AS product_total_kmf,(SELECT jsonb_agg(jsonb_build_object('product_ref',p.product_ref,'quantity',i.quantity,'unit_price_kmf',i.price_kmf,'requested_transport_rail',i.requested_transport_rail,'weight_kg',p.weight_kg,'volume_cm3',p.volume_cm3)) FROM order_items i JOIN products p ON p.id=i.product_id WHERE i.order_id=o.id) AS item_details "+
+   "(SELECT ARRAY_AGG(DISTINCT p.product_ref) FROM order_items i JOIN products p ON p.id=i.product_id WHERE i.order_id=o.id) AS products,(SELECT COALESCE(SUM(i.price_kmf*i.quantity),0)::numeric FROM order_items i WHERE i.order_id=o.id) AS product_total_kmf,(SELECT jsonb_agg(jsonb_build_object('product_ref',p.product_ref,'quantity',i.quantity,'unit_price_kmf',i.price_kmf,'requested_transport_rail',i.requested_transport_rail,'weight_kg',p.weight_kg,'volume_cm3',p.volume_cm3)) FROM order_items i JOIN products p ON p.id=i.product_id WHERE i.order_id=o.id) AS item_details,"+
+   "(SELECT COUNT(*)::int FROM purchase_lines pl JOIN order_items oi2 ON oi2.id=pl.order_item_id WHERE oi2.order_id=o.id AND pl.cancelled_at IS NULL) AS purchase_line_count,"+
+   "(SELECT COUNT(DISTINCT pl.purchase_order_id)::int FROM purchase_lines pl JOIN order_items oi2 ON oi2.id=pl.order_item_id WHERE oi2.order_id=o.id AND pl.cancelled_at IS NULL AND pl.purchase_order_id IS NOT NULL) AS purchase_order_count,"+
+   "(SELECT jsonb_agg(jsonb_build_object('po_id',po.id,'status',po.status,'trigger_mode',po.trigger_mode)) FROM purchase_orders po WHERE EXISTS (SELECT 1 FROM purchase_lines pl JOIN order_items oi2 ON oi2.id=pl.order_item_id WHERE pl.purchase_order_id=po.id AND oi2.order_id=o.id AND pl.cancelled_at IS NULL)) AS purchase_orders "+
    'FROM orders o LEFT JOIN markets m ON m.id=o.market_id WHERE o.reference=$1',
    [REFERENCE]);
   check(rows.length===1,'G6_REFERENCE_NOT_UNIQUE_OR_MISSING');
@@ -56,7 +59,10 @@ const check=(ok,code)=>{if(!ok)throw Error(code)};
     transport_sum_matches:Number(o.total_kmf)===Number(o.product_total_kmf)+Number(o.transport_price_kmf),
     item_details:o.item_details,
     payment_mode:o.payment_mode,status:o.status,payment_status:o.payment_status,
-    lines:Number(o.lines),quantity:Number(o.qty),products:o.products
+    lines:Number(o.lines),quantity:Number(o.qty),products:o.products,
+    purchase_line_count:Number(o.purchase_line_count),
+    purchase_order_count:Number(o.purchase_order_count),
+    purchase_orders:o.purchase_orders
   };
   const expected={scope:'G6-BUYER',market:'KM',total_kmf:17990,
     payment_mode:'cash_relais',status:'pending',lines:1,quantity:1,product:PRODUCT};
