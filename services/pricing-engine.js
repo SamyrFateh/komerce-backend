@@ -220,6 +220,9 @@ async function recommend(input, options = {}) {
   });
 
   const warnings = [...(cdr.warnings || []), ...market.warnings];
+  if ((healthStatus === 'strong' || healthStatus === 'healthy') && cdr.input_quality?.level !== 'high') {
+    warnings.push(`Santé « ${healthStatus} » calculée sur des entrées de qualité ${cdr.input_quality?.level || 'inconnue'} (part estimée ${cdr.input_quality?.estimated_cost_share_pct ?? '?'} %) : à confirmer.`);
+  }
   const dataQuality = buildDataQuality(input, {
     hasProduct: !!product,
     hasPurchaseCost: Number(product?.cost_kmf) > 0,
@@ -364,6 +367,13 @@ async function recommend(input, options = {}) {
     break_even_authority: 'ANALYTICAL_EQUIVALENT_NOT_PORTFOLIO_FORECAST',
 
     health_status: healthStatus,
+    // Qualité des entrées, distincte de la santé : un `strong` sur entrées estimées
+    // n'est pas une preuve (champs existants inchangés, ajouts seulement).
+    health_status_confidence: cdr.input_quality?.level || 'low',
+    input_quality: cdr.input_quality || null,
+    customs_estimate_status: cdr.customs_estimate_status || 'not_estimated',
+    customs_inspection_kmf: cdr.customs_inspection_kmf || 0,
+    customs_duties_kmf: cdr.customs_duties_kmf || 0,
     market_confidence: market.market_confidence,
     sourcing_decision: sourcingDecision,
     reason,
