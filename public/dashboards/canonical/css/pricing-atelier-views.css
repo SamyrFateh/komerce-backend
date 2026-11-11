@@ -841,3 +841,31 @@
   .kmc-atelier-views .kmc-structure-reference-form .kmc-inline-cost-save,
   .kmc-atelier-views .kmc-structure-reference-form .kmc-inline-cost-cancel { width: 100%; }
 }
+
+
+/* Prévisionnel avant première vente — atelier. Formulaire fermé par défaut :
+   une simulation séparée des prix actifs, sans présélection de chiffres. */
+.kmc-atelier-forecast { margin-top: 16px; background: #fafbfd; border-color: #bdc6d1; }
+.kmc-atelier-forecast > summary { cursor: pointer; font-weight: 800; color: #202a37; padding: 2px 0 8px; }
+.kmc-atelier-forecast > summary:focus-visible { outline: 3px solid #303942; outline-offset: 3px; }
+.kmc-atelier-forecast-choices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: end; }
+.kmc-atelier-forecast-scroll { overflow-x: auto; max-width: 100%; border: 1px solid #c7cdd6; border-radius: 10px; background: #fff; }
+.kmc-atelier-forecast-table { border-collapse: collapse; width: 100%; min-width: 730px; }
+.kmc-atelier-forecast-table th,
+.kmc-atelier-forecast-table td { border-bottom: 1px solid #e0e5eb; text-align: left; padding: 8px 10px; }
+.kmc-atelier-forecast-table thead { background: #e9edf2; color: #202a37; }
+.kmc-atelier-forecast-table thead th { font-weight: 800; }
+.kmc-atelier-forecast-table tbody th { font-weight: 650; color: #2e3a48; width: 42%; }
+.kmc-atelier-forecast-table td { width: 19%; }
+.kmc-atelier-forecast-table input { box-sizing: border-box; width: 100%; min-width: 95px; padding: 9px 10px;
+  border: 1px solid #b1bdcb; border-radius: 7px; font: inherit; background: #fff; color: #17212b; }
+.kmc-atelier-forecast-table input:focus-visible { outline: 2px solid #344a5e; outline-offset: 2px; }
+.kmc-atelier-forecast-output { margin-top: 12px; }
+.kmc-atelier-forecast-result { padding: 14px; border: 1px solid #b8c6d2; border-radius: 10px; background: #fff; }
+.kmc-atelier-forecast-result > strong { display: block; margin-bottom: 8px; color: #1b2733; }
+.kmc-atelier-forecast-lines { margin-top: 12px; }
+.kmc-atelier-forecast-lines > summary { cursor: pointer; color: #263541; font-weight: 750; }
+@media (max-width: 850px) {
+  .kmc-atelier-forecast-choices { grid-template-columns: 1fr; }
+  .kmc-atelier-forecast { padding: 12px; }
+}
