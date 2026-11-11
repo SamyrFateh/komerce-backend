@@ -886,7 +886,7 @@
     grid.appendChild(sourcesPanel(doc, corridor, ctx));
     grid.appendChild(decisionPanel(doc, corridor, ctx));
     section.appendChild(grid);
-    section.appendChild(forecastFormPanel(doc, corridor));
+    if (ctx.canSimulate) section.appendChild(forecastFormPanel(doc, corridor));
     return section;
   }
 
@@ -1163,6 +1163,7 @@
             { method: 'POST', body: payloadForecast });
           const host = forecastForm.parentNode.querySelector('[data-atelier-forecast-output]');
           if (host) host.replaceChildren(forecastResultPanel(doc, answer));
+          if (submit) submit.disabled = false;
         } else if (draftForm) {
           const ref = draftForm.dataset.atelierDraftForm;
           const amount = num(data.get('amount'));
