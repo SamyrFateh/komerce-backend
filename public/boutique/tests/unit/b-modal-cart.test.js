@@ -329,6 +329,21 @@ describe('b-modal-cart', () => {
       expect(() => setupModalCart()).not.toThrow();
     });
 
+    test('P0 — post-rendu SKU réactive Ajouter après passage de sélection incomplète à disponible', () => {
+      setupModalCart();
+      setSkuSelection(null, { color: 'Navy Blue' });
+      bus.emit('modal:detail-ready');
+      expect(dom.addCartBtn.classList.contains('k-purchase-intent--blocked')).toBe(true);
+      expect(dom.addCartBtn.getAttribute('aria-disabled')).toBe('true');
+
+      setSkuSelection('sku-xl', { color: 'Navy Blue', size: 'XL' });
+      bus.emit('modal:selection-rendered');
+      expect(dom.addCartBtn.classList.contains('k-purchase-intent--blocked')).toBe(false);
+      expect(dom.addCartBtn.getAttribute('aria-disabled')).toBeNull();
+      expect(dom.addCartBtn.disabled).toBe(false);
+      expect(dom.addCartBtn.textContent).toContain('Ajouter');
+    });
+
     test('modal:detail-ready rejoue la synchronisation', () => {
       setupModalCart();
       state.modalProduct = { id: 42 };
