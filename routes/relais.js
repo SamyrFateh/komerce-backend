@@ -33,10 +33,11 @@
 const express = require('express');
 const router  = express.Router();
 const db      = require('../db');
+const { isRelaisRoutable } = require('../services/routing');
 
 const PUBLIC_RELAY_COLUMNS = `
   r.id, r.market_id, m.code AS market_code, m.name AS market_name,
-  r.name, r.agent_name, r.phone, r.address, r.zone, r.hours, r.island,
+  r.name, r.agent_name, r.phone, r.address, r.zone, r.hours, r.island, r.island_code,
   r.latitude, r.longitude, r.photo_url
 `;
 
@@ -72,7 +73,7 @@ function requestedMarketCode(req) {
 async function listActiveRelays({ marketCode = null, compact = false } = {}) {
   const select = compact
     ? `r.id, r.market_id, m.code AS market_code, m.name AS market_name,
-       r.name, r.zone, r.island, r.address, r.phone, r.latitude, r.longitude, r.photo_url`
+       r.name, r.zone, r.island, r.island_code, r.address, r.phone, r.latitude, r.longitude, r.photo_url`
     : PUBLIC_RELAY_COLUMNS;
 
   const params = [];
@@ -99,7 +100,8 @@ async function listActiveRelays({ marketCode = null, compact = false } = {}) {
       r.island NULLS LAST,
       r.name
   `, params);
-  return rows;
+  // Checkout : ne proposer que des relais routables (même règle que POST /api/orders).
+  return rows.filter((r) => isRelaisRoutable(r, { marketCode: r.market_code }));
 }
 
 function rejectMalformedMarket(res, code) {
