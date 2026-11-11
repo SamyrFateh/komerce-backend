@@ -1512,6 +1512,24 @@ export function cleanupCartSnapshotDom() {
       });
       info.appendChild(name);
 
+      // Une même fiche peut produire plusieurs lignes SKU. Dans le drawer
+      // mobile, afficher la combinaison sur CHAQUE ligne est indispensable
+      // pour distinguer les tailles/couleurs et muter la bonne quantité.
+      const comboEntries = item.variant_combo
+        && typeof item.variant_combo === 'object'
+        && !Array.isArray(item.variant_combo)
+        ? Object.entries(item.variant_combo)
+        : [];
+      const variantText = comboEntries.length
+        ? comboEntries.map(([axis, value]) => axis + ' : ' + String(value)).join(' · ')
+        : (item.variant_label || p.variant_label || '');
+      if (variantText) {
+        const variant = document.createElement('div');
+        variant.className = 'k-cart-item-variant k-cart-item-unit';
+        variant.textContent = variantText;
+        info.appendChild(variant);
+      }
+
       if (item.qty > 1) {
         const unitLine = document.createElement('div');
         unitLine.className = 'k-cart-item-unit';
