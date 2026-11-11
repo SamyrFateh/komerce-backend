@@ -108,7 +108,9 @@ async function queryParcels(marketId, includeSimulation = false, relaisId = null
   const { rows } = await db.query(
     `SELECT p.reference, p.status, p.created_at, p.updated_at, p.shipped_at,
             p.recipient_name, p.destination_island,
-            o.reference AS order_ref, o.total_kmf,
+            o.id AS order_id, o.reference AS order_ref, o.total_kmf,
+            (SELECT COUNT(*)::int FROM parcels ready
+              WHERE ready.order_id = o.id AND ready.status = 'available') AS available_parcel_count,
             r.name AS relais_name, r.island AS relais_island,
             COALESCE((SELECT COUNT(*)::int FROM parcel_items pi WHERE pi.parcel_id = p.id), 0) AS item_count,
             (p.status::text IN ('shipped', 'in_transit') AND NOT ${PARCEL_SHIPMENT_ATTACHED_SQL}) AS local_receivable
