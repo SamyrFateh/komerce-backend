@@ -132,8 +132,9 @@ function calculateCase(forecast, scenario, units = 1) {
       continue;
     }
     codes.add(c.code);
-    if (c.market_code && c.market_code !== market) problems.push(c.code + ': marché incorrect');
-    if (c.circuit && c.circuit !== product.circuit) problems.push(c.code + ': circuit incorrect');
+    if (c.market_code !== market) problems.push(c.code + ': marché non renseigné ou incorrect');
+    if (c.circuit !== product.circuit && c.circuit !== 'both')
+      problems.push(c.code + ': circuit non renseigné ou incorrect');
     if (c.cif_included && c.stage !== 'N1') problems.push(c.code + ': CIF limité aux frais N1');
     if ((c.basis === 'pct_n1' || c.basis === 'pct_exposure' || c.basis === 'pct_sale') && c.stage !== 'N2')
       problems.push(c.code + ': pourcentage commercial classé hors N2');
