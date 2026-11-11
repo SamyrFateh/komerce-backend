@@ -423,6 +423,40 @@
     introduction.appendChild(el(doc, 'strong', '', 'Le produit contribue. Le portefeuille couvre.'));
     introduction.appendChild(el(doc, 'p', '', 'On mesure ce que chaque vente apporte, puis on compare les contributions réconciliées aux charges fixes de la même période.'));
     section.appendChild(introduction);
+    // The cost configuration holds mixed units (%, per order, per kg).
+    // Explain the canonical sequence here, never calculate a fabricated market-wide amount.
+    const chain = el(doc, 'div', 'kmc-economic-cost-chain');
+    chain.dataset.costFormulaChain = '';
+    [
+      {
+        tone: 'n1', number: '01', label: 'N1 · Coût rendu Relais',
+        value: 'Calculé par produit',
+        detail: 'Achat fournisseur + approvisionnement, fret, douane et logistique jusqu’au Relais.',
+      },
+      {
+        tone: 'n2', number: '02', label: 'N2 · Variables business',
+        value: 'Calculé par transaction',
+        detail: 'Paiement, provisions de risque et autres frais variables selon le canal.',
+      },
+      {
+        tone: 'total', number: '03', label: 'Coût variable complet',
+        value: 'N1 + N2',
+        detail: 'Somme unitaire du moteur, après application des règles de poids, quantité et paiement.',
+      },
+      {
+        tone: 'decision', number: '04', label: 'Catalogue marché',
+        value: 'Plancher → prix → contribution',
+        detail: 'Le moteur donne le plancher. Le prix est décidé humainement ; la contribution est prix − coût variable.',
+      },
+    ].forEach(step => {
+      const card = el(doc, 'div', `kmc-economic-cost-chain-step is-${step.tone}`);
+      card.appendChild(el(doc, 'span', 'kmc-economic-cost-chain-index', step.number));
+      card.appendChild(el(doc, 'strong', 'kmc-economic-cost-chain-label', step.label));
+      card.appendChild(el(doc, 'div', 'kmc-economic-cost-chain-value', step.value));
+      card.appendChild(el(doc, 'small', 'kmc-economic-cost-chain-detail', step.detail));
+      chain.appendChild(card);
+    });
+    section.appendChild(chain);
     const grid = el(doc, 'div', 'kmc-economic-reading-grid');
     [
       { icon: '↗', tone: 'variable', title: 'Contribution par vente', value: 'Prix − coûts variables (N1 + N2)', detail: 'Estimée avant vente ; réconciliée après achat, expédition, douane et livraison.' },
