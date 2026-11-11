@@ -190,6 +190,55 @@ test('sépare les variantes du même produit et incrémente une combinaison iden
   expect(state.cart[1]).toMatchObject({ qty: 1, variant_label: 'L / Bleu' });
 });
 
+test('P0 — même produit, deux SKU de tailles différentes : lignes et prix indépendants', () => {
+  const robe = product(7, { price_kmf: 7990 });
+  state.modalProduct = robe;
+  state.modalVariantCombo = { Couleur: 'Navy Blue', Taille: 'XL' };
+  addToCart({ ...robe, sku_id: 'sku-xl', price_kmf: 7990 }, 1);
+
+  state.modalVariantCombo = { Couleur: 'Navy Blue', Taille: 'M' };
+  addToCart({ ...robe, sku_id: 'sku-m', price_kmf: 8990 }, 1);
+
+  expect(state.cart).toHaveLength(2);
+  expect(state.cart[0]).toMatchObject({
+    sku_id: 'sku-xl', qty: 1, price: 7990,
+    variant_combo: { Couleur: 'Navy Blue', Taille: 'XL' },
+  });
+  expect(state.cart[1]).toMatchObject({
+    sku_id: 'sku-m', qty: 1, price: 8990,
+    variant_combo: { Couleur: 'Navy Blue', Taille: 'M' },
+  });
+
+  // L'ordre des propriétés du JSON ne fait pas partie de l'identité SKU.
+  state.modalVariantCombo = { Taille: 'M', Couleur: 'Navy Blue' };
+  addToCart({ ...robe, sku_id: 'sku-m', price_kmf: 8990 }, 1);
+  expect(state.cart).toHaveLength(2);
+  expect(state.cart[0].qty).toBe(1);
+  expect(state.cart[1].qty).toBe(2);
+  expect(mockSaveCart).toHaveBeenCalledTimes(3);
+});
+
+test('P0 — rail de transport distinct : deux lignes même SKU jamais fusionnées', () => {
+  const robe = product(7, { price_kmf: 7990 });
+  state.modalProduct = robe;
+  state.modalVariantCombo = { Taille: 'M' };
+  const sku = { ...robe, sku_id: 'sku-m' };
+  addToCart(sku, 1, null, { requested_transport_rail: 'SEA_STANDARD' });
+  addToCart(sku, 1, null, { requested_transport_rail: 'AIR_EXPRESS' });
+  expect(state.cart).toHaveLength(2);
+  expect(state.cart.map(i => i.requested_transport_rail)).toEqual(['SEA_STANDARD', 'AIR_EXPRESS']);
+});
+
+test('P0 — un SKU explicite différent ne fusionne pas même avec un combo identique', () => {
+  const robe = product(7, { price_kmf: 7990 });
+  state.modalProduct = robe;
+  state.modalVariantCombo = { Taille: 'M' };
+  addToCart({ ...robe, sku_id: 'sku-m' }, 1);
+  addToCart({ ...robe, sku_id: 'sku-l' }, 1);
+  expect(state.cart).toHaveLength(2);
+  expect(state.cart.map(i => i.sku_id)).toEqual(['sku-m', 'sku-l']);
+});
+
 test('termine l’animation fly-to-cart et nettoie ses particules', () => {
   const source = document.createElement('button');
   source.getBoundingClientRect = () => ({ left: 10, top: 20, width: 20, height: 20 });
