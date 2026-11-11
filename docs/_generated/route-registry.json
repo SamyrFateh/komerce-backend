@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-11-06T17:33:29.493Z",
+  "generatedAt": "2026-11-11T10:36:56.117Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 797,
+  "count": 807,
   "routes": [
     {
       "method": "GET",
@@ -1331,6 +1331,26 @@
     },
     {
       "method": "GET",
+      "fullPath": "/api/admin/markets/:marketCode/transport-sale-rates",
+      "mountPrefix": "/api/admin/markets",
+      "localPath": "/:marketCode/transport-sale-rates",
+      "routeFile": "routes/admin-market-control-plane.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "PUT",
+      "fullPath": "/api/admin/markets/:marketCode/transport-sale-rates/:rateKey",
+      "mountPrefix": "/api/admin/markets",
+      "localPath": "/:marketCode/transport-sale-rates/:rateKey",
+      "routeFile": "routes/admin-market-control-plane.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
       "fullPath": "/api/admin/markets/central-authority",
       "mountPrefix": "/api/admin/markets",
       "localPath": "/central-authority",
@@ -2504,6 +2524,26 @@
       "fullPath": "/api/admin/workspaces/catalog/products/:productRef/deactivate",
       "mountPrefix": "/api/admin/workspaces/catalog",
       "localPath": "/products/:productRef/deactivate",
+      "routeFile": "routes/admin-catalog-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/workspaces/catalog/products/:productRef/quality",
+      "mountPrefix": "/api/admin/workspaces/catalog",
+      "localPath": "/products/:productRef/quality",
+      "routeFile": "routes/admin-catalog-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/catalog/products/:productRef/quality/:action",
+      "mountPrefix": "/api/admin/workspaces/catalog",
+      "localPath": "/products/:productRef/quality/:action",
       "routeFile": "routes/admin-catalog-workspace.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
@@ -7146,6 +7186,16 @@
     },
     {
       "method": "GET",
+      "fullPath": "/api/relay/incidents",
+      "mountPrefix": "/api/relay",
+      "localPath": "/incidents",
+      "routeFile": "routes/relay-dashboard.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
       "fullPath": "/api/relay/orders",
       "mountPrefix": "/api/relay",
       "localPath": "/orders",
@@ -7199,6 +7249,56 @@
       "fullPath": "/api/relay/orders/:id/incident",
       "mountPrefix": "/api/relay",
       "localPath": "/orders/:id/incident",
+      "routeFile": "routes/relay-dashboard.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/relay/returns",
+      "mountPrefix": "/api/relay",
+      "localPath": "/returns",
+      "routeFile": "routes/relay-dashboard.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/relay/returns",
+      "mountPrefix": "/api/relay",
+      "localPath": "/returns",
+      "routeFile": "routes/relay-dashboard.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/relay/returns/eligible",
+      "mountPrefix": "/api/relay",
+      "localPath": "/returns/eligible",
+      "routeFile": "routes/relay-dashboard.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/relay/returns/intake",
+      "mountPrefix": "/api/relay",
+      "localPath": "/returns/intake",
+      "routeFile": "routes/relay-dashboard.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/relay/returns/remarks",
+      "mountPrefix": "/api/relay",
+      "localPath": "/returns/remarks",
       "routeFile": "routes/relay-dashboard.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
