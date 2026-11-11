@@ -152,6 +152,12 @@ describe('market-ready-to-sell-projection', () => {
       business_variable_cost_kmf: 1200,
       variable_cost_complete_kmf: 16000,
       minimum_safe_price_kmf: 17600,
+      cost_allocation_trace: {
+        status: 'ESTIMATED_NOT_RECONCILED',
+        authority: 'SERVER_PRICING_ENGINE',
+        hypotheses: { articles_per_order: 2.5, confidence: 'low' },
+        lines: [{ family: 'N2', key: 'payment', unit_cost_kmf: 1200 }],
+      },
     };
     mockBuildCorridor.mockResolvedValueOnce(corridor);
     const result = await projection.buildReadyToSell({
@@ -165,6 +171,11 @@ describe('market-ready-to-sell-projection', () => {
       variable_cost_local: 16000,
       minimum_safe_price_local: 17600,
       contribution_at_proposed_local: 2000,
+      cost_allocation_trace: {
+        status: 'ESTIMATED_NOT_RECONCILED', authority: 'SERVER_PRICING_ENGINE',
+        hypotheses: { articles_per_order: 2.5, confidence: 'low' },
+        lines: [{ family: 'N2', key: 'payment', unit_cost_kmf: 1200 }],
+      },
     });
     expect(result.items[0].variable_cost_local).toBe(
       result.items[0].landed_relay_cost_local + result.items[0].business_variable_cost_local
