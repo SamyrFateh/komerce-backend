@@ -495,6 +495,71 @@
     return section;
   }
 
+  // N3 belongs to the reconciled market period, never to a SKU cost.
+  // The browser renders only server-returned totals and coverage ratios.
+  function structureCoverageSummary(doc, decision) {
+    const coverage = decision?.coverage || {};
+    const structure = coverage.structure || {};
+    const status = coverage.coverage_status || decision?.decision_status || null;
+    const decisionReady = ['COVERED', 'UNCOVERED'].includes(status)
+      && ['COVERED', 'UNCOVERED'].includes(decision?.decision_status);
+    const n3 = finite(coverage.denominator_n3_kmf);
+    const structureTotal = structure.market_n3_decisional === true
+      ? finite(structure.market_n3_total_kmf) : null;
+    const recognizedN3 = n3 != null && n3 >= 0 ? n3
+      : structureTotal != null && structureTotal >= 0 ? structureTotal : null;
+    const contribution = decisionReady ? finite(coverage.numerator_contribution_kmf) : null;
+    const ratio = decisionReady ? finite(coverage.coverage_ratio) : null;
+    const validRatio = ratio != null && ratio >= 0 && recognizedN3 > 0 && contribution != null;
+    const period = decision?.canonical_period;
+    const periodNote = period?.source === 'calendar_month_selection'
+      ? 'Mois calendaire sélectionné'
+      : period?.width_days != null
+        ? `Fenêtre canonique de ${formatNumber(period.width_days)} jours`
+        : 'Période du moteur non confirmée';
+
+    const section = el(doc, 'section', 'kmc-n3-coverage-summary');
+    section.dataset.n3CoverageSummary = '';
+    const heading = el(doc, 'div', 'kmc-n3-summary-heading');
+    heading.appendChild(el(doc, 'strong', '', 'N3 · Structure du marché et couverture'));
+    heading.appendChild(el(doc, 'span', '', periodNote));
+    section.appendChild(heading);
+    const grid = el(doc, 'div', 'kmc-n3-summary-grid');
+    [
+      {
+        label: 'Total N3 de période',
+        value: recognizedN3 == null ? '—' : formatKmf(recognizedN3),
+        note: 'Fixes directs + quote-part fixe mutualisée · total serveur',
+        tone: 'structure',
+      },
+      {
+        label: 'Contribution réconciliée',
+        value: contribution == null ? '—' : formatKmf(contribution),
+        note: 'Même marché, même fenêtre · ventes matures',
+        tone: 'contribution',
+      },
+      {
+        label: 'Couverture de N3',
+        value: validRatio
+          ? new Intl.NumberFormat('fr-FR', { style: 'percent', maximumFractionDigits: 1 }).format(ratio)
+          : '—',
+        note: validRatio ? (status === 'COVERED' ? 'Seuil de politique atteint' : 'Couverture insuffisante')
+          : 'Non décisionnelle : données ou réconciliation insuffisantes',
+        tone: validRatio && status === 'COVERED' ? 'covered' : validRatio ? 'uncovered' : 'unknown',
+      },
+    ].forEach(metric => {
+      const card = el(doc, 'div', `kmc-n3-summary-metric is-${metric.tone}`);
+      card.appendChild(el(doc, 'small', 'kmc-n3-metric-label', metric.label));
+      card.appendChild(el(doc, 'strong', 'kmc-n3-metric-value', metric.value));
+      card.appendChild(el(doc, 'span', 'kmc-n3-metric-note', metric.note));
+      grid.appendChild(card);
+    });
+    section.appendChild(grid);
+    section.appendChild(el(doc, 'p', 'kmc-n3-summary-rule',
+      'N3 n’entre pas dans le plancher du produit : les contributions du portefeuille couvrent ces charges collectivement.'));
+    return section;
+  }
+
   function createCostPilotage(doc, payload, marketCode, decision, user, activeFamily) {
     const groups = classifyComponents(Array.isArray(payload.cost_components) ? payload.cost_components : []);
     const structure = decision?.coverage?.structure || null;
@@ -516,6 +581,7 @@
     const families = el(doc, 'div', 'kmc-economic-family-grid');
     cards.forEach(card => families.appendChild(card));
     section.appendChild(families);
+    section.appendChild(structureCoverageSummary(doc, decision));
     section.appendChild(principleCard(doc, marketCode));
     return section;
   }
