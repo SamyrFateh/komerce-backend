@@ -30,7 +30,7 @@ const orderState=async()=> {
   return o||null;
 };
 async function login(browser,baseURL,actor='hub'){
-  const prefix=actor==='relay'?'E2E_AGENT_RELAIS':'E2E_AGENT_HUB';
+  const prefix=actor==='relay'?'E2E_AGENT_RELAIS':actor==='admin'?'E2E_ADMIN':'E2E_AGENT_HUB';
   const email=process.env[prefix+'_EMAIL'],password=process.env[prefix+'_PASSWORD'];
   expect(email&&password,'E2E '+actor+' credentials').toBeTruthy();
   const ctx=await browser.newContext({baseURL,viewport:{width:1440,height:900}});
