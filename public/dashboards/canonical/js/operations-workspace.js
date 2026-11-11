@@ -2059,13 +2059,13 @@
     // P0 #3900 : retrait au clavier = code secret vérifié dans la transaction
     // canonique pickup. Un motif de scan ne constitue jamais une identité.
     if (config.action === 'collect') {
-      slot.appendChild(text(doc, 'p', 'kmc-workspace-note',
-        'Scanner facultatif : saisissez le code remis au client. La validation serveur est indispensable. Sans code, utilisez uniquement la procédure exceptionnelle autorisée.'));
       renderActionTable(slot, {
         rows: config.rows,
         emptyText: config.empty,
         columns: actionColumns({ referenceKind: 'parcel' }),
       });
+      slot.prepend(text(doc, 'p', 'kmc-workspace-note',
+        'Scanner facultatif : saisissez le code remis au client. La validation serveur est indispensable. Sans code, utilisez uniquement la procédure exceptionnelle autorisée.'));
       slot.querySelectorAll('tbody tr').forEach((rowNode, index) => {
         const row = config.rows[index];
         const cell = rowNode.lastChild;
