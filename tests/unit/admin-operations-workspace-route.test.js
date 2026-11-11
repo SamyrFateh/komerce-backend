@@ -59,6 +59,7 @@ jest.mock('../../services/market-delegation-service', () => ({
 
 const mockBuildWorkspace = jest.fn();
 const mockRunDistribution = jest.fn();
+const mockDistributeSingleOrder = jest.fn();
 const mockScanParcel = jest.fn();
 const mockConfirmCash = jest.fn();
 const mockAssignInventory = jest.fn();
@@ -75,6 +76,7 @@ jest.mock('../../services/operations-workspace', () => {
     OperationsWorkspaceError,
     buildWorkspace: (...args) => mockBuildWorkspace(...args),
     runDistribution: (...args) => mockRunDistribution(...args),
+    distributeSingleOrder: (...args) => mockDistributeSingleOrder(...args),
     scanParcel: (...args) => mockScanParcel(...args),
     confirmCash: (...args) => mockConfirmCash(...args),
     assignInventory: (...args) => mockAssignInventory(...args),
@@ -385,4 +387,24 @@ test('autorité dashboard globale ne donne aucun droit de mutation Opérations',
   expect(act.status).toBe(403);
   expect(act.body.code).toBe('MARKET_CAPABILITY_REQUIRED');
   expect(mockRunDistribution).not.toHaveBeenCalled();
+});
+
+test('répartir UNE commande : même capability exacte que « Répartir ce marché », audit avant mutation', async () => {
+  mockDistributeSingleOrder.mockResolvedValueOnce({ order_ref: 'CMD-CM-001', success: true });
+  const ok = await request(app())
+    .post('/api/admin/workspaces/operations/market/CM/orders/CMD-CM-001/distribute').send({});
+  expect(ok.status).toBe(200);
+  expect(ok.body.action).toBe('distribute_order');
+  expect(mockDistributeSingleOrder).toHaveBeenCalledWith('CMD-CM-001', expect.objectContaining({ code: 'CM' }));
+  expect(mockResolveAuthorization).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+    marketCode: 'CM',
+    requiredCapability: 'execution.distribution.run',
+  }));
+
+  mockDistributeSingleOrder.mockClear();
+  mockGrantedCapabilities.delete('execution.distribution.run@CM');
+  const denied = await request(app())
+    .post('/api/admin/workspaces/operations/market/CM/orders/CMD-CM-001/distribute').send({});
+  expect(denied.status).toBe(403);
+  expect(mockDistributeSingleOrder).not.toHaveBeenCalled();
 });

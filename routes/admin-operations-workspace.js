@@ -563,6 +563,20 @@ router.post(
 );
 
 router.post(
+  '/market/:marketCode/orders/:reference/distribute',
+  attachHubExecutionCapability('execution.distribution.run'),
+  requireHubWorkspaceAction,
+  async (req, res, next) => {
+    try {
+      const result = await workspace.distributeSingleOrder(req.params.reference, req.workspaceMarket);
+      return res.json({ ok: true, action: 'distribute_order', result });
+    } catch (err) {
+      return sendWorkspaceError(err, res, next);
+    }
+  }
+);
+
+router.post(
   '/market/:marketCode/parcels/:reference/ship',
   attachHubExecutionCapability('execution.parcel.ship'),
   requireHubWorkspaceAction,

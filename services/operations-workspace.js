@@ -537,6 +537,33 @@ async function runDistribution(market) {
   });
 }
 
+// Répartition d'UNE commande du marché : même writer canonique (autoParcel.distributeOrder) que « Répartir ce marché ».
+async function distributeSingleOrder(reference, market) {
+  const resolvedMarket = requireMarket(market);
+  const order = await resolveOrderInMarket(reference, resolvedMarket.id);
+  if (!['ordered', 'preparation'].includes(order.status)) {
+    throw new OperationsWorkspaceError(
+      'order_not_distributable',
+      `Répartition impossible : la commande ${order.reference} est au statut ${order.status}`,
+      409
+    );
+  }
+  const result = await autoParcel.distributeOrder(order.id);
+  if (result && result.error === 'Order not found') {
+    throw new OperationsWorkspaceError('workspace_order_not_found', 'Commande introuvable dans ce marché', 404);
+  }
+  return Object.freeze({
+    market: resolvedMarket.code,
+    order_ref: order.reference,
+    success: Boolean(result && result.success),
+    queued: Boolean(result && result.queued),
+    already_assigned: Boolean(result && result.already_assigned),
+    nothing_eligible: Boolean(result && result.nothing_eligible),
+    parcel_ref: result && result.parcel_ref ? result.parcel_ref : null,
+    error: result && result.error ? result.error : null,
+  });
+}
+
 const SCAN_ACTIONS = Object.freeze({
   ship: Object.freeze({ event_type: 'shipped', notes: 'Expédié depuis le Hub · Workspace Opérations' }),
   receive: Object.freeze({ event_type: 'relais_received', notes: 'Reçu au relais · Workspace Opérations' }),
@@ -696,6 +723,7 @@ module.exports = {
   resolveOrderInMarket,
   resolveParcelInMarket,
   runDistribution,
+  distributeSingleOrder,
   scanParcel,
   confirmCash,
   assignInventory,

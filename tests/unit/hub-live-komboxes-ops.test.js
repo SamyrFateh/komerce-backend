@@ -15,7 +15,8 @@ test('Hub Live compose les KOM-BOX uniquement via les routes Workspace marché',
   expect(ui).toContain("'bags/'+encodeURIComponent(bag.unit_id)+'/deposit'");
   expect(ui).not.toContain("'fill-box'");
   expect(ui).toContain('/advance`');
-  expect(ui).not.toContain('/api/hub/');
+  // seul l'endpoint de confirmation canonique (feat/hub-confirm-physical-code) est autorisé
+  expect(ui.replace('/api/hub/physical-codes/confirm', '')).not.toContain('/api/hub/');
 });
 
 test('les routes de composition sont gardées par la capacité parcel.ship et le marché serveur', () => {

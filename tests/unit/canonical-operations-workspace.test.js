@@ -27,7 +27,8 @@ test('le frontend ne construit jamais market_id comme autorité', () => {
   const executable = SOURCE.replace(/\/\*\*[\s\S]*?\*\//, '');
   expect(executable).not.toMatch(/\bmarket_id\b/);
   expect(executable).not.toMatch(/\bmarketId\b/);
-  expect(executable).not.toContain('/api/hub/');
+  // seul l'endpoint de confirmation canonique (feat/hub-confirm-physical-code) est autorisé
+  expect(executable.replace('/api/hub/physical-codes/confirm', '')).not.toContain('/api/hub/');
   expect(executable).not.toContain('/api/v2/');
 });
 

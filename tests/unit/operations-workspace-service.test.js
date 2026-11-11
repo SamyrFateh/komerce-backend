@@ -229,6 +229,34 @@ test('runDistribution bloque tout avant mutation si un relais appartient à un a
   expect(mockDistributeOrder).not.toHaveBeenCalled();
 });
 
+test('distributeSingleOrder répartit UNE commande du marché via le writer canonique', async () => {
+  mockQuery.mockResolvedValueOnce({
+    rows: [{ id: 'order-cm-1', reference: 'CMD-CM-001', status: 'ordered', relais_id: 'relay-cm', relais_market_id: 'market-cm-id' }],
+  });
+  mockDistributeOrder.mockResolvedValueOnce({ success: true, parcel_ref: 'PCL-CM-009' });
+
+  const result = await workspace.distributeSingleOrder('CMD-CM-001', MARKET);
+
+  expect(mockQuery.mock.calls[0][1]).toEqual(['CMD-CM-001', 'market-cm-id']);
+  expect(mockDistributeOrder.mock.calls).toEqual([['order-cm-1']]);
+  expect(result).toEqual(expect.objectContaining({ order_ref: 'CMD-CM-001', success: true, parcel_ref: 'PCL-CM-009' }));
+  expect(JSON.stringify(result)).not.toContain('order-cm-1');
+});
+
+test('distributeSingleOrder refuse une commande hors marché, hors statut ou à relais étranger sans appeler le writer', async () => {
+  mockQuery.mockResolvedValueOnce({ rows: [] });
+  await expect(workspace.distributeSingleOrder('CMD-XX', MARKET)).rejects.toMatchObject({ status: 404 });
+  mockQuery.mockResolvedValueOnce({
+    rows: [{ id: 'o2', reference: 'CMD-CM-002', status: 'delivered', relais_id: null, relais_market_id: null }],
+  });
+  await expect(workspace.distributeSingleOrder('CMD-CM-002', MARKET)).rejects.toMatchObject({ code: 'order_not_distributable', status: 409 });
+  mockQuery.mockResolvedValueOnce({
+    rows: [{ id: 'o3', reference: 'CMD-CM-003', status: 'ordered', relais_id: 'relay-cg', relais_market_id: 'market-cg-id' }],
+  });
+  await expect(workspace.distributeSingleOrder('CMD-CM-003', MARKET)).rejects.toMatchObject({ code: 'relay_market_mismatch' });
+  expect(mockDistributeOrder).not.toHaveBeenCalled();
+});
+
 test('scanParcel résout le colis dans le marché avant d appeler le moteur append-only', async () => {
   mockQuery.mockResolvedValueOnce({
     rows: [{
