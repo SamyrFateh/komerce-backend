@@ -14,6 +14,14 @@ on:
       - 'public/dashboards/canonical/index.html'
       - 'public/dashboards/canonical/js/pricing-atelier-views.js'
       - 'public/dashboards/canonical/css/pricing-atelier-views.css'
+      - 'playwright.market-catalog-allocation.config.js'
+      - 'public/dashboards/canonical/js/market-catalog-pricing-list.js'
+      - 'public/dashboards/canonical/css/market-catalog-pricing-list.css'
+      - 'services/pricing-market-corridor.js'
+      - 'services/market-ready-to-sell-projection.js'
+      - 'tests/e2e/market-catalog-pricing-list.spec.js'
+      - 'tests/unit/pricing-market-corridor.test.js'
+      - 'tests/unit/market-ready-to-sell-projection.test.js'
   pull_request:
     paths:
       - '.github/workflows/catalog-unified-contextual-chromium.yml'
@@ -21,6 +29,14 @@ on:
       - 'public/dashboards/canonical/css/catalog-workspace-wide-v1.css'
       - 'scripts/testing/catalog-contextual-chromium-proof.js'
       - 'public/dashboards/canonical/index.html'
+      - 'playwright.market-catalog-allocation.config.js'
+      - 'public/dashboards/canonical/js/market-catalog-pricing-list.js'
+      - 'public/dashboards/canonical/css/market-catalog-pricing-list.css'
+      - 'services/pricing-market-corridor.js'
+      - 'services/market-ready-to-sell-projection.js'
+      - 'tests/e2e/market-catalog-pricing-list.spec.js'
+      - 'tests/unit/pricing-market-corridor.test.js'
+      - 'tests/unit/market-ready-to-sell-projection.test.js'
   workflow_dispatch:
 
 permissions:
@@ -50,6 +66,17 @@ jobs:
         run: |
           mkdir -p "$ATELIER_SHOTS_DIR"
           npx playwright test --config playwright.catalog-pricing-integration.config.js --grep '1440|390'
+      - name: Verify pricing allocation projection and N3 exclusion (unit)
+        run: |
+          node --check services/pricing-market-corridor.js
+          node --check services/market-ready-to-sell-projection.js
+          node --check public/dashboards/canonical/js/market-catalog-pricing-list.js
+          npx jest --config jest.unit.config.js --runInBand --no-coverage \
+            tests/unit/pricing-market-corridor.test.js \
+            tests/unit/market-ready-to-sell-projection.test.js \
+            tests/unit/canonical-pricing-economic-cockpit.test.js
+      - name: Execute real allocation dialog Chromium 1440
+        run: npx playwright test --config playwright.market-catalog-allocation.config.js
       - name: Keep annotated visual evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -58,5 +85,6 @@ jobs:
           path: |
             test-results/catalog-contextual-1440/*.png
             test-results/catalog-pricing-integrated/shots/*.png
+            test-results/market-catalog-allocation/
           if-no-files-found: ignore
           retention-days: 14
