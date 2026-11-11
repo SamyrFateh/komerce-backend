@@ -209,13 +209,13 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 34 fichier(s) déclaré(s), boutique: 5 fichier(s)
+**Implementation** : 36 fichier(s) déclaré(s), boutique: 5 fichier(s)
   - boutique : 3
   - migrations : 4
   - routes : 4
   - scripts : 1
-  - services : 6
-  - tests : 14
+  - services : 7
+  - tests : 15
   - utils : 2
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="auth-identity"]_

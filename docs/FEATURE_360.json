@@ -1067,7 +1067,7 @@
             ]
           },
           "services": {
-            "count": 6,
+            "count": 7,
             "files": [
               {
                 "declared": "services/credential-action-store.js",
@@ -1083,6 +1083,11 @@
                 "declared": "services/credential-link-token.js",
                 "resolvedPath": "services/credential-link-token.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/g6-staging-buyer-identity-guard.js",
+                "resolvedPath": "services/g6-staging-buyer-identity-guard.js",
+                "status": "resolved-on-disk-no-header"
               },
               {
                 "declared": "services/otp-test-mode.js",
@@ -1102,7 +1107,7 @@
             ]
           },
           "tests": {
-            "count": 14,
+            "count": 15,
             "files": [
               {
                 "declared": "tests/e2e-api/auth-identity.pickup-authorization-staging.e2e.test.js",
@@ -1142,6 +1147,11 @@
               {
                 "declared": "tests/unit/credential-session-guard.test.js",
                 "resolvedPath": "tests/unit/credential-session-guard.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/g6-staging-buyer-scoped-checkout.test.js",
+                "resolvedPath": "tests/unit/g6-staging-buyer-scoped-checkout.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -1192,7 +1202,7 @@
             ]
           }
         },
-        "totalFiles": 34,
+        "totalFiles": 36,
         "boutiqueManifest": "auth",
         "boutiqueFiles": {
           "count": 5,

@@ -133,12 +133,12 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 > Authentifier un utilisateur et gérer son identité active (OTP, login/register, magic-link, guest-checkout, profil) via les routes exposées.
 
 - scripts: 1
-- services: 6
+- services: 7
 - routes: 4
 - boutique: 3
 - utils: 2
 - migrations: 4
-- tests: 14
+- tests: 15
 - tables owned (lifecycle): 5 — `revoked_tokens`, `users`, `otp_codes`, `credential_action_tokens`, `user_pickup_authorizations`
 - tables written: 5
 - interfaces exposed: 28
@@ -2301,7 +2301,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 2297 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 2299 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 214 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 79 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -2549,7 +2549,7 @@ Meta Graph monté : oui.
 | notifications | orders | data-read | 2 | **DECLARED_AND_OBSERVED** |
 | notifications | platform-ops | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | orders | auth | static-code | 14 | **DECLARED_AND_OBSERVED** |
-| orders | auth-identity | static-code, interface, data-read | 11 | **DECLARED_AND_OBSERVED** |
+| orders | auth-identity | static-code, interface, data-read | 12 | **DECLARED_AND_OBSERVED** |
 | orders | business-rules | static-code | 8 | **DECLARED_AND_OBSERVED** |
 | orders | catalog | static-code, data-read | 11 | **DECLARED_AND_OBSERVED** |
 | orders | customs | static-code | 5 | **DECLARED_AND_OBSERVED** |
