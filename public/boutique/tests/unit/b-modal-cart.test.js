@@ -400,8 +400,13 @@ describe('b-modal-cart', () => {
       state.cart = [];
       _syncModalQtyUI();
 
-      dom.qtyPlus.click();
-      dom.qtyMinus.click();
+      // Sans ligne, les vrais boutons legacy sont désactivés. Vérifier
+      // séparément la délégation historique même si un événement synthétique
+      // arrive sur un contrôle disabled (button.click() n'en émet aucun).
+      expect(dom.qtyPlus.disabled).toBe(true);
+      expect(dom.qtyMinus.disabled).toBe(true);
+      dom.qtyPlus.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      dom.qtyMinus.dispatchEvent(new MouseEvent('click', { bubbles: true }));
       expect(quickAdd).toHaveBeenCalledWith('42', dom.qtyPlus);
       expect(quickRemove).toHaveBeenCalledWith('42', dom.qtyMinus);
     });
