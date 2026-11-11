@@ -41,6 +41,20 @@ describe('L9a — répartition Hub dans Opérations', () => {
   });
 });
 
+describe('réception Hub — confirmer une référence inconnue', () => {
+  const src = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/operations-workspace.js'), 'utf8');
+  test('HUB_PHYSICAL_CODE_UNKNOWN propose « Confirmer cette référence » vers la route canonique, puis relance l\'identification', () => {
+    expect(src).toContain("const PHYSICAL_CODE_CONFIRM_ENDPOINT = '/api/hub/physical-codes/confirm';");
+    expect(src).toMatch(/error\.code === 'HUB_PHYSICAL_CODE_UNKNOWN'/);
+    expect(src).toContain("'Confirmer cette référence', 'open-physical-confirm'");
+    expect(src).toMatch(/purchase_order_id: po\.purchase_order_id,\s*product_sku_id: variant\.value,\s*code,\s*code_type: type\.value,\s*proof_ref:/);
+    expect(src).toMatch(/closeConfirm\(\);\s*await identify\(code\);/);
+  });
+  test('les trois types de code de la doctrine sont proposés', () => {
+    ['EAN_GTIN', 'SUPPLIER_BARCODE', 'KOM_LOT_LABEL'].forEach(type => expect(src).toContain(`'${type}'`));
+  });
+});
+
 describe('L9c — gestes Hub réservés à Hub live', () => {
   const src = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/operations-workspace.js'), 'utf8');
   test('hors mode execution, les boutons Commander, Répartir, Expédier et Affecter ne sont pas rendus', () => {
