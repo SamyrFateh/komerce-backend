@@ -134,6 +134,7 @@ function calculateCase(forecast, scenario, units = 1) {
     codes.add(c.code);
     if (c.market_code && c.market_code !== market) problems.push(c.code + ': marché incorrect');
     if (c.circuit && c.circuit !== product.circuit) problems.push(c.code + ': circuit incorrect');
+    if (c.cif_included && c.stage !== 'N1') problems.push(c.code + ': CIF limité aux frais N1');
     if ((c.basis === 'pct_n1' || c.basis === 'pct_exposure' || c.basis === 'pct_sale') && c.stage !== 'N2')
       problems.push(c.code + ': pourcentage commercial classé hors N2');
     if (c.basis === 'pct_sale' && c.value >= 100) problems.push(c.code + ': taux >= 100 %');
@@ -144,13 +145,19 @@ function calculateCase(forecast, scenario, units = 1) {
   let cif = null;
   let n1 = null;
   let pctPrice = 0;
+  // Les risques calculés sur d'autres frais ne dépendent jamais de l'ordre des risques.
+  let exposureBaseAmounts = null;
   for (let phase = 0; phase < stages.length; phase++) {
     if (phase === 1) cif = product.purchase_kmf +
       lines.filter(line => line.stage === 'N1' && line.cif_included).reduce((a, x) => a + x.amount_kmf, 0);
-    if (phase === 2) n1 = lines.filter(line => line.stage === 'N1').reduce((a, x) => a + x.amount_kmf, 0);
+    if (phase === 2) {
+      n1 = lines.filter(line => line.stage === 'N1').reduce((a, x) => a + x.amount_kmf, 0);
+      exposureBaseAmounts = { ...baseAmounts };
+    }
     for (const c of stages[phase]) {
       const evidence = traceStatus(c.evidence, date, c.code, problems, notes);
-      const amount = componentAmount(c, product, units, baseAmounts, cif, n1, problems);
+      const amount = componentAmount(c, product, units,
+        c.basis === 'pct_exposure' ? exposureBaseAmounts : baseAmounts, cif, n1, problems);
       if (amount == null) continue;
       if (c.basis === 'pct_sale') pctPrice += c.value / 100;
       const entry = { code: c.code, stage: c.stage, basis: c.basis,
@@ -169,7 +176,8 @@ function calculateCase(forecast, scenario, units = 1) {
   const status = problems.length ? 'NON_DECISIONNEL' : hasWeak ? 'PROVISOIRE' : 'EXPLOITABLE';
   return {
     status, scenario, market_code: market, circuit: product.circuit, units_per_order: units,
-    n1_kmf: round(totalN1), n2_fixed_kmf: round(totalN2Fixed), sale_pct: round(pctPrice * 100),
+    n1_kmf: round(totalN1), n2_fixed_kmf: round(totalN2Fixed),
+    sale_pct: round(pctPrice * 100), sale_fraction: pctPrice,
     p0_kmf: problems.length ? null : floor, cif_kmf: cif == null ? null : round(cif),
     lines, problems, notes,
   };
@@ -193,14 +201,14 @@ function comparePrices(forecast) {
   const prices = (forecast.candidate_prices_kmf || []).map(price => {
     if (!positive(price)) return { price_kmf: price, status: 'PRIX_INVALIDE' };
     if (nonDecisional) return { price_kmf: price, status: 'NON_DECISIONNEL' };
-    const pct = central.sale_pct / 100;
+    const pct = central.sale_fraction;
     const contribution = round(price * (1 - pct) - (central.n1_kmf + central.n2_fixed_kmf));
     const label = price >= scenarios.defavorable.p0_kmf ? 'ROBUSTE_DANS_LES_SCENARIOS' :
       price >= central.p0_kmf ? 'SENSIBLE' :
         price >= scenarios.favorable.p0_kmf ? 'DESTRUCTIF_AU_CENTRAL' : 'DESTRUCTIF';
     return { price_kmf: price, verdict: label, decision_quality: CASES.some(n => scenarios[n].status === 'PROVISOIRE')
       ? 'PROVISOIRE' : 'EXPLOITABLE', contribution_centrale_kmf: contribution,
-      contribution_defavorable_kmf: round(price * (1 - scenarios.defavorable.sale_pct / 100)
+      contribution_defavorable_kmf: round(price * (1 - scenarios.defavorable.sale_fraction)
         - scenarios.defavorable.n1_kmf - scenarios.defavorable.n2_fixed_kmf) };
   });
   const n3 = forecast.n3_monthly_kmf;
