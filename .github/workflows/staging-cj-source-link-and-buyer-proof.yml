@@ -56,7 +56,7 @@ jobs:
           const OUT='test-results/cj-source-buyer';fs.mkdirSync(OUT,{recursive:true});
           const TARGETS=[['KPR-000099','76dacd6c-c1d8-4313-9455-f0d8f063835b',17990],['KPR-000100','e7146e22-1122-47b7-bd5b-ee2fba5bc48a',7990],['KPR-000101','449db944-ae6f-4042-9f87-47117611d1b7',8990]];
           const NAME='CJ — recette G6 KM — sans commande automatique';
-          const report={run_id:process.env.GITHUB_RUN_ID,sha:process.env.E2E_EXPECTED_DEPLOY_SHA,verdict:'NOT_PROVEN',fixture_mode:'CANONICAL_API_SETUP_NOT_UI_CERTIFICATION',human_attestation:false,external_supplier_calls:0,products:[],blocked_mutations:[]};
+          const report={run_id:process.env.GITHUB_RUN_ID,sha:process.env.E2E_EXPECTED_DEPLOY_SHA,verdict:'NOT_PROVEN',fixture_mode:'CANONICAL_API_SETUP_NOT_UI_CERTIFICATION',human_attestation:false,external_supplier_calls:0,products:[],blocked_mutations:[],blocked_external_telemetry:[]};
           const save=()=>fs.writeFileSync(OUT+'/report.json',JSON.stringify(report,null,2)+'\n');
           let browser,admin;
           async function version(){const v=await fetch(BASE+'/health/version').then(r=>r.json());if(v.commit!==report.sha)throw Error('STAGING_SHA_CHANGED');}
@@ -105,8 +105,14 @@ jobs:
            const page=await buyer.newPage();await page.route('**/*',route=>{
             if(['GET','HEAD','OPTIONS'].includes(route.request().method()))return route.continue();
             const request=route.request();const url=new URL(request.url());
-            // Record safe routing metadata only — never query strings, tokens or payloads.
-            report.blocked_mutations.push({method:request.method(),origin:url.origin,path:url.pathname,resource_type:request.resourceType()});return route.abort();
+            // Every browser POST remains aborted: no Stripe or Komerce mutation leaves Chromium.
+            // Stripe.js fraud-signal beacon: exact measured destination, NOT a Komerce write.
+            // Distinguish it from business mutations without enabling any network egress.
+            const record={method:request.method(),origin:url.origin,path:url.pathname,resource_type:request.resourceType()};
+            if(record.method==='POST'&&record.origin==='https://m.stripe.com'&&record.path==='/6'&&record.resource_type==='xhr')
+              report.blocked_external_telemetry.push(record);
+            else report.blocked_mutations.push(record);
+            return route.abort();
            });
            for(const record of report.products){await version();const expected=TARGETS.find(t=>t[1]===record.id);
             const response=await buyer.request.get(BASE+'/api/products/'+record.id+'/detail?market=KM');const body=await response.json();record.public_detail={http:response.status(),body};save();
