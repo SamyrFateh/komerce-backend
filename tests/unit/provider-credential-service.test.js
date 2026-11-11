@@ -1,3 +1,4 @@
+/** @test-kind unit @test-runner jest @test-requires none */
 'use strict';
 
 jest.mock('../../db', () => ({ query: jest.fn(), withTransaction: jest.fn(), getClient: jest.fn() }));

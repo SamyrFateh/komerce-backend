@@ -1,3 +1,4 @@
+/** @test-kind unit @test-runner jest @test-requires none */
 /**
  * @unit hub-order-status
  * @feature logistics (Hub live · statut de commande du dossier)

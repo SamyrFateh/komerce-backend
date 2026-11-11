@@ -1,3 +1,4 @@
+/** @test-kind unit @test-runner jest @test-requires none */
 'use strict';
 /** @test-kind unit */
 const {MARKET_PROOFS,CODES,REQUIRED_EVIDENCE}=require('../../tests/staging-canonical/market-business-proof-matrix');

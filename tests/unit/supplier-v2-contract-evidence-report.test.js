@@ -1,3 +1,4 @@
+/** @test-kind unit @test-runner jest @test-requires none */
 'use strict';
 
 const report = require('../../scripts/supplier-v2-contract-evidence-report');

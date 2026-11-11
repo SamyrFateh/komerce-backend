@@ -1,3 +1,4 @@
+/** @test-kind unit @test-runner jest @test-requires none */
 'use strict';
 
 const { adaptShippingRate } = require('../../services/suppliers/allegro-shipping-capability-adapter');

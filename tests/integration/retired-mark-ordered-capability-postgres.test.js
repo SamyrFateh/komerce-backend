@@ -1,3 +1,4 @@
+/** @test-kind integration @test-runner jest @test-requires postgres */
 'use strict';
 /** @test-kind integration
  * @test-requires postgres

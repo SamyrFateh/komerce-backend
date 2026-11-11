@@ -1,3 +1,4 @@
+/** @test-kind unit @test-runner jest @test-requires none */
 'use strict';
 const { resolveCollectAmount } = require('../../services/relay-collect-amount');
 

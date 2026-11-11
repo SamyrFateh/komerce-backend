@@ -179,7 +179,7 @@
 
     if (state.mode === 'product') {
       html += `<select class="ps-select" data-act="set-product">
-        ${state.products.map(p => `<option value="${p.id}"${p.id === state.productId ? ' selected' : ''}>${p.name} · ${fmt(p.price_kmf)}</option>`).join('')}
+        ${state.products.map(p => `<option value="${p.id}"${p.id === state.productId ? ' selected' : ''}>${esc(p.name)} · ${fmt(p.price_kmf)}</option>`).join('')}
       </select>`;
     } else {
       html += `<select class="ps-select" data-act="set-category">
@@ -275,7 +275,7 @@
     } else {
       d.competitors.items.forEach(c => {
         html += `<div class="ps-comp-row">
-          <span class="ps-comp-name">${c.competitor_name}${c.notes ? ` · <span style="color:#94a3b8;font-style:italic">${c.notes}</span>` : ''}</span>
+          <span class="ps-comp-name">${esc(c.competitor_name)}${c.notes ? ` · <span style="color:#94a3b8;font-style:italic">${esc(c.notes)}</span>` : ''}</span>
           <span class="ps-comp-price">${fmt(c.price_kmf)}</span>
           <span class="ps-comp-date">${new Date(c.observed_at).toLocaleDateString('fr-FR')}</span>
           <button class="kmc-btn-ghost" data-act="del-competitor" data-id="${c.id}" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:18px">×</button>

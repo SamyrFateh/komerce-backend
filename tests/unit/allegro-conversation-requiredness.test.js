@@ -1,3 +1,4 @@
+/** @test-kind unit @test-runner jest @test-requires none */
 'use strict';
 const { buildSellerContractProof } = require('../../scripts/allegro-sandbox-check');
 const { assertThrough } = require('../../scripts/provider-contract-proof');
