@@ -68,6 +68,8 @@ jest.mock('../../js/b-scroll-owner.js', () => ({
 }));
 
 const { state, dom } = require('../../js/b-store.js');
+const { bus } = require('../../js/b-bus.js');
+const { selectModalOption } = require('../../js/view-models/modal-selection-model.js');
 const { renderMobileProductDetail } = require('../../js/b-modal-mobile-product.js');
 
 function installDom() {
@@ -469,6 +471,7 @@ describe('b-modal-mobile-product — sélecteur Couleur (M2, spec §5.4)', () =>
   }
 
   test('SKU avec axe Couleur : la rangée de vignettes est rendue avec une seule source de sélection', () => {
+    const eventSpy = jest.spyOn(bus, 'emit');
     const detail = baseDetail({
       inventory_model: 'SKU',
       option_axes: [colorAxis()],
@@ -498,6 +501,10 @@ describe('b-modal-mobile-product — sélecteur Couleur (M2, spec §5.4)', () =>
     expect(active.length).toBe(1);
     expect(active[0].querySelector('.k-sku-name').textContent).toBe('Bleu');
     expect(group.querySelector('.k-vg-label-val').textContent).toBe('Bleu');
+    selectModalOption.mockReturnValueOnce(selection);
+    group.querySelector('.k-sku').click();
+    expect(eventSpy).toHaveBeenCalledWith('modal:selection-rendered');
+    eventSpy.mockRestore();
   });
 
   test('LEGACY (selection_supported=false) : aucun sélecteur Couleur, même si option_axes est fourni', () => {

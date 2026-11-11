@@ -49,6 +49,7 @@
 'use strict';
 
 import { state, dom, getRequestedTransportRail } from './b-store.js';
+import { bus } from './b-bus.js';
 import { fmtPrice, optimizeImgUrl } from './b-utils.js';
 import {
   OPTION_STATE,
@@ -300,6 +301,9 @@ function renderAxis(detail, selection, axis, onSelectionChanged) {
         option.value
       );
       onSelectionChanged();
+      // Même convergence post-rendu SKU que sur desktop : aucune CTA ne
+      // conserve l'aria-disabled d'une sélection précédente achetable.
+      bus.emit('modal:selection-rendered');
     });
 
     wrap.appendChild(button);

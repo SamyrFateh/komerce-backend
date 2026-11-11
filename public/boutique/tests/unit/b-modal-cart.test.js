@@ -329,6 +329,50 @@ describe('b-modal-cart', () => {
       expect(() => setupModalCart()).not.toThrow();
     });
 
+    test('P0 — post-rendu SKU réactive Ajouter après passage de sélection incomplète à disponible', () => {
+      setupModalCart();
+      setSkuSelection(null, { color: 'Navy Blue' });
+      bus.emit('modal:detail-ready');
+      expect(dom.addCartBtn.classList.contains('k-purchase-intent--blocked')).toBe(true);
+      expect(dom.addCartBtn.getAttribute('aria-disabled')).toBe('true');
+
+      setSkuSelection('sku-xl', { color: 'Navy Blue', size: 'XL' });
+      bus.emit('modal:selection-rendered');
+      expect(dom.addCartBtn.classList.contains('k-purchase-intent--blocked')).toBe(false);
+      expect(dom.addCartBtn.getAttribute('aria-disabled')).toBeNull();
+      expect(dom.addCartBtn.disabled).toBe(false);
+      expect(dom.addCartBtn.textContent).toContain('Ajouter');
+    });
+
+    test('P0 — XL déjà au panier puis M disponible : Ajouter actif sur M, quantité XL préservée', () => {
+      setupModalCart();
+      state.cart = [{
+        product: { id: 42, sku_id: 'sku-xl' }, qty: 2,
+        variant_combo: { color: 'Navy Blue', size: 'XL' },
+      }];
+
+      setSkuSelection('sku-xl', { color: 'Navy Blue', size: 'XL' });
+      bus.emit('modal:selection-rendered');
+      expect(state.modalQty).toBe(2);
+      expect(actions.classList.contains('k-modal-actions--filled')).toBe(true);
+
+      setSkuSelection('sku-m', { color: 'Navy Blue', size: 'M' });
+      bus.emit('modal:selection-rendered');
+      expect(state.modalQty).toBe(1);
+      expect(dom.addCartBtn.textContent).toContain('Ajouter');
+      expect(dom.addCartBtn.classList.contains('k-purchase-intent--blocked')).toBe(false);
+      expect(dom.addCartBtn.getAttribute('aria-disabled')).toBeNull();
+      expect(dom.addCartBtn.disabled).toBe(false);
+      expect(actions.classList.contains('k-modal-actions--filled')).toBe(false);
+      expect(state.cart).toHaveLength(1);
+      expect(state.cart[0].qty).toBe(2);
+
+      setSkuSelection('sku-xl', { color: 'Navy Blue', size: 'XL' });
+      bus.emit('modal:selection-rendered');
+      expect(state.modalQty).toBe(2);
+      expect(actions.classList.contains('k-modal-actions--filled')).toBe(true);
+    });
+
     test('modal:detail-ready rejoue la synchronisation', () => {
       setupModalCart();
       state.modalProduct = { id: 42 };

@@ -428,6 +428,9 @@ function installDetailReadyReconcile() {
   if (_detailReadyReconcileInstalled) return;
   _detailReadyReconcileInstalled = true;
   bus.on('modal:detail-ready', _syncModalQtyUI);
+  // L'option SKU est déjà résolue ET repeinte : contrairement au clic
+  // document capturé, ce signal ne peut pas précéder le reducer/renderer.
+  bus.on('modal:selection-rendered', _syncModalQtyUI);
   // Le side-cart et le drawer mutent la même ligne SKU pendant que la fiche
   // peut rester ouverte : refléter immédiatement ces quantités exactes.
   bus.on('cart:update', _syncModalQtyUI);
