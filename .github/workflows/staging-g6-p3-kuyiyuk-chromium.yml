@@ -1,0 +1,55 @@
+name: G6 P3 — existing order manual sourcing in real Chromium (staging)
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: read
+concurrency:
+  group: komerce-g6-p3-kuyiyuk-chromium
+  cancel-in-progress: false
+jobs:
+  p3:
+    if: >-
+      github.repository == 'SamyrFateh/komerce-backend' &&
+      github.actor == github.repository_owner &&
+      github.event.issue.user.login == github.repository_owner &&
+      github.event.issue.title == '[staging-op] g6-p3-kuyiyuk-chromium'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      EXPECTED_RAILWAY_ENVIRONMENT: staging
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      E2E_CLICKS_BASE_URL: https://komerce-backend-production.up.railway.app
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      KOMERCE_STAGING_RESET_DB_PIN: ${{ vars.STAGING_DB_PIN }}
+      PGOPTIONS: '-c default_transaction_read_only=on'
+      E2E_AGENT_HUB_EMAIL: ${{ secrets.E2E_AGENT_HUB_EMAIL }}
+      E2E_AGENT_HUB_PASSWORD: ${{ secrets.E2E_AGENT_HUB_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Pin staging deployment and verify protected database target
+        run: |
+          node scripts/recette/resolve-staging-deploy-pin.js
+          node scripts/recette/target-guard.js
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: P3 same-order Hub UI gestures
+        run: npx playwright test --config=playwright.hub-v1-clicks.config.js tests/staging-clicks/g6-p3-kuyiyuk.spec.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g6-p3-kuyiyuk-${{ github.run_id }}
+          path: test-results/g6-p3-kuyiyuk/
+          if-no-files-found: warn
+          retention-days: 30
