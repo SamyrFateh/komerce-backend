@@ -12,7 +12,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const {test,expect}=require('@playwright/test');
 const OUT=path.resolve('test-results/g6-p3-kuyiyuk');
-const evidence={schema:'komerce-g6-p3-kuyiyuk/1',reference:'KUYIYUK',verdict:'NOT_PROVEN',external_supplier_calls:0,payment_executed:false,gestures:[]};
+const evidence={schema:'komerce-g6-p3-kuyiyuk/1',reference:'KUYIYUK',verdict:'NOT_PROVEN',external_supplier_calls:0,external_payment_executed:false,staging_cash_confirmation_recorded:false,gestures:[]};
 const save=()=>{fs.mkdirSync(OUT,{recursive:true});fs.writeFileSync(path.join(OUT,'evidence.json'),JSON.stringify(evidence,null,2)+'\n');};
 let db;
 const q=async(sql,params=[]) => (await db.query(sql,params)).rows;
@@ -23,13 +23,16 @@ const orderState=async()=> {
   const [o]=await q(`SELECT o.id,o.reference,o.user_id,o.simulation_scope,o.status::text AS status,o.payment_mode::text AS payment_mode,o.payment_status::text AS payment_status,
      (SELECT COUNT(*)::int FROM order_items oi WHERE oi.order_id=o.id) AS item_count,
      (SELECT COUNT(*)::int FROM purchase_lines pl JOIN order_items oi ON oi.id=pl.order_item_id WHERE oi.order_id=o.id AND pl.cancelled_at IS NULL) AS line_count,
-     (SELECT COUNT(DISTINCT pl.purchase_order_id)::int FROM purchase_lines pl JOIN order_items oi ON oi.id=pl.order_item_id WHERE oi.order_id=o.id AND pl.cancelled_at IS NULL AND pl.purchase_order_id IS NOT NULL) AS po_count
+     (SELECT COUNT(DISTINCT pl.purchase_order_id)::int FROM purchase_lines pl JOIN order_items oi ON oi.id=pl.order_item_id WHERE oi.order_id=o.id AND pl.cancelled_at IS NULL AND pl.purchase_order_id IS NOT NULL) AS po_count,
+     (SELECT COUNT(*)::int FROM cash_collections cc WHERE cc.order_id=o.id) AS cash_collection_count,
+     (SELECT COUNT(*)::int FROM cash_confirmation_controls ccc WHERE ccc.order_id=o.id AND ccc.state='CONFIRMED') AS cash_control_confirmed_count
     FROM orders o WHERE o.id=$1 AND o.reference='KUYIYUK'`,[orderId]);
   return o||null;
 };
-async function login(browser,baseURL){
-  const email=process.env.E2E_AGENT_HUB_EMAIL,password=process.env.E2E_AGENT_HUB_PASSWORD;
-  expect(email&&password,'E2E Hub credentials').toBeTruthy();
+async function login(browser,baseURL,actor='hub'){
+  const prefix=actor==='relay'?'E2E_AGENT_RELAIS':'E2E_AGENT_HUB';
+  const email=process.env[prefix+'_EMAIL'],password=process.env[prefix+'_PASSWORD'];
+  expect(email&&password,'E2E '+actor+' credentials').toBeTruthy();
   const ctx=await browser.newContext({baseURL,viewport:{width:1440,height:900}});
   const page=await ctx.newPage();
   page.on('dialog',d=>d.accept());
@@ -47,7 +50,7 @@ async function capture(page,name){
   fs.mkdirSync(path.join(OUT,'captures'),{recursive:true});
   await page.screenshot({path:path.join(OUT,'captures',name+'.png')});
 }
-test.describe.serial('G6 P3 KUYIYUK — Chromium Hub UI',()=>{
+test.describe.serial('G6 P3 KUYIYUK — Chromium Relais cash + Hub UI',()=>{
   test.beforeAll(async()=>{
     db=require('../../db');
     const env=process.env;
@@ -63,13 +66,13 @@ test.describe.serial('G6 P3 KUYIYUK — Chromium Hub UI',()=>{
     expect(o,'same canonical G6 order exists').toBeTruthy();
     expect(o.user_id).toBe(buyer);
     expect(o.simulation_scope).toBe('G6-BUYER');
-    expect(o.status).toBe('pending');
+    expect(['pending','confirmed']).toContain(o.status);
     expect(o.payment_mode).toBe('cash_relais');
-    expect(o.payment_status).not.toBe('paid');
+    expect(o.payment_status).toBe(o.status==='pending'?'pending':'paid');
     expect(Number(o.item_count)).toBe(1);
     expect(Number(o.line_count)).toBeLessThanOrEqual(1);
     expect(Number(o.po_count)).toBeLessThanOrEqual(1);
-    evidence.initial={order_id:o.id,status:o.status,payment_status:o.payment_status,line_count:Number(o.line_count),po_count:Number(o.po_count)};
+    evidence.initial={order_id:o.id,status:o.status,payment_status:o.payment_status,line_count:Number(o.line_count),po_count:Number(o.po_count),cash_collection_count:Number(o.cash_collection_count),cash_control_confirmed_count:Number(o.cash_control_confirmed_count)};
     save();
   });
   test.afterAll(async()=>{
@@ -77,7 +80,7 @@ test.describe.serial('G6 P3 KUYIYUK — Chromium Hub UI',()=>{
       const o=await orderState();
       if(o)evidence.final={order_id:o.id,status:o.status,payment_status:o.payment_status,line_count:Number(o.line_count),po_count:Number(o.po_count)};
     }catch(e){evidence.readback_error=String(e.message||e).slice(0,250);}
-    if(evidence.final&&evidence.final.line_count===1&&evidence.final.po_count===1){
+    if(evidence.final&&evidence.final.status==='confirmed'&&evidence.final.payment_status==='paid'&&evidence.final.cash_collection_count===1&&evidence.final.cash_control_confirmed_count===1&&evidence.final.line_count===1&&evidence.final.po_count===1){
       evidence.verdict='G6_P3_MANUAL_LINE_AND_DRAFT_PO_CHROMIUM_PASS';
     }else if(evidence.error){
       evidence.verdict='G6_P3_BLOCKED_NOT_PROVEN';
@@ -86,11 +89,50 @@ test.describe.serial('G6 P3 KUYIYUK — Chromium Hub UI',()=>{
     if(db&&db.pool)await db.pool.end();
   });
   test('Créer la ligne manuelle puis préparer le PO depuis le cockpit canonique',async({browser,baseURL})=>{
-    const before=await orderState();
+    let before=await orderState();
     if(Number(before.line_count)===1&&Number(before.po_count)===1){
       evidence.gestures.push({key:'resume-existing-draft',verdict:'ALREADY_PRESENT_NO_REPLAY'});
       await test.skip();
     }
+    if(before.status==='pending'){
+      const {ctx:relayCtx,page:relayPage}=await login(browser,baseURL,'relay');
+      try{
+        await relayPage.goto('/admin/relais-live?view=execute',{waitUntil:'domcontentloaded'});
+        await relayPage.locator('select').first().waitFor({timeout:20000});
+        await relayPage.locator('select').first().selectOption({label:'KM · Comores'});
+        await relayPage.waitForLoadState('networkidle').catch(()=>{});
+        await relayPage.locator('[data-relay-execution-jump="cash"]').click();
+        const cashRow=relayPage.locator('tr',{hasText:'KUYIYUK'});
+        await cashRow.waitFor({timeout:20000});
+        await capture(relayPage,'00-cash-pending');
+        const cashResponse=relayPage.waitForResponse(r=>new URL(r.url()).pathname==='/api/admin/workspaces/operations/market/KM/orders/KUYIYUK/confirm-cash'&&r.request().method()==='POST',{timeout:30000});
+        await cashRow.locator('[data-workspace-action="confirm-cash"]').click();
+        const cr=await cashResponse;
+        const cbody=await cr.json().catch(()=>({}));
+        evidence.gestures.push({key:'relay-confirm-cash',http:cr.status(),code:cbody.code||null,verdict:cr.status()===200?'PASS':'FAIL'});
+        save();
+        if(cr.status()!==200){
+          evidence.error=String(cbody.code||cbody.error||'CASH_CONFIRMATION_REJECTED').slice(0,250);
+          throw new Error(evidence.error);
+        }
+        evidence.staging_cash_confirmation_recorded=true;
+        await expect.poll(async()=>{const o=await orderState();return String(o.status)+':'+String(o.payment_status)+':'+Number(o.cash_collection_count);},{timeout:20000}).toBe('confirmed:paid:1');
+        await capture(relayPage,'00-cash-confirmed');
+      }catch(error){
+        evidence.error=String(error.message||error).split('\n')[0].slice(0,300);
+        await capture(relayPage,'99-cash-blocked').catch(()=>{});
+        save();
+        throw error;
+      }finally{
+        await relayCtx.close();
+      }
+      evidence.gestures.push({key:'cash-payment-recorded-in-staging',verdict:'PASS',external_payment:false});
+      before=await orderState();
+    }
+    expect(before.status).toBe('confirmed');
+    expect(before.payment_status).toBe('paid');
+    expect(Number(before.cash_collection_count)).toBe(1);
+    expect(Number(before.cash_control_confirmed_count)).toBe(1);
     const {ctx,page}=await login(browser,baseURL);
     try{
       await page.goto('/admin/hub-live?view=execute',{waitUntil:'domcontentloaded'});
@@ -102,7 +144,8 @@ test.describe.serial('G6 P3 KUYIYUK — Chromium Hub UI',()=>{
       const orderCard=page.locator('[data-hlc-order]').filter({hasText:'KUYIYUK'});
       await orderCard.first().waitFor({timeout:25000});
       await capture(page,'01-order-visible');
-      if(Number(before.line_count)===0){
+      const afterCash=await orderState();
+      if(Number(afterCash.line_count)===0){
         const need=page.locator('[data-hlc-need]').filter({hasText:'KUYIYUK'});
         await need.first().waitFor({timeout:20000});
         await need.first().click();
@@ -158,8 +201,11 @@ test.describe.serial('G6 P3 KUYIYUK — Chromium Hub UI',()=>{
       evidence.final={order_id:after.id,status:after.status,payment_status:after.payment_status,line_count:Number(after.line_count),po_count:Number(after.po_count)};
       expect(Number(after.line_count)).toBe(1);
       expect(Number(after.po_count)).toBe(1);
-      expect(after.payment_status).not.toBe('paid');
-      evidence.db_readback='same order, one purchase line, one draft PO';
+      expect(after.status).toBe('confirmed');
+      expect(after.payment_status).toBe('paid');
+      expect(Number(after.cash_collection_count)).toBe(1);
+      expect(Number(after.cash_control_confirmed_count)).toBe(1);
+      evidence.db_readback='same order, one cash collection and confirmed control, one purchase line, one draft PO';
       save();
     }catch(error){
       evidence.error=String(error.message||error).split('\n')[0].slice(0,300);
