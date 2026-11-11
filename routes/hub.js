@@ -68,7 +68,7 @@ const hubRead = [
 
 function addMarketScope(req, conditions, params, column = 'o.market_id') {
   if (req.user.role !== 'market_operator') return;
-  conditions.push(`${column} = ANY(${params.length + 1}::uuid[])`);
+  conditions.push(`${column} = ANY($${params.length + 1}::uuid[])`);
   params.push(req.authorizedMarkets ? Array.from(req.authorizedMarkets) : []);
 }
 

@@ -167,6 +167,7 @@ const {
   submitOrder, renderOrderSuccess, renderCheckout,
   buildCheckoutRecentChoices,
   buildCheckoutFulfillmentPreviewPath, summarizeCheckoutFulfillment,
+  checkoutQuoteKey, resolveCheckoutPayable,
   makeInput, makePhoneInput, makeIntlPhoneInput,
   getDefaultPhoneCodeForZone,
 } = require('../../js/b-checkout.js');
@@ -223,6 +224,21 @@ describe('b-checkout', () => {
     state.viewedHistory = [];
     scroll.savedY = 0;
     getCurrentIdentity.mockReturnValue(null);
+  });
+
+  describe('total présenté = devis serveur (livraison comprise)', () => {
+    const items = [{ product: { id: 'p1', price_kmf: 7990 }, qty: 1 }, { product: { id: 'p2', price_kmf: 5000 }, qty: 1, checkout_included: false }];
+    it('sans devis valide : non prêt, jamais de montant serveur inventé', () => {
+      expect(resolveCheckoutPayable(items, 'relay-1', null)).toMatchObject({ ready: false, transport: 0 });
+      expect(resolveCheckoutPayable(items, 'relay-1', { key: 'autre', total_kmf: 1 }).ready).toBe(false);
+    });
+    it('avec devis de la sélection courante : le total est exactement celui du serveur (7 990 + 26 = 8 016)', () => {
+      const quote = { key: checkoutQuoteKey('relay-1', items), items_total_kmf: 7990, transport_price_kmf: 26, discount_kmf: 0, total_kmf: 8016 };
+      expect(resolveCheckoutPayable(items, 'relay-1', quote)).toEqual({ ready: true, total: 8016, transport: 26, discount: 0 });
+      // changer de relais ou de quantité invalide le devis
+      expect(resolveCheckoutPayable(items, 'relay-2', quote).ready).toBe(false);
+      expect(resolveCheckoutPayable([{ ...items[0], qty: 2 }], 'relay-1', quote).ready).toBe(false);
+    });
   });
 
   describe('projection fulfillment mixte', () => {
@@ -1605,11 +1621,14 @@ describe('b-checkout', () => {
         return Promise.resolve({});
       });
       requireIdentity.mockResolvedValue(null); // on ne pousse pas jusqu'à l'appel API ici
+      // Le bouton exige le devis serveur (total livraison comprise) : POST /api/orders/preview.
+      apiPost.mockResolvedValue({ items_total_kmf: 0, transport_price_kmf: 26, discount_kmf: 0, total_kmf: 26 });
       renderCheckout();
       await flush();
 
       const btn = document.getElementById('btn-confirm-order');
-      expect(btn.disabled).toBe(false); // relais ready + sélectionné
+      expect(btn.disabled).toBe(false); // relais ready + sélectionné + devis serveur reçu
+      expect(apiPost).toHaveBeenCalledWith('/api/orders/preview', expect.objectContaining({ relais_id: '1' }), expect.any(Object));
       btn.click();
       await flush();
 

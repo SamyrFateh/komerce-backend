@@ -8680,14 +8680,14 @@
         "category": "services",
         "declared": "services/pricing-floor-forecast-shadow.js",
         "resolvedPath": "services/pricing-floor-forecast-shadow.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "economic-engine",
         "category": "services",
         "declared": "services/pricing-floor-forecast-preview.js",
         "resolvedPath": "services/pricing-floor-forecast-preview.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "economic-engine",
@@ -14957,6 +14957,13 @@
       {
         "feature": "market-autonomy",
         "category": "dash",
+        "declared": "dashboards/canonical/js/market-network.js",
+        "resolvedPath": "public/dashboards/canonical/js/market-network.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "dash",
         "declared": "dashboards/canonical/css/market-cash-control.css",
         "resolvedPath": "public/dashboards/canonical/css/market-cash-control.css",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -15750,6 +15757,13 @@
         "category": "tests",
         "declared": "tests/unit/market-delegation-network-routes.test.js",
         "resolvedPath": "tests/unit/market-delegation-network-routes.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "tests",
+        "declared": "tests/unit/market-network.test.js",
+        "resolvedPath": "tests/unit/market-network.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -42164,6 +42178,15 @@
         "to": "auth-identity",
         "channels": [
           {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/market-delegation-network-service.js",
+                "targetFile": "services/user-mutation-service.js"
+              }
+            ]
+          },
+          {
             "channel": "data-read",
             "evidence": [
               {
@@ -42394,6 +42417,14 @@
             "evidence": [
               {
                 "sourceFileId": "services/market-delegation-network-service.js",
+                "targetFile": "services/relais-mutation-service.js"
+              },
+              {
+                "sourceFileId": "routes/market-delegation-network.js",
+                "targetFile": "services/relais-mutation-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/market-delegation-network-service.test.js",
                 "targetFile": "services/relais-mutation-service.js"
               }
             ]
@@ -49080,7 +49111,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2303
+        "filesObserved": 2305
       },
       "boutique": {
         "filesObserved": 214,
@@ -52998,8 +53029,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 692,
-        "technicalNodesOwned": 692,
+        "technicalNodesTotal": 694,
+        "technicalNodesOwned": 694,
         "technicalOrphans": 0
       },
       "dash": {

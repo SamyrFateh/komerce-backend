@@ -338,6 +338,7 @@
 
   const RECEIVABLE_ENDPOINT = '/api/scans/hub/receivable';
   const RECEIVE_ENDPOINT = '/api/scans/hub/receive';
+  const PHYSICAL_CODE_CONFIRM_ENDPOINT = '/api/hub/physical-codes/confirm';
   const RECEPTION_STATE_LABELS = Object.freeze({ NOT_RECEIVED: 'Non reçu', PARTIAL: 'Partiel', COMPLETE: 'Complet' });
 
   const WORKSPACE_VIEWS = Object.freeze([
@@ -496,11 +497,92 @@
     }
     inputs.forEach(({ input }) => input.addEventListener('input', sync));
     let scanning = false;
-    scannerInput.addEventListener('keydown', async event => {
-      if (event.key !== 'Enter') return;
-      event.preventDefault();
-      const code = String(scannerInput.value || '').trim();
-      if (!code || scanning) return;
+    const PHYSICAL_CODE_TYPES = Object.freeze([
+      ['EAN_GTIN', 'EAN / GTIN imprimé (universel)'],
+      ['SUPPLIER_BARCODE', 'Code-barres du fournisseur'],
+      ['KOM_LOT_LABEL', 'Étiquette de lot Komerce'],
+    ]);
+    const confirmBox = doc.createElement('form');
+    confirmBox.className = 'kmc-workspace-receive-confirm';
+    confirmBox.setAttribute('data-physical-confirm', '');
+    confirmBox.hidden = true;
+    scannerPanel.appendChild(confirmBox);
+
+    function closeConfirm() {
+      confirmBox.hidden = true;
+      confirmBox.replaceChildren();
+    }
+
+    // Code inconnu : l'agent, colis en main, rattache l'EAN à la variante attendue sur CETTE PO.
+    // Le code identifie la référence, jamais la commande ni un exemplaire.
+    function openConfirm(code) {
+      confirmBox.replaceChildren();
+      confirmBox.hidden = false;
+      confirmBox.appendChild(text(doc, 'span', 'kmc-workspace-muted',
+        `Code ${code} inconnu pour ce fournisseur. Colis en main, choisissez la variante attendue sur cette PO.`));
+      const variant = doc.createElement('select');
+      variant.setAttribute('aria-label', 'Variante attendue sur la PO');
+      variant.setAttribute('data-confirm-variant', '');
+      variant.appendChild(Object.assign(doc.createElement('option'), { value: '', textContent: 'Variante attendue…' }));
+      po.lines.filter(line => line.product_sku_id).forEach(line => {
+        variant.appendChild(Object.assign(doc.createElement('option'), {
+          value: String(line.product_sku_id),
+          textContent: `${line.product_name} (attendu ${formatNumber(line.expected_quantity)})`,
+        }));
+      });
+      const type = doc.createElement('select');
+      type.setAttribute('aria-label', 'Type de code');
+      type.setAttribute('data-confirm-type', '');
+      PHYSICAL_CODE_TYPES.forEach(([value, label]) => type.appendChild(Object.assign(doc.createElement('option'), { value, textContent: label })));
+      const proof = doc.createElement('input');
+      proof.type = 'text';
+      proof.maxLength = 500;
+      proof.placeholder = 'Preuve : référence de la photo ou de la note';
+      proof.setAttribute('aria-label', 'Référence de la photo ou de la note');
+      proof.setAttribute('data-confirm-proof', '');
+      const submit = makeActionButton(doc, 'Valider la confirmation', 'confirm-physical-code');
+      submit.type = 'submit';
+      submit.disabled = true;
+      const cancel = makeActionButton(doc, 'Annuler', 'cancel-physical-code');
+      cancel.addEventListener('click', closeConfirm);
+      const syncConfirm = () => { submit.disabled = !variant.value || !String(proof.value || '').trim(); };
+      variant.addEventListener('change', syncConfirm);
+      proof.addEventListener('input', syncConfirm);
+      [variant, type, proof].forEach(node => confirmBox.appendChild(node));
+      const actions = doc.createElement('div');
+      actions.className = 'kmc-workspace-receive-confirm-actions';
+      actions.appendChild(submit);
+      actions.appendChild(cancel);
+      confirmBox.appendChild(actions);
+      confirmBox.onsubmit = async event => {
+        event.preventDefault();
+        if (submit.disabled) return;
+        submit.disabled = true;
+        scannerResult.textContent = 'Confirmation en cours…';
+        scannerResult.dataset.scanTone = 'pending';
+        try {
+          await jsonRequest(context.fetch, PHYSICAL_CODE_CONFIRM_ENDPOINT, {
+            method: 'POST',
+            body: {
+              purchase_order_id: po.purchase_order_id,
+              product_sku_id: variant.value,
+              code,
+              code_type: type.value,
+              proof_ref: String(proof.value).trim(),
+            },
+          });
+          closeConfirm();
+          await identify(code);
+        } catch (error) {
+          scannerResult.textContent = `Confirmation refusée : ${error.message}`;
+          scannerResult.dataset.scanTone = 'error';
+          submit.disabled = false;
+        }
+      };
+      variant.focus();
+    }
+
+    async function identify(code) {
       scanning = true;
       scannerInput.disabled = true;
       scannerResult.textContent = 'Identification en cours…';
@@ -526,11 +608,26 @@
       } catch (error) {
         scannerResult.textContent = `Code non reconnu ou incompatible avec cette PO (${error.code || 'contrôle requis'}).`;
         scannerResult.dataset.scanTone = 'error';
+        if (error.code === 'HUB_PHYSICAL_CODE_UNKNOWN') {
+          const propose = makeActionButton(doc, 'Confirmer cette référence', 'open-physical-confirm');
+          propose.addEventListener('click', () => { propose.remove(); openConfirm(code); });
+          scannerResult.appendChild(doc.createTextNode(' '));
+          scannerResult.appendChild(propose);
+        }
         scannerInput.focus();
       } finally {
         scanning = false;
         scannerInput.disabled = false;
       }
+    }
+
+    scannerInput.addEventListener('keydown', async event => {
+      if (event.key !== 'Enter') return;
+      event.preventDefault();
+      const code = String(scannerInput.value || '').trim();
+      if (!code || scanning) return;
+      closeConfirm();
+      await identify(code);
     });
 
     button.addEventListener('click', () => {
@@ -1744,10 +1841,28 @@
         { key: 'relais_name', label: 'Relais' },
         { key: 'item_count', label: 'Articles', align: 'right' },
         { key: 'total_kmf', label: 'Montant', align: 'right', format: formatKmf },
+        { key: 'action', label: 'Action', align: 'right' },
       ],
       rows: payload.distribution.unassigned,
       emptyText: 'Aucune commande à répartir.',
     });
+    // Répartition d'UNE commande (même writer et mêmes droits que « Répartir ce marché »).
+    if (!isHubReadOnly(context)) {
+      distributionTable.querySelectorAll('tbody tr').forEach((rowNode, index) => {
+        const row = payload.distribution.unassigned[index];
+        const actionCell = rowNode.lastChild;
+        if (!row || !actionCell) return;
+        actionCell.replaceChildren();
+        const button = makeActionButton(doc, 'Répartir', 'distribute-order');
+        actionCell.appendChild(button);
+        button.addEventListener('click', () => runAction(context, button, {
+          url: endpointFor(context.marketCode, `orders/${encodeURIComponent(row.reference)}/distribute`),
+          confirmMessage: `Répartir la commande ${row.reference} ?`,
+          runningMessage: `${row.reference} · répartition en cours…`,
+          successMessage: `${row.reference} · répartition terminée.`,
+        }).catch(() => {}));
+      });
+    }
 
     renderParcelActionSection(rootNode, ui, doc, context, {
       title: 'Hub · Expédier',

@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 796,
-    "filesWithFullHeaders": 741,
+    "scannedCodeFiles": 798,
+    "filesWithFullHeaders": 743,
     "filesWithLiteHeaders": 55,
-    "filesWithAnyHeaders": 796,
+    "filesWithAnyHeaders": 798,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 2020,
-    "edges": 9951,
+    "graphNodes": 2023,
+    "edges": 9967,
     "dbTables": 233,
-    "doctrines": 784,
+    "doctrines": 785,
     "impactAreas": 207,
-    "unresolvedCodeEdges": 954,
+    "unresolvedCodeEdges": 955,
     "dbWriteViaOverlapWarnings": 12,
     "multiWriterTables": 95
   },
@@ -40,7 +40,7 @@
     "admin-dashboard": 39,
     "decision-signals": 14,
     "market": 9,
-    "economic-engine": 67,
+    "economic-engine": 69,
     "sourcing": 37,
     "logistics": 69,
     "boutique": 21,
@@ -112,7 +112,7 @@
     "schema": 1,
     "route": 137,
     "entrypoint": 1,
-    "service": 478,
+    "service": 480,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -123,7 +123,7 @@
   "byCriticality": {
     "critical": 122,
     "medium": 154,
-    "high": 455,
+    "high": 457,
     "low": 64,
     "unknown": 1
   },
@@ -17069,6 +17069,7 @@
         "customs_effective_rates",
         "customs_shipment_parcels",
         "customs_shipments",
+        "international_shipments",
         "order_item_real_cost_allocations",
         "order_items",
         "orders",
@@ -22288,18 +22289,29 @@
       ],
       "depends": [
         "services/market-delegation-service.js",
-        "services/relais-mutation-service.js"
+        "services/relais-mutation-service.js",
+        "services/user-mutation-service.js"
       ],
       "usedBy": [
         "routes/market-delegation-network.js"
       ],
-      "dbRead": [],
+      "dbRead": [
+        "assignment_memberships",
+        "membership_capabilities",
+        "users"
+      ],
       "dbWrite": [],
       "dbWriteVia": [
         {
           "via": "relais-mutation-service",
           "tables": [
             "relais"
+          ]
+        },
+        {
+          "via": "user-mutation-service",
+          "tables": [
+            "users"
           ]
         },
         {
@@ -27440,7 +27452,8 @@
         "boutique_subcategories",
         "finance_config",
         "pricing_components",
-        "risk_provisions"
+        "risk_provisions",
+        "markets"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -27580,7 +27593,8 @@
       "dbRead": [
         "order_items",
         "orders",
-        "products"
+        "products",
+        "relais"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -27595,6 +27609,74 @@
         "pricing"
       ],
       "version": "2026-09"
+    },
+    {
+      "id": "services/pricing-floor-forecast-preview.js",
+      "file": "services/pricing-floor-forecast-preview.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "economic-engine-forecast-preview-contract",
+      "domain": "economic-engine",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "server_product_market_and_untrusted_simulation"
+      ],
+      "outputs": [
+        "never_persisted_provisional_floor_preview"
+      ],
+      "depends": [
+        "services/pricing-floor-forecast-shadow.js"
+      ],
+      "usedBy": [
+        "routes/admin-pricing-workspace.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "docs/doctrine/PRICING_FLOOR_FORECAST_SHADOW.md"
+      ],
+      "impactAreas": [
+        "economic-engine"
+      ],
+      "version": "2026-11"
+    },
+    {
+      "id": "services/pricing-floor-forecast-shadow.js",
+      "file": "services/pricing-floor-forecast-shadow.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "economic-engine-pricing-floor-forecast-shadow",
+      "domain": "economic-engine",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "explicit_market_product_scenarios_and_evidence"
+      ],
+      "outputs": [
+        "non_decisional_forecast_and_cost_trace"
+      ],
+      "depends": [],
+      "usedBy": [
+        "scripts/recette/pricing-floor-forecast-demo.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "docs/doctrine/PRICING_FLOOR_FORECAST_SHADOW.md"
+      ],
+      "impactAreas": [
+        "economic-engine"
+      ],
+      "version": "2026-11"
     },
     {
       "id": "services/pricing-guards.js",
@@ -31444,7 +31526,8 @@
         "relais",
         "scan_events",
         "customs_shipments",
-        "customs_shipment_parcels"
+        "customs_shipment_parcels",
+        "international_shipments"
       ],
       "dbWrite": [],
       "dbWriteVia": [
@@ -39298,6 +39381,11 @@
       "table": "customs_effective_rates"
     },
     {
+      "id": "db:international_shipments",
+      "type": "db-table",
+      "table": "international_shipments"
+    },
+    {
       "id": "db:store_credits",
       "type": "db-table",
       "table": "store_credits"
@@ -39346,11 +39434,6 @@
       "id": "db:international_shipment_hub_units",
       "type": "db-table",
       "table": "international_shipment_hub_units"
-    },
-    {
-      "id": "db:international_shipments",
-      "type": "db-table",
-      "table": "international_shipments"
     },
     {
       "id": "db:international_shipment_events",
@@ -42741,6 +42824,11 @@
       "id": "doctrine:contribution_covers_structure_collectively",
       "type": "doctrine",
       "doctrine": "contribution_covers_structure_collectively"
+    },
+    {
+      "id": "doctrine:docs/doctrine/PRICING_FLOOR_FORECAST_SHADOW.md",
+      "type": "doctrine",
+      "doctrine": "docs/doctrine/PRICING_FLOOR_FORECAST_SHADOW.md"
     },
     {
       "id": "doctrine:local_evidence_never_falls_back_silently",
@@ -70510,6 +70598,12 @@
     },
     {
       "from": "services/customs-shipment-service.js",
+      "to": "db:international_shipments",
+      "type": "db-read",
+      "label": "international_shipments"
+    },
+    {
+      "from": "services/customs-shipment-service.js",
       "to": "db:order_item_real_cost_allocations",
       "type": "db-read",
       "label": "order_item_real_cost_allocations"
@@ -79710,6 +79804,12 @@
       "label": "services/relais-mutation-service.js"
     },
     {
+      "from": "services/market-delegation-network-service.js",
+      "to": "services/user-mutation-service.js",
+      "type": "depends",
+      "label": "services/user-mutation-service.js"
+    },
+    {
       "from": "routes/market-delegation-network.js",
       "to": "services/market-delegation-network-service.js",
       "type": "uses",
@@ -79717,10 +79817,35 @@
     },
     {
       "from": "services/market-delegation-network-service.js",
+      "to": "db:assignment_memberships",
+      "type": "db-read",
+      "label": "assignment_memberships"
+    },
+    {
+      "from": "services/market-delegation-network-service.js",
+      "to": "db:membership_capabilities",
+      "type": "db-read",
+      "label": "membership_capabilities"
+    },
+    {
+      "from": "services/market-delegation-network-service.js",
+      "to": "db:users",
+      "type": "db-read",
+      "label": "users"
+    },
+    {
+      "from": "services/market-delegation-network-service.js",
       "to": "db:relais",
       "type": "db-write-via",
       "label": "relais",
       "via": "relais-mutation-service"
+    },
+    {
+      "from": "services/market-delegation-network-service.js",
+      "to": "db:users",
+      "type": "db-write-via",
+      "label": "users",
+      "via": "user-mutation-service"
     },
     {
       "from": "services/market-delegation-network-service.js",
@@ -87989,6 +88114,12 @@
     },
     {
       "from": "services/pricing-cdr.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "services/pricing-cdr.js",
       "to": "doctrine:resolve_before_behavior_change",
       "type": "doctrine",
       "label": "resolve_before_behavior_change"
@@ -88217,6 +88348,12 @@
     },
     {
       "from": "services/pricing-engine.js",
+      "to": "db:relais",
+      "type": "db-read",
+      "label": "relais"
+    },
+    {
+      "from": "services/pricing-engine.js",
       "to": "doctrine:fixed_structure_never_fabricates_sku_price",
       "type": "doctrine",
       "label": "fixed_structure_never_fabricates_sku_price"
@@ -88244,6 +88381,48 @@
       "to": "impact:pricing",
       "type": "impact",
       "label": "pricing"
+    },
+    {
+      "from": "services/pricing-floor-forecast-preview.js",
+      "to": "services/pricing-floor-forecast-shadow.js",
+      "type": "depends",
+      "label": "services/pricing-floor-forecast-shadow.js"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "services/pricing-floor-forecast-preview.js",
+      "type": "uses",
+      "label": "routes/admin-pricing-workspace.js"
+    },
+    {
+      "from": "services/pricing-floor-forecast-preview.js",
+      "to": "doctrine:docs/doctrine/PRICING_FLOOR_FORECAST_SHADOW.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/PRICING_FLOOR_FORECAST_SHADOW.md"
+    },
+    {
+      "from": "services/pricing-floor-forecast-preview.js",
+      "to": "impact:economic-engine",
+      "type": "impact",
+      "label": "economic-engine"
+    },
+    {
+      "from": "scripts/recette/pricing-floor-forecast-demo.js",
+      "to": "services/pricing-floor-forecast-shadow.js",
+      "type": "uses",
+      "label": "scripts/recette/pricing-floor-forecast-demo.js"
+    },
+    {
+      "from": "services/pricing-floor-forecast-shadow.js",
+      "to": "doctrine:docs/doctrine/PRICING_FLOOR_FORECAST_SHADOW.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/PRICING_FLOOR_FORECAST_SHADOW.md"
+    },
+    {
+      "from": "services/pricing-floor-forecast-shadow.js",
+      "to": "impact:economic-engine",
+      "type": "impact",
+      "label": "economic-engine"
     },
     {
       "from": "services/pricing-apply.js",
@@ -94294,6 +94473,12 @@
       "to": "db:customs_shipment_parcels",
       "type": "db-read",
       "label": "customs_shipment_parcels"
+    },
+    {
+      "from": "services/shipping-customs-workspace.js",
+      "to": "db:international_shipments",
+      "type": "db-read",
+      "label": "international_shipments"
     },
     {
       "from": "services/shipping-customs-workspace.js",
@@ -111813,6 +111998,7 @@
         "services/market-cost-attribution-service.js",
         "services/market-local-price-activation-service.js",
         "services/market-operation-guard.js",
+        "services/pricing-floor-forecast-preview.js",
         "services/pricing-market-corridor.js",
         "services/pricing-market-decision-policy.js",
         "services/pricing-market-decision-projection.js",
@@ -121831,6 +122017,7 @@
         "customs_effective_rates",
         "customs_shipment_parcels",
         "customs_shipments",
+        "international_shipments",
         "order_item_real_cost_allocations",
         "order_items",
         "orders",
@@ -121875,6 +122062,7 @@
         "db:customs_shipment_parcel_events",
         "db:customs_shipment_parcels",
         "db:customs_shipments",
+        "db:international_shipments",
         "db:order_item_real_cost_allocations",
         "db:order_items",
         "db:orders",
@@ -127200,19 +127388,30 @@
       "purpose": null,
       "directDependsOn": [
         "services/market-delegation-service.js",
-        "services/relais-mutation-service.js"
+        "services/relais-mutation-service.js",
+        "services/user-mutation-service.js"
       ],
       "directUsedBy": [
         "routes/market-delegation-network.js"
       ],
       "ownedFiles": [],
-      "dbRead": [],
+      "dbRead": [
+        "assignment_memberships",
+        "membership_capabilities",
+        "users"
+      ],
       "dbWrite": [],
       "dbWriteVia": [
         {
           "via": "relais-mutation-service",
           "tables": [
             "relais"
+          ]
+        },
+        {
+          "via": "user-mutation-service",
+          "tables": [
+            "users"
           ]
         },
         {
@@ -127234,8 +127433,11 @@
         "network"
       ],
       "mustCheck": [
+        "db:assignment_memberships",
         "db:market_delegation_audit",
+        "db:membership_capabilities",
         "db:relais",
+        "db:users",
         "doctrine:client_market_id_never_authority",
         "doctrine:network_authority_is_capability_based",
         "doctrine:writer_not_owner_boundary",
@@ -127245,7 +127447,8 @@
         "impact:network",
         "routes/market-delegation-network.js",
         "services/market-delegation-service.js",
-        "services/relais-mutation-service.js"
+        "services/relais-mutation-service.js",
+        "services/user-mutation-service.js"
       ]
     },
     "services/market-delegation-performance-service.js": {
@@ -132381,7 +132584,8 @@
         "boutique_subcategories",
         "finance_config",
         "pricing_components",
-        "risk_provisions"
+        "risk_provisions",
+        "markets"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -132399,6 +132603,7 @@
         "db:cost_components",
         "db:customs_categories",
         "db:finance_config",
+        "db:markets",
         "db:pricing_components",
         "db:risk_provisions",
         "doctrine:resolve_before_behavior_change",
@@ -132523,7 +132728,8 @@
       "dbRead": [
         "order_items",
         "orders",
-        "products"
+        "products",
+        "relais"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -132540,6 +132746,7 @@
         "db:order_items",
         "db:orders",
         "db:products",
+        "db:relais",
         "doctrine:contribution_covers_structure_collectively",
         "doctrine:fixed_structure_never_fabricates_sku_price",
         "doctrine:market_bounds_possible_human_decides",
@@ -132562,6 +132769,63 @@
         "services/sourcing-workspace.js",
         "services/supplier-catalog-scanner.js",
         "services/suppliers/catalog-import-orchestrator.js"
+      ]
+    },
+    "services/pricing-floor-forecast-preview.js": {
+      "role": "economic-engine-forecast-preview-contract",
+      "domain": "economic-engine",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/pricing-floor-forecast-shadow.js"
+      ],
+      "directUsedBy": [
+        "routes/admin-pricing-workspace.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "docs/doctrine/PRICING_FLOOR_FORECAST_SHADOW.md"
+      ],
+      "impactAreas": [
+        "economic-engine"
+      ],
+      "mustCheck": [
+        "doctrine:docs/doctrine/PRICING_FLOOR_FORECAST_SHADOW.md",
+        "impact:economic-engine",
+        "routes/admin-pricing-workspace.js",
+        "services/pricing-floor-forecast-shadow.js"
+      ]
+    },
+    "services/pricing-floor-forecast-shadow.js": {
+      "role": "economic-engine-pricing-floor-forecast-shadow",
+      "domain": "economic-engine",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [],
+      "directUsedBy": [
+        "scripts/recette/pricing-floor-forecast-demo.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "docs/doctrine/PRICING_FLOOR_FORECAST_SHADOW.md"
+      ],
+      "impactAreas": [
+        "economic-engine"
+      ],
+      "mustCheck": [
+        "doctrine:docs/doctrine/PRICING_FLOOR_FORECAST_SHADOW.md",
+        "impact:economic-engine",
+        "services/pricing-floor-forecast-preview.js"
       ]
     },
     "services/pricing-guards.js": {
@@ -136323,7 +136587,8 @@
         "relais",
         "scan_events",
         "customs_shipments",
-        "customs_shipment_parcels"
+        "customs_shipment_parcels",
+        "international_shipments"
       ],
       "dbWrite": [],
       "dbWriteVia": [
@@ -136364,6 +136629,7 @@
         "db:customs_shipment_parcels",
         "db:customs_shipments",
         "db:incidents",
+        "db:international_shipments",
         "db:order_item_real_cost_allocations",
         "db:orders",
         "db:parcel_items",
@@ -141472,7 +141738,8 @@
         "impact:auth-identity",
         "impact:dashboard",
         "impact:loyalty",
-        "routes/loyalty.js"
+        "routes/loyalty.js",
+        "services/market-delegation-network-service.js"
       ]
     },
     "services/verify-qr-collection.js": {
@@ -148272,6 +148539,12 @@
       "to": "db",
       "type": "depends",
       "label": "db"
+    },
+    {
+      "from": "scripts/recette/pricing-floor-forecast-demo.js",
+      "to": "services/pricing-floor-forecast-shadow.js",
+      "type": "uses",
+      "label": "scripts/recette/pricing-floor-forecast-demo.js"
     },
     {
       "from": "services/pricing-market-corridor.js",

@@ -96,4 +96,14 @@ describe('order-checkout-service — unification monétaire (pivot EUR, snapshot
     expect(src).toMatch(/transportPriceKmf: transport_price_kmf, transportPricingSnapshot/);
     expect(src).toMatch(/e\.code === 'fx_rate_unavailable'[\s\S]{0,120}fail\(503/);
   });
+  test('previewOnly : même calcul que la création, ROLLBACK avant toute insertion de commande', () => {
+    expect(source).toMatch(/previewOnly = false/);
+    const previewAt = source.indexOf('if (previewOnly) {');
+    const totalAt = source.indexOf('total_kmf += transport_price_kmf;');
+    const insertAt = source.indexOf('const order = await insertOrderRow(client, {');
+    expect(totalAt).toBeGreaterThan(0);
+    expect(previewAt).toBeGreaterThan(totalAt);
+    expect(insertAt).toBeGreaterThan(previewAt);
+    expect(source.slice(previewAt, insertAt)).toMatch(/ROLLBACK[\s\S]*items_total_kmf[\s\S]*transport_price_kmf[\s\S]*total_kmf/);
+  });
 });

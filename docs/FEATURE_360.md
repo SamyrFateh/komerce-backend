@@ -1475,8 +1475,8 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "auth-identity" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "market-delegation" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 
-**Implementation** : 40 fichier(s) déclaré(s)
-  - dash : 22
+**Implementation** : 41 fichier(s) déclaré(s)
+  - dash : 23
   - migrations : 3
   - services : 4
   - tests : 11
@@ -1693,13 +1693,13 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 110 fichier(s) déclaré(s)
+**Implementation** : 111 fichier(s) déclaré(s)
   - config : 1
   - middleware : 4
   - migrations : 23
   - routes : 14
   - services : 17
-  - tests : 51
+  - tests : 52
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="market-delegation"]_
 

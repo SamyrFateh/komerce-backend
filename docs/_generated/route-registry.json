@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-11-11T10:36:56.117Z",
+  "generatedAt": "2026-11-11T17:46:19.165Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 807,
+  "count": 812,
   "routes": [
     {
       "method": "GET",
@@ -2721,6 +2721,16 @@
     },
     {
       "method": "POST",
+      "fullPath": "/api/admin/workspaces/operations/market/:marketCode/orders/:reference/distribute",
+      "mountPrefix": "/api/admin/workspaces/operations",
+      "localPath": "/market/:marketCode/orders/:reference/distribute",
+      "routeFile": "routes/admin-operations-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
       "fullPath": "/api/admin/workspaces/operations/market/:marketCode/parcels/:reference/collect",
       "mountPrefix": "/api/admin/workspaces/operations",
       "localPath": "/market/:marketCode/parcels/:reference/collect",
@@ -3004,6 +3014,16 @@
       "fullPath": "/api/admin/workspaces/pricing/market/:marketCode/price-observations/:observationRef/deactivate",
       "mountPrefix": "/api/admin/workspaces/pricing",
       "localPath": "/market/:marketCode/price-observations/:observationRef/deactivate",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/pricing/market/:marketCode/products/:productRef/forecast-preview",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/market/:marketCode/products/:productRef/forecast-preview",
       "routeFile": "routes/admin-pricing-workspace.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
@@ -5626,6 +5646,16 @@
       ]
     },
     {
+      "method": "GET",
+      "fullPath": "/api/market-delegation/markets/:marketCode/network/relais-agents",
+      "mountPrefix": "/api/market-delegation",
+      "localPath": "/markets/:marketCode/network/relais-agents",
+      "routeFile": "routes/market-delegation-network.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
       "method": "PUT",
       "fullPath": "/api/market-delegation/markets/:marketCode/network/relais/:relaisId",
       "mountPrefix": "/api/market-delegation",
@@ -5640,6 +5670,16 @@
       "fullPath": "/api/market-delegation/markets/:marketCode/network/relais/:relaisId/activate",
       "mountPrefix": "/api/market-delegation",
       "localPath": "/markets/:marketCode/network/relais/:relaisId/activate",
+      "routeFile": "routes/market-delegation-network.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/market-delegation/markets/:marketCode/network/relais/:relaisId/agents",
+      "mountPrefix": "/api/market-delegation",
+      "localPath": "/markets/:marketCode/network/relais/:relaisId/agents",
       "routeFile": "routes/market-delegation-network.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
@@ -6026,6 +6066,17 @@
       "mountPrefix": "/api/orders",
       "localPath": "/parcels/:parcelId/status",
       "routeFile": "routes/orders/parcels.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js",
+        "routes/orders.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/orders/preview",
+      "mountPrefix": "/api/orders",
+      "localPath": "/preview",
+      "routeFile": "routes/orders/create.js",
       "mountedFrom": [
         "bootstrap/api-routes.js",
         "routes/orders.js"

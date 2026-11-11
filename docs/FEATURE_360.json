@@ -1643,6 +1643,7 @@
           "consumer": "market-delegation",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
+            "static-code",
             "data-read"
           ]
         },
@@ -11559,12 +11560,12 @@
               {
                 "declared": "services/pricing-floor-forecast-preview.js",
                 "resolvedPath": "services/pricing-floor-forecast-preview.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/pricing-floor-forecast-shadow.js",
                 "resolvedPath": "services/pricing-floor-forecast-shadow.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/pricing-guards.js",
@@ -21184,7 +21185,7 @@
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 22,
+            "count": 23,
             "files": [
               {
                 "declared": "dashboards/canonical/access.html",
@@ -21249,6 +21250,11 @@
               {
                 "declared": "dashboards/canonical/js/market-catalog.js",
                 "resolvedPath": "public/dashboards/canonical/js/market-catalog.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/js/market-network.js",
+                "resolvedPath": "public/dashboards/canonical/js/market-network.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -21404,7 +21410,7 @@
             ]
           }
         },
-        "totalFiles": 40,
+        "totalFiles": 41,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -22765,7 +22771,7 @@
             ]
           },
           "tests": {
-            "count": 51,
+            "count": 52,
             "files": [
               {
                 "declared": "tests/e2e-api/market-delegation.authority-team-network.e2e.test.js",
@@ -22998,6 +23004,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/market-network.test.js",
+                "resolvedPath": "tests/unit/market-network.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/market-operator-provisioning.test.js",
                 "resolvedPath": "tests/unit/market-operator-provisioning.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -23025,7 +23036,7 @@
             ]
           }
         },
-        "totalFiles": 110,
+        "totalFiles": 111,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -23546,6 +23557,7 @@
           "provider": "auth-identity",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
+            "static-code",
             "data-read"
           ]
         },

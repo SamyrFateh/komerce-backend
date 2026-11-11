@@ -1232,3 +1232,25 @@ describe('orders/create — §6 intégrité du claim shared_cart_item_id', () =>
     expectTransactionRolledBack(client);
   });
 });
+
+describe('orders/preview — le total présenté au client est exactement le total enregistré', () => {
+  it('POST /preview renvoie items + livraison + total, égal au total_kmf inséré par POST /', async () => {
+    const prelude = () => [{ rows: [RELAIS] }, { rows: [{ id: 'recip-1' }] }, { rows: [PRODUCT] }];
+
+    const previewClient = makeClient(prelude());
+    db.getClient.mockResolvedValue(previewClient);
+    const prev = await request(app).post('/api/orders/preview').send(validBody());
+    expect(prev.status).toBe(200);
+    expect(prev.body).toMatchObject({ items_total_kmf: 20000, transport_price_kmf: 130, discount_kmf: 0, total_kmf: 20130 });
+    expect(previewClient.calls.some(c => /INSERT INTO orders/.test(c.sql))).toBe(false);
+    expect(previewClient.calls.some(c => /COMMIT/.test(c.sql))).toBe(false);
+    expectTransactionRolledBack(previewClient);
+
+    const createClient = makeClient([...prelude(), { rows: [orderRow()] }, { rows: [] }, { rows: [] }, { rows: [] }]);
+    db.getClient.mockResolvedValue(createClient);
+    const created = await request(app).post('/api/orders').send(validBody());
+    expect(created.status).toBe(201);
+    const insert = createClient.calls.find(c => /INSERT INTO orders/.test(c.sql));
+    expect(insert.params[6]).toBe(prev.body.total_kmf);
+  });
+});

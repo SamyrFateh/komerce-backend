@@ -17,6 +17,8 @@
  */
 'use strict';
 
+const { ISLAND_ROUTED_MARKETS, DESTINATIONS } = require('./routing');
+
 function requireExecutor(executor) {
   if (!executor || typeof executor.query !== 'function') {
     throw new TypeError('relais-mutation-service: executor.query requis');
@@ -65,6 +67,20 @@ function normalizeGps(latitude, longitude) {
   return { latitude: lat, longitude: lng };
 }
 
+// Marché insulaire (même règle que resolveRoutingFromRelais) : island_code obligatoire et admis par le routage.
+function isIslandMarket(marketCode) {
+  return !!marketCode && ISLAND_ROUTED_MARKETS.includes(String(marketCode).toUpperCase());
+}
+function islandOptionsFor(marketCode) {
+  return isIslandMarket(marketCode) ? [...DESTINATIONS] : [];
+}
+function assertIslandCode(marketCode, islandCode) {
+  if (!isIslandMarket(marketCode)) return;
+  const code = islandCode ? String(islandCode).trim().toUpperCase() : '';
+  if (!code) throw new RelaisValidationError('NETWORK_ISLAND_CODE_REQUIRED', `island_code est requis pour le marché ${String(marketCode).toUpperCase()}.`, 400);
+  if (!DESTINATIONS.includes(code)) throw new RelaisValidationError('NETWORK_ISLAND_CODE_INVALID', `island_code doit être l'une des valeurs : ${DESTINATIONS.join(', ')}.`, 400);
+}
+
 const RELAIS_COLUMNS = `id, market_id, name, agent_name, phone, address, zone, hours, island, island_code,
             is_active, latitude, longitude, photo_url, created_at`;
 
@@ -90,9 +106,10 @@ async function getOwnedRelais(executor, { marketId, relaisId }) {
   return relais;
 }
 
-async function createRelais(executor, { marketId, name, agentName, phone, address, zone, hours, island, islandCode, latitude, longitude, photoUrl }) {
+async function createRelais(executor, { marketId, marketCode = null, name, agentName, phone, address, zone, hours, island, islandCode, latitude, longitude, photoUrl }) {
   const db = requireExecutor(executor);
   const gps = normalizeGps(latitude, longitude);
+  assertIslandCode(marketCode, islandCode);
   const payload = {
     name: requiredText(name, 'name', { max: 200 }),
     // L'identité structurelle du relais ne dépend pas d'une personne déjà
@@ -103,7 +120,7 @@ async function createRelais(executor, { marketId, name, agentName, phone, addres
     zone: optionalText(zone, 200),
     hours: optionalText(hours, 200),
     island: optionalText(island, 100),
-    island_code: optionalText(islandCode, 20),
+    island_code: optionalText(islandCode && String(islandCode).trim().toUpperCase(), 20),
     photo_url: optionalText(photoUrl, 1000),
     ...gps,
   };
@@ -118,7 +135,7 @@ async function createRelais(executor, { marketId, name, agentName, phone, addres
   return rows[0];
 }
 
-async function updateRelais(executor, { marketId, relaisId, patch = {} }) {
+async function updateRelais(executor, { marketId, marketCode = null, relaisId, patch = {} }) {
   const db = requireExecutor(executor);
   const before = await getOwnedRelais(db, { marketId, relaisId });
 
@@ -133,6 +150,8 @@ async function updateRelais(executor, { marketId, relaisId, patch = {} }) {
     island_code: patch.islandCode !== undefined ? optionalText(patch.islandCode, 20) : before.island_code,
     photo_url: patch.photoUrl !== undefined ? optionalText(patch.photoUrl, 1000) : before.photo_url,
   };
+  if (patch.islandCode !== undefined) next.island_code = optionalText(patch.islandCode && String(patch.islandCode).trim().toUpperCase(), 20);
+  assertIslandCode(marketCode, next.island_code);
   const gps = (patch.latitude !== undefined || patch.longitude !== undefined)
     ? normalizeGps(
       patch.latitude !== undefined ? patch.latitude : before.latitude,
@@ -166,6 +185,8 @@ async function setRelaisActive(executor, { marketId, relaisId, active }) {
 
 module.exports = {
   RelaisValidationError,
+  isIslandMarket,
+  islandOptionsFor,
   listRelais,
   getOwnedRelais,
   createRelais,
