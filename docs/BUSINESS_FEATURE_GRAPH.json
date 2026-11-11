@@ -1076,6 +1076,13 @@
       {
         "feature": "auth-identity",
         "category": "services",
+        "declared": "services/g6-staging-buyer-identity-guard.js",
+        "resolvedPath": "services/g6-staging-buyer-identity-guard.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "auth-identity",
+        "category": "services",
         "declared": "services/user-mutation-service.js",
         "resolvedPath": "services/user-mutation-service.js",
         "status": "resolved-in-technical-graph"
@@ -1197,6 +1204,13 @@
         "category": "migrations",
         "declared": "migrations/368_internal_account_activation.sql",
         "resolvedPath": "migrations/368_internal_account_activation.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "auth-identity",
+        "category": "tests",
+        "declared": "tests/unit/g6-staging-buyer-scoped-checkout.test.js",
+        "resolvedPath": "tests/unit/g6-staging-buyer-scoped-checkout.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -42962,6 +42976,10 @@
                 "targetFile": "public/boutique/js/b-identity.js"
               },
               {
+                "sourceFileId": "services/order-checkout-service.js",
+                "targetFile": "services/g6-staging-buyer-identity-guard.js"
+              },
+              {
                 "sourceFileId": "public/boutique/js/b-checkout.js",
                 "targetFile": "public/boutique/js/b-identity.js"
               },
@@ -49034,7 +49052,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2297
+        "filesObserved": 2299
       },
       "boutique": {
         "filesObserved": 214,
