@@ -209,3 +209,94 @@ test('un produit sans prix reste non achetable mais ses coûts sont consultables
  expect(pricingEngine.recommend).toHaveBeenCalledWith(expect.objectContaining({current_price_kmf:null,final_price_kmf:null}),expect.any(Object));
  expect(db.query.mock.calls.every(([sql])=>!/^\s*(INSERT|UPDATE|DELETE)/i.test(sql))).toBe(true);
 });
+
+test('la ventilation N1/N2 restitue le coût engagé et la quote-part serveur sans réaffecter N3', async () => {
+  db.query.mockReset().mockResolvedValue({ rows: [] });
+  localPricing.resolveActiveProductMarketPricing.mockReset().mockResolvedValue(null);
+  pricingCdr.loadGlobalConfig.mockReset().mockResolvedValue({});
+  pricingEngine.recommend.mockReset().mockResolvedValue({
+    purchase_cost_kmf: 12000,
+    landed_relay_cost_kmf: 14800,
+    business_variable_cost_kmf: 1200,
+    variable_cost_complete_kmf: 16000,
+    minimum_safe_price_kmf: 17600,
+    allocation_averages: {
+      articles_per_order: 2.5, articles_per_parcel: 4, articles_per_shipment: 200,
+      confidence: 'low',
+    },
+    cost_breakdown: {
+      landed_relay: {
+        product_purchase: 12000, freight: 2000, packaging: 500,
+        port_transitary: 300,
+      },
+      business: { payment: 800, risk_provision: 400, fixed_overhead: 2000 },
+      customs_status: 'not_estimated',
+    },
+    allocations: [
+      { component_key: 'shipment_fee', component_label: 'Transitaire',
+        category: 'port_transitary', unit: 'kmf_per_shipment',
+        allocation_level: 'shipment', allocation_basis: 'quantity',
+        engaged_cost_kmf: 60000, allocation_divisor: 200,
+        allocated_cost_kmf: 300, confidence: 'low' },
+      { component_key: 'packaging', component_label: 'Carton',
+        category: 'packaging', unit: 'kmf_per_parcel',
+        allocation_level: 'parcel', allocation_basis: 'quantity',
+        engaged_cost_kmf: 2000, allocation_divisor: 4,
+        allocated_cost_kmf: 500, confidence: 'low' },
+      { component_key: 'cash', component_label: 'Collecte',
+        category: 'payment', unit: 'kmf_per_order',
+        allocation_level: 'order', allocation_basis: 'quantity',
+        engaged_cost_kmf: 2000, allocation_divisor: 2.5,
+        allocated_cost_kmf: 800, confidence: 'low' },
+      { component_key: 'fixed', component_label: 'Loyer',
+        category: 'fixed_overhead', unit: 'kmf',
+        allocation_level: 'article', engaged_cost_kmf: 2000,
+        allocated_cost_kmf: 2000, confidence: 'high' },
+    ],
+  });
+  const result = await corridor.buildMarketCorridorForProduct({
+    market: { id: 'mkt', code: 'KM', currency: 'KMF' },
+    product: { id: 'p', product_ref: 'KPR-TRACE', cost_kmf: 12000, is_active: true },
+  });
+  const economics = result.selected.economics;
+  expect(economics.landed_relay_cost_kmf).toBe(14800);
+  expect(economics.business_variable_cost_kmf).toBe(1200);
+  const trace = economics.cost_allocation_trace;
+  expect(trace).toMatchObject({
+    status: 'ESTIMATED_NOT_RECONCILED', currency: 'KMF',
+    hypotheses: { articles_per_order: 2.5, articles_per_parcel: 4,
+      articles_per_shipment: 200, confidence: 'low' },
+  });
+  const transitaire = trace.lines.find(line => line.key === 'port_transitary');
+  expect(transitaire.unit_cost_kmf).toBe(300);
+  expect(transitaire.components[0]).toMatchObject({
+    engaged_kmf: 60000, divisor: 200, allocated_kmf: 300, level: 'shipment',
+  });
+  const payment = trace.lines.find(line => line.key === 'payment');
+  expect(payment.components[0]).toMatchObject({ engaged_kmf: 2000, divisor: 2.5, allocated_kmf: 800 });
+  expect(trace.lines.find(line => line.key === 'product_purchase')).toMatchObject({
+    unit_cost_kmf: 12000, non_itemized_kmf: 12000,
+  });
+  expect(trace.lines.find(line => line.key === 'risk_provision')).toMatchObject({
+    unit_cost_kmf: 400, non_itemized_kmf: 400,
+  });
+  expect(trace.lines.some(line => line.key === 'fixed_overhead')).toBe(false);
+  expect(trace.lines.flatMap(line => line.components).some(line => line.component_key === 'fixed')).toBe(false);
+  expect(db.query.mock.calls.every(([sql]) => !/^\\s*(INSERT|UPDATE|DELETE)/i.test(sql))).toBe(true);
+});
+
+test('aucune trace ne se fabrique lorsque le moteur ne fournit pas le détail', async () => {
+  db.query.mockReset().mockResolvedValue({ rows: [] });
+  localPricing.resolveActiveProductMarketPricing.mockReset().mockResolvedValue(null);
+  pricingCdr.loadGlobalConfig.mockReset().mockResolvedValue({});
+  pricingEngine.recommend.mockReset().mockResolvedValue({
+    landed_relay_cost_kmf: 14800,
+    business_variable_cost_kmf: 1200,
+    variable_cost_complete_kmf: 16000,
+  });
+  const result = await corridor.buildMarketCorridorForProduct({
+    market: { id: 'mkt', code: 'KM', currency: 'KMF' },
+    product: { id: 'p', product_ref: 'KPR-NO-TRACE', cost_kmf: 12000, is_active: true },
+  });
+  expect(result.selected.economics.cost_allocation_trace).toBeNull();
+});
