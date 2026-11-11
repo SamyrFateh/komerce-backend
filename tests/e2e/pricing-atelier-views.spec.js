@@ -237,6 +237,12 @@ for (const [name, viewport] of [['1440', { width: 1440, height: 900 }], ['390', 
       await expect(costChain).toContainText('N1 + N2');
       await expect(costChain).toContainText('Plancher → prix → contribution');
       await expect(costChain).not.toContainText('0 KMF');
+      const n3Summary = costs.locator('[data-n3-coverage-summary]');
+      await expect(n3Summary).toBeVisible();
+      await expect(n3Summary.locator('.kmc-n3-summary-metric')).toHaveCount(3);
+      await expect(n3Summary).toContainText('N3 · Structure du marché et couverture');
+      await expect(n3Summary.locator('.kmc-n3-summary-metric.is-unknown')).toContainText('Non décisionnelle');
+      await expect(n3Summary.locator('.kmc-n3-summary-metric.is-unknown .kmc-n3-metric-value')).toHaveText('—');
       await expect(page.locator('[data-cost-layout-button]')).toHaveCount(0);
       const cards = page.locator('.kmc-economic-family-grid > .kmc-cockpit-cost-card');
       await expect(cards).toHaveCount(3);
@@ -544,6 +550,12 @@ test.describe('Moteur économique · démo illustrée desktop 1440 (API simulée
     const reading = page.locator('[data-economic-cost-reading]');
     await expect(reading).toBeHidden();
     await expect(page.locator('.kmc-cockpit-costs')).toHaveAttribute('data-cost-layout', 'columns');
+    const n3 = page.locator('[data-n3-coverage-summary]');
+    await expect(n3).toBeVisible();
+    await expect(n3).toContainText('1 200 000 KMF');
+    await expect(n3).toContainText('900 000 KMF');
+    await expect(n3.locator('.kmc-n3-summary-metric.is-uncovered .kmc-n3-metric-value')).toHaveText('75 %');
+    await expect(n3).toContainText('N3 n’entre pas dans le plancher du produit');
     const direct = page.locator('.kmc-cockpit-cost-card.is-fixed-direct');
     await expect(direct).toContainText('Loyer local');
     await expect(direct).toContainText('Équipe fixe du marché');
