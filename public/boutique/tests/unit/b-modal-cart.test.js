@@ -121,6 +121,16 @@ describe('b-modal-cart', () => {
       expect(currentModalCartItem()).toBeNull();
     });
 
+    test('P0 — combo identique mais SKU explicite différent : jamais la ligne courante', () => {
+      setSkuSelection('sku-m', { color: 'Navy Blue', size: 'M' });
+      state.cart = [{
+        product: { id: 42, sku_id: 'sku-xl' },
+        variant_combo: { color: 'Navy Blue', size: 'M' },
+        qty: 3,
+      }];
+      expect(currentModalCartItem()).toBeNull();
+    });
+
     test('SKU non trouvé par id : fallback variant_combo canonique', () => {
       setSkuSelection('sku-red', { size: 'L', color: 'Rouge' });
       state.cart = [
