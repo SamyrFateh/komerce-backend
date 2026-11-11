@@ -1,0 +1,122 @@
+name: Certification Claude parallele KM — retours et SAV (Chromium)
+
+# Branche dediee cert/claude-par-km-returns uniquement. Marqueur CLAUDE-PAR-20261111.
+on:
+  push:
+    branches: [cert/claude-par-km-returns]
+    paths:
+      - '.github/workflows/cert-claude-par-km-returns.yml'
+      - 'tests/staging-clicks/claude-par-km-returns.spec.js'
+      - 'playwright.claude-par-km-returns.config.js'
+      - 'scripts/recette/claude-par-km-crossrelay-probe.js'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: komerce-staging-local-stock-cert
+  cancel-in-progress: false
+
+jobs:
+  returns:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_TARGET_ENV: staging
+      EXPECTED_RAILWAY_ENVIRONMENT: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      HUB_V1_E2E_APPLY_MODE: approved
+      HUB_V1_STAGING_DISPOSABLE_MODE: '1'
+      HTTP_RUNNER_MARKET: KM
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      E2E_STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      HTTP_RUNNER_BASE_URL: https://komerce-backend-production.up.railway.app
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      E2E_AGENT_HUB_EMAIL: ${{ secrets.E2E_AGENT_HUB_EMAIL }}
+      E2E_AGENT_HUB_PASSWORD: ${{ secrets.E2E_AGENT_HUB_PASSWORD }}
+      E2E_MARKET_OPERATOR_EMAIL: ${{ secrets.E2E_MARKET_OPERATOR_EMAIL }}
+      E2E_MARKET_OPERATOR_PASSWORD: ${{ secrets.E2E_MARKET_OPERATOR_PASSWORD }}
+      E2E_AGENT_RELAIS_EMAIL: ${{ secrets.E2E_AGENT_RELAIS_EMAIL }}
+      E2E_AGENT_RELAIS_PASSWORD: ${{ secrets.E2E_AGENT_RELAIS_PASSWORD }}
+      E2E_TRANSITAIRE_EMAIL: ${{ secrets.E2E_AGENT_TRANSITAIRE_EMAIL }}
+      E2E_TRANSITAIRE_PASSWORD: ${{ secrets.E2E_AGENT_TRANSITAIRE_PASSWORD }}
+      STRIPE_SECRET_KEY: sk_test_certification_placeholder
+      STRIPE_WEBHOOK_SECRET: whsec_certification_placeholder
+      PAYPAL_CLIENT_ID: ci-certification-placeholder
+      PAYPAL_CLIENT_SECRET: ci-certification-placeholder
+      PAYPAL_WEBHOOK_ID: ci-certification-placeholder
+      META_WA_APP_SECRET: ci-certification-placeholder
+      AUTHKEY_API_KEY: ci-certification-placeholder
+      JWT_SECRET: ci-certification-placeholder
+      QR_SECRET: ci-certification-placeholder
+      ADMIN_PASSWORD: ci-certification-placeholder
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Pin SHA déployé et empreinte staging
+        run: |
+          test -n "$DATABASE_URL"
+          node scripts/recette/resolve-staging-deploy-pin.js
+          node scripts/recette/target-guard.js
+      - name: Fixture commerciale neuve (paiement simulé, aucun débit externe)
+        shell: bash
+        run: |
+          set -euo pipefail
+          RUN8="$(node -p 'require("crypto").randomBytes(4).toString("hex").toUpperCase()')"
+          echo "HTTP_RUNNER_RUN8=$RUN8" >> "$GITHUB_ENV"
+          echo "HUB_V1_CERTIFICATION_RUN=$RUN8" >> "$GITHUB_ENV"
+          export HUB_V1_CERTIFICATION_RUN="$RUN8"
+          node scripts/recette/hub-v1-certification-runner.js \
+            --allow-remote-staging --run="$RUN8" --market="$HTTP_RUNNER_MARKET" --stop-after=2 --dry-run
+          node scripts/recette/hub-v1-certification-runner.js \
+            --allow-remote-staging --run="$RUN8" --market="$HTTP_RUNNER_MARKET" --stop-after=2
+      - name: Rattacher le relais de recette à la fixture
+        run: |
+          RELAY_MODE=to-fixture RELAY_RUN8="$HTTP_RUNNER_RUN8" \
+          RELAY_APPLY=1 RELAY_CONFIRMATION=REASSIGN-E2E-RELAY \
+            node scripts/recette/staging-e2e-relay-reassign.js
+          cp test-results/relay-reassign/report.json test-results/relay-reassign/assignment-original.json
+      - name: Installer Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Retours et SAV KM en Chromium (un contexte par role)
+        run: npx playwright test --config=playwright.claude-par-km-returns.config.js
+      - name: Restaurer l'affectation du compte relais de recette
+        if: always()
+        shell: bash
+        run: |
+          if [ -f test-results/relay-reassign/assignment-original.json ]; then
+            BEFORE="$(node -p "require('./test-results/relay-reassign/assignment-original.json').relais_before || ''")"
+            if [[ "$BEFORE" =~ ^[0-9a-fA-F-]{36}$ ]]; then
+              RELAY_MODE=restore RELAY_RESTORE_ID="$BEFORE" RELAY_APPLY=1 \
+              RELAY_CONFIRMATION=REASSIGN-E2E-RELAY node scripts/recette/staging-e2e-relay-reassign.js
+            else
+              echo "RELAY_RESTORE_ID_INVALID" >&2
+              exit 1
+            fi
+          fi
+      - name: Sonde inter-relais (agent de retour sur son relais d'origine)
+        if: always()
+        run: node scripts/recette/claude-par-km-crossrelay-probe.js
+      - name: Archiver preuves agent et empreinte staging
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: claude-par-km-returns-${{ github.run_id }}
+          path: |
+            test-results/claude-par-km-returns/
+            test-results/hub-v1-cert/
+            test-results/hub-v1-http/deploy-pin.json
+            test-results/relay-reassign/
+          if-no-files-found: warn
+          retention-days: 30
