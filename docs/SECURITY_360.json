@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-11-11T17:11:30.010Z",
+  "generatedAt": "2026-11-11T17:47:51.635Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 822,
-    "protected": 764,
+    "total": 825,
+    "protected": 767,
     "public": 58,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -2347,6 +2347,14 @@
       ]
     },
     {
+      "key": "POST /api/admin/workspaces/operations/market/{marketCode}/orders/{reference}/distribute",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
       "key": "POST /api/admin/workspaces/operations/market/{marketCode}/parcels/{reference}/collect",
       "level": "PROTECTED",
       "roles": [
@@ -4315,7 +4323,17 @@
       "roles": []
     },
     {
+      "key": "GET /api/market-delegation/markets/{marketCode}/network/relais-agents",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
       "key": "POST /api/market-delegation/markets/{marketCode}/network/relais/{relaisId}/activate",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/market-delegation/markets/{marketCode}/network/relais/{relaisId}/agents",
       "level": "PROTECTED",
       "roles": []
     },

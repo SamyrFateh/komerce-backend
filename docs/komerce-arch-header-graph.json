@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 2023,
-    "edges": 9962,
+    "edges": 9967,
     "dbTables": 233,
     "doctrines": 785,
     "impactAreas": 207,
@@ -22289,18 +22289,29 @@
       ],
       "depends": [
         "services/market-delegation-service.js",
-        "services/relais-mutation-service.js"
+        "services/relais-mutation-service.js",
+        "services/user-mutation-service.js"
       ],
       "usedBy": [
         "routes/market-delegation-network.js"
       ],
-      "dbRead": [],
+      "dbRead": [
+        "assignment_memberships",
+        "membership_capabilities",
+        "users"
+      ],
       "dbWrite": [],
       "dbWriteVia": [
         {
           "via": "relais-mutation-service",
           "tables": [
             "relais"
+          ]
+        },
+        {
+          "via": "user-mutation-service",
+          "tables": [
+            "users"
           ]
         },
         {
@@ -79793,6 +79804,12 @@
       "label": "services/relais-mutation-service.js"
     },
     {
+      "from": "services/market-delegation-network-service.js",
+      "to": "services/user-mutation-service.js",
+      "type": "depends",
+      "label": "services/user-mutation-service.js"
+    },
+    {
       "from": "routes/market-delegation-network.js",
       "to": "services/market-delegation-network-service.js",
       "type": "uses",
@@ -79800,10 +79817,35 @@
     },
     {
       "from": "services/market-delegation-network-service.js",
+      "to": "db:assignment_memberships",
+      "type": "db-read",
+      "label": "assignment_memberships"
+    },
+    {
+      "from": "services/market-delegation-network-service.js",
+      "to": "db:membership_capabilities",
+      "type": "db-read",
+      "label": "membership_capabilities"
+    },
+    {
+      "from": "services/market-delegation-network-service.js",
+      "to": "db:users",
+      "type": "db-read",
+      "label": "users"
+    },
+    {
+      "from": "services/market-delegation-network-service.js",
       "to": "db:relais",
       "type": "db-write-via",
       "label": "relais",
       "via": "relais-mutation-service"
+    },
+    {
+      "from": "services/market-delegation-network-service.js",
+      "to": "db:users",
+      "type": "db-write-via",
+      "label": "users",
+      "via": "user-mutation-service"
     },
     {
       "from": "services/market-delegation-network-service.js",
@@ -127346,19 +127388,30 @@
       "purpose": null,
       "directDependsOn": [
         "services/market-delegation-service.js",
-        "services/relais-mutation-service.js"
+        "services/relais-mutation-service.js",
+        "services/user-mutation-service.js"
       ],
       "directUsedBy": [
         "routes/market-delegation-network.js"
       ],
       "ownedFiles": [],
-      "dbRead": [],
+      "dbRead": [
+        "assignment_memberships",
+        "membership_capabilities",
+        "users"
+      ],
       "dbWrite": [],
       "dbWriteVia": [
         {
           "via": "relais-mutation-service",
           "tables": [
             "relais"
+          ]
+        },
+        {
+          "via": "user-mutation-service",
+          "tables": [
+            "users"
           ]
         },
         {
@@ -127380,8 +127433,11 @@
         "network"
       ],
       "mustCheck": [
+        "db:assignment_memberships",
         "db:market_delegation_audit",
+        "db:membership_capabilities",
         "db:relais",
+        "db:users",
         "doctrine:client_market_id_never_authority",
         "doctrine:network_authority_is_capability_based",
         "doctrine:writer_not_owner_boundary",
@@ -127391,7 +127447,8 @@
         "impact:network",
         "routes/market-delegation-network.js",
         "services/market-delegation-service.js",
-        "services/relais-mutation-service.js"
+        "services/relais-mutation-service.js",
+        "services/user-mutation-service.js"
       ]
     },
     "services/market-delegation-performance-service.js": {
@@ -141681,7 +141738,8 @@
         "impact:auth-identity",
         "impact:dashboard",
         "impact:loyalty",
-        "routes/loyalty.js"
+        "routes/loyalty.js",
+        "services/market-delegation-network-service.js"
       ]
     },
     "services/verify-qr-collection.js": {
