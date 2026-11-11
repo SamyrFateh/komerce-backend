@@ -11379,7 +11379,7 @@
             ]
           },
           "services": {
-            "count": 54,
+            "count": 56,
             "files": [
               {
                 "declared": "scripts/market-cost-attribution-conservation-check.js",
@@ -11557,6 +11557,16 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/pricing-floor-forecast-preview.js",
+                "resolvedPath": "services/pricing-floor-forecast-preview.js",
+                "status": "resolved-on-disk-no-header"
+              },
+              {
+                "declared": "services/pricing-floor-forecast-shadow.js",
+                "resolvedPath": "services/pricing-floor-forecast-shadow.js",
+                "status": "resolved-on-disk-no-header"
+              },
+              {
                 "declared": "services/pricing-guards.js",
                 "resolvedPath": "services/pricing-guards.js",
                 "status": "resolved-in-technical-graph"
@@ -11654,7 +11664,7 @@
             ]
           },
           "tests": {
-            "count": 103,
+            "count": 105,
             "files": [
               {
                 "declared": "tests/integration/canonical-margin-writer-real-db.test.js",
@@ -11987,6 +11997,16 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/pricing-floor-forecast-preview.test.js",
+                "resolvedPath": "tests/unit/pricing-floor-forecast-preview.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/pricing-floor-forecast-shadow.test.js",
+                "resolvedPath": "tests/unit/pricing-floor-forecast-shadow.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/pricing-flow-contract.test.js",
                 "resolvedPath": "tests/unit/pricing-flow-contract.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -12194,7 +12214,7 @@
             ]
           }
         },
-        "totalFiles": 214,
+        "totalFiles": 218,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
