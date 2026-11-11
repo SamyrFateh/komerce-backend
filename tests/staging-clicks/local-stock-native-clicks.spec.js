@@ -55,6 +55,12 @@ test('LOCAL_STOCK : un agent atteste puis remet au client par les vrais clics (H
     const version=await versionResponse.json();
     assert(String(version.commit||version.sha).toLowerCase()===EXPECTED_SHA.toLowerCase(),
       'staging-sha',String(version.commit||version.sha).slice(0,12));
+    // La commande de recette doit disposer d'un code canonique complet.
+    // Si le provisioning ne peut pas le fournir, aucun statut de remise simulé.
+    const pickupCode=String(process.env.G3_PICKUP_CODE||'').toUpperCase()
+      .replace(/[\s-]/g,'');
+    assert(/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$/.test(pickupCode),
+      'pickup-code-canonical-fixture-required');
     const result=await db.query('SELECT id FROM orders WHERE reference=$1',[ref]);
     assert(result.rows.length===1,'fixture-unique',ref);
     orderId=result.rows[0].id;
@@ -81,8 +87,7 @@ test('LOCAL_STOCK : un agent atteste puis remet au client par les vrais clics (H
         return route.continue();
       }
       if(['GET','HEAD','OPTIONS'].includes(method))return route.continue();
-      if(method==='POST'&&(permitted.has(u.pathname)||
-        /^\/api\/admin\/workspaces\/operations\/market\/[A-Z]{2}\/parcels\/[^/]+\/collect$/.test(u.pathname)))
+      if(method==='POST'&&(permitted.has(u.pathname)||u.pathname==='/api/scans/collect'))
         return route.continue();
       record.blockedWrites.push(method+' '+u.pathname);return route.abort('blockedbyclient');
     });
@@ -172,11 +177,13 @@ test('LOCAL_STOCK : un agent atteste puis remet au client par les vrais clics (H
     await expect(page.locator('#relay-execution-collect')).toBeVisible();
     assert(await page.locator('#relay-execution-shipments').count()===0,'counter-no-hub-arrivals');
     const collectRow=page.locator('#relay-execution-collect tr').filter({hasText:parcel.reference});
-    await expect(collectRow.locator('[data-workspace-action="collect"]')).toBeVisible({timeout:20000});
+    await expect(collectRow).toBeVisible({timeout:20000});
+    // Le guichet par code ne prétend pas sélectionner le colis d'une ligne :
+    // la remise canonique choisit le prochain lot valide de la commande.
+    await page.locator('[data-pickup-code-input]').fill(pickupCode);
     const collectResponse=page.waitForResponse(r=>
-      new URL(r.url()).pathname==='/api/admin/workspaces/operations/market/'+MARKET+'/parcels/'+encodeURIComponent(parcel.reference)+'/collect'
-      &&r.request().method()==='POST');
-    await collectRow.locator('[data-workspace-action="collect"]').click();
+      new URL(r.url()).pathname==='/api/scans/collect'&&r.request().method()==='POST');
+    await page.locator('[data-pickup-code-confirm]').click();
     const collectedHttp=await collectResponse;
     if(collectedHttp.status()!==200){
       // Persist sanitized business rejection for the NEXT iteration; never
@@ -192,6 +199,8 @@ test('LOCAL_STOCK : un agent atteste puis remet au client par les vrais clics (H
         ':'+record.pickup_failure.code);
     }
     assert(collectedHttp.status()===200,'pickup-click-http-200',collectedHttp.status());
+    const collectedBody=await collectedHttp.json();
+    assert(collectedBody.parcel_reference===parcel.reference,'pickup-exact-parcel-by-code');
     await wait(350);
     const done=await snapshot(db,orderId);
     assert(assess(done,'collected').length===0,'pickup-db-zero-hub',assess(done,'collected'));
