@@ -110,7 +110,7 @@ jobs:
             node scripts/recette/staging-e2e-relay-reassign.js
           cp test-results/relay-reassign/report.json test-results/relay-reassign/assignment-original.json
       - name: Installer Chromium
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install chromium || npx playwright install --with-deps chromium
       - name: Retours et SAV KM en Chromium (un contexte par role)
         run: npx playwright test --config=tests/staging-clicks/claude-par-km-returns.config.js
       - name: Restaurer l'affectation du compte relais de recette
