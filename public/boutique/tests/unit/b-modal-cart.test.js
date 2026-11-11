@@ -344,6 +344,27 @@ describe('b-modal-cart', () => {
       expect(quickRemove).not.toHaveBeenCalled();
     });
 
+    test('P0 — autre variante seulement au panier : +/- SKU ne mute pas la mauvaise taille', () => {
+      setupModalCart();
+      setSkuSelection('sku-blue', { color: 'Bleu', size: 'M' });
+      const otherSize = {
+        product: { id: 42, sku_id: 'sku-red' },
+        variant_combo: { color: 'Rouge', size: 'XL' },
+        qty: 3,
+      };
+      state.cart = [otherSize];
+      _syncModalQtyUI();
+
+      expect(actions.classList.contains('k-modal-actions--filled')).toBe(false);
+      dom.qtyPlus.click();
+      dom.qtyMinus.click();
+
+      expect(quickAdd).not.toHaveBeenCalled();
+      expect(quickRemove).not.toHaveBeenCalled();
+      expect(setQty).not.toHaveBeenCalled();
+      expect(otherSize.qty).toBe(3);
+    });
+
     test('stepper sans produit ne mute rien', () => {
       setupModalCart();
       dom.qtyPlus.click();
