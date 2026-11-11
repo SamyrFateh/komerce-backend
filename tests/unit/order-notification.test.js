@@ -39,6 +39,7 @@
  *     ✓ exception par destinataire catchée individuellement, n'interrompt pas la boucle
  *   notifyPaymentConfirmed :
  *     ✓ order introuvable en DB → skip silencieux
+ *     ✓ commande de simulation → aucun appel WhatsApp externe
  *     ✓ pas de téléphone → log 'skipped'
  *     ✓ succès : notif paiement envoyée, aucun appel invoice-service (O7.2)
  *     ✓ exception globale (db.query rejette) → catch général, alerte radar
@@ -75,6 +76,7 @@ const mockFirstName = jest.fn((n) => (n ? String(n).split(' ')[0] : 'Client'));
 const mockFormatAmount = jest.fn((n) => String(n));
 const mockPickPhone = jest.fn();
 const mockPickRecipients = jest.fn();
+const mockSuppressForSimulatedOrder = jest.fn();
 
 jest.mock('../../services/notifications/internals', () => ({
   db: { query: (...a) => mockDbQuery(...a) },
@@ -93,6 +95,7 @@ jest.mock('../../services/notifications/internals', () => ({
   formatAmount: (...a) => mockFormatAmount(...a),
   pickPhone: (...a) => mockPickPhone(...a),
   pickRecipients: (...a) => mockPickRecipients(...a),
+  suppressForSimulatedOrder: (...a) => mockSuppressForSimulatedOrder(...a),
 }));
 
 const mockGetOrCreateInvoice = jest.fn();
@@ -108,6 +111,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockFirstName.mockImplementation((n) => (n ? String(n).split(' ')[0] : 'Client'));
   mockFormatAmount.mockImplementation((n) => String(n));
+  mockSuppressForSimulatedOrder.mockResolvedValue(false);
 });
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -213,6 +217,17 @@ describe('notifyPaymentConfirmed', () => {
 
     expect(mockLog.warn).toHaveBeenCalled();
     expect(mockWaPaymentConfirmed).not.toHaveBeenCalled();
+  });
+
+  it('supprime toute notification externe pour une commande de simulation', async () => {
+    mockDbQuery.mockResolvedValueOnce({ rows: [orderRow] });
+    mockSuppressForSimulatedOrder.mockResolvedValueOnce(true);
+
+    await notifyPaymentConfirmed('order-1', 'CMD-1');
+
+    expect(mockSuppressForSimulatedOrder).toHaveBeenCalledWith('order-1', 'payment_confirmed');
+    expect(mockWaPaymentConfirmed).not.toHaveBeenCalled();
+    expect(mockLogNotification).not.toHaveBeenCalled();
   });
 
   it('journalise "skipped" si pickPhone ne trouve aucun téléphone', async () => {
