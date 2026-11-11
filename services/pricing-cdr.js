@@ -83,6 +83,7 @@ function _legacyCategoryToNew(oldCat, key) {
 async function loadGlobalConfig(options = {}) {
   let components = [];
   let componentsSource = 'cost_components';
+  let marketCode = null;
   try {
     const ccRes = await db.query(`
       SELECT id, key, label, emoji, description, family, category,
@@ -105,6 +106,10 @@ async function loadGlobalConfig(options = {}) {
         return true;
       });
       componentsSource = 'cost_components_market_override';
+      try {
+        const mk = await db.query('SELECT code FROM markets WHERE id = $1', [options.marketId]);
+        marketCode = mk?.rows?.[0]?.code || null;
+      } catch (_) { marketCode = null; }
     }
   } catch (err) {
     components = [];
@@ -166,6 +171,7 @@ async function loadGlobalConfig(options = {}) {
     components,
     components_source: componentsSource,
     market_id: options.marketId || null,
+    market_code: marketCode,
     provisions: provRes.rows,
     charges: chargesRes.rows,
     cost_benchmarks: costBenchmarks,
@@ -221,6 +227,36 @@ const MEASURED_SOURCES = new Set(['real', 'measured', 'quoted', 'observed', 'con
 const CUSTOMS_INSPECTION_KEYS = new Set(['frais_inspection_douane_kmf']);
 const PRICE_BASED_RISK_KEYS = new Set(['provision_non_collecte_pct']);
 const isCustomsInspection = (c) => CUSTOMS_INSPECTION_KEYS.has(c.key);
+// ── Périmètre des composants (P0-2, #3830) ──────────────────────────
+// Les composants marqués Comores (port → relais, surcoûts inter-îles) ne valent que
+// pour le marché KM (ou une surcharge marché explicite). Un surcoût inter-îles ne
+// s'applique que si l'île de destination (relais / zone) est connue ET correspond.
+// Inconnu ≠ zéro : le composant n'est pas appliqué et il est signalé (UNKNOWN).
+const COMORES_MARKET_CODE = 'KM';
+const COMORES_MARKED_KEYS = new Set(['transport_port_relais_kmf']);
+const INTER_ISLAND_KEY = /inter[_-]?iles?[_-](moheli|anjouan)/i;
+const LOCAL_STOCK_EXCLUDED_CATEGORIES = new Set(['hub', 'packaging', 'sourcing', 'product_purchase']);
+const LOCAL_STOCK_EXCLUDED_KEYS = new Set(['transport_port_relais_kmf']);
+
+function normalizeIsland(value) {
+  if (!value) return null;
+  const s = String(value).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+    .replace(/[^a-z]+/g, '_').replace(/^_|_$/g, '');
+  if (/moheli|mwali/.test(s)) return 'moheli';
+  if (/anjouan|ndzuani/.test(s)) return 'anjouan';
+  if (/grande_comore|ngazidja/.test(s)) return 'grande_comore';
+  if (/mayotte|maore/.test(s)) return 'mayotte';
+  return s || null;
+}
+
+function componentTerritory(c) {
+  const key = c.key || '';
+  const keyIsland = (key.match(INTER_ISLAND_KEY) || [])[1] || null;
+  const island = normalizeIsland(c.island) || keyIsland;
+  return { island, comoresMarked: COMORES_MARKED_KEYS.has(key) || !!island };
+}
+
+const CUSTOMS_INSPECTION_KEY = /inspection|expertise|controle|contr[oô]le|frais/i;
 
 function pctBasisFor(category, key) {
   if (PRICE_BASED_CATEGORIES.has(category)) return 'price';
@@ -241,7 +277,7 @@ function isVolumeFreightComponent(c) {
 // Règle sans seuil numérique, fondée sur la confiance portée par les composants :
 //   high : aucune ligne estimée et aucun repli ; low : achat/catégorie inconnus, repli `default`
 //   ou ligne de confiance `low` ; medium : le reste. La part estimée est informative seulement.
-function buildInputQuality({ allocations, meta, categoryKnown, purchaseKnown, dutiesKnown }) {
+function buildInputQuality({ allocations, meta, categoryKnown, purchaseKnown, dutiesKnown, scopeUnknown = [] }) {
   const lines = (allocations || []).filter(a => a.economic_nature !== 'fixed' && a.allocated_cost_kmf > 0);
   const total = lines.reduce((s, a) => s + a.allocated_cost_kmf, 0);
   const estimatedLines = lines.filter(a => !MEASURED_SOURCES.has(a.source) || a.component_confidence === 'low');
@@ -255,6 +291,7 @@ function buildInputQuality({ allocations, meta, categoryKnown, purchaseKnown, du
   const unknown = [];
   if (!purchaseKnown) unknown.push('purchase_price');
   if (!dutiesKnown) unknown.push('customs_duties');
+  for (const u of scopeUnknown) unknown.push(`scope:${u.component_key}`);
   let level = 'medium';
   if (!estimatedLines.length && !fallbacks.length) level = 'high';
   if (!purchaseKnown || !categoryKnown || fallbacks.some(f => f.source === 'default')
@@ -281,9 +318,12 @@ function computeCDR(product, ctx = {}) {
   const taxAED  = fxOut.aed_kmf;
   const fretEUR = Number(fc.fret_eur_per_m3) || 180;
 
-  const categoryKey    = product.category || 'phones';
-  const cat            = cfg.categories[categoryKey];
-  if (!cat) warnings.push(`Catégorie "${categoryKey}" inconnue — poids, volume et marge cible par défaut utilisés.`);
+  // Catégorie absente ≠ « phones » : plus de bascule silencieuse (P0-2).
+  const categoryKey    = product.category || null;
+  const cat            = categoryKey ? cfg.categories[categoryKey] : undefined;
+  const categoryStatus = cat ? 'KNOWN' : 'UNKNOWN';
+  if (!categoryKey) warnings.push('Catégorie absente (category_status UNKNOWN) — poids, volume et marge cible par défaut utilisés.');
+  else if (!cat) warnings.push(`Catégorie "${categoryKey}" inconnue — poids, volume et marge cible par défaut utilisés.`);
 
   const productCostKmf = Number(product.cost_kmf) || 0;
   const productWeightKg = positiveNumberOrNull(product.weight_kg);
@@ -321,9 +361,21 @@ function computeCDR(product, ctx = {}) {
   const avgArticlesPerParcel   = Number(fc.avg_articles_per_parcel)   || 4.0;
   const avgArticlesPerShipment = Number(fc.avg_articles_per_shipment) || 200.0;
 
+  const marketCode = cfg.market_code || ctx.market_code || null;
+  const destinationIsland = normalizeIsland(ctx.destination_island);
+  const scopeUnknown = [];
+  const scopeNotApplicable = [];
+  const flagUnknown = (c, reason, message) => {
+    scopeUnknown.push({ component_key: c.key || null, label: c.label || c.key || '', status: 'UNKNOWN', reason });
+    warnings.push(message);
+  };
+
   const applicable = [];
   for (const c of cfg.components) {
-    if (localStock && IMPORT_CHAIN.has(c.category)) continue;
+    if (localStock && (IMPORT_CHAIN.has(c.category) || LOCAL_STOCK_EXCLUDED_CATEGORIES.has(c.category) || LOCAL_STOCK_EXCLUDED_KEYS.has(c.key))) {
+      scopeNotApplicable.push({ component_key: c.key || null, label: c.label || c.key || '', status: 'NOT_APPLICABLE', reason: 'LOCAL_STOCK' });
+      continue;
+    }
     const a = c.applies_to || 'all';
     if (a !== 'all' && !a.startsWith('category:' + categoryKey) && !a.startsWith('channel:' + channel)) continue;
     if (c.scope === 'category' && c.scope_value && c.scope_value !== categoryKey) continue;
@@ -331,6 +383,25 @@ function computeCDR(product, ctx = {}) {
     if ((c.category === 'paiement' || c.category === 'payment') && !c.channel) {
       if (channel === 'cash_relais' && (c.key || '').startsWith('stripe_')) continue;
       if (channel === 'diaspora' && !(c.key || '').startsWith('stripe_') && (c.key || '').includes('cash')) continue;
+    }
+    const territory = componentTerritory(c);
+    if (territory.comoresMarked) {
+      if (marketCode !== COMORES_MARKET_CODE && c.source !== 'market_override') {
+        flagUnknown(c, marketCode ? 'comores_component_outside_km' : 'market_unknown',
+          `Composant Comores "${c.key}" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché${marketCode ? '' : ' / marché non déterminé'}.`);
+        continue;
+      }
+      if (territory.island) {
+        if (!destinationIsland) {
+          flagUnknown(c, 'destination_island_unknown',
+            `Surcoût destination non déterminé : "${c.key}" non appliqué (UNKNOWN) — île de destination inconnue.`);
+          continue;
+        }
+        if (destinationIsland !== territory.island) {
+          scopeNotApplicable.push({ component_key: c.key || null, label: c.label || c.key || '', status: 'NOT_APPLICABLE', reason: 'destination_island_differs' });
+          continue;
+        }
+      }
     }
     applicable.push(c);
   }
@@ -517,12 +588,14 @@ function computeCDR(product, ctx = {}) {
     weight_source: productWeightKg != null ? 'product' : (categoryWeightKg != null ? 'category' : 'default'),
     volume_source: requestedVolumeM3 != null ? 'product' : (categoryVolumeM3 != null ? 'category' : 'default'),
     freight_source: freightSource,
+    category_status: categoryStatus,
     price_basis_kmf: priceBasis == null ? null : r(priceBasis),
   };
   const inputQuality = buildInputQuality({
     allocations: details._allocations,
     meta,
     categoryKnown: !!cat,
+    scopeUnknown,
     purchaseKnown: productCostKmf > 0,
     dutiesKnown: customsEstimateStatus === 'cost_component' || localStock,
   });
@@ -542,6 +615,13 @@ function computeCDR(product, ctx = {}) {
     customs_inspection_kmf: customsInspectionKmf,
     customs_duties_kmf: customsDutiesKmf,
     input_quality: inputQuality,
+    category_status: categoryStatus,
+    cost_scope: {
+      market_code: marketCode,
+      destination_island: destinationIsland,
+      unknown_components: scopeUnknown,
+      not_applicable_components: scopeNotApplicable,
+    },
     import_chain_not_applicable: localStock,
     warnings,
     _meta: meta,
