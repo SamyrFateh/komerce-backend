@@ -284,6 +284,15 @@
       .filter(Boolean);
   }
 
+  // Sélection explicite : jamais de présélection des colis éligibles du marché
+  // (des colis d'une autre opération y figurent). Champ vide par défaut.
+  function parseParcelRefs(raw) {
+    return Array.from(new Set(String(raw || '').split(',').map(value => value.trim()).filter(Boolean)));
+  }
+  function parcelSelectionConfirm(verb, reference, refs) {
+    return `${verb} ${reference} avec ${refs.length} colis : ${refs.length ? refs.join(', ') : 'aucun'}. Confirmer ?`;
+  }
+
   // ── Saisie douane : formulaire intégré (remplace prompt()/confirm() natifs) ──────────────────
   const CURRENCY_LABEL = 'KMF';
   const STATUS_LABELS = Object.freeze({ pending: 'À déclarer', declared: 'Déclarée', confirmed: 'Confirmée' });
@@ -490,12 +499,13 @@
         if (!shipmentDate) return;
         const cif = promptFn('Valeur CIF (KMF)');
         if (!cif) return;
-        const suggested = candidateRefs(payload).join(',');
-        const refsRaw = promptFn('Colis à rattacher (références séparées par des virgules)', suggested) || '';
-        const parcelRefs = refsRaw.split(',').map(value => value.trim()).filter(Boolean);
+        const eligible = candidateRefs(payload).length;
+        const refsRaw = promptFn(`Colis à rattacher, sélection explicite (${eligible} éligible(s) sur le marché ; références séparées par des virgules)`, '') || '';
+        const parcelRefs = parseParcelRefs(refsRaw);
         await runAction(context, create, {
           url: endpointFor(context.marketCode, 'customs/shipments'),
           body: { reference, shipment_date: shipmentDate, cif_value_kmf: Number(cif), parcel_refs: parcelRefs },
+          confirmMessage: parcelSelectionConfirm('Créer le dossier', reference, parcelRefs),
           successMessage: `Expédition douane ${reference} créée.`,
         });
       });
@@ -548,13 +558,15 @@
           const suffix = row.is_active ? 'deactivate' : 'activate';
           let body = {};
           if (!row.is_active) {
-            const refsRaw = (context.prompt || (() => ''))('Colis à rattacher lors de la réactivation (références séparées par des virgules)', candidateRefs(payload).join(',')) || '';
-            body = { parcel_refs: refsRaw.split(',').map(value => value.trim()).filter(Boolean) };
+            const refsRaw = (context.prompt || (() => ''))('Colis à rattacher lors de la réactivation, sélection explicite (références séparées par des virgules)', '') || '';
+            body = { parcel_refs: parseParcelRefs(refsRaw) };
           }
           runAction(context, toggle, {
             url: endpointFor(context.marketCode, `customs/shipments/${encodeURIComponent(row.reference)}/${suffix}`),
             body,
-            confirmMessage: `${row.is_active ? 'Désactiver' : 'Réactiver'} ${row.reference} ?`,
+            confirmMessage: row.is_active
+              ? `Désactiver ${row.reference} ?`
+              : parcelSelectionConfirm('Réactiver le dossier', row.reference, body.parcel_refs),
             successMessage: `${row.reference} mis à jour.`,
           });
         });
@@ -658,5 +670,5 @@
     return context.reload();
   }
 
-  return Object.freeze({ endpointFor, metricItems, mount, _test: { candidateRefs, canConfirmTransit, parseAmountInput } });
+  return Object.freeze({ endpointFor, metricItems, mount, _test: { candidateRefs, parseParcelRefs, parcelSelectionConfirm, canConfirmTransit, parseAmountInput } });
 });
