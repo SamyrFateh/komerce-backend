@@ -1,3 +1,4 @@
+/** @test-kind unit @test-runner jest @test-requires none */
 'use strict';
 /** @test-kind unit — L10 invitations via API, jamais de mot de passe ni SQL mutation. */
 const { run, parseAccounts } = require('../../scripts/recette/l10-invite-e2e-identities');

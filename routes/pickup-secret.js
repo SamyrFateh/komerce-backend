@@ -52,7 +52,7 @@ const { validate } = require('../middleware/validate');
 const { pickup } = require('../validators');
 const { transitionOrderStatus } = require('../services/order-status-machine');
 const { confirmPickupCashPayment } = require('../services/confirm-pickup-cash-payment');
-const { markPickupSecretRevealed } = require('../services/order-mutation-service');
+const { consumeRevealCodeOnce } = require('../services/pickup-secret-access-service');
 const log = require('../utils/logger').child({ module: 'pickup-secret' });
 const { buildReceiptHTML, escapeHTML } = require('../utils/pickup-receipt-html');
 // O7.2 (Cycle B) : generatePickupCode/hashCode/generateAndStoreSecret/
@@ -455,7 +455,7 @@ router.get('/reveal-once/:orderId', authenticate, async (req, res, next) => {
       return res.status(404).json({ error: 'Commande introuvable' });
     }
 
-    if (order.user_id && order.user_id !== userId) {
+    if (!order.user_id || order.user_id !== userId) {
       return res.status(403).json({ error: 'Cette commande ne vous appartient pas' });
     }
 
@@ -497,38 +497,30 @@ router.get('/reveal-once/:orderId', authenticate, async (req, res, next) => {
     //    le principe du hash). Donc on stocke temporairement le code clair en
     //    DB (table pickup_reveal_codes, TTL 30 min) au moment de la génération.
     //    Migré de REVEAL_CACHE (Map in-memory) vers DB en SEC-1 / migration 070.
-    const { rows: [revealRow] } = await db.query(
-      'SELECT code FROM pickup_reveal_codes WHERE order_id = $1 AND expires_at > NOW()',
-      [orderId]
-    );
-    if (!revealRow) {
-      // Ligne absente ou expirée → 410 (redémarrage, délai dépassé)
+    //    Atomique : UPDATE garde IS NULL + DELETE RETURNING dans une transaction.
+    const revealedCode = await consumeRevealCodeOnce(orderId);
+    if (!revealedCode) {
+      // Déjà révélé (course) / ligne absente ou expirée → 410
       return res.status(410).json({
         error: 'Code non disponible',
-        message: 'Le code n\'est plus disponible (redémarrage serveur ou expiration). Utilisez la procédure de perte.',
+        message: 'Le code n\'est plus disponible (déjà révélé, redémarrage serveur ou expiration). Utilisez la procédure de perte.',
         masked: order.pickup_secret_last4
                   ? ('•••-•••-' + order.pickup_secret_last4.slice(-2))
                   : null,
       });
     }
 
-    // 6. Marquer comme révélé + supprimer de la table immédiatement (one-shot)
-    await Promise.all([
-      markPickupSecretRevealed(db, orderId),
-      db.query('DELETE FROM pickup_reveal_codes WHERE order_id = $1', [orderId]),
-    ]);
-
     log.info(`[PICKUP-SECRET] 👁 Code révélé (one-shot) order=${orderId} channel=${order.pickup_secret_channel}`);
 
     // 7. Générer le payload QR (format KMR1.base64url)
-    const qrPayloadRaw = JSON.stringify({ c: revealRow.code, o: order.reference });
+    const qrPayloadRaw = JSON.stringify({ c: revealedCode, o: order.reference });
     const qrPayload = 'KMR1.' + Buffer.from(qrPayloadRaw)
       .toString('base64')
       .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
     return res.json({
       order_ref:   order.reference,
-      code:        revealRow.code, // [M1] fix: cached n'existe pas ici, la source est revealRow
+      code:        revealedCode,
       qr_payload:  qrPayload,
       channel:     order.pickup_secret_channel,
       total_kmf:   Number(order.total_kmf || 0),

@@ -57,6 +57,7 @@ module.exports = {
     ],
     services: [
       'services/otp-test-mode.js',
+      'services/g6-staging-buyer-identity-guard.js',
       // LOT12 ? unique persistence boundary for the users lifecycle.
       'services/user-mutation-service.js',
       'services/credential-action-store.js',
@@ -101,6 +102,7 @@ module.exports = {
       'migrations/368_internal_account_activation.sql',
     ],
       tests: [
+      'tests/unit/g6-staging-buyer-scoped-checkout.test.js',
       'tests/unit/l10-invite-e2e-identities.test.js',
       'tests/e2e-api/auth-identity.pickup-authorization-staging.e2e.test.js',
       'tests/integration/admin-authz-probe.test.js',

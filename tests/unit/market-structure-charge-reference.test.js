@@ -1,3 +1,4 @@
+/** @test-kind unit @test-runner jest @test-requires none */
 'use strict';
 jest.mock('../../db',()=>({getClient:jest.fn(),query:jest.fn()}));
 jest.mock('../../services/pricing-period-structure',()=>({

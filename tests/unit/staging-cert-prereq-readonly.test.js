@@ -1,3 +1,4 @@
+/** @test-kind unit @test-runner jest @test-requires none */
 'use strict';
 /** Garde du script de prerequis certification : staging seul, READ ONLY, aucune ecriture SQL, detection d'un ACTIVE non canonique. */
 const fs = require('fs');

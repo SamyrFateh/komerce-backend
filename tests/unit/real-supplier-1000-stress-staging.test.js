@@ -1,3 +1,4 @@
+/** @test-kind unit @test-runner jest @test-requires none */
 'use strict';
 
 const stress = require('../../scripts/real-supplier-1000-stress-staging');

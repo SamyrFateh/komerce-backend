@@ -9,7 +9,7 @@
  * @outputs       read-only per-product editorial/media/SOI/cost/market-pricing blockers
  * @depends       scripts/recette/target-guard.js
  * @db-read       import_runtime_runs, sourcing_candidates, products, product_skus, catalog_media,
- *                product_market_exposure, product_market_price_drafts, markets
+ *                catalog_field_overrides, product_market_exposure, product_market_price_drafts, markets
  * @db-write      none
  * @db-txn        BEGIN READ ONLY
  * @doctrine      exact_real_source_not_sellability_no_invented_cost_or_price
@@ -64,8 +64,15 @@ function assessProduct(row) {
     hard.push('SUPPLIER_ORDER_IDENTITY_UNPROVEN');
   const activeMedia = media.filter(m => m.is_active === true && /^https:\/\//i.test(m.url || ''));
   if (!activeMedia.length) decisions.push('CATALOGUE_MEDIA_REVIEW_REQUIRED');
-  if (!p.name || !p.description || p.needs_review !== false || p.source_locale !== 'fr')
-    decisions.push('FRENCH_EDITORIAL_REVIEW_REQUIRED');
+  // source_locale is immutable *supplier* provenance. It stays 'en' after a
+  // French editorial approval and must never be used as the output language.
+  // For non-FR supplier content, require an actual canonical manual curation
+  // and independently recorded name+description overrides, not a mere claim.
+  const signedFrenchFields = safeCount(row.signed_french_overrides);
+  const editorialVerified = Boolean(p.name && p.description && p.needs_review === false
+    && (p.source_locale === 'fr'
+      || (p.content_source === 'manual' && signedFrenchFields >= 2)));
+  if (!editorialVerified) decisions.push('FRENCH_EDITORIAL_REVIEW_REQUIRED');
   const scan = row.scan_result || {};
   const customsStatus = scan.customs_review?.status || null;
   if (customsStatus === 'REQUIRED') decisions.push('CUSTOMS_REVIEW_REQUIRED');
@@ -86,7 +93,9 @@ function assessProduct(row) {
     boutique_category: p.boutique_category_key || null,
     boutique_subcategory: p.boutique_subcategory_key || null,
     source_locale: p.source_locale || null,
-    needs_editorial_review: p.needs_review !== false,
+    french_editorial_verified: editorialVerified,
+    signed_french_overrides: signedFrenchFields,
+    needs_editorial_review: !editorialVerified,
     description_present: Boolean(p.description),
     source_decision: scan.sourcing_decision || null,
     customs_review_status: customsStatus,
@@ -108,6 +117,9 @@ function assessProduct(row) {
 const QUERY = [
   'SELECT c.candidate_ref, c.supplier_product_id, c.state, c.product_id,',
   '       c.normalized_source_contract, c.scan_result, to_jsonb(p) AS product,',
+  '       (SELECT count(DISTINCT o.field_name)::int FROM catalog_field_overrides o',
+  "         WHERE o.product_id=p.id AND o.field_name IN ('name','description')",
+  '           AND o.set_by IS NOT NULL) AS signed_french_overrides,',
   '       (SELECT coalesce(jsonb_agg(jsonb_build_object(',
   "          'supplier_sku',s.supplier_sku, 'supplier_unit_ref',s.supplier_unit_ref,",
   "          'supplier_order_identity',s.supplier_order_identity, 'source',s.source)), '[]'::jsonb)",
@@ -124,6 +136,13 @@ const QUERY = [
   '  LEFT JOIN products p ON p.id=c.product_id',
   ' WHERE r.run_ref=$1 ORDER BY c.candidate_ref',
 ].join('\n');
+// La cohorte est définie par le RUN fournisseur exact KIR-000014, jamais par le
+// total Catalogue : d'autres produits de recette peuvent coexister sur staging.
+function cohortIdentitiesMatch(rows) {
+  const refs = new Set(rows.map(row => row.candidate_ref));
+  return rows.length === EXPECTED.size && refs.size === EXPECTED.size
+    && [...refs].every(ref => EXPECTED.has(ref));
+}
 async function audit() {
   assertStaging(process.env);
   // All connections, including the guard, are read-only at PostgreSQL server level.
@@ -145,9 +164,29 @@ async function audit() {
     report.market = km || null;
     report.total_products = totals.products;
     report.products = rows.map(assessProduct);
+    // Consume the exact canonical publication and media-review contracts.
+    // Neither test data nor an English source can masquerade as approved FR.
+    const { certifyCatalogProduct } = require('../../services/catalog-certification');
+    const { inspectCatalogVisualFrEvidence } = require('../../services/catalog-visual-fr-evidence-read');
+    report.publication_gates = [];
+    for (const row of rows) {
+      if (!EXPECTED.has(row.candidate_ref) || !row.product_id) continue;
+      const technical = await certifyCatalogProduct(client, row.product_id);
+      const visual = await inspectCatalogVisualFrEvidence(client, row.product_id);
+      report.publication_gates.push({
+        candidate_ref: row.candidate_ref,
+        product_ref: row.product?.product_ref || null,
+        technical_certified: technical?.certification?.certified === true,
+        technical_reasons: technical?.certification?.reasons || ['CATALOG_CERTIFICATION_MISSING'],
+        visual_fr_certified: visual?.ready === true,
+        visual_fr_reason: visual?.code || 'VISUAL_FR_EVIDENCE_MISSING',
+        allowed_to_approve_from_this_report: false,
+      });
+    }
     report.hard_blockers = [];
-    if (rows.length !== EXPECTED.size || report.total_products !== EXPECTED.size
-        || new Set(rows.map(r=>r.candidate_ref)).size !== EXPECTED.size)
+    report.cohort_products = rows.length;
+    report.other_staging_products = Math.max(0, report.total_products - rows.length);
+    if (!cohortIdentitiesMatch(rows))
       report.hard_blockers.push('EXACT_FOUR_PRODUCT_COHORT_NOT_MATCHED');
     if (!km || km.is_active !== true || km.currency !== 'KMF')
       report.hard_blockers.push('KM_MARKET_NOT_READY');
@@ -177,4 +216,4 @@ async function main() {
     process.exitCode = 2;
 }
 if (require.main === module) main().catch(e=>{console.error(String(e.code||e.message));process.exitCode=1;});
-module.exports = { assertStaging, expectedDatabasePin, assessProduct, RUN, EXPECTED, QUERY };
+module.exports = { assertStaging, expectedDatabasePin, assessProduct, cohortIdentitiesMatch, RUN, EXPECTED, QUERY };

@@ -197,6 +197,25 @@ describe('bootstrap/security', () => {
       );
     });
 
+    test('B4 — CDNs inutilisés exclus et images non-HTTPS distantes refusées', () => {
+      for (const directive of ['scriptSrc', 'connectSrc']) {
+        expect(csp[directive]).not.toContain('https://unpkg.com');
+        expect(csp[directive]).not.toContain('https://cdn.jsdelivr.net');
+      }
+      expect(csp.imgSrc).not.toContain('http:');
+      expect(csp.imgSrc).toContain('https:');
+      expect(csp.imgSrc).toContain("'self'");
+    });
+
+    test('B4 — Chart.js chargé depuis le bundle same-origin déjà versionné', () => {
+      const fs = require('fs');
+      const path = require('path');
+      const html = fs.readFileSync(path.resolve(__dirname, '../../public/dashboards/admin/index.html'), 'utf8');
+      expect(html).toContain('src="/chart.umd.min.js"');
+      expect(html).not.toMatch(/src="https:\/\/cdn\.jsdelivr\.net/);
+      expect(fs.existsSync(path.resolve(__dirname, '../../public/chart.umd.min.js'))).toBe(true);
+    });
+
     test('defaultSrc et baseUri restreints à self', () => {
       expect(csp.defaultSrc).toEqual(["'self'"]);
       expect(csp.baseUri).toEqual(["'self'"]);

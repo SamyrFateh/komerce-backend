@@ -311,6 +311,9 @@ jobs:
       - name: Impact suppression hygiene
         if: steps.rebase_proof.outputs.rebase_no_impact != 'true' && steps.repair.outputs.unit_repair_only != 'true'
         run: node scripts/impact-suppression-check.js
+      - name: Test execution headers (@test-kind / @test-runner / @test-requires)
+        if: steps.rebase_proof.outputs.rebase_no_impact != 'true' && steps.repair.outputs.unit_repair_only != 'true'
+        run: node scripts/test-header-check.js --strict
       # Le registre commité est une projection, jamais une vérité autonome.
       # On le régénère depuis les montages Express du HEAD avant le gate afin
       # qu'une projection stale ne produise ni faux vert ni faux rouge.
@@ -345,6 +348,13 @@ jobs:
           node-version: '20'
           cache: npm
       - run: npm ci
+
+      # A backend PR can touch Boutique source. The strict coverage gate
+      # measures real Jest coverage in each source workspace, not root-only.
+      # Installing the Boutique test runner prevents a false non-measurable veto.
+      - name: Install Boutique Jest for strict touched-tests measurement
+        if: needs.changes.outputs.boutique_js == 'true' && needs.changes.outputs.unit_repair_only != 'true'
+        run: npm --prefix public/boutique ci --ignore-scripts --no-audit --no-fund
 
       # ── Touched-tests (ex pr-governance.yml) ─────────────────────────────────
       # Vérifie que tout code touché a un signal test. --strict active la

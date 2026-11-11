@@ -8,7 +8,7 @@
  * @outputs       catalog_work_queue, delegated_catalog_mutations
  * @depends       db, utils/rules.js, services/catalog-product-quality-service.js, services/product-admin-service.js, services/catalog-approval.js, services/catalog-overrides.js, services/boutique-taxonomy-admin.js, services/catalog-commercial-assortment.js, services/pricing-parameters-status.js
  * @used-by       routes/admin-catalog-workspace.js
- * @db-read       catalog_product_sale_holds, catalog_product_quality_notes, disputes, order_items, products, sourcing_candidates, boutique_categories, boutique_subcategories, import_runtime_runs, markets, product_market_exposure, product_market_price_drafts, catalog_media, product_skus, product_variants, finance_config, currency_parities, exchange_rates, cost_components
+ * @db-read       catalog_product_sale_holds, catalog_product_quality_notes, disputes, order_items, products, sourcing_candidates, boutique_categories, boutique_subcategories, import_runtime_runs, markets, product_market_exposure, product_market_price_drafts, catalog_media, catalog_media_visual_fr_reviews, product_skus, product_variants, finance_config, currency_parities, exchange_rates, cost_components
  * @db-write      none
  * @db-write-via  product-admin-service, catalog-approval, catalog-overrides, boutique-taxonomy-admin
  * @db-txn        delegated_to_domain_authority
@@ -24,6 +24,7 @@ const { getRuleNumber } = require('../utils/rules');
 const productAdmin = require('./product-admin-service');
 const catalogApproval = require('./catalog-approval');
 const { certifyCatalogProduct } = require('./catalog-certification');
+const { inspectCatalogVisualFrEvidence } = require('./catalog-visual-fr-evidence-read');
 const catalogOverrides = require('./catalog-overrides');
 const taxonomy = require('./boutique-taxonomy-admin');
 const commercialAssortment = require('./catalog-commercial-assortment');
@@ -498,11 +499,22 @@ async function getRegistryReadiness(productRef) {
       note: 'Fiche inactive hors file candidat : points techniques indicatifs, aucune certification de publication.',
     };
   }
+  const visual = facts?.row?.has_sourcing_candidate === true
+    ? await inspectCatalogVisualFrEvidence(db, product.id) : null;
+  const technical = facts?.certification || null;
+  const certification = technical && visual ? {
+    ...technical,
+    certified: technical.certified === true && visual.ready === true,
+    reasons: [...technical.reasons, ...(visual.ready ? [] : ['visual_fr_review_required'])],
+    visual_fr_ready: visual.ready,
+    visual_fr_reason: visual.code,
+    visual_fr_results: visual.results,
+  } : technical;
   return {
     product_ref: product.product_ref,
     phase: 'catalog_approval',
-    certification: facts?.certification || null,
-    note: 'Contrôle technique de validation Catalogue ; la revue visuelle FR et les prix locaux relèvent de leurs validations propres.',
+    certification,
+    note: 'Contrôle des prérequis Catalogue incluant chaque image fournisseur. Prix et exposition restent distincts.',
   };
 }
 
@@ -561,10 +573,28 @@ function publicProductDossier(facts, product, marketHandoff = null, details = {}
           Number(row.active_supplier_skus) === Number(row.complete_supplier_skus)),
     },
     media: {
+      // UUIDs exposed only through the authenticated Catalogue + Sourcing dossier.
+      product_id: row.has_sourcing_candidate === true ? product.id : null,
+      sourcing_linked: row.has_sourcing_candidate === true,
+      automated_staging_review_allowed: process.env.KOMERCE_ENV === 'staging',
+      visual_fr: details.visual || null,
       active_canonical: count(row.active_media),
       gallery: (Array.isArray(details.media) ? details.media : [])
         .filter(item => typeof item.url === 'string' && /^https:\/\//i.test(item.url))
         .slice(0, 24).map(item => ({
+          media_id: row.has_sourcing_candidate === true ? item.media_id : null,
+          option_values: item.option_values || {},
+          review: item.review_source_media_id ? {
+            source_media_id: item.review_source_media_id,
+            source_url: item.review_source_url,
+            option_values: item.review_option_values || {},
+            text_presence: item.text_presence,
+            source_transcription: item.source_transcription,
+            french_translation: item.french_translation,
+            french_presentation: item.french_presentation,
+            reviewed_by: item.reviewed_by,
+            reviewed_at: item.reviewed_at,
+          } : null,
           url: item.url,
           alt: item.alt || null,
           role: item.role || 'PRODUCT',
@@ -625,10 +655,18 @@ async function getProductDossier(productRef) {
     'catalog_facts_unavailable', 'Fiche canonique indisponible', 503
   );
   const skuStockAuthority = facts.row.inventory_model === 'SKU';
-  const [mediaResult, variantResult] = await Promise.all([
-    db.query(`SELECT url, alt, role, source_media_id, display_order
-       FROM catalog_media WHERE product_id=$1 AND is_active=TRUE
-       ORDER BY display_order ASC NULLS LAST, created_at ASC LIMIT 25`, [product.id]),
+  const [mediaResult, variantResult, visual] = await Promise.all([
+    db.query(`SELECT cm.id AS media_id, cm.url, cm.alt, cm.role, cm.source_media_id,
+              cm.option_values, cm.display_order,
+              vr.source_media_id AS review_source_media_id,
+              vr.source_url AS review_source_url,
+              vr.option_values AS review_option_values,
+              vr.text_presence, vr.source_transcription, vr.french_translation,
+              vr.french_presentation, vr.reviewed_by, vr.reviewed_at
+       FROM catalog_media cm
+       LEFT JOIN catalog_media_visual_fr_reviews vr ON vr.media_id=cm.id
+       WHERE cm.product_id=$1 AND cm.is_active=TRUE
+       ORDER BY cm.display_order ASC NULLS LAST, cm.created_at ASC LIMIT 25`, [product.id]),
     skuStockAuthority
       ? db.query(`SELECT sku, supplier_sku, supplier_unit_ref, variant_combo,
                   stock, is_active FROM product_skus
@@ -636,10 +674,13 @@ async function getProductDossier(productRef) {
       : db.query(`SELECT sku, variant_type, variant_value, stock
                    FROM product_variants WHERE product_id=$1
                    ORDER BY display_order ASC, variant_type ASC, variant_value ASC LIMIT 51`, [product.id]),
+    facts.row.has_sourcing_candidate === true
+      ? inspectCatalogVisualFrEvidence(db, product.id) : Promise.resolve(null),
   ]);
   return publicProductDossier(facts, product, handoff, {
     media: mediaResult.rows,
     variants: variantResult.rows,
+    visual,
   });
 }
 

@@ -44,6 +44,7 @@ module.exports = {
       'modal produit catalogue : un fetch Product Detail, un etat de selection SKU, deux compositions responsive mobile/desktop',
       'raffinerie catalogue : donnee source EN conservee, eligibilite douane/transport (catalog_exclusions), enrichissement FR, overrides traces, approbation humaine unique',
       'contrat de revue du texte incruste dans les medias fournisseur : preuve attachee a la source et variante, traduction FR revue sans dependance IA specifique (verification pure, sans publication automatique)',
+      'recette propriétaire staging : revue Chromium automatisée explicitement attribuée au run GitHub et au compte authentifié sur candidats Sourcing TEST ; jamais une attestation humaine, jamais recevable hors staging, jamais une publication sans geste explicite',
       'projection par lot KIR : préparation Catalogue, publication et visibilité par marché depuis les produits réellement promus ; lecture seule, sans automatiser une décision',
       'Catalogue global maître : registre paginé de toutes les fiches réellement remises depuis Sourcing/Raffinerie ; fournisseurs, taxonomie boutique, écarts actionnables et corrections par autorité sans confondre remise et vente',
       'Catalogue pré-publication : contrôle canonique des prérequis candidat à la demande en lecture seule, sans déclencher de publication ni confondre approbation Catalogue, revue visuelle FR et décisions marchés',
@@ -83,6 +84,7 @@ module.exports = {
       'middleware/require-catalog-global-authority.js',
     ],
     ci: [
+      '.github/workflows/staging-p1-cj-commercial-chromium.yml',
       '.github/workflows/showcase-v2-staging-deploy.yml',
       '.github/workflows/cj-real-showcase-contract.yml',
       '.github/workflows-disabled/showcase-catalog-media-audit.yml',
@@ -115,6 +117,8 @@ module.exports = {
       'utils/categories-cache.js',
     ],
     scripts: [
+      'scripts/recette/p1-cj-commercial-chromium.js',
+      'scripts/recette/p1-cj-media-inspection.json',
       'scripts/allegro-sandbox-check.js',
       'scripts/ebay-p3-pipeline-proof.js',
       'scripts/cj-real-showcase-seed.js',

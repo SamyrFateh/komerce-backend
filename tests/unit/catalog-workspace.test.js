@@ -676,6 +676,32 @@ test('Dossier canonique : une fiche source, son achat et ses preuves sans UUID n
   expect(JSON.stringify(result)).not.toContain('private-uuid');
   expect(JSON.stringify(result)).not.toContain('market_price_decided');
 });
+test('Dossier sourcing autorisé : IDs canoniques, variante et revue exacte sans prix local fictif', () => {
+  const { publicProductDossier } = workspace._test;
+  const source = { id: 'canonical-product-uuid', product_ref: 'KPR-000099', lifecycle_status: 'candidate', is_active: false };
+  const details = {
+    media: [{ media_id: 'canonical-media-uuid', url: 'https://supplier.test/source.png',
+      alt: 'Ne vaut pas revue des pixels', source_media_id: 'CJ-image-1',
+      option_values: { size: 'M' }, review_source_media_id: 'CJ-image-1',
+      review_source_url: 'https://supplier.test/source.png',
+      review_option_values: { size: 'M' }, text_presence: 'NONE',
+      reviewed_by: 'catalog-admin-1', reviewed_at: '2026-11-10T20:00:00Z' }],
+    visual: { ready: true, code: 'VISUAL_FR_REVIEWED', results: [
+      { source_media_id: 'CJ-image-1', state: 'NO_RELEVANT_TEXT_REVIEWED', ready: true },
+    ] },
+  };
+  const result = publicProductDossier({ row: {
+    has_sourcing_candidate: true, active_media: 1, name: 'Produit', source_locale: 'fr',
+  }, certification: { certified: true, reasons: [] } }, source, null, details);
+  expect(result.media).toMatchObject({ product_id: 'canonical-product-uuid',
+    sourcing_linked: true, visual_fr: { ready: true }, gallery: [{
+      media_id: 'canonical-media-uuid', source_media_id: 'CJ-image-1',
+      option_values: { size: 'M' }, review: { text_presence: 'NONE', reviewed_by: 'catalog-admin-1' },
+    }] });
+  expect(result.market_data_scope).toBe('not_queried_before_approval');
+  expect(JSON.stringify(result)).not.toContain('local_price_amount');
+});
+
 test('Produit déjà actif : état marché explicite, pas de fausse recertification candidat', () => {
   const {publicProductDossier}=workspace._test;
   const result=publicProductDossier(
@@ -716,7 +742,7 @@ test('Dossier: galerie HTTPS canonique, dimensions, variantes SKU et stock fiabl
     dimensions_cm:'15 x 8 x 2',fragility:'low',requires_secure_transport:true,
     weight_kg:0.25,stock_is_authoritative:false,
   });
-  expect(output.media.gallery).toEqual([{url:'https://cdn.example.test/p1.webp',
+  expect(output.media.gallery).toMatchObject([{url:'https://cdn.example.test/p1.webp',
     role:'PRODUCT',alt:'face',source_media_id:'M1'}]);
   expect(output.variants).toMatchObject({
     inventory_model:'SKU',stock_semantics:'sellable_sku',truncated:false,
@@ -743,7 +769,9 @@ test('Dossier SQL: lire seulement les variantes du modèle déclaré et les méd
   const source=require('fs').readFileSync(
     require('path').join(__dirname,'../../services/catalog-workspace.js'),'utf8');
   expect(source).toContain("const skuStockAuthority = facts.row.inventory_model === 'SKU'");
-  expect(source).toContain('FROM catalog_media WHERE product_id=$1 AND is_active=TRUE');
+  expect(source).toContain('FROM catalog_media cm');
+  expect(source).toContain('WHERE cm.product_id=$1 AND cm.is_active=TRUE');
+  expect(source).toContain('LEFT JOIN catalog_media_visual_fr_reviews vr ON vr.media_id=cm.id');
   expect(source).toContain('FROM product_skus');
   expect(source).toContain('FROM product_variants');
   expect(source).toContain('LIMIT 25');

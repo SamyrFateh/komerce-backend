@@ -1,3 +1,4 @@
+/** @test-kind unit @test-runner jest @test-requires none */
 'use strict';
 const fs = require('node:fs');
 const path = require('node:path');

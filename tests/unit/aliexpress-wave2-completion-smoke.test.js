@@ -1,3 +1,4 @@
+/** @test-kind unit @test-runner jest @test-requires none */
 'use strict';
 
 const { COMPLETION_QUERIES } = require('../../scripts/aliexpress-wave2-completion');

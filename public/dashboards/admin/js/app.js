@@ -638,7 +638,11 @@
     main.innerHTML = '<div class="loading-state"><span class="loader"></span> Chargement...</div>';
     Promise.resolve(invokeView(View, main)).catch(err => {
       console.error('[app] render error:', err);
-      main.innerHTML = `<div class="error-state">Erreur: ${err.message}</div>`;
+      // B2: server-derived errors are plain text, never HTML.
+      const errorState = document.createElement('div');
+      errorState.className = 'error-state';
+      errorState.textContent = 'Erreur: ' + String(err?.message || 'Erreur inconnue');
+      main.replaceChildren(errorState);
     });
   }
 

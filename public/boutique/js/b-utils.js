@@ -34,7 +34,10 @@ import { dom } from './b-store.js';
 /** Affiche une notification UI temporaire — utilitaire transversal. */
 export function showToast(msg, type, duration) {
   type = type || '';
-  dom.toast.innerHTML = '<div class="k-toast-simple">' + (msg || '') + '</div>';
+  const message = document.createElement('div');
+  message.className = 'k-toast-simple';
+  message.textContent = String(msg || '');
+  dom.toast.replaceChildren(message);
   dom.toast.className = 'k-toast show' + (type ? ' ' + type : '');
   clearTimeout(dom.toast._t);
   dom.toast._t = setTimeout(() => dom.toast.classList.remove('show'), duration || 2800);

@@ -209,13 +209,13 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 34 fichier(s) déclaré(s), boutique: 5 fichier(s)
+**Implementation** : 36 fichier(s) déclaré(s), boutique: 5 fichier(s)
   - boutique : 3
   - migrations : 4
   - routes : 4
   - scripts : 1
-  - services : 6
-  - tests : 14
+  - services : 7
+  - tests : 15
   - utils : 2
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="auth-identity"]_
@@ -346,6 +346,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - modal produit catalogue : un fetch Product Detail, un etat de selection SKU, deux compositions responsive mobile/desktop
   - raffinerie catalogue : donnee source EN conservee, eligibilite douane/transport (catalog_exclusions), enrichissement FR, overrides traces, approbation humaine unique
   - contrat de revue du texte incruste dans les medias fournisseur : preuve attachee a la source et variante, traduction FR revue sans dependance IA specifique (verification pure, sans publication automatique)
+  - recette propriétaire staging : revue Chromium automatisée explicitement attribuée au run GitHub et au compte authentifié sur candidats Sourcing TEST ; jamais une attestation humaine, jamais recevable hors staging, jamais une publication sans geste explicite
   - projection par lot KIR : préparation Catalogue, publication et visibilité par marché depuis les produits réellement promus ; lecture seule, sans automatiser une décision
   - Catalogue global maître : registre paginé de toutes les fiches réellement remises depuis Sourcing/Raffinerie ; fournisseurs, taxonomie boutique, écarts actionnables et corrections par autorité sans confondre remise et vente
   - Catalogue pré-publication : contrôle canonique des prérequis candidat à la demande en lecture seule, sans déclencher de publication ni confondre approbation Catalogue, revue visuelle FR et décisions marchés
@@ -446,9 +447,9 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 448 fichier(s) déclaré(s), boutique: 33 fichier(s)
+**Implementation** : 451 fichier(s) déclaré(s), boutique: 33 fichier(s)
   - boutique : 39
-  - ci : 24
+  - ci : 25
   - config : 1
   - dash : 1
   - docs : 19
@@ -456,7 +457,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - migrations : 25
   - routes : 7
   - schemas : 5
-  - scripts : 33
+  - scripts : 35
   - services : 84
   - tests : 208
   - utils : 1
@@ -600,8 +601,8 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 463 fichier(s) déclaré(s)
-  - dash : 174
+**Implementation** : 464 fichier(s) déclaré(s)
+  - dash : 175
   - middleware : 1
   - migrations : 2
   - routes : 28
@@ -736,6 +737,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - gate de couverture économique par marché, fail-closed sur maturité, risque et charges de structure attribuées
   - politique canonique de décision par marché : fenêtre, seuils de maturité/couverture et plafond de dispositions versionnés append-only
   - corridor de prix issu de preuves marché locales, sans fallback silencieux depuis une référence globale
+  - les coûts et références économiques sont consultables avant le premier prix local ; selected.price_kmf reste null et buyer_effective=false tant qu aucune décision acheteur ne le porte, sans publication implicite
   - Exception ciblée Catalogue pays : un admin central vérifié peut prévisualiser, fixer, activer et repricer un prix local sur marché explicitement sélectionné ; mêmes gates économiques, aucune ouverture des observations/politiques locales par rôle seul, opérateurs toujours soumis aux capabilities.
   - explicabilité canonique de chaque ligne de coût : source, hypothèse, mouvement, nature économique, périmètre d allocation et impact
   - strategies tarifaires et matrices admin
@@ -1473,11 +1475,11 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "auth-identity" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "market-delegation" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 
-**Implementation** : 37 fichier(s) déclaré(s)
-  - dash : 20
+**Implementation** : 40 fichier(s) déclaré(s)
+  - dash : 22
   - migrations : 3
   - services : 4
-  - tests : 10
+  - tests : 11
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="market-autonomy"]_
 

@@ -619,9 +619,8 @@ describe('revealOnce', () => {
 
     db.query
       .mockResolvedValueOnce({ rows: [delegatedOrder] })
-      .mockResolvedValueOnce({ rows: [{ code: 'A7K-3M9-P2' }] })
-      .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({ rows: [] });
+      .mockResolvedValueOnce({ rows: [{ id: 'o1' }], rowCount: 1 }) // UPDATE revealed_at (garde IS NULL)
+      .mockResolvedValueOnce({ rows: [{ code: 'A7K-3M9-P2' }] }); // DELETE reveal_codes RETURNING code
 
     const allowed = await revealOnce({ orderId: 'o1', userId: 'organizer-1' });
     expect(allowed.status).toBe(200);
@@ -658,7 +657,8 @@ describe('revealOnce', () => {
     const emitted = new Date();
     db.query
       .mockResolvedValueOnce({ rows: [{ id: 'o1', user_id: 'u1', pickup_secret_hash: 'h', pickup_secret_emitted_at: emitted, pickup_secret_last4: 'WXP2' }] })
-      .mockResolvedValueOnce({ rows: [] }); // pickup_reveal_codes vide
+      .mockResolvedValueOnce({ rows: [{ id: 'o1' }], rowCount: 1 }) // UPDATE revealed_at
+      .mockResolvedValueOnce({ rows: [] }); // DELETE RETURNING vide -> rollback
     const result = await revealOnce({ orderId: 'o1', userId: 'u1' });
     expect(result.status).toBe(410);
     expect(result.body.error).toBe('Code non disponible');
@@ -673,9 +673,8 @@ describe('revealOnce', () => {
           pickup_secret_emitted_at: emitted, pickup_secret_channel: 'stripe', total_kmf: 5000,
         }],
       })
-      .mockResolvedValueOnce({ rows: [{ code: 'A7K-3M9-P2' }] }) // pickup_reveal_codes
-      .mockResolvedValueOnce({ rows: [] }) // UPDATE revealed_at
-      .mockResolvedValueOnce({ rows: [] }); // DELETE reveal_codes
+      .mockResolvedValueOnce({ rows: [{ id: 'o1' }], rowCount: 1 }) // UPDATE revealed_at (garde IS NULL)
+      .mockResolvedValueOnce({ rows: [{ code: 'A7K-3M9-P2' }] }); // DELETE reveal_codes RETURNING code
 
     const result = await revealOnce({ orderId: 'o1', userId: 'u1' });
     expect(result.status).toBe(200);
@@ -684,18 +683,12 @@ describe('revealOnce', () => {
     expect(result.body.total_kmf).toBe(5000);
   });
 
-  it('autorise la révélation si user_id de la commande est null (invité)', async () => {
-    const emitted = new Date();
-    db.query
-      .mockResolvedValueOnce({
-        rows: [{ id: 'o1', reference: 'KMC-001', user_id: null, pickup_secret_hash: 'h', pickup_secret_emitted_at: emitted, pickup_secret_channel: 'wallet', total_kmf: 1000 }],
-      })
-      .mockResolvedValueOnce({ rows: [{ code: 'X' }] })
-      .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({ rows: [] });
-
+  it('403 si la commande n\'a ni propriétaire ni destinataire (jamais d\'accès ouvert)', async () => {
+    db.query.mockResolvedValueOnce({
+      rows: [{ id: 'o1', reference: 'KMC-001', user_id: null, pickup_secret_hash: 'h', pickup_secret_emitted_at: new Date(), pickup_secret_channel: 'wallet', total_kmf: 1000 }],
+    });
     const result = await revealOnce({ orderId: 'o1', userId: 'u1' });
-    expect(result.status).toBe(200);
+    expect(result.status).toBe(403);
   });
 });
 

@@ -1067,7 +1067,7 @@
             ]
           },
           "services": {
-            "count": 6,
+            "count": 7,
             "files": [
               {
                 "declared": "services/credential-action-store.js",
@@ -1083,6 +1083,11 @@
                 "declared": "services/credential-link-token.js",
                 "resolvedPath": "services/credential-link-token.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/g6-staging-buyer-identity-guard.js",
+                "resolvedPath": "services/g6-staging-buyer-identity-guard.js",
+                "status": "resolved-on-disk-no-header"
               },
               {
                 "declared": "services/otp-test-mode.js",
@@ -1102,7 +1107,7 @@
             ]
           },
           "tests": {
-            "count": 14,
+            "count": 15,
             "files": [
               {
                 "declared": "tests/e2e-api/auth-identity.pickup-authorization-staging.e2e.test.js",
@@ -1142,6 +1147,11 @@
               {
                 "declared": "tests/unit/credential-session-guard.test.js",
                 "resolvedPath": "tests/unit/credential-session-guard.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/g6-staging-buyer-scoped-checkout.test.js",
+                "resolvedPath": "tests/unit/g6-staging-buyer-scoped-checkout.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -1192,7 +1202,7 @@
             ]
           }
         },
-        "totalFiles": 34,
+        "totalFiles": 36,
         "boutiqueManifest": "auth",
         "boutiqueFiles": {
           "count": 5,
@@ -2433,6 +2443,7 @@
           "modal produit catalogue : un fetch Product Detail, un etat de selection SKU, deux compositions responsive mobile/desktop",
           "raffinerie catalogue : donnee source EN conservee, eligibilite douane/transport (catalog_exclusions), enrichissement FR, overrides traces, approbation humaine unique",
           "contrat de revue du texte incruste dans les medias fournisseur : preuve attachee a la source et variante, traduction FR revue sans dependance IA specifique (verification pure, sans publication automatique)",
+          "recette propriétaire staging : revue Chromium automatisée explicitement attribuée au run GitHub et au compte authentifié sur candidats Sourcing TEST ; jamais une attestation humaine, jamais recevable hors staging, jamais une publication sans geste explicite",
           "projection par lot KIR : préparation Catalogue, publication et visibilité par marché depuis les produits réellement promus ; lecture seule, sans automatiser une décision",
           "Catalogue global maître : registre paginé de toutes les fiches réellement remises depuis Sourcing/Raffinerie ; fournisseurs, taxonomie boutique, écarts actionnables et corrections par autorité sans confondre remise et vente",
           "Catalogue pré-publication : contrôle canonique des prérequis candidat à la demande en lecture seule, sans déclencher de publication ni confondre approbation Catalogue, revue visuelle FR et décisions marchés",
@@ -2733,7 +2744,7 @@
             ]
           },
           "ci": {
-            "count": 24,
+            "count": 25,
             "files": [
               {
                 "declared": ".github/workflows-disabled/README-CJ-SHOWCASE.md",
@@ -2838,6 +2849,11 @@
               {
                 "declared": ".github/workflows/staging-catalog-ops.yml",
                 "resolvedPath": ".github/workflows/staging-catalog-ops.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows/staging-p1-cj-commercial-chromium.yml",
+                "resolvedPath": ".github/workflows/staging-p1-cj-commercial-chromium.yml",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -3188,7 +3204,7 @@
             ]
           },
           "scripts": {
-            "count": 33,
+            "count": 35,
             "files": [
               {
                 "declared": "scripts/aliexpress-500-catalog-sync.js",
@@ -3353,6 +3369,16 @@
               {
                 "declared": "scripts/real-supplier-1000-stress-staging.js",
                 "resolvedPath": "scripts/real-supplier-1000-stress-staging.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "scripts/recette/p1-cj-commercial-chromium.js",
+                "resolvedPath": "scripts/recette/p1-cj-commercial-chromium.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "scripts/recette/p1-cj-media-inspection.json",
+                "resolvedPath": "scripts/recette/p1-cj-media-inspection.json",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -4838,7 +4864,7 @@
             ]
           }
         },
-        "totalFiles": 448,
+        "totalFiles": 451,
         "boutiqueManifest": "modal-product",
         "boutiqueFiles": {
           "count": 33,
@@ -6832,7 +6858,7 @@
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 174,
+            "count": 175,
             "files": [
               {
                 "declared": "chart.umd.min.js",
@@ -7207,6 +7233,11 @@
               {
                 "declared": "dashboards/canonical/css/catalog-control-tower.css",
                 "resolvedPath": "public/dashboards/canonical/css/catalog-control-tower.css",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/css/catalog-workspace-wide-v1.css",
+                "resolvedPath": "public/dashboards/canonical/css/catalog-workspace-wide-v1.css",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -9177,7 +9208,7 @@
             ]
           }
         },
-        "totalFiles": 463,
+        "totalFiles": 464,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -11029,6 +11060,7 @@
           "gate de couverture économique par marché, fail-closed sur maturité, risque et charges de structure attribuées",
           "politique canonique de décision par marché : fenêtre, seuils de maturité/couverture et plafond de dispositions versionnés append-only",
           "corridor de prix issu de preuves marché locales, sans fallback silencieux depuis une référence globale",
+          "les coûts et références économiques sont consultables avant le premier prix local ; selected.price_kmf reste null et buyer_effective=false tant qu aucune décision acheteur ne le porte, sans publication implicite",
           "Exception ciblée Catalogue pays : un admin central vérifié peut prévisualiser, fixer, activer et repricer un prix local sur marché explicitement sélectionné ; mêmes gates économiques, aucune ouverture des observations/politiques locales par rôle seul, opérateurs toujours soumis aux capabilities.",
           "explicabilité canonique de chaque ligne de coût : source, hypothèse, mouvement, nature économique, périmètre d allocation et impact",
           "strategies tarifaires et matrices admin",
@@ -21132,7 +21164,7 @@
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 20,
+            "count": 22,
             "files": [
               {
                 "declared": "dashboards/canonical/access.html",
@@ -21152,6 +21184,11 @@
               {
                 "declared": "dashboards/canonical/css/market-catalog-essential.css",
                 "resolvedPath": "public/dashboards/canonical/css/market-catalog-essential.css",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/css/market-catalog-pricing-list.css",
+                "resolvedPath": "public/dashboards/canonical/css/market-catalog-pricing-list.css",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -21182,6 +21219,11 @@
               {
                 "declared": "dashboards/canonical/js/market-cash-control.js",
                 "resolvedPath": "public/dashboards/canonical/js/market-cash-control.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/js/market-catalog-pricing-list.js",
+                "resolvedPath": "public/dashboards/canonical/js/market-catalog-pricing-list.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -21282,7 +21324,7 @@
             ]
           },
           "tests": {
-            "count": 10,
+            "count": 11,
             "files": [
               {
                 "declared": "tests/e2e/market-readonly-views.spec.js",
@@ -21302,6 +21344,11 @@
               {
                 "declared": "tests/unit/market-cash-control-ui.test.js",
                 "resolvedPath": "tests/unit/market-cash-control-ui.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/market-catalog-pricing-list.test.js",
+                "resolvedPath": "tests/unit/market-catalog-pricing-list.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -21337,7 +21384,7 @@
             ]
           }
         },
-        "totalFiles": 37,
+        "totalFiles": 40,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,

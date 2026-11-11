@@ -1,3 +1,4 @@
+/** @test-kind unit @test-runner jest @test-requires none */
 'use strict';
 const {recetteIsolationGuard}=require('../../middleware/recette-isolation-guard');
 const original=process.env.KOMERCE_RECETTE_ISOLATED;

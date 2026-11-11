@@ -1,3 +1,4 @@
+/** @test-kind integration @test-runner jest @test-requires postgres */
 /**
  * @integration financial-journal-gap-signal-postgres.test.js
  * @feature Signal financial_journal_gap — écart du journal → Action Center (signal-service)

@@ -1,3 +1,4 @@
+/** @test-kind unit @test-runner jest @test-requires none */
 'use strict';
 
 const { activationVerdict } = require('../../services/market-local-price-activation-service');

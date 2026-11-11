@@ -97,6 +97,7 @@ function renderMedia(detail, selection, force = false) {
   buildCarouselSlides({
     name: detail.product.name,
     images: media.map((item) => item.url),
+    media, // preserve reviewed caption and variant association
     image_url: media[0]?.url || '',
   });
   goToSlide(0);

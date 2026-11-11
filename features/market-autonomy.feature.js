@@ -77,6 +77,8 @@ module.exports = {
       'dashboards/canonical/market-catalog.html',
       'dashboards/canonical/js/market-autonomy.js',
       'dashboards/canonical/js/market-catalog.js',
+      'dashboards/canonical/js/market-catalog-pricing-list.js',
+      'dashboards/canonical/css/market-catalog-pricing-list.css',
       'dashboards/canonical/js/market-prompt.js',
       'dashboards/canonical/js/market-access.js',
       'dashboards/canonical/js/markets-management.js',
@@ -94,6 +96,7 @@ module.exports = {
       'dashboards/canonical/js/team-invite.js',
     ],
     tests: [
+      'tests/unit/market-catalog-pricing-list.test.js',
       'tests/unit/migration-308-suspend-unproven-markets.test.js',
       'tests/integration/market-dj-provisioning-postgres.test.js',
       'tests/integration/market-local-price-state-transition-real-db.test.js',

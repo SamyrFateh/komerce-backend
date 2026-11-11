@@ -1,3 +1,4 @@
+/** @test-kind unit @test-runner jest @test-requires none */
 /**
  * @komerce-arch
  * @role          ebay-sandbox-browse-connector-test

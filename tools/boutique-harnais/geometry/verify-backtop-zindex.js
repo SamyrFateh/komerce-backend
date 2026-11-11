@@ -1,6 +1,6 @@
 const http=require('http'),fs=require('fs'),path=require('path');
 const {chromium}=require('playwright');
-const ROOT=path.resolve(__dirname,'..','public');
+const ROOT=path.resolve(__dirname,'..','..','public');
 const srv=http.createServer((q,r)=>{const p=q.url.split('?')[0];
   const f=p.startsWith('/boutique/')?path.join(ROOT,p):path.join(__dirname,p);
   if(!fs.existsSync(f)){r.writeHead(404);return r.end('nf');}

@@ -1076,6 +1076,13 @@
       {
         "feature": "auth-identity",
         "category": "services",
+        "declared": "services/g6-staging-buyer-identity-guard.js",
+        "resolvedPath": "services/g6-staging-buyer-identity-guard.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "auth-identity",
+        "category": "services",
         "declared": "services/user-mutation-service.js",
         "resolvedPath": "services/user-mutation-service.js",
         "status": "resolved-in-technical-graph"
@@ -1197,6 +1204,13 @@
         "category": "migrations",
         "declared": "migrations/368_internal_account_activation.sql",
         "resolvedPath": "migrations/368_internal_account_activation.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "auth-identity",
+        "category": "tests",
+        "declared": "tests/unit/g6-staging-buyer-scoped-checkout.test.js",
+        "resolvedPath": "tests/unit/g6-staging-buyer-scoped-checkout.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -1440,6 +1454,13 @@
       {
         "feature": "catalog",
         "category": "ci",
+        "declared": ".github/workflows/staging-p1-cj-commercial-chromium.yml",
+        "resolvedPath": ".github/workflows/staging-p1-cj-commercial-chromium.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "ci",
         "declared": ".github/workflows/showcase-v2-staging-deploy.yml",
         "resolvedPath": ".github/workflows/showcase-v2-staging-deploy.yml",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -1611,6 +1632,20 @@
         "declared": "utils/categories-cache.js",
         "resolvedPath": "utils/categories-cache.js",
         "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "catalog",
+        "category": "scripts",
+        "declared": "scripts/recette/p1-cj-commercial-chromium.js",
+        "resolvedPath": "scripts/recette/p1-cj-commercial-chromium.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "scripts",
+        "declared": "scripts/recette/p1-cj-media-inspection.json",
+        "resolvedPath": "scripts/recette/p1-cj-media-inspection.json",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
         "feature": "catalog",
@@ -5740,6 +5775,13 @@
         "category": "dash",
         "declared": "dashboards/canonical/js/catalog-workspace-decision.js",
         "resolvedPath": "public/dashboards/canonical/js/catalog-workspace-decision.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/css/catalog-workspace-wide-v1.css",
+        "resolvedPath": "public/dashboards/canonical/css/catalog-workspace-wide-v1.css",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -14803,6 +14845,20 @@
       {
         "feature": "market-autonomy",
         "category": "dash",
+        "declared": "dashboards/canonical/js/market-catalog-pricing-list.js",
+        "resolvedPath": "public/dashboards/canonical/js/market-catalog-pricing-list.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "dash",
+        "declared": "dashboards/canonical/css/market-catalog-pricing-list.css",
+        "resolvedPath": "public/dashboards/canonical/css/market-catalog-pricing-list.css",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "dash",
         "declared": "dashboards/canonical/js/market-prompt.js",
         "resolvedPath": "public/dashboards/canonical/js/market-prompt.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -14903,6 +14959,13 @@
         "category": "dash",
         "declared": "dashboards/canonical/js/team-invite.js",
         "resolvedPath": "public/dashboards/canonical/js/team-invite.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "tests",
+        "declared": "tests/unit/market-catalog-pricing-list.test.js",
+        "resolvedPath": "tests/unit/market-catalog-pricing-list.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -33883,6 +33946,14 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "scripts/recette/p1-cj-commercial-chromium.js",
+                "targetFile": "services/pricing-cdr.js"
+              },
+              {
+                "sourceFileId": "scripts/recette/p1-cj-commercial-chromium.js",
+                "targetFile": "services/pricing-engine.js"
+              },
+              {
                 "sourceFileId": "scripts/aliexpress-incremental-e2e-200.js",
                 "targetFile": "services/pricing-engine.js"
               },
@@ -33985,6 +34056,10 @@
               {
                 "sourceFileId": "utils/categories-cache.js",
                 "targetFile": "utils/logger.js"
+              },
+              {
+                "sourceFileId": "scripts/recette/p1-cj-commercial-chromium.js",
+                "targetFile": "db.js"
               },
               {
                 "sourceFileId": "scripts/allegro-sandbox-check.js",
@@ -40973,10 +41048,6 @@
                 "targetFile": "services/order-status-machine.js"
               },
               {
-                "sourceFileId": "routes/pickup-secret.js",
-                "targetFile": "services/order-mutation-service.js"
-              },
-              {
                 "sourceFileId": "tests/unit/order-physical-coverage-gate.test.js",
                 "targetFile": "services/order-status-machine.js"
               },
@@ -41572,6 +41643,18 @@
               {
                 "sourceFileId": "services/market-local-price-activation-service.js",
                 "targetFile": "services/pricing-market-corridor.js"
+              },
+              {
+                "sourceFileId": "tests/unit/market-catalog-pricing-list.test.js",
+                "targetFile": "services/pricing-engine.js"
+              },
+              {
+                "sourceFileId": "tests/unit/market-catalog-pricing-list.test.js",
+                "targetFile": "services/pricing-cdr.js"
+              },
+              {
+                "sourceFileId": "tests/unit/market-catalog-pricing-list.test.js",
+                "targetFile": "services/pricing-market-corridor.js"
               }
             ]
           }
@@ -41595,6 +41678,10 @@
               },
               {
                 "sourceFileId": "services/market-local-price-state-transition.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/market-catalog-pricing-list.test.js",
                 "targetFile": "db.js"
               },
               {
@@ -42887,6 +42974,10 @@
               {
                 "sourceFileId": "public/boutique/js/b-tracking.js",
                 "targetFile": "public/boutique/js/b-identity.js"
+              },
+              {
+                "sourceFileId": "services/order-checkout-service.js",
+                "targetFile": "services/g6-staging-buyer-identity-guard.js"
               },
               {
                 "sourceFileId": "public/boutique/js/b-checkout.js",
@@ -48961,7 +49052,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2294
+        "filesObserved": 2299
       },
       "boutique": {
         "filesObserved": 214,

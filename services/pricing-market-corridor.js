@@ -380,9 +380,8 @@ async function buildMarketCorridorForProduct({ market, product, executor = db })
   ]);
 
   const effectivePriceKmf = activePricing?.effective_unit_price_kmf || finitePositive(product.price_kmf);
-  if (!effectivePriceKmf) {
-    throw new PricingMarketCorridorError(409, 'pricing_market_corridor_effective_price_missing', 'Prix acheteur effectif indisponible.');
-  }
+  // First local pricing starts from costs, not an already-existing buyer price.
+  // Keep the price null: a recommendation is never a market decision or cutover.
 
   const localCorridor = projectObservedCorridor(localRows, { currency: market.currency, scope: 'market' });
   const globalReference = projectObservedCorridor(globalRows, { currency: 'KMF', scope: 'global_reference' });
@@ -427,7 +426,7 @@ async function buildMarketCorridorForProduct({ market, product, executor = db })
         : 'Aucune donnée locale : la référence globale reste informative et n’est jamais promue silencieusement en corridor pays.',
     },
     selected: {
-      source: activePricing ? 'LOCAL_ACTIVE' : 'GLOBAL_BASE',
+      source: activePricing ? 'LOCAL_ACTIVE' : effectivePriceKmf ? 'GLOBAL_BASE' : 'UNPRICED',
       buyer_effective: Boolean(activePricing),
       local_amount: activePricing?.local_amount ?? null,
       local_currency: activePricing?.local_currency ?? null,

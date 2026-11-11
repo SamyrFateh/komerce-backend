@@ -1,3 +1,4 @@
+/** @test-kind e2e @test-runner playwright @test-requires webapp */
 'use strict';
 
 const { test, expect } = require('@playwright/test');

@@ -728,6 +728,21 @@ describe('DELETE /api/admin/users/:id', () => {
     expect(provisioning.revokeAllOperatorScopes).toHaveBeenCalled();
   });
 
+  it('wallet avec mouvements sans commande → soft delete, ledger jamais supprimé', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [{ id: 'u1', full_name: 'Jean', email: 'jean@x.km', role: 'client' }] })
+      .mockResolvedValueOnce({ rows: [{ count: '0' }] })
+      .mockResolvedValueOnce({ rows: [{ has_movements: true }] })
+      .mockResolvedValue({ rows: [] });
+
+    const res = await request(app).delete('/api/admin/users/u1');
+    expect(res.status).toBe(200);
+    expect(res.body.type).toBe('soft_delete');
+    expect(res.body.message).toMatch(/historique wallet/);
+    const sqls = db.query.mock.calls.map((c) => String(c[0]));
+    expect(sqls.some((q) => /DELETE FROM wallet/i.test(q))).toBe(false);
+  });
+
   it('utilisateur sans commandes ni historique de scope → hard delete, 200', async () => {
     db.query
       .mockResolvedValueOnce({ rows: [{ id: 'u1', full_name: 'Jean', email: 'jean@x.km', role: 'client' }] })
@@ -737,5 +752,7 @@ describe('DELETE /api/admin/users/:id', () => {
     const res = await request(app).delete('/api/admin/users/u1');
     expect(res.status).toBe(200);
     expect(res.body.type).toBe('hard_delete');
+    const sqls = db.query.mock.calls.map((c) => String(c[0]));
+    expect(sqls.some((q) => /DELETE FROM wallet/i.test(q))).toBe(false);
   });
 });

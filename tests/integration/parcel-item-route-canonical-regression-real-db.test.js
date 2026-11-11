@@ -1,3 +1,4 @@
+/** @test-kind integration @test-runner jest @test-requires postgres */
 'use strict';
 /**
  * Non-regression issue #2958: actual Express/Joi route, canonical service
