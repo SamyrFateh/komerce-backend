@@ -1,0 +1,54 @@
+name: Claude PAR — répartir UNE commande de recette (staging KM)
+
+# Certification parallèle Claude (#3868). « Répartir ce marché » agit sur toutes les commandes
+# du marché, dont celles de ChatGPT : on appelle le writer canonique distributeOrder sur la seule
+# commande CLAUDE-PAR KRJ7I90, après contrôle de son marqueur et de son relais.
+on:
+  push:
+    branches: [cert/claude-par-accounts]
+    paths:
+      - '.github/workflows/claude-par-distribute-order.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  distribute:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      KOMERCE_ENV: staging
+      NODE_ENV: test
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      EXPECTED_RAILWAY_ENVIRONMENT: staging
+      ORDER_REF: KRJ7I90
+      RELAIS_NAME: CLAUDE-PAR Relais KM
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Vérifier la cible staging
+        run: node scripts/recette/target-guard.js
+      - name: Répartir la seule commande CLAUDE-PAR (writer canonique, transaction)
+        run: |
+          node -e "
+          const db = require('./db');
+          const { distributeOrder } = require('./services/auto-parcel');
+          (async () => {
+            const c = await db.pool.connect();
+            try {
+              await c.query('BEGIN');
+              const { rows: [o] } = await c.query(
+                'SELECT o.id, o.reference, o.status, r.name AS relais FROM orders o JOIN relais r ON r.id = o.relais_id WHERE o.reference = \$1', [process.env.ORDER_REF]);
+              if (!o || o.relais !== process.env.RELAIS_NAME) throw Error('COMMANDE_CIBLE_INATTENDUE');
+              const res = await distributeOrder(o.id, c);
+              if (!res || res.success === false) throw Error('DISTRIBUTION_' + (res && res.error));
+              await c.query('COMMIT');
+              console.log(JSON.stringify({ order: o.reference, status_before: o.status, parcels: res.parcels || res.parcel_count || res.parcel || null }));
+            } catch (e) { await c.query('ROLLBACK'); console.error('REFUS', e.message); process.exitCode = 1; }
+            finally { c.release(); await db.pool.end(); }
+          })();"
