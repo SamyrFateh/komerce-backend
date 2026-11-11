@@ -8,7 +8,7 @@
  * @outputs       relais read model, auditable network mutations
  * @depends       services/market-delegation-service.js, services/relais-mutation-service.js, services/user-mutation-service.js
  * @used-by       routes/market-delegation-network.js
- * @db-read       none
+ * @db-read       assignment_memberships, membership_capabilities, users
  * @db-write      none
  * @db-write-via:relais-mutation-service relais
  * @db-write-via:user-mutation-service users
