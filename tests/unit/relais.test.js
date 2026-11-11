@@ -60,7 +60,7 @@ describe('relais — GET / (liste publique, sans auth)', () => {
   });
 
   it('filtre strictement par market code quand ?market= est fourni', async () => {
-    const rows = [{ id: 'relay-cm', market_code: 'CM', name: 'Relais Yaoundé' }];
+    const rows = [{ id: 'relay-cm', market_code: 'CM', name: 'Relais Yaoundé', zone: 'Yaoundé' }];
     mockQuery.mockResolvedValueOnce({ rows });
 
     const res = await request(app).get('/api/relais?market=cm');
@@ -185,5 +185,25 @@ describe('public/relais/js/relais.js — encaissement en devise du marché', () 
   });
   test('syntaxe valide', () => {
     expect(() => new Function(src)).not.toThrow();
+  });
+});
+
+describe('relais — seuls les relais routables sont proposés (même règle que POST /api/orders)', () => {
+  it('écarte un relais insulaire sans île et garde les relais routables', async () => {
+    const base = { market_code: 'KM', zone: null };
+    mockQuery.mockResolvedValueOnce({ rows: [
+      { ...base, id: 'sans-ile', name: 'Sans île', island: null, island_code: null },
+      { ...base, id: 'code', name: 'Code', island: null, island_code: 'ANJOUAN' },
+      { ...base, id: 'libre', name: 'Libre', island: 'Grande Comore', island_code: null },
+      { id: 'cm-ok', market_code: 'CM', name: 'Douala', zone: 'Douala', island: null, island_code: null },
+      { id: 'cm-ko', market_code: 'CM', name: 'Sans zone', zone: ' ', island: null, island_code: null },
+    ] });
+    for (const url of ['/api/relais']) {
+      const res = await request(app).get(url);
+      expect(res.body.map((r) => r.id)).toEqual(['code', 'libre', 'cm-ok']);
+    }
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'x', market_code: 'KM', name: 'X', island: 'Atlantide', island_code: null }] });
+    const pub = await request(app).get('/api/relais/public');
+    expect(pub.body.relais).toEqual([]);
   });
 });
