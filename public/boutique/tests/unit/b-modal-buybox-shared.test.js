@@ -129,6 +129,55 @@ describe('b-modal-buybox-shared — achat immédiat', () => {
     });
   });
 
+  test('P0 — projection buy-now sans produit : jamais une ligne fictive', () => {
+    expect(_buyboxSharedTestApi.currentBuyNowLine()).toBeNull();
+  });
+
+  test('P0 — produit SIMPLE sans variante : prix, image legacy et quantité valide', () => {
+    state.modalProduct = {
+      id: 77, name: 'Produit simple', price: 3490, image: '/legacy.jpg',
+    };
+    state.modalProductDetail = { inventory_model: 'SIMPLE' };
+    state.modalSelection = { selected_options: {} };
+    state.modalQty = 0;
+    expect(_buyboxSharedTestApi.currentBuyNowLine()).toMatchObject({
+      id: 77, price: 3490, image: '/legacy.jpg', qty: 1,
+      variant_combo: null, variant_label: '',
+    });
+    expect(_buyboxSharedTestApi.currentBuyNowLine().sku_id).toBeUndefined();
+
+    // Aucun prix/média ne doit être inventé si le modèle ne les connaît pas.
+    state.modalProduct = { id: 78, name: 'Produit sans média' };
+    state.modalSelection = { selected_options: null };
+    state.modalQty = 'invalid';
+    expect(_buyboxSharedTestApi.currentBuyNowLine()).toMatchObject({
+      id: 78, price: 0, image: '', qty: 1, variant_combo: null,
+    });
+  });
+
+  test('P0 — compatibilité référence/option, quantité négative et transport', () => {
+    state.modalProduct = {
+      id: 79, name: 'Produit ancien', selected_sku_id: 'legacy-sku',
+      price: 4990, image_url: '/sku.jpg',
+    };
+    state.modalProductDetail = { inventory_model: 'SIMPLE' };
+    state.modalSelection = { selected_options: 'non-object' };
+    state.modalQty = -5;
+    state.modalDeliverySelection = { requested_transport_rail: 'AIR_EXPRESS' };
+    expect(_buyboxSharedTestApi.currentBuyNowLine()).toMatchObject({
+      sku_id: 'legacy-sku', price: 4990, image: '/sku.jpg',
+      variant_combo: null, qty: 1, requested_transport_rail: 'AIR_EXPRESS',
+    });
+
+    state.modalSelection = null;
+    expect(_buyboxSharedTestApi.currentBuyNowLine().variant_combo).toBeNull();
+
+    state.modalSelection = { selected_options: { Taille: 'M' } };
+    const withOptions = _buyboxSharedTestApi.currentBuyNowLine();
+    expect(withOptions.variant_combo).toEqual({ Taille: 'M' });
+    expect(withOptions.variant_label).toBe('M');
+  });
+
   test('currentCartProduct accepte le produit explicite et le produit modal par défaut', () => {
     installSkuState();
     expect(_buyboxSharedTestApi.currentCartProduct()).toMatchObject({ sku_id: 'sku-1', price_kmf: 9000 });
