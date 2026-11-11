@@ -80,6 +80,7 @@ test.describe.serial('G6 P3 KUYIYUK — Chromium Relais cash + Hub UI',()=>{
     );
     evidence.initial={order_id:o.id,status:o.status,payment_status:o.payment_status,line_count:Number(o.line_count),po_count:Number(o.po_count),cash_collection_count:Number(o.cash_collection_count),cash_control_confirmed_count:Number(o.cash_control_confirmed_count),order_relais_id:o.relais_id||null};
     evidence.relay_identity=relayIdentity?{user_id:relayIdentity.id,role:relayIdentity.role,relais_id:relayIdentity.relais_id||null,is_e2e_test_account:relayIdentity.is_e2e_test_account}:null;
+    console.log('[G6_P3_RELAY_VISIBILITY]',JSON.stringify({order_relais_id:o.relais_id||null,relay_identity:evidence.relay_identity}));
     save();
   });
   test.afterAll(async()=>{
