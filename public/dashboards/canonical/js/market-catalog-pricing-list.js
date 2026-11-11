@@ -230,8 +230,12 @@
       costAmount.textContent = format(row.variable_cost_local, currency);
       cost.appendChild(costAmount);
       const costInfo = doc.createElement('small');
-      costInfo.textContent = row.variable_cost_local == null ? 'Coût non établi' : 'Sans charges fixes';
+      costInfo.textContent = row.variable_cost_local == null ? 'Coût non établi' : 'N1 + N2 · sans charges fixes';
       cost.appendChild(costInfo);
+      const n2 = doc.createElement('small');
+      n2.className = 'kmc-price-n2';
+      n2.textContent = 'N2 · Business : ' + format(row.business_variable_cost_local, currency);
+      cost.appendChild(n2);
 
       const marketCell = td(null, 'kmc-price-market');
       marketCell.classList.toggle('is-unconfirmed', row.corridor?.low == null || row.corridor?.high == null);
@@ -249,6 +253,11 @@
       marketCell.appendChild(hint);
 
       const priceCell = td(null, 'kmc-price-edit');
+      const floor = doc.createElement('div');
+      floor.className = 'kmc-price-safety-floor';
+      floor.dataset.safetyFloor = '';
+      floor.textContent = 'Plancher moteur : ' + format(row.minimum_safe_price_local, currency);
+      priceCell.appendChild(floor);
       const input = doc.createElement('input');
       input.type = 'number';
       input.min = '0';
@@ -294,9 +303,11 @@
       const detailBox = doc.createElement('div');
       detailBox.className = 'kmc-price-detail-box';
       detailBox.hidden = true;
-      detailBox.textContent = 'Coût rendu relais : ' + format(row.landed_relay_cost_local, currency) +
-        ' · coût variable complet : ' + format(row.variable_cost_local, currency) +
-        ' · aucune charge fixe de structure ajoutée au produit.';
+      detailBox.textContent = 'N1 · Rendu Relais : ' + format(row.landed_relay_cost_local, currency) +
+        ' · N2 · Variables business : ' + format(row.business_variable_cost_local, currency) +
+        ' · N1 + N2 · Coût variable complet : ' + format(row.variable_cost_local, currency) +
+        ' · plancher de sécurité moteur : ' + format(row.minimum_safe_price_local, currency) +
+        ' · charges fixes N3 exclues du coût variable unitaire.';
       product.appendChild(detailBox);
       detail.addEventListener('click', () => {
         detailBox.hidden = !detailBox.hidden;
