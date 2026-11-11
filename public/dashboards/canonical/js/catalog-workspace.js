@@ -2427,6 +2427,12 @@
       mgroup.appendChild(text(doc, 'p', 'kmc-catalog-correction-hint',
         'Un prix LOCAL_ACTIVE et une exposition ENABLED ne prouvent pas à eux seuls la capacité d’achat en caisse.'));
     }
+    if (row.lifecycle_status === 'active' && row.is_active === true) {
+      const marketLink = text(doc, 'a', 'kmc-workspace-action is-secondary', 'Décisions marchés');
+      marketLink.href = '/dashboards/canonical/market-catalog.html?product_ref=' +
+        encodeURIComponent(row.product_ref);
+      mgroup.appendChild(marketLink);
+    }
     slot.appendChild(mgroup);
     const issues = Array.isArray(gate.reasons) ? gate.reasons : [];
     if (gate.phase === 'catalog_approval' && issues.length) {
@@ -2745,7 +2751,7 @@
     }
     // The classification may also be corrected before an issue is raised,
     // but the server still validates the active Boutique pair and operator grant.
-    if ((row.candidate_ref || (row.lifecycle_status === 'active' && row.is_active === true))) {
+    if (row.product_ref && row.lifecycle_status !== 'rejected') {
       const btn = makeButton(doc, 'Corriger le classement', 'inspector-classify', true);
       btn.addEventListener('click', () =>
         openProductClassificationDialog(context, row, categories, btn));
@@ -3075,7 +3081,7 @@
         statusChip.setAttribute('data-status', row.work_status || 'inactive');
         statusChip.hidden = true; // Statut technique masqué : seules les corrections sont visibles.
         diagnostic.appendChild(statusChip);
-        const readinessCheck = renderRegistryCorrections(doc, diagnostic, row, context, nextStep);
+        renderRegistryCorrections(doc, diagnostic, row, context, nextStep);
         tr.appendChild(diagnostic);
         const actionCell = doc.createElement('td');
         actionCell.className = 'kmc-catalog-action-cell';
@@ -3108,22 +3114,6 @@
         }
         const actions = doc.createElement('div');
         actions.className = 'kmc-catalog-actions-inner';
-        const view = text(doc, 'a', 'kmc-workspace-action is-secondary kmc-catalog-view-link', 'Voir fiche');
-        view.href = contextualHref('/admin/products/' + encodeURIComponent(row.product_ref),
-          '/admin/workspaces/catalog?product_ref=' + encodeURIComponent(row.product_ref), 'Retour au Catalogue');
-        // Seules des actions Catalogue et marché figurent ici.
-        // Toute préparation fournisseur/éditoriale appartient à la Raffinerie.
-        const editClassification = makeButton(doc, 'Modifier classement', 'classify-product', true);
-        editClassification.addEventListener('click', () =>
-          openProductClassificationDialog(context, row, categories, editClassification));
-        const issues = row.issues || [];
-        const market = text(doc, 'a', 'kmc-workspace-action is-secondary', 'Décisions marchés');
-        market.href = '/dashboards/canonical/market-catalog.html?product_ref=' +
-          encodeURIComponent(row.product_ref);
-        const diagnose = makeButton(doc, 'Vérifier prérequis', 'diagnose-product', true);
-        diagnose.addEventListener('click', () => {
-          if (readinessCheck) readinessCheck.click();
-        });
         // An already approved product is also a Catalogue dossier, not a
         // forced navigation to a second dashboard. Market decisions remain
         // separate audited authorities, accessible as a contextual extra.
@@ -3135,28 +3125,6 @@
         actions.appendChild(primary);
         statusChip.title = 'Consulter le dossier produit';
         statusChip.addEventListener('click', () => primary.click());
-        const extra = doc.createElement('details');
-        extra.className = 'kmc-catalog-row-more';
-        const more = text(doc, 'summary', '', '···');
-        more.title = 'Autres actions sur ce produit';
-        more.setAttribute('aria-label', 'Autres actions pour ' + row.product_ref);
-        extra.appendChild(more);
-        const extraList = doc.createElement('div');
-        extraList.className = 'kmc-catalog-row-more-list';
-        [
-          ['detail', view],
-          ['classify', editClassification],
-          // La Raffinerie n'est jamais une action secondaire du Catalogue finalisé.
-          ...(row.lifecycle_status === 'active' && row.is_active ? [['markets', market]] : []),
-        ].forEach(([kind, action]) => {
-          if (kind !== nextStep.kind && !(kind === 'classify' && row.lifecycle_status === 'rejected')) {
-            extraList.appendChild(action);
-          }
-        });
-        if (extraList.children.length) {
-          extra.appendChild(extraList);
-          actions.appendChild(extra);
-        }
         actionCell.appendChild(actions);
         tr.appendChild(actionCell);
         tbody.appendChild(tr);

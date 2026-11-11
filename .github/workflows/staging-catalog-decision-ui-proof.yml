@@ -1,0 +1,123 @@
+name: Catalogue — focused read-only Chromium layout and buyer visibility diagnosis
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: read
+concurrency:
+  group: komerce-catalog-decision-ui-proof
+  cancel-in-progress: false
+jobs:
+  inspect:
+    if: >-
+      github.repository == 'SamyrFateh/komerce-backend' &&
+      github.actor == github.repository_owner &&
+      github.event.issue.user.login == github.repository_owner &&
+      github.event.issue.title == '[staging-op] catalog-decision-ui-proof'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      EXPECTED_RAILWAY_ENVIRONMENT: staging
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      KOMERCE_STAGING_RESET_DB_PIN: ${{ vars.STAGING_DB_PIN }}
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      PGOPTIONS: '-c default_transaction_read_only=on'
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Pin actual staging and protected database
+        run: |
+          node scripts/recette/resolve-staging-deploy-pin.js
+          node scripts/recette/target-guard.js
+      - run: npx playwright install --with-deps chromium
+      - name: Inspect the exact UI and independently diagnose public visibility, no business writes
+        run: |
+          node <<'JS'
+          const fs=require('node:fs');
+          const {chromium}=require('playwright');
+          const db=require('./db');
+          const {publicCatalogVisibilitySql,canonicalProductImageSql,sellableCatalogUnitSql}=require('./services/catalog-public-view');
+          const {skuSourceResolvedSql}=require('./services/supplier-source-resolution');
+          const {inspectCatalogVisualFrEvidence}=require('./services/catalog-visual-fr-evidence-read');
+          const BASE=process.env.STAGING_BASE_URL,OUT='test-results/catalog-decision-ui';fs.mkdirSync(OUT,{recursive:true});
+          const report={run_id:process.env.GITHUB_RUN_ID,sha:process.env.E2E_EXPECTED_DEPLOY_SHA,ui_verdict:'NOT_PROVEN',business_verdict:'NOT_PROVEN',business_writes:0,blocked_mutations:[]};
+          let browser;
+          (async()=>{try{
+            const refs=['KPR-000099','KPR-000100','KPR-000101'];
+            const {rows}=await db.query(`SELECT p.id,p.product_ref,p.is_active,p.is_available,p.stock,p.inventory_model,
+              ${publicCatalogVisibilitySql('p',{marketCodeParamIndex:1})} AS public_gate,
+              ${canonicalProductImageSql('p')} IS NOT NULL AS canonical_image_present,
+              ${sellableCatalogUnitSql('p')} AS sellable_unit_ready,
+              (SELECT count(*)::int FROM catalog_product_sale_holds h WHERE h.product_id=p.id AND h.released_at IS NULL) AS sale_holds,
+              (SELECT jsonb_agg(jsonb_build_object('sku',k.sku,'stock',k.stock,'active',k.is_active,'source',k.source,
+                'price_kmf',k.price_kmf,'supplier_sku',k.supplier_sku,'supplier_unit_ref',k.supplier_unit_ref,
+                'provider',k.supplier_order_identity->>'provider','source_resolved',${skuSourceResolvedSql('k')}))
+                FROM product_skus k WHERE k.product_id=p.id) AS skus,
+              (SELECT jsonb_agg(jsonb_build_object('active',ps.is_active,'deleted',ps.deleted_at,
+                'supplier_name',s.name,'platform',s.platform,'supplier_active',s.is_active,'supplier_deleted',s.deleted_at,'owner_scope',s.owner_scope))
+                FROM product_suppliers ps JOIN suppliers s ON s.id=ps.supplier_id WHERE ps.product_id=p.id) AS supplier_links
+              FROM products p WHERE p.product_ref=ANY($2::text[]) ORDER BY p.product_ref`,['KM',refs]);
+            report.products=[];
+            for(const row of rows)report.products.push({...row,visual:await inspectCatalogVisualFrEvidence(db,row.id)});
+            browser=await chromium.launch({headless:true});
+            const ctx=await browser.newContext({viewport:{width:1440,height:1000},locale:'fr-FR'});
+            const login=await ctx.request.post(BASE+'/api/auth/login',{data:{email:process.env.E2E_ADMIN_EMAIL,password:process.env.E2E_ADMIN_PASSWORD}});
+            if(!login.ok())throw Error('ADMIN_LOGIN_FAILED');
+            const page=await ctx.newPage();
+            await page.route('**/*',route=>{
+              if(['GET','HEAD','OPTIONS'].includes(route.request().method()))return route.continue();
+              report.blocked_mutations.push(new URL(route.request().url()).pathname);return route.abort();
+            });
+            await page.goto(BASE+'/admin/workspaces/catalog?search=KPR-000099&product_ref=KPR-000099',{waitUntil:'domcontentloaded'});
+            const row=page.locator('tr[data-product-ref="KPR-000099"]');await row.waitFor({state:'visible',timeout:25000});
+            const action=row.locator('[data-workspace-action="open-catalog-inspector"]');
+            if(await row.locator('.kmc-catalog-row-more').count()!==0||await action.count()!==1)throw Error('REGISTRY_ACTION_NOT_UNIQUE');
+            report.button=await action.evaluate(el=>{const r=el.getBoundingClientRect();return {width:r.width,height:r.height,whiteSpace:getComputedStyle(el).whiteSpace};});
+            if(report.button.height>70||report.button.width<95||report.button.whiteSpace!=='nowrap')throw Error('REGISTRY_BUTTON_COMPRESSED');
+            await page.screenshot({path:OUT+'/catalogue-one-action-1440.png'});
+            await action.click();
+            await page.locator('[data-catalog-product-inspector="KPR-000099"]').waitFor({state:'visible'});
+            await page.locator('[data-catalog-complementary-info] > summary').click();
+            await page.locator('[data-workspace-action="inspector-classify"]').waitFor({state:'visible'});
+            await page.getByRole('link',{name:'Décisions marchés',exact:true}).waitFor({state:'visible'});
+            await page.keyboard.press('Escape');
+            await page.goto(BASE+'/dashboards/canonical/market-catalog.html?market=KM&product_ref=KPR-000099',{waitUntil:'domcontentloaded'});
+            const price=page.locator('tr[data-product-ref="KPR-000099"]');await price.waitFor({state:'visible',timeout:30000});
+            report.cost_visual=await price.evaluate(el=>({
+              landed:getComputedStyle(el.querySelector('.kmc-price-landed .kmc-price-money')).color,
+              variable:getComputedStyle(el.querySelector('.kmc-price-variable .kmc-price-money')).color,
+              decision:getComputedStyle(el.querySelector('.kmc-price-edit')).backgroundColor,
+              contribution:el.querySelector('.kmc-price-contribution').dataset.contributionState,
+              price:el.querySelector('.kmc-price-edit input').value
+            }));
+            if(report.cost_visual.landed===report.cost_visual.variable||report.cost_visual.decision==='rgba(0, 0, 0, 0)')throw Error('DECISION_COST_HIERARCHY_NOT_VISIBLE');
+            await page.screenshot({path:OUT+'/market-cost-decisions-1440.png'});
+            const buyer=await browser.newContext();report.public_api=[];
+            for(const p of report.products){const res=await buyer.request.get(BASE+'/api/products/'+p.id+'/detail?market=KM');report.public_api.push({ref:p.product_ref,http:res.status(),body:await res.json()});}
+            report.business_verdict=report.public_api.length===3&&report.public_api.every(p=>p.http===200)?'THREE_PUBLIC_DETAILS_VISIBLE_NOT_FULL_E2E':'PUBLIC_VISIBILITY_BLOCKED';
+            if(report.blocked_mutations.length)throw Error('UNEXPECTED_UI_MUTATION');
+            report.ui_verdict='FOCUSED_LAYOUT_CHROMIUM_PASS';await buyer.close();await ctx.close();
+          }catch(error){report.error=String(error.message).slice(0,350);report.ui_verdict='FAIL';process.exitCode=2;}
+          finally{if(browser)await browser.close();await db.pool.end();fs.writeFileSync(OUT+'/report.json',JSON.stringify(report,null,2));console.log(JSON.stringify({ui:report.ui_verdict,business:report.business_verdict,error:report.error,diagnostics:report.products?.map(p=>({ref:p.product_ref,public_gate:p.public_gate,sellable:p.sellable_unit_ready,source:p.supplier_links,skus:p.skus}))}));}})();
+          JS
+      - name: Preserve actual browser screenshots and independent read-only visibility diagnosis
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: catalog-decision-ui-proof-${{ github.run_id }}
+          path: |
+            test-results/catalog-decision-ui/
+            test-results/hub-v1-http/deploy-pin.json
+          retention-days: 21

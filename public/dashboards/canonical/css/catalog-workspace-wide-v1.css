@@ -1750,3 +1750,12 @@ body.kmc-shell-v4[data-kmc-surface="catalog-workspace"]:has(.kmc-catalog-tabs)
     min-height: 44px;
   }
 }
+
+/* One registry action: keep its label readable at every table width. */
+.kmc-catalog-registry-table .kmc-catalog-action-cell .kmc-catalog-primary-action {
+  flex: 0 0 auto;
+  min-width: max-content;
+  white-space: nowrap;
+  word-break: normal;
+  overflow-wrap: normal;
+}
