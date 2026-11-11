@@ -1,6 +1,6 @@
 # Komerce — prix plancher prévisionnel en shadow (issue #3830)
 
-**Statut : simulation indépendante, aucun branchement sur le prix catalogue.** Ce lot implémente une partie démontrable de la doctrine `DOCTRINE_PLANCHER_PREVISIONNEL.md`, en complément des PR P0-1 #3832 et P0-2 #3833. Il ne les remplace pas, ne modifie pas `pricing-cdr.js`, ne fait aucune requête SQL et ne choisit/publie aucun prix.
+**Statut : simulation en lecture seule accessible depuis l'Atelier, séparée des prix actifs.** Ce lot implémente une partie démontrable de la doctrine `DOCTRINE_PLANCHER_PREVISIONNEL.md`, en complément des PR P0-1 #3832 et P0-2 #3833. Il ne les remplace pas, ne modifie pas `pricing-cdr.js` et ne choisit/publie aucun prix. La route effectue uniquement un SELECT sur le produit et le marché est déjà résolu par le middleware d'autorisation.
 
 ## Entrée et autorité
 
@@ -50,6 +50,14 @@ Une liste de postes indispensables est imposée au circuit import (livraison fou
 
 **Formule :** `P0 = (N1 + N2_hors_pourcentage_sur_prix) / (1 - somme_des_%_du_prix)`. Les scénarios favorable, central, défavorable doivent comporter **exactement les mêmes composants** et donner des planchers ordonnés. La marge de sécurité forfaitaire de 10 % n'est pas ajoutée. Les charges N3 ne sont pas incluses dans P0 ; on fournit seulement, en information, des ventes équivalentes nécessaires pour couvrir une N3 mensuelle fournie.
 
+## Entrée dans l'Atelier (simulation uniquement)
+
+L'Atelier affiche un panneau repliable dans le dossier du produit. Pour calculer, l'utilisateur renseigne manuellement chacun des trois scénarios ; **aucun champ n'est prérempli**. Le circuit import/local est une hypothèse de simulation, jamais la déclaration opérationnelle de stock. L'unité de commission relais (commande ou unité) doit être explicitement choisie et confirmée par contrat avant toute référence de tarification.
+
+Le serveur utilise `req.workspaceMarket` et `products.cost_kmf`, `weight_kg`, `volume_cm3` lus par requête `SELECT` sous `pricing.simulate`. Le navigateur ne fournit ni marché autoritaire, ni coût d'achat, ni marqueur de preuve contractuelle. Tous les taux sont saisis **en KMF ou en pourcentages avec leurs assiettes indiquées** ; les montants facturés en EUR/AED doivent être convertis par l'autorité FX avant saisie. Cela reste une simulation et non une procédure de certification des données.
+
+**Aucun résultat ne modifie le prix actif, les paramètres, les devis ou la base.** Aucun tarif douanier ni prix de transport n'est automatiquement deviné.
+
 ## Contrôles / limites
 
 - Les ratios 200 / 4 / 2,5 ne sont **jamais** utilisés.
@@ -59,14 +67,15 @@ Une liste de postes indispensables est imposée au circuit import (livraison fou
 - Les droits de douane au taux provisoire ne sont pas des droits réellement dus ; classification SH et fiscalité locale restent à valider.
 - Le `packaging` est un coût par unité explicitement fourni : **un ventilateur de 0,06 m³ ne peut pas être tarifé avec un carton de 0,04 m³ en faisant une division fractionnaire**.
 - Pour un panier multi-produits, la ventilation des forfaits peut nécessiter une méthode causale spécifique ; le modèle `unitsPerOrder = 1` est le plancher de référence prudent, et `unitsPerOrder = 3` n'est qu'une simulation **explicite**, jamais un panier médian inventé.
-- Cette première implémentation n'intègre ni la persistence des devis, ni le snapshot de décision, ni l'Atelier, ni la comparaison SQL au réel. Ce sera le chantier **d'intégration** après les correctifs P0 et les arbitrages de contrat / corridor / douane.
+- Cette première implémentation comprend une **prévisualisation dans l'Atelier**, avec choix explicite du circuit et de l'unité de commission ; toutes les valeurs du navigateur sont rétrogradées à `ASSUMED`, même si un utilisateur fournit un libellé de facture ou de devis. Elle n'intègre ni la persistance de devis, ni le snapshot de décision, ni la comparaison SQL au réel. Ces travaux nécessitent validation des P0 et arbitrages de contrat / corridor / douane.
 - Pas de déploiement automatique, pas de mutation des prix sur staging ou production.
 
 ## Reproduction
 
 ```bash
 node scripts/recette/pricing-floor-forecast-demo.js
-npx jest tests/unit/pricing-floor-forecast-shadow.test.js --config jest.unit.config.js --runInBand
+npx jest tests/unit/pricing-floor-forecast-shadow.test.js tests/unit/pricing-floor-forecast-preview.test.js tests/unit/admin-pricing-workspace-market-route.test.js --config jest.unit.config.js --runInBand
+npx playwright test -c playwright.catalog-pricing-integration.config.js --grep 'Prévision avant vente'
 ```
 
 Les quatre exemples ne sont que des simulations, **pas des produits sourcés, des coûts payés, des devis réels ni des prix validés**. La doctrine d'Opus et les scénarios initiaux sont disponibles dans le document reçu pour l'issue #3830.
