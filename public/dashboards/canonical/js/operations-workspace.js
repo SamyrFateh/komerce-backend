@@ -2033,6 +2033,7 @@
 
   // Mode dégradé : la confirmation depuis l'interface remplace le scan matériel ; le motif est obligatoire et tracé.
   const MANUAL_REASONS = Object.freeze([
+    ['manual_entry', 'Saisie manuelle volontaire'],
     ['scanner_unavailable', 'Scanner indisponible'], ['label_unreadable', 'Étiquette illisible'],
     ['offline', 'Hors ligne'], ['other', 'Autre (précisez)'],
   ]);
