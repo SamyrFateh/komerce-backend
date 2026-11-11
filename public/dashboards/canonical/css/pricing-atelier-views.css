@@ -843,6 +843,12 @@
 }
 
 /* Cost sequence: readable path to catalog pricing, not a client-side economic calculation. */
+.kmc-atelier-views .kmc-cockpit-costs > .kmc-economic-cost-chain {
+  grid-column: 1 / -1;
+  grid-row: auto;
+  min-width: 0;
+}
+
 .kmc-atelier-views .kmc-economic-cost-chain {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
