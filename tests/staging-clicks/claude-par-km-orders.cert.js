@@ -108,8 +108,8 @@ async function buyerOrder({buyer,phone,code}){
   // le relais par defaut peut differer de celui du compte agent E2E : choisir le relais de l'agent dans l'UI
   const want=R.agent_relais_name;R.relay_default_summary=(await page.locator('#ck-relais-summary').innerText().catch(()=>'')).replace(/\s+/g,' ');
   if(want&&!R.relay_default_summary.includes(want)){
-   const ch=page.locator('#ck-relais-section button,#ck-relais-summary button').filter({hasText:/Changer/i}).first();
-   await ch.click();await page.locator('.ck-relais-item').first().waitFor({timeout:15000}).catch(()=>{});
+   const chs=page.locator('#ck-order-modal button, #ck-order-modal [role=button]').filter({hasText:/^\s*Changer\s*$/i});R.changer_count=await chs.count();
+   await chs.nth(R.changer_count>1?1:0).click();await page.waitForTimeout(1500);await page.screenshot({path:path.join(OUT,'03b-relay-picker.png')});R.picker_text=(await page.locator('#ck-relais-overlay').innerText().catch(()=>'')).replace(/\s+/g,' ').slice(0,600);await page.locator('.ck-relais-item').first().waitFor({timeout:15000}).catch(()=>{});
    R.relay_choices=await page.locator('.ck-relais-item').allInnerTexts().then(a=>a.map(x=>x.replace(/\s+/g,' ').slice(0,80)));
    const it=page.locator('.ck-relais-item').filter({hasText:want}).first();
    chk(await it.count()>0,'agent_relay_offered_in_checkout',{want,choices:R.relay_choices});
