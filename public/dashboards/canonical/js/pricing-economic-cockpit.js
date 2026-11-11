@@ -405,24 +405,7 @@
 
   // Une contribution par vente, une couverture collective par période.
   // Aucun pourcentage synthétique n'est construit à partir d'unités hétérogènes.
-  function costReading(doc, decision) {
-    const mix = decision?.coverage?.cost_mix;
-    // No arithmetic from mixed units in the browser: the four shares must
-    // arrive as a complete, reconciled, server-authored projection.
-    const percentages = ['variable_pct', 'fixed_pct', 'direct_pct', 'mutualized_pct'];
-    const ready = mix?.status === 'READY' && mix?.basis === 'RECONCILED_MARKET_PERIOD'
-      && Boolean(mix.period?.from && mix.period?.to)
-      && percentages.every(key => mix[key] !== null && mix[key] !== undefined
-        && Number.isFinite(Number(mix[key])) && Number(mix[key]) >= 0 && Number(mix[key]) <= 100);
-    const percent = value => `${formatNumber(value, 1)} %`;
-    const section = el(doc, 'section', 'kmc-economic-reading');
-    section.dataset.economicCostReading = '';
-    section.setAttribute('aria-label', 'Comment lire les coûts et la contribution');
-    const introduction = el(doc, 'div', 'kmc-economic-reading-heading');
-    introduction.appendChild(el(doc, 'span', 'kmc-economic-reading-eyebrow', 'LOGIQUE ÉCONOMIQUE'));
-    introduction.appendChild(el(doc, 'strong', '', 'Le produit contribue. Le portefeuille couvre.'));
-    introduction.appendChild(el(doc, 'p', '', 'On mesure ce que chaque vente apporte, puis on compare les contributions réconciliées aux charges fixes de la même période.'));
-    section.appendChild(introduction);
+  function costChain(doc) {
     // The cost configuration holds mixed units (%, per order, per kg).
     // Explain the canonical sequence here, never calculate a fabricated market-wide amount.
     const chain = el(doc, 'div', 'kmc-economic-cost-chain');
@@ -456,7 +439,27 @@
       card.appendChild(el(doc, 'small', 'kmc-economic-cost-chain-detail', step.detail));
       chain.appendChild(card);
     });
-    section.appendChild(chain);
+    return chain;
+  }
+
+  function costReading(doc, decision) {
+    const mix = decision?.coverage?.cost_mix;
+    // No arithmetic from mixed units in the browser: the four shares must
+    // arrive as a complete, reconciled, server-authored projection.
+    const percentages = ['variable_pct', 'fixed_pct', 'direct_pct', 'mutualized_pct'];
+    const ready = mix?.status === 'READY' && mix?.basis === 'RECONCILED_MARKET_PERIOD'
+      && Boolean(mix.period?.from && mix.period?.to)
+      && percentages.every(key => mix[key] !== null && mix[key] !== undefined
+        && Number.isFinite(Number(mix[key])) && Number(mix[key]) >= 0 && Number(mix[key]) <= 100);
+    const percent = value => `${formatNumber(value, 1)} %`;
+    const section = el(doc, 'section', 'kmc-economic-reading');
+    section.dataset.economicCostReading = '';
+    section.setAttribute('aria-label', 'Comment lire les coûts et la contribution');
+    const introduction = el(doc, 'div', 'kmc-economic-reading-heading');
+    introduction.appendChild(el(doc, 'span', 'kmc-economic-reading-eyebrow', 'LOGIQUE ÉCONOMIQUE'));
+    introduction.appendChild(el(doc, 'strong', '', 'Le produit contribue. Le portefeuille couvre.'));
+    introduction.appendChild(el(doc, 'p', '', 'On mesure ce que chaque vente apporte, puis on compare les contributions réconciliées aux charges fixes de la même période.'));
+    section.appendChild(introduction);
     const grid = el(doc, 'div', 'kmc-economic-reading-grid');
     [
       { icon: '↗', tone: 'variable', title: 'Contribution par vente', value: 'Prix − coûts variables (N1 + N2)', detail: 'Estimée avant vente ; réconciliée après achat, expédition, douane et livraison.' },
@@ -500,6 +503,7 @@
     section.dataset.atelierViews = 'costs';
     section.appendChild(el(doc, 'p', 'kmc-economic-cost-intro',
       `Coûts et paramètres · ${marketLabel}. Les valeurs héritées et les charges propres au marché sont indiquées séparément. Les montants conservent leur unité de calcul.`));
+    section.appendChild(costChain(doc));
     const canEditVariables = payload.capabilities?.cost_overrides === true || payload.capabilities?.can_manage_costs === true;
     const canEditStructure = payload.capabilities?.can_manage_structure_events === true;
     const canManageGroup = payload.access?.role === 'global_admin'
