@@ -24,6 +24,17 @@ describe('Hub V1 — sac client physique / KOM-BOX / relais',()=>{
     expect(workspace).not.toContain("'fill-box'");
     expect(workspace).not.toContain("'Ajouter au carton'");
   });
+  test('mode dégradé Hub : vrai MANUAL avec preuve, pas un SCAN fictif',()=>{
+    expect(workspace).toContain("data-hub-bag-evidence-method");
+    expect(workspace).toContain("data-hub-bag-manual-proof");
+    expect(workspace).toContain("evidence_method:'MANUAL',evidence_ref:proofRef");
+    expect(workspace).toContain("proofRef.length<6");
+    expect(workspace).toContain("evidence_method:'SCAN',evidence_code:barcode.value.trim()");
+    expect(workspace).toContain("quantity>Math.min(left,Number(line.quantity))");
+    expect(workspace).toContain("barcode.hidden=manual");
+    expect(workspace).toContain("proof.hidden=!manual");
+  });
+
   test('le relais scanne le même sac sans présumer réception',()=>{
     expect(workspace).toContain("data-relay-bag-scanner");
     expect(workspace).toContain("relay-lookup-bag");
