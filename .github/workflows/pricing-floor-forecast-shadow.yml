@@ -1,0 +1,31 @@
+name: Pricing floor forecast shadow — pure checks
+
+on:
+  pull_request:
+    paths:
+      - 'services/pricing-floor-forecast-shadow.js'
+      - 'tests/unit/pricing-floor-forecast-shadow.test.js'
+      - 'scripts/recette/pricing-floor-forecast-demo.js'
+      - 'docs/doctrine/PRICING_FLOOR_FORECAST_SHADOW.md'
+      - '.github/workflows/pricing-floor-forecast-shadow.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pricing-floor-shadow:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Run pricing floor Jest tests (isolated, no DB)
+        run: npx jest tests/unit/pricing-floor-forecast-shadow.test.js --config jest.unit.config.js --runInBand --no-coverage
+      - name: Reproduce four hypothetical examples without DB
+        run: node scripts/recette/pricing-floor-forecast-demo.js
