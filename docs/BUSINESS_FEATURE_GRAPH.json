@@ -34713,10 +34713,6 @@
                 "targetFile": "public/boutique/js/b-cart.js"
               },
               {
-                "sourceFileId": "public/boutique/js/b-modal-buybox-shared.js",
-                "targetFile": "public/boutique/js/b-cart.js"
-              },
-              {
                 "sourceFileId": "public/boutique/tests/unit/b-modal-buybox-shared.test.js",
                 "targetFile": "public/boutique/js/b-cart.js"
               }
