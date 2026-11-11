@@ -393,6 +393,19 @@ describe('b-modal-cart', () => {
       expect(otherSize.qty).toBe(3);
     });
 
+    test('P0 — les steppers restent accessibles uniquement au modèle legacy', () => {
+      setupModalCart();
+      state.modalProduct = { id: 42, name: 'Sans SKU' };
+      state.modalProductDetail = { inventory_model: 'LEGACY_VARIANTS' };
+      state.cart = [];
+      _syncModalQtyUI();
+
+      dom.qtyPlus.click();
+      dom.qtyMinus.click();
+      expect(quickAdd).toHaveBeenCalledWith('42', dom.qtyPlus);
+      expect(quickRemove).toHaveBeenCalledWith('42', dom.qtyMinus);
+    });
+
     test('stepper sans produit ne mute rien', () => {
       setupModalCart();
       dom.qtyPlus.click();
