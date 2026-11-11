@@ -203,6 +203,7 @@ module.exports = {
       'tests/unit/market-delegation-cash-control-routes.test.js',
       'tests/unit/market-delegation-network-service.test.js',
       'tests/unit/market-delegation-network-routes.test.js',
+      'tests/unit/market-network.test.js',
       'tests/unit/market-delegation-provider-service.test.js',
       'tests/unit/market-delegation-provider-routes.test.js',
       'tests/unit/market-delegation-catalog-service.test.js',
