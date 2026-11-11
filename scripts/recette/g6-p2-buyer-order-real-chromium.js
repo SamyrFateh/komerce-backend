@@ -25,7 +25,7 @@ const run=crypto.randomBytes(4).toString('hex');
 const report={run_id:process.env.GITHUB_RUN_ID||null,run8:run.toUpperCase(),
   phase:'G6-KM-CHROMIUM-REAL-OTP-ORDER',product_ref:REF,product_id:PRODUCT,
   verdict:'NOT_PROVEN',human_attestation:false,payment_real:false,supplier_order_real:false,
-  blocked_requests:[],steps:[]};
+  blocked_requests:[],allowed_external_reads:[],steps:[]};
 const save=()=>fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2)+'\n');
 const check=(bool,code)=>{if(!bool)throw Error(code)};
 const record=(name,value)=>{report.steps.push({name,observed:value});save()};
@@ -100,6 +100,13 @@ async function browserCheckout({buyer,phone,code}){
         report.blocked_requests.push({...meta,reason:'duplicate_order_post'});
         return route.abort();
       }
+      return route.continue();
+    }
+    if(method==='POST'&&u.origin==='https://maps.googleapis.com'&&
+       u.pathname==='/\$rpc/google.internal.maps.mapsjs.v1.MapsJsInternalService/GetViewportInfo'&&
+       req.resourceType()==='xhr'){
+      // Google Maps uses POST for this read-only viewport query; keep the allowlist exact.
+      report.allowed_external_reads.push(meta);
       return route.continue();
     }
     if(method==='POST'&&u.origin==='https://m.stripe.com'&&u.pathname==='/6'&&req.resourceType()==='xhr')return route.abort();
@@ -180,7 +187,7 @@ async function browserCheckout({buyer,phone,code}){
   const response=page.waitForResponse(r=>r.url().endsWith('/api/orders')&&r.request().method()==='POST',{timeout:25000});
   await confirm.click();
   const created=await response,body=await created.json().catch(()=>null);
-  record('CANONICAL_ORDER_HTTP',{status:created.status(),reference:body?.order?.reference||null,code:body?.code||null,error:body?.error||null});
+  record('CANONICAL_ORDER_HTTP',{status:created.status(),order_id:body?.order?.id||null,reference:body?.order?.reference||null,code:body?.code||null,error:body?.error||null});
   check(created.status()===201&&!!body?.order?.id,'G6_CANONICAL_ORDER_POST_NOT_201');
   await page.screenshot({path:path.join(OUT,'05-real-order-confirmation.png')});
   check(report.blocked_requests.length===0,'G6_UNEXPECTED_BROWSER_WRITE');
