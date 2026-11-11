@@ -25,7 +25,7 @@ const run=crypto.randomBytes(4).toString('hex');
 const report={run_id:process.env.GITHUB_RUN_ID||null,run8:run.toUpperCase(),
   phase:'G6-KM-CHROMIUM-REAL-OTP-ORDER',product_ref:REF,product_id:PRODUCT,
   verdict:'NOT_PROVEN',human_attestation:false,payment_real:false,supplier_order_real:false,
-  blocked_requests:[],steps:[]};
+  blocked_requests:[],allowed_read_posts:[],steps:[]};
 const save=()=>fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2)+'\n');
 const check=(bool,code)=>{if(!bool)throw Error(code)};
 const record=(name,value)=>{report.steps.push({name,observed:value});save()};
@@ -94,6 +94,14 @@ async function browserCheckout({buyer,phone,code}){
     if(['GET','HEAD','OPTIONS'].includes(method))return route.continue();
     const u=new URL(req.url());
     const meta={method,origin:u.origin,path:u.pathname,type:req.resourceType()};
+    // Google Maps uses POST for this read-only viewport query while rendering the
+    // selected relay map. Allow only this exact XHR endpoint; keep all other
+    // non-allowlisted browser POSTs blocked.
+    if(method==='POST'&&u.origin==='https://maps.googleapis.com'&&
+       u.pathname==='/$rpc/google.internal.maps.mapsjs.v1.MapsJsInternalService/GetViewportInfo'&&
+       req.resourceType()==='xhr'){
+      report.allowed_read_posts.push(meta);save();return route.continue();
+    }
     if(method==='POST'&&u.origin===ORIGIN&&
        ['/api/auth/otp/request','/api/auth/otp/verify','/api/orders'].includes(u.pathname)){
       if(u.pathname==='/api/orders'&&++orderRequests!==1){
@@ -132,14 +140,35 @@ async function browserCheckout({buyer,phone,code}){
   const item=page.locator('#k-search-dropdown .k-search-item[data-id="'+PRODUCT+'"]');
   await item.waitFor({state:'visible',timeout:25000});await item.click();
   await page.locator('#k-modal-name').waitFor({state:'visible',timeout:13000});
+  // Wait for the canonical desktop Product Detail renderer, not a legacy carousel
+  // image that may already be loaded before SKU options finish rendering.
+  await page.locator('#k-modal-variants [data-pdc5-root]').waitFor({state:'attached',timeout:20000});
+  const variantEvidence=await page.locator('#k-modal-variants').evaluate(el=>({
+   root:!!el.querySelector('[data-pdc5-root]'),
+   axes:[...el.querySelectorAll('.k-vg')].map(group=>({
+    key:group.dataset.axisKey,
+    options:[...group.querySelectorAll('button[data-option-value]')].map(button=>({
+     value:button.dataset.optionValue,state:button.dataset.optionState,
+     selected:button.getAttribute('aria-pressed')
+    }))
+   }))
+  }));
+  record('PDP_VARIANT_MATRIX',variantEvidence);
   await page.waitForFunction(()=>[...document.querySelectorAll('#k-modal-carousel-track img')].some(x=>x.complete&&x.naturalWidth>0),null,{timeout:25000});
   const add=page.locator('#k-add-cart-btn');
   for(let n=0;n<12&&!await add.isEnabled();n++){
    const options=page.locator('#k-modal-variants button[data-option-state="AVAILABLE"][data-option-value]:not([aria-pressed="true"])');
    if(!await options.count())break;await options.first().click();
   }
-  check(await add.isEnabled(),'NO_PURCHASABLE_VARIANT');
+  const addEnabled=await add.isEnabled();
   await page.screenshot({path:path.join(OUT,'02-real-authenticated-product.png')});
+  record('PDP_SELECTION_RESULT',{
+   add_enabled:addEnabled,
+   selected_options:await page.locator('#k-modal-variants button[data-option-value][aria-pressed="true"]').evaluateAll(buttons=>buttons.map(button=>({
+    axis:button.closest('.k-vg')?.dataset.axisKey,value:button.dataset.optionValue
+   })))
+  });
+  check(addEnabled,'NO_PURCHASABLE_VARIANT');
   const before=Number(await page.locator('#k-modal-cart-badge').innerText().catch(()=>'0'))||0;
   await add.click();
   await page.waitForFunction(n=>Number(document.querySelector('#k-modal-cart-badge')?.textContent||0)>n,before,{timeout:10000});
