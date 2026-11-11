@@ -8,7 +8,7 @@
  * @outputs       economic_reference_and_market_decision_inputs
  * @depends       db, services/pricing-cdr.js, services/pricing-output.js
  * @used-by       routes/modules.js, routes/pricing.js, routes/sourcing-scanner.js, services/apply-pricing-updates.js, services/order-cost-snapshot.js, services/pricing-dashboard.js, services/pricing-recommend.js, services/supplier-catalog-scanner.js, services/suppliers/catalog-import-orchestrator.js
- * @db-read       order_items, orders, products
+ * @db-read       order_items, orders, products, relais
  * @db-write      none
  * @db-txn        none
  * @doctrine      fixed_structure_never_fabricates_sku_price, market_bounds_possible_human_decides, contribution_covers_structure_collectively
