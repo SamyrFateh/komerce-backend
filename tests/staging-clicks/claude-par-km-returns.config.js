@@ -4,7 +4,7 @@ const {defineConfig}=require('@playwright/test');
 const BASE='https://komerce-backend-production.up.railway.app';
 if(process.env.E2E_STAGING_BASE_URL!==BASE)throw Error('CLAUDE_PAR_STAGING_ONLY');
 module.exports=defineConfig({
-  testDir:'tests/staging-clicks',testMatch:'claude-par-km-returns.spec.js',
+  testDir:__dirname,testMatch:'claude-par-km-returns.spec.js',
   outputDir:'test-results/claude-par-km-returns/raw',
   timeout:1500000,retries:0,workers:1,fullyParallel:false,
   reporter:[['line'],['json',{outputFile:'test-results/claude-par-km-returns/playwright.json'}]],
