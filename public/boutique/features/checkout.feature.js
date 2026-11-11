@@ -107,7 +107,7 @@ module.exports = {
     'le checkout final présente des cartes indépendantes sans fausse progression ; son chrome est neutre, les moyens de paiement restent compacts et le wallet ne devient jamais une étape obligatoire',
     'le checkout rend sa coque et son récapitulatif immédiatement, indépendamment du chargement des SDK de paiement',
     'sur desktop, la colonne transactionnelle ne possède aucun scroll vertical imbriqué : le body checkout reste l’unique scroll owner du tunnel',
-    'une intention Acheter maintenant finalise uniquement la ligne courante explicitement transmise, sans absorber le panier personnel existant',
+    'une intention Acheter maintenant a la source buy-now, finalise uniquement la variante explicitement transmise, sans ajouter ni supprimer de lignes du panier personnel, y compris après succès',
     'le rayon récemment consulté est limité au checkout du panier personnel ; il ne sélectionne jamais une variante implicitement et ne modifie CheckoutSelection qu’après une action Ajouter explicite',
     'le rail de suggestions (checkout de liste partagée, freeze 22-08-2026) ne modifie JAMAIS CheckoutSelection.items ni le récapitulatif figé affiché — tout ajout va exclusivement dans state.cart (panier personnel, entité séparée), jamais fusionné avec la liste payée. Toast distinct ("Ajouté à votre panier personnel") pour ne jamais laisser croire à une modification de la liste figée',
     'le rail de suggestions du checkout de liste partagée échoue silencieusement (jamais un throw, jamais un état de chargement bloquant) — une suggestion indisponible ne doit jamais dégrader le reste du tunnel checkout',

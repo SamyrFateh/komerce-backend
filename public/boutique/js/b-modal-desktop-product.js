@@ -215,18 +215,23 @@ function renderActions(detail, selection) {
   if (buyNowBtn) buyNowBtn.textContent = '⚡ Acheter';
   wireBuyNowButton(buyNowBtn);
 
-  // T-023/D11 : layout AVAILABLE_EMPTY (Ajouter + Acheter côte à côte) vs
-  // AVAILABLE_FILLED (stepper + Acheter) — porté par modal-shell.css via
-  // .k-modal-actions--filled. État dérivé de la présence du produit dans
-  // le panier (state.cart, clé product.id), pas de la sélection SKU.
+  // P0 : pour les produits SKU, le renderer ne connaît pas la ligne panier
+  // correspondant à la taille/couleur courante. Une autre variante déjà au
+  // panier ne doit jamais masquer « Ajouter » : b-modal-cart.js est l'unique
+  // owner de --filled SKU et synchronise l'état exact après le rendu.
   const actionsEl = modalZone('.k-modal-actions');
   if (actionsEl) {
-    const productId = detail.product?.id;
-    const inCart = Boolean(
-      productId != null
-      && (state.cart || []).some((item) => String(item.product?.id) === String(productId) && (item.qty || 0) > 0)
-    );
-    actionsEl.classList.toggle('k-modal-actions--filled', inCart);
+    if (isSku) {
+      actionsEl.classList.remove('k-modal-actions--filled');
+    } else {
+      // Compatibilité produits simples/legacy : présence product-id-first.
+      const productId = detail.product?.id;
+      const inCart = Boolean(
+        productId != null
+        && (state.cart || []).some((item) => String(item.product?.id) === String(productId) && (item.qty || 0) > 0)
+      );
+      actionsEl.classList.toggle('k-modal-actions--filled', inCart);
+    }
   }
 }
 

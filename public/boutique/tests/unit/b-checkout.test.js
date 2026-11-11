@@ -165,7 +165,7 @@ const {
   digitsOnly, normalizeLocal, prettifyLocal, buildE164,
   checkoutCart, closeOrderModal, updateWalletDisplay, checkWalletBalance,
   submitOrder, renderOrderSuccess, renderCheckout,
-  buildCheckoutRecentChoices,
+  buildCheckoutRecentChoices, buildCheckoutSelection,
   buildCheckoutFulfillmentPreviewPath, summarizeCheckoutFulfillment,
   checkoutQuoteKey, resolveCheckoutPayable,
   makeInput, makePhoneInput, makeIntlPhoneInput,
@@ -224,6 +224,23 @@ describe('b-checkout', () => {
     state.viewedHistory = [];
     scroll.savedY = 0;
     getCurrentIdentity.mockReturnValue(null);
+  });
+
+  test('P0 — Acheter maintenant isole le checkout et conserve le panier personnel', () => {
+    const existing = { product: { id: 'robe', sku_id: 'sku-xl', price_kmf: 7990 },
+      sku_id: 'sku-xl', qty: 2, variant_combo: { Taille: 'XL' } };
+    state.cart = [existing];
+    const immediate = { product: { id: 'robe', sku_id: 'sku-m', price_kmf: 7990 },
+      sku_id: 'sku-m', qty: 1, variant_combo: { Taille: 'M' } };
+
+    const selection = buildCheckoutSelection([immediate], { origin: 'BUY_NOW' });
+    expect(selection.source).toBe('buy-now');
+    expect(selection.items).toHaveLength(1);
+    expect(selection.items[0].sku_id).toBe('sku-m');
+    state.orderData = { payment_mode: 'cash_relais', checkoutSelection: selection };
+    renderCheckout();
+    expect(dom.orderBody.querySelector('.ck-recap-origin-title').textContent).toBe('Achat immédiat');
+    expect(state.cart).toEqual([existing]);
   });
 
   describe('total présenté = devis serveur (livraison comprise)', () => {
@@ -492,6 +509,35 @@ describe('b-checkout', () => {
       expect(state.orderData.checkoutSelection.items[0].checkout_included).toBe(true);
       expect(state.orderData.checkoutSelection.total).toBe(43000);
       expect(rows[0].classList.contains('is-excluded')).toBe(false);
+    });
+
+    it('P0 — checkout : deux tailles du même produit restent lisibles et indépendantes', () => {
+      const robe = { id: 'robe-7', name: 'Robe Navy Blue', price_kmf: 7990 };
+      state.orderData = {
+        payment_mode: 'cash_relais',
+        checkoutSelection: {
+          source: 'personal-cart',
+          sourceId: null,
+          items: [
+            { product: { ...robe, sku_id: 'sku-xl' }, sku_id: 'sku-xl', qty: 1,
+              variant_combo: { Couleur: 'Navy Blue', Taille: 'XL' } },
+            { product: { ...robe, sku_id: 'sku-m' }, sku_id: 'sku-m', qty: 2,
+              variant_combo: { Couleur: 'Navy Blue', Taille: 'M' } },
+          ],
+          total: 23970,
+        },
+      };
+      renderCheckout();
+      const rows = dom.orderBody.querySelectorAll('.ck-recap-item');
+      expect(rows).toHaveLength(2);
+      expect(rows[0].querySelector('.ck-recap-item-variant').textContent).toContain('Taille : XL');
+      expect(rows[1].querySelector('.ck-recap-item-variant').textContent).toContain('Taille : M');
+      expect(rows[0].querySelector('.ck-recap-item-price').textContent).toContain('7990');
+      expect(rows[1].querySelector('.ck-recap-item-price').textContent).toContain('15980');
+      const before = checkoutQuoteKey('relay-1', state.orderData.checkoutSelection.items);
+      const changed = state.orderData.checkoutSelection.items.map((item) => ({ ...item }));
+      changed[1].variant_combo = { Couleur: 'Navy Blue', Taille: 'L' };
+      expect(checkoutQuoteKey('relay-1', changed)).not.toBe(before);
     });
 
     it('panier personnel : la même checkbox pilote l’inclusion sans supprimer la ligne', () => {

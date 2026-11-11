@@ -72,6 +72,37 @@ describe('b-modal-cart', () => {
     state.cart = [];
   });
 
+  test('P0 — options disponibles, ruptures et combinaisons interdites : états accessibles réversibles', () => {
+    const makeOption = (stateName) => {
+      const button = document.createElement('button');
+      button.dataset.optionValue = 'M';
+      button.dataset.optionState = stateName;
+      modal.appendChild(button);
+      return button;
+    };
+    const available = makeOption('AVAILABLE');
+    const outOfStock = makeOption('OUT_OF_STOCK');
+    const incompatible = makeOption('INCOMPATIBLE');
+    const unknown = makeOption('OTHER');
+
+    _modalCartTestApi.reconcileVariantAvailabilityUI();
+
+    expect(available.hasAttribute('aria-disabled')).toBe(false);
+    expect(available.dataset.optionUnavailableReason).toBeUndefined();
+    expect(outOfStock.getAttribute('aria-disabled')).toBe('true');
+    expect(outOfStock.dataset.optionUnavailableReason).toBe('Rupture de stock');
+    expect(incompatible.dataset.optionUnavailableReason).toBe('Combinaison non proposée');
+    expect(unknown.getAttribute('aria-disabled')).toBe('true');
+    expect(unknown.dataset.optionUnavailableReason).toBeUndefined();
+
+    // Un choix peut redevenir achetable après changement de couleur.
+    outOfStock.dataset.optionState = 'AVAILABLE';
+    _modalCartTestApi.reconcileVariantAvailabilityUI();
+    expect(outOfStock.hasAttribute('aria-disabled')).toBe(false);
+    expect(outOfStock.dataset.optionUnavailable).toBeUndefined();
+    expect(outOfStock.dataset.optionUnavailableReason).toBeUndefined();
+  });
+
   describe('helpers de résolution ligne', () => {
     test('normalizedCombo est stable, trié et défensif', () => {
       expect(normalizedCombo(null)).toBe('');
@@ -118,6 +149,16 @@ describe('b-modal-cart', () => {
 
       setSkuSelection('sku-red', null);
       state.cart = [{ product: { id: 42, sku_id: 'other' }, qty: 2 }];
+      expect(currentModalCartItem()).toBeNull();
+    });
+
+    test('P0 — combo identique mais SKU explicite différent : jamais la ligne courante', () => {
+      setSkuSelection('sku-m', { color: 'Navy Blue', size: 'M' });
+      state.cart = [{
+        product: { id: 42, sku_id: 'sku-xl' },
+        variant_combo: { color: 'Navy Blue', size: 'M' },
+        qty: 3,
+      }];
       expect(currentModalCartItem()).toBeNull();
     });
 
@@ -301,6 +342,24 @@ describe('b-modal-cart', () => {
       expect(actions.classList.contains('k-modal-actions--filled')).toBe(true);
     });
 
+    test('P0 — cart:update côté drawer/side-cart resynchronise le compteur SKU exact', () => {
+      setupModalCart();
+      setSkuSelection('sku-m', { color: 'Navy Blue', size: 'M' });
+      state.cart = [
+        { product: { id: 42, sku_id: 'sku-m' }, qty: 1,
+          variant_combo: { color: 'Navy Blue', size: 'M' } },
+        { product: { id: 42, sku_id: 'sku-xl' }, qty: 7,
+          variant_combo: { color: 'Navy Blue', size: 'XL' } },
+      ];
+
+      bus.emit('cart:update');
+      expect(dom.modalQtyVal.textContent).toBe('1');
+      state.cart[0].qty = 3; // mutation opérée par le side-cart
+      bus.emit('cart:update');
+      expect(dom.modalQtyVal.textContent).toBe('3');
+      expect(state.cart[1].qty).toBe(7);
+    });
+
     test('qtyPlus appelle quickAdd puis resynchronise', () => {
       setupModalCart();
       state.modalProduct = { id: 11 };
@@ -342,6 +401,45 @@ describe('b-modal-cart', () => {
       dom.qtyMinus.click();
       expect(setQty).toHaveBeenCalledWith('42', 1, selectedLine);
       expect(quickRemove).not.toHaveBeenCalled();
+    });
+
+    test('P0 — autre variante seulement au panier : +/- SKU ne mute pas la mauvaise taille', () => {
+      setupModalCart();
+      setSkuSelection('sku-blue', { color: 'Bleu', size: 'M' });
+      const otherSize = {
+        product: { id: 42, sku_id: 'sku-red' },
+        variant_combo: { color: 'Rouge', size: 'XL' },
+        qty: 3,
+      };
+      state.cart = [otherSize];
+      _syncModalQtyUI();
+
+      expect(actions.classList.contains('k-modal-actions--filled')).toBe(false);
+      dom.qtyPlus.click();
+      dom.qtyMinus.click();
+
+      expect(quickAdd).not.toHaveBeenCalled();
+      expect(quickRemove).not.toHaveBeenCalled();
+      expect(setQty).not.toHaveBeenCalled();
+      expect(otherSize.qty).toBe(3);
+    });
+
+    test('P0 — les steppers restent accessibles uniquement au modèle legacy', () => {
+      setupModalCart();
+      state.modalProduct = { id: 42, name: 'Sans SKU' };
+      state.modalProductDetail = { inventory_model: 'LEGACY_VARIANTS' };
+      state.cart = [];
+      _syncModalQtyUI();
+
+      // Sans ligne, les vrais boutons legacy sont désactivés. Vérifier
+      // séparément la délégation historique même si un événement synthétique
+      // arrive sur un contrôle disabled (button.click() n'en émet aucun).
+      expect(dom.qtyPlus.disabled).toBe(true);
+      expect(dom.qtyMinus.disabled).toBe(true);
+      dom.qtyPlus.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      dom.qtyMinus.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      expect(quickAdd).toHaveBeenCalledWith('42', dom.qtyPlus);
+      expect(quickRemove).toHaveBeenCalledWith('42', dom.qtyMinus);
     });
 
     test('stepper sans produit ne mute rien', () => {
