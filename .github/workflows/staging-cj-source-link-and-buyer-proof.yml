@@ -104,7 +104,9 @@ jobs:
            browser=await chromium.launch({headless:true});const buyer=await browser.newContext({viewport:{width:1440,height:1000},locale:'fr-FR'});
            const page=await buyer.newPage();await page.route('**/*',route=>{
             if(['GET','HEAD','OPTIONS'].includes(route.request().method()))return route.continue();
-            report.blocked_mutations.push(new URL(route.request().url()).pathname);return route.abort();
+            const request=route.request();const url=new URL(request.url());
+            // Record safe routing metadata only — never query strings, tokens or payloads.
+            report.blocked_mutations.push({method:request.method(),origin:url.origin,path:url.pathname,resource_type:request.resourceType()});return route.abort();
            });
            for(const record of report.products){await version();const expected=TARGETS.find(t=>t[1]===record.id);
             const response=await buyer.request.get(BASE+'/api/products/'+record.id+'/detail?market=KM');const body=await response.json();record.public_detail={http:response.status(),body};save();
