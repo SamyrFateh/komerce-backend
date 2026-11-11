@@ -229,6 +229,14 @@ for (const [name, viewport] of [['1440', { width: 1440, height: 900 }], ['390', 
       await expect(page.locator('.kmc-metric-card').first()).toBeHidden();
       const costs = page.locator('.kmc-cockpit-costs');
       await expect(costs).toHaveAttribute('data-cost-layout', 'columns');
+      const costChain = costs.locator('[data-cost-formula-chain]');
+      await expect(costChain).toBeVisible();
+      await expect(costChain.locator('.kmc-economic-cost-chain-step')).toHaveCount(4);
+      await expect(costChain).toContainText('N1 · Coût rendu Relais');
+      await expect(costChain).toContainText('N2 · Variables business');
+      await expect(costChain).toContainText('N1 + N2');
+      await expect(costChain).toContainText('Plancher → prix → contribution');
+      await expect(costChain).not.toContainText('0 KMF');
       await expect(page.locator('[data-cost-layout-button]')).toHaveCount(0);
       const cards = page.locator('.kmc-economic-family-grid > .kmc-cockpit-cost-card');
       await expect(cards).toHaveCount(3);
