@@ -25,7 +25,7 @@ const DATE = '2026-11-11';
 const proof = { status: 'ASSUMED', reference: 'DEMONSTRATION uniquement — aucun devis ni facture',
   as_of: DATE, expires_on: '2026-12-11' };
 const l = (code, stage, basis, value, options = {}) =>
-  ({ code, stage, basis, value, evidence: proof, market_code: 'KM', ...options });
+  ({ code, stage, basis, value, evidence: proof, market_code: 'KM', circuit: 'import', ...options });
 
 const corridors = {
   favorable:   { fret: 150, lot: 5, forfait: 80000, douane: 0, final: 400, bank: 1, casse: .5, nonpickup: 2 },
