@@ -156,9 +156,28 @@ async function browserCheckout({buyer,phone,code}){
   record('PDP_VARIANT_MATRIX',variantEvidence);
   await page.waitForFunction(()=>[...document.querySelectorAll('#k-modal-carousel-track img')].some(x=>x.complete&&x.naturalWidth>0),null,{timeout:25000});
   const add=page.locator('#k-add-cart-btn');
-  for(let n=0;n<12&&!await add.isEnabled();n++){
-   const options=page.locator('#k-modal-variants button[data-option-state="AVAILABLE"][data-option-value]:not([aria-pressed="true"])');
-   if(!await options.count())break;await options.first().click();
+  // Select axes in canonical Product Detail order. A global "first unselected"
+  // selector can oscillate between available colors and never choose a size.
+  // Each click below is a genuine Playwright pointer gesture; the next axis
+  // is read only AFTER the current selection's DOM rerender has completed.
+  const axisLocator=page.locator('#k-modal-variants [data-axis-key]');
+  const axisCount=await axisLocator.count();
+  check(axisCount>0,'G6_VARIANT_AXES_NOT_RENDERED');
+  for(let axisIndex=0;axisIndex<axisCount;axisIndex++){
+   const axis=axisLocator.nth(axisIndex);
+   const axisKey=await axis.getAttribute('data-axis-key');
+   const selected=axis.locator('button[data-option-state="AVAILABLE"][aria-pressed="true"]');
+   if(await selected.count())continue;
+   const choices=axis.locator('button[data-option-state="AVAILABLE"][data-option-value]');
+   if(!await choices.count())throw Error('G6_NO_AVAILABLE_OPTION_IN_AXIS_'+axisKey);
+   const choice=choices.first();
+   const value=await choice.getAttribute('data-option-value');
+   await choice.click();
+   await page.waitForFunction(({index,selectedValue})=>{
+    const root=document.querySelectorAll('#k-modal-variants [data-axis-key]')[index];
+    return !!root && Array.from(root.querySelectorAll('button[data-option-value]')).some(
+      b=>b.dataset.optionValue===selectedValue && b.getAttribute('aria-pressed')==='true');
+   },{index:axisIndex,selectedValue:value},{timeout:8000});
   }
   const addEnabled=await add.isEnabled();
   await page.screenshot({path:path.join(OUT,'02-real-authenticated-product.png')});
