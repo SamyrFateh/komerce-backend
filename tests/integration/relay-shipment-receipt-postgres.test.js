@@ -201,14 +201,14 @@ if (!process.env.DATABASE_URL) {
     await expect(workspace.scanParcel(pa.reference, 'ship', market, { id: admin, role: 'admin' }, { reason: 'scanner_unavailable' })).rejects.toBeTruthy();
     expect((await q('SELECT status FROM parcels WHERE id=$1', [pa.id])).rows[0].status).toBe(statusBefore);
     expect((await q("SELECT count(*)::int AS n FROM scan_events WHERE parcel_id=$1 AND event_type='shipped' AND status='applied' AND entry_mode='manual_confirmation'", [pa.id])).rows[0].n).toBe(0);
-    // chemin nominal en mode manuel : la remise est appliquée par le même moteur et tracée « dégradé »
+    // P0 #3900 : aucun mode manuel (y compris label_unreadable) ne peut
+    // contourner le code de retrait client dans ce workspace logistique.
     const pb = await refOf(items.b.itemId);
     await q('UPDATE orders SET relais_id=$2 WHERE id=$1', [items.b.orderId, relaisB]);
-    const done = await workspace.scanParcel(pb.reference, 'collect', market, { id: admin, role: 'admin' }, { reason: 'label_unreadable', note: 'QR abîmé' });
-    expect(done).toBeTruthy();
-    const applied = (await q("SELECT entry_mode, metadata, status FROM scan_events WHERE parcel_id=$1 AND event_type='customer_collected' AND status='applied' ORDER BY created_at DESC LIMIT 1", [pb.id])).rows[0];
-    expect(applied).toMatchObject({ entry_mode: 'manual_confirmation', status: 'applied' });
-    expect(applied.metadata).toMatchObject({ manual_reason: 'label_unreadable', manual_note: 'QR abîmé' });
+    await expect(workspace.scanParcel(pb.reference, 'collect', market, { id: admin, role: 'admin' }, { reason: 'label_unreadable', note: 'QR abîmé' }))
+      .rejects.toMatchObject({ code: 'PICKUP_CODE_REQUIRED', status: 409 });
+    const applied = (await q("SELECT count(*)::int AS n FROM scan_events WHERE parcel_id=$1 AND event_type='customer_collected' AND status='applied'", [pb.id])).rows[0];
+    expect(applied.n).toBe(0);
     // sans motif : aucun appel moteur, aucune ligne
     const before = (await q('SELECT count(*)::int AS n FROM scan_events WHERE parcel_id=$1', [pa.id])).rows[0].n;
     await expect(workspace.scanParcel(pa.reference, 'ship', market, { id: admin, role: 'admin' })).rejects.toMatchObject({ code: 'manual_reason_required' });
