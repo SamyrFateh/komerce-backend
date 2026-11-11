@@ -34831,6 +34831,10 @@
               },
               {
                 "sourceFileId": "public/boutique/js/b-modal-mobile-product.js",
+                "targetFile": "public/boutique/js/b-bus.js"
+              },
+              {
+                "sourceFileId": "public/boutique/js/b-modal-mobile-product.js",
                 "targetFile": "public/boutique/js/b-utils.js"
               },
               {
@@ -34840,6 +34844,10 @@
               {
                 "sourceFileId": "public/boutique/js/b-modal-desktop-product.js",
                 "targetFile": "public/boutique/js/b-store.js"
+              },
+              {
+                "sourceFileId": "public/boutique/js/b-modal-desktop-product.js",
+                "targetFile": "public/boutique/js/b-bus.js"
               },
               {
                 "sourceFileId": "public/boutique/js/b-modal-desktop-product.js",
@@ -34998,8 +35006,16 @@
                 "targetFile": "public/boutique/js/b-store.js"
               },
               {
+                "sourceFileId": "public/boutique/tests/unit/b-modal-mobile-product.test.js",
+                "targetFile": "public/boutique/js/b-bus.js"
+              },
+              {
                 "sourceFileId": "public/boutique/tests/unit/b-modal-desktop-product.test.js",
                 "targetFile": "public/boutique/js/b-store.js"
+              },
+              {
+                "sourceFileId": "public/boutique/tests/unit/b-modal-desktop-product.test.js",
+                "targetFile": "public/boutique/js/b-bus.js"
               },
               {
                 "sourceFileId": "public/boutique/tests/unit/b-modal-desktop-product.test.js",
