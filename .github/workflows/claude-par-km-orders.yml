@@ -1,0 +1,53 @@
+# Campagne CLAUDE-PAR-20261111 (exécutant A) : commande boutique KM + cash relais en Chromium. Branche dédiée uniquement.
+name: Claude PAR KM - commande boutique et cash relais (Chromium)
+on:
+  push:
+    branches: [cert/claude-par-km-orders]
+    paths:
+      - '.github/workflows/claude-par-km-orders.yml'
+      - 'scripts/recette/claude-par-km-orders.js'
+permissions:
+  contents: read
+concurrency:
+  group: komerce-staging-local-stock-cert
+  cancel-in-progress: false
+jobs:
+  orders:
+    if: github.actor == github.repository_owner
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_TARGET_ENV: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      EXPECTED_RAILWAY_ENVIRONMENT: staging
+      KOMERCE_STAGING_RESET_DB_PIN: ${{ vars.STAGING_DB_PIN }}
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      E2E_AGENT_RELAIS_EMAIL: ${{ secrets.E2E_AGENT_RELAIS_EMAIL }}
+      E2E_AGENT_RELAIS_PASSWORD: ${{ secrets.E2E_AGENT_RELAIS_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Pin runtime and verify DB target
+        run: |
+          node scripts/recette/resolve-staging-deploy-pin.js
+          node scripts/recette/target-guard.js
+      - run: npx playwright install --with-deps chromium
+      - name: Commande client, cash relais, double validation, autre marche
+        run: node scripts/recette/claude-par-km-orders.js
+      - name: Artefacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: claude-par-km-orders-${{ github.run_id }}
+          path: test-results/claude-par-km-orders/
+          if-no-files-found: warn
+          retention-days: 30
