@@ -210,14 +210,21 @@ function computeFixedCostAllocation(charges, finance) {
 // cumulé (qui rendait le résultat dépendant de l'ordre de chargement) :
 //   purchase : prix d'achat                (product_purchase, défaut)
 //   cif      : achat + fret au volume      (assurance, transitaire %, droits)
-//   price    : prix encaissé               (paiement, provision de risque)
-const PRICE_BASED_CATEGORIES = new Set(['payment', 'paiement', 'risk_provision']);
+//   price    : prix encaissé               (paiement, non-collecte)
+//   (casse / perte en transport = risque sur la valeur exposée → CIF)
+const PRICE_BASED_CATEGORIES = new Set(['payment', 'paiement']);
 const CIF_BASED_CATEGORIES = new Set(['freight', 'transit', 'port_transitary', 'customs', 'douane']);
 const MEASURED_SOURCES = new Set(['real', 'measured', 'quoted', 'observed', 'contract', 'manual']);
-const CUSTOMS_INSPECTION_KEY = /inspection|expertise|controle|contr[oô]le|frais/i;
+// Listes fermées (aucune classification par nom de clé) : tout composant douane absent de
+// CUSTOMS_INSPECTION_KEYS compte comme DROITS ; tout risque absent de PRICE_BASED_RISK_KEYS
+// est assis sur la valeur exposée (CIF), pas sur l'encaissement.
+const CUSTOMS_INSPECTION_KEYS = new Set(['frais_inspection_douane_kmf']);
+const PRICE_BASED_RISK_KEYS = new Set(['provision_non_collecte_pct']);
+const isCustomsInspection = (c) => CUSTOMS_INSPECTION_KEYS.has(c.key);
 
-function pctBasisFor(category) {
+function pctBasisFor(category, key) {
   if (PRICE_BASED_CATEGORIES.has(category)) return 'price';
+  if (category === 'risk_provision') return PRICE_BASED_RISK_KEYS.has(key) ? 'price' : 'cif';
   if (CIF_BASED_CATEGORIES.has(category)) return 'cif';
   return 'purchase';
 }
@@ -231,8 +238,9 @@ function isVolumeFreightComponent(c) {
 
 // Qualité des entrées (distincte de la santé économique) : part du coût variable
 // issue de lignes estimées + replis poids / volume / catégorie / fret.
-// « majorité » (> 50 %) n'est pas un coefficient métier : c'est le seuil de bascule
-// entre « estimé en partie » et « essentiellement estimé ».
+// Règle sans seuil numérique, fondée sur la confiance portée par les composants :
+//   high : aucune ligne estimée et aucun repli ; low : achat/catégorie inconnus, repli `default`
+//   ou ligne de confiance `low` ; medium : le reste. La part estimée est informative seulement.
 function buildInputQuality({ allocations, meta, categoryKnown, purchaseKnown, dutiesKnown }) {
   const lines = (allocations || []).filter(a => a.economic_nature !== 'fixed' && a.allocated_cost_kmf > 0);
   const total = lines.reduce((s, a) => s + a.allocated_cost_kmf, 0);
@@ -247,9 +255,10 @@ function buildInputQuality({ allocations, meta, categoryKnown, purchaseKnown, du
   const unknown = [];
   if (!purchaseKnown) unknown.push('purchase_price');
   if (!dutiesKnown) unknown.push('customs_duties');
-  let level = 'high';
-  if (share > 0 || fallbacks.length || unknown.length) level = 'medium';
-  if (share > 50 || !purchaseKnown || fallbacks.some(f => f.source === 'default') || !categoryKnown) level = 'low';
+  let level = 'medium';
+  if (!estimatedLines.length && !fallbacks.length) level = 'high';
+  if (!purchaseKnown || !categoryKnown || fallbacks.some(f => f.source === 'default')
+    || lines.some(a => a.component_confidence === 'low')) level = 'low';
   return {
     level,
     estimated_cost_share_pct: share,
@@ -403,7 +412,7 @@ function computeCDR(product, ctx = {}) {
     };
 
     if (c.unit === 'pct') {
-      pending.push({ c, rate: v / 100, basis: pctBasisFor(c.category) });
+      pending.push({ c, rate: v / 100, basis: pctBasisFor(c.category, c.key) });
       continue;
     }
     switch (c.unit) {
@@ -469,9 +478,9 @@ function computeCDR(product, ctx = {}) {
   // les droits restent `not_estimated` tant qu'aucun composant de DROITS n'existe.
   const customsComponents = applicable.filter(c => c.category === 'customs' || c.category === 'douane');
   const customsInspectionKmf = r(customsComponents
-    .filter(c => CUSTOMS_INSPECTION_KEY.test(c.key || ''))
+    .filter(c => isCustomsInspection(c))
     .reduce((s, c) => s + details._allocations.filter(a => a.component_key === c.key).reduce((t, a) => t + a.allocated_cost_kmf, 0), 0));
-  const dutiesComponents = customsComponents.filter(c => !CUSTOMS_INSPECTION_KEY.test(c.key || ''));
+  const dutiesComponents = customsComponents.filter(c => !isCustomsInspection(c));
   const customsDutiesKmf = r(dutiesComponents
     .reduce((s, c) => s + details._allocations.filter(a => a.component_key === c.key).reduce((t, a) => t + a.allocated_cost_kmf, 0), 0));
   const customsEstimateStatus = dutiesComponents.length > 0 ? 'cost_component' : 'not_estimated';

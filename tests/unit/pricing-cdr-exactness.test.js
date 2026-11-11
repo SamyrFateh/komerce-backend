@@ -26,7 +26,7 @@ const mk = (key, category, default_value, unit, allocation_method = null, extra 
   ({ key, category, default_value, unit, allocation_method, applies_to: 'all', source: 'default', confidence: 'medium', ...extra });
 const COMPONENTS = [
   mk('frais_bancaires_achat_pct', 'product_purchase', 1.5, 'pct'),
-  mk('sourcing_temps_acheteur_kmf', 'sourcing', 200, 'kmf_per_order'),
+  mk('sourcing_temps_acheteur_kmf', 'sourcing', 200, 'kmf_per_order', null, { confidence: 'low' }),
   mk('hub_controle_kmf', 'hub', 150, 'kmf_per_parcel'),
   mk('fret_maritime_eur_m3', 'freight', 180, 'eur', 'by_volume'),
   mk('assurance_transport_pct', 'freight', 0.5, 'pct'),
@@ -136,13 +136,14 @@ describe('P0-1 · assiettes % explicites, indépendantes de l\'ordre', () => {
     expect(line('transitaire_kmf')).toMatchObject({ pct_basis: 'cif', allocated_cost_kmf: Math.round(cif * 0.03) });
     expect(line('stripe_pct')).toMatchObject({ pct_basis: 'price', allocation_basis: 'price' });
     expect(line('provision_non_collecte_pct').pct_basis).toBe('price');
+    expect(line('provision_casse_transport_pct')).toMatchObject({ pct_basis: 'cif', allocated_cost_kmf: Math.round(cif * 0.01) });
   });
 });
 
 describe('P0-1 · frais de paiement et non-collecte sur le prix', () => {
   it('plancher = V·(1+s)/(1−Σ%prix·(1+s)) et frais = taux x prix de résolution', () => {
     const c = run(cfg(), undefined, 0.001, 'diaspora');
-    const rate = 0.015 + 0.02 + 0.01;
+    const rate = 0.015 + 0.02; // stripe + non-collecte ; la casse (1 %) est sur CIF
     const v0 = c.price_independent_cost_kmf;
     const pFloor = (v0 * 1.1) / (1 - rate * 1.1);
     expect(c._meta.price_basis_kmf).toBe(Math.round(pFloor));
@@ -154,14 +155,14 @@ describe('P0-1 · frais de paiement et non-collecte sur le prix', () => {
   it('référence = V0 / (1 − Σ%prix − marge cible) ; marge de sécurité et cible restent séparées', () => {
     const c = run(cfg(), undefined, 0.001, 'diaspora');
     const p = computePrices(c, cat, finance);
-    const raw = c.price_independent_cost_kmf / (1 - 0.045 - 0.3);
+    const raw = c.price_independent_cost_kmf / (1 - 0.035 - 0.3);
     expect(p.economic_reference_price_kmf).toBeGreaterThanOrEqual(Math.round(raw));
     expect(p.economic_reference_price_kmf).toBeLessThan(raw + 1000);
     expect(p.target_margin_pct).toBe(30);
     expect(p.safety_margin_pct).toBe(10);
     expect(p.minimum_safe_price_kmf).toBeLessThan(p.economic_reference_price_kmf);
     // à ce prix, la marge après frais sur le prix vaut la cible
-    const costAtRef = c.price_independent_cost_kmf + 0.045 * raw;
+    const costAtRef = c.price_independent_cost_kmf + 0.035 * raw;
     expect((raw - costAtRef) / raw).toBeCloseTo(0.3, 5);
   });
 
@@ -202,6 +203,29 @@ describe('P0-1 · statut douane et qualité des entrées', () => {
     const c = run(cfg([...COMPONENTS, mk('droits_douane_pct', 'customs', 10, 'pct')]));
     expect(c.customs_estimate_status).toBe('cost_component');
     expect(c.customs_duties_kmf).toBeGreaterThan(0);
+  });
+
+  it('composant douane hors liste fermée d\'inspection = droits (même avec « frais » dans la clé)', () => {
+    const c = run(cfg([...COMPONENTS, mk('frais_droits_douane', 'customs', 10, 'pct')]));
+    expect(c.customs_estimate_status).toBe('cost_component');
+    expect(c.customs_duties_kmf).toBeGreaterThan(0);
+    expect(c.customs_inspection_kmf).toBe(25);
+  });
+
+  it('qualité : règle sans seuil — high / medium / low', () => {
+    const real = (x) => ({ ...x, source: 'real', confidence: 'high' });
+    const base = COMPONENTS.map(real);
+    const p = { category: 'phones', cost_kmf: 3000, weight_kg: 1 };
+    const q = (comps, prod = p, ctxCfg = {}) => computeCDR(prod, { config: cfg(comps, ctxCfg), volume_m3: 0.001 }).input_quality;
+    expect(q(base).level).toBe('high');
+    // une ligne estimée (source default, confiance medium) sans repli ⇒ medium
+    expect(q(base.map((x, i) => (i === 1 ? { ...x, source: 'default', confidence: 'medium' } : x))).level).toBe('medium');
+    // une ligne de confiance low ⇒ low
+    expect(q(base.map((x, i) => (i === 1 ? { ...x, confidence: 'low' } : x))).level).toBe('low');
+    // achat inconnu / catégorie inconnue / repli default ⇒ low
+    expect(q(base, { ...p, cost_kmf: 0 }).level).toBe('low');
+    expect(q(base, { ...p, category: 'zzz' }).level).toBe('low');
+    expect(computeCDR({ category: 'phones', cost_kmf: 3000 }, { config: { ...cfg(base), categories: { phones: {} } } }).input_quality.level).toBe('low');
   });
 
   it('qualité des entrées : fixture 100 % estimée → low ; entrées mesurées → high', () => {

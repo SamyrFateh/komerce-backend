@@ -1,6 +1,6 @@
 {
   "_kind": "golden-cdr",
-  "captured_at": "2026-11-11T10:38:41.767Z",
+  "captured_at": "2026-11-11T10:56:10.023Z",
   "config_fingerprint": "8dd411ff63e062f6",
   "frozen_config": {
     "categories": {
@@ -289,7 +289,7 @@
         "payment": 80,
         "purchase": 152250,
         "relay": 200,
-        "risk": 17044,
+        "risk": 16570,
         "sourcing": 80,
         "transitary": 4636
       },
@@ -305,9 +305,9 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 17044,
-        "total": 195481,
-        "variable": 176073
+        "risk": 16570,
+        "total": 195007,
+        "variable": 175599
       },
       "warnings": [
         "Douane non estimée : coût réel connu après ventilation de l'expédition (aucun taux théorique appliqué).",
@@ -331,10 +331,10 @@
         "hub": 50,
         "overhead": 19408,
         "packaging": 75,
-        "payment": 3011,
+        "payment": 3002,
         "purchase": 152250,
         "relay": 200,
-        "risk": 17358,
+        "risk": 16844,
         "sourcing": 80,
         "transitary": 4636
       },
@@ -350,9 +350,9 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 17358,
-        "total": 198726,
-        "variable": 179318
+        "risk": 16844,
+        "total": 198203,
+        "variable": 178795
       },
       "warnings": [
         "Douane non estimée : coût réel connu après ventilation de l'expédition (aucun taux théorique appliqué).",
@@ -379,7 +379,7 @@
         "payment": 80,
         "purchase": 12180,
         "relay": 200,
-        "risk": 1504,
+        "risk": 1452,
         "sourcing": 80,
         "transitary": 493
       },
@@ -395,9 +395,9 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 1504,
-        "total": 34949,
-        "variable": 15541
+        "risk": 1452,
+        "total": 34897,
+        "variable": 15489
       },
       "warnings": [
         "Douane non estimée : coût réel connu après ventilation de l'expédition (aucun taux théorique appliqué).",
@@ -421,10 +421,10 @@
         "hub": 50,
         "overhead": 19408,
         "packaging": 75,
-        "payment": 966,
+        "payment": 963,
         "purchase": 45675,
         "relay": 200,
-        "risk": 5362,
+        "risk": 5196,
         "sourcing": 80,
         "transitary": 1496
       },
@@ -440,9 +440,9 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 5362,
-        "total": 74803,
-        "variable": 55395
+        "risk": 5196,
+        "total": 74634,
+        "variable": 55226
       },
       "warnings": [
         "Douane non estimée : coût réel connu après ventilation de l'expédition (aucun taux théorique appliqué).",
@@ -469,7 +469,7 @@
         "payment": 80,
         "purchase": 203000,
         "relay": 200,
-        "risk": 23422,
+        "risk": 22776,
         "sourcing": 80,
         "transitary": 6339
       },
@@ -485,9 +485,9 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 23422,
-        "total": 261368,
-        "variable": 241960
+        "risk": 22776,
+        "total": 260722,
+        "variable": 241314
       },
       "warnings": [
         "Douane non estimée : coût réel connu après ventilation de l'expédition (aucun taux théorique appliqué).",
@@ -511,10 +511,10 @@
         "hub": 50,
         "overhead": 19408,
         "packaging": 75,
-        "payment": 565,
+        "payment": 563,
         "purchase": 25375,
         "relay": 200,
-        "risk": 3009,
+        "risk": 2911,
         "sourcing": 80,
         "transitary": 880
       },
@@ -530,9 +530,9 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 3009,
-        "total": 50496,
-        "variable": 31088
+        "risk": 2911,
+        "total": 50396,
+        "variable": 30988
       },
       "warnings": [
         "Douane non estimée : coût réel connu après ventilation de l'expédition (aucun taux théorique appliqué).",
@@ -556,10 +556,10 @@
         "hub": 50,
         "overhead": 19408,
         "packaging": 75,
-        "payment": 1674,
+        "payment": 1670,
         "purchase": 60900,
         "relay": 200,
-        "risk": 9518,
+        "risk": 9234,
         "sourcing": 80,
         "transitary": 2593
       },
@@ -575,9 +575,9 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 9518,
-        "total": 117734,
-        "variable": 98326
+        "risk": 9234,
+        "total": 117446,
+        "variable": 98038
       },
       "warnings": [
         "Douane non estimée : coût réel connu après ventilation de l'expédition (aucun taux théorique appliqué).",
@@ -604,7 +604,7 @@
         "payment": 80,
         "purchase": 18270,
         "relay": 200,
-        "risk": 2249,
+        "risk": 2176,
         "sourcing": 80,
         "transitary": 692
       },
@@ -620,9 +620,9 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 2249,
-        "total": 42639,
-        "variable": 23231
+        "risk": 2176,
+        "total": 42566,
+        "variable": 23158
       },
       "warnings": [
         "Douane non estimée : coût réel connu après ventilation de l'expédition (aucun taux théorique appliqué).",
@@ -649,7 +649,7 @@
         "payment": 80,
         "purchase": 91350,
         "relay": 200,
-        "risk": 10549,
+        "risk": 10251,
         "sourcing": 80,
         "transitary": 2905
       },
@@ -665,9 +665,9 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 10549,
-        "total": 128383,
-        "variable": 108975
+        "risk": 10251,
+        "total": 128085,
+        "variable": 108677
       },
       "warnings": [
         "Douane non estimée : coût réel connu après ventilation de l'expédition (aucun taux théorique appliqué).",
@@ -694,7 +694,7 @@
         "payment": 80,
         "purchase": 50750,
         "relay": 200,
-        "risk": 5800,
+        "risk": 5631,
         "sourcing": 80,
         "transitary": 1638
       },
@@ -710,9 +710,9 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 5800,
-        "total": 79329,
-        "variable": 59921
+        "risk": 5631,
+        "total": 79160,
+        "variable": 59752
       },
       "warnings": [
         "Catégorie \"ghost_category_xyz\" inconnue — poids, volume et marge cible par défaut utilisés.",
@@ -740,7 +740,7 @@
         "payment": 80,
         "purchase": 0,
         "relay": 200,
-        "risk": 164,
+        "risk": 147,
         "sourcing": 80,
         "transitary": 136
       },
@@ -756,9 +756,9 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 164,
-        "total": 21101,
-        "variable": 1693
+        "risk": 147,
+        "total": 21084,
+        "variable": 1676
       },
       "warnings": [
         "Douane non estimée : coût réel connu après ventilation de l'expédition (aucun taux théorique appliqué).",
@@ -783,10 +783,10 @@
         "hub": 50,
         "overhead": 19408,
         "packaging": 75,
-        "payment": 23554,
+        "payment": 23487,
         "purchase": 1218000,
         "relay": 200,
-        "risk": 137878,
+        "risk": 133879,
         "sourcing": 80,
         "transitary": 36178
       },
@@ -802,9 +802,9 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 137878,
-        "total": 1443764,
-        "variable": 1424356
+        "risk": 133879,
+        "total": 1439698,
+        "variable": 1420290
       },
       "warnings": [
         "Douane non estimée : coût réel connu après ventilation de l'expédition (aucun taux théorique appliqué).",
@@ -831,7 +831,7 @@
         "payment": 80,
         "purchase": 152250,
         "relay": 200,
-        "risk": 17054,
+        "risk": 16580,
         "sourcing": 80,
         "transitary": 4638
       },
@@ -847,9 +847,9 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 17054,
-        "total": 195583,
-        "variable": 176175
+        "risk": 16580,
+        "total": 195109,
+        "variable": 175701
       },
       "warnings": [
         "Douane non estimée : coût réel connu après ventilation de l'expédition (aucun taux théorique appliqué).",
