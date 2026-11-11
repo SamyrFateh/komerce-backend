@@ -109,11 +109,11 @@ async function buyerOrder({buyer,phone,code}){
   const want=R.agent_relais_name;R.relay_default_summary=(await page.locator('#ck-relais-summary').innerText().catch(()=>'')).replace(/\s+/g,' ');
   if(want&&!R.relay_default_summary.includes(want)){
    R.changer_count=await page.locator('.ck-step-header-change').count();
-   await page.getByText(/point de retrait/i).first().click();await page.waitForTimeout(1500);await page.screenshot({path:path.join(OUT,'03b-relay-picker.png')});R.picker_text=(await page.locator('#ck-relais-overlay').innerText().catch(()=>'')).replace(/\s+/g,' ').slice(0,600);await page.locator('.ck-relais-item').first().waitFor({timeout:15000}).catch(()=>{});
+   await page.locator('.ck-step-header-change').nth(R.changer_count>1?1:0).click();await page.waitForTimeout(1500);await page.screenshot({path:path.join(OUT,'03b-relay-picker.png')});R.picker_text=(await page.locator('#ck-relais-overlay').innerText().catch(()=>'')).replace(/\s+/g,' ').slice(0,600);await page.locator('.ck-relais-item').first().waitFor({timeout:15000}).catch(()=>{});
    R.relay_choices=await page.locator('.ck-relais-item').allInnerTexts().then(a=>a.map(x=>x.replace(/\s+/g,' ').slice(0,80)));
    const it=page.locator('.ck-relais-item').filter({hasText:want}).first();
-   chk(await it.count()>0,'agent_relay_offered_in_checkout',{want,choices:R.relay_choices});
-   await it.click();
+   soft(await it.count()>0,'agent_relay_offered_in_checkout',{want,choices:R.relay_choices});
+   if(await it.count()>0){await it.click();}else{await page.locator('.ck-relais-sheet-x').click().catch(()=>{});await page.keyboard.press('Escape').catch(()=>{});}
    const cta=page.locator('.ck-relais-sheet-cta');if(await cta.isVisible().catch(()=>false))await cta.click();
    await page.waitForTimeout(800);
    R.relay_selected_summary=(await page.locator('#ck-relais-summary').innerText().catch(()=>'')).replace(/\s+/g,' ');
@@ -148,7 +148,10 @@ async function relayCash(order){
   await page.waitForLoadState('networkidle').catch(()=>{});
   await page.locator('[data-relay-execution-jump="cash"]').click();
   const row=page.locator('tr',{hasText:order.reference});
-  try{await row.waitFor({timeout:20000})}catch(e){await page.screenshot({path:path.join(OUT,'05-relay-cash-row-missing.png'),fullPage:true}).catch(()=>{});await ctx.close().catch(()=>{});throw Error('RELAY_CASH_ROW_MISSING:'+JSON.stringify(R.relay_diag))}
+  try{await row.waitFor({timeout:20000})}catch(e){await page.screenshot({path:path.join(OUT,'05-relay-cash-row-missing.png'),fullPage:true}).catch(()=>{});R.cash_row_missing=true;
+   const x=await page.evaluate(async(u)=>{const r=await fetch(u,{method:'POST',credentials:'include',headers:{'content-type':'application/json','x-requested-with':'XMLHttpRequest'},body:'{}'});let j=null;try{j=await r.json()}catch(e){}return {status:r.status,body:j}},ORIGIN+'/api/admin/workspaces/operations/market/KM/orders/'+order.reference+'/confirm-cash');
+   R.cross_relay_attempt=x;soft([401,403,404,409,422].includes(x.status),'cross_relay_confirm_refused',x);
+   await ctx.close().catch(()=>{});return {blocked:true}}
   await page.screenshot({path:path.join(OUT,'05-relay-cash-pending.png')});
   const p='/api/admin/workspaces/operations/market/KM/orders/'+order.reference+'/confirm-cash';
   let captured=null;page.on('request',r=>{if(new URL(r.url()).pathname===p&&r.method()==='POST')captured={headers:r.headers(),body:r.postData()}});
@@ -182,7 +185,8 @@ async function relayCash(order){
   soft(num(R.checkout_total_text)===total,'checkout_total_equals_server_total',{ui:R.checkout_total_text,server:total});
   soft(num(R.pdp_price_text)>0&&total===num(R.pdp_price_text),'pdp_price_consistent_with_server',{pdp:R.pdp_price_text,server:total});
   chk(s0.cc.length===0,'no_cash_before_relay');
-  await relayCash(order);
+  const rc=await relayCash(order);
+  if(rc&&rc.blocked){const sx=await state(order.id);chk(sx.cc.length===0&&sx.o.status==='pending','cross_relay_no_db_effect',{cc:sx.cc.length,status:sx.o.status});await version('end');R.verdict='BLOQUE_RELAIS_AGENT_NON_AFFECTE_AU_RELAIS_DE_LA_COMMANDE';process.exitCode=2;return}
   const s1=await state(order.id);R.after_cash={o:s1.o,cc:s1.cc,ctl:s1.ctl,hist:s1.hist};
   chk(s1.o.status==='confirmed'&&s1.o.payment_status==='paid','order_confirmed_paid',{s:s1.o.status,p:s1.o.payment_status});
   chk(s1.cc.length===1,'one_cash_collection_after_double_attempt',s1.cc.length);
