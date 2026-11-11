@@ -149,3 +149,75 @@ describe('market-delegation network service — capabilities et audit', () => {
     expect(migration).toMatch(/DROP NOT NULL/);
   });
 });
+
+describe('network service — île obligatoire et rattachement agent -> relais', () => {
+  const U = '11111111-1111-4111-8111-111111111111';
+  const R = '22222222-2222-4222-8222-222222222222';
+  const relaisRow = (marketId) => ({ id: R, market_id: marketId, name: 'R', is_active: true });
+
+  test('marché insulaire (KM) : island_code absent ou hors routage refusé, valeur admise acceptée', async () => {
+    let db = executor();
+    mockAuthz(db, { marketId: 'mkt-km', marketCode: 'KM', capabilities: ['network.create'] });
+    await expect(network.createRelais(db, { marketCode: 'KM', actorUserId: 'u1', name: 'X', agentName: 'Y', phone: '1', address: 'Z' }))
+      .rejects.toMatchObject({ code: 'NETWORK_ISLAND_CODE_REQUIRED', status: 400 });
+    db = executor();
+    mockAuthz(db, { marketId: 'mkt-km', marketCode: 'KM', capabilities: ['network.create'] });
+    await expect(network.createRelais(db, { marketCode: 'KM', actorUserId: 'u1', name: 'X', agentName: 'Y', phone: '1', address: 'Z', islandCode: 'ATLANTIDE' }))
+      .rejects.toMatchObject({ code: 'NETWORK_ISLAND_CODE_INVALID' });
+    db = executor();
+    mockAuthz(db, { marketId: 'mkt-km', marketCode: 'KM', capabilities: ['network.create'] });
+    db.query.mockImplementationOnce(async (sql, params) => ({ rows: [{ id: 'r1', island_code: params[8] }] })).mockResolvedValueOnce({ rows: [] });
+    await expect(network.createRelais(db, { marketCode: 'KM', actorUserId: 'u1', name: 'X', agentName: 'Y', phone: '1', address: 'Z', islandCode: 'moheli' }))
+      .resolves.toMatchObject({ island_code: 'MOHELI' });
+  });
+
+  test('marché non insulaire (CM) : île non exigée ; options d\'île exposées seulement pour KM/YT', () => {
+    const w = require('../../services/relais-mutation-service');
+    expect(w.islandOptionsFor('CM')).toEqual([]);
+    expect(w.islandOptionsFor('km')).toEqual(['ANJOUAN', 'MORONI', 'MOHELI', 'MAYOTTE']);
+  });
+
+  test('responsable pays : rattache un agent du même marché via assignAgentRelais, audité', async () => {
+    const db = executor();
+    mockAuthz(db, { capabilities: ['network.update'] });
+    db.query
+      .mockResolvedValueOnce({ rows: [relaisRow('mkt-cm')] })               // getOwnedRelais
+      .mockResolvedValueOnce({ rows: [{ id: U, relais_id: null }] })        // agent dans le marché
+      .mockResolvedValueOnce({ rows: [{ id: R }] })                          // assignAgentRelais : relais actif
+      .mockResolvedValueOnce({ rows: [{ id: U, relais_id: R }] })           // UPDATE users
+      .mockResolvedValueOnce({ rows: [] });                                  // audit
+    const out = await network.assignAgentToRelais(db, { marketCode: 'CM', relaisId: R, userId: U, actorUserId: 'u1', actorRole: 'market_operator' });
+    expect(out).toEqual({ status: 'assigned', user_id: U, relais_id: R });
+    expect(db.query.mock.calls[7][0]).toMatch(/UPDATE users SET relais_id/);
+    expect(db.query.mock.calls[8][1][4]).toBe('NETWORK_RELAIS_AGENT_ASSIGNED');
+  });
+
+  test('hors marché : acteur sans membership 403 ; relais d\'un autre marché 404 ; agent d\'un autre marché 403, aucune écriture', async () => {
+    let db = executor();
+    db.query.mockResolvedValueOnce({ rows: [{ market_id: 'mkt-cm', market_code: 'CM', assignment_id: 'a-cm', assignment_status: 'ACTIVE' }] }).mockResolvedValueOnce({ rows: [] });
+    await expect(network.assignAgentToRelais(db, { marketCode: 'CM', relaisId: R, userId: U, actorUserId: 'u1', actorRole: 'market_operator' }))
+      .rejects.toMatchObject({ code: 'MARKET_MEMBERSHIP_REQUIRED', status: 403 });
+
+    db = executor();
+    mockAuthz(db, { capabilities: ['network.update'] });
+    db.query.mockResolvedValueOnce({ rows: [relaisRow('mkt-autre')] });
+    await expect(network.assignAgentToRelais(db, { marketCode: 'CM', relaisId: R, userId: U, actorUserId: 'u1', actorRole: 'market_operator' }))
+      .rejects.toMatchObject({ code: 'NETWORK_RELAIS_NOT_FOUND', status: 404 });
+
+    db = executor();
+    mockAuthz(db, { capabilities: ['network.update'] });
+    db.query.mockResolvedValueOnce({ rows: [relaisRow('mkt-cm')] }).mockResolvedValueOnce({ rows: [] });
+    await expect(network.assignAgentToRelais(db, { marketCode: 'CM', relaisId: R, userId: U, actorUserId: 'u1', actorRole: 'market_operator' }))
+      .rejects.toMatchObject({ code: 'AGENT_MARKET_MISMATCH', status: 403 });
+    expect(db.query.mock.calls.some(([sql]) => /UPDATE users/.test(sql))).toBe(false);
+  });
+
+  test('admin : autorité centrale sans membership ; user_id invalide refusé 400', async () => {
+    const db = executor();
+    db.query
+      .mockResolvedValueOnce({ rows: [{ market_id: 'mkt-cm', market_code: 'CM', assignment_id: 'a-cm', assignment_status: 'ACTIVE' }] })
+      .mockResolvedValueOnce({ rows: [relaisRow('mkt-cm')] });
+    await expect(network.assignAgentToRelais(db, { marketCode: 'CM', relaisId: R, userId: 'nope', actorUserId: 'adm', actorRole: 'admin' }))
+      .rejects.toMatchObject({ code: 'AGENT_ID_INVALID', status: 400 });
+  });
+});

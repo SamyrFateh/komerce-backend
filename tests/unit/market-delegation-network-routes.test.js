@@ -10,9 +10,9 @@ const routeSource = fs.readFileSync(path.join(ROOT, 'routes', 'market-delegation
 const bootstrapSource = fs.readFileSync(path.join(ROOT, 'bootstrap', 'api-routes.js'), 'utf8');
 
 describe('market-delegation network routes', () => {
-  test('all five network routes are authenticated', () => {
+  test('all seven network routes are authenticated', () => {
     const routeDeclarations = routeSource.match(/router\.(get|post|put|delete)\([^\n]+/g) || [];
-    expect(routeDeclarations).toHaveLength(5);
+    expect(routeDeclarations).toHaveLength(7);
     expect(routeDeclarations.every(line => line.includes('authenticate'))).toBe(true);
   });
 
@@ -45,5 +45,19 @@ describe('market-delegation network routes', () => {
     expect(bootstrapSource).toMatch(/const marketDelegationNetworkRouter = require\('\.\.\/routes\/market-delegation-network'\)/);
     const mounts = bootstrapSource.match(/app\.use\('\/api\/market-delegation', marketDelegationNetworkRouter\)/g) || [];
     expect(mounts).toHaveLength(1);
+  });
+});
+
+describe('routes rattachement agent et île (contrat source)', () => {
+  test('route gouvernée de rattachement + liste des agents, sans requireRole ni market_id client', () => {
+    expect(routeSource).toMatch(/router\.post\('\/markets\/:marketCode\/network\/relais\/:relaisId\/agents', authenticate/);
+    expect(routeSource).toMatch(/router\.get\('\/markets\/:marketCode\/network\/relais-agents', authenticate/);
+    expect(routeSource).toMatch(/island_options: islandOptionsFor/);
+  });
+  test('UI Réseau local : sélecteur d\'île obligatoire et geste de rattachement', () => {
+    const ui = fs.readFileSync(path.join(ROOT, 'public', 'dashboards', 'canonical', 'js', 'market-network.js'), 'utf8');
+    expect(ui).toMatch(/island_options/);
+    expect(ui).toMatch(/L’île du relais est obligatoire/);
+    expect(ui).toMatch(/network\/relais\/\$\{encodeURIComponent\(relais\.id\)\}\/agents/);
   });
 });

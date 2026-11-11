@@ -29,6 +29,7 @@
  *   - PUT  network/relais/:id                            → network.update
  *   - POST network/relais/:id/suspend                    → network.suspend
  *   - POST network/relais/:id/activate                   → network.update
+ *   - GET  network/relais-agents, POST network/relais/:id/agents → network.read / network.update (admin : autorité centrale)
  *   - GET/POST/PUT/suspend/activate network/providers     → provider.manage (capacité unique)
  */
 (function bootMarketNetwork(global) {
@@ -84,7 +85,7 @@
 
   // ── Relais ──────────────────────────────────────────────────────────
 
-  function renderRelaisCreateForm(marketCode, canCreate, refresh) {
+  function renderRelaisCreateForm(marketCode, canCreate, refresh, islandOptions = []) {
     if (!canCreate) return null;
     const card = el('article', 'kmc-team-invite');
     card.appendChild(el('strong', '', 'Ajouter un relais'));
@@ -95,7 +96,7 @@
       ['agent_name', 'Agent responsable', true],
       ['phone', 'Téléphone', true],
       ['address', 'Adresse', true],
-      ['island', 'Île / zone', false],
+      ...(islandOptions.length ? [] : [['island', 'Île / zone', false]]),
     ];
     const inputs = {};
     const grid = el('div', 'kmc-team-capabilities');
@@ -113,6 +114,28 @@
       wrap.appendChild(input);
       grid.appendChild(wrap);
     });
+    // Marché insulaire : île obligatoire, valeurs admises par le routage (island_routing, source serveur).
+    let islandSelect = null;
+    if (islandOptions.length) {
+      const wrap = el('label', 'kmc-team-capability');
+      wrap.style.display = 'grid';
+      wrap.style.gridTemplateColumns = '1fr';
+      wrap.appendChild(el('span', '', 'Île *'));
+      islandSelect = global.document.createElement('select');
+      islandSelect.className = 'kmc-team-input';
+      islandSelect.required = true;
+      islandSelect.dataset.islandSelect = '';
+      const placeholder = el('option', '', 'Choisir une île');
+      placeholder.value = '';
+      islandSelect.appendChild(placeholder);
+      islandOptions.forEach((code) => {
+        const option = el('option', '', code);
+        option.value = code;
+        islandSelect.appendChild(option);
+      });
+      wrap.appendChild(islandSelect);
+      grid.appendChild(wrap);
+    }
     card.appendChild(grid);
 
     const submit = el('button', 'kmc-workspace-action', 'Créer le relais');
@@ -129,6 +152,11 @@
         result.textContent = 'Nom, agent, téléphone et adresse sont obligatoires.';
         return;
       }
+      if (islandSelect && !islandSelect.value) {
+        result.hidden = false;
+        result.textContent = 'L’île du relais est obligatoire.';
+        return;
+      }
       submit.disabled = true;
       submit.textContent = 'Création…';
       result.hidden = true;
@@ -140,7 +168,7 @@
             agent_name: inputs.agent_name.value.trim(),
             phone: inputs.phone.value.trim(),
             address: inputs.address.value.trim(),
-            island: inputs.island.value.trim() || undefined,
+            ...(islandSelect ? { island_code: islandSelect.value } : { island: inputs.island.value.trim() || undefined }),
           },
         });
         await refresh();
@@ -155,7 +183,7 @@
     return card;
   }
 
-  function renderRelaisItem(relais, marketCode, canUpdate, canSuspend, refresh) {
+  function renderRelaisItem(relais, marketCode, canUpdate, canSuspend, refresh, agents = []) {
     const card = el('article', 'kmc-team-member');
     const head = el('div', 'kmc-team-member-head');
     const copy = el('div', 'kmc-team-member-copy');
@@ -164,6 +192,37 @@
     head.appendChild(copy);
     head.appendChild(pill(relais.is_active ? 'Actif' : 'Suspendu', relais.is_active));
     card.appendChild(head);
+
+    if (relais.is_active && canUpdate && agents.length) {
+      const row = el('div', 'kmc-team-form-row');
+      const select = global.document.createElement('select');
+      select.className = 'kmc-team-input';
+      select.dataset.agentSelect = '';
+      const placeholder = el('option', '', 'Rattacher un agent relais…');
+      placeholder.value = '';
+      select.appendChild(placeholder);
+      agents.forEach((a) => {
+        const option = el('option', '', `${a.full_name || a.email}${a.relais_id === relais.id ? ' (rattaché)' : ''}`);
+        option.value = a.id;
+        select.appendChild(option);
+      });
+      const assign = el('button', 'kmc-workspace-action is-secondary', 'Rattacher');
+      assign.type = 'button';
+      assign.addEventListener('click', async () => {
+        if (!select.value) return;
+        assign.disabled = true;
+        try {
+          await request(`/api/market-delegation/markets/${encodeURIComponent(marketCode)}/network/relais/${encodeURIComponent(relais.id)}/agents`, { method: 'POST', body: { user_id: select.value } });
+          await refresh();
+        } catch (error) {
+          global.alert(`${error.message}${error.code ? ` · ${error.code}` : ''}`);
+          assign.disabled = false;
+        }
+      });
+      row.appendChild(select);
+      row.appendChild(assign);
+      card.appendChild(row);
+    }
 
     if ((relais.is_active && canSuspend) || (!relais.is_active && canUpdate)) {
       const action = el(
@@ -347,12 +406,19 @@
         summary.appendChild(pill(`${(relaisData.relais || []).filter(r => !r.is_active).length} suspendus`));
         section.appendChild(summary);
 
-        const form = renderRelaisCreateForm(marketCode, canCreate, refresh);
+        const form = renderRelaisCreateForm(marketCode, canCreate, refresh, relaisData.island_options || []);
         if (form) section.appendChild(form);
+
+        let agents = [];
+        if (canUpdate) {
+          try {
+            agents = (await request(`/api/market-delegation/markets/${encodeURIComponent(marketCode)}/network/relais-agents`)).agents || [];
+          } catch (_) { agents = []; }
+        }
 
         const list = el('div', 'kmc-team-list');
         if (!(relaisData.relais || []).length) list.appendChild(el('div', 'kmc-team-empty', 'Aucun relais dans ce Market ID.'));
-        (relaisData.relais || []).forEach(r => list.appendChild(renderRelaisItem(r, marketCode, canUpdate, canSuspend, refresh)));
+        (relaisData.relais || []).forEach(r => list.appendChild(renderRelaisItem(r, marketCode, canUpdate, canSuspend, refresh, agents)));
         section.appendChild(list);
       } else if (relaisError && relaisError !== 'absent') {
         section.appendChild(el('div', 'kmc-team-empty', `${relaisError.message}${relaisError.code ? ` · ${relaisError.code}` : ''}`));
