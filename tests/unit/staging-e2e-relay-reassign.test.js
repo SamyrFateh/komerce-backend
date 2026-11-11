@@ -16,5 +16,8 @@ describe('staging-e2e-relay-reassign', () => {
     expect(src).not.toMatch(/\b(INSERT\s+INTO|UPDATE\s+\w+\s+SET|DELETE\s+FROM)\b/i);
     expect(src).toMatch(/REASSIGN-E2E-RELAY/);
     expect(src).toMatch(/RELAY_MARKET_MISMATCH/);
+    expect(src).toMatch(/RELAY_ORDER_REFERENCE/);
+    expect(src).toMatch(/G6-BUYER/);
+    expect(src).toMatch(/ORDER_REFERENCE_NOT_ALLOWED/);
   });
 });
