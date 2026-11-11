@@ -1,0 +1,70 @@
+name: P0 variants Chromium staging (one-shot)
+
+on:
+  push:
+    branches:
+      - test/p0-variant-chromium-staging-20261111
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: p0-variants-staging-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  chromium-variants:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: public/boutique/package-lock.json
+
+      - name: Require real deployed staging containing P0 merge
+        env:
+          ORIGIN: https://komerce-backend-production.up.railway.app
+          MINIMUM_SHA: a0f287d24b2a8fde5717b4b0466975442fce6fb2
+        run: |
+          set -euo pipefail
+          curl -fsS --retry 3 --retry-delay 2 "$ORIGIN/health/version" > /tmp/staging-version.json
+          cat /tmp/staging-version.json
+          RUNTIME_SHA="$(node -e 'const v=require("/tmp/staging-version.json"); process.stdout.write(String(v.commit||""))')"
+          [[ "$RUNTIME_SHA" =~ ^[a-f0-9]{40}$ ]] || { echo "::error::RUNTIME_SHA_MISSING"; exit 2; }
+          git cat-file -e "$RUNTIME_SHA^{commit}" || git fetch --depth=50 origin "$RUNTIME_SHA"
+          git merge-base --is-ancestor "$MINIMUM_SHA" "$RUNTIME_SHA" || {
+            echo "::error::STAGING_MISSING_P0_MERGE; runtime=$RUNTIME_SHA expected-ancestor=$MINIMUM_SHA"; exit 2;
+          }
+          echo "Runtime includes P0 merge: $RUNTIME_SHA" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Install Chromium
+        run: cd public/boutique && npm ci && npx playwright install --with-deps chromium
+
+      - name: Run real desktop multi-variant scenario
+        env:
+          CI: '1'
+          KOMERCE_ENV: staging
+          BASE_URL: https://komerce-backend-production.up.railway.app/boutique/?market=KM
+          E2E_MULTI_VARIANT_PRODUCT_NAME: Robe longue femme
+        run: |
+          set -euo pipefail
+          cd public/boutique
+          npx playwright test tests/e2e/cart.spec.js --project="Desktop Chrome" --grep="P0 variantes" --retries=0 --workers=1
+
+      - name: Upload browser proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: chromium-variants-staging-${{ github.run_id }}
+          path: |
+            public/boutique/test-results/
+            public/boutique/playwright-report/
+          if-no-files-found: warn
+          retention-days: 14
