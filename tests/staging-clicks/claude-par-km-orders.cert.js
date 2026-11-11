@@ -185,6 +185,21 @@ async function relayCash(order){
   chk(process.env.KOMERCE_ENV==='staging'&&process.env.NODE_ENV==='test','env_guard');
   chk((await confirmTarget({db,env:process.env})).confirmed,'db_target');
   await version('start');
+  if(process.env.PRECHECK_ONLY==='1'){
+   const out={};
+   for(const t of ['assignment_memberships','membership_capabilities'])out[t+'_cols']=(await q("SELECT column_name FROM information_schema.columns WHERE table_name=$1 ORDER BY ordinal_position",[t])).map(x=>x.column_name);
+   for(const [k,env] of [['agent_relais','E2E_AGENT_RELAIS_EMAIL'],['operator','E2E_MARKET_OPERATOR_EMAIL'],['admin','E2E_ADMIN_EMAIL']]){
+    const [u]=await q('SELECT id,role::text AS role,relais_id FROM users WHERE lower(email)=lower($1)',[process.env[env]]);
+    const e={role:u?.role,relais_id:u?.relais_id};
+    if(u){const uc=out.assignment_memberships_cols.find(c=>c==='user_id');
+     if(uc){e.memberships=await q('SELECT * FROM assignment_memberships WHERE user_id=$1',[u.id]).catch(x=>String(x.message));
+      const mc=out.membership_capabilities_cols.find(c=>c==='membership_id');
+      if(mc&&Array.isArray(e.memberships)){e.capabilities=[];for(const m of e.memberships)e.capabilities.push(...await q('SELECT * FROM membership_capabilities WHERE membership_id=$1',[m.id]))}}}
+    out[k]=e}
+   out.relais_default=await q("SELECT id,name,market_id,is_active FROM relais WHERE id='c75ab380-23c4-46a1-9104-8d22456580e6'");
+   out.market_KM=await q("SELECT id,code FROM markets WHERE code='KM'");
+   R.precheck=out;R.verdict='PRECHECK_READ_ONLY';save();return;
+  }
   const [ag0]=await q('SELECT r.name FROM users u JOIN relais r ON r.id=u.relais_id WHERE lower(u.email)=lower($1)',[process.env.E2E_AGENT_RELAIS_EMAIL]);R.agent_relais_name=ag0?.name;
   const fx=await provisionBuyer();
   const order=await buyerOrder(fx);R.order={id:order.id,reference:order.reference};

@@ -2,6 +2,11 @@
 name: Claude PAR KM - commande boutique et cash relais (Chromium)
 on:
   workflow_dispatch:
+    inputs:
+      precheck:
+        description: 'lecture seule (1)'
+        required: false
+        default: '0'
   push:
     branches: [cert/claude-par-km-orders]
     paths:
@@ -18,6 +23,9 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     env:
+      PRECHECK_ONLY: ${{ inputs.precheck }}
+      E2E_MARKET_OPERATOR_EMAIL: ${{ secrets.E2E_MARKET_OPERATOR_EMAIL }}
+      E2E_MARKET_OPERATOR_PASSWORD: ${{ secrets.E2E_MARKET_OPERATOR_PASSWORD }}
       NODE_ENV: test
       KOMERCE_ENV: staging
       KOMERCE_TARGET_ENV: staging
