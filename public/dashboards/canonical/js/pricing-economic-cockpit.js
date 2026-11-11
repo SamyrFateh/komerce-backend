@@ -503,7 +503,7 @@
     const status = coverage.coverage_status || decision?.decision_status || null;
     const decisionReady = ['COVERED', 'UNCOVERED'].includes(status)
       && ['COVERED', 'UNCOVERED'].includes(decision?.decision_status);
-    const n3 = finite(coverage.denominator_n3_kmf);
+    const n3 = finite(coverage.structural_charges_kmf ?? coverage.denominator_n3_kmf);
     const structureTotal = structure.market_n3_decisional === true
       ? finite(structure.market_n3_total_kmf) : null;
     const recognizedN3 = n3 != null && n3 >= 0 ? n3
