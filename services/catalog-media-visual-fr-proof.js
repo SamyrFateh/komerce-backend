@@ -23,6 +23,13 @@ const STATES = Object.freeze({
 function nonempty(value) {
   return typeof value === 'string' && value.trim().length > 0;
 }
+// node-postgres returns TIMESTAMPTZ as a Date, while the visual-review writer
+// verifies the same proof before persistence using an ISO string.
+// Accept either representation, but never an invalid, absent or numeric date.
+function validReviewTimestamp(value) {
+  if (value instanceof Date) return Number.isFinite(value.getTime());
+  return nonempty(value) && Number.isFinite(Date.parse(value));
+}
 function sameOptions(a, b) {
   const x = a && typeof a === 'object' && !Array.isArray(a) ? a : {};
   const y = b && typeof b === 'object' && !Array.isArray(b) ? b : {};
@@ -51,8 +58,7 @@ function inspectOne(media, review, { runtime = process.env.KOMERCE_ENV } = {}) {
     || !sameOptions(review.option_values, media.option_values)) {
     return { ...result, reason: 'SOURCE_IMAGE_OR_VARIANT_CHANGED' };
   }
-  if (!nonempty(review.reviewed_by) || !nonempty(review.reviewed_at)
-    || !Number.isFinite(Date.parse(review.reviewed_at))) {
+  if (!nonempty(review.reviewed_by) || !validReviewTimestamp(review.reviewed_at)) {
     return { ...result, reason: 'REVIEWER_OR_TIMESTAMP_MISSING' };
   }
   if (review.text_presence === 'NONE') {
