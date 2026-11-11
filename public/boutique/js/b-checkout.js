@@ -244,8 +244,49 @@ function _checkoutItems() {
   return _currentCheckoutSelection().items.filter(_checkoutItemIncluded);
 }
 
+/**
+ * Clé d'identité d'un devis serveur : relais + lignes incluses. Un devis n'est
+ * valable que pour la sélection exacte qui l'a produit.
+ */
+export function checkoutQuoteKey(relaisId, items = []) {
+  const lines = (Array.isArray(items) ? items : [])
+    .filter(_checkoutItemIncluded)
+    .map((item) => [
+      _checkoutLineProductId(item),
+      Number(item?.qty ?? item?.quantity ?? 1) || 1,
+      JSON.stringify(item?.variant_combo || null),
+      item?.requested_transport_rail ?? '',
+    ].join(':'))
+    .sort();
+  return String(relaisId || '') + '|' + lines.join(',');
+}
+
+/**
+ * Total présenté au client. Source unique : le devis serveur (POST /api/orders/preview),
+ * identique au total enregistré à la création. Sans devis valide pour la sélection
+ * courante, aucun montant n'est inventé : ready=false et le total local ne sert que de
+ * repli d'affichage (le bouton de confirmation reste verrouillé).
+ */
+export function resolveCheckoutPayable(items, relaisId, quote) {
+  const key = checkoutQuoteKey(relaisId, items);
+  if (quote && quote.key === key && Number.isFinite(Number(quote.total_kmf))) {
+    return {
+      ready: true,
+      total: Number(quote.total_kmf),
+      transport: Number(quote.transport_price_kmf) || 0,
+      discount: Number(quote.discount_kmf) || 0,
+    };
+  }
+  return { ready: false, total: _checkoutSelectionTotal(items), transport: 0, discount: 0 };
+}
+
+function _checkoutPayable() {
+  const od = state.orderData || {};
+  return resolveCheckoutPayable(_currentCheckoutSelection().items, od.selectedRelaisId, od.serverQuote);
+}
+
 function _checkoutTotal() {
-  return _checkoutSelectionTotal(_currentCheckoutSelection().items);
+  return _checkoutPayable().total;
 }
 
 function _checkoutLineProductId(line) {
@@ -670,7 +711,52 @@ function _applyCheckoutFulfillmentPreview(stateByProduct = new Map()) {
   return true;
 }
 
+let _serverQuoteAbortController = null;
+
+/** Devis serveur du total (livraison comprise) — même calcul que la création de commande. */
+async function _refreshCheckoutServerQuote(od = state.orderData) {
+  if (_serverQuoteAbortController) {
+    _serverQuoteAbortController.abort();
+    _serverQuoteAbortController = null;
+  }
+  const relayId = String(od?.selectedRelaisId || '').trim();
+  const selected = _checkoutItems();
+  if (!relayId || !selected.length) {
+    if (od) od.serverQuote = null;
+    refreshCheckoutComputedUI();
+    return;
+  }
+  const key = checkoutQuoteKey(relayId, _currentCheckoutSelection().items);
+  if (od?.serverQuote && od.serverQuote.key !== key) od.serverQuote = null;
+  const controller = new AbortController();
+  _serverQuoteAbortController = controller;
+  refreshCheckoutComputedUI();
+  try {
+    const quote = await apiPost('/api/orders/preview', {
+      items: selected.map(i => ({
+        product_id: String(i.product.id),
+        quantity: i.qty,
+        confection_type: 'aucun',
+        variant_combo: i.variant_combo || null,
+        requested_transport_rail: i.requested_transport_rail ?? null,
+        shared_cart_item_id: i.shared_cart_item_id ?? undefined,
+      })),
+      relais_id: relayId,
+      payment_mode: 'cash_relais',
+    }, { signal: controller.signal });
+    if (_serverQuoteAbortController !== controller) return;
+    od.serverQuote = { ...quote, key, error: null };
+  } catch (error) {
+    if (error?.name === 'AbortError') return;
+    if (od) od.serverQuote = { key, error: error?.message || 'Devis indisponible' };
+  } finally {
+    if (_serverQuoteAbortController === controller) _serverQuoteAbortController = null;
+  }
+  refreshCheckoutComputedUI();
+}
+
 async function _refreshCheckoutFulfillmentPreview(od = state.orderData) {
+  _refreshCheckoutServerQuote(od);
   if (_fulfillmentPreviewAbortController) {
     _fulfillmentPreviewAbortController.abort();
     _fulfillmentPreviewAbortController = null;
@@ -1310,7 +1396,9 @@ function refreshCheckoutComputedUI() {
   const relayName = getRelayDisplayName(od.selectedRelaisName);
   const island    = od.selectedIsland || '';
   const where     = relayName ? (relayName + (island ? ' • ' + island : '')) : '';
-  const total = _checkoutTotal();
+  const payable = _checkoutPayable();
+  const total = payable.total;
+  const quoteReady = payable.ready;
   const cb = document.getElementById('cb-use-wallet');
   const walletApplied = (cb && cb.checked && state.walletBalance > 0) ? Math.min(state.walletBalance, total) : 0;
   const netAmount = total - walletApplied;
@@ -1323,13 +1411,19 @@ function refreshCheckoutComputedUI() {
       : '\u00c0 r\u00e9gler';
   }
   if (finalTotalAmount) {
-    finalTotalAmount.textContent = fmt(netAmount, 'KMF');
+    finalTotalAmount.textContent = (od.selectedRelaisId && !quoteReady) ? '\u2026' : fmt(netAmount, 'KMF');
+  }
+  const deliveryLine = document.getElementById('ck-delivery-line');
+  if (deliveryLine) {
+    deliveryLine.hidden = !quoteReady;
+    const amount = deliveryLine.querySelector('strong');
+    if (amount) amount.textContent = fmt(payable.transport, 'KMF');
   }
   // Règle §8 (simplification checkout final, cf. mock) — un seul gabarit de
   // CTA, quel que soit le moyen de paiement ou l'usage du wallet : jamais
   // « Payer » (Stripe) ni « (net wallet) » (cash), toujours le même libellé
   // portant le montant net réellement dû (après déduction wallet).
-  const mainText = '\u2713 Confirmer la commande · ' + fmt(netAmount, 'KMF');
+  const mainText = '\u2713 Confirmer la commande · ' + ((od.selectedRelaisId && !quoteReady) ? '\u2026' : fmt(netAmount, 'KMF'));
   const mobileMoneyLabel = od.mobileMoneyAvailability?.label || 'Mobile Money';
   let subText = mode === 'stripe_eur'
     ? (where ? 'Carte via Stripe • ' + where : 'Carte via Stripe')
@@ -1356,7 +1450,11 @@ function refreshCheckoutComputedUI() {
   } else if (!mobileMoneyOk && btn_busy(confirmBtn) === false) {
     subText = 'Mobile Money indisponible pour ce point relais';
   }
-  confirmBtn.disabled = !hasCheckoutItems || !relayOk || !mobileMoneyOk || btn_busy(confirmBtn);
+  const quoteError = od.serverQuote && od.serverQuote.error;
+  if (relayOk && hasCheckoutItems && mobileMoneyOk && !quoteReady && btn_busy(confirmBtn) === false) {
+    subText = quoteError ? 'Total indisponible : ' + quoteError : 'Calcul du total\u2026';
+  }
+  confirmBtn.disabled = !hasCheckoutItems || !relayOk || !mobileMoneyOk || !quoteReady || btn_busy(confirmBtn);
   confirmBtn.classList.toggle('is-disabled', confirmBtn.disabled);
   setCheckoutConfirmButton(confirmBtn, mainText, subText);
 }
@@ -2110,6 +2208,12 @@ export function renderCheckout() {
 
     const finalTotal = document.createElement('div');
     finalTotal.className = 'ck-final-total';
+    const deliveryLine = document.createElement('div');
+    deliveryLine.className = 'ck-delivery-line';
+    deliveryLine.id = 'ck-delivery-line';
+    deliveryLine.hidden = true;
+    deliveryLine.innerHTML = '<span>Livraison</span><strong></strong>';
+    checkoutAside.appendChild(deliveryLine);
     finalTotal.innerHTML =
       '<span id="ck-final-total-label">\u00c0 r\u00e9gler</span>'
       + '<strong id="ck-final-total-amount">' + fmt(_checkoutTotal(), 'KMF') + '</strong>';

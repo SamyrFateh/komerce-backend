@@ -137,6 +137,7 @@ const ROUTE_SCHEMA_MAP = [
   { prefix: '/api/products/{id}',         method: 'put',    schema: validators.products?.update },
   // ORDERS
   { prefix: '/api/orders',               method: 'post',   schema: validators.orders?.create },
+  { prefix: '/api/orders/preview',       method: 'post',   schema: validators.orders?.create },
   { prefix: '/api/orders',               method: 'get',    schema: validators.orders?.list },
   { prefix: '/api/orders/{id}/status',   method: 'patch',  schema: validators.orders?.updateStatus },
   { prefix: '/api/orders/{id}/local-relay-receipt', method: 'post', schema: null }, // attestation terrain, validation in-route
@@ -996,6 +997,9 @@ const KNOWN_RESPONSES = {
   },
   '/api/shared-carts/{id}/finalize': {
     post: { fields: ['status','reference'], source: 'scan-boutique' }
+  },
+  '/api/orders/preview': {
+    post: { fields: ['items_total_kmf','transport_price_kmf','discount_kmf','total_kmf'], source: 'test' }
   },
   '/api/orders': {
     post: { fields: ['reference','status','total_kmf','id'], source: 'test+scan' },

@@ -151,6 +151,8 @@ describe('checkout — state machine relais', () => {
     state.orderData = {};
     state.walletBalance = 0;
     apiGet.mockReset();
+    // Devis serveur du total (livraison comprise) requis pour activer Confirmer.
+    require('../../js/b-utils.js').apiPost.mockResolvedValue({ items_total_kmf: 0, transport_price_kmf: 26, discount_kmf: 0, total_kmf: 26 });
     // /api/public/config (Stripe) : réponse neutre par défaut
     apiGet.mockImplementation((path) => {
       if (path === '/api/public/config') return Promise.resolve({});
