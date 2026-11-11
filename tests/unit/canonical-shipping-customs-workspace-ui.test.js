@@ -60,3 +60,8 @@ test('création/réactivation douane : aucune présélection des colis éligible
   expect(ws._test.parcelSelectionConfirm('Créer le dossier','D1',['A','B'])).toContain('2 colis');
   expect(ws._test.parcelSelectionConfirm('Créer le dossier','D1',[])).toContain('0 colis');
 });
+test('dossier lié à une expédition : « Déclarer »/« Corriger » ancienne voie masqués, voie customs-amount indiquée',()=>{
+  expect(source).toContain('row.journey_reference && row.is_active');
+  expect(source).toContain('data-customs-journey-linked');
+  expect(source).toMatch(/row\.status === 'declared' && row\.is_active && !row\.journey_reference/);
+});

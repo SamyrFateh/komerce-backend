@@ -8680,14 +8680,14 @@
         "category": "services",
         "declared": "services/pricing-floor-forecast-shadow.js",
         "resolvedPath": "services/pricing-floor-forecast-shadow.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "economic-engine",
         "category": "services",
         "declared": "services/pricing-floor-forecast-preview.js",
         "resolvedPath": "services/pricing-floor-forecast-preview.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "economic-engine",
@@ -52998,8 +52998,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 692,
-        "technicalNodesOwned": 692,
+        "technicalNodesTotal": 694,
+        "technicalNodesOwned": 694,
         "technicalOrphans": 0
       },
       "dash": {
