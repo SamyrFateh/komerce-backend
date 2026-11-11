@@ -8,6 +8,8 @@
 
 Le service **ne va pas chercher un taux, un prix fournisseur, un devis, une commission ou un tarif douanier** : son appelant doit fournir les valeurs converties en KMF par l'autorité FX et les preuves correspondantes. Il n'y a aucune valeur de repli silencieuse. L'entrée est nommée par `market_code`, `product.circuit` (`import` ou `local`) et `valuation_date`.
 
+**Chaque composante doit explicitement porter `market_code` et `circuit`** (ou `circuit: 'both'` pour un poste réellement commun). Un coût sans périmètre ou affecté au mauvais marché/circuit rend le scénario `NON_DECISIONNEL` ; le calcul ne récupère jamais un coût KM pour un marché CM/CG par défaut.
+
 Le coût d'achat est `product.purchase_kmf` + `purchase_evidence`. Chaque scénario contient une liste de composants :
 
 ```js
