@@ -1205,28 +1205,58 @@
           value:String(i),
           textContent:(line.product||'Article')+' · '+line.quantity+' disponible(s) ('+line.from_unit_ref+')',
         })));
-        const barcode=field('Scanner EAN / référence physique','Code physique observé lors du dépôt dans '+bag.reference);
+        const method=doc.createElement('select');
+        method.setAttribute('aria-label','Mode de preuve du dépôt dans '+bag.reference);
+        method.setAttribute('data-hub-bag-evidence-method','');
+        [['SCAN','Code physique vérifié'],['MANUAL','Mode dégradé · constat manuel']]
+          .forEach(([value,label])=>method.appendChild(Object.assign(doc.createElement('option'),
+            {value,textContent:label})));
+        const barcode=field('Scanner ou saisir EAN / référence physique',
+          'Code physique observé lors du dépôt dans '+bag.reference);
         barcode.setAttribute('data-hub-bag-code','');
+        const proof=field('Preuve du constat manuel (référence, au moins 6 caractères)',
+          'Référence de preuve du dépôt manuel dans '+bag.reference);
+        proof.setAttribute('data-hub-bag-manual-proof','');
+        proof.hidden=true;
         const qty=doc.createElement('input');qty.type='number';qty.min='1';qty.step='1';qty.value='1';
         qty.setAttribute('aria-label','Quantité déposée dans '+bag.reference);
         const put=makeActionButton(doc,'Déposer dans le sac','scan-bag-deposit');
+        const syncMethod=()=>{
+          const manual=method.value==='MANUAL';
+          barcode.hidden=manual;
+          proof.hidden=!manual;
+          if(manual)barcode.value='';
+          else proof.value='';
+        };
+        method.addEventListener('change',syncMethod);
         const deposit=()=>{
           const line=options[Number(source.value)];
-          if (!line || !barcode.value.trim()) return;
+          if (!line) return;
+          const manual=method.value==='MANUAL';
+          const proofRef=String(proof.value||'').trim();
+          if(manual ? proofRef.length<6 : !barcode.value.trim()) {
+            setFeedback(context.root,manual
+              ? 'Mode manuel : référence de preuve obligatoire (6 caractères minimum).'
+              : 'Code physique à vérifier avant le dépôt.', 'critical');
+            return;
+          }
           const left=(planned.get(String(line.order_item_id))||0)-(actual.get(String(line.order_item_id))||0);
           const quantity=Number(qty.value);
           if (!Number.isInteger(quantity)||quantity<1||quantity>Math.min(left,Number(line.quantity))) return;
           runAction(context,put,{
             url:endpointFor(context.marketCode, 'bags/'+encodeURIComponent(bag.unit_id)+'/deposit'),
             body:{from_unit_id:line.from_unit_id,allocation_id:line.allocation_id,
-              quantity,evidence_method:'SCAN',evidence_code:barcode.value.trim()},
-            runningMessage:'Contrôle du scan et dépôt…',
-            successMessage:'Dépôt confirmé dans '+bag.reference,
+              quantity,
+              ...(manual ? {evidence_method:'MANUAL',evidence_ref:proofRef}
+                : {evidence_method:'SCAN',evidence_code:barcode.value.trim()})},
+            runningMessage:manual?'Contrôle du constat et dépôt…':'Contrôle du code et dépôt…',
+            successMessage:'Dépôt confirmé dans '+bag.reference+(manual?' · preuve manuelle':''),
           }).catch(()=>{});
         };
         barcode.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();deposit();}});
+        proof.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();deposit();}});
         put.addEventListener('click',deposit);
-        [source,barcode,qty,put].forEach(node=>row.appendChild(node));
+        [source,method,barcode,proof,qty,put].forEach(node=>row.appendChild(node));
         holder.appendChild(row);
       }
       if (totalPlanned>0 && totalActual===totalPlanned && [...planned].every(([id,q])=>actual.get(id)===q)) {
