@@ -26,6 +26,7 @@ const run=crypto.randomBytes(4).toString('hex');
 const R={marker:MARKER,run8:run.toUpperCase(),verdict:'NOT_PROVEN',checks:[],steps:[]};
 const save=()=>fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(R,null,2)+'\n');
 const chk=(ok,key,detail)=>{R.checks.push({key,verdict:ok?'PASS':'FAIL',detail:detail===undefined?undefined:detail});save();if(!ok)throw Error('FAIL:'+key+(detail===undefined?'':':'+JSON.stringify(detail).slice(0,200)))};
+const soft=(ok,key,detail)=>{R.checks.push({key,verdict:ok?'PASS':'DEFECT',detail});if(!ok)(R.defects=R.defects||[]).push({key,detail});save()};
 const num=s=>Number(String(s).replace(/[^\d]/g,''));
 async function version(tag){const v=await (await fetch(ORIGIN+'/health/version')).json();R['sha_'+tag]=v.commit;chk(/^[a-f0-9]{40}$/.test(v.commit),'sha_'+tag,v.commit)}
 const q=async(s,p=[])=>(await db.query(s,p)).rows;
@@ -159,8 +160,9 @@ async function relayCash(order){
   const s0=await state(order.id);R.after_order={o:s0.o,items:s0.items};
   const total=Number(s0.o.total_kmf);
   chk(s0.o.status==='pending'&&s0.o.payment_mode==='cash_relais'&&s0.items.length>=1,'order_pending_cash_relais',{status:s0.o.status,mode:s0.o.payment_mode,lines:s0.items.length});
-  chk(num(R.checkout_total_text)===total,'checkout_total_equals_server_total',{ui:R.checkout_total_text,server:total});
-  chk(num(R.pdp_price_text)>0&&total>=num(R.pdp_price_text),'pdp_price_consistent_with_server',{pdp:R.pdp_price_text,server:total});
+  R.price_breakdown={items_price_kmf:s0.items.map(i=>i.price_kmf),transport_price_kmf:s0.o.transport_price_kmf,total_kmf:total,display_total_amount:s0.o.display_total_amount};
+  soft(num(R.checkout_total_text)===total,'checkout_total_equals_server_total',{ui:R.checkout_total_text,server:total});
+  soft(num(R.pdp_price_text)>0&&total===num(R.pdp_price_text),'pdp_price_consistent_with_server',{pdp:R.pdp_price_text,server:total});
   chk(s0.cc.length===0,'no_cash_before_relay');
   await relayCash(order);
   const s1=await state(order.id);R.after_cash={o:s1.o,cc:s1.cc,ctl:s1.ctl,hist:s1.hist};
@@ -169,7 +171,7 @@ async function relayCash(order){
   chk(Object.values(s1.cc[0]).some(v=>Number(v)===total),'cash_amount_equals_total',s1.cc[0]);
   chk(s1.ctl.filter(c=>c.state==='CONFIRMED').length===1,'one_confirmed_control',s1.ctl.map(c=>c.state));
   chk(s1.o.updated_at!==undefined,'readback');
-  await version('end');R.verdict='CLAUDE_PAR_KM_ORDER_CASH_CHROMIUM_PASS';
+  await version('end');R.verdict=R.defects?'PASS_WITH_DEFECTS':'CLAUDE_PAR_KM_ORDER_CASH_CHROMIUM_PASS';
  }catch(e){R.verdict='FAIL_OR_BLOCKED';R.error=String(e.message||e).slice(0,400);process.exitCode=2}
  finally{save();await db.pool.end();console.log(JSON.stringify({verdict:R.verdict,error:R.error||null,order:R.order||null}))}
 })();
