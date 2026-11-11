@@ -159,7 +159,7 @@ async function computeRecommend(b = {}) {
     product = r.rows[0];
   }
 
-  const category   = b.category || product?.category || 'phones';
+  const category   = b.category || product?.category || null;
   const isDiaspora = !!b.is_diaspora;
   const channel    = b.channel || 'cash_relais';
   const bodyWeightKg = Number(b.poids_kg);
@@ -192,11 +192,14 @@ async function computeRecommend(b = {}) {
   // ── 2. Charger paramètres globaux en parallèle ──
   const [{ fc, comps, provs, charges }, catRes] = await Promise.all([
     _loadGlobalParams(),
-    db.query('SELECT * FROM customs_categories WHERE key = $1 AND is_active = TRUE', [category]),
+    category
+      ? db.query('SELECT * FROM customs_categories WHERE key = $1 AND is_active = TRUE', [category])
+      : Promise.resolve({ rows: [] }),
   ]);
 
   const cat = catRes.rows[0];
-  if (!cat) warnings.push('Catégorie "' + category + '" introuvable → valeurs par défaut');
+  if (!category) warnings.push('Catégorie absente (category_status UNKNOWN) → valeurs par défaut');
+  else if (!cat) warnings.push('Catégorie "' + category + '" introuvable → valeurs par défaut');
 
   const fxRates       = resolveFxRates(fc);
   const taxEUR        = fxRates.eur_kmf;
@@ -312,6 +315,7 @@ async function computeRecommend(b = {}) {
     context: {
       product_id:   b.product_id || null,
       category,
+      category_status: cat ? 'KNOWN' : 'UNKNOWN',
       channel,
       is_diaspora:  isDiaspora,
       taux_aed_kmf: taxAED,
@@ -432,7 +436,7 @@ async function computeRecommendBatch(b = {}) {
   const ctx      = { channel: 'cash_relais', isDiaspora: false };
 
   for (const product of productsRes.rows) {
-    const category     = product.category || 'phones';
+    const category     = product.category || null;
     const cat          = cats[category];
     const poidsKg      = Number(product.weight_kg) || 1;
     const volumeM3     = Number(product.volume_cm3) > 0 ? Number(product.volume_cm3) / 1_000_000 : 0.005;
@@ -484,6 +488,7 @@ async function computeRecommendBatch(b = {}) {
       product_id:            product.id,
       name:                  product.name,
       category,
+      category_status:       cat ? 'KNOWN' : 'UNKNOWN',
       cost_kmf:              prixAchatKmf,
       weight_kg:             poidsKg,
       volume_m3:             volumeM3,
