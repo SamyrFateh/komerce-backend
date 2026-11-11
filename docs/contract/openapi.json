@@ -33838,6 +33838,47 @@
           }
         }
       }
+    },
+    "/api/hub/physical-codes/confirm": {
+      "post": {
+        "summary": "POST /api/hub/physical-codes/confirm",
+        "x-route-file": "routes/hub.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "service-read",
+                  "description": "Champs observés (source: service-read)",
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "code": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "product_sku_id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "trust": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
     }
   },
   "x-inventory-source": "runtime-introspection"
