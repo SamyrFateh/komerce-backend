@@ -308,6 +308,91 @@ async function projectToKmf(amount, currency) {
   return kmf;
 }
 
+// Expose the engine's estimated per-SKU allocation evidence, without recomputing
+// N1/N2 in the browser or treating analytical N3 as a SKU obligation.
+function projectCostAllocationTrace(pricing = {}) {
+  const breakdown = pricing.cost_breakdown;
+  if (!breakdown?.landed_relay || !breakdown?.business) return null;
+  const cost = value => {
+    if (value == null || value === '' || !Number.isFinite(Number(value))) return null;
+    return Number(value);
+  };
+  const keyFor = category => ({
+    product_purchase: 'product_purchase', sourcing: 'sourcing', hub: 'hub',
+    packaging: 'packaging', freight: 'freight', transit: 'freight',
+    customs: 'customs', douane: 'customs', port_transitary: 'port_transitary',
+    distribution: 'local_distribution', local_distribution: 'local_distribution',
+    relay: 'relay', payment: 'payment', paiement: 'payment',
+    risk_provision: 'risk_provision',
+  })[category] || (category === 'fixed_overhead' ? null : 'sourcing');
+
+  const allocations = (Array.isArray(pricing.allocations) ? pricing.allocations : [])
+    .map(line => {
+      if (!line || typeof line !== 'object') return null;
+      const category = keyFor(line.category);
+      if (!category) return null; // N3: not an item cost
+      const allocated = cost(line.allocated_cost_kmf ?? line.imputed_amount_kmf);
+      const engaged = cost(line.engaged_cost_kmf ?? line.engaged_amount_kmf);
+      const divisor = cost(line.allocation_divisor);
+      if (allocated == null || engaged == null || allocated < 0 || engaged < 0) return null;
+      return {
+        category, component_key: line.component_key || null,
+        label: line.component_label || line.component_key || 'Poste sans nom',
+        level: line.allocation_level || line.engaged_level || 'unknown',
+        basis: line.allocation_basis || null,
+        unit: line.unit || null,
+        engaged_kmf: engaged,
+        divisor: divisor != null && divisor > 0 ? divisor : null,
+        allocated_kmf: allocated,
+        confidence: line.confidence || 'unknown',
+      };
+    }).filter(Boolean);
+
+  const definitions = [
+    ['N1', 'product_purchase', 'Achat fournisseur'],
+    ['N1', 'sourcing', 'Sourcing'],
+    ['N1', 'hub', 'Hub variable'],
+    ['N1', 'packaging', 'Emballage'],
+    ['N1', 'freight', 'Fret / transit'],
+    ['N1', 'customs', 'Douane'],
+    ['N1', 'port_transitary', 'Port / transitaire'],
+    ['N1', 'local_distribution', 'Distribution locale'],
+    ['N1', 'relay', 'Relais'],
+    ['N2', 'payment', 'Paiement / collecte'],
+    ['N2', 'risk_provision', 'Provision de risque'],
+  ];
+  const lines = definitions.map(([family, key, label]) => {
+    const amount = cost(family === 'N1'
+      ? breakdown.landed_relay[key] : breakdown.business[key]);
+    if (amount == null) return null;
+    const components = allocations.filter(allocation => allocation.category === key);
+    // This is a reconciliation indicator, not a substitute pricing calculation:
+    // product purchase, base freight and risk provision often have no allocation row.
+    const componentSum = components.reduce((sum, line) => sum + line.allocated_kmf, 0);
+    const remainder = amount - componentSum;
+    return {
+      family, key, label, unit_cost_kmf: amount,
+      components,
+      non_itemized_kmf: remainder > 2 ? Math.round(remainder) : 0,
+      allocation_discrepancy: remainder < -2,
+    };
+  }).filter(line => line && (line.unit_cost_kmf !== 0 || line.components.length));
+  const av = pricing.allocation_averages || {};
+  return {
+    status: 'ESTIMATED_NOT_RECONCILED',
+    authority: 'SERVER_PRICING_ENGINE',
+    currency: 'KMF',
+    hypotheses: {
+      articles_per_order: cost(av.articles_per_order),
+      articles_per_parcel: cost(av.articles_per_parcel),
+      articles_per_shipment: cost(av.articles_per_shipment),
+      confidence: av.confidence || 'unknown',
+    },
+    lines,
+    customs_status: breakdown.customs_status || pricing.cost_breakdown?.customs_status || null,
+  };
+}
+
 function projectUnitEconomics(pricing = {}, selectedPriceKmf = null) {
   return {
     selected_price_kmf: selectedPriceKmf,
@@ -316,6 +401,7 @@ function projectUnitEconomics(pricing = {}, selectedPriceKmf = null) {
     variable_cost_complete_kmf: pricing.variable_cost_complete_kmf ?? null,
     landed_relay_cost_kmf: pricing.landed_relay_cost_kmf ?? null,
     business_variable_cost_kmf: pricing.business_variable_cost_kmf ?? null,
+    cost_allocation_trace: projectCostAllocationTrace(pricing),
     // Contrat canonique (2026-09) : cdr_complete_kmf → fully_loaded_cost_reference_kmf
     cdr_reference_kmf: pricing.fully_loaded_cost_reference_kmf ?? null,
     contribution_unit_kmf: pricing.contribution_kmf ?? null,
