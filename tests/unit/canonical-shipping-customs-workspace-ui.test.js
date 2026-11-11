@@ -49,3 +49,9 @@ test('Expéditions & Douane : la colonne Commande ouvre la fiche 360 avec retour
   expect(src).toContain('nav.canOpenEntity360(context.user)');
   expect(src).toContain("nav.withEntityReturnTo(`/admin/orders/${encodeURIComponent(value)}`, nav.currentReturnTarget(null), 'Retour aux expéditions')");
 });
+
+test('dossier lié à une expédition : « Déclarer »/« Corriger » ancienne voie masqués, voie customs-amount indiquée',()=>{
+  expect(source).toContain('row.journey_reference && row.is_active');
+  expect(source).toContain('data-customs-journey-linked');
+  expect(source).toMatch(/row\.status === 'declared' && row\.is_active && !row\.journey_reference/);
+});

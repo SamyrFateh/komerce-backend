@@ -532,12 +532,17 @@
       });
       const td = doc.createElement('td');
       if (context.user && context.user.role === 'admin') {
-        if (row.status === 'pending' && row.is_active) {
+        if (row.journey_reference && row.is_active && row.status !== 'confirmed') {
+          // Dossier lié à une expédition KOM-BOX : pas de voie colis, seule la déclaration de montant de l'expédition.
+          const hint = text(doc, 'span', 'kmc-workspace-hint', `Lié à ${row.journey_reference} : déclarer le montant depuis l'expédition (customs-amount)`);
+          hint.setAttribute('data-customs-journey-linked', row.journey_reference);
+          td.appendChild(hint);
+        } else if (row.status === 'pending' && row.is_active) {
           const declare = makeButton(doc, 'Déclarer', 'declare-customs');
           declare.addEventListener('click', () => openCustomsForm(context, doc, formHost, row, 'declare'));
           td.appendChild(declare);
         }
-        if (row.status === 'declared' && row.is_active) {
+        if (row.status === 'declared' && row.is_active && !row.journey_reference) {
           const correct = makeButton(doc, 'Corriger', 'correct-customs');
           correct.classList.add('is-secondary');
           correct.addEventListener('click', () => openCustomsForm(context, doc, formHost, row, 'correct'));

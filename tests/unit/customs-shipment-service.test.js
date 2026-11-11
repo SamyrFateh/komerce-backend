@@ -735,6 +735,21 @@ describe('declareCustomsPayment', () => {
       .rejects.toMatchObject({ status: 409 });
   });
 
+  it('409 dédié si le dossier est lié à une expédition KOM-BOX (voie customs-amount)', async () => {
+    const client = {
+      query: jest.fn(async (sql) => {
+        const s = sql.trim();
+        if (s.startsWith('SELECT * FROM customs_shipments')) return { rows: [{ id: 'ship-1', status: 'pending', is_active: true }] };
+        if (s.includes('FROM international_shipments')) return { rows: [{ reference: 'INT-1' }] };
+        return { rows: [] };
+      }),
+      release: jest.fn(),
+    };
+    const mockDb = { pool: { connect: jest.fn().mockResolvedValue(client) } };
+    await expect(declareCustomsPayment(mockDb, 'ship-1', { customs_paid_kmf: 1000 }, 'user-1'))
+      .rejects.toMatchObject({ status: 409, code: 'CUSTOMS_LINKED_TO_JOURNEY_USE_CUSTOMS_AMOUNT', message: expect.stringContaining('customs-amount') });
+  });
+
   it('déclare, ventile, propage et pose customs_cleared_at sur les colis (happy path complet)', async () => {
     const client = {
       query: jest.fn(async (sql) => {

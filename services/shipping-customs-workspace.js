@@ -105,7 +105,9 @@ async function queryCustoms(marketId) {
             cs.cif_value_kmf, cs.customs_paid_kmf, cs.freight_kmf,
             cs.total_weight_kg, cs.nb_parcels, cs.allocation_method,
             cs.status, cs.is_active, cs.declared_at, cs.created_at,
-            COUNT(csp.parcel_id)::int AS linked_parcels
+            COUNT(csp.parcel_id)::int AS linked_parcels,
+            (SELECT s.reference FROM international_shipments s
+              WHERE s.customs_shipment_id = cs.id LIMIT 1) AS journey_reference
        FROM customs_shipments cs
        LEFT JOIN customs_shipment_parcels csp ON csp.shipment_id = cs.id
       WHERE cs.market_id = $1
