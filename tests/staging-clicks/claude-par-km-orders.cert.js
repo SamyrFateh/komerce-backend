@@ -13,9 +13,9 @@
 const fs=require('fs'),path=require('path'),crypto=require('crypto'),bcrypt=require('bcryptjs');
 const {chromium}=require('playwright');
 const db=require('../../db');
-const {confirmTarget}=require('./target-guard');
+const {confirmTarget}=require('../../scripts/recette/target-guard');
 const {createAdminUser}=require('../../services/user-mutation-service');
-const {markE2eTestAccount}=require('./staging-e2e-provision');
+const {markE2eTestAccount}=require('../../scripts/recette/staging-e2e-provision');
 const {preseedG6BuyerOtp}=require('../../services/g6-staging-buyer-identity-guard');
 const ORIGIN='https://komerce-backend-production.up.railway.app';
 const MARKER='CLAUDE-PAR-20261111';

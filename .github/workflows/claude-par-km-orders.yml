@@ -5,7 +5,7 @@ on:
     branches: [cert/claude-par-km-orders]
     paths:
       - '.github/workflows/claude-par-km-orders.yml'
-      - 'scripts/recette/claude-par-km-orders.js'
+      - 'tests/staging-clicks/claude-par-km-orders.cert.js'
 permissions:
   contents: read
 concurrency:
@@ -44,7 +44,7 @@ jobs:
           node scripts/recette/target-guard.js
       - run: npx playwright install chromium
       - name: Commande client, cash relais, double validation, autre marche
-        run: node scripts/recette/claude-par-km-orders.js
+        run: node tests/staging-clicks/claude-par-km-orders.cert.js
       - name: Artefacts
         if: always()
         uses: actions/upload-artifact@v4
