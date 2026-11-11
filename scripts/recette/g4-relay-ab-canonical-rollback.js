@@ -142,7 +142,7 @@ async function prove({ db, env=process.env, run8, userWriter, relayWriter,
       "WHERE am.user_id=ANY($1::uuid[]) AND am.status='ACTIVE' "+
       "ORDER BY am.user_id,mc.capability", [createdUserIds]
     );
-    if(grants.length!==4||new Set(grants.map(g=>String(g.user_id))).size!==2 ||
+    if(grants.length!==expectedCapabilities.length*2||new Set(grants.map(g=>String(g.user_id))).size!==2 ||
        grants.some(g=>String(g.market_id)!==String(market.id)||g.status!=='ACTIVE')||
        facts.some(f=>JSON.stringify(grants.filter(g=>String(g.user_id)===String(f.userId))
          .map(g=>g.capability).sort())!==JSON.stringify(expectedCapabilities)))

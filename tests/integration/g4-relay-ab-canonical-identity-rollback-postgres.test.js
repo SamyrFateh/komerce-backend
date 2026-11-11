@@ -48,7 +48,7 @@ describeDb('G4 A/B: canonical identities proven and rolled back on disposable Po
       role:'agent_relais',e2e_markers:2,
       post_rollback:{agents:0,relais:0,memberships:0,markers:0},
       membership:'EPHEMERAL_KM_ONLY_PROVEN',
-      granted_capabilities:['execution.parcel.collect','execution.parcel.receive'],
+      granted_capabilities:['execution.cash.confirm','execution.parcel.collect','execution.parcel.receive'],
       order_fixtures:'NOT_CREATED',
       chromium:'NOT_RUN',staging:'NOT_MODIFIED',
       certification:'NOT_PROVEN',committed:false,
