@@ -17,7 +17,7 @@ const product = (id, active = false) => ({
   decision_state:{key:'READY',tone:'positive'},can_approve:true,
   proposed_price:{amount:25000,source:active?'LOCAL_ACTIVE':'MARKET_TARGET',currency:CURRENCY},
   corridor:{low:23000,target:25000,high:28000,status:'READY',sample_count:5},
-  landed_relay_cost_local:14800,variable_cost_local:16000,
+  landed_relay_cost_local:14800,business_variable_cost_local:1200,variable_cost_local:16000,minimum_safe_price_local:17600,
   contribution_at_proposed_local:9000,
 });
 
@@ -36,7 +36,19 @@ async function mount(page) {
         decision_state:{key:'READY',tone:'positive'},can_approve:true,
         proposed_price:{amount:25000,source:'MARKET_TARGET',currency:'KMF'},
         corridor:{low:23000,target:25000,high:28000,status:'READY',sample_count:5},
-        landed_relay_cost_local:14800,variable_cost_local:16000,contribution_at_proposed_local:9000
+        landed_relay_cost_local:14800,business_variable_cost_local:1200,variable_cost_local:16000,minimum_safe_price_local:17600,contribution_at_proposed_local:9000,
+        cost_allocation_trace: {
+          status: 'ESTIMATED_NOT_RECONCILED', authority: 'SERVER_PRICING_ENGINE', currency:'KMF',
+          hypotheses:{articles_per_order:2.5,articles_per_parcel:4,articles_per_shipment:200,confidence:'low'},
+          lines:[
+            {family:'N1',key:'product_purchase',label:'Achat fournisseur',unit_cost_kmf:12000,components:[],non_itemized_kmf:12000,allocation_discrepancy:false},
+            {family:'N1',key:'freight',label:'Fret / transit',unit_cost_kmf:2000,components:[{label:'Fret au poids',level:'article',basis:'weight',engaged_kmf:2000,divisor:1,allocated_kmf:2000,confidence:'high'}],non_itemized_kmf:0,allocation_discrepancy:false},
+            {family:'N1',key:'packaging',label:'Emballage',unit_cost_kmf:500,components:[{label:'Emballage carton',level:'parcel',basis:'quantity',engaged_kmf:2000,divisor:4,allocated_kmf:500,confidence:'low'}],non_itemized_kmf:0,allocation_discrepancy:false},
+            {family:'N1',key:'port_transitary',label:'Port / transitaire',unit_cost_kmf:300,components:[{label:'Transitaire forfait',level:'shipment',basis:'quantity',engaged_kmf:60000,divisor:200,allocated_kmf:300,confidence:'low'}],non_itemized_kmf:0,allocation_discrepancy:false},
+            {family:'N2',key:'payment',label:'Paiement / collecte',unit_cost_kmf:800,components:[{label:'Collecte',level:'order',basis:'quantity',engaged_kmf:2000,divisor:2.5,allocated_kmf:800,confidence:'low'}],non_itemized_kmf:0,allocation_discrepancy:false},
+            {family:'N2',key:'risk_provision',label:'Provision de risque',unit_cost_kmf:400,components:[],non_itemized_kmf:400,allocation_discrepancy:false},
+          ],
+        }
       },
       {product_id:'p2',product_ref:'KPR-2',product_name:'Casque déjà publié',
         category:'Audio',catalog_state:'published',decision_recorded:true,
@@ -44,9 +56,22 @@ async function mount(page) {
         decision_state:{key:'READY',tone:'positive'},can_approve:true,
         proposed_price:{amount:25000,source:'LOCAL_ACTIVE',currency:'KMF'},
         corridor:{low:23000,target:25000,high:28000,status:'READY',sample_count:5},
-        landed_relay_cost_local:14800,variable_cost_local:16000,contribution_at_proposed_local:9000
+        landed_relay_cost_local:14800,business_variable_cost_local:1200,variable_cost_local:16000,minimum_safe_price_local:17600,contribution_at_proposed_local:9000,
+        cost_allocation_trace: {
+          status: 'ESTIMATED_NOT_RECONCILED', authority: 'SERVER_PRICING_ENGINE', currency:'KMF',
+          hypotheses:{articles_per_order:2.5,articles_per_parcel:4,articles_per_shipment:200,confidence:'low'},
+          lines:[
+            {family:'N1',key:'product_purchase',label:'Achat fournisseur',unit_cost_kmf:12000,components:[],non_itemized_kmf:12000,allocation_discrepancy:false},
+            {family:'N1',key:'freight',label:'Fret / transit',unit_cost_kmf:2000,components:[{label:'Fret au poids',level:'article',basis:'weight',engaged_kmf:2000,divisor:1,allocated_kmf:2000,confidence:'high'}],non_itemized_kmf:0,allocation_discrepancy:false},
+            {family:'N1',key:'packaging',label:'Emballage',unit_cost_kmf:500,components:[{label:'Emballage carton',level:'parcel',basis:'quantity',engaged_kmf:2000,divisor:4,allocated_kmf:500,confidence:'low'}],non_itemized_kmf:0,allocation_discrepancy:false},
+            {family:'N1',key:'port_transitary',label:'Port / transitaire',unit_cost_kmf:300,components:[{label:'Transitaire forfait',level:'shipment',basis:'quantity',engaged_kmf:60000,divisor:200,allocated_kmf:300,confidence:'low'}],non_itemized_kmf:0,allocation_discrepancy:false},
+            {family:'N2',key:'payment',label:'Paiement / collecte',unit_cost_kmf:800,components:[{label:'Collecte',level:'order',basis:'quantity',engaged_kmf:2000,divisor:2.5,allocated_kmf:800,confidence:'low'}],non_itemized_kmf:0,allocation_discrepancy:false},
+            {family:'N2',key:'risk_provision',label:'Provision de risque',unit_cost_kmf:400,components:[],non_itemized_kmf:400,allocation_discrepancy:false},
+          ],
+        }
       },
     ];
+    rows[1].cost_allocation_trace = null; // API older/missing: no fabricated allocation details
     window.__catalogCalls=[];
     window.__catalogReloads=0;
     const request=async (url,options={}) => {
@@ -79,10 +104,42 @@ test.describe('Catalogue pays — Chromium desktop 1440', () => {
     await mount(page);
     const surface=page.locator('[data-market-price-catalog]');
     await expect(surface).toBeVisible();
-    await expect(surface.locator('tbody tr')).toHaveCount(2);
+    await expect(surface.locator('table.kmc-price-list-table > tbody > tr[data-product-ref]')).toHaveCount(2);
     for(const header of ['Produit','Rendu relais','Coût variable','Repères marché','Notre prix','Contribution','Publication'])
-      await expect(surface.locator('thead')).toContainText(header);
+      await expect(surface.locator('table.kmc-price-list-table > thead')).toContainText(header);
     await expect(surface).not.toContainText('Charges fixes par article');
+    const row = surface.locator('tr[data-product-ref="KPR-1"]');
+    await expect(row.locator('.kmc-price-landed')).toContainText('14 800 KMF');
+    await expect(row.locator('.kmc-price-variable')).toContainText('16 000 KMF');
+    await expect(row.locator('.kmc-price-n2')).toHaveText('N2 · Business : 1 200 KMF');
+    await expect(row.locator('[data-safety-floor]')).toHaveText('Plancher moteur : 17 600 KMF');
+    await expect(row.locator('.kmc-price-contribution')).toContainText('9 000 KMF');
+    await row.getByRole('button', { name: 'Voir les quotes-parts N1 / N2' }).click();
+    const dialog = row.locator('dialog.kmc-price-detail-box');
+    await expect(dialog).toBeVisible();
+    await expect(dialog).toContainText('N1 + N2 · Coût variable complet');
+    await expect(dialog).toContainText('Les charges fixes N3 sont exclues');
+    await expect(dialog).toContainText('2,5 articles / commande');
+    await expect(dialog).toContainText('4 articles / colis');
+    await expect(dialog).toContainText('200 articles / expédition');
+    await expect(dialog).toContainText('confiance : Faible');
+    await expect(dialog).toContainText('Transitaire forfait');
+    await expect(dialog).toContainText('60 000 KMF');
+    await expect(dialog).toContainText('300 KMF');
+    await expect(dialog).toContainText('Expédition ÷ 200 articles');
+    await expect(dialog).toContainText('Colis ÷ 4 articles');
+    await expect(dialog).toContainText('Commande ÷ 2,5 articles');
+    await expect(dialog).toContainText('Part non détaillée par le moteur');
+    await expect(dialog).toContainText('Fret au poids');
+    await expect(dialog).toContainText('Poids du produit');
+    await expect(dialog.getByRole('button', { name: 'Fermer la ventilation des coûts' })).toBeVisible();
+    expect(await page.evaluate(() => window.__catalogCalls)).toHaveLength(0);
+    await dialog.getByRole('button', { name: 'Fermer la ventilation des coûts' }).click();
+    await expect(dialog).toBeHidden();
+    await row.getByRole('button', { name: 'Voir les quotes-parts N1 / N2' }).click();
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
+
     const dimensions=await page.evaluate(()=>({
       width:window.innerWidth, scroll:document.documentElement.scrollWidth,
       table:document.querySelector('.kmc-price-list-scroll').clientWidth,
@@ -90,6 +147,20 @@ test.describe('Catalogue pays — Chromium desktop 1440', () => {
     expect(dimensions.scroll).toBeLessThanOrEqual(dimensions.width);
     expect(dimensions.table).toBeGreaterThan(900);
     await test.info().attach('market-catalog-desktop-1440',{body:await page.screenshot({fullPage:true}),contentType:'image/png'});
+  });
+
+  test('ventilation absente : aucune hypothèse ni faux montant inventé', async ({page}) => {
+    await mount(page);
+    const row = page.locator('tr[data-product-ref="KPR-2"]');
+    await row.getByRole('button', {name: 'Voir les quotes-parts N1 / N2'}).click();
+    const dialog = row.locator('dialog.kmc-price-detail-box');
+    await expect(dialog).toBeVisible();
+    await expect(dialog).toContainText('Ventilation par poste non fournie par le moteur');
+    await expect(dialog.locator('.kmc-price-allocation-table')).toHaveCount(0);
+    await expect(dialog).toContainText('N1 + N2 · Coût variable complet');
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
+    expect(await page.evaluate(() => window.__catalogCalls)).toHaveLength(0);
   });
 
   test('anti-faute : 2500 refusé, 32000 au-dessus du marché autorisé',async({page})=>{

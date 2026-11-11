@@ -841,3 +841,126 @@
   .kmc-atelier-views .kmc-structure-reference-form .kmc-inline-cost-save,
   .kmc-atelier-views .kmc-structure-reference-form .kmc-inline-cost-cancel { width: 100%; }
 }
+
+/* Cost sequence: readable path to catalog pricing, not a client-side economic calculation. */
+.kmc-atelier-views .kmc-cockpit-costs > .kmc-economic-cost-chain {
+  grid-column: 1 / -1;
+  grid-row: auto;
+  min-width: 0;
+}
+
+.kmc-atelier-views .kmc-economic-cost-chain {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  padding: 4px 18px 17px;
+}
+.kmc-atelier-views .kmc-economic-cost-chain-step {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  border: 1px solid #dbe4ee;
+  border-radius: 12px;
+  background: #fff;
+  padding: 14px 15px;
+  box-shadow: 0 1px 3px rgba(18, 36, 60, .04);
+}
+.kmc-atelier-views .kmc-economic-cost-chain-step.is-n1 { border-top: 3px solid #64748b; }
+.kmc-atelier-views .kmc-economic-cost-chain-step.is-n2 { border-top: 3px solid #8269ba; }
+.kmc-atelier-views .kmc-economic-cost-chain-step.is-total { border-top: 3px solid #193a5c; background: #f4f7fb; }
+.kmc-atelier-views .kmc-economic-cost-chain-step.is-decision { border-top: 3px solid #a97521; background: #fffaf0; }
+.kmc-atelier-views .kmc-economic-cost-chain-index {
+  color: #63758b;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+.kmc-atelier-views .kmc-economic-cost-chain-label {
+  color: #19344f;
+  font-size: 13px;
+  line-height: 1.35;
+}
+.kmc-atelier-views .kmc-economic-cost-chain-value {
+  color: #152a43;
+  font-size: 16px;
+  line-height: 1.35;
+  font-weight: 850;
+  overflow-wrap: anywhere;
+}
+.kmc-atelier-views .kmc-economic-cost-chain-detail {
+  color: #53677e;
+  font-size: 11px;
+  line-height: 1.45;
+}
+@media (max-width: 1200px) {
+  .kmc-atelier-views .kmc-economic-cost-chain { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 650px) {
+  .kmc-atelier-views .kmc-economic-cost-chain { grid-template-columns: minmax(0, 1fr); padding: 4px 12px 14px; }
+}
+
+/* N3 is a period cost: display its reconciled coverage without adding it to SKU floors. */
+.kmc-atelier-views .kmc-cockpit-costs > .kmc-n3-coverage-summary {
+  grid-column: 1 / -1;
+  grid-row: auto;
+  min-width: 0;
+}
+.kmc-atelier-views .kmc-n3-coverage-summary {
+  padding: 15px 17px 13px;
+  border: 1px solid #dbe3ed;
+  border-radius: 14px;
+  background: #f6f8fb;
+}
+.kmc-atelier-views .kmc-n3-summary-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 7px 15px;
+  padding-bottom: 11px;
+}
+.kmc-atelier-views .kmc-n3-summary-heading strong { font-size: 15px; font-weight: 850; color: #1a3048; }
+.kmc-atelier-views .kmc-n3-summary-heading span { font-size: 11px; color: #5c6e83; }
+.kmc-atelier-views .kmc-n3-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.kmc-atelier-views .kmc-n3-summary-metric {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  min-width: 0;
+  padding: 13px 15px;
+  border-radius: 10px;
+  border: 1px solid #dfe5ec;
+  background: white;
+}
+.kmc-atelier-views .kmc-n3-summary-metric.is-structure { border-left: 3px solid #825cb3; }
+.kmc-atelier-views .kmc-n3-summary-metric.is-contribution { border-left: 3px solid #476b83; }
+.kmc-atelier-views .kmc-n3-summary-metric.is-covered { border-left: 3px solid #287155; }
+.kmc-atelier-views .kmc-n3-summary-metric.is-uncovered { border-left: 3px solid #b17a32; }
+.kmc-atelier-views .kmc-n3-summary-metric.is-unknown { border-left: 3px solid #94a3b8; }
+.kmc-atelier-views .kmc-n3-metric-label {
+  font-size: 11px;
+  color: #50647b;
+  font-weight: 750;
+}
+.kmc-atelier-views .kmc-n3-metric-value {
+  color: #172f49;
+  font-size: 19px;
+  font-weight: 850;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.kmc-atelier-views .kmc-n3-metric-note { font-size: 11px; color: #5b6e83; line-height: 1.4; }
+.kmc-atelier-views .kmc-n3-summary-rule {
+  margin: 12px 0 0;
+  color: #50647a;
+  font-size: 11px;
+  line-height: 1.5;
+}
+@media (max-width: 780px) {
+  .kmc-atelier-views .kmc-n3-summary-grid { grid-template-columns: minmax(0, 1fr); }
+}

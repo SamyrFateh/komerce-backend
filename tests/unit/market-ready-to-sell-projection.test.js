@@ -142,6 +142,46 @@ describe('market-ready-to-sell-projection', () => {
     expect(result.items[0].bulk_eligible).toBe(false);
   });
 
+  test('N1, N2, coût variable et plancher proviennent du moteur sans total navigateur', async () => {
+    const db = executor([], [
+      { id: 'p1', product_ref: 'KPR-1', name: 'Test coûts', category: 'phones', cost_kmf: 9000 },
+    ]);
+    const corridor = corridorFor('KPR-1');
+    corridor.selected.economics = {
+      landed_relay_cost_kmf: 14800,
+      business_variable_cost_kmf: 1200,
+      variable_cost_complete_kmf: 16000,
+      minimum_safe_price_kmf: 17600,
+      cost_allocation_trace: {
+        status: 'ESTIMATED_NOT_RECONCILED',
+        authority: 'SERVER_PRICING_ENGINE',
+        hypotheses: { articles_per_order: 2.5, confidence: 'low' },
+        lines: [{ family: 'N2', key: 'payment', unit_cost_kmf: 1200 }],
+      },
+    };
+    mockBuildCorridor.mockResolvedValueOnce(corridor);
+    const result = await projection.buildReadyToSell({
+      executor: db,
+      market: { id: 'mkt-km', code: 'KM', currency: 'KMF' },
+      reviewQueue: { items: [{ product_id: 'p1', product_ref: 'KPR-1' }] },
+    });
+    expect(result.items[0]).toMatchObject({
+      landed_relay_cost_local: 14800,
+      business_variable_cost_local: 1200,
+      variable_cost_local: 16000,
+      minimum_safe_price_local: 17600,
+      contribution_at_proposed_local: 2000,
+      cost_allocation_trace: {
+        status: 'ESTIMATED_NOT_RECONCILED', authority: 'SERVER_PRICING_ENGINE',
+        hypotheses: { articles_per_order: 2.5, confidence: 'low' },
+        lines: [{ family: 'N2', key: 'payment', unit_cost_kmf: 1200 }],
+      },
+    });
+    expect(result.items[0].variable_cost_local).toBe(
+      result.items[0].landed_relay_cost_local + result.items[0].business_variable_cost_local
+    );
+  });
+
   test('la projection reste strictement read-only', () => {
     const fs = require('fs');
     const path = require('path');

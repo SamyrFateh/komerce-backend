@@ -144,17 +144,19 @@ async function buildReadyToSell({
 
     const costEconomics = corridor?.selected?.economics || null;
     async function localCost(value) {
-      const number = positive(value);
+      const number = value === 0 || value === '0' ? 0 : positive(value);
       if (number == null) return null;
+      if (number === 0) return 0;
       if (market.currency === 'KMF') return Math.round(number);
       try {
         const local = Number(await projectAmount(number, 'KMF', market.currency));
         return Number.isFinite(local) && local > 0 ? Math.round(local * 100) / 100 : null;
       } catch (_) { return null; }
     }
-    const [variableLocal, landedLocal, minimumSafeLocal] = await Promise.all([
+    const [variableLocal, landedLocal, businessLocal, minimumSafeLocal] = await Promise.all([
       localCost(costEconomics?.variable_cost_complete_kmf),
       localCost(costEconomics?.landed_relay_cost_kmf),
+      localCost(costEconomics?.business_variable_cost_kmf),
       localCost(costEconomics?.minimum_safe_price_kmf),
     ]);
     const priceDecision = priceByProduct.get(String(product.id)) || null;
@@ -209,8 +211,11 @@ async function buildReadyToSell({
       variable_cost_local: variableLocal,
       landed_relay_cost_kmf: positive(costEconomics?.landed_relay_cost_kmf),
       landed_relay_cost_local: landedLocal,
+      business_variable_cost_kmf: costEconomics?.business_variable_cost_kmf ?? null,
+      business_variable_cost_local: businessLocal,
       minimum_safe_price_local: minimumSafeLocal,
       cost_quality: costEconomics?.data_quality || null,
+      cost_allocation_trace: costEconomics?.cost_allocation_trace || null,
       corridor: {
         status: local?.status || 'UNAVAILABLE',
         confidence: local?.confidence || 'none',
