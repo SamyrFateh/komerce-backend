@@ -584,6 +584,18 @@ async function scanParcel(reference, action, market, actor = {}, manualInput = n
   if (!scan) {
     throw new OperationsWorkspaceError('invalid_scan_action', 'Action colis inconnue', 400);
   }
+  // P0 #3900: le motif scanner_unavailable ne prouve JAMAIS l'identité du destinataire.
+  // Cette voie générique ne dispose ni du code de retrait ni de l'autorisation
+  // exceptionnelle. Toute remise doit emprunter le writer canonique de pickup
+  // (collectByPickupCode / collectByAuthorizedName), qui vérifie la preuve,
+  // le relais et l'unicité de la remise dans sa transaction.
+  if (action === 'collect') {
+    throw new OperationsWorkspaceError(
+      'PICKUP_PROOF_REQUIRED',
+      'Remise refusée : vérifiez le code de retrait au clavier dans le parcours de remise sécurisé, ou utilisez la procédure exceptionnelle habilitée.',
+      409
+    );
+  }
   const parcel = await resolveParcelInMarket(reference, resolvedMarket.id);
   if (action === 'receive') {
     // Geste reserve au colis LOCAL expedie par le Hub : un colis rattache a une expedition se receptionne par attestation.
