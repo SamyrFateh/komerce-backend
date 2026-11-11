@@ -39,6 +39,7 @@
  *   modal:suggestions-rendered { product } — suggestions modal rendues, prêtes pour curation PDP
  *   carousel:changed { index }             — slide produit actif changé ; synchroniser l'UX image
  *   modal:detail-ready —                  — Product Detail Contract résolu ; réconcilier l'état panier modal
+ *   modal:selection-rendered —            — un axe SKU a été choisi et le renderer responsive a fini ; réconcilier les CTA sur la sélection finale
  *   nav:goto-track   —                  — ouvrir l'onglet Suivi depuis la confirmation de commande [b-checkout.js → b-nav.js, FIX 2026-07-11]
  *   checkout:order-failed { code, status } — fait : la commande vient d'échouer côté
  *     backend (code métier optionnel, ex. 'shared_cart_item_already_claimed'). Signal
