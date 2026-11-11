@@ -20,6 +20,8 @@ const RECEIVE = '/api/scans/hub/receive';
 const PO_ID = '6748895a-89bf-4236-9fb0-737fcf1e59ca';
 const SKU_ID = '0b9d2f4e-1111-4222-8333-444455556666';
 const PHYSICAL_CODE = '0012345678905';
+const NEW_CODE = '0098765432109';
+const CONFIRM = '/api/hub/physical-codes/confirm';
 const RECEIVABLE_PAYLOAD = {
   generated_at: '2026-10-18T10:00:00Z',
   purchase_orders: [{
@@ -121,8 +123,9 @@ const TRACE = {
     }] }],
 };
 
-async function mount(page, { posts = [], failShip = false, receiveReply = null, receivable = RECEIVABLE_PAYLOAD, dossier = DOSSIER, suppliers = [], failManual = false, view = 'hub', emptyDistribution = false, pilot = false } = {}) {
+async function mount(page, { posts = [], failShip = false, receiveReply = null, receivable = RECEIVABLE_PAYLOAD, dossier = DOSSIER, suppliers = [], failManual = false, view = 'hub', emptyDistribution = false, pilot = false, failConfirm = false } = {}) {
   page.on('dialog', (dialog) => dialog.accept());
+  const learned = new Set();
   await page.route(`${ORIGIN}/**`, async (route) => {
     const url = new URL(route.request().url());
     const json = (body, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
@@ -130,6 +133,13 @@ async function mount(page, { posts = [], failShip = false, receiveReply = null, 
     if (url.pathname.startsWith('/dashboards/canonical/')) {
       const file = path.join(CANONICAL, url.pathname.replace('/dashboards/canonical/', ''));
       return fs.existsSync(file) ? route.fulfill({ path: file }) : route.fulfill({ status: 404, body: '' });
+    }
+    if (route.request().method() === 'POST' && url.pathname === CONFIRM) {
+      const body = route.request().postDataJSON();
+      posts.push({ path: url.pathname, body });
+      if (failConfirm) return json({ error: 'Variante absente de la PO', code: 'HUB_PHYSICAL_SKU_NOT_ON_PO' }, 409);
+      learned.add(body.code);
+      return json({ id: 'pc1', code: body.code, product_sku_id: body.product_sku_id, trust: 'CONFIRMED' }, 201);
     }
     if (route.request().method() === 'POST' && url.pathname === RECEIVE) {
       posts.push({ path: url.pathname, body: route.request().postDataJSON() });
@@ -160,7 +170,9 @@ async function mount(page, { posts = [], failShip = false, receiveReply = null, 
     if (url.pathname === API) return json(emptyDistribution ? { ...WORKSPACE, distribution: { unassigned: [] } } : WORKSPACE);
     if (url.pathname === `${API}/supply`) return json(dossier.cockpit ? dossier : shapeDossier(dossier));
     if (url.pathname === `${API}/supply/physical-code`) {
-      return url.searchParams.get('code') === PHYSICAL_CODE
+      const scanned = url.searchParams.get('code');
+      if (learned.has(scanned)) return json({ product_sku_id: SKU_ID, purchase_order_id: PO_ID, confirmed: true, code: scanned });
+      return scanned === PHYSICAL_CODE
         ? json({ product_sku_id: SKU_ID, purchase_order_id: PO_ID, confirmed: true, code: PHYSICAL_CODE })
         : json({ code: 'HUB_PHYSICAL_CODE_UNKNOWN', error: 'Code inconnu' }, 404);
     }
@@ -448,6 +460,51 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       expect(posts[0].body.contents).toEqual([{ purchase_order_id: PO_ID, product_sku_id: SKU_ID, evidence_code: PHYSICAL_CODE, quantity: 2 }]);
       expect(posts[0].body.reference).toMatch(/^SUPPLIER_PACKAGE-/);
       await expect(page.locator('[data-workspace-feedback]')).toContainText('Réception enregistrée');
+    });
+
+    test('code inconnu : « Confirmer cette référence » enregistre variante, type et preuve, puis la réception reprend', async ({ page }) => {
+      const posts = [];
+      await mount(page, { posts, view: 'reception' });
+      const card = page.locator(`[data-receive-po="${PO_ID}"]`);
+      const scanner = card.locator('.kmc-workspace-receive-scan-input');
+      await scanner.fill(NEW_CODE);
+      await scanner.press('Enter');
+      await expect(card.locator('.kmc-workspace-receive-scan-result')).toContainText('HUB_PHYSICAL_CODE_UNKNOWN');
+      await card.locator('[data-workspace-action="open-physical-confirm"]').click();
+      const submit = card.locator('[data-workspace-action="confirm-physical-code"]');
+      await expect(submit).toBeDisabled();
+      await card.locator('[data-confirm-variant]').selectOption(SKU_ID);
+      await card.locator('[data-confirm-type]').selectOption('EAN_GTIN');
+      await card.locator('[data-confirm-proof]').fill('PHOTO-2026-11-11-001');
+      await expect(submit).toBeEnabled();
+      await submit.click();
+      await expect.poll(() => posts.length).toBe(1);
+      expect(posts[0].path).toBe(CONFIRM);
+      expect(posts[0].body).toEqual({ purchase_order_id: PO_ID, product_sku_id: SKU_ID, code: NEW_CODE, code_type: 'EAN_GTIN', proof_ref: 'PHOTO-2026-11-11-001' });
+      await expect(card.locator('.kmc-workspace-receive-scan-result')).toContainText('Référence confirmée');
+      await card.locator('[data-receive-line="0"]').fill('2');
+      const button = card.locator('[data-workspace-action="receive-supplier"]');
+      await expect(button).toBeEnabled();
+      await button.click();
+      await expect.poll(() => posts.length).toBe(2);
+      expect(posts[1].path).toBe(RECEIVE);
+      expect(posts[1].body.contents).toEqual([{ purchase_order_id: PO_ID, product_sku_id: SKU_ID, evidence_code: NEW_CODE, quantity: 2 }]);
+    });
+
+    test('code inconnu : refus serveur de la confirmation affiché, aucune réception possible', async ({ page }) => {
+      const posts = [];
+      await mount(page, { posts, view: 'reception', failConfirm: true });
+      const card = page.locator(`[data-receive-po="${PO_ID}"]`);
+      await card.locator('.kmc-workspace-receive-scan-input').fill(NEW_CODE);
+      await card.locator('.kmc-workspace-receive-scan-input').press('Enter');
+      await card.locator('[data-workspace-action="open-physical-confirm"]').click();
+      await card.locator('[data-confirm-variant]').selectOption(SKU_ID);
+      await card.locator('[data-confirm-proof]').fill('NOTE-7');
+      await card.locator('[data-workspace-action="confirm-physical-code"]').click();
+      await expect(card.locator('.kmc-workspace-receive-scan-result')).toContainText('Confirmation refusée : Variante absente de la PO');
+      await card.locator('[data-receive-line="0"]').fill('2');
+      await expect(card.locator('[data-workspace-action="receive-supplier"]')).toBeDisabled();
+      expect(posts.filter((post) => post.path === RECEIVE)).toHaveLength(0);
     });
 
     test('quantité supérieure au restant : refusée côté interface, aucune requête', async ({ page }) => {
