@@ -12,6 +12,7 @@ jest.mock('../../utils/logger', () => ({
 
 const {
   resolveRoutingFromRelais,
+  isRelaisRoutable,
   normalizeIsland,
   ensureRoutingColumns,
   backfillRoutingData,
@@ -232,5 +233,20 @@ describe('routing — marchés hors modèle insulaire (RCT1 J/K)', () => {
   });
   it('un relais insulaire garde son routage même sous un marché non insulaire', () => {
     expect(resolveRoutingFromRelais({ ...relay, island_code: 'ANJOUAN' }, { marketCode: 'CM' }).destination_island).toBe('ANJOUAN');
+  });
+});
+
+describe('isRelaisRoutable — règle partagée avec POST /api/orders', () => {
+  it('suit exactement resolveRoutingFromRelais (île, marché hors modèle insulaire, relais absent)', () => {
+    expect(isRelaisRoutable({ id: 'a', name: 'A', island_code: 'ANJOUAN' }, { marketCode: 'KM' })).toBe(true);
+    expect(isRelaisRoutable({ id: 'b', name: 'B', island: 'Grande Comore' })).toBe(true);
+    expect(isRelaisRoutable({ id: 'c', name: 'C' }, { marketCode: 'KM' })).toBe(false);
+    expect(isRelaisRoutable({ id: 'd', name: 'D', island_code: 'ZANZIBAR' })).toBe(false);
+    expect(isRelaisRoutable({ id: 'e', name: 'E', zone: 'Douala' }, { marketCode: 'CM' })).toBe(true);
+    expect(isRelaisRoutable({ id: 'f', name: 'F', zone: ' ' }, { marketCode: 'CM' })).toBe(false);
+    expect(isRelaisRoutable(null)).toBe(false);
+  });
+  it('ne masque pas une erreur inattendue', () => {
+    expect(() => isRelaisRoutable({ get island_code() { throw new TypeError('boom'); } })).toThrow('boom');
   });
 });
