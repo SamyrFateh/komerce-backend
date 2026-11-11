@@ -2056,6 +2056,22 @@
   function renderParcelActionSection(rootNode, ui, doc, context, config) {
     const slot = createSection(rootNode, ui, config.title, config.description);
     if (config.jumpId && slot.parentElement) slot.parentElement.id=config.jumpId;
+    // P0 #3900 : pas de fausse attestation de retrait via un simple motif
+    // « scanner indisponible ». La remise exige le parcours pickup sécurisé.
+    if (config.action === 'collect') {
+      slot.appendChild(text(doc, 'p', 'kmc-workspace-note',
+        'Remise protégée : la saisie manuelle du code de retrait doit être vérifiée par le serveur. Sans code, utiliser la procédure exceptionnelle habilitée. Le raccourci de remise sans preuve est désactivé.'));
+      renderActionTable(slot, {
+        rows: config.rows,
+        emptyText: config.empty,
+        columns: actionColumns({ referenceKind: 'parcel' }),
+      });
+      slot.querySelectorAll('tbody tr').forEach(rowNode => {
+        const actionCell = rowNode.lastChild;
+        actionCell.replaceChildren(text(doc, 'span', 'kmc-workspace-muted', 'Code de retrait requis'));
+      });
+      return;
+    }
     const manual = manualReasonControls(doc);
     if ((config.rows||[]).length) slot.appendChild(manual.wrap);
     renderActionRows(slot, doc, context, Object.assign({}, config, { manualBody: manual.body }), 'parcel');
