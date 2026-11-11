@@ -11,7 +11,7 @@ const proof = (status = 'QUOTED') => ({
   as_of: '2026-11-11', expires_on: '2027-01-31',
 });
 const line = (code, stage, basis, value, more = {}) =>
-  ({ code, stage, basis, value, evidence: proof(), ...more });
+  ({ code, stage, basis, value, market_code: 'KM', circuit: 'import', evidence: proof(), ...more });
 const fixture = (overrides = {}) => {
   const components = [
     line('supplier_delivery', 'N1', 'fixed_unit', 100, { cif_included: true }),
@@ -129,9 +129,9 @@ describe('prix plancher prévisionnel — shadow pur et sans valeur par défaut'
 
   test('local ne supporte aucun coût import; N3 n augmente jamais le plancher', () => {
     const costs = [
-      line('local_delivery', 'N1', 'fixed_order', 20),
-      line('relay_commission', 'N2', 'fixed_order', 40),
-      line('payment', 'N2', 'pct_sale', 3),
+      line('local_delivery', 'N1', 'fixed_order', 20, { circuit: 'local' }),
+      line('relay_commission', 'N2', 'fixed_order', 40, { circuit: 'local' }),
+      line('payment', 'N2', 'pct_sale', 3, { circuit: 'local' }),
     ];
     const f = fixture({ product: {
       circuit: 'local', purchase_kmf: 500, purchase_evidence: proof('CONTRACT'),
