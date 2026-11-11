@@ -103,12 +103,21 @@ test.describe.serial('G6 P3 KUYIYUK — Chromium Relais cash + Hub UI',()=>{
       await test.skip();
     }
     if(before.status==='pending'){
-      const {ctx:relayCtx,page:relayPage}=await login(browser,baseURL,'relay');
+      const {ctx:relayCtx,page:relayPage}=await login(browser,baseURL,'admin');
       try{
         await relayPage.goto('/admin/relais-live?view=execute',{waitUntil:'domcontentloaded'});
         await relayPage.locator('select').first().waitFor({timeout:20000});
         await relayPage.locator('select').first().selectOption({label:'KM · Comores'});
         await relayPage.waitForLoadState('networkidle').catch(()=>{});
+        const cashScope=await relayPage.evaluate(async()=>{
+          const [meResponse,workspaceResponse]=await Promise.all([
+            fetch('/api/auth/me',{credentials:'same-origin'}),
+            fetch('/api/admin/workspaces/operations/market/KM',{credentials:'same-origin'})
+          ]);
+          const me=await meResponse.json(),workspace=await workspaceResponse.json();
+          return {actor_role:me.role,actor_id:me.id,workspace_status:workspaceResponse.status,cash_pending_count:workspace.summary?.relay_cash_pending,cash_pending_references:(workspace.queues?.relay?.cash_pending||[]).map(o=>o.reference)};
+        });
+        console.log('[G6_P3_CASH_SCOPE]',JSON.stringify(cashScope));
         await relayPage.locator('[data-relay-execution-jump="cash"]').click();
         const cashRow=relayPage.locator('tr',{hasText:'KUYIYUK'});
         await cashRow.waitFor({timeout:20000});
