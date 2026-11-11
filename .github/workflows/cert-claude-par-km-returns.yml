@@ -70,6 +70,15 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Aligner le code sur le SHA exact déployé en staging (nos fichiers de harnais en plus)
+        run: |
+          set -euo pipefail
+          DEP="$(curl -fsS "$STAGING_BASE_URL/health/version" | node -p 'JSON.parse(require("fs").readFileSync(0,"utf8")).commit')"
+          echo "SHA déployé: $DEP"
+          git fetch --no-tags origin main "$DEP" || git fetch --no-tags origin main
+          git checkout -q --detach "$DEP"
+          git checkout "$GITHUB_SHA" -- tests/staging-clicks/claude-par-km-returns.spec.js tests/staging-clicks/claude-par-km-returns.config.js tests/staging-clicks/claude-par-km-crossrelay-probe.js
+          git reset -q
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
