@@ -1,0 +1,53 @@
+name: Economic engine - real staging read-only census (#3830)
+
+on:
+  push:
+    branches: [research/economic-staging-readonly-census]
+    paths:
+      - '.github/workflows/economic-engine-staging-readonly-census.yml'
+      - 'scripts/recette/economic-engine-staging-readonly-census.js'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: economic-engine-staging-census-readonly
+  cancel-in-progress: false
+
+jobs:
+  census:
+    name: Verify staging and read economic configuration and real costs
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      PGOPTIONS: '-c default_transaction_read_only=on'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install locked dependencies without hooks
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Static read-only safety check
+        run: |
+          node --check scripts/recette/economic-engine-staging-readonly-census.js
+          if grep -Eiq '\b(INSERT[[:space:]]+INTO|UPDATE[[:space:]]+[a-z_]+[[:space:]]+SET|DELETE[[:space:]]+FROM|TRUNCATE|ALTER[[:space:]]+TABLE|DROP[[:space:]]+TABLE)\b' scripts/recette/economic-engine-staging-readonly-census.js; then
+            echo 'Refus : SQL mutable dans le script de recensement'
+            exit 1
+          fi
+      - name: Read staging (session and transaction read-only)
+        run: node scripts/recette/economic-engine-staging-readonly-census.js
+      - name: Preserve census
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: economic-staging-readonly-${{ github.run_id }}
+          path: test-results/staging-economic-readonly/census.json
+          if-no-files-found: warn
+          retention-days: 14
