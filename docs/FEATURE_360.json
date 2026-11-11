@@ -1087,7 +1087,7 @@
               {
                 "declared": "services/g6-staging-buyer-identity-guard.js",
                 "resolvedPath": "services/g6-staging-buyer-identity-guard.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/otp-test-mode.js",

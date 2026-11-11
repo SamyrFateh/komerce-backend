@@ -5,7 +5,7 @@
  * @layer         test
  * @owner         backend-core
  * @purpose       Read-only PostgreSQL verification of the existing G6 order; never creates orders.
- * @db-read       orders, order_items, products, markets
+ * @db-read       orders, order_items, products, markets, suppliers, product_suppliers
  * @db-write      none
  * @impact-areas  orders, checkout
  */
@@ -46,7 +46,8 @@ const check=(ok,code)=>{if(!ok)throw Error(code)};
    "(SELECT ARRAY_AGG(DISTINCT p.product_ref) FROM order_items i JOIN products p ON p.id=i.product_id WHERE i.order_id=o.id) AS products,(SELECT COALESCE(SUM(i.price_kmf*i.quantity),0)::numeric FROM order_items i WHERE i.order_id=o.id) AS product_total_kmf,(SELECT jsonb_agg(jsonb_build_object('product_ref',p.product_ref,'quantity',i.quantity,'unit_price_kmf',i.price_kmf,'requested_transport_rail',i.requested_transport_rail,'weight_kg',p.weight_kg,'volume_cm3',p.volume_cm3)) FROM order_items i JOIN products p ON p.id=i.product_id WHERE i.order_id=o.id) AS item_details,"+
    "(SELECT COUNT(*)::int FROM purchase_lines pl JOIN order_items oi2 ON oi2.id=pl.order_item_id WHERE oi2.order_id=o.id AND pl.cancelled_at IS NULL) AS purchase_line_count,"+
    "(SELECT COUNT(DISTINCT pl.purchase_order_id)::int FROM purchase_lines pl JOIN order_items oi2 ON oi2.id=pl.order_item_id WHERE oi2.order_id=o.id AND pl.cancelled_at IS NULL AND pl.purchase_order_id IS NOT NULL) AS purchase_order_count,"+
-   "(SELECT jsonb_agg(jsonb_build_object('po_id',po.id,'status',po.status,'trigger_mode',po.trigger_mode)) FROM purchase_orders po WHERE EXISTS (SELECT 1 FROM purchase_lines pl JOIN order_items oi2 ON oi2.id=pl.order_item_id WHERE pl.purchase_order_id=po.id AND oi2.order_id=o.id AND pl.cancelled_at IS NULL)) AS purchase_orders "+
+   "(SELECT jsonb_agg(jsonb_build_object('po_id',po.id,'status',po.status,'trigger_mode',po.trigger_mode)) FROM purchase_orders po WHERE EXISTS (SELECT 1 FROM purchase_lines pl JOIN order_items oi2 ON oi2.id=pl.order_item_id WHERE pl.purchase_order_id=po.id AND oi2.order_id=o.id AND pl.cancelled_at IS NULL)) AS purchase_orders,"+
+   "(SELECT jsonb_agg(jsonb_build_object('supplier_id',s.id,'supplier_name',s.name,'platform',s.platform,'auto_order',s.auto_order,'owner_scope',s.owner_scope,'mapping_id',ps.id,'supplier_sku',ps.supplier_sku,'supplier_price_aed',ps.supplier_price_aed)) FROM product_suppliers ps JOIN suppliers s ON s.id=ps.supplier_id JOIN products p ON p.id=ps.product_id WHERE p.product_ref='KPR-000099' AND s.is_active=TRUE AND s.deleted_at IS NULL AND ps.is_active=TRUE AND ps.deleted_at IS NULL) AS supplier_mappings "+
    'FROM orders o LEFT JOIN markets m ON m.id=o.market_id WHERE o.reference=$1',
    [REFERENCE]);
   check(rows.length===1,'G6_REFERENCE_NOT_UNIQUE_OR_MISSING');
@@ -62,7 +63,8 @@ const check=(ok,code)=>{if(!ok)throw Error(code)};
     lines:Number(o.lines),quantity:Number(o.qty),products:o.products,
     purchase_line_count:Number(o.purchase_line_count),
     purchase_order_count:Number(o.purchase_order_count),
-    purchase_orders:o.purchase_orders
+    purchase_orders:o.purchase_orders,
+    supplier_mappings:o.supplier_mappings
   };
   const expected={scope:'G6-BUYER',market:'KM',total_kmf:17990,
     payment_mode:'cash_relais',status:'pending',lines:1,quantity:1,product:PRODUCT};
