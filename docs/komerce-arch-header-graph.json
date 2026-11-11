@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 798,
-    "filesWithFullHeaders": 743,
+    "scannedCodeFiles": 796,
+    "filesWithFullHeaders": 741,
     "filesWithLiteHeaders": 55,
-    "filesWithAnyHeaders": 798,
+    "filesWithAnyHeaders": 796,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 2023,
-    "edges": 9960,
+    "graphNodes": 2020,
+    "edges": 9951,
     "dbTables": 233,
-    "doctrines": 785,
+    "doctrines": 784,
     "impactAreas": 207,
-    "unresolvedCodeEdges": 955,
+    "unresolvedCodeEdges": 954,
     "dbWriteViaOverlapWarnings": 12,
     "multiWriterTables": 95
   },
@@ -40,7 +40,7 @@
     "admin-dashboard": 39,
     "decision-signals": 14,
     "market": 9,
-    "economic-engine": 69,
+    "economic-engine": 67,
     "sourcing": 37,
     "logistics": 69,
     "boutique": 21,
@@ -112,7 +112,7 @@
     "schema": 1,
     "route": 137,
     "entrypoint": 1,
-    "service": 480,
+    "service": 478,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -123,7 +123,7 @@
   "byCriticality": {
     "critical": 122,
     "medium": 154,
-    "high": 457,
+    "high": 455,
     "low": 64,
     "unknown": 1
   },
@@ -27440,8 +27440,7 @@
         "boutique_subcategories",
         "finance_config",
         "pricing_components",
-        "risk_provisions",
-        "markets"
+        "risk_provisions"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -27581,8 +27580,7 @@
       "dbRead": [
         "order_items",
         "orders",
-        "products",
-        "relais"
+        "products"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -27597,74 +27595,6 @@
         "pricing"
       ],
       "version": "2026-09"
-    },
-    {
-      "id": "services/pricing-floor-forecast-preview.js",
-      "file": "services/pricing-floor-forecast-preview.js",
-      "type": "file",
-      "headerType": "full",
-      "role": "economic-engine-forecast-preview-contract",
-      "domain": "economic-engine",
-      "layer": "service",
-      "criticality": "high",
-      "owner": null,
-      "purpose": null,
-      "inputs": [
-        "server_product_market_and_untrusted_simulation"
-      ],
-      "outputs": [
-        "never_persisted_provisional_floor_preview"
-      ],
-      "depends": [
-        "services/pricing-floor-forecast-shadow.js"
-      ],
-      "usedBy": [
-        "routes/admin-pricing-workspace.js"
-      ],
-      "dbRead": [],
-      "dbWrite": [],
-      "dbWriteVia": [],
-      "dbTxn": [],
-      "doctrine": [
-        "docs/doctrine/PRICING_FLOOR_FORECAST_SHADOW.md"
-      ],
-      "impactAreas": [
-        "economic-engine"
-      ],
-      "version": "2026-11"
-    },
-    {
-      "id": "services/pricing-floor-forecast-shadow.js",
-      "file": "services/pricing-floor-forecast-shadow.js",
-      "type": "file",
-      "headerType": "full",
-      "role": "economic-engine-pricing-floor-forecast-shadow",
-      "domain": "economic-engine",
-      "layer": "service",
-      "criticality": "high",
-      "owner": null,
-      "purpose": null,
-      "inputs": [
-        "explicit_market_product_scenarios_and_evidence"
-      ],
-      "outputs": [
-        "non_decisional_forecast_and_cost_trace"
-      ],
-      "depends": [],
-      "usedBy": [
-        "scripts/recette/pricing-floor-forecast-demo.js"
-      ],
-      "dbRead": [],
-      "dbWrite": [],
-      "dbWriteVia": [],
-      "dbTxn": [],
-      "doctrine": [
-        "docs/doctrine/PRICING_FLOOR_FORECAST_SHADOW.md"
-      ],
-      "impactAreas": [
-        "economic-engine"
-      ],
-      "version": "2026-11"
     },
     {
       "id": "services/pricing-guards.js",
@@ -42811,11 +42741,6 @@
       "id": "doctrine:contribution_covers_structure_collectively",
       "type": "doctrine",
       "doctrine": "contribution_covers_structure_collectively"
-    },
-    {
-      "id": "doctrine:docs/doctrine/PRICING_FLOOR_FORECAST_SHADOW.md",
-      "type": "doctrine",
-      "doctrine": "docs/doctrine/PRICING_FLOOR_FORECAST_SHADOW.md"
     },
     {
       "id": "doctrine:local_evidence_never_falls_back_silently",
@@ -88064,12 +87989,6 @@
     },
     {
       "from": "services/pricing-cdr.js",
-      "to": "db:markets",
-      "type": "db-read",
-      "label": "markets"
-    },
-    {
-      "from": "services/pricing-cdr.js",
       "to": "doctrine:resolve_before_behavior_change",
       "type": "doctrine",
       "label": "resolve_before_behavior_change"
@@ -88298,12 +88217,6 @@
     },
     {
       "from": "services/pricing-engine.js",
-      "to": "db:relais",
-      "type": "db-read",
-      "label": "relais"
-    },
-    {
-      "from": "services/pricing-engine.js",
       "to": "doctrine:fixed_structure_never_fabricates_sku_price",
       "type": "doctrine",
       "label": "fixed_structure_never_fabricates_sku_price"
@@ -88331,48 +88244,6 @@
       "to": "impact:pricing",
       "type": "impact",
       "label": "pricing"
-    },
-    {
-      "from": "services/pricing-floor-forecast-preview.js",
-      "to": "services/pricing-floor-forecast-shadow.js",
-      "type": "depends",
-      "label": "services/pricing-floor-forecast-shadow.js"
-    },
-    {
-      "from": "routes/admin-pricing-workspace.js",
-      "to": "services/pricing-floor-forecast-preview.js",
-      "type": "uses",
-      "label": "routes/admin-pricing-workspace.js"
-    },
-    {
-      "from": "services/pricing-floor-forecast-preview.js",
-      "to": "doctrine:docs/doctrine/PRICING_FLOOR_FORECAST_SHADOW.md",
-      "type": "doctrine",
-      "label": "docs/doctrine/PRICING_FLOOR_FORECAST_SHADOW.md"
-    },
-    {
-      "from": "services/pricing-floor-forecast-preview.js",
-      "to": "impact:economic-engine",
-      "type": "impact",
-      "label": "economic-engine"
-    },
-    {
-      "from": "scripts/recette/pricing-floor-forecast-demo.js",
-      "to": "services/pricing-floor-forecast-shadow.js",
-      "type": "uses",
-      "label": "scripts/recette/pricing-floor-forecast-demo.js"
-    },
-    {
-      "from": "services/pricing-floor-forecast-shadow.js",
-      "to": "doctrine:docs/doctrine/PRICING_FLOOR_FORECAST_SHADOW.md",
-      "type": "doctrine",
-      "label": "docs/doctrine/PRICING_FLOOR_FORECAST_SHADOW.md"
-    },
-    {
-      "from": "services/pricing-floor-forecast-shadow.js",
-      "to": "impact:economic-engine",
-      "type": "impact",
-      "label": "economic-engine"
     },
     {
       "from": "services/pricing-apply.js",
@@ -111942,7 +111813,6 @@
         "services/market-cost-attribution-service.js",
         "services/market-local-price-activation-service.js",
         "services/market-operation-guard.js",
-        "services/pricing-floor-forecast-preview.js",
         "services/pricing-market-corridor.js",
         "services/pricing-market-decision-policy.js",
         "services/pricing-market-decision-projection.js",
@@ -132511,8 +132381,7 @@
         "boutique_subcategories",
         "finance_config",
         "pricing_components",
-        "risk_provisions",
-        "markets"
+        "risk_provisions"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -132530,7 +132399,6 @@
         "db:cost_components",
         "db:customs_categories",
         "db:finance_config",
-        "db:markets",
         "db:pricing_components",
         "db:risk_provisions",
         "doctrine:resolve_before_behavior_change",
@@ -132655,8 +132523,7 @@
       "dbRead": [
         "order_items",
         "orders",
-        "products",
-        "relais"
+        "products"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -132673,7 +132540,6 @@
         "db:order_items",
         "db:orders",
         "db:products",
-        "db:relais",
         "doctrine:contribution_covers_structure_collectively",
         "doctrine:fixed_structure_never_fabricates_sku_price",
         "doctrine:market_bounds_possible_human_decides",
@@ -132696,63 +132562,6 @@
         "services/sourcing-workspace.js",
         "services/supplier-catalog-scanner.js",
         "services/suppliers/catalog-import-orchestrator.js"
-      ]
-    },
-    "services/pricing-floor-forecast-preview.js": {
-      "role": "economic-engine-forecast-preview-contract",
-      "domain": "economic-engine",
-      "criticality": "high",
-      "headerType": "full",
-      "owner": null,
-      "purpose": null,
-      "directDependsOn": [
-        "services/pricing-floor-forecast-shadow.js"
-      ],
-      "directUsedBy": [
-        "routes/admin-pricing-workspace.js"
-      ],
-      "ownedFiles": [],
-      "dbRead": [],
-      "dbWrite": [],
-      "dbWriteVia": [],
-      "doctrines": [
-        "docs/doctrine/PRICING_FLOOR_FORECAST_SHADOW.md"
-      ],
-      "impactAreas": [
-        "economic-engine"
-      ],
-      "mustCheck": [
-        "doctrine:docs/doctrine/PRICING_FLOOR_FORECAST_SHADOW.md",
-        "impact:economic-engine",
-        "routes/admin-pricing-workspace.js",
-        "services/pricing-floor-forecast-shadow.js"
-      ]
-    },
-    "services/pricing-floor-forecast-shadow.js": {
-      "role": "economic-engine-pricing-floor-forecast-shadow",
-      "domain": "economic-engine",
-      "criticality": "high",
-      "headerType": "full",
-      "owner": null,
-      "purpose": null,
-      "directDependsOn": [],
-      "directUsedBy": [
-        "scripts/recette/pricing-floor-forecast-demo.js"
-      ],
-      "ownedFiles": [],
-      "dbRead": [],
-      "dbWrite": [],
-      "dbWriteVia": [],
-      "doctrines": [
-        "docs/doctrine/PRICING_FLOOR_FORECAST_SHADOW.md"
-      ],
-      "impactAreas": [
-        "economic-engine"
-      ],
-      "mustCheck": [
-        "doctrine:docs/doctrine/PRICING_FLOOR_FORECAST_SHADOW.md",
-        "impact:economic-engine",
-        "services/pricing-floor-forecast-preview.js"
       ]
     },
     "services/pricing-guards.js": {
@@ -148463,12 +148272,6 @@
       "to": "db",
       "type": "depends",
       "label": "db"
-    },
-    {
-      "from": "scripts/recette/pricing-floor-forecast-demo.js",
-      "to": "services/pricing-floor-forecast-shadow.js",
-      "type": "uses",
-      "label": "scripts/recette/pricing-floor-forecast-demo.js"
     },
     {
       "from": "services/pricing-market-corridor.js",
