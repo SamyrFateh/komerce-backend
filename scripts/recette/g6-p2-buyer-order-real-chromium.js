@@ -25,7 +25,7 @@ const run=crypto.randomBytes(4).toString('hex');
 const report={run_id:process.env.GITHUB_RUN_ID||null,run8:run.toUpperCase(),
   phase:'G6-KM-CHROMIUM-REAL-OTP-ORDER',product_ref:REF,product_id:PRODUCT,
   verdict:'NOT_PROVEN',human_attestation:false,payment_real:false,supplier_order_real:false,
-  blocked_requests:[],steps:[]};
+  blocked_requests:[],allowed_read_posts:[],steps:[]};
 const save=()=>fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2)+'\n');
 const check=(bool,code)=>{if(!bool)throw Error(code)};
 const record=(name,value)=>{report.steps.push({name,observed:value});save()};
@@ -94,6 +94,14 @@ async function browserCheckout({buyer,phone,code}){
     if(['GET','HEAD','OPTIONS'].includes(method))return route.continue();
     const u=new URL(req.url());
     const meta={method,origin:u.origin,path:u.pathname,type:req.resourceType()};
+    // Google Maps uses POST for this read-only viewport query while rendering the
+    // selected relay map. Allow only this exact XHR endpoint; keep all other
+    // non-allowlisted browser POSTs blocked.
+    if(method==='POST'&&u.origin==='https://maps.googleapis.com'&&
+       u.pathname==='/$rpc/google.internal.maps.mapsjs.v1.MapsJsInternalService/GetViewportInfo'&&
+       req.resourceType()==='xhr'){
+      report.allowed_read_posts.push(meta);save();return route.continue();
+    }
     if(method==='POST'&&u.origin===ORIGIN&&
        ['/api/auth/otp/request','/api/auth/otp/verify','/api/orders'].includes(u.pathname)){
       if(u.pathname==='/api/orders'&&++orderRequests!==1){
