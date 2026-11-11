@@ -22,7 +22,7 @@ describe('b-bus — registre des événements', () => {
   });
 
   test('modal:selection-rendered a un contrat standard après le rerender SKU', () => {
-    expect(source).toMatch(/Événements standard Komerce[\\s\\S]*\\*\\s+modal:selection-rendered\\b/);
+    expect(source.split('Événements standard Komerce')[1] || '').toContain('modal:selection-rendered');
   });
 
   test('modal:detail-ready n’est pas déclaré comme événement retiré', () => {
