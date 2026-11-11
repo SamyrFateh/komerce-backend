@@ -45,7 +45,7 @@ jobs:
           node scripts/recette/resolve-staging-deploy-pin.js
           node scripts/recette/target-guard.js
       - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install chromium
       - name: P3 same-order Hub UI gestures
         run: npx playwright test --config=playwright.hub-v1-clicks.config.js tests/staging-clicks/g6-p3-kuyiyuk.spec.js
       - uses: actions/upload-artifact@v4
