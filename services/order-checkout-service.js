@@ -63,6 +63,7 @@
 
 const db      = require('../db');
 const { assignOrderSimulationScope } = require('./simulation-scope-service');
+const {verifyMarkedG6Buyer}=require('./g6-staging-buyer-identity-guard');
 const { reserveRct1OrderReference, expectedProductTotalKmf, isAllowedRct1Reference } = require('./rct1-checkout-reference-guard');
 const { reserveHubFixtureReference, isAllowedHubFixtureReference, assertHubFixtureOwnership } = require('./hub-v1-fixture-checkout-guard');
 const { getLoyaltyDiscount }             = require('./loyalty-service');
@@ -171,6 +172,19 @@ async function runOrderCheckout({ user, body, internalSimulation = null }) {
       display_market_code = null,
       email: bodyEmail = null,
     } = body;
+
+    // Owner-provisioned G6 browser identities are explicitly marked in DB,
+    // and only in staging. Set their simulation scope in the SAME checkout
+    // transaction, so no post-commit notification can run.
+    const g6Buyer=await verifyMarkedG6Buyer(client,user);
+    if (g6Buyer && (payment_mode!=='cash_relais'||use_wallet||
+        stripe_payment_intent||share_token||pickup_code_recipient!=='buyer'||
+        !Array.isArray(items)||items.length!==1||Number(items[0]?.quantity)!==1||
+        (tracking_phone && tracking_phone!==user.phone))) {
+      await client.query('ROLLBACK');
+      return fail(409,{code:'G6_FIXTURE_CASH_SINGLE_PRODUCT_ONLY',
+        error:'Ce client de recette est réservé à une commande cash unitaire sans prestataire externe'});
+    }
 
     if (!Array.isArray(items) || items.length === 0) {
       await client.query('ROLLBACK');
@@ -528,6 +542,13 @@ async function runOrderCheckout({ user, body, internalSimulation = null }) {
         reason: internalSimulation.reason, env: { KOMERCE_ENV: 'staging' },
       });
       order.simulation_scope = internalSimulation.scope;
+    } else if (g6Buyer) {
+      await assignOrderSimulationScope(client, {
+        orderId:order.id,scope:'G6-BUYER',actorId:user.id,
+        reason:'G6 staged Chromium owner-provisioned test customer; no external side effects',
+        env:{KOMERCE_ENV:'staging'},
+      });
+      order.simulation_scope='G6-BUYER';
     }
     await recordInitialHistory(client, order.id, user.id);
 

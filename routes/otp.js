@@ -29,6 +29,7 @@ const log = require('../utils/logger').child({ module: 'otp' });
 
 // ── TEST MODE (jamais actif en production) ──────────────────────────
 const { isOtpTestMode, getMasterCode, isMasterCode } = require('../services/otp-test-mode');
+const { hasPreparedG6BuyerOtp } = require('../services/g6-staging-buyer-identity-guard');
 
 // ─── Config ─────────────────────────────────────────────────
 const OTP_LENGTH = 6;
@@ -158,6 +159,21 @@ router.post('/request', async (req, res, next) => {
         ok: false,
         success: false,
         error: 'Usage OTP invalide',
+      });
+    }
+
+    // G6 owner-provisioned buyer: the canonical OTP is already bcrypt-hashed
+    // in otp_codes by a protected staging-only runner. Never call WhatsApp,
+    // never echo its code, never fall through to the global test mode.
+    const g6 = await hasPreparedG6BuyerOtp(pool, {phone,purpose});
+    if (g6) {
+      if (!g6.prepared) return res.status(409).json({
+        ok:false,success:false,code:'G6_OTP_FIXTURE_MISSING',
+        error:'Code de recette absent ou expiré',
+      });
+      return res.json({
+        ok:true,success:true,message:'Code de recette préparé (aucun envoi externe)',
+        expiresIn:600,retryAfter:0,
       });
     }
 
@@ -308,7 +324,7 @@ router.post('/verify', async (req, res, next) => {
     // ── TEST MODE : le code maître valide pour n'importe quel numéro ──
     // Court-circuite la vérification DB/bcrypt → session immédiate.
     // (jamais atteint en production : isMasterCode() y est toujours false)
-    if (isMasterCode(code)) {
+    if (isMasterCode(code) && !(await hasPreparedG6BuyerOtp(pool, {phone,purpose}))) {
       const { user, created } = await issueVerifiedSession(res, phone, name);
       log.warn(`[OTP][TEST] Vérif court-circuitée (code maître) → ${phone}${created ? ' [created]' : ''}`);
       return res.json({
