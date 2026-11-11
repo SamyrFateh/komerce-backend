@@ -1,6 +1,7 @@
 # Campagne CLAUDE-PAR-20261111 (exécutant A) : commande boutique KM + cash relais en Chromium. Branche dédiée uniquement.
 name: Claude PAR KM - commande boutique et cash relais (Chromium)
 on:
+  workflow_dispatch:
   push:
     branches: [cert/claude-par-km-orders]
     paths:
@@ -9,7 +10,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: komerce-staging-local-stock-cert
+  group: komerce-claude-par-km-orders-a
   cancel-in-progress: false
 jobs:
   orders:
