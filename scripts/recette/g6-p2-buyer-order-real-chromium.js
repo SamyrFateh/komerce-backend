@@ -132,14 +132,35 @@ async function browserCheckout({buyer,phone,code}){
   const item=page.locator('#k-search-dropdown .k-search-item[data-id="'+PRODUCT+'"]');
   await item.waitFor({state:'visible',timeout:25000});await item.click();
   await page.locator('#k-modal-name').waitFor({state:'visible',timeout:13000});
+  // Wait for the canonical desktop Product Detail renderer, not a legacy carousel
+  // image that may already be loaded before SKU options finish rendering.
+  await page.locator('#k-modal-variants [data-pdc5-root]').waitFor({state:'attached',timeout:20000});
+  const variantEvidence=await page.locator('#k-modal-variants').evaluate(el=>({
+   root:!!el.querySelector('[data-pdc5-root]'),
+   axes:[...el.querySelectorAll('.k-vg')].map(group=>({
+    key:group.dataset.axisKey,
+    options:[...group.querySelectorAll('button[data-option-value]')].map(button=>({
+     value:button.dataset.optionValue,state:button.dataset.optionState,
+     selected:button.getAttribute('aria-pressed')
+    }))
+   }))
+  }));
+  record('PDP_VARIANT_MATRIX',variantEvidence);
   await page.waitForFunction(()=>[...document.querySelectorAll('#k-modal-carousel-track img')].some(x=>x.complete&&x.naturalWidth>0),null,{timeout:25000});
   const add=page.locator('#k-add-cart-btn');
   for(let n=0;n<12&&!await add.isEnabled();n++){
    const options=page.locator('#k-modal-variants button[data-option-state="AVAILABLE"][data-option-value]:not([aria-pressed="true"])');
    if(!await options.count())break;await options.first().click();
   }
-  check(await add.isEnabled(),'NO_PURCHASABLE_VARIANT');
+  const addEnabled=await add.isEnabled();
   await page.screenshot({path:path.join(OUT,'02-real-authenticated-product.png')});
+  record('PDP_SELECTION_RESULT',{
+   add_enabled:addEnabled,
+   selected_options:await page.locator('#k-modal-variants button[data-option-value][aria-pressed="true"]').evaluateAll(buttons=>buttons.map(button=>({
+    axis:button.closest('.k-vg')?.dataset.axisKey,value:button.dataset.optionValue
+   })))
+  });
+  check(addEnabled,'NO_PURCHASABLE_VARIANT');
   const before=Number(await page.locator('#k-modal-cart-badge').innerText().catch(()=>'0'))||0;
   await add.click();
   await page.waitForFunction(n=>Number(document.querySelector('#k-modal-cart-badge')?.textContent||0)>n,before,{timeout:10000});
