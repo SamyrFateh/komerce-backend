@@ -63,7 +63,7 @@ const GROUPS = [
 
 const VALID_KIND = new Set(['unit', 'integration', 'e2e']);
 const VALID_RUNNER = new Set(['jest', 'playwright']);
-const VALID_REQUIRES = new Set(['none', 'postgres', 'redis', 'webapp']);
+const VALID_REQUIRES = new Set(['none', 'postgres', 'redis', 'webapp', 'remote-webapp']);
 
 function listFiles({ dir, ext, recursive }) {
   const abs = path.join(ROOT, dir);

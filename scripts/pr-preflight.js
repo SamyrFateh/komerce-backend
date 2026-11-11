@@ -176,6 +176,7 @@ function buildPlan(scope, baseSha, headSha = 'HEAD', options = {}) {
     npmRun('Touched files ownership', 'gate:touched-files', ['--base', baseSha]),
     npmRun('Docs history', 'gate:docs-lint'),
     nodeRun('Impact suppression hygiene', 'scripts/impact-suppression-check.js'),
+    nodeRun('Test execution headers', 'scripts/test-header-check.js', ['--strict']),
     // Parité CI (job changes) : registre de routes hydraté avant l'audit.
     nodeRun('Route registry hydration', 'scripts/gen-route-registry.js'),
     npmRun('Feature audit', 'gate:feature-audit'),

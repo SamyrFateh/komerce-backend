@@ -20,6 +20,8 @@ describe('db.js — parseur NUMERIC (OID 1700) enregistré sur pg', () => {
   beforeAll(() => {
     // Charger db.js exécute l'enregistrement du parseur en effet de bord au
     // require — c'est le même mécanisme que l'application réelle au boot.
+    // Aucune connexion : le Pool est paresseux ; une URL factice evite toute dependance a l'environnement.
+    process.env.DATABASE_URL = process.env.DATABASE_URL || 'postgresql://unused:unused@127.0.0.1:1/unused';
     require('../../db');
     ({ types } = require('pg'));
   });

@@ -1,3 +1,4 @@
+/** @test-kind unit @test-runner jest @test-requires none */
 'use strict';
 
 const { resolveOfferPrerequisites } = require('../../scripts/allegro-offer-prerequisites-proof');

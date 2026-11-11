@@ -1,3 +1,4 @@
+/** @test-kind unit @test-runner jest @test-requires none */
 'use strict';
 const assert = require('node:assert/strict');
 const { assessCashOrderProvenance } = require('../../services/cash-order-provenance-readonly');

@@ -1,3 +1,4 @@
+/** @test-kind unit @test-runner jest @test-requires none */
 'use strict';
 const { spawnSync } = require('child_process');
 const path = require('path');

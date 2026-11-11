@@ -1,5 +1,5 @@
 'use strict';
-/** @test-kind integration @test-runner jest @test-requires DATABASE_URL */
+/** @test-kind integration @test-runner jest @test-requires postgres */
 if (!process.env.DATABASE_URL) {
   describe.skip('customs financial audit REAL_DB (requires DATABASE_URL)', () => {
     test('requires database', () => {});

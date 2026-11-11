@@ -1,3 +1,4 @@
+/** @test-kind unit @test-runner jest @test-requires none */
 'use strict';
 /** Human-guided recipe contracts: no real payments, resets, or certification. */
 const fs=require('fs');
