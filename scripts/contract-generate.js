@@ -1817,6 +1817,9 @@ const KNOWN_RESPONSES = {
   '/api/hub/trace': {
     get: { fields: ['order_id','purchase_order_id','chain'], source: 'route-read' }
   },
+  '/api/hub/physical-codes/confirm': {
+    post: { fields: ['id','code','product_sku_id','trust'], source: 'service-read' }
+  },
   '/api/hub/batch-scan': {
     post: { fields: ['data','total'], source: 'route-read' }
   },
