@@ -246,6 +246,8 @@ function sourceVisualFrPublicReadySql(a) {
             AND vrev.source_media_id=vm.source_media_id AND vrev.source_url=vm.url
             AND COALESCE(vrev.option_values,'{}'::jsonb)=COALESCE(vm.option_values,'{}'::jsonb)
             AND NULLIF(BTRIM(vrev.reviewed_by),'') IS NOT NULL
+            AND (vrev.reviewed_by NOT LIKE 'automation:github-actions:%'
+                 OR ${process.env.KOMERCE_ENV === 'staging' ? 'TRUE' : 'FALSE'})
             AND vrev.reviewed_at IS NOT NULL
             AND (
               vrev.text_presence='NONE'

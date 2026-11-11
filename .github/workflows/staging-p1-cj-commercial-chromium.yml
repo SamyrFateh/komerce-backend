@@ -1,0 +1,67 @@
+# Owner-approved temporary staging campaign. Actual Chromium form gestures only.
+name: G6 P1 — CJ Catalogue and KM commercial decisions in real Chromium staging
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: read
+concurrency:
+  group: komerce-g6-p1-cj-commercial-chromium-staging
+  cancel-in-progress: false
+jobs:
+  commercial:
+    if: >-
+      github.repository == 'SamyrFateh/komerce-backend' &&
+      github.actor == github.repository_owner &&
+      github.event.issue.user.login == github.repository_owner &&
+      github.event.issue.title == '[staging-op] g6-cj-commercial-chromium-3-products'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      GITHUB_ACTIONS: 'true'
+      G6_CJ_COMMERCIAL_APPROVED: STAGING_ONLY_3_CJ_TEST
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      EXPECTED_RAILWAY_ENVIRONMENT: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      KOMERCE_STAGING_RESET_DB_PIN: ${{ vars.STAGING_DB_PIN }}
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      PGOPTIONS: '-c default_transaction_read_only=on'
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      E2E_MARKET_OPERATOR_EMAIL: ${{ secrets.E2E_MARKET_OPERATOR_EMAIL }}
+      E2E_MARKET_OPERATOR_PASSWORD: ${{ secrets.E2E_MARKET_OPERATOR_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Resolve exact staging runtime SHA and reject application drift
+        run: node scripts/recette/resolve-staging-deploy-pin.js
+      - name: Confirm the protected staging database fingerprint
+        run: node scripts/recette/target-guard.js
+      - name: Install real Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Review exact source pixels, approve Catalogue, activate canonical KM price through real Chromium
+        run: node scripts/recette/p1-cj-commercial-chromium.js
+      - name: Archive real Chromium + HTTP + PostgreSQL before/after evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g6-p1-cj-commercial-chromium-${{ github.run_id }}
+          path: |
+            test-results/p1-cj-commercial-chromium/
+            test-results/hub-v1-http/deploy-pin.json
+          if-no-files-found: warn
+          retention-days: 21
+      - name: State limits
+        if: always()
+        run: |
+          echo 'Owner-authorized AUTOMATED_STAGING: exact three CJ TEST products, KM only.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Actual UI writers + independent read-only PostgreSQL/API. No human attestation, provider, payment or production GO.' >> "$GITHUB_STEP_SUMMARY"

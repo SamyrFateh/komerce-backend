@@ -1,0 +1,159 @@
+# Staging fixture setup is explicit and distinct from read-only buyer Chromium certification.
+name: CJ TEST — canonical supplier fixture binding and real buyer Chromium proof
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: read
+concurrency:
+  group: komerce-cj-source-link-buyer-proof
+  cancel-in-progress: false
+jobs:
+  inspect:
+    if: >-
+      github.repository == 'SamyrFateh/komerce-backend' &&
+      github.actor == github.repository_owner &&
+      github.event.issue.user.login == github.repository_owner &&
+      github.event.issue.title == '[staging-op] cj-source-link-and-buyer-proof'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      EXPECTED_RAILWAY_ENVIRONMENT: staging
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      KOMERCE_STAGING_RESET_DB_PIN: ${{ vars.STAGING_DB_PIN }}
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      PGOPTIONS: '-c default_transaction_read_only=on'
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Pin actual staging and protected database
+        run: |
+          node scripts/recette/resolve-staging-deploy-pin.js
+          node scripts/recette/target-guard.js
+      - run: npx playwright install --with-deps chromium
+      - name: Bind exact TEST fixtures through canonical API, then prove real buyer search and PDP
+        run: |
+          node <<'JS'
+          const fs=require('node:fs');
+          const {chromium,request}=require('playwright');
+          const db=require('./db');
+          const {confirmTarget}=require('./scripts/recette/target-guard');
+          const {publicCatalogVisibilitySql}=require('./services/catalog-public-view');
+          const {resolveCanonicalMappingMoney}=require('./services/purchasing-canonical-money');
+          const BASE='https://komerce-backend-production.up.railway.app';
+          const OUT='test-results/cj-source-buyer';fs.mkdirSync(OUT,{recursive:true});
+          const TARGETS=[['KPR-000099','76dacd6c-c1d8-4313-9455-f0d8f063835b',17990],['KPR-000100','e7146e22-1122-47b7-bd5b-ee2fba5bc48a',7990],['KPR-000101','449db944-ae6f-4042-9f87-47117611d1b7',8990]];
+          const NAME='CJ — recette G6 KM — sans commande automatique';
+          const report={run_id:process.env.GITHUB_RUN_ID,sha:process.env.E2E_EXPECTED_DEPLOY_SHA,verdict:'NOT_PROVEN',fixture_mode:'CANONICAL_API_SETUP_NOT_UI_CERTIFICATION',human_attestation:false,external_supplier_calls:0,products:[],blocked_mutations:[],blocked_external_telemetry:[]};
+          const save=()=>fs.writeFileSync(OUT+'/report.json',JSON.stringify(report,null,2)+'\n');
+          let browser,admin;
+          async function version(){const v=await fetch(BASE+'/health/version').then(r=>r.json());if(v.commit!==report.sha)throw Error('STAGING_SHA_CHANGED');}
+          async function snapshot(){return (await db.query(`SELECT p.id,p.product_ref,p.name,p.lifecycle_status,p.is_active,p.is_available,
+           (SELECT sc.scan_result->>'sourcing_decision' FROM sourcing_candidates sc WHERE sc.product_id=p.id AND sc.state='imported_to_catalog' ORDER BY sc.updated_at DESC LIMIT 1) AS source_decision,
+           ${publicCatalogVisibilitySql('p',{marketCodeParamIndex:1})} AS public_gate,
+           (SELECT jsonb_agg(jsonb_build_object('id',k.id,'supplier_sku',k.supplier_sku,'supplier_unit_ref',k.supplier_unit_ref,'provider',k.supplier_order_identity->>'provider','stock',k.stock,'is_active',k.is_active) ORDER BY k.created_at,k.id) FROM product_skus k WHERE k.product_id=p.id) AS skus,
+           (SELECT jsonb_agg(jsonb_build_object('id',ps.id,'supplier_id',ps.supplier_id,'supplier_sku',ps.supplier_sku,'is_active',ps.is_active,'deleted_at',ps.deleted_at,'priority',ps.priority)) FROM product_suppliers ps WHERE ps.product_id=p.id) AS mappings,
+           (SELECT jsonb_agg(jsonb_build_object('amount',d.amount,'status',d.status)) FROM product_market_price_drafts d JOIN markets m ON m.id=d.market_id WHERE d.product_id=p.id AND m.code='KM') AS prices,
+           (SELECT e.commercial_exposure FROM product_market_exposure e JOIN markets m ON m.id=e.market_id WHERE e.product_id=p.id AND m.code='KM') AS exposure
+           FROM products p WHERE p.id=ANY($2::uuid[]) ORDER BY p.product_ref`,['KM',TARGETS.map(t=>t[1])])).rows;}
+          async function sources(){return (await db.query("SELECT id,name,platform,auto_order,owner_scope,is_active,deleted_at,notes,created_by,(api_key_enc IS NOT NULL OR api_secret_enc IS NOT NULL OR account_id IS NOT NULL) AS has_credentials FROM suppliers WHERE name=$1 AND deleted_at IS NULL",[NAME])).rows;}
+          (async()=>{try{
+           if(process.env.GITHUB_ACTIONS!=='true'||process.env.GITHUB_EVENT_NAME!=='issues'||process.env.GITHUB_ACTOR!==process.env.GITHUB_REPOSITORY_OWNER||process.env.KOMERCE_ENV!=='staging'||process.env.STAGING_BASE_URL!==BASE||!/^\d{5,20}$/.test(report.run_id||'')||!String(process.env.PGOPTIONS||'').includes('default_transaction_read_only=on'))throw Error('OWNER_STAGING_GUARD');
+           const target=await confirmTarget({db,env:process.env});if(!target.confirmed)throw Error('TARGET_NOT_CONFIRMED');report.fingerprint=target.fingerprint;await version();
+           const before=await snapshot();report.before=before;
+           if(before.length!==3)throw Error('TARGET_SET_CHANGED');
+           for(const [ref,id,amount] of TARGETS){const p=before.find(x=>x.id===id);
+            if(!p||p.product_ref!==ref||p.source_decision!=='TEST'||p.lifecycle_status!=='active'||!p.is_active||!p.is_available||p.exposure!=='ENABLED'||!p.prices?.some(x=>x.status==='LOCAL_ACTIVE'&&Number(x.amount)===amount)||!p.skus?.length||p.skus.some(k=>k.provider!=='cj'||!k.supplier_sku||!k.supplier_unit_ref))throw Error('PRODUCT_PRECONDITION_CHANGED:'+ref);
+           }
+           save();admin=await request.newContext({baseURL:BASE,extraHTTPHeaders:{Origin:BASE}});
+           const login=await admin.post('/api/auth/login',{data:{email:process.env.E2E_ADMIN_EMAIL,password:process.env.E2E_ADMIN_PASSWORD}});if(!login.ok())throw Error('ADMIN_LOGIN_FAILED');
+           const me=await admin.get('/api/auth/me').then(r=>r.json());if(me.role!=='admin')throw Error('ADMIN_REQUIRED');report.actor=me.id;
+           let suppliers=await sources();if(suppliers.length>1)throw Error('AMBIGUOUS_FIXTURE_SOURCE');
+           if(!suppliers.length){
+            // A purchasing directory entry with the real provider; no credentials, API execution or outbound order.
+            const response=await admin.post('/api/purchasing/suppliers',{data:{name:NAME,platform:'cj',auto_order:false,notes:'AUTOMATED_STAGING G6 KM; fixture ownership run '+report.run_id+'; real CJ product identities; no external order or payment authorized.'}});
+            report.supplier_creation={http:response.status()};save();if(!response.ok())throw Error('CANONICAL_SUPPLIER_CREATE_FAILED');suppliers=await sources();
+           }
+           const supplier=suppliers[0];report.fixture_supplier=supplier;
+           if(suppliers.length!==1||supplier.platform!=='cj'||supplier.owner_scope!==null||supplier.auto_order!==false||supplier.is_active!==true||supplier.deleted_at!==null||supplier.has_credentials||supplier.created_by!==me.id||!supplier.notes?.startsWith('AUTOMATED_STAGING G6 KM; fixture ownership run '))throw Error('UNSAFE_FIXTURE_SUPPLIER');
+           for(const p of before){await version();const record={ref:p.product_ref,id:p.id,before:p};report.products.push(record);
+            const unrelated=(p.mappings||[]).filter(m=>m.supplier_id!==supplier.id&&m.is_active&&!m.deleted_at);if(unrelated.length)throw Error('EXISTING_OTHER_SOURCE_REQUIRES_REVIEW');
+            const existing=(p.mappings||[]).find(m=>m.supplier_id===supplier.id&&m.is_active&&!m.deleted_at);
+            if(existing){record.setup='EXISTING_MAPPING_CAPITALIZED';}
+            else{const sku=p.skus.find(k=>k.is_active&&Number(k.stock)>0);if(!sku)throw Error('NO_STOCKED_EXACT_SKU');
+             record.canonical_money=await resolveCanonicalMappingMoney(db,p.id,sku.supplier_sku);if(!record.canonical_money)throw Error('CANONICAL_MONEY_MISSING');
+             // Product-level source binding only; sold SKU/SOI and native currency remain canonical and unchanged.
+             const response=await admin.post('/api/purchasing/suppliers/'+supplier.id+'/map',{data:{product_id:p.id,supplier_sku:sku.supplier_sku,notes:'AUTOMATED_STAGING source binding run '+report.run_id+'; exact sold SKU stays authoritative; no supplier execution'}});
+             record.setup={http:response.status(),canonical:await response.json()};save();if(!response.ok())throw Error('CANONICAL_SOURCE_MAPPING_FAILED:'+p.product_ref);
+            }
+            const after=(await snapshot()).find(x=>x.id===p.id);record.after=after;save();
+            if(!after.public_gate||JSON.stringify(after.skus)!==JSON.stringify(p.skus)||JSON.stringify(after.prices)!==JSON.stringify(p.prices)||after.exposure!==p.exposure||!after.mappings?.some(m=>m.supplier_id===supplier.id&&m.is_active&&!m.deleted_at))throw Error('SOURCE_READBACK_MISMATCH:'+p.product_ref);
+           }
+           browser=await chromium.launch({headless:true});const buyer=await browser.newContext({viewport:{width:1440,height:1000},locale:'fr-FR'});
+           const page=await buyer.newPage();await page.route('**/*',route=>{
+            if(['GET','HEAD','OPTIONS'].includes(route.request().method()))return route.continue();
+            const request=route.request();const url=new URL(request.url());
+            // Every browser POST remains aborted: no Stripe or Komerce mutation leaves Chromium.
+            // Stripe.js fraud-signal beacon: exact measured destination, NOT a Komerce write.
+            // Distinguish it from business mutations without enabling any network egress.
+            const record={method:request.method(),origin:url.origin,path:url.pathname,resource_type:request.resourceType()};
+            if(record.method==='POST'&&record.origin==='https://m.stripe.com'&&record.path==='/6'&&record.resource_type==='xhr')
+              report.blocked_external_telemetry.push(record);
+            else report.blocked_mutations.push(record);
+            return route.abort();
+           });
+           for(const record of report.products){await version();const expected=TARGETS.find(t=>t[1]===record.id);
+            const response=await buyer.request.get(BASE+'/api/products/'+record.id+'/detail?market=KM');const body=await response.json();record.public_detail={http:response.status(),body};save();
+            if(!response.ok()||body.product?.reference!==record.ref||Number(body.pricing?.price_kmf)!==expected[2])throw Error('BUYER_IDENTITY_OR_PRICE_MISMATCH:'+record.ref);
+            await page.goto(BASE+'/boutique/?market=KM',{waitUntil:'domcontentloaded'});
+            await page.locator('#k-search-input').fill(record.before.name);
+            const result=page.locator('#k-search-dropdown .k-search-item[data-id="'+record.id+'"]');await result.waitFor({state:'visible',timeout:25000});
+            record.search_text=await result.innerText();await page.screenshot({path:OUT+'/'+record.ref+'-search.png'});
+            await result.click();await page.locator('#k-modal-name').waitFor({state:'visible',timeout:25000});
+            await page.waitForFunction(name=>document.querySelector('#k-modal-name')?.textContent.includes(name),record.before.name);
+            // The name/price can paint before the main gallery and SKU options are ready.
+            // A blank hero or absent configurator is NOT a visually certified PDP.
+            let visual;
+            try {
+             const visualHandle=await page.waitForFunction(()=>{
+              const images=[...document.querySelectorAll('#k-modal-carousel-track img')];
+              const hero=images.find(img=>img.complete&&img.naturalWidth>0&&img.getBoundingClientRect().width>0);
+              const variants=document.querySelector('#k-modal-variants');
+              if(!hero||!variants||!variants.innerText.trim())return false;
+              return {hero_loaded:true,hero_src:hero.currentSrc||hero.src,options_rendered:true,options:variants.innerText.trim().slice(0,240)};
+             },null,{timeout:25000});visual=await visualHandle.jsonValue();
+            } catch(e){
+             await page.screenshot({path:OUT+'/'+record.ref+'-pdp-not-ready.png'});
+             throw Error('BUYER_PDP_HERO_OR_VARIANTS_NOT_READY:'+record.ref);
+            }
+            record.pdp_visual=visual;save();
+            record.pdp={name:await page.locator('#k-modal-name').innerText(),price:await page.locator('#k-modal-price').innerText()};
+            if(Number(record.pdp.price.replace(/[^0-9]/g,''))!==expected[2])throw Error('PDP_PRICE_MISMATCH:'+record.ref);
+            await page.screenshot({path:OUT+'/'+record.ref+'-pdp.png'});record.verdict='BUYER_SEARCH_AND_PDP_CHROMIUM_API_PG_PASS';save();
+           }
+           if(report.blocked_mutations.length)throw Error('UNEXPECTED_BUYER_MUTATION');await version();report.verdict='THREE_CJ_PRODUCTS_BUYER_VISIBLE_NOT_FULL_E2E';
+           }catch(error){report.verdict='BLOCKED';report.error=String(error.message).slice(0,350);process.exitCode=2;}
+           finally{if(browser)await browser.close();if(admin)await admin.dispose();await db.pool.end();save();console.log(JSON.stringify({verdict:report.verdict,error:report.error,products:report.products.map(p=>({ref:p.ref,verdict:p.verdict,http:p.public_detail?.http})),human_attestation:false}));}
+          })();
+          JS
+      - name: Preserve canonical setup and independent Chromium API PostgreSQL proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cj-source-buyer-proof-${{ github.run_id }}
+          path: |
+            test-results/cj-source-buyer/
+            test-results/hub-v1-http/deploy-pin.json
+          retention-days: 21

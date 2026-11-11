@@ -180,9 +180,9 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 > Raffiner les donnees fournisseur en catalogue canonique, publier les unites vendables et exposer un contrat detail produit stable a la Boutique.
 
 - middleware: 1
-- ci: 24
+- ci: 25
 - utils: 1
-- scripts: 33
+- scripts: 35
 - services: 84
 - schemas: 5
 - migrations: 25
@@ -432,8 +432,8 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - services: 4
 - migrations: 3
-- dash: 20
-- tests: 10
+- dash: 22
+- tests: 11
 - tables owned (lifecycle): 2 — `product_market_price_drafts`, `product_market_price_draft_events`
 - tables written: 2
 - interfaces exposed: 0
@@ -2301,7 +2301,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 2294 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 2297 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 214 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 79 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -2347,9 +2347,9 @@ Meta Graph monté : oui.
 | catalog | auth-identity | interface | 1 | **DECLARED_AND_OBSERVED** |
 | catalog | business-rules | static-code | 12 | **DECLARED_AND_OBSERVED** |
 | catalog | customs | static-code | 2 | **DECLARED_AND_OBSERVED** |
-| catalog | economic-engine | static-code | 13 | **DECLARED_AND_OBSERVED** |
+| catalog | economic-engine | static-code | 15 | **DECLARED_AND_OBSERVED** |
 | catalog | external-provider-contracts | static-code | 5 | **DECLARED_AND_OBSERVED** |
-| catalog | infrastructure | static-code | 110 | **DECLARED_AND_OBSERVED** |
+| catalog | infrastructure | static-code | 111 | **DECLARED_AND_OBSERVED** |
 | catalog | logistics | static-code | 10 | **DECLARED_AND_OBSERVED** |
 | catalog | market | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | catalog | market-autonomy | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
@@ -2506,8 +2506,8 @@ Meta Graph monté : oui.
 | market | notifications | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | market | orders | static-code | 1 | **OBSERVED_UNDECLARED** |
 | market-autonomy | catalog | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
-| market-autonomy | economic-engine | static-code | 4 | **DECLARED_AND_OBSERVED** |
-| market-autonomy | infrastructure | static-code | 5 | **DECLARED_AND_OBSERVED** |
+| market-autonomy | economic-engine | static-code | 7 | **DECLARED_AND_OBSERVED** |
+| market-autonomy | infrastructure | static-code | 6 | **DECLARED_AND_OBSERVED** |
 | market-autonomy | market | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
 | market-autonomy | market-control-plane | static-code | 2 | **OBSERVED_UNDECLARED** |
 | market-control-plane | auth | static-code | 2 | **DECLARED_AND_OBSERVED** |

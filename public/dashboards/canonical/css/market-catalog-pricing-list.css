@@ -59,3 +59,30 @@ body.kmc-shell-v4 #market-catalog-root[data-workspace-kind="market-catalog"] > .
 body.kmc-shell-v4 #market-catalog-root[data-workspace-kind="market-catalog"] > .kmc-workspace-header .kmc-workspace-kicker {
   color:#e7f1ff; background:rgba(255,255,255,.14);
 }
+
+/* Cost facts, price decision and publication have distinct visual roles. */
+#market-catalog-root .kmc-price-list-table thead th { color:#364152; font-weight:800; }
+#market-catalog-root .kmc-price-list-table thead th:nth-child(2) { background:#edf2f7; color:#334155; }
+#market-catalog-root .kmc-price-list-table thead th:nth-child(3) { background:#eee9f8; color:#654492; }
+#market-catalog-root .kmc-price-list-table thead th:nth-child(5) { background:#fff0ce; color:#874500; }
+#market-catalog-root .kmc-price-list-table thead th:nth-child(6) { background:#eaf4ef; color:#205942; }
+#market-catalog-root .kmc-price-money { display:block; font-size:16px; font-weight:800; font-variant-numeric:tabular-nums; letter-spacing:-.015em; }
+#market-catalog-root td.kmc-price-landed { background:#f7f9fc; }
+#market-catalog-root td.kmc-price-landed .kmc-price-money { color:#334155; }
+#market-catalog-root td.kmc-price-variable { background:#faf7ff; }
+#market-catalog-root td.kmc-price-variable .kmc-price-money { color:#654492; }
+#market-catalog-root td.kmc-price-edit { background:#fffaf0; box-shadow:inset 3px 0 #e8b960; }
+#market-catalog-root .kmc-price-edit input { width:160px; font-size:18px; color:#352715; border:2px solid #b88738; background:#fff; }
+#market-catalog-root .kmc-price-edit input:focus { outline:3px solid #efd6a2; outline-offset:2px; border-color:#8c5200; }
+#market-catalog-root .kmc-price-market.is-unconfirmed strong { display:inline-block; padding:4px 7px; border-radius:5px; background:#fff0d9; color:#895317; font-size:12px; }
+#market-catalog-root td.kmc-price-contribution[data-contribution-state="positive"] .kmc-price-money { color:#186447; }
+#market-catalog-root td.kmc-price-contribution[data-contribution-state="negative"] .kmc-price-money { color:#aa263c; }
+#market-catalog-root td.kmc-price-contribution[data-contribution-state="positive"] { background:#f1f8f3; }
+#market-catalog-root td.kmc-price-contribution[data-contribution-state="negative"] { background:#fff1f3; }
+#market-catalog-root td.kmc-price-contribution[data-contribution-state="unknown"],
+#market-catalog-root td.kmc-price-contribution[data-contribution-state="zero"] { color:#68717d; background:#fafbfc; }
+#market-catalog-root .kmc-price-action > small[data-publication-state] { display:inline-block; padding:4px 7px; border-radius:5px; font-weight:700; font-size:11px; }
+#market-catalog-root .kmc-price-action > small[data-publication-state="exposed"] { background:#e8f2ec; color:#245840; }
+#market-catalog-root .kmc-price-action > small[data-publication-state="hidden"] { background:#edf0f4; color:#465365; }
+#market-catalog-root .kmc-price-action > small[data-publication-state="pending"] { background:#fff0d9; color:#895317; }
+#market-catalog-root .kmc-price-detail-toggle { color:#465365; text-decoration:underline; text-underline-offset:3px; }

@@ -5,7 +5,7 @@
  * @layer service
  * @owner catalog
  * @purpose Persist explicit human image review only for exact active source and variant.
- * @db-read catalog_media
+ * @db-read catalog_media, sourcing_candidates, catalog_media_visual_fr_reviews
  * @db-write catalog_media_visual_fr_reviews
  * @db-txn none
  * @impact-areas catalog,sourcing
@@ -15,12 +15,21 @@
 const { inspectOne } = require('./catalog-media-visual-fr-proof');
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-async function recordVisualFrReview(q, { productId, mediaId, review, reviewerId }) {
+async function recordVisualFrReview(q, { productId, mediaId, review, reviewerId }, env = process.env) {
   if (!uuid.test(productId || '') || !uuid.test(mediaId || '')) {
     return { status: 400, code: 'INVALID_MEDIA_OR_PRODUCT_ID' };
   }
   if (typeof reviewerId !== 'string' || !reviewerId.trim()) {
     return { status: 403, code: 'HUMAN_REVIEWER_REQUIRED' };
+  }
+  const execution = review?.execution_mode || 'HUMAN';
+  if (!['HUMAN', 'AUTOMATED_STAGING'].includes(execution)) {
+    return { status: 422, code: 'REVIEW_EXECUTION_MODE_INVALID' };
+  }
+  const automated = execution === 'AUTOMATED_STAGING';
+  if (automated && (env.KOMERCE_ENV !== 'staging' ||
+    !/^\d{5,20}$/.test(String(review.run_id || '')) || !uuid.test(reviewerId))) {
+    return { status: 403, code: 'AUTOMATED_REVIEW_STAGING_ONLY' };
   }
   const { rows } = await q.query(
     `SELECT id, source_media_id, url, option_values FROM catalog_media
@@ -28,6 +37,19 @@ async function recordVisualFrReview(q, { productId, mediaId, review, reviewerId 
   );
   const media = rows[0];
   if (!media) return { status: 404, code: 'ACTIVE_SOURCE_MEDIA_NOT_FOUND' };
+  if (automated) {
+    const scope = await q.query(`SELECT EXISTS (
+        SELECT 1 FROM sourcing_candidates sc WHERE sc.product_id=$1
+          AND sc.state='imported_to_catalog'
+          AND UPPER(sc.scan_result->>'sourcing_decision')='TEST'
+      ) AS test_candidate,
+      EXISTS (SELECT 1 FROM catalog_media_visual_fr_reviews vr
+        WHERE vr.media_id=$2 AND vr.reviewed_by NOT LIKE 'automation:github-actions:%') AS human_review`,
+    [productId, mediaId]);
+    if (scope.rows[0]?.test_candidate !== true || scope.rows[0]?.human_review === true) {
+      return { status: 403, code: 'AUTOMATED_REVIEW_TEST_CANDIDATE_REQUIRED' };
+    }
+  }
   const proof = {
     source_media_id: review?.source_media_id,
     source_url: review?.source_url,
@@ -36,11 +58,11 @@ async function recordVisualFrReview(q, { productId, mediaId, review, reviewerId 
     source_transcription: review?.source_transcription ?? null,
     french_translation: review?.french_translation ?? null,
     french_presentation: review?.french_presentation ?? null,
-    reviewed_by: reviewerId,
+    reviewed_by: automated ? `automation:github-actions:${review.run_id}:${reviewerId}` : reviewerId,
     reviewed_at: new Date().toISOString(),
   };
   const verdict = inspectOne({ source_media_id: media.source_media_id, url: media.url,
-    option_values: media.option_values }, proof);
+    option_values: media.option_values }, proof, { runtime: env.KOMERCE_ENV });
   if (verdict.reason === 'SOURCE_IMAGE_OR_VARIANT_CHANGED') {
     return { status: 409, code: 'SOURCE_IMAGE_OR_VARIANT_CHANGED' };
   }
@@ -68,14 +90,16 @@ async function recordVisualFrReview(q, { productId, mediaId, review, reviewerId 
             source_transcription=EXCLUDED.source_transcription,french_translation=EXCLUDED.french_translation,
             french_presentation=EXCLUDED.french_presentation,reviewed_by=EXCLUDED.reviewed_by,
             reviewed_at=EXCLUDED.reviewed_at,updated_at=now()
+      WHERE $12::boolean=FALSE OR catalog_media_visual_fr_reviews.reviewed_by LIKE 'automation:github-actions:%'
       RETURNING media_id, reviewed_at`,
     [mediaId,productId,proof.source_media_id,proof.source_url,
      JSON.stringify(proof.option_values),proof.text_presence,proof.source_transcription,
      proof.french_translation,JSON.stringify(proof.french_presentation),
-     proof.reviewed_by,proof.reviewed_at]
+     proof.reviewed_by,proof.reviewed_at,automated]
   );
   if (!written.rows.length) return { status: 409, code: 'SOURCE_MEDIA_CHANGED_DURING_REVIEW' };
   return { status: 200, code: 'VISUAL_FR_REVIEW_RECORDED', ready: verdict.ready,
+    execution_mode: execution, human_attestation: !automated,
     visual_state: verdict.state, media_id: mediaId };
 }
 

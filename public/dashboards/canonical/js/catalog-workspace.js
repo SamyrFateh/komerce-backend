@@ -2095,7 +2095,9 @@
     source.textContent = 'Agrandir l’image fournisseur originale';
     detail.appendChild(source);
     if (review.reviewed_by) detail.appendChild(text(doc, 'p', 'kmc-catalog-correction-hint',
-      'Dernière attestation par ' + review.reviewed_by + ' · ' + (review.reviewed_at || 'date absente') +
+      (String(review.reviewed_by).startsWith('automation:github-actions:')
+        ? 'Dernière revue automatisée de recette (sans attestation humaine) par '
+        : 'Dernière attestation humaine par ') + review.reviewed_by + ' · ' + (review.reviewed_at || 'date absente') +
       ' · choix : ' + (review.text_presence || 'indéterminé')));
     const field = (label, tag) => {
       const wrapper = doc.createElement('label');
@@ -2135,12 +2137,35 @@
     confirmation.appendChild(text(doc, 'span', '',
       ' Je confirme avoir réellement examiné les pixels de CETTE source et variante.'));
     detail.appendChild(confirmation);
+    let execution = null;
+    let runId = null;
+    if (media.automated_staging_review_allowed === true) {
+      execution = field('Origine de la revue (staging)', 'select');
+      execution.setAttribute('data-review-execution-mode', '');
+      [['', '— Choisir —'], ['HUMAN', 'Revue humaine'],
+        ['AUTOMATED_STAGING', 'Recette Chromium automatisée · sans attestation humaine']]
+        .forEach(([value, label]) => {
+          const option = doc.createElement('option');
+          option.value = value;
+          option.textContent = label;
+          execution.appendChild(option);
+        });
+      runId = field('Run GitHub Actions de recette', 'input');
+      runId.setAttribute('data-review-run-id', '');
+      runId.inputMode = 'numeric';
+      runId.parentNode.hidden = true;
+    }
     const feedback = text(doc, 'p', 'kmc-catalog-correction-hint', 'Aucune attestation enregistrée automatiquement.');
     feedback.setAttribute('role', 'status');
     const save = doc.createElement('button');
     save.type = 'button';
     save.className = 'kmc-btn kmc-btn-primary';
     save.textContent = 'Enregistrer la revue humaine';
+    if (execution) execution.addEventListener('change', () => {
+      const automated = execution.value === 'AUTOMATED_STAGING';
+      runId.parentNode.hidden = !automated;
+      save.textContent = automated ? 'Enregistrer la revue automatisée de recette' : 'Enregistrer la revue humaine';
+    });
     const refresh = () => {
       const present = presence.value === 'PRESENT';
       transcription.disabled = !present;
@@ -2160,6 +2185,11 @@
         feedback.textContent = 'Inspecter l’image, choisir un état et confirmer la revue humaine.';
         return;
       }
+      if (execution && (!execution.value ||
+        (execution.value === 'AUTOMATED_STAGING' && !/^\d{5,20}$/.test(runId.value.trim())))) {
+        feedback.textContent = 'Choisir l’origine de la revue et renseigner le run de recette automatisée.';
+        return;
+      }
       if (presence.value === 'PRESENT' &&
         (!transcription.value.trim() || !translation.value.trim() ||
           (kind.value === 'localized_image' && !/^https:\/\//i.test(localizedUrl.value.trim())))) {
@@ -2167,6 +2197,8 @@
         return;
       }
       const body = {
+        ...(execution ? { execution_mode: execution.value,
+          run_id: execution.value === 'AUTOMATED_STAGING' ? runId.value.trim() : null } : {}),
         source_media_id: item.source_media_id,
         source_url: item.url,
         option_values: item.option_values || {},
@@ -2394,6 +2426,12 @@
       });
       mgroup.appendChild(text(doc, 'p', 'kmc-catalog-correction-hint',
         'Un prix LOCAL_ACTIVE et une exposition ENABLED ne prouvent pas à eux seuls la capacité d’achat en caisse.'));
+    }
+    if (row.lifecycle_status === 'active' && row.is_active === true) {
+      const marketLink = text(doc, 'a', 'kmc-workspace-action is-secondary', 'Décisions marchés');
+      marketLink.href = '/dashboards/canonical/market-catalog.html?product_ref=' +
+        encodeURIComponent(row.product_ref);
+      mgroup.appendChild(marketLink);
     }
     slot.appendChild(mgroup);
     const issues = Array.isArray(gate.reasons) ? gate.reasons : [];
@@ -2713,7 +2751,7 @@
     }
     // The classification may also be corrected before an issue is raised,
     // but the server still validates the active Boutique pair and operator grant.
-    if ((row.candidate_ref || (row.lifecycle_status === 'active' && row.is_active === true))) {
+    if (row.product_ref && row.lifecycle_status !== 'rejected') {
       const btn = makeButton(doc, 'Corriger le classement', 'inspector-classify', true);
       btn.addEventListener('click', () =>
         openProductClassificationDialog(context, row, categories, btn));
@@ -3043,7 +3081,7 @@
         statusChip.setAttribute('data-status', row.work_status || 'inactive');
         statusChip.hidden = true; // Statut technique masqué : seules les corrections sont visibles.
         diagnostic.appendChild(statusChip);
-        const readinessCheck = renderRegistryCorrections(doc, diagnostic, row, context, nextStep);
+        renderRegistryCorrections(doc, diagnostic, row, context, nextStep);
         tr.appendChild(diagnostic);
         const actionCell = doc.createElement('td');
         actionCell.className = 'kmc-catalog-action-cell';
@@ -3076,22 +3114,6 @@
         }
         const actions = doc.createElement('div');
         actions.className = 'kmc-catalog-actions-inner';
-        const view = text(doc, 'a', 'kmc-workspace-action is-secondary kmc-catalog-view-link', 'Voir fiche');
-        view.href = contextualHref('/admin/products/' + encodeURIComponent(row.product_ref),
-          '/admin/workspaces/catalog?product_ref=' + encodeURIComponent(row.product_ref), 'Retour au Catalogue');
-        // Seules des actions Catalogue et marché figurent ici.
-        // Toute préparation fournisseur/éditoriale appartient à la Raffinerie.
-        const editClassification = makeButton(doc, 'Modifier classement', 'classify-product', true);
-        editClassification.addEventListener('click', () =>
-          openProductClassificationDialog(context, row, categories, editClassification));
-        const issues = row.issues || [];
-        const market = text(doc, 'a', 'kmc-workspace-action is-secondary', 'Décisions marchés');
-        market.href = '/dashboards/canonical/market-catalog.html?product_ref=' +
-          encodeURIComponent(row.product_ref);
-        const diagnose = makeButton(doc, 'Vérifier prérequis', 'diagnose-product', true);
-        diagnose.addEventListener('click', () => {
-          if (readinessCheck) readinessCheck.click();
-        });
         // An already approved product is also a Catalogue dossier, not a
         // forced navigation to a second dashboard. Market decisions remain
         // separate audited authorities, accessible as a contextual extra.
@@ -3103,28 +3125,6 @@
         actions.appendChild(primary);
         statusChip.title = 'Consulter le dossier produit';
         statusChip.addEventListener('click', () => primary.click());
-        const extra = doc.createElement('details');
-        extra.className = 'kmc-catalog-row-more';
-        const more = text(doc, 'summary', '', '···');
-        more.title = 'Autres actions sur ce produit';
-        more.setAttribute('aria-label', 'Autres actions pour ' + row.product_ref);
-        extra.appendChild(more);
-        const extraList = doc.createElement('div');
-        extraList.className = 'kmc-catalog-row-more-list';
-        [
-          ['detail', view],
-          ['classify', editClassification],
-          // La Raffinerie n'est jamais une action secondaire du Catalogue finalisé.
-          ...(row.lifecycle_status === 'active' && row.is_active ? [['markets', market]] : []),
-        ].forEach(([kind, action]) => {
-          if (kind !== nextStep.kind && !(kind === 'classify' && row.lifecycle_status === 'rejected')) {
-            extraList.appendChild(action);
-          }
-        });
-        if (extraList.children.length) {
-          extra.appendChild(extraList);
-          actions.appendChild(extra);
-        }
         actionCell.appendChild(actions);
         tr.appendChild(actionCell);
         tbody.appendChild(tr);
