@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       services/cost-allocation/index.js, services/cost-allocation/_helpers.js, services/documents/customs-invoice.js, services/parcel-mutation-service.js
  * @used-by       routes/admin-customs-shipments.js, services/order-status-machine.js, services/shipping-customs-workspace.js
- * @db-read       customs_effective_rates, customs_shipment_parcels, customs_shipments, order_item_real_cost_allocations, order_items, orders, parcel_items, parcels, products
+ * @db-read       customs_effective_rates, customs_shipment_parcels, customs_shipments, international_shipments, order_item_real_cost_allocations, order_items, orders, parcel_items, parcels, products
  * @db-write      customs_shipment_parcel_events, customs_shipment_parcels, customs_shipments, order_item_real_cost_allocations, orders
  * @db-write-via:parcel-mutation-service parcels
  * @db-write-via:cost-allocation order_item_real_cost_allocations
