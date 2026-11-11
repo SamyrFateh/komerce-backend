@@ -113,8 +113,8 @@ async function buyerOrder({buyer,phone,code}){
    R.relay_choices=await page.locator('.ck-relais-item').allInnerTexts().then(a=>a.map(x=>x.replace(/\s+/g,' ').slice(0,80)));
    const it=page.locator('.ck-relais-item').filter({hasText:want}).first();
    soft(await it.count()>0,'agent_relay_offered_in_checkout',{want,choices:R.relay_choices});
-   if(await it.count()>0){await it.click();}else{await page.locator('.ck-relais-sheet-x').click().catch(()=>{});await page.keyboard.press('Escape').catch(()=>{});}
-   const cta=page.locator('.ck-relais-sheet-cta');if(await cta.isVisible().catch(()=>false))await cta.click();
+   if(await it.count()>0){await it.click();}
+   const cta=page.locator('.ck-relais-sheet-cta');await page.waitForTimeout(1200);if(await cta.isVisible().catch(()=>false))await cta.click({force:true,timeout:8000}).catch(()=>{});
    await page.waitForTimeout(800);
    R.relay_selected_summary=(await page.locator('#ck-relais-summary').innerText().catch(()=>'')).replace(/\s+/g,' ');
   }
