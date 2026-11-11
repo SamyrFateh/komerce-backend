@@ -311,6 +311,24 @@ describe('b-modal-cart', () => {
       expect(actions.classList.contains('k-modal-actions--filled')).toBe(true);
     });
 
+    test('P0 — cart:update côté drawer/side-cart resynchronise le compteur SKU exact', () => {
+      setupModalCart();
+      setSkuSelection('sku-m', { color: 'Navy Blue', size: 'M' });
+      state.cart = [
+        { product: { id: 42, sku_id: 'sku-m' }, qty: 1,
+          variant_combo: { color: 'Navy Blue', size: 'M' } },
+        { product: { id: 42, sku_id: 'sku-xl' }, qty: 7,
+          variant_combo: { color: 'Navy Blue', size: 'XL' } },
+      ];
+
+      bus.emit('cart:update');
+      expect(dom.modalQtyVal.textContent).toBe('1');
+      state.cart[0].qty = 3; // mutation opérée par le side-cart
+      bus.emit('cart:update');
+      expect(dom.modalQtyVal.textContent).toBe('3');
+      expect(state.cart[1].qty).toBe(7);
+    });
+
     test('qtyPlus appelle quickAdd puis resynchronise', () => {
       setupModalCart();
       state.modalProduct = { id: 11 };
