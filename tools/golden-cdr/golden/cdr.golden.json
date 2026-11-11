@@ -1,6 +1,6 @@
 {
   "_kind": "golden-cdr",
-  "captured_at": "2026-09-12T15:25:00.000Z",
+  "captured_at": "2026-11-11T10:56:10.023Z",
   "config_fingerprint": "8dd411ff63e062f6",
   "frozen_config": {
     "categories": {
@@ -272,7 +272,7 @@
     {
       "allocation": {
         "levels": {
-          "article": 6,
+          "article": 10,
           "order": 3,
           "parcel": 6,
           "shipment": 2
@@ -282,16 +282,16 @@
       "breakdown": {
         "customs": 25,
         "distribution": 725,
-        "freight": 1478,
+        "freight": 1108,
         "hub": 50,
         "overhead": 19408,
         "packaging": 75,
         "payment": 80,
-        "purchase": 152255,
+        "purchase": 152250,
         "relay": 200,
-        "risk": 9531,
+        "risk": 16570,
         "sourcing": 80,
-        "transitary": 4744
+        "transitary": 4636
       },
       "category": "phones",
       "channel": "cash_relais",
@@ -305,18 +305,19 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 9531,
-        "total": 193269,
-        "variable": 173861
+        "risk": 16570,
+        "total": 195007,
+        "variable": 175599
       },
       "warnings": [
+        "Douane non estimée : coût réel connu après ventilation de l'expédition (aucun taux théorique appliqué).",
         "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."
       ]
     },
     {
       "allocation": {
         "levels": {
-          "article": 7,
+          "article": 11,
           "order": 3,
           "parcel": 6,
           "shipment": 2
@@ -326,16 +327,16 @@
       "breakdown": {
         "customs": 25,
         "distribution": 725,
-        "freight": 1478,
+        "freight": 1108,
         "hub": 50,
         "overhead": 19408,
         "packaging": 75,
-        "payment": 2443,
-        "purchase": 152255,
+        "payment": 3002,
+        "purchase": 152250,
         "relay": 200,
-        "risk": 9672,
+        "risk": 16844,
         "sourcing": 80,
-        "transitary": 4744
+        "transitary": 4636
       },
       "category": "phones",
       "channel": "diaspora",
@@ -349,18 +350,19 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 9672,
-        "total": 195845,
-        "variable": 176437
+        "risk": 16844,
+        "total": 198203,
+        "variable": 178795
       },
       "warnings": [
+        "Douane non estimée : coût réel connu après ventilation de l'expédition (aucun taux théorique appliqué).",
         "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."
       ]
     },
     {
       "allocation": {
         "levels": {
-          "article": 6,
+          "article": 10,
           "order": 3,
           "parcel": 6,
           "shipment": 2
@@ -370,16 +372,16 @@
       "breakdown": {
         "customs": 25,
         "distribution": 725,
-        "freight": 599,
+        "freight": 329,
         "hub": 50,
         "overhead": 19408,
         "packaging": 75,
         "payment": 80,
-        "purchase": 12184,
+        "purchase": 12180,
         "relay": 200,
-        "risk": 856,
+        "risk": 1452,
         "sourcing": 80,
-        "transitary": 515
+        "transitary": 493
       },
       "category": "vetements",
       "channel": "cash_relais",
@@ -393,18 +395,19 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 856,
-        "total": 35031,
-        "variable": 15623
+        "risk": 1452,
+        "total": 34897,
+        "variable": 15489
       },
       "warnings": [
+        "Douane non estimée : coût réel connu après ventilation de l'expédition (aucun taux théorique appliqué).",
         "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."
       ]
     },
     {
       "allocation": {
         "levels": {
-          "article": 7,
+          "article": 11,
           "order": 3,
           "parcel": 6,
           "shipment": 2
@@ -414,16 +417,16 @@
       "breakdown": {
         "customs": 25,
         "distribution": 725,
-        "freight": 1662,
+        "freight": 941,
         "hub": 50,
         "overhead": 19408,
         "packaging": 75,
-        "payment": 800,
-        "purchase": 45686,
+        "payment": 963,
+        "purchase": 45675,
         "relay": 200,
-        "risk": 3027,
+        "risk": 5196,
         "sourcing": 80,
-        "transitary": 1552
+        "transitary": 1496
       },
       "category": "ceremonie",
       "channel": "diaspora",
@@ -437,18 +440,19 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 3027,
-        "total": 74620,
-        "variable": 55212
+        "risk": 5196,
+        "total": 74634,
+        "variable": 55226
       },
       "warnings": [
+        "Douane non estimée : coût réel connu après ventilation de l'expédition (aucun taux théorique appliqué).",
         "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."
       ]
     },
     {
       "allocation": {
         "levels": {
-          "article": 6,
+          "article": 10,
           "order": 3,
           "parcel": 6,
           "shipment": 2
@@ -458,16 +462,16 @@
       "breakdown": {
         "customs": 25,
         "distribution": 725,
-        "freight": 15344,
+        "freight": 8164,
         "hub": 50,
         "overhead": 19408,
         "packaging": 75,
         "payment": 80,
-        "purchase": 203107,
+        "purchase": 203000,
         "relay": 200,
-        "risk": 13514,
+        "risk": 22776,
         "sourcing": 80,
-        "transitary": 6685
+        "transitary": 6339
       },
       "category": "electro",
       "channel": "cash_relais",
@@ -481,18 +485,19 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 13514,
-        "total": 265924,
-        "variable": 246516
+        "risk": 22776,
+        "total": 260722,
+        "variable": 241314
       },
       "warnings": [
+        "Douane non estimée : coût réel connu après ventilation de l'expédition (aucun taux théorique appliqué).",
         "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."
       ]
     },
     {
       "allocation": {
         "levels": {
-          "article": 7,
+          "article": 11,
           "order": 3,
           "parcel": 6,
           "shipment": 2
@@ -502,16 +507,16 @@
       "breakdown": {
         "customs": 25,
         "distribution": 725,
-        "freight": 486,
+        "freight": 304,
         "hub": 50,
         "overhead": 19408,
         "packaging": 75,
-        "payment": 468,
-        "purchase": 25378,
+        "payment": 563,
+        "purchase": 25375,
         "relay": 200,
-        "risk": 1685,
+        "risk": 2911,
         "sourcing": 80,
-        "transitary": 908
+        "transitary": 880
       },
       "category": "cosmetiques",
       "channel": "diaspora",
@@ -525,18 +530,19 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 1685,
-        "total": 50139,
-        "variable": 30731
+        "risk": 2911,
+        "total": 50396,
+        "variable": 30988
       },
       "warnings": [
+        "Douane non estimée : coût réel connu après ventilation de l'expédition (aucun taux théorique appliqué).",
         "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."
       ]
     },
     {
       "allocation": {
         "levels": {
-          "article": 7,
+          "article": 11,
           "order": 3,
           "parcel": 6,
           "shipment": 2
@@ -546,16 +552,16 @@
       "breakdown": {
         "customs": 25,
         "distribution": 725,
-        "freight": 45080,
+        "freight": 22686,
         "hub": 50,
         "overhead": 19408,
         "packaging": 75,
-        "payment": 1711,
-        "purchase": 61234,
+        "payment": 1670,
+        "purchase": 60900,
         "relay": 200,
-        "risk": 6710,
+        "risk": 9234,
         "sourcing": 80,
-        "transitary": 3321
+        "transitary": 2593
       },
       "category": "mariage",
       "channel": "diaspora",
@@ -569,18 +575,19 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 6710,
-        "total": 141811,
-        "variable": 122403
+        "risk": 9234,
+        "total": 117446,
+        "variable": 98038
       },
       "warnings": [
+        "Douane non estimée : coût réel connu après ventilation de l'expédition (aucun taux théorique appliqué).",
         "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."
       ]
     },
     {
       "allocation": {
         "levels": {
-          "article": 6,
+          "article": 10,
           "order": 3,
           "parcel": 6,
           "shipment": 2
@@ -590,16 +597,16 @@
       "breakdown": {
         "customs": 25,
         "distribution": 725,
-        "freight": 1883,
+        "freight": 985,
         "hub": 50,
         "overhead": 19408,
         "packaging": 75,
         "payment": 80,
-        "purchase": 18283,
+        "purchase": 18270,
         "relay": 200,
-        "risk": 1311,
+        "risk": 2176,
         "sourcing": 80,
-        "transitary": 737
+        "transitary": 692
       },
       "category": "enfants",
       "channel": "cash_relais",
@@ -613,18 +620,19 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 1311,
-        "total": 43320,
-        "variable": 23912
+        "risk": 2176,
+        "total": 42566,
+        "variable": 23158
       },
       "warnings": [
+        "Douane non estimée : coût réel connu après ventilation de l'expédition (aucun taux théorique appliqué).",
         "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."
       ]
     },
     {
       "allocation": {
         "levels": {
-          "article": 6,
+          "article": 10,
           "order": 3,
           "parcel": 6,
           "shipment": 2
@@ -634,16 +642,16 @@
       "breakdown": {
         "customs": 25,
         "distribution": 725,
-        "freight": 5831,
+        "freight": 3136,
         "hub": 50,
         "overhead": 19408,
         "packaging": 75,
         "payment": 80,
-        "purchase": 91390,
+        "purchase": 91350,
         "relay": 200,
-        "risk": 6053,
+        "risk": 10251,
         "sourcing": 80,
-        "transitary": 3049
+        "transitary": 2905
       },
       "category": "materiels",
       "channel": "cash_relais",
@@ -657,18 +665,19 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 6053,
-        "total": 129825,
-        "variable": 110417
+        "risk": 10251,
+        "total": 128085,
+        "variable": 108677
       },
       "warnings": [
+        "Douane non estimée : coût réel connu après ventilation de l'expédition (aucun taux théorique appliqué).",
         "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."
       ]
     },
     {
       "allocation": {
         "levels": {
-          "article": 6,
+          "article": 10,
           "order": 3,
           "parcel": 6,
           "shipment": 2
@@ -678,16 +687,16 @@
       "breakdown": {
         "customs": 25,
         "distribution": 725,
-        "freight": 1151,
+        "freight": 698,
         "hub": 50,
         "overhead": 19408,
         "packaging": 75,
         "payment": 80,
-        "purchase": 50757,
+        "purchase": 50750,
         "relay": 200,
-        "risk": 3264,
+        "risk": 5631,
         "sourcing": 80,
-        "transitary": 1689
+        "transitary": 1638
       },
       "category": "ghost_category_xyz",
       "channel": "cash_relais",
@@ -701,19 +710,20 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 3264,
-        "total": 78953,
-        "variable": 59545
+        "risk": 5631,
+        "total": 79160,
+        "variable": 59752
       },
       "warnings": [
         "Catégorie \"ghost_category_xyz\" inconnue — poids, volume et marge cible par défaut utilisés.",
+        "Douane non estimée : coût réel connu après ventilation de l'expédition (aucun taux théorique appliqué).",
         "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."
       ]
     },
     {
       "allocation": {
         "levels": {
-          "article": 6,
+          "article": 9,
           "order": 3,
           "parcel": 6,
           "shipment": 2
@@ -723,16 +733,16 @@
       "breakdown": {
         "customs": 25,
         "distribution": 725,
-        "freight": 717,
+        "freight": 358,
         "hub": 50,
         "overhead": 19408,
         "packaging": 75,
         "payment": 80,
-        "purchase": 5,
+        "purchase": 0,
         "relay": 200,
-        "risk": 114,
+        "risk": 147,
         "sourcing": 80,
-        "transitary": 154
+        "transitary": 136
       },
       "category": "phones",
       "channel": "cash_relais",
@@ -746,11 +756,12 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 114,
-        "total": 21491,
-        "variable": 2083
+        "risk": 147,
+        "total": 21084,
+        "variable": 1676
       },
       "warnings": [
+        "Douane non estimée : coût réel connu après ventilation de l'expédition (aucun taux théorique appliqué).",
         "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel.",
         "cost_kmf absent ou nul sur le produit — CDR non significatif."
       ]
@@ -758,7 +769,7 @@
     {
       "allocation": {
         "levels": {
-          "article": 7,
+          "article": 11,
           "order": 3,
           "parcel": 6,
           "shipment": 2
@@ -768,16 +779,16 @@
       "breakdown": {
         "customs": 25,
         "distribution": 725,
-        "freight": 9673,
+        "freight": 7791,
         "hub": 50,
         "overhead": 19408,
         "packaging": 75,
-        "payment": 19036,
-        "purchase": 1218027,
+        "payment": 23487,
+        "purchase": 1218000,
         "relay": 200,
-        "risk": 76760,
+        "risk": 133879,
         "sourcing": 80,
-        "transitary": 36963
+        "transitary": 36178
       },
       "category": "electro",
       "channel": "diaspora",
@@ -791,18 +802,19 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 76760,
-        "total": 1419619,
-        "variable": 1400211
+        "risk": 133879,
+        "total": 1439698,
+        "variable": 1420290
       },
       "warnings": [
+        "Douane non estimée : coût réel connu après ventilation de l'expédition (aucun taux théorique appliqué).",
         "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."
       ]
     },
     {
       "allocation": {
         "levels": {
-          "article": 6,
+          "article": 10,
           "order": 3,
           "parcel": 6,
           "shipment": 2
@@ -812,16 +824,16 @@
       "breakdown": {
         "customs": 25,
         "distribution": 725,
-        "freight": 1658,
+        "freight": 1198,
         "hub": 50,
         "overhead": 19408,
         "packaging": 75,
         "payment": 80,
-        "purchase": 152257,
+        "purchase": 152250,
         "relay": 200,
-        "risk": 9542,
+        "risk": 16580,
         "sourcing": 80,
-        "transitary": 4749
+        "transitary": 4638
       },
       "category": "phones",
       "channel": "cash_relais",
@@ -835,11 +847,12 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 9542,
-        "total": 193472,
-        "variable": 174064
+        "risk": 16580,
+        "total": 195109,
+        "variable": 175701
       },
       "warnings": [
+        "Douane non estimée : coût réel connu après ventilation de l'expédition (aucun taux théorique appliqué).",
         "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel.",
         "volume_m3 absent — utilisation du défaut générique 0,005 m³."
       ]
