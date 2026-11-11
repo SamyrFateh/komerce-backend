@@ -137,7 +137,7 @@ test.describe('P0 variantes — parcours vrai Chromium desktop', () => {
 
   test('même produit en deux tailles : ajout, quantités isolées, libellés et persistance', async ({ page }) => {
     page.on('response', async (response) => {
-      if (!/\\/api\\/products\\/[^/?]+\\/detail/.test(response.url())) return;
+      if (!response.url().includes('/api/products/') || !response.url().includes('/detail')) return;
       try {
         const detail = await response.json();
         console.log('[P0 DETAIL]', JSON.stringify({
