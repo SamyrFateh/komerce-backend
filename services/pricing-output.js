@@ -58,8 +58,15 @@ function computePrices(cdr, cat, finance) {
   const survivalPrice = Math.max(0, variableComplete - riskProvision);
   const minimumSafePrice = arrondiPsycho(variableComplete * (1 + safetyPct / 100));
 
+  // Référence : P = V0 / (1 − Σ%prix − marge). Les frais de paiement et la non-collecte
+  // sont des % du PRIX : résolution directe, sans boucle. Sans % sur le prix, c'est la
+  // formule historique V / (1 − marge).
+  const priceRate = Number(cdr?.price_based_cost_rate) || 0;
+  const priceIndependent = Number(cdr?.price_independent_cost_kmf);
   let contributionReferencePrice = variableComplete;
-  if (targetRatio > 0 && targetRatio < 1) {
+  if (priceRate > 0 && Number.isFinite(priceIndependent) && 1 - priceRate - targetRatio > 0) {
+    contributionReferencePrice = priceIndependent / (1 - priceRate - targetRatio);
+  } else if (targetRatio > 0 && targetRatio < 1) {
     contributionReferencePrice = variableComplete / (1 - targetRatio);
   }
   contributionReferencePrice = arrondiPsycho(contributionReferencePrice);
@@ -78,6 +85,13 @@ function computePrices(cdr, cat, finance) {
   };
 }
 
+/** Coût variable évalué à un prix donné (frais sur le prix inclus). */
+function variableCostAtPrice(cdr, price, fallback) {
+  const rate = Number(cdr?.price_based_cost_rate) || 0;
+  const v0 = Number(cdr?.price_independent_cost_kmf);
+  return rate > 0 && Number.isFinite(v0) ? v0 + rate * price : fallback;
+}
+
 function computeScenarios(cdr, prices, cat, finance = {}) {
   const scenarios = [];
   const variableComplete = Number(cdr?.variable_cost_estimated_kmf) || 0;
@@ -92,9 +106,10 @@ function computeScenarios(cdr, prices, cat, finance = {}) {
     if (!(price > 0)) return 0;
     return Math.round(((price - cost) / price) * 1000) / 10;
   }
-  function selectable(price) {
-    return price >= variableComplete;
+  function selectable(price, cost = variableComplete) {
+    return price >= cost;
   }
+  const referenceCost = variableCostAtPrice(cdr, referencePrice, variableComplete);
 
   scenarios.push({
     id: 'honest_baseline',
@@ -103,11 +118,11 @@ function computeScenarios(cdr, prices, cat, finance = {}) {
     explanation: 'Ce repère part uniquement du coût variable complet. Les charges fixes restent au niveau portefeuille et ne fabriquent pas le prix du SKU.',
     levier: null,
     price_kmf: r(referencePrice),
-    cost_imputed_kmf: r(variableComplete),
-    contribution_kmf: r(referencePrice - variableComplete),
-    margin_kmf: r(referencePrice - variableComplete),
-    margin_pct: marginPct(referencePrice, variableComplete),
-    selectable: selectable(referencePrice),
+    cost_imputed_kmf: r(referenceCost),
+    contribution_kmf: r(referencePrice - referenceCost),
+    margin_kmf: r(referencePrice - referenceCost),
+    margin_pct: marginPct(referencePrice, referenceCost),
+    selectable: selectable(referencePrice, referenceCost),
     is_recommended: true,
     authority: 'REFERENCE_ONLY',
   });
@@ -122,11 +137,11 @@ function computeScenarios(cdr, prices, cat, finance = {}) {
     levier: 'contribution_target',
     levier_params: { reduction_pct: conquestPct },
     price_kmf: r(conquestPrice),
-    cost_imputed_kmf: r(variableComplete),
-    contribution_kmf: r(conquestPrice - variableComplete),
-    margin_kmf: r(conquestPrice - variableComplete),
-    margin_pct: marginPct(conquestPrice, variableComplete),
-    selectable: selectable(conquestPrice),
+    cost_imputed_kmf: r(variableCostAtPrice(cdr, conquestPrice, variableComplete)),
+    contribution_kmf: r(conquestPrice - variableCostAtPrice(cdr, conquestPrice, variableComplete)),
+    margin_kmf: r(conquestPrice - variableCostAtPrice(cdr, conquestPrice, variableComplete)),
+    margin_pct: marginPct(conquestPrice, variableCostAtPrice(cdr, conquestPrice, variableComplete)),
+    selectable: selectable(conquestPrice, variableCostAtPrice(cdr, conquestPrice, variableComplete)),
     is_recommended: false,
     authority: 'REFERENCE_ONLY',
   });

@@ -1078,7 +1078,7 @@
         "category": "services",
         "declared": "services/g6-staging-buyer-identity-guard.js",
         "resolvedPath": "services/g6-staging-buyer-identity-guard.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "auth-identity",
@@ -52970,8 +52970,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 691,
-        "technicalNodesOwned": 691,
+        "technicalNodesTotal": 692,
+        "technicalNodesOwned": 692,
         "technicalOrphans": 0
       },
       "dash": {
