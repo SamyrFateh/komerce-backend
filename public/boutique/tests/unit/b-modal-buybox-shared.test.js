@@ -55,6 +55,8 @@ beforeEach(() => {
   state.modalProductDetail = null;
   state.modalSelection = null;
   state.modalQty = 1;
+  state.cart = [];
+  state.modalDeliverySelection = { requested_transport_rail: null };
 });
 
 afterEach(() => {
@@ -90,41 +92,39 @@ describe('b-modal-buybox-shared — achat immédiat', () => {
     expect(addToCart).not.toHaveBeenCalled();
   });
 
-  test('Buy Now ajoute le snapshot SKU puis ouvre immédiatement le checkout sur cette seule ligne', () => {
+  test('Buy Now ouvre checkout sur la seule variante SKU sans modifier le panier', () => {
     installSkuState();
-    state.modalQty = 1;
+    state.modalSelection.selected_options = { Couleur: 'Navy Blue', Taille: 'M' };
+    state.modalQty = 2;
+    state.cart = [
+      { product: { id: 1, sku_id: 'sku-1' }, sku_id: 'sku-1', qty: 2,
+        variant_combo: { Couleur: 'Navy Blue', Taille: 'M' } },
+      { product: { id: 1, sku_id: 'sku-xl' }, sku_id: 'sku-xl', qty: 7,
+        variant_combo: { Couleur: 'Navy Blue', Taille: 'XL' } },
+    ];
+    const original = JSON.stringify(state.cart);
     const button = document.createElement('button');
-    const initialLabel = document.createElement('span');
-    initialLabel.textContent = 'Acheter';
-    button.appendChild(initialLabel);
-
-    const checkoutLine = { id: 1, sku_id: 'sku-1', qty: 1, price: 9000 };
-    addToCart.mockImplementation(() => {
-      expect(button.disabled).toBe(true);
-      expect(button.textContent).toContain('Ouverture du paiement');
-      return checkoutLine;
-    });
+    button.textContent = 'Acheter';
 
     wireBuyNowButton(button);
     button.click();
 
-    expect(addToCart).toHaveBeenCalledWith(
-      expect.objectContaining({
-        id: 1,
-        sku_id: 'sku-1',
-        price_kmf: 9000,
-        image_url: '/sku-1.jpg',
-      }),
-      1,
-      button,
-      { requested_transport_rail: null }
-    );
-
+    expect(addToCart).not.toHaveBeenCalled();
+    expect(JSON.stringify(state.cart)).toBe(original);
     expect(button.disabled).toBe(false);
     expect(button.classList.contains('buy-confirmed')).toBe(false);
     expect(button.textContent).toBe('Acheter');
     expect(bus.emit).toHaveBeenCalledWith('checkout:open', {
-      lines: [checkoutLine],
+      lines: [expect.objectContaining({
+        id: 1,
+        sku_id: 'sku-1',
+        qty: 2,
+        price: 9000,
+        variant_combo: { Couleur: 'Navy Blue', Taille: 'M' },
+        product: expect.objectContaining({
+          sku_id: 'sku-1', price_kmf: 9000, image_url: '/sku-1.jpg',
+        }),
+      })],
       context: { origin: 'BUY_NOW' },
     });
   });
