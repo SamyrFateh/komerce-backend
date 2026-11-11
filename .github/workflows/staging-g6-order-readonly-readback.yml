@@ -1,0 +1,52 @@
+# Owner-only read-only PostgreSQL proof for the already-created G6 order.
+name: G6 KM — existing order PostgreSQL readback (READ ONLY)
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: read
+concurrency:
+  group: komerce-g6-order-readonly-readback
+  cancel-in-progress: false
+jobs:
+  readback:
+    if: >-
+      github.repository == 'SamyrFateh/komerce-backend' &&
+      github.actor == github.repository_owner &&
+      github.event.issue.user.login == github.repository_owner &&
+      github.event.issue.title == '[staging-op] g6-order-readonly-readback'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      EXPECTED_RAILWAY_ENVIRONMENT: staging
+      KOMERCE_STAGING_RESET_DB_PIN: ${{ vars.STAGING_DB_PIN }}
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      PGOPTIONS: '-c default_transaction_read_only=on'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Pin deployed staging version and protected database
+        run: |
+          node scripts/recette/resolve-staging-deploy-pin.js
+          node scripts/recette/target-guard.js
+      - name: Read existing G6 order from PostgreSQL
+        run: node scripts/recette/g6-order-readonly-readback.js
+      - name: Preserve read-only proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g6-order-readonly-${{ github.run_id }}
+          path: test-results/g6-order-readonly/
+          if-no-files-found: warn
+          retention-days: 21

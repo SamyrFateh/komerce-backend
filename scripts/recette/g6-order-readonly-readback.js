@@ -1,0 +1,67 @@
+/** 
+ * @komerce-arch-lite
+ * @role          g6-order-readonly-readback
+ * @domain        orders
+ * @layer         test
+ * @owner         backend-core
+ * @purpose       Read-only PostgreSQL verification of the existing G6 order; never creates orders.
+ * @db-read       orders, order_items, products, markets
+ * @db-write      none
+ * @impact-areas  orders, checkout
+ */
+'use strict';
+const fs=require('node:fs');
+const path=require('node:path');
+const db=require('../../db');
+const {confirmTarget}=require('./target-guard');
+
+const ORIGIN='https://komerce-backend-production.up.railway.app';
+const REFERENCE='KUYIYUK';
+const EXPECTED_BUYER='aedfc0cb-db52-4f58-be1b-f709374151ad';
+const PRODUCT='KPR-000099';
+const OUT=path.resolve('test-results/g6-order-readonly');
+fs.mkdirSync(OUT,{recursive:true});
+const report={run_id:process.env.GITHUB_RUN_ID||null,reference:REFERENCE,
+  verdict:'NOT_PROVEN',order_created:false,db_write:false,external_effects:false};
+const save=()=>fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2)+'\n');
+const check=(ok,code)=>{if(!ok)throw Error(code)};
+(async()=>{
+ try{
+  check(process.env.NODE_ENV==='test'&&process.env.KOMERCE_ENV==='staging'&&
+    process.env.GITHUB_EVENT_NAME==='issues'&&
+    process.env.GITHUB_ACTOR===process.env.GITHUB_REPOSITORY_OWNER&&
+    process.env.STAGING_BASE_URL===ORIGIN&&
+    String(process.env.PGOPTIONS||'').includes('default_transaction_read_only=on')&&
+    /^\d{5,20}$/.test(String(process.env.GITHUB_RUN_ID||'')),
+    'OWNER_STAGING_READONLY_GUARD');
+  const target=await confirmTarget({db,env:process.env});
+  check(target.confirmed,'STAGING_DB_TARGET_NOT_CONFIRMED');
+  report.db_fingerprint=target.fingerprint;
+  const {rows}=await db.query(
+   'SELECT o.id,o.reference,o.user_id,o.total_kmf,o.payment_mode::text AS payment_mode,'+
+   'o.payment_status::text AS payment_status,o.status::text AS status,o.simulation_scope,'+
+   'm.code AS market,'+
+   '(SELECT COUNT(*)::int FROM order_items i WHERE i.order_id=o.id) AS lines,'+
+   '(SELECT COALESCE(SUM(i.quantity),0)::int FROM order_items i WHERE i.order_id=o.id) AS qty,'+
+   '(SELECT ARRAY_AGG(DISTINCT p.product_ref) FROM order_items i JOIN products p ON p.id=i.product_id WHERE i.order_id=o.id) AS products '+
+   'FROM orders o LEFT JOIN markets m ON m.id=o.market_id WHERE o.reference=$1',
+   [REFERENCE]);
+  check(rows.length===1,'G6_REFERENCE_NOT_UNIQUE_OR_MISSING');
+  const o=rows[0];
+  check(o.user_id===EXPECTED_BUYER,'G6_ORDER_BUYER_MISMATCH');
+  check(o.simulation_scope==='G6-BUYER'&&o.market==='KM'&&
+    Number(o.total_kmf)===17990&&o.payment_mode==='cash_relais'&&
+    o.status==='pending'&&o.payment_status!=='paid'&&
+    Number(o.lines)===1&&Number(o.qty)===1&&Array.isArray(o.products)&&o.products.includes(PRODUCT),
+    'G6_POSTGRES_CANONICAL_ORDER_MISMATCH');
+  report.order={reference:o.reference,status:o.status,payment_status:o.payment_status,
+    scope:o.simulation_scope,market:o.market,total_kmf:Number(o.total_kmf),
+    payment_mode:o.payment_mode,lines:Number(o.lines),quantity:Number(o.qty),products:o.products};
+  report.verdict='G6_EXISTING_ORDER_POSTGRES_READBACK_PASS';
+ }catch(e){
+  report.verdict='BLOCKED';report.error=String(e.message||e).slice(0,350);process.exitCode=2;
+ }finally{
+  save();await db.pool.end();
+  console.log(JSON.stringify(report));
+ }
+})();
