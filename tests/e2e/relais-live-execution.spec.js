@@ -284,7 +284,7 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       await expect(page.locator('#relay-execution-collect')).toBeVisible();
       for(const key of ['shipments','cash','receive']) await expect(page.locator('#relay-execution-'+key)).toBeHidden();
       await expect(page.locator('[data-relay-execution-jump="collect"]')).toHaveAttribute('aria-current','true');
-      await expect(page.locator('[data-workspace-action="collect"]')).toBeVisible();
+      await expect(page.locator('[data-pickup-code-confirm]')).toBeVisible();
     });
 
     test('comptoir autonome : aucune tâche arrivage ni cash, une remise via writer canonique',async({page})=>{
@@ -301,10 +301,20 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       await expect(ws.locator('#relay-execution-receive')).toHaveCount(0);
       await expect(ws.locator('#relay-execution-cash')).toHaveCount(0);
       await expect(ws.locator('#relay-execution-collect')).toBeVisible();
-      await ws.locator('[data-workspace-action="collect"]').click();
+      await ws.locator('[data-pickup-code-input]').fill('ABCDEFGH');
+       await ws.locator('[data-pickup-code-confirm]').click();
       await expect.poll(()=>posts.length).toBe(1);
-      expect(posts[0].path).toBe(API+'/parcels/PCL-KM-3/collect');
+      expect(posts[0].path).toBe('/api/scans/collect');
       await expect(ws.locator('.kmc-relay-main-nav a',{hasText:'Flux Relais'})).toHaveAttribute('href','/admin/relais-live?market=KM');
+    });
+
+    test('mode dégradé : sans code client complet, aucune remise n est soumise', async ({page})=>{
+      const posts=[];
+      await mount(page,posts,{focus:'collect'});
+      await page.locator('[data-pickup-code-input]').fill('ABC');
+      await page.locator('[data-pickup-code-confirm]').click();
+      await expect(page.locator('[data-workspace-feedback]')).toContainText('Code complet de 8 caractères requis');
+      expect(posts).toHaveLength(0);
     });
 
     test('actions Relais uniquement : aucune action Hub', async ({ page }) => {
@@ -314,7 +324,7 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       await expect(page.locator('[data-workspace-action="receive"]')).toHaveCount(1);
       await expect(page.locator('tr', { hasText: 'PCL-KM-4' }).locator('[data-workspace-action="receive"]')).toHaveCount(1);
       await expect(page.locator('tr', { hasText: 'PCL-KM-2' }).locator('[data-workspace-action="receive"]')).toHaveCount(0);
-      await expect(page.locator('[data-workspace-action="collect"]')).toHaveCount(1);
+      await expect(page.locator('[data-pickup-code-confirm]')).toHaveCount(1);
       await expect(page.locator('[data-workspace-action="mark-ordered"], [data-workspace-action="ship"], [data-workspace-action="run-distribution"]')).toHaveCount(0);
     });
 
@@ -328,12 +338,13 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       await page.locator('[data-workspace-action="receive"]').click();
       await expect.poll(() => posts.length).toBe(2);
       await page.locator('[data-relay-execution-jump="collect"]').click();
-      await page.locator('[data-workspace-action="collect"]').click();
+      await page.locator('[data-pickup-code-input]').fill('ABCDEFGH');
+       await page.locator('[data-pickup-code-confirm]').click();
       await expect.poll(() => posts.length).toBe(3);
       expect(posts.map((p) => p.path)).toEqual([
         `${API}/orders/K-CASH-1/confirm-cash`,
         `${API}/parcels/PCL-KM-4/receive`,
-        `${API}/parcels/PCL-KM-3/collect`,
+        `/api/scans/collect`,
       ]);
     });
 
@@ -371,9 +382,11 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       const posts = [];
       await mount(page, posts);
       await page.locator('[data-relay-execution-jump="collect"]').click();
-      await page.locator('[data-workspace-action="collect"]').dblclick();
+      await page.locator('[data-pickup-code-input]').fill('ABCDEFGH');
+       await page.locator('[data-pickup-code-confirm]').dblclick();
       await page.waitForTimeout(400);
-      expect(posts.filter((p) => p.path.endsWith('/collect'))).toHaveLength(1);
+      expect(posts.filter((p) => p.path === '/api/scans/collect')).toHaveLength(1);
+       expect(posts.find(p => p.path === '/api/scans/collect').body).toEqual({ pickup_code: 'ABCDEFGH' });
     });
   });
 }
