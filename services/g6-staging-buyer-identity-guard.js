@@ -6,7 +6,7 @@
  * @owner         backend-core
  * @purpose       Restrict G6 browser fixtures to owner-provisioned, DB-marked client identities.
  * @db-read       users, e2e_test_accounts, otp_codes
- * @db-write      otp_codes (owner-only staging fixture preseed)
+ * @db-write      otp_codes
  * @impact-areas  auth, orders, checkout
  */
 'use strict';
