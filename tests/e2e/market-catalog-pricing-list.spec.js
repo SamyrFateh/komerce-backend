@@ -17,7 +17,7 @@ const product = (id, active = false) => ({
   decision_state:{key:'READY',tone:'positive'},can_approve:true,
   proposed_price:{amount:25000,source:active?'LOCAL_ACTIVE':'MARKET_TARGET',currency:CURRENCY},
   corridor:{low:23000,target:25000,high:28000,status:'READY',sample_count:5},
-  landed_relay_cost_local:14800,variable_cost_local:16000,
+  landed_relay_cost_local:14800,business_variable_cost_local:1200,variable_cost_local:16000,minimum_safe_price_local:17600,
   contribution_at_proposed_local:9000,
 });
 
@@ -36,7 +36,7 @@ async function mount(page) {
         decision_state:{key:'READY',tone:'positive'},can_approve:true,
         proposed_price:{amount:25000,source:'MARKET_TARGET',currency:'KMF'},
         corridor:{low:23000,target:25000,high:28000,status:'READY',sample_count:5},
-        landed_relay_cost_local:14800,variable_cost_local:16000,contribution_at_proposed_local:9000
+        landed_relay_cost_local:14800,business_variable_cost_local:1200,variable_cost_local:16000,minimum_safe_price_local:17600,contribution_at_proposed_local:9000
       },
       {product_id:'p2',product_ref:'KPR-2',product_name:'Casque déjà publié',
         category:'Audio',catalog_state:'published',decision_recorded:true,
@@ -44,7 +44,7 @@ async function mount(page) {
         decision_state:{key:'READY',tone:'positive'},can_approve:true,
         proposed_price:{amount:25000,source:'LOCAL_ACTIVE',currency:'KMF'},
         corridor:{low:23000,target:25000,high:28000,status:'READY',sample_count:5},
-        landed_relay_cost_local:14800,variable_cost_local:16000,contribution_at_proposed_local:9000
+        landed_relay_cost_local:14800,business_variable_cost_local:1200,variable_cost_local:16000,minimum_safe_price_local:17600,contribution_at_proposed_local:9000
       },
     ];
     window.__catalogCalls=[];
@@ -83,6 +83,16 @@ test.describe('Catalogue pays — Chromium desktop 1440', () => {
     for(const header of ['Produit','Rendu relais','Coût variable','Repères marché','Notre prix','Contribution','Publication'])
       await expect(surface.locator('thead')).toContainText(header);
     await expect(surface).not.toContainText('Charges fixes par article');
+    const row = surface.locator('tr[data-product-ref="KPR-1"]');
+    await expect(row.locator('.kmc-price-landed')).toContainText('14 800 KMF');
+    await expect(row.locator('.kmc-price-variable')).toContainText('16 000 KMF');
+    await expect(row.locator('.kmc-price-n2')).toHaveText('N2 · Business : 1 200 KMF');
+    await expect(row.locator('[data-safety-floor]')).toHaveText('Plancher moteur : 17 600 KMF');
+    await expect(row.locator('.kmc-price-contribution')).toContainText('9 000 KMF');
+    await row.getByRole('button', { name: 'Détail du coût' }).click();
+    await expect(row.locator('.kmc-price-detail-box')).toContainText('N1 + N2 · Coût variable complet');
+    await expect(row.locator('.kmc-price-detail-box')).toContainText('charges fixes N3 exclues');
+
     const dimensions=await page.evaluate(()=>({
       width:window.innerWidth, scroll:document.documentElement.scrollWidth,
       table:document.querySelector('.kmc-price-list-scroll').clientWidth,
