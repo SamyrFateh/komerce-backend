@@ -215,19 +215,26 @@
       productLine.appendChild(identity);
       product.appendChild(productLine);
 
-      const landed = td(null, 'kmc-price-readonly');
-      landed.appendChild(doc.createTextNode(format(row.landed_relay_cost_local, currency)));
+      const landed = td(null, 'kmc-price-readonly kmc-price-landed');
+      const landedAmount = doc.createElement('strong');
+      landedAmount.className = 'kmc-price-money';
+      landedAmount.textContent = format(row.landed_relay_cost_local, currency);
+      landed.appendChild(landedAmount);
       const landedInfo = doc.createElement('small');
       landedInfo.textContent = row.landed_relay_cost_local == null ? 'À estimer' : 'Estimation du moteur';
       landed.appendChild(landedInfo);
 
-      const cost = td(null, 'kmc-price-readonly');
-      cost.appendChild(doc.createTextNode(format(row.variable_cost_local, currency)));
+      const cost = td(null, 'kmc-price-readonly kmc-price-variable');
+      const costAmount = doc.createElement('strong');
+      costAmount.className = 'kmc-price-money';
+      costAmount.textContent = format(row.variable_cost_local, currency);
+      cost.appendChild(costAmount);
       const costInfo = doc.createElement('small');
       costInfo.textContent = row.variable_cost_local == null ? 'Coût non établi' : 'Sans charges fixes';
       cost.appendChild(costInfo);
 
       const marketCell = td(null, 'kmc-price-market');
+      marketCell.classList.toggle('is-unconfirmed', row.corridor?.low == null || row.corridor?.high == null);
       const low = row.corridor?.low;
       const high = row.corridor?.high;
       const target = row.corridor?.target;
@@ -253,7 +260,22 @@
       priceCell.appendChild(input);
       const priceNote = doc.createElement('small');
       priceCell.appendChild(priceNote);
-      const contribution = td('—', 'kmc-price-contribution');
+      const contribution = td(null, 'kmc-price-contribution');
+      const contributionAmount = doc.createElement('strong');
+      contributionAmount.className = 'kmc-price-money';
+      contributionAmount.textContent = '—';
+      contribution.appendChild(contributionAmount);
+      function showContribution(value) {
+        const amount = value == null ? null : Number(value);
+        const known = amount != null && Number.isFinite(amount);
+        contributionAmount.textContent = known ? format(amount, currency) : '—';
+        contribution.dataset.contributionState = !known ? 'unknown'
+          : amount > 0 ? 'positive' : amount < 0 ? 'negative' : 'zero';
+        contribution.classList.toggle('is-negative', known && amount < 0);
+        contributionNote.textContent = !known ? 'À calculer après saisie'
+          : amount > 0 ? 'Contribution positive · estimation'
+            : amount < 0 ? 'Contribution négative · estimation' : 'Contribution nulle';
+      }
       const contributionNote = doc.createElement('small');
       contributionNote.textContent = 'Estimation moteur';
       contribution.appendChild(contributionNote);
@@ -290,8 +312,10 @@
       const activeAndExposed = row.local_price_active && row.exposure_enabled;
       const initialContribution = row.contribution_at_proposed_local;
       // Initially, only server-projected amounts are displayed; changes require a fresh server preview.
-      if (initialContribution != null) contribution.firstChild.textContent = format(initialContribution, currency);
+      showContribution(initialContribution);
       function updateAction() {
+        actionNote.dataset.publicationState = activeAndExposed ? 'exposed'
+          : row.local_price_active ? 'hidden' : 'pending';
         const entered = numeric(input.value);
         const sameActive = row.local_price_active && activePrice === entered;
         const changedActive = row.local_price_active && activePrice !== entered;
@@ -308,7 +332,7 @@
         } else if (sameActive && activeAndExposed) {
           button.textContent = 'Masquer';
           button.disabled = !canExpose || busy;
-          actionNote.textContent = 'Prix actif';
+          actionNote.textContent = 'Exposition activée';
         } else if (sameActive && !row.exposure_enabled) {
           button.textContent = 'Publier';
           button.disabled = !canExpose || busy;
@@ -321,9 +345,7 @@
       function showPreview(result, entered) {
         preview = result;
         previewAmount = entered;
-        contribution.firstChild.textContent = result.contribution_local == null
-          ? '—' : format(result.contribution_local, currency);
-        contribution.classList.toggle('is-negative', result.below_variable === true);
+        showContribution(result.contribution_local);
         priceNote.textContent = priceMessage(result);
         priceNote.className = result.below_variable ? 'is-danger'
           : result.requires_acknowledgement || result.requires_market_gate ? 'is-warning' : '';
@@ -353,7 +375,7 @@
         previewAmount = null;
         acknowledgedAmount = null;
         priceNote.textContent = 'À vérifier';
-        contribution.firstChild.textContent = '—';
+        showContribution(null);
         updateAction();
         timer = setTimeout(requestPreview, 400);
       });

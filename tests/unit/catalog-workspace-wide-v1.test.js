@@ -15,7 +15,7 @@ test('Catalogue: pleine largeur limitée au registre, sans modifier Raffinerie',
   expect(css).toContain('.kmc-catalog-registry-table.kmc-workspace-table');
   expect(css).toContain('table-layout: fixed');
   expect(ui).toContain("' kmc-catalog-main-panel'");
-  expect(index).toContain('catalog-workspace-wide-v1.css?v=261110-review-focus-2');
+  expect(index).toContain('catalog-workspace-wide-v1.css?v=261111-single-action-1');
 });
 
 test('Catalogue: nom/references/diagnostics/actions sont distincts et bornés', () => {
@@ -69,7 +69,10 @@ test('V3 : statut cliquable suit l’autorité métier, sans publication implici
   expect(ui).toContain("kind: 'refinery'");
   expect(ui).toContain("kind: 'markets'");
   expect(ui).toContain("statusChip.addEventListener('click', () => primary.click())");
-  expect(ui).toContain('kmc-catalog-row-more');
+  expect(ui).not.toContain('kmc-catalog-row-more');
+  expect(ui).toContain("'Dossier produit', 'open-catalog-inspector'");
+  expect(ui).toContain("'Corriger le classement', 'inspector-classify'");
+  expect(css).toContain('white-space: nowrap;');
   expect(ui).toContain("Approuvé Catalogue");
   expect(ui).not.toContain("status: 'Publié'");
 });
@@ -208,7 +211,7 @@ test('Dossier opérateur : correction source accessible sans chiffres économiqu
   expect(ui).toContain("method: 'POST'");
   expect(css).toContain('width: min(660px, calc(100vw - 40px))');
   expect(ui).not.toContain('appendCatalogEconomicSummary');
-  expect(index).toContain('catalog-workspace.js?v=261110-review-focus-2');
+  expect(index).toContain('catalog-workspace.js?v=261111-single-action-1');
 });
 
 test('Catalogue : dossier produit complet, y compris les produits approuvés', () => {
@@ -277,8 +280,8 @@ test('Actions éditoriales toujours visibles avant lecture longue de la fiche', 
   expect(css).toContain(".kmc-catalog-inspector-action-dock");
   expect(css).toContain("position: sticky");
   expect(css).toContain('min-height: 42px');
-  expect(index).toContain('catalog-workspace.js?v=261110-review-focus-2');
-  expect(index).toContain('catalog-workspace-wide-v1.css?v=261110-review-focus-2');
+  expect(index).toContain('catalog-workspace.js?v=261111-single-action-1');
+  expect(index).toContain('catalog-workspace-wide-v1.css?v=261111-single-action-1');
 });
 
 test('Validation Catalogue : la préparation française et le contrôle sont distincts de la décision humaine',()=>{
@@ -293,7 +296,7 @@ test('Validation Catalogue : la préparation française et le contrôle sont dis
   expect(ui).toContain("ENDPOINT + '/approval/'");
   expect(ui).toContain('Validation refusée : ');
   expect(ui).not.toContain("status: 'À valider en Raffinerie'");
-  expect(index).toContain('catalog-workspace.js?v=261110-review-focus-2');
+  expect(index).toContain('catalog-workspace.js?v=261111-single-action-1');
 });
 
 test('G6 : corriger la fiche française ne publie jamais automatiquement le Catalogue', () => {
