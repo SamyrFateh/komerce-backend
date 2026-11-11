@@ -428,6 +428,9 @@ function installDetailReadyReconcile() {
   if (_detailReadyReconcileInstalled) return;
   _detailReadyReconcileInstalled = true;
   bus.on('modal:detail-ready', _syncModalQtyUI);
+  // Le side-cart et le drawer mutent la même ligne SKU pendant que la fiche
+  // peut rester ouverte : refléter immédiatement ces quantités exactes.
+  bus.on('cart:update', _syncModalQtyUI);
 }
 
 function setupModalCart() {
