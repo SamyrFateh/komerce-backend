@@ -1,0 +1,113 @@
+# Exact disposable-staging fixture correction; no business Chromium certificate.
+name: G6 KM — reconcile twelve evidenced duplicate economic fixture charges
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: read
+concurrency:
+  group: komerce-g6-economic-fixture-reconcile
+  cancel-in-progress: false
+jobs:
+  reconcile:
+    if: >-
+      github.repository == 'SamyrFateh/komerce-backend' &&
+      github.actor == github.repository_owner &&
+      github.event.issue.user.login == github.repository_owner &&
+      github.event.issue.title == '[staging-op] g6-km-economic-fixture-reconcile'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      EXPECTED_RAILWAY_ENVIRONMENT: staging
+      G6_ECONOMIC_FIXTURE_APPROVED: RECONCILE_12_EXACT_DUPLICATES
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      KOMERCE_STAGING_RESET_DB_PIN: ${{ vars.STAGING_DB_PIN }}
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      PGOPTIONS: '-c default_transaction_read_only=on'
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Pin actual staging runtime
+        run: node scripts/recette/resolve-staging-deploy-pin.js
+      - name: Reconcile only twelve exact duplicate fixture charges through the canonical API
+        run: |
+          node <<'JS'
+          const fs=require('node:fs');
+          const {request}=require('playwright');
+          const db=require('./db');
+          const {confirmTarget}=require('./scripts/recette/target-guard');
+          const BASE='https://komerce-backend-production.up.railway.app';
+          const PLAN=[{"keeper": {"id": "29fcbda5-d94b-4291-9d71-3d153ca45bf7", "family": "overhead", "name": "Loyer bureaux + hub Moroni", "amount_kmf": 200000, "is_recurring": true, "recurrence_period": "monthly", "is_active": true, "notes": "Estimation initiale low confidence. A recalibrer avec factures reelles.", "created_at": "2026-04-25T22:03:50.775Z", "updated_at": "2026-04-25T22:03:50.775Z", "emoji": null, "display_order": 100, "is_editable": true, "is_deletable": true, "market_owner_id": null}, "duplicates": [{"id": "89ea42c9-4be7-4155-8779-e53da3a82dfb", "family": "overhead", "name": "Loyer bureaux + hub Moroni", "amount_kmf": 200000, "is_recurring": true, "recurrence_period": "monthly", "is_active": true, "notes": "Estimation initiale low confidence. A recalibrer avec factures reelles.", "created_at": "2026-04-25T22:04:17.824Z", "updated_at": "2026-04-25T22:04:17.824Z", "emoji": null, "display_order": 100, "is_editable": true, "is_deletable": true, "market_owner_id": null}, {"id": "f2578e0d-d908-4adf-a5a5-0be092375be4", "family": "overhead", "name": "Loyer bureaux + hub Moroni", "amount_kmf": 200000, "is_recurring": true, "recurrence_period": "monthly", "is_active": true, "notes": "Estimation initiale low confidence.", "created_at": "2026-04-25T22:14:17.239Z", "updated_at": "2026-04-25T22:14:17.239Z", "emoji": null, "display_order": 100, "is_editable": true, "is_deletable": true, "market_owner_id": null}, {"id": "4d2f5815-c10b-4da0-a8d6-e02cdb786eb4", "family": "overhead", "name": "Loyer bureaux + hub Moroni", "amount_kmf": 200000, "is_recurring": true, "recurrence_period": "monthly", "is_active": true, "notes": "Estimation initiale low confidence. A recalibrer avec factures reelles.", "created_at": "2026-04-25T22:14:23.412Z", "updated_at": "2026-04-25T22:14:23.412Z", "emoji": null, "display_order": 100, "is_editable": true, "is_deletable": true, "market_owner_id": null}]}, {"keeper": {"id": "0af2a05b-bfe1-481f-b4fa-4f0ade2daff9", "family": "overhead", "name": "Salaires equipe (founder + 1)", "amount_kmf": 800000, "is_recurring": true, "recurrence_period": "monthly", "is_active": true, "notes": "Estimation phase pre-launch. Inclut founder remuneration + 1 employe.", "created_at": "2026-04-25T22:03:50.775Z", "updated_at": "2026-04-25T22:03:50.775Z", "emoji": null, "display_order": 100, "is_editable": true, "is_deletable": true, "market_owner_id": null}, "duplicates": [{"id": "229b4894-4a77-48fb-aa52-13fd7d4cde1e", "family": "overhead", "name": "Salaires equipe (founder + 1)", "amount_kmf": 800000, "is_recurring": true, "recurrence_period": "monthly", "is_active": true, "notes": "Estimation phase pre-launch. Inclut founder remuneration + 1 employe.", "created_at": "2026-04-25T22:04:17.824Z", "updated_at": "2026-04-25T22:04:17.824Z", "emoji": null, "display_order": 100, "is_editable": true, "is_deletable": true, "market_owner_id": null}, {"id": "c342cade-dbc2-49a8-8284-726ad2903f91", "family": "overhead", "name": "Salaires equipe (founder + 1)", "amount_kmf": 800000, "is_recurring": true, "recurrence_period": "monthly", "is_active": true, "notes": "Estimation phase pre-launch.", "created_at": "2026-04-25T22:14:17.239Z", "updated_at": "2026-04-25T22:14:17.239Z", "emoji": null, "display_order": 100, "is_editable": true, "is_deletable": true, "market_owner_id": null}, {"id": "b3e4b8ad-f7ed-4298-89d3-00cb00022425", "family": "overhead", "name": "Salaires equipe (founder + 1)", "amount_kmf": 800000, "is_recurring": true, "recurrence_period": "monthly", "is_active": true, "notes": "Estimation phase pre-launch. Inclut founder remuneration + 1 employe.", "created_at": "2026-04-25T22:14:23.412Z", "updated_at": "2026-04-25T22:14:23.412Z", "emoji": null, "display_order": 100, "is_editable": true, "is_deletable": true, "market_owner_id": null}]}, {"keeper": {"id": "6182938f-ed41-4839-8416-0feadf24c83a", "family": "overhead", "name": "Outils SaaS (Stripe, Railway, etc.)", "amount_kmf": 100000, "is_recurring": true, "recurrence_period": "monthly", "is_active": true, "notes": "Stripe processing + Railway hosting + outils annexes.", "created_at": "2026-04-25T22:03:50.775Z", "updated_at": "2026-04-25T22:03:50.775Z", "emoji": null, "display_order": 100, "is_editable": true, "is_deletable": true, "market_owner_id": null}, "duplicates": [{"id": "0527dbac-6164-4756-935a-dce5751562c6", "family": "overhead", "name": "Outils SaaS (Stripe, Railway, etc.)", "amount_kmf": 100000, "is_recurring": true, "recurrence_period": "monthly", "is_active": true, "notes": "Stripe processing + Railway hosting + outils annexes.", "created_at": "2026-04-25T22:04:17.824Z", "updated_at": "2026-04-25T22:04:17.824Z", "emoji": null, "display_order": 100, "is_editable": true, "is_deletable": true, "market_owner_id": null}, {"id": "039c8b08-e4da-49aa-a547-0d8021769cd1", "family": "overhead", "name": "Outils SaaS (Stripe, Railway, etc.)", "amount_kmf": 100000, "is_recurring": true, "recurrence_period": "monthly", "is_active": true, "notes": "Stripe + Railway + outils annexes.", "created_at": "2026-04-25T22:14:17.239Z", "updated_at": "2026-04-25T22:14:17.239Z", "emoji": null, "display_order": 100, "is_editable": true, "is_deletable": true, "market_owner_id": null}, {"id": "2d95f810-7a4e-40af-9e53-e6463585f643", "family": "overhead", "name": "Outils SaaS (Stripe, Railway, etc.)", "amount_kmf": 100000, "is_recurring": true, "recurrence_period": "monthly", "is_active": true, "notes": "Stripe processing + Railway hosting + outils annexes.", "created_at": "2026-04-25T22:14:23.412Z", "updated_at": "2026-04-25T22:14:23.412Z", "emoji": null, "display_order": 100, "is_editable": true, "is_deletable": true, "market_owner_id": null}]}, {"keeper": {"id": "d547880b-8a58-40e5-a660-1ba6af097405", "family": "overhead", "name": "Charges diverses (banque, comm.)", "amount_kmf": 100000, "is_recurring": true, "recurrence_period": "monthly", "is_active": true, "notes": "Frais bancaires + communication + imprevus mensuels.", "created_at": "2026-04-25T22:03:50.775Z", "updated_at": "2026-04-25T22:03:50.775Z", "emoji": null, "display_order": 100, "is_editable": true, "is_deletable": true, "market_owner_id": null}, "duplicates": [{"id": "d6a957e7-48cc-4587-ad0e-bc4cde7e5a31", "family": "overhead", "name": "Charges diverses (banque, comm.)", "amount_kmf": 100000, "is_recurring": true, "recurrence_period": "monthly", "is_active": true, "notes": "Frais bancaires + communication + imprevus mensuels.", "created_at": "2026-04-25T22:04:17.824Z", "updated_at": "2026-04-25T22:04:17.824Z", "emoji": null, "display_order": 100, "is_editable": true, "is_deletable": true, "market_owner_id": null}, {"id": "2cf4ce34-cc74-4a06-972c-9044911ba8ed", "family": "overhead", "name": "Charges diverses (banque, comm.)", "amount_kmf": 100000, "is_recurring": true, "recurrence_period": "monthly", "is_active": true, "notes": "Frais bancaires + imprevus.", "created_at": "2026-04-25T22:14:17.239Z", "updated_at": "2026-04-25T22:14:17.239Z", "emoji": null, "display_order": 100, "is_editable": true, "is_deletable": true, "market_owner_id": null}, {"id": "98b5e505-d086-45fd-931b-4acf67d00b1c", "family": "overhead", "name": "Charges diverses (banque, comm.)", "amount_kmf": 100000, "is_recurring": true, "recurrence_period": "monthly", "is_active": true, "notes": "Frais bancaires + communication + imprevus mensuels.", "created_at": "2026-04-25T22:14:23.412Z", "updated_at": "2026-04-25T22:14:23.412Z", "emoji": null, "display_order": 100, "is_editable": true, "is_deletable": true, "market_owner_id": null}]}];
+          const OUT='test-results/g6-economic-fixture';fs.mkdirSync(OUT,{recursive:true});
+          const report={run_id:process.env.GITHUB_RUN_ID,mode:'FIXTURE_SETUP_CANONICAL_API_NOT_CHROMIUM_CERTIFICATION',
+           human_attestation:false,verdict:'BLOCKED',actions:[],source_evidence_run:'42926338430'};
+          const save=()=>fs.writeFileSync(OUT+'/report.json',JSON.stringify(report,null,2)+'\n');
+          const fields=['id','family','name','amount_kmf','is_recurring','recurrence_period','notes','market_owner_id','created_at'];
+          const signature=c=>JSON.stringify(fields.map(k=>c[k] instanceof Date?c[k].toISOString():c[k]));
+          async function rows(){return (await db.query('SELECT * FROM charges ORDER BY id')).rows;}
+          async function checkVersion(){const v=await fetch(BASE+'/health/version').then(r=>r.json());if(v.commit!==process.env.E2E_EXPECTED_DEPLOY_SHA)throw Error('DEPLOY_SHA_CHANGED');report.sha=v.commit;}
+          (async()=>{let ctx;try{
+           if(process.env.KOMERCE_ENV!=='staging'||process.env.GITHUB_ACTOR!==process.env.GITHUB_REPOSITORY_OWNER||
+             process.env.GITHUB_EVENT_NAME!=='issues'||process.env.STAGING_BASE_URL!==BASE||
+             process.env.G6_ECONOMIC_FIXTURE_APPROVED!=='RECONCILE_12_EXACT_DUPLICATES'||
+             !String(process.env.PGOPTIONS||'').includes('default_transaction_read_only=on'))throw Error('STAGING_OWNER_FIXTURE_GUARD');
+           const target=await confirmTarget({db,env:process.env});if(!target.confirmed)throw Error('DB_NOT_CONFIRMED');
+           report.fingerprint=target.fingerprint;await checkVersion();
+           const before=await rows();report.before=before;
+           const ids=new Set(PLAN.flatMap(g=>g.duplicates.map(c=>c.id)));
+           if(ids.size!==12)throw Error('FIXTURE_TARGET_SET_CHANGED');
+           for(const group of PLAN){
+            for(const planned of [group.keeper,...group.duplicates]){
+             const found=before.find(c=>c.id===planned.id);
+             if(!found||signature(found)!==signature(planned))throw Error('FIXTURE_SIGNATURE_CHANGED:'+planned.id);
+            }
+            if(before.find(c=>c.id===group.keeper.id).is_active!==true)throw Error('KEEPER_NOT_ACTIVE');
+           }
+           save();ctx=await request.newContext({baseURL:BASE,extraHTTPHeaders:{Origin:BASE}});
+           const login=await ctx.post('/api/auth/login',{data:{email:process.env.E2E_ADMIN_EMAIL,password:process.env.E2E_ADMIN_PASSWORD}});
+           if(!login.ok())throw Error('ADMIN_AUTH_FAILED');
+           const me=await ctx.get('/api/auth/me').then(r=>r.json());if(me.role!=='admin')throw Error('ADMIN_REQUIRED');report.actor=me.id;
+           for(const group of PLAN)for(const planned of group.duplicates){
+            await checkVersion();const current=(await rows()).find(c=>c.id===planned.id);
+            if(signature(current)!==signature(planned))throw Error('FIXTURE_CHANGED_DURING_RECONCILIATION');
+            if(!current.is_active){report.actions.push({id:planned.id,status:'ALREADY_INACTIVE_NO_TOGGLE'});continue;}
+            const response=await ctx.put('/api/admin/economic/charges/'+planned.id+'/toggle',{data:{}});
+            const body=await response.json();const after=(await rows()).find(c=>c.id===planned.id);
+            report.actions.push({id:planned.id,before:current,http:response.status(),canonical:body.charge,after});save();
+            if(!response.ok()||body.charge?.is_active!==false||after?.is_active!==false||signature(after)!==signature(planned))
+             throw Error('CANONICAL_DEACTIVATION_NOT_CONFIRMED:'+planned.id);
+           }
+           const after=await rows();report.after=after;
+           for(const original of before){const current=after.find(c=>c.id===original.id);
+            if(!current||signature(current)!==signature(original)||(!ids.has(original.id)&&current.is_active!==original.is_active))throw Error('UNRELATED_CHARGE_CHANGED');}
+           if(after.length!==before.length||after.some(c=>ids.has(c.id)&&c.is_active))throw Error('FINAL_RECONCILIATION_MISMATCH');
+           const api=await ctx.get('/api/admin/economic/charges');report.api_after={http:api.status(),body:await api.json()};
+           const {rows:[market]}=await db.query("SELECT id FROM markets WHERE code='KM'");
+           const cdr=require('./services/pricing-cdr');const config=await cdr.loadGlobalConfig({marketId:market.id});
+           report.analytical_allocation_after=cdr.computeFixedCostAllocation(config.charges,config.finance);
+           report.active_count_before=before.filter(c=>c.is_active).length;report.active_count_after=after.filter(c=>c.is_active).length;
+           await checkVersion();report.verdict='FIXTURE_DUPLICATES_DEACTIVATED_CANONICAL_API_SQL_CONFIRMED';
+           }catch(error){report.error=String(error.message);process.exitCode=2;}
+           finally{if(ctx)await ctx.dispose();await db.pool.end();save();console.log(JSON.stringify({verdict:report.verdict,error:report.error,active_before:report.active_count_before,active_after:report.active_count_after,allocation:report.analytical_allocation_after}));}
+          })();
+          JS
+      - name: Preserve independent API and PostgreSQL fixture before/after proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g6-economic-fixture-reconcile-${{ github.run_id }}
+          path: |
+            test-results/g6-economic-fixture/
+            test-results/hub-v1-http/deploy-pin.json
+          retention-days: 21
