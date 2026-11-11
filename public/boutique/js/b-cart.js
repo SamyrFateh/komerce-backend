@@ -273,20 +273,49 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
   // au lieu de recréer une ligne générique sans variant_combo. On vérifie
   // quand même le rail : une ligne explicite avec un rail différent ne doit
   // pas absorber silencieusement le nouveau choix.
+  const selectedSkuId = product.sku_id ?? product.selected_sku_id ?? null;
+  // La référence SKU est la vérité pour une variante vendable. Le combo
+  // normalisé sert seulement à retrouver un ancien panier sans sku_id et
+  // à préserver le comportement des produits LEGACY_VARIANTS.
+  const comboKey = (value) => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return 'null';
+    return JSON.stringify(Object.keys(value).sort().reduce((acc, key) => {
+      acc[key] = value[key];
+      return acc;
+    }, {}));
+  };
   const explicitLine = options.existingLine
     && state.cart.includes(options.existingLine)
+    && getCartItemProductId(options.existingLine) === String(product.id)
     && (options.existingLine.requested_transport_rail ?? null) === requestedTransportRail
     ? options.existingLine
     : null;
-  const existing = explicitLine || state.cart.find(i =>
-    getCartItemProductId(i) === String(product.id)
-    && JSON.stringify(i.variant_combo || null) === JSON.stringify(combo)
-    && (i.requested_transport_rail ?? null) === requestedTransportRail
-  );
+  const existing = explicitLine || state.cart.find(i => {
+    if (getCartItemProductId(i) !== String(product.id)) return false;
+    if ((i.requested_transport_rail ?? null) !== requestedTransportRail) return false;
+    const lineSkuId = i.sku_id ?? i.product?.sku_id ?? i.product?.selected_sku_id ?? null;
+    if (selectedSkuId != null && lineSkuId != null) {
+      return String(lineSkuId) === String(selectedSkuId);
+    }
+    // Ne pas fusionner un produit legacy sans SKU avec une ligne SKU.
+    if (selectedSkuId == null && lineSkuId != null) return false;
+    return comboKey(i.variant_combo) === comboKey(combo);
+  });
 
   let cartLine = existing;
   if (cartLine) {
     cartLine.qty += qty;
+    if (selectedSkuId != null) {
+      // Réconciliation d'une ancienne ligne sans SKU : un choix explicite
+      // courant remplace le snapshot de variantes potentiellement obsolète.
+      cartLine.sku_id = selectedSkuId;
+      if (combo) {
+        cartLine.variant_combo = combo;
+        cartLine.variant_label = comboLabel;
+      }
+      cartLine.product = product;
+      cartLine.price = product.price_kmf ?? product.price ?? 0;
+    }
     if (!cartLine.product) cartLine.product = product;
     if (!cartLine.id) cartLine.id = product.id;
     if (!cartLine.name) cartLine.name = product.name;
@@ -300,6 +329,7 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
       price: product.price_kmf ?? product.price ?? 0,
       image: product.image_url || product.image || '',
       qty: qty,
+      ...(selectedSkuId != null ? { sku_id: selectedSkuId } : {}),
       variant_combo: combo,
       variant_label: comboLabel,
       requested_transport_rail: requestedTransportRail,
