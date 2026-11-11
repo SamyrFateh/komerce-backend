@@ -106,10 +106,17 @@ button.hlc-chip.is-link { cursor: pointer; background: #dce7fb; color: #163b8c; 
 .hlc-btn.is-link { border: 0; background: none; min-height: 0; padding: 1px 2px; color: var(--hlc-accent); text-decoration: underline; font-weight: 600; }
 .hlc-btn:disabled { background: #f3f4f6; color: #8a93a0; border-color: #e1e4e9; cursor: not-allowed; }
 .hlc-btn:focus-visible { outline: 3px solid rgb(31 79 163 / .35); outline-offset: 1px; }
-.hlc-form { display: grid; gap: 6px; border: 1px solid var(--hlc-line); border-radius: 8px; background: var(--hlc-soft); padding: 10px; }
+.hlc-form { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; gap: 6px; border: 1px solid var(--hlc-line); border-radius: 8px; background: var(--hlc-soft); padding: 10px; }
 .hlc-form select, .hlc-field input, .hlc-field select { min-height: 32px; border: 1px solid #cbd3df; border-radius: 8px; padding: 4px 8px; font: inherit; background: #fff; max-width: 100%; }
 .hlc-field { display: grid; gap: 2px; font-size: 12px; }
-.hlc-form .kmc-workspace-receive-card { border: 0; padding: 0; background: transparent; }
+.hlc-form .kmc-workspace-receive-card { border: 0; padding: 0; background: transparent; min-width: 0; }
+.hlc-form .kmc-workspace-receive-head > span, .hlc-form .kmc-workspace-receive-hint { overflow-wrap: anywhere; }
+.hlc-form .kmc-workspace-table-wrap { max-width: 100%; }
+.hlc-form .kmc-workspace-receive-card .kmc-workspace-table th, .hlc-form .kmc-workspace-receive-card .kmc-workspace-table td { padding: 9px 6px; }
+.hlc-form .kmc-workspace-receive-card .kmc-workspace-table { min-width: 0; }
+.hlc-form .kmc-workspace-receive-card .kmc-workspace-table th { font-size: 11px; letter-spacing: .02em; }
+.hlc-form .kmc-workspace-receive-card .kmc-workspace-table td:last-child { min-width: 0; text-align: left; }
+.hlc-form .kmc-workspace-receive-qty { width: 72px; }
 .hlc-zone-hint { margin: 0; color: var(--hlc-mute); font-size: 12px; }
 .kmc-hub-physical-secondary { margin-top: 14px; border: 1px solid var(--hlc-line, #d6dde8); border-radius: 10px; padding: 8px 12px; background: #fff; }
 .kmc-hub-physical-secondary > summary { cursor: pointer; font-weight: 800; padding: 4px 0; }

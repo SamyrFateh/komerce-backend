@@ -375,6 +375,23 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       expect(layout.zones.every(width => width > 0)).toBe(true);
     });
 
+    test('formulaire « Réceptionner une livraison » : scan et tableau restent dans la colonne', async ({ page }, testInfo) => {
+      await mount(page, { view: null });
+      await page.locator('[data-hlc-po]').first().click();
+      await page.locator('[data-hlc-action="receive"]').click();
+      const form = page.locator('[data-hlc-form="receive"]');
+      await expect(form.locator('.kmc-workspace-receive-scanner')).toBeVisible();
+      if (process.env.KM_SHOT_DIR) await page.screenshot({ fullPage: true, path: path.join(process.env.KM_SHOT_DIR, `receive-form-${name}-${process.env.KM_SHOT_TAG || 'x'}.png`) });
+      const overflow = await form.evaluate((root) => {
+        const box = root.getBoundingClientRect();
+        return [...root.querySelectorAll('.kmc-workspace-receive-scanner, .kmc-workspace-table-wrap, .kmc-workspace-receive-tracking, .kmc-workspace-receive-qty, .kmc-workspace-receive-card')]
+          .map((n) => ({ cls: n.className, over: Math.round(n.getBoundingClientRect().right - box.right) }))
+          .filter((x) => x.over > 1);
+      });
+      expect(overflow).toEqual([]);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
+    });
+
     test('L9a : « Répartir ce marché » est masqué quand aucune commande n’est à répartir', async ({ page }) => {
       await mount(page, { emptyDistribution: true });
       await expect(page.locator('[data-workspace-action="run-distribution"]')).toHaveCount(0);
