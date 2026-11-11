@@ -384,7 +384,10 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       if (process.env.KM_SHOT_DIR) await page.screenshot({ fullPage: true, path: path.join(process.env.KM_SHOT_DIR, `receive-form-${name}-${process.env.KM_SHOT_TAG || 'x'}.png`) });
       const overflow = await form.evaluate((root) => {
         const box = root.getBoundingClientRect();
-        return [...root.querySelectorAll('.kmc-workspace-receive-scanner, .kmc-workspace-table-wrap, .kmc-workspace-receive-tracking, .kmc-workspace-receive-qty, .kmc-workspace-receive-card')]
+        // Sur mobile, la saisie de quantité reste atteignable par défilement interne du tableau.
+        const wide = window.innerWidth > 700;
+        const selector = `.kmc-workspace-receive-scanner, .kmc-workspace-table-wrap, .kmc-workspace-receive-tracking, .kmc-workspace-receive-card${wide ? ', .kmc-workspace-receive-qty' : ''}`;
+        return [...root.querySelectorAll(selector)]
           .map((n) => ({ cls: n.className, over: Math.round(n.getBoundingClientRect().right - box.right) }))
           .filter((x) => x.over > 1);
       });
