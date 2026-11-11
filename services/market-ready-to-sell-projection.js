@@ -215,6 +215,7 @@ async function buildReadyToSell({
       business_variable_cost_local: businessLocal,
       minimum_safe_price_local: minimumSafeLocal,
       cost_quality: costEconomics?.data_quality || null,
+      cost_allocation_trace: costEconomics?.cost_allocation_trace || null,
       corridor: {
         status: local?.status || 'UNAVAILABLE',
         confidence: local?.confidence || 'none',
