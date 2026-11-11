@@ -42,8 +42,9 @@ jobs:
         run: |
           node scripts/recette/resolve-staging-deploy-pin.js
           node scripts/recette/target-guard.js
-      - name: Prepare real Chromium
-        run: npx playwright install --with-deps chromium
+      - name: Prepare real Chromium (headless shell, no Ubuntu apt)
+        timeout-minutes: 5
+        run: npx playwright install chromium --only-shell
       - name: Play OTP in Chromium then submit ONE true cash order (no provider)
         run: node scripts/recette/g6-p2-buyer-order-real-chromium.js
       - name: Archive browser screenshots and scrubbed independent DB proof
