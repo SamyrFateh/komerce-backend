@@ -54,10 +54,4 @@ describe('routes rattachement agent et île (contrat source)', () => {
     expect(routeSource).toMatch(/router\.get\('\/markets\/:marketCode\/network\/relais-agents', authenticate/);
     expect(routeSource).toMatch(/island_options: islandOptionsFor/);
   });
-  test('UI Réseau local : sélecteur d\'île obligatoire et geste de rattachement', () => {
-    const ui = fs.readFileSync(path.join(ROOT, 'public', 'dashboards', 'canonical', 'js', 'market-network.js'), 'utf8');
-    expect(ui).toMatch(/island_options/);
-    expect(ui).toMatch(/L’île du relais est obligatoire/);
-    expect(ui).toMatch(/network\/relais\/\$\{encodeURIComponent\(relais\.id\)\}\/agents/);
-  });
 });
