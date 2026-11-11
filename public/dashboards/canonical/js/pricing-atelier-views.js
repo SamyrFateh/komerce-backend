@@ -702,6 +702,160 @@
     return box;
   }
 
+  // Formulaire d'hypothèses : le navigateur n'est jamais autorité économique.
+  const FORECAST_SCENARIOS = Object.freeze([
+    ['favorable', 'Favorable'], ['central', 'Central'], ['defavorable', 'Défavorable'],
+  ]);
+  const FORECAST_FIELDS = Object.freeze([
+    ['supplier_delivery', 'Livraison fournisseur → Hub (KMF/article)', 'import'],
+    ['bank_pct', 'Frais bancaires achat (%)', 'import'],
+    ['hub_packaging', 'Consommables et conditionnement Hub (KMF/article)', 'import'],
+    ['freight', 'Fret (KMF/m³)', 'import'],
+    ['lot_volume_m3', 'Volume de lot prévu (m³)', 'import'],
+    ['minimum_billable_m3', 'Minimum facturable (m³)', 'import'],
+    ['lot_fee', 'Transitaire et port (KMF/lot)', 'import'],
+    ['insurance_pct', 'Assurance sur CIF (%)', 'import'],
+    ['customs_duties', 'Droits prévisionnels sur CIF (%)', 'import'],
+    ['last_mile', 'Port → relais (KMF/commande)', 'import'],
+    ['local_delivery', 'Stock local → relais (KMF/commande)', 'local'],
+    ['relay_commission', 'Commission relais (unité à choisir)', 'both'],
+    ['payment', 'Frais de paiement fixes (KMF/commande)', 'both'],
+    ['payment_pct', 'Frais sur prix de vente (%)', 'both'],
+    ['risk_damage_pct', 'Provision casse sur N1 (%)', 'both'],
+    ['risk_pickup_pct', 'Provision non-retrait sur frais aval (%)', 'both'],
+  ]);
+
+  function forecastPayloadFromForm(form) {
+    const entries = new FormData(form);
+    const circuit = String(entries.get('circuit') || '');
+    const commissionBasis = String(entries.get('commission_basis') || '');
+    const scenarios = {};
+    FORECAST_SCENARIOS.forEach(([scenario]) => {
+      const values = {};
+      FORECAST_FIELDS.forEach(([key, , scope]) => {
+        if (scope !== 'both' && scope !== circuit) return;
+        const raw = entries.get(key + '_' + scenario);
+        values[key] = raw === null || raw === '' ? null : Number(raw);
+      });
+      scenarios[scenario] = values;
+    });
+    const rawPrice = entries.get('candidate_price');
+    const price = rawPrice === null || rawPrice === '' ? null : Number(rawPrice);
+    return {
+      circuit, commission_basis: commissionBasis, scenarios,
+      candidate_prices_kmf: Number.isFinite(price) && price > 0 ? [price] : [],
+    };
+  }
+
+  function forecastFormPanel(doc, corridor) {
+    const details = doc.createElement('details');
+    details.className = 'kmc-atelier-panel kmc-atelier-forecast';
+    details.dataset.atelierForecast = '';
+    details.appendChild(el(doc, 'summary', '', 'Simuler le prix plancher prévisionnel · 3 scénarios'));
+    details.appendChild(el(doc, 'p', 'kmc-atelier-note',
+      'Aucune moyenne 200/4/2,5. Toutes les valeurs saisies sont des hypothèses NON VÉRIFIÉES ; ' +
+      'zéro doit être saisi volontairement, aucun montant n’est prérempli. Aucun prix actif n’est modifié.'));
+    details.appendChild(metricLine(doc, 'Achat enregistré au catalogue',
+      corridor.product.purchase_cost_kmf > 0 ? formatKmf(corridor.product.purchase_cost_kmf) : 'Indisponible'));
+    const form = doc.createElement('form');
+    form.className = 'kmc-atelier-form';
+    form.dataset.atelierForecastForm = corridor.product.product_ref;
+    const choices = el(doc, 'div', 'kmc-atelier-forecast-choices');
+    const circuitField = el(doc, 'label', 'kmc-atelier-field');
+    circuitField.appendChild(el(doc, 'span', '', 'Circuit simulé'));
+    const circuit = doc.createElement('select');
+    circuit.name = 'circuit';
+    [['import', 'Importé via Hub'], ['local', 'Stock local / relais direct']].forEach(([value, title]) => {
+      const option = doc.createElement('option');
+      option.value = value; option.textContent = title; circuit.appendChild(option);
+    });
+    circuitField.appendChild(circuit);
+    choices.appendChild(circuitField);
+    const commissionField = el(doc, 'label', 'kmc-atelier-field');
+    commissionField.appendChild(el(doc, 'span', '', 'Commission relais · hypothèse contractuelle'));
+    const commission = doc.createElement('select');
+    commission.name = 'commission_basis'; commission.required = true;
+    [['', 'Choisir une unité'], ['fixed_unit', 'Par unité vendue'], ['fixed_order', 'Par commande']].forEach(([value, title]) => {
+      const option = doc.createElement('option');
+      option.value = value; option.textContent = title; commission.appendChild(option);
+    });
+    commissionField.appendChild(commission); choices.appendChild(commissionField);
+    const priceField = el(doc, 'label', 'kmc-atelier-field');
+    priceField.appendChild(el(doc, 'span', '', 'Prix commercial à tester (KMF, facultatif)'));
+    const price = doc.createElement('input');
+    price.type = 'number'; price.name = 'candidate_price'; price.min = '0.01'; price.step = 'any';
+    price.placeholder = 'Pas de prix présélectionné';
+    priceField.appendChild(price); choices.appendChild(priceField);
+    form.appendChild(choices);
+    const scroll = el(doc, 'div', 'kmc-atelier-forecast-scroll');
+    const table = doc.createElement('table');
+    table.className = 'kmc-atelier-forecast-table';
+    const head = doc.createElement('tr');
+    ['Composante', ...FORECAST_SCENARIOS.map(([, text]) => text)]
+      .forEach(text => head.appendChild(el(doc, 'th', '', text)));
+    const thead = doc.createElement('thead'); thead.appendChild(head); table.appendChild(thead);
+    const tbody = doc.createElement('tbody');
+    FORECAST_FIELDS.forEach(([key, title, scope]) => {
+      const tr = doc.createElement('tr');
+      tr.dataset.forecastCircuit = scope;
+      tr.appendChild(el(doc, 'th', '', title));
+      FORECAST_SCENARIOS.forEach(([scenario]) => {
+        const td = doc.createElement('td');
+        const input = doc.createElement('input');
+        input.type = 'number'; input.min = '0'; input.step = 'any'; input.required = true;
+        input.name = key + '_' + scenario; input.setAttribute('aria-label', title + ' · ' + scenario);
+        td.appendChild(input); tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody); scroll.appendChild(table); form.appendChild(scroll);
+    const submit = el(doc, 'button', 'kmc-atelier-secondary', 'Calculer sans enregistrer');
+    submit.type = 'submit'; form.appendChild(submit); details.appendChild(form);
+    const host = el(doc, 'div', 'kmc-atelier-forecast-output');
+    host.dataset.atelierForecastOutput = ''; host.setAttribute('role', 'status');
+    details.appendChild(host);
+    const syncCircuit = () => {
+      table.querySelectorAll('[data-forecast-circuit]').forEach(row => {
+        const enabled = row.dataset.forecastCircuit === 'both' || row.dataset.forecastCircuit === circuit.value;
+        row.hidden = !enabled;
+        row.querySelectorAll('input').forEach(input => { input.disabled = !enabled; });
+      });
+    };
+    circuit.addEventListener('change', syncCircuit); syncCircuit();
+    return details;
+  }
+
+  function forecastResultPanel(doc, answer) {
+    const data = answer && answer.forecast;
+    if (!data) return el(doc, 'p', 'kmc-atelier-alert', 'Aucun résultat retourné.');
+    const pane = el(doc, 'div', 'kmc-atelier-forecast-result');
+    pane.appendChild(el(doc, 'strong', '', 'Prévision : ' + data.status));
+    pane.appendChild(el(doc, 'p', 'kmc-atelier-note',
+      'Simulation sous hypothèses non vérifiées, sans action sur le catalogue.'));
+    pane.appendChild(metricLine(doc, 'Plancher central',
+      data.plancher_central_kmf == null ? 'Non décisionnel' : formatKmf(data.plancher_central_kmf)));
+    pane.appendChild(metricLine(doc, 'Plancher prudent',
+      data.plancher_prudent_kmf == null ? 'Non décisionnel' : formatKmf(data.plancher_prudent_kmf)));
+    const central = data.cases && data.cases.central;
+    if (central) {
+      pane.appendChild(metricLine(doc, 'Coût rendu relais N1', formatKmf(central.n1_kmf)));
+      pane.appendChild(metricLine(doc, 'N2 hors pourcentage sur prix', formatKmf(central.n2_fixed_kmf)));
+      pane.appendChild(metricLine(doc, 'Frais proportionnels au prix', central.sale_pct + ' %'));
+      const lines = doc.createElement('details');
+      lines.className = 'kmc-atelier-forecast-lines';
+      lines.appendChild(el(doc, 'summary', '', 'Détail des coûts et hypothèses'));
+      (central.lines || []).forEach(line =>
+        lines.appendChild(metricLine(doc, line.code + ' · ' + line.evidence, formatKmf(line.amount_kmf))));
+      pane.appendChild(lines);
+    }
+    (data.prices || []).forEach(item =>
+      pane.appendChild(metricLine(doc,
+        'Prix testé ' + formatKmf(item.price_kmf) + ' · ' + (item.verdict || item.status),
+        item.contribution_centrale_kmf == null ? '—' : 'Contribution : ' + formatKmf(item.contribution_centrale_kmf))));
+    (data.diagnostics || []).forEach(note => pane.appendChild(el(doc, 'p', 'kmc-atelier-alert', note)));
+    return pane;
+  }
+
   function buildDossier(doc, corridor, ctx) {
     const section = el(doc, 'section', 'kmc-atelier-dossier');
     section.dataset.atelierDossier = corridor.product.product_ref;
@@ -732,6 +886,7 @@
     grid.appendChild(sourcesPanel(doc, corridor, ctx));
     grid.appendChild(decisionPanel(doc, corridor, ctx));
     section.appendChild(grid);
+    section.appendChild(forecastFormPanel(doc, corridor));
     return section;
   }
 
@@ -990,16 +1145,25 @@
     });
 
     rootNode.addEventListener('submit', async event => {
+      const forecastForm = event.target.closest('[data-atelier-forecast-form]');
       const draftForm = event.target.closest('[data-atelier-draft-form]');
       const simForm = event.target.closest('[data-atelier-sim-form]');
       const obsForm = event.target.closest('[data-atelier-observation-form]');
-      if (!draftForm && !simForm && !obsForm) return;
+      if (!forecastForm && !draftForm && !simForm && !obsForm) return;
       event.preventDefault();
       const submit = event.target.querySelector('button[type="submit"]');
       if (submit) submit.disabled = true;
       const data = new FormData(event.target);
       try {
-        if (draftForm) {
+        if (forecastForm) {
+          const ref = forecastForm.dataset.atelierForecastForm;
+          const payloadForecast = forecastPayloadFromForm(forecastForm);
+          const answer = await workspace.jsonRequest(options.fetch,
+            `${endpoint}/products/${encodeURIComponent(ref)}/forecast-preview`,
+            { method: 'POST', body: payloadForecast });
+          const host = forecastForm.parentNode.querySelector('[data-atelier-forecast-output]');
+          if (host) host.replaceChildren(forecastResultPanel(doc, answer));
+        } else if (draftForm) {
           const ref = draftForm.dataset.atelierDraftForm;
           const amount = num(data.get('amount'));
           if (amount === null || amount <= 0) throw new Error('Montant invalide : prix non enregistré.');
@@ -1058,6 +1222,7 @@
   return {
     VIEWS, STATES, FILTERS, PAGE_SIZE, resolveView, withParams, classifyProduct, summarizeQueue, filterRows,
     missingCostComponents, priorityItems, observationPayload, catalogueHref, sourceLabel, formatKmf, formatMoney, formatDate,
-    mapLimit, buildNav, buildPriorities, buildQueue, buildDossier, enhance, install,
+    mapLimit, buildNav, buildPriorities, buildQueue, buildDossier,
+    forecastFormPanel, forecastResultPanel, forecastPayloadFromForm, enhance, install,
   };
 });
