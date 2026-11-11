@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 796
-- Files with full headers: 741
+- Scanned code files: 798
+- Files with full headers: 743
 - Files with lite headers: 55
-- Files with any headers: 796
+- Files with any headers: 798
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 2020
-- Edges: 9951
+- Graph nodes: 2023
+- Edges: 9960
 - DB tables: 233
-- Doctrines: 784
+- Doctrines: 785
 - Impact areas: 207
-- Unresolved code edges: 954
+- Unresolved code edges: 955
 - Tables multi-écrivains directs (>=2): 95
 - Avertissements db-write / db-write-via en chevauchement: 12
 
@@ -38,7 +38,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - dashboard: 32
 - decision-signals: 14
 - documents: 15
-- economic-engine: 67
+- economic-engine: 69
 - external-provider-contracts: 1
 - finance: 3
 - incident-management: 5
@@ -92,7 +92,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 137
 - route-manifest: 1
 - schema: 1
-- service: 478
+- service: 480
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -551,6 +551,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/pricing-cost-explainability.js — economic-engine-pricing-cost-explainability (economic-engine, high, full)
 - services/pricing-dashboard.js — economic-engine-pricing-dashboard (economic-engine, high, full)
 - services/pricing-engine.js — economic-engine-pricing-engine (economic-engine, high, full)
+- services/pricing-floor-forecast-preview.js — economic-engine-forecast-preview-contract (economic-engine, high, full)
+- services/pricing-floor-forecast-shadow.js — economic-engine-pricing-floor-forecast-shadow (economic-engine, high, full)
 - services/pricing-guards.js — economic-engine-pricing-guards (economic-engine, high, full)
 - services/pricing-market-corridor.js — pricing-market-corridor-owner (economic-engine, high, full)
 - services/pricing-market-coverage.js — economic-engine-pricing-market-coverage (economic-engine, high, full)

@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-11-11T10:36:56.117Z",
+  "generatedAt": "2026-11-11T14:03:19.072Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 807,
+  "count": 808,
   "routes": [
     {
       "method": "GET",
@@ -3004,6 +3004,16 @@
       "fullPath": "/api/admin/workspaces/pricing/market/:marketCode/price-observations/:observationRef/deactivate",
       "mountPrefix": "/api/admin/workspaces/pricing",
       "localPath": "/market/:marketCode/price-observations/:observationRef/deactivate",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/pricing/market/:marketCode/products/:productRef/forecast-preview",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/market/:marketCode/products/:productRef/forecast-preview",
       "routeFile": "routes/admin-pricing-workspace.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
