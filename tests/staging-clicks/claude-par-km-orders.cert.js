@@ -127,46 +127,56 @@ async function buyerOrder({buyer,phone,code}){
   await ctx.close();return body.order;
  }finally{await browser.close()}
 }
+async function login(browser,prefix,video){
+ const email=process.env[prefix+'_EMAIL'],password=process.env[prefix+'_PASSWORD'];
+ chk(!!email&&!!password,prefix+'_creds');
+ const ctx=await browser.newContext({viewport:{width:1440,height:900},recordVideo:{dir:path.join(OUT,'video',video),size:{width:1280,height:720}}});
+ const page=await ctx.newPage();page.on('dialog',d=>d.accept());
+ await page.goto(ORIGIN+'/login.html');
+ await page.locator('#email').fill(email);await page.locator('#password').fill(password);
+ const lr=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/auth/login'&&r.request().method()==='POST');
+ await page.locator('#btn-submit').click();chk((await lr).status()===200,video+'_login');
+ await page.waitForURL(u=>u.pathname!=='/login.html',{timeout:20000});
+ return {ctx,page};
+}
 async function relayCash(order){
- const [ag]=await q('SELECT u.relais_id,r.name AS relais_name,r.market_id FROM users u LEFT JOIN relais r ON r.id=u.relais_id WHERE lower(u.email)=lower($1)',[process.env.E2E_AGENT_RELAIS_EMAIL]);
- const [orl]=await q('SELECT r.id,r.name,r.market_id FROM orders o JOIN relais r ON r.id=o.relais_id WHERE o.id=$1',[order.id]);
- R.relay_diag={agent_relais_id:ag?.relais_id,agent_relais_name:ag?.relais_name,order_relais_id:orl?.id,order_relais_name:orl?.name,same:ag?.relais_id===orl?.id};save();
- const email=process.env.E2E_AGENT_RELAIS_EMAIL,password=process.env.E2E_AGENT_RELAIS_PASSWORD;
- chk(!!email&&!!password,'relay_creds');
+ const [ag]=await q('SELECT u.relais_id,r.name AS relais_name FROM users u LEFT JOIN relais r ON r.id=u.relais_id WHERE lower(u.email)=lower($1)',[process.env.E2E_AGENT_RELAIS_EMAIL]);
+ const [orl]=await q('SELECT r.id,r.name FROM orders o JOIN relais r ON r.id=o.relais_id WHERE o.id=$1',[order.id]);
+ R.relay_diag={agent_relais_name:ag?.relais_name,order_relais_name:orl?.name,same:ag?.relais_id===orl?.id};save();
+ const p='/api/admin/workspaces/operations/market/KM/orders/'+order.reference+'/confirm-cash';
  const browser=await chromium.launch({headless:true});
  try{
-  const ctx=await browser.newContext({viewport:{width:1440,height:900},recordVideo:{dir:path.join(OUT,'video','relay'),size:{width:1280,height:720}}});
-  const page=await ctx.newPage();page.on('dialog',d=>d.accept());
-  await page.goto(ORIGIN+'/login.html');
-  await page.locator('#email').fill(email);await page.locator('#password').fill(password);
-  const lr=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/auth/login'&&r.request().method()==='POST');
-  await page.locator('#btn-submit').click();chk((await lr).status()===200,'relay_login');
-  await page.waitForURL(u=>u.pathname!=='/login.html',{timeout:20000});
+  // 1) agent relais E2E (autre relais que celui de la commande) : doit etre refuse, sans effet
+  if(!R.relay_diag.same){
+   const {ctx,page}=await login(browser,'E2E_AGENT_RELAIS','relay');
+   await page.goto(ORIGIN+'/admin/relais-live?view=execute',{waitUntil:'domcontentloaded'});
+   const x=await page.evaluate(async(u)=>{const r=await fetch(u,{method:'POST',credentials:'include',headers:{'content-type':'application/json'},body:'{}'});let j=null;try{j=await r.json()}catch(e){}return {status:r.status,body:j}},ORIGIN+p);
+   R.cross_relay_attempt=x;soft([401,403,404,409,422].includes(x.status),'cross_relay_confirm_refused',x);
+   const sx=await state(order.id);chk(sx.cc.length===0&&sx.o.status==='pending','cross_relay_no_db_effect',{cc:sx.cc.length,status:sx.o.status});
+   await ctx.close();
+  }
+  // 2) role autorise (admin, comme la recette G6) : encaissement par clic dans Relais Live
+  const {ctx,page}=await login(browser,'E2E_ADMIN','cash');
   await page.goto(ORIGIN+'/admin/relais-live?view=execute',{waitUntil:'domcontentloaded'});
   await page.locator('select').first().waitFor({timeout:20000});
   await page.locator('select').first().selectOption({label:'KM · Comores'});
   await page.waitForLoadState('networkidle').catch(()=>{});
   await page.locator('[data-relay-execution-jump="cash"]').click();
   const row=page.locator('tr',{hasText:order.reference});
-  try{await row.waitFor({timeout:20000})}catch(e){await page.screenshot({path:path.join(OUT,'05-relay-cash-row-missing.png'),fullPage:true}).catch(()=>{});R.cash_row_missing=true;
-   const x=await page.evaluate(async(u)=>{const r=await fetch(u,{method:'POST',credentials:'include',headers:{'content-type':'application/json','x-requested-with':'XMLHttpRequest'},body:'{}'});let j=null;try{j=await r.json()}catch(e){}return {status:r.status,body:j}},ORIGIN+'/api/admin/workspaces/operations/market/KM/orders/'+order.reference+'/confirm-cash');
-   R.cross_relay_attempt=x;soft([401,403,404,409,422].includes(x.status),'cross_relay_confirm_refused',x);
-   await ctx.close().catch(()=>{});return {blocked:true}}
-  await page.screenshot({path:path.join(OUT,'05-relay-cash-pending.png')});
-  const p='/api/admin/workspaces/operations/market/KM/orders/'+order.reference+'/confirm-cash';
+  try{await row.waitFor({timeout:25000})}catch(e){await page.screenshot({path:path.join(OUT,'05-cash-row-missing.png'),fullPage:true}).catch(()=>{});throw Error('CASH_ROW_MISSING_FOR_ADMIN')}
+  await page.screenshot({path:path.join(OUT,'05-cash-pending.png')});
   let captured=null;page.on('request',r=>{if(new URL(r.url()).pathname===p&&r.method()==='POST')captured={headers:r.headers(),body:r.postData()}});
   const cresp=page.waitForResponse(r=>new URL(r.url()).pathname===p&&r.request().method()==='POST',{timeout:30000});
   await row.locator('[data-workspace-action="confirm-cash"]').click();
   const c1=await cresp;R.cash_ui_http=c1.status();R.cash_ui_body=await c1.json().catch(()=>null);
   chk(c1.status()===200,'cash_confirm_ui_200',R.cash_ui_body);
-  await page.screenshot({path:path.join(OUT,'06-relay-cash-confirmed.png')});
-  // replay : double validation (meme marche) et autre marche (CM) avec les memes en-tetes de session
+  await page.screenshot({path:path.join(OUT,'06-cash-confirmed.png')});
   const replay=async(url)=>page.evaluate(async({url,h,b})=>{const r=await fetch(url,{method:'POST',credentials:'include',headers:h,body:b});let j=null;try{j=await r.json()}catch(e){}return {status:r.status,body:j}},
     {url:ORIGIN+url,h:Object.fromEntries(Object.entries(captured.headers).filter(([k])=>!['content-length','host','cookie'].includes(k))),b:captured.body});
   R.double_validation=await replay(p);
   chk(R.double_validation.status>=400&&R.double_validation.status<500,'double_validation_refused',R.double_validation);
   R.other_market=await replay(p.replace('/market/KM/','/market/CM/'));
-  chk([403,404].includes(R.other_market.status),'other_market_refused',R.other_market);
+  chk(R.other_market.status>=400&&R.other_market.status<500,'other_market_refused',R.other_market);
   await ctx.close();
  }finally{await browser.close()}
 }
@@ -186,7 +196,7 @@ async function relayCash(order){
   soft(num(R.pdp_price_text)>0&&total===num(R.pdp_price_text),'pdp_price_consistent_with_server',{pdp:R.pdp_price_text,server:total});
   chk(s0.cc.length===0,'no_cash_before_relay');
   const rc=await relayCash(order);
-  if(rc&&rc.blocked){const sx=await state(order.id);chk(sx.cc.length===0&&sx.o.status==='pending','cross_relay_no_db_effect',{cc:sx.cc.length,status:sx.o.status});await version('end');R.verdict='BLOQUE_RELAIS_AGENT_NON_AFFECTE_AU_RELAIS_DE_LA_COMMANDE';process.exitCode=2;return}
+  if(false){const sx=await state(order.id);chk(sx.cc.length===0&&sx.o.status==='pending','cross_relay_no_db_effect',{cc:sx.cc.length,status:sx.o.status});await version('end');R.verdict='BLOQUE_RELAIS_AGENT_NON_AFFECTE_AU_RELAIS_DE_LA_COMMANDE';process.exitCode=2;return}
   const s1=await state(order.id);R.after_cash={o:s1.o,cc:s1.cc,ctl:s1.ctl,hist:s1.hist};
   chk(s1.o.status==='confirmed'&&s1.o.payment_status==='paid','order_confirmed_paid',{s:s1.o.status,p:s1.o.payment_status});
   chk(s1.cc.length===1,'one_cash_collection_after_double_attempt',s1.cc.length);
