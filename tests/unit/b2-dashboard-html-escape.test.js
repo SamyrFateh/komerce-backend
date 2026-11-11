@@ -46,4 +46,13 @@ describe('B2 — Hub/Relais client HTML isolation', () => {
     expect(utils).toContain('message.textContent = String(msg');
     expect(utils).not.toMatch(/dom\.toast\.innerHTML\s*=/);
   });
+
+  it('escapes supplier, competitor and product names in Sales and PricingStrategy views', () => {
+    const sales = src('public/dashboards/admin/js/views/SalesView.js');
+    const pricing = src('public/dashboards/admin/js/views/PricingStrategyView.js');
+    expect(sales).toContain("esc(p.name || '—')");
+    for (const marker of ['esc(p.name)', 'esc(c.competitor_name)', 'esc(c.notes)']) {
+      expect(pricing).toContain(marker);
+    }
+  });
 });
