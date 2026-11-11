@@ -40,7 +40,7 @@ jobs:
         run: |
           node scripts/recette/resolve-staging-deploy-pin.js
           node scripts/recette/target-guard.js
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install chromium
       - name: Commande client, cash relais, double validation, autre marche
         run: node scripts/recette/claude-par-km-orders.js
       - name: Artefacts
