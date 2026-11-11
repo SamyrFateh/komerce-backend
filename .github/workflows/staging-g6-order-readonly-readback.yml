@@ -41,7 +41,7 @@ jobs:
           node scripts/recette/resolve-staging-deploy-pin.js
           node scripts/recette/target-guard.js
       - name: Read existing G6 order from PostgreSQL
-        run: node scripts/recette/g6-order-readonly-readback.js
+        run: node tests/recette/g6-order-readonly-readback.js
       - name: Preserve read-only proof
         if: always()
         uses: actions/upload-artifact@v4
