@@ -72,6 +72,37 @@ describe('b-modal-cart', () => {
     state.cart = [];
   });
 
+  test('P0 — options disponibles, ruptures et combinaisons interdites : états accessibles réversibles', () => {
+    const makeOption = (stateName) => {
+      const button = document.createElement('button');
+      button.dataset.optionValue = 'M';
+      button.dataset.optionState = stateName;
+      modal.appendChild(button);
+      return button;
+    };
+    const available = makeOption('AVAILABLE');
+    const outOfStock = makeOption('OUT_OF_STOCK');
+    const incompatible = makeOption('INCOMPATIBLE');
+    const unknown = makeOption('OTHER');
+
+    _modalCartTestApi.reconcileVariantAvailabilityUI();
+
+    expect(available.hasAttribute('aria-disabled')).toBe(false);
+    expect(available.dataset.optionUnavailableReason).toBeUndefined();
+    expect(outOfStock.getAttribute('aria-disabled')).toBe('true');
+    expect(outOfStock.dataset.optionUnavailableReason).toBe('Rupture de stock');
+    expect(incompatible.dataset.optionUnavailableReason).toBe('Combinaison non proposée');
+    expect(unknown.getAttribute('aria-disabled')).toBe('true');
+    expect(unknown.dataset.optionUnavailableReason).toBeUndefined();
+
+    // Un choix peut redevenir achetable après changement de couleur.
+    outOfStock.dataset.optionState = 'AVAILABLE';
+    _modalCartTestApi.reconcileVariantAvailabilityUI();
+    expect(outOfStock.hasAttribute('aria-disabled')).toBe(false);
+    expect(outOfStock.dataset.optionUnavailable).toBeUndefined();
+    expect(outOfStock.dataset.optionUnavailableReason).toBeUndefined();
+  });
+
   describe('helpers de résolution ligne', () => {
     test('normalizedCombo est stable, trié et défensif', () => {
       expect(normalizedCombo(null)).toBe('');
