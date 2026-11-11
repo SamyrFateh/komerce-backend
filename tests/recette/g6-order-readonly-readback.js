@@ -13,7 +13,7 @@
 const fs=require('node:fs');
 const path=require('node:path');
 const db=require('../../db');
-const {confirmTarget}=require('./target-guard');
+const {confirmTarget}=require('../../scripts/recette/target-guard');
 
 const ORIGIN='https://komerce-backend-production.up.railway.app';
 const REFERENCE='KUYIYUK';
