@@ -2112,7 +2112,7 @@
     const label = doc.createElement('label');
     label.textContent = 'Code de retrait communiqué par le client';
     const input = doc.createElement('input');
-    input.type = 'text';
+    input.type = 'password'; // Secret client masqué à l'écran, même en saisie clavier.
     input.autocomplete = 'off';
     input.spellcheck = false;
     input.maxLength = 16;
