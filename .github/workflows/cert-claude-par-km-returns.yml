@@ -2,6 +2,12 @@ name: Certification Claude parallele KM — retours et SAV (Chromium)
 
 # Branche dediee cert/claude-par-km-returns uniquement. Marqueur CLAUDE-PAR-20261111.
 on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: 'Saisir exactement RUN-CLAUDE-PAR-KM-RETURNS'
+        required: true
+        type: string
   push:
     branches: [cert/claude-par-km-returns]
     paths:
@@ -20,6 +26,10 @@ concurrency:
 
 jobs:
   returns:
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      github.actor == github.repository_owner &&
+      inputs.confirmation == 'RUN-CLAUDE-PAR-KM-RETURNS'
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     env:
