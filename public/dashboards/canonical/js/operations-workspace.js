@@ -2104,7 +2104,7 @@
       // Le guichet sans sélection de commande exige impérativement le code
       // complet ; ni les 4 derniers caractères ni une référence colis
       // visible dans la file ne prouvent l'autorisation de retrait.
-      const code = String(input.value || '').toUpperCase().replace(/[\\s-]/g, '');
+      const code = String(input.value || '').toUpperCase().replace(/[\s-]/g, '');
       if (!/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$/.test(code)) {
         setFeedback(context.root, 'Code complet de 8 caractères requis pour la remise.', 'critical');
         return;
