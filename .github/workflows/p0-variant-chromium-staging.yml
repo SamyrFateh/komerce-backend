@@ -22,6 +22,18 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Checkout proposed P0 post-render fix for browser-only preview
+        uses: actions/checkout@v4
+        with:
+          repository: SamyrFateh/komerce-backend
+          ref: fix/p0-variant-intent-post-render-sync-20261111
+          path: p0-fix
+          fetch-depth: 1
+
+      - name: Record preview source
+        run: |
+          echo "Preview modules from $(git -C p0-fix rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
+
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -53,6 +65,7 @@ jobs:
           KOMERCE_ENV: staging
           BASE_URL: https://komerce-backend-production.up.railway.app/boutique/?market=KM
           E2E_MULTI_VARIANT_PRODUCT_NAME: Robe longue femme
+          E2E_PREVIEW_ROOT: ${{ github.workspace }}/p0-fix/public/boutique/js
         run: |
           set -euo pipefail
           cd public/boutique
