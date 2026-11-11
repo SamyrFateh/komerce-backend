@@ -1919,15 +1919,11 @@
     });
     }
 
-    renderParcelActionSection(rootNode, ui, doc, context, {
+    renderPickupCodeSection(rootNode, ui, doc, context, {
       title: 'Remettre au client',
-      description: 'Confirmer la remise physique de chaque colis.',
+      description: 'Sans scanner : demandez le code complet au client et saisissez-le au clavier. Le serveur vérifie le code, le relais et le prochain lot avant toute remise.',
       rows: payload.queues.relay.to_collect,
-      action: 'collect',
       jumpId:'relay-execution-collect',
-      actionLabel: 'Remis au client',
-      suffix: row => `parcels/${encodeURIComponent(row.reference)}/collect`,
-      confirm: row => `Confirmer la remise de ${row.reference} au client ?`,
       empty: 'Aucun colis à remettre.',
     });
       if(context.mode==='relay-execution' && !context.focusOnly) {
@@ -2060,6 +2056,74 @@
     const manual = manualReasonControls(doc);
     if ((config.rows||[]).length) slot.appendChild(manual.wrap);
     renderActionRows(slot, doc, context, Object.assign({}, config, { manualBody: manual.body }), 'parcel');
+  }
+
+  /**
+   * Retrait sans scanner : le code fourni par le destinataire est saisi au
+   * clavier dans le même guichet que la file d'attente. Le writer de retrait
+   * canonique vérifie le secret complet, les droits inter-relais et le statut
+   * dans une seule transaction ; aucun scan logistique customer_collected.
+   * Ne pas prétendre que le bouton d'une ligne choisit un colis : un code
+   * retire le prochain lot AVAILABLE de la commande correspondante.
+   */
+  function renderPickupCodeSection(rootNode, ui, doc, context, config) {
+    const slot = createSection(rootNode, ui, config.title, config.description);
+    if (config.jumpId && slot.parentElement) slot.parentElement.id = config.jumpId;
+    renderActionTable(slot, {
+      rows: config.rows,
+      emptyText: config.empty,
+      columns: actionColumns({ referenceKind: 'parcel' }).slice(0, -1),
+    });
+    if (!(config.rows || []).length) return;
+
+    const zone = doc.createElement('div');
+    zone.className = 'kmc-workspace-manual-pickup';
+    zone.setAttribute('data-manual-pickup-code', '');
+    const label = doc.createElement('label');
+    label.textContent = 'Code de retrait communiqué par le client';
+    const input = doc.createElement('input');
+    input.type = 'text';
+    input.autocomplete = 'off';
+    input.spellcheck = false;
+    input.maxLength = 16;
+    input.placeholder = 'Code complet (8 caractères)';
+    input.setAttribute('aria-label', 'Code de retrait client complet');
+    input.setAttribute('data-pickup-code-input', '');
+    label.appendChild(input);
+    const button = makeActionButton(doc, 'Vérifier et remettre', 'confirm-pickup-code');
+    button.type = 'button';
+    button.setAttribute('data-pickup-code-confirm', '');
+    const note = text(doc, 'p', 'kmc-workspace-muted',
+      'Sans code : ne confirmez pas la remise. Utilisez uniquement la procédure nominative exceptionnelle autorisée. La saisie manuelle ne remplace pas la vérification du destinataire.');
+    zone.appendChild(label);
+    zone.appendChild(button);
+    zone.appendChild(note);
+    slot.appendChild(zone);
+
+    const submit = async () => {
+      // Le guichet sans sélection de commande exige impérativement le code
+      // complet ; ni les 4 derniers caractères ni une référence colis
+      // visible dans la file ne prouvent l'autorisation de retrait.
+      const code = String(input.value || '').toUpperCase().replace(/[\\s-]/g, '');
+      if (!/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$/.test(code)) {
+        setFeedback(context.root, 'Code complet de 8 caractères requis pour la remise.', 'critical');
+        return;
+      }
+      await runAction(context, button, {
+        url: '/api/scans/collect',
+        body: { pickup_code: code },
+        confirmMessage: 'Le client est présent, le code de retrait est complet et vous allez remettre le prochain lot disponible de sa commande. Confirmer ?',
+        runningMessage: 'Vérification du code et enregistrement du retrait…',
+        onSuccess: () => { input.value = ''; },
+        successMessage: result => 'Remise vérifiée par code · ' +
+          String(result.parcel_reference || result.reference || result.order_ref || 'lot confirmé') +
+          (result.partial ? ' · autres lots à retirer' : ' · commande terminée'),
+      });
+    };
+    button.addEventListener('click', () => { submit().catch(() => {}); });
+    input.addEventListener('keydown', event => {
+      if (event.key === 'Enter') { event.preventDefault(); button.click(); }
+    });
   }
 
   function renderActionRows(slot, doc, context, config, kind) {
