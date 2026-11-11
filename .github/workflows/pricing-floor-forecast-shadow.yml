@@ -1,12 +1,20 @@
-name: Pricing floor forecast shadow — pure checks
+name: Pricing floor forecast shadow — pure + Chromium proof
 
 on:
   pull_request:
     paths:
       - 'services/pricing-floor-forecast-shadow.js'
+      - 'services/pricing-floor-forecast-preview.js'
+      - 'routes/admin-pricing-workspace.js'
+      - 'public/dashboards/canonical/js/pricing-atelier-views.js'
+      - 'public/dashboards/canonical/css/pricing-atelier-views.css'
       - 'tests/unit/pricing-floor-forecast-shadow.test.js'
+      - 'tests/unit/pricing-floor-forecast-preview.test.js'
+      - 'tests/unit/admin-pricing-workspace-market-route.test.js'
+      - 'tests/e2e/pricing-atelier-views.spec.js'
       - 'scripts/recette/pricing-floor-forecast-demo.js'
       - 'docs/doctrine/PRICING_FLOOR_FORECAST_SHADOW.md'
+      - 'features/economic-engine.feature.js'
       - '.github/workflows/pricing-floor-forecast-shadow.yml'
   workflow_dispatch:
 
@@ -14,9 +22,9 @@ permissions:
   contents: read
 
 jobs:
-  pricing-floor-shadow:
+  forecast-unit:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -25,7 +33,24 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Run pricing floor Jest tests (isolated, no DB)
-        run: npx jest tests/unit/pricing-floor-forecast-shadow.test.js --config jest.unit.config.js --runInBand --no-coverage
-      - name: Reproduce four hypothetical examples without DB
+      - name: Forecast engine, proof contract and real route authorization
+        run: |
+          npx jest tests/unit/pricing-floor-forecast-shadow.test.js tests/unit/pricing-floor-forecast-preview.test.js tests/unit/admin-pricing-workspace-market-route.test.js tests/unit/canonical-pricing-atelier-views.test.js --config jest.unit.config.js --runInBand --no-coverage
+      - name: Four hypothetical examples (no DB)
         run: node scripts/recette/pricing-floor-forecast-demo.js
+
+  forecast-chromium:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Prepare Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Atelier preview (mock APIs, no real prices)
+        run: npx playwright test -c playwright.catalog-pricing-integration.config.js --grep 'Prévision avant vente'
