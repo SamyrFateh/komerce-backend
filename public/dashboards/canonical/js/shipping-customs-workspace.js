@@ -227,7 +227,7 @@
     const manualSelect = doc.createElement('select');
     manualSelect.setAttribute('aria-label', 'Motif de la confirmation sans scan');
     manualSelect.setAttribute('data-manual-reason', '');
-    [['scanner_unavailable', 'Scanner indisponible'], ['label_unreadable', 'Étiquette illisible'], ['offline', 'Hors ligne'], ['other', 'Autre (précisez)']]
+    [['manual_entry', 'Saisie manuelle volontaire'], ['scanner_unavailable', 'Scanner indisponible'], ['label_unreadable', 'Étiquette illisible'], ['offline', 'Hors ligne'], ['other', 'Autre (précisez)']]
       .forEach(([value, label]) => manualSelect.appendChild(Object.assign(doc.createElement('option'), { value, textContent: label })));
     const manualNote = doc.createElement('input');
     manualNote.type = 'text'; manualNote.maxLength = 500; manualNote.placeholder = 'Précision (obligatoire si « Autre »)';

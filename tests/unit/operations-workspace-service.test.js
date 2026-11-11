@@ -285,6 +285,32 @@ test('scanParcel résout le colis dans le marché avant d appeler le moteur appe
   expect(result.reference).toBe('PCL-CM-001');
 });
 
+test('P0 mode dégradé : la remise sans preuve de retrait ne passe jamais par le scan logistique', async () => {
+  for (const reason of [undefined, { reason: 'manual_entry' }, { reason: 'scanner_unavailable' }]) {
+    await expect(workspace.scanParcel('PCL-CM-001', 'collect', MARKET,
+      { id: 'relay-1', role: 'agent_relais' }, reason))
+      .rejects.toMatchObject({ code: 'PICKUP_CODE_REQUIRED', status: 409 });
+  }
+  expect(mockQuery).not.toHaveBeenCalled();
+  expect(mockProcessScan).not.toHaveBeenCalled();
+});
+
+test('saisie manuelle volontaire : voie receive sans prétendre panne de lecteur', async () => {
+  mockQuery.mockResolvedValueOnce({
+    rows: [{ id: 'parcel-cm-id', reference: 'PCL-CM-001', status: 'shipped',
+      order_id: 'order-cm-id', relais_id: 'relay-cm',
+      order_market_id: 'market-cm-id', relais_market_id: 'market-cm-id' }],
+  }).mockResolvedValueOnce({ rows: [{ attached: false }] });
+  await workspace.scanParcel('PCL-CM-001', 'receive', MARKET,
+    { id: 'relay-1', role: 'agent_relais' }, { reason: 'manual_entry' });
+  expect(mockProcessScan).toHaveBeenCalledWith(expect.objectContaining({
+    event_type: 'relais_received',
+    metadata: expect.objectContaining({
+      entry_mode: 'manual_confirmation', manual_reason: 'manual_entry',
+    }),
+  }));
+});
+
 test('scanParcel refuse une confirmation sans motif et n\'appelle pas le moteur', async () => {
   await expect(workspace.scanParcel('PCL-CM-001', 'ship', MARKET, { id: 'a', role: 'admin' }))
     .rejects.toMatchObject({ code: 'manual_reason_required' });
@@ -296,9 +322,9 @@ test('scanParcel refuse une confirmation sans motif et n\'appelle pas le moteur'
 test.each([
   ['admin', 'ship', 'admin'],
   ['agent_hub', 'ship', 'hub_agent'],
-  ['agent_relais', 'collect', 'relay_agent'],
+  ['agent_relais', 'receive', 'relay_agent'],
   // rôle inattendu : la station qui exécute l'action décide (jamais d'étiquette « admin » par défaut)
-  ['market_operator', 'collect', 'relay_agent'],
+  ['market_operator', 'receive', 'relay_agent'],
   [undefined, 'ship', 'hub_agent'],
 ])('scanParcel traduit le rôle %s (%s) en actor_role %s accepté par scan_events', async (role, action, expected) => {
   mockQuery.mockResolvedValueOnce({
