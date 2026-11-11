@@ -115,6 +115,9 @@ async function buyerOrder({buyer,phone,code}){
  }finally{await browser.close()}
 }
 async function relayCash(order){
+ const [ag]=await q('SELECT u.relais_id,r.name AS relais_name,r.market_id FROM users u LEFT JOIN relais r ON r.id=u.relais_id WHERE lower(u.email)=lower($1)',[process.env.E2E_AGENT_RELAIS_EMAIL]);
+ const [orl]=await q('SELECT r.id,r.name,r.market_id FROM orders o JOIN relais r ON r.id=o.relais_id WHERE o.id=$1',[order.id]);
+ R.relay_diag={agent_relais_id:ag?.relais_id,agent_relais_name:ag?.relais_name,order_relais_id:orl?.id,order_relais_name:orl?.name,same:ag?.relais_id===orl?.id};save();
  const email=process.env.E2E_AGENT_RELAIS_EMAIL,password=process.env.E2E_AGENT_RELAIS_PASSWORD;
  chk(!!email&&!!password,'relay_creds');
  const browser=await chromium.launch({headless:true});
@@ -131,7 +134,8 @@ async function relayCash(order){
   await page.locator('select').first().selectOption({label:'KM · Comores'});
   await page.waitForLoadState('networkidle').catch(()=>{});
   await page.locator('[data-relay-execution-jump="cash"]').click();
-  const row=page.locator('tr',{hasText:order.reference});await row.waitFor({timeout:20000});
+  const row=page.locator('tr',{hasText:order.reference});
+  try{await row.waitFor({timeout:20000})}catch(e){await page.screenshot({path:path.join(OUT,'05-relay-cash-row-missing.png'),fullPage:true}).catch(()=>{});await ctx.close().catch(()=>{});throw Error('RELAY_CASH_ROW_MISSING:'+JSON.stringify(R.relay_diag))}
   await page.screenshot({path:path.join(OUT,'05-relay-cash-pending.png')});
   const p='/api/admin/workspaces/operations/market/KM/orders/'+order.reference+'/confirm-cash';
   let captured=null;page.on('request',r=>{if(new URL(r.url()).pathname===p&&r.method()==='POST')captured={headers:r.headers(),body:r.postData()}});
