@@ -191,3 +191,21 @@ test('buildMarketCorridorForProduct accepte un candidat résolu sans relâcher l
   expect(result.selected.source).toBe('GLOBAL_BASE');
   expect(result.selected.buyer_effective).toBe(false);
 });
+
+test('un produit sans prix reste non achetable mais ses coûts sont consultables avant première décision',async()=>{
+ db.query.mockReset();localPricing.resolveActiveProductMarketPricing.mockReset();
+ pricingCdr.loadGlobalConfig.mockReset();pricingEngine.recommend.mockReset();
+ db.query.mockResolvedValue({rows:[]});
+ localPricing.resolveActiveProductMarketPricing.mockResolvedValue(null);
+ pricingCdr.loadGlobalConfig.mockResolvedValue({});
+ pricingEngine.recommend.mockResolvedValue({purchase_cost_kmf:700,variable_cost_complete_kmf:1000,
+  minimum_safe_price_kmf:1100,recommended_price_kmf:1700,contribution_kmf:null});
+ const result=await corridor.buildMarketCorridorForProduct({market:{id:'m',code:'KM',currency:'KMF'},
+  product:{id:'p',product_ref:'KPR-UNPRICED',price_kmf:null,is_active:true}});
+ expect(result.selected).toMatchObject({source:'UNPRICED',buyer_effective:false,price_kmf:null,local_amount:null});
+ expect(result.selected.economics).toMatchObject({selected_price_kmf:null,variable_cost_complete_kmf:1000,
+  coverage_reference_price_kmf:1700});
+ expect(result.corridor.local).toMatchObject({status:'LOCAL_EVIDENCE_MISSING',sample_count:0});
+ expect(pricingEngine.recommend).toHaveBeenCalledWith(expect.objectContaining({current_price_kmf:null,final_price_kmf:null}),expect.any(Object));
+ expect(db.query.mock.calls.every(([sql])=>!/^\s*(INSERT|UPDATE|DELETE)/i.test(sql))).toBe(true);
+});
