@@ -364,6 +364,27 @@ test('câble image, nom, quantité et suppression dans le drawer', () => {
   emitSpy.mockRestore();
 });
 
+test('P0 — drawer : deux tailles visibles, plus/moins ne modifient que leur ligne', () => {
+  const robe = product(7, { price_kmf: 7990 });
+  state.cart = [
+    { product: { ...robe, sku_id: 'sku-xl' }, sku_id: 'sku-xl', qty: 2,
+      variant_combo: { Couleur: 'Navy Blue', Taille: 'XL' } },
+    { product: { ...robe, sku_id: 'sku-m' }, sku_id: 'sku-m', qty: 1,
+      variant_combo: { Couleur: 'Navy Blue', Taille: 'M' } },
+  ];
+
+  renderCartBody();
+  const lines = dom.cartBody.querySelectorAll('.k-cart-item');
+  expect(lines).toHaveLength(2);
+  expect(lines[0].querySelector('.k-cart-item-variant').textContent).toContain('Taille : XL');
+  expect(lines[1].querySelector('.k-cart-item-variant').textContent).toContain('Taille : M');
+  lines[1].querySelectorAll('.k-qty-ctrl')[1].click();
+  expect(state.cart.map(i => i.qty)).toEqual([2, 2]);
+  renderCartBody();
+  dom.cartBody.querySelectorAll('.k-cart-item')[0].querySelectorAll('.k-qty-ctrl')[0].click();
+  expect(state.cart.map(i => i.qty)).toEqual([1, 2]);
+});
+
 test('le CTA vide ferme le drawer et réactive la boutique', () => {
   document.body.classList.add('cart-open');
   dom.cartOverlay.classList.add('open');
