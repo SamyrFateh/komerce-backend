@@ -548,7 +548,7 @@
         html += `
           <tr>
             <td><strong>${i + 1}</strong></td>
-            <td>${p.name || '—'}</td>
+            <td>${esc(p.name || '—')}</td>
             <td style="text-transform:capitalize;color:var(--text-tertiary,#94a3b8)">${p.category || '—'}</td>
             <td>${p.nb_sold || 0}</td>
             <td><strong>${fmtFull(p.revenue)}</strong></td>
