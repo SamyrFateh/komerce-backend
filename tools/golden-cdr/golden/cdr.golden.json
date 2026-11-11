@@ -1,6 +1,6 @@
 {
   "_kind": "golden-cdr",
-  "captured_at": "2026-11-11T10:43:57.163Z",
+  "captured_at": "2026-11-11T11:00:47.597Z",
   "config_fingerprint": "8dd411ff63e062f6",
   "frozen_config": {
     "categories": {
@@ -289,7 +289,7 @@
         "payment": 80,
         "purchase": 152250,
         "relay": 200,
-        "risk": 16988,
+        "risk": 16521,
         "sourcing": 80,
         "transitary": 4636
       },
@@ -305,9 +305,9 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 16988,
-        "total": 194900,
-        "variable": 175492
+        "risk": 16521,
+        "total": 194433,
+        "variable": 175025
       },
       "warnings": [
         "Composant Comores \"transport_inter_iles_anjouan_kmf\" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché / marché non déterminé.",
@@ -334,10 +334,10 @@
         "hub": 50,
         "overhead": 19408,
         "packaging": 75,
-        "payment": 3001,
+        "payment": 2992,
         "purchase": 152250,
         "relay": 200,
-        "risk": 17301,
+        "risk": 16794,
         "sourcing": 80,
         "transitary": 4636
       },
@@ -353,9 +353,9 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 17301,
-        "total": 198134,
-        "variable": 178726
+        "risk": 16794,
+        "total": 197618,
+        "variable": 178210
       },
       "warnings": [
         "Composant Comores \"transport_inter_iles_anjouan_kmf\" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché / marché non déterminé.",
@@ -385,7 +385,7 @@
         "payment": 80,
         "purchase": 12180,
         "relay": 200,
-        "risk": 1448,
+        "risk": 1402,
         "sourcing": 80,
         "transitary": 493
       },
@@ -401,9 +401,9 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 1448,
-        "total": 34368,
-        "variable": 14960
+        "risk": 1402,
+        "total": 34322,
+        "variable": 14914
       },
       "warnings": [
         "Composant Comores \"transport_inter_iles_anjouan_kmf\" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché / marché non déterminé.",
@@ -430,10 +430,10 @@
         "hub": 50,
         "overhead": 19408,
         "packaging": 75,
-        "payment": 956,
+        "payment": 954,
         "purchase": 45675,
         "relay": 200,
-        "risk": 5305,
+        "risk": 5145,
         "sourcing": 80,
         "transitary": 1496
       },
@@ -449,9 +449,9 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 5305,
-        "total": 74211,
-        "variable": 54803
+        "risk": 5145,
+        "total": 74049,
+        "variable": 54641
       },
       "warnings": [
         "Composant Comores \"transport_inter_iles_anjouan_kmf\" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché / marché non déterminé.",
@@ -481,7 +481,7 @@
         "payment": 80,
         "purchase": 203000,
         "relay": 200,
-        "risk": 23365,
+        "risk": 22727,
         "sourcing": 80,
         "transitary": 6339
       },
@@ -497,9 +497,9 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 23365,
-        "total": 260786,
-        "variable": 241378
+        "risk": 22727,
+        "total": 260148,
+        "variable": 240740
       },
       "warnings": [
         "Composant Comores \"transport_inter_iles_anjouan_kmf\" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché / marché non déterminé.",
@@ -526,10 +526,10 @@
         "hub": 50,
         "overhead": 19408,
         "packaging": 75,
-        "payment": 555,
+        "payment": 554,
         "purchase": 25375,
         "relay": 200,
-        "risk": 2952,
+        "risk": 2860,
         "sourcing": 80,
         "transitary": 880
       },
@@ -545,9 +545,9 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 2952,
-        "total": 49904,
-        "variable": 30496
+        "risk": 2860,
+        "total": 49811,
+        "variable": 30403
       },
       "warnings": [
         "Composant Comores \"transport_inter_iles_anjouan_kmf\" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché / marché non déterminé.",
@@ -574,10 +574,10 @@
         "hub": 50,
         "overhead": 19408,
         "packaging": 75,
-        "payment": 1665,
+        "payment": 1660,
         "purchase": 60900,
         "relay": 200,
-        "risk": 9461,
+        "risk": 9184,
         "sourcing": 80,
         "transitary": 2593
       },
@@ -593,9 +593,9 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 9461,
-        "total": 117143,
-        "variable": 97735
+        "risk": 9184,
+        "total": 116861,
+        "variable": 97453
       },
       "warnings": [
         "Composant Comores \"transport_inter_iles_anjouan_kmf\" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché / marché non déterminé.",
@@ -625,7 +625,7 @@
         "payment": 80,
         "purchase": 18270,
         "relay": 200,
-        "risk": 2192,
+        "risk": 2127,
         "sourcing": 80,
         "transitary": 692
       },
@@ -641,9 +641,9 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 2192,
-        "total": 42057,
-        "variable": 22649
+        "risk": 2127,
+        "total": 41992,
+        "variable": 22584
       },
       "warnings": [
         "Composant Comores \"transport_inter_iles_anjouan_kmf\" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché / marché non déterminé.",
@@ -673,7 +673,7 @@
         "payment": 80,
         "purchase": 91350,
         "relay": 200,
-        "risk": 10493,
+        "risk": 10202,
         "sourcing": 80,
         "transitary": 2905
       },
@@ -689,9 +689,9 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 10493,
-        "total": 127802,
-        "variable": 108394
+        "risk": 10202,
+        "total": 127511,
+        "variable": 108103
       },
       "warnings": [
         "Composant Comores \"transport_inter_iles_anjouan_kmf\" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché / marché non déterminé.",
@@ -721,7 +721,7 @@
         "payment": 80,
         "purchase": 50750,
         "relay": 200,
-        "risk": 5744,
+        "risk": 5582,
         "sourcing": 80,
         "transitary": 1638
       },
@@ -737,9 +737,9 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 5744,
-        "total": 78748,
-        "variable": 59340
+        "risk": 5582,
+        "total": 78586,
+        "variable": 59178
       },
       "warnings": [
         "Catégorie \"ghost_category_xyz\" inconnue — poids, volume et marge cible par défaut utilisés.",
@@ -770,7 +770,7 @@
         "payment": 80,
         "purchase": 0,
         "relay": 200,
-        "risk": 108,
+        "risk": 98,
         "sourcing": 80,
         "transitary": 136
       },
@@ -786,9 +786,9 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 108,
-        "total": 20520,
-        "variable": 1112
+        "risk": 98,
+        "total": 20510,
+        "variable": 1102
       },
       "warnings": [
         "Composant Comores \"transport_inter_iles_anjouan_kmf\" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché / marché non déterminé.",
@@ -816,10 +816,10 @@
         "hub": 50,
         "overhead": 19408,
         "packaging": 75,
-        "payment": 23544,
+        "payment": 23477,
         "purchase": 1218000,
         "relay": 200,
-        "risk": 137820,
+        "risk": 133829,
         "sourcing": 80,
         "transitary": 36178
       },
@@ -835,9 +835,9 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 137820,
-        "total": 1443171,
-        "variable": 1423763
+        "risk": 133829,
+        "total": 1439113,
+        "variable": 1419705
       },
       "warnings": [
         "Composant Comores \"transport_inter_iles_anjouan_kmf\" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché / marché non déterminé.",
@@ -867,7 +867,7 @@
         "payment": 80,
         "purchase": 152250,
         "relay": 200,
-        "risk": 16997,
+        "risk": 16530,
         "sourcing": 80,
         "transitary": 4638
       },
@@ -883,9 +883,9 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 16997,
-        "total": 195001,
-        "variable": 175593
+        "risk": 16530,
+        "total": 194534,
+        "variable": 175126
       },
       "warnings": [
         "Composant Comores \"transport_inter_iles_anjouan_kmf\" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché / marché non déterminé.",
