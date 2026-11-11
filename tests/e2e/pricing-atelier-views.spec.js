@@ -157,11 +157,13 @@ for (const [name, viewport] of [['1440', { width: 1440, height: 900 }], ['390', 
           if (Object.prototype.hasOwnProperty.call(values, key)) input.value = String(values[key]);
         }
       }, numeric);
+      await detail.locator('[name="customs_duties_favorable"]').fill('0');
+      await detail.locator('[name="customs_duties_defavorable"]').fill('42');
       await detail.locator('[name="candidate_price"]').fill('9000');
       await detail.getByRole('button', { name: 'Calculer sans enregistrer' }).click();
       await expect(detail.locator('[data-atelier-forecast-output]')).toContainText('Plancher central');
       await expect(detail.locator('[data-atelier-forecast-output]')).toContainText('PROVISOIRE');
-      await expect(detail.locator('[data-atelier-forecast-output]')).toContainText('8 909');
+      await expect(detail.locator('[data-atelier-forecast-output]')).toContainText(/8\s*909/);
       expect(posts.filter(item => item.path.endsWith('/forecast-preview'))).toHaveLength(1);
       expect(posts.filter(item => /\/local-price|\/activate/.test(item.path))).toHaveLength(0);
       const sent = posts.find(item => item.path.endsWith('/forecast-preview')).body;
