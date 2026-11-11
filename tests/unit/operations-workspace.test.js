@@ -41,6 +41,15 @@ describe('L9a — répartition Hub dans Opérations', () => {
   });
 });
 
+describe('répartition d\'une seule commande', () => {
+  const src = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/operations-workspace.js'), 'utf8');
+  test('chaque ligne à répartir porte « Répartir » vers orders/:reference/distribute, et « Répartir ce marché » reste', () => {
+    expect(src).toContain("makeActionButton(doc, 'Répartir', 'distribute-order')");
+    expect(src).toContain('orders/${encodeURIComponent(row.reference)}/distribute');
+    expect(src).toContain("'Répartir ce marché', 'run-distribution'");
+  });
+});
+
 describe('L9c — gestes Hub réservés à Hub live', () => {
   const src = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/operations-workspace.js'), 'utf8');
   test('hors mode execution, les boutons Commander, Répartir, Expédier et Affecter ne sont pas rendus', () => {

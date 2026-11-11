@@ -1744,10 +1744,28 @@
         { key: 'relais_name', label: 'Relais' },
         { key: 'item_count', label: 'Articles', align: 'right' },
         { key: 'total_kmf', label: 'Montant', align: 'right', format: formatKmf },
+        { key: 'action', label: 'Action', align: 'right' },
       ],
       rows: payload.distribution.unassigned,
       emptyText: 'Aucune commande à répartir.',
     });
+    // Répartition d'UNE commande (même writer et mêmes droits que « Répartir ce marché »).
+    if (!isHubReadOnly(context)) {
+      distributionTable.querySelectorAll('tbody tr').forEach((rowNode, index) => {
+        const row = payload.distribution.unassigned[index];
+        const actionCell = rowNode.lastChild;
+        if (!row || !actionCell) return;
+        actionCell.replaceChildren();
+        const button = makeActionButton(doc, 'Répartir', 'distribute-order');
+        actionCell.appendChild(button);
+        button.addEventListener('click', () => runAction(context, button, {
+          url: endpointFor(context.marketCode, `orders/${encodeURIComponent(row.reference)}/distribute`),
+          confirmMessage: `Répartir la commande ${row.reference} ?`,
+          runningMessage: `${row.reference} · répartition en cours…`,
+          successMessage: `${row.reference} · répartition terminée.`,
+        }).catch(() => {}));
+      });
+    }
 
     renderParcelActionSection(rootNode, ui, doc, context, {
       title: 'Hub · Expédier',
