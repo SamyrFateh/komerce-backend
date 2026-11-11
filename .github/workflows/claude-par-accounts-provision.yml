@@ -31,6 +31,7 @@ jobs:
       EXPECTED_RAILWAY_ENVIRONMENT: staging
       KOMERCE_STAGING_RESET_DB_PIN: ${{ vars.STAGING_DB_PIN }}
       PROVISION_CONFIRMATION: PROVISION-STAGING-E2E
+      KOMERCE_STAGING_E2E_PROVISION_ACK: PROVISION-STAGING-E2E
       E2E_PROVISION_EXTRA_MARKETS: ''
       # Admin existant : jamais modifié par le provisioning (existingOnly).
       E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
@@ -66,6 +67,7 @@ jobs:
         run: node scripts/recette/staging-e2e-provision.js --dry-run
       - name: Provisioning — execute
         run: |
+          set -euo pipefail
           mkdir -p test-results/claude-par-accounts
           node scripts/recette/staging-e2e-provision.js --execute | tee test-results/claude-par-accounts/report.json
       - name: Chiffrer les identifiants pour Opus
