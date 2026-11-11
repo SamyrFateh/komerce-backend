@@ -11,6 +11,8 @@
  */
 'use strict';
 const { test, expect } = require('@playwright/test');
+const fs = require('node:fs/promises');
+const nodePath = require('node:path');
 const {
   BASE_URL, waitForGrid, openFirstCard, addToCartFromModal,
   closeModal, openCartDrawer, getCartItems, cardCount,
@@ -136,6 +138,23 @@ test.describe('P0 variantes — parcours vrai Chromium desktop', () => {
     'Campagne staging explicite : BASE_URL distant et E2E_MULTI_VARIANT_PRODUCT_NAME requis (un skip ne vaut pas PASS)');
 
   test('même produit en deux tailles : ajout, quantités isolées, libellés et persistance', async ({ page }) => {
+    const previewRoot = process.env.E2E_PREVIEW_ROOT;
+    const overlayHits = new Set();
+    if (previewRoot) {
+      const overlayNames = new Set([
+        'b-modal-cart.js', 'b-modal-desktop-product.js', 'b-modal-mobile-product.js',
+      ]);
+      await page.route('**/boutique/js/**', async (route) => {
+        const url = new URL(route.request().url());
+        const name = url.pathname.split('/').pop();
+        if (url.origin !== new URL(BASE_URL).origin || !overlayNames.has(name)) {
+          return route.continue();
+        }
+        const body = await fs.readFile(nodePath.join(previewRoot, name), 'utf8');
+        overlayHits.add(name);
+        return route.fulfill({ status: 200, contentType: 'text/javascript; charset=utf-8', body });
+      });
+    }
     page.on('response', async (response) => {
       if (!response.url().includes('/api/products/') || !response.url().includes('/detail')) return;
       try {
@@ -157,6 +176,12 @@ test.describe('P0 variantes — parcours vrai Chromium desktop', () => {
     await expect(suggestion).toBeVisible({ timeout: 20000 });
     await suggestion.click();
     await expect(page.locator('#k-modal-variants [data-pdc5-root]')).toBeAttached();
+    if (previewRoot) {
+      expect([...overlayHits], 'La recette preview doit charger les modules de la PR, jamais seulement ceux du staging').toEqual(
+        expect.arrayContaining(['b-modal-cart.js', 'b-modal-desktop-product.js'])
+      );
+      console.log('[P0 PREVIEW]', [...overlayHits].sort().join(','));
+    }
 
     // L'axe couleur est optionnel dans la fiche ; l'axe taille est requis pour la campagne.
     const groups = page.locator('#k-modal-variants [data-axis-key]');
