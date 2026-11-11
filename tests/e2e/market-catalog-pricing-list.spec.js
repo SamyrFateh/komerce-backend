@@ -71,6 +71,7 @@ async function mount(page) {
         }
       },
     ];
+    rows[1].cost_allocation_trace = null; // API older/missing: no fabricated allocation details
     window.__catalogCalls=[];
     window.__catalogReloads=0;
     const request=async (url,options={}) => {
@@ -146,6 +147,20 @@ test.describe('Catalogue pays — Chromium desktop 1440', () => {
     expect(dimensions.scroll).toBeLessThanOrEqual(dimensions.width);
     expect(dimensions.table).toBeGreaterThan(900);
     await test.info().attach('market-catalog-desktop-1440',{body:await page.screenshot({fullPage:true}),contentType:'image/png'});
+  });
+
+  test('ventilation absente : aucune hypothèse ni faux montant inventé', async ({page}) => {
+    await mount(page);
+    const row = page.locator('tr[data-product-ref="KPR-2"]');
+    await row.getByRole('button', {name: 'Voir les quotes-parts N1 / N2'}).click();
+    const dialog = row.locator('dialog.kmc-price-detail-box');
+    await expect(dialog).toBeVisible();
+    await expect(dialog).toContainText('Ventilation par poste non fournie par le moteur');
+    await expect(dialog.locator('.kmc-price-allocation-table')).toHaveCount(0);
+    await expect(dialog).toContainText('N1 + N2 · Coût variable complet');
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
+    expect(await page.evaluate(() => window.__catalogCalls)).toHaveLength(0);
   });
 
   test('anti-faute : 2500 refusé, 32000 au-dessus du marché autorisé',async({page})=>{
