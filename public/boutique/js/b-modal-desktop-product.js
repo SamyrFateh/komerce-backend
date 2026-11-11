@@ -19,6 +19,7 @@
 'use strict';
 
 import { state, dom, modalZone, getRequestedTransportRail } from './b-store.js';
+import { bus } from './b-bus.js';
 import { fmtPrice, optimizeImgUrl } from './b-utils.js';
 import { isDesktop } from './b-scroll-owner.js';
 import {
@@ -380,6 +381,10 @@ function renderAxis(detail, selection, axis, onSelectionChanged) {
         option.value
       );
       onSelectionChanged();
+      // Le renderer vient de finir sa mise à jour SKU. Le recalcul en
+      // capture du clic peut s'être exécuté AVANT ce rendu : réconcilier
+      // après garantit que l'ancienne classe "blocked" est retirée.
+      bus.emit('modal:selection-rendered');
     });
 
     wrap.appendChild(button);
