@@ -38,12 +38,12 @@ const check=(ok,code)=>{if(!ok)throw Error(code)};
   check(target.confirmed,'STAGING_DB_TARGET_NOT_CONFIRMED');
   report.db_fingerprint=target.fingerprint;
   const {rows}=await db.query(
-   'SELECT o.id,o.reference,o.user_id,o.total_kmf,o.payment_mode::text AS payment_mode,'+
+   'SELECT o.id,o.reference,o.user_id,o.total_kmf,o.transport_price_kmf,o.transport_pricing_snapshot,o.payment_mode::text AS payment_mode,'+
    'o.payment_status::text AS payment_status,o.status::text AS status,o.simulation_scope,'+
    'm.code AS market,'+
    '(SELECT COUNT(*)::int FROM order_items i WHERE i.order_id=o.id) AS lines,'+
    '(SELECT COALESCE(SUM(i.quantity),0)::int FROM order_items i WHERE i.order_id=o.id) AS qty,'+
-   '(SELECT ARRAY_AGG(DISTINCT p.product_ref) FROM order_items i JOIN products p ON p.id=i.product_id WHERE i.order_id=o.id) AS products '+
+   '(SELECT ARRAY_AGG(DISTINCT p.product_ref) FROM order_items i JOIN products p ON p.id=i.product_id WHERE i.order_id=o.id) AS products,(SELECT COALESCE(SUM(i.price_kmf*i.quantity),0)::numeric FROM order_items i WHERE i.order_id=o.id) AS product_total_kmf,(SELECT jsonb_agg(jsonb_build_object('product_ref',p.product_ref,'quantity',i.quantity,'unit_price_kmf',i.price_kmf,'requested_transport_rail',i.requested_transport_rail,'weight_kg',p.weight_kg,'volume_cm3',p.volume_cm3)) FROM order_items i JOIN products p ON p.id=i.product_id WHERE i.order_id=o.id) AS item_details '+
    'FROM orders o LEFT JOIN markets m ON m.id=o.market_id WHERE o.reference=$1',
    [REFERENCE]);
   check(rows.length===1,'G6_REFERENCE_NOT_UNIQUE_OR_MISSING');
