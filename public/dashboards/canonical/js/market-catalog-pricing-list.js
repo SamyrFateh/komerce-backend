@@ -298,20 +298,159 @@
       const detail = doc.createElement('button');
       detail.type = 'button';
       detail.className = 'kmc-price-detail-toggle';
-      detail.textContent = 'Détail du coût';
+      detail.textContent = 'Voir les quotes-parts N1 / N2';
       product.appendChild(detail);
-      const detailBox = doc.createElement('div');
-      detailBox.className = 'kmc-price-detail-box';
-      detailBox.hidden = true;
-      detailBox.textContent = 'N1 · Rendu Relais : ' + format(row.landed_relay_cost_local, currency) +
-        ' · N2 · Variables business : ' + format(row.business_variable_cost_local, currency) +
-        ' · N1 + N2 · Coût variable complet : ' + format(row.variable_cost_local, currency) +
-        ' · plancher de sécurité moteur : ' + format(row.minimum_safe_price_local, currency) +
-        ' · charges fixes N3 exclues du coût variable unitaire.';
+      const detailBox = doc.createElement('dialog');
+      detailBox.className = 'kmc-price-detail-box kmc-price-allocation-dialog';
+      detailBox.setAttribute('aria-label', 'Ventilation économique · ' + (row.product_name || row.product_ref));
+      const dialogHeader = doc.createElement('header');
+      dialogHeader.className = 'kmc-price-allocation-header';
+      const headerText = doc.createElement('div');
+      const modalTitle = doc.createElement('h3');
+      modalTitle.textContent = 'Coût imputé · ' + (row.product_name || row.product_ref);
+      headerText.appendChild(modalTitle);
+      const subtitle = doc.createElement('p');
+      subtitle.textContent = 'Ventilation prévisionnelle par article · données du moteur, sans N3';
+      headerText.appendChild(subtitle);
+      dialogHeader.appendChild(headerText);
+      const close = doc.createElement('button');
+      close.type = 'button';
+      close.className = 'kmc-price-allocation-close';
+      close.textContent = 'Fermer ×';
+      close.setAttribute('aria-label', 'Fermer la ventilation des coûts');
+      close.addEventListener('click', () => detailBox.close());
+      dialogHeader.appendChild(close);
+      detailBox.appendChild(dialogHeader);
+
+      const totals = doc.createElement('div');
+      totals.className = 'kmc-price-allocation-totals';
+      [
+        ['N1 · Rendu Relais', row.landed_relay_cost_local],
+        ['N2 · Variables business', row.business_variable_cost_local],
+        ['N1 + N2 · Coût variable complet', row.variable_cost_local],
+        ['Plancher de sécurité moteur', row.minimum_safe_price_local],
+      ].forEach(([label, value]) => {
+        const card = doc.createElement('div');
+        card.className = 'kmc-price-allocation-total';
+        const k = doc.createElement('span');
+        k.textContent = label;
+        const v = doc.createElement('strong');
+        v.textContent = format(value, currency);
+        card.append(k, v);
+        totals.appendChild(card);
+      });
+      detailBox.appendChild(totals);
+
+      const trace = row.cost_allocation_trace;
+      if (!trace || !Array.isArray(trace.lines)) {
+        const missing = doc.createElement('p');
+        missing.className = 'kmc-price-allocation-unavailable';
+        missing.textContent = 'Ventilation par poste non fournie par le moteur : montant et clé de répartition indisponibles.';
+        detailBox.appendChild(missing);
+      } else {
+        const assumptions = doc.createElement('div');
+        assumptions.className = 'kmc-price-allocation-assumptions';
+        const average = trace.hypotheses || {};
+        const show = value => value == null || !Number.isFinite(Number(value)) ? 'non renseigné' : format(value);
+        const confidence = {
+          high: 'Élevée', medium: 'Moyenne', low: 'Faible', unknown: 'Non qualifiée',
+        }[average.confidence] || 'Non qualifiée';
+        assumptions.textContent = 'Hypothèses d’allocation · '
+          + show(average.articles_per_order) + ' articles / commande · '
+          + show(average.articles_per_parcel) + ' articles / colis · '
+          + show(average.articles_per_shipment) + ' articles / expédition · '
+          + 'confiance : ' + confidence + '.';
+        detailBox.appendChild(assumptions);
+        const note = doc.createElement('p');
+        note.className = 'kmc-price-allocation-note';
+        note.textContent = 'Montants des postes en KMF, base du moteur. « Engagé » est la base du composant ; '
+          + 'seule la quote-part calculée par le serveur est imputée à cet article. '
+          + 'Un forfait partagé peut évoluer avec le volume réel.';
+        detailBox.appendChild(note);
+
+        const levelLabel = component => {
+          const divisor = component.divisor == null ? 'non renseigné' : format(component.divisor);
+          if (component.level === 'order') return 'Commande ÷ ' + divisor + ' articles';
+          if (component.level === 'parcel') return 'Colis ÷ ' + divisor + ' articles';
+          if (component.level === 'shipment') return 'Expédition ÷ ' + divisor + ' articles';
+          if (component.basis === 'weight') return 'Poids du produit';
+          if (component.basis === 'volume') return 'Volume du produit';
+          if (component.basis === 'value') return 'Base monétaire (%)';
+          if (component.level === 'article') return 'Article · imputation directe';
+          return 'Base non précisée';
+        };
+        for (const family of ['N1', 'N2']) {
+          const familyLines = trace.lines.filter(line => line.family === family);
+          const group = doc.createElement('section');
+          group.className = 'kmc-price-allocation-family';
+          const groupTitle = doc.createElement('h4');
+          groupTitle.textContent = family === 'N1' ? 'N1 · Achat et parcours jusqu’au Relais' : 'N2 · Frais de vente et provisions';
+          group.appendChild(groupTitle);
+          const scroll = doc.createElement('div');
+          scroll.className = 'kmc-price-allocation-scroll';
+          const table = doc.createElement('table');
+          table.className = 'kmc-price-allocation-table';
+          const thead = doc.createElement('thead');
+          const headerRow = doc.createElement('tr');
+          ['Poste', 'Quote-part article', 'Montant engagé', 'Base / répartition', 'Confiance'].forEach(label => {
+            const th = doc.createElement('th');
+            th.textContent = label;
+            headerRow.appendChild(th);
+          });
+          thead.appendChild(headerRow);
+          table.appendChild(thead);
+          const tbodyDetail = doc.createElement('tbody');
+          const addLine = (name, allocated, engaged, basis, confidenceText, kind) => {
+            const line = doc.createElement('tr');
+            line.className = 'kmc-price-allocation-line is-' + kind;
+            [name, format(allocated, 'KMF'), engaged == null ? '—' : format(engaged, 'KMF'), basis, confidenceText].forEach((value, index) => {
+              const cell = doc.createElement(index === 0 ? 'th' : 'td');
+              cell.textContent = value;
+              line.appendChild(cell);
+            });
+            tbodyDetail.appendChild(line);
+          };
+          familyLines.forEach(line => {
+            addLine(line.label, line.unit_cost_kmf, null, 'Total du poste · moteur', 'Estimation', 'category');
+            (line.components || []).forEach(component => addLine(
+              '↳ ' + component.label, component.allocated_kmf, component.engaged_kmf,
+              levelLabel(component), ({
+                high: 'Élevée', medium: 'Moyenne', low: 'Faible',
+              })[component.confidence] || 'À confirmer', 'component'
+            ));
+            if (line.non_itemized_kmf > 0) {
+              addLine('↳ Part non détaillée par le moteur', line.non_itemized_kmf, null,
+                'Aucune ligne d’allocation publiée', 'À qualifier', 'unitemized');
+            }
+            if (line.allocation_discrepancy) {
+              const warning = doc.createElement('tr');
+              const cell = doc.createElement('td');
+              cell.colSpan = 5;
+              cell.textContent = 'Ventilation incomplète ou incohérente pour ce poste : vérification nécessaire.';
+              cell.className = 'kmc-price-allocation-warning';
+              warning.appendChild(cell);
+              tbodyDetail.appendChild(warning);
+            }
+          });
+          if (!familyLines.length) addLine('Aucun poste chiffré fourni', null, null, '—', 'Non établi', 'empty');
+          table.appendChild(tbodyDetail);
+          scroll.appendChild(table);
+          group.appendChild(scroll);
+          detailBox.appendChild(group);
+        }
+      }
+      const excluded = doc.createElement('p');
+      excluded.className = 'kmc-price-allocation-excluded';
+      excluded.textContent = 'Les charges fixes N3 sont exclues de ce coût variable unitaire. '
+        + 'Cette ventilation est une estimation ; les coûts engagés et réconciliés seront confirmés dans le flux réel.';
+      detailBox.appendChild(excluded);
       product.appendChild(detailBox);
       detail.addEventListener('click', () => {
-        detailBox.hidden = !detailBox.hidden;
-        detail.textContent = detailBox.hidden ? 'Détail du coût' : 'Masquer le détail';
+        if (typeof detailBox.showModal === 'function') detailBox.showModal();
+        else detailBox.setAttribute('open', '');
+      });
+      detailBox.addEventListener('click', event => {
+        if (event.target === detailBox && typeof detailBox.close === 'function') detailBox.close();
       });
 
       let preview = null;
