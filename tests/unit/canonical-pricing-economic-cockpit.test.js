@@ -46,6 +46,18 @@ test('Atelier économique charge la surface cockpit fidèle au mock approuvé', 
   expect(source).not.toContain('findWorkshop');
 });
 
+test('N3 marché reste distinct du plancher produit et le taux de couverture vient du serveur', () => {
+  const js = fs.readFileSync(path.join(CANONICAL, 'js', 'pricing-economic-cockpit.js'), 'utf8');
+  expect(js).toContain('dataset.n3CoverageSummary');
+  expect(js).toContain('coverage.denominator_n3_kmf');
+  expect(js).toContain('coverage.numerator_contribution_kmf');
+  expect(js).toContain('coverage.coverage_ratio');
+  expect(js).toContain('structure.market_n3_decisional === true');
+  expect(js).toContain('N3 n’entre pas dans le plancher du produit');
+  expect(js).toContain('Non décisionnelle : données ou réconciliation insuffisantes');
+  expect(js).not.toMatch(/market_n3_total_kmf\\s*[+]\\s*.*denominator_n3_kmf/);
+});
+
 test('mutualisé reste un périmètre et peut être variable ou fixe', () => {
   const source = fs.readFileSync(path.join(CANONICAL, 'js', 'pricing-economic-cockpit.js'), 'utf8');
   expect(source).toContain("economicNature(component) === 'variable'");
@@ -151,8 +163,8 @@ test('trois colonnes : un libellé, la dernière valeur, une action ou un état 
   expect(css).toContain('grid-column: 3;');
   expect(css).toContain('grid-column: auto;');
   expect(css).toContain('overflow-x: auto;');
-  expect(index).toContain('pricing-atelier-views.css?v=261031-fixed-label-1');
-  expect(index).toContain('pricing-economic-cockpit.js?v=261101-marketlabels-1');
+  expect(index).toContain('pricing-atelier-views.css?v=261111-cost-chain-1');
+  expect(index).toContain('pricing-economic-cockpit.js?v=261111-cost-chain-1');
 });
 
 test('ajustements : enregistrement automatique (prix à la validation, coûts par champ), jamais à la frappe ni vide', () => {
