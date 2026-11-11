@@ -105,6 +105,19 @@ async function buyerOrder({buyer,phone,code}){
   await page.locator('#k-order-modal.open').waitFor({state:'visible',timeout:15000});
   const confirm=page.locator('#btn-confirm-order');
   await page.waitForFunction(()=>{const e=document.getElementById('btn-confirm-order');return e&&!e.disabled},null,{timeout:16000});
+  // le relais par defaut peut differer de celui du compte agent E2E : choisir le relais de l'agent dans l'UI
+  const want=R.agent_relais_name;R.relay_default_summary=(await page.locator('#ck-relais-summary').innerText().catch(()=>'')).replace(/\s+/g,' ');
+  if(want&&!R.relay_default_summary.includes(want)){
+   const ch=page.locator('#ck-relais-section button,#ck-relais-summary button').filter({hasText:/Changer/i}).first();
+   await ch.click();await page.locator('.ck-relais-item').first().waitFor({timeout:15000}).catch(()=>{});
+   R.relay_choices=await page.locator('.ck-relais-item').allInnerTexts().then(a=>a.map(x=>x.replace(/\s+/g,' ').slice(0,80)));
+   const it=page.locator('.ck-relais-item').filter({hasText:want}).first();
+   chk(await it.count()>0,'agent_relay_offered_in_checkout',{want,choices:R.relay_choices});
+   await it.click();
+   const cta=page.locator('.ck-relais-sheet-cta');if(await cta.isVisible().catch(()=>false))await cta.click();
+   await page.waitForTimeout(800);
+   R.relay_selected_summary=(await page.locator('#ck-relais-summary').innerText().catch(()=>'')).replace(/\s+/g,' ');
+  }
   R.checkout_total_text=(await page.locator('#ck-final-total-amount').innerText()).trim();
   await page.screenshot({path:path.join(OUT,'03-checkout.png')});
   const resp=page.waitForResponse(r=>r.url().endsWith('/api/orders')&&r.request().method()==='POST',{timeout:25000});
@@ -159,6 +172,7 @@ async function relayCash(order){
   chk(process.env.KOMERCE_ENV==='staging'&&process.env.NODE_ENV==='test','env_guard');
   chk((await confirmTarget({db,env:process.env})).confirmed,'db_target');
   await version('start');
+  const [ag0]=await q('SELECT r.name FROM users u JOIN relais r ON r.id=u.relais_id WHERE lower(u.email)=lower($1)',[process.env.E2E_AGENT_RELAIS_EMAIL]);R.agent_relais_name=ag0?.name;
   const fx=await provisionBuyer();
   const order=await buyerOrder(fx);R.order={id:order.id,reference:order.reference};
   const s0=await state(order.id);R.after_order={o:s0.o,items:s0.items};
