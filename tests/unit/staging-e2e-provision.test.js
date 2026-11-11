@@ -127,8 +127,8 @@ describe('run', () => {
     expect(report.relais.DJ).toEqual({ status: 'skipped_market_inactive' });
     expect(w.relais.map((r) => r.market_id)).not.toContain('m-DJ');
     expect(w.relais).toHaveLength(4);
-    // L'agent relais appartient au marche de son relais : membership d'execution via le writer canonique, bornee receive/collect.
-    expect(w.calls.filter((c) => c.startsWith('addMembership:'))).toEqual(['addMembership:a-KM:execution.parcel.receive+execution.parcel.collect:true']);
+    // L'agent relais appartient au marche de son relais : membership d'execution via le writer canonique, receive, remise et encaissement (execution.cash.confirm).
+    expect(w.calls.filter((c) => c.startsWith('addMembership:'))).toEqual(['addMembership:a-KM:execution.parcel.receive+execution.parcel.collect+execution.cash.confirm:true']);
     const by = Object.fromEntries(report.profiles.map((p) => [p.profile, p]));
     expect(by.admin.password).toBe('not_touched');
     expect(by.market_operator.market_scope).toMatchObject({ market: 'KM', role: 'manager' });
@@ -216,5 +216,23 @@ describe('marches de recette supplementaires (CM, CG)', () => {
     for (const bad of ['YT', 'DJ', 'KM']) {
       await expect(run({ db, mode: 'dry-run', env: baseEnv({ E2E_PROVISION_EXTRA_MARKETS: bad }), deps, guard })).rejects.toMatchObject({ message: expect.stringContaining('E2E_PROVISION_EXTRA_MARKET_NOT_ALLOWED') });
     }
+  });
+});
+
+describe('ensureRelayAgentMembership : droit d\'encaissement du relais', () => {
+  const { ensureRelayAgentMembership, RELAY_AGENT_CAPABILITIES } = require('../../scripts/recette/staging-e2e-provision');
+  it('accorde execution.cash.confirm avec la limite du plafond du marché', async () => {
+    expect(RELAY_AGENT_CAPABILITIES).toEqual(['execution.parcel.receive', 'execution.parcel.collect', 'execution.cash.confirm']);
+    const client = { query: jest.fn(async () => ({ rows: [
+      { capability: 'execution.cash.confirm', limit_amount: '1000000' },
+      { capability: 'finance.act', limit_amount: '5' },
+    ] })) };
+    const addMembership = jest.fn(async () => ({}));
+    const deps = { delegation: { resolveActiveAssignmentByMarketCode: jest.fn(async () => ({ assignment_id: 'a1' })), addMembership } };
+    await ensureRelayAgentMembership(client, deps, { userId: 'u1', marketCode: 'CM', actorId: 'adm' });
+    expect(addMembership).toHaveBeenCalledWith(client, expect.objectContaining({
+      assignmentId: 'a1', userId: 'u1', capabilities: RELAY_AGENT_CAPABILITIES,
+      capabilityLimits: { 'execution.cash.confirm': 1000000 },
+    }));
   });
 });
