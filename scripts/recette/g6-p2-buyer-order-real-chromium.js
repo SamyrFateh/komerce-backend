@@ -126,7 +126,9 @@ async function browserCheckout({buyer,phone,code}){
   check((await ctx.cookies()).some(x=>x.name.endsWith('kmrc_jwt')&&x.httpOnly),'OTP_HTTPONLY_SESSION_NOT_SET');
   record('CHROMIUM_OTP_VERIFIED',{request_status:rr.status(),verify_status:vr.status(),session:true,external_notification:false});
   await page.goto(ORIGIN+'/boutique/?market=KM',{waitUntil:'domcontentloaded'});
-  await page.locator('#k-search-input').fill(REF);
+  const {rows:[actualProduct]}=await db.query('SELECT name,product_ref FROM products WHERE id=$1',[PRODUCT]);
+  check(actualProduct?.product_ref===REF&&!!actualProduct.name,'G6_PRODUCT_PROVENANCE_MISMATCH');
+  await page.locator('#k-search-input').fill(actualProduct.name);
   const item=page.locator('#k-search-dropdown .k-search-item[data-id="'+PRODUCT+'"]');
   await item.waitFor({state:'visible',timeout:25000});await item.click();
   await page.locator('#k-modal-name').waitFor({state:'visible',timeout:13000});
