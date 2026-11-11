@@ -28,6 +28,27 @@ test('automated evidence is staging-only, never a human attestation',()=>{
  expect(inspectOne(IMAGE,review,{runtime:'staging'})).toMatchObject({ready:true,execution_mode:'AUTOMATED_STAGING',human_attestation:false});
  expect(inspectOne(IMAGE,{...review,reviewed_by:'automation:github-actions:fake'},{runtime:'staging'})).toMatchObject({ready:false});
 });
+test('PostgreSQL TIMESTAMPTZ Date retains reviewed source-media proof without weakening gates', () => {
+  const reviewed_at = new Date('2026-09-20T08:00:00.000Z');
+  const automated = {
+    ...REVIEW,
+    reviewed_at,
+    reviewed_by: 'automation:github-actions:42919260151:00000000-0000-0000-0000-000000000003',
+  };
+  expect(inspectOne(IMAGE, automated, { runtime: 'staging' })).toMatchObject({
+    ready: true, execution_mode: 'AUTOMATED_STAGING', human_attestation: false,
+  });
+  expect(inspectOne(IMAGE, automated, { runtime: 'production' })).toMatchObject({
+    ready: false, reason: 'AUTOMATED_REVIEW_STAGING_ONLY',
+  });
+  expect(inspectOne(IMAGE, { ...automated, source_url: IMAGE.url + '?changed' }, { runtime: 'staging' }))
+    .toMatchObject({ ready: false, reason: 'SOURCE_IMAGE_OR_VARIANT_CHANGED' });
+  for (const invalid of [null, '', 'not-a-timestamp', new Date(NaN), Date.now(), {}]) {
+    expect(inspectOne(IMAGE, { ...REVIEW, reviewed_at: invalid }))
+      .toMatchObject({ ready: false, reason: 'REVIEWER_OR_TIMESTAMP_MISSING' });
+  }
+});
+
 test('a source image with an insecure URL can never have a valid visual proof', () => {
   expect(inspectOne({ ...IMAGE, url: 'http://example.test/image.jpg' },
     { ...REVIEW, source_url: 'http://example.test/image.jpg' }))
