@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-11-12T11:24:04.681Z",
+  "generatedAt": "2026-11-12T17:18:18.323Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 827,
-    "protected": 768,
+    "total": 828,
+    "protected": 769,
     "public": 59,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -989,6 +989,13 @@
     },
     {
       "key": "GET /api/admin/documents/{id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/documents/reconcile",
       "level": "PROTECTED",
       "roles": [
         "admin"
@@ -4568,11 +4575,6 @@
       ]
     },
     {
-      "key": "POST /api/orders/quote-pdf",
-      "level": "PUBLIC",
-      "roles": []
-    },
-    {
       "key": "POST /api/orders/preview",
       "level": "PROTECTED",
       "roles": []
@@ -4585,6 +4587,11 @@
         "agent_relais",
         "agent_hub"
       ]
+    },
+    {
+      "key": "POST /api/orders/quote-pdf",
+      "level": "PUBLIC",
+      "roles": []
     },
     {
       "key": "GET /api/orders/relais",
