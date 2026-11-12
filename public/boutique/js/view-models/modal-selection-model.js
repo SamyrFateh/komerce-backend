@@ -136,9 +136,25 @@ function unavailableMessage(detail, state, axisKey, value, optionState) {
   return `${value} indisponible${context} — ${reason}`;
 }
 
+/**
+ * À l'ouverture, seules les valeurs univoques réellement achetables peuvent
+ * être présélectionnées. L'ordre des axes ne change pas cette règle :
+ * - une couleur vendable unique est préremplie, pas une taille parmi plusieurs ;
+ * - une taille vendable unique est préremplie, pas une couleur parmi plusieurs ;
+ * - une seule combinaison vendable résout immédiatement son SKU.
+ * Aucun choix fondé sur le premier SKU, le titre ou la photo du produit.
+ */
 export function createModalSelection(detail) {
   if (!detail || detail.inventory_model !== 'SKU') return deriveLegacyState(detail);
-  return deriveSkuState(detail, {});
+  const availableUnits = detail.sellable_units.filter((unit) => unit.stock_status === 'AVAILABLE');
+  const selectedOptions = {};
+  for (const axis of detail.option_axes) {
+    const availableValues = axis.values.filter((option) =>
+      availableUnits.some((unit) => unit.option_values[axis.key] === option.value)
+    );
+    if (availableValues.length === 1) selectedOptions[axis.key] = availableValues[0].value;
+  }
+  return deriveSkuState(detail, selectedOptions);
 }
 
 export function selectModalOption(detail, state, axisKey, value) {
