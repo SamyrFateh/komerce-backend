@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 2033,
-    "edges": 10016,
+    "edges": 10020,
     "dbTables": 234,
     "doctrines": 790,
     "impactAreas": 207,
@@ -19861,6 +19861,7 @@
         "purchase_lines",
         "purchase_orders",
         "purchase_order_authorizations",
+        "supplier_execution_payments",
         "users"
       ],
       "dbWrite": [
@@ -29568,12 +29569,15 @@
         "routes/purchasing.js"
       ],
       "dbRead": [
+        "manual_purchase_executions",
         "order_items",
         "orders",
         "product_suppliers",
         "products",
         "purchase_lines",
+        "purchase_order_authorizations",
         "purchase_orders",
+        "supplier_execution_payments",
         "suppliers",
         "v_purchase_line_progress"
       ],
@@ -75739,6 +75743,12 @@
     },
     {
       "from": "services/hub-authorization-service.js",
+      "to": "db:supplier_execution_payments",
+      "type": "db-read",
+      "label": "supplier_execution_payments"
+    },
+    {
+      "from": "services/hub-authorization-service.js",
       "to": "db:users",
       "type": "db-read",
       "label": "users"
@@ -91564,6 +91574,12 @@
     },
     {
       "from": "services/purchasing-engagement-service.js",
+      "to": "db:manual_purchase_executions",
+      "type": "db-read",
+      "label": "manual_purchase_executions"
+    },
+    {
+      "from": "services/purchasing-engagement-service.js",
       "to": "db:order_items",
       "type": "db-read",
       "label": "order_items"
@@ -91594,9 +91610,21 @@
     },
     {
       "from": "services/purchasing-engagement-service.js",
+      "to": "db:purchase_order_authorizations",
+      "type": "db-read",
+      "label": "purchase_order_authorizations"
+    },
+    {
+      "from": "services/purchasing-engagement-service.js",
       "to": "db:purchase_orders",
       "type": "db-read",
       "label": "purchase_orders"
+    },
+    {
+      "from": "services/purchasing-engagement-service.js",
+      "to": "db:supplier_execution_payments",
+      "type": "db-read",
+      "label": "supplier_execution_payments"
     },
     {
       "from": "services/purchasing-engagement-service.js",
@@ -125433,6 +125461,7 @@
         "purchase_lines",
         "purchase_orders",
         "purchase_order_authorizations",
+        "supplier_execution_payments",
         "users"
       ],
       "dbWrite": [
@@ -125454,6 +125483,7 @@
         "db:purchase_lines",
         "db:purchase_order_authorizations",
         "db:purchase_orders",
+        "db:supplier_execution_payments",
         "db:users",
         "doctrine:append_only_decisions",
         "doctrine:no_implicit_power",
@@ -135193,12 +135223,15 @@
       ],
       "ownedFiles": [],
       "dbRead": [
+        "manual_purchase_executions",
         "order_items",
         "orders",
         "product_suppliers",
         "products",
         "purchase_lines",
+        "purchase_order_authorizations",
         "purchase_orders",
+        "supplier_execution_payments",
         "suppliers",
         "v_purchase_line_progress"
       ],
@@ -135222,7 +135255,9 @@
         "db:product_suppliers",
         "db:products",
         "db:purchase_lines",
+        "db:purchase_order_authorizations",
         "db:purchase_orders",
+        "db:supplier_execution_payments",
         "db:suppliers",
         "db:v_purchase_line_progress",
         "doctrine:docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md",
