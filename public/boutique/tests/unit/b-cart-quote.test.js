@@ -95,6 +95,9 @@ describe('Fais-moi un devis — sans relais ni identité', () => {
     try {
       setupCartQuote();
       await openReady();
+      expect(document.querySelector('.k-quote-logo')?.getAttribute('src')).toBe('/images/Logo_Komerce.png');
+      expect(document.querySelector('#k-quote-title')?.textContent).toBe('Devis estimatif');
+      expect(document.querySelector('.k-quote-total')?.textContent).toContain('23');
       document.querySelector('[data-quote-action="save"]').click();
       await flush();
       expect(anchorClick).toHaveBeenCalledTimes(1);
