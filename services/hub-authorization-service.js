@@ -8,8 +8,8 @@
  * @outputs       hub_authorization_grants, purchase_order_authorizations
  * @depends       db
  * @used-by       routes/purchasing.js, services/purchasing-engagement-service.js, services/supplier-payment-orchestrator.js
- * @db-read       hub_authorization_grants, purchase_lines, purchase_orders, purchase_order_authorizations, supplier_execution_payments, users
- * @db-write      hub_authorization_grants, purchase_order_authorizations
+ * @db-read       hub_authorization_grants, purchase_lines, purchase_orders, purchase_order_authorizations, supplier_execution_payments, manual_purchase_executions, purchase_variance_decisions, users
+ * @db-write      hub_authorization_grants, purchase_order_authorizations, purchase_variance_decisions
  * @db-txn        owns_transaction
  * @doctrine      two_distinct_directrice_authorizations, no_implicit_power, append_only_decisions
  * @impact-areas  purchasing, finance
@@ -141,6 +141,53 @@ async function assertCommitmentAuthorized(client, purchaseOrderId) {
   if (!rows.length) fail(409, 'PURCHASE_COMMITMENT_NOT_AUTHORIZED', 'Engagement d\'achat non validé par la directrice : la PO ne peut pas être soumise');
 }
 
+/**
+ * Décision d'écart indépendante de l'autorisation initiale du paiement.
+ * Le détenteur du grant supplier_payment approuve un plafond exceptionnel documenté
+ * dans la devise de la PO ; aucune mutation de l'autorisation ou des preuves vendeur.
+ */
+async function decideVariance({ purchaseOrderId, actor, body = {} }, database = db) {
+  if (typeof purchaseOrderId !== 'string' || !UUID.test(purchaseOrderId)) fail(400, 'PURCHASE_ORDER_INVALID', 'po_id invalide');
+  if (!actor || !actor.id) fail(403, 'AUTHORIZATION_GRANT_REQUIRED', 'Authentification requise');
+  const currency = String(body.currency || '').trim().toUpperCase();
+  const amount = Number(body.approved_total);
+  const reason = typeof body.reason === 'string' ? body.reason.trim() : '';
+  const proofRef = typeof body.proof_ref === 'string' ? body.proof_ref.trim() : '';
+  if (!/^[A-Z]{3}$/.test(currency) || !Number.isFinite(amount) || !(amount > 0))
+    fail(400, 'PURCHASE_VARIANCE_AMOUNT_INVALID', 'Montant total approuvé et devise requis');
+  if (reason.length < 5 || !proofRef || proofRef.length > 240)
+    fail(400, 'PURCHASE_VARIANCE_PROOF_REQUIRED', 'Motif précis et justificatif obligatoires');
+  return database.withTransaction(async (client) => {
+    const { rows: [po] } = await client.query('SELECT id FROM purchase_orders WHERE id=$1 FOR UPDATE', [purchaseOrderId]);
+    if (!po) fail(404, 'PURCHASE_ORDER_NOT_FOUND', 'PO introuvable');
+    if (!(await hasGrant(client, actor.id, 'supplier_payment')))
+      fail(403, 'AUTHORIZATION_GRANT_REQUIRED', 'Délégation paiement fournisseur requise');
+    const { rows: [authorization] } = await client.query(
+      "SELECT amount, currency FROM purchase_order_authorizations WHERE purchase_order_id=$1 AND authorization_type='supplier_payment'",
+      [purchaseOrderId]);
+    if (!authorization || authorization.currency !== currency || amount > Number(authorization.amount) + 0.0001)
+      fail(409, 'SUPPLIER_PAYMENT_EXCEEDS_AUTHORIZATION', 'Décision d’écart supérieure à l’autorisation de paiement');
+    const { rows: [justified] } = await client.query(
+      'SELECT COUNT(*)::int AS entries, COALESCE(SUM(amount),0) AS total FROM manual_purchase_executions WHERE purchase_order_id=$1 AND currency=$2',
+      [purchaseOrderId, currency]);
+    if (!justified || Number(justified.entries) < 1 || amount <= Number(justified.total) + 0.0001)
+      fail(409, 'PURCHASE_VARIANCE_NOT_REQUIRED', 'Écart vendeur inexistant ou non justifié');
+    const { rows: [existing] } = await client.query(
+      'SELECT * FROM purchase_variance_decisions WHERE purchase_order_id=$1 AND currency=$2', [purchaseOrderId, currency]);
+    if (existing) {
+      if (Number(existing.approved_total) === amount && existing.reason === reason && existing.proof_ref === proofRef)
+        return { ...existing, idempotent_replay: true };
+      fail(409, 'PURCHASE_VARIANCE_ALREADY_DECIDED', 'Décision existante immuable : une nouvelle révision requiert un dossier distinct');
+    }
+    const { rows: [decision] } = await client.query(
+      `INSERT INTO purchase_variance_decisions
+         (purchase_order_id,currency,approved_total,reason,proof_ref,decided_by)
+       VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
+      [purchaseOrderId, currency, amount, reason, proofRef, actor.id]);
+    return decision;
+  });
+}
+
 /** Garde d'écriture : un paiement fournisseur suppose l'autorisation de paiement, dans la devise et le plafond autorisés. */
 async function assertPaymentAuthorized(client, purchaseOrderId, expectedAmount, currency, { excludePaymentKey = null } = {}) {
   const { rows: [auth] } = await client.query(
@@ -154,9 +201,30 @@ async function assertPaymentAuthorized(client, purchaseOrderId, expectedAmount, 
     `SELECT COALESCE(SUM(expected_amount), 0) AS total FROM supplier_execution_payments
       WHERE purchase_order_id = $1 AND currency = $2 AND status IN ('prepared','requested','succeeded','ambiguous')
         AND ($3::text IS NULL OR payment_execution_key <> $3)`, [purchaseOrderId, auth.currency, excludePaymentKey]);
-  if (Number(prior.total) + Number(expectedAmount) > Number(auth.amount) + 0.0001) {
+  const cumulative = Number(prior.total) + Number(expectedAmount);
+  if (cumulative > Number(auth.amount) + 0.0001) {
     fail(409, 'SUPPLIER_PAYMENT_EXCEEDS_AUTHORIZATION', 'Le cumul des paiements dépasse le plafond autorisé');
+  }
+  // Ne pas confondre le plafond de la directrice avec les sommes justifiées
+  // par vendeurs réels. Si achat manuel tracé, toute dépense excédentaire
+  // exige une décision d'écart distincte append-only (migration 407).
+  const { rows: [justified] } = await client.query(
+    `SELECT COUNT(*)::int AS entries,
+            COUNT(*) FILTER (WHERE currency <> $2) AS wrong_currency,
+            COALESCE(SUM(amount) FILTER (WHERE currency = $2),0) AS total
+       FROM manual_purchase_executions WHERE purchase_order_id=$1`,
+    [purchaseOrderId, auth.currency]);
+  if (Number(justified?.entries || 0) > 0) {
+    if (Number(justified.wrong_currency) > 0)
+      fail(409, 'SUPPLIER_PAYMENT_JUSTIFICATION_CURRENCY_MISMATCH', 'Devise des achats réels différente de l’autorisation');
+    if (cumulative > Number(justified.total) + 0.0001) {
+      const { rows: [decision] } = await client.query(
+        'SELECT approved_total FROM purchase_variance_decisions WHERE purchase_order_id=$1 AND currency=$2',
+        [purchaseOrderId, auth.currency]);
+      if (!decision || cumulative > Number(decision.approved_total) + 0.0001)
+        fail(409, 'SUPPLIER_PAYMENT_EXCEEDS_JUSTIFIED_TOTAL', 'Le cumul payé dépasse les achats vendeur justifiés sans décision d’écart autorisée');
+    }
   }
 }
 
-module.exports = { TYPES, HubAuthorizationError, grant, revoke, listGrants, hasGrant, decide, assertCommitmentAuthorized, assertPaymentAuthorized };
+module.exports = { TYPES, HubAuthorizationError, grant, revoke, listGrants, hasGrant, decide, decideVariance, assertCommitmentAuthorized, assertPaymentAuthorized };
