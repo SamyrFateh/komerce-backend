@@ -31,7 +31,7 @@ jobs:
       - name: Require real deployed staging containing P0 #3901 merge
         env:
           ORIGIN: https://komerce-backend-production.up.railway.app
-          MINIMUM_SHA: e3e85ec771957697293c77a16e6f4d32fd912a2e
+          MINIMUM_SHA: d8d8ddc37aa5e119a328c9aaefe1d394cc363dc0 # P0 pickup #3902 deployed
         run: |
           set -euo pipefail
           curl -fsS --retry 3 --retry-delay 2 "$ORIGIN/health/version" > /tmp/staging-version.json
