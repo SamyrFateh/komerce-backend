@@ -1301,6 +1301,7 @@ function _openRelaisPicker(od, byIle, allIles, onDone) {
       const sel = relOf(); if (!sel) return;
       od.fulfillment_zone   = draft.zone;
       od.selectedIsland     = draft.zone === 'france' ? 'France' : draft.island;
+      if (String(od.selectedRelaisId) !== String(sel.id)) _invalidateCheckoutPaymentAttempt();
       od.selectedRelaisId   = sel.id;
       od.selectedRelaisName = sel.name || sel.nom || '';
       close();
@@ -2271,12 +2272,14 @@ export function renderCheckout() {
     /**
  * Met à jour le récapitulatif paiement en checkout.
  */
-  function updatePaymentUI() {
+  function updatePaymentUI({ userInitiated = false } = {}) {
       const mode = document.querySelector('input[name="payment_mode"]:checked');
       const isStripe = mode && mode.value === 'stripe_eur';
       const isPaypal = mode && mode.value === 'paypal_eur';
       const isMobileMoney = mode && mode.value === 'mobile_money';
-      od.payment_mode = mode ? mode.value : 'cash_relais';
+      const nextPaymentMode = mode ? mode.value : 'cash_relais';
+      if (userInitiated && od.payment_mode && od.payment_mode !== nextPaymentMode) _invalidateCheckoutPaymentAttempt();
+      od.payment_mode = nextPaymentMode;
 
       // Le titre de section est statique (règle §4) — plus de re-rendu ici.
       // Le moyen sélectionné reste visible via la classe --active sur les
@@ -2357,13 +2360,17 @@ export function renderCheckout() {
       refreshCheckoutComputedUI();
     }
 
-    payGrid.addEventListener('change', updatePaymentUI);
+    payGrid.addEventListener('change', () => updatePaymentUI({ userInitiated: true }));
     updatePaymentUI(); // init état chip cash
     refreshCheckoutComputedUI();
 
     setTimeout(() => {
       const cb = document.getElementById('cb-use-wallet');
-      if (cb) cb.addEventListener('change', function() { od.use_wallet = this.checked; updateWalletDisplay(); });
+      if (cb) cb.addEventListener('change', function() {
+        if (Boolean(od.use_wallet) !== this.checked) _invalidateCheckoutPaymentAttempt();
+        od.use_wallet = this.checked;
+        updateWalletDisplay();
+      });
     }, 0);
 
     confirmBtn.addEventListener('click', () => submitOrder(confirmBtn));
@@ -2535,6 +2542,16 @@ export async function submitOrder(btn) {
     return;
   }
 
+  // Le dernier total présenté doit venir du preview canonique, jamais du panier local.
+  // Sans devis vérifié, aucun acte engageant ne doit être envoyé.
+  const acceptedQuote = _checkoutPayable();
+  if (!acceptedQuote.ready || !Number.isSafeInteger(acceptedQuote.total)) {
+    showToast('Actualisez le récapitulatif du prix avant de confirmer.', 'error');
+    _refreshCheckoutServerQuote(od);
+    return;
+  }
+  const acceptedTotalKmf = acceptedQuote.total;
+
   const isMobileMoney = od.payment_mode === 'mobile_money';
   const mobileMoneyAvailability = od.mobileMoneyAvailability || null;
   const mobileMoneyMsisdn = String(document.getElementById('mobile-money-msisdn')?.value || '').trim();
@@ -2597,7 +2614,8 @@ export async function submitOrder(btn) {
           items, relais_id: od.selectedRelaisId || undefined,
           payment_mode: od.payment_mode, use_wallet: od.use_wallet || false,
           tracking_phone: trackingPhone || undefined,
-          pickup_code_recipient: pickupCodeRecipient
+          pickup_code_recipient: pickupCodeRecipient,
+          expected_total_kmf: acceptedTotalKmf
           // L5 / P0-4 (mandat §8) — share_token retiré : un checkout
           // PERSONAL_CART ne doit porter aucune donnée de liste partagée.
           // state.shareToken peut être alimenté par une liste reçue affichée
@@ -2615,7 +2633,8 @@ export async function submitOrder(btn) {
 items, relais_id: od.selectedRelaisId || undefined,
 payment_mode: 'mobile_money', use_wallet: od.use_wallet || false,
 tracking_phone: trackingPhone || undefined,
-pickup_code_recipient: pickupCodeRecipient
+pickup_code_recipient: pickupCodeRecipient,
+expected_total_kmf: acceptedTotalKmf
         }, { idempotencyKey: state.mobileMoneyAttemptKey });
         orderData = apiResult.order || apiResult;
         state.pendingMobileMoneyOrderRef = orderData.reference;
@@ -2624,13 +2643,15 @@ pickup_code_recipient: pickupCodeRecipient
         orderData = state.lastApiResult?.order || { reference: state.pendingMobileMoneyOrderRef };
       }
     } else {
+      if (!state.checkoutAttemptKey) state.checkoutAttemptKey = genIdempotencyKey();
       apiResult = await apiPost('/api/orders', {
         items, relais_id: od.selectedRelaisId || undefined,
         payment_mode: od.payment_mode, use_wallet: od.use_wallet || false,
         tracking_phone: trackingPhone || undefined,
-        pickup_code_recipient: pickupCodeRecipient
+        pickup_code_recipient: pickupCodeRecipient,
+        expected_total_kmf: acceptedTotalKmf
         // L5 / P0-4 (mandat §8) — share_token retiré, cf. commentaire ci-dessus.
-      });
+      }, { idempotencyKey: state.checkoutAttemptKey });
       orderData = apiResult.order || apiResult;
     }
 
@@ -2684,12 +2705,22 @@ pickup_code_recipient: pickupCodeRecipient
     }
 
     _clearCommittedCheckoutSource();
+    state.checkoutAttemptKey = null;
     renderOrderSuccess(orderData, recipName, clientEmail, apiResult || orderData);
     showToast('Commande confirmée !', 'success');
     btn.dataset.busy = '0';
   } catch (e) {
     console.error('submitOrder:', e);
-    showToast(e.message || 'Erreur lors de la commande.', 'error');
+    if (e.code === 'price_changed' || e.code === 'price_confirmation_required') {
+      // Aucune validation silencieuse du nouveau prix : mettre à jour le
+      // récapitulatif, conserver le panier et attendre un DEUXIÈME clic explicite.
+      od.serverQuote = null;
+      _invalidateCheckoutPaymentAttempt();
+      _refreshCheckoutServerQuote(od);
+      showToast('Le prix a changé. Vérifiez le nouveau total, puis confirmez à nouveau.', 'error');
+    } else {
+      showToast(e.message || 'Erreur lors de la commande.', 'error');
+    }
     // Correctif V2-B.1 §5 — signal générique d'échec de commande. Le
     // checkout ne connaît jamais la liste (doctrine group-checkout-
     // adapter.js) : on émet ici un code d'erreur neutre, à charge du
@@ -2824,17 +2855,24 @@ async function _createKomerceOrderForPayPal() {
     shared_cart_item_id: i.shared_cart_item_id ?? undefined,
   }));
 
+  const paypalQuote = _checkoutPayable();
+  if (!paypalQuote.ready || !Number.isSafeInteger(paypalQuote.total)) {
+    _refreshCheckoutServerQuote(od);
+    throw new Error('Actualisez le récapitulatif du prix avant de poursuivre sur PayPal.');
+  }
+  if (!state.checkoutAttemptKey) state.checkoutAttemptKey = genIdempotencyKey();
   const apiResult = await apiPost('/api/orders', {
     items,
     relais_id:        od.selectedRelaisId,
     payment_mode:     'paypal_eur',
     use_wallet:       od.use_wallet || false,
+    expected_total_kmf: paypalQuote.total,
     tracking_phone:   trackingPhone,
     pickup_code_recipient: state.checkoutDisplayContext?.origin === 'SHARED_LIST'
       ? (od.pickupCodeRecipient === 'organizer' ? 'organizer' : 'buyer')
       : undefined,
     // L5 / P0-4 (mandat §8) — share_token retiré, cf. commentaire plus haut.
-  }, { idempotencyKey: genIdempotencyKey() });
+  }, { idempotencyKey: state.checkoutAttemptKey });
 
   const order = apiResult.order || apiResult;
   state.pendingPaypalOrderRef = order.reference;
@@ -2854,5 +2892,6 @@ function _onPayPalSuccess(captureRes) {
   const orderData = state.lastApiResult?.order || { reference: orderRef };
   _clearCommittedCheckoutSource();
   state.pendingPaypalOrderRef = null;
+  state.checkoutAttemptKey = null;
   renderOrderSuccess(orderData, recipName, undefined, state.lastApiResult || orderData);
 }

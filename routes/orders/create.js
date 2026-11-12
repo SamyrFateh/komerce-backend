@@ -103,7 +103,7 @@ router.post('/preview', authenticateOrCreateGuest, validate(orderCreateSchema), 
 router.post('/', authenticateOrCreateGuest, validate(orderCreateSchema), async (req, res, next) => {
   let result;
   try {
-    result = await runOrderCheckout({ user: req.user, body: req.body });
+    result = await runOrderCheckout({ user: req.user, body: req.body, idempotencyKey: req.get('Idempotency-Key') || null });
   } catch (err) {
     return next(err);
   }
@@ -116,9 +116,10 @@ router.post('/', authenticateOrCreateGuest, validate(orderCreateSchema), async (
 
   // Régression 2026-09 : une liste entièrement réclamée restait OPEN et
   // continuait à proposer « Clôturer la liste » malgré 4/4 achetés / reste 0.
-  await closeCompletedSharedCartForOrderItems(req.body.items, order.id);
+  if (!result.replayed) await closeCompletedSharedCartForOrderItems(req.body.items, order.id);
 
-  return res.status(201).json({
+  return res.status(result.replayed ? 200 : 201).json({
+    replayed: Boolean(result.replayed),
     discount_pct: order.discount_pct || 0,
     discount_kmf: order.discount_kmf || 0,
     loyalty_label: order.loyalty_label || null,

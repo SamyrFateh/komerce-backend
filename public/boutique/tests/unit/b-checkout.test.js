@@ -188,6 +188,13 @@ function setCheckoutTotal(total) {
   };
 }
 
+// Les tests de paiement simulent un devis serveur accepté, non un total local.
+function setConfirmedCheckoutQuote(total = 20000) {
+  const od = state.orderData;
+  const items = od.checkoutSelection?.items || buildCheckoutSelection().items;
+  od.serverQuote = { key: checkoutQuoteKey(od.selectedRelaisId, items), total_kmf: total, error: null };
+}
+
 function resetDom() {
   document.body.innerHTML = '';
   dom.orderModal = document.createElement('div');
@@ -642,6 +649,7 @@ describe('b-checkout', () => {
 
       const btn = document.createElement('button');
 
+      setConfirmedCheckoutQuote();
       await submitOrder(btn);
 
       expect(showToast).toHaveBeenCalledWith(
@@ -811,6 +819,7 @@ describe('b-checkout', () => {
       const btn = document.createElement('button');
       btn.dataset.busy = '1';
 
+      setConfirmedCheckoutQuote();
       await submitOrder(btn);
 
       expect(requireIdentity).toHaveBeenCalled();
@@ -823,6 +832,7 @@ describe('b-checkout', () => {
       state.cart = [{ product: { id: 1 }, qty: 1 }];
       const btn = document.createElement('button');
 
+      setConfirmedCheckoutQuote();
       await submitOrder(btn);
 
       expect(apiPost).not.toHaveBeenCalled();
@@ -840,16 +850,18 @@ describe('b-checkout', () => {
       apiPost.mockResolvedValue({ order: { reference: 'CMD-001', id: 55 } });
 
       const btn = document.createElement('button');
+      setConfirmedCheckoutQuote();
       await submitOrder(btn);
 
       // Lot 3 : plus de recipient_name/recipient_phone envoyés — l'identité de
       // retrait est déduite côté backend depuis le compte OTP (tracking_phone).
       expect(apiPost).toHaveBeenCalledWith('/api/orders', expect.objectContaining({
+        expected_total_kmf: 20000,
         items: [{ product_id: '1', quantity: 2, confection_type: 'aucun', variant_combo: null, requested_transport_rail: null }],
         relais_id: 7,
         payment_mode: 'cash_relais',
         tracking_phone: '+269123456',
-      }));
+      }), expect.objectContaining({ idempotencyKey: 'idem-key-1' }));
       const sentPayload = apiPost.mock.calls[0][1];
       expect(sentPayload).not.toHaveProperty('recipient_name');
       expect(sentPayload).not.toHaveProperty('recipient_phone');
@@ -884,6 +896,7 @@ describe('b-checkout', () => {
       apiPost.mockResolvedValue({ order: { reference: 'CMD-002', id: 56 } });
 
       const btn = document.createElement('button');
+      setConfirmedCheckoutQuote();
       await submitOrder(btn);
 
       const payload = apiPost.mock.calls[0][1];
@@ -901,6 +914,7 @@ describe('b-checkout', () => {
 
       const btn = document.createElement('button');
       btn.disabled = true;
+      setConfirmedCheckoutQuote();
       await submitOrder(btn);
 
       expect(showToast).toHaveBeenCalledWith('Relais complet', 'error');
@@ -922,6 +936,7 @@ describe('b-checkout', () => {
       bus.on('checkout:order-failed', onOrderFailed);
 
       const btn = document.createElement('button');
+      setConfirmedCheckoutQuote();
       await submitOrder(btn);
 
       expect(onOrderFailed).toHaveBeenCalledWith({ code: 'shared_cart_item_already_claimed', status: 409 });
@@ -952,6 +967,7 @@ describe('b-checkout', () => {
       window.Stripe = function StripeStub() { return {}; };
 
       const btn = document.createElement('button');
+      setConfirmedCheckoutQuote();
       await submitOrder(btn);
 
       window.Stripe = originalStripe;
@@ -1856,6 +1872,7 @@ describe('b-checkout', () => {
       apiPost.mockResolvedValueOnce({ order: { reference: 'CMD-PP-001', id: 99 } });
       const { prepareKomerceOrder } = await activatePaypalAndGetCallbacks();
 
+      setConfirmedCheckoutQuote();
       const result = await prepareKomerceOrder();
 
       expect(apiPost).toHaveBeenCalledWith('/api/orders', expect.objectContaining({
@@ -1874,9 +1891,11 @@ describe('b-checkout', () => {
     });
 
     it('prepareKomerceOrder : idempotence — une ref pending existante est réutilisée sans nouvel appel API', async () => {
-      state.pendingPaypalOrderRef = 'CMD-PP-EXISTING';
       state.cart = [];
       const { prepareKomerceOrder } = await activatePaypalAndGetCallbacks();
+      // La référence ne peut être réutilisée que dans la MÊME intention PayPal.
+      // Un véritable changement de moyen de paiement l'invalide volontairement.
+      state.pendingPaypalOrderRef = 'CMD-PP-EXISTING';
 
       const result = await prepareKomerceOrder();
 
