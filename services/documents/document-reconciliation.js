@@ -8,7 +8,7 @@
  * @outputs       reconciliation_report, transaction_documents (via services d'émission existants)
  * @depends       db.js, services/invoice-service.js, services/documents/pickup-proof.js, services/documents/refund-receipt.js
  * @used-by       routes/admin/documents.js
- * @db-read       orders, invoices, refunds, transaction_documents
+ * @db-read       orders, scans, invoices, refunds, transaction_documents
  * @db-write      none
  * @db-write-via:invoice-service invoices
  * @db-write-via:pickup-proof transaction_documents
@@ -48,16 +48,19 @@ const DETECTORS = {
            LIMIT $1`,
     issue: (row) => invoiceService.issueInvoice(row.order_id),
   },
-  // Commande remise (collected) sans preuve de retrait.
+  // Chaque geste confirmé de remise (y compris partiel) doit avoir sa preuve propre.
+  // Une ancienne preuve par commande ne remplace pas une preuve ancrée sur scans.id.
   pickup_proof: {
-    sql: `SELECT o.id AS subject_id, o.id AS order_id
-            FROM orders o
-           WHERE o.status = 'collected'
+    sql: `SELECT s.id AS subject_id, s.order_id
+            FROM scans s
+           WHERE s.step = 'collected'
              AND NOT EXISTS (SELECT 1 FROM transaction_documents td
-                              WHERE td.order_id = o.id AND td.document_type = 'pickup_proof')
-           ORDER BY o.created_at
+                              WHERE td.document_type = 'pickup_proof'
+                                AND td.subject_type = 'pickup_handoff'
+                                AND td.subject_id = s.id)
+           ORDER BY s.created_at, s.id
            LIMIT $1`,
-    issue: (row, opts) => pickupProof.issue(row.order_id, { issuedBy: opts.issuedBy }),
+    issue: (row, opts) => pickupProof.issueForHandoff(row.subject_id, { issuedBy: opts.issuedBy }),
   },
   // Remboursement confirmé (dont ligne) sans reçu.
   refund_receipt: {
