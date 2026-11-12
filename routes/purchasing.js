@@ -201,6 +201,14 @@ router.post('/po/:po_id/authorize-payment', ...groupedGuard, async (req, res, ne
   } catch (err) { groupedError(err, res, next); }
 });
 
+// L5 — décision séparée, append-only, du plafond d'écart vendeur/paiement.
+router.post('/po/:po_id/variance-decision', ...groupedGuard, async (req, res, next) => {
+  try {
+    const out = await hubAuth.decideVariance({ purchaseOrderId: req.params.po_id, actor: req.user, body: req.body || {} });
+    res.status(out.idempotent_replay ? 200 : 201).json(out);
+  } catch (err) { groupedError(err, res, next); }
+});
+
 router.post('/lines', ...groupedGuard, async (req, res, next) => {
   try { res.status(201).json(await engagement.createManualLine(req.body || {}, { actor: req.user })); } catch (err) { groupedError(err, res, next); }
 });
