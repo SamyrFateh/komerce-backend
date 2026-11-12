@@ -255,14 +255,15 @@ export function setupCartQuote() {
                 savePdf(pdf);
               }
             } else {
+              // Partage natif indisponible : téléchargement du PDF comme repli.
               savePdf(pdf);
-              status.textContent = 'PDF enregistré : partage-le depuis ton téléphone.';
-              return;
             }
           } else {
             savePdf(pdf);
           }
-          status.textContent = 'Devis PDF prêt.';
+          // Un partage validé ou un téléchargement lancé termine le devis.
+          // Une annulation AbortError et toute erreur gardent la fenêtre ouverte.
+          close();
         } catch (error) {
           status.textContent = error?.message || 'Téléchargement impossible.';
         } finally {
