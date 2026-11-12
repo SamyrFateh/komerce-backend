@@ -7,9 +7,10 @@
  * @inputs        orderId (commande en statut 'collected')
  * @outputs       transaction_documents row (pickup_proof)
  * @depends       services/documents/document-service.js, db.js
- * @used-by       services/verify-qr-collection.js (post-commit),
+ * @used-by       services/pickup-collection-service.js, services/pickup-exceptional-collection-service.js (post-commit, par scan),
+ *                services/verify-qr-collection.js (post-commit),
  *                routes/orders/status.js (post-commit, transition collected)
- * @db-read       orders, recipients, relais, users
+ * @db-read       orders, recipients, relais, users, scans, parcels, parcel_items, order_items
  * @db-write      transaction_documents
  * @db-txn        caller_transaction_optional
  * @doctrine      DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md
@@ -174,4 +175,101 @@ function buildDisplayData(doc) {
   };
 }
 
-module.exports = { issue, buildDisplayData };
+// ── Preuve par geste réel de remise (#3927 trou 2, décision A5) ─────────────
+// Ancrée sur scans.id : un colis remis = un geste = une preuve, y compris collecte partielle et retry.
+// Idempotence : (document_type, subject_type, subject_id) = ('pickup_proof', 'pickup_handoff', scans.id).
+const HANDOFF_SUBJECT = 'pickup_handoff';
+const HANDOFF_MODES = Object.freeze({ PICKUP_CODE: 'code', AUTHORIZED_NAME_ID_CHECK: 'exceptional' });
+
+async function issueForHandoff(scanId, { dbClient, issuedBy } = {}) {
+  if (!scanId) throw new Error('[pickup-proof] scanId requis');
+  const db = dbClient || pool;
+
+  const existing = await documentService.findExistingDocument({
+    documentType: 'pickup_proof', subjectType: HANDOFF_SUBJECT, subjectId: scanId, dbClient: db,
+  });
+  if (existing) return existing;
+
+  const { rows: [scan] } = await db.query(
+    `SELECT s.id, s.order_id, s.step, s.parcel_id, s.pickup_method, s.scanned_by, s.created_at,
+            o.reference AS order_reference, o.user_id AS owner_user_id, o.relais_id AS order_relais_id,
+            p.reference AS parcel_reference,
+            r.name AS relais_name,
+            a.full_name AS agent_name,
+            rc.full_name AS recipient_name
+     FROM   scans s
+     JOIN   orders o ON o.id = s.order_id
+     LEFT JOIN parcels p ON p.id = s.parcel_id
+     LEFT JOIN relais r ON r.id = COALESCE(s.pickup_relais_id, o.relais_id)
+     LEFT JOIN users a ON a.id = s.scanned_by
+     LEFT JOIN recipients rc ON rc.id = o.recipient_id
+     WHERE  s.id = $1`,
+    [scanId]
+  );
+  if (!scan) throw new Error(`[pickup-proof] Scan ${scanId} introuvable`);
+  if (scan.step !== 'collected') {
+    throw new Error(`[pickup-proof] Le scan ${scanId} n'est pas une remise (step: ${scan.step})`);
+  }
+
+  // Articles réellement remis : parcel_items du colis du scan ; commande historique sans colis : lignes de la commande.
+  const { rows: items } = scan.parcel_id
+    ? await db.query(
+      `SELECT pi.order_item_id, oi.product_id, oi.sku_id, oi.variant_combo, pi.quantity
+       FROM parcel_items pi JOIN order_items oi ON oi.id = pi.order_item_id
+       WHERE pi.parcel_id = $1 ORDER BY pi.created_at, pi.id`,
+      [scan.parcel_id]
+    )
+    : await db.query(
+      `SELECT oi.id AS order_item_id, oi.product_id, oi.sku_id, oi.variant_combo, oi.quantity
+       FROM order_items oi WHERE oi.order_id = $1 ORDER BY oi.created_at, oi.id`,
+      [scan.order_id]
+    );
+
+  const reference = await _generateReference(db);
+  const metadata = {
+    scan_id:          scan.id,
+    order_id:         scan.order_id,
+    order_reference:  scan.order_reference,
+    parcel_id:        scan.parcel_id || null,
+    parcel_reference: scan.parcel_reference || null,
+    items: items.map(i => ({
+      order_item_id: i.order_item_id, product_id: i.product_id, sku_id: i.sku_id || null,
+      variant_combo: i.variant_combo || null, quantity: i.quantity,
+    })),
+    relais_id:        scan.order_relais_id || null,
+    relais_name:      scan.relais_name || null,
+    agent_id:         scan.scanned_by || null,
+    agent_name:       scan.agent_name || null,
+    mode:             HANDOFF_MODES[scan.pickup_method] || 'legacy',
+    recipient_name:   scan.recipient_name || null,
+    collected_at:     scan.created_at instanceof Date ? scan.created_at.toISOString() : scan.created_at,
+  };
+
+  const doc = await documentService.persistDocument({
+    documentType: 'pickup_proof',
+    subjectType:  HANDOFF_SUBJECT,
+    subjectId:    scan.id,
+    orderId:      scan.order_id,
+    reference,
+    issuedBy:     issuedBy || scan.scanned_by || null,
+    ownerUserId:  scan.owner_user_id,
+    metadata,
+    dbClient:     db,
+  });
+  log.info({ reference, scan_id: scan.id, order_id: scan.order_id }, '[pickup-proof] Preuve de remise émise');
+  return doc;
+}
+
+// Anciens chemins (QR, transition manuelle collected) : même ancrage, sur le dernier scan de remise de la commande.
+async function issueForLatestHandoff(orderId, { dbClient, issuedBy } = {}) {
+  if (!orderId) throw new Error('[pickup-proof] orderId requis');
+  const db = dbClient || pool;
+  const { rows: [scan] } = await db.query(
+    "SELECT id FROM scans WHERE order_id = $1 AND step = 'collected' ORDER BY created_at DESC, id DESC LIMIT 1",
+    [orderId]
+  );
+  if (!scan) throw new Error(`[pickup-proof] Aucun scan de remise pour la commande ${orderId}`);
+  return issueForHandoff(scan.id, { dbClient, issuedBy });
+}
+
+module.exports = { issue, issueForHandoff, issueForLatestHandoff, buildDisplayData };

@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db.js, services/order-status-machine.js, services/pickup-code-helpers.js, services/pickup-collection-recorder.js, utils/alerts.js
+ * @depends       db.js, services/order-status-machine.js, services/pickup-code-helpers.js, services/pickup-collection-recorder.js, services/documents/pickup-proof.js, utils/alerts.js
  * @used-by       services/pickup-secret-service.js, services/scan-operations.js, services/pickup-exceptional-collection-service.js
  * @db-read       orders, relais, users
  * @db-write      alerts, pickup_print_tokens, pickup_reveal_codes, scans
@@ -82,6 +82,7 @@ const {
   recordCanonicalCollection: _recordCanonicalCollection,
   mapCanonicalCollectionError: _mapCanonicalCollectionError,
 } = require('./pickup-collection-recorder');
+const pickupProof = require('./documents/pickup-proof');
 const log = require('../utils/logger').child({ module: 'pickup-collection-service' });
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -280,8 +281,9 @@ async function collectByPickupCode({
   const agentId = user?.id || null;
   const role    = user?.role || null;
 
+  let handoffScanId = null;
   try {
-    return await db.withTransaction(async (client) => {
+    const outcome = await db.withTransaction(async (client) => {
     // FOR UPDATE dès la résolution : élimine la fenêtre check-then-act entre
     // la lecture de la commande candidate et sa remise (même doctrine que
     // collectOrder ci-dessus). last4 restreint le candidate set ; la
@@ -378,6 +380,7 @@ async function collectByPickupCode({
       pickupMethod: 'PICKUP_CODE',
       notes,
     });
+    handoffScanId = collection.scanId;
 
     if (collectedByName !== null && collectedByName !== undefined) {
       await setCollectedByName(client, {
@@ -404,6 +407,12 @@ async function collectByPickupCode({
       collected_at: collection.collectedAt.toISOString(),
     }};
     });
+    // Preuve de remise post-commit (une par geste, ancrée sur scans.id) : non bloquant, rattrapable par rejeu.
+    if (handoffScanId) {
+      pickupProof.issueForHandoff(handoffScanId, { issuedBy: agentId })
+        .catch(err => log.warn({ err, scan_id: handoffScanId }, '[PICKUP-SECRET] émission preuve de remise échouée (non-fatal)'));
+    }
+    return outcome;
   } catch (err) {
     const mapped = _mapCanonicalCollectionError(err);
     if (mapped) return mapped;
