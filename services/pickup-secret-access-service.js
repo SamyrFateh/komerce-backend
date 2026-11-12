@@ -64,8 +64,8 @@ const log = require('../utils/logger').child({ module: 'pickup-secret-service' }
 // Persiste le code clair dans pickup_reveal_codes (TTL 30 min).
 // Remplace la Map REVEAL_CACHE in-memory (SEC-1 / migration 070).
 
-async function cacheCodeForReveal(orderId, code) {
-  await db.query(
+async function cacheCodeForReveal(orderId, code, dbClient = db) {
+  await dbClient.query(
     `INSERT INTO pickup_reveal_codes (order_id, code, expires_at)
      VALUES ($1, $2, NOW() + INTERVAL '30 minutes')
      ON CONFLICT (order_id) DO UPDATE

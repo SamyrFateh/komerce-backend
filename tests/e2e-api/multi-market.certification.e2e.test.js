@@ -301,15 +301,18 @@ describeE2E('CERTIFICATION multi-marché KM/CM/CG/DJ', ({ db }) => {
   });
 
   // ── Wallet : KMF uniquement, refus explicite hors KMF ─────────────────────────────────────────────────────
-  it('wallet — le remboursement sur wallet (KMF) d’une commande d’un marché non-KMF est refusé (409), jamais converti', async () => {
+  it('wallet — le remboursement wallet d’une commande d’un marché non-KMF est crédité dans la devise du marché (XAF), jamais en KMF', async () => {
     const { processRefund } = require('../../services/refund-service');
     const client = await db.connect();
     try {
       await client.query('BEGIN');
       const { rows: [order] } = await client.query('SELECT * FROM orders WHERE id=$1', [ctx.CM.orderId]);
       const walletOrder = { ...order, payment_mode: 'cash_relais', stripe_payment_id: null };
-      await expect(processRefund(client, walletOrder, 100, 0.15, 'cancel', 'e2e-certif', null))
-        .rejects.toMatchObject({ code: 'REFUND_WALLET_CURRENCY_UNSUPPORTED', statusCode: 409 });
+      const out = await processRefund(client, walletOrder, 100, 0.15, 'cancel', 'e2e-certif', null);
+      expect(out.method).toBe('wallet_credit');
+      const { rows: [w] } = await client.query(
+        'SELECT w.currency FROM wallet_transactions wt JOIN wallets w ON w.id = wt.wallet_id WHERE wt.id = $1', [out.walletTxId]);
+      expect(w.currency).toBe('XAF');
     } finally {
       await client.query('ROLLBACK');
       client.release();

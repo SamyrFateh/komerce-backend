@@ -6,10 +6,11 @@
  * @criticality   critical
  * @inputs        order_id, current_status, target_status, actor, reason
  * @outputs       validated_transition, order_history, side_effects
- * @depends       db.js, services/client-notification-service.js
+ * @depends       db.js, services/client-notification-service.js, services/pickup-secret-service.js
  * @used-by       order-payment-confirmation.js, routes/orders.js, cancellation-flows, admin-flows
  * @db-read       international_shipment_relay_receipts, order_items, orders, products, relais, scans
  * @db-write      order_items, order_status_history, orders
+ * @db-write-via:pickup-secret-service pickup_reveal_codes
  * @db-write-via:customs-shipment-service customs_shipments
  * @db-write-via:product-admin-service products, product_variants
  * @db-txn        single_status_transition_gate, append_history_before_side_effects
@@ -390,7 +391,7 @@ async function transitionOrderStatus({
   // qui dépend lui-même de transitionOrderStatus.
   let pickupCode = null;
   if (newStatus === 'available' && !order.pickup_secret_hash) {
-    const { ensureSecretGenerated } = require('./pickup-secret-service');
+    const { ensureSecretGenerated, cacheCodeForReveal } = require('./pickup-secret-service');
     const secretResult = await ensureSecretGenerated({
       orderId:  orderId,
       relaisId: order.relais_id || null,
@@ -398,6 +399,9 @@ async function transitionOrderStatus({
       dbClient: dbClient || null,
     });
     pickupCode = secretResult.code || null;
+    if (pickupCode && order.payment_mode === 'sav_replacement') {
+      await cacheCodeForReveal(orderId, pickupCode, q);
+    }
   }
 
   // ── 5. Special: confirmed (paiement reçu) → set payment_status = 'paid' ──

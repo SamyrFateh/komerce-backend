@@ -56,7 +56,7 @@ function buildReceiptHTML(doc) {
     : doc.metadata || {};
 
   const fmtKMF = n => n != null
-    ? new Intl.NumberFormat('fr-FR').format(Math.round(n)) + ' KMF'
+    ? new Intl.NumberFormat('fr-FR').format(Math.round(n)) + ' ' + (/^[A-Z]{3}$/.test(meta.currency || '') ? meta.currency : 'KMF')
     : '—';
   const fmtDate = d => d
     ? new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })

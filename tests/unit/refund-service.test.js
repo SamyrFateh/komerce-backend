@@ -19,6 +19,7 @@ jest.mock('stripe', () => jest.fn(() => ({
 })));
 
 jest.mock('../../services/order-fx-snapshot', () => ({
+  prorateMarketAmount: (amount, num, den) => Math.round((Number(amount) * Number(num)) / Number(den)),
   assertRefundWithinCaptured: jest.fn().mockResolvedValue(undefined),
   assertRefundRecordCompatible: jest.fn().mockResolvedValue(undefined),
 }));
@@ -164,28 +165,47 @@ describe('refund-service', () => {
     });
   });
 
-  describe('garde devise du wallet (KMF) par marché', () => {
+  describe('wallet multi-devise par marché', () => {
     const pendingInsert = { rows: [{ id: 'refund-xaf' }] };
-
-    it('processRefund : commande d\'un marché XAF payée hors Stripe → 409, wallet jamais crédité', async () => {
-      const client = makeClient([pendingInsert, { rows: [{ currency: 'XAF' }] }]);
-      await expect(processRefund(client, makeCashOrder({ market_id: 'm-cm' }), 5000, 7.6, 'cancel', 'x', 'admin-1'))
-        .rejects.toMatchObject({ code: 'REFUND_WALLET_CURRENCY_UNSUPPORTED', statusCode: 409 });
-      expect(walletService.credit).not.toHaveBeenCalled();
+    const xafOrder = (extra = {}) => makeCashOrder({
+      market_id: 'm-cm', total_kmf: 10000,
+      fx_snapshot: { market: { currency: 'XAF', amount: 15000, minor_unit: 0 } }, ...extra,
     });
 
-    it('processRefundWithFallback : Stripe en échec sur un marché XAF → pas de repli wallet KMF', async () => {
+    it('processRefund : marché XAF → wallet crédité en XAF au prorata du montant de marché figé', async () => {
+      walletService.credit.mockResolvedValueOnce({ transaction: { id: 'tx-xaf' } });
+      const client = makeClient([pendingInsert, { rows: [{ currency: 'XAF' }] }, { rows: [{ kmf: '0' }] }, { rows: [], rowCount: 1 }]);
+      const r = await processRefund(client, xafOrder(), 5000, 7.6, 'partial', 'x', 'admin-1');
+      expect(r.method).toBe('wallet_credit');
+      expect(walletService.credit).toHaveBeenCalledWith(client, expect.objectContaining({ amountKmf: 7500, currency: 'XAF' }));
+    });
+
+    it('remboursement du reste complet : solde exact du montant de marché moins les crédits wallet déjà émis', async () => {
+      walletService.credit.mockResolvedValueOnce({ transaction: { id: 'tx-xaf2' } });
+      const client = makeClient([pendingInsert, { rows: [{ currency: 'XAF' }] }, { rows: [{ kmf: '5000' }] }, { rows: [{ amt: '7500' }] }, { rows: [], rowCount: 1 }]);
+      await processRefund(client, xafOrder(), 5000, 7.6, 'full', 'x', 'admin-1');
+      expect(walletService.credit).toHaveBeenCalledWith(client, expect.objectContaining({ amountKmf: 7500, currency: 'XAF' }));
+    });
+
+    it('processRefundWithFallback : Stripe en échec sur un marché XAF → repli wallet XAF (jamais KMF)', async () => {
       mockStripeRefundsCreate.mockRejectedValueOnce(new Error('stripe down'));
+      walletService.credit.mockResolvedValueOnce({ transaction: { id: 'tx-fb' } });
+      const client = makeClient([pendingInsert, { rows: [{ currency: 'XAF' }] }, { rows: [{ kmf: '0' }] }, { rows: [], rowCount: 1 }]);
+      await processRefundWithFallback(client, xafOrder({ payment_mode: 'stripe_eur', stripe_payment_id: 'pi_1' }), 5000, 7.6, 'partial', 'x', 'admin-1');
+      expect(walletService.credit).toHaveBeenCalledWith(client, expect.objectContaining({ currency: 'XAF' }));
+    });
+
+    it('montant de marché figé absent → refus fail-closed, wallet jamais crédité', async () => {
       const client = makeClient([pendingInsert, { rows: [{ currency: 'XAF' }] }]);
-      await expect(processRefundWithFallback(client, makeStripeOrder({ market_id: 'm-cm' }), 5000, 7.6, 'cancel', 'x', 'admin-1'))
-        .rejects.toMatchObject({ code: 'REFUND_WALLET_CURRENCY_UNSUPPORTED' });
+      await expect(processRefund(client, xafOrder({ fx_snapshot: null }), 5000, 7.6, 'cancel', 'x', 'admin-1'))
+        .rejects.toMatchObject({ code: 'REFUND_WALLET_MARKET_AMOUNT_MISSING', statusCode: 409 });
       expect(walletService.credit).not.toHaveBeenCalled();
     });
 
     it('marché inconnu → refus fail-closed', async () => {
       const client = makeClient([pendingInsert, { rows: [] }]);
       await expect(processRefund(client, makeCashOrder({ market_id: 'm-ghost' }), 5000, 7.6, 'cancel', 'x', 'admin-1'))
-        .rejects.toMatchObject({ code: 'REFUND_WALLET_CURRENCY_UNSUPPORTED' });
+        .rejects.toMatchObject({ code: 'REFUND_WALLET_CURRENCY_UNKNOWN' });
     });
 
     it('devise KMF avec espaces/casse → toujours reconnue (pas de blocage à tort)', async () => {
