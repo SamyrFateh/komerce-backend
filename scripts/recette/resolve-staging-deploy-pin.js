@@ -23,8 +23,7 @@ const SHA = /^[a-f0-9]{40}$/i;
 // Chemins que Railway ne deploie pas : une difference limitee a eux ne change pas le code servi.
 // Un seul fichier Playwright connu est un artefact de recette (jamais charge par server.js).
 // Ne PAS ajouter /^playwright\./ : les autres configs restent a examiner individuellement.
-const NON_DEPLOYED = [/^\.github\//, /^docs\//, /^tests\//, /\.md$/i,
-  /^playwright\.staging-relay-local-native\.config\.js$/];
+const NON_DEPLOYED = [/^\\.github\\//, /^docs\\//, /^tests\\//, /\\.md$/i,\n  /^playwright\\.staging-relay-local-native\\.config\\.js$/, /^scripts\\/recette\\/staging-e2e-relay-reassign\\.js$/];
 
 function decidePin({ stagingSha, headSha, isAncestor, changedFiles }) {
   const report = { staging_sha: stagingSha, head_sha: headSha, changed_files: changedFiles || [], decision: 'REFUSED', reason: null };
