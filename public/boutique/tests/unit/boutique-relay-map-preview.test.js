@@ -160,6 +160,25 @@ describe('checkout relay visible map preview', () => {
       .toContain('photo cliquable');
   });
 
+  test('checkout compact : Maps reste utilisable sans iframe', async () => {
+    mockState.relais = [{
+      id: 'relay-1', name: 'Relais Anjouan',
+      latitude: '-12.1714000', longitude: '44.3991000',
+    }];
+    mockState.orderData = { selectedRelaisId: 'relay-1' };
+    jest.isolateModules(() => { require('../../js/boutique.js'); });
+    const aside = document.createElement('div');
+    aside.className = 'ck-checkout-aside';
+    document.body.appendChild(aside);
+    const { container, link } = appendRelaySummary({
+      href: 'https://www.google.com/maps/search/?api=1&query=Relais%20Anjouan',
+    });
+    aside.appendChild(container);
+    await flushMutations();
+    expect(container.querySelector('.ck-relais-map-preview')).toBeNull();
+    expect(link.href).toContain('q=-12.1714,44.3991');
+  });
+
   test('ne crée aucune iframe si le lien ne porte pas de requête cartographique', async () => {
     jest.isolateModules(() => {
       require('../../js/boutique.js');
