@@ -24887,7 +24887,7 @@
             ]
           },
           "services": {
-            "count": 26,
+            "count": 27,
             "files": [
               {
                 "declared": "services/admin-order-refund.js",
@@ -25000,6 +25000,11 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/public-cart-quote-service.js",
+                "resolvedPath": "services/public-cart-quote-service.js",
+                "status": "resolved-on-disk-no-header"
+              },
+              {
                 "declared": "services/qr-collection-core.js",
                 "resolvedPath": "services/qr-collection-core.js",
                 "status": "resolved-in-technical-graph"
@@ -25022,7 +25027,7 @@
             ]
           },
           "tests": {
-            "count": 59,
+            "count": 60,
             "files": [
               {
                 "declared": "tests/e2e-api/customer-to-customer.golden.e2e.test.js",
@@ -25295,6 +25300,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/public-cart-quote-service.test.js",
+                "resolvedPath": "tests/unit/public-cart-quote-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/qr-collection-core-emission.test.js",
                 "resolvedPath": "tests/unit/qr-collection-core-emission.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -25332,7 +25342,7 @@
             ]
           }
         },
-        "totalFiles": 100,
+        "totalFiles": 102,
         "boutiqueManifest": "orders-client",
         "boutiqueFiles": {
           "count": 19,

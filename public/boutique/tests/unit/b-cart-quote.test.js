@@ -1,58 +1,54 @@
 /** @test-kind unit @test-runner jest @test-requires none */
 'use strict';
 
-jest.mock('../../js/b-store.js', () => ({
-  state: { cart: [], cartSurface: 'personal' },
-}));
-jest.mock('../../js/b-bus.js', () => ({
-  bus: { on: jest.fn(), off: jest.fn() },
-}));
+jest.mock('../../js/b-store.js', () => ({ state: { cart: [], cartSurface: 'personal' } }));
+jest.mock('../../js/b-bus.js', () => ({ bus: { on: jest.fn(), off: jest.fn() } }));
 jest.mock('../../js/b-utils.js', () => ({
-  apiGet: jest.fn(),
   apiPost: jest.fn(),
-  fmt: jest.fn((amount) => Number(amount).toLocaleString('fr-FR') + ' KMF'),
+  fmt: jest.fn(amount => Number(amount).toLocaleString('fr-FR') + ' KMF'),
 }));
-jest.mock('../../js/b-identity.js', () => ({
-  requireIdentity: jest.fn(),
-}));
-const { cartQuotePayload, renderQuotePreview } = require('../../js/b-cart-quote.js');
+const { cartQuotePayload, renderQuotePreview, quoteVariantLabel } = require('../../js/b-cart-quote.js');
 
-describe('Fais-moi un devis — panier personnel', () => {
+describe('Fais-moi un devis — sans relais ni identité', () => {
   const cart = [
-    { product: { id: 'p-1' }, qty: 2, variant_combo: { Taille: 'S' }, requested_transport_rail: 'SEA_STANDARD' },
-    { product: { id: 'p-1' }, qty: 1, variant_combo: { Taille: 'M' }, requested_transport_rail: 'AIR_EXPRESS' },
+    { product: { id: 'p-1' }, qty: 2, variant_combo: { cj_size: 'S' }, requested_transport_rail: 'SEA_STANDARD' },
+    { product: { id: 'p-1' }, qty: 1, variant_combo: { cj_size: 'M' } },
   ];
-
-  test('envoie deux lignes SKU distinctes au serveur, jamais de prix inventé', () => {
-    expect(cartQuotePayload(cart, 'relay-km')).toEqual({
-      relais_id: 'relay-km', payment_mode: 'cash_relais',
+  test('conserve deux tailles distinctes et le marché sans prix client ni relais', () => {
+    expect(cartQuotePayload(cart, 'KM')).toEqual({
+      market_code: 'KM',
       items: [
-        { product_id: 'p-1', quantity: 2, confection_type: 'aucun',
-          variant_combo: { Taille: 'S' }, requested_transport_rail: 'SEA_STANDARD' },
-        { product_id: 'p-1', quantity: 1, confection_type: 'aucun',
-          variant_combo: { Taille: 'M' }, requested_transport_rail: 'AIR_EXPRESS' },
+        { product_id: 'p-1', quantity: 2, variant_combo: { cj_size: 'S' }, requested_transport_rail: 'SEA_STANDARD' },
+        { product_id: 'p-1', quantity: 1, variant_combo: { cj_size: 'M' }, requested_transport_rail: null },
       ],
     });
   });
-
-  test('interdit devis sans relais ou avec panier vide/quantité invalide', () => {
+  test('refuse un panier vide, quantité invalide, ou marché absent', () => {
     expect(cartQuotePayload(cart, null)).toBeNull();
-    expect(cartQuotePayload([], 'relay-km')).toBeNull();
-    expect(cartQuotePayload([{ product: { id: 'p-1' }, qty: 0 }], 'relay-km')).toBeNull();
+    expect(cartQuotePayload([], 'KM')).toBeNull();
+    expect(cartQuotePayload([{ product: { id: 'p-1' }, qty: 0 }], 'KM')).toBeNull();
   });
-
-  test('présente uniquement les prix du devis serveur et échappe le nom produit', () => {
+  test('affiche le montant officiel, la livraison incluse et des variantes lisibles', () => {
     const root = document.createElement('div');
     renderQuotePreview(root, {
-      relais_name: 'Moroni',
-      total_kmf: 19000, items_total_kmf: 18000,
-      transport_price_kmf: 1000, discount_kmf: 0,
+      total_kmf: 7990, items_total_kmf: 7990, transport_price_kmf: 0,
       items: [{ product_name: '<script>bad()</script>', quantity: 1,
-        variant_combo: { Taille: 'S' }, unit_price_kmf: 18000, line_total_kmf: 18000 }],
+        variant_combo: { cj_color: 'Rouge', cj_size: 'S' },
+        unit_price_kmf: 7990, line_total_kmf: 7990 }],
     });
-    expect(root.textContent).toContain('<script>bad()</script>');
     expect(root.querySelector('script')).toBeNull();
-    expect(root.textContent).toContain('19');
-    expect(root.textContent).toContain('Livraison au relais');
+    expect(root.textContent).toContain('<script>bad()</script>');
+    expect(root.textContent).toContain('Couleur : Rouge');
+    expect(root.textContent).toContain('Taille : S');
+    expect(root.textContent).toContain('7');
+    expect(root.textContent).toContain('Livraison maritime incluse');
+    expect(root.textContent).not.toContain('Point relais');
+    expect(root.textContent).not.toContain('26 KMF');
+    expect(quoteVariantLabel({ cj_size: 'XL' })).toBe('Taille : XL');
+  });
+  test('refuse un supplément maritime non nul en provenance du serveur', () => {
+    expect(() => renderQuotePreview(document.createElement('div'), {
+      items: [{}], total_kmf: 8016, transport_price_kmf: 26,
+    })).toThrow(/incomplet/);
   });
 });

@@ -56,13 +56,12 @@ describe('order-checkout-service — relais actif comme destination finale', () 
     expect(routing).toBeGreaterThan(gate);
     expect(source).toMatch(/e\.code === 'PAYMENT_MODE_NOT_ALLOWED_FOR_MARKET'/);
   });
-  test('lot 4 — tarif de transport global refusé hors devise du tarif, avant le devis', () => {
-    const gate = source.indexOf('assertTransportTariffApplicable({');
-    const quote = source.indexOf('quoteTransportPriceForOrder({');
-    expect(gate).toBeGreaterThan(0);
-    expect(quote).toBeGreaterThan(gate);
-    expect(source).toMatch(/SELECT lifecycle_status, code, currency FROM markets/);
-    expect(source).toMatch(/MARKET_TRANSPORT_TARIFF_MISSING/);
+  test('maritime inclus sans supplément client, aérien toujours contrôlé', () => {
+    expect(source).toContain('const transport_price_kmf = 0;');
+    expect(source).toMatch(/resolveOrderItemTransportRail\(item\.requested_transport_rail \?\? null\)/);
+    expect(source).not.toContain('total_kmf += transport_price_kmf;');
+    expect(source).not.toContain('quoteTransportPriceForOrder({');
+    expect(source).toMatch(/getRule\('FREIGHT_KMF_PER_KG', 65\)/);
   });
   test('lot 7 — aucun taux de repli : snapshot FX par l\'autorité, refus 503 fx_rate_unavailable', () => {
     expect(source).not.toMatch(/\|\|\s*492/);
@@ -86,20 +85,17 @@ describe('order-checkout-service — unification monétaire (pivot EUR, snapshot
     expect(src).toMatch(/fxSnapshot: fxSnapshotBuilt\.snapshot/);
   });
 
-  test('tarifs transport : chargés pour le marché du relais serveur, jamais du corps de requête', () => {
-    expect(src).toMatch(/loadMarketTransportSaleTariffs\(client, relais\.market_id\)/);
-    expect(src).not.toMatch(/body\.market_id/);
-  });
-
-  test('snapshot transport figé et persisté avec la commande ; fx_rate_unavailable → 503', () => {
-    expect(src).toMatch(/transportPricingSnapshot = \{/);
+  test('transport client nul et coûts internes préservés ; snapshot FX intact', () => {
+    expect(src).toContain('const transport_price_kmf = 0;');
+    expect(src).toContain('const transportPricingSnapshot = null;');
     expect(src).toMatch(/transportPriceKmf: transport_price_kmf, transportPricingSnapshot/);
-    expect(src).toMatch(/e\.code === 'fx_rate_unavailable'[\s\S]{0,120}fail\(503/);
+    expect(src).toMatch(/getRule\('FREIGHT_KMF_PER_KG', 65\)/);
+    expect(src).toMatch(/e\.code === 'fx_rate_unavailable'/);
   });
   test('previewOnly : même calcul que la création, ROLLBACK avant toute insertion de commande', () => {
     expect(source).toMatch(/previewOnly = false/);
     const previewAt = source.indexOf('if (previewOnly) {');
-    const totalAt = source.indexOf('total_kmf += transport_price_kmf;');
+    const totalAt = source.indexOf('const transport_price_kmf = 0;');
     const insertAt = source.indexOf('const order = await insertOrderRow(client, {');
     expect(totalAt).toBeGreaterThan(0);
     expect(previewAt).toBeGreaterThan(totalAt);
