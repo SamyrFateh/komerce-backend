@@ -36,7 +36,7 @@ const engagement = require('../../services/purchasing-engagement-service');
 const hasDb = Boolean(process.env.DATABASE_URL);
 const describeDb = hasDb ? describe : describe.skip;
 const id = () => crypto.randomUUID();
-const MIGRATIONS = ['263_purchase_lines_foundation.sql', '264_purchase_line_progress_view.sql', '265_hub_allocations_purchase_line.sql', '266_purchase_orders_grouped_form.sql', '357_purchase_orders_market_scope.sql', '380_hub_directrice_authorizations.sql'];
+const MIGRATIONS = ['263_purchase_lines_foundation.sql', '264_purchase_line_progress_view.sql', '265_hub_allocations_purchase_line.sql', '266_purchase_orders_grouped_form.sql', '357_purchase_orders_market_scope.sql', '380_hub_directrice_authorizations.sql', '404_manual_purchase_executions.sql'];
 const identityOf = (provider, payload = { supplier_sku: 'U1' }) => JSON.stringify({ provider, version: 1, payload });
 const NOON = identityOf('noon');
 const ALLEGRO = (offer) => identityOf('allegro', { environment: 'sandbox', offer_id: offer });
