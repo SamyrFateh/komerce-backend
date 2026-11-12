@@ -10986,6 +10986,7 @@
           "consumer": "logistics",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
+            "static-code",
             "data-read"
           ]
         },
@@ -19806,6 +19807,7 @@
           "provider": "documents",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
+            "static-code",
             "data-read"
           ]
         },
