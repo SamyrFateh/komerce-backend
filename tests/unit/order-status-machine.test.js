@@ -715,3 +715,21 @@ describe('transitionOrderStatus() — échec insertion historique (D6)', () => {
     })).rejects.toThrow('history table locked');
   });
 });
+
+test('publie le code du remplacement quand le colis devient disponible, dans la transaction physique', async () => {
+  const pickup = require('../../services/pickup-secret-service');
+  const generate = jest.spyOn(pickup, 'ensureSecretGenerated').mockResolvedValue({ code: 'ABC-DEF-GH' });
+  const cache = jest.spyOn(pickup, 'cacheCodeForReveal').mockResolvedValue();
+  try {
+    const order = setupMockForTransition('in_transit', { payment_mode: 'sav_replacement' });
+    const result = await transitionOrderStatus({
+      orderId: order.id, newStatus: 'available', source: 'patch',
+      actor: { id: 'admin-1', role: 'admin' }, dbClient: mockDb,
+    });
+    expect(result.success).toBe(true);
+    expect(cache).toHaveBeenCalledWith(order.id, 'ABC-DEF-GH', mockDb);
+  } finally {
+    generate.mockRestore();
+    cache.mockRestore();
+  }
+});

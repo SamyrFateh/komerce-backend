@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       db.js, services/documents/wallet-receipt.js, services/order-mutation-service.js
  * @used-by       routes/wallet.js, routes/payments.js, services/order-payment-confirmation.js
- * @db-read       orders, users, wallet_consumptions, wallet_credit_lots, wallet_transactions, wallets
+ * @db-read       markets, orders, users, wallet_consumptions, wallet_credit_lots, wallet_transactions, wallets
  * @db-write      wallet_consumptions, wallet_credit_lots, wallet_transactions, wallets
  * @db-write-via:order-mutation-service orders
  * @db-txn        credit_debit_idempotent, wallet_ledger_append_only
@@ -81,20 +81,32 @@ async function ensureWalletTables() {
   }
 }
 
+const DEFAULT_WALLET_CURRENCY = 'KMF';
+
 // ── Core : Get or Create Wallet ─────────────────────────────────────────────
-async function getOrCreateWallet(client, userId, { forUpdate = false } = {}) {
+// Un wallet par (utilisateur, devise) : jamais de conversion implicite entre soldes (migration 405).
+function normalizeWalletCurrency(currency) {
+  const c = String(currency || DEFAULT_WALLET_CURRENCY).trim().toUpperCase();
+  if (!/^[A-Z]{3}$/.test(c)) {
+    throw Object.assign(new Error('Devise wallet invalide'), { statusCode: 400, code: 'WALLET_CURRENCY_INVALID' });
+  }
+  return c;
+}
+
+async function getOrCreateWallet(client, userId, { forUpdate = false, currency = DEFAULT_WALLET_CURRENCY } = {}) {
+  const ccy = normalizeWalletCurrency(currency);
   const lock = forUpdate ? ' FOR UPDATE' : '';
   const { rows } = await client.query(
-    `SELECT * FROM wallets WHERE user_id = $1${lock}`, [userId]
+    `SELECT * FROM wallets WHERE user_id = $1 AND currency = $2${lock}`, [userId, ccy]
   );
   if (rows.length) return rows[0];
 
   const res = await client.query(
-    `INSERT INTO wallets (user_id)
-     VALUES ($1)
-     ON CONFLICT (user_id) DO UPDATE SET updated_at = NOW()
+    `INSERT INTO wallets (user_id, currency)
+     VALUES ($1, $2)
+     ON CONFLICT (user_id, currency) DO UPDATE SET updated_at = NOW()
      RETURNING *`,
-    [userId]
+    [userId, ccy]
   );
   return res.rows[0];
 }
@@ -161,7 +173,7 @@ async function credit(client, opts) {
 async function creditInTransaction(client, opts) {
   const {
     userId, amountKmf, reason, referenceId,
-    idempotencyKey, note, metadata, expiresAt, createdBy,
+    idempotencyKey, note, metadata, expiresAt, createdBy, currency,
   } = opts;
 
   // Fast path séquentiel : évite tout verrou/mouvement si le rejeu est déjà
@@ -171,7 +183,7 @@ async function creditInTransaction(client, opts) {
     if (dup) return { transaction: dup, duplicate: true };
   }
 
-  const wallet = await getOrCreateWallet(client, userId, { forUpdate: true });
+  const wallet = await getOrCreateWallet(client, userId, { forUpdate: true, currency });
 
   if (idempotencyKey) {
     await client.query(`SAVEPOINT ${IDEMPOTENCY_SAVEPOINT}`);
@@ -236,7 +248,7 @@ async function debit(client, opts) {
 async function debitInTransaction(client, opts) {
   const {
     userId, amountKmf, reason, referenceId,
-    idempotencyKey, note, metadata,
+    idempotencyKey, note, metadata, currency,
   } = opts;
 
   if (idempotencyKey) {
@@ -246,10 +258,10 @@ async function debitInTransaction(client, opts) {
     }
   }
 
-  const wallet = await getOrCreateWallet(client, userId, { forUpdate: true });
+  const wallet = await getOrCreateWallet(client, userId, { forUpdate: true, currency });
   if (wallet.balance_kmf < amountKmf) {
     throw new Error(
-      `Solde insuffisant : ${wallet.balance_kmf} KMF dispo, ${amountKmf} KMF demandé`
+      `Solde insuffisant : ${wallet.balance_kmf} ${wallet.currency} dispo, ${amountKmf} ${wallet.currency} demandé`
     );
   }
 
@@ -354,6 +366,13 @@ async function debitInTransaction(client, opts) {
 //     on retourne un résultat idempotent construit depuis l'état déjà
 //     persisté. Une commande ne devient 'paid' via wallet que si le montant
 //     réellement appliqué et persisté couvre total_kmf.
+/** Devise commerciale du marché de la commande (KMF si commande historique sans marché). */
+async function resolveOrderWalletCurrency(client, order) {
+  if (!order || !order.market_id) return DEFAULT_WALLET_CURRENCY;
+  const { rows: [m] } = await client.query('SELECT currency FROM markets WHERE id = $1', [order.market_id]);
+  return normalizeWalletCurrency(m && m.currency);
+}
+
 async function applyToOrder(client, { userId, orderId, amountKmf }) {
   // Verrouiller la commande AVANT toute décision — sérialise les appels
   // concurrents sur le même orderId (ex. double-clic, retry réseau) et
@@ -371,13 +390,22 @@ async function applyToOrder(client, { userId, orderId, amountKmf }) {
   const alreadyApplied = Number(order.wallet_applied_kmf || 0);
   const headroom        = Math.max(0, order.total_kmf - alreadyApplied);
 
-  const wallet = await getOrCreateWallet(client, userId);
+  // Un wallet n'est utilisable que sur une commande de sa devise (aucune conversion implicite).
+  const orderCurrency = await resolveOrderWalletCurrency(client, order);
+  if (orderCurrency !== DEFAULT_WALLET_CURRENCY) {
+    throw Object.assign(
+      new Error(`Wallet non applicable : commande en ${orderCurrency} (seul un solde ${orderCurrency} peut la régler).`),
+      { statusCode: 409, code: 'WALLET_CURRENCY_MISMATCH' }
+    );
+  }
+  const wallet = await getOrCreateWallet(client, userId, { currency: orderCurrency });
   const max    = Math.min(amountKmf || wallet.balance_kmf, wallet.balance_kmf, headroom);
   if (max <= 0) throw new Error('Rien à appliquer');
 
   const result = await debit(client, {
     userId,
     amountKmf:      max,
+    currency:       orderCurrency,
     reason:         'checkout',
     referenceId:    orderId,
     idempotencyKey: `checkout_${orderId}`,
@@ -486,7 +514,7 @@ async function removeFromOrder(client, { orderId }) {
 }
 
 // ── Auto-credit depuis annulation ───────────────────────────────────────────
-async function createCreditFromCancel(client, { orderId, adminId, amountKmf }) {
+async function createCreditFromCancel(client, { orderId, adminId, amountKmf, currency }) {
   const { rows: [order] } = await client.query(
     'SELECT * FROM orders WHERE id = $1', [orderId]
   );
@@ -495,6 +523,7 @@ async function createCreditFromCancel(client, { orderId, adminId, amountKmf }) {
   return credit(client, {
     userId:         order.user_id,
     amountKmf:      amountKmf || order.total_kmf,
+    currency:       currency || await resolveOrderWalletCurrency(client, order),
     reason:         'order_cancel',
     referenceId:    orderId,
     idempotencyKey: `cancel_${orderId}`,
@@ -574,20 +603,26 @@ async function reverseLot(client, { lotId, adminId, note }) {
 }
 
 // ── Queries (read-only, pool) ───────────────────────────────────────────────
-async function getBalance(userId) {
+async function getBalance(userId, currency = DEFAULT_WALLET_CURRENCY) {
   const r = await db.query(
-    'SELECT balance_kmf FROM wallets WHERE user_id = $1', [userId]
+    'SELECT balance_kmf FROM wallets WHERE user_id = $1 AND currency = $2', [userId, normalizeWalletCurrency(currency)]
   );
   return r.rows.length ? r.rows[0].balance_kmf : 0;
 }
 
-async function getBalanceInTx(client, userId) {
-  const wallet = await getOrCreateWallet(client, userId);
+/** Soldes par devise (un wallet par devise, jamais additionnés entre eux). */
+async function getBalancesByCurrency(userId) {
+  const r = await db.query('SELECT currency, balance_kmf AS balance FROM wallets WHERE user_id = $1 ORDER BY currency', [userId]);
+  return r.rows.map((x) => ({ currency: x.currency, balance: x.balance }));
+}
+
+async function getBalanceInTx(client, userId, currency = DEFAULT_WALLET_CURRENCY) {
+  const wallet = await getOrCreateWallet(client, userId, { currency });
   return wallet.balance_kmf;
 }
 
-async function getTransactions(userId, { limit = 20, offset = 0 } = {}) {
-  const wRes = await db.query('SELECT id FROM wallets WHERE user_id = $1', [userId]);
+async function getTransactions(userId, { limit = 20, offset = 0, currency = DEFAULT_WALLET_CURRENCY } = {}) {
+  const wRes = await db.query('SELECT id FROM wallets WHERE user_id = $1 AND currency = $2', [userId, normalizeWalletCurrency(currency)]);
   if (!wRes.rows.length) return { transactions: [], total: 0 };
   const wid = wRes.rows[0].id;
 
@@ -628,12 +663,12 @@ async function listWallets({ limit = 50, offset = 0, search } = {}) {
   return { wallets: res.rows, total: cntRes.rows[0].c };
 }
 
-async function getWalletDetail(userId) {
+async function getWalletDetail(userId, currency = DEFAULT_WALLET_CURRENCY) {
   const wRes = await db.query(`
     SELECT w.*, u.full_name, u.email, u.phone
     FROM wallets w JOIN users u ON u.id = w.user_id
-    WHERE w.user_id = $1
-  `, [userId]);
+    WHERE w.user_id = $1 AND w.currency = $2
+  `, [userId, normalizeWalletCurrency(currency)]);
   if (!wRes.rows.length) return null;
   const w = wRes.rows[0];
 
@@ -665,6 +700,9 @@ module.exports = {
   reverseLot,
   issueReceiptForCredit,
   getBalance,
+  getBalancesByCurrency,
+  resolveOrderWalletCurrency,
+  normalizeWalletCurrency,
   getBalanceInTx,
   getTransactions,
   listWallets,

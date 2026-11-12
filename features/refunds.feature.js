@@ -64,6 +64,7 @@ module.exports = {
       'services/item-refund-reservation-service.js',
       'services/item-refund-psp-orchestrator.js',
       'services/refund-intent-ledger.js',
+      'services/sav-ledger-refund.js',
       'services/refund-evidence-verifier.js',
       'services/refund-intent-reconciliation.js',
     ],
@@ -82,6 +83,7 @@ module.exports = {
       'tests/unit/item-refund-psp-orchestrator.test.js',
       'tests/e2e-api/refunds.item-partial-physical.e2e.test.js',
       'tests/unit/refund-intent-ledger.test.js',
+      'tests/unit/sav-ledger-refund.test.js',
       'tests/unit/refund-evidence-verifier.test.js',
       'tests/unit/refund-intent-reconciliation.test.js',
       'tests/e2e-api/refunds.intents-reconciliation.e2e.test.js',
@@ -132,6 +134,7 @@ module.exports = {
       'processRefund(orderOrCartId, reason)',
     ],
     consumes: [
+      'market (prorata SAV dans les devises figées via fx-authority)',
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
       'orders (commande source)',
       'logistics (attestation physique du manquant au relais ; source incident immuable)',
