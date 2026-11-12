@@ -82,24 +82,69 @@ export function renderQuotePreview(container, quote) {
     throw new Error('Devis serveur incomplet : aucun PDF ne peut être généré.');
   }
   container.replaceChildren();
+
+  const meta = document.createElement('div');
+  meta.className = 'k-quote-meta';
+  const market = document.createElement('span');
+  market.textContent = 'Marché : ' + String(quote.market_code || '—');
+  const date = document.createElement('span');
+  date.textContent = new Date().toLocaleDateString('fr-FR', {
+    day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Europe/Paris',
+  });
+  meta.append(market, date);
+  container.appendChild(meta);
+
+  const heading = document.createElement('p');
+  heading.className = 'k-quote-section-title';
+  heading.textContent = 'Articles de ton panier';
+  container.appendChild(heading);
+
   const rows = document.createElement('div');
   rows.className = 'k-quote-lines';
   quote.items.forEach(item => {
+    const line = document.createElement('div');
+    line.className = 'k-quote-line';
+    const product = document.createElement('div');
+    product.className = 'k-quote-product';
+    const name = document.createElement('strong');
+    name.className = 'k-quote-product-name';
+    name.textContent = String(item.product_name || 'Produit');
+    product.appendChild(name);
+
     const variant = quoteVariantLabel(item.variant_combo);
-    const name = String(item.product_name || 'Produit') +
-      (variant ? ' · ' + variant : '') +
-      '  (' + Number(item.quantity) + ' × ' + fmt(Number(item.unit_price_kmf), 'KMF') + ')';
-    addRow(rows, name, fmt(Number(item.line_total_kmf), 'KMF'));
+    if (variant) {
+      const attrs = document.createElement('span');
+      attrs.className = 'k-quote-variant';
+      attrs.textContent = variant;
+      product.appendChild(attrs);
+    }
+    const detail = document.createElement('span');
+    detail.className = 'k-quote-line-detail';
+    detail.textContent = String(Number(item.quantity)) + ' × ' +
+      fmt(Number(item.unit_price_kmf), 'KMF');
+    product.appendChild(detail);
+
+    const amount = document.createElement('strong');
+    amount.className = 'k-quote-line-amount';
+    amount.textContent = fmt(Number(item.line_total_kmf), 'KMF');
+    line.append(product, amount);
+    rows.appendChild(line);
   });
   container.appendChild(rows);
-  const totals = document.createElement('div');
-  totals.className = 'k-quote-totals';
-  addRow(totals, 'Total estimatif', fmt(Number(quote.total_kmf), 'KMF'), true);
-  container.appendChild(totals);
-  const hint = document.createElement('p');
-  hint.className = 'k-quote-hint';
-  hint.textContent = 'Livraison maritime incluse';
-  container.appendChild(hint);
+
+  const total = document.createElement('div');
+  total.className = 'k-quote-total';
+  const totalLabel = document.createElement('span');
+  totalLabel.textContent = 'Total estimatif';
+  const totalValue = document.createElement('strong');
+  totalValue.textContent = fmt(Number(quote.total_kmf), 'KMF');
+  total.append(totalLabel, totalValue);
+  container.appendChild(total);
+
+  const shipping = document.createElement('p');
+  shipping.className = 'k-quote-shipping';
+  shipping.textContent = '✓  Livraison maritime incluse';
+  container.appendChild(shipping);
 }
 
 function savePdf(blob) {
@@ -173,9 +218,12 @@ export function setupCartQuote() {
     dialog.innerHTML = `
       <section class="k-quote-panel">
         <div class="k-quote-header">
-          <div>
-            <h2 id="k-quote-title">Fais-moi un devis</h2>
-            <p>Ton panier, sans passer commande.</p>
+          <div class="k-quote-header-brand">
+            <img class="k-quote-logo" src="/images/Logo_Komerce.png" alt="Komerce" width="142" height="44">
+            <div class="k-quote-header-copy">
+              <h2 id="k-quote-title">Devis estimatif</h2>
+              <p>Ton panier, sans passer commande.</p>
+            </div>
           </div>
           <button type="button" class="k-quote-close" aria-label="Fermer">×</button>
         </div>
@@ -183,7 +231,7 @@ export function setupCartQuote() {
           <p id="k-quote-status" role="status" aria-live="polite">Calcul du devis…</p>
           <div id="k-quote-result" hidden>
             <div id="k-quote-preview"></div>
-            <p class="k-quote-disclaimer">Devis sans engagement, ni commande ni facture. Prix et stock revérifiés à la confirmation.</p>
+            <p class="k-quote-disclaimer">Document informatif, sans engagement : ni commande ni facture. Prix et stock revérifiés à la confirmation.</p>
             <div class="k-quote-actions">
               <button type="button" data-quote-action="share">Partager</button>
               <button type="button" data-quote-action="save">Enregistrer PDF</button>
@@ -192,7 +240,6 @@ export function setupCartQuote() {
         </div>
       </section>`;
     document.body.appendChild(dialog);
-    dialog.querySelector('.k-quote-actions').style.gridTemplateColumns = 'repeat(2, minmax(0, 1fr))';
     const close = () => {
       if (!dialog.isConnected) return;
       bus.off('cart:update', invalidate);
