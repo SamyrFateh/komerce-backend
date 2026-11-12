@@ -142,7 +142,11 @@ async function computeClosingRefund(client, order, pct = 100) {
   return { kmf, eur, type };
 }
 
+// Prorata d'un montant déjà converti et encaissé (aucune reconversion) : point d'accès unique pour les writers de remboursement.
+const prorateMarketAmount = (amount, numerator, denominator, minor) => fx.prorate(amount, numerator, denominator, minor);
+
 module.exports = {
+  prorateMarketAmount,
   computeClosingRefund,
   assertRefundRecordCompatible,
   buildOrderFxSnapshot, loadPriorRefunds, refundEurForKmf, computeRefundEurForOrder, assertRefundWithinCaptured,

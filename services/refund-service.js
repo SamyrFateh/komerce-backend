@@ -34,7 +34,7 @@
 
 const stripe        = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const walletService = require('./wallet-service');
-const { assertRefundWithinCaptured, assertRefundRecordCompatible } = require('./order-fx-snapshot');
+const { assertRefundWithinCaptured, assertRefundRecordCompatible, prorateMarketAmount } = require('./order-fx-snapshot');
 const refundReceiptService = require('./documents/refund-receipt');
 const log = require('../utils/logger').child({ module: 'refund-service' });
 
@@ -94,7 +94,7 @@ async function resolveWalletRefundCredit(dbClient, order, amountKmf, refundType)
       [order.id, currency, `refund_${order.id}_${refundType}_%`, `refund_fb_${order.id}_${refundType}_%`]);
     amount = Math.max(0, Math.round(marketTotal - Number(paid.amt)));
   } else {
-    amount = require('./fx-authority').prorate(String(amountKmf), String(marketTotal), String(order.total_kmf), 0);
+    amount = prorateMarketAmount(String(amountKmf), String(marketTotal), String(order.total_kmf), 0);
   }
   if (!(amount >= 1)) {
     const err = new Error('Montant wallet nul dans la devise du marché : remboursement refusé.');

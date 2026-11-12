@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 2035,
-    "edges": 10040,
+    "edges": 10042,
     "dbTables": 234,
     "doctrines": 791,
     "impactAreas": 207,
@@ -30502,6 +30502,7 @@
         "orders",
         "refunds",
         "wallets",
+        "wallet_transactions",
         "markets"
       ],
       "dbWrite": [
@@ -37207,6 +37208,7 @@
         "services/order-payment-confirmation.js"
       ],
       "dbRead": [
+        "markets",
         "orders",
         "users",
         "wallet_consumptions",
@@ -92986,6 +92988,12 @@
     },
     {
       "from": "services/refund-service.js",
+      "to": "db:wallet_transactions",
+      "type": "db-read",
+      "label": "wallet_transactions"
+    },
+    {
+      "from": "services/refund-service.js",
       "to": "db:markets",
       "type": "db-read",
       "label": "markets"
@@ -102860,6 +102868,12 @@
       "to": "services/wallet-service.js",
       "type": "uses",
       "label": "services/order-payment-confirmation.js"
+    },
+    {
+      "from": "services/wallet-service.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
     },
     {
       "from": "services/wallet-service.js",
@@ -136317,6 +136331,7 @@
         "orders",
         "refunds",
         "wallets",
+        "wallet_transactions",
         "markets"
       ],
       "dbWrite": [
@@ -136337,6 +136352,7 @@
         "db:markets",
         "db:orders",
         "db:refunds",
+        "db:wallet_transactions",
         "db:wallets",
         "doctrine:idempotent_stripe_refund",
         "doctrine:refund_confirmed_only",
@@ -142842,6 +142858,7 @@
       ],
       "ownedFiles": [],
       "dbRead": [
+        "markets",
         "orders",
         "users",
         "wallet_consumptions",
@@ -142872,6 +142889,7 @@
         "wallet"
       ],
       "mustCheck": [
+        "db:markets",
         "db:orders",
         "db:users",
         "db:wallet_consumptions",

@@ -14,14 +14,12 @@ jest.mock('../../services/cost-allocation/canonical-margin-writer', () => ({
   isEnabled: jest.fn().mockResolvedValue(false),
   refreshCanonicalMarginForOrders: jest.fn().mockResolvedValue({ enabled: false }),
 }));
-jest.mock('../../services/fx-authority', () => ({
-  prorate: (amount, num, den) => Math.round((Number(amount) * Number(num)) / Number(den)),
-}));
 jest.mock('stripe', () => jest.fn(() => ({
   refunds: { create: mockStripeRefundsCreate },
 })));
 
 jest.mock('../../services/order-fx-snapshot', () => ({
+  prorateMarketAmount: (amount, num, den) => Math.round((Number(amount) * Number(num)) / Number(den)),
   assertRefundWithinCaptured: jest.fn().mockResolvedValue(undefined),
   assertRefundRecordCompatible: jest.fn().mockResolvedValue(undefined),
 }));
