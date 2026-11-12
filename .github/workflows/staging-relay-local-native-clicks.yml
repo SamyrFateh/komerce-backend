@@ -104,6 +104,8 @@ jobs:
           RELAY_APPLY=1 RELAY_CONFIRMATION=REASSIGN-E2E-RELAY \
             node scripts/recette/staging-e2e-relay-reassign.js
           cp test-results/relay-reassign/report.json test-results/relay-reassign/assignment-original.json
+      - name: Émettre le code de retrait canonique (fixture E2E uniquement)
+        run: node scripts/recette/staging-e2e-pickup-secret-fixture.js
       - name: Installer Chromium
         run: npx playwright install --with-deps chromium
       - name: Exécuter les vrais clics d'attestation et retrait sur staging

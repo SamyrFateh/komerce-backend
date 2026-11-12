@@ -32,7 +32,9 @@ function decidePin({ stagingSha, headSha, isAncestor, changedFiles }) {
   if (!SHA.test(String(stagingSha || '')) || !SHA.test(String(headSha || ''))) { report.reason = 'SHA_INVALID'; return report; }
   if (stagingSha.toLowerCase() === headSha.toLowerCase()) { report.decision = 'ACCEPTED_EXACT'; return report; }
   if (!isAncestor) { report.reason = 'STAGING_NOT_ANCESTOR_OF_HEAD'; return report; }
-  const deployed = (changedFiles || []).filter((f) => f !== 'scripts/recette/staging-e2e-relay-reassign.js' && !NON_DEPLOYED.some((re) => re.test(f)));
+  const deployed = (changedFiles || []).filter((f) => f !== 'scripts/recette/staging-e2e-relay-reassign.js' &&
+    f !== 'scripts/recette/staging-e2e-pickup-secret-fixture.js' &&
+    !NON_DEPLOYED.some((re) => re.test(f)));
   if (deployed.length) { report.reason = 'DEPLOYED_PATHS_DIFFER'; report.deployed_paths_differing = deployed; return report; }
   report.decision = 'ACCEPTED_NON_DEPLOYED_DIFF_ONLY'; return report;
 }

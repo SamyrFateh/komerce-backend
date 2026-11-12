@@ -33,6 +33,17 @@ describe('pin de deploiement staging', () => {
     const r = decidePin({stagingSha:A,headSha:B,isAncestor:true,changedFiles:['scripts/recette/staging-e2e-relay-reassign.js']});
     expect(r.decision).toBe('ACCEPTED_NON_DEPLOYED_DIFF_ONLY');
   });
+  test('seul le helper exact de code canonique staging est non déployé', () => {
+    const r=decidePin({stagingSha:A,headSha:B,isAncestor:true,changedFiles:[
+      'scripts/recette/staging-e2e-pickup-secret-fixture.js',
+      '.github/workflows/staging-relay-local-native-clicks.yml',
+    ]});
+    expect(r.decision).toBe('ACCEPTED_NON_DEPLOYED_DIFF_ONLY');
+    const denied=decidePin({stagingSha:A,headSha:B,isAncestor:true,changedFiles:[
+      'scripts/recette/staging-e2e-pickup-secret-fixture.js.bak',
+    ]});
+    expect(denied.decision).toBe('REFUSED');
+  });
   test('pin refuse toute autre config Playwright et tout changement runtime', () => {
     for(const candidate of [
       'playwright.staging-relay-local-native.config.js.bak',
