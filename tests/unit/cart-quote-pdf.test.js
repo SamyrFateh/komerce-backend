@@ -37,9 +37,9 @@ describe('devis boutique public non transactionnel', () => {
   test('les API de devis autonomes sont publiques et ne créent jamais une commande', () => {
     const route = fs.readFileSync(path.join(__dirname, '../../routes/orders/create.js'), 'utf8');
     const service = fs.readFileSync(path.join(__dirname, '../../services/public-cart-quote-service.js'), 'utf8');
-    expect(route).toMatch(/router\.post\('\/cart-quote', async/);
     expect(route).toMatch(/router\.post\('\/quote-pdf', async/);
     expect(route).toContain('quotePublicCart(req.body)');
+    expect(route).toContain("includes('application/json')");
     expect(route).toContain('renderCartQuotePdf(quote)');
     expect(service).toContain("await client.query('ROLLBACK')");
     expect(service).not.toContain("await client.query('COMMIT')");
