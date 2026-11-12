@@ -1355,6 +1355,7 @@ describe('b-checkout', () => {
     });
  
     it('P0 — visiteur sans devis : identification accessible avant le total serveur, puis confirmation possible', async () => {
+      state.user = null;
       state.cart = [{ product: { id: 1, name: 'Chemise', price_kmf: 8990 }, qty: 1 }];
       state.orderData.selectedRelaisId = 1;
       apiGet.mockImplementation(path => path === '/api/relais'
@@ -1386,6 +1387,7 @@ describe('b-checkout', () => {
     });
 
     it('P0 — annulation de l’identification : la commande reste impossible et le panier intact', async () => {
+      state.user = null;
       state.cart = [{ product: { id: 1, name: 'Chemise', price_kmf: 8990 }, qty: 1 }];
       requireIdentity.mockResolvedValue(null);
       renderCheckout();
