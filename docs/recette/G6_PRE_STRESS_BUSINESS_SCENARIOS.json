@@ -1,0 +1,523 @@
+{
+  "version": "G6-PRE-STRESS-1",
+  "source_doc": "docs/recette/G6_PRE_STRESS_BUSINESS_SCENARIOS.md",
+  "basis_issue": 3754,
+  "created": "2026-11-12",
+  "allowed_env": "Railway staging jetable",
+  "browser_viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "agents": [
+    "ChatGPT",
+    "Opus"
+  ],
+  "same_staging_sha_required": true,
+  "distinct_run8_and_order_by_agent": true,
+  "serialize_shared_relay_agent": true,
+  "provider_side_effects_forbidden": true,
+  "verdicts": [
+    "PASS",
+    "FAIL",
+    "BLOCKED",
+    "NOT_PROVEN"
+  ],
+  "required_proof": [
+    "scenario_id",
+    "agent",
+    "market",
+    "staging_sha",
+    "run8",
+    "actor",
+    "real_chromium",
+    "http",
+    "postgres_before_after",
+    "financial_or_none",
+    "audited_events",
+    "verdict"
+  ],
+  "scenarios": [
+    {
+      "id": "M01",
+      "kind": "nominal",
+      "markets": [
+        "KM"
+      ],
+      "title": "Fournisseur réel -> catalogue approuvé -> prix/exposition KM -> vrai panier/boutique/POST commande -> cash simulé -> engagement PO puis autorisation paiement -> réception Hub -> sac/KOM-BOX -> transitaire/douane -> Relais -> remise -> finance",
+      "expected": "Une filiation source→commande→colis→remise, quantités et coûts sans doubles",
+      "priority": "P0",
+      "verdict": "NOT_PROVEN"
+    },
+    {
+      "id": "M02",
+      "kind": "nominal",
+      "markets": [
+        "KM"
+      ],
+      "title": "Produit LOCAL_STOCK vendable -> vrai achat boutique -> cash test -> mise à disposition Relais -> code canonique saisi au clavier -> remise",
+      "expected": "Sans Hub, PO ou transport import ; commande, colis et lignes physiques collected",
+      "priority": "P0",
+      "verdict": "NOT_PROVEN"
+    },
+    {
+      "id": "M03",
+      "kind": "nominal",
+      "markets": [
+        "KM"
+      ],
+      "title": "Panier mixte stock local + import, deux branches de traitement, deux retraits possibles",
+      "expected": "Pas de statut collected tant que les lignes import n'ont pas été remises",
+      "priority": "P0",
+      "verdict": "NOT_PROVEN"
+    },
+    {
+      "id": "M04",
+      "kind": "nominal",
+      "markets": [
+        "CM"
+      ],
+      "title": "M01 avec responsable marché CM, caisse, fournisseur, transitaire et Relais CM",
+      "expected": "Prix XAF, clients et stocks CM, aucune fuite KM/CG",
+      "priority": "P0",
+      "verdict": "NOT_PROVEN"
+    },
+    {
+      "id": "M05",
+      "kind": "nominal",
+      "markets": [
+        "CG"
+      ],
+      "title": "M01 avec responsable marché CG, caisse, fournisseur, transitaire et Relais CG",
+      "expected": "Prix XAF, clients et stocks CG, aucune fuite KM/CM",
+      "priority": "P0",
+      "verdict": "NOT_PROVEN"
+    },
+    {
+      "id": "N01",
+      "kind": "negative_or_edge",
+      "markets": [
+        "Prix non actif"
+      ],
+      "title": "Achat impossible ; aucune commande",
+      "expected": "",
+      "priority": "P0",
+      "verdict": "NOT_PROVEN"
+    },
+    {
+      "id": "N02",
+      "kind": "negative_or_edge",
+      "markets": [
+        "Exposition OFF"
+      ],
+      "title": "Produit non achetable, publication non implicite",
+      "expected": "",
+      "priority": "P0",
+      "verdict": "NOT_PROVEN"
+    },
+    {
+      "id": "N03",
+      "kind": "negative_or_edge",
+      "markets": [
+        "Marché suspendu ",
+        " route absente"
+      ],
+      "title": "Refus checkout, aucun paiement",
+      "expected": "",
+      "priority": "P0",
+      "verdict": "NOT_PROVEN"
+    },
+    {
+      "id": "N04",
+      "kind": "negative_or_edge",
+      "markets": [
+        "Stock zéro ",
+        " quantité trop grande"
+      ],
+      "title": "Pas de stock négatif ni réserve fictive",
+      "expected": "",
+      "priority": "P0",
+      "verdict": "NOT_PROVEN"
+    },
+    {
+      "id": "N05",
+      "kind": "negative_or_edge",
+      "markets": [
+        "SKU ",
+        " SOI incomplet"
+      ],
+      "title": "Refus publication ou achat",
+      "expected": "",
+      "priority": "P0",
+      "verdict": "NOT_PROVEN"
+    },
+    {
+      "id": "N06",
+      "kind": "negative_or_edge",
+      "markets": [
+        "Prix change pendant checkout"
+      ],
+      "title": "Nouveau prix proposé et accepté explicitement",
+      "expected": "",
+      "priority": "P0",
+      "verdict": "NOT_PROVEN"
+    },
+    {
+      "id": "N07",
+      "kind": "negative_or_edge",
+      "markets": [
+        "Double clic commande"
+      ],
+      "title": "Une commande maximum",
+      "expected": "",
+      "priority": "P0",
+      "verdict": "NOT_PROVEN"
+    },
+    {
+      "id": "N08",
+      "kind": "negative_or_edge",
+      "markets": [
+        "Clé idempotence concurrente"
+      ],
+      "title": "Aucun doublon paiement, stock ou commande",
+      "expected": "",
+      "priority": "P0",
+      "verdict": "NOT_PROVEN"
+    },
+    {
+      "id": "N09",
+      "kind": "negative_or_edge",
+      "markets": [
+        "Cash non encaissé puis tentative remise"
+      ],
+      "title": "Aucun collected sans paid",
+      "expected": "",
+      "priority": "P0",
+      "verdict": "NOT_PROVEN"
+    },
+    {
+      "id": "N10",
+      "kind": "negative_or_edge",
+      "markets": [
+        "Webhook PSP simulé dupliqué",
+        "non signé"
+      ],
+      "title": "Pas de double règlement, signature obligatoire",
+      "expected": "",
+      "priority": "P0",
+      "verdict": "NOT_PROVEN"
+    },
+    {
+      "id": "N11",
+      "kind": "negative_or_edge",
+      "markets": [
+        "PO sans validation engagement"
+      ],
+      "title": "Aucun engagement fournisseur",
+      "expected": "",
+      "priority": "P0",
+      "verdict": "NOT_PROVEN"
+    },
+    {
+      "id": "N12",
+      "kind": "negative_or_edge",
+      "markets": [
+        "Paiement fournisseur sans deuxième validation"
+      ],
+      "title": "Refus ; preuves d'autorisation distinctes",
+      "expected": "",
+      "priority": "P0",
+      "verdict": "NOT_PROVEN"
+    },
+    {
+      "id": "N13",
+      "kind": "negative_or_edge",
+      "markets": [
+        "Rupture fournisseur ",
+        " backorder"
+      ],
+      "title": "Reliquat enregistré, sans réception fictive",
+      "expected": "",
+      "priority": "P0",
+      "verdict": "NOT_PROVEN"
+    },
+    {
+      "id": "N14",
+      "kind": "negative_or_edge",
+      "markets": [
+        "Réception partielle ",
+        " excès ",
+        " quantité négative"
+      ],
+      "title": "Quantités exactes, refus/incident si écart",
+      "expected": "",
+      "priority": "P0",
+      "verdict": "NOT_PROVEN"
+    },
+    {
+      "id": "N15",
+      "kind": "negative_or_edge",
+      "markets": [
+        "Sac",
+        "carton incomplet"
+      ],
+      "title": "Pas de fermeture ni départ non conforme",
+      "expected": "",
+      "priority": "P0",
+      "verdict": "NOT_PROVEN"
+    },
+    {
+      "id": "N16",
+      "kind": "negative_or_edge",
+      "markets": [
+        "Carton non DISPATCHED ",
+        " composition figée"
+      ],
+      "title": "Refus de remise et de modification post-remise",
+      "expected": "",
+      "priority": "P0",
+      "verdict": "NOT_PROVEN"
+    },
+    {
+      "id": "N17",
+      "kind": "negative_or_edge",
+      "markets": [
+        "Transitaire hors rôle",
+        "marché"
+      ],
+      "title": "HTTP 403 sans transition",
+      "expected": "",
+      "priority": "P0",
+      "verdict": "NOT_PROVEN"
+    },
+    {
+      "id": "N18",
+      "kind": "negative_or_edge",
+      "markets": [
+        "Douane bloquée puis mainlevée"
+      ],
+      "title": "Pas de transit fictif avant autorisation",
+      "expected": "",
+      "priority": "P0",
+      "verdict": "NOT_PROVEN"
+    },
+    {
+      "id": "N19",
+      "kind": "negative_or_edge",
+      "markets": [
+        "Retard",
+        "perte transport local"
+      ],
+      "title": "Incident, aucun faux retrait",
+      "expected": "",
+      "priority": "P0",
+      "verdict": "NOT_PROVEN"
+    },
+    {
+      "id": "N20",
+      "kind": "negative_or_edge",
+      "markets": [
+        "Écart réception Relais"
+      ],
+      "title": "Quantité réellement constatée et incident",
+      "expected": "",
+      "priority": "P0",
+      "verdict": "NOT_PROVEN"
+    },
+    {
+      "id": "N21",
+      "kind": "negative_or_edge",
+      "markets": [
+        "Agent du mauvais Relais"
+      ],
+      "title": "Refus et aucune fuite de données",
+      "expected": "",
+      "priority": "P0",
+      "verdict": "NOT_PROVEN"
+    },
+    {
+      "id": "N22",
+      "kind": "negative_or_edge",
+      "markets": [
+        "Deux Relais A",
+        "B du même marché"
+      ],
+      "title": "Isolation inter-relais démontrée en deux profils",
+      "expected": "",
+      "priority": "P0",
+      "verdict": "NOT_PROVEN"
+    },
+    {
+      "id": "N23",
+      "kind": "negative_or_edge",
+      "markets": [
+        "Retrait sans code, last4, code erroné, brute-force"
+      ],
+      "title": "Refus vérifié ; pas de remise ; compteur sécurité",
+      "expected": "",
+      "priority": "P0",
+      "verdict": "NOT_PROVEN"
+    },
+    {
+      "id": "N24",
+      "kind": "negative_or_edge",
+      "markets": [
+        "Deux remises simultanées"
+      ],
+      "title": "Une attestation de remise maximum",
+      "expected": "",
+      "priority": "P0",
+      "verdict": "NOT_PROVEN"
+    },
+    {
+      "id": "N25",
+      "kind": "negative_or_edge",
+      "markets": [
+        "SAV retour et double reprise"
+      ],
+      "title": "Reprise unique, produit gelé, pas de revente automatique",
+      "expected": "",
+      "priority": "P0",
+      "verdict": "NOT_PROVEN"
+    },
+    {
+      "id": "N26",
+      "kind": "negative_or_edge",
+      "markets": [
+        "Avoir",
+        "wallet",
+        "remboursement"
+      ],
+      "title": "Rapprochement exact, aucun PSP réel",
+      "expected": "",
+      "priority": "P0",
+      "verdict": "NOT_PROVEN"
+    },
+    {
+      "id": "N27",
+      "kind": "negative_or_edge",
+      "markets": [
+        "Annulation après retrait partiel"
+      ],
+      "title": "Seul le non remis peut être annulé et remboursé",
+      "expected": "",
+      "priority": "P0",
+      "verdict": "NOT_PROVEN"
+    },
+    {
+      "id": "N28",
+      "kind": "negative_or_edge",
+      "markets": [
+        "HTTP timeout",
+        "500 + réessai"
+      ],
+      "title": "Pas de faux succès ni double mutation",
+      "expected": "",
+      "priority": "P0",
+      "verdict": "NOT_PROVEN"
+    },
+    {
+      "id": "N29",
+      "kind": "negative_or_edge",
+      "markets": [
+        "Session 401 ",
+        " interdiction 403"
+      ],
+      "title": "Aucune mutation, navigation sécurisée",
+      "expected": "",
+      "priority": "P0",
+      "verdict": "NOT_PROVEN"
+    },
+    {
+      "id": "N30",
+      "kind": "negative_or_edge",
+      "markets": [
+        "Order 360 et tableaux de bord vs PG"
+      ],
+      "title": "Même vérité, fixtures exclues des KPI commerciaux",
+      "expected": "",
+      "priority": "P1",
+      "verdict": "NOT_PROVEN"
+    },
+    {
+      "id": "N31",
+      "kind": "negative_or_edge",
+      "markets": [
+        "FX KMF",
+        "XAF et remboursement"
+      ],
+      "title": "Snapshot conservé, remboursement sur encaissement",
+      "expected": "",
+      "priority": "P0",
+      "verdict": "NOT_PROVEN"
+    },
+    {
+      "id": "N32",
+      "kind": "negative_or_edge",
+      "markets": [
+        "Marché et rôles croisés"
+      ],
+      "title": "Pas de lecture ou écriture hors délégation",
+      "expected": "",
+      "priority": "P0",
+      "verdict": "NOT_PROVEN"
+    },
+    {
+      "id": "N33",
+      "kind": "negative_or_edge",
+      "markets": [
+        "Même produit, 2 tailles",
+        "variantes dans un panier"
+      ],
+      "title": "Deux SKU distincts, quantités/total exacts, stock propre",
+      "expected": "",
+      "priority": "P0",
+      "verdict": "NOT_PROVEN"
+    },
+    {
+      "id": "N34",
+      "kind": "negative_or_edge",
+      "markets": [
+        "Fournisseur central Hub pour produit manuel"
+      ],
+      "title": "Une source Hub stable si vendeur inconnu, pas de fausse dette fournisseur",
+      "expected": "",
+      "priority": "P0",
+      "verdict": "NOT_PROVEN"
+    },
+    {
+      "id": "N35",
+      "kind": "negative_or_edge",
+      "markets": [
+        "Coût rendu Relais, N1",
+        "N2",
+        "N3, plancher et contribution"
+      ],
+      "title": "Fret non doublé, allocations causales, N3 séparé, total détail=plancher",
+      "expected": "",
+      "priority": "P0",
+      "verdict": "NOT_PROVEN"
+    },
+    {
+      "id": "N36",
+      "kind": "negative_or_edge",
+      "markets": [
+        "Mode manuel physique sans scanner de bout en bout"
+      ],
+      "title": "Réception Hub, sac, KOM-BOX, transitaire, Relais, SAV avec mode MANUAL, même writer et audit",
+      "expected": "",
+      "priority": "P0",
+      "verdict": "NOT_PROVEN"
+    },
+    {
+      "id": "N37",
+      "kind": "negative_or_edge",
+      "markets": [
+        "Documents et information client"
+      ],
+      "title": "Devis, commande, reçu, suivi, remise et avoir rattachés au même dossier ; pas de notification externe réelle",
+      "expected": "",
+      "priority": "P1",
+      "verdict": "NOT_PROVEN"
+    }
+  ]
+}
