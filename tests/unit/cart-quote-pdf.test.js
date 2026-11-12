@@ -27,6 +27,7 @@ describe('devis boutique public non transactionnel', () => {
     expect(Buffer.isBuffer(pdf)).toBe(true);
     expect(pdf.subarray(0, 5).toString('ascii')).toBe('%PDF-');
     expect(pdf.length).toBeGreaterThan(1000);
+    expect(pdf.toString('latin1')).toMatch(/\/Subtype\s*\/Image/); // logo PNG officiel embarqué, comme la facture
     expect(variantLabel({ cj_color: 'Rouge', cj_size: 'S' })).toBe('Couleur : Rouge / Taille : S');
   });
   test('refuse les incohérences et tout transport maritime facturé', () => {
