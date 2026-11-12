@@ -6859,7 +6859,7 @@
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 175,
+            "count": 176,
             "files": [
               {
                 "declared": "chart.umd.min.js",
@@ -7374,6 +7374,11 @@
               {
                 "declared": "dashboards/canonical/css/purchasing-workspace.css",
                 "resolvedPath": "public/dashboards/canonical/css/purchasing-workspace.css",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/css/relay-workboard.css",
+                "resolvedPath": "public/dashboards/canonical/css/relay-workboard.css",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -9209,7 +9214,7 @@
             ]
           }
         },
-        "totalFiles": 464,
+        "totalFiles": 465,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,

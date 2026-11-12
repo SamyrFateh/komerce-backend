@@ -5794,6 +5794,13 @@
       {
         "feature": "dashboard",
         "category": "dash",
+        "declared": "dashboards/canonical/css/relay-workboard.css",
+        "resolvedPath": "public/dashboards/canonical/css/relay-workboard.css",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
         "declared": "dashboards/canonical/css/catalog-control-tower.css",
         "resolvedPath": "public/dashboards/canonical/css/catalog-control-tower.css",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
