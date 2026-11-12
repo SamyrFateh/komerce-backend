@@ -60,7 +60,9 @@ describe('document-reconciliation', () => {
     expect(db.query.mock.calls.every(([, p]) => p[0] === 200)).toBe(true);
     const sqls = db.query.mock.calls.map(c => c[0]).join('\n');
     expect(sqls).toMatch(/payment_status = 'paid'/);
-    expect(sqls).toMatch(/o\.status = 'collected'/);
+    expect(sqls).toMatch(/s\.step = 'collected'/);
+    expect(sqls).toMatch(/td\.subject_type = 'pickup_handoff'/);
+    expect(sqls).toMatch(/td\.subject_id = s\.id/);
     expect(sqls).toMatch(/r\.status = 'completed'/);
   });
 });
