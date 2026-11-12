@@ -435,7 +435,6 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | `market_delivery_attestations` | Preuve centrale, vérifiable et révocable, qu'une liaison de transport et un tarif applicable existent pour un marché. Migration 305. |
 | `market_transport_sale_rates` | Tarif de vente transport par Market (devise du marché, par kg) ; absent = refus hors KMF ; distinct du coût de fret attesté. Migration 313. |
 | `order_item_refund_reservations` | Réservations partielles de remboursement par article adossées à une attestation relais et à une intention PSP durable ; aucune sortie de fonds automatique. Migration 365. |
-| `manual_purchase_executions` | Vendeur économique réel par achat physique manuel (allocation vendeur → ligne → quantité/montant, devise de la PO, justificatif, canal) ; append-only, écrit par `confirmGroupedPurchaseOrder`. Migration 404. |
 | `purchase_order_authorizations` | Décisions append-only de la directrice Hub sur un bon de commande (`purchase_commitment` ou `supplier_payment`) ; UPDATE/DELETE refusés. Migration 380. |
 | `refund_execution_intents` | Intention de remboursement durable avant appel Stripe/PayPal ; aucun backfill legacy automatique. Migration 317. |
 
@@ -924,3 +923,9 @@ Migrations 391–394 appliquées sur Railway staging le 2026-11-04 à 13:09 UTC 
 
 
 <!-- schema-pending: order_comments.hub_stage_key (migration 398, intended_migration_schema; not yet live) -->
+
+<!-- schema-pending: manual_purchase_executions (migration 404) -->
+### manual_purchase_executions (migration 404 — intended_migration_schema)
+
+`manual_purchase_executions` is a new append-only table proposed by migration 404. It records the real economic seller of each manual physical purchase (allocation seller -> purchase line -> quantity/amount, in the PO currency, with channel, proof reference and variance reason), written only by `confirmGroupedPurchaseOrder`. It creates no SOI, stock, debt or payment.
+<!-- /schema-pending -->
