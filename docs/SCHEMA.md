@@ -84,7 +84,6 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 |---|---|
 | `catalog_product_quality_notes` | Remarques qualité traçables (acteur, provenance Catalogue ou Relais, article remis, commentaire daté et immuable) ; migration 400 non encore vérifiée live. **Migration 400 — promue le 2026-11-08 (schema-promote, dump live verifie).** |
 | `catalog_product_sale_holds` | Décisions Catalogue centrales gel/dégel global d'une référence avec justification, acteur et historique ; garde des nouvelles commandes, migration 400 non encore vérifiée live. **Migration 400 — promue le 2026-11-08 (schema-promote, dump live verifie).** |
-| `relay_return_compensations` | Décision de compensation SAV après remise rattachée au dossier de retour (une par `disputes.id`), append-only, écrite seulement après confirmation du mouvement canonique (crédit wallet du payeur dans la devise du marché). Migration 406. |
 | `relay_product_return_receipts` | Preuve immuable de reprise physique d un dossier de retour article au relais ; une attestation par dossier, quantite exacte, zone A-Z facultative et non exclusive, sans stock ni mouvement wallet. Non verifiee live. **Migration 401 — promue le 2026-11-08 (schema-promote, dump live verifie).** |
 
 
@@ -924,3 +923,9 @@ Migrations 391–394 appliquées sur Railway staging le 2026-11-04 à 13:09 UTC 
 
 
 <!-- schema-pending: order_comments.hub_stage_key (migration 398, intended_migration_schema; not yet live) -->
+
+<!-- schema-pending: relay_return_compensations (migration 406) -->
+### relay_return_compensations (migration 406 — intended_migration_schema)
+
+`relay_return_compensations` is a new append-only table proposed by migration 406. It records one admin-motivated after-handover compensation decision per product-return dispute, written only once the canonical movement (wallet credit to the payer, in the market currency) is confirmed. It never touches stock or sellability.
+<!-- /schema-pending -->
