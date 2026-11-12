@@ -7,7 +7,7 @@
   },
   "x-contract-debt": {
     "unknown_responses": 80,
-    "total_routes": 759,
+    "total_routes": 760,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -30019,6 +30019,45 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/purchasing/po/{po_id}/commitment-pdf": {
+      "get": {
+        "summary": "GET /api/purchasing/po/{po_id}/commitment-pdf",
+        "x-route-file": "routes/purchasing.js",
+        "parameters": [
+          {
+            "name": "po_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bon de commande fournisseur interne figé à la validation de l’engagement",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary",
+                  "x-contract-status": "route-read"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Identifiant du bon de commande invalide"
+          },
+          "404": {
+            "description": "Bon de commande PDF indisponible"
           },
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
