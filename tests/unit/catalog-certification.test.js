@@ -42,6 +42,44 @@ function readyRow(overrides = {}) {
   };
 }
 
+describe('category-only supplier publication proof is independent of Discovery',()=>{
+  test('a provenance-backed family can complete catalogue certification even without a leaf',()=>{
+    const row=readyRow({boutique_category_key:'Mode & Beauté',
+      boutique_subcategory_key:null,taxonomy_active:true,has_sourcing_candidate:true,
+      supplier_product_name:'Silky Light Fog Lip Gloss',
+      supplier_category:'Health, Beauty & Hair > Makeup > Lipstick'});
+    const result=evaluateCatalogProductCertification(row,{publicationGuard:PASS_GUARD});
+    expect(result).toMatchObject({certified:true,reasons:[]});
+  });
+  test.each([
+    ['native unlinked',{has_sourcing_candidate:false}],
+    ['missing source path',{supplier_category:null}],
+    ['contradictory supplier path',{supplier_category:'Automobiles & Motorcycles > Auto Replacement Parts'}],
+    ['wrong boutique category',{boutique_category_key:'Auto'}],
+    ['no source identity',{supplier_product_name:null}]
+  ])('a category-only product with %s is not certifiable',(_label,mutation)=>{
+    const row=readyRow({...mutation,boutique_subcategory_key:null,
+      boutique_category_key:mutation.boutique_category_key||'Mode & Beauté',
+      taxonomy_active:true,has_sourcing_candidate:mutation.has_sourcing_candidate??true,
+      supplier_product_name:mutation.supplier_product_name===undefined
+        ?'Silky Light Fog Lip Gloss':mutation.supplier_product_name,
+      supplier_category:mutation.supplier_category===undefined
+        ?'Health, Beauty & Hair > Makeup > Lipstick':mutation.supplier_category});
+    const result=evaluateCatalogProductCertification(row,{publicationGuard:PASS_GUARD});
+    expect(result.certified).toBe(false);
+    expect(result.reasons).toContain('boutique_subcategory_missing');
+  });
+  test('loader exposes source identity and checks active category without requiring leaf',async()=>{
+    const {loadCatalogProductCertificationFacts}=require('../../services/catalog-certification');
+    const q={query:jest.fn().mockResolvedValue({rows:[]})};
+    await loadCatalogProductCertificationFacts(q,'candidate-id');
+    const sql=q.query.mock.calls[0][0];
+    expect(sql).toContain('candidate.product_name AS supplier_product_name');
+    expect(sql).toContain('candidate.supplier_category');
+    expect(sql).toContain('p.boutique_subcategory_key IS NULL OR bs.key IS NOT NULL');
+  });
+});
+
 describe('catalog canonical certification', () => {
   beforeEach(() => PASS_GUARD.mockClear());
 

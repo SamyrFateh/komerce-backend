@@ -21,6 +21,7 @@
 const { canonicalizeProductIdentity } = require('./catalog-promotion/editorial-identity');
 const { findConfirmed, chooseCommercialPair } = require('./supplier-commercial-category-mapping');
 const {semanticIntent,semanticConflict} = require('./commercial-taxonomy-semantics');
+const {categoryIntent}=require('./commercial-object-family-classifier');
 
 function sourceLocaleFromCandidate(candidate = {}) {
   const locale = candidate?.normalized_source_contract?.source_locale;
@@ -157,6 +158,25 @@ async function resolveCommercialTaxonomyVerdict(q, candidate = {}) {
         subcategory:proposal.subcategory,source:proposal.source};
     }
   }
+  // Category-level placement is justified by corroborating OBJECT identity
+  // and supplier breadcrumb, not a search destination. It is not a leaf and
+  // MUST remain distinguishable from a fully classified subcategory.
+  const root=categoryIntent(candidate);
+  if(root.kind==='conflict') {
+    return {status:'REVIEW_REQUIRED',category:null,subcategory:null,
+      source:root.source,conflicts:root.categories,evidence:root.evidence};
+  }
+  if(root.kind==='category') {
+    const {rows:[activeRoot]}=await q.query(
+      'SELECT key FROM boutique_categories WHERE key=$1 AND is_active=TRUE '+
+      'AND filter_type IS NULL LIMIT 1',[root.category]);
+    if(activeRoot) {
+      return {status:'CATEGORY_CLASSIFIED',level:'CATEGORY',category:root.category,
+        subcategory:null,source:root.source,evidence:root.evidence};
+    }
+    return {status:'REVIEW_REQUIRED',category:null,subcategory:null,
+      source:'CATEGORY_TARGET_INACTIVE',proposal:{category:root.category,subcategory:null}};
+  }
   const prior = discoveryCommercialPrior(candidate);
   if (prior) {
     // The suggestion is retained for review, but never returned as the
@@ -171,6 +191,13 @@ async function resolveCommercialTaxonomyVerdict(q, candidate = {}) {
 async function resolveActiveBoutiqueTaxonomy(q, candidate = {}) {
   const verdict = await resolveCommercialTaxonomyVerdict(q, candidate);
   const requested = { category:verdict.category, subcategory:verdict.subcategory };
+  if(verdict.status==='CATEGORY_CLASSIFIED') {
+    const {rows:[activeRoot]}=await q.query(
+      'SELECT key FROM boutique_categories WHERE key=$1 AND is_active=TRUE '+
+      'AND filter_type IS NULL LIMIT 1',[requested.category]);
+    if(!activeRoot)throw new Error('BOUTIQUE_CATEGORY_INACTIVE_OR_UNKNOWN');
+    return {category:requested.category,subcategory:null};
+  }
   if (verdict.status !== 'EXPLICIT_REVIEW') return requested;
   if (!requested.category || !requested.subcategory) {
     throw new Error('BOUTIQUE_TAXONOMY_INCOMPLETE: target_category + target_subcategory requis ensemble');
@@ -236,8 +263,14 @@ async function createDraftProductFromSourcingCandidate(q, {
   const commercialProvider = String(candidate?.normalized_source_contract?.supplier_name
     || candidate?.supplier_name || '').trim().toLowerCase();
   const strictSupplier = ['aliexpress', 'cj', 'cjdropshipping'].includes(commercialProvider);
-  if (strictSupplier && (!boutiqueTaxonomy?.category || !boutiqueTaxonomy?.subcategory)) {
-    throw new Error('BOUTIQUE_TAXONOMY_UNRESOLVED: category/subcategory review required before draft creation');
+  const categoryProof=categoryIntent(candidate);
+  const categoryOnlyCertifiedAtDraft=Boolean(
+    boutiqueTaxonomy?.category && !boutiqueTaxonomy?.subcategory
+    && categoryProof.kind==='category' && categoryProof.category===boutiqueTaxonomy.category
+  );
+  if (strictSupplier && (!boutiqueTaxonomy?.category ||
+      (!boutiqueTaxonomy?.subcategory && !categoryOnlyCertifiedAtDraft))) {
+    throw new Error('BOUTIQUE_TAXONOMY_UNRESOLVED: verified boutique category or subcategory required before draft creation');
   }
   // Identité client (nom court, description proposée) dérivée mécaniquement
   // du fournisseur — jamais d'invention, jamais d'IA (DOCTRINE_CATALOGUE.md
