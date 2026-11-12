@@ -822,7 +822,7 @@ async function packWave(ctx, st, wave) {
   wave.boxId = boxId;
   await advanceUnit(db, svc, boxId, QC, uid, 'HUB-DXB-PACK');
   const attach = (extra = {}) => svc.bagBox.attachBagToBox({ bagUnitId: wave.bagId, boxUnitId: boxId, parcelId: parcel.id,
-    bagReferenceScan: wave.bagRef, boxReferenceScan: wave.boxRef, expectedMarketId: manifest.market_id, actorId: uid, ...extra });
+    evidenceMethod: 'SCAN', bagReferenceScan: wave.bagRef, boxReferenceScan: wave.boxRef, expectedMarketId: manifest.market_id, actorId: uid, ...extra });
   const alreadyBoxed = (await db.query('SELECT 1 FROM hub_box_bags WHERE box_unit_id=$1', [boxId])).rows.length > 0;
   if (wave.full && !alreadyBoxed) await expectRefusal(st, 'scan du sac non conforme', () => attach({ bagReferenceScan: `${wave.bagRef}-FAUX` }), { code: 'HUB_BOX_BAG_SCAN_MISMATCH' });
   const first = await attach(); const replay = await attach();

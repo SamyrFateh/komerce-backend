@@ -71,3 +71,12 @@ describe('admin operations workspace cash HTTP contract', () => {
     });
   });
 });
+
+describe('admin-operations-workspace — dépôt en sac MANUAL accepté (#3900)', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '../../routes/admin-operations-workspace.js'), 'utf8');
+  test('la route transmet la provenance réelle et ne refuse plus MANUAL', () => {
+    expect(src).not.toContain('HUB_BAG_MANUAL_APPROVAL_REQUIRED');
+    expect(src).toContain("body.evidence_method !== 'SCAN' && body.evidence_method !== 'MANUAL'");
+    expect(src).toContain('evidence_ref:body.evidence_ref');
+  });
+});
