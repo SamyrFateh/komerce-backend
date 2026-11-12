@@ -15,6 +15,7 @@
 'use strict';
 
 const PDFDocument = require('pdfkit');
+const { LOGO_KOMERCE_BASE64 } = require('../../utils/documents/logo-base64');
 
 const money = (value) => {
   const n = Number(value);
@@ -47,43 +48,62 @@ function renderCartQuotePdf(preview, issuedAt = new Date()) {
   if (!Number.isFinite(sum) || Math.round(sum) !== Math.round(Number(preview.items_total_kmf))) {
     throw new Error('Sous-total canonique incohérent');
   }
+  const discount = Number(preview.discount_kmf || 0);
+  if (!Number.isFinite(discount) || discount < 0 ||
+      Math.round(Number(preview.items_total_kmf) - discount) !== Math.round(Number(preview.total_kmf))) {
+    throw new Error('Total estimatif du devis incohérent');
+  }
+
   return new Promise((resolve, reject) => {
     const pdf = new PDFDocument({ size: 'A4', margin: 46, info: {
       Title: 'Devis estimatif Komerce',
       Author: 'Komerce',
-      Subject: 'Simulation de panier sans commande ni facture',
+      Subject: 'Panier informatif sans commande ni facture',
     } });
     const chunks = [];
     pdf.on('data', chunk => chunks.push(chunk));
     pdf.once('error', reject);
     pdf.once('end', () => resolve(Buffer.concat(chunks)));
 
+    const left = 46;
+    const width = pdf.page.width - left * 2;
     const date = new Date(issuedAt).toLocaleString('fr-FR', {
-      day: '2-digit', month: '2-digit', year: 'numeric',
+      day: '2-digit', month: 'short', year: 'numeric',
       hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris',
     });
 
-    pdf.fillColor('#27332c').font('Helvetica-Bold').fontSize(21).text('KOMERCE');
-    pdf.moveDown(0.3).fontSize(17).text('DEVIS ESTIMATIF');
-    pdf.moveDown(0.2).fillColor('#4b5563').font('Helvetica').fontSize(9)
-      .text('Préparé le ' + date)
-      .text('Document informatif — ni commande, ni facture, ni réservation de stock.')
-      .text('Les prix et disponibilités seront revérifiés à la commande.');
-    pdf.moveDown(1);
-    pdf.font('Helvetica').fontSize(9).fillColor('#6b7280')
-      .text('Marché : ' + String(preview.market_code || '—') + '   |   Montants en KMF')
-      .text('Livraison maritime incluse, sans frais supplémentaires.');
-    pdf.moveDown(1);
+    // La facture Komerce utilise exactement la même ressource embarquée.
+    pdf.image(Buffer.from(LOGO_KOMERCE_BASE64, 'base64'), left, 36, { fit: [145, 48] });
+    pdf.fillColor('#0d3f30').font('Helvetica-Bold').fontSize(19)
+      .text('DEVIS ESTIMATIF', 249, 42, { width: 300, align: 'right' });
+    pdf.fillColor('#64746a').font('Helvetica').fontSize(9)
+      .text('Ton panier, sans passer commande', 249, 68, { width: 300, align: 'right' });
+    pdf.strokeColor('#f5c723').lineWidth(3)
+      .moveTo(left, 97).lineTo(left + width, 97).stroke();
 
-    const ensureSpace = (min = 70) => {
-      if (pdf.y + min > pdf.page.height - 65) pdf.addPage();
-    };
+    pdf.roundedRect(left, 114, width, 54, 9).fill('#0b4a36');
+    pdf.fillColor('#ffffff').font('Helvetica-Bold').fontSize(15)
+      .text('DEVIS ESTIMATIF', left + 18, 125, { width: width - 36 });
+    pdf.fillColor('#e3f2e9').font('Helvetica').fontSize(9)
+      .text('Document informatif — ni commande, ni facture', left + 18, 147, { width: width - 36 });
 
-    ensureSpace();
-    pdf.fillColor('#27332c').font('Helvetica-Bold').fontSize(11).text('Articles');
-    pdf.moveDown(0.5);
-    preview.items.forEach(item => {
-      ensureSpace(75);
+    pdf.fillColor('#526458').font('Helvetica').fontSize(10)
+      .text('Marché : ' + String(preview.market_code || '—'), left, 187, { width: 220 })
+      .text('Émis le ' + date, left + 230, 187, { width: width - 230, align: 'right' });
+
+    let y = 221;
+    function tableHeader() {
+      pdf.rect(left, y, width, 28).fill('#f1f5f1');
+      pdf.fillColor('#244536').font('Helvetica-Bold').fontSize(8.5);
+      pdf.text('ARTICLE ET VARIANTES', left + 11, y + 9, { width: 240 });
+      pdf.text('QTÉ', left + 261, y + 9, { width: 35, align: 'center' });
+      pdf.text('PRIX U.', left + 303, y + 9, { width: 87, align: 'right' });
+      pdf.text('TOTAL', left + 395, y + 9, { width: width - 407, align: 'right' });
+      y += 28;
+    }
+    tableHeader();
+
+    for (const item of preview.items) {
       const qty = Number(item.quantity);
       const unit = Number(item.unit_price_kmf);
       const total = Number(item.line_total_kmf);
@@ -91,40 +111,66 @@ function renderCartQuotePdf(preview, issuedAt = new Date()) {
           !Number.isFinite(total) || Math.round(qty * unit) !== Math.round(total)) {
         throw new Error('Ligne canonique du devis invalide');
       }
-      const startY = pdf.y;
       const name = String(item.product_name || 'Produit');
       const variant = variantLabel(item.variant_combo);
-      pdf.font('Helvetica-Bold').fontSize(10).fillColor('#27332c')
-        .text(name, 48, startY, { width: 320 });
-      if (variant) pdf.font('Helvetica').fontSize(9).fillColor('#555f59')
-        .text(variant, 48, pdf.y + 2, { width: 320 });
-      const infoEnd = pdf.y;
-      pdf.font('Helvetica').fontSize(9).fillColor('#27332c')
-        .text(String(qty) + ' x ' + money(unit), 372, startY, { width: 170, align: 'right' })
-        .font('Helvetica-Bold').text(money(total), 372, pdf.y + 3, { width: 170, align: 'right' });
-      pdf.y = Math.max(infoEnd, pdf.y) + 11;
-      pdf.strokeColor('#e4e7e4').lineWidth(0.5).moveTo(48, pdf.y).lineTo(546, pdf.y).stroke();
-      pdf.y += 10;
-    });
+      pdf.font('Helvetica-Bold').fontSize(9.5);
+      const nameHeight = pdf.heightOfString(name, { width: 243 });
+      pdf.font('Helvetica').fontSize(8.5);
+      const variantHeight = variant ? pdf.heightOfString(variant, { width: 243 }) : 0;
+      const rowHeight = Math.max(49, nameHeight + variantHeight + 22);
 
-    ensureSpace(155);
-    const summary = [
-      ['Articles', preview.items_total_kmf],
-    ];
-    if (Number(preview.discount_kmf) > 0) summary.push(['Remise fidélité', -Number(preview.discount_kmf)]);
-    summary.forEach(([label, amount]) => {
-      const n = Number(amount);
-      const y = pdf.y;
-      pdf.font('Helvetica').fontSize(10).fillColor('#47534e')
-        .text(label, 250, y, { width: 165 });
-      pdf.font('Helvetica-Bold').text((n < 0 ? '-' : '') + money(Math.abs(n)),
-        415, y, { width: 130, align: 'right' });
-      pdf.y = Math.max(y + 18, pdf.y + 4);
-    });
-    pdf.moveDown(0.5).font('Helvetica-Bold').fontSize(14).fillColor('#1f3025')
-      .text('TOTAL ESTIMATIF : ' + money(preview.total_kmf), { align: 'right' });
-    pdf.moveDown(1).font('Helvetica').fontSize(9).fillColor('#6b7280')
-      .text('Ce document ne vaut pas acceptation, contrat, demande de paiement ou réservation. Aucun débit n\'a été réalisé.');
+      if (y + rowHeight > pdf.page.height - 145) {
+        pdf.addPage();
+        y = 54;
+        tableHeader();
+      }
+      pdf.fillColor('#19382a').font('Helvetica-Bold').fontSize(9.5)
+        .text(name, left + 11, y + 11, { width: 243 });
+      if (variant) {
+        pdf.fillColor('#5a6c60').font('Helvetica').fontSize(8.5)
+          .text(variant, left + 11, y + 13 + nameHeight, { width: 243 });
+      }
+      pdf.fillColor('#334e40').font('Helvetica').fontSize(9)
+        .text(String(qty), left + 261, y + 14, { width: 35, align: 'center' })
+        .text(money(unit), left + 303, y + 14, { width: 87, align: 'right' });
+      pdf.fillColor('#153f2d').font('Helvetica-Bold').fontSize(9)
+        .text(money(total), left + 395, y + 14, { width: width - 407, align: 'right' });
+      y += rowHeight;
+      pdf.strokeColor('#e3eae3').lineWidth(0.7)
+        .moveTo(left, y).lineTo(left + width, y).stroke();
+    }
+
+    if (y + 165 > pdf.page.height - 46) {
+      pdf.addPage();
+      y = 60;
+    }
+    y += 20;
+    if (discount > 0) {
+      pdf.fillColor('#526458').font('Helvetica').fontSize(9)
+        .text('Remise', left + 240, y, { width: 120 })
+        .text('-' + money(discount), left + 365, y, { width: width - 365, align: 'right' });
+      y += 25;
+    }
+
+    pdf.roundedRect(left, y, width, 65, 11).fill('#fff0b9');
+    pdf.fillColor('#19372b').font('Helvetica-Bold').fontSize(13)
+      .text('TOTAL ESTIMATIF', left + 17, y + 24, { width: 210 });
+    pdf.roundedRect(left + 260, y + 9, width - 269, 47, 8).fill('#0b4a36');
+    pdf.fillColor('#ffffff').font('Helvetica-Bold').fontSize(17)
+      .text(money(preview.total_kmf), left + 273, y + 22,
+        { width: width - 295, align: 'right' });
+    y += 82;
+
+    pdf.roundedRect(left, y, width, 33, 8).fill('#e9f4e9');
+    pdf.fillColor('#12583a').font('Helvetica-Bold').fontSize(10)
+      .text('Livraison maritime incluse', left + 14, y + 11, { width: width - 28 });
+    y += 49;
+
+    pdf.fillColor('#607064').font('Helvetica').fontSize(8.5)
+      .text('Les prix et disponibilités seront revérifiés à la confirmation.', left, y,
+        { width })
+      .text('Ce devis ne vaut ni acceptation, ni réservation, ni demande de paiement.', left, y + 16,
+        { width });
     pdf.end();
   });
 }
