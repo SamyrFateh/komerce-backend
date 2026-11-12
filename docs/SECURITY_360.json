@@ -3,8 +3,8 @@
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
     "total": 826,
-    "protected": 768,
-    "public": 58,
+    "protected": 767,
+    "public": 59,
     "unprotected": 0,
     "admin_no_guard": 0,
     "unknown": 0
@@ -148,6 +148,12 @@
       "kind": "EXPECTED_PUBLIC",
       "evidence": "routes/modules.js",
       "rationale": "Référentiel public des modules de configuration produit."
+    },
+    {
+      "key": "POST /api/orders/quote-pdf",
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/orders/create.js; services/public-cart-quote-service.js; tests/unit/public-cart-quote-service.test.js; tests/unit/cart-quote-pdf.test.js",
+      "rationale": "Devis de panier non transactionnel et anonyme. Exposition et prix locaux contrôlés par le serveur, 1 à 30 lignes, zéro commande, zéro écriture persistée, globalLimiter et cache no-store. Même route JSON (aperçu) ou PDF (partage), jamais un checkout."
     },
     {
       "key": "GET /api/orders/retrait/{token}",
@@ -4555,7 +4561,7 @@
     },
     {
       "key": "POST /api/orders/quote-pdf",
-      "level": "PROTECTED",
+      "level": "PUBLIC",
       "roles": []
     },
     {

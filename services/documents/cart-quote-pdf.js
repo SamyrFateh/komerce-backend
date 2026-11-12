@@ -24,7 +24,10 @@ const money = (value) => {
 
 function variantLabel(combo) {
   if (!combo || typeof combo !== 'object' || Array.isArray(combo)) return '';
-  return Object.entries(combo).map(([axis, value]) => String(axis) + ' : ' + String(value)).join(' / ');
+  const labels = { cj_color: 'Couleur', color: 'Couleur', couleur: 'Couleur', cj_size: 'Taille', size: 'Taille', taille: 'Taille' };
+  return Object.entries(combo).map(([axis, value]) =>
+    (labels[String(axis).toLowerCase()] || String(axis)) + ' : ' + String(value)
+  ).join(' / ');
 }
 
 /**
@@ -36,8 +39,9 @@ function renderCartQuotePdf(preview, issuedAt = new Date()) {
   if (!preview || !Array.isArray(preview.items) || !preview.items.length) {
     throw new Error('Lignes canoniques du devis absentes');
   }
-  if (!Number.isFinite(Number(preview.total_kmf)) || preview.total_kmf == null) {
-    throw new Error('Total canonique absent');
+  if (!Number.isFinite(Number(preview.total_kmf)) || preview.total_kmf == null ||
+      Number(preview.transport_price_kmf) !== 0) {
+    throw new Error('Total canonique ou transport maritime incohérent');
   }
   const sum = preview.items.reduce((acc, item) => acc + Number(item.line_total_kmf), 0);
   if (!Number.isFinite(sum) || Math.round(sum) !== Math.round(Number(preview.items_total_kmf))) {
@@ -66,10 +70,9 @@ function renderCartQuotePdf(preview, issuedAt = new Date()) {
       .text('Document informatif — ni commande, ni facture, ni réservation de stock.')
       .text('Les prix et disponibilités seront revérifiés à la commande.');
     pdf.moveDown(1);
-    pdf.fillColor('#27332c').font('Helvetica-Bold').fontSize(11)
-      .text('Point relais : ' + String(preview.relais_name || 'Non précisé'));
     pdf.font('Helvetica').fontSize(9).fillColor('#6b7280')
-      .text('Marché : ' + String(preview.market_code || '—') + '   |   Montants en KMF');
+      .text('Marché : ' + String(preview.market_code || '—') + '   |   Montants en KMF')
+      .text('Livraison maritime incluse, sans frais supplémentaires.');
     pdf.moveDown(1);
 
     const ensureSpace = (min = 70) => {
@@ -107,7 +110,6 @@ function renderCartQuotePdf(preview, issuedAt = new Date()) {
     ensureSpace(155);
     const summary = [
       ['Articles', preview.items_total_kmf],
-      ['Transport vers le relais', preview.transport_price_kmf],
     ];
     if (Number(preview.discount_kmf) > 0) summary.push(['Remise fidélité', -Number(preview.discount_kmf)]);
     summary.forEach(([label, amount]) => {

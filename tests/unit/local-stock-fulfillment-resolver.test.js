@@ -186,24 +186,15 @@ describe('allocation cohérente avec commercial_exposure', () => {
 });
 
 describe('wiring Feature First orders → local-stock → transport', () => {
-  it('résout la provenance avant pricing et ne transmet que les lignes IMPORT au moteur transport', () => {
-    const source = fs.readFileSync(
-      path.join(__dirname, '../../services/order-checkout-service.js'),
-      'utf8'
-    );
-
+  it('résout la provenance avant contrôle du rail, sans supplément client', () => {
+    const source = fs.readFileSync(path.join(__dirname, '../../services/order-checkout-service.js'), 'utf8');
     const resolverCall = source.indexOf('await resolveCheckoutFulfillmentSources');
-    const importFilter = source.indexOf('const importTransportItems = items.filter');
-    const pricingCall = source.indexOf('quoteTransportPriceForOrder({');
-
+    const railCheck = source.indexOf('resolveOrderItemTransportRail(item.requested_transport_rail ?? null)');
     expect(resolverCall).toBeGreaterThan(-1);
-    expect(importFilter).toBeGreaterThan(-1);
-    expect(pricingCall).toBeGreaterThan(-1);
-    expect(resolverCall).toBeLessThan(importFilter);
-    expect(importFilter).toBeLessThan(pricingCall);
-    expect(source).toMatch(/item\._fulfillment_source === FULFILLMENT_SOURCE\.IMPORT/);
-    expect(source).toMatch(/items: importTransportItems\.map\(item =>/);
-    expect(source).toMatch(/LOCAL_STOCK contribue exactement 0 au transport/);
+    expect(railCheck).toBeGreaterThan(resolverCall);
+    expect(source).toContain('item._fulfillment_source === FULFILLMENT_SOURCE.IMPORT');
+    expect(source).toContain('const transport_price_kmf = 0;');
+    expect(source).not.toContain('total_kmf += transport_price_kmf');
   });
 
   it('la règle métier local-stock ne fuit pas dans transport-pricing', () => {

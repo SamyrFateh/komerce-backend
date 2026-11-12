@@ -41,6 +41,9 @@ const { validate }                       = require('../../middleware/validate');
 const { orders }                         = require('../../validators');
 const { runOrderCheckout }               = require('../../services/order-checkout-service');
 const { renderCartQuotePdf } = require('../../services/documents/cart-quote-pdf');
+const { quotePublicCart, PublicQuoteError } = require('../../services/public-cart-quote-service');
+const { MarketCommercialPriceError } = require('../../services/market-commercial-price-service');
+const { TransportPricingError } = require('../../services/transport-pricing');
 const { closeCompletedSharedCartForOrderItems } = require('../../services/cart-share-service');
 
 // Business Alignment Closure — un relais explicite est désormais une
@@ -52,18 +55,27 @@ const orderCreateSchema = {
   body: orders.create.body.fork(['relais_id'], schema => schema.required()),
 };
 
-// POST /api/orders/quote-pdf — devis informatif et éphémère, NON une facture.
-// Même calcul canonique que le checkout ; session client vérifiée, aucun ordre
-// ni paiement ni transaction_documents. Le PDF est recalculé au clic.
-router.post('/quote-pdf', authenticateOrCreateGuest, validate(orderCreateSchema), async (req, res, next) => {
+// Devis personnel autonome : calcul CANONIQUE public, sans relais, OTP ni
+// commande. Le checkout réel (ci-dessous) conserve son identité et son relais.
+function handleQuoteError(err, res, next) {
+  if (err instanceof PublicQuoteError || err instanceof MarketCommercialPriceError ||
+      err instanceof TransportPricingError) {
+    return res.status(err.status || 409).json({ error: err.message, code: err.code });
+  }
+  return next(err);
+}
+
+// PDF informatif éphémère. Recalcule le prix sur le serveur et bloque un
+// PDF périmé si le prix a varié depuis l'aperçu (expected_total_kmf).
+router.post('/quote-pdf', async (req, res, next) => {
   try {
-    const result = await runOrderCheckout({
-      user: req.user,
-      body: { ...req.body, payment_mode: 'cash_relais', use_wallet: false },
-      previewOnly: true,
-    });
-    if (!result.ok) return res.status(result.status).json(result.body);
-    const pdf = await renderCartQuotePdf(result.preview);
+    const quote = await quotePublicCart(req.body);
+    // Un contrat unique : aperçu JSON ou document PDF selon Accept.
+    // Aucun endpoint supplémentaire ni dépendance au checkout authentifié.
+    if (String(req.get('accept') || '').includes('application/json')) {
+      return res.set('Cache-Control', 'no-store').json(quote);
+    }
+    const pdf = await renderCartQuotePdf(quote);
     res.set({
       'Content-Type': 'application/pdf',
       'Content-Disposition': 'attachment; filename="Komerce-devis-estimatif.pdf"',
@@ -72,7 +84,7 @@ router.post('/quote-pdf', authenticateOrCreateGuest, validate(orderCreateSchema)
     });
     return res.status(200).send(pdf);
   } catch (error) {
-    return next(error);
+    return handleQuoteError(error, res, next);
   }
 });
 

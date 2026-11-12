@@ -10,7 +10,10 @@ const {
 
 describe('Security 360 route dispositions', () => {
   test('historical signal inventory is explicit and structurally valid', () => {
-    expect(Object.keys(DISPOSITIONS)).toHaveLength(51);
+    expect(Object.keys(DISPOSITIONS)).toHaveLength(52);
+    expect(DISPOSITIONS['POST /api/orders/quote-pdf']).toMatchObject({
+      kind: 'EXPECTED_PUBLIC',
+    });
     expect(validateDispositions()).toEqual([]);
     for (const [key, disposition] of Object.entries(DISPOSITIONS)) {
       expect(key).toMatch(/^(GET|POST|PUT|PATCH|DELETE) \//);
