@@ -135,6 +135,18 @@ async function reassign({ db, env = process.env, fetchImpl = fetch, apply = fals
       );
       if (!targetRelay || !currentRelay || targetRelay.market_id !== order.market_id ||
           currentRelay.market_id !== order.market_id) throw new Error('RELAY_MARKET_MISMATCH');
+      const { rows: [targetMarket] } = await client.query('SELECT code FROM markets WHERE id=$1::uuid AND is_active=TRUE LIMIT 1', [order.market_id]);
+      if (!targetMarket || targetMarket.code !== 'KM') throw new Error('TARGET_MARKET_NOT_ALLOWED');
+      const { rows: [admin] } = await client.query(
+        "SELECT id, role::text AS role FROM users WHERE lower(email)=lower($1)",
+        [env.E2E_ADMIN_EMAIL]
+      );
+      if (!admin || admin.role !== 'admin') throw new Error('E2E_ADMIN_AUTHORITY_MISSING');
+      const { ensureRelayAgentMembership } = require('./staging-e2e-provision');
+      await ensureRelayAgentMembership(client,
+        { delegation: require('../../services/market-delegation-service') },
+        { userId: user.id, marketCode: 'KM', actorId: admin.id });
+      report.cash_capability = 'execution.cash.confirm';
       dest = targetRelay.id;
       report.order_reference = reference;
       report.order_id = order.id;
@@ -150,6 +162,10 @@ async function reassign({ db, env = process.env, fetchImpl = fetch, apply = fals
       report.status = res.status; report.writes = res.status === 'assigned' ? 1 : 0;
       if (!['assigned', 'already'].includes(res.status)) throw new Error('ASSIGN_REFUSED:' + res.status);
       await client.query('COMMIT');
+      if (mode === 'to-order' && env.GITHUB_ENV && UUID.test(String(report.relais_before || ''))) {
+        fs.appendFileSync(env.GITHUB_ENV, `RELAY_RESTORE_ID=${report.relais_before}\n`);
+        report.restore_id_exported = true;
+      }
     } else { report.status = 'DRY_RUN'; await client.query('ROLLBACK'); }
     return report;
   } catch (e) { try { await client.query('ROLLBACK'); } catch (_) { /* fermée */ } throw e; } finally { client.release(); }
