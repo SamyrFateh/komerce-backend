@@ -6,6 +6,7 @@ describe('G6 P2 — le devis serveur anonyme n est pas une commande',()=>{
  const src=fs.readFileSync(path.join(__dirname,'../../scripts/recette/g6-p2-buyer-cart-checkout-readonly.js'),'utf8');
  const server=fs.readFileSync(path.join(__dirname,'../../routes/orders/create.js'),'utf8');
  const auth=fs.readFileSync(path.join(__dirname,'../../middleware/auth-guest.js'),'utf8');
+ const realBuyer=fs.readFileSync(path.join(__dirname,'../../scripts/recette/g6-p2-buyer-order-real-chromium.js'),'utf8');
  test('seul POST /api/orders/preview est autorisé dans la sonde readonly',()=>{
   expect(src).toContain("hit.path==='/api/orders/preview'");
   expect(src).toContain("hit.type==='fetch'");
@@ -20,5 +21,9 @@ describe('G6 P2 — le devis serveur anonyme n est pas une commande',()=>{
   expect(auth).toContain("code: 'identity_required'");
   expect(src).toContain('UNAUTHENTICATED_CONFIRM_ENABLED');
   expect(src).toContain('READONLY_BIZ_DB_CHANGED');
+  expect(realBuyer).toContain("'/api/orders/preview'");
+  expect(realBuyer).toContain('G6_AUTHENTICATED_SERVER_QUOTE_NOT_200');
+  expect(realBuyer).toContain('G6_CANONICAL_ORDER_POST_NOT_201');
+  expect(realBuyer).toContain('G6_EXACTLY_ONE_ORDER_NOT_SATISFIED');
  });
 });
