@@ -507,10 +507,10 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 > Faire exister une commande, de la creation au statut final, avec un cout figure et une reference lisible.
 
 - utils: 1
-- services: 26
+- services: 27
 - routes: 11
 - boutique: 3
-- tests: 59
+- tests: 60
 - tables owned (lifecycle): 9 — `order_items`, `orders`, `disputes`, `order_comments`, `order_item_cost_imputations`, `order_status_history`, `recipients`, `sms_log`, `customs_history`
 - tables written: 11
 - interfaces exposed: 27
@@ -2301,7 +2301,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 2307 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 2309 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 216 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 79 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -2549,20 +2549,20 @@ Meta Graph monté : oui.
 | notifications | orders | data-read | 2 | **DECLARED_AND_OBSERVED** |
 | notifications | platform-ops | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | orders | auth | static-code | 14 | **DECLARED_AND_OBSERVED** |
-| orders | auth-identity | static-code, interface, data-read | 13 | **DECLARED_AND_OBSERVED** |
-| orders | business-rules | static-code | 8 | **DECLARED_AND_OBSERVED** |
-| orders | catalog | static-code, data-read | 11 | **DECLARED_AND_OBSERVED** |
+| orders | auth-identity | static-code, interface, data-read | 12 | **DECLARED_AND_OBSERVED** |
+| orders | business-rules | static-code | 9 | **DECLARED_AND_OBSERVED** |
+| orders | catalog | static-code, data-read | 12 | **DECLARED_AND_OBSERVED** |
 | orders | customs | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | orders | dashboard | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | orders | decision-signals | static-code, data-write | 2 | **DECLARED_AND_OBSERVED** |
 | orders | documents | static-code, interface | 10 | **DECLARED_AND_OBSERVED** |
-| orders | economic-engine | static-code | 8 | **DECLARED_AND_OBSERVED** |
-| orders | infrastructure | static-code, interface | 66 | **DECLARED_AND_OBSERVED** |
+| orders | economic-engine | static-code | 10 | **DECLARED_AND_OBSERVED** |
+| orders | infrastructure | static-code, interface | 68 | **DECLARED_AND_OBSERVED** |
 | orders | local-stock | static-code | 4 | **DECLARED_AND_OBSERVED** |
-| orders | logistics | static-code, interface, data-read | 38 | **DECLARED_AND_OBSERVED** |
+| orders | logistics | static-code, interface, data-read | 36 | **DECLARED_AND_OBSERVED** |
 | orders | loyalty | static-code | 7 | **DECLARED_AND_OBSERVED** |
 | orders | market | static-code | 3 | **DECLARED_AND_OBSERVED** |
-| orders | market-autonomy | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| orders | market-autonomy | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | orders | notifications | static-code | 13 | **DECLARED_AND_OBSERVED** |
 | orders | payments | static-code, interface | 9 | **DECLARED_AND_OBSERVED** |
 | orders | platform-ops | static-code | 41 | **DECLARED_AND_OBSERVED** |
