@@ -17,7 +17,7 @@ const db=require('../db');
 const {resolveCommercialTaxonomyVerdict,
   createDraftProductFromSourcingCandidate}=require('../services/catalog-candidate-product-service');
 const EXPECTED_URL='postgresql://komerce:komerce@127.0.0.1:5432/komerce_real_catalog_stress';
-const EXPECTED_SHA='9ff18f6f902f2e72fc893a90da96b61058c77028d55e941381631fc9fb8116de';
+const EXPECTED_SHA='966fe7fe392bbdb0a79b9fe6b0653fb55346393999da8b5f5e869cee696c33db';
 const OUTPUT='artifacts/cj-p1-evidence-boundary-real-pg/report.json';
 const inc=(x,k)=>{x[k]=(x[k]||0)+1;};
 function sourceCandidate(item){
@@ -44,8 +44,26 @@ function loadCorpus(file){
   const data=JSON.parse(bytes.toString('utf8'));
   assertEqual(data.inspected,498,'REAL_CJ_INSPECTED_MISMATCH');
   assertEqual(data.products.length,498,'REAL_CJ_ROWS_MISMATCH');
-  assertEqual(data.automatic,52,'REAL_CJ_BASELINE_AUTO_MISMATCH');
+  assertEqual(data.automatic,54,'REAL_CJ_BASELINE_AUTO_MISMATCH');
   assertEqual(new Set(data.products.map(x=>x.supplier_product_id)).size,498,'DUPLICATE_SUPPLIER_ID');
+  // Exactly two additions come from the read-only provider recovery workflow.
+  // No invented seller id, price, SKU, operator decision or classification.
+  assertEqual(data.provenance?.previous_sha256,
+    '18a93c7dc27cc2074df21f313ec0a1982836bfa664381c20a9b29a5e68598b0f',
+    'SOURCE_RECOVERY_PROVENANCE_HASH');
+  assertEqual(data.provenance?.recovered_count,2,'REAL_PROVIDER_RECOVERY_COUNT');
+  assertEqual(data.provenance?.recovered_by,'CJ_LIVE_PRODUCT_LISTV2','REAL_PROVIDER_RECOVERY_ORIGIN');
+  assertEqual(data.certification,'NOT_ASSERTED','NO_FABRICATED_CJ_500_CERTIFICATION');
+  const recovered=data.products.filter(x=>String(x.candidate_ref||'').startsWith('CJ-REAL-RECOVERY-'));
+  assertEqual(recovered.length,2,'REAL_PROVIDER_RECOVERY_ROWS');
+  for(const p of recovered){
+    if(!p.supplier_product_id||!p.product_name||!p.supplier_category
+      ||p.real_source_proof?.supplier!=='CJdropshipping'
+      ||p.real_source_proof?.endpoint!=='CJ product.listV2 query'
+      ||p.real_source_proof?.semantic_relevance?.relevant!==true
+      ||p.status!=='UNASSESSED')
+      throw Error('REAL_PROVIDER_RECOVERY_PROVENANCE_UNTRUSTED');
+  }
   return data;
 }
 async function transactionProof(client,label,candidate,{shouldCreate,expectedCategory,expectedSubcategory}={}){
