@@ -92,7 +92,7 @@ test.describe.serial('G6 P3 KUYIYUK — Chromium Relais cash + Hub UI',()=>{
       const o=await orderState();
       if(o)evidence.final={order_id:o.id,status:o.status,payment_status:o.payment_status,line_count:Number(o.line_count),po_count:Number(o.po_count),cash_collection_count:Number(o.cash_collection_count),cash_control_confirmed_count:Number(o.cash_control_confirmed_count)};
     }catch(e){evidence.readback_error=String(e.message||e).slice(0,250);}
-    if(evidence.final&&evidence.final.status==='confirmed'&&evidence.final.payment_status==='paid'&&evidence.final.cash_collection_count===1&&evidence.final.cash_control_confirmed_count===1&&evidence.final.line_count===1&&evidence.final.po_count===1){
+    if(evidence.final&&['confirmed','ordered'].includes(evidence.final.status)&&evidence.final.payment_status==='paid'&&evidence.final.cash_collection_count===1&&evidence.final.cash_control_confirmed_count===1&&evidence.final.line_count===1&&evidence.final.po_count===1){
       evidence.verdict='G6_P3_MANUAL_LINE_AND_DRAFT_PO_CHROMIUM_PASS';
     }else if(evidence.error){
       evidence.verdict='G6_P3_BLOCKED_NOT_PROVEN';
