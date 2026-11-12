@@ -64,14 +64,14 @@ jobs:
           fi
           node scripts/seed-reference-data.js
           echo CANONICAL_DISPOSABLE_POSTGRESQL_READY
-      - name: Recover the exact 498 authentic supplier identities without any API calls
+      - name: Recover 498 genuine CJ identities from pinned read-only provider capture
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           mkdir -p baseline
-          gh run download 40518230098 -R "$GITHUB_REPOSITORY" -n cj-balanced-e2e-500 -D baseline
-          echo '9ff18f6f902f2e72fc893a90da96b61058c77028d55e941381631fc9fb8116de  baseline/classification-evidence.json' | sha256sum -c -
+          gh run download 43226639371 -R "$GITHUB_REPOSITORY" -n cj-real-498-source-43226639371 -D baseline
+          echo '966fe7fe392bbdb0a79b9fe6b0653fb55346393999da8b5f5e869cee696c33db  baseline/classification-evidence.json' | sha256sum -c -
       - name: Certify 498 real classifications and Sourcing to Catalogue transactions
         run: node scripts/cj-498-p1-disposable-pg-e2e.js baseline/classification-evidence.json
       - name: Preserve E2E evidence on green or red
