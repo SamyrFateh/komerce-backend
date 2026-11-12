@@ -10546,16 +10546,21 @@
             ]
           },
           "services": {
-            "count": 8,
+            "count": 9,
             "files": [
               {
                 "declared": "services/documents/cart-quote-pdf.js",
                 "resolvedPath": "services/documents/cart-quote-pdf.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/documents/customs-invoice.js",
                 "resolvedPath": "services/documents/customs-invoice.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/documents/document-reconciliation.js",
+                "resolvedPath": "services/documents/document-reconciliation.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -10591,7 +10596,7 @@
             ]
           },
           "tests": {
-            "count": 17,
+            "count": 18,
             "files": [
               {
                 "declared": "tests/e2e-api/invoices-finance-config.kmf-numeric.e2e.test.js",
@@ -10616,6 +10621,11 @@
               {
                 "declared": "tests/unit/customs-invoice.test.js",
                 "resolvedPath": "tests/unit/customs-invoice.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/document-reconciliation.test.js",
+                "resolvedPath": "tests/unit/document-reconciliation.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -10711,7 +10721,7 @@
             ]
           }
         },
-        "totalFiles": 40,
+        "totalFiles": 42,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -24993,7 +25003,7 @@
               {
                 "declared": "services/public-cart-quote-service.js",
                 "resolvedPath": "services/public-cart-quote-service.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/qr-collection-core.js",

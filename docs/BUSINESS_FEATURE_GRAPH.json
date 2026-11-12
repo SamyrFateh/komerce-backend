@@ -8132,6 +8132,13 @@
       {
         "feature": "documents",
         "category": "services",
+        "declared": "services/documents/document-reconciliation.js",
+        "resolvedPath": "services/documents/document-reconciliation.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "documents",
+        "category": "services",
         "declared": "services/documents/customs-invoice.js",
         "resolvedPath": "services/documents/customs-invoice.js",
         "status": "resolved-in-technical-graph"
@@ -8155,7 +8162,7 @@
         "category": "services",
         "declared": "services/documents/cart-quote-pdf.js",
         "resolvedPath": "services/documents/cart-quote-pdf.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "documents",
@@ -8337,6 +8344,13 @@
         "category": "tests",
         "declared": "tests/unit/refund-receipt.test.js",
         "resolvedPath": "tests/unit/refund-receipt.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "documents",
+        "category": "tests",
+        "declared": "tests/unit/document-reconciliation.test.js",
+        "resolvedPath": "tests/unit/document-reconciliation.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -16457,7 +16471,7 @@
         "category": "services",
         "declared": "services/public-cart-quote-service.js",
         "resolvedPath": "services/public-cart-quote-service.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "orders",
@@ -37726,6 +37740,14 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "services/documents/document-reconciliation.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/documents/document-reconciliation.js",
+                "targetFile": "utils/logger.js"
+              },
+              {
                 "sourceFileId": "services/documents/customs-invoice.js",
                 "targetFile": "db.js"
               },
@@ -47438,6 +47460,14 @@
                 "targetFile": "services/documents/refund-receipt.js"
               },
               {
+                "sourceFileId": "services/item-refund-psp-orchestrator.js",
+                "targetFile": "services/documents/refund-receipt.js"
+              },
+              {
+                "sourceFileId": "tests/unit/item-refund-psp-orchestrator.test.js",
+                "targetFile": "services/documents/refund-receipt.js"
+              },
+              {
                 "sourceFileId": "tests/unit/refund-receipt-html.test.js",
                 "targetFile": "utils/documents/refund-receipt-html.js"
               }
@@ -47484,6 +47514,10 @@
               {
                 "sourceFileId": "services/item-refund-psp-orchestrator.js",
                 "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/item-refund-psp-orchestrator.js",
+                "targetFile": "utils/logger.js"
               },
               {
                 "sourceFileId": "services/refund-intent-ledger.js",
@@ -49292,7 +49326,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2310
+        "filesObserved": 2312
       },
       "boutique": {
         "filesObserved": 216,
@@ -53198,8 +53232,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 695,
-        "technicalNodesOwned": 695,
+        "technicalNodesTotal": 698,
+        "technicalNodesOwned": 698,
         "technicalOrphans": 0
       },
       "dash": {
@@ -53213,8 +53247,8 @@
       "boutique": {
         "manifestsDiscovered": 16,
         "manifestsConnected": 16,
-        "technicalNodesTotal": 104,
-        "technicalNodesOwned": 104,
+        "technicalNodesTotal": 105,
+        "technicalNodesOwned": 105,
         "technicalOrphans": 0
       }
     },
