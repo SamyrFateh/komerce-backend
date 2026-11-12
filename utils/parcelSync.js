@@ -7,7 +7,7 @@
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
  * @depends       db, services/order-status-machine.js, services/parcel-order-membership.js, utils/logger.js, utils/parcels.js
- * @db-write      alerts, parcel_events, parcels, scans, parcel_items, order_items
+ * @db-write      alerts, parcel_events, parcels, scans
  * @db-write-via:order-status-machine product_variants, order_status_history, products
  * @db-read      order_items, parcel_items, parcels
  * @used-by       routes/hub-dashboard.js, routes/logistics.js, routes/parcels.js, routes/transit-dashboard.js, routes/transitaire-api.js, services/hub-operations.js, services/parcelOptimizationService.js, services/scan-operations.js, services/verify-qr-collection.js
@@ -197,55 +197,12 @@ async function syncScanToParcels({ order_id, step, scan_id, target_one_available
     if (newWeight <= currentWeight) continue;
 
 
-    // Pickup par code/QR : le statut physique et les quantités remises
-    // doivent être validés dans la MÊME transaction. Le scan-engine
-    // projette déjà qty_collected depuis qty_received ; cette voie de retrait
-    // via parcelSync n'avait jamais appliqué la projection.
-    // Seul le retrait explicitement ciblé est concerné.
+    // Projection des quantités par l'owner physique scan-engine,
+    // dans la même transaction que la transition du colis et de la commande.
+    // Pas de second writer direct dans le synchroniseur de statuts.
     if (step === 'collected' && target_one_available) {
-      if (!dbClient) {
-        throw new Error('PICKUP_PHYSICAL_TRANSACTION_REQUIRED');
-      }
-      const { rows: physical } = await q.query(
-        `SELECT pi.order_item_id, pi.quantity, pi.qty_received, pi.qty_collected
-           FROM parcel_items pi
-          WHERE pi.parcel_id = $1
-          ORDER BY pi.id FOR UPDATE OF pi`,
-        [parcel.id]
-      );
-      if (!physical.length || physical.some(pi =>
-          !pi.order_item_id ||
-          !Number.isInteger(Number(pi.qty_received)) ||
-          Number(pi.qty_received) <= 0 ||
-          Number(pi.qty_received) > Number(pi.quantity) ||
-          Number(pi.qty_collected) > Number(pi.qty_received))) {
-        throw new Error('PICKUP_PHYSICAL_QUANTITY_INVALID');
-      }
-      await q.query(
-        `UPDATE parcel_items
-            SET qty_collected = qty_received
-          WHERE parcel_id = $1 AND qty_collected < qty_received`,
-        [parcel.id]
-      );
-      // Même projection que le scan-engine : additionner tous les colis
-      // non annulés pour chaque order_item, y compris un colis partagé.
-      // Les contraintes E7 de remboursement restent imposées par PostgreSQL.
-      const ids = [...new Set(physical.map(pi => pi.order_item_id))];
-      await q.query(
-        `UPDATE order_items oi
-            SET qty_collected = agg.collected
-           FROM (
-             SELECT pi.order_item_id,
-                    COALESCE(SUM(pi.qty_collected), 0)::integer AS collected
-               FROM parcel_items pi
-               JOIN parcels p ON p.id = pi.parcel_id
-              WHERE pi.order_item_id = ANY($1::uuid[])
-                AND p.status <> 'cancelled'
-              GROUP BY pi.order_item_id
-           ) agg
-          WHERE oi.id = agg.order_item_id`,
-        [ids]
-      );
+      if (!dbClient) throw new Error('PICKUP_PHYSICAL_TRANSACTION_REQUIRED');
+      await require('../services/scan-engine').projectCollectedPickupQuantities(dbClient, parcel.id);
     }
 
     await q.query(
