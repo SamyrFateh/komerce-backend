@@ -51,4 +51,84 @@ describe('Fais-moi un devis — sans relais ni identité', () => {
       items: [{}], total_kmf: 8016, transport_price_kmf: 26,
     })).toThrow(/incomplet/);
   });
+
+  test('ferme le devis après téléchargement et partage réussi, reste ouvert si partage annulé', async () => {
+    const { setupCartQuote } = require('../../js/b-cart-quote.js');
+    const { state } = require('../../js/b-store.js');
+    const origin = document.createElement('button');
+    origin.id = 'k-cart-quote';
+    document.body.appendChild(origin);
+    document.body.dataset.marketCode = 'KM';
+    state.cart = cart;
+    state.cartSurface = 'personal';
+
+    const preview = {
+      total_kmf: 23970, items_total_kmf: 23970, transport_price_kmf: 0,
+      items: [
+        { product_name: 'Chemise', quantity: 2, unit_price_kmf: 7990,
+          line_total_kmf: 15980, variant_combo: { cj_size: 'S' } },
+        { product_name: 'Chemise', quantity: 1, unit_price_kmf: 7990,
+          line_total_kmf: 7990, variant_combo: { cj_size: 'M' } },
+      ],
+    };
+    const oldFetch = global.fetch;
+    const oldCreate = URL.createObjectURL;
+    const oldRevoke = URL.revokeObjectURL;
+    const oldShare = Object.getOwnPropertyDescriptor(navigator, 'share');
+    const oldCanShare = Object.getOwnPropertyDescriptor(navigator, 'canShare');
+    const anchorClick = jest.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    global.fetch = jest.fn().mockImplementation(async (_url, options) => {
+      if (options.headers.Accept === 'application/json') {
+        return { ok: true, json: async () => preview };
+      }
+      return { ok: true, blob: async () => new Blob(['%PDF-1.4'], { type: 'application/pdf' }) };
+    });
+    URL.createObjectURL = jest.fn(() => 'blob:quote');
+    URL.revokeObjectURL = jest.fn();
+    const flush = () => new Promise(resolve => setTimeout(resolve, 0));
+    const openReady = async () => {
+      origin.click();
+      await flush();
+      expect(document.querySelector('#k-quote-result').hidden).toBe(false);
+    };
+
+    try {
+      setupCartQuote();
+      await openReady();
+      document.querySelector('[data-quote-action="save"]').click();
+      await flush();
+      expect(anchorClick).toHaveBeenCalledTimes(1);
+      expect(document.querySelector('#k-quote-dialog')).toBeNull();
+      expect(document.activeElement).toBe(origin);
+
+      Object.defineProperty(navigator, 'share', { configurable: true,
+        value: jest.fn().mockRejectedValue({ name: 'AbortError' }) });
+      Object.defineProperty(navigator, 'canShare', { configurable: true, value: () => true });
+      await openReady();
+      document.querySelector('[data-quote-action="share"]').click();
+      await flush();
+      expect(document.querySelector('#k-quote-dialog')).not.toBeNull();
+      expect(anchorClick).toHaveBeenCalledTimes(1);
+
+      navigator.share.mockResolvedValueOnce();
+      await new Promise(resolve => setTimeout(resolve, 0));
+      document.querySelector('[data-quote-action="share"]').click();
+      await flush();
+      expect(document.querySelector('#k-quote-dialog')).toBeNull();
+      expect(anchorClick).toHaveBeenCalledTimes(1);
+    } finally {
+      global.fetch = oldFetch;
+      URL.createObjectURL = oldCreate;
+      URL.revokeObjectURL = oldRevoke;
+      if (oldShare) Object.defineProperty(navigator, 'share', oldShare);
+      else delete navigator.share;
+      if (oldCanShare) Object.defineProperty(navigator, 'canShare', oldCanShare);
+      else delete navigator.canShare;
+      anchorClick.mockRestore();
+      document.body.removeAttribute('data-market-code');
+      document.querySelector('#k-quote-dialog')?.remove();
+      origin.remove();
+      state.cart = [];
+    }
+  });
 });
