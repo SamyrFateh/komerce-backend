@@ -200,6 +200,7 @@ export function setupCartQuote() {
     const result = dialog.querySelector('#k-quote-result');
     const preview = dialog.querySelector('#k-quote-preview');
     let locked = null;
+    let cachedPdf = null;
     let processing = false;
     const startingSignature = cartSignature();
     const validCart = () => state.cartSurface === 'personal' &&
@@ -207,6 +208,7 @@ export function setupCartQuote() {
     const invalidate = () => {
       if (validCart()) return;
       locked = null;
+      cachedPdf = null;
       result.hidden = true;
       calculate.disabled = true;
       status.textContent = 'Ton panier a changé. Ferme cette fenêtre et recommence le devis.';
@@ -242,6 +244,7 @@ export function setupCartQuote() {
 
     select.addEventListener('change', () => {
       locked = null;
+      cachedPdf = null;
       result.hidden = true;
       status.textContent = '';
     });
@@ -266,11 +269,17 @@ export function setupCartQuote() {
         const quote = await apiPost('/api/orders/preview', payload, { retries: 0 });
         if (!dialog.isConnected || !validCart()) return invalidate();
         renderQuotePreview(preview, quote);
+        // Cache the ephemeral PDF before showing actions. Mobile share requires
+        // navigator.share() during a direct gesture, not after a network await.
+        const pdf = await loadPdf(payload);
+        if (!dialog.isConnected || !validCart() || select.value !== payload.relais_id) return invalidate();
+        cachedPdf = pdf;
         locked = payload;
         result.hidden = false;
         status.textContent = 'Devis prêt : vous pouvez le partager, enregistrer ou imprimer.';
       } catch (error) {
         locked = null;
+        cachedPdf = null;
         result.hidden = true;
         status.textContent = error?.message || 'Devis indisponible. Réessaie.';
       } finally {
@@ -281,7 +290,7 @@ export function setupCartQuote() {
 
     dialog.querySelectorAll('[data-quote-action]').forEach(button => {
       button.addEventListener('click', async () => {
-        if (processing || !locked || !validCart()) return invalidate();
+        if (processing || !locked || !cachedPdf || !validCart()) return invalidate();
         const action = button.dataset.quoteAction;
         // Ouvrir l'onglet PDF dès le geste humain, avant le fetch asynchrone.
         const tab = action === 'print' ? window.open('', '_blank') : null;
@@ -290,9 +299,9 @@ export function setupCartQuote() {
           tab.document.body.textContent = 'Préparation du devis PDF…';
         }
         processing = true;
-        status.textContent = 'Préparation du PDF…';
+        status.textContent = 'Ouverture du devis PDF…';
         try {
-          const pdf = await loadPdf(locked);
+          const pdf = cachedPdf;
           if (!validCart()) { tab?.close(); return invalidate(); }
           if (action === 'share') {
             const file = typeof File === 'function'
