@@ -987,6 +987,15 @@
   }
 }
 
+@media (max-width: 899px) {
+  .k-order-overlay.open .ck-checkout-primary,
+  .k-order-overlay.open .ck-checkout-aside { border-radius: 18px; }
+  .ck-recap-subtotal { margin-top: 9px; padding: 14px 13px; }
+  .ck-recap-subtotal strong { font-size: 1.04rem; }
+  .ck-checkout-trust { font-size: .6rem; }
+  .k-order-overlay.open .ck-pay-chip { min-height: 58px; padding: 9px 10px; }
+}
+
 @media (min-width: 900px) {
   /*
    * Desktop = page transactionnelle.
@@ -1488,11 +1497,3 @@
 .k-order-overlay.open .ck-confirm-btn:disabled .ck-confirm-subtext { color: var(--text-muted); opacity: 1; }
 .k-order-overlay.open .ck-confirm-main { font-size: .95rem; line-height: 1.3; }
 
-@media (max-width: 899px) {
-  .k-order-overlay.open .ck-checkout-primary,
-  .k-order-overlay.open .ck-checkout-aside { border-radius: 18px; }
-  .ck-recap-subtotal { margin-top: 9px; padding: 14px 13px; }
-  .ck-recap-subtotal strong { font-size: 1.04rem; }
-  .ck-checkout-trust { font-size: .6rem; }
-  .k-order-overlay.open .ck-pay-chip { min-height: 58px; padding: 9px 10px; }
-}
