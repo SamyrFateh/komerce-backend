@@ -16448,6 +16448,13 @@
       {
         "feature": "orders",
         "category": "services",
+        "declared": "services/public-cart-quote-service.js",
+        "resolvedPath": "services/public-cart-quote-service.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "orders",
+        "category": "services",
         "declared": "services/rct1-checkout-reference-guard.js",
         "resolvedPath": "services/rct1-checkout-reference-guard.js",
         "status": "resolved-in-technical-graph"
@@ -17045,6 +17052,13 @@
         "category": "tests",
         "declared": "tests/unit/orders-create-route.test.js",
         "resolvedPath": "tests/unit/orders-create-route.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "orders",
+        "category": "tests",
+        "declared": "tests/unit/public-cart-quote-service.test.js",
+        "resolvedPath": "tests/unit/public-cart-quote-service.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -43108,10 +43122,6 @@
                 "targetFile": "public/boutique/js/b-phone.js"
               },
               {
-                "sourceFileId": "public/boutique/js/b-cart-quote.js",
-                "targetFile": "public/boutique/js/b-identity.js"
-              },
-              {
                 "sourceFileId": "public/boutique/tests/unit/b-tracking.test.js",
                 "targetFile": "public/boutique/js/b-identity.js"
               },
@@ -43160,6 +43170,10 @@
                 "targetFile": "utils/rules.js"
               },
               {
+                "sourceFileId": "services/public-cart-quote-service.js",
+                "targetFile": "utils/rules.js"
+              },
+              {
                 "sourceFileId": "routes/orders/qr.js",
                 "targetFile": "utils/rules.js"
               },
@@ -43202,6 +43216,10 @@
               {
                 "sourceFileId": "services/order-status-machine.js",
                 "targetFile": "services/product-admin-service.js"
+              },
+              {
+                "sourceFileId": "services/public-cart-quote-service.js",
+                "targetFile": "services/catalog-public-view.js"
               },
               {
                 "sourceFileId": "services/order-checkout-item-resolution.js",
@@ -43416,8 +43434,16 @@
                 "targetFile": "services/transport-pricing.js"
               },
               {
+                "sourceFileId": "services/public-cart-quote-service.js",
+                "targetFile": "services/transport-pricing.js"
+              },
+              {
                 "sourceFileId": "routes/orders/status.js",
                 "targetFile": "services/cost-allocation/canonical-margin-writer.js"
+              },
+              {
+                "sourceFileId": "routes/orders/create.js",
+                "targetFile": "services/transport-pricing.js"
               },
               {
                 "sourceFileId": "tests/unit/order-cost-snapshot.test.js",
@@ -43494,6 +43520,10 @@
               {
                 "sourceFileId": "services/order-checkout-service.js",
                 "targetFile": "utils/logger.js"
+              },
+              {
+                "sourceFileId": "services/public-cart-quote-service.js",
+                "targetFile": "db.js"
               },
               {
                 "sourceFileId": "services/hub-v1-fixture-payment.js",
@@ -43692,6 +43722,10 @@
                 "targetFile": "utils/rates.js"
               },
               {
+                "sourceFileId": "tests/unit/public-cart-quote-service.test.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "tests/unit/orders-status-route.test.js",
                 "targetFile": "tests/integration/test-harness/mock-db.js"
               },
@@ -43780,14 +43814,6 @@
               {
                 "sourceFileId": "services/order-checkout-service.js",
                 "targetFile": "services/routing.js"
-              },
-              {
-                "sourceFileId": "services/order-checkout-service.js",
-                "targetFile": "services/market-transport-tariff-gate.js"
-              },
-              {
-                "sourceFileId": "services/order-checkout-service.js",
-                "targetFile": "services/market-transport-sale-rates.js"
               },
               {
                 "sourceFileId": "services/order-checkout-persistence.js",
@@ -43996,6 +44022,18 @@
               {
                 "sourceFileId": "services/order-checkout-service.js",
                 "targetFile": "services/market-commercial-price-service.js"
+              },
+              {
+                "sourceFileId": "services/public-cart-quote-service.js",
+                "targetFile": "services/market-local-price-resolution-service.js"
+              },
+              {
+                "sourceFileId": "routes/orders/create.js",
+                "targetFile": "services/market-commercial-price-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/public-cart-quote-service.test.js",
+                "targetFile": "services/market-local-price-resolution-service.js"
               }
             ]
           }
@@ -49188,7 +49226,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2307
+        "filesObserved": 2309
       },
       "boutique": {
         "filesObserved": 216,
