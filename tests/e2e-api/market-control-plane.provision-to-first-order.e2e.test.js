@@ -178,51 +178,69 @@ describeE2E('Market Control Plane H — provisioning -> première commande',({db
     expect(stored).toMatchObject({market_id:marketId,relais_id:relayId,status:'pending',payment_status:'pending'});
   });
 
-  it('4 — lot 4 : hors devise du tarif de transport global, la commande est refusée (fail-closed)',async()=>{
-    await db.query("UPDATE markets SET currency='XAF' WHERE id=$1",[marketId]);
-    await db.query("UPDATE product_market_price_drafts SET currency='XAF' WHERE market_id=$1 AND product_id=$2",[marketId,productId]);
+  // Les commandes créées par les scénarios marché sont toujours enregistrées
+  // pour le cleanup LIFO, même si une assertion de tarification échoue ensuite.
+  async function expectOrderWithoutMaritimeSurcharge(res) {
+    const orderId = res.body?.order?.id;
+    if (orderId) {
+      cleanup.track('orders', 'id', orderId);
+      cleanup.trackSql('DELETE FROM invoices WHERE order_id=$1', [orderId]);
+      cleanup.trackSql('DELETE FROM order_items WHERE order_id=$1', [orderId]);
+      cleanup.trackSql('DELETE FROM order_status_history WHERE order_id=$1', [orderId]);
+    }
+    expect(res.status).toBe(201);
+    expect(orderId).toBeTruthy();
+    const { rows: [stored] } = await db.query(
+      'SELECT market_id, transport_price_kmf, transport_pricing_snapshot FROM orders WHERE id=$1',
+      [orderId]
+    );
+    expect(stored.market_id).toBe(marketId);
+    expect(Number(stored.transport_price_kmf)).toBe(0);
+    expect(stored.transport_pricing_snapshot).toBeNull();
+  }
+
+  it('4 — marché XAF sans tarif maritime : commande admise sans supplément client', async () => {
+    await db.query("UPDATE markets SET currency='XAF' WHERE id=$1", [marketId]);
+    await db.query("UPDATE product_market_price_drafts SET currency='XAF' WHERE market_id=$1 AND product_id=$2", [marketId, productId]);
     try {
-      const res=await request(app).post('/api/orders')
-        .set('Authorization',`Bearer ${buyerToken}`)
-        .send({items:[{product_id:productId,quantity:1}],relais_id:relayId,payment_mode:'stripe_eur',tracking_phone:'+269000999'});
-      expect(res.status).toBe(409);
-      expect(res.body.code).toBe('MARKET_TRANSPORT_TARIFF_MISSING');
+      const res = await request(app).post('/api/orders')
+        .set('Authorization', `Bearer ${buyerToken}`)
+        .send({ items: [{ product_id: productId, quantity: 1 }], relais_id: relayId, payment_mode: 'stripe_eur', tracking_phone: '+269000999' });
+      await expectOrderWithoutMaritimeSurcharge(res);
     } finally {
-      await db.query("UPDATE markets SET currency='KMF' WHERE id=$1",[marketId]);
-      await db.query("UPDATE product_market_price_drafts SET currency='KMF' WHERE market_id=$1 AND product_id=$2",[marketId,productId]);
+      await db.query("UPDATE markets SET currency='KMF' WHERE id=$1", [marketId]);
+      await db.query("UPDATE product_market_price_drafts SET currency='KMF' WHERE market_id=$1 AND product_id=$2", [marketId, productId]);
     }
   });
 
-  it('5 — généralisation : le même checkout accepte un marché non-KMF dès qu’il a ses propres tarifs de vente',async()=>{
-    await db.query("UPDATE markets SET currency='XAF' WHERE id=$1",[marketId]);
-    await db.query("UPDATE product_market_price_drafts SET currency='XAF' WHERE market_id=$1 AND product_id=$2",[marketId,productId]);
-    const orderBody={items:[{product_id:productId,quantity:1}],relais_id:relayId,payment_mode:'stripe_eur',tracking_phone:'+269000999'};
-    let orderId=null;
+  it('5 — tarif maritime historique externe ou local : aucune surfacturation client', async () => {
+    await db.query("UPDATE markets SET currency='XAF' WHERE id=$1", [marketId]);
+    await db.query("UPDATE product_market_price_drafts SET currency='XAF' WHERE market_id=$1 AND product_id=$2", [marketId, productId]);
+    const orderBody = { items: [{ product_id: productId, quantity: 1 }], relais_id: relayId, payment_mode: 'stripe_eur', tracking_phone: '+269000999' };
     try {
-      // Un tarif posé sur un AUTRE marché ne débloque pas celui-ci.
-      const { rows:[other] }=await db.query("SELECT id FROM markets WHERE id<>$1 AND code IN ('KM','CM','CG') LIMIT 1",[marketId]);
-      await db.query("INSERT INTO market_transport_sale_rates (market_id,rate_key,rate_per_kg,currency,evidence_ref) VALUES ($1,'SEA_KMF_PER_KG_COMMERCIAL',90,'XAF','e2e-autre-marche')",[other.id]);
-      const stillRefused=await request(app).post('/api/orders').set('Authorization',`Bearer ${buyerToken}`).send(orderBody);
-      expect(stillRefused.status).toBe(409);
-      expect(stillRefused.body.code).toBe('MARKET_TRANSPORT_TARIFF_MISSING');
+      const { rows: [other] } = await db.query(
+        "SELECT id FROM markets WHERE id<>$1 AND code IN ('KM','CM','CG') LIMIT 1", [marketId]
+      );
+      expect(other?.id).toBeTruthy();
+      await db.query(
+        "INSERT INTO market_transport_sale_rates (market_id,rate_key,rate_per_kg,currency,evidence_ref) VALUES ($1,'SEA_KMF_PER_KG_COMMERCIAL',90,'XAF','e2e-autre-marche')",
+        [other.id]
+      );
+      const first = await request(app).post('/api/orders')
+        .set('Authorization', `Bearer ${buyerToken}`).send(orderBody);
+      await expectOrderWithoutMaritimeSurcharge(first);
 
-      await db.query("INSERT INTO market_transport_sale_rates (market_id,rate_key,rate_per_kg,currency,evidence_ref) VALUES ($1,'SEA_KMF_PER_KG_COMMERCIAL',90,'XAF','e2e-decision-locale')",[marketId]);
-      const accepted=await request(app).post('/api/orders').set('Authorization',`Bearer ${buyerToken}`).send(orderBody);
-      expect(accepted.status).toBe(201);
-      orderId=accepted.body.order.id;
-      const {rows:[snap]}=await db.query('SELECT transport_pricing_snapshot AS s FROM orders WHERE id=$1',[orderId]);
-      expect(snap.s).toMatchObject({version:1,market_currency:'XAF',pivot_currency:'EUR',source:'market_transport_sale_rates'});
-      expect(snap.s.tariff_lines[0]).toMatchObject({rate_key:'SEA_KMF_PER_KG_COMMERCIAL',rate_per_kg_local:90,currency:'XAF',evidence_ref:'e2e-decision-locale'});
+      await db.query(
+        "INSERT INTO market_transport_sale_rates (market_id,rate_key,rate_per_kg,currency,evidence_ref) VALUES ($1,'SEA_KMF_PER_KG_COMMERCIAL',90,'XAF','e2e-decision-locale')",
+        [marketId]
+      );
+      const second = await request(app).post('/api/orders')
+        .set('Authorization', `Bearer ${buyerToken}`).send(orderBody);
+      await expectOrderWithoutMaritimeSurcharge(second);
     } finally {
-      await db.query('DELETE FROM market_transport_sale_rates WHERE evidence_ref IN ($1,$2)',['e2e-autre-marche','e2e-decision-locale']);
-      await db.query("UPDATE markets SET currency='KMF' WHERE id=$1",[marketId]);
-      await db.query("UPDATE product_market_price_drafts SET currency='KMF' WHERE market_id=$1 AND product_id=$2",[marketId,productId]);
-      if(orderId){
-        cleanup.track('orders','id',orderId);
-        cleanup.trackSql('DELETE FROM invoices WHERE order_id=$1',[orderId]);
-        cleanup.trackSql('DELETE FROM order_items WHERE order_id=$1',[orderId]);
-        cleanup.trackSql('DELETE FROM order_status_history WHERE order_id=$1',[orderId]);
-      }
+      await db.query('DELETE FROM market_transport_sale_rates WHERE evidence_ref IN ($1,$2)', ['e2e-autre-marche', 'e2e-decision-locale']);
+      await db.query("UPDATE markets SET currency='KMF' WHERE id=$1", [marketId]);
+      await db.query("UPDATE product_market_price_drafts SET currency='KMF' WHERE market_id=$1 AND product_id=$2", [marketId, productId]);
     }
   });
 });
