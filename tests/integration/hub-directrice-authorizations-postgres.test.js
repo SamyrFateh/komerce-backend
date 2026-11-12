@@ -86,11 +86,16 @@ if (!process.env.DATABASE_URL) {
   });
 
   test('décision d\'engagement tracée (décideur, horodatage, montant dérivé des lignes, pièce) puis soumission possible ; rejeu idempotent ; append-only', async () => {
+    await expect(auth.getCommitmentPdf(po)).rejects.toMatchObject({ status: 404 });
     const d = await auth.decide({ purchaseOrderId: po, authorizationType: 'purchase_commitment', actor: directrice, body: { proof_ref: 'BC-1' } });
+    expect(d).not.toHaveProperty('commitment_pdf');
+    const pdf = await auth.getCommitmentPdf(po);
+    expect(pdf.subarray(0, 5).toString()).toBe('%PDF-');
     expect(d).toMatchObject({ decided_by: directrice.id, currency: 'AED', proof_ref: 'BC-1' });
     expect(Number(d.amount)).toBe(30);
     expect(d.decided_at).toBeTruthy();
     expect((await auth.decide({ purchaseOrderId: po, authorizationType: 'purchase_commitment', actor: directrice, body: { proof_ref: 'BC-2' } })).idempotent_replay).toBe(true);
+    expect(await auth.getCommitmentPdf(po)).toEqual(pdf);
     await expect(q('UPDATE purchase_order_authorizations SET amount = 1 WHERE id=$1', [d.id])).rejects.toThrow(/purchase_order_authorization_immutable/);
     await expect(q('DELETE FROM purchase_order_authorizations WHERE id=$1', [d.id])).rejects.toThrow(/purchase_order_authorization_immutable/);
     await expect(auth.assertCommitmentAuthorized(db, po)).resolves.toBeUndefined();

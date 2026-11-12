@@ -25,6 +25,7 @@ const TYPE_LABELS = {
   invoice: 'Facture',
   refund_receipt: 'Reçu de remboursement',
   wallet_receipt: 'Reçu wallet',
+  purchase_commitment: 'Bon de commande fournisseur',
   pickup_proof: 'Preuve de retrait',
   customs_invoice: 'Facture douane',
 };
@@ -103,6 +104,19 @@ function renderLines(pdf, documentType, document) {
       ? `${Number(document.total_amount).toLocaleString('fr-FR')} ${document.total_currency_label}`
       : formatAmount(document.total_kmf); // repli si le payload est ancien (facture pré-P4)
     rows.push(['Total payé', totalLabel]);
+  } else if (documentType === 'purchase_commitment') {
+    pdf.moveDown().font('Helvetica-Bold').fontSize(10).text('Usage interne Hub');
+    pdf.font('Helvetica').text(`Fournisseur : ${document.supplier_name}`);
+    pdf.moveDown().font('Helvetica-Bold').text('Articles');
+    for (const line of document.lines) {
+      const unitPrice = line.supplier_unit_price == null || !line.supplier_currency
+        ? 'prix unitaire non renseigné'
+        : `${line.supplier_unit_price} ${line.supplier_currency} / unité`;
+      pdf.font('Helvetica').text(
+        `${line.quantity} × ${line.product_name || 'Article'} · ${line.supplier_sku} · ${unitPrice}`,
+      );
+    }
+    rows.push(['Montant engagé', `${Number(document.amount).toFixed(4).replace(/\.?0+$/, '')} ${document.currency}`]);
   } else {
     rows.push(['Commande', meta.order_reference || '—']);
     if (documentType === 'refund_receipt') {
@@ -163,7 +177,9 @@ async function renderPdf({ documentType, document, html = null }) {
   pdf.fillColor('#1E2A25');
   renderLines(pdf, documentType, source);
   pdf.moveDown(2).fontSize(8).fillColor('#66736D')
-    .text('Document généré automatiquement à partir d’un événement confirmé. Téléchargement réservé au compte propriétaire.');
+    .text(documentType === 'purchase_commitment'
+      ? 'Engagement d’achat validé. Le paiement fournisseur fait l’objet d’une autorisation distincte.'
+      : 'Document généré automatiquement à partir d’un événement confirmé. Téléchargement réservé au compte propriétaire.');
   pdf.end();
   await completed;
 

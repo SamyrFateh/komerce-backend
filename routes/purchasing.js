@@ -131,6 +131,14 @@ router.get('/po/:po_id', ...groupedGuard, async (req, res, next) => {
   try { res.json(await getPurchaseOrderDetail(req.params.po_id)); } catch (err) { groupedError(err, res, next); }
 });
 
+router.get('/po/:po_id/commitment-pdf', ...groupedGuard, async (req, res, next) => {
+  try {
+    const pdf = await hubAuth.getCommitmentPdf(req.params.po_id);
+    res.set('Cache-Control', 'private, no-store');
+    res.attachment(`bon-commande-${req.params.po_id}.pdf`).send(pdf);
+  } catch (err) { groupedError(err, res, next); }
+});
+
 router.post('/po/prepare', ...groupedGuard, async (req, res, next) => {
   try {
     res.status(201).json(await grouped.preparePurchaseOrder(req.body || {}, { actor: req.user }));

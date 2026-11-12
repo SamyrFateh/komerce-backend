@@ -6,9 +6,9 @@
  * @criticality   critical
  * @inputs        user_id, authorization_type, purchase_order_id, proof_ref
  * @outputs       hub_authorization_grants, purchase_order_authorizations
- * @depends       db
+ * @depends       db, services/documents/pdf-renderer.js
  * @used-by       routes/purchasing.js, services/purchasing-engagement-service.js, services/supplier-payment-orchestrator.js
- * @db-read       hub_authorization_grants, purchase_lines, purchase_orders, purchase_order_authorizations, supplier_execution_payments, manual_purchase_executions, purchase_variance_decisions, users
+ * @db-read       hub_authorization_grants, purchase_lines, purchase_orders, purchase_order_authorizations, supplier_execution_payments, manual_purchase_executions, purchase_variance_decisions, users, suppliers, order_items, products
  * @db-write      hub_authorization_grants, purchase_order_authorizations, purchase_variance_decisions
  * @db-txn        owns_transaction
  * @doctrine      two_distinct_directrice_authorizations, no_implicit_power, append_only_decisions
@@ -18,6 +18,7 @@
 'use strict';
 
 const db = require('../db');
+const { renderPdf } = require('./documents/pdf-renderer');
 
 const TYPES = Object.freeze(['purchase_commitment', 'supplier_payment']);
 
@@ -26,6 +27,20 @@ class HubAuthorizationError extends Error {
 }
 const fail = (status, code, message, extra) => { throw new HubAuthorizationError(status, code, message, extra); };
 const UUID = /^[0-9a-f-]{36}$/i;
+
+const DECISION_FIELDS = 'id, purchase_order_id, authorization_type, decided_by, decided_at, amount, currency, proof_ref';
+
+async function getCommitmentPdf(purchaseOrderId, database = db) {
+  if (typeof purchaseOrderId !== 'string' || !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(purchaseOrderId)) {
+    fail(400, 'PURCHASE_ORDER_INVALID', 'po_id invalide');
+  }
+  const { rows: [row] } = await database.query(
+    `SELECT commitment_pdf FROM purchase_order_authorizations
+     WHERE purchase_order_id = $1 AND authorization_type = 'purchase_commitment'
+       AND commitment_pdf IS NOT NULL`, [purchaseOrderId]);
+  if (!row) fail(404, 'PURCHASE_COMMITMENT_PDF_UNAVAILABLE', 'Bon de commande PDF indisponible');
+  return row.commitment_pdf;
+}
 
 function requireType(type) {
   if (!TYPES.includes(type)) fail(400, 'AUTHORIZATION_TYPE_INVALID', `authorization_type doit valoir ${TYPES.join(' ou ')}`);
@@ -81,19 +96,26 @@ async function hasGrant(client, userId, type) {
 
 async function poAmount(client, po, body) {
   const { rows } = await client.query(
-    `SELECT quantity, supplier_unit_price, supplier_currency FROM purchase_lines WHERE purchase_order_id = $1 AND cancelled_at IS NULL`, [po.id]);
+    `SELECT pl.quantity, pl.supplier_unit_price, pl.supplier_currency, pl.supplier_sku,
+            p.name AS product_name, s.name AS supplier_name
+       FROM purchase_lines pl
+       JOIN suppliers s ON s.id = pl.supplier_id
+       JOIN order_items oi ON oi.id = pl.order_item_id
+       LEFT JOIN products p ON p.id = oi.product_id
+      WHERE pl.purchase_order_id = $1 AND pl.cancelled_at IS NULL
+      ORDER BY pl.id`, [po.id]);
   if (!rows.length) fail(409, 'PURCHASE_ORDER_EMPTY', 'PO sans ligne');
   const priced = rows.every((r) => r.supplier_unit_price != null && r.supplier_currency);
   if (priced && new Set(rows.map((r) => r.supplier_currency)).size === 1) {
     const amount = rows.reduce((s, r) => s + Number(r.quantity) * Number(r.supplier_unit_price), 0);
-    return { amount, currency: rows[0].supplier_currency };
+    return { amount, currency: rows[0].supplier_currency, lines: rows };
   }
   const amount = Number(body.amount);
   const currency = typeof body.currency === 'string' ? body.currency.toUpperCase() : '';
   if (!(amount > 0) || !/^[A-Z]{3}$/.test(currency)) {
     fail(400, 'AUTHORIZATION_AMOUNT_REQUIRED', 'Montant et devise requis : les lignes de la PO ne portent pas un prix fournisseur unique');
   }
-  return { amount, currency };
+  return { amount, currency, lines: rows };
 }
 
 /** Décision tracée d'une des deux autorisations sur une PO. Le décideur doit détenir le grant ACTIF correspondant. */
@@ -104,18 +126,31 @@ async function decide({ purchaseOrderId, authorizationType, actor, body = {} }, 
   if (!proof || proof.length > 240) fail(400, 'AUTHORIZATION_PROOF_REQUIRED', 'proof_ref obligatoire (pièce associée)');
   if (!actor || !actor.id) fail(403, 'AUTHORIZATION_GRANT_REQUIRED', 'Authentification requise');
   return database.withTransaction(async (client) => {
-    const { rows: [po] } = await client.query('SELECT id, status FROM purchase_orders WHERE id = $1 FOR UPDATE', [purchaseOrderId]);
+    const { rows: [po] } = await client.query('SELECT id, status, now() AS decided_at FROM purchase_orders WHERE id = $1 FOR UPDATE', [purchaseOrderId]);
     if (!po) fail(404, 'PURCHASE_ORDER_NOT_FOUND', 'PO introuvable');
     if (!(await hasGrant(client, actor.id, authorizationType))) {
       fail(403, 'AUTHORIZATION_GRANT_REQUIRED', 'Vous ne détenez pas cette autorisation (attribuée par l\'Admin central)');
     }
     const { rows: [existing] } = await client.query(
-      'SELECT * FROM purchase_order_authorizations WHERE purchase_order_id = $1 AND authorization_type = $2', [po.id, authorizationType]);
+      `SELECT ${DECISION_FIELDS} FROM purchase_order_authorizations WHERE purchase_order_id = $1 AND authorization_type = $2`, [po.id, authorizationType]);
     if (existing) return { ...existing, idempotent_replay: true };
     let money;
+    let commitmentPdf = null;
     if (authorizationType === 'purchase_commitment') {
       if (po.status !== 'draft') fail(409, 'PURCHASE_ORDER_NOT_DRAFT', `PO au statut "${po.status}" : l'engagement se valide avant la soumission`);
       money = await poAmount(client, po, body);
+      const pdf = await renderPdf({
+        documentType: 'purchase_commitment',
+        document: {
+          reference: `PO-${po.id}`,
+          issued_at: po.decided_at,
+          supplier_name: money.lines[0].supplier_name,
+          lines: money.lines,
+          amount: money.amount,
+          currency: money.currency,
+        },
+      });
+      commitmentPdf = pdf.buffer;
     } else {
       if (!['notified', 'confirmed'].includes(po.status)) fail(409, 'PURCHASE_ORDER_NOT_SUBMITTED', `PO au statut "${po.status}" : le paiement s'autorise après soumission`);
       const { rows: [commit] } = await client.query(
@@ -127,9 +162,9 @@ async function decide({ purchaseOrderId, authorizationType, actor, body = {} }, 
       money = { amount, currency };
     }
     const { rows: [row] } = await client.query(
-      `INSERT INTO purchase_order_authorizations (purchase_order_id, authorization_type, decided_by, amount, currency, proof_ref)
-       VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
-      [po.id, authorizationType, actor.id, money.amount, money.currency, proof]);
+      `INSERT INTO purchase_order_authorizations (purchase_order_id, authorization_type, decided_by, amount, currency, proof_ref, commitment_pdf)
+       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING ${DECISION_FIELDS}`,
+      [po.id, authorizationType, actor.id, money.amount, money.currency, proof, commitmentPdf]);
     return row;
   });
 }
@@ -227,4 +262,4 @@ async function assertPaymentAuthorized(client, purchaseOrderId, expectedAmount, 
   }
 }
 
-module.exports = { TYPES, HubAuthorizationError, grant, revoke, listGrants, hasGrant, decide, decideVariance, assertCommitmentAuthorized, assertPaymentAuthorized };
+module.exports = { TYPES, HubAuthorizationError, grant, revoke, listGrants, hasGrant, decide, decideVariance, getCommitmentPdf, assertCommitmentAuthorized, assertPaymentAuthorized };

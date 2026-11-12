@@ -459,7 +459,7 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | `market_delivery_attestations` | Preuve centrale, vérifiable et révocable, qu'une liaison de transport et un tarif applicable existent pour un marché. Migration 305. |
 | `market_transport_sale_rates` | Tarif de vente transport par Market (devise du marché, par kg) ; absent = refus hors KMF ; distinct du coût de fret attesté. Migration 313. |
 | `order_item_refund_reservations` | Réservations partielles de remboursement par article adossées à une attestation relais et à une intention PSP durable ; aucune sortie de fonds automatique. Migration 365. |
-| `purchase_order_authorizations` | Décisions append-only de la directrice Hub sur un bon de commande (`purchase_commitment` ou `supplier_payment`) ; UPDATE/DELETE refusés. Migration 380. |
+| `purchase_order_authorizations` | Décisions append-only de la directrice Hub sur un bon de commande (`purchase_commitment` ou `supplier_payment`) ; UPDATE/DELETE refusés. Migration 380. La migration 408 ajoute `commitment_pdf`, document privé figé à la validation des nouveaux engagements. Les décisions historiques conservent une valeur NULL. |
 | `refund_execution_intents` | Intention de remboursement durable avant appel Stripe/PayPal ; aucun backfill legacy automatique. Migration 317. |
 
 ## 5. Vues critiques
