@@ -2474,12 +2474,12 @@ Meta Graph monté : oui.
 | local-stock | logistics | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | local-stock | market | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | logistics | auth | static-code | 13 | **DECLARED_AND_OBSERVED** |
-| logistics | auth-identity | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
+| logistics | auth-identity | static-code, data-read | 6 | **DECLARED_AND_OBSERVED** |
 | logistics | business-rules | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
 | logistics | catalog | static-code, data-write, data-read | 3 | **DECLARED_AND_OBSERVED** |
 | logistics | customs | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
 | logistics | dashboard | static-code | 2 | **OBSERVED_UNDECLARED** |
-| logistics | documents | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| logistics | documents | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
 | logistics | economic-engine | static-code | 1 | **OBSERVED_UNDECLARED** |
 | logistics | incident-management | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
 | logistics | infrastructure | static-code | 117 | **DECLARED_AND_OBSERVED** |
