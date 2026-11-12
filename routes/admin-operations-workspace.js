@@ -402,9 +402,10 @@ router.post(
   async (req,res,next) => {
     try {
       const body=req.body||{};
-      if (body.evidence_method !== 'SCAN') {
-        return res.status(409).json({code:'HUB_BAG_MANUAL_APPROVAL_REQUIRED',
-          error:'Le dépôt manuel exige la validation L11, distincte du scan normal'});
+      // Même writer pour SCAN et MANUAL (preuve + justification) : la provenance réelle est conservée.
+      if (body.evidence_method !== 'SCAN' && body.evidence_method !== 'MANUAL') {
+        return res.status(400).json({code:'HUB_BAG_EVIDENCE_METHOD_REQUIRED',
+          error:'evidence_method doit être SCAN ou MANUAL'});
       }
       const {rows:[allocation]}=await db.query(
         'SELECT order_id,market_id FROM hub_purchase_allocations WHERE id=$1',
@@ -420,8 +421,9 @@ router.post(
         allocation_id:body.allocation_id,
         quantity:body.quantity,
         operation_type:'REPACK',
-        evidence_method:'SCAN',
+        evidence_method:body.evidence_method,
         evidence_code:body.evidence_code,
+        evidence_ref:body.evidence_ref,
       },req.user.id);
       return res.status(result.status).json(result.body);
     } catch(err) { return sendWorkspaceError(err,res,next); }
@@ -471,6 +473,7 @@ router.post(
       const result = await bagBox.attachBagToBox({
         boxUnitId: req.params.unitId, bagUnitId: body.bag_unit_id, parcelId: body.parcel_id,
         bagReferenceScan: body.bag_reference_scan, boxReferenceScan: body.box_reference_scan,
+        evidenceMethod: body.evidence_method, evidenceRef: body.evidence_ref,
         expectedMarketId: req.workspaceMarket.id, actorId: req.user.id,
       });
       return res.status(result.already_linked ? 200 : 201).json(result);

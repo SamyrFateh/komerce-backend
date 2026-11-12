@@ -398,7 +398,8 @@ async function createPhysicalUnit(executor, {
 function manifestEntry(c) {
   return c.product_sku_id
     ? { purchase_order_id: c.purchase_order_id, product_sku_id: c.product_sku_id,
-        ...(c.evidence_code ? {evidence_code:c.evidence_code}:{}), quantity: c.quantity }
+        ...(c.evidence_code ? {evidence_code:c.evidence_code}:{}),
+        ...(c.evidence_method === 'MANUAL' ? {evidence_method:'MANUAL',evidence_ref:c.evidence_ref}:{}), quantity: c.quantity }
     : { purchase_order_id: c.purchase_order_id, quantity: c.quantity };
 }
 
@@ -481,6 +482,18 @@ function normalizeInboundContents(contents) {
       fail('HUB_INBOUND_EVIDENCE_CONFLICT','Codes physiques incompatibles pour un même SKU réceptionné');
     }
     if (observedCode) entry.evidence_code = observedCode;
+    // Saisie clavier volontaire : même writer, provenance MANUAL + justification, jamais un SCAN présumé.
+    if (item.evidence_method === 'MANUAL') {
+      const ref = typeof item.evidence_ref === 'string' ? item.evidence_ref.trim() : '';
+      if (!productSkuId) fail('HUB_INBOUND_MANUAL_SKU_REQUIRED', 'Mode manuel : variante (SKU) requise');
+      if (observedCode) fail('HUB_INBOUND_MANUAL_CODE_FORBIDDEN', 'Mode manuel : aucun code scanné attendu');
+      if (ref.length < 6) fail('HUB_INBOUND_MANUAL_EVIDENCE_REQUIRED', 'Mode manuel : justification de 6 caractères minimum');
+      if (entry.evidence_code) fail('HUB_INBOUND_EVIDENCE_CONFLICT', 'Preuves scan et manuelle incompatibles pour un même SKU');
+      entry.evidence_method = 'MANUAL';
+      entry.evidence_ref = ref;
+    } else if (entry.evidence_method === 'MANUAL' && observedCode) {
+      fail('HUB_INBOUND_EVIDENCE_CONFLICT', 'Preuves scan et manuelle incompatibles pour un même SKU');
+    }
     entry.quantity += quantity;
     grouped.set(key, entry);
   }
@@ -507,6 +520,7 @@ async function placedQuantityExcludingOutcomes(db, allocationId) {
 
 // Un code observé à la réception doit résoudre exactement le SKU de la PO.
 async function observedReceiptCode(db, entry) {
+  if (entry.content.evidence_method === 'MANUAL') return null; // preuve manuelle : pas de code à résoudre
   if (!entry.content.evidence_code) return null; // parcours historique, à migrer sous L11
   const physicalCodes = require('./hub-physical-codes');
   let match;
@@ -578,7 +592,11 @@ async function receiveSupplierPackage(executor, {
         purchaseOrderId: entry.content.purchase_order_id,
       });
     }
-    allocations.push({ allocation, quantity: entry.content.quantity, evidenceCode });
+    allocations.push({
+      allocation, quantity: entry.content.quantity, evidenceCode,
+      evidenceMethod: entry.content.evidence_method === 'MANUAL' ? 'MANUAL' : null,
+      evidenceRef: entry.content.evidence_method === 'MANUAL' ? entry.content.evidence_ref : null,
+    });
   }
 
   const unit = await createPhysicalUnit(db, {
@@ -596,10 +614,10 @@ async function receiveSupplierPackage(executor, {
     await db.query(
       `INSERT INTO hub_physical_unit_placements (
          physical_unit_id, allocation_id, quantity, operation_id, operation_type, created_by,
-         evidence_method, evidence_code
-       ) VALUES ($1,$2,$3,$4,'RECEIVE',$5,$6,$7)`,
+         evidence_method, evidence_code, evidence_ref
+       ) VALUES ($1,$2,$3,$4,'RECEIVE',$5,$6,$7,$8)`,
       [unit.id, item.allocation.id, item.quantity, operationId, actorId,
-       item.evidenceCode ? 'SCAN' : null, item.evidenceCode]
+       item.evidenceCode ? 'SCAN' : item.evidenceMethod, item.evidenceCode, item.evidenceRef]
     );
     await insertCustodyEvent(db, {
       physicalUnitId: unit.id,
@@ -802,7 +820,11 @@ async function reconcileSupplierPackageContents(executor, {
         purchaseOrderId: entry.content.purchase_order_id,
       });
     }
-    allocations.push({ allocation, quantity: entry.content.quantity, evidenceCode });
+    allocations.push({
+      allocation, quantity: entry.content.quantity, evidenceCode,
+      evidenceMethod: entry.content.evidence_method === 'MANUAL' ? 'MANUAL' : null,
+      evidenceRef: entry.content.evidence_method === 'MANUAL' ? entry.content.evidence_ref : null,
+    });
   }
 
   const operationId = crypto.randomUUID();
@@ -810,10 +832,10 @@ async function reconcileSupplierPackageContents(executor, {
     await db.query(
       `INSERT INTO hub_physical_unit_placements (
          physical_unit_id, allocation_id, quantity, operation_id, operation_type, created_by,
-         evidence_method, evidence_code
-       ) VALUES ($1,$2,$3,$4,'RECEIVE',$5,$6,$7)`,
+         evidence_method, evidence_code, evidence_ref
+       ) VALUES ($1,$2,$3,$4,'RECEIVE',$5,$6,$7,$8)`,
       [unit.id, item.allocation.id, item.quantity, operationId, actorId,
-       item.evidenceCode ? 'SCAN' : null, item.evidenceCode]
+       item.evidenceCode ? 'SCAN' : item.evidenceMethod, item.evidenceCode, item.evidenceRef]
     );
     await insertCustodyEvent(db, {
       physicalUnitId: unit.id,

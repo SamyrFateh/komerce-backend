@@ -85,3 +85,12 @@ test('Catalogue global : filtres accessibles et panneau taxonomie secondaire sur
   expect(css).toContain('@media (max-width: 650px)');
   expect(css).toContain('.kmc-catalog-filter { flex-basis: 100%; }');
 });
+
+describe('operations-workspace.js — provenance manuelle (#3900)', () => {
+  const ui = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/operations-workspace.js'), 'utf8');
+  test('sac -> KOM-BOX et réception exposent le mode manuel avec justification', () => {
+    expect(ui).toContain('data-hub-box-evidence-method');
+    expect(ui).toContain('data-hub-box-manual-proof');
+    expect(ui).toContain('data-receive-manual-proof');
+  });
+});

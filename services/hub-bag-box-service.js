@@ -43,7 +43,7 @@ function translate(err) {
 // KOM-BOX et ne passe jamais par un MOVE fictif ou SUPERSEDED.
 async function attachBagToBox({
   bagUnitId, boxUnitId, parcelId, bagReferenceScan, boxReferenceScan,
-  expectedMarketId, actorId,
+  evidenceMethod, evidenceRef, expectedMarketId, actorId,
 }) {
   const bagId = uuid(bagUnitId, 'bag_unit_id');
   const boxId = uuid(boxUnitId, 'box_unit_id');
@@ -52,6 +52,15 @@ async function attachBagToBox({
   const user = uuid(actorId, 'actor_id');
   const bagScan = textRef(bagReferenceScan, 'scan du sac');
   const boxScan = textRef(boxReferenceScan, 'scan de la KOM-BOX');
+  // Même writer pour le scanner et la saisie clavier : la provenance est explicite, jamais présumée SCAN.
+  const method = String(evidenceMethod || '').trim().toUpperCase();
+  if (method !== 'SCAN' && method !== 'MANUAL') throw refusal(400, 'HUB_BAG_EVIDENCE_METHOD_REQUIRED', 'evidence_method');
+  const proof = String(evidenceRef || '').trim();
+  if (method === 'MANUAL' && (proof.length < 6 || proof.length > 500)) {
+    throw refusal(400, 'HUB_BAG_MANUAL_EVIDENCE_REQUIRED', 'Mode manuel : justification de 6 à 500 caractères');
+  }
+  if (method === 'SCAN' && proof) throw refusal(400, 'HUB_BAG_SCAN_EVIDENCE_REF_FORBIDDEN', 'evidence_ref');
+  const storedRef = method === 'MANUAL' ? proof : null;
   try {
     return await db.withTransaction(async client => {
       const { rows: [scope] } = await client.query(
@@ -60,22 +69,25 @@ async function attachBagToBox({
       );
       if (!scope) throw refusal(403, 'HUB_BAG_MARKET_SCOPE_MISMATCH');
       const { rows: [previous] } = await client.query(
-        'SELECT box_unit_id, parcel_id, bag_reference_scan, box_reference_scan FROM hub_box_bags WHERE bag_unit_id=$1',
+        'SELECT box_unit_id, parcel_id, bag_reference_scan, box_reference_scan, evidence_method, evidence_ref ' +
+        'FROM hub_box_bags WHERE bag_unit_id=$1',
         [bagId]
       );
       if (previous) {
         if (String(previous.box_unit_id) === boxId && String(previous.parcel_id) === parcel &&
-          previous.bag_reference_scan === bagScan && previous.box_reference_scan === boxScan) {
-          return { bag_unit_id: bagId, box_unit_id: boxId, parcel_id: parcel, already_linked: true };
+          previous.bag_reference_scan === bagScan && previous.box_reference_scan === boxScan &&
+          previous.evidence_method === method && (previous.evidence_ref || null) === storedRef) {
+          return { bag_unit_id: bagId, box_unit_id: boxId, parcel_id: parcel, evidence_method: method, already_linked: true };
         }
         throw refusal(409, 'HUB_BAG_ALREADY_BOXED');
       }
       const { rows: [linked] } = await client.query(
         'INSERT INTO hub_box_bags(' +
-        'bag_unit_id, box_unit_id, parcel_id, linked_by, bag_reference_scan, box_reference_scan' +
-        ') VALUES ($1,$2,$3,$4,$5,$6) ' +
-        'ON CONFLICT (bag_unit_id) DO NOTHING RETURNING bag_unit_id, box_unit_id, parcel_id',
-        [bagId, boxId, parcel, user, bagScan, boxScan]
+        'bag_unit_id, box_unit_id, parcel_id, linked_by, bag_reference_scan, box_reference_scan, ' +
+        'evidence_method, evidence_ref' +
+        ') VALUES ($1,$2,$3,$4,$5,$6,$7,$8) ' +
+        'ON CONFLICT (bag_unit_id) DO NOTHING RETURNING bag_unit_id, box_unit_id, parcel_id, evidence_method',
+        [bagId, boxId, parcel, user, bagScan, boxScan, method, storedRef]
       );
       if (!linked) throw refusal(409, 'HUB_BAG_ALREADY_BOXED');
       return { ...linked, already_linked: false };
