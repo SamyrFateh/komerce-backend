@@ -29,7 +29,10 @@ describe('pin de deploiement staging', () => {
     expect(r.decision).toBe('ACCEPTED_NON_DEPLOYED_DIFF_ONLY');
     expect(r.changed_files).toHaveLength(3);
   });
-  test('seul le helper owner-only de réaffectation E2E est aussi un outil de recette non déployé', () => {\n    const r = decidePin({stagingSha:A,headSha:B,isAncestor:true,changedFiles:['scripts/recette/staging-e2e-relay-reassign.js']});\n    expect(r.decision).toBe('ACCEPTED_NON_DEPLOYED_DIFF_ONLY');\n  });\n  test('pin refuse toute autre config Playwright et tout changement runtime', () => {
+  test('seul le helper owner-only de réaffectation E2E est aussi un outil de recette non déployé', () => {
+    const r = decidePin({stagingSha:A,headSha:B,isAncestor:true,changedFiles:['scripts/recette/staging-e2e-relay-reassign.js']});
+    expect(r.decision).toBe('ACCEPTED_NON_DEPLOYED_DIFF_ONLY');
+  });
     for(const candidate of [
       'playwright.staging-relay-local-native.config.js.bak',
       'playwright.staging-other.config.js',
