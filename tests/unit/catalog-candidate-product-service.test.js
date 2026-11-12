@@ -15,6 +15,10 @@ const {
   objectPhraseMatch,
 } = require('../../services/catalog-candidate-product-service');
 
+jest.mock('../../services/suppliers/central-hub-supplier', () => ({
+  ensureCentralHubSupplier: jest.fn(async () => ({ id: 'central-hub-id' })),
+}));
+
 describe('contextual object phrase matching', () => {
   it('recognizes bounded intervening material descriptors', () => {
     expect(objectPhraseMatch('Car Zinc Alloy Leather Key Case Cover','car key case')).toBe(true);
@@ -57,6 +61,28 @@ describe('commercial object routing — independent of customs', () => {
 });
 
 describe('catalog-candidate-product-service', () => {
+  it('rattache les imports manuels historiques au fournisseur central Hub lors de la création du brouillon', async () => {
+    const q = { query: jest.fn(async sql => {
+      if (sql.includes('FROM boutique_categories')) return { rows: [{ category: 'Mode & Beauté', subcategory: 'Femme' }] };
+      if (sql.includes('FROM supplier_catalog_imports')) return { rows: [{ source_type: 'manual' }] };
+      if (sql.includes('INSERT INTO products')) return { rows: [{ id: 'product-manual' }] };
+      throw new Error(`SQL inattendu: ${sql}`);
+    }) };
+    const candidate = {
+      import_id: 'import-manual',
+      supplier_name: 'Fournisseur central Hub',
+      product_name: 'Chemise',
+      komerce_category: 'mode',
+      commercial_taxonomy_review: { status: 'CONFIRMED', category: 'Mode & Beauté', subcategory: 'Femme' },
+    };
+
+    await expect(createDraftProductFromSourcingCandidate(q, { candidate, initialPrice: null }))
+      .resolves.toBe('product-manual');
+    const productInsert = q.query.mock.calls.find(([sql]) => sql.includes('INSERT INTO products'));
+    expect(productInsert[0]).toContain('procurement_supplier_id');
+    expect(productInsert[1].at(-1)).toBe('central-hub-id');
+  });
+
   it('creates the inactive candidate product through the injected transaction client', async () => {
     const q = {
       query: jest.fn()
@@ -108,6 +134,7 @@ describe('catalog-candidate-product-service', () => {
       // description publiée nulle, revue éditoriale signalée.
       null,
       true,
+      null,
     ]);
   });
 
@@ -137,6 +164,7 @@ describe('catalog-candidate-product-service', () => {
       // Aucune description fournisseur : rien n'est fabriqué, revue signalée.
       null,
       true,
+      null,
     ]);
   });
 

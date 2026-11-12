@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-11-11T17:47:51.635Z",
+  "generatedAt": "2026-11-12T11:24:04.681Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 825,
-    "protected": 767,
+    "total": 826,
+    "protected": 768,
     "public": 58,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -2888,6 +2888,14 @@
     },
     {
       "key": "POST /api/admin/workspaces/sourcing/candidates/{candidateRef}/watchlist",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "sourcing"
+      ]
+    },
+    {
+      "key": "GET /api/admin/workspaces/sourcing/catalog-suppliers",
       "level": "PROTECTED",
       "roles": [
         "admin",

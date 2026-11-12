@@ -299,6 +299,10 @@
       rows: [
         { champ: 'Référence Komerce', valeur: product.product_ref },
         { champ: 'SKU catalogue', valeur: product.sku },
+        ...(central.visibility === 'global' ? [{
+          champ: 'Approvisionnement par',
+          valeur: central.procurement_supplier?.name || 'Fournisseur non renseigné',
+        }] : []),
         { champ: 'Catégorie', valeur: [product.category, product.subcategory].filter(Boolean).join(' · ') },
         { champ: 'Prix boutique', valeur: product.price_kmf == null ? 'À définir' : formatKmf(product.price_kmf) },
         { champ: 'Lifecycle', valeur: product.lifecycle_status },
@@ -321,6 +325,7 @@
         { key: 'unite', label: 'Unité' },
         { key: 'sku', label: 'SKU' },
         ...(central.visibility === 'global' ? [
+          { key: 'procurement_supplier', label: 'Approvisionnement par' },
           { key: 'supplier_unit_ref', label: 'Réf. unité fournisseur' },
           { key: 'supplier_provider', label: 'Provider' },
         ] : []),
@@ -335,6 +340,7 @@
           unite: variantLabel(row.variant_combo),
           sku: row.sku || row.supplier_sku,
           ...(central.visibility === 'global' ? {
+            procurement_supplier: row.procurement_supplier_name || central.procurement_supplier?.name || '—',
             supplier_unit_ref: row.supplier_unit_ref || '—',
             supplier_provider: row.supplier_provider || '—',
           } : {}),
@@ -345,7 +351,11 @@
           type: 'Variante legacy',
           unite: `${row.variant_type}: ${row.variant_value}`,
           sku: row.sku,
-          ...(central.visibility === 'global' ? { supplier_unit_ref: '—', supplier_provider: '—' } : {}),
+          ...(central.visibility === 'global' ? {
+            procurement_supplier: row.procurement_supplier_name || central.procurement_supplier?.name || '—',
+            supplier_unit_ref: '—',
+            supplier_provider: '—',
+          } : {}),
           stock: formatNumber(row.stock),
           prix: row.price_kmf == null ? 'Prix produit' : formatKmf(row.price_kmf),
         })),

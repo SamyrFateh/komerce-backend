@@ -44,6 +44,15 @@ Une source fichier peut représenter :
 
 Le nom du canal (`csv`, `manual`) ne devient jamais un provider.
 
+Pour une saisie MANUAL, l’import, le candidat et le produit portent une identité
+d’approvisionnement explicite : fournisseur réel enregistré choisi par
+l’opérateur, ou `Fournisseur central Hub` si aucun fournisseur tiers n’est
+connu. Cette fiche système protégée désigne l’équipe Hub qui coordonne l’achat
+manuel ; elle ne désigne pas le vendeur réel, ne crée pas de provider/API et ne
+crée à elle seule ni PO, ni dette, ni coût, ni stock. Si le vendeur réel est
+connu, il reste conservé comme fournisseur choisi. `LOCAL_STOCK` reste un
+fulfillment direct par le relais et ne passe pas par une PO Hub.
+
 ### 1.3 Mode de fulfillment
 
 Comment la vente B2C est satisfaite :
@@ -295,7 +304,9 @@ Les deux P4 ne sont pas interchangeables.
 ## 12. Ordre M0 → M5
 
 ### M0 — Doctrine INTERNAL_MANAGED
-Ce document. Aucun nouveau provider, aucune migration, aucune écriture runtime.
+Ce document et la liaison d’identité d’approvisionnement manuelle nécessaire
+au parcours Hub (migration 403). Aucun nouveau provider et aucune création
+automatique de PO, dette, coût ou stock.
 
 ### M1 — Contrat fichier canonique
 Définir le format riche CSV/XLSX, ses clés et ses rejets.
@@ -322,4 +333,6 @@ M0 est terminé si :
 4. XLSX est défini comme adapter vers le même contrat ;
 5. fournisseur tiers sans API et stock propre ont deux parcours Purchasing distincts ;
 6. LOCAL_STOCK n'entraîne aucune PO fournisseur par vente ;
-7. aucune migration ou abstraction hypothétique n'est ajoutée avant M1/M3.
+7. la migration 403 ne crée que l’identité Hub protégée et les liens
+   d’approvisionnement nécessaires au catalogue ; elle n’anticipe pas le
+   moteur de stock ou le traitement comptable M1/M3.

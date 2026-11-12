@@ -291,8 +291,12 @@ describe('G-01..G-02 — railway-live-schema.sql baseline safety', () => {
       { cwd: ROOT, encoding: 'utf8' }
     ).trim();
     const headCommit = execSync('git rev-parse HEAD', { cwd: ROOT, encoding: 'utf8' }).trim();
-    // Le vrai commit de contenu du dump ne doit PAS être le HEAD.
-    expect(dumpCommit).not.toBe(headCommit);
+    const stagedPaths = execSync('git diff --cached --name-only', { cwd: ROOT, encoding: 'utf8' })
+      .split(/\r?\n/).filter(Boolean);
+    // Avant le commit, un changement staged représente déjà la branche en
+    // préparation. Le dump lui-même doit toujours rester hors de ce changement.
+    expect(stagedPaths).not.toContain('docs/db/railway-live-schema.sql');
+    expect(dumpCommit !== headCommit || stagedPaths.length > 0).toBe(true);
   });
 
   test('G-02 — migration 240 sort de la baseline si le snapshot ne porte pas Allegro', async () => {

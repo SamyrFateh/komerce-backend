@@ -45,15 +45,20 @@ async function resolveProduct(productRef) {
 
   const { rows } = await db.query(`
     SELECT
-      id, product_ref, sku, name, description, category, subcategory,
-      price_kmf, stock, inventory_model, is_active, is_available,
-      has_variants, lifecycle_status, content_source, enrichment_version,
-      sourcing_source, fragility, weight_kg, dimensions_cm, image_url,
-      created_at, updated_at,
+      products.id, products.product_ref, products.sku, products.name, products.description,
+      products.category, products.subcategory, products.price_kmf, products.stock,
+      products.inventory_model, products.is_active, products.is_available,
+      products.has_variants, products.lifecycle_status, products.content_source, products.enrichment_version,
+      products.sourcing_source, products.fragility, products.weight_kg, products.dimensions_cm, products.image_url,
+      products.created_at, products.updated_at,
+      products.procurement_supplier_id,
+      procurement_supplier.name AS procurement_supplier_name,
+      procurement_supplier.system_key AS procurement_supplier_system_key,
       EXISTS(SELECT 1 FROM catalog_product_sale_holds h
              WHERE h.product_id=products.id AND h.released_at IS NULL) AS catalog_quality_frozen
     FROM products
-    WHERE UPPER(product_ref) = UPPER($1)
+    LEFT JOIN suppliers procurement_supplier ON procurement_supplier.id = products.procurement_supplier_id
+    WHERE UPPER(products.product_ref) = UPPER($1)
     LIMIT 1
   `, [normalized]);
 
@@ -109,19 +114,25 @@ async function loadProduct360(product, options = {}) {
   const realScope = marketFilter('o', marketIds, 2);
 
   const variantsPromise = db.query(`
-    SELECT variant_type, variant_value, sku, stock, price_kmf, image_url, display_order
-    FROM product_variants
-    WHERE product_id = $1::uuid
-    ORDER BY display_order ASC, variant_type ASC, variant_value ASC
+    SELECT pv.variant_type, pv.variant_value, pv.sku, pv.stock, pv.price_kmf, pv.image_url, pv.display_order,
+           s.name AS procurement_supplier_name
+    FROM product_variants pv
+    JOIN products p ON p.id = pv.product_id
+    LEFT JOIN suppliers s ON s.id = p.procurement_supplier_id
+    WHERE pv.product_id = $1::uuid
+    ORDER BY pv.display_order ASC, pv.variant_type ASC, pv.variant_value ASC
   `, [productId]);
 
   const skusPromise = db.query(`
-    SELECT sku, supplier_sku, supplier_unit_ref,
-           supplier_order_identity->>'provider' AS supplier_provider,
-           variant_combo, stock, price_kmf, is_active, created_at, updated_at
-    FROM product_skus
-    WHERE product_id = $1::uuid
-    ORDER BY is_active DESC, created_at ASC
+    SELECT ps.sku, ps.supplier_sku, ps.supplier_unit_ref,
+           ps.supplier_order_identity->>'provider' AS supplier_provider,
+           ps.variant_combo, ps.stock, ps.price_kmf, ps.is_active, ps.created_at, ps.updated_at,
+           s.name AS procurement_supplier_name
+    FROM product_skus ps
+    JOIN products p ON p.id = ps.product_id
+    LEFT JOIN suppliers s ON s.id = p.procurement_supplier_id
+    WHERE ps.product_id = $1::uuid
+    ORDER BY ps.is_active DESC, ps.created_at ASC
   `, [productId]);
 
   const performancePromise = db.query(`
@@ -266,6 +277,7 @@ async function loadProduct360(product, options = {}) {
     price_kmf: row.price_kmf == null ? null : Number(row.price_kmf),
     image_url: row.image_url || null,
     display_order: Number(row.display_order) || 0,
+    ...(includeCentral ? { procurement_supplier_name: row.procurement_supplier_name || null } : {}),
   }));
 
   const skus = skusResult.rows.map(row => Object.freeze({
@@ -279,6 +291,7 @@ async function loadProduct360(product, options = {}) {
     stock: Number(row.stock) || 0,
     price_kmf: row.price_kmf == null ? null : Number(row.price_kmf),
     is_active: Boolean(row.is_active),
+    ...(includeCentral ? { procurement_supplier_name: row.procurement_supplier_name || null } : {}),
     created_at: row.created_at,
     updated_at: row.updated_at,
   }));
@@ -437,6 +450,13 @@ async function loadProduct360(product, options = {}) {
             enrichment_version: product.enrichment_version || null,
             sourcing_source: product.sourcing_source || null,
           }),
+          procurement_supplier: product.procurement_supplier_id
+            ? Object.freeze({
+                id: product.procurement_supplier_id,
+                name: product.procurement_supplier_name || null,
+                system_key: product.procurement_supplier_system_key || null,
+              })
+            : null,
           suppliers: Object.freeze(suppliers),
           price_history: Object.freeze(priceHistory),
           stock_audit_count: stockHistory.length,

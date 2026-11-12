@@ -7,7 +7,7 @@
   },
   "x-contract-debt": {
     "unknown_responses": 80,
-    "total_routes": 757,
+    "total_routes": 758,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -10536,6 +10536,43 @@
                       "x-observed": true
                     },
                     "sources": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/sourcing/catalog-suppliers": {
+      "get": {
+        "summary": "GET /api/admin/workspaces/sourcing/catalog-suppliers",
+        "x-route-file": "routes/admin-sourcing-workspace.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "name": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "system_key": {
                       "type": "string",
                       "x-observed": true
                     }

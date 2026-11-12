@@ -451,7 +451,6 @@ module.exports = {
       'public/golden-e2e-cockpit.html',
       'public/js/golden-e2e-cockpit-journey.js',
       'public/js/golden-recipe-scenarios.js',
-      'services/product-360.js',
       'services/supplier-360.js',
       'services/provider-certification-overview.js',
       'services/shipping-customs-workspace.js',

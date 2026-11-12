@@ -30,7 +30,8 @@ describe('supplier-source-resolution (unit)', () => {
   test('le SQL admissible exige association active, fournisseur actif non supprimé, catalogue global, plateforme = provider', () => {
     const sql = eligibleSourceFromWhereSql({ productSql: 'k.product_id', providerSql: 'x' }).replace(/\s+/g, ' ');
     expect(sql).toContain('ps.is_active = TRUE AND ps.deleted_at IS NULL');
-    expect(sql).toContain('s.is_active = TRUE AND s.deleted_at IS NULL AND s.owner_scope IS NULL');
+    expect(sql).toContain('s.is_active = TRUE AND s.deleted_at IS NULL');
+    expect(sql).toContain("s.system_key = 'central_hub'");
     expect(sql).toContain('lower(s.platform) = lower(x)');
     expect(sql).toContain("'ebay'");
   });
@@ -52,6 +53,18 @@ describe('supplier-source-resolution (unit)', () => {
     expect(await resolveSupplierSource(c, { productId: 'p', provider: 'ebay' }))
       .toMatchObject({ status: SOURCE_STATUS.FORBIDDEN_PROVIDER });
     expect(c.query).not.toHaveBeenCalled();
+  });
+
+  test('utilise le fournisseur d’approvisionnement du produit via le même résolveur', async () => {
+    const central = { id: null, supplier_id: 'hub-id', supplier_name: 'Fournisseur central Hub', system_key: 'central_hub' };
+    const c = { query: jest.fn()
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [central] }) };
+    await expect(resolveSupplierSource(c, { productId: 'p', provider: null, assignedSupplierId: 'hub-id' }))
+      .resolves.toMatchObject({ status: SOURCE_STATUS.RESOLVED, mapping: central });
+    expect(c.query).toHaveBeenCalledTimes(2);
+    expect(c.query.mock.calls[1][0]).toContain('FROM suppliers s');
+    expect(c.query.mock.calls[1][1]).toEqual(['hub-id', null]);
   });
 
   test('le writer canonique de SKU refuse une identité eBay (écriture) et accepte les autres providers', () => {

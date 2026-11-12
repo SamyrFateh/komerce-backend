@@ -130,6 +130,28 @@ describe('submitPurchaseOrder', () => {
     expect(mockReadiness).not.toHaveBeenCalled();
   });
 
+  it('PO manuelle Hub : la référence vendeur reste à renseigner dans le flux standard', async () => {
+    process.env.ADMIN_PHONE = '+225111111111';
+    mockNotifyText.mockResolvedValue(undefined);
+    scripted([
+      [/FROM purchase_orders WHERE id = \$1 FOR UPDATE/, { rows: [poRow({ supplier_id: 'hub-id', trigger_mode: 'manual' })] }],
+      [/FROM purchase_lines pl/, { rows: [submitLine({
+        product_name: 'Sac manuel', product_sku_id: 'komerce-sku', supplier_sku: null,
+        supplier_unit_ref: null, supplier_order_identity: null,
+        supplier_unit_price: null, supplier_currency: null,
+      })] }],
+      [/FROM suppliers/, { rows: [{ name: 'Fournisseur central Hub', platform: 'local', contact_phone: null }] }],
+      [/SELECT trigger_mode/, { rows: [{ trigger_mode: 'manual' }] }],
+    ]);
+    db.query.mockImplementation(async (sql) => (/FROM purchase_orders WHERE id/.test(sql) ? { rows: [{ id: PO, status: 'notified' }] } : { rows: [] }));
+
+    const out = await engagement.submitPurchaseOrder(PO);
+
+    expect(out.notification.channel).toBe('admin_manual');
+    expect(mockNotifyText.mock.calls[0][1]).toContain('Référence Komerce ; référence fournisseur à renseigner par le Hub');
+    expect(mockNotifyText.mock.calls[0][1]).not.toContain('Ref : null');
+  });
+
   it('une PO mélangeant simulation et réel est refusée avant tout envoi', async () => {
     const { calls } = scripted([
       [/FROM purchase_orders WHERE id = \$1 FOR UPDATE/, { rows: [poRow({ trigger_mode: 'manual' })] }],
