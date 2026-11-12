@@ -721,14 +721,6 @@
           "channels": [
             "static-code"
           ]
-        },
-        {
-          "provider": "purchasing",
-          "disposition": "DECLARED_AND_OBSERVED",
-          "channels": [
-            "static-code",
-            "data-read"
-          ]
         }
       ],
       "consumedBy": [
@@ -757,8 +749,7 @@
           "consumer": "catalog",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code",
-            "data-read"
+            "static-code"
           ]
         },
         {
@@ -30564,7 +30555,8 @@
           "consumer": "catalog",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
@@ -34024,6 +34016,14 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
+          ]
+        },
+        {
+          "provider": "purchasing",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code",
+            "data-read"
           ]
         }
       ],
