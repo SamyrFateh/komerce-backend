@@ -2417,12 +2417,3 @@ body.k-quote-open { overflow: hidden; }
   .k-quote-total > strong { font-size: 22px; }
   .k-quote-actions button { min-height: 50px; }
 }
-@media (max-width: 360px) {
-  .k-quote-logo { width: 91px; }
-  .k-quote-header h2 { font-size: 17px; }
-  .k-quote-header-copy { padding-left: 9px; }
-  .k-quote-line-amount { font-size: 12px; }
-  .k-quote-total > strong { font-size: 19px; }
-  .k-quote-actions { gap: 7px; }
-  .k-quote-actions button { padding: 8px 5px; font-size: 12px; }
-}
