@@ -53,6 +53,6 @@ describe('Fais-moi un devis — panier personnel', () => {
     expect(root.textContent).toContain('<script>bad()</script>');
     expect(root.querySelector('script')).toBeNull();
     expect(root.textContent).toContain('19');
-    expect(root.textContent).toContain('Transport');
+    expect(root.textContent).toContain('Livraison au relais');
   });
 });
