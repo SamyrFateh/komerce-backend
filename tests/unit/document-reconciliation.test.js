@@ -4,7 +4,7 @@
 jest.mock('../../db', () => ({ query: jest.fn() }));
 jest.mock('../../utils/logger', () => ({ child: jest.fn(() => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() })) }));
 jest.mock('../../services/invoice-service', () => ({ issueInvoice: jest.fn() }));
-jest.mock('../../services/documents/pickup-proof', () => ({ issue: jest.fn() }));
+jest.mock('../../services/documents/pickup-proof', () => ({ issueForHandoff: jest.fn() }));
 jest.mock('../../services/documents/refund-receipt', () => ({ issue: jest.fn() }));
 
 const invoiceService = require('../../services/invoice-service');
@@ -27,12 +27,12 @@ describe('document-reconciliation', () => {
   it('réémet les trois familles via les services d\'émission existants', async () => {
     const db = dbWith({
       invoice: [{ subject_id: 'o1', order_id: 'o1' }],
-      proof: [{ subject_id: 'o2', order_id: 'o2' }],
+      proof: [{ subject_id: 'scan-2', order_id: 'o2' }],
       refund: [{ subject_id: 'r1', order_id: 'o3' }],
     });
     const report = await reconcileDocuments({ db, issuedBy: 'admin-1' });
     expect(invoiceService.issueInvoice).toHaveBeenCalledWith('o1');
-    expect(pickupProof.issue).toHaveBeenCalledWith('o2', { issuedBy: 'admin-1' });
+    expect(pickupProof.issueForHandoff).toHaveBeenCalledWith('scan-2', { issuedBy: 'admin-1' });
     expect(refundReceipt.issue).toHaveBeenCalledWith('r1', { issuedBy: 'admin-1' });
     expect(report).toMatchObject({ issued: 3, failed: 0, dry_run: false });
   });
