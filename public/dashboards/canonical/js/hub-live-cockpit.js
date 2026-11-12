@@ -656,6 +656,12 @@
             A('authorize-commitment', 'Valider l’engagement d’achat', { primary: true, why: 'droit purchase_commitment', disabled: lock || grant(viewer && viewer.can_authorize_commitment, 'réservé à la responsable Hub'), run: () => openForm('commitment', po.id) });
             A('detach-line', 'Retirer une ligne', { why: 'la ligne redevient un besoin ouvert', disabled: lock, run: () => openForm('detach', po.id) });
           }
+          if (!readOnly && po.authorizations.commitment?.pdf_available) {
+            A('download-commitment-pdf', 'Télécharger le bon de commande PDF', {
+              href: `/api/purchasing/po/${encodeURIComponent(po.id)}/commitment-pdf`,
+              why: 'usage interne Hub',
+            });
+          }
           if (po.step.key === 'validation') A('submit-po', 'Soumettre la PO', { primary: true, why: 'rien n’est encore envoyé', disabled: lock, run: (b) => submitPo(b, po.id) });
           if (po.step.key === 'engaged') A('record-sent', 'Enregistrer l’envoi fournisseur', { primary: true, why: 'canal réel, auteur, heure', disabled: lock, run: () => openForm('sent', po.id) });
           if (po.status === 'notified' && po.sent_at) A('confirm-po', 'Confirmation fournisseur', { why: 'quantités confirmées (déclaratif)', disabled: lock, run: () => openForm('confirm', po.id) });
@@ -766,7 +772,9 @@
     actionsFor().forEach((a) => {
       if (a.primary && !a.disabled) { if (primaryUsed) a.primary = false; else primaryUsed = true; } else if (a.disabled) a.primary = false;
       const row = el(doc, 'div', 'hlc-action-row');
-      const b = button(doc, a.label, a.key, a.primary ? 'is-primary' : '');
+      const b = a.href ? el(doc, 'a', 'hlc-btn', a.label)
+        : button(doc, a.label, a.key, a.primary ? 'is-primary' : '');
+      if (a.href) b.setAttribute('href', a.href);
       if (a.disabled) { b.disabled = true; b.setAttribute('aria-disabled', 'true'); b.title = a.disabled; }
       else if (a.run) b.addEventListener('click', () => { a.run(b); });
       row.appendChild(b);

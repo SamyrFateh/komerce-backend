@@ -56,7 +56,7 @@
     "healthy": 34,
     "attention": 6,
     "blocked": 0,
-    "businessDependencies": 323,
+    "businessDependencies": 324,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
@@ -10551,7 +10551,7 @@
               {
                 "declared": "services/documents/cart-quote-pdf.js",
                 "resolvedPath": "services/documents/cart-quote-pdf.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/documents/customs-invoice.js",
@@ -11009,6 +11009,13 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "data-read"
+          ]
+        },
+        {
+          "consumer": "purchasing",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
           ]
         },
         {
@@ -24993,7 +25000,7 @@
               {
                 "declared": "services/public-cart-quote-service.js",
                 "resolvedPath": "services/public-cart-quote-service.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/qr-collection-core.js",
@@ -29200,7 +29207,7 @@
       "implementation": {
         "byCategory": {
           "migrations": {
-            "count": 14,
+            "count": 15,
             "files": [
               {
                 "declared": "migrations/225_purchase_orders_exact_supplier_identity.sql",
@@ -29270,6 +29277,11 @@
               {
                 "declared": "migrations/362_suppliers_hub_scope.sql",
                 "resolvedPath": "migrations/362_suppliers_hub_scope.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/408_hub_purchase_commitment_pdf.sql",
+                "resolvedPath": "migrations/408_hub_purchase_commitment_pdf.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -30075,7 +30087,7 @@
             ]
           }
         },
-        "totalFiles": 170,
+        "totalFiles": 171,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -30472,7 +30484,7 @@
           }
         ],
         "httpInterfaces": {
-          "count": 20
+          "count": 21
         }
       },
       "businessDependencies": [
@@ -30489,6 +30501,13 @@
           "channels": [
             "static-code",
             "data-read"
+          ]
+        },
+        {
+          "provider": "documents",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
           ]
         },
         {

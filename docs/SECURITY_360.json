@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-11-12T11:24:04.681Z",
+  "generatedAt": "2026-11-12T18:59:19.434Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 827,
-    "protected": 768,
+    "total": 828,
+    "protected": 769,
     "public": 59,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -4568,11 +4568,6 @@
       ]
     },
     {
-      "key": "POST /api/orders/quote-pdf",
-      "level": "PUBLIC",
-      "roles": []
-    },
-    {
       "key": "POST /api/orders/preview",
       "level": "PROTECTED",
       "roles": []
@@ -4585,6 +4580,11 @@
         "agent_relais",
         "agent_hub"
       ]
+    },
+    {
+      "key": "POST /api/orders/quote-pdf",
+      "level": "PUBLIC",
+      "roles": []
     },
     {
       "key": "GET /api/orders/relais",
@@ -5184,6 +5184,14 @@
     },
     {
       "key": "POST /api/purchasing/po/{po_id}/authorize-payment",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "GET /api/purchasing/po/{po_id}/commitment-pdf",
       "level": "PROTECTED",
       "roles": [
         "admin",

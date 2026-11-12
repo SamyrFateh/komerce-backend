@@ -18,7 +18,7 @@ jest.mock('../../services/purchasing-grouped-service', () => ({}));
 jest.mock('../../services/purchasing-order-detail', () => ({ getPurchaseOrderDetail: jest.fn() }));
 jest.mock('../../services/purchasing-canonical-money', () => ({ resolveCanonicalMappingMoney: jest.fn() }));
 jest.mock('../../services/purchasing-engagement-service', () => ({}));
-const mockAuth = { grant: jest.fn(), revoke: jest.fn(), listGrants: jest.fn(), decide: jest.fn() };
+const mockAuth = { grant: jest.fn(), revoke: jest.fn(), listGrants: jest.fn(), decide: jest.fn(), getCommitmentPdf: jest.fn() };
 jest.mock('../../services/hub-authorization-service', () => mockAuth);
 
 const express = require('express');
@@ -59,4 +59,37 @@ test('décisions : un compte Hub appelle le service (grant exigé côté service
   expect(mockAuth.decide).toHaveBeenLastCalledWith(expect.objectContaining({ purchaseOrderId: 'p1', authorizationType: 'supplier_payment' }));
   user = { id: 'c1', role: 'client' };
   expect((await request(app).post('/api/purchasing/po/p1/authorize-payment').send({})).status).toBe(403);
+});
+
+test('le PDF interne est une pièce jointe privée réservée au Hub et à l’Admin central', async () => {
+  const url = '/api/purchasing/po/01394ccc-5cd0-4211-bfc3-6bd2656bf452/commitment-pdf';
+  for (const role of ['client', 'market_operator', 'agent_relais']) {
+    user = { id: 'u', role };
+    expect((await request(app).get(url)).status).toBe(403);
+  }
+  user = null;
+  expect((await request(app).get(url)).status).toBe(401);
+  expect(mockAuth.getCommitmentPdf).not.toHaveBeenCalled();
+
+  user = { id: 'h', role: 'agent_hub' };
+  mockAuth.getCommitmentPdf.mockRejectedValueOnce(Object.assign(new Error('Indisponible'), {
+    status: 404, code: 'PURCHASE_COMMITMENT_PDF_UNAVAILABLE',
+  }));
+  expect((await request(app).get(url)).status).toBe(404);
+
+  const pdf = Buffer.from('%PDF-1.3');
+  mockAuth.getCommitmentPdf.mockResolvedValue(pdf);
+  for (const role of ['agent_hub', 'admin']) {
+    user = { id: 'u', role };
+    const response = await request(app).get(url).buffer(true).parse((res, callback) => {
+      const chunks = [];
+      res.on('data', chunk => chunks.push(chunk));
+      res.on('end', () => callback(null, Buffer.concat(chunks)));
+    });
+    expect(response.status).toBe(200);
+    expect(response.headers['content-type']).toBe('application/pdf');
+    expect(response.headers['cache-control']).toBe('private, no-store');
+    expect(response.headers['content-disposition']).toMatch(/^attachment; filename="bon-commande-/);
+    expect(response.body).toEqual(pdf);
+  }
 });

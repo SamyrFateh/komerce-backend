@@ -188,7 +188,8 @@ if (!process.env.DATABASE_URL) {
     await expect(grouped.detachLines(s.po1, [s.k102.items[0].lineId])).rejects.toMatchObject({ status: 409, code: 'PURCHASE_ORDER_COMMITMENT_FROZEN' });
     const mid = (await dossier(agent)).purchase_orders.find((p) => p.id === s.po1);
     expect(mid.step.key).toBe('validation');
-    expect(mid.authorizations.commitment).toMatchObject({ currency: 'USD', proof_ref: 'BC-PO1' });
+    expect(mid.authorizations.commitment).toMatchObject({ currency: 'USD', proof_ref: 'BC-PO1', pdf_available: true });
+    expect(mid.authorizations.commitment).not.toHaveProperty('commitment_pdf');
     expect(mid.authorizations.payment).toBeNull();
 
     await engagement.submitPurchaseOrder(s.po1, { actor: agent });

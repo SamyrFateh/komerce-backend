@@ -8,7 +8,7 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 - Healthy : **34**
 - Attention : **6**
 - Blocked : **0**
-- Business dependencies : **323**
+- Business dependencies : **324**
 - Direct cross-feature imports : **0**
 - Runtime cycles : **0**
 - Ambiguous ownership signals : **0**
@@ -37,7 +37,7 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 | customs | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | customs_categories, customs_shipment_fees, customs_shipment_parcel_events, customs_shipment_parcels, customs_shipments | auth, catalog, documents, economic-engine, infrastructure, logistics, market, orders | admin-dashboard, catalog, dashboard, documents, economic-engine, infrastructure, logistics, orders, sourcing | 0 |
 | dashboard | business-transversal | 🟢 HEALTHY | 🟢 HEALTHY | order_incidents, partners | auth, auth-identity, business-rules, catalog, customs, decision-signals, documents, economic-engine, external-provider-contracts, incident-management, infrastructure, inventory, local-stock, logistics, market, market-autonomy, market-delegation, notifications, orders, payments, purchasing, shared-cart, sourcing, supplier-connectivity, wallet | admin-dashboard, decision-signals, economic-engine, infrastructure, market-control-plane, market-delegation, orders, sourcing | 0 |
 | decision-signals | piloting-capability | 🟢 HEALTHY | 🟢 HEALTHY | signals | auth, business-rules, dashboard, economic-engine, infrastructure, logistics, market-delegation, payments, purchasing | admin-dashboard, dashboard, incident-management, market-control-plane, orders | 0 |
-| documents | business-transversal | 🟢 HEALTHY | 🟢 HEALTHY | invoices, transaction_documents | auth, auth-identity, catalog, customs, infrastructure, logistics, orders, refunds, wallet | admin-dashboard, auth-identity, customs, dashboard, logistics, orders, payments, platform-ops, refunds, wallet | 0 |
+| documents | business-transversal | 🟢 HEALTHY | 🟢 HEALTHY | invoices, transaction_documents | auth, auth-identity, catalog, customs, infrastructure, logistics, orders, refunds, wallet | admin-dashboard, auth-identity, customs, dashboard, logistics, orders, payments, platform-ops, purchasing, refunds, wallet | 0 |
 | economic-engine | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | charges, competitor_prices, cost_benchmarks, cost_component_events, cost_component_market_override_events, cost_component_market_overrides, cost_components, economic_risk_cost_events, economic_risk_watermark_events, economic_snapshots, economic_structure_cost_events, exchange_rates, finance_config, financial_movement_documents, financial_movements, international_n1_reconciliations, market_cost_attributions, market_price_observation_events, market_price_observations, order_cost_entry_events, order_item_real_cost_allocations, price_history, pricing_category_dims, pricing_category_taxes, pricing_components, pricing_market_decision_policy_events, pricing_matrices_audit, pricing_maturity_disposition_events, pricing_strategies, pricing_strategy_history, risk_provisions | auth, auth-identity, business-rules, catalog, customs, dashboard, infrastructure, local-stock, logistics, loyalty, market, market-autonomy, market-delegation, orders, platform-ops, refunds | admin-dashboard, catalog, customs, dashboard, decision-signals, infrastructure, loyalty, market-autonomy, market-control-plane, market-delegation, orders, platform-ops, purchasing, refunds, sourcing | 0 |
 | external-provider-contracts | technical-transversal | 🟡 ATTENTION | 🟢 HEALTHY | _aucune_ | _aucune_ | catalog, dashboard, purchasing, supplier-connectivity | 1 |
 | incident-management | business-transversal | 🟢 HEALTHY | 🟢 HEALTHY | incidents | decision-signals, infrastructure, logistics, orders | dashboard, logistics, notifications, payments, platform-ops | 0 |
@@ -58,7 +58,7 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 | platform | frontend-transversal | 🟢 HEALTHY | 🟢 HEALTHY | _aucune_ | _aucune_ | _aucune_ | 0 |
 | platform-ops | technical-transversal | 🟢 HEALTHY | 🟢 HEALTHY | fabrics, garment_models | auth, auth-identity, business-rules, catalog, documents, economic-engine, incident-management, infrastructure, logistics, orders, purchasing, wallet | auth-identity, auth-passkey, catalog, economic-engine, infrastructure, notifications, orders, payments, providers-services, recommendations, shared-cart, wallet | 0 |
 | providers-services | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | inquiries, physical_offers, providers, services | auth, auth-identity, infrastructure, local-stock, market, platform-ops, recommendations | market-delegation, recommendations | 0 |
-| purchasing | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | hub_authorization_grants, product_suppliers, purchase_lines, purchase_order_authorizations, purchase_orders, supplier_execution_events, supplier_execution_fulfillments, supplier_execution_order_lines, supplier_execution_orders, supplier_execution_payment_proofs, supplier_execution_payments, supplier_payment_settlements, suppliers | auth, catalog, economic-engine, external-provider-contracts, infrastructure, logistics, notifications, orders, sourcing, supplier-connectivity | catalog, dashboard, decision-signals, logistics, orders, payments, platform-ops, sourcing | 0 |
+| purchasing | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | hub_authorization_grants, product_suppliers, purchase_lines, purchase_order_authorizations, purchase_orders, supplier_execution_events, supplier_execution_fulfillments, supplier_execution_order_lines, supplier_execution_orders, supplier_execution_payment_proofs, supplier_execution_payments, supplier_payment_settlements, suppliers | auth, catalog, documents, economic-engine, external-provider-contracts, infrastructure, logistics, notifications, orders, sourcing, supplier-connectivity | catalog, dashboard, decision-signals, logistics, orders, payments, platform-ops, sourcing | 0 |
 | recommendations | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | _aucune_ | catalog, infrastructure, local-stock, logistics, market, market-autonomy, orders, platform-ops, providers-services | infrastructure, providers-services, shared-cart | 0 |
 | refunds | business-transversal | 🟢 HEALTHY | 🟢 HEALTHY | order_item_refund_reservations, refund_execution_intents, refunds | documents, economic-engine, infrastructure, logistics, orders, payments, wallet | documents, economic-engine, logistics, orders, payments | 0 |
 | settlement | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | market_settlement_events, market_settlements | auth, auth-identity, infrastructure, market, market-delegation | market-delegation | 0 |
@@ -701,7 +701,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Exposes** : 0 internal API(s), 9 HTTP interface(s)
 
 **Consumes** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), customs (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), refunds (DECLARED_AND_OBSERVED), wallet (DECLARED_AND_OBSERVED)
-**Consumed by** : admin-dashboard (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), customs (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED), refunds (DECLARED_AND_OBSERVED), wallet (DECLARED_AND_OBSERVED)
+**Consumed by** : admin-dashboard (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), customs (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED), purchasing (DECLARED_AND_OBSERVED), refunds (DECLARED_AND_OBSERVED), wallet (DECLARED_AND_OBSERVED)
 
 **Projections** : _aucune_
 
@@ -2260,7 +2260,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Owns** : `hub_authorization_grants`, `product_suppliers`, `purchase_lines`, `purchase_order_authorizations`, `purchase_orders`, `supplier_execution_events`, `supplier_execution_fulfillments`, `supplier_execution_order_lines`, `supplier_execution_orders`, `supplier_execution_payment_proofs`, `supplier_execution_payments`, `supplier_payment_settlements`, `suppliers`
 
-**Exposes** : 14 internal API(s), 20 HTTP interface(s)
+**Exposes** : 14 internal API(s), 21 HTTP interface(s)
   - `adaptShippingRate` (services/suppliers/allegro-shipping-capability-adapter.js) — resolved
   - `compareLegacyCanonicalUnit` (services/suppliers/canonical-unit-cutover-comparison.js) — resolved
   - `confirmGroupedPurchaseOrder` (services/purchasing-engagement-service.js) — resolved
@@ -2273,7 +2273,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - `resolveCanonicalSupplierMoney` (services/purchasing-canonical-money.js) — resolved
   - _...4 de plus, voir FEATURE_360.json_
 
-**Consumes** : auth (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), external-provider-contracts (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), sourcing (DECLARED_AND_OBSERVED), supplier-connectivity (DECLARED_AND_OBSERVED)
+**Consumes** : auth (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), documents (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), external-provider-contracts (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), sourcing (DECLARED_AND_OBSERVED), supplier-connectivity (DECLARED_AND_OBSERVED)
 **Consumed by** : catalog (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), decision-signals (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED), sourcing (DECLARED_AND_OBSERVED)
 
 **Projections** : _aucune_
@@ -2286,8 +2286,8 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 170 fichier(s) déclaré(s)
-  - migrations : 14
+**Implementation** : 171 fichier(s) déclaré(s)
+  - migrations : 15
   - routes : 1
   - scripts : 14
   - services : 53

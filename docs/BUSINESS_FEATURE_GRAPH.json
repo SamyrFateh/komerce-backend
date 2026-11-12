@@ -8155,7 +8155,7 @@
         "category": "services",
         "declared": "services/documents/cart-quote-pdf.js",
         "resolvedPath": "services/documents/cart-quote-pdf.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "documents",
@@ -16457,7 +16457,7 @@
         "category": "services",
         "declared": "services/public-cart-quote-service.js",
         "resolvedPath": "services/public-cart-quote-service.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "orders",
@@ -18502,6 +18502,13 @@
         "declared": "routes/purchasing.js",
         "resolvedPath": "routes/purchasing.js",
         "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "purchasing",
+        "category": "migrations",
+        "declared": "migrations/408_hub_purchase_commitment_pdf.sql",
+        "resolvedPath": "migrations/408_hub_purchase_commitment_pdf.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
         "feature": "purchasing",
@@ -26295,6 +26302,14 @@
       },
       {
         "feature": "purchasing",
+        "entry": "GET /api/purchasing/po/:po_id/commitment-pdf",
+        "method": "GET",
+        "path": "/api/purchasing/po/{id}/commitment-pdf",
+        "routeFile": "routes/purchasing.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "purchasing",
         "entry": "POST /api/purchasing/po/prepare",
         "method": "POST",
         "path": "/api/purchasing/po/prepare",
@@ -30013,6 +30028,12 @@
         "from": "providers-services",
         "to": "infrastructure",
         "raw": "infrastructure — dépendance technique db.js et résolution KOMERCE_ENV",
+        "resolved": true
+      },
+      {
+        "from": "purchasing",
+        "to": "documents",
+        "raw": "documents (rendu PDF interne du bon de commande validé)",
         "resolved": true
       },
       {
@@ -46536,6 +46557,22 @@
       },
       {
         "from": "purchasing",
+        "to": "documents",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/hub-authorization-service.js",
+                "targetFile": "services/documents/pdf-renderer.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "purchasing",
         "to": "economic-engine",
         "channels": [
           {
@@ -53198,8 +53235,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 695,
-        "technicalNodesOwned": 695,
+        "technicalNodesTotal": 697,
+        "technicalNodesOwned": 697,
         "technicalOrphans": 0
       },
       "dash": {
@@ -53213,8 +53250,8 @@
       "boutique": {
         "manifestsDiscovered": 16,
         "manifestsConnected": 16,
-        "technicalNodesTotal": 104,
-        "technicalNodesOwned": 104,
+        "technicalNodesTotal": 105,
+        "technicalNodesOwned": 105,
         "technicalOrphans": 0
       }
     },
