@@ -2,8 +2,8 @@
   "generatedAt": "2026-11-12T17:18:18.323Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 832,
-    "protected": 773,
+    "total": 833,
+    "protected": 774,
     "public": 59,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -5191,6 +5191,14 @@
     },
     {
       "key": "POST /api/purchasing/po/{po_id}/authorize-payment",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "GET /api/purchasing/po/{po_id}/commitment-pdf",
       "level": "PROTECTED",
       "roles": [
         "admin",
