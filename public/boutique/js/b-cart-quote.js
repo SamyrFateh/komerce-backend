@@ -180,6 +180,7 @@ export function setupCartQuote() {
         </div>
       </section>`;
     document.body.appendChild(dialog);
+    dialog.querySelector('.k-quote-actions').style.gridTemplateColumns = 'repeat(2, minmax(0, 1fr))';
     const close = () => {
       if (!dialog.isConnected) return;
       bus.off('cart:update', invalidate);
