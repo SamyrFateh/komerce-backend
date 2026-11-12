@@ -1301,6 +1301,7 @@ function _openRelaisPicker(od, byIle, allIles, onDone) {
       const sel = relOf(); if (!sel) return;
       od.fulfillment_zone   = draft.zone;
       od.selectedIsland     = draft.zone === 'france' ? 'France' : draft.island;
+      if (String(od.selectedRelaisId) !== String(sel.id)) _invalidateCheckoutPaymentAttempt();
       od.selectedRelaisId   = sel.id;
       od.selectedRelaisName = sel.name || sel.nom || '';
       close();
@@ -2276,7 +2277,9 @@ export function renderCheckout() {
       const isStripe = mode && mode.value === 'stripe_eur';
       const isPaypal = mode && mode.value === 'paypal_eur';
       const isMobileMoney = mode && mode.value === 'mobile_money';
-      od.payment_mode = mode ? mode.value : 'cash_relais';
+      const nextPaymentMode = mode ? mode.value : 'cash_relais';
+      if (od.payment_mode && od.payment_mode !== nextPaymentMode) _invalidateCheckoutPaymentAttempt();
+      od.payment_mode = nextPaymentMode;
 
       // Le titre de section est statique (règle §4) — plus de re-rendu ici.
       // Le moyen sélectionné reste visible via la classe --active sur les
@@ -2363,7 +2366,11 @@ export function renderCheckout() {
 
     setTimeout(() => {
       const cb = document.getElementById('cb-use-wallet');
-      if (cb) cb.addEventListener('change', function() { od.use_wallet = this.checked; updateWalletDisplay(); });
+      if (cb) cb.addEventListener('change', function() {
+        if (Boolean(od.use_wallet) !== this.checked) _invalidateCheckoutPaymentAttempt();
+        od.use_wallet = this.checked;
+        updateWalletDisplay();
+      });
     }, 0);
 
     confirmBtn.addEventListener('click', () => submitOrder(confirmBtn));
@@ -2708,8 +2715,7 @@ expected_total_kmf: acceptedTotalKmf
       // Aucune validation silencieuse du nouveau prix : mettre à jour le
       // récapitulatif, conserver le panier et attendre un DEUXIÈME clic explicite.
       od.serverQuote = null;
-      state.checkoutAttemptKey = null;
-      state.mobileMoneyAttemptKey = null;
+      _invalidateCheckoutPaymentAttempt();
       _refreshCheckoutServerQuote(od);
       showToast('Le prix a changé. Vérifiez le nouveau total, puis confirmez à nouveau.', 'error');
     } else {
@@ -2886,5 +2892,6 @@ function _onPayPalSuccess(captureRes) {
   const orderData = state.lastApiResult?.order || { reference: orderRef };
   _clearCommittedCheckoutSource();
   state.pendingPaypalOrderRef = null;
+  state.checkoutAttemptKey = null;
   renderOrderSuccess(orderData, recipName, undefined, state.lastApiResult || orderData);
 }
