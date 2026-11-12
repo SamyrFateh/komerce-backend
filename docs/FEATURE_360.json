@@ -1087,7 +1087,7 @@
               {
                 "declared": "services/g6-staging-buyer-identity-guard.js",
                 "resolvedPath": "services/g6-staging-buyer-identity-guard.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/otp-test-mode.js",
@@ -1643,6 +1643,7 @@
           "consumer": "market-delegation",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
+            "static-code",
             "data-read"
           ]
         },
@@ -6858,7 +6859,7 @@
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 175,
+            "count": 176,
             "files": [
               {
                 "declared": "chart.umd.min.js",
@@ -7373,6 +7374,11 @@
               {
                 "declared": "dashboards/canonical/css/purchasing-workspace.css",
                 "resolvedPath": "public/dashboards/canonical/css/purchasing-workspace.css",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/css/relay-workboard.css",
+                "resolvedPath": "public/dashboards/canonical/css/relay-workboard.css",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -9208,7 +9214,7 @@
             ]
           }
         },
-        "totalFiles": 464,
+        "totalFiles": 465,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -11379,7 +11385,7 @@
             ]
           },
           "services": {
-            "count": 54,
+            "count": 56,
             "files": [
               {
                 "declared": "scripts/market-cost-attribution-conservation-check.js",
@@ -11557,6 +11563,16 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/pricing-floor-forecast-preview.js",
+                "resolvedPath": "services/pricing-floor-forecast-preview.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/pricing-floor-forecast-shadow.js",
+                "resolvedPath": "services/pricing-floor-forecast-shadow.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/pricing-guards.js",
                 "resolvedPath": "services/pricing-guards.js",
                 "status": "resolved-in-technical-graph"
@@ -11654,7 +11670,7 @@
             ]
           },
           "tests": {
-            "count": 103,
+            "count": 105,
             "files": [
               {
                 "declared": "tests/integration/canonical-margin-writer-real-db.test.js",
@@ -11987,6 +12003,16 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/pricing-floor-forecast-preview.test.js",
+                "resolvedPath": "tests/unit/pricing-floor-forecast-preview.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/pricing-floor-forecast-shadow.test.js",
+                "resolvedPath": "tests/unit/pricing-floor-forecast-shadow.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/pricing-flow-contract.test.js",
                 "resolvedPath": "tests/unit/pricing-flow-contract.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -12194,7 +12220,7 @@
             ]
           }
         },
-        "totalFiles": 214,
+        "totalFiles": 218,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -21164,7 +21190,7 @@
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 22,
+            "count": 23,
             "files": [
               {
                 "declared": "dashboards/canonical/access.html",
@@ -21229,6 +21255,11 @@
               {
                 "declared": "dashboards/canonical/js/market-catalog.js",
                 "resolvedPath": "public/dashboards/canonical/js/market-catalog.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/js/market-network.js",
+                "resolvedPath": "public/dashboards/canonical/js/market-network.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -21384,7 +21415,7 @@
             ]
           }
         },
-        "totalFiles": 40,
+        "totalFiles": 41,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -22745,7 +22776,7 @@
             ]
           },
           "tests": {
-            "count": 51,
+            "count": 52,
             "files": [
               {
                 "declared": "tests/e2e-api/market-delegation.authority-team-network.e2e.test.js",
@@ -22978,6 +23009,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/market-network.test.js",
+                "resolvedPath": "tests/unit/market-network.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/market-operator-provisioning.test.js",
                 "resolvedPath": "tests/unit/market-operator-provisioning.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -23005,7 +23041,7 @@
             ]
           }
         },
-        "totalFiles": 110,
+        "totalFiles": 111,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -23526,6 +23562,7 @@
           "provider": "auth-identity",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
+            "static-code",
             "data-read"
           ]
         },

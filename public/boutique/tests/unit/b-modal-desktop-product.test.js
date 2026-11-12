@@ -52,6 +52,7 @@ jest.mock('../../js/b-cart.js', () => ({ addToCart: jest.fn() }));
 jest.mock('../../js/b-share-cart.js', () => ({ startShareFlow: jest.fn() }));
 
 const { state, dom } = require('../../js/b-store.js');
+const { bus } = require('../../js/b-bus.js');
 const { isDesktop } = require('../../js/b-scroll-owner.js');
 const { buildCarouselSlides, goToSlide } = require('../../js/b-modal-product.js');
 const { setupImageUX } = require('../../js/b-modal-image-ux.js');
@@ -335,6 +336,28 @@ describe('desktop product detail renderer', () => {
     expect(dom.modal.querySelector('.k-modal-actions').classList.contains('k-modal-actions--filled')).toBe(true);
   });
 
+  test('P0 — autre taille en panier : desktop ne masque jamais Ajouter pour un SKU distinct', () => {
+    const product = detail();
+    const selection = createModalSelection(product);
+    selection.selected_options = { Couleur: 'Beige', Taille: 'L' };
+    selection.selected_sku_id = SKU_BEI_L;
+    state.cart = [{
+      product: { id: PRODUCT_ID, sku_id: SKU_MAR_M },
+      sku_id: SKU_MAR_M,
+      variant_combo: { Couleur: 'Marron', Taille: 'M' },
+      qty: 1,
+    }];
+
+    // Reproduit le --filled du rendu précédent, avant changement de taille.
+    const actions = dom.modal.querySelector('.k-modal-actions');
+    actions.classList.add('k-modal-actions--filled');
+    renderDesktopProductDetail(product, selection);
+
+    expect(actions.classList.contains('k-modal-actions--filled')).toBe(false);
+    expect(dom.addCartBtn.disabled).toBe(false);
+    expect(dom.addCartBtn.hidden).toBe(false);
+  });
+
   test('T-023/D11 — entrée panier avec qty 0 : reste AVAILABLE_EMPTY', () => {
     const product = detail({ inventory_model: 'LEGACY_VARIANTS' });
     state.cart = [{ product: { id: PRODUCT_ID }, qty: 0 }];
@@ -386,12 +409,15 @@ describe('desktop product detail renderer', () => {
   });
 
   test('Marron + M résout le même SKU que mobile et actualise prix, référence et médias', () => {
+    const eventSpy = jest.spyOn(bus, 'emit');
     const product = detail();
     renderDesktopProductDetail(product, createModalSelection(product), { forceMedia: true });
     document.querySelector('[data-axis-key="Couleur"] [data-option-value="Marron"]').click();
     document.querySelector('[data-axis-key="Taille"] [data-option-value="M"]').click();
 
     expect(state.modalSelection.selected_sku_id).toBe(SKU_MAR_M);
+    expect(eventSpy).toHaveBeenCalledWith('modal:selection-rendered');
+    eventSpy.mockRestore();
     expect(state.modalVariantCombo).toEqual({ Couleur: 'Marron', Taille: 'M' });
     expect(dom.modalSku.textContent).toBe('Réf. ROB-MAR-M');
     expect(dom.modalPrice.textContent).toBe('12500 KMF');

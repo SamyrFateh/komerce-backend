@@ -106,6 +106,9 @@ async function notifyPaymentConfirmed(orderId, orderReference) {
       return;
     }
 
+    // Staging/test orders must never emit external messages, including after a cash confirmation.
+    if (await suppressForSimulatedOrder(order.id, 'payment_confirmed')) return;
+
     const phone = pickPhone(order);
     const name = firstName(order.recipient_name || order.user_full_name);
 

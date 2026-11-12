@@ -151,7 +151,7 @@ module.exports = {
     'un produit LEGACY_VARIANTS qui expose encore des axes ou has_variants reste non achetable jusqu a sa bascule SKU canonique',
     'sur mobile et desktop, Ajouter et Acheter restent désactivés pour un produit SKU tant que selected_sku_id est null',
     'sur mobile et desktop, Ajouter et Acheter utilisent le même accent commerce sans modifier leur hiérarchie ni leurs états désactivés',
-    'Acheter maintenant ouvre sans délai le checkout sur la seule ligne SKU courante ; il ne redirige jamais vers le panier et ne fusionne jamais son intention avec les lignes déjà présentes',
+    'Acheter maintenant ouvre sans délai une sélection BUY_NOW éphémère sur la seule ligne SKU courante ; il ne modifie jamais le panier personnel existant, même lorsque ce SKU est déjà présent',
     'un ajout SKU persiste le prix, la référence et le média de la sellable_unit sélectionnée, jamais seulement les champs catalogue du produit',
     'le CTA SKU ajoute une unité ; après ajout, le stepper ne peut muter que la ligne exacte de la sélection courante résolue par sku_id puis variant_combo',
     'les vignettes photo viennent de option_axes.values.thumbnail_url ; aucune couleur ou image n est déduite par heuristique',

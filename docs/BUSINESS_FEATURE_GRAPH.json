@@ -1078,7 +1078,7 @@
         "category": "services",
         "declared": "services/g6-staging-buyer-identity-guard.js",
         "resolvedPath": "services/g6-staging-buyer-identity-guard.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "auth-identity",
@@ -5794,6 +5794,13 @@
       {
         "feature": "dashboard",
         "category": "dash",
+        "declared": "dashboards/canonical/css/relay-workboard.css",
+        "resolvedPath": "public/dashboards/canonical/css/relay-workboard.css",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
         "declared": "dashboards/canonical/css/catalog-control-tower.css",
         "resolvedPath": "public/dashboards/canonical/css/catalog-control-tower.css",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -8678,6 +8685,20 @@
       {
         "feature": "economic-engine",
         "category": "services",
+        "declared": "services/pricing-floor-forecast-shadow.js",
+        "resolvedPath": "services/pricing-floor-forecast-shadow.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "services",
+        "declared": "services/pricing-floor-forecast-preview.js",
+        "resolvedPath": "services/pricing-floor-forecast-preview.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "services",
         "declared": "services/pricing-cdr.js",
         "resolvedPath": "services/pricing-cdr.js",
         "status": "resolved-in-technical-graph"
@@ -9436,6 +9457,20 @@
         "category": "tests",
         "declared": "tests/unit/pricing-engine.test.js",
         "resolvedPath": "tests/unit/pricing-engine.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/unit/pricing-floor-forecast-shadow.test.js",
+        "resolvedPath": "tests/unit/pricing-floor-forecast-shadow.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/unit/pricing-floor-forecast-preview.test.js",
+        "resolvedPath": "tests/unit/pricing-floor-forecast-preview.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -14929,6 +14964,13 @@
       {
         "feature": "market-autonomy",
         "category": "dash",
+        "declared": "dashboards/canonical/js/market-network.js",
+        "resolvedPath": "public/dashboards/canonical/js/market-network.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "dash",
         "declared": "dashboards/canonical/css/market-cash-control.css",
         "resolvedPath": "public/dashboards/canonical/css/market-cash-control.css",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -15722,6 +15764,13 @@
         "category": "tests",
         "declared": "tests/unit/market-delegation-network-routes.test.js",
         "resolvedPath": "tests/unit/market-delegation-network-routes.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "tests",
+        "declared": "tests/unit/market-network.test.js",
+        "resolvedPath": "tests/unit/market-network.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -34671,10 +34720,6 @@
                 "targetFile": "public/boutique/js/b-cart.js"
               },
               {
-                "sourceFileId": "public/boutique/js/b-modal-buybox-shared.js",
-                "targetFile": "public/boutique/js/b-cart.js"
-              },
-              {
                 "sourceFileId": "public/boutique/tests/unit/b-modal-buybox-shared.test.js",
                 "targetFile": "public/boutique/js/b-cart.js"
               }
@@ -34793,6 +34838,10 @@
               },
               {
                 "sourceFileId": "public/boutique/js/b-modal-mobile-product.js",
+                "targetFile": "public/boutique/js/b-bus.js"
+              },
+              {
+                "sourceFileId": "public/boutique/js/b-modal-mobile-product.js",
                 "targetFile": "public/boutique/js/b-utils.js"
               },
               {
@@ -34802,6 +34851,10 @@
               {
                 "sourceFileId": "public/boutique/js/b-modal-desktop-product.js",
                 "targetFile": "public/boutique/js/b-store.js"
+              },
+              {
+                "sourceFileId": "public/boutique/js/b-modal-desktop-product.js",
+                "targetFile": "public/boutique/js/b-bus.js"
               },
               {
                 "sourceFileId": "public/boutique/js/b-modal-desktop-product.js",
@@ -34960,8 +35013,16 @@
                 "targetFile": "public/boutique/js/b-store.js"
               },
               {
+                "sourceFileId": "public/boutique/tests/unit/b-modal-mobile-product.test.js",
+                "targetFile": "public/boutique/js/b-bus.js"
+              },
+              {
                 "sourceFileId": "public/boutique/tests/unit/b-modal-desktop-product.test.js",
                 "targetFile": "public/boutique/js/b-store.js"
+              },
+              {
+                "sourceFileId": "public/boutique/tests/unit/b-modal-desktop-product.test.js",
+                "targetFile": "public/boutique/js/b-bus.js"
               },
               {
                 "sourceFileId": "public/boutique/tests/unit/b-modal-desktop-product.test.js",
@@ -42136,6 +42197,15 @@
         "to": "auth-identity",
         "channels": [
           {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/market-delegation-network-service.js",
+                "targetFile": "services/user-mutation-service.js"
+              }
+            ]
+          },
+          {
             "channel": "data-read",
             "evidence": [
               {
@@ -42366,6 +42436,14 @@
             "evidence": [
               {
                 "sourceFileId": "services/market-delegation-network-service.js",
+                "targetFile": "services/relais-mutation-service.js"
+              },
+              {
+                "sourceFileId": "routes/market-delegation-network.js",
+                "targetFile": "services/relais-mutation-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/market-delegation-network-service.test.js",
                 "targetFile": "services/relais-mutation-service.js"
               }
             ]
@@ -49052,7 +49130,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2299
+        "filesObserved": 2305
       },
       "boutique": {
         "filesObserved": 214,
@@ -52970,8 +53048,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 691,
-        "technicalNodesOwned": 691,
+        "technicalNodesTotal": 694,
+        "technicalNodesOwned": 694,
         "technicalOrphans": 0
       },
       "dash": {

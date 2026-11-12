@@ -81,7 +81,7 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 
 | Dépôt | Manifests découverts | Manifests connectés | Nœuds techniques | Owned | Orphelins |
 |---|---|---|---|---|---|
-| backend | 36 | 36 | 691 | 691 | 0 |
+| backend | 36 | 36 | 694 | 694 | 0 |
 | dash | 3 | 3 | N/A | N/A | N/A |
 | boutique | 16 | 16 | 104 | 104 | 0 |
 
@@ -223,7 +223,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - services: 47
 - routes: 28
 - migrations: 2
-- dash: 175
+- dash: 176
 - tests: 211
 - tables owned (lifecycle): 2 — `order_incidents`, `partners`
 - tables written: 20
@@ -270,11 +270,11 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - utils: 3
 - middleware: 1
-- services: 54
+- services: 56
 - routes: 13
 - migrations: 34
 - dash: 6
-- tests: 103
+- tests: 105
 - tables owned (lifecycle): 31 — `order_item_real_cost_allocations`, `exchange_rates`, `charges`, `competitor_prices`, `cost_benchmarks`, `cost_component_events`, `cost_component_market_override_events`, `cost_component_market_overrides`, `cost_components`, `economic_risk_cost_events`, `economic_risk_watermark_events`, `economic_snapshots`, `economic_structure_cost_events`, `finance_config`, `international_n1_reconciliations`, `financial_movements`, `financial_movement_documents`, `market_price_observations`, `market_price_observation_events`, `price_history`, `pricing_category_dims`, `pricing_category_taxes`, `pricing_components`, `pricing_matrices_audit`, `pricing_market_decision_policy_events`, `pricing_maturity_disposition_events`, `pricing_strategies`, `pricing_strategy_history`, `risk_provisions`, `market_cost_attributions`, `order_cost_entry_events`
 - tables written: 32
 - interfaces exposed: 110
@@ -432,7 +432,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - services: 4
 - migrations: 3
-- dash: 22
+- dash: 23
 - tests: 11
 - tables owned (lifecycle): 2 — `product_market_price_drafts`, `product_market_price_draft_events`
 - tables written: 2
@@ -465,7 +465,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - middleware: 4
 - services: 17
 - routes: 14
-- tests: 51
+- tests: 52
 - tables owned (lifecycle): 10 — `market_operating_assignments`, `assignment_memberships`, `membership_capabilities`, `assignment_capability_ceiling`, `market_cash_control_policies`, `capability_registry`, `ceiling_templates`, `ceiling_template_capabilities`, `market_delegation_audit`, `market_team_invitations`
 - tables written: 10
 - interfaces exposed: 33
@@ -2301,7 +2301,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 2299 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 2305 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 214 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 79 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -2354,8 +2354,8 @@ Meta Graph monté : oui.
 | catalog | market | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | catalog | market-autonomy | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
 | catalog | notifications | static-code | 2 | **DECLARED_AND_OBSERVED** |
-| catalog | orders | static-code, data-read | 16 | **DECLARED_AND_OBSERVED** |
-| catalog | platform-ops | static-code | 74 | **DECLARED_AND_OBSERVED** |
+| catalog | orders | static-code, data-read | 15 | **DECLARED_AND_OBSERVED** |
+| catalog | platform-ops | static-code | 78 | **DECLARED_AND_OBSERVED** |
 | catalog | purchasing | static-code | 8 | **DECLARED_AND_OBSERVED** |
 | catalog | shared-cart | static-code, interface | 13 | **DECLARED_AND_OBSERVED** |
 | catalog | sourcing | static-code, data-write, data-read | 39 | **DECLARED_AND_OBSERVED** |
@@ -2523,12 +2523,12 @@ Meta Graph monté : oui.
 | market-control-plane | payments | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
 | market-control-plane | sourcing | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | market-delegation | auth | static-code | 14 | **DECLARED_AND_OBSERVED** |
-| market-delegation | auth-identity | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| market-delegation | auth-identity | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
 | market-delegation | catalog | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
 | market-delegation | dashboard | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | market-delegation | economic-engine | static-code, data-read | 6 | **DECLARED_AND_OBSERVED** |
 | market-delegation | infrastructure | static-code | 24 | **DECLARED_AND_OBSERVED** |
-| market-delegation | logistics | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
+| market-delegation | logistics | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
 | market-delegation | market | static-code, data-read | 7 | **DECLARED_AND_OBSERVED** |
 | market-delegation | market-autonomy | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
 | market-delegation | market-operator-dashboard | static-code | 1 | **OBSERVED_UNDECLARED** |

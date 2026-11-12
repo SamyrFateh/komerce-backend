@@ -16,7 +16,8 @@ test('réception Hub : le scanner identifie le SKU exact de la PO, pas une comma
   expect(ui).toContain('Number(line.remaining_quantity) > 0');
   expect(ui).toContain('quantité réellement reçue');
   expect(ui).toContain("event.key !== 'Enter'");
-  expect(ui).not.toContain('/api/hub/physical-codes');
+  // seul l'endpoint de confirmation canonique (feat/hub-confirm-physical-code) est autorisé, jamais le lookup non scopé
+  expect(ui.replace('/api/hub/physical-codes/confirm', '')).not.toContain('/api/hub/physical-codes');
 });
 
 test('lookup du code à la réception : Hub uniquement et marché imposé par le serveur', () => {

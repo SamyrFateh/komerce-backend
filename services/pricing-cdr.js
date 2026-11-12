@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       db, utils/rates.js
  * @used-by       services/pricing-engine.js
- * @db-read       charges, cost_benchmarks, cost_components, customs_categories, boutique_categories, boutique_subcategories, finance_config, pricing_components, risk_provisions
+ * @db-read       charges, cost_benchmarks, cost_components, customs_categories, boutique_categories, boutique_subcategories, finance_config, pricing_components, risk_provisions, markets
  * @db-write      none
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
@@ -83,6 +83,7 @@ function _legacyCategoryToNew(oldCat, key) {
 async function loadGlobalConfig(options = {}) {
   let components = [];
   let componentsSource = 'cost_components';
+  let marketCode = null;
   try {
     const ccRes = await db.query(`
       SELECT id, key, label, emoji, description, family, category,
@@ -105,6 +106,10 @@ async function loadGlobalConfig(options = {}) {
         return true;
       });
       componentsSource = 'cost_components_market_override';
+      try {
+        const mk = await db.query('SELECT code FROM markets WHERE id = $1', [options.marketId]);
+        marketCode = mk?.rows?.[0]?.code || null;
+      } catch (_) { marketCode = null; }
     }
   } catch (err) {
     components = [];
@@ -166,6 +171,7 @@ async function loadGlobalConfig(options = {}) {
     components,
     components_source: componentsSource,
     market_id: options.marketId || null,
+    market_code: marketCode,
     provisions: provRes.rows,
     charges: chargesRes.rows,
     cost_benchmarks: costBenchmarks,
@@ -205,6 +211,100 @@ function computeFixedCostAllocation(charges, finance) {
   };
 }
 
+// ── Assiettes des composants en pourcentage (P0-1, #3830) ──────────
+// Chaque `pct` s'applique à une assiette déclarée et stable, jamais au sous-total
+// cumulé (qui rendait le résultat dépendant de l'ordre de chargement) :
+//   purchase : prix d'achat                (product_purchase, défaut)
+//   cif      : achat + fret au volume      (assurance, transitaire %, droits)
+//   price    : prix encaissé               (paiement, non-collecte)
+//   (casse / perte en transport = risque sur la valeur exposée → CIF)
+const PRICE_BASED_CATEGORIES = new Set(['payment', 'paiement']);
+const CIF_BASED_CATEGORIES = new Set(['freight', 'transit', 'port_transitary', 'customs', 'douane']);
+const MEASURED_SOURCES = new Set(['real', 'measured', 'quoted', 'observed', 'contract', 'manual']);
+// Listes fermées (aucune classification par nom de clé) : tout composant douane absent de
+// CUSTOMS_INSPECTION_KEYS compte comme DROITS ; tout risque absent de PRICE_BASED_RISK_KEYS
+// est assis sur la valeur exposée (CIF), pas sur l'encaissement.
+const CUSTOMS_INSPECTION_KEYS = new Set(['frais_inspection_douane_kmf']);
+const PRICE_BASED_RISK_KEYS = new Set(['provision_non_collecte_pct']);
+const isCustomsInspection = (c) => CUSTOMS_INSPECTION_KEYS.has(c.key);
+// ── Périmètre des composants (P0-2, #3830) ──────────────────────────
+// Les composants marqués Comores (port → relais, surcoûts inter-îles) ne valent que
+// pour le marché KM (ou une surcharge marché explicite). Un surcoût inter-îles ne
+// s'applique que si l'île de destination (relais / zone) est connue ET correspond.
+// Inconnu ≠ zéro : le composant n'est pas appliqué et il est signalé (UNKNOWN).
+const COMORES_MARKET_CODE = 'KM';
+const COMORES_MARKED_KEYS = new Set(['transport_port_relais_kmf']);
+const INTER_ISLAND_KEY = /inter[_-]?iles?[_-](moheli|anjouan)/i;
+const LOCAL_STOCK_EXCLUDED_CATEGORIES = new Set(['hub', 'packaging', 'sourcing', 'product_purchase']);
+const LOCAL_STOCK_EXCLUDED_KEYS = new Set(['transport_port_relais_kmf']);
+
+function normalizeIsland(value) {
+  if (!value) return null;
+  const s = String(value).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+    .replace(/[^a-z]+/g, '_').replace(/^_|_$/g, '');
+  if (/moheli|mwali/.test(s)) return 'moheli';
+  if (/anjouan|ndzuani/.test(s)) return 'anjouan';
+  if (/grande_comore|ngazidja/.test(s)) return 'grande_comore';
+  if (/mayotte|maore/.test(s)) return 'mayotte';
+  return s || null;
+}
+
+function componentTerritory(c) {
+  const key = c.key || '';
+  const keyIsland = (key.match(INTER_ISLAND_KEY) || [])[1] || null;
+  const island = normalizeIsland(c.island) || keyIsland;
+  return { island, comoresMarked: COMORES_MARKED_KEYS.has(key) || !!island };
+}
+
+const CUSTOMS_INSPECTION_KEY = /inspection|expertise|controle|contr[oô]le|frais/i;
+
+function pctBasisFor(category, key) {
+  if (PRICE_BASED_CATEGORIES.has(category)) return 'price';
+  if (category === 'risk_provision') return PRICE_BASED_RISK_KEYS.has(key) ? 'price' : 'cif';
+  if (CIF_BASED_CATEGORIES.has(category)) return 'cif';
+  return 'purchase';
+}
+
+// Un composant de fret « au volume » est l'autorité du fret ; le calcul en dur
+// (volume × fret_eur_per_m3 × taux) ne sert qu'à défaut.
+function isVolumeFreightComponent(c) {
+  return (c.category === 'freight' || c.category === 'transit')
+    && (c.allocation_method === 'by_volume' || c.unit === 'kmf_per_m3');
+}
+
+// Qualité des entrées (distincte de la santé économique) : part du coût variable
+// issue de lignes estimées + replis poids / volume / catégorie / fret.
+// Règle sans seuil numérique, fondée sur la confiance portée par les composants :
+//   high : aucune ligne estimée et aucun repli ; low : achat/catégorie inconnus, repli `default`
+//   ou ligne de confiance `low` ; medium : le reste. La part estimée est informative seulement.
+function buildInputQuality({ allocations, meta, categoryKnown, purchaseKnown, dutiesKnown, scopeUnknown = [] }) {
+  const lines = (allocations || []).filter(a => a.economic_nature !== 'fixed' && a.allocated_cost_kmf > 0);
+  const total = lines.reduce((s, a) => s + a.allocated_cost_kmf, 0);
+  const estimatedLines = lines.filter(a => !MEASURED_SOURCES.has(a.source) || a.component_confidence === 'low');
+  const estimatedKmf = estimatedLines.reduce((s, a) => s + a.allocated_cost_kmf, 0);
+  const share = total > 0 ? Math.round((estimatedKmf / total) * 1000) / 10 : 0;
+  const fallbacks = [];
+  if (meta.weight_source !== 'product') fallbacks.push({ field: 'weight', source: meta.weight_source });
+  if (meta.volume_source !== 'product') fallbacks.push({ field: 'volume', source: meta.volume_source });
+  if (!categoryKnown) fallbacks.push({ field: 'category', source: 'default' });
+  if (meta.freight_source === 'fallback_estimate') fallbacks.push({ field: 'freight', source: 'fallback_estimate' });
+  const unknown = [];
+  if (!purchaseKnown) unknown.push('purchase_price');
+  if (!dutiesKnown) unknown.push('customs_duties');
+  for (const u of scopeUnknown) unknown.push(`scope:${u.component_key}`);
+  let level = 'medium';
+  if (!estimatedLines.length && !fallbacks.length) level = 'high';
+  if (!purchaseKnown || !categoryKnown || fallbacks.some(f => f.source === 'default')
+    || lines.some(a => a.component_confidence === 'low')) level = 'low';
+  return {
+    level,
+    estimated_cost_share_pct: share,
+    estimated_lines: estimatedLines.map(a => a.component_key),
+    fallbacks,
+    unknown,
+  };
+}
+
 // ── CDR complet ────────────────────────────────────────────────────
 function computeCDR(product, ctx = {}) {
   const cfg = ctx.config;
@@ -218,9 +318,12 @@ function computeCDR(product, ctx = {}) {
   const taxAED  = fxOut.aed_kmf;
   const fretEUR = Number(fc.fret_eur_per_m3) || 180;
 
-  const categoryKey    = product.category || 'phones';
-  const cat            = cfg.categories[categoryKey];
-  if (!cat) warnings.push(`Catégorie "${categoryKey}" inconnue — poids, volume et marge cible par défaut utilisés.`);
+  // Catégorie absente ≠ « phones » : plus de bascule silencieuse (P0-2).
+  const categoryKey    = product.category || null;
+  const cat            = categoryKey ? cfg.categories[categoryKey] : undefined;
+  const categoryStatus = cat ? 'KNOWN' : 'UNKNOWN';
+  if (!categoryKey) warnings.push('Catégorie absente (category_status UNKNOWN) — poids, volume et marge cible par défaut utilisés.');
+  else if (!cat) warnings.push(`Catégorie "${categoryKey}" inconnue — poids, volume et marge cible par défaut utilisés.`);
 
   const productCostKmf = Number(product.cost_kmf) || 0;
   const productWeightKg = positiveNumberOrNull(product.weight_kg);
@@ -246,19 +349,33 @@ function computeCDR(product, ctx = {}) {
     distribution: 0, local_distribution: 0, relay: 0,
     payment: 0, risks: 0, fixed_costs: 0,
   };
+  details._allocations = [];
 
   // L2 : chaîne import (fret/douane/port) NON APPLICABLE quand le produit est servi
   // depuis un stock local exposé (provenance LOCAL_STOCK). Inapplicable ≠ zéro d'un
   // inconnu : sans signal de provenance, la chaîne import reste estimée.
   const localStock = ctx.provenance === 'LOCAL_STOCK';
   const IMPORT_CHAIN = new Set(['freight', 'transit', 'customs', 'douane', 'port_transitary']);
-  const freightEstimated = localStock ? 0 : volM3 * fretEUR * taxEUR;
-  details.freight = r(freightEstimated);
-  let runningSubtotal = productCostKmf + freightEstimated;
 
+  const avgArticlesPerOrder    = Number(fc.avg_articles_per_order)    || 2.5;
+  const avgArticlesPerParcel   = Number(fc.avg_articles_per_parcel)   || 4.0;
+  const avgArticlesPerShipment = Number(fc.avg_articles_per_shipment) || 200.0;
+
+  const marketCode = cfg.market_code || ctx.market_code || null;
+  const destinationIsland = normalizeIsland(ctx.destination_island);
+  const scopeUnknown = [];
+  const scopeNotApplicable = [];
+  const flagUnknown = (c, reason, message) => {
+    scopeUnknown.push({ component_key: c.key || null, label: c.label || c.key || '', status: 'UNKNOWN', reason });
+    warnings.push(message);
+  };
+
+  const applicable = [];
   for (const c of cfg.components) {
-    if (localStock && IMPORT_CHAIN.has(c.category)) continue;
-    const v = Number(c.default_value || 0);
+    if (localStock && (IMPORT_CHAIN.has(c.category) || LOCAL_STOCK_EXCLUDED_CATEGORIES.has(c.category) || LOCAL_STOCK_EXCLUDED_KEYS.has(c.key))) {
+      scopeNotApplicable.push({ component_key: c.key || null, label: c.label || c.key || '', status: 'NOT_APPLICABLE', reason: 'LOCAL_STOCK' });
+      continue;
+    }
     const a = c.applies_to || 'all';
     if (a !== 'all' && !a.startsWith('category:' + categoryKey) && !a.startsWith('channel:' + channel)) continue;
     if (c.scope === 'category' && c.scope_value && c.scope_value !== categoryKey) continue;
@@ -267,67 +384,36 @@ function computeCDR(product, ctx = {}) {
       if (channel === 'cash_relais' && (c.key || '').startsWith('stripe_')) continue;
       if (channel === 'diaspora' && !(c.key || '').startsWith('stripe_') && (c.key || '').includes('cash')) continue;
     }
-
-    const avgArticlesPerOrder    = Number(fc.avg_articles_per_order)    || 2.5;
-    const avgArticlesPerParcel   = Number(fc.avg_articles_per_parcel)   || 4.0;
-    const avgArticlesPerShipment = Number(fc.avg_articles_per_shipment) || 200.0;
-    let amount = 0, engagedAmount = 0, allocationLevel = 'article', allocationDivisor = 1;
-
-    // Les unités monétaires (EUR/AED/USD) décrivent la devise de la valeur,
-    // pas sa base d'allocation. Quand allocation_method=by_volume/by_weight,
-    // la quantité physique doit être appliquée APRES conversion en KMF.
-    // Avant ce correctif, `180 EUR / m³` devenait `180 EUR / article`, soit
-    // ~89 kKMF de faux fret sur chaque SKU léger.
-    const applyPhysicalBasis = (baseKmf) => {
-      if (c.allocation_method === 'by_volume') return baseKmf * volM3;
-      if (c.allocation_method === 'by_weight') return baseKmf * weightKg;
-      return baseKmf;
-    };
-
-    switch (c.unit) {
-      case 'pct':           amount = runningSubtotal * (v / 100); engagedAmount = amount; break;
-      case 'kmf':           amount = v; engagedAmount = amount; break;
-      case 'kmf_per_kg':    amount = v * weightKg; engagedAmount = amount; break;
-      case 'kmf_per_m3':    amount = v * volM3; engagedAmount = amount; break;
-      case 'kmf_per_order':
-        engagedAmount = v; allocationDivisor = avgArticlesPerOrder;
-        amount = v / allocationDivisor; allocationLevel = 'order'; break;
-      case 'kmf_per_parcel':
-        engagedAmount = v; allocationDivisor = avgArticlesPerParcel;
-        amount = v / allocationDivisor; allocationLevel = 'parcel'; break;
-      case 'kmf_per_shipment':
-        engagedAmount = v; allocationDivisor = avgArticlesPerShipment;
-        amount = v / allocationDivisor; allocationLevel = 'shipment'; break;
-      case 'aed': amount = applyPhysicalBasis(v * fx.aed_kmf); engagedAmount = amount; break;
-      case 'eur': amount = applyPhysicalBasis(v * taxEUR); engagedAmount = amount; break;
-      case 'usd': amount = applyPhysicalBasis(v * fx.usd_kmf); engagedAmount = amount; break;
+    const territory = componentTerritory(c);
+    if (territory.comoresMarked) {
+      if (marketCode !== COMORES_MARKET_CODE && c.source !== 'market_override') {
+        flagUnknown(c, marketCode ? 'comores_component_outside_km' : 'market_unknown',
+          `Composant Comores "${c.key}" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché${marketCode ? '' : ' / marché non déterminé'}.`);
+        continue;
+      }
+      if (territory.island) {
+        if (!destinationIsland) {
+          flagUnknown(c, 'destination_island_unknown',
+            `Surcoût destination non déterminé : "${c.key}" non appliqué (UNKNOWN) — île de destination inconnue.`);
+          continue;
+        }
+        if (destinationIsland !== territory.island) {
+          scopeNotApplicable.push({ component_key: c.key || null, label: c.label || c.key || '', status: 'NOT_APPLICABLE', reason: 'destination_island_differs' });
+          continue;
+        }
+      }
     }
+    applicable.push(c);
+  }
 
-    if (!details._allocations) details._allocations = [];
-    if (amount > 0) {
-      // base de répartition (doctrine §5)
-      const basis = c.allocation_method === 'by_volume'
-        ? 'volume'
-        : c.allocation_method === 'by_weight'
-          ? 'weight'
-          : ({ kmf_per_kg: 'weight', kmf_per_m3: 'volume', pct: 'value' })[c.unit] || 'quantity';
-      const lineConfidence = allocationLevel === 'article' ? 'high' : (fc.allocation_confidence || 'low');
-      details._allocations.push({
-        component_key: c.key || null, component_label: c.label || c.key || '',
-        category: c.category || null, unit: c.unit,
-        // ── noms doctrinaux (contrat §8) ──
-        allocation_level: allocationLevel,        // article | parcel | order | shipment | month
-        allocation_basis: basis,                  // quantity | weight | volume | value | manual
-        engaged_cost_kmf: r(engagedAmount),
-        allocation_divisor: r(allocationDivisor * 100) / 100,
-        allocated_cost_kmf: r(amount),
-        confidence: lineConfidence,
-        // ── alias historiques (compatibilité) ──
-        engaged_amount_kmf: r(engagedAmount), engaged_level: allocationLevel,
-        imputed_amount_kmf: r(amount),
-      });
-    }
+  const lineBasis = (c) => c.allocation_method === 'by_volume'
+    ? 'volume'
+    : c.allocation_method === 'by_weight'
+      ? 'weight'
+      : ({ kmf_per_kg: 'weight', kmf_per_m3: 'volume', pct: 'value' })[c.unit] || 'quantity';
 
+  // Ajoute une ligne au détail ET aux allocations (une seule fois par composant).
+  const pushLine = (c, amount, engagedAmount, level, divisor, basis, extra = {}) => {
     switch (c.category) {
       case 'product_purchase':   details.product_cost += amount; break;
       case 'sourcing':           details.sourcing += amount; break;
@@ -343,65 +429,202 @@ function computeCDR(product, ctx = {}) {
       case 'fixed_overhead':     details.fixed_costs += amount; break;
       default:                   details.sourcing += amount;
     }
-    runningSubtotal += amount;
+    if (!(amount > 0)) return;
+    const lineConfidence = level === 'article' ? 'high' : (fc.allocation_confidence || 'low');
+    details._allocations.push({
+      component_key: c.key || null, component_label: c.label || c.key || '',
+      category: c.category || null, unit: c.unit,
+      // ── noms doctrinaux (contrat §8) ──
+      allocation_level: level,        // article | parcel | order | shipment | month
+      allocation_basis: basis,        // quantity | weight | volume | value | price | manual
+      engaged_cost_kmf: r(engagedAmount),
+      allocation_divisor: r(divisor * 100) / 100,
+      allocated_cost_kmf: r(amount),
+      confidence: lineConfidence,
+      source: c.source || null,
+      component_confidence: c.confidence || null,
+      // ── alias historiques (compatibilité) ──
+      engaged_amount_kmf: r(engagedAmount), engaged_level: level,
+      imputed_amount_kmf: r(amount),
+      ...extra,
+    });
+  };
+
+  // Passe 1 : montants indépendants du prix et des assiettes % (ordre sans effet).
+  const hasVolumeFreight = !localStock && applicable.some(isVolumeFreightComponent);
+  let freightSource = 'component';
+  let nonPctFreight = 0;
+  let fixedOverheadAmount = 0;
+  let priceIndependent = productCostKmf;
+  const pending = [];
+
+  if (!localStock && !hasVolumeFreight) {
+    freightSource = 'fallback_estimate';
+    const estimate = volM3 * fretEUR * taxEUR;
+    nonPctFreight += estimate;
+    priceIndependent += estimate;
+    pushLine({ key: 'freight_default_estimate', label: 'Fret (estimation par défaut)', category: 'freight', unit: 'eur', source: 'estimate', confidence: 'low' },
+      estimate, estimate, 'article', 1, 'volume');
+    warnings.push('Fret estimé par repli (aucun composant de fret au volume actif) : valeur à valider.');
+  } else if (localStock) {
+    freightSource = 'not_applicable';
+  }
+
+  for (const c of applicable) {
+    const v = Number(c.default_value || 0);
+    let amount = 0, engagedAmount = 0, level = 'article', divisor = 1;
+
+    // Les unités monétaires (EUR/AED/USD) décrivent la devise de la valeur,
+    // pas sa base d'allocation : la quantité physique s'applique APRES conversion.
+    const applyPhysicalBasis = (baseKmf) => {
+      if (c.allocation_method === 'by_volume') return baseKmf * volM3;
+      if (c.allocation_method === 'by_weight') return baseKmf * weightKg;
+      return baseKmf;
+    };
+
+    if (c.unit === 'pct') {
+      pending.push({ c, rate: v / 100, basis: pctBasisFor(c.category, c.key) });
+      continue;
+    }
+    switch (c.unit) {
+      case 'kmf':           amount = v; engagedAmount = amount; break;
+      case 'kmf_per_kg':    amount = v * weightKg; engagedAmount = amount; break;
+      case 'kmf_per_m3':    amount = v * volM3; engagedAmount = amount; break;
+      case 'kmf_per_order':
+        engagedAmount = v; divisor = avgArticlesPerOrder; amount = v / divisor; level = 'order'; break;
+      case 'kmf_per_parcel':
+        engagedAmount = v; divisor = avgArticlesPerParcel; amount = v / divisor; level = 'parcel'; break;
+      case 'kmf_per_shipment':
+        engagedAmount = v; divisor = avgArticlesPerShipment; amount = v / divisor; level = 'shipment'; break;
+      case 'aed': amount = applyPhysicalBasis(v * fx.aed_kmf); engagedAmount = amount; break;
+      case 'eur': amount = applyPhysicalBasis(v * taxEUR); engagedAmount = amount; break;
+      case 'usd': amount = applyPhysicalBasis(v * fx.usd_kmf); engagedAmount = amount; break;
+    }
+    const isFixed = c.category === 'fixed_overhead';
+    if (isFixed) fixedOverheadAmount += amount;
+    else {
+      priceIndependent += amount;
+      if (c.category === 'freight' || c.category === 'transit') nonPctFreight += amount;
+    }
+    pushLine(c, amount, engagedAmount, level, divisor, lineBasis(c), isFixed ? { economic_nature: 'fixed', cost_type: 'fixed_overhead' } : {});
+  }
+
+  // Passe 2 : pourcentages sur assiette déclarée (achat, CIF) ; ceux sur le prix sont résolus ensuite.
+  const cifBase = productCostKmf + nonPctFreight;
+  let priceRate = 0;
+  const pricePending = [];
+  for (const p of pending) {
+    if (p.basis === 'price') { priceRate += p.rate; pricePending.push(p); continue; }
+    const base = p.basis === 'cif' ? cifBase : productCostKmf;
+    const amount = base * p.rate;
+    priceIndependent += amount;
+    pushLine(p.c, amount, amount, 'article', 1, 'value', { pct_basis: p.basis });
+  }
+  const provisionRates = (cfg.provisions || []).map(p => ({ p, rate: Number(p.rate_pct) / 100 }));
+  for (const x of provisionRates) priceRate += x.rate;
+
+  // Résolution du plancher sans itération : P = V·(1+s) avec V = V0 + Σ%prix · P
+  //   ⇒ P = V0·(1+s) / (1 − Σ%prix·(1+s)). Les lignes sur le prix sont évaluées à ce P ;
+  //   le plancher de computePrices (= variable × (1+s)) reste donc inchangé dans sa forme.
+  const safety = (Number(fc.minimum_safety_margin_pct) || 10) / 100;
+  const denom = 1 - priceRate * (1 + safety);
+  let priceBasis = null;
+  if (priceRate > 0) {
+    if (denom > 0) priceBasis = (priceIndependent * (1 + safety)) / denom;
+    else warnings.push('Taux sur le prix ≥ 100 % après marge de sécurité : plancher non résoluble, frais sur le prix non imputés.');
+  }
+  for (const p of pricePending) {
+    const amount = priceBasis == null ? 0 : priceBasis * p.rate;
+    pushLine(p.c, amount, amount, 'article', 1, 'price', { pct_basis: 'price' });
+  }
+  for (const { p, rate } of provisionRates) {
+    const amount = priceBasis == null ? 0 : priceBasis * rate;
+    pushLine({ key: p.key || `risk_provision_${p.id ?? ''}`.replace(/_$/, ''), label: p.label || p.key || 'Provision de risque', category: 'risk_provision', unit: 'pct', source: p.source || null, confidence: p.confidence || null },
+      amount, amount, 'article', 1, 'price', { pct_basis: 'price' });
   }
 
   // Doctrine douane (2026-10) : la douane réelle est un montant par expédition Komerce,
   // ventilé après coup (customs_shipments → allocations). Les taux de catégorie
-  // (douane_pct / tva_pct / taxe_add_pct) restent des classifications figées, jamais
-  // un coût économique : aucune douane théorique n'est calculée ici. Seul un composant
-  // de coût `customs` explicitement configuré (cost_components) est conservé.
-  // Sans composant, la douane est NON ESTIMÉE (≠ 0) : connue seulement après ventilation.
-  const customsEstimateStatus = details.customs > 0 ? 'cost_component' : 'not_estimated';
-  if (customsEstimateStatus === 'not_estimated') {
+  // ne sont jamais un coût économique. Un composant d'INSPECTION n'est pas un droit :
+  // les droits restent `not_estimated` tant qu'aucun composant de DROITS n'existe.
+  const customsComponents = applicable.filter(c => c.category === 'customs' || c.category === 'douane');
+  const customsInspectionKmf = r(customsComponents
+    .filter(c => isCustomsInspection(c))
+    .reduce((s, c) => s + details._allocations.filter(a => a.component_key === c.key).reduce((t, a) => t + a.allocated_cost_kmf, 0), 0));
+  const dutiesComponents = customsComponents.filter(c => !isCustomsInspection(c));
+  const customsDutiesKmf = r(dutiesComponents
+    .reduce((s, c) => s + details._allocations.filter(a => a.component_key === c.key).reduce((t, a) => t + a.allocated_cost_kmf, 0), 0));
+  const customsEstimateStatus = dutiesComponents.length > 0 ? 'cost_component' : 'not_estimated';
+  if (customsEstimateStatus === 'not_estimated' && !localStock) {
     warnings.push('Douane non estimée : coût réel connu après ventilation de l\'expédition (aucun taux théorique appliqué).');
   }
 
-  const variableCostEstimated = runningSubtotal;
   const fixedAlloc = computeFixedCostAllocation(cfg.charges, fc);
   if (fixedAlloc.warnings.length) warnings.push(...fixedAlloc.warnings);
-  details.fixed_costs = fixedAlloc.fixed_cost_allocation_kmf;
+  // Structure = quote-part des charges + composants fixed_overhead (jamais dans le variable).
+  details.fixed_costs += fixedAlloc.fixed_cost_allocation_kmf;
 
   if (!fc.allocation_calibrated_at && (fc.allocation_confidence || 'low') === 'low') {
-    if ((details._allocations || []).some(a => a.engaged_level !== 'article')) {
+    if (details._allocations.some(a => a.engaged_level !== 'article')) {
       warnings.push('Moyennes d\'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel.');
     }
   }
-
-  // Doctrine §3 : la provision risque est un coût VARIABLE (N2). Elle se calcule sur
-  // le coût variable engagé (N1 + paiement), jamais sur la quote-part de charges fixes (N3).
-  // Avant : baseRisks = variable + fixe → gonflait N2 avec une part de N3.
-  let risksAmount = 0;
-  const baseRisks = variableCostEstimated;
-  for (const p of cfg.provisions) risksAmount += baseRisks * (Number(p.rate_pct) / 100);
-  details.risks = r(risksAmount);
 
   for (const k of Object.keys(details)) {
     if (k === '_allocations') continue;
     details[k] = r(details[k]);
   }
 
-  const variableTotal  = r(variableCostEstimated + risksAmount);
-  const fixedTotal     = fixedAlloc.fixed_cost_allocation_kmf;
+  // Invariant : total variable = Σ des lignes affichées (`distribution` = local + relay, non recompté).
+  const variableTotal = details.product_cost + details.sourcing + details.hub + details.packaging
+    + details.freight + details.customs + details.port_transitaire
+    + details.local_distribution + details.relay + details.payment + details.risks;
+  const fixedTotal = details.fixed_costs;
+
+  const meta = {
+    taxAED, taxEUR, fretEUR, category: categoryKey, channel,
+    weight_kg: weightKg,
+    volume_m3: volM3,
+    weight_source: productWeightKg != null ? 'product' : (categoryWeightKg != null ? 'category' : 'default'),
+    volume_source: requestedVolumeM3 != null ? 'product' : (categoryVolumeM3 != null ? 'category' : 'default'),
+    freight_source: freightSource,
+    category_status: categoryStatus,
+    price_basis_kmf: priceBasis == null ? null : r(priceBasis),
+  };
+  const inputQuality = buildInputQuality({
+    allocations: details._allocations,
+    meta,
+    categoryKnown: !!cat,
+    scopeUnknown,
+    purchaseKnown: productCostKmf > 0,
+    dutiesKnown: customsEstimateStatus === 'cost_component' || localStock,
+  });
 
   return {
     variable_cost_estimated_kmf:  variableTotal,
     fixed_cost_allocation_kmf:    fixedTotal,
-    risk_provision_estimated_kmf: r(risksAmount),
+    risk_provision_estimated_kmf: details.risks,
     cost_complete_estimated_kmf:  variableTotal + fixedTotal,
     monthly_fixed_costs_kmf:      fixedAlloc.monthly_fixed_costs_kmf,
     target_orders_per_month:      fixedAlloc.target_orders_per_month,
+    // Résolution du plancher / de la référence (consommée par computePrices).
+    price_independent_cost_kmf:   Math.round(priceIndependent * 100) / 100,
+    price_based_cost_rate:        priceRate,
     details,
     customs_estimate_status: customsEstimateStatus,
+    customs_inspection_kmf: customsInspectionKmf,
+    customs_duties_kmf: customsDutiesKmf,
+    input_quality: inputQuality,
+    category_status: categoryStatus,
+    cost_scope: {
+      market_code: marketCode,
+      destination_island: destinationIsland,
+      unknown_components: scopeUnknown,
+      not_applicable_components: scopeNotApplicable,
+    },
     import_chain_not_applicable: localStock,
     warnings,
-    _meta: {
-      taxAED, taxEUR, fretEUR, category: categoryKey, channel,
-      weight_kg: weightKg,
-      volume_m3: volM3,
-      weight_source: productWeightKg != null ? 'product' : (categoryWeightKg != null ? 'category' : 'default'),
-      volume_source: requestedVolumeM3 != null ? 'product' : (categoryVolumeM3 != null ? 'category' : 'default'),
-    },
+    _meta: meta,
   };
 }
 

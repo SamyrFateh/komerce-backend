@@ -229,6 +229,34 @@ test('runDistribution bloque tout avant mutation si un relais appartient à un a
   expect(mockDistributeOrder).not.toHaveBeenCalled();
 });
 
+test('distributeSingleOrder répartit UNE commande du marché via le writer canonique', async () => {
+  mockQuery.mockResolvedValueOnce({
+    rows: [{ id: 'order-cm-1', reference: 'CMD-CM-001', status: 'ordered', relais_id: 'relay-cm', relais_market_id: 'market-cm-id' }],
+  });
+  mockDistributeOrder.mockResolvedValueOnce({ success: true, parcel_ref: 'PCL-CM-009' });
+
+  const result = await workspace.distributeSingleOrder('CMD-CM-001', MARKET);
+
+  expect(mockQuery.mock.calls[0][1]).toEqual(['CMD-CM-001', 'market-cm-id']);
+  expect(mockDistributeOrder.mock.calls).toEqual([['order-cm-1']]);
+  expect(result).toEqual(expect.objectContaining({ order_ref: 'CMD-CM-001', success: true, parcel_ref: 'PCL-CM-009' }));
+  expect(JSON.stringify(result)).not.toContain('order-cm-1');
+});
+
+test('distributeSingleOrder refuse une commande hors marché, hors statut ou à relais étranger sans appeler le writer', async () => {
+  mockQuery.mockResolvedValueOnce({ rows: [] });
+  await expect(workspace.distributeSingleOrder('CMD-XX', MARKET)).rejects.toMatchObject({ status: 404 });
+  mockQuery.mockResolvedValueOnce({
+    rows: [{ id: 'o2', reference: 'CMD-CM-002', status: 'delivered', relais_id: null, relais_market_id: null }],
+  });
+  await expect(workspace.distributeSingleOrder('CMD-CM-002', MARKET)).rejects.toMatchObject({ code: 'order_not_distributable', status: 409 });
+  mockQuery.mockResolvedValueOnce({
+    rows: [{ id: 'o3', reference: 'CMD-CM-003', status: 'ordered', relais_id: 'relay-cg', relais_market_id: 'market-cg-id' }],
+  });
+  await expect(workspace.distributeSingleOrder('CMD-CM-003', MARKET)).rejects.toMatchObject({ code: 'relay_market_mismatch' });
+  expect(mockDistributeOrder).not.toHaveBeenCalled();
+});
+
 test('scanParcel résout le colis dans le marché avant d appeler le moteur append-only', async () => {
   mockQuery.mockResolvedValueOnce({
     rows: [{
@@ -257,6 +285,32 @@ test('scanParcel résout le colis dans le marché avant d appeler le moteur appe
   expect(result.reference).toBe('PCL-CM-001');
 });
 
+test('P0 mode dégradé : la remise sans preuve de retrait ne passe jamais par le scan logistique', async () => {
+  for (const reason of [undefined, { reason: 'manual_entry' }, { reason: 'scanner_unavailable' }]) {
+    await expect(workspace.scanParcel('PCL-CM-001', 'collect', MARKET,
+      { id: 'relay-1', role: 'agent_relais' }, reason))
+      .rejects.toMatchObject({ code: 'PICKUP_CODE_REQUIRED', status: 409 });
+  }
+  expect(mockQuery).not.toHaveBeenCalled();
+  expect(mockProcessScan).not.toHaveBeenCalled();
+});
+
+test('saisie manuelle volontaire : voie receive sans prétendre panne de lecteur', async () => {
+  mockQuery.mockResolvedValueOnce({
+    rows: [{ id: 'parcel-cm-id', reference: 'PCL-CM-001', status: 'shipped',
+      order_id: 'order-cm-id', relais_id: 'relay-cm',
+      order_market_id: 'market-cm-id', relais_market_id: 'market-cm-id' }],
+  }).mockResolvedValueOnce({ rows: [{ attached: false }] });
+  await workspace.scanParcel('PCL-CM-001', 'receive', MARKET,
+    { id: 'relay-1', role: 'agent_relais' }, { reason: 'manual_entry' });
+  expect(mockProcessScan).toHaveBeenCalledWith(expect.objectContaining({
+    event_type: 'relais_received',
+    metadata: expect.objectContaining({
+      entry_mode: 'manual_confirmation', manual_reason: 'manual_entry',
+    }),
+  }));
+});
+
 test('scanParcel refuse une confirmation sans motif et n\'appelle pas le moteur', async () => {
   await expect(workspace.scanParcel('PCL-CM-001', 'ship', MARKET, { id: 'a', role: 'admin' }))
     .rejects.toMatchObject({ code: 'manual_reason_required' });
@@ -268,9 +322,9 @@ test('scanParcel refuse une confirmation sans motif et n\'appelle pas le moteur'
 test.each([
   ['admin', 'ship', 'admin'],
   ['agent_hub', 'ship', 'hub_agent'],
-  ['agent_relais', 'collect', 'relay_agent'],
+  ['agent_relais', 'receive', 'relay_agent'],
   // rôle inattendu : la station qui exécute l'action décide (jamais d'étiquette « admin » par défaut)
-  ['market_operator', 'collect', 'relay_agent'],
+  ['market_operator', 'receive', 'relay_agent'],
   [undefined, 'ship', 'hub_agent'],
 ])('scanParcel traduit le rôle %s (%s) en actor_role %s accepté par scan_events', async (role, action, expected) => {
   mockQuery.mockResolvedValueOnce({

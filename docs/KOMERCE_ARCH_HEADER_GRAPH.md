@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 795
-- Files with full headers: 741
-- Files with lite headers: 54
-- Files with any headers: 795
+- Scanned code files: 798
+- Files with full headers: 743
+- Files with lite headers: 55
+- Files with any headers: 798
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 2019
-- Edges: 9936
+- Graph nodes: 2023
+- Edges: 9967
 - DB tables: 233
-- Doctrines: 784
+- Doctrines: 785
 - Impact areas: 207
-- Unresolved code edges: 953
+- Unresolved code edges: 955
 - Tables multi-écrivains directs (>=2): 95
 - Avertissements db-write / db-write-via en chevauchement: 12
 
@@ -27,7 +27,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - account: 2
 - admin-dashboard: 39
 - auth: 14
-- auth-identity: 11
+- auth-identity: 12
 - auth-passkey: 7
 - bootstrap: 2
 - boutique: 21
@@ -38,7 +38,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - dashboard: 32
 - decision-signals: 14
 - documents: 15
-- economic-engine: 67
+- economic-engine: 69
 - external-provider-contracts: 1
 - finance: 3
 - incident-management: 5
@@ -92,7 +92,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 137
 - route-manifest: 1
 - schema: 1
-- service: 477
+- service: 480
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -551,6 +551,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/pricing-cost-explainability.js — economic-engine-pricing-cost-explainability (economic-engine, high, full)
 - services/pricing-dashboard.js — economic-engine-pricing-dashboard (economic-engine, high, full)
 - services/pricing-engine.js — economic-engine-pricing-engine (economic-engine, high, full)
+- services/pricing-floor-forecast-preview.js — economic-engine-forecast-preview-contract (economic-engine, high, full)
+- services/pricing-floor-forecast-shadow.js — economic-engine-pricing-floor-forecast-shadow (economic-engine, high, full)
 - services/pricing-guards.js — economic-engine-pricing-guards (economic-engine, high, full)
 - services/pricing-market-corridor.js — pricing-market-corridor-owner (economic-engine, high, full)
 - services/pricing-market-coverage.js — economic-engine-pricing-market-coverage (economic-engine, high, full)
@@ -745,6 +747,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/catalog-visual-fr-human-review-write.js -> owner catalog (catalog-visual-fr-human-review-write)
 - services/commercial-taxonomy-semantics.js -> owner backend-core (commercial-taxonomy-semantic-intent)
 - services/dashboard-rct1-orders.js -> owner backend-core (rct1-orders-readonly-projection)
+- services/g6-staging-buyer-identity-guard.js -> owner backend-core (g6-staging-buyer-identity-guard)
 - services/hub-v1-fixture-checkout-guard.js -> owner backend-core (hub-v1-fixture-checkout-guard)
 - services/hub-v1-fixture-payment.js -> owner backend-core (hub-v1-fixture-payment)
 - services/providers-inquiry-service.js -> owner services/providers-service.js (providers-services-contextual-inquiry)
@@ -1045,6 +1048,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - financial_movements: 3 écrivains directs — bootstrap/crons.js, services/financial-journal-projectors.js, services/financial-journal.js
 - international_shipment_events: 3 écrivains directs — services/hub-box-shipment-service.js, services/international-shipment-journey.js, services/relay-shipment-receipt.js
 - order_comments: 3 écrivains directs — routes/hub-dashboard.js, routes/relay-dashboard.js, services/operations-workspace.js
+- otp_codes: 3 écrivains directs — routes/auth-step-up-otp.js, routes/otp.js, services/g6-staging-buyer-identity-guard.js
 - price_history: 3 écrivains directs — services/economic-price-audit-service.js, services/pricing-apply.js, services/pricing-strategy-service.js
 - refunds: 3 écrivains directs — services/item-refund-psp-orchestrator.js, services/refund-service.js, utils/refunds.js
 - relais: 3 écrivains directs — routes/admin/system.js, services/relais-mutation-service.js, services/routing.js
@@ -1059,7 +1063,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - business_rules_history: 2 écrivains directs — routes/admin-rules.js, utils/rules.js
 - cart_shares: 2 écrivains directs — routes/shares.js, services/cart-share-service.js
 - cash_deposits: 2 écrivains directs — routes/cash.js, services/cash-deposit-service.js
-- client_notifications: 2 écrivains directs — routes/client-notifications.js, services/client-notification-service.js
 
 ## DB Write / Write-Via Overlap Warnings
 

@@ -1,6 +1,6 @@
 {
   "_kind": "golden-cdr",
-  "captured_at": "2026-09-12T15:25:00.000Z",
+  "captured_at": "2026-11-11T11:00:47.597Z",
   "config_fingerprint": "8dd411ff63e062f6",
   "frozen_config": {
     "categories": {
@@ -272,26 +272,26 @@
     {
       "allocation": {
         "levels": {
-          "article": 6,
+          "article": 10,
           "order": 3,
-          "parcel": 6,
+          "parcel": 3,
           "shipment": 2
         },
         "min_confidence": "low"
       },
       "breakdown": {
         "customs": 25,
-        "distribution": 725,
-        "freight": 1478,
+        "distribution": 200,
+        "freight": 1108,
         "hub": 50,
         "overhead": 19408,
         "packaging": 75,
         "payment": 80,
-        "purchase": 152255,
+        "purchase": 152250,
         "relay": 200,
-        "risk": 9531,
+        "risk": 16521,
         "sourcing": 80,
-        "transitary": 4744
+        "transitary": 4636
       },
       "category": "phones",
       "channel": "cash_relais",
@@ -305,37 +305,41 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 9531,
-        "total": 193269,
-        "variable": 173861
+        "risk": 16521,
+        "total": 194433,
+        "variable": 175025
       },
       "warnings": [
+        "Composant Comores \"transport_inter_iles_anjouan_kmf\" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché / marché non déterminé.",
+        "Composant Comores \"transport_inter_iles_moheli_kmf\" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché / marché non déterminé.",
+        "Composant Comores \"transport_port_relais_kmf\" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché / marché non déterminé.",
+        "Douane non estimée : coût réel connu après ventilation de l'expédition (aucun taux théorique appliqué).",
         "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."
       ]
     },
     {
       "allocation": {
         "levels": {
-          "article": 7,
+          "article": 11,
           "order": 3,
-          "parcel": 6,
+          "parcel": 3,
           "shipment": 2
         },
         "min_confidence": "low"
       },
       "breakdown": {
         "customs": 25,
-        "distribution": 725,
-        "freight": 1478,
+        "distribution": 200,
+        "freight": 1108,
         "hub": 50,
         "overhead": 19408,
         "packaging": 75,
-        "payment": 2443,
-        "purchase": 152255,
+        "payment": 2992,
+        "purchase": 152250,
         "relay": 200,
-        "risk": 9672,
+        "risk": 16794,
         "sourcing": 80,
-        "transitary": 4744
+        "transitary": 4636
       },
       "category": "phones",
       "channel": "diaspora",
@@ -349,37 +353,41 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 9672,
-        "total": 195845,
-        "variable": 176437
+        "risk": 16794,
+        "total": 197618,
+        "variable": 178210
       },
       "warnings": [
+        "Composant Comores \"transport_inter_iles_anjouan_kmf\" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché / marché non déterminé.",
+        "Composant Comores \"transport_inter_iles_moheli_kmf\" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché / marché non déterminé.",
+        "Composant Comores \"transport_port_relais_kmf\" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché / marché non déterminé.",
+        "Douane non estimée : coût réel connu après ventilation de l'expédition (aucun taux théorique appliqué).",
         "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."
       ]
     },
     {
       "allocation": {
         "levels": {
-          "article": 6,
+          "article": 10,
           "order": 3,
-          "parcel": 6,
+          "parcel": 3,
           "shipment": 2
         },
         "min_confidence": "low"
       },
       "breakdown": {
         "customs": 25,
-        "distribution": 725,
-        "freight": 599,
+        "distribution": 200,
+        "freight": 329,
         "hub": 50,
         "overhead": 19408,
         "packaging": 75,
         "payment": 80,
-        "purchase": 12184,
+        "purchase": 12180,
         "relay": 200,
-        "risk": 856,
+        "risk": 1402,
         "sourcing": 80,
-        "transitary": 515
+        "transitary": 493
       },
       "category": "vetements",
       "channel": "cash_relais",
@@ -393,37 +401,41 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 856,
-        "total": 35031,
-        "variable": 15623
+        "risk": 1402,
+        "total": 34322,
+        "variable": 14914
       },
       "warnings": [
+        "Composant Comores \"transport_inter_iles_anjouan_kmf\" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché / marché non déterminé.",
+        "Composant Comores \"transport_inter_iles_moheli_kmf\" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché / marché non déterminé.",
+        "Composant Comores \"transport_port_relais_kmf\" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché / marché non déterminé.",
+        "Douane non estimée : coût réel connu après ventilation de l'expédition (aucun taux théorique appliqué).",
         "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."
       ]
     },
     {
       "allocation": {
         "levels": {
-          "article": 7,
+          "article": 11,
           "order": 3,
-          "parcel": 6,
+          "parcel": 3,
           "shipment": 2
         },
         "min_confidence": "low"
       },
       "breakdown": {
         "customs": 25,
-        "distribution": 725,
-        "freight": 1662,
+        "distribution": 200,
+        "freight": 941,
         "hub": 50,
         "overhead": 19408,
         "packaging": 75,
-        "payment": 800,
-        "purchase": 45686,
+        "payment": 954,
+        "purchase": 45675,
         "relay": 200,
-        "risk": 3027,
+        "risk": 5145,
         "sourcing": 80,
-        "transitary": 1552
+        "transitary": 1496
       },
       "category": "ceremonie",
       "channel": "diaspora",
@@ -437,37 +449,41 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 3027,
-        "total": 74620,
-        "variable": 55212
+        "risk": 5145,
+        "total": 74049,
+        "variable": 54641
       },
       "warnings": [
+        "Composant Comores \"transport_inter_iles_anjouan_kmf\" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché / marché non déterminé.",
+        "Composant Comores \"transport_inter_iles_moheli_kmf\" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché / marché non déterminé.",
+        "Composant Comores \"transport_port_relais_kmf\" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché / marché non déterminé.",
+        "Douane non estimée : coût réel connu après ventilation de l'expédition (aucun taux théorique appliqué).",
         "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."
       ]
     },
     {
       "allocation": {
         "levels": {
-          "article": 6,
+          "article": 10,
           "order": 3,
-          "parcel": 6,
+          "parcel": 3,
           "shipment": 2
         },
         "min_confidence": "low"
       },
       "breakdown": {
         "customs": 25,
-        "distribution": 725,
-        "freight": 15344,
+        "distribution": 200,
+        "freight": 8164,
         "hub": 50,
         "overhead": 19408,
         "packaging": 75,
         "payment": 80,
-        "purchase": 203107,
+        "purchase": 203000,
         "relay": 200,
-        "risk": 13514,
+        "risk": 22727,
         "sourcing": 80,
-        "transitary": 6685
+        "transitary": 6339
       },
       "category": "electro",
       "channel": "cash_relais",
@@ -481,37 +497,41 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 13514,
-        "total": 265924,
-        "variable": 246516
+        "risk": 22727,
+        "total": 260148,
+        "variable": 240740
       },
       "warnings": [
+        "Composant Comores \"transport_inter_iles_anjouan_kmf\" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché / marché non déterminé.",
+        "Composant Comores \"transport_inter_iles_moheli_kmf\" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché / marché non déterminé.",
+        "Composant Comores \"transport_port_relais_kmf\" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché / marché non déterminé.",
+        "Douane non estimée : coût réel connu après ventilation de l'expédition (aucun taux théorique appliqué).",
         "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."
       ]
     },
     {
       "allocation": {
         "levels": {
-          "article": 7,
+          "article": 11,
           "order": 3,
-          "parcel": 6,
+          "parcel": 3,
           "shipment": 2
         },
         "min_confidence": "low"
       },
       "breakdown": {
         "customs": 25,
-        "distribution": 725,
-        "freight": 486,
+        "distribution": 200,
+        "freight": 304,
         "hub": 50,
         "overhead": 19408,
         "packaging": 75,
-        "payment": 468,
-        "purchase": 25378,
+        "payment": 554,
+        "purchase": 25375,
         "relay": 200,
-        "risk": 1685,
+        "risk": 2860,
         "sourcing": 80,
-        "transitary": 908
+        "transitary": 880
       },
       "category": "cosmetiques",
       "channel": "diaspora",
@@ -525,37 +545,41 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 1685,
-        "total": 50139,
-        "variable": 30731
+        "risk": 2860,
+        "total": 49811,
+        "variable": 30403
       },
       "warnings": [
+        "Composant Comores \"transport_inter_iles_anjouan_kmf\" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché / marché non déterminé.",
+        "Composant Comores \"transport_inter_iles_moheli_kmf\" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché / marché non déterminé.",
+        "Composant Comores \"transport_port_relais_kmf\" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché / marché non déterminé.",
+        "Douane non estimée : coût réel connu après ventilation de l'expédition (aucun taux théorique appliqué).",
         "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."
       ]
     },
     {
       "allocation": {
         "levels": {
-          "article": 7,
+          "article": 11,
           "order": 3,
-          "parcel": 6,
+          "parcel": 3,
           "shipment": 2
         },
         "min_confidence": "low"
       },
       "breakdown": {
         "customs": 25,
-        "distribution": 725,
-        "freight": 45080,
+        "distribution": 200,
+        "freight": 22686,
         "hub": 50,
         "overhead": 19408,
         "packaging": 75,
-        "payment": 1711,
-        "purchase": 61234,
+        "payment": 1660,
+        "purchase": 60900,
         "relay": 200,
-        "risk": 6710,
+        "risk": 9184,
         "sourcing": 80,
-        "transitary": 3321
+        "transitary": 2593
       },
       "category": "mariage",
       "channel": "diaspora",
@@ -569,37 +593,41 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 6710,
-        "total": 141811,
-        "variable": 122403
+        "risk": 9184,
+        "total": 116861,
+        "variable": 97453
       },
       "warnings": [
+        "Composant Comores \"transport_inter_iles_anjouan_kmf\" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché / marché non déterminé.",
+        "Composant Comores \"transport_inter_iles_moheli_kmf\" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché / marché non déterminé.",
+        "Composant Comores \"transport_port_relais_kmf\" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché / marché non déterminé.",
+        "Douane non estimée : coût réel connu après ventilation de l'expédition (aucun taux théorique appliqué).",
         "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."
       ]
     },
     {
       "allocation": {
         "levels": {
-          "article": 6,
+          "article": 10,
           "order": 3,
-          "parcel": 6,
+          "parcel": 3,
           "shipment": 2
         },
         "min_confidence": "low"
       },
       "breakdown": {
         "customs": 25,
-        "distribution": 725,
-        "freight": 1883,
+        "distribution": 200,
+        "freight": 985,
         "hub": 50,
         "overhead": 19408,
         "packaging": 75,
         "payment": 80,
-        "purchase": 18283,
+        "purchase": 18270,
         "relay": 200,
-        "risk": 1311,
+        "risk": 2127,
         "sourcing": 80,
-        "transitary": 737
+        "transitary": 692
       },
       "category": "enfants",
       "channel": "cash_relais",
@@ -613,37 +641,41 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 1311,
-        "total": 43320,
-        "variable": 23912
+        "risk": 2127,
+        "total": 41992,
+        "variable": 22584
       },
       "warnings": [
+        "Composant Comores \"transport_inter_iles_anjouan_kmf\" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché / marché non déterminé.",
+        "Composant Comores \"transport_inter_iles_moheli_kmf\" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché / marché non déterminé.",
+        "Composant Comores \"transport_port_relais_kmf\" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché / marché non déterminé.",
+        "Douane non estimée : coût réel connu après ventilation de l'expédition (aucun taux théorique appliqué).",
         "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."
       ]
     },
     {
       "allocation": {
         "levels": {
-          "article": 6,
+          "article": 10,
           "order": 3,
-          "parcel": 6,
+          "parcel": 3,
           "shipment": 2
         },
         "min_confidence": "low"
       },
       "breakdown": {
         "customs": 25,
-        "distribution": 725,
-        "freight": 5831,
+        "distribution": 200,
+        "freight": 3136,
         "hub": 50,
         "overhead": 19408,
         "packaging": 75,
         "payment": 80,
-        "purchase": 91390,
+        "purchase": 91350,
         "relay": 200,
-        "risk": 6053,
+        "risk": 10202,
         "sourcing": 80,
-        "transitary": 3049
+        "transitary": 2905
       },
       "category": "materiels",
       "channel": "cash_relais",
@@ -657,37 +689,41 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 6053,
-        "total": 129825,
-        "variable": 110417
+        "risk": 10202,
+        "total": 127511,
+        "variable": 108103
       },
       "warnings": [
+        "Composant Comores \"transport_inter_iles_anjouan_kmf\" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché / marché non déterminé.",
+        "Composant Comores \"transport_inter_iles_moheli_kmf\" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché / marché non déterminé.",
+        "Composant Comores \"transport_port_relais_kmf\" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché / marché non déterminé.",
+        "Douane non estimée : coût réel connu après ventilation de l'expédition (aucun taux théorique appliqué).",
         "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."
       ]
     },
     {
       "allocation": {
         "levels": {
-          "article": 6,
+          "article": 10,
           "order": 3,
-          "parcel": 6,
+          "parcel": 3,
           "shipment": 2
         },
         "min_confidence": "low"
       },
       "breakdown": {
         "customs": 25,
-        "distribution": 725,
-        "freight": 1151,
+        "distribution": 200,
+        "freight": 698,
         "hub": 50,
         "overhead": 19408,
         "packaging": 75,
         "payment": 80,
-        "purchase": 50757,
+        "purchase": 50750,
         "relay": 200,
-        "risk": 3264,
+        "risk": 5582,
         "sourcing": 80,
-        "transitary": 1689
+        "transitary": 1638
       },
       "category": "ghost_category_xyz",
       "channel": "cash_relais",
@@ -701,38 +737,42 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 3264,
-        "total": 78953,
-        "variable": 59545
+        "risk": 5582,
+        "total": 78586,
+        "variable": 59178
       },
       "warnings": [
         "Catégorie \"ghost_category_xyz\" inconnue — poids, volume et marge cible par défaut utilisés.",
+        "Composant Comores \"transport_inter_iles_anjouan_kmf\" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché / marché non déterminé.",
+        "Composant Comores \"transport_inter_iles_moheli_kmf\" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché / marché non déterminé.",
+        "Composant Comores \"transport_port_relais_kmf\" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché / marché non déterminé.",
+        "Douane non estimée : coût réel connu après ventilation de l'expédition (aucun taux théorique appliqué).",
         "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."
       ]
     },
     {
       "allocation": {
         "levels": {
-          "article": 6,
+          "article": 9,
           "order": 3,
-          "parcel": 6,
+          "parcel": 3,
           "shipment": 2
         },
         "min_confidence": "low"
       },
       "breakdown": {
         "customs": 25,
-        "distribution": 725,
-        "freight": 717,
+        "distribution": 200,
+        "freight": 358,
         "hub": 50,
         "overhead": 19408,
         "packaging": 75,
         "payment": 80,
-        "purchase": 5,
+        "purchase": 0,
         "relay": 200,
-        "risk": 114,
+        "risk": 98,
         "sourcing": 80,
-        "transitary": 154
+        "transitary": 136
       },
       "category": "phones",
       "channel": "cash_relais",
@@ -746,11 +786,15 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 114,
-        "total": 21491,
-        "variable": 2083
+        "risk": 98,
+        "total": 20510,
+        "variable": 1102
       },
       "warnings": [
+        "Composant Comores \"transport_inter_iles_anjouan_kmf\" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché / marché non déterminé.",
+        "Composant Comores \"transport_inter_iles_moheli_kmf\" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché / marché non déterminé.",
+        "Composant Comores \"transport_port_relais_kmf\" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché / marché non déterminé.",
+        "Douane non estimée : coût réel connu après ventilation de l'expédition (aucun taux théorique appliqué).",
         "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel.",
         "cost_kmf absent ou nul sur le produit — CDR non significatif."
       ]
@@ -758,26 +802,26 @@
     {
       "allocation": {
         "levels": {
-          "article": 7,
+          "article": 11,
           "order": 3,
-          "parcel": 6,
+          "parcel": 3,
           "shipment": 2
         },
         "min_confidence": "low"
       },
       "breakdown": {
         "customs": 25,
-        "distribution": 725,
-        "freight": 9673,
+        "distribution": 200,
+        "freight": 7791,
         "hub": 50,
         "overhead": 19408,
         "packaging": 75,
-        "payment": 19036,
-        "purchase": 1218027,
+        "payment": 23477,
+        "purchase": 1218000,
         "relay": 200,
-        "risk": 76760,
+        "risk": 133829,
         "sourcing": 80,
-        "transitary": 36963
+        "transitary": 36178
       },
       "category": "electro",
       "channel": "diaspora",
@@ -791,37 +835,41 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 76760,
-        "total": 1419619,
-        "variable": 1400211
+        "risk": 133829,
+        "total": 1439113,
+        "variable": 1419705
       },
       "warnings": [
+        "Composant Comores \"transport_inter_iles_anjouan_kmf\" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché / marché non déterminé.",
+        "Composant Comores \"transport_inter_iles_moheli_kmf\" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché / marché non déterminé.",
+        "Composant Comores \"transport_port_relais_kmf\" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché / marché non déterminé.",
+        "Douane non estimée : coût réel connu après ventilation de l'expédition (aucun taux théorique appliqué).",
         "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."
       ]
     },
     {
       "allocation": {
         "levels": {
-          "article": 6,
+          "article": 10,
           "order": 3,
-          "parcel": 6,
+          "parcel": 3,
           "shipment": 2
         },
         "min_confidence": "low"
       },
       "breakdown": {
         "customs": 25,
-        "distribution": 725,
-        "freight": 1658,
+        "distribution": 200,
+        "freight": 1198,
         "hub": 50,
         "overhead": 19408,
         "packaging": 75,
         "payment": 80,
-        "purchase": 152257,
+        "purchase": 152250,
         "relay": 200,
-        "risk": 9542,
+        "risk": 16530,
         "sourcing": 80,
-        "transitary": 4749
+        "transitary": 4638
       },
       "category": "phones",
       "channel": "cash_relais",
@@ -835,11 +883,15 @@
       },
       "totals": {
         "fixed": 19408,
-        "risk": 9542,
-        "total": 193472,
-        "variable": 174064
+        "risk": 16530,
+        "total": 194534,
+        "variable": 175126
       },
       "warnings": [
+        "Composant Comores \"transport_inter_iles_anjouan_kmf\" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché / marché non déterminé.",
+        "Composant Comores \"transport_inter_iles_moheli_kmf\" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché / marché non déterminé.",
+        "Composant Comores \"transport_port_relais_kmf\" non appliqué hors marché KM (UNKNOWN) : aucune surcharge marché / marché non déterminé.",
+        "Douane non estimée : coût réel connu après ventilation de l'expédition (aucun taux théorique appliqué).",
         "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel.",
         "volume_m3 absent — utilisation du défaut générique 0,005 m³."
       ]

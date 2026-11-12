@@ -227,7 +227,7 @@
     const manualSelect = doc.createElement('select');
     manualSelect.setAttribute('aria-label', 'Motif de la confirmation sans scan');
     manualSelect.setAttribute('data-manual-reason', '');
-    [['scanner_unavailable', 'Scanner indisponible'], ['label_unreadable', 'Étiquette illisible'], ['offline', 'Hors ligne'], ['other', 'Autre (précisez)']]
+    [['manual_entry', 'Saisie manuelle volontaire'], ['scanner_unavailable', 'Scanner indisponible'], ['label_unreadable', 'Étiquette illisible'], ['offline', 'Hors ligne'], ['other', 'Autre (précisez)']]
       .forEach(([value, label]) => manualSelect.appendChild(Object.assign(doc.createElement('option'), { value, textContent: label })));
     const manualNote = doc.createElement('input');
     manualNote.type = 'text'; manualNote.maxLength = 500; manualNote.placeholder = 'Précision (obligatoire si « Autre »)';
@@ -282,6 +282,15 @@
     return (payload.customs && Array.isArray(payload.customs.candidates) ? payload.customs.candidates : [])
       .map(row => row.reference)
       .filter(Boolean);
+  }
+
+  // Sélection explicite : jamais de présélection des colis éligibles du marché
+  // (des colis d'une autre opération y figurent). Champ vide par défaut.
+  function parseParcelRefs(raw) {
+    return Array.from(new Set(String(raw || '').split(',').map(value => value.trim()).filter(Boolean)));
+  }
+  function parcelSelectionConfirm(verb, reference, refs) {
+    return `${verb} ${reference} avec ${refs.length} colis : ${refs.length ? refs.join(', ') : 'aucun'}. Confirmer ?`;
   }
 
   // ── Saisie douane : formulaire intégré (remplace prompt()/confirm() natifs) ──────────────────
@@ -490,12 +499,13 @@
         if (!shipmentDate) return;
         const cif = promptFn('Valeur CIF (KMF)');
         if (!cif) return;
-        const suggested = candidateRefs(payload).join(',');
-        const refsRaw = promptFn('Colis à rattacher (références séparées par des virgules)', suggested) || '';
-        const parcelRefs = refsRaw.split(',').map(value => value.trim()).filter(Boolean);
+        const eligible = candidateRefs(payload).length;
+        const refsRaw = promptFn(`Colis à rattacher, sélection explicite (${eligible} éligible(s) sur le marché ; références séparées par des virgules)`, '') || '';
+        const parcelRefs = parseParcelRefs(refsRaw);
         await runAction(context, create, {
           url: endpointFor(context.marketCode, 'customs/shipments'),
           body: { reference, shipment_date: shipmentDate, cif_value_kmf: Number(cif), parcel_refs: parcelRefs },
+          confirmMessage: parcelSelectionConfirm('Créer le dossier', reference, parcelRefs),
           successMessage: `Expédition douane ${reference} créée.`,
         });
       });
@@ -532,12 +542,17 @@
       });
       const td = doc.createElement('td');
       if (context.user && context.user.role === 'admin') {
-        if (row.status === 'pending' && row.is_active) {
+        if (row.journey_reference && row.is_active && row.status !== 'confirmed') {
+          // Dossier lié à une expédition KOM-BOX : pas de voie colis, seule la déclaration de montant de l'expédition.
+          const hint = text(doc, 'span', 'kmc-workspace-hint', `Lié à ${row.journey_reference} : déclarer le montant depuis l'expédition (customs-amount)`);
+          hint.setAttribute('data-customs-journey-linked', row.journey_reference);
+          td.appendChild(hint);
+        } else if (row.status === 'pending' && row.is_active) {
           const declare = makeButton(doc, 'Déclarer', 'declare-customs');
           declare.addEventListener('click', () => openCustomsForm(context, doc, formHost, row, 'declare'));
           td.appendChild(declare);
         }
-        if (row.status === 'declared' && row.is_active) {
+        if (row.status === 'declared' && row.is_active && !row.journey_reference) {
           const correct = makeButton(doc, 'Corriger', 'correct-customs');
           correct.classList.add('is-secondary');
           correct.addEventListener('click', () => openCustomsForm(context, doc, formHost, row, 'correct'));
@@ -548,13 +563,15 @@
           const suffix = row.is_active ? 'deactivate' : 'activate';
           let body = {};
           if (!row.is_active) {
-            const refsRaw = (context.prompt || (() => ''))('Colis à rattacher lors de la réactivation (références séparées par des virgules)', candidateRefs(payload).join(',')) || '';
-            body = { parcel_refs: refsRaw.split(',').map(value => value.trim()).filter(Boolean) };
+            const refsRaw = (context.prompt || (() => ''))('Colis à rattacher lors de la réactivation, sélection explicite (références séparées par des virgules)', '') || '';
+            body = { parcel_refs: parseParcelRefs(refsRaw) };
           }
           runAction(context, toggle, {
             url: endpointFor(context.marketCode, `customs/shipments/${encodeURIComponent(row.reference)}/${suffix}`),
             body,
-            confirmMessage: `${row.is_active ? 'Désactiver' : 'Réactiver'} ${row.reference} ?`,
+            confirmMessage: row.is_active
+              ? `Désactiver ${row.reference} ?`
+              : parcelSelectionConfirm('Réactiver le dossier', row.reference, body.parcel_refs),
             successMessage: `${row.reference} mis à jour.`,
           });
         });
@@ -658,5 +675,5 @@
     return context.reload();
   }
 
-  return Object.freeze({ endpointFor, metricItems, mount, _test: { candidateRefs, canConfirmTransit, parseAmountInput } });
+  return Object.freeze({ endpointFor, metricItems, mount, _test: { candidateRefs, parseParcelRefs, parcelSelectionConfirm, canConfirmTransit, parseAmountInput } });
 });

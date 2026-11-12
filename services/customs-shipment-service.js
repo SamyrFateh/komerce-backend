@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       services/cost-allocation/index.js, services/cost-allocation/_helpers.js, services/documents/customs-invoice.js, services/parcel-mutation-service.js
  * @used-by       routes/admin-customs-shipments.js, services/order-status-machine.js, services/shipping-customs-workspace.js
- * @db-read       customs_effective_rates, customs_shipment_parcels, customs_shipments, order_item_real_cost_allocations, order_items, orders, parcel_items, parcels, products
+ * @db-read       customs_effective_rates, customs_shipment_parcels, customs_shipments, international_shipments, order_item_real_cost_allocations, order_items, orders, parcel_items, parcels, products
  * @db-write      customs_shipment_parcel_events, customs_shipment_parcels, customs_shipments, order_item_real_cost_allocations, orders
  * @db-write-via:parcel-mutation-service parcels
  * @db-write-via:cost-allocation order_item_real_cost_allocations
@@ -1077,6 +1077,18 @@ async function declareCustomsPayment(db, shipmentId, payload, userId) {
     }
     if (ship.is_active === false) {
       throw httpError(409, 'Expédition désactivée — la réactiver avant de déclarer');
+    }
+
+    // 1b. Dossier lié à une expédition KOM-BOX (journey) : la voie colis historique est fermée,
+    // le montant se déclare par customs-amount (declareInternationalCustomsAmount).
+    const { rows: [journey] } = await client.query(
+      'SELECT reference FROM international_shipments WHERE customs_shipment_id = $1 LIMIT 1',
+      [shipmentId]
+    );
+    if (journey) {
+      throw httpError(409,
+        `Dossier lié à l'expédition ${journey.reference} : utiliser la déclaration de montant de l'expédition (customs-amount)`,
+        'CUSTOMS_LINKED_TO_JOURNEY_USE_CUSTOMS_AMOUNT');
     }
 
     // 2. Colis porteurs : aucun montant déclaré sans affectation possible

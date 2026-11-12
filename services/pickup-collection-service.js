@@ -268,14 +268,11 @@ async function collectByPickupCode({
 }) {
   const normalized = normalizeCode(code);
   const targeted = Boolean(expectedOrderId);
-  const isShortTargetedCode = targeted && normalized.length === 4
-    && /^[A-HJ-NP-Z2-9]{4}$/.test(normalized);
-
-  if (!CODE_FORMAT_REGEX.test(normalized) && !isShortTargetedCode) {
+  // P0 #3900 : même pour une commande ciblée, les 4 derniers caractères
+  // ne constituent jamais une preuve de remise. Un code COMPLET est requis.
+  if (!CODE_FORMAT_REGEX.test(normalized)) {
     return { status: 400, body: {
-      error: targeted
-        ? 'Code de retrait invalide — 4 ou 8 caractères attendus'
-        : 'Code de retrait invalide — format attendu : 8 caractères (tirets de présentation autorisés)',
+      error: 'Code de retrait invalide — format attendu : 8 caractères (tirets de présentation autorisés)',
     }};
   }
 
@@ -337,12 +334,10 @@ async function collectByPickupCode({
     }
 
     if (targeted) {
-      const matchesTarget = normalized.length === 4
-        ? normalized === String(order.pickup_secret_last4 || '').toUpperCase()
-        : Boolean(
-            order.pickup_secret_hash
-            && hashCode(normalized, order.pickup_secret_salt) === order.pickup_secret_hash
-          );
+      const matchesTarget = Boolean(
+        order.pickup_secret_hash
+        && hashCode(normalized, order.pickup_secret_salt) === order.pickup_secret_hash
+      );
       if (!matchesTarget) {
         await _logSecurityAlert(client, {
           type:        'pickup_collect_invalid_code',

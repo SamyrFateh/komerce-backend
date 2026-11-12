@@ -49,3 +49,19 @@ test('Expéditions & Douane : la colonne Commande ouvre la fiche 360 avec retour
   expect(src).toContain('nav.canOpenEntity360(context.user)');
   expect(src).toContain("nav.withEntityReturnTo(`/admin/orders/${encodeURIComponent(value)}`, nav.currentReturnTarget(null), 'Retour aux expéditions')");
 });
+
+test('création/réactivation douane : aucune présélection des colis éligibles, confirmation avec le nombre de colis',()=>{
+  expect(source).not.toMatch(/promptFn\([^\n]*suggested/);
+  expect(source).not.toMatch(/candidateRefs\(payload\)\.join/);
+  expect(source).toContain("parcelSelectionConfirm('Créer le dossier'");
+  const ws=require('../../public/dashboards/canonical/js/shipping-customs-workspace.js');
+  expect(ws._test.parseParcelRefs('')).toEqual([]);
+  expect(ws._test.parseParcelRefs(' A, B ,A,')).toEqual(['A','B']);
+  expect(ws._test.parcelSelectionConfirm('Créer le dossier','D1',['A','B'])).toContain('2 colis');
+  expect(ws._test.parcelSelectionConfirm('Créer le dossier','D1',[])).toContain('0 colis');
+});
+test('dossier lié à une expédition : « Déclarer »/« Corriger » ancienne voie masqués, voie customs-amount indiquée',()=>{
+  expect(source).toContain('row.journey_reference && row.is_active');
+  expect(source).toContain('data-customs-journey-linked');
+  expect(source).toMatch(/row\.status === 'declared' && row\.is_active && !row\.journey_reference/);
+});

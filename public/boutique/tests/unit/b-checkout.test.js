@@ -165,8 +165,9 @@ const {
   digitsOnly, normalizeLocal, prettifyLocal, buildE164,
   checkoutCart, closeOrderModal, updateWalletDisplay, checkWalletBalance,
   submitOrder, renderOrderSuccess, renderCheckout,
-  buildCheckoutRecentChoices,
+  buildCheckoutRecentChoices, buildCheckoutSelection,
   buildCheckoutFulfillmentPreviewPath, summarizeCheckoutFulfillment,
+  checkoutQuoteKey, resolveCheckoutPayable,
   makeInput, makePhoneInput, makeIntlPhoneInput,
   getDefaultPhoneCodeForZone,
 } = require('../../js/b-checkout.js');
@@ -223,6 +224,38 @@ describe('b-checkout', () => {
     state.viewedHistory = [];
     scroll.savedY = 0;
     getCurrentIdentity.mockReturnValue(null);
+  });
+
+  test('P0 — Acheter maintenant isole le checkout et conserve le panier personnel', () => {
+    const existing = { product: { id: 'robe', sku_id: 'sku-xl', price_kmf: 7990 },
+      sku_id: 'sku-xl', qty: 2, variant_combo: { Taille: 'XL' } };
+    state.cart = [existing];
+    const immediate = { product: { id: 'robe', sku_id: 'sku-m', price_kmf: 7990 },
+      sku_id: 'sku-m', qty: 1, variant_combo: { Taille: 'M' } };
+
+    const selection = buildCheckoutSelection([immediate], { origin: 'BUY_NOW' });
+    expect(selection.source).toBe('buy-now');
+    expect(selection.items).toHaveLength(1);
+    expect(selection.items[0].sku_id).toBe('sku-m');
+    state.orderData = { payment_mode: 'cash_relais', checkoutSelection: selection };
+    renderCheckout();
+    expect(dom.orderBody.querySelector('.ck-recap-origin-title').textContent).toBe('Achat immédiat');
+    expect(state.cart).toEqual([existing]);
+  });
+
+  describe('total présenté = devis serveur (livraison comprise)', () => {
+    const items = [{ product: { id: 'p1', price_kmf: 7990 }, qty: 1 }, { product: { id: 'p2', price_kmf: 5000 }, qty: 1, checkout_included: false }];
+    it('sans devis valide : non prêt, jamais de montant serveur inventé', () => {
+      expect(resolveCheckoutPayable(items, 'relay-1', null)).toMatchObject({ ready: false, transport: 0 });
+      expect(resolveCheckoutPayable(items, 'relay-1', { key: 'autre', total_kmf: 1 }).ready).toBe(false);
+    });
+    it('avec devis de la sélection courante : le total est exactement celui du serveur (7 990 + 26 = 8 016)', () => {
+      const quote = { key: checkoutQuoteKey('relay-1', items), items_total_kmf: 7990, transport_price_kmf: 26, discount_kmf: 0, total_kmf: 8016 };
+      expect(resolveCheckoutPayable(items, 'relay-1', quote)).toEqual({ ready: true, total: 8016, transport: 26, discount: 0 });
+      // changer de relais ou de quantité invalide le devis
+      expect(resolveCheckoutPayable(items, 'relay-2', quote).ready).toBe(false);
+      expect(resolveCheckoutPayable([{ ...items[0], qty: 2 }], 'relay-1', quote).ready).toBe(false);
+    });
   });
 
   describe('projection fulfillment mixte', () => {
@@ -476,6 +509,35 @@ describe('b-checkout', () => {
       expect(state.orderData.checkoutSelection.items[0].checkout_included).toBe(true);
       expect(state.orderData.checkoutSelection.total).toBe(43000);
       expect(rows[0].classList.contains('is-excluded')).toBe(false);
+    });
+
+    it('P0 — checkout : deux tailles du même produit restent lisibles et indépendantes', () => {
+      const robe = { id: 'robe-7', name: 'Robe Navy Blue', price_kmf: 7990 };
+      state.orderData = {
+        payment_mode: 'cash_relais',
+        checkoutSelection: {
+          source: 'personal-cart',
+          sourceId: null,
+          items: [
+            { product: { ...robe, sku_id: 'sku-xl' }, sku_id: 'sku-xl', qty: 1,
+              variant_combo: { Couleur: 'Navy Blue', Taille: 'XL' } },
+            { product: { ...robe, sku_id: 'sku-m' }, sku_id: 'sku-m', qty: 2,
+              variant_combo: { Couleur: 'Navy Blue', Taille: 'M' } },
+          ],
+          total: 23970,
+        },
+      };
+      renderCheckout();
+      const rows = dom.orderBody.querySelectorAll('.ck-recap-item');
+      expect(rows).toHaveLength(2);
+      expect(rows[0].querySelector('.ck-recap-item-variant').textContent).toContain('Taille : XL');
+      expect(rows[1].querySelector('.ck-recap-item-variant').textContent).toContain('Taille : M');
+      expect(rows[0].querySelector('.ck-recap-item-price').textContent).toContain('7990');
+      expect(rows[1].querySelector('.ck-recap-item-price').textContent).toContain('15980');
+      const before = checkoutQuoteKey('relay-1', state.orderData.checkoutSelection.items);
+      const changed = state.orderData.checkoutSelection.items.map((item) => ({ ...item }));
+      changed[1].variant_combo = { Couleur: 'Navy Blue', Taille: 'L' };
+      expect(checkoutQuoteKey('relay-1', changed)).not.toBe(before);
     });
 
     it('panier personnel : la même checkbox pilote l’inclusion sans supprimer la ligne', () => {
@@ -1605,11 +1667,14 @@ describe('b-checkout', () => {
         return Promise.resolve({});
       });
       requireIdentity.mockResolvedValue(null); // on ne pousse pas jusqu'à l'appel API ici
+      // Le bouton exige le devis serveur (total livraison comprise) : POST /api/orders/preview.
+      apiPost.mockResolvedValue({ items_total_kmf: 0, transport_price_kmf: 26, discount_kmf: 0, total_kmf: 26 });
       renderCheckout();
       await flush();
 
       const btn = document.getElementById('btn-confirm-order');
-      expect(btn.disabled).toBe(false); // relais ready + sélectionné
+      expect(btn.disabled).toBe(false); // relais ready + sélectionné + devis serveur reçu
+      expect(apiPost).toHaveBeenCalledWith('/api/orders/preview', expect.objectContaining({ relais_id: '1' }), expect.any(Object));
       btn.click();
       await flush();
 

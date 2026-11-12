@@ -1701,6 +1701,10 @@
 .kmc-workspace-receive-scan-result[data-scan-tone="success"] { color: #126a3e; font-weight: 700; }
 .kmc-workspace-receive-scan-result[data-scan-tone="warning"] { color: #9a5800; font-weight: 700; }
 .kmc-workspace-receive-scan-result[data-scan-tone="error"] { color: #ad2830; font-weight: 700; }
+.kmc-workspace-receive-confirm { flex: 1 1 100%; min-width: 0; display: grid; gap: 8px; padding: 10px; border: 1px dashed #99bce9; border-radius: 8px; background: #fff; font-size: 12px; }
+.kmc-workspace-receive-confirm[hidden] { display: none; }
+.kmc-workspace-receive-confirm select, .kmc-workspace-receive-confirm input { min-width: 0; max-width: 100%; min-height: 38px; padding: 6px 9px; border: 1px solid #99bce9; border-radius: 8px; font: inherit; background: #fff; }
+.kmc-workspace-receive-confirm-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 @media (max-width: 680px) { .kmc-workspace-receive-scan-label, .kmc-workspace-receive-scan-result { flex-basis: 100%; } }
 
 

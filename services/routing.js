@@ -180,6 +180,18 @@ function resolveRoutingFromRelais(relais, options = {}) {
   };
 }
 
+// Règle partagée : un relais est routable ssi resolveRoutingFromRelais ne lève pas.
+// Utilisée par les listes proposées au checkout pour ne jamais offrir un relais que POST /api/orders refuserait.
+function isRelaisRoutable(relais, options = {}) {
+  try {
+    resolveRoutingFromRelais(relais, options);
+    return true;
+  } catch (err) {
+    if (err instanceof RoutingError) return false;
+    throw err;
+  }
+}
+
 // ── Vérification de schéma (fail-closed) ─────────────────────────────────────
 // LOT R2 — DEBT-05 : le DDL additif (ALTER TABLE ... ADD COLUMN IF NOT EXISTS)
 // vit désormais dans migrations/014e_routing_columns_foundation.sql (l'ALTER
@@ -264,6 +276,7 @@ async function backfillRoutingData(db) {
 
 module.exports = {
   resolveRoutingFromRelais,
+  isRelaisRoutable,
   normalizeIsland,
   ensureRoutingColumns,
   backfillRoutingData,

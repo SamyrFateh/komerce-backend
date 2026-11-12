@@ -150,11 +150,16 @@ async function ensureUser(client, deps, account) {
 
 // Un agent relais appartient au marche de son relais : membership d'execution (reception + remise) via le writer canonique
 // (addMembership ; borne par le plafond de l'assignment, jamais d'ecriture SQL directe). Idempotent.
-const RELAY_AGENT_CAPABILITIES = ['execution.parcel.receive', 'execution.parcel.collect'];
+// Encaissement au relais : doctrine OPERATIONS_WORKSPACE_4A (« confirm relay cash » = execution.cash.confirm, agent_relais).
+// Capacité à montant : limite = celle du plafond du marché (jamais au-delà).
+const RELAY_AGENT_CAPABILITIES = ['execution.parcel.receive', 'execution.parcel.collect', 'execution.cash.confirm'];
 async function ensureRelayAgentMembership(client, deps, { userId, marketCode, actorId }) {
   const assignment = await deps.delegation.resolveActiveAssignmentByMarketCode(client, marketCode);
+  const { rows: limited } = await client.query(
+    `SELECT capability, limit_amount FROM assignment_capability_ceiling WHERE assignment_id = $1::uuid AND revoked_at IS NULL AND limit_amount IS NOT NULL`, [assignment.assignment_id]);
+  const capabilityLimits = Object.fromEntries(limited.filter((r) => RELAY_AGENT_CAPABILITIES.includes(r.capability)).map((r) => [r.capability, Number(r.limit_amount)]));
   await deps.delegation.addMembership(client, {
-    assignmentId: assignment.assignment_id, userId, actorUserId: actorId, capabilities: RELAY_AGENT_CAPABILITIES, actorIsCentral: true,
+    assignmentId: assignment.assignment_id, userId, actorUserId: actorId, capabilities: RELAY_AGENT_CAPABILITIES, capabilityLimits, actorIsCentral: true,
   });
   return { market: marketCode, capabilities: RELAY_AGENT_CAPABILITIES };
 }

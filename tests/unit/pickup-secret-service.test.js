@@ -733,6 +733,13 @@ describe('collectByPickupCode', () => {
     expect(db.withTransaction).not.toHaveBeenCalled();
   });
 
+  test('retrait ciblé par orderId avec seulement last4 → 400 sans transaction ni remise', async () => {
+    const result = await collectByPickupCode({ code: LAST4, user: admin, expectedOrderId: 'o1' });
+    expect(result.status).toBe(400);
+    expect(db.withTransaction).not.toHaveBeenCalled();
+    expect(mockSafeSyncScanToParcels).not.toHaveBeenCalled();
+  });
+
   test('code complet valide (admin) → 200, scan_code = référence (jamais le secret)', async () => {
     const order = buildOrder();
     db.query
@@ -764,7 +771,7 @@ describe('collectByPickupCode', () => {
     expect(insertCall[1].join(' ')).not.toMatch(new RegExp(CODE));
   });
 
-  test('retrait ciblé 4 chars → revalide le code dans la transaction puis collecte un seul parcel', async () => {
+  test('retrait ciblé avec code complet → revalide le hash dans la transaction puis collecte un seul parcel', async () => {
     const order = buildOrder({ pickup_secret_last4: CODE.replace(/-/g, '').slice(-4) });
     mockSafeSyncScanToParcels.mockResolvedValueOnce({
       synced: true,
@@ -779,7 +786,7 @@ describe('collectByPickupCode', () => {
       .mockResolvedValueOnce({ rows: [] });
 
     const result = await collectByPickupCode({
-      code: CODE.replace(/-/g, '').slice(-4),
+      code: CODE,
       user: admin,
       expectedOrderId: 'o1',
       collectedByName: 'Fatima',

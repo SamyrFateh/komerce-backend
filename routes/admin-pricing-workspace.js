@@ -31,6 +31,7 @@ const workspace = require('../services/pricing-workspace');
 const marketDecisionPolicy = require('../services/pricing-market-decision-policy');
 const marketDecisionProjection = require('../services/pricing-market-decision-projection');
 const pricingMarketCorridor = require('../services/pricing-market-corridor');
+const forecastPreview = require('../services/pricing-floor-forecast-preview');
 const marketCommercialPrice = require('../services/market-commercial-price-service');
 const marketLocalPriceActivation = require('../services/market-local-price-activation-service');
 const marketDelegationCatalog = require('../services/market-delegation-catalog-service');
@@ -339,6 +340,38 @@ router.get('/market/:marketCode/corridor', requirePricingReadCapability('pricing
     }));
   } catch (error) { handleError(error, res, next); }
 });
+
+// Simulation prévisionnelle sans mutation ; marché et achat proviennent exclusivement
+// du serveur, les montants navigateur restent des HYPOTHÈSES (jamais des devis).
+router.post('/market/:marketCode/products/:productRef/forecast-preview',
+  requirePricingReadCapability('pricing.simulate'), async (req, res, next) => {
+    try {
+      res.set('Cache-Control', 'private, no-store');
+      const productRef = String(req.params.productRef || '').trim().slice(0, 120);
+      if (!productRef) return res.status(400).json({ code: 'pricing_forecast_product_required' });
+      const { rows } = await db.query(
+        `SELECT product_ref, cost_kmf, weight_kg,
+                volume_cm3 / 1000000.0 AS volume_m3, is_active
+           FROM products WHERE product_ref = $1 LIMIT 1`,
+        [productRef]
+      );
+      if (!rows[0] || rows[0].is_active !== true) {
+        return res.status(404).json({ code: 'pricing_forecast_product_not_found',
+          error: 'Produit actif introuvable.' });
+      }
+      return res.json(forecastPreview.preview({
+        market: req.workspaceMarket,
+        product: rows[0],
+        payload: req.body,
+      }));
+    } catch (error) {
+      if (error instanceof forecastPreview.ForecastPreviewError) {
+        return res.status(422).json({ code: error.code, error: error.message, fields: error.fields });
+      }
+      return handleError(error, res, next);
+    }
+  }
+);
 
 router.post('/market/:marketCode/price-observations', requireLocalStrategyCapability('market.observation.record'), async (req, res, next) => {
   try {

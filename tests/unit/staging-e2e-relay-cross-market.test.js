@@ -14,7 +14,9 @@ const cm = '33333333-3333-4333-8333-333333333333';
 const oldRelais = '44444444-4444-4444-8444-444444444444';
 const newRelais = '55555555-5555-4555-8555-555555555555';
 const env = { KOMERCE_ENV: 'staging', KOMERCE_TARGET_ENV: 'staging',
-  E2E_AGENT_RELAIS_EMAIL: 'e2e-agent-relais@komerce.test', RELAY_MODE: 'to-fixture', RELAY_RUN8: 'A1B2C3D4' };
+  E2E_AGENT_RELAIS_EMAIL: 'e2e-agent-relais@komerce.test', RELAY_MODE: 'to-fixture', RELAY_RUN8: 'A1B2C3D4',
+  // apply:true exige l'approbation propriétaire (cf. reassign) : contexte GitHub explicite, jamais hérité de l'environnement.
+  GITHUB_REPOSITORY: 'SamyrFateh/komerce-backend', GITHUB_ACTOR: 'SamyrFateh', GITHUB_REPOSITORY_OWNER: 'SamyrFateh', GITHUB_EVENT_NAME: 'issues' };
 
 function scenario({ targetCode = 'CM', allowed = true, ownerGrant = false } = {}) {
   const steps = [

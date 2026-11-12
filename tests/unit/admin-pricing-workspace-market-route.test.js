@@ -527,3 +527,48 @@ test('Un rôle non-Admin ne bénéficie jamais des droits du Catalogue pays sans
   expect(response.body.code).toBe('MARKET_MEMBERSHIP_REQUIRED');
   expect(mockCommercialPrice.setMarketPriceDraft).not.toHaveBeenCalled();
 });
+
+
+test('preview plancher marché : lecture seule, achat et scope résolus côté serveur, droits contrôlés', async () => {
+  db.query.mockImplementation(async (sql, params) => {
+    if (String(sql).includes('FROM markets')) return { rows: [
+      { id: 'market-cm', code: 'CM', name: 'Cameroun', currency: 'XAF', is_active: true },
+    ] };
+    if (String(sql).includes('FROM products WHERE product_ref')) return { rows: [
+      { product_ref: 'KPR-1', cost_kmf: 3936, weight_kg: .15, volume_m3: .0008, is_active: true },
+    ] };
+    return { rows: [] };
+  });
+  const values = {
+    supplier_delivery: 738, bank_pct: 1.5, hub_packaging: 56, freight: 88552.8,
+    lot_volume_m3: 3, minimum_billable_m3: 1, lot_fee: 110000,
+    insurance_pct: .5, customs_duties: 20, last_mile: 500,
+    relay_commission: 600, payment: 200, payment_pct: 0,
+    risk_damage_pct: 1, risk_pickup_pct: 5,
+  };
+  const body = {
+    circuit: 'import', commission_basis: 'fixed_unit',
+    scenarios: { favorable: { ...values, customs_duties: 0 },
+      central: values, defavorable: { ...values, customs_duties: 42 } },
+    candidate_prices_kmf: [9000],
+  };
+  let res = await request(app()).post('/api/admin/workspaces/pricing/market/CM/products/KPR-1/forecast-preview').send(body);
+  expect(res.status).toBe(200);
+  expect(res.headers['cache-control']).toContain('no-store');
+  expect(res.body.simulation_only).toBe(true);
+  expect(res.body.forecast.market_code).toBe('CM');
+  expect(res.body.forecast.status).toBe('PROVISOIRE');
+  expect(res.body.forecast.cases.central.lines.every(l => l.evidence === 'ASSUMED')).toBe(true);
+  expect(db.query.mock.calls.filter(([sql]) => /FROM products WHERE product_ref/.test(sql))).toHaveLength(1);
+  expect(db.query.mock.calls.every(([sql]) => /^\s*SELECT\b/i.test(sql))).toBe(true);
+
+  res = await request(app()).post('/api/admin/workspaces/pricing/market/CM/products/KPR-1/forecast-preview')
+    .send({ ...body, scenarios: { ...body.scenarios, central: { ...values, market_code: 'KM' } } });
+  expect(res.status).toBe(400);
+  expect(res.body.code).toBe('pricing_internal_authority_forbidden');
+
+  mockPricingReadGranted = false;
+  res = await request(app()).post('/api/admin/workspaces/pricing/market/CM/products/KPR-1/forecast-preview').send(body);
+  expect(res.status).toBe(403);
+  expect(res.body.code).toBe('MARKET_CAPABILITY_REQUIRED');
+});

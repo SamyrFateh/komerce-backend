@@ -14968,6 +14968,9 @@ body.k-id-scroll-lock { overflow: hidden; }
   .k-order-overlay.open .ck-confirm-btn { transition: none; }
 }
 
+.ck-delivery-line { display: flex; justify-content: space-between; gap: 16px; margin: 10px 2px 0; font-size: .78rem; color: var(--text-muted); }
+.ck-delivery-line[hidden] { display: none; }
+
 
 /* ── mobile-catalog-convergence.css ──────────────────────── */
 /**

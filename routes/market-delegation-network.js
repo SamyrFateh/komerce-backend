@@ -22,6 +22,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const { islandOptionsFor } = require('../services/relais-mutation-service');
 const { authenticate } = require('../middleware/auth');
 const {
   resolveAuthorization,
@@ -29,6 +30,8 @@ const {
   createRelais,
   updateRelais,
   setRelaisActive,
+  listRelaisAgents,
+  assignAgentToRelais,
 } = require('../services/market-delegation-network-service');
 
 function correlationId(req) {
@@ -83,6 +86,8 @@ router.get('/markets/:marketCode/network/relais', authenticate, async (req, res,
       market: { code: result.authz.market_code, name: result.authz.market_name, currency: result.authz.currency },
       assignment_id: result.authz.assignment_id,
       actor_capabilities: result.authz.capabilities,
+      // Valeurs d'île admises par le routage ; vide hors marché insulaire (alors island_code est sans objet).
+      island_options: islandOptionsFor(result.authz.market_code),
       relais: result.relais,
     });
   } catch (error) {
@@ -142,6 +147,36 @@ router.put('/markets/:marketCode/network/relais/:relaisId', authenticate, async 
       },
     }));
     res.json({ success: true, relais });
+  } catch (error) {
+    if (sendDelegationError(res, error)) return;
+    next(error);
+  }
+});
+
+router.get('/markets/:marketCode/network/relais-agents', authenticate, async (req, res, next) => {
+  try {
+    const agents = await withTransaction(client => listRelaisAgents(client, {
+      marketCode: req.params.marketCode, actorUserId: req.user.id, actorRole: req.user.role,
+    }));
+    res.json({ agents });
+  } catch (error) {
+    if (sendDelegationError(res, error)) return;
+    next(error);
+  }
+});
+
+router.post('/markets/:marketCode/network/relais/:relaisId/agents', authenticate, async (req, res, next) => {
+  try {
+    rejectMarketId(req.body);
+    const result = await withTransaction(client => assignAgentToRelais(client, {
+      marketCode: req.params.marketCode,
+      relaisId: req.params.relaisId,
+      userId: (req.body || {}).user_id,
+      actorUserId: req.user.id,
+      actorRole: req.user.role,
+      correlationId: correlationId(req),
+    }));
+    res.json({ success: true, ...result });
   } catch (error) {
     if (sendDelegationError(res, error)) return;
     next(error);

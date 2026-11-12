@@ -53,6 +53,15 @@ router.post('/:ref/scan', async (req, res, next) => {
     if (!event_type) {
       return res.status(400).json({ error: 'event_type requis' });
     }
+    // P0 #3900 : un événement logistique ne prouve pas l'autorisation du
+    // destinataire. Le code complet (ou l'exception nominative) doit être
+    // vérifié par le writer canonique de retrait. Pas de collected via scan.
+    if (event_type === 'collected') {
+      return res.status(409).json({
+        code: 'PICKUP_CODE_REQUIRED',
+        error: 'Remise client : code de retrait ou procédure nominative exceptionnelle obligatoire.',
+      });
+    }
 
     // Résoudre le parcel (hors transaction — processScan ouvre la sienne)
     const { rows: [parcel] } = await db.query(

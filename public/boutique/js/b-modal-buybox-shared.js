@@ -35,7 +35,6 @@
 
 import { fmtPrice } from './b-utils.js';
 import { bus } from './b-bus.js';
-import { addToCart } from './b-cart.js';
 import { state, getRequestedTransportRail } from './b-store.js';
 import {
   buildModalCartProduct,
@@ -48,6 +47,34 @@ function currentCartProduct(product = state.modalProduct) {
     state.modalProductDetail,
     state.modalSelection
   );
+}
+
+/**
+ * Achat immédiat = sélection de checkout éphémère, jamais ajout implicite
+ * au panier personnel. L'identité et le prix viennent de la sellable_unit
+ * canonique déjà sélectionnée, pas d'un produit parent arbitraire.
+ */
+function currentBuyNowLine() {
+  const product = currentCartProduct();
+  if (!product) return null;
+  const selected = state.modalSelection?.selected_options;
+  const combo = selected && typeof selected === 'object'
+    && Object.keys(selected).length ? { ...selected } : null;
+  const qty = Math.max(1, Math.floor(Number(state.modalQty) || 1));
+  const skuId = product.sku_id ?? product.selected_sku_id ?? null;
+  const price = product.price_kmf ?? product.price ?? 0;
+  return {
+    product,
+    id: product.id,
+    name: product.name,
+    price,
+    image: product.image_url || product.image || '',
+    qty,
+    ...(skuId != null ? { sku_id: skuId } : {}),
+    variant_combo: combo,
+    variant_label: combo ? Object.values(combo).join(' / ') : '',
+    requested_transport_rail: getRequestedTransportRail(),
+  };
 }
 
 /**
@@ -78,16 +105,12 @@ export function wireBuyNowButton(buyNowBtn) {
     buyNowBtn.disabled = true;
     buyNowBtn.classList.add('buy-confirmed');
 
-    // 2. Ajout au panier avec snapshot du SKU sélectionné. Même helper
-    //    partagé que "Ajouter au panier" et "Panier partagé" — le rail
-    //    demandé ne doit jamais différer selon le CTA cliqué.
-    const checkoutLine = addToCart(currentCartProduct(), state.modalQty, buyNowBtn, {
-      requested_transport_rail: getRequestedTransportRail(),
-    });
+    // 2. Ligne éphémère pour le seul SKU choisi. Ne jamais incrémenter une
+    //    ligne du panier existant : si M a déjà qty=2, Acheter M ne doit
+    //    ni le doubler à 4 ni modifier les autres tailles.
+    const checkoutLine = currentBuyNowLine();
 
-    // 3. CheckoutSelection exacte : la ligne courante seulement. Le panier
-    //    existant demeure intact mais ne se mélange jamais à l'intention
-    //    « Acheter maintenant ».
+    // 3. CheckoutSelection exacte, sans aucune mutation du panier personnel.
     if (checkoutLine) {
       bus.emit('checkout:open', {
         lines: [checkoutLine],
@@ -257,4 +280,5 @@ export function renderPaymentModes(el, { activeMode, onModeChange } = {}) {
 export const _buyboxSharedTestApi = Object.freeze({
   buildPaymentDetail,
   currentCartProduct,
+  currentBuyNowLine,
 });
