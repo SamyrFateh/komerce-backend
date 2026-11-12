@@ -971,7 +971,8 @@ describe('collectByPickupCode', () => {
   });
 
   test('erreur pendant la transition (fallback) → transaction rejetée (rollback)', async () => {
-    mockSafeSyncScanToParcels.mockResolvedValueOnce({ synced: false });
+    // Fallback autorisé UNIQUEMENT si l'absence de colis est explicitement établie.
+    mockSafeSyncScanToParcels.mockResolvedValueOnce({ synced: false, reason: 'no_parcels' });
     mockTransitionOrderStatus.mockRejectedValueOnce(new Error('transition failed'));
     const order = buildOrder();
     db.query
@@ -1400,6 +1401,7 @@ describe('collectByAuthorizedName', () => {
       synced: false,
       parcelsUpdated: 0,
       orderStatus: null,
+      reason: 'no_parcels', // vraie commande legacy, pas erreur technique
     });
 
     mockTransitionOrderStatus.mockResolvedValueOnce({
