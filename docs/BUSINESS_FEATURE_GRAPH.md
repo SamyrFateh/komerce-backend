@@ -252,11 +252,11 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 > Generer et conserver un PDF officiel privé (facture, remboursement, wallet, retrait, douane) après événement confirmé ; exposer au client authentifié uniquement ses factures et remboursements essentiels.
 
-- services: 7
+- services: 8
 - routes: 3
 - migrations: 7
 - utils: 5
-- tests: 16
+- tests: 17
 - tables owned (lifecycle): 2 — `invoices`, `transaction_documents`
 - tables written: 2
 - interfaces exposed: 9
@@ -2301,8 +2301,8 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 2305 fichier(s) `.js`/`.mjs` observés (canal A)
-- boutique : 214 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
+- backend : 2307 fichier(s) `.js`/`.mjs` observés (canal A)
+- boutique : 216 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 79 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
   - _dash interface channel: consumer file resolution câblée via docs/DASHBOARDS_360.json (bridge vue -> fileId basé sur les entrées "views/" déjà gouvernées par implementedByEdges) — les modules dashboards référencés par META_GRAPH mais absents des vues gouvernées (ou ambigus) restent INTERFACE-CONSUMER-FILE-UNRESOLVED, jamais devinés_
@@ -2549,13 +2549,13 @@ Meta Graph monté : oui.
 | notifications | orders | data-read | 2 | **DECLARED_AND_OBSERVED** |
 | notifications | platform-ops | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | orders | auth | static-code | 14 | **DECLARED_AND_OBSERVED** |
-| orders | auth-identity | static-code, interface, data-read | 12 | **DECLARED_AND_OBSERVED** |
+| orders | auth-identity | static-code, interface, data-read | 13 | **DECLARED_AND_OBSERVED** |
 | orders | business-rules | static-code | 8 | **DECLARED_AND_OBSERVED** |
 | orders | catalog | static-code, data-read | 11 | **DECLARED_AND_OBSERVED** |
 | orders | customs | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | orders | dashboard | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | orders | decision-signals | static-code, data-write | 2 | **DECLARED_AND_OBSERVED** |
-| orders | documents | static-code, interface | 9 | **DECLARED_AND_OBSERVED** |
+| orders | documents | static-code, interface | 10 | **DECLARED_AND_OBSERVED** |
 | orders | economic-engine | static-code | 8 | **DECLARED_AND_OBSERVED** |
 | orders | infrastructure | static-code, interface | 66 | **DECLARED_AND_OBSERVED** |
 | orders | local-stock | static-code | 4 | **DECLARED_AND_OBSERVED** |
@@ -2565,7 +2565,7 @@ Meta Graph monté : oui.
 | orders | market-autonomy | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | orders | notifications | static-code | 13 | **DECLARED_AND_OBSERVED** |
 | orders | payments | static-code, interface | 9 | **DECLARED_AND_OBSERVED** |
-| orders | platform-ops | static-code | 38 | **DECLARED_AND_OBSERVED** |
+| orders | platform-ops | static-code | 41 | **DECLARED_AND_OBSERVED** |
 | orders | purchasing | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | orders | refunds | static-code, data-read | 7 | **DECLARED_AND_OBSERVED** |
 | orders | shared-cart | static-code | 9 | **DECLARED_AND_OBSERVED** |
@@ -2596,7 +2596,7 @@ Meta Graph monté : oui.
 | platform-ops | infrastructure | static-code, interface | 31 | **DECLARED_AND_OBSERVED** |
 | platform-ops | logistics | static-code, interface, data-read | 14 | **DECLARED_AND_OBSERVED** |
 | platform-ops | notifications | static-code | 3 | **OBSERVED_UNDECLARED** |
-| platform-ops | orders | static-code, interface, data-read | 20 | **DECLARED_AND_OBSERVED** |
+| platform-ops | orders | static-code, interface, data-read | 21 | **DECLARED_AND_OBSERVED** |
 | platform-ops | payments | static-code | 1 | **OBSERVED_UNDECLARED** |
 | platform-ops | providers-services | static-code | 1 | **OBSERVED_UNDECLARED** |
 | platform-ops | purchasing | static-code, interface | 2 | **DECLARED_AND_OBSERVED** |
