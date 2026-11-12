@@ -38,9 +38,17 @@ function unitMatches(unit, options) {
   return Object.entries(options).every(([key, value]) => unit.option_values[key] === value);
 }
 
-function optionStateFor(detail, priorOptions, axisKey, value) {
+/**
+ * Les axes sont indépendants de l'ordre de présentation.
+ * Pour une valeur candidate, on conserve les choix des AUTRES axes,
+ * même s'ils apparaissent après cet axe dans option_axes.
+ */
+function optionStateFor(detail, selectedOptions, axisKey, value) {
+  const otherOptions = Object.fromEntries(
+    Object.entries(selectedOptions).filter(([key]) => key !== axisKey)
+  );
   const candidates = detail.sellable_units.filter((unit) =>
-    unit.option_values[axisKey] === value && unitMatches(unit, priorOptions)
+    unit.option_values[axisKey] === value && unitMatches(unit, otherOptions)
   );
 
   if (candidates.length === 0) return OPTION_STATE.INCOMPATIBLE;
@@ -50,19 +58,12 @@ function optionStateFor(detail, priorOptions, axisKey, value) {
 
 function buildOptionStates(detail, selectedOptions) {
   const states = {};
-  const priorOptions = {};
-
   for (const axis of detail.option_axes) {
     states[axis.key] = axis.values.map((option) => ({
       value: option.value,
-      state: optionStateFor(detail, priorOptions, axis.key, option.value),
+      state: optionStateFor(detail, selectedOptions, axis.key, option.value),
     }));
-
-    if (Object.prototype.hasOwnProperty.call(selectedOptions, axis.key)) {
-      priorOptions[axis.key] = selectedOptions[axis.key];
-    }
   }
-
   return states;
 }
 
@@ -124,9 +125,8 @@ function deriveLegacyState(detail) {
 }
 
 function unavailableMessage(detail, state, axisKey, value, optionState) {
-  const axisIndex = detail.option_axes.findIndex((axis) => axis.key === axisKey);
   const contextValues = detail.option_axes
-    .slice(0, axisIndex)
+    .filter((axis) => axis.key !== axisKey)
     .map((axis) => state.selected_options[axis.key])
     .filter(Boolean);
   const context = contextValues.length > 0 ? ` pour ${contextValues.join(' / ')}` : '';
@@ -161,13 +161,8 @@ export function selectModalOption(detail, state, axisKey, value) {
     };
   }
 
-  const selectedOptions = {};
-  detail.option_axes.forEach((axis, index) => {
-    if (index < axisIndex && Object.prototype.hasOwnProperty.call(state.selected_options, axis.key)) {
-      selectedOptions[axis.key] = state.selected_options[axis.key];
-    }
-    if (index === axisIndex) selectedOptions[axis.key] = value;
-  });
-
-  return deriveSkuState(detail, selectedOptions);
+  // Ne jamais effacer une taille choisie lors d'un clic sur la couleur,
+  // ni l'inverse. Une combinaison incompatible est refusée plus haut,
+  // sans toucher à la sélection courante ni inventer un SKU disponible.
+  return deriveSkuState(detail, { ...state.selected_options, [axisKey]: value });
 }
