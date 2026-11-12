@@ -351,8 +351,8 @@ async function runOrderCheckout({ user, body, internalSimulation = null, preview
     // Résolution serveur, sous la transaction orders déjà ouverte. Le owner
     // local-stock acquiert les FOR UPDATE dans un ordre déterministe et les
     // conserve jusqu'au COMMIT/ROLLBACK. Le frontend n'est jamais autorité.
-    // Le verdict est ensuite persisté sur order_items (Lot C) et sert ici à
-    // construire la seule collection éligible au transport import (Lot D).
+    // Le verdict est ensuite persisté sur order_items (Lot C).
+    // Aucun supplément transport commercial sur le maritime (#3936).
     const fulfillmentSources = await resolveCheckoutFulfillmentSources(client, {
       marketId: relais?.market_id || null,
       demands: items.map(item => ({
@@ -364,10 +364,6 @@ async function runOrderCheckout({ user, body, internalSimulation = null, preview
       item._fulfillment_source =
         fulfillmentSources[item.product_id] || FULFILLMENT_SOURCE.IMPORT;
     }
-
-    const importTransportItems = items.filter(
-      item => item._fulfillment_source === FULFILLMENT_SOURCE.IMPORT
-    );
 
     // Décision propriétaire #3936 : maritime inclus dans les prix catalogue,
     // donc aucun supplément transport n'est ajouté au client, y compris pour
