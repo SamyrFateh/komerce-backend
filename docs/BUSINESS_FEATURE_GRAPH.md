@@ -507,12 +507,12 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 > Faire exister une commande, de la creation au statut final, avec un cout figure et une reference lisible.
 
 - utils: 1
-- services: 27
+- services: 28
 - routes: 11
 - boutique: 3
-- tests: 60
-- tables owned (lifecycle): 9 — `order_items`, `orders`, `disputes`, `order_comments`, `order_item_cost_imputations`, `order_status_history`, `recipients`, `sms_log`, `customs_history`
-- tables written: 11
+- tests: 62
+- tables owned (lifecycle): 10 — `order_items`, `orders`, `disputes`, `order_comments`, `order_item_cost_imputations`, `order_status_history`, `recipients`, `sms_log`, `customs_history`, `order_checkout_idempotency`
+- tables written: 12
 - interfaces exposed: 27
 - internal APIs: 30
 - dependencies (consumes): 23 — dashboard, market-control-plane, platform-ops, infrastructure, decision-signals, business-rules, wallet, economic-engine, logistics, catalog, market-autonomy, local-stock, market, purchasing, loyalty, payments, auth, auth-identity, customs, documents, notifications, refunds, shared-cart
@@ -843,6 +843,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `mobile_money_transactions` | `payments` | single-writer | payments | — |
 | `notification_log` | `notifications` | declared-table-owner | notifications, platform-ops | — |
 | `operator_market_scopes` | `market` | declared-table-owner | market | market-delegation |
+| `order_checkout_idempotency` | `orders` | declared-table-owner | orders | — |
 | `order_comments` | `orders` | multi-writer-resolved-by-classification-signal | dashboard, orders | — |
 | `order_cost_entry_events` | `economic-engine` | declared-table-owner | economic-engine | — |
 | `order_incidents` | `dashboard` | single-writer | dashboard | — |
@@ -2301,7 +2302,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 2312 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 2315 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 216 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 79 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -2557,7 +2558,7 @@ Meta Graph monté : oui.
 | orders | decision-signals | static-code, data-write | 2 | **DECLARED_AND_OBSERVED** |
 | orders | documents | static-code, interface | 10 | **DECLARED_AND_OBSERVED** |
 | orders | economic-engine | static-code | 10 | **DECLARED_AND_OBSERVED** |
-| orders | infrastructure | static-code, interface | 68 | **DECLARED_AND_OBSERVED** |
+| orders | infrastructure | static-code, interface | 69 | **DECLARED_AND_OBSERVED** |
 | orders | local-stock | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | orders | logistics | static-code, interface, data-read | 36 | **DECLARED_AND_OBSERVED** |
 | orders | loyalty | static-code | 7 | **DECLARED_AND_OBSERVED** |
