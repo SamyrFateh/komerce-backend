@@ -27,6 +27,7 @@ module.exports = {
     in: [
       'état et persistance du panier personnel',
       'quantités, mini-panier et badge panier',
+      'simulation de devis A4 non transactionnel depuis le panier personnel, sur prix canoniques serveur et relais explicite',
       'projection client de l historique et de la timeline commande',
       'projection contextualisée des factures, remboursements et du solde wallet positif dans une commande appartenant à la session',
       'signal visuel actionnable tant qu une commande est disponible au relais',
@@ -45,6 +46,7 @@ module.exports = {
       '../js/b-cart-pill.js',
       '../js/b-cart-stepper-guard.js',
       '../js/b-cart.js',
+      '../js/b-cart-quote.js',
       '../js/cart-product-summary.js',
       '../js/cart-public-api.js',
       '../js/b-mini-cart.js',
@@ -59,6 +61,7 @@ module.exports = {
       '../tests/unit/b-tracking-loading-states.test.js',
       '../tests/unit/b-cart-core.test.js',
       '../tests/unit/b-cart.test.js',
+      '../tests/unit/b-cart-quote.test.js',
       '../tests/unit/cart-public-api-boundary.test.js',
       '../tests/unit/b-mini-cart.test.js',
       '../tests/unit/mobile-cart-convergence.test.js',
