@@ -80,6 +80,15 @@ jobs:
 
             v_blocked:=false;
             BEGIN
+              TRUNCATE TABLE public.suppliers CASCADE;
+            EXCEPTION WHEN OTHERS THEN
+              IF SQLERRM<>'CENTRAL_HUB_SUPPLIER_IMMUTABLE' THEN RAISE; END IF;
+              v_blocked:=true;
+            END;
+            IF NOT v_blocked THEN RAISE EXCEPTION 'central_hub_truncate_allowed'; END IF;
+
+            v_blocked:=false;
+            BEGIN
               INSERT INTO public.suppliers(name,platform,owner_scope,system_key)
                 VALUES('Fournisseur central Hub','local','hub','central_hub');
             EXCEPTION WHEN unique_violation THEN
@@ -107,3 +116,19 @@ jobs:
           END $$;
           SQL
           echo 'CENTRAL_HUB_POSTGRESQL_INVARIANTS=PASS'
+  repository-preflight:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      TZ: Indian/Comoro
+      NODE_ENV: test
+      KOMERCE_DISABLE_CRONS: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Re-run canonical full PR preflight after merge reconciliation
+        run: npm run pr:preflight
