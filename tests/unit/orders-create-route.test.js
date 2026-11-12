@@ -1254,3 +1254,24 @@ describe('orders/preview — le total présenté au client est exactement le tot
     expect(insert.params[6]).toBe(prev.body.total_kmf);
   });
 });
+
+describe('L3 — confirmation du prix avant écriture de commande', () => {
+  it('409 price_changed si le total serveur diffère du devis accepté, sans INSERT ni COMMIT', async () => {
+    const client = makeClient([
+      { rows: [RELAIS] },
+      { rows: [{ id: 'recip-1' }] },
+      { rows: [PRODUCT] },
+    ]);
+    db.getClient.mockResolvedValue(client);
+    const res = await request(app).post('/api/orders')
+      .send(validBody({ expected_total_kmf: 19000 }));
+
+    expect(res.status).toBe(409);
+    expect(res.body).toMatchObject({
+      code: 'price_changed', expected_total_kmf: 19000, current_total_kmf: 20000,
+    });
+    expect(client.calls.some(c => /INSERT INTO orders/.test(c.sql))).toBe(false);
+    expect(client.calls.some(c => /^COMMIT/.test(c.sql))).toBe(false);
+    expectTransactionRolledBack(client);
+  });
+});

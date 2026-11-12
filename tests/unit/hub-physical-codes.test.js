@@ -120,3 +120,35 @@ describe('Hub V1 — physical barcode identifies a SKU, never a customer', () =>
     expect(q.query.mock.calls.some(([sql]) => sql.startsWith('INSERT INTO product_sku_physical_codes'))).toBe(false);
   });
 });
+
+describe('Hub V1 — garde marché sur la confirmation de code physique (#3927 trou 1)', () => {
+  const MARKET_A = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+  const MARKET_B = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+  const args = { purchaseOrderId: PO, productSkuId: SKU, code: '0012345678905', codeType: 'SUPPLIER_BARCODE', actorId: ACTOR, proofRef: 'visuel-boite-constate' };
+  const scoped = (marketIds) => {
+    const q = fakeDb();
+    const base = q.query.getMockImplementation();
+    q.query.mockImplementation(async (sql, a) => sql.includes('v_purchase_line_market')
+      ? { rows: marketIds.map(market_id => ({ market_id })) } : base(sql, a));
+    return q;
+  };
+  const wrote = (q) => q.query.mock.calls.some(([sql]) => /^(INSERT|UPDATE)/.test(sql));
+
+  test('hors périmètre : 403 et zéro mutation', async () => {
+    const q = scoped([MARKET_B]);
+    await expect(confirmPhysicalCode(q, { ...args, allowedMarketIds: [MARKET_A] }))
+      .rejects.toMatchObject({ status: 403, code: 'HUB_PHYSICAL_MARKET_SCOPE_MISMATCH' });
+    expect(wrote(q)).toBe(false);
+  });
+
+  test('PO multi-marchés partiellement hors périmètre : 403', async () => {
+    await expect(confirmPhysicalCode(scoped([MARKET_A, MARKET_B]), { ...args, allowedMarketIds: [MARKET_A] }))
+      .rejects.toMatchObject({ status: 403 });
+  });
+
+  test('dans le périmètre : confirmé ; Hub central (sans périmètre) : non restreint', async () => {
+    await expect(confirmPhysicalCode(scoped([MARKET_A]), { ...args, allowedMarketIds: [MARKET_A] }))
+      .resolves.toMatchObject({ trust: 'CONFIRMED' });
+    await expect(confirmPhysicalCode(fakeDb(), args)).resolves.toMatchObject({ trust: 'CONFIRMED' });
+  });
+});

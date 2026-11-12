@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db.js, services/pickup-collection-recorder.js, services/pickup-collection-service.js, services/pickup-authorization-service.js, services/notifications/notification-service.js, services/order-mutation-service.js, utils/name-normalize.js
+ * @depends       db.js, services/pickup-collection-recorder.js, services/documents/pickup-proof.js, services/pickup-collection-service.js, services/pickup-authorization-service.js, services/notifications/notification-service.js, services/order-mutation-service.js, utils/name-normalize.js
  * @used-by       services/pickup-secret-service.js
  * @db-read       orders, relais, users
  * @db-write      alerts
@@ -86,6 +86,7 @@ const {
 const {
   _logSecurityAlert,
 } = require('./pickup-collection-service');
+const pickupProof = require('./documents/pickup-proof');
 const log = require('../utils/logger').child({ module: 'pickup-exceptional-collection-service' });
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -304,12 +305,19 @@ async function collectByAuthorizedName({
         order_status: collection.orderStatus,
       },
       _notify: { phone: order.buyer_phone || null, reference: order.reference, partial: collection.partial },
+      _handoffScanId: collection.scanId,
     };
     });
   } catch (err) {
     const mapped = _mapCanonicalCollectionError(err);
     if (mapped) return mapped;
     throw err;
+  }
+
+  // Preuve de remise post-commit (une par geste, ancrée sur scans.id) : non bloquant, rattrapable par rejeu.
+  if (result.status === 200 && result._handoffScanId) {
+    pickupProof.issueForHandoff(result._handoffScanId, { issuedBy: agentId })
+      .catch(err => log.warn({ err, scan_id: result._handoffScanId }, '[PICKUP-SECRET] émission preuve de remise échouée (non-fatal)'));
   }
 
   // Notification post-commit — fire-and-forget, hors transaction (même

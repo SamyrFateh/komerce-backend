@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-11-12T17:33:41.588Z",
+  "generatedAt": "2026-11-12T17:18:18.323Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 829,
-    "protected": 770,
+    "total": 828,
+    "protected": 769,
     "public": 59,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -989,6 +989,13 @@
     },
     {
       "key": "GET /api/admin/documents/{id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/documents/reconcile",
       "level": "PROTECTED",
       "roles": [
         "admin"
@@ -5390,20 +5397,6 @@
         "admin",
         "agent_relais",
         "market_operator"
-      ]
-    },
-    {
-      "key": "GET /api/relay/returns/{id}/compensation-proposal",
-      "level": "PROTECTED",
-      "roles": [
-        "admin"
-      ]
-    },
-    {
-      "key": "POST /api/relay/returns/{id}/compensation",
-      "level": "PROTECTED",
-      "roles": [
-        "admin"
       ]
     },
     {

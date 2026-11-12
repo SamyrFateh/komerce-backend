@@ -6,7 +6,7 @@
  * @criticality   critical
  * @inputs        reserved item refund, committed intent, sandbox PSP adapters
  * @outputs       provider reconciliation and single financial refund row only after proof
- * @depends       db, refund-intent-ledger, refund-intent-reconciliation, paypal-client, order-item-refund-settlement
+ * @depends       db, refund-intent-ledger, refund-intent-reconciliation, paypal-client, order-item-refund-settlement, documents/refund-receipt
  * @used-by       routes/admin/orders.js
  * @db-read       orders, order_item_refund_reservations, refund_execution_intents, refunds
  * @db-write      order_item_refund_reservations, refund_execution_intents, refunds
@@ -20,6 +20,8 @@ const defaultDb = require('../db');
 const { euroCents, claimRefundIntent } = require('./refund-intent-ledger');
 const { reconcileRefundIntent } = require('./refund-intent-reconciliation');
 const { applyVerifiedItemRefundToOrderItem } = require('./order-item-refund-settlement');
+const refundReceiptService = require('./documents/refund-receipt');
+const log = require('../utils/logger').child({ module: 'item-refund-psp-orchestrator' });
 
 class ItemRefundExecutionError extends Error {
   constructor(code, message, status=409) { super(message); this.code=code; this.status=status; }
@@ -43,6 +45,23 @@ async function markUncertain({reservationId,intentId,providerRef=null,db}) {
     [reservationId,providerRef]
   );
 }
+// Reçu partiel : uniquement après remboursement de ligne CONFIRMÉ (jamais requested/failed),
+// post-commit, idempotent. Un échec est tracé et repris par document-reconciliation ;
+// il ne casse jamais la finalisation financière déjà committée.
+async function issueItemRefundReceiptSafe({reservationId,orderId,db}) {
+  try {
+    const {rows:[row]}=await db.query(
+      "SELECT id FROM refunds WHERE order_id=$1 AND refund_type=$2 AND status='completed'",
+      [orderId,'item:'+reservationId]
+    );
+    if(!row)return null;
+    return await refundReceiptService.issue(row.id);
+  } catch(err) {
+    log.error({err,reservation_id:reservationId,order_id:orderId,code:'ITEM_REFUND_RECEIPT_ISSUE_FAILED'},
+      '[item-refund] Reçu partiel non émis — reprise par la réconciliation documentaire');
+    return null;
+  }
+}
 async function finalizeVerifiedRefund({reservationId,providerRef,db=defaultDb}) {
   const client=await db.getClient();let tx=false;
   try {
@@ -59,6 +78,7 @@ async function finalizeVerifiedRefund({reservationId,providerRef,db=defaultDb}) 
     if(ref.status==='confirmed'){
       if(ref.provider_ref!==providerRef)fail('ITEM_REFUND_PROVIDER_REF_CONFLICT','Preuve PSP contradictoire');
       await client.query('COMMIT');tx=false;
+      await issueItemRefundReceiptSafe({reservationId,orderId:ref.order_id,db});
       return {reservationId,status:'confirmed',replayed:true,paid:true};
     }
     if(ref.intent_status!=='confirmed'||ref.intent_provider_ref!==providerRef) {
@@ -99,6 +119,7 @@ async function finalizeVerifiedRefund({reservationId,providerRef,db=defaultDb}) 
       orderId:ref.order_id,orderItemId:ref.order_item_id,quantity:Number(ref.quantity)
     });
     await client.query('COMMIT');tx=false;
+    await issueItemRefundReceiptSafe({reservationId,orderId:ref.order_id,db});
     return {reservationId,status:'confirmed',replayed:false,paid:true};
   } catch(err){if(tx)await client.query('ROLLBACK').catch(()=>{});throw err}
   finally{client.release()}

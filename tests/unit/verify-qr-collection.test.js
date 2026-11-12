@@ -31,7 +31,7 @@ const mockTransitionOrderStatus = jest.fn();
 jest.mock('../../services/order-status-machine', () => ({ transitionOrderStatus: (...args) => mockTransitionOrderStatus(...args) }));
 
 const mockPickupProofIssue = jest.fn();
-jest.mock('../../services/documents/pickup-proof', () => ({ issue: (...args) => mockPickupProofIssue(...args) }));
+jest.mock('../../services/documents/pickup-proof', () => ({ issueForLatestHandoff: (...args) => mockPickupProofIssue(...args) }));
 
 const mockRecalculateLoyalty = jest.fn();
 jest.mock('../../services/loyalty-service', () => ({ recalculateLoyalty: (...args) => mockRecalculateLoyalty(...args) }));
