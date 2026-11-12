@@ -8,7 +8,7 @@
  * @outputs       scanned_reference_identity_not_customer_allocation
  * @depends       db.js
  * @used-by       routes/hub.js
- * @db-read       product_sku_physical_codes, purchase_orders, purchase_lines
+ * @db-read       product_sku_physical_codes, purchase_orders, purchase_lines, v_purchase_line_market
  * @db-write      product_sku_physical_codes
  * @db-txn        caller_owned_transaction_for_confirmation
  * @doctrine      code_identifies_sku_not_client; allocation_remains_in_hub_purchase_allocations
@@ -53,6 +53,20 @@ async function loadExpectedPO(q, purchaseOrderId) {
     throw new PhysicalCodeError(409, 'HUB_PHYSICAL_PO_NOT_RECEIVABLE');
   }
   return po;
+}
+
+// Périmètre marché résolu côté serveur (session). allowedMarketIds === null/undefined : Hub central, non restreint.
+// Sinon, chaque marché porté par les lignes de la PO (order_item -> order -> market_id) doit être dans le périmètre.
+async function assertPoWithinMarketScope(q, po, allowedMarketIds) {
+  if (allowedMarketIds == null) return;
+  const allowed = new Set(Array.from(allowedMarketIds, String));
+  const { rows } = await q.query(
+    'SELECT DISTINCT market_id FROM v_purchase_line_market WHERE purchase_order_id = $1 AND NOT cancelled',
+    [po.id]
+  );
+  if (!rows.length || rows.some(row => !allowed.has(String(row.market_id)))) {
+    throw new PhysicalCodeError(403, 'HUB_PHYSICAL_MARKET_SCOPE_MISMATCH');
+  }
 }
 
 async function skuExpectedOnPO(q, po, skuId) {
@@ -101,7 +115,7 @@ async function resolvePhysicalCode(q, { purchaseOrderId, code }) {
 
 // Appariement constaté sur un emballage, vérifié contre la PO.
 // Le caller doit fournir un client transactionnel (BEGIN/COMMIT) pour l'advisory lock.
-async function confirmPhysicalCode(q, { purchaseOrderId, productSkuId, code, codeType, proofRef, actorId }) {
+async function confirmPhysicalCode(q, { purchaseOrderId, productSkuId, code, codeType, proofRef, actorId, allowedMarketIds }) {
   const normalized = normalizeCode(code);
   const skuId = requireUuid(productSkuId, 'product_sku_id');
   const userId = requireUuid(actorId, 'actor_id');
@@ -110,6 +124,7 @@ async function confirmPhysicalCode(q, { purchaseOrderId, productSkuId, code, cod
   const proof = String(proofRef || '').trim();
   if (!proof || proof.length > 500) throw new PhysicalCodeError(400, 'HUB_PHYSICAL_PROOF_REQUIRED');
   const po = await loadExpectedPO(q, purchaseOrderId);
+  await assertPoWithinMarketScope(q, po, allowedMarketIds);
   if (!await skuExpectedOnPO(q, po, skuId)) {
     throw new PhysicalCodeError(409, 'HUB_PHYSICAL_SKU_NOT_ON_PO');
   }

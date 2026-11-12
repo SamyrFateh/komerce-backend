@@ -48,6 +48,7 @@ const { hub } = require('../validators');
 const hubOps  = require('../services/hub-operations');
 const boxShipment = require('../services/hub-box-shipment-service');
 const physicalCodes = require('../services/hub-physical-codes');
+const { listAuthorizedMarketsForCapability } = require('../services/market-delegation-service');
 const uploadHub = require('../middleware/upload-hub');
 
 const hubAuth = [authenticate, requireRole(['admin', 'agent_hub'])];
@@ -102,6 +103,13 @@ router.get('/physical-codes/resolve', ...hubAuth, async (req, res, next) => {
 router.post('/physical-codes/confirm', ...hubAuth, async (req, res, next) => {
   let client;
   try {
+    // Périmètre issu de la session : admin et Hub central non restreints ; un agent_hub porteur de délégations
+    // marché actives (operations.read) est limité à ces marchés (403 et zéro mutation hors périmètre).
+    let allowedMarketIds = null;
+    if (req.user.role !== 'admin') {
+      const grants = await listAuthorizedMarketsForCapability(db, { userId: req.user.id, requiredCapability: 'operations.read' });
+      if (grants.length) allowedMarketIds = grants.map(row => row.market_id);
+    }
     client = await db.connect();
     await client.query('BEGIN');
     const result = await physicalCodes.confirmPhysicalCode(client, {
@@ -111,6 +119,7 @@ router.post('/physical-codes/confirm', ...hubAuth, async (req, res, next) => {
       codeType: req.body && req.body.code_type,
       proofRef: req.body && req.body.proof_ref,
       actorId: req.user.id,
+      allowedMarketIds,
     });
     await client.query('COMMIT');
     return res.status(201).json(result);

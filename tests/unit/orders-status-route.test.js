@@ -65,7 +65,7 @@ jest.mock('../../services/order-status-machine', () => ({
 }));
 
 jest.mock('../../services/documents/pickup-proof', () => ({
-  issue: jest.fn().mockResolvedValue(undefined),
+  issueForLatestHandoff: jest.fn().mockResolvedValue(undefined),
 }));
 
 jest.mock('../../utils/logger', () => ({
@@ -204,7 +204,7 @@ describe('orders/status — PATCH /:id/status', () => {
 
     expect(res.status).toBe(200);
     await new Promise(process.nextTick);
-    expect(pickupProofService.issue).toHaveBeenCalledWith('order-1', { issuedBy: 'admin-1' });
+    expect(pickupProofService.issueForLatestHandoff).toHaveBeenCalledWith('order-1', { issuedBy: 'admin-1' });
     expect(recalculateLoyalty).toHaveBeenCalledWith(db, 'user-1');
   });
 
@@ -214,7 +214,7 @@ describe('orders/status — PATCH /:id/status', () => {
 
     await request(app).patch('/api/orders/o1/status').send({ status: 'shipped' });
 
-    expect(pickupProofService.issue).not.toHaveBeenCalled();
+    expect(pickupProofService.issueForLatestHandoff).not.toHaveBeenCalled();
     expect(recalculateLoyalty).not.toHaveBeenCalled();
   });
 
