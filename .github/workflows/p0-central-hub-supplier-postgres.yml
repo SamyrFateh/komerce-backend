@@ -81,7 +81,7 @@ jobs:
             v_blocked:=false;
             BEGIN
               INSERT INTO public.suppliers(name,platform,owner_scope,system_key)
-                VALUES('Duplicate Hub','local','hub','central_hub');
+                VALUES('Fournisseur central Hub','local','hub','central_hub');
             EXCEPTION WHEN unique_violation THEN
               v_blocked:=true;
             END;
