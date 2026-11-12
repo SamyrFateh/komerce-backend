@@ -194,7 +194,9 @@ describe('modal-selection-model', () => {
       'Taille',
       'M'
     );
-    expect(sizeThenColor.selected_options).toEqual({ Taille: 'M', Couleur: 'Beige' });
+    expect(sizeThenColor.selected_options).toEqual({ Couleur: 'Beige', Taille: 'M' });
+    expect(JSON.stringify(sizeThenColor.selected_options))
+      .toBe(JSON.stringify(colorThenSize.selected_options));
     expect(sizeThenColor.selected_sku_id).toBe(colorThenSize.selected_sku_id);
     expect(sizeThenColor.selected_sku_id).toBe('44444444-4444-4444-8444-444444444444');
   });

@@ -162,7 +162,12 @@ export function selectModalOption(detail, state, axisKey, value) {
   }
 
   // Ne jamais effacer une taille choisie lors d'un clic sur la couleur,
-  // ni l'inverse. Une combinaison incompatible est refusée plus haut,
-  // sans toucher à la sélection courante ni inventer un SKU disponible.
-  return deriveSkuState(detail, { ...state.selected_options, [axisKey]: value });
+  // ni l'inverse. Une combinaison incompatible est refusée plus haut.
+  // Canoniser l'ordre des clés par option_axes pour que variant_combo ait
+  // la même signature JSON quel que soit l'ordre réel des clics.
+  const values = { ...state.selected_options, [axisKey]: value };
+  const selectedOptions = Object.fromEntries(detail.option_axes
+    .filter((axis) => Object.prototype.hasOwnProperty.call(values, axis.key))
+    .map((axis) => [axis.key, values[axis.key]]));
+  return deriveSkuState(detail, selectedOptions);
 }
