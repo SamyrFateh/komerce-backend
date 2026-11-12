@@ -891,24 +891,27 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
       expect(css).toMatch(/border-radius\s*:\s*0/);
     });
 
-    it('LOT7-c : desktop possède deux colonnes et un aside sticky', () => {
+    it('LOT7-c : desktop en deux colonnes, scroll unique (skin V2)', () => {
       const layoutBlocks = [
         ...css.matchAll(/\.ck-checkout-layout\s*\{([^}]+)\}/g),
       ];
-
-      const layout = layoutBlocks.at(-1)?.[1] ?? '';
-
-      expect(layout).toMatch(/display\s*:\s*grid/);
+      // La première règle desktop canonique contient la grille ; les
+      // overrides de polish ultérieurs n'en changent ni l'état ni la structure.
+      const layout = layoutBlocks.map(m => m[1]).find(s =>
+        /display\s*:\s*grid/.test(s)
+      ) ?? '';
       expect(layout).toMatch(/grid-template-columns\s*:/);
 
-      const asideBlocks = [
-        ...css.matchAll(/\.ck-checkout-aside\s*\{([^}]+)\}/g),
-      ];
+      // Le skin desktop V2 surclasse la colonne sticky historique. Le
+      // checkout entier conserve un seul propriétaire de scroll.
+      const v2 = readCss('checkout-desktop-v2.css');
+      const aside = v2.match(/\.ck-checkout-aside\s*\{([^}]+)\}/)?.[1] ?? '';
+      expect(aside).toMatch(/position\s*:\s*static/);
+      expect(aside).toMatch(/max-height\s*:\s*none/);
+      expect(aside).toMatch(/overflow\s*:\s*visible/);
 
-      const aside = asideBlocks.at(-1)?.[1] ?? '';
-
-      expect(aside).toMatch(/position\s*:\s*sticky/);
-      expect(aside).toMatch(/overflow-y\s*:\s*auto/);
+      const body = v2.match(/\.k-order-overlay\.open \.k-order-body--checkout\s*\{([^}]+)\}/)?.[1] ?? '';
+      expect(body).toMatch(/overflow-y\s*:\s*auto/);
     });
 
     it('LOT7-d : CTA final suit le total dans la colonne droite', () => {
