@@ -469,10 +469,30 @@ async function runOrderCheckout({ user, body, internalSimulation = null, preview
     }
 
     if (previewOnly) {
+      // Même prix/SKU, exposition marché, quantité et transport que la commande,
+      // mais aucun événement métier : toutes les écritures sont annulées.
+      // Les libellés/variantes des documents doivent provenir du serveur.
+      const previewItems = items.map(item => {
+        const product = productMap[item.product_id];
+        const qty = Number(item.quantity);
+        const unit = Number(item._effective_unit_price_kmf);
+        return {
+          product_id: item.product_id,
+          product_name: product?.name || product?.name_fr || 'Produit',
+          quantity: qty,
+          variant_combo: item.variant_combo || null,
+          requested_transport_rail: item.requested_transport_rail || null,
+          unit_price_kmf: unit,
+          line_total_kmf: unit * qty,
+        };
+      });
       await client.query('ROLLBACK');
       return {
         ok: true,
         preview: {
+          items: previewItems,
+          relais_name: relais.name,
+          market_code: checkoutMarket.code,
           items_total_kmf: marketPricing.total_kmf,
           transport_price_kmf,
           discount_pct: discountPct,
