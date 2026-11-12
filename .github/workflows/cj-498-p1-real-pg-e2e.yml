@@ -63,6 +63,8 @@ jobs:
             psql -h 127.0.0.1 -U komerce -d komerce_real_catalog_stress -v ON_ERROR_STOP=1 -f migrations/292_supplier_commercial_category_mappings.sql >/dev/null
           fi
           node scripts/seed-reference-data.js
+          psql -h 127.0.0.1 -U komerce -d komerce_real_catalog_stress -v ON_ERROR_STOP=1 -f migrations/403_central_hub_supplier_catalog_link.sql >/dev/null
+          echo CENTRAL_HUB_SCHEMA_MIGRATION_403_APPLIED
           echo CANONICAL_DISPOSABLE_POSTGRESQL_READY
       - name: Recover 498 genuine CJ identities from pinned read-only provider capture
         env:
