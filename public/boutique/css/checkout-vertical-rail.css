@@ -1300,7 +1300,7 @@
 .ck-delivery-line { display: flex; justify-content: space-between; gap: 16px; margin: 10px 2px 0; font-size: .78rem; color: var(--text-muted); }
 .ck-delivery-line[hidden] { display: none; }
 
-/* Checkout premium 2026 — couche de présentation sans changement des contrats. */
+/* Checkout boutique — polish visuel sur les tokens existants, sans nouveau thème. */
 .k-order-overlay.open .ck-checkout-primary,
 .k-order-overlay.open .ck-checkout-aside {
   border-color: rgba(31,48,36,.10);
@@ -1314,8 +1314,8 @@
   padding: 23px 22px 25px;
   border: 0;
   border-radius: 20px 20px 0 0;
-  background: linear-gradient(115deg, var(--checkout-neutral-deep), var(--text));
-  color: var(--white);
+  background: linear-gradient(115deg, var(--cream-peach), var(--checkout-cream));
+  color: var(--text);
   font-size: clamp(1.16rem, 2vw, 1.44rem);
   font-weight: 900;
   letter-spacing: -.025em;
@@ -1325,11 +1325,10 @@
   display: block;
   content: "Vérifiez vos informations, puis choisissez votre paiement.";
   margin-top: 7px;
-  color: var(--white);
+  color: var(--text-muted);
   font-size: .74rem;
   font-weight: 500;
   letter-spacing: 0;
-  opacity: .8;
 }
 
 .k-order-overlay.open .ck-checkout-desktop-heading {
@@ -1464,8 +1463,9 @@
 .k-order-overlay.open .ck-confirm-btn:not(:disabled) {
   min-height: 59px;
   border-radius: 14px;
-  background: linear-gradient(110deg, var(--action-commerce), var(--coral-dark));
-  box-shadow: 0 9px 21px rgba(200,92,45,.20);
+  background: var(--action-commerce);
+  color: var(--action-commerce-text);
+  box-shadow: var(--action-commerce-shadow);
 }
 .k-order-overlay.open .ck-confirm-btn:disabled {
   min-height: 59px;
