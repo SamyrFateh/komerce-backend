@@ -33,7 +33,7 @@ describe('pin de deploiement staging', () => {
     const r = decidePin({stagingSha:A,headSha:B,isAncestor:true,changedFiles:['scripts/recette/staging-e2e-relay-reassign.js']});
     expect(r.decision).toBe('ACCEPTED_NON_DEPLOYED_DIFF_ONLY');
   });
-    for(const candidate of [
+  test('pin refuse toute autre config Playwright et tout changement runtime', () => {\n    for(const candidate of [
       'playwright.staging-relay-local-native.config.js.bak',
       'playwright.staging-other.config.js',
       'public/playwright.staging-relay-local-native.config.js',
