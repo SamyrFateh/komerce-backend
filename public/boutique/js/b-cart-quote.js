@@ -15,10 +15,10 @@
 
 import { state } from './b-store.js';
 import { bus } from './b-bus.js';
-import { apiPost, fmt } from './b-utils.js';
+import { fmt } from './b-utils.js';
 
 const PDF_PATH = '/api/orders/quote-pdf';
-const PREVIEW_PATH = '/api/orders/cart-quote';
+const PREVIEW_PATH = PDF_PATH;
 const AXIS_LABELS = Object.freeze({
   cj_color: 'Couleur', color: 'Couleur', couleur: 'Couleur',
   cj_size: 'Taille', size: 'Taille', taille: 'Taille',
@@ -111,6 +111,18 @@ function savePdf(blob) {
   anchor.click();
   anchor.remove();
   window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+
+async function loadPreview(payload) {
+  const response = await fetch(PREVIEW_PATH, {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || 'Devis indisponible.');
+  return data;
 }
 
 async function loadPdf(payload) {
@@ -266,7 +278,7 @@ export function setupCartQuote() {
       return;
     }
     try {
-      const quote = await apiPost(PREVIEW_PATH, payload, { retries: 0 });
+      const quote = await loadPreview(payload);
       if (!dialog.isConnected || !validCart()) return invalidate();
       renderQuotePreview(preview, quote);
       // Charger avant le geste de partage natif, qui requiert l'activation utilisateur.
