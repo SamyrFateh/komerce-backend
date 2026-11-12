@@ -151,7 +151,7 @@ async function reassign({ db, env = process.env, fetchImpl = fetch, apply = fals
       if (!['assigned', 'already'].includes(res.status)) throw new Error('ASSIGN_REFUSED:' + res.status);
       await client.query('COMMIT');
       if (mode === 'to-order' && env.GITHUB_ENV && UUID.test(String(report.relais_before || ''))) {
-        fs.appendFileSync(env.GITHUB_ENV, `RELAY_RESTORE_ID=${report.relais_before}\\n`);
+        fs.appendFileSync(env.GITHUB_ENV, `RELAY_RESTORE_ID=${report.relais_before}\n`);
         report.restore_id_exported = true;
       }
     } else { report.status = 'DRY_RUN'; await client.query('ROLLBACK'); }
