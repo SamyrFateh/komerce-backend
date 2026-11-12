@@ -6,6 +6,7 @@
  * @criticality   medium
  * @inputs        canonical_checkout_preview_only
  * @outputs       ephemeral_pdf_buffer
+ * @depends       pdfkit, utils/documents/logo-base64.js
  * @db-read       none
  * @db-write      none
  * @doctrine      devis_avant_commande_sans_engagement_ni_facture
