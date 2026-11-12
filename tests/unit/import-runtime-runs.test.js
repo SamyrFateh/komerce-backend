@@ -254,6 +254,27 @@ describe('import runtime run projection', () => {
     });
   });
 
+  test('pipeline_partial_blocked avec produits sans catégorie : jamais FAILED (#3927 trou 11)', () => {
+    const projection = runs.buildProjection({
+      run: baseRun({
+        status: 'FAILED',
+        failure_reason: 'pipeline_partial_blocked',
+        finished_at: T1,
+        source_total: 3,
+        intake: {
+          recorded_at: T1, accepted: 2, duplicates: 0, rejected: 1, quarantined: 0, deferred: 0,
+          ready_for_refinery: 2, certification_blocked: 0, pipeline_status: 'PARTIAL_BLOCKED',
+          canonical_resolved: true, reject_reasons: { 'media absent': 1 }, capture_id: 'cap-partial',
+        },
+      }),
+      rows: [candidate(1), candidate(2, { komerce_category: null })],
+      sourceProof: null,
+    });
+    expect(projection.status).not.toBe('FAILED');
+    expect(projection.failure_reason).toBeNull();
+    expect(stage(projection, 'TAXONOMY').status).not.toBe('FAILED');
+  });
+
   test('ancien FAILED pipeline_partial_blocked est re-projeté comme passage vivant', () => {
     const projection = runs.buildProjection({
       run: baseRun({

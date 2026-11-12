@@ -29,6 +29,8 @@ const { formatRelayPoint } = require('./relay-location');
 const { suppressForSimulatedOrder } = require('./internals');
 
 async function notifyOrderCreated(order, smsPhones, userEmail, emailItems, relais, cashSmsText) {
+  // Commandes simulées/staging : jamais de message externe, comme les autres émetteurs.
+  if (order && await suppressForSimulatedOrder(order.id, 'order_created')) return;
   const recipients = pickRecipients(order, 'order_created');
   const name = firstName(order.recipient_name || order.user_full_name);
 
