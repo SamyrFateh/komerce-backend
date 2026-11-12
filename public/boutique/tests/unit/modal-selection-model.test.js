@@ -158,20 +158,85 @@ describe('modal-selection-model', () => {
     expect(selected.selection_message).toBeNull();
   });
 
-  test('changer la couleur efface la taille aval', () => {
+  test('changer la couleur conserve la taille compatible et résout immédiatement le nouveau SKU', () => {
     const product = detail();
     const marron = selectModalOption(product, createModalSelection(product), 'Couleur', 'Marron');
     const marronM = selectModalOption(product, marron, 'Taille', 'M');
     const beige = selectModalOption(product, marronM, 'Couleur', 'Beige');
 
-    expect(beige.selected_options).toEqual({ Couleur: 'Beige' });
-    expect(beige.selected_sku_id).toBeNull();
+    expect(beige.selected_options).toEqual({ Couleur: 'Beige', Taille: 'M' });
+    expect(beige.selected_sku_id).toBe('44444444-4444-4444-8444-444444444444');
     expect(beige.selected_media.map((media) => media.id)).toEqual(['beige-product']);
     expect(stateMap(beige, 'Taille')).toEqual({
       S: OPTION_STATE.INCOMPATIBLE,
       M: OPTION_STATE.AVAILABLE,
       L: OPTION_STATE.AVAILABLE,
     });
+  });
+
+  test('taille puis couleur et couleur puis taille aboutissent au même SKU sans présélection', () => {
+    const product = detail();
+    const initial = createModalSelection(product);
+    expect(initial.selected_options).toEqual({});
+    expect(initial.selected_sku_id).toBeNull();
+
+    const sizeFirst = selectModalOption(product, initial, 'Taille', 'M');
+    expect(sizeFirst.selected_options).toEqual({ Taille: 'M' });
+    expect(stateMap(sizeFirst, 'Couleur')).toEqual({
+      Marron: OPTION_STATE.AVAILABLE,
+      Beige: OPTION_STATE.AVAILABLE,
+      Vert: OPTION_STATE.INCOMPATIBLE,
+    });
+    const sizeThenColor = selectModalOption(product, sizeFirst, 'Couleur', 'Beige');
+    const colorThenSize = selectModalOption(
+      product,
+      selectModalOption(product, initial, 'Couleur', 'Beige'),
+      'Taille',
+      'M'
+    );
+    expect(sizeThenColor.selected_options).toEqual({ Couleur: 'Beige', Taille: 'M' });
+    expect(JSON.stringify(sizeThenColor.selected_options))
+      .toBe(JSON.stringify(colorThenSize.selected_options));
+    expect(sizeThenColor.selected_sku_id).toBe(colorThenSize.selected_sku_id);
+    expect(sizeThenColor.selected_sku_id).toBe('44444444-4444-4444-8444-444444444444');
+  });
+
+  test('couleur incompatible avec la taille choisie : conserver le choix et expliquer sans SKU fictif', () => {
+    const product = detail();
+    const sizeFirst = selectModalOption(product, createModalSelection(product), 'Taille', 'S');
+    const rejected = selectModalOption(product, sizeFirst, 'Couleur', 'Beige');
+    expect(stateMap(sizeFirst, 'Couleur').Beige).toBe(OPTION_STATE.INCOMPATIBLE);
+    expect(rejected.selected_options).toEqual({ Taille: 'S' });
+    expect(rejected.selected_sku_id).toBeNull();
+    expect(rejected.selection_message).toBe('Beige indisponible pour S — combinaison non proposée');
+
+    const brownS = selectModalOption(product, sizeFirst, 'Couleur', 'Marron');
+    const blocked = selectModalOption(product, brownS, 'Couleur', 'Beige');
+    expect(blocked.selected_options).toEqual({ Taille: 'S', Couleur: 'Marron' });
+    expect(blocked.selected_sku_id).toBe(brownS.selected_sku_id);
+    expect(blocked.selection_message).toBe('Beige indisponible pour S — combinaison non proposée');
+  });
+
+  test('rupture côté couleur après taille choisie : ne pas effacer la taille', () => {
+    const product = detail({
+      sellable_units: [
+        ...detail().sellable_units,
+        {
+          sku_id: '88888888-8888-4888-8888-888888888888',
+          sku: 'ROB-BEI-S',
+          option_values: { Couleur: 'Beige', Taille: 'S' },
+          stock_status: 'OUT_OF_STOCK',
+          available_quantity: 0,
+          price_kmf: 12500,
+          media_ids: [],
+        },
+      ],
+    });
+    const sizeFirst = selectModalOption(product, createModalSelection(product), 'Taille', 'S');
+    expect(stateMap(sizeFirst, 'Couleur').Beige).toBe(OPTION_STATE.OUT_OF_STOCK);
+    const blocked = selectModalOption(product, sizeFirst, 'Couleur', 'Beige');
+    expect(blocked.selected_options).toEqual({ Taille: 'S' });
+    expect(blocked.selection_message).toBe('Beige indisponible pour S — rupture de stock');
   });
 
   test('combinaison non proposée expliquée sans muter la sélection', () => {
@@ -260,6 +325,22 @@ describe('modal-selection-model', () => {
     });
 
     expect(createModalSelection(product).selected_sku_id).toBeNull();
+  });
+
+  test('SKU sans aucune unité vendable : aucun SKU fictif, et médias produit sans neutre préservés', () => {
+    const product = detail({
+      option_axes: [],
+      sellable_units: [],
+      media: [
+        { id: 'only-specific', url: '/specific.jpg', role: 'PRODUCT',
+          option_values: { Couleur: 'Marron' } },
+      ],
+    });
+    const state = createModalSelection(product);
+    expect(state.selected_options).toEqual({});
+    expect(state.selected_sku_id).toBeNull();
+    expect(state.option_states).toEqual({});
+    expect(state.selected_media.map(media => media.id)).toEqual(['only-specific']);
   });
 
   test('sans media_ids, les associations option_values restent la source de vérité', () => {

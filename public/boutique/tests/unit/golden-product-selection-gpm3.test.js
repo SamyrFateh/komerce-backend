@@ -136,16 +136,27 @@ describe('GPM-3 — sélection SKU réelle — Golden Product Elite Pro', () => 
     ).toBe(false);
   });
 
-  test('changement de couleur après sélection complète réinitialise la taille (ordre des axes respecté)', () => {
+  test('changement de couleur après sélection complète conserve la taille et résout le SKU réel', () => {
     let state = createModalSelection(detail);
     state = click(state, 'Couleur', 'Bleu');
     state = click(state, 'Taille', '42');
     expect(state.selected_sku_id).not.toBeNull();
 
-    // Couleur est avant Taille dans option_axes → changer Couleur doit
-    // effacer la sélection Taille (axisIndex logic de selectModalOption).
     state = click(state, 'Couleur', 'Noir');
-    expect(state.selected_options).toEqual({ Couleur: 'Noir' });
-    expect(state.selected_sku_id).toBeNull();
+    expect(state.selected_options).toEqual({ Couleur: 'Noir', Taille: '42' });
+    const unit = detail.sellable_units.find((u) => u.sku_id === state.selected_sku_id);
+    expect(unit).toMatchObject({ sku: 'GOLD-BLK-42', stock_status: 'AVAILABLE' });
+  });
+
+  test('Golden Product : taille d’abord puis couleur conserve la taille et résout le SKU', () => {
+    let state = createModalSelection(detail);
+    state = click(state, 'Taille', '43');
+    expect(state.selected_options).toEqual({ Taille: '43' });
+    expect(state.option_states.Couleur.find(c => c.value === 'Bleu').state)
+      .toBe(OPTION_STATE.OUT_OF_STOCK);
+    state = click(state, 'Couleur', 'Noir');
+    expect(state.selected_options).toEqual({ Taille: '43', Couleur: 'Noir' });
+    expect(detail.sellable_units.find(u => u.sku_id === state.selected_sku_id).sku)
+      .toBe('GOLD-BLK-43');
   });
 });
