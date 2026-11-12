@@ -97,7 +97,9 @@ async function recordCanonicalCollection({
       throw error;
     }
 
-    if (syncResult.reason && syncResult.reason !== 'no_parcels') {
+    // Un échec technique (reason absent) n'est JAMAIS une commande legacy.
+    // Sinon le fallback order-level peut annoncer collected après une erreur PG.
+    if (syncResult.reason !== 'no_parcels') {
       const error = new Error('La synchronisation du colis ciblé a échoué');
       error.code = 'PARCEL_SYNC_INCOMPLETE';
       throw error;

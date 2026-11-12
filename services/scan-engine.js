@@ -643,6 +643,65 @@ async function hasCanonicalDirectLocalReceipt(client, parcel, parcelItems) {
   return rows.length === 1;
 }
 
+
+/**
+ * Projection physique du retrait par code canonique.
+ * Le service de preuve (pickup-collection-recorder) verrouille déjà la
+ * commande, parcelSync verrouille le colis AVAILABLE et appelle cet owner
+ * dans la MÊME transaction. Aucune nouvelle voie de remise/scanner.
+ *
+ * @param {object} client - client PostgreSQL transactionnel, requis
+ * @param {string} parcelId - colis ciblé, déjà verrouillé par l'appelant
+ */
+async function projectCollectedPickupQuantities(client, parcelId) {
+  if (!client || typeof client.query !== 'function') {
+    throw new Error('PICKUP_PHYSICAL_TRANSACTION_REQUIRED');
+  }
+  const { rows: physical } = await client.query(
+    `SELECT pi.order_item_id, pi.quantity, pi.qty_received, pi.qty_collected
+       FROM parcel_items pi
+      WHERE pi.parcel_id = $1
+      ORDER BY pi.id FOR UPDATE OF pi`,
+    [parcelId]
+  );
+  if (!physical.length || physical.some(pi =>
+      !pi.order_item_id ||
+      !Number.isInteger(Number(pi.qty_received)) ||
+      Number(pi.qty_received) <= 0 ||
+      Number(pi.qty_received) > Number(pi.quantity) ||
+      Number(pi.qty_collected) > Number(pi.qty_received))) {
+    throw new Error('PICKUP_PHYSICAL_QUANTITY_INVALID');
+  }
+  // Idempotence par quantités, et pas de rattrapage factice packed/shipped
+  // pour LOCAL_STOCK direct. Contraintes SQL de remboursement E7 conservées.
+  await client.query(
+    `UPDATE parcel_items
+        SET qty_collected = qty_received
+      WHERE parcel_id = $1 AND qty_collected < qty_received`,
+    [parcelId]
+  );
+  // Le même modèle de projection que syncOrderFromParcels : somme de tous
+  // les colis actifs associés à la ligne, pas de double allocation en cas
+  // de multi-colis ni de mélange entre commandes.
+  const ids = [...new Set(physical.map(pi => pi.order_item_id))];
+  await client.query(
+    `UPDATE order_items oi
+        SET qty_collected = agg.collected
+       FROM (
+         SELECT pi.order_item_id,
+                COALESCE(SUM(pi.qty_collected), 0)::integer AS collected
+           FROM parcel_items pi
+           JOIN parcels p ON p.id = pi.parcel_id
+          WHERE pi.order_item_id = ANY($1::uuid[])
+            AND p.status <> 'cancelled'
+          GROUP BY pi.order_item_id
+       ) agg
+      WHERE oi.id = agg.order_item_id`,
+    [ids]
+  );
+  return { parcelId, orderItemIds: ids };
+}
+
 /** Cascade les quantités vers le champ cible pour tous les items d'un colis */
 async function cascadeQuantities(client, parcelId, qtyField) {
   // Le champ source est toujours le champ précédent dans la chaîne
@@ -1163,6 +1222,7 @@ module.exports = {
   correctScanEvent,
   getParcelTrace,
   syncOrderFromParcels,
+  projectCollectedPickupQuantities,
   ScanError,
   // @test-only — helpers internes exposés pour les tests de caractérisation
   _assertCollectionScanAuthorized: assertCollectionScanAuthorized,

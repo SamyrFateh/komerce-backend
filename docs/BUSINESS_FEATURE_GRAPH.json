@@ -41125,6 +41125,10 @@
                 "targetFile": "services/order-status-machine.js"
               },
               {
+                "sourceFileId": "tests/unit/pickup-collection-recorder.test.js",
+                "targetFile": "services/order-status-machine.js"
+              },
+              {
                 "sourceFileId": "tests/unit/scan-operations.test.js",
                 "targetFile": "services/order-status-machine.js"
               },

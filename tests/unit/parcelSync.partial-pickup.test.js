@@ -15,6 +15,10 @@ jest.mock('../../services/order-status-machine', () => ({
 }));
 
 jest.mock('../../db', () => ({ query: jest.fn() }));
+const mockProjectCollectedPickupQuantities = jest.fn();
+jest.mock('../../services/scan-engine', () => ({
+  projectCollectedPickupQuantities: (...args) => mockProjectCollectedPickupQuantities(...args),
+}));
 
 const { syncScanToParcels } = require('../../utils/parcelSync');
 
@@ -59,6 +63,21 @@ describe('parcelSync — retrait partiel ciblé', () => {
       sql.includes('UPDATE parcels')
     );
     expect(updateParcel[1][1]).toBe('p-local');
+    expect(mockProjectCollectedPickupQuantities).toHaveBeenCalledWith(client, 'p-local');
+  });
+
+  test('un refus de projection empêche toute transition de colis', async () => {
+    const client = { query: jest.fn(async sql => {
+      if (sql.includes("status = 'available'") && sql.includes('FOR UPDATE')) {
+        return { rows: [{ id:'p-local', status:'available', reference:'P-LOCAL' }] };
+      }
+      return { rows: [] };
+    }) };
+    mockProjectCollectedPickupQuantities.mockRejectedValueOnce(new Error('PICKUP_PHYSICAL_QUANTITY_INVALID'));
+    await expect(syncScanToParcels({
+      order_id:'o1', step:'collected', scan_id:'s1', target_one_available:true
+    },client)).rejects.toThrow('PICKUP_PHYSICAL_QUANTITY_INVALID');
+    expect(client.query.mock.calls.some(([sql]) => sql.includes('UPDATE parcels'))).toBe(false);
   });
 
   test('distingue aucun parcel prêt de la commande legacy sans parcel', async () => {
