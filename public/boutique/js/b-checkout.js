@@ -1409,6 +1409,10 @@ function refreshCheckoutComputedUI() {
   const walletApplied = (cb && cb.checked && state.walletBalance > 0) ? Math.min(state.walletBalance, total) : 0;
   const netAmount = total - walletApplied;
 
+  // Sous-total indicatif catalogue, séparé du devis engageant du serveur.
+  const subtotalEl = document.getElementById('ck-recap-subtotal-value');
+  if (subtotalEl) subtotalEl.textContent = fmt(_checkoutSelectionTotal(_currentCheckoutSelection().items), 'KMF');
+
   const finalTotalLabel = document.getElementById('ck-final-total-label');
   const finalTotalAmount = document.getElementById('ck-final-total-amount');
   if (finalTotalLabel) {
@@ -1735,8 +1739,10 @@ function _buildRecapItemsBlock(
       && !Array.isArray(it.variant_combo)
       ? Object.entries(it.variant_combo)
       : [];
+    // Traduction de présentation uniquement ; variant_combo reste canonique.
+    const axisLabels = { cj_color: 'Couleur', color: 'Couleur', couleur: 'Couleur', cj_size: 'Taille', size: 'Taille', taille: 'Taille' };
     const variantText = variantCombo.length
-      ? variantCombo.map(([axis, value]) => axis + ' : ' + String(value)).join(' · ')
+      ? variantCombo.map(([axis, value]) => (axisLabels[String(axis).toLowerCase()] || axis) + ' : ' + String(value)).join(' · ')
       : (it.variant_label || product.variant_label || '');
     info.innerHTML =
       '<span class="ck-recap-item-name">' + sanitize(product.name || '') + '</span>'
@@ -1974,6 +1980,24 @@ export function renderCheckout() {
       orderSummary.classList.add('ck-recap-step--embedded');
       checkoutPrimary.appendChild(orderSummary);
     }
+
+    // Repère visuel non engageant, actualisé avec la sélection.
+    const articleSubtotal = document.createElement('div');
+    articleSubtotal.className = 'ck-recap-subtotal';
+    articleSubtotal.innerHTML =
+      '<span class="ck-recap-subtotal-caption">Sous-total des articles'
+      + '<small>Indicatif · montant final vérifié avant confirmation</small></span>'
+      + '<strong id="ck-recap-subtotal-value"></strong>';
+    articleSubtotal.querySelector('#ck-recap-subtotal-value').textContent =
+      fmt(_checkoutSelectionTotal(_currentCheckoutSelection().items), 'KMF');
+    checkoutPrimary.appendChild(articleSubtotal);
+
+    const reassurance = document.createElement('div');
+    reassurance.className = 'ck-checkout-trust';
+    reassurance.innerHTML = '<span>♢ Paiement sécurisé</span>'
+      + '<span>◈ Retrait protégé</span>'
+      + '<span>♡ Service client</span>';
+    checkoutPrimary.appendChild(reassurance);
 
     if (od.checkoutSelection.source === 'personal-cart') {
       _renderCheckoutRecentShelf(checkoutPrimary);
