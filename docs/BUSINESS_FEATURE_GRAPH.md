@@ -2565,7 +2565,7 @@ Meta Graph monté : oui.
 | orders | market-autonomy | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | orders | notifications | static-code | 13 | **DECLARED_AND_OBSERVED** |
 | orders | payments | static-code, interface | 9 | **DECLARED_AND_OBSERVED** |
-| orders | platform-ops | static-code | 41 | **DECLARED_AND_OBSERVED** |
+| orders | platform-ops | static-code | 42 | **DECLARED_AND_OBSERVED** |
 | orders | purchasing | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | orders | refunds | static-code, data-read | 7 | **DECLARED_AND_OBSERVED** |
 | orders | shared-cart | static-code | 9 | **DECLARED_AND_OBSERVED** |

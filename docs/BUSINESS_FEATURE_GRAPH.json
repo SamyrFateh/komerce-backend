@@ -44375,6 +44375,10 @@
                 "targetFile": "public/boutique/js/b-bus.js"
               },
               {
+                "sourceFileId": "public/boutique/tests/unit/b-cart-quote.test.js",
+                "targetFile": "public/boutique/js/b-store.js"
+              },
+              {
                 "sourceFileId": "public/boutique/tests/unit/b-mini-cart.test.js",
                 "targetFile": "public/boutique/js/b-store.js"
               },
