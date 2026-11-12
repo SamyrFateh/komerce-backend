@@ -1,6 +1,6 @@
 # G6 — Contrat partagé ChatGPT / Opus avant tests de stress
 
-**État : spécification à exécuter, PAS une certification.** Source : G6 #3754, fournisseur central #3918, mode manuel #3900, recette guidée existante. Le protocole comporte 5 scénarios nominaux et 37 cas limites (32 de G6 plus 5 compléments).
+**État : spécification à exécuter, PAS une certification.** Version **G6-PRE-STRESS-2** (12/11/2026), intégrant les arbitrages propriétaire A1–A8, A2-bis, A2-ter (#3927, commentaire 6828953843). Source : G6 #3754, fournisseur central #3918/#3933, mode manuel #3900. Le protocole comporte **6 scénarios nominaux (M01–M06) et 40 cas limites (N01–N40)**, plus des configurations C01–C05 et des oracles transversaux. Aucun ID n'est renuméroté.
 
 ## Règles obligatoires
 
@@ -16,10 +16,11 @@
 | ID | Marché | Geste complet exigé | Oracle de sortie |
 |---|---|---|---|
 | M01 | KM | Fournisseur réel -> catalogue approuvé -> prix/exposition KM -> vrai panier/boutique/POST commande -> cash simulé -> engagement PO puis autorisation paiement -> réception Hub -> sac/KOM-BOX -> transitaire/douane -> Relais -> remise -> finance | Une filiation source→commande→colis→remise, quantités et coûts sans doubles |
-| M02 | KM | Produit LOCAL_STOCK vendable -> vrai achat boutique -> cash test -> mise à disposition Relais -> code canonique saisi au clavier -> remise | Sans Hub, PO ou transport import ; commande, colis et lignes physiques collected |
+| M02 | KM, CM, CG | Produit LOCAL_STOCK vendable -> vrai achat boutique -> cash test -> mise à disposition Relais -> code canonique saisi au clavier -> remise | Sans Hub, PO ou transport import ; commande, colis et lignes physiques collected |
 | M03 | KM | Panier mixte stock local + import, deux branches de traitement, deux retraits possibles | Pas de statut collected tant que les lignes import n'ont pas été remises |
 | M04 | CM | M01 avec responsable marché CM, caisse, fournisseur, transitaire et Relais CM | Prix XAF, clients et stocks CM, aucune fuite KM/CG |
 | M05 | CG | M01 avec responsable marché CG, caisse, fournisseur, transitaire et Relais CG | Prix XAF, clients et stocks CG, aucune fuite KM/CM |
+| M06 | KM | Produit manuel -> Fournisseur central Hub -> vrai achat client -> sourcing physique Hub -> PO deux autorisations -> Hub -> Relais -> remise -> SAV | Produit rattaché au Fournisseur central sans fournisseur inventé ; confirmation refusée sans justificatif (MANUAL_PURCHASE_PROOF_REQUIRED) ni prix (CONFIRMED_PRICE_REQUIRED) ; vendeur réel structuré par achat à la confirmation, jamais central_hub ; rapprochement achats <-> paiement autorisé ; aucun SOI, stock, dette ou paiement fabriqué ; même circuit Hub/Relais canonique |
 
 ## N — Comportements métier attendus avant stress
 
@@ -33,8 +34,8 @@
 | N06 | Prix change pendant checkout | Nouveau prix proposé et accepté explicitement |
 | N07 | Double clic commande | Une commande maximum |
 | N08 | Clé idempotence concurrente | Aucun doublon paiement, stock ou commande |
-| N09 | Cash non encaissé puis tentative remise | Aucun collected sans paid |
-| N10 | Webhook PSP simulé dupliqué/non signé | Pas de double règlement, signature obligatoire |
+| N09 | Cash non encaissé puis tentative remise | Invariant non payé = aucune remise ; joué sur le flux où le cash peut rester impayé (M02, cash au Relais), pas sur l'import où le paiement précède le sourcing |
+| N10 | Webhook PSP simulé dupliqué/non signé | Pas de double règlement, signature obligatoire ; Chromium NOT_APPLICABLE (webhook) |
 | N11 | PO sans validation engagement | Aucun engagement fournisseur |
 | N12 | Paiement fournisseur sans deuxième validation | Refus ; preuves d'autorisation distinctes |
 | N13 | Rupture fournisseur / backorder | Reliquat enregistré, sans réception fictive |
@@ -45,23 +46,83 @@
 | N18 | Douane bloquée puis mainlevée | Pas de transit fictif avant autorisation |
 | N19 | Retard/perte transport local | Incident, aucun faux retrait |
 | N20 | Écart réception Relais | Quantité réellement constatée et incident |
-| N21 | Agent du mauvais Relais | Refus et aucune fuite de données |
-| N22 | Deux Relais A/B du même marché | Isolation inter-relais démontrée en deux profils |
+| N21 | Agent du mauvais Relais | Agent d'un autre Relais : écriture refusée ET aucune donnée divulguée en lecture (table R) |
+| N22 | Deux Relais A/B du même marché | Deux Relais A/B du même marché, deux profils : mêmes assertions que N21 dans les deux sens (table R) |
 | N23 | Retrait sans code, last4, code erroné, brute-force | Refus vérifié ; pas de remise ; compteur sécurité |
 | N24 | Deux remises simultanées | Une attestation de remise maximum |
-| N25 | SAV retour et double reprise | Reprise unique, produit gelé, pas de revente automatique |
-| N26 | Avoir/wallet/remboursement | Rapprochement exact, aucun PSP réel |
-| N27 | Annulation après retrait partiel | Seul le non remis peut être annulé et remboursé |
+| N25 | SAV retour et double reprise | Reprise physique unique, produit gelé, pas de revente ni compensation automatique à la simple reprise |
+| N26 | Avoir/wallet/remboursement | N26a avant retrait : annulation/remboursement de ligne confirmé + avoir partiel. N26b après retrait : décision admin motivée, wallet prioritaire devise marché, payeur réel. Aucun PSP réel |
+| N27 | Annulation après retrait partiel | Reliquat non remis annulable selon son palier F1/F2/F3 et son état fournisseur ; ligne déjà remise = SAV (N26b), jamais annulation ; articles évalués séparément |
 | N28 | HTTP timeout/500 + réessai | Pas de faux succès ni double mutation |
 | N29 | Session 401 / interdiction 403 | Aucune mutation, navigation sécurisée |
 | N30 | Order 360 et tableaux de bord vs PG | Même vérité, fixtures exclues des KPI commerciaux |
 | N31 | FX KMF/XAF et remboursement | Snapshot conservé, remboursement sur encaissement |
-| N32 | Marché et rôles croisés | Pas de lecture ou écriture hors délégation |
+| N32 | Marché et rôles croisés | Pas de lecture ou d'écriture hors délégation ni hors marché (table R) ; physical-codes/confirm BLOCKED jusqu'à L-SEC |
 | N33 | Même produit, 2 tailles/variantes dans un panier | Deux SKU distincts, quantités/total exacts, stock propre |
-| N34 | Fournisseur central Hub pour produit manuel | Une source Hub stable si vendeur inconnu, pas de fausse dette fournisseur |
-| N35 | Coût rendu Relais, N1/N2/N3, plancher et contribution | Fret non doublé, allocations causales, N3 séparé, total détail=plancher |
-| N36 | Mode manuel physique sans scanner de bout en bout | Réception Hub, sac, KOM-BOX, transitaire, Relais, SAV avec mode MANUAL, même writer et audit |
-| N37 | Documents et information client | Devis, commande, reçu, suivi, remise et avoir rattachés au même dossier ; pas de notification externe réelle |
+| N34 | Fournisseur central Hub pour produit manuel | N34a : Fournisseur central unique, immuable, non désactivable, sans dette fictive. N34b : un fournisseur réel choisi explicitement n'est jamais remplacé par le Hub |
+| N35 | Coût rendu Relais, N1/N2/N3, plancher et contribution | Oracle O-ECO appliqué aux objets des M/C : fret non doublé, allocations causales, N3 séparé, total détail = plancher |
+| N36 | Mode manuel physique sans scanner de bout en bout | Modalité d'exécution de M01/M06 entièrement en MANUAL (pas un second circuit) : provenance MANUAL relue en PostgreSQL à chaque geste, même writer et audit que le scan |
+| N37 | Documents et information client | Cohérence O-DOC/O-NOTIF sur le même dossier et O-SEC-DOC : aucun document téléchargeable hors propriétaire/marché ; zéro envoi externe réel |
+| N38 | Échec post-commit d'un document ou d'une notification puis reprise | Événement métier conservé, échec tracé, reprise idempotente sans doublon ni faux envoi |
+| N39 | Annulation client après engagement ou paiement de la PO | F1 avant achat ou plancher 24 h : 100 % ; F2 achat engagé : demande admin, wallet uniquement si accordée ; F3 embarqué : fermée ; aucun remboursement ni engagement silencieux |
+| N40 | Prix fournisseur confirmé différent du devis ou article indisponible | Écart motivé et validé séparément, backorder ou arbitrage, pas de substitution ni paiement silencieux ; impact O-ECO tracé |
+
+## Version 2 — décisions intégrées (#3927)
+
+### Verdicts
+`PASS | FAIL | BLOCKED | NOT_PROVEN | NOT_APPLICABLE`. `NOT_APPLICABLE` exige un motif et la branche non concernée, au niveau de l'assertion ou du scénario. Il n'est jamais compté comme PASS et ne peut pas masquer un P0 obligatoire.
+
+### Variantes d'ID (sans renumérotation)
+- **N26a** : avant retrait, remboursement de ligne confirmé + avoir partiel (L-A6). **N26b** : après retrait, compensation SAV (L-A1).
+- **N34a** : identité du Fournisseur central (unique, immuable, non désactivable ; test PostgreSQL existant `p0-central-hub-supplier-postgres.yml`, #3933). **N34b** : un fournisseur réel choisi explicitement n'est jamais remplacé par le Hub.
+- **N21/N22** : mêmes assertions (écriture refusée **et** lecture non divulguée), N22 dans les deux sens entre deux Relais.
+- **N35** : devient l'oracle **O-ECO** appliqué aux objets des M et C. **N36** : modalité MANUAL de M01/M06, pas un second circuit. **N37** : passe P0 pour la sécurité d'accès documentaire.
+
+### Configurations C01–C05 (paramètres des M, nommage `ID-Cxx-MARCHÉ`)
+| Config | S'applique à | Données |
+|---|---|---|
+| C01 | M01, M04, M05 | 1 produit, 1 variante, 1 fournisseur connu |
+| C02 | M01, M04, M05 | 3 SKU chez un seul fournisseur, achat groupé, lignes préservées |
+| C03 | M01, M04, M05 | 4 produits chez 3 fournisseurs contractuels ; PO mono-marché par fournisseur, arrivages asynchrones, consolidation Hub |
+| C04 | M06 | Commande spéciale, achats physiques chez plusieurs petits vendeurs A/B/C sous coordination du Fournisseur central (L-A2) |
+| C05 | M03 | Import multi-fournisseurs + stock local Relais ; branche locale `NOT_APPLICABLE` pour Hub/PO |
+
+Variations à jouer quand elles s'appliquent : deux variantes du même produit et quantités multiples ; réception partielle, backorder ou excès ; consolidation multi-PO et carton multi-commandes ; écart de prix confirmé (N40) ; annulation ou remboursement partiel. Arbre de corrélation commun : `order_item → source/supplier → PO/purchase_line → achat physique (C04) → réception Hub → sac/KOM-BOX/expédition → réception Relais → parcel_item → scan de retrait → finance/document/notification`.
+
+### Oracles transversaux
+- **O-ECO** : N1/N2/N3 sur les objets réels ; fret non doublé, allocations causales, N3 séparé, snapshots prix/FX intacts.
+- **O-DOC** : document officiel uniquement après événement confirmé, privé, immuable, idempotent, SHA-256.
+
+| Événement | Attendu |
+|---|---|
+| Commande créée / non payée | **NONE** (devis éphémère éventuel, aucune facture) |
+| Paiement confirmé | Facture |
+| PO engagée ou payée | Enregistrement PO + `purchase_order_authorizations` ; `purchase_order_pdf` **NOT_PROVEN** (L-A8, P1) |
+| Remise réelle | Preuve de retrait par `scans.id`, par colis (L-A5) |
+| Remboursement confirmé | Avoir/reçu, partiel par ligne (L-A6) |
+| Mouvement wallet confirmé | Reçu wallet |
+| Douane | Document lorsqu'il est émis |
+| Réception non attestée | **NONE** |
+
+- **O-NOTIF** : in-app client `preparation`, `shipped`, `available`, une fois chacun ; `in_transit` **NONE** ; résolution au retrait, à l'annulation ou au remboursement ; `order.exception.*` seulement sur fait confirmé avec action. En staging : **zéro envoi réel**, seules des lignes `notification_logs` `skipped`/`blocked`. **O-NOTIF/DRIFT_DOCTRINE** : WhatsApp `order_created`, `payment_confirmed`, `shipped`, `delivered/collected` actifs dans le code ; écart consigné, **non corrigé** (décision séparée, production inchangée).
+- **O-SEC-DOC** : téléchargement refusé hors session, propriétaire ou marché.
+
+### Table de droits R
+`rôle × geste × marché → 200 attendu, ou 403/404 avec zéro mutation prouvée en PostgreSQL`. Référencée par N17, N21, N22, N29 et N32. Écart connu : `/api/hub/physical-codes/confirm` sans garde marché → **BLOCKED** jusqu'à L-SEC.
+
+### Lots correctifs (autorisation séparée du propriétaire requise)
+| Lot | Contenu | Priorité | Débloque |
+|---|---|---|---|
+| L-A5 | Preuve de retrait par geste réel (par colis), ancrée `scans.id`, code 8 caractères et retrait nominatif exceptionnel, idempotente | P0 | M01–M06, N23, N24, C05 |
+| L-A6 | Avoir/reçu partiel après remboursement de ligne confirmé, facture d'origine immuable | P0 | N26a, N27 |
+| L-A2 | Vendeur réel structuré par achat physique et allocation ligne/variante/quantité/montant ; vendeur obligatoire à la confirmation (A2-bis), jamais `central_hub` ; rapprochement achats confirmés ↔ total justifié ↔ paiement autorisé par cumuls et plafonds, devises PO et client préservées (A2-ter) | P0 | M06, C04 |
+| L-A1 | Compensation SAV après remise : décision admin motivée rattachée au retour, wallet prioritaire dans la devise du marché, payeur réel, produit gelé | P0 | N25, N26b |
+| L-SEC | Garde marché sur `/api/hub/physical-codes/confirm` | P0 | N32, table R |
+| L-A8 | PDF interne du bon fournisseur | P1 | O-DOC `purchase_order_pdf` |
+| L-A3 | Alignement WhatsApp | Décision séparée | O-NOTIF/DRIFT_DOCTRINE |
+
+### Gates
+**G0** SHA servi = SHA cible, allowlist `AUTHKEY_ALLOWED_PHONES` vide ou sans numéro de recette, fixtures par agent → **G1** arbitrages (fait le 12/11) → **G2** lots P0 déployés avant les scénarios qu'ils débloquent, sinon BLOCKED explicite → **G3** M → **G4** N P0 → **G5** N P1 → **G6** comparatif ChatGPT ↔ Opus → `GO_PRE_STRESS` → recette humaine #3754 → stress. Rien ne s'exécute sans « GO tests métiers » explicite du propriétaire.
 
 ## Coordination et paquet de preuve
 

@@ -11,17 +11,17 @@ const documentation=path.join(__dirname,'../../docs/recette/G6_PRE_STRESS_BUSINE
 
 describe('G6 pré-stress — unique business contract ChatGPT / Opus',()=>{
   const data=JSON.parse(fs.readFileSync(source,'utf8'));
-  test('contrat unique de 5 nominaux et 37 cas limites, stable et sans trous',()=>{
-    expect(data.version).toBe('G6-PRE-STRESS-1');
+  test('contrat unique de 6 nominaux et 40 cas limites, stable et sans trous',()=>{
+    expect(data.version).toBe('G6-PRE-STRESS-2');
     expect(data.agents).toEqual(['ChatGPT','Opus']);
-    expect(data.scenarios).toHaveLength(42);
+    expect(data.scenarios).toHaveLength(46);
     const ids=data.scenarios.map(x=>x.id);
     const expected=[
-      ...Array.from({length:5},(_,i)=>'M'+String(i+1).padStart(2,'0')),
-      ...Array.from({length:37},(_,i)=>'N'+String(i+1).padStart(2,'0')),
+      ...Array.from({length:6},(_,i)=>'M'+String(i+1).padStart(2,'0')),
+      ...Array.from({length:40},(_,i)=>'N'+String(i+1).padStart(2,'0')),
     ];
     expect(ids).toEqual(expected);
-    expect(new Set(ids).size).toBe(42);
+    expect(new Set(ids).size).toBe(46);
   });
   test('aucun PASS injecté au départ, aucun oracle ni marché absent',()=>{
     for(const s of data.scenarios){
@@ -39,6 +39,16 @@ describe('G6 pré-stress — unique business contract ChatGPT / Opus',()=>{
     expect(data.same_staging_sha_required).toBe(true);
     expect(data.required_proof).toContain('postgres_before_after');
     expect(data.required_proof).toContain('real_chromium');
+  });
+  test('v2 : NOT_APPLICABLE encadré, lots P0 et oracles transversaux référencés',()=>{
+    expect(data.verdicts).toEqual(['PASS','FAIL','BLOCKED','NOT_PROVEN','NOT_APPLICABLE']);
+    expect(data.not_applicable_rule).toMatch(/jamais compté comme PASS/);
+    expect(Object.keys(data.p0_fix_lots).sort()).toEqual(['L-A1','L-A2','L-A5','L-A6','L-SEC']);
+    for(const k of ['O-ECO','O-DOC','O-NOTIF','O-SEC-DOC']) expect(data.transversal_oracles[k]).toBeTruthy();
+    const known=new Set([...Object.keys(data.p0_fix_lots),'#3900']);
+    for(const s of data.scenarios) for(const dep of (s.depends_on||[])) expect(known.has(dep)).toBe(true);
+    const ids=new Set(data.scenarios.map(x=>x.id));
+    for(const c of Object.values(data.configurations).filter(c=>c&&c.applies_to)) for(const id of c.applies_to) expect(ids.has(id)).toBe(true);
   });
   test('guide humain et contrat machine conservent exactement les mêmes IDs',()=>{
     const md=fs.readFileSync(documentation,'utf8');
