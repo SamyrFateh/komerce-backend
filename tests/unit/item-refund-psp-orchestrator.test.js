@@ -10,6 +10,8 @@ jest.mock('../../services/refund-intent-ledger',()=>({
 jest.mock('../../services/refund-intent-reconciliation',()=>({
   reconcileRefundIntent:jest.fn(async()=>({complete:true,status:'confirmed'})),
 }));
+jest.mock('../../services/documents/refund-receipt',()=>({issue:jest.fn(async()=>({id:'doc-1'}))}));
+const receipt=require('../../services/documents/refund-receipt');
 const ledger=require('../../services/refund-intent-ledger');
 const verify=require('../../services/refund-intent-reconciliation');
 const {executeReservedItemRefund,assertSandbox}=require('../../services/item-refund-psp-orchestrator');
@@ -38,6 +40,7 @@ function fixture({provider='stripe',intentStatus='reserved',reservationStatus='r
       reason:'Remboursement manquant',provider,capture_ref:'pi_test',
       amount_eur:'2.00',intent_status:intentStatus,
     }]};
+    if(sql.startsWith('SELECT id FROM refunds'))return {rows:[{id:id(9)}]};
     if(sql.startsWith('UPDATE'))return {rows:[]};
     throw Error('unexpected DB query '+sql);
   }),getClient:jest.fn(async()=>client)};
@@ -97,7 +100,21 @@ describe('E7 PSP sandbox execution',()=>{
     }));
     expect(f.events.indexOf('PROVIDER_POST')).toBeLessThan(f.events.findIndex(x=>x.startsWith('INSERT INTO refunds')));
     expect(f.events.some(x=>x.startsWith('UPDATE order_items'))).toBe(true);
-    expect(f.events.slice(-1)).toEqual(['COMMIT']);
+    expect(f.events.filter(x=>x==='COMMIT')).toHaveLength(1);
+  });
+  test('remboursement de ligne confirmé : reçu partiel émis post-commit sur la ligne refunds de la réservation',async()=>{
+    const f=fixture();
+    await executeReservedItemRefund({reservationId:id(6),orderId:id(1),orderItemId:id(2),actor,db:f.db,env,stripe:f.stripe});
+    expect(f.db.query).toHaveBeenCalledWith(expect.stringContaining('SELECT id FROM refunds'),[id(1),'item:'+id(6)]);
+    expect(receipt.issue).toHaveBeenCalledTimes(1);
+    expect(receipt.issue).toHaveBeenCalledWith(id(9));
+    expect(f.events.indexOf('COMMIT')).toBeLessThan(f.events.findIndex(x=>x.startsWith('SELECT id FROM refunds')));
+  });
+  test('échec d\'émission du reçu : tracé, la finalisation financière reste confirmée',async()=>{
+    const f=fixture();
+    receipt.issue.mockRejectedValueOnce(new Error('pdf down'));
+    const out=await executeReservedItemRefund({reservationId:id(6),orderId:id(1),orderItemId:id(2),actor,db:f.db,env,stripe:f.stripe});
+    expect(out).toMatchObject({status:'confirmed',paid:true});
   });
   test('échec PSP vérifié : réserve libérée, aucun refund ni article crédité',async()=>{
     const f=fixture();
@@ -110,6 +127,7 @@ describe('E7 PSP sandbox execution',()=>{
     expect(f.events.some(x=>x.includes("status='failed'"))).toBe(true);
     expect(f.events.some(x=>x.startsWith('INSERT INTO refunds'))).toBe(false);
     expect(f.events.some(x=>x.startsWith('UPDATE order_items'))).toBe(false);
+    expect(receipt.issue).not.toHaveBeenCalled();
   });
   test('timeout PSP : statut UNKNOWN, aucune deuxième sortie ni clôture inventée',async()=>{
     const f=fixture({providerFails:true});
@@ -120,6 +138,7 @@ describe('E7 PSP sandbox execution',()=>{
     expect(f.events.filter(x=>x==='PROVIDER_POST')).toHaveLength(1);
     expect(f.events.filter(x=>x.startsWith('INSERT INTO refunds'))).toHaveLength(0);
     expect(f.events.some(x=>x.includes("SET status='unknown'"))).toBe(true);
+    expect(receipt.issue).not.toHaveBeenCalled();
   });
   test('un intent en cours/unknown est non réexécutable et non payable',async()=>{
     const f=fixture({intentStatus:'unknown',reservationStatus:'unknown'});

@@ -7,8 +7,10 @@
  * @inputs        refundId (remboursement confirmé)
  * @outputs       transaction_documents row (refund_receipt)
  * @depends       services/documents/document-service.js, db.js
- * @used-by       routes/orders/cancel.js (post-commit), services/refund-service.js (post-commit)
- * @db-read       invoices, orders, refunds
+ * @used-by       routes/orders/cancel.js (post-commit), services/refund-service.js (post-commit),
+ *                services/item-refund-psp-orchestrator.js (post-commit, remboursement de ligne confirmé),
+ *                services/documents/document-reconciliation.js (reprise)
+ * @db-read       invoices, orders, refunds, order_item_refund_reservations, refund_execution_intents, order_items, product_skus, markets
  * @db-write      transaction_documents
  * @db-txn        caller_transaction_optional
  * @doctrine      DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md
@@ -54,6 +56,58 @@ async function _generateReference(db) {
   const { rows } = await db.query("SELECT nextval('refund_receipt_seq') AS seq");
   const year = new Date().getFullYear();
   return `REM-${year}-${String(rows[0].seq).padStart(6, '0')}`;
+}
+
+/**
+ * Détail d'un remboursement de ligne (refund_type = 'item:<reservation_id>').
+ * Le PSP rembourse la capture EUR au payeur d'origine : la devise de
+ * remboursement est donc EUR ; la devise commerciale du marché reste distincte.
+ */
+async function _loadItemRefundMetadata(db, refund) {
+  const reservationId = String(refund.refund_type).slice('item:'.length);
+  const { rows: [r] } = await db.query(
+    `SELECT res.id, res.order_item_id, res.quantity, res.amount_kmf, res.amount_eur, res.reason,
+            oi.product_id, oi.sku_id, oi.variant_combo, oi.price_kmf, oi.quantity AS line_quantity,
+            sk.sku AS sku_code,
+            i.provider, i.capture_ref, i.provider_ref,
+            m.currency AS market_currency
+       FROM order_item_refund_reservations res
+       JOIN order_items oi ON oi.id = res.order_item_id
+       JOIN refund_execution_intents i ON i.id = res.refund_intent_id
+       LEFT JOIN product_skus sk ON sk.id = oi.sku_id
+       LEFT JOIN orders o ON o.id = res.order_id
+       LEFT JOIN markets m ON m.id = o.market_id
+      WHERE res.id = $1 AND res.order_id = $2`,
+    [reservationId, refund.order_id]
+  );
+  if (!r) {
+    throw new Error(`[refund-receipt] Réservation de ligne ${reservationId} introuvable pour le remboursement ${refund.id}`);
+  }
+  return {
+    partial: true,
+    refund_reservation_id: r.id,
+    line: {
+      order_item_id:  r.order_item_id,
+      product_id:     r.product_id,
+      sku_id:         r.sku_id || null,
+      sku:            r.sku_code || null,
+      variant_combo:  r.variant_combo || null,
+      quantity:       Number(r.quantity),
+      line_quantity:  Number(r.line_quantity),
+      unit_price_kmf: r.price_kmf,
+      amount_kmf:     r.amount_kmf,
+      amount_eur:     r.amount_eur,
+    },
+    refund_currency:  'EUR',
+    market_currency:  r.market_currency || null,
+    payer: {
+      user_id:      refund.user_id || null,
+      provider:     r.provider,
+      capture_ref:  r.capture_ref,
+      provider_ref: r.provider_ref || null,
+    },
+    original_invoice_immutable: true,
+  };
 }
 
 /**
@@ -109,6 +163,11 @@ async function issue(refundId, { dbClient, issuedBy } = {}) {
     return existing;
   }
 
+  // Chargé AVANT la référence : un reçu de ligne incomplet ne consomme aucun numéro.
+  const itemMetadata = String(refund.refund_type || '').startsWith('item:')
+    ? await _loadItemRefundMetadata(db, refund)
+    : null;
+
   // ── Générer la référence ──────────────────────────────────────────────────
   const reference = await _generateReference(db);
 
@@ -128,6 +187,10 @@ async function issue(refundId, { dbClient, issuedBy } = {}) {
     order_payment_mode: refund.order_payment_mode,
     // Panier partagé (Phase 3) : shared_cart_id, contribution_id à ajouter ici
   };
+
+  // Remboursement de LIGNE confirmé : reçu partiel (avoir) portant ligne, SKU, quantité,
+  // montant, devise de remboursement et payeur réel ; lié à la facture d'origine (lue, jamais modifiée).
+  if (itemMetadata) Object.assign(metadata, itemMetadata);
 
   // ── Persister le document (idempotent via ON CONFLICT DO NOTHING) ─────────
   const doc = await documentService.persistDocument({
@@ -197,6 +260,10 @@ function buildDisplayData(doc) {
     confirmed_at:    fmtDate(meta.confirmed_at),
     issued_at:       fmtDate(doc.issued_at),
     stripe_refund_id: meta.stripe_refund_id || null,
+    partial:         meta.partial === true,
+    line:            meta.line || null,
+    refund_currency: meta.refund_currency || null,
+    payer:           meta.payer || null,
   };
 }
 
