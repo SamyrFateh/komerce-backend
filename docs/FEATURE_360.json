@@ -10551,7 +10551,7 @@
               {
                 "declared": "services/documents/cart-quote-pdf.js",
                 "resolvedPath": "services/documents/cart-quote-pdf.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/documents/customs-invoice.js",
@@ -24993,7 +24993,7 @@
               {
                 "declared": "services/public-cart-quote-service.js",
                 "resolvedPath": "services/public-cart-quote-service.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/qr-collection-core.js",

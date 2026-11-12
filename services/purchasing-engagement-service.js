@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       db, services/purchasing-grouped-service.js, services/purchase-line-snapshot.js, services/notification-service.js, services/hub-reference.js, services/suppliers/provider-authority.js, services/suppliers/canonical-unit-purchasing-gate.js, services/suppliers/purchase-order-confirmation-boundary.js, services/suppliers/execution-adapter-registry.js, services/suppliers/supplier-fulfillment-adapter-contract.js, utils/logger.js
  * @used-by       routes/purchasing.js
- * @db-read       order_items, orders, product_suppliers, products, purchase_lines, purchase_orders, suppliers, v_purchase_line_progress
+ * @db-read       manual_purchase_executions, order_items, orders, product_suppliers, products, purchase_lines, purchase_order_authorizations, purchase_orders, supplier_execution_payments, suppliers, v_purchase_line_progress
  * @db-write      manual_purchase_executions, purchase_lines, purchase_orders
  * @db-txn        owns_transaction
  * @doctrine      docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md

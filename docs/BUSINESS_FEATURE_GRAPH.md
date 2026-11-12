@@ -81,9 +81,9 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 
 | Dépôt | Manifests découverts | Manifests connectés | Nœuds techniques | Owned | Orphelins |
 |---|---|---|---|---|---|
-| backend | 36 | 36 | 695 | 695 | 0 |
+| backend | 36 | 36 | 697 | 697 | 0 |
 | dash | 3 | 3 | N/A | N/A | N/A |
-| boutique | 16 | 16 | 104 | 104 | 0 |
+| boutique | 16 | 16 | 105 | 105 | 0 |
 
 _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipeline — non scanné par arch:gen backend, couverture non mesurable ici (SCOPE, pas un gap)
 

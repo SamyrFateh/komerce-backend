@@ -8,7 +8,7 @@
  * @outputs       hub_authorization_grants, purchase_order_authorizations
  * @depends       db
  * @used-by       routes/purchasing.js, services/purchasing-engagement-service.js, services/supplier-payment-orchestrator.js
- * @db-read       hub_authorization_grants, purchase_lines, purchase_orders, purchase_order_authorizations, users
+ * @db-read       hub_authorization_grants, purchase_lines, purchase_orders, purchase_order_authorizations, supplier_execution_payments, users
  * @db-write      hub_authorization_grants, purchase_order_authorizations
  * @db-txn        owns_transaction
  * @doctrine      two_distinct_directrice_authorizations, no_implicit_power, append_only_decisions

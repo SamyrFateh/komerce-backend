@@ -8155,7 +8155,7 @@
         "category": "services",
         "declared": "services/documents/cart-quote-pdf.js",
         "resolvedPath": "services/documents/cart-quote-pdf.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "documents",
@@ -16457,7 +16457,7 @@
         "category": "services",
         "declared": "services/public-cart-quote-service.js",
         "resolvedPath": "services/public-cart-quote-service.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "orders",
@@ -53198,8 +53198,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 695,
-        "technicalNodesOwned": 695,
+        "technicalNodesTotal": 697,
+        "technicalNodesOwned": 697,
         "technicalOrphans": 0
       },
       "dash": {
@@ -53213,8 +53213,8 @@
       "boutique": {
         "manifestsDiscovered": 16,
         "manifestsConnected": 16,
-        "technicalNodesTotal": 104,
-        "technicalNodesOwned": 104,
+        "technicalNodesTotal": 105,
+        "technicalNodesOwned": 105,
         "technicalOrphans": 0
       }
     },
