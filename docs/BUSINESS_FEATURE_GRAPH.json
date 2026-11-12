@@ -8132,6 +8132,13 @@
       {
         "feature": "documents",
         "category": "services",
+        "declared": "services/documents/document-reconciliation.js",
+        "resolvedPath": "services/documents/document-reconciliation.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "documents",
+        "category": "services",
         "declared": "services/documents/customs-invoice.js",
         "resolvedPath": "services/documents/customs-invoice.js",
         "status": "resolved-in-technical-graph"
@@ -8337,6 +8344,13 @@
         "category": "tests",
         "declared": "tests/unit/refund-receipt.test.js",
         "resolvedPath": "tests/unit/refund-receipt.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "documents",
+        "category": "tests",
+        "declared": "tests/unit/document-reconciliation.test.js",
+        "resolvedPath": "tests/unit/document-reconciliation.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -16455,6 +16469,13 @@
       {
         "feature": "orders",
         "category": "services",
+        "declared": "services/order-checkout-idempotency.js",
+        "resolvedPath": "services/order-checkout-idempotency.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "orders",
+        "category": "services",
         "declared": "services/public-cart-quote-service.js",
         "resolvedPath": "services/public-cart-quote-service.js",
         "status": "resolved-in-technical-graph"
@@ -17059,6 +17080,20 @@
         "category": "tests",
         "declared": "tests/unit/orders-create-route.test.js",
         "resolvedPath": "tests/unit/orders-create-route.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "orders",
+        "category": "tests",
+        "declared": "tests/unit/order-checkout-idempotency.test.js",
+        "resolvedPath": "tests/unit/order-checkout-idempotency.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "orders",
+        "category": "tests",
+        "declared": "tests/integration/checkout-idempotency-postgres.test.js",
+        "resolvedPath": "tests/integration/checkout-idempotency-postgres.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -37726,6 +37761,14 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "services/documents/document-reconciliation.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/documents/document-reconciliation.js",
+                "targetFile": "utils/logger.js"
+              },
+              {
                 "sourceFileId": "services/documents/customs-invoice.js",
                 "targetFile": "db.js"
               },
@@ -40246,6 +40289,10 @@
               {
                 "sourceFileId": "tests/unit/pickup-exceptional-collection-service.test.js",
                 "targetFile": "services/pickup-authorization-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/pickup-exceptional-collection-service.test.js",
+                "targetFile": "utils/name-normalize.js"
               }
             ]
           },
@@ -40377,6 +40424,23 @@
         "from": "logistics",
         "to": "documents",
         "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/pickup-collection-service.js",
+                "targetFile": "services/documents/pickup-proof.js"
+              },
+              {
+                "sourceFileId": "services/pickup-exceptional-collection-service.js",
+                "targetFile": "services/documents/pickup-proof.js"
+              },
+              {
+                "sourceFileId": "tests/unit/pickup-exceptional-collection-service.test.js",
+                "targetFile": "services/documents/pickup-proof.js"
+              }
+            ]
+          },
           {
             "channel": "data-read",
             "evidence": [
@@ -41016,6 +41080,10 @@
               {
                 "sourceFileId": "routes/hub.js",
                 "targetFile": "middleware/require-market-delegated-capability.js"
+              },
+              {
+                "sourceFileId": "routes/hub.js",
+                "targetFile": "services/market-delegation-service.js"
               },
               {
                 "sourceFileId": "tests/unit/market-transport-sale-rate-command.test.js",
@@ -43773,6 +43841,10 @@
               {
                 "sourceFileId": "tests/unit/orders-create-route.test.js",
                 "targetFile": "utils/rates.js"
+              },
+              {
+                "sourceFileId": "tests/integration/checkout-idempotency-postgres.test.js",
+                "targetFile": "db.js"
               },
               {
                 "sourceFileId": "tests/unit/public-cart-quote-service.test.js",
@@ -47438,6 +47510,14 @@
                 "targetFile": "services/documents/refund-receipt.js"
               },
               {
+                "sourceFileId": "services/item-refund-psp-orchestrator.js",
+                "targetFile": "services/documents/refund-receipt.js"
+              },
+              {
+                "sourceFileId": "tests/unit/item-refund-psp-orchestrator.test.js",
+                "targetFile": "services/documents/refund-receipt.js"
+              },
+              {
                 "sourceFileId": "tests/unit/refund-receipt-html.test.js",
                 "targetFile": "utils/documents/refund-receipt-html.js"
               }
@@ -47484,6 +47564,10 @@
               {
                 "sourceFileId": "services/item-refund-psp-orchestrator.js",
                 "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/item-refund-psp-orchestrator.js",
+                "targetFile": "utils/logger.js"
               },
               {
                 "sourceFileId": "services/refund-intent-ledger.js",
@@ -49292,7 +49376,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2310
+        "filesObserved": 2315
       },
       "boutique": {
         "filesObserved": 216,
@@ -52611,6 +52695,19 @@
       "lifecycleOwner": "orders",
       "resolution": "single-writer"
     },
+    "order_checkout_idempotency": {
+      "writers": [
+        {
+          "feature": "orders",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "orders",
+      "resolution": "declared-table-owner"
+    },
     "cash_collections": {
       "writers": [
         {
@@ -53198,8 +53295,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 697,
-        "technicalNodesOwned": 697,
+        "technicalNodesTotal": 698,
+        "technicalNodesOwned": 698,
         "technicalOrphans": 0
       },
       "dash": {

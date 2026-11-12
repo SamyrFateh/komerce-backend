@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-12T17:33:23.713Z",
+  "generatedAt": "2026-11-12T17:18:18.323Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
     "total": 828,
@@ -989,6 +989,13 @@
     },
     {
       "key": "GET /api/admin/documents/{id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/documents/reconcile",
       "level": "PROTECTED",
       "roles": [
         "admin"
@@ -5208,14 +5215,6 @@
     },
     {
       "key": "POST /api/purchasing/po/{po_id}/discard",
-      "level": "PROTECTED",
-      "roles": [
-        "admin",
-        "agent_hub"
-      ]
-    },
-    {
-      "key": "GET /api/purchasing/po/{po_id}/reconciliation",
       "level": "PROTECTED",
       "roles": [
         "admin",

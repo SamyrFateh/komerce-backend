@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-12T17:32:12.583Z",
+  "generatedAt": "2026-11-12T17:15:26.685Z",
   "generator": "scripts/gen-route-registry.js",
   "count": 815,
   "routes": [
@@ -798,6 +798,18 @@
       "fullPath": "/api/admin/documents/:id",
       "mountPrefix": "/api/admin",
       "localPath": "/documents/:id",
+      "routeFile": "routes/admin/documents.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js",
+        "routes/admin.js",
+        "routes/admin/index.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/documents/reconcile",
+      "mountPrefix": "/api/admin",
+      "localPath": "/documents/reconcile",
       "routeFile": "routes/admin/documents.js",
       "mountedFrom": [
         "bootstrap/api-routes.js",
@@ -7121,16 +7133,6 @@
       "fullPath": "/api/purchasing/po/:po_id/discard",
       "mountPrefix": "/api/purchasing",
       "localPath": "/po/:po_id/discard",
-      "routeFile": "routes/purchasing.js",
-      "mountedFrom": [
-        "bootstrap/api-routes.js"
-      ]
-    },
-    {
-      "method": "GET",
-      "fullPath": "/api/purchasing/po/:po_id/reconciliation",
-      "mountPrefix": "/api/purchasing",
-      "localPath": "/po/:po_id/reconciliation",
       "routeFile": "routes/purchasing.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"

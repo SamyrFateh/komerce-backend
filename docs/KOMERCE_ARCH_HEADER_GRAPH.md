@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 802
-- Files with full headers: 747
+- Scanned code files: 803
+- Files with full headers: 748
 - Files with lite headers: 55
-- Files with any headers: 802
+- Files with any headers: 803
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 2033
-- Edges: 10020
-- DB tables: 234
-- Doctrines: 790
+- Graph nodes: 2034
+- Edges: 10041
+- DB tables: 233
+- Doctrines: 791
 - Impact areas: 207
-- Unresolved code edges: 959
+- Unresolved code edges: 961
 - Tables multi-écrivains directs (>=2): 95
 - Avertissements db-write / db-write-via en chevauchement: 12
 
@@ -37,7 +37,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - customs: 8
 - dashboard: 32
 - decision-signals: 14
-- documents: 15
+- documents: 16
 - economic-engine: 69
 - external-provider-contracts: 1
 - finance: 3
@@ -92,7 +92,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 137
 - route-manifest: 1
 - schema: 1
-- service: 483
+- service: 484
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -931,6 +931,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/shipping-customs-workspace.js -> incidents (via scan-engine)
 - WRITE routes/providers-services.js -> inquiries (via providers-inquiry-service)
 - WRITE services/operations-workspace.js -> inventory_items (via inventory-service)
+- WRITE routes/admin/documents.js -> invoices (via document-reconciliation)
+- WRITE services/documents/document-reconciliation.js -> invoices (via invoice-service)
 - WRITE services/payment-mobile-money.js -> invoices (via order-payment-confirmation)
 - WRITE routes/admin-market-control-plane.js -> market_cash_control_policies (via market-provisioning-service)
 - WRITE routes/market-delegation-cash-control.js -> market_cash_control_policies (via market-cash-control-policy-service)
@@ -1000,8 +1002,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/orders/create.js -> order_items (via order-checkout-service)
 - WRITE services/local-relay-receipt-service.js -> order_items (via order-item-availability-service)
 - WRITE services/operations-workspace.js -> order_items (via scan-engine)
-- WRITE services/parcel-operations.js -> order_items (via order-item-availability-service)
-- WRITE routes/orders/create.js -> order_status_history (via order-checkout-service)
 
 ## Multi-Writer Tables (>=2 écrivains directs, hors délégations)
 

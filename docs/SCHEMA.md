@@ -89,6 +89,22 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 ### 4.1 Logistique commande (7 tables)
 
+<!-- schema-pending
+object: manual_purchase_executions
+kind: table
+migration: 404
+section: ### 4.1 Logistique commande (7 tables)
+role: Allocations vendeur réel append-only par ligne PO manuelle, quantité et montant justifiés, canal et preuve. Ne pas interpréter comme un paiement fournisseur.
+-->
+
+<!-- schema-pending
+object: order_checkout_idempotency
+kind: table
+migration: 408
+section: ### 4.1 Logistique commande (7 tables)
+role: Réservation transactionnelle UNIQUE(user_id, idempotency_key) et snapshot immuable du résultat du checkout ; réémission sans double création, stock ni débit wallet. Ne pas confondre avec une table live tant que le dump Railway ne confirme pas la migration.
+-->
+
 | Table | Rôle |
 |---|---|
 | `orders` | Commande client (table maîtresse, 60+ colonnes). **Migration 315 (2026-10-22, `intended_migration_schema`)** : + `fx_snapshot` JSONB nullable (vérité monétaire figée de la transaction : montant d'origine, montant confirmé dans la devise du marché du relais, montant EUR encaissé, jambes FX sourcées ; immuable une fois posé, lu par paiements et remboursements, jamais reconverti). **Migration 313 (2026-10-22, `intended_migration_schema`)** : + `transport_pricing_snapshot` JSONB nullable (preuve figée du tarif de vente transport appliqué : devise du marché, pivot EUR, ids de ligne de tarif, jambes FX ; distinct de `display_parity_snapshot`, réservé à l'affichage). **Migration 303 (2026-10-19, `intended_migration_schema`)** : + `simulation_scope` TEXT nullable (NULL = activité réelle ; sinon périmètre de recette, ex. `RCT1`, format contrôlé, immuable une fois posé par trigger). Exclu par défaut des agrégats d'activité réelle ; inclus seulement quand le périmètre est demandé. |
@@ -923,9 +939,3 @@ Migrations 391–394 appliquées sur Railway staging le 2026-11-04 à 13:09 UTC 
 
 
 <!-- schema-pending: order_comments.hub_stage_key (migration 398, intended_migration_schema; not yet live) -->
-
-<!-- schema-pending: manual_purchase_executions (migration 404) -->
-### manual_purchase_executions (migration 404 — intended_migration_schema)
-
-`manual_purchase_executions` is a new append-only table proposed by migration 404. It records the real economic seller of each manual physical purchase (allocation seller -> purchase line -> quantity/amount, in the PO currency, with channel, proof reference and variance reason), written only by `confirmGroupedPurchaseOrder`. It creates no SOI, stock, debt or payment.
-<!-- /schema-pending -->
