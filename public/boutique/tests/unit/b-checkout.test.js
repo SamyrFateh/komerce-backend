@@ -1891,9 +1891,11 @@ describe('b-checkout', () => {
     });
 
     it('prepareKomerceOrder : idempotence — une ref pending existante est réutilisée sans nouvel appel API', async () => {
-      state.pendingPaypalOrderRef = 'CMD-PP-EXISTING';
       state.cart = [];
       const { prepareKomerceOrder } = await activatePaypalAndGetCallbacks();
+      // La référence ne peut être réutilisée que dans la MÊME intention PayPal.
+      // Un véritable changement de moyen de paiement l'invalide volontairement.
+      state.pendingPaypalOrderRef = 'CMD-PP-EXISTING';
 
       const result = await prepareKomerceOrder();
 
