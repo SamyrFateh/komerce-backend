@@ -152,10 +152,11 @@ async function recordInitialHistory(client, orderId, userId) {
   await appendOrderHistoryNote(client, orderId, 'pending', 'Commande créée', userId);
 }
 
-async function applyWalletDebit(client, { userId, amountKmf, orderId, orderReference }) {
+async function applyWalletDebit(client, { userId, amountKmf, walletDebit, walletCurrency, orderId, orderReference }) {
   await walletService.debit(client, {
     userId,
-    amountKmf,
+    amountKmf: walletDebit != null ? walletDebit : amountKmf,
+    ...(walletCurrency && walletCurrency !== 'KMF' ? { currency: walletCurrency } : {}),
     reason: 'checkout',
     referenceId: orderId,
     idempotencyKey: `checkout_${orderId}`,
