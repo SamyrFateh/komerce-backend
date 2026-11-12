@@ -44,6 +44,17 @@ describe('pin de deploiement staging', () => {
     ]});
     expect(denied.decision).toBe('REFUSED');
   });
+  test('diagnostic Chromium panier exact non déployé; autre script refusé', () => {
+    const accepted=decidePin({stagingSha:A,headSha:B,isAncestor:true,changedFiles:[
+      'scripts/recette/g6-p2-buyer-cart-checkout-readonly.js',
+      'tests/unit/g6-p2-readonly-preview-contract.test.js',
+    ]});
+    expect(accepted.decision).toBe('ACCEPTED_NON_DEPLOYED_DIFF_ONLY');
+    const denied=decidePin({stagingSha:A,headSha:B,isAncestor:true,changedFiles:[
+      'scripts/recette/g6-p2-buyer-cart-checkout-readonly.js.bak',
+    ]});
+    expect(denied.decision).toBe('REFUSED');
+  });
   test('pin refuse toute autre config Playwright et tout changement runtime', () => {
     for(const candidate of [
       'playwright.staging-relay-local-native.config.js.bak',
