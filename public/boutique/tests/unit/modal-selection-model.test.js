@@ -327,6 +327,22 @@ describe('modal-selection-model', () => {
     expect(createModalSelection(product).selected_sku_id).toBeNull();
   });
 
+  test('SKU sans aucune unité vendable : aucun SKU fictif, et médias produit sans neutre préservés', () => {
+    const product = detail({
+      option_axes: [],
+      sellable_units: [],
+      media: [
+        { id: 'only-specific', url: '/specific.jpg', role: 'PRODUCT',
+          option_values: { Couleur: 'Marron' } },
+      ],
+    });
+    const state = createModalSelection(product);
+    expect(state.selected_options).toEqual({});
+    expect(state.selected_sku_id).toBeNull();
+    expect(state.option_states).toEqual({});
+    expect(state.selected_media.map(media => media.id)).toEqual(['only-specific']);
+  });
+
   test('sans media_ids, les associations option_values restent la source de vérité', () => {
     const product = detail({
       sellable_units: detail().sellable_units.map((unit) =>
