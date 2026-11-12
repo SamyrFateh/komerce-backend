@@ -23,7 +23,7 @@ const report={
  phase:'G6-P2-KM-BUYER-CART-CHECKOUT-READONLY',
  product_ref:REF,product_id:ID,market:'KM',
  verdict:'NOT_PROVEN',order_created:false,otp_authenticated:false,customer_payment:false,
- human_attestation:false,blocked_requests:[],steps:[]
+ human_attestation:false,blocked_requests:[],preview_http_statuses:[],steps:[]
 };
 function save(){fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2)+'\n');}
 function step(name,observed){report.steps.push({name,observed});save();}
@@ -67,11 +67,21 @@ async function run(){
   browser=await chromium.launch({headless:true});
   const ctx=await browser.newContext({viewport:{width:1440,height:900},locale:'fr-FR'});
   const page=await ctx.newPage();
+  page.on('response',response=>{
+   const req=response.request();
+   const u=new URL(response.url());
+   if(req.method()==='POST'&&u.origin===BASE&&u.pathname==='/api/orders/preview')
+     report.preview_http_statuses.push(response.status());
+  });
   await page.route('**/*',async route=>{
    const req=route.request();
    if(['GET','HEAD','OPTIONS'].includes(req.method()))return route.continue();
    const u=new URL(req.url());
    const hit={method:req.method(),origin:u.origin,path:u.pathname,type:req.resourceType()};
+   // Business-legal POST with read-only semantics: server auth rejects
+   // anonymous quote (401) and order-checkout previewOnly ROLLBACKs before order persistence.
+   if(hit.method==='POST'&&hit.origin===BASE&&hit.path==='/api/orders/preview'&&hit.type==='fetch')
+     return route.continue();
    if(!(hit.method==='POST'&&hit.origin==='https://m.stripe.com'&&hit.path==='/6'&&hit.type==='xhr'))
      report.blocked_requests.push(hit);
    return route.abort();
@@ -128,12 +138,15 @@ async function run(){
     checkout_text:(await page.locator('#k-order-modal').innerText()).slice(0,650)
   };
   step('CHECKOUT_BEFORE_AUTH',buyerState);
+  if(buyerState.confirm_enabled)throw Error('UNAUTHENTICATED_CONFIRM_ENABLED');
   report.after=await snapshot();
   if(JSON.stringify(report.before)!==JSON.stringify(report.after))
     throw Error('READONLY_BIZ_DB_CHANGED');
   if(report.blocked_requests.length)throw Error('UNEXPECTED_BROWSER_WRITE_ATTEMPTS');
+  if(!report.preview_http_statuses.length||report.preview_http_statuses.some(x=>x!==401))
+    throw Error('UNAUTHENTICATED_PREVIEW_MUST_BE_401');
   await version();
-  report.verdict='P2_CART_CHECKOUT_BROWSER_PASS_ORDER_NOT_ATTEMPTED';
+  report.verdict='P2_PREAUTH_CART_QUOTE_401_BROWSER_PASS_ORDER_NOT_ATTEMPTED';
  }catch(e){
   report.verdict='BLOCKED';report.error=String(e.message||e).slice(0,350);process.exitCode=2;
  }finally{
