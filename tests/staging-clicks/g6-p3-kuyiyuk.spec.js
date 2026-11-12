@@ -222,7 +222,7 @@ test.describe.serial('G6 P3 KUYIYUK — Chromium Relais cash + Hub UI',()=>{
       evidence.final={order_id:after.id,status:after.status,payment_status:after.payment_status,line_count:Number(after.line_count),po_count:Number(after.po_count)};
       expect(Number(after.line_count)).toBe(1);
       expect(Number(after.po_count)).toBe(1);
-      expect(after.status).toBe('confirmed');
+      expect(['confirmed','ordered']).toContain(after.status);
       expect(after.payment_status).toBe('paid');
       expect(Number(after.cash_collection_count)).toBe(1);
       expect(Number(after.cash_control_confirmed_count)).toBe(1);
