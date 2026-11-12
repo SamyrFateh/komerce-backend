@@ -45,7 +45,7 @@ describeE2E('ISOLATION CM/CG — deux marchés XAF indépendants', ({ db }) => {
                     VALUES ($1,'SEA_KMF_PER_KG_COMMERCIAL',$2,'XAF',$3)`, [c.marketId, rate, ev]);
   };
   const snap = async (orderId) => (await db.query(
-    'SELECT transport_pricing_snapshot AS t, fx_snapshot AS f, total_kmf FROM orders WHERE id=$1', [orderId])).rows[0];
+    'SELECT transport_pricing_snapshot AS t, transport_price_kmf, fx_snapshot AS f, total_kmf FROM orders WHERE id=$1', [orderId])).rows[0];
 
   beforeAll(async () => {
     cleanup = createCleanup(db);
@@ -112,19 +112,25 @@ describeE2E('ISOLATION CM/CG — deux marchés XAF indépendants', ({ db }) => {
     expect(s1.f.market.market_id).toBe(M.CM.marketId);
     expect(s2.f.market.market_id).toBe(M.CG.marketId);
     expect(s1.f.market.currency).toBe('XAF');
-    expect(s1.t.tariff_lines[0].evidence_ref).toBe('e2e-iso-cm');
-    expect(s2.t.tariff_lines[0].evidence_ref).toBe('e2e-iso-cg');
+    expect(s1.t).toBeNull();
+    expect(s2.t).toBeNull();
+    expect(Number(s1.transport_price_kmf)).toBe(0);
+    expect(Number(s2.transport_price_kmf)).toBe(0);
   });
 
-  it('tarifs : changer le tarif CM modifie les futures commandes CM seulement ; l’existant et CG sont inchangés', async () => {
+  it('tarifs historiques : leur changement ne modifie ni suppléments client ni commandes existantes', async () => {
     const before = { cm: await snap(M.CM.orderId), cg: await snap(M.CG.orderId) };
     await setRate(M.CM, 130, 'e2e-iso-cm-v2');
     await authorizeCentralCollectionForTest(db, cleanup, M.CM.marketId, 'stripe_eur');
     const n = await post(M.CM); expect(n.status).toBe(201); track(n.body.order.id);
     const nCg = await post(M.CG); expect(nCg.status).toBe(201); track(nCg.body.order.id);
     const sN = await snap(n.body.order.id); const sCg = await snap(nCg.body.order.id);
-    expect(sN.t.tariff_lines[0]).toMatchObject({ rate_per_kg_local: 130, evidence_ref: 'e2e-iso-cm-v2' });
-    expect(sCg.t.tariff_lines[0]).toMatchObject({ rate_per_kg_local: 95, evidence_ref: 'e2e-iso-cg' });
+    expect(sN.t).toBeNull();
+    expect(sCg.t).toBeNull();
+    expect(Number(sN.transport_price_kmf)).toBe(0);
+    expect(Number(sCg.transport_price_kmf)).toBe(0);
+    expect(Number(sN.total_kmf)).toBe(Number(before.cm.total_kmf));
+    expect(Number(sCg.total_kmf)).toBe(Number(before.cg.total_kmf));
     expect(await snap(M.CM.orderId)).toEqual(before.cm);
     expect(await snap(M.CG.orderId)).toEqual(before.cg);
   });
