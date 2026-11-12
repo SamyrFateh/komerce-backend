@@ -1,8 +1,5 @@
 /** @test-kind unit @test-runner jest @test-requires none */
 'use strict';
-jest.mock('../../utils/logger', () => ({
-  child: () => ({info:jest.fn(),warn:jest.fn(),error:jest.fn()}),
-}));
 const { projectCollectedPickupQuantities } = require('../../services/scan-engine');
 
 describe('scan-engine — projection des quantités de retrait par code', () => {
