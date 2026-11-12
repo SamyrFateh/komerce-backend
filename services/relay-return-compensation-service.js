@@ -6,7 +6,7 @@
  * @criticality   critical
  * @inputs        admin_actor, product_return_dispute_id, movement, amount, reason, scale_code
  * @outputs       one_immutable_compensation_decision_per_return_request, wallet_credit_in_market_currency
- * @depends       db.js, services/wallet-service.js, services/fx-authority.js, disputes, orders, order_items
+ * @depends       db.js, services/wallet-service.js, services/fx-authority.js, services/sav-ledger-refund.js, services/sav-replacement-order.js, disputes, orders, order_items
  * @used-by       routes/relay-dashboard.js
  * @db-read       disputes, orders, order_items, business_rules, relay_return_compensations, relay_product_return_receipts
  * @db-write      relay_return_compensations
@@ -24,7 +24,7 @@
  * confirmation (commit). Le barème COMPENSATION_* n'est qu'une valeur par défaut PROPOSÉE que l'admin valide ou corrige.
  * Le produit repris reste gelé : ce writer ne touche ni stock ni vendabilité.
  * Mouvement implémenté : crédit wallet du PAYEUR de la commande, dans la devise commerciale du marché.
- * Remboursement par le ledger et ré-expédition : non branchés (refus explicite), voir PR L6 section Reprise.
+ * Le remboursement PSP réserve une intention durable avant toute sortie externe.
  */
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MOVEMENTS = Object.freeze(['wallet_credit', 'ledger_refund', 'reship']);
@@ -44,7 +44,8 @@ function requireAdmin(actor) {
 async function loadDossier(client, requestId, lock) {
   const { rows: [row] } = await client.query(
     `SELECT d.id, d.status, d.type, d.return_quantity, d.return_order_item_id,
-            o.id AS order_id, o.user_id AS payer_user_id, o.market_id, o.total_kmf, o.fx_snapshot, o.reference,
+            o.id AS order_id, o.user_id AS payer_user_id, o.market_id, o.total_kmf, o.total_eur, o.fx_snapshot, o.reference,
+            o.payment_mode, o.wallet_applied_kmf, o.stripe_payment_id, o.paypal_capture_id,
             oi.price_kmf AS unit_price_kmf, oi.qty_collected
        FROM disputes d
        JOIN orders o ON o.id = d.order_id
@@ -94,15 +95,15 @@ async function proposeCompensation({ actor, requestId, db }) {
   };
 }
 
-async function decideCompensation({ actor, requestId, movement, amount, reason, scaleCode, db }) {
+async function decideCompensation({ actor, requestId, movement, amount, reason, scaleCode, db, env = process.env, stripe, paypal }) {
   requireAdmin(actor);
   if (!UUID.test(String(requestId || ''))) fail('COMPENSATION_ID_INVALID', 'Dossier invalide.');
   if (!MOVEMENTS.includes(movement)) fail('COMPENSATION_MOVEMENT_INVALID', 'Mouvement de compensation invalide.');
-  if (movement !== 'wallet_credit') {
-    fail('COMPENSATION_MOVEMENT_NOT_AVAILABLE', 'Remboursement ledger et ré-expédition ne sont pas encore branchés : utiliser le crédit wallet.', 501);
+  const value = movement === 'reship' ? 0 : Number(amount);
+  if (movement === 'reship' && amount != null && Number(amount) !== 0) {
+    fail('COMPENSATION_RESHIP_NO_CHARGE', 'Le remplacement ne comporte aucun montant facturé.');
   }
-  const value = Number(amount);
-  if (!Number.isSafeInteger(value) || value < 1) fail('COMPENSATION_AMOUNT_INVALID', 'Montant entier > 0 (devise du marché) requis.');
+  if (movement !== 'reship' && (!Number.isSafeInteger(value) || value < 1)) fail('COMPENSATION_AMOUNT_INVALID', 'Montant entier > 0 (devise du marché) requis.');
   const why = String(reason || '').trim();
   if (why.length < 10 || why.length > 1000) fail('COMPENSATION_REASON_REQUIRED', 'Décision admin motivée (10 à 1000 caractères) obligatoire.');
   const scale = scaleCode ? String(scaleCode).trim().slice(0, 60) : null;
@@ -110,6 +111,8 @@ async function decideCompensation({ actor, requestId, movement, amount, reason, 
   const walletService = require('./wallet-service');
   const client = await db.getClient();
   let outcome;
+  let ledger;
+  let replacement;
   try {
     await client.query('BEGIN');
     const dossier = await loadDossier(client, requestId, true);
@@ -117,6 +120,10 @@ async function decideCompensation({ actor, requestId, movement, amount, reason, 
     if (existing) {
       if (existing.movement === movement && Number(existing.amount) === value && existing.decided_by === actor.id) {
         await client.query('COMMIT');
+        if (movement === 'ledger_refund') {
+          return require('./sav-ledger-refund').execute({ compensation: existing, db, env, stripe, paypal, replayed: true });
+        }
+        if (movement === 'reship') return finishReplacement(existing, true);
         return { compensation: existing, replayed: true };
       }
       fail('COMPENSATION_ALREADY_DECIDED', 'Une compensation a déjà été décidée pour ce dossier.', 409);
@@ -127,36 +134,62 @@ async function decideCompensation({ actor, requestId, movement, amount, reason, 
     if (Number(dossier.qty_collected) < Number(dossier.return_quantity)) {
       fail('COMPENSATION_NOT_AFTER_HANDOVER', 'Compensation SAV réservée aux articles remis au client.', 409);
     }
-    const { currency, lineValue } = await lineValueInMarketCurrency(client, dossier);
+    const { currency, lineValue } = movement === 'reship'
+      ? { currency: await walletService.resolveOrderWalletCurrency(client, dossier), lineValue: 0 }
+      : await lineValueInMarketCurrency(client, dossier);
     if (value > lineValue) {
       fail('COMPENSATION_EXCEEDS_LINE_VALUE', 'La compensation ne peut pas dépasser la valeur de la ligne retournée.', 409, { lineValue });
     }
-    const pct = await cosmeticPct(client);
-    const scaleDefault = Math.max(1, Math.round((lineValue * pct) / 100));
-    const credit = await walletService.credit(client, {
+    const scaleDefault = movement === 'reship' ? null
+      : Math.max(1, Math.round((lineValue * await cosmeticPct(client)) / 100));
+    const { rows: [receipt] } = await client.query(
+      'SELECT id, quantity FROM relay_product_return_receipts WHERE request_id = $1', [requestId]);
+    if (movement === 'reship') {
+      replacement = await require('./sav-replacement-order').create({ client, dossier, receipt, actor });
+    }
+    const refund = movement === 'ledger_refund'
+      ? await require('./sav-ledger-refund').reserve({ client, dossier, currency, value, actor, env })
+      : null;
+    const credit = movement !== 'wallet_credit' ? null : await walletService.credit(client, {
       userId: dossier.payer_user_id, amountKmf: value, currency, reason: 'sav_compensation',
       referenceId: dossier.order_id, idempotencyKey: `sav_comp_${requestId}`,
       note: `Compensation SAV — commande ${dossier.reference}`, createdBy: actor.id,
     });
-    const { rows: [receipt] } = await client.query('SELECT id FROM relay_product_return_receipts WHERE request_id = $1', [requestId]);
     const { rows: [row] } = await client.query(
       `INSERT INTO relay_return_compensations
-         (request_id, order_id, payer_user_id, movement, amount, currency, reason, scale_code, scale_default_amount,
-          wallet_transaction_id, decided_by)
-       VALUES ($1,$2,$3,'wallet_credit',$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
-      [requestId, dossier.order_id, dossier.payer_user_id, value, currency, why, scale, scaleDefault, credit.transaction.id, actor.id]);
+         (request_id, order_id, payer_user_id, amount, currency, reason, scale_code, scale_default_amount,
+          wallet_transaction_id, decided_by, movement, refund_intent_id, refund_amount_kmf, replacement_order_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *`,
+      [requestId, dossier.order_id, dossier.payer_user_id, value, currency, why, scale, scaleDefault,
+        credit?.transaction.id ?? null, actor.id, movement, refund?.intentId ?? null, refund?.amountKmf ?? null, replacement?.id ?? null]);
     await client.query('COMMIT');
-    outcome = { compensation: { ...row, return_receipt_id: receipt ? receipt.id : null }, replayed: false, walletTxId: credit.transaction.id };
+    ledger = refund;
+    outcome = { compensation: { ...row, return_receipt_id: receipt ? receipt.id : null }, replayed: false, walletTxId: credit?.transaction.id };
   } catch (err) {
     await client.query('ROLLBACK');
+    if (['local_stock_insufficient', 'local_stock_verdict_drift'].includes(err.code) || (err.code === '23514' && err.message.includes('product_catalog_quality_hold'))) {
+      fail('COMPENSATION_RESHIP_STOCK_UNAVAILABLE', 'Stock vendable indisponible ou produit sous gel qualité.', 409);
+    }
+    if (err.status >= 400 && err.status < 500 && err.code && !(err instanceof CompensationError)) {
+      fail(err.code, err.message, err.status);
+    }
     if (err && err.code === '23505') fail('COMPENSATION_ALREADY_DECIDED', 'Une compensation a déjà été décidée pour ce dossier.', 409);
     throw err;
   } finally {
     client.release();
   }
+  if (ledger) return require('./sav-ledger-refund').execute({ compensation: outcome.compensation, db, env, stripe, paypal, replayed: false });
+  if (replacement) return finishReplacement(outcome.compensation, false, replacement);
   // Reçu wallet seulement APRÈS confirmation (commit), non bloquant, idempotent.
   walletService.issueReceiptForCredit(outcome.walletTxId, actor.id).catch(() => {});
   return { compensation: outcome.compensation, replayed: false };
+}
+
+async function finishReplacement(compensation, replayed, replacement) {
+  const replacementStatus = replacement?.fulfillment_source === 'LOCAL_STOCK'
+    ? 'replacement_order_created'
+    : await require('./sav-replacement-order').startProcurement(compensation.replacement_order_id);
+  return { compensation, replayed, replacement_status: replacementStatus };
 }
 
 module.exports = { CompensationError, MOVEMENTS, proposeCompensation, decideCompensation };

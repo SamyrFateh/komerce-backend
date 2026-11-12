@@ -103,3 +103,7 @@ describe('insertOrderRow — estimation de coût inconnue', () => {
     expect(values[i + 1]).toBe(70);
   });
 });
+
+test('expose la garde commune d’allocation locale pour les commandes de remplacement', () => {
+  expect(require('../../services/order-checkout-persistence').requireOrderLocalStockAllocation).toEqual(expect.any(Function));
+});

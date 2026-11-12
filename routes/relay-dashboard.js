@@ -210,7 +210,7 @@ router.post('/returns/intake', authenticate, requireRole(['agent_relais']), asyn
   }
 });
 
-// Compensation SAV après remise : décision admin motivée, un seul mouvement canonique (wallet), jamais automatique.
+// Compensation SAV après remise : décision admin motivée, un seul mouvement canonique, jamais automatique.
 const returnCompensation = require('../services/relay-return-compensation-service');
 const compensationError = (err, res, next) => (err instanceof returnCompensation.CompensationError
   ? res.status(err.status).json({ error: err.message, code: err.code }) : next(err));
@@ -227,7 +227,8 @@ router.post('/returns/:id/compensation', authenticate, requireRole(['admin']), a
       actor: req.user, requestId: req.params.id, movement: req.body?.movement || 'wallet_credit',
       amount: req.body?.amount, reason: req.body?.reason, scaleCode: req.body?.scale_code, db,
     });
-    res.status(out.replayed ? 200 : 201).json(out);
+    const pending = ['reserved', 'processing', 'unknown'].includes(out.refund_status);
+    res.status(pending ? 202 : out.replayed ? 200 : 201).json(out);
   } catch (err) { compensationError(err, res, next); }
 });
 

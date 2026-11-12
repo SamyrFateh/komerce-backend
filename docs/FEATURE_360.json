@@ -56,7 +56,7 @@
     "healthy": 34,
     "attention": 6,
     "blocked": 0,
-    "businessDependencies": 323,
+    "businessDependencies": 324,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
@@ -10986,6 +10986,7 @@
           "consumer": "logistics",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
+            "static-code",
             "data-read"
           ]
         },
@@ -19806,6 +19807,7 @@
           "provider": "documents",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
+            "static-code",
             "data-read"
           ]
         },
@@ -21063,6 +21065,13 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "data-read"
+          ]
+        },
+        {
+          "consumer": "refunds",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
           ]
         },
         {
@@ -24878,7 +24887,7 @@
             ]
           },
           "services": {
-            "count": 28,
+            "count": 29,
             "files": [
               {
                 "declared": "services/admin-order-refund.js",
@@ -25016,6 +25025,11 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/sav-replacement-order.js",
+                "resolvedPath": "services/sav-replacement-order.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/verify-qr-collection.js",
                 "resolvedPath": "services/verify-qr-collection.js",
                 "status": "resolved-in-technical-graph"
@@ -25023,7 +25037,7 @@
             ]
           },
           "tests": {
-            "count": 61,
+            "count": 62,
             "files": [
               {
                 "declared": "tests/e2e-api/customer-to-customer.golden.e2e.test.js",
@@ -25326,6 +25340,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/sav-replacement-order.test.js",
+                "resolvedPath": "tests/unit/sav-replacement-order.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/verify-qr-collection.test.js",
                 "resolvedPath": "tests/unit/verify-qr-collection.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -25343,7 +25362,7 @@
             ]
           }
         },
-        "totalFiles": 104,
+        "totalFiles": 106,
         "boutiqueManifest": "orders-client",
         "boutiqueFiles": {
           "count": 19,
@@ -31103,7 +31122,7 @@
       "implementation": {
         "byCategory": {
           "services": {
-            "count": 6,
+            "count": 7,
             "files": [
               {
                 "declared": "services/item-refund-psp-orchestrator.js",
@@ -31134,11 +31153,16 @@
                 "declared": "services/refund-service.js",
                 "resolvedPath": "services/refund-service.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/sav-ledger-refund.js",
+                "resolvedPath": "services/sav-ledger-refund.js",
+                "status": "resolved-in-technical-graph"
               }
             ]
           },
           "tests": {
-            "count": 16,
+            "count": 17,
             "files": [
               {
                 "declared": "tests/e2e-api/refunds.credits-cash-numeric.e2e.test.js",
@@ -31219,6 +31243,11 @@
                 "declared": "tests/unit/refunds-util.test.js",
                 "resolvedPath": "tests/unit/refunds-util.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/sav-ledger-refund.test.js",
+                "resolvedPath": "tests/unit/sav-ledger-refund.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           },
@@ -31233,7 +31262,7 @@
             ]
           }
         },
-        "totalFiles": 23,
+        "totalFiles": 25,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -31387,6 +31416,13 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "data-read"
+          ]
+        },
+        {
+          "provider": "market",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
           ]
         },
         {

@@ -58,8 +58,8 @@ function orderCapture(order, provider) {
   return null;
 }
 
-async function reserveRefundIntent({
-  orderId, operationKey, provider, captureRef, amountEur, initiatedBy = null, db = defaultDb,
+async function reserveRefundIntentInTransaction(client, {
+  orderId, operationKey, provider, captureRef, amountEur, initiatedBy = null,
 }) {
   if (!orderId || !operationKey || !captureRef || !['stripe', 'paypal'].includes(provider)) {
     throw new RefundIntentError('REFUND_INTENT_INPUT_INVALID', 'Commande, événement, capture et PSP requis', 400);
@@ -68,86 +68,89 @@ async function reserveRefundIntent({
     throw new RefundIntentError('REFUND_OPERATION_KEY_INVALID', 'Identifiant événement non autorisé', 400);
   }
   const requested = euroCents(amountEur);
+  // Serialize every reservation per order at the PostgreSQL boundary.
+  const orderResult = await client.query(
+    'SELECT id, market_id, total_eur, payment_status, payment_mode, ' +
+    'stripe_payment_id, paypal_capture_id FROM orders WHERE id = $1 FOR UPDATE', [orderId]
+  );
+  const order = orderResult.rows[0];
+  if (!order || !order.market_id) {
+    throw new RefundIntentError('REFUND_ORDER_UNKNOWN', 'Commande ou marché introuvable');
+  }
+  if (order.payment_status !== 'paid') {
+    throw new RefundIntentError('REFUND_PAYMENT_NOT_CONFIRMED', 'Commande non payée');
+  }
+  if (!orderCapture(order, provider) || String(orderCapture(order, provider)) !== String(captureRef)) {
+    throw new RefundIntentError('REFUND_CAPTURE_MISMATCH', 'Prestataire ou capture incohérent');
+  }
+
+  const found = await client.query(
+    'SELECT id, order_id, market_id, capture_ref, amount_eur, status ' +
+    'FROM refund_execution_intents WHERE provider = $1 AND operation_key = $2 FOR UPDATE',
+    [provider, operationKey]
+  );
+  const existing = found.rows[0];
+  if (existing) {
+    if (String(existing.order_id) !== String(orderId) ||
+        String(existing.market_id) !== String(order.market_id) ||
+        String(existing.capture_ref) !== String(captureRef) ||
+        euroCents(existing.amount_eur) !== requested) {
+      throw new RefundIntentError('REFUND_REPLAY_PAYLOAD_MISMATCH', 'Événement rejoué avec paramètres différents');
+    }
+    return { intentId: existing.id, providerRequestKey: providerKey(existing.id),
+      status: existing.status, replayed: true, executable: false };
+  }
+
+  // ANY existing refund (wallet or PSP) is not automatically migrated or
+  // reconciled: they must be reviewed before enabling this new ledger.
+  const legacy = await client.query(
+    'SELECT id FROM refunds WHERE order_id = $1 LIMIT 1',
+    [orderId]
+  );
+  if (legacy.rows.length) {
+    throw new RefundIntentError('REFUND_LEGACY_RECONCILIATION_REQUIRED',
+      'Remboursement historique non rapproché');
+  }
+
+  const unresolved = await client.query(
+    "SELECT id FROM refund_execution_intents WHERE order_id = $1 " +
+    "AND status IN ('reserved','processing','unknown') LIMIT 1", [orderId]
+  );
+  if (unresolved.rows.length) {
+    throw new RefundIntentError('REFUND_UNRESOLVED_INTENT', 'Opération PSP en cours ou inconnue');
+  }
+
+  const totals = await client.query(
+    "SELECT COALESCE(SUM(amount_eur),0)::text AS confirmed_eur " +
+    "FROM refund_execution_intents WHERE order_id = $1 AND status = 'confirmed'", [orderId]
+  );
+  const captured = euroCents(order.total_eur);
+  const done = euroCents(totals.rows[0]?.confirmed_eur ?? '0', true);
+  if (requested + done > captured) {
+    throw new RefundIntentError('REFUND_EXCEEDS_CAPTURE', 'Montant total supérieur à la capture EUR');
+  }
+
+  const inserted = await client.query(
+    'INSERT INTO refund_execution_intents ' +
+    '(order_id, market_id, provider, capture_ref, operation_key, amount_eur, initiated_by) ' +
+    'VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id, status',
+    [orderId, order.market_id, provider, captureRef, operationKey, euroString(requested), initiatedBy]
+  );
+  const intent = inserted.rows[0];
+  return { intentId: intent.id, providerRequestKey: providerKey(intent.id),
+    status: intent.status, replayed: false, executable: false };
+}
+
+async function reserveRefundIntent({ db = defaultDb, ...input }) {
   const client = await db.connect();
   let active = false;
   try {
     await client.query('BEGIN');
     active = true;
-    // Serialize every reservation per order at the PostgreSQL boundary.
-    const orderResult = await client.query(
-      'SELECT id, market_id, total_eur, payment_status, payment_mode, ' +
-      'stripe_payment_id, paypal_capture_id FROM orders WHERE id = $1 FOR UPDATE', [orderId]
-    );
-    const order = orderResult.rows[0];
-    if (!order || !order.market_id) {
-      throw new RefundIntentError('REFUND_ORDER_UNKNOWN', 'Commande ou marché introuvable');
-    }
-    if (order.payment_status !== 'paid') {
-      throw new RefundIntentError('REFUND_PAYMENT_NOT_CONFIRMED', 'Commande non payée');
-    }
-    if (!orderCapture(order, provider) || String(orderCapture(order, provider)) !== String(captureRef)) {
-      throw new RefundIntentError('REFUND_CAPTURE_MISMATCH', 'Prestataire ou capture incohérent');
-    }
-
-    const found = await client.query(
-      'SELECT id, order_id, market_id, capture_ref, amount_eur, status ' +
-      'FROM refund_execution_intents WHERE provider = $1 AND operation_key = $2 FOR UPDATE',
-      [provider, operationKey]
-    );
-    const existing = found.rows[0];
-    if (existing) {
-      if (String(existing.order_id) !== String(orderId) ||
-          String(existing.market_id) !== String(order.market_id) ||
-          String(existing.capture_ref) !== String(captureRef) ||
-          euroCents(existing.amount_eur) !== requested) {
-        throw new RefundIntentError('REFUND_REPLAY_PAYLOAD_MISMATCH', 'Événement rejoué avec paramètres différents');
-      }
-      await client.query('COMMIT');
-      active = false;
-      return { intentId: existing.id, providerRequestKey: providerKey(existing.id),
-        status: existing.status, replayed: true, executable: false };
-    }
-
-    // ANY existing refund (wallet or PSP) is not automatically migrated or
-    // reconciled: they must be reviewed before enabling this new ledger.
-    const legacy = await client.query(
-      'SELECT id FROM refunds WHERE order_id = $1 LIMIT 1',
-      [orderId]
-    );
-    if (legacy.rows.length) {
-      throw new RefundIntentError('REFUND_LEGACY_RECONCILIATION_REQUIRED',
-        'Remboursement historique non rapproché');
-    }
-
-    const unresolved = await client.query(
-      "SELECT id FROM refund_execution_intents WHERE order_id = $1 " +
-      "AND status IN ('reserved','processing','unknown') LIMIT 1", [orderId]
-    );
-    if (unresolved.rows.length) {
-      throw new RefundIntentError('REFUND_UNRESOLVED_INTENT', 'Opération PSP en cours ou inconnue');
-    }
-
-    const totals = await client.query(
-      "SELECT COALESCE(SUM(amount_eur),0)::text AS confirmed_eur " +
-      "FROM refund_execution_intents WHERE order_id = $1 AND status = 'confirmed'", [orderId]
-    );
-    const captured = euroCents(order.total_eur);
-    const done = euroCents(totals.rows[0]?.confirmed_eur ?? '0', true);
-    if (requested + done > captured) {
-      throw new RefundIntentError('REFUND_EXCEEDS_CAPTURE', 'Montant total supérieur à la capture EUR');
-    }
-
-    const inserted = await client.query(
-      'INSERT INTO refund_execution_intents ' +
-      '(order_id, market_id, provider, capture_ref, operation_key, amount_eur, initiated_by) ' +
-      'VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id, status',
-      [orderId, order.market_id, provider, captureRef, operationKey, euroString(requested), initiatedBy]
-    );
-    const intent = inserted.rows[0];
+    const result = await reserveRefundIntentInTransaction(client, input);
     await client.query('COMMIT');
     active = false;
-    return { intentId: intent.id, providerRequestKey: providerKey(intent.id),
-      status: intent.status, replayed: false, executable: false };
+    return result;
   } catch (error) {
     if (active) await client.query('ROLLBACK').catch(() => {});
     throw error;
@@ -196,5 +199,5 @@ async function claimRefundIntent({ intentId, db = defaultDb }) {
 
 module.exports = {
   RefundIntentError, euroCents, euroString, providerKey,
-  reserveRefundIntent, claimRefundIntent,
+  reserveRefundIntent, reserveRefundIntentInTransaction, claimRefundIntent,
 };

@@ -37,6 +37,13 @@ describe('pickup-secret-access-service', () => {
     expect(db.query).toHaveBeenCalledWith(expect.stringMatching(/pickup_reveal_codes[\s\S]*30 minutes/), ['o1', 'ABC-DEF-GH']);
   });
 
+  test('cacheCodeForReveal peut partager la transaction qui rend le colis disponible', async () => {
+    const client = { query: jest.fn().mockResolvedValue({ rows: [] }) };
+    await cacheCodeForReveal('o1', 'ABC-DEF-GH', client);
+    expect(client.query).toHaveBeenCalledWith(expect.stringContaining('pickup_reveal_codes'), ['o1', 'ABC-DEF-GH']);
+    expect(db.query).not.toHaveBeenCalled();
+  });
+
   test('issuePrintToken crée un token éphémère de 48 caractères hex', async () => {
     db.query.mockResolvedValue({ rows: [] });
     const token = await issuePrintToken({ orderId: 'o1', code: 'ABC-DEF-GH', payerName: 'Sam' });

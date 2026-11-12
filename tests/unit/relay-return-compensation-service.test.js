@@ -19,6 +19,10 @@ jest.mock('../../services/fx-authority', () => ({
   prorate: (amount, num, den) => Math.round((Number(amount) * Number(num)) / Number(den)),
 }));
 
+jest.mock('../../services/sav-ledger-refund', () => ({ reserve: jest.fn(), execute: jest.fn() }));
+jest.mock('../../services/sav-replacement-order', () => ({ create: jest.fn(), startProcurement: jest.fn() }));
+const refund = require('../../services/sav-ledger-refund');
+const replacement = require('../../services/sav-replacement-order');
 const svc = require('../../services/relay-return-compensation-service');
 
 const uuid = (n) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
@@ -39,8 +43,8 @@ function makeDb({ row = dossier(), existing = null } = {}) {
       if (/FROM disputes d/.test(sql)) return { rows: row ? [row] : [] };
       if (/FROM relay_return_compensations/.test(sql)) return { rows: existing ? [existing] : [] };
       if (/business_rules/.test(sql)) return { rows: [] };
-      if (/relay_product_return_receipts/.test(sql)) return { rows: [{ id: uuid(9) }] };
-      if (/INSERT INTO relay_return_compensations/.test(sql)) return { rows: [{ id: uuid(8), request_id: REQ, amount: params[3], currency: params[4] }] };
+      if (/relay_product_return_receipts/.test(sql)) return { rows: [{ id: uuid(9), quantity: 1 }] };
+      if (/INSERT INTO relay_return_compensations/.test(sql)) return { rows: [{ id: uuid(8), request_id: REQ, amount: params[3], currency: params[4], movement: params[10], refund_intent_id: params[11], replacement_order_id: params[13] }] };
       return { rows: [] };
     }),
   };
@@ -67,10 +71,40 @@ describe('decideCompensation', () => {
     expect(mockCredit).not.toHaveBeenCalled();
   });
 
-  it('remboursement ledger / ré-expédition : refus explicite, aucun mouvement', async () => {
-    const { db } = makeDb();
-    await expect(svc.decideCompensation({ ...base, movement: 'reship', db })).rejects.toMatchObject({ code: 'COMPENSATION_MOVEMENT_NOT_AVAILABLE' });
+  it('réserve le remboursement dans la décision puis appelle le PSP après commit', async () => {
+    const { db, calls, client } = makeDb();
+    refund.reserve.mockResolvedValue({ intentId: uuid(12), amountKmf: 2000 });
+    refund.execute.mockImplementation(async ({ compensation }) => {
+      expect(calls.at(-1).sql).toBe('COMMIT');
+      expect(client.release).toHaveBeenCalledTimes(1);
+      return { compensation, refund_status: 'confirmed' };
+    });
+    const result = await svc.decideCompensation({ ...base, movement: 'ledger_refund', db });
+    expect(result.compensation.refund_intent_id).toBe(uuid(12));
+    expect(result.refund_status).toBe('confirmed');
     expect(mockCredit).not.toHaveBeenCalled();
+    expect(mockReceipt).not.toHaveBeenCalled();
+  });
+
+  it('le remplacement crée une commande sans facturation avant le commit', async () => {
+    const { db, calls } = makeDb();
+    replacement.create.mockResolvedValue({ id: uuid(13), fulfillment_source: 'IMPORT' });
+    replacement.startProcurement.mockImplementation(async id => {
+      expect(id).toBe(uuid(13));
+      expect(calls.at(-1).sql).toBe('COMMIT');
+      return 'replacement_order_created';
+    });
+    const result = await svc.decideCompensation({ ...base, movement: 'reship', amount: undefined, db });
+    expect(result.compensation).toMatchObject({ replacement_order_id: uuid(13), amount: 0 });
+    expect(replacement.create).toHaveBeenCalledWith(expect.objectContaining({ receipt: { id: uuid(9), quantity: 1 } }));
+    expect(mockCredit).not.toHaveBeenCalled();
+    expect(refund.reserve).not.toHaveBeenCalled();
+  });
+
+  it('refuse tout montant sur un remplacement', async () => {
+    const { db } = makeDb();
+    await expect(svc.decideCompensation({ ...base, movement: 'reship', db })).rejects.toMatchObject({ code: 'COMPENSATION_RESHIP_NO_CHARGE' });
+    expect(replacement.create).not.toHaveBeenCalled();
   });
 
   it('crédit wallet du payeur en XAF, une décision, reçu émis après commit', async () => {

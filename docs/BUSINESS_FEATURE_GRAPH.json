@@ -16546,6 +16546,13 @@
       {
         "feature": "orders",
         "category": "services",
+        "declared": "services/sav-replacement-order.js",
+        "resolvedPath": "services/sav-replacement-order.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "orders",
+        "category": "services",
         "declared": "services/cancel-order-purchase-orders.js",
         "resolvedPath": "services/cancel-order-purchase-orders.js",
         "status": "resolved-in-technical-graph"
@@ -16947,6 +16954,13 @@
         "category": "tests",
         "declared": "tests/unit/relay-return-compensation-service.test.js",
         "resolvedPath": "tests/unit/relay-return-compensation-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "orders",
+        "category": "tests",
+        "declared": "tests/unit/sav-replacement-order.test.js",
+        "resolvedPath": "tests/unit/sav-replacement-order.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -19437,6 +19451,13 @@
       {
         "feature": "refunds",
         "category": "services",
+        "declared": "services/sav-ledger-refund.js",
+        "resolvedPath": "services/sav-ledger-refund.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "refunds",
+        "category": "services",
         "declared": "services/refund-evidence-verifier.js",
         "resolvedPath": "services/refund-evidence-verifier.js",
         "status": "resolved-in-technical-graph"
@@ -19495,6 +19516,13 @@
         "category": "tests",
         "declared": "tests/unit/refund-intent-ledger.test.js",
         "resolvedPath": "tests/unit/refund-intent-ledger.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "refunds",
+        "category": "tests",
+        "declared": "tests/unit/sav-ledger-refund.test.js",
+        "resolvedPath": "tests/unit/sav-ledger-refund.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -30151,6 +30179,12 @@
       },
       {
         "from": "refunds",
+        "to": "market",
+        "raw": "market (prorata SAV dans les devises figées via fx-authority)",
+        "resolved": true
+      },
+      {
+        "from": "refunds",
         "to": "infrastructure",
         "raw": "infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)",
         "resolved": true
@@ -37206,6 +37240,10 @@
               {
                 "sourceFileId": "tests/unit/hub-dashboard-route.test.js",
                 "targetFile": "services/order-status-machine.js"
+              },
+              {
+                "sourceFileId": "tests/unit/relay-dashboard-route.test.js",
+                "targetFile": "services/relay-return-compensation-service.js"
               }
             ]
           },
@@ -40396,6 +40434,15 @@
         "to": "documents",
         "channels": [
           {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "tests/integration/relay-return-intake-postgres.test.js",
+                "targetFile": "services/invoice-service.js"
+              }
+            ]
+          },
+          {
             "channel": "data-read",
             "evidence": [
               {
@@ -41222,6 +41269,10 @@
               {
                 "sourceFileId": "routes/pickup-secret.js",
                 "targetFile": "services/order-status-machine.js"
+              },
+              {
+                "sourceFileId": "tests/integration/relay-return-intake-postgres.test.js",
+                "targetFile": "services/relay-return-compensation-service.js"
               },
               {
                 "sourceFileId": "tests/unit/order-physical-coverage-gate.test.js",
@@ -43975,6 +44026,10 @@
                 "targetFile": "utils/parcelSync.js"
               },
               {
+                "sourceFileId": "tests/unit/order-status-machine.test.js",
+                "targetFile": "services/pickup-secret-service.js"
+              },
+              {
                 "sourceFileId": "tests/unit/orders-create-route.test.js",
                 "targetFile": "services/routing.js"
               }
@@ -44421,8 +44476,16 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "services/sav-replacement-order.js",
+                "targetFile": "services/purchasing-trigger-service.js"
+              },
+              {
                 "sourceFileId": "services/cancel-order-purchase-orders.js",
                 "targetFile": "services/purchasing-cancel-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/sav-replacement-order.test.js",
+                "targetFile": "services/purchasing-trigger-service.js"
               }
             ]
           }
@@ -44441,6 +44504,10 @@
                 "targetFile": "services/refund-service.js"
               },
               {
+                "sourceFileId": "services/relay-return-compensation-service.js",
+                "targetFile": "services/sav-ledger-refund.js"
+              },
+              {
                 "sourceFileId": "routes/admin/orders.js",
                 "targetFile": "services/item-refund-reservation-service.js"
               },
@@ -44455,6 +44522,10 @@
               {
                 "sourceFileId": "tests/unit/admin-order-refund.test.js",
                 "targetFile": "services/refund-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/relay-return-compensation-service.test.js",
+                "targetFile": "services/sav-ledger-refund.js"
               },
               {
                 "sourceFileId": "tests/unit/orders-cancel-route.test.js",
@@ -47464,6 +47535,14 @@
                 "targetFile": "services/documents/refund-receipt.js"
               },
               {
+                "sourceFileId": "services/sav-ledger-refund.js",
+                "targetFile": "services/documents/refund-receipt.js"
+              },
+              {
+                "sourceFileId": "tests/unit/sav-ledger-refund.test.js",
+                "targetFile": "services/documents/refund-receipt.js"
+              },
+              {
                 "sourceFileId": "tests/unit/refund-receipt-html.test.js",
                 "targetFile": "utils/documents/refund-receipt-html.js"
               }
@@ -47546,6 +47625,22 @@
       },
       {
         "from": "refunds",
+        "to": "market",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/sav-ledger-refund.js",
+                "targetFile": "services/fx-authority.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "refunds",
         "to": "orders",
         "channels": [
           {
@@ -47598,6 +47693,10 @@
             "evidence": [
               {
                 "sourceFileId": "services/item-refund-psp-orchestrator.js",
+                "targetFile": "services/paypal-client.js"
+              },
+              {
+                "sourceFileId": "services/sav-ledger-refund.js",
                 "targetFile": "services/paypal-client.js"
               },
               {
@@ -49318,7 +49417,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2312
+        "filesObserved": 2316
       },
       "boutique": {
         "filesObserved": 216,
@@ -53224,8 +53323,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 698,
-        "technicalNodesOwned": 698,
+        "technicalNodesTotal": 700,
+        "technicalNodesOwned": 700,
         "technicalOrphans": 0
       },
       "dash": {
