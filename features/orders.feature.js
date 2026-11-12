@@ -69,6 +69,7 @@ module.exports = {
       'services/order-financial-closure-reconciliation.js',
       'services/order-financial-closure-signal.js',
       'services/order-checkout-service.js',
+      'services/order-checkout-idempotency.js',
       'services/public-cart-quote-service.js',
       'services/rct1-checkout-reference-guard.js',
       'services/hub-v1-fixture-checkout-guard.js',
@@ -192,6 +193,8 @@ module.exports = {
       'tests/unit/orders-aggregator-route.test.js',
       'tests/unit/orders-cancel-route.test.js',
       'tests/unit/orders-create-route.test.js',
+      'tests/unit/order-checkout-idempotency.test.js',
+      'tests/integration/checkout-idempotency-postgres.test.js',
       'tests/unit/public-cart-quote-service.test.js',
       'tests/unit/order-checkout-market-lifecycle.test.js',
       'tests/unit/orders-detail.test.js',
@@ -222,6 +225,7 @@ module.exports = {
       'order_items: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)
       'order_status_history: RW',
       'orders: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)
+      'order_checkout_idempotency: RW!', // Unique checkout claim (migration 408 ; staged, pas encore live)
       'parcel_items: R',
       'parcels: R',
       'product_variants: R',  // W-via:product-admin-service (adjustStock variantes)
