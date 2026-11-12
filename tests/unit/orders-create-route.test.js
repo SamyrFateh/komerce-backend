@@ -514,10 +514,10 @@ describe('orders/create — SKU (Lot 3, inventory_model="SKU")', () => {
     expect(res.status).toBe(201);
 
     // total_kmf envoyé à l'INSERT INTO orders (7ᵉ paramètre positionnel, $7)
-    // = prix SKU (15000) + devis transport commercial (65, fallback SEA
+    // = prix SKU (15000) + devis transport inclus (ancien tarif 65, SEA
     // par défaut pour poids 1kg — cf. defaultMocks/getRule ci-dessus).
     const orderInsert = client.calls.find(c => /INSERT INTO orders/.test(c.sql));
-    expect(orderInsert.params[6]).toBe(15065); // total_kmf
+    expect(orderInsert.params[6]).toBe(15000); // total_kmf
 
     const itemInsert = client.calls.find(c => /INSERT INTO order_items/.test(c.sql));
     expect(itemInsert.params).toContain(15000); // order_items.price_kmf
@@ -573,7 +573,7 @@ describe('orders/create — SKU (Lot 3, inventory_model="SKU")', () => {
 
     expect(res.status).toBe(201);
     const orderInsert = client.calls.find(c => /INSERT INTO orders/.test(c.sql));
-    expect(orderInsert.params[6]).toBe(9065); // 10000*(1-10/100) + 65 transport
+    expect(orderInsert.params[6]).toBe(9000); // 10000*(1-10/100) (transport inclus)
     const itemInsert = client.calls.find(c => /INSERT INTO order_items/.test(c.sql));
     expect(itemInsert.params).toContain(9000);
   });
@@ -675,8 +675,8 @@ describe('orders/create — loyalty discount', () => {
     expect(res.status).toBe(201);
     const insertOrderCall = client.calls.find(c => /INSERT INTO orders/.test(c.sql));
     // total brut produits = 10000*2 = 20000 ; + transport §8 (1kg*2*65) = 130
-    // => 20130 ; discount 10% = 2013 ; total_kmf final = 18117
-    expect(insertOrderCall.params).toContain(18117);
+    // => 20130 ; discount 10% = 2013 ; total_kmf final = 18000
+    expect(insertOrderCall.params).toContain(18000);
   });
 });
 
@@ -1241,7 +1241,7 @@ describe('orders/preview — le total présenté au client est exactement le tot
     db.getClient.mockResolvedValue(previewClient);
     const prev = await request(app).post('/api/orders/preview').send(validBody());
     expect(prev.status).toBe(200);
-    expect(prev.body).toMatchObject({ items_total_kmf: 20000, transport_price_kmf: 130, discount_kmf: 0, total_kmf: 20130 });
+    expect(prev.body).toMatchObject({ items_total_kmf: 20000, transport_price_kmf: 0, discount_kmf: 0, total_kmf: 20000 });
     expect(previewClient.calls.some(c => /INSERT INTO orders/.test(c.sql))).toBe(false);
     expect(previewClient.calls.some(c => /COMMIT/.test(c.sql))).toBe(false);
     expectTransactionRolledBack(previewClient);
