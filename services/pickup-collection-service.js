@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db.js, services/order-status-machine.js, services/pickup-code-helpers.js, services/pickup-collection-recorder.js, utils/alerts.js
+ * @depends       db.js, services/order-status-machine.js, services/pickup-code-helpers.js, services/pickup-collection-recorder.js, services/documents/pickup-proof.js, utils/alerts.js
  * @used-by       services/pickup-secret-service.js, services/scan-operations.js, services/pickup-exceptional-collection-service.js
  * @db-read       orders, relais, users
  * @db-write      alerts, pickup_print_tokens, pickup_reveal_codes, scans
@@ -82,12 +82,17 @@ const {
   recordCanonicalCollection: _recordCanonicalCollection,
   mapCanonicalCollectionError: _mapCanonicalCollectionError,
 } = require('./pickup-collection-recorder');
+const pickupProof = require('./documents/pickup-proof');
 const log = require('../utils/logger').child({ module: 'pickup-collection-service' });
 
 // ══════════════════════════════════════════════════════════════════════════════
 // verifyPickupCode
 // ══════════════════════════════════════════════════════════════════════════════
 // Retourne { status, body }.
+
+// Seuil partagé par verifyPickupCode et collectByPickupCode (mauvais code ciblé).
+const PICKUP_MAX_ATTEMPTS = 3;
+const PICKUP_BLOCK_MS = 15 * 60 * 1000;
 
 async function verifyPickupCode({ orderId, code, agentId }) {
   if (!code) {
@@ -139,7 +144,7 @@ async function verifyPickupCode({ orderId, code, agentId }) {
 
   if (!matched) {
     const attempts  = (order.pickup_secret_attempts || 0) + 1;
-    const blockUntil = attempts >= 3 ? new Date(now.getTime() + 15 * 60 * 1000) : null;
+    const blockUntil = attempts >= PICKUP_MAX_ATTEMPTS ? new Date(now.getTime() + PICKUP_BLOCK_MS) : null;
 
     await setPickupAttemptState(db, {
       orderId,
@@ -152,7 +157,7 @@ async function verifyPickupCode({ orderId, code, agentId }) {
     return { status: 401, body: {
       error: 'Code incorrect',
       attempts,
-      remaining:     Math.max(0, 3 - attempts),
+      remaining:     Math.max(0, PICKUP_MAX_ATTEMPTS - attempts),
       blocked_until: blockUntil,
     }};
   }
@@ -280,8 +285,9 @@ async function collectByPickupCode({
   const agentId = user?.id || null;
   const role    = user?.role || null;
 
+  let handoffScanId = null;
   try {
-    return await db.withTransaction(async (client) => {
+    const outcome = await db.withTransaction(async (client) => {
     // FOR UPDATE dès la résolution : élimine la fenêtre check-then-act entre
     // la lecture de la commande candidate et sa remise (même doctrine que
     // collectOrder ci-dessus). last4 restreint le candidate set ; la
@@ -333,30 +339,40 @@ async function collectByPickupCode({
       return { status: 404, body: { error: 'Code de retrait introuvable ou déjà utilisé' } };
     }
 
-    if (targeted) {
-      const matchesTarget = Boolean(
-        order.pickup_secret_hash
-        && hashCode(normalized, order.pickup_secret_salt) === order.pickup_secret_hash
-      );
-      if (!matchesTarget) {
-        await _logSecurityAlert(client, {
-          type:        'pickup_collect_invalid_code',
-          entityId:    order.id,
-          title:       `Code invalide pour retrait ciblé ${order.reference}`,
-          description: `agent_id=${agentId} role=${role} ip=${ip || 'inconnue'} user_agent=${userAgent || 'inconnu'}`,
-        });
-        return { status: 401, body: { error: 'Code de retrait incorrect' } };
-      }
-    }
-
     const now = new Date();
 
+    // Blocage d'abord : une commande verrouillée refuse même le bon code jusqu'à l'échéance.
     if (order.pickup_secret_blocked_until && new Date(order.pickup_secret_blocked_until) > now) {
       const retryAfter = Math.ceil((new Date(order.pickup_secret_blocked_until) - now) / 1000 / 60);
       return { status: 429, body: {
         error: `Trop de tentatives. Réessayez dans ${retryAfter} min.`,
         blocked_until: order.pickup_secret_blocked_until,
       }};
+    }
+
+    if (targeted) {
+      const matchesTarget = Boolean(
+        order.pickup_secret_hash
+        && hashCode(normalized, order.pickup_secret_salt) === order.pickup_secret_hash
+      );
+      if (!matchesTarget) {
+        // Même transaction FOR UPDATE : le compteur persiste avec le refus (retour normal = COMMIT).
+        const attempts = (order.pickup_secret_attempts || 0) + 1;
+        const blockedUntil = attempts >= PICKUP_MAX_ATTEMPTS ? new Date(now.getTime() + PICKUP_BLOCK_MS) : null;
+        await setPickupAttemptState(client, { orderId: order.id, attempts, blockedUntil });
+        await _logSecurityAlert(client, {
+          type:        'pickup_collect_invalid_code',
+          entityId:    order.id,
+          title:       `Code invalide pour retrait ciblé ${order.reference}`,
+          description: `agent_id=${agentId} role=${role} ip=${ip || 'inconnue'} user_agent=${userAgent || 'inconnu'}`,
+        });
+        return { status: 401, body: {
+          error: 'Code de retrait incorrect',
+          attempts,
+          remaining: Math.max(0, PICKUP_MAX_ATTEMPTS - attempts),
+          blocked_until: blockedUntil,
+        }};
+      }
     }
 
     if (order.pickup_secret_expires_at && new Date(order.pickup_secret_expires_at) < now) {
@@ -378,12 +394,17 @@ async function collectByPickupCode({
       pickupMethod: 'PICKUP_CODE',
       notes,
     });
+    handoffScanId = collection.scanId;
 
     if (collectedByName !== null && collectedByName !== undefined) {
       await setCollectedByName(client, {
         orderId: order.id,
         collectedByName: String(collectedByName || '').trim() || null,
       });
+    }
+
+    if ((order.pickup_secret_attempts || 0) > 0 || order.pickup_secret_blocked_until) {
+      await setPickupAttemptState(client, { orderId: order.id, attempts: 0, blockedUntil: null });
     }
 
     log.info(`[PICKUP-SECRET] 📦 Retrait aveugle confirmé pour ${order.reference} par agent=${agentId}`);
@@ -404,6 +425,12 @@ async function collectByPickupCode({
       collected_at: collection.collectedAt.toISOString(),
     }};
     });
+    // Preuve de remise post-commit (une par geste, ancrée sur scans.id) : non bloquant, rattrapable par rejeu.
+    if (handoffScanId) {
+      pickupProof.issueForHandoff(handoffScanId, { issuedBy: agentId })
+        .catch(err => log.warn({ err, scan_id: handoffScanId }, '[PICKUP-SECRET] émission preuve de remise échouée (non-fatal)'));
+    }
+    return outcome;
   } catch (err) {
     const mapped = _mapCanonicalCollectionError(err);
     if (mapped) return mapped;

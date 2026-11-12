@@ -713,11 +713,11 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 40 fichier(s) déclaré(s)
+**Implementation** : 42 fichier(s) déclaré(s)
   - migrations : 7
   - routes : 3
-  - services : 8
-  - tests : 17
+  - services : 9
+  - tests : 18
   - utils : 5
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="documents"]_
