@@ -145,6 +145,7 @@ export function setupCartQuote() {
     dialog.className = 'k-quote-dialog';
     dialog.setAttribute('aria-labelledby', 'k-quote-title');
     dialog.innerHTML = `
+      <section class="k-quote-panel">
       <div class="k-quote-header">
         <div>
           <h2 id="k-quote-title">Fais-moi un devis</h2>
@@ -167,7 +168,8 @@ export function setupCartQuote() {
             <button type="button" data-quote-action="print">Imprimer</button>
           </div>
         </div>
-      </div>`;
+      </div>
+      </section>`;
     document.body.appendChild(dialog);
     const close = () => {
       if (!dialog.isConnected) return;
