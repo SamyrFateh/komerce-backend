@@ -34,6 +34,7 @@ function decidePin({ stagingSha, headSha, isAncestor, changedFiles }) {
   if (!isAncestor) { report.reason = 'STAGING_NOT_ANCESTOR_OF_HEAD'; return report; }
   const deployed = (changedFiles || []).filter((f) => f !== 'scripts/recette/staging-e2e-relay-reassign.js' &&
     f !== 'scripts/recette/staging-e2e-pickup-secret-fixture.js' &&
+    f !== 'scripts/recette/g6-p2-buyer-cart-checkout-readonly.js' &&
     !NON_DEPLOYED.some((re) => re.test(f)));
   if (deployed.length) { report.reason = 'DEPLOYED_PATHS_DIFFER'; report.deployed_paths_differing = deployed; return report; }
   report.decision = 'ACCEPTED_NON_DEPLOYED_DIFF_ONLY'; return report;
