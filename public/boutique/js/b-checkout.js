@@ -2272,13 +2272,13 @@ export function renderCheckout() {
     /**
  * Met à jour le récapitulatif paiement en checkout.
  */
-  function updatePaymentUI() {
+  function updatePaymentUI({ userInitiated = false } = {}) {
       const mode = document.querySelector('input[name="payment_mode"]:checked');
       const isStripe = mode && mode.value === 'stripe_eur';
       const isPaypal = mode && mode.value === 'paypal_eur';
       const isMobileMoney = mode && mode.value === 'mobile_money';
       const nextPaymentMode = mode ? mode.value : 'cash_relais';
-      if (od.payment_mode && od.payment_mode !== nextPaymentMode) _invalidateCheckoutPaymentAttempt();
+      if (userInitiated && od.payment_mode && od.payment_mode !== nextPaymentMode) _invalidateCheckoutPaymentAttempt();
       od.payment_mode = nextPaymentMode;
 
       // Le titre de section est statique (règle §4) — plus de re-rendu ici.
@@ -2360,7 +2360,7 @@ export function renderCheckout() {
       refreshCheckoutComputedUI();
     }
 
-    payGrid.addEventListener('change', updatePaymentUI);
+    payGrid.addEventListener('change', () => updatePaymentUI({ userInitiated: true }));
     updatePaymentUI(); // init état chip cash
     refreshCheckoutComputedUI();
 
