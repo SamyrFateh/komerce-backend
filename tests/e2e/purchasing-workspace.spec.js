@@ -340,6 +340,7 @@ test.describe('Achats fournisseurs — espace canonique', () => {
     await page.locator('[data-confirmed-quantity]').fill('2');
     await page.locator('[data-supplier-order-id]').fill('ALG-42');
     await page.locator('[data-purchase-proof-ref]').fill('RECU-ALG-42');
+    await page.locator('[data-purchase-seller-label]').fill('Souk Alger');
     await page.locator('[data-workspace-action="confirm-po"]').click();
 
     await expect(page.locator('[data-purchasing-po-status="confirmed"]')).toBeVisible();
@@ -347,6 +348,7 @@ test.describe('Achats fournisseurs — espace canonique', () => {
     expect(confirm).toHaveLength(1);
     expect(confirm[0].body.supplier_order_id).toBe('ALG-42');
     expect(confirm[0].body.purchase_proof_ref).toBe('RECU-ALG-42');
+    expect(confirm[0].body.seller_label).toBe('Souk Alger');
     expect(confirm[0].body.lines).toEqual([{ purchase_line_id: '00000000-0000-4000-8000-000000000001', confirmed_quantity: 2 }]);
     await expect(page.locator('[data-workspace-feedback]')).toContainText('1 reliquat');
     // reliquat 5 - 2 = 3 : nouvelle ligne ouverte (KOM-1009) qui garde le marché de la ligne d'origine

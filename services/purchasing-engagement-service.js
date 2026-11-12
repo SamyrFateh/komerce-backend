@@ -9,7 +9,7 @@
  * @depends       db, services/purchasing-grouped-service.js, services/purchase-line-snapshot.js, services/notification-service.js, services/hub-reference.js, services/suppliers/provider-authority.js, services/suppliers/canonical-unit-purchasing-gate.js, services/suppliers/purchase-order-confirmation-boundary.js, services/suppliers/execution-adapter-registry.js, services/suppliers/supplier-fulfillment-adapter-contract.js, utils/logger.js
  * @used-by       routes/purchasing.js
  * @db-read       order_items, orders, product_suppliers, products, purchase_lines, purchase_orders, suppliers, v_purchase_line_progress
- * @db-write      purchase_lines, purchase_orders
+ * @db-write      manual_purchase_executions, purchase_lines, purchase_orders
  * @db-txn        owns_transaction
  * @doctrine      docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md
  * @impact-areas  purchasing, supplier-integration
@@ -418,6 +418,116 @@ async function verifyConfirmationEvidence(lines, confirmations, supplierOrderId,
   return verifiedRef;
 }
 
+const EXECUTION_CHANNELS = ['in_person', 'phone', 'whatsapp', 'email', 'other'];
+const money4 = (n) => Math.round(Number(n) * 10000) / 10000;
+
+/**
+ * Vendeur réel par achat physique (A2/A2-bis) : obligatoire à la confirmation d'une PO manuelle, jamais `central_hub`.
+ * Forme longue `executions[]` (allocations vendeur -> ligne -> quantité/montant) ou raccourci `seller_supplier_id`/`seller_label`
+ * (un seul vendeur couvrant toutes les lignes confirmées, au prix confirmé). Chaque ligne confirmée doit être allouée à
+ * l'unité près. L'écart montant justifié / montant confirmé (par devise) exige `variance_reason`.
+ */
+async function buildManualExecutions(client, lines, byId, body, manualProof) {
+  const confirmedLines = lines.filter((l) => byId.get(l.id).confirmedQuantity > 0);
+  const unitPrice = (l) => (byId.get(l.id).price !== null ? byId.get(l.id).price : Number(l.supplier_unit_price));
+  let raw = body.executions;
+  if (raw === undefined || raw === null) {
+    const label = optionalText(body.seller_label);
+    const sid = optionalText(body.seller_supplier_id);
+    raw = confirmedLines.map((l) => ({
+      purchase_line_id: l.id, seller_supplier_id: sid, seller_label: label, channel: body.channel,
+      quantity: byId.get(l.id).confirmedQuantity, amount: money4(byId.get(l.id).confirmedQuantity * unitPrice(l)),
+    }));
+  }
+  if (!Array.isArray(raw) || raw.length === 0) {
+    throw fail(400, 'MANUAL_PURCHASE_SELLER_REQUIRED', 'Vendeur réel obligatoire à la confirmation d’un achat manuel (executions[] ou seller_label/seller_supplier_id).');
+  }
+  const lineById = new Map(lines.map((l) => [l.id, l]));
+  const sellerIds = [...new Set(raw.map((e) => e && optionalText(e.seller_supplier_id)).filter(Boolean))];
+  for (const id of sellerIds) requireUuid(id, 'executions[].seller_supplier_id');
+  const hubIds = new Set();
+  if (sellerIds.length) {
+    const { rows } = await client.query('SELECT id, system_key FROM suppliers WHERE id = ANY($1::uuid[])', [sellerIds]);
+    if (rows.length !== sellerIds.length) throw fail(400, 'INVALID_INPUT', 'seller_supplier_id inconnu');
+    for (const r of rows) if (r.system_key === 'central_hub') hubIds.add(r.id);
+  }
+  const allocated = new Map();
+  const execs = raw.map((e) => {
+    if (!e || typeof e !== 'object') throw fail(400, 'INVALID_INPUT', 'executions[] invalide');
+    const lineId = requireUuid(e.purchase_line_id, 'executions[].purchase_line_id');
+    const line = lineById.get(lineId);
+    if (!line || byId.get(lineId).confirmedQuantity < 1) {
+      throw fail(409, 'MANUAL_PURCHASE_EXECUTION_LINE_INVALID', 'Allocation vendeur sur une ligne non confirmée de la PO', { purchase_line_id: lineId });
+    }
+    const sid = optionalText(e.seller_supplier_id);
+    const label = optionalText(e.seller_label);
+    if (sid && hubIds.has(sid)) throw fail(400, 'MANUAL_PURCHASE_SELLER_CENTRAL_HUB', 'central_hub coordonne l’achat : le vendeur réel doit être déclaré (fournisseur référencé ou seller_label).');
+    if (!sid && !label) throw fail(400, 'MANUAL_PURCHASE_SELLER_REQUIRED', 'Vendeur réel obligatoire (seller_supplier_id ou seller_label) pour chaque allocation.');
+    const quantity = requireNonNegativeInt(e.quantity, 'executions[].quantity');
+    if (quantity < 1) throw fail(400, 'INVALID_INPUT', 'executions[].quantity doit être ≥ 1');
+    const amount = Number(e.amount);
+    if (!Number.isFinite(amount) || amount < 0) throw fail(400, 'INVALID_INPUT', 'executions[].amount invalide');
+    const channel = optionalText(e.channel) || 'other';
+    if (!EXECUTION_CHANNELS.includes(channel)) throw fail(400, 'INVALID_INPUT', 'executions[].channel invalide');
+    const currency = String(optionalText(e.currency) || line.supplier_currency || '').toUpperCase();
+    if (!/^[A-Z]{3}$/.test(currency)) throw fail(400, 'INVALID_INPUT', 'executions[].currency (devise de la PO) obligatoire');
+    allocated.set(lineId, (allocated.get(lineId) || 0) + quantity);
+    return { lineId, sid, label, channel, quantity, amount: money4(amount), currency, proof: optionalText(e.proof_ref) || manualProof };
+  });
+  for (const l of confirmedLines) {
+    const got = allocated.get(l.id) || 0;
+    const want = byId.get(l.id).confirmedQuantity;
+    if (got !== want) {
+      throw fail(409, 'MANUAL_PURCHASE_ALLOCATION_MISMATCH', 'Les allocations vendeur doivent couvrir exactement la quantité confirmée de chaque ligne', { purchase_line_id: l.id, allocated: got, confirmed: want });
+    }
+  }
+  const diff = new Map();
+  for (const l of confirmedLines) {
+    const cur = String(l.supplier_currency || '').toUpperCase();
+    diff.set(cur, (diff.get(cur) || 0) - byId.get(l.id).confirmedQuantity * unitPrice(l));
+  }
+  for (const e of execs) diff.set(e.currency, (diff.get(e.currency) || 0) + e.amount);
+  const variance = [...diff.values()].some((d) => Math.abs(d) > 0.0001);
+  const varianceReason = optionalText(body.variance_reason);
+  if (variance && !varianceReason) {
+    throw fail(409, 'MANUAL_PURCHASE_VARIANCE_REASON_REQUIRED', 'Écart entre le total justifié et le total confirmé : variance_reason obligatoire.', { variance: Object.fromEntries(diff) });
+  }
+  return { execs, varianceReason: variance ? varianceReason : null };
+}
+
+async function insertManualExecutions(client, poId, { execs, varianceReason }, actor) {
+  for (const e of execs) {
+    await client.query(`
+      INSERT INTO manual_purchase_executions
+        (purchase_order_id, purchase_line_id, seller_supplier_id, seller_label, channel, quantity, amount, currency, proof_ref, variance_reason, recorded_by)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+    `, [poId, e.lineId, e.sid, e.sid ? null : e.label, e.channel, e.quantity, e.amount, e.currency, e.proof, varianceReason, actor && actor.id || null]);
+  }
+}
+
+/** Rapprochement par cumuls et plafonds (A2-ter) : confirmé ↔ justifié ↔ autorisé/payé, par devise. Lecture seule. */
+async function getPurchaseReconciliation(poId) {
+  requireUuid(poId, 'po_id');
+  const [confirmed, justified, auths, paid] = await Promise.all([
+    db.query(`SELECT supplier_currency AS currency, SUM(confirmed_quantity * COALESCE(confirmed_unit_price, supplier_unit_price)) AS total
+                FROM purchase_lines WHERE purchase_order_id = $1 AND cancelled_at IS NULL AND confirmed_quantity > 0 GROUP BY 1`, [poId]),
+    db.query('SELECT currency, SUM(amount) AS total FROM manual_purchase_executions WHERE purchase_order_id = $1 GROUP BY 1', [poId]),
+    db.query('SELECT authorization_type, amount, currency FROM purchase_order_authorizations WHERE purchase_order_id = $1', [poId]),
+    db.query(`SELECT currency, SUM(expected_amount) AS total FROM supplier_execution_payments
+               WHERE purchase_order_id = $1 AND status IN ('prepared','requested','succeeded','ambiguous') GROUP BY 1`, [poId]),
+  ]);
+  const cur = {};
+  const put = (rows, key) => rows.forEach((r) => { (cur[r.currency] = cur[r.currency] || {})[key] = Number(r.total); });
+  put(confirmed.rows, 'confirmed_total'); put(justified.rows, 'justified_total'); put(paid.rows, 'paid_or_committed_total');
+  auths.rows.forEach((a) => { (cur[a.currency] = cur[a.currency] || {})[`${a.authorization_type}_cap`] = Number(a.amount); });
+  const currencies = Object.entries(cur).map(([currency, v]) => ({
+    currency, ...v,
+    justification_gap: money4((v.confirmed_total || 0) - (v.justified_total || 0)),
+    payment_within_cap: v.supplier_payment_cap === undefined ? null : (v.paid_or_committed_total || 0) <= v.supplier_payment_cap + 0.0001,
+  }));
+  return { purchase_order_id: poId, currencies };
+}
+
 async function confirmGroupedPurchaseOrder(poId, body = {}, { actor = null, context = {} } = {}) {
   requireUuid(poId, 'po_id');
   const confirmations = parseConfirmationLines(body);
@@ -468,6 +578,9 @@ async function confirmGroupedPurchaseOrder(poId, body = {}, { actor = null, cont
     }
 
     const allZero = confirmations.every((c) => c.confirmedQuantity === 0);
+    // A2/A2-bis : vendeur réel structuré, obligatoire à la confirmation d'un achat manuel, même transaction.
+    const manualExecutions = (po.trigger_mode !== 'auto' && !allZero)
+      ? await buildManualExecutions(client, lines, byId, body, manualProof) : null;
     // Réconciliation fournisseur uniquement pour une PO API ; une PO manuelle enregistre la référence/preuve déclarée par le Hub.
     const verifiedRef = (allZero || po.trigger_mode !== 'auto')
       ? supplierOrderId
@@ -508,6 +621,7 @@ async function confirmGroupedPurchaseOrder(poId, body = {}, { actor = null, cont
       `, [po.id, verifiedRef, trackingUrl, trackingNumber,
         po.trigger_mode === 'auto' ? notes : [notes, manualProof && `[PREUVE_ACHAT_MANUEL] ${manualProof}`].filter(Boolean).join('\n') || null]);
     }
+    if (manualExecutions) await insertManualExecutions(client, po.id, manualExecutions, actor);
     return { po_id: po.id, remnantIds, allZero };
   });
 
@@ -793,6 +907,7 @@ module.exports = {
   recordPurchaseOrderSent,
   submitPurchaseOrder,
   confirmGroupedPurchaseOrder,
+  getPurchaseReconciliation,
   settleLine,
   createManualLine,
   changeLineSupplier,

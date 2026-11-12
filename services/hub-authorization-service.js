@@ -142,12 +142,20 @@ async function assertCommitmentAuthorized(client, purchaseOrderId) {
 }
 
 /** Garde d'écriture : un paiement fournisseur suppose l'autorisation de paiement, dans la devise et le plafond autorisés. */
-async function assertPaymentAuthorized(client, purchaseOrderId, expectedAmount, currency) {
+async function assertPaymentAuthorized(client, purchaseOrderId, expectedAmount, currency, { excludePaymentKey = null } = {}) {
   const { rows: [auth] } = await client.query(
     "SELECT amount, currency FROM purchase_order_authorizations WHERE purchase_order_id = $1 AND authorization_type = 'supplier_payment'", [purchaseOrderId]);
   if (!auth) fail(409, 'SUPPLIER_PAYMENT_NOT_AUTHORIZED', 'Paiement fournisseur non autorisé par la directrice');
   if (auth.currency !== String(currency).toUpperCase() || Number(expectedAmount) > Number(auth.amount)) {
     fail(409, 'SUPPLIER_PAYMENT_EXCEEDS_AUTHORIZATION', 'Le paiement dépasse le montant ou la devise autorisés');
+  }
+  // A2-ter : plafond cumulé (tranches/acomptes autorisés), pas égalité de chaque tranche au total de la PO.
+  const { rows: [prior] } = await client.query(
+    `SELECT COALESCE(SUM(expected_amount), 0) AS total FROM supplier_execution_payments
+      WHERE purchase_order_id = $1 AND currency = $2 AND status IN ('prepared','requested','succeeded','ambiguous')
+        AND ($3::text IS NULL OR payment_execution_key <> $3)`, [purchaseOrderId, auth.currency, excludePaymentKey]);
+  if (Number(prior.total) + Number(expectedAmount) > Number(auth.amount) + 0.0001) {
+    fail(409, 'SUPPLIER_PAYMENT_EXCEEDS_AUTHORIZATION', 'Le cumul des paiements dépasse le plafond autorisé');
   }
 }
 

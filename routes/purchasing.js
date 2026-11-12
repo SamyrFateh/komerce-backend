@@ -171,6 +171,10 @@ router.post('/po/:po_id/confirm', ...groupedGuard, async (req, res, next) => {
   } catch (err) { groupedError(err, res, next); }
 });
 
+router.get('/po/:po_id/reconciliation', ...groupedGuard, async (req, res, next) => {
+  try { res.json(await engagement.getPurchaseReconciliation(req.params.po_id)); } catch (err) { groupedError(err, res, next); }
+});
+
 // P04 — autorisations de la directrice : grants (Admin central) et décisions tracées sur la PO (détenteur du grant actif).
 router.get('/authorizations/grants', ...guard, async (req, res, next) => {
   try { res.json({ grants: await hubAuth.listGrants({ userId: req.query.user_id || null, activeOnly: req.query.all !== '1' }) }); } catch (err) { groupedError(err, res, next); }

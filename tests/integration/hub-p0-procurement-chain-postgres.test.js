@@ -154,7 +154,7 @@ describeDb('Hub P0 — chaîne d\'approvisionnement complète (REAL_DB)', () => 
       stage = (await dossier.getDossier({ marketId: km })).purchase_orders.find((p) => p.id === s.po);
       expect(stage.stage).toBe('sent');
 
-      await engagement.confirmGroupedPurchaseOrder(s.po, { purchase_proof_ref: 'RECU-HUB-P0',
+      await engagement.confirmGroupedPurchaseOrder(s.po, { purchase_proof_ref: 'RECU-HUB-P0', seller_label: 'Vendeur test',
         supplier_order_id: `SO-${tag}`,
         lines: [...s.c1.lines, ...s.c2.lines].map((l) => ({ purchase_line_id: l.lineId, confirmed_quantity: l.qty })),
       }, { actor: actor() });
@@ -378,7 +378,7 @@ describeDb('Hub P0 — chaîne d\'approvisionnement complète (REAL_DB)', () => 
     });
 
     test('mauvaise variante, sur-réception et double saisie idempotente', async () => {
-      await engagement.confirmGroupedPurchaseOrder(km1.po, { purchase_proof_ref: 'RECU-HUB-P0',
+      await engagement.confirmGroupedPurchaseOrder(km1.po, { purchase_proof_ref: 'RECU-HUB-P0', seller_label: 'Vendeur test',
         supplier_order_id: `SO2-${tag}`, lines: [{ purchase_line_id: km1.lines[0].lineId, confirmed_quantity: 1 }],
       }, { actor: actor() });
       const wrong = await receive(km1.po, sku2.id, 1, `${tag}-WRONGSKU`);

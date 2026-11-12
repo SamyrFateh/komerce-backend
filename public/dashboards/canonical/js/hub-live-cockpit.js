@@ -495,7 +495,7 @@
         currency = field(form, 'Devise', Object.assign(textInput('USD', 'currency'), { maxLength: 3 }));
         if (kind === 'payment' && po.amount.derived) { amount.placeholder = String(po.amount.amount); currency.value = po.amount.currency; }
       }
-      let channel; let supplierOrder; let confirmProof; let confirmQty = [];
+      let channel; let supplierOrder; let confirmProof; let confirmSeller; let confirmQty = [];
       if (kind === 'sent') {
         channel = field(form, 'Canal d’envoi réel', doc.createElement('select'));
         CHANNELS.forEach(([v, l]) => channel.appendChild(Object.assign(doc.createElement('option'), { value: v, textContent: l })));
@@ -509,6 +509,7 @@
         });
         supplierOrder = field(form, 'Référence de commande fournisseur', textInput('', 'supplier_order_id'));
         confirmProof = field(form, 'Justificatif d’achat (obligatoire)', textInput('Facture, capture, reçu…', 'purchase_proof_ref'));
+        confirmSeller = field(form, 'Vendeur réel (obligatoire pour un achat manuel, pas le Hub central)', textInput('Magasin ou vendeur', 'seller_label'));
       }
       const submit = button(doc, { commitment: 'Valider l’engagement', payment: 'Autoriser le paiement', sent: 'Enregistrer l’envoi', confirm: 'Enregistrer la confirmation' }[kind], `submit-${kind}`, 'is-primary');
       submit.type = 'submit';
@@ -544,7 +545,7 @@
           if (lines.some((x) => x.confirmed_quantity > 0) && confirmProof.value.trim().length < 4) { note.textContent = 'Justificatif d’achat obligatoire (4 caractères minimum).'; return; }
           execute(submit, {
             url: purchasing(`po/${id}/confirm`),
-            body: { lines, ...(supplierOrder.value.trim() ? { supplier_order_id: supplierOrder.value.trim() } : {}), ...(confirmProof.value.trim() ? { purchase_proof_ref: confirmProof.value.trim() } : {}) },
+            body: { lines, ...(supplierOrder.value.trim() ? { supplier_order_id: supplierOrder.value.trim() } : {}), ...(confirmProof.value.trim() ? { purchase_proof_ref: confirmProof.value.trim() } : {}), ...(confirmSeller.value.trim() ? { seller_label: confirmSeller.value.trim() } : {}) },
             confirmMessage: 'Enregistrer la confirmation fournisseur ? Toute quantité non confirmée redevient un besoin ouvert.',
             runningMessage: 'Enregistrement de la confirmation…', successMessage: 'Confirmation fournisseur enregistrée.', onSuccess: () => { state.form = null; },
           });
