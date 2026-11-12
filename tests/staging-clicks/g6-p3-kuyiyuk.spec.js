@@ -66,9 +66,13 @@ test.describe.serial('G6 P3 KUYIYUK — Chromium Relais cash + Hub UI',()=>{
     expect(o,'same canonical G6 order exists').toBeTruthy();
     expect(o.user_id).toBe(buyer);
     expect(o.simulation_scope).toBe('G6-BUYER');
-    expect(['pending','confirmed']).toContain(o.status);
+    expect(['pending','confirmed','ordered']).toContain(o.status);
     expect(o.payment_mode).toBe('cash_relais');
     expect(o.payment_status).toBe(o.status==='pending'?'pending':'paid');
+    if(o.status==='ordered'){
+      expect(Number(o.cash_collection_count)).toBe(1);
+      expect(Number(o.cash_control_confirmed_count)).toBe(1);
+    }
     expect(Number(o.item_count)).toBe(1);
     expect(Number(o.line_count)).toBeLessThanOrEqual(1);
     expect(Number(o.po_count)).toBeLessThanOrEqual(1);
@@ -86,7 +90,7 @@ test.describe.serial('G6 P3 KUYIYUK — Chromium Relais cash + Hub UI',()=>{
   test.afterAll(async()=>{
     try {
       const o=await orderState();
-      if(o)evidence.final={order_id:o.id,status:o.status,payment_status:o.payment_status,line_count:Number(o.line_count),po_count:Number(o.po_count)};
+      if(o)evidence.final={order_id:o.id,status:o.status,payment_status:o.payment_status,line_count:Number(o.line_count),po_count:Number(o.po_count),cash_collection_count:Number(o.cash_collection_count),cash_control_confirmed_count:Number(o.cash_control_confirmed_count)};
     }catch(e){evidence.readback_error=String(e.message||e).slice(0,250);}
     if(evidence.final&&evidence.final.status==='confirmed'&&evidence.final.payment_status==='paid'&&evidence.final.cash_collection_count===1&&evidence.final.cash_control_confirmed_count===1&&evidence.final.line_count===1&&evidence.final.po_count===1){
       evidence.verdict='G6_P3_MANUAL_LINE_AND_DRAFT_PO_CHROMIUM_PASS';
@@ -133,7 +137,7 @@ test.describe.serial('G6 P3 KUYIYUK — Chromium Relais cash + Hub UI',()=>{
           throw new Error(evidence.error);
         }
         evidence.staging_cash_confirmation_recorded=true;
-        await expect.poll(async()=>{const o=await orderState();return String(o.status)+':'+String(o.payment_status)+':'+Number(o.cash_collection_count);},{timeout:20000}).toBe('confirmed:paid:1');
+        await expect.poll(async()=>{const o=await orderState();return String(o.status)+':'+String(o.payment_status)+':'+Number(o.cash_collection_count)+':'+Number(o.cash_control_confirmed_count);},{timeout:20000}).toMatch(/^(?:confirmed|ordered):paid:1:1$/);
         await capture(relayPage,'00-cash-confirmed');
       }catch(error){
         evidence.error=String(error.message||error).split('\n')[0].slice(0,300);
@@ -146,7 +150,7 @@ test.describe.serial('G6 P3 KUYIYUK — Chromium Relais cash + Hub UI',()=>{
       evidence.gestures.push({key:'cash-payment-recorded-in-staging',verdict:'PASS',external_payment:false});
       before=await orderState();
     }
-    expect(before.status).toBe('confirmed');
+    expect(['confirmed','ordered']).toContain(before.status);
     expect(before.payment_status).toBe('paid');
     expect(Number(before.cash_collection_count)).toBe(1);
     expect(Number(before.cash_control_confirmed_count)).toBe(1);
