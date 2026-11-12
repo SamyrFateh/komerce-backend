@@ -65,6 +65,7 @@ const ENTRIES = [
   R('catalog_product_quality_notes', 'observations SAV et qualité historisées, purgées avec les produits de recette'),
   R('catalog_product_sale_holds', 'gel qualité de produits de recette, purgé sans toucher les référentiels globaux'),
   R('relay_product_return_receipts', 'preuves de retour SAV des commandes de recette, purgeables avec les litiges de test'),
+  R('relay_return_compensations', 'compensations SAV, purgées avec les dossiers de retour de recette'),
   // sourcing_captures : sourcing_sources.production_certified_capture_id y pointe ; TRUNCATE tronquerait le registre protege.
   R('sourcing_captures', 'captures sourcing : DELETE (FK retour sourcing_sources) et non TRUNCATE', { mode: 'delete' }),
   // ── purge_root : ajouts LOT 1 (constat Opus, ecrivains verifies) ──
@@ -94,11 +95,11 @@ const ENTRIES = [
 catalog_media_recovery_audit catalog_media_visual_fr_reviews catalog_publication_decision_audit catalog_stock_sync_state competitor_prices
 customs_shipment_parcels disputes economic_risk_cost_events import_runtime_item_events import_runtime_runs
 hub_box_bags international_shipment_hub_units international_shipment_relay_receipts local_stock local_stock_allocations loyalty_rewards
-market_price_observation_events market_price_observations mobile_money_transactions order_comments order_incidents
+market_price_observation_events market_price_observations mobile_money_transactions order_checkout_idempotency order_comments order_incidents
 order_item_cost_imputations order_item_real_cost_allocations order_items order_status_history parcel_events parcel_items
 pickup_print_tokens pickup_reveal_codes price_history pricing_maturity_disposition_events pricing_strategies pricing_strategy_history
 product_attributes product_content_profile product_content_sections product_market_exposure product_market_price_draft_events
-product_market_price_drafts product_sku_media product_sku_physical_codes product_skus product_suppliers product_variants purchase_lines purchase_order_authorizations refund_execution_intents order_item_refund_reservations
+product_market_price_drafts product_sku_media product_sku_physical_codes product_skus product_suppliers product_variants purchase_lines purchase_order_authorizations manual_purchase_executions purchase_variance_decisions refund_execution_intents order_item_refund_reservations
 scans shared_cart_events shared_cart_saved_access sourcing_candidate_observations sourcing_identity_constraints sourcing_match_proposals
 sourcing_observation_evidence sourcing_resolution_bindings sourcing_resolution_decisions store_credits supplier_catalog_import_rejections
 supplier_execution_groups supplier_payment_settlements unsold_items`.split(/\s+/).map((t) => V(t, 'enfant FK d une racine purgee')),

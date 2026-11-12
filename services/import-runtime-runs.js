@@ -465,9 +465,8 @@ function buildProjection({ run, rows = [], sourceProof = null, items = [], now =
   const persistedFailureReason = run.failure_reason || null;
   const legacyProviderRuntimeFailure = run.status === 'FAILED'
     && persistedFailureReason === 'pipeline_partial_blocked'
-    && taxonomyDone
     && balanced
-    && certified >= readyForRefinery;
+    && readyForRefinery > 0;
   const failedRun = run.status === 'FAILED' && !legacyProviderRuntimeFailure;
 
   function stage(key, status, processed, total, extra = {}) {

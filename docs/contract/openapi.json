@@ -7,7 +7,7 @@
   },
   "x-contract-debt": {
     "unknown_responses": 80,
-    "total_routes": 760,
+    "total_routes": 759,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -2727,240 +2727,6 @@
         }
       }
     },
-    "/api/orders/quote-pdf": {
-      "post": {
-        "summary": "POST /api/orders/quote-pdf",
-        "x-route-file": "routes/orders.js",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "items": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "product_id": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "quantity": {
-                          "type": "integer",
-                          "default": 1
-                        },
-                        "requested_transport_rail": {
-                          "type": "string",
-                          "enum": [
-                            "SEA_STANDARD",
-                            "AIR_EXPRESS",
-                            null
-                          ],
-                          "default": null
-                        },
-                        "module_type": {
-                          "type": "string",
-                          "enum": [
-                            "mariage",
-                            "couture",
-                            "lunettes",
-                            "parfum",
-                            "bijoux",
-                            "electronique",
-                            "cosmetique",
-                            "alimentaire",
-                            "autre"
-                          ]
-                        },
-                        "module_fabric_id": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "module_fabric_type": {
-                          "type": "string",
-                          "maxLength": 100
-                        },
-                        "module_size": {
-                          "type": "string",
-                          "maxLength": 20
-                        },
-                        "module_retouche": {
-                          "type": "boolean"
-                        },
-                        "module_qty_meters": {
-                          "type": "number"
-                        },
-                        "module_accessories": {
-                          "type": "array",
-                          "items": {
-                            "type": "string",
-                            "maxLength": 100
-                          }
-                        },
-                        "variant_combo": {
-                          "type": "object"
-                        },
-                        "shared_cart_item_id": {
-                          "type": "string",
-                          "format": "uuid"
-                        }
-                      },
-                      "required": [
-                        "product_id"
-                      ]
-                    },
-                    "minItems": 1
-                  },
-                  "relais_id": {
-                    "type": "string",
-                    "format": "uuid"
-                  },
-                  "payment_mode": {
-                    "type": "string",
-                    "enum": [
-                      "stripe_eur",
-                      "cash_relais",
-                      "paypal_eur",
-                      "mobile_money"
-                    ]
-                  },
-                  "stripe_payment_intent": {
-                    "type": "string",
-                    "maxLength": 200
-                  },
-                  "tracking_phone": {
-                    "type": "string"
-                  },
-                  "pickup_code_recipient": {
-                    "type": "string",
-                    "enum": [
-                      "buyer",
-                      "organizer"
-                    ],
-                    "default": "buyer"
-                  },
-                  "confection_type": {
-                    "type": "string",
-                    "enum": [
-                      "aucun",
-                      "couture_standard",
-                      "sur_mesure",
-                      "lunettes_vue",
-                      "lunettes_soleil",
-                      "broderie",
-                      "retouche",
-                      "autre"
-                    ],
-                    "default": "aucun"
-                  },
-                  "confection_instructions": {
-                    "type": "string",
-                    "maxLength": 1000
-                  },
-                  "confection_delay_days": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "default": 0
-                  },
-                  "confection_artisan_id": {
-                    "type": "string",
-                    "format": "uuid"
-                  },
-                  "module_type": {
-                    "type": "string",
-                    "enum": [
-                      "mariage",
-                      "couture",
-                      "lunettes",
-                      "parfum",
-                      "bijoux",
-                      "electronique",
-                      "cosmetique",
-                      "alimentaire",
-                      "autre"
-                    ]
-                  },
-                  "module_fabric_id": {
-                    "type": "string",
-                    "format": "uuid"
-                  },
-                  "module_fabric_type": {
-                    "type": "string",
-                    "maxLength": 100
-                  },
-                  "module_size": {
-                    "type": "string",
-                    "maxLength": 20
-                  },
-                  "module_retouche": {
-                    "type": "boolean",
-                    "default": false
-                  },
-                  "module_qty_meters": {
-                    "type": "number"
-                  },
-                  "module_accessories": {
-                    "type": "array",
-                    "items": {
-                      "type": "string",
-                      "maxLength": 100
-                    }
-                  },
-                  "order_occasion": {
-                    "type": "string",
-                    "maxLength": 50
-                  },
-                  "use_wallet": {
-                    "type": "boolean",
-                    "default": false
-                  },
-                  "display_market_code": {
-                    "type": "string",
-                    "enum": [
-                      "KM",
-                      "YT",
-                      "CM",
-                      "CG",
-                      null
-                    ]
-                  },
-                  "market_id": {
-                    "type": "any"
-                  }
-                },
-                "required": [
-                  "items",
-                  "payment_mode"
-                ]
-              }
-            }
-          },
-          "x-contract-status": "joi"
-        },
-        "responses": {
-          "200": {
-            "description": "Devis estimatif PDF privé et éphémère, sans commande ni facture",
-            "content": {
-              "application/pdf": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary",
-                  "x-contract-status": "route-read"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Authentification client requise"
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        }
-      }
-    },
     "/api/orders/preview": {
       "post": {
         "summary": "POST /api/orders/preview",
@@ -3203,6 +2969,240 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/orders/quote-pdf": {
+      "post": {
+        "summary": "POST /api/orders/quote-pdf",
+        "x-route-file": "routes/orders/create.js",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "product_id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "quantity": {
+                          "type": "integer",
+                          "default": 1
+                        },
+                        "requested_transport_rail": {
+                          "type": "string",
+                          "enum": [
+                            "SEA_STANDARD",
+                            "AIR_EXPRESS",
+                            null
+                          ],
+                          "default": null
+                        },
+                        "module_type": {
+                          "type": "string",
+                          "enum": [
+                            "mariage",
+                            "couture",
+                            "lunettes",
+                            "parfum",
+                            "bijoux",
+                            "electronique",
+                            "cosmetique",
+                            "alimentaire",
+                            "autre"
+                          ]
+                        },
+                        "module_fabric_id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "module_fabric_type": {
+                          "type": "string",
+                          "maxLength": 100
+                        },
+                        "module_size": {
+                          "type": "string",
+                          "maxLength": 20
+                        },
+                        "module_retouche": {
+                          "type": "boolean"
+                        },
+                        "module_qty_meters": {
+                          "type": "number"
+                        },
+                        "module_accessories": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "maxLength": 100
+                          }
+                        },
+                        "variant_combo": {
+                          "type": "object"
+                        },
+                        "shared_cart_item_id": {
+                          "type": "string",
+                          "format": "uuid"
+                        }
+                      },
+                      "required": [
+                        "product_id"
+                      ]
+                    },
+                    "minItems": 1
+                  },
+                  "relais_id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "payment_mode": {
+                    "type": "string",
+                    "enum": [
+                      "stripe_eur",
+                      "cash_relais",
+                      "paypal_eur",
+                      "mobile_money"
+                    ]
+                  },
+                  "stripe_payment_intent": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "tracking_phone": {
+                    "type": "string"
+                  },
+                  "pickup_code_recipient": {
+                    "type": "string",
+                    "enum": [
+                      "buyer",
+                      "organizer"
+                    ],
+                    "default": "buyer"
+                  },
+                  "confection_type": {
+                    "type": "string",
+                    "enum": [
+                      "aucun",
+                      "couture_standard",
+                      "sur_mesure",
+                      "lunettes_vue",
+                      "lunettes_soleil",
+                      "broderie",
+                      "retouche",
+                      "autre"
+                    ],
+                    "default": "aucun"
+                  },
+                  "confection_instructions": {
+                    "type": "string",
+                    "maxLength": 1000
+                  },
+                  "confection_delay_days": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "default": 0
+                  },
+                  "confection_artisan_id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "module_type": {
+                    "type": "string",
+                    "enum": [
+                      "mariage",
+                      "couture",
+                      "lunettes",
+                      "parfum",
+                      "bijoux",
+                      "electronique",
+                      "cosmetique",
+                      "alimentaire",
+                      "autre"
+                    ]
+                  },
+                  "module_fabric_id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "module_fabric_type": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "module_size": {
+                    "type": "string",
+                    "maxLength": 20
+                  },
+                  "module_retouche": {
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "module_qty_meters": {
+                    "type": "number"
+                  },
+                  "module_accessories": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "maxLength": 100
+                    }
+                  },
+                  "order_occasion": {
+                    "type": "string",
+                    "maxLength": 50
+                  },
+                  "use_wallet": {
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "display_market_code": {
+                    "type": "string",
+                    "enum": [
+                      "KM",
+                      "YT",
+                      "CM",
+                      "CG",
+                      null
+                    ]
+                  },
+                  "market_id": {
+                    "type": "any"
+                  }
+                },
+                "required": [
+                  "items",
+                  "payment_mode"
+                ]
+              }
+            }
+          },
+          "x-contract-status": "joi"
+        },
+        "responses": {
+          "200": {
+            "description": "Devis estimatif PDF privé et éphémère, sans commande ni facture",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary",
+                  "x-contract-status": "route-read"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentification client requise"
           },
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
@@ -30019,45 +30019,6 @@
                 }
               }
             }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        }
-      }
-    },
-    "/api/purchasing/po/{po_id}/commitment-pdf": {
-      "get": {
-        "summary": "GET /api/purchasing/po/{po_id}/commitment-pdf",
-        "x-route-file": "routes/purchasing.js",
-        "parameters": [
-          {
-            "name": "po_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Bon de commande fournisseur interne figé à la validation de l’engagement",
-            "content": {
-              "application/pdf": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary",
-                  "x-contract-status": "route-read"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Identifiant du bon de commande invalide"
-          },
-          "404": {
-            "description": "Bon de commande PDF indisponible"
           },
           "429": {
             "description": "Too Many Requests — rate limit exceeded"

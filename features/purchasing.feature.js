@@ -152,6 +152,8 @@ module.exports = {
       'migrations/281_supplier_payment_proofs.sql',
       'migrations/284_supplier_execution_fulfillments.sql',
       'migrations/294_supplier_payment_settlements.sql',
+      'migrations/404_manual_purchase_executions.sql',
+      'migrations/407_purchase_variance_decisions.sql',
     ],
     scripts: [
       'scripts/purchase-lines-parity-check.js',
@@ -212,6 +214,8 @@ module.exports = {
       'tests/unit/supplier-fulfillment-reconciliation.test.js',
       'tests/integration/supplier-execution-fulfillments-postgres.test.js',
       'tests/unit/purchasing-engagement-service.test.js',
+      'tests/unit/hub-authorization-cumulative-cap.test.js',
+      'tests/unit/hub-authorization-variance-decision.test.js',
       'tests/unit/purchasing-completion-service.test.js',
       'tests/unit/purchasing-grouped-service.test.js',
       'tests/unit/hub-operations-grouped-completion.test.js',

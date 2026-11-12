@@ -8132,6 +8132,13 @@
       {
         "feature": "documents",
         "category": "services",
+        "declared": "services/documents/document-reconciliation.js",
+        "resolvedPath": "services/documents/document-reconciliation.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "documents",
+        "category": "services",
         "declared": "services/documents/customs-invoice.js",
         "resolvedPath": "services/documents/customs-invoice.js",
         "status": "resolved-in-technical-graph"
@@ -8337,6 +8344,13 @@
         "category": "tests",
         "declared": "tests/unit/refund-receipt.test.js",
         "resolvedPath": "tests/unit/refund-receipt.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "documents",
+        "category": "tests",
+        "declared": "tests/unit/document-reconciliation.test.js",
+        "resolvedPath": "tests/unit/document-reconciliation.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -16455,6 +16469,13 @@
       {
         "feature": "orders",
         "category": "services",
+        "declared": "services/order-checkout-idempotency.js",
+        "resolvedPath": "services/order-checkout-idempotency.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "orders",
+        "category": "services",
         "declared": "services/public-cart-quote-service.js",
         "resolvedPath": "services/public-cart-quote-service.js",
         "status": "resolved-in-technical-graph"
@@ -16535,6 +16556,20 @@
         "declared": "services/relay-return-request-service.js",
         "resolvedPath": "services/relay-return-request-service.js",
         "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "orders",
+        "category": "services",
+        "declared": "services/relay-return-compensation-service.js",
+        "resolvedPath": "services/relay-return-compensation-service.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "orders",
+        "category": "services",
+        "declared": "services/sav-replacement-order.js",
+        "resolvedPath": "services/sav-replacement-order.js",
+        "status": "resolved-on-disk-no-header"
       },
       {
         "feature": "orders",
@@ -16938,6 +16973,20 @@
       {
         "feature": "orders",
         "category": "tests",
+        "declared": "tests/unit/relay-return-compensation-service.test.js",
+        "resolvedPath": "tests/unit/relay-return-compensation-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "orders",
+        "category": "tests",
+        "declared": "tests/unit/sav-replacement-order.test.js",
+        "resolvedPath": "tests/unit/sav-replacement-order.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "orders",
+        "category": "tests",
         "declared": "tests/unit/payment-service.test.js",
         "resolvedPath": "tests/unit/payment-service.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -17059,6 +17108,20 @@
         "category": "tests",
         "declared": "tests/unit/orders-create-route.test.js",
         "resolvedPath": "tests/unit/orders-create-route.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "orders",
+        "category": "tests",
+        "declared": "tests/unit/order-checkout-idempotency.test.js",
+        "resolvedPath": "tests/unit/order-checkout-idempotency.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "orders",
+        "category": "tests",
+        "declared": "tests/integration/checkout-idempotency-postgres.test.js",
+        "resolvedPath": "tests/integration/checkout-idempotency-postgres.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -18506,13 +18569,6 @@
       {
         "feature": "purchasing",
         "category": "migrations",
-        "declared": "migrations/408_hub_purchase_commitment_pdf.sql",
-        "resolvedPath": "migrations/408_hub_purchase_commitment_pdf.sql",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "purchasing",
-        "category": "migrations",
         "declared": "migrations/275_supplier_platform_cj.sql",
         "resolvedPath": "migrations/275_supplier_platform_cj.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -18606,6 +18662,20 @@
         "category": "migrations",
         "declared": "migrations/294_supplier_payment_settlements.sql",
         "resolvedPath": "migrations/294_supplier_payment_settlements.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "migrations",
+        "declared": "migrations/404_manual_purchase_executions.sql",
+        "resolvedPath": "migrations/404_manual_purchase_executions.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "migrations",
+        "declared": "migrations/407_purchase_variance_decisions.sql",
+        "resolvedPath": "migrations/407_purchase_variance_decisions.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -18998,6 +19068,20 @@
         "category": "tests",
         "declared": "tests/unit/purchasing-engagement-service.test.js",
         "resolvedPath": "tests/unit/purchasing-engagement-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/unit/hub-authorization-cumulative-cap.test.js",
+        "resolvedPath": "tests/unit/hub-authorization-cumulative-cap.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/unit/hub-authorization-variance-decision.test.js",
+        "resolvedPath": "tests/unit/hub-authorization-variance-decision.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -19430,6 +19514,13 @@
       {
         "feature": "refunds",
         "category": "services",
+        "declared": "services/sav-ledger-refund.js",
+        "resolvedPath": "services/sav-ledger-refund.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "refunds",
+        "category": "services",
         "declared": "services/refund-evidence-verifier.js",
         "resolvedPath": "services/refund-evidence-verifier.js",
         "status": "resolved-in-technical-graph"
@@ -19488,6 +19579,13 @@
         "category": "tests",
         "declared": "tests/unit/refund-intent-ledger.test.js",
         "resolvedPath": "tests/unit/refund-intent-ledger.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "refunds",
+        "category": "tests",
+        "declared": "tests/unit/sav-ledger-refund.test.js",
+        "resolvedPath": "tests/unit/sav-ledger-refund.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -26302,14 +26400,6 @@
       },
       {
         "feature": "purchasing",
-        "entry": "GET /api/purchasing/po/:po_id/commitment-pdf",
-        "method": "GET",
-        "path": "/api/purchasing/po/{id}/commitment-pdf",
-        "routeFile": "routes/purchasing.js",
-        "status": "resolved-owned"
-      },
-      {
-        "feature": "purchasing",
         "entry": "POST /api/purchasing/po/prepare",
         "method": "POST",
         "path": "/api/purchasing/po/prepare",
@@ -30032,12 +30122,6 @@
       },
       {
         "from": "purchasing",
-        "to": "documents",
-        "raw": "documents (rendu PDF interne du bon de commande validé)",
-        "resolved": true
-      },
-      {
-        "from": "purchasing",
         "to": "supplier-connectivity",
         "raw": "supplier-connectivity (autorité provider, Supplier Order Identity opaque et contrats adapter fail-closed)",
         "resolved": true
@@ -30154,6 +30238,12 @@
         "from": "recommendations",
         "to": "providers-services",
         "raw": "providers-services — isServiceExposable()/getService()/isPhysicalOfferExposable()/getPhysicalOffer() pour les cartes tierces",
+        "resolved": true
+      },
+      {
+        "from": "refunds",
+        "to": "market",
+        "raw": "market (prorata SAV dans les devises figées via fx-authority)",
         "resolved": true
       },
       {
@@ -37203,12 +37293,20 @@
                 "targetFile": "services/relay-return-request-service.js"
               },
               {
+                "sourceFileId": "routes/relay-dashboard.js",
+                "targetFile": "services/relay-return-compensation-service.js"
+              },
+              {
                 "sourceFileId": "tests/unit/admin-orders-route.test.js",
                 "targetFile": "routes/admin/orders.js"
               },
               {
                 "sourceFileId": "tests/unit/hub-dashboard-route.test.js",
                 "targetFile": "services/order-status-machine.js"
+              },
+              {
+                "sourceFileId": "tests/unit/relay-dashboard-route.test.js",
+                "targetFile": "services/relay-return-compensation-service.js"
               }
             ]
           },
@@ -37744,6 +37842,14 @@
               },
               {
                 "sourceFileId": "services/documents/refund-receipt.js",
+                "targetFile": "utils/logger.js"
+              },
+              {
+                "sourceFileId": "services/documents/document-reconciliation.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/documents/document-reconciliation.js",
                 "targetFile": "utils/logger.js"
               },
               {
@@ -40267,6 +40373,10 @@
               {
                 "sourceFileId": "tests/unit/pickup-exceptional-collection-service.test.js",
                 "targetFile": "services/pickup-authorization-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/pickup-exceptional-collection-service.test.js",
+                "targetFile": "utils/name-normalize.js"
               }
             ]
           },
@@ -40398,6 +40508,27 @@
         "from": "logistics",
         "to": "documents",
         "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/pickup-collection-service.js",
+                "targetFile": "services/documents/pickup-proof.js"
+              },
+              {
+                "sourceFileId": "services/pickup-exceptional-collection-service.js",
+                "targetFile": "services/documents/pickup-proof.js"
+              },
+              {
+                "sourceFileId": "tests/integration/relay-return-intake-postgres.test.js",
+                "targetFile": "services/invoice-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/pickup-exceptional-collection-service.test.js",
+                "targetFile": "services/documents/pickup-proof.js"
+              }
+            ]
+          },
           {
             "channel": "data-read",
             "evidence": [
@@ -41039,6 +41170,10 @@
                 "targetFile": "middleware/require-market-delegated-capability.js"
               },
               {
+                "sourceFileId": "routes/hub.js",
+                "targetFile": "services/market-delegation-service.js"
+              },
+              {
                 "sourceFileId": "tests/unit/market-transport-sale-rate-command.test.js",
                 "targetFile": "services/market-delegation-service.js"
               }
@@ -41225,6 +41360,10 @@
               {
                 "sourceFileId": "routes/pickup-secret.js",
                 "targetFile": "services/order-status-machine.js"
+              },
+              {
+                "sourceFileId": "tests/integration/relay-return-intake-postgres.test.js",
+                "targetFile": "services/relay-return-compensation-service.js"
               },
               {
                 "sourceFileId": "tests/unit/order-physical-coverage-gate.test.js",
@@ -43796,6 +43935,10 @@
                 "targetFile": "utils/rates.js"
               },
               {
+                "sourceFileId": "tests/integration/checkout-idempotency-postgres.test.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "tests/unit/public-cart-quote-service.test.js",
                 "targetFile": "db.js"
               },
@@ -43978,6 +44121,10 @@
                 "targetFile": "utils/parcelSync.js"
               },
               {
+                "sourceFileId": "tests/unit/order-status-machine.test.js",
+                "targetFile": "services/pickup-secret-service.js"
+              },
+              {
                 "sourceFileId": "tests/unit/orders-create-route.test.js",
                 "targetFile": "services/routing.js"
               }
@@ -44071,6 +44218,10 @@
               },
               {
                 "sourceFileId": "services/order-fx-snapshot.js",
+                "targetFile": "services/fx-authority.js"
+              },
+              {
+                "sourceFileId": "services/relay-return-compensation-service.js",
                 "targetFile": "services/fx-authority.js"
               },
               {
@@ -44420,8 +44571,16 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "services/sav-replacement-order.js",
+                "targetFile": "services/purchasing-trigger-service.js"
+              },
+              {
                 "sourceFileId": "services/cancel-order-purchase-orders.js",
                 "targetFile": "services/purchasing-cancel-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/sav-replacement-order.test.js",
+                "targetFile": "services/purchasing-trigger-service.js"
               }
             ]
           }
@@ -44440,6 +44599,10 @@
                 "targetFile": "services/refund-service.js"
               },
               {
+                "sourceFileId": "services/relay-return-compensation-service.js",
+                "targetFile": "services/sav-ledger-refund.js"
+              },
+              {
                 "sourceFileId": "routes/admin/orders.js",
                 "targetFile": "services/item-refund-reservation-service.js"
               },
@@ -44454,6 +44617,10 @@
               {
                 "sourceFileId": "tests/unit/admin-order-refund.test.js",
                 "targetFile": "services/refund-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/relay-return-compensation-service.test.js",
+                "targetFile": "services/sav-ledger-refund.js"
               },
               {
                 "sourceFileId": "tests/unit/orders-cancel-route.test.js",
@@ -44542,6 +44709,10 @@
               },
               {
                 "sourceFileId": "services/order-checkout-persistence.js",
+                "targetFile": "services/wallet-service.js"
+              },
+              {
+                "sourceFileId": "services/relay-return-compensation-service.js",
                 "targetFile": "services/wallet-service.js"
               },
               {
@@ -46557,22 +46728,6 @@
       },
       {
         "from": "purchasing",
-        "to": "documents",
-        "channels": [
-          {
-            "channel": "static-code",
-            "evidence": [
-              {
-                "sourceFileId": "services/hub-authorization-service.js",
-                "targetFile": "services/documents/pdf-renderer.js"
-              }
-            ]
-          }
-        ],
-        "conformanceStatus": "DECLARED_AND_OBSERVED"
-      },
-      {
-        "from": "purchasing",
         "to": "economic-engine",
         "channels": [
           {
@@ -47475,6 +47630,22 @@
                 "targetFile": "services/documents/refund-receipt.js"
               },
               {
+                "sourceFileId": "services/item-refund-psp-orchestrator.js",
+                "targetFile": "services/documents/refund-receipt.js"
+              },
+              {
+                "sourceFileId": "services/sav-ledger-refund.js",
+                "targetFile": "services/documents/refund-receipt.js"
+              },
+              {
+                "sourceFileId": "tests/unit/item-refund-psp-orchestrator.test.js",
+                "targetFile": "services/documents/refund-receipt.js"
+              },
+              {
+                "sourceFileId": "tests/unit/sav-ledger-refund.test.js",
+                "targetFile": "services/documents/refund-receipt.js"
+              },
+              {
                 "sourceFileId": "tests/unit/refund-receipt-html.test.js",
                 "targetFile": "utils/documents/refund-receipt-html.js"
               }
@@ -47523,6 +47694,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "services/item-refund-psp-orchestrator.js",
+                "targetFile": "utils/logger.js"
+              },
+              {
                 "sourceFileId": "services/refund-intent-ledger.js",
                 "targetFile": "db.js"
               },
@@ -47549,6 +47724,22 @@
               {
                 "table": "international_shipment_relay_receipts",
                 "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "refunds",
+        "to": "market",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/sav-ledger-refund.js",
+                "targetFile": "services/fx-authority.js"
               }
             ]
           }
@@ -47609,6 +47800,10 @@
             "evidence": [
               {
                 "sourceFileId": "services/item-refund-psp-orchestrator.js",
+                "targetFile": "services/paypal-client.js"
+              },
+              {
+                "sourceFileId": "services/sav-ledger-refund.js",
                 "targetFile": "services/paypal-client.js"
               },
               {
@@ -49329,7 +49524,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2310
+        "filesObserved": 2323
       },
       "boutique": {
         "filesObserved": 216,
@@ -52648,6 +52843,19 @@
       "lifecycleOwner": "orders",
       "resolution": "single-writer"
     },
+    "order_checkout_idempotency": {
+      "writers": [
+        {
+          "feature": "orders",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "orders",
+      "resolution": "declared-table-owner"
+    },
     "cash_collections": {
       "writers": [
         {
@@ -53235,8 +53443,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 697,
-        "technicalNodesOwned": 697,
+        "technicalNodesTotal": 698,
+        "technicalNodesOwned": 698,
         "technicalOrphans": 0
       },
       "dash": {

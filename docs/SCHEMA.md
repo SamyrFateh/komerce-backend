@@ -89,6 +89,30 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 ### 4.1 Logistique commande (7 tables)
 
+<!-- schema-pending
+object: purchase_variance_decisions
+kind: table
+migration: 407
+section: ### 4.1 Logistique commande (7 tables)
+role: Autorisation distincte et immuable de la directrice Hub pour dépasser le total vendeur justifié, plafonnée par l'autorisation de paiement initiale, avec motif et pièce.
+-->
+
+<!-- schema-pending
+object: manual_purchase_executions
+kind: table
+migration: 404
+section: ### 4.1 Logistique commande (7 tables)
+role: Allocations vendeur réel append-only par ligne PO manuelle, quantité et montant justifiés, canal et preuve. Ne pas interpréter comme un paiement fournisseur.
+-->
+
+<!-- schema-pending
+object: order_checkout_idempotency
+kind: table
+migration: 408
+section: ### 4.1 Logistique commande (7 tables)
+role: Réservation transactionnelle UNIQUE(user_id, idempotency_key) et snapshot immuable du résultat du checkout ; réémission sans double création, stock ni débit wallet. Ne pas confondre avec une table live tant que le dump Railway ne confirme pas la migration.
+-->
+
 | Table | Rôle |
 |---|---|
 | `orders` | Commande client (table maîtresse, 60+ colonnes). **Migration 315 (2026-10-22, `intended_migration_schema`)** : + `fx_snapshot` JSONB nullable (vérité monétaire figée de la transaction : montant d'origine, montant confirmé dans la devise du marché du relais, montant EUR encaissé, jambes FX sourcées ; immuable une fois posé, lu par paiements et remboursements, jamais reconverti). **Migration 313 (2026-10-22, `intended_migration_schema`)** : + `transport_pricing_snapshot` JSONB nullable (preuve figée du tarif de vente transport appliqué : devise du marché, pivot EUR, ids de ligne de tarif, jambes FX ; distinct de `display_parity_snapshot`, réservé à l'affichage). **Migration 303 (2026-10-19, `intended_migration_schema`)** : + `simulation_scope` TEXT nullable (NULL = activité réelle ; sinon périmètre de recette, ex. `RCT1`, format contrôlé, immuable une fois posé par trigger). Exclu par défaut des agrégats d'activité réelle ; inclus seulement quand le périmètre est demandé. |
@@ -142,7 +166,7 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 | Table | Rôle |
 |---|---|
-| `wallets` | Wallet client (1 par user, création lazy). **Contrainte DB** `chk_balance_non_negative CHECK (balance_kmf >= 0)` ajoutée en migration 068 — filet de sécurité contre un solde négatif même en cas de requête SQL directe. **Validée en prod** (confirmé dump Railway 26 mai 2026 : contrainte sans `NOT VALID`). |
+| `wallets` | Wallet client (1 par (user, devise) depuis la migration 405 : colonne `currency` NOT NULL défaut `'KMF'`, unique `(user_id, currency)` ; les colonnes `*_kmf` portent des unités de la devise du wallet, aucune conversion implicite entre soldes ; création lazy). **Contrainte DB** `chk_balance_non_negative CHECK (balance_kmf >= 0)` ajoutée en migration 068 — filet de sécurité contre un solde négatif même en cas de requête SQL directe. **Validée en prod** (confirmé dump Railway 26 mai 2026 : contrainte sans `NOT VALID`). |
 | `wallet_transactions` | Transactions immutables. |
 | `wallet_credit_lots` | Lots de crédits (consommation FIFO). |
 | `wallet_consumptions` | Consommations de lots (audit). **Append-only depuis migration 066** : suppression physique remplacée par marquage `reversed_at = NOW()` + `reversal_reason`. Index partiel `idx_wcons_active WHERE reversed_at IS NULL` pour filtrer les consommations actives. `wallet-service.removeFromOrder()` fait `UPDATE` et non `DELETE`. |
@@ -923,3 +947,10 @@ Migrations 391–394 appliquées sur Railway staging le 2026-11-04 à 13:09 UTC 
 
 
 <!-- schema-pending: order_comments.hub_stage_key (migration 398, intended_migration_schema; not yet live) -->
+
+
+<!-- schema-pending: relay_return_compensations (migration 406) -->
+### relay_return_compensations (migration 406 — intended_migration_schema)
+
+`relay_return_compensations` is a new append-only table proposed by migration 406. It records one admin-motivated after-handover compensation decision per product-return dispute. Wallet credits commit with the decision. Migration 409 links a PSP decision to its durable `refund_intent_id` and `refund_amount_kmf`; settlement is read from the refund ledger. Migration 410 links a no-charge replacement via `replacement_order_id` and records `order_items.replacement_source_item_id` for the exact original item. The `sav_replacement` payment mode has no client capture.
+<!-- /schema-pending -->

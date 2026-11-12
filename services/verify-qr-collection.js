@@ -53,7 +53,7 @@ async function verifyQrCollection({ token, orderId, user }) {
     await client.query('COMMIT');
 
     // Preuve de retrait (post-commit, non bloquant)
-    pickupProofService.issue(order.id, { issuedBy: user.id }).catch(err => {
+    pickupProofService.issueForLatestHandoff(order.id, { issuedBy: user.id }).catch(err => {
       log.warn({ err, order_id: order.id }, '[verify-qr] émission preuve de retrait échouée (non-fatal)');
     });
 

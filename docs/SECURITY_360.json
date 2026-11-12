@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-11-12T18:59:19.434Z",
+  "generatedAt": "2026-11-12T17:18:18.323Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 828,
-    "protected": 769,
+    "total": 832,
+    "protected": 773,
     "public": 59,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -989,6 +989,13 @@
     },
     {
       "key": "GET /api/admin/documents/{id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/documents/reconcile",
       "level": "PROTECTED",
       "roles": [
         "admin"
@@ -5191,14 +5198,6 @@
       ]
     },
     {
-      "key": "GET /api/purchasing/po/{po_id}/commitment-pdf",
-      "level": "PROTECTED",
-      "roles": [
-        "admin",
-        "agent_hub"
-      ]
-    },
-    {
       "key": "POST /api/purchasing/po/{po_id}/confirm",
       "level": "PROTECTED",
       "roles": [
@@ -6057,6 +6056,36 @@
       "key": "POST /webhook/meta-whatsapp",
       "level": "PUBLIC",
       "roles": []
+    },
+    {
+      "key": "GET /api/purchasing/po/{po_id}/reconciliation",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/purchasing/po/{po_id}/variance-decision",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "GET /api/relay/returns/{id}/compensation-proposal",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/relay/returns/{id}/compensation",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
     }
   ]
 }

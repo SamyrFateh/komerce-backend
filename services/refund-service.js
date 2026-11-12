@@ -8,7 +8,7 @@
  * @outputs       refund row, stripe/wallet refund result
  * @depends       db.js, stripe, services/wallet-service.js, services/order-fx-snapshot.js
  * @used-by       routes/orders/cancel.js, services/admin-order-refund.js, services/cancel-shared-cart-with-refunds.js
- * @db-read       orders, refunds, wallets, markets
+ * @db-read       orders, refunds, wallets, wallet_transactions, markets
  * @db-write      refunds
  * @db-txn        resolve_before_behavior_change
  * @doctrine      refund_confirmed_only, idempotent_stripe_refund, resolve_before_behavior_change
@@ -34,7 +34,7 @@
 
 const stripe        = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const walletService = require('./wallet-service');
-const { assertRefundWithinCaptured, assertRefundRecordCompatible } = require('./order-fx-snapshot');
+const { assertRefundWithinCaptured, assertRefundRecordCompatible, prorateMarketAmount } = require('./order-fx-snapshot');
 const refundReceiptService = require('./documents/refund-receipt');
 const log = require('../utils/logger').child({ module: 'refund-service' });
 
@@ -53,19 +53,56 @@ async function _refreshCanonicalMargin(dbClient, orderId) {
 }
 
 /**
- * Le wallet est un crédit en KMF. Rembourser une commande d'un Market dont la devise n'est pas le KMF
- * sur ce wallet mélangerait les devises : refus fail-closed (409), jamais de conversion implicite.
- * Commande sans market_id (historique pré-Markets) : comportement historique conservé.
+ * Wallet multi-devise (migration 405) : le remboursement wallet est crédité dans la devise commerciale du marché de la
+ * commande, jamais converti vers un autre solde. Montant = part exacte du montant de marché figé à la commande
+ * (`fx_snapshot.market`, prorata sur le KMF d'origine, aucun taux du jour) ; le dernier remboursement solde exactement.
+ * Commande sans market_id (historique pré-Markets) ou marché KMF : montant KMF inchangé.
  */
-async function assertWalletRefundCurrency(dbClient, order) {
-  if (!order || !order.market_id) return;
+async function resolveWalletRefundCredit(dbClient, order, amountKmf, refundType) {
+  if (!order || !order.market_id) return { currency: 'KMF', amount: amountKmf };
   const { rows: [market] } = await dbClient.query('SELECT currency FROM markets WHERE id = $1', [order.market_id]);
-  if (!market || String(market.currency ?? '').trim().toUpperCase() !== 'KMF') {
-    const err = new Error('Remboursement wallet (KMF) impossible pour une commande d\'un marché dont la devise n\'est pas le KMF.');
-    err.code = 'REFUND_WALLET_CURRENCY_UNSUPPORTED';
+  const currency = String(market?.currency ?? '').trim().toUpperCase();
+  if (!currency) {
+    const err = new Error('Devise du marché inconnue : remboursement wallet refusé.');
+    err.code = 'REFUND_WALLET_CURRENCY_UNKNOWN';
     err.statusCode = 409;
     throw err;
   }
+  if (currency === 'KMF') return { currency, amount: amountKmf };
+
+  const snap = typeof order.fx_snapshot === 'string' ? JSON.parse(order.fx_snapshot) : order.fx_snapshot;
+  const marketTotal = Number(snap?.market?.amount);
+  if (!snap?.market || String(snap.market.currency).toUpperCase() !== currency || !(marketTotal > 0)
+      || Number(snap.market.minor_unit) !== 0 || !(Number(order.total_kmf) > 0)) {
+    const err = new Error('Montant de marché figé indisponible : remboursement wallet refusé.');
+    err.code = 'REFUND_WALLET_MARKET_AMOUNT_MISSING';
+    err.statusCode = 409;
+    throw err;
+  }
+  const { rows: [prior] } = await dbClient.query(
+    `SELECT COALESCE(SUM(amount_kmf), 0)::text AS kmf FROM refunds
+      WHERE order_id = $1 AND status IN ('completed','pending') AND refund_type <> $2`, [order.id, refundType]);
+  const remainingKmf = Number(order.total_kmf) - Number(prior.kmf);
+  let amount;
+  if (Number(amountKmf) >= remainingKmf - 1e-9) {
+    // Reste complet : solde exact du montant de marché, déduction faite des crédits wallet déjà émis pour la commande.
+    const { rows: [paid] } = await dbClient.query(
+      `SELECT COALESCE(SUM(wt.amount_kmf), 0)::text AS amt
+         FROM wallet_transactions wt JOIN wallets w ON w.id = wt.wallet_id
+        WHERE wt.reference_id = $1 AND wt.type = 'credit' AND wt.reason = 'order_cancel' AND w.currency = $2
+          AND (wt.idempotency_key IS NULL OR (wt.idempotency_key NOT LIKE $3 AND wt.idempotency_key NOT LIKE $4))`,
+      [order.id, currency, `refund_${order.id}_${refundType}_%`, `refund_fb_${order.id}_${refundType}_%`]);
+    amount = Math.max(0, Math.round(marketTotal - Number(paid.amt)));
+  } else {
+    amount = prorateMarketAmount(String(amountKmf), String(marketTotal), String(order.total_kmf), 0);
+  }
+  if (!(amount >= 1)) {
+    const err = new Error('Montant wallet nul dans la devise du marché : remboursement refusé.');
+    err.code = 'REFUND_WALLET_AMOUNT_BELOW_MINOR_UNIT';
+    err.statusCode = 409;
+    throw err;
+  }
+  return { currency, amount };
 }
 
 /**
@@ -123,10 +160,11 @@ async function processRefund(dbClient, order, amountKmf, amountEur, refundType, 
     log.info(`[CANCEL] Stripe refund OK: ${stripeRefundId} — ${amountEur}€ pour ${order.reference}`);
   } else {
     refundMethod = 'wallet_credit';
-    await assertWalletRefundCurrency(dbClient, order);
+    const walletCredit = await resolveWalletRefundCredit(dbClient, order, amountKmf, refundType);
     const result = await walletService.credit(dbClient, {
       userId:         order.user_id,
-      amountKmf,
+      amountKmf:      walletCredit.amount,
+      currency:       walletCredit.currency,
       reason:         'order_cancel',
       referenceId:    order.id,
       idempotencyKey,
@@ -230,10 +268,11 @@ async function processRefundWithFallback(dbClient, order, amountKmf, amountEur, 
 
   if (!refundMethod || refundMethod === 'wallet_credit') {
     refundMethod = 'wallet_credit';
-    await assertWalletRefundCurrency(dbClient, order);
+    const walletCredit = await resolveWalletRefundCredit(dbClient, order, amountKmf, refundType);
     const result = await walletService.credit(dbClient, {
       userId:         order.user_id,
-      amountKmf,
+      amountKmf:      walletCredit.amount,
+      currency:       walletCredit.currency,
       reason:         'order_cancel',
       referenceId:    order.id,
       // ← P0 FIX : clé stable (avant : Date.now() = jamais idempotent !)

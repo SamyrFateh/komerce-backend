@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-11-12T11:23:20.286Z",
+  "generatedAt": "2026-11-12T17:15:26.685Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 813,
+  "count": 815,
   "routes": [
     {
       "method": "GET",
@@ -798,6 +798,18 @@
       "fullPath": "/api/admin/documents/:id",
       "mountPrefix": "/api/admin",
       "localPath": "/documents/:id",
+      "routeFile": "routes/admin/documents.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js",
+        "routes/admin.js",
+        "routes/admin/index.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/documents/reconcile",
+      "mountPrefix": "/api/admin",
+      "localPath": "/documents/reconcile",
       "routeFile": "routes/admin/documents.js",
       "mountedFrom": [
         "bootstrap/api-routes.js",
@@ -6098,6 +6110,17 @@
       "mountPrefix": "/api/orders",
       "localPath": "/problems",
       "routeFile": "routes/orders/list.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js",
+        "routes/orders.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/orders/quote-pdf",
+      "mountPrefix": "/api/orders",
+      "localPath": "/quote-pdf",
+      "routeFile": "routes/orders/create.js",
       "mountedFrom": [
         "bootstrap/api-routes.js",
         "routes/orders.js"

@@ -210,6 +210,28 @@ router.post('/returns/intake', authenticate, requireRole(['agent_relais']), asyn
   }
 });
 
+// Compensation SAV après remise : décision admin motivée, un seul mouvement canonique, jamais automatique.
+const returnCompensation = require('../services/relay-return-compensation-service');
+const compensationError = (err, res, next) => (err instanceof returnCompensation.CompensationError
+  ? res.status(err.status).json({ error: err.message, code: err.code }) : next(err));
+router.get('/returns/:id/compensation-proposal', authenticate, requireRole(['admin']), async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'private, no-store');
+    res.json(await returnCompensation.proposeCompensation({ actor: req.user, requestId: req.params.id, db }));
+  } catch (err) { compensationError(err, res, next); }
+});
+router.post('/returns/:id/compensation', authenticate, requireRole(['admin']), async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'private, no-store');
+    const out = await returnCompensation.decideCompensation({
+      actor: req.user, requestId: req.params.id, movement: req.body?.movement || 'wallet_credit',
+      amount: req.body?.amount, reason: req.body?.reason, scaleCode: req.body?.scale_code, db,
+    });
+    const pending = ['reserved', 'processing', 'unknown'].includes(out.refund_status);
+    res.status(pending ? 202 : out.replayed ? 200 : 201).json(out);
+  } catch (err) { compensationError(err, res, next); }
+});
+
 // GET /dashboard
 router.get('/dashboard', ...relayRead, async (req, res, next) => {
   try {

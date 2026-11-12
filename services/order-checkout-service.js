@@ -75,6 +75,7 @@ const { resolveRoutingFromRelais, RoutingError } = require('./routing');
 const { resolveOrderItemTransportRail, TransportPricingError } = require('./transport-pricing');
 const { resolveDisplaySnapshot } = require('./order-display-snapshot');
 const { runOrderPostCommitHooks } = require('./order-post-commit-hooks');
+const { claimCheckout, completeCheckout } = require('./order-checkout-idempotency');
 const { resolveCheckoutItems } = require('./order-checkout-item-resolution');
 const { applyActiveMarketPricesToCheckoutItems } = require('./market-local-price-resolution-service');
 const { MarketCommercialPriceError } = require('./market-commercial-price-service');
@@ -103,7 +104,7 @@ function fail(status, body) {
 
 // previewOnly : même calcul que la création (prix, transport, remise, wallet) puis ROLLBACK avant toute écriture
 // de commande — source unique du total présenté au client (aucun recalcul côté navigateur).
-async function runOrderCheckout({ user, body, internalSimulation = null, previewOnly = false }) {
+async function runOrderCheckout({ user, body, internalSimulation = null, previewOnly = false, idempotencyKey = null }) {
   // Paramètre serveur uniquement : routes/orders/create.js ne transmet jamais ce contexte.
   // Validation avant tout accès DB ; un payload client simulation_scope n'est jamais lu.
   const hubFixture = internalSimulation !== null && internalSimulation.scope === 'E2E-HUB-V1';
@@ -124,6 +125,17 @@ async function runOrderCheckout({ user, body, internalSimulation = null, preview
 
   try {
     await client.query('BEGIN');
+
+    // Rejoindre l'ordre existant AVANT tout calcul, wallet ou allocation.
+    // L'unicité (user_id, key) arbitre les requêtes concurrentes au niveau PG.
+    // Les fixtures de recette ont leur propre verrou de référence.
+    const checkoutClaim = (!previewOnly && !internalSimulation && idempotencyKey)
+      ? await claimCheckout(client, { userId: user.id, key: idempotencyKey, body })
+      : null;
+    if (checkoutClaim?.replayed) {
+      await client.query('ROLLBACK');
+      return { ok: true, ...checkoutClaim.snapshot, replayed: true };
+    }
 
     if (internalSimulation) {
       // Verrou transactionnel + controle du scope, avant toute autre ecriture.
@@ -403,8 +415,11 @@ async function runOrderCheckout({ user, body, internalSimulation = null, preview
     }
     let creditApplied = 0;
 
-    if (use_wallet && user?.id) {
-      const walletBalance = await walletService.getBalanceInTx(client, user.id);
+    // Wallet : seul un solde dans la devise du marché règle la commande ; le wallet KMF ne s'applique qu'à un marché KMF
+    // (aucune conversion implicite). Règlement par un wallet non-KMF : non géré ici (voir PR L6, section Reprise).
+    const walletCurrencyOk = !checkoutMarket || String(checkoutMarket.currency || 'KMF').toUpperCase() === 'KMF';
+    if (use_wallet && user?.id && walletCurrencyOk) {
+      const walletBalance = await walletService.getBalanceInTx(client, user.id, 'KMF');
       if (walletBalance > 0) {
         creditApplied = Math.min(walletBalance, total_kmf);
         total_kmf -= creditApplied;
@@ -444,6 +459,27 @@ async function runOrderCheckout({ user, body, internalSimulation = null, preview
           total_kmf,
         },
       };
+    }
+
+    // Le prix annoncé par le devis serveur doit être explicitement accepté.
+    // Montant AVANT débit wallet (mais APRES remise) pour ne pas forcer le client
+    // à accepter un nouveau prix lorsque seul son solde wallet a changé.
+    // Les anciens intégrateurs sans clé restent compatibles ; toute tentative
+    // boutique portant Idempotency-Key EXIGE ce montant signé par l'UI.
+    const expectedTotal = body.expected_total_kmf;
+    if (!internalSimulation && checkoutClaim && expectedTotal == null) {
+      await client.query('ROLLBACK');
+      return fail(428, { code: 'price_confirmation_required',
+        error: 'Actualisez le récapitulatif et confirmez le total avant de commander.' });
+    }
+    if (!internalSimulation && expectedTotal != null &&
+        (!Number.isSafeInteger(Number(expectedTotal)) ||
+          Number(expectedTotal) !== Number(total_kmf) + Number(creditApplied))) {
+      await client.query('ROLLBACK');
+      return fail(409, { code: 'price_changed',
+        error: 'Le prix a changé. Consultez le nouveau total et confirmez à nouveau.',
+        expected_total_kmf: Number(expectedTotal),
+        current_total_kmf: Number(total_kmf) + Number(creditApplied) });
     }
 
     // RCT1 : ni remise ni crédit ; prix produit sans supplément maritime,
@@ -555,6 +591,8 @@ async function runOrderCheckout({ user, body, internalSimulation = null, preview
     }
 
     await lockCostSnapshot(client, order);
+    // Snapshot strictement atomique avec la commande, son wallet et son stock.
+    if (checkoutClaim) await completeCheckout(client, checkoutClaim, { order, creditApplied, relais });
 
     await client.query('COMMIT');
 
@@ -589,6 +627,9 @@ async function runOrderCheckout({ user, body, internalSimulation = null, preview
       await client.query('ROLLBACK');
     } catch (_) {
       // no-op
+    }
+    if (err && typeof err.code === 'string' && err.code.startsWith('idempotency_')) {
+      return fail(err.status || 409, { code: err.code, error: err.message });
     }
     // Boutique First (D2) — conflit de réclamation sur un article de liste
     // partagée : le premier paiement confirmé gagne, arbitré par l'index

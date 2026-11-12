@@ -188,6 +188,13 @@ function setCheckoutTotal(total) {
   };
 }
 
+// Les tests de paiement simulent un devis serveur accepté, non un total local.
+function setConfirmedCheckoutQuote(total = 20000) {
+  const od = state.orderData;
+  const items = od.checkoutSelection?.items || buildCheckoutSelection().items;
+  od.serverQuote = { key: checkoutQuoteKey(od.selectedRelaisId, items), total_kmf: total, error: null };
+}
+
 function resetDom() {
   document.body.innerHTML = '';
   dom.orderModal = document.createElement('div');
@@ -642,6 +649,7 @@ describe('b-checkout', () => {
 
       const btn = document.createElement('button');
 
+      setConfirmedCheckoutQuote();
       await submitOrder(btn);
 
       expect(showToast).toHaveBeenCalledWith(
@@ -811,6 +819,7 @@ describe('b-checkout', () => {
       const btn = document.createElement('button');
       btn.dataset.busy = '1';
 
+      setConfirmedCheckoutQuote();
       await submitOrder(btn);
 
       expect(requireIdentity).toHaveBeenCalled();
@@ -823,6 +832,7 @@ describe('b-checkout', () => {
       state.cart = [{ product: { id: 1 }, qty: 1 }];
       const btn = document.createElement('button');
 
+      setConfirmedCheckoutQuote();
       await submitOrder(btn);
 
       expect(apiPost).not.toHaveBeenCalled();
@@ -840,16 +850,18 @@ describe('b-checkout', () => {
       apiPost.mockResolvedValue({ order: { reference: 'CMD-001', id: 55 } });
 
       const btn = document.createElement('button');
+      setConfirmedCheckoutQuote();
       await submitOrder(btn);
 
       // Lot 3 : plus de recipient_name/recipient_phone envoyés — l'identité de
       // retrait est déduite côté backend depuis le compte OTP (tracking_phone).
       expect(apiPost).toHaveBeenCalledWith('/api/orders', expect.objectContaining({
+        expected_total_kmf: 20000,
         items: [{ product_id: '1', quantity: 2, confection_type: 'aucun', variant_combo: null, requested_transport_rail: null }],
         relais_id: 7,
         payment_mode: 'cash_relais',
         tracking_phone: '+269123456',
-      }));
+      }), expect.objectContaining({ idempotencyKey: 'idem-key-1' }));
       const sentPayload = apiPost.mock.calls[0][1];
       expect(sentPayload).not.toHaveProperty('recipient_name');
       expect(sentPayload).not.toHaveProperty('recipient_phone');
@@ -884,6 +896,7 @@ describe('b-checkout', () => {
       apiPost.mockResolvedValue({ order: { reference: 'CMD-002', id: 56 } });
 
       const btn = document.createElement('button');
+      setConfirmedCheckoutQuote();
       await submitOrder(btn);
 
       const payload = apiPost.mock.calls[0][1];
@@ -901,6 +914,7 @@ describe('b-checkout', () => {
 
       const btn = document.createElement('button');
       btn.disabled = true;
+      setConfirmedCheckoutQuote();
       await submitOrder(btn);
 
       expect(showToast).toHaveBeenCalledWith('Relais complet', 'error');
@@ -922,6 +936,7 @@ describe('b-checkout', () => {
       bus.on('checkout:order-failed', onOrderFailed);
 
       const btn = document.createElement('button');
+      setConfirmedCheckoutQuote();
       await submitOrder(btn);
 
       expect(onOrderFailed).toHaveBeenCalledWith({ code: 'shared_cart_item_already_claimed', status: 409 });
@@ -952,6 +967,7 @@ describe('b-checkout', () => {
       window.Stripe = function StripeStub() { return {}; };
 
       const btn = document.createElement('button');
+      setConfirmedCheckoutQuote();
       await submitOrder(btn);
 
       window.Stripe = originalStripe;
@@ -1336,6 +1352,52 @@ describe('b-checkout', () => {
 
       expect(dom.orderBody.querySelector('#ck-guest-hint')).not.toBeNull();
       expect(dom.orderBody.querySelector('#ck-identity-recap')).toBeNull();
+    });
+ 
+    it('P0 — visiteur sans devis : identification accessible avant le total serveur, puis confirmation possible', async () => {
+      state.user = null;
+      state.cart = [{ product: { id: 1, name: 'Chemise', price_kmf: 8990 }, qty: 1 }];
+      state.orderData.selectedRelaisId = 1;
+      apiGet.mockImplementation(path => path === '/api/relais'
+        ? Promise.resolve([{ id: 1, name: 'Relais Moroni', island: 'Grande Comore' }])
+        : Promise.resolve({}));
+      const verified = { full_name: 'Amina', phone: '+269123456' };
+      apiPost.mockImplementation(path => {
+        if (path !== '/api/orders/preview') return Promise.resolve({});
+        if (!state.user) return Promise.reject(Object.assign(new Error('Vérification du numéro requise pour commander'), { code: 'identity_required' }));
+        return Promise.resolve({ items_total_kmf: 8990, transport_price_kmf: 0, discount_kmf: 0, total_kmf: 8990 });
+      });
+      requireIdentity.mockResolvedValue(verified);
+
+      renderCheckout();
+      await flush();
+      const confirm = document.getElementById('btn-confirm-order');
+      const login = dom.orderBody.querySelector('#ck-guest-hint .k-ck-guest-login');
+      expect(confirm.disabled).toBe(true);
+      expect(login).not.toBeNull();
+      login.click();
+      await flush();
+
+      expect(requireIdentity).toHaveBeenCalledWith(expect.objectContaining({ title: 'Sécuriser votre commande' }));
+      expect(state.user).toEqual(verified);
+      expect(dom.orderBody.querySelector('#ck-guest-hint')).toBeNull();
+      expect(dom.orderBody.querySelector('#ck-identity-recap')).not.toBeNull();
+      expect(confirm.disabled).toBe(false);
+      expect(apiPost).toHaveBeenCalledWith('/api/orders/preview', expect.objectContaining({ relais_id: '1' }), expect.any(Object));
+    });
+
+    it('P0 — annulation de l’identification : la commande reste impossible et le panier intact', async () => {
+      state.user = null;
+      state.cart = [{ product: { id: 1, name: 'Chemise', price_kmf: 8990 }, qty: 1 }];
+      requireIdentity.mockResolvedValue(null);
+      renderCheckout();
+      await flush();
+      const login = dom.orderBody.querySelector('#ck-guest-hint .k-ck-guest-login');
+      login.click();
+      await flush();
+      expect(login.disabled).toBe(false);
+      expect(document.getElementById('btn-confirm-order').disabled).toBe(true);
+      expect(state.cart).toHaveLength(1);
     });
 
     it('pas d\'identité connue, restauration silencieuse positive → carte récap insérée après coup', async () => {
@@ -1856,6 +1918,7 @@ describe('b-checkout', () => {
       apiPost.mockResolvedValueOnce({ order: { reference: 'CMD-PP-001', id: 99 } });
       const { prepareKomerceOrder } = await activatePaypalAndGetCallbacks();
 
+      setConfirmedCheckoutQuote();
       const result = await prepareKomerceOrder();
 
       expect(apiPost).toHaveBeenCalledWith('/api/orders', expect.objectContaining({
@@ -1874,9 +1937,11 @@ describe('b-checkout', () => {
     });
 
     it('prepareKomerceOrder : idempotence — une ref pending existante est réutilisée sans nouvel appel API', async () => {
-      state.pendingPaypalOrderRef = 'CMD-PP-EXISTING';
       state.cart = [];
       const { prepareKomerceOrder } = await activatePaypalAndGetCallbacks();
+      // La référence ne peut être réutilisée que dans la MÊME intention PayPal.
+      // Un véritable changement de moyen de paiement l'invalide volontairement.
+      state.pendingPaypalOrderRef = 'CMD-PP-EXISTING';
 
       const result = await prepareKomerceOrder();
 

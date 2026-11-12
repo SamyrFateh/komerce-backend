@@ -454,6 +454,8 @@
     ref.setAttribute('data-supplier-order-id', '');
     form.appendChild(ref);
 
+    let seller = null;
+    let variance = null;
     const proof = doc.createElement('input');
     if (manual) {
       proof.type = 'text';
@@ -463,6 +465,20 @@
       proof.setAttribute('aria-label', 'Justificatif de l’achat manuel (obligatoire)');
       proof.setAttribute('data-purchase-proof-ref', '');
       form.appendChild(proof);
+      seller = doc.createElement('input');
+      seller.type = 'text';
+      seller.required = true;
+      seller.minLength = 2;
+      seller.placeholder = 'Vendeur réel obligatoire : nom du magasin ou du vendeur (pas le Hub central)';
+      seller.setAttribute('aria-label', 'Vendeur réel de l’achat manuel (obligatoire)');
+      seller.setAttribute('data-purchase-seller-label', '');
+      form.appendChild(seller);
+      variance = doc.createElement('input');
+      variance.type = 'text';
+      variance.placeholder = 'Motif si le total justifié diffère du total confirmé (sinon laisser vide)';
+      variance.setAttribute('aria-label', 'Motif d’écart de justification');
+      variance.setAttribute('data-purchase-variance-reason', '');
+      form.appendChild(variance);
     }
 
     const bar = doc.createElement('div');
@@ -490,6 +506,10 @@
         setFeedback(context.root, 'Ajoutez une référence de facture, de reçu ou de photo avant de confirmer l’achat manuel.', 'critical');
         return;
       }
+      if (manual && payloadLines.some((l) => l.confirmed_quantity > 0) && seller.value.trim().length < 2) {
+        setFeedback(context.root, 'Indiquez le vendeur réel (magasin ou fournisseur) avant de confirmer l’achat manuel.', 'critical');
+        return;
+      }
       context.busy.add('confirm');
       submit.disabled = true;
       context.act(submit, 'confirm', {
@@ -497,7 +517,8 @@
         body: {
           lines: payloadLines,
           ...(ref.value.trim() ? { supplier_order_id: ref.value.trim() } : {}),
-          ...(manual ? { purchase_proof_ref: proof.value.trim() } : {}),
+          ...(manual ? { purchase_proof_ref: proof.value.trim(), seller_label: seller.value.trim() } : {}),
+          ...(manual && variance.value.trim() ? { variance_reason: variance.value.trim() } : {}),
         },
         successMessage: (result) => {
           const remnants = (result.remnants || []).length;

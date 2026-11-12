@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 802,
-    "filesWithFullHeaders": 747,
+    "scannedCodeFiles": 803,
+    "filesWithFullHeaders": 748,
     "filesWithLiteHeaders": 55,
-    "filesWithAnyHeaders": 802,
+    "filesWithAnyHeaders": 803,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 2032,
-    "edges": 10019,
+    "graphNodes": 2034,
+    "edges": 10041,
     "dbTables": 233,
-    "doctrines": 790,
+    "doctrines": 791,
     "impactAreas": 207,
-    "unresolvedCodeEdges": 959,
+    "unresolvedCodeEdges": 961,
     "dbWriteViaOverlapWarnings": 12,
     "multiWriterTables": 95
   },
@@ -61,7 +61,7 @@
     "settlement": 2,
     "business-rules": 1,
     "orders": 37,
-    "documents": 15,
+    "documents": 16,
     "auth-identity": 12,
     "operations": 11,
     "inventory": 2,
@@ -112,7 +112,7 @@
     "schema": 1,
     "route": 137,
     "entrypoint": 1,
-    "service": 483,
+    "service": 484,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -122,7 +122,7 @@
   },
   "byCriticality": {
     "critical": 122,
-    "medium": 156,
+    "medium": 157,
     "high": 459,
     "low": 64,
     "unknown": 1
@@ -7723,7 +7723,8 @@
       ],
       "depends": [
         "db.js",
-        "middleware/auth.js"
+        "middleware/auth.js",
+        "services/documents/document-reconciliation.js"
       ],
       "usedBy": [
         "routes/admin/index.js"
@@ -7733,7 +7734,15 @@
         "users"
       ],
       "dbWrite": [],
-      "dbWriteVia": [],
+      "dbWriteVia": [
+        {
+          "via": "document-reconciliation",
+          "tables": [
+            "invoices",
+            "transaction_documents"
+          ]
+        }
+      ],
       "dbTxn": [],
       "doctrine": [
         "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
@@ -18340,6 +18349,74 @@
       "version": "2026-06"
     },
     {
+      "id": "services/documents/document-reconciliation.js",
+      "file": "services/documents/document-reconciliation.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "document-reconciliation",
+      "domain": "documents",
+      "layer": "service",
+      "criticality": "medium",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "limit",
+        "dryRun",
+        "issuedBy"
+      ],
+      "outputs": [
+        "reconciliation_report",
+        "transaction_documents (via services d'émission existants)"
+      ],
+      "depends": [
+        "db.js",
+        "services/invoice-service.js",
+        "services/documents/pickup-proof.js",
+        "services/documents/refund-receipt.js"
+      ],
+      "usedBy": [
+        "routes/admin/documents.js"
+      ],
+      "dbRead": [
+        "orders",
+        "invoices",
+        "refunds",
+        "transaction_documents"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [
+        {
+          "via": "invoice-service",
+          "tables": [
+            "invoices"
+          ]
+        },
+        {
+          "via": "pickup-proof",
+          "tables": [
+            "transaction_documents"
+          ]
+        },
+        {
+          "via": "refund-receipt",
+          "tables": [
+            "transaction_documents"
+          ]
+        }
+      ],
+      "dbTxn": [],
+      "doctrine": [
+        "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
+        "un document ne prouve jamais une intention"
+      ],
+      "impactAreas": [
+        "documents",
+        "orders",
+        "refunds"
+      ],
+      "version": "2026-11"
+    },
+    {
       "id": "services/documents/document-service.js",
       "file": "services/documents/document-service.js",
       "type": "file",
@@ -18502,7 +18579,12 @@
       "dbRead": [
         "invoices",
         "orders",
-        "refunds"
+        "refunds",
+        "order_item_refund_reservations",
+        "refund_execution_intents",
+        "order_items",
+        "product_skus",
+        "markets"
       ],
       "dbWrite": [
         "transaction_documents"
@@ -19849,8 +19931,7 @@
         "purchase_order_authorizations"
       ],
       "depends": [
-        "db",
-        "services/documents/pdf-renderer.js"
+        "db"
       ],
       "usedBy": [
         "routes/purchasing.js",
@@ -19862,10 +19943,7 @@
         "purchase_lines",
         "purchase_orders",
         "purchase_order_authorizations",
-        "users",
-        "suppliers",
-        "order_items",
-        "products"
+        "users"
       ],
       "dbWrite": [
         "hub_authorization_grants",
@@ -21275,7 +21353,8 @@
         "refund-intent-ledger",
         "refund-intent-reconciliation",
         "paypal-client",
-        "order-item-refund-settlement"
+        "order-item-refund-settlement",
+        "documents/refund-receipt"
       ],
       "usedBy": [
         "routes/admin/orders.js"
@@ -39592,6 +39671,16 @@
       "table": "store_credits"
     },
     {
+      "id": "db:order_item_refund_reservations",
+      "type": "db-table",
+      "table": "order_item_refund_reservations"
+    },
+    {
+      "id": "db:refund_execution_intents",
+      "type": "db-table",
+      "table": "refund_execution_intents"
+    },
+    {
       "id": "db:economic_variables",
       "type": "db-table",
       "table": "economic_variables"
@@ -39690,16 +39779,6 @@
       "id": "db:inventory_items",
       "type": "db-table",
       "table": "inventory_items"
-    },
-    {
-      "id": "db:order_item_refund_reservations",
-      "type": "db-table",
-      "table": "order_item_refund_reservations"
-    },
-    {
-      "id": "db:refund_execution_intents",
-      "type": "db-table",
-      "table": "refund_execution_intents"
     },
     {
       "id": "db:international_shipment_relay_receipts",
@@ -41840,6 +41919,11 @@
       "id": "doctrine:devis_avant_commande_sans_engagement_ni_facture",
       "type": "doctrine",
       "doctrine": "devis_avant_commande_sans_engagement_ni_facture"
+    },
+    {
+      "id": "doctrine:un document ne prouve jamais une intention",
+      "type": "doctrine",
+      "doctrine": "un document ne prouve jamais une intention"
     },
     {
       "id": "doctrine:finance_config_single_runtime_truth",
@@ -56217,6 +56301,12 @@
       "label": "middleware/auth.js"
     },
     {
+      "from": "routes/admin/documents.js",
+      "to": "services/documents/document-reconciliation.js",
+      "type": "depends",
+      "label": "services/documents/document-reconciliation.js"
+    },
+    {
       "from": "routes/admin/index.js",
       "to": "routes/admin/documents.js",
       "type": "uses",
@@ -56233,6 +56323,20 @@
       "to": "db:users",
       "type": "db-read",
       "label": "users"
+    },
+    {
+      "from": "routes/admin/documents.js",
+      "to": "db:invoices",
+      "type": "db-write-via",
+      "label": "invoices",
+      "via": "document-reconciliation"
+    },
+    {
+      "from": "routes/admin/documents.js",
+      "to": "db:transaction_documents",
+      "type": "db-write-via",
+      "label": "transaction_documents",
+      "via": "document-reconciliation"
     },
     {
       "from": "routes/admin/documents.js",
@@ -73118,6 +73222,111 @@
       "label": "orders"
     },
     {
+      "from": "services/documents/document-reconciliation.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/documents/document-reconciliation.js",
+      "to": "services/invoice-service.js",
+      "type": "depends",
+      "label": "services/invoice-service.js"
+    },
+    {
+      "from": "services/documents/document-reconciliation.js",
+      "to": "services/documents/pickup-proof.js",
+      "type": "depends",
+      "label": "services/documents/pickup-proof.js"
+    },
+    {
+      "from": "services/documents/document-reconciliation.js",
+      "to": "services/documents/refund-receipt.js",
+      "type": "depends",
+      "label": "services/documents/refund-receipt.js"
+    },
+    {
+      "from": "routes/admin/documents.js",
+      "to": "services/documents/document-reconciliation.js",
+      "type": "uses",
+      "label": "routes/admin/documents.js"
+    },
+    {
+      "from": "services/documents/document-reconciliation.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/documents/document-reconciliation.js",
+      "to": "db:invoices",
+      "type": "db-read",
+      "label": "invoices"
+    },
+    {
+      "from": "services/documents/document-reconciliation.js",
+      "to": "db:refunds",
+      "type": "db-read",
+      "label": "refunds"
+    },
+    {
+      "from": "services/documents/document-reconciliation.js",
+      "to": "db:transaction_documents",
+      "type": "db-read",
+      "label": "transaction_documents"
+    },
+    {
+      "from": "services/documents/document-reconciliation.js",
+      "to": "db:invoices",
+      "type": "db-write-via",
+      "label": "invoices",
+      "via": "invoice-service"
+    },
+    {
+      "from": "services/documents/document-reconciliation.js",
+      "to": "db:transaction_documents",
+      "type": "db-write-via",
+      "label": "transaction_documents",
+      "via": "pickup-proof"
+    },
+    {
+      "from": "services/documents/document-reconciliation.js",
+      "to": "db:transaction_documents",
+      "type": "db-write-via",
+      "label": "transaction_documents",
+      "via": "refund-receipt"
+    },
+    {
+      "from": "services/documents/document-reconciliation.js",
+      "to": "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
+      "type": "doctrine",
+      "label": "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
+    },
+    {
+      "from": "services/documents/document-reconciliation.js",
+      "to": "doctrine:un document ne prouve jamais une intention",
+      "type": "doctrine",
+      "label": "un document ne prouve jamais une intention"
+    },
+    {
+      "from": "services/documents/document-reconciliation.js",
+      "to": "impact:documents",
+      "type": "impact",
+      "label": "documents"
+    },
+    {
+      "from": "services/documents/document-reconciliation.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
+    },
+    {
+      "from": "services/documents/document-reconciliation.js",
+      "to": "impact:refunds",
+      "type": "impact",
+      "label": "refunds"
+    },
+    {
       "from": "services/documents/document-service.js",
       "to": "db.js",
       "type": "depends",
@@ -73332,6 +73541,36 @@
       "to": "db:refunds",
       "type": "db-read",
       "label": "refunds"
+    },
+    {
+      "from": "services/documents/refund-receipt.js",
+      "to": "db:order_item_refund_reservations",
+      "type": "db-read",
+      "label": "order_item_refund_reservations"
+    },
+    {
+      "from": "services/documents/refund-receipt.js",
+      "to": "db:refund_execution_intents",
+      "type": "db-read",
+      "label": "refund_execution_intents"
+    },
+    {
+      "from": "services/documents/refund-receipt.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
+    },
+    {
+      "from": "services/documents/refund-receipt.js",
+      "to": "db:product_skus",
+      "type": "db-read",
+      "label": "product_skus"
+    },
+    {
+      "from": "services/documents/refund-receipt.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
     },
     {
       "from": "services/documents/refund-receipt.js",
@@ -75694,12 +75933,6 @@
       "label": "db"
     },
     {
-      "from": "services/hub-authorization-service.js",
-      "to": "services/documents/pdf-renderer.js",
-      "type": "depends",
-      "label": "services/documents/pdf-renderer.js"
-    },
-    {
       "from": "routes/purchasing.js",
       "to": "services/hub-authorization-service.js",
       "type": "uses",
@@ -75746,24 +75979,6 @@
       "to": "db:users",
       "type": "db-read",
       "label": "users"
-    },
-    {
-      "from": "services/hub-authorization-service.js",
-      "to": "db:suppliers",
-      "type": "db-read",
-      "label": "suppliers"
-    },
-    {
-      "from": "services/hub-authorization-service.js",
-      "to": "db:order_items",
-      "type": "db-read",
-      "label": "order_items"
-    },
-    {
-      "from": "services/hub-authorization-service.js",
-      "to": "db:products",
-      "type": "db-read",
-      "label": "products"
     },
     {
       "from": "services/hub-authorization-service.js",
@@ -78327,6 +78542,12 @@
       "to": "order-item-refund-settlement",
       "type": "depends",
       "label": "order-item-refund-settlement"
+    },
+    {
+      "from": "services/item-refund-psp-orchestrator.js",
+      "to": "documents/refund-receipt",
+      "type": "depends",
+      "label": "documents/refund-receipt"
     },
     {
       "from": "routes/admin/orders.js",
@@ -113228,7 +113449,8 @@
       "purpose": null,
       "directDependsOn": [
         "db.js",
-        "middleware/auth.js"
+        "middleware/auth.js",
+        "services/documents/document-reconciliation.js"
       ],
       "directUsedBy": [
         "routes/admin/index.js"
@@ -113239,7 +113461,15 @@
         "users"
       ],
       "dbWrite": [],
-      "dbWriteVia": [],
+      "dbWriteVia": [
+        {
+          "via": "document-reconciliation",
+          "tables": [
+            "invoices",
+            "transaction_documents"
+          ]
+        }
+      ],
       "doctrines": [
         "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
       ],
@@ -113247,12 +113477,14 @@
         "documents"
       ],
       "mustCheck": [
+        "db:invoices",
         "db:transaction_documents",
         "db:users",
         "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
         "impact:documents",
         "middleware/auth.js",
-        "routes/admin/index.js"
+        "routes/admin/index.js",
+        "services/documents/document-reconciliation.js"
       ]
     },
     "routes/admin/index.js": {
@@ -123895,6 +124127,75 @@
         "utils/logger.js"
       ]
     },
+    "services/documents/document-reconciliation.js": {
+      "role": "document-reconciliation",
+      "domain": "documents",
+      "criticality": "medium",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "services/invoice-service.js",
+        "services/documents/pickup-proof.js",
+        "services/documents/refund-receipt.js"
+      ],
+      "directUsedBy": [
+        "routes/admin/documents.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "orders",
+        "invoices",
+        "refunds",
+        "transaction_documents"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [
+        {
+          "via": "invoice-service",
+          "tables": [
+            "invoices"
+          ]
+        },
+        {
+          "via": "pickup-proof",
+          "tables": [
+            "transaction_documents"
+          ]
+        },
+        {
+          "via": "refund-receipt",
+          "tables": [
+            "transaction_documents"
+          ]
+        }
+      ],
+      "doctrines": [
+        "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
+        "un document ne prouve jamais une intention"
+      ],
+      "impactAreas": [
+        "documents",
+        "orders",
+        "refunds"
+      ],
+      "mustCheck": [
+        "db:invoices",
+        "db:orders",
+        "db:refunds",
+        "db:transaction_documents",
+        "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
+        "doctrine:un document ne prouve jamais une intention",
+        "impact:documents",
+        "impact:orders",
+        "impact:refunds",
+        "routes/admin/documents.js",
+        "services/documents/pickup-proof.js",
+        "services/documents/refund-receipt.js",
+        "services/invoice-service.js"
+      ]
+    },
     "services/documents/document-service.js": {
       "role": "document-service",
       "domain": "documents",
@@ -123975,7 +124276,6 @@
         "impact:account",
         "impact:documents",
         "services/documents/document-service.js",
-        "services/hub-authorization-service.js",
         "services/invoice-service.js"
       ]
     },
@@ -124018,6 +124318,7 @@
         "db:users",
         "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
         "impact:orders",
+        "services/documents/document-reconciliation.js",
         "services/documents/document-service.js",
         "services/verify-qr-collection.js",
         "utils/documents/pickup-proof-html.js",
@@ -124043,7 +124344,12 @@
       "dbRead": [
         "invoices",
         "orders",
-        "refunds"
+        "refunds",
+        "order_item_refund_reservations",
+        "refund_execution_intents",
+        "order_items",
+        "product_skus",
+        "markets"
       ],
       "dbWrite": [
         "transaction_documents"
@@ -124058,13 +124364,19 @@
       ],
       "mustCheck": [
         "db:invoices",
+        "db:markets",
+        "db:order_item_refund_reservations",
+        "db:order_items",
         "db:orders",
+        "db:product_skus",
+        "db:refund_execution_intents",
         "db:refunds",
         "db:transaction_documents",
         "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
         "impact:orders",
         "impact:refunds",
         "services/admin-order-refund.js",
+        "services/documents/document-reconciliation.js",
         "services/documents/document-service.js",
         "services/payment-paypal.js",
         "utils/documents/refund-receipt-html.js",
@@ -125437,8 +125749,7 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
-        "db",
-        "services/documents/pdf-renderer.js"
+        "db"
       ],
       "directUsedBy": [
         "routes/purchasing.js",
@@ -125451,10 +125762,7 @@
         "purchase_lines",
         "purchase_orders",
         "purchase_order_authorizations",
-        "users",
-        "suppliers",
-        "order_items",
-        "products"
+        "users"
       ],
       "dbWrite": [
         "hub_authorization_grants",
@@ -125472,12 +125780,9 @@
       ],
       "mustCheck": [
         "db:hub_authorization_grants",
-        "db:order_items",
-        "db:products",
         "db:purchase_lines",
         "db:purchase_order_authorizations",
         "db:purchase_orders",
-        "db:suppliers",
         "db:users",
         "doctrine:append_only_decisions",
         "doctrine:no_implicit_power",
@@ -125485,7 +125790,6 @@
         "impact:finance",
         "impact:purchasing",
         "routes/purchasing.js",
-        "services/documents/pdf-renderer.js",
         "services/purchasing-engagement-service.js",
         "services/supplier-payment-orchestrator.js"
       ]
@@ -126900,6 +127204,7 @@
         "impact:payment",
         "routes/documents.js",
         "routes/invoices.js",
+        "services/documents/document-reconciliation.js",
         "services/documents/pdf-renderer.js",
         "services/order-payment-confirmation.js",
         "utils/documents/logo-base64.js"
@@ -126917,7 +127222,8 @@
         "refund-intent-ledger",
         "refund-intent-reconciliation",
         "paypal-client",
-        "order-item-refund-settlement"
+        "order-item-refund-settlement",
+        "documents/refund-receipt"
       ],
       "directUsedBy": [
         "routes/admin/orders.js"
@@ -148173,6 +148479,12 @@
       "label": "services/customs-shipment-service.js (post-declaration)"
     },
     {
+      "from": "services/documents/document-reconciliation.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
       "from": "services/documents/document-service.js",
       "to": "db.js",
       "type": "depends",
@@ -148735,6 +149047,12 @@
       "to": "order-item-refund-settlement",
       "type": "depends",
       "label": "order-item-refund-settlement"
+    },
+    {
+      "from": "services/item-refund-psp-orchestrator.js",
+      "to": "documents/refund-receipt",
+      "type": "depends",
+      "label": "documents/refund-receipt"
     },
     {
       "from": "services/item-refund-reservation-service.js",

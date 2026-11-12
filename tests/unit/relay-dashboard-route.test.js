@@ -84,6 +84,7 @@ jest.mock('../../services/relay-dashboard-queries', () => ({
   getOrderDetail: jest.fn(),
 }));
 
+const compensation = require('../../services/relay-return-compensation-service');
 const queries = require('../../services/relay-dashboard-queries');
 const router = require('../../routes/relay-dashboard');
 
@@ -411,4 +412,17 @@ describe('routes/relay-dashboard', () => {
     expect(source).toContain("attachAuthorizedMarketsForCapability('operations.read'");
     expect(source).toContain("requireMarketDelegatedCapability('hub.supervise'");
   });
+});
+
+test('compensation SAV : seul l’admin décide et le PSP incertain répond 202', async () => {
+  const decide = jest.spyOn(compensation, 'decideCompensation').mockResolvedValue({ refund_status: 'unknown', replayed: false });
+  const url = '/api/relay-dashboard/returns/return-1/compensation';
+  mockUser = { id: 'agent-1', role: 'agent_relais' };
+  expect((await request(buildApp()).post(url).send({ movement: 'ledger_refund' })).status).toBe(403);
+  expect(decide).not.toHaveBeenCalled();
+  mockUser = { id: 'admin-1', role: 'admin' };
+  const response = await request(buildApp()).post(url).send({ movement: 'ledger_refund' });
+  expect(response.status).toBe(202);
+  expect(response.body.refund_status).toBe('unknown');
+  decide.mockRestore();
 });

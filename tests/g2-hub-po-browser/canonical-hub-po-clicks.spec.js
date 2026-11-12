@@ -177,9 +177,10 @@ test('05 - confirmation fournisseur avec quantites et preuve obligatoire', async
   await expect(form).toContainText('Justificatif d’achat obligatoire');
   expect(await page.evaluate(() => window.__g2.calls)).toEqual([]);
   await form.locator('input[name=purchase_proof_ref]').fill('CI-FOURNISSEUR-OK');
+  await form.locator('input[name=seller_label]').fill('Vendeur CI');
   await form.locator('button[type=submit]').click();
   await capture(page,'05-confirm','/api/purchasing/po/'+PO_ID+'/confirm',
-    {lines:[{purchase_line_id:LINE_ID,confirmed_quantity:2}],purchase_proof_ref:'CI-FOURNISSEUR-OK'});
+    {lines:[{purchase_line_id:LINE_ID,confirmed_quantity:2}],purchase_proof_ref:'CI-FOURNISSEUR-OK',seller_label:'Vendeur CI'});
   expect(attempted).toEqual([]);
 });
 

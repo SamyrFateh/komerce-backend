@@ -232,21 +232,21 @@ async function insertOrderItemsWithStock(client, { items, productMap, order, rel
     // aurait changé après le verdict. Une ligne LOCAL_STOCK est revalidée et
     // allouée sous la même transaction avant COMMIT.
     if (fulfillmentSource === FULFILLMENT_SOURCE.LOCAL_STOCK) {
-      const allocation = await allocateForOrderItem(client, {
-        productId: item.product_id,
-        marketId:  relais?.market_id || null,
-        orderId:   order.id,
-        quantity:  qty,
+      await requireOrderLocalStockAllocation(client, {
+        productId: item.product_id, marketId: relais?.market_id || null, orderId: order.id, quantity: qty,
       });
-      if (!allocation) {
-        const err = new Error(
-          `insertOrderItemsWithStock: allocation locale absente après verdict LOCAL_STOCK (${item.product_id})`
-        );
-        err.code = 'local_stock_verdict_drift';
-        throw err;
-      }
     }
   }
+}
+
+async function requireOrderLocalStockAllocation(client, demand) {
+  const allocation = await allocateForOrderItem(client, demand);
+  if (!allocation) {
+    const err = new Error(`Allocation locale absente après verdict LOCAL_STOCK (${demand.productId})`);
+    err.code = 'local_stock_verdict_drift';
+    throw err;
+  }
+  return allocation;
 }
 
 // ── Wallet couvre 100% → cycle paiement complet (state machine + stock) ──
@@ -316,6 +316,7 @@ module.exports = {
   recordInitialHistory,
   applyWalletDebit,
   insertOrderItemsWithStock,
+  requireOrderLocalStockAllocation,
   completeWalletFullPayment,
   lockCostSnapshot,
 };

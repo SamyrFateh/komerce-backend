@@ -77,6 +77,10 @@ class InvoiceService {
 
     const order = orderRes.rows[0];
 
+    if (order.payment_mode === 'sav_replacement') {
+      throw new Error(`Commande ${order.reference} : remplacement SAV sans facturation`);
+    }
+
     // Verify payment
     if (order.payment_status !== 'paid') {
       throw new Error(`Commande ${order.reference} non payée (status: ${order.payment_status})`);

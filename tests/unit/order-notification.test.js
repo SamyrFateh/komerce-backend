@@ -134,6 +134,15 @@ describe('notifyOrderCreated', () => {
     }));
   });
 
+  it('supprime toute notification externe pour une commande de simulation (#3927 trou 12)', async () => {
+    mockSuppressForSimulatedOrder.mockResolvedValueOnce(true);
+
+    await notifyOrderCreated({ ...order, id: 'order-1' }, ['+269111'], null, null, null, null);
+
+    expect(mockSuppressForSimulatedOrder).toHaveBeenCalledWith('order-1', 'order_created');
+    expect(mockWaOrderCreated).not.toHaveBeenCalled();
+  });
+
   it('utilise smsPhones (array) en fallback si pickRecipients ne trouve rien', async () => {
     mockPickRecipients.mockReturnValueOnce([]);
     mockWaOrderCreated.mockResolvedValueOnce({ ok: true, messageId: 'm1' });
