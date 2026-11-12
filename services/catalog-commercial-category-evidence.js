@@ -1,0 +1,119 @@
+/** @komerce-arch-lite
+ * @role commercial-category-object-evidence
+ * @domain catalog
+ * @layer service
+ * @owner backend-core
+ * @purpose Corroborate a boutique parent with supplier hierarchy AND product object identity.
+ * @db-read none
+ * @db-write none
+ * @impact-areas catalog,sourcing
+ */
+'use strict';
+
+const {words}=require('./commercial-taxonomy-semantics');
+
+// Curated, supplier-agnostic OBJECT families. A supplier path is context, not
+// authority: the same source feed can put chargers under "Home Storage" and
+// earbuds under "Jewelry". Require a title object independently supporting the
+// proposed parent. Never use Discovery keywords or customs for this purpose.
+//
+// Do not generalize on one human review automatically. New families/phrases
+// should be added only with human-reviewed positives AND adversarial negatives.
+const FAMILIES=[
+  {id:'fashion_apparel',category:'Mode & Beauté',
+    path:/^(?:women s clothing|men s clothing)\b/,
+    object:/\b(?:coats?|dresses?|shirts?|blouses?|skirts?|jackets?|sweaters?|hoodies?|trousers?|pants?|vests?|tops?|shorts?|clothing|suits?)\b/},
+  {id:'fashion_footwear',category:'Mode & Beauté',
+    path:/^(?:bags shoes|sports outdoors sneakers|toys kids babies shoes bags)\b/,
+    object:/\b(?:shoes?|sneakers?|high heels?|boots?|sandals?|loafers?|slippers?|pumps?|cleats?)\b/},
+  {id:'fashion_beauty',category:'Mode & Beauté',
+    path:/^health beauty hair\b/,
+    object:/\b(?:makeup|cosmetics?|eyeliner|eyebrow|lipstick|eyelash|mascara|skin care|facial|nail|manicure|pedicure|hairbrush|makeup brush|beauty tools?)\b/},
+  {id:'fashion_jewelry',category:'Mode & Beauté',
+    path:/^jewelry watches\b/,
+    object:/\b(?:watches?|wristwatch|quartz|bracelets?|necklaces?|earrings?|pendants?|rings?|jewelry|jewellery|brooch)\b/},
+  {id:'fashion_bags',category:'Mode & Beauté',
+    path:/^bags shoes\b/,
+    object:/\b(?:handbags?|purses?|tote bags?|shoulder bags?|fashion backpacks?)\b/},
+  {id:'home_household',category:'Maison',
+    path:/^home garden furniture\b/,
+    object:/\b(?:(?:storage (?:boxes?|bins?|cabinets?|shelves?|benches?|racks?|containers?|cubes?))|organizers?|cabinets?|shel(?:f|ves)|racks?|hampers?|furniture|tables?|chairs?|beds?|sofas?|benches?|kitchen|kitchenware|tableware|hot pots?|electric cookers?|coffee pot|cookware|utensils?|egg boiler|caddy|towels?|lamps?|decor|tapestry|vases?|wall art|paintings?|posters?|pillows?|blankets?|cushions?|drinkware|cups?|mugs?|curtains?|baskets?)\b/},
+  {id:'home_children',category:'Maison',
+    path:/^toys kids babies\b/,
+    object:/\b(?:toys?|plush toys?|stuffed animals?|teddy bears?|dolls?|ride on (?:cars?|motorcycles?)|strollers?|baby stroller|school bags?|pencil cases?|baby beds?|nursery furniture)\b/},
+  {id:'home_lighting',category:'Maison',
+    path:/^home improvement (?:indoor|outdoor) lighting\b/,
+    object:/\b(?:lamps?|decorative light|bedside light|night lights?|wall lights?|solar (?:wall|street|path) lights?|outdoor wall lights?|street path lights?)\b/},
+  {id:'tech_phone',category:'Tech',
+    path:/^phones accessories\b/,
+    object:/\b(?:phones?|smartphones?|chargers?|charging|usb|usb(?: c)? cables?|type c cables?|lightning cables?|phone cables?|charging cables?|data cables?|bluetooth|phone cases?|phone holders?|phone stands?|touchscreens?|tablets?)\b/},
+  {id:'tech_audio',category:'Tech',
+    path:/^consumer electronics\b/,
+    object:/\b(?:earbuds?|earphones?|headphones?|headsets?|microphones?|speakers?|audio|stereo|bluetooth|smartwatches?|smart watch|wireless receiver|media player|sound mixer)\b/},
+  {id:'tech_office',category:'Tech',
+    path:/^computer office\b/,
+    object:/\b(?:printers?|laminators?|keyboards?|scanners?|computers?|laptops?|tablets?|monitors?)\b/},
+  {id:'tools',category:'Bricolage',
+    path:/^home improvement\b/,
+    object:/\b(?:drill(?:s|ing)?|screwdrivers?|wrenches?|ratchets?|saws?|pliers?|power tools?|hand tools?|garden tools?|soldering|multimeters?|drill bits?|hammers?|spanners?|workbench|router bits?|socket sets?|tool sets?|tool kits?|crimpers?|woodworking)\b/},
+  // Electrical building supplies: require BOTH a home-improvement tool path
+  // and a named wiring/electrical object. Generic 'cable' never qualifies,
+  // because it also names USB, audio, data and vehicle accessories.
+  {id:'electrical_installation',category:'Bricolage',
+    path:/^home improvement tools\b/,
+    object:/\b(?:electrical wires?|copper core cables?|solar panel (?:extension wires?|connectors?|cables?)|wire spool racks?|cable dispensers?|cable locators?|underground cable locators?)\b/},
+  {id:'vehicle_part',category:'Auto',
+    path:/^automobiles motorcycles\b/,
+    object:/\b(?:cars?|automotive|automobiles?|motorcycles?|vehicle|fuel|brakes?|calipers?|rotors?|air filters?|cabin filters?|engines?|dashboards?|windshields?|wipers?|headlights?|taillights?|steering|bumpers?|radiators?|seat belts?|exhaust|clutch|tires?|tyres?|suspension|transmission)\b/},
+];
+
+// Supplier category copied into an ambiguous product title is not a second,
+// independent source of object identity. Keep such items in review even when
+// their root strongly suggests Auto. This guards against generic product feeds.
+const GENERIC_ACCESSORY_TITLE =
+  /^(?:(?:universal|generic|assorted|various|general) )?(?:motorcycle|car|automobile|auto|vehicle|bike|scooter)(?: (?:modification|replacement|general|universal))? (?:accessories|parts|products|items)$/;
+function genericObjectIdentityReason(candidate={}){
+  const title=words(candidate.product_name);
+  return GENERIC_ACCESSORY_TITLE.test(title)?'GENERIC_ACCESSORIES_WITHOUT_ITEM_IDENTITY':null;
+}
+
+/**
+ * Conservative two-source category proposal. Returns null when either proof is
+ * missing or when the title contains objects from multiple parent universes.
+ * A single independent ambiguous product remains in review, not AUTO.
+ */
+function categoryCorroboratedByObject(candidate={}){
+  const title=words(candidate.product_name);
+  const supplierPath=candidate.supplier_category||candidate.normalized_source_contract?.supplier_category;
+  const path=words(supplierPath);
+  if(!title||!path) return null;
+  if(genericObjectIdentityReason(candidate)) return null;
+  // A finishing material is not a product type: 'plush backpack' is a bag,
+  // never affirmative evidence of a toy merely because the CJ branch says Toys.
+  // Separately, a heat-press machine bundled with mugs is equipment + goods,
+  // so 'mug' must not independently certify a household-product parent.
+  if (/\b(?:heat|tumbler|mug|sublimation) press (?:machine|set|kit)\b/.test(title)
+      && /\b(?:mugs?|cups?|tumblers?|press machines?)\b/.test(title))
+    return null;
+  // A ride-on motorcycle for children is a toy; its 'motorcycle' noun is
+  // NOT independent proof of a real vehicle or replacement part. Resolve the
+  // identity before cross-universe collision tests, using BOTH supplier path
+  // and concrete toy/child semantics. Never infer toy from 'car' by itself.
+  const toyVehicle=(/^toys kids babies\b/.test(path)
+    && (/\btoy (?:cars?|motorcycles?|trucks?)\b/.test(title)
+      || (/\bride on (?:cars?|motorcycles?)\b/.test(title)
+        && /\b(?:kids?|children|babies|6v|12v)\b/.test(title)))
+    && !/\b(?:brake rotors?|engine parts?|fuel filters?|brake calipers?)\b/.test(title));
+  const titleHits=FAMILIES.filter(f=>f.object.test(title)
+    && !(toyVehicle && f.id==='vehicle_part'));
+  const categories=new Set(titleHits.map(f=>f.category));
+  if(categories.size!==1) return null;
+  const matched=titleHits.filter(f=>f.path.test(path));
+  if(!matched.length) return null;
+  const category=matched[0].category;
+  if(!matched.every(f=>f.category===category)) return null;
+  return {category,subcategory:null,level:'CATEGORY',
+    source:'SUPPLIER_PATH_AND_OBJECT',
+    evidence:{object_families:matched.map(f=>f.id),supplier_root:words(String(supplierPath).split('>')[0])||null}};
+}
+module.exports={categoryCorroboratedByObject,genericObjectIdentityReason};

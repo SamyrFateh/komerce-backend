@@ -14,6 +14,8 @@ const fs=require('node:fs');
 const path=require('node:path');
 const crypto=require('node:crypto');
 const db=require('../db');
+const {validatePublicationUpdate}=require('../services/product-publication-guard');
+const {buildCounterAudit}=require('./lib/cj-classification-counter-audit');
 const {resolveCommercialTaxonomyVerdict,
   createDraftProductFromSourcingCandidate}=require('../services/catalog-candidate-product-service');
 const EXPECTED_URL='postgresql://komerce:komerce@127.0.0.1:5432/komerce_real_catalog_stress';
@@ -78,19 +80,102 @@ async function run(file=process.argv[2]||'baseline/classification-evidence.json'
   assertEqual(dbName,'komerce_real_catalog_stress','DATABASE_IDENTITY');
   const active=(await db.query('SELECT bc.key AS category, bs.key AS subcategory FROM boutique_subcategories bs JOIN boutique_categories bc ON bc.key=bs.category_key WHERE bc.is_active=TRUE AND bs.is_active=TRUE')).rows;
   const activeSet=new Set(active.map(x=>x.category+'/'+x.subcategory));
+  const activeCategories=new Set(active.map(x=>x.category));
   if(activeSet.size<15||!activeSet.has('Mode & Beauté/Enfant')
     ||!activeSet.has('Auto/Accessoires')||!activeSet.has('Tech/Phones'))throw Error('CANONICAL_TAXONOMY_NOT_READY');
-  const byStatus={},byEvidence={},byPair={},drift=[],samples=[];
-  let ignoredDiscovery=0,discoveryOnly=0,auto=0;
+  const byStatus={},byEvidence={},byPair={},byCategory={},drift=[],samples=[],categorySamples=[],decisions=[];
+  let ignoredDiscovery=0,discoveryOnly=0,auto=0,category=0;
+  const mixedGenderRefs=new Set(['KSC-000012','KSC-000017','KSC-000031']);
+  const photoRefs=new Set(['KSC-000372','KSC-000382','KSC-000383','KSC-000384','KSC-000385']);
+  const counterAuditRefs=new Map([
+    ['KSC-000094',['REVIEW_REQUIRED',null,null]],
+    ['KSC-000479',['REVIEW_REQUIRED',null,null]],
+    ['KSC-000150',['REVIEW_REQUIRED',null,null]],
+    ['KSC-000399',['REVIEW_REQUIRED',null,null]],
+    ['KSC-000465',['CATEGORY_CLASSIFIED','Maison',null]],
+    ['KSC-000476',['CATEGORY_CLASSIFIED','Maison',null]],
+    ['KSC-000477',['CATEGORY_CLASSIFIED','Maison',null]],
+    ['KSC-000478',['REVIEW_REQUIRED',null,null]],
+  ]);
+  const realObjectRegression=new Map([
+    ['KSC-000168',['CATEGORY_CLASSIFIED','Tech',null]],
+    ['KSC-000169',['CATEGORY_CLASSIFIED','Tech',null]],
+    ['KSC-000051',['CATEGORY_CLASSIFIED','Mode & Beauté',null]],
+    ['KSC-000060',['AUTO_CLASSIFIED','Mode & Beauté','Enfant']],
+    ['KSC-000104',['CATEGORY_CLASSIFIED','Maison',null]],
+    ['KSC-000110',['CATEGORY_CLASSIFIED','Maison',null]],
+    ['KSC-000283',['CATEGORY_CLASSIFIED','Bricolage',null]],
+    ['KSC-000284',['CATEGORY_CLASSIFIED','Bricolage',null]],
+    ['KSC-000285',['CATEGORY_CLASSIFIED','Bricolage',null]],
+    ['KSC-000286',['CATEGORY_CLASSIFIED','Bricolage',null]],
+    ['KSC-000287',['CATEGORY_CLASSIFIED','Bricolage',null]],
+    ['KSC-000290',['CATEGORY_CLASSIFIED','Bricolage',null]],
+    ['KSC-000291',['CATEGORY_CLASSIFIED','Bricolage',null]],
+    ['KSC-000292',['CATEGORY_CLASSIFIED','Bricolage',null]],
+    ['KSC-000312',['CATEGORY_CLASSIFIED','Maison',null]],
+    ['KSC-000324',['CATEGORY_CLASSIFIED','Maison',null]],
+    ['KSC-000326',['CATEGORY_CLASSIFIED','Maison',null]],
+    ['KSC-000327',['CATEGORY_CLASSIFIED','Maison',null]],
+  ]);
   for(const original of doc.products){
     const candidate=sourceCandidate(original);
     const v=await resolveCommercialTaxonomyVerdict(db,candidate);
     const p=v.category&&v.subcategory?v.category+'/'+v.subcategory:null;
     inc(byStatus,v.status);inc(byEvidence,v.source);
+    if(photoRefs.has(original.candidate_ref)){
+      const pub=validatePublicationUpdate({
+        before:{name:'Couverture photo',name_source:original.product_name,
+          category:'Maison',price_kmf:10000,stock:2,is_active:false,is_available:false,
+          description:'Description française pour produit avec photo client.',
+          source_locale:'fr',content_source:'manual'},
+        patch:{is_active:true,is_available:true},context:{catalogMediaCount:1}
+      });
+      if(pub.code!=='buyer_image_checkout_not_supported')
+        throw Error('BUYER_IMAGE_PUBLICATION_NOT_BLOCKED:'+original.candidate_ref);
+      photoRefs.delete(original.candidate_ref);
+    }
+    if(counterAuditRefs.has(original.candidate_ref)){
+      const want=counterAuditRefs.get(original.candidate_ref);
+      if([v.status,v.category,v.subcategory].some((x,i)=>x!==want[i]))
+        throw Error('COUNTER_AUDIT_WRONG_CLASSIFICATION:'+
+          original.candidate_ref+':expected='+JSON.stringify(want)+
+          ':observed='+JSON.stringify(v));
+      counterAuditRefs.delete(original.candidate_ref);
+    }
+    if(realObjectRegression.has(original.candidate_ref)){
+      const want=realObjectRegression.get(original.candidate_ref);
+      if([v.status,v.category,v.subcategory].some((x,i)=>x!==want[i]))
+        throw Error('REAL_OBJECT_CATEGORY_REGRESSION:'+original.candidate_ref+
+          ':expected='+JSON.stringify(want)+':observed='+JSON.stringify(v));
+      realObjectRegression.delete(original.candidate_ref);
+    }
+    if(mixedGenderRefs.has(original.candidate_ref)) {
+      if(v.status!=='CATEGORY_CLASSIFIED'||v.category!=='Mode & Beauté'
+        ||v.subcategory!==null||v.source!=='SEMANTIC_MIXED_GENDER_APPAREL')
+        throw Error('MIXED_GENDER_PARENT_REGRESSION:'+original.candidate_ref+':'+JSON.stringify(v));
+      mixedGenderRefs.delete(original.candidate_ref);
+    }
+    decisions.push({supplier_product_id:original.supplier_product_id,
+      candidate_ref:original.candidate_ref,product_name:original.product_name,
+      supplier_category:original.supplier_category,
+      verdict:v.status,category:v.category||null,subcategory:v.subcategory||null,
+      evidence_source:v.source,evidence:v.evidence||null,
+      suggestion:v.proposal||null});
     if(v.status==='AUTO_CLASSIFIED'){
       auto++;inc(byPair,p);
       if(!activeSet.has(p)||v.source==='OPERATOR_OR_DISCOVERY'||v.source==='DISCOVERY_PRIOR')
         throw Error('UNJUSTIFIED_AUTO:'+original.candidate_ref+':'+JSON.stringify(v));
+    } else if(v.status==='CATEGORY_CLASSIFIED') {
+      category++;inc(byCategory,v.category);
+      if(!v.category||v.subcategory!==null||!activeCategories.has(v.category)
+        ||!['OBJECT_TERM_COMMON_PARENT','SUPPLIER_PATH_AND_OBJECT',
+          'SEMANTIC_MIXED_GENDER_APPAREL','SEMANTIC_CHILD_APPAREL_PARENT'].includes(v.source))
+        throw Error('UNJUSTIFIED_CATEGORY:'+original.candidate_ref+':'+JSON.stringify(v));
+      if(v.source==='SUPPLIER_PATH_AND_OBJECT' && !v.evidence?.object_families?.length)
+        throw Error('CATEGORY_EVIDENCE_MISSING:'+original.candidate_ref);
+      if(categorySamples.length<35) categorySamples.push({ref:original.candidate_ref,
+        title:original.product_name,path:original.supplier_category,
+        category:v.category,source:v.source,evidence:v.evidence||null});
     } else if(v.status==='EXPLICIT_REVIEW'){
       throw Error('HUMAN_CONFIRMATION_FABRICATED:'+original.candidate_ref);
     } else if(v.status==='REVIEW_REQUIRED') {
@@ -112,6 +197,10 @@ async function run(file=process.argv[2]||'baseline/classification-evidence.json'
       samples.push({ref:original.candidate_ref,title:original.product_name,source:v.source,
         proposal:v.proposal||null});
   }
+  if(mixedGenderRefs.size)throw Error('MIXED_GENDER_CORPUS_REFS_MISSING:'+Array.from(mixedGenderRefs).join(','));
+  if(realObjectRegression.size)throw Error('REAL_OBJECT_CORPUS_REFS_MISSING:'+Array.from(realObjectRegression.keys()).join(','));
+  if(counterAuditRefs.size)throw Error('COUNTER_AUDIT_REFS_MISSING:'+Array.from(counterAuditRefs.keys()).join(','));
+  if(photoRefs.size)throw Error('BUYER_IMAGE_SOURCE_REFS_MISSING:'+Array.from(photoRefs).join(','));
   // These are genuine service calls on a real PostgreSQL transaction and
   // canonical boutique reference tables, not mocked SQL nor live Railway.
   const client=await db.getClient(),draftProofs=[];
@@ -142,21 +231,93 @@ async function run(file=process.argv[2]||'baseline/classification-evidence.json'
       category:'Tech',subcategory:'Inactive'}};
     draftProofs.push(await transactionProof(client,'inactive_human_pair_blocked',inactive,
       {shouldCreate:false}));
+    // Deliberately collide two proven object phrases under ONE active parent.
+    // The transaction must produce a category-only draft, not invent a leaf.
+    for(const subcategory of ['Cuisine','Déco']){
+      const update=await client.query(
+        "UPDATE boutique_subcategories SET object_classification_terms = "+
+        "object_classification_terms || '{\"storage cube\":12}'::jsonb "+
+        "WHERE category_key='Maison' AND key=$1 AND is_active=TRUE",
+        [subcategory]);
+      if(update.rowCount!==1)throw Error('CATEGORY_PARENT_E2E_FIXTURE_MISSING:'+subcategory);
+    }
+    const categoryOnly={supplier_name:'CJdropshipping',
+      product_name:'Storage Cube Organizer',
+      supplier_category:'Unmapped > Unclear Objects',
+      komerce_category:'autre',
+      raw_payload:{discovery:{target_category:'Tech',target_subcategory:'Phones'}}};
+    draftProofs.push(await transactionProof(client,'category_only_common_parent',categoryOnly,
+      {shouldCreate:true,expectedCategory:'Maison',expectedSubcategory:null}));
+    const mixed={supplier_name:'CJdropshipping',
+      product_name:'Woolen Loose Cape Tops For Men And Women',
+      supplier_category:"Women's Clothing > Outerwear & Jackets > Blazers",
+      komerce_category:'vetements',
+      raw_payload:{discovery:{target_category:'Auto',target_subcategory:'Éclairage'}}};
+    draftProofs.push(await transactionProof(client,'mixed_gender_parent_unpriced',mixed,
+      {shouldCreate:true,expectedCategory:'Mode & Beauté',expectedSubcategory:null}));
+    // Human learning is governed, not unsupervised. First a human explicitly
+    // confirms an object's destination. Reuse for other SKUs is only allowed
+    // after an editor separately accepts a reusable multiword OBJECT phrase in
+    // the active boutique vocabulary. Both decisions are rolled back.
+    const first={supplier_name:'CJdropshipping',
+      product_name:'Foldable Rattan Fruit Basket',
+      supplier_category:'Unmapped > Experimental Household',
+      komerce_category:'autre',
+      raw_payload:{discovery:{target_category:'Tech',target_subcategory:'Phones'}},
+      commercial_taxonomy_review:{status:'CONFIRMED',category:'Maison',subcategory:'Cuisine'}};
+    const similar={...first,product_name:'Large Foldable Rattan Fruit Basket'};
+    delete similar.commercial_taxonomy_review;
+    const beforeVocabulary=await resolveCommercialTaxonomyVerdict(client,similar);
+    if(beforeVocabulary.status!=='REVIEW_REQUIRED')
+      throw Error('LEARNING_BEFORE_EDITORIAL_APPROVAL:'+JSON.stringify(beforeVocabulary));
+    draftProofs.push(await transactionProof(client,'human_confirms_first_object',first,
+      {shouldCreate:true,expectedCategory:'Maison',expectedSubcategory:'Cuisine'}));
+    const taught=await client.query(
+      "UPDATE boutique_subcategories SET object_classification_terms = "+
+      "object_classification_terms || '{\"foldable rattan fruit basket\":12}'::jsonb "+
+      "WHERE category_key='Maison' AND key='Cuisine' AND is_active=TRUE");
+    if(taught.rowCount!==1)throw Error('REUSABLE_OBJECT_TERM_TARGET_INACTIVE');
+    const learned=await resolveCommercialTaxonomyVerdict(client,similar);
+    if(learned.status!=='AUTO_CLASSIFIED'||learned.category!=='Maison'
+      ||learned.subcategory!=='Cuisine'||learned.source!=='OBJECT_NAME_MATCH')
+      throw Error('EDITOR_APPROVED_OBJECT_NOT_REUSED:'+JSON.stringify(learned));
+    draftProofs.push(await transactionProof(client,'editorial_object_reused_for_similar_sku',similar,
+      {shouldCreate:true,expectedCategory:'Maison',expectedSubcategory:'Cuisine'}));
+    const unrelated={...similar,product_name:'Foldable Rattan Shoe Shelf'};
+    draftProofs.push(await transactionProof(client,'unrelated_object_not_taught',unrelated,
+      {shouldCreate:false}));
   }finally {
     try{await client.query('ROLLBACK');rolledBack=true;}finally{client.release();}
   }
+  const counterAudit=buildCounterAudit(decisions);
+  assertEqual(counterAudit.data_count,498,'COUNTER_AUDIT_CORPUS_INCOMPLETE');
   const out={kind:'REAL_PG_E2E_CJ_SOURCE_TO_CATALOG_DRAFT',
     certification:'PROVEN_BOUNDARY_NOT_PRODUCT_PRECISION',
     source_count:498,previous_automatic:doc.automatic,
-    candidate_automatic:auto,candidate_review:498-auto,
+    candidate_automatic:auto,candidate_category:category,
+    candidate_placement:auto+category,candidate_review:498-auto-category,
     prior_discovery_proposals:ignoredDiscovery,discovery_only:discoveryOnly,
     by_status:byStatus,by_evidence:byEvidence,by_pair:byPair,
+    by_category:byCategory,category_evidence_samples:categorySamples,
     changed_examples:drift,review_samples:samples,product_draft_proofs:draftProofs,
+    counter_audit_summary:{flagged:counterAudit.flagged_count,
+      by_code:counterAudit.flag_counts,
+      duplicate_groups:counterAudit.duplicates.groups,
+      discordant_duplicate_groups:counterAudit.duplicates.discordant_groups},
     transaction_rolled_back:rolledBack,publication_performed:false,supplier_calls:0};
   fs.mkdirSync(path.dirname(output),{recursive:true});
   fs.writeFileSync(output,JSON.stringify(out,null,2)+'\n');
+  fs.writeFileSync(path.join(path.dirname(output),'counter-audit-risks.json'),
+    JSON.stringify(counterAudit,null,2)+'\n');
+  const decisionOutput=path.join(path.dirname(output),'all-498-decisions.json');
+  fs.writeFileSync(decisionOutput,JSON.stringify({
+    kind:'REVIEWABLE_CJ_498_COMMERCIAL_CLASSIFICATION',
+    note:'Proposed classifications, not an independently annotated accuracy score',
+    source_sha256:EXPECTED_SHA,decisions,
+  },null,2)+'\n');
   console.log('[CJ_P1_REAL_PG] '+JSON.stringify({inspected:498,automatic:auto,
-    review:498-auto,discovery_only:discoveryOnly,prior_seen:ignoredDiscovery,
+    category,placement:auto+category,review:498-auto-category,
+    discovery_only:discoveryOnly,prior_seen:ignoredDiscovery,
     by_evidence:byEvidence,draft_proofs:draftProofs.length,rollback:rolledBack}));
   return out;
 }

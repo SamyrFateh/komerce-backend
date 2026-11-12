@@ -153,6 +153,7 @@ async function loadCatalogProductCertificationFacts(q, productId) {
      SELECT p.id AS product_id,
             p.product_ref,
             p.name,
+            p.name_source,
             p.description,
             p.source_locale,
             p.category,

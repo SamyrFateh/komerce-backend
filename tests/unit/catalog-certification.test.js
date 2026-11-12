@@ -186,3 +186,27 @@ describe('catalog canonical certification', () => {
     });
   });
 });
+
+
+describe('mandatory buyer artwork blocks pipeline catalog certification',()=>{
+  const {evaluateCatalogProductCertification}=require('../../services/catalog-certification');
+  const row={name:'Couverture photo',name_source:'Custom Photo Blanket Personalized Fleece Throw',
+    description:'Couverture personnalisée avec une photographie du client.',
+    category:'accessoires',boutique_category_key:'Maison',boutique_subcategory_key:'Déco',
+    taxonomy_active:true,price_kmf:2000,stock:2,content_source:'manual',source_locale:'fr',
+    needs_review:false,lifecycle_status:'candidate',is_active:false,is_available:false,
+    has_sourcing_candidate:true,supplier_name:'CJdropshipping',supplier_product_id:'CJ100',
+    normalized_source_contract:{schema_version:'2'},sourcing_decision:'TEST',
+    active_media:1,active_supplier_skus:1,complete_supplier_skus:1,enabled_markets:0};
+  test('catalog certification fails closed even with price, media, supplier SKU and French text',()=>{
+    const result=evaluateCatalogProductCertification(row);
+    expect(result.certified).toBe(false);
+    expect(result.publication_guard).toBe('buyer_image_checkout_not_supported');
+    expect(result.reasons).toContain('publication_guard:buyer_image_checkout_not_supported');
+  });
+  test('stock-photo patterned blanket is not tagged buyer-upload-required',()=>{
+    const result=evaluateCatalogProductCertification({...row,
+      name_source:'Fleece Blanket With Landscape Photo Print'});
+    expect(result.reasons).not.toContain('publication_guard:buyer_image_checkout_not_supported');
+  });
+});
