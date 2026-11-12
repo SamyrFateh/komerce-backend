@@ -4,8 +4,8 @@
 
 | Niveau | Compte |
 |---|---|
-| 🟢 PROTECTED | 768 |
-| ⚪ PUBLIC (légitime) | 58 |
+| 🟢 PROTECTED | 767 |
+| ⚪ PUBLIC (légitime) | 59 |
 | 🟠 UNPROTECTED | 0 |
 | 🔴 ADMIN_NO_GUARD | 0 |
 | ❔ UNKNOWN (statique n'a pas atteint — à auditer) | 0 |
