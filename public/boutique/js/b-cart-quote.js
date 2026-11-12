@@ -138,7 +138,9 @@ export function setupCartQuote() {
     if (!state.cart?.length || state.cartSurface !== 'personal') return;
     if (document.getElementById('k-quote-dialog')) return;
 
-    const dialog = document.createElement('dialog');
+    const dialog = document.createElement('div');
+    dialog.setAttribute('role', 'dialog');
+    dialog.setAttribute('aria-modal', 'true');
     dialog.id = 'k-quote-dialog';
     dialog.className = 'k-quote-dialog';
     dialog.setAttribute('aria-labelledby', 'k-quote-title');
@@ -167,9 +169,28 @@ export function setupCartQuote() {
         </div>
       </div>`;
     document.body.appendChild(dialog);
-    const close = () => dialog.close();
+    const close = () => {
+      if (!dialog.isConnected) return;
+      bus.off('cart:update', invalidate);
+      document.removeEventListener('keydown', onKeydown);
+      document.body.classList.remove('k-quote-open');
+      dialog.remove();
+      origin?.focus?.();
+    };
+    const onKeydown = event => {
+      if (document.querySelector('.k-id-overlay')) return;
+      if (event.key === 'Escape') { event.preventDefault(); close(); return; }
+      if (event.key !== 'Tab') return;
+      const focusable = [...dialog.querySelectorAll('button:not([disabled]), select:not([disabled])')];
+      if (!focusable.length) return;
+      const first = focusable[0], last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    };
     dialog.querySelector('.k-quote-close').addEventListener('click', close);
-    dialog.addEventListener('close', () => { dialog.remove(); origin?.focus?.(); }, { once: true });
+    dialog.addEventListener('click', event => { if (event.target === dialog) close(); });
+    document.addEventListener('keydown', onKeydown);
+    document.body.classList.add('k-quote-open');
 
     const select = dialog.querySelector('#k-quote-relais');
     const calculate = dialog.querySelector('.k-quote-calculate');
@@ -189,9 +210,7 @@ export function setupCartQuote() {
       status.textContent = 'Ton panier a changé. Ferme cette fenêtre et recommence le devis.';
     };
     bus.on('cart:update', invalidate);
-    dialog.addEventListener('close', () => bus.off?.('cart:update', invalidate), { once: true });
-
-    dialog.showModal();
+    dialog.querySelector('.k-quote-close').focus();
     try {
       const market = new URLSearchParams(window.location.search).get('market');
       const query = market && /^[A-Za-z]{2}$/.test(market)
@@ -274,8 +293,10 @@ export function setupCartQuote() {
           const pdf = await loadPdf(locked);
           if (!validCart()) { tab?.close(); return invalidate(); }
           if (action === 'share') {
-            const file = new File([pdf], 'Komerce-devis-estimatif.pdf', { type: 'application/pdf' });
-            if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }))) {
+            const file = typeof File === 'function'
+              ? new File([pdf], 'Komerce-devis-estimatif.pdf', { type: 'application/pdf' })
+              : null;
+            if (file && navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }))) {
               try { await navigator.share({ title: 'Devis Komerce', files: [file] }); }
               catch (error) {
                 if (error?.name === 'AbortError') return;
