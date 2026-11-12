@@ -47,6 +47,7 @@ describe('pin de deploiement staging', () => {
   test('diagnostic Chromium panier exact non déployé; autre script refusé', () => {
     const accepted=decidePin({stagingSha:A,headSha:B,isAncestor:true,changedFiles:[
       'scripts/recette/g6-p2-buyer-cart-checkout-readonly.js',
+      'scripts/recette/g6-p2-buyer-order-real-chromium.js',
       'tests/unit/g6-p2-readonly-preview-contract.test.js',
     ]});
     expect(accepted.decision).toBe('ACCEPTED_NON_DEPLOYED_DIFF_ONLY');
