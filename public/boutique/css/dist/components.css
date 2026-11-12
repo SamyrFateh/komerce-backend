@@ -14942,6 +14942,16 @@ body.k-id-scroll-lock { overflow: hidden; }
 }
 
 @media (min-width: 900px) {
+  .k-order-overlay.open .ck-checkout-layout { width: min(1280px, 100%); gap: 28px; }
+  .k-order-overlay.open .ck-checkout-primary { padding: 24px 25px 27px; }
+  .k-order-overlay.open .ck-checkout-aside { padding: 20px 22px 25px; }
+  .k-order-overlay.open .ck-checkout-aside .ck-checkout-heading {
+    margin: -20px -22px 22px;
+    padding: 25px 28px 28px;
+  }
+}
+
+@media (min-width: 900px) {
   /*
    * Desktop = page transactionnelle.
    * L'overlay reste le mÃ©canisme de navigation existant mais cesse
@@ -15264,7 +15274,7 @@ body.k-id-scroll-lock { overflow: hidden; }
 .ck-delivery-line { display: flex; justify-content: space-between; gap: 16px; margin: 10px 2px 0; font-size: .78rem; color: var(--text-muted); }
 .ck-delivery-line[hidden] { display: none; }
 
-/* Checkout premium 2026 — couche de présentation sans changement des contrats. */
+/* Checkout boutique — polish visuel sur les tokens existants, sans nouveau thème. */
 .k-order-overlay.open .ck-checkout-primary,
 .k-order-overlay.open .ck-checkout-aside {
   border-color: rgba(31,48,36,.10);
@@ -15278,8 +15288,8 @@ body.k-id-scroll-lock { overflow: hidden; }
   padding: 23px 22px 25px;
   border: 0;
   border-radius: 20px 20px 0 0;
-  background: linear-gradient(115deg, var(--checkout-neutral-deep), var(--text));
-  color: var(--white);
+  background: linear-gradient(115deg, var(--cream-peach), var(--checkout-cream));
+  color: var(--text);
   font-size: clamp(1.16rem, 2vw, 1.44rem);
   font-weight: 900;
   letter-spacing: -.025em;
@@ -15289,11 +15299,10 @@ body.k-id-scroll-lock { overflow: hidden; }
   display: block;
   content: "Vérifiez vos informations, puis choisissez votre paiement.";
   margin-top: 7px;
-  color: var(--white);
+  color: var(--text-muted);
   font-size: .74rem;
   font-weight: 500;
   letter-spacing: 0;
-  opacity: .8;
 }
 
 .k-order-overlay.open .ck-checkout-desktop-heading {
@@ -15428,10 +15437,11 @@ body.k-id-scroll-lock { overflow: hidden; }
 .k-order-overlay.open .ck-confirm-btn:not(:disabled) {
   min-height: 59px;
   border-radius: 14px;
-  background: linear-gradient(110deg, var(--action-commerce), var(--coral-dark));
-  box-shadow: 0 9px 21px rgba(200,92,45,.20);
+  background: var(--action-commerce);
+  color: var(--action-commerce-text);
+  box-shadow: var(--action-commerce-shadow);
 }
-.k-order-overlay.open .ck-confirm-btn:disabled {
+.k-order-overlay.open .ck-confirm-btn:disabled.is-disabled {
   min-height: 59px;
   background: var(--checkout-control-soft);
   color: var(--text-muted);
@@ -15442,15 +15452,6 @@ body.k-id-scroll-lock { overflow: hidden; }
 .k-order-overlay.open .ck-confirm-btn:disabled .ck-confirm-subtext { color: var(--text-muted); opacity: 1; }
 .k-order-overlay.open .ck-confirm-main { font-size: .95rem; line-height: 1.3; }
 
-@media (min-width: 900px) {
-  .k-order-overlay.open .ck-checkout-layout { width: min(1280px, 100%); gap: 28px; }
-  .k-order-overlay.open .ck-checkout-primary { padding: 24px 25px 27px; }
-  .k-order-overlay.open .ck-checkout-aside { padding: 20px 22px 25px; }
-  .k-order-overlay.open .ck-checkout-aside .ck-checkout-heading {
-    margin: -20px -22px 22px;
-    padding: 25px 28px 28px;
-  }
-}
 @media (max-width: 899px) {
   .k-order-overlay.open .ck-checkout-primary,
   .k-order-overlay.open .ck-checkout-aside { border-radius: 18px; }

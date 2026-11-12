@@ -978,6 +978,16 @@
 }
 
 @media (min-width: 900px) {
+  .k-order-overlay.open .ck-checkout-layout { width: min(1280px, 100%); gap: 28px; }
+  .k-order-overlay.open .ck-checkout-primary { padding: 24px 25px 27px; }
+  .k-order-overlay.open .ck-checkout-aside { padding: 20px 22px 25px; }
+  .k-order-overlay.open .ck-checkout-aside .ck-checkout-heading {
+    margin: -20px -22px 22px;
+    padding: 25px 28px 28px;
+  }
+}
+
+@media (min-width: 900px) {
   /*
    * Desktop = page transactionnelle.
    * L'overlay reste le mÃ©canisme de navigation existant mais cesse
@@ -1467,7 +1477,7 @@
   color: var(--action-commerce-text);
   box-shadow: var(--action-commerce-shadow);
 }
-.k-order-overlay.open .ck-confirm-btn:disabled {
+.k-order-overlay.open .ck-confirm-btn:disabled.is-disabled {
   min-height: 59px;
   background: var(--checkout-control-soft);
   color: var(--text-muted);
@@ -1478,15 +1488,6 @@
 .k-order-overlay.open .ck-confirm-btn:disabled .ck-confirm-subtext { color: var(--text-muted); opacity: 1; }
 .k-order-overlay.open .ck-confirm-main { font-size: .95rem; line-height: 1.3; }
 
-@media (min-width: 900px) {
-  .k-order-overlay.open .ck-checkout-layout { width: min(1280px, 100%); gap: 28px; }
-  .k-order-overlay.open .ck-checkout-primary { padding: 24px 25px 27px; }
-  .k-order-overlay.open .ck-checkout-aside { padding: 20px 22px 25px; }
-  .k-order-overlay.open .ck-checkout-aside .ck-checkout-heading {
-    margin: -20px -22px 22px;
-    padding: 25px 28px 28px;
-  }
-}
 @media (max-width: 899px) {
   .k-order-overlay.open .ck-checkout-primary,
   .k-order-overlay.open .ck-checkout-aside { border-radius: 18px; }
