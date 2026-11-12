@@ -40246,6 +40246,10 @@
               {
                 "sourceFileId": "tests/unit/pickup-exceptional-collection-service.test.js",
                 "targetFile": "services/pickup-authorization-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/pickup-exceptional-collection-service.test.js",
+                "targetFile": "utils/name-normalize.js"
               }
             ]
           },
@@ -40377,6 +40381,23 @@
         "from": "logistics",
         "to": "documents",
         "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/pickup-collection-service.js",
+                "targetFile": "services/documents/pickup-proof.js"
+              },
+              {
+                "sourceFileId": "services/pickup-exceptional-collection-service.js",
+                "targetFile": "services/documents/pickup-proof.js"
+              },
+              {
+                "sourceFileId": "tests/unit/pickup-exceptional-collection-service.test.js",
+                "targetFile": "services/documents/pickup-proof.js"
+              }
+            ]
+          },
           {
             "channel": "data-read",
             "evidence": [
