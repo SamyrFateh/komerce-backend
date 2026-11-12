@@ -18638,6 +18638,20 @@
       },
       {
         "feature": "purchasing",
+        "category": "migrations",
+        "declared": "migrations/404_manual_purchase_executions.sql",
+        "resolvedPath": "migrations/404_manual_purchase_executions.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "migrations",
+        "declared": "migrations/407_purchase_variance_decisions.sql",
+        "resolvedPath": "migrations/407_purchase_variance_decisions.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
         "category": "scripts",
         "declared": "scripts/purchase-lines-parity-check.js",
         "resolvedPath": "scripts/purchase-lines-parity-check.js",
@@ -19026,6 +19040,20 @@
         "category": "tests",
         "declared": "tests/unit/purchasing-engagement-service.test.js",
         "resolvedPath": "tests/unit/purchasing-engagement-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/unit/hub-authorization-cumulative-cap.test.js",
+        "resolvedPath": "tests/unit/hub-authorization-cumulative-cap.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/unit/hub-authorization-variance-decision.test.js",
+        "resolvedPath": "tests/unit/hub-authorization-variance-decision.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -49376,7 +49404,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2315
+        "filesObserved": 2317
       },
       "boutique": {
         "filesObserved": 216,
