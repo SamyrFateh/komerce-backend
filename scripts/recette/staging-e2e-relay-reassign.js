@@ -150,6 +150,10 @@ async function reassign({ db, env = process.env, fetchImpl = fetch, apply = fals
       report.status = res.status; report.writes = res.status === 'assigned' ? 1 : 0;
       if (!['assigned', 'already'].includes(res.status)) throw new Error('ASSIGN_REFUSED:' + res.status);
       await client.query('COMMIT');
+      if (mode === 'to-order' && env.GITHUB_ENV && UUID.test(String(report.relais_before || ''))) {
+        fs.appendFileSync(env.GITHUB_ENV, `RELAY_RESTORE_ID=${report.relais_before}\\n`);
+        report.restore_id_exported = true;
+      }
     } else { report.status = 'DRY_RUN'; await client.query('ROLLBACK'); }
     return report;
   } catch (e) { try { await client.query('ROLLBACK'); } catch (_) { /* fermée */ } throw e; } finally { client.release(); }
