@@ -287,7 +287,7 @@ describeE2E('E2E-P0-PURCHASING — achats regroupés : flux complet', ({ db }) =
     expect(await poStatus(po1.id)).toBe('notified');
 
     // Confirmation partielle de PO1 (KM) : A 2/2, B 2/3 → reliquat ouvert de 1 sur B.
-    await engagement.confirmGroupedPurchaseOrder(po1.id, { purchase_proof_ref: 'TEST-RECEIPT',
+    await engagement.confirmGroupedPurchaseOrder(po1.id, { purchase_proof_ref: 'TEST-RECEIPT', seller_label: 'Vendeur test',
       supplier_order_id: `SUP-${tag('po1')}`,
       lines: [{ purchase_line_id: a.lineId, confirmed_quantity: 2 }, { purchase_line_id: b.lineId, confirmed_quantity: 2 }],
     });
@@ -310,13 +310,13 @@ describeE2E('E2E-P0-PURCHASING — achats regroupés : flux complet', ({ db }) =
     // Reliquat de B repris dans une nouvelle PO, soumis, confirmé, reçu → B passe en préparation.
     const po3 = (await grouped.preparePurchaseOrder({ supplier_id: supplier1, procurement_hub_ref: hubRef, line_ids: [remnant.id] })).purchase_order;
     await submitAuthorized(engagement, po3.id);
-    await engagement.confirmGroupedPurchaseOrder(po3.id, { purchase_proof_ref: 'TEST-RECEIPT', supplier_order_id: `SUP-${tag('po3')}`, lines: [{ purchase_line_id: remnant.id, confirmed_quantity: 1 }] });
+    await engagement.confirmGroupedPurchaseOrder(po3.id, { purchase_proof_ref: 'TEST-RECEIPT', seller_label: 'Vendeur test', supplier_order_id: `SUP-${tag('po3')}`, lines: [{ purchase_line_id: remnant.id, confirmed_quantity: 1 }] });
     await completeOrdersAfterHubReceipt(await hubReceive(remnant.id, 1));
     expect(await poStatus(po3.id)).toBe('hub_received');
     expect(await orderStatus(b.orderId)).toBe('preparation');
 
     // PO2 : confirmée puis ligne soldée à 0 sans reliquat → PO close, mais la commande reste bloquée (fail-closed).
-    await engagement.confirmGroupedPurchaseOrder(po2.id, { purchase_proof_ref: 'TEST-RECEIPT', supplier_order_id: `SUP-${tag('po2')}`, lines: [{ purchase_line_id: c.lineId, confirmed_quantity: 1 }] });
+    await engagement.confirmGroupedPurchaseOrder(po2.id, { purchase_proof_ref: 'TEST-RECEIPT', seller_label: 'Vendeur test', supplier_order_id: `SUP-${tag('po2')}`, lines: [{ purchase_line_id: c.lineId, confirmed_quantity: 1 }] });
     await engagement.settleLine(c.lineId, { settled_quantity: 0, reason: 'rupture fournisseur', reopen_remainder: false });
     const verdict = await evaluateOrderProcurementCompletion(c.orderId);
     expect(verdict).toMatchObject({ complete: false, transition: 'skipped' });
@@ -386,7 +386,7 @@ describeE2E('E2E-P0-PURCHASING — achats regroupés : flux complet', ({ db }) =
     // Ligne soldée sans reliquat (fail-closed) : item non couvert → signal.
     const po = (await grouped.preparePurchaseOrder({ supplier_id: supplier1, procurement_hub_ref: hubRef, line_ids: [solded.lineId] })).purchase_order;
     await submitAuthorized(engagement, po.id);
-    await engagement.confirmGroupedPurchaseOrder(po.id, { purchase_proof_ref: 'TEST-RECEIPT', supplier_order_id: `SUP-${tag('sg')}`, lines: [{ purchase_line_id: solded.lineId, confirmed_quantity: 2 }] });
+    await engagement.confirmGroupedPurchaseOrder(po.id, { purchase_proof_ref: 'TEST-RECEIPT', seller_label: 'Vendeur test', supplier_order_id: `SUP-${tag('sg')}`, lines: [{ purchase_line_id: solded.lineId, confirmed_quantity: 2 }] });
     await hubReceive(solded.lineId, 1); // le Hub a reçu 1 sur 2 : la clôture ne peut pas aller en dessous
     await engagement.settleLine(solded.lineId, { settled_quantity: 1, reason: 'écart constaté', reopen_remainder: false });
     out = await GENERATORS.ordered_without_purchase_order();

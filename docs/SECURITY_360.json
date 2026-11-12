@@ -2,8 +2,8 @@
   "generatedAt": "2026-11-12T17:18:18.323Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 828,
-    "protected": 769,
+    "total": 830,
+    "protected": 771,
     "public": 59,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -6056,6 +6056,22 @@
       "key": "POST /webhook/meta-whatsapp",
       "level": "PUBLIC",
       "roles": []
+    },
+    {
+      "key": "GET /api/purchasing/po/{po_id}/reconciliation",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/purchasing/po/{po_id}/variance-decision",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
     }
   ]
 }

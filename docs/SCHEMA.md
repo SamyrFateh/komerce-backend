@@ -90,6 +90,22 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 ### 4.1 Logistique commande (7 tables)
 
 <!-- schema-pending
+object: purchase_variance_decisions
+kind: table
+migration: 407
+section: ### 4.1 Logistique commande (7 tables)
+role: Autorisation distincte et immuable de la directrice Hub pour dépasser le total vendeur justifié, plafonnée par l'autorisation de paiement initiale, avec motif et pièce.
+-->
+
+<!-- schema-pending
+object: manual_purchase_executions
+kind: table
+migration: 404
+section: ### 4.1 Logistique commande (7 tables)
+role: Allocations vendeur réel append-only par ligne PO manuelle, quantité et montant justifiés, canal et preuve. Ne pas interpréter comme un paiement fournisseur.
+-->
+
+<!-- schema-pending
 object: order_checkout_idempotency
 kind: table
 migration: 408

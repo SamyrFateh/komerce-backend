@@ -171,6 +171,10 @@ router.post('/po/:po_id/confirm', ...groupedGuard, async (req, res, next) => {
   } catch (err) { groupedError(err, res, next); }
 });
 
+router.get('/po/:po_id/reconciliation', ...groupedGuard, async (req, res, next) => {
+  try { res.json(await engagement.getPurchaseReconciliation(req.params.po_id)); } catch (err) { groupedError(err, res, next); }
+});
+
 // P04 — autorisations de la directrice : grants (Admin central) et décisions tracées sur la PO (détenteur du grant actif).
 router.get('/authorizations/grants', ...guard, async (req, res, next) => {
   try { res.json({ grants: await hubAuth.listGrants({ userId: req.query.user_id || null, activeOnly: req.query.all !== '1' }) }); } catch (err) { groupedError(err, res, next); }
@@ -193,6 +197,14 @@ router.post('/po/:po_id/authorize-commitment', ...groupedGuard, async (req, res,
 router.post('/po/:po_id/authorize-payment', ...groupedGuard, async (req, res, next) => {
   try {
     const out = await hubAuth.decide({ purchaseOrderId: req.params.po_id, authorizationType: 'supplier_payment', actor: req.user, body: req.body || {} });
+    res.status(out.idempotent_replay ? 200 : 201).json(out);
+  } catch (err) { groupedError(err, res, next); }
+});
+
+// L5 — décision séparée, append-only, du plafond d'écart vendeur/paiement.
+router.post('/po/:po_id/variance-decision', ...groupedGuard, async (req, res, next) => {
+  try {
+    const out = await hubAuth.decideVariance({ purchaseOrderId: req.params.po_id, actor: req.user, body: req.body || {} });
     res.status(out.idempotent_replay ? 200 : 201).json(out);
   } catch (err) { groupedError(err, res, next); }
 });
