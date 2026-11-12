@@ -31,8 +31,8 @@ describe('devis boutique — document non transactionnel', () => {
     expect(variantLabel({ Taille: 'S', Couleur: 'Rouge' })).toBe('Taille : S / Couleur : Rouge');
   });
   test('rejette les montants et lignes incohérents sans émettre de document', async () => {
-    await expect(renderCartQuotePdf({ ...canonicalPreview, items: [] })).rejects.toThrow('Lignes');
-    await expect(renderCartQuotePdf({ ...canonicalPreview, total_kmf: null, items: canonicalPreview.items.map(x => ({...x, unit_price_kmf: Infinity})) })).rejects.toThrow();
+    expect(() => renderCartQuotePdf({ ...canonicalPreview, items: [] })).toThrow('Lignes');
+    expect(() => renderCartQuotePdf({ ...canonicalPreview, total_kmf: null, items: canonicalPreview.items.map(x => ({...x, unit_price_kmf: Infinity})) })).toThrow();
   });
   test('l’API PDF requiert une identité, le calcul preview-only et aucun POST de commande', () => {
     const route = fs.readFileSync(path.join(__dirname, '../../routes/orders/create.js'), 'utf8');
