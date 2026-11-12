@@ -305,6 +305,7 @@ const ROUTE_SCHEMA_MAP = [
   { prefix: '/api/health',              method: 'get',    schema: null },
   // LOT 4E — Canonical Sourcing Workspace (global central actions)
   { prefix: '/api/admin/workspaces/sourcing', method: 'get', schema: null },
+  { prefix: '/api/admin/workspaces/sourcing/catalog-suppliers', method: 'get', schema: null },
   { prefix: '/api/admin/workspaces/sourcing/import-runs', method: 'get', schema: null },
   { prefix: '/api/admin/workspaces/sourcing/import-cockpit', method: 'get', schema: null },
   { prefix: '/api/admin/workspaces/sourcing/import-runs/{runRef}', method: 'get', schema: null },
@@ -684,6 +685,7 @@ const KNOWN_RESPONSES = {
   '/api/admin/workspaces/pricing/cost-components/{key}/toggle': { post: { fields: ['ok','action','result'], source: 'test' } },
   // LOT 4E — réponses Sourcing Workspace consommées par Canonical.
   '/api/admin/workspaces/sourcing': { get: { fields: ['scope','summary','portfolio','imports','candidates','suppliers','connectors','sources'], source: 'test' } },
+  '/api/admin/workspaces/sourcing/catalog-suppliers': { get: { fields: ['id','name','system_key'], source: 'test' } },
   '/api/admin/workspaces/sourcing/import-runs': { get: { fields: ['runs'], source: 'test' } },
   '/api/admin/workspaces/sourcing/import-cockpit': { get: { fields: ['source_controls','lots','selected'], source: 'test' } },
   '/api/admin/workspaces/sourcing/import-runs/{runRef}': { get: { fields: ['run_ref','mode','status','failure_reason','provider','source_type','source_ref','import_ref','started_at','finished_at','updated_at','current_stage','processed','progress_pct','accounting','stages','current_item','recent_items','events'], source: 'service-read' } },

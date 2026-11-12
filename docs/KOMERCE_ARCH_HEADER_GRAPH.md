@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 798
-- Files with full headers: 743
+- Scanned code files: 799
+- Files with full headers: 744
 - Files with lite headers: 55
-- Files with any headers: 798
+- Files with any headers: 799
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 2023
-- Edges: 9967
+- Graph nodes: 2026
+- Edges: 9985
 - DB tables: 233
-- Doctrines: 785
+- Doctrines: 787
 - Impact areas: 207
-- Unresolved code edges: 955
+- Unresolved code edges: 957
 - Tables multi-écrivains directs (>=2): 95
 - Avertissements db-write / db-write-via en chevauchement: 12
 
@@ -59,7 +59,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - payments: 1
 - platform-ops: 2
 - providers-services: 7
-- purchasing: 52
+- purchasing: 53
 - recommendations: 6
 - refunds: 7
 - settlement: 2
@@ -92,7 +92,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 137
 - route-manifest: 1
 - schema: 1
-- service: 480
+- service: 481
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -645,6 +645,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/suppliers/allegro-shipping-capability-adapter.js — allegro-shipping-capability-adapter (purchasing, high, full)
 - services/suppliers/canonical-unit-cutover-comparison.js — canonical-unit-purchasing-cutover-comparison (purchasing, high, full)
 - services/suppliers/canonical-unit-purchasing-gate.js — canonical-unit-purchasing-hard-stop-gate (purchasing, high, full)
+- services/suppliers/central-hub-supplier.js — central-hub-supplier-identity (purchasing, high, full)
 - services/suppliers/cj-billing-history-reconciliation.js — cj-billing-history-reconciliation (purchasing, high, full)
 - services/suppliers/cj-fulfillment-adapter.js — cj-fulfillment-adapter (purchasing, high, full)
 - services/suppliers/cj-fulfillment-reader.js — cj-provider-fulfillment-reader (purchasing, high, full)
@@ -1056,13 +1057,13 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - sourcing_captures: 3 écrivains directs — services/sourcing-catalog-change-observation.js, services/sourcing-observation-shadow-service.js, services/sourcing-source-autopilot.js
 - sourcing_provider_control_events: 3 écrivains directs — services/provider-credential-service.js, services/sourcing-provider-control-policy.js, services/sourcing-source-registry.js
 - supplier_execution_payment_proofs: 3 écrivains directs — services/supplier-payment-proof-persistence.js, services/suppliers/cj-billing-history-reconciliation.js, services/suppliers/cj-supplier-payment-runtime.js
+- suppliers: 3 écrivains directs — routes/purchasing.js, services/purchasing-admin-service.js, services/suppliers/central-hub-supplier.js
 - wallet_consumptions: 3 écrivains directs — routes/admin/system.js, routes/wallet.js, services/wallet-service.js
 - wallet_credit_lots: 3 écrivains directs — routes/admin/system.js, routes/wallet.js, services/wallet-service.js
 - assignment_memberships: 2 écrivains directs — services/market-delegation-service.js, services/market-delegation-team-service.js
 - business_rules: 2 écrivains directs — routes/admin-rules.js, utils/rules.js
 - business_rules_history: 2 écrivains directs — routes/admin-rules.js, utils/rules.js
 - cart_shares: 2 écrivains directs — routes/shares.js, services/cart-share-service.js
-- cash_deposits: 2 écrivains directs — routes/cash.js, services/cash-deposit-service.js
 
 ## DB Write / Write-Via Overlap Warnings
 

@@ -125,6 +125,36 @@ describe('purchasing-trigger-service — triggerPurchasing (modèle unique : lig
     expect(notifyText).not.toHaveBeenCalled();
   });
 
+  it('produit manuel affecté au Hub → ligne ouverte Komerce dans le même flux d’achat standard', async () => {
+    const hubItem = { ...itemWithId, sku_id: 'sku-manual', procurement_supplier_id: 'hub-id' };
+    db.query.mockResolvedValueOnce({ rows: [order] }).mockResolvedValueOnce({ rows: [hubItem] });
+    const hub = {
+      id: null, supplier_id: 'hub-id', supplier_name: 'Fournisseur central Hub', platform: 'local',
+      system_key: 'central_hub', auto_order: false, supplier_sku: null,
+    };
+    const client = makeClient([
+      { rows: [{ id: 'sku-manual', product_id: 'p1', supplier_sku: null, source: 'MANUAL' }] },
+      { rows: [] },
+      { rows: [hub] },
+      { rows: [] },
+      { rows: [{ id: 'hub-line-1' }] },
+    ]);
+    db.getClient.mockResolvedValue(client);
+
+    const result = await triggerPurchasing('o1');
+
+    expect(result.purchase_orders).toEqual([{
+      item: 'Sac Ali', status: 'line_opened', purchase_order_id: null,
+      purchase_line_id: 'hub-line-1',
+    }]);
+    const insert = client.calls.find((sql) => /INSERT INTO purchase_lines/i.test(String(sql)));
+    expect(insert).toBeTruthy();
+    const params = client.query.mock.calls.find(([sql]) => /INSERT INTO purchase_lines/i.test(String(sql)))[1];
+    expect(params).toEqual(['oi1', 'hub-id', null, 'sku-manual', null, null, null, 2, null, null, 'DXB', null]);
+    expect(client.calls.some((sql) => /INSERT INTO purchase_orders/i.test(String(sql)))).toBe(false);
+    expect(notifyText).not.toHaveBeenCalled();
+  });
+
   it('rejeu : item déjà couvert par les lignes → already_exists, aucune insertion', async () => {
     db.query.mockResolvedValueOnce({ rows: [order] }).mockResolvedValueOnce({ rows: [itemWithId] });
     const client = makeClient([

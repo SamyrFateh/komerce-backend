@@ -25,6 +25,7 @@ const {
   loadExactSoldSku,
   resolveExactSkuProcurementReadiness,
   buildPurchaseTarget,
+  buildManualCatalogPurchaseTarget,
   insertOpenPurchaseLine,
   findItemCoverage,
   resolveProcurementHubRef,
@@ -52,8 +53,12 @@ async function notifyAdminNoSupplier(order, item) {
 // prioritaire pour le produit et la plateforme du SKU vendu. Non résolue → null (« Sourcing requis ») ;
 // ambiguë ou provider interdit → erreur explicite, jamais de choix arbitraire.
 async function loadSupplierMapping(client, item, exactSku) {
-  const provider = exactSku ? exactSku.supplier_order_identity.provider : null;
-  const res = await resolveSupplierSource(client, { productId: item.product_id, provider });
+  const provider = exactSku?.supplier_order_identity?.provider || null;
+  const res = await resolveSupplierSource(client, {
+    productId: item.product_id,
+    provider,
+    assignedSupplierId: item.procurement_supplier_id || null,
+  });
   if (res.status === SOURCE_STATUS.RESOLVED) return res.mapping;
   if (res.status === SOURCE_STATUS.UNRESOLVED) return null;
   const err = new Error(`SUPPLIER_SOURCE_${res.status}: produit ${item.product_id}, provider ${provider || 'n/a'}`);
@@ -86,6 +91,9 @@ async function alertItemFailure(client, orderId, item, savepointIdx, itemErr) {
  * inconnu, exigé à la confirmation). Rejeu idempotent : un article déjà couvert n'est jamais racheté.
  */
 function buildOpenSnapshot(ps, exactSku, canonicalMoney) {
+  if (ps?.system_key === 'central_hub' && (!exactSku || exactSku.manualCatalogSku)) {
+    return buildManualCatalogPurchaseTarget(ps, exactSku);
+  }
   if (exactSku && canonicalMoney) {
     return { ...buildPurchaseTarget(ps, exactSku, canonicalMoney), productSkuId: exactSku.id };
   }
@@ -108,7 +116,7 @@ async function triggerPurchasing(orderId, options = {}) {
   const { rows: [order] } = await db.query(`SELECT o.* FROM orders o WHERE o.id = $1`, [orderId]);
   if (!order) throw new Error(`Commande introuvable : ${orderId}`);
   const { rows: items } = await db.query(`
-    SELECT oi.*, p.name AS product_name, p.category, p.price_aed
+    SELECT oi.*, p.name AS product_name, p.category, p.price_aed, p.procurement_supplier_id
     FROM order_items oi JOIN products p ON p.id = oi.product_id WHERE oi.order_id = $1
   `, [orderId]);
 
@@ -129,7 +137,9 @@ async function triggerPurchasing(orderId, options = {}) {
       let canonicalMoney = null;
       try {
         exactSku = await loadExactSoldSku(client, item);
-        canonicalMoney = exactSku ? await resolveExactSkuProcurementReadiness(client, exactSku, item.quantity, readinessContext) : null;
+        canonicalMoney = exactSku && !exactSku.manualCatalogSku
+          ? await resolveExactSkuProcurementReadiness(client, exactSku, item.quantity, readinessContext)
+          : null;
       } catch (itemErr) {
         await alertItemFailure(client, orderId, item, idx, itemErr);
         results.push({ item: item.product_name, status: 'error', error: itemErr.message });

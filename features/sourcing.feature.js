@@ -46,6 +46,7 @@ module.exports = {
   perimeter: {
     in: [
       'ingestion catalogue fournisseur brut (dispatch CSV / saisie manuelle / API)',
+      'transport de l’identité fournisseur/Hub sélectionnée depuis l’import vers le candidat, sans en devenir l’autorité ni créer une identité provider',
       'coffre applicatif des identifiants fournisseur (Provider Credential Authority) : chiffrement serveur AES-256-GCM, configuration / test / remplacement / révocation depuis Sources, jamais relu par le navigateur ; le repli process.env reste actif pendant la transition',
       'activation explicite Source ON/OFF pour l acquisition automatique récurrente : OFF par défaut, runner provider-agnostic, pull borné et lock distribué par source',
       'shadow ingestion NormalizedSupplierProduct V2 vers Source/Capture/Observation, sans bascule d autorite',
@@ -237,6 +238,7 @@ module.exports = {
       'sourcing_resolution_decisions: RW!',
       'sourcing_resolution_bindings: RW!',
       'supplier_catalog_imports: R',
+      'suppliers: R',
       'products: R',
       'catalog_media: R',
       'product_variants: R',
@@ -321,6 +323,7 @@ module.exports = {
         'supplier-catalog-scanner pour le scan pricing, catalog-candidate-product-service pour créer le brouillon products, ' +
         'et catalog-promotion.js pour promouvoir normalized_source_contract V2 vers catalog_media/product_variants/' +
         'product_skus/product_sku_media dans la transaction de POST .../import-product)',
+      'purchasing (référentiel de fournisseurs d’approvisionnement ; Sourcing transmet l’affectation à la candidature sans créer ni modifier de PO)',
       'economic-engine (pricing-engine.loadGlobalConfig — config de scan)',
       'customs (customs-dynamic-category-classifier : score des catégories actives pour suggestions Sourcing, lecture uniquement ; aucune clé codée en dur)',
       'auth',

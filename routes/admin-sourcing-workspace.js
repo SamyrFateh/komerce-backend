@@ -96,6 +96,13 @@ router.get('/', async (req, res, next) => {
   } catch (err) { handleError(err, res, next); }
 });
 
+router.get('/catalog-suppliers', async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'no-store');
+    res.json(await workspace.listCatalogSuppliers());
+  } catch (err) { handleError(err, res, next); }
+});
+
 const RUN_REF_RE = /^KIR-\d{6,}$/;
 
 function runNotFound(res) {

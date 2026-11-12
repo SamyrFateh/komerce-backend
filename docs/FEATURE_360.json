@@ -56,7 +56,7 @@
     "healthy": 34,
     "attention": 6,
     "blocked": 0,
-    "businessDependencies": 322,
+    "businessDependencies": 323,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
@@ -721,6 +721,14 @@
           "channels": [
             "static-code"
           ]
+        },
+        {
+          "provider": "purchasing",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code",
+            "data-read"
+          ]
         }
       ],
       "consumedBy": [
@@ -749,7 +757,8 @@
           "consumer": "catalog",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
@@ -2434,6 +2443,7 @@
       "perimeter": {
         "in": [
           "connecteurs fournisseurs (CSV, API, manuel, Noon, CJdropshipping, AliExpress, Allegro Sandbox, eBay Sandbox Browse enregistré dans le dispatch générique P3)",
+          "identité d’approvisionnement par produit : le canal MANUAL choisit un fournisseur réel enregistré ou, à défaut, le Fournisseur central Hub protégé ; cette identité reste distincte du vendeur externe, du provider et de Supplier Order Identity (migration 403)",
           "contrat source fournisseur versionne V1/V2 : brut integral + preservation explicite media, axes et unites vendables quand la source les connait",
           "publication produit et déclenchement de l audit prix via economic-engine",
           "categories boutique admin",
@@ -3005,7 +3015,7 @@
             ]
           },
           "migrations": {
-            "count": 25,
+            "count": 26,
             "files": [
               {
                 "declared": "migrations/098_catalog_refinery_foundation.sql",
@@ -3130,6 +3140,11 @@
               {
                 "declared": "migrations/400_catalog_product_quality_holds.sql",
                 "resolvedPath": "migrations/400_catalog_product_quality_holds.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/403_central_hub_supplier_catalog_link.sql",
+                "resolvedPath": "migrations/403_central_hub_supplier_catalog_link.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -3385,7 +3400,7 @@
             ]
           },
           "services": {
-            "count": 84,
+            "count": 85,
             "files": [
               {
                 "declared": "services/boutique-taxonomy-admin.js",
@@ -3605,6 +3620,11 @@
               {
                 "declared": "services/pipeline-certification-scenario-core.js",
                 "resolvedPath": "services/pipeline-certification-scenario-core.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/product-360.js",
+                "resolvedPath": "services/product-360.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -4865,7 +4885,7 @@
             ]
           }
         },
-        "totalFiles": 451,
+        "totalFiles": 453,
         "boutiqueManifest": "modal-product",
         "boutiqueFiles": {
           "count": 33,
@@ -5407,6 +5427,10 @@
           {
             "table": "product_market_price_drafts",
             "lifecycleOwner": "market-autonomy"
+          },
+          {
+            "table": "suppliers",
+            "lifecycleOwner": "purchasing"
           }
         ]
       },
@@ -5713,6 +5737,10 @@
           {
             "table": "product_market_price_drafts",
             "lifecycleOwner": "market-autonomy"
+          },
+          {
+            "table": "suppliers",
+            "lifecycleOwner": "purchasing"
           }
         ]
       },
@@ -5871,7 +5899,8 @@
           "provider": "purchasing",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
@@ -7914,7 +7943,7 @@
             ]
           },
           "services": {
-            "count": 47,
+            "count": 46,
             "files": [
               {
                 "declared": "config/central-transit-roles.js",
@@ -8109,11 +8138,6 @@
               {
                 "declared": "services/partner-admin-service.js",
                 "resolvedPath": "services/partner-admin-service.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
-                "declared": "services/product-360.js",
-                "resolvedPath": "services/product-360.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -9214,7 +9238,7 @@
             ]
           }
         },
-        "totalFiles": 465,
+        "totalFiles": 464,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -28961,6 +28985,7 @@
           "synchronisation d'annulation : pending/notified suivent l'annulation de la commande ; les POs engagées déclenchent une alerte sans forçage",
           "réparation/rattrapage des commandes marquées \"ordered\" sans (ou avec) bon de commande cohérent (outils admin de correction)",
           "gestion des fournisseurs et de leur mapping produit (routes/purchasing.js /suppliers/*)",
+          "référentiel système Fournisseur central Hub permanent et protégé, utilisé comme responsable d’approvisionnement pour les imports manuels sans fournisseur réel sélectionné ; il ne représente ni vendeur, ni provider, ni dette fournisseur (migration 403)",
           "administration transverse des bons de commande, historiquement exposée depuis le dashboard (services/purchasing-admin-service.js — retaggé @domain purchasing au Lot O2, écrit orders/product_suppliers/purchase_orders/suppliers)",
           "Supplier Order Identity universelle : une unité vendable doit se résoudre sans ambiguïté vers exactement une unité commandable fournisseur avant tout engagement",
           "Procurement Route canonique : l'achat fournisseur est routé vers un Procurement Hub explicite avant la jambe logistique Market ; aucune destination client/Market brute ne peut être assimilée à la destination fournisseur",
@@ -29344,7 +29369,7 @@
             ]
           },
           "services": {
-            "count": 52,
+            "count": 53,
             "files": [
               {
                 "declared": "scripts/recette/audit-sku-supplier-link.js",
@@ -29519,6 +29544,11 @@
               {
                 "declared": "services/suppliers/canonical-unit-purchasing-gate.js",
                 "resolvedPath": "services/suppliers/canonical-unit-purchasing-gate.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/suppliers/central-hub-supplier.js",
+                "resolvedPath": "services/suppliers/central-hub-supplier.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -30054,7 +30084,7 @@
             ]
           }
         },
-        "totalFiles": 169,
+        "totalFiles": 170,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -30580,6 +30610,14 @@
           "channels": [
             "static-code",
             "interface"
+          ]
+        },
+        {
+          "consumer": "sourcing",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code",
+            "data-read"
           ]
         }
       ],
@@ -32654,6 +32692,7 @@
       "perimeter": {
         "in": [
           "ingestion catalogue fournisseur brut (dispatch CSV / saisie manuelle / API)",
+          "transport de l’identité fournisseur/Hub sélectionnée depuis l’import vers le candidat, sans en devenir l’autorité ni créer une identité provider",
           "coffre applicatif des identifiants fournisseur (Provider Credential Authority) : chiffrement serveur AES-256-GCM, configuration / test / remplacement / révocation depuis Sources, jamais relu par le navigateur ; le repli process.env reste actif pendant la transition",
           "activation explicite Source ON/OFF pour l acquisition automatique récurrente : OFF par défaut, runner provider-agnostic, pull borné et lock distribué par source",
           "shadow ingestion NormalizedSupplierProduct V2 vers Source/Capture/Observation, sans bascule d autorite",
@@ -33593,6 +33632,10 @@
           {
             "table": "supplier_catalog_imports",
             "lifecycleOwner": "catalog"
+          },
+          {
+            "table": "suppliers",
+            "lifecycleOwner": "purchasing"
           }
         ]
       },
@@ -33805,6 +33848,10 @@
           {
             "table": "supplier_catalog_imports",
             "lifecycleOwner": "catalog"
+          },
+          {
+            "table": "suppliers",
+            "lifecycleOwner": "purchasing"
           }
         ]
       },
@@ -34018,14 +34065,9 @@
       },
       "technicalContext": {
         "technicalPrimitiveDependencies": 0,
-        "testOnlyRelations": 1,
+        "testOnlyRelations": 0,
         "compositionRootRelations": 0,
-        "details": [
-          {
-            "to": "purchasing",
-            "family": "NON_RUNTIME_TEST"
-          }
-        ]
+        "details": []
       },
       "boundaryHealth": {
         "status": "HEALTHY",

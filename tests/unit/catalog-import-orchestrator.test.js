@@ -27,12 +27,16 @@ jest.mock('../../services/pricing-engine');
 jest.mock('../../services/catalog-eligibility');
 jest.mock('../../services/sourcing-observation-shadow-service');
 jest.mock('../../services/suppliers/catalog-import-json');
+jest.mock('../../services/suppliers/central-hub-supplier', () => ({
+  resolveCatalogSupplier: jest.fn(),
+}));
 
 const db = require('../../db');
 const scanner = require('../../services/supplier-catalog-scanner');
 const pricingEngine = require('../../services/pricing-engine');
 const eligibility = require('../../services/catalog-eligibility');
 const shadow = require('../../services/sourcing-observation-shadow-service');
+const centralHubSupplier = require('../../services/suppliers/central-hub-supplier');
 
 const jsonImport = require('../../services/suppliers/catalog-import-json');
 const providerPolicy = require('../../services/sourcing-provider-control-policy');
@@ -81,15 +85,40 @@ function makeV2Product(overrides = {}) {
 describe('importCatalog', () => {
   beforeEach(() => {
     pricingEngine.loadGlobalConfig.mockResolvedValue(CONFIG);
+    centralHubSupplier.resolveCatalogSupplier.mockResolvedValue({
+      id: 'central-hub-id', name: 'Fournisseur central Hub', platform: 'local',
+      owner_scope: 'hub', system_key: 'central_hub', auto_order: false,
+      is_active: true, deleted_at: null,
+    });
     require('../../utils/rules').invalidateCache();
   });
 
   // ── Validation ──────────────────────────────────────────────────────────
 
-  test('rejette un supplier_name vide', async () => {
-    const result = await importCatalog({ supplier_name: '  ', source_type: 'manual' }, 1, jest.fn());
+  test('une saisie manuelle sans vendeur connu se rattache au fournisseur central Hub', async () => {
+    jest.clearAllMocks();
+    centralHubSupplier.resolveCatalogSupplier.mockResolvedValue({
+      id: 'central-hub-id', name: 'Fournisseur central Hub', platform: 'local',
+      owner_scope: 'hub', system_key: 'central_hub', auto_order: false,
+      is_active: true, deleted_at: null,
+    });
+    const result = await importCatalog({ source_type: 'manual', supplier_id: '11111111-1111-4111-8111-111111111111', items: [] }, 1,
+      jest.fn().mockResolvedValue({ products: [], invalid: [] }));
+    expect(centralHubSupplier.resolveCatalogSupplier).toHaveBeenCalledWith(db, {
+      supplierId: '11111111-1111-4111-8111-111111111111', supplierName: '',
+    });
     expect(result.status).toBe(400);
-    expect(result.body.error).toMatch(/supplier_name requis/);
+    expect(result.body.error).toMatch(/Aucun produit valide/);
+  });
+
+  test('un CSV sans vendeur connu est rattaché au Fournisseur central Hub', async () => {
+    const dispatch = jest.fn().mockRejectedValue(new Error('CSV absent'));
+    const result = await importCatalog({ source_type: 'csv' }, 1, dispatch);
+    expect(result.status).toBe(400);
+    expect(result.body.error).toBe('CSV absent');
+    expect(centralHubSupplier.resolveCatalogSupplier).toHaveBeenCalledWith(db, {
+      supplierId: null, supplierName: '',
+    });
   });
 
   test('rejette un source_type inconnu', async () => {

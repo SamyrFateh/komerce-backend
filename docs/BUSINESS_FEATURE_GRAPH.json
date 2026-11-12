@@ -2049,6 +2049,13 @@
       {
         "feature": "catalog",
         "category": "services",
+        "declared": "services/suppliers/catalog-import-orchestrator.js",
+        "resolvedPath": "services/suppliers/catalog-import-orchestrator.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
         "declared": "services/product-variant-service.js",
         "resolvedPath": "services/product-variant-service.js",
         "status": "resolved-in-technical-graph"
@@ -2093,6 +2100,13 @@
         "category": "services",
         "declared": "services/catalog-candidate-product-service.js",
         "resolvedPath": "services/catalog-candidate-product-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
+        "declared": "services/product-360.js",
+        "resolvedPath": "services/product-360.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -2343,13 +2357,6 @@
       {
         "feature": "catalog",
         "category": "services",
-        "declared": "services/suppliers/catalog-import-orchestrator.js",
-        "resolvedPath": "services/suppliers/catalog-import-orchestrator.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "catalog",
-        "category": "services",
         "declared": "services/sourcing-import-dispatch.js",
         "resolvedPath": "services/sourcing-import-dispatch.js",
         "status": "resolved-in-technical-graph"
@@ -2500,6 +2507,13 @@
         "declared": "schemas/catalog/import-profile.v1.schema.json",
         "resolvedPath": "schemas/catalog/import-profile.v1.schema.json",
         "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "catalog",
+        "category": "migrations",
+        "declared": "migrations/403_central_hub_supplier_catalog_link.sql",
+        "resolvedPath": "migrations/403_central_hub_supplier_catalog_link.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
         "feature": "catalog",
@@ -5146,13 +5160,6 @@
         "declared": "public/js/golden-recipe-scenarios.js",
         "resolvedPath": "public/js/golden-recipe-scenarios.js",
         "status": "resolved-on-disk-no-header"
-      },
-      {
-        "feature": "dashboard",
-        "category": "services",
-        "declared": "services/product-360.js",
-        "resolvedPath": "services/product-360.js",
-        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "dashboard",
@@ -18121,6 +18128,13 @@
       {
         "feature": "purchasing",
         "category": "services",
+        "declared": "services/suppliers/central-hub-supplier.js",
+        "resolvedPath": "services/suppliers/central-hub-supplier.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "purchasing",
+        "category": "services",
         "declared": "services/purchasing-order-detail.js",
         "resolvedPath": "services/purchasing-order-detail.js",
         "status": "resolved-in-technical-graph"
@@ -30261,6 +30275,12 @@
       },
       {
         "from": "sourcing",
+        "to": "purchasing",
+        "raw": "purchasing (référentiel de fournisseurs d’approvisionnement ; Sourcing transmet l’affectation à la candidature sans créer ni modifier de PO)",
+        "resolved": true
+      },
+      {
+        "from": "sourcing",
         "to": "economic-engine",
         "raw": "economic-engine (pricing-engine.loadGlobalConfig — config de scan)",
         "resolved": true
@@ -34063,15 +34083,19 @@
                 "targetFile": "services/pricing-engine.js"
               },
               {
+                "sourceFileId": "services/suppliers/catalog-import-orchestrator.js",
+                "targetFile": "services/pricing-engine.js"
+              },
+              {
                 "sourceFileId": "services/product-price-audit.js",
                 "targetFile": "services/economic-price-audit-service.js"
               },
               {
-                "sourceFileId": "services/supplier-catalog-scanner.js",
-                "targetFile": "services/pricing-engine.js"
+                "sourceFileId": "services/product-360.js",
+                "targetFile": "services/cost-allocation/cost-expectation.js"
               },
               {
-                "sourceFileId": "services/suppliers/catalog-import-orchestrator.js",
+                "sourceFileId": "services/supplier-catalog-scanner.js",
                 "targetFile": "services/pricing-engine.js"
               },
               {
@@ -34339,6 +34363,14 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "services/suppliers/catalog-import-orchestrator.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/product-360.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "services/catalog-market-exposure-service.js",
                 "targetFile": "db.js"
               },
@@ -34349,10 +34381,6 @@
               {
                 "sourceFileId": "services/supplier-catalog-scanner.js",
                 "targetFile": "utils/rates.js"
-              },
-              {
-                "sourceFileId": "services/suppliers/catalog-import-orchestrator.js",
-                "targetFile": "db.js"
               },
               {
                 "sourceFileId": "services/suppliers/catalog-import-json.js",
@@ -35125,6 +35153,18 @@
                 "targetFile": "services/suppliers/allegro-fulfillment-adapter.js"
               },
               {
+                "sourceFileId": "services/product-admin-service.js",
+                "targetFile": "services/suppliers/central-hub-supplier.js"
+              },
+              {
+                "sourceFileId": "services/suppliers/catalog-import-orchestrator.js",
+                "targetFile": "services/suppliers/central-hub-supplier.js"
+              },
+              {
+                "sourceFileId": "services/catalog-candidate-product-service.js",
+                "targetFile": "services/suppliers/central-hub-supplier.js"
+              },
+              {
                 "sourceFileId": "services/catalog-promotion/sku.js",
                 "targetFile": "services/supplier-source-resolution.js"
               },
@@ -35151,6 +35191,19 @@
               {
                 "sourceFileId": "tests/unit/aliexpress-fulfillment-adapter.test.js",
                 "targetFile": "services/suppliers/supplier-fulfillment-readiness.js"
+              },
+              {
+                "sourceFileId": "tests/unit/catalog-import-orchestrator.test.js",
+                "targetFile": "services/suppliers/central-hub-supplier.js"
+              }
+            ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "suppliers",
+                "mode": "R"
               }
             ]
           }
@@ -35275,14 +35328,6 @@
                 "targetFile": "services/sourcing-catalog-change-sku-identity-proof.js"
               },
               {
-                "sourceFileId": "services/catalog-candidate-product-service.js",
-                "targetFile": "services/supplier-commercial-category-mapping.js"
-              },
-              {
-                "sourceFileId": "services/suppliers/connectors/aliexpress-connected-connector.js",
-                "targetFile": "services/suppliers/aliexpress-discovery.js"
-              },
-              {
                 "sourceFileId": "services/suppliers/catalog-import-orchestrator.js",
                 "targetFile": "services/sourcing-candidate-import-service.js"
               },
@@ -35305,6 +35350,14 @@
               {
                 "sourceFileId": "services/suppliers/catalog-import-orchestrator.js",
                 "targetFile": "services/import-runtime-item-events.js"
+              },
+              {
+                "sourceFileId": "services/catalog-candidate-product-service.js",
+                "targetFile": "services/supplier-commercial-category-mapping.js"
+              },
+              {
+                "sourceFileId": "services/suppliers/connectors/aliexpress-connected-connector.js",
+                "targetFile": "services/suppliers/aliexpress-discovery.js"
               },
               {
                 "sourceFileId": "services/suppliers/catalog-import-json.js",
@@ -35412,6 +35465,10 @@
           {
             "channel": "static-code",
             "evidence": [
+              {
+                "sourceFileId": "services/product-360.js",
+                "targetFile": "services/suppliers/provider-capability-certifications.js"
+              },
               {
                 "sourceFileId": "services/catalog-promotion/sku.js",
                 "targetFile": "services/suppliers/supplier-order-identity.js"
@@ -35890,8 +35947,16 @@
                 "targetFile": "services/catalog-run-progress.js"
               },
               {
+                "sourceFileId": "routes/admin-product-360.js",
+                "targetFile": "services/product-360.js"
+              },
+              {
                 "sourceFileId": "tests/unit/import-runtime-journey.test.js",
                 "targetFile": "services/catalog-run-progress.js"
+              },
+              {
+                "sourceFileId": "tests/unit/product-360-service.test.js",
+                "targetFile": "services/product-360.js"
               }
             ]
           },
@@ -36077,10 +36142,6 @@
               {
                 "sourceFileId": "services/dashboard-finance-canonical.js",
                 "targetFile": "services/financial-journal-reporting.js"
-              },
-              {
-                "sourceFileId": "services/product-360.js",
-                "targetFile": "services/cost-allocation/cost-expectation.js"
               },
               {
                 "sourceFileId": "routes/admin-dashboard.js",
@@ -36306,10 +36367,6 @@
               },
               {
                 "sourceFileId": "services/order-360.js",
-                "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "services/product-360.js",
                 "targetFile": "db.js"
               },
               {
@@ -37321,10 +37378,6 @@
             "channel": "static-code",
             "evidence": [
               {
-                "sourceFileId": "services/product-360.js",
-                "targetFile": "services/suppliers/provider-capability-certifications.js"
-              },
-              {
                 "sourceFileId": "services/supplier-360.js",
                 "targetFile": "services/suppliers/provider-capability-certifications.js"
               },
@@ -37967,6 +38020,14 @@
                 "targetFile": "services/catalog-product-mutation-service.js"
               },
               {
+                "sourceFileId": "tests/unit/simulation-scope-service.test.js",
+                "targetFile": "services/product-360.js"
+              },
+              {
+                "sourceFileId": "tests/unit/d2b-justified-readers.test.js",
+                "targetFile": "services/product-360.js"
+              },
+              {
                 "sourceFileId": "tests/unit/pricing-strategy-service-full.test.js",
                 "targetFile": "services/catalog-product-mutation-service.js"
               }
@@ -38074,10 +38135,6 @@
               },
               {
                 "sourceFileId": "tests/unit/simulation-scope-service.test.js",
-                "targetFile": "services/product-360.js"
-              },
-              {
-                "sourceFileId": "tests/unit/simulation-scope-service.test.js",
                 "targetFile": "routes/admin-dashboard.js"
               },
               {
@@ -38091,10 +38148,6 @@
               {
                 "sourceFileId": "tests/unit/d2b-justified-readers.test.js",
                 "targetFile": "services/dashboard-commerce.js"
-              },
-              {
-                "sourceFileId": "tests/unit/d2b-justified-readers.test.js",
-                "targetFile": "services/product-360.js"
               },
               {
                 "sourceFileId": "tests/unit/finance-annulations.test.js",
@@ -48650,9 +48703,18 @@
                 "targetFile": "services/suppliers/canonical-unit-purchasing-gate.js"
               }
             ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "suppliers",
+                "mode": "R"
+              }
+            ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "supplier-connectivity",
@@ -49230,7 +49292,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2309
+        "filesObserved": 2310
       },
       "boutique": {
         "filesObserved": 216,
@@ -49266,7 +49328,7 @@
     "familySummary": {
       "PROJECTION": 0,
       "COMPOSITION_ROOT_WIRING": 20,
-      "NON_RUNTIME_TEST": 18,
+      "NON_RUNTIME_TEST": 17,
       "TECHNICAL_PRIMITIVE": 0,
       "BUSINESS_TRANSVERSAL_SERVICE": 0,
       "CROSS_FEATURE_DIRECT_IMPORT": 0,
@@ -49801,21 +49863,6 @@
         "exceptionReasons": []
       },
       {
-        "from": "sourcing",
-        "to": "purchasing",
-        "family": "NON_RUNTIME_TEST",
-        "evidenceRole": "TEST_ONLY",
-        "consumerKind": "business-feature",
-        "providerKind": "business-feature",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "non-runtime-evidence",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
         "from": "supplier-connectivity",
         "to": "purchasing",
         "family": "NON_RUNTIME_TEST",
@@ -49855,7 +49902,7 @@
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|piloting-capability|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|business-file-import": 2,
       "COMPOSITION_ROOT_WIRING|RUNTIME_AND_TEST|technical-foundation|business-feature|business-file-import": 3,
-      "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-feature|business-file-import": 8,
+      "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-feature|business-file-import": 7,
       "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-transversal|business-file-import": 2,
       "NON_RUNTIME_TEST|TEST_ONLY|business-feature|unclassified|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-feature|business-file-import": 3,
@@ -50531,6 +50578,22 @@
       ],
       "lifecycleOwner": "sourcing",
       "resolution": "declared-table-owner"
+    },
+    "suppliers": {
+      "writers": [
+        {
+          "feature": "purchasing",
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
+        }
+      ],
+      "readers": [
+        "catalog",
+        "sourcing"
+      ],
+      "lifecycleOwner": "purchasing",
+      "resolution": "single-writer"
     },
     "import_runtime_runs": {
       "writers": [
@@ -52730,19 +52793,6 @@
       "lifecycleOwner": "purchasing",
       "resolution": "single-writer"
     },
-    "suppliers": {
-      "writers": [
-        {
-          "feature": "purchasing",
-          "mode": "RW",
-          "declaredOwner": false,
-          "technical": false
-        }
-      ],
-      "readers": [],
-      "lifecycleOwner": "purchasing",
-      "resolution": "single-writer"
-    },
     "supplier_execution_events": {
       "writers": [
         {
@@ -53148,8 +53198,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 694,
-        "technicalNodesOwned": 694,
+        "technicalNodesTotal": 695,
+        "technicalNodesOwned": 695,
         "technicalOrphans": 0
       },
       "dash": {
@@ -53500,11 +53550,6 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "sourcing -> purchasing",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"sourcing\" vers \"purchasing\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "supplier-connectivity -> purchasing",
         "msg": "dépendance cross-feature observée (canal: static-code, 5 preuve(s)) sans contract.consumes déclaré chez \"supplier-connectivity\" vers \"purchasing\""
       },
@@ -53624,9 +53669,9 @@
     "summary": {
       "signals": 6,
       "debt": 6,
-      "expectedTopology": 49,
+      "expectedTopology": 48,
       "generatorLimitations": 12,
-      "classifiedCandidates": 67
+      "classifiedCandidates": 66
     }
   }
 }

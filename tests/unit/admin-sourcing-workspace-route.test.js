@@ -30,6 +30,7 @@ jest.mock('../../middleware/require-sourcing-global-authority', () => ({
 const mockCalls = {
   buildWorkspace: jest.fn(),
   buildHealthDashboard: jest.fn(),
+  listCatalogSuppliers: jest.fn(),
   importCatalog: jest.fn(),
   updatePortfolioProduct: jest.fn(),
   updateCandidate: jest.fn(),
@@ -63,6 +64,7 @@ const mockCalls = {
 jest.mock('../../services/sourcing-workspace', () => ({
   SourcingWorkspaceError: class SourcingWorkspaceError extends Error {},
   buildWorkspace: (...args) => mockCalls.buildWorkspace(...args),
+  listCatalogSuppliers: (...args) => mockCalls.listCatalogSuppliers(...args),
   timed: (timings, label, promise) => Promise.resolve(promise).then((value) => { timings[label] = 1; return value; }),
   importCatalog: (...args) => mockCalls.importCatalog(...args),
   updatePortfolioProduct: (...args) => mockCalls.updatePortfolioProduct(...args),
@@ -116,6 +118,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockSourcingAllowed = true;
   mockCalls.buildWorkspace.mockResolvedValue({ scope: { mode: 'global_sourcing' }, summary: {}, portfolio: {}, imports: [], candidates: [], suppliers: [], sources: [] });
+  mockCalls.listCatalogSuppliers.mockResolvedValue([{ id: 'hub-id', name: 'Fournisseur central Hub', system_key: 'central_hub' }]);
   mockCalls.buildHealthDashboard.mockResolvedValue({
     schema_version: 'sourcing-health-dashboard-v1',
     scope: { mode: 'global_sourcing' },
@@ -139,6 +142,14 @@ test('grant sourcing ouvre une projection globale sans bloquer sur l’audit de 
   expect(mockCalls.buildHealthDashboard).not.toHaveBeenCalled();
   expect(res.body.health).toBeUndefined();
   expect(res.body.scope).toEqual({ mode: 'global_sourcing' });
+});
+
+test('la liste d’approvisionnement catalogue est lue depuis la route Sourcing existante', async () => {
+  const res = await request(app()).get('/api/admin/workspaces/sourcing/catalog-suppliers');
+  expect(res.status).toBe(200);
+  expect(res.headers['cache-control']).toContain('no-store');
+  expect(res.body).toEqual([{ id: 'hub-id', name: 'Fournisseur central Hub', system_key: 'central_hub' }]);
+  expect(mockCalls.listCatalogSuppliers).toHaveBeenCalledTimes(1);
 });
 
 test('deep link Catalogue vers Sourcing : candidate_ref conserve le grant métier', async () => {

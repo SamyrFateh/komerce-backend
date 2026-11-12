@@ -10,8 +10,9 @@
  *                services/product-sku-service.js, services/product-variant-service.js, services/product-sellable-service.js,
  *                services/product-stock-service.js
  * @used-by       routes/products.js
- * @db-read       boutique_categories, boutique_subcategories, catalog_field_overrides, products
+ * @db-read       boutique_categories, boutique_subcategories, catalog_field_overrides, products, suppliers
  * @db-write      catalog_field_overrides, products
+ * @db-write-via:central-hub-supplier suppliers
  * @db-write-via:product-stock-service product_skus, product_variants, products
  * @db-txn        resolve_before_behavior_change
  * @doctrine      docs/doctrine/DOCTRINE_CATALOGUE.md §5, §7
@@ -51,6 +52,7 @@ const { auditProductStockChange,
         validatePublicationUpdate }         = require('./product-publication-guard');
 const { OVERRIDABLE_FIELDS, isPipelineSourced, upsertOverrides } = require('./catalog-overrides');
 const log = require('../utils/logger').child({ module: 'product-admin-service' });
+const centralHubSupplier = require('./suppliers/central-hub-supplier');
 
 // Nettoyage architectural (2026-08) : replaceVariants/deleteVariant extraits
 // vers product-variant-service.js, réexportés ci-dessous (API inchangée).
@@ -184,6 +186,15 @@ async function createProduct(db, payload, adminUser) {
   const taxCheck = await validateProductTaxonomyPayload(db, { category: payload.category, subcategory: payload.subcategory });
   if (!taxCheck.ok) return { status: taxCheck.status, body: taxCheck.body };
 
+  let procurementSupplier;
+  try {
+    procurementSupplier = await centralHubSupplier.resolveCatalogSupplier(db, {
+      supplierId: payload.procurement_supplier_id || null,
+    });
+  } catch (error) {
+    return { status: error.status || 422, body: { error: error.message, code: error.code } };
+  }
+
   // Une création admin est un brouillon tant que la publication n'est pas
   // explicitement demandée. Sans ces valeurs, les DEFAULT historiques de la
   // table (TRUE/TRUE) rendaient immédiatement publics les produits de tests
@@ -191,6 +202,7 @@ async function createProduct(db, payload, adminUser) {
   // créer leurs fixtures sans polluer le catalogue présenté aux clients.
   const creationPayload = {
     ...payload,
+    procurement_supplier_id: procurementSupplier.id,
     is_active: payload.is_active === true,
     is_available: payload.is_available === true,
   };
@@ -210,7 +222,7 @@ async function createProduct(db, payload, adminUser) {
                      'dimensions_cm', 'stock', 'image_url', 'images', 'badge', 'emoji', 'promo_pct',
                      'is_available', 'is_active', 'has_couture', 'sourcing_source',
                      'requires_secure_transport', 'customs_risk_coeff', 'unsold_price_kmf',
-                     'unsold_channel', 'has_variants', 'sort_order'];
+                     'unsold_channel', 'has_variants', 'sort_order', 'procurement_supplier_id'];
   for (const f of optionals) {
     if (creationPayload[f] !== undefined) fields.push(f);
   }

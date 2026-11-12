@@ -64,6 +64,12 @@ function setupHappyPathCapture() {
     if (sql.includes('SELECT key, value FROM business_rules')) {
       return Promise.resolve({ rows: [] });
     }
+    if (sql.includes('FROM suppliers') && sql.includes('lower(btrim(name))')) {
+      return Promise.resolve({ rows: [{
+        id: 'supplier-v2', name: params[0], platform: 'local', owner_scope: null,
+        system_key: null, auto_order: false, is_active: true, deleted_at: null,
+      }] });
+    }
     if (sql.includes('INSERT INTO supplier_catalog_imports')) {
       return Promise.resolve({ rows: [{ id: 'import-v2' }] });
     }
@@ -168,5 +174,24 @@ describe('catalog source V2 persistence contract', () => {
       'normalized_source_contract = EXCLUDED.normalized_source_contract'
     );
     expect(capture.getCandidateSql()).toContain('raw_payload         = EXCLUDED.raw_payload');
+  });
+
+  test('un fournisseur manuel non enregistré est refusé sans commencer l’import', async () => {
+    db.query.mockResolvedValue({ rows: [] });
+    const dispatch = jest.fn();
+
+    const result = await importCatalog({ supplier_name: 'Inconnu', source_type: 'manual' }, 'user-1', dispatch);
+
+    expect(result).toMatchObject({ status: 422, body: { code: 'CATALOG_SUPPLIER_NOT_REGISTERED' } });
+    expect(dispatch).not.toHaveBeenCalled();
+  });
+
+  test('une source API sans nom fournisseur est refusée avant dispatch', async () => {
+    const dispatch = jest.fn();
+
+    const result = await importCatalog({ source_type: 'api', supplier_id: 'provider-id' }, 'user-1', dispatch);
+
+    expect(result).toEqual({ status: 400, body: { error: 'supplier_name requis' } });
+    expect(dispatch).not.toHaveBeenCalled();
   });
 });
