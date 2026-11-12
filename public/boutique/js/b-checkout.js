@@ -749,7 +749,7 @@ async function _refreshCheckoutServerQuote(od = state.orderData) {
     od.serverQuote = { ...quote, key, error: null };
   } catch (error) {
     if (error?.name === 'AbortError') return;
-    if (od) od.serverQuote = { key, error: error?.message || 'Devis indisponible' };
+    if (od) od.serverQuote = { key, error: error?.message || 'Devis indisponible', code: error?.code || null };
   } finally {
     if (_serverQuoteAbortController === controller) _serverQuoteAbortController = null;
   }
@@ -1458,7 +1458,9 @@ function refreshCheckoutComputedUI() {
   }
   const quoteError = od.serverQuote && od.serverQuote.error;
   if (relayOk && hasCheckoutItems && mobileMoneyOk && !quoteReady && btn_busy(confirmBtn) === false) {
-    subText = quoteError ? 'Total indisponible : ' + quoteError : 'Calcul du total\u2026';
+    subText = od.serverQuote?.code === 'identity_required'
+      ? 'Identifiez-vous ci-dessus pour afficher le montant exact'
+      : (quoteError ? 'Total indisponible : ' + quoteError : 'Calcul du total\u2026');
   }
   confirmBtn.disabled = !hasCheckoutItems || !relayOk || !mobileMoneyOk || !quoteReady || btn_busy(confirmBtn);
   confirmBtn.classList.toggle('is-disabled', confirmBtn.disabled);
@@ -2012,7 +2014,31 @@ export function renderCheckout() {
             hint.id = 'ck-guest-hint';
             hint.className = 'k-ck-guest-hint';
             hint.innerHTML = '<span class="k-ck-guest-ic" aria-hidden="true">✍️</span>'
-              + '<span><b>Première commande ?</b> Votre compte se crée en validant votre numéro WhatsApp.</span>';
+              + '<span class="k-ck-guest-copy"><b>Première commande ?</b> Votre compte se crée en validant votre numéro WhatsApp.</span>'
+              + '<button type="button" class="k-ck-guest-login">M’identifier pour continuer</button>';
+            const loginBtn = hint.querySelector('.k-ck-guest-login');
+            loginBtn.addEventListener('click', async () => {
+              if (loginBtn.disabled) return;
+              loginBtn.disabled = true;
+              try {
+                // Le devis serveur exige une session : ouvrir l'identité AVANT
+                // le prix exact, sans jamais autoriser une commande sans devis.
+                const verified = await requireIdentity({
+                  reason: 'finaliser votre commande',
+                  title: 'Sécuriser votre commande',
+                  returnFocusTo: loginBtn,
+                });
+                if (!verified || !hint.isConnected || state.orderData !== od) return;
+                state.user = verified;
+                hint.replaceWith(_buildIdentityHeader(verified));
+                await _refreshCheckoutServerQuote(od);
+              } catch (err) {
+                console.warn('[checkout] identification invitée:', err);
+                showToast('Identification impossible. Réessayez pour continuer.', 'error');
+              } finally {
+                if (hint.isConnected) loginBtn.disabled = false;
+              }
+            });
             _insertCheckoutIdentity(body, hint);
           }
           return;

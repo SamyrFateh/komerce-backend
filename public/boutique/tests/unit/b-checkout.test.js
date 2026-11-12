@@ -1353,6 +1353,52 @@ describe('b-checkout', () => {
       expect(dom.orderBody.querySelector('#ck-guest-hint')).not.toBeNull();
       expect(dom.orderBody.querySelector('#ck-identity-recap')).toBeNull();
     });
+ 
+    it('P0 — visiteur sans devis : identification accessible avant le total serveur, puis confirmation possible', async () => {
+      state.user = null;
+      state.cart = [{ product: { id: 1, name: 'Chemise', price_kmf: 8990 }, qty: 1 }];
+      state.orderData.selectedRelaisId = 1;
+      apiGet.mockImplementation(path => path === '/api/relais'
+        ? Promise.resolve([{ id: 1, name: 'Relais Moroni', island: 'Grande Comore' }])
+        : Promise.resolve({}));
+      const verified = { full_name: 'Amina', phone: '+269123456' };
+      apiPost.mockImplementation(path => {
+        if (path !== '/api/orders/preview') return Promise.resolve({});
+        if (!state.user) return Promise.reject(Object.assign(new Error('Vérification du numéro requise pour commander'), { code: 'identity_required' }));
+        return Promise.resolve({ items_total_kmf: 8990, transport_price_kmf: 0, discount_kmf: 0, total_kmf: 8990 });
+      });
+      requireIdentity.mockResolvedValue(verified);
+
+      renderCheckout();
+      await flush();
+      const confirm = document.getElementById('btn-confirm-order');
+      const login = dom.orderBody.querySelector('#ck-guest-hint .k-ck-guest-login');
+      expect(confirm.disabled).toBe(true);
+      expect(login).not.toBeNull();
+      login.click();
+      await flush();
+
+      expect(requireIdentity).toHaveBeenCalledWith(expect.objectContaining({ title: 'Sécuriser votre commande' }));
+      expect(state.user).toEqual(verified);
+      expect(dom.orderBody.querySelector('#ck-guest-hint')).toBeNull();
+      expect(dom.orderBody.querySelector('#ck-identity-recap')).not.toBeNull();
+      expect(confirm.disabled).toBe(false);
+      expect(apiPost).toHaveBeenCalledWith('/api/orders/preview', expect.objectContaining({ relais_id: '1' }), expect.any(Object));
+    });
+
+    it('P0 — annulation de l’identification : la commande reste impossible et le panier intact', async () => {
+      state.user = null;
+      state.cart = [{ product: { id: 1, name: 'Chemise', price_kmf: 8990 }, qty: 1 }];
+      requireIdentity.mockResolvedValue(null);
+      renderCheckout();
+      await flush();
+      const login = dom.orderBody.querySelector('#ck-guest-hint .k-ck-guest-login');
+      login.click();
+      await flush();
+      expect(login.disabled).toBe(false);
+      expect(document.getElementById('btn-confirm-order').disabled).toBe(true);
+      expect(state.cart).toHaveLength(1);
+    });
 
     it('pas d\'identité connue, restauration silencieuse positive → carte récap insérée après coup', async () => {
       restoreIdentity.mockResolvedValue({ full_name: 'Fatima', phone: '+269987654' });
