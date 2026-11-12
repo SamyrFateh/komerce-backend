@@ -29,6 +29,11 @@ describe('parcelSync — retrait partiel ciblé', () => {
       if (sql.includes("status = 'available'") && sql.includes('FOR UPDATE')) {
         return Promise.resolve({ rows: [{ id: 'p-local', status: 'available', reference: 'PAR-LOCAL' }] });
       }
+      if (sql.includes('SELECT pi.order_item_id') && sql.includes('FOR UPDATE OF pi')) {
+        return Promise.resolve({ rows: [
+          { order_item_id: 'item-local', quantity: 2, qty_received: 2, qty_collected: 0 },
+        ] });
+      }
       if (sql.includes('SELECT status, type FROM parcels')) {
         return Promise.resolve({ rows: [
           { status: 'collected', type: 'partial' },
@@ -59,6 +64,33 @@ describe('parcelSync — retrait partiel ciblé', () => {
       sql.includes('UPDATE parcels')
     );
     expect(updateParcel[1][1]).toBe('p-local');
+    expect(client.query.mock.calls.some(([sql, params]) =>
+      sql.includes('UPDATE parcel_items') &&
+      sql.includes('qty_collected = qty_received') &&
+      params[0] === 'p-local'
+    )).toBe(true);
+    expect(client.query.mock.calls.some(([sql, params]) =>
+      sql.includes('UPDATE order_items oi') &&
+      sql.includes('SUM(pi.qty_collected)') &&
+      params[0][0] === 'item-local'
+    )).toBe(true);
+  });
+
+  test('refuse un colis sans quantité physiquement réceptionnée avant tout statut collected', async () => {
+    const client = { query: jest.fn(async sql => {
+      if (sql.includes("status = 'available'") && sql.includes('FOR UPDATE')) {
+        return { rows: [{ id:'p-local', status:'available', reference:'P-LOCAL' }] };
+      }
+      if (sql.includes('SELECT pi.order_item_id') && sql.includes('FOR UPDATE OF pi')) {
+        return { rows: [{ order_item_id:'item-local', quantity:2, qty_received:0, qty_collected:0 }] };
+      }
+      return { rows: [] };
+    }) };
+    await expect(syncScanToParcels({
+      order_id:'o1', step:'collected', scan_id:'s1', target_one_available:true
+    },client)).rejects.toThrow('PICKUP_PHYSICAL_QUANTITY_INVALID');
+    expect(client.query.mock.calls.some(([sql]) => sql.includes('UPDATE parcels'))).toBe(false);
+    expect(client.query.mock.calls.some(([sql]) => sql.includes('UPDATE parcel_items'))).toBe(false);
   });
 
   test('distingue aucun parcel prêt de la commande legacy sans parcel', async () => {
