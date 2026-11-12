@@ -148,23 +148,40 @@ describeE2E('CERTIFICATION multi-marché KM/CM/CG/DJ', ({ db }) => {
       .rejects.toMatchObject({ code: 'fx_currency_unsupported' });
   });
 
-  // ── Transport hors tarif : fail-closed pour les marchés non-KMF sans tarif de vente propre ────────────────
-  it.each(['CM', 'CG', 'DJ'])('%s — transport hors tarif de vente du marché → 409 MARKET_TRANSPORT_TARIFF_MISSING', async (label) => {
+  // ── Maritime inclus : commande commercialisable sans tarif maritime de vente ───────────────────────────
+  it.each(['CM', 'CG', 'DJ'])('%s — aucun tarif maritime de vente : checkout sans supplément client', async (label) => {
     const c = ctx[label];
     await authorizeCentralCollectionForTest(db, cleanup, c.marketId, 'stripe_eur');
     if (label === 'DJ') await seedApprovedEurUsdObservationForTest(db);
     const res = await post(c);
-    expect(res.status).toBe(409);
-    expect(res.body.code).toBe('MARKET_TRANSPORT_TARIFF_MISSING');
+    if (res.body?.order?.id) trackOrder(res.body.order.id);
+    expect(res.status).toBe(201);
+    const { rows: [order] } = await db.query(
+      'SELECT market_id,transport_price_kmf,transport_pricing_snapshot FROM orders WHERE id=$1',
+      [res.body.order.id]
+    );
+    expect(order.market_id).toBe(c.marketId);
+    expect(Number(order.transport_price_kmf)).toBe(0);
+    expect(order.transport_pricing_snapshot).toBeNull();
   });
 
-  it('isolation — le tarif d’un marché ne débloque pas un autre marché', async () => {
+  it('isolation — un tarif maritime historique CM ne modifie pas le checkout CG', async () => {
     await db.query(`INSERT INTO market_transport_sale_rates (market_id,rate_key,rate_per_kg,currency,evidence_ref)
                     VALUES ($1,'SEA_KMF_PER_KG_COMMERCIAL',90,'XAF','e2e-certif-isolation')`, [ctx.CM.marketId]);
-    const res = await post(ctx.CG);
-    expect(res.status).toBe(409);
-    expect(res.body.code).toBe('MARKET_TRANSPORT_TARIFF_MISSING');
-    await db.query("DELETE FROM market_transport_sale_rates WHERE evidence_ref='e2e-certif-isolation'");
+    try {
+      const res = await post(ctx.CG);
+      if (res.body?.order?.id) trackOrder(res.body.order.id);
+      expect(res.status).toBe(201);
+      const { rows: [order] } = await db.query(
+        'SELECT market_id,transport_price_kmf,transport_pricing_snapshot FROM orders WHERE id=$1',
+        [res.body.order.id]
+      );
+      expect(order.market_id).toBe(ctx.CG.marketId);
+      expect(Number(order.transport_price_kmf)).toBe(0);
+      expect(order.transport_pricing_snapshot).toBeNull();
+    } finally {
+      await db.query("DELETE FROM market_transport_sale_rates WHERE evidence_ref='e2e-certif-isolation'");
+    }
   });
 
   it('isolation — un produit actif sur un marché n’est pas achetable sur un autre', async () => {
@@ -181,7 +198,7 @@ describeE2E('CERTIFICATION multi-marché KM/CM/CG/DJ', ({ db }) => {
   describe.each(MARKETS.map((m) => [m.label]))('%s — parcours nominal', (label) => {
     let c; let order;
 
-    it('checkout : prix local → commande, transport tarifé, snapshot monétaire figé', async () => {
+    it('checkout : prix local, surcoût maritime nul et snapshot FX figé', async () => {
       c = ctx[label];
       await authorizeCentralCollectionForTest(db, cleanup, c.marketId, 'stripe_eur');
       if (c.tariff != null) {
@@ -194,7 +211,7 @@ describeE2E('CERTIFICATION multi-marché KM/CM/CG/DJ', ({ db }) => {
       expect(res.status).toBe(201);
       c.orderId = res.body.order.id; trackOrder(c.orderId);
       const { rows: [o] } = await db.query(
-        `SELECT market_id,status,payment_status,total_kmf,total_eur::text AS total_eur,fx_snapshot,transport_pricing_snapshot
+        `SELECT market_id,status,payment_status,total_kmf,total_eur::text AS total_eur,fx_snapshot,transport_price_kmf,transport_pricing_snapshot
            FROM orders WHERE id=$1`, [c.orderId]);
       order = o;
       expect(order).toMatchObject({ market_id: c.marketId, status: 'pending', payment_status: 'pending' });
@@ -202,9 +219,8 @@ describeE2E('CERTIFICATION multi-marché KM/CM/CG/DJ', ({ db }) => {
       expect(s).toMatchObject({ pivot_currency: 'EUR', origin: { currency: 'KMF' }, market: { currency: c.currency, market_id: c.marketId } });
       expect(Number(s.eur.amount_text)).toBe(Number(order.total_eur));
       if (c.currency !== 'KMF') expect(s.market.legs.length).toBeGreaterThan(0);
-      if (c.tariff != null) {
-        expect(order.transport_pricing_snapshot).toMatchObject({ market_currency: c.currency, pivot_currency: 'EUR', source: 'market_transport_sale_rates' });
-      }
+      expect(Number(order.transport_price_kmf)).toBe(0);
+      expect(order.transport_pricing_snapshot).toBeNull();
       if (c.currency === 'DJF') {
         // La chaîne EUR→USD→DJF porte l'observation et le peg ; la fixture est explicitement non réelle.
         expect(JSON.stringify(s.market.legs)).toMatch(/observation/);
