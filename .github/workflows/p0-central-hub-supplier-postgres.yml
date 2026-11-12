@@ -1,0 +1,109 @@
+name: P0 Central Hub supplier — independent PostgreSQL invariants
+on:
+  pull_request:
+    paths:
+      - 'migrations/403_central_hub_supplier_catalog_link.sql'
+      - 'services/suppliers/central-hub-supplier.js'
+      - 'tests/unit/central-hub-supplier.test.js'
+      - '.github/workflows/p0-central-hub-supplier-postgres.yml'
+permissions:
+  contents: read
+jobs:
+  central-hub-postgres:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_central_hub_proof
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U komerce -d komerce_central_hub_proof"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      PGPASSWORD: komerce
+      PGHOST: 127.0.0.1
+      PGUSER: komerce
+      PGDATABASE: komerce_central_hub_proof
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore exact canonical schema and apply the migration twice
+        shell: bash
+        run: |
+          set -euo pipefail
+          psql -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql >/dev/null
+          psql -v ON_ERROR_STOP=1 -f migrations/403_central_hub_supplier_catalog_link.sql >/dev/null
+          HUB_ID_FIRST="$(psql -Atqc "SELECT id FROM public.suppliers WHERE system_key = 'central_hub'")"
+          test -n "$HUB_ID_FIRST"
+          psql -v ON_ERROR_STOP=1 -f migrations/403_central_hub_supplier_catalog_link.sql >/dev/null
+          HUB_ID_SECOND="$(psql -Atqc "SELECT id FROM public.suppliers WHERE system_key = 'central_hub'")"
+          test "$HUB_ID_FIRST" = "$HUB_ID_SECOND"
+          echo 'HUB_PROVISIONING_IDEMPOTENT=true'
+      - name: Assert unique protected identity, ordinary supplier compatibility and link FKs
+        shell: bash
+        run: |
+          set -euo pipefail
+          psql -v ON_ERROR_STOP=1 <<'SQL'
+          DO $$
+          DECLARE
+            v_id uuid;
+            v_ordinary_id uuid;
+            v_blocked boolean;
+            v_count integer;
+          BEGIN
+            SELECT id INTO STRICT v_id FROM public.suppliers WHERE system_key='central_hub';
+            SELECT COUNT(*) INTO v_count FROM public.suppliers WHERE system_key='central_hub'
+              AND name='Fournisseur central Hub' AND platform='local'
+              AND owner_scope='hub' AND auto_order=false AND is_active=true AND deleted_at IS NULL;
+            IF v_count<>1 THEN RAISE EXCEPTION 'central_hub_identity_not_unique_or_invalid'; END IF;
+
+            v_blocked:=false;
+            BEGIN
+              UPDATE public.suppliers SET is_active=false WHERE id=v_id;
+            EXCEPTION WHEN OTHERS THEN
+              IF SQLERRM<>'CENTRAL_HUB_SUPPLIER_IMMUTABLE' THEN RAISE; END IF;
+              v_blocked:=true;
+            END;
+            IF NOT v_blocked THEN RAISE EXCEPTION 'central_hub_deactivation_allowed'; END IF;
+
+            v_blocked:=false;
+            BEGIN
+              DELETE FROM public.suppliers WHERE id=v_id;
+            EXCEPTION WHEN OTHERS THEN
+              IF SQLERRM<>'CENTRAL_HUB_SUPPLIER_IMMUTABLE' THEN RAISE; END IF;
+              v_blocked:=true;
+            END;
+            IF NOT v_blocked THEN RAISE EXCEPTION 'central_hub_deletion_allowed'; END IF;
+
+            v_blocked:=false;
+            BEGIN
+              INSERT INTO public.suppliers(name,platform,owner_scope,system_key)
+                VALUES('Duplicate Hub','local','hub','central_hub');
+            EXCEPTION WHEN unique_violation THEN
+              v_blocked:=true;
+            END;
+            IF NOT v_blocked THEN RAISE EXCEPTION 'central_hub_duplicate_allowed'; END IF;
+
+            INSERT INTO public.suppliers(name,platform)
+              VALUES('Independent real supplier test','local') RETURNING id INTO v_ordinary_id;
+            UPDATE public.suppliers SET is_active=false WHERE id=v_ordinary_id;
+            DELETE FROM public.suppliers WHERE id=v_ordinary_id;
+
+            SELECT COUNT(*) INTO v_count FROM pg_constraint
+              WHERE contype='f' AND confrelid='public.suppliers'::regclass
+              AND conrelid IN ('public.products'::regclass,
+                               'public.sourcing_candidates'::regclass,
+                               'public.supplier_catalog_imports'::regclass);
+            IF v_count<3 THEN RAISE EXCEPTION 'supplier_link_foreign_keys_missing'; END IF;
+
+            IF NOT EXISTS (SELECT 1 FROM pg_trigger
+              WHERE tgrelid='public.purchase_lines'::regclass
+                AND tgname='trg_purchase_lines_require_sku_unless_central_hub'
+                AND NOT tgisinternal)
+            THEN RAISE EXCEPTION 'non_hub_supplier_sku_guard_missing'; END IF;
+          END $$;
+          SQL
+          echo 'CENTRAL_HUB_POSTGRESQL_INVARIANTS=PASS'
