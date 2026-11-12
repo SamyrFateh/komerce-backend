@@ -187,14 +187,14 @@ describeE2E('ISOLATION CM/CG — deux marchés XAF indépendants', ({ db }) => {
     } finally { await setLife('ACTIVE', true); }
   });
 
-  it('remboursement : un remboursement refusé/appliqué sur CM n’écrit rien sur CG', async () => {
+  it('remboursement : un remboursement appliqué sur CM n’écrit rien sur CG', async () => {
     const { processRefund } = require('../../services/refund-service');
     const client = await db.connect();
     try {
       await client.query('BEGIN');
       const { rows: [order] } = await client.query('SELECT * FROM orders WHERE id=$1', [M.CM.orderId]);
-      await expect(processRefund(client, { ...order, payment_mode: 'cash_relais', stripe_payment_id: null }, 100, 0.15, 'cancel', 'e2e-iso', null))
-        .rejects.toMatchObject({ code: 'REFUND_WALLET_CURRENCY_UNSUPPORTED' });
+      const out = await processRefund(client, { ...order, payment_mode: 'cash_relais', stripe_payment_id: null }, 100, 0.15, 'cancel', 'e2e-iso', null);
+      expect(out.method).toBe('wallet_credit');
     } finally { await client.query('ROLLBACK'); client.release(); }
     const r = await db.query('SELECT order_id FROM refunds WHERE order_id = ANY($1::uuid[])', [[M.CM.orderId, M.CG.orderId]]);
     expect(r.rows).toHaveLength(0);

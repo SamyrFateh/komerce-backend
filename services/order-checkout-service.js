@@ -403,8 +403,11 @@ async function runOrderCheckout({ user, body, internalSimulation = null, preview
     }
     let creditApplied = 0;
 
-    if (use_wallet && user?.id) {
-      const walletBalance = await walletService.getBalanceInTx(client, user.id);
+    // Wallet : seul un solde dans la devise du marché règle la commande ; le wallet KMF ne s'applique qu'à un marché KMF
+    // (aucune conversion implicite). Règlement par un wallet non-KMF : non géré ici (voir PR L6, section Reprise).
+    const walletCurrencyOk = !checkoutMarket || String(checkoutMarket.currency || 'KMF').toUpperCase() === 'KMF';
+    if (use_wallet && user?.id && walletCurrencyOk) {
+      const walletBalance = await walletService.getBalanceInTx(client, user.id, 'KMF');
       if (walletBalance > 0) {
         creditApplied = Math.min(walletBalance, total_kmf);
         total_kmf -= creditApplied;

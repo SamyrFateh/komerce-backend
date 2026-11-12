@@ -42,6 +42,7 @@ const log             = require('../../utils/logger').child({ module: 'wallet-re
 /** Raisons de mouvement wallet éligibles à un reçu */
 const RECEIPT_ELIGIBLE_REASONS = new Set([
   'order_cancel',
+  'sav_compensation',
   'admin_gift',
   'refund',
   'loyalty',
@@ -77,6 +78,7 @@ async function issue(walletTransactionId, { dbClient, issuedBy } = {}) {
   const { rows: [tx] } = await db.query(
     `SELECT wt.*,
             w.user_id,
+            w.currency  AS wallet_currency,
             u.full_name AS user_name,
             u.phone     AS user_phone
      FROM   wallet_transactions wt
@@ -120,6 +122,7 @@ async function issue(walletTransactionId, { dbClient, issuedBy } = {}) {
     user_name:             tx.user_name   || null,
     user_phone:            tx.user_phone  || null,
     amount_kmf:            tx.amount_kmf,
+    currency:              tx.wallet_currency || 'KMF',
     direction:             tx.type,
     reason:                tx.reason,
     note:                  tx.note        || null,

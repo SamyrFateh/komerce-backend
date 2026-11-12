@@ -84,6 +84,7 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 |---|---|
 | `catalog_product_quality_notes` | Remarques qualité traçables (acteur, provenance Catalogue ou Relais, article remis, commentaire daté et immuable) ; migration 400 non encore vérifiée live. **Migration 400 — promue le 2026-11-08 (schema-promote, dump live verifie).** |
 | `catalog_product_sale_holds` | Décisions Catalogue centrales gel/dégel global d'une référence avec justification, acteur et historique ; garde des nouvelles commandes, migration 400 non encore vérifiée live. **Migration 400 — promue le 2026-11-08 (schema-promote, dump live verifie).** |
+| `relay_return_compensations` | Décision de compensation SAV après remise rattachée au dossier de retour (une par `disputes.id`), append-only, écrite seulement après confirmation du mouvement canonique (crédit wallet du payeur dans la devise du marché). Migration 406. |
 | `relay_product_return_receipts` | Preuve immuable de reprise physique d un dossier de retour article au relais ; une attestation par dossier, quantite exacte, zone A-Z facultative et non exclusive, sans stock ni mouvement wallet. Non verifiee live. **Migration 401 — promue le 2026-11-08 (schema-promote, dump live verifie).** |
 
 
@@ -142,7 +143,7 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 | Table | Rôle |
 |---|---|
-| `wallets` | Wallet client (1 par user, création lazy). **Contrainte DB** `chk_balance_non_negative CHECK (balance_kmf >= 0)` ajoutée en migration 068 — filet de sécurité contre un solde négatif même en cas de requête SQL directe. **Validée en prod** (confirmé dump Railway 26 mai 2026 : contrainte sans `NOT VALID`). |
+| `wallets` | Wallet client (1 par (user, devise) depuis la migration 405 : colonne `currency` NOT NULL défaut `'KMF'`, unique `(user_id, currency)` ; les colonnes `*_kmf` portent des unités de la devise du wallet, aucune conversion implicite entre soldes ; création lazy). **Contrainte DB** `chk_balance_non_negative CHECK (balance_kmf >= 0)` ajoutée en migration 068 — filet de sécurité contre un solde négatif même en cas de requête SQL directe. **Validée en prod** (confirmé dump Railway 26 mai 2026 : contrainte sans `NOT VALID`). |
 | `wallet_transactions` | Transactions immutables. |
 | `wallet_credit_lots` | Lots de crédits (consommation FIFO). |
 | `wallet_consumptions` | Consommations de lots (audit). **Append-only depuis migration 066** : suppression physique remplacée par marquage `reversed_at = NOW()` + `reversal_reason`. Index partiel `idx_wcons_active WHERE reversed_at IS NULL` pour filtrer les consommations actives. `wallet-service.removeFromOrder()` fait `UPDATE` et non `DELETE`. |
