@@ -223,6 +223,10 @@ const orders = {
       })).min(1).required(),
       relais_id:             uuid,
       payment_mode:          Joi.string().valid('stripe_eur', 'cash_relais', 'paypal_eur', 'mobile_money').required(),
+      // Devis serveur accepté par le client, avant application éventuelle du wallet.
+      // Obligatoire si le checkout transmet Idempotency-Key (route/service L3),
+      // optionnel pour les intégrateurs historiques en période de migration.
+      expected_total_kmf:    Joi.number().integer().min(0).max(Number.MAX_SAFE_INTEGER),
       stripe_payment_intent: safeStr(200),
       tracking_phone:        phone.allow(null, ''),
       // Liste partagée : intention uniquement, jamais un téléphone fourni
