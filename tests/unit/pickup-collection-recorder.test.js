@@ -49,6 +49,22 @@ describe('pickup-collection-recorder', () => {
     })).rejects.toThrow('preuve nominative incomplète');
   });
 
+  test('échec du synchroniseur sans raison explicite refuse la remise et ne passe pas en fallback legacy', async () => {
+    const { safeSyncScanToParcels } = require('../../utils/parcelSync');
+    const { transitionOrderStatus } = require('../../services/order-status-machine');
+    jest.clearAllMocks();
+    safeSyncScanToParcels.mockResolvedValue({ synced:false, parcelsUpdated:0, orderStatus:null });
+    const client = { query: jest.fn().mockResolvedValue({ rows:[{ id:'scan-1' }] }) };
+    await expect(recordCanonicalCollection({
+      client,
+      order: { id:'order-1', reference:'E2E-ORDER', relais_id:'relay-1', status:'available' },
+      agentId:'agent-1',
+      pickupMethod:'PICKUP_CODE',
+      notes:'code de retrait valide',
+    })).rejects.toThrow('La synchronisation du colis ciblé a échoué');
+    expect(transitionOrderStatus).not.toHaveBeenCalled();
+  });
+
   test('mappe les conflits canoniques en 409 sans masquer les erreurs inconnues', () => {
     const err = new Error('aucun colis');
     err.code = 'NO_PARCEL_AVAILABLE';
