@@ -241,27 +241,35 @@ describeDb('Hub V1 — sac client mono-commande (PG réel)', () => {
     // Les identifiants scannés et le colis client doivent concorder.
     await expect(bagBox.attachBagToBox({
       bagUnitId:bag1Id,boxUnitId:boxId,parcelId:parcel1,
-      bagReferenceScan:tag+'-FAUX',boxReferenceScan:tag+'-BOX',
+      evidenceMethod:'SCAN',bagReferenceScan:tag+'-FAUX',boxReferenceScan:tag+'-BOX',
       expectedMarketId:marketId,actorId,
     })).rejects.toMatchObject({code:'HUB_BOX_BAG_SCAN_MISMATCH'});
     await expect(bagBox.attachBagToBox({
       bagUnitId:bag1Id,boxUnitId:boxId,parcelId:parcel2,
-      bagReferenceScan:tag+'-SAC1',boxReferenceScan:tag+'-BOX',
+      evidenceMethod:'SCAN',bagReferenceScan:tag+'-SAC1',boxReferenceScan:tag+'-BOX',
       expectedMarketId:marketId,actorId,
     })).rejects.toMatchObject({code:'HUB_BOX_BAG_PARCEL_ORDER_MISMATCH'});
 
     const first = await bagBox.attachBagToBox({
       bagUnitId: bag1Id, boxUnitId: boxId, parcelId: parcel1,
-      bagReferenceScan: tag + '-SAC1', boxReferenceScan: tag + '-BOX',
+      evidenceMethod:'SCAN',bagReferenceScan:tag + '-SAC1', boxReferenceScan: tag + '-BOX',
       expectedMarketId: marketId, actorId,
     });
     expect(first.already_linked).toBe(false);
     const second = await bagBox.attachBagToBox({
       bagUnitId: bag2Id, boxUnitId: boxId, parcelId: parcel2,
-      bagReferenceScan: tag + '-SAC2', boxReferenceScan: tag + '-BOX',
+      evidenceMethod:'MANUAL',evidenceRef:'Constat clavier : étiquette abîmée',
+      bagReferenceScan:tag + '-SAC2', boxReferenceScan: tag + '-BOX',
       expectedMarketId: marketId, actorId,
     });
     expect(second.already_linked).toBe(false);
+    // Provenance réelle conservée : le scanner et la saisie manuelle ne se confondent jamais.
+    const {rows:provenance}=await q(
+      'SELECT bag_unit_id,evidence_method,evidence_ref FROM hub_box_bags WHERE box_unit_id=$1',[boxId]);
+    const byBag=new Map(provenance.map(r=>[String(r.bag_unit_id),r]));
+    expect(byBag.get(String(bag1Id))).toMatchObject({evidence_method:'SCAN',evidence_ref:null});
+    expect(byBag.get(String(bag2Id))).toMatchObject({
+      evidence_method:'MANUAL',evidence_ref:'Constat clavier : étiquette abîmée'});
 
     // La preuve physique est conservée dans CHAQUE sac ; aucun MOVE ni SUPERSEDED.
     const { rows: bags } = await q('SELECT id,state,order_id FROM hub_physical_units WHERE id=ANY($1::uuid[]) ORDER BY id',[[bag1Id,bag2Id]]);
@@ -286,7 +294,7 @@ describeDb('Hub V1 — sac client mono-commande (PG réel)', () => {
 
     const replay=await bagBox.attachBagToBox({
       bagUnitId:bag1Id,boxUnitId:boxId,parcelId:parcel1,
-      bagReferenceScan:tag+'-SAC1',boxReferenceScan:tag+'-BOX',expectedMarketId:marketId,actorId,
+      evidenceMethod:'SCAN',bagReferenceScan:tag+'-SAC1',boxReferenceScan:tag+'-BOX',expectedMarketId:marketId,actorId,
     });
     expect(replay.already_linked).toBe(true);
     const {rows:[still]}=await q('SELECT COUNT(*)::int AS n FROM hub_box_bags WHERE box_unit_id=$1',[boxId]);

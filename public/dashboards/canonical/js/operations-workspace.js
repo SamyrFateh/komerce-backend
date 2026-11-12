@@ -409,6 +409,16 @@
     const scannerResult = text(doc, 'span', 'kmc-workspace-receive-scan-result', 'Scanner la référence avant de déclarer sa quantité reçue.');
     scannerResult.setAttribute('role', 'status');
     scannerPanel.appendChild(scannerResult);
+    // Mode dégradé : sans code lisible, l'agent justifie une constatation manuelle ; la provenance
+    // enregistrée est MANUAL (jamais SCAN), avec la même vérification de quantité et de variante.
+    const manualProof = doc.createElement('input');
+    manualProof.type = 'text';
+    manualProof.maxLength = 500;
+    manualProof.className = 'kmc-workspace-receive-manual-proof';
+    manualProof.placeholder = 'Mode dégradé : justification de la saisie manuelle (6 caractères min.)';
+    manualProof.setAttribute('aria-label', 'Justification de la réception en saisie manuelle');
+    manualProof.setAttribute('data-receive-manual-proof', '');
+    scannerPanel.appendChild(manualProof);
     card.appendChild(scannerPanel);
 
     const wrap = doc.createElement('div');
@@ -478,7 +488,9 @@
             purchase_order_id: po.purchase_order_id,
             ...(line.product_sku_id ? { product_sku_id: line.product_sku_id } : {}),
             ...(scannedCodeBySku.has(String(line.product_sku_id)) ?
-              { evidence_code: scannedCodeBySku.get(String(line.product_sku_id)) } : {}),
+              { evidence_code: scannedCodeBySku.get(String(line.product_sku_id)) }
+              : (line.product_sku_id && String(manualProof.value || '').trim().length >= 6
+                ? { evidence_method: 'MANUAL', evidence_ref: String(manualProof.value).trim() } : {})),
             quantity,
           });
         }
@@ -488,14 +500,15 @@
 
     function sync() {
       const { contents, invalid } = collect();
-      const unverified = contents.some(item => !item.evidence_code);
+      const unverified = contents.some(item => !item.evidence_code && item.evidence_method !== 'MANUAL');
       button.disabled = invalid || contents.length === 0 || unverified;
       hint.textContent = invalid
         ? 'Quantité invalide : entier entre 0 et le restant attendu.'
-        : unverified ? 'Scanner toutes les références déclarées reçues avant validation.'
+        : unverified ? 'Scanner toutes les références reçues, ou justifier la saisie manuelle (mode dégradé).'
         : 'Quantité réellement comptée et références scannées : prêt à enregistrer.';
     }
     inputs.forEach(({ input }) => input.addEventListener('input', sync));
+    manualProof.addEventListener('input', sync);
     let scanning = false;
     const PHYSICAL_CODE_TYPES = Object.freeze([
       ['EAN_GTIN', 'EAN / GTIN imprimé (universel)'],
@@ -632,7 +645,7 @@
 
     button.addEventListener('click', () => {
       const { contents, invalid } = collect();
-      if (invalid || !contents.length || contents.some(item => !item.evidence_code)) return;
+      if (invalid || !contents.length || contents.some(item => !item.evidence_code && item.evidence_method !== 'MANUAL')) return;
       const total = contents.reduce((sum, item) => sum + item.quantity, 0);
       const trackingRef = String(tracking.value || '').trim();
       runAction(context, button, {
@@ -1288,6 +1301,20 @@
           const parcel=doc.createElement('select');
           parcel.setAttribute('aria-label','Colis client rattaché au sac scanné');
           const add=makeActionButton(doc,'Placer le sac','put-bag-in-box');
+          const boxMethod=doc.createElement('select');
+          boxMethod.setAttribute('aria-label','Mode de preuve du rattachement dans '+box.reference);
+          boxMethod.setAttribute('data-hub-box-evidence-method','');
+          [['SCAN','Références scannées'],['MANUAL','Mode dégradé · saisie manuelle']]
+            .forEach(([value,label])=>boxMethod.appendChild(Object.assign(doc.createElement('option'),
+              {value,textContent:label})));
+          const boxProof=field('Justification de la saisie manuelle (au moins 6 caractères)',
+            'Justification de la saisie manuelle dans '+box.reference);
+          boxProof.setAttribute('data-hub-box-manual-proof','');
+          boxProof.hidden=true;
+          boxMethod.addEventListener('change',()=>{
+            boxProof.hidden=boxMethod.value!=='MANUAL';
+            if(boxProof.hidden)boxProof.value='';
+          });
           const identify=()=>{
             const bag=readyBags.find(b=>b.reference===bagScan.value.trim());
             const previousParcel=parcel.value;
@@ -1323,17 +1350,24 @@
           add.addEventListener('click',()=>{
             const bag=readyBags.find(b=>b.reference===bagScan.value.trim());
             if(!bag||boxScan.value.trim()!==box.reference||!parcel.value)return;
+            const manualBox=boxMethod.value==='MANUAL';
+            const boxProofRef=String(boxProof.value||'').trim();
+            if(manualBox&&boxProofRef.length<6){
+              setFeedback(context.root,'Mode manuel : justification obligatoire (6 caractères minimum).','critical');
+              return;
+            }
             runAction(context,add,{
               url:endpointFor(context.marketCode,'boxes/'+encodeURIComponent(box.unit_id)+'/bags'),
               body:{
                 bag_unit_id:bag.unit_id,parcel_id:parcel.value,
                 bag_reference_scan:bagScan.value.trim(),box_reference_scan:boxScan.value.trim(),
+                ...(manualBox?{evidence_method:'MANUAL',evidence_ref:boxProofRef}:{evidence_method:'SCAN'}),
               },
               runningMessage:'Contrôle du sac et de la KOM-BOX…',
               successMessage:bag.reference+' placé dans '+box.reference+' sans déplacement des articles.',
             }).catch(()=>{});
           });
-          [boxScan,bagScan,parcel,add].forEach(node=>cell.appendChild(node));
+          [boxScan,bagScan,parcel,boxMethod,boxProof,add].forEach(node=>cell.appendChild(node));
           identify();
         }else{
           cell.appendChild(text(doc,'span','kmc-workspace-muted','Préparer puis fermer un sac client avant mise en KOM-BOX.'));

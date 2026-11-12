@@ -197,7 +197,7 @@ async function runInner({ env = process.env, db, run8 } = {}, holder = {}) {
       const pid = ready ? (await q("SELECT DISTINCT pi.parcel_id AS id FROM parcel_items pi JOIN order_items oi ON oi.id=pi.order_item_id JOIN parcels p ON p.id=pi.parcel_id WHERE oi.order_id=$1 AND p.status::text<>'cancelled' LIMIT 1", [ready.order_id]))[0] : null;
       const parcel = pid && (d.client_parcels || []).find((p) => String(p.id) === String(pid.id));
       if (!ready || !parcel) { blocked('hub:box-add-bag', 'hub_agent', `POST ${WS}/boxes/:id/bags`, `${JS}:1161`, `sac pret ou colis client absent du dossier pour ${bg.bagOrder.reference} (bags_ready=${(d.bags_ready || []).length}, client_parcels=${(d.client_parcels || []).length})`); continue; }
-      const r = await rec('hub:box-add-bag', 'hub_agent', 'POST', `${WS}/boxes/${boxId}/bags`, { bag_unit_id: ready.unit_id, parcel_id: parcel.id, bag_reference_scan: ready.reference, box_reference_scan: boxRef }, { http: [200, 201] }, `${JS}:1161`);
+      const r = await rec('hub:box-add-bag', 'hub_agent', 'POST', `${WS}/boxes/${boxId}/bags`, { bag_unit_id: ready.unit_id, parcel_id: parcel.id, bag_reference_scan: ready.reference, box_reference_scan: boxRef, evidence_method: 'SCAN' }, { http: [200, 201] }, `${JS}:1161`);
       report.actions[report.actions.length - 1].order = bg.bagOrder.reference;
       if (r && [200, 201].includes(r.http)) placed.push(bg);
     }
