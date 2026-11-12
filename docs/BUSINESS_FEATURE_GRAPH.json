@@ -41018,6 +41018,10 @@
                 "targetFile": "middleware/require-market-delegated-capability.js"
               },
               {
+                "sourceFileId": "routes/hub.js",
+                "targetFile": "services/market-delegation-service.js"
+              },
+              {
                 "sourceFileId": "tests/unit/market-transport-sale-rate-command.test.js",
                 "targetFile": "services/market-delegation-service.js"
               }

@@ -2486,7 +2486,7 @@ Meta Graph monté : oui.
 | logistics | local-stock | data-read | 2 | **DECLARED_AND_OBSERVED** |
 | logistics | loyalty | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | logistics | market | static-code | 3 | **DECLARED_AND_OBSERVED** |
-| logistics | market-delegation | static-code | 6 | **DECLARED_AND_OBSERVED** |
+| logistics | market-delegation | static-code | 7 | **DECLARED_AND_OBSERVED** |
 | logistics | notifications | static-code | 14 | **DECLARED_AND_OBSERVED** |
 | logistics | orders | static-code, data-write, data-read | 40 | **DECLARED_AND_OBSERVED** |
 | logistics | payments | static-code | 2 | **DECLARED_AND_OBSERVED** |
