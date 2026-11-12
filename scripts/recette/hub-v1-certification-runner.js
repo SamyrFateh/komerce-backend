@@ -630,7 +630,10 @@ async function step7(ctx, st) {
   st.actors = { hub_agent: agent.id };
   for (const [label, poId] of poLabels(ctx)) {
     const { rows: lines } = await db.query('SELECT id,quantity FROM purchase_lines WHERE purchase_order_id=$1 AND cancelled_at IS NULL ORDER BY id', [poId]);
+    // Le vendeur réel est le fournisseur de la fixture, jamais le Hub central.
+    // L5 impose cette preuve sur chaque achat manuel, y compris le runner Hub 13 étapes.
     const body = { purchase_proof_ref: `SIM-RECU-${run}-${label}`, supplier_order_id: `SIM-SO-${run}-${label}`,
+      seller_supplier_id: manifest.suppliers[label], channel: 'phone',
       lines: lines.map((l) => ({ purchase_line_id: l.id, confirmed_quantity: l.quantity })) };
     if ((await poHeader(db, poId)).status === 'notified') {
       await expectRefusal(st, `PO-${label} confirmation sans justificatif`, () => svc.engagement.confirmGroupedPurchaseOrder(poId, { ...body, purchase_proof_ref: '' }, { actor: agent }), { code: 'MANUAL_PURCHASE_PROOF_REQUIRED' });
