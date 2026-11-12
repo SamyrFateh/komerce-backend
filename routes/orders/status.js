@@ -133,7 +133,7 @@ router.patch('/:id/status', authenticate, requireRole(['admin', 'agent_hub', 'ag
 
     // ── Preuve de retrait (post-commit, non bloquant) ─────────────────────
     if (status === 'collected') {
-      pickupProofService.issue(order.id, { issuedBy: req.user.id }).catch(err => {
+      pickupProofService.issueForLatestHandoff(order.id, { issuedBy: req.user.id }).catch(err => {
         log.warn({ err, order_id: order.id }, '[status] émission preuve de retrait échouée (non-fatal)');
       });
     }

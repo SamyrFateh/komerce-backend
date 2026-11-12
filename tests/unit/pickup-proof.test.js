@@ -147,3 +147,60 @@ describe('buildDisplayData', () => {
     expect(result.issued_at).toBe('—');
   });
 });
+
+describe('issueForHandoff / issueForLatestHandoff (#3927 trou 2)', () => {
+  const { issueForHandoff, issueForLatestHandoff } = require('../../services/documents/pickup-proof');
+  const SCAN = '11111111-1111-4111-8111-111111111111';
+  const scanRow = (over = {}) => ({
+    id: SCAN, order_id: 'o1', step: 'collected', parcel_id: 'p1', pickup_method: 'PICKUP_CODE', scanned_by: 'agent-1',
+    created_at: new Date('2026-11-12T10:00:00Z'), order_reference: 'ORD-1', owner_user_id: 'u1', order_relais_id: 'r1',
+    parcel_reference: 'PCL-1', relais_name: 'Moroni', agent_name: 'Agent', recipient_name: 'Client', ...over,
+  });
+  beforeEach(() => { db.query.mockReset(); documentService.findExistingDocument.mockReset(); documentService.persistDocument.mockReset(); });
+
+  it('ancre la preuve sur scans.id avec colis, articles, quantités, relais, agent et mode', async () => {
+    documentService.findExistingDocument.mockResolvedValue(null);
+    db.query
+      .mockResolvedValueOnce({ rows: [scanRow()] })
+      .mockResolvedValueOnce({ rows: [{ order_item_id: 'oi1', product_id: 'pr1', sku_id: 's1', variant_combo: null, quantity: 2 }] })
+      .mockResolvedValueOnce({ rows: [{ seq: 7 }] });
+    documentService.persistDocument.mockResolvedValue({ id: 'd1' });
+    await issueForHandoff(SCAN);
+    const arg = documentService.persistDocument.mock.calls[0][0];
+    expect(arg).toMatchObject({ documentType: 'pickup_proof', subjectType: 'pickup_handoff', subjectId: SCAN, ownerUserId: 'u1', orderId: 'o1' });
+    expect(arg.metadata).toMatchObject({
+      scan_id: SCAN, parcel_id: 'p1', parcel_reference: 'PCL-1', relais_name: 'Moroni', agent_id: 'agent-1', mode: 'code',
+      items: [{ order_item_id: 'oi1', quantity: 2 }],
+    });
+  });
+
+  it('mode exceptionnel et idempotence : un rejeu du même scan ne régénère rien', async () => {
+    documentService.findExistingDocument.mockResolvedValue({ id: 'd1', reference: 'RET-1' });
+    await expect(issueForHandoff(SCAN)).resolves.toEqual({ id: 'd1', reference: 'RET-1' });
+    expect(db.query).not.toHaveBeenCalled();
+    expect(documentService.persistDocument).not.toHaveBeenCalled();
+  });
+
+  it('mode nominatif exceptionnel et deux scans distincts = deux preuves', async () => {
+    documentService.findExistingDocument.mockResolvedValue(null);
+    db.query
+      .mockResolvedValueOnce({ rows: [scanRow({ pickup_method: 'AUTHORIZED_NAME_ID_CHECK' })] })
+      .mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [{ seq: 8 }] });
+    documentService.persistDocument.mockResolvedValue({ id: 'd2' });
+    await issueForHandoff(SCAN);
+    expect(documentService.persistDocument.mock.calls[0][0].metadata.mode).toBe('exceptional');
+  });
+
+  it("refuse un scan qui n'est pas une remise", async () => {
+    documentService.findExistingDocument.mockResolvedValue(null);
+    db.query.mockResolvedValueOnce({ rows: [scanRow({ step: 'shipped' })] });
+    await expect(issueForHandoff(SCAN)).rejects.toThrow("n'est pas une remise");
+  });
+
+  it('chemin historique : résout le dernier scan collected puis ancre sur lui', async () => {
+    documentService.findExistingDocument.mockResolvedValue({ id: 'd1' });
+    db.query.mockResolvedValueOnce({ rows: [{ id: SCAN }] });
+    await issueForLatestHandoff('o1');
+    expect(documentService.findExistingDocument).toHaveBeenCalledWith(expect.objectContaining({ subjectType: 'pickup_handoff', subjectId: SCAN }));
+  });
+});
