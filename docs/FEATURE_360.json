@@ -56,7 +56,7 @@
     "healthy": 34,
     "attention": 6,
     "blocked": 0,
-    "businessDependencies": 324,
+    "businessDependencies": 325,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
@@ -11020,6 +11020,13 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "data-read"
+          ]
+        },
+        {
+          "consumer": "purchasing",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
           ]
         },
         {
@@ -29274,7 +29281,7 @@
       "implementation": {
         "byCategory": {
           "migrations": {
-            "count": 16,
+            "count": 17,
             "files": [
               {
                 "declared": "migrations/225_purchase_orders_exact_supplier_identity.sql",
@@ -29354,6 +29361,11 @@
               {
                 "declared": "migrations/407_purchase_variance_decisions.sql",
                 "resolvedPath": "migrations/407_purchase_variance_decisions.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/411_hub_purchase_commitment_pdf.sql",
+                "resolvedPath": "migrations/411_hub_purchase_commitment_pdf.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -30169,7 +30181,7 @@
             ]
           }
         },
-        "totalFiles": 174,
+        "totalFiles": 175,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -30566,7 +30578,7 @@
           }
         ],
         "httpInterfaces": {
-          "count": 20
+          "count": 21
         }
       },
       "businessDependencies": [
@@ -30583,6 +30595,13 @@
           "channels": [
             "static-code",
             "data-read"
+          ]
+        },
+        {
+          "provider": "documents",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
           ]
         },
         {

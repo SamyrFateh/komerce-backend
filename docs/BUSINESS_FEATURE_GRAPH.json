@@ -18569,6 +18569,13 @@
       {
         "feature": "purchasing",
         "category": "migrations",
+        "declared": "migrations/411_hub_purchase_commitment_pdf.sql",
+        "resolvedPath": "migrations/411_hub_purchase_commitment_pdf.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "migrations",
         "declared": "migrations/275_supplier_platform_cj.sql",
         "resolvedPath": "migrations/275_supplier_platform_cj.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -26400,6 +26407,14 @@
       },
       {
         "feature": "purchasing",
+        "entry": "GET /api/purchasing/po/:po_id/commitment-pdf",
+        "method": "GET",
+        "path": "/api/purchasing/po/{id}/commitment-pdf",
+        "routeFile": "routes/purchasing.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "purchasing",
         "entry": "POST /api/purchasing/po/prepare",
         "method": "POST",
         "path": "/api/purchasing/po/prepare",
@@ -30118,6 +30133,12 @@
         "from": "providers-services",
         "to": "infrastructure",
         "raw": "infrastructure — dépendance technique db.js et résolution KOMERCE_ENV",
+        "resolved": true
+      },
+      {
+        "from": "purchasing",
+        "to": "documents",
+        "raw": "documents (rendu PDF interne du bon de commande validé)",
         "resolved": true
       },
       {
@@ -46725,6 +46746,22 @@
           }
         ],
         "conformanceStatus": "OBSERVED_UNDECLARED"
+      },
+      {
+        "from": "purchasing",
+        "to": "documents",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/hub-authorization-service.js",
+                "targetFile": "services/documents/pdf-renderer.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "purchasing",

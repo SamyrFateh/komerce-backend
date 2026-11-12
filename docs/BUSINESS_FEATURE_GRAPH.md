@@ -262,7 +262,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - interfaces exposed: 9
 - internal APIs: 0
 - dependencies (consumes): 9 — logistics, catalog, auth, infrastructure, orders, customs, wallet, refunds, auth-identity
-- consumers: 10 — auth-identity, customs, dashboard, logistics, orders, payments, platform-ops, refunds, wallet, admin-dashboard
+- consumers: 11 — auth-identity, customs, dashboard, logistics, orders, payments, platform-ops, purchasing, refunds, wallet, admin-dashboard
 
 ### economic-engine _(business-feature)_
 
@@ -588,14 +588,14 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - services: 53
 - routes: 1
-- migrations: 16
+- migrations: 17
 - scripts: 14
 - tests: 90
 - tables owned (lifecycle): 13 — `suppliers`, `purchase_lines`, `purchase_orders`, `product_suppliers`, `purchase_order_authorizations`, `hub_authorization_grants`, `supplier_execution_payments`, `supplier_payment_settlements`, `supplier_execution_events`, `supplier_execution_fulfillments`, `supplier_execution_order_lines`, `supplier_execution_orders`, `supplier_execution_payment_proofs`
 - tables written: 13
-- interfaces exposed: 20
+- interfaces exposed: 21
 - internal APIs: 14
-- dependencies (consumes): 10 — supplier-connectivity, external-provider-contracts, sourcing, catalog, infrastructure, orders, auth, economic-engine, notifications, logistics
+- dependencies (consumes): 11 — documents, supplier-connectivity, external-provider-contracts, sourcing, catalog, infrastructure, orders, auth, economic-engine, notifications, logistics
 - consumers: 8 — catalog, dashboard, logistics, orders, payments, platform-ops, sourcing, decision-signals
 
 ### recommendations _(business-feature)_
@@ -1525,6 +1525,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `DELETE /api/purchasing/po/{id}` | purchasing | `routes/purchasing.js` (resolved-owned) |
 | `GET /api/purchasing/open-lines` | purchasing | `routes/purchasing.js` (resolved-owned) |
 | `GET /api/purchasing/po/{id}` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `GET /api/purchasing/po/{id}/commitment-pdf` | purchasing | `routes/purchasing.js` (resolved-owned) |
 | `POST /api/purchasing/po/prepare` | purchasing | `routes/purchasing.js` (resolved-owned) |
 | `POST /api/purchasing/po/{id}/detach` | purchasing | `routes/purchasing.js` (resolved-owned) |
 | `POST /api/purchasing/po/{id}/discard` | purchasing | `routes/purchasing.js` (resolved-owned) |
@@ -2127,6 +2128,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | providers-services | local-stock (`local-stock — déclaration et exposition du stock local Product Komerce du seed Discovery staging via les primitives owner`) | ✔ |
 | providers-services | recommendations (`recommendations — réutilise le tooling Discovery CJ pour construire les candidats staging ; recommendations reste propriétaire de la sélection et de l ordre éditorial`) | ✔ |
 | providers-services | infrastructure (`infrastructure — dépendance technique db.js et résolution KOMERCE_ENV`) | ✔ |
+| purchasing | documents (`documents (rendu PDF interne du bon de commande validé)`) | ✔ |
 | purchasing | supplier-connectivity (`supplier-connectivity (autorité provider, Supplier Order Identity opaque et contrats adapter fail-closed)`) | ✔ |
 | purchasing | external-provider-contracts (`external-provider-contracts (contrat transverse de preuve provider : Conversation + KNOWN/DERIVED/UNKNOWN + P0..P4 consommé par les proofs Purchasing)`) | ✔ |
 | purchasing | sourcing (`sourcing (resolveCanonicalUnitForProductSku — frontière canonique exacte, sans lecture directe des tables Resolution)`) | ✔ |
@@ -2615,6 +2617,7 @@ Meta Graph monté : oui.
 | purchasing | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | purchasing | catalog | static-code, data-read | 21 | **DECLARED_AND_OBSERVED** |
 | purchasing | decision-signals | static-code | 1 | **OBSERVED_UNDECLARED** |
+| purchasing | documents | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | purchasing | economic-engine | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | purchasing | external-provider-contracts | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | purchasing | infrastructure | static-code | 65 | **DECLARED_AND_OBSERVED** |
