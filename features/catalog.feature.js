@@ -34,6 +34,7 @@ module.exports = {
   perimeter: {
     in: [
       'connecteurs fournisseurs (CSV, API, manuel, Noon, CJdropshipping, AliExpress, Allegro Sandbox, eBay Sandbox Browse enregistré dans le dispatch générique P3)',
+      'identité d’approvisionnement par produit : le canal MANUAL choisit un fournisseur réel enregistré ou, à défaut, le Fournisseur central Hub protégé ; cette identité reste distincte du vendeur externe, du provider et de Supplier Order Identity (migration 403)',
       'contrat source fournisseur versionne V1/V2 : brut integral + preservation explicite media, axes et unites vendables quand la source les connait',
       'publication produit et déclenchement de l audit prix via economic-engine',
       'categories boutique admin',
@@ -184,6 +185,7 @@ module.exports = {
       'services/catalog-fr-quality.js',
       'services/catalog-terminology-memory.js',
       'services/product-admin-service.js',
+      'services/suppliers/catalog-import-orchestrator.js',
       'services/product-variant-service.js',
       'services/product-sku-service.js',
       'services/product-sellable-service.js',
@@ -191,6 +193,7 @@ module.exports = {
       'services/product-price-audit.js',
       'services/catalog-publication-decision-audit.js',
       'services/catalog-candidate-product-service.js',
+      'services/product-360.js',
       'services/commercial-taxonomy-semantics.js',
       'services/catalog-product-mutation-service.js',
       'services/catalog-change-intake.js',
@@ -226,7 +229,6 @@ module.exports = {
       'services/suppliers/e2e-isolated-runtime.js',
       'services/suppliers/e2e-catalog-500-plan.js',
       'services/supplier-catalog-scanner.js',
-      'services/suppliers/catalog-import-orchestrator.js',
       'services/sourcing-import-dispatch.js',
       'services/suppliers/catalog-import-json.js',
       'services/catalog-eligibility.js',
@@ -253,6 +255,7 @@ module.exports = {
       'schemas/catalog/import-profile.v1.schema.json',
     ],
     migrations: [
+      'migrations/403_central_hub_supplier_catalog_link.sql',
       'migrations/242_catalog_field_sync_state.sql',
       'migrations/241_catalog_stock_sync_state.sql',
       'migrations/098_catalog_refinery_foundation.sql',
@@ -603,6 +606,7 @@ module.exports = {
       'product_attributes: RW',
       'products: RW!',
       'sourcing_candidates: RW',
+      'suppliers: R',
       'import_runtime_runs: R',
       'markets: R',
       'supplier_catalog_imports: W',

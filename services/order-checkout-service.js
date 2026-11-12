@@ -72,15 +72,13 @@ const { getRule }                        = require('../utils/rules');
 const { getUniqueRef, generateCashCode } = require('./order-service');
 const walletService = require('./wallet-service');
 const { resolveRoutingFromRelais, RoutingError } = require('./routing');
-const { quoteTransportPriceForOrder, TransportPricingError } = require('./transport-pricing');
+const { resolveOrderItemTransportRail, TransportPricingError } = require('./transport-pricing');
 const { resolveDisplaySnapshot } = require('./order-display-snapshot');
 const { runOrderPostCommitHooks } = require('./order-post-commit-hooks');
 const { resolveCheckoutItems } = require('./order-checkout-item-resolution');
 const { applyActiveMarketPricesToCheckoutItems } = require('./market-local-price-resolution-service');
 const { MarketCommercialPriceError } = require('./market-commercial-price-service');
 const { assertCentralCollectionAllowed } = require('./market-payment-collection-gate');
-const { assertTransportTariffApplicable, resolveEffectiveTransportRates } = require('./market-transport-tariff-gate');
-const { loadMarketTransportSaleTariffs } = require('./market-transport-sale-rates');
 const { buildOrderFxSnapshot } = require('./order-fx-snapshot');
 const {
   FULFILLMENT_SOURCE,
@@ -294,22 +292,12 @@ async function runOrderCheckout({ user, body, internalSimulation = null, preview
 
     const [
       maxQty, fretPerKg, customsPct, cashTimeout,
-      seaKmfPerKgCommercial, airKmfPerKgTaxable, airVolumetricDivisor,
     ] = await Promise.all([
       getRule('MAX_QUANTITY_PER_ITEM', 100),
       getRule('FREIGHT_KMF_PER_KG', 65),
       getRule('CUSTOMS_DEFAULT_PCT', 20),
       getRule('CASH_PAYMENT_TIMEOUT_HOURS', 36),
-      // §8 — tarifs commerciaux transport (distincts du coût interne fretPerKg)
-      getRule('SEA_KMF_PER_KG_COMMERCIAL', 65),
-      getRule('AIR_KMF_PER_KG_TAXABLE', 2500),
-      getRule('AIR_VOLUMETRIC_DIVISOR', 6000),
     ]);
-    const transportRates = {
-      SEA_KMF_PER_KG_COMMERCIAL: seaKmfPerKgCommercial,
-      AIR_KMF_PER_KG_TAXABLE: airKmfPerKgTaxable,
-      AIR_VOLUMETRIC_DIVISOR: airVolumetricDivisor,
-    };
 
     // ── Résolution des items : produit, SKU/legacy, stock, prix canonique,
     // claim shared_cart_item_id — cf. order-checkout-item-resolution.js.
@@ -363,8 +351,8 @@ async function runOrderCheckout({ user, body, internalSimulation = null, preview
     // Résolution serveur, sous la transaction orders déjà ouverte. Le owner
     // local-stock acquiert les FOR UPDATE dans un ordre déterministe et les
     // conserve jusqu'au COMMIT/ROLLBACK. Le frontend n'est jamais autorité.
-    // Le verdict est ensuite persisté sur order_items (Lot C) et sert ici à
-    // construire la seule collection éligible au transport import (Lot D).
+    // Le verdict est ensuite persisté sur order_items (Lot C).
+    // Aucun supplément transport commercial sur le maritime (#3936).
     const fulfillmentSources = await resolveCheckoutFulfillmentSources(client, {
       marketId: relais?.market_id || null,
       demands: items.map(item => ({
@@ -377,71 +365,26 @@ async function runOrderCheckout({ user, body, internalSimulation = null, preview
         fulfillmentSources[item.product_id] || FULFILLMENT_SOURCE.IMPORT;
     }
 
-    const importTransportItems = items.filter(
-      item => item._fulfillment_source === FULFILLMENT_SOURCE.IMPORT
-    );
-
-    // §8 — devis transport commercial. Seules les lignes IMPORT sont
-    // transmises au moteur : LOCAL_STOCK contribue exactement 0 au transport
-    // international. `transport-pricing` reste volontairement ignorant de la
-    // notion local-stock. Les coûts d'acquisition historiques déjà présents
-    // dans cost_estimated restent inchangés : ce lot ne modifie que le prix
-    // commercial du transport de cette commande.
-    let transport_price_kmf = 0;
-    let transportPricingSnapshot = null;
+    // Décision propriétaire #3936 : maritime inclus dans les prix catalogue,
+    // donc aucun supplément transport n'est ajouté au client, y compris pour
+    // les lignes IMPORT. Les coûts internes fret/douane restent inchangés.
+    // La validation du rail reste stricte : AIR_EXPRESS non commercialisable
+    // ne doit jamais devenir une option autorisée par ce prix à zéro.
+    const transport_price_kmf = 0;
+    const transportPricingSnapshot = null;
     try {
-      // Lot 4 : les tarifs de transport globaux sont des tarifs de vente en KMF ; hors de cette devise,
-      // refus tant qu'aucun tarif de vente du marché n'existe (le coût attesté n'est jamais un prix).
-      const marketTariffs = importTransportItems.length > 0
-        ? await loadMarketTransportSaleTariffs(client, relais.market_id)
-        : { rates: {}, lines: [] };
-      const marketTransportRates = marketTariffs.rates;
-      assertTransportTariffApplicable({
-        marketCurrency: checkoutMarket.currency,
-        importItemCount: importTransportItems.length,
-        marketRates: marketTransportRates,
-      });
-      const transportQuote = quoteTransportPriceForOrder({
-        items: importTransportItems.map(item => {
-          const product = productMap[item.product_id];
-          return {
-            product_id: item.product_id,
-            requested_transport_rail: item.requested_transport_rail ?? null,
-            weight_kg: product?.weight_kg,
-            volume_cm3: product?.volume_cm3,
-            quantity: item.quantity,
-          };
-        }),
-        rates: resolveEffectiveTransportRates({
-          marketCurrency: checkoutMarket.currency,
-          globalRates: transportRates,
-          marketRates: marketTransportRates,
-        }),
-      });
-      transport_price_kmf = transportQuote.transport_price_kmf;
-      if (importTransportItems.length > 0) {
-        transportPricingSnapshot = {
-          version: 1,
-          market_id: relais.market_id,
-          market_currency: String(checkoutMarket.currency || '').trim().toUpperCase(),
-          pivot_currency: 'EUR',
-          source: marketTariffs.lines.length ? 'market_transport_sale_rates' : 'business_rules',
-          tariff_lines: marketTariffs.lines,
-          breakdown: transportQuote.breakdown,
-          transport_price_kmf,
-        };
+      for (const item of items) {
+        if (item.requested_transport_rail || item._fulfillment_source === FULFILLMENT_SOURCE.IMPORT) {
+          resolveOrderItemTransportRail(item.requested_transport_rail ?? null);
+        }
       }
     } catch (e) {
       await client.query('ROLLBACK');
-      if (e && e.code === 'fx_rate_unavailable') {
-        return fail(503, { error: e.message, code: e.code });
-      }
-      if (e instanceof TransportPricingError || (e && e.code === 'MARKET_TRANSPORT_TARIFF_MISSING')) {
+      if (e instanceof TransportPricingError) {
         return fail(409, { error: e.message, code: e.code });
       }
       throw e;
     }
-    total_kmf += transport_price_kmf;
 
     const margin_est = cost_estimated == null ? null : (total_kmf > 0
       ? ((total_kmf - cost_estimated) / total_kmf * 100).toFixed(2)
@@ -469,10 +412,30 @@ async function runOrderCheckout({ user, body, internalSimulation = null, preview
     }
 
     if (previewOnly) {
+      // Même prix/SKU, exposition marché, quantité et transport que la commande,
+      // mais aucun événement métier : toutes les écritures sont annulées.
+      // Les libellés/variantes des documents doivent provenir du serveur.
+      const previewItems = items.map(item => {
+        const product = productMap[item.product_id];
+        const qty = Number(item.quantity);
+        const unit = Number(item._effective_unit_price_kmf);
+        return {
+          product_id: item.product_id,
+          product_name: product?.name || product?.name_fr || 'Produit',
+          quantity: qty,
+          variant_combo: item.variant_combo || null,
+          requested_transport_rail: item.requested_transport_rail || null,
+          unit_price_kmf: unit,
+          line_total_kmf: unit * qty,
+        };
+      });
       await client.query('ROLLBACK');
       return {
         ok: true,
         preview: {
+          items: previewItems,
+          relais_name: relais.name,
+          market_code: checkoutMarket.code,
           items_total_kmf: marketPricing.total_kmf,
           transport_price_kmf,
           discount_pct: discountPct,
@@ -483,9 +446,8 @@ async function runOrderCheckout({ user, body, internalSimulation = null, preview
       };
     }
 
-    // RCT1 : ni remise ni credit ; le prix produit reste exactement l'attendu independant de la reference
-    // et le seul supplement admis est le transport commercial du checkout (hypothese v4 : attendu =
-    // prix produit + poids x tarif business_rules). L'echec annule la transaction avant toute insertion.
+    // RCT1 : ni remise ni crédit ; prix produit sans supplément maritime,
+    // coûts internes fret/douane distincts. Échec = rollback avant insertion.
     if (internalSimulation) {
       const expectedProductTotal = hubFixture
         ? internalSimulation.expectedProductTotalKmf

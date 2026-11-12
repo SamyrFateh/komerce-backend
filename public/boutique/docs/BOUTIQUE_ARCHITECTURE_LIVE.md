@@ -15,7 +15,7 @@
 | Fichier | Lignes | Bundle(s) |
 |---|---:|---|
 | `boutique-desktop.css` | 1323 | desktop.css |
-| `cart.css` | 2145 | components.css |
+| `cart.css` | 2420 | components.css |
 | `categories.css` | 983 | components.css |
 | `category-cutout-navigation.css` | 408 | components.css |
 | `category-cutout-navigation-desktop.css` | 649 | desktop.css |
@@ -69,8 +69,8 @@ Cascade réelle des bundles livrés :
 ```
  1. /boutique/css/dist/base.css?v=266
  2. /boutique/css/dist/critical-home.css?v=5
- 3. /boutique/css/dist/components.css?v=647
- 4. /boutique/css/dist/components.css?v=647
+ 3. /boutique/css/dist/components.css?v=649
+ 4. /boutique/css/dist/components.css?v=649
  5. /boutique/css/dist/desktop.css?v=155
 ```
 

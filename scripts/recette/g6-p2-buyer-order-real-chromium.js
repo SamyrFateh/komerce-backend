@@ -25,7 +25,7 @@ const run=crypto.randomBytes(4).toString('hex');
 const report={run_id:process.env.GITHUB_RUN_ID||null,run8:run.toUpperCase(),
   phase:'G6-KM-CHROMIUM-REAL-OTP-ORDER',product_ref:REF,product_id:PRODUCT,
   verdict:'NOT_PROVEN',human_attestation:false,payment_real:false,supplier_order_real:false,
-  blocked_requests:[],allowed_read_posts:[],steps:[]};
+  blocked_requests:[],allowed_read_posts:[],preview_http_statuses:[],steps:[]};
 const save=()=>fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2)+'\n');
 const check=(bool,code)=>{if(!bool)throw Error(code)};
 const record=(name,value)=>{report.steps.push({name,observed:value});save()};
@@ -89,6 +89,11 @@ async function browserCheckout({buyer,phone,code}){
  try{
   const ctx=await browser.newContext({viewport:{width:1440,height:900},locale:'fr-FR'});
   const page=await ctx.newPage();let orderRequests=0;
+  page.on('response',response=>{
+    const req=response.request(),u=new URL(response.url());
+    if(req.method()==='POST'&&u.origin===ORIGIN&&u.pathname==='/api/orders/preview')
+      report.preview_http_statuses.push(response.status());
+  });
   await page.route('**/*',async route=>{
     const req=route.request(),method=req.method();
     if(['GET','HEAD','OPTIONS'].includes(method))return route.continue();
@@ -103,7 +108,7 @@ async function browserCheckout({buyer,phone,code}){
       report.allowed_read_posts.push(meta);save();return route.continue();
     }
     if(method==='POST'&&u.origin===ORIGIN&&
-       ['/api/auth/otp/request','/api/auth/otp/verify','/api/orders'].includes(u.pathname)){
+       ['/api/auth/otp/request','/api/auth/otp/verify','/api/orders','/api/orders/preview'].includes(u.pathname)){
       if(u.pathname==='/api/orders'&&++orderRequests!==1){
         report.blocked_requests.push({...meta,reason:'duplicate_order_post'});
         return route.abort();
@@ -200,6 +205,8 @@ async function browserCheckout({buyer,phone,code}){
   const confirm=page.locator('#btn-confirm-order');
   await confirm.waitFor({state:'visible',timeout:15000});
   await page.waitForFunction(()=>{const el=document.getElementById('btn-confirm-order');return el&&!el.disabled},null,{timeout:16000});
+  check(report.preview_http_statuses.length>0&&report.preview_http_statuses.every(x=>x===200),
+    'G6_AUTHENTICATED_SERVER_QUOTE_NOT_200');
   const total=await page.locator('#ck-final-total-amount').innerText();
   check(/17[\s\u202f.,]*990/.test(total),'G6_CHECKOUT_TOTAL_NOT_17990');
   record('REAL_CHECKOUT',{display_total:total,relay:await page.locator('#ck-relais-summary').innerText().catch(()=>null)});

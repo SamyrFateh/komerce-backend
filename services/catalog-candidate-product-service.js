@@ -8,8 +8,9 @@
  * @outputs       product_id
  * @depends       none
  * @used-by       routes/sourcing-scanner.js
- * @db-read       boutique_categories, boutique_subcategories
+ * @db-read       boutique_categories, boutique_subcategories, supplier_catalog_imports
  * @db-write      products
+ * @db-write-via:central-hub-supplier suppliers
  * @db-txn        caller_owned
  * @doctrine      docs/doctrine/DOCTRINE_CATALOGUE.md §7
  * @impact-areas  catalog, sourcing
@@ -21,6 +22,7 @@
 const { canonicalizeProductIdentity } = require('./catalog-promotion/editorial-identity');
 const { findConfirmed, chooseCommercialPair } = require('./supplier-commercial-category-mapping');
 const {semanticIntent,semanticConflict} = require('./commercial-taxonomy-semantics');
+const centralHubSupplier = require('./suppliers/central-hub-supplier');
 
 function sourceLocaleFromCandidate(candidate = {}) {
   const locale = candidate?.normalized_source_contract?.source_locale;
@@ -230,6 +232,16 @@ async function createDraftProductFromSourcingCandidate(q, {
   const hasVariants = hasVariantsFromCandidate(candidate);
   const sourceLocale = sourceLocaleFromCandidate(candidate);
   const boutiqueTaxonomy = await resolveActiveBoutiqueTaxonomy(q, candidate);
+  let procurementSupplierId = candidate?.supplier_id || null;
+  if (!procurementSupplierId && candidate?.import_id) {
+    const importSource = await q.query(
+      'SELECT source_type FROM supplier_catalog_imports WHERE id = $1::uuid',
+      [candidate.import_id]
+    );
+    if (['manual', 'csv'].includes(importSource.rows[0]?.source_type)) {
+      procurementSupplierId = (await centralHubSupplier.ensureCentralHubSupplier(q)).id;
+    }
+  }
   // No catalog draft without an active and complete commercial classification.
   // Keep the sourcing candidate unresolved for explicit human mapping; never
   // infer the boutique category from customs and never invent a fallback.
@@ -264,8 +276,8 @@ async function createDraftProductFromSourcingCandidate(q, {
        has_variants,
        is_active, is_available, lifecycle_status,
        name_source, description_source, source_locale, content_source,
-       description, needs_review
-     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, FALSE, FALSE, 'candidate', $10, $11, $12, 'connector_raw', $13, $14)
+       description, needs_review, procurement_supplier_id
+     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, FALSE, FALSE, 'candidate', $10, $11, $12, 'connector_raw', $13, $14, $15::uuid)
      RETURNING id`,
     [
       identity.name,
@@ -282,6 +294,7 @@ async function createDraftProductFromSourcingCandidate(q, {
       sourceLocale,
       identity.description,
       identity.needs_editorial_review,
+      procurementSupplierId,
     ]
   );
 

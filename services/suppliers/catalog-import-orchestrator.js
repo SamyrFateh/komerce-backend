@@ -8,8 +8,9 @@
  * @outputs       sourcing_candidates, import_summary, shadow_observation_summary, provider_runtime_certification_attempt
  * @depends       db.js, services/supplier-catalog-scanner.js, services/pricing-engine.js, services/sourcing-candidate-import-service.js, services/sourcing-observation-shadow-service.js, services/sourcing-provider-control-policy.js, services/sourcing-certification.js, services/suppliers/normalized-product.js, services/suppliers/connectors/*
  * @used-by       routes/sourcing-scanner.js
- * @db-read       none
+ * @db-read       suppliers
  * @db-write      supplier_catalog_imports
+ * @db-write-via:central-hub-supplier suppliers
  * @db-write-via:import-runtime-runs import_runtime_runs
  * @db-write-via:sourcing-provider-control-policy sourcing_sources
  * @db-txn        resolve_before_behavior_change
@@ -46,6 +47,7 @@ const { getRuleNumber } = require('../../utils/rules');
 const { importJsonCatalog } = require('./catalog-import-json');
 const importRuns = require('../import-runtime-runs');
 const itemEvents = require('../import-runtime-item-events');
+const centralHubSupplier = require('./central-hub-supplier');
 
 /**
  * Agrège les raisons de rejet d'un tableau d'entrées invalides en compte par
@@ -90,14 +92,29 @@ function automaticRejectedReason(verdict) {
  */
 async function importCatalog(body, userId, dispatchToConnector) {
   const b = body || {};
-  const supplierName = (b.supplier_name || '').trim();
   const sourceType = b.source_type || 'manual';
+  let supplierName = (b.supplier_name || '').trim();
+  let operatingSupplierId = null;
 
-  if (!supplierName) {
-    return { status: 400, body: { error: 'supplier_name requis' } };
-  }
   if (!['csv', 'manual', 'api', 'json'].includes(sourceType)) {
     return { status: 400, body: { error: 'source_type doit être csv, manual, api ou json' } };
+  }
+
+  if (['manual', 'csv'].includes(sourceType)) {
+    try {
+      const supplier = await centralHubSupplier.resolveCatalogSupplier(db, {
+        supplierId: b.supplier_id || null,
+        supplierName,
+      });
+      operatingSupplierId = supplier.id;
+      supplierName = supplier.name;
+      b.supplier_id = supplier.id;
+      b.supplier_name = supplier.name;
+    } catch (error) {
+      return { status: error.status || 422, body: { error: error.message, code: error.code } };
+    }
+  } else if (!supplierName) {
+    return { status: 400, body: { error: 'supplier_name requis' } };
   }
 
   // Toute source API doit porter son identité canonique AVANT le dispatch et toute écriture.
@@ -179,10 +196,11 @@ async function importCatalog(body, userId, dispatchToConnector) {
   // 3. Créer l'import.
   const importRes = await db.query(
     `INSERT INTO supplier_catalog_imports
-       (supplier_name, source_type, source_filename, notes, total_items, imported_by)
-     VALUES ($1, $2, $3, $4, $5, $6)
+       (supplier_name, source_type, source_filename, notes, total_items, imported_by, supplier_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
      RETURNING *`,
-    [supplierName, sourceType, b.source_filename || null, b.notes || null, products.length, userId || null]
+    [supplierName, sourceType, b.source_filename || null, b.notes || null, products.length,
+      userId || null, operatingSupplierId]
   );
   const importId = importRes.rows[0].id;
   await runHook((id) => importRuns.attachImport(id, {
@@ -264,6 +282,7 @@ async function importCatalog(body, userId, dispatchToConnector) {
       const { row: upsertedRow, wasUpdated } = await sourcingCandidateImport.upsertCandidateFromCatalogImport(db, {
         importId,
         supplierName,
+        supplierId: operatingSupplierId,
         product,
         normalized,
         normalizedSourceContract,

@@ -136,6 +136,22 @@ test('variantLabel ne fait que présenter le variant_combo serveur', () => {
   expect(product360.variantLabel(null)).toBe('Défaut');
 });
 
+test('Product 360 central montre l’affectation d’approvisionnement sans l’exposer au marché', () => {
+  const root = node();
+  const fakeUi = ui();
+  const model = payload();
+  model.central = { visibility: 'global', procurement_supplier: { name: 'Fournisseur central Hub' } };
+  model.inventory.skus = [{ sku: 'KM-SKU', procurement_supplier_name: 'Fournisseur central Hub' }];
+  product360.renderPayload(root, fakeUi, { createElement: () => node() }, model);
+
+  const procurementTable = fakeUi.DataTable.render.mock.calls
+    .find(([, table]) => table.columns.some((column) => column.key === 'procurement_supplier'))[1];
+  expect(procurementTable.columns).toEqual(expect.arrayContaining([
+    expect.objectContaining({ key: 'procurement_supplier', label: 'Approvisionnement par' }),
+  ]));
+  expect(procurementTable.rows[0].procurement_supplier).toBe('Fournisseur central Hub');
+});
+
 test('mount charge exclusivement l’endpoint Entity 360 dérivé de product_ref', async () => {
   const root = node();
   const fakeUi = ui();

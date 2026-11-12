@@ -39,6 +39,7 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 | `boutique.js` | 15 | 49 | 3/0 | Modal produit, Grille produits, Chips catégories |
 | `b-modal-product.js` | 28 | 11 | 0/1 | Modal produit |
 | `b-tracking.js` | 38 | 0 | 0/0 | Section catalogue |
+| `b-cart-quote.js` | 33 | 0 | 3/0 | Panier |
 | `b-phone.js` | 16 | 17 | 0/0 | — |
 | `b-komerce.js` | 31 | 0 | 0/1 | Section catalogue |
 | `b-cart-pill.js` | 6 | 18 | 3/0 | Grille produits, Section catalogue |
@@ -162,7 +163,7 @@ Charte projet : **un seul breakpoint, 900px** (1200px toléré). Tout le reste e
 | Indicateur | Valeur | Cible |
 |------------|:------:|:-----:|
 | Composants en multipropriété CSS | 8 | 0 |
-| Modules JS écrivant le DOM | 46 | ≤ 5 |
+| Modules JS écrivant le DOM | 47 | ≤ 5 |
 | Breakpoints distincts | 5 | ≤ 2 |
 | Violations breakpoint | 25 | 0 |
 | `!important` | 17 | < 5 |

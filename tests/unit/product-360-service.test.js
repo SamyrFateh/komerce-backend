@@ -308,6 +308,21 @@ test('autorité centrale seule charge fournisseurs et audits sans exposer secret
   expect(serialized).not.toContain('api_key');
 });
 
+test('Product 360 central expose le fournisseur d’approvisionnement enregistré', async () => {
+  mockQueries({ variants: [], skus: [] });
+  const result = await product360.loadProduct360(product({
+    procurement_supplier_id: '33333333-3333-4333-8333-333333333333',
+    procurement_supplier_name: 'Fournisseur central Hub',
+    procurement_supplier_system_key: 'central_hub',
+  }), { marketIds: null, includeCentral: true });
+
+  expect(result.central.procurement_supplier).toEqual({
+    id: '33333333-3333-4333-8333-333333333333',
+    name: 'Fournisseur central Hub',
+    system_key: 'central_hub',
+  });
+});
+
 describe('Product 360 — fil P1 par marché (prix pays → exposition)', () => {
   const CM = { market_code: 'CM', market_name: 'Cameroun', market_currency: 'XAF', commercial_exposure: 'ENABLED', exposure_decision_recorded: true, price_status: 'LOCAL_ACTIVE', local_price_amount: '20000', local_price_currency: 'XAF' };
   const KM = { market_code: 'KM', market_name: 'Comores', market_currency: 'KMF', commercial_exposure: 'DISABLED', exposure_decision_recorded: false, price_status: null, local_price_amount: null, local_price_currency: null };

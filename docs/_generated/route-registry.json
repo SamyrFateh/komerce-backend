@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-11-11T17:46:19.165Z",
+  "generatedAt": "2026-11-12T11:23:20.286Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 812,
+  "count": 813,
   "routes": [
     {
       "method": "GET",
@@ -3504,6 +3504,16 @@
       "fullPath": "/api/admin/workspaces/sourcing/candidates/:candidateRef/watchlist",
       "mountPrefix": "/api/admin/workspaces/sourcing",
       "localPath": "/candidates/:candidateRef/watchlist",
+      "routeFile": "routes/admin-sourcing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/workspaces/sourcing/catalog-suppliers",
+      "mountPrefix": "/api/admin/workspaces/sourcing",
+      "localPath": "/catalog-suppliers",
       "routeFile": "routes/admin-sourcing-workspace.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"

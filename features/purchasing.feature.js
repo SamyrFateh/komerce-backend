@@ -32,6 +32,7 @@ module.exports = {
       'synchronisation d\'annulation : pending/notified suivent l\'annulation de la commande ; les POs engagées déclenchent une alerte sans forçage',
       'réparation/rattrapage des commandes marquées "ordered" sans (ou avec) bon de commande cohérent (outils admin de correction)',
       'gestion des fournisseurs et de leur mapping produit (routes/purchasing.js /suppliers/*)',
+      'référentiel système Fournisseur central Hub permanent et protégé, utilisé comme responsable d’approvisionnement pour les imports manuels sans fournisseur réel sélectionné ; il ne représente ni vendeur, ni provider, ni dette fournisseur (migration 403)',
       'administration transverse des bons de commande, historiquement exposée depuis le dashboard ' +
         '(services/purchasing-admin-service.js — retaggé @domain purchasing au Lot O2, ' +
         'écrit orders/product_suppliers/purchase_orders/suppliers)',
@@ -78,6 +79,7 @@ module.exports = {
 
   files: {
     services: [
+      'services/suppliers/central-hub-supplier.js',
       'services/purchasing-order-detail.js',
       'services/hub-administration-board.js',
       'services/suppliers/allegro-fulfillment-adapter.js',

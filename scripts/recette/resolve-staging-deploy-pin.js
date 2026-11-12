@@ -21,7 +21,8 @@ const fs = require('fs');
 
 const SHA = /^[a-f0-9]{40}$/i;
 // Chemins que Railway ne deploie pas : une difference limitee a eux ne change pas le code servi.
-// Un seul fichier Playwright connu est un artefact de recette (jamais charge par server.js).
+// Le helper E2E de réaffectation owner-only est aussi un outil de recette, jamais chargé par server.js.
+// Un seul fichier Playwright connu est autorisé ici ; les autres restent à examiner individuellement.
 // Ne PAS ajouter /^playwright\./ : les autres configs restent a examiner individuellement.
 const NON_DEPLOYED = [/^\.github\//, /^docs\//, /^tests\//, /\.md$/i,
   /^playwright\.staging-relay-local-native\.config\.js$/];
@@ -31,7 +32,11 @@ function decidePin({ stagingSha, headSha, isAncestor, changedFiles }) {
   if (!SHA.test(String(stagingSha || '')) || !SHA.test(String(headSha || ''))) { report.reason = 'SHA_INVALID'; return report; }
   if (stagingSha.toLowerCase() === headSha.toLowerCase()) { report.decision = 'ACCEPTED_EXACT'; return report; }
   if (!isAncestor) { report.reason = 'STAGING_NOT_ANCESTOR_OF_HEAD'; return report; }
-  const deployed = (changedFiles || []).filter((f) => !NON_DEPLOYED.some((re) => re.test(f)));
+  const deployed = (changedFiles || []).filter((f) => f !== 'scripts/recette/staging-e2e-relay-reassign.js' &&
+    f !== 'scripts/recette/staging-e2e-pickup-secret-fixture.js' &&
+    f !== 'scripts/recette/g6-p2-buyer-cart-checkout-readonly.js' &&
+    f !== 'scripts/recette/g6-p2-buyer-order-real-chromium.js' &&
+    !NON_DEPLOYED.some((re) => re.test(f)));
   if (deployed.length) { report.reason = 'DEPLOYED_PATHS_DIFFER'; report.deployed_paths_differing = deployed; return report; }
   report.decision = 'ACCEPTED_NON_DEPLOYED_DIFF_ONLY'; return report;
 }

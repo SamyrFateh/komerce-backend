@@ -53,11 +53,20 @@ function requireSupplierMoney(target) {
 async function loadExactSoldSku(client, item) {
   if (!item.sku_id) return null;
   const { rows: [sku] } = await client.query(`
-    SELECT id, product_id, supplier_sku, supplier_unit_ref, supplier_order_identity
+    SELECT id, product_id, supplier_sku, supplier_unit_ref, supplier_order_identity, source
     FROM product_skus WHERE id = $1 AND product_id = $2 LIMIT 1
   `, [item.sku_id, item.product_id]);
   if (!sku) throw blockedSupplierIdentity('product_sku vendu introuvable', { product_sku_id: item.sku_id, product_id: item.product_id });
   const supplierSku = String(sku.supplier_sku || '').trim();
+  if (String(sku.source || '').toUpperCase() === 'MANUAL') {
+    return {
+      ...sku,
+      supplier_sku: supplierSku || null,
+      supplier_unit_ref: String(sku.supplier_unit_ref || '').trim() || null,
+      supplier_order_identity: null,
+      manualCatalogSku: true,
+    };
+  }
   if (!supplierSku) throw blockedSupplierIdentity('supplier_sku absent sur le product_sku vendu', { product_sku_id: sku.id });
   const supplierUnitRef = String(sku.supplier_unit_ref || '').trim() || null;
   const identity = normalizeIdentity(sku.supplier_order_identity, supplierUnitRef);
@@ -128,6 +137,18 @@ function buildPurchaseTarget(ps, exactSku, canonicalMoney) {
   };
 }
 
+function buildManualCatalogPurchaseTarget(ps, exactSku = null) {
+  return {
+    purchaseTarget: { ...ps, supplier_sku: exactSku?.supplier_sku || null },
+    productSkuId: exactSku?.id || null,
+    money: null,
+    unitPriceAed: null,
+    supplierUnitRef: null,
+    supplierOrderIdentity: null,
+    manualHubProcurement: ps.system_key === 'central_hub',
+  };
+}
+
 /**
  * Écriture double (PR 1) : la ligne d'achat d'une PO historique est écrite dans la MÊME transaction
  * que la PO. Sans order_item, aucune traçabilité n'est possible : on ne crée pas de ligne.
@@ -159,7 +180,8 @@ async function insertHistoricalPurchaseLine(client, { purchaseOrderId, item, ps,
 async function insertOpenPurchaseLine(client, { item, ps, snapshot, quantity, parentLineId = null }) {
   if (!item?.id) throw new Error('[insertOpenPurchaseLine] order_item requis');
   // Identité exacte : tout ou rien (ligne API-éligible) ; sans SKU exact la ligne reste achetable en mode manuel.
-  if (snapshot.productSkuId && (!snapshot.supplierUnitRef || !snapshot.supplierOrderIdentity)) {
+  if (snapshot.productSkuId && (!snapshot.supplierUnitRef || !snapshot.supplierOrderIdentity)
+      && !(snapshot.manualHubProcurement && snapshot.productSkuId)) {
     throw new Error('[insertOpenPurchaseLine] identité exacte incomplète');
   }
   const { rows: [line] } = await client.query(`
@@ -216,6 +238,7 @@ module.exports = {
   loadExactSoldSku,
   resolveExactSkuProcurementReadiness,
   buildPurchaseTarget,
+  buildManualCatalogPurchaseTarget,
   insertHistoricalPurchaseLine,
   insertOpenPurchaseLine,
   confirmHistoricalPurchaseLine,

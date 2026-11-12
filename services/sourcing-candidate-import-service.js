@@ -32,6 +32,7 @@
 async function upsertCandidateFromCatalogImport(q, {
   importId,
   supplierName,
+  supplierId = null,
   product,
   normalized,
   normalizedSourceContract,
@@ -61,7 +62,7 @@ async function upsertCandidateFromCatalogImport(q, {
        purchase_price_kmf, target_margin_pct,
        data_sources, scan_result, scan_at, confidence,
        state, rejected_reason, updated_by, raw_payload,
-       normalized_source_contract
+       normalized_source_contract, supplier_id
      ) VALUES (
        $1, $2, $3,
        $4, $5, $6, $7,
@@ -72,12 +73,13 @@ async function upsertCandidateFromCatalogImport(q, {
        $21, $22,
        $23::jsonb, $24, NOW(), $25,
        $26, $27, $28, $29::jsonb,
-       $30::jsonb
+       $30::jsonb, $31::uuid
      )
      ON CONFLICT (supplier_name, supplier_product_id)
        WHERE supplier_product_id IS NOT NULL
      DO UPDATE SET
        import_id           = EXCLUDED.import_id,
+       supplier_id         = COALESCE(EXCLUDED.supplier_id, sourcing_candidates.supplier_id),
        product_name        = EXCLUDED.product_name,
        supplier_category   = EXCLUDED.supplier_category,
        purchase_price      = CASE WHEN (sourcing_candidates.data_sources->>'purchase_price') = 'manual'
@@ -149,6 +151,7 @@ async function upsertCandidateFromCatalogImport(q, {
       autoState, autoRejectedReason, userId || null,
       product.raw_payload ? JSON.stringify(product.raw_payload) : null,
       normalizedSourceContract ? JSON.stringify(normalizedSourceContract) : null,
+      supplierId || null,
     ]
   );
 

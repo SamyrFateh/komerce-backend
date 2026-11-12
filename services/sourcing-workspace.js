@@ -8,7 +8,7 @@
  * @outputs       global_sourcing_projection, sourcing_mutation_result
  * @depends       db.js, services/pricing-engine.js, services/customs-dynamic-category-classifier.js, services/sourcing-analysis.js, services/sourcing-mutations.js, services/sourcing-candidate-actions.js, services/sourcing-import-dispatch.js, services/sourcing-source-autopilot.js, services/sourcing-source-registry.js, services/sourcing-provider-control-policy.js, services/suppliers/catalog-import-orchestrator.js, services/partner-admin-service.js
  * @used-by       routes/admin-sourcing-workspace.js
- * @db-read       products, sourcing_candidates, supplier_catalog_imports, partners, suppliers_stats, sourcing_sources, sourcing_captures, boutique_categories, boutique_subcategories
+ * @db-read       products, sourcing_candidates, supplier_catalog_imports, suppliers, partners, suppliers_stats, sourcing_sources, sourcing_captures, boutique_categories, boutique_subcategories
  * @db-write-via:sourcing-mutations products
  * @db-write-via:sourcing-candidate-actions sourcing_candidates, sourcing_candidate_events, products, catalog_media, product_variants, product_skus, product_sku_media
  * @db-write-via:catalog-import-orchestrator supplier_catalog_imports, sourcing_candidates
@@ -248,6 +248,16 @@ async function buildWorkspace({ timings = null, candidateRef = null } = {}) {
     sources,
     connectors: importDispatch.connectorCatalog(),
   };
+}
+
+async function listCatalogSuppliers() {
+  const { rows } = await db.query(
+    `SELECT id, name, platform, owner_scope, system_key
+       FROM suppliers
+      WHERE is_active = TRUE AND deleted_at IS NULL
+      ORDER BY CASE WHEN system_key = 'central_hub' THEN 0 ELSE 1 END, lower(name), id`
+  );
+  return rows;
 }
 
 function projectSourceControl(source) {
@@ -780,6 +790,7 @@ module.exports = {
   resolveCandidateRef,
   resolvePartnerRef,
   buildWorkspace,
+  listCatalogSuppliers,
   projectSourceControl,
   listSourceControls,
   updatePortfolioProduct,

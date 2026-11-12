@@ -117,29 +117,56 @@ async function reassign({ db, env = process.env, fetchImpl = fetch, apply = fals
       if (reference !== 'KUYIYUK') throw new Error('ORDER_REFERENCE_NOT_ALLOWED');
       const { rows: [order] } = await client.query(
         `SELECT id, market_id, relais_id, simulation_scope, status::text AS status,
-                payment_mode::text AS payment_mode, payment_status::text AS payment_status
+                payment_mode::text AS payment_mode, payment_status::text AS payment_status,
+                (SELECT COUNT(*)::int FROM cash_collections cc WHERE cc.order_id=orders.id) AS cash_collection_count,
+                (SELECT COUNT(*)::int FROM cash_confirmation_controls ccc WHERE ccc.order_id=orders.id AND ccc.state='CONFIRMED') AS cash_control_confirmed_count
            FROM orders WHERE reference=$1 LIMIT 1`,
         [reference]
       );
-      if (!order || !order.relais_id || order.simulation_scope !== 'G6-BUYER' ||
-          order.status !== 'pending' || order.payment_mode !== 'cash_relais' || order.payment_status !== 'pending') {
+      if (!order || order.simulation_scope !== 'G6-BUYER' || order.payment_mode !== 'cash_relais') {
         throw new Error('TARGET_ORDER_NOT_ELIGIBLE');
       }
-      const { rows: [targetRelay] } = await client.query(
-        'SELECT id, market_id FROM relais WHERE id=$1::uuid AND is_active=TRUE LIMIT 1',
-        [order.relais_id]
+      const { rows: [targetMarket] } = await client.query(
+        'SELECT code FROM markets WHERE id=$1::uuid AND is_active=TRUE LIMIT 1', [order.market_id]
       );
-      const { rows: [currentRelay] } = await client.query(
-        'SELECT market_id FROM relais WHERE id=$1::uuid LIMIT 1',
-        [user.relais_id]
-      );
-      if (!targetRelay || !currentRelay || targetRelay.market_id !== order.market_id ||
-          currentRelay.market_id !== order.market_id) throw new Error('RELAY_MARKET_MISMATCH');
-      dest = targetRelay.id;
+      if (!targetMarket || targetMarket.code !== 'KM') throw new Error('TARGET_MARKET_NOT_ALLOWED');
       report.order_reference = reference;
       report.order_id = order.id;
       report.same_market = true;
-    } else if (mode === 'restore') {
+      if (order.status === 'ordered' && order.payment_status === 'paid') {
+        if (Number(order.cash_collection_count) !== 1 || Number(order.cash_control_confirmed_count) !== 1) {
+          throw new Error('PAID_CASH_EVIDENCE_NOT_UNIQUE');
+        }
+        report.already_paid = true;
+        report.cash_collection_count = Number(order.cash_collection_count);
+        report.cash_control_confirmed_count = Number(order.cash_control_confirmed_count);
+        dest = user.relais_id;
+      } else {
+        if (!order.relais_id || order.status !== 'pending' || order.payment_status !== 'pending') {
+          throw new Error('TARGET_ORDER_NOT_ELIGIBLE');
+        }
+        const { rows: [targetRelay] } = await client.query(
+          'SELECT id, market_id FROM relais WHERE id=$1::uuid AND is_active=TRUE LIMIT 1',
+          [order.relais_id]
+        );
+        const { rows: [currentRelay] } = await client.query(
+          'SELECT market_id FROM relais WHERE id=$1::uuid LIMIT 1',
+          [user.relais_id]
+        );
+        if (!targetRelay || !currentRelay || targetRelay.market_id !== order.market_id ||
+            currentRelay.market_id !== order.market_id) throw new Error('RELAY_MARKET_MISMATCH');
+        const { rows: [admin] } = await client.query(
+          "SELECT id, role::text AS role FROM users WHERE lower(email)=lower($1)",
+          [env.E2E_ADMIN_EMAIL]
+        );
+        if (!admin || admin.role !== 'admin') throw new Error('E2E_ADMIN_AUTHORITY_MISSING');
+        const { ensureRelayAgentMembership } = require('./staging-e2e-provision');
+        await ensureRelayAgentMembership(client,
+          { delegation: require('../../services/market-delegation-service') },
+          { userId: user.id, marketCode: 'KM', actorId: admin.id });
+        report.cash_capability = 'execution.cash.confirm';
+        dest = targetRelay.id;
+      }    } else if (mode === 'restore') {
       if (!UUID.test(String(env.RELAY_RESTORE_ID || ''))) throw new Error('RESTORE_ID_REQUIRED');
       dest = env.RELAY_RESTORE_ID;
     } else throw new Error('MODE_INVALID');
@@ -150,6 +177,10 @@ async function reassign({ db, env = process.env, fetchImpl = fetch, apply = fals
       report.status = res.status; report.writes = res.status === 'assigned' ? 1 : 0;
       if (!['assigned', 'already'].includes(res.status)) throw new Error('ASSIGN_REFUSED:' + res.status);
       await client.query('COMMIT');
+      if (mode === 'to-order' && env.GITHUB_ENV && UUID.test(String(report.relais_before || ''))) {
+        fs.appendFileSync(env.GITHUB_ENV, `RELAY_RESTORE_ID=${report.relais_before}\n`);
+        report.restore_id_exported = true;
+      }
     } else { report.status = 'DRY_RUN'; await client.query('ROLLBACK'); }
     return report;
   } catch (e) { try { await client.query('ROLLBACK'); } catch (_) { /* fermée */ } throw e; } finally { client.release(); }

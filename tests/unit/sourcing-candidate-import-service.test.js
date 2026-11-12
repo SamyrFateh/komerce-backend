@@ -78,6 +78,17 @@ describe('sourcing-candidate-import-service', () => {
     expect(q.query.mock.calls[0][0]).toContain('normalized_source_contract = EXCLUDED.normalized_source_contract');
   });
 
+  it('conserve le fournisseur opérationnel choisi sur la candidature', async () => {
+    const q = { query: jest.fn().mockResolvedValue({ rows: [{ id: 'cand-hub', was_updated: false, data_sources: {} }] }) };
+    const input = { ...baseInput(), supplierId: 'supplier-hub-id' };
+
+    await upsertCandidateFromCatalogImport(q, input);
+
+    expect(q.query.mock.calls[0][0]).toContain('normalized_source_contract, supplier_id');
+    expect(q.query.mock.calls[0][1].at(-1)).toBe('supplier-hub-id');
+    expect(q.query.mock.calls[0][0]).toContain('supplier_id         = COALESCE(EXCLUDED.supplier_id, sourcing_candidates.supplier_id)');
+  });
+
   it.each([
     [0, 0],
     [1, 1],

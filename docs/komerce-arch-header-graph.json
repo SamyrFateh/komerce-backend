@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 798,
-    "filesWithFullHeaders": 743,
+    "scannedCodeFiles": 799,
+    "filesWithFullHeaders": 744,
     "filesWithLiteHeaders": 55,
-    "filesWithAnyHeaders": 798,
+    "filesWithAnyHeaders": 799,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 2023,
-    "edges": 9967,
+    "graphNodes": 2026,
+    "edges": 9985,
     "dbTables": 233,
-    "doctrines": 785,
+    "doctrines": 787,
     "impactAreas": 207,
-    "unresolvedCodeEdges": 955,
+    "unresolvedCodeEdges": 957,
     "dbWriteViaOverlapWarnings": 12,
     "multiWriterTables": 95
   },
@@ -66,7 +66,7 @@
     "operations": 11,
     "inventory": 2,
     "local-stock": 4,
-    "purchasing": 52,
+    "purchasing": 53,
     "unsold-resolution": 1,
     "external-provider-contracts": 1,
     "finance": 3,
@@ -112,7 +112,7 @@
     "schema": 1,
     "route": 137,
     "entrypoint": 1,
-    "service": 480,
+    "service": 481,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -123,7 +123,7 @@
   "byCriticality": {
     "critical": 122,
     "medium": 154,
-    "high": 457,
+    "high": 458,
     "low": 64,
     "unknown": 1
   },
@@ -14009,12 +14009,20 @@
       ],
       "dbRead": [
         "boutique_categories",
-        "boutique_subcategories"
+        "boutique_subcategories",
+        "supplier_catalog_imports"
       ],
       "dbWrite": [
         "products"
       ],
-      "dbWriteVia": [],
+      "dbWriteVia": [
+        {
+          "via": "central-hub-supplier",
+          "tables": [
+            "suppliers"
+          ]
+        }
+      ],
       "dbTxn": [
         "caller_owned"
       ],
@@ -28529,13 +28537,20 @@
         "boutique_categories",
         "boutique_subcategories",
         "catalog_field_overrides",
-        "products"
+        "products",
+        "suppliers"
       ],
       "dbWrite": [
         "catalog_field_overrides",
         "products"
       ],
       "dbWriteVia": [
+        {
+          "via": "central-hub-supplier",
+          "tables": [
+            "suppliers"
+          ]
+        },
         {
           "via": "product-stock-service",
           "tables": [
@@ -33574,6 +33589,7 @@
         "products",
         "sourcing_candidates",
         "supplier_catalog_imports",
+        "suppliers",
         "partners",
         "suppliers_stats",
         "sourcing_sources",
@@ -34753,11 +34769,19 @@
       "usedBy": [
         "routes/sourcing-scanner.js"
       ],
-      "dbRead": [],
+      "dbRead": [
+        "suppliers"
+      ],
       "dbWrite": [
         "supplier_catalog_imports"
       ],
       "dbWriteVia": [
+        {
+          "via": "central-hub-supplier",
+          "tables": [
+            "suppliers"
+          ]
+        },
         {
           "via": "import-runtime-runs",
           "tables": [
@@ -34826,6 +34850,53 @@
         "supplier-import"
       ],
       "version": "2026-09-v1"
+    },
+    {
+      "id": "services/suppliers/central-hub-supplier.js",
+      "file": "services/suppliers/central-hub-supplier.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "central-hub-supplier-identity",
+      "domain": "purchasing",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "database_executor",
+        "optional_supplier_id"
+      ],
+      "outputs": [
+        "canonical_supplier_reference"
+      ],
+      "depends": [
+        "database",
+        "migrations/403_central_hub_supplier_catalog_link.sql"
+      ],
+      "usedBy": [
+        "services/suppliers/catalog-import-orchestrator.js",
+        "services/catalog-candidate-product-service.js"
+      ],
+      "dbRead": [
+        "suppliers"
+      ],
+      "dbWrite": [
+        "suppliers"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "caller_owned"
+      ],
+      "doctrine": [
+        "provider_identity_is_not_execution_mode",
+        "central_hub_is_internal_procurement_owner"
+      ],
+      "impactAreas": [
+        "catalog",
+        "sourcing",
+        "purchasing"
+      ],
+      "version": "2026-11"
     },
     {
       "id": "services/suppliers/cj-billing-history-reconciliation.js",
@@ -43429,6 +43500,16 @@
       "id": "doctrine:provider_runtime_certification_requires_canonical_resolved_api_capture",
       "type": "doctrine",
       "doctrine": "provider_runtime_certification_requires_canonical_resolved_api_capture"
+    },
+    {
+      "id": "doctrine:provider_identity_is_not_execution_mode",
+      "type": "doctrine",
+      "doctrine": "provider_identity_is_not_execution_mode"
+    },
+    {
+      "id": "doctrine:central_hub_is_internal_procurement_owner",
+      "type": "doctrine",
+      "doctrine": "central_hub_is_internal_procurement_owner"
     },
     {
       "id": "doctrine:docs/doctrine/DOCTRINE_PURCHASING_CAPABILITY_DRIVEN_EXECUTION.md",
@@ -65724,9 +65805,22 @@
     },
     {
       "from": "services/catalog-candidate-product-service.js",
+      "to": "db:supplier_catalog_imports",
+      "type": "db-read",
+      "label": "supplier_catalog_imports"
+    },
+    {
+      "from": "services/catalog-candidate-product-service.js",
       "to": "db:products",
       "type": "db-write",
       "label": "products"
+    },
+    {
+      "from": "services/catalog-candidate-product-service.js",
+      "to": "db:suppliers",
+      "type": "db-write-via",
+      "label": "suppliers",
+      "via": "central-hub-supplier"
     },
     {
       "from": "services/catalog-candidate-product-service.js",
@@ -89849,6 +89943,12 @@
     },
     {
       "from": "services/product-admin-service.js",
+      "to": "db:suppliers",
+      "type": "db-read",
+      "label": "suppliers"
+    },
+    {
+      "from": "services/product-admin-service.js",
       "to": "db:catalog_field_overrides",
       "type": "db-write",
       "label": "catalog_field_overrides"
@@ -89858,6 +89958,13 @@
       "to": "db:products",
       "type": "db-write",
       "label": "products"
+    },
+    {
+      "from": "services/product-admin-service.js",
+      "to": "db:suppliers",
+      "type": "db-write-via",
+      "label": "suppliers",
+      "via": "central-hub-supplier"
     },
     {
       "from": "services/product-admin-service.js",
@@ -97844,6 +97951,12 @@
     },
     {
       "from": "services/sourcing-workspace.js",
+      "to": "db:suppliers",
+      "type": "db-read",
+      "label": "suppliers"
+    },
+    {
+      "from": "services/sourcing-workspace.js",
       "to": "db:partners",
       "type": "db-read",
       "label": "partners"
@@ -99419,9 +99532,22 @@
     },
     {
       "from": "services/suppliers/catalog-import-orchestrator.js",
+      "to": "db:suppliers",
+      "type": "db-read",
+      "label": "suppliers"
+    },
+    {
+      "from": "services/suppliers/catalog-import-orchestrator.js",
       "to": "db:supplier_catalog_imports",
       "type": "db-write",
       "label": "supplier_catalog_imports"
+    },
+    {
+      "from": "services/suppliers/catalog-import-orchestrator.js",
+      "to": "db:suppliers",
+      "type": "db-write-via",
+      "label": "suppliers",
+      "via": "central-hub-supplier"
     },
     {
       "from": "services/suppliers/catalog-import-orchestrator.js",
@@ -99514,6 +99640,72 @@
       "to": "impact:supplier-import",
       "type": "impact",
       "label": "supplier-import"
+    },
+    {
+      "from": "services/suppliers/central-hub-supplier.js",
+      "to": "database",
+      "type": "depends",
+      "label": "database"
+    },
+    {
+      "from": "services/suppliers/central-hub-supplier.js",
+      "to": "migrations/403_central_hub_supplier_catalog_link.sql",
+      "type": "depends",
+      "label": "migrations/403_central_hub_supplier_catalog_link.sql"
+    },
+    {
+      "from": "services/suppliers/catalog-import-orchestrator.js",
+      "to": "services/suppliers/central-hub-supplier.js",
+      "type": "uses",
+      "label": "services/suppliers/catalog-import-orchestrator.js"
+    },
+    {
+      "from": "services/catalog-candidate-product-service.js",
+      "to": "services/suppliers/central-hub-supplier.js",
+      "type": "uses",
+      "label": "services/catalog-candidate-product-service.js"
+    },
+    {
+      "from": "services/suppliers/central-hub-supplier.js",
+      "to": "db:suppliers",
+      "type": "db-read",
+      "label": "suppliers"
+    },
+    {
+      "from": "services/suppliers/central-hub-supplier.js",
+      "to": "db:suppliers",
+      "type": "db-write",
+      "label": "suppliers"
+    },
+    {
+      "from": "services/suppliers/central-hub-supplier.js",
+      "to": "doctrine:provider_identity_is_not_execution_mode",
+      "type": "doctrine",
+      "label": "provider_identity_is_not_execution_mode"
+    },
+    {
+      "from": "services/suppliers/central-hub-supplier.js",
+      "to": "doctrine:central_hub_is_internal_procurement_owner",
+      "type": "doctrine",
+      "label": "central_hub_is_internal_procurement_owner"
+    },
+    {
+      "from": "services/suppliers/central-hub-supplier.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "services/suppliers/central-hub-supplier.js",
+      "to": "impact:sourcing",
+      "type": "impact",
+      "label": "sourcing"
+    },
+    {
+      "from": "services/suppliers/central-hub-supplier.js",
+      "to": "impact:purchasing",
+      "type": "impact",
+      "label": "purchasing"
     },
     {
       "from": "services/suppliers/cj-billing-history-reconciliation.js",
@@ -118957,12 +119149,20 @@
       "ownedFiles": [],
       "dbRead": [
         "boutique_categories",
-        "boutique_subcategories"
+        "boutique_subcategories",
+        "supplier_catalog_imports"
       ],
       "dbWrite": [
         "products"
       ],
-      "dbWriteVia": [],
+      "dbWriteVia": [
+        {
+          "via": "central-hub-supplier",
+          "tables": [
+            "suppliers"
+          ]
+        }
+      ],
       "doctrines": [
         "docs/doctrine/DOCTRINE_CATALOGUE.md §7"
       ],
@@ -118974,12 +119174,15 @@
         "db:boutique_categories",
         "db:boutique_subcategories",
         "db:products",
+        "db:supplier_catalog_imports",
+        "db:suppliers",
         "doctrine:docs/doctrine/DOCTRINE_CATALOGUE.md §7",
         "impact:catalog",
         "impact:sourcing",
         "routes/sourcing-scanner.js",
         "services/catalog-promotion/editorial-identity.js",
-        "services/sourcing-candidate-actions.js"
+        "services/sourcing-candidate-actions.js",
+        "services/suppliers/central-hub-supplier.js"
       ]
     },
     "services/catalog-certification-gate-b.js": {
@@ -133667,13 +133870,20 @@
         "boutique_categories",
         "boutique_subcategories",
         "catalog_field_overrides",
-        "products"
+        "products",
+        "suppliers"
       ],
       "dbWrite": [
         "catalog_field_overrides",
         "products"
       ],
       "dbWriteVia": [
+        {
+          "via": "central-hub-supplier",
+          "tables": [
+            "suppliers"
+          ]
+        },
         {
           "via": "product-stock-service",
           "tables": [
@@ -133699,6 +133909,7 @@
         "db:product_skus",
         "db:product_variants",
         "db:products",
+        "db:suppliers",
         "doctrine:docs/doctrine/DOCTRINE_CATALOGUE.md §5",
         "doctrine:§7",
         "impact:admin-dashboard",
@@ -138644,6 +138855,7 @@
         "products",
         "sourcing_candidates",
         "supplier_catalog_imports",
+        "suppliers",
         "partners",
         "suppliers_stats",
         "sourcing_sources",
@@ -138727,6 +138939,7 @@
         "db:sourcing_provider_control_events",
         "db:sourcing_sources",
         "db:supplier_catalog_imports",
+        "db:suppliers",
         "db:suppliers_stats",
         "doctrine:browser_business_refs_only",
         "doctrine:global_sourcing_authority",
@@ -139750,11 +139963,19 @@
         "routes/sourcing-scanner.js"
       ],
       "ownedFiles": [],
-      "dbRead": [],
+      "dbRead": [
+        "suppliers"
+      ],
       "dbWrite": [
         "supplier_catalog_imports"
       ],
       "dbWriteVia": [
+        {
+          "via": "central-hub-supplier",
+          "tables": [
+            "suppliers"
+          ]
+        },
         {
           "via": "import-runtime-runs",
           "tables": [
@@ -139783,6 +140004,7 @@
         "db:import_runtime_runs",
         "db:sourcing_sources",
         "db:supplier_catalog_imports",
+        "db:suppliers",
         "doctrine:docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
         "doctrine:docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
         "doctrine:docs/doctrine/DOCTRINE_SOURCE_SHADOW_INGESTION.md",
@@ -139802,6 +140024,7 @@
         "services/sourcing-source-autopilot.js",
         "services/sourcing-workspace.js",
         "services/supplier-catalog-scanner.js",
+        "services/suppliers/central-hub-supplier.js",
         "services/suppliers/normalized-product.js",
         "utils/rules.js"
       ]
@@ -139837,6 +140060,49 @@
         "doctrine:docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
         "impact:catalog",
         "impact:supplier-import"
+      ]
+    },
+    "services/suppliers/central-hub-supplier.js": {
+      "role": "central-hub-supplier-identity",
+      "domain": "purchasing",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "database",
+        "migrations/403_central_hub_supplier_catalog_link.sql"
+      ],
+      "directUsedBy": [
+        "services/suppliers/catalog-import-orchestrator.js",
+        "services/catalog-candidate-product-service.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "suppliers"
+      ],
+      "dbWrite": [
+        "suppliers"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "provider_identity_is_not_execution_mode",
+        "central_hub_is_internal_procurement_owner"
+      ],
+      "impactAreas": [
+        "catalog",
+        "sourcing",
+        "purchasing"
+      ],
+      "mustCheck": [
+        "db:suppliers",
+        "doctrine:central_hub_is_internal_procurement_owner",
+        "doctrine:provider_identity_is_not_execution_mode",
+        "impact:catalog",
+        "impact:purchasing",
+        "impact:sourcing",
+        "services/catalog-candidate-product-service.js",
+        "services/suppliers/catalog-import-orchestrator.js"
       ]
     },
     "services/suppliers/cj-billing-history-reconciliation.js": {
@@ -144139,6 +144405,15 @@
       ]
     },
     {
+      "table": "suppliers",
+      "writerCount": 3,
+      "writers": [
+        "routes/purchasing.js",
+        "services/purchasing-admin-service.js",
+        "services/suppliers/central-hub-supplier.js"
+      ]
+    },
+    {
       "table": "wallet_consumptions",
       "writerCount": 3,
       "writers": [
@@ -144458,14 +144733,6 @@
       "writers": [
         "routes/purchasing.js",
         "services/supplier-payment-settlement-service.js"
-      ]
-    },
-    {
-      "table": "suppliers",
-      "writerCount": 2,
-      "writers": [
-        "routes/purchasing.js",
-        "services/purchasing-admin-service.js"
       ]
     },
     {
@@ -149577,6 +149844,18 @@
       "to": "services/suppliers/catalog-sync-checkpoint.js",
       "type": "uses",
       "label": "scripts/cj-full-catalog-sync.js"
+    },
+    {
+      "from": "services/suppliers/central-hub-supplier.js",
+      "to": "database",
+      "type": "depends",
+      "label": "database"
+    },
+    {
+      "from": "services/suppliers/central-hub-supplier.js",
+      "to": "migrations/403_central_hub_supplier_catalog_link.sql",
+      "type": "depends",
+      "label": "migrations/403_central_hub_supplier_catalog_link.sql"
     },
     {
       "from": "future CJ payment reconciliation runtime",

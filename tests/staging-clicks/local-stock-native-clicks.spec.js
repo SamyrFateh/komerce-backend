@@ -180,7 +180,33 @@ test('LOCAL_STOCK : un agent atteste puis remet au client par les vrais clics (H
     await expect(collectRow).toBeVisible({timeout:20000});
     // Le guichet par code ne prétend pas sélectionner le colis d'une ligne :
     // la remise canonique choisit le prochain lot valide de la commande.
-    await page.locator('[data-pickup-code-input]').fill(pickupCode);
+    // Negatifs avec le vrai guichet : absence de secret et last4 ne font
+    // jamais de POST, un code entier erroné ne modifie aucun colis.
+    const codeInput=page.locator('[data-pickup-code-input]');
+    const codeConfirm=page.locator('[data-pickup-code-confirm]');
+    const pickupRequests=[];
+    page.on('request',request=>{
+      if(request.method()==='POST' &&
+         new URL(request.url()).pathname==='/api/scans/collect')
+        pickupRequests.push(request);
+    });
+    await codeConfirm.click();
+    assert(pickupRequests.length===0,'pickup-missing-code-no-post');
+    await codeInput.fill(pickupCode.slice(-4));
+    await codeConfirm.click();
+    assert(pickupRequests.length===0,'pickup-last4-no-post');
+    const badCode=(pickupCode[0]==='A'?'B':'A')+pickupCode.slice(1);
+    await codeInput.fill(badCode);
+    const badResponse=page.waitForResponse(r=>
+      new URL(r.url()).pathname==='/api/scans/collect'&&r.request().method()==='POST');
+    await codeConfirm.click();
+    const rejected=await badResponse;
+    assert(rejected.status()>=400&&rejected.status()<500,
+      'pickup-invalid-full-code-refused',rejected.status());
+    const afterBadCode=await snapshot(db,orderId);
+    assert(assess(afterBadCode,'available').length===0,
+      'pickup-invalid-code-no-mutation',assess(afterBadCode,'available'));
+    await codeInput.fill(pickupCode);
     const collectResponse=page.waitForResponse(r=>
       new URL(r.url()).pathname==='/api/scans/collect'&&r.request().method()==='POST');
     await page.locator('[data-pickup-code-confirm]').click();

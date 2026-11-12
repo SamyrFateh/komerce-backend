@@ -63,6 +63,14 @@ describe('loadExactSoldSku', () => {
     c.query.mockResolvedValue({ rows: [{ id: 's', supplier_sku: 'A1', supplier_unit_ref: null, supplier_order_identity: identity }] });
     await expect(snap.loadExactSoldSku(c, { sku_id: 's', product_id: 'p' })).rejects.toThrow('supplier_unit_ref requis');
   });
+  test('un SKU MANUAL reste une unité de catalogue sans SOI fabriquée', async () => {
+    const c = { query: jest.fn().mockResolvedValue({ rows: [{
+      id: 'sku-manual', product_id: 'p', source: 'MANUAL', supplier_sku: null,
+      supplier_unit_ref: null, supplier_order_identity: null,
+    }] }) };
+    await expect(snap.loadExactSoldSku(c, { sku_id: 'sku-manual', product_id: 'p' }))
+      .resolves.toMatchObject({ id: 'sku-manual', manualCatalogSku: true, supplier_order_identity: null });
+  });
 });
 
 describe('resolveExactSkuProcurementReadiness', () => {
@@ -93,6 +101,15 @@ describe('buildPurchaseTarget', () => {
     const out = snap.buildPurchaseTarget({ supplier_sku: 'H', supplier_price_aed: '7' }, null, null);
     expect(out).toMatchObject({ unitPriceAed: 7, supplierUnitRef: null, supplierOrderIdentity: null });
   });
+});
+
+test('ligne Hub manuel conserve le SKU Komerce sans créer prix, SKU vendeur ni SOI', () => {
+  expect(snap.buildManualCatalogPurchaseTarget({ system_key: 'central_hub', supplier_id: 'hub' }, { id: 'sku-1' }))
+    .toEqual({
+      purchaseTarget: { system_key: 'central_hub', supplier_id: 'hub', supplier_sku: null },
+      productSkuId: 'sku-1', money: null, unitPriceAed: null, supplierUnitRef: null,
+      supplierOrderIdentity: null, manualHubProcurement: true,
+    });
 });
 
 describe('lignes historiques', () => {
@@ -132,6 +149,16 @@ describe('lignes historiques', () => {
     await expect(snap.insertOpenPurchaseLine(c, { item: base.item, ps, snapshot: snapshot({ supplierUnitRef: null }), quantity: 1 })).rejects.toThrow('identité exacte incomplète');
     await expect(snap.insertOpenPurchaseLine(c, { item: base.item, ps, snapshot: snapshot({ supplierOrderIdentity: null }), quantity: 1 })).rejects.toThrow('identité exacte incomplète');
     expect(c.query).not.toHaveBeenCalled();
+  });
+  test('ligne Hub manuelle accepte les faits vendeur à compléter dans la PO standard', async () => {
+    const c = { query: jest.fn().mockResolvedValue({ rows: [{ id: 'hub-line' }] }) };
+    const snapshot = snap.buildManualCatalogPurchaseTarget({ system_key: 'central_hub', supplier_id: 'hub' }, { id: 'sku-1' });
+    await expect(snap.insertOpenPurchaseLine(c, {
+      item: base.item, ps: { system_key: 'central_hub', supplier_id: 'hub', id: null }, snapshot, quantity: 2,
+    })).resolves.toEqual({ id: 'hub-line' });
+    expect(c.query.mock.calls[0][1]).toEqual([
+      'it', 'hub', null, 'sku-1', null, null, null, 2, null, null, 'DXB', null,
+    ]);
   });
   test('confirmation (prix fourni ou par défaut)', async () => {
     const c = { query: jest.fn().mockResolvedValue({}) };

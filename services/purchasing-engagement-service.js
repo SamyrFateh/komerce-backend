@@ -187,7 +187,10 @@ function buildSubmitMessage({ po, supplier, groups, tag, hubLabel }) {
   const lines = groups.map((g) => {
     const total = g.supplier_unit_price !== null
       ? ` — ${(Number(g.supplier_unit_price) * g.quantity).toFixed(2)} ${g.supplier_currency}` : '';
-    return `- ${g.product_name || g.supplier_sku} (x${g.quantity}) — Ref : ${g.supplier_sku}${total}`;
+    const reference = g.supplier_sku
+      ? ` — Réf. fournisseur : ${g.supplier_sku}`
+      : ' — Référence Komerce ; référence fournisseur à renseigner par le Hub';
+    return `- ${g.product_name || g.supplier_sku || 'Produit'} (x${g.quantity})${reference}${total}`;
   });
   return {
     supplier: [

@@ -173,7 +173,10 @@ test('import JSON guidé : invalide bloqué, valide transmis sans mutation impli
   const payload = { summary: {}, candidates: [], portfolio: { products: [] }, suppliers: [] };
   const fetch = jest.fn(async (url, options) => {
     calls.push({ url, options });
-    return { ok: true, json: async () => payload };
+    return { ok: true, json: async () => url.endsWith('/catalog-suppliers') ? [
+      { id: 'hub-id', name: 'Fournisseur central Hub', platform: 'local', system_key: 'central_hub' },
+      { id: 'real-id', name: 'CJ', platform: 'local', system_key: null },
+    ] : payload };
   });
   await sourcing.mount({
     root, document: { createElement: tag => new Node(tag) }, fetch,
@@ -189,8 +192,9 @@ test('import JSON guidé : invalide bloqué, valide transmis sans mutation impli
     prompt: () => { throw new Error('Native prompt forbidden for imports'); },
   });
   const action = name => find(root, 'data-workspace-action', name);
-  action('manual-import').listeners.click();
-  find(root, 'data-manual-supplier', '').value = 'CJ';
+  await action('manual-import').listeners.click();
+  expect(find(root, 'data-manual-supplier', '').value).toBe('hub-id');
+  find(root, 'data-manual-supplier', '').value = 'real-id';
   const editor = find(root, 'data-manual-products', '');
   editor.value = '{wrong';
   await action('submit-manual-import').listeners.click();
@@ -201,24 +205,26 @@ test('import JSON guidé : invalide bloqué, valide transmis sans mutation impli
   const mutations = calls.filter(call => call.options.method === 'POST');
   expect(mutations).toHaveLength(1);
   expect(JSON.parse(mutations[0].options.body)).toEqual({
-    supplier_name: 'CJ', source_type: 'manual',
+    supplier_id: 'real-id', source_type: 'manual',
     items: [{ supplier_product_id: 'CJ-1', product_name: 'Produit test', purchase_price: 100, currency: 'AED' }],
   });
 
   // CSV partage le panneau mais jamais le payload JSON; aucun import implicite.
-  action('csv-import').listeners.click();
+  await action('csv-import').listeners.click();
   const csvEditor = find(root, 'data-manual-products', '');
-  find(root, 'data-manual-supplier', '').value = 'CJ';
-  csvEditor.value = '';
+  expect(find(root, 'data-manual-supplier', '').value).toBe('hub-id');
+  find(root, 'data-manual-supplier', '').value = 'real-id';
+  csvEditor.value = 'supplier_product_id,product_name,purchase_price,currency\nCJ-1,Produit test,100,AED';
   await action('submit-manual-import').listeners.click();
-  expect(calls.filter(call => call.options.method === 'POST')).toHaveLength(1);
-  csvEditor.value = 'supplier_product_id,product_name,purchase_price,currency\nCJ-2,Produit CSV,200,AED';
-  await action('submit-manual-import').listeners.click();
+  const csvPost = calls.filter(call => call.options.method === 'POST')[1];
+  expect(JSON.parse(csvPost.options.body)).toEqual({
+    supplier_id: 'real-id', source_type: 'csv', csv_text: csvEditor.value,
+  });
   const posts = calls.filter(call => call.options.method === 'POST');
   expect(posts).toHaveLength(2);
   expect(JSON.parse(posts[1].options.body)).toEqual({
-    supplier_name: 'CJ', source_type: 'csv',
-    csv_text: 'supplier_product_id,product_name,purchase_price,currency\nCJ-2,Produit CSV,200,AED',
+    supplier_id: 'real-id', source_type: 'csv',
+    csv_text: 'supplier_product_id,product_name,purchase_price,currency\nCJ-1,Produit test,100,AED',
   });
 });
 

@@ -40,6 +40,10 @@ const { authenticateOrCreateGuest }      = require('../../middleware/auth-guest'
 const { validate }                       = require('../../middleware/validate');
 const { orders }                         = require('../../validators');
 const { runOrderCheckout }               = require('../../services/order-checkout-service');
+const { renderCartQuotePdf } = require('../../services/documents/cart-quote-pdf');
+const { quotePublicCart, PublicQuoteError } = require('../../services/public-cart-quote-service');
+const { MarketCommercialPriceError } = require('../../services/market-commercial-price-service');
+const { TransportPricingError } = require('../../services/transport-pricing');
 const { closeCompletedSharedCartForOrderItems } = require('../../services/cart-share-service');
 
 // Business Alignment Closure — un relais explicite est désormais une
@@ -50,6 +54,39 @@ const orderCreateSchema = {
   ...orders.create,
   body: orders.create.body.fork(['relais_id'], schema => schema.required()),
 };
+
+// Devis personnel autonome : calcul CANONIQUE public, sans relais, OTP ni
+// commande. Le checkout réel (ci-dessous) conserve son identité et son relais.
+function handleQuoteError(err, res, next) {
+  if (err instanceof PublicQuoteError || err instanceof MarketCommercialPriceError ||
+      err instanceof TransportPricingError) {
+    return res.status(err.status || 409).json({ error: err.message, code: err.code });
+  }
+  return next(err);
+}
+
+// PDF informatif éphémère. Recalcule le prix sur le serveur et bloque un
+// PDF périmé si le prix a varié depuis l'aperçu (expected_total_kmf).
+router.post('/quote-pdf', async (req, res, next) => {
+  try {
+    const quote = await quotePublicCart(req.body);
+    // Un contrat unique : aperçu JSON ou document PDF selon Accept.
+    // Aucun endpoint supplémentaire ni dépendance au checkout authentifié.
+    if (String(req.get('accept') || '').includes('application/json')) {
+      return res.set('Cache-Control', 'no-store').json(quote);
+    }
+    const pdf = await renderCartQuotePdf(quote);
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': 'attachment; filename="Komerce-devis-estimatif.pdf"',
+      'Cache-Control': 'private, no-store',
+      'X-Content-Type-Options': 'nosniff',
+    });
+    return res.status(200).send(pdf);
+  } catch (error) {
+    return handleQuoteError(error, res, next);
+  }
+});
 
 // POST /api/orders/preview — aperçu serveur du total (même calcul que la création, rien n'est persisté).
 router.post('/preview', authenticateOrCreateGuest, validate(orderCreateSchema), async (req, res, next) => {

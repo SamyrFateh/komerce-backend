@@ -304,17 +304,36 @@ if (!hasIntegrationEnv) {
     expect(String(row.rows[0].import_id)).toBe(String(first.body.import_id));
   });
 
-  test('legacy manual reste inchangé (non-régression croisée)', async () => {
+  test('legacy manual: une fiche fournisseur réelle et une source vide retournent 400', async () => {
     const admin = await createUser({ role: 'admin' });
     const supplierName = `IT-MANUAL-${suffix()}`;
-    supplierNames.push(supplierName);
+    const { rows: [supplier] } = await db.query(
+      `INSERT INTO suppliers (name, platform, auto_order, is_active)
+       VALUES ($1, 'local', FALSE, TRUE) RETURNING id`,
+      [supplierName]
+    );
 
+    try {
+      const result = await importCatalog(
+        { supplier_name: supplierName, source_type: 'manual', items: [] },
+        admin.id,
+        async () => ({ products: [], invalid: [] })
+      );
+      expect(result.status).toBe(400); // identité résolue, liste vide -> 400
+      expect(result.body.error).toMatch(/Aucun produit valide/);
+    } finally {
+      await db.query('DELETE FROM suppliers WHERE id = $1', [supplier.id]);
+    }
+  });
+
+  test('legacy manual: un fournisseur explicite non enregistré est refusé', async () => {
+    const admin = await createUser({ role: 'admin' });
     const result = await importCatalog(
-      { supplier_name: supplierName, source_type: 'manual', items: [] },
+      { supplier_name: `IT-UNKNOWN-${suffix()}`, source_type: 'manual', items: [] },
       admin.id,
       async () => ({ products: [], invalid: [] })
     );
-    expect(result.status).toBe(400); // comportement legacy inchangé : liste vide -> 400
-    expect(result.body.error).toMatch(/Aucun produit valide/);
+    expect(result.status).toBe(422);
+    expect(result.body.code).toBe('CATALOG_SUPPLIER_NOT_REGISTERED');
   });
 }

@@ -22,6 +22,9 @@ jest.mock('../../services/catalog-overrides', () => ({
   isPipelineSourced: jest.fn(() => false),
   upsertOverrides: jest.fn(),
 }));
+jest.mock('../../services/suppliers/central-hub-supplier', () => ({
+  resolveCatalogSupplier: jest.fn(async () => ({ id: 'central-hub-id' })),
+}));
 jest.mock('../../utils/logger', () => ({ child: jest.fn(() => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() })) }));
 
 const { recordProductPriceChange } = require('../../services/product-price-audit');
@@ -68,6 +71,8 @@ describe('product-admin-service', () => {
     const insertCall = db.query.mock.calls.find(([sql]) => sql.includes('INSERT INTO products'));
     expect(insertCall[0]).toContain('is_available');
     expect(insertCall[0]).toContain('is_active');
+    expect(insertCall[0]).toContain('procurement_supplier_id');
+    expect(insertCall[1]).toContain('central-hub-id');
     expect(insertCall[1]).toEqual(expect.arrayContaining([false, false]));
     expect(recordProductPriceChange).toHaveBeenCalledWith(db, expect.objectContaining({ productId: 'prod-001', oldPriceKmf: 0, newPriceKmf: 1000 }));
     expect(auditProductStockChange).toHaveBeenCalledWith(db, expect.objectContaining({ productId: 'prod-001', oldStock: null, newStock: 5 }));

@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-11-11T17:47:51.635Z",
+  "generatedAt": "2026-11-12T11:24:04.681Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 825,
-    "protected": 767,
-    "public": 58,
+    "total": 827,
+    "protected": 768,
+    "public": 59,
     "unprotected": 0,
     "admin_no_guard": 0,
     "unknown": 0
@@ -148,6 +148,12 @@
       "kind": "EXPECTED_PUBLIC",
       "evidence": "routes/modules.js",
       "rationale": "Référentiel public des modules de configuration produit."
+    },
+    {
+      "key": "POST /api/orders/quote-pdf",
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/orders/create.js; services/public-cart-quote-service.js; tests/unit/public-cart-quote-service.test.js; tests/unit/cart-quote-pdf.test.js",
+      "rationale": "Devis de panier non transactionnel et anonyme. Exposition et prix locaux contrôlés par le serveur, 1 à 30 lignes, zéro commande, zéro écriture persistée, globalLimiter et cache no-store. Même route JSON (aperçu) ou PDF (partage), jamais un checkout."
     },
     {
       "key": "GET /api/orders/retrait/{token}",
@@ -2895,6 +2901,14 @@
       ]
     },
     {
+      "key": "GET /api/admin/workspaces/sourcing/catalog-suppliers",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "sourcing"
+      ]
+    },
+    {
       "key": "GET /api/admin/workspaces/sourcing/import-cockpit",
       "level": "PROTECTED",
       "roles": [
@@ -4552,6 +4566,11 @@
         "agent_hub",
         "agent_relais"
       ]
+    },
+    {
+      "key": "POST /api/orders/quote-pdf",
+      "level": "PUBLIC",
+      "roles": []
     },
     {
       "key": "POST /api/orders/preview",

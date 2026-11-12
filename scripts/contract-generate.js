@@ -138,6 +138,7 @@ const ROUTE_SCHEMA_MAP = [
   // ORDERS
   { prefix: '/api/orders',               method: 'post',   schema: validators.orders?.create },
   { prefix: '/api/orders/preview',       method: 'post',   schema: validators.orders?.create },
+  { prefix: '/api/orders/quote-pdf',     method: 'post',   schema: validators.orders?.create },
   { prefix: '/api/orders',               method: 'get',    schema: validators.orders?.list },
   { prefix: '/api/orders/{id}/status',   method: 'patch',  schema: validators.orders?.updateStatus },
   { prefix: '/api/orders/{id}/local-relay-receipt', method: 'post', schema: null }, // attestation terrain, validation in-route
@@ -304,6 +305,7 @@ const ROUTE_SCHEMA_MAP = [
   { prefix: '/api/health',              method: 'get',    schema: null },
   // LOT 4E — Canonical Sourcing Workspace (global central actions)
   { prefix: '/api/admin/workspaces/sourcing', method: 'get', schema: null },
+  { prefix: '/api/admin/workspaces/sourcing/catalog-suppliers', method: 'get', schema: null },
   { prefix: '/api/admin/workspaces/sourcing/import-runs', method: 'get', schema: null },
   { prefix: '/api/admin/workspaces/sourcing/import-cockpit', method: 'get', schema: null },
   { prefix: '/api/admin/workspaces/sourcing/import-runs/{runRef}', method: 'get', schema: null },
@@ -683,6 +685,7 @@ const KNOWN_RESPONSES = {
   '/api/admin/workspaces/pricing/cost-components/{key}/toggle': { post: { fields: ['ok','action','result'], source: 'test' } },
   // LOT 4E — réponses Sourcing Workspace consommées par Canonical.
   '/api/admin/workspaces/sourcing': { get: { fields: ['scope','summary','portfolio','imports','candidates','suppliers','connectors','sources'], source: 'test' } },
+  '/api/admin/workspaces/sourcing/catalog-suppliers': { get: { fields: ['id','name','system_key'], source: 'test' } },
   '/api/admin/workspaces/sourcing/import-runs': { get: { fields: ['runs'], source: 'test' } },
   '/api/admin/workspaces/sourcing/import-cockpit': { get: { fields: ['source_controls','lots','selected'], source: 'test' } },
   '/api/admin/workspaces/sourcing/import-runs/{runRef}': { get: { fields: ['run_ref','mode','status','failure_reason','provider','source_type','source_ref','import_ref','started_at','finished_at','updated_at','current_stage','processed','progress_pct','accounting','stages','current_item','recent_items','events'], source: 'service-read' } },
@@ -1001,6 +1004,8 @@ const KNOWN_RESPONSES = {
   '/api/orders/preview': {
     post: { fields: ['items_total_kmf','transport_price_kmf','discount_kmf','total_kmf'], source: 'test' }
   },
+  // Binary PDF : response override below. No JSON fields or invented UNKNOWN debt.
+  '/api/orders/quote-pdf': { post: { fields: [], source: 'route-read' } },
   '/api/orders': {
     post: { fields: ['reference','status','total_kmf','id'], source: 'test+scan' },
     get:  { fields: ['reference','status','total_kmf','phone'], source: 'test' }
@@ -2823,6 +2828,13 @@ const SUCCESS_STATUS_OVERRIDES = Object.freeze({
 // KNOWN_RESPONSES (pas un schéma de corps, juste un code de statut documenté en plus).
 // Format : "METHOD /chemin/{param}" → { [code]: { description } }
 const RESPONSE_OVERRIDES = {
+  'POST /api/orders/quote-pdf': {
+    '200': {
+      description: 'Devis estimatif PDF privé et éphémère, sans commande ni facture',
+      content: { 'application/pdf': { schema: { type: 'string', format: 'binary', 'x-contract-status': 'route-read' } } },
+    },
+    '401': { description: 'Authentification client requise' },
+  },
   'POST /api/relay/returns/intake': { '200': { description: 'Attestation existante, rejeu identique' } },
   'POST /api/payments/mobile-money/initiate': {
     '201': { description: 'Nouvelle tentative Mobile Money créée' },

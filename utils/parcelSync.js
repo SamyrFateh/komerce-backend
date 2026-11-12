@@ -196,6 +196,15 @@ async function syncScanToParcels({ order_id, step, scan_id, target_one_available
     // Forward only : ne pas reculer
     if (newWeight <= currentWeight) continue;
 
+
+    // Projection des quantités par l'owner physique scan-engine,
+    // dans la même transaction que la transition du colis et de la commande.
+    // Pas de second writer direct dans le synchroniseur de statuts.
+    if (step === 'collected' && target_one_available) {
+      if (!dbClient) throw new Error('PICKUP_PHYSICAL_TRANSACTION_REQUIRED');
+      await require('../services/scan-engine').projectCollectedPickupQuantities(dbClient, parcel.id);
+    }
+
     await q.query(
       `UPDATE parcels
        SET status = $1::parcel_status,

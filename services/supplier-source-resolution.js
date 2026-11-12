@@ -54,7 +54,8 @@ const FORBIDDEN_SQL_LIST = FORBIDDEN_SKU_PROVIDERS.map((p) => `'${p}'`).join(', 
 /**
  * Fragment « FROM … WHERE … » des associations ADMISSIBLES pour un produit (alias `ps`, `s`).
  * Admissible = association active non supprimée, fournisseur actif non supprimé du catalogue global
- * (owner_scope NULL), plateforme du fournisseur = provider du SKU (provider NULL : produit sans SKU exact),
+ * (owner_scope NULL) ou fiche système central Hub, plateforme du fournisseur = provider du SKU
+ * (provider NULL : produit sans SKU exact),
  * provider non interdit. `excludeSql` retire un fournisseur/une association (simulation de désactivation).
  */
 function eligibleSourceFromWhereSql({ productSql, providerSql = 'NULL', excludeSql = null }) {
@@ -63,7 +64,8 @@ function eligibleSourceFromWhereSql({ productSql, providerSql = 'NULL', excludeS
     JOIN suppliers s ON s.id = ps.supplier_id
    WHERE ps.product_id = ${productSql}
      AND ps.is_active = TRUE AND ps.deleted_at IS NULL
-     AND s.is_active = TRUE AND s.deleted_at IS NULL AND s.owner_scope IS NULL
+     AND s.is_active = TRUE AND s.deleted_at IS NULL
+     AND (s.owner_scope IS NULL OR s.system_key = 'central_hub')
      AND ((${providerSql}) IS NULL OR lower(s.platform) = lower(${providerSql}))
      AND lower(COALESCE(${providerSql}, '')) NOT IN (${FORBIDDEN_SQL_LIST})
      ${excludeSql ? `AND NOT (${excludeSql})` : ''}`;
@@ -89,7 +91,7 @@ function skuSourceResolvedSql(skuAlias) {
  * Résolution unique. Retourne { status, mapping, candidates }.
  * Plus haute priorité (plus petit nombre) ; égalité en tête = AMBIGUOUS (refus, jamais de choix arbitraire).
  */
-async function resolveSupplierSource(client, { productId, provider = null }) {
+async function resolveSupplierSource(client, { productId, provider = null, assignedSupplierId = null }) {
   if (provider && isForbiddenSkuProvider(provider)) {
     return { status: SOURCE_STATUS.FORBIDDEN_PROVIDER, mapping: null, candidates: [] };
   }
@@ -98,7 +100,23 @@ async function resolveSupplierSource(client, { productId, provider = null }) {
            s.account_id, s.api_key_enc, s.api_secret_enc, s.lead_time_days
     ${eligibleSourceFromWhereSql({ productSql: '$1::uuid', providerSql: '$2::text' })}
     ORDER BY ps.priority ASC, ps.created_at ASC, ps.id ASC`, [productId, provider]);
-  if (!rows.length) return { status: SOURCE_STATUS.UNRESOLVED, mapping: null, candidates: [] };
+  if (!rows.length) {
+    if (!assignedSupplierId) return { status: SOURCE_STATUS.UNRESOLVED, mapping: null, candidates: [] };
+    const { rows: [assigned] } = await client.query(`
+      SELECT NULL::uuid AS id, s.id AS supplier_id,
+             s.name AS supplier_name, s.platform, s.auto_order, s.system_key,
+             s.contact_phone, s.account_id, s.api_key_enc, s.api_secret_enc, s.lead_time_days,
+             NULL::numeric AS supplier_price_aed, NULL::text AS supplier_sku,
+             1::integer AS min_order_qty, 1::integer AS priority
+        FROM suppliers s
+       WHERE s.id = $1::uuid AND s.is_active = TRUE AND s.deleted_at IS NULL
+         AND (s.owner_scope IS NULL OR s.system_key = 'central_hub')
+         AND ($2::text IS NULL OR lower(s.platform) = lower($2::text))
+         AND lower(COALESCE($2::text, '')) NOT IN (${FORBIDDEN_SQL_LIST})
+       LIMIT 1`, [assignedSupplierId, provider]);
+    if (assigned) return { status: SOURCE_STATUS.RESOLVED, mapping: assigned, candidates: [assigned] };
+    return { status: SOURCE_STATUS.UNRESOLVED, mapping: null, candidates: [] };
+  }
   if (rows.length > 1 && rows[0].priority === rows[1].priority) {
     return { status: SOURCE_STATUS.AMBIGUOUS, mapping: null, candidates: rows };
   }
