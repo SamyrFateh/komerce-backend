@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       db.js, services/documents/wallet-receipt.js, services/order-mutation-service.js
  * @used-by       routes/wallet.js, routes/payments.js, services/order-payment-confirmation.js
- * @db-read       orders, users, wallet_consumptions, wallet_credit_lots, wallet_transactions, wallets
+ * @db-read       markets, orders, users, wallet_consumptions, wallet_credit_lots, wallet_transactions, wallets
  * @db-write      wallet_consumptions, wallet_credit_lots, wallet_transactions, wallets
  * @db-write-via:order-mutation-service orders
  * @db-txn        credit_debit_idempotent, wallet_ledger_append_only

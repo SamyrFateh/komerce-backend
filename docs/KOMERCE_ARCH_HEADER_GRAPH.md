@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 799
-- Files with full headers: 744
+- Scanned code files: 803
+- Files with full headers: 748
 - Files with lite headers: 55
-- Files with any headers: 799
+- Files with any headers: 803
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 2026
-- Edges: 9985
-- DB tables: 233
-- Doctrines: 787
+- Graph nodes: 2035
+- Edges: 10040
+- DB tables: 234
+- Doctrines: 791
 - Impact areas: 207
-- Unresolved code edges: 957
+- Unresolved code edges: 963
 - Tables multi-écrivains directs (>=2): 95
 - Avertissements db-write / db-write-via en chevauchement: 12
 
@@ -30,7 +30,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - auth-identity: 12
 - auth-passkey: 7
 - bootstrap: 2
-- boutique: 21
+- boutique: 24
 - business-rules: 1
 - catalog: 137
 - checkout: 3
@@ -54,7 +54,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - markets: 1
 - notification: 21
 - operations: 11
-- orders: 37
+- orders: 38
 - payment: 30
 - payments: 1
 - platform-ops: 2
@@ -92,7 +92,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 137
 - route-manifest: 1
 - schema: 1
-- service: 481
+- service: 484
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -100,7 +100,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - ui-behavior: 1
 - ui-bootstrap: 4
 - ui-boundary: 2
-- ui-component: 40
+- ui-component: 41
 - ui-controller: 3
 - ui-enhancer: 3
 - ui-infrastructure: 1
@@ -227,6 +227,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/refund-intent-ledger.js — durable-refund-intent-reservation (refunds, critical, full)
 - services/refund-intent-reconciliation.js — durable-refund-evidence-reconciliation (refunds, critical, full)
 - services/relay-product-return-intake-service.js — relay-product-return-intake-service (logistics, critical, full)
+- services/relay-return-compensation-service.js — relay-return-compensation-service (orders, critical, full)
 - services/relay-return-request-service.js — orders-product-return-request-service (orders, critical, full)
 - services/repair-ordered-purchasing.js — orders-repair-ordered-purchasing (purchasing, critical, full)
 - services/repair-ordered-without-purchase-orders.js — orders-repair-ordered-without-purchase-orders (purchasing, critical, full)
@@ -578,6 +579,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/provider-certification-overview.js — provider-certification-overview (admin-dashboard, high, full)
 - services/provider-status-mutation-service.js — providers-services-status-mutation-service (providers-services, high, full)
 - services/providers-service.js — providers-services-providers-service (providers-services, high, full)
+- services/public-cart-quote-service.js — public-cart-quotation (boutique, high, full)
 - services/purchase-line-snapshot.js — purchase-line-snapshot (purchasing, high, full)
 - services/purchasing-admin-service.js — dashboard-purchasing-admin-service (purchasing, high, full)
 - services/purchasing-canonical-money.js — purchasing-canonical-supplier-money (purchasing, high, full)

@@ -8155,7 +8155,7 @@
         "category": "services",
         "declared": "services/documents/cart-quote-pdf.js",
         "resolvedPath": "services/documents/cart-quote-pdf.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "documents",
@@ -16457,7 +16457,7 @@
         "category": "services",
         "declared": "services/public-cart-quote-service.js",
         "resolvedPath": "services/public-cart-quote-service.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "orders",
@@ -16534,6 +16534,13 @@
         "category": "services",
         "declared": "services/relay-return-request-service.js",
         "resolvedPath": "services/relay-return-request-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "orders",
+        "category": "services",
+        "declared": "services/relay-return-compensation-service.js",
+        "resolvedPath": "services/relay-return-compensation-service.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -16933,6 +16940,13 @@
         "category": "tests",
         "declared": "tests/unit/relay-return-request-service.test.js",
         "resolvedPath": "tests/unit/relay-return-request-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "orders",
+        "category": "tests",
+        "declared": "tests/unit/relay-return-compensation-service.test.js",
+        "resolvedPath": "tests/unit/relay-return-compensation-service.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -37182,6 +37196,10 @@
                 "targetFile": "services/relay-return-request-service.js"
               },
               {
+                "sourceFileId": "routes/relay-dashboard.js",
+                "targetFile": "services/relay-return-compensation-service.js"
+              },
+              {
                 "sourceFileId": "tests/unit/admin-orders-route.test.js",
                 "targetFile": "routes/admin/orders.js"
               },
@@ -44053,6 +44071,10 @@
                 "targetFile": "services/fx-authority.js"
               },
               {
+                "sourceFileId": "services/relay-return-compensation-service.js",
+                "targetFile": "services/fx-authority.js"
+              },
+              {
                 "sourceFileId": "tests/unit/order-display-snapshot.test.js",
                 "targetFile": "utils/currency.js"
               }
@@ -44521,6 +44543,10 @@
               },
               {
                 "sourceFileId": "services/order-checkout-persistence.js",
+                "targetFile": "services/wallet-service.js"
+              },
+              {
+                "sourceFileId": "services/relay-return-compensation-service.js",
                 "targetFile": "services/wallet-service.js"
               },
               {
@@ -47520,6 +47546,22 @@
       },
       {
         "from": "refunds",
+        "to": "market",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/refund-service.js",
+                "targetFile": "services/fx-authority.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "OBSERVED_UNDECLARED"
+      },
+      {
+        "from": "refunds",
         "to": "orders",
         "channels": [
           {
@@ -49292,7 +49334,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2310
+        "filesObserved": 2312
       },
       "boutique": {
         "filesObserved": 216,
@@ -49331,7 +49373,7 @@
       "NON_RUNTIME_TEST": 17,
       "TECHNICAL_PRIMITIVE": 0,
       "BUSINESS_TRANSVERSAL_SERVICE": 0,
-      "CROSS_FEATURE_DIRECT_IMPORT": 0,
+      "CROSS_FEATURE_DIRECT_IMPORT": 1,
       "BUSINESS_FEATURE_INTERFACE": 0,
       "PILOTING_CAPABILITY": 0,
       "UNCLASSIFIED": 0
@@ -49863,6 +49905,23 @@
         "exceptionReasons": []
       },
       {
+        "from": "refunds",
+        "to": "market",
+        "family": "CROSS_FEATURE_DIRECT_IMPORT",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "business-transversal",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "boundary-remediation-required",
+        "exceptionRequired": true,
+        "exceptionReasons": [
+          "direct-import"
+        ]
+      },
+      {
         "from": "supplier-connectivity",
         "to": "purchasing",
         "family": "NON_RUNTIME_TEST",
@@ -49911,6 +49970,7 @@
       "COMPOSITION_ROOT_WIRING|RUNTIME_AND_TEST|technical-transversal|business-feature|business-file-import": 1,
       "NON_RUNTIME_TEST|TEST_ONLY|business-feature|piloting-capability|business-file-import": 1,
       "NON_RUNTIME_TEST|TEST_ONLY|business-transversal|technical-transversal|technical-primitive": 1,
+      "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_ONLY|business-transversal|business-feature|business-file-import": 1,
       "NON_RUNTIME_TEST|TEST_ONLY|integration-adapter|business-feature|business-file-import": 1,
       "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-transversal|technical-primitive": 1
     },
@@ -49919,7 +49979,9 @@
     "staleExceptions": [],
     "duplicateExceptionKeys": [],
     "illegitimateExceptions": [],
-    "missingExceptions": [],
+    "missingExceptions": [
+      "refunds->market"
+    ],
     "emptyRationaleExceptions": [],
     "unexplainedRuntimeCycles": [],
     "ontologyGapCoverage": {
@@ -53198,8 +53260,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 695,
-        "technicalNodesOwned": 695,
+        "technicalNodesTotal": 698,
+        "technicalNodesOwned": 698,
         "technicalOrphans": 0
       },
       "dash": {
@@ -53213,8 +53275,8 @@
       "boutique": {
         "manifestsDiscovered": 16,
         "manifestsConnected": 16,
-        "technicalNodesTotal": 104,
-        "technicalNodesOwned": 104,
+        "technicalNodesTotal": 105,
+        "technicalNodesOwned": 105,
         "technicalOrphans": 0
       }
     },
@@ -53300,6 +53362,11 @@
     "error": [],
     "warn": [
       {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "refunds -> market",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"refunds\" vers \"market\""
+      },
+      {
         "type": "WRITER-NOT-OWNER",
         "ref": "order_item_real_cost_allocations",
         "msg": "table \"order_item_real_cost_allocations\" : lifecycle owner = economic-engine (db.tables \"!\"), mais aussi écrite par customs"
@@ -53331,6 +53398,11 @@
       }
     ],
     "debt": [
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "refunds -> market",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"refunds\" vers \"market\""
+      },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "order_item_real_cost_allocations",
@@ -53667,11 +53739,11 @@
       }
     ],
     "summary": {
-      "signals": 6,
-      "debt": 6,
+      "signals": 7,
+      "debt": 7,
       "expectedTopology": 48,
       "generatorLimitations": 12,
-      "classifiedCandidates": 66
+      "classifiedCandidates": 67
     }
   }
 }

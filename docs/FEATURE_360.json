@@ -53,15 +53,15 @@
   },
   "summary": {
     "features": 40,
-    "healthy": 34,
+    "healthy": 33,
     "attention": 6,
-    "blocked": 0,
+    "blocked": 1,
     "businessDependencies": 323,
-    "directCrossFeatureImports": 0,
+    "directCrossFeatureImports": 1,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
     "ontologyGaps": 0,
-    "debtItemsTotal": 10,
+    "debtItemsTotal": 11,
     "gateHealthy": 37,
     "gateBlocked": 2
   },
@@ -10551,7 +10551,7 @@
               {
                 "declared": "services/documents/cart-quote-pdf.js",
                 "resolvedPath": "services/documents/cart-quote-pdf.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/documents/customs-invoice.js",
@@ -24878,7 +24878,7 @@
             ]
           },
           "services": {
-            "count": 27,
+            "count": 28,
             "files": [
               {
                 "declared": "services/admin-order-refund.js",
@@ -24993,7 +24993,7 @@
               {
                 "declared": "services/public-cart-quote-service.js",
                 "resolvedPath": "services/public-cart-quote-service.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/qr-collection-core.js",
@@ -25003,6 +25003,11 @@
               {
                 "declared": "services/rct1-checkout-reference-guard.js",
                 "resolvedPath": "services/rct1-checkout-reference-guard.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/relay-return-compensation-service.js",
+                "resolvedPath": "services/relay-return-compensation-service.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -25018,7 +25023,7 @@
             ]
           },
           "tests": {
-            "count": 60,
+            "count": 61,
             "files": [
               {
                 "declared": "tests/e2e-api/customer-to-customer.golden.e2e.test.js",
@@ -25311,6 +25316,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/relay-return-compensation-service.test.js",
+                "resolvedPath": "tests/unit/relay-return-compensation-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/relay-return-request-service.test.js",
                 "resolvedPath": "tests/unit/relay-return-request-service.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -25333,7 +25343,7 @@
             ]
           }
         },
-        "totalFiles": 102,
+        "totalFiles": 104,
         "boutiqueManifest": "orders-client",
         "boutiqueFiles": {
           "count": 19,
@@ -31456,8 +31466,8 @@
         ]
       },
       "boundaryHealth": {
-        "status": "HEALTHY",
-        "directCrossFeatureImports": 0,
+        "status": "BLOCKED",
+        "directCrossFeatureImports": 1,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
         "declaredNotObserved": 0,
@@ -31481,8 +31491,14 @@
         "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 0,
-        "debtItems": []
+        "debtCount": 1,
+        "debtItems": [
+          {
+            "type": "DIRECT_CROSS_FEATURE_IMPORT",
+            "severity": "high",
+            "evidence": "1 paire(s) classées CROSS_FEATURE_DIRECT_IMPORT"
+          }
+        ]
       },
       "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",
