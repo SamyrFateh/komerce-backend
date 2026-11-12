@@ -1258,6 +1258,22 @@ describe('b-checkout', () => {
     });
   });
 
+  describe('checkout premium — projection sans modification métier', () => {
+    it('montre un sous-total indicatif et des variantes lisibles', async () => {
+      state.cart = [{
+        product: { id: 1, name: 'Chemise', price_kmf: 8990 },
+        qty: 2,
+        variant_combo: { cj_color: 'Red', cj_size: '3XL' },
+      }];
+      renderCheckout();
+      expect(document.getElementById('ck-recap-subtotal-value').textContent).toContain('17980');
+      const variant = dom.orderBody.querySelector('.ck-recap-item-variant').textContent;
+      expect(variant).toContain('Couleur : Red');
+      expect(variant).toContain('Taille : 3XL');
+      expect(variant).not.toContain('cj_');
+    });
+  });
+
   describe('renderCheckout — structure de base et identité', () => {
     beforeEach(() => {
       state.orderData = {};
