@@ -47,6 +47,7 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 | `b-modal-buybox-shared.js` | 22 | 0 | 0/1 | Modal produit |
 | `b-pager.js` | 1 | 20 | 0/1 | Grille produits, Header, Hero, Chips catégories, Bottom-nav mobile |
 | `b-modal-nav.js` | 10 | 10 | 1/4 | Modal produit |
+| `b-cart-quote.js` | 19 | 0 | 3/0 | Panier |
 | `b-catalog.js` | 16 | 2 | 3/3 | Carte produit, Grille produits, Hero, Chips catégories, Section catalogue |
 | `b-identity.js` | 11 | 5 | 0/0 | — |
 | `b-modal-image-ux.js` | 11 | 5 | 1/1 | Modal produit |
@@ -162,7 +163,7 @@ Charte projet : **un seul breakpoint, 900px** (1200px toléré). Tout le reste e
 | Indicateur | Valeur | Cible |
 |------------|:------:|:-----:|
 | Composants en multipropriété CSS | 8 | 0 |
-| Modules JS écrivant le DOM | 46 | ≤ 5 |
+| Modules JS écrivant le DOM | 47 | ≤ 5 |
 | Breakpoints distincts | 5 | ≤ 2 |
 | Violations breakpoint | 25 | 0 |
 | `!important` | 17 | < 5 |

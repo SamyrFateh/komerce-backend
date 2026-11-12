@@ -40,6 +40,7 @@ const { authenticateOrCreateGuest }      = require('../../middleware/auth-guest'
 const { validate }                       = require('../../middleware/validate');
 const { orders }                         = require('../../validators');
 const { runOrderCheckout }               = require('../../services/order-checkout-service');
+const { renderCartQuotePdf } = require('../../services/documents/cart-quote-pdf');
 const { closeCompletedSharedCartForOrderItems } = require('../../services/cart-share-service');
 
 // Business Alignment Closure — un relais explicite est désormais une
@@ -50,6 +51,30 @@ const orderCreateSchema = {
   ...orders.create,
   body: orders.create.body.fork(['relais_id'], schema => schema.required()),
 };
+
+// POST /api/orders/quote-pdf — devis informatif et éphémère, NON une facture.
+// Même calcul canonique que le checkout ; session client vérifiée, aucun ordre
+// ni paiement ni transaction_documents. Le PDF est recalculé au clic.
+router.post('/quote-pdf', authenticateOrCreateGuest, validate(orderCreateSchema), async (req, res, next) => {
+  try {
+    const result = await runOrderCheckout({
+      user: req.user,
+      body: { ...req.body, payment_mode: 'cash_relais', use_wallet: false },
+      previewOnly: true,
+    });
+    if (!result.ok) return res.status(result.status).json(result.body);
+    const pdf = await renderCartQuotePdf(result.preview);
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': 'attachment; filename="Komerce-devis-estimatif.pdf"',
+      'Cache-Control': 'private, no-store',
+      'X-Content-Type-Options': 'nosniff',
+    });
+    return res.status(200).send(pdf);
+  } catch (error) {
+    return next(error);
+  }
+});
 
 // POST /api/orders/preview — aperçu serveur du total (même calcul que la création, rien n'est persisté).
 router.post('/preview', authenticateOrCreateGuest, validate(orderCreateSchema), async (req, res, next) => {

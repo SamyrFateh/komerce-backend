@@ -48,6 +48,7 @@ module.exports = {
   perimeter: {
     in: [
       'generation PDF privée de facture, preuve de retrait, facture douane, reçu wallet et reçu remboursement',
+      'rendu PDF éphémère du devis estimatif panier (sans officialisation ni stockage dans transaction_documents)',
       'liste et téléchargement client authentifiés des factures et remboursements dans Mon Komerce et la commande concernée',
     ],
     out: [
@@ -64,6 +65,7 @@ module.exports = {
       'services/documents/customs-invoice.js',
       'services/documents/wallet-receipt.js',
       'services/documents/pdf-renderer.js',
+      'services/documents/cart-quote-pdf.js',
       'services/invoice-service.js',
     ],
     routes: [
@@ -103,6 +105,7 @@ module.exports = {
       'tests/unit/invoices-route.test.js',
       'tests/unit/documents-route.test.js',
       'tests/unit/pdf-renderer.test.js',
+      'tests/unit/cart-quote-pdf.test.js',
       // E2E fonctionnel — chantier currency debt (audit 09-2026), LOT 4.
       // invoices.subtotal_kmf/shipping_kmf/total_kmf (migration 217,
       // integer -> numeric) : décodage number, centimes préservés,
