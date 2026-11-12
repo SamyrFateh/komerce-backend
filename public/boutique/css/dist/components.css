@@ -14121,6 +14121,7 @@ body.k-id-scroll-lock { overflow: hidden; }
 .k-ck-guest-hint {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
   min-height: 60px;
   padding: 12px 14px;
@@ -14140,6 +14141,23 @@ body.k-id-scroll-lock { overflow: hidden; }
   border-radius: 50%;
   background: rgba(232,131,90,.12);
 }
+
+.k-ck-guest-copy { flex: 1 1 190px; }
+
+.k-ck-guest-login {
+  margin-left: auto;
+  padding: 9px 12px;
+  border: 1px solid rgba(31,48,36,.22);
+  border-radius: 10px;
+  background: var(--white);
+  color: var(--text);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.k-ck-guest-login:hover { background: rgba(31,48,36,.06); }
+.k-ck-guest-login:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+.k-ck-guest-login:disabled { opacity: .6; cursor: wait; }
 
 /* Ã¢â€â‚¬Ã¢â€â‚¬ Relais Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */
 
