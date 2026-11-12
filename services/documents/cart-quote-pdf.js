@@ -36,7 +36,13 @@ function renderCartQuotePdf(preview, issuedAt = new Date()) {
   if (!preview || !Array.isArray(preview.items) || !preview.items.length) {
     throw new Error('Lignes canoniques du devis absentes');
   }
-  if (!Number.isFinite(Number(preview.total_kmf))) throw new Error('Total canonique absent');
+  if (!Number.isFinite(Number(preview.total_kmf)) || preview.total_kmf == null) {
+    throw new Error('Total canonique absent');
+  }
+  const sum = preview.items.reduce((acc, item) => acc + Number(item.line_total_kmf), 0);
+  if (!Number.isFinite(sum) || Math.round(sum) !== Math.round(Number(preview.items_total_kmf))) {
+    throw new Error('Sous-total canonique incohérent');
+  }
   return new Promise((resolve, reject) => {
     const pdf = new PDFDocument({ size: 'A4', margin: 46, info: {
       Title: 'Devis estimatif Komerce',
@@ -106,9 +112,12 @@ function renderCartQuotePdf(preview, issuedAt = new Date()) {
     if (Number(preview.discount_kmf) > 0) summary.push(['Remise fidélité', -Number(preview.discount_kmf)]);
     summary.forEach(([label, amount]) => {
       const n = Number(amount);
-      pdf.font('Helvetica').fontSize(10).fillColor('#47534e').text(label, 250, pdf.y, { width: 165 });
-      pdf.font('Helvetica-Bold').text((n < 0 ? '-' : '') + money(Math.abs(n)), 415, pdf.y - 12, { width: 130, align: 'right' });
-      pdf.y += 8;
+      const y = pdf.y;
+      pdf.font('Helvetica').fontSize(10).fillColor('#47534e')
+        .text(label, 250, y, { width: 165 });
+      pdf.font('Helvetica-Bold').text((n < 0 ? '-' : '') + money(Math.abs(n)),
+        415, y, { width: 130, align: 'right' });
+      pdf.y = Math.max(y + 18, pdf.y + 4);
     });
     pdf.moveDown(0.5).font('Helvetica-Bold').fontSize(14).fillColor('#1f3025')
       .text('TOTAL ESTIMATIF : ' + money(preview.total_kmf), { align: 'right' });
