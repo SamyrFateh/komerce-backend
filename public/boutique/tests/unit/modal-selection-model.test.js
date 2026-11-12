@@ -125,6 +125,82 @@ describe('modal-selection-model', () => {
     });
   });
 
+  test('une seule couleur achetable : Vert présélectionné, tailles libres, aucun SKU choisi', () => {
+    const product = detail({
+      media: [
+        { id: 'global-main', url: '/main.jpg', option_values: {} },
+        { id: 'green', url: '/green.jpg', option_values: { Couleur: 'Vert' } },
+      ],
+      sellable_units: detail().sellable_units
+        .filter(unit => unit.stock_status === 'AVAILABLE')
+        .map(unit => ({ ...unit, option_values: { ...unit.option_values, Couleur: 'Vert' }, media_ids: ['green'] })),
+    });
+    const state = createModalSelection(product);
+    expect(state.selected_options).toEqual({ Couleur: 'Vert' });
+    expect(state.selected_sku_id).toBeNull();
+    expect(state.option_states.Taille.find(s => s.value === 'S').state).toBe(OPTION_STATE.AVAILABLE);
+    expect(state.option_states.Taille.find(s => s.value === 'M').state).toBe(OPTION_STATE.AVAILABLE);
+    expect(state.selected_media.map(media => media.id)).toEqual(['green']);
+    const selected = selectModalOption(product, state, 'Taille', 'M');
+    expect(selected.selected_options).toEqual({ Couleur: 'Vert', Taille: 'M' });
+    expect(selected.selected_sku_id).toBe(SKU_MAR_M);
+  });
+
+  test('une seule taille vendable : la présélectionner sans choisir une couleur parmi plusieurs', () => {
+    const product = detail({
+      sellable_units: detail().sellable_units.filter(unit =>
+        unit.stock_status === 'AVAILABLE' && unit.option_values.Taille === 'M'
+      ),
+    });
+    const state = createModalSelection(product);
+    expect(state.selected_options).toEqual({ Taille: 'M' });
+    expect(state.selected_sku_id).toBeNull();
+    expect(stateMap(state, 'Couleur')).toEqual({
+      Marron: OPTION_STATE.AVAILABLE,
+      Beige: OPTION_STATE.AVAILABLE,
+      Vert: OPTION_STATE.INCOMPATIBLE,
+    });
+  });
+
+  test('une seule combinaison en stock : présélection complète et vrai SKU ; autres valeurs non présélectionnées', () => {
+    const availableSku = detail().sellable_units.find(unit => unit.sku_id === SKU_MAR_M);
+    const product = detail({
+      sellable_units: detail().sellable_units.map(unit =>
+        unit.sku_id === SKU_MAR_M ? unit : { ...unit, stock_status: 'OUT_OF_STOCK', available_quantity: 0 }
+      ),
+    });
+    const state = createModalSelection(product);
+    expect(state.selected_options).toEqual({ Couleur: 'Marron', Taille: 'M' });
+    expect(state.selected_sku_id).toBe(availableSku.sku_id);
+    expect(state.selected_media.map(media => media.id)).toEqual(['brown-scene', 'brown-m-detail']);
+    expect(stateMap(state, 'Taille').S).toBe(OPTION_STATE.OUT_OF_STOCK);
+  });
+
+  test('toutes combinaisons en rupture : aucun choix automatique et aucun faux SKU', () => {
+    const product = detail({
+      sellable_units: detail().sellable_units.map(unit => ({
+        ...unit, stock_status: 'OUT_OF_STOCK', available_quantity: 0,
+      })),
+    });
+    const state = createModalSelection(product);
+    expect(state.selected_options).toEqual({});
+    expect(state.selected_sku_id).toBeNull();
+    expect(state.option_states.Couleur.find(entry => entry.value === 'Marron').state)
+      .toBe(OPTION_STATE.OUT_OF_STOCK);
+  });
+
+  test('plusieurs couleurs et tailles achetables : aucune présélection, même avec une première image liée à une couleur', () => {
+    const product = detail({
+      media: [
+        { id: 'brown-main', url: '/brown.jpg', option_values: { Couleur: 'Marron' } },
+        ...detail().media,
+      ],
+    });
+    const state = createModalSelection(product);
+    expect(state.selected_options).toEqual({});
+    expect(state.selected_sku_id).toBeNull();
+  });
+
   test('Marron recalcule les tailles et les médias', () => {
     const product = detail();
     const state = selectModalOption(product, createModalSelection(product), 'Couleur', 'Marron');
