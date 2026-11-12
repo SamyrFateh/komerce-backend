@@ -65,20 +65,16 @@ function handleQuoteError(err, res, next) {
   return next(err);
 }
 
-router.post('/cart-quote', async (req, res, next) => {
-  try {
-    const quote = await quotePublicCart(req.body);
-    return res.set('Cache-Control', 'no-store').json(quote);
-  } catch (error) {
-    return handleQuoteError(error, res, next);
-  }
-});
-
 // PDF informatif éphémère. Recalcule le prix sur le serveur et bloque un
 // PDF périmé si le prix a varié depuis l'aperçu (expected_total_kmf).
 router.post('/quote-pdf', async (req, res, next) => {
   try {
     const quote = await quotePublicCart(req.body);
+    // Un contrat unique : aperçu JSON ou document PDF selon Accept.
+    // Aucun endpoint supplémentaire ni dépendance au checkout authentifié.
+    if (String(req.get('accept') || '').includes('application/json')) {
+      return res.set('Cache-Control', 'no-store').json(quote);
+    }
     const pdf = await renderCartQuotePdf(quote);
     res.set({
       'Content-Type': 'application/pdf',
