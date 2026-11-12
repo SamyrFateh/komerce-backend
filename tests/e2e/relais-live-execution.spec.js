@@ -334,9 +334,13 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       await page.locator('[data-relay-execution-jump="cash"]').click();
       await page.locator('[data-workspace-action="confirm-cash"]').click();
       await expect.poll(() => posts.length).toBe(1);
+      // Le POST est observé avant le retour serveur. Attendre la relecture
+      // évite d'interagir avec le panneau qui va être reconstruit.
+      await expect(page.locator('[data-workspace-feedback]')).toContainText('K-CASH-1 · action appliquée.');
       await page.locator('[data-relay-execution-jump="receive"]').click();
       await page.locator('[data-workspace-action="receive"]').click();
       await expect.poll(() => posts.length).toBe(2);
+      await expect(page.locator('[data-workspace-feedback]')).toContainText('PCL-KM-4 · action appliquée.');
       await page.locator('[data-relay-execution-jump="collect"]').click();
       await page.locator('[data-pickup-code-input]').fill('ABCDEFGH');
        await page.locator('[data-pickup-code-confirm]').click();
