@@ -2286,12 +2286,12 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 170 fichier(s) déclaré(s)
-  - migrations : 14
+**Implementation** : 174 fichier(s) déclaré(s)
+  - migrations : 16
   - routes : 1
   - scripts : 14
   - services : 53
-  - tests : 88
+  - tests : 90
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="purchasing"]_
 

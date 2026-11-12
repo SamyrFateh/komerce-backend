@@ -29247,7 +29247,7 @@
       "implementation": {
         "byCategory": {
           "migrations": {
-            "count": 14,
+            "count": 16,
             "files": [
               {
                 "declared": "migrations/225_purchase_orders_exact_supplier_identity.sql",
@@ -29317,6 +29317,16 @@
               {
                 "declared": "migrations/362_suppliers_hub_scope.sql",
                 "resolvedPath": "migrations/362_suppliers_hub_scope.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/404_manual_purchase_executions.sql",
+                "resolvedPath": "migrations/404_manual_purchase_executions.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/407_purchase_variance_decisions.sql",
+                "resolvedPath": "migrations/407_purchase_variance_decisions.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -29677,7 +29687,7 @@
             ]
           },
           "tests": {
-            "count": 88,
+            "count": 90,
             "files": [
               {
                 "declared": "tests/e2e-api/purchasing.grouped-flow.e2e.test.js",
@@ -29920,6 +29930,16 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/hub-authorization-cumulative-cap.test.js",
+                "resolvedPath": "tests/unit/hub-authorization-cumulative-cap.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/hub-authorization-variance-decision.test.js",
+                "resolvedPath": "tests/unit/hub-authorization-variance-decision.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/hub-operations-grouped-completion.test.js",
                 "resolvedPath": "tests/unit/hub-operations-grouped-completion.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -30122,7 +30142,7 @@
             ]
           }
         },
-        "totalFiles": 170,
+        "totalFiles": 174,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
