@@ -155,7 +155,7 @@ describe('Komerce Shelf category navigation contract', () => {
 
   it('force la rotation du cache qui conservait encore l’ancien atlas', () => {
     expect(index).toContain('/boutique/js/b-service-worker-refresh.js?v=341');
-    expect(index).toContain('/boutique/js/main.js?v=359');
+    expect(index).toContain('/boutique/js/main.js?v=360');
     expect(swRefresh).toContain("komerce-v341");
     expect(swRefresh).toContain("event.data?.version === 'v341'");
     expect(sw).toContain("const CACHE = 'komerce-v341'");

@@ -995,8 +995,8 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
   // retirés du DOM, restaurés au cleanup. #k-cart-continue (← Continuer)
   // reste inchangé : affordance générique de retour, valable aussi en
   // snapshot.
-  const DRAWER_NATIVE_BTN_IDS_TO_HIDE = ['k-cart-checkout', 'k-cart-share', 'k-cart-clear'];
-  const SIDECART_NATIVE_BTN_IDS_TO_HIDE = ['k-sc-checkout', 'k-sc-cta', 'k-sc-share', 'k-sc-clear'];
+  const DRAWER_NATIVE_BTN_IDS_TO_HIDE = ['k-cart-checkout', 'k-cart-quote', 'k-cart-share', 'k-cart-clear'];
+  const SIDECART_NATIVE_BTN_IDS_TO_HIDE = ['k-sc-checkout', 'k-sc-quote', 'k-sc-cta', 'k-sc-share', 'k-sc-clear'];
 
   /**
    * Pilote le chrome canonique du drawer/mobile (#k-cart-header,

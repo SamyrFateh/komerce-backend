@@ -680,6 +680,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Perimeter** :
 - _in_ :
   - generation PDF privée de facture, preuve de retrait, facture douane, reçu wallet et reçu remboursement
+  - rendu PDF éphémère du devis estimatif panier (sans officialisation ni stockage dans transaction_documents)
   - liste et téléchargement client authentifiés des factures et remboursements dans Mon Komerce et la commande concernée
 - _out_ :
   - decision qu'un document doit etre genere (reste a la feature source : orders, customs, wallet, refunds)
@@ -712,11 +713,11 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 38 fichier(s) déclaré(s)
+**Implementation** : 40 fichier(s) déclaré(s)
   - migrations : 7
   - routes : 3
-  - services : 7
-  - tests : 16
+  - services : 8
+  - tests : 17
   - utils : 5
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="documents"]_
@@ -1915,7 +1916,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Architectural debt** (1) :
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "market-control-plane" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 
-**Implementation** : 100 fichier(s) déclaré(s), boutique: 17 fichier(s)
+**Implementation** : 100 fichier(s) déclaré(s), boutique: 19 fichier(s)
   - boutique : 3
   - routes : 11
   - services : 26

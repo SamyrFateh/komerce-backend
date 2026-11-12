@@ -8153,6 +8153,13 @@
       {
         "feature": "documents",
         "category": "services",
+        "declared": "services/documents/cart-quote-pdf.js",
+        "resolvedPath": "services/documents/cart-quote-pdf.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "documents",
+        "category": "services",
         "declared": "services/invoice-service.js",
         "resolvedPath": "services/invoice-service.js",
         "status": "resolved-in-technical-graph"
@@ -8365,6 +8372,13 @@
         "category": "tests",
         "declared": "tests/unit/pdf-renderer.test.js",
         "resolvedPath": "tests/unit/pdf-renderer.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "documents",
+        "category": "tests",
+        "declared": "tests/unit/cart-quote-pdf.test.js",
+        "resolvedPath": "tests/unit/cart-quote-pdf.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -31887,6 +31901,14 @@
       {
         "boutiqueManifest": "orders-client",
         "category": "boutique",
+        "declared": "../js/b-cart-quote.js",
+        "resolvedPath": "public/boutique/js/b-cart-quote.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "orders-client",
+        "category": "boutique",
         "declared": "../js/cart-product-summary.js",
         "resolvedPath": "public/boutique/js/cart-product-summary.js",
         "exists": true,
@@ -31961,6 +31983,14 @@
         "category": "tests",
         "declared": "../tests/unit/b-cart.test.js",
         "resolvedPath": "public/boutique/tests/unit/b-cart.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "orders-client",
+        "category": "tests",
+        "declared": "../tests/unit/b-cart-quote.test.js",
+        "resolvedPath": "public/boutique/tests/unit/b-cart-quote.test.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -43131,6 +43161,10 @@
                 "targetFile": "public/boutique/js/b-phone.js"
               },
               {
+                "sourceFileId": "public/boutique/js/b-cart-quote.js",
+                "targetFile": "public/boutique/js/b-identity.js"
+              },
+              {
                 "sourceFileId": "public/boutique/tests/unit/b-tracking.test.js",
                 "targetFile": "public/boutique/js/b-identity.js"
               },
@@ -43371,6 +43405,10 @@
               {
                 "sourceFileId": "routes/orders/status.js",
                 "targetFile": "services/documents/pickup-proof.js"
+              },
+              {
+                "sourceFileId": "routes/orders/create.js",
+                "targetFile": "services/documents/cart-quote-pdf.js"
               },
               {
                 "sourceFileId": "routes/orders/cancel.js",
@@ -44241,6 +44279,18 @@
               {
                 "sourceFileId": "public/boutique/js/b-cart.js",
                 "targetFile": "public/boutique/js/b-scroll-owner.js"
+              },
+              {
+                "sourceFileId": "public/boutique/js/b-cart-quote.js",
+                "targetFile": "public/boutique/js/b-store.js"
+              },
+              {
+                "sourceFileId": "public/boutique/js/b-cart-quote.js",
+                "targetFile": "public/boutique/js/b-bus.js"
+              },
+              {
+                "sourceFileId": "public/boutique/js/b-cart-quote.js",
+                "targetFile": "public/boutique/js/b-utils.js"
               },
               {
                 "sourceFileId": "public/boutique/js/b-mini-cart.js",
@@ -45935,6 +45985,10 @@
           {
             "channel": "static-code",
             "evidence": [
+              {
+                "sourceFileId": "public/boutique/js/main.js",
+                "targetFile": "public/boutique/js/b-cart-quote.js"
+              },
               {
                 "sourceFileId": "public/boutique/js/boutique.js",
                 "targetFile": "public/boutique/js/b-cart-core.js"
@@ -49196,10 +49250,10 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2306
+        "filesObserved": 2308
       },
       "boutique": {
-        "filesObserved": 214,
+        "filesObserved": 216,
         "nonCanonicalManifestFiles": 15
       },
       "dash": {

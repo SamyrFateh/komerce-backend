@@ -38,9 +38,17 @@ function unitMatches(unit, options) {
   return Object.entries(options).every(([key, value]) => unit.option_values[key] === value);
 }
 
-function optionStateFor(detail, priorOptions, axisKey, value) {
+/**
+ * Les axes sont indépendants de l'ordre de présentation.
+ * Pour une valeur candidate, on conserve les choix des AUTRES axes,
+ * même s'ils apparaissent après cet axe dans option_axes.
+ */
+function optionStateFor(detail, selectedOptions, axisKey, value) {
+  const otherOptions = Object.fromEntries(
+    Object.entries(selectedOptions).filter(([key]) => key !== axisKey)
+  );
   const candidates = detail.sellable_units.filter((unit) =>
-    unit.option_values[axisKey] === value && unitMatches(unit, priorOptions)
+    unit.option_values[axisKey] === value && unitMatches(unit, otherOptions)
   );
 
   if (candidates.length === 0) return OPTION_STATE.INCOMPATIBLE;
@@ -50,19 +58,12 @@ function optionStateFor(detail, priorOptions, axisKey, value) {
 
 function buildOptionStates(detail, selectedOptions) {
   const states = {};
-  const priorOptions = {};
-
   for (const axis of detail.option_axes) {
     states[axis.key] = axis.values.map((option) => ({
       value: option.value,
-      state: optionStateFor(detail, priorOptions, axis.key, option.value),
+      state: optionStateFor(detail, selectedOptions, axis.key, option.value),
     }));
-
-    if (Object.prototype.hasOwnProperty.call(selectedOptions, axis.key)) {
-      priorOptions[axis.key] = selectedOptions[axis.key];
-    }
   }
-
   return states;
 }
 
@@ -124,9 +125,8 @@ function deriveLegacyState(detail) {
 }
 
 function unavailableMessage(detail, state, axisKey, value, optionState) {
-  const axisIndex = detail.option_axes.findIndex((axis) => axis.key === axisKey);
   const contextValues = detail.option_axes
-    .slice(0, axisIndex)
+    .filter((axis) => axis.key !== axisKey)
     .map((axis) => state.selected_options[axis.key])
     .filter(Boolean);
   const context = contextValues.length > 0 ? ` pour ${contextValues.join(' / ')}` : '';
@@ -136,9 +136,25 @@ function unavailableMessage(detail, state, axisKey, value, optionState) {
   return `${value} indisponible${context} — ${reason}`;
 }
 
+/**
+ * À l'ouverture, seules les valeurs univoques réellement achetables peuvent
+ * être présélectionnées. L'ordre des axes ne change pas cette règle :
+ * - une couleur vendable unique est préremplie, pas une taille parmi plusieurs ;
+ * - une taille vendable unique est préremplie, pas une couleur parmi plusieurs ;
+ * - une seule combinaison vendable résout immédiatement son SKU.
+ * Aucun choix fondé sur le premier SKU, le titre ou la photo du produit.
+ */
 export function createModalSelection(detail) {
   if (!detail || detail.inventory_model !== 'SKU') return deriveLegacyState(detail);
-  return deriveSkuState(detail, {});
+  const availableUnits = detail.sellable_units.filter((unit) => unit.stock_status === 'AVAILABLE');
+  const selectedOptions = {};
+  for (const axis of detail.option_axes) {
+    const availableValues = axis.values.filter((option) =>
+      availableUnits.some((unit) => unit.option_values[axis.key] === option.value)
+    );
+    if (availableValues.length === 1) selectedOptions[axis.key] = availableValues[0].value;
+  }
+  return deriveSkuState(detail, selectedOptions);
 }
 
 export function selectModalOption(detail, state, axisKey, value) {
@@ -161,13 +177,13 @@ export function selectModalOption(detail, state, axisKey, value) {
     };
   }
 
-  const selectedOptions = {};
-  detail.option_axes.forEach((axis, index) => {
-    if (index < axisIndex && Object.prototype.hasOwnProperty.call(state.selected_options, axis.key)) {
-      selectedOptions[axis.key] = state.selected_options[axis.key];
-    }
-    if (index === axisIndex) selectedOptions[axis.key] = value;
-  });
-
+  // Ne jamais effacer une taille choisie lors d'un clic sur la couleur,
+  // ni l'inverse. Une combinaison incompatible est refusée plus haut.
+  // Canoniser l'ordre des clés par option_axes pour que variant_combo ait
+  // la même signature JSON quel que soit l'ordre réel des clics.
+  const values = { ...state.selected_options, [axisKey]: value };
+  const selectedOptions = Object.fromEntries(detail.option_axes
+    .filter((axis) => Object.prototype.hasOwnProperty.call(values, axis.key))
+    .map((axis) => [axis.key, values[axis.key]]));
   return deriveSkuState(detail, selectedOptions);
 }

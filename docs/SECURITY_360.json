@@ -2,8 +2,8 @@
   "generatedAt": "2026-11-12T11:24:04.681Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 826,
-    "protected": 768,
+    "total": 827,
+    "protected": 769,
     "public": 58,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -4560,6 +4560,11 @@
         "agent_hub",
         "agent_relais"
       ]
+    },
+    {
+      "key": "POST /api/orders/quote-pdf",
+      "level": "PROTECTED",
+      "roles": []
     },
     {
       "key": "POST /api/orders/preview",

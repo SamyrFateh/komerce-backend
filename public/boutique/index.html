@@ -41,8 +41,8 @@
 <script src="/boutique/js/anti-fouc.js"></script>
 <link rel="stylesheet" href="/boutique/css/dist/base.css?v=266">
 <link rel="stylesheet" href="/boutique/css/dist/critical-home.css?v=5">
-<link id="k-components-preload" rel="preload" href="/boutique/css/dist/components.css?v=647" as="style">
-<noscript><link rel="stylesheet" href="/boutique/css/dist/components.css?v=647"></noscript>
+<link id="k-components-preload" rel="preload" href="/boutique/css/dist/components.css?v=648" as="style">
+<noscript><link rel="stylesheet" href="/boutique/css/dist/components.css?v=648"></noscript>
 <script src="/boutique/js/preload-css-swap.js"></script>
 <link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=155">
 <!-- event.css RETIRÉ (2026-07) : ce bundle ne contenait QUE tokens.css, déjà
@@ -257,6 +257,7 @@
           </span>
           <strong id="k-sc-total" class="k-sc-subtotal-amount"></strong>
         </div>
+        <button id="k-sc-quote" class="k-quote-trigger k-sc-btn-quote" type="button">Fais-moi un devis</button>
         <button id="k-sc-checkout" class="k-sc-btn-checkout" type="button">
           Commander (<span id="k-sc-count-inline">0</span>)
         </button>
@@ -433,6 +434,7 @@
     </div>
     <div id="k-cart-footer-btns" class="k-cart-footer-btns">
       <!-- Commander pierre claire — CTA principal, pleine largeur -->
+      <button id="k-cart-quote" class="k-quote-trigger kcf-btn" type="button">Fais-moi un devis</button>
       <button id="k-cart-checkout" class="kcf-btn kcf-primary" type="button">Commander</button>
       <!-- Actions secondaires : 2 colonnes compactes -->
       <div class="k-cart-footer-actions">
@@ -587,7 +589,7 @@
 <!-- <script src="/boutique/js/mock-data.js"></script> -->
 <script defer src="/boutique/js/komerce-api.js?v=340"></script>
 <!-- Phase 2 Option C : main.js orchestre tous les modules ES -->
-<script type="module" src="/boutique/js/main.js?v=359"></script>
+<script type="module" src="/boutique/js/main.js?v=360"></script>
 
   <!-- Contract DOM: required by b-store.js initDom(); kept hidden unless cart UI enables it -->
   <a id="k-cart-whatsapp"

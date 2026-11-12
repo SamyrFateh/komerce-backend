@@ -721,6 +721,14 @@
           "channels": [
             "static-code"
           ]
+        },
+        {
+          "provider": "purchasing",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code",
+            "data-read"
+          ]
         }
       ],
       "consumedBy": [
@@ -749,7 +757,8 @@
           "consumer": "catalog",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
@@ -10466,6 +10475,7 @@
       "perimeter": {
         "in": [
           "generation PDF privée de facture, preuve de retrait, facture douane, reçu wallet et reçu remboursement",
+          "rendu PDF éphémère du devis estimatif panier (sans officialisation ni stockage dans transaction_documents)",
           "liste et téléchargement client authentifiés des factures et remboursements dans Mon Komerce et la commande concernée"
         ],
         "out": [
@@ -10545,8 +10555,13 @@
             ]
           },
           "services": {
-            "count": 7,
+            "count": 8,
             "files": [
+              {
+                "declared": "services/documents/cart-quote-pdf.js",
+                "resolvedPath": "services/documents/cart-quote-pdf.js",
+                "status": "resolved-on-disk-no-header"
+              },
               {
                 "declared": "services/documents/customs-invoice.js",
                 "resolvedPath": "services/documents/customs-invoice.js",
@@ -10585,7 +10600,7 @@
             ]
           },
           "tests": {
-            "count": 16,
+            "count": 17,
             "files": [
               {
                 "declared": "tests/e2e-api/invoices-finance-config.kmf-numeric.e2e.test.js",
@@ -10595,6 +10610,11 @@
               {
                 "declared": "tests/integration/admin-documents-contract.test.js",
                 "resolvedPath": "tests/integration/admin-documents-contract.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/cart-quote-pdf.test.js",
+                "resolvedPath": "tests/unit/cart-quote-pdf.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -10700,7 +10720,7 @@
             ]
           }
         },
-        "totalFiles": 38,
+        "totalFiles": 40,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -25315,7 +25335,7 @@
         "totalFiles": 100,
         "boutiqueManifest": "orders-client",
         "boutiqueFiles": {
-          "count": 17,
+          "count": 19,
           "files": [
             {
               "declared": "../css/cart.css",
@@ -25341,6 +25361,13 @@
             {
               "declared": "../js/b-cart-pill.js",
               "resolvedPath": "public/boutique/js/b-cart-pill.js",
+              "category": "boutique",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../js/b-cart-quote.js",
+              "resolvedPath": "public/boutique/js/b-cart-quote.js",
               "category": "boutique",
               "exists": true,
               "status": "resolved-on-disk"
@@ -25390,6 +25417,13 @@
             {
               "declared": "../tests/unit/b-cart-core.test.js",
               "resolvedPath": "public/boutique/tests/unit/b-cart-core.test.js",
+              "category": "tests",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../tests/unit/b-cart-quote.test.js",
+              "resolvedPath": "public/boutique/tests/unit/b-cart-quote.test.js",
               "category": "tests",
               "exists": true,
               "status": "resolved-on-disk"
@@ -30520,8 +30554,7 @@
           "consumer": "catalog",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code",
-            "data-read"
+            "static-code"
           ]
         },
         {
@@ -33981,14 +34014,6 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
-          ]
-        },
-        {
-          "provider": "purchasing",
-          "disposition": "DECLARED_AND_OBSERVED",
-          "channels": [
-            "static-code",
-            "data-read"
           ]
         }
       ],
