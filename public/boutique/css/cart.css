@@ -2182,7 +2182,7 @@ body.cart-open .k-wa-fab {
 #k-cart-quote:disabled,
 #k-sc-quote:disabled { opacity: .48; cursor: not-allowed; }
 #k-cart-quote.u-hidden,
-#k-sc-quote.u-hidden { display: none !important; }
+#k-sc-quote.u-hidden { display: none; }
 
 body.k-quote-open { overflow: hidden; }
 .k-quote-dialog {
