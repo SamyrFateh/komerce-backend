@@ -90,6 +90,10 @@ const log = require('../utils/logger').child({ module: 'pickup-collection-servic
 // ══════════════════════════════════════════════════════════════════════════════
 // Retourne { status, body }.
 
+// Seuil partagé par verifyPickupCode et collectByPickupCode (mauvais code ciblé).
+const PICKUP_MAX_ATTEMPTS = 3;
+const PICKUP_BLOCK_MS = 15 * 60 * 1000;
+
 async function verifyPickupCode({ orderId, code, agentId }) {
   if (!code) {
     return { status: 400, body: { error: 'Code requis' } };
@@ -140,7 +144,7 @@ async function verifyPickupCode({ orderId, code, agentId }) {
 
   if (!matched) {
     const attempts  = (order.pickup_secret_attempts || 0) + 1;
-    const blockUntil = attempts >= 3 ? new Date(now.getTime() + 15 * 60 * 1000) : null;
+    const blockUntil = attempts >= PICKUP_MAX_ATTEMPTS ? new Date(now.getTime() + PICKUP_BLOCK_MS) : null;
 
     await setPickupAttemptState(db, {
       orderId,
@@ -153,7 +157,7 @@ async function verifyPickupCode({ orderId, code, agentId }) {
     return { status: 401, body: {
       error: 'Code incorrect',
       attempts,
-      remaining:     Math.max(0, 3 - attempts),
+      remaining:     Math.max(0, PICKUP_MAX_ATTEMPTS - attempts),
       blocked_until: blockUntil,
     }};
   }
@@ -335,30 +339,40 @@ async function collectByPickupCode({
       return { status: 404, body: { error: 'Code de retrait introuvable ou déjà utilisé' } };
     }
 
-    if (targeted) {
-      const matchesTarget = Boolean(
-        order.pickup_secret_hash
-        && hashCode(normalized, order.pickup_secret_salt) === order.pickup_secret_hash
-      );
-      if (!matchesTarget) {
-        await _logSecurityAlert(client, {
-          type:        'pickup_collect_invalid_code',
-          entityId:    order.id,
-          title:       `Code invalide pour retrait ciblé ${order.reference}`,
-          description: `agent_id=${agentId} role=${role} ip=${ip || 'inconnue'} user_agent=${userAgent || 'inconnu'}`,
-        });
-        return { status: 401, body: { error: 'Code de retrait incorrect' } };
-      }
-    }
-
     const now = new Date();
 
+    // Blocage d'abord : une commande verrouillée refuse même le bon code jusqu'à l'échéance.
     if (order.pickup_secret_blocked_until && new Date(order.pickup_secret_blocked_until) > now) {
       const retryAfter = Math.ceil((new Date(order.pickup_secret_blocked_until) - now) / 1000 / 60);
       return { status: 429, body: {
         error: `Trop de tentatives. Réessayez dans ${retryAfter} min.`,
         blocked_until: order.pickup_secret_blocked_until,
       }};
+    }
+
+    if (targeted) {
+      const matchesTarget = Boolean(
+        order.pickup_secret_hash
+        && hashCode(normalized, order.pickup_secret_salt) === order.pickup_secret_hash
+      );
+      if (!matchesTarget) {
+        // Même transaction FOR UPDATE : le compteur persiste avec le refus (retour normal = COMMIT).
+        const attempts = (order.pickup_secret_attempts || 0) + 1;
+        const blockedUntil = attempts >= PICKUP_MAX_ATTEMPTS ? new Date(now.getTime() + PICKUP_BLOCK_MS) : null;
+        await setPickupAttemptState(client, { orderId: order.id, attempts, blockedUntil });
+        await _logSecurityAlert(client, {
+          type:        'pickup_collect_invalid_code',
+          entityId:    order.id,
+          title:       `Code invalide pour retrait ciblé ${order.reference}`,
+          description: `agent_id=${agentId} role=${role} ip=${ip || 'inconnue'} user_agent=${userAgent || 'inconnu'}`,
+        });
+        return { status: 401, body: {
+          error: 'Code de retrait incorrect',
+          attempts,
+          remaining: Math.max(0, PICKUP_MAX_ATTEMPTS - attempts),
+          blocked_until: blockedUntil,
+        }};
+      }
     }
 
     if (order.pickup_secret_expires_at && new Date(order.pickup_secret_expires_at) < now) {
@@ -387,6 +401,10 @@ async function collectByPickupCode({
         orderId: order.id,
         collectedByName: String(collectedByName || '').trim() || null,
       });
+    }
+
+    if ((order.pickup_secret_attempts || 0) > 0 || order.pickup_secret_blocked_until) {
+      await setPickupAttemptState(client, { orderId: order.id, attempts: 0, blockedUntil: null });
     }
 
     log.info(`[PICKUP-SECRET] 📦 Retrait aveugle confirmé pour ${order.reference} par agent=${agentId}`);
