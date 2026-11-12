@@ -24,6 +24,7 @@ const users = require('../../../services/user-mutation-service');
 const operators = require('../../../services/market-operator-provisioning');
 const relais = require('../../../services/relais-mutation-service');
 const delegation = require('../../../services/market-delegation-service');
+const projector = require('../../../services/market-scope-projector');
 const { markE2eTestAccount, ensureRelayAgentMembership } = require('../staging-e2e-provision');
 
 const MARKETS = ['CM', 'CG'];
@@ -75,7 +76,18 @@ async function main() {
         if (!email || !password) throw new Error(`CREDS_MISSING ${code} ${r.slug}`);
         const res = await ensureUser(client, { email, role: r.role, password, name: `CLAUDE-PAR ${r.slug} ${code}`, currency: market.currency });
         const a = { email, role: r.role, user: res.user, marker: await markE2eTestAccount(client, { userId: res.id, actorId: admin.id }) };
-        if (r.scope) {
+        if (r.scope === 'manager') {
+          // Même voie que ensureMarketOperatorLead (staging-e2e-provision) : capacités manager bornées par le plafond du
+          // marché (limites finies obligatoires), SANS devenir responsable d'exploitation.
+          const { assignment_id: assignmentId } = await delegation.resolveActiveAssignmentByMarketCode(client, code);
+          const capabilities = await operators.targetCapabilitiesForScope(client, { assignmentId, scope: 'manager' });
+          const { rows: limited } = await client.query(
+            'SELECT capability, limit_amount FROM assignment_capability_ceiling WHERE assignment_id = $1::uuid AND revoked_at IS NULL AND limit_amount IS NOT NULL', [assignmentId]);
+          const capabilityLimits = Object.fromEntries(limited.filter((l) => capabilities.includes(l.capability)).map((l) => [l.capability, Number(l.limit_amount)]));
+          await delegation.addMembership(client, { assignmentId, userId: res.id, actorUserId: admin.id, capabilities, capabilityLimits, actorIsCentral: true });
+          await projector.projectAssignment(client, assignmentId);
+          a.scope = { role: 'manager', capabilities: capabilities.length, operating_lead: 'not_assigned' };
+        } else if (r.scope) {
           const g = await operators.grantOperatorScope(client, { userId: res.id, marketCode: code, scopeRole: r.scope, grantedBy: admin.id });
           a.scope = { role: r.scope, status: g.status };
         }
