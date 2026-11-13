@@ -121,6 +121,19 @@ Variations à jouer quand elles s'appliquent : deux variantes du même produit e
 | L-A8 | PDF interne du bon fournisseur | P1 | O-DOC `purchase_order_pdf` |
 | L-A3 | Alignement WhatsApp | Décision séparée | O-NOTIF/DRIFT_DOCTRINE |
 
+### Double exécution indépendante (décision du propriétaire, 13/11)
+| | Campagne GPT | Campagne Opus |
+|---|---|---|
+| Matrice | 46 scénarios | les mêmes 46 |
+| Marchés | KM, CM, CG | KM, CM, CG |
+| Multi-sourcing | CJ, AliExpress, Hub central | identique |
+| Parcours | client → achat → Hub → transitaire → relais → client → SAV | identique |
+| Validation | Chromium + HTTP + PostgreSQL | identique |
+| Données | cohorte GPT-G6 | cohorte CLAUDE-PAR |
+| Résultats | rapport indépendant | rapport indépendant |
+
+Les deux campagnes utilisent la même version applicative (SHA identique, noté par run), les mêmes règles et les mêmes assertions. Les commandes, produits, comptes et preuves sont distincts. La comparaison se fait ligne par ligne, par ID et par marché : **un PASS chez l'un et un FAIL ou BLOCKED chez l'autre est une ANOMALIE à investiguer, jamais un PASS global**.
+
 ### Prérequis catalogue et critère multi-sourcing (décision du propriétaire, 13/11)
 - Catalogue CM et CG peuplé **par le vrai parcours de sourcing**, sans insertion directe, avec de **vrais produits fournisseurs** et **quelques produits manuels** via le Fournisseur central Hub. Les objets de recette portent le marqueur CLAUDE-PAR.
 - **Le multi-sourcing est un critère de test obligatoire** de chaque E2E import (M01, M03, M04, M05) : au moins 3 sources distinctes dans la même commande, PO mono-marché par fournisseur, consolidation Hub. C01 et C02 seuls ne suffisent pas à certifier.

@@ -858,5 +858,11 @@
     "rule": "Catalogue CM et CG peuplé par le vrai parcours de sourcing (pas d'insertion directe) avec de vrais produits fournisseurs, plus des produits manuels via le Fournisseur central Hub ; marqueur CLAUDE-PAR sur les objets de recette",
     "multi_sourcing": "Critère de test obligatoire de chaque E2E M01/M03/M04/M05 : au moins 3 sources distinctes (fournisseurs réels distincts et/ou Fournisseur central Hub) dans la même commande, PO mono-marché par fournisseur, consolidation Hub",
     "per_market_minimum": "KM, CM, CG : >= 4 produits vendables (prix LOCAL_ACTIVE + exposition ENABLED) répartis chez >= 3 sources dont >= 1 produit manuel Fournisseur central ; stock local vendable dans le relais CLAUDE-PAR du marché pour M02/M03"
+  },
+  "dual_execution": {
+    "rule": "Deux campagnes complètes et indépendantes (GPT-G6, CLAUDE-PAR) jouent les 46 scénarios sur KM, CM et CG, avec la même version applicative (SHA identique noté par run), les mêmes règles et les mêmes assertions, mais des commandes, produits, comptes et preuves distincts",
+    "scope": "Multi-sourcing CJ + AliExpress + Fournisseur central Hub ; parcours client -> achat -> Hub -> transitaire -> relais -> client -> SAV ; preuves Chromium + HTTP + PostgreSQL",
+    "comparison": "Comparaison ligne par ligne par ID x marché. PASS chez l'un et FAIL/BLOCKED chez l'autre = ANOMALIE à investiguer, jamais un PASS global. Seul un PASS des deux campagnes sur le même SHA compte comme PASS",
+    "reports": "Un rapport indépendant par campagne ; le comparatif est produit après les deux rapports"
   }
 }
