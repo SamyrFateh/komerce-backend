@@ -81,3 +81,16 @@ Ordre proposé **H2 → H1 → H3 → H4**, puis nouveau verdict sur chaque têt
 ## Contenu de ce dossier
 - `briefs/` : tous les briefs Opus, Sonnet et Fable, et les plans, dont `BRIEF_3900_PASSE2.md`, `BRIEF_CORRECTIONS_3900_R2.md` et `BRIEF_CORRECTIONS_HUB_FABLE.md`.
 - `scripts/` : helpers Chromium (`parcours-km`, `catalogue-ms`, `par3900`), boucles de fusion, consigne d’alignement GPT (`scripts/ALIGNEMENT_GPT_E2E.md`). Aucun secret ; les scripts lisent les identifiants depuis le scratchpad local.
+
+
+## 13/11 — priorité corrections, PR d'intégration H1–H4 #4004
+
+Sur décision propriétaire, **corrections avant certification #3900 ou lancement G6**. GPT a créé la branche `fix/hub-H1-H4-integration-20261113` depuis `main` `46f540bc`, commit `1687f8ecfc073842bfded99f1076c269870edab8`, et la [PR **draft #4004**](https://github.com/SamyrFateh/komerce-backend/pull/4004).
+
+**Composition du code (49 chemins)** : H2 `distributeOrderLocked` sérialisé + H1 `closed_short`/quantité reçue ; H1 `openSupplierShortage` + H3 refus `purchase_line_received_quantity` + H4 PO API prouvée dans le même `purchasing-engagement-service.js`. Les fixtures PG H1+H3 et les tests unitaires des trois lots ont été fusionnés, les deux branches Hub gardent la file directrice globale depuis `/admin/hub`.
+
+**Contrôles** : première exécution [43483473404](https://github.com/SamyrFateh/komerce-backend/actions/runs/43483473404) a échoué **uniquement à l'entrée gouvernance** (sections Pourquoi/Tests absentes de la description PR) ; body corrigé sans changer le commit. Nouveau run [43483644722](https://github.com/SamyrFateh/komerce-backend/actions/runs/43483644722) : détection scope, gouvernance, migrations, backend et dashboard **verts** au dernier contrôle ; préflight complet et PG16/intégration **en cours**. Ne pas affirmer Required verdict vert avant son retour.
+
+**Dette de projection** : `docs/komerce-arch-header-graph.json` reprend provisoirement le blob H1 individuellement validé, non la fusion exacte H1+H4 ; régénérer ou réconcilier ce gros graphe sur l'HEAD intégré si le préflight l'exige. Les autres projections de graphes et contrats ont été consolidées.
+
+**HOLD métier** : aucune fusion `main`, aucun staging/E7 modifié, aucun writer ou campagne G6 déclenché. #3900 reste un chantier de preuve distinct ; avant déploiement coordonner avec Opus un staging libre. Les oracles O-HUB et 46 scénarios demeurent dans #3944.
