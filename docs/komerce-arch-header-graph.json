@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 2056,
-    "edges": 10184,
+    "edges": 10185,
     "dbTables": 238,
     "doctrines": 800,
     "impactAreas": 207,
@@ -24848,7 +24848,8 @@
         "inventory_items",
         "order_incidents",
         "hub_box_bags",
-        "e2e_test_accounts"
+        "e2e_test_accounts",
+        "cash_collections"
       ],
       "dbWrite": [
         "order_comments"
@@ -84693,6 +84694,12 @@
     },
     {
       "from": "services/operations-workspace.js",
+      "to": "db:cash_collections",
+      "type": "db-read",
+      "label": "cash_collections"
+    },
+    {
+      "from": "services/operations-workspace.js",
       "to": "db:order_comments",
       "type": "db-write",
       "label": "order_comments"
@@ -132142,7 +132149,8 @@
         "inventory_items",
         "order_incidents",
         "hub_box_bags",
-        "e2e_test_accounts"
+        "e2e_test_accounts",
+        "cash_collections"
       ],
       "dbWrite": [
         "order_comments"
@@ -132207,6 +132215,7 @@
         "market-authorization"
       ],
       "mustCheck": [
+        "db:cash_collections",
         "db:e2e_test_accounts",
         "db:hub_box_bags",
         "db:incidents",
