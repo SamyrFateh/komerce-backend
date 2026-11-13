@@ -921,8 +921,11 @@ async function getDirectorTodo({ viewer = null, now = new Date() } = {}, q = db)
   for (const market of markets) {
     const d = await getDossier({ marketId: market.id, viewer, now }, q);
     for (const t of d.cockpit.todo) {
-      // Un colis sans marché connu apparaît dans chaque dossier : on ne le compte qu'une fois.
-      if (!tasks.has(t.id)) tasks.set(t.id, { ...t, market: { id: market.id, code: market.code, name: market.name } });
+      // Une action "BOX_BAGS" (ou autre ID local) peut exister dans plusieurs marchés.
+      // Le dossier directeur ne doit pas effacer les tâches du deuxième marché.
+      // Seul le colis fournisseur sans rattachement est réellement global et dédoublonné par unité.
+      const key = t.kind === 'RECONCILE_PARCEL' ? t.id : `${market.id}:${t.id}`;
+      if (!tasks.has(key)) tasks.set(key, { ...t, market: { id: market.id, code: market.code, name: market.name } });
     }
   }
   const list = [...tasks.values()].sort((a, b) => (b.overdue - a.overdue) || ((b.age_hours ?? -1) - (a.age_hours ?? -1)) || a.priority - b.priority);
