@@ -82,3 +82,32 @@ test('répond 404 sans révéler un document appartenant à un autre compte', as
   expect(mockEnsureInvoicePdf).not.toHaveBeenCalled();
   expect(mockEnsureDocumentPdf).not.toHaveBeenCalled();
 });
+
+test('la liste inclut les preuves de retrait ancrées sur pickup_handoff, filtrées par propriétaire', async () => {
+  mockQuery.mockResolvedValueOnce({ rows: [{ id: ID, document_type: 'pickup_proof', reference: 'KOM-PRV-1', status: 'available' }] });
+  const res = await request(app()).get('/api/auth/me/documents');
+  expect(res.status).toBe(200);
+  const sql = mockQuery.mock.calls[0][0];
+  expect(sql).toContain("td.document_type = 'pickup_proof' AND td.subject_type = 'pickup_handoff'");
+  expect(sql).toContain('COALESCE(td.owner_user_id, o.user_id) = $1');
+  expect(mockQuery.mock.calls[0][1][0]).toBe('user-1');
+  expect(res.body.documents[0]).toMatchObject({ document_type: 'pickup_proof', download_url: `/api/auth/me/documents/${ID}/download` });
+});
+
+test('le propriétaire télécharge la preuve de retrait (même contrôle propriétaire)', async () => {
+  mockQuery.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [{ id: ID, document_type: 'pickup_proof' }] });
+  mockEnsureDocumentPdf.mockResolvedValueOnce({ pdf_content: Buffer.from('%PDF'), pdf_filename: 'preuve.pdf' });
+  const res = await request(app()).get(`/api/auth/me/documents/${ID}/download`);
+  expect(res.status).toBe(200);
+  const [sql, params] = mockQuery.mock.calls[1];
+  expect(sql).toContain("td.document_type = 'pickup_proof' AND td.subject_type = 'pickup_handoff'");
+  expect(sql).toContain('COALESCE(td.owner_user_id, o.user_id) = $2');
+  expect(params).toEqual([ID, 'user-1']);
+});
+
+test('preuve de retrait d\'un autre client : refus (non-divulgation, même réponse que les autres documents)', async () => {
+  mockQuery.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [] });
+  const res = await request(app()).get(`/api/auth/me/documents/${ID}/download`);
+  expect([403, 404]).toContain(res.status);
+  expect(mockEnsureDocumentPdf).not.toHaveBeenCalled();
+});

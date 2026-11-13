@@ -116,6 +116,7 @@ export function renderOrdersHistory(orders, container) {
 
 function essentialDocumentLabel(documentRow, order) {
   if (documentRow.document_type === 'invoice') return 'Facture';
+  if (documentRow.document_type === 'pickup_proof') return 'Preuve de retrait';
   if (documentRow.document_type !== 'refund_receipt') return null;
   const refunded = Number(documentRow.amount_kmf || 0);
   const total = Number(order.total_amount ?? order.total_kmf ?? 0);
