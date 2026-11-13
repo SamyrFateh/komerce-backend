@@ -207,6 +207,28 @@ describe('orders/cancel — calcul remboursement', () => {
     expect(res.body.message).toMatch(/aucun prélèvement/);
   });
 
+  it('FA-02 : wallet partiel remboursé séparément du net capturé, sans doubler la valeur', async () => {
+    const mixed = orderRow({
+      payment_status: 'paid', total_kmf: 6000, total_eur: 12.20,
+      wallet_applied_kmf: 4000,
+    });
+    const client = makeClient([{ rows: [mixed] }]);
+    db.getClient.mockResolvedValue(client);
+    processRefund.mockResolvedValue({ method: 'stripe', amountEur: 12.20, amountKmf: 6000 });
+    transitionOrderStatus.mockResolvedValue({
+      success: true,
+      cancelEffects: { walletReversalAmount: 4000, walletReversalTxId: 'reverse-mixed-1' },
+    });
+
+    const res = await request(app).post('/api/orders/o1/cancel').send({});
+    expect(res.status).toBe(200);
+    expect(processRefund).toHaveBeenCalledWith(
+      client, mixed, 6000, 12.20, 'full', 'Annulation client', 'user-1'
+    );
+    expect(res.body.refund.wallet_reversal.amount_kmf).toBe(4000);
+    expectTransactionCommitted(client);
+  });
+
   it('FA-14 : annule une commande 100% wallet sans faux remboursement PSP', async () => {
     const paidWithWallet = orderRow({
       payment_status: 'paid', total_kmf: 0, total_eur: 0, wallet_applied_kmf: 10000,
