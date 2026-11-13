@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-11-13T00:32:27.607Z",
+  "generatedAt": "2026-11-13T09:37:15.565Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 836,
-    "protected": 777,
+    "total": 838,
+    "protected": 779,
     "public": 59,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -2488,6 +2488,11 @@
       "roles": []
     },
     {
+      "key": "GET /api/admin/workspaces/pricing/market/{marketCode}/economic-p0-audit",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
       "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/cost-components/{key}/reset",
       "level": "PROTECTED",
       "roles": []
@@ -4818,6 +4823,11 @@
     },
     {
       "key": "POST /api/pickup/collect/{orderId}",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/pickup/customer-regenerate/{orderId}",
       "level": "PROTECTED",
       "roles": []
     },

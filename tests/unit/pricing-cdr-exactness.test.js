@@ -12,7 +12,7 @@ jest.mock('../../services/fx-engine-rates', () => ({
   withAuthorityRates: async (fc) => fc,
 }));
 
-const { computeCDR } = require('../../services/pricing-cdr');
+const { computeCDR, computeSingleArticleReferenceCDR } = require('../../services/pricing-cdr');
 const { computePrices, computeScenarios } = require('../../services/pricing-output');
 const engine = require('../../services/pricing-engine');
 
@@ -67,6 +67,26 @@ describe('P0-1 · fret unique', () => {
     expect(est.source).toBe('estimate');
     expect(c.warnings.join(' ')).toMatch(/Fret estimé par repli/);
     expect(c.input_quality.fallbacks.map(f => f.field)).toContain('freight');
+  });
+
+  it('un fret au poids exclut le repli au volume sans confondre assurance et fret', () => {
+    const components = COMPONENTS.filter(x => x.key !== 'fret_maritime_eur_m3').concat(
+      mk('fret_aerien_kmf_kg', 'freight', 120, 'kmf_per_kg', 'by_weight')
+    );
+    const c = run(cfg(components));
+    expect(c._meta.freight_source).toBe('component');
+    expect(c.details._allocations.find(a => a.component_key === 'freight_default_estimate')).toBeUndefined();
+    expect(c.details._allocations.find(a => a.component_key === 'fret_aerien_kmf_kg').allocated_cost_kmf).toBe(120);
+  });
+
+  it('un fret EUR au poids exclut également le repli volumétrique', () => {
+    const components = COMPONENTS.filter(x => x.key !== 'fret_maritime_eur_m3').concat(
+      mk('fret_aerien_eur_kg', 'freight', 3, 'eur', 'by_weight')
+    );
+    const c = run(cfg(components));
+    expect(c._meta.freight_source).toBe('component');
+    expect(c.details._allocations.find(a => a.component_key === 'freight_default_estimate')).toBeUndefined();
+    expect(c.details._allocations.find(a => a.component_key === 'fret_aerien_eur_kg').allocated_cost_kmf).toBe(1485);
   });
 
   it('stock local : aucun fret', () => {
@@ -252,5 +272,102 @@ describe('P0-1 · propagation par pricing-engine.recommend', () => {
     expect(res.input_quality.estimated_cost_share_pct).toBeGreaterThan(50);
     expect(res.warnings.join(' ')).toMatch(/Santé « strong »/);
     expect(res.variable_cost_complete_kmf).toBe(res.variable_cost_estimated_kmf);
+  });
+});
+
+
+describe('ME-02 / #3994 — référence économique mono-article, strictement non décisionnelle', () => {
+  const p = { category: 'phones', cost_kmf: 3000, weight_kg: 1 };
+  const sourceComponents = [
+    mk('achat_logistique', 'sourcing', 1300, 'kmf_per_order'),
+    mk('emballage_hub', 'hub', 400, 'kmf_per_parcel'),
+    mk('frais_inspection_douane_kmf', 'customs', 5000, 'kmf_per_shipment'),
+    mk('fret_au_poids', 'freight', 100, 'kmf_per_kg', 'by_weight', { source: 'market_override' }),
+    mk('loyer_mensuel', 'fixed_overhead', 250, 'kmf_per_order'),
+  ];
+
+  it('impute 1/1/1 en référence, sans modifier les moyennes 2,5/4/200 du CDR opérationnel', () => {
+    const config = cfg(sourceComponents);
+    const snapshot = JSON.stringify(config);
+    const ctx = { config, volume_m3: 0.002, market_code: 'KM' };
+    const before = computeCDR(p, ctx);
+    const reference = computeSingleArticleReferenceCDR(p, ctx);
+    const line = (value, key) => value.details._allocations.find(a => a.component_key === key);
+    expect(line(before, 'achat_logistique').allocated_cost_kmf).toBe(520);
+    expect(line(before, 'emballage_hub').allocated_cost_kmf).toBe(100);
+    expect(line(before, 'frais_inspection_douane_kmf').allocated_cost_kmf).toBe(25);
+    expect(line(reference, 'achat_logistique')).toMatchObject({
+      allocated_cost_kmf: 1300, allocation_divisor: 1, allocation_level: 'order',
+    });
+    expect(line(reference, 'emballage_hub')).toMatchObject({
+      allocated_cost_kmf: 400, allocation_divisor: 1, allocation_level: 'parcel',
+    });
+    expect(line(reference, 'frais_inspection_douane_kmf')).toMatchObject({
+      allocated_cost_kmf: 5000, allocation_divisor: 1, allocation_level: 'shipment',
+    });
+    expect(line(reference, 'fret_au_poids').allocated_cost_kmf).toBe(100);
+    expect(reference.variable_cost_estimated_kmf - before.variable_cost_estimated_kmf).toBe(6055);
+    // N3 stays separate from all variable costs and from the SKU floor.
+    expect(line(reference, 'loyer_mensuel').economic_nature).toBe('fixed');
+    expect(reference.variable_cost_estimated_kmf).toBe(
+      Object.entries(reference.details)
+        .filter(([k]) => ['product_cost', 'sourcing', 'hub', 'packaging', 'freight',
+          'customs', 'port_transitaire', 'local_distribution', 'relay', 'payment', 'risks'].includes(k))
+        .reduce((sum, [, value]) => sum + value, 0));
+    expect(reference.single_article_reference).toMatchObject({
+      mode: 'SHADOW_REFERENCE_ONLY', status: 'NON_DECISIONNEL', no_price_activation: true,
+      quantity_assumption: { order: 1, parcel: 1, shipment: 1 },
+      operational_average_divisors: { order: 2.5, parcel: 4, shipment: 200 },
+    });
+    expect(JSON.stringify(config)).toBe(snapshot);
+    expect(computeCDR(p, ctx)).toEqual(before);
+  });
+
+  it('commission relais conforme per_order : le writer et le CDR partagent la même unité', () => {
+    const components = [...sourceComponents,
+      mk('commission_relais_kmf', 'relay', 600, 'kmf_per_order', 'per_order')];
+    const reference = computeSingleArticleReferenceCDR(p, { config: cfg(components), volume_m3: .002 });
+    expect(reference.single_article_reference.blockers).not.toContain('RELAY_COMMISSION_UNIT_NOT_RECONCILED');
+    expect(reference.single_article_reference.relay_units_observed)
+      .toEqual(expect.arrayContaining([expect.objectContaining({
+        key: 'commission_relais_kmf', unit: 'kmf_per_order', allocation_method: 'per_order',
+      })]));
+    // Un tarif source hypothèse/droits de douane inconnus reste NON_DECISIONNEL malgré l'unité correcte.
+    expect(reference.single_article_reference.status).toBe('NON_DECISIONNEL');
+  });
+
+  it('commission relais en unité per_item : blocage contractuel conservateur', () => {
+    const components = [...sourceComponents,
+      mk('commission_relais_kmf', 'relay', 600, 'kmf', 'per_item')];
+    const reference = computeSingleArticleReferenceCDR(p, { config: cfg(components), volume_m3: .002 });
+    expect(reference.single_article_reference.blockers).toContain('RELAY_COMMISSION_UNIT_NOT_RECONCILED');
+    expect(reference.warnings.join(' ')).toMatch(/décision contractuelle/);
+  });
+
+  it('CM/CG : signale la provenance du fret héritée; une surcharge explicite évite le faux blocage corridor', () => {
+    for (const market of ['CM', 'CG']) {
+      const shared = cfg(sourceComponents.map(c => c.key === 'fret_au_poids'
+        ? { ...c, source: 'default' } : c), { market_code: market });
+      const unknown = computeSingleArticleReferenceCDR(p, { config: shared, volume_m3: .002 });
+      expect(unknown.single_article_reference.blockers).toContain('CORRIDOR_COST_PROVENANCE_UNVERIFIED');
+      expect(unknown.single_article_reference.corridor_components_unverified).toContain('fret_au_poids');
+
+      const confirmedScope = cfg(sourceComponents.map(c => ({ ...c,
+        source: ['freight', 'customs', 'port_transitary'].includes(c.category)
+          ? 'market_override' : c.source })), { market_code: market });
+      const scoped = computeSingleArticleReferenceCDR(p, { config: confirmedScope, volume_m3: .002 });
+      expect(scoped.single_article_reference.blockers).not.toContain('CORRIDOR_COST_PROVENANCE_UNVERIFIED');
+      expect(scoped.single_article_reference.mode).toBe('SHADOW_REFERENCE_ONLY');
+    }
+  });
+
+  it('absence de marché et droits non sourcés : ne deviennent jamais un GO de prix', () => {
+    const reference = computeSingleArticleReferenceCDR(p, {
+      config: { ...cfg(sourceComponents), market_code: null }, volume_m3: .002,
+    });
+    expect(reference.single_article_reference.blockers).toContain('MARKET_NOT_RESOLVED');
+    expect(reference.single_article_reference.blockers).toContain('MANDATORY_COST_OR_SCOPE_UNKNOWN');
+    expect(reference.customs_estimate_status).toBe('not_estimated');
+    expect(reference.single_article_reference.status).toBe('NON_DECISIONNEL');
   });
 });

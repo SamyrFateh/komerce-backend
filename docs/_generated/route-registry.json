@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-11-13T00:31:53.938Z",
+  "generatedAt": "2026-11-13T09:26:52.135Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 823,
+  "count": 824,
   "routes": [
     {
       "method": "GET",
@@ -6464,6 +6464,16 @@
       "fullPath": "/api/pickup/collect/:orderId",
       "mountPrefix": "/api/pickup",
       "localPath": "/collect/:orderId",
+      "routeFile": "routes/pickup-secret.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/pickup/customer-regenerate/:orderId",
+      "mountPrefix": "/api/pickup",
+      "localPath": "/customer-regenerate/:orderId",
       "routeFile": "routes/pickup-secret.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"

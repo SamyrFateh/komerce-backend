@@ -169,6 +169,8 @@ for (const [name, viewport] of [['1440', { width: 1440, height: 900 }], ['390', 
       const sent = posts.find(item => item.path.endsWith('/forecast-preview')).body;
       expect(sent.circuit).toBe('import');
       expect(sent.commission_basis).toBe('fixed_unit');
+      expect(sent.candidate_prices_local).toEqual([9000]);
+      expect(sent.candidate_prices_kmf).toBeUndefined();
       expect(sent.scenarios.central.customs_duties).toBe(20);
       expect(sent.scenarios.defavorable.freight).toBe(88552.8);
       expect(sent.market_code).toBeUndefined();

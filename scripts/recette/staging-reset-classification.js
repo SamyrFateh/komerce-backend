@@ -73,7 +73,7 @@ const ENTRIES = [
   R('international_shipments', 'expeditions internationales'), R('international_shipment_charges', 'frais d expedition internationale'),
   R('international_shipment_events', 'evenements expedition internationale'), R('international_n1_reconciliations', 'reconciliation N1 (fait calcule)'),
   R('customs_shipments', 'dossiers douane'), R('customs_shipment_fees', 'frais douane'),
-  R('customs_shipment_financial_audit', 'audit financier douane (fait metier)'), R('customs_shipment_parcel_events', 'evenements colis douane'),
+  R('pickup_collect_failures', 'compteur anti-bruteforce retrait par agent (exploitation, sans FK)'),   R('customs_shipment_financial_audit', 'audit financier douane (fait metier)'), R('customs_shipment_parcel_events', 'evenements colis douane'),
   R('cash_reconciliation', 'rapprochement cash agent'), R('order_cost_entry_events', 'evenements de cout commande'),
   R('wallets', 'portefeuilles clients (reset d environnement, pas une transaction metier)'),
   R('wallet_transactions', 'ledger wallet'), R('wallet_credit_lots', 'lots de credit wallet'), R('wallet_consumptions', 'consommations wallet'),
@@ -97,7 +97,7 @@ customs_shipment_parcels disputes economic_risk_cost_events import_runtime_item_
 hub_box_bags international_shipment_hub_units international_shipment_relay_receipts local_stock local_stock_allocations loyalty_rewards
 market_price_observation_events market_price_observations mobile_money_transactions order_checkout_idempotency order_comments order_incidents
 order_item_cost_imputations order_item_real_cost_allocations order_items order_status_history parcel_events parcel_items
-pickup_print_tokens pickup_reveal_codes price_history pricing_maturity_disposition_events pricing_strategies pricing_strategy_history
+pickup_code_generations pickup_print_tokens pickup_reveal_codes price_history pricing_maturity_disposition_events pricing_strategies pricing_strategy_history
 product_attributes product_content_profile product_content_sections product_market_exposure product_market_price_draft_events
 product_market_price_drafts product_sku_media product_sku_physical_codes product_skus product_suppliers product_variants purchase_lines purchase_order_authorizations manual_purchase_executions purchase_variance_decisions refund_execution_intents order_item_refund_reservations
 scans shared_cart_events shared_cart_saved_access sourcing_candidate_observations sourcing_identity_constraints sourcing_match_proposals
