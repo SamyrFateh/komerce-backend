@@ -124,6 +124,16 @@ router.get('/:id/detail', async (req, res, next) => {
           price_kmf: null,
           unavailable_reason: 'Livraison non tarifée sur ce marché',
         }));
+      } else if (marketCode === 'KM') {
+        // Doctrine commerciale KM : maritime standard inclus dans le prix du
+        // produit, aucun supplément au client. La cotation calculée par le
+        // moteur transport sert aux coûts internes, pas au prix de la fiche.
+        // L'aérien éventuel conserve sa cotation/sa disponibilité propre.
+        detail.delivery_options = detail.delivery_options.map(option =>
+          option.code === 'SEA_STANDARD'
+            ? { ...option, price_kmf: null }
+            : option
+        );
       }
     }
 
