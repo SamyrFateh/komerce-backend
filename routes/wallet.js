@@ -99,7 +99,7 @@ router.post('/apply', async (req, res, next) => {
   const client = await db.getClient();
   try {
     await client.query('BEGIN');
-    const { order_id, amount_kmf } = req.body;
+    const { order_id, amount_kmf, amount } = req.body;
     if (!order_id) {
       await client.query('ROLLBACK');
       return res.status(400).json({ error: 'order_id requis' });
@@ -132,11 +132,13 @@ router.post('/apply', async (req, res, next) => {
       userId:    req.user.id,
       orderId:   order_id,
       amountKmf: amount_kmf,
+      amount,
     });
     await client.query('COMMIT');
 
     res.json({
-      message:          `${result.applied_kmf} KMF appliqués`,
+      message:          `${result.debited ?? result.applied_kmf} ${result.currency || 'KMF'} appliqués`,
+      ...(result.currency && result.currency !== 'KMF' ? { currency: result.currency, debited: result.debited } : {}),
       applied_kmf:      result.applied_kmf,
       remaining_to_pay: result.remaining_to_pay,
       transaction:      result.transaction,
@@ -191,7 +193,8 @@ router.post('/remove', async (req, res, next) => {
     await client.query('COMMIT');
 
     res.json({
-      message:      `${result.reversed_kmf} KMF remboursés au wallet`,
+      message:      `${result.reversed_kmf} ${result.currency || 'KMF'} remboursés au wallet`,
+      ...(result.currency && result.currency !== 'KMF' ? { currency: result.currency } : {}),
       reversed_kmf: result.reversed_kmf,
       transaction:  result.transaction,
     });

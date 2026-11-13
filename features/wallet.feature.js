@@ -110,6 +110,7 @@ module.exports = {
       'POST /api/wallet/admin/reverse-lot',
     ],
     consumes: [
+      "market (2026-11-13 #3927 — conversion KMF↔devise du marché via la seule autorité fx-authority/currency_parities ; preuve: services/wallet-service.js -> services/fx-authority.js)",
       'orders (persistence via order-mutation-service ? LOT11)',
       'platform-ops (monitoring/exploitation transverse observé dans le code)',
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',

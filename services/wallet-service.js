@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db.js, services/documents/wallet-receipt.js, services/order-mutation-service.js
+ * @depends       db.js, services/documents/wallet-receipt.js, services/order-mutation-service.js, services/fx-authority.js (devise marché non-KMF)
  * @used-by       routes/wallet.js, routes/payments.js, services/order-payment-confirmation.js
  * @db-read       markets, orders, users, wallet_consumptions, wallet_credit_lots, wallet_transactions, wallets
  * @db-write      wallet_consumptions, wallet_credit_lots, wallet_transactions, wallets
@@ -373,7 +373,44 @@ async function resolveOrderWalletCurrency(client, order) {
   return normalizeWalletCurrency(m && m.currency);
 }
 
-async function applyToOrder(client, { userId, orderId, amountKmf }) {
+/**
+ * Plan de dépense wallet pour un reste à payer exprimé en KMF (colonnes techniques *_kmf).
+ * KMF : inchangé. Autre devise X : débit dans le wallet X du même utilisateur, arrondi à l'unité de X ;
+ * équivalent KMF via fx-authority (seule autorité, currency_parities). Parité absente : refus 409.
+ * Jamais de dépassement du reste à payer ni du solde ; aucune conversion entre deux soldes.
+ */
+async function planWalletSpend(client, { userId, currency, remainingKmf, requested = null }) {
+  const ccy = normalizeWalletCurrency(currency);
+  const wallet = await getOrCreateWallet(client, userId, { currency: ccy });
+  const balance = Number(wallet.balance_kmf);
+  const asked = requested == null ? Infinity : Number(requested);
+  if (ccy === DEFAULT_WALLET_CURRENCY) {
+    const spend = Math.min(asked || balance, balance, remainingKmf);
+    return { currency: ccy, debit: spend, equivKmf: spend };
+  }
+  const fx = require('./fx-authority');
+  const unit = fx.MINOR_UNITS[ccy] ?? 0;
+  const f = 10 ** unit;
+  try {
+    const headroom = (await fx.convert({ amount: String(remainingKmf), from: 'KMF', to: ccy, client })).amount;
+    const debitAmt = Math.floor(Math.min(asked || balance, balance, headroom) * f) / f;
+    if (!(debitAmt > 0)) return { currency: ccy, debit: 0, equivKmf: 0 };
+    const equiv = debitAmt >= headroom
+      ? remainingKmf
+      : Math.min((await fx.convert({ amount: String(debitAmt), from: ccy, to: 'KMF', client })).amount, remainingKmf);
+    return { currency: ccy, debit: debitAmt, equivKmf: equiv };
+  } catch (err) {
+    if (err instanceof fx.FxError) {
+      throw Object.assign(
+        new Error(`Wallet ${ccy} non applicable : aucune parité approuvée KMF/${ccy} (${err.message}).`),
+        { statusCode: 409, code: 'WALLET_FX_PARITY_UNAVAILABLE' }
+      );
+    }
+    throw err;
+  }
+}
+
+async function applyToOrder(client, { userId, orderId, amountKmf, amount }) {
   // Verrouiller la commande AVANT toute décision — sérialise les appels
   // concurrents sur le même orderId (ex. double-clic, retry réseau) et
   // garantit que alreadyApplied reflète l'état réellement commité.
@@ -390,27 +427,26 @@ async function applyToOrder(client, { userId, orderId, amountKmf }) {
   const alreadyApplied = Number(order.wallet_applied_kmf || 0);
   const headroom        = Math.max(0, order.total_kmf - alreadyApplied);
 
-  // Un wallet n'est utilisable que sur une commande de sa devise (aucune conversion implicite).
+  // Un wallet n'est utilisable que sur une commande de sa devise (aucune conversion entre soldes).
+  // Marché non-KMF : débit dans la devise du marché, équivalent KMF converti par fx-authority.
   const orderCurrency = await resolveOrderWalletCurrency(client, order);
-  if (orderCurrency !== DEFAULT_WALLET_CURRENCY) {
-    throw Object.assign(
-      new Error(`Wallet non applicable : commande en ${orderCurrency} (seul un solde ${orderCurrency} peut la régler).`),
-      { statusCode: 409, code: 'WALLET_CURRENCY_MISMATCH' }
-    );
-  }
-  const wallet = await getOrCreateWallet(client, userId, { currency: orderCurrency });
-  const max    = Math.min(amountKmf || wallet.balance_kmf, wallet.balance_kmf, headroom);
-  if (max <= 0) throw new Error('Rien à appliquer');
+  const plan = await planWalletSpend(client, {
+    userId, currency: orderCurrency, remainingKmf: headroom,
+    requested: amount != null ? amount : amountKmf,
+  });
+  if (plan.debit <= 0) throw new Error('Rien à appliquer');
 
   const result = await debit(client, {
     userId,
-    amountKmf:      max,
+    amountKmf:      plan.debit,
     currency:       orderCurrency,
     reason:         'checkout',
     referenceId:    orderId,
     idempotencyKey: `checkout_${orderId}`,
     note:           `Appliqué à commande ${order.reference}`,
+    metadata:       orderCurrency === DEFAULT_WALLET_CURRENCY ? undefined : { equivalent_kmf: plan.equivKmf },
   });
+  const max = plan.equivKmf;
 
   if (result.duplicate) {
     // Aucun débit nouveau : ne pas rejouer wallet_applied_kmf ni payment_status
@@ -419,6 +455,7 @@ async function applyToOrder(client, { userId, orderId, amountKmf }) {
       ...result,
       applied_kmf:      alreadyApplied,
       remaining_to_pay: Math.max(0, order.total_kmf - alreadyApplied),
+      currency:         orderCurrency,
     };
   }
 
@@ -449,7 +486,10 @@ async function applyToOrder(client, { userId, orderId, amountKmf }) {
     }
   }
 
-  return { ...result, applied_kmf: newApplied, remaining_to_pay: remainingToPay };
+  return {
+    ...result, applied_kmf: newApplied, remaining_to_pay: remainingToPay,
+    currency: orderCurrency, debited: plan.debit,
+  };
 }
 
 // ── Checkout reversal : retirer wallet d'une commande ───────────────────────
@@ -510,7 +550,7 @@ async function removeFromOrder(client, { orderId }) {
     amountKmf: 0,
   });
 
-  return { transaction: txRes.rows[0], reversed_kmf: totalReversed };
+  return { transaction: txRes.rows[0], reversed_kmf: totalReversed, currency: wRes.rows[0].currency };
 }
 
 // ── Auto-credit depuis annulation ───────────────────────────────────────────
@@ -690,6 +730,7 @@ async function getWalletDetail(userId, currency = DEFAULT_WALLET_CURRENCY) {
 }
 
 module.exports = {
+  planWalletSpend,
   ensureWalletTables,
   getOrCreateWallet,
   credit,
