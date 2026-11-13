@@ -11,6 +11,8 @@ const mockTransition = jest.fn();
 jest.mock('../../services/order-status-machine', () => ({ transitionOrderStatus: (...a) => mockTransition(...a) }));
 const mockScan3 = jest.fn();
 jest.mock('../../services/scan-operations', () => ({ triggerScan3: (...a) => mockScan3(...a) }));
+const mockOpenShortage = jest.fn();
+jest.mock('../../services/supplier-shortage-service', () => ({ openSupplierShortage: (...a) => mockOpenShortage(...a) }));
 const mockDistribute = jest.fn();
 jest.mock('../../services/auto-parcel', () => ({ distributeOrder: (...a) => mockDistribute(...a) }));
 const mockAlert = jest.fn();
@@ -52,6 +54,7 @@ beforeEach(() => {
   mockScan3.mockResolvedValue(undefined);
   mockAlert.mockResolvedValue({});
   mockDistribute.mockResolvedValue({ success: true });
+  mockOpenShortage.mockResolvedValue({ created: true, alert_created: true });
   db.query.mockReset();
 });
 
@@ -273,19 +276,13 @@ describe('H1 — avancement automatique', () => {
     expect(svc.computeCompletion([{ id: 'i1', quantity: 10 }], [line('l1', 'i1', PO, 6, 6)]).complete).toBe(false);
   });
 
-  test('rupture : transition, répartition automatique du reçu, alerte de remboursement (une seule fois)', async () => {
+  test('rupture : transition, répartition du reçu, rattrapage incident + alerte par ligne soldée (idempotent côté service)', async () => {
     useClient({ items: [{ id: 'i1', quantity: 10 }], lines: [line(LINE_SHORT, 'i1', null, 6, 6)], settled: [LINE_SHORT] });
-    db.query.mockResolvedValueOnce({ rows: [] });
+    db.query.mockResolvedValueOnce({ rows: [{ id: LINE_SHORT, missing: 4, settle_reason: 'rupture' }] });
     const verdict = await svc.evaluateOrderProcurementCompletion(ORDER);
     expect(verdict).toMatchObject({ complete: true, transition: 'preparation' });
     expect(mockDistribute).toHaveBeenCalledWith(ORDER);
-    expect(mockAlert).toHaveBeenCalledWith(db, expect.objectContaining({ type: 'supplier_shortage_refund_required', entityId: 'i1', severity: 'high' }));
-
-    mockAlert.mockClear();
-    useClient({ items: [{ id: 'i1', quantity: 10 }], lines: [line(LINE_SHORT, 'i1', null, 6, 6)], settled: [LINE_SHORT] });
-    db.query.mockResolvedValueOnce({ rows: [{ '?column?': 1 }] });
-    await svc.evaluateOrderProcurementCompletion(ORDER);
-    expect(mockAlert).not.toHaveBeenCalled();
+    expect(mockOpenShortage).toHaveBeenCalledWith(db, expect.objectContaining({ purchaseLineId: LINE_SHORT, orderItemId: 'i1', missingQuantity: 4, actorId: null }));
   });
 
   test('HB-03 : répartition automatique au passage en preparation ; échec = alerte, transition conservée', async () => {

@@ -6,10 +6,10 @@
  * @criticality   critical
  * @inputs        purchase_order_id, purchase_line_id, supplier_confirmation, runtime_context
  * @outputs       response_or_domain_result, side_effects
- * @depends       db, services/purchasing-grouped-service.js, services/purchase-line-snapshot.js, services/notification-service.js, services/hub-reference.js, services/suppliers/provider-authority.js, services/suppliers/canonical-unit-purchasing-gate.js, services/suppliers/purchase-order-confirmation-boundary.js, services/suppliers/execution-adapter-registry.js, services/suppliers/supplier-fulfillment-adapter-contract.js, utils/logger.js
+ * @depends       db, services/purchasing-grouped-service.js, services/supplier-shortage-service.js, services/purchase-line-snapshot.js, services/notification-service.js, services/hub-reference.js, services/suppliers/provider-authority.js, services/suppliers/canonical-unit-purchasing-gate.js, services/suppliers/purchase-order-confirmation-boundary.js, services/suppliers/execution-adapter-registry.js, services/suppliers/supplier-fulfillment-adapter-contract.js, utils/logger.js
  * @used-by       routes/purchasing.js
  * @db-read       manual_purchase_executions, order_items, orders, product_suppliers, products, purchase_lines, purchase_order_authorizations, purchase_orders, supplier_execution_payments, suppliers, v_purchase_line_progress
- * @db-write      manual_purchase_executions, purchase_lines, purchase_orders
+ * @db-write      alerts, incidents, manual_purchase_executions, purchase_lines, purchase_orders
  * @db-txn        owns_transaction
  * @doctrine      docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md
  * @impact-areas  purchasing, supplier-integration
@@ -51,6 +51,7 @@ const {
   procurementHubLabel,
 } = require('./purchase-line-snapshot');
 const { shared } = require('./purchasing-grouped-service');
+const { openSupplierShortage } = require('./supplier-shortage-service');
 const log = require('../utils/logger').child({ module: 'purchasing-engagement' });
 
 const {
@@ -720,6 +721,13 @@ async function settleLine(lineId, body = {}, { actor = null } = {}) {
     // PO manuelle : le reliquat est conservé automatiquement (ligne enfant), sauf refus explicite.
     const reopenRemainder = reopenExplicit === undefined ? po.trigger_mode !== 'auto' : reopenExplicit === true;
     if (reopenRemainder) remnantId = await insertRemnant(client, line, remaining, actor);
+    // H1 : sans reliquat, la clôture Hub vaut constat de rupture fournisseur (incident + alerte de remboursement).
+    else {
+      await openSupplierShortage(client, {
+        purchaseLineId: lineId, orderItemId: line.order_item_id, missingQuantity: remaining,
+        receivedQuantity: received, reason, actorId: uuidOrNull(actor && actor.id),
+      });
+    }
     const closed = await closeGroupedPurchaseOrderIfComplete(client, po.id);
     return { lineId, remnantId, remaining, poId: po.id, closed };
   });

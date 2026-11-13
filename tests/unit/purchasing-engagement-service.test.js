@@ -8,6 +8,8 @@
  */
 
 jest.mock('../../db', () => ({ getClient: jest.fn(), query: jest.fn() }));
+const mockOpenShortage = jest.fn().mockResolvedValue({});
+jest.mock('../../services/supplier-shortage-service', () => ({ openSupplierShortage: (...a) => mockOpenShortage(...a) }));
 jest.mock('../../services/hub-authorization-service', () => ({ assertCommitmentAuthorized: jest.fn().mockResolvedValue(undefined) }));
 jest.mock('../../utils/logger', () => {
   const f = jest.fn(() => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }));
@@ -364,6 +366,21 @@ describe('settleLine — garde-fous', () => {
     expect(out.unsettled_quantity).toBe(6);
     expect(calls.find((c) => /INSERT INTO purchase_lines/.test(c.sql)).params[12]).toBe(uuid(50));
     expect(calls.some((c) => /SET status = 'hub_received'/.test(c.sql))).toBe(false);
+  });
+
+  it('H1 : clôture SANS reliquat → incident de rupture fournisseur (acteur + ligne en preuve) ; avec reliquat → aucun', async () => {
+    mockOpenShortage.mockClear();
+    scripted([peek(), poLock(), lineLock(), [/v_purchase_line_progress\s+WHERE line_id/, { rows: [{ received_quantity: 2 }] }], [/FROM v_purchase_line_progress\s+WHERE purchase_order_id/, { rows: [] }]]);
+    db.query.mockImplementation(async (sql) => (/FROM purchase_orders WHERE id/.test(sql) ? { rows: [{ id: PO, status: 'confirmed' }] } : shaped));
+    await engagement.settleLine(L1, { settled_quantity: 2, reason: 'rupture', reopen_remainder: false }, { actor: { id: uuid(50) } });
+    expect(mockOpenShortage).toHaveBeenCalledWith(expect.anything(), {
+      purchaseLineId: L1, orderItemId: uuid(7), missingQuantity: 4, receivedQuantity: 2, reason: 'rupture', actorId: uuid(50),
+    });
+
+    mockOpenShortage.mockClear();
+    scripted([peek(), poLock(), lineLock(), [/v_purchase_line_progress\s+WHERE line_id/, { rows: [{ received_quantity: 2 }] }], [/INSERT INTO purchase_lines/, { rows: [{ id: uuid(98) }] }], [/FROM v_purchase_line_progress\s+WHERE purchase_order_id/, { rows: [] }]]);
+    await engagement.settleLine(L1, { settled_quantity: 2, reason: 'x', reopen_remainder: true });
+    expect(mockOpenShortage).not.toHaveBeenCalled();
   });
 
   it('PO sans autre ligne active → pas de clôture ; toutes soldées → hub_received', async () => {

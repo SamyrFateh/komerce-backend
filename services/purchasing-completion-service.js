@@ -6,10 +6,10 @@
  * @criticality   critical
  * @inputs        order_id, hub_allocations, actor
  * @outputs       order_completion_verdict, purchase_order_hub_received, order_status_preparation
- * @depends       db, services/auto-parcel.js, services/order-status-machine.js, services/scan-operations.js, utils/alerts.js, utils/logger.js
+ * @depends       db, services/auto-parcel.js, services/supplier-shortage-service.js, services/order-status-machine.js, services/scan-operations.js, utils/alerts.js, utils/logger.js
  * @used-by       services/hub-operations.js, bootstrap/crons.js
  * @db-read       order_items, purchase_lines, hub_physical_unit_placements, hub_purchase_allocations, parcel_items, orders, purchase_orders, v_purchase_line_progress
- * @db-write      alerts, purchase_orders, parcels, parcel_items
+ * @db-write      alerts, incidents, purchase_orders, parcels, parcel_items
  * @db-txn        owns_transaction
  * @doctrine      docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md
  * @impact-areas  purchasing, orders, logistics
@@ -38,6 +38,7 @@
 const db = require('../db');
 const { transitionOrderStatus } = require('./order-status-machine');
 const { createAlert } = require('../utils/alerts');
+const { openSupplierShortage } = require('./supplier-shortage-service');
 const log = require('../utils/logger').child({ module: 'purchasing-completion' });
 
 let triggerScan3;
@@ -198,22 +199,31 @@ async function autoDistribute(orderId) {
   }
 }
 
-/** Demande de remboursement de ligne (décision 1) : une alerte ouverte par article, jamais dupliquée. */
+/**
+ * Demande de remboursement de ligne (décision 1). Normalement ouverte à la clôture (settleLine) ; ce rattrapage couvre
+ * les clôtures antérieures : toute ligne soldée sans reliquat de l'article reçoit son incident « rupture fournisseur »
+ * et son alerte. Idempotent par ligne (aucun doublon d'incident). Ne lève jamais.
+ */
 async function openShortageRefundRequest(orderId, shortage) {
   try {
-    const { rows } = await db.query(
-      "SELECT 1 FROM alerts WHERE type = 'supplier_shortage_refund_required' AND entity_id = $1 AND resolved_at IS NULL LIMIT 1",
-      [shortage.order_item_id]
-    );
-    if (rows.length) return false;
-    await createAlert(db, {
-      type: 'supplier_shortage_refund_required', entityType: 'order_item', entityId: shortage.order_item_id, severity: 'high',
-      title: `Rupture fournisseur : ${shortage.missing_quantity} unité(s) à rembourser — commande ${orderId}`,
-      description: `order_id=${orderId} order_item_id=${shortage.order_item_id} manquant=${shortage.missing_quantity} reçu=${shortage.received_quantity} ; la commande part avec le reçu`,
-    });
-    return true;
+    const { rows: lines } = await db.query(`
+      SELECT pl.id, COALESCE(pl.confirmed_quantity, pl.quantity) - pl.settled_quantity AS missing, pl.settle_reason
+        FROM purchase_lines pl
+       WHERE pl.order_item_id = $1 AND pl.settled_at IS NOT NULL AND pl.cancelled_at IS NULL
+         AND COALESCE(pl.confirmed_quantity, pl.quantity) - pl.settled_quantity > 0
+         AND NOT EXISTS (SELECT 1 FROM purchase_lines c WHERE c.parent_line_id = pl.id AND c.cancelled_at IS NULL)
+    `, [shortage.order_item_id]);
+    let opened = false;
+    for (const l of lines) {
+      const r = await openSupplierShortage(db, {
+        purchaseLineId: l.id, orderItemId: shortage.order_item_id, missingQuantity: Number(l.missing),
+        receivedQuantity: shortage.received_quantity, reason: l.settle_reason, actorId: null,
+      });
+      opened = opened || r.created || r.alert_created;
+    }
+    return opened;
   } catch (err) {
-    log.error({ err, order_id: orderId }, '[purchasing-completion] demande de remboursement de ligne non enregistrée');
+    log.error({ err, order_id: orderId }, '[purchasing-completion] incident de rupture fournisseur non enregistré');
     return false;
   }
 }

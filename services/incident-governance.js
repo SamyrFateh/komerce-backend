@@ -79,6 +79,8 @@ const RECONCILIATION_SUBTYPE_MAPPING = Object.freeze({
   hub_purchase_identity_conflict: Object.freeze({ origin_domain: 'PURCHASING', resolver_domain: 'PURCHASING', resolution_class: 'UPSTREAM_TRUTH' }),
   hub_purchase_quantity_conflict: Object.freeze({ origin_domain: 'PURCHASING', resolver_domain: 'PURCHASING', resolution_class: 'UPSTREAM_TRUTH' }),
   hub_destination_conflict:       Object.freeze({ origin_domain: 'ORDERS', resolver_domain: 'ORDERS', resolution_class: 'UPSTREAM_TRUTH' }),
+  // H1 : rupture fournisseur constatée par la clôture Hub d'une ligne sans reliquat (sous-type de reconciliation_error).
+  supplier_shortage:              Object.freeze({ origin_domain: 'PURCHASING', resolver_domain: 'PURCHASING', resolution_class: 'UPSTREAM_TRUTH' }),
 });
 
 function resolveGovernance(incidentType, context = {}) {
