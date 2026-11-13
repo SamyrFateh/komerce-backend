@@ -69,6 +69,26 @@ describe('P0-1 · fret unique', () => {
     expect(c.input_quality.fallbacks.map(f => f.field)).toContain('freight');
   });
 
+  it('un fret au poids exclut le repli au volume sans confondre assurance et fret', () => {
+    const components = COMPONENTS.filter(x => x.key !== 'fret_maritime_eur_m3').concat(
+      mk('fret_aerien_kmf_kg', 'freight', 120, 'kmf_per_kg', 'by_weight')
+    );
+    const c = run(cfg(components));
+    expect(c._meta.freight_source).toBe('component');
+    expect(c.details._allocations.find(a => a.component_key === 'freight_default_estimate')).toBeUndefined();
+    expect(c.details._allocations.find(a => a.component_key === 'fret_aerien_kmf_kg').allocated_cost_kmf).toBe(120);
+  });
+
+  it('un fret EUR au poids exclut également le repli volumétrique', () => {
+    const components = COMPONENTS.filter(x => x.key !== 'fret_maritime_eur_m3').concat(
+      mk('fret_aerien_eur_kg', 'freight', 3, 'eur', 'by_weight')
+    );
+    const c = run(cfg(components));
+    expect(c._meta.freight_source).toBe('component');
+    expect(c.details._allocations.find(a => a.component_key === 'freight_default_estimate')).toBeUndefined();
+    expect(c.details._allocations.find(a => a.component_key === 'fret_aerien_eur_kg').allocated_cost_kmf).toBe(1485);
+  });
+
   it('stock local : aucun fret', () => {
     const c = computeCDR({ category: 'phones', cost_kmf: 3000, weight_kg: 1 },
       { config: cfg(), volume_m3: 0.001, provenance: 'LOCAL_STOCK' });

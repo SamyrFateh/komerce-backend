@@ -265,11 +265,13 @@ function pctBasisFor(category, key) {
   return 'purchase';
 }
 
-// Un composant de fret « au volume » est l'autorité du fret ; le calcul en dur
-// (volume × fret_eur_per_m3 × taux) ne sert qu'à défaut.
-function isVolumeFreightComponent(c) {
+// Un fret physique explicite (au volume OU au poids) remplace le fret estimé
+// par défaut. Un simple pourcentage d'assurance en catégorie freight ne suffit
+// pas : en son absence, le fret demeure inconnu et l'estimation est signalée.
+function isPhysicalFreightComponent(c) {
   return (c.category === 'freight' || c.category === 'transit')
-    && (c.allocation_method === 'by_volume' || c.unit === 'kmf_per_m3');
+    && (c.allocation_method === 'by_volume' || c.allocation_method === 'by_weight'
+      || c.unit === 'kmf_per_m3' || c.unit === 'kmf_per_kg');
 }
 
 // Qualité des entrées (distincte de la santé économique) : part du coût variable
@@ -451,21 +453,21 @@ function computeCDR(product, ctx = {}) {
   };
 
   // Passe 1 : montants indépendants du prix et des assiettes % (ordre sans effet).
-  const hasVolumeFreight = !localStock && applicable.some(isVolumeFreightComponent);
+  const hasPhysicalFreight = !localStock && applicable.some(isPhysicalFreightComponent);
   let freightSource = 'component';
   let nonPctFreight = 0;
   let fixedOverheadAmount = 0;
   let priceIndependent = productCostKmf;
   const pending = [];
 
-  if (!localStock && !hasVolumeFreight) {
+  if (!localStock && !hasPhysicalFreight) {
     freightSource = 'fallback_estimate';
     const estimate = volM3 * fretEUR * taxEUR;
     nonPctFreight += estimate;
     priceIndependent += estimate;
     pushLine({ key: 'freight_default_estimate', label: 'Fret (estimation par défaut)', category: 'freight', unit: 'eur', source: 'estimate', confidence: 'low' },
       estimate, estimate, 'article', 1, 'volume');
-    warnings.push('Fret estimé par repli (aucun composant de fret au volume actif) : valeur à valider.');
+    warnings.push('Fret estimé par repli (aucun composant de fret physique actif) : valeur à valider.');
   } else if (localStock) {
     freightSource = 'not_applicable';
   }
