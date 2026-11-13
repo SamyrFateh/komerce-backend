@@ -20,7 +20,7 @@
 | `category-cutout-navigation.css` | 408 | components.css |
 | `category-cutout-navigation-desktop.css` | 649 | desktop.css |
 | `checkout-desktop-v2.css` | 83 | checkout-desktop-v2.css |
-| `checkout-vertical-rail.css` | 1805 | components.css |
+| `checkout-vertical-rail.css` | 1798 | components.css |
 | `critical-home.css` | 1580 | critical-home.css |
 | `discovery-desktop-v2.css` | 165 | discovery-desktop-v2.css |
 | `discovery-rail.css` | 280 | components.css |
@@ -69,8 +69,8 @@ Cascade réelle des bundles livrés :
 ```
  1. /boutique/css/dist/base.css?v=266
  2. /boutique/css/dist/critical-home.css?v=5
- 3. /boutique/css/dist/components.css?v=660
- 4. /boutique/css/dist/components.css?v=660
+ 3. /boutique/css/dist/components.css?v=661
+ 4. /boutique/css/dist/components.css?v=661
  5. /boutique/css/dist/desktop.css?v=157
 ```
 

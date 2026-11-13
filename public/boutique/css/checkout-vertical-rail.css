@@ -1584,8 +1584,7 @@
 }
 
 @media (max-width: 899px) {
-  .k-order-overlay.open .ck-checkout-primary,
-  .k-order-overlay.open .ck-checkout-aside { border-radius: 18px; }
+  /* Rayon mobile fixé ci-dessous, sans déclaration intermédiaire concurrente. */
   .ck-recap-subtotal {
     margin-top: 9px;
     gap: 10px;
@@ -1593,13 +1592,7 @@
   }
   .ck-recap-subtotal strong { font-size: 1.16rem; }
   .ck-checkout-trust { font-size: .6rem; }
-  .k-order-overlay.open .ck-pay-chip { min-height: 62px; padding: 9px 10px; }
-  .k-order-overlay.open .ck-pay-chip .ck-chip-icon {
-    flex-basis: 31px;
-    width: 31px;
-    height: 31px;
-    font-size: 1.05rem;
-  }
+  .k-order-overlay.open .ck-pay-chip .ck-chip-icon { font-size: 1.05rem; }
   .k-order-overlay.open .ck-pay-chip--active::after { top: 5px; right: 5px; }
   /* Checkout mobile compact V2 : les sections existantes restent les seuls
      composants de sélection/identité/relais/paiement. Aucun circuit parallèle. */
