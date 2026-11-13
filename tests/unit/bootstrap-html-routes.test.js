@@ -500,13 +500,17 @@ describe('bootstrap/html-routes', () => {
       );
     });
 
-    test('/hub sert hub/index.html', () => {
+    test('/hub redirige vers le cockpit canonique sans servir l’ancien écran', () => {
       const res = fakeRes();
       app._routes['/hub']({}, res);
-      expect(res.sendFile).toHaveBeenCalledWith(
-        require('path').join(PUBLIC_DIR, 'hub', 'index.html'),
-        expect.any(Function)
-      );
+      expect(res.redirect).toHaveBeenCalledWith(302, '/admin/hub');
+      expect(res.sendFile).not.toHaveBeenCalled();
+    });
+
+    test('l’accès direct /hub/index.html redirige sans charger l’ancien JavaScript', () => {
+      const source = require('fs').readFileSync(require('path').join(PUBLIC_DIR, 'hub', 'index.html'), 'utf8');
+      expect(source).toContain("window.location.replace('/admin/hub')");
+      expect(source).not.toContain('/hub/js/hub.js');
     });
   });
 
