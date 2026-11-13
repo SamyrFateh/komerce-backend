@@ -207,6 +207,27 @@ describe('submitPurchaseOrder', () => {
     expect(out.purchase_order.status).toBe('notified');
   });
 
+  it('décision 4 : une PO automatique soumise pose la preuve d\'envoi (canal api) ; une PO manuelle non', async () => {
+    mockRegistry.allegro = { provider: 'allegro', evaluate: jest.fn() };
+    mockReadiness.mockResolvedValue({ ready: true, status: 'FULFILLMENT_READY' });
+    const run = async (mode) => {
+      const { calls } = scripted([
+        [/FROM purchase_orders WHERE id = \$1 FOR UPDATE/, { rows: [poRow({ trigger_mode: mode })] }],
+        [/FROM purchase_lines pl/, { rows: [submitLine({ supplier_order_identity: { provider: 'allegro', version: 1, payload: { a: 1 } }, product_name: 'Produit' })] }],
+        [/FROM suppliers/, { rows: [{ name: 'F', platform: null, contact_phone: null }] }],
+        [/SELECT trigger_mode/, { rows: [{ trigger_mode: mode }] }],
+      ]);
+      db.query.mockImplementation(async (sql) => (/FROM purchase_orders WHERE id/.test(sql) ? { rows: [{ id: PO, status: 'notified' }] } : { rows: [] }));
+      await engagement.submitPurchaseOrder(PO, { actor: { id: uuid(42) } });
+      return calls.find((c) => /UPDATE purchase_orders SET status = 'notified'/.test(c.sql));
+    };
+    const auto = await run('auto');
+    expect(auto.sql).toMatch(/sent_at = NOW\(\), sent_channel = 'api'/);
+    expect(auto.params).toEqual([PO, uuid(42)]);
+    const manual = await run('manual');
+    expect(manual.sql).not.toMatch(/sent_at/);
+  });
+
   it('buildOrderPayload appelé avec items[] et preflights[] ; une exception non-Error est rendue en texte', async () => {
     const buildOrderPayload = jest.fn().mockRejectedValue('refus brut');
     mockRegistry.allegro = { provider: 'allegro', evaluate: jest.fn(), buildOrderPayload };

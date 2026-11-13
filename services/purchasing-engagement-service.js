@@ -325,9 +325,15 @@ async function submitPurchaseOrder(poId, { actor = null, context = {} } = {}) {
     const tag = buildSupplierTagRequest(po.id);
     const messages = buildSubmitMessage({ po, supplier, groups, tag, hubLabel: procurementHubLabel(po.procurement_hub_ref) });
 
+    // Décision 4 (#3998) : pour une PO automatique, la soumission API vaut preuve d'envoi (canal « api », auteur = acteur) ;
+    // le geste manuel « Enregistrer l'envoi » n'existe que pour les PO manuelles/WhatsApp. Jamais en simulation.
+    const apiSent = header.trigger_mode === 'auto' && !simulationScope;
     await client.query(
-      `UPDATE purchase_orders SET status = 'notified', ordered_at = NOW(), updated_at = NOW() WHERE id = $1`,
-      [po.id]
+      apiSent
+        ? `UPDATE purchase_orders SET status = 'notified', ordered_at = NOW(), updated_at = NOW(),
+                  sent_at = NOW(), sent_channel = 'api', sent_by = $2 WHERE id = $1`
+        : `UPDATE purchase_orders SET status = 'notified', ordered_at = NOW(), updated_at = NOW() WHERE id = $1`,
+      apiSent ? [po.id, uuidOrNull(actor && actor.id)] : [po.id]
     );
     // Invariant 14 de la carte : le lien WhatsApp s'écrit APRÈS la persistance de la PO.
     let waUrl = null;

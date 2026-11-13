@@ -201,6 +201,7 @@ module.exports = {
       'tests/unit/hub-dubai-projection.test.js',
       'tests/unit/hub-global-board.test.js',
       'tests/unit/hub-unsourced-order-dossier.test.js',
+      'tests/unit/hub-director-todo-age.test.js',
       'tests/unit/hub-order-status.test.js',
       'tests/e2e-api/orders.pickup-code-vs-authorized-name.e2e.test.js',
       'tests/integration/hub-physical-identity-postgres.test.js',

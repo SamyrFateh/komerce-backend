@@ -18,6 +18,8 @@
 .hlc-todo-pill { appearance: none; display: inline-flex; align-items: center; gap: 7px; max-width: 330px; background: #fff; border: 1px solid var(--hlc-line); border-radius: 999px; padding: 5px 11px; font: inherit; font-size: 12px; font-weight: 500; color: var(--hlc-ink); cursor: pointer; }
 .hlc-todo-pill.is-on { border-color: var(--hlc-accent); box-shadow: 0 0 0 1px var(--hlc-accent); }
 .hlc-todo-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hlc-todo-age { margin-left: 6px; font-size: 11px; opacity: .75; white-space: nowrap; }
+.hlc-todo-age.is-overdue { opacity: 1; font-weight: 600; color: var(--hlc-bad, #b42318); }
 .hlc-narrative { font-size: 12px; color: var(--hlc-mute); max-width: 520px; }
 .hlc-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #8a93a0; flex: 0 0 auto; }
 .hlc-dot.is-act { background: var(--hlc-accent); } .hlc-dot.is-warn { background: #e89a2e; } .hlc-dot.is-wait { background: #8a93a0; }
