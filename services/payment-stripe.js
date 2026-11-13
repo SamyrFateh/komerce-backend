@@ -161,6 +161,30 @@ async function createStripeIntent(order, stripe, db) {
   };
 }
 
+function isRecordedStripePayment(order, intent) {
+  return order?.payment_status === 'paid' &&
+    order.payment_mode === 'stripe_eur' && order.stripe_payment_id === intent.id;
+}
+
+async function recordUnappliedStripePayment(client, event, intent, order, reason) {
+  const recorded = await client.query(
+    `INSERT INTO stripe_events_processed (stripe_event_id, event_type, payload_summary)
+     VALUES ($1, $2, $3)
+     ON CONFLICT (stripe_event_id) DO NOTHING`,
+    [event.id, event.type, JSON.stringify({ rejected: reason, order_id: order.id })]
+  );
+  if (recorded.rowCount === 0) return;
+
+  await createAlert(client, {
+    type: 'stripe_capture_reconciliation_required',
+    entityType: 'order',
+    entityId: order.id,
+    severity: 'high',
+    title: `Encaissement Stripe à rapprocher — ${order.reference}`,
+    description: `intent=${intent.id} event=${event.id} montant=${intent.amount} devise=${intent.currency} motif=${reason}`,
+  });
+}
+
 // ─── handleStripeSucceeded ────────────────────────────────────────────────────
 /**
  * Gère payment_intent.succeeded.
@@ -186,17 +210,32 @@ async function handleStripeSucceeded(event, intent, db, triggerPurchasing) {
 
   // Chemins 2-3 : commande introuvable ou déjà paid
   const { rows: [existing] } = await db.query(
-    'SELECT id, reference, total_eur, payment_status FROM orders WHERE id = $1', [orderId]
+    'SELECT id, reference, total_eur, payment_status, payment_mode, stripe_payment_id FROM orders WHERE id = $1', [orderId]
   );
   if (!existing) {
     log.warn({ order_id: orderId }, '[STRIPE-WEBHOOK] order_id not found');
     await markStripeEventProcessed(event, { ignored: 'order_not_found', order_id: orderId }, db);
     return { received: true, ignored: true };
   }
-  if (existing.payment_status === 'paid') {
+  if (isRecordedStripePayment(existing, intent)) {
     log.info({ order_id: orderId }, '[STRIPE-WEBHOOK] order already paid, skipping');
     await markStripeEventProcessed(event, { ignored: 'already_paid', order_id: orderId }, db);
     return { received: true, idempotent: true };
+  }
+
+  if (existing.payment_status === 'paid') {
+    const client = await db.pool.connect();
+    try {
+      await client.query('BEGIN');
+      await recordUnappliedStripePayment(client, event, intent, existing, 'already_paid');
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+    return { received: true, rejected: true };
   }
 
   // Contrat montant/devise/commande : un PaymentIntent « succeeded » ne marque jamais une commande payée
@@ -240,6 +279,15 @@ async function handleStripeSucceeded(event, intent, db, triggerPurchasing) {
 
     // Chemin 4 : noop
     if (cycleResult.noop) {
+      const { rows: [current] } = await client.query(
+        'SELECT payment_status, payment_mode, stripe_payment_id FROM orders WHERE id = $1',
+        [orderId]
+      );
+      if (!isRecordedStripePayment(current, intent)) {
+        await recordUnappliedStripePayment(client, event, intent, existing, 'confirm_noop');
+        await client.query('COMMIT');
+        return { received: true, rejected: true };
+      }
       await client.query('COMMIT');
       await markStripeEventProcessed(event, { noop: 'confirm', order_id: orderId }, db);
       return { received: true, idempotent: true };
@@ -249,7 +297,9 @@ async function handleStripeSucceeded(event, intent, db, triggerPurchasing) {
     if (!cycleResult.success) {
       log.error({ cycle_error: cycleResult.error }, '[STRIPE] Cycle rejected');
       await client.query('ROLLBACK');
-      await markStripeEventProcessed(event, { rejected: 'confirm', error: cycleResult.error, order_id: orderId }, db);
+      await client.query('BEGIN');
+      await recordUnappliedStripePayment(client, event, intent, existing, 'confirm_rejected');
+      await client.query('COMMIT');
       return { received: true, rejected: true };
     }
 
