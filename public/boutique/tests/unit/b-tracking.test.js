@@ -264,6 +264,19 @@ describe('renderOrderDetail', () => {
     expect(container.querySelectorAll('.k-order-document-download')).toHaveLength(2);
   });
 
+  it('liste la preuve de retrait téléchargeable (#3900 R3)', () => {
+    const container = document.createElement('div');
+    renderOrderDetail(
+      { reference: 'K9ZZZZ', total_amount: 5000, status: 'collected' },
+      container,
+      { privateResources: { documents: [
+        { document_type: 'pickup_proof', reference: 'PRV-1', download_url: '/api/auth/me/documents/p1/download' },
+      ] } },
+    );
+    expect(container.textContent).toContain('Preuve de retrait');
+    expect(container.querySelectorAll('.k-order-document-download')).toHaveLength(1);
+  });
+
   it('télécharge un PDF disponible avec la session authentifiée', async () => {
     const container = document.createElement('div');
     apiDownload.mockRejectedValueOnce(new Error('stop after request'));
