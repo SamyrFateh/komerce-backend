@@ -133,6 +133,17 @@ describe('refund-service', () => {
       expect(client.calls.some(c => /UPDATE refunds/.test(String(c.sql)))).toBe(false);
     });
 
+    it('FA-04 : commande Stripe sans reference capture refuse avant DB, sans wallet', async () => {
+      const client = makeClient([]);
+      await expect(processRefundWithFallback(
+        client, makeStripeOrder({ stripe_payment_id: null }), 5000, 10,
+        'partial', 'x', 'admin-001', 'parcel-002'
+      )).rejects.toMatchObject({ code: 'REFUND_STRIPE_CAPTURE_MISSING', statusCode: 409 });
+      expect(client.query).not.toHaveBeenCalled();
+      expect(mockStripeRefundsCreate).not.toHaveBeenCalled();
+      expect(walletService.credit).not.toHaveBeenCalled();
+    });
+
     it('reutilise la ligne refund existante si INSERT est ignore par ON CONFLICT', async () => {
       const client = makeClient([
         { rows: [] },
