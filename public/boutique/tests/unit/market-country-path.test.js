@@ -59,10 +59,11 @@ describe('Boutique publique — URL pays canonique', () => {
 
   test('/CM transporte le filtre vers la lecture relais, même avec ?market=KM', async () => {
     const { window, nativeFetch } = boot('/CM', '?market=KM');
+    const logo = { href: '/', setAttribute(_name, value) { this.href = value; } };
     const document = {
       body: { dataset: {} },
       getElementById: () => null,
-      querySelector: () => null,
+      querySelector: selector => selector === 'a.k-logo[href="/"]' ? logo : null,
     };
     vm.runInNewContext(HYDRATION_SOURCE, {
       window, document, URL, URLSearchParams,
@@ -70,6 +71,8 @@ describe('Boutique publique — URL pays canonique', () => {
     });
 
     expect(document.body.dataset.marketCode).toBe('CM');
+    expect(logo.href).toBe('/CM');
+    expect(document.title).toBe('Komerce — La boutique en ligne du Cameroun');
     await window.fetch('/api/relais');
     expect(nativeFetch).toHaveBeenCalledWith('/api/relais?market=CM', undefined);
   });
