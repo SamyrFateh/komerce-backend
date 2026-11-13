@@ -14,7 +14,7 @@ function fixture(overrides = {}) {
     calls.push(sql);
     if (sql.includes('FROM orders WHERE')) return { rows: [order] };
     if (sql.includes('operation_key = $2')) return { rows: overrides.existing ? [overrides.existing] : [] };
-    if (sql.includes('FROM refunds r WHERE')) return { rows: overrides.legacy ? [{ id: 'old' }] : [] };
+    if (sql.includes('FROM refunds WHERE')) return { rows: overrides.legacy ? [{ id: 'old' }] : [] };
     if (sql.includes('AND status IN') && sql.includes('refund_execution_intents')) return { rows: [] };
     if (sql.includes('AS confirmed_eur')) return { rows: [{ confirmed_eur: overrides.confirmed || '0' }] };
     if (sql.includes('INSERT INTO refund_execution_intents')) return { rows: [{ id: ID, status: 'reserved' }] };
