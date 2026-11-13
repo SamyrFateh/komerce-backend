@@ -139,6 +139,7 @@ router.post('/:id/cancel', authenticate, validate(orders.cancelOrder), async (re
     // Ne pas appeler computeClosingRefund, qui exige un montant PSP > 0.
     // Un total nul SANS débit wallet demeure fail-closed (état incohérent).
     const walletOnlyPaid = isPaid && Number(order.total_kmf) === 0 &&
+      order.total_eur != null && Number(order.total_eur) === 0 &&
       Number(order.wallet_applied_kmf) > 0;
     if (isPaid && !walletOnlyPaid) {
       const freeWindowHours  = await getRule('CANCEL_FREE_WINDOW_HOURS', 24);
