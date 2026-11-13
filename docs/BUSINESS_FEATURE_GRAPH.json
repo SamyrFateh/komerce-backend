@@ -33015,7 +33015,7 @@
               },
               {
                 "endpoint": "/api/admin/dashboard/control-tower",
-                "routeFile": "routes/admin-dashboard-market.js",
+                "routeFile": "routes/admin-dashboard.js",
                 "consumerFileId": "dash:dashboards/admin/js/views/ControlTowerView.js"
               },
               {
@@ -33030,7 +33030,7 @@
               },
               {
                 "endpoint": "/api/admin/dashboard/costing",
-                "routeFile": "routes/admin-dashboard-market.js",
+                "routeFile": "routes/admin-dashboard.js",
                 "consumerFileId": "dash:dashboards/admin/js/views/CostingView.js"
               },
               {
@@ -33050,12 +33050,12 @@
               },
               {
                 "endpoint": "/api/admin/dashboard/logistics",
-                "routeFile": "routes/admin-dashboard-market.js",
+                "routeFile": "routes/admin-dashboard.js",
                 "consumerFileId": "dash:dashboards/admin/js/views/OrdersLogisticsView.js"
               },
               {
                 "endpoint": "/api/admin/dashboard/unified",
-                "routeFile": "routes/admin-dashboard-market.js",
+                "routeFile": "routes/admin-dashboard.js",
                 "consumerFileId": "dash:dashboards/admin/js/views/PilotageView.js"
               },
               {
@@ -34837,6 +34837,21 @@
               {
                 "sourceFileId": "tests/unit/golden-product-gpm1.test.js",
                 "targetFile": "services/transport-rails.js"
+              }
+            ]
+          },
+          {
+            "channel": "interface",
+            "evidence": [
+              {
+                "endpoint": "/api/relais",
+                "routeFile": "routes/relais.js",
+                "consumerFileId": "public/boutique/js/market-hydration.js"
+              },
+              {
+                "endpoint": "/api/relais/public",
+                "routeFile": "routes/relais.js",
+                "consumerFileId": "public/boutique/js/market-hydration.js"
               }
             ]
           }
@@ -44076,6 +44091,16 @@
               {
                 "sourceFileId": "services/order-checkout-persistence.js",
                 "targetFile": "services/local-stock-service.js"
+              }
+            ]
+          },
+          {
+            "channel": "interface",
+            "evidence": [
+              {
+                "endpoint": "/api/local-stock/checkout-preview",
+                "routeFile": "routes/local-stock.js",
+                "consumerFileId": "public/boutique/js/b-checkout.js"
               }
             ]
           }

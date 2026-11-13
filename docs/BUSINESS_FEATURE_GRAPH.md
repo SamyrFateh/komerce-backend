@@ -2356,7 +2356,7 @@ Meta Graph monté : oui.
 | catalog | economic-engine | static-code | 16 | **DECLARED_AND_OBSERVED** |
 | catalog | external-provider-contracts | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | catalog | infrastructure | static-code | 112 | **DECLARED_AND_OBSERVED** |
-| catalog | logistics | static-code | 10 | **DECLARED_AND_OBSERVED** |
+| catalog | logistics | static-code, interface | 12 | **DECLARED_AND_OBSERVED** |
 | catalog | market | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | catalog | market-autonomy | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
 | catalog | notifications | static-code | 2 | **DECLARED_AND_OBSERVED** |
@@ -2565,7 +2565,7 @@ Meta Graph monté : oui.
 | orders | documents | static-code, interface | 10 | **DECLARED_AND_OBSERVED** |
 | orders | economic-engine | static-code | 10 | **DECLARED_AND_OBSERVED** |
 | orders | infrastructure | static-code, interface | 69 | **DECLARED_AND_OBSERVED** |
-| orders | local-stock | static-code | 4 | **DECLARED_AND_OBSERVED** |
+| orders | local-stock | static-code, interface | 5 | **DECLARED_AND_OBSERVED** |
 | orders | logistics | static-code, interface, data-read | 37 | **DECLARED_AND_OBSERVED** |
 | orders | loyalty | static-code | 7 | **DECLARED_AND_OBSERVED** |
 | orders | market | static-code | 4 | **DECLARED_AND_OBSERVED** |

@@ -24172,7 +24172,7 @@
             ]
           },
           "services": {
-            "count": 13,
+            "count": 14,
             "files": [
               {
                 "declared": "services/alert-engine.js",
@@ -24238,6 +24238,11 @@
                 "declared": "services/whatsapp-meta.js",
                 "resolvedPath": "services/whatsapp-meta.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "utils/non-prod-phone-guard.js",
+                "resolvedPath": "utils/non-prod-phone-guard.js",
+                "status": "resolved-on-disk-no-header"
               }
             ]
           },
@@ -24377,7 +24382,7 @@
             ]
           }
         },
-        "totalFiles": 48,
+        "totalFiles": 49,
         "boutiqueManifest": "notifications-client",
         "boutiqueFiles": {
           "count": 3,
