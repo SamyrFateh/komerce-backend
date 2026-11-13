@@ -360,13 +360,15 @@ async function loadCockpit({
   const authByPo = new Map();
   if (poIds.length) {
     const { rows } = await q.query(`
-      SELECT a.purchase_order_id, a.authorization_type, a.amount, a.currency, a.proof_ref, a.decided_at, u.full_name
+      SELECT a.purchase_order_id, a.authorization_type, a.amount, a.currency, a.proof_ref, a.decided_at, a.commitment_pdf IS NOT NULL AS pdf_available, u.full_name
         FROM purchase_order_authorizations a LEFT JOIN users u ON u.id = a.decided_by
        WHERE a.purchase_order_id = ANY($1::uuid[])`, [poIds]);
     for (const r of rows || []) {
       const entry = authByPo.get(r.purchase_order_id) || { commitment: null, payment: null };
       const decision = { amount: Number(r.amount), currency: r.currency, proof_ref: r.proof_ref, decided_at: r.decided_at, decided_by_name: r.full_name || null };
-      if (r.authorization_type === 'purchase_commitment') entry.commitment = decision; else entry.payment = decision;
+      if (r.authorization_type === 'purchase_commitment') {
+        entry.commitment = { ...decision, pdf_available: r.pdf_available === true };
+      } else entry.payment = decision;
       authByPo.set(r.purchase_order_id, entry);
     }
   }

@@ -137,6 +137,7 @@ module.exports = {
       'routes/purchasing.js',
     ],
     migrations: [
+      'migrations/411_hub_purchase_commitment_pdf.sql',
       'migrations/275_supplier_platform_cj.sql',
       'migrations/225_purchase_orders_exact_supplier_identity.sql',
       'migrations/239_purchase_orders_canonical_supplier_money.sql',
@@ -151,6 +152,8 @@ module.exports = {
       'migrations/281_supplier_payment_proofs.sql',
       'migrations/284_supplier_execution_fulfillments.sql',
       'migrations/294_supplier_payment_settlements.sql',
+      'migrations/404_manual_purchase_executions.sql',
+      'migrations/407_purchase_variance_decisions.sql',
     ],
     scripts: [
       'scripts/purchase-lines-parity-check.js',
@@ -211,6 +214,8 @@ module.exports = {
       'tests/unit/supplier-fulfillment-reconciliation.test.js',
       'tests/integration/supplier-execution-fulfillments-postgres.test.js',
       'tests/unit/purchasing-engagement-service.test.js',
+      'tests/unit/hub-authorization-cumulative-cap.test.js',
+      'tests/unit/hub-authorization-variance-decision.test.js',
       'tests/unit/purchasing-completion-service.test.js',
       'tests/unit/purchasing-grouped-service.test.js',
       'tests/unit/hub-operations-grouped-completion.test.js',
@@ -303,6 +308,7 @@ module.exports = {
       'DELETE /api/purchasing/po/:po_id',
       'GET /api/purchasing/open-lines',
       'GET /api/purchasing/po/:po_id',
+      'GET /api/purchasing/po/:po_id/commitment-pdf',
       'POST /api/purchasing/po/prepare',
       'POST /api/purchasing/po/:po_id/detach',
       'POST /api/purchasing/po/:po_id/discard',
@@ -329,6 +335,7 @@ module.exports = {
       { fn: 'createManualLine', file: 'services/purchasing-engagement-service.js' },
     ],
     consumes: [
+      'documents (rendu PDF interne du bon de commande validé)',
       'supplier-connectivity (autorité provider, Supplier Order Identity opaque et contrats adapter fail-closed)',
       'external-provider-contracts (contrat transverse de preuve provider : Conversation + KNOWN/DERIVED/UNKNOWN + P0..P4 consommé par les proofs Purchasing)',
       'sourcing (resolveCanonicalUnitForProductSku — frontière canonique exacte, sans lecture directe des tables Resolution)',

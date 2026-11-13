@@ -495,7 +495,7 @@
         currency = field(form, 'Devise', Object.assign(textInput('USD', 'currency'), { maxLength: 3 }));
         if (kind === 'payment' && po.amount.derived) { amount.placeholder = String(po.amount.amount); currency.value = po.amount.currency; }
       }
-      let channel; let supplierOrder; let confirmProof; let confirmQty = [];
+      let channel; let supplierOrder; let confirmProof; let confirmSeller; let confirmQty = [];
       if (kind === 'sent') {
         channel = field(form, 'Canal d’envoi réel', doc.createElement('select'));
         CHANNELS.forEach(([v, l]) => channel.appendChild(Object.assign(doc.createElement('option'), { value: v, textContent: l })));
@@ -509,6 +509,7 @@
         });
         supplierOrder = field(form, 'Référence de commande fournisseur', textInput('', 'supplier_order_id'));
         confirmProof = field(form, 'Justificatif d’achat (obligatoire)', textInput('Facture, capture, reçu…', 'purchase_proof_ref'));
+        confirmSeller = field(form, 'Vendeur réel (obligatoire pour un achat manuel, pas le Hub central)', textInput('Magasin ou vendeur', 'seller_label'));
       }
       const submit = button(doc, { commitment: 'Valider l’engagement', payment: 'Autoriser le paiement', sent: 'Enregistrer l’envoi', confirm: 'Enregistrer la confirmation' }[kind], `submit-${kind}`, 'is-primary');
       submit.type = 'submit';
@@ -544,7 +545,7 @@
           if (lines.some((x) => x.confirmed_quantity > 0) && confirmProof.value.trim().length < 4) { note.textContent = 'Justificatif d’achat obligatoire (4 caractères minimum).'; return; }
           execute(submit, {
             url: purchasing(`po/${id}/confirm`),
-            body: { lines, ...(supplierOrder.value.trim() ? { supplier_order_id: supplierOrder.value.trim() } : {}), ...(confirmProof.value.trim() ? { purchase_proof_ref: confirmProof.value.trim() } : {}) },
+            body: { lines, ...(supplierOrder.value.trim() ? { supplier_order_id: supplierOrder.value.trim() } : {}), ...(confirmProof.value.trim() ? { purchase_proof_ref: confirmProof.value.trim() } : {}), ...(confirmSeller.value.trim() ? { seller_label: confirmSeller.value.trim() } : {}) },
             confirmMessage: 'Enregistrer la confirmation fournisseur ? Toute quantité non confirmée redevient un besoin ouvert.',
             runningMessage: 'Enregistrement de la confirmation…', successMessage: 'Confirmation fournisseur enregistrée.', onSuccess: () => { state.form = null; },
           });
@@ -656,6 +657,12 @@
             A('authorize-commitment', 'Valider l’engagement d’achat', { primary: true, why: 'droit purchase_commitment', disabled: lock || grant(viewer && viewer.can_authorize_commitment, 'réservé à la responsable Hub'), run: () => openForm('commitment', po.id) });
             A('detach-line', 'Retirer une ligne', { why: 'la ligne redevient un besoin ouvert', disabled: lock, run: () => openForm('detach', po.id) });
           }
+          if (!readOnly && po.authorizations.commitment?.pdf_available) {
+            A('download-commitment-pdf', 'Télécharger le bon de commande PDF', {
+              href: `/api/purchasing/po/${encodeURIComponent(po.id)}/commitment-pdf`,
+              why: 'usage interne Hub',
+            });
+          }
           if (po.step.key === 'validation') A('submit-po', 'Soumettre la PO', { primary: true, why: 'rien n’est encore envoyé', disabled: lock, run: (b) => submitPo(b, po.id) });
           if (po.step.key === 'engaged') A('record-sent', 'Enregistrer l’envoi fournisseur', { primary: true, why: 'canal réel, auteur, heure', disabled: lock, run: () => openForm('sent', po.id) });
           if (po.status === 'notified' && po.sent_at) A('confirm-po', 'Confirmation fournisseur', { why: 'quantités confirmées (déclaratif)', disabled: lock, run: () => openForm('confirm', po.id) });
@@ -766,7 +773,9 @@
     actionsFor().forEach((a) => {
       if (a.primary && !a.disabled) { if (primaryUsed) a.primary = false; else primaryUsed = true; } else if (a.disabled) a.primary = false;
       const row = el(doc, 'div', 'hlc-action-row');
-      const b = button(doc, a.label, a.key, a.primary ? 'is-primary' : '');
+      const b = a.href ? el(doc, 'a', 'hlc-btn', a.label)
+        : button(doc, a.label, a.key, a.primary ? 'is-primary' : '');
+      if (a.href) b.setAttribute('href', a.href);
       if (a.disabled) { b.disabled = true; b.setAttribute('aria-disabled', 'true'); b.title = a.disabled; }
       else if (a.run) b.addEventListener('click', () => { a.run(b); });
       row.appendChild(b);

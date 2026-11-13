@@ -44,6 +44,8 @@ jest.mock('../../middleware/auth', () => ({
 
 jest.mock('../../services/wallet-service', () => ({
   getBalance: jest.fn(),
+  getBalancesByCurrency: jest.fn().mockResolvedValue([]),
+  normalizeWalletCurrency: jest.fn((c) => String(c || 'KMF').toUpperCase()),
   getTransactions: jest.fn(),
   applyToOrder: jest.fn(),
   removeFromOrder: jest.fn(),
@@ -91,7 +93,7 @@ describe('routes/wallet', () => {
       const res = await request(buildApp()).get('/api/wallet');
 
       expect(res.status).toBe(200);
-      expect(res.body).toEqual({ balance_kmf: 15000, user_id: 'user-1', expires_at: '2026-12-01' });
+      expect(res.body).toEqual({ balance_kmf: 15000, balances: [], user_id: 'user-1', expires_at: '2026-12-01' });
     });
 
     test('expires_at est null si aucun lot avec expiration', async () => {
@@ -348,6 +350,20 @@ describe('routes/wallet', () => {
       const res = await request(buildApp()).post('/api/wallet/admin/credit').send(body);
       expect(res.status).toBe(400);
       expect(walletService.credit).not.toHaveBeenCalled();
+    });
+
+    test('amount + currency (XAF) : crédit dans la devise demandée ; amount sans currency → 400', async () => {
+      mockUser = { id: 'admin-1', role: 'admin' };
+      db.getClient.mockResolvedValueOnce(makeClient([{ rows: [{ id: 'u9', full_name: 'F', phone: '1' }] }]));
+      walletService.credit.mockResolvedValueOnce({ transaction: { id: 'tx4' }, lot: null, duplicate: false });
+      const ok = await request(buildApp()).post('/api/wallet/admin/credit')
+        .set('Idempotency-Key', 'k2').send({ user_id: 'u9', amount: 7500, currency: 'XAF' });
+      expect(ok.status).toBe(201);
+      expect(walletService.credit.mock.calls.at(-1)[1]).toMatchObject({ amountKmf: 7500, currency: 'XAF' });
+      db.getClient.mockResolvedValueOnce(makeClient([]));
+      const ko = await request(buildApp()).post('/api/wallet/admin/credit')
+        .set('Idempotency-Key', 'k3').send({ user_id: 'u9', amount: 7500 });
+      expect(ko.status).toBe(400);
     });
 
     test('clé header préfixée admin_credit: et rejouée → idempotent sans nouveau reçu', async () => {

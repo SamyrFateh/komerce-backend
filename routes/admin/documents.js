@@ -6,10 +6,11 @@
  * @criticality   low
  * @inputs        query filters (document_type, order_id, from, to, limit, offset)
  * @outputs       transaction_documents rows + résumé par type
- * @depends       db.js, middleware/auth.js
+ * @depends       db.js, middleware/auth.js, services/documents/document-reconciliation.js
  * @used-by       routes/admin/index.js
  * @db-read       transaction_documents, users
  * @db-write      (none)
+ * @db-write-via:document-reconciliation invoices, transaction_documents
  * @db-txn        (none)
  * @doctrine      DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md
  * @impact-areas  documents
@@ -39,6 +40,22 @@ const guard = [authenticate, requireRole(['admin'])];
 //   to             ISO date (issued_at <=)
 //   limit          défaut 50, max 200
 //   offset         défaut 0
+// ─── POST /api/admin/documents/reconcile ───────────────────────────────────
+// Reprise idempotente des documents dont l'émission post-commit a échoué
+// (facture/PDF, preuve de retrait, reçu de remboursement). Body : { limit?, dry_run? }.
+// Échecs rapportés (et journalisés), jamais masqués ; aucun envoi.
+router.post('/documents/reconcile', ...guard, async (req, res, next) => {
+  try {
+    const { reconcileDocuments } = require('../../services/documents/document-reconciliation');
+    const report = await reconcileDocuments({
+      limit: req.body?.limit,
+      dryRun: req.body?.dry_run === true,
+      issuedBy: req.user.id,
+    });
+    return res.json(report);
+  } catch (err) { return next(err); }
+});
+
 router.get('/documents', ...guard, async (req, res, next) => {
   try {
     const {

@@ -20,6 +20,9 @@ jest.mock('../../middleware/auth', () => ({
   },
 }));
 
+const mockReconcile = jest.fn();
+jest.mock('../../services/documents/document-reconciliation', () => ({ reconcileDocuments: (...a) => mockReconcile(...a) }));
+
 const mockQuery = jest.fn();
 jest.mock('../../db', () => ({ query: (...args) => mockQuery(...args) }));
 
@@ -168,6 +171,29 @@ describe('GET /documents/:id', () => {
   it('erreur DB → 500', async () => {
     mockQuery.mockRejectedValueOnce(new Error('boom'));
     const res = await request(app).get('/api/admin/documents/doc-1');
+    expect(res.status).toBe(500);
+  });
+});
+
+describe('POST /documents/reconcile', () => {
+  it('refuse un non-admin (403) sans réémission', async () => {
+    currentUser = { id: 'u1', role: 'client' };
+    const res = await request(app).post('/api/admin/documents/reconcile').send({});
+    expect(res.status).toBe(403);
+    expect(mockReconcile).not.toHaveBeenCalled();
+  });
+
+  it('admin : lance la réconciliation avec limite, dry_run et émetteur', async () => {
+    mockReconcile.mockResolvedValueOnce({ dry_run: true, issued: 0, failed: 0, families: {} });
+    const res = await request(app).post('/api/admin/documents/reconcile').send({ limit: 10, dry_run: true });
+    expect(res.status).toBe(200);
+    expect(mockReconcile).toHaveBeenCalledWith({ limit: 10, dryRun: true, issuedBy: 'admin-1' });
+    expect(res.body.dry_run).toBe(true);
+  });
+
+  it('erreur service → 500', async () => {
+    mockReconcile.mockRejectedValueOnce(new Error('boom'));
+    const res = await request(app).post('/api/admin/documents/reconcile').send({});
     expect(res.status).toBe(500);
   });
 });

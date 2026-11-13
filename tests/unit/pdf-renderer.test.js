@@ -105,3 +105,22 @@ describe('P4 — devise de la facture selon payment_mode réel', () => {
     expect(result.buffer.subarray(0, 4).toString()).toBe('%PDF');
   });
 });
+
+test('rend le bon de commande interne avec des lignes tarifées et des lignes sans prix', async () => {
+  const result = await renderPdf({
+    documentType: 'purchase_commitment',
+    document: {
+      reference: 'PO-01394ccc',
+      issued_at: '2026-11-12T18:00:00.000Z',
+      supplier_name: 'Fournisseur Hub',
+      amount: 30,
+      currency: 'AED',
+      lines: [
+        { quantity: 2, product_name: 'Coque', supplier_sku: 'COQ-01', supplier_unit_price: '10.0000', supplier_currency: 'AED' },
+        { quantity: 1, supplier_sku: 'MANUEL-01' },
+      ],
+    },
+  });
+  expect(result.buffer.subarray(0, 5).toString()).toBe('%PDF-');
+  expect(result.filename).toBe('PO-01394ccc.pdf');
+});

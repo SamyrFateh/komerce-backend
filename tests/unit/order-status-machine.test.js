@@ -498,6 +498,28 @@ describe('transitionOrderStatus() — effets annulation : wallet reversal', () =
     }));
   });
 
+  test('fallback credit() annulation commande XAF : recrédite le montant et la devise du débit d’origine, pas l’équivalent KMF', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{ ...mockOrder, status: 'confirmed' }] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [], rowCount: 0 })
+      .mockResolvedValueOnce({ rows: [{ wallet_applied_kmf: 750, user_id: 'user-x', reference: 'KMC-X' }] })
+      .mockResolvedValueOnce({ rows: [{ amount_kmf: 1000, currency: 'XAF' }] }) // débit d'origine
+      .mockResolvedValueOnce({ rows: [] }) // order_items
+      .mockResolvedValueOnce({ rows: [] }); // history
+    walletService.removeFromOrder.mockRejectedValueOnce(new Error('reversal impossible'));
+    walletService.credit.mockResolvedValueOnce({ transaction: { id: 'wtx-x' } });
+
+    await transitionOrderStatus({
+      orderId: mockOrder.id, newStatus: 'cancelled',
+      actor: { id: 'admin-1', role: 'admin' }, source: 'patch', dbClient: mockDb,
+    });
+
+    expect(walletService.credit).toHaveBeenCalledWith(mockDb, expect.objectContaining({
+      userId: 'user-x', amountKmf: 1000, currency: 'XAF',
+    }));
+  });
+
   test('removeFromOrder ET credit() échouent tous les deux → non-bloquant, cancelEffects reste à 0', async () => {
     setupCancelSequence({ walletRows: [{ wallet_applied_kmf: 1000, user_id: 'user-3', reference: 'KMC-W3' }] });
     walletService.removeFromOrder.mockRejectedValueOnce(new Error('fail 1'));
@@ -714,4 +736,22 @@ describe('transitionOrderStatus() — échec insertion historique (D6)', () => {
       actor: { id: 'admin-1', role: 'admin' }, source: 'patch', dbClient: mockDb,
     })).rejects.toThrow('history table locked');
   });
+});
+
+test('publie le code du remplacement quand le colis devient disponible, dans la transaction physique', async () => {
+  const pickup = require('../../services/pickup-secret-service');
+  const generate = jest.spyOn(pickup, 'ensureSecretGenerated').mockResolvedValue({ code: 'ABC-DEF-GH' });
+  const cache = jest.spyOn(pickup, 'cacheCodeForReveal').mockResolvedValue();
+  try {
+    const order = setupMockForTransition('in_transit', { payment_mode: 'sav_replacement' });
+    const result = await transitionOrderStatus({
+      orderId: order.id, newStatus: 'available', source: 'patch',
+      actor: { id: 'admin-1', role: 'admin' }, dbClient: mockDb,
+    });
+    expect(result.success).toBe(true);
+    expect(cache).toHaveBeenCalledWith(order.id, 'ABC-DEF-GH', mockDb);
+  } finally {
+    generate.mockRestore();
+    cache.mockRestore();
+  }
 });

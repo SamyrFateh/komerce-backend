@@ -61,8 +61,9 @@ function requireAdmin(req, res, next) {
 // GET /api/wallet — solde
 router.get('/', async (req, res, next) => {
   try {
-    const [balance, expiryRes] = await Promise.all([
+    const [balance, balances, expiryRes] = await Promise.all([
       walletService.getBalance(req.user.id),
+      walletService.getBalancesByCurrency(req.user.id),
       db.query(
         `SELECT MIN(wcl.expires_at) AS expires_at
          FROM wallet_credit_lots wcl
@@ -75,7 +76,7 @@ router.get('/', async (req, res, next) => {
       ),
     ]);
     const expiresAt = expiryRes.rows[0]?.expires_at ?? null;
-    res.json({ balance_kmf: balance, user_id: req.user.id, expires_at: expiresAt });
+    res.json({ balance_kmf: balance, balances, user_id: req.user.id, expires_at: expiresAt });
   } catch (err) { next(err); }
 });
 
@@ -98,7 +99,7 @@ router.post('/apply', async (req, res, next) => {
   const client = await db.getClient();
   try {
     await client.query('BEGIN');
-    const { order_id, amount_kmf } = req.body;
+    const { order_id, amount_kmf, amount } = req.body;
     if (!order_id) {
       await client.query('ROLLBACK');
       return res.status(400).json({ error: 'order_id requis' });
@@ -131,11 +132,13 @@ router.post('/apply', async (req, res, next) => {
       userId:    req.user.id,
       orderId:   order_id,
       amountKmf: amount_kmf,
+      amount,
     });
     await client.query('COMMIT');
 
     res.json({
-      message:          `${result.applied_kmf} KMF appliqués`,
+      message:          `${result.debited ?? result.applied_kmf} ${result.currency || 'KMF'} appliqués`,
+      ...(result.currency && result.currency !== 'KMF' ? { currency: result.currency, debited: result.debited } : {}),
       applied_kmf:      result.applied_kmf,
       remaining_to_pay: result.remaining_to_pay,
       transaction:      result.transaction,
@@ -190,7 +193,8 @@ router.post('/remove', async (req, res, next) => {
     await client.query('COMMIT');
 
     res.json({
-      message:      `${result.reversed_kmf} KMF remboursés au wallet`,
+      message:      `${result.reversed_kmf} ${result.currency || 'KMF'} remboursés au wallet`,
+      ...(result.currency && result.currency !== 'KMF' ? { currency: result.currency } : {}),
       reversed_kmf: result.reversed_kmf,
       transaction:  result.transaction,
     });
@@ -218,7 +222,7 @@ router.get('/admin', requireAdmin, async (req, res, next) => {
 // GET /api/wallet/admin/:userId — détail d'un wallet
 router.get('/admin/:userId', requireAdmin, async (req, res, next) => {
   try {
-    const detail = await walletService.getWalletDetail(req.params.userId);
+    const detail = await walletService.getWalletDetail(req.params.userId, req.query.currency);
     if (!detail) return res.status(404).json({ error: 'Wallet introuvable' });
     res.json(detail);
   } catch (err) { next(err); }
@@ -229,13 +233,27 @@ router.post('/admin/credit', requireAdmin, async (req, res, next) => {
   const client = await db.getClient();
   try {
     await client.query('BEGIN');
-    const { user_id, amount_kmf, reason, note, expires_days } = req.body;
+    const { user_id, reason, note, expires_days } = req.body;
+    // Compat KMF : `amount_kmf` seul = KMF. Nouveau contrat : `amount` + `currency` (devise du marché du bénéficiaire).
+    const hasAmount = req.body.amount !== undefined;
+    const amount_kmf = hasAmount ? req.body.amount : req.body.amount_kmf;
+    let walletCurrency = 'KMF';
+    if (hasAmount) {
+      try { walletCurrency = walletService.normalizeWalletCurrency(req.body.currency); } catch (e) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({ error: 'currency (code ISO 3 lettres) requise avec amount' });
+      }
+      if (!req.body.currency || (req.body.amount_kmf !== undefined && walletCurrency !== 'KMF')) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({ error: 'currency requise avec amount ; amount_kmf est réservé au KMF' });
+      }
+    }
     const rawKey = req.get('Idempotency-Key') || req.body.idempotency_key;
     const callerKey = typeof rawKey === 'string' ? rawKey.trim() : '';
 
     if (!user_id || !Number.isInteger(amount_kmf) || amount_kmf <= 0) {
       await client.query('ROLLBACK');
-      return res.status(400).json({ error: 'user_id et amount_kmf (entier > 0) requis' });
+      return res.status(400).json({ error: 'user_id et amount (ou amount_kmf) — entier > 0 — requis' });
     }
     if (!callerKey || callerKey.length > 200) {
       await client.query('ROLLBACK');
@@ -257,6 +275,7 @@ router.post('/admin/credit', requireAdmin, async (req, res, next) => {
     const result = await walletService.credit(client, {
       userId:         user_id,
       amountKmf:      amount_kmf,
+      currency:       walletCurrency,
       reason:         reason || 'admin_gift',
       note:           note || 'Crédit manuel admin',
       createdBy:      req.user.id,
@@ -275,7 +294,7 @@ router.post('/admin/credit', requireAdmin, async (req, res, next) => {
     res.status(result.duplicate ? 200 : 201).json({
       success: true,
       idempotent: !!result.duplicate,
-      message: `${Number(amount_kmf).toLocaleString('fr-FR')} KMF crédités à ${user.full_name}`,
+      message: `${Number(amount_kmf).toLocaleString('fr-FR')} ${walletCurrency} crédités à ${user.full_name}`,
       transaction: result.transaction,
       lot:         result.lot,
     });

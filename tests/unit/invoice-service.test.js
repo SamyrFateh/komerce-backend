@@ -83,3 +83,11 @@ test('le rendu HTML historique échappe les noms de produit', () => {
   expect(html).toContain('data:image/png;base64,');
   expect(html).toContain('name="komerce-invoice-payload"');
 });
+
+test('ne facture pas une commande interne de remplacement SAV', async () => {
+  mockQuery.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [{
+    id: 'order-1', reference: 'CMD-1', payment_status: 'paid', payment_mode: 'sav_replacement',
+  }] });
+  await expect(invoiceService.getOrCreateInvoice('order-1')).rejects.toThrow('sans facturation');
+  expect(mockQuery).toHaveBeenCalledTimes(2);
+});

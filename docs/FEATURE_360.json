@@ -56,7 +56,7 @@
     "healthy": 34,
     "attention": 6,
     "blocked": 0,
-    "businessDependencies": 323,
+    "businessDependencies": 327,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
@@ -5846,7 +5846,8 @@
           "provider": "logistics",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "interface"
           ]
         },
         {
@@ -10546,16 +10547,21 @@
             ]
           },
           "services": {
-            "count": 8,
+            "count": 9,
             "files": [
               {
                 "declared": "services/documents/cart-quote-pdf.js",
                 "resolvedPath": "services/documents/cart-quote-pdf.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/documents/customs-invoice.js",
                 "resolvedPath": "services/documents/customs-invoice.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/documents/document-reconciliation.js",
+                "resolvedPath": "services/documents/document-reconciliation.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -10591,7 +10597,7 @@
             ]
           },
           "tests": {
-            "count": 17,
+            "count": 18,
             "files": [
               {
                 "declared": "tests/e2e-api/invoices-finance-config.kmf-numeric.e2e.test.js",
@@ -10616,6 +10622,11 @@
               {
                 "declared": "tests/unit/customs-invoice.test.js",
                 "resolvedPath": "tests/unit/customs-invoice.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/document-reconciliation.test.js",
+                "resolvedPath": "tests/unit/document-reconciliation.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -10711,7 +10722,7 @@
             ]
           }
         },
-        "totalFiles": 40,
+        "totalFiles": 42,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -10986,6 +10997,7 @@
           "consumer": "logistics",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
+            "static-code",
             "data-read"
           ]
         },
@@ -11009,6 +11021,13 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "data-read"
+          ]
+        },
+        {
+          "consumer": "purchasing",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
           ]
         },
         {
@@ -17807,10 +17826,18 @@
           ]
         },
         {
-          "consumer": "orders",
+          "consumer": "market-delegation",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
+          ]
+        },
+        {
+          "consumer": "orders",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code",
+            "interface"
           ]
         },
         {
@@ -19806,6 +19833,7 @@
           "provider": "documents",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
+            "static-code",
             "data-read"
           ]
         },
@@ -19911,7 +19939,8 @@
           "consumer": "catalog",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "interface"
           ]
         },
         {
@@ -21066,10 +21095,24 @@
           ]
         },
         {
+          "consumer": "refunds",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "consumer": "settlement",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "data-read"
+          ]
+        },
+        {
+          "consumer": "wallet",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
           ]
         }
       ],
@@ -21216,7 +21259,7 @@
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 23,
+            "count": 24,
             "files": [
               {
                 "declared": "dashboards/canonical/access.html",
@@ -21281,6 +21324,11 @@
               {
                 "declared": "dashboards/canonical/js/market-catalog.js",
                 "resolvedPath": "public/dashboards/canonical/js/market-catalog.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/js/market-local-offer.js",
+                "resolvedPath": "public/dashboards/canonical/js/market-local-offer.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -21441,7 +21489,7 @@
             ]
           }
         },
-        "totalFiles": 41,
+        "totalFiles": 42,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -22637,7 +22685,7 @@
             ]
           },
           "routes": {
-            "count": 14,
+            "count": 15,
             "files": [
               {
                 "declared": "routes/market-delegation-cash-control.js",
@@ -22708,11 +22756,16 @@
                 "declared": "routes/market-delegation-team.js",
                 "resolvedPath": "routes/market-delegation-team.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "routes/market-local-stock.js",
+                "resolvedPath": "routes/market-local-stock.js",
+                "status": "resolved-in-technical-graph"
               }
             ]
           },
           "services": {
-            "count": 17,
+            "count": 18,
             "files": [
               {
                 "declared": "services/capability-registry.js",
@@ -22747,6 +22800,11 @@
               {
                 "declared": "services/market-delegation-local-offer-service.js",
                 "resolvedPath": "services/market-delegation-local-offer-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/market-delegation-local-stock-service.js",
+                "resolvedPath": "services/market-delegation-local-stock-service.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -23067,7 +23125,7 @@
             ]
           }
         },
-        "totalFiles": 111,
+        "totalFiles": 113,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -23623,6 +23681,13 @@
           ]
         },
         {
+          "provider": "local-stock",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "logistics",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -24110,7 +24175,7 @@
             ]
           },
           "services": {
-            "count": 13,
+            "count": 14,
             "files": [
               {
                 "declared": "services/alert-engine.js",
@@ -24175,6 +24240,11 @@
               {
                 "declared": "services/whatsapp-meta.js",
                 "resolvedPath": "services/whatsapp-meta.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "utils/non-prod-phone-guard.js",
+                "resolvedPath": "utils/non-prod-phone-guard.js",
                 "status": "resolved-in-technical-graph"
               }
             ]
@@ -24315,7 +24385,7 @@
             ]
           }
         },
-        "totalFiles": 48,
+        "totalFiles": 49,
         "boutiqueManifest": "notifications-client",
         "boutiqueFiles": {
           "count": 3,
@@ -24878,7 +24948,7 @@
             ]
           },
           "services": {
-            "count": 27,
+            "count": 30,
             "files": [
               {
                 "declared": "services/admin-order-refund.js",
@@ -24908,6 +24978,11 @@
               {
                 "declared": "services/hub-v1-fixture-payment.js",
                 "resolvedPath": "services/hub-v1-fixture-payment.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/order-checkout-idempotency.js",
+                "resolvedPath": "services/order-checkout-idempotency.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -24993,7 +25068,7 @@
               {
                 "declared": "services/public-cart-quote-service.js",
                 "resolvedPath": "services/public-cart-quote-service.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/qr-collection-core.js",
@@ -25006,8 +25081,18 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/relay-return-compensation-service.js",
+                "resolvedPath": "services/relay-return-compensation-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/relay-return-request-service.js",
                 "resolvedPath": "services/relay-return-request-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/sav-replacement-order.js",
+                "resolvedPath": "services/sav-replacement-order.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -25018,7 +25103,7 @@
             ]
           },
           "tests": {
-            "count": 60,
+            "count": 64,
             "files": [
               {
                 "declared": "tests/e2e-api/customer-to-customer.golden.e2e.test.js",
@@ -25063,6 +25148,11 @@
               {
                 "declared": "tests/integration/admin-order-refund-payment-service.test.js",
                 "resolvedPath": "tests/integration/admin-order-refund-payment-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/checkout-idempotency-postgres.test.js",
+                "resolvedPath": "tests/integration/checkout-idempotency-postgres.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -25133,6 +25223,11 @@
               {
                 "declared": "tests/unit/order-api-v2.test.js",
                 "resolvedPath": "tests/unit/order-api-v2.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/order-checkout-idempotency.test.js",
+                "resolvedPath": "tests/unit/order-checkout-idempotency.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -25311,8 +25406,18 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/relay-return-compensation-service.test.js",
+                "resolvedPath": "tests/unit/relay-return-compensation-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/relay-return-request-service.test.js",
                 "resolvedPath": "tests/unit/relay-return-request-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/sav-replacement-order.test.js",
+                "resolvedPath": "tests/unit/sav-replacement-order.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -25333,7 +25438,7 @@
             ]
           }
         },
-        "totalFiles": 102,
+        "totalFiles": 109,
         "boutiqueManifest": "orders-client",
         "boutiqueFiles": {
           "count": 19,
@@ -25485,6 +25590,10 @@
             "resolution": "single-writer"
           },
           {
+            "table": "order_checkout_idempotency",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "order_comments",
             "resolution": "multi-writer-resolved-by-classification-signal"
           },
@@ -25523,6 +25632,12 @@
           {
             "table": "disputes",
             "mode": "W",
+            "lifecycleOwner": "orders",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "order_checkout_idempotency",
+            "mode": "RW",
             "lifecycleOwner": "orders",
             "ownershipStatus": "owner"
           },
@@ -25623,6 +25738,10 @@
             "resolution": "single-writer"
           },
           {
+            "table": "order_checkout_idempotency",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "order_comments",
             "resolution": "multi-writer-resolved-by-classification-signal"
           },
@@ -25661,6 +25780,12 @@
           {
             "table": "disputes",
             "mode": "W",
+            "lifecycleOwner": "orders",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "order_checkout_idempotency",
+            "mode": "RW",
             "lifecycleOwner": "orders",
             "ownershipStatus": "owner"
           },
@@ -25988,7 +26113,8 @@
           "provider": "local-stock",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "interface"
           ]
         },
         {
@@ -29200,7 +29326,7 @@
       "implementation": {
         "byCategory": {
           "migrations": {
-            "count": 14,
+            "count": 17,
             "files": [
               {
                 "declared": "migrations/225_purchase_orders_exact_supplier_identity.sql",
@@ -29270,6 +29396,21 @@
               {
                 "declared": "migrations/362_suppliers_hub_scope.sql",
                 "resolvedPath": "migrations/362_suppliers_hub_scope.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/404_manual_purchase_executions.sql",
+                "resolvedPath": "migrations/404_manual_purchase_executions.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/407_purchase_variance_decisions.sql",
+                "resolvedPath": "migrations/407_purchase_variance_decisions.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/411_hub_purchase_commitment_pdf.sql",
+                "resolvedPath": "migrations/411_hub_purchase_commitment_pdf.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -29630,7 +29771,7 @@
             ]
           },
           "tests": {
-            "count": 88,
+            "count": 90,
             "files": [
               {
                 "declared": "tests/e2e-api/purchasing.grouped-flow.e2e.test.js",
@@ -29873,6 +30014,16 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/hub-authorization-cumulative-cap.test.js",
+                "resolvedPath": "tests/unit/hub-authorization-cumulative-cap.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/hub-authorization-variance-decision.test.js",
+                "resolvedPath": "tests/unit/hub-authorization-variance-decision.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/hub-operations-grouped-completion.test.js",
                 "resolvedPath": "tests/unit/hub-operations-grouped-completion.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -30075,7 +30226,7 @@
             ]
           }
         },
-        "totalFiles": 170,
+        "totalFiles": 175,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -30472,7 +30623,7 @@
           }
         ],
         "httpInterfaces": {
-          "count": 20
+          "count": 21
         }
       },
       "businessDependencies": [
@@ -30489,6 +30640,13 @@
           "channels": [
             "static-code",
             "data-read"
+          ]
+        },
+        {
+          "provider": "documents",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
           ]
         },
         {
@@ -31093,7 +31251,7 @@
       "implementation": {
         "byCategory": {
           "services": {
-            "count": 6,
+            "count": 7,
             "files": [
               {
                 "declared": "services/item-refund-psp-orchestrator.js",
@@ -31124,11 +31282,16 @@
                 "declared": "services/refund-service.js",
                 "resolvedPath": "services/refund-service.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/sav-ledger-refund.js",
+                "resolvedPath": "services/sav-ledger-refund.js",
+                "status": "resolved-in-technical-graph"
               }
             ]
           },
           "tests": {
-            "count": 16,
+            "count": 17,
             "files": [
               {
                 "declared": "tests/e2e-api/refunds.credits-cash-numeric.e2e.test.js",
@@ -31209,6 +31372,11 @@
                 "declared": "tests/unit/refunds-util.test.js",
                 "resolvedPath": "tests/unit/refunds-util.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/sav-ledger-refund.test.js",
+                "resolvedPath": "tests/unit/sav-ledger-refund.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           },
@@ -31223,7 +31391,7 @@
             ]
           }
         },
-        "totalFiles": 23,
+        "totalFiles": 25,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -31377,6 +31545,13 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "data-read"
+          ]
+        },
+        {
+          "provider": "market",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
           ]
         },
         {
@@ -34873,6 +35048,13 @@
         },
         {
           "provider": "infrastructure",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "market",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"

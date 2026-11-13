@@ -42,7 +42,8 @@ async function executeSupplierPayment(client, {
   const prepared = await prepareSupplierPayment(client, payment);
   // P04 : aucun appel fournisseur sans autorisation de paiement de la directrice (montant et devise bornés).
   await require('./hub-authorization-service').assertPaymentAuthorized(
-    client, payment.purchaseOrderId, prepared.expected_amount, prepared.currency);
+    client, payment.purchaseOrderId, prepared.expected_amount, prepared.currency,
+    { excludePaymentKey: prepared.payment_execution_key });
   const gate = await canInvokeProviderPayment(client, {
     provider: prepared.provider,
     paymentExecutionKey: prepared.payment_execution_key,

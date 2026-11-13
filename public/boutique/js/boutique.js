@@ -340,6 +340,9 @@ function ensureRelayMapPreview(mapLink) {
     mapLink.dataset.locationPrecision = 'gps';
   }
 
+  // Checkout : pas d'iframe générique plein écran. Le lien Maps reste utilisable
+  // et a déjà été précisé au GPS si le relais dispose de coordonnées.
+  if (summary.closest('.ck-checkout-aside')) return;
   const embedUrl = relayEmbedUrlFromLink(mapLink, relay);
   if (!embedUrl) return;
 

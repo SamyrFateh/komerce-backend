@@ -357,6 +357,8 @@ const ROUTE_SCHEMA_MAP = [
 // ── 4. Champs de réponse connus (extraits de A2 + tests intégration) ─────────
 // Format : chemin → méthode → { fields: [...], source: 'test|scan|UNKNOWN' }
 const KNOWN_RESPONSES = {
+  // Binary response specified in RESPONSE_OVERRIDES.
+  '/api/purchasing/po/{po_id}/commitment-pdf': { get: { fields: [], source: 'route-read' } },
   '/api/admin/dashboard/reference/resolve': {
     get: { fields: ['query','found','ambiguous','matches'], source: 'test' }
   },
@@ -2828,6 +2830,14 @@ const SUCCESS_STATUS_OVERRIDES = Object.freeze({
 // KNOWN_RESPONSES (pas un schéma de corps, juste un code de statut documenté en plus).
 // Format : "METHOD /chemin/{param}" → { [code]: { description } }
 const RESPONSE_OVERRIDES = {
+  'GET /api/purchasing/po/{po_id}/commitment-pdf': {
+    '200': {
+      description: 'Bon de commande fournisseur interne figé à la validation de l’engagement',
+      content: { 'application/pdf': { schema: { type: 'string', format: 'binary', 'x-contract-status': 'route-read' } } },
+    },
+    '400': { description: 'Identifiant du bon de commande invalide' },
+    '404': { description: 'Bon de commande PDF indisponible' },
+  },
   'POST /api/orders/quote-pdf': {
     '200': {
       description: 'Devis estimatif PDF privé et éphémère, sans commande ni facture',

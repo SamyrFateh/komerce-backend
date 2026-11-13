@@ -81,9 +81,9 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 
 | Dépôt | Manifests découverts | Manifests connectés | Nœuds techniques | Owned | Orphelins |
 |---|---|---|---|---|---|
-| backend | 36 | 36 | 695 | 695 | 0 |
+| backend | 36 | 36 | 705 | 705 | 0 |
 | dash | 3 | 3 | N/A | N/A | N/A |
-| boutique | 16 | 16 | 104 | 104 | 0 |
+| boutique | 16 | 16 | 105 | 105 | 0 |
 
 _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipeline — non scanné par arch:gen backend, couverture non mesurable ici (SCOPE, pas un gap)
 
@@ -252,17 +252,17 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 > Generer et conserver un PDF officiel privé (facture, remboursement, wallet, retrait, douane) après événement confirmé ; exposer au client authentifié uniquement ses factures et remboursements essentiels.
 
-- services: 8
+- services: 9
 - routes: 3
 - migrations: 7
 - utils: 5
-- tests: 17
+- tests: 18
 - tables owned (lifecycle): 2 — `invoices`, `transaction_documents`
 - tables written: 2
 - interfaces exposed: 9
 - internal APIs: 0
 - dependencies (consumes): 9 — logistics, catalog, auth, infrastructure, orders, customs, wallet, refunds, auth-identity
-- consumers: 10 — auth-identity, customs, dashboard, logistics, orders, payments, platform-ops, refunds, wallet, admin-dashboard
+- consumers: 11 — auth-identity, customs, dashboard, logistics, orders, payments, platform-ops, purchasing, refunds, wallet, admin-dashboard
 
 ### economic-engine _(business-feature)_
 
@@ -375,7 +375,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - interfaces exposed: 2
 - internal APIs: 6
 - dependencies (consumes): 4 — catalog, market, logistics, infrastructure
-- consumers: 6 — dashboard, economic-engine, logistics, orders, providers-services, recommendations
+- consumers: 7 — dashboard, economic-engine, logistics, market-delegation, orders, providers-services, recommendations
 
 ### logistics _(business-feature)_
 
@@ -424,7 +424,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - interfaces exposed: 0
 - internal APIs: 0
 - dependencies (consumes): 2 — infrastructure, notifications
-- consumers: 16 — catalog, customs, dashboard, economic-engine, infrastructure, local-stock, logistics, market-autonomy, market-control-plane, market-delegation, market-operator-dashboard, orders, payments, providers-services, recommendations, settlement
+- consumers: 18 — catalog, customs, dashboard, economic-engine, infrastructure, local-stock, logistics, market-autonomy, market-control-plane, market-delegation, market-operator-dashboard, orders, payments, providers-services, recommendations, refunds, settlement, wallet
 
 ### market-autonomy _(business-feature)_
 
@@ -432,7 +432,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - services: 4
 - migrations: 3
-- dash: 23
+- dash: 24
 - tests: 11
 - tables owned (lifecycle): 2 — `product_market_price_drafts`, `product_market_price_draft_events`
 - tables written: 2
@@ -463,14 +463,14 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - migrations: 23
 - config: 1
 - middleware: 4
-- services: 17
-- routes: 14
+- services: 18
+- routes: 15
 - tests: 52
 - tables owned (lifecycle): 10 — `market_operating_assignments`, `assignment_memberships`, `membership_capabilities`, `assignment_capability_ceiling`, `market_cash_control_policies`, `capability_registry`, `ceiling_templates`, `ceiling_template_capabilities`, `market_delegation_audit`, `market_team_invitations`
 - tables written: 10
 - interfaces exposed: 33
 - internal APIs: 35
-- dependencies (consumes): 13 — market, auth, auth-identity, infrastructure, logistics, catalog, providers-services, orders, settlement, economic-engine, market-autonomy, dashboard, payments
+- dependencies (consumes): 14 — local-stock, market, auth, auth-identity, infrastructure, logistics, catalog, providers-services, orders, settlement, economic-engine, market-autonomy, dashboard, payments
 - consumers: 10 — dashboard, dashboard, economic-engine, logistics, market-autonomy, market-control-plane, market-operator-dashboard, payments, settlement, decision-signals
 
 ### market-operator-dashboard _(unclassified)_
@@ -493,7 +493,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - tests: 23
 - migrations: 6
 - utils: 2
-- services: 13
+- services: 14
 - routes: 4
 - tables owned (lifecycle): 3 — `client_notifications`, `alerts`, `notification_log`
 - tables written: 3
@@ -507,12 +507,12 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 > Faire exister une commande, de la creation au statut final, avec un cout figure et une reference lisible.
 
 - utils: 1
-- services: 27
+- services: 30
 - routes: 11
 - boutique: 3
-- tests: 60
-- tables owned (lifecycle): 9 — `order_items`, `orders`, `disputes`, `order_comments`, `order_item_cost_imputations`, `order_status_history`, `recipients`, `sms_log`, `customs_history`
-- tables written: 11
+- tests: 64
+- tables owned (lifecycle): 10 — `order_items`, `orders`, `disputes`, `order_comments`, `order_item_cost_imputations`, `order_status_history`, `recipients`, `sms_log`, `customs_history`, `order_checkout_idempotency`
+- tables written: 12
 - interfaces exposed: 27
 - internal APIs: 30
 - dependencies (consumes): 23 — dashboard, market-control-plane, platform-ops, infrastructure, decision-signals, business-rules, wallet, economic-engine, logistics, catalog, market-autonomy, local-stock, market, purchasing, loyalty, payments, auth, auth-identity, customs, documents, notifications, refunds, shared-cart
@@ -588,14 +588,14 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - services: 53
 - routes: 1
-- migrations: 14
+- migrations: 17
 - scripts: 14
-- tests: 88
+- tests: 90
 - tables owned (lifecycle): 13 — `suppliers`, `purchase_lines`, `purchase_orders`, `product_suppliers`, `purchase_order_authorizations`, `hub_authorization_grants`, `supplier_execution_payments`, `supplier_payment_settlements`, `supplier_execution_events`, `supplier_execution_fulfillments`, `supplier_execution_order_lines`, `supplier_execution_orders`, `supplier_execution_payment_proofs`
 - tables written: 13
-- interfaces exposed: 20
+- interfaces exposed: 21
 - internal APIs: 14
-- dependencies (consumes): 10 — supplier-connectivity, external-provider-contracts, sourcing, catalog, infrastructure, orders, auth, economic-engine, notifications, logistics
+- dependencies (consumes): 11 — documents, supplier-connectivity, external-provider-contracts, sourcing, catalog, infrastructure, orders, auth, economic-engine, notifications, logistics
 - consumers: 8 — catalog, dashboard, logistics, orders, payments, platform-ops, sourcing, decision-signals
 
 ### recommendations _(business-feature)_
@@ -618,13 +618,13 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 > Rembourser un client de facon tracable et sans double remboursement, quel que soit le flux appelant.
 
 - utils: 1
-- services: 6
-- tests: 16
+- services: 7
+- tests: 17
 - tables owned (lifecycle): 3 — `refunds`, `refund_execution_intents`, `order_item_refund_reservations`
 - tables written: 3
 - interfaces exposed: 0
 - internal APIs: 1
-- dependencies (consumes): 7 — infrastructure, orders, logistics, payments, wallet, documents, economic-engine
+- dependencies (consumes): 8 — market, infrastructure, orders, logistics, payments, wallet, documents, economic-engine
 - consumers: 5 — documents, economic-engine, logistics, orders, payments
 
 ### settlement _(business-feature)_
@@ -716,7 +716,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - tables written: 4
 - interfaces exposed: 9
 - internal APIs: 0
-- dependencies (consumes): 6 — orders, platform-ops, infrastructure, auth, documents, auth-identity
+- dependencies (consumes): 7 — market, orders, platform-ops, infrastructure, auth, documents, auth-identity
 - consumers: 7 — auth-identity, dashboard, documents, infrastructure, orders, platform-ops, refunds
 
 ### wallet-loyalty _(deprecated)_
@@ -843,6 +843,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `mobile_money_transactions` | `payments` | single-writer | payments | — |
 | `notification_log` | `notifications` | declared-table-owner | notifications, platform-ops | — |
 | `operator_market_scopes` | `market` | declared-table-owner | market | market-delegation |
+| `order_checkout_idempotency` | `orders` | declared-table-owner | orders | — |
 | `order_comments` | `orders` | multi-writer-resolved-by-classification-signal | dashboard, orders | — |
 | `order_cost_entry_events` | `economic-engine` | declared-table-owner | economic-engine | — |
 | `order_incidents` | `dashboard` | single-writer | dashboard | — |
@@ -1524,6 +1525,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `DELETE /api/purchasing/po/{id}` | purchasing | `routes/purchasing.js` (resolved-owned) |
 | `GET /api/purchasing/open-lines` | purchasing | `routes/purchasing.js` (resolved-owned) |
 | `GET /api/purchasing/po/{id}` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `GET /api/purchasing/po/{id}/commitment-pdf` | purchasing | `routes/purchasing.js` (resolved-owned) |
 | `POST /api/purchasing/po/prepare` | purchasing | `routes/purchasing.js` (resolved-owned) |
 | `POST /api/purchasing/po/{id}/detach` | purchasing | `routes/purchasing.js` (resolved-owned) |
 | `POST /api/purchasing/po/{id}/discard` | purchasing | `routes/purchasing.js` (resolved-owned) |
@@ -2040,6 +2042,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | market-control-plane | sourcing (`sourcing (sourcing_global_access_grants et require-sourcing-global-authority : autorisation centrale explicite lue)`) | ✔ |
 | market-control-plane | auth (`auth (garde des routes centrales)`) | ✔ |
 | market-control-plane | infrastructure (`infrastructure (DB et bootstrap)`) | ✔ |
+| market-delegation | local-stock (`local-stock`) | ✔ |
 | market-delegation | market (`market`) | ✔ |
 | market-delegation | auth (`auth`) | ✔ |
 | market-delegation | auth-identity (`auth-identity`) | ✔ |
@@ -2126,6 +2129,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | providers-services | local-stock (`local-stock — déclaration et exposition du stock local Product Komerce du seed Discovery staging via les primitives owner`) | ✔ |
 | providers-services | recommendations (`recommendations — réutilise le tooling Discovery CJ pour construire les candidats staging ; recommendations reste propriétaire de la sélection et de l ordre éditorial`) | ✔ |
 | providers-services | infrastructure (`infrastructure — dépendance technique db.js et résolution KOMERCE_ENV`) | ✔ |
+| purchasing | documents (`documents (rendu PDF interne du bon de commande validé)`) | ✔ |
 | purchasing | supplier-connectivity (`supplier-connectivity (autorité provider, Supplier Order Identity opaque et contrats adapter fail-closed)`) | ✔ |
 | purchasing | external-provider-contracts (`external-provider-contracts (contrat transverse de preuve provider : Conversation + KNOWN/DERIVED/UNKNOWN + P0..P4 consommé par les proofs Purchasing)`) | ✔ |
 | purchasing | sourcing (`sourcing (resolveCanonicalUnitForProductSku — frontière canonique exacte, sans lecture directe des tables Resolution)`) | ✔ |
@@ -2146,6 +2150,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | recommendations | market (`market (référentiel markets — résolution code -> id côté serveur)`) | ✔ |
 | recommendations | local-stock (`local-stock — isStockExposable() pour la carte product du rail Discovery`) | ✔ |
 | recommendations | providers-services (`providers-services — isServiceExposable()/getService()/isPhysicalOfferExposable()/getPhysicalOffer() pour les cartes tierces`) | ✔ |
+| refunds | market (`market (prorata SAV dans les devises figées via fx-authority)`) | ✔ |
 | refunds | infrastructure (`infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)`) | ✔ |
 | refunds | orders (`orders (commande source)`) | ✔ |
 | refunds | logistics (`logistics (attestation physique du manquant au relais ; source incident immuable)`) | ✔ |
@@ -2179,6 +2184,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | unsold-resolution | catalog (`catalog (produit concerné)`) | ✔ |
 | unsold-resolution | auth (`auth`) | ✔ |
 | unsold-resolution | infrastructure (`infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)`) | ✔ |
+| wallet | market (`market (2026-11-13 #3927 — conversion KMF↔devise du marché via la seule autorité fx-authority/currency_parities ; preuve: services/wallet-service.js -> services/fx-authority.js)`) | ✔ |
 | wallet | orders (`orders (persistence via order-mutation-service ? LOT11)`) | ✔ |
 | wallet | platform-ops (`platform-ops (monitoring/exploitation transverse observé dans le code)`) | ✔ |
 | wallet | infrastructure (`infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)`) | ✔ |
@@ -2238,7 +2244,7 @@ Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la det
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> local-stock — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "local-stock"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> loyalty — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "loyalty"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> market-control-plane — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "market-control-plane"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> market-delegation — dépendance cross-feature observée (canal: static-code, 14 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "market-delegation"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> market-delegation — dépendance cross-feature observée (canal: static-code, 15 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "market-delegation"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> providers-services — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "providers-services"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> purchasing — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "purchasing"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> settlement — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "settlement"
@@ -2301,7 +2307,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 2310 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 2327 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 216 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 79 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -2350,7 +2356,7 @@ Meta Graph monté : oui.
 | catalog | economic-engine | static-code | 16 | **DECLARED_AND_OBSERVED** |
 | catalog | external-provider-contracts | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | catalog | infrastructure | static-code | 112 | **DECLARED_AND_OBSERVED** |
-| catalog | logistics | static-code | 10 | **DECLARED_AND_OBSERVED** |
+| catalog | logistics | static-code, interface | 12 | **DECLARED_AND_OBSERVED** |
 | catalog | market | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | catalog | market-autonomy | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
 | catalog | notifications | static-code | 2 | **DECLARED_AND_OBSERVED** |
@@ -2387,7 +2393,7 @@ Meta Graph monté : oui.
 | dashboard | market-autonomy | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | dashboard | market-delegation | static-code | 29 | **DECLARED_AND_OBSERVED** |
 | dashboard | notifications | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
-| dashboard | orders | static-code, data-write, data-read | 15 | **DECLARED_AND_OBSERVED** |
+| dashboard | orders | static-code, data-write, data-read | 17 | **DECLARED_AND_OBSERVED** |
 | dashboard | payments | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | dashboard | platform | static-code | 1 | **OBSERVED_UNDECLARED** |
 | dashboard | purchasing | static-code, data-read | 7 | **DECLARED_AND_OBSERVED** |
@@ -2408,7 +2414,7 @@ Meta Graph monté : oui.
 | documents | auth-identity | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | documents | catalog | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | documents | customs | data-read | 2 | **DECLARED_AND_OBSERVED** |
-| documents | infrastructure | static-code | 23 | **DECLARED_AND_OBSERVED** |
+| documents | infrastructure | static-code | 25 | **DECLARED_AND_OBSERVED** |
 | documents | logistics | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
 | documents | orders | data-read | 3 | **DECLARED_AND_OBSERVED** |
 | documents | refunds | data-read | 1 | **DECLARED_AND_OBSERVED** |
@@ -2450,7 +2456,7 @@ Meta Graph monté : oui.
 | infrastructure | loyalty | static-code | 2 | **OBSERVED_UNDECLARED** |
 | infrastructure | market | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | infrastructure | market-control-plane | static-code | 1 | **OBSERVED_UNDECLARED** |
-| infrastructure | market-delegation | static-code | 14 | **OBSERVED_UNDECLARED** |
+| infrastructure | market-delegation | static-code | 15 | **OBSERVED_UNDECLARED** |
 | infrastructure | notifications | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | infrastructure | orders | static-code | 6 | **DECLARED_AND_OBSERVED** |
 | infrastructure | payments | static-code | 10 | **DECLARED_AND_OBSERVED** |
@@ -2474,21 +2480,21 @@ Meta Graph monté : oui.
 | local-stock | logistics | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | local-stock | market | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | logistics | auth | static-code | 13 | **DECLARED_AND_OBSERVED** |
-| logistics | auth-identity | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
+| logistics | auth-identity | static-code, data-read | 6 | **DECLARED_AND_OBSERVED** |
 | logistics | business-rules | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
 | logistics | catalog | static-code, data-write, data-read | 3 | **DECLARED_AND_OBSERVED** |
 | logistics | customs | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
 | logistics | dashboard | static-code | 2 | **OBSERVED_UNDECLARED** |
-| logistics | documents | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| logistics | documents | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
 | logistics | economic-engine | static-code | 1 | **OBSERVED_UNDECLARED** |
 | logistics | incident-management | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
 | logistics | infrastructure | static-code | 117 | **DECLARED_AND_OBSERVED** |
 | logistics | local-stock | data-read | 2 | **DECLARED_AND_OBSERVED** |
 | logistics | loyalty | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | logistics | market | static-code | 3 | **DECLARED_AND_OBSERVED** |
-| logistics | market-delegation | static-code | 6 | **DECLARED_AND_OBSERVED** |
+| logistics | market-delegation | static-code | 7 | **DECLARED_AND_OBSERVED** |
 | logistics | notifications | static-code | 14 | **DECLARED_AND_OBSERVED** |
-| logistics | orders | static-code, data-write, data-read | 40 | **DECLARED_AND_OBSERVED** |
+| logistics | orders | static-code, data-write, data-read | 41 | **DECLARED_AND_OBSERVED** |
 | logistics | payments | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | logistics | purchasing | static-code, data-read | 16 | **DECLARED_AND_OBSERVED** |
 | logistics | refunds | static-code | 1 | **DECLARED_AND_OBSERVED** |
@@ -2522,12 +2528,13 @@ Meta Graph monté : oui.
 | market-control-plane | orders | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
 | market-control-plane | payments | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
 | market-control-plane | sourcing | static-code | 1 | **DECLARED_AND_OBSERVED** |
-| market-delegation | auth | static-code | 14 | **DECLARED_AND_OBSERVED** |
+| market-delegation | auth | static-code | 15 | **DECLARED_AND_OBSERVED** |
 | market-delegation | auth-identity | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
 | market-delegation | catalog | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
 | market-delegation | dashboard | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | market-delegation | economic-engine | static-code, data-read | 6 | **DECLARED_AND_OBSERVED** |
-| market-delegation | infrastructure | static-code | 24 | **DECLARED_AND_OBSERVED** |
+| market-delegation | infrastructure | static-code | 25 | **DECLARED_AND_OBSERVED** |
+| market-delegation | local-stock | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | market-delegation | logistics | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
 | market-delegation | market | static-code, data-read | 7 | **DECLARED_AND_OBSERVED** |
 | market-delegation | market-autonomy | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
@@ -2557,19 +2564,19 @@ Meta Graph monté : oui.
 | orders | decision-signals | static-code, data-write | 2 | **DECLARED_AND_OBSERVED** |
 | orders | documents | static-code, interface | 10 | **DECLARED_AND_OBSERVED** |
 | orders | economic-engine | static-code | 10 | **DECLARED_AND_OBSERVED** |
-| orders | infrastructure | static-code, interface | 68 | **DECLARED_AND_OBSERVED** |
-| orders | local-stock | static-code | 4 | **DECLARED_AND_OBSERVED** |
-| orders | logistics | static-code, interface, data-read | 36 | **DECLARED_AND_OBSERVED** |
+| orders | infrastructure | static-code, interface | 69 | **DECLARED_AND_OBSERVED** |
+| orders | local-stock | static-code, interface | 5 | **DECLARED_AND_OBSERVED** |
+| orders | logistics | static-code, interface, data-read | 37 | **DECLARED_AND_OBSERVED** |
 | orders | loyalty | static-code | 7 | **DECLARED_AND_OBSERVED** |
-| orders | market | static-code | 3 | **DECLARED_AND_OBSERVED** |
+| orders | market | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | orders | market-autonomy | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | orders | notifications | static-code | 13 | **DECLARED_AND_OBSERVED** |
 | orders | payments | static-code, interface | 9 | **DECLARED_AND_OBSERVED** |
 | orders | platform-ops | static-code | 42 | **DECLARED_AND_OBSERVED** |
-| orders | purchasing | static-code | 1 | **DECLARED_AND_OBSERVED** |
-| orders | refunds | static-code, data-read | 7 | **DECLARED_AND_OBSERVED** |
+| orders | purchasing | static-code | 3 | **DECLARED_AND_OBSERVED** |
+| orders | refunds | static-code, data-read | 9 | **DECLARED_AND_OBSERVED** |
 | orders | shared-cart | static-code | 9 | **DECLARED_AND_OBSERVED** |
-| orders | wallet | static-code, interface | 11 | **DECLARED_AND_OBSERVED** |
+| orders | wallet | static-code, interface | 12 | **DECLARED_AND_OBSERVED** |
 | payments | auth | static-code | 9 | **DECLARED_AND_OBSERVED** |
 | payments | auth-identity | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | payments | business-rules | static-code | 3 | **DECLARED_AND_OBSERVED** |
@@ -2613,6 +2620,7 @@ Meta Graph monté : oui.
 | purchasing | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | purchasing | catalog | static-code, data-read | 21 | **DECLARED_AND_OBSERVED** |
 | purchasing | decision-signals | static-code | 1 | **OBSERVED_UNDECLARED** |
+| purchasing | documents | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | purchasing | economic-engine | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | purchasing | external-provider-contracts | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | purchasing | infrastructure | static-code | 65 | **DECLARED_AND_OBSERVED** |
@@ -2631,12 +2639,13 @@ Meta Graph monté : oui.
 | recommendations | platform-ops | static-code | 10 | **DECLARED_AND_OBSERVED** |
 | recommendations | providers-services | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | refunds | auth | static-code | 1 | **OBSERVED_UNDECLARED** |
-| refunds | documents | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| refunds | documents | static-code | 6 | **DECLARED_AND_OBSERVED** |
 | refunds | economic-engine | static-code | 1 | **DECLARED_AND_OBSERVED** |
-| refunds | infrastructure | static-code | 7 | **DECLARED_AND_OBSERVED** |
+| refunds | infrastructure | static-code | 8 | **DECLARED_AND_OBSERVED** |
 | refunds | logistics | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| refunds | market | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | refunds | orders | static-code, data-read | 7 | **DECLARED_AND_OBSERVED** |
-| refunds | payments | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| refunds | payments | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | refunds | wallet | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
 | settlement | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | settlement | auth-identity | data-read | 1 | **DECLARED_AND_OBSERVED** |
@@ -2669,6 +2678,7 @@ Meta Graph monté : oui.
 | wallet | auth-identity | static-code, data-read | 3 | **DECLARED_AND_OBSERVED** |
 | wallet | documents | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | wallet | infrastructure | static-code | 8 | **DECLARED_AND_OBSERVED** |
+| wallet | market | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | wallet | notifications | static-code | 1 | **OBSERVED_UNDECLARED** |
 | wallet | orders | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
 | wallet | platform-ops | static-code | 2 | **DECLARED_AND_OBSERVED** |

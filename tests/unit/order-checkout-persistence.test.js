@@ -25,6 +25,18 @@ const {
 beforeEach(() => jest.clearAllMocks());
 
 describe('order-checkout-persistence', () => {
+  test('applyWalletDebit marché XAF : débit dans la devise du wallet, équivalent KMF sur la commande', async () => {
+    const client = { query: jest.fn().mockResolvedValue({ rows: [] }) };
+    walletService.debit.mockResolvedValue({ transaction_id: 'wtx2' });
+
+    await applyWalletDebit(client, {
+      userId: 'u1', amountKmf: 750, walletDebit: 1000, walletCurrency: 'XAF', orderId: 'o2', orderReference: 'ORD-2',
+    });
+
+    expect(walletService.debit).toHaveBeenCalledWith(client, expect.objectContaining({ amountKmf: 1000, currency: 'XAF' }));
+    expect(client.query).toHaveBeenCalledWith('UPDATE orders SET wallet_applied_kmf = $1 WHERE id = $2', [750, 'o2']);
+  });
+
   test('refuse une ligne sans fulfillment_source canonique avant toute écriture', async () => {
     const client = { query: jest.fn() };
 
@@ -102,4 +114,8 @@ describe('insertOrderRow — estimation de coût inconnue', () => {
     expect(values.slice(i - 2, i)).toEqual([null, null]); // coût et marge estimés
     expect(values[i + 1]).toBe(70);
   });
+});
+
+test('expose la garde commune d’allocation locale pour les commandes de remplacement', () => {
+  expect(require('../../services/order-checkout-persistence').requireOrderLocalStockAllocation).toEqual(expect.any(Function));
 });
