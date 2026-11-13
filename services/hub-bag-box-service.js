@@ -107,10 +107,10 @@ async function attachBagToBox({
         'bag_unit_id, box_unit_id, parcel_id, linked_by, bag_reference_scan, box_reference_scan, ' +
         'evidence_method, evidence_ref' +
         ') VALUES ($1,$2,$3,$4,$5,$6,$7,$8) ' +
-        'ON CONFLICT (bag_unit_id) DO NOTHING RETURNING bag_unit_id, box_unit_id, parcel_id, evidence_method',
+        'RETURNING bag_unit_id, box_unit_id, parcel_id, evidence_method',
         [bagId, boxId, parcel, user, bagScan, boxScan, method, storedRef]
       );
-      if (!linked) throw refusal(409, 'HUB_BAG_ALREADY_BOXED');
+      // Un doublon concurrent déclenche 23505, traduit en 409 par translate(); jamais ignoré.
       return { ...linked, already_linked: false };
     });
   } catch (error) { throw translate(error); }
