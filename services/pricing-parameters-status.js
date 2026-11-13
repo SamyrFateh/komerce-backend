@@ -108,12 +108,12 @@ async function getPricingParameterStatus(db) {
 
   items.push(item({
     key: 'relay_commission_kmf',
-    label: 'Commission relais (montant fixe par article, due à la remise au client)',
+    label: 'Commission relais (forfait par commande, dû à la première remise client)',
     value: rel ? Number(rel.default_value) : (fc ? Number(fc.commission_relais_standard_kmf) : null),
     status: !rel && !fc ? 'missing' : (rel && rel.updated_by ? 'operator_set' : 'default_unvalidated'),
     provenance: rel ? 'cost_components.commission_relais_kmf (global, tous marchés)' : 'finance_config.commission_relais_standard_kmf (repli historique)',
-    usage: 'Coût du relais alloué par article au moment de l’allocation du colis. Valeur globale : aucun montant par marché.',
-    consequence: 'Un montant non validé est traité comme estimation, jamais comme coût réel. Les marchés Cameroun et Congo n’ont pas de commission propre.',
+    usage: 'Forfait unique par commande après remise physique confirmée, ventilé entre les articles du premier colis remis. Valeur globale : aucun montant par marché. Les allocations historiques par article ne sont pas réécrites.',
+    consequence: 'Un montant non validé reste estimé, jamais coût réel. Le coût déjà imputé aux anciennes commandes demeure historique. Les marchés Cameroun et Congo n’ont pas de commission propre.',
   }));
 
   return { items, has_unvalidated: items.some(i => ['missing', 'default_unvalidated', 'divergent'].includes(i.status)) };
