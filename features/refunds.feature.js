@@ -143,6 +143,7 @@ module.exports = {
       'payments (capture PSP, intention durable et réconciliation du remboursement en EUR)',
       'wallet (credit)',
       'documents (reçu)',
+      'notifications (alerte critique de rapprochement de remboursement PSP incertain)',
       'economic-engine (A8 : rafraîchissement transactionnel de la marge réelle canonique via canonical-margin-writer ; no-op si la règle CANONICAL_MARGIN_WRITER_ENABLED vaut 0)',
     ],
   },
