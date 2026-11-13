@@ -2347,6 +2347,7 @@
               const input = doc.createElement('input');
               input.type = 'number';
               input.min = '0';
+              input.max = String(item.expected);
               input.step = '1';
               input.placeholder = '0 à ' + item.expected;
               input.setAttribute('aria-label', 'Reçu ' + item.product);
@@ -2389,6 +2390,10 @@
             const qty = Number(input.value);
             if (!Number.isInteger(qty) || qty < 0) {
               setFeedback(context.root, 'Quantité reçue invalide pour ' + item.product + '.', 'critical');
+              return;
+            }
+            if (qty > Number(item.expected)) {
+              setFeedback(context.root, 'Reçu supérieur à l’expédié pour ' + item.product + ' (' + formatNumber(item.expected) + ' max).', 'critical');
               return;
             }
             lines.push({ order_item_id: item.order_item_id, received_qty: qty });

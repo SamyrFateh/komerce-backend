@@ -79,6 +79,7 @@ async function queryOrders(marketId, relaisId = null, includeSimulation = false)
                 JOIN order_items linked_oi ON linked_oi.id = local_pi.order_item_id
                 WHERE linked_oi.order_id = o.id AND linked_oi.fulfillment_source = 'LOCAL_STOCK')
             ) AS local_receipt_candidate,
+            EXISTS (SELECT 1 FROM cash_collections cc WHERE cc.order_id = o.id) AS cash_confirmed,
             u.full_name AS client_name,
             r.name AS relais_name, r.island AS relais_island,
             (SELECT COUNT(*)::int FROM order_items oi WHERE oi.order_id = o.id) AS item_count
@@ -335,7 +336,9 @@ function buildQueues(orders, parcels, viewer = null) {
       cash_pending: orders.filter(row =>
         row.status === 'pending' &&
         ['cash_relais', 'cash_relay'].includes(row.payment_mode) &&
-        row.payment_status !== 'paid'
+        row.payment_status !== 'paid' &&
+        // Cash déjà encaissé (cash_collections) : jamais re-proposé à l'encaissement.
+        row.cash_confirmed !== true
       ),
       // Projection d'attente, jamais une attestation physique. La mutation
       // conserve ses gardes serveur (paiement, allocations, rôle et relais).
