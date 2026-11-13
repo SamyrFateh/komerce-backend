@@ -125,6 +125,7 @@ for (const width of SIZES) {
     expect(evidence.side).not.toBeNull();
     expect(evidence.gallery).not.toBeNull();
     expect(evidence.buybox).not.toBeNull();
+    console.log('PDP_GEOMETRY_EVIDENCE', JSON.stringify(evidence));
     expect(evidence.side.width).toBeGreaterThanOrEqual(width === 1440 ? 310 : width === 1700 ? 365 : 385);
     expect(evidence.overflowCount, JSON.stringify(evidence.overflow)).toBe(0);
     expect(evidence.documentOverflowX).toBeLessThanOrEqual(2);
