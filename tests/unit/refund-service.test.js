@@ -375,34 +375,31 @@ describe('refund-service', () => {
       expect(client.calls[0].params).toEqual(expect.arrayContaining(['Annulation']));
     });
 
-    it("bascule en wallet avec cle 'full' quand Stripe echoue et qu'aucun parcelId n'est fourni", async () => {
-      const client = makeClient([
-        { rows: [{ id: 'refund-fb-full' }] },
-        { rows: [], rowCount: 1 },
-      ]);
+    it("FA-04 : appel Stripe incertain sans parcelId ne credite jamais le wallet", async () => {
+      const client = makeClient([{ rows: [{ id: 'refund-fb-full' }] }]);
       mockStripeRefundsCreate.mockRejectedValue(new Error('stripe down'));
-      walletService.credit.mockResolvedValue({ transaction: { id: 'wallet-tx-full' } });
 
-      const result = await processRefundWithFallback(client, makeStripeOrder(), 7500, 15.24, 'cancel', 'Annulation client', 'admin-001', null);
-
-      expect(result.method).toBe('wallet_credit');
-      expect(walletService.credit).toHaveBeenCalledWith(client, expect.objectContaining({
-        idempotencyKey: 'refund_fb_order-001_cancel_full',
-      }));
+      await expect(processRefundWithFallback(
+        client, makeStripeOrder(), 7500, 15.24, 'cancel',
+        'Annulation client', 'admin-001', null
+      )).rejects.toMatchObject({ code: 'REFUND_STRIPE_OUTCOME_UNKNOWN' });
+      expect(mockStripeRefundsCreate).toHaveBeenCalledWith(
+        expect.anything(), { idempotencyKey: 'refund_order-001_cancel_full' }
+      );
+      expect(walletService.credit).not.toHaveBeenCalled();
     });
 
-    it('credite directement le wallet quand la commande est stripe_eur mais sans stripe_payment_id', async () => {
-      const client = makeClient([
-        { rows: [{ id: 'refund-fb-nostripe' }] },
-        { rows: [], rowCount: 1 },
-      ]);
-      walletService.credit.mockResolvedValue({ transaction: { id: 'wallet-tx-nostripe' } });
-
+    it('FA-04 : Stripe sans reference de capture, aucun repli wallet', async () => {
+      const client = makeClient([]);
       const order = makeStripeOrder({ stripe_payment_id: null });
-      const result = await processRefundWithFallback(client, order, 5000, 10, 'cancel', 'Sans PI', 'admin-001', null);
 
-      expect(result.method).toBe('wallet_credit');
+      await expect(processRefundWithFallback(
+        client, order, 5000, 10, 'cancel', 'Sans PI', 'admin-001', null
+      )).rejects.toMatchObject({ code: 'REFUND_STRIPE_CAPTURE_MISSING' });
+      expect(client.query).not.toHaveBeenCalled();
+      expect(walletService.credit).not.toHaveBeenCalled();
       expect(mockStripeRefundsCreate).not.toHaveBeenCalled();
     });
+
   });
 });
