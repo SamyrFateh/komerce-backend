@@ -18,6 +18,8 @@
 .hlc-todo-pill { appearance: none; display: inline-flex; align-items: center; gap: 7px; max-width: 330px; background: #fff; border: 1px solid var(--hlc-line); border-radius: 999px; padding: 5px 11px; font: inherit; font-size: 12px; font-weight: 500; color: var(--hlc-ink); cursor: pointer; }
 .hlc-todo-pill.is-on { border-color: var(--hlc-accent); box-shadow: 0 0 0 1px var(--hlc-accent); }
 .hlc-todo-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hlc-todo-age { margin-left: 6px; font-size: 11px; opacity: .75; white-space: nowrap; }
+.hlc-todo-age.is-overdue { opacity: 1; font-weight: 600; color: var(--hlc-bad, #b42318); }
 .hlc-narrative { font-size: 12px; color: var(--hlc-mute); max-width: 520px; }
 .hlc-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #8a93a0; flex: 0 0 auto; }
 .hlc-dot.is-act { background: var(--hlc-accent); } .hlc-dot.is-warn { background: #e89a2e; } .hlc-dot.is-wait { background: #8a93a0; }
@@ -125,3 +127,23 @@ button.hlc-chip.is-link { cursor: pointer; background: #dce7fb; color: #163b8c; 
 .hlc-pill.is-bad { background: #fde3e3; color: #8f1219; } .hlc-dot.is-bad { background: #c0262d; }
 .hlc-todo-pill.is-bad { border-color: #c0262d; background: #fff5f5; }
 .hlc-node.is-bad { border-color: #e9a3a6; background: #fff5f5; }
+
+/* H4 — supervision de la directrice dans le cockpit existant, sans second tableau de bord. */
+.hlc-director { margin: 10px 0 14px; padding: 10px 12px; border: 1px solid #c6ced8; border-radius: 9px; background: #f7f8fa; color: #222831; }
+.hlc-director-summary { cursor: pointer; font-size: 12px; font-weight: 800; letter-spacing: .01em; }
+.hlc-director-body { margin-top: 9px; min-width: 0; }
+.hlc-director-list { display: flex; flex-direction: column; gap: 5px; max-height: 340px; overflow: auto; }
+.hlc-director-task { display: grid; grid-template-columns: 42px minmax(0, 1fr) 78px 112px; align-items: center; gap: 10px; border: 1px solid #e1e4e9; border-radius: 6px; background: #fff; padding: 7px 9px; font-size: 11px; }
+.hlc-director-task.is-overdue { border-left: 3px solid #ac3333; }
+.hlc-director-market { font-weight: 800; color: #252c35; }
+.hlc-director-detail { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.hlc-director-name { overflow-wrap: anywhere; }
+.hlc-director-why { color: #5b626d; overflow-wrap: anywhere; }
+.hlc-director-age { font-weight: 700; white-space: nowrap; color: #48505b; }
+.hlc-director-age.is-overdue { color: #9a2626; }
+.hlc-director-open { color: #23394f; font-size: 11px; font-weight: 700; text-decoration: underline; }
+.hlc-director-empty { margin: 2px 0; color: #5b626d; font-size: 12px; }
+@media (max-width: 760px) {
+  .hlc-director-task { grid-template-columns: 32px minmax(0, 1fr) 65px; }
+  .hlc-director-open { grid-column: 2 / 4; }
+}

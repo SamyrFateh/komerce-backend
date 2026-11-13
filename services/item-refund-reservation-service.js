@@ -8,7 +8,7 @@
  * @outputs       durable item-scoped reservation + committed PSP intent, never a refund payout
  * @depends       db, services/refund-intent-ledger.js
  * @used-by       routes/admin/orders.js
- * @db-read       orders, order_items, international_shipment_relay_receipts, order_item_refund_reservations, refund_execution_intents, refunds
+ * @db-read       orders, order_items, international_shipment_relay_receipts, incidents, order_item_refund_reservations, refund_execution_intents, refunds
  * @db-write      order_item_refund_reservations, refund_execution_intents
  * @db-txn        order lock and incident proof, atomic reservation, commit before PSP
  * @doctrine      refund_to_payer, no_duplicate_refund, incident_proof_required, no_psp_in_sql_transaction
@@ -101,11 +101,19 @@ async function reserveVerifiedShortage({
       'SELECT COALESCE(SUM(GREATEST(expected_qty - received_qty, 0)),0)::int AS verified_missing FROM international_shipment_relay_receipts WHERE order_item_id = $1 AND incident_id = $2',
       [orderItemId, incidentId]
     );
+    // H1 : la clôture Hub d'une ligne d'achat sans reliquat constate aussi un manquant (incident « rupture fournisseur »).
+    const { rows: [supplier] } = await client.query(
+      `SELECT COALESCE(SUM((details->>'missing_quantity')::int), 0)::int AS verified_missing
+         FROM incidents
+        WHERE id = $1 AND order_item_id = $2 AND order_id = $3 AND incident_type = 'reconciliation_error'
+          AND details->>'type' = 'supplier_shortage'`,
+      [incidentId, orderItemId, orderId]
+    );
     const { rows: [reserved] } = await client.query(
       "SELECT COALESCE(SUM(quantity),0)::int AS reserved FROM order_item_refund_reservations WHERE order_item_id = $1 AND status <> 'failed'",
       [orderItemId]
     );
-    const missing = Number(proof?.verified_missing || 0), already = Number(reserved?.reserved || 0);
+    const missing = Number(proof?.verified_missing || 0) + Number(supplier?.verified_missing || 0), already = Number(reserved?.reserved || 0);
     if (!missing || quantity + already > missing ||
         quantity + already + Number(item.qty_collected) > Number(item.quantity) ||
         Number(item.qty_refunded) > Number(item.quantity) - Number(item.qty_collected)) {

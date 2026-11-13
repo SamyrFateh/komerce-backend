@@ -20,7 +20,11 @@ jest.mock('../../services/hub-physical-identity', () => {
   };
 });
 const mockComplete = jest.fn().mockResolvedValue([]);
-jest.mock('../../services/purchasing-completion-service', () => ({ completeOrdersAfterHubReceipt: (...a) => mockComplete(...a) }));
+const mockCompleteUnit = jest.fn().mockResolvedValue([]);
+jest.mock('../../services/purchasing-completion-service', () => ({
+  completeOrdersAfterHubReceipt: (...a) => mockComplete(...a),
+  completeOrdersForPhysicalUnit: (...a) => mockCompleteUnit(...a),
+}));
 
 const db = require('../../db');
 const hubPhysical = require('../../services/hub-physical-identity');
@@ -73,5 +77,18 @@ describe('PR 7 — complétude d\'achat après COMMIT des réceptions Hub', () =
     const ko = await hubOps.revalidateQuarantineCommand({ unit_id: U1, incident_id: I1 }, null);
     expect(ko.status).toBe(409);
     expect(mockComplete).not.toHaveBeenCalled();
+  });
+});
+
+describe('H1 / HB-01 — rejeu d\'une réception', () => {
+  test('même référence rejouée : la complétude des commandes de l\'unité est recalculée, sans nouvelle réception', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [{ id: U1, reference: 'SUP-REPLAY', unit_type: 'SUPPLIER_PACKAGE', state: 'RECEIVED' }] })
+      .mockResolvedValueOnce({ rows: [{ purchase_order_id: PO1, product_sku_id: null, quantity: 2 }] });
+    hubPhysical.receiveSupplierPackage.mockClear();
+    const result = await hubOps.receiveSupplierPackageCommand({ reference: 'SUP-REPLAY', contents: [{ purchase_order_id: PO1, quantity: 2 }] }, 'agent-9');
+    expect(result.status).toBe(200);
+    expect(hubPhysical.receiveSupplierPackage).not.toHaveBeenCalled();
+    expect(mockCompleteUnit).toHaveBeenCalledWith(U1, { actor: { id: 'agent-9' } });
   });
 });

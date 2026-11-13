@@ -6,10 +6,10 @@
  * @criticality   critical
  * @inputs        purchase_order_id, purchase_line_id, supplier_confirmation, runtime_context
  * @outputs       response_or_domain_result, side_effects
- * @depends       db, services/purchasing-grouped-service.js, services/purchase-line-snapshot.js, services/notification-service.js, services/hub-reference.js, services/suppliers/provider-authority.js, services/suppliers/canonical-unit-purchasing-gate.js, services/suppliers/purchase-order-confirmation-boundary.js, services/suppliers/execution-adapter-registry.js, services/suppliers/supplier-fulfillment-adapter-contract.js, utils/logger.js
+ * @depends       db, services/purchasing-grouped-service.js, services/supplier-shortage-service.js, services/purchase-line-snapshot.js, services/notification-service.js, services/hub-reference.js, services/suppliers/provider-authority.js, services/suppliers/canonical-unit-purchasing-gate.js, services/suppliers/purchase-order-confirmation-boundary.js, services/suppliers/execution-adapter-registry.js, services/suppliers/supplier-fulfillment-adapter-contract.js, utils/logger.js
  * @used-by       routes/purchasing.js
  * @db-read       manual_purchase_executions, order_items, orders, product_suppliers, products, purchase_lines, purchase_order_authorizations, purchase_orders, supplier_execution_payments, suppliers, v_purchase_line_progress
- * @db-write      manual_purchase_executions, purchase_lines, purchase_orders
+ * @db-write      alerts, incidents, manual_purchase_executions, purchase_lines, purchase_orders
  * @db-txn        owns_transaction
  * @doctrine      docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md
  * @impact-areas  purchasing, supplier-integration
@@ -51,6 +51,7 @@ const {
   procurementHubLabel,
 } = require('./purchase-line-snapshot');
 const { shared } = require('./purchasing-grouped-service');
+const { openSupplierShortage } = require('./supplier-shortage-service');
 const log = require('../utils/logger').child({ module: 'purchasing-engagement' });
 
 const {
@@ -325,9 +326,15 @@ async function submitPurchaseOrder(poId, { actor = null, context = {} } = {}) {
     const tag = buildSupplierTagRequest(po.id);
     const messages = buildSubmitMessage({ po, supplier, groups, tag, hubLabel: procurementHubLabel(po.procurement_hub_ref) });
 
+    // Décision 4 (#3998) : pour une PO automatique, la soumission API vaut preuve d'envoi (canal « api », auteur = acteur) ;
+    // le geste manuel « Enregistrer l'envoi » n'existe que pour les PO manuelles/WhatsApp. Jamais en simulation.
+    const apiSent = header.trigger_mode === 'auto' && !simulationScope;
     await client.query(
-      `UPDATE purchase_orders SET status = 'notified', ordered_at = NOW(), updated_at = NOW() WHERE id = $1`,
-      [po.id]
+      apiSent
+        ? `UPDATE purchase_orders SET status = 'notified', ordered_at = NOW(), updated_at = NOW(),
+                  sent_at = NOW(), sent_channel = 'api', sent_by = $2 WHERE id = $1`
+        : `UPDATE purchase_orders SET status = 'notified', ordered_at = NOW(), updated_at = NOW() WHERE id = $1`,
+      apiSent ? [po.id, uuidOrNull(actor && actor.id)] : [po.id]
     );
     // Invariant 14 de la carte : le lien WhatsApp s'écrit APRÈS la persistance de la PO.
     let waUrl = null;
@@ -569,6 +576,17 @@ async function confirmGroupedPurchaseOrder(poId, body = {}, { actor = null, cont
         throw fail(400, 'INVALID_INPUT', `confirmed_quantity dépasse la quantité de la ligne ${line.id}`, { purchase_line_id: line.id, quantity: line.quantity });
       }
     }
+    // HB-05 : la réception avant confirmation est permise, mais une confirmation ne peut pas descendre sous le déjà reçu
+    // (unique définition SQL du reçu, hors quarantaine) : l'allocation figée serait dépassée et le reçu recommandé en double.
+    for (const line of lines) {
+      const { rows: [r] } = await client.query('SELECT purchase_line_received_quantity($1) AS received', [line.id]);
+      const received = Number(r?.received || 0);
+      if (byId.get(line.id).confirmedQuantity < received) {
+        throw fail(409, 'CONFIRMED_QUANTITY_BELOW_RECEIVED', `confirmed_quantity (${byId.get(line.id).confirmedQuantity}) inférieure à la quantité déjà reçue (${received}) pour la ligne ${line.id}`, {
+          purchase_line_id: line.id, confirmed_quantity: byId.get(line.id).confirmedQuantity, received_quantity: received,
+        });
+      }
+    }
 
     for (const line of lines) {
       const c = byId.get(line.id);
@@ -720,6 +738,13 @@ async function settleLine(lineId, body = {}, { actor = null } = {}) {
     // PO manuelle : le reliquat est conservé automatiquement (ligne enfant), sauf refus explicite.
     const reopenRemainder = reopenExplicit === undefined ? po.trigger_mode !== 'auto' : reopenExplicit === true;
     if (reopenRemainder) remnantId = await insertRemnant(client, line, remaining, actor);
+    // H1 : sans reliquat, la clôture Hub vaut constat de rupture fournisseur (incident + alerte de remboursement).
+    else {
+      await openSupplierShortage(client, {
+        purchaseLineId: lineId, orderItemId: line.order_item_id, missingQuantity: remaining,
+        receivedQuantity: received, reason, actorId: uuidOrNull(actor && actor.id),
+      });
+    }
     const closed = await closeGroupedPurchaseOrderIfComplete(client, po.id);
     return { lineId, remnantId, remaining, poId: po.id, closed };
   });

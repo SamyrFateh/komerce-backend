@@ -8,9 +8,9 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       db, utils/logger.js, utils/reference.js
  * @used-by       routes/auto-distribute-api.js
- * @db-read       order_items, orders, parcel_items, parcels, relais, users, scan_events, scans, hub_box_bags, customs_shipment_parcels, incidents, invoices, order_item_real_cost_allocations
+ * @db-read       order_items, orders, parcel_items, parcels, purchase_lines, v_purchase_line_progress, relais, users, scan_events, scans, hub_box_bags, customs_shipment_parcels, incidents, invoices, order_item_real_cost_allocations
  * @db-write      parcel_items, parcels
- * @db-txn        resolve_before_behavior_change
+ * @db-txn        distributeOrder verrouille la commande (FOR UPDATE) ; transaction propre sans client fourni
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  logistics
  * @version       2026-06
@@ -48,7 +48,16 @@ async function nextParcelRef(client) {
 
 // ── Core: distribute one order ──────────────────────────────────
 async function distributeOrder(orderId, dbClient) {
-  const client = dbClient || db;
+  // H2 / HB-04 : la répartition d'une commande est sérialisée par un verrou de ligne sur la commande. Sans client fourni,
+  // on ouvre notre propre transaction (le verrou tient jusqu'au COMMIT) ; avec un client, l'appelant porte la transaction.
+  // Le second appelant concurrent attend, relit les lignes déjà colisées et sort en `already_assigned`.
+  if (!dbClient) return db.withTransaction((client) => distributeOrderLocked(orderId, client));
+  return distributeOrderLocked(orderId, dbClient);
+}
+
+async function distributeOrderLocked(orderId, dbClient) {
+  const client = dbClient;
+  await client.query('SELECT id FROM orders WHERE id = $1 FOR UPDATE', [orderId]);
 
   // Get order + relais info
   const { rows: [order] } = await client.query(`
@@ -88,7 +97,11 @@ async function distributeOrder(orderId, dbClient) {
   const { rows: allItems } = await client.query(`
     SELECT oi.id, oi.quantity, oi.product_id, oi.fulfillment_source,
            COALESCE((SELECT SUM(v.received_quantity)::int FROM v_purchase_line_progress v
-                      WHERE v.order_item_id = oi.id AND NOT v.cancelled), 0) AS received
+                      WHERE v.order_item_id = oi.id AND NOT v.cancelled), 0) AS received,
+           -- H1 / HB-02 : rupture définitive = au moins une ligne soldée, plus aucune ligne en attente de réception.
+           (EXISTS (SELECT 1 FROM purchase_lines pl WHERE pl.order_item_id = oi.id AND pl.cancelled_at IS NULL AND pl.settled_at IS NOT NULL)
+            AND NOT EXISTS (SELECT 1 FROM v_purchase_line_progress v
+                             WHERE v.order_item_id = oi.id AND NOT v.cancelled AND v.received_quantity < v.effective_quantity)) AS closed_short
       FROM order_items oi
      WHERE oi.order_id = $1
        AND NOT EXISTS (SELECT 1 FROM parcel_items pi JOIN parcels p ON p.id = pi.parcel_id AND p.status NOT IN ('cancelled')
@@ -98,13 +111,16 @@ async function distributeOrder(orderId, dbClient) {
 
   // Doctrine d'eligibilite : un colis ne contient que des articles du MEME circuit et PRETS. Jamais de melange local/import,
   // jamais d'article non approvisionne ou non recu avec des articles prets : ceux-la restent sans colis jusqu'a reception.
+  // Rupture définitive : le colis part avec la quantité reçue (le manquant est remboursé en amont).
+  const shortReceived = (item) => item.closed_short === true && Number(item.received) > 0 && Number(item.received) < Number(item.quantity || 1);
   const laneOf = (item) => item.fulfillment_source === 'IMPORT'
-    ? (Number(item.received) >= Number(item.quantity || 1) ? 'import' : 'import_pending')
+    ? ((Number(item.received) >= Number(item.quantity || 1) || shortReceived(item)) ? 'import' : 'import_pending')
     : 'local';
   const groups = new Map();
   const deferred = [];
   for (const item of allItems) {
     const lane = laneOf(item);
+    if (lane === 'import' && shortReceived(item)) item.quantity = Number(item.received);
     if (lane === 'import_pending') { deferred.push(item.id); continue; }
     if (!groups.has(lane)) groups.set(lane, []);
     groups.get(lane).push(item);

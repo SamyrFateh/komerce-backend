@@ -92,6 +92,18 @@ function mapDbError(err) {
   return err;
 }
 
+// HB-11 : une PO regroupée se réceptionne par variante ; une ligne sans product_sku_id ne correspondrait à aucune réception.
+async function assertLinesHaveVariant(client, ids) {
+  const { rows } = await client.query(
+    'SELECT id FROM purchase_lines WHERE id = ANY($1::uuid[]) AND product_sku_id IS NULL AND cancelled_at IS NULL', [ids]
+  );
+  if (rows.length) {
+    throw fail(409, 'PURCHASE_LINE_VARIANT_REQUIRED', 'Une ligne sans variante (product_sku_id) ne peut pas être regroupée : elle ne serait pas réceptionnable', {
+      line_ids: rows.map((r) => r.id),
+    });
+  }
+}
+
 async function lockGroupedPo(client, poId, { requireDraft = true } = {}) {
   const { rows: [po] } = await client.query(
     'SELECT id, order_id, status, supplier_id, procurement_hub_ref, market_id, trigger_mode FROM purchase_orders WHERE id = $1 FOR UPDATE',
@@ -328,6 +340,7 @@ async function preparePurchaseOrder({ supplier_id, procurement_hub_ref, line_ids
     `, [supplierId, triggerMode, hub, markets[0].market_id, actor && actor.id ? `[GROUPED] préparée par ${actor.id}` : '[GROUPED] préparée']);
 
     await client.query('SELECT id FROM purchase_lines WHERE id = ANY($1::uuid[]) ORDER BY id FOR UPDATE', [ids]);
+    await assertLinesHaveVariant(client, ids);
     // I2 : rattachement uniquement depuis l'état ouvert ; tout écart de compte annule tout.
     const { rows: attached } = await client.query(`
       UPDATE purchase_lines
@@ -363,6 +376,7 @@ async function attachDraftLines(poId, lineIds) {
     }
     await assertCommitmentNotAuthorized(client, po.id);
     await client.query('SELECT id FROM purchase_lines WHERE id = ANY($1::uuid[]) ORDER BY id FOR UPDATE', [ids]);
+    await assertLinesHaveVariant(client, ids);
     const { rows: attached } = await client.query(`
       UPDATE purchase_lines
          SET purchase_order_id = $1, updated_at = NOW()

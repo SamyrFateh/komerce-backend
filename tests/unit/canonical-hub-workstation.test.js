@@ -137,6 +137,41 @@ test('la vue Opérations reste globale sans contexte de marché délégué', asy
   expect(root.querySelectorAll('[data-hub-case-list]')).toHaveLength(0);
 });
 
+test('H4 : la directrice voit les tâches CM et KM depuis /admin/hub, sans writer', async () => {
+  const app=load(),root=el('main');
+  const task=(market,code,hours,overdue) => ({
+    id:'BOX_BAGS',kind:'BOX_BAGS',missing:'Sacs à mettre en carton',
+    why:'Attente de préparation physique',market:{code:market},age_hours:hours,overdue,
+    subject:{box_unit_id:code},
+  });
+  const fetch=jest.fn(async (url,opts) => {
+    if (url === '/api/hub/director-todo') return {
+      ok:true,json:async()=>({scope:'ALL_MARKETS',overdue_count:1,tasks:[
+        task('CM','cm-1',53,true),task('KM','km-2',17,false),
+      ]})
+    };
+    return {ok:true,json:async()=>({scope:'HUB_GLOBAL',orders:[]})};
+  });
+  const mounted=app.mount({
+    root,user:{role:'agent_hub'},document:doc,location:{search:'?branch=operations'},fetch,
+    renderAdministrative:jest.fn(),renderOperations:jest.fn(),
+  });
+  await mounted.directorLoad;
+  expect(fetch).toHaveBeenCalledWith('/api/hub/director-todo', expect.objectContaining({method:'GET',credentials:'include'}));
+  expect(root.querySelectorAll('[data-hub-director-todo]')).toHaveLength(1);
+  expect(root.querySelectorAll('[data-hub-director-task="BOX_BAGS"]')).toHaveLength(2);
+  const rows=root.querySelectorAll('[data-hub-director-task="BOX_BAGS"]');
+  expect(rows[0].className).toContain('is-overdue');
+  expect(rows[0].children.some(x=>x.getAttribute('href')==='/admin/hub-live?view=execute&market=CM')).toBe(true);
+  expect(rows[1].children.some(x=>x.getAttribute('href')==='/admin/hub-live?view=execute&market=KM')).toBe(true);
+  expect(fetch.mock.calls.every(call=>call[1].method === 'GET')).toBe(true);
+  const relayRoot=el('main');
+  const relay=app.mount({root:relayRoot,user:{role:'agent_relais'},document:doc,location:{search:''},fetch,
+    renderAdministrative:jest.fn(),renderOperations:jest.fn()});
+  await relay.directorLoad;
+  expect(relayRoot.querySelectorAll('[data-hub-director-todo]')).toHaveLength(0);
+});
+
 test('les liens Hub ne conservent jamais le paramètre market', () => {
   const app=load();
   expect(app.href('operations','?market=KM&po=PO-42')).toBe('/admin/hub?branch=operations');

@@ -11,6 +11,10 @@ const mockTransition = jest.fn();
 jest.mock('../../services/order-status-machine', () => ({ transitionOrderStatus: (...a) => mockTransition(...a) }));
 const mockScan3 = jest.fn();
 jest.mock('../../services/scan-operations', () => ({ triggerScan3: (...a) => mockScan3(...a) }));
+const mockOpenShortage = jest.fn();
+jest.mock('../../services/supplier-shortage-service', () => ({ openSupplierShortage: (...a) => mockOpenShortage(...a) }));
+const mockDistribute = jest.fn();
+jest.mock('../../services/auto-parcel', () => ({ distributeOrder: (...a) => mockDistribute(...a) }));
 const mockAlert = jest.fn();
 jest.mock('../../utils/alerts', () => ({ createAlert: (...a) => mockAlert(...a) }));
 
@@ -21,10 +25,11 @@ const ORDER = '00000000-0000-4000-8000-0000000000a1';
 const PO = '00000000-0000-4000-8000-0000000000b1';
 
 /** Client simulé : réponses par motif SQL. */
-function makeClient({ order = { id: ORDER, status: 'ordered' }, items = [], lines = [], pos = {}, poProgress = {} } = {}) {
+function makeClient({ order = { id: ORDER, status: 'ordered' }, items = [], lines = [], pos = {}, poProgress = {}, settled = [] } = {}) {
   const updates = [];
   const query = jest.fn(async (sql, params) => {
     if (/FROM orders WHERE id/.test(sql)) return { rows: order ? [order] : [] };
+    if (/FROM purchase_lines WHERE id = ANY/.test(sql)) return { rows: settled.map((id) => ({ id })) };
     if (/FROM order_items/.test(sql)) return { rows: items };
     if (/WHERE order_id = \$1 AND NOT cancelled/.test(sql)) return { rows: lines };
     if (/FROM purchase_orders WHERE id = \$1 FOR UPDATE/.test(sql)) return { rows: pos[params[0]] ? [pos[params[0]]] : [] };
@@ -48,17 +53,20 @@ beforeEach(() => {
   mockTransition.mockResolvedValue({ success: true, noop: false });
   mockScan3.mockResolvedValue(undefined);
   mockAlert.mockResolvedValue({});
+  mockDistribute.mockResolvedValue({ success: true });
+  mockOpenShortage.mockResolvedValue({ created: true, alert_created: true });
+  db.query.mockReset();
 });
 
 describe('computeCompletion', () => {
   test('un item est complet si couvert (Σ effectif ≥ quantité) ET entièrement reçu', () => {
     const items = [{ id: 'i1', quantity: 5 }, { id: 'i2', quantity: 2 }];
-    expect(svc.computeCompletion(items, [line('l1', 'i1', PO, 5, 5), line('l2', 'i2', PO, 2, 2)])).toEqual({ items_total: 2, items_complete: 2, complete: true });
+    expect(svc.computeCompletion(items, [line('l1', 'i1', PO, 5, 5), line('l2', 'i2', PO, 2, 2)])).toEqual({ items_total: 2, items_complete: 2, complete: true, shortages: [] });
   });
 
   test('fail-closed : ligne soldée sans reliquat (Σ effectif < quantité) laisse l\'item incomplet', () => {
     const result = svc.computeCompletion([{ id: 'i1', quantity: 10 }], [line('l1', 'i1', PO, 6, 6)]);
-    expect(result).toEqual({ items_total: 1, items_complete: 0, complete: false });
+    expect(result).toEqual({ items_total: 1, items_complete: 0, complete: false, shortages: [] });
   });
 
   test('un reliquat ouvert non reçu bloque l\'item ; une somme sur plusieurs lignes est acceptée', () => {
@@ -246,5 +254,91 @@ describe('chargement de SCAN 3', () => {
     const isolated = require('../../services/purchasing-completion-service');
     await expect(isolated.evaluateOrderProcurementCompletion(ORDER)).resolves.toMatchObject({ transition: 'preparation' });
     jest.dontMock('../../services/scan-operations');
+  });
+});
+
+describe('H1 — avancement automatique', () => {
+  const LINE_SHORT = '00000000-0000-4000-8000-0000000000c1';
+
+  test('HB-02 computeCompletion : ligne soldée sans reliquat = couverte ; le manquant est signalé', () => {
+    const r = svc.computeCompletion([{ id: 'i1', quantity: 10 }], [line(LINE_SHORT, 'i1', PO, 6, 6)], new Set([LINE_SHORT]));
+    expect(r).toEqual({ items_total: 1, items_complete: 1, complete: true, shortages: [{ order_item_id: 'i1', missing_quantity: 4, received_quantity: 6 }] });
+  });
+
+  test('HB-02 : une ligne soldée dont rien n\'a été reçu ne fait pas partir la commande', () => {
+    const r = svc.computeCompletion([{ id: 'i1', quantity: 4 }], [line(LINE_SHORT, 'i1', PO, 0, 0)], new Set([LINE_SHORT]));
+    expect(r.complete).toBe(false);
+    expect(r.shortages).toHaveLength(1);
+  });
+
+  test('HB-02 : un reliquat non reçu ou une sous-couverture non soldée bloque toujours', () => {
+    expect(svc.computeCompletion([{ id: 'i1', quantity: 10 }], [line(LINE_SHORT, 'i1', PO, 6, 6), line('l2', 'i1', null, 4, 0)], new Set([LINE_SHORT])).complete).toBe(false);
+    expect(svc.computeCompletion([{ id: 'i1', quantity: 10 }], [line('l1', 'i1', PO, 6, 6)]).complete).toBe(false);
+  });
+
+  test('rupture : transition, répartition du reçu, rattrapage incident + alerte par ligne soldée (idempotent côté service)', async () => {
+    useClient({ items: [{ id: 'i1', quantity: 10 }], lines: [line(LINE_SHORT, 'i1', null, 6, 6)], settled: [LINE_SHORT] });
+    db.query.mockResolvedValueOnce({ rows: [{ id: LINE_SHORT, missing: 4, settle_reason: 'rupture' }] });
+    const verdict = await svc.evaluateOrderProcurementCompletion(ORDER);
+    expect(verdict).toMatchObject({ complete: true, transition: 'preparation' });
+    expect(mockDistribute).toHaveBeenCalledWith(ORDER);
+    expect(mockOpenShortage).toHaveBeenCalledWith(db, expect.objectContaining({ purchaseLineId: LINE_SHORT, orderItemId: 'i1', missingQuantity: 4, actorId: null }));
+  });
+
+  test('HB-03 : répartition automatique au passage en preparation ; échec = alerte, transition conservée', async () => {
+    useClient({ items: [{ id: 'i1', quantity: 1 }], lines: [line('l1', 'i1', null, 1, 1)] });
+    expect((await svc.evaluateOrderProcurementCompletion(ORDER)).transition).toBe('preparation');
+    expect(mockDistribute).toHaveBeenCalledTimes(1);
+
+    mockDistribute.mockRejectedValue(new Error('boom'));
+    useClient({ items: [{ id: 'i1', quantity: 1 }], lines: [line('l1', 'i1', null, 1, 1)] });
+    expect((await svc.evaluateOrderProcurementCompletion(ORDER)).transition).toBe('preparation');
+    expect(mockAlert).toHaveBeenCalledWith(db, expect.objectContaining({ type: 'purchasing_distribution_failed' }));
+  });
+
+  test('HB-03 : aucune répartition si la transition est un noop (déjà fait)', async () => {
+    useClient({ items: [{ id: 'i1', quantity: 1 }], lines: [line('l1', 'i1', null, 1, 1)] });
+    mockTransition.mockResolvedValue({ success: true, noop: true });
+    await svc.evaluateOrderProcurementCompletion(ORDER);
+    expect(mockDistribute).not.toHaveBeenCalled();
+  });
+
+  test('HB-01 : redémarrage simulé entre la réception et la complétude, rattrapé par le balayage', async () => {
+    // Réception committée, mais complétude jamais exécutée : la commande est restée `ordered`.
+    db.query
+      .mockResolvedValueOnce({ rows: [{ id: ORDER }] }) // commandes ordered entièrement reçues
+      .mockResolvedValueOnce({ rows: [] });            // aucune commande preparation sans colis
+    useClient({ items: [{ id: 'i1', quantity: 2 }], lines: [line('l1', 'i1', null, 2, 2)] });
+    const swept = await svc.sweepStalledOrders();
+    expect(swept).toEqual({ ordered: 1, distributed: 0, errors: 0 });
+    expect(mockTransition).toHaveBeenCalledWith(expect.objectContaining({ orderId: ORDER, newStatus: 'preparation' }));
+    expect(mockDistribute).toHaveBeenCalledWith(ORDER);
+  });
+
+  test('balayage idempotent : second passage = rien à faire ; reprise des commandes preparation sans colis', async () => {
+    db.query.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [{ id: ORDER }] });
+    expect(await svc.sweepStalledOrders()).toEqual({ ordered: 0, distributed: 1, errors: 0 });
+    expect(mockTransition).not.toHaveBeenCalled();
+    expect(mockDistribute).toHaveBeenCalledWith(ORDER);
+    db.query.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [] });
+    expect(await svc.sweepStalledOrders()).toEqual({ ordered: 0, distributed: 0, errors: 0 });
+  });
+
+  test('balayage : une erreur sur une commande n\'arrête pas les suivantes ni ne lève', async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ id: 'o-bad' }, { id: ORDER }] }).mockResolvedValueOnce({ rows: [] });
+    db.withTransaction.mockRejectedValueOnce(new Error('db down'));
+    useClient({ items: [{ id: 'i1', quantity: 1 }], lines: [line('l1', 'i1', null, 1, 1)] });
+    db.withTransaction.mockRejectedValueOnce(new Error('db down'));
+    const swept = await svc.sweepStalledOrders();
+    expect(swept.errors).toBeGreaterThanOrEqual(1);
+  });
+
+  test('HB-01 rejeu : la complétude est recalculée pour les commandes de l\'unité', async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ order_id: ORDER }] });
+    useClient({ items: [{ id: 'i1', quantity: 1 }], lines: [line('l1', 'i1', null, 1, 1)] });
+    const results = await svc.completeOrdersForPhysicalUnit('unit-1', { actor: { id: 'u1' } });
+    expect(results[0]).toMatchObject({ order_id: ORDER, transition: 'preparation' });
+    db.query.mockRejectedValueOnce(new Error('x'));
+    expect(await svc.completeOrdersForPhysicalUnit('unit-1')).toEqual([]);
   });
 });

@@ -261,6 +261,13 @@
       b.title = `${item.missing} — ${item.why}${item.blocked_reason ? ` (${item.blocked_reason})` : ''}`;
       b.appendChild(el(doc, 'span', `hlc-dot is-${tone}`));
       b.appendChild(el(doc, 'span', 'hlc-todo-text', item.missing));
+      if (item.age_hours != null) {
+        // Ancienneté dérivée côté serveur (H4) ; alerte au-delà du seuil fixé par le serveur (48 h).
+        const age = item.age_hours >= 48 ? `${Math.floor(item.age_hours / 24)} j` : `${item.age_hours} h`;
+        const badge = el(doc, 'span', `hlc-todo-age${item.overdue ? ' is-overdue' : ''}`, item.overdue ? `⚠ ${age}` : age);
+        badge.setAttribute('data-hlc-age', String(item.age_hours));
+        b.appendChild(badge);
+      }
       b.addEventListener('click', () => { if (target) select(target.type, target.id); });
       todoBar.appendChild(b);
     });

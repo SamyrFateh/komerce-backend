@@ -36,7 +36,7 @@ const engagement = require('../../services/purchasing-engagement-service');
 const hasDb = Boolean(process.env.DATABASE_URL);
 const describeDb = hasDb ? describe : describe.skip;
 const id = () => crypto.randomUUID();
-const MIGRATIONS = ['263_purchase_lines_foundation.sql', '264_purchase_line_progress_view.sql', '265_hub_allocations_purchase_line.sql', '266_purchase_orders_grouped_form.sql', '357_purchase_orders_market_scope.sql', '380_hub_directrice_authorizations.sql', '404_manual_purchase_executions.sql'];
+const MIGRATIONS = ['263_purchase_lines_foundation.sql', '264_purchase_line_progress_view.sql', '265_hub_allocations_purchase_line.sql', '266_purchase_orders_grouped_form.sql', '357_purchase_orders_market_scope.sql', '380_hub_directrice_authorizations.sql', '404_manual_purchase_executions.sql', '414_purchase_line_received_quantity.sql'];
 const identityOf = (provider, payload = { supplier_sku: 'U1' }) => JSON.stringify({ provider, version: 1, payload });
 const NOON = identityOf('noon');
 const ALLEGRO = (offer) => identityOf('allegro', { environment: 'sandbox', offer_id: offer });
@@ -60,10 +60,24 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
       await c.query(`SET search_path TO ${current}`);
       await c.query(`
         CREATE TABLE users (id uuid PRIMARY KEY);
-        CREATE TABLE suppliers (id uuid PRIMARY KEY, name text, platform text, contact_phone text, deleted_at timestamptz);
+        CREATE TABLE suppliers (id uuid PRIMARY KEY, name text, platform text, system_key text, contact_phone text, deleted_at timestamptz);
         CREATE TABLE product_suppliers (id uuid PRIMARY KEY);
         CREATE TABLE product_skus (id uuid PRIMARY KEY);
         CREATE TABLE products (id uuid PRIMARY KEY, name text);
+        -- H1 : le writer de rupture est appelé dans la même transaction que settleLine.
+        -- Reproduire les tables canoniques minimales plutôt que masquer l'incident dans ce test PostgreSQL.
+        CREATE TABLE incidents (
+          id uuid PRIMARY KEY DEFAULT gen_random_uuid(), parcel_id uuid, order_id uuid, order_item_id uuid,
+          incident_type text NOT NULL, severity text, title text, description text, details jsonb NOT NULL DEFAULT '{}'::jsonb,
+          client_impact text, detected_by uuid, detected_source text, origin_domain text,
+          resolver_domain text, resolution_class text, due_at timestamptz,
+          status text NOT NULL DEFAULT 'open', created_at timestamptz NOT NULL DEFAULT now()
+        );
+        CREATE TABLE alerts (
+          id uuid PRIMARY KEY DEFAULT gen_random_uuid(), type text NOT NULL, entity_type text NOT NULL,
+          entity_id uuid, severity text, title text, description text, resolved_at timestamptz,
+          created_at timestamptz NOT NULL DEFAULT now()
+        );
         CREATE TABLE markets (id uuid PRIMARY KEY, code text NOT NULL UNIQUE, name text NOT NULL);
         CREATE TABLE orders (id uuid PRIMARY KEY, reference text, market_id uuid REFERENCES markets(id), created_at timestamptz NOT NULL DEFAULT now());
         CREATE TABLE order_items (
@@ -108,11 +122,18 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
           product_sku_id uuid,
           supplier_id uuid
         );
+        -- HB-06 : migration 414 lit le même état d'unité physique que la production.
+        CREATE TABLE hub_physical_units (
+          id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+          state text NOT NULL DEFAULT 'RECEIVED', outcome_type text
+        );
         CREATE TABLE hub_physical_unit_placements (
           id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
           allocation_id uuid NOT NULL REFERENCES hub_purchase_allocations(id),
+          physical_unit_id uuid REFERENCES hub_physical_units(id),
           operation_type text NOT NULL,
-          quantity integer NOT NULL
+          quantity integer NOT NULL,
+          removed_at timestamptz
         );
       `);
       for (const name of MIGRATIONS) await c.query(migrationSql(name));
@@ -216,7 +237,9 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
     const { rows: [alloc] } = await q(`
       INSERT INTO hub_purchase_allocations(purchase_order_id, order_item_id, product_sku_id, supplier_id, purchase_line_id)
       VALUES ($1,$2,$3,$4,$5) RETURNING id`, [line.purchase_order_id, line.order_item_id, line.product_sku_id, line.supplier_id, lineId]);
-    await q('INSERT INTO hub_physical_unit_placements(allocation_id, operation_type, quantity) VALUES ($1,$2,$3)', [alloc.id, 'RECEIVE', quantity]);
+    const { rows: [unit] } = await q('INSERT INTO hub_physical_units(state) VALUES ($1) RETURNING id', ['RECEIVED']);
+    await q('INSERT INTO hub_physical_unit_placements(allocation_id, physical_unit_id, operation_type, quantity) VALUES ($1,$2,$3,$4)',
+      [alloc.id, unit.id, 'RECEIVE', quantity]);
   }
 
   // ─── submit ───────────────────────────────────────────────────────────────────────────────────
@@ -496,6 +519,12 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
       const out = await engagement.settleLine(line, { settled_quantity: 5, reason: 'écart accepté', reopen_remainder: false });
       expect(out.remnant).toBeNull();
       expect((await row('SELECT count(*)::int AS n FROM purchase_lines WHERE parent_line_id IS NOT NULL')).n).toBe(0);
+      // HB-02 : constat automatique atomique, aucune écriture de remboursement.
+      const incident = await row(`SELECT id, order_item_id, details FROM incidents WHERE details->>'type' = 'supplier_shortage'`);
+      expect(incident.order_item_id).toBeTruthy();
+      expect(incident.details).toMatchObject({ type: 'supplier_shortage', purchase_line_id: line, missing_quantity: 1 });
+      const alert = await row('SELECT type, entity_id FROM alerts WHERE entity_id = $1', [incident.id]);
+      expect(alert).toEqual({ type: 'supplier_shortage_refund_required', entity_id: incident.id });
     });
 
     it('toutes les lignes soldées (reçu ≥ effectif) → la PO regroupée passe en hub_received', async () => {

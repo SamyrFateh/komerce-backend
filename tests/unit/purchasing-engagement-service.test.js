@@ -8,6 +8,8 @@
  */
 
 jest.mock('../../db', () => ({ getClient: jest.fn(), query: jest.fn() }));
+const mockOpenShortage = jest.fn().mockResolvedValue({});
+jest.mock('../../services/supplier-shortage-service', () => ({ openSupplierShortage: (...a) => mockOpenShortage(...a) }));
 jest.mock('../../services/hub-authorization-service', () => ({ assertCommitmentAuthorized: jest.fn().mockResolvedValue(undefined) }));
 jest.mock('../../utils/logger', () => {
   const f = jest.fn(() => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }));
@@ -207,6 +209,27 @@ describe('submitPurchaseOrder', () => {
     expect(out.purchase_order.status).toBe('notified');
   });
 
+  it('décision 4 : une PO automatique soumise pose la preuve d\'envoi (canal api) ; une PO manuelle non', async () => {
+    mockRegistry.allegro = { provider: 'allegro', evaluate: jest.fn() };
+    mockReadiness.mockResolvedValue({ ready: true, status: 'FULFILLMENT_READY' });
+    const run = async (mode) => {
+      const { calls } = scripted([
+        [/FROM purchase_orders WHERE id = \$1 FOR UPDATE/, { rows: [poRow({ trigger_mode: mode })] }],
+        [/FROM purchase_lines pl/, { rows: [submitLine({ supplier_order_identity: { provider: 'allegro', version: 1, payload: { a: 1 } }, product_name: 'Produit' })] }],
+        [/FROM suppliers/, { rows: [{ name: 'F', platform: null, contact_phone: null }] }],
+        [/SELECT trigger_mode/, { rows: [{ trigger_mode: mode }] }],
+      ]);
+      db.query.mockImplementation(async (sql) => (/FROM purchase_orders WHERE id/.test(sql) ? { rows: [{ id: PO, status: 'notified' }] } : { rows: [] }));
+      await engagement.submitPurchaseOrder(PO, { actor: { id: uuid(42) } });
+      return calls.find((c) => /UPDATE purchase_orders SET status = 'notified'/.test(c.sql));
+    };
+    const auto = await run('auto');
+    expect(auto.sql).toMatch(/sent_at = NOW\(\), sent_channel = 'api'/);
+    expect(auto.params).toEqual([PO, uuid(42)]);
+    const manual = await run('manual');
+    expect(manual.sql).not.toMatch(/sent_at/);
+  });
+
   it('buildOrderPayload appelé avec items[] et preflights[] ; une exception non-Error est rendue en texte', async () => {
     const buildOrderPayload = jest.fn().mockRejectedValue('refus brut');
     mockRegistry.allegro = { provider: 'allegro', evaluate: jest.fn(), buildOrderPayload };
@@ -263,6 +286,17 @@ describe('confirmGroupedPurchaseOrder — garde-fous', () => {
     scripted([[/FROM purchase_orders WHERE id = \$1 FOR UPDATE/, { rows: [poRow({ status: 'notified', trigger_mode: 'manual' })] }]]);
     await expect(engagement.confirmGroupedPurchaseOrder(PO, { lines: okLines }))
       .rejects.toMatchObject({ status: 400, code: 'MANUAL_PURCHASE_PROOF_REQUIRED' });
+  });
+
+  it('HB-05 : confirmation inférieure à la quantité déjà reçue → 409 CONFIRMED_QUANTITY_BELOW_RECEIVED, sans écriture', async () => {
+    const { calls } = scripted([
+      [/FROM purchase_orders WHERE id = \$1 FOR UPDATE/, { rows: [poRow({ status: 'notified' })] }],
+      [/FROM purchase_lines\s+WHERE purchase_order_id/, { rows: [{ id: L1, quantity: 5, supplier_order_identity: null }] }],
+      [/purchase_line_received_quantity/, { rows: [{ received: 3 }] }],
+    ]);
+    await expect(engagement.confirmGroupedPurchaseOrder(PO, { lines: [{ purchase_line_id: L1, confirmed_quantity: 2 }] }))
+      .rejects.toMatchObject({ status: 409, code: 'CONFIRMED_QUANTITY_BELOW_RECEIVED', received_quantity: 3 });
+    expect(calls.some((c) => /UPDATE purchase_lines/.test(c.sql))).toBe(false);
   });
 
   it('tout à zéro : aucune vérification de preuve fournisseur ; texte libre (notes, suivi) sans valeur → null', async () => {
@@ -364,6 +398,21 @@ describe('settleLine — garde-fous', () => {
     expect(out.unsettled_quantity).toBe(6);
     expect(calls.find((c) => /INSERT INTO purchase_lines/.test(c.sql)).params[12]).toBe(uuid(50));
     expect(calls.some((c) => /SET status = 'hub_received'/.test(c.sql))).toBe(false);
+  });
+
+  it('H1 : clôture SANS reliquat → incident de rupture fournisseur (acteur + ligne en preuve) ; avec reliquat → aucun', async () => {
+    mockOpenShortage.mockClear();
+    scripted([peek(), poLock(), lineLock(), [/v_purchase_line_progress\s+WHERE line_id/, { rows: [{ received_quantity: 2 }] }], [/FROM v_purchase_line_progress\s+WHERE purchase_order_id/, { rows: [] }]]);
+    db.query.mockImplementation(async (sql) => (/FROM purchase_orders WHERE id/.test(sql) ? { rows: [{ id: PO, status: 'confirmed' }] } : shaped));
+    await engagement.settleLine(L1, { settled_quantity: 2, reason: 'rupture', reopen_remainder: false }, { actor: { id: uuid(50) } });
+    expect(mockOpenShortage).toHaveBeenCalledWith(expect.anything(), {
+      purchaseLineId: L1, orderItemId: uuid(7), missingQuantity: 4, receivedQuantity: 2, reason: 'rupture', actorId: uuid(50),
+    });
+
+    mockOpenShortage.mockClear();
+    scripted([peek(), poLock(), lineLock(), [/v_purchase_line_progress\s+WHERE line_id/, { rows: [{ received_quantity: 2 }] }], [/INSERT INTO purchase_lines/, { rows: [{ id: uuid(98) }] }], [/FROM v_purchase_line_progress\s+WHERE purchase_order_id/, { rows: [] }]]);
+    await engagement.settleLine(L1, { settled_quantity: 2, reason: 'x', reopen_remainder: true });
+    expect(mockOpenShortage).not.toHaveBeenCalled();
   });
 
   it('PO sans autre ligne active → pas de clôture ; toutes soldées → hub_received', async () => {
