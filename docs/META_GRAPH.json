@@ -1,28 +1,45 @@
 {
-  "generatedAt": "2026-09-01T21:46:59.682Z",
+  "generatedAt": "2026-11-13T02:02:34.687Z",
   "sources": {
     "backend": {
-      "nodes": 1067
+      "nodes": 2053
     },
     "boutique": {
-      "modules": 98,
-      "endpoints": 61
+      "modules": 103,
+      "endpoints": 65
     },
     "dashboards": {
       "modules": 41,
       "callEdges": 111
     },
     "contract": {
-      "endpoints": 506
+      "endpoints": 760
     }
   },
   "summary": {
-    "endpointsConsumed": 96,
+    "endpointsConsumed": 98,
     "sharedEndpoints": 2,
-    "phantomSeams": 0,
-    "sharedTables": 11
+    "phantomSeams": 1,
+    "sharedTables": 18
   },
   "endpoints": {
+    "/api/local-stock/checkout-preview": {
+      "boutique": [
+        "b-checkout"
+      ],
+      "dashboards": [],
+      "inContract": true,
+      "status": "UNKNOWN",
+      "routeFile": "routes/local-stock.js",
+      "services": [
+        "services/local-stock-service.js",
+        "services/local-stock-checkout-preview.js"
+      ],
+      "tables": [
+        "markets",
+        "relais"
+      ]
+    },
     "/api/public/config": {
       "boutique": [
         "b-checkout",
@@ -40,7 +57,8 @@
     },
     "/api/relais": {
       "boutique": [
-        "b-checkout"
+        "b-checkout",
+        "market-hydration"
       ],
       "dashboards": [],
       "inContract": true,
@@ -50,7 +68,8 @@
         "services/*"
       ],
       "tables": [
-        "relais"
+        "relais",
+        "markets"
       ]
     },
     "/api/wallet": {
@@ -92,7 +111,9 @@
       "services": [
         "services/order-checkout-service.js"
       ],
-      "tables": []
+      "tables": [
+        "finance_config"
+      ]
     },
     "/api/payments/stripe/intent": {
       "boutique": [
@@ -119,9 +140,7 @@
       "inContract": true,
       "status": "UNKNOWN",
       "routeFile": "routes/shares.js",
-      "services": [
-        "services/*"
-      ],
+      "services": [],
       "tables": [
         "cart_shares",
         "products"
@@ -141,6 +160,7 @@
         "services/*"
       ],
       "tables": [
+        "credential_action_tokens",
         "loyalty_tiers",
         "users",
         "revoked_tokens"
@@ -213,9 +233,28 @@
         "services/*"
       ],
       "tables": [
+        "credential_action_tokens",
         "loyalty_tiers",
         "users",
         "revoked_tokens"
+      ]
+    },
+    "/api/payments/mobile-money/initiate": {
+      "boutique": [
+        "b-mobile-money"
+      ],
+      "dashboards": [],
+      "inContract": true,
+      "status": "UNKNOWN",
+      "routeFile": "routes/payments-mobile-money.js",
+      "services": [
+        "services/payment-mobile-money.js"
+      ],
+      "tables": [
+        "orders",
+        "markets",
+        "mobile_money_transactions",
+        "relais"
       ]
     },
     "/api/boutique/suggestions": {
@@ -234,7 +273,8 @@
     },
     "/api/relais/public": {
       "boutique": [
-        "b-nav"
+        "b-nav",
+        "market-hydration"
       ],
       "dashboards": [],
       "inContract": true,
@@ -244,7 +284,8 @@
         "services/*"
       ],
       "tables": [
-        "relais"
+        "relais",
+        "markets"
       ]
     },
     "/api/auth/me/notifications": {
@@ -515,6 +556,7 @@
         "services/*"
       ],
       "tables": [
+        "credential_action_tokens",
         "loyalty_tiers",
         "users",
         "revoked_tokens"
@@ -532,6 +574,7 @@
         "services/*"
       ],
       "tables": [
+        "credential_action_tokens",
         "loyalty_tiers",
         "users",
         "revoked_tokens"
@@ -592,13 +635,19 @@
       "status": "UNKNOWN",
       "routeFile": "routes/hub.js",
       "services": [
-        "services/*"
+        "services/hub-operations.js",
+        "services/hub-box-shipment-service.js"
       ],
       "tables": [
         "orders",
         "parcel_items",
         "parcels",
-        "users"
+        "users",
+        "markets",
+        "market_operating_assignments",
+        "assignment_memberships",
+        "membership_capabilities",
+        "assignment_capability_ceiling"
       ]
     },
     "/api/hub/pack": {
@@ -610,13 +659,19 @@
       "status": "UNKNOWN",
       "routeFile": "routes/hub.js",
       "services": [
-        "services/*"
+        "services/hub-operations.js",
+        "services/hub-box-shipment-service.js"
       ],
       "tables": [
         "orders",
         "parcel_items",
         "parcels",
-        "users"
+        "users",
+        "markets",
+        "market_operating_assignments",
+        "assignment_memberships",
+        "membership_capabilities",
+        "assignment_capability_ceiling"
       ]
     },
     "/api/hub/seal": {
@@ -628,13 +683,19 @@
       "status": "UNKNOWN",
       "routeFile": "routes/hub.js",
       "services": [
-        "services/*"
+        "services/hub-operations.js",
+        "services/hub-box-shipment-service.js"
       ],
       "tables": [
         "orders",
         "parcel_items",
         "parcels",
-        "users"
+        "users",
+        "markets",
+        "market_operating_assignments",
+        "assignment_memberships",
+        "membership_capabilities",
+        "assignment_capability_ceiling"
       ]
     },
     "/api/scans": {
@@ -646,7 +707,8 @@
       "status": "UNKNOWN",
       "routeFile": "routes/scans.js",
       "services": [
-        "services/*"
+        "services/scan-operations.js",
+        "services/hub-operations.js"
       ],
       "tables": [
         "orders",
@@ -704,7 +766,11 @@
       "inContract": true,
       "status": "UNKNOWN",
       "routeFile": "routes/products.js",
-      "services": [],
+      "services": [
+        "services/catalog-public-view.js",
+        "services/market-local-price-resolution-service.js",
+        "services/catalog-product-source-read-service.js"
+      ],
       "tables": [
         "product_skus",
         "product_variants",
@@ -726,7 +792,9 @@
         "orders",
         "product_suppliers",
         "purchase_orders",
-        "suppliers"
+        "suppliers",
+        "supplier_execution_payments",
+        "supplier_payment_settlements"
       ]
     },
     "/api/categories": {
@@ -907,18 +975,19 @@
       ],
       "inContract": true,
       "status": "UNKNOWN",
-      "routeFile": "routes/admin-dashboard-market.js",
+      "routeFile": "routes/admin-dashboard.js",
       "services": [
-        "services/dashboard-pilotage-market",
-        "services/dashboard-commerce",
-        "services/dashboard-operations",
-        "services/dashboard-finance-canonical",
-        "services/dashboard-admin-context"
+        "services/*"
       ],
       "tables": [
-        "markets",
-        "operator_market_scopes",
-        "dashboard_global_access_grants"
+        "customs_shipments",
+        "order_item_cost_imputations",
+        "order_item_real_cost_allocations",
+        "order_items",
+        "orders",
+        "parcels",
+        "relais",
+        "signals"
       ]
     },
     "/api/dashboard/ops": {
@@ -942,18 +1011,19 @@
       ],
       "inContract": true,
       "status": "UNKNOWN",
-      "routeFile": "routes/admin-dashboard-market.js",
+      "routeFile": "routes/admin-dashboard.js",
       "services": [
-        "services/dashboard-pilotage-market",
-        "services/dashboard-commerce",
-        "services/dashboard-operations",
-        "services/dashboard-finance-canonical",
-        "services/dashboard-admin-context"
+        "services/*"
       ],
       "tables": [
-        "markets",
-        "operator_market_scopes",
-        "dashboard_global_access_grants"
+        "customs_shipments",
+        "order_item_cost_imputations",
+        "order_item_real_cost_allocations",
+        "order_items",
+        "orders",
+        "parcels",
+        "relais",
+        "signals"
       ]
     },
     "/api/admin/costing/orders": {
@@ -965,18 +1035,24 @@
       "status": "UNKNOWN",
       "routeFile": "routes/admin-costing.js",
       "services": [
-        "services/*"
+        "services/*",
+        "services/cost-allocation/real-margin-shadow.js",
+        "services/cost-allocation/product-margin-steering.js"
       ],
       "tables": [
         "customs_shipments",
         "finance_config",
+        "markets",
         "order_item_cost_imputations",
         "order_item_real_cost_allocations",
         "order_items",
         "orders",
         "parcels",
         "products",
-        "relais"
+        "refunds",
+        "purchase_lines",
+        "relais",
+        "supplier_execution_payments"
       ]
     },
     "/api/admin/costing/products": {
@@ -988,18 +1064,24 @@
       "status": "UNKNOWN",
       "routeFile": "routes/admin-costing.js",
       "services": [
-        "services/*"
+        "services/*",
+        "services/cost-allocation/real-margin-shadow.js",
+        "services/cost-allocation/product-margin-steering.js"
       ],
       "tables": [
         "customs_shipments",
         "finance_config",
+        "markets",
         "order_item_cost_imputations",
         "order_item_real_cost_allocations",
         "order_items",
         "orders",
         "parcels",
         "products",
-        "relais"
+        "refunds",
+        "purchase_lines",
+        "relais",
+        "supplier_execution_payments"
       ]
     },
     "/api/admin/costing/relais": {
@@ -1011,18 +1093,24 @@
       "status": "UNKNOWN",
       "routeFile": "routes/admin-costing.js",
       "services": [
-        "services/*"
+        "services/*",
+        "services/cost-allocation/real-margin-shadow.js",
+        "services/cost-allocation/product-margin-steering.js"
       ],
       "tables": [
         "customs_shipments",
         "finance_config",
+        "markets",
         "order_item_cost_imputations",
         "order_item_real_cost_allocations",
         "order_items",
         "orders",
         "parcels",
         "products",
-        "relais"
+        "refunds",
+        "purchase_lines",
+        "relais",
+        "supplier_execution_payments"
       ]
     },
     "/api/admin/customs-shipments": {
@@ -1037,8 +1125,10 @@
         "services/*"
       ],
       "tables": [
+        "customs_shipment_fees",
         "customs_shipment_parcels",
         "customs_shipments",
+        "customs_shipment_parcel_events",
         "orders",
         "parcels"
       ]
@@ -1056,8 +1146,10 @@
         "services/*"
       ],
       "tables": [
+        "customs_shipment_fees",
         "customs_shipment_parcels",
         "customs_shipments",
+        "customs_shipment_parcel_events",
         "orders",
         "parcels"
       ]
@@ -1074,7 +1166,13 @@
       "services": [
         "services/partner-admin-service.js"
       ],
-      "tables": []
+      "tables": [
+        "markets",
+        "market_operating_assignments",
+        "assignment_memberships",
+        "membership_capabilities",
+        "assignment_capability_ceiling"
+      ]
     },
     "/api/pricing/flow": {
       "boutique": [],
@@ -1179,16 +1277,11 @@
       "dashboards": [
         "HubRelaisView"
       ],
-      "inContract": true,
-      "status": "UNKNOWN",
-      "routeFile": "routes/hub-mark-ordered.js",
-      "services": [
-        "services/*"
-      ],
-      "tables": [
-        "orders",
-        "order_comments"
-      ]
+      "inContract": false,
+      "status": "NOT_FOUND",
+      "routeFile": null,
+      "services": [],
+      "tables": []
     },
     "/api/hub/auto-distribute": {
       "boutique": [],
@@ -1291,18 +1384,19 @@
       ],
       "inContract": true,
       "status": "UNKNOWN",
-      "routeFile": "routes/admin-dashboard-market.js",
+      "routeFile": "routes/admin-dashboard.js",
       "services": [
-        "services/dashboard-pilotage-market",
-        "services/dashboard-commerce",
-        "services/dashboard-operations",
-        "services/dashboard-finance-canonical",
-        "services/dashboard-admin-context"
+        "services/*"
       ],
       "tables": [
-        "markets",
-        "operator_market_scopes",
-        "dashboard_global_access_grants"
+        "customs_shipments",
+        "order_item_cost_imputations",
+        "order_item_real_cost_allocations",
+        "order_items",
+        "orders",
+        "parcels",
+        "relais",
+        "signals"
       ]
     },
     "/api/admin/economic/history": {
@@ -1338,18 +1432,19 @@
       ],
       "inContract": true,
       "status": "UNKNOWN",
-      "routeFile": "routes/admin-dashboard-market.js",
+      "routeFile": "routes/admin-dashboard.js",
       "services": [
-        "services/dashboard-pilotage-market",
-        "services/dashboard-commerce",
-        "services/dashboard-operations",
-        "services/dashboard-finance-canonical",
-        "services/dashboard-admin-context"
+        "services/*"
       ],
       "tables": [
-        "markets",
-        "operator_market_scopes",
-        "dashboard_global_access_grants"
+        "customs_shipments",
+        "order_item_cost_imputations",
+        "order_item_real_cost_allocations",
+        "order_items",
+        "orders",
+        "parcels",
+        "relais",
+        "signals"
       ]
     },
     "/api/pricing/strategy": {
@@ -1437,11 +1532,12 @@
       "status": "UNKNOWN",
       "routeFile": "routes/admin-finance-config.js",
       "services": [
+        "services/fx-observation-service.js",
         "services/*"
       ],
       "tables": [
         "finance_config",
-        "exchange_rates"
+        "fx_rate_observations"
       ]
     },
     "/api/admin/sourcing/catalogs": {
@@ -1565,7 +1661,13 @@
       "services": [
         "services/partner-admin-service.js"
       ],
-      "tables": []
+      "tables": [
+        "markets",
+        "market_operating_assignments",
+        "assignment_memberships",
+        "membership_capabilities",
+        "assignment_capability_ceiling"
+      ]
     },
     "/api/transitaire/ship": {
       "boutique": [],
@@ -1584,7 +1686,12 @@
         "parcels",
         "relais",
         "scan_events",
-        "users"
+        "users",
+        "markets",
+        "market_operating_assignments",
+        "assignment_memberships",
+        "membership_capabilities",
+        "assignment_capability_ceiling"
       ]
     },
     "/api/transitaire/stats": {
@@ -1604,7 +1711,12 @@
         "parcels",
         "relais",
         "scan_events",
-        "users"
+        "users",
+        "markets",
+        "market_operating_assignments",
+        "assignment_memberships",
+        "membership_capabilities",
+        "assignment_capability_ceiling"
       ]
     },
     "/api/transitaire/parcels": {
@@ -1624,7 +1736,12 @@
         "parcels",
         "relais",
         "scan_events",
-        "users"
+        "users",
+        "markets",
+        "market_operating_assignments",
+        "assignment_memberships",
+        "membership_capabilities",
+        "assignment_capability_ceiling"
       ]
     },
     "/api/transitaire/history": {
@@ -1644,7 +1761,12 @@
         "parcels",
         "relais",
         "scan_events",
-        "users"
+        "users",
+        "markets",
+        "market_operating_assignments",
+        "assignment_memberships",
+        "membership_capabilities",
+        "assignment_capability_ceiling"
       ]
     }
   },
@@ -1653,9 +1775,17 @@
       "/api/orders",
       "/api/products"
     ],
-    "phantomSeams": [],
+    "phantomSeams": [
+      "/api/hub/orders/mark-ordered"
+    ],
     "sharedTables": [
+      "assignment_capability_ceiling",
+      "assignment_memberships",
+      "finance_config",
       "invoices",
+      "market_operating_assignments",
+      "markets",
+      "membership_capabilities",
       "order_items",
       "orders",
       "parcel_items",
@@ -1665,10 +1795,68 @@
       "products",
       "relais",
       "scan_events",
+      "supplier_execution_payments",
       "users"
     ]
   },
   "tableBlast": {
+    "markets": {
+      "routes": [
+        "routes/admin-costing.js",
+        "routes/admin/partners.js",
+        "routes/hub.js",
+        "routes/local-stock.js",
+        "routes/payments-mobile-money.js",
+        "routes/relais.js",
+        "routes/transitaire-api.js"
+      ],
+      "boutique": [
+        "b-checkout",
+        "b-mobile-money",
+        "b-nav",
+        "komerce-api",
+        "market-hydration"
+      ],
+      "dashboards": [
+        "CostingView",
+        "CustomsView",
+        "SuppliersView",
+        "TransitaireView"
+      ]
+    },
+    "relais": {
+      "routes": [
+        "routes/admin-costing.js",
+        "routes/admin-dashboard.js",
+        "routes/client-notifications.js",
+        "routes/client-tracking.js",
+        "routes/local-stock.js",
+        "routes/logistics.js",
+        "routes/parcel-api-v2/read.js",
+        "routes/parcels.js",
+        "routes/payments-mobile-money.js",
+        "routes/relais.js",
+        "routes/transitaire-api.js"
+      ],
+      "boutique": [
+        "b-checkout",
+        "b-mobile-money",
+        "b-nav",
+        "b-notifications",
+        "b-tracking",
+        "komerce-api",
+        "market-hydration"
+      ],
+      "dashboards": [
+        "ControlTowerView",
+        "CostingView",
+        "HubRelaisView",
+        "OrdersLogisticsView",
+        "PilotageView",
+        "ProblemsView",
+        "TransitaireView"
+      ]
+    },
     "currency_parities": {
       "routes": [
         "server.js"
@@ -1681,45 +1869,21 @@
       ],
       "dashboards": []
     },
-    "relais": {
-      "routes": [
-        "routes/admin-costing.js",
-        "routes/client-notifications.js",
-        "routes/client-tracking.js",
-        "routes/logistics.js",
-        "routes/parcel-api-v2/read.js",
-        "routes/parcels.js",
-        "routes/relais.js",
-        "routes/transitaire-api.js"
-      ],
-      "boutique": [
-        "b-checkout",
-        "b-nav",
-        "b-notifications",
-        "b-tracking",
-        "komerce-api"
-      ],
-      "dashboards": [
-        "CostingView",
-        "HubRelaisView",
-        "ProblemsView",
-        "TransitaireView"
-      ]
-    },
     "orders": {
       "routes": [
         "routes/admin-costing.js",
         "routes/admin-customs-shipments.js",
+        "routes/admin-dashboard.js",
         "routes/cash.js",
         "routes/client-notifications.js",
         "routes/client-tracking.js",
         "routes/documents.js",
-        "routes/hub-mark-ordered.js",
         "routes/hub.js",
         "routes/invoices.js",
         "routes/logistics.js",
         "routes/parcel-api-v2/read.js",
         "routes/parcels.js",
+        "routes/payments-mobile-money.js",
         "routes/payments-paypal.js",
         "routes/payments.js",
         "routes/purchasing.js",
@@ -1730,6 +1894,7 @@
       "boutique": [
         "b-checkout",
         "b-komerce",
+        "b-mobile-money",
         "b-notifications",
         "b-paypal",
         "b-tracking",
@@ -1738,10 +1903,13 @@
       ],
       "dashboards": [
         "AccountingView",
+        "ControlTowerView",
         "CostingView",
         "CustomsView",
         "HubRelaisView",
         "InvoicesView",
+        "OrdersLogisticsView",
+        "PilotageView",
         "ProblemsView",
         "SanteView",
         "TransitaireView"
@@ -1831,6 +1999,24 @@
       ],
       "dashboards": []
     },
+    "finance_config": {
+      "routes": [
+        "routes/admin-costing.js",
+        "routes/admin-finance-config.js",
+        "routes/orders/create.js"
+      ],
+      "boutique": [
+        "b-checkout",
+        "b-tracking",
+        "komerce-api"
+      ],
+      "dashboards": [
+        "CostingView",
+        "OrdersLogisticsView",
+        "ProblemsView",
+        "SanteView"
+      ]
+    },
     "stripe_events_processed": {
       "routes": [
         "routes/payments.js"
@@ -1875,6 +2061,17 @@
         "ProblemsView",
         "SourcingView"
       ]
+    },
+    "credential_action_tokens": {
+      "routes": [
+        "routes/auth.js"
+      ],
+      "boutique": [
+        "b-greeting",
+        "b-komerce",
+        "komerce-api"
+      ],
+      "dashboards": []
     },
     "loyalty_tiers": {
       "routes": [
@@ -1932,6 +2129,15 @@
       ],
       "dashboards": []
     },
+    "mobile_money_transactions": {
+      "routes": [
+        "routes/payments-mobile-money.js"
+      ],
+      "boutique": [
+        "b-mobile-money"
+      ],
+      "dashboards": []
+    },
     "client_notifications": {
       "routes": [
         "routes/client-notifications.js"
@@ -1944,6 +2150,7 @@
     "order_items": {
       "routes": [
         "routes/admin-costing.js",
+        "routes/admin-dashboard.js",
         "routes/client-tracking.js",
         "routes/logistics.js",
         "routes/parcel-api-v2/read.js",
@@ -1954,8 +2161,11 @@
         "komerce-api"
       ],
       "dashboards": [
+        "ControlTowerView",
         "CostingView",
         "HubRelaisView",
+        "OrdersLogisticsView",
+        "PilotageView",
         "ProblemsView"
       ]
     },
@@ -1963,6 +2173,7 @@
       "routes": [
         "routes/admin-costing.js",
         "routes/admin-customs-shipments.js",
+        "routes/admin-dashboard.js",
         "routes/carriers.js",
         "routes/client-tracking.js",
         "routes/hub.js",
@@ -1976,9 +2187,12 @@
         "komerce-api"
       ],
       "dashboards": [
+        "ControlTowerView",
         "CostingView",
         "CustomsView",
         "HubRelaisView",
+        "OrdersLogisticsView",
+        "PilotageView",
         "ProblemsView",
         "SanteView",
         "TransitaireView"
@@ -2032,6 +2246,66 @@
         "komerce-api"
       ],
       "dashboards": []
+    },
+    "market_operating_assignments": {
+      "routes": [
+        "routes/admin/partners.js",
+        "routes/hub.js",
+        "routes/transitaire-api.js"
+      ],
+      "boutique": [
+        "komerce-api"
+      ],
+      "dashboards": [
+        "CustomsView",
+        "SuppliersView",
+        "TransitaireView"
+      ]
+    },
+    "assignment_memberships": {
+      "routes": [
+        "routes/admin/partners.js",
+        "routes/hub.js",
+        "routes/transitaire-api.js"
+      ],
+      "boutique": [
+        "komerce-api"
+      ],
+      "dashboards": [
+        "CustomsView",
+        "SuppliersView",
+        "TransitaireView"
+      ]
+    },
+    "membership_capabilities": {
+      "routes": [
+        "routes/admin/partners.js",
+        "routes/hub.js",
+        "routes/transitaire-api.js"
+      ],
+      "boutique": [
+        "komerce-api"
+      ],
+      "dashboards": [
+        "CustomsView",
+        "SuppliersView",
+        "TransitaireView"
+      ]
+    },
+    "assignment_capability_ceiling": {
+      "routes": [
+        "routes/admin/partners.js",
+        "routes/hub.js",
+        "routes/transitaire-api.js"
+      ],
+      "boutique": [
+        "komerce-api"
+      ],
+      "dashboards": [
+        "CustomsView",
+        "SuppliersView",
+        "TransitaireView"
+      ]
     },
     "product_suppliers": {
       "routes": [
@@ -2115,6 +2389,27 @@
       ],
       "dashboards": []
     },
+    "supplier_execution_payments": {
+      "routes": [
+        "routes/admin-costing.js",
+        "routes/purchasing.js"
+      ],
+      "boutique": [
+        "komerce-api"
+      ],
+      "dashboards": [
+        "CostingView"
+      ]
+    },
+    "supplier_payment_settlements": {
+      "routes": [
+        "routes/purchasing.js"
+      ],
+      "boutique": [
+        "komerce-api"
+      ],
+      "dashboards": []
+    },
     "boutique_categories": {
       "routes": [
         "routes/categories.js"
@@ -2155,75 +2450,61 @@
         "SanteView"
       ]
     },
-    "markets": {
-      "routes": [
-        "routes/admin-dashboard-market.js"
-      ],
-      "boutique": [],
-      "dashboards": [
-        "ControlTowerView",
-        "CostingView",
-        "OrdersLogisticsView",
-        "PilotageView"
-      ]
-    },
-    "operator_market_scopes": {
-      "routes": [
-        "routes/admin-dashboard-market.js"
-      ],
-      "boutique": [],
-      "dashboards": [
-        "ControlTowerView",
-        "CostingView",
-        "OrdersLogisticsView",
-        "PilotageView"
-      ]
-    },
-    "dashboard_global_access_grants": {
-      "routes": [
-        "routes/admin-dashboard-market.js"
-      ],
-      "boutique": [],
-      "dashboards": [
-        "ControlTowerView",
-        "CostingView",
-        "OrdersLogisticsView",
-        "PilotageView"
-      ]
-    },
     "customs_shipments": {
       "routes": [
         "routes/admin-costing.js",
-        "routes/admin-customs-shipments.js"
+        "routes/admin-customs-shipments.js",
+        "routes/admin-dashboard.js"
       ],
       "boutique": [],
       "dashboards": [
+        "ControlTowerView",
         "CostingView",
         "CustomsView",
-        "SanteView"
-      ]
-    },
-    "finance_config": {
-      "routes": [
-        "routes/admin-costing.js",
-        "routes/admin-finance-config.js"
-      ],
-      "boutique": [],
-      "dashboards": [
-        "CostingView",
+        "OrdersLogisticsView",
+        "PilotageView",
         "SanteView"
       ]
     },
     "order_item_cost_imputations": {
       "routes": [
-        "routes/admin-costing.js"
+        "routes/admin-costing.js",
+        "routes/admin-dashboard.js"
       ],
       "boutique": [],
       "dashboards": [
-        "CostingView"
+        "ControlTowerView",
+        "CostingView",
+        "OrdersLogisticsView",
+        "PilotageView"
       ]
     },
     "order_item_real_cost_allocations": {
+      "routes": [
+        "routes/admin-costing.js",
+        "routes/admin-dashboard.js"
+      ],
+      "boutique": [],
+      "dashboards": [
+        "ControlTowerView",
+        "CostingView",
+        "OrdersLogisticsView",
+        "PilotageView"
+      ]
+    },
+    "signals": {
+      "routes": [
+        "routes/admin-dashboard.js"
+      ],
+      "boutique": [],
+      "dashboards": [
+        "ControlTowerView",
+        "CostingView",
+        "OrdersLogisticsView",
+        "PilotageView"
+      ]
+    },
+    "refunds": {
       "routes": [
         "routes/admin-costing.js"
       ],
@@ -2232,7 +2513,36 @@
         "CostingView"
       ]
     },
+    "purchase_lines": {
+      "routes": [
+        "routes/admin-costing.js"
+      ],
+      "boutique": [],
+      "dashboards": [
+        "CostingView"
+      ]
+    },
+    "customs_shipment_fees": {
+      "routes": [
+        "routes/admin-customs-shipments.js"
+      ],
+      "boutique": [],
+      "dashboards": [
+        "CustomsView",
+        "SanteView"
+      ]
+    },
     "customs_shipment_parcels": {
+      "routes": [
+        "routes/admin-customs-shipments.js"
+      ],
+      "boutique": [],
+      "dashboards": [
+        "CustomsView",
+        "SanteView"
+      ]
+    },
+    "customs_shipment_parcel_events": {
       "routes": [
         "routes/admin-customs-shipments.js"
       ],
@@ -2282,16 +2592,7 @@
         "ProblemsView"
       ]
     },
-    "order_comments": {
-      "routes": [
-        "routes/hub-mark-ordered.js"
-      ],
-      "boutique": [],
-      "dashboards": [
-        "HubRelaisView"
-      ]
-    },
-    "exchange_rates": {
+    "fx_rate_observations": {
       "routes": [
         "routes/admin-finance-config.js"
       ],

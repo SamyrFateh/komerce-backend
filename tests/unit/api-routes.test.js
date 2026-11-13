@@ -43,3 +43,8 @@ test('monte les comptes de paiement par Market (admin central + lecture Market)'
   expect(source).toContain("app.use('/api/admin/market-payment-accounts', adminMarketPaymentAccountsRouter)");
   expect(source).toContain("app.use('/api/market-delegation', marketDelegationPaymentAccountsRouter)");
 });
+
+test('monte /api/markets/:marketCode/local-stock (réception et exposition par le responsable pays)', () => {
+  expect(source).toContain("require('../routes/market-local-stock')");
+  expect(source).toContain("app.use('/api/markets', marketLocalStockRouter)");
+});

@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-11-12T17:18:18.323Z",
+  "generatedAt": "2026-11-13T00:32:27.607Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 833,
-    "protected": 774,
+    "total": 836,
+    "protected": 777,
     "public": 59,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -4444,6 +4444,21 @@
       "roles": []
     },
     {
+      "key": "PUT /api/markets/{marketCode}/local-stock/{productId}/exposure",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/markets/{marketCode}/local-stock/receipts",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/markets/{marketCode}/local-stock",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
       "key": "GET /api/modules/{type}",
       "level": "PUBLIC",
       "roles": []
@@ -5230,6 +5245,14 @@
       ]
     },
     {
+      "key": "GET /api/purchasing/po/{po_id}/reconciliation",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
       "key": "POST /api/purchasing/po/{po_id}/sent",
       "level": "PROTECTED",
       "roles": [
@@ -5239,6 +5262,14 @@
     },
     {
       "key": "POST /api/purchasing/po/{po_id}/submit",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/purchasing/po/{po_id}/variance-decision",
       "level": "PROTECTED",
       "roles": [
         "admin",
@@ -5405,6 +5436,20 @@
         "admin",
         "agent_relais",
         "market_operator"
+      ]
+    },
+    {
+      "key": "GET /api/relay/returns/{id}/compensation-proposal",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/relay/returns/{id}/compensation",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
       ]
     },
     {
@@ -6064,36 +6109,6 @@
       "key": "POST /webhook/meta-whatsapp",
       "level": "PUBLIC",
       "roles": []
-    },
-    {
-      "key": "GET /api/purchasing/po/{po_id}/reconciliation",
-      "level": "PROTECTED",
-      "roles": [
-        "admin",
-        "agent_hub"
-      ]
-    },
-    {
-      "key": "POST /api/purchasing/po/{po_id}/variance-decision",
-      "level": "PROTECTED",
-      "roles": [
-        "admin",
-        "agent_hub"
-      ]
-    },
-    {
-      "key": "GET /api/relay/returns/{id}/compensation-proposal",
-      "level": "PROTECTED",
-      "roles": [
-        "admin"
-      ]
-    },
-    {
-      "key": "POST /api/relay/returns/{id}/compensation",
-      "level": "PROTECTED",
-      "roles": [
-        "admin"
-      ]
     }
   ]
 }

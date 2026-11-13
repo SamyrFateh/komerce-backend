@@ -13,28 +13,28 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 807,
-    "filesWithFullHeaders": 752,
+    "scannedCodeFiles": 810,
+    "filesWithFullHeaders": 755,
     "filesWithLiteHeaders": 55,
-    "filesWithAnyHeaders": 807,
+    "filesWithAnyHeaders": 810,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 2045,
-    "edges": 10140,
+    "graphNodes": 2053,
+    "edges": 10174,
     "dbTables": 237,
-    "doctrines": 794,
+    "doctrines": 799,
     "impactAreas": 207,
-    "unresolvedCodeEdges": 968,
+    "unresolvedCodeEdges": 969,
     "dbWriteViaOverlapWarnings": 12,
     "multiWriterTables": 95
   },
   "byDomain": {
     "infrastructure": 25,
     "bootstrap": 2,
-    "notification": 21,
+    "notification": 22,
     "auth": 14,
-    "market-delegation": 36,
+    "market-delegation": 38,
     "platform-ops": 2,
     "catalog": 137,
     "admin-dashboard": 39,
@@ -98,7 +98,7 @@
     "util-ui": 1,
     "ui-infrastructure": 1,
     "state": 1,
-    "util": 32,
+    "util": 33,
     "domain-helper": 1,
     "adapter": 6,
     "ui-runtime": 2,
@@ -110,9 +110,9 @@
     "ui-behavior": 1,
     "state-store": 1,
     "schema": 1,
-    "route": 137,
+    "route": 138,
     "entrypoint": 1,
-    "service": 488,
+    "service": 489,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -123,7 +123,7 @@
   "byCriticality": {
     "critical": 125,
     "medium": 157,
-    "high": 460,
+    "high": 463,
     "low": 64,
     "unknown": 1
   },
@@ -162,6 +162,7 @@
         "routes/market-delegation-provider.js",
         "routes/market-delegation-catalog.js",
         "routes/market-delegation-local-offer.js",
+        "routes/market-local-stock.js",
         "routes/market-delegation-client-case.js",
         "routes/market-delegation-settlement.js",
         "routes/market-delegation-structure-event.js",
@@ -10547,6 +10548,58 @@
         "dashboard"
       ],
       "version": "2026-10"
+    },
+    {
+      "id": "routes/market-local-stock.js",
+      "file": "routes/market-local-stock.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "market-local-stock-api",
+      "domain": "market-delegation",
+      "layer": "route",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated user",
+        "market code",
+        "receipt payload",
+        "Idempotency-Key"
+      ],
+      "outputs": [
+        "local stock list",
+        "receipt declaration",
+        "exposure update"
+      ],
+      "depends": [
+        "middleware/auth.js",
+        "services/market-delegation-local-stock-service.js"
+      ],
+      "usedBy": [
+        "bootstrap/api-routes.js",
+        "public/dashboards/canonical/js/market-local-offer.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [
+        {
+          "via": "market-delegation-local-stock-service",
+          "tables": [
+            "local_stock",
+            "market_delegation_audit"
+          ]
+        }
+      ],
+      "dbTxn": [],
+      "doctrine": [
+        "country_lead_only_local_stock_declaration",
+        "client_market_id_never_authority"
+      ],
+      "impactAreas": [
+        "market-delegation",
+        "local-stock"
+      ],
+      "version": "2026-11"
     },
     {
       "id": "routes/meta-whatsapp.js",
@@ -22448,6 +22501,72 @@
         "providers-services"
       ],
       "version": "2026-09"
+    },
+    {
+      "id": "services/market-delegation-local-stock-service.js",
+      "file": "services/market-delegation-local-stock-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "market-delegation-local-stock-service",
+      "domain": "market-delegation",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "actor user",
+        "market code",
+        "product_id",
+        "relais_id",
+        "qty_received",
+        "proof_ref",
+        "Idempotency-Key"
+      ],
+      "outputs": [
+        "local_stock_row",
+        "receipt_audit",
+        "exposure_row"
+      ],
+      "depends": [
+        "services/local-stock-service.js",
+        "services/market-delegation-service.js",
+        "services/market-delegation-team-service.js"
+      ],
+      "usedBy": [],
+      "dbRead": [
+        "products",
+        "relais",
+        "local_stock",
+        "market_delegation_audit"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [
+        {
+          "via": "local-stock-service",
+          "tables": [
+            "local_stock"
+          ]
+        },
+        {
+          "via": "market-delegation-service",
+          "tables": [
+            "market_delegation_audit"
+          ]
+        }
+      ],
+      "dbTxn": [
+        "advisory_lock_session"
+      ],
+      "doctrine": [
+        "country_lead_only_local_stock_declaration",
+        "market_pool_stock_km_main",
+        "no_second_stock_writer"
+      ],
+      "impactAreas": [
+        "market-delegation",
+        "local-stock"
+      ],
+      "version": "2026-11"
     },
     {
       "id": "services/market-delegation-network-service.js",
@@ -37639,7 +37758,8 @@
       ],
       "depends": [
         "Meta Graph API",
-        "env META_WA_*"
+        "env META_WA_*",
+        "utils/non-prod-phone-guard.js"
       ],
       "usedBy": [
         "notification-service.js",
@@ -38487,6 +38607,47 @@
         "logistics"
       ],
       "version": "2026-07"
+    },
+    {
+      "id": "utils/non-prod-phone-guard.js",
+      "file": "utils/non-prod-phone-guard.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "non-prod-phone-guard",
+      "domain": "notification",
+      "layer": "util",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "env AUTHKEY_ALLOWED_PHONES",
+        "runtime environment",
+        "recipient_phone"
+      ],
+      "outputs": [
+        "allowed_boolean"
+      ],
+      "depends": [
+        "middleware/require-non-production.js"
+      ],
+      "usedBy": [
+        "services/authkey-client.js",
+        "services/whatsapp-meta.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "no_external_send_outside_production",
+        "fail_safe_empty_allowlist"
+      ],
+      "impactAreas": [
+        "whatsapp",
+        "notifications",
+        "shared-cart"
+      ],
+      "version": "2026-11"
     },
     {
       "id": "utils/orderParcelLinkRules.js",
@@ -39625,6 +39786,11 @@
       "table": "market_team_invitations"
     },
     {
+      "id": "db:local_stock",
+      "type": "db-table",
+      "table": "local_stock"
+    },
+    {
       "id": "db:fabrics",
       "type": "db-table",
       "table": "fabrics"
@@ -40063,11 +40229,6 @@
       "id": "db:international_shipment_relay_receipts",
       "type": "db-table",
       "table": "international_shipment_relay_receipts"
-    },
-    {
-      "id": "db:local_stock",
-      "type": "db-table",
-      "table": "local_stock"
     },
     {
       "id": "db:product_market_price_draft_events",
@@ -41433,6 +41594,11 @@
       "id": "doctrine:legacy_scope_is_projection",
       "type": "doctrine",
       "doctrine": "legacy_scope_is_projection"
+    },
+    {
+      "id": "doctrine:country_lead_only_local_stock_declaration",
+      "type": "doctrine",
+      "doctrine": "country_lead_only_local_stock_declaration"
     },
     {
       "id": "doctrine:order_creation_idempotent",
@@ -42835,6 +43001,16 @@
       "doctrine": "local_offer_authority_is_capability_based"
     },
     {
+      "id": "doctrine:market_pool_stock_km_main",
+      "type": "doctrine",
+      "doctrine": "market_pool_stock_km_main"
+    },
+    {
+      "id": "doctrine:no_second_stock_writer",
+      "type": "doctrine",
+      "doctrine": "no_second_stock_writer"
+    },
+    {
       "id": "doctrine:network_authority_is_capability_based",
       "type": "doctrine",
       "doctrine": "network_authority_is_capability_based"
@@ -44215,6 +44391,16 @@
       "doctrine": "GAP_ANALYSIS_CURRENCY_BOUNDARY.md — FREEZE FINAL 22-08-2026."
     },
     {
+      "id": "doctrine:no_external_send_outside_production",
+      "type": "doctrine",
+      "doctrine": "no_external_send_outside_production"
+    },
+    {
+      "id": "doctrine:fail_safe_empty_allowlist",
+      "type": "doctrine",
+      "doctrine": "fail_safe_empty_allowlist"
+    },
+    {
       "id": "doctrine:API_CONTRACTS",
       "type": "doctrine",
       "doctrine": "API_CONTRACTS"
@@ -45351,6 +45537,12 @@
       "to": "routes/market-delegation-local-offer.js",
       "type": "depends",
       "label": "routes/market-delegation-local-offer.js"
+    },
+    {
+      "from": "bootstrap/api-routes.js",
+      "to": "routes/market-local-stock.js",
+      "type": "depends",
+      "label": "routes/market-local-stock.js"
     },
     {
       "from": "bootstrap/api-routes.js",
@@ -60783,6 +60975,68 @@
       "to": "impact:dashboard",
       "type": "impact",
       "label": "dashboard"
+    },
+    {
+      "from": "routes/market-local-stock.js",
+      "to": "middleware/auth.js",
+      "type": "depends",
+      "label": "middleware/auth.js"
+    },
+    {
+      "from": "routes/market-local-stock.js",
+      "to": "services/market-delegation-local-stock-service.js",
+      "type": "depends",
+      "label": "services/market-delegation-local-stock-service.js"
+    },
+    {
+      "from": "bootstrap/api-routes.js",
+      "to": "routes/market-local-stock.js",
+      "type": "uses",
+      "label": "bootstrap/api-routes.js"
+    },
+    {
+      "from": "public/dashboards/canonical/js/market-local-offer.js",
+      "to": "routes/market-local-stock.js",
+      "type": "uses",
+      "label": "public/dashboards/canonical/js/market-local-offer.js"
+    },
+    {
+      "from": "routes/market-local-stock.js",
+      "to": "db:local_stock",
+      "type": "db-write-via",
+      "label": "local_stock",
+      "via": "market-delegation-local-stock-service"
+    },
+    {
+      "from": "routes/market-local-stock.js",
+      "to": "db:market_delegation_audit",
+      "type": "db-write-via",
+      "label": "market_delegation_audit",
+      "via": "market-delegation-local-stock-service"
+    },
+    {
+      "from": "routes/market-local-stock.js",
+      "to": "doctrine:country_lead_only_local_stock_declaration",
+      "type": "doctrine",
+      "label": "country_lead_only_local_stock_declaration"
+    },
+    {
+      "from": "routes/market-local-stock.js",
+      "to": "doctrine:client_market_id_never_authority",
+      "type": "doctrine",
+      "label": "client_market_id_never_authority"
+    },
+    {
+      "from": "routes/market-local-stock.js",
+      "to": "impact:market-delegation",
+      "type": "impact",
+      "label": "market-delegation"
+    },
+    {
+      "from": "routes/market-local-stock.js",
+      "to": "impact:local-stock",
+      "type": "impact",
+      "label": "local-stock"
     },
     {
       "from": "routes/meta-whatsapp.js",
@@ -80747,6 +81001,92 @@
       "to": "impact:providers-services",
       "type": "impact",
       "label": "providers-services"
+    },
+    {
+      "from": "services/market-delegation-local-stock-service.js",
+      "to": "services/local-stock-service.js",
+      "type": "depends",
+      "label": "services/local-stock-service.js"
+    },
+    {
+      "from": "services/market-delegation-local-stock-service.js",
+      "to": "services/market-delegation-service.js",
+      "type": "depends",
+      "label": "services/market-delegation-service.js"
+    },
+    {
+      "from": "services/market-delegation-local-stock-service.js",
+      "to": "services/market-delegation-team-service.js",
+      "type": "depends",
+      "label": "services/market-delegation-team-service.js"
+    },
+    {
+      "from": "services/market-delegation-local-stock-service.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/market-delegation-local-stock-service.js",
+      "to": "db:relais",
+      "type": "db-read",
+      "label": "relais"
+    },
+    {
+      "from": "services/market-delegation-local-stock-service.js",
+      "to": "db:local_stock",
+      "type": "db-read",
+      "label": "local_stock"
+    },
+    {
+      "from": "services/market-delegation-local-stock-service.js",
+      "to": "db:market_delegation_audit",
+      "type": "db-read",
+      "label": "market_delegation_audit"
+    },
+    {
+      "from": "services/market-delegation-local-stock-service.js",
+      "to": "db:local_stock",
+      "type": "db-write-via",
+      "label": "local_stock",
+      "via": "local-stock-service"
+    },
+    {
+      "from": "services/market-delegation-local-stock-service.js",
+      "to": "db:market_delegation_audit",
+      "type": "db-write-via",
+      "label": "market_delegation_audit",
+      "via": "market-delegation-service"
+    },
+    {
+      "from": "services/market-delegation-local-stock-service.js",
+      "to": "doctrine:country_lead_only_local_stock_declaration",
+      "type": "doctrine",
+      "label": "country_lead_only_local_stock_declaration"
+    },
+    {
+      "from": "services/market-delegation-local-stock-service.js",
+      "to": "doctrine:market_pool_stock_km_main",
+      "type": "doctrine",
+      "label": "market_pool_stock_km_main"
+    },
+    {
+      "from": "services/market-delegation-local-stock-service.js",
+      "to": "doctrine:no_second_stock_writer",
+      "type": "doctrine",
+      "label": "no_second_stock_writer"
+    },
+    {
+      "from": "services/market-delegation-local-stock-service.js",
+      "to": "impact:market-delegation",
+      "type": "impact",
+      "label": "market-delegation"
+    },
+    {
+      "from": "services/market-delegation-local-stock-service.js",
+      "to": "impact:local-stock",
+      "type": "impact",
+      "label": "local-stock"
     },
     {
       "from": "services/market-delegation-network-service.js",
@@ -103996,6 +104336,12 @@
       "label": "env META_WA_*"
     },
     {
+      "from": "services/whatsapp-meta.js",
+      "to": "utils/non-prod-phone-guard.js",
+      "type": "depends",
+      "label": "utils/non-prod-phone-guard.js"
+    },
+    {
       "from": "notification-service.js",
       "to": "services/whatsapp-meta.js",
       "type": "uses",
@@ -105580,6 +105926,54 @@
       "label": "logistics"
     },
     {
+      "from": "utils/non-prod-phone-guard.js",
+      "to": "middleware/require-non-production.js",
+      "type": "depends",
+      "label": "middleware/require-non-production.js"
+    },
+    {
+      "from": "services/authkey-client.js",
+      "to": "utils/non-prod-phone-guard.js",
+      "type": "uses",
+      "label": "services/authkey-client.js"
+    },
+    {
+      "from": "services/whatsapp-meta.js",
+      "to": "utils/non-prod-phone-guard.js",
+      "type": "uses",
+      "label": "services/whatsapp-meta.js"
+    },
+    {
+      "from": "utils/non-prod-phone-guard.js",
+      "to": "doctrine:no_external_send_outside_production",
+      "type": "doctrine",
+      "label": "no_external_send_outside_production"
+    },
+    {
+      "from": "utils/non-prod-phone-guard.js",
+      "to": "doctrine:fail_safe_empty_allowlist",
+      "type": "doctrine",
+      "label": "fail_safe_empty_allowlist"
+    },
+    {
+      "from": "utils/non-prod-phone-guard.js",
+      "to": "impact:whatsapp",
+      "type": "impact",
+      "label": "whatsapp"
+    },
+    {
+      "from": "utils/non-prod-phone-guard.js",
+      "to": "impact:notifications",
+      "type": "impact",
+      "label": "notifications"
+    },
+    {
+      "from": "utils/non-prod-phone-guard.js",
+      "to": "impact:shared-cart",
+      "type": "impact",
+      "label": "shared-cart"
+    },
+    {
       "from": "utils/orderParcelLinkRules.js",
       "to": "services/order-status-machine.js",
       "type": "depends",
@@ -106454,6 +106848,7 @@
         "routes/market-delegation-provider.js",
         "routes/market-delegation-catalog.js",
         "routes/market-delegation-local-offer.js",
+        "routes/market-local-stock.js",
         "routes/market-delegation-client-case.js",
         "routes/market-delegation-settlement.js",
         "routes/market-delegation-structure-event.js",
@@ -106599,6 +106994,7 @@
         "routes/market-delegation-settlement.js",
         "routes/market-delegation-structure-event.js",
         "routes/market-delegation-team.js",
+        "routes/market-local-stock.js",
         "routes/meta-whatsapp.js",
         "routes/modules.js",
         "routes/notification-api.js",
@@ -107239,6 +107635,7 @@
         "routes/market-delegation-settlement.js",
         "routes/market-delegation-structure-event.js",
         "routes/market-delegation-team.js",
+        "routes/market-local-stock.js",
         "routes/meta-whatsapp.js",
         "routes/modules.js",
         "routes/notification-api.js",
@@ -107844,7 +108241,8 @@
         "impact:security",
         "impact:simulator",
         "routes/admin/system.js",
-        "routes/simulator.js"
+        "routes/simulator.js",
+        "utils/non-prod-phone-guard.js"
       ]
     },
     "middleware/require-pricing-global-authority.js": {
@@ -117128,6 +117526,53 @@
         "services/market-scope-projector.js"
       ]
     },
+    "routes/market-local-stock.js": {
+      "role": "market-local-stock-api",
+      "domain": "market-delegation",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "middleware/auth.js",
+        "services/market-delegation-local-stock-service.js"
+      ],
+      "directUsedBy": [
+        "bootstrap/api-routes.js",
+        "public/dashboards/canonical/js/market-local-offer.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [
+        {
+          "via": "market-delegation-local-stock-service",
+          "tables": [
+            "local_stock",
+            "market_delegation_audit"
+          ]
+        }
+      ],
+      "doctrines": [
+        "country_lead_only_local_stock_declaration",
+        "client_market_id_never_authority"
+      ],
+      "impactAreas": [
+        "market-delegation",
+        "local-stock"
+      ],
+      "mustCheck": [
+        "bootstrap/api-routes.js",
+        "db:local_stock",
+        "db:market_delegation_audit",
+        "doctrine:client_market_id_never_authority",
+        "doctrine:country_lead_only_local_stock_declaration",
+        "impact:local-stock",
+        "impact:market-delegation",
+        "middleware/auth.js",
+        "services/market-delegation-local-stock-service.js"
+      ]
+    },
     "routes/meta-whatsapp.js": {
       "role": "notification-meta-whatsapp",
       "domain": "notification",
@@ -119876,7 +120321,8 @@
         "services/notifications/order.js",
         "services/notifications/otp-auth.js",
         "services/notifications/parcel.js",
-        "utils/logger.js"
+        "utils/logger.js",
+        "utils/non-prod-phone-guard.js"
       ]
     },
     "services/auto-parcel.js": {
@@ -128512,7 +128958,8 @@
         "impact:orders",
         "routes/local-stock.js",
         "services/discovery-rail-composer.js",
-        "services/local-stock-checkout-preview.js"
+        "services/local-stock-checkout-preview.js",
+        "services/market-delegation-local-stock-service.js"
       ]
     },
     "services/logistics-control-chain-projection.js": {
@@ -129251,6 +129698,66 @@
         "services/providers-service.js"
       ]
     },
+    "services/market-delegation-local-stock-service.js": {
+      "role": "market-delegation-local-stock-service",
+      "domain": "market-delegation",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/local-stock-service.js",
+        "services/market-delegation-service.js",
+        "services/market-delegation-team-service.js"
+      ],
+      "directUsedBy": [],
+      "ownedFiles": [],
+      "dbRead": [
+        "products",
+        "relais",
+        "local_stock",
+        "market_delegation_audit"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [
+        {
+          "via": "local-stock-service",
+          "tables": [
+            "local_stock"
+          ]
+        },
+        {
+          "via": "market-delegation-service",
+          "tables": [
+            "market_delegation_audit"
+          ]
+        }
+      ],
+      "doctrines": [
+        "country_lead_only_local_stock_declaration",
+        "market_pool_stock_km_main",
+        "no_second_stock_writer"
+      ],
+      "impactAreas": [
+        "market-delegation",
+        "local-stock"
+      ],
+      "mustCheck": [
+        "db:local_stock",
+        "db:market_delegation_audit",
+        "db:products",
+        "db:relais",
+        "doctrine:country_lead_only_local_stock_declaration",
+        "doctrine:market_pool_stock_km_main",
+        "doctrine:no_second_stock_writer",
+        "impact:local-stock",
+        "impact:market-delegation",
+        "routes/market-local-stock.js",
+        "services/local-stock-service.js",
+        "services/market-delegation-service.js",
+        "services/market-delegation-team-service.js"
+      ]
+    },
     "services/market-delegation-network-service.js": {
       "role": "market-delegation-network-service",
       "domain": "market-delegation",
@@ -129496,6 +130003,7 @@
         "services/market-delegation-catalog-service.js",
         "services/market-delegation-client-case-service.js",
         "services/market-delegation-local-offer-service.js",
+        "services/market-delegation-local-stock-service.js",
         "services/market-delegation-network-service.js",
         "services/market-delegation-provider-service.js",
         "services/market-delegation-settlement-service.js",
@@ -129699,6 +130207,7 @@
         "services/market-delegation-cost-statement-service.js",
         "services/market-delegation-customs-service.js",
         "services/market-delegation-local-offer-service.js",
+        "services/market-delegation-local-stock-service.js",
         "services/market-delegation-performance-service.js",
         "services/market-delegation-service.js",
         "services/market-delegation-settlement-service.js",
@@ -144223,7 +144732,8 @@
       "purpose": null,
       "directDependsOn": [
         "Meta Graph API",
-        "env META_WA_*"
+        "env META_WA_*",
+        "utils/non-prod-phone-guard.js"
       ],
       "directUsedBy": [
         "notification-service.js",
@@ -144255,7 +144765,8 @@
         "impact:shared-cart",
         "impact:whatsapp",
         "routes/meta-whatsapp.js",
-        "services/notifications/notification-service.js"
+        "services/notifications/notification-service.js",
+        "utils/non-prod-phone-guard.js"
       ]
     },
     "utils/alerts.js": {
@@ -145158,6 +145669,44 @@
         "services/pickup-authorization-service.js",
         "services/pickup-exceptional-collection-service.js",
         "services/pickup-secret-service.js"
+      ]
+    },
+    "utils/non-prod-phone-guard.js": {
+      "role": "non-prod-phone-guard",
+      "domain": "notification",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "middleware/require-non-production.js"
+      ],
+      "directUsedBy": [
+        "services/authkey-client.js",
+        "services/whatsapp-meta.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "no_external_send_outside_production",
+        "fail_safe_empty_allowlist"
+      ],
+      "impactAreas": [
+        "whatsapp",
+        "notifications",
+        "shared-cart"
+      ],
+      "mustCheck": [
+        "doctrine:fail_safe_empty_allowlist",
+        "doctrine:no_external_send_outside_production",
+        "impact:notifications",
+        "impact:shared-cart",
+        "impact:whatsapp",
+        "middleware/require-non-production.js",
+        "services/authkey-client.js",
+        "services/whatsapp-meta.js"
       ]
     },
     "utils/orderParcelLinkRules.js": {
@@ -148246,6 +148795,12 @@
       "to": "routes/market-delegation-team.js",
       "type": "uses",
       "label": "market operator dashboard"
+    },
+    {
+      "from": "public/dashboards/canonical/js/market-local-offer.js",
+      "to": "routes/market-local-stock.js",
+      "type": "uses",
+      "label": "public/dashboards/canonical/js/market-local-offer.js"
     },
     {
       "from": "routes/meta-whatsapp.js",

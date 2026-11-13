@@ -17825,6 +17825,13 @@
           ]
         },
         {
+          "consumer": "market-delegation",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "consumer": "orders",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -21249,7 +21256,7 @@
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 23,
+            "count": 24,
             "files": [
               {
                 "declared": "dashboards/canonical/access.html",
@@ -21314,6 +21321,11 @@
               {
                 "declared": "dashboards/canonical/js/market-catalog.js",
                 "resolvedPath": "public/dashboards/canonical/js/market-catalog.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/js/market-local-offer.js",
+                "resolvedPath": "public/dashboards/canonical/js/market-local-offer.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -21474,7 +21486,7 @@
             ]
           }
         },
-        "totalFiles": 41,
+        "totalFiles": 42,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -22670,7 +22682,7 @@
             ]
           },
           "routes": {
-            "count": 14,
+            "count": 15,
             "files": [
               {
                 "declared": "routes/market-delegation-cash-control.js",
@@ -22741,11 +22753,16 @@
                 "declared": "routes/market-delegation-team.js",
                 "resolvedPath": "routes/market-delegation-team.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "routes/market-local-stock.js",
+                "resolvedPath": "routes/market-local-stock.js",
+                "status": "resolved-in-technical-graph"
               }
             ]
           },
           "services": {
-            "count": 17,
+            "count": 18,
             "files": [
               {
                 "declared": "services/capability-registry.js",
@@ -22780,6 +22797,11 @@
               {
                 "declared": "services/market-delegation-local-offer-service.js",
                 "resolvedPath": "services/market-delegation-local-offer-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/market-delegation-local-stock-service.js",
+                "resolvedPath": "services/market-delegation-local-stock-service.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -23100,7 +23122,7 @@
             ]
           }
         },
-        "totalFiles": 111,
+        "totalFiles": 113,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -23650,6 +23672,13 @@
         },
         {
           "provider": "infrastructure",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "local-stock",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
