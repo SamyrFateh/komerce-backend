@@ -1,0 +1,35 @@
+name: Claude PAR — diagnostic lecture seule de visibilité publique des produits CLAUDE-PAR
+
+# Lecture seule : urls publiques fournisseur des seuls produits listés dans catalog-publication-ids.json.
+on:
+  push:
+    branches: [cert/claude-par-catalog]
+    paths:
+      - '.github/workflows/claude-par-catalog-visibility-diag.yml'
+      - 'scripts/recette/claude-par/catalog-visibility-diag.js'
+      - 'scripts/recette/claude-par/catalog-publication-ids.json'
+
+permissions:
+  contents: read
+
+jobs:
+  dump:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      KOMERCE_ENV: staging
+      NODE_ENV: test
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      EXPECTED_RAILWAY_ENVIRONMENT: staging
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Vérifier la cible staging
+        run: node scripts/recette/target-guard.js
+      - name: Diagnostic
+        run: node scripts/recette/claude-par/catalog-visibility-diag.js
