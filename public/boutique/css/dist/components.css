@@ -3323,7 +3323,7 @@ html.k-mobile-premium-v1 .k-chip-label {
      display:contents / display:none, non touchées ici). */
   #k-modal .k-modal-body {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) clamp(310px, 22vw, 390px);
+    grid-template-columns: minmax(0, 1fr) 296px;
     flex: 1;
     min-height: 0;
     overflow: hidden;
@@ -6274,9 +6274,9 @@ html.k-mobile-premium-v1 .k-chip-label {
     background: var(--page-bg);
   }
 
-  /* La composition 48/52 ci-dessus reste le fallback des petits desktops.
-     À partir de 1200px, la galerie utilise 57 % du panneau hors panier,
-     pour une répartition globale proche de 45/33/22 (panier borné). */
+  /* ≥1200px : la géométrie finale est désormais possédée par
+     modal-desktop-density.css (pass de densité 2026-08). La règle 900px
+     ci-dessus reste le fallback canonique ; aucun override mort ici. */
 
   /* D6 — Hero desktop en aplat (spec, réf. mockup fourni) :
      fond uni --hero-bg, seul le décor radial sobre est conservé,
@@ -6897,13 +6897,6 @@ html.k-mobile-premium-v1 .k-chip-label {
     aspect-ratio: 1 / 1;
   }
 }
-/* Vue desktop ≥1200 : proportions Galerie ~45 % / Fiche ~33 % / Panier ~22 %.
-   Le panier est borné par modal-shell.css (310..390px). */
-@media (min-width: 1200px) {
-  #k-modal .k-modal-product-zone {
-    grid-template-columns: minmax(0, 57%) minmax(0, 43%);
-  }
-}
 
 
 /* ── modal-desktop-density.css ───────────────────────────── */
@@ -6921,16 +6914,16 @@ html.k-mobile-premium-v1 .k-chip-label {
    ═══════════════════════════════════════════════════════════════ */
 
 @media (min-width: 1200px) {
-  /* Le side-cart reste lisible mais rend quelques pixels au produit. */
+  /* Autorité finale de la coque desktop. 22vw borné à 320–390px :
+     confortable à 1440, 1700 et 1920, sans surcharge de la modal. */
   #k-modal .k-modal-body {
-    grid-template-columns: minmax(0, 1fr) 288px;
+    grid-template-columns: minmax(0, 1fr) clamp(320px, 22vw, 390px);
   }
 
-  /* Réduire le déséquilibre "grand vide média / buybox étroite".
-     La piste droite gagne assez de présence pour les grands écrans sans
-     introduire un breakpoint supplémentaire hors contrat. */
+  /* Proportions globales cibles ~45/33/22, après réserve du side-cart.
+     1.326fr / 1fr évite 57% + 43% + gap qui ferait déborder la grille. */
   #k-modal .k-modal-product-zone {
-    grid-template-columns: minmax(0, 1fr) minmax(460px, 520px);
+    grid-template-columns: minmax(0, 1.326fr) minmax(0, 1fr);
     gap: 18px;
     padding: 16px 18px;
   }
