@@ -1,0 +1,20 @@
+order KC692IV daefd587-60f7-4f15-9d10-5e72e5021164 client +2693470913 relay 8f75adf3
+PO CJ draft 9f3a8a9b-df29-45e0-8965-c7f58f21087a (144+141)
+PO central hub draft 4f02b7d1-7516-47a1-a249-e487c3ba6199 (163 casserole, ligne manuelle) ; Ali 124 BLOQUE: local stock au relais
+POs: engaged+submitted+paid (ENG/PAY refs CLAUDE-PAR-20261113-*). next: sent, reception manual
+sent both POs. next: reception Hub MANUAL
+confirmations ok (4F02 seller Quincaillerie; 9F3A seller CJ; refus L5 400 MANUAL_PURCHASE_SELLER_REQUIRED + UI justificatif<4). next reception
+casserole recue Hub MANUAL (code confirm CLPAR-163-CASSEROLE). next: CJ reception
+CJ recu Hub (2 lignes) MANUAL. next: Repartir KC692IV, sac MANUAL, box, ...
+parcel KOM-P-2026-000167 (repartir OK)
+sac KOM-ITEM-3BB76F7ACED566962E 3 depots MANUAL; next: fermer sac, box
+box KOM-BOX-4290B893227D2A4A7A, sac->box MANUAL OK (201)
+box PACKED. next dossier CLAUDE-PAR-20261113-EXP + rattacher + remise transitaire MANUAL
+box DISPATCHED, rattache EXP. next: Expeditions&Douane remise transitaire manual_entry
+handed_over MANUAL (manual_entry) OK. next transitaire steps
+transitaire: received, tracking, in_transit, arrived OK. 409 JOURNEY_TRACKING_REQUIRED refus. next douane admin
+douane OK (DOUANE1 lie, droits 0 KMF, mainlevee). DOUANE0 desactive (mine, parcels_reset). 409 refus JOURNEY_CUSTOMS_REQUIRED/LEGACY_MEMBERSHIP/PENDING. next transport local, relay reception
+relais reception OK (qty UI not blocking >expected, tested not server)
+code via admin regenerate (reveal client 410 fenetre expiree; defect: pas d'ecran client, fenetre 30min). .code.admin local chmod600
+REMISE OK (collected) via code 8 car; 4 mauvais codes => 404 sans verrou (L1 non prouve: pas lie a une commande)
+SAV: retour 67d7db35, reprise 505f3f14, compensation 1380 KMF wallet_credit ef3bc4a9 (admin HTTP, pas d'ecran)

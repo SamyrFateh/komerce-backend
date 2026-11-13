@@ -1,0 +1,23 @@
+const {run,B}=require('./R.js');
+run('agent-hub',async({p,shot,btns,log})=>{
+ await p.goto(B+'/admin/hub-live?view=execute&market=KM',{waitUntil:'domcontentloaded'});await p.waitForTimeout(8000);
+ await p.getByRole('button',{name:'KC692IV',exact:true}).first().click();await p.waitForTimeout(1500);
+ await p.locator('[data-hlc-action=open-physical-details]').first().click();await p.waitForTimeout(2500);
+ const add=p.locator('[data-workspace-action=put-bag-in-box]');await add.scrollIntoViewIfNeeded();
+ const box=p.locator('input[placeholder="Scanner cette KOM-BOX une fois"]');const bag=p.locator('input[placeholder="Scanner le sac client"]');
+ await box.fill('KOM-BOX-E86E211EDA5A58B49B');await bag.fill('KOM-ITEM-3BB76F7ACED566962E');await p.waitForTimeout(500);
+ console.log('refus mauvaise KOM-BOX (disabled):',await add.isDisabled());await shot('L1-refus-mauvaise-box');
+ await box.fill('KOM-BOX-4290B893227D2A4A7A');await bag.fill('KOM-BOX-4290B893227D2A4A7A');await p.waitForTimeout(500);
+ console.log('refus mauvais sac (disabled):',await add.isDisabled());
+ await bag.fill('KOM-ITEM-3BB76F7ACED566962E');await p.waitForTimeout(500);
+ const sels=await p.evaluate(()=>[...document.querySelectorAll('select')].filter(e=>e.offsetParent).map(e=>[...e.options].map(o=>o.text.slice(0,32)).join('/')).slice(-3));console.log(sels);
+ const meth=p.locator('select:visible').filter({hasText:'Mode dégradé'}).last();await meth.selectOption({label:(await meth.locator('option').allTextContents()).find(x=>/Mode dégradé/.test(x))});
+ await p.waitForTimeout(500);
+ await p.locator('select:visible').filter({hasText:'Choisir le colis client'}).last().selectOption({index:1});await p.waitForTimeout(500);
+ console.log(await p.evaluate(()=>[...document.querySelectorAll('input')].filter(e=>e.offsetParent).map(e=>e.placeholder||e.name).slice(-4)));
+ const proof=p.locator('input:visible').last();
+ console.log('btn enabled sans justification',!(await add.isDisabled()));
+ await add.click();await p.waitForTimeout(1500);
+ await proof.fill('CLAUDE-PAR-20261113 constat manuel sac vers KOM-BOX');await p.waitForTimeout(300);await shot('L2-box-manuel');
+ await add.click();await p.waitForTimeout(4000);await shot('L3-box-place');
+});

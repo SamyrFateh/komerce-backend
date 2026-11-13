@@ -1,0 +1,12 @@
+const {chromium}=require('/opt/npm-tools/node_modules/playwright');const S=__dirname;const B='https://komerce-backend-production.up.railway.app';
+(async()=>{const br=await chromium.launch();const ctx=await br.newContext({storageState:S+'/client-state.json',viewport:{width:1440,height:900},locale:'fr-FR',recordVideo:{dir:S+'/video-client',size:{width:1280,height:720}}});const p=await ctx.newPage();
+const log=[];p.on('response',async r=>{const u=r.url();if(u.includes('/api/')&&/pickup|reveal|secret|orders\/[0-9a-f-]+$/.test(u)&&r.request().method()!=='OPTIONS')log.push(r.status()+' '+r.request().method()+' '+u.replace(B,'').slice(0,110))});
+await p.goto(B+'/boutique/?market=KM',{waitUntil:'domcontentloaded'});await p.waitForTimeout(3500);
+await p.locator('#k-header-komerce-btn').click();await p.waitForTimeout(1500);
+await p.getByText('Mes Commandes').first().click();await p.waitForTimeout(3500);
+await p.screenshot({path:S+'/shots/T1-mes-commandes.png'});
+await p.locator('text=KC692IV').first().click();await p.waitForTimeout(3500);
+await p.screenshot({path:S+'/shots/T2-commande.png',fullPage:true});
+console.log((await p.locator('body').innerText()).replace(/\s+/g,' ').match(/(code|retrait|révél)[^.]{0,120}/gi));
+console.log(await p.evaluate(()=>[...document.querySelectorAll('button')].filter(e=>e.offsetParent).map(e=>(e.innerText||'').trim().slice(0,40)).filter(Boolean)));
+console.log(log);await br.close()})();
