@@ -39,6 +39,16 @@ const ids = require('./catalog-publication-ids.json').products;
               (supplier_order_identity->'payload' = '{}'::jsonb) AS payload_empty, count(*)::int AS n
          FROM product_skus WHERE product_id=$1::uuid AND is_active AND stock>0 GROUP BY 1,2,3,4,5,6,7,8`, [id]);
     r.sku_identity = d.rows;
+    const pr = await db.query(`SELECT inventory_model, has_variants, stock, is_active, is_available, lifecycle_status FROM products WHERE id=$1::uuid`, [id]);
+    r.product_row = pr.rows[0];
+    const ss = await db.query(
+      `SELECT count(*) FILTER (WHERE is_active AND stock>0 AND (price_kmf IS NULL OR price_kmf>0))::int AS basic_ok,
+              count(*) FILTER (WHERE is_active AND stock>0 AND price_kmf IS NOT NULL AND price_kmf<=0)::int AS neg_price,
+              count(*) FILTER (WHERE is_active AND stock>0 AND supplier_order_identity IS NULL)::int AS null_identity,
+              count(*) FILTER (WHERE is_active AND stock>0 AND supplier_order_identity->>'provider' !~ '^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$')::int AS bad_provider,
+              count(*) FILTER (WHERE is_active AND stock>0 AND supplier_order_identity->>'version' !~ '^[1-9][0-9]*$')::int AS bad_version
+         FROM product_skus WHERE product_id=$1::uuid`, [id]);
+    r.sku_checks = ss.rows[0];
     out.push({ id: id.slice(0, 8), ...r });
   }
   console.log('DIAG_BEGIN'); console.log(JSON.stringify(out)); console.log('DIAG_END');
