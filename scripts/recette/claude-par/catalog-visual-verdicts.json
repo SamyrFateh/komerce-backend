@@ -141,7 +141,7 @@
         }
       }
     },
-    "bf6b85e1-4062-4b19-858d-30eab55ce489": {
+    "fe2c8a44-d385-45ff-ae5b-8acbd3bf8534": {
       "media": {
         "CLAUDE-PAR-20261113-PLANCHE:media:v4": {
           "verdict": "APPROVED",
@@ -149,7 +149,7 @@
         }
       }
     },
-    "82dcf516-dc7b-4395-801b-e1a0d0fde675": {
+    "af3e5584-a71a-4dbe-b09c-11d9a0849376": {
       "media": {
         "CLAUDE-PAR-20261113-CASSEROLE:media:v4": {
           "verdict": "APPROVED",
@@ -170,7 +170,9 @@
     "424a9e16-2175-4e29-b974-431d39e64bd9": "carte Instagram, textes anglais, badge",
     "e7fc3651-200f-4be2-bdd5-f39e54f5ca63": "textes anglais, marques, allegations non verifiees",
     "b7e80506-b037-40b2-a46e-72514ac04021": "non retenu (etiquettes cintre Lee, non inspecte image par image)",
-    "21bc5285-note": "retenu apres decision Opus : images 8-9 etiquette generique transcrite et traduite en legende FR"
+    "21bc5285-note": "retenu apres decision Opus : images 8-9 etiquette generique transcrite et traduite en legende FR",
+    "bf6b85e1-4062-4b19-858d-30eab55ce489": "doublon de promotion (produit remplace par fe2c8a44)",
+    "82dcf516-dc7b-4395-801b-e1a0d0fde675": "doublon de promotion (produit remplace par af3e5584)"
   },
-  "rerun": 2
+  "rerun": 3
 }
