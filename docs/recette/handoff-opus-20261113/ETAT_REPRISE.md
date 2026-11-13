@@ -45,6 +45,16 @@ Point de départ pour tout agent qui reprend après une coupure. Fil de coordina
 - **Les 4 PR restent draft et non fusionnées**. Chevauchements : `purchasing-engagement-service.js` H1/H3/H4 ; `auto-parcel.js` H1/H2. Réconcilier dans cet ordre en conservant les deux logiques, puis refaire Required verdict sur chaque tête actualisée et PostgreSQL avant la moindre fusion.
 - **HOLD staging et E2E** : #3900 encore ouverte, passe 2 non déclarée terminée ; aucun merge Hub, aucun changement de variables Railway ; le GO 46 E2E G6 n'a pas été donné. Pas de paiements, WhatsApp ni notifications réels.
 
+### Réconciliation à vérifier sur tête intégrée (pas encore exécutée)
+
+Ordre proposé **H2 → H1 → H3 → H4**, puis nouveau verdict sur chaque tête réellement actualisée. Les quatre PR avaient la même base `46f540bc` au relevé du 13/11 ; elles sont toutes draft et le staging est réservé à #3900.
+
+- **`services/auto-parcel.js` (H2 + H1)** : conserver le `FOR UPDATE` transactionnel de H2 **ET** le calcul `closed_short` / quantité reçue de H1. Ne pas restaurer un distributeOrder non sérialisé en reprenant H1.
+- **`services/purchasing-engagement-service.js` (H1 + H3 + H4)** : conserver ensemble H1 `openSupplierShortage` dans la transaction de clôture sans reliquat, H3 `purchase_line_received_quantity` refusant une confirmation sous le reçu, H4 `apiSent` (PO auto, `sent_channel='api'`, pas en simulation). Les modifications portent sur trois points distincts, mais **l'absence de conflit textuel ne prouve pas l'absence de conflit métier**.
+- **`tests/integration/purchase-lines-engagement-postgres.test.js` (H1 + H3)** : fixture `incidents`/`alerts` de H1 et migration 414 + tables physiques de H3 doivent coexister ; garder les preuves de réception hors quarantaine et incident de rupture.
+- **`tests/unit/purchasing-engagement-service.test.js`, `features/purchasing.feature.js` et projections gouvernées** : concaténer les assertions métiers, régénérer les graphes/contrats depuis les sources, ne jamais écraser une projection plus récente par un fichier généré sur une ancienne tête.
+- **Sortie** : PostgreSQL 16 intégral, preflight canonique et Required verdict verts **sur chaque HEAD réconcilié**, puis seule fenêtre de fusion après clôture de la seconde passe #3900 et vérification qu'aucune campagne n'écrit sur le staging. Activer `E7_ITEM_RESERVATIONS_ENABLED=1` sur **staging uniquement** dans cette fenêtre ; déploiement, SHA, puis H1–H9/Chromium ciblés.
+
 **Fusion groupée H1 à H4** : à faire quand tout est vert et qu'aucun run `staging`, `chromium` ou `g6` n'est actif. Modèle de boucle : `scripts/merge-list.sh <PR...>`. Elle sort les PR du brouillon via `POST /pulls/{n}/ccr/ready_for_review`, fait update-branch, attend `clean`, fusionne en squash et contrôle `merged=true`. **Dans le même créneau**, activer `E7_ITEM_RESERVATIONS_ENABLED=1` sur le staging Railway (décision du propriétaire du 13/11). Cela redémarre le service.
 
 **Audits Fable** : #3987 (flux d'argent), #3988 (moteur économique), #3998 (Hub). Les décisions 1 à 7 du propriétaire sur #3998 figurent dans le commentaire 6857010399. Les invariants SQL H1 à H9 de #3998 sont **ajoutés au contrat partagé #3944** dans l'oracle O-HUB ; il reste à les **exécuter** indépendamment pour chaque campagne.
