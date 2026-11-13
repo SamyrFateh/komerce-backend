@@ -279,7 +279,7 @@ module.exports = {
       'suppliers: RW',
       'manual_purchase_executions: RW!', // Achats réels justifiés, écriture purchasing
       'purchase_variance_decisions: RW!', // Décision directrice Hub sur écart de prix
-      'purchase_lines: RW!'
+      'purchase_lines: RW!',
       'hub_authorization_grants: RW!',
       'purchase_order_authorizations: RW!',
       'supplier_execution_events: RW!',
