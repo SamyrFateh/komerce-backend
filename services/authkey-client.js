@@ -37,7 +37,6 @@
 const AUTHKEY_URL = 'https://authkey.io/restapi/requestjson.php';
 const API_KEY = process.env.AUTHKEY_API_KEY;
 const log = require('../utils/logger').child({ module: 'authkey-client' });
-const { resolveRuntimeEnvironment } = require('../middleware/require-non-production');
 // O7.2 (Cycle A) : l'import de invoice-public-token.js a été retiré — c'était la
 // seule preuve cross-feature notifications -> orders. Voir docs/O7_2_CYCLE_ANALYSIS.md.
 
@@ -46,31 +45,7 @@ const { resolveRuntimeEnvironment } = require('../middleware/require-non-product
 // les numéros listés dans AUTHKEY_ALLOWED_PHONES (séparés par virgule).
 // Ex : AUTHKEY_ALLOWED_PHONES="+2693301234,+33612345678"
 // Si la variable est absente en staging, AUCUN message ne part (fail-safe).
-const IS_PRODUCTION = resolveRuntimeEnvironment().env === 'production';
-const _allowedPhones = IS_PRODUCTION
-  ? null  // prod : pas de filtre
-  : new Set(
-      (process.env.AUTHKEY_ALLOWED_PHONES || '')
-        .split(',')
-        .map(p => p.trim().replace(/\D/g, ''))
-        .filter(Boolean)
-    );
-
-/**
- * Vérifie si un numéro est autorisé à recevoir un message en staging.
- * Normalise en digits purs pour la comparaison (insensible au format).
- * En production, retourne toujours true.
- */
-function _isStagingAllowed(rawPhone) {
-  if (IS_PRODUCTION) return true;
-  if (!_allowedPhones || _allowedPhones.size === 0) return false;
-  const digits = String(rawPhone || '').replace(/\D/g, '');
-  // Tente la correspondance sur le suffixe (ex: "3301234" matche "+2693301234")
-  for (const allowed of _allowedPhones) {
-    if (allowed.endsWith(digits) || digits.endsWith(allowed)) return true;
-  }
-  return false;
-}
+const { isNonProdPhoneAllowed: _isStagingAllowed } = require('../utils/non-prod-phone-guard');
 
 function envFirst(...names) {
   for (const name of names) {
