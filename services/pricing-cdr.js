@@ -630,10 +630,102 @@ function computeCDR(product, ctx = {}) {
   };
 }
 
+/**
+ * Conservative one-article reference for audit and price discussion only.
+ *
+ * The operational pricing engine continues to call computeCDR() unchanged:
+ * no historical mean or commercial activation gate is silently rewritten.
+ * A single article bears the full modeled per-order/parcel/shipment charge;
+ * actual post-sale allocation still uses observed physical quantities.
+ *
+ * This is NOT a certified floor. Missing customs evidence, unresolved
+ * market/corridor provenance or relay commission unit differences are
+ * explicitly recorded so that a consumer cannot mistake the reference for
+ * a reconciled cost or a published selling price.
+ */
+function computeSingleArticleReferenceCDR(product, ctx = {}) {
+  if (!ctx.config || !ctx.config.finance) {
+    throw new TypeError('Configuration économique et finance requises pour la référence mono-article.');
+  }
+
+  const original = ctx.config;
+  const historicalDivisors = {
+    order: Number(original.finance.avg_articles_per_order) || 2.5,
+    parcel: Number(original.finance.avg_articles_per_parcel) || 4,
+    shipment: Number(original.finance.avg_articles_per_shipment) || 200,
+  };
+  const config = {
+    ...original,
+    finance: {
+      ...original.finance,
+      avg_articles_per_order: 1,
+      avg_articles_per_parcel: 1,
+      avg_articles_per_shipment: 1,
+    },
+  };
+  const result = computeCDR(product, { ...ctx, config });
+  const marketCode = result.cost_scope.market_code;
+  const blockers = [];
+
+  if (!marketCode) blockers.push('MARKET_NOT_RESOLVED');
+  if (result.input_quality.unknown.length) blockers.push('MANDATORY_COST_OR_SCOPE_UNKNOWN');
+
+  // Real relay settlement currently uses commission_relais_kmf × quantity
+  // (services/cost-allocation/allocate.js), but the pre-sale CDR can
+  // describe it as per-order. No automatic re-interpretation is authorized.
+  const relayUnits = (original.components || [])
+    .filter(c => c.category === 'relay' && c.is_active !== false)
+    .map(c => ({ key: c.key, unit: c.unit, allocation_method: c.allocation_method || null }));
+  if (relayUnits.some(c => c.unit === 'kmf_per_order' || c.allocation_method === 'per_order')) {
+    blockers.push('RELAY_COMMISSION_UNIT_NOT_RECONCILED');
+  }
+
+  // A base component may be portable, but we cannot certify that a
+  // supplier/transport quote inherited by CM/CG is a genuine local corridor.
+  // Record missing evidence without modifying active market pricing.
+  const corridorCategories = new Set([
+    'freight', 'transit', 'port_transitary', 'customs', 'douane', 'local_distribution',
+  ]);
+  const corridorUnverified = (original.components || [])
+    .filter(c => c.is_active !== false && corridorCategories.has(c.category))
+    .filter(c => marketCode === 'CM' || marketCode === 'CG')
+    .filter(c => c.source !== 'market_override'
+      && !(c.scope === 'market' && c.scope_value === marketCode)
+      && c.market_code !== marketCode && c.corridor_market_code !== marketCode)
+    .map(c => c.key || c.category);
+  if (corridorUnverified.length) blockers.push('CORRIDOR_COST_PROVENANCE_UNVERIFIED');
+
+  const warnings = result.warnings.filter(w => !w.startsWith('Moyennes d\'allocation non calibrées'));
+  warnings.push('Référence mono-article prudente (q=1) : simulation uniquement, jamais une allocation physique réelle ni un prix actif.');
+  if (relayUnits.length && blockers.includes('RELAY_COMMISSION_UNIT_NOT_RECONCILED')) {
+    warnings.push('Commission relais par commande dans la prévision, par unité dans le réel : choix contractuel requis.');
+  }
+  if (corridorUnverified.length) {
+    warnings.push('Coûts hérités sans preuve de corridor CM/CG : valider les devis et surcharges marché.');
+  }
+
+  return {
+    ...result,
+    warnings,
+    single_article_reference: {
+      mode: 'SHADOW_REFERENCE_ONLY',
+      status: blockers.length ? 'NON_DECISIONNEL' : 'PROVISOIRE',
+      canonical_currency: 'KMF',
+      quantity_assumption: { order: 1, parcel: 1, shipment: 1 },
+      operational_average_divisors: historicalDivisors,
+      no_price_activation: true,
+      blockers,
+      relay_units_observed: relayUnits,
+      corridor_components_unverified: corridorUnverified,
+    },
+  };
+}
+
 module.exports = {
   loadGlobalConfig,
   computeFixedCostAllocation,
   computeCDR,
+  computeSingleArticleReferenceCDR,
   _legacyFamilyFromCategory,
   _legacyCategoryToNew,
   _positiveNumberOrNull: positiveNumberOrNull,
