@@ -260,8 +260,16 @@
   }
 
   /* Protéger le bord droit sans sacrifier la lisibilité des lignes. */
-  #k-modal .k-modal-cart-slot,
+  #k-modal .k-modal-cart-slot {
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  /* Sur le grand desktop, la réserve générale du catalogue (260–296px)
+     ne doit jamais rétrécir le panier reparenté dans sa propre piste.
+     La grille #k-modal .k-modal-body détermine seule sa largeur. */
   #k-modal .k-side-cart--in-modal {
+    width: 100%;
     min-width: 0;
     box-sizing: border-box;
   }
