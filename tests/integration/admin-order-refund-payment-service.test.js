@@ -52,7 +52,7 @@ describe('P3-A.2 refundCancelledOrder → payment-service', () => {
       id: 'order-1',
       reference: 'KM-1',
       status: 'cancelled',
-      payment_status: 'pending',
+      payment_status: 'paid', // la transaction Stripe doit être capturée avant le remboursement
       payment_mode: 'stripe_eur',
       stripe_payment_id: 'pi_123',
       total_kmf: 12000,
