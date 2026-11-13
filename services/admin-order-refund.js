@@ -76,6 +76,20 @@ async function refundCancelledOrder({ orderId, user, dryRun = true, reason = nul
       return { status: 409, body: { error: 'Commande déjà marquée refunded' } };
     }
 
+    // FA-07 : une commande annulée mais jamais payée ne possède aucun
+    // encaissement à restituer. Dry-run et exécution partagent le même refus ;
+    // aucun crédit wallet, cash ou PSP ne doit être créé depuis ce dossier.
+    if (order.payment_status !== 'paid') {
+      await client.query('ROLLBACK');
+      return {
+        status: 409,
+        body: {
+          code: 'ORDER_NOT_PAID_NO_REFUND',
+          error: 'Aucun remboursement possible : cette commande n’a jamais été payée.',
+        },
+      };
+    }
+
     const { rows: existingRefunds } = await client.query(
       `SELECT id, refund_method, stripe_refund_id, status, completed_at
          FROM refunds
