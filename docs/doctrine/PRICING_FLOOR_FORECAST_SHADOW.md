@@ -91,3 +91,17 @@ Il **ne constitue ni une preuve d'un lot physique d'un seul article, ni la répa
 Des garde-fous déclarent `NON_DECISIONNEL` pour une devise/marché non résolu, un coût ou périmètre inconnu, une unité de commission relais prévisionnelle par commande non réconciliée avec la remise réelle par article, ou des coûts hérités sans provenance du corridor CM/CG. La présence d'un composant `market_override` prouve seulement sa portée déclarée : elle **ne certifie pas** que sa valeur est issue d'un devis réel.
 
 Ce diagnostic ne crée aucun nouveau circuit d'activation ni une seconde autorité de prix. **À arbitrer pour clore P0** : unité contractuelle de commission (article/commande/remise), sources et clés physiques réelles des corridors KM/CM/CG, et adoption éventuelle de la référence prudente dans la décision commerciale.
+
+
+## P0 #3994 — audit lecture seule des coûts par marché et de l'unité relais
+
+L'API authentifiée `GET /api/admin/workspaces/pricing/market/{KM|CM|CG}/economic-p0-audit` utilise le marché **résolu côté serveur**, l'autorisation `pricing.read` et la requête canonique `cost-component-market-service.listEffectiveComponents(marketId)`. Elle n'autorise aucune écriture, n'accepte aucun `market_id` fourni par le navigateur et renvoie `Cache-Control: private, no-store`.
+
+La réponse inventorie, sans conversion implicite : `key`, `category`, valeur numérique **dans son unité**, `unit`, `allocation_method`, `source`, `confidence`, `scope`, `island`, état actif/daté, héritage/surcharge et **présence** de provenance ou de note. Une surcharge locale prouve au plus sa **portée marché**, pas la facture de transport ni son taux FX ; toute entrée conserve `cost_evidence_status: NOT_VERIFIED`.
+
+Les alertes non décisionnelles distinguent :
+- `INHERITED_CORRIDOR_UNVERIFIED` — fret, transit, douane, frais portuaires ou distribution hérités sans justification propre à CM/CG ;
+- `KM_SPECIFIC_UNVERIFIED_OUTSIDE_KM` — clé Comores / inter-îles héritée hors marché KM ;
+- `RELAY_FORECAST_REAL_UNIT_MISMATCH` — la configuration initiale `commission_relais_kmf` (migration 043) indique une **commission par commande remise** (`kmf_per_order`, `per_order`), mais `allocateParcelRealCosts()` impute actuellement `montant × quantité` avec `allocation_method=per_item`. L'écart est remonté, **pas corrigé sans validation du contrat**.
+
+Le endpoint retourne toujours `certified: false`, `status: NON_DECISIONNEL`, `no_price_activation: true`. L'absence d'alerte technique **ne certifie jamais** un tarif. Les contrôles de vraies valeurs nécessitent une lecture autorisée du staging après déploiement sur le SHA réellement servi, avec devis/factures et acteurs marché autorisés. Ni l'audit, ni cette réponse ne modifient les coûts ou les prix actifs.
