@@ -25,9 +25,9 @@
     background: var(--page-bg);
   }
 
-  /* La composition 48/52 ci-dessus reste le fallback des petits desktops.
-     À partir de 1200px, la galerie utilise 57 % du panneau hors panier,
-     pour une répartition globale proche de 45/33/22 (panier borné). */
+  /* ≥1200px : la géométrie finale est désormais possédée par
+     modal-desktop-density.css (pass de densité 2026-08). La règle 900px
+     ci-dessus reste le fallback canonique ; aucun override mort ici. */
 
   /* D6 — Hero desktop en aplat (spec, réf. mockup fourni) :
      fond uni --hero-bg, seul le décor radial sobre est conservé,
@@ -646,12 +646,5 @@
     max-width: 72px;
     height: auto;
     aspect-ratio: 1 / 1;
-  }
-}
-/* Vue desktop ≥1200 : proportions Galerie ~45 % / Fiche ~33 % / Panier ~22 %.
-   Le panier est borné par modal-shell.css (310..390px). */
-@media (min-width: 1200px) {
-  #k-modal .k-modal-product-zone {
-    grid-template-columns: minmax(0, 57%) minmax(0, 43%);
   }
 }
