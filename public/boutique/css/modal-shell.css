@@ -575,7 +575,7 @@
      display:contents / display:none, non touchées ici). */
   #k-modal .k-modal-body {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) clamp(310px, 22vw, 390px);
+    grid-template-columns: minmax(0, 1fr) 296px;
     flex: 1;
     min-height: 0;
     overflow: hidden;
