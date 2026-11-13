@@ -32,7 +32,7 @@
  *     avant la préparation (l'expédition partielle d'une commande est hors périmètre) ;
  *   - idempotente : un second appel ne change rien (PO déjà `hub_received`, transition `noop`, pas de second SCAN 3).
  *
- * Le chemin historique (`processReceive`) n'est pas modifié : sa complétude lit la même vue de progression.
+ * Le chemin historique de réception déclarative est supprimé : seul le reçu physique sert la complétude.
  */
 
 const db = require('../db');

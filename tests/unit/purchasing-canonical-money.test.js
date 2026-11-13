@@ -19,9 +19,6 @@ jest.mock('../../services/purchasing-trigger-service', () => ({
   triggerPurchasing: jest.fn(),
 }));
 
-jest.mock('../../services/purchasing-receive-service', () => ({
-  processReceive: jest.fn(),
-}));
 
 jest.mock('../../services/purchasing-admin-service', () => ({
   deleteSupplier: jest.fn(),

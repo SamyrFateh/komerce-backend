@@ -7,7 +7,7 @@
  * @inputs        supplier id, procurement hub ref, purchase line ids, purchase order id, cancel reason, actor
  * @outputs       open-line groups, draft grouped purchase order, detach/discard/cancel results
  * @depends       db, services/purchase-line-snapshot.js, utils/logger.js
- * @used-by       routes/purchasing.js, services/purchasing-admin-service.js, services/purchasing-receive-service.js
+ * @used-by       routes/purchasing.js, services/purchasing-admin-service.js
  * @db-read       purchase_lines, purchase_orders, order_items, orders, markets, products, suppliers, v_purchase_line_market, purchase_order_authorizations
  * @db-write      purchase_lines, purchase_orders
  * @db-txn        owned
