@@ -16,3 +16,13 @@ describe('hub-live-cockpit.css — formulaire de réception dans la colonne', ()
     expect(css).toMatch(/\.hlc-form \.kmc-workspace-receive-card \.kmc-workspace-table td:last-child \{ min-width: 0;/);
   });
 });
+
+describe('hub-live-cockpit — ancienneté des tâches (H4 #3998)', () => {
+  const js = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/hub-live-cockpit.js'), 'utf8');
+
+  test('la pastille affiche l\'âge fourni par le serveur et l\'alerte, sans rien calculer côté navigateur', () => {
+    expect(js).toMatch(/item\.age_hours != null/);
+    expect(js).toMatch(/hlc-todo-age\$\{item\.overdue \? ' is-overdue' : ''\}/);
+    expect(css).toMatch(/\.hlc-todo-age\.is-overdue/);
+  });
+});
