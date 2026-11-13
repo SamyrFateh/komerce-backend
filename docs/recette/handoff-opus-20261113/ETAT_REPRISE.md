@@ -1,4 +1,4 @@
-# Reprise Opus : certification pré-E2E G6 (état au 13/11/2026 à 16h50)
+# Reprise Opus : certification pré-E2E G6 (revu le 13/11/2026 — états GitHub H1–H4)
 
 Point de départ pour tout agent qui reprend après une coupure. Fil de coordination : issue **#3927**. Matrice commune : PR draft **#3944**, branche `docs/g6-matrix-v2`.
 
@@ -30,10 +30,19 @@ Point de départ pour tout agent qui reprend après une coupure. Fil de coordina
 | Lot | PR | État |
 |---|---|---|
 | L1 à L7, #3951, W1 à W3, R1 à R6 (#3981 à #3986) | fusionnés | sur le staging (`589d81d88` vérifié) |
-| H1 : avancement automatique (HB-01, HB-02, HB-03), plus l'incident `supplier_shortage` et le remboursement de ligne déclenché par l'admin | #4001 | draft, preflight vert |
-| H2 : verrou de commande dans `distributeOrder` (HB-04) | #4000 | draft, preflight vert |
-| H3 : quantités (HB-05, HB-06, HB-07, HB-11) | en cours (Sonnet B) | — |
-| H4 : vue directrice tous marchés, ancienneté, alerte 48 h (HB-08), décision 4 | en cours (Sonnet B) | — |
+| H1 : avancement automatique (HB-01, HB-02, HB-03), incident `supplier_shortage`, remboursement admin | #4001 | **draft, Required verdict ROUGE** : job PostgreSQL/intégration/E2E API échoué ; 1 test sur 162 en échec, `relation "incidents" does not exist` dans `purchase-lines-engagement-postgres` |
+| H2 : verrou de commande dans `distributeOrder` (HB-04) | #4000 | **draft, Required verdict VERT** : CI PG16/intégration/E2E API verte ; test dédié de concurrence réelle à confirmer |
+| H3 : quantités (HB-05, HB-06, HB-07, HB-11) | #4003 | **draft, Required verdict ROUGE** : job PostgreSQL/intégration/E2E API échoué ; 13 tests sur 162 en échec, `function purchase_line_received_quantity(unknown) does not exist` ; migration 414 / montage du schéma à diagnostiquer |
+| H4 : vue directrice tous marchés, ancienneté, alerte 48 h (HB-08), décision 4 | #4002 | **draft, Required verdict VERT**, PG16/intégration/dashboard verts ; API multi-marchés présente mais **UI directrice non raccordée** (`/api/hub/director-todo`) |
+
+### Revue croisée GitHub (13/11) — points restant à lever
+
+- [H1 #4001](https://github.com/SamyrFateh/komerce-backend/pull/4001) : [Required verdict rouge, run 43452768908](https://github.com/SamyrFateh/komerce-backend/actions/runs/43452768908). Le test d'intégration `purchase-lines-engagement-postgres` échoue sur `relation "incidents" does not exist`. Examiner uniquement le montage de schéma/test avant de conclure à un défaut métier ; ne pas élargir le correctif sans preuve.
+- [H2 #4000](https://github.com/SamyrFateh/komerce-backend/pull/4000) : [Required verdict vert, run 43451497471](https://github.com/SamyrFateh/komerce-backend/actions/runs/43451497471). Conserver la preuve de contention de deux répartitions sur une même commande à rejouer en PostgreSQL réel, malgré l'index unique existant.
+- [H3 #4003](https://github.com/SamyrFateh/komerce-backend/pull/4003) : [Required verdict rouge, run 43455000959](https://github.com/SamyrFateh/komerce-backend/actions/runs/43455000959). `purchase-lines-engagement-postgres` échoue sur `purchase_line_received_quantity(unknown) does not exist` ; distinguer une migration 414 non chargée d'un défaut de résolution SQL. Les 13 échecs se concentrent dans cette suite, d'autres fichiers du même lot sont marqués non prouvés par sortie non nulle. Rejouer M06 sur produit manuel Hub central avec SKU.
+- [H4 #4002](https://github.com/SamyrFateh/komerce-backend/pull/4002) : [Required verdict vert, run 43452050028](https://github.com/SamyrFateh/komerce-backend/actions/runs/43452050028) ; `GET /api/hub/director-todo` fournit le multi-marchés, mais l'écran existant n'utilise pas encore cette vue (la PR l'indique elle-même). **Décision 6 non certifiable en vrai Chromium tant que ce raccordement n'est pas fait.** À faire sans créer de second dashboard.
+- Les quatre PR sont **ouvertes et en draft, non fusionnées**. Elles se recouvrent sur `purchasing-engagement-service.js` (H1/H3/H4) et `auto-parcel.js` (H1/H2). Rebaser et contrôler la CI sur les **têtes actualisées** avant chaque fusion ; aucun verdict vert antérieur ne vaut pour une tête modifiée.
+- **STOP E2E G6** jusqu'au GO explicite du propriétaire, puis deux campagnes indépendantes GPT/Opus sur la même version de staging. Ne pas confondre tests unitaires/preflight, CI PR et validation métier Chromium + HTTP + PostgreSQL. Aucun paiement ou notification réels.
 
 **Fusion groupée H1 à H4** : à faire quand tout est vert et qu'aucun run `staging`, `chromium` ou `g6` n'est actif. Modèle de boucle : `scripts/merge-list.sh <PR...>`. Elle sort les PR du brouillon via `POST /pulls/{n}/ccr/ready_for_review`, fait update-branch, attend `clean`, fusionne en squash et contrôle `merged=true`. **Dans le même créneau**, activer `E7_ITEM_RESERVATIONS_ENABLED=1` sur le staging Railway (décision du propriétaire du 13/11). Cela redémarre le service.
 
@@ -53,7 +62,7 @@ Point de départ pour tout agent qui reprend après une coupure. Fil de coordina
 
 ## Prochaines étapes
 1. **Seconde passe #3900** (`briefs/BRIEF_3900_PASSE2.md`), en cours en KM sur `589d81d88`. Elle couvre les 12 points : 3 sources, R4, R6, R1, R2, R3, retrait partiel, timeout et panne réseau, R5 sur KC692IV, encaissement, SAV.
-2. **H1 à H4** au vert, puis fusion groupée et activation de E7, puis **revérification Hub ciblée** : invariants H1 à H9, complétude automatique, rupture vers incident puis remboursement de ligne, quarantaine, vue directrice.
+2. **Lever les rouges H1 (#4001) et H3 (#4003)** ; raccorder la vue multi-marchés H4 au cockpit, rejouer migration 414/PG16 et M06 ; H2/H4 restent verts uniquement sur leurs têtes actuelles. Ensuite H1 à H4 au vert sur têtes réconciliées, fusion groupée et activation de E7 sur staging **après** la seconde passe #3900, puis **revérification Hub ciblée** : invariants H1 à H9, complétude automatique, rupture -> incident -> réservation admin -> remboursement de ligne, quarantaine, vue directrice en Chromium.
 3. Mettre à jour la matrice #3944 : ajouter les invariants H1 à H9 de #3998 aux oracles, et créer les scénarios « rupture définitive » et « colis arrivé non rapproché ».
 4. Si tout est PASS : demander au propriétaire le **GO E2E G6 final, qui n'est pas encore donné**. Ensuite, 46 scénarios sur KM puis CM et CG, avec les fixtures de cas limites (prix inactif, exposition coupée, stock à 0, au moins 2 variantes).
 5. **Après les E2E** : supprimer les routes historiques de colis (HB-09) et le code mort de réception (HB-10).
