@@ -413,35 +413,15 @@ describe('routes/wallet', () => {
   });
 
   describe('POST /admin/order-credit/:orderId', () => {
-    test('crée un avoir depuis commande annulée et émet un reçu (admin)', async () => {
+    test('FA-06 : interdit le writer legacy même pour un admin', async () => {
       mockUser = { id: 'admin-1', role: 'admin' };
-      const client = makeClient([]);
-      db.getClient.mockResolvedValueOnce(client);
-      walletService.createCreditFromCancel.mockResolvedValueOnce({
-        duplicate: false, transaction: { id: 'tx4' }, reversed_kmf: 4000,
-      });
 
       const res = await request(buildApp()).post('/api/wallet/admin/order-credit/o1');
 
-      expect(res.status).toBe(201);
-      expect(res.body.success).toBe(true);
-      expectTransactionCommitted(client);
-      expect(walletReceiptService.issue).toHaveBeenCalledWith('tx4', { issuedBy: 'admin-1' });
-    });
-
-    test('rollback et renvoie le résultat idempotent si l\'avoir existe déjà', async () => {
-      mockUser = { id: 'admin-1', role: 'admin' };
-      const client = makeClient([]);
-      db.getClient.mockResolvedValueOnce(client);
-      walletService.createCreditFromCancel.mockResolvedValueOnce({
-        duplicate: true, transaction: { id: 'tx4' },
-      });
-
-      const res = await request(buildApp()).post('/api/wallet/admin/order-credit/o1');
-
-      expect(res.status).toBe(200);
-      expect(res.body.message).toMatch(/idempotent/);
-      expectTransactionRolledBack(client);
+      expect(res.status).toBe(409);
+      expect(res.body.code).toBe('LEGACY_ORDER_CREDIT_DISABLED');
+      expect(db.getClient).not.toHaveBeenCalled();
+      expect(walletService.createCreditFromCancel).not.toHaveBeenCalled();
       expect(walletReceiptService.issue).not.toHaveBeenCalled();
     });
   });
