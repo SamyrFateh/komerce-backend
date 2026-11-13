@@ -26,3 +26,18 @@ describe('hub-live-cockpit — ancienneté des tâches (H4 #3998)', () => {
     expect(css).toMatch(/\.hlc-todo-age\.is-overdue/);
   });
 });
+
+describe('H4 #3998 — branchement directrice dans le vrai poste Hub', () => {
+  const operations = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/operations-workspace.js'), 'utf8');
+  test('la vue directrice charge son API multi-marchés et expose la file dans le poste Hub existant', () => {
+    expect(operations).toMatch(/renderDirectorTodo\(doc, context, ordersSlot\)/);
+    expect(operations).toContain("jsonRequest(context.fetch, '/api/hub/director-todo')");
+    expect(operations).toContain("['admin', 'agent_hub'].includes(context.user.role)");
+    expect(operations).toContain("data-hub-director-list");
+    expect(operations).toContain("task.age_hours");
+    expect(operations).toContain("task.overdue");
+    expect(operations).toContain("textContent");
+    expect(operations).toContain("/admin/hub-live?view=execute&market=");
+    expect(css).toContain('.hlc-director-task.is-overdue');
+  });
+});
