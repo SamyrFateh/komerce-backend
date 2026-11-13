@@ -236,6 +236,7 @@ module.exports = {
       'POST /api/payments/paypal/capture/:paypalOrderId',
       'POST /api/payments/paypal/create-order',
       'POST /api/payments/paypal/refund/:orderId',
+      'POST /api/payments/paypal/refund/:orderId/reconcile',
       'GET /api/payments/rates',
       'POST /api/payments/stripe/webhook',
     ],
