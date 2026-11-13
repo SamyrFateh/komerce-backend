@@ -216,6 +216,8 @@ function appendPickupCodeAction(container, order) {
   button.textContent = 'Générer un nouveau code';
   button.addEventListener('click', async () => {
     if (button.disabled) return;
+    // La rotation est irréversible : l'ancien code cesse immédiatement de fonctionner.
+    if (!window.confirm('Générer un nouveau code de retrait ? L’ancien code ne sera plus valable.')) return;
     button.disabled = true;
     try {
       const res = await apiPost('/api/pickup/customer-regenerate/' + encodeURIComponent(order.id), {});

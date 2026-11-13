@@ -794,7 +794,19 @@ describe('renderListsTab — bibliothèque de listes (GAP-01/02)', () => {
 });
 
 describe('renderOrderDetail — code de retrait (#3900 R1)', () => {
+  afterEach(() => jest.restoreAllMocks());
+
+  it('ne régénère aucun code lorsque le client annule la confirmation', async () => {
+    jest.spyOn(window, 'confirm').mockReturnValue(false);
+    const container = document.createElement('div');
+    renderOrderDetail({ id: 'o-1', reference: 'K9ZZZZ', total_amount: 5000, status: 'available' }, container);
+    container.querySelector('.k-order-pickup-code-generate').click();
+    await Promise.resolve();
+    expect(apiPost).not.toHaveBeenCalledWith('/api/pickup/customer-regenerate/o-1', {});
+  });
+
   it('propose de générer un nouveau code sur une commande disponible et l\'affiche', async () => {
+    const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(true);
     apiPost.mockResolvedValueOnce({ code: 'ABC23DEF' });
     const container = document.createElement('div');
     renderOrderDetail({ id: 'o-1', reference: 'K9ZZZZ', total_amount: 5000, status: 'available' }, container);
@@ -802,6 +814,7 @@ describe('renderOrderDetail — code de retrait (#3900 R1)', () => {
     expect(btn).not.toBeNull();
     btn.click();
     await Promise.resolve(); await Promise.resolve();
+    expect(confirmSpy).toHaveBeenCalledTimes(1);
     expect(apiPost).toHaveBeenCalledWith('/api/pickup/customer-regenerate/o-1', {});
     expect(container.querySelector('.k-pickup-code-output').textContent).toContain('ABC23DEF');
   });
