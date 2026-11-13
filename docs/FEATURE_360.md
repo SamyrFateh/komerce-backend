@@ -8,7 +8,7 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 - Healthy : **34**
 - Attention : **6**
 - Blocked : **0**
-- Business dependencies : **326**
+- Business dependencies : **327**
 - Direct cross-feature imports : **0**
 - Runtime cycles : **0**
 - Ambiguous ownership signals : **0**

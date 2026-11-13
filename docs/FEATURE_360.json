@@ -56,7 +56,7 @@
     "healthy": 34,
     "attention": 6,
     "blocked": 0,
-    "businessDependencies": 326,
+    "businessDependencies": 327,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
@@ -5846,7 +5846,8 @@
           "provider": "logistics",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "interface"
           ]
         },
         {
@@ -17835,7 +17836,8 @@
           "consumer": "orders",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "interface"
           ]
         },
         {
@@ -19937,7 +19939,8 @@
           "consumer": "catalog",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "interface"
           ]
         },
         {
@@ -24242,7 +24245,7 @@
               {
                 "declared": "utils/non-prod-phone-guard.js",
                 "resolvedPath": "utils/non-prod-phone-guard.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               }
             ]
           },
@@ -26110,7 +26113,8 @@
           "provider": "local-stock",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "interface"
           ]
         },
         {
