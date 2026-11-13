@@ -1,5 +1,7 @@
 /** @test-kind unit @test-runner jest @test-requires none */
 'use strict';
+// Le test de service est isolé : aucune connexion PostgreSQL, writer mocké.
+jest.mock('../../db', () => ({ withTransaction: jest.fn() }));
 const fs = require('fs');
 const path = require('path');
 const bagBox = require('../../services/hub-bag-box-service');
@@ -72,7 +74,7 @@ describe('Réception fournisseur Hub : saisie manuelle (#3900 P0-2)', () => {
 });
 
 describe('Audit Fable #3998 — colis client déduit du sac sans ressaisie', () => {
-  const db = require('../../db');
+  const db = jest.requireMock('../../db');
   afterEach(() => jest.restoreAllMocks());
 
   function mockCandidates(candidates) {
