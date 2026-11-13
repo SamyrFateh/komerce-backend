@@ -84,7 +84,7 @@ function _migrateLegacyCartItem(item) {
  */
 export function cartStorageKeys() {
   const market = typeof window !== 'undefined' ? window.KomerceMarket?.get?.()?.code : null;
-  const code = ['KM', 'CM', 'CG', 'DJ', 'YT'].includes(market) ? market : 'KM';
+  const code = typeof market === 'string' && /^[A-Z]{2}$/.test(market) ? market : 'KM';
   const suffix = code === 'KM' ? '' : '_' + code;
   return { cart: 'kmrc_cart' + suffix, version: 'kmrc_cart_v' + suffix };
 }
