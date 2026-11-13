@@ -222,6 +222,12 @@ describe('renderOrderDetail', () => {
     expect(container.querySelector('.k-track-steps')).not.toBeNull();
   });
 
+  it.each([['total_kmf', 'KC1'], ['totalKmf', 'KC2']])('lit le total serveur %s (pas 0 KMF)', (field, ref) => {
+    const container = document.createElement('div');
+    renderOrderDetail({ reference: ref, [field]: 98765, status: 'pending' }, container);
+    expect(container.querySelector('.k-order-card-total').textContent).toMatch(/98\s?765|98.765/);
+  });
+
   it('utilise l\'id comme repli si reference absente', () => {
     const container = document.createElement('div');
     renderOrderDetail({ id: 'internal-id-1', total_amount: 0, status: 'pending' }, container);
@@ -256,6 +262,19 @@ describe('renderOrderDetail', () => {
     expect(container.textContent).not.toContain('WLT-1');
     expect(container.textContent).not.toContain('INV-PENDING');
     expect(container.querySelectorAll('.k-order-document-download')).toHaveLength(2);
+  });
+
+  it('liste la preuve de retrait téléchargeable (#3900 R3)', () => {
+    const container = document.createElement('div');
+    renderOrderDetail(
+      { reference: 'K9ZZZZ', total_amount: 5000, status: 'collected' },
+      container,
+      { privateResources: { documents: [
+        { document_type: 'pickup_proof', reference: 'PRV-1', download_url: '/api/auth/me/documents/p1/download' },
+      ] } },
+    );
+    expect(container.textContent).toContain('Preuve de retrait');
+    expect(container.querySelectorAll('.k-order-document-download')).toHaveLength(1);
   });
 
   it('télécharge un PDF disponible avec la session authentifiée', async () => {
