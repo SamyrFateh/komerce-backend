@@ -31,6 +31,14 @@ const ids = require('./catalog-publication-ids.json').products;
          FROM markets m LEFT JOIN product_market_exposure pme ON pme.market_id=m.id AND pme.product_id=$1::uuid
          LEFT JOIN product_market_price_drafts d ON d.market_id=m.id AND d.product_id=$1::uuid WHERE m.code IN ('KM','CM','CG') ORDER BY m.code`, [id]);
     r.markets = m.rows;
+    const d = await db.query(
+      `SELECT COALESCE(source,'NULL') AS source, (supplier_sku IS NOT NULL AND BTRIM(supplier_sku)<>'') AS has_sku,
+              (supplier_unit_ref IS NOT NULL AND BTRIM(supplier_unit_ref)<>'') AS has_unit,
+              jsonb_typeof(supplier_order_identity) AS idt, supplier_order_identity->>'provider' AS provider,
+              supplier_order_identity->>'version' AS version, jsonb_typeof(supplier_order_identity->'payload') AS payload_t,
+              (supplier_order_identity->'payload' = '{}'::jsonb) AS payload_empty, count(*)::int AS n
+         FROM product_skus WHERE product_id=$1::uuid AND is_active AND stock>0 GROUP BY 1,2,3,4,5,6,7,8`, [id]);
+    r.sku_identity = d.rows;
     out.push({ id: id.slice(0, 8), ...r });
   }
   console.log('DIAG_BEGIN'); console.log(JSON.stringify(out)); console.log('DIAG_END');
