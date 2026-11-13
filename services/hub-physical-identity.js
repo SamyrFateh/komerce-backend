@@ -188,13 +188,7 @@ async function resolveGroupedLineEntries(db, content) {
             oi.sku_id AS item_sku_id,
             o.market_id,
             o.relais_id,
-            COALESCE((
-              SELECT SUM(p.quantity)::integer
-                FROM hub_physical_unit_placements p
-                JOIN hub_purchase_allocations a ON a.id = p.allocation_id
-                JOIN hub_physical_units u ON u.id = p.physical_unit_id AND u.outcome_type IS NULL
-               WHERE a.purchase_line_id = pl.id AND p.operation_type = 'RECEIVE'
-            ), 0) AS received
+            purchase_line_received_quantity(pl.id) AS received
        FROM purchase_lines pl
        JOIN purchase_orders po ON po.id = pl.purchase_order_id
        JOIN order_items oi ON oi.id = pl.order_item_id
@@ -203,9 +197,15 @@ async function resolveGroupedLineEntries(db, content) {
         AND pl.product_sku_id = $2
         AND pl.cancelled_at IS NULL
       ORDER BY o.created_at ASC, pl.id ASC
-      FOR SHARE OF pl, po`,
+      FOR UPDATE OF pl FOR SHARE OF po`,
     [content.purchase_order_id, content.product_sku_id]
   );
+  // HB-06/HB-07 : le reçu est lu APRÈS le verrou des lignes (une réception concurrente de la même variante attend),
+  // via l'unique définition SQL de la quantité reçue (hors quarantaine).
+  for (const row of rows) {
+    const { rows: [r] } = await db.query('SELECT purchase_line_received_quantity($1) AS received', [row.purchase_line_id]);
+    row.received = Number(r?.received || 0);
+  }
   if (rows.length === 0) {
     fail('HUB_PURCHASE_SKU_MISMATCH', 'Aucune ligne d’achat ouverte pour ce product_sku_id dans la Purchase Order');
   }
@@ -611,14 +611,22 @@ async function receiveSupplierPackage(executor, {
   const operationId = crypto.randomUUID();
 
   for (const item of allocations) {
-    await db.query(
-      `INSERT INTO hub_physical_unit_placements (
-         physical_unit_id, allocation_id, quantity, operation_id, operation_type, created_by,
-         evidence_method, evidence_code, evidence_ref
-       ) VALUES ($1,$2,$3,$4,'RECEIVE',$5,$6,$7,$8)`,
-      [unit.id, item.allocation.id, item.quantity, operationId, actorId,
-       item.evidenceCode ? 'SCAN' : item.evidenceMethod, item.evidenceCode, item.evidenceRef]
-    );
+    try {
+      await db.query(
+        `INSERT INTO hub_physical_unit_placements (
+           physical_unit_id, allocation_id, quantity, operation_id, operation_type, created_by,
+           evidence_method, evidence_code, evidence_ref
+         ) VALUES ($1,$2,$3,$4,'RECEIVE',$5,$6,$7,$8)`,
+        [unit.id, item.allocation.id, item.quantity, operationId, actorId,
+         item.evidenceCode ? 'SCAN' : item.evidenceMethod, item.evidenceCode, item.evidenceRef]
+      );
+    } catch (err) {
+      // HB-07 : la garde base (verrou + plafond de l'allocation) répond une erreur brute ; on la rend exploitable.
+      if (err && /hub_allocation_overplaced/.test(String(err.message))) {
+        fail('HUB_ALLOCATION_OVERRECEIVED', 'Réception simultanée ou quantité supérieure au reste à recevoir de la ligne : relire la PO et ressaisir');
+      }
+      throw err;
+    }
     await insertCustodyEvent(db, {
       physicalUnitId: unit.id,
       eventType: 'PLACEMENT_IN',

@@ -569,6 +569,17 @@ async function confirmGroupedPurchaseOrder(poId, body = {}, { actor = null, cont
         throw fail(400, 'INVALID_INPUT', `confirmed_quantity dépasse la quantité de la ligne ${line.id}`, { purchase_line_id: line.id, quantity: line.quantity });
       }
     }
+    // HB-05 : la réception avant confirmation est permise, mais une confirmation ne peut pas descendre sous le déjà reçu
+    // (unique définition SQL du reçu, hors quarantaine) : l'allocation figée serait dépassée et le reçu recommandé en double.
+    for (const line of lines) {
+      const { rows: [r] } = await client.query('SELECT purchase_line_received_quantity($1) AS received', [line.id]);
+      const received = Number(r?.received || 0);
+      if (byId.get(line.id).confirmedQuantity < received) {
+        throw fail(409, 'CONFIRMED_QUANTITY_BELOW_RECEIVED', `confirmed_quantity (${byId.get(line.id).confirmedQuantity}) inférieure à la quantité déjà reçue (${received}) pour la ligne ${line.id}`, {
+          purchase_line_id: line.id, confirmed_quantity: byId.get(line.id).confirmedQuantity, received_quantity: received,
+        });
+      }
+    }
 
     for (const line of lines) {
       const c = byId.get(line.id);

@@ -214,6 +214,7 @@ module.exports = {
       'tests/unit/supplier-fulfillment-reconciliation.test.js',
       'tests/integration/supplier-execution-fulfillments-postgres.test.js',
       'tests/unit/purchasing-engagement-service.test.js',
+      'tests/unit/hub-h3-quantities.test.js',
       'tests/unit/hub-authorization-cumulative-cap.test.js',
       'tests/unit/hub-authorization-variance-decision.test.js',
       'tests/unit/purchasing-completion-service.test.js',

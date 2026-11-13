@@ -265,6 +265,17 @@ describe('confirmGroupedPurchaseOrder — garde-fous', () => {
       .rejects.toMatchObject({ status: 400, code: 'MANUAL_PURCHASE_PROOF_REQUIRED' });
   });
 
+  it('HB-05 : confirmation inférieure à la quantité déjà reçue → 409 CONFIRMED_QUANTITY_BELOW_RECEIVED, sans écriture', async () => {
+    const { calls } = scripted([
+      [/FROM purchase_orders WHERE id = \$1 FOR UPDATE/, { rows: [poRow({ status: 'notified' })] }],
+      [/FROM purchase_lines\s+WHERE purchase_order_id/, { rows: [{ id: L1, quantity: 5, supplier_order_identity: null }] }],
+      [/purchase_line_received_quantity/, { rows: [{ received: 3 }] }],
+    ]);
+    await expect(engagement.confirmGroupedPurchaseOrder(PO, { lines: [{ purchase_line_id: L1, confirmed_quantity: 2 }] }))
+      .rejects.toMatchObject({ status: 409, code: 'CONFIRMED_QUANTITY_BELOW_RECEIVED', received_quantity: 3 });
+    expect(calls.some((c) => /UPDATE purchase_lines/.test(c.sql))).toBe(false);
+  });
+
   it('tout à zéro : aucune vérification de preuve fournisseur ; texte libre (notes, suivi) sans valeur → null', async () => {
     const { calls } = scripted([
       [/FROM purchase_orders WHERE id = \$1 FOR UPDATE/, { rows: [poRow({ status: 'notified' })] }],
