@@ -650,8 +650,8 @@ async function allocateProductPurchaseCosts(orderId, dbClient = null) {
       [orderId]
     );
 
-    // Charger les order_items (cost_kmf produit = approximation tant qu'on n'a
-    // pas de facture fournisseur reelle attachee a la commande)
+    // Charger les order_items : products.cost_kmf est une estimation catalogue,
+    // jamais une preuve d'achat facture ou paye. Ne pas la marquer is_actual.
     const itemsRes = await client.query(
       `SELECT oi.id AS order_item_id, oi.quantity, p.cost_kmf
        FROM order_items oi
@@ -667,7 +667,7 @@ async function allocateProductPurchaseCosts(orderId, dbClient = null) {
         await client.query(
           `INSERT INTO order_item_real_cost_allocations
              (order_id, order_item_id, cost_type, amount_kmf, allocation_method, source, is_actual, confidence)
-           VALUES ($1, $2, 'product_purchase', $3, 'direct', 'products.cost_kmf', TRUE, 'medium')`,
+           VALUES ($1, $2, 'product_purchase', $3, 'direct', 'products.cost_kmf', FALSE, 'low')`,
           [orderId, it.order_item_id, amount]
         );
         count++;
