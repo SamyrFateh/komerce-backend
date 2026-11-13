@@ -13382,6 +13382,13 @@
       {
         "feature": "logistics",
         "category": "services",
+        "declared": "services/pickup-secret-customer-rotation-service.js",
+        "resolvedPath": "services/pickup-secret-customer-rotation-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "logistics",
+        "category": "services",
         "declared": "services/pickup-agent-lockout.js",
         "resolvedPath": "services/pickup-agent-lockout.js",
         "status": "resolved-in-technical-graph"
@@ -14154,6 +14161,13 @@
         "category": "tests",
         "declared": "tests/unit/pickup-secret-rotation-service.test.js",
         "resolvedPath": "tests/unit/pickup-secret-rotation-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/unit/pickup-secret-customer-rotation-service.test.js",
+        "resolvedPath": "tests/unit/pickup-secret-customer-rotation-service.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -40788,6 +40802,14 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "services/pickup-secret-customer-rotation-service.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/pickup-secret-customer-rotation-service.js",
+                "targetFile": "utils/logger.js"
+              },
+              {
                 "sourceFileId": "services/pickup-secret-access-service.js",
                 "targetFile": "db.js"
               },
@@ -41401,6 +41423,10 @@
               },
               {
                 "sourceFileId": "services/pickup-secret-rotation-service.js",
+                "targetFile": "services/order-mutation-service.js"
+              },
+              {
+                "sourceFileId": "services/pickup-secret-customer-rotation-service.js",
                 "targetFile": "services/order-mutation-service.js"
               },
               {
@@ -49688,7 +49714,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2329
+        "filesObserved": 2331
       },
       "boutique": {
         "filesObserved": 216,
@@ -53607,8 +53633,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 706,
-        "technicalNodesOwned": 706,
+        "technicalNodesTotal": 707,
+        "technicalNodesOwned": 707,
         "technicalOrphans": 0
       },
       "dash": {
