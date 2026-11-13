@@ -4344,7 +4344,7 @@ html.k-mobile-premium-v1 .k-chip-label {
    Plus lisible que des dots quand il y en a beaucoup. */
 .k-modal-counter {
   display: none;
-  position: absolute; bottom: 10px; right: 10px; z-index: 3;
+  position: absolute; bottom: var(--k-counter-bottom, 10px); right: var(--k-counter-right, 10px); z-index: 3;
   padding: 3px 10px; min-width: 38px; text-align: center;
   background: var(--overlay-dark-md); color: var(--white);
   font-size: 11px; font-weight: 500; letter-spacing: .02em;
@@ -5004,7 +5004,7 @@ html.k-mobile-premium-v1 .k-chip-label {
     display: flex;
     flex-wrap: nowrap;
     justify-content: flex-start;
-    gap: clamp(14px, 6vw, 24px);
+    gap: clamp(10px, 4vw, 18px);
     padding: 5px 0;
     border-top: 0.5px solid var(--sand-dark);
     margin-top: 6px;
@@ -5013,7 +5013,7 @@ html.k-mobile-premium-v1 .k-chip-label {
     display: flex;
     align-items: center;
     gap: 4px;
-    font-size: 10px;
+    font-size: 11px;
     line-height: 1.2;
     font-weight: 500;
     color: var(--text-muted-dark);
@@ -6987,16 +6987,20 @@ html.k-mobile-premium-v1 .k-chip-label {
     position: relative;
   }
 
+  /* Favori aligné sur la première ligne du titre, sans flottement
+     dans la zone prix/référence quand le titre prend deux lignes. */
   #k-modal .k-modal-name-row {
-    display: block;
-    padding-right: 42px;
-    gap: 0;
+    display: flex;
+    align-items: flex-start;
+    padding-right: 0;
+    gap: 8px;
   }
 
   #k-modal .k-modal-fav-btn {
-    position: absolute;
-    top: 5px;
-    right: 14px;
+    position: static;
+    flex: 0 0 40px;
+    width: 40px;
+    height: 40px;
     margin: 0;
   }
 
@@ -7023,7 +7027,7 @@ html.k-mobile-premium-v1 .k-chip-label {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: calc(100% - 42px);
+    max-width: 100%;
   }
 
   /* Price row: tight, no overflow issues */
@@ -7113,10 +7117,16 @@ html.k-mobile-premium-v1 .k-chip-label {
   /* Réassurance = une information, pas un bandeau. Le stock est déjà porté
      par la pill accolée au prix : on conserve uniquement paiement + retrait,
      sur une ligne respirante de 34px maximum dans le flux transactionnel. */
+  /* Une seule ligne d'informations, ancrée à gauche sur titre/prix.
+     Ne pas étirer son trait et son espacement sur toute la largeur. */
   #k-modal .k-modal-trust {
+    align-self: flex-start;
+    width: max-content;
+    max-width: 100%;
     min-height: 34px;
-    border-bottom: 0.5px solid var(--sand-dark);
-    overflow: hidden;
+    justify-content: flex-start;
+    border-bottom: 0;
+    overflow: visible;
   }
 
   #k-modal .k-modal-trust-item {
@@ -7162,6 +7172,14 @@ html.k-mobile-premium-v1 .k-chip-label {
      indépendant de la source de hauteur du wrapper. Le scale est plafonné
      et conserve une marge de sécurité (0.88) côté JS : jamais de coupe des
      bords utiles du produit. object-position reste centré. */
+
+  /* Petit préfixe explicite : 2/3 en haut = produits, Photo 3/5 = média.
+     Le compteur reste dans l'image, l'affichage desktop est inchangé. */
+  #k-modal .k-modal-img-wrap > .k-modal-counter::before {
+    content: 'Photo ';
+    font-size: 10px;
+    opacity: .85;
+  }
 
   /* ── P3-fix : Hero compact pour produits avec variantes ─────────────────
      k-modal--has-variants est posé par renderMobileProductDetail(). Avec le
@@ -7247,7 +7265,7 @@ html.k-mobile-premium-v1 .k-chip-label {
      Ne dépend jamais d'un contenu enfant pour obtenir sa hauteur. */
   #k-modal .k-sku--color {
     flex: 0 0 auto;
-    width: 42px;
+    width: 54px;
     height: auto;
     aspect-ratio: auto;
     padding: 2px 2px 3px;
@@ -7287,13 +7305,18 @@ html.k-mobile-premium-v1 .k-chip-label {
      (inchangé), ceci est un ajout purement visuel pour distinguer des
      teintes proches sans dépendre de la seule couleur. */
   #k-modal .k-sku-name {
-    display: block;
-    font-size: 9px;
-    line-height: 1.1;
-    max-width: 42px;
-    white-space: nowrap;
+    display: -webkit-box;
+    font-size: 10px;
+    line-height: 1.15;
+    width: 100%;
+    max-width: 54px;
+    min-height: 23px;
+    white-space: normal;
     overflow: hidden;
-    text-overflow: ellipsis;
+    overflow-wrap: anywhere;
+    text-overflow: clip;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
     text-align: center;
     color: var(--text-muted);
   }
