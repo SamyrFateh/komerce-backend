@@ -113,6 +113,14 @@ section: ### 4.1 Logistique commande (7 tables)
 role: Réservation transactionnelle UNIQUE(user_id, idempotency_key) et snapshot immuable du résultat du checkout ; réémission sans double création, stock ni débit wallet. Ne pas confondre avec une table live tant que le dump Railway ne confirme pas la migration.
 -->
 
+<!-- schema-pending
+object: pickup_collect_failures
+kind: table
+migration: 413
+section: ### 4.1 Logistique commande (7 tables)
+role: Compteur append-only des échecs de retrait par code (code inconnu ou incorrect) par agent et relais ; au-delà de 5 échecs en 15 minutes glissantes, collectByPickupCode répond 429. Colonnes agent_id, relais_id, created_at. Aucun code stocké.
+-->
+
 | Table | Rôle |
 |---|---|
 | `orders` | Commande client (table maîtresse, 60+ colonnes). **Migration 315 (2026-10-22, `intended_migration_schema`)** : + `fx_snapshot` JSONB nullable (vérité monétaire figée de la transaction : montant d'origine, montant confirmé dans la devise du marché du relais, montant EUR encaissé, jambes FX sourcées ; immuable une fois posé, lu par paiements et remboursements, jamais reconverti). **Migration 313 (2026-10-22, `intended_migration_schema`)** : + `transport_pricing_snapshot` JSONB nullable (preuve figée du tarif de vente transport appliqué : devise du marché, pivot EUR, ids de ligne de tarif, jambes FX ; distinct de `display_parity_snapshot`, réservé à l'affichage). **Migration 303 (2026-10-19, `intended_migration_schema`)** : + `simulation_scope` TEXT nullable (NULL = activité réelle ; sinon périmètre de recette, ex. `RCT1`, format contrôlé, immuable une fois posé par trigger). Exclu par défaut des agrégats d'activité réelle ; inclus seulement quand le périmètre est demandé. |
@@ -954,7 +962,3 @@ Migrations 391–394 appliquées sur Railway staging le 2026-11-04 à 13:09 UTC 
 
 `relay_return_compensations` is a new append-only table proposed by migration 406. It records one admin-motivated after-handover compensation decision per product-return dispute. Wallet credits commit with the decision. Migration 409 links a PSP decision to its durable `refund_intent_id` and `refund_amount_kmf`; settlement is read from the refund ledger. Migration 410 links a no-charge replacement via `replacement_order_id` and records `order_items.replacement_source_item_id` for the exact original item. The `sav_replacement` payment mode has no client capture.
 <!-- /schema-pending -->
-
-### pickup_collect_failures (migration 413)
-
-Compteur append-only des échecs de retrait par code (code inconnu ou incorrect) par agent et relais. Au-delà de 5 échecs sur 15 minutes glissantes, `collectByPickupCode` répond 429 (alerte sécurité). Colonnes : `agent_id`, `relais_id`, `created_at`. Aucun code stocké.

@@ -13382,6 +13382,13 @@
       {
         "feature": "logistics",
         "category": "services",
+        "declared": "services/pickup-agent-lockout.js",
+        "resolvedPath": "services/pickup-agent-lockout.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "logistics",
+        "category": "services",
         "declared": "services/pickup-secret-access-service.js",
         "resolvedPath": "services/pickup-secret-access-service.js",
         "status": "resolved-in-technical-graph"
@@ -14147,6 +14154,13 @@
         "category": "tests",
         "declared": "tests/unit/pickup-secret-rotation-service.test.js",
         "resolvedPath": "tests/unit/pickup-secret-rotation-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/unit/pickup-agent-lockout.test.js",
+        "resolvedPath": "tests/unit/pickup-agent-lockout.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -41114,6 +41128,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "tests/unit/pickup-agent-lockout.test.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "tests/unit/scan-operations.test.js",
                 "targetFile": "db.js"
               },
@@ -49670,7 +49688,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2327
+        "filesObserved": 2329
       },
       "boutique": {
         "filesObserved": 216,
@@ -53589,8 +53607,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 705,
-        "technicalNodesOwned": 705,
+        "technicalNodesTotal": 706,
+        "technicalNodesOwned": 706,
         "technicalOrphans": 0
       },
       "dash": {
