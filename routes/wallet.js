@@ -296,36 +296,16 @@ router.post('/admin/credit', requireAdmin, async (req, res, next) => {
   } finally { client.release(); }
 });
 
-// POST /api/wallet/admin/order-credit/:orderId — avoir depuis commande annulée
-router.post('/admin/order-credit/:orderId', requireAdmin, async (req, res, next) => {
-  const client = await db.getClient();
-  try {
-    await client.query('BEGIN');
-
-    const result = await walletService.createCreditFromCancel(client, {
-      orderId: req.params.orderId,
-      adminId: req.user.id,
-    });
-
-    if (result.duplicate) {
-      await client.query('ROLLBACK');
-      return res.json({ message: 'Avoir déjà créé (idempotent)', transaction: result.transaction });
-    }
-
-    await client.query('COMMIT');
-
-    // Reçu wallet (post-commit, non bloquant) — avoir depuis commande
-    if (result.transaction?.id) {
-      walletReceiptService.issue(result.transaction.id, { issuedBy: req.user.id }).catch(err => {
-        log.warn({ err, tx_id: result.transaction.id }, '[wallet] émission reçu order-credit échouée (non-fatal)');
-      });
-    }
-
-    res.status(201).json({ success: true, message: 'Avoir créé', ...result });
-  } catch (err) {
-    await client.query('ROLLBACK');
-    next(err);
-  } finally { client.release(); }
+// POST /api/wallet/admin/order-credit/:orderId — legacy fermé (FA-06).
+// Cette route créait un crédit arbitraire sur une commande payée ou non,
+// sans prise en compte des remboursements existants et en confondant KMF/XAF.
+// L'autorité de remboursement est /api/admin/orders/:id/refund, pas un writer
+// wallet concurrent. Les crédits commerciaux admin directs restent distincts.
+router.post('/admin/order-credit/:orderId', requireAdmin, (_req, res) => {
+  return res.status(409).json({
+    code: 'LEGACY_ORDER_CREDIT_DISABLED',
+    error: 'Avoir depuis commande désactivé : utilisez le remboursement admin canonique.',
+  });
 });
 
 
