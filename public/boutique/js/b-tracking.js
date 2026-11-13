@@ -98,6 +98,13 @@ export function formatOrderDate(isoDate) {
   } catch(e) { return ''; }
 }
 
+// Le détail serveur (GET /api/orders/:ref) expose total_kmf, la liste tracking totalKmf : lecture
+// directe du champ serveur, jamais de recalcul côté client (0 KMF affiché à tort sur total_amount seul).
+function orderTotalKmf(order) {
+  const value = order && (order.total_amount ?? order.total_kmf ?? order.totalKmf);
+  return Number(value) || 0;
+}
+
 export function renderOrdersHistory(orders, container) {
   if (!orders.length) {
     container.innerHTML = '<div class="k-search-empty">Aucune commande trouvée.</div>';
@@ -109,16 +116,17 @@ export function renderOrdersHistory(orders, container) {
         <span class="k-order-ref">${sanitize(o.reference || o.id || "")}</span>
         <span class="k-order-date">${o.created_at ? new Date(o.created_at).toLocaleDateString('fr-FR') : ''}</span>
       </div>
-      <div class="k-order-card-total">${fmt(o.total_amount || 0, 'KMF')}</div>
+      <div class="k-order-card-total">${fmt(orderTotalKmf(o), 'KMF')}</div>
       <div class="k-track-steps k-track-steps--compact">${buildTimeline(o.status || 'pending')}</div>
     </div>`).join('');
 }
 
 function essentialDocumentLabel(documentRow, order) {
   if (documentRow.document_type === 'invoice') return 'Facture';
+  if (documentRow.document_type === 'pickup_proof') return 'Preuve de retrait';
   if (documentRow.document_type !== 'refund_receipt') return null;
   const refunded = Number(documentRow.amount_kmf || 0);
-  const total = Number(order.total_amount ?? order.total_kmf ?? 0);
+  const total = orderTotalKmf(order);
   return refunded > 0 && total > 0 && refunded >= total
     ? 'Remboursement total'
     : 'Remboursement partiel';
@@ -204,7 +212,7 @@ export function renderOrderDetail(order, container, { privateResources = null } 
         <span class="k-order-ref">${sanitize(order.reference || order.id || "")}</span>
         <span class="k-order-date">${order.created_at ? new Date(order.created_at).toLocaleDateString('fr-FR') : ''}</span>
       </div>
-      <div class="k-order-card-total">${fmt(order.total_amount || 0, 'KMF')}</div>
+      <div class="k-order-card-total">${fmt(orderTotalKmf(order), 'KMF')}</div>
       <div class="k-track-steps">${buildTimeline(order.status || 'pending')}</div>
     </div>`;
   appendEssentialOrderResources(container, order, privateResources);
