@@ -221,6 +221,14 @@
      et conserve une marge de sécurité (0.88) côté JS : jamais de coupe des
      bords utiles du produit. object-position reste centré. */
 
+  /* Petit préfixe explicite : 2/3 en haut = produits, Photo 3/5 = média.
+     Le compteur reste dans l'image, l'affichage desktop est inchangé. */
+  #k-modal .k-modal-img-wrap > .k-modal-counter::before {
+    content: 'Photo ';
+    font-size: 10px;
+    opacity: .85;
+  }
+
   /* ── P3-fix : Hero compact pour produits avec variantes ─────────────────
      k-modal--has-variants est posé par renderMobileProductDetail(). Avec le
      ratio 4:3 (plus compact que l'ancien 48vh), le hero libère déjà plus
