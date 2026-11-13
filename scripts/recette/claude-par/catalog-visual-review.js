@@ -11,9 +11,8 @@ const targets = require('./catalog-targets.json');
   const runId = String(process.env.GITHUB_RUN_ID || '');
   if (process.env.KOMERCE_ENV !== 'staging' || !/^\d{5,20}$/.test(runId)) throw new Error('CONTEXTE_STAGING_ACTIONS_REQUIS');
   const { rows: [rv] } = await db.query(
-    `SELECT u.id FROM users u JOIN e2e_test_accounts e ON e.user_id=u.id
-      WHERE u.role='admin' AND lower(u.email) LIKE 'claude-par-%' ORDER BY u.created_at LIMIT 1`);
-  if (!rv) throw new Error('REVIEWER_CLAUDE_PAR_INTROUVABLE');
+    `SELECT id FROM users WHERE role='admin' AND lower(email)=lower($1) LIMIT 1`, [process.env.REVIEWER_EMAIL || '']);
+  if (!rv) throw new Error('REVIEWER_ADMIN_INTROUVABLE');
   const summary = [];
   for (const [productId, spec] of Object.entries(verdicts.products)) {
     if (!targets.products.includes(productId)) throw new Error('PRODUIT_HORS_CIBLES');
