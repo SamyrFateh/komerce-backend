@@ -16287,6 +16287,13 @@
       {
         "feature": "notifications",
         "category": "services",
+        "declared": "utils/non-prod-phone-guard.js",
+        "resolvedPath": "utils/non-prod-phone-guard.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "notifications",
+        "category": "services",
         "declared": "services/authkey-client.js",
         "resolvedPath": "services/authkey-client.js",
         "status": "resolved-in-technical-graph"
@@ -43158,12 +43165,12 @@
                 "targetFile": "utils/logger.js"
               },
               {
-                "sourceFileId": "services/authkey-client.js",
-                "targetFile": "utils/logger.js"
+                "sourceFileId": "utils/non-prod-phone-guard.js",
+                "targetFile": "middleware/require-non-production.js"
               },
               {
                 "sourceFileId": "services/authkey-client.js",
-                "targetFile": "middleware/require-non-production.js"
+                "targetFile": "utils/logger.js"
               },
               {
                 "sourceFileId": "services/notifications/internals.js",
@@ -49583,7 +49590,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2323
+        "filesObserved": 2324
       },
       "boutique": {
         "filesObserved": 216,
