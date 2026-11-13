@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 811
-- Files with full headers: 756
+- Scanned code files: 812
+- Files with full headers: 757
 - Files with lite headers: 55
-- Files with any headers: 811
+- Files with any headers: 812
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 2056
-- Edges: 10185
-- DB tables: 238
-- Doctrines: 800
+- Graph nodes: 2059
+- Edges: 10198
+- DB tables: 239
+- Doctrines: 801
 - Impact areas: 207
-- Unresolved code edges: 970
+- Unresolved code edges: 971
 - Tables multi-écrivains directs (>=2): 96
 - Avertissements db-write / db-write-via en chevauchement: 12
 
@@ -45,7 +45,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - infrastructure: 25
 - inventory: 2
 - local-stock: 4
-- logistics: 70
+- logistics: 71
 - loyalty: 3
 - market: 9
 - market-autonomy: 4
@@ -92,7 +92,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 138
 - route-manifest: 1
 - schema: 1
-- service: 490
+- service: 491
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -549,6 +549,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/pickup-code-helpers.js — pickup-code-helpers (logistics, high, full)
 - services/pickup-collection-service.js — pickup-collection-service (logistics, high, full)
 - services/pickup-exceptional-collection-service.js — pickup-exceptional-collection-service (logistics, high, full)
+- services/pickup-secret-customer-rotation-service.js — pickup-secret-customer-rotation (logistics, high, full)
 - services/pickup-secret-service.js — pickup-secret-service (logistics, high, full)
 - services/pipeline-certification-gate-c.js — e2e-certification-gate-c (catalog, high, full)
 - services/pipeline-certification-scenario-core.js — pipeline-certification-scenario-core (catalog, high, full)
@@ -1023,10 +1024,10 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - order_items: 9 écrivains directs — routes/admin/delete-order-cascade.js, routes/admin/system.js, services/order-checkout-persistence.js, services/order-checkout-service.js, services/order-item-availability-service.js, services/order-item-refund-settlement.js, services/order-status-machine.js, services/sav-replacement-order.js, services/scan-engine.js
 - supplier_execution_events: 9 écrivains directs — services/supplier-execution-persistence.js, services/supplier-payment-orchestrator.js, services/supplier-payment-proof-persistence.js, services/supplier-payment-state.js, services/suppliers/cj-billing-history-reconciliation.js, services/suppliers/cj-payment-recovery.js, services/suppliers/cj-supplier-payment-runtime.js, services/suppliers/supplier-fulfillment-persistence.js, services/suppliers/supplier-fulfillment-runtime.js
 - order_status_history: 8 écrivains directs — routes/admin/delete-order-cascade.js, routes/admin/system.js, routes/admin/users.js, routes/orders/cancel.js, services/hub-v1-fixture-payment.js, services/order-checkout-persistence.js, services/order-checkout-service.js, services/order-status-machine.js
+- pickup_print_tokens: 7 écrivains directs — bootstrap/crons.js, routes/pickup-secret.js, services/pickup-collection-recorder.js, services/pickup-collection-service.js, services/pickup-secret-access-service.js, services/pickup-secret-customer-rotation-service.js, services/pickup-secret-rotation-service.js
+- pickup_reveal_codes: 7 écrivains directs — bootstrap/crons.js, routes/pickup-secret.js, services/pickup-collection-recorder.js, services/pickup-collection-service.js, services/pickup-secret-access-service.js, services/pickup-secret-customer-rotation-service.js, services/pickup-secret-rotation-service.js
 - purchase_orders: 7 écrivains directs — services/purchasing-admin-service.js, services/purchasing-cancel-service.js, services/purchasing-completion-service.js, services/purchasing-engagement-service.js, services/purchasing-grouped-service.js, services/purchasing-receive-service.js, services/receive-purchase-order.js
 - parcel_events: 6 écrivains directs — services/local-relay-receipt-service.js, services/parcel-item-mutation-service.js, services/parcel-security.js, services/parcel-shipment-handover.js, services/relay-parcel-item-reconciliation.js, utils/parcelSync.js
-- pickup_print_tokens: 6 écrivains directs — bootstrap/crons.js, routes/pickup-secret.js, services/pickup-collection-recorder.js, services/pickup-collection-service.js, services/pickup-secret-access-service.js, services/pickup-secret-rotation-service.js
-- pickup_reveal_codes: 6 écrivains directs — bootstrap/crons.js, routes/pickup-secret.js, services/pickup-collection-recorder.js, services/pickup-collection-service.js, services/pickup-secret-access-service.js, services/pickup-secret-rotation-service.js
 - purchase_lines: 6 écrivains directs — services/purchase-line-snapshot.js, services/purchasing-admin-service.js, services/purchasing-cancel-service.js, services/purchasing-engagement-service.js, services/purchasing-grouped-service.js, services/purchasing-trigger-service.js
 - scan_events: 6 écrivains directs — routes/admin/system.js, routes/admin/users.js, routes/transitaire-api.js, services/hub-operations.js, services/parcel-auto-create-service.js, services/scan-engine.js
 - shared_cart_events: 6 écrivains directs — services/cart-share-service.js, services/shared-cart-creation.js, services/shared-cart-engine.js, services/shared-cart-internals.js, services/shared-cart-lifecycle.js, services/shared-cart-queries.js
