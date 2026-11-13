@@ -107,34 +107,30 @@ describe('refund-service', () => {
       expect(walletService.credit).not.toHaveBeenCalled();
     });
 
-    it('bascule en wallet credit si le remboursement Stripe echoue', async () => {
-      const client = makeClient([
-        { rows: [{ id: 'refund-002' }] },
-        { rows: [], rowCount: 1 },
-      ]);
-      mockStripeRefundsCreate.mockRejectedValue(new Error('stripe down'));
+    it.each([
+      ['timeout apres traitement PSP', Object.assign(new Error('timeout'), { code: 'ETIMEDOUT' })],
+      ['connexion coupee', Object.assign(new Error('socket hang up'), { code: 'ECONNRESET' })],
+      ['refus Stripe sans preuve de non-execution', new Error('stripe down')],
+    ])('FA-04 : %s ne declenche jamais de double remboursement via wallet', async (_label, stripeError) => {
+      const client = makeClient([{ rows: [{ id: 'refund-002' }] }]);
+      mockStripeRefundsCreate.mockRejectedValueOnce(stripeError);
       walletService.credit.mockResolvedValue({ transaction: { id: 'wallet-tx-001' } });
 
-      const result = await processRefundWithFallback(
-        client,
-        makeStripeOrder(),
-        7500,
-        15.24,
-        'cancel',
-        'Annulation client',
-        'admin-001',
-        'parcel-001'
-      );
+      await expect(processRefundWithFallback(
+        client, makeStripeOrder(), 7500, 15.24, 'cancel',
+        'Annulation client', 'admin-001', 'parcel-001'
+      )).rejects.toMatchObject({
+        code: 'REFUND_STRIPE_OUTCOME_UNKNOWN',
+        statusCode: 409,
+        cause: stripeError,
+      });
 
-      expect(result.method).toBe('wallet_credit');
-      expect(result.walletTxId).toBe('wallet-tx-001');
-      expect(walletService.credit).toHaveBeenCalledWith(client, expect.objectContaining({
-        userId: 'user-001',
-        amountKmf: 7500,
-        referenceId: 'order-001',
-        idempotencyKey: 'refund_fb_order-001_cancel_parcel-001',
-      }));
-      expect(client.calls[1].params).toEqual(['wallet_credit', null, 'wallet-tx-001', 'refund-002']);
+      expect(mockStripeRefundsCreate).toHaveBeenCalledWith(
+        expect.objectContaining({ payment_intent: 'pi_001', amount: 1524 }),
+        { idempotencyKey: 'refund_order-001_cancel_parcel-001' }
+      );
+      expect(walletService.credit).not.toHaveBeenCalled();
+      expect(client.calls.some(c => /UPDATE refunds/.test(String(c.sql)))).toBe(false);
     });
 
     it('reutilise la ligne refund existante si INSERT est ignore par ON CONFLICT', async () => {
@@ -187,12 +183,15 @@ describe('refund-service', () => {
       expect(walletService.credit).toHaveBeenCalledWith(client, expect.objectContaining({ amountKmf: 7500, currency: 'XAF' }));
     });
 
-    it('processRefundWithFallback : Stripe en échec sur un marché XAF → repli wallet XAF (jamais KMF)', async () => {
-      mockStripeRefundsCreate.mockRejectedValueOnce(new Error('stripe down'));
-      walletService.credit.mockResolvedValueOnce({ transaction: { id: 'tx-fb' } });
-      const client = makeClient([pendingInsert, { rows: [{ currency: 'XAF' }] }, { rows: [{ kmf: '0' }] }, { rows: [], rowCount: 1 }]);
-      await processRefundWithFallback(client, xafOrder({ payment_mode: 'stripe_eur', stripe_payment_id: 'pi_1' }), 5000, 7.6, 'partial', 'x', 'admin-1');
-      expect(walletService.credit).toHaveBeenCalledWith(client, expect.objectContaining({ currency: 'XAF' }));
+    it('FA-04 : Stripe incertain sur un marché XAF, ni XAF ni KMF credits', async () => {
+      mockStripeRefundsCreate.mockRejectedValueOnce(new Error('timeout'));
+      const client = makeClient([pendingInsert]);
+      await expect(processRefundWithFallback(
+        client, xafOrder({ payment_mode: 'stripe_eur', stripe_payment_id: 'pi_1' }),
+        5000, 7.6, 'partial', 'x', 'admin-1'
+      )).rejects.toMatchObject({ code: 'REFUND_STRIPE_OUTCOME_UNKNOWN' });
+      expect(walletService.credit).not.toHaveBeenCalled();
+      expect(client.calls.some(c => String(c.sql).includes('SELECT currency FROM markets'))).toBe(false);
     });
 
     it('montant de marché figé absent → refus fail-closed, wallet jamais crédité', async () => {
