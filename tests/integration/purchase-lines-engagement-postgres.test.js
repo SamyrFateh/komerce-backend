@@ -64,6 +64,20 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
         CREATE TABLE product_suppliers (id uuid PRIMARY KEY);
         CREATE TABLE product_skus (id uuid PRIMARY KEY);
         CREATE TABLE products (id uuid PRIMARY KEY, name text);
+        -- H1 : le writer de rupture est appelé dans la même transaction que settleLine.
+        -- Reproduire les tables canoniques minimales plutôt que masquer l'incident dans ce test PostgreSQL.
+        CREATE TABLE incidents (
+          id uuid PRIMARY KEY DEFAULT gen_random_uuid(), parcel_id uuid, order_id uuid, order_item_id uuid,
+          incident_type text NOT NULL, severity text, title text, description text, details jsonb NOT NULL DEFAULT '{}'::jsonb,
+          client_impact text, detected_by uuid, detected_source text, origin_domain text,
+          resolver_domain text, resolution_class text, due_at timestamptz,
+          status text NOT NULL DEFAULT 'open', created_at timestamptz NOT NULL DEFAULT now()
+        );
+        CREATE TABLE alerts (
+          id uuid PRIMARY KEY DEFAULT gen_random_uuid(), type text NOT NULL, entity_type text NOT NULL,
+          entity_id uuid, severity text, title text, description text, resolved_at timestamptz,
+          created_at timestamptz NOT NULL DEFAULT now()
+        );
         CREATE TABLE markets (id uuid PRIMARY KEY, code text NOT NULL UNIQUE, name text NOT NULL);
         CREATE TABLE orders (id uuid PRIMARY KEY, reference text, market_id uuid REFERENCES markets(id), created_at timestamptz NOT NULL DEFAULT now());
         CREATE TABLE order_items (
@@ -496,6 +510,12 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
       const out = await engagement.settleLine(line, { settled_quantity: 5, reason: 'écart accepté', reopen_remainder: false });
       expect(out.remnant).toBeNull();
       expect((await row('SELECT count(*)::int AS n FROM purchase_lines WHERE parent_line_id IS NOT NULL')).n).toBe(0);
+      // HB-02 : constat automatique atomique, aucune écriture de remboursement.
+      const incident = await row(`SELECT id, order_item_id, details FROM incidents WHERE details->>'type' = 'supplier_shortage'`);
+      expect(incident.order_item_id).toBeTruthy();
+      expect(incident.details).toMatchObject({ type: 'supplier_shortage', purchase_line_id: line, missing_quantity: 1 });
+      const alert = await row('SELECT type, entity_id FROM alerts WHERE entity_id = $1', [incident.id]);
+      expect(alert).toEqual({ type: 'supplier_shortage_refund_required', entity_id: incident.id });
     });
 
     it('toutes les lignes soldées (reçu ≥ effectif) → la PO regroupée passe en hub_received', async () => {
