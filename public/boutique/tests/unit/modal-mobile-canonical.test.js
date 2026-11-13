@@ -55,7 +55,7 @@ describe('modal-mobile-canonical.css - suggestion responsibilities', () => {
     );
   });
 
-  test('keeps reassurance to one useful 34px row without duplicating stock', () => {
+  test('keeps reassurance left-aligned and visible without duplicating stock', () => {
     expect(css).toMatch(
       /#k-modal\s+\.k-modal-trust\s*\{[^}]*min-height:\s*34px[^}]*overflow:\s*hidden/s
     );
