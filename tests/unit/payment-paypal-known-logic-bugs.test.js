@@ -9,9 +9,10 @@ const mockAuthority = jest.fn(async () => ({
 jest.mock('../../services/paypal-refund-authority', () => ({
   refundPaypalOrder: (...args) => mockAuthority(...args),
 }));
-jest.mock('../../utils/logger', () => ({
-  child: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }),
-}));
+jest.mock('../../utils/logger', () => {
+  const logger = () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() });
+  return { child: logger, forModule: logger };
+});
 const { refundPaypalOrder } = require('../../services/payment-paypal');
 
 test('RC-9: deux appels au service legacy ne declenchent aucun POST PayPal direct', async () => {
