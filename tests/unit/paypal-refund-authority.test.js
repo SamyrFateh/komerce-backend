@@ -26,9 +26,10 @@ jest.mock('../../services/documents/refund-receipt', () => ({
   issue: jest.fn(),
 }));
 jest.mock('../../utils/alerts', () => ({ createAlert: jest.fn() }));
-jest.mock('../../utils/logger', () => ({
-  child: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }),
-}));
+jest.mock('../../utils/logger', () => {
+  const logger = () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() });
+  return { child: logger, forModule: logger };
+});
 const { refundPaypalOrder, reconcilePaypalRefund } = require('../../services/paypal-refund-authority');
 const { recordExternalRefund } = require('../../services/refund-service');
 const { markRefunded } = require('../../services/payment-service');
