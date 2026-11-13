@@ -11,6 +11,7 @@ const {
   resolveUpstreamTruthIncident,
   detachUserFromIncidents,
   seedIncident,
+  createSupplierShortageIncident,
 } = require('../../services/incident-write-service');
 
 describe('incident-write-service — F2/F3', () => {
@@ -303,4 +304,29 @@ test('incident de réconciliation physique : detected_source conforme à la cont
   const block = src.slice(src.indexOf('function createHubPhysicalReconciliationIncident'));
   const value = block.match(/'reconciliation_error',\$3,\$4,\$5,\$6,'([a-z_]+)'/)[1];
   expect(allowed).toContain(value);
+});
+
+describe('H1 — createSupplierShortageIncident', () => {
+  const base = { purchaseLineId: 'l1', orderId: 'o1', orderItemId: 'i1', missingQuantity: 4, receivedQuantity: 6, reason: 'rupture', actorId: 'u1' };
+
+  test('crée un incident reconciliation_error/supplier_shortage gouverné PURCHASING, acteur et ligne en preuve', async () => {
+    const executor = { query: jest.fn().mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [{ id: 'inc-9' }] }) };
+    const out = await createSupplierShortageIncident(executor, base);
+    expect(out).toEqual({ incident: { id: 'inc-9' }, created: true });
+    const values = executor.query.mock.calls[1][1];
+    expect(JSON.parse(values[4])).toMatchObject({ type: 'supplier_shortage', purchase_line_id: 'l1', missing_quantity: 4, closed_by: 'u1' });
+    expect(values.slice(5, 10)).toEqual(['u1', 'hub_agent', 'PURCHASING', 'PURCHASING', 'UPSTREAM_TRUTH']);
+  });
+
+  test('une ligne ayant déjà son incident : aucun INSERT', async () => {
+    const executor = { query: jest.fn().mockResolvedValueOnce({ rows: [{ id: 'inc-old' }] }) };
+    expect(await createSupplierShortageIncident(executor, base)).toEqual({ incident: { id: 'inc-old' }, created: false });
+    expect(executor.query).toHaveBeenCalledTimes(1);
+  });
+
+  test('entrées invalides refusées avant SQL', async () => {
+    const executor = { query: jest.fn() };
+    await expect(createSupplierShortageIncident(executor, { ...base, missingQuantity: 0 })).rejects.toThrow(TypeError);
+    expect(executor.query).not.toHaveBeenCalled();
+  });
 });
