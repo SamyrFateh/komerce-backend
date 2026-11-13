@@ -49,6 +49,7 @@ SELECT pi.order_item_id, oi.quantity, SUM(pi.quantity) AS en_colis, COUNT(*) AS 
   JOIN order_items oi ON oi.id = pi.order_item_id
  GROUP BY pi.order_item_id, oi.quantity HAVING SUM(pi.quantity) > oi.quantity;
 
+-- H5 — vérité de quantité reçue : deux diagnostics distincts (HB-05, HB-06).
 -- H5a — quantité reçue au-delà de la quantité effective de ligne (HB-05).
 SELECT line_id, effective_quantity, received_quantity
   FROM v_purchase_line_progress
