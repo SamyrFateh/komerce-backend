@@ -11715,7 +11715,7 @@
             ]
           },
           "tests": {
-            "count": 105,
+            "count": 106,
             "files": [
               {
                 "declared": "tests/integration/canonical-margin-writer-real-db.test.js",
@@ -11740,6 +11740,11 @@
               {
                 "declared": "tests/integration/product-margin-steering-real-db.test.js",
                 "resolvedPath": "tests/integration/product-margin-steering-real-db.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/relay-commission-per-order-postgres.test.js",
+                "resolvedPath": "tests/integration/relay-commission-per-order-postgres.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -12265,7 +12270,7 @@
             ]
           }
         },
-        "totalFiles": 218,
+        "totalFiles": 219,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,

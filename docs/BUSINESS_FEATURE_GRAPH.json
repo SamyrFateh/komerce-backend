@@ -9259,6 +9259,13 @@
       {
         "feature": "economic-engine",
         "category": "tests",
+        "declared": "tests/integration/relay-commission-per-order-postgres.test.js",
+        "resolvedPath": "tests/integration/relay-commission-per-order-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
         "declared": "tests/unit/relay-commission.test.js",
         "resolvedPath": "tests/unit/relay-commission.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -38697,6 +38704,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "tests/integration/relay-commission-per-order-postgres.test.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "tests/unit/apply-pricing-updates.test.js",
                 "targetFile": "db.js"
               },
@@ -49718,7 +49729,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2331
+        "filesObserved": 2332
       },
       "boutique": {
         "filesObserved": 216,
