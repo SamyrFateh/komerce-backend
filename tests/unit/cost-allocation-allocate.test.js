@@ -487,6 +487,13 @@ describe('allocateProductPurchaseCosts', () => {
 
     expect(result.order_id).toBe('order-001');
     expect(result.allocations_count).toBe(2);
+    const purchaseInserts = client.query.mock.calls
+      .map(([sql]) => String(sql))
+      .filter(sql => sql.includes('INSERT INTO order_item_real_cost_allocations'));
+    expect(purchaseInserts).toHaveLength(2);
+    for (const sql of purchaseInserts) {
+      expect(sql).toContain("'products.cost_kmf', FALSE, 'low'");
+    }
     expectTransactionCommitted(client);
   });
 
