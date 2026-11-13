@@ -81,7 +81,7 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 
 | Dépôt | Manifests découverts | Manifests connectés | Nœuds techniques | Owned | Orphelins |
 |---|---|---|---|---|---|
-| backend | 36 | 36 | 704 | 704 | 0 |
+| backend | 36 | 36 | 705 | 705 | 0 |
 | dash | 3 | 3 | N/A | N/A | N/A |
 | boutique | 16 | 16 | 105 | 105 | 0 |
 
@@ -424,7 +424,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - interfaces exposed: 0
 - internal APIs: 0
 - dependencies (consumes): 2 — infrastructure, notifications
-- consumers: 17 — catalog, customs, dashboard, economic-engine, infrastructure, local-stock, logistics, market-autonomy, market-control-plane, market-delegation, market-operator-dashboard, orders, payments, providers-services, recommendations, refunds, settlement
+- consumers: 18 — catalog, customs, dashboard, economic-engine, infrastructure, local-stock, logistics, market-autonomy, market-control-plane, market-delegation, market-operator-dashboard, orders, payments, providers-services, recommendations, refunds, settlement, wallet
 
 ### market-autonomy _(business-feature)_
 
@@ -493,7 +493,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - tests: 23
 - migrations: 6
 - utils: 2
-- services: 13
+- services: 14
 - routes: 4
 - tables owned (lifecycle): 3 — `client_notifications`, `alerts`, `notification_log`
 - tables written: 3
@@ -716,7 +716,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - tables written: 4
 - interfaces exposed: 9
 - internal APIs: 0
-- dependencies (consumes): 6 — orders, platform-ops, infrastructure, auth, documents, auth-identity
+- dependencies (consumes): 7 — market, orders, platform-ops, infrastructure, auth, documents, auth-identity
 - consumers: 7 — auth-identity, dashboard, documents, infrastructure, orders, platform-ops, refunds
 
 ### wallet-loyalty _(deprecated)_
@@ -2184,6 +2184,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | unsold-resolution | catalog (`catalog (produit concerné)`) | ✔ |
 | unsold-resolution | auth (`auth`) | ✔ |
 | unsold-resolution | infrastructure (`infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)`) | ✔ |
+| wallet | market (`market (2026-11-13 #3927 — conversion KMF↔devise du marché via la seule autorité fx-authority/currency_parities ; preuve: services/wallet-service.js -> services/fx-authority.js)`) | ✔ |
 | wallet | orders (`orders (persistence via order-mutation-service ? LOT11)`) | ✔ |
 | wallet | platform-ops (`platform-ops (monitoring/exploitation transverse observé dans le code)`) | ✔ |
 | wallet | infrastructure (`infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)`) | ✔ |
@@ -2306,7 +2307,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 2326 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 2327 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 216 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 79 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -2677,6 +2678,7 @@ Meta Graph monté : oui.
 | wallet | auth-identity | static-code, data-read | 3 | **DECLARED_AND_OBSERVED** |
 | wallet | documents | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | wallet | infrastructure | static-code | 8 | **DECLARED_AND_OBSERVED** |
+| wallet | market | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | wallet | notifications | static-code | 1 | **OBSERVED_UNDECLARED** |
 | wallet | orders | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
 | wallet | platform-ops | static-code | 2 | **DECLARED_AND_OBSERVED** |

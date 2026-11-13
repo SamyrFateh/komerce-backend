@@ -415,13 +415,28 @@ async function runOrderCheckout({ user, body, internalSimulation = null, preview
     }
     let creditApplied = 0;
 
-    // Wallet : seul un solde dans la devise du marché règle la commande ; le wallet KMF ne s'applique qu'à un marché KMF
-    // (aucune conversion implicite). Règlement par un wallet non-KMF : non géré ici (voir PR L6, section Reprise).
-    const walletCurrencyOk = !checkoutMarket || String(checkoutMarket.currency || 'KMF').toUpperCase() === 'KMF';
-    if (use_wallet && user?.id && walletCurrencyOk) {
-      const walletBalance = await walletService.getBalanceInTx(client, user.id, 'KMF');
-      if (walletBalance > 0) {
-        creditApplied = Math.min(walletBalance, total_kmf);
+    // Wallet : seul le solde dans la devise du marché règle la commande (KMF → KMF, XAF → XAF).
+    // Débit en devise du marché ; équivalent KMF (reste à payer) par fx-authority ; aucune conversion entre soldes.
+    let walletPlan = null;
+    if (use_wallet && user?.id) {
+      const marketCcy = String(checkoutMarket?.currency || 'KMF').toUpperCase();
+      try {
+        if (marketCcy === 'KMF') {
+          const walletBalance = await walletService.getBalanceInTx(client, user.id, 'KMF');
+          const spend = Math.min(walletBalance, total_kmf);
+          walletPlan = { currency: 'KMF', debit: spend, equivKmf: spend };
+        } else {
+          walletPlan = await walletService.planWalletSpend(client, {
+            userId: user.id, currency: marketCcy, remainingKmf: total_kmf,
+          });
+        }
+      } catch (err) {
+        if (err.code !== 'WALLET_FX_PARITY_UNAVAILABLE') throw err;
+        await client.query('ROLLBACK');
+        return fail(409, { error: err.message, code: err.code });
+      }
+      if (walletPlan.debit > 0) {
+        creditApplied = walletPlan.equivKmf;
         total_kmf -= creditApplied;
       }
     }
@@ -571,6 +586,8 @@ async function runOrderCheckout({ user, body, internalSimulation = null, preview
       await applyWalletDebit(client, {
         userId: user.id,
         amountKmf: creditApplied,
+        walletDebit: walletPlan.debit,
+        walletCurrency: walletPlan.currency,
         orderId: order.id,
         orderReference: order.reference,
       });

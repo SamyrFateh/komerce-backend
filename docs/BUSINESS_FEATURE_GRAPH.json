@@ -16308,6 +16308,13 @@
       {
         "feature": "notifications",
         "category": "services",
+        "declared": "utils/non-prod-phone-guard.js",
+        "resolvedPath": "utils/non-prod-phone-guard.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "notifications",
+        "category": "services",
         "declared": "services/authkey-client.js",
         "resolvedPath": "services/authkey-client.js",
         "status": "resolved-in-technical-graph"
@@ -30494,6 +30501,12 @@
       },
       {
         "from": "wallet",
+        "to": "market",
+        "raw": "market (2026-11-13 #3927 — conversion KMF↔devise du marché via la seule autorité fx-authority/currency_parities ; preuve: services/wallet-service.js -> services/fx-authority.js)",
+        "resolved": true
+      },
+      {
+        "from": "wallet",
         "to": "orders",
         "raw": "orders (persistence via order-mutation-service ? LOT11)",
         "resolved": true
@@ -43207,12 +43220,12 @@
                 "targetFile": "utils/logger.js"
               },
               {
-                "sourceFileId": "services/authkey-client.js",
-                "targetFile": "utils/logger.js"
+                "sourceFileId": "utils/non-prod-phone-guard.js",
+                "targetFile": "middleware/require-non-production.js"
               },
               {
                 "sourceFileId": "services/authkey-client.js",
-                "targetFile": "middleware/require-non-production.js"
+                "targetFile": "utils/logger.js"
               },
               {
                 "sourceFileId": "services/notifications/internals.js",
@@ -49275,6 +49288,22 @@
       },
       {
         "from": "wallet",
+        "to": "market",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/wallet-service.js",
+                "targetFile": "services/fx-authority.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "wallet",
         "to": "notifications",
         "channels": [
           {
@@ -49616,7 +49645,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2326
+        "filesObserved": 2327
       },
       "boutique": {
         "filesObserved": 216,
@@ -53535,8 +53564,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 704,
-        "technicalNodesOwned": 704,
+        "technicalNodesTotal": 705,
+        "technicalNodesOwned": 705,
         "technicalOrphans": 0
       },
       "dash": {

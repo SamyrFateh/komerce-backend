@@ -8,7 +8,7 @@
  * @outputs       validated_transition, order_history, side_effects
  * @depends       db.js, services/client-notification-service.js, services/pickup-secret-service.js
  * @used-by       order-payment-confirmation.js, routes/orders.js, cancellation-flows, admin-flows
- * @db-read       international_shipment_relay_receipts, order_items, orders, products, relais, scans
+ * @db-read       international_shipment_relay_receipts, order_items, orders, products, relais, scans, wallet_transactions, wallets
  * @db-write      order_items, order_status_history, orders
  * @db-write-via:pickup-secret-service pickup_reveal_codes
  * @db-write-via:customs-shipment-service customs_shipments
@@ -470,9 +470,14 @@ async function transitionOrderStatus({
       } catch (e) {
         log.error({ err: e, order_id: orderId, user_id: orderInfo.user_id }, 'Wallet removeFromOrder failed, trying credit fallback');
         try {
+          // Montant et devise du débit d'origine (wallet de la devise du marché), jamais l'équivalent KMF.
+          const { rows: [dbt] } = await q.query(
+            `SELECT t.amount_kmf, w.currency FROM wallet_transactions t JOIN wallets w ON w.id = t.wallet_id
+              WHERE t.idempotency_key = $1 AND t.type = 'debit'`, [`checkout_${orderId}`]);
           const wResult = await walletService.credit(q, {
             userId:         orderInfo.user_id,
-            amountKmf:      walletApplied,
+            amountKmf:      dbt ? Number(dbt.amount_kmf) : walletApplied,
+            currency:       dbt ? dbt.currency : undefined,
             reason:         'order_cancel',
             referenceId:    orderId,
             idempotencyKey: `wallet_reversal_${orderId}`,

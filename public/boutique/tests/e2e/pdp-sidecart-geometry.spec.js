@@ -39,9 +39,13 @@ async function openWithFourCartLines(page) {
     available: true, price_kmf: null, eta_label: null, unavailable_reason: null,
   }];
   const product = fixtureProduct(detail);
-  await page.route(/\/api\//, route => route.fulfill({
-    status: 200, contentType: 'application/json', body: '[]',
-  }));
+  // Staging utilise les API de bootstrap réelles. Le fallback [] est
+  // réservé au serveur local statique sans backend.
+  if (!process.env.BASE_URL) {
+    await page.route(/\/api\//, route => route.fulfill({
+      status: 200, contentType: 'application/json', body: '[]',
+    }));
+  }
   await page.route(/\/api\/boutique\/suggestions/, route => route.fulfill({
     status: 200, contentType: 'application/json', body: '{"suggestions":[]}',
   }));

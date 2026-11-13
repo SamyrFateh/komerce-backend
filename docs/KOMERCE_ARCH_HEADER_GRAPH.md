@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 809
-- Files with full headers: 754
+- Scanned code files: 810
+- Files with full headers: 755
 - Files with lite headers: 55
-- Files with any headers: 809
+- Files with any headers: 810
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 2050
-- Edges: 10162
+- Graph nodes: 2053
+- Edges: 10174
 - DB tables: 237
-- Doctrines: 797
+- Doctrines: 799
 - Impact areas: 207
-- Unresolved code edges: 968
+- Unresolved code edges: 969
 - Tables multi-écrivains directs (>=2): 95
 - Avertissements db-write / db-write-via en chevauchement: 12
 
@@ -52,7 +52,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - market-control-plane: 5
 - market-delegation: 38
 - markets: 1
-- notification: 21
+- notification: 22
 - operations: 11
 - orders: 40
 - payment: 30
@@ -109,7 +109,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - ui-runtime: 2
 - ui-service: 5
 - ui-state: 1
-- util: 32
+- util: 33
 - util-ui: 1
 - utility: 2
 - validators: 1
@@ -699,6 +699,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - utils/credential-session-guard.js — credential-session-version-guard (auth-identity, high, full)
 - utils/documents/customs-invoice-html.js — customs-invoice-html (documents, high, full)
 - utils/name-normalize.js — name-normalize (shared, high, full)
+- utils/non-prod-phone-guard.js — non-prod-phone-guard (notification, high, full)
 - utils/parcels.js — logistics-parcels (logistics, high, full)
 - utils/parcelSync.js — logistics-parcel-sync (logistics, high, full)
 - utils/pricing-cache.js — economic-engine-pricing-cache (economic-engine, high, full)

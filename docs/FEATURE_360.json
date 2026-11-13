@@ -21104,6 +21104,13 @@
           "channels": [
             "data-read"
           ]
+        },
+        {
+          "consumer": "wallet",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
         }
       ],
       "projections": {
@@ -35032,6 +35039,13 @@
         },
         {
           "provider": "infrastructure",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "market",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"

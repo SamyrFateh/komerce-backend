@@ -13,26 +13,26 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 809,
-    "filesWithFullHeaders": 754,
+    "scannedCodeFiles": 810,
+    "filesWithFullHeaders": 755,
     "filesWithLiteHeaders": 55,
-    "filesWithAnyHeaders": 809,
+    "filesWithAnyHeaders": 810,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 2050,
-    "edges": 10162,
+    "graphNodes": 2053,
+    "edges": 10174,
     "dbTables": 237,
-    "doctrines": 797,
+    "doctrines": 799,
     "impactAreas": 207,
-    "unresolvedCodeEdges": 968,
+    "unresolvedCodeEdges": 969,
     "dbWriteViaOverlapWarnings": 12,
     "multiWriterTables": 95
   },
   "byDomain": {
     "infrastructure": 25,
     "bootstrap": 2,
-    "notification": 21,
+    "notification": 22,
     "auth": 14,
     "market-delegation": 38,
     "platform-ops": 2,
@@ -98,7 +98,7 @@
     "util-ui": 1,
     "ui-infrastructure": 1,
     "state": 1,
-    "util": 32,
+    "util": 33,
     "domain-helper": 1,
     "adapter": 6,
     "ui-runtime": 2,
@@ -123,7 +123,7 @@
   "byCriticality": {
     "critical": 125,
     "medium": 157,
-    "high": 462,
+    "high": 463,
     "low": 64,
     "unknown": 1
   },
@@ -25843,7 +25843,9 @@
         "orders",
         "products",
         "relais",
-        "scans"
+        "scans",
+        "wallet_transactions",
+        "wallets"
       ],
       "dbWrite": [
         "order_items",
@@ -37589,7 +37591,8 @@
       "depends": [
         "db.js",
         "services/documents/wallet-receipt.js",
-        "services/order-mutation-service.js"
+        "services/order-mutation-service.js",
+        "services/fx-authority.js (devise marché non-KMF)"
       ],
       "usedBy": [
         "routes/wallet.js",
@@ -37755,7 +37758,8 @@
       ],
       "depends": [
         "Meta Graph API",
-        "env META_WA_*"
+        "env META_WA_*",
+        "utils/non-prod-phone-guard.js"
       ],
       "usedBy": [
         "notification-service.js",
@@ -38603,6 +38607,47 @@
         "logistics"
       ],
       "version": "2026-07"
+    },
+    {
+      "id": "utils/non-prod-phone-guard.js",
+      "file": "utils/non-prod-phone-guard.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "non-prod-phone-guard",
+      "domain": "notification",
+      "layer": "util",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "env AUTHKEY_ALLOWED_PHONES",
+        "runtime environment",
+        "recipient_phone"
+      ],
+      "outputs": [
+        "allowed_boolean"
+      ],
+      "depends": [
+        "middleware/require-non-production.js"
+      ],
+      "usedBy": [
+        "services/authkey-client.js",
+        "services/whatsapp-meta.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "no_external_send_outside_production",
+        "fail_safe_empty_allowlist"
+      ],
+      "impactAreas": [
+        "whatsapp",
+        "notifications",
+        "shared-cart"
+      ],
+      "version": "2026-11"
     },
     {
       "id": "utils/orderParcelLinkRules.js",
@@ -44344,6 +44389,16 @@
       "id": "doctrine:GAP_ANALYSIS_CURRENCY_BOUNDARY.md — FREEZE FINAL 22-08-2026.",
       "type": "doctrine",
       "doctrine": "GAP_ANALYSIS_CURRENCY_BOUNDARY.md — FREEZE FINAL 22-08-2026."
+    },
+    {
+      "id": "doctrine:no_external_send_outside_production",
+      "type": "doctrine",
+      "doctrine": "no_external_send_outside_production"
+    },
+    {
+      "id": "doctrine:fail_safe_empty_allowlist",
+      "type": "doctrine",
+      "doctrine": "fail_safe_empty_allowlist"
     },
     {
       "id": "doctrine:API_CONTRACTS",
@@ -86403,6 +86458,18 @@
     },
     {
       "from": "services/order-status-machine.js",
+      "to": "db:wallet_transactions",
+      "type": "db-read",
+      "label": "wallet_transactions"
+    },
+    {
+      "from": "services/order-status-machine.js",
+      "to": "db:wallets",
+      "type": "db-read",
+      "label": "wallets"
+    },
+    {
+      "from": "services/order-status-machine.js",
       "to": "db:order_items",
       "type": "db-write",
       "label": "order_items"
@@ -104016,6 +104083,12 @@
       "label": "services/order-mutation-service.js"
     },
     {
+      "from": "services/wallet-service.js",
+      "to": "services/fx-authority.js (devise marché non-KMF)",
+      "type": "depends",
+      "label": "services/fx-authority.js (devise marché non-KMF)"
+    },
+    {
       "from": "routes/wallet.js",
       "to": "services/wallet-service.js",
       "type": "uses",
@@ -104261,6 +104334,12 @@
       "to": "env META_WA_*",
       "type": "depends",
       "label": "env META_WA_*"
+    },
+    {
+      "from": "services/whatsapp-meta.js",
+      "to": "utils/non-prod-phone-guard.js",
+      "type": "depends",
+      "label": "utils/non-prod-phone-guard.js"
     },
     {
       "from": "notification-service.js",
@@ -105845,6 +105924,54 @@
       "to": "impact:logistics",
       "type": "impact",
       "label": "logistics"
+    },
+    {
+      "from": "utils/non-prod-phone-guard.js",
+      "to": "middleware/require-non-production.js",
+      "type": "depends",
+      "label": "middleware/require-non-production.js"
+    },
+    {
+      "from": "services/authkey-client.js",
+      "to": "utils/non-prod-phone-guard.js",
+      "type": "uses",
+      "label": "services/authkey-client.js"
+    },
+    {
+      "from": "services/whatsapp-meta.js",
+      "to": "utils/non-prod-phone-guard.js",
+      "type": "uses",
+      "label": "services/whatsapp-meta.js"
+    },
+    {
+      "from": "utils/non-prod-phone-guard.js",
+      "to": "doctrine:no_external_send_outside_production",
+      "type": "doctrine",
+      "label": "no_external_send_outside_production"
+    },
+    {
+      "from": "utils/non-prod-phone-guard.js",
+      "to": "doctrine:fail_safe_empty_allowlist",
+      "type": "doctrine",
+      "label": "fail_safe_empty_allowlist"
+    },
+    {
+      "from": "utils/non-prod-phone-guard.js",
+      "to": "impact:whatsapp",
+      "type": "impact",
+      "label": "whatsapp"
+    },
+    {
+      "from": "utils/non-prod-phone-guard.js",
+      "to": "impact:notifications",
+      "type": "impact",
+      "label": "notifications"
+    },
+    {
+      "from": "utils/non-prod-phone-guard.js",
+      "to": "impact:shared-cart",
+      "type": "impact",
+      "label": "shared-cart"
     },
     {
       "from": "utils/orderParcelLinkRules.js",
@@ -108114,7 +108241,8 @@
         "impact:security",
         "impact:simulator",
         "routes/admin/system.js",
-        "routes/simulator.js"
+        "routes/simulator.js",
+        "utils/non-prod-phone-guard.js"
       ]
     },
     "middleware/require-pricing-global-authority.js": {
@@ -120193,7 +120321,8 @@
         "services/notifications/order.js",
         "services/notifications/otp-auth.js",
         "services/notifications/parcel.js",
-        "utils/logger.js"
+        "utils/logger.js",
+        "utils/non-prod-phone-guard.js"
       ]
     },
     "services/auto-parcel.js": {
@@ -132942,7 +133071,9 @@
         "orders",
         "products",
         "relais",
-        "scans"
+        "scans",
+        "wallet_transactions",
+        "wallets"
       ],
       "dbWrite": [
         "order_items",
@@ -132995,6 +133126,8 @@
         "db:products",
         "db:relais",
         "db:scans",
+        "db:wallet_transactions",
+        "db:wallets",
         "doctrine:annulation_tracee",
         "doctrine:payment_to_stock_single_entry",
         "doctrine:status_transition_source_unique",
@@ -144442,7 +144575,8 @@
       "directDependsOn": [
         "db.js",
         "services/documents/wallet-receipt.js",
-        "services/order-mutation-service.js"
+        "services/order-mutation-service.js",
+        "services/fx-authority.js (devise marché non-KMF)"
       ],
       "directUsedBy": [
         "routes/wallet.js",
@@ -144598,7 +144732,8 @@
       "purpose": null,
       "directDependsOn": [
         "Meta Graph API",
-        "env META_WA_*"
+        "env META_WA_*",
+        "utils/non-prod-phone-guard.js"
       ],
       "directUsedBy": [
         "notification-service.js",
@@ -144630,7 +144765,8 @@
         "impact:shared-cart",
         "impact:whatsapp",
         "routes/meta-whatsapp.js",
-        "services/notifications/notification-service.js"
+        "services/notifications/notification-service.js",
+        "utils/non-prod-phone-guard.js"
       ]
     },
     "utils/alerts.js": {
@@ -145533,6 +145669,44 @@
         "services/pickup-authorization-service.js",
         "services/pickup-exceptional-collection-service.js",
         "services/pickup-secret-service.js"
+      ]
+    },
+    "utils/non-prod-phone-guard.js": {
+      "role": "non-prod-phone-guard",
+      "domain": "notification",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "middleware/require-non-production.js"
+      ],
+      "directUsedBy": [
+        "services/authkey-client.js",
+        "services/whatsapp-meta.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "no_external_send_outside_production",
+        "fail_safe_empty_allowlist"
+      ],
+      "impactAreas": [
+        "whatsapp",
+        "notifications",
+        "shared-cart"
+      ],
+      "mustCheck": [
+        "doctrine:fail_safe_empty_allowlist",
+        "doctrine:no_external_send_outside_production",
+        "impact:notifications",
+        "impact:shared-cart",
+        "impact:whatsapp",
+        "middleware/require-non-production.js",
+        "services/authkey-client.js",
+        "services/whatsapp-meta.js"
       ]
     },
     "utils/orderParcelLinkRules.js": {
@@ -152695,6 +152869,12 @@
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
+    },
+    {
+      "from": "services/wallet-service.js",
+      "to": "services/fx-authority.js (devise marché non-KMF)",
+      "type": "depends",
+      "label": "services/fx-authority.js (devise marché non-KMF)"
     },
     {
       "from": "services/webauthn-management-service.js",
