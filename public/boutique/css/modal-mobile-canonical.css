@@ -171,14 +171,12 @@
     max-width: 100%;
     min-height: 34px;
     justify-content: flex-start;
-    gap: clamp(10px, 4vw, 18px);
     border-bottom: 0;
     overflow: visible;
   }
 
   #k-modal .k-modal-trust-item {
     flex: 0 1 auto;
-    font-size: 11px;
   }
 
   #k-modal .k-modal-trust-item:nth-child(3) {
