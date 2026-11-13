@@ -1,5 +1,7 @@
 # Brief Fable : audit à charge des flux d'argent Komerce
 
+**Mode ÉCO « super héros »** : rigueur maximale et tokens minimum. Lis seulement le code qui porte la preuve (`git grep`, puis lecture ciblée par plage de lignes), jamais un fichier entier par réflexe. Pas de reformulation de ce brief ni de narration : seulement des constats prouvés, triés et actionnables. Arrête-toi dès que le rendu est complet.
+
 **Mode** : lecture seule. Aucun test, aucun workflow, aucune modification de code ni écriture sur le staging. Toute affirmation est prouvée par `fichier:ligne` sur `main` ou par une preuve en base (lecture seule).
 
 ## Contexte
