@@ -21,7 +21,10 @@ describe('PDP desktop premium polish', () => {
   test('Ã©largit la coque commerciale sans casser les rÃ©gions', () => {
     expect(shell).toMatch(/grid-template-columns:\s*minmax\(0,\s*1fr\)\s*296px/);
     expect(hybrid).toMatch(/grid-template-columns:\s*minmax\(0,\s*48%\)\s*minmax\(0,\s*52%\)/);
-    expect(density).toMatch(/grid-template-columns:\s*minmax\(0,\s*1fr\)\s*minmax\(460px,\s*520px\)/);
+    // Densité desktop v2 : la BuyBox et le panier restent proportionnés
+    // au viewport, sans reconstruire un rail fixe à 288px.
+    expect(density).toMatch(/grid-template-columns:\s*minmax\(0,\s*1fr\)\s*clamp\(320px,\s*22vw,\s*390px\)/);
+    expect(density).toMatch(/grid-template-columns:\s*minmax\(0,\s*1\.326fr\)\s*minmax\(0,\s*1fr\)/);
     expect(hybrid).toMatch(/clamp\(24px,\s*2vw,\s*36px\)/);
   });
 
