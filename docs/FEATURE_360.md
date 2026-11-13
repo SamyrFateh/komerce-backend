@@ -2762,7 +2762,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Perimeter** :
 - _in_ :
   - solde wallet et historique de credit/debit
-  - application/retrait du wallet sur une commande (orders.wallet_applied_kmf)
+  - application du wallet atomique au checkout (orders.wallet_applied_kmf) et restitution par annulation métier uniquement ; routes legacy apply/remove refusées en 409 (FA-01/02/15)
 - _out_ :
   - paiement carte/PayPal (feature payments)
   - remboursement initiateur (feature refunds, qui credite le wallet)
