@@ -195,6 +195,11 @@ if (!hasIntegrationEnv) {
       const event = stripeEvent('EVT-itest-stripe-replay-1');
       const intent = stripeIntent({ orderId: order.id, orderReference: order.reference, id: 'pi_itest_replay_1' });
 
+      // Le checkout attache le PI créé par Stripe à la commande AVANT
+      // le webhook. Sans ce lien, un événement répété est une capture
+      // orpheline à rapprocher (FA-12), pas un paiement idempotent.
+      await db.query('UPDATE orders SET stripe_payment_id = $1 WHERE id = $2', [intent.id, order.id]);
+
       // 1) first delivery
       const hooks1 = spyHooks();
       const trigger1 = fakeTriggerPurchasing();
