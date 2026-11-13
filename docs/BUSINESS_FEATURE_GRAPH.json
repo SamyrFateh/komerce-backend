@@ -13398,7 +13398,7 @@
         "category": "services",
         "declared": "services/pickup-secret-customer-rotation-service.js",
         "resolvedPath": "services/pickup-secret-customer-rotation-service.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "logistics",
@@ -13888,6 +13888,13 @@
         "category": "tests",
         "declared": "tests/unit/hub-unsourced-order-dossier.test.js",
         "resolvedPath": "tests/unit/hub-unsourced-order-dossier.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/unit/hub-director-todo-age.test.js",
+        "resolvedPath": "tests/unit/hub-director-todo-age.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -49729,7 +49736,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2332
+        "filesObserved": 2333
       },
       "boutique": {
         "filesObserved": 216,
@@ -53700,8 +53707,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 706,
-        "technicalNodesOwned": 706,
+        "technicalNodesTotal": 707,
+        "technicalNodesOwned": 707,
         "technicalOrphans": 0
       },
       "dash": {

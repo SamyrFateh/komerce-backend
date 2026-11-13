@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-11-13T09:37:15.565Z",
+  "generatedAt": "2026-11-13T15:21:45.463Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 838,
-    "protected": 779,
+    "total": 839,
+    "protected": 780,
     "public": 59,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -2488,11 +2488,6 @@
       "roles": []
     },
     {
-      "key": "GET /api/admin/workspaces/pricing/market/{marketCode}/economic-p0-audit",
-      "level": "PROTECTED",
-      "roles": []
-    },
-    {
       "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/cost-components/{key}/reset",
       "level": "PROTECTED",
       "roles": []
@@ -2524,6 +2519,11 @@
     },
     {
       "key": "GET /api/admin/workspaces/pricing/market/{marketCode}/decision",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/admin/workspaces/pricing/market/{marketCode}/economic-p0-audit",
       "level": "PROTECTED",
       "roles": []
     },
@@ -3858,6 +3858,14 @@
     },
     {
       "key": "POST /api/hub/box/{unit_id}/shipment",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "GET /api/hub/director-todo",
       "level": "PROTECTED",
       "roles": [
         "admin",
