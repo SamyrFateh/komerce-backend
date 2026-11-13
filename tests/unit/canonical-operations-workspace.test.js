@@ -28,7 +28,7 @@ test('le frontend ne construit jamais market_id comme autorité', () => {
   expect(executable).not.toMatch(/\bmarket_id\b/);
   expect(executable).not.toMatch(/\bmarketId\b/);
   // Exception H4 strictement en lecture seule : GET director-todo ; les écritures Hub restent dans le Workspace marché.
-  expect(executable.replace('/api/hub/physical-codes/confirm', '').replace('/api/hub/director-todo', '')).not.toContain('/api/hub/');
+  expect(executable.replace('/api/hub/physical-codes/confirm', '').replaceAll('/api/hub/director-todo', '')).not.toContain('/api/hub/');
   expect(executable).not.toContain('/api/v2/');
 });
 
