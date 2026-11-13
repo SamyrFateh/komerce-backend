@@ -323,15 +323,25 @@ describe('ME-02 / #3994 — référence économique mono-article, strictement no
     expect(computeCDR(p, ctx)).toEqual(before);
   });
 
-  it('rejette toute lecture de la commission relais comme certifiée avant harmonisation de son unité', () => {
+  it('commission relais conforme per_order : le writer et le CDR partagent la même unité', () => {
     const components = [...sourceComponents,
-      mk('commission_relais_kmf', 'relay', 600, 'kmf_per_order')];
+      mk('commission_relais_kmf', 'relay', 600, 'kmf_per_order', 'per_order')];
     const reference = computeSingleArticleReferenceCDR(p, { config: cfg(components), volume_m3: .002 });
-    expect(reference.single_article_reference.status).toBe('NON_DECISIONNEL');
-    expect(reference.single_article_reference.blockers).toContain('RELAY_COMMISSION_UNIT_NOT_RECONCILED');
+    expect(reference.single_article_reference.blockers).not.toContain('RELAY_COMMISSION_UNIT_NOT_RECONCILED');
     expect(reference.single_article_reference.relay_units_observed)
-      .toEqual(expect.arrayContaining([expect.objectContaining({ unit: 'kmf_per_order' })]));
-    expect(reference.warnings.join(' ')).toMatch(/choix contractuel requis/);
+      .toEqual(expect.arrayContaining([expect.objectContaining({
+        key: 'commission_relais_kmf', unit: 'kmf_per_order', allocation_method: 'per_order',
+      })]));
+    // Un tarif source hypothèse/droits de douane inconnus reste NON_DECISIONNEL malgré l'unité correcte.
+    expect(reference.single_article_reference.status).toBe('NON_DECISIONNEL');
+  });
+
+  it('commission relais en unité per_item : blocage contractuel conservateur', () => {
+    const components = [...sourceComponents,
+      mk('commission_relais_kmf', 'relay', 600, 'kmf', 'per_item')];
+    const reference = computeSingleArticleReferenceCDR(p, { config: cfg(components), volume_m3: .002 });
+    expect(reference.single_article_reference.blockers).toContain('RELAY_COMMISSION_UNIT_NOT_RECONCILED');
+    expect(reference.warnings.join(' ')).toMatch(/décision contractuelle/);
   });
 
   it('CM/CG : signale la provenance du fret héritée; une surcharge explicite évite le faux blocage corridor', () => {

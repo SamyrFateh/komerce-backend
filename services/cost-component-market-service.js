@@ -277,15 +277,15 @@ async function resetOverride({ marketId, key, actorId = null }) {
 
 /**
  * P0 #3994: diagnostics SELECT-only, not a quote or price-decision authority.
- * Migration 043 describes relay commission per delivered order; physical
- * allocation in allocateParcelRealCosts() currently multiplies per item.
- * This audit surfaces the divergence without rewriting financial truth.
+ * Migration 043 and the current writer agree on per_order for new handoffs.
+ * The audit still refuses to treat existing per_item rows as reconciled:
+ * those legacy allocations remain preserved and need separate review.
  */
 const P0_CORRIDOR_CATEGORIES = new Set([
   'freight', 'transit', 'port_transitary', 'customs', 'douane', 'local_distribution',
 ]);
 const P0_KM_ONLY_KEY = /^(?:transport_port_relais_kmf|transport_inter_iles_.*)$/i;
-const P0_REAL_RELAY_METHOD = 'per_item';
+const P0_REAL_RELAY_METHOD = 'per_order';
 
 function p0IsoDay(value) {
   if (!value) return null;
@@ -321,9 +321,8 @@ function auditEffectiveMarketCosts({ market, components, asOf }) {
     }
     const unit = row.unit || null;
     const method = row.allocation_method || null;
-    const forecastPerOrder = unit === 'kmf_per_order' || method === 'per_order';
     const forecastPerItem = method === 'per_item';
-    const relayMismatch = relay && (forecastPerOrder || !forecastPerItem);
+    const relayMismatch = relay && (unit !== 'kmf_per_order' || method !== 'per_order');
     const entry = {
       key: row.key || null, category: row.category || null,
       value: row.default_value == null ? null : Number(row.default_value),
@@ -337,7 +336,7 @@ function auditEffectiveMarketCosts({ market, components, asOf }) {
       is_effective: current, scope_status: scopeStatus,
       cost_evidence_status: 'NOT_VERIFIED',
       ...(relay ? {
-        relay_forecast_unit: forecastPerOrder ? 'per_order' : forecastPerItem ? 'per_item' : 'UNKNOWN',
+        relay_forecast_unit: unit === 'kmf_per_order' && method === 'per_order' ? 'per_order' : forecastPerItem ? 'per_item' : 'UNKNOWN',
         relay_real_current_unit: P0_REAL_RELAY_METHOD,
         relay_unit_consistent: !relayMismatch,
       } : {}),
