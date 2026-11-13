@@ -121,6 +121,14 @@ Variations à jouer quand elles s'appliquent : deux variantes du même produit e
 | L-A8 | PDF interne du bon fournisseur | P1 | O-DOC `purchase_order_pdf` |
 | L-A3 | Alignement WhatsApp | Décision séparée | O-NOTIF/DRIFT_DOCTRINE |
 
+### Prérequis catalogue et critère multi-sourcing (décision du propriétaire, 13/11)
+- Catalogue CM et CG peuplé **par le vrai parcours de sourcing**, sans insertion directe, avec de **vrais produits fournisseurs** et **quelques produits manuels** via le Fournisseur central Hub. Les objets de recette portent le marqueur CLAUDE-PAR.
+- **Le multi-sourcing est un critère de test obligatoire** de chaque E2E import (M01, M03, M04, M05) : au moins 3 sources distinctes dans la même commande, PO mono-marché par fournisseur, consolidation Hub. C01 et C02 seuls ne suffisent pas à certifier.
+- Minimum par marché (KM, CM, CG) :
+  - au moins 4 produits vendables (`LOCAL_ACTIVE` + `ENABLED`) chez au moins 3 sources, dont au moins 1 produit manuel du Fournisseur central ;
+  - du stock local vendable dans le relais CLAUDE-PAR du marché (M02, M03).
+- État des lots : L-A1, L-A2, L-A5, L-A6, L-SEC, L3 et L7 sont fusionnés. **L-A8 est livré (#3951)** : `purchase_order_pdf` devient prouvable. W1 (dépense du wallet dans la devise du marché) et W2 (garde de non-envoi WhatsApp Meta) sont en cours.
+
 ### Gates
 **G0** SHA servi = SHA cible, allowlist `AUTHKEY_ALLOWED_PHONES` vide ou sans numéro de recette, fixtures par agent → **G1** arbitrages (fait le 12/11) → **G2** lots P0 déployés avant les scénarios qu'ils débloquent, sinon BLOCKED explicite → **G3** M → **G4** N P0 → **G5** N P1 → **G6** comparatif ChatGPT ↔ Opus → `GO_PRE_STRESS` → recette humaine #3754 → stress. Rien ne s'exécute sans « GO tests métiers » explicite du propriétaire.
 

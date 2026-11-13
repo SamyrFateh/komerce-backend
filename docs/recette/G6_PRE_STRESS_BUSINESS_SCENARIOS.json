@@ -728,11 +728,11 @@
       ]
     }
   ],
-  "updated": "2026-11-12",
+  "updated": "2026-11-13",
   "decision_ref": "issue #3927 comment 6828953843 (A1-A8, A2-bis, A2-ter)",
   "not_applicable_rule": "NOT_APPLICABLE exige un motif et la branche non concernée, au niveau assertion ou scénario ; jamais compté comme PASS ; interdit pour masquer un P0 obligatoire.",
   "gates": {
-    "G0": "SHA servi = SHA cible ; AUTHKEY_ALLOWED_PHONES vide ou sans numéro de recette ; zéro envoi réel ; fixtures par agent",
+    "G0": "SHA servi = SHA cible ; AUTHKEY_ALLOWED_PHONES vide ou sans numéro de recette ; zéro envoi réel ; fixtures par agent ; catalogue multi-sources KM/CM/CG prêt (catalog_prerequisites)",
     "G1": "Arbitrages A1-A8 validés (fait le 12/11)",
     "G2": "Lots P0 fusionnés et déployés avant les scénarios qu'ils débloquent ; sinon BLOCKED explicite",
     "G3": "Scénarios M",
@@ -749,7 +749,7 @@
     "L-SEC": "Garde marché sur /api/hub/physical-codes/confirm : 403 et zéro mutation inter-marché"
   },
   "p1_lots": {
-    "L-A8": "PDF interne du bon fournisseur (O-DOC:purchase_order_pdf NOT_PROVEN tant qu'absent)"
+    "L-A8": "Livré (#3951) : O-DOC:purchase_order_pdf devient prouvable"
   },
   "separate_decisions": {
     "L-A3": "WhatsApp inchangé en production ; écart doctrine/code signalé O-NOTIF/DRIFT_DOCTRINE"
@@ -761,7 +761,8 @@
         "M04",
         "M05"
       ],
-      "data": "1 produit, 1 variante, 1 fournisseur connu"
+      "data": "1 produit, 1 variante, 1 fournisseur connu",
+      "multi_sourcing_note": "Insuffisant seul pour la certification : chaque M import doit aussi être joué en C03 (multi-sourcing)"
     },
     "C02": {
       "applies_to": [
@@ -769,7 +770,8 @@
         "M04",
         "M05"
       ],
-      "data": "3 SKU chez un seul fournisseur, achat groupé, lignes préservées"
+      "data": "3 SKU chez un seul fournisseur, achat groupé, lignes préservées",
+      "multi_sourcing_note": "Insuffisant seul pour la certification : chaque M import doit aussi être joué en C03 (multi-sourcing)"
     },
     "C03": {
       "applies_to": [
@@ -814,7 +816,7 @@
       "expected": {
         "order_created": "NONE (devis éphémère éventuel, aucune facture)",
         "payment_confirmed": "facture",
-        "po_engaged_or_paid": "enregistrement PO + purchase_order_authorizations ; purchase_order_pdf NOT_PROVEN (L-A8)",
+        "po_engaged_or_paid": "enregistrement PO + purchase_order_authorizations + PDF interne du bon fournisseur (#3951)",
         "pickup_handoff": "preuve de retrait par scans.id (L-A5)",
         "refund_confirmed": "avoir/reçu, partiel par ligne (L-A6)",
         "wallet_movement_confirmed": "reçu wallet",
@@ -839,5 +841,22 @@
       "N32"
     ],
     "known_gap": "/api/hub/physical-codes/confirm sans garde marché -> BLOCKED jusqu'à L-SEC"
+  },
+  "p0_fix_lots_status": {
+    "L-A5": "merged #3948",
+    "L-A6": "merged #3946",
+    "L-A2": "merged #3949",
+    "L-A1": "merged #3950",
+    "L-SEC": "merged #3945",
+    "L3-checkout": "merged #3952",
+    "L7": "merged #3947",
+    "L-A8": "merged #3951 (P1 livré)",
+    "W1-wallet-devise-marche": "en cours",
+    "W2-garde-meta-wa": "en cours"
+  },
+  "catalog_prerequisites": {
+    "rule": "Catalogue CM et CG peuplé par le vrai parcours de sourcing (pas d'insertion directe) avec de vrais produits fournisseurs, plus des produits manuels via le Fournisseur central Hub ; marqueur CLAUDE-PAR sur les objets de recette",
+    "multi_sourcing": "Critère de test obligatoire de chaque E2E M01/M03/M04/M05 : au moins 3 sources distinctes (fournisseurs réels distincts et/ou Fournisseur central Hub) dans la même commande, PO mono-marché par fournisseur, consolidation Hub",
+    "per_market_minimum": "KM, CM, CG : >= 4 produits vendables (prix LOCAL_ACTIVE + exposition ENABLED) répartis chez >= 3 sources dont >= 1 produit manuel Fournisseur central ; stock local vendable dans le relais CLAUDE-PAR du marché pour M02/M03"
   }
 }
