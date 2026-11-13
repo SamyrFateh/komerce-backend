@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 2045,
-    "edges": 10138,
+    "edges": 10140,
     "dbTables": 237,
     "doctrines": 794,
     "impactAreas": 207,
@@ -25724,7 +25724,9 @@
         "orders",
         "products",
         "relais",
-        "scans"
+        "scans",
+        "wallet_transactions",
+        "wallets"
       ],
       "dbWrite": [
         "order_items",
@@ -86116,6 +86118,18 @@
     },
     {
       "from": "services/order-status-machine.js",
+      "to": "db:wallet_transactions",
+      "type": "db-read",
+      "label": "wallet_transactions"
+    },
+    {
+      "from": "services/order-status-machine.js",
+      "to": "db:wallets",
+      "type": "db-read",
+      "label": "wallets"
+    },
+    {
+      "from": "services/order-status-machine.js",
       "to": "db:order_items",
       "type": "db-write",
       "label": "order_items"
@@ -132548,7 +132562,9 @@
         "orders",
         "products",
         "relais",
-        "scans"
+        "scans",
+        "wallet_transactions",
+        "wallets"
       ],
       "dbWrite": [
         "order_items",
@@ -132601,6 +132617,8 @@
         "db:products",
         "db:relais",
         "db:scans",
+        "db:wallet_transactions",
+        "db:wallets",
         "doctrine:annulation_tracee",
         "doctrine:payment_to_stock_single_entry",
         "doctrine:status_transition_source_unique",
