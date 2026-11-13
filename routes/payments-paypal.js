@@ -18,7 +18,6 @@
  * POST /api/payments/paypal/capture/:paypalOrderId → capturePaypalOrder
  * POST /api/payments/paypal/webhook                → handlePaypalWebhookEvent
  * POST /api/payments/paypal/refund/:orderId        → refundPaypalOrder
- * POST /api/payments/paypal/refund/:orderId/reconcile → reconcilePaypalRefund
  */
 
 'use strict';
@@ -186,24 +185,6 @@ router.post('/refund/:orderId', authenticate, async (req, res, next) => {
       requestKey: req.get('Idempotency-Key'),
       paypal,
       db,
-    });
-    return res.status(result.status).json(result.body);
-  } catch (err) {
-    next(err);
-  }
-});
-
-// F3 — Rapprochement manuel d'une issue PSP ambiguë : GET fournisseur
-// authentifié uniquement. Aucun POST de remboursement n'est déclenché ici.
-router.post('/refund/:orderId/reconcile', authenticate, async (req, res, next) => {
-  if (req.user?.role !== 'admin') return res.status(403).json({ error: 'Admin uniquement' });
-  try {
-    const result = await require('../services/paypal-refund-authority').reconcilePaypalRefund({
-      orderId: req.params.orderId,
-      requestKey: req.get('Idempotency-Key'),
-      providerRefundId: req.body?.provider_ref,
-      adminUser: req.user,
-      paypal, db,
     });
     return res.status(result.status).json(result.body);
   } catch (err) {
