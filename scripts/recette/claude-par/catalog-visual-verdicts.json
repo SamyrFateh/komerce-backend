@@ -156,6 +156,100 @@
           "text_presence": "NONE"
         }
       }
+    },
+    "06b95d4f-e365-4b91-8fc0-c6ae08e70e5b": {
+      "media": {
+        "1005012272920103:media:10": {
+          "verdict": "APPROVED",
+          "text_presence": "NONE"
+        },
+        "1005012272920103:media:11": {
+          "verdict": "APPROVED",
+          "text_presence": "NONE"
+        },
+        "1005012272920103:media:12": {
+          "verdict": "APPROVED",
+          "text_presence": "NONE"
+        },
+        "1005012272920103:media:4": {
+          "verdict": "APPROVED",
+          "text_presence": "NONE"
+        },
+        "1005012272920103:media:8": {
+          "verdict": "APPROVED",
+          "text_presence": "NONE"
+        },
+        "1005012272920103:media:9": {
+          "verdict": "APPROVED",
+          "text_presence": "NONE"
+        },
+        "1005012272920103:media:1": {
+          "verdict": "APPROVED",
+          "text_presence": "PRESENT",
+          "source_transcription": "Appearance strength / Enhance the comfort of your driving experience",
+          "french_translation": "Texte sur la photo : « Appearance strength » (solidité d'aspect) et « Enhance the comfort of your driving experience » (améliorez le confort de votre conduite). Slogan générique, sans marque.",
+          "french_presentation": {
+            "kind": "caption",
+            "text": "Texte sur la photo : « Appearance strength » (solidité d'aspect) et « Enhance the comfort of your driving experience » (améliorez le confort de votre conduite). Slogan générique, sans marque.",
+            "reviewed": true
+          }
+        },
+        "1005012272920103:media:7": {
+          "verdict": "APPROVED",
+          "text_presence": "PRESENT",
+          "source_transcription": "Appearance strength / Enhance the comfort of your driving experience",
+          "french_translation": "Texte sur la photo : « Appearance strength » (solidité d'aspect) et « Enhance the comfort of your driving experience » (améliorez le confort de votre conduite). Slogan générique, sans marque.",
+          "french_presentation": {
+            "kind": "caption",
+            "text": "Texte sur la photo : « Appearance strength » (solidité d'aspect) et « Enhance the comfort of your driving experience » (améliorez le confort de votre conduite). Slogan générique, sans marque.",
+            "reviewed": true
+          }
+        },
+        "1005012272920103:media:2": {
+          "verdict": "APPROVED",
+          "text_presence": "PRESENT",
+          "source_transcription": "Convenient storage / functional / 8 separate pockets, providing you a tidy and spacious in-car environment",
+          "french_translation": "Texte sur l'image : « Convenient storage » (rangement pratique), « functional » (fonctionnel), « 8 separate pockets, providing you a tidy and spacious in-car environment » (8 poches séparées pour un habitacle ordonné et spacieux). Pictogrammes d'objets rangeables, sans marque.",
+          "french_presentation": {
+            "kind": "caption",
+            "text": "Texte sur l'image : « Convenient storage » (rangement pratique), « functional » (fonctionnel), « 8 separate pockets, providing you a tidy and spacious in-car environment » (8 poches séparées pour un habitacle ordonné et spacieux). Pictogrammes d'objets rangeables, sans marque.",
+            "reviewed": true
+          }
+        },
+        "1005012272920103:media:3": {
+          "verdict": "APPROVED",
+          "text_presence": "PRESENT",
+          "source_transcription": "AFTER / BEFORE / Increase storage space neat and beautiful",
+          "french_translation": "Texte sur l'image : « BEFORE » (avant), « AFTER » (après), « Increase storage space neat and beautiful » (gagnez de la place de rangement, net et esthétique). Comparaison avant/après, sans marque.",
+          "french_presentation": {
+            "kind": "caption",
+            "text": "Texte sur l'image : « BEFORE » (avant), « AFTER » (après), « Increase storage space neat and beautiful » (gagnez de la place de rangement, net et esthétique). Comparaison avant/après, sans marque.",
+            "reviewed": true
+          }
+        },
+        "1005012272920103:media:5": {
+          "verdict": "APPROVED",
+          "text_presence": "PRESENT",
+          "source_transcription": "Color appearance preview image / TRAVEL / CAMP / ALIMINGROOM (mot déformé, probablement LIVING ROOM)",
+          "french_translation": "Texte sur l'image : « Color appearance preview image » (aperçu des coloris) et légendes de scènes « TRAVEL » (voyage), « CAMP » (camping), « ALIMINGROOM » (mot déformé, probablement « salon »). Légendes de scènes, aucune marque identifiable.",
+          "french_presentation": {
+            "kind": "caption",
+            "text": "Texte sur l'image : « Color appearance preview image » (aperçu des coloris) et légendes de scènes « TRAVEL » (voyage), « CAMP » (camping), « ALIMINGROOM » (mot déformé, probablement « salon »). Légendes de scènes, aucune marque identifiable.",
+            "reviewed": true
+          }
+        },
+        "1005012272920103:media:6": {
+          "verdict": "APPROVED",
+          "text_presence": "PRESENT",
+          "source_transcription": "59cm/23.2in / 46cm/18.1in",
+          "french_translation": "Dimensions indiquées sur l'image : 59 cm de hauteur (23,2 pouces) et 46 cm de largeur (18,1 pouces).",
+          "french_presentation": {
+            "kind": "caption",
+            "text": "Dimensions indiquées sur l'image : 59 cm de hauteur (23,2 pouces) et 46 cm de largeur (18,1 pouces).",
+            "reviewed": true
+          }
+        }
+      }
     }
   },
   "rejected_products": {
@@ -174,5 +268,5 @@
     "bf6b85e1-4062-4b19-858d-30eab55ce489": "doublon de promotion (produit remplace par fe2c8a44)",
     "82dcf516-dc7b-4395-801b-e1a0d0fde675": "doublon de promotion (produit remplace par af3e5584)"
   },
-  "rerun": 3
+  "rerun": 4
 }
