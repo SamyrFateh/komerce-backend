@@ -87,22 +87,6 @@
     }
    }
   },
-  "0611e9ed-f78c-4f22-ab26-62551fc6ff87": {
-   "media": {
-    "CLAUDE-PAR-20261113-PLANCHE:media:1": {
-     "verdict": "APPROVED",
-     "text_presence": "NONE"
-    }
-   }
-  },
-  "493edcfe-b769-445d-81bb-1f86d75549ce": {
-   "media": {
-    "CLAUDE-PAR-20261113-CASSEROLE:media:1": {
-     "verdict": "APPROVED",
-     "text_presence": "NONE"
-    }
-   }
-  },
   "21bc5285-7b1a-47c5-a914-7656790816c5": {
    "media": {
     "1005011617878718:media:1": {
@@ -154,6 +138,22 @@
       "text": "Etiquette volante visible sur la photo, texte partiellement masque : « HIGH QU... » (haute qualite), « SIMPLICITY » (simplicite), « COMFOR... » (confort), « MAKE FASHI... » (faire la mode). Slogans generiques, sans marque.",
       "reviewed": true
      }
+    }
+   }
+  },
+  "6a55d16a-cdc0-4cd9-adfc-1201ddd69301": {
+   "media": {
+    "CLAUDE-PAR-20261113-PLANCHE:media:1": {
+     "verdict": "APPROVED",
+     "text_presence": "NONE"
+    }
+   }
+  },
+  "83457a83-0b68-48aa-8507-ae153f925acd": {
+   "media": {
+    "CLAUDE-PAR-20261113-CASSEROLE:media:1": {
+     "verdict": "APPROVED",
+     "text_presence": "NONE"
     }
    }
   }
