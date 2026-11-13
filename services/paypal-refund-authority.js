@@ -127,13 +127,17 @@ async function settleConfirmed({ db, orderId, intentId, actor }) {
         initiatedBy: actor.id, conflictOn: 'order_refund_type',
       });
       if (!refundId) fail('REFUND_SETTLEMENT_UNWRITTEN', 'Journal de remboursement absent');
-      const { rows: [sum] } = await client.query(
-        "SELECT COALESCE(SUM(amount_eur),0)::text AS refunded_eur FROM refunds WHERE order_id=$1 AND status='completed'",
-        [orderId]
-      );
-      const sumCents = euroCents(sum?.refunded_eur ?? '0', true);
-      if (sumCents > whole) fail('REFUND_SETTLEMENT_OVER_CAPTURE', 'Remboursements supérieurs au capturé');
-      fullyRefunded = sumCents === whole;
+    }
+    // Even on replay, derive partial/full from the persisted financial ledger,
+    // not from the request or an untrusted payment-provider response.
+    const { rows: [sum] } = await client.query(
+      "SELECT COALESCE(SUM(amount_eur),0)::text AS refunded_eur FROM refunds WHERE order_id=$1 AND status='completed'",
+      [orderId]
+    );
+    const sumCents = euroCents(sum?.refunded_eur ?? '0', true);
+    if (sumCents > whole) fail('REFUND_SETTLEMENT_OVER_CAPTURE', 'Remboursements supérieurs au capturé');
+    fullyRefunded = sumCents === whole;
+    if (!replayed) {
       if (fullyRefunded) {
         const updated = await markRefunded(orderId, { client });
         if (!updated.changed) fail('REFUND_PAYMENT_STATUS_CONFLICT', 'Statut de paiement non clôturable');
