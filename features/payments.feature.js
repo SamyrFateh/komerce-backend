@@ -264,6 +264,8 @@ module.exports = {
 
   // ── Invariants propres ───────────────────────────────────────────────────
   invariants: [
+    { statement: 'FA-13/24 : un succès Mobile Money exige une preuve de montant et devise, et une nouvelle capture sur une commande déjà payée laisse une alerte dans la même transaction.',
+      test: 'tests/unit/payment-mobile-money.test.js' },
     { statement: 'RC-9 : getRefund lit PayPal par GET sans exécuter un refund, rejette tout ID douteux et fournit seulement une preuve à confronter au ledger.',
       test: 'tests/unit/paypal-client.test.js' },
     { statement: 'RC-9 préparation : le client PayPal relaie une clé providerRequestKey validée issue de refund_execution_intents, stable au rejeu, tout en laissant les anciennes routes inchangées tant que la réconciliation est incomplète',
