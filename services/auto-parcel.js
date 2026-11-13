@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       db, utils/logger.js, utils/reference.js
  * @used-by       routes/auto-distribute-api.js
- * @db-read       order_items, orders, parcel_items, parcels, relais, users, scan_events, scans, hub_box_bags, customs_shipment_parcels, incidents, invoices, order_item_real_cost_allocations
+ * @db-read       order_items, orders, parcel_items, parcels, purchase_lines, v_purchase_line_progress, relais, users, scan_events, scans, hub_box_bags, customs_shipment_parcels, incidents, invoices, order_item_real_cost_allocations
  * @db-write      parcel_items, parcels
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change

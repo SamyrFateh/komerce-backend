@@ -8,7 +8,7 @@
  * @outputs       order_completion_verdict, purchase_order_hub_received, order_status_preparation
  * @depends       db, services/auto-parcel.js, services/order-status-machine.js, services/scan-operations.js, utils/alerts.js, utils/logger.js
  * @used-by       services/hub-operations.js, bootstrap/crons.js
- * @db-read       order_items, purchase_lines, hub_purchase_allocations, parcel_items, orders, purchase_orders, v_purchase_line_progress
+ * @db-read       order_items, purchase_lines, hub_physical_unit_placements, hub_purchase_allocations, parcel_items, orders, purchase_orders, v_purchase_line_progress
  * @db-write      alerts, purchase_orders, parcels, parcel_items
  * @db-txn        owns_transaction
  * @doctrine      docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md

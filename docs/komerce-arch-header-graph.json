@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 811,
-    "filesWithFullHeaders": 756,
+    "scannedCodeFiles": 812,
+    "filesWithFullHeaders": 757,
     "filesWithLiteHeaders": 55,
-    "filesWithAnyHeaders": 811,
+    "filesWithAnyHeaders": 812,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 2056,
-    "edges": 10185,
-    "dbTables": 238,
-    "doctrines": 800,
+    "graphNodes": 2059,
+    "edges": 10207,
+    "dbTables": 239,
+    "doctrines": 801,
     "impactAreas": 207,
-    "unresolvedCodeEdges": 970,
+    "unresolvedCodeEdges": 971,
     "dbWriteViaOverlapWarnings": 12,
     "multiWriterTables": 96
   },
@@ -42,7 +42,7 @@
     "market": 9,
     "economic-engine": 69,
     "sourcing": 37,
-    "logistics": 70,
+    "logistics": 71,
     "boutique": 24,
     "checkout": 3,
     "shared-cart": 25,
@@ -112,7 +112,7 @@
     "schema": 1,
     "route": 138,
     "entrypoint": 1,
-    "service": 490,
+    "service": 491,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -123,7 +123,7 @@
   "byCriticality": {
     "critical": 125,
     "medium": 157,
-    "high": 464,
+    "high": 465,
     "low": 64,
     "unknown": 1
   },
@@ -6962,6 +6962,7 @@
       "outputs": [
         "canonical_pricing_projection",
         "market_cost_projection",
+        "read_only_p0_cost_audit",
         "market_decision_projection",
         "market_price_decisions",
         "market_corridor_projection",
@@ -6977,6 +6978,7 @@
         "middleware/require-pricing-global-authority.js",
         "middleware/require-market-delegated-capability.js",
         "services/pricing-workspace.js",
+        "services/cost-component-market-service.js",
         "services/pricing-market-decision-policy.js",
         "services/pricing-market-decision-projection.js",
         "services/pricing-market-corridor.js",
@@ -16775,7 +16777,8 @@
       ],
       "outputs": [
         "effective_market_cost_components",
-        "audited_override_mutations"
+        "audited_override_mutations",
+        "read_only_p0_corridor_relay_evidence"
       ],
       "depends": [
         "db.js"
@@ -27499,6 +27502,61 @@
       "dbWriteViaOverlapWarning": "services/pickup-secret-access-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> orders"
     },
     {
+      "id": "services/pickup-secret-customer-rotation-service.js",
+      "file": "services/pickup-secret-customer-rotation-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "pickup-secret-customer-rotation",
+      "domain": "logistics",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "orderId",
+        "userId"
+      ],
+      "outputs": [
+        "new_pickup_code_one_shot"
+      ],
+      "depends": [
+        "db.js",
+        "services/pickup-secret-issuer.js",
+        "services/order-mutation-service.js"
+      ],
+      "usedBy": [
+        "routes/pickup-secret.js"
+      ],
+      "dbRead": [
+        "orders",
+        "pickup_code_generations"
+      ],
+      "dbWrite": [
+        "pickup_code_generations",
+        "pickup_reveal_codes",
+        "pickup_print_tokens"
+      ],
+      "dbWriteVia": [
+        {
+          "via": "order-mutation-service",
+          "tables": [
+            "orders"
+          ]
+        }
+      ],
+      "dbTxn": [
+        "single_transaction_for_update"
+      ],
+      "doctrine": [
+        "no_second_secret_writer"
+      ],
+      "impactAreas": [
+        "logistics",
+        "pickup"
+      ],
+      "version": "2026-11"
+    },
+    {
       "id": "services/pickup-secret-issuer.js",
       "file": "services/pickup-secret-issuer.js",
       "type": "file",
@@ -28035,7 +28093,8 @@
         "never_persisted_provisional_floor_preview"
       ],
       "depends": [
-        "services/pricing-floor-forecast-shadow.js"
+        "services/pricing-floor-forecast-shadow.js",
+        "utils/currency.js"
       ],
       "usedBy": [
         "routes/admin-pricing-workspace.js"
@@ -29822,23 +29881,30 @@
       ],
       "depends": [
         "db",
+        "services/auto-parcel.js",
         "services/order-status-machine.js",
         "services/scan-operations.js",
         "utils/alerts.js",
         "utils/logger.js"
       ],
       "usedBy": [
-        "services/hub-operations.js"
+        "services/hub-operations.js",
+        "bootstrap/crons.js"
       ],
       "dbRead": [
         "order_items",
+        "purchase_lines",
+        "hub_purchase_allocations",
+        "parcel_items",
         "orders",
         "purchase_orders",
         "v_purchase_line_progress"
       ],
       "dbWrite": [
         "alerts",
-        "purchase_orders"
+        "purchase_orders",
+        "parcels",
+        "parcel_items"
       ],
       "dbWriteVia": [],
       "dbTxn": [
@@ -40338,6 +40404,11 @@
       "table": "user_pickup_authorizations"
     },
     {
+      "id": "db:pickup_code_generations",
+      "type": "db-table",
+      "table": "pickup_code_generations"
+    },
+    {
       "id": "db:pricing_benchmarks",
       "type": "db-table",
       "table": "pricing_benchmarks"
@@ -43621,6 +43692,11 @@
       "id": "doctrine:docs/architecture/IMPACT_FEATURE_FIRST_FULFILLMENT_MIXTE.md R9-R10",
       "type": "doctrine",
       "doctrine": "docs/architecture/IMPACT_FEATURE_FIRST_FULFILLMENT_MIXTE.md R9-R10"
+    },
+    {
+      "id": "doctrine:no_second_secret_writer",
+      "type": "doctrine",
+      "doctrine": "no_second_secret_writer"
     },
     {
       "id": "doctrine:docs/architecture/IMPACT_FEATURE_FIRST_FULFILLMENT_MIXTE.md R10",
@@ -55603,6 +55679,12 @@
       "to": "services/pricing-workspace.js",
       "type": "depends",
       "label": "services/pricing-workspace.js"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "services/cost-component-market-service.js",
+      "type": "depends",
+      "label": "services/cost-component-market-service.js"
     },
     {
       "from": "routes/admin-pricing-workspace.js",
@@ -89079,6 +89161,85 @@
       "label": "logistics"
     },
     {
+      "from": "services/pickup-secret-customer-rotation-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/pickup-secret-customer-rotation-service.js",
+      "to": "services/pickup-secret-issuer.js",
+      "type": "depends",
+      "label": "services/pickup-secret-issuer.js"
+    },
+    {
+      "from": "services/pickup-secret-customer-rotation-service.js",
+      "to": "services/order-mutation-service.js",
+      "type": "depends",
+      "label": "services/order-mutation-service.js"
+    },
+    {
+      "from": "routes/pickup-secret.js",
+      "to": "services/pickup-secret-customer-rotation-service.js",
+      "type": "uses",
+      "label": "routes/pickup-secret.js"
+    },
+    {
+      "from": "services/pickup-secret-customer-rotation-service.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/pickup-secret-customer-rotation-service.js",
+      "to": "db:pickup_code_generations",
+      "type": "db-read",
+      "label": "pickup_code_generations"
+    },
+    {
+      "from": "services/pickup-secret-customer-rotation-service.js",
+      "to": "db:pickup_code_generations",
+      "type": "db-write",
+      "label": "pickup_code_generations"
+    },
+    {
+      "from": "services/pickup-secret-customer-rotation-service.js",
+      "to": "db:pickup_reveal_codes",
+      "type": "db-write",
+      "label": "pickup_reveal_codes"
+    },
+    {
+      "from": "services/pickup-secret-customer-rotation-service.js",
+      "to": "db:pickup_print_tokens",
+      "type": "db-write",
+      "label": "pickup_print_tokens"
+    },
+    {
+      "from": "services/pickup-secret-customer-rotation-service.js",
+      "to": "db:orders",
+      "type": "db-write-via",
+      "label": "orders",
+      "via": "order-mutation-service"
+    },
+    {
+      "from": "services/pickup-secret-customer-rotation-service.js",
+      "to": "doctrine:no_second_secret_writer",
+      "type": "doctrine",
+      "label": "no_second_secret_writer"
+    },
+    {
+      "from": "services/pickup-secret-customer-rotation-service.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
+    },
+    {
+      "from": "services/pickup-secret-customer-rotation-service.js",
+      "to": "impact:pickup",
+      "type": "impact",
+      "label": "pickup"
+    },
+    {
       "from": "services/pickup-secret-issuer.js",
       "to": "db.js",
       "type": "depends",
@@ -89904,6 +90065,12 @@
       "to": "services/pricing-floor-forecast-shadow.js",
       "type": "depends",
       "label": "services/pricing-floor-forecast-shadow.js"
+    },
+    {
+      "from": "services/pricing-floor-forecast-preview.js",
+      "to": "utils/currency.js",
+      "type": "depends",
+      "label": "utils/currency.js"
     },
     {
       "from": "routes/admin-pricing-workspace.js",
@@ -92600,6 +92767,12 @@
     },
     {
       "from": "services/purchasing-completion-service.js",
+      "to": "services/auto-parcel.js",
+      "type": "depends",
+      "label": "services/auto-parcel.js"
+    },
+    {
+      "from": "services/purchasing-completion-service.js",
       "to": "services/order-status-machine.js",
       "type": "depends",
       "label": "services/order-status-machine.js"
@@ -92629,10 +92802,34 @@
       "label": "services/hub-operations.js"
     },
     {
+      "from": "bootstrap/crons.js",
+      "to": "services/purchasing-completion-service.js",
+      "type": "uses",
+      "label": "bootstrap/crons.js"
+    },
+    {
       "from": "services/purchasing-completion-service.js",
       "to": "db:order_items",
       "type": "db-read",
       "label": "order_items"
+    },
+    {
+      "from": "services/purchasing-completion-service.js",
+      "to": "db:purchase_lines",
+      "type": "db-read",
+      "label": "purchase_lines"
+    },
+    {
+      "from": "services/purchasing-completion-service.js",
+      "to": "db:hub_purchase_allocations",
+      "type": "db-read",
+      "label": "hub_purchase_allocations"
+    },
+    {
+      "from": "services/purchasing-completion-service.js",
+      "to": "db:parcel_items",
+      "type": "db-read",
+      "label": "parcel_items"
     },
     {
       "from": "services/purchasing-completion-service.js",
@@ -92663,6 +92860,18 @@
       "to": "db:purchase_orders",
       "type": "db-write",
       "label": "purchase_orders"
+    },
+    {
+      "from": "services/purchasing-completion-service.js",
+      "to": "db:parcels",
+      "type": "db-write",
+      "label": "parcels"
+    },
+    {
+      "from": "services/purchasing-completion-service.js",
+      "to": "db:parcel_items",
+      "type": "db-write",
+      "label": "parcel_items"
     },
     {
       "from": "services/purchasing-completion-service.js",
@@ -107273,6 +107482,7 @@
         "services/mobile-money-reconciliation.js",
         "services/order-financial-closure-signal.js",
         "services/outbox-worker.js",
+        "services/purchasing-completion-service.js",
         "utils/logger.js",
         "utils/rules.js"
       ]
@@ -114120,6 +114330,7 @@
         "middleware/require-pricing-global-authority.js",
         "middleware/require-market-delegated-capability.js",
         "services/pricing-workspace.js",
+        "services/cost-component-market-service.js",
         "services/pricing-market-decision-policy.js",
         "services/pricing-market-decision-projection.js",
         "services/pricing-market-corridor.js",
@@ -119000,6 +119211,7 @@
         "services/order-mutation-service.js",
         "services/payment-paypal.js",
         "services/payment-stripe.js",
+        "services/pickup-secret-customer-rotation-service.js",
         "services/pickup-secret-service.js",
         "utils/logger.js",
         "utils/pickup-receipt-html.js"
@@ -120508,6 +120720,7 @@
         "impact:logistics",
         "routes/auto-distribute-api.js",
         "services/operations-workspace.js",
+        "services/purchasing-completion-service.js",
         "utils/logger.js",
         "utils/reference.js"
       ]
@@ -132949,6 +133162,7 @@
         "services/pickup-collection-recorder.js",
         "services/pickup-exceptional-collection-service.js",
         "services/pickup-secret-access-service.js",
+        "services/pickup-secret-customer-rotation-service.js",
         "services/pickup-secret-issuer.js",
         "services/pickup-secret-rotation-service.js",
         "services/pickup-secret-service.js",
@@ -134860,6 +135074,59 @@
         "utils/pickup-receipt-html.js"
       ]
     },
+    "services/pickup-secret-customer-rotation-service.js": {
+      "role": "pickup-secret-customer-rotation",
+      "domain": "logistics",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "services/pickup-secret-issuer.js",
+        "services/order-mutation-service.js"
+      ],
+      "directUsedBy": [
+        "routes/pickup-secret.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "orders",
+        "pickup_code_generations"
+      ],
+      "dbWrite": [
+        "pickup_code_generations",
+        "pickup_reveal_codes",
+        "pickup_print_tokens"
+      ],
+      "dbWriteVia": [
+        {
+          "via": "order-mutation-service",
+          "tables": [
+            "orders"
+          ]
+        }
+      ],
+      "doctrines": [
+        "no_second_secret_writer"
+      ],
+      "impactAreas": [
+        "logistics",
+        "pickup"
+      ],
+      "mustCheck": [
+        "db:orders",
+        "db:pickup_code_generations",
+        "db:pickup_print_tokens",
+        "db:pickup_reveal_codes",
+        "doctrine:no_second_secret_writer",
+        "impact:logistics",
+        "impact:pickup",
+        "routes/pickup-secret.js",
+        "services/order-mutation-service.js",
+        "services/pickup-secret-issuer.js"
+      ]
+    },
     "services/pickup-secret-issuer.js": {
       "role": "pickup-secret-issuer",
       "domain": "logistics",
@@ -134903,6 +135170,7 @@
         "impact:pickup",
         "services/order-mutation-service.js",
         "services/pickup-code-helpers.js",
+        "services/pickup-secret-customer-rotation-service.js",
         "services/pickup-secret-rotation-service.js",
         "services/pickup-secret-service.js"
       ]
@@ -135394,7 +135662,8 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
-        "services/pricing-floor-forecast-shadow.js"
+        "services/pricing-floor-forecast-shadow.js",
+        "utils/currency.js"
       ],
       "directUsedBy": [
         "routes/admin-pricing-workspace.js"
@@ -135413,7 +135682,8 @@
         "doctrine:docs/doctrine/PRICING_FLOOR_FORECAST_SHADOW.md",
         "impact:economic-engine",
         "routes/admin-pricing-workspace.js",
-        "services/pricing-floor-forecast-shadow.js"
+        "services/pricing-floor-forecast-shadow.js",
+        "utils/currency.js"
       ]
     },
     "services/pricing-floor-forecast-shadow.js": {
@@ -137129,24 +137399,31 @@
       "purpose": null,
       "directDependsOn": [
         "db",
+        "services/auto-parcel.js",
         "services/order-status-machine.js",
         "services/scan-operations.js",
         "utils/alerts.js",
         "utils/logger.js"
       ],
       "directUsedBy": [
-        "services/hub-operations.js"
+        "services/hub-operations.js",
+        "bootstrap/crons.js"
       ],
       "ownedFiles": [],
       "dbRead": [
         "order_items",
+        "purchase_lines",
+        "hub_purchase_allocations",
+        "parcel_items",
         "orders",
         "purchase_orders",
         "v_purchase_line_progress"
       ],
       "dbWrite": [
         "alerts",
-        "purchase_orders"
+        "purchase_orders",
+        "parcels",
+        "parcel_items"
       ],
       "dbWriteVia": [],
       "doctrines": [
@@ -137158,15 +137435,21 @@
         "logistics"
       ],
       "mustCheck": [
+        "bootstrap/crons.js",
         "db:alerts",
+        "db:hub_purchase_allocations",
         "db:order_items",
         "db:orders",
+        "db:parcel_items",
+        "db:parcels",
+        "db:purchase_lines",
         "db:purchase_orders",
         "db:v_purchase_line_progress",
         "doctrine:docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md",
         "impact:logistics",
         "impact:orders",
         "impact:purchasing",
+        "services/auto-parcel.js",
         "services/hub-operations.js",
         "services/order-status-machine.js",
         "services/scan-operations.js",
@@ -145273,6 +145556,7 @@
         "services/market-transport-sale-rates.js",
         "services/order-display-snapshot.js",
         "services/payment-mobile-money.js",
+        "services/pricing-floor-forecast-preview.js",
         "services/pricing-market-corridor.js"
       ]
     },
@@ -146545,7 +146829,7 @@
     },
     {
       "table": "parcels",
-      "writerCount": 16,
+      "writerCount": 17,
       "writers": [
         "routes/admin-customs-shipments.js",
         "routes/admin/system.js",
@@ -146559,6 +146843,7 @@
         "services/parcel-operations.js",
         "services/parcel-security.js",
         "services/parcelOptimizationService.js",
+        "services/purchasing-completion-service.js",
         "services/scan-engine.js",
         "services/simulator/cleanup.js",
         "services/simulator/state-advancer.js",
@@ -146567,7 +146852,7 @@
     },
     {
       "table": "parcel_items",
-      "writerCount": 12,
+      "writerCount": 13,
       "writers": [
         "routes/admin/system.js",
         "routes/parcels.js",
@@ -146577,6 +146862,7 @@
         "services/parcel-item-mutation-service.js",
         "services/parcel-operations.js",
         "services/parcelOptimizationService.js",
+        "services/purchasing-completion-service.js",
         "services/relay-parcel-item-reconciliation.js",
         "services/scan-engine.js",
         "services/simulator/cleanup.js",
@@ -146679,6 +146965,32 @@
       ]
     },
     {
+      "table": "pickup_print_tokens",
+      "writerCount": 7,
+      "writers": [
+        "bootstrap/crons.js",
+        "routes/pickup-secret.js",
+        "services/pickup-collection-recorder.js",
+        "services/pickup-collection-service.js",
+        "services/pickup-secret-access-service.js",
+        "services/pickup-secret-customer-rotation-service.js",
+        "services/pickup-secret-rotation-service.js"
+      ]
+    },
+    {
+      "table": "pickup_reveal_codes",
+      "writerCount": 7,
+      "writers": [
+        "bootstrap/crons.js",
+        "routes/pickup-secret.js",
+        "services/pickup-collection-recorder.js",
+        "services/pickup-collection-service.js",
+        "services/pickup-secret-access-service.js",
+        "services/pickup-secret-customer-rotation-service.js",
+        "services/pickup-secret-rotation-service.js"
+      ]
+    },
+    {
       "table": "purchase_orders",
       "writerCount": 7,
       "writers": [
@@ -146701,30 +147013,6 @@
         "services/parcel-shipment-handover.js",
         "services/relay-parcel-item-reconciliation.js",
         "utils/parcelSync.js"
-      ]
-    },
-    {
-      "table": "pickup_print_tokens",
-      "writerCount": 6,
-      "writers": [
-        "bootstrap/crons.js",
-        "routes/pickup-secret.js",
-        "services/pickup-collection-recorder.js",
-        "services/pickup-collection-service.js",
-        "services/pickup-secret-access-service.js",
-        "services/pickup-secret-rotation-service.js"
-      ]
-    },
-    {
-      "table": "pickup_reveal_codes",
-      "writerCount": 6,
-      "writers": [
-        "bootstrap/crons.js",
-        "routes/pickup-secret.js",
-        "services/pickup-collection-recorder.js",
-        "services/pickup-collection-service.js",
-        "services/pickup-secret-access-service.js",
-        "services/pickup-secret-rotation-service.js"
       ]
     },
     {
@@ -151532,6 +151820,12 @@
       "to": "services/pickup-secret-access-service.js",
       "type": "uses",
       "label": "services/pickup-secret-service.js (réexport)"
+    },
+    {
+      "from": "services/pickup-secret-customer-rotation-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
     },
     {
       "from": "services/pickup-secret-issuer.js",

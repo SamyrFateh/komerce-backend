@@ -18457,7 +18457,7 @@
               {
                 "declared": "services/pickup-secret-customer-rotation-service.js",
                 "resolvedPath": "services/pickup-secret-customer-rotation-service.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/pickup-secret-issuer.js",
