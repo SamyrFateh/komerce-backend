@@ -198,6 +198,7 @@ function setupClientForNominal(orderId = 'order-uuid-001', ref = 'KOM-001') {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockDbQuery.mockReset();
   // Par défaut : stripe_events_processed vide (event non vu)
   mockDbQuery.mockResolvedValue({ rows: [], rowCount: 0 });
 });
@@ -271,7 +272,7 @@ describe('_handleStripeSucceeded — chemin 3 : order déjà paid', () => {
 
     mockDbQuery
       .mockResolvedValueOnce({ rows: [] })                           // stripe_events_processed → vide
-      .mockResolvedValueOnce({ rows: [{ payment_status: 'paid' }] }) // SELECT payment_status
+      .mockResolvedValueOnce({ rows: [{ payment_status: 'paid', payment_mode: 'stripe_eur', stripe_payment_id: event.data.object.id }] }) // SELECT payment_status
       .mockResolvedValueOnce({ rows: [], rowCount: 0 });             // _markEventProcessed
 
     const req = makeWebhookReq(event);
@@ -298,7 +299,7 @@ describe('_handleStripeSucceeded — chemin 4 : cycleResult.noop', () => {
     mockConfirmPaymentCycle.mockResolvedValueOnce({ noop: true, success: false });
 
     const client = makeClient([
-      // Pas de query custom — noop → COMMIT direct
+      { rows: [{ payment_status: 'paid', payment_mode: 'stripe_eur', stripe_payment_id: event.data.object.id }] },
     ]);
     mockPoolConnect.mockResolvedValueOnce(client);
 
@@ -330,7 +331,7 @@ describe('_handleStripeSucceeded — chemin 5 : cycleResult rejected', () => {
 
     mockConfirmPaymentCycle.mockResolvedValueOnce({ success: false, noop: false, error: 'invalid_transition' });
 
-    const client = makeClient([]);
+    const client = makeClient([{ rowCount: 1 }, { rows: [{ id: 'alert' }] }]);
     mockPoolConnect.mockResolvedValueOnce(client);
 
     mockDbQuery

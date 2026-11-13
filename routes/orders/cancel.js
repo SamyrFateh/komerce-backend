@@ -133,7 +133,15 @@ router.post('/:id/cancel', authenticate, validate(orders.cancelOrder), async (re
     let refundType       = 'none';
     let inFreeWindow     = false;
 
-    if (isPaid) {
+    // FA-14 : une commande réglée intégralement par wallet est marquée paid
+    // avec total_kmf=0 et total_eur=0 (aucune capture externe à rembourser).
+    // La transition canonique ci-dessous restitue le wallet en transaction.
+    // Ne pas appeler computeClosingRefund, qui exige un montant PSP > 0.
+    // Un total nul SANS débit wallet demeure fail-closed (état incohérent).
+    const walletOnlyPaid = isPaid && Number(order.total_kmf) === 0 &&
+      order.total_eur != null && Number(order.total_eur) === 0 &&
+      Number(order.wallet_applied_kmf) > 0;
+    if (isPaid && !walletOnlyPaid) {
       const freeWindowHours  = await getRule('CANCEL_FREE_WINDOW_HOURS', 24);
       const partialRefundPct = await getRule('CANCEL_PARTIAL_REFUND_PCT', 80);
 

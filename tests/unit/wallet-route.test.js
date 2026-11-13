@@ -178,38 +178,19 @@ describe('routes/wallet', () => {
       expectTransactionRolledBack(client);
     });
 
-    test('applique le wallet et commit la transaction', async () => {
+    test('FA-02/15 : refuse toute application après création sans débit ni paiement', async () => {
       const client = makeClient([{ rows: [{ user_id: 'user-1', payment_status: 'pending', status: 'confirmed' }] }]);
       db.getClient.mockResolvedValueOnce(client);
-      walletService.applyToOrder.mockResolvedValueOnce({
-        applied_kmf: 3000, remaining_to_pay: 2000, transaction: { id: 'tx1' },
-      });
 
-      const res = await request(buildApp()).post('/api/wallet/apply').send({ order_id: 'o1', amount_kmf: 3000 });
+      const res = await request(buildApp()).post('/api/wallet/apply')
+        .send({ order_id: 'o1', amount_kmf: 3000 });
 
-      expect(res.status).toBe(200);
-      expect(res.body).toEqual({
-        message: '3000 KMF appliqués',
-        applied_kmf: 3000,
-        remaining_to_pay: 2000,
-        transaction: { id: 'tx1' },
-      });
-      expect(walletService.applyToOrder).toHaveBeenCalledWith(client, {
-        userId: 'user-1', orderId: 'o1', amountKmf: 3000,
-      });
-      expectTransactionCommitted(client);
-    });
-
-    test('rollback et propage l\'erreur si le service échoue', async () => {
-      const client = makeClient([{ rows: [{ user_id: 'user-1', payment_status: 'pending', status: 'confirmed' }] }]);
-      db.getClient.mockResolvedValueOnce(client);
-      walletService.applyToOrder.mockRejectedValueOnce(new Error('solde insuffisant'));
-
-      const res = await request(buildApp()).post('/api/wallet/apply').send({ order_id: 'o1' });
-
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(409);
+      expect(res.body.code).toBe('WALLET_CHECKOUT_ONLY');
+      expect(walletService.applyToOrder).not.toHaveBeenCalled();
       expectTransactionRolledBack(client);
     });
+
   });
 
   describe('POST /remove', () => {
@@ -242,20 +223,16 @@ describe('routes/wallet', () => {
       expectTransactionRolledBack(client);
     });
 
-    test('retire le wallet et commit', async () => {
+    test('FA-01 : refuse la contrepassation isolée même avant paiement', async () => {
       const client = makeClient([{ rows: [{ user_id: 'user-1', payment_status: 'pending' }] }]);
       db.getClient.mockResolvedValueOnce(client);
-      walletService.removeFromOrder.mockResolvedValueOnce({ reversed_kmf: 3000, transaction: { id: 'tx2' } });
 
       const res = await request(buildApp()).post('/api/wallet/remove').send({ order_id: 'o1' });
 
-      expect(res.status).toBe(200);
-      expect(res.body).toEqual({
-        message: '3000 KMF remboursés au wallet',
-        reversed_kmf: 3000,
-        transaction: { id: 'tx2' },
-      });
-      expectTransactionCommitted(client);
+      expect(res.status).toBe(409);
+      expect(res.body.code).toBe('WALLET_REVERSAL_REQUIRES_CANCELLATION');
+      expect(walletService.removeFromOrder).not.toHaveBeenCalled();
+      expectTransactionRolledBack(client);
     });
 
     // P5-N2 (§7) : le retrait self-service est bloqué une fois la commande payée —
@@ -436,35 +413,15 @@ describe('routes/wallet', () => {
   });
 
   describe('POST /admin/order-credit/:orderId', () => {
-    test('crée un avoir depuis commande annulée et émet un reçu (admin)', async () => {
+    test('FA-06 : interdit le writer legacy même pour un admin', async () => {
       mockUser = { id: 'admin-1', role: 'admin' };
-      const client = makeClient([]);
-      db.getClient.mockResolvedValueOnce(client);
-      walletService.createCreditFromCancel.mockResolvedValueOnce({
-        duplicate: false, transaction: { id: 'tx4' }, reversed_kmf: 4000,
-      });
 
       const res = await request(buildApp()).post('/api/wallet/admin/order-credit/o1');
 
-      expect(res.status).toBe(201);
-      expect(res.body.success).toBe(true);
-      expectTransactionCommitted(client);
-      expect(walletReceiptService.issue).toHaveBeenCalledWith('tx4', { issuedBy: 'admin-1' });
-    });
-
-    test('rollback et renvoie le résultat idempotent si l\'avoir existe déjà', async () => {
-      mockUser = { id: 'admin-1', role: 'admin' };
-      const client = makeClient([]);
-      db.getClient.mockResolvedValueOnce(client);
-      walletService.createCreditFromCancel.mockResolvedValueOnce({
-        duplicate: true, transaction: { id: 'tx4' },
-      });
-
-      const res = await request(buildApp()).post('/api/wallet/admin/order-credit/o1');
-
-      expect(res.status).toBe(200);
-      expect(res.body.message).toMatch(/idempotent/);
-      expectTransactionRolledBack(client);
+      expect(res.status).toBe(409);
+      expect(res.body.code).toBe('LEGACY_ORDER_CREDIT_DISABLED');
+      expect(db.getClient).not.toHaveBeenCalled();
+      expect(walletService.createCreditFromCancel).not.toHaveBeenCalled();
       expect(walletReceiptService.issue).not.toHaveBeenCalled();
     });
   });

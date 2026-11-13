@@ -56,6 +56,7 @@ describe('invariant payments — idempotence Stripe (couche service)', () => {
   let handleStripeSucceeded;
   beforeEach(() => {
     jest.clearAllMocks(); jest.resetModules();
+    db.query.mockReset();
     handleStripeSucceeded = require('../../services/payment-stripe').handleStripeSucceeded;
   });
 
@@ -63,7 +64,7 @@ describe('invariant payments — idempotence Stripe (couche service)', () => {
     // Chemin : intent avec order_id → SELECT orders → already paid → markProcessed → return idempotent
     const INTENT = { id: 'pi_done', metadata: { order_id: '1', order_reference: 'K-001' }, amount_received: 5000 };
     db.query
-      .mockResolvedValueOnce({ rows: [{ payment_status: 'paid' }] })  // SELECT orders
+      .mockResolvedValueOnce({ rows: [{ payment_status: 'paid', payment_mode: 'stripe_eur', stripe_payment_id: INTENT.id }] })  // SELECT orders
       .mockResolvedValueOnce({ rows: [] });                             // INSERT stripe_events_processed (already_paid path)
 
     const result = await handleStripeSucceeded(
@@ -102,6 +103,7 @@ describe('invariant payments — idempotence PayPal (couche service)', () => {
 
   beforeEach(() => {
     jest.clearAllMocks(); jest.resetModules();
+    db.query.mockReset();
     mockPaypal.verifyWebhookSignature.mockResolvedValue(true);
     handlePaypalWebhookEvent = require('../../services/payment-paypal').handlePaypalWebhookEvent;
   });
