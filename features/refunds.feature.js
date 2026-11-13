@@ -64,6 +64,7 @@ module.exports = {
       'services/item-refund-reservation-service.js',
       'services/item-refund-psp-orchestrator.js',
       'services/refund-intent-ledger.js',
+      'services/paypal-refund-authority.js',
       'services/sav-ledger-refund.js',
       'services/refund-evidence-verifier.js',
       'services/refund-intent-reconciliation.js',
@@ -83,6 +84,7 @@ module.exports = {
       'tests/unit/item-refund-psp-orchestrator.test.js',
       'tests/e2e-api/refunds.item-partial-physical.e2e.test.js',
       'tests/unit/refund-intent-ledger.test.js',
+      'tests/unit/paypal-refund-authority.test.js',
       'tests/unit/sav-ledger-refund.test.js',
       'tests/unit/refund-evidence-verifier.test.js',
       'tests/unit/refund-intent-reconciliation.test.js',
@@ -151,6 +153,8 @@ module.exports = {
   // ── Invariants propres ───────────────────────────────────────────────────
   invariants: [
     { statement: 'RC-9 deux connexions PostgreSQL reelles serialisent reserve et claim sans double intention ni double execution', test: 'tests/e2e-api/refunds.intents-physical-concurrency.e2e.test.js' },
+    { statement: 'FA-05/21 F3 : PayPal admin reserve et claim une intention durable avant POST, rejeu/timeout inconnus sont sans nouveau POST, settlement partiel confirme sans clore la commande, activation sandbox explicite',
+      test: 'tests/unit/paypal-refund-authority.test.js' },
     { statement: 'RC-9 : reference externe unique par fournisseur et intention, prouvee en PostgreSQL',
       test: 'tests/e2e-api/refunds.intent-provider-reference-unique.e2e.test.js' },
     { statement: 'RC-5/RC-9 : le rapprochement PSP relit la preuve hors transaction, verrouille ensuite commande puis intention, interdit changement de marché/capture/montant, ne marque confirmed que si preuve complète et ne modifie ni refunds ni orders',
