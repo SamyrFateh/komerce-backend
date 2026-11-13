@@ -197,6 +197,41 @@ function appendEssentialOrderResources(container, order, resources) {
   container.querySelector('.k-order-card')?.appendChild(section);
 }
 
+// #3900 R1 : le propriétaire d'une commande prête au retrait génère un nouveau
+// code (rotation serveur, ancien code invalidé, affiché une seule fois).
+function appendPickupCodeAction(container, order) {
+  if (order.status !== 'available' || !order.id) return;
+  const section = document.createElement('section');
+  section.className = 'k-order-essentials k-order-pickup-code';
+  const title = document.createElement('h3');
+  title.textContent = 'Code de retrait';
+  const hint = document.createElement('p');
+  hint.textContent = 'Code perdu ? Générez-en un nouveau : l\u2019ancien ne fonctionnera plus.';
+  const out = document.createElement('div');
+  out.className = 'k-pickup-code-output';
+  out.setAttribute('aria-live', 'polite');
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'k-order-pickup-code-generate';
+  button.textContent = 'Générer un nouveau code';
+  button.addEventListener('click', async () => {
+    if (button.disabled) return;
+    button.disabled = true;
+    try {
+      const res = await apiPost('/api/pickup/customer-regenerate/' + encodeURIComponent(order.id), {});
+      out.textContent = 'Votre code : ' + res.code + ' — notez-le maintenant, il ne sera plus affiché.';
+    } catch (err) {
+      out.textContent = err?.status === 429
+        ? 'Limite atteinte (5 codes par 24 h).'
+        : 'Impossible de générer un code pour le moment.';
+    } finally {
+      button.disabled = false;
+    }
+  });
+  section.append(title, hint, button, out);
+  container.querySelector('.k-order-card')?.appendChild(section);
+}
+
 export function renderOrderDetail(order, container, { privateResources = null } = {}) {
   container.innerHTML = `
     <div class="k-order-card">
@@ -208,6 +243,7 @@ export function renderOrderDetail(order, container, { privateResources = null } 
       <div class="k-track-steps">${buildTimeline(order.status || 'pending')}</div>
     </div>`;
   appendEssentialOrderResources(container, order, privateResources);
+  appendPickupCodeAction(container, order);
 }
 
 export function renderMyOrdersList(el, orders) {

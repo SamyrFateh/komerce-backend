@@ -792,3 +792,23 @@ describe('renderListsTab — bibliothèque de listes (GAP-01/02)', () => {
     expect(switchOrder).toBeLessThan(activateOrder);
   });
 });
+
+describe('renderOrderDetail — code de retrait (#3900 R1)', () => {
+  it('propose de générer un nouveau code sur une commande disponible et l\'affiche', async () => {
+    apiPost.mockResolvedValueOnce({ code: 'ABC23DEF' });
+    const container = document.createElement('div');
+    renderOrderDetail({ id: 'o-1', reference: 'K9ZZZZ', total_amount: 5000, status: 'available' }, container);
+    const btn = container.querySelector('.k-order-pickup-code-generate');
+    expect(btn).not.toBeNull();
+    btn.click();
+    await Promise.resolve(); await Promise.resolve();
+    expect(apiPost).toHaveBeenCalledWith('/api/pickup/customer-regenerate/o-1', {});
+    expect(container.querySelector('.k-pickup-code-output').textContent).toContain('ABC23DEF');
+  });
+
+  it('ne propose rien si la commande n\'est pas prête au retrait', () => {
+    const container = document.createElement('div');
+    renderOrderDetail({ id: 'o-1', reference: 'K9ZZZZ', total_amount: 5000, status: 'collected' }, container);
+    expect(container.querySelector('.k-order-pickup-code-generate')).toBeNull();
+  });
+});

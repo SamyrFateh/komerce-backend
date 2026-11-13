@@ -954,3 +954,7 @@ Migrations 391–394 appliquées sur Railway staging le 2026-11-04 à 13:09 UTC 
 
 `relay_return_compensations` is a new append-only table proposed by migration 406. It records one admin-motivated after-handover compensation decision per product-return dispute. Wallet credits commit with the decision. Migration 409 links a PSP decision to its durable `refund_intent_id` and `refund_amount_kmf`; settlement is read from the refund ledger. Migration 410 links a no-charge replacement via `replacement_order_id` and records `order_items.replacement_source_item_id` for the exact original item. The `sav_replacement` payment mode has no client capture.
 <!-- /schema-pending -->
+
+### pickup_code_generations (migration 412)
+
+Audit append-only des codes de retrait regénérés par le client propriétaire (`POST /api/pickup/customer-regenerate/:orderId`). Sert aussi de quota (5 par commande et par 24 h). Colonnes : `order_id`, `user_id`, `created_at`. Aucun code ni hash stocké.
