@@ -13,11 +13,11 @@
 | NON_RUNTIME_TEST | 17 |
 | TECHNICAL_PRIMITIVE | 0 |
 | BUSINESS_TRANSVERSAL_SERVICE | 0 |
-| CROSS_FEATURE_DIRECT_IMPORT | 0 |
+| CROSS_FEATURE_DIRECT_IMPORT | 1 |
 | BUSINESS_FEATURE_INTERFACE | 0 |
 | PILOTING_CAPABILITY | 0 |
 | UNCLASSIFIED | 0 |
-| **TOTAL** | **37** |
+| **TOTAL** | **38** |
 
 ## The 94 pairs (from → to)
 
@@ -59,6 +59,7 @@
 | purchasing → decision-signals | NON_RUNTIME_TEST | TEST_ONLY | business-feature | piloting-capability | static-code | business-file-import | non-runtime-evidence | — | `` |
 | refunds → auth | NON_RUNTIME_TEST | TEST_ONLY | business-transversal | technical-transversal | static-code | technical-primitive | non-runtime-evidence | — | `` |
 | supplier-connectivity → purchasing | NON_RUNTIME_TEST | TEST_ONLY | integration-adapter | business-feature | static-code | business-file-import | non-runtime-evidence | — | `` |
+| wallet → market | CROSS_FEATURE_DIRECT_IMPORT | RUNTIME_ONLY | business-feature | business-feature | static-code | business-file-import | boundary-remediation-required | direct-import | `` |
 | wallet → notifications | NON_RUNTIME_TEST | TEST_ONLY | business-feature | business-transversal | static-code | technical-primitive | non-runtime-evidence | — | `` |
 
 ## Exceptions ledger (measured, not fixed)
