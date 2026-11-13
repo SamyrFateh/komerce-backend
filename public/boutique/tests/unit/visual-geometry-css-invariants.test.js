@@ -356,6 +356,9 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
       const polish = readCss('side-cart-desktop-polish.css');
 
       expect(shell).toMatch(/grid-template-columns\s*:\s*minmax\(0,\s*1fr\)\s+296px/);
+      const density = readCss('modal-desktop-density.css');
+      expect(density).toMatch(/grid-template-columns\s*:\s*minmax\(0,\s*1fr\)\s+clamp\(320px,\s*22vw,\s*390px\)/);
+      expect(density).toMatch(/grid-template-columns\s*:\s*minmax\(0,\s*1\.326fr\)\s+minmax\(0,\s*1fr\)/);
       expect(desktop).toMatch(/\.k-sc-empty\s*\{[^}]*min-height:\s*220px[^}]*justify-content:\s*center/s);
       expect(polish).toMatch(/\.k-side-cart--in-modal \.k-sc-item-name\s*\{[^}]*-webkit-line-clamp:\s*1/s);
     });

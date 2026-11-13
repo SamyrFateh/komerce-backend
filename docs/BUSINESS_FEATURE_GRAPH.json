@@ -16471,7 +16471,7 @@
         "category": "services",
         "declared": "services/order-checkout-idempotency.js",
         "resolvedPath": "services/order-checkout-idempotency.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "orders",
@@ -16562,14 +16562,14 @@
         "category": "services",
         "declared": "services/relay-return-compensation-service.js",
         "resolvedPath": "services/relay-return-compensation-service.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "orders",
         "category": "services",
         "declared": "services/sav-replacement-order.js",
         "resolvedPath": "services/sav-replacement-order.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "orders",
@@ -19523,7 +19523,7 @@
         "category": "services",
         "declared": "services/sav-ledger-refund.js",
         "resolvedPath": "services/sav-ledger-refund.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "refunds",
@@ -30463,6 +30463,12 @@
         "from": "unsold-resolution",
         "to": "infrastructure",
         "raw": "infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)",
+        "resolved": true
+      },
+      {
+        "from": "wallet",
+        "to": "market",
+        "raw": "market (2026-11-13 #3927 — conversion KMF↔devise du marché via la seule autorité fx-authority/currency_parities ; preuve: services/wallet-service.js -> services/fx-authority.js)",
         "resolved": true
       },
       {
@@ -49220,6 +49226,22 @@
       },
       {
         "from": "wallet",
+        "to": "market",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/wallet-service.js",
+                "targetFile": "services/fx-authority.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "wallet",
         "to": "notifications",
         "channels": [
           {
@@ -53480,8 +53502,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 698,
-        "technicalNodesOwned": 698,
+        "technicalNodesTotal": 702,
+        "technicalNodesOwned": 702,
         "technicalOrphans": 0
       },
       "dash": {

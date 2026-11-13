@@ -53,15 +53,15 @@
   },
   "summary": {
     "features": 40,
-    "healthy": 34,
+    "healthy": 33,
     "attention": 6,
-    "blocked": 0,
+    "blocked": 1,
     "businessDependencies": 325,
-    "directCrossFeatureImports": 0,
+    "directCrossFeatureImports": 1,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
     "ontologyGaps": 0,
-    "debtItemsTotal": 10,
+    "debtItemsTotal": 11,
     "gateHealthy": 37,
     "gateBlocked": 2
   },
@@ -24939,7 +24939,7 @@
               {
                 "declared": "services/order-checkout-idempotency.js",
                 "resolvedPath": "services/order-checkout-idempotency.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/order-checkout-item-resolution.js",
@@ -25039,7 +25039,7 @@
               {
                 "declared": "services/relay-return-compensation-service.js",
                 "resolvedPath": "services/relay-return-compensation-service.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/relay-return-request-service.js",
@@ -25049,7 +25049,7 @@
               {
                 "declared": "services/sav-replacement-order.js",
                 "resolvedPath": "services/sav-replacement-order.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/verify-qr-collection.js",
@@ -31241,7 +31241,7 @@
               {
                 "declared": "services/sav-ledger-refund.js",
                 "resolvedPath": "services/sav-ledger-refund.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               }
             ]
           },
@@ -35092,8 +35092,8 @@
         ]
       },
       "boundaryHealth": {
-        "status": "HEALTHY",
-        "directCrossFeatureImports": 0,
+        "status": "BLOCKED",
+        "directCrossFeatureImports": 1,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
         "declaredNotObserved": 0,
@@ -35117,8 +35117,14 @@
         "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 0,
-        "debtItems": []
+        "debtCount": 1,
+        "debtItems": [
+          {
+            "type": "DIRECT_CROSS_FEATURE_IMPORT",
+            "severity": "high",
+            "evidence": "1 paire(s) classées CROSS_FEATURE_DIRECT_IMPORT"
+          }
+        ]
       },
       "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",

@@ -262,3 +262,114 @@ test.describe('Chantier finition mobile V3 — P2 réassurance', () => {
     });
   }
 });
+
+
+// Le test porte sur la modale, pas sur la navigation de recherche (écran
+// Discovery). Le bus applicatif est le point d'entrée public réel du PDP.
+async function openPdpGeometryFixture(page, viewport, entryKey) {
+  await page.setViewportSize({ width: viewport.width, height: viewport.height });
+  await stubFixtureCatalogue(page);
+  const entry = catalogue.cases.find((c) => c.key === entryKey);
+  await page.goto('/boutique/index.html', { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction((id) =>
+    Boolean(window._kbus?.emit && window._kstate?.products?.some(
+      product => String(product.id) === String(id)
+    )), entry.detail.product.id, { timeout: 8_000 });
+  await page.evaluate((id) =>
+    window._kbus.emit('modal:open', { id, kind: 'product', pushHistory: false }),
+    entry.detail.product.id
+  );
+  await expect(page.locator('#k-modal-overlay')).toHaveClass(/open/, { timeout: 6_000 });
+  await expect(page.locator('#k-modal-name')).toHaveText(entry.detail.product.name);
+  return entry;
+}
+
+test.describe('PDP mobile retouches 2026-11 — Chromium geometry', () => {
+  for (const viewport of VIEWPORTS) {
+    test(`@ ${viewport.key} : le compteur suit la photo portrait réelle, sans sortir du média`, async ({ page }) => {
+      await openPdpGeometryFixture(page, viewport, 'garment');
+      const counter = page.locator('#k-modal .k-modal-img-wrap .k-modal-counter');
+      await expect(counter).toBeVisible({ timeout: 5_000 });
+
+      // Une photo portrait au sein d'un hero 4:3 reproduit le cas Samsung :
+      // object-fit:contain laisse des marges de part et d'autre de la photo.
+      await page.evaluate(() => {
+        const portrait = '<svg xmlns="http://www.w3.org/2000/svg" width="500" height="900">'
+          + '<rect width="500" height="900" fill="#eee"/></svg>';
+        const first = document.querySelector('#k-modal .k-modal-carousel-track .k-modal-slide');
+        first.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(portrait);
+      });
+
+      await expect.poll(() => counter.evaluate(el =>
+        parseFloat(el.style.getPropertyValue('--k-counter-right')) || 0
+      )).toBeGreaterThan(65);
+
+      const metrics = await counter.evaluate((el) => {
+        const wrap = el.closest('.k-modal-img-wrap').getBoundingClientRect();
+        const image = el.closest('.k-modal-img-wrap').querySelector('.k-modal-slide');
+        const rect = el.getBoundingClientRect();
+        const fit = Math.min(wrap.width / image.naturalWidth, wrap.height / image.naturalHeight);
+        const imageWidth = image.naturalWidth * fit;
+        const imageHeight = image.naturalHeight * fit;
+        const imageLeft = wrap.left + (wrap.width - imageWidth) / 2;
+        const imageRight = imageLeft + imageWidth;
+        const imageBottom = wrap.top + (wrap.height + imageHeight) / 2;
+        return {
+          leftGap: rect.left - imageLeft,
+          rightGap: imageRight - rect.right,
+          bottomGap: imageBottom - rect.bottom,
+          pseudo: getComputedStyle(el, '::before').content,
+        };
+      });
+      expect(metrics.leftGap).toBeGreaterThanOrEqual(5);
+      expect(metrics.rightGap).toBeGreaterThanOrEqual(7);
+      expect(metrics.bottomGap).toBeGreaterThanOrEqual(7);
+      expect(metrics.rightGap).toBeLessThanOrEqual(16);
+      expect(metrics.pseudo).toContain('Photo');
+      if (viewport.key === '390x844') await shot(page, 'mobile-pdp-photo-counter-390.png');
+    });
+
+    test(`@ ${viewport.key} : coeur, réassurance et noms couleurs gardent des alignements propres`, async ({ page }) => {
+      await openPdpGeometryFixture(page, viewport, 'stress');
+      const trust = page.locator('#k-modal .k-modal-trust');
+      const firstItem = trust.locator('.k-modal-trust-item').first();
+      await expect(firstItem).toBeVisible();
+      const name = page.locator('#k-modal .k-modal-name-row');
+      const favorite = page.locator('#k-modal-fav-btn');
+      await expect(favorite).toBeVisible();
+      const swatchLabel = page.locator('#k-modal .k-sku--color .k-sku-name').first();
+      await expect(swatchLabel).toBeVisible();
+      const metrics = await page.evaluate(() => {
+        const title = document.querySelector('#k-modal .k-modal-name-row').getBoundingClientRect();
+        const fav = document.querySelector('#k-modal-fav-btn').getBoundingClientRect();
+        const trustEl = document.querySelector('#k-modal .k-modal-trust');
+        const trust = trustEl.getBoundingClientRect();
+        const item = document.querySelector('#k-modal .k-modal-trust-item').getBoundingClientRect();
+        const info = document.querySelector('#k-modal .k-modal-info').getBoundingClientRect();
+        const swatchName = document.querySelector('#k-modal .k-sku--color .k-sku-name');
+        const swatchStyle = getComputedStyle(swatchName);
+        return {
+          favTopDifference: Math.abs(fav.top - title.top),
+          favWidth: fav.width,
+          trustLeftDifference: Math.abs(trust.left - title.left),
+          itemLeftDifference: Math.abs(item.left - title.left),
+          trustNarrowerThanInfo: trust.width < info.width - 12,
+          trustOverflow: trustEl.scrollWidth - trustEl.clientWidth,
+          labelWhiteSpace: swatchStyle.whiteSpace,
+          labelLineClamp: swatchStyle.webkitLineClamp,
+          labelFontSize: parseFloat(swatchStyle.fontSize),
+        };
+      });
+      expect(metrics.favTopDifference).toBeLessThanOrEqual(3);
+      expect(metrics.favWidth).toBeGreaterThanOrEqual(40);
+      expect(metrics.trustLeftDifference).toBeLessThanOrEqual(3);
+      expect(metrics.itemLeftDifference).toBeLessThanOrEqual(3);
+      expect(metrics.trustNarrowerThanInfo).toBe(true);
+      expect(metrics.trustOverflow).toBeLessThanOrEqual(1);
+      expect(metrics.labelWhiteSpace).toBe('normal');
+      expect(metrics.labelLineClamp).toBe('2');
+      expect(metrics.labelFontSize).toBeGreaterThanOrEqual(10);
+      if (viewport.key === '390x844') await shot(page, 'mobile-pdp-identity-trust-colors-390.png');
+    });
+  }
+});
