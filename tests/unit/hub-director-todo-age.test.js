@@ -72,6 +72,8 @@ describe('vue directrice — tous marchés', () => {
     expect(out.scope).toBe('ALL_MARKETS');
     expect(out.overdue_after_hours).toBe(48);
     expect(out.tasks.filter((t) => t.kind === 'RECONCILE_PARCEL')).toHaveLength(1);
+    // Une tâche opérationnelle de même identifiant local dans CM et KM doit apparaître deux fois.
+    expect(out.tasks.filter((t) => t.kind === 'SOURCING_REQUIRED')).toHaveLength(2);
     expect(out.tasks[0].overdue).toBe(true);
     expect(out.tasks[0].market.code).toBe('CM');
     expect(out.overdue_count).toBeGreaterThanOrEqual(1);
