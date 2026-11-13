@@ -49,6 +49,10 @@ const ids = require('./catalog-publication-ids.json').products;
               count(*) FILTER (WHERE is_active AND stock>0 AND supplier_order_identity->>'version' !~ '^[1-9][0-9]*$')::int AS bad_version
          FROM product_skus WHERE product_id=$1::uuid`, [id]);
     r.sku_checks = ss.rows[0];
+    const one = await db.query(`SELECT supplier_sku, supplier_unit_ref FROM product_skus WHERE product_id=$1::uuid AND is_active ORDER BY created_at, id LIMIT 3`, [id]);
+    r.sample_supplier_skus = one.rows;
+    const ps = await db.query(`SELECT count(*)::int AS n FROM product_suppliers WHERE product_id=$1::uuid AND deleted_at IS NULL`, [id]);
+    r.product_suppliers = ps.rows[0].n;
     out.push({ id: id.slice(0, 8), ...r });
   }
   console.log('DIAG_BEGIN'); console.log(JSON.stringify(out)); console.log('DIAG_END');
