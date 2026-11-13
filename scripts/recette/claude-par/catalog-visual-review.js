@@ -24,7 +24,7 @@ const targets = require('./catalog-targets.json');
       if (!v || v.verdict !== 'APPROVED') { refused += 1; continue; }
       const review = {
         execution_mode: 'AUTOMATED_STAGING', run_id: runId,
-        source_media_id: m.source_media_id, source_url: m.url, option_values: m.option_values ?? null,
+        source_media_id: m.source_media_id, source_url: m.url, option_values: m.option_values ?? {},
         text_presence: v.text_presence, source_transcription: v.source_transcription ?? null,
         french_translation: v.french_translation ?? null, french_presentation: v.french_presentation ?? null,
       };
