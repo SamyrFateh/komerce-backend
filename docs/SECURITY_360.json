@@ -2,8 +2,8 @@
   "generatedAt": "2026-11-13T09:37:15.565Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 837,
-    "protected": 778,
+    "total": 838,
+    "protected": 779,
     "public": 59,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -2484,6 +2484,11 @@
     },
     {
       "key": "GET /api/admin/workspaces/pricing/market/{marketCode}/corridor",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/admin/workspaces/pricing/market/{marketCode}/economic-p0-audit",
       "level": "PROTECTED",
       "roles": []
     },

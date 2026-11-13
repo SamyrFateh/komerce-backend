@@ -584,3 +584,65 @@ test('preview plancher marché : lecture seule, achat et scope résolus côté s
   expect(res.status).toBe(403);
   expect(res.body.code).toBe('MARKET_CAPABILITY_REQUIRED');
 });
+
+
+describe('#3994 ME-04/ME-13 — audit économique marché authentifié, lecture seule', () => {
+  test('viewer CM obtient les composants et alertes CM via market_id serveur seulement', async () => {
+    mockScopeRole = 'viewer';
+    db.query.mockImplementation(async (sql, params) => {
+      if (String(sql).includes('FROM markets')) {
+        return { rows: [{ id: 'market-cm', code: 'CM', currency: 'XAF' }] };
+      }
+      if (String(sql).includes('FROM cost_components cc')) {
+        return { rows: [
+          { id: 'cc-freight', key: 'fret_global', category: 'freight',
+            family: 'landed_relay', unit: 'eur', allocation_method: 'by_volume',
+            base_default_value: '250', base_is_active: true, is_exceptional: false,
+            source: 'default', confidence: 'low', override_id: null },
+          { id: 'cc-relay', key: 'commission_relais_kmf', category: 'relay',
+            family: 'landed_relay', unit: 'kmf_per_order', allocation_method: 'per_order',
+            base_default_value: '500', base_is_active: true, is_exceptional: false,
+            source: 'default', confidence: 'medium', override_id: null },
+        ] };
+      }
+      return { rows: [{ role: mockRole }] };
+    });
+
+    const res = await request(app()).get('/api/admin/workspaces/pricing/market/CM/economic-p0-audit');
+    expect(res.status).toBe(200);
+    expect(res.headers['cache-control']).toBe('private, no-store');
+    expect(res.body).toMatchObject({
+      read_only: true, no_price_activation: true, certified: false,
+      status: 'NON_DECISIONNEL', market_code: 'CM', market_currency: 'XAF',
+      summary: { active_components: 2, unresolved_issues: 2 },
+    });
+    expect(res.body.issues.map(i => i.code).sort()).toEqual([
+      'INHERITED_CORRIDOR_UNVERIFIED', 'RELAY_FORECAST_REAL_UNIT_MISMATCH',
+    ]);
+    const query = db.query.mock.calls.find(([sql]) => String(sql).includes('FROM cost_components cc'));
+    expect(query[1]).toEqual(['market-cm']);
+    expect(query[0]).toContain('cc.provenance AS base_provenance');
+    expect(db.query.mock.calls.some(([sql]) => /\b(?:UPDATE|INSERT|DELETE)\b/i.test(sql))).toBe(false);
+  });
+
+  test('revocation pricing.read et isolation CG refusent avant toute lecture de composants', async () => {
+    mockPricingReadGranted = false;
+    let res = await request(app()).get('/api/admin/workspaces/pricing/market/CM/economic-p0-audit');
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe('MARKET_CAPABILITY_REQUIRED');
+    expect(db.query.mock.calls.some(([sql]) => String(sql).includes('FROM cost_components cc'))).toBe(false);
+    mockPricingReadGranted = true;
+    jest.clearAllMocks();
+    res = await request(app()).get('/api/admin/workspaces/pricing/market/CG/economic-p0-audit');
+    expect(res.status).toBe(403);
+    expect(db.query.mock.calls.some(([sql]) => String(sql).includes('FROM cost_components cc'))).toBe(false);
+  });
+
+  test('market_id imposé via query ne remplace jamais le marché autorisé', async () => {
+    const res = await request(app())
+      .get('/api/admin/workspaces/pricing/market/CM/economic-p0-audit?market_id=market-cg');
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('pricing_internal_authority_forbidden');
+    expect(db.query).not.toHaveBeenCalled();
+  });
+});
