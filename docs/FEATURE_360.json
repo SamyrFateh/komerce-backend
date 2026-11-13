@@ -26533,6 +26533,10 @@
           "test": "tests/unit/payment-mobile-money.test.js"
         },
         {
+          "statement": "FA-12 : un encaissement Stripe hors cycle laisse une alerte et un événement atomiques, même si la confirmation est rejetée ou que la commande est déjà payée.",
+          "test": "tests/unit/payment-stripe.test.js"
+        },
+        {
           "statement": "RC-9 : getRefund lit PayPal par GET sans exécuter un refund, rejette tout ID douteux et fournit seulement une preuve à confronter au ledger.",
           "test": "tests/unit/paypal-client.test.js"
         },
