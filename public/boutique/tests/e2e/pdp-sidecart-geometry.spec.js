@@ -54,15 +54,23 @@ async function openWithFourCartLines(page) {
     body: JSON.stringify(detail),
   }));
   await page.goto(BASE, { waitUntil: 'domcontentloaded' });
-  await page.waitForFunction(() => window._kbus && window._kstate, null, { timeout: 12000 });
-  await page.evaluate(product => {
+  // Ne pas dépendre des globals debug, absents volontairement en staging.
+  // Playwright importe les modules canoniques dans l'origine de la page :
+  // aucun instrument de debug n'est ajouté au runtime public.
+  await page.waitForSelector('#k-modal-overlay', { state: 'attached', timeout: 12000 });
+  await page.evaluate(async product => {
+    const [{ state }, { bus }] = await Promise.all([
+      import('/boutique/js/b-store.js'),
+      import('/boutique/js/b-bus.js'),
+    ]);
+    if (!state || !bus) throw new Error('Modules Boutique non disponibles');
     const items = [
       { variant: 'Red / 3XL', qty: 2 },
       { variant: 'Red / XL', qty: 1 },
       { variant: 'Black / L', qty: 1 },
       { variant: 'Black / 4XL', qty: 1 },
     ];
-    window._kstate.cart = items.map((item, i) => ({
+    state.cart = items.map((item, i) => ({
       product: {
         id: 'pdp-proof-' + i,
         name: 'Chemise femme à imprimé multicolore',
@@ -72,9 +80,9 @@ async function openWithFourCartLines(page) {
       qty: item.qty,
       variant_label: item.variant,
     }));
-    window._kbus.emit('side-cart:render');
-    window._kstate.products.push(product);
-    window._kbus.emit('modal:open', { id: product.id });
+    bus.emit('side-cart:render');
+    if (!state.products.some(p => String(p.id) === String(product.id))) state.products.push(product);
+    bus.emit('modal:open', { id: product.id });
   }, product);
   await expect(page.locator('#k-modal')).toBeVisible({ timeout: 12000 });
   await expect(page.locator('#k-modal .k-modal-cart-slot #k-side-cart')).toBeVisible({ timeout: 12000 });
