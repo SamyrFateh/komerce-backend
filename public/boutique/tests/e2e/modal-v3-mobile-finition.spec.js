@@ -264,10 +264,30 @@ test.describe('Chantier finition mobile V3 — P2 réassurance', () => {
 });
 
 
+// Le test porte sur la modale, pas sur la navigation de recherche (écran
+// Discovery). Le bus applicatif est le point d'entrée public réel du PDP.
+async function openPdpGeometryFixture(page, viewport, entryKey) {
+  await page.setViewportSize({ width: viewport.width, height: viewport.height });
+  await stubFixtureCatalogue(page);
+  const entry = catalogue.cases.find((c) => c.key === entryKey);
+  await page.goto('/boutique/index.html', { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction((id) =>
+    Boolean(window._kbus?.emit && window._kstate?.products?.some(
+      product => String(product.id) === String(id)
+    )), entry.detail.product.id, { timeout: 8_000 });
+  await page.evaluate((id) =>
+    window._kbus.emit('modal:open', { id, kind: 'product', pushHistory: false }),
+    entry.detail.product.id
+  );
+  await expect(page.locator('#k-modal-overlay')).toHaveClass(/open/, { timeout: 6_000 });
+  await expect(page.locator('#k-modal-name')).toHaveText(entry.detail.product.name);
+  return entry;
+}
+
 test.describe('PDP mobile retouches 2026-11 — Chromium geometry', () => {
   for (const viewport of VIEWPORTS) {
     test(`@ ${viewport.key} : le compteur suit la photo portrait réelle, sans sortir du média`, async ({ page }) => {
-      await openAt(page, viewport, 'garment');
+      await openPdpGeometryFixture(page, viewport, 'garment');
       const counter = page.locator('#k-modal .k-modal-img-wrap .k-modal-counter');
       await expect(counter).toBeVisible({ timeout: 5_000 });
 
@@ -310,7 +330,7 @@ test.describe('PDP mobile retouches 2026-11 — Chromium geometry', () => {
     });
 
     test(`@ ${viewport.key} : coeur, réassurance et noms couleurs gardent des alignements propres`, async ({ page }) => {
-      await openAt(page, viewport, 'stress');
+      await openPdpGeometryFixture(page, viewport, 'stress');
       const trust = page.locator('#k-modal .k-modal-trust');
       const firstItem = trust.locator('.k-modal-trust-item').first();
       await expect(firstItem).toBeVisible();
