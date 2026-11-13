@@ -1,0 +1,27 @@
+name: Claude PAR — images libres Wikimedia (CC0) pour les produits manuels
+
+# Aucune donnée staging : recherche Commons + téléchargement d'apercus en artefact.
+on:
+  push:
+    branches: [cert/claude-par-catalog]
+    paths:
+      - '.github/workflows/claude-par-catalog-wikimedia-fetch.yml'
+      - 'scripts/recette/claude-par/catalog-wikimedia-fetch.js'
+
+permissions:
+  contents: read
+
+jobs:
+  fetch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node scripts/recette/claude-par/catalog-wikimedia-fetch.js
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wikimedia-cc0-${{ github.run_id }}
+          path: out/
