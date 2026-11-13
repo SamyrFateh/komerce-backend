@@ -1,175 +1,191 @@
 {
- "marker": "CLAUDE-PAR-20261113",
- "inspector": "Claude (inspection visuelle reelle de chaque image telechargee, 13/11/2026)",
- "policy": "approuve = aucune surimpression de texte, logo, filigrane ni image trompeuse ; tout le reste est rejete et n'est PAS enregistre",
- "products": {
-  "a16c7ade-d317-445d-9489-6cf233612a47": {
-   "media": {
-    "1549325115853385728:hero": {
-     "verdict": "APPROVED",
-     "text_presence": "NONE"
+  "marker": "CLAUDE-PAR-20261113",
+  "inspector": "Claude (inspection visuelle reelle de chaque image telechargee, 13/11/2026)",
+  "policy": "approuve = aucune surimpression de texte, logo, filigrane ni image trompeuse ; tout le reste est rejete et n'est PAS enregistre",
+  "products": {
+    "a16c7ade-d317-445d-9489-6cf233612a47": {
+      "media": {
+        "1549325115853385728:hero": {
+          "verdict": "APPROVED",
+          "text_presence": "NONE"
+        },
+        "1549325115853385728:media:2": {
+          "verdict": "APPROVED",
+          "text_presence": "NONE"
+        },
+        "1549325115853385728:media:3": {
+          "verdict": "APPROVED",
+          "text_presence": "NONE"
+        },
+        "1549325115853385728:media:4": {
+          "verdict": "APPROVED",
+          "text_presence": "NONE"
+        },
+        "1549325115853385728:media:5": {
+          "verdict": "APPROVED",
+          "text_presence": "NONE"
+        },
+        "1549325115853385728:media:6": {
+          "verdict": "APPROVED",
+          "text_presence": "NONE"
+        }
+      }
     },
-    "1549325115853385728:media:2": {
-     "verdict": "APPROVED",
-     "text_presence": "NONE"
+    "91c94beb-f706-40be-ac05-5d13d6d716dd": {
+      "media": {
+        "1650760857292386304:hero": {
+          "verdict": "APPROVED",
+          "text_presence": "NONE"
+        },
+        "1650760857292386304:media:10": {
+          "verdict": "APPROVED",
+          "text_presence": "NONE"
+        },
+        "1650760857292386304:media:11": {
+          "verdict": "APPROVED",
+          "text_presence": "NONE"
+        },
+        "1650760857292386304:media:12": {
+          "verdict": "APPROVED",
+          "text_presence": "NONE"
+        },
+        "1650760857292386304:media:13": {
+          "verdict": "APPROVED",
+          "text_presence": "NONE"
+        },
+        "1650760857292386304:media:2": {
+          "verdict": "APPROVED",
+          "text_presence": "NONE"
+        },
+        "1650760857292386304:media:3": {
+          "verdict": "APPROVED",
+          "text_presence": "NONE"
+        },
+        "1650760857292386304:media:4": {
+          "verdict": "APPROVED",
+          "text_presence": "NONE"
+        },
+        "1650760857292386304:media:5": {
+          "verdict": "APPROVED",
+          "text_presence": "NONE"
+        },
+        "1650760857292386304:media:6": {
+          "verdict": "APPROVED",
+          "text_presence": "NONE"
+        },
+        "1650760857292386304:media:7": {
+          "verdict": "APPROVED",
+          "text_presence": "NONE"
+        },
+        "1650760857292386304:media:8": {
+          "verdict": "APPROVED",
+          "text_presence": "NONE"
+        },
+        "1650760857292386304:media:9": {
+          "verdict": "APPROVED",
+          "text_presence": "NONE"
+        }
+      }
     },
-    "1549325115853385728:media:3": {
-     "verdict": "APPROVED",
-     "text_presence": "NONE"
+    "21bc5285-7b1a-47c5-a914-7656790816c5": {
+      "media": {
+        "1005011617878718:media:1": {
+          "verdict": "APPROVED",
+          "text_presence": "NONE"
+        },
+        "1005011617878718:media:2": {
+          "verdict": "APPROVED",
+          "text_presence": "NONE"
+        },
+        "1005011617878718:media:3": {
+          "verdict": "APPROVED",
+          "text_presence": "NONE"
+        },
+        "1005011617878718:media:4": {
+          "verdict": "APPROVED",
+          "text_presence": "NONE"
+        },
+        "1005011617878718:media:5": {
+          "verdict": "APPROVED",
+          "text_presence": "NONE"
+        },
+        "1005011617878718:media:6": {
+          "verdict": "APPROVED",
+          "text_presence": "NONE"
+        },
+        "1005011617878718:media:7": {
+          "verdict": "APPROVED",
+          "text_presence": "NONE"
+        },
+        "1005011617878718:media:8": {
+          "verdict": "APPROVED",
+          "text_presence": "PRESENT",
+          "source_transcription": "HIGH QU... / SIMPLICITY / COMFOR... / MAKE FASHI...",
+          "french_translation": "Etiquette volante visible sur la photo, texte partiellement masque : « HIGH QU... » (haute qualite), « SIMPLICITY » (simplicite), « COMFOR... » (confort), « MAKE FASHI... » (faire la mode). Slogans generiques, sans marque.",
+          "french_presentation": {
+            "kind": "caption",
+            "text": "Etiquette volante visible sur la photo, texte partiellement masque : « HIGH QU... » (haute qualite), « SIMPLICITY » (simplicite), « COMFOR... » (confort), « MAKE FASHI... » (faire la mode). Slogans generiques, sans marque.",
+            "reviewed": true
+          }
+        },
+        "1005011617878718:media:9": {
+          "verdict": "APPROVED",
+          "text_presence": "PRESENT",
+          "source_transcription": "HIGH QU... / SIMPLICITY / COMFOR... / MAKE FASHI...",
+          "french_translation": "Etiquette volante visible sur la photo, texte partiellement masque : « HIGH QU... » (haute qualite), « SIMPLICITY » (simplicite), « COMFOR... » (confort), « MAKE FASHI... » (faire la mode). Slogans generiques, sans marque.",
+          "french_presentation": {
+            "kind": "caption",
+            "text": "Etiquette volante visible sur la photo, texte partiellement masque : « HIGH QU... » (haute qualite), « SIMPLICITY » (simplicite), « COMFOR... » (confort), « MAKE FASHI... » (faire la mode). Slogans generiques, sans marque.",
+            "reviewed": true
+          }
+        }
+      }
     },
-    "1549325115853385728:media:4": {
-     "verdict": "APPROVED",
-     "text_presence": "NONE"
+    "6a55d16a-cdc0-4cd9-adfc-1201ddd69301": {
+      "media": {
+        "CLAUDE-PAR-20261113-PLANCHE:media:1": {
+          "verdict": "APPROVED",
+          "text_presence": "NONE"
+        }
+      }
     },
-    "1549325115853385728:media:5": {
-     "verdict": "APPROVED",
-     "text_presence": "NONE"
+    "83457a83-0b68-48aa-8507-ae153f925acd": {
+      "media": {
+        "CLAUDE-PAR-20261113-CASSEROLE:media:1": {
+          "verdict": "APPROVED",
+          "text_presence": "NONE"
+        }
+      }
     },
-    "1549325115853385728:media:6": {
-     "verdict": "APPROVED",
-     "text_presence": "NONE"
+    "bf6b85e1-4062-4b19-858d-30eab55ce489": {
+      "media": {
+        "CLAUDE-PAR-20261113-PLANCHE:media:v4": {
+          "verdict": "APPROVED",
+          "text_presence": "NONE"
+        }
+      }
+    },
+    "82dcf516-dc7b-4395-801b-e1a0d0fde675": {
+      "media": {
+        "CLAUDE-PAR-20261113-CASSEROLE:media:v4": {
+          "verdict": "APPROVED",
+          "text_presence": "NONE"
+        }
+      }
     }
-   }
   },
-  "91c94beb-f706-40be-ac05-5d13d6d716dd": {
-   "media": {
-    "1650760857292386304:hero": {
-     "verdict": "APPROVED",
-     "text_presence": "NONE"
-    },
-    "1650760857292386304:media:10": {
-     "verdict": "APPROVED",
-     "text_presence": "NONE"
-    },
-    "1650760857292386304:media:11": {
-     "verdict": "APPROVED",
-     "text_presence": "NONE"
-    },
-    "1650760857292386304:media:12": {
-     "verdict": "APPROVED",
-     "text_presence": "NONE"
-    },
-    "1650760857292386304:media:13": {
-     "verdict": "APPROVED",
-     "text_presence": "NONE"
-    },
-    "1650760857292386304:media:2": {
-     "verdict": "APPROVED",
-     "text_presence": "NONE"
-    },
-    "1650760857292386304:media:3": {
-     "verdict": "APPROVED",
-     "text_presence": "NONE"
-    },
-    "1650760857292386304:media:4": {
-     "verdict": "APPROVED",
-     "text_presence": "NONE"
-    },
-    "1650760857292386304:media:5": {
-     "verdict": "APPROVED",
-     "text_presence": "NONE"
-    },
-    "1650760857292386304:media:6": {
-     "verdict": "APPROVED",
-     "text_presence": "NONE"
-    },
-    "1650760857292386304:media:7": {
-     "verdict": "APPROVED",
-     "text_presence": "NONE"
-    },
-    "1650760857292386304:media:8": {
-     "verdict": "APPROVED",
-     "text_presence": "NONE"
-    },
-    "1650760857292386304:media:9": {
-     "verdict": "APPROVED",
-     "text_presence": "NONE"
-    }
-   }
-  },
-  "21bc5285-7b1a-47c5-a914-7656790816c5": {
-   "media": {
-    "1005011617878718:media:1": {
-     "verdict": "APPROVED",
-     "text_presence": "NONE"
-    },
-    "1005011617878718:media:2": {
-     "verdict": "APPROVED",
-     "text_presence": "NONE"
-    },
-    "1005011617878718:media:3": {
-     "verdict": "APPROVED",
-     "text_presence": "NONE"
-    },
-    "1005011617878718:media:4": {
-     "verdict": "APPROVED",
-     "text_presence": "NONE"
-    },
-    "1005011617878718:media:5": {
-     "verdict": "APPROVED",
-     "text_presence": "NONE"
-    },
-    "1005011617878718:media:6": {
-     "verdict": "APPROVED",
-     "text_presence": "NONE"
-    },
-    "1005011617878718:media:7": {
-     "verdict": "APPROVED",
-     "text_presence": "NONE"
-    },
-    "1005011617878718:media:8": {
-     "verdict": "APPROVED",
-     "text_presence": "PRESENT",
-     "source_transcription": "HIGH QU... / SIMPLICITY / COMFOR... / MAKE FASHI...",
-     "french_translation": "Etiquette volante visible sur la photo, texte partiellement masque : « HIGH QU... » (haute qualite), « SIMPLICITY » (simplicite), « COMFOR... » (confort), « MAKE FASHI... » (faire la mode). Slogans generiques, sans marque.",
-     "french_presentation": {
-      "kind": "caption",
-      "text": "Etiquette volante visible sur la photo, texte partiellement masque : « HIGH QU... » (haute qualite), « SIMPLICITY » (simplicite), « COMFOR... » (confort), « MAKE FASHI... » (faire la mode). Slogans generiques, sans marque.",
-      "reviewed": true
-     }
-    },
-    "1005011617878718:media:9": {
-     "verdict": "APPROVED",
-     "text_presence": "PRESENT",
-     "source_transcription": "HIGH QU... / SIMPLICITY / COMFOR... / MAKE FASHI...",
-     "french_translation": "Etiquette volante visible sur la photo, texte partiellement masque : « HIGH QU... » (haute qualite), « SIMPLICITY » (simplicite), « COMFOR... » (confort), « MAKE FASHI... » (faire la mode). Slogans generiques, sans marque.",
-     "french_presentation": {
-      "kind": "caption",
-      "text": "Etiquette volante visible sur la photo, texte partiellement masque : « HIGH QU... » (haute qualite), « SIMPLICITY » (simplicite), « COMFOR... » (confort), « MAKE FASHI... » (faire la mode). Slogans generiques, sans marque.",
-      "reviewed": true
-     }
-    }
-   }
-  },
-  "6a55d16a-cdc0-4cd9-adfc-1201ddd69301": {
-   "media": {
-    "CLAUDE-PAR-20261113-PLANCHE:media:1": {
-     "verdict": "APPROVED",
-     "text_presence": "NONE"
-    }
-   }
-  },
-  "83457a83-0b68-48aa-8507-ae153f925acd": {
-   "media": {
-    "CLAUDE-PAR-20261113-CASSEROLE:media:1": {
-     "verdict": "APPROVED",
-     "text_presence": "NONE"
-    }
-   }
+  "rejected_products": {
+    "ee0c6e12-96de-4f6d-9081-a0dec38b29c5": "logo CONGDI sur 2 images, textes anglais superposes, marque tierce AutoBot",
+    "bbc4a3f1-a2e3-4ab8-b91b-dd1d47f419a3": "textes anglais/chinois superposes, modele Moto non conforme au titre",
+    "f28b185e-ef4e-4338-ab28-990056e3e13a": "images 1,3,4 montrent d'autres vetements (image trompeuse)",
+    "b7f9165c-79d2-4ac6-8944-2d0f3ec45a29": "textes allemand/anglais, logo Samsung",
+    "1c957e74-603a-4a0c-b230-f83c312be6a0": "photos d'iPhone alors que le titre annonce Samsung (image trompeuse)",
+    "19fbf48a-14ab-48ca-8fb3-0c7d7649ff0d": "logo 70mai, textes arabe/anglais, bandeau promo",
+    "23b198c5-f303-432e-b162-85e65dc474e7": "textes chinois superposes, logos REDMI",
+    "7a39e213-34ae-462b-9056-e0f03843e9de": "filigrane de boutique, textes anglais",
+    "424a9e16-2175-4e29-b974-431d39e64bd9": "carte Instagram, textes anglais, badge",
+    "e7fc3651-200f-4be2-bdd5-f39e54f5ca63": "textes anglais, marques, allegations non verifiees",
+    "b7e80506-b037-40b2-a46e-72514ac04021": "non retenu (etiquettes cintre Lee, non inspecte image par image)",
+    "21bc5285-note": "retenu apres decision Opus : images 8-9 etiquette generique transcrite et traduite en legende FR"
   }
- },
- "rejected_products": {
-  "ee0c6e12-96de-4f6d-9081-a0dec38b29c5": "logo CONGDI sur 2 images, textes anglais superposes, marque tierce AutoBot",
-  "bbc4a3f1-a2e3-4ab8-b91b-dd1d47f419a3": "textes anglais/chinois superposes, modele Moto non conforme au titre",
-  "f28b185e-ef4e-4338-ab28-990056e3e13a": "images 1,3,4 montrent d'autres vetements (image trompeuse)",
-  "b7f9165c-79d2-4ac6-8944-2d0f3ec45a29": "textes allemand/anglais, logo Samsung",
-  "1c957e74-603a-4a0c-b230-f83c312be6a0": "photos d'iPhone alors que le titre annonce Samsung (image trompeuse)",
-  "19fbf48a-14ab-48ca-8fb3-0c7d7649ff0d": "logo 70mai, textes arabe/anglais, bandeau promo",
-  "23b198c5-f303-432e-b162-85e65dc474e7": "textes chinois superposes, logos REDMI",
-  "7a39e213-34ae-462b-9056-e0f03843e9de": "filigrane de boutique, textes anglais",
-  "424a9e16-2175-4e29-b974-431d39e64bd9": "carte Instagram, textes anglais, badge",
-  "e7fc3651-200f-4be2-bdd5-f39e54f5ca63": "textes anglais, marques, allegations non verifiees",
-  "b7e80506-b037-40b2-a46e-72514ac04021": "non retenu (etiquettes cintre Lee, non inspecte image par image)",
-  "21bc5285-note": "retenu apres decision Opus : images 8-9 etiquette generique transcrite et traduite en legende FR"
- }
 }
