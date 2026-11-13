@@ -670,13 +670,15 @@ function computeSingleArticleReferenceCDR(product, ctx = {}) {
   if (!marketCode) blockers.push('MARKET_NOT_RESOLVED');
   if (result.input_quality.unknown.length) blockers.push('MANDATORY_COST_OR_SCOPE_UNKNOWN');
 
-  // Real relay settlement currently uses commission_relais_kmf × quantity
-  // (services/cost-allocation/allocate.js), but the pre-sale CDR can
-  // describe it as per-order. No automatic re-interpretation is authorized.
+  // Remise client : le writer traite désormais la commission canonique une
+  // seule fois PAR COMMANDE. Un composant dont l'unité est différente reste
+  // NON_DECISIONNEL ; les allocations héritées per_item ne sont pas corrigées
+  // rétroactivement et ne constituent pas une preuve de marge réelle.
   const relayUnits = (original.components || [])
     .filter(c => c.category === 'relay' && c.is_active !== false)
     .map(c => ({ key: c.key, unit: c.unit, allocation_method: c.allocation_method || null }));
-  if (relayUnits.some(c => c.unit === 'kmf_per_order' || c.allocation_method === 'per_order')) {
+  if (relayUnits.some(c => c.key === 'commission_relais_kmf'
+    && (c.unit !== 'kmf_per_order' || c.allocation_method !== 'per_order'))) {
     blockers.push('RELAY_COMMISSION_UNIT_NOT_RECONCILED');
   }
 
@@ -698,7 +700,7 @@ function computeSingleArticleReferenceCDR(product, ctx = {}) {
   const warnings = result.warnings.filter(w => !w.startsWith('Moyennes d\'allocation non calibrées'));
   warnings.push('Référence mono-article prudente (q=1) : simulation uniquement, jamais une allocation physique réelle ni un prix actif.');
   if (relayUnits.length && blockers.includes('RELAY_COMMISSION_UNIT_NOT_RECONCILED')) {
-    warnings.push('Commission relais par commande dans la prévision, par unité dans le réel : choix contractuel requis.');
+    warnings.push('Commission relais canonique hors unité par commande : une décision contractuelle est requise.');
   }
   if (corridorUnverified.length) {
     warnings.push('Coûts hérités sans preuve de corridor CM/CG : valider les devis et surcharges marché.');
