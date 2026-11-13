@@ -79,3 +79,15 @@ npx playwright test -c playwright.catalog-pricing-integration.config.js --grep '
 ```
 
 Les quatre exemples ne sont que des simulations, **pas des produits sourcés, des coûts payés, des devis réels ni des prix validés**. La doctrine d'Opus et les scénarios initiaux sont disponibles dans le document reçu pour l'issue #3830.
+
+## Diagnostic complémentaire ME-02 — référence mono-article du CDR (issue #3994)
+
+Le calcul opérationnel `computeCDR(product, ctx)` conserve **pour l'instant** ses répartitions historiques selon les valeurs `finance_config.avg_articles_per_order/parcel/shipment`. Il reste le chemin utilisé par le moteur actuel : la correction de ses règles de décision exige une validation distincte, et ne peut pas recalculer silencieusement les prix actifs.
+
+Un appel **explicite** à `computeSingleArticleReferenceCDR(product, ctx)` fournit la comparaison prudente : tous les forfaits `kmf_per_order`, `kmf_per_parcel` et `kmf_per_shipment` ont une clé de répartition `q=1` pour l'article étudié. Ce résultat a le marqueur `single_article_reference.mode = SHADOW_REFERENCE_ONLY`, `no_price_activation=true`, les diviseurs opérationnels historiques et un statut `PROVISOIRE` ou `NON_DECISIONNEL`.
+
+Il **ne constitue ni une preuve d'un lot physique d'un seul article, ni la répartition comptable réelle** d'une expédition déjà consolidée. Les allocations physiques réelles conservent leurs quantités observées. N3 reste indépendante des coûts variables et n'est pas ajoutée au plancher SKU.
+
+Des garde-fous déclarent `NON_DECISIONNEL` pour une devise/marché non résolu, un coût ou périmètre inconnu, une unité de commission relais prévisionnelle par commande non réconciliée avec la remise réelle par article, ou des coûts hérités sans provenance du corridor CM/CG. La présence d'un composant `market_override` prouve seulement sa portée déclarée : elle **ne certifie pas** que sa valeur est issue d'un devis réel.
+
+Ce diagnostic ne crée aucun nouveau circuit d'activation ni une seconde autorité de prix. **À arbitrer pour clore P0** : unité contractuelle de commission (article/commande/remise), sources et clés physiques réelles des corridors KM/CM/CG, et adoption éventuelle de la référence prudente dans la décision commerciale.
