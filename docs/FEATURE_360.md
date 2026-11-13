@@ -2766,6 +2766,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - _out_ :
   - paiement carte/PayPal (feature payments)
   - remboursement initiateur (feature refunds, qui credite le wallet)
+  - avoir admin depuis commande via endpoint legacy (FA-06 : route maintenue en 409, remboursement via refunds)
   - programme de fidelite et ses recompenses (feature loyalty, scindee de wallet-loyalty au Lot O1)
   - emission du recu wallet (services/documents/wallet-receipt.js, @domain documents — consommateur en aval, pas ownership wallet)
 
