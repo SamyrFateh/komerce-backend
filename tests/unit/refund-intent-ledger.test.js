@@ -14,7 +14,7 @@ function fixture(overrides = {}) {
     calls.push(sql);
     if (sql.includes('FROM orders WHERE')) return { rows: [order] };
     if (sql.includes('operation_key = $2')) return { rows: overrides.existing ? [overrides.existing] : [] };
-    if (sql.includes('FROM refunds WHERE')) return { rows: overrides.legacy ? [{ id: 'old' }] : [] };
+    if (sql.includes('FROM refunds r WHERE')) return { rows: overrides.legacy ? [{ id: 'old' }] : [] };
     if (sql.includes('AND status IN') && sql.includes('refund_execution_intents')) return { rows: [] };
     if (sql.includes('AS confirmed_eur')) return { rows: [{ confirmed_eur: overrides.confirmed || '0' }] };
     if (sql.includes('INSERT INTO refund_execution_intents')) return { rows: [{ id: ID, status: 'reserved' }] };
@@ -55,6 +55,15 @@ test.each([[{ legacy: true }, 'REFUND_LEGACY_RECONCILIATION_REQUIRED'],
     expect(f.calls.at(-1)).toBe('ROLLBACK');
   }
 );
+test('rejeu confirmé reste lisible après passage au statut refunded', async () => {
+  const f = fixture({ order: { payment_status: 'refunded' },
+    existing: { id: ID, order_id: ORDER, market_id: MARKET,
+      capture_ref: 'pi-test', amount_eur: '25.00', status: 'confirmed' } });
+  const r = await reserveRefundIntent(f.opts);
+  expect(r).toMatchObject({ replayed: true, status: 'confirmed' });
+  expect(f.calls.some(x => x.includes('INSERT INTO refund_execution_intents'))).toBe(false);
+});
+
 test('montants décimaux sans arrondi implicite', () => {
   expect(euroCents('25.08')).toBe(2508n);
   expect(() => euroCents('25.089')).toThrow();
