@@ -9501,6 +9501,37 @@ COMMENT ON TABLE public.physical_outcome_receipts IS 'Consumer minimal réel de 
 
 
 --
+-- Name: pickup_code_generations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.pickup_code_generations (
+    id bigint NOT NULL,
+    order_id uuid NOT NULL,
+    user_id uuid NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: pickup_code_generations_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.pickup_code_generations_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: pickup_code_generations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.pickup_code_generations_id_seq OWNED BY public.pickup_code_generations.id;
+
+
+--
 -- Name: pickup_collect_failures; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -13601,6 +13632,13 @@ ALTER TABLE ONLY public.otp_codes ALTER COLUMN id SET DEFAULT nextval('public.ot
 
 
 --
+-- Name: pickup_code_generations id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.pickup_code_generations ALTER COLUMN id SET DEFAULT nextval('public.pickup_code_generations_id_seq'::regclass);
+
+
+--
 -- Name: pickup_collect_failures id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -14978,6 +15016,14 @@ ALTER TABLE ONLY public.physical_offers
 
 ALTER TABLE ONLY public.physical_outcome_receipts
     ADD CONSTRAINT physical_outcome_receipts_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: pickup_code_generations pickup_code_generations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.pickup_code_generations
+    ADD CONSTRAINT pickup_code_generations_pkey PRIMARY KEY (id);
 
 
 --
@@ -18147,6 +18193,13 @@ CREATE INDEX idx_physical_offers_market ON public.physical_offers USING btree (m
 --
 
 CREATE INDEX idx_physical_offers_provider ON public.physical_offers USING btree (provider_id);
+
+
+--
+-- Name: idx_pickup_code_generations_order_created; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_pickup_code_generations_order_created ON public.pickup_code_generations USING btree (order_id, created_at DESC);
 
 
 --
@@ -23443,6 +23496,14 @@ ALTER TABLE ONLY public.physical_offers
 
 ALTER TABLE ONLY public.physical_outcome_receipts
     ADD CONSTRAINT physical_outcome_receipts_event_id_fkey FOREIGN KEY (event_id) REFERENCES public.outbox_events(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: pickup_code_generations pickup_code_generations_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.pickup_code_generations
+    ADD CONSTRAINT pickup_code_generations_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id) ON DELETE CASCADE;
 
 
 --

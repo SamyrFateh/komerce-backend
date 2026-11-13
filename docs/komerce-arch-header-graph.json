@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 811,
-    "filesWithFullHeaders": 756,
+    "scannedCodeFiles": 812,
+    "filesWithFullHeaders": 757,
     "filesWithLiteHeaders": 55,
-    "filesWithAnyHeaders": 811,
+    "filesWithAnyHeaders": 812,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 2056,
-    "edges": 10185,
-    "dbTables": 238,
-    "doctrines": 800,
+    "graphNodes": 2059,
+    "edges": 10198,
+    "dbTables": 239,
+    "doctrines": 801,
     "impactAreas": 207,
-    "unresolvedCodeEdges": 970,
+    "unresolvedCodeEdges": 971,
     "dbWriteViaOverlapWarnings": 12,
     "multiWriterTables": 96
   },
@@ -42,7 +42,7 @@
     "market": 9,
     "economic-engine": 69,
     "sourcing": 37,
-    "logistics": 70,
+    "logistics": 71,
     "boutique": 24,
     "checkout": 3,
     "shared-cart": 25,
@@ -112,7 +112,7 @@
     "schema": 1,
     "route": 138,
     "entrypoint": 1,
-    "service": 490,
+    "service": 491,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -123,7 +123,7 @@
   "byCriticality": {
     "critical": 125,
     "medium": 157,
-    "high": 464,
+    "high": 465,
     "low": 64,
     "unknown": 1
   },
@@ -27499,6 +27499,61 @@
       "dbWriteViaOverlapWarning": "services/pickup-secret-access-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> orders"
     },
     {
+      "id": "services/pickup-secret-customer-rotation-service.js",
+      "file": "services/pickup-secret-customer-rotation-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "pickup-secret-customer-rotation",
+      "domain": "logistics",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "orderId",
+        "userId"
+      ],
+      "outputs": [
+        "new_pickup_code_one_shot"
+      ],
+      "depends": [
+        "db.js",
+        "services/pickup-secret-issuer.js",
+        "services/order-mutation-service.js"
+      ],
+      "usedBy": [
+        "routes/pickup-secret.js"
+      ],
+      "dbRead": [
+        "orders",
+        "pickup_code_generations"
+      ],
+      "dbWrite": [
+        "pickup_code_generations",
+        "pickup_reveal_codes",
+        "pickup_print_tokens"
+      ],
+      "dbWriteVia": [
+        {
+          "via": "order-mutation-service",
+          "tables": [
+            "orders"
+          ]
+        }
+      ],
+      "dbTxn": [
+        "single_transaction_for_update"
+      ],
+      "doctrine": [
+        "no_second_secret_writer"
+      ],
+      "impactAreas": [
+        "logistics",
+        "pickup"
+      ],
+      "version": "2026-11"
+    },
+    {
       "id": "services/pickup-secret-issuer.js",
       "file": "services/pickup-secret-issuer.js",
       "type": "file",
@@ -40338,6 +40393,11 @@
       "table": "user_pickup_authorizations"
     },
     {
+      "id": "db:pickup_code_generations",
+      "type": "db-table",
+      "table": "pickup_code_generations"
+    },
+    {
       "id": "db:pricing_benchmarks",
       "type": "db-table",
       "table": "pricing_benchmarks"
@@ -43621,6 +43681,11 @@
       "id": "doctrine:docs/architecture/IMPACT_FEATURE_FIRST_FULFILLMENT_MIXTE.md R9-R10",
       "type": "doctrine",
       "doctrine": "docs/architecture/IMPACT_FEATURE_FIRST_FULFILLMENT_MIXTE.md R9-R10"
+    },
+    {
+      "id": "doctrine:no_second_secret_writer",
+      "type": "doctrine",
+      "doctrine": "no_second_secret_writer"
     },
     {
       "id": "doctrine:docs/architecture/IMPACT_FEATURE_FIRST_FULFILLMENT_MIXTE.md R10",
@@ -89079,6 +89144,85 @@
       "label": "logistics"
     },
     {
+      "from": "services/pickup-secret-customer-rotation-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/pickup-secret-customer-rotation-service.js",
+      "to": "services/pickup-secret-issuer.js",
+      "type": "depends",
+      "label": "services/pickup-secret-issuer.js"
+    },
+    {
+      "from": "services/pickup-secret-customer-rotation-service.js",
+      "to": "services/order-mutation-service.js",
+      "type": "depends",
+      "label": "services/order-mutation-service.js"
+    },
+    {
+      "from": "routes/pickup-secret.js",
+      "to": "services/pickup-secret-customer-rotation-service.js",
+      "type": "uses",
+      "label": "routes/pickup-secret.js"
+    },
+    {
+      "from": "services/pickup-secret-customer-rotation-service.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/pickup-secret-customer-rotation-service.js",
+      "to": "db:pickup_code_generations",
+      "type": "db-read",
+      "label": "pickup_code_generations"
+    },
+    {
+      "from": "services/pickup-secret-customer-rotation-service.js",
+      "to": "db:pickup_code_generations",
+      "type": "db-write",
+      "label": "pickup_code_generations"
+    },
+    {
+      "from": "services/pickup-secret-customer-rotation-service.js",
+      "to": "db:pickup_reveal_codes",
+      "type": "db-write",
+      "label": "pickup_reveal_codes"
+    },
+    {
+      "from": "services/pickup-secret-customer-rotation-service.js",
+      "to": "db:pickup_print_tokens",
+      "type": "db-write",
+      "label": "pickup_print_tokens"
+    },
+    {
+      "from": "services/pickup-secret-customer-rotation-service.js",
+      "to": "db:orders",
+      "type": "db-write-via",
+      "label": "orders",
+      "via": "order-mutation-service"
+    },
+    {
+      "from": "services/pickup-secret-customer-rotation-service.js",
+      "to": "doctrine:no_second_secret_writer",
+      "type": "doctrine",
+      "label": "no_second_secret_writer"
+    },
+    {
+      "from": "services/pickup-secret-customer-rotation-service.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
+    },
+    {
+      "from": "services/pickup-secret-customer-rotation-service.js",
+      "to": "impact:pickup",
+      "type": "impact",
+      "label": "pickup"
+    },
+    {
       "from": "services/pickup-secret-issuer.js",
       "to": "db.js",
       "type": "depends",
@@ -119000,6 +119144,7 @@
         "services/order-mutation-service.js",
         "services/payment-paypal.js",
         "services/payment-stripe.js",
+        "services/pickup-secret-customer-rotation-service.js",
         "services/pickup-secret-service.js",
         "utils/logger.js",
         "utils/pickup-receipt-html.js"
@@ -132949,6 +133094,7 @@
         "services/pickup-collection-recorder.js",
         "services/pickup-exceptional-collection-service.js",
         "services/pickup-secret-access-service.js",
+        "services/pickup-secret-customer-rotation-service.js",
         "services/pickup-secret-issuer.js",
         "services/pickup-secret-rotation-service.js",
         "services/pickup-secret-service.js",
@@ -134860,6 +135006,59 @@
         "utils/pickup-receipt-html.js"
       ]
     },
+    "services/pickup-secret-customer-rotation-service.js": {
+      "role": "pickup-secret-customer-rotation",
+      "domain": "logistics",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "services/pickup-secret-issuer.js",
+        "services/order-mutation-service.js"
+      ],
+      "directUsedBy": [
+        "routes/pickup-secret.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "orders",
+        "pickup_code_generations"
+      ],
+      "dbWrite": [
+        "pickup_code_generations",
+        "pickup_reveal_codes",
+        "pickup_print_tokens"
+      ],
+      "dbWriteVia": [
+        {
+          "via": "order-mutation-service",
+          "tables": [
+            "orders"
+          ]
+        }
+      ],
+      "doctrines": [
+        "no_second_secret_writer"
+      ],
+      "impactAreas": [
+        "logistics",
+        "pickup"
+      ],
+      "mustCheck": [
+        "db:orders",
+        "db:pickup_code_generations",
+        "db:pickup_print_tokens",
+        "db:pickup_reveal_codes",
+        "doctrine:no_second_secret_writer",
+        "impact:logistics",
+        "impact:pickup",
+        "routes/pickup-secret.js",
+        "services/order-mutation-service.js",
+        "services/pickup-secret-issuer.js"
+      ]
+    },
     "services/pickup-secret-issuer.js": {
       "role": "pickup-secret-issuer",
       "domain": "logistics",
@@ -134903,6 +135102,7 @@
         "impact:pickup",
         "services/order-mutation-service.js",
         "services/pickup-code-helpers.js",
+        "services/pickup-secret-customer-rotation-service.js",
         "services/pickup-secret-rotation-service.js",
         "services/pickup-secret-service.js"
       ]
@@ -146679,6 +146879,32 @@
       ]
     },
     {
+      "table": "pickup_print_tokens",
+      "writerCount": 7,
+      "writers": [
+        "bootstrap/crons.js",
+        "routes/pickup-secret.js",
+        "services/pickup-collection-recorder.js",
+        "services/pickup-collection-service.js",
+        "services/pickup-secret-access-service.js",
+        "services/pickup-secret-customer-rotation-service.js",
+        "services/pickup-secret-rotation-service.js"
+      ]
+    },
+    {
+      "table": "pickup_reveal_codes",
+      "writerCount": 7,
+      "writers": [
+        "bootstrap/crons.js",
+        "routes/pickup-secret.js",
+        "services/pickup-collection-recorder.js",
+        "services/pickup-collection-service.js",
+        "services/pickup-secret-access-service.js",
+        "services/pickup-secret-customer-rotation-service.js",
+        "services/pickup-secret-rotation-service.js"
+      ]
+    },
+    {
       "table": "purchase_orders",
       "writerCount": 7,
       "writers": [
@@ -146701,30 +146927,6 @@
         "services/parcel-shipment-handover.js",
         "services/relay-parcel-item-reconciliation.js",
         "utils/parcelSync.js"
-      ]
-    },
-    {
-      "table": "pickup_print_tokens",
-      "writerCount": 6,
-      "writers": [
-        "bootstrap/crons.js",
-        "routes/pickup-secret.js",
-        "services/pickup-collection-recorder.js",
-        "services/pickup-collection-service.js",
-        "services/pickup-secret-access-service.js",
-        "services/pickup-secret-rotation-service.js"
-      ]
-    },
-    {
-      "table": "pickup_reveal_codes",
-      "writerCount": 6,
-      "writers": [
-        "bootstrap/crons.js",
-        "routes/pickup-secret.js",
-        "services/pickup-collection-recorder.js",
-        "services/pickup-collection-service.js",
-        "services/pickup-secret-access-service.js",
-        "services/pickup-secret-rotation-service.js"
       ]
     },
     {
@@ -151532,6 +151734,12 @@
       "to": "services/pickup-secret-access-service.js",
       "type": "uses",
       "label": "services/pickup-secret-service.js (réexport)"
+    },
+    {
+      "from": "services/pickup-secret-customer-rotation-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
     },
     {
       "from": "services/pickup-secret-issuer.js",
