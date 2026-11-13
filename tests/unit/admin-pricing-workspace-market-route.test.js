@@ -537,6 +537,9 @@ test('preview plancher marché : lecture seule, achat et scope résolus côté s
     if (String(sql).includes('FROM products WHERE product_ref')) return { rows: [
       { product_ref: 'KPR-1', cost_kmf: 3936, weight_kg: .15, volume_m3: .0008, is_active: true },
     ] };
+    if (String(sql).includes('FROM currency_parities')) {
+      return { rows: [{ rate: params[0] === 'XAF' ? '655.957' : '491.96775' }] };
+    }
     return { rows: [] };
   });
   const values = {
@@ -550,17 +553,26 @@ test('preview plancher marché : lecture seule, achat et scope résolus côté s
     circuit: 'import', commission_basis: 'fixed_unit',
     scenarios: { favorable: { ...values, customs_duties: 0 },
       central: values, defavorable: { ...values, customs_duties: 42 } },
-    candidate_prices_kmf: [9000],
+    candidate_prices_local: [9000],
   };
   let res = await request(app()).post('/api/admin/workspaces/pricing/market/CM/products/KPR-1/forecast-preview').send(body);
   expect(res.status).toBe(200);
   expect(res.headers['cache-control']).toContain('no-store');
   expect(res.body.simulation_only).toBe(true);
   expect(res.body.forecast.market_code).toBe('CM');
+  expect(res.body.market_currency).toBe('XAF');
+  expect(res.body.internal_currency).toBe('KMF');
+  expect(res.body.local_display.prices[0].price).toBeCloseTo(9000, 1);
+  expect(res.body.forecast.prices[0].price_kmf).not.toBe(9000);
   expect(res.body.forecast.status).toBe('PROVISOIRE');
   expect(res.body.forecast.cases.central.lines.every(l => l.evidence === 'ASSUMED')).toBe(true);
   expect(db.query.mock.calls.filter(([sql]) => /FROM products WHERE product_ref/.test(sql))).toHaveLength(1);
   expect(db.query.mock.calls.every(([sql]) => /^\s*SELECT\b/i.test(sql))).toBe(true);
+
+  res = await request(app()).post('/api/admin/workspaces/pricing/market/CM/products/KPR-1/forecast-preview')
+    .send({ ...body, candidate_prices_kmf: [9000] });
+  expect(res.status).toBe(422);
+  expect(res.body.code).toBe('pricing_forecast_preview_invalid');
 
   res = await request(app()).post('/api/admin/workspaces/pricing/market/CM/products/KPR-1/forecast-preview')
     .send({ ...body, scenarios: { ...body.scenarios, central: { ...values, market_code: 'KM' } } });

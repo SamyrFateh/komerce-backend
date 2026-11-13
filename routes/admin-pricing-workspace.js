@@ -359,7 +359,7 @@ router.post('/market/:marketCode/products/:productRef/forecast-preview',
         return res.status(404).json({ code: 'pricing_forecast_product_not_found',
           error: 'Produit actif introuvable.' });
       }
-      return res.json(forecastPreview.preview({
+      return res.json(await forecastPreview.previewForMarket({
         market: req.workspaceMarket,
         product: rows[0],
         payload: req.body,
