@@ -5004,7 +5004,7 @@ html.k-mobile-premium-v1 .k-chip-label {
     display: flex;
     flex-wrap: nowrap;
     justify-content: flex-start;
-    gap: clamp(14px, 6vw, 24px);
+    gap: clamp(10px, 4vw, 18px);
     padding: 5px 0;
     border-top: 0.5px solid var(--sand-dark);
     margin-top: 6px;
@@ -5013,7 +5013,7 @@ html.k-mobile-premium-v1 .k-chip-label {
     display: flex;
     align-items: center;
     gap: 4px;
-    font-size: 10px;
+    font-size: 11px;
     line-height: 1.2;
     font-weight: 500;
     color: var(--text-muted-dark);
@@ -7125,14 +7125,12 @@ html.k-mobile-premium-v1 .k-chip-label {
     max-width: 100%;
     min-height: 34px;
     justify-content: flex-start;
-    gap: clamp(10px, 4vw, 18px);
     border-bottom: 0;
     overflow: visible;
   }
 
   #k-modal .k-modal-trust-item {
     flex: 0 1 auto;
-    font-size: 11px;
   }
 
   #k-modal .k-modal-trust-item:nth-child(3) {
