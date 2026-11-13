@@ -614,11 +614,11 @@ describe('#3994 ME-04/ME-13 — audit économique marché authentifié, lecture 
     expect(res.body).toMatchObject({
       read_only: true, no_price_activation: true, certified: false,
       status: 'NON_DECISIONNEL', market_code: 'CM', market_currency: 'XAF',
-      summary: { active_components: 2, unresolved_issues: 2 },
+      summary: { active_components: 2, unresolved_issues: 1 },
     });
-    expect(res.body.issues.map(i => i.code).sort()).toEqual([
-      'INHERITED_CORRIDOR_UNVERIFIED', 'RELAY_FORECAST_REAL_UNIT_MISMATCH',
-    ]);
+    expect(res.body.issues.map(i => i.code)).toEqual(['INHERITED_CORRIDOR_UNVERIFIED']);
+    expect(res.body.components.find(c => c.key === 'commission_relais_kmf'))
+      .toMatchObject({ relay_forecast_unit: 'per_order', relay_real_current_unit: 'per_order', relay_unit_consistent: true });
     const query = db.query.mock.calls.find(([sql]) => String(sql).includes('FROM cost_components cc'));
     expect(query[1]).toEqual(['market-cm']);
     expect(query[0]).toContain('cc.provenance AS base_provenance');
