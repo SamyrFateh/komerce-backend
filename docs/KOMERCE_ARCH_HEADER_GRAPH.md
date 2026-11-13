@@ -6,20 +6,20 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 810
-- Files with full headers: 755
+- Scanned code files: 811
+- Files with full headers: 756
 - Files with lite headers: 55
-- Files with any headers: 810
+- Files with any headers: 811
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 2053
-- Edges: 10174
-- DB tables: 237
-- Doctrines: 799
+- Graph nodes: 2056
+- Edges: 10184
+- DB tables: 238
+- Doctrines: 800
 - Impact areas: 207
-- Unresolved code edges: 969
-- Tables multi-écrivains directs (>=2): 95
+- Unresolved code edges: 970
+- Tables multi-écrivains directs (>=2): 96
 - Avertissements db-write / db-write-via en chevauchement: 12
 
 ## Domains
@@ -45,7 +45,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - infrastructure: 25
 - inventory: 2
 - local-stock: 4
-- logistics: 69
+- logistics: 70
 - loyalty: 3
 - market: 9
 - market-autonomy: 4
@@ -92,7 +92,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 138
 - route-manifest: 1
 - schema: 1
-- service: 489
+- service: 490
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -544,6 +544,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/parcel-transition-guard.js — incident-management-transition-guard (incident-management, high, full)
 - services/parcelOptimizationService.js — logistics-parcel-optimization-service (logistics, high, full)
 - services/partner-admin-service.js — partner-admin-service (dashboard, high, full)
+- services/pickup-agent-lockout.js — pickup-agent-lockout (logistics, high, full)
 - services/pickup-authorization-service.js — pickup-authorization-service (auth-identity, high, full)
 - services/pickup-code-helpers.js — pickup-code-helpers (logistics, high, full)
 - services/pickup-collection-service.js — pickup-collection-service (logistics, high, full)

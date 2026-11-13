@@ -18267,7 +18267,7 @@
             ]
           },
           "services": {
-            "count": 47,
+            "count": 48,
             "files": [
               {
                 "declared": "services/auto-parcel.js",
@@ -18420,6 +18420,11 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/pickup-agent-lockout.js",
+                "resolvedPath": "services/pickup-agent-lockout.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/pickup-code-helpers.js",
                 "resolvedPath": "services/pickup-code-helpers.js",
                 "status": "resolved-in-technical-graph"
@@ -18507,7 +18512,7 @@
             ]
           },
           "tests": {
-            "count": 90,
+            "count": 91,
             "files": [
               {
                 "declared": "tests/e2e-api/hub-membership-readers.e2e.test.js",
@@ -18825,6 +18830,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/pickup-agent-lockout.test.js",
+                "resolvedPath": "tests/unit/pickup-agent-lockout.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/pickup-code-helpers.test.js",
                 "resolvedPath": "tests/unit/pickup-code-helpers.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -18982,7 +18992,7 @@
             ]
           }
         },
-        "totalFiles": 184,
+        "totalFiles": 186,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,

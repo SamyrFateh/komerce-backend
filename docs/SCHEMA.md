@@ -113,6 +113,14 @@ section: ### 4.1 Logistique commande (7 tables)
 role: Réservation transactionnelle UNIQUE(user_id, idempotency_key) et snapshot immuable du résultat du checkout ; réémission sans double création, stock ni débit wallet. Ne pas confondre avec une table live tant que le dump Railway ne confirme pas la migration.
 -->
 
+<!-- schema-pending
+object: pickup_collect_failures
+kind: table
+migration: 413
+section: ### 4.1 Logistique commande (7 tables)
+role: Compteur append-only des échecs de retrait par code (code inconnu ou incorrect) par agent et relais ; au-delà de 5 échecs en 15 minutes glissantes, collectByPickupCode répond 429. Colonnes agent_id, relais_id, created_at. Aucun code stocké.
+-->
+
 | Table | Rôle |
 |---|---|
 | `orders` | Commande client (table maîtresse, 60+ colonnes). **Migration 315 (2026-10-22, `intended_migration_schema`)** : + `fx_snapshot` JSONB nullable (vérité monétaire figée de la transaction : montant d'origine, montant confirmé dans la devise du marché du relais, montant EUR encaissé, jambes FX sourcées ; immuable une fois posé, lu par paiements et remboursements, jamais reconverti). **Migration 313 (2026-10-22, `intended_migration_schema`)** : + `transport_pricing_snapshot` JSONB nullable (preuve figée du tarif de vente transport appliqué : devise du marché, pivot EUR, ids de ligne de tarif, jambes FX ; distinct de `display_parity_snapshot`, réservé à l'affichage). **Migration 303 (2026-10-19, `intended_migration_schema`)** : + `simulation_scope` TEXT nullable (NULL = activité réelle ; sinon périmètre de recette, ex. `RCT1`, format contrôlé, immuable une fois posé par trigger). Exclu par défaut des agrégats d'activité réelle ; inclus seulement quand le périmètre est demandé. |

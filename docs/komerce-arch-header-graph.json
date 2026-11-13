@@ -13,21 +13,21 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 810,
-    "filesWithFullHeaders": 755,
+    "scannedCodeFiles": 811,
+    "filesWithFullHeaders": 756,
     "filesWithLiteHeaders": 55,
-    "filesWithAnyHeaders": 810,
+    "filesWithAnyHeaders": 811,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 2053,
-    "edges": 10174,
-    "dbTables": 237,
-    "doctrines": 799,
+    "graphNodes": 2056,
+    "edges": 10184,
+    "dbTables": 238,
+    "doctrines": 800,
     "impactAreas": 207,
-    "unresolvedCodeEdges": 969,
+    "unresolvedCodeEdges": 970,
     "dbWriteViaOverlapWarnings": 12,
-    "multiWriterTables": 95
+    "multiWriterTables": 96
   },
   "byDomain": {
     "infrastructure": 25,
@@ -42,7 +42,7 @@
     "market": 9,
     "economic-engine": 69,
     "sourcing": 37,
-    "logistics": 69,
+    "logistics": 70,
     "boutique": 24,
     "checkout": 3,
     "shared-cart": 25,
@@ -112,7 +112,7 @@
     "schema": 1,
     "route": 138,
     "entrypoint": 1,
-    "service": 489,
+    "service": 490,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -123,7 +123,7 @@
   "byCriticality": {
     "critical": 125,
     "medium": 157,
-    "high": 463,
+    "high": 464,
     "low": 64,
     "unknown": 1
   },
@@ -27063,6 +27063,50 @@
       "version": "2026-06"
     },
     {
+      "id": "services/pickup-agent-lockout.js",
+      "file": "services/pickup-agent-lockout.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "pickup-agent-lockout",
+      "domain": "logistics",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "client",
+        "user"
+      ],
+      "outputs": [
+        "lockout_state"
+      ],
+      "depends": [
+        "db.js"
+      ],
+      "usedBy": [
+        "services/pickup-collection-service.js"
+      ],
+      "dbRead": [
+        "pickup_collect_failures",
+        "users"
+      ],
+      "dbWrite": [
+        "pickup_collect_failures"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "compatible_with_caller"
+      ],
+      "doctrine": [
+        "brute_force_guard"
+      ],
+      "impactAreas": [
+        "logistics",
+        "security"
+      ],
+      "version": "2026-11"
+    },
+    {
       "id": "services/pickup-authorization-service.js",
       "file": "services/pickup-authorization-service.js",
       "type": "file",
@@ -27242,6 +27286,7 @@
         "side_effects"
       ],
       "depends": [
+        "services/pickup-agent-lockout.js",
         "db.js",
         "services/order-status-machine.js",
         "services/pickup-code-helpers.js",
@@ -27261,6 +27306,7 @@
       ],
       "dbWrite": [
         "alerts",
+        "pickup_collect_failures",
         "pickup_print_tokens",
         "pickup_reveal_codes",
         "scans"
@@ -40281,6 +40327,11 @@
       "table": "paypal_events_processed"
     },
     {
+      "id": "db:pickup_collect_failures",
+      "type": "db-table",
+      "table": "pickup_collect_failures"
+    },
+    {
       "id": "db:user_pickup_authorizations",
       "type": "db-table",
       "table": "user_pickup_authorizations"
@@ -43554,6 +43605,11 @@
       "id": "doctrine:wallet_non_modifie_ici",
       "type": "doctrine",
       "doctrine": "wallet_non_modifie_ici"
+    },
+    {
+      "id": "doctrine:brute_force_guard",
+      "type": "doctrine",
+      "doctrine": "brute_force_guard"
     },
     {
       "id": "doctrine:exceptional_pickup_strict_normalized_match",
@@ -88269,6 +88325,54 @@
       "label": "payment"
     },
     {
+      "from": "services/pickup-agent-lockout.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/pickup-collection-service.js",
+      "to": "services/pickup-agent-lockout.js",
+      "type": "uses",
+      "label": "services/pickup-collection-service.js"
+    },
+    {
+      "from": "services/pickup-agent-lockout.js",
+      "to": "db:pickup_collect_failures",
+      "type": "db-read",
+      "label": "pickup_collect_failures"
+    },
+    {
+      "from": "services/pickup-agent-lockout.js",
+      "to": "db:users",
+      "type": "db-read",
+      "label": "users"
+    },
+    {
+      "from": "services/pickup-agent-lockout.js",
+      "to": "db:pickup_collect_failures",
+      "type": "db-write",
+      "label": "pickup_collect_failures"
+    },
+    {
+      "from": "services/pickup-agent-lockout.js",
+      "to": "doctrine:brute_force_guard",
+      "type": "doctrine",
+      "label": "brute_force_guard"
+    },
+    {
+      "from": "services/pickup-agent-lockout.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
+    },
+    {
+      "from": "services/pickup-agent-lockout.js",
+      "to": "impact:security",
+      "type": "impact",
+      "label": "security"
+    },
+    {
       "from": "services/pickup-authorization-service.js",
       "to": "db.js",
       "type": "depends",
@@ -88481,6 +88585,12 @@
     },
     {
       "from": "services/pickup-collection-service.js",
+      "to": "services/pickup-agent-lockout.js",
+      "type": "depends",
+      "label": "services/pickup-agent-lockout.js"
+    },
+    {
+      "from": "services/pickup-collection-service.js",
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
@@ -88556,6 +88666,12 @@
       "to": "db:alerts",
       "type": "db-write",
       "label": "alerts"
+    },
+    {
+      "from": "services/pickup-collection-service.js",
+      "to": "db:pickup_collect_failures",
+      "type": "db-write",
+      "label": "pickup_collect_failures"
     },
     {
       "from": "services/pickup-collection-service.js",
@@ -134304,6 +134420,44 @@
         "utils/logger.js"
       ]
     },
+    "services/pickup-agent-lockout.js": {
+      "role": "pickup-agent-lockout",
+      "domain": "logistics",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js"
+      ],
+      "directUsedBy": [
+        "services/pickup-collection-service.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "pickup_collect_failures",
+        "users"
+      ],
+      "dbWrite": [
+        "pickup_collect_failures"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "brute_force_guard"
+      ],
+      "impactAreas": [
+        "logistics",
+        "security"
+      ],
+      "mustCheck": [
+        "db:pickup_collect_failures",
+        "db:users",
+        "doctrine:brute_force_guard",
+        "impact:logistics",
+        "impact:security",
+        "services/pickup-collection-service.js"
+      ]
+    },
     "services/pickup-authorization-service.js": {
       "role": "pickup-authorization-service",
       "domain": "auth-identity",
@@ -134460,6 +134614,7 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
+        "services/pickup-agent-lockout.js",
         "db.js",
         "services/order-status-machine.js",
         "services/pickup-code-helpers.js",
@@ -134480,6 +134635,7 @@
       ],
       "dbWrite": [
         "alerts",
+        "pickup_collect_failures",
         "pickup_print_tokens",
         "pickup_reveal_codes",
         "scans"
@@ -134527,6 +134683,7 @@
         "db:orders",
         "db:parcel_items",
         "db:parcels",
+        "db:pickup_collect_failures",
         "db:pickup_print_tokens",
         "db:pickup_reveal_codes",
         "db:product_variants",
@@ -134538,6 +134695,7 @@
         "impact:logistics",
         "services/documents/pickup-proof.js",
         "services/order-status-machine.js",
+        "services/pickup-agent-lockout.js",
         "services/pickup-code-helpers.js",
         "services/pickup-collection-recorder.js",
         "services/pickup-exceptional-collection-service.js",
@@ -147175,6 +147333,14 @@
       ]
     },
     {
+      "table": "pickup_collect_failures",
+      "writerCount": 2,
+      "writers": [
+        "services/pickup-agent-lockout.js",
+        "services/pickup-collection-service.js"
+      ]
+    },
+    {
       "table": "pickup_verify_attempts",
       "writerCount": 2,
       "writers": [
@@ -151309,6 +151475,12 @@
       "to": "services/payment-stripe.js",
       "type": "uses",
       "label": "stripe_webhooks"
+    },
+    {
+      "from": "services/pickup-agent-lockout.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
     },
     {
       "from": "services/pickup-authorization-service.js",

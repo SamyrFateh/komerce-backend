@@ -6,10 +6,10 @@
  * @criticality   high
  * @inputs        request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db.js, services/order-status-machine.js, services/pickup-code-helpers.js, services/pickup-collection-recorder.js, services/documents/pickup-proof.js, utils/alerts.js
+ * @depends       services/pickup-agent-lockout.js, db.js, services/order-status-machine.js, services/pickup-code-helpers.js, services/pickup-collection-recorder.js, services/documents/pickup-proof.js, utils/alerts.js
  * @used-by       services/pickup-secret-service.js, services/scan-operations.js, services/pickup-exceptional-collection-service.js
  * @db-read       orders, relais, users
- * @db-write      alerts, pickup_print_tokens, pickup_reveal_codes, scans
+ * @db-write      alerts, pickup_collect_failures, pickup_print_tokens, pickup_reveal_codes, scans
  * @db-write-via:order-status-machine product_variants, order_status_history, orders, products
  * @db-write-via:pickup-collection-recorder scans, pickup_reveal_codes, pickup_print_tokens, product_variants, order_status_history, orders, products, parcels, parcel_items
  * @db-write-via:order-mutation-service orders
@@ -83,6 +83,7 @@ const {
   mapCanonicalCollectionError: _mapCanonicalCollectionError,
 } = require('./pickup-collection-recorder');
 const pickupProof = require('./documents/pickup-proof');
+const { checkAgentLockout, recordAgentFailure } = require('./pickup-agent-lockout');
 const log = require('../utils/logger').child({ module: 'pickup-collection-service' });
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -288,6 +289,14 @@ async function collectByPickupCode({
   let handoffScanId = null;
   try {
     const outcome = await db.withTransaction(async (client) => {
+    // #3900 R2 : verrou agent+relais (codes inconnus compris), avant toute lecture de commande.
+    const lock = await checkAgentLockout(client, user);
+    if (lock.locked) {
+      return { status: 429, body: {
+        error: `Trop d'échecs de retrait. Réessayez dans ${lock.retryAfterMin} min.`,
+        blocked_until: lock.blockedUntil,
+      }};
+    }
     // FOR UPDATE dès la résolution : élimine la fenêtre check-then-act entre
     // la lecture de la commande candidate et sa remise (même doctrine que
     // collectOrder ci-dessus). last4 restreint le candidate set ; la
@@ -328,6 +337,15 @@ async function collectByPickupCode({
         );
 
     if (!order) {
+      const fail = await recordAgentFailure(client, user);
+      if (fail.justLocked) {
+        await _logSecurityAlert(client, {
+          type:        'pickup_collect_agent_locked',
+          entityId:    null,
+          title:       'Agent verrouillé : trop d\'échecs de retrait par code',
+          description: `agent_id=${agentId} role=${role} ip=${ip || 'inconnue'} échecs=${fail.count}/15min`,
+        });
+      }
       await _logSecurityAlert(client, {
         type:        'pickup_collect_invalid_code',
         entityId:    targeted ? expectedOrderId : null,
@@ -360,6 +378,15 @@ async function collectByPickupCode({
         const attempts = (order.pickup_secret_attempts || 0) + 1;
         const blockedUntil = attempts >= PICKUP_MAX_ATTEMPTS ? new Date(now.getTime() + PICKUP_BLOCK_MS) : null;
         await setPickupAttemptState(client, { orderId: order.id, attempts, blockedUntil });
+        const fail = await recordAgentFailure(client, user);
+        if (fail.justLocked) {
+          await _logSecurityAlert(client, {
+            type:        'pickup_collect_agent_locked',
+            entityId:    order.id,
+            title:       'Agent verrouillé : trop d\'échecs de retrait par code',
+            description: `agent_id=${agentId} role=${role} ip=${ip || 'inconnue'} échecs=${fail.count}/15min`,
+          });
+        }
         await _logSecurityAlert(client, {
           type:        'pickup_collect_invalid_code',
           entityId:    order.id,

@@ -73,7 +73,7 @@ const ENTRIES = [
   R('international_shipments', 'expeditions internationales'), R('international_shipment_charges', 'frais d expedition internationale'),
   R('international_shipment_events', 'evenements expedition internationale'), R('international_n1_reconciliations', 'reconciliation N1 (fait calcule)'),
   R('customs_shipments', 'dossiers douane'), R('customs_shipment_fees', 'frais douane'),
-  R('customs_shipment_financial_audit', 'audit financier douane (fait metier)'), R('customs_shipment_parcel_events', 'evenements colis douane'),
+  R('pickup_collect_failures', 'compteur anti-bruteforce retrait par agent (exploitation, sans FK)'),   R('customs_shipment_financial_audit', 'audit financier douane (fait metier)'), R('customs_shipment_parcel_events', 'evenements colis douane'),
   R('cash_reconciliation', 'rapprochement cash agent'), R('order_cost_entry_events', 'evenements de cout commande'),
   R('wallets', 'portefeuilles clients (reset d environnement, pas une transaction metier)'),
   R('wallet_transactions', 'ledger wallet'), R('wallet_credit_lots', 'lots de credit wallet'), R('wallet_consumptions', 'consommations wallet'),
