@@ -1,4 +1,4 @@
-# Reprise Opus : certification pré-E2E G6 (état au 13/11/2026 à 10h40)
+# Reprise Opus : certification pré-E2E G6 (état au 13/11/2026 à 16h50)
 
 Point de départ pour tout agent qui reprend après une coupure. Fil de coordination : issue **#3927**. Matrice commune : PR draft **#3944**, branche `docs/g6-matrix-v2`.
 
@@ -29,15 +29,15 @@ Point de départ pour tout agent qui reprend après une coupure. Fil de coordina
 ## Lots de code
 | Lot | PR | État |
 |---|---|---|
-| L1 à L7, #3951, W1 à W3 | fusionnés | sur le staging |
-| R1 : code de retrait régénérable par le client | branche `fix/3900-R1` | preflight en cours, pas encore poussé |
-| R2 : anti-bruteforce par agent et relais | #3985 | draft, preflight vert |
-| R3 : preuve de retrait dans « Mon Komerce » | #3984 | draft, preflight vert |
-| R4 : interrupteur « Saisie manuelle » à la réception Hub | #3981 | Required vert |
-| R5 : total à 0 KMF et récap des produits manuels | #3982 | Required vert |
-| R6 : file « Encaisser » et réception relais supérieure à l'expédié | #3983 | à revérifier |
+| L1 à L7, #3951, W1 à W3, R1 à R6 (#3981 à #3986) | fusionnés | sur le staging (`589d81d88` vérifié) |
+| H1 : avancement automatique (HB-01, HB-02, HB-03), plus l'incident `supplier_shortage` et le remboursement de ligne déclenché par l'admin | #4001 | draft, preflight vert |
+| H2 : verrou de commande dans `distributeOrder` (HB-04) | #4000 | draft, preflight vert |
+| H3 : quantités (HB-05, HB-06, HB-07, HB-11) | en cours (Sonnet B) | — |
+| H4 : vue directrice tous marchés, ancienneté, alerte 48 h (HB-08), décision 4 | en cours (Sonnet B) | — |
 
-**Fusion groupée** : une fois tout vert, fusionner R1 à R6 quand aucun run `staging`, `chromium` ou `g6` n'est actif. `main` bouge souvent : utiliser `scripts/merge-w3.sh` comme modèle de boucle (update-branch, régénération des projections en conflit, merge, contrôle `merged=true`).
+**Fusion groupée H1 à H4** : à faire quand tout est vert et qu'aucun run `staging`, `chromium` ou `g6` n'est actif. Modèle de boucle : `scripts/merge-list.sh <PR...>`. Elle sort les PR du brouillon via `POST /pulls/{n}/ccr/ready_for_review`, fait update-branch, attend `clean`, fusionne en squash et contrôle `merged=true`. **Dans le même créneau**, activer `E7_ITEM_RESERVATIONS_ENABLED=1` sur le staging Railway (décision du propriétaire du 13/11). Cela redémarre le service.
+
+**Audits Fable** : #3987 (flux d'argent), #3988 (moteur économique), #3998 (Hub). Les décisions 1 à 7 du propriétaire sur #3998 figurent dans le commentaire 6857010399. Les invariants SQL H1 à H9 de #3998 sont à ajouter aux contrôles PostgreSQL des deux campagnes E2E.
 
 ## Défauts consignés, non corrigés
 - **Catalogue** (#3927) :
@@ -52,18 +52,12 @@ Point de départ pour tout agent qui reprend après une coupure. Fil de coordina
 - **Passe #3900** (#3900, commentaire 6848393664) : D4, le dossier douane qui présélectionne les colis du marché, est déjà corrigé par #3887 et doit être revérifié.
 
 ## Prochaines étapes
-1. R1 poussé, puis fusion groupée de R1 à R6. Relire `/health/version` après déploiement.
-2. **Seconde passe #3900**, brief `briefs/BRIEF_3900_PASSE_MANUELLE.md`, limitée aux points ouverts :
-   - réception Hub en MANUAL (R4) ;
-   - code régénéré par le client (R1) ;
-   - 429 après 5 échecs (R2) ;
-   - preuve de retrait client (R3) ;
-   - retrait partiel multi-colis ;
-   - timeout après commit et panne réseau ;
-   - commande import à 3 sources (KPR-000144 + 000164 + 000163) ;
-   - revérification de KC692IV (récap des produits manuels, « Encaisser »).
-3. Si tout est PASS : demander au propriétaire le **GO E2E G6**, puis jouer les 46 scénarios sur KM, puis CM et CG. Les fixtures de cas limites à prévoir : prix inactif, exposition coupée, stock à 0, produit à au moins 2 variantes.
+1. **Seconde passe #3900** (`briefs/BRIEF_3900_PASSE2.md`), en cours en KM sur `589d81d88`. Elle couvre les 12 points : 3 sources, R4, R6, R1, R2, R3, retrait partiel, timeout et panne réseau, R5 sur KC692IV, encaissement, SAV.
+2. **H1 à H4** au vert, puis fusion groupée et activation de E7, puis **revérification Hub ciblée** : invariants H1 à H9, complétude automatique, rupture vers incident puis remboursement de ligne, quarantaine, vue directrice.
+3. Mettre à jour la matrice #3944 : ajouter les invariants H1 à H9 de #3998 aux oracles, et créer les scénarios « rupture définitive » et « colis arrivé non rapproché ».
+4. Si tout est PASS : demander au propriétaire le **GO E2E G6 final, qui n'est pas encore donné**. Ensuite, 46 scénarios sur KM puis CM et CG, avec les fixtures de cas limites (prix inactif, exposition coupée, stock à 0, au moins 2 variantes).
+5. **Après les E2E** : supprimer les routes historiques de colis (HB-09) et le code mort de réception (HB-10).
 
 ## Contenu de ce dossier
-- `briefs/` : tous les briefs Opus et Sonnet, et les plans.
+- `briefs/` : tous les briefs Opus, Sonnet et Fable, et les plans, dont `BRIEF_3900_PASSE2.md`, `BRIEF_CORRECTIONS_3900_R2.md` et `BRIEF_CORRECTIONS_HUB_FABLE.md`.
 - `scripts/` : helpers Chromium (`parcours-km`, `catalogue-ms`, `par3900`), boucles de fusion, consigne d’alignement GPT (`scripts/ALIGNEMENT_GPT_E2E.md`). Aucun secret ; les scripts lisent les identifiants depuis le scratchpad local.
