@@ -42,7 +42,7 @@
 | `modal-mobile-canonical.css` | 831 | components.css |
 | `modal-mobile-suggestion-actions.css` | 68 | components.css |
 | `modal-product.css` | 1510 | components.css |
-| `modal-product-lot4-hybrid.css` | 651 | components.css |
+| `modal-product-lot4-hybrid.css` | 658 | components.css |
 | `modal-product-polish.css` | 419 | components.css |
 | `modal-shell.css` | 1538 | components.css |
 | `modal-suggestion-card-polish.css` | 26 | components.css |
@@ -58,7 +58,7 @@
 | `shared-list-lists-tab.css` | 278 | components.css |
 | `shared-list-side-cart.css` | 935 | components.css |
 | `shared-list-side-cart-responsive.css` | 91 | components.css |
-| `side-cart-desktop-polish.css` | 262 | desktop.css |
+| `side-cart-desktop-polish.css` | 315 | desktop.css |
 | `tokens.css` | 599 | base.css |
 | `wallet.css` | 191 | components.css |
 
@@ -69,9 +69,9 @@ Cascade réelle des bundles livrés :
 ```
  1. /boutique/css/dist/base.css?v=266
  2. /boutique/css/dist/critical-home.css?v=5
- 3. /boutique/css/dist/components.css?v=655
- 4. /boutique/css/dist/components.css?v=655
- 5. /boutique/css/dist/desktop.css?v=155
+ 3. /boutique/css/dist/components.css?v=656
+ 4. /boutique/css/dist/components.css?v=656
+ 5. /boutique/css/dist/desktop.css?v=156
 ```
 
 ## 3. Cartographie des sélecteurs critiques

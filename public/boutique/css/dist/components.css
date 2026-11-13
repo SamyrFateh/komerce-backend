@@ -3323,7 +3323,7 @@ html.k-mobile-premium-v1 .k-chip-label {
      display:contents / display:none, non touchées ici). */
   #k-modal .k-modal-body {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 296px;
+    grid-template-columns: minmax(0, 1fr) clamp(310px, 22vw, 390px);
     flex: 1;
     min-height: 0;
     overflow: hidden;
@@ -6274,9 +6274,9 @@ html.k-mobile-premium-v1 .k-chip-label {
     background: var(--page-bg);
   }
 
-  /* ≥1200px : la géométrie finale est désormais possédée par
-     modal-desktop-density.css (pass de densité 2026-08). La règle 900px
-     ci-dessus reste le fallback canonique ; aucun override mort ici. */
+  /* La composition 48/52 ci-dessus reste le fallback des petits desktops.
+     À partir de 1200px, la galerie utilise 57 % du panneau hors panier,
+     pour une répartition globale proche de 45/33/22 (panier borné). */
 
   /* D6 — Hero desktop en aplat (spec, réf. mockup fourni) :
      fond uni --hero-bg, seul le décor radial sobre est conservé,
@@ -6895,6 +6895,13 @@ html.k-mobile-premium-v1 .k-chip-label {
     max-width: 72px;
     height: auto;
     aspect-ratio: 1 / 1;
+  }
+}
+/* Vue desktop ≥1200 : proportions Galerie ~45 % / Fiche ~33 % / Panier ~22 %.
+   Le panier est borné par modal-shell.css (310..390px). */
+@media (min-width: 1200px) {
+  #k-modal .k-modal-product-zone {
+    grid-template-columns: minmax(0, 57%) minmax(0, 43%);
   }
 }
 
