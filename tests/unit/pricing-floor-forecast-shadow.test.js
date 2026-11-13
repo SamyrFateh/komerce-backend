@@ -127,6 +127,16 @@ describe('prix plancher prévisionnel — shadow pur et sans valeur par défaut'
       .toBeCloseTo(single.lines.find(x => x.code === 'last_mile').amount_kmf / 3, 2);
   });
 
+  test('lot plus petit que le produit : le fret ne peut pas fabriquer un coût exploitable', () => {
+    const f = fixture();
+    f.product.volume_m3 = 0.6; // lot simulé de 0.5 m3
+    const c = calculateCase(f, 'central');
+    expect(c.status).toBe('NON_DECISIONNEL');
+    expect(c.problems).toContain('freight: volume produit supérieur au volume du lot');
+    expect(c.problems).toContain('lot_fee: volume produit supérieur au volume du lot');
+    expect(comparePrices(f).plancher_prudent_kmf).toBeNull();
+  });
+
   test('local ne supporte aucun coût import; N3 n augmente jamais le plancher', () => {
     const costs = [
       line('local_delivery', 'N1', 'fixed_order', 20, { circuit: 'local' }),
