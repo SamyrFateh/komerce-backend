@@ -6,7 +6,13 @@
  * @test-runner jest
  * @test-requires none
  */
-jest.mock('../../db', () => ({ query: jest.fn() }));
+// H2 : distributeOrder ouvre sa transaction ; le verrou FOR UPDATE de la commande est absorbé par le client simulé
+// (les autres requêtes restent sur db.query pour garder les séquences de réponses historiques).
+jest.mock('../../db', () => {
+  const query = jest.fn();
+  const client = { query: (sql, params) => (/FROM orders WHERE id = \$1 FOR UPDATE/.test(sql) ? Promise.resolve({ rows: [] }) : query(sql, params)) };
+  return { query, withTransaction: jest.fn(async (work) => work(client)) };
+});
 const mockTransition = jest.fn();
 jest.mock('../../services/parcel-operations', () => ({ transitionParcelStatus: (...a) => mockTransition(...a) }));
 
@@ -120,6 +126,51 @@ describe('auto-parcel', () => {
       expect(result.queued).toBe(true);
       expect(result.order_ref).toBe('CMD-SAT');
       expect(result.open_parcels).toHaveLength(MAX_OPEN_PARCELS_PER_DEST);
+    });
+
+    it('H2 : sans client fourni, la repartition ouvre une transaction et verrouille la commande (FOR UPDATE)', async () => {
+      const locks = [];
+      db.withTransaction.mockImplementationOnce(async (work) => work({
+        query: (sql, params) => { if (/FOR UPDATE/.test(sql)) { locks.push(params[0]); return Promise.resolve({ rows: [] }); } return db.query(sql, params); },
+      }));
+      db.query.mockResolvedValueOnce({ rows: [] });
+      await distributeOrder('order-lock');
+      expect(db.withTransaction).toHaveBeenCalledTimes(1);
+      expect(locks).toEqual(['order-lock']);
+    });
+
+    it('H2 : avec un client fourni, la commande est verrouillee sur ce client (transaction de l\'appelant)', async () => {
+      const query = jest.fn()
+        .mockResolvedValueOnce({ rows: [] }) // verrou
+        .mockResolvedValueOnce({ rows: [] }); // commande introuvable
+      await distributeOrder('order-x', { query });
+      expect(query.mock.calls[0][0]).toMatch(/FROM orders WHERE id = \$1 FOR UPDATE/);
+      expect(db.withTransaction).not.toHaveBeenCalled();
+    });
+
+    it('H2 : deux repartitions concurrentes de la meme commande -> un seul colis cree, l\'autre sort en already_assigned', async () => {
+      // Simulation d'un verrou de ligne : la 2e transaction attend la fin de la 1re, puis relit l'etat committe.
+      let assigned = false; let chain = Promise.resolve(); let parcelsCreated = 0;
+      db.withTransaction.mockImplementation((work) => {
+        const run = chain.then(() => work({ query: (sql) => {
+          if (/FOR UPDATE/.test(sql)) return Promise.resolve({ rows: [] });
+          if (/FROM orders o/.test(sql)) return Promise.resolve({ rows: [makeOrder()] });
+          if (/SELECT 1 AS assigned/.test(sql)) return Promise.resolve({ rows: assigned ? [{ assigned: 1 }] : [] });
+          if (/SELECT oi.id, oi.quantity/.test(sql)) return Promise.resolve({ rows: [makeItem()] });
+          if (/FROM parcels p/.test(sql)) return Promise.resolve({ rows: [] });
+          if (/nextval/.test(sql)) return Promise.resolve({ rows: [{ seq: '1' }] });
+          if (/INSERT INTO parcels/.test(sql)) { parcelsCreated += 1; return Promise.resolve({ rows: [{ id: 'p1', reference: 'KOM-P-2026-000001' }] }); }
+          if (/INSERT INTO parcel_items/.test(sql)) { assigned = true; return Promise.resolve({ rows: [], rowCount: 1 }); }
+          return Promise.resolve({ rows: [] });
+        } }));
+        chain = run.catch(() => {});
+        return run;
+      });
+      const [a, b] = await Promise.all([distributeOrder('order-001'), distributeOrder('order-001')]);
+      db.withTransaction.mockImplementation(async (work) => work({ query: (sql, params) => (/FROM orders WHERE id = \$1 FOR UPDATE/.test(sql) ? Promise.resolve({ rows: [] }) : db.query(sql, params)) }));
+      expect(parcelsCreated).toBe(1);
+      expect([a, b].filter((r) => r.already_assigned)).toHaveLength(1);
+      expect([a, b].filter((r) => r.parcel_created)).toHaveLength(1);
     });
 
     it('retourne une erreur claire si la commande est introuvable', async () => {

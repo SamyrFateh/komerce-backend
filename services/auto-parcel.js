@@ -10,7 +10,7 @@
  * @used-by       routes/auto-distribute-api.js
  * @db-read       order_items, orders, parcel_items, parcels, relais, users, scan_events, scans, hub_box_bags, customs_shipment_parcels, incidents, invoices, order_item_real_cost_allocations
  * @db-write      parcel_items, parcels
- * @db-txn        resolve_before_behavior_change
+ * @db-txn        distributeOrder verrouille la commande (FOR UPDATE) ; transaction propre sans client fourni
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  logistics
  * @version       2026-06
@@ -48,7 +48,16 @@ async function nextParcelRef(client) {
 
 // ── Core: distribute one order ──────────────────────────────────
 async function distributeOrder(orderId, dbClient) {
-  const client = dbClient || db;
+  // H2 / HB-04 : la répartition d'une commande est sérialisée par un verrou de ligne sur la commande. Sans client fourni,
+  // on ouvre notre propre transaction (le verrou tient jusqu'au COMMIT) ; avec un client, l'appelant porte la transaction.
+  // Le second appelant concurrent attend, relit les lignes déjà colisées et sort en `already_assigned`.
+  if (!dbClient) return db.withTransaction((client) => distributeOrderLocked(orderId, client));
+  return distributeOrderLocked(orderId, dbClient);
+}
+
+async function distributeOrderLocked(orderId, dbClient) {
+  const client = dbClient;
+  await client.query('SELECT id FROM orders WHERE id = $1 FOR UPDATE', [orderId]);
 
   // Get order + relais info
   const { rows: [order] } = await client.query(`
