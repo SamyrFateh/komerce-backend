@@ -82,6 +82,26 @@ const MARKETS = {
     free_ship_label: 'Livraison incluse au Cameroun',
     price_label:     'Prix en XAF',
   },
+  DJ: {
+    code:            'DJ',
+    name:            'Djibouti',
+    gentile:         'La boutique djiboutienne',
+    gentile_short:   'Djibouti',
+    delivery_line:   'Mode, tech, beauté — à Djibouti',
+    payment_label:   'Paiement selon les moyens disponibles',
+    pickup_label:    'Retrait relais',
+    currency:        'DJF',
+    minor_unit:      0,
+    relay_group_label: 'Ville',
+    relay_default_zone: 'Djibouti',
+    seo_title:       'Komerce — La boutique en ligne de Djibouti',
+    seo_description: 'La boutique en ligne de Djibouti. Découvrez les offres disponibles et les points de retrait.',
+    og_title:        'Komerce — La boutique djiboutienne',
+    og_description:  'Découvrez les produits disponibles à Djibouti et les points de retrait.',
+    footer_tagline:  'Découvrez la sélection Komerce pour Djibouti.',
+    free_ship_label: 'Livraison selon offre',
+    price_label:     'Prix en DJF',
+  },
   CG: {
     code:            'CG',
     name:            'Congo',
@@ -109,23 +129,32 @@ const MARKETS = {
 // Demain (M2 branché), résolu depuis le relais choisi > préférence stockée > défaut.
 const DEFAULT_MARKET = 'KM';
 
-// ── Override de PRÉVISUALISATION (?market=) ─────────────────────────────
-// Paramètre d'URL exclusivement — jamais une résolution stockée ni serveur.
-// Portée strictement PREVIEW/DÉMO : change l'affichage (gentilé, libellés,
-// devise affichée), ne touche à AUCUNE logique de panier, de commande ou
-// d'autorisation. Conforme à la doctrine freeze §3 : le MarketContext est
-// "contextuel, client, commutable, NON autorisant" — ceci en est la forme
-// la plus littérale possible. Un lien partagé avec ?market=CM ne donne
-// aucun droit, ne débloque aucune action, affiche juste la vitrine du
-// marché demandé. Retiré/remplacé par une vraie résolution (relais choisi)
-// quand M2 sera branché en H3 — voir marché par défaut ci-dessus.
+// ── Entrées pays publiques : /KM, /CM, /CG, /DJ, /YT ──────────────
+// L'URL est un contexte de navigation, jamais une autorisation d'achat.
+// Une URL pays a priorité sur ?market= afin qu'un lien partagé soit stable.
+function getPathMarketCode() {
+  try {
+    const match = /^\/([a-z]{2})\/?$/i.exec(window.location.pathname || '');
+    const code = match ? match[1].toUpperCase() : '';
+    return Object.prototype.hasOwnProperty.call(MARKETS, code) ? code : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+// ── Alias historique de prévisualisation (?market=) ────────────────
+// Conservé pour /boutique?market=CM et les consommateurs existants.
+// Ce retour devient aussi le contexte explicite du pathname pays.
+// Aucun code client n'en déduit une autorisation métier.
 function getPreviewMarketOverride() {
+  const pathMarket = getPathMarketCode();
+  if (pathMarket) return pathMarket;
   try {
     const params = new URLSearchParams(window.location.search);
-    const code = params.get('market');
-    return (code && MARKETS[code]) ? code : null;
+    const code = String(params.get('market') || '').toUpperCase();
+    return Object.prototype.hasOwnProperty.call(MARKETS, code) ? code : null;
   } catch (e) {
-    return null; // jamais casser le rendu pour un paramètre malformé
+    return null;
   }
 }
 
@@ -133,13 +162,13 @@ function getPreviewMarketOverride() {
 
 /**
  * Retourne le contexte marché courant.
- * Pour l'instant, toujours KM. La logique de résolution (relais, préférence,
- * géo) sera branchée par H3 quand M2 existera.
+ * /XX (pays) > ?market= (alias historique) > KM par défaut.
+ * Le contexte est de présentation ; l'autorité de transaction reste côté API.
  *
  * @returns {object} — un enregistrement MARKETS, jamais null
  */
 function getMarketContext() {
-  return MARKETS[DEFAULT_MARKET];
+  return MARKETS[getPreviewMarketOverride() || DEFAULT_MARKET];
 }
 
 /**
@@ -156,5 +185,6 @@ window.KomerceMarket = {
   get:                getMarketContext,
   getByCode:          getMarket,
   getPreviewOverride: getPreviewMarketOverride,
+  getPathCode:       getPathMarketCode,
   DEFAULT:            DEFAULT_MARKET,
 };

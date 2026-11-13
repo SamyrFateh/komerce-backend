@@ -21,6 +21,12 @@
     : marketApi.get?.();
   if (!market) return;
 
+  // L'accueil du marché reste son URL publique, y compris depuis le logo.
+  // Le navigateur affiche également le bon nom de boutique dans son onglet.
+  if (market.seo_title) document.title = market.seo_title;
+  const logoHome = document.querySelector('a.k-logo[href="/"]');
+  if (logoHome && market.code !== 'KM') logoHome.setAttribute('href', '/' + market.code);
+
   if (document.body) document.body.dataset.marketCode = market.code;
 
   /*
