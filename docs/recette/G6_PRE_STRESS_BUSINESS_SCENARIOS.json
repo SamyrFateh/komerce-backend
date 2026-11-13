@@ -53,7 +53,8 @@
       "oracles": [
         "O-ECO",
         "O-DOC",
-        "O-NOTIF"
+        "O-NOTIF",
+        "O-HUB"
       ],
       "depends_on": [
         "L-A5"
@@ -92,7 +93,8 @@
       "oracles": [
         "O-ECO",
         "O-DOC",
-        "O-NOTIF"
+        "O-NOTIF",
+        "O-HUB"
       ],
       "depends_on": [
         "L-A5"
@@ -111,7 +113,8 @@
       "oracles": [
         "O-ECO",
         "O-DOC",
-        "O-NOTIF"
+        "O-NOTIF",
+        "O-HUB"
       ],
       "depends_on": [
         "L-A5"
@@ -130,7 +133,8 @@
       "oracles": [
         "O-ECO",
         "O-DOC",
-        "O-NOTIF"
+        "O-NOTIF",
+        "O-HUB"
       ],
       "depends_on": [
         "L-A5"
@@ -149,7 +153,8 @@
       "oracles": [
         "O-ECO",
         "O-DOC",
-        "O-NOTIF"
+        "O-NOTIF",
+        "O-HUB"
       ],
       "depends_on": [
         "L-A2",
@@ -330,7 +335,10 @@
       "title": "Rupture fournisseur / backorder",
       "expected": "Reliquat enregistré, sans réception fictive",
       "priority": "P0",
-      "verdict": "NOT_PROVEN"
+      "verdict": "NOT_PROVEN",
+      "oracles": [
+        "O-HUB"
+      ]
     },
     {
       "id": "N14",
@@ -343,7 +351,10 @@
       "title": "Réception partielle / excès / quantité négative",
       "expected": "Quantités exactes, refus/incident si écart",
       "priority": "P0",
-      "verdict": "NOT_PROVEN"
+      "verdict": "NOT_PROVEN",
+      "oracles": [
+        "O-HUB"
+      ]
     },
     {
       "id": "N15",
@@ -356,7 +367,10 @@
       "title": "Sac/carton incomplet",
       "expected": "Pas de fermeture ni départ non conforme",
       "priority": "P0",
-      "verdict": "NOT_PROVEN"
+      "verdict": "NOT_PROVEN",
+      "oracles": [
+        "O-HUB"
+      ]
     },
     {
       "id": "N16",
@@ -369,7 +383,10 @@
       "title": "Carton non DISPATCHED / composition figée",
       "expected": "Refus de remise et de modification post-remise",
       "priority": "P0",
-      "verdict": "NOT_PROVEN"
+      "verdict": "NOT_PROVEN",
+      "oracles": [
+        "O-HUB"
+      ]
     },
     {
       "id": "N17",
@@ -829,7 +846,24 @@
       "staging": "Zéro envoi réel ; seules des lignes notification_logs skipped/blocked sont attendues",
       "DRIFT_DOCTRINE": "WhatsApp order_created, payment_confirmed, shipped, delivered/collected actifs dans services/notifications/order.js ; consigné, non corrigé (décision séparée)"
     },
-    "O-SEC-DOC": "Téléchargement de document refusé hors session/propriétaire/marché (ex-N37 partie accès)"
+    "O-SEC-DOC": "Téléchargement de document refusé hors session/propriétaire/marché (ex-N37 partie accès)",
+    "O-HUB": {
+      "source": "docs/recette/G6_HUB_SQL_ORACLES.sql",
+      "audit_issue": 3998,
+      "ids": [
+        "H1",
+        "H2",
+        "H3",
+        "H4",
+        "H5",
+        "H6",
+        "H7",
+        "H8",
+        "H9"
+      ],
+      "mode": "PostgreSQL read-only à état stabilisé : avant/après geste; même SHA et mêmes 9 contrôles, deux cohortes ChatGPT et Opus",
+      "interpretation": "H1/H3/H4/H5a/H6/H7 : zéro anomalie à état stabilisé; H2 : sous-couverture à rapprocher d'un incident supplier_shortage et d'une décision admin; H5b : diagnostic allocation figée (pas FAIL automatique); H8/H9 : chaque tâche âgée doit être visible avec alerte 48h. Ne jamais utiliser une ligne SQL seule comme PASS E2E."
+    }
   },
   "rights_table_R": {
     "shape": "rôle x geste x marché -> 200 attendu ou 403/404 avec zéro mutation prouvée en PostgreSQL",
