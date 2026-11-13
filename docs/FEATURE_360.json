@@ -26529,10 +26529,6 @@
       "authority": "backend-core — tout changement de provider, callback, webhook ou logique d idempotence paiement doit etre valide par le propriétaire payments.",
       "invariants": [
         {
-          "statement": "FA-13/24 : un succès Mobile Money exige une preuve de montant et devise, et une nouvelle capture sur une commande déjà payée laisse une alerte dans la même transaction.",
-          "test": "tests/unit/payment-mobile-money.test.js"
-        },
-        {
           "statement": "RC-9 : getRefund lit PayPal par GET sans exécuter un refund, rejette tout ID douteux et fournit seulement une preuve à confronter au ledger.",
           "test": "tests/unit/paypal-client.test.js"
         },
@@ -31353,6 +31349,10 @@
         {
           "statement": "RC-5 — toute sortie PSP requiert une intention de remboursement committee avant appel externe ; le vrai service et le faux Stripe documentent provisoirement cette rupture sans prétendre la corriger",
           "test": "tests/unit/refund-stripe-txn-known-risk.test.js"
+        },
+        {
+          "statement": "FA-04 : un POST Stripe sans verdict (timeout, panne, erreur) ou une capture absente bloque la mutation colis et ne crédite jamais le wallet par repli",
+          "test": "tests/unit/refund-service.test.js"
         },
         "un remboursement n'est jamais applique deux fois pour le meme evenement source",
         "tout refund externe ou crédit compensatoire est idempotent par événement source ; un rejeu ne déclenche jamais un second remboursement"

@@ -1956,7 +1956,6 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - [object Object]
 - [object Object]
 - [object Object]
-- [object Object]
 - aucun secret de paiement en dur dans le code
 - [object Object]
 - un provider activé en DB mais non configuré runtime reste indisponible (fail-closed, aucun fallback silencieux)
@@ -2368,6 +2367,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Authority** : backend-core — tout changement de logique de remboursement doit etre valide par le proprietaire de refund-service.js
 
 **Invariants** :
+- [object Object]
 - [object Object]
 - [object Object]
 - [object Object]

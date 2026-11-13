@@ -197,21 +197,32 @@ async function processRefund(dbClient, order, amountKmf, amountEur, refundType, 
 }
 
 /**
- * Variante avec fallback : si Stripe échoue, bascule sur wallet.
+ * Remboursement colis : Stripe prioritaire, wallet uniquement lorsque la
+ * commande n'a pas de capture Stripe à rembourser.
  *
- * P0 FIX : idempotency key stable partout (Stripe ET wallet fallback).
- * Avant le fix, le fallback utilisait Date.now() => jamais idempotent.
+ * FA-04 : une erreur de POST Stripe ne prouve PAS un refus PSP. Le remboursement
+ * peut avoir été exécuté avant un timeout. Ne jamais créditer le wallet dans
+ * ce cas : sinon carte et wallet peuvent rembourser la même valeur.
  *
- * A-BE-06 (2026-05-26) : INSERT pending AVANT l'appel Stripe, comme processRefund().
- * Avant : INSERT seulement à la fin → si Stripe rembourse et que l'INSERT crash,
- * argent remboursé sans trace DB.
- * Maintenant : INSERT pending → Stripe/wallet → UPDATE completed.
+ * Cette protection empêche le double versement, mais le caller conserve une
+ * transaction SQL ouverte pendant le POST externe : si la transaction échoue,
+ * une exécution Stripe peut rester non rapprochée (FA-08). Le futur raccordement
+ * à refund-intent-ledger est nécessaire pour une reprise automatisée durable.
  */
 async function processRefundWithFallback(dbClient, order, amountKmf, amountEur, refundType, reason, initiatedBy, parcelId) {
   // Garde montant zéro : aucun appel DB/Stripe/wallet pour un remboursement nul
   // (évite une ligne `refunds` fantôme + un appel Stripe amount:0 inutile).
   if (!amountKmf && !amountEur) {
     return { method: 'none', skipped: true, reason: 'zero_amount', amountEur, amountKmf };
+  }
+
+  // FA-04 : une commande Stripe payée sans identifiant de capture vérifiable
+  // ne doit pas être convertie silencieusement en avoir wallet.
+  if (order.payment_mode === 'stripe_eur' && !order.stripe_payment_id) {
+    const error = new Error('Capture Stripe manquante : rapprochement du paiement requis.');
+    error.code = 'REFUND_STRIPE_CAPTURE_MISSING';
+    error.statusCode = 409;
+    throw error;
   }
 
   // Une seule vérité monétaire : jamais plus que le capturé, jamais un doublon silencieux de montant différent.
@@ -261,12 +272,26 @@ async function processRefundWithFallback(dbClient, order, amountKmf, amountEur, 
       stripeRefundId = stripeRefund.id;
       refundMethod   = 'stripe';
     } catch (stripeErr) {
-      log.error({ err: stripeErr }, '[refund-service] Stripe failed, using wallet fallback');
-      refundMethod = 'wallet_credit';
+      // Une réponse HTTP négative, une coupure réseau ou un timeout ne donnent
+      // pas une preuve suffisante de non-exécution du remboursement. L'absence
+      // de succès n'autorise donc AUCUN crédit wallet automatique.
+      // Le caller rollback le colis et doit faire rapprocher le PSP avant
+      // une nouvelle tentative ; aucune réponse success n'est émise.
+      log.error({ err: stripeErr, order_id: order.id, parcel_id: parcelId,
+        provider_request_key: idempotencyKey },
+      '[refund-service] Résultat Stripe incertain : aucun fallback wallet, rapprochement requis');
+      const error = new Error('Résultat du remboursement Stripe non confirmé : rapprochement requis.');
+      error.code = 'REFUND_STRIPE_OUTCOME_UNKNOWN';
+      error.statusCode = 409;
+      error.providerRequestKey = idempotencyKey;
+      error.cause = stripeErr;
+      throw error;
     }
   }
 
-  if (!refundMethod || refundMethod === 'wallet_credit') {
+  // La branche wallet ne concerne plus jamais une commande Stripe avec
+  // référence de capture, même si Stripe est indisponible (FA-04).
+  if (!refundMethod) {
     refundMethod = 'wallet_credit';
     const walletCredit = await resolveWalletRefundCredit(dbClient, order, amountKmf, refundType);
     const result = await walletService.credit(dbClient, {
