@@ -62,6 +62,33 @@ describe('admin-order-refund', () => {
     expectTransactionRolledBack(client);
   });
 
+  it.each([false, true])('FA-07 : commande cancelled jamais payée, dryRun=%s : aucun crédit ni remboursement', async (dryRun) => {
+    const unpaid = {
+      id: 'order-001', reference: 'CMD-001', status: 'cancelled',
+      payment_status: 'unpaid', payment_mode: 'cash_relais',
+      total_kmf: 10000, total_eur: 20.33,
+    };
+    const client = makeClient([{ rows: [unpaid] }]);
+    db.getClient.mockResolvedValue(client);
+
+    const result = await refundCancelledOrder({
+      orderId: 'order-001', user: { id: 'admin-001', role: 'admin' },
+      cashMode: 'wallet_credit', dryRun,
+    });
+
+    expect(result).toEqual({
+      status: 409,
+      body: {
+        code: 'ORDER_NOT_PAID_NO_REFUND',
+        error: expect.stringContaining('jamais été payée'),
+      },
+    });
+    expect(processRefund).not.toHaveBeenCalled();
+    expect(transitionOrderStatus).not.toHaveBeenCalled();
+    expect(markRefunded).not.toHaveBeenCalled();
+    expectTransactionRolledBack(client);
+  });
+
   it('dryRun planifie la methode sans executer le remboursement', async () => {
     const order = {
       id: 'order-001', reference: 'CMD-001', status: 'cancelled', payment_status: 'paid',
