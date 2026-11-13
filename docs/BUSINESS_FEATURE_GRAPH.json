@@ -38978,6 +38978,10 @@
                 "targetFile": "services/fx-authority.js"
               },
               {
+                "sourceFileId": "services/pricing-floor-forecast-preview.js",
+                "targetFile": "utils/currency.js"
+              },
+              {
                 "sourceFileId": "services/pricing-cdr.js",
                 "targetFile": "services/fx-engine-rates.js"
               },
