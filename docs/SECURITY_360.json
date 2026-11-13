@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-11-13T00:32:27.607Z",
+  "generatedAt": "2026-11-13T09:37:15.565Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 836,
-    "protected": 777,
+    "total": 837,
+    "protected": 778,
     "public": 59,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -4818,6 +4818,11 @@
     },
     {
       "key": "POST /api/pickup/collect/{orderId}",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/pickup/customer-regenerate/{orderId}",
       "level": "PROTECTED",
       "roles": []
     },

@@ -24283,6 +24283,57 @@
         }
       }
     },
+    "/api/pickup/customer-regenerate/{orderId}": {
+      "post": {
+        "summary": "POST /api/pickup/customer-regenerate/{orderId}",
+        "x-route-file": "routes/pickup-secret.js",
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "order_ref": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "code": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "remaining_today": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
     "/api/pickup/exceptional-pickup/{orderId}": {
       "get": {
         "summary": "GET /api/pickup/exceptional-pickup/{orderId}",
