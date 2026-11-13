@@ -47,11 +47,34 @@ function mockDb(currency) {
 describe('fiche produit — tarif transport par marché', () => {
   beforeEach(() => { jest.clearAllMocks(); mockDetail(); });
 
-  test('marché KMF : tarif transport conservé', async () => {
+  test('marché KM : le coût maritime interne ne devient pas un frais client', async () => {
     mockDb('KMF');
     const res = await request(app).get(`/${ID}/detail?market=KM`);
     expect(res.status).toBe(200);
-    expect(res.body.delivery_options[0]).toMatchObject({ available: true, price_kmf: 4200 });
+    expect(res.body.delivery_options[0]).toMatchObject({
+      code: 'SEA_STANDARD', available: true, price_kmf: null,
+    });
+    expect(res.body.pricing.price_kmf).toBe(1000);
+  });
+
+  test('marché KM : ne masque pas une offre aérienne distincte', async () => {
+    mockDb('KMF');
+    getProductDetail.mockResolvedValueOnce({
+      product: { reference: 'REF-1' },
+      media: [{ url: 'https://cdn.example.com/a.jpg' }],
+      pricing: { price_kmf: 1000 },
+      sellable_units: [],
+      delivery_options: [
+        { code: 'SEA_STANDARD', label: 'Mer', available: true, price_kmf: 26 },
+        { code: 'AIR_EXPRESS', label: 'Air', available: true, price_kmf: 2500 },
+      ],
+    });
+    const res = await request(app).get(`/${ID}/detail?market=KM`);
+    expect(res.status).toBe(200);
+    expect(res.body.delivery_options).toMatchObject([
+      { code: 'SEA_STANDARD', price_kmf: null },
+      { code: 'AIR_EXPRESS', price_kmf: 2500 },
+    ]);
   });
 
   test('marché XAF : aucun prix de transport, option indisponible (comme le refus checkout)', async () => {
