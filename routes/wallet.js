@@ -174,9 +174,8 @@ router.post('/remove', async (req, res, next) => {
       await client.query('ROLLBACK');
       return res.status(403).json({ error: 'Cette commande ne vous appartient pas' });
     }
-    // P5-N2 (§7) — retrait self-service autorisé uniquement avant paiement confirmé.
-    // Après 'paid', seul le chemin d'annulation métier (order-status-machine →
-    // removeFromOrder) peut re-créditer le wallet ; l'API self-service n'y touche plus.
+    // P5-N2 + FA-01 — après 'paid', interdit ; avant 'paid', le verrou
+    // checkout-only plus bas interdit aussi une restitution isolée.
     if (orderCheck.payment_status === 'paid') {
       await client.query('ROLLBACK');
       return res.status(409).json({ error: 'Commande déjà payée — retrait wallet impossible via cette route' });
