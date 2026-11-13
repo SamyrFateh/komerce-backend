@@ -224,14 +224,15 @@ describeDb('Hub V1 — sac client mono-commande (PG réel)', () => {
     // Le test doit réutiliser cette preuve canonique, pas créer un deuxième colis par article
     // (le garde unique_order_item_per_parcel refuserait légitimement ce doublon).
     const { rows: [firstParcel] } = await q(
-      'SELECT p.id FROM parcels p JOIN parcel_items pi ON pi.parcel_id=p.id WHERE p.order_id=$1 AND pi.order_item_id=$2',
+      'SELECT p.id, pi.id AS parcel_item_id FROM parcels p JOIN parcel_items pi ON pi.parcel_id=p.id WHERE p.order_id=$1 AND pi.order_item_id=$2',
       [order1, item1]);
     const { rows: [secondParcel] } = await q(
-      'SELECT p.id FROM parcels p JOIN parcel_items pi ON pi.parcel_id=p.id WHERE p.order_id=$1 AND pi.order_item_id=$2',
+      'SELECT p.id, pi.id AS parcel_item_id FROM parcels p JOIN parcel_items pi ON pi.parcel_id=p.id WHERE p.order_id=$1 AND pi.order_item_id=$2',
       [order2, item2]);
     expect(firstParcel).toBeDefined();
     expect(secondParcel).toBeDefined();
     const parcel1 = firstParcel.id, parcel2 = secondParcel.id;
+    const pi1 = firstParcel.parcel_item_id, pi2 = secondParcel.parcel_item_id;
     expect(parcel1).not.toBe(parcel2);
 
     const newBox = await hubOps.createOperatorUnitCommand({
