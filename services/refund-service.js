@@ -283,6 +283,7 @@ async function processRefundWithFallback(dbClient, order, amountKmf, amountEur, 
       const error = new Error('Résultat du remboursement Stripe non confirmé : rapprochement requis.');
       error.code = 'REFUND_STRIPE_OUTCOME_UNKNOWN';
       error.statusCode = 409;
+      error.providerRequestKey = idempotencyKey;
       error.cause = stripeErr;
       throw error;
     }
