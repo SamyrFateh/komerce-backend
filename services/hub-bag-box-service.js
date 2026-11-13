@@ -8,7 +8,7 @@
  * @outputs       immutable_physical_bag_containment, relay_scannable_bag
  * @depends       db.js
  * @used-by       routes/admin-operations-workspace.js
- * @db-read       hub_box_bags, hub_physical_units, hub_physical_unit_placements, hub_purchase_allocations, orders, parcels, international_shipment_hub_units, international_shipments, order_items, products
+ * @db-read       hub_box_bags, hub_physical_units, hub_physical_unit_placements, hub_purchase_allocations, orders, parcels, parcel_items, international_shipment_hub_units, international_shipments, order_items, products
  * @db-write      hub_box_bags
  * @db-txn        service_owned
  * @doctrine      sealed_customer_bag_persists_inside_market_box; no_fake_repack_or_duplicate_allocation
