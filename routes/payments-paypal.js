@@ -6,7 +6,7 @@
  * @criticality   critical
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result
- * @depends       db.js, middleware/auth.js, middleware/auth-guest.js, services/paypal-client.js, services/payment-paypal.js
+ * @depends       db.js, middleware/auth.js, middleware/auth-guest.js, services/paypal-client.js, services/payment-paypal.js, services/paypal-refund-authority.js
  * @used-by       bootstrap/api-routes.js
  * @db-read       orders
  * @db-write      (none)
@@ -18,6 +18,7 @@
  * POST /api/payments/paypal/capture/:paypalOrderId → capturePaypalOrder
  * POST /api/payments/paypal/webhook                → handlePaypalWebhookEvent
  * POST /api/payments/paypal/refund/:orderId        → refundPaypalOrder
+ * POST /api/payments/paypal/refund/:orderId/reconcile → reconcilePaypalRefund
  */
 
 'use strict';
