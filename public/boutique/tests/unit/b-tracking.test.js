@@ -222,6 +222,12 @@ describe('renderOrderDetail', () => {
     expect(container.querySelector('.k-track-steps')).not.toBeNull();
   });
 
+  it.each([['total_kmf', 'KC1'], ['totalKmf', 'KC2']])('lit le total serveur %s (pas 0 KMF)', (field, ref) => {
+    const container = document.createElement('div');
+    renderOrderDetail({ reference: ref, [field]: 98765, status: 'pending' }, container);
+    expect(container.querySelector('.k-order-card-total').textContent).toMatch(/98\s?765|98.765/);
+  });
+
   it('utilise l\'id comme repli si reference absente', () => {
     const container = document.createElement('div');
     renderOrderDetail({ id: 'internal-id-1', total_amount: 0, status: 'pending' }, container);

@@ -63,6 +63,10 @@ describe('Réception fournisseur Hub : saisie manuelle (#3900 P0-2)', () => {
     expect(src).toContain("item.evidenceCode ? 'SCAN' : item.evidenceMethod, item.evidenceCode, item.evidenceRef");
     expect(src).toContain("if (entry.content.evidence_method === 'MANUAL') return null;");
     expect(ui).toContain("data-receive-manual-proof");
+    // R4 : interrupteur explicite ; sans lui, jamais de MANUAL ; avec lui, jamais de evidence_code.
+    expect(ui).toContain('data-receive-manual-toggle');
+    expect(ui).toMatch(/manualToggle\.checked\s*\?\s*\(line\.product_sku_id && String\(manualProof/);
+    expect(ui).toContain('matched.confirmed && !manualToggle.checked');
     expect(ui).toContain("{ evidence_method: 'MANUAL', evidence_ref: String(manualProof.value).trim() }");
   });
 });
