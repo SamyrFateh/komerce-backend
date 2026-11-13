@@ -229,6 +229,21 @@ describe('orders/cancel — calcul remboursement', () => {
     expectTransactionCommitted(client);
   });
 
+  it('FA-14 : refuse le raccourci wallet-only si une capture EUR existe', async () => {
+    const incoherent = orderRow({
+      payment_status: 'paid', total_kmf: 0, total_eur: 5, wallet_applied_kmf: 10000,
+    });
+    const client = makeClient([{ rows: [incoherent] }]);
+    db.getClient.mockResolvedValue(client);
+
+    const res = await request(app).post('/api/orders/o1/cancel').send({});
+
+    expect(res.status).toBe(500);
+    expect(processRefund).not.toHaveBeenCalled();
+    expect(transitionOrderStatus).not.toHaveBeenCalled();
+    expectTransactionRolledBack(client);
+  });
+
   it('FA-14 : annule une commande 100% wallet sans faux remboursement PSP', async () => {
     const paidWithWallet = orderRow({
       payment_status: 'paid', total_kmf: 0, total_eur: 0, wallet_applied_kmf: 10000,
