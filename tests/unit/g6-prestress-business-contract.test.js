@@ -50,6 +50,18 @@ describe('G6 pré-stress — unique business contract ChatGPT / Opus',()=>{
     const ids=new Set(data.scenarios.map(x=>x.id));
     for(const c of Object.values(data.configurations).filter(c=>c&&c.applies_to)) for(const id of c.applies_to) expect(ids.has(id)).toBe(true);
   });
+  test('O-HUB Fable H1-H9 est partagé et appliqué à tous les scénarios Hub critiques',()=>{
+    const oracle=data.transversal_oracles['O-HUB'];
+    expect(oracle.source).toBe('docs/recette/G6_HUB_SQL_ORACLES.sql');
+    expect(oracle.ids).toEqual(Array.from({length:9},(_,i)=>'H'+(i+1)));
+    const sql=fs.readFileSync(path.join(__dirname,'../../',oracle.source),'utf8');
+    for(const id of oracle.ids) expect(sql).toMatch(new RegExp('^-- '+id+'\\b','m'));
+    for(const id of ['M01','M03','M04','M05','M06','N13','N14','N15','N16']) {
+      expect(data.scenarios.find(s=>s.id===id).oracles).toContain('O-HUB');
+    }
+    expect(data.same_staging_sha_required).toBe(true);
+    expect(data.distinct_run8_and_order_by_agent).toBe(true);
+  });
   test('guide humain et contrat machine conservent exactement les mêmes IDs',()=>{
     const md=fs.readFileSync(documentation,'utf8');
     const ids=[...md.matchAll(/^\| ([MN]\d{2}) \|/gm)].map(m=>m[1]);
