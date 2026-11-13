@@ -27,17 +27,18 @@ describe('hub-live-cockpit — ancienneté des tâches (H4 #3998)', () => {
   });
 });
 
-describe('H4 #3998 — branchement directrice dans le vrai poste Hub', () => {
+describe('H4 #3998 — branchement global de la directrice dans le vrai poste Hub', () => {
+  const central = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/hub-workstation.js'), 'utf8');
   const operations = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/operations-workspace.js'), 'utf8');
-  test('la vue directrice charge son API multi-marchés et expose la file dans le poste Hub existant', () => {
-    expect(operations).toMatch(/renderDirectorTodo\(doc, context, ordersSlot\)/);
-    expect(operations).toContain("jsonRequest(context.fetch, '/api/hub/director-todo')");
-    expect(operations).toContain("['admin', 'agent_hub'].includes(context.user.role)");
-    expect(operations).toContain("data-hub-director-list");
-    expect(operations).toContain("task.age_hours");
-    expect(operations).toContain("task.overdue");
-    expect(operations).toContain("textContent");
-    expect(operations).toContain("/admin/hub-live?view=execute&market=");
+  test('le panneau est dans /admin/hub, pas un deuxième cockpit par marché', () => {
+    expect(central).toContain('renderDirectorQueue(content,{document:doc,fetch:fetchFn,user})');
+    expect(central).toContain("requestJSON(fetchFn,'/api/hub/director-todo')");
+    expect(central).toContain("['admin', 'agent_hub'].includes(user && user.role)");
+    expect(central).toContain('data-hub-director-list');
+    expect(central).toContain('task.age_hours');
+    expect(central).toContain('task.overdue');
+    expect(central).toContain('/admin/hub-live?view=execute&market=');
+    expect(operations).not.toContain("'/api/hub/director-todo'");
     expect(css).toContain('.hlc-director-task.is-overdue');
   });
 });
