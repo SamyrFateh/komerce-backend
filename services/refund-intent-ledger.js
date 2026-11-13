@@ -107,16 +107,7 @@ async function reserveRefundIntentInTransaction(client, {
   // ANY existing refund (wallet or PSP) is not automatically migrated or
   // reconciled: they must be reviewed before enabling this new ledger.
   const legacy = await client.query(
-    // Only confirmed PayPal admin intents whose exact financial journal has
-    // already been settled are reconciled. All other/legacy rows fail closed.
-    `SELECT r.id FROM refunds r WHERE r.order_id=$1 AND NOT EXISTS (
-         SELECT 1 FROM refund_execution_intents i
-          WHERE i.order_id=r.order_id AND i.provider='paypal'
-            AND i.status='confirmed' AND r.status='completed'
-            AND r.refund_method='paypal'
-            AND r.refund_type='paypal_admin:' || i.id::text
-            AND r.amount_eur=i.amount_eur
-       ) LIMIT 1`,
+    'SELECT id FROM refunds WHERE order_id = $1 LIMIT 1',
     [orderId]
   );
   if (legacy.rows.length) {
