@@ -4,14 +4,6 @@ on:
   push:
     branches:
       - 'fix/mobile-pdp-finishing-*'
-  pull_request:
-    paths:
-      - 'public/boutique/css/modal-mobile-canonical.css'
-      - 'public/boutique/css/modal-media.css'
-      - 'public/boutique/js/b-modal-image-ux.js'
-      - 'public/boutique/js/b-modal-nav.js'
-      - 'public/boutique/tests/e2e/modal-v3-mobile-finition.spec.js'
-      - '.github/workflows/mobile-pdp-chromium-proof.yml'
 
 permissions:
   contents: write
