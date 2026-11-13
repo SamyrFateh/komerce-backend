@@ -34,7 +34,7 @@ const {
 
 const { parseInboundTag, generatePhysicalReference } = require('./hub-reference');
 const { findPriorReception, replayResponse } = require('./hub-receive-idempotency');
-const { completeOrdersAfterHubReceipt } = require('./purchasing-completion-service');
+const { completeOrdersAfterHubReceipt, completeOrdersForPhysicalUnit } = require('./purchasing-completion-service');
 
 const REPACK_MIN_GAIN_FALLBACK_CM3 = 2000;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -136,6 +136,15 @@ async function transitionOperatorUnit(client, { unitId, toState, actorId, locati
  * L'ancien scan parcel_ref → safeSyncScanToParcels(order_id) est fermé.
  * La réception fournisseur canonique passe par receiveSupplierPackageCommand().
  */
+/** Rejeu d'une réception (HB-01) : même réponse, mais la complétude des commandes de l'unité est recalculée. */
+async function replayAndComplete(prior, contents, userId) {
+  const response = replayResponse(prior, contents);
+  if (response.status === 200 && !response.body.quarantined) {
+    await completeOrdersForPhysicalUnit(prior.unit.id, { actor: { id: userId || null } });
+  }
+  return response;
+}
+
 async function receiveParcel() {
   return {
     status: 410,
@@ -206,7 +215,7 @@ async function receiveSupplierPackageCommand(payload, userId) {
     const explicitReference = Boolean(payload && payload.reference);
     if (explicitReference) {
       const prior = await findPriorReception(reference);
-      if (prior) return replayResponse(prior, normalizedContents);
+      if (prior) return replayAndComplete(prior, normalizedContents, userId);
     }
 
     let result;
@@ -222,7 +231,7 @@ async function receiveSupplierPackageCommand(payload, userId) {
       // Course : deux envois simultanés de la même référence — le second relit l'état au lieu d'échouer en 500.
       if (explicitReference && error && error.code === '23505') {
         const prior = await findPriorReception(reference);
-        if (prior) return replayResponse(prior, normalizedContents);
+        if (prior) return replayAndComplete(prior, normalizedContents, userId);
       }
       throw error;
     }

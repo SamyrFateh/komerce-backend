@@ -88,7 +88,11 @@ async function distributeOrder(orderId, dbClient) {
   const { rows: allItems } = await client.query(`
     SELECT oi.id, oi.quantity, oi.product_id, oi.fulfillment_source,
            COALESCE((SELECT SUM(v.received_quantity)::int FROM v_purchase_line_progress v
-                      WHERE v.order_item_id = oi.id AND NOT v.cancelled), 0) AS received
+                      WHERE v.order_item_id = oi.id AND NOT v.cancelled), 0) AS received,
+           -- H1 / HB-02 : rupture définitive = au moins une ligne soldée, plus aucune ligne en attente de réception.
+           (EXISTS (SELECT 1 FROM purchase_lines pl WHERE pl.order_item_id = oi.id AND pl.cancelled_at IS NULL AND pl.settled_at IS NOT NULL)
+            AND NOT EXISTS (SELECT 1 FROM v_purchase_line_progress v
+                             WHERE v.order_item_id = oi.id AND NOT v.cancelled AND v.received_quantity < v.effective_quantity)) AS closed_short
       FROM order_items oi
      WHERE oi.order_id = $1
        AND NOT EXISTS (SELECT 1 FROM parcel_items pi JOIN parcels p ON p.id = pi.parcel_id AND p.status NOT IN ('cancelled')
@@ -98,13 +102,16 @@ async function distributeOrder(orderId, dbClient) {
 
   // Doctrine d'eligibilite : un colis ne contient que des articles du MEME circuit et PRETS. Jamais de melange local/import,
   // jamais d'article non approvisionne ou non recu avec des articles prets : ceux-la restent sans colis jusqu'a reception.
+  // Rupture définitive : le colis part avec la quantité reçue (le manquant est remboursé en amont).
+  const shortReceived = (item) => item.closed_short === true && Number(item.received) > 0 && Number(item.received) < Number(item.quantity || 1);
   const laneOf = (item) => item.fulfillment_source === 'IMPORT'
-    ? (Number(item.received) >= Number(item.quantity || 1) ? 'import' : 'import_pending')
+    ? ((Number(item.received) >= Number(item.quantity || 1) || shortReceived(item)) ? 'import' : 'import_pending')
     : 'local';
   const groups = new Map();
   const deferred = [];
   for (const item of allItems) {
     const lane = laneOf(item);
+    if (lane === 'import' && shortReceived(item)) item.quantity = Number(item.received);
     if (lane === 'import_pending') { deferred.push(item.id); continue; }
     if (!groups.has(lane)) groups.set(lane, []);
     groups.get(lane).push(item);
