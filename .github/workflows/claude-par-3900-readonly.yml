@@ -1,0 +1,53 @@
+name: CLAUDE-PAR 3900 - staging read-only provenance census
+
+on:
+  push:
+    branches: [cert/claude-par-3900]
+    paths:
+      - '.github/workflows/claude-par-3900-readonly.yml'
+      - 'scripts/recette/claude-par-3900-readonly.js'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: claude-par-3900-readonly
+  cancel-in-progress: false
+
+jobs:
+  census:
+    name: Read CLAUDE-PAR objects (read-only)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      PGOPTIONS: '-c default_transaction_read_only=on'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install locked dependencies without hooks
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Static read-only safety check
+        run: |
+          node --check scripts/recette/claude-par-3900-readonly.js
+          if grep -Eiq '\b(INSERT[[:space:]]+INTO|UPDATE[[:space:]]+[a-z_]+[[:space:]]+SET|DELETE[[:space:]]+FROM|TRUNCATE|ALTER[[:space:]]+TABLE|DROP[[:space:]]+TABLE)\b' scripts/recette/claude-par-3900-readonly.js; then
+            echo 'Refus : SQL mutable'
+            exit 1
+          fi
+      - name: Read staging (session and transaction read-only)
+        run: node scripts/recette/claude-par-3900-readonly.js
+      - name: Preserve census
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: claude-par-3900-readonly-${{ github.run_id }}
+          path: test-results/claude-par-3900/census.json
+          if-no-files-found: warn
+          retention-days: 14
