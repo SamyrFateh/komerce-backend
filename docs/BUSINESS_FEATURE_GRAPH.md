@@ -375,7 +375,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - interfaces exposed: 2
 - internal APIs: 6
 - dependencies (consumes): 4 — catalog, market, logistics, infrastructure
-- consumers: 6 — dashboard, economic-engine, logistics, orders, providers-services, recommendations
+- consumers: 7 — dashboard, economic-engine, logistics, market-delegation, orders, providers-services, recommendations
 
 ### logistics _(business-feature)_
 
@@ -470,7 +470,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - tables written: 10
 - interfaces exposed: 33
 - internal APIs: 35
-- dependencies (consumes): 13 — market, auth, auth-identity, infrastructure, logistics, catalog, providers-services, orders, settlement, economic-engine, market-autonomy, dashboard, payments
+- dependencies (consumes): 14 — local-stock, market, auth, auth-identity, infrastructure, logistics, catalog, providers-services, orders, settlement, economic-engine, market-autonomy, dashboard, payments
 - consumers: 10 — dashboard, dashboard, economic-engine, logistics, market-autonomy, market-control-plane, market-operator-dashboard, payments, settlement, decision-signals
 
 ### market-operator-dashboard _(unclassified)_
@@ -2042,6 +2042,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | market-control-plane | sourcing (`sourcing (sourcing_global_access_grants et require-sourcing-global-authority : autorisation centrale explicite lue)`) | ✔ |
 | market-control-plane | auth (`auth (garde des routes centrales)`) | ✔ |
 | market-control-plane | infrastructure (`infrastructure (DB et bootstrap)`) | ✔ |
+| market-delegation | local-stock (`local-stock`) | ✔ |
 | market-delegation | market (`market`) | ✔ |
 | market-delegation | auth (`auth`) | ✔ |
 | market-delegation | auth-identity (`auth-identity`) | ✔ |
@@ -2216,11 +2217,10 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - none
 
-### DETTE / DRIFT ACTIONNABLE (7)
+### DETTE / DRIFT ACTIONNABLE (6)
 
 Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la dette gouvernance. Les topologies attendues et limites du générateur restent visibles séparément et ne consomment aucun budget de dette.
 
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ market-delegation -> local-stock — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "market-delegation" vers "local-stock"
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ order_item_real_cost_allocations — table "order_item_real_cost_allocations" : lifecycle owner = economic-engine (db.tables "!"), mais aussi écrite par customs
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ order_items — table "order_items" : lifecycle owner = orders (db.tables "!"), mais aussi écrite par logistics
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ orders — table "orders" : lifecycle owner = orders (db.tables "!"), mais aussi écrite par economic-engine
@@ -2533,7 +2533,7 @@ Meta Graph monté : oui.
 | market-delegation | dashboard | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | market-delegation | economic-engine | static-code, data-read | 6 | **DECLARED_AND_OBSERVED** |
 | market-delegation | infrastructure | static-code | 25 | **DECLARED_AND_OBSERVED** |
-| market-delegation | local-stock | static-code | 1 | **OBSERVED_UNDECLARED** |
+| market-delegation | local-stock | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | market-delegation | logistics | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
 | market-delegation | market | static-code, data-read | 7 | **DECLARED_AND_OBSERVED** |
 | market-delegation | market-autonomy | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
@@ -2709,7 +2709,6 @@ Meta Graph monté : oui.
 - `market` → `market-delegation` (canaux: static-code)
 - `market` → `orders` (canaux: static-code)
 - `market-autonomy` → `market-control-plane` (canaux: static-code)
-- `market-delegation` → `local-stock` (canaux: static-code)
 - `market-delegation` → `market-operator-dashboard` (canaux: static-code)
 - `platform-ops` → `auth-passkey` (canaux: static-code)
 - `platform-ops` → `notifications` (canaux: static-code)
@@ -2776,11 +2775,11 @@ Composition-root owners (dérivés de l'ownership des fichiers wiring, pas du no
 | NON_RUNTIME_TEST | 17 | non-runtime-evidence |
 | TECHNICAL_PRIMITIVE | 0 | technical-dependency-policy |
 | BUSINESS_TRANSVERSAL_SERVICE | 0 | business-dependency-declare-candidate |
-| CROSS_FEATURE_DIRECT_IMPORT | 1 | boundary-remediation-required |
+| CROSS_FEATURE_DIRECT_IMPORT | 0 | boundary-remediation-required |
 | BUSINESS_FEATURE_INTERFACE | 0 | business-dependency-declare-candidate |
 | PILOTING_CAPABILITY | 0 | piloting-capability-dependency |
 | UNCLASSIFIED | 0 | _(bloquant si > 0)_ |
-| **TOTAL** | **38** | |
+| **TOTAL** | **37** | |
 
 ### Projection dependencies
 
@@ -2851,7 +2850,7 @@ Consommation réelle d'un service transversal métier — candidat `contract.con
 
 require() direct d'un fichier d'une autre business-feature — couture à casser AVANT déclaration.
 
-- `market-delegation` → `local-stock` — business-file-import, RUNTIME_ONLY _(exception: direct-import)_
+- _none_
 
 ### Business feature interfaces
 

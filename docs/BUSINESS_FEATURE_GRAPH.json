@@ -29642,6 +29642,12 @@
       },
       {
         "from": "market-delegation",
+        "to": "local-stock",
+        "raw": "local-stock",
+        "resolved": true
+      },
+      {
+        "from": "market-delegation",
         "to": "market",
         "raw": "market",
         "resolved": true
@@ -42756,7 +42762,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "market-delegation",
@@ -49649,7 +49655,7 @@
       "NON_RUNTIME_TEST": 17,
       "TECHNICAL_PRIMITIVE": 0,
       "BUSINESS_TRANSVERSAL_SERVICE": 0,
-      "CROSS_FEATURE_DIRECT_IMPORT": 1,
+      "CROSS_FEATURE_DIRECT_IMPORT": 0,
       "BUSINESS_FEATURE_INTERFACE": 0,
       "PILOTING_CAPABILITY": 0,
       "UNCLASSIFIED": 0
@@ -50047,23 +50053,6 @@
       },
       {
         "from": "market-delegation",
-        "to": "local-stock",
-        "family": "CROSS_FEATURE_DIRECT_IMPORT",
-        "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "business-feature",
-        "providerKind": "business-feature",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "boundary-remediation-required",
-        "exceptionRequired": true,
-        "exceptionReasons": [
-          "direct-import"
-        ]
-      },
-      {
-        "from": "market-delegation",
         "to": "market-operator-dashboard",
         "family": "NON_RUNTIME_TEST",
         "evidenceRole": "TEST_ONLY",
@@ -50239,7 +50228,6 @@
       "COMPOSITION_ROOT_WIRING|RUNTIME_AND_TEST|technical-foundation|business-feature|business-file-import": 3,
       "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-feature|business-file-import": 7,
       "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-transversal|business-file-import": 2,
-      "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_ONLY|business-feature|business-feature|business-file-import": 1,
       "NON_RUNTIME_TEST|TEST_ONLY|business-feature|unclassified|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-feature|business-file-import": 3,
       "COMPOSITION_ROOT_WIRING|RUNTIME_AND_TEST|technical-transversal|business-transversal|business-file-import": 1,
@@ -50255,9 +50243,7 @@
     "staleExceptions": [],
     "duplicateExceptionKeys": [],
     "illegitimateExceptions": [],
-    "missingExceptions": [
-      "market-delegation->local-stock"
-    ],
+    "missingExceptions": [],
     "emptyRationaleExceptions": [],
     "unexplainedRuntimeCycles": [],
     "ontologyGapCoverage": {
@@ -53651,11 +53637,6 @@
     "error": [],
     "warn": [
       {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "market-delegation -> local-stock",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"market-delegation\" vers \"local-stock\""
-      },
-      {
         "type": "WRITER-NOT-OWNER",
         "ref": "order_item_real_cost_allocations",
         "msg": "table \"order_item_real_cost_allocations\" : lifecycle owner = economic-engine (db.tables \"!\"), mais aussi écrite par customs"
@@ -53687,11 +53668,6 @@
       }
     ],
     "debt": [
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "market-delegation -> local-stock",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"market-delegation\" vers \"local-stock\""
-      },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "order_item_real_cost_allocations",
@@ -54028,11 +54004,11 @@
       }
     ],
     "summary": {
-      "signals": 7,
-      "debt": 7,
+      "signals": 6,
+      "debt": 6,
       "expectedTopology": 48,
       "generatorLimitations": 12,
-      "classifiedCandidates": 67
+      "classifiedCandidates": 66
     }
   }
 }
