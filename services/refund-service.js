@@ -216,6 +216,15 @@ async function processRefundWithFallback(dbClient, order, amountKmf, amountEur, 
     return { method: 'none', skipped: true, reason: 'zero_amount', amountEur, amountKmf };
   }
 
+  // FA-04 : une commande Stripe payée sans identifiant de capture vérifiable
+  // ne doit pas être convertie silencieusement en avoir wallet.
+  if (order.payment_mode === 'stripe_eur' && !order.stripe_payment_id) {
+    const error = new Error('Capture Stripe manquante : rapprochement du paiement requis.');
+    error.code = 'REFUND_STRIPE_CAPTURE_MISSING';
+    error.statusCode = 409;
+    throw error;
+  }
+
   // Une seule vérité monétaire : jamais plus que le capturé, jamais un doublon silencieux de montant différent.
   await assertRefundWithinCaptured(dbClient, order, amountKmf, amountEur, refundType);
   await assertRefundRecordCompatible(dbClient, order, amountKmf, amountEur, refundType);
