@@ -48,13 +48,13 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 | Objet | Compte | Note |
 |---|---|---|
-| Tables | 232 | Vérifié sur le dump live Railway. |
+| Tables | 237 | Vérifié sur le dump live Railway. |
 | Vues | 21 | Vérifié sur le dump live Railway. |
 | ENUMs | 17 | Types métier présents dans le dump live Railway. |
-| Index | 529 | Performance + contraintes uniques |
-| Foreign keys | 458 | Cohérence relationnelle |
-| Fonctions | 129 | Fonctions présentes dans le dump live Railway. |
-| Triggers | 145 | Triggers présents dans le dump live Railway. |
+| Index | 535 | Performance + contraintes uniques |
+| Foreign keys | 477 | Cohérence relationnelle |
+| Fonctions | 134 | Fonctions présentes dans le dump live Railway. |
+| Triggers | 151 | Triggers présents dans le dump live Railway. |
 | Extensions | `pgcrypto`, `uuid-ossp` | UUID + chiffrement |
 
 ---
@@ -89,37 +89,9 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 ### 4.1 Logistique commande (7 tables)
 
-<!-- schema-pending
-object: purchase_variance_decisions
-kind: table
-migration: 407
-section: ### 4.1 Logistique commande (7 tables)
-role: Autorisation distincte et immuable de la directrice Hub pour dépasser le total vendeur justifié, plafonnée par l'autorisation de paiement initiale, avec motif et pièce.
--->
 
-<!-- schema-pending
-object: manual_purchase_executions
-kind: table
-migration: 404
-section: ### 4.1 Logistique commande (7 tables)
-role: Allocations vendeur réel append-only par ligne PO manuelle, quantité et montant justifiés, canal et preuve. Ne pas interpréter comme un paiement fournisseur.
--->
 
-<!-- schema-pending
-object: order_checkout_idempotency
-kind: table
-migration: 408
-section: ### 4.1 Logistique commande (7 tables)
-role: Réservation transactionnelle UNIQUE(user_id, idempotency_key) et snapshot immuable du résultat du checkout ; réémission sans double création, stock ni débit wallet. Ne pas confondre avec une table live tant que le dump Railway ne confirme pas la migration.
--->
 
-<!-- schema-pending
-object: pickup_collect_failures
-kind: table
-migration: 413
-section: ### 4.1 Logistique commande (7 tables)
-role: Compteur append-only des échecs de retrait par code (code inconnu ou incorrect) par agent et relais ; au-delà de 5 échecs en 15 minutes glissantes, collectByPickupCode répond 429. Colonnes agent_id, relais_id, created_at. Aucun code stocké.
--->
 
 | Table | Rôle |
 |---|---|
@@ -129,6 +101,10 @@ role: Compteur append-only des échecs de retrait par code (code inconnu ou inco
 | `order_comments` | Commentaires opérationnels. **Migration 398 (intended_migration_schema, non encore promue live)** : colonne nullable `hub_stage_key` (po, supplier, reception, cartons, departure, remaining) pour les notes internes Hub rattachées aux étapes d’une commande ; index ciblé et trigger SQL interdisant UPDATE et DELETE directs des notes d’étape tant que la commande existe. Les commentaires historiques restent inchangés ; la cascade de suppression de la commande demeure possible. |
 | `order_incidents` | Incidents commande. |
 | `order_cost_entry_events` | Journal append-only des saisies/corrections manuelles de coûts (L1) et des affectations de périmètre de recette (L3) : ancienne/nouvelle valeur, provenance, motif, auteur, clé d'idempotence. **Migration 303 — promue le 2026-10-19 (schema-promote, dump live verifie).** |
+| `purchase_variance_decisions` | Autorisation distincte et immuable de la directrice Hub pour dépasser le total vendeur justifié, plafonnée par l'autorisation de paiement initiale, avec motif et pièce. **Migration 407 — promue le 2026-11-13 (schema-promote, dump live verifie).** |
+| `manual_purchase_executions` | Allocations vendeur réel append-only par ligne PO manuelle, quantité et montant justifiés, canal et preuve. Ne pas interpréter comme un paiement fournisseur. **Migration 404 — promue le 2026-11-13 (schema-promote, dump live verifie).** |
+| `order_checkout_idempotency` | Réservation transactionnelle UNIQUE(user_id, idempotency_key) et snapshot immuable du résultat du checkout ; réémission sans double création, stock ni débit wallet. Ne pas confondre avec une table live tant que le dump Railway ne confirme pas la migration. **Migration 408 — promue le 2026-11-13 (schema-promote, dump live verifie).** |
+| `pickup_collect_failures` | Compteur append-only des échecs de retrait par code (code inconnu ou incorrect) par agent et relais ; au-delà de 5 échecs en 15 minutes glissantes, collectByPickupCode répond 429. Colonnes agent_id, relais_id, created_at. Aucun code stocké. **Migration 413 — promue le 2026-11-13 (schema-promote, dump live verifie).** |
 
 > **Ajouté** : migration 071 (A-BE-18, 26 mai 2026). Ces tables étaient auparavant créées au runtime par `ensureRelayTables()` dans `routes/relay-dashboard.js`. Elles sont désormais versionnées dans `migrations/071_relay_dashboard_tables.sql` (idempotent). Colonnes : voir migration pour le DDL complet (types incidents, priorités, statuts, résolution). Index : `idx_incidents_order`, `idx_incidents_status`, `idx_comments_order`.
 | `order_item_cost_imputations` | Imputations de coûts par item (audit). **Migration 164 (2026-09-06, `intended_migration_schema`)** : + `estimated_business_variable_cost_kmf` NUMERIC(12,2) nullable pour figer les coûts variables business (paiement + provision risque) et + `estimated_fixed_overhead_kmf` NUMERIC(12,2) nullable comme allocation analytique historique des charges fixes. `estimated_business_complete_cost_kmf` est conservé pour compatibilité legacy. Cette allocation fixe n'est jamais une dette intrinsèque du SKU ni une autorité de prix. Le backfill reste NULL lorsqu'un snapshot historique ne permet pas une reconstruction fiable ; aucune valeur 0 n'est inventée. |
