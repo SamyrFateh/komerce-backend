@@ -238,7 +238,7 @@ describe('orders/cancel — calcul remboursement', () => {
 
     const res = await request(app).post('/api/orders/o1/cancel').send({});
 
-    expect(res.status).toBe(500);
+    expect(res.status).toBe(409);
     expect(processRefund).not.toHaveBeenCalled();
     expect(transitionOrderStatus).not.toHaveBeenCalled();
     expectTransactionRolledBack(client);
