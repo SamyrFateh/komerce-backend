@@ -1,0 +1,35 @@
+name: Claude PAR — enregistrer les revues visuelles FR (AUTOMATED_STAGING) des produits CLAUDE-PAR
+
+# Écrit uniquement les revues APPROUVÉES de catalog-visual-verdicts.json (inspection réelle, jamais HUMAN).
+on:
+  push:
+    branches: [cert/claude-par-catalog]
+    paths:
+      - '.github/workflows/claude-par-catalog-visual-review.yml'
+      - 'scripts/recette/claude-par/catalog-visual-review.js'
+      - 'scripts/recette/claude-par/catalog-visual-verdicts.json'
+
+permissions:
+  contents: read
+
+jobs:
+  dump:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      KOMERCE_ENV: staging
+      NODE_ENV: test
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      EXPECTED_RAILWAY_ENVIRONMENT: staging
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Vérifier la cible staging
+        run: node scripts/recette/target-guard.js
+      - name: Enregistrer les revues approuvées
+        run: node scripts/recette/claude-par/catalog-visual-review.js
