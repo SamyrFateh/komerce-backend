@@ -30,7 +30,7 @@ const COMPONENTS = [
   mk('hub_controle_kmf', 'hub', 150, 'kmf_per_parcel'),
   mk('fret_maritime_eur_m3', 'freight', 180, 'eur', 'by_volume'),
   mk('assurance_transport_pct', 'freight', 0.5, 'pct'),
-  mk('frais_frais_inspection_douane_kmf_kmf', 'customs', 5000, 'kmf_per_shipment'),
+  mk('frais_inspection_douane_kmf', 'customs', 5000, 'kmf_per_shipment'),
   mk('transitaire_kmf', 'port_transitary', 3, 'pct'),
   mk('transport_port_relais_kmf', 'local_distribution', 500, 'kmf_per_parcel'),
   mk('commission_relais_kmf', 'relay', 600, 'kmf_per_order'),
