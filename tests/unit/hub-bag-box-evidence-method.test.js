@@ -125,7 +125,8 @@ describe('Audit Fable #3998 — colis client déduit du sac sans ressaisie', () 
     const source = fs.readFileSync(path.join(__dirname,
       '../../public/dashboards/canonical/js/operations-workspace.js'), 'utf8');
     expect(source).not.toContain('bag_unit_id:bag.unit_id,parcel_id:parcel.value');
-    expect(source).toContain('bag_unit_id:bag.unit_id,');
+    expect(source).toContain('bag_unit_id:bag.unit_id,...(!parcel.hidden?{parcel_id:parcel.value}:{})');
+    expect(source).toContain('parcel.hidden=!ambiguous');
     expect(source).toContain('bag_reference_scan:bagScan.value.trim(),box_reference_scan:boxScan.value.trim()');
   });
 });
