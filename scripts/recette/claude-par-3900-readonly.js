@@ -77,8 +77,8 @@ async function main() {
     await section(client, 'order', `SELECT * FROM orders WHERE reference = $1`, [ORDER_REF]);
     await section(client, 'parcels', `SELECT * FROM parcels WHERE order_id = ${O}`, [ORDER_REF]);
     await section(client, 'units', `SELECT reference, unit_type, state, current_location_ref FROM hub_physical_units WHERE order_id = ${O} ORDER BY created_at`, [ORDER_REF]);
-    await section(client, 'allocations', `SELECT a.id, a.purchase_order_id, a.quantity, a.supplier_order_identity, ps.code AS sku_code
-      FROM hub_purchase_allocations a LEFT JOIN product_skus ps ON ps.id = a.product_sku_id WHERE a.order_id = ${O}`, [ORDER_REF]);
+    await section(client, 'allocations', `SELECT a.id, a.purchase_order_id, a.quantity, a.supplier_order_identity, a.product_sku_id
+      FROM hub_purchase_allocations a WHERE a.order_id = ${O}`, [ORDER_REF]);
     await section(client, 'placements', `SELECT pl.operation_type, pl.quantity, pl.evidence_method, (pl.evidence_code IS NOT NULL) AS has_evidence_code, pl.evidence_ref, pl.placed_at, u.reference, u.unit_type
       FROM hub_physical_unit_placements pl JOIN hub_physical_units u ON u.id = pl.physical_unit_id
       WHERE pl.allocation_id IN (SELECT id FROM hub_purchase_allocations WHERE order_id = ${O}) ORDER BY pl.placed_at`, [ORDER_REF]);
@@ -98,6 +98,12 @@ async function main() {
     await section(client, 'physical_codes', `SELECT code, code_type, trust, confirmation_proof_ref, confirmed_at FROM product_sku_physical_codes WHERE code LIKE 'CLPAR-%' ORDER BY confirmed_at`, []);
     await section(client, 'incidents', `SELECT incident_type, severity, status, title, created_at FROM incidents WHERE order_id = ${O}`, [ORDER_REF]);
     await section(client, 'pickup_codes_state', `SELECT (pickup_secret_hash IS NOT NULL) AS has_hash, pickup_secret_last4 IS NOT NULL AS has_last4, pickup_secret_attempts, pickup_secret_blocked_until, pickup_secret_revealed_at FROM orders WHERE reference = $1`, [ORDER_REF]);
+    await section(client, 'shipment_events', `SELECT e.event_type, e.from_stage, e.to_stage, e.proof_ref, e.notes, e.payload, e.occurred_at
+      FROM international_shipment_events e JOIN international_shipments s ON s.id = e.shipment_id
+      WHERE s.reference = 'CLAUDE-PAR-20261113-EXP' ORDER BY e.occurred_at`, []);
+    await section(client, 'transaction_documents', `SELECT document_type, subject_type, reference, status, created_at FROM transaction_documents WHERE order_id = ${O} ORDER BY created_at`, [ORDER_REF]);
+    await section(client, 'return_receipts', `SELECT r.quantity, r.condition_code, r.storage_zone, r.received_at FROM relay_product_return_receipts r
+      WHERE r.request_id IN (SELECT id FROM relay_product_return_requests WHERE order_id = ${O})`, [ORDER_REF]);
     await section(client, 'sav', `SELECT * FROM relay_return_compensations WHERE order_id = ${O}`, [ORDER_REF]);
 
     await client.query('ROLLBACK'); tx = false;
