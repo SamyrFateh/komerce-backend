@@ -226,7 +226,10 @@ async function refundPaypalOrder({
   }
   let providerRef = null;
   try {
-    const result = await paypal.refundCapture(claimed.capture_ref, {
+    // The provider adapter is the only PSP boundary here; claimed was committed.
+    // Same adapter contract as SAV / item-refund guarded orchestration.
+    const paypalAdapter = paypal;
+    const result = await paypalAdapter.refundCapture(claimed.capture_ref, {
       amountEur: Number(claimed.amount_eur),
       reason: String(reason || 'admin_refund').slice(0,255),
       providerRequestKey: claimed.providerRequestKey,
