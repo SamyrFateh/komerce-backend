@@ -58,7 +58,7 @@
 | `shared-list-lists-tab.css` | 278 | components.css |
 | `shared-list-side-cart.css` | 935 | components.css |
 | `shared-list-side-cart-responsive.css` | 91 | components.css |
-| `side-cart-desktop-polish.css` | 262 | desktop.css |
+| `side-cart-desktop-polish.css` | 323 | desktop.css |
 | `tokens.css` | 599 | base.css |
 | `wallet.css` | 191 | components.css |
 
@@ -69,9 +69,9 @@ Cascade réelle des bundles livrés :
 ```
  1. /boutique/css/dist/base.css?v=266
  2. /boutique/css/dist/critical-home.css?v=5
- 3. /boutique/css/dist/components.css?v=655
- 4. /boutique/css/dist/components.css?v=655
- 5. /boutique/css/dist/desktop.css?v=155
+ 3. /boutique/css/dist/components.css?v=657
+ 4. /boutique/css/dist/components.css?v=657
+ 5. /boutique/css/dist/desktop.css?v=157
 ```
 
 ## 3. Cartographie des sélecteurs critiques
