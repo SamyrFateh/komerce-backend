@@ -141,22 +141,6 @@
         }
       }
     },
-    "6a55d16a-cdc0-4cd9-adfc-1201ddd69301": {
-      "media": {
-        "CLAUDE-PAR-20261113-PLANCHE:media:1": {
-          "verdict": "APPROVED",
-          "text_presence": "NONE"
-        }
-      }
-    },
-    "83457a83-0b68-48aa-8507-ae153f925acd": {
-      "media": {
-        "CLAUDE-PAR-20261113-CASSEROLE:media:1": {
-          "verdict": "APPROVED",
-          "text_presence": "NONE"
-        }
-      }
-    },
     "bf6b85e1-4062-4b19-858d-30eab55ce489": {
       "media": {
         "CLAUDE-PAR-20261113-PLANCHE:media:v4": {
@@ -187,5 +171,6 @@
     "e7fc3651-200f-4be2-bdd5-f39e54f5ca63": "textes anglais, marques, allegations non verifiees",
     "b7e80506-b037-40b2-a46e-72514ac04021": "non retenu (etiquettes cintre Lee, non inspecte image par image)",
     "21bc5285-note": "retenu apres decision Opus : images 8-9 etiquette generique transcrite et traduite en legende FR"
-  }
+  },
+  "rerun": 2
 }
