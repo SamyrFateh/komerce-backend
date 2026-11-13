@@ -1,4 +1,4 @@
-# Reprise Opus : certification pré-E2E G6 (revu le 13/11/2026 — états GitHub H1–H4)
+# Reprise Opus : certification pré-E2E G6 (revue croisée du 13/11/2026 — correctifs Hub et matrice O-HUB)
 
 Point de départ pour tout agent qui reprend après une coupure. Fil de coordination : issue **#3927**. Matrice commune : PR draft **#3944**, branche `docs/g6-matrix-v2`.
 
@@ -27,26 +27,27 @@ Point de départ pour tout agent qui reprend après une coupure. Fil de coordina
 - **Marqueurs** : `CLAUDE-PAR-20261111` et `CLAUDE-PAR-20261113`.
 
 ## Lots de code
-| Lot | PR | État |
+
+| Lot | PR | État vérifié sur tête citée |
 |---|---|---|
-| L1 à L7, #3951, W1 à W3, R1 à R6 (#3981 à #3986) | fusionnés | sur le staging (`589d81d88` vérifié) |
-| H1 : avancement automatique (HB-01, HB-02, HB-03), incident `supplier_shortage`, remboursement admin | #4001 | **draft, Required verdict ROUGE** : job PostgreSQL/intégration/E2E API échoué ; 1 test sur 162 en échec, `relation "incidents" does not exist` dans `purchase-lines-engagement-postgres` |
-| H2 : verrou de commande dans `distributeOrder` (HB-04) | #4000 | **draft, Required verdict VERT** : CI PG16/intégration/E2E API verte ; test dédié de concurrence réelle à confirmer |
-| H3 : quantités (HB-05, HB-06, HB-07, HB-11) | #4003 | **draft, Required verdict ROUGE** : job PostgreSQL/intégration/E2E API échoué ; 13 tests sur 162 en échec, `function purchase_line_received_quantity(unknown) does not exist` ; migration 414 / montage du schéma à diagnostiquer |
-| H4 : vue directrice tous marchés, ancienneté, alerte 48 h (HB-08), décision 4 | #4002 | **draft, Required verdict VERT**, PG16/intégration/dashboard verts ; API multi-marchés présente mais **UI directrice non raccordée** (`/api/hub/director-todo`) |
+| L1 à L7, #3951, W1 à W3, R1 à R6 (#3981 à #3986) | fusionnés | staging antérieur (SHA `589d81d88` selon handoff Opus ; revérifier `/health/version` avant tout test) |
+| H1 : complétude automatique, cron, rupture + incident + remboursement admin (HB-01/02/03) | [#4001](https://github.com/SamyrFateh/komerce-backend/pull/4001) | **draft, CI en cours** sur `58f164a` ; fixture PG `incidents`/alertes corrigée, test sac/KOM-BOX adapté à la distribution automatique ; nouveau run [43466803089](https://github.com/SamyrFateh/komerce-backend/actions/runs/43466803089). Aucun PASS revendiqué avant Required verdict. |
+| H2 : sérialiser les répartitions HB-04 | [#4000](https://github.com/SamyrFateh/komerce-backend/pull/4000) | **draft, Required verdict VERT** sur `c8039a3` ([43451497471](https://github.com/SamyrFateh/komerce-backend/actions/runs/43451497471)), test concurrence PostgreSQL réelle inter-opérateurs restant à prouver. |
+| H3 : confirmation ≥ déjà reçu ; quantité unifiée hors quarantaine ; refus ligne sans SKU (HB-05/06/07/11) | [#4003](https://github.com/SamyrFateh/komerce-backend/pull/4003) | **draft, Required verdict VERT** sur `6673e52` ([43464578449](https://github.com/SamyrFateh/komerce-backend/actions/runs/43464578449)), migration 414 et fixture PG synchronisées ; M06 réel Hub central à rejouer. |
+| H4 : cockpit directrice multi-marchés, âge et alerte 48 h (HB-08, décision 4) | [#4002](https://github.com/SamyrFateh/komerce-backend/pull/4002) | **draft, CI en cours** sur `f71630d` ([43466280972](https://github.com/SamyrFateh/komerce-backend/actions/runs/43466280972)) ; API `/api/hub/director-todo` branchée dans cockpit Hub existant, contrat OpenAPI, source de génération et DEBT régénérés ; vrai geste Chromium pas encore certifié. |
 
-### Revue croisée GitHub (13/11) — points restant à lever
+### Travail poussé et points bloquants
 
-- [H1 #4001](https://github.com/SamyrFateh/komerce-backend/pull/4001) : [Required verdict rouge, run 43452768908](https://github.com/SamyrFateh/komerce-backend/actions/runs/43452768908). Le test d'intégration `purchase-lines-engagement-postgres` échoue sur `relation "incidents" does not exist`. Examiner uniquement le montage de schéma/test avant de conclure à un défaut métier ; ne pas élargir le correctif sans preuve.
-- [H2 #4000](https://github.com/SamyrFateh/komerce-backend/pull/4000) : [Required verdict vert, run 43451497471](https://github.com/SamyrFateh/komerce-backend/actions/runs/43451497471). Conserver la preuve de contention de deux répartitions sur une même commande à rejouer en PostgreSQL réel, malgré l'index unique existant.
-- [H3 #4003](https://github.com/SamyrFateh/komerce-backend/pull/4003) : [Required verdict rouge, run 43455000959](https://github.com/SamyrFateh/komerce-backend/actions/runs/43455000959). `purchase-lines-engagement-postgres` échoue sur `purchase_line_received_quantity(unknown) does not exist` ; distinguer une migration 414 non chargée d'un défaut de résolution SQL. Les 13 échecs se concentrent dans cette suite, d'autres fichiers du même lot sont marqués non prouvés par sortie non nulle. Rejouer M06 sur produit manuel Hub central avec SKU.
-- [H4 #4002](https://github.com/SamyrFateh/komerce-backend/pull/4002) : [Required verdict vert, run 43452050028](https://github.com/SamyrFateh/komerce-backend/actions/runs/43452050028) ; `GET /api/hub/director-todo` fournit le multi-marchés, mais l'écran existant n'utilise pas encore cette vue (la PR l'indique elle-même). **Décision 6 non certifiable en vrai Chromium tant que ce raccordement n'est pas fait.** À faire sans créer de second dashboard.
-- Les quatre PR sont **ouvertes et en draft, non fusionnées**. Elles se recouvrent sur `purchasing-engagement-service.js` (H1/H3/H4) et `auto-parcel.js` (H1/H2). Rebaser et contrôler la CI sur les **têtes actualisées** avant chaque fusion ; aucun verdict vert antérieur ne vaut pour une tête modifiée.
-- **STOP E2E G6** jusqu'au GO explicite du propriétaire, puis deux campagnes indépendantes GPT/Opus sur la même version de staging. Ne pas confondre tests unitaires/preflight, CI PR et validation métier Chromium + HTTP + PostgreSQL. Aucun paiement ou notification réels.
+- H1 : l'ancien test `hub-order-bag-ownership-postgres` créait une seconde ligne `parcel_items` après la distribution automatique, en conflit avec la garde unique (garde saine). La fixture réutilise désormais les IDs des colis créés automatiquement et les `parcel_item_id` canoniques ; CI actuelle à relire.
+- H3 : le runner PostgreSQL a validé la migration 414 et les tests d'intégration sur la tête citée. Ne pas relâcher les protections de variant/SKU pour M06.
+- H4 : le cockpit charge les tâches tous marchés depuis l'API en lecture seule (âge, alerte `>=48h`, référence, lien vers le poste du marché). L'enregistrement du endpoint dans `docs/contract/openapi.json` et la dette de contrat sont synchronisés. Reste à prouver la vraie lecture/interaction Chromium sur le staging intégré.
+- **Matrice commune #3944 (branche `docs/g6-matrix-v2`)** : O-HUB **ajouté** aux fichiers G6 JSON et Markdown et aux scénarios M01/M03/M04/M05/M06/N13-N16, script `docs/recette/G6_HUB_SQL_ORACLES.sql` avec **9 contrôles Fable H1–H9**, test de contrat associé. Ce sont des assertions **à exécuter**, aucune preuve de PASS métier à ce stade. H2 (rupture) et H5b (allocation figée) exigent interprétation contextuelle ; H8/H9 exigent visibilité/âge/alerte, pas nécessairement zéro ligne.
+- **Les 4 PR restent draft et non fusionnées**. Chevauchements : `purchasing-engagement-service.js` H1/H3/H4 ; `auto-parcel.js` H1/H2. Réconcilier dans cet ordre en conservant les deux logiques, puis refaire Required verdict sur chaque tête actualisée et PostgreSQL avant la moindre fusion.
+- **HOLD staging et E2E** : #3900 encore ouverte, passe 2 non déclarée terminée ; aucun merge Hub, aucun changement de variables Railway ; le GO 46 E2E G6 n'a pas été donné. Pas de paiements, WhatsApp ni notifications réels.
 
 **Fusion groupée H1 à H4** : à faire quand tout est vert et qu'aucun run `staging`, `chromium` ou `g6` n'est actif. Modèle de boucle : `scripts/merge-list.sh <PR...>`. Elle sort les PR du brouillon via `POST /pulls/{n}/ccr/ready_for_review`, fait update-branch, attend `clean`, fusionne en squash et contrôle `merged=true`. **Dans le même créneau**, activer `E7_ITEM_RESERVATIONS_ENABLED=1` sur le staging Railway (décision du propriétaire du 13/11). Cela redémarre le service.
 
-**Audits Fable** : #3987 (flux d'argent), #3988 (moteur économique), #3998 (Hub). Les décisions 1 à 7 du propriétaire sur #3998 figurent dans le commentaire 6857010399. Les invariants SQL H1 à H9 de #3998 sont à ajouter aux contrôles PostgreSQL des deux campagnes E2E.
+**Audits Fable** : #3987 (flux d'argent), #3988 (moteur économique), #3998 (Hub). Les décisions 1 à 7 du propriétaire sur #3998 figurent dans le commentaire 6857010399. Les invariants SQL H1 à H9 de #3998 sont **ajoutés au contrat partagé #3944** dans l'oracle O-HUB ; il reste à les **exécuter** indépendamment pour chaque campagne.
 
 ## Défauts consignés, non corrigés
 - **Catalogue** (#3927) :
@@ -62,8 +63,8 @@ Point de départ pour tout agent qui reprend après une coupure. Fil de coordina
 
 ## Prochaines étapes
 1. **Seconde passe #3900** (`briefs/BRIEF_3900_PASSE2.md`), en cours en KM sur `589d81d88`. Elle couvre les 12 points : 3 sources, R4, R6, R1, R2, R3, retrait partiel, timeout et panne réseau, R5 sur KC692IV, encaissement, SAV.
-2. **Lever les rouges H1 (#4001) et H3 (#4003)** ; raccorder la vue multi-marchés H4 au cockpit, rejouer migration 414/PG16 et M06 ; H2/H4 restent verts uniquement sur leurs têtes actuelles. Ensuite H1 à H4 au vert sur têtes réconciliées, fusion groupée et activation de E7 sur staging **après** la seconde passe #3900, puis **revérification Hub ciblée** : invariants H1 à H9, complétude automatique, rupture -> incident -> réservation admin -> remboursement de ligne, quarantaine, vue directrice en Chromium.
-3. Mettre à jour la matrice #3944 : ajouter les invariants H1 à H9 de #3998 aux oracles, et créer les scénarios « rupture définitive » et « colis arrivé non rapproché ».
+2. **Finir CI H1/H4**, puis réconcilier H1/H2/H3/H4 avec PostgreSQL, vérifier M06 Hub central et vue directrice ; après fin confirmée de #3900 et absence de runs actifs, fusion groupée + activation de E7 **sur staging uniquement**, puis revérification Hub ciblée H1–H9 (Chromium, HTTP et SQL indépendants).
+3. **Matrice #3944 mise à jour (O-HUB)** : exécuter les 9 SQL pour ChatGPT et Opus, et vérifier les ruptures définitives, colis arrivés non rapprochés, contention, quarantaine et leur preuve physique sur les scénarios M/N correspondants.
 4. Si tout est PASS : demander au propriétaire le **GO E2E G6 final, qui n'est pas encore donné**. Ensuite, 46 scénarios sur KM puis CM et CG, avec les fixtures de cas limites (prix inactif, exposition coupée, stock à 0, au moins 2 variantes).
 5. **Après les E2E** : supprimer les routes historiques de colis (HB-09) et le code mort de réception (HB-10).
 
