@@ -104,12 +104,13 @@ for (const width of SIZES) {
       const gallery = box(q('#k-modal .k-modal-product-zone .k-modal-img-wrap'));
       const buybox = box(q('#k-modal .k-modal-product-zone > .k-modal-right-rail'));
       const side = box(q('#k-modal .k-modal-cart-slot'));
+      const cart = box(q('#k-modal .k-modal-cart-slot #k-side-cart'));
       const lines = [...document.querySelectorAll('#k-modal .k-sc-item')].map(box);
       const controls = [...document.querySelectorAll('#k-modal .k-sc-item-actions, #k-modal .k-sc-subtotal-amount, #k-modal #k-sc-checkout')].map(box);
       const overflow = controls.filter(c => c && side && (c.right > side.right - 5 || c.x < side.x - 2));
       return {
         viewport: innerWidth,
-        body, gallery, buybox, side, lines, controls,
+        body, gallery, buybox, side, cart, lines, controls,
         overflowCount: overflow.length,
         overflow,
         documentOverflowX: document.documentElement.scrollWidth - innerWidth,
@@ -123,6 +124,9 @@ for (const width of SIZES) {
     });
     expect(evidence.body).not.toBeNull();
     expect(evidence.side).not.toBeNull();
+    expect(evidence.cart).not.toBeNull();
+    expect(evidence.cart.width).toBeGreaterThanOrEqual(evidence.side.width - 2);
+    expect(evidence.cart.right).toBeLessThanOrEqual(evidence.side.right + 2);
     expect(evidence.gallery).not.toBeNull();
     expect(evidence.buybox).not.toBeNull();
     console.log('PDP_GEOMETRY_EVIDENCE', JSON.stringify(evidence));
