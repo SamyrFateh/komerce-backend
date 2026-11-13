@@ -229,6 +229,7 @@ module.exports = {
       'order_items: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)
       'order_status_history: RW',
       'orders: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)
+      'relay_return_compensations: RW!', // Compensation SAV, décision unique (A1)
       'order_checkout_idempotency: RW!', // Unique checkout claim (migration 408 ; staged, pas encore live)
       'parcel_items: R',
       'parcels: R',

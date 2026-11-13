@@ -122,6 +122,7 @@ module.exports = {
       'services/pickup-secret-issuer.js',
       'services/pickup-secret-rotation-service.js',
       'services/pickup-agent-lockout.js',
+      'services/pickup-secret-customer-rotation-service.js',
       'services/pickup-secret-access-service.js',
       'services/pickup-collection-service.js',
       'services/pickup-collection-recorder.js',
@@ -241,6 +242,7 @@ module.exports = {
       'tests/unit/pickup-code-helpers.test.js',
       'tests/unit/pickup-secret-rotation-service.test.js',
       'tests/unit/pickup-agent-lockout.test.js',
+      'tests/unit/pickup-secret-customer-rotation-service.test.js',
       'tests/unit/scan-operations.test.js',
       'tests/unit/scan-write-service.test.js',
       'tests/unit/relais-mutation-service.test.js',
@@ -306,6 +308,7 @@ module.exports = {
       'parcel_events: RW!', // logistics owns append-only trace; no new cross-feature writer
       'parcel_items: RW!',
       'parcels: RW!',
+      'pickup_collect_failures: RW!', // R2 #3900: compteur d'échecs agent + relais (migration 413)
       'pickup_print_tokens: RW!',
       'pickup_reveal_codes: RW!',
       'pickup_verify_attempts: RW',
