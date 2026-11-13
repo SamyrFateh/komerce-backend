@@ -321,7 +321,6 @@ function auditEffectiveMarketCosts({ market, components, asOf }) {
     }
     const unit = row.unit || null;
     const method = row.allocation_method || null;
-    const forecastPerOrder = unit === 'kmf_per_order' || method === 'per_order';
     const forecastPerItem = method === 'per_item';
     const relayMismatch = relay && (unit !== 'kmf_per_order' || method !== 'per_order');
     const entry = {
