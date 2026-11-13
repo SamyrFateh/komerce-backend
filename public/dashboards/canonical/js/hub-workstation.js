@@ -247,6 +247,65 @@
   }
 
 
+  // H4 #3998 : la directrice voit les tâches de TOUS les marchés sur /admin/hub.
+  // Une seule file de supervision, intégrée aux branches existantes. Cette vue
+  // ne déclenche aucune action métier : l'API serveur reste la seule vérité.
+  async function renderDirectorQueue(host, { document:doc, fetch:fetchFn, user } = {}) {
+    if (!['admin', 'agent_hub'].includes(user && user.role) || !doc || typeof fetchFn !== 'function') return null;
+    const panel=make(doc,'details','hlc-director');
+    panel.setAttribute('data-hub-director-todo','');
+    panel.open=true;
+    const heading=make(doc,'summary','hlc-director-summary','Direction Hub · Tous marchés · Chargement…');
+    panel.appendChild(heading);
+    const body=make(doc,'div','hlc-director-body','Chargement des tâches et de leur ancienneté…');
+    body.setAttribute('role','status');
+    panel.appendChild(body);
+    host.appendChild(panel);
+    try {
+      const payload=await requestJSON(fetchFn,'/api/hub/director-todo');
+      // Une navigation a pu détruire le poste. Ne rien injecter dans l'ancien document.
+      if (panel.isConnected === false) return null;
+      if (payload.scope !== 'ALL_MARKETS' || !Array.isArray(payload.tasks)) throw new Error('Réponse direction Hub invalide');
+      heading.textContent='Direction Hub · Tous marchés · '+payload.tasks.length+
+        ' tâche(s) · '+Number(payload.overdue_count||0)+' alerte(s) ≥ 48 h';
+      body.replaceChildren();
+      if (!payload.tasks.length) {
+        body.appendChild(make(doc,'p','hlc-director-empty','Aucune tâche Hub en attente sur les marchés actifs.'));
+        return payload;
+      }
+      const list=make(doc,'div','hlc-director-list');
+      list.setAttribute('data-hub-director-list','');
+      for(const task of payload.tasks) {
+        const row=make(doc,'div','hlc-director-task'+(task.overdue?' is-overdue':''));
+        row.setAttribute('data-hub-director-task',safe(task.kind||'TASK'));
+        const market=safe(task.market&&task.market.code||'—');
+        row.appendChild(make(doc,'strong','hlc-director-market',market));
+        const detail=make(doc,'span','hlc-director-detail');
+        detail.appendChild(make(doc,'strong','hlc-director-name',task.missing||task.kind||'Tâche Hub'));
+        if (task.why) detail.appendChild(make(doc,'span','hlc-director-why',task.why));
+        row.appendChild(detail);
+        const age=task.age_hours == null?'Âge inconnu':
+          task.age_hours>=48?Math.floor(task.age_hours/24)+' j':task.age_hours+' h';
+        row.appendChild(make(doc,'span','hlc-director-age'+(task.overdue?' is-overdue':''),
+          (task.overdue?'⚠ ':'')+age));
+        if (/^[A-Z]{2}$/.test(market)) {
+          const link=make(doc,'a','hlc-director-open','Ouvrir le marché');
+          link.setAttribute('href','/admin/hub-live?view=execute&market='+encodeURIComponent(market));
+          row.appendChild(link);
+        }
+        list.appendChild(row);
+      }
+      body.appendChild(list);
+      return payload;
+    } catch(error) {
+      if (panel.isConnected !== false) {
+        heading.textContent='Direction Hub · Tous marchés · Indisponible';
+        body.textContent='La supervision ne peut pas être chargée : '+safe(error.message||error);
+      }
+      return null;
+    }
+  }
+
   // Le Hub est une entité centrale : ce tableau agrège TOUS les marchés
   // sans sélecteur de marché. Les opérations utilisent ensuite, si besoin,
   // le marché d'une commande pour cibler leur writer canonique.
@@ -780,6 +839,9 @@
     const layout=make(doc,'div','kmc-hub-app-layout is-table');
     const content=make(doc,'section','kmc-hub-app-content');
     content.setAttribute('data-hub-active-branch',branch);
+    // La file direction reste visible dans le poste global, quel que soit l'onglet.
+    const directorLoad=administrativeAllowed && typeof fetchFn === 'function'
+      ? renderDirectorQueue(content,{document:doc,fetch:fetchFn,user}) : Promise.resolve(null);
     const host=make(doc,'div','kmc-hub-app-workspace');
     host.setAttribute('data-hub-branch-workspace',branch);
     content.appendChild(host);
@@ -801,10 +863,10 @@
       const row=[...rows].find(node=>node.getAttribute('data-hub-global-order')===id);
       if(row?.scrollIntoView)row.scrollIntoView({block:'nearest'});
     };
-    return Object.freeze({branch,reloadCases,selectPO,selectOrder});
+    return Object.freeze({branch,reloadCases,selectPO,selectOrder,directorLoad});
   }
 
   global.KomerceCanonicalHubWorkstation = Object.freeze({
-    mount, renderGlobalBoard, renderAdministrationBoard, parseBranch, href, BRANCHES, PO_STAGE,
+    mount, renderGlobalBoard, renderAdministrationBoard, renderDirectorQueue, parseBranch, href, BRANCHES, PO_STAGE,
   });
 })(typeof globalThis !== 'undefined' ? globalThis : this);
