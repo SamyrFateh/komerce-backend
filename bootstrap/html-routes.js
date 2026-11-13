@@ -384,7 +384,7 @@ function mountHtmlRoutes(app, rootDir) {
   // Entrées publiques pays : une seule boutique, catalogue/prix/relais résolus
   // par le contexte URL côté client puis par les API marché côté serveur.
   // L'alias /boutique et la racine restent compatibles (marché KM par défaut).
-  app.get(/^\\/(KM|CM|CG|DJ|YT)\\/?$/i, (req, res) => {
+  app.get(/^\/(KM|CM|CG|DJ|YT)\/?$/i, (req, res) => {
     const code = req.params[0].toUpperCase();
     const canonicalPath = '/' + code;
     if (req.path !== canonicalPath) {
