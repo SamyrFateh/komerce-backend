@@ -95,7 +95,7 @@ describe('#3994 P0 — audit du marché et de la commission, sans décision de p
     expect(cm.issues.filter(i => i.code === 'KM_SPECIFIC_UNVERIFIED_OUTSIDE_KM')).toHaveLength(2);
   });
 
-  test('commission relais : contrat per_order, writer courant per_item ; aucune certification implicite', () => {
+  test('commission canonique per_order : runtime cohérent, mais facture non certifiée', () => {
     const perOrder = base('commission_relais_kmf', 'relay', {
       base_provenance: 'hypothèse projet', base_default_value: '500',
     });
@@ -103,23 +103,23 @@ describe('#3994 P0 — audit du marché et de la commission, sans décision de p
       market: market('KM'), components: [perOrder], asOf: '2026-11-13',
     });
     expect(result.components[0]).toMatchObject({
-      relay_forecast_unit: 'per_order', relay_real_current_unit: 'per_item',
-      relay_unit_consistent: false, base_provenance_declared: true,
+      relay_forecast_unit: 'per_order', relay_real_current_unit: 'per_order',
+      relay_unit_consistent: true, base_provenance_declared: true,
       cost_evidence_status: 'NOT_VERIFIED',
     });
-    expect(result.issues).toContainEqual({
-      code: 'RELAY_FORECAST_REAL_UNIT_MISMATCH', component_key: 'commission_relais_kmf',
-    });
-    const threeUnits = 3;
-    expect(500 * threeUnits).not.toBe(500); // montant actuel vs contrat par commande, sans réécriture
+    expect(result.issues).toEqual([]);
+    expect(result.certified).toBe(false);
+
     const perItem = base('commission_par_article', 'relay', {
       unit: 'kmf', allocation_method: 'per_item',
     });
     const comparison = service.auditEffectiveMarketCosts({
       market: market('KM'), components: [perItem], asOf: '2026-11-13',
     });
-    expect(comparison.components[0].relay_unit_consistent).toBe(true);
-    expect(comparison.issues).toEqual([]);
+    expect(comparison.components[0].relay_unit_consistent).toBe(false);
+    expect(comparison.issues).toContainEqual({
+      code: 'RELAY_FORECAST_REAL_UNIT_MISMATCH', component_key: 'commission_par_article',
+    });
   });
 
   test('composants désactivés, exceptionnels ou hors date : listés mais jamais imputés aux alertes actives', () => {
