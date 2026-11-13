@@ -25,8 +25,8 @@
  * Client :
  *   GET  /api/wallet              — solde
  *   GET  /api/wallet/transactions — historique
- *   POST /api/wallet/apply        — appliquer wallet à commande (checkout)
- *   POST /api/wallet/remove       — retirer wallet d'une commande
+ *   POST /api/wallet/apply        — refus (wallet appliqué exclusivement au checkout)
+ *   POST /api/wallet/remove       — refus (restitution via annulation métier uniquement)
  *
  * Admin :
  *   GET  /api/wallet/admin            — liste tous les wallets
@@ -94,12 +94,12 @@ router.get('/transactions', async (req, res, next) => {
 // CHECKOUT
 // ═══════════════════════════════════════════════════════════════════════════════
 
-// POST /api/wallet/apply — appliquer wallet à une commande
+// POST /api/wallet/apply — verrou de sécurité FA-02/FA-15 : pas de débit après création
 router.post('/apply', async (req, res, next) => {
   const client = await db.getClient();
   try {
     await client.query('BEGIN');
-    const { order_id, amount_kmf, amount } = req.body;
+    const { order_id } = req.body;
     if (!order_id) {
       await client.query('ROLLBACK');
       return res.status(400).json({ error: 'order_id requis' });
@@ -128,20 +128,13 @@ router.post('/apply', async (req, res, next) => {
       return res.status(409).json({ error: `Application impossible — commande en statut '${orderCheck.status}'` });
     }
 
-    const result = await walletService.applyToOrder(client, {
-      userId:    req.user.id,
-      orderId:   order_id,
-      amountKmf: amount_kmf,
-      amount,
-    });
-    await client.query('COMMIT');
-
-    res.json({
-      message:          `${result.debited ?? result.applied_kmf} ${result.currency || 'KMF'} appliqués`,
-      ...(result.currency && result.currency !== 'KMF' ? { currency: result.currency, debited: result.debited } : {}),
-      applied_kmf:      result.applied_kmf,
-      remaining_to_pay: result.remaining_to_pay,
-      transaction:      result.transaction,
+    // FA-02/FA-15 : orders.total_kmf et FX sont figés nets du wallet au checkout.
+    // Une application ultérieure débiterait le wallet SANS réduire l'encaissement
+    // cash/PSP ; l'autorité unique est POST /api/orders avec use_wallet.
+    await client.query('ROLLBACK');
+    return res.status(409).json({
+      code: 'WALLET_CHECKOUT_ONLY',
+      error: 'Wallet applicable uniquement pendant la création de commande. Pour changer le paiement, recréez la commande.',
     });
   } catch (err) {
     await client.query('ROLLBACK');
@@ -155,7 +148,7 @@ router.post('/apply', async (req, res, next) => {
   } finally { client.release(); }
 });
 
-// POST /api/wallet/remove — retirer wallet d'une commande
+// POST /api/wallet/remove — verrou de sécurité FA-01 : restitution via annulation
 router.post('/remove', async (req, res, next) => {
   const client = await db.getClient();
   try {
@@ -189,14 +182,14 @@ router.post('/remove', async (req, res, next) => {
       return res.status(409).json({ error: 'Commande déjà payée — retrait wallet impossible via cette route' });
     }
 
-    const result = await walletService.removeFromOrder(client, { orderId: order_id });
-    await client.query('COMMIT');
-
-    res.json({
-      message:      `${result.reversed_kmf} ${result.currency || 'KMF'} remboursés au wallet`,
-      ...(result.currency && result.currency !== 'KMF' ? { currency: result.currency } : {}),
-      reversed_kmf: result.reversed_kmf,
-      transaction:  result.transaction,
+    // FA-01 : le checkout stocke un montant PSP/cash NET du wallet.
+    // La restitution isolée laisserait un total à encaisser trop faible.
+    // Seule la machine d'annulation contre-passe wallet ET cycle commande
+    // dans une transaction. Cette route legacy reste protégée et refusée.
+    await client.query('ROLLBACK');
+    return res.status(409).json({
+      code: 'WALLET_REVERSAL_REQUIRES_CANCELLATION',
+      error: 'Le wallet ne peut être restitué séparément : annulez la commande selon le parcours métier.',
     });
   } catch (err) {
     await client.query('ROLLBACK');
