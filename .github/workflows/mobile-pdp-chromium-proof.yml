@@ -1,0 +1,57 @@
+name: Mobile PDP Chromium proof
+
+on:
+  push:
+    branches:
+      - 'fix/mobile-pdp-finishing-*'
+  pull_request:
+    paths:
+      - 'public/boutique/css/modal-mobile-canonical.css'
+      - 'public/boutique/css/modal-media.css'
+      - 'public/boutique/js/b-modal-image-ux.js'
+      - 'public/boutique/js/b-modal-nav.js'
+      - 'public/boutique/tests/e2e/modal-v3-mobile-finition.spec.js'
+      - '.github/workflows/mobile-pdp-chromium-proof.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  chromium-mobile:
+    name: Chromium 360 / 390 / 430 PDP geometry
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CI: '1'
+      MODAL_V3_CATALOGUE_SHOTS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: public/boutique/package-lock.json
+      - name: Install boutique dependencies
+        working-directory: public/boutique
+        run: npm ci
+      - name: Install Chromium
+        working-directory: public/boutique
+        run: npx playwright install --with-deps chromium
+      - name: Exercise exact mobile PDP geometry in Chromium
+        working-directory: public/boutique
+        shell: bash
+        run: |
+          env -u BASE_URL npx playwright test \
+            tests/e2e/modal-v3-mobile-finition.spec.js \
+            --project='Desktop Chrome' \
+            --grep='PDP mobile retouches 2026-11' \
+            --workers=1 --retries=0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mobile-pdp-chromium-evidence
+          path: |
+            public/boutique/test-results/
+            public/boutique/docs/_work/modal-v3-catalogue/mobile-pdp-*.png
+          if-no-files-found: ignore
+          retention-days: 7
