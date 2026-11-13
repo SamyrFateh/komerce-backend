@@ -16,7 +16,7 @@ test('Hub Live compose les KOM-BOX uniquement via les routes Workspace marché',
   expect(ui).not.toContain("'fill-box'");
   expect(ui).toContain('/advance`');
   // Exception H4 strictement en lecture seule : GET director-todo ; les écritures Hub restent dans le Workspace marché.
-  expect(ui.replace('/api/hub/physical-codes/confirm', '').replace('/api/hub/director-todo', '')).not.toContain('/api/hub/');
+  expect(ui.replace('/api/hub/physical-codes/confirm', '').replaceAll('/api/hub/director-todo', '')).not.toContain('/api/hub/');
 });
 
 test('les routes de composition sont gardées par la capacité parcel.ship et le marché serveur', () => {
