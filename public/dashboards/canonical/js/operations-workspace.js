@@ -1007,6 +1007,61 @@
     return true;
   }
 
+  // H4 / décision 6 : vue de supervision unique, en lecture seule, dans le poste Hub EXISTANT.
+  // On ne reconstruit aucune tâche côté navigateur : GET /api/hub/director-todo est la vérité serveur.
+  function renderDirectorTodo(doc, context, parent) {
+    if (!context.user || !['admin', 'agent_hub'].includes(context.user.role)) return;
+    const panel = doc.createElement('details');
+    panel.className = 'hlc-director';
+    panel.setAttribute('data-hub-director-todo', '');
+    panel.open = true;
+    const summary = text(doc, 'summary', 'hlc-director-summary', 'Direction Hub · Tous marchés · Chargement…');
+    panel.appendChild(summary);
+    const body = text(doc, 'div', 'hlc-director-body', 'Lecture des tâches en attente…');
+    body.setAttribute('role', 'status');
+    panel.appendChild(body);
+    parent.appendChild(panel);
+    jsonRequest(context.fetch, '/api/hub/director-todo').then(payload => {
+      if (!panel.isConnected) return; // une navigation a remplacé le cockpit
+      const tasks = Array.isArray(payload.tasks) ? payload.tasks : [];
+      summary.textContent = `Direction Hub · Tous marchés · ${tasks.length} tâche(s) · ${Number(payload.overdue_count || 0)} alerte(s) ≥ 48 h`;
+      body.replaceChildren();
+      if (!tasks.length) {
+        body.appendChild(text(doc, 'p', 'hlc-director-empty', 'Aucune tâche Hub en attente sur les marchés actifs.'));
+        return;
+      }
+      const list = doc.createElement('div');
+      list.className = 'hlc-director-list';
+      list.setAttribute('data-hub-director-list', '');
+      for (const task of tasks) {
+        const row = doc.createElement('div');
+        row.className = 'hlc-director-task' + (task.overdue ? ' is-overdue' : '');
+        row.setAttribute('data-hub-director-task', String(task.kind || 'TASK'));
+        const market = (task.market && task.market.code) || '—';
+        row.appendChild(text(doc, 'strong', 'hlc-director-market', market));
+        const detail = doc.createElement('span');
+        detail.className = 'hlc-director-detail';
+        detail.appendChild(text(doc, 'strong', 'hlc-director-name', task.missing || task.kind || 'Tâche Hub'));
+        if (task.why) detail.appendChild(text(doc, 'span', 'hlc-director-why', task.why));
+        row.appendChild(detail);
+        const age = task.age_hours == null ? 'Âge inconnu'
+          : task.age_hours >= 48 ? `${Math.floor(task.age_hours / 24)} j` : `${task.age_hours} h`;
+        row.appendChild(text(doc, 'span', 'hlc-director-age' + (task.overdue ? ' is-overdue' : ''), (task.overdue ? '⚠ ' : '') + age));
+        if (/^[A-Z]{2}$/.test(market)) {
+          const link = text(doc, 'a', 'hlc-director-open', 'Ouvrir le marché');
+          link.href = '/admin/hub-live?view=execute&market=' + encodeURIComponent(market);
+          row.appendChild(link);
+        }
+        list.appendChild(row);
+      }
+      body.appendChild(list);
+    }).catch(error => {
+      if (!panel.isConnected) return;
+      summary.textContent = 'Direction Hub · Tous marchés · Indisponible';
+      body.textContent = 'La supervision ne peut pas être chargée : ' + String(error.message || error);
+    });
+  }
+
   function renderSupplySection(rootNode, ui, doc, context) {
     // Concept C : aucun bloc KPI ni titre de section redondant au-dessus du cockpit (hero existant conservé).
     const flowHost = doc.createElement('div');
@@ -1033,6 +1088,8 @@
     const cockpitHost = doc.createElement('div');
     cockpitHost.setAttribute('data-hub-cockpit-host', '');
     ordersSlot.appendChild(cockpitHost);
+    // L'alerte globale ne dépend pas du filtre marché du poste d'exécution.
+    renderDirectorTodo(doc, context, ordersSlot);
     const sourcingHost = doc.createElement('section');
     sourcingHost.hidden = true;
     sourcingHost.setAttribute('data-hub-sourcing-recovery', '');
