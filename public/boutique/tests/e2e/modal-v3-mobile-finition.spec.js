@@ -342,7 +342,8 @@ test.describe('PDP mobile retouches 2026-11 — Chromium geometry', () => {
       const metrics = await page.evaluate(() => {
         const title = document.querySelector('#k-modal .k-modal-name-row').getBoundingClientRect();
         const fav = document.querySelector('#k-modal-fav-btn').getBoundingClientRect();
-        const trust = document.querySelector('#k-modal .k-modal-trust').getBoundingClientRect();
+        const trustEl = document.querySelector('#k-modal .k-modal-trust');
+        const trust = trustEl.getBoundingClientRect();
         const item = document.querySelector('#k-modal .k-modal-trust-item').getBoundingClientRect();
         const info = document.querySelector('#k-modal .k-modal-info').getBoundingClientRect();
         const swatchName = document.querySelector('#k-modal .k-sku--color .k-sku-name');
@@ -353,7 +354,7 @@ test.describe('PDP mobile retouches 2026-11 — Chromium geometry', () => {
           trustLeftDifference: Math.abs(trust.left - title.left),
           itemLeftDifference: Math.abs(item.left - title.left),
           trustNarrowerThanInfo: trust.width < info.width - 12,
-          trustOverflow: trust.scrollWidth - trust.clientWidth,
+          trustOverflow: trustEl.scrollWidth - trustEl.clientWidth,
           labelWhiteSpace: swatchStyle.whiteSpace,
           labelLineClamp: swatchStyle.webkitLineClamp,
           labelFontSize: parseFloat(swatchStyle.fontSize),
