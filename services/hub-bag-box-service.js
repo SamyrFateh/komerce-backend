@@ -47,7 +47,9 @@ async function attachBagToBox({
 }) {
   const bagId = uuid(bagUnitId, 'bag_unit_id');
   const boxId = uuid(boxUnitId, 'box_unit_id');
-  const parcel = uuid(parcelId, 'parcel_id');
+  // Un colis import par commande : la sélection est dérivée côté serveur, jamais devinée par le navigateur.
+  // Une sélection explicite reste permise pour les parcours de réparation/recette existants.
+  const requestedParcel = parcelId == null || parcelId === '' ? null : uuid(parcelId, 'parcel_id');
   const marketId = uuid(expectedMarketId, 'market_id');
   const user = uuid(actorId, 'actor_id');
   const bagScan = textRef(bagReferenceScan, 'scan du sac');
@@ -64,10 +66,29 @@ async function attachBagToBox({
   try {
     return await db.withTransaction(async client => {
       const { rows: [scope] } = await client.query(
-        'SELECT b.id, o.market_id FROM hub_physical_units b ' +
+        'SELECT b.id, b.order_id, o.market_id FROM hub_physical_units b ' +
         'JOIN orders o ON o.id=b.order_id WHERE b.id=$1 AND o.market_id=$2', [bagId, marketId]
       );
       if (!scope) throw refusal(403, 'HUB_BAG_MARKET_SCOPE_MISMATCH');
+      let parcel = requestedParcel;
+      if (!parcel) {
+        // La vérité métier est la commande du sac. Le colis est unique uniquement
+        // si une seule répartition import active existe. Aucun choix implicite ambigu.
+        const { rows: candidates } = await client.query(
+          "SELECT DISTINCT p.id FROM parcels p " +
+          "JOIN parcel_items pi ON pi.parcel_id = p.id " +
+          "JOIN order_items oi ON oi.id = pi.order_item_id " +
+          "WHERE p.order_id = $1 AND oi.order_id = $1 " +
+          "AND oi.fulfillment_source = 'IMPORT' AND p.status <> 'cancelled' " +
+          "ORDER BY p.id LIMIT 2",
+          [scope.order_id]
+        );
+        if (!candidates.length) throw refusal(409, 'HUB_BAG_PARCEL_NOT_READY',
+          'Le colis client import n’est pas encore réparti pour cette commande');
+        if (candidates.length > 1) throw refusal(409, 'HUB_BAG_PARCEL_AMBIGUOUS',
+          'Plusieurs colis client existent : le rattachement nécessite un choix vérifié');
+        parcel = uuid(candidates[0].id, 'derived_parcel_id');
+      }
       const { rows: [previous] } = await client.query(
         'SELECT box_unit_id, parcel_id, bag_reference_scan, box_reference_scan, evidence_method, evidence_ref ' +
         'FROM hub_box_bags WHERE bag_unit_id=$1',

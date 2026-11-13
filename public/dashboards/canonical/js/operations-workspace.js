@@ -1317,8 +1317,8 @@
           boxScan.value=context.hubVerifiedBoxes[String(box.unit_id)]||'';
           const bagScan=field('Scanner le sac client','Scanner référence du sac client');
           bagScan.setAttribute('data-hub-bag-scan','');
-          const parcel=doc.createElement('select');
-          parcel.setAttribute('aria-label','Colis client rattaché au sac scanné');
+          // Le serveur déduit le colis import unique de la commande du sac.
+          // Les scans du sac et de la KOM-BOX restent obligatoires.
           const add=makeActionButton(doc,'Placer le sac','put-bag-in-box');
           const boxMethod=doc.createElement('select');
           boxMethod.setAttribute('aria-label','Mode de preuve du rattachement dans '+box.reference);
@@ -1336,18 +1336,7 @@
           });
           const identify=()=>{
             const bag=readyBags.find(b=>b.reference===bagScan.value.trim());
-            const previousParcel=parcel.value;
-            parcel.replaceChildren();
-            parcel.appendChild(Object.assign(doc.createElement('option'),{
-              value:'',textContent:bag?'Choisir le colis client…':'Scanner un sac identifié…',
-            }));
-            if(bag) (d.client_parcels||[]).filter(p=>String(p.order_id)===String(bag.order_id))
-              .forEach(p=>parcel.appendChild(Object.assign(doc.createElement('option'),{
-                value:p.id,textContent:p.reference+' · '+bag.order_ref,
-              })));
-            if([...parcel.options].some(opt=>opt.value===previousParcel))parcel.value=previousParcel;
-            else if(parcel.options.length===2)parcel.selectedIndex=1;
-            add.disabled=!(bag&&boxScan.value.trim()===box.reference&&parcel.value);
+            add.disabled=!(bag&&boxScan.value.trim()===box.reference);
             return bag;
           };
           boxScan.addEventListener('input',()=>{
@@ -1363,12 +1352,11 @@
           });
           bagScan.addEventListener('input',identify);
           bagScan.addEventListener('keydown',event=>{
-            if(event.key==='Enter'){event.preventDefault();identify();parcel.focus();}
+            if(event.key==='Enter'){event.preventDefault();identify();boxMethod.focus();}
           });
-          parcel.addEventListener('change',identify);
           add.addEventListener('click',()=>{
             const bag=readyBags.find(b=>b.reference===bagScan.value.trim());
-            if(!bag||boxScan.value.trim()!==box.reference||!parcel.value)return;
+            if(!bag||boxScan.value.trim()!==box.reference)return;
             const manualBox=boxMethod.value==='MANUAL';
             const boxProofRef=String(boxProof.value||'').trim();
             if(manualBox&&boxProofRef.length<6){
@@ -1378,7 +1366,7 @@
             runAction(context,add,{
               url:endpointFor(context.marketCode,'boxes/'+encodeURIComponent(box.unit_id)+'/bags'),
               body:{
-                bag_unit_id:bag.unit_id,parcel_id:parcel.value,
+                bag_unit_id:bag.unit_id,
                 bag_reference_scan:bagScan.value.trim(),box_reference_scan:boxScan.value.trim(),
                 ...(manualBox?{evidence_method:'MANUAL',evidence_ref:boxProofRef}:{evidence_method:'SCAN'}),
               },
@@ -1386,7 +1374,7 @@
               successMessage:bag.reference+' placé dans '+box.reference+' sans déplacement des articles.',
             }).catch(()=>{});
           });
-          [boxScan,bagScan,parcel,boxMethod,boxProof,add].forEach(node=>cell.appendChild(node));
+          [boxScan,bagScan,boxMethod,boxProof,add].forEach(node=>cell.appendChild(node));
           identify();
         }else{
           cell.appendChild(text(doc,'span','kmc-workspace-muted','Préparer puis fermer un sac client avant mise en KOM-BOX.'));
