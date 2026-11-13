@@ -508,7 +508,7 @@ describe('bootstrap/html-routes', () => {
     });
 
     test('l’accès direct /hub/index.html redirige sans charger l’ancien JavaScript', () => {
-      const source = require('fs').readFileSync(require('path').join(PUBLIC_DIR, 'hub', 'index.html'), 'utf8');
+      const source = require('fs').readFileSync(require('path').resolve(__dirname, '../../public/hub/index.html'), 'utf8');
       expect(source).toContain("window.location.replace('/admin/hub')");
       expect(source).not.toContain('/hub/js/hub.js');
     });
