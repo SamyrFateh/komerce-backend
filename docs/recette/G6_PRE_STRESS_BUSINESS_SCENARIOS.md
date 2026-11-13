@@ -145,6 +145,18 @@ Les deux campagnes utilisent la même version applicative (SHA identique, noté 
 ### Gates
 **G0** SHA servi = SHA cible, allowlist `AUTHKEY_ALLOWED_PHONES` vide ou sans numéro de recette, fixtures par agent → **G1** arbitrages (fait le 12/11) → **G2** lots P0 déployés avant les scénarios qu'ils débloquent, sinon BLOCKED explicite → **G3** M → **G4** N P0 → **G5** N P1 → **G6** comparatif ChatGPT ↔ Opus → `GO_PRE_STRESS` → recette humaine #3754 → stress. Rien ne s'exécute sans « GO tests métiers » explicite du propriétaire.
 
+## Oracle transversal O-HUB — audit Fable #3998 (partagé GPT / Opus)
+
+Le script SQL **lecture seule** [`G6_HUB_SQL_ORACLES.sql`](./G6_HUB_SQL_ORACLES.sql) regroupe les **9 invariants H1 à H9** à relever après stabilisation de chaque geste Hub (commande/réception, rupture, répartition, sac, KOM-BOX, expédition). Il est obligatoire pour **M01, M03, M04, M05, M06 et N13–N16** et ne change aucun des 46 IDs existants.
+
+- **Deux campagnes, un seul contrat :** ChatGPT et Opus exécutent *exactement* le même script sur le **même SHA staging**, mais sur leurs cohortes distinctes. Enregistrer, pour chaque H1–H9, l'horodatage, les paramètres de sélection/identifiants de la cohorte, le nombre de lignes, les clés des anomalies, l'interprétation et la preuve SQL/Chromium/HTTP correspondante.
+- **Zéro anomalie non justifiée** est exigé à état stabilisé pour H1 (commande reçue bloquée), H3 (préparation sans colis), H4 (répartition excédentaire), H5a (sur-réception), H6 (sur-engagement), H7 (mélange de marchés). Les états transitoires pendant une transaction ne sont pas un FAIL : vérifier au terme de la transition et après le balayage si nécessaire.
+- **Rupture et allocations :** H2 (sous-couverture terminale) doit être rapproché de `supplier_shortage`, de l'alerte et de la décision administrative de remboursement ; une rupture légitime n'est pas automatiquement un FAIL. H5b (allocation figée vs quantité soldée) est une **investigation**, pas une assertion zéro aveugle : examiner les placements réellement reçus et exclure la quarantaine.
+- **File directrice :** H8 (colis fournisseur non rapproché >24 h) et H9 (sac/carton en attente >48 h) doivent produire une visibilité opérationnelle, une ancienneté et une alerte au seuil de 48 h dans la vue tous marchés. L'existence d'une tâche âgée n'est pas un FAIL si le suivi et la reprise sont prouvés.
+- **Preuve métier complémentaire obligatoire :** arrêt/redémarrage au dernier reçu, rejeu idempotent, réception partielle, refus confirmation sous le reçu, quarantaine, deux répartitions concurrentes sur PostgreSQL réel, commande manuelle M06 avec variante, rupture soldée → incident unique → réservation et exécution de remboursement validées par l'admin. Aucune autorisation de paiement ni mouvement financier n'est fabriqué par le script SQL.
+
+La source Fable est [#3998](https://github.com/SamyrFateh/komerce-backend/issues/3998). **Aucun des contrôles SQL ci-dessus n'est déclaré exécuté ni PASS par l'ajout documentaire.** La campagne E2E reste sous le GO explicite du propriétaire.
+
 ## Coordination et paquet de preuve
 
 - **Référentiel de vérité** : ce fichier plus #3754 ; pas de deuxième nomenclature propre à Opus.
