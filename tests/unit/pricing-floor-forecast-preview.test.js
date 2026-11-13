@@ -43,12 +43,18 @@ const payload = (overrides = {}) => ({
 });
 const calculate = (body = payload(), more = {}) =>
   preview({ market, product, payload: body, date: DATE, ...more });
+const localPayload = prices => {
+  const body = payload();
+  delete body.candidate_prices_kmf; // no legacy KMF authority on XAF markets
+  body.candidate_prices_local = prices;
+  return body;
+};
 
 describe('projection de la simulation selon la devise du marché', () => {
   test('CM : montants XAF convertis côté serveur, physique et taux inchangés, restitution XAF', async () => {
     const result = await previewForMarket({
       market: { code: 'CM', currency: 'XAF' }, product,
-      payload: { ...payload(), candidate_prices_kmf: undefined, candidate_prices_local: [10000] },
+      payload: localPayload([10000]),
       date: DATE,
     });
     expect(result.market_currency).toBe('XAF');
@@ -74,7 +80,7 @@ describe('projection de la simulation selon la devise du marché', () => {
   test('KM : les hypothèses et prix restent en KMF, sans variation', async () => {
     const x = await previewForMarket({
       market: { code: 'KM', currency: 'KMF' }, product,
-      payload: { ...payload(), candidate_prices_kmf: undefined, candidate_prices_local: [9000] },
+      payload: localPayload([9000]),
       date: DATE,
     });
     expect(x.forecast.prices[0].price_kmf).toBe(9000);
