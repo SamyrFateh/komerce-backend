@@ -14,7 +14,7 @@ on:
       - '.github/workflows/mobile-pdp-chromium-proof.yml'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   chromium-mobile:
@@ -34,6 +34,20 @@ jobs:
       - name: Install boutique dependencies
         working-directory: public/boutique
         run: npm ci
+      - name: Build canonical Boutique CSS assets
+        working-directory: public/boutique
+        run: npm run deploy:css
+      - name: Synchronize generated CSS on branch
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/boutique/css/dist/components.css public/boutique/index.html public/boutique/.cache-buster-state.json
+          if ! git diff --cached --quiet; then
+            git commit -m "build(boutique): regenerate PDP mobile CSS bundle"
+            git push origin "HEAD:refs/heads/${GITHUB_REF_NAME}"
+          fi
       - name: Install Chromium
         working-directory: public/boutique
         run: npx playwright install --with-deps chromium
