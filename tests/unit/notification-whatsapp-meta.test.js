@@ -58,8 +58,46 @@ describe('services/whatsapp-meta', () => {
   function loadConfigured() {
     process.env.META_WA_TOKEN = 'test-token';
     process.env.META_WA_PHONE_NUMBER_ID = '123456';
+    process.env.KOMERCE_ENV = 'production'; // garde non-prod testée dans le bloc dédié ci-dessous
     return require('../../services/whatsapp-meta');
   }
+
+  describe('garde de non-envoi hors production (W2)', () => {
+    function loadNonProd(allowed) {
+      process.env.META_WA_TOKEN = 'test-token';
+      process.env.META_WA_PHONE_NUMBER_ID = '123456';
+      process.env.KOMERCE_ENV = 'staging';
+      if (allowed === undefined) delete process.env.AUTHKEY_ALLOWED_PHONES;
+      else process.env.AUTHKEY_ALLOWED_PHONES = allowed;
+      return require('../../services/whatsapp-meta');
+    }
+    const msg = { to: '+2693301234', templateName: 'order_created' };
+
+    it('liste vide ou absente : aucun envoi', async () => {
+      for (const v of [undefined, '', ' , ']) {
+        jest.resetModules();
+        const { sendTemplateWhatsApp } = loadNonProd(v);
+        expect(await sendTemplateWhatsApp(msg)).toEqual({ success: false, skipped: true, reason: 'non_prod_not_allowed' });
+      }
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it('numéro hors liste : bloqué ; numéro listé : envoyé', async () => {
+      mockFetch.mockResolvedValue({ ok: true, json: async () => ({ messages: [{ id: 'wamid.1' }] }) });
+      const { sendTemplateWhatsApp } = loadNonProd('+2693301234,+33612345678');
+      expect((await sendTemplateWhatsApp({ ...msg, to: '+33700000000' })).reason).toBe('non_prod_not_allowed');
+      expect(mockFetch).not.toHaveBeenCalled();
+      expect((await sendTemplateWhatsApp(msg)).success).toBe(true);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
+
+    it('production : aucun filtre, liste ignorée', async () => {
+      mockFetch.mockResolvedValue({ ok: true, json: async () => ({ messages: [{ id: 'wamid.2' }] }) });
+      process.env.AUTHKEY_ALLOWED_PHONES = '+33612345678';
+      const { sendTemplateWhatsApp } = loadConfigured();
+      expect((await sendTemplateWhatsApp(msg)).success).toBe(true);
+    });
+  });
 
   it('skip si META_WA_TOKEN absent', async () => {
     delete process.env.META_WA_TOKEN;
