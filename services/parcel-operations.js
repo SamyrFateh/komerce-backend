@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db, services/notification-service.js, services/order-item-availability-service.js, services/order-status-machine.js, services/parcel-guards.js, services/parcel-service.js, services/parcel-transition-guard.js, services/refund-service.js, utils/logger.js, utils/reference.js, utils/rules.js
+ * @depends       db, services/notification-service.js, services/order-item-availability-service.js, services/order-status-machine.js, services/parcel-guards.js, services/parcel-service.js, services/parcel-transition-guard.js, services/refund-service.js, utils/alerts.js, utils/logger.js, utils/reference.js, utils/rules.js
  * @used-by       routes/orders/parcels.js
  * @db-read       order_items, orders, parcel_items, parcels, products, relais, users
  * @db-write      parcel_items, parcels
