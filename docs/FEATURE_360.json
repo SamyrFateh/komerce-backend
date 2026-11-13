@@ -18452,7 +18452,7 @@
               {
                 "declared": "services/pickup-secret-customer-rotation-service.js",
                 "resolvedPath": "services/pickup-secret-customer-rotation-service.js",
-                "status": "resolved-in-technical-graph"
+                "status": "resolved-on-disk-no-header"
               },
               {
                 "declared": "services/pickup-secret-issuer.js",
@@ -19072,6 +19072,10 @@
             "resolution": "declared-table-owner"
           },
           {
+            "table": "pickup_collect_failures",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "pickup_print_tokens",
             "resolution": "declared-table-owner"
           },
@@ -19201,6 +19205,12 @@
           },
           {
             "table": "parcels",
+            "mode": "RW",
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "pickup_collect_failures",
             "mode": "RW",
             "lifecycleOwner": "logistics",
             "ownershipStatus": "owner"
@@ -19388,6 +19398,10 @@
             "resolution": "declared-table-owner"
           },
           {
+            "table": "pickup_collect_failures",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "pickup_print_tokens",
             "resolution": "declared-table-owner"
           },
@@ -19517,6 +19531,12 @@
           },
           {
             "table": "parcels",
+            "mode": "RW",
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "pickup_collect_failures",
             "mode": "RW",
             "lifecycleOwner": "logistics",
             "ownershipStatus": "owner"
@@ -25638,6 +25658,10 @@
             "resolution": "multi-writer-resolved-by-classification-signal"
           },
           {
+            "table": "relay_return_compensations",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "sms_log",
             "resolution": "multi-writer-resolved-by-classification-signal"
           }
@@ -25693,6 +25717,12 @@
           },
           {
             "table": "recipients",
+            "mode": "RW",
+            "lifecycleOwner": "orders",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "relay_return_compensations",
             "mode": "RW",
             "lifecycleOwner": "orders",
             "ownershipStatus": "owner"
@@ -25786,6 +25816,10 @@
             "resolution": "multi-writer-resolved-by-classification-signal"
           },
           {
+            "table": "relay_return_compensations",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "sms_log",
             "resolution": "multi-writer-resolved-by-classification-signal"
           }
@@ -25841,6 +25875,12 @@
           },
           {
             "table": "recipients",
+            "mode": "RW",
+            "lifecycleOwner": "orders",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "relay_return_compensations",
             "mode": "RW",
             "lifecycleOwner": "orders",
             "ownershipStatus": "owner"
@@ -30260,6 +30300,10 @@
             "resolution": "declared-table-owner"
           },
           {
+            "table": "manual_purchase_executions",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "product_suppliers",
             "resolution": "single-writer"
           },
@@ -30273,6 +30317,10 @@
           },
           {
             "table": "purchase_orders",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "purchase_variance_decisions",
             "resolution": "declared-table-owner"
           },
           {
@@ -30316,6 +30364,12 @@
             "ownershipStatus": "owner"
           },
           {
+            "table": "manual_purchase_executions",
+            "mode": "RW",
+            "lifecycleOwner": "purchasing",
+            "ownershipStatus": "owner"
+          },
+          {
             "table": "product_suppliers",
             "mode": "RW",
             "lifecycleOwner": "purchasing",
@@ -30335,6 +30389,12 @@
           },
           {
             "table": "purchase_orders",
+            "mode": "RW",
+            "lifecycleOwner": "purchasing",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "purchase_variance_decisions",
             "mode": "RW",
             "lifecycleOwner": "purchasing",
             "ownershipStatus": "owner"
@@ -30418,6 +30478,10 @@
             "resolution": "declared-table-owner"
           },
           {
+            "table": "manual_purchase_executions",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "product_suppliers",
             "resolution": "single-writer"
           },
@@ -30431,6 +30495,10 @@
           },
           {
             "table": "purchase_orders",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "purchase_variance_decisions",
             "resolution": "declared-table-owner"
           },
           {
@@ -30474,6 +30542,12 @@
             "ownershipStatus": "owner"
           },
           {
+            "table": "manual_purchase_executions",
+            "mode": "RW",
+            "lifecycleOwner": "purchasing",
+            "ownershipStatus": "owner"
+          },
+          {
             "table": "product_suppliers",
             "mode": "RW",
             "lifecycleOwner": "purchasing",
@@ -30493,6 +30567,12 @@
           },
           {
             "table": "purchase_orders",
+            "mode": "RW",
+            "lifecycleOwner": "purchasing",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "purchase_variance_decisions",
             "mode": "RW",
             "lifecycleOwner": "purchasing",
             "ownershipStatus": "owner"
