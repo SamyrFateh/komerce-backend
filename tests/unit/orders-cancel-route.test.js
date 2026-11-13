@@ -75,6 +75,7 @@ jest.mock('../../utils/logger', () => ({
 const db = require('../../db');
 const { getRule } = require('../../utils/rules');
 const { processRefund } = require('../../services/refund-service');
+const { computeClosingRefund } = require('../../services/order-fx-snapshot');
 const { notifyCancellation } = require('../../services/notification-service');
 const { transitionOrderStatus } = require('../../services/order-status-machine');
 const refundReceiptService = require('../../services/documents/refund-receipt');
@@ -204,6 +205,31 @@ describe('orders/cancel — calcul remboursement', () => {
     expect(res.status).toBe(200);
     expect(processRefund).not.toHaveBeenCalled();
     expect(res.body.message).toMatch(/aucun prélèvement/);
+  });
+
+  it('FA-14 : annule une commande 100% wallet sans faux remboursement PSP', async () => {
+    const paidWithWallet = orderRow({
+      payment_status: 'paid', total_kmf: 0, total_eur: 0, wallet_applied_kmf: 10000,
+    });
+    const client = makeClient([{ rows: [paidWithWallet] }]);
+    db.getClient.mockResolvedValue(client);
+    transitionOrderStatus.mockResolvedValue({
+      success: true,
+      cancelEffects: { walletReversalAmount: 10000, walletReversalTxId: 'reversal-1' },
+    });
+
+    const res = await request(app).post('/api/orders/o1/cancel').send({ reason: 'Annulation test' });
+
+    expect(res.status).toBe(200);
+    expect(computeClosingRefund).not.toHaveBeenCalled();
+    expect(processRefund).not.toHaveBeenCalled();
+    expect(transitionOrderStatus).toHaveBeenCalledWith(expect.objectContaining({
+      orderId: 'o1', newStatus: 'cancelled', dbClient: client,
+    }));
+    expect(res.body.refund.wallet_reversal).toEqual({
+      amount_kmf: 10000, wallet_tx_id: 'reversal-1',
+    });
+    expectTransactionCommitted(client);
   });
 
   it('remboursement 100% dans la fenêtre gratuite', async () => {
