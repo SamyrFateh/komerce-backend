@@ -137,7 +137,7 @@ const PHYSICAL_BY_ITEM_SQL = `
    WHERE a.market_id = $1 AND a.order_item_id = ANY($2::uuid[])
    GROUP BY a.order_item_id`;
 
-function buildTodo({ orders, unsourced, needBatches, purchaseOrders, bagsOpen, bagsReady, boxes, viewer, parcelsToReconcile = [], blockedItems = [], now = new Date() }) {
+function buildTodo({ orders, unsourced, needBatches, purchaseOrders, bagsOpen, bagsReady, boxes, viewer, parcelsToReconcile = [], blockedItems = [], queuedOrders = [], now = new Date() }) {
   const todo = [];
   const can = (flag, reason) => (viewer === null ? { viewer_can_act: null, blocked_reason: null }
     : flag ? { viewer_can_act: true, blocked_reason: null } : { viewer_can_act: false, blocked_reason: reason });
@@ -282,6 +282,17 @@ function buildTodo({ orders, unsourced, needBatches, purchaseOrders, bagsOpen, b
       since: list.map((b) => b.since).filter(Boolean).sort().slice(-1)[0] || null,
       action: { type: 'open_order', order_id: orderId, label: 'Ouvrir la commande' }, ...can(true) });
   }
+  // HB-12 : aucun colis local ne peut accueillir le reliquat et le maximum de trois
+  // colis ouverts au relais est atteint. Le constat reste une projection, jamais un état enregistré.
+  for (const wait of queuedOrders) {
+    push({ id: `PARCEL_CAPACITY_WAIT:${wait.order_id}`, kind: 'PARCEL_CAPACITY_WAIT', priority: 57,
+      owner: 'agent_hub', severity: 'anomaly', subject: { order_id: wait.order_id },
+      missing: `${wait.order_ref} : en file de colis · ${wait.relais_name || 'relais'} (${wait.open_parcels} ouverts)`,
+      why: 'La capacité des trois colis locaux ouverts est saturée : expédier ou libérer une place avant de répartir.',
+      since: wait.since,
+      action: { type: 'open_order', order_id: wait.order_id, label: 'Ouvrir la commande en attente' }, ...can(true),
+    });
+  }
   // Actions exécutables par le rôle courant d'abord, puis attentes d'un autre rôle ; priorité métier ensuite.
   const own = (t) => (t.viewer_can_act === false ? 1 : 0);
   return todo.map((t) => withAge(t, now)).sort((a, b) => own(a) - own(b) || a.priority - b.priority);
@@ -391,7 +402,7 @@ function buildPhysical({ orders, bagsOpen, bagsReady, boxes, poById }) {
 
 async function loadCockpit({
   q, marketId, viewer, orderMap, needsRows, purchaseOrders, unsourcedItems, bagsOpen, bagsReady, boxes,
-  parcelsToReconcile = [], blockedItems = [], now = new Date(),
+  parcelsToReconcile = [], blockedItems = [], queuedOrders = [], now = new Date(),
 }) {
   const grants = new Set();
   if (viewer && viewer.id) {
@@ -548,7 +559,7 @@ async function loadCockpit({
     orders,
     unit_legend: Object.entries(UNIT_LABELS).filter(([state]) => state !== 'sourcing').map(([state, label]) => ({ state, label })),
     physical: buildPhysical({ orders, bagsOpen, bagsReady, boxes, poById }),
-    todo: buildTodo({ orders, unsourced: unsourcedItems, needBatches, purchaseOrders, bagsOpen, bagsReady, boxes, viewer: rights, parcelsToReconcile, blockedItems, now }),
+    todo: buildTodo({ orders, unsourced: unsourcedItems, needBatches, purchaseOrders, bagsOpen, bagsReady, boxes, viewer: rights, parcelsToReconcile, blockedItems, queuedOrders, now }),
   };
 }
 
@@ -872,12 +883,45 @@ async function getDossier({ marketId, supplierId = null, viewer = null, now = ne
      GROUP BY o.id, o.reference, oi.id, oi.quantity
     HAVING SUM(v.effective_quantity) < oi.quantity AND bool_and(v.cancelled OR v.received_quantity >= v.effective_quantity)`, [marketId]);
 
+  // HB-12 : même limite que auto-parcel (trois colis locaux ouverts par relais,
+  // 30 unités et dix commandes par colis). La file n'est signalée que si aucun colis
+  // existant n'a la capacité d'absorber la quantité locale encore non affectée.
+  const { rows: queuedRows } = await q.query(`
+    SELECT o.id AS order_id, o.reference AS order_ref, o.created_at AS since,
+           r.name AS relais_name, COUNT(DISTINCT p.id)::int AS open_parcels
+      FROM orders o
+      JOIN relais r ON r.id = o.relais_id
+      JOIN LATERAL (
+        SELECT COALESCE(SUM(oi.quantity), 0)::int AS pending_qty
+          FROM order_items oi
+         WHERE oi.order_id = o.id AND COALESCE(oi.fulfillment_source, '') <> 'IMPORT'
+           AND NOT EXISTS (
+             SELECT 1 FROM parcel_items pi
+               JOIN parcels assigned ON assigned.id = pi.parcel_id AND assigned.status <> 'cancelled'
+              WHERE pi.order_item_id = oi.id
+           )
+      ) pending ON pending.pending_qty > 0
+      JOIN parcels p ON p.relais_id = o.relais_id AND p.status IN ('draft', 'preparation')
+      LEFT JOIN LATERAL (
+        SELECT COUNT(pi.id)::int AS item_count,
+               COUNT(DISTINCT oi.order_id)::int AS order_count,
+               ARRAY_AGG(DISTINCT CASE WHEN oi.fulfillment_source = 'IMPORT' THEN 'import' ELSE 'local' END) AS lanes
+          FROM parcel_items pi JOIN order_items oi ON oi.id = pi.order_item_id
+         WHERE pi.parcel_id = p.id
+      ) capacity ON TRUE
+     WHERE o.market_id = $1 AND o.status IN ('ordered', 'preparation')
+       AND (capacity.lanes IS NULL OR capacity.lanes = ARRAY['local']::text[])
+     GROUP BY o.id, o.reference, o.created_at, r.name, pending.pending_qty
+    HAVING COUNT(DISTINCT p.id) >= 3
+       AND BOOL_AND(capacity.item_count + pending.pending_qty > 30 OR capacity.order_count >= 10)
+     ORDER BY o.created_at LIMIT 100`, [marketId]);
+
   const count = (stage) => purchaseOrders.filter((po) => po.stage === stage).length;
   // Cockpit : mêmes lectures, enrichies (couverture, réception, ventilation physique, autorisations, À faire maintenant).
   const cockpit = await loadCockpit({
     q, marketId, viewer, orderMap: orders, needsRows, purchaseOrders, unsourcedItems,
     bagsOpen: bags_open, bagsReady: bags_ready, boxes: [...boxes.values()],
-    parcelsToReconcile: parcelRows, now,
+    parcelsToReconcile: parcelRows, queuedOrders: queuedRows, now,
     blockedItems: blockedRows.map((r) => ({ ...r, ordered: Number(r.ordered), covered: Number(r.covered) })),
   });
   return {

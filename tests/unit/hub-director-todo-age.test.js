@@ -13,13 +13,14 @@ const id = (n) => '00000000-0000-4000-8000-' + String(n).padStart(12, '0');
 const NOW = new Date('2026-11-13T12:00:00Z');
 const hoursAgo = (h) => new Date(NOW.getTime() - h * 3600 * 1000).toISOString();
 
-function reader({ items = [], parcels = [], blocked = [], markets = null } = {}) {
+function reader({ items = [], parcels = [], blocked = [], queued = [], markets = null } = {}) {
   return {
     query: jest.fn(async (sql) => {
       if (markets && /FROM markets WHERE is_active/.test(sql)) return { rows: markets };
       if (/FROM orders o/.test(sql) && /JOIN order_items oi ON oi.order_id = o.id/.test(sql)) return { rows: items };
       if (/u\.unit_type = 'SUPPLIER_PACKAGE' AND u\.state = 'RECEIVED'/.test(sql)) return { rows: parcels };
       if (/bool_and\(v\.cancelled/.test(sql)) return { rows: blocked };
+      if (/COUNT\(DISTINCT p.id\)::int AS open_parcels/.test(sql)) return { rows: queued };
       return { rows: [] };
     }),
   };
@@ -79,5 +80,24 @@ describe('vue directrice — tous marchés', () => {
     expect(out.overdue_count).toBeGreaterThanOrEqual(1);
     const ages = out.tasks.map((t) => t.age_hours);
     expect(ages).toEqual([...ages].sort((a, b) => b - a));
+  });
+});
+
+describe('HB-12 : file de colis locaux saturés exposée au cockpit directrice', () => {
+  it('la commande non affectable est visible avec relais et âge sans nouveau writer', async () => {
+    const q = reader({ queued: [{
+      order_id: id(60), order_ref: 'KQ60', relais_name: 'Relais Nord',
+      open_parcels: 3, since: hoursAgo(52),
+    }] });
+    const dossier = await getDossier({ marketId: id(1), now: NOW }, q);
+    expect(dossier.cockpit.todo).toEqual([expect.objectContaining({
+      id: `PARCEL_CAPACITY_WAIT:${id(60)}`, kind: 'PARCEL_CAPACITY_WAIT',
+      age_hours: 52, overdue: true, severity: 'anomaly',
+      missing: expect.stringContaining('Relais Nord (3 ouverts)'),
+    })]);
+    const sql = q.query.mock.calls.map(args => args[0]).find(x => x.includes('COUNT(DISTINCT p.id)::int AS open_parcels'));
+    expect(sql).toContain("COALESCE(oi.fulfillment_source, '') <> 'IMPORT'");
+    expect(sql).toContain('HAVING COUNT(DISTINCT p.id) >= 3');
+    expect(sql).toContain('AND BOOL_AND(');
   });
 });
