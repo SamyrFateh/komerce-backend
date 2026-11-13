@@ -18267,7 +18267,7 @@
             ]
           },
           "services": {
-            "count": 48,
+            "count": 49,
             "files": [
               {
                 "declared": "services/auto-parcel.js",
@@ -18450,6 +18450,11 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/pickup-secret-customer-rotation-service.js",
+                "resolvedPath": "services/pickup-secret-customer-rotation-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/pickup-secret-issuer.js",
                 "resolvedPath": "services/pickup-secret-issuer.js",
                 "status": "resolved-in-technical-graph"
@@ -18512,7 +18517,7 @@
             ]
           },
           "tests": {
-            "count": 91,
+            "count": 92,
             "files": [
               {
                 "declared": "tests/e2e-api/hub-membership-readers.e2e.test.js",
@@ -18865,6 +18870,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/pickup-secret-customer-rotation-service.test.js",
+                "resolvedPath": "tests/unit/pickup-secret-customer-rotation-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/pickup-secret-issuer.test.js",
                 "resolvedPath": "tests/unit/pickup-secret-issuer.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -18992,7 +19002,7 @@
             ]
           }
         },
-        "totalFiles": 186,
+        "totalFiles": 188,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
