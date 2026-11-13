@@ -8,7 +8,7 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 - Healthy : **34**
 - Attention : **6**
 - Blocked : **0**
-- Business dependencies : **326**
+- Business dependencies : **327**
 - Direct cross-feature imports : **0**
 - Runtime cycles : **0**
 - Ambiguous ownership signals : **0**
@@ -44,13 +44,13 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 | infrastructure | technical-foundation | 🟢 HEALTHY | 🟢 HEALTHY | outbox_events, physical_outcome_receipts, schema_migrations | auth, catalog, customs, dashboard, economic-engine, inventory, logistics, market, notifications, orders, payments, platform-ops, recommendations, shared-cart, wallet | auth, auth-identity, auth-passkey, business-rules, catalog, customs, dashboard, decision-signals, documents, economic-engine, incident-management, inventory, local-stock, logistics, loyalty, market, market-autonomy, market-control-plane, market-delegation, market-operator-dashboard, notifications, orders, payments, platform-ops, providers-services, purchasing, recommendations, refunds, settlement, shared-cart, sourcing, unsold-resolution, wallet | 0 |
 | inventory | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | inventory_items | auth, catalog, infrastructure, logistics, orders | admin-dashboard, dashboard, infrastructure | 0 |
 | legacy-control-tower | deprecated | 🟢 HEALTHY | 🟢 HEALTHY | _aucune_ | _aucune_ | _aucune_ | 0 |
-| local-stock | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | local_stock, local_stock_allocations | catalog, infrastructure, logistics, market | dashboard, economic-engine, logistics, orders, providers-services, recommendations | 0 |
+| local-stock | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | local_stock, local_stock_allocations | catalog, infrastructure, logistics, market | dashboard, economic-engine, logistics, market-delegation, orders, providers-services, recommendations | 0 |
 | logistics | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | carriers, hub_box_bags, hub_custody_events, hub_physical_unit_placements, hub_physical_units, hub_purchase_allocations, international_shipment_charges, international_shipment_events, international_shipment_hub_units, international_shipment_relay_receipts, international_shipments, market_transport_sale_rates, parcel_events, parcel_items, parcels, pickup_print_tokens, pickup_reveal_codes, pickup_verify_attempts, product_sku_physical_codes, relais, relay_product_return_receipts, scan_events, scans, shipments | auth, auth-identity, business-rules, catalog, customs, documents, incident-management, infrastructure, local-stock, loyalty, market, market-delegation, notifications, orders, payments, purchasing, refunds | admin-dashboard, auth-identity, catalog, customs, dashboard, decision-signals, documents, economic-engine, incident-management, infrastructure, inventory, local-stock, market-control-plane, market-delegation, notifications, orders, payments, platform-ops, purchasing, recommendations, refunds | 0 |
 | loyalty | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | loyalty_rewards, loyalty_tiers | auth, auth-identity, economic-engine, infrastructure, notifications, orders | auth-identity, economic-engine, logistics, orders, payments | 0 |
 | market | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | currency_parities, fx_public_reference_quotes, fx_rate_observations, markets, operator_market_scopes | infrastructure, notifications | catalog, customs, dashboard, economic-engine, infrastructure, local-stock, logistics, market-autonomy, market-control-plane, market-delegation, market-operator-dashboard, orders, payments, providers-services, recommendations, refunds, settlement, wallet | 0 |
 | market-autonomy | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | product_market_price_draft_events, product_market_price_drafts | catalog, economic-engine, infrastructure, market | catalog, dashboard, economic-engine, market-delegation, market-operator-dashboard, orders, recommendations, shared-cart | 2 |
 | market-control-plane | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | market_delivery_attestations | auth, catalog, dashboard, decision-signals, economic-engine, infrastructure, logistics, market, market-delegation, orders, payments, sourcing | _aucune_ | 1 |
-| market-delegation | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | assignment_capability_ceiling, assignment_memberships, capability_registry, ceiling_template_capabilities, ceiling_templates, market_cash_control_policies, market_delegation_audit, market_operating_assignments, market_team_invitations, membership_capabilities | auth, auth-identity, catalog, dashboard, economic-engine, infrastructure, logistics, market, market-autonomy, orders, payments, providers-services, settlement | dashboard, decision-signals, economic-engine, logistics, market-control-plane, market-operator-dashboard, payments, settlement | 0 |
+| market-delegation | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | assignment_capability_ceiling, assignment_memberships, capability_registry, ceiling_template_capabilities, ceiling_templates, market_cash_control_policies, market_delegation_audit, market_operating_assignments, market_team_invitations, membership_capabilities | auth, auth-identity, catalog, dashboard, economic-engine, infrastructure, local-stock, logistics, market, market-autonomy, orders, payments, providers-services, settlement | dashboard, decision-signals, economic-engine, logistics, market-control-plane, market-operator-dashboard, payments, settlement | 0 |
 | market-operator-dashboard | unclassified | 🟡 ATTENTION | 🟢 HEALTHY | _aucune_ | catalog, infrastructure, market, market-autonomy, market-delegation | _aucune_ | 4 |
 | notifications | business-transversal | 🟢 HEALTHY | 🟢 HEALTHY | alerts, client_notifications, notification_log | auth, auth-identity, incident-management, infrastructure, logistics, orders, platform-ops | auth, auth-identity, catalog, dashboard, infrastructure, logistics, loyalty, market, orders, payments, purchasing, shared-cart | 0 |
 | orders | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | customs_history, disputes, order_checkout_idempotency, order_comments, order_item_cost_imputations, order_items, order_status_history, orders, recipients, sms_log | auth, auth-identity, business-rules, catalog, customs, dashboard, decision-signals, documents, economic-engine, infrastructure, local-stock, logistics, loyalty, market, market-autonomy, notifications, payments, platform-ops, purchasing, refunds, shared-cart, wallet | admin-dashboard, auth-identity, catalog, customs, dashboard, documents, economic-engine, incident-management, infrastructure, inventory, logistics, loyalty, market-control-plane, market-delegation, notifications, payments, platform-ops, purchasing, recommendations, refunds, shared-cart, unsold-resolution, wallet | 1 |
@@ -1156,7 +1156,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - `resolveCheckoutFulfillmentSources` (services/local-stock-service.js) — resolved
 
 **Consumes** : catalog (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), market (DECLARED_AND_OBSERVED)
-**Consumed by** : dashboard (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), providers-services (DECLARED_AND_OBSERVED), recommendations (DECLARED_AND_OBSERVED)
+**Consumed by** : dashboard (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), market-delegation (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), providers-services (DECLARED_AND_OBSERVED), recommendations (DECLARED_AND_OBSERVED)
 
 **Projections** : _aucune_
 
@@ -1477,8 +1477,8 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "auth-identity" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "market-delegation" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 
-**Implementation** : 41 fichier(s) déclaré(s)
-  - dash : 23
+**Implementation** : 42 fichier(s) déclaré(s)
+  - dash : 24
   - migrations : 3
   - services : 4
   - tests : 11
@@ -1682,7 +1682,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - `inviteTeamMember` (services/market-delegation-team-service.js) — resolved
   - _...25 de plus, voir FEATURE_360.json_
 
-**Consumes** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), market (DECLARED_AND_OBSERVED), market-autonomy (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), providers-services (DECLARED_AND_OBSERVED), settlement (DECLARED_AND_OBSERVED)
+**Consumes** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), local-stock (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), market (DECLARED_AND_OBSERVED), market-autonomy (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), providers-services (DECLARED_AND_OBSERVED), settlement (DECLARED_AND_OBSERVED)
 **Consumed by** : dashboard (DECLARED_AND_OBSERVED), decision-signals (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), market-control-plane (DECLARED_AND_OBSERVED), market-operator-dashboard (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), settlement (DECLARED_AND_OBSERVED)
 
 **Projections** : _aucune_
@@ -1695,12 +1695,12 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 111 fichier(s) déclaré(s)
+**Implementation** : 113 fichier(s) déclaré(s)
   - config : 1
   - middleware : 4
   - migrations : 23
-  - routes : 14
-  - services : 17
+  - routes : 15
+  - services : 18
   - tests : 52
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="market-delegation"]_
