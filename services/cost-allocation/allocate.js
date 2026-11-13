@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       db, ./_helpers (shareByWeight), utils/relay-commission.js, services/simulation-scope-service.js
  * @used-by       services/cost-allocation/index.js
- * @db-read       cost_components, customs_shipment_parcels, customs_shipments, finance_config, order_items, orders, parcel_items, parcels, products
+ * @db-read       cost_components, customs_shipment_parcels, customs_shipments, finance_config, order_item_real_cost_allocations, order_items, orders, parcel_items, parcels, products
  * @db-write      order_item_real_cost_allocations
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
@@ -289,137 +289,208 @@ async function allocateShipmentRealCosts(shipmentId, dbClient = null) {
 // ═══════════════════════════════════════════════════════════════════════
 
 /**
- * Quand un parcel passe en 'collected', on alloue :
- *   - local_distribution (transport hub→relais) : par poids, depuis finance_config
- *   - relay (commission relais) : per_item, autorité cost_components
- *     (`commission_relais_kmf`), avec finance_config.standard en fallback legacy.
+ * Commission relais (P0 #3994) : UNE commission par commande remise.
  *
- * LOT 1A-3 : aucune sélection implicite showroom. Tant qu'aucun contexte runtime
- * ne porte explicitement ce type de relais, le composant global est la vérité.
- * is_actual=TRUE car la commission est engagée de façon prévisible.
+ * - Un colis doit porter le statut physique "collected" pour déclencher le coût.
+ * - Plusieurs lignes, quantités et colis d'une même commande n'ajoutent
+ *   JAMAIS une deuxième commission.
+ * - Une ligne relay héritée (per_item ou autre) est préservée, pas retouchée ;
+ *   aucun nouveau calcul n'est ajouté à cette commande avant correction auditée.
+ * - On prend le premier colis réellement remis comme support de ventilation ;
+ *   les lignes y portent des parts proportionnelles aux unités de ce colis.
+ * - L'écriture verrouille les lignes orders dans un ordre stable. Ce lock
+ *   sérialise deux remises concurrentes et le contrôle des lignes existantes.
+ * - Une provenance non démontrée reste is_actual=FALSE, pas un coût payé.
+ * - Le dbClient externe doit être déjà dans une transaction (sinon le verrou
+ *   FOR UPDATE n'a pas la même portée). L'endpoint Admin utilise ownTx.
  */
 async function allocateParcelRealCosts(parcelId, dbClient = null) {
   const ownTx = !dbClient;
   const client = dbClient || await db.pool.connect();
-
   try {
     if (ownTx) await client.query('BEGIN');
 
-    // Charger parcel + order
-    const parcelRes = await client.query(
-      `SELECT p.id, p.order_id, p.status, o.simulation_scope
-       FROM parcels p
-       LEFT JOIN orders o ON o.id = p.order_id
-       WHERE p.id = $1`,
+    const { rows: parcelRows } = await client.query(
+      `SELECT p.id, p.order_id, p.status
+         FROM parcels p WHERE p.id = $1`,
       [parcelId]
     );
-    if (!parcelRes.rows.length) {
+    if (!parcelRows.length) {
       if (ownTx) await client.query('ROLLBACK');
       return { parcel_id: parcelId, allocations_count: 0, error: 'parcel_not_found' };
     }
-    const parcel = parcelRes.rows[0];
+    const parcel = parcelRows[0];
+    if (parcel.status !== 'collected') {
+      if (ownTx) await client.query('COMMIT');
+      return { parcel_id: parcelId, allocations_count: 0, reason: 'parcel_not_collected' };
+    }
 
-    // Idempotence : supprimer les allocations local_distribution + relay existantes
-    await client.query(
-      `DELETE FROM order_item_real_cost_allocations
-       WHERE parcel_id = $1 AND cost_type IN ('local_distribution', 'relay')`,
+    const { rows: parcelItems } = await client.query(
+      `SELECT pi.order_item_id, oi.order_id, pi.quantity
+         FROM parcel_items pi
+         JOIN order_items oi ON oi.id = pi.order_item_id
+         WHERE pi.parcel_id = $1`,
       [parcelId]
     );
-
-    // Charger order_items du parcel
-    const itemsRes = await client.query(
-      `SELECT pi.order_item_id, oi.order_id AS order_id, pi.quantity, p.weight_kg
-       FROM parcel_items pi
-       JOIN order_items oi ON oi.id = pi.order_item_id
-       LEFT JOIN products p ON p.id = oi.product_id
-       WHERE pi.parcel_id = $1`,
-      [parcelId]
-    );
-    if (!itemsRes.rows.length) {
+    if (!parcelItems.length) {
       if (ownTx) await client.query('COMMIT');
       return { parcel_id: parcelId, allocations_count: 0, reason: 'no_items' };
     }
-    const items = itemsRes.rows;
 
-    // LOT 1A-3 — une priorité runtime explicite :
-    //   1. cost_components.commission_relais_kmf (autorité OWNED)
-    //   2. finance_config.commission_relais_standard_kmf (fallback legacy)
-    //   3. 500 KMF (fallback CURRENT)
-    // commission_relais_pct/showroom ne sont jamais devinés ici.
-    const relayCfgRes = await client.query(`
+    const byOrder = new Map();
+    for (const item of parcelItems) {
+      const orderId = item.order_id || parcel.order_id;
+      const quantity = Number(item.quantity);
+      if (!orderId || !item.order_item_id || !Number.isSafeInteger(quantity) || quantity <= 0) {
+        const error = new Error('Colis remis sans ligne/quantité/commande physique exploitable');
+        error.status = 422;
+        error.code = 'RELAY_COMMISSION_QUANTITY_UNKNOWN';
+        throw error;
+      }
+      const lines = byOrder.get(orderId) || new Map();
+      lines.set(item.order_item_id, (lines.get(item.order_item_id) || 0) + quantity);
+      byOrder.set(orderId, lines);
+    }
+    const orderIds = [...byOrder.keys()].sort();
+    // Verrou métier : avant la recherche de commission déjà allouée.
+    // Deux appels concurrents sur les deux colis de la même commande ne peuvent
+    // pas produire deux inserts "relay" après ce verrou.
+    const { rows: lockedOrders } = await client.query(
+      `SELECT id, relais_id, simulation_scope
+         FROM orders
+        WHERE id = ANY($1::uuid[])
+        ORDER BY id
+        FOR UPDATE`,
+      [orderIds]
+    );
+    const orderById = new Map(lockedOrders.map(o => [String(o.id), o]));
+    if (orderById.size !== orderIds.length || orderIds.some(id => !orderById.has(String(id)))) {
+      const error = new Error('Référence commande introuvable lors de la ventilation relais');
+      error.status = 422;
+      error.code = 'RELAY_COMMISSION_ORDER_UNKNOWN';
+      throw error;
+    }
+    const { rows: existingRows } = await client.query(
+      `SELECT order_id, COUNT(*)::int AS count, SUM(amount_kmf) AS total_kmf,
+              ARRAY_AGG(DISTINCT allocation_method) AS methods
+         FROM order_item_real_cost_allocations
+        WHERE order_id = ANY($1::uuid[]) AND cost_type = 'relay'
+        GROUP BY order_id`,
+      [orderIds]
+    );
+    const existingByOrder = new Map(existingRows.map(r => [String(r.order_id), r]));
+
+    // Autorité de montant identique au writer existant ; on vérifie
+    // désormais son UNITÉ. Aucun tarif par article n'est automatiquement
+    // converti en forfait commande si la config a divergé.
+    const { rows: commissionRows } = await client.query(`
       SELECT
-        (SELECT default_value
-           FROM cost_components
-          WHERE key = 'commission_relais_kmf'
-            AND is_active = TRUE
+        (SELECT default_value FROM cost_components
+          WHERE key = 'commission_relais_kmf' AND is_active = TRUE
             AND is_exceptional = FALSE
             AND (active_from IS NULL OR active_from <= CURRENT_DATE)
             AND (active_until IS NULL OR active_until >= CURRENT_DATE)
-          ORDER BY display_order, key
-          LIMIT 1) AS component_value,
-        (SELECT updated_by
-           FROM cost_components
-          WHERE key = 'commission_relais_kmf'
-            AND is_active = TRUE
+          ORDER BY display_order, key LIMIT 1) AS component_value,
+        (SELECT unit FROM cost_components
+          WHERE key = 'commission_relais_kmf' AND is_active = TRUE
             AND is_exceptional = FALSE
             AND (active_from IS NULL OR active_from <= CURRENT_DATE)
             AND (active_until IS NULL OR active_until >= CURRENT_DATE)
-          ORDER BY display_order, key
-          LIMIT 1) AS component_updated_by,
-        (SELECT provenance
-           FROM cost_components
-          WHERE key = 'commission_relais_kmf'
-            AND is_active = TRUE
+          ORDER BY display_order, key LIMIT 1) AS component_unit,
+        (SELECT allocation_method FROM cost_components
+          WHERE key = 'commission_relais_kmf' AND is_active = TRUE
             AND is_exceptional = FALSE
             AND (active_from IS NULL OR active_from <= CURRENT_DATE)
             AND (active_until IS NULL OR active_until >= CURRENT_DATE)
-          ORDER BY display_order, key
-          LIMIT 1) AS component_provenance,
-        (SELECT commission_relais_standard_kmf
-           FROM finance_config
+          ORDER BY display_order, key LIMIT 1) AS component_allocation_method,
+        (SELECT updated_by FROM cost_components
+          WHERE key = 'commission_relais_kmf' AND is_active = TRUE
+            AND is_exceptional = FALSE
+            AND (active_from IS NULL OR active_from <= CURRENT_DATE)
+            AND (active_until IS NULL OR active_until >= CURRENT_DATE)
+          ORDER BY display_order, key LIMIT 1) AS component_updated_by,
+        (SELECT provenance FROM cost_components
+          WHERE key = 'commission_relais_kmf' AND is_active = TRUE
+            AND is_exceptional = FALSE
+            AND (active_from IS NULL OR active_from <= CURRENT_DATE)
+            AND (active_until IS NULL OR active_until >= CURRENT_DATE)
+          ORDER BY display_order, key LIMIT 1) AS component_provenance,
+        (SELECT commission_relais_standard_kmf FROM finance_config
           WHERE id = 1) AS legacy_standard_value
     `);
-    const relayCommission = resolveRelayCommissionCurrent(relayCfgRes.rows[0] || {});
-    const commissionPerItem = relayCommission.amount_kmf;
-    // C2 : seul un montant saisi par un opérateur sur le composant canonique est
-    // un coût réel. Seed, repli finance_config ou littéral = estimation.
-    // L3 : l'auteur seul ne suffit pas — il faut aussi une provenance déclarée de la valeur.
-    const relayCfg = relayCfgRes.rows[0] || {};
-    const relayProvenance = relayCfg.component_provenance && String(relayCfg.component_provenance).trim()
+    const relayCfg = commissionRows[0] || {};
+    const relayCommission = resolveRelayCommissionCurrent(relayCfg);
+    const componentAvailable = relayCommission.source === 'cost_components.commission_relais_kmf';
+    if (componentAvailable
+      && (relayCfg.component_unit !== 'kmf_per_order' || relayCfg.component_allocation_method !== 'per_order')) {
+      const error = new Error('Unité commission relais non réconciliée avec la règle commande remise');
+      error.status = 422;
+      error.code = 'RELAY_COMMISSION_BASIS_CONFLICT';
+      throw error;
+    }
+    const totalCents = Math.round(relayCommission.amount_kmf * 100);
+    if (!Number.isSafeInteger(totalCents) || totalCents < 0) {
+      const error = new Error('Montant de commission relais non représentable en KMF');
+      error.status = 422;
+      error.code = 'RELAY_COMMISSION_AMOUNT_INVALID';
+      throw error;
+    }
+    const provenance = relayCfg.component_provenance && String(relayCfg.component_provenance).trim()
       ? String(relayCfg.component_provenance).trim() : null;
-    // L3 : une valeur de composant « FICTIF » ne devient jamais un coût réel d'une commande d'activité réelle.
-    const simulatedValueOnRealOrder = isSimulatedProvenance(relayProvenance) && !parcel.simulation_scope;
-    const relayIsActual = relayCommission.source === 'cost_components.commission_relais_kmf'
-      && Boolean(relayCfg.component_updated_by) && Boolean(relayProvenance) && !simulatedValueOnRealOrder;
 
     let allocations = 0;
+    const diagnostics = [];
+    for (const orderId of orderIds) {
+      const previous = existingByOrder.get(String(orderId));
+      if (previous) {
+        // Ne jamais réécrire les anciennes lignes per_item (ni les manuelles).
+        diagnostics.push({
+          order_id: orderId, status: 'already_allocated_preserved',
+          existing_rows: Number(previous.count),
+          existing_total_kmf: Number(previous.total_kmf),
+          existing_methods: previous.methods,
+        });
+        continue;
+      }
+      const order = orderById.get(String(orderId));
+      if (!order.relais_id) {
+        diagnostics.push({ order_id: orderId, status: 'relay_beneficiary_missing' });
+        continue;
+      }
 
-    // Allocation 'relay' : per_item × commission
-    for (const it of items) {
-      const amount = commissionPerItem * (Number(it.quantity) || 1);
-      await client.query(
-        `INSERT INTO order_item_real_cost_allocations
-           (order_id, order_item_id, parcel_id,
-            cost_type, amount_kmf, allocation_method,
-            source, is_actual, confidence, provenance)
-         VALUES ($1,$2,$3,'relay',$4,'per_item',$5,$6,'medium',$7)`,
-        [it.order_id || parcel.order_id, it.order_item_id, parcelId, amount, relayCommission.source, relayIsActual, relayProvenance]
-      );
-      allocations++;
+      const isSimulatedOnReal = isSimulatedProvenance(provenance) && !order.simulation_scope;
+      const relayIsActual = componentAvailable
+        && Boolean(relayCfg.component_updated_by) && Boolean(provenance) && !isSimulatedOnReal;
+      const lines = [...byOrder.get(orderId)].map(([id, weight]) => ({ id, weight }));
+      const shares = shareByWeight(totalCents, lines);
+      for (const share of shares) {
+        await client.query(
+          `INSERT INTO order_item_real_cost_allocations
+             (order_id, order_item_id, parcel_id,
+              cost_type, amount_kmf, allocation_method,
+              source, is_actual, confidence, provenance, notes)
+           VALUES ($1,$2,$3,'relay',$4,'per_order',$5,$6,'medium',$7,'relay_order_handoff_v1')`,
+          [orderId, share.id, parcelId, share.share / 100,
+            relayCommission.source, relayIsActual, provenance]
+        );
+        allocations++;
+      }
+      diagnostics.push({
+        order_id: orderId, status: 'allocated_per_order',
+        amount_kmf: totalCents / 100, allocated_rows: shares.length,
+        cost_is_actual: relayIsActual,
+      });
     }
 
-    // Allocation 'local_distribution' : actuellement non saisi finement.
-    // On NE met PAS de fallback estime ici. Restera 'missing' tant qu'il
-    // n'y a pas de saisie reelle — coherent avec doctrine "jamais 0 pour manquant".
-
     if (ownTx) await client.query('COMMIT');
-
     return {
       parcel_id: parcelId,
       allocations_count: allocations,
-      items_count: items.length,
-      relay_commission_kmf: commissionPerItem,
+      items_count: parcelItems.length,
+      relay_commission_kmf: totalCents / 100,
+      relay_commission_basis: 'per_order',
       relay_commission_source: relayCommission.source,
+      orders: diagnostics,
     };
   } catch (err) {
     if (ownTx) await client.query('ROLLBACK').catch(() => {});
@@ -650,8 +721,8 @@ async function allocateProductPurchaseCosts(orderId, dbClient = null) {
       [orderId]
     );
 
-    // Charger les order_items (cost_kmf produit = approximation tant qu'on n'a
-    // pas de facture fournisseur reelle attachee a la commande)
+    // Charger les order_items : products.cost_kmf est une estimation catalogue,
+    // jamais une preuve d'achat facture ou paye. Ne pas la marquer is_actual.
     const itemsRes = await client.query(
       `SELECT oi.id AS order_item_id, oi.quantity, p.cost_kmf
        FROM order_items oi
@@ -667,7 +738,7 @@ async function allocateProductPurchaseCosts(orderId, dbClient = null) {
         await client.query(
           `INSERT INTO order_item_real_cost_allocations
              (order_id, order_item_id, cost_type, amount_kmf, allocation_method, source, is_actual, confidence)
-           VALUES ($1, $2, 'product_purchase', $3, 'direct', 'products.cost_kmf', TRUE, 'medium')`,
+           VALUES ($1, $2, 'product_purchase', $3, 'direct', 'products.cost_kmf', FALSE, 'low')`,
           [orderId, it.order_item_id, amount]
         );
         count++;

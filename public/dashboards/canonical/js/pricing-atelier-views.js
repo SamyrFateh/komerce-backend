@@ -743,18 +743,20 @@
     const price = rawPrice === null || rawPrice === '' ? null : Number(rawPrice);
     return {
       circuit, commission_basis: commissionBasis, scenarios,
-      candidate_prices_kmf: Number.isFinite(price) && price > 0 ? [price] : [],
+      candidate_prices_local: Number.isFinite(price) && price > 0 ? [price] : [], 
     };
   }
 
   function forecastFormPanel(doc, corridor) {
+    const currency = (corridor.market && corridor.market.currency) || 'KMF';
     const details = doc.createElement('details');
     details.className = 'kmc-atelier-panel kmc-atelier-forecast';
     details.dataset.atelierForecast = '';
     details.appendChild(el(doc, 'summary', '', 'Simuler le prix plancher prévisionnel · 3 scénarios'));
     details.appendChild(el(doc, 'p', 'kmc-atelier-note',
-      'Aucune moyenne 200/4/2,5. Toutes les valeurs saisies sont des hypothèses NON VÉRIFIÉES ; ' +
-      'zéro doit être saisi volontairement, aucun montant n’est prérempli. Aucun prix actif n’est modifié.'));
+      'Aucune moyenne 200/4/2,5. Montants monétaires saisis en ' + currency +
+      ', poids/volumes et pourcentages inchangés ; hypothèses NON VÉRIFIÉES. ' +
+      'Zéro explicite, aucun montant prérempli. Calcul interne KMF via FX officiel. Aucun prix actif modifié.'));
     details.appendChild(metricLine(doc, 'Achat enregistré au catalogue',
       corridor.product.purchase_cost_kmf > 0 ? formatKmf(corridor.product.purchase_cost_kmf) : 'Indisponible'));
     const form = doc.createElement('form');
@@ -781,7 +783,7 @@
     });
     commissionField.appendChild(commission); choices.appendChild(commissionField);
     const priceField = el(doc, 'label', 'kmc-atelier-field');
-    priceField.appendChild(el(doc, 'span', '', 'Prix commercial à tester (KMF, facultatif)'));
+    priceField.appendChild(el(doc, 'span', '', 'Prix commercial à tester (' + currency + ', facultatif)'));
     const price = doc.createElement('input');
     price.type = 'number'; price.name = 'candidate_price'; price.min = '0.01'; price.step = 'any';
     price.placeholder = 'Pas de prix présélectionné';
@@ -798,12 +800,12 @@
     FORECAST_FIELDS.forEach(([key, title, scope]) => {
       const tr = doc.createElement('tr');
       tr.dataset.forecastCircuit = scope;
-      tr.appendChild(el(doc, 'th', '', title));
+      tr.appendChild(el(doc, 'th', '', title.replace(/KMF/g, currency)));
       FORECAST_SCENARIOS.forEach(([scenario]) => {
         const td = doc.createElement('td');
         const input = doc.createElement('input');
         input.type = 'number'; input.min = '0'; input.step = 'any'; input.required = true;
-        input.name = key + '_' + scenario; input.setAttribute('aria-label', title + ' · ' + scenario);
+        input.name = key + '_' + scenario; input.setAttribute('aria-label', title.replace(/KMF/g, currency) + ' · ' + scenario);
         td.appendChild(input); tr.appendChild(td);
       });
       tbody.appendChild(tr);
@@ -829,29 +831,37 @@
     const data = answer && answer.forecast;
     if (!data) return el(doc, 'p', 'kmc-atelier-alert', 'Aucun résultat retourné.');
     const pane = el(doc, 'div', 'kmc-atelier-forecast-result');
+    const currency = answer.market_currency || 'KMF';
+    const local = answer.local_display || {};
+    const display = (value, fallback) => value == null
+      ? (fallback == null ? 'Non décisionnel' : formatKmf(fallback))
+      : formatMoney(value, currency);
     pane.appendChild(el(doc, 'strong', '', 'Prévision : ' + data.status));
     pane.appendChild(el(doc, 'p', 'kmc-atelier-note',
       'Simulation sous hypothèses non vérifiées, sans action sur le catalogue.'));
     pane.appendChild(metricLine(doc, 'Plancher central',
-      data.plancher_central_kmf == null ? 'Non décisionnel' : formatKmf(data.plancher_central_kmf)));
+      display(local.plancher_central, data.plancher_central_kmf)));
     pane.appendChild(metricLine(doc, 'Plancher prudent',
-      data.plancher_prudent_kmf == null ? 'Non décisionnel' : formatKmf(data.plancher_prudent_kmf)));
+      display(local.plancher_prudent, data.plancher_prudent_kmf)));
     const central = data.cases && data.cases.central;
     if (central) {
-      pane.appendChild(metricLine(doc, 'Coût rendu relais N1', formatKmf(central.n1_kmf)));
-      pane.appendChild(metricLine(doc, 'N2 hors pourcentage sur prix', formatKmf(central.n2_fixed_kmf)));
+      pane.appendChild(metricLine(doc, 'Coût rendu relais N1', display(local.central_n1, central.n1_kmf)));
+      pane.appendChild(metricLine(doc, 'N2 hors pourcentage sur prix', display(local.central_n2, central.n2_fixed_kmf)));
       pane.appendChild(metricLine(doc, 'Frais proportionnels au prix', central.sale_pct + ' %'));
       const lines = doc.createElement('details');
       lines.className = 'kmc-atelier-forecast-lines';
-      lines.appendChild(el(doc, 'summary', '', 'Détail des coûts et hypothèses'));
+      lines.appendChild(el(doc, 'summary', '', 'Détail technique KMF (base interne) et hypothèses'));
       (central.lines || []).forEach(line =>
         lines.appendChild(metricLine(doc, line.code + ' · ' + line.evidence, formatKmf(line.amount_kmf))));
       pane.appendChild(lines);
     }
-    (data.prices || []).forEach(item =>
+    (data.prices || []).forEach((item, index) => {
+      const shown = (local.prices || [])[index] || {};
       pane.appendChild(metricLine(doc,
-        'Prix testé ' + formatKmf(item.price_kmf) + ' · ' + (item.verdict || item.status),
-        item.contribution_centrale_kmf == null ? '—' : 'Contribution : ' + formatKmf(item.contribution_centrale_kmf))));
+        'Prix testé ' + display(shown.price, item.price_kmf) + ' · ' + (item.verdict || item.status),
+        item.contribution_centrale_kmf == null ? '—' :
+          'Contribution : ' + display(shown.contribution, item.contribution_centrale_kmf)));
+    });
     (data.diagnostics || []).forEach(note => pane.appendChild(el(doc, 'p', 'kmc-atelier-alert', note)));
     return pane;
   }

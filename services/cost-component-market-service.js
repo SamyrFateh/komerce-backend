@@ -5,7 +5,7 @@
  * @layer         service
  * @criticality   high
  * @inputs        resolved_market_id, component_key, market_override_payload, actor_id
- * @outputs       effective_market_cost_components, audited_override_mutations
+ * @outputs       effective_market_cost_components, audited_override_mutations, read_only_p0_corridor_relay_evidence
  * @depends       db.js
  * @used-by       routes/admin-pricing-workspace.js, services/pricing-cdr.js
  * @db-read       cost_components, cost_component_market_overrides
@@ -61,6 +61,7 @@ function effectiveRow(row) {
     allocation_method: row.allocation_method,
     source: hasOverride ? 'market_override' : row.source,
     base_source: row.source,
+    base_provenance_declared: Boolean(String(row.base_provenance || '').trim()),
     confidence: row.confidence,
     base_confidence: row.confidence,
     channel: row.channel,
@@ -89,6 +90,7 @@ async function listEffectiveComponents(marketId, q = db) {
             cc.economic_nature, cc.allocation_perimeter,
             cc.default_value AS base_default_value, cc.unit, cc.currency, cc.scope, cc.scope_value,
             cc.allocation_method, cc.source, cc.confidence, cc.channel, cc.island,
+            cc.provenance AS base_provenance,
             cc.is_active AS base_is_active, cc.is_exceptional, cc.active_from, cc.active_until,
             cc.display_order, cc.notes, cc.updated_at AS base_updated_at,
             o.id AS override_id, o.default_value AS override_default_value,
@@ -272,11 +274,112 @@ async function resetOverride({ marketId, key, actorId = null }) {
   }
 }
 
+
+/**
+ * P0 #3994: diagnostics SELECT-only, not a quote or price-decision authority.
+ * Migration 043 and the current writer agree on per_order for new handoffs.
+ * The audit still refuses to treat existing per_item rows as reconciled:
+ * those legacy allocations remain preserved and need separate review.
+ */
+const P0_CORRIDOR_CATEGORIES = new Set([
+  'freight', 'transit', 'port_transitary', 'customs', 'douane', 'local_distribution',
+]);
+const P0_KM_ONLY_KEY = /^(?:transport_port_relais_kmf|transport_inter_iles_.*)$/i;
+const P0_REAL_RELAY_METHOD = 'per_order';
+
+function p0IsoDay(value) {
+  if (!value) return null;
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  return String(value).slice(0, 10);
+}
+
+function auditEffectiveMarketCosts({ market, components, asOf }) {
+  const code = String(market?.code || '').trim().toUpperCase();
+  if (!/^[A-Z]{2}$/.test(code)) {
+    throw new MarketCostComponentError(400, 'Code marché indisponible', 'market_cost_market_required');
+  }
+  const day = p0IsoDay(asOf) || new Date().toISOString().slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) {
+    throw new MarketCostComponentError(400, 'Date de référence invalide', 'market_cost_date_invalid');
+  }
+  const issues = [];
+  const entries = [];
+  for (const row of components || []) {
+    const current = row.is_active === true && !row.is_exceptional
+      && (!row.active_from || p0IsoDay(row.active_from) <= day)
+      && (!row.active_until || p0IsoDay(row.active_until) >= day);
+    const corridor = P0_CORRIDOR_CATEGORIES.has(row.category);
+    const relay = row.category === 'relay' || row.key === 'commission_relais_kmf';
+    const override = row.inherited === false && row.source === 'market_override';
+    const kmOnly = P0_KM_ONLY_KEY.test(row.key || '') || Boolean(row.island);
+    let scopeStatus = 'NOT_CORRIDOR_COMPONENT';
+    if (corridor) {
+      if (kmOnly && code !== 'KM' && !override) scopeStatus = 'KM_SPECIFIC_UNVERIFIED_OUTSIDE_KM';
+      else if (override) scopeStatus = 'MARKET_OVERRIDE_SCOPE_ONLY';
+      else if (code === 'CM' || code === 'CG') scopeStatus = 'INHERITED_CORRIDOR_UNVERIFIED';
+      else scopeStatus = 'BASE_CORRIDOR_QUOTE_UNVERIFIED';
+    }
+    const unit = row.unit || null;
+    const method = row.allocation_method || null;
+    const forecastPerItem = method === 'per_item';
+    const relayMismatch = relay && (unit !== 'kmf_per_order' || method !== 'per_order');
+    const entry = {
+      key: row.key || null, category: row.category || null,
+      value: row.default_value == null ? null : Number(row.default_value),
+      unit, allocation_method: method,
+      scope: row.scope || null, scope_value: row.scope_value || null,
+      source: row.source || null, confidence: row.confidence || null,
+      island: row.island || null,
+      market_override: override, inherited: row.inherited !== false,
+      base_provenance_declared: Boolean(row.base_provenance_declared),
+      override_note_declared: Boolean(String(row.override_notes || '').trim()),
+      is_effective: current, scope_status: scopeStatus,
+      cost_evidence_status: 'NOT_VERIFIED',
+      ...(relay ? {
+        relay_forecast_unit: unit === 'kmf_per_order' && method === 'per_order' ? 'per_order' : forecastPerItem ? 'per_item' : 'UNKNOWN',
+        relay_real_current_unit: P0_REAL_RELAY_METHOD,
+        relay_unit_consistent: !relayMismatch,
+      } : {}),
+    };
+    entries.push(entry);
+    if (!current) continue;
+    if (scopeStatus === 'KM_SPECIFIC_UNVERIFIED_OUTSIDE_KM'
+      || scopeStatus === 'INHERITED_CORRIDOR_UNVERIFIED') {
+      issues.push({ code: scopeStatus, component_key: entry.key });
+    }
+    if (relayMismatch) issues.push({ code: 'RELAY_FORECAST_REAL_UNIT_MISMATCH', component_key: entry.key });
+    if (corridor && (!Number.isFinite(entry.value) || entry.value < 0)) {
+      issues.push({ code: 'CORRIDOR_AMOUNT_UNKNOWN', component_key: entry.key });
+    }
+  }
+  return {
+    read_only: true, no_price_activation: true, certified: false,
+    status: 'NON_DECISIONNEL', market_code: code,
+    market_currency: market.currency || null, as_of: day,
+    relay_real_runtime_method: P0_REAL_RELAY_METHOD,
+    summary: {
+      active_components: entries.filter(e => e.is_effective).length,
+      active_corridor_components: entries.filter(e =>
+        e.is_effective && P0_CORRIDOR_CATEGORIES.has(e.category)).length,
+      unresolved_issues: issues.length,
+    },
+    issues, components: entries,
+  };
+}
+
+async function buildMarketEconomicP0Audit(market, { q = db, asOf } = {}) {
+  if (!market?.id) throw new MarketCostComponentError(400, 'Marché requis', 'market_cost_market_required');
+  const components = await listEffectiveComponents(market.id, q);
+  return auditEffectiveMarketCosts({ market, components, asOf });
+}
+
 module.exports = {
   MarketCostComponentError,
   legacyEconomicNature,
   effectiveRow,
   listEffectiveComponents,
+  auditEffectiveMarketCosts,
+  buildMarketEconomicP0Audit,
   upsertOverride,
   resetOverride,
 };
