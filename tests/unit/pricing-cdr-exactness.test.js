@@ -30,7 +30,7 @@ const COMPONENTS = [
   mk('hub_controle_kmf', 'hub', 150, 'kmf_per_parcel'),
   mk('fret_maritime_eur_m3', 'freight', 180, 'eur', 'by_volume'),
   mk('assurance_transport_pct', 'freight', 0.5, 'pct'),
-  mk('frais_inspection_douane_kmf', 'customs', 5000, 'kmf_per_shipment'),
+  mk('frais_frais_inspection_douane_kmf_kmf', 'customs', 5000, 'kmf_per_shipment'),
   mk('transitaire_kmf', 'port_transitary', 3, 'pct'),
   mk('transport_port_relais_kmf', 'local_distribution', 500, 'kmf_per_parcel'),
   mk('commission_relais_kmf', 'relay', 600, 'kmf_per_order'),
@@ -281,7 +281,7 @@ describe('ME-02 / #3994 — référence économique mono-article, strictement no
   const sourceComponents = [
     mk('achat_logistique', 'sourcing', 1300, 'kmf_per_order'),
     mk('emballage_hub', 'hub', 400, 'kmf_per_parcel'),
-    mk('inspection_douane', 'customs', 5000, 'kmf_per_shipment'),
+    mk('frais_inspection_douane_kmf', 'customs', 5000, 'kmf_per_shipment'),
     mk('fret_au_poids', 'freight', 100, 'kmf_per_kg', 'by_weight', { source: 'market_override' }),
     mk('loyer_mensuel', 'fixed_overhead', 250, 'kmf_per_order'),
   ];
@@ -295,14 +295,14 @@ describe('ME-02 / #3994 — référence économique mono-article, strictement no
     const line = (value, key) => value.details._allocations.find(a => a.component_key === key);
     expect(line(before, 'achat_logistique').allocated_cost_kmf).toBe(520);
     expect(line(before, 'emballage_hub').allocated_cost_kmf).toBe(100);
-    expect(line(before, 'inspection_douane').allocated_cost_kmf).toBe(25);
+    expect(line(before, 'frais_inspection_douane_kmf').allocated_cost_kmf).toBe(25);
     expect(line(reference, 'achat_logistique')).toMatchObject({
       allocated_cost_kmf: 1300, allocation_divisor: 1, allocation_level: 'order',
     });
     expect(line(reference, 'emballage_hub')).toMatchObject({
       allocated_cost_kmf: 400, allocation_divisor: 1, allocation_level: 'parcel',
     });
-    expect(line(reference, 'inspection_douane')).toMatchObject({
+    expect(line(reference, 'frais_inspection_douane_kmf')).toMatchObject({
       allocated_cost_kmf: 5000, allocation_divisor: 1, allocation_level: 'shipment',
     });
     expect(line(reference, 'fret_au_poids').allocated_cost_kmf).toBe(100);
