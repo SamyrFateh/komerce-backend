@@ -101,4 +101,49 @@ describeDb('Repartition automatique — eligibilite des colis (PG16 jetable)', (
     expect(p103).not.toBeNull();
     expect(pLocal).toBeNull();
   });
+  test('C1 H4 : deux opérateurs PG simultanés sur la même commande IMPORT — un seul colis actif', async () => {
+    // Cohorte PG16 jetable uniquement, pas de staging ni d'objets métier externes.
+    await mkOrder('C1', 'IMPORT', { received: 2 });
+    const clients = await Promise.all([0, 1].map(async () => {
+      const client = new Client({ connectionString: process.env.DATABASE_URL });
+      await client.connect();
+      return client;
+    }));
+    expect(new Set(clients.map(c => c.processID)).size).toBe(2);
+    let results;
+    try {
+      await Promise.all(clients.map(c => c.query('BEGIN')));
+      // La première transaction porte le verrou FOR UPDATE jusqu'au COMMIT.
+      // L'autre vraie session attend, puis lit le résultat effectivement persisté.
+      results = await Promise.all(clients.map(async client => {
+        try {
+          const result = await autoParcel.distributeOrder(o.C1, client);
+          await client.query('COMMIT');
+          return result;
+        } catch (error) {
+          await client.query('ROLLBACK').catch(() => {});
+          throw error;
+        }
+      }));
+    } finally {
+      await Promise.all(clients.map(c => c.end()));
+    }
+    expect(results.filter(x => x.success && x.parcel_created)).toHaveLength(1);
+    expect(results.filter(x => x.success && x.already_assigned)).toHaveLength(1);
+    const active = await q(
+      "SELECT COUNT(*)::int AS n, COALESCE(SUM(pi.quantity),0)::int AS qty, COUNT(DISTINCT pi.parcel_id)::int AS parcels " +
+      "FROM parcel_items pi JOIN parcels p ON p.id=pi.parcel_id AND p.cancelled_at IS NULL " +
+      "WHERE pi.order_item_id=$1",
+      [item.C1]);
+    expect(active.rows).toEqual([{ n: 1, qty: 2, parcels: 1 }]);
+    const h4 = await q(
+      "SELECT pi.order_item_id FROM parcel_items pi " +
+      "JOIN parcels p ON p.id=pi.parcel_id AND p.cancelled_at IS NULL " +
+      "JOIN order_items oi ON oi.id=pi.order_item_id " +
+      "WHERE pi.order_item_id=$1 GROUP BY pi.order_item_id, oi.quantity " +
+      "HAVING SUM(pi.quantity) > oi.quantity",
+      [item.C1]);
+    expect(h4.rows).toHaveLength(0);
+  });
+
 });
