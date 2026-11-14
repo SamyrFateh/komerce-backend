@@ -1,8 +1,8 @@
 # Komerce Architecture Header Audit
 
-Generated: 2026-11-14T07:40:05.480Z
+Generated: 2026-11-14T08:39:14.153Z
 
-Coverage: 809/809 files (100%).
+Coverage: 810/810 files (100%).
 
 ## Coverage By Layer
 
@@ -17,7 +17,7 @@ Coverage: 809/809 files (100%).
 | entrypoint | 1 | 0 | 1 |
 | middleware | 27 | 0 | 27 |
 | route | 138 | 0 | 138 |
-| service | 499 | 0 | 499 |
+| service | 500 | 0 | 500 |
 | util | 30 | 0 | 30 |
 
 ## Next Missing Priority

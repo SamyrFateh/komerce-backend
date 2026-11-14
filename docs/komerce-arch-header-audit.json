@@ -1,6 +1,6 @@
 {
   "version": "2026-06",
-  "generatedAt": "2026-11-14T07:40:05.480Z",
+  "generatedAt": "2026-11-14T08:39:14.153Z",
   "scope": [
     "server.js",
     "bootstrap",
@@ -11,8 +11,8 @@
     "public/boutique/js"
   ],
   "totals": {
-    "files": 809,
-    "covered": 809,
+    "files": 810,
+    "covered": 810,
     "missing": 0
   },
   "byLayer": {
@@ -62,8 +62,8 @@
       "missing": 0
     },
     "service": {
-      "total": 499,
-      "covered": 499,
+      "total": 500,
+      "covered": 500,
       "missing": 0
     },
     "util": {
@@ -1709,7 +1709,7 @@
       "layer": "route",
       "domainHint": "unknown",
       "criticalityHint": "medium",
-      "lines": 673
+      "lines": 692
     },
     {
       "file": "routes/admin/users.js",
@@ -2375,7 +2375,7 @@
       "layer": "route",
       "domainHint": "payment",
       "criticalityHint": "critical",
-      "lines": 195
+      "lines": 211
     },
     {
       "file": "routes/payments.js",
@@ -3878,7 +3878,7 @@
       "layer": "service",
       "domainHint": "auth",
       "criticalityHint": "medium",
-      "lines": 266
+      "lines": 300
     },
     {
       "file": "services/hub-bag-box-service.js",
@@ -5021,7 +5021,7 @@
       "layer": "service",
       "domainHint": "payment",
       "criticalityHint": "critical",
-      "lines": 744
+      "lines": 663
     },
     {
       "file": "services/payment-service.js",
@@ -5058,6 +5058,15 @@
       "domainHint": "payment",
       "criticalityHint": "medium",
       "lines": 395
+    },
+    {
+      "file": "services/paypal-refund-authority.js",
+      "hasHeader": true,
+      "role": "durable-paypal-admin-refund-authority",
+      "layer": "service",
+      "domainHint": "payment",
+      "criticalityHint": "medium",
+      "lines": 279
     },
     {
       "file": "services/pickup-agent-lockout.js",
@@ -5732,7 +5741,7 @@
       "layer": "service",
       "domainHint": "unknown",
       "criticalityHint": "medium",
-      "lines": 204
+      "lines": 207
     },
     {
       "file": "services/refund-intent-reconciliation.js",
@@ -5804,7 +5813,7 @@
       "layer": "service",
       "domainHint": "unknown",
       "criticalityHint": "medium",
-      "lines": 196
+      "lines": 206
     },
     {
       "file": "services/relay-return-request-service.js",
@@ -5813,7 +5822,7 @@
       "layer": "service",
       "domainHint": "unknown",
       "criticalityHint": "medium",
-      "lines": 197
+      "lines": 199
     },
     {
       "file": "services/relay-shipment-receipt.js",
@@ -6425,7 +6434,7 @@
       "layer": "service",
       "domainHint": "payment",
       "criticalityHint": "critical",
-      "lines": 199
+      "lines": 202
     },
     {
       "file": "services/supplier-payment-state.js",
@@ -7037,7 +7046,7 @@
       "layer": "service",
       "domainHint": "unknown",
       "criticalityHint": "medium",
-      "lines": 205
+      "lines": 278
     },
     {
       "file": "services/verify-qr-collection.js",

@@ -13,21 +13,21 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 811,
-    "filesWithFullHeaders": 756,
+    "scannedCodeFiles": 812,
+    "filesWithFullHeaders": 757,
     "filesWithLiteHeaders": 55,
-    "filesWithAnyHeaders": 811,
+    "filesWithAnyHeaders": 812,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 2058,
-    "edges": 10196,
+    "graphNodes": 2061,
+    "edges": 10227,
     "dbTables": 239,
-    "doctrines": 801,
+    "doctrines": 803,
     "impactAreas": 207,
     "unresolvedCodeEdges": 972,
     "dbWriteViaOverlapWarnings": 12,
-    "multiWriterTables": 96
+    "multiWriterTables": 97
   },
   "byDomain": {
     "infrastructure": 25,
@@ -71,7 +71,7 @@
     "external-provider-contracts": 1,
     "finance": 3,
     "incident-management": 5,
-    "refunds": 7,
+    "refunds": 8,
     "market-autonomy": 4,
     "markets": 1,
     "payments": 1,
@@ -112,7 +112,7 @@
     "schema": 1,
     "route": 138,
     "entrypoint": 1,
-    "service": 491,
+    "service": 492,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -121,7 +121,7 @@
     "validators": 1
   },
   "byCriticality": {
-    "critical": 125,
+    "critical": 126,
     "medium": 156,
     "high": 465,
     "low": 64,
@@ -11746,7 +11746,8 @@
         "middleware/auth.js",
         "middleware/auth-guest.js",
         "services/paypal-client.js",
-        "services/payment-paypal.js"
+        "services/payment-paypal.js",
+        "services/paypal-refund-authority.js"
       ],
       "usedBy": [
         "bootstrap/api-routes.js"
@@ -26829,7 +26830,7 @@
         "db.js",
         "services/paypal-client.js",
         "services/order-payment-confirmation.js",
-        "services/documents/refund-receipt.js",
+        "services/paypal-refund-authority.js",
         "routes/pickup-secret.js"
       ],
       "usedBy": [
@@ -27067,6 +27068,73 @@
         "payment"
       ],
       "version": "2026-06"
+    },
+    {
+      "id": "services/paypal-refund-authority.js",
+      "file": "services/paypal-refund-authority.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "durable-paypal-admin-refund-authority",
+      "domain": "refunds",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "order_id",
+        "admin",
+        "explicit idempotency key",
+        "original capture",
+        "provider evidence"
+      ],
+      "outputs": [
+        "durable intent",
+        "verified refunds row",
+        "partial/full settlement"
+      ],
+      "depends": [
+        "db.js",
+        "services/refund-intent-ledger.js",
+        "services/refund-intent-reconciliation.js",
+        "services/refund-service.js",
+        "services/payment-service.js",
+        "services/order-status-machine.js",
+        "services/documents/refund-receipt.js",
+        "utils/alerts.js"
+      ],
+      "usedBy": [
+        "services/payment-paypal.js"
+      ],
+      "dbRead": [
+        "orders",
+        "refund_execution_intents",
+        "refunds"
+      ],
+      "dbWrite": [
+        "refund_execution_intents",
+        "refunds",
+        "orders",
+        "order_status_history"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "reserve_commit_then_claim_commit_then_provider_post_then_verified_settlement_commit"
+      ],
+      "doctrine": [
+        "no_psp_in_sql_transaction",
+        "durable_intent",
+        "no_duplicate_refund",
+        "fail_closed_on_unknown",
+        "refunds_to_original_payer"
+      ],
+      "impactAreas": [
+        "payments",
+        "orders",
+        "refunds",
+        "documents",
+        "finance"
+      ],
+      "version": "2026-11"
     },
     {
       "id": "services/pickup-agent-lockout.js",
@@ -30782,7 +30850,9 @@
         "refund_execution_intents"
       ],
       "usedBy": [
-        "future refund orchestrators (NOT ACTIVATED)"
+        "services/paypal-refund-authority.js",
+        "services/sav-ledger-refund.js",
+        "services/item-refund-reservation-service.js"
       ],
       "dbRead": [
         "orders",
@@ -31275,7 +31345,8 @@
         "order_items",
         "products",
         "disputes",
-        "relay_product_return_receipts"
+        "relay_product_return_receipts",
+        "relay_return_compensations"
       ],
       "dbWrite": [],
       "dbWriteVia": [
@@ -37607,7 +37678,8 @@
         "relais"
       ],
       "dbWrite": [
-        "users"
+        "users",
+        "hub_authorization_grants"
       ],
       "dbWriteVia": [],
       "dbTxn": [
@@ -43633,6 +43705,16 @@
       "id": "doctrine:wallet_non_modifie_ici",
       "type": "doctrine",
       "doctrine": "wallet_non_modifie_ici"
+    },
+    {
+      "id": "doctrine:fail_closed_on_unknown",
+      "type": "doctrine",
+      "doctrine": "fail_closed_on_unknown"
+    },
+    {
+      "id": "doctrine:refunds_to_original_payer",
+      "type": "doctrine",
+      "doctrine": "refunds_to_original_payer"
     },
     {
       "id": "doctrine:brute_force_guard",
@@ -62869,6 +62951,12 @@
       "to": "services/payment-paypal.js",
       "type": "depends",
       "label": "services/payment-paypal.js"
+    },
+    {
+      "from": "routes/payments-paypal.js",
+      "to": "services/paypal-refund-authority.js",
+      "type": "depends",
+      "label": "services/paypal-refund-authority.js"
     },
     {
       "from": "bootstrap/api-routes.js",
@@ -88021,9 +88109,9 @@
     },
     {
       "from": "services/payment-paypal.js",
-      "to": "services/documents/refund-receipt.js",
+      "to": "services/paypal-refund-authority.js",
       "type": "depends",
-      "label": "services/documents/refund-receipt.js"
+      "label": "services/paypal-refund-authority.js"
     },
     {
       "from": "services/payment-paypal.js",
@@ -88380,6 +88468,162 @@
       "to": "impact:payment",
       "type": "impact",
       "label": "payment"
+    },
+    {
+      "from": "services/paypal-refund-authority.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/paypal-refund-authority.js",
+      "to": "services/refund-intent-ledger.js",
+      "type": "depends",
+      "label": "services/refund-intent-ledger.js"
+    },
+    {
+      "from": "services/paypal-refund-authority.js",
+      "to": "services/refund-intent-reconciliation.js",
+      "type": "depends",
+      "label": "services/refund-intent-reconciliation.js"
+    },
+    {
+      "from": "services/paypal-refund-authority.js",
+      "to": "services/refund-service.js",
+      "type": "depends",
+      "label": "services/refund-service.js"
+    },
+    {
+      "from": "services/paypal-refund-authority.js",
+      "to": "services/payment-service.js",
+      "type": "depends",
+      "label": "services/payment-service.js"
+    },
+    {
+      "from": "services/paypal-refund-authority.js",
+      "to": "services/order-status-machine.js",
+      "type": "depends",
+      "label": "services/order-status-machine.js"
+    },
+    {
+      "from": "services/paypal-refund-authority.js",
+      "to": "services/documents/refund-receipt.js",
+      "type": "depends",
+      "label": "services/documents/refund-receipt.js"
+    },
+    {
+      "from": "services/paypal-refund-authority.js",
+      "to": "utils/alerts.js",
+      "type": "depends",
+      "label": "utils/alerts.js"
+    },
+    {
+      "from": "services/payment-paypal.js",
+      "to": "services/paypal-refund-authority.js",
+      "type": "uses",
+      "label": "services/payment-paypal.js"
+    },
+    {
+      "from": "services/paypal-refund-authority.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/paypal-refund-authority.js",
+      "to": "db:refund_execution_intents",
+      "type": "db-read",
+      "label": "refund_execution_intents"
+    },
+    {
+      "from": "services/paypal-refund-authority.js",
+      "to": "db:refunds",
+      "type": "db-read",
+      "label": "refunds"
+    },
+    {
+      "from": "services/paypal-refund-authority.js",
+      "to": "db:refund_execution_intents",
+      "type": "db-write",
+      "label": "refund_execution_intents"
+    },
+    {
+      "from": "services/paypal-refund-authority.js",
+      "to": "db:refunds",
+      "type": "db-write",
+      "label": "refunds"
+    },
+    {
+      "from": "services/paypal-refund-authority.js",
+      "to": "db:orders",
+      "type": "db-write",
+      "label": "orders"
+    },
+    {
+      "from": "services/paypal-refund-authority.js",
+      "to": "db:order_status_history",
+      "type": "db-write",
+      "label": "order_status_history"
+    },
+    {
+      "from": "services/paypal-refund-authority.js",
+      "to": "doctrine:no_psp_in_sql_transaction",
+      "type": "doctrine",
+      "label": "no_psp_in_sql_transaction"
+    },
+    {
+      "from": "services/paypal-refund-authority.js",
+      "to": "doctrine:durable_intent",
+      "type": "doctrine",
+      "label": "durable_intent"
+    },
+    {
+      "from": "services/paypal-refund-authority.js",
+      "to": "doctrine:no_duplicate_refund",
+      "type": "doctrine",
+      "label": "no_duplicate_refund"
+    },
+    {
+      "from": "services/paypal-refund-authority.js",
+      "to": "doctrine:fail_closed_on_unknown",
+      "type": "doctrine",
+      "label": "fail_closed_on_unknown"
+    },
+    {
+      "from": "services/paypal-refund-authority.js",
+      "to": "doctrine:refunds_to_original_payer",
+      "type": "doctrine",
+      "label": "refunds_to_original_payer"
+    },
+    {
+      "from": "services/paypal-refund-authority.js",
+      "to": "impact:payments",
+      "type": "impact",
+      "label": "payments"
+    },
+    {
+      "from": "services/paypal-refund-authority.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
+    },
+    {
+      "from": "services/paypal-refund-authority.js",
+      "to": "impact:refunds",
+      "type": "impact",
+      "label": "refunds"
+    },
+    {
+      "from": "services/paypal-refund-authority.js",
+      "to": "impact:documents",
+      "type": "impact",
+      "label": "documents"
+    },
+    {
+      "from": "services/paypal-refund-authority.js",
+      "to": "impact:finance",
+      "type": "impact",
+      "label": "finance"
     },
     {
       "from": "services/pickup-agent-lockout.js",
@@ -94098,10 +94342,22 @@
       "label": "refund_execution_intents"
     },
     {
-      "from": "future refund orchestrators (NOT ACTIVATED)",
+      "from": "services/paypal-refund-authority.js",
       "to": "services/refund-intent-ledger.js",
       "type": "uses",
-      "label": "future refund orchestrators (NOT ACTIVATED)"
+      "label": "services/paypal-refund-authority.js"
+    },
+    {
+      "from": "services/sav-ledger-refund.js",
+      "to": "services/refund-intent-ledger.js",
+      "type": "uses",
+      "label": "services/sav-ledger-refund.js"
+    },
+    {
+      "from": "services/item-refund-reservation-service.js",
+      "to": "services/refund-intent-ledger.js",
+      "type": "uses",
+      "label": "services/item-refund-reservation-service.js"
     },
     {
       "from": "services/refund-intent-ledger.js",
@@ -94987,6 +95243,12 @@
       "to": "db:relay_product_return_receipts",
       "type": "db-read",
       "label": "relay_product_return_receipts"
+    },
+    {
+      "from": "services/relay-return-request-service.js",
+      "to": "db:relay_return_compensations",
+      "type": "db-read",
+      "label": "relay_return_compensations"
     },
     {
       "from": "services/relay-return-request-service.js",
@@ -104207,6 +104469,12 @@
       "to": "db:users",
       "type": "db-write",
       "label": "users"
+    },
+    {
+      "from": "services/user-mutation-service.js",
+      "to": "db:hub_authorization_grants",
+      "type": "db-write",
+      "label": "hub_authorization_grants"
     },
     {
       "from": "services/user-mutation-service.js",
@@ -118909,7 +119177,8 @@
         "middleware/auth.js",
         "middleware/auth-guest.js",
         "services/paypal-client.js",
-        "services/payment-paypal.js"
+        "services/payment-paypal.js",
+        "services/paypal-refund-authority.js"
       ],
       "directUsedBy": [
         "bootstrap/api-routes.js"
@@ -118938,6 +119207,7 @@
         "services/market-payment-collection-gate.js",
         "services/payment-paypal.js",
         "services/paypal-client.js",
+        "services/paypal-refund-authority.js",
         "utils/logger.js"
       ]
     },
@@ -125962,7 +126232,7 @@
         "services/admin-order-refund.js",
         "services/documents/document-reconciliation.js",
         "services/documents/document-service.js",
-        "services/payment-paypal.js",
+        "services/paypal-refund-authority.js",
         "services/sav-ledger-refund.js",
         "utils/documents/refund-receipt-html.js",
         "utils/logger.js"
@@ -133383,6 +133653,7 @@
         "services/parcel-auto-create-service.js",
         "services/parcel-operations.js",
         "services/payment-status-validator.js",
+        "services/paypal-refund-authority.js",
         "services/pickup-collection-recorder.js",
         "services/pickup-collection-service.js",
         "services/pickup-secret-service.js",
@@ -134290,7 +134561,7 @@
         "db.js",
         "services/paypal-client.js",
         "services/order-payment-confirmation.js",
-        "services/documents/refund-receipt.js",
+        "services/paypal-refund-authority.js",
         "routes/pickup-secret.js"
       ],
       "directUsedBy": [
@@ -134338,10 +134609,10 @@
         "impact:payment",
         "routes/payments-paypal.js",
         "routes/pickup-secret.js",
-        "services/documents/refund-receipt.js",
         "services/order-payment-confirmation.js",
         "services/payment-service.js",
         "services/paypal-client.js",
+        "services/paypal-refund-authority.js",
         "services/pickup-secret-service.js",
         "utils/alerts.js",
         "utils/logger.js"
@@ -134398,6 +134669,7 @@
         "services/payment-paypal.js",
         "services/payment-status-validator.js",
         "services/payment-stripe.js",
+        "services/paypal-refund-authority.js",
         "services/simulator/state-advancer.js"
       ]
     },
@@ -134532,6 +134804,79 @@
         "services/refund-evidence-verifier.js",
         "services/sav-ledger-refund.js",
         "utils/logger.js"
+      ]
+    },
+    "services/paypal-refund-authority.js": {
+      "role": "durable-paypal-admin-refund-authority",
+      "domain": "refunds",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "services/refund-intent-ledger.js",
+        "services/refund-intent-reconciliation.js",
+        "services/refund-service.js",
+        "services/payment-service.js",
+        "services/order-status-machine.js",
+        "services/documents/refund-receipt.js",
+        "utils/alerts.js"
+      ],
+      "directUsedBy": [
+        "services/payment-paypal.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "orders",
+        "refund_execution_intents",
+        "refunds"
+      ],
+      "dbWrite": [
+        "refund_execution_intents",
+        "refunds",
+        "orders",
+        "order_status_history"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "no_psp_in_sql_transaction",
+        "durable_intent",
+        "no_duplicate_refund",
+        "fail_closed_on_unknown",
+        "refunds_to_original_payer"
+      ],
+      "impactAreas": [
+        "payments",
+        "orders",
+        "refunds",
+        "documents",
+        "finance"
+      ],
+      "mustCheck": [
+        "db:order_status_history",
+        "db:orders",
+        "db:refund_execution_intents",
+        "db:refunds",
+        "doctrine:durable_intent",
+        "doctrine:fail_closed_on_unknown",
+        "doctrine:no_duplicate_refund",
+        "doctrine:no_psp_in_sql_transaction",
+        "doctrine:refunds_to_original_payer",
+        "impact:documents",
+        "impact:finance",
+        "impact:orders",
+        "impact:payments",
+        "impact:refunds",
+        "routes/payments-paypal.js",
+        "services/documents/refund-receipt.js",
+        "services/order-status-machine.js",
+        "services/payment-paypal.js",
+        "services/payment-service.js",
+        "services/refund-intent-ledger.js",
+        "services/refund-intent-reconciliation.js",
+        "services/refund-service.js",
+        "utils/alerts.js"
       ]
     },
     "services/pickup-agent-lockout.js": {
@@ -138173,7 +138518,9 @@
         "refund_execution_intents"
       ],
       "directUsedBy": [
-        "future refund orchestrators (NOT ACTIVATED)"
+        "services/paypal-refund-authority.js",
+        "services/sav-ledger-refund.js",
+        "services/item-refund-reservation-service.js"
       ],
       "ownedFiles": [],
       "dbRead": [
@@ -138199,6 +138546,7 @@
         "doctrine:legacy_reconciliation_first",
         "doctrine:multi_market_isolation",
         "services/item-refund-reservation-service.js",
+        "services/paypal-refund-authority.js",
         "services/refund-evidence-verifier.js",
         "services/refund-intent-reconciliation.js",
         "services/sav-ledger-refund.js"
@@ -138240,6 +138588,7 @@
         "doctrine:fail_closed_provider_evidence",
         "doctrine:market_isolation",
         "doctrine:no_psp_in_transaction",
+        "services/paypal-refund-authority.js",
         "services/refund-evidence-verifier.js",
         "services/refund-intent-ledger.js",
         "services/sav-ledger-refund.js"
@@ -138302,6 +138651,7 @@
         "services/cost-allocation/canonical-margin-writer.js",
         "services/order-fx-snapshot.js",
         "services/parcel-operations.js",
+        "services/paypal-refund-authority.js",
         "services/sav-ledger-refund.js",
         "services/wallet-service.js",
         "utils/logger.js"
@@ -138661,7 +139011,8 @@
         "order_items",
         "products",
         "disputes",
-        "relay_product_return_receipts"
+        "relay_product_return_receipts",
+        "relay_return_compensations"
       ],
       "dbWrite": [],
       "dbWriteVia": [
@@ -138689,6 +139040,7 @@
         "db:orders",
         "db:products",
         "db:relay_product_return_receipts",
+        "db:relay_return_compensations",
         "doctrine:financial_authority_never_delegated",
         "doctrine:relay_scope_is_server_authority",
         "doctrine:return_is_dispute_not_parallel_object",
@@ -144814,7 +145166,8 @@
         "relais"
       ],
       "dbWrite": [
-        "users"
+        "users",
+        "hub_authorization_grants"
       ],
       "dbWriteVia": [],
       "doctrines": [
@@ -144826,6 +145179,7 @@
         "loyalty"
       ],
       "mustCheck": [
+        "db:hub_authorization_grants",
         "db:loyalty_tiers",
         "db:orders",
         "db:relais",
@@ -145140,6 +145494,7 @@
         "services/payment-cash-confirm.js",
         "services/payment-paypal.js",
         "services/payment-stripe.js",
+        "services/paypal-refund-authority.js",
         "services/pickup-authorization-service.js",
         "services/pickup-collection-service.js",
         "services/purchasing-cancel-service.js",
@@ -146604,7 +146959,7 @@
   "multiWriterTables": [
     {
       "table": "orders",
-      "writerCount": 34,
+      "writerCount": 35,
       "writers": [
         "routes/admin-customs-shipments.js",
         "routes/admin/delete-order-cascade.js",
@@ -146631,6 +146986,7 @@
         "services/payment-paypal.js",
         "services/payment-service.js",
         "services/payment-stripe.js",
+        "services/paypal-refund-authority.js",
         "services/pickup-secret-access-service.js",
         "services/pickup-secret-service.js",
         "services/purchasing-admin-service.js",
@@ -146776,6 +147132,21 @@
       ]
     },
     {
+      "table": "order_status_history",
+      "writerCount": 9,
+      "writers": [
+        "routes/admin/delete-order-cascade.js",
+        "routes/admin/system.js",
+        "routes/admin/users.js",
+        "routes/orders/cancel.js",
+        "services/hub-v1-fixture-payment.js",
+        "services/order-checkout-persistence.js",
+        "services/order-checkout-service.js",
+        "services/order-status-machine.js",
+        "services/paypal-refund-authority.js"
+      ]
+    },
+    {
       "table": "supplier_execution_events",
       "writerCount": 9,
       "writers": [
@@ -146788,20 +147159,6 @@
         "services/suppliers/cj-supplier-payment-runtime.js",
         "services/suppliers/supplier-fulfillment-persistence.js",
         "services/suppliers/supplier-fulfillment-runtime.js"
-      ]
-    },
-    {
-      "table": "order_status_history",
-      "writerCount": 8,
-      "writers": [
-        "routes/admin/delete-order-cascade.js",
-        "routes/admin/system.js",
-        "routes/admin/users.js",
-        "routes/orders/cancel.js",
-        "services/hub-v1-fixture-payment.js",
-        "services/order-checkout-persistence.js",
-        "services/order-checkout-service.js",
-        "services/order-status-machine.js"
       ]
     },
     {
@@ -146865,6 +147222,18 @@
         "services/purchasing-engagement-service.js",
         "services/purchasing-grouped-service.js",
         "services/purchasing-trigger-service.js"
+      ]
+    },
+    {
+      "table": "refund_execution_intents",
+      "writerCount": 6,
+      "writers": [
+        "services/item-refund-psp-orchestrator.js",
+        "services/item-refund-reservation-service.js",
+        "services/paypal-refund-authority.js",
+        "services/refund-intent-ledger.js",
+        "services/refund-intent-reconciliation.js",
+        "services/sav-ledger-refund.js"
       ]
     },
     {
@@ -146969,17 +147338,6 @@
         "services/cost-allocation/manual-cost-entry-service.js",
         "services/customs-shipment-service.js",
         "services/transport-cost-allocation.js"
-      ]
-    },
-    {
-      "table": "refund_execution_intents",
-      "writerCount": 5,
-      "writers": [
-        "services/item-refund-psp-orchestrator.js",
-        "services/item-refund-reservation-service.js",
-        "services/refund-intent-ledger.js",
-        "services/refund-intent-reconciliation.js",
-        "services/sav-ledger-refund.js"
       ]
     },
     {
@@ -147197,6 +147555,15 @@
       ]
     },
     {
+      "table": "refunds",
+      "writerCount": 3,
+      "writers": [
+        "services/item-refund-psp-orchestrator.js",
+        "services/paypal-refund-authority.js",
+        "services/refund-service.js"
+      ]
+    },
+    {
       "table": "relais",
       "writerCount": 3,
       "writers": [
@@ -147373,6 +147740,14 @@
       ]
     },
     {
+      "table": "hub_authorization_grants",
+      "writerCount": 2,
+      "writers": [
+        "services/hub-authorization-service.js",
+        "services/user-mutation-service.js"
+      ]
+    },
+    {
       "table": "inquiries",
       "writerCount": 2,
       "writers": [
@@ -147514,14 +147889,6 @@
       "writers": [
         "routes/admin/users.js",
         "services/order-checkout-service.js"
-      ]
-    },
-    {
-      "table": "refunds",
-      "writerCount": 2,
-      "writers": [
-        "services/item-refund-psp-orchestrator.js",
-        "services/refund-service.js"
       ]
     },
     {
@@ -151613,6 +151980,12 @@
       "label": "stripe_webhooks"
     },
     {
+      "from": "services/paypal-refund-authority.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
       "from": "services/pickup-agent-lockout.js",
       "to": "db.js",
       "type": "depends",
@@ -152037,12 +152410,6 @@
       "to": "refund_execution_intents",
       "type": "depends",
       "label": "refund_execution_intents"
-    },
-    {
-      "from": "future refund orchestrators (NOT ACTIVATED)",
-      "to": "services/refund-intent-ledger.js",
-      "type": "uses",
-      "label": "future refund orchestrators (NOT ACTIVATED)"
     },
     {
       "from": "services/refund-intent-reconciliation.js",
