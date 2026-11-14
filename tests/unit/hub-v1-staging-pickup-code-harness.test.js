@@ -51,5 +51,5 @@ test('Chromium pickup uses actual code UI and detects invalid and duplicate hand
   expect(src).toContain("key: 'local:direct-receipt'");
   expect(src).toContain("route: 'POST /api/orders/:id/local-relay-receipt'");
   expect(src).not.toContain("rowButton(page, imp.reference, 'Remis au client')");
-  expect((src.match(/^\s*test\('/gm) || []).length).toBe(10);
+  expect((src.match(/^\s*test\('/gm) || []).length).toBe(11);
 });
