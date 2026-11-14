@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS public.local_item_refund_reservations (
   amount_kmf numeric(14,2) NOT NULL CHECK (amount_kmf > 0),
   quantity integer NOT NULL CHECK (quantity > 0),
   reason text NOT NULL CHECK (length(btrim(reason)) >= 8),
-  status text NOT NULL DEFAULT 'reserved' CHECK (status IN ('reserved','cancelled')),
+  status text NOT NULL DEFAULT 'reserved' CHECK (status = 'reserved'),
   initiated_by uuid NOT NULL REFERENCES public.users(id) ON DELETE RESTRICT,
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT uq_local_item_refund_operation UNIQUE (order_id, operation_key)
@@ -76,3 +76,36 @@ DROP TRIGGER IF EXISTS trg_guard_psp_refund_vs_local_obligation ON public.order_
 CREATE TRIGGER trg_guard_psp_refund_vs_local_obligation
 BEFORE INSERT ON public.order_item_refund_reservations
 FOR EACH ROW EXECUTE FUNCTION public.guard_psp_refund_vs_local_obligation();
+
+-- A legacy / wallet / PSP refund must not bypass an outstanding local
+-- obligation, even when invoked through a different service/HTTP route.
+CREATE OR REPLACE FUNCTION public.guard_legacy_refund_vs_local_obligation()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  PERFORM 1 FROM public.orders WHERE id=NEW.order_id FOR UPDATE;
+  IF EXISTS (
+    SELECT 1 FROM public.local_item_refund_reservations
+     WHERE order_id=NEW.order_id AND status='reserved'
+  ) THEN
+    RAISE EXCEPTION 'REFUND_LOCAL_OBLIGATION_UNRESOLVED'
+      USING ERRCODE='23514';
+  END IF;
+  RETURN NEW;
+END $$;
+DROP TRIGGER IF EXISTS trg_guard_legacy_refund_vs_local_obligation ON public.refunds;
+CREATE TRIGGER trg_guard_legacy_refund_vs_local_obligation
+BEFORE INSERT ON public.refunds
+FOR EACH ROW EXECUTE FUNCTION public.guard_legacy_refund_vs_local_obligation();
+
+-- No state edit can present an unverified physical payout as completed.
+-- Settlement requires a later additive, independently certified migration.
+CREATE OR REPLACE FUNCTION public.guard_local_refund_immutable()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  RAISE EXCEPTION 'LOCAL_REFUND_RESERVATION_IMMUTABLE'
+    USING ERRCODE='23514';
+END $$;
+DROP TRIGGER IF EXISTS trg_guard_local_refund_immutable ON public.local_item_refund_reservations;
+CREATE TRIGGER trg_guard_local_refund_immutable
+BEFORE UPDATE OR DELETE ON public.local_item_refund_reservations
+FOR EACH ROW EXECUTE FUNCTION public.guard_local_refund_immutable();
