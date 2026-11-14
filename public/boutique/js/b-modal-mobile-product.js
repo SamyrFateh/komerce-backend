@@ -55,7 +55,7 @@ import {
   OPTION_STATE,
   selectModalOption,
 } from './view-models/modal-selection-model.js';
-import { buildCarouselSlides, goToSlide } from './b-modal-product.js';
+import { buildCarouselSlides, goToSlide, syncEnrichedTopbarProduct } from './b-modal-product.js';
 import { setupImageUX } from './b-modal-image-ux.js';
 import { wireBuyNowButton } from './b-modal-buybox-shared.js';
 import { reconcileDeliverySelection } from './view-models/delivery-mode-model.js';
@@ -795,6 +795,7 @@ export function renderMobileProductDetail(
 
   // MDM-2: Media into shell carousel
   renderMedia(detail, selection, forceMedia);
+  syncEnrichedTopbarProduct(); // variante, prix et média issus de la même sélection.
 }
 
 export function clearMobileProductDetailState() {

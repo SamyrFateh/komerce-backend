@@ -41,7 +41,7 @@ const { bus } = require('../../js/b-bus.js');
 const {
   buildCarouselSlides, goToSlide, openSizeGuide, closeSizeGuide,
   _syncScrollPadding,
-  setupModalFAB, hideModalFAB,
+  setupModalFAB, hideModalFAB, syncEnrichedTopbarProduct,
 } = require('../../js/b-modal-product.js');
 
 function makeProduct(overrides) {
@@ -427,4 +427,41 @@ describe('b-modal-product', () => {
       expect(() => closeSizeGuide()).not.toThrow();
     });
   });
+  describe('mini-héro V4', () => {
+    it('synchronise le SKU sans recalcul de prix et remonte à la galerie au clic', () => {
+      const topbar = document.createElement('div');
+      topbar.className = 'k-modal-topbar';
+      topbar.innerHTML = '<div class="k-modal-topbar-right"></div>';
+      const scroll = document.createElement('div');
+      scroll.className = 'k-modal-scroll';
+      scroll.scrollTo = jest.fn();
+      scroll.innerHTML = '<div class="k-modal-img-wrap"></div>';
+      dom.modal.append(topbar, scroll);
+      dom.modalName = document.createElement('h2');
+      dom.modalName.textContent = 'Organisateur';
+      dom.modalPrice.textContent = '18 400 XAF';
+      state.modalProduct = makeProduct({ image_url: 'parent.jpg' });
+      state.modalProductDetail = { media: [{ url: 'parent.jpg' }], pricing: { promo_pct: 0 } };
+      state.modalSelection = { selected_media: [{ url: 'model-a.jpg' }] };
+
+      setupModalFAB();
+      const mini = dom.modal.querySelector('.k-modal-topbar-product');
+      const thumb = mini.querySelector('.k-topbar-thumb');
+      expect(thumb.tagName).toBe('BUTTON');
+      expect(thumb.getAttribute('aria-label')).toBe('Revenir aux photos du produit');
+      expect(mini.querySelector('.k-topbar-price-val').textContent).toBe('18 400 XAF');
+      expect(mini.querySelector('.k-topbar-thumb-img').getAttribute('src')).toBe('model-a.jpg');
+
+      dom.modalPrice.textContent = '19 900 XAF';
+      state.modalSelection = { selected_media: [{ url: 'model-b.jpg' }] };
+      syncEnrichedTopbarProduct();
+      expect(mini.querySelector('.k-topbar-price-val').textContent).toBe('19 900 XAF');
+      expect(mini.querySelector('.k-topbar-thumb-img').getAttribute('src')).toBe('model-b.jpg');
+
+      thumb.click();
+      expect(scroll.scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
+      hideModalFAB();
+    });
+  });
+
 });
