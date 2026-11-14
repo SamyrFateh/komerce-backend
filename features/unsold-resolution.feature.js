@@ -101,8 +101,10 @@ module.exports = {
 
   // ── Invariants propres ───────────────────────────────────────────────────
   invariants: [
-    "aucun invendu d'une commande payée ne peut être vendu, donné, détruit ou annoncé via les routes unsold",
-    'le délai J+14 ne crée ni droit de propriété ni permission de liquidation automatique',
+    { statement: "aucun invendu d'une commande payée ne peut être vendu, donné, détruit ou annoncé via les routes unsold",
+      test: 'tests/e2e-api/unsold-resolution.pipeline-real-db.e2e.test.js' },
+    { statement: 'le délai J+14 ne crée ni droit de propriété ni permission de liquidation automatique',
+      test: 'tests/unit/unsold.test.js' },
     'un invendu résolu ne revient jamais en available',
     'toute résolution possède un statut terminal autorisé et un horodatage resolved_at',
   ],
