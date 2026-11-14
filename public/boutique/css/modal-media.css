@@ -344,13 +344,14 @@
    que borner la taille du hero LUI-MÃŠME Ã  l'intÃ©rieur de cet espace. */
 @media (min-width: 900px) {
   #k-modal .k-modal-product-zone .k-modal-img-wrap {
-    min-height: 480px;
+    min-height: 0;
     max-height: none;
     /* ProductMedia complet :
        rail 52px + gap 8px + hero carrÃ© jusqu'Ã  640px. */
     max-width: none;
     width: 100%;
-    height: calc(100dvh - 90px);
+    /* Le carousel 4:3 détermine seul la hauteur du média : pas de vide 810px. */
+    height: auto;
     /* T-018-bis â€” DÃ‰CISION A (audit desktop finition, 2026-07) :
        align-self repasse de `center` Ã  `start`. La note MIGRATION v3.0
        prÃ©cÃ©dente confondait deux sujets distincts : position:sticky
@@ -368,7 +369,7 @@
        rÃ©cit = 108px, diff:0, capture desktop-stress-hero-alignment.png). */
     margin-inline: 0;
     margin-block: 0;
-    align-self: stretch;
+    align-self: start;
     /* Contour visible (cf. reference-modale-4-etats.html v2.1) : le container
        image n'avait jamais de border nulle part â€” flottait sans cadre contre
        le fond ivoire du shell. background/border-radius NE sont PAS ajoutÃ©s
