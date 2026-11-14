@@ -639,8 +639,10 @@
        Le carousel n'a plus à réserver artificiellement le rail via padding. */
     grid-column: 1; grid-row: 1;
     display: grid;
-    grid-template-columns: 68px minmax(0, 1fr);
-    column-gap: 10px;
+    --k-pdp-thumb-size: clamp(68px, 5.2vw, 82px);
+    --k-pdp-thumb-gap: clamp(10px, 1.5vw, 24px);
+    grid-template-columns: var(--k-pdp-thumb-size) minmax(0, 1fr);
+    column-gap: var(--k-pdp-thumb-gap);
     align-items: stretch;
     border-radius: 0;
     margin: 0;
@@ -689,8 +691,8 @@
     flex-direction: column;
     gap: 10px;
     position: static;
-    width: 68px;
-    min-width: 68px;
+    width: var(--k-pdp-thumb-size);
+    min-width: var(--k-pdp-thumb-size);
     max-height: 100%;
     margin: 8px 0;
     z-index: 8;
@@ -707,9 +709,9 @@
      stricte que le checkpoint T-028 d'origine, qui réintroduisait un
      box-shadow décoratif issu d'une base pré-T-021). */
   #k-modal .k-modal-thumb {
-    width: 68px;
-    height: 68px;
-    flex: 0 0 68px;
+    width: var(--k-pdp-thumb-size);
+    height: var(--k-pdp-thumb-size);
+    flex: 0 0 var(--k-pdp-thumb-size);
     border-radius: 12px;
     border: 1.5px solid var(--border-text-10);
     background: var(--white);
