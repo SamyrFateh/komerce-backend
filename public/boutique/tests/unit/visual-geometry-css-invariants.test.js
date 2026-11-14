@@ -1105,7 +1105,7 @@ describe('PDP desktop - hero imposant et panier centre', () => {
     expect(wrapper).toMatch(/max-width\s*:\s*none/);
     expect(carousel).toMatch(/width\s*:\s*100%/);
     expect(carousel).toMatch(/max-width\s*:\s*none/);
-    expect(carousel).toMatch(/aspect-ratio\s*:\s*4\s*\/\s*3/);
+    expect(carousel).toMatch(/aspect-ratio\s*:\s*1\s*\/\s*1/);
   });
 
   it('centre le panier court et borne le panier long dans la modal', () => {
