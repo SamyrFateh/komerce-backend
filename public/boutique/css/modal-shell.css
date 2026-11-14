@@ -640,7 +640,7 @@
     align-items: stretch;
     border-radius: 0;
     margin: 0;
-    max-height: none;
+    /* Hauteur maximale du média : modal-media.css, source propriétaire. */
   }
 
   /* Média unique : aucune piste fantôme n'est réservée aux miniatures. */
