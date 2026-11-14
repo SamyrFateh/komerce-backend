@@ -1,19 +1,24 @@
 # Komerce Architecture Header Audit
 
-Generated: 2026-06-28T20:43:37.146Z
+Generated: 2026-11-14T07:40:21.628Z
 
-Coverage: 277/277 files (100%).
+Coverage: 810/810 files (100%).
 
 ## Coverage By Layer
 
 | Layer | Covered | Missing | Total |
 |---|---:|---:|---:|
-| bootstrap | 8 | 0 | 8 |
+| bootstrap | 9 | 0 | 9 |
+| boutique-controller | 1 | 0 | 1 |
+| boutique-group | 9 | 0 | 9 |
+| boutique-js | 84 | 0 | 84 |
+| boutique-render | 5 | 0 | 5 |
+| boutique-view-model | 6 | 0 | 6 |
 | entrypoint | 1 | 0 | 1 |
-| middleware | 10 | 0 | 10 |
-| route | 97 | 0 | 97 |
-| service | 145 | 0 | 145 |
-| util | 16 | 0 | 16 |
+| middleware | 27 | 0 | 27 |
+| route | 138 | 0 | 138 |
+| service | 499 | 0 | 499 |
+| util | 31 | 0 | 31 |
 
 ## Next Missing Priority
 
