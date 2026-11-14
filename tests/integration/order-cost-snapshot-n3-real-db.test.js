@@ -25,7 +25,7 @@ if (!process.env.DATABASE_URL) {
 
   jest.setTimeout(30000);
   const TAG = `e2e_test_me05_${Date.now().toString(36)}`;
-  const orderIds = []; const productIds = [];
+  const orderIds = []; const productIds = []; const relaisIds = [];
   const prev = process.env.ORDER_COST_SNAPSHOT_ACTIVE;
 
   beforeAll(() => { process.env.ORDER_COST_SNAPSHOT_ACTIVE = 'true'; });
@@ -35,15 +35,19 @@ if (!process.env.DATABASE_URL) {
     await db.query('DELETE FROM order_items WHERE order_id = ANY($1::uuid[])', [orderIds]).catch(() => {});
     await db.query('DELETE FROM orders WHERE id = ANY($1::uuid[])', [orderIds]).catch(() => {});
     await db.query('DELETE FROM products WHERE id = ANY($1::uuid[])', [productIds]).catch(() => {});
+    await db.query('DELETE FROM relais WHERE id = ANY($1::uuid[])', [relaisIds]).catch(() => {});
   });
 
   async function seed(code, quantity) {
     const { rows: [m] } = await db.query('SELECT id FROM markets WHERE code = $1', [code]);
     const orderId = crypto.randomUUID(); const productId = crypto.randomUUID();
-    orderIds.push(orderId); productIds.push(productId);
+    const relaisId = crypto.randomUUID();
+    orderIds.push(orderId); productIds.push(productId); relaisIds.push(relaisId);
+    await db.query(`INSERT INTO relais (id, name, agent_name, phone, address, island, market_id)
+                    VALUES ($1,$2,'E2E Agent','+269000111','Test','Ngazidja',$3)`, [relaisId, `${TAG}-relais-${code}`, m.id]);
     await db.query(`INSERT INTO products (id, name, price_kmf, stock, weight_kg, cost_kmf) VALUES ($1,$2,5000,100,1,1000)`, [productId, `${TAG}-${code}`]);
-    await db.query(`INSERT INTO orders (id, reference, user_id, market_id, total_kmf, payment_mode, payment_status, status)
-                    VALUES ($1,$2,NULL,$3,$4,'cash_relais','pending','pending')`, [orderId, `${TAG}-${code}-${orderIds.length}`, m.id, 5000 * quantity]);
+    await db.query(`INSERT INTO orders (id, reference, user_id, relais_id, market_id, total_kmf, payment_mode, payment_status, status)
+                    VALUES ($1,$2,NULL,$5,$3,$4,'cash_relais','pending','pending')`, [orderId, `${TAG}-${code}-${orderIds.length}`, m.id, 5000 * quantity, relaisId]);
     await db.query(`INSERT INTO order_items (id, order_id, product_id, quantity, price_kmf) VALUES ($1,$2,$3,$4,5000)`, [crypto.randomUUID(), orderId, productId, quantity]);
     return orderId;
   }
