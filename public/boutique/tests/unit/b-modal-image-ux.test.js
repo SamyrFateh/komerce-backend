@@ -148,9 +148,9 @@ describe('b-modal-image-ux', () => {
       setupImageUX();
       document.querySelector('.k-modal-view-full').click();
       const imgs = document.querySelectorAll('.k-modal-fullscreen-slide img');
-      expect(imgs.length).toBe(3);
-      expect(imgs[0].src).toContain('w_1600');
-      expect(imgs[0].src).not.toContain('w_800');
+      expect(imgs.length).toBe(5); // 3 images réelles + 2 fantômes
+      expect(imgs[1].src).toContain('w_1600');
+      expect(imgs[1].src).not.toContain('w_800');
     });
 
     test('compteur fullscreen affiche 1/N Ã  l\'ouverture', () => {
@@ -205,6 +205,66 @@ describe('b-modal-image-ux', () => {
       end.changedTouches = [{ clientX: 190 }];
       fs.dispatchEvent(end);
       expect(document.querySelector('.k-modal-fullscreen-counter').textContent).toContain('1');
+    });
+
+
+    test('ghost infini : 3/3 → 1/3 puis 1/3 → 3/3, snap invisible après transition', () => {
+      buildModalDom(3); setupImageUX();
+      const { openCurrentImageFullscreen } = require('../../js/b-modal-image-ux.js');
+      openCurrentImageFullscreen(2);
+      const fs = document.querySelector('.k-modal-fullscreen');
+      const track = fs.querySelector('.k-modal-fullscreen-track');
+      expect(document.querySelectorAll('.k-modal-fullscreen-slide[data-ghost="1"]')).toHaveLength(2);
+      expect(track.style.transform).toBe('translateX(-300%)');
+      function swipe(x0,x1) {
+        const st = new Event('touchstart'); st.touches=[{clientX:x0,clientY:170}]; fs.dispatchEvent(st);
+        const end = new Event('touchend'); end.changedTouches=[{clientX:x1,clientY:170}];end.touches=[];
+        fs.dispatchEvent(end);
+      }
+      swipe(230,150);
+      expect(fs.querySelector('.k-modal-fullscreen-counter').textContent).toContain('1');
+      expect(track.style.transform).toBe('translateX(-400%)');
+      track.dispatchEvent(new Event('transitionend'));
+      expect(track.style.transform).toBe('translateX(-100%)');
+      swipe(120,200);
+      expect(fs.querySelector('.k-modal-fullscreen-counter').textContent).toContain('3');
+      expect(track.style.transform).toBe('translateX(0%)');
+      track.dispatchEvent(new Event('transitionend'));
+      expect(track.style.transform).toBe('translateX(-300%)');
+      fs.querySelector('.k-modal-fullscreen-close').click();
+    });
+
+    test('swipe haut ferme seulement la lightbox et restaure la galerie sur image N', () => {
+      buildModalDom(3);setupImageUX();
+      const { openCurrentImageFullscreen } = require('../../js/b-modal-image-ux.js');
+      const returned = jest.fn();
+      bus.on('carousel:fullscreen-return',returned);
+      openCurrentImageFullscreen(1);
+      const fs = document.querySelector('.k-modal-fullscreen');
+      const st = new Event('touchstart');st.touches=[{clientX:140,clientY:270}];fs.dispatchEvent(st);
+      const end = new Event('touchend');end.changedTouches=[{clientX:145,clientY:140}];end.touches=[];
+      fs.dispatchEvent(end);
+      expect(fs.classList.contains('is-open')).toBe(false);
+      expect(returned).toHaveBeenCalledWith(1);
+      expect(document.body.style.overflow).toBe('');
+    });
+
+    test('pinch multi-doigts ne déclenche jamais le swipe vertical de sortie', () => {
+      buildModalDom(3);setupImageUX();
+      document.querySelector('.k-modal-view-full').click();
+      const fs = document.querySelector('.k-modal-fullscreen');
+      const st=new Event('touchstart');st.touches=[{clientX:90,clientY:240},{clientX:210,clientY:240}];
+      fs.dispatchEvent(st);
+      const end=new Event('touchend');end.changedTouches=[{clientX:90,clientY:100}];end.touches=[];
+      fs.dispatchEvent(end);
+      expect(fs.classList.contains('is-open')).toBe(true);
+      fs.querySelector('.k-modal-fullscreen-close').click();
+    });
+
+    test('média unique : aucun slide fantôme', () => {
+      buildModalDom(1);setupImageUX();
+      document.querySelector('.k-modal-view-full').click();
+      expect(document.querySelectorAll('.k-modal-fullscreen-slide')).toHaveLength(1);
     });
 
     test('Escape ferme la lightbox si ouverte', () => {
