@@ -310,6 +310,7 @@ module.exports = {
       'parcel_items: RW!',
       'parcels: RW!',
       'pickup_collect_failures: RW!', // R2 #3900: compteur d'échecs agent + relais (migration 413)
+      'pickup_code_generations: RW!', // R1 #3900 : générations de code de retrait par le client (migration 412)
       'pickup_print_tokens: RW!',
       'pickup_reveal_codes: RW!',
       'pickup_verify_attempts: RW',
