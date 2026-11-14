@@ -84,6 +84,7 @@ describe('b-modal-product', () => {
     state.carouselIndex = 0;
     state.carouselCount = 1;
     state.modalProduct = null;
+    state.modalIdentityProjection = null;
     state._fabObserver = null;
     state._topbarObserver = null;
   });
@@ -311,6 +312,8 @@ describe('b-modal-product', () => {
     it('avec topbar + produit actif → crée le bloc produit avec nom/prix', () => {
       addTopbar();
       state.modalProduct = makeProduct({ name: 'Huile 1L', price_kmf: 1200 });
+      // Projection d'affichage remise par le propriétaire b-modal-product-fields.
+      state.modalIdentityProjection = { name: 'Huile 1L', price: '1200 KMF' };
       setupModalFAB();
       const productEl = dom.modal.querySelector('.k-modal-topbar-product');
       expect(productEl).not.toBeNull();
