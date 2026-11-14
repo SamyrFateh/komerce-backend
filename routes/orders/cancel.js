@@ -53,6 +53,7 @@ const { computeClosingRefund } = require('../../services/order-fx-snapshot');
 const { notifyCancellation }       = require('../../services/notification-service');
 const { transitionOrderStatus }    = require('../../services/order-status-machine');
 const refundReceiptService         = require('../../services/documents/refund-receipt');
+const { createAlert } = require('../../utils/alerts');
 const log = require('../../utils/logger').child({ module: 'cancel' });
 
 // ─── POST /api/orders/:id/cancel ─────────────────────────────────────────────
@@ -233,6 +234,15 @@ router.post('/:id/cancel', authenticate, validate(orders.cancelOrder), async (re
         // remboursement en cas de panne du ledger ou du prestataire.
         log.error({ err, order_id: id, intent_id: stripeIntent.intentId },
           '[CANCEL] Intention Stripe à rapprocher après COMMIT');
+        try {
+          await createAlert(db, { type: 'refund_provider_reconciliation_required',
+            entityType: 'order', entityId: id, severity: 'high',
+            title: 'Remboursement Stripe à rapprocher après annulation',
+            description: 'intent=' + stripeIntent.intentId + ' provider=' + (err.code || 'unknown') });
+        } catch (alertErr) {
+          log.error({ alertErr, order_id: id, intent_id: stripeIntent.intentId },
+            '[CANCEL] Alerte financière non persistée');
+        }
         stripeOutcome = { status: 202, body: {
           intent_id: stripeIntent.intentId, refund_status: 'unknown',
           requires_reconciliation: true,
