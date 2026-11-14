@@ -445,6 +445,54 @@ describeDb('Hub P0 — chaîne d\'approvisionnement complète (REAL_DB)', () => 
       expect(Number(ordered.received_quantity)).toBeLessThanOrEqual(Number(ordered.confirmed_quantity));
     });
 
+    test('C3 H5a/H5b : confirmation réduite en concurrence avec réception interdit le reliquat fantôme', async () => {
+      const o = await makeOrder({
+        market: km, relais: relaisKm, supplier: supplierA,
+        items: [{ sku: sku2, qty: 2 }],
+      });
+      const prepared = await grouped.preparePurchaseOrder(
+        { supplier_id: supplierA, procurement_hub_ref: 'DXB', line_ids: [o.lines[0].lineId] },
+        { actor: actor() }
+      );
+      const poId = prepared.purchase_order.id;
+      await submitAuthorized(engagement, poId, { actor: actor() });
+      await engagement.recordPurchaseOrderSent(poId, { channel: 'whatsapp' }, { actor: actor() });
+
+      const results = await Promise.allSettled([
+        engagement.confirmGroupedPurchaseOrder(poId, {
+          purchase_proof_ref: 'C3-CONTENTION-RECU', seller_label: 'Vendeur test',
+          supplier_order_id: 'C3-' + tag,
+          lines: [{ purchase_line_id: o.lines[0].lineId, confirmed_quantity: 1 }],
+        }, { actor: actor() }),
+        receive(poId, sku2.id, 2, tag + '-C3-RECEIVE'),
+      ]);
+      const confirmation = results[0];
+      const reception = results[1];
+      if (reception.status === 'fulfilled') {
+        expect(reception.value.status).toBeLessThan(500);
+      } else {
+        // Une erreur SQL brute est un défaut, pas un refus de ligne de commande.
+        expect(reception.reason.status).toBeGreaterThanOrEqual(400);
+        expect(reception.reason.status).toBeLessThan(500);
+      }
+      if (confirmation.status === 'rejected') {
+        expect(confirmation.reason.status).toBeGreaterThanOrEqual(400);
+        expect(confirmation.reason.status).toBeLessThan(500);
+      }
+      // Au moins une action doit avoir passé l'autorité métier ; aucun faux PASS si les deux bloquent.
+      expect(confirmation.status === 'fulfilled' ||
+        (reception.status === 'fulfilled' && reception.value.status === 201)).toBe(true);
+      const { rows: [progress] } = await q(
+        'SELECT confirmed_quantity, received_quantity FROM v_purchase_line_progress WHERE line_id=$1',
+        [o.lines[0].lineId]
+      );
+      const confirmed = Number(progress.confirmed_quantity);
+      const qtyReceived = Number(progress.received_quantity);
+      expect(qtyReceived).toBeLessThanOrEqual(confirmed);
+      if (qtyReceived === 2) expect(confirmation.status).toBe('rejected');
+      if (confirmation.status === 'fulfilled') expect(confirmed).toBe(1);
+    });
+
     test('carton CM refusé vers une expédition KM, et carton rattaché deux fois', async () => {
       const shipKm = `${tag}-SHIPKM`;
       await q(`INSERT INTO international_shipments(id,market_id,reference,forwarder_name,transport_mode,stage,created_by)
