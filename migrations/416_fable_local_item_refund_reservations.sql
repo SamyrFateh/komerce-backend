@@ -61,7 +61,7 @@ FOR EACH ROW EXECUTE FUNCTION public.guard_local_item_refund_pending_collection(
 -- PSP E7 must not enter the same order while an unresolved local liability
 -- exists. Both writers already take the orders FOR UPDATE lock before insert.
 CREATE OR REPLACE FUNCTION public.guard_psp_refund_vs_local_obligation()
-RETURNS trigger LANGUAGE plpgsql AS $
+RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   -- Same order row is the global exclusion lock used by the reservation
   -- writer. This also protects direct SQL/secondary writers that do not
