@@ -31385,6 +31385,18 @@
       "authority": "backend-core — tout changement de logique de remboursement doit etre valide par le proprietaire de refund-service.js",
       "invariants": [
         {
+          "statement": "FA-04/08 F3 : annulation Stripe reserve l intention avant COMMIT metier, jamais de POST fournisseur sous transaction, un resultat inconnu ne declenche aucun fallback wallet et reste a rapprocher",
+          "test": "tests/unit/stripe-refund-authority.test.js"
+        },
+        {
+          "statement": "FA-08 : annulation Stripe en deux transactions PostgreSQL physiques, une seule intention, rollback avant COMMIT sans trace PSP ni annulation perdue",
+          "test": "tests/e2e-api/refunds.stripe-business-intent-concurrency.e2e.test.js"
+        },
+        {
+          "statement": "FA-04/08 F3 certification : quatre frontieres de crash (avant reservation, avant appel PSP, apres PSP avant COMMIT, apres COMMIT avant marquage) sur PostgreSQL reel avec transport Stripe bouchonne, une seule intention, aucun double remboursement, reprise avec la meme cle fournisseur, I4/I8 tenus",
+          "test": "tests/e2e-api/refunds.stripe-crash-boundaries.e2e.test.js"
+        },
+        {
           "statement": "RC-9 deux connexions PostgreSQL reelles serialisent reserve et claim sans double intention ni double execution",
           "test": "tests/e2e-api/refunds.intents-physical-concurrency.e2e.test.js"
         },
@@ -31430,7 +31442,7 @@
       "implementation": {
         "byCategory": {
           "services": {
-            "count": 8,
+            "count": 9,
             "files": [
               {
                 "declared": "services/item-refund-psp-orchestrator.js",
@@ -31471,11 +31483,16 @@
                 "declared": "services/sav-ledger-refund.js",
                 "resolvedPath": "services/sav-ledger-refund.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/stripe-refund-authority.js",
+                "resolvedPath": "services/stripe-refund-authority.js",
+                "status": "resolved-on-disk-no-header"
               }
             ]
           },
           "tests": {
-            "count": 17,
+            "count": 20,
             "files": [
               {
                 "declared": "tests/e2e-api/refunds.credits-cash-numeric.e2e.test.js",
@@ -31510,6 +31527,16 @@
               {
                 "declared": "tests/e2e-api/refunds.no-double-application.e2e.test.js",
                 "resolvedPath": "tests/e2e-api/refunds.no-double-application.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/e2e-api/refunds.stripe-business-intent-concurrency.e2e.test.js",
+                "resolvedPath": "tests/e2e-api/refunds.stripe-business-intent-concurrency.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/e2e-api/refunds.stripe-crash-boundaries.e2e.test.js",
+                "resolvedPath": "tests/e2e-api/refunds.stripe-crash-boundaries.e2e.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -31561,11 +31588,16 @@
                 "declared": "tests/unit/sav-ledger-refund.test.js",
                 "resolvedPath": "tests/unit/sav-ledger-refund.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/stripe-refund-authority.test.js",
+                "resolvedPath": "tests/unit/stripe-refund-authority.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           }
         },
-        "totalFiles": 25,
+        "totalFiles": 29,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,

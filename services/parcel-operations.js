@@ -6,9 +6,9 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db, services/notification-service.js, services/order-item-availability-service.js, services/order-status-machine.js, services/parcel-guards.js, services/parcel-service.js, services/parcel-transition-guard.js, services/refund-service.js, utils/alerts.js, utils/logger.js, utils/reference.js, utils/rules.js
+ * @depends       db, services/notification-service.js, services/order-item-availability-service.js, services/order-status-machine.js, services/parcel-guards.js, services/parcel-service.js, services/parcel-transition-guard.js, services/refund-service.js, services/stripe-refund-authority.js, utils/alerts.js, utils/logger.js, utils/reference.js, utils/rules.js
  * @used-by       routes/orders/parcels.js
- * @db-read       order_items, orders, parcel_items, parcels, products, relais, users
+ * @db-read       refund_execution_intents, order_items, orders, parcel_items, parcels, products, relais, users
  * @db-write      parcel_items, parcels
  * @db-write-via:order-item-availability-service order_items
  * @db-write-via:order-status-machine order_status_history
@@ -51,6 +51,7 @@ const { notifyText, notifyParcelScan } = require('./notification-service');
 const { getRule, getRuleNumber }        = require('../utils/rules');
 const { generateParcelRef }             = require('../utils/reference');
 const { processRefundWithFallback }     = require('./refund-service');
+const { reserveStripeBusinessRefund, executeReservedStripeRefund } = require('./stripe-refund-authority');
 const { computeRefundEurForOrder }      = require('./order-fx-snapshot');
 const { createAlert }                   = require('../utils/alerts');
 const { PARCEL_SMS }                    = require('./parcel-service');
@@ -487,6 +488,23 @@ async function cancelBackorder(orderId, body, user) {
       [parcelId, orderId]
     );
 
+    // Rejeu après COMMIT de l'annulation du colis : renvoyer l'intention
+    // plutôt que recréditer du wallet ou réexpédier un second POST Stripe.
+    if (parcel?.status === 'cancelled' && order.payment_mode === 'stripe_eur') {
+      const { rows: [existingIntent] } = await client.query(
+        "SELECT id,status FROM refund_execution_intents WHERE order_id=$1 AND provider='stripe' AND operation_key=$2",
+        [orderId, 'backorder:parcel:' + parcelId]
+      );
+      if (existingIntent) {
+        await client.query('ROLLBACK');
+        return { status: 202, body: {
+          success: true, parcel_ref: parcel.reference, status: 'cancelled',
+          refund: { intent_id: existingIntent.id, refund_status: existingIntent.status,
+            requires_reconciliation: existingIntent.status !== 'confirmed' },
+        } };
+      }
+    }
+
     // Guard annulation (I-06)
     const cancelGuard = checkParcelCancellable(parcel);
     if (!cancelGuard.ok) {
@@ -528,43 +546,91 @@ async function cancelBackorder(orderId, body, user) {
     // Restaurer le stock (I-06, via product-admin-service)
     await adjustStock(client, boItems, 'increment');
 
-    // Crédit boutique ou remboursement Stripe (I-06, avec fallback silencieux)
-    let refundResult    = null;
+    // Stripe : réserve durablement dans CETTE transaction, en même temps que
+    // l'annulation du colis et la restauration stock. Aucun POST PSP sous verrou.
+    // Autres modes : crédit wallet transactionnel historique (sans sortie PSP).
+    let refundResult = null;
     let refundAmountEur = 0;
+    let stripeIntent = null;
+    const isStripe = order.payment_mode === 'stripe_eur';
 
     if (backorderValueKmf > 0 && order.payment_status === 'paid') {
-      // Part du montant EUR réellement encaissé (snapshot d'origine) : jamais de reconversion ni de taux de repli.
+      if (isStripe && (Number(order.wallet_applied_kmf || 0) > 0 ||
+          Number(order.discount_kmf || 0) > 0)) {
+        const err = new Error('Backorder avec réduction ou wallet : prorata capturé à certifier avant remboursement');
+        err.code = 'REFUND_BACKORDER_DISCOUNT_ALLOCATION_REQUIRED';
+        throw err;
+      }
+      // Prorata depuis la capture EUR figée, jamais un taux FX du jour.
       refundAmountEur = await computeRefundEurForOrder(client, order, backorderValueKmf, 'partial');
-
-      refundResult = await processRefundWithFallback(
-        client, order,
-        backorderValueKmf, refundAmountEur,
-        'partial',
-        reason || 'Annulation backorder',
-        user.id,
-        parcelId
-      );
+      if (isStripe) {
+        stripeIntent = await reserveStripeBusinessRefund(client, {
+          order, amountEur: refundAmountEur,
+          operationKey: 'backorder:parcel:' + parcelId, initiatedBy: user.id,
+        });
+      } else {
+        refundResult = await processRefundWithFallback(
+          client, order, backorderValueKmf, refundAmountEur, 'partial',
+          reason || 'Annulation backorder', user.id, parcelId
+        );
+      }
     }
 
     // Historique (I-04)
     await appendOrderHistoryNote(client, orderId, order.status,
-      `Backorder ${parcel.reference} annulé — ${boItems.length} article(s), ${Number(backorderValueKmf).toLocaleString('fr-FR')} KMF ${refundResult?.method === 'stripe' ? 'remboursé (Stripe)' : 'crédité (boutique)'}`,
+      `Backorder ${parcel.reference} annulé — ${boItems.length} article(s), ${Number(backorderValueKmf).toLocaleString('fr-FR')} KMF ${stripeIntent ? 'Stripe en attente de rapprochement' : (refundResult?.method === 'stripe' ? 'remboursé (Stripe)' : 'crédité (boutique)')}`,
       user.id);
 
     await client.query('COMMIT');
 
+    // Transaction métier TERMINÉE avant le premier contact avec Stripe.
+    // Le flag sandbox est fermé par défaut, donc la dette reste visible comme
+    // intention reserved, pas comme remboursement inventé.
+    let stripeOutcome = null;
+    if (stripeIntent) {
+      try {
+        stripeOutcome = await executeReservedStripeRefund({
+          db, orderId, intentId: stripeIntent.intentId, actorId: user.id,
+        });
+        if (stripeOutcome.status === 200 && stripeOutcome.body.refund_status === 'confirmed') {
+          refundResult = { method: 'stripe',
+            stripeRefundId: stripeOutcome.body.stripe_refund_id,
+            amountEur: refundAmountEur, amountKmf: backorderValueKmf };
+        }
+      } catch (err) {
+        log.error({ err, order_id: orderId, parcel_id: parcelId, intent_id: stripeIntent.intentId },
+          '[BACKORDER] Rapprochement Stripe requis après COMMIT du colis');
+        try {
+          await createAlert(db, { type: 'refund_provider_reconciliation_required',
+            entityType: 'order', entityId: orderId, severity: 'high',
+            title: 'Remboursement Stripe backorder à rapprocher',
+            description: 'intent=' + stripeIntent.intentId + ' parcel=' + parcelId +
+              ' error=' + (err.code || 'unknown') });
+        } catch (alertErr) {
+          log.error({ alertErr, order_id: orderId, parcel_id: parcelId },
+            '[BACKORDER] Alerte financière non persistée');
+        }
+        stripeOutcome = { status: 202, body: {
+          intent_id: stripeIntent.intentId, refund_status: 'unknown',
+          requires_reconciliation: true,
+        } };
+      }
+    }
+
     // SMS notification (non bloquant)
     if (order.user_phone) {
-      const creditStr = refundResult?.method === 'stripe'
-        ? `${refundAmountEur.toFixed(2)}EUR rembourse via Stripe`
-        : `${Number(backorderValueKmf).toLocaleString('fr-FR')} KMF credite sur votre compte`;
+      const creditStr = stripeIntent && !refundResult
+        ? `remboursement Stripe ${refundAmountEur.toFixed(2)}EUR en attente de verification`
+        : (refundResult?.method === 'stripe'
+          ? `${refundAmountEur.toFixed(2)}EUR rembourse via Stripe`
+          : `${Number(backorderValueKmf).toLocaleString('fr-FR')} KMF credite sur votre compte`);
       const smsText = `Komerce : Backorder ${parcel.reference} annule. ${creditStr}. Merci de votre comprehension.`;
       notifyText(order.user_phone, smsText, 'backorder_cancelled', orderId)
         .catch(err => log.error({ err }, 'Notification backorder_cancelled failed'));
     }
 
     return {
-      status: 200,
+      status: stripeIntent && !refundResult ? 202 : 200,
       body: {
         success:    true,
         reference:  order.reference,
@@ -574,13 +640,17 @@ async function cancelBackorder(orderId, body, user) {
           quantity:     i.quantity,
           price_kmf:    i.price_kmf,
         })),
-        refund: backorderValueKmf > 0 && refundResult ? {
-          amount_kmf:       backorderValueKmf,
-          amount_eur:       refundAmountEur,
-          method:           refundResult.method,
-          stripe_refund_id: refundResult.stripeRefundId,
-          store_credit_id:  refundResult.storeCreditId,
-        } : null,
+        refund: stripeIntent && !refundResult
+          ? { intent_id: stripeIntent.intentId, amount_kmf: backorderValueKmf,
+              amount_eur: refundAmountEur,
+              refund_status: stripeOutcome?.body?.refund_status || 'unknown',
+              requires_reconciliation: true }
+          : backorderValueKmf > 0 && refundResult ? {
+              amount_kmf: backorderValueKmf, amount_eur: refundAmountEur,
+              method: refundResult.method,
+              stripe_refund_id: refundResult.stripeRefundId,
+              store_credit_id: refundResult.storeCreditId,
+            } : null,
       },
     };
 

@@ -63,6 +63,7 @@ module.exports = {
       'services/item-refund-psp-orchestrator.js',
       'services/refund-intent-ledger.js',
       'services/paypal-refund-authority.js',
+      'services/stripe-refund-authority.js',
       'services/sav-ledger-refund.js',
       'services/refund-evidence-verifier.js',
       'services/refund-intent-reconciliation.js',
@@ -83,6 +84,9 @@ module.exports = {
       'tests/e2e-api/refunds.item-partial-physical.e2e.test.js',
       'tests/unit/refund-intent-ledger.test.js',
       'tests/unit/paypal-refund-authority.test.js',
+      'tests/unit/stripe-refund-authority.test.js',
+      'tests/e2e-api/refunds.stripe-business-intent-concurrency.e2e.test.js',
+      'tests/e2e-api/refunds.stripe-crash-boundaries.e2e.test.js',
       'tests/unit/sav-ledger-refund.test.js',
       'tests/unit/refund-evidence-verifier.test.js',
       'tests/unit/refund-intent-reconciliation.test.js',
@@ -150,6 +154,10 @@ module.exports = {
 
   // ── Invariants propres ───────────────────────────────────────────────────
   invariants: [
+    { statement: 'FA-04/08 F3 : annulation Stripe reserve l intention avant COMMIT metier, jamais de POST fournisseur sous transaction, un resultat inconnu ne declenche aucun fallback wallet et reste a rapprocher',
+      test: 'tests/unit/stripe-refund-authority.test.js' },
+    { statement: 'FA-08 : annulation Stripe en deux transactions PostgreSQL physiques, une seule intention, rollback avant COMMIT sans trace PSP ni annulation perdue', test: 'tests/e2e-api/refunds.stripe-business-intent-concurrency.e2e.test.js' },
+    { statement: 'FA-04/08 F3 certification : quatre frontieres de crash (avant reservation, avant appel PSP, apres PSP avant COMMIT, apres COMMIT avant marquage) sur PostgreSQL reel avec transport Stripe bouchonne, une seule intention, aucun double remboursement, reprise avec la meme cle fournisseur, I4/I8 tenus', test: 'tests/e2e-api/refunds.stripe-crash-boundaries.e2e.test.js' },
     { statement: 'RC-9 deux connexions PostgreSQL reelles serialisent reserve et claim sans double intention ni double execution', test: 'tests/e2e-api/refunds.intents-physical-concurrency.e2e.test.js' },
     { statement: 'FA-05/21 F3 : PayPal admin reserve et claim une intention durable avant POST, rejeu/timeout inconnus sont sans nouveau POST, settlement partiel confirme sans clore la commande, activation sandbox explicite',
       test: 'tests/unit/paypal-refund-authority.test.js' },

@@ -25,7 +25,7 @@
  */
 'use strict';
 
-import { dom } from './b-store.js';
+import { state, dom } from './b-store.js';
 import { fmtPrice } from './b-utils.js';
 import { getCurrentPrice } from './b-modal-buybox-shared.js';
 
@@ -43,7 +43,9 @@ export function paintProvisionalFields(product) {
   dom.modalDesc.textContent = product.description || '';
   dom.modalDesc.classList.remove('is-expanded'); // reset truncation on each open
   dom.modalDesc.onclick = function () { dom.modalDesc.classList.toggle('is-expanded'); };
-  dom.modalPrice.textContent = fmtPrice(product.price_kmf);
+  const formattedPrice = fmtPrice(product.price_kmf);
+  dom.modalPrice.textContent = formattedPrice;
+  state.modalIdentityProjection = { name: product.name, price: formattedPrice };
 
   // PDC-6 : old price vient exclusivement du contrat détail ; le paint
   // provisoire le laisse masqué.
@@ -96,7 +98,9 @@ export function paintDetailFields(detail, selection) {
   }
 
   const price = getCurrentPrice(detail, selection);
-  if (dom.modalPrice) dom.modalPrice.textContent = price != null ? fmtPrice(price) : '';
+  const formattedPrice = price != null ? fmtPrice(price) : '';
+  if (dom.modalPrice) dom.modalPrice.textContent = formattedPrice;
+  state.modalIdentityProjection = { name: detail.product.name, price: formattedPrice };
 
   if (dom.modalOldPrice) {
     const oldPrice = detail.pricing.old_price_kmf;

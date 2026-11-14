@@ -2379,6 +2379,9 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - [object Object]
 - [object Object]
 - [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
 - un remboursement n'est jamais applique deux fois pour le meme evenement source
 - tout refund externe ou crédit compensatoire est idempotent par événement source ; un rejeu ne déclenche jamais un second remboursement
 
@@ -2400,9 +2403,9 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 25 fichier(s) déclaré(s)
-  - services : 8
-  - tests : 17
+**Implementation** : 29 fichier(s) déclaré(s)
+  - services : 9
+  - tests : 20
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="refunds"]_
 
