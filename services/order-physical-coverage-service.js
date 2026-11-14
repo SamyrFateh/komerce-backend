@@ -8,7 +8,7 @@
  * @outputs       couverture physique quantitative par ligne attendue, verdict fail-closed
  * @depends       none
  * @used-by       services/order-status-machine.js
- * @db-read       orders, order_items, v_purchase_line_progress
+ * @db-read       orders, order_items, v_purchase_line_progress, purchase_lines, incidents
  * @db-write      none
  * @db-txn        caller-owned
  * @doctrine      physical_coverage_before_preparation, fail_closed_without_physical_proof, single_reception_definition
