@@ -9,7 +9,7 @@
  * @depends       none
  * @used-by       dashboard, loyalty
  * @db-read       orders, loyalty_tiers, users, relais
- * @db-write      users
+ * @db-write      users, hub_authorization_grants
  * @db-txn        caller-owned
  * @doctrine      lifecycle_owner_persistence_boundary
  * @impact-areas  auth-identity, dashboard, loyalty
@@ -151,6 +151,55 @@ async function deleteNonAdminUsers(executor) {
   );
 }
 
+/**
+ * Reset d'usine / utilisateurs : libère les références RESTRICT/NO ACTION vers les comptes non-admin AVANT leur suppression.
+ * Les FK sont lues dans le catalogue (aucune liste à maintenir) : colonne nullable → NULL ; colonne NOT NULL → lignes supprimées
+ * (ex. hub_authorization_grants.granted_by). Chaque instruction est isolée par SAVEPOINT et rejouée (dépendances entre tables) ;
+ * une table append-only qui refuse la suppression (trigger) est rapportée dans `blocked`, jamais masquée.
+ */
+async function releaseNonAdminUserReferences(executor, { maxPasses = 4 } = {}) {
+  const client = requireExecutor(executor);
+  const { rows: fks } = await client.query(
+    `SELECT format('%s', c.conrelid::regclass) AS tbl, a.attname AS col, a.attnotnull AS not_null
+       FROM pg_constraint c
+       JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = c.conkey[1]
+      WHERE c.contype = 'f' AND c.confrelid = 'public.users'::regclass
+        AND c.confdeltype IN ('a','r') AND array_length(c.conkey, 1) = 1
+      ORDER BY 1, 2`);
+  const quote = (id) => `"${String(id).replace(/"/g, '""')}"`;
+  const qualify = (name) => name.split('.').map((part) => (/^"/.test(part) ? part : quote(part))).join('.');
+  const cleared = {};
+  let pending = fks.slice();
+  for (let pass = 0; pass < maxPasses && pending.length; pass += 1) {
+    const next = [];
+    for (const fk of pending) {
+      const target = qualify(fk.tbl); const col = quote(fk.col);
+      const where = `${col} IN (SELECT id FROM users WHERE role <> 'admin')`;
+      // arch-safe: identifiants issus de pg_catalog, quotés ; aucune valeur utilisateur.
+      const sql = fk.not_null ? `DELETE FROM ${target} WHERE ${where}` : `UPDATE ${target} SET ${col} = NULL WHERE ${where}`;
+      // Repli : une colonne nullable liée par CHECK à d'autres colonnes (ex. revoked_by/revoked_at) ne peut pas passer à NULL seule → ligne supprimée.
+      const attempts = fk.not_null ? [sql] : [sql, `DELETE FROM ${target} WHERE ${where}`];
+      let done = false;
+      for (const attempt of attempts) {
+        await client.query('SAVEPOINT sp_release_user_ref');
+        try {
+          const r = await client.query(attempt);
+          await client.query('RELEASE SAVEPOINT sp_release_user_ref');
+          if (r.rowCount) cleared[`${fk.tbl}.${fk.col}`] = (cleared[`${fk.tbl}.${fk.col}`] || 0) + r.rowCount;
+          done = true;
+          break;
+        } catch (err) {
+          await client.query('ROLLBACK TO SAVEPOINT sp_release_user_ref');
+          fk.error = err.message;
+        }
+      }
+      if (!done) next.push(fk);
+    }
+    pending = next;
+  }
+  return { cleared, blocked: pending.map((fk) => ({ table: fk.tbl, column: fk.col, error: fk.error })) };
+}
+
 async function incrementBigBasketCount(executor, userId) {
   return requireExecutor(executor).query(
     `UPDATE users
@@ -198,6 +247,7 @@ module.exports = {
   anonymizeUser,
   deleteUser,
   deleteNonAdminUsers,
+  releaseNonAdminUserReferences,
   incrementBigBasketCount,
   markBigBasketNotified,
   recalculateUserLoyalty,
