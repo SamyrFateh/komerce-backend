@@ -137,6 +137,8 @@ jobs:
         run: node scripts/recette/rct1-preflight.js > test-results/hub-v1-cert/rct1.json
       - name: Collect Hub PO / sac / box / shipment / relais existing evidence
         run: node scripts/recette/hub-v1-staging-cert-readonly.js
+      - name: T9 — attest real persisted 48h with PostgreSQL clock (READ ONLY)
+        run: node scripts/recette/hub-t9-authentic-age-readonly.js
       - name: Evidence summary
         if: always()
         shell: bash
