@@ -152,52 +152,75 @@ async function deleteNonAdminUsers(executor) {
 }
 
 /**
- * Reset d'usine / utilisateurs : libère les références RESTRICT/NO ACTION vers les comptes non-admin AVANT leur suppression.
- * Les FK sont lues dans le catalogue (aucune liste à maintenir) : colonne nullable → NULL ; colonne NOT NULL → lignes supprimées
- * (ex. hub_authorization_grants.granted_by). Chaque instruction est isolée par SAVEPOINT et rejouée (dépendances entre tables) ;
- * une table append-only qui refuse la suppression (trigger) est rapportée dans `blocked`, jamais masquée.
+ * Reset d'usine / utilisateurs : libère, AVANT la suppression des comptes non-admin, uniquement des références de
+ * DÉLÉGATION ou de simple trace opérationnelle, par listes EXPLICITES. Doctrine : aucun fait métier (cash, encaissements,
+ * remboursements, documents, audit, preuves) n'est jamais supprimé ni modifié ici ; toute autre FK RESTRICT/NO ACTION
+ * vers users portant des lignes est découverte dans le catalogue puis RAPPORTÉE dans `blocked`, sans aucune écriture.
  */
-async function releaseNonAdminUserReferences(executor, { maxPasses = 4 } = {}) {
+// Suppression de ligne : délégations/configuration seulement (la ligne n'a de sens que tant que le compte existe).
+const RELEASE_DELETE_ROWS = Object.freeze([
+  ['hub_authorization_grants', 'user_id'],
+  ['hub_authorization_grants', 'granted_by'],
+  ['hub_authorization_grants', 'revoked_by'], // CHECK lie revoked_by à revoked_at : on retire la délégation entière
+]);
+// Mise à NULL : traces opérationnelles nullables (jamais financières, probatoires ni d'audit).
+const RELEASE_NULL_COLUMNS = Object.freeze([
+  ['purchase_orders', 'sent_by'],
+  ['international_shipment_hub_units', 'attached_by'],
+]);
+
+async function releaseNonAdminUserReferences(executor) {
   const client = requireExecutor(executor);
+  const nonAdmin = "(SELECT id FROM users WHERE role <> 'admin')";
+  const cleared = {};
+  const run = async (key, sql) => {
+    await client.query('SAVEPOINT sp_release_user_ref');
+    try {
+      const r = await client.query(sql);
+      await client.query('RELEASE SAVEPOINT sp_release_user_ref');
+      if (r.rowCount) cleared[key] = r.rowCount;
+      return null;
+    } catch (err) {
+      await client.query('ROLLBACK TO SAVEPOINT sp_release_user_ref');
+      return err.message;
+    }
+  };
+  const errors = {};
+  // Identifiants issus des listes constantes ci-dessus : aucune valeur utilisateur.
+  for (const [table, col] of RELEASE_DELETE_ROWS) {
+    const err = await run(`${table}.${col}`, `DELETE FROM ${table} WHERE ${col} IN ${nonAdmin}`); // arch-safe: liste constante
+    if (err) errors[`${table}.${col}`] = err;
+  }
+  for (const [table, col] of RELEASE_NULL_COLUMNS) {
+    const err = await run(`${table}.${col}`, `UPDATE ${table} SET ${col} = NULL WHERE ${col} IN ${nonAdmin}`); // arch-safe: liste constante
+    if (err) errors[`${table}.${col}`] = err;
+  }
+  // Découverte (lecture seule) : toute autre FK RESTRICT/NO ACTION vers users qui porte encore des lignes est rapportée.
   const { rows: fks } = await client.query(
-    `SELECT format('%s', c.conrelid::regclass) AS tbl, a.attname AS col, a.attnotnull AS not_null
+    `SELECT format('%s', c.conrelid::regclass) AS tbl, a.attname AS col
        FROM pg_constraint c
        JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = c.conkey[1]
       WHERE c.contype = 'f' AND c.confrelid = 'public.users'::regclass
         AND c.confdeltype IN ('a','r') AND array_length(c.conkey, 1) = 1
       ORDER BY 1, 2`);
+  const handled = new Set([...RELEASE_DELETE_ROWS, ...RELEASE_NULL_COLUMNS].map(([t, c]) => `${t}.${c}`));
   const quote = (id) => `"${String(id).replace(/"/g, '""')}"`;
-  const qualify = (name) => name.split('.').map((part) => (/^"/.test(part) ? part : quote(part))).join('.');
-  const cleared = {};
-  let pending = fks.slice();
-  for (let pass = 0; pass < maxPasses && pending.length; pass += 1) {
-    const next = [];
-    for (const fk of pending) {
-      const target = qualify(fk.tbl); const col = quote(fk.col);
-      const where = `${col} IN (SELECT id FROM users WHERE role <> 'admin')`;
-      // arch-safe: identifiants issus de pg_catalog, quotés ; aucune valeur utilisateur.
-      const sql = fk.not_null ? `DELETE FROM ${target} WHERE ${where}` : `UPDATE ${target} SET ${col} = NULL WHERE ${where}`;
-      // Repli : une colonne nullable liée par CHECK à d'autres colonnes (ex. revoked_by/revoked_at) ne peut pas passer à NULL seule → ligne supprimée.
-      const attempts = fk.not_null ? [sql] : [sql, `DELETE FROM ${target} WHERE ${where}`];
-      let done = false;
-      for (const attempt of attempts) {
-        await client.query('SAVEPOINT sp_release_user_ref');
-        try {
-          const r = await client.query(attempt);
-          await client.query('RELEASE SAVEPOINT sp_release_user_ref');
-          if (r.rowCount) cleared[`${fk.tbl}.${fk.col}`] = (cleared[`${fk.tbl}.${fk.col}`] || 0) + r.rowCount;
-          done = true;
-          break;
-        } catch (err) {
-          await client.query('ROLLBACK TO SAVEPOINT sp_release_user_ref');
-          fk.error = err.message;
-        }
-      }
-      if (!done) next.push(fk);
+  const blocked = [];
+  for (const fk of fks) {
+    const key = `${fk.tbl}.${fk.col}`;
+    if (handled.has(key) && !errors[key]) continue;
+    const target = fk.tbl.split('.').map((part) => (/^"/.test(part) ? part : quote(part))).join('.');
+    await client.query('SAVEPOINT sp_release_user_ref');
+    try {
+      // arch-safe: identifiants issus de pg_catalog, quotés ; SELECT seul.
+      const { rows: [r] } = await client.query(`SELECT COUNT(*)::int AS n FROM ${target} WHERE ${quote(fk.col)} IN ${nonAdmin}`);
+      await client.query('RELEASE SAVEPOINT sp_release_user_ref');
+      if (r.n > 0 || errors[key]) blocked.push({ table: fk.tbl, column: fk.col, rows: r.n, ...(errors[key] ? { error: errors[key] } : {}) });
+    } catch (_) {
+      await client.query('ROLLBACK TO SAVEPOINT sp_release_user_ref');
     }
-    pending = next;
   }
-  return { cleared, blocked: pending.map((fk) => ({ table: fk.tbl, column: fk.col, error: fk.error })) };
+  return { cleared, blocked };
 }
 
 async function incrementBigBasketCount(executor, userId) {

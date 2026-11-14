@@ -158,7 +158,12 @@ router.post('/reset', ...guard, validate(admin.reset), allowFlushOutsideProd, as
       // Références RESTRICT vers les comptes (ex. délégations Hub granted_by) : libérées avant la suppression des comptes.
       const released = await releaseNonAdminUserReferences(client);
       report.deleted.user_refs_released = released.cleared;
-      if (released.blocked.length) report.deleted.user_refs_blocked = released.blocked;
+      if (released.blocked.length) {
+        // Faits métier (cash, remboursements, documents, audit, preuves) rattachés à un compte : jamais effacés. Rien n'est écrit (ROLLBACK).
+        const blockedErr = new Error('Reset refusé : des faits métier référencent encore des comptes non-admin (voir user_refs_blocked)');
+        blockedErr.status = 409; blockedErr.code = 'USER_REFS_BLOCKED'; blockedErr.user_refs_blocked = released.blocked;
+        throw blockedErr;
+      }
       const users = await deleteNonAdminUsers(client);
       report.deleted.users_non_admin = users.rowCount;
     }
