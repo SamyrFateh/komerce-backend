@@ -13398,7 +13398,7 @@
         "category": "services",
         "declared": "services/pickup-secret-customer-rotation-service.js",
         "resolvedPath": "services/pickup-secret-customer-rotation-service.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "logistics",
@@ -52599,6 +52599,19 @@
       "lifecycleOwner": "logistics",
       "resolution": "declared-table-owner"
     },
+    "pickup_code_generations": {
+      "writers": [
+        {
+          "feature": "logistics",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "logistics",
+      "resolution": "declared-table-owner"
+    },
     "pickup_verify_attempts": {
       "writers": [
         {
@@ -53720,8 +53733,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 706,
-        "technicalNodesOwned": 706,
+        "technicalNodesTotal": 707,
+        "technicalNodesOwned": 707,
         "technicalOrphans": 0
       },
       "dash": {
