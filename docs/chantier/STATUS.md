@@ -16,6 +16,24 @@
 
 Statuts autorisés : `À_FAIRE` · `EN_COURS` · `PR_EN_REVUE` · `BLOQUÉ` · `FAIT` · `ABANDONNÉ`. Une PR draft ouverte n'est pas `FAIT`.
 
+## Avant les E2E G6 — conditions de GO (double exécution GPT-G6 / CLAUDE-PAR)
+
+> Une ligne par condition. Mise à jour par le responsable de la ligne à chaque avancée. Les scénarios eux-mêmes restent **uniquement** dans la matrice [`G6_PRE_STRESS_BUSINESS_SCENARIOS.{md,json}`](../recette/G6_PRE_STRESS_BUSINESS_SCENARIOS.md) (#3944) : ne pas les recopier ici.
+
+| # | Condition | Responsable | État | Preuve / prochaine action |
+| --- | --- | --- | --- | --- |
+| G0a | Staging servi = SHA cible, identique pour les deux campagnes | Opus | À_VÉRIFIER au GO | Live `af9dff4` (14/11 15h43) ; figé par le gel des fusions (G7) |
+| G0b | Allowlist OTP sans numéro de recette, zéro envoi réel, PSP en mode test | Opus | À_VÉRIFIER au GO | Contrôle des variables Railway sans afficher les valeurs ; `stripe_mode=test` lu sur `/health/version` |
+| G0c | Rythme des campagnes sous les limiteurs par IP (#4070 ST-F1) | GPT + Opus | À_FAIRE | Plan de cadence des deux campagnes ; un 429 = NOT_PROVEN |
+| G1 | Matrice 46 scénarios + oracles O-FIN, O-HUB, O-ECO + cas limites L01–L25 | Opus (revue GPT) | PR_EN_REVUE | [#3944](https://github.com/SamyrFateh/komerce-backend/pull/3944) : revue GPT, puis fusion |
+| G2 | Certification Hub H1–H9 | Sonnet (GPT contributeur) | EN_COURS | [#4029](https://github.com/SamyrFateh/komerce-backend/pull/4029) : Chromium, H1–H9 SQL et C1 PASS ; C2–C5, T1–T10 à prouver |
+| G3 | Certification Stripe F3 (#4025) | Sonnet | DÉCISION_PROPRIÉTAIRE | Crash PG PASS ([#4073](https://github.com/SamyrFateh/komerce-backend/pull/4073)) ; GET sandbox NOT_PROVEN (GO de création d'un remboursement test demandé) |
+| G4 | Seconde passe #3900 (mode manuel KM) | Opus (exécution Sonnet) | EN_COURS | [#3900](https://github.com/SamyrFateh/komerce-backend/issues/3900), cohorte CLAUDE-PAR |
+| G5 | E7 réservations actif, décaissement coupé | Opus | FAIT | Railway `be4a1566` SUCCESS |
+| G6 | Simulation de marché qualifiée (commandes payées sans encaissement ni facture, I7/I15) | Propriétaire | DÉCISION_PROPRIÉTAIRE | Voulu ou non ; arrêt pendant les campagnes ? |
+| G7 | Gel des fusions annoncé pour toute la durée des deux campagnes | Opus | À_FAIRE | Annonce ici + dans #3944 au moment du GO |
+| GO | GO explicite du propriétaire pour l'E2E G6 final | Propriétaire | NON_DONNÉ | Seulement quand G0–G7 sont FAIT |
+
 ## Tâches actives — reprise contrôlée (14 novembre 2026)
 
 | Chantier | Responsable | Statut | PR / source | Zone réservée | Prochaine action / preuve |
