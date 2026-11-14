@@ -718,6 +718,11 @@ function renderEnrichedContent(detail) {
   // point qui décide déjà si ce produit a du contenu enrichi ou non.
   const zone = container.closest('.k-modal-product-zone');
 
+  // La composition desktop regroupe la description et les caractéristiques
+  // dans la même carte, sous le hero. Le contenu restant demeure en dessous.
+  const detailsPanel = document.getElementById('k-modal-long-details');
+  const oldSpecs = detailsPanel?.querySelector('.k-modal-enriched-block--specs');
+  oldSpecs?.remove();
   const vm = buildProductContentViewModel(detail.content);
 
   appendEnrichedBulletBlock(container, { heading: CONTENT_LABELS.highlights, items: vm.highlights.map((h) => h.label), variant: 'highlights' });
@@ -735,6 +740,15 @@ function renderEnrichedContent(detail) {
       appendEnrichedKeyValueBlock(container, { heading: section.title, entries: section.entries });
     }
   });
+
+  const specifications = container.querySelector('.k-modal-enriched-block--specs');
+  if (detailsPanel && specifications) detailsPanel.appendChild(specifications);
+  const hasDescription = Boolean(document.getElementById('k-modal-long-description')?.hidden === false);
+  const hasSpecs = Boolean(specifications);
+  detailsPanel?.classList.toggle('k-modal-long-details--two-columns', hasDescription && hasSpecs);
+  detailsPanel?.classList.toggle('k-modal-long-details--empty', !hasDescription && !hasSpecs);
+  const heading = document.getElementById('k-modal-long-details-heading');
+  if (heading) heading.hidden = !hasDescription && !hasSpecs;
 
   // short_description et brand ne suffisent pas à créer une section
   // desktop sous le hero : seules les sections réellement rendues comptent.

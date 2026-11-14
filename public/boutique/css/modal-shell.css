@@ -1350,7 +1350,7 @@
 @media (min-width: 900px) {
   #k-modal .k-modal-product-zone > #k-modal-suggestions {
     grid-column: 1 / -1;
-    grid-row: 2;
+    grid-row: 4;
     align-self: start;
     box-sizing: border-box;
     width: 100%;
@@ -1360,18 +1360,100 @@
 
   #k-modal .k-modal-product-zone.k-modal-product-zone--no-enriched
   > #k-modal-suggestions {
-    grid-row: 2;
+    grid-row: 4;
   }
 
   #k-modal .k-modal-product-zone > .k-modal-long-details {
     grid-column: 1 / -1;
-    grid-row: 3;
+    grid-row: 2;
   }
 
   #k-modal .k-modal-product-zone > #k-modal-enriched-content {
     grid-column: 1 / -1;
-    grid-row: 4;
+    grid-row: 3;
   }
+}
+
+/* PDP canonique desktop — mock validé le 14 novembre 2026.
+   Une seule surface de détails sous le hero, puis les recommandations.
+   Ces styles n'affectent ni la composition mobile ni Discovery. */
+@media (min-width: 900px) {
+  #k-modal .k-modal-topbar { position: relative; }
+  #k-modal .k-modal-brand {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text);
+    font-weight: 700;
+    font-size: 25px;
+    letter-spacing: -.025em;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  #k-modal .k-modal-brand img { width: 32px; height: 32px; object-fit: contain; }
+  #k-modal .k-modal-product-zone {
+    grid-template-rows: auto auto auto auto;
+    row-gap: 18px;
+  }
+  #k-modal .k-modal-product-zone > .k-modal-long-details {
+    grid-column: 1 / -1;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px 32px;
+    margin: 0 18px;
+    background: var(--page-bg);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    min-width: 0;
+  }
+  #k-modal .k-modal-product-zone > .k-modal-long-details.k-modal-long-details--two-columns {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  #k-modal .k-modal-product-zone > .k-modal-long-details.k-modal-long-details--empty {
+    display: none;
+  }
+  #k-modal .k-modal-long-details-heading {
+    grid-column: 1 / -1;
+    font-size: 20px;
+    line-height: 1.25;
+    margin: 0;
+    color: var(--text);
+  }
+  #k-modal .k-modal-long-details-heading[hidden] { display: none; }
+  #k-modal .k-modal-long-description { min-width: 0; }
+  #k-modal .k-modal-long-description[hidden] { display: none; }
+  #k-modal .k-modal-long-details .k-modal-enriched-block {
+    min-width: 0;
+    padding: 0;
+    margin: 0;
+  }
+  #k-modal .k-modal-long-details .k-modal-section-title {
+    font-size: 15px;
+    color: var(--ocean-dark);
+    margin: 0 0 6px;
+  }
+  #k-modal .k-modal-long-details .k-modal-enriched-spec-list {
+    min-width: 0;
+  }
+  #k-modal .k-modal-long-details--two-columns > .k-modal-enriched-block--specs {
+    border-left: 1px solid var(--border);
+    padding-left: 32px;
+  }
+  #k-modal .k-modal-product-zone > #k-modal-enriched-content {
+    grid-column: 1 / -1;
+  }
+  #k-modal .k-modal-product-zone > #k-modal-suggestions {
+    grid-column: 1 / -1;
+    padding-top: 0;
+  }
+}
+@media (max-width: 899px) {
+  #k-modal .k-modal-brand { display: none; }
 }
 
 /* ── U1 — Discovery detail inside the canonical Komerce modal ───────── */
