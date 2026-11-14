@@ -2636,7 +2636,7 @@ Meta Graph monté : oui.
 | purchasing | external-provider-contracts | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | purchasing | incident-management | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | purchasing | infrastructure | static-code | 60 | **DECLARED_AND_OBSERVED** |
-| purchasing | logistics | static-code, data-read | 16 | **DECLARED_AND_OBSERVED** |
+| purchasing | logistics | static-code, data-read | 17 | **DECLARED_AND_OBSERVED** |
 | purchasing | notifications | static-code | 10 | **DECLARED_AND_OBSERVED** |
 | purchasing | orders | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
 | purchasing | refunds | static-code | 1 | **OBSERVED_UNDECLARED** |
