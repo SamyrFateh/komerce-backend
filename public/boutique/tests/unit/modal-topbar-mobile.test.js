@@ -235,11 +235,11 @@ describe('topbar mobile canonique — oracle REF-2026-07e', () => {
     )?.[1] ?? '';
 
     expect(productRule).toMatch(
-      /max-width\s*:\s*calc\(50%\s*-\s*34px\)/
+      /max-width\s*:\s*none/
     );
 
-    expect(polish).not.toMatch(
-      /#k-modal\.is-scrolled \.k-modal-cart-btn(?::active)?\s*\{/
+    expect(polish).toMatch(
+      /#k-modal\.is-scrolled \.k-modal-cart-btn\s*\{[^}]*position\s*:\s*relative/
     );
   });
 
