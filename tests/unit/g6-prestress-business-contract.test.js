@@ -50,6 +50,15 @@ describe('G6 pré-stress — unique business contract ChatGPT / Opus',()=>{
     const ids=new Set(data.scenarios.map(x=>x.id));
     for(const c of Object.values(data.configurations).filter(c=>c&&c.applies_to)) for(const id of c.applies_to) expect(ids.has(id)).toBe(true);
   });
+  test('O-FIN Fable I1-I15 est partagé et appliqué aux scénarios financiers',()=>{
+    const oracle=data.transversal_oracles['O-FIN'];
+    expect(oracle.source).toBe('docs/recette/G6_FINANCE_SQL_ORACLES.sql');
+    expect(oracle.invariants).toHaveLength(15);
+    const sql=require('fs').readFileSync(require('path').join(__dirname,'../../docs/recette/G6_FINANCE_SQL_ORACLES.sql'),'utf8');
+    for(let i=1;i<=15;i++) expect(sql).toMatch(new RegExp('-- I'+i+' '));
+    expect(sql).not.toMatch(/\b(INSERT|UPDATE|DELETE|TRUNCATE|ALTER|DROP)\b/i);
+    for(const id of oracle.applies_to) expect(data.scenarios.find(s=>s.id===id).oracles).toContain('O-FIN');
+  });
   test('O-HUB Fable H1-H9 est partagé et appliqué à tous les scénarios Hub critiques',()=>{
     const oracle=data.transversal_oracles['O-HUB'];
     expect(oracle.source).toBe('docs/recette/G6_HUB_SQL_ORACLES.sql');

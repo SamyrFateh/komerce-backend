@@ -54,7 +54,8 @@
         "O-ECO",
         "O-DOC",
         "O-NOTIF",
-        "O-HUB"
+        "O-HUB",
+        "O-FIN"
       ],
       "depends_on": [
         "L-A5"
@@ -74,7 +75,8 @@
       "verdict": "NOT_PROVEN",
       "oracles": [
         "O-DOC",
-        "O-NOTIF"
+        "O-NOTIF",
+        "O-FIN"
       ],
       "depends_on": [
         "L-A5"
@@ -94,7 +96,8 @@
         "O-ECO",
         "O-DOC",
         "O-NOTIF",
-        "O-HUB"
+        "O-HUB",
+        "O-FIN"
       ],
       "depends_on": [
         "L-A5"
@@ -114,7 +117,8 @@
         "O-ECO",
         "O-DOC",
         "O-NOTIF",
-        "O-HUB"
+        "O-HUB",
+        "O-FIN"
       ],
       "depends_on": [
         "L-A5"
@@ -134,7 +138,8 @@
         "O-ECO",
         "O-DOC",
         "O-NOTIF",
-        "O-HUB"
+        "O-HUB",
+        "O-FIN"
       ],
       "depends_on": [
         "L-A5"
@@ -154,7 +159,8 @@
         "O-ECO",
         "O-DOC",
         "O-NOTIF",
-        "O-HUB"
+        "O-HUB",
+        "O-FIN"
       ],
       "depends_on": [
         "L-A2",
@@ -240,7 +246,10 @@
       "title": "Prix change pendant checkout",
       "expected": "Nouveau prix proposé et accepté explicitement",
       "priority": "P0",
-      "verdict": "NOT_PROVEN"
+      "verdict": "NOT_PROVEN",
+      "oracles": [
+        "O-FIN"
+      ]
     },
     {
       "id": "N07",
@@ -253,7 +262,10 @@
       "title": "Double clic commande",
       "expected": "Une commande maximum",
       "priority": "P0",
-      "verdict": "NOT_PROVEN"
+      "verdict": "NOT_PROVEN",
+      "oracles": [
+        "O-FIN"
+      ]
     },
     {
       "id": "N08",
@@ -266,7 +278,10 @@
       "title": "Clé idempotence concurrente",
       "expected": "Aucun doublon paiement, stock ou commande",
       "priority": "P0",
-      "verdict": "NOT_PROVEN"
+      "verdict": "NOT_PROVEN",
+      "oracles": [
+        "O-FIN"
+      ]
     },
     {
       "id": "N09",
@@ -279,7 +294,10 @@
       "title": "Cash non encaissé puis tentative remise",
       "expected": "Invariant non payé = aucune remise ; joué sur le flux où le cash peut rester impayé (M02, cash au Relais), pas sur l'import où le paiement précède le sourcing",
       "priority": "P0",
-      "verdict": "NOT_PROVEN"
+      "verdict": "NOT_PROVEN",
+      "oracles": [
+        "O-FIN"
+      ]
     },
     {
       "id": "N10",
@@ -296,6 +314,9 @@
       "proof_channels": [
         "http",
         "postgres_before_after"
+      ],
+      "oracles": [
+        "O-FIN"
       ]
     },
     {
@@ -309,7 +330,10 @@
       "title": "PO sans validation engagement",
       "expected": "Aucun engagement fournisseur",
       "priority": "P0",
-      "verdict": "NOT_PROVEN"
+      "verdict": "NOT_PROVEN",
+      "oracles": [
+        "O-FIN"
+      ]
     },
     {
       "id": "N12",
@@ -322,7 +346,10 @@
       "title": "Paiement fournisseur sans deuxième validation",
       "expected": "Refus ; preuves d'autorisation distinctes",
       "priority": "P0",
-      "verdict": "NOT_PROVEN"
+      "verdict": "NOT_PROVEN",
+      "oracles": [
+        "O-FIN"
+      ]
     },
     {
       "id": "N13",
@@ -496,6 +523,9 @@
       "verdict": "NOT_PROVEN",
       "depends_on": [
         "L-A5"
+      ],
+      "oracles": [
+        "O-FIN"
       ]
     },
     {
@@ -512,6 +542,9 @@
       "verdict": "NOT_PROVEN",
       "depends_on": [
         "L-A1"
+      ],
+      "oracles": [
+        "O-FIN"
       ]
     },
     {
@@ -537,7 +570,10 @@
             "L-A1"
           ]
         }
-      }
+      },
+      "oracles": [
+        "O-FIN"
+      ]
     },
     {
       "id": "N27",
@@ -553,6 +589,9 @@
       "verdict": "NOT_PROVEN",
       "depends_on": [
         "L-A6"
+      ],
+      "oracles": [
+        "O-FIN"
       ]
     },
     {
@@ -605,7 +644,10 @@
       "title": "FX KMF/XAF et remboursement",
       "expected": "Snapshot conservé, remboursement sur encaissement",
       "priority": "P0",
-      "verdict": "NOT_PROVEN"
+      "verdict": "NOT_PROVEN",
+      "oracles": [
+        "O-FIN"
+      ]
     },
     {
       "id": "N32",
@@ -712,7 +754,8 @@
       "verdict": "NOT_PROVEN",
       "oracles": [
         "O-DOC",
-        "O-NOTIF"
+        "O-NOTIF",
+        "O-FIN"
       ]
     },
     {
@@ -726,7 +769,10 @@
       "title": "Annulation client après engagement ou paiement de la PO",
       "expected": "F1 avant achat ou plancher 24 h : 100 % ; F2 achat engagé : demande admin, wallet uniquement si accordée ; F3 embarqué : fermée ; aucun remboursement ni engagement silencieux",
       "priority": "P0",
-      "verdict": "NOT_PROVEN"
+      "verdict": "NOT_PROVEN",
+      "oracles": [
+        "O-FIN"
+      ]
     },
     {
       "id": "N40",
@@ -741,7 +787,8 @@
       "priority": "P0",
       "verdict": "NOT_PROVEN",
       "oracles": [
-        "O-ECO"
+        "O-ECO",
+        "O-FIN"
       ]
     }
   ],
@@ -863,6 +910,51 @@
       ],
       "mode": "PostgreSQL read-only à état stabilisé : avant/après geste; même SHA et mêmes 9 contrôles, deux cohortes ChatGPT et Opus",
       "interpretation": "H1/H3/H4/H5a/H6/H7 : zéro anomalie à état stabilisé; H2 : sous-couverture à rapprocher d'un incident supplier_shortage et d'une décision admin; H5b : diagnostic allocation figée (pas FAIL automatique); H8/H9 : chaque tâche âgée doit être visible avec alerte 48h. Ne jamais utiliser une ligne SQL seule comme PASS E2E."
+    },
+    "O-FIN": {
+      "source": "docs/recette/G6_FINANCE_SQL_ORACLES.sql",
+      "origin": "Audit Fable #3987 (FA-01..FA-25), invariants I1..I15",
+      "rule": "Zéro ligne sur les objets de la cohorte, à état stabilisé, sur le même SHA pour les deux campagnes ; requête invalide sur le schéma live = NOT_PROVEN",
+      "invariants": [
+        "I1",
+        "I2",
+        "I3",
+        "I4",
+        "I5",
+        "I6",
+        "I7",
+        "I8",
+        "I9",
+        "I10",
+        "I11",
+        "I12",
+        "I13",
+        "I14",
+        "I15"
+      ],
+      "applies_to": [
+        "M01",
+        "M02",
+        "M03",
+        "M04",
+        "M05",
+        "M06",
+        "N06",
+        "N07",
+        "N08",
+        "N09",
+        "N10",
+        "N11",
+        "N12",
+        "N24",
+        "N25",
+        "N26",
+        "N27",
+        "N31",
+        "N38",
+        "N39",
+        "N40"
+      ]
     }
   },
   "rights_table_R": {

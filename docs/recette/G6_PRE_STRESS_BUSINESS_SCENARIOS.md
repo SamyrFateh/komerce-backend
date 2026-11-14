@@ -145,6 +145,14 @@ Les deux campagnes utilisent la même version applicative (SHA identique, noté 
 ### Gates
 **G0** SHA servi = SHA cible, allowlist `AUTHKEY_ALLOWED_PHONES` vide ou sans numéro de recette, fixtures par agent → **G1** arbitrages (fait le 12/11) → **G2** lots P0 déployés avant les scénarios qu'ils débloquent, sinon BLOCKED explicite → **G3** M → **G4** N P0 → **G5** N P1 → **G6** comparatif ChatGPT ↔ Opus → `GO_PRE_STRESS` → recette humaine #3754 → stress. Rien ne s'exécute sans « GO tests métiers » explicite du propriétaire.
 
+## Oracle transversal O-FIN — audit Fable #3987 (partagé GPT / Opus)
+
+Le script SQL **lecture seule** [`G6_FINANCE_SQL_ORACLES.sql`](./G6_FINANCE_SQL_ORACLES.sql) regroupe les **15 invariants I1 à I15** de l'audit des flux d'argent : wallet, restitué ≤ encaissé, double encaissement PSP, idempotence de commande, SAV ≤ remis, fournisseur payé ≤ autorisé, documents. Il est obligatoire pour **M01–M06, N06–N12, N24–N27, N31 et N38–N40** et ne change aucun des 46 IDs.
+
+- **Deux campagnes, un seul contrat** : même script, même SHA staging, cohortes distinctes. Pour chaque invariant, consigner l'horodatage, le filtre de cohorte, le nombre de lignes, les clés des anomalies et leur qualification.
+- **Zéro ligne exigée** à état stabilisé sur les objets de la cohorte. Une requête qui échoue sur le schéma live est `NOT_PROVEN`, jamais `PASS`. Une violation historique hors cohorte est signalée, jamais masquée.
+- Corrections déjà sur `main` : FA-01/02/03/06/07/12/13/14/15/24 ; FA-04/05/08/21 (#4020, PayPal) ; FA-10 (#4026) ; FA-22/25 (#4028) ; FA-23 (#4024). FA-09 et FA-11 sont encore ouvertes : leurs invariants (I14, et I4/I11 sur le prorata wallet) peuvent légitimement remonter des anomalies et sont qualifiés `FAIL` attendu, à tracer.
+
 ## Oracle transversal O-HUB — audit Fable #3998 (partagé GPT / Opus)
 
 Le script SQL **lecture seule** [`G6_HUB_SQL_ORACLES.sql`](./G6_HUB_SQL_ORACLES.sql) regroupe les **9 invariants H1 à H9** à relever après stabilisation de chaque geste Hub (commande/réception, rupture, répartition, sac, KOM-BOX, expédition). Il est obligatoire pour **M01, M03, M04, M05, M06 et N13–N16** et ne change aucun des 46 IDs existants.
