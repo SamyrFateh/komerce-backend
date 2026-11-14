@@ -102,16 +102,22 @@ test('Customs page requires its actual international journey component, not unre
   expect((src.match(/^\s*test\('/gm)||[])).toHaveLength(10);
   expect(src).toContain("if (successfulTests !== 10)");
 });
-test('physical Relay flow clicks the canonical exclusive Kanban queue before each action',()=>{
+test('Relay LOCAL_STOCK flow uses the physical receipt lane, then the code-only handoff Kanban',()=>{
   const src=get('tests/staging-clicks/hub-v1-clicks.spec.js');
-  expect(src).toContain("const operation=st.suffix === 'receive' ? 'receive' : 'collect'");
-  expect(src).toContain("workspace.locator('[data-relay-execution-jump=\"'+operation+'\"]')");
+  expect(src).toContain("ws.locator('[data-relay-execution-jump=\"receive\"]')");
   expect(src).toContain("await jump.click()");
-  expect(src).toContain("await expect(workspace).toHaveAttribute('data-relay-active-operation',operation)");
-  expect(src).toContain("await expect(jump).toHaveAttribute('aria-current','true')");
-  expect(src.indexOf('await jump.click()')).toBeLessThan(src.indexOf('const btn = rowButton(page, loc.reference, st.label)'));
+  expect(src).toContain("await expect(ws).toHaveAttribute('data-relay-active-operation', 'receive')");
+  expect(src).toContain('[data-relay-direct-local-receipts]');
+  expect(src).toContain('[data-relay-local-order="');
+  expect(src).toContain('[data-local-physical-proof]');
+  expect(src).toContain('[data-local-receipt-note]');
+  expect(src).toContain("route: 'POST /api/orders/:id/local-relay-receipt'");
+  expect(src).toContain("await activatePickupQueue(collectPage)");
+  expect(src).toContain("key: 'local:collect'");
+  expect(src).toContain("expect(Number(physical[0].qty_shipped), 'aucun expédié fictif').toBe(0)");
+  expect(src).not.toContain("local:ship',");
+  expect(src).not.toContain("local:receive',");
   expect(src).not.toContain('orders.simulation_scope exclu par queryParcels');
-  expect(src).toContain("absent: (await btn.count()) === 0");
 });
 
 test('Full physical harness cannot silently run unrelated LOCAL_STOCK spec',()=>{

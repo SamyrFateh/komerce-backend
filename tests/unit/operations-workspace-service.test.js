@@ -212,6 +212,10 @@ test('runDistribution ne distribue que les commandes présélectionnées dans le
   const result = await workspace.runDistribution(MARKET);
 
   expect(mockQuery.mock.calls[0][1]).toEqual(['market-cm-id']);
+  // Aucune commande 100 % locale ne quitte le circuit direct Relais via le Hub.
+  // Les commandes mixtes restent éligibles par leurs seules lignes IMPORT sans colis.
+  expect(String(mockQuery.mock.calls[0][0])).toContain("oi.fulfillment_source = 'IMPORT'");
+  expect(String(mockQuery.mock.calls[0][0])).toContain('pi.order_item_id = oi.id');
   expect(mockDistributeOrder.mock.calls).toEqual([
     ['order-cm-1'],
     ['order-cm-2'],
