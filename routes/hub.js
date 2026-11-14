@@ -231,6 +231,15 @@ router.get('/administration', authenticate, requireRole(['admin', 'agent_hub']),
   } catch (err) { return next(err); }
 });
 
+// Vue directrice (#3998 H4) : tâches du dossier Hub de TOUS les marchés actifs, avec ancienneté et alerte au-delà de 48 h.
+// Même service que le dossier par marché ; lecture seule, aucun droit d'écriture conféré.
+router.get('/director-todo', authenticate, requireRole(['admin', 'agent_hub']), async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'private, no-store');
+    return res.json(await dossier.getDirectorTodo({ viewer: req.user || null }));
+  } catch (err) { return next(err); }
+});
+
 router.get('/board', ...hubBoardRead, async (req, res, next) => {
   try {
     res.set('Cache-Control', 'private, no-store');

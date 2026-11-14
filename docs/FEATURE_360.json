@@ -18522,7 +18522,7 @@
             ]
           },
           "tests": {
-            "count": 92,
+            "count": 93,
             "files": [
               {
                 "declared": "tests/e2e-api/hub-membership-readers.e2e.test.js",
@@ -18662,6 +18662,11 @@
               {
                 "declared": "tests/unit/hub-bag-box-ui-contract.test.js",
                 "resolvedPath": "tests/unit/hub-bag-box-ui-contract.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/hub-director-todo-age.test.js",
+                "resolvedPath": "tests/unit/hub-director-todo-age.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -19007,7 +19012,7 @@
             ]
           }
         },
-        "totalFiles": 188,
+        "totalFiles": 189,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,

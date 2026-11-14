@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-11-13T09:26:52.135Z",
+  "generatedAt": "2026-11-13T15:21:10.599Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 824,
+  "count": 826,
   "routes": [
     {
       "method": "GET",
@@ -3012,6 +3012,16 @@
       ]
     },
     {
+      "method": "GET",
+      "fullPath": "/api/admin/workspaces/pricing/market/:marketCode/economic-p0-audit",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/market/:marketCode/economic-p0-audit",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
       "method": "POST",
       "fullPath": "/api/admin/workspaces/pricing/market/:marketCode/price-observations",
       "mountPrefix": "/api/admin/workspaces/pricing",
@@ -4912,6 +4922,16 @@
       "fullPath": "/api/hub/box/:unit_id/shipment",
       "mountPrefix": "/api/hub",
       "localPath": "/box/:unit_id/shipment",
+      "routeFile": "routes/hub.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/hub/director-todo",
+      "mountPrefix": "/api/hub",
+      "localPath": "/director-todo",
       "routeFile": "routes/hub.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"

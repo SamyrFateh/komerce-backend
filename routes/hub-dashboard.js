@@ -27,16 +27,18 @@
  * GET  /queue           — File de travail priorisée
  * GET  /orders/:id      — Détail complet commande + colis + paiement + client
  * GET  /validate/:id    — Validations anti-erreur avant action
- * POST /orders/:id/start-prep   — Démarrer préparation
- * POST /orders/:id/create-parcel — Créer colis (complet ou partiel)
- * POST /parcels/:id/add-item    — Ajouter article au colis
- * POST /parcels/:id/remove-item — Retirer article du colis
- * POST /parcels/:id/ready       — Marquer colis prêt
- * POST /parcels/:id/ship        — Expédier colis + transport
+ * POST /orders/:id/start-prep   — 410 (fermé)
+ * POST /orders/:id/create-parcel — 410 (fermé)
+ * POST /parcels/:id/add-item    — 410 (fermé)
+ * POST /parcels/:id/remove-item — 410 (fermé)
+ * POST /parcels/:id/ready       — 410 (fermé)
+ * POST /parcels/:id/ship        — 410 (fermé)
+ * POST /orders/:id/auto-prepare  — 410 (fermé)
+ * POST /parcels/:id/reassign-item — 410 (fermé)
  * POST /orders/:id/incident     — Signaler incident
  * POST /orders/:id/escalate     — Escalader admin
  * POST /orders/:id/comment      — Commentaire terrain
- * POST /orders/:id/backorder    — Marquer en attente fournisseur
+ * POST /orders/:id/backorder    — 410 (fermé)
  */
 
 'use strict';
@@ -47,24 +49,6 @@ const db      = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { attachMarketDelegatedRoleFor } = require('../middleware/require-market-delegated-role');
 const { requireMarketDelegatedCapability, attachAuthorizedMarketsForCapability } = require('../middleware/require-market-delegated-capability');
-const { safeSyncScanToParcels } = require('../utils/parcelSync');
-const { generateParcelRef } = require('../utils/reference');
-const { transitionOrderStatus } = require('../services/order-status-machine');
-const { recordHubPreparationScan } = require('../services/scan-write-service');
-const {
-  assignWholeOrderItemToParcel,
-  assignParcelItem,
-  addParcelItemTraced,
-  removeParcelItemTraced,
-  reassignParcelItem,
-} = require('../services/parcel-item-mutation-service');
-const { listOrdersRepresentedByParcel } = require('../services/parcel-order-membership');
-const {
-  createHubParcel,
-  createAutoPreparedParcel,
-  setParcelWeight,
-  appendParcelShipmentInfo,
-} = require('../services/parcel-mutation-service');
 const log = require('../utils/logger').child({ module: 'hub-dashboard' });
 const hubQueries = require('../services/hub-dashboard-queries');
 const { wantsSimulation } = require('../services/simulation-visibility');
@@ -184,405 +168,25 @@ router.get('/validate/:id', ...hubRead, async (req, res, next) => {
   } catch(e) { next(e); }
 });
 
-router.post('/orders/:id/start-prep', ...hubAuth, async (req, res, next) => {
-  try {
-    const { rows } = await db.query(
-      "SELECT id, status, reference FROM orders WHERE id = $1",
-      [req.params.id]
-    );
-    if (!rows.length) return res.status(404).json({ error: 'Commande introuvable' });
-    const order = rows[0];
-
-    if (!['confirmed', 'ordered'].includes(order.status)) {
-      return res.status(400).json({
-        error: `Impossible de préparer — statut actuel: ${order.status}`,
-        hint: 'La commande doit être confirmée ou commandée'
-      });
-    }
-
-    const _prepResult = await transitionOrderStatus({
-      orderId: order.id,
-      newStatus: 'preparation',
-      actor: { id: req.user?.id || null, role: req.user?.role || 'system' },
-      source: 'hub_start_prep',
-    });
-    if (!_prepResult.success) {
-      log.warn(`[HUB] transitionOrderStatus failed for ${order.id}: ${_prepResult.error}`);
-      if (_prepResult.code === 'PHYSICAL_RECEPTION_INCOMPLETE') {
-        return res.status(409).json({ error: _prepResult.error, code: _prepResult.code, coverage: _prepResult.coverage });
-      }
-    }
-
-    const scanCodePrep = `HUB-PREP-${order.id.slice(0, 8).toUpperCase()}`;
-    await recordHubPreparationScan(db, {
-      orderId: order.id,
-      scannedBy: req.user.id,
-      notes: `Pr\u00e9paration d\u00e9marr\u00e9e par ${req.user.full_name || 'hub'}`,
-      scanCode: scanCodePrep,
-    });
-
-    await db.query(`
-      INSERT INTO order_comments (order_id, author_id, author_name, text)
-      VALUES ($1, $2, 'Hub', 'Préparation démarrée')
-    `, [order.id, req.user.id]);
-
-    res.json({ message: `Commande ${order.reference} en préparation`, status: 'preparation' });
-  } catch(e) { next(e); }
-});
-
-router.post('/orders/:id/create-parcel', ...hubAuth, async (req, res, next) => {
-  try {
-    const { type = 'standard', notes, item_ids } = req.body;
-    const { rows } = await db.query('SELECT id, reference FROM orders WHERE id = $1', [req.params.id]);
-    if (!rows.length) return res.status(404).json({ error: 'Commande introuvable' });
-    const order = rows[0];
-
-    const reference = await generateParcelRef(db);
-    let external_code = null, seal_code = null;
-    try {
-      const security = require('../services/parcel-security');
-      external_code = security.generateExternalCode();
-      seal_code = security.generateSealCode();
-    } catch(e) {}
-
-    const parcel = await createHubParcel(db, {
-      reference,
-      externalCode: external_code,
-      sealCode: seal_code,
-      orderId: order.id,
-      type,
-      notes,
-    });
-
-    if (item_ids && item_ids.length) {
-      for (const itemId of item_ids) {
-        await assignWholeOrderItemToParcel(db, {
-          parcelId: parcel.id,
-          orderItemId: itemId,
-          orderId: order.id,
-        }).catch(() => {});
-      }
-    }
-
-    await db.query(`
-      INSERT INTO order_comments (order_id, author_id, author_name, text)
-      VALUES ($1, $2, 'Hub', $3)
-    `, [order.id, req.user.id, `Colis ${reference} créé (${type})`]);
-
-    res.status(201).json({
-      message: `Colis ${reference} créé`,
-      parcel,
-      items_assigned: item_ids ? item_ids.length : 0
-    });
-  } catch(e) { next(e); }
-});
-
-router.post('/orders/:id/auto-prepare', ...hubAuth, async (req, res, next) => {
-  const client = await db.getClient();
-  try {
-    await client.query('BEGIN');
-
-    const { rows: [order] } = await client.query(
-      `SELECT id, reference, status FROM orders WHERE id = $1 FOR UPDATE`,
-      [req.params.id]
-    );
-    if (!order) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'Commande introuvable' }); }
-
-    if (!['confirmed', 'ordered', 'preparation'].includes(order.status)) {
-      await client.query('ROLLBACK');
-      return res.status(400).json({
-        error: `Auto-prepare impossible — statut: ${order.status}`,
-        hint: 'La commande doit être confirmée, commandée ou en préparation'
-      });
-    }
-
-    const { rows: unassigned } = await client.query(`
-      SELECT oi.id, oi.quantity, oi.product_id, p.name AS product_name, p.weight_kg
-      FROM order_items oi
-      LEFT JOIN products p ON p.id = oi.product_id
-      WHERE oi.order_id = $1
-        AND NOT EXISTS (
-          SELECT 1 FROM parcel_items pi
-          JOIN parcels pa ON pa.id = pi.parcel_id AND pa.status != 'cancelled'
-          WHERE pi.order_item_id = oi.id
-        )
-      ORDER BY oi.created_at ASC
-    `, [order.id]);
-
-    if (unassigned.length === 0) {
-      await client.query('ROLLBACK');
-      return res.json({
-        message: 'Tous les articles sont déjà assignés à un colis',
-        already_complete: true
-      });
-    }
-
-    if (['confirmed', 'ordered'].includes(order.status)) {
-      const _autoPrep = await transitionOrderStatus({
-        orderId: order.id,
-        newStatus: 'preparation',
-        actor: { id: req.user?.id || null, role: req.user?.role || 'system' },
-        source: 'hub_auto_prepare',
-        dbClient: client,
-      });
-      if (!_autoPrep.success && _autoPrep.code === 'PHYSICAL_RECEPTION_INCOMPLETE') {
-        await client.query('ROLLBACK');
-        return res.status(409).json({ error: _autoPrep.error, code: _autoPrep.code, coverage: _autoPrep.coverage });
-      }
-    }
-
-    const reference = await generateParcelRef(client);
-    let external_code = null, seal_code = null;
-    try {
-      const security = require('../services/parcel-security');
-      external_code = security.generateExternalCode();
-      seal_code = security.generateSealCode();
-    } catch(e) {}
-
-    const parcel = await createAutoPreparedParcel(client, {
-      reference,
-      externalCode: external_code,
-      sealCode: seal_code,
-      orderId: order.id,
-      notes: `Auto-cr\u00e9\u00e9 sur scan QR \u2014 ${unassigned.length} article(s)`,
-    });
-
-    for (const item of unassigned) {
-      await assignParcelItem(client, {
-        parcelId: parcel.id,
-        orderItemId: item.id,
-        productId: item.product_id,
-        quantity: item.quantity,
-      });
-    }
-
-    const totalWeight = unassigned.reduce((s, i) => s + ((i.weight_kg || 0.5) * i.quantity), 0);
-    await setParcelWeight(client, {
-      parcelId: parcel.id,
-      weightKg: Math.round(totalWeight * 100) / 100,
-    });
-
-    try {
-      await client.query('SAVEPOINT sp_scans_auto_prepare');
-      const scanCodeAuto = `HUB-AUTO-${order.id.slice(0, 8).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`;
-      await recordHubPreparationScan(client, {
-        orderId: order.id,
-        scannedBy: req.user.id,
-        notes: `Auto-prepare: colis ${reference} cr\u00e9\u00e9, ${unassigned.length} article(s) assign\u00e9(s)`,
-        scanCode: scanCodeAuto,
-      });
-      await client.query('RELEASE SAVEPOINT sp_scans_auto_prepare');
-    } catch(e) {
-      await client.query('ROLLBACK TO SAVEPOINT sp_scans_auto_prepare').catch(() => {});
-      log.warn('[HUB] scan auto-prepare skipped:', e.message);
-    }
-
-    await client.query(`
-      INSERT INTO order_comments (order_id, author_id, author_name, text)
-      VALUES ($1, $2, 'Hub', $3)
-    `, [order.id, req.user.id, `📦 Auto-prepare: colis ${reference} créé (${unassigned.length} article(s))`]);
-
-    await client.query('COMMIT');
-    const { rows: [fullParcel] } = await db.query('SELECT * FROM parcels WHERE id = $1', [parcel.id]);
-
-    res.status(201).json({
-      message: `Colis ${reference} créé automatiquement — ${unassigned.length} article(s) assigné(s)`,
-      parcel: fullParcel,
-      items_assigned: unassigned.length,
-      items: unassigned.map(i => ({ id: i.id, product_name: i.product_name, quantity: i.quantity })),
-      next_action: 'ready',
-    });
-  } catch(e) {
-    await client.query('ROLLBACK').catch(() => {});
-    next(e);
-  } finally {
-    client.release();
-  }
-});
-
-// ── HUB-A : colis multi-commandes / réaffectations tracées ─────────────────
-// Le Hub organise librement ses colis : une ligne de n'importe quelle commande
-// (même destination) peut rejoindre un colis ; chaque mouvement est tracé dans
-// parcel_events et conserve identité, quantité et compteurs qty_*.
-async function withHubTransaction(work) {
-  const client = await db.getClient();
-  try {
-    await client.query('BEGIN');
-    const out = await work(client);
-    await client.query('COMMIT');
-    return out;
-  } catch (e) {
-    await client.query('ROLLBACK').catch(() => {});
-    throw e;
-  } finally {
-    client.release();
-  }
+// HB-09 (#3998) : une seule autorité physique Hub ; chemins historiques
+// conservés temporairement avec réponse 410, authentification et rôles inchangés.
+// Aucun writer, scan simulé, transition de statut ou modification de colis ici.
+function legacyHubWriterClosed(_req, res) {
+  return res.status(410).json({
+    code: 'HUB_LEGACY_WRITER_CLOSED',
+    error: 'Cette écriture Hub historique est fermée. Utiliser le parcours physique canonique.',
+    canonical: '/admin/hub',
+  });
 }
-
-function sendMutationError(res, e) {
-  if (e && e.code && e.status) return res.status(e.status).json({ error: e.message, code: e.code });
-  return null;
-}
-
-router.post('/parcels/:id/add-item', ...hubAuth, async (req, res, next) => {
-  try {
-    const { order_item_id, quantity } = req.body;
-    if (!order_item_id) return res.status(400).json({ error: 'order_item_id requis' });
-
-    const out = await withHubTransaction((client) => addParcelItemTraced(client, {
-      parcelId: req.params.id, orderItemId: order_item_id, quantity, actorId: req.user.id,
-    }));
-    res.json({ message: 'Article ajout\u00e9', item: out.row || { already_assigned: true }, order_id: out.order_id });
-  } catch(e) { if (!sendMutationError(res, e)) next(e); }
-});
-
-router.post('/parcels/:id/reassign-item', ...hubAuth, async (req, res, next) => {
-  try {
-    const { order_item_id, to_parcel_id, reason } = req.body;
-    if (!order_item_id || !to_parcel_id) {
-      return res.status(400).json({ error: 'order_item_id et to_parcel_id requis' });
-    }
-    const out = await withHubTransaction((client) => reassignParcelItem(client, {
-      fromParcelId: req.params.id, toParcelId: to_parcel_id, orderItemId: order_item_id,
-      actorId: req.user.id, reason,
-    }));
-    res.json({
-      message: `Article réaffecté ${out.from.reference} → ${out.to.reference}`,
-      item: out.moved, from_parcel_id: out.from.id, to_parcel_id: out.to.id, order_id: out.order_id,
-    });
-  } catch(e) { if (!sendMutationError(res, e)) next(e); }
-});
-
-router.post('/parcels/:id/remove-item', ...hubAuth, async (req, res, next) => {
-  try {
-    const { order_item_id } = req.body;
-    if (!order_item_id) return res.status(400).json({ error: 'order_item_id requis' });
-
-    const deleted = await withHubTransaction((client) => removeParcelItemTraced(client, {
-      parcelId: req.params.id, orderItemId: order_item_id, actorId: req.user.id,
-    }));
-
-    if (!deleted) return res.status(404).json({ error: 'Article non trouv\u00e9 dans ce colis' });
-    res.json({ message: 'Article retir\u00e9', deleted });
-  } catch(e) { if (!sendMutationError(res, e)) next(e); }
-});
-
-router.post('/parcels/:id/ready', ...hubAuth, async (req, res, next) => {
-  try {
-    const { rows: [parcel] } = await db.query(
-      "SELECT id, order_id, reference, status FROM parcels WHERE id = $1",
-      [req.params.id]
-    );
-    if (!parcel) return res.status(404).json({ error: 'Colis introuvable' });
-
-    // HUB-A : chaque commande représentée par le colis doit être entièrement emballée.
-    const representedOrders = await listOrdersRepresentedByParcel(db, parcel.id);
-    if (!representedOrders.includes(parcel.order_id)) representedOrders.push(parcel.order_id);
-    for (const orderId of representedOrders) {
-      const { rows: [cov] } = await db.query(`
-        SELECT COUNT(oi.id) AS total,
-               COUNT(pi.order_item_id) FILTER (WHERE pa.status <> 'cancelled') AS packed
-        FROM order_items oi
-        LEFT JOIN parcel_items pi ON pi.order_item_id = oi.id
-        LEFT JOIN parcels pa ON pa.id = pi.parcel_id
-        WHERE oi.order_id = $1
-      `, [orderId]);
-      if (parseInt(cov.total) === 0 || parseInt(cov.packed) < parseInt(cov.total)) {
-        return res.status(400).json({
-          error: 'Colis incomplet',
-          hint: `${cov.packed}/${cov.total} article(s) emballé(s) — emballez tout avant de marquer prêt`
-        });
-      }
-    }
-
-    await safeSyncScanToParcels({
-      order_id: parcel.order_id,
-      step: 'preparation',
-      scan_id: null,
-      scanned_by: req.user.id,
-      notes: `Colis ${parcel.reference} prêt`
-    });
-
-    res.json({ message: `Colis ${parcel.reference} prêt`, status: 'preparation' });
-  } catch(e) { next(e); }
-});
-
-router.post('/parcels/:id/ship', ...hubAuth, async (req, res, next) => {
-  try {
-    const { transport, batch_id, notes } = req.body;
-
-    const { rows: [parcel] } = await db.query(
-      "SELECT id, order_id, reference, status FROM parcels WHERE id = $1",
-      [req.params.id]
-    );
-    if (!parcel) return res.status(404).json({ error: 'Colis introuvable' });
-    if (parcel.status === 'draft') {
-      return res.status(400).json({ error: 'Colis non préparé', hint: 'Marquez le colis prêt avant de l’expédier' });
-    }
-
-    const { rows: [itemCheck] } = await db.query(
-      'SELECT COUNT(*) AS cnt FROM parcel_items WHERE parcel_id = $1',
-      [parcel.id]
-    );
-    if (parseInt(itemCheck.cnt) === 0) {
-      return res.status(400).json({
-        error: 'Impossible — colis vide',
-        hint: 'Ajoutez des articles et marquez prêt avant expédition'
-      });
-    }
-
-    // HUB-A : la règle de paiement existante (payée ou cash_relais) s'applique
-    // à CHAQUE commande représentée par le colis — jamais assouplie.
-    const shippedOrders = await listOrdersRepresentedByParcel(db, parcel.id);
-    if (!shippedOrders.includes(parcel.order_id)) shippedOrders.push(parcel.order_id);
-    const { rows: shippedOrderRows } = await db.query(
-      'SELECT payment_mode, payment_status, reference FROM orders WHERE id = ANY($1::uuid[])',
-      [shippedOrders]
-    );
-    const unpaid = shippedOrderRows.find(o => o.payment_status !== 'paid' && o.payment_mode !== 'cash_relais');
-    if (unpaid) {
-      return res.status(400).json({
-        error: `⚠️ Commande ${unpaid.reference} non payée`,
-        hint: 'Vérifiez le paiement avant expédition'
-      });
-    }
-
-    const shipmentSync = await safeSyncScanToParcels({
-      order_id: parcel.order_id,
-      step: 'shipped',
-      scan_id: null,
-      scanned_by: req.user.id,
-      notes: notes || `Expédié par hub — transport: ${transport || 'non spécifié'}`
-    });
-
-    // L'expédition est une transition métier : une sync silencieusement échouée
-    // ne peut jamais produire un HTTP 200 ni un commentaire « expédié ».
-    if (!shipmentSync.synced) {
-      return res.status(503).json({
-        error: 'Synchronisation de l’expédition non confirmée',
-        code: 'SHIPMENT_SYNC_FAILED',
-        retryable: true,
-      });
-    }
-
-    await appendParcelShipmentInfo(db, {
-      parcelId: parcel.id,
-      note: `\n[SHIPPED] ${new Date().toISOString()} | transport: ${transport || '-'} | batch: ${batch_id || '-'}`,
-    });
-
-    await db.query(`
-      INSERT INTO order_comments (order_id, author_id, author_name, text)
-      VALUES ($1, $2, 'Hub', $3)
-    `, [parcel.order_id, req.user.id,
-       `Colis ${parcel.reference} expédié — ${transport || 'transport non précisé'}`]);
-
-    res.json({
-      message: `Colis ${parcel.reference} expédié ✈️`,
-      status: 'shipped',
-      transport: transport || null
-    });
-  } catch(e) { next(e); }
-});
+router.post('/orders/:id/start-prep', ...hubAuth, legacyHubWriterClosed);
+router.post('/orders/:id/create-parcel', ...hubAuth, legacyHubWriterClosed);
+router.post('/orders/:id/auto-prepare', ...hubAuth, legacyHubWriterClosed);
+router.post('/parcels/:id/add-item', ...hubAuth, legacyHubWriterClosed);
+router.post('/parcels/:id/reassign-item', ...hubAuth, legacyHubWriterClosed);
+router.post('/parcels/:id/remove-item', ...hubAuth, legacyHubWriterClosed);
+router.post('/parcels/:id/ready', ...hubAuth, legacyHubWriterClosed);
+router.post('/parcels/:id/ship', ...hubAuth, legacyHubWriterClosed);
+router.post('/orders/:id/backorder', ...hubAuth, legacyHubWriterClosed);
 
 const INCIDENT_TYPES = ['retard', 'blocage', 'paiement', 'stock', 'colis_endommage', 'colis_perdu', 'client_absent', 'autre'];
 
@@ -685,31 +289,5 @@ router.post('/orders/:id/comment', ...hubSupervise, validateCommentBody, resolve
   } catch(e) { next(e); }
 });
 
-router.post('/orders/:id/backorder', ...hubAuth, async (req, res, next) => {
-  try {
-    const { reason, items_waiting } = req.body;
-
-    const { rows: [order] } = await db.query(
-      'SELECT id, reference FROM orders WHERE id = $1', [req.params.id]
-    );
-    if (!order) return res.status(404).json({ error: 'Commande introuvable' });
-
-    await db.query(`
-      INSERT INTO order_incidents (order_id, type, description, priority, reporter_id)
-      VALUES ($1, 'stock', $2, 'normal', $3)
-    `, [order.id, reason || 'En attente fournisseur', req.user.id]);
-
-    await db.query(`
-      INSERT INTO order_comments (order_id, author_id, author_name, text)
-      VALUES ($1, $2, 'Hub', $3)
-    `, [order.id, req.user.id,
-       `📦 Backorder: ${reason || 'En attente fournisseur'}${items_waiting ? ` (${items_waiting.length} articles)` : ''}`]);
-
-    res.json({
-      message: `Commande ${order.reference} marquée en attente`,
-      status: 'backorder'
-    });
-  } catch(e) { next(e); }
-});
 
 module.exports = router;

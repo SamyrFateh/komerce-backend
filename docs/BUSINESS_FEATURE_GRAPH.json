@@ -13893,6 +13893,13 @@
       {
         "feature": "logistics",
         "category": "tests",
+        "declared": "tests/unit/hub-director-todo-age.test.js",
+        "resolvedPath": "tests/unit/hub-director-todo-age.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
         "declared": "tests/unit/hub-order-status.test.js",
         "resolvedPath": "tests/unit/hub-order-status.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -40074,6 +40081,10 @@
                 "targetFile": "routes/purchasing.js"
               },
               {
+                "sourceFileId": "bootstrap/crons.js",
+                "targetFile": "services/purchasing-completion-service.js"
+              },
+              {
                 "sourceFileId": "tests/integration/o9-1-critical-runtime-proofs.test.js",
                 "targetFile": "services/purchasing-trigger-service.js"
               }
@@ -47253,6 +47264,10 @@
                 "targetFile": "services/scan-operations.js"
               },
               {
+                "sourceFileId": "services/purchasing-completion-service.js",
+                "targetFile": "services/auto-parcel.js"
+              },
+              {
                 "sourceFileId": "tests/integration/supplier-source-anomaly-postgres.test.js",
                 "targetFile": "services/hub-procurement-dossier.js"
               },
@@ -49775,7 +49790,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2332
+        "filesObserved": 2333
       },
       "boutique": {
         "filesObserved": 216,
@@ -54002,7 +54017,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "infrastructure -> purchasing",
-        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"purchasing\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"purchasing\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
