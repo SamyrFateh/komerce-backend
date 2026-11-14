@@ -144,9 +144,13 @@ async function projectGoldenEvidence(db, order) {
     SELECT oi.id AS order_item_id, oi.quantity AS ordered_qty,
            COALESCE(SUM(pl.quantity) FILTER (
              WHERE pl.cancelled_at IS NULL AND pl.purchase_order_id IS NOT NULL
+               AND oi.sku_id IS NOT NULL
+               AND pl.product_sku_id = oi.sku_id
            ), 0) AS purchased_qty,
            COALESCE(SUM(pl.quantity) FILTER (
              WHERE pl.cancelled_at IS NULL AND pl.purchase_order_id IS NOT NULL
+               AND oi.sku_id IS NOT NULL
+               AND pl.product_sku_id = oi.sku_id
                AND EXISTS (
                  SELECT 1 FROM supplier_execution_payments sep
                   WHERE sep.purchase_order_id = pl.purchase_order_id
