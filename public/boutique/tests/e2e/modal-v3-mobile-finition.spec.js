@@ -432,3 +432,26 @@ test.describe('PDP mobile retouches 2026-11 — Mini-héro V4 canonique', () => 
     });
   }
 });
+
+
+test('PDP mobile retouches 2026-11 — SKU : le mini-héro suit prix et média sélectionnés', async ({ page }) => {
+  const entry = await openMiniheroContractFixture(page, { width: 390, height: 844 }, 'elite');
+  await selectOptions(page, entry.validSelection);
+  await page.locator('#k-modal .k-modal-scroll').evaluate((el) => { el.scrollTop = el.scrollHeight; });
+  await expect(page.locator('#k-modal')).toHaveClass(/is-scrolled/);
+  const sync = await page.evaluate(async () => {
+    const { optimizeImgUrl } = await import('/boutique/js/b-utils.js');
+    const url = window._kstate?.modalSelection?.selected_media?.[0]?.url;
+    return {
+      hasMedia: Boolean(url),
+      imageSynced: Boolean(url) && document.querySelector('.k-topbar-thumb-img')?.getAttribute('src') === optimizeImgUrl(url, 120),
+      priceSynced: document.querySelector('.k-topbar-price-val')?.textContent === document.querySelector('#k-modal-price')?.textContent,
+      skuResolved: Boolean(window._kstate?.modalSelection?.selected_sku_id),
+    };
+  });
+  expect(sync.hasMedia).toBe(true);
+  expect(sync.imageSynced).toBe(true);
+  expect(sync.priceSynced).toBe(true);
+  expect(sync.skuResolved).toBe(true);
+  await shot(page, 'mobile-pdp-minihero-sku-390.png');
+});
