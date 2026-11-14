@@ -892,14 +892,14 @@
     width: 132px;
   }
   #k-modal .k-modal-product-zone .k-modal-actions .k-add-cart-btn {
-    flex: 0 0 112px; width: 112px; height: 48px; border-radius: 999px;
+    flex: 0 0 calc(45% - 4px); width: auto; height: 48px; border-radius: 999px;
     background: var(--white); color: var(--action-commerce-text); border: 1.5px solid var(--action-commerce-border);
     font-size: 14px; font-weight: 700;
     /* P0 fix (DIFF-pdp-desktop-simple-vs-enrichi) : overflow:hidden hérité de la
        règle de base fait retomber le min-width automatique du flex-item à 0 au
        lieu de la largeur du texte → troncature ("Ajouter au pa…"). On neutralise
        ici, desktop uniquement. */
-    overflow: visible; text-overflow: clip; min-width: 112px;
+    overflow: visible; text-overflow: clip; min-width: 128px;
   }
   #k-modal .k-modal-product-zone .k-modal-actions.k-modal-actions--filled .k-add-cart-btn {
     display: none;
@@ -1342,9 +1342,9 @@
    LOT 6D — SUGGESTIONS TRANSVERSALES DESKTOP
 
    row 1 : ProductMedia | ProductBuyBox
-   row 2 : Suggestions pleine largeur
-   row 3 : Description longue
-   row 4 : Contenu enrichi
+   row 2 : Description longue
+   row 3 : Suggestions pertinentes
+   row 4 : Contenu enrichi complémentaire (après les suggestions)
 
    Le RightRail ne possède plus les suggestions.
    Leur présentation interne reste celle du renderer desktop historique.
@@ -1352,7 +1352,7 @@
 @media (min-width: 900px) {
   #k-modal .k-modal-product-zone > #k-modal-suggestions {
     grid-column: 1 / -1;
-    grid-row: 4;
+    grid-row: 3;
     align-self: start;
     box-sizing: border-box;
     width: 100%;
@@ -1372,7 +1372,7 @@
 
   #k-modal .k-modal-product-zone > #k-modal-enriched-content {
     grid-column: 1 / -1;
-    grid-row: 3;
+    grid-row: 4;
   }
 }
 
