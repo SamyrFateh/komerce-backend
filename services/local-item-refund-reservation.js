@@ -8,7 +8,7 @@
  * @outputs       native-currency durable refund obligation, NEVER a payout
  * @depends       db, migrations/416_fable_local_item_refund_reservations.sql
  * @used-by       routes/admin/orders.js
- * @db-read       orders, order_items, incidents, international_shipment_relay_receipts, cash_collections, mobile_money_transactions, refunds, refund_execution_intents, order_item_refund_reservations
+ * @db-read       orders, order_items, incidents, international_shipment_relay_receipts, cash_collections, mobile_money_transactions, markets, refunds, refund_execution_intents, order_item_refund_reservations
  * @db-write      local_item_refund_reservations
  * @db-txn        order lock, captured amount and verified shortage, insert then COMMIT
  * @doctrine      payer_original_only, no_wallet_fallback, no_double_refund, no_unverified_payout
