@@ -113,13 +113,25 @@ async function distributeOrderLocked(orderId, dbClient) {
   // jamais d'article non approvisionne ou non recu avec des articles prets : ceux-la restent sans colis jusqu'a reception.
   // Rupture définitive : le colis part avec la quantité reçue (le manquant est remboursé en amont).
   const shortReceived = (item) => item.closed_short === true && Number(item.received) > 0 && Number(item.received) < Number(item.quantity || 1);
-  const laneOf = (item) => item.fulfillment_source === 'IMPORT'
-    ? ((Number(item.received) >= Number(item.quantity || 1) || shortReceived(item)) ? 'import' : 'import_pending')
-    : 'local';
+  // LOCAL_STOCK n'a aucune étape Hub : réception physique et création du
+  // seul colis local sont du ressort de local-relay-receipt-service.
+  // Une commande mixte garde ses lignes locales en attente au relais tandis
+  // que ses lignes IMPORT reçues peuvent être réparties au Hub.
+  // Provenance inconnue = refus, jamais requalifiée implicitement en local.
+  const laneOf = (item) => {
+    if (item.fulfillment_source === 'LOCAL_STOCK') return 'local_direct';
+    if (item.fulfillment_source === 'IMPORT') {
+      return (Number(item.received) >= Number(item.quantity || 1) || shortReceived(item))
+        ? 'import' : 'import_pending';
+    }
+    throw new Error('AUTO_PARCEL_FULFILLMENT_SOURCE_UNKNOWN');
+  };
   const groups = new Map();
   const deferred = [];
+  let directLocalItems = 0;
   for (const item of allItems) {
     const lane = laneOf(item);
+    if (lane === 'local_direct') { directLocalItems++; continue; }
     if (lane === 'import' && shortReceived(item)) item.quantity = Number(item.received);
     if (lane === 'import_pending') { deferred.push(item.id); continue; }
     if (!groups.has(lane)) groups.set(lane, []);
@@ -127,7 +139,10 @@ async function distributeOrderLocked(orderId, dbClient) {
   }
   if (groups.size === 0) {
     return { success: true, order_ref: order.reference, nothing_eligible: true, deferred_items: deferred.length,
-      reason: 'Aucun article pret (import non recu au Hub) : aucun colis cree' };
+      local_direct_items: directLocalItems,
+      reason: directLocalItems && !deferred.length
+        ? 'LOCAL_STOCK : réception attestée directement au relais, aucun colis Hub'
+        : 'Aucun article IMPORT reçu au Hub : aucun colis créé' };
   }
 
   const relaisId = order.relais_id;
@@ -139,7 +154,8 @@ async function distributeOrderLocked(orderId, dbClient) {
     outcomes.push({ ...outcome, lane });
   }
   const { lane: _lane, ...first } = outcomes[0];
-  const extra = deferred.length ? { deferred_items: deferred.length } : {};
+  const extra = { ...(deferred.length ? { deferred_items: deferred.length } : {}),
+    ...(directLocalItems ? { local_direct_items: directLocalItems } : {}) };
   return outcomes.length === 1
     ? { ...first, ...extra }
     : { ...first, parcels: outcomes.map(o => ({ parcel_ref: o.parcel_ref, lane: o.lane, items_assigned: o.items_assigned })), ...extra };
@@ -267,6 +283,7 @@ async function distributeAll() {
       AND EXISTS (
         SELECT 1 FROM order_items oi
          WHERE oi.order_id = o.id
+           AND oi.fulfillment_source = 'IMPORT'
            AND NOT EXISTS (SELECT 1 FROM parcel_items pi JOIN parcels p ON p.id = pi.parcel_id AND p.status NOT IN ('cancelled')
                             WHERE pi.order_item_id = oi.id)
       )
@@ -343,6 +360,8 @@ async function getDistribution() {
     LEFT JOIN users u ON u.id = o.user_id
     LEFT JOIN relais r ON r.id = o.relais_id
     WHERE o.status IN ('ordered', 'preparation')
+      AND EXISTS (SELECT 1 FROM order_items oi
+                   WHERE oi.order_id = o.id AND oi.fulfillment_source = 'IMPORT')
       AND NOT EXISTS (
         SELECT 1 FROM parcel_items pi
         JOIN order_items oi ON oi.id = pi.order_item_id

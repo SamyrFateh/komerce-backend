@@ -2499,7 +2499,7 @@ Meta Graph monté : oui.
 | logistics | documents | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
 | logistics | economic-engine | static-code | 1 | **OBSERVED_UNDECLARED** |
 | logistics | incident-management | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
-| logistics | infrastructure | static-code | 120 | **DECLARED_AND_OBSERVED** |
+| logistics | infrastructure | static-code | 121 | **DECLARED_AND_OBSERVED** |
 | logistics | local-stock | data-read | 2 | **DECLARED_AND_OBSERVED** |
 | logistics | loyalty | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | logistics | market | static-code | 3 | **DECLARED_AND_OBSERVED** |
@@ -2577,7 +2577,7 @@ Meta Graph monté : oui.
 | orders | economic-engine | static-code | 10 | **DECLARED_AND_OBSERVED** |
 | orders | infrastructure | static-code, interface | 70 | **DECLARED_AND_OBSERVED** |
 | orders | local-stock | static-code, interface | 5 | **DECLARED_AND_OBSERVED** |
-| orders | logistics | static-code, interface, data-read | 37 | **DECLARED_AND_OBSERVED** |
+| orders | logistics | static-code, interface, data-read | 38 | **DECLARED_AND_OBSERVED** |
 | orders | loyalty | static-code | 7 | **DECLARED_AND_OBSERVED** |
 | orders | market | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | orders | market-autonomy | static-code | 5 | **DECLARED_AND_OBSERVED** |
