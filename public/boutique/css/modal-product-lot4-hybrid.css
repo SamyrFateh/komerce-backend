@@ -360,39 +360,6 @@
     padding: 22px clamp(22px, 3vw, 42px) 36px;
   }
 
-  /* Compact horizontal recommendations from the approved PDP mock. */
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card {
-    display: grid;
-    grid-template-columns: 96px minmax(0, 1fr);
-    grid-template-rows: auto auto auto;
-    min-height: 108px;
-    align-content: center;
-  }
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-img {
-    grid-column: 1;
-    grid-row: 1 / -1;
-    width: 96px;
-    height: 100%;
-    min-height: 108px;
-    aspect-ratio: auto;
-    align-self: stretch;
-  }
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-name {
-    grid-column: 2;
-    grid-row: 1;
-    padding: 10px 10px 2px;
-  }
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-reason {
-    grid-column: 2;
-    grid-row: 2;
-    padding: 0 10px;
-  }
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-bottom {
-    grid-column: 2;
-    grid-row: 3;
-    padding: 2px 10px 10px;
-  }
-
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-title {
     border-bottom: 0;
   }
