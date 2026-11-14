@@ -65,6 +65,7 @@ module.exports = {
       'services/item-refund-psp-orchestrator.js',
       'services/refund-intent-ledger.js',
       'services/paypal-refund-authority.js',
+      'services/stripe-refund-authority.js',
       'services/sav-ledger-refund.js',
       'services/refund-evidence-verifier.js',
       'services/refund-intent-reconciliation.js',
@@ -153,6 +154,8 @@ module.exports = {
 
   // ── Invariants propres ───────────────────────────────────────────────────
   invariants: [
+    { statement: 'FA-04/08 F3 : annulation Stripe reserve l intention avant COMMIT metier, jamais de POST fournisseur sous transaction, un resultat inconnu ne declenche aucun fallback wallet et reste a rapprocher',
+      test: 'tests/unit/orders-cancel-route.test.js' },
     { statement: 'RC-9 deux connexions PostgreSQL reelles serialisent reserve et claim sans double intention ni double execution', test: 'tests/e2e-api/refunds.intents-physical-concurrency.e2e.test.js' },
     { statement: 'FA-05/21 F3 : PayPal admin reserve et claim une intention durable avant POST, rejeu/timeout inconnus sont sans nouveau POST, settlement partiel confirme sans clore la commande, activation sandbox explicite',
       test: 'tests/unit/paypal-refund-authority.test.js' },
