@@ -212,7 +212,7 @@
   }
 
   #k-modal .k-modal-carousel-handle--prev {
-    left: calc(68px + 10px + 12px);
+    left: calc(var(--k-pdp-thumb-size, 68px) + var(--k-pdp-thumb-gap, 10px) + 12px);
   }
 
   #k-modal .k-modal-carousel-handle--next {
