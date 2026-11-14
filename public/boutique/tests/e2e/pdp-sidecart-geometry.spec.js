@@ -398,9 +398,29 @@ test('AUDIT VISUEL — vraie fiche débardeur CM, sans fixture ni mutation', asy
   await page.locator('#k-modal .k-modal-main').evaluate(el => { el.scrollTop = 380; });
   await page.waitForTimeout(400);
   await page.screenshot({ path: path.join(out, 'cm-real-after-scroll-1586x992.png'), animations: 'disabled' });
+  const thumbs = page.locator('#k-modal .k-modal-thumb');
+  if (await thumbs.count() >= 5) {
+    await thumbs.last().click();
+    await page.waitForTimeout(350);
+    await page.screenshot({ path: path.join(out, 'cm-real-last-thumbnail-1586x992.png'), animations: 'disabled' });
+  }
   console.log('PDP_CM_REAL_FIDELITY_AUDIT', JSON.stringify(audit));
   expect(audit.productTitle.toLowerCase()).toContain('débardeur');
   expect(audit.gallery).not.toBeNull();
   expect(audit.buybox).not.toBeNull();
   expect(audit.side).not.toBeNull();
+  // Cibles du mock validé à 1586 × 992 : la fixture ne fait pas foi,
+  // ce contrat s'exécute sur le produit CM et ses vraies images.
+  expect(audit.sideRatio).toBeGreaterThan(.16);
+  expect(audit.sideRatio).toBeLessThan(.20);
+  expect(audit.galleryRatio).toBeGreaterThan(.33);
+  expect(audit.galleryRatio).toBeLessThan(.39);
+  expect(audit.buyboxRatio).toBeGreaterThan(.40);
+  expect(audit.buyboxRatio).toBeLessThan(.48);
+  expect(audit.buyButtonRatio).toBeGreaterThan(.51);
+  expect(audit.buyButtonRatio).toBeLessThan(.59);
+  expect(audit.galleryThumbGap).toBeGreaterThanOrEqual(20);
+  expect(audit.galleryThumbGap).toBeLessThanOrEqual(26);
+  expect(audit.suggestions.y).toBeGreaterThanOrEqual(audit.details.bottom);
+  expect(audit.suggestions.y - audit.details.bottom).toBeLessThan(48);
 });
