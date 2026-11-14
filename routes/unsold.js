@@ -28,7 +28,10 @@ const { authenticate, requireAdmin } = require('../middleware/auth');
 // ── GET /api/unsold — liste des invendus disponibles ──────────────────────────
 router.get('/', authenticate, requireAdmin, async (req, res, next) => {
   try {
-    const { rows } = await db.query('SELECT * FROM v_unsold_pipeline');
+    const { rows } = await db.query(`SELECT v.* FROM v_unsold_pipeline v
+       JOIN unsold_items ui ON ui.id = v.id
+       JOIN orders o ON o.id = ui.order_id
+       WHERE o.payment_status IS DISTINCT FROM 'paid'`);
     res.json(rows);
   } catch(err) { next(err); }
 });
@@ -54,7 +57,10 @@ router.get('/stats/summary', authenticate, requireAdmin, async (req, res, next) 
         COUNT(*) FILTER (WHERE channel = 'whatsapp') AS canal_whatsapp,
         COUNT(*) FILTER (WHERE channel = 'reseller') AS canal_revendeur,
         COUNT(*) FILTER (WHERE channel = 'both')     AS canal_both
-      FROM v_unsold_pipeline
+      FROM v_unsold_pipeline v
+      JOIN unsold_items ui ON ui.id = v.id
+      JOIN orders o ON o.id = ui.order_id
+      WHERE o.payment_status IS DISTINCT FROM 'paid'
     `);
     res.json(rows[0]);
   } catch(err) { next(err); }
