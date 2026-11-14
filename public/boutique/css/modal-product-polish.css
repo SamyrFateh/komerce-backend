@@ -334,16 +334,6 @@
     font-weight: 700;
   }
 
-  #k-modal.is-scrolled .k-topbar-thumb {
-    width: 34px;
-    height: 34px;
-    flex-basis: 34px;
-  }
-
-  #k-modal.is-scrolled .k-topbar-name {
-    font-size: 12px;
-  }
-
   #k-modal.is-scrolled .k-topbar-price {
     gap: 4px;
   }

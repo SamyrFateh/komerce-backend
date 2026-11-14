@@ -819,6 +819,12 @@ import { optimizeImgUrl, fmtPrice, applyProductImageFallback } from './b-utils.j
     }
   }
 
+// Les événements du contrat détail sont le seul point de convergence entre
+// le renderer mobile et le rappel produit. Zéro import croisé, zéro listener
+// accumulé à chaque ouverture de modale.
+bus.on('modal:detail-ready', syncEnrichedTopbarProduct);
+bus.on('modal:selection-rendered', syncEnrichedTopbarProduct);
+
 // Surface publique ré-exportée par b-modal.js : buildCarouselSlides, goToSlide,
 // openSizeGuide, closeSizeGuide. Helpers consommés par openModal/closeModal :
 // _syncScrollPadding, setupModalFAB, hideModalFAB.

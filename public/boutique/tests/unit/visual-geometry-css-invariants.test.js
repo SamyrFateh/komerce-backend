@@ -969,8 +969,9 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
         /transform\s*:\s*translate\(-50%,\s*-50%\)/
       );
 
-      expect(polish).not.toMatch(
-        /#k-modal\.is-scrolled \.k-modal-cart-btn(?::active)?\s*\{/
+      // Panier centré uniquement au repos ; au scroll il rejoint la croix.
+      expect(polish).toMatch(
+        /#k-modal\.is-scrolled \.k-modal-cart-btn\s*\{[^}]*position\s*:\s*relative/
       );
     });
 
@@ -980,7 +981,7 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
       )?.[1] ?? '';
 
       expect(product).toMatch(
-        /max-width\s*:\s*calc\(50%\s*-\s*34px\)/
+        /max-width\s*:\s*none/
       );
       expect(product).toMatch(/margin-left\s*:\s*0/);
     });
