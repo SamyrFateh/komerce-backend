@@ -384,10 +384,28 @@ test.describe('PDP mobile retouches 2026-11 — Chromium geometry', () => {
   }
 });
 
+async function openV4GalleryFixture(page, viewport, key) {
+  await page.setViewportSize({ width: viewport.width, height: viewport.height });
+  await stubFixtureCatalogue(page);
+  const entry = catalogue.cases.find((item) => item.key === key);
+  const product = catalogue.products.find((item) => String(item.id) === String(entry.detail.product.id));
+  await page.goto('/boutique/index.html', { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => window._kbus && window._kstate, null, { timeout: 10000 });
+  await page.evaluate((item) => {
+    if (!window._kstate.products.some((p) => String(p.id) === String(item.id))) {
+      window._kstate.products.push(item);
+    }
+    window._kbus.emit('modal:open', { id: item.id });
+  }, product);
+  await expect(page.locator('#k-modal-overlay')).toHaveClass(/open/, { timeout: 8000 });
+  await expect(page.locator('#k-modal-name')).toHaveText(entry.detail.product.name, { timeout: 8000 });
+  return entry;
+}
+
 test.describe('PDP mobile retouches 2026-11 — Galerie & détails V4', () => {
   for (const viewport of VIEWPORTS) {
     test(`PDP mobile retouches 2026-11 — ${viewport.key} : galerie 16:9, favori réel et détails lisibles`, async ({ page }) => {
-      await openAt(page, viewport, 'stress');
+      await openV4GalleryFixture(page, viewport, 'stress');
       const hero = page.locator('#k-modal .k-modal-img-wrap');
       const favorite = page.locator('#k-modal .k-modal-img-wrap > #k-modal-fav-btn');
       await expect(hero).toBeVisible();
