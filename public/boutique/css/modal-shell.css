@@ -624,10 +624,7 @@
        simple, haute pour un produit à variantes nombreuses). */
   }
 
-  /* PDP v3.1 : sans contenu enrichi, aucun track vide n'est reserve. */
-  #k-modal .k-modal-product-zone.k-modal-product-zone--no-enriched {
-    grid-template-rows: auto auto auto;
-  }
+  /* Les quatre rangées gardent un ordre stable ; row-gap est nul en desktop. */
 
   /* ── Image : col gauche sticky ───────────────────────────── */
   /* height + overflow : owned par le bloc FIX ci-dessous (même fichier).
@@ -1336,41 +1333,31 @@
      exclusivement par le bloc LOT 6D plus bas. */
 }
 
-/* ══════════════════════════════════════════════════════════════════════════
-   LOT 6D — SUGGESTIONS TRANSVERSALES DESKTOP
-
-   row 1 : ProductMedia | ProductBuyBox
-   row 2 : Suggestions pleine largeur
-   row 3 : Description longue
-   row 4 : Contenu enrichi
-
-   Le RightRail ne possède plus les suggestions.
-   Leur présentation interne reste celle du renderer desktop historique.
-   ══════════════════════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════
+   PDP desktop canonique — mock validé (14/11/2026)
+   Rangée 1 : galerie | BuyBox
+   Rangée 2 : description intégrale
+   Rangée 3 : caractéristiques et contenu enrichi
+   Rangée 4 : recommandations toujours en dernier
+   Le DOM et le rendu mobile ne changent pas.
+   ══════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
-  #k-modal .k-modal-product-zone > #k-modal-suggestions {
+  #k-modal .k-modal-product-zone > .k-modal-long-details {
     grid-column: 1 / -1;
     grid-row: 2;
+  }
+  #k-modal .k-modal-product-zone > #k-modal-enriched-content {
+    grid-column: 1 / -1;
+    grid-row: 3;
+  }
+  #k-modal .k-modal-product-zone > #k-modal-suggestions {
+    grid-column: 1 / -1;
+    grid-row: 4;
     align-self: start;
     box-sizing: border-box;
     width: 100%;
     min-width: 0;
     margin-top: 0;
-  }
-
-  #k-modal .k-modal-product-zone.k-modal-product-zone--no-enriched
-  > #k-modal-suggestions {
-    grid-row: 2;
-  }
-
-  #k-modal .k-modal-product-zone > .k-modal-long-details {
-    grid-column: 1 / -1;
-    grid-row: 3;
-  }
-
-  #k-modal .k-modal-product-zone > #k-modal-enriched-content {
-    grid-column: 1 / -1;
-    grid-row: 4;
   }
 }
 
