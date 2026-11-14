@@ -31393,6 +31393,10 @@
           "test": "tests/e2e-api/refunds.stripe-business-intent-concurrency.e2e.test.js"
         },
         {
+          "statement": "FA-04/08 F3 certification : quatre frontieres de crash (avant reservation, avant appel PSP, apres PSP avant COMMIT, apres COMMIT avant marquage) sur PostgreSQL reel avec transport Stripe bouchonne, une seule intention, aucun double remboursement, reprise avec la meme cle fournisseur, I4/I8 tenus",
+          "test": "tests/e2e-api/refunds.stripe-crash-boundaries.e2e.test.js"
+        },
+        {
           "statement": "RC-9 deux connexions PostgreSQL reelles serialisent reserve et claim sans double intention ni double execution",
           "test": "tests/e2e-api/refunds.intents-physical-concurrency.e2e.test.js"
         },
@@ -31488,7 +31492,7 @@
             ]
           },
           "tests": {
-            "count": 19,
+            "count": 20,
             "files": [
               {
                 "declared": "tests/e2e-api/refunds.credits-cash-numeric.e2e.test.js",
@@ -31528,6 +31532,11 @@
               {
                 "declared": "tests/e2e-api/refunds.stripe-business-intent-concurrency.e2e.test.js",
                 "resolvedPath": "tests/e2e-api/refunds.stripe-business-intent-concurrency.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/e2e-api/refunds.stripe-crash-boundaries.e2e.test.js",
+                "resolvedPath": "tests/e2e-api/refunds.stripe-crash-boundaries.e2e.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -31588,7 +31597,7 @@
             ]
           }
         },
-        "totalFiles": 28,
+        "totalFiles": 29,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,

@@ -19696,6 +19696,13 @@
       {
         "feature": "refunds",
         "category": "tests",
+        "declared": "tests/e2e-api/refunds.stripe-crash-boundaries.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/refunds.stripe-crash-boundaries.e2e.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "refunds",
+        "category": "tests",
         "declared": "tests/unit/sav-ledger-refund.test.js",
         "resolvedPath": "tests/unit/sav-ledger-refund.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -47899,6 +47906,10 @@
                 "targetFile": "services/documents/refund-receipt.js"
               },
               {
+                "sourceFileId": "tests/e2e-api/refunds.stripe-crash-boundaries.e2e.test.js",
+                "targetFile": "services/documents/refund-receipt.js"
+              },
+              {
                 "sourceFileId": "tests/unit/sav-ledger-refund.test.js",
                 "targetFile": "services/documents/refund-receipt.js"
               },
@@ -49860,7 +49871,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2337
+        "filesObserved": 2338
       },
       "boutique": {
         "filesObserved": 216,
