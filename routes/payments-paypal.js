@@ -6,7 +6,7 @@
  * @criticality   critical
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result
- * @depends       db.js, middleware/auth.js, middleware/auth-guest.js, services/paypal-client.js, services/payment-paypal.js
+ * @depends       db.js, middleware/auth.js, middleware/auth-guest.js, services/paypal-client.js, services/payment-paypal.js, services/paypal-refund-authority.js
  * @used-by       bootstrap/api-routes.js
  * @db-read       orders
  * @db-write      (none)
@@ -174,17 +174,33 @@ router.post('/refund/:orderId', authenticate, async (req, res, next) => {
   if (req.user?.role !== 'admin') return res.status(403).json({ error: 'Admin uniquement' });
 
   const { orderId } = req.params;
-  const { amount_eur, reason } = req.body || {};
-
+  const { amount_eur, reason, action, provider_ref } = req.body || {};
+  if (action != null && !['refund', 'reconcile'].includes(action)) {
+    return res.status(400).json({ code: 'REFUND_ACTION_INVALID' });
+  }
+  if (action === 'reconcile' && (amount_eur != null || reason != null)) {
+    return res.status(400).json({ code: 'REFUND_RECONCILIATION_PAYLOAD_INVALID' });
+  }
   try {
-    const result = await refundPaypalOrder({
-      orderId,
-      amountEur:  amount_eur,
-      reason,
-      adminUser:  req.user,
-      paypal,
-      db,
-    });
+    // No extra HTTP route: this operation is an explicit GET-only provider
+    // reconciliation on the existing authenticated admin endpoint. Never
+    // initiate another provider refund when action='reconcile'.
+    const result = action === 'reconcile'
+      ? await require('../services/paypal-refund-authority').reconcilePaypalRefund({
+          orderId,
+          requestKey: req.get('Idempotency-Key'),
+          providerRefundId: provider_ref,
+          adminUser: req.user,
+          paypal, db,
+        })
+      : await refundPaypalOrder({
+          orderId,
+          amountEur: amount_eur,
+          reason,
+          adminUser: req.user,
+          requestKey: req.get('Idempotency-Key'),
+          paypal, db,
+        });
     return res.status(result.status).json(result.body);
   } catch (err) {
     next(err);

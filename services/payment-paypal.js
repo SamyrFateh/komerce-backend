@@ -6,7 +6,7 @@
  * @criticality   critical
  * @inputs        order, paypal_client, db, webhook_event
  * @outputs       capture_result, refund_result, side_effects
- * @depends       db.js, services/paypal-client.js, services/order-payment-confirmation.js, services/documents/refund-receipt.js, routes/pickup-secret.js
+ * @depends       db.js, services/paypal-client.js, services/order-payment-confirmation.js, services/paypal-refund-authority.js, routes/pickup-secret.js
  * @used-by       routes/payments-paypal.js
  * @db-read       orders, paypal_events_processed
  * @db-write      alerts, orders, paypal_events_processed
@@ -43,15 +43,12 @@ const refundReceiptService = require('./documents/refund-receipt');
  */
 
 const { confirmPaymentCycle }    = require('./order-payment-confirmation');
-const { markRefunded }           = require('./payment-service');
 const {
   setPaypalOrderId,
   setPaypalCaptureMetadata,
   setPaypalCaptureId,
   appendOrderNote,
 } = require('./order-mutation-service');
-const { recordExternalRefund }   = require('./refund-service');
-const { appendOrderHistoryNote, transitionOrderStatus } = require('./order-status-machine');
 // O7.2 (Cycle B) : importait auparavant routes/pickup-secret.js (une route,
 // pas une boundary de feature). Voir docs/O7_2_CYCLE_ANALYSIS.md, Cycle B.
 const { generateAndStoreSecret, cacheCodeForReveal } = require('./pickup-secret-service');
@@ -650,88 +647,10 @@ async function markPaypalEventProcessed(event, status, payloadSummary, db) {
 
 
 // ─── refundPaypalOrder ───────────────────────────────────────────────────────
-async function refundPaypalOrder({ orderId, amountEur, reason, adminUser, paypal, db }) {
-  if (!orderId) return { status: 400, body: { error: 'orderId requis' } };
-
-  const { rows: [order] } = await db.query(
-    'SELECT * FROM orders WHERE id = $1', [orderId]
-  );
-
-  if (!order) return { status: 404, body: { error: 'Commande introuvable' } };
-  if (!order.paypal_capture_id) {
-    return { status: 409, body: { error: 'Pas de capture PayPal liée à cette commande' } };
-  }
-  if (order.payment_status !== 'paid') {
-    return { status: 409, body: { error: 'Commande non payée — refund impossible' } };
-  }
-
-  const refundAmount = amountEur ? Number(amountEur) : Number(order.total_eur);
-  if (!Number.isFinite(refundAmount) || refundAmount <= 0) {
-    return { status: 400, body: { error: 'amountEur invalide' } };
-  }
-  if (refundAmount > Number(order.total_eur) + 0.01) {
-    return { status: 400, body: { error: 'Montant refund supérieur au total commande' } };
-  }
-
-  let refund;
-  try {
-    refund = await paypal.refundCapture(order.paypal_capture_id, {
-      amountEur: refundAmount,
-      reason:    reason || 'admin_refund',
-    });
-  } catch (err) {
-    log.error({ err: err.message, order_id: order.id, capture_id: order.paypal_capture_id }, '[PAYPAL] refundCapture failed');
-    return { status: 502, body: { error: 'Échec refund PayPal', detail: err.message } };
-  }
-
-  const totalKmf     = Number(order.total_kmf || 0);
-  const totalEur     = Number(order.total_eur || 0);
-  const isFullRefund = Math.abs(refundAmount - totalEur) < 0.01;
-  const amountKmf    = isFullRefund
-    ? totalKmf
-    : (totalEur > 0 ? Math.round(refundAmount * totalKmf / totalEur) : 0);
-  const refundType   = isFullRefund ? 'full' : 'partial';
-
-  const refundRowId = await recordExternalRefund(db, {
-    orderId:          order.id,
-    amountKmf,
-    amountEur:        refundAmount,
-    refundType,
-    method:           'paypal',
-    externalRefundId: refund.id || null,
-    reason:           reason || 'admin_refund',
-    initiatedBy:      adminUser?.id || null,
-    conflictOn:       'any',
-  });
-
-  await appendOrderHistoryNote(db, order.id, 'refunded',
-    `Refund PayPal ${refund.id || ''} — ${refundAmount} EUR`,
-    adminUser?.id || null);
-
-  await markRefunded(order.id, { client: db });
-
-  // I-BACK-3 : le remboursement PayPal est DÉJÀ effectué (capture.refund ci-dessus).
-  // La transition status → refunded passe par la machine avec source='refund_external'
-  // qui autorise * → refunded (l'argent est parti, bloquer = incohérence).
-  await transitionOrderStatus({
-    orderId: order.id,
-    newStatus: 'refunded',
-    actor: { id: adminUser?.id || null, role: 'admin' },
-    source: 'refund_external',
-    note: `Refund PayPal ${refund.id || ''} — ${refundAmount} EUR`,
-    dbClient: db,
-  });
-
-  if (refundRowId) {
-    refundReceiptService.issue(refundRowId, { issuedBy: adminUser?.id }).catch(err => {
-      log.warn({ err, order_id: order.id }, '[payment-paypal] reçu remboursement échoué (non-fatal)');
-    });
-  }
-
-  return {
-    status: 200,
-    body: { success: true, refund_id: refund.id, refund_status: refund.status },
-  };
+async function refundPaypalOrder(args) {
+  // F3: unique financial writer in refunds, behind an explicit sandbox gate.
+  // This compatibility facade MUST NOT call paypal.refundCapture itself.
+  return require('./paypal-refund-authority').refundPaypalOrder(args);
 }
 
 module.exports = {
