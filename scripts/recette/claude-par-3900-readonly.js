@@ -110,6 +110,8 @@ async function main() {
         (SELECT jsonb_object_agg(e.key, e.value) FROM jsonb_each(to_jsonb(po)) e WHERE e.key ~ '(seller|proof|manual|source|supplier_order_id)') AS seller_and_proof
         FROM purchase_orders po LEFT JOIN suppliers s ON s.id = po.supplier_id
         WHERE po.id IN (SELECT purchase_order_id FROM hub_purchase_allocations WHERE order_id = ${O})`, [REF]);
+  await section(client, REF + '_manual_purchase_executions', `SELECT m.purchase_order_id, m.seller_label, (m.seller_supplier_id IS NOT NULL) AS has_seller_supplier, m.channel, m.quantity, m.amount, m.currency, m.proof_ref, m.recorded_at
+        FROM manual_purchase_executions m WHERE m.purchase_order_id IN (SELECT purchase_order_id FROM hub_purchase_allocations WHERE order_id = ${O}) ORDER BY m.recorded_at`, [REF]);
   await section(client, REF + '_parcel_items', `SELECT p.reference, p.status, oi.fulfillment_source, oi.quantity FROM parcel_items pi JOIN parcels p ON p.id=pi.parcel_id JOIN order_items oi ON oi.id=pi.order_item_id WHERE oi.order_id = ${O} ORDER BY p.reference`, [REF]);
       await section(client, REF + '_order_items', `SELECT oi.fulfillment_source, oi.quantity FROM order_items oi WHERE oi.order_id = ${O}`, [REF]);
     }
