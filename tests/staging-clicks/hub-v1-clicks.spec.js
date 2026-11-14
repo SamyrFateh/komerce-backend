@@ -314,7 +314,7 @@ test.describe.serial(`Hub V1 : clics reels Chromium (${MARKET_CODE}, fixture E2E
       'T8 task visible directrice').toBe(true);
     await page.getByRole('tab', { name: 'Dossiers' }).click();
     await page.locator('[data-hlc-todo]').waitFor({ timeout: 20000 });
-    const all = page.locator('[data-workspace-action="todo-toggle"]');
+    const all = page.locator('[data-hlc-action="todo-toggle"]');
     if (await all.count()) await all.click();
     const visibleTask = page.locator('[data-hlc-todo-item="RECONCILE_PARCEL"]').filter({ hasText: reference });
     await expect(visibleTask, 'T8 file visible sur le vrai cockpit Chromium').toBeVisible({ timeout: 10000 });
