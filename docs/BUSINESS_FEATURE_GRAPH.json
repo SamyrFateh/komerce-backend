@@ -13398,7 +13398,7 @@
         "category": "services",
         "declared": "services/pickup-secret-customer-rotation-service.js",
         "resolvedPath": "services/pickup-secret-customer-rotation-service.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "logistics",
@@ -41333,6 +41333,10 @@
                 "targetFile": "services/notification-service.js"
               },
               {
+                "sourceFileId": "services/parcel-operations.js",
+                "targetFile": "utils/alerts.js"
+              },
+              {
                 "sourceFileId": "services/local-relay-receipt-service.js",
                 "targetFile": "services/client-notification-service.js"
               },
@@ -41379,6 +41383,14 @@
               {
                 "sourceFileId": "tests/unit/scan-operations.test.js",
                 "targetFile": "services/notifications/relay-location.js"
+              },
+              {
+                "sourceFileId": "tests/unit/parcel-operations.test.js",
+                "targetFile": "utils/alerts.js"
+              },
+              {
+                "sourceFileId": "tests/unit/parcel-operations.test.js",
+                "targetFile": "services/notification-service.js"
               }
             ]
           }
@@ -41685,6 +41697,10 @@
             "evidence": [
               {
                 "sourceFileId": "services/parcel-operations.js",
+                "targetFile": "services/refund-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/parcel-operations.test.js",
                 "targetFile": "services/refund-service.js"
               }
             ]
@@ -44048,6 +44064,10 @@
               {
                 "sourceFileId": "tests/unit/order-payment-confirmation.test.js",
                 "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/order-checkout-service-relay-boundary.test.js",
+                "targetFile": "validators/index.js"
               },
               {
                 "sourceFileId": "tests/unit/hub-v1-fixture-payment.test.js",
@@ -52579,6 +52599,19 @@
       "lifecycleOwner": "logistics",
       "resolution": "declared-table-owner"
     },
+    "pickup_code_generations": {
+      "writers": [
+        {
+          "feature": "logistics",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "logistics",
+      "resolution": "declared-table-owner"
+    },
     "pickup_verify_attempts": {
       "writers": [
         {
@@ -53700,8 +53733,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 706,
-        "technicalNodesOwned": 706,
+        "technicalNodesTotal": 707,
+        "technicalNodesOwned": 707,
         "technicalOrphans": 0
       },
       "dash": {

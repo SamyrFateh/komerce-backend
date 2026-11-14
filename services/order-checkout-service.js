@@ -121,6 +121,16 @@ async function runOrderCheckout({ user, body, internalSimulation = null, preview
       throw Object.assign(new Error(code), { code });
     }
   }
+  // FA-03 : ne jamais persister une référence Stripe issue du navigateur,
+  // y compris via un appel service direct qui contournerait le validateur HTTP.
+  // Le PaymentIntent est créé/rattaché uniquement par payment-stripe.js avec
+  // metadata.order_id et contrat montant/devise vérifiés.
+  if (Object.prototype.hasOwnProperty.call(body || {}, 'stripe_payment_intent')) {
+    return fail(400, {
+      code: 'STRIPE_INTENT_CLIENT_FORBIDDEN',
+      error: 'La référence Stripe est exclusivement attribuée par le serveur.',
+    });
+  }
   const client = await db.getClient();
 
   try {
@@ -549,7 +559,7 @@ async function runOrderCheckout({ user, body, internalSimulation = null, preview
       reference, userId: user.id, recipientId: recipient_id, relaisId: relais?.id || null,
       trackingPhone: tracking_phone,
       totalKmf: total_kmf, totalEur: fxSnapshotBuilt.totalEur,
-      paymentMode: payment_mode, stripePaymentIntent: stripe_payment_intent, cashRefCode: cash_ref_code,
+      paymentMode: payment_mode, stripePaymentIntent: null, cashRefCode: cash_ref_code,
       confectionType: confection_type, confectionInstructions: confection_instructions,
       confectionDelayDays: confection_delay_days, confectionArtisanId: confection_artisan_id,
       moduleType: module_type, moduleFabricId: module_fabric_id, moduleFabricType: module_fabric_type,
