@@ -41106,6 +41106,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "tests/integration/auto-parcel-reference-postgres.test.js",
+                "targetFile": "utils/reference.js"
+              },
+              {
                 "sourceFileId": "tests/integration/auto-parcel-cleanup-postgres.test.js",
                 "targetFile": "db.js"
               },
@@ -44313,6 +44317,10 @@
               {
                 "sourceFileId": "tests/e2e-api/orders.local-relay-receipt.e2e.test.js",
                 "targetFile": "routes/pickup-secret.js"
+              },
+              {
+                "sourceFileId": "tests/e2e-api/orders.local-relay-receipt.e2e.test.js",
+                "targetFile": "services/auto-parcel.js"
               },
               {
                 "sourceFileId": "tests/e2e-api/orders.single-collect.e2e.test.js",
