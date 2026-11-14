@@ -616,7 +616,7 @@
         "status": "production",
         "owner": "backend-core",
         "since": "2026-07",
-        "service": "Arbitrer et liquider la valeur immobilisée d'une commande invendue (WhatsApp, revendeur, don, destruction).",
+        "service": "Garder les colis non retirés sous responsabilité du relais ; la liquidation n'est autorisée qu'après clôture physique, juridique et financière certifiée.",
         "businessKind": "business-feature",
         "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
@@ -21126,6 +21126,13 @@
         "category": "tests",
         "declared": "tests/unit/supplier-platform-allegro.test.js",
         "resolvedPath": "tests/unit/supplier-platform-allegro.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "unsold-resolution",
+        "category": "migrations",
+        "declared": "migrations/415_paid_no_show_liquidation_guard.sql",
+        "resolvedPath": "migrations/415_paid_no_show_liquidation_guard.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
