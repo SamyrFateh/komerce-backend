@@ -600,6 +600,16 @@ async function cancelBackorder(orderId, body, user) {
       } catch (err) {
         log.error({ err, order_id: orderId, parcel_id: parcelId, intent_id: stripeIntent.intentId },
           '[BACKORDER] Rapprochement Stripe requis après COMMIT du colis');
+        try {
+          await createAlert(db, { type: 'refund_provider_reconciliation_required',
+            entityType: 'order', entityId: orderId, severity: 'high',
+            title: 'Remboursement Stripe backorder à rapprocher',
+            description: 'intent=' + stripeIntent.intentId + ' parcel=' + parcelId +
+              ' error=' + (err.code || 'unknown') });
+        } catch (alertErr) {
+          log.error({ alertErr, order_id: orderId, parcel_id: parcelId },
+            '[BACKORDER] Alerte financière non persistée');
+        }
         stripeOutcome = { status: 202, body: {
           intent_id: stripeIntent.intentId, refund_status: 'unknown',
           requires_reconciliation: true,
