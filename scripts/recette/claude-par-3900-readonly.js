@@ -20,7 +20,7 @@ const { confirmTarget } = require('./target-guard');
 
 const ORIGIN = 'https://komerce-backend-production.up.railway.app';
 const OUTPUT = path.resolve('test-results/claude-par-3900/census.json');
-const ORDER_REFS = (process.env.ORDER_REFS || 'KC692IV,K047L9E,KI98LBZ').split(',').map(x => x.trim()).filter(Boolean);
+const ORDER_REFS = (process.env.ORDER_REFS || 'KC692IV,K047L9E,KI98LBZ,K7TIXBV').split(',').map(x => x.trim()).filter(Boolean);
 const MARK = 'CLAUDE-PAR-20261113';
 
 const report = { kind: 'CLAUDE_PAR_3900_READONLY', order_refs: ORDER_REFS, generated_at: new Date().toISOString(),
@@ -104,8 +104,12 @@ async function main() {
         WHERE s.reference LIKE 'CLAUDE-PAR-20261113-EXP%' ORDER BY e.occurred_at`, []);
       await section(client, REF + '_transaction_documents', `SELECT document_type, subject_type, reference, status, created_at FROM transaction_documents WHERE order_id = ${O} ORDER BY created_at`, [REF]);
       await section(client, REF + '_return_receipts', `SELECT r.quantity, r.condition_code, r.storage_zone, r.received_at FROM relay_product_return_receipts r
-        WHERE r.request_id IN (SELECT id FROM relay_product_return_requests WHERE order_id = ${O})`, [REF]);
+        WHERE r.request_id IN (SELECT id FROM disputes WHERE order_id = ${O})`, [REF]);
       await section(client, REF + '_sav', `SELECT * FROM relay_return_compensations WHERE order_id = ${O}`, [REF]);
+  await section(client, REF + '_purchase_orders', `SELECT po.id, po.status, s.name AS supplier,
+        (SELECT jsonb_object_agg(e.key, e.value) FROM jsonb_each(to_jsonb(po)) e WHERE e.key ~ '(seller|proof|manual|source|supplier_order_id)') AS seller_and_proof
+        FROM purchase_orders po LEFT JOIN suppliers s ON s.id = po.supplier_id
+        WHERE po.id IN (SELECT purchase_order_id FROM hub_purchase_allocations WHERE order_id = ${O})`, [REF]);
   await section(client, REF + '_parcel_items', `SELECT p.reference, p.status, oi.fulfillment_source, oi.quantity FROM parcel_items pi JOIN parcels p ON p.id=pi.parcel_id JOIN order_items oi ON oi.id=pi.order_item_id WHERE oi.order_id = ${O} ORDER BY p.reference`, [REF]);
       await section(client, REF + '_order_items', `SELECT oi.fulfillment_source, oi.quantity FROM order_items oi WHERE oi.order_id = ${O}`, [REF]);
     }
