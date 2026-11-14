@@ -116,7 +116,13 @@ router.post('/reset', ...guard, validate(admin.reset), allowFlushOutsideProd, as
     }
 
     if (mode === 'users' || mode === 'factory') {
-      const userDepTables = [
+      // En mode factory, les justificatifs d'autorisation fournisseur sont
+      // append-only. Si leur FK interdit la suppression d'un compte, les
+      // données utilisateur (wallet, historique, adresses...) doivent être
+      // intégralement restaurées, jamais amputées par le nettoyage préalable.
+      await client.query('SAVEPOINT sp_users_atomic');
+      try {
+        const userDepTables = [
         "UPDATE sms_log SET user_id = NULL WHERE user_id IS NOT NULL",
         "DELETE FROM wallet_consumptions WHERE credit_lot_id IN (SELECT id FROM wallet_credit_lots WHERE wallet_id IN (SELECT id FROM wallets WHERE user_id IN (SELECT id FROM users WHERE role != 'admin')))",
         "DELETE FROM wallet_credit_lots WHERE wallet_id IN (SELECT id FROM wallets WHERE user_id IN (SELECT id FROM users WHERE role != 'admin'))",
@@ -145,8 +151,23 @@ router.post('/reset', ...guard, validate(admin.reset), allowFlushOutsideProd, as
         }
       }
 
-      const users = await deleteNonAdminUsers(client);
-      report.deleted.users_non_admin = users.rowCount;
+        const users = await deleteNonAdminUsers(client);
+        report.deleted.users_non_admin = users.rowCount;
+        await client.query('RELEASE SAVEPOINT sp_users_atomic');
+      } catch (err) {
+        // Ne jamais casser une preuve Hub pour réussir une purge de staging.
+        // Seul le mode factory peut poursuivre partiellement ; le mode users
+        // et toute autre erreur restent bloqués, sans COMMIT trompeur.
+        await client.query('ROLLBACK TO SAVEPOINT sp_users_atomic');
+        const immutableHubGrant = mode === 'factory' && err.code === '23503' &&
+          err.constraint === 'hub_authorization_grants_granted_by_fkey';
+        if (!immutableHubGrant) throw err;
+        await client.query('RELEASE SAVEPOINT sp_users_atomic');
+        report.deleted.user_deps_cleaned = 0;
+        report.deleted.users_non_admin = 0;
+        report.partial = true;
+        report.warnings = ['Comptes et données financières conservés : des autorisations Hub immuables référencent ces utilisateurs'];
+      }
     }
 
     if (mode === 'factory') {
@@ -184,7 +205,13 @@ router.post('/reset', ...guard, validate(admin.reset), allowFlushOutsideProd, as
     await client.query('COMMIT');
 
     log.info(`🧹 Admin reset "${mode}" effectué par ${req.user.email}`);
-    res.json({ success: true, message: `Reset "${mode}" effectué avec succès ✅`, ...report });
+    res.json({
+      success: true,
+      message: report.partial
+        ? 'Reset factory partiel : produits et relais purgés, comptes et preuves financières conservés'
+        : `Reset "${mode}" effectué avec succès ✅`,
+      ...report,
+    });
   } catch(err) {
     await client.query('ROLLBACK');
     next(err);
