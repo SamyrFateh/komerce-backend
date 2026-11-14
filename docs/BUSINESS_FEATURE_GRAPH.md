@@ -617,9 +617,8 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 > Rembourser un client de facon tracable et sans double remboursement, quel que soit le flux appelant.
 
-- utils: 1
 - services: 8
-- tests: 18
+- tests: 17
 - tables owned (lifecycle): 3 — `refunds`, `refund_execution_intents`, `order_item_refund_reservations`
 - tables written: 3
 - interfaces exposed: 0
@@ -2313,7 +2312,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 2334 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 2332 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 216 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 79 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -2647,13 +2646,13 @@ Meta Graph monté : oui.
 | refunds | auth | static-code | 1 | **OBSERVED_UNDECLARED** |
 | refunds | documents | static-code | 8 | **DECLARED_AND_OBSERVED** |
 | refunds | economic-engine | static-code | 1 | **DECLARED_AND_OBSERVED** |
-| refunds | infrastructure | static-code | 9 | **DECLARED_AND_OBSERVED** |
+| refunds | infrastructure | static-code | 8 | **DECLARED_AND_OBSERVED** |
 | refunds | logistics | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | refunds | market | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | refunds | notifications | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | refunds | orders | static-code, data-read | 11 | **DECLARED_AND_OBSERVED** |
 | refunds | payments | static-code | 3 | **DECLARED_AND_OBSERVED** |
-| refunds | wallet | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
+| refunds | wallet | static-code, data-read | 3 | **DECLARED_AND_OBSERVED** |
 | settlement | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | settlement | auth-identity | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | settlement | infrastructure | static-code | 1 | **DECLARED_AND_OBSERVED** |

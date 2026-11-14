@@ -34,6 +34,14 @@
 const { makeClient, expectTransactionRolledBack } = require('../integration/test-harness/mock-db');
 
 jest.mock('../../db', () => ({ getClient: jest.fn(), query: jest.fn() }));
+// FA-22 : la clé est désormais obligatoire ; l'arbitrage PG de la clé est prouvé
+// par tests/integration/checkout-idempotency-postgres.test.js (pas de requête
+// supplémentaire dans les séquences de mock de ce fichier).
+jest.mock('../../services/order-checkout-idempotency', () => ({
+  ...jest.requireActual('../../services/order-checkout-idempotency'),
+  claimCheckout: jest.fn(async (_c, { key }) => (global.__FA22_CLAIM ? { key, claimed: true, replayed: false } : null)), // pas de claim : les séquences de mock historiques restent valides
+  completeCheckout: jest.fn(async () => {}),
+}));
 // Livrabilité du marché : couverte par order-checkout-delivery-proof.test.js ; neutre ici (mocks de requêtes positionnels).
 jest.mock('../../services/market-delivery-proof-service', () => ({ assertMarketDeliverable: jest.fn(() => Promise.resolve({ proven: true })) }));
 
@@ -131,7 +139,7 @@ const { lockEstimatedCostsForOrder } = require('../../services/order-cost-snapsh
 const { handleOrderConfirmed } = require('../../services/loyalty-service');
 
 const express = require('express');
-const request = require('supertest');
+const request = require('../helpers/supertest-order-key').keyOnly;
 
 let app;
 
@@ -1273,5 +1281,32 @@ describe('L3 — confirmation du prix avant écriture de commande', () => {
     expect(client.calls.some(c => /INSERT INTO orders/.test(c.sql))).toBe(false);
     expect(client.calls.some(c => /^COMMIT/.test(c.sql))).toBe(false);
     expectTransactionRolledBack(client);
+  });
+});
+
+describe('FA-22 — Idempotency-Key obligatoire à la création', () => {
+  it('400 idempotency_key_required sans en-tête, avant toute écriture', async () => {
+    db.getClient.mockClear();
+    const res = await require('supertest')(app).post('/api/orders').send(validBody());
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('idempotency_key_required');
+    expect(db.getClient).not.toHaveBeenCalled();
+  });
+
+  it('428 price_confirmation_required : clé fournie mais total accepté absent (jamais de création au nouveau prix)', async () => {
+    global.__FA22_CLAIM = true;
+    const client = makeClient([{ rows: [RELAIS] }, { rows: [{ id: 'recip-1' }] }, { rows: [PRODUCT] }]);
+    db.getClient.mockResolvedValue(client);
+    const res = await request(app).post('/api/orders').send(validBody());
+    delete global.__FA22_CLAIM;
+    expect(res.status).toBe(428);
+    expect(res.body.code).toBe('price_confirmation_required');
+    expect(client.calls.some(c => /INSERT INTO orders/.test(c.sql))).toBe(false);
+  });
+
+  it('le service refuse aussi un appel direct sans clé', async () => {
+    const { runOrderCheckout } = require('../../services/order-checkout-service');
+    await expect(runOrderCheckout({ user: { id: 'u1' }, body: validBody() }))
+      .rejects.toMatchObject({ code: 'idempotency_key_required', status: 400 });
   });
 });

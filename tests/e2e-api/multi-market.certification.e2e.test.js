@@ -18,7 +18,7 @@
  * ATTENTION : l'observation EUR/USD utilisée pour DJ est une FIXTURE DE TEST non réelle ; ce spec ne certifie
  * pas un taux de production (GO technique uniquement — ni GO staging, ni GO commercial).
  */
-const request = require('supertest');
+const request = require('../helpers/supertest-order-key');
 const express = require('express');
 const Stripe = require('stripe');
 const { signAuthToken } = require('../../utils/auth-session');
