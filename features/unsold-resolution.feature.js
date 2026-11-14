@@ -22,15 +22,15 @@ module.exports = {
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
   // ── Service rendu ────────────────────────────────────────────────────────
-  service: "Arbitrer et liquider la valeur immobilisée d'une commande invendue " +
-           '(WhatsApp, revendeur, don, destruction).',
+  service: "Garder les colis non retirés sous responsabilité du relais ; la liquidation " +
+           "n'est autorisée qu'après clôture physique, juridique et financière certifiée.",
 
   // ── Perimetre ────────────────────────────────────────────────────────────
   perimeter: {
     in: [
-      "détection des commandes disponibles depuis 14 jours sans retrait (auto_unsold() sur orders)",
-      "arbitrage et résolution d'un invendu : vente WhatsApp, vente revendeur, don, destruction",
-      "calcul du prix de liquidation depuis le prix original (politique actuelle : 75% par défaut, ajustable via PATCH avant résolution)",
+      "scan historique J+14 bloqué faute de clôture de garde et de droits client certifiée",
+      "mutation de l'invendu uniquement pour des commandes non payées et un état available",
+      "prohibition de la promotion ou cession de marchandises payées tant que les droits de retrait persistent",
     ],
     out: [
       'réception, affectation et dispatch des articles au hub (feature inventory — aucun point de contact technique : ' +
@@ -90,7 +90,10 @@ module.exports = {
 
   // ── Dette assumée / documentée ────────────────────────────────────────────
   debt: {
-    knownGaps: [],
+    knownGaps: [
+      'F3 #4115 : sortie du no-show par colis, relances, arbitrage de marché et réconciliation du code de retrait / argent / stock non certifiés. Le scanner automatique est bloqué.',
+      'La fonction SQL legacy auto_unsold() demeure physiquement présente : ne pas l appeler directement ; sa refonte atomique est nécessaire avant GO.',
+    ],
   },
 
   // ── Autorite ─────────────────────────────────────────────────────────────
@@ -98,6 +101,8 @@ module.exports = {
 
   // ── Invariants propres ───────────────────────────────────────────────────
   invariants: [
+    "aucun invendu d'une commande payée ne peut être vendu, donné, détruit ou annoncé via les routes unsold",
+    'le délai J+14 ne crée ni droit de propriété ni permission de liquidation automatique',
     'un invendu résolu ne revient jamais en available',
     'toute résolution possède un statut terminal autorisé et un horodatage resolved_at',
   ],
