@@ -167,12 +167,24 @@ describeDb('Hub V1 — sac client mono-commande (PG réel)', () => {
     expect(result.body.code).toBe('HUB_ORDER_BAG_REQUIRES_HANDLING_UNIT');
   });
 
-  test('la commande 2 peut préparer son propre sac avec la quantité restante', async () => {
-    const result = await hubOps.moveAllocationCommand({
+  test('C4 H7 : deux scans simultanés du même dépôt créent un seul placement actif', async () => {
+    const sameDeposit = () => hubOps.moveAllocationCommand({
       from_unit_id: sourceUnitId, to_unit_id: bag2Id, allocation_id: allocation2,
       quantity: 1, operation_type: 'REPACK', evidence_method: 'SCAN', evidence_code: barcode,
     }, actorId);
-    expect(result.status).toBe(200);
+    const concurrent = await Promise.allSettled([sameDeposit(), sameDeposit()]);
+    // Le service transforme les refus en HTTP métier : aucun rejet SQL brut.
+    expect(concurrent.every(r => r.status === 'fulfilled')).toBe(true);
+    const statuses = concurrent.map(r => r.value.status);
+    expect(statuses.filter(s => s === 200).length).toBeGreaterThanOrEqual(1);
+    expect(statuses.every(s => s === 200 || (s >= 400 && s < 500))).toBe(true);
+    const { rows: [placed] } = await q(
+      "SELECT COUNT(*)::int AS n, COALESCE(SUM(quantity),0)::int AS qty " +
+      "FROM hub_physical_unit_placements WHERE physical_unit_id=$1 " +
+      "AND allocation_id=$2 AND operation_type='REPACK' AND removed_at IS NULL",
+      [bag2Id, allocation2]
+    );
+    expect(placed).toEqual({ n: 1, qty: 1 });
     const rows = await q(
       'SELECT p.physical_unit_id, a.order_id FROM hub_physical_unit_placements p ' +
       'JOIN hub_purchase_allocations a ON a.id=p.allocation_id ' +
