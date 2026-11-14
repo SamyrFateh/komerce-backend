@@ -26,6 +26,7 @@ const MARKET_LABEL = MARKET_LABELS[MARKET_CODE];
 if (!MARKET_LABEL) throw new Error('E2E_CLICKS_MARKET invalide : ' + MARKET_CODE);
 const evidence = { schema: 'komerce-hub-v1-clicks/1', run8: RUN8, base: null, gestures: [], tests: [] };
 const save = () => { fs.mkdirSync(OUT, { recursive: true }); fs.writeFileSync(EVID, JSON.stringify(evidence, (k, v) => (k === 'json' ? undefined : v), 2) + '\n'); };
+const REQUIRED_CHROMIUM_TESTS = 11; // 10 gestes canoniques + T8, modifier avec le plan de recette.
 const shared = { bagRefs: {}, box: null, shipment: null, states: {} }; // states : une connexion par role (evite le rate-limit du login)
 let counter = 0;
 
@@ -166,9 +167,9 @@ test.describe.serial(`Hub V1 : clics reels Chromium (${MARKET_CODE}, fixture E2E
   test.afterAll(async () => {
     if (process.env.E2E_CLICKS_ALLOW_DISTRIBUTION === '1') {
       const successfulTests = evidence.tests.filter(t => t.status === 'passed').length;
-      if (successfulTests !== 10) evidence.gestures.push({
+      if (successfulTests !== REQUIRED_CHROMIUM_TESTS) evidence.gestures.push({
         key: 'full-suite:coverage', role: 'harness', route: null, verdict: 'NOT_RUN', http: null,
-        note: 'campagne physique incomplète : ' + successfulTests + '/10 tests Playwright réussis',
+        note: 'campagne physique incomplète : ' + successfulTests + '/' + REQUIRED_CHROMIUM_TESTS + ' tests Playwright réussis',
       });
     }
     const failures=evidence.gestures.filter((row)=>row.verdict!=='CLICK_PASS');
