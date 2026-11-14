@@ -43,6 +43,7 @@ Statuts autorisés : `À_FAIRE` · `EN_COURS` · `PR_EN_REVUE` · `BLOQUÉ` · `
 
 | Date | Chantier | Responsable | Preuve | Certification / suite |
 | --- | --- | --- | --- | --- |
+| 2026-11-14 | Reset d'usine robuste aux délégations Hub (régression `txg04` après FA-23) : suppression limitée à `hub_authorization_grants`, NULL limité à 2 traces opérationnelles, tout autre fait métier rapporté (409) sans écriture | Sonnet (fusion Opus) | [#4039](https://github.com/SamyrFateh/komerce-backend/pull/4039) fusionnée | Required SUCCESS ; tests PG réels. Débloque la CI de #4028 et #4034. |
 | 2026-11-14 | FA-23 — Σ paiements fournisseur ≤ autorisation ≤ engagement PO (fail-closed hors transaction) | Sonnet (fusion Opus) | [#4024](https://github.com/SamyrFateh/komerce-backend/pull/4024), merge `021c22ad1` | Required SUCCESS ; tests PG16 réels (concurrence, devise, isolation). Certification staging : non faite. |
 | 2026-11-14 | FA-10 — cumul compensations SAV ≤ unités remises (tous dossiers, 2 opérateurs) | Sonnet (fusion Opus) | [#4026](https://github.com/SamyrFateh/komerce-backend/pull/4026), merge `0f36a2dc7` | Required SUCCESS ; tests PG16 réels. Certification staging : non faite. |
 | 2026-11-14 | Déclarer `pickup_code_generations` dans la carte logistics (porte Headers ↔ SQL rouge sur `main`) | Opus | [#4027](https://github.com/SamyrFateh/komerce-backend/pull/4027) fusionnée | Débloque les preflights ; gouvernance seulement. |
