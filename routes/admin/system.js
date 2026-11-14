@@ -26,7 +26,7 @@ const router  = express.Router();
 const db      = require('../../db');
 const { appendOrderHistoryNote } = require('../../services/order-status-machine');
 const { seedIncident } = require('../../services/incident-write-service');
-const { deleteNonAdminUsers } = require('../../services/user-mutation-service');
+const { deleteNonAdminUsers, releaseNonAdminUserReferences } = require('../../services/user-mutation-service');
 const { authenticate, requireRole } = require('../../middleware/auth');
 const { requireNonProduction } = require('../../middleware/require-non-production');
 const { validate } = require('../../middleware/validate');
@@ -145,6 +145,25 @@ router.post('/reset', ...guard, validate(admin.reset), allowFlushOutsideProd, as
         }
       }
 
+      if (mode === 'factory') {
+        // Faits Hub append-only (décisions de la directrice, immuables par trigger) : seule la remise à zéro d'usine les emporte.
+        try {
+          await client.query('SAVEPOINT sp_factory_hub_facts');
+          await client.query('TRUNCATE purchase_orders CASCADE');
+          await client.query('RELEASE SAVEPOINT sp_factory_hub_facts');
+        } catch (_) {
+          await client.query('ROLLBACK TO SAVEPOINT sp_factory_hub_facts');
+        }
+      }
+      // Références RESTRICT vers les comptes (ex. délégations Hub granted_by) : libérées avant la suppression des comptes.
+      const released = await releaseNonAdminUserReferences(client);
+      report.deleted.user_refs_released = released.cleared;
+      if (released.blocked.length) {
+        // Faits métier (cash, remboursements, documents, audit, preuves) rattachés à un compte : jamais effacés. Rien n'est écrit (ROLLBACK).
+        const blockedErr = new Error('Reset refusé : des faits métier référencent encore des comptes non-admin (voir user_refs_blocked)');
+        blockedErr.status = 409; blockedErr.code = 'USER_REFS_BLOCKED'; blockedErr.user_refs_blocked = released.blocked;
+        throw blockedErr;
+      }
       const users = await deleteNonAdminUsers(client);
       report.deleted.users_non_admin = users.rowCount;
     }

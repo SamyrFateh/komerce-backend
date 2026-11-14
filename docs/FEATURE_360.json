@@ -56,7 +56,7 @@
     "healthy": 34,
     "attention": 6,
     "blocked": 0,
-    "businessDependencies": 327,
+    "businessDependencies": 328,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
@@ -24800,6 +24800,13 @@
           ]
         },
         {
+          "consumer": "refunds",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "consumer": "shared-cart",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -31356,6 +31363,10 @@
           "test": "tests/e2e-api/refunds.intents-physical-concurrency.e2e.test.js"
         },
         {
+          "statement": "FA-05/21 F3 : PayPal admin reserve et claim une intention durable avant POST, rejeu/timeout inconnus sont sans nouveau POST, settlement partiel confirme sans clore la commande, activation sandbox explicite",
+          "test": "tests/unit/paypal-refund-authority.test.js"
+        },
+        {
           "statement": "RC-9 : reference externe unique par fournisseur et intention, prouvee en PostgreSQL",
           "test": "tests/e2e-api/refunds.intent-provider-reference-unique.e2e.test.js"
         },
@@ -31393,7 +31404,7 @@
       "implementation": {
         "byCategory": {
           "services": {
-            "count": 7,
+            "count": 8,
             "files": [
               {
                 "declared": "services/item-refund-psp-orchestrator.js",
@@ -31404,6 +31415,11 @@
                 "declared": "services/item-refund-reservation-service.js",
                 "resolvedPath": "services/item-refund-reservation-service.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/paypal-refund-authority.js",
+                "resolvedPath": "services/paypal-refund-authority.js",
+                "status": "resolved-on-disk-no-header"
               },
               {
                 "declared": "services/refund-evidence-verifier.js",
@@ -31433,7 +31449,7 @@
             ]
           },
           "tests": {
-            "count": 17,
+            "count": 18,
             "files": [
               {
                 "declared": "tests/e2e-api/refunds.credits-cash-numeric.e2e.test.js",
@@ -31478,6 +31494,11 @@
               {
                 "declared": "tests/unit/item-refund-reservation-service.test.js",
                 "resolvedPath": "tests/unit/item-refund-reservation-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/paypal-refund-authority.test.js",
+                "resolvedPath": "tests/unit/paypal-refund-authority.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -31533,7 +31554,7 @@
             ]
           }
         },
-        "totalFiles": 25,
+        "totalFiles": 27,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -31691,6 +31712,13 @@
         },
         {
           "provider": "market",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "notifications",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"

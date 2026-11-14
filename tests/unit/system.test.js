@@ -178,6 +178,18 @@ describe('POST /api/admin/reset', () => {
     expect(res.body.restocked).toBeUndefined();
   });
 
+  it('mode "factory" → références RESTRICT vers les comptes libérées AVANT DELETE FROM users (délégations Hub)', async () => {
+    const client = makeFlexibleClient({ orderCount: 0 });
+    db.getClient.mockResolvedValue(client);
+
+    const res = await request(app).post('/api/admin/reset').send({ mode: 'factory', confirm: true });
+    expect(res.status).toBe(200);
+    const catalog = client.calls.findIndex((c) => /FROM pg_constraint c/.test(c) && /public\.users/.test(c));
+    const del = client.calls.findIndex((c) => /^DELETE FROM users WHERE role != 'admin'/.test(c));
+    expect(catalog).toBeGreaterThan(-1);
+    expect(del).toBeGreaterThan(catalog);
+  });
+
   it('erreur en cours de transaction → ROLLBACK + 500, client toujours release', async () => {
     const client = makeFlexibleClient({ orderCount: 1, failOn: /TRUNCATE orders CASCADE/ });
     db.getClient.mockResolvedValue(client);
