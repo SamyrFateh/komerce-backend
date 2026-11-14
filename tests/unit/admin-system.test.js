@@ -336,6 +336,66 @@ describe('admin/system — POST /reset', () => {
     expect(res.body.restocked).toBeUndefined();
   });
 
+  it('factory : FK d’autorisation Hub immuable conserve les utilisateurs ET leurs wallets, sans mentir sur le reset partiel', async () => {
+    const grantFk = Object.assign(new Error('hub_authorization_grants_granted_by_fkey'), {
+      code: '23503', constraint: 'hub_authorization_grants_granted_by_fkey',
+    });
+    const client = makeClient([
+      ['SELECT COUNT(*)::int AS count FROM orders', { rows: [{ count: '0' }] }],
+      [/DELETE FROM users WHERE role/, grantFk],
+    ]);
+    mockGetClient.mockResolvedValueOnce(client);
+    const res = await request(app).post('/api/admin/reset').send({mode:'factory',confirm:true});
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({success:true,partial:true,
+      deleted:{users_non_admin:0,user_deps_cleaned:0}});
+    expect(res.body.message).toMatch(/partiel/i);
+    expect(res.body.warnings[0]).toMatch(/autorisations Hub immuables/);
+    const queries=client.calls;
+    const sp=queries.indexOf('SAVEPOINT sp_users_atomic');
+    const rollback=queries.indexOf('ROLLBACK TO SAVEPOINT sp_users_atomic');
+    const release=queries.indexOf('RELEASE SAVEPOINT sp_users_atomic');
+    expect(sp).toBeGreaterThan(-1);
+    expect(rollback).toBeGreaterThan(sp);
+    expect(release).toBeGreaterThan(rollback);
+    expect(queries.indexOf('DELETE FROM products')).toBeGreaterThan(release);
+    expect(queries.indexOf('DELETE FROM relais')).toBeGreaterThan(release);
+    expect(queries.indexOf('COMMIT')).toBeGreaterThan(release);
+    expect(queries).not.toContain('ROLLBACK');
+  });
+
+  it('mode users : FK Hub bloquante provoque ROLLBACK global, pas de succes partiel', async () => {
+    const err=Object.assign(new Error('grant referential integrity'),{
+      code:'23503',constraint:'hub_authorization_grants_granted_by_fkey',
+    });
+    const client=makeClient([
+      ['SELECT COUNT(*)::int AS count FROM orders',{rows:[{count:'0'}]}],
+      [/DELETE FROM users WHERE role/,err],
+    ]);
+    mockGetClient.mockResolvedValueOnce(client);
+    const res=await request(app).post('/api/admin/reset').send({mode:'users',confirm:true});
+    expect(res.status).toBe(500);
+    expect(client.calls).toContain('ROLLBACK TO SAVEPOINT sp_users_atomic');
+    expect(client.calls).toContain('ROLLBACK');
+    expect(client.calls).not.toContain('COMMIT');
+  });
+
+  it('factory : FK étrangère non Hub reste une erreur 500 sans purge partielle', async () => {
+    const err=Object.assign(new Error('unknown FK'),{
+      code:'23503',constraint:'some_other_fkey',
+    });
+    const client=makeClient([
+      ['SELECT COUNT(*)::int AS count FROM orders',{rows:[{count:'0'}]}],
+      [/DELETE FROM users WHERE role/,err],
+    ]);
+    mockGetClient.mockResolvedValueOnce(client);
+    const res=await request(app).post('/api/admin/reset').send({mode:'factory',confirm:true});
+    expect(res.status).toBe(500);
+    expect(client.calls).toContain('ROLLBACK TO SAVEPOINT sp_users_atomic');
+    expect(client.calls).toContain('ROLLBACK');
+    expect(client.calls).not.toContain('DELETE FROM products');
+  });
+
   it('PDC-7 : le restock global ne cible que inventory_model = LEGACY_VARIANTS (jamais les produits SKU)', async () => {
     const client = makeClient([
       ['SELECT COUNT(*)::int AS count FROM orders', { rows: [{ count: '0' }] }],
