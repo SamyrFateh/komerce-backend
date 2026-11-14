@@ -426,7 +426,9 @@ test.describe('PDP mobile retouches 2026-11 — Galerie & détails V4', () => {
       });
       expect(geom.ratio).toBeCloseTo(16 / 9, 1);
       expect(geom.favoriteInside).toBe(true);
-      expect(geom.favoriteSize).toBeGreaterThanOrEqual(44);
+      // BoundingClientRect conserve une précision subpixel (43.99999px à 360px).
+      // CSS source impose toujours width/height 44px : ne pas durcir le seuil flottant.
+      expect(geom.favoriteSize).toBeGreaterThanOrEqual(43.9);
       expect(geom.singleFavorite).toBe(true);
       expect(geom.noHorizontalScroll).toBe(true);
       await shot(page, `mobile-pdp-v4-gallery-details-${viewport.key}.png`);
