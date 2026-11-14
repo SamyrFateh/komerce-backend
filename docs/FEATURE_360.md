@@ -1956,6 +1956,8 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - [object Object]
 - [object Object]
 - [object Object]
+- [object Object]
+- [object Object]
 - aucun secret de paiement en dur dans le code
 - [object Object]
 - un provider activé en DB mais non configuré runtime reste indisponible (fail-closed, aucun fallback silencieux)
@@ -2375,6 +2377,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - [object Object]
 - [object Object]
 - [object Object]
+- [object Object]
 - un remboursement n'est jamais applique deux fois pour le meme evenement source
 - tout refund externe ou crédit compensatoire est idempotent par événement source ; un rejeu ne déclenche jamais un second remboursement
 
@@ -2762,10 +2765,11 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Perimeter** :
 - _in_ :
   - solde wallet et historique de credit/debit
-  - application/retrait du wallet sur une commande (orders.wallet_applied_kmf)
+  - application du wallet atomique au checkout (orders.wallet_applied_kmf) et restitution par annulation métier uniquement ; routes legacy apply/remove refusées en 409 (FA-01/02/15)
 - _out_ :
   - paiement carte/PayPal (feature payments)
   - remboursement initiateur (feature refunds, qui credite le wallet)
+  - avoir admin depuis commande via endpoint legacy (FA-06 : route maintenue en 409, remboursement via refunds)
   - programme de fidelite et ses recompenses (feature loyalty, scindee de wallet-loyalty au Lot O1)
   - emission du recu wallet (services/documents/wallet-receipt.js, @domain documents — consommateur en aval, pas ownership wallet)
 

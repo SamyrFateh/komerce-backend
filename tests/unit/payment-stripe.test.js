@@ -332,7 +332,7 @@ describe('handleStripeSucceeded — chemins 1-4 : guards précoces', () => {
   test('chemin 3 : commande déjà payée → idempotent', async () => {
     const db = { query: jest.fn(), pool: { connect: jest.fn() } };
     db.query
-      .mockResolvedValueOnce({ rows: [{ id: 'order-paid', reference: 'REF-order-paid', total_eur: '10.00', payment_status: 'paid' }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'order-paid', reference: 'REF-order-paid', total_eur: '10.00', payment_status: 'paid', payment_mode: 'stripe_eur', stripe_payment_id: 'pi_already_paid' }] })
       .mockResolvedValueOnce({ rows: [], rowCount: 1 }); // markStripeEventProcessed
 
     const event  = { id: 'evt_already_paid', type: 'payment_intent.succeeded' };
@@ -344,14 +344,26 @@ describe('handleStripeSucceeded — chemins 1-4 : guards précoces', () => {
     expect(db.pool.connect).not.toHaveBeenCalled();
   });
 
+  test.each([1, 0])('commande déjà payée en espèces : trace et alerte idempotentes (rowCount=%s)', async (rowCount) => {
+    const order = { id: 'order-cash', reference: 'KOM-CASH', payment_status: 'paid', payment_mode: 'cash_relais' };
+    const client = makeClient([{ rows: [], rowCount }, { rows: [{ id: 'alert' }] }]);
+    const db = { query: jest.fn().mockResolvedValue({ rows: [order] }), pool: { connect: jest.fn().mockResolvedValue(client) } };
+    const event = { id: 'evt_cash', type: 'payment_intent.succeeded' };
+    const intent = { id: 'pi_cash', amount: 1000, currency: 'eur', metadata: { order_id: order.id } };
+
+    await expect(handleStripeSucceeded(event, intent, db)).resolves.toEqual({ received: true, rejected: true });
+
+    expect(client.calls.filter(({ sql }) => sql.includes('INSERT INTO alerts'))).toHaveLength(rowCount);
+    expect(client.calls.at(-1).sql).toBe('COMMIT');
+  });
+
   test('chemin 4 : confirmPaymentCycle noop → commit + idempotent', async () => {
     const db = { query: jest.fn(), pool: { connect: jest.fn() } };
     db.query.mockResolvedValueOnce({ rows: [{ id: 'order-noop', reference: 'KOM-SB-1', total_eur: '10.00', payment_status: 'pending' }] });
     db.query.mockResolvedValueOnce({ rows: [], rowCount: 1 }); // markStripeEventProcessed (après commit)
 
     const client = makeClient([
-      { rows: [], rowCount: 1 }, // BEGIN
-      { rows: [], rowCount: 1 }, // COMMIT
+      { rows: [{ payment_status: 'paid', payment_mode: 'stripe_eur', stripe_payment_id: 'pi_noop' }] },
     ]);
     db.pool.connect.mockResolvedValue(client);
     mockConfirmPaymentCycle.mockResolvedValueOnce({ noop: true });
@@ -657,7 +669,7 @@ describe('handleStripeSucceeded — cycle non réussi (rollback)', () => {
     db.query.mockResolvedValueOnce({ rows: [{ id: 'order-rej-1', reference: 'KOM-REJ-1', total_eur: '10.00', payment_status: 'pending' }] });
     db.query.mockResolvedValueOnce({ rows: [], rowCount: 1 }); // markStripeEventProcessed (rejected)
 
-    const client = makeClient([]);
+    const client = makeClient([{ rowCount: 1 }, { rows: [{ id: 'alert' }] }]);
     db.pool.connect.mockResolvedValueOnce(client);
 
     mockConfirmPaymentCycle.mockResolvedValueOnce({ success: false, noop: false, error: 'stock invariant violated' });
@@ -667,7 +679,8 @@ describe('handleStripeSucceeded — cycle non réussi (rollback)', () => {
     expect(result).toEqual({ received: true, rejected: true });
     const sqls = client.calls.map(c => String(c.sql).trim());
     expect(sqls).toContain('ROLLBACK');
-    expect(sqls).not.toContain('COMMIT');
+    expect(sqls).toContain('COMMIT');
+    expect(sqls.indexOf('ROLLBACK')).toBeLessThan(sqls.findIndex(sql => sql.includes('INSERT INTO alerts')));
   });
 
   test('erreur inattendue pendant la transaction → ROLLBACK puis throw propagé, client relâché', async () => {
@@ -754,7 +767,7 @@ describe('handleStripeSucceeded — contrat montant/devise/commande (fail-closed
     mockConfirmPaymentCycle.mockReset();
     const db = { query: jest.fn(), pool: { connect: jest.fn() } };
     db.query.mockResolvedValueOnce({ rows: [order] });
-    const client = makeClient([{ rows: [], rowCount: 1 }]);
+    const client = makeClient([{ rows: [{ payment_status: 'paid', payment_mode: 'stripe_eur', stripe_payment_id: goodIntent().id }] }]);
     db.pool.connect.mockResolvedValueOnce(client);
     mockConfirmPaymentCycle.mockResolvedValueOnce({ noop: true });
     db.query.mockResolvedValue({ rows: [], rowCount: 1 });

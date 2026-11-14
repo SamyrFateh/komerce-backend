@@ -227,7 +227,9 @@ const orders = {
       // Obligatoire si le checkout transmet Idempotency-Key (route/service L3),
       // optionnel pour les intégrateurs historiques en période de migration.
       expected_total_kmf:    Joi.number().integer().min(0).max(Number.MAX_SAFE_INTEGER),
-      stripe_payment_intent: safeStr(200),
+      // FA-03 : une référence Stripe appartient exclusivement au service Stripe,
+      // jamais au payload du checkout (sinon remboursement d'une autre commande).
+      stripe_payment_intent: Joi.forbidden(),
       tracking_phone:        phone.allow(null, ''),
       // Liste partagée : intention uniquement, jamais un téléphone fourni
       // par le client. Le serveur résout l'utilisateur vérifié.
