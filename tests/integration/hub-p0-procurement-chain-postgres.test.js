@@ -397,6 +397,54 @@ describeDb('Hub P0 — chaîne d\'approvisionnement complète (REAL_DB)', () => 
       expect(await received(km1.lines[0].lineId)).toBe(1);
     });
 
+    test('C2 H5a/H6 : deux réceptions concurrentes sur une PO et la même variante ne sur-reçoivent jamais', async () => {
+      // Deux demandes indépendantes, références distinctes, pour une seule unité autorisée.
+      // Le service crée ses propres transactions PostgreSQL (pas de données staging).
+      const o = await makeOrder({
+        market: km, relais: relaisKm, supplier: supplierA,
+        items: [{ sku: sku1, qty: 1 }],
+      });
+      const prepared = await grouped.preparePurchaseOrder(
+        { supplier_id: supplierA, procurement_hub_ref: 'DXB', line_ids: [o.lines[0].lineId] },
+        { actor: actor() }
+      );
+      const poId = prepared.purchase_order.id;
+      await submitAuthorized(engagement, poId, { actor: actor() });
+      await engagement.recordPurchaseOrderSent(poId, { channel: 'whatsapp' }, { actor: actor() });
+      await engagement.confirmGroupedPurchaseOrder(poId, {
+        purchase_proof_ref: 'C2-CONTENTION-RECU',
+        seller_label: 'Vendeur test',
+        supplier_order_id: 'C2-' + tag,
+        lines: [{ purchase_line_id: o.lines[0].lineId, confirmed_quantity: 1 }],
+      }, { actor: actor() });
+
+      const outcomes = await Promise.allSettled([
+        receive(poId, sku1.id, 1, tag + '-C2-RX1'),
+        receive(poId, sku1.id, 1, tag + '-C2-RX2'),
+      ]);
+      // Une exception brute (23505, 23514, 500, etc.) ne vaut jamais refus métier.
+      expect(outcomes.every(r => r.status === 'fulfilled')).toBe(true);
+      const statuses = outcomes.map(r => r.value.status);
+      expect(statuses.filter(s => s === 201)).toHaveLength(1);
+      expect(statuses.every(s => s === 201 || s === 202 || (s >= 400 && s < 500))).toBe(true);
+
+      const lineId = o.lines[0].lineId;
+      expect(await received(lineId)).toBe(1);
+      const { rows: [coverage] } = await q(
+        "SELECT COALESCE(SUM(pl.quantity),0)::int AS physical_qty " +
+        "FROM hub_physical_unit_placements pl " +
+        "JOIN hub_purchase_allocations a ON a.id=pl.allocation_id " +
+        "WHERE a.purchase_line_id=$1 AND pl.operation_type='RECEIVE' AND pl.removed_at IS NULL",
+        [lineId]
+      );
+      expect(coverage.physical_qty).toBe(1);
+      const { rows: [ordered] } = await q(
+        'SELECT confirmed_quantity, received_quantity FROM v_purchase_line_progress WHERE line_id=$1',
+        [lineId]
+      );
+      expect(Number(ordered.received_quantity)).toBeLessThanOrEqual(Number(ordered.confirmed_quantity));
+    });
+
     test('carton CM refusé vers une expédition KM, et carton rattaché deux fois', async () => {
       const shipKm = `${tag}-SHIPKM`;
       await q(`INSERT INTO international_shipments(id,market_id,reference,forwarder_name,transport_mode,stage,created_by)
