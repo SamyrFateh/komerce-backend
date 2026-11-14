@@ -310,4 +310,61 @@ if (!process.env.DATABASE_URL) {
     expect(byOrder[s.k101.orderId].placements.filter((p) => p.active).reduce((t, p) => t + p.quantity, 0)).toBe(2);
     expect(byOrder[s.k102.orderId].placements.filter((p) => p.active).reduce((t, p) => t + p.quantity, 0)).toBe(1);
   });
+
+  test('T10/HB-12 PG16 : trois colis locaux sans capacité -> tâche datée de la file', async () => {
+    // Donnees strictement isolees dans la base PostgreSQL ephemere du job.
+    // Chaque colis a un article local deja affecte ; la commande entrante
+    // a 30 unites, donc aucun des trois colis (capacite 30) ne peut l'absorber.
+    const refs = [];
+    for (let n = 0; n < 3; n++) {
+      const carrier = await makeOrder({
+        reference: `${tag}-T10-CARRIER-${n}`, minutesAgo: 15 + n,
+        items: [{ sku: skuC, qty: 1, source: 'LOCAL_STOCK' }],
+      });
+      const parcelId = id();
+      await q(
+        "INSERT INTO parcels(id,order_id,relais_id,reference,status,type) " +
+        "VALUES($1,$2,$3,$4,'preparation','standard')",
+        [parcelId, carrier.orderId, relais, `${tag}-T10-PARCEL-${n}`]
+      );
+      await q(
+        'INSERT INTO parcel_items(id,parcel_id,order_item_id,product_id,quantity) VALUES($1,$2,$3,$4,1)',
+        [id(), parcelId, carrier.items[0].itemId, skuC.productId]
+      );
+      refs.push(parcelId);
+    }
+    const pending = await makeOrder({
+      reference: `${tag}-T10-WAITING`, minutesAgo: 5,
+      items: [{ sku: skuC, qty: 30, source: 'LOCAL_STOCK' }],
+    });
+    const before = await q(
+      'SELECT COUNT(*)::int AS n FROM parcel_items pi JOIN order_items oi ON oi.id=pi.order_item_id WHERE oi.order_id=$1',
+      [pending.orderId]
+    );
+    expect(before.rows[0].n).toBe(0);
+    const live = await dossier(agent);
+    const task = live.cockpit.todo.find(t => t.id === 'PARCEL_CAPACITY_WAIT:' + pending.orderId);
+    expect(task).toBeDefined();
+    expect(task).toMatchObject({
+      kind: 'PARCEL_CAPACITY_WAIT',
+      owner: 'agent_hub',
+      severity: 'anomaly',
+      subject: { order_id: pending.orderId },
+      overdue: false,
+    });
+    expect(task.missing).toContain('(3 ouverts)');
+    expect(task.since).toBeTruthy();
+    const director = await dossierService.getDirectorTodo();
+    expect(director.tasks.some(t => t.id === task.id)).toBe(true);
+    const after = await q(
+      'SELECT COUNT(*)::int AS n FROM parcel_items pi JOIN order_items oi ON oi.id=pi.order_item_id WHERE oi.order_id=$1',
+      [pending.orderId]
+    );
+    expect(after.rows[0].n).toBe(0);
+    const open = await q(
+      "SELECT COUNT(*)::int AS n FROM parcels WHERE id = ANY($1::uuid[]) AND status IN ('draft','preparation')",
+      [refs]
+    );
+    expect(open.rows[0].n).toBe(3);
+  });
 }
