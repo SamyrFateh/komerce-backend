@@ -345,12 +345,12 @@
 @media (min-width: 900px) {
   #k-modal .k-modal-product-zone .k-modal-img-wrap {
     min-height: 480px;
-    max-height: none;
+    max-height: 560px;
     /* ProductMedia complet :
        rail 52px + gap 8px + hero carrÃ© jusqu'Ã  640px. */
     max-width: none;
     width: 100%;
-    height: calc(100dvh - 90px);
+    height: min(560px, calc(100dvh - 120px));
     /* T-018-bis â€” DÃ‰CISION A (audit desktop finition, 2026-07) :
        align-self repasse de `center` Ã  `start`. La note MIGRATION v3.0
        prÃ©cÃ©dente confondait deux sujets distincts : position:sticky
@@ -388,7 +388,7 @@
   #k-modal:not(.k-modal--has-variants)
   .k-modal-product-zone .k-modal-img-wrap[data-gallery-mode="single"] {
     min-height: 0;
-    max-height: none;
+    max-height: 560px;
     max-width: none;
   }
 
