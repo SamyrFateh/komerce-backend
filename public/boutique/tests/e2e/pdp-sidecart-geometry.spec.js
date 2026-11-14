@@ -281,3 +281,126 @@ test('marché KM — devis maritime interne non exposé sur le détail public r�
   expect(sea).toBeDefined();
   expect(sea.price_kmf).toBeNull();
 });
+
+test('AUDIT VISUEL — vraie fiche débardeur CM, sans fixture ni mutation', async ({ page, request }) => {
+  test.skip(!process.env.BASE_URL, 'Réservé à la campagne Chromium distante sur staging');
+  test.setTimeout(65000);
+  await page.setViewportSize({ width: 1586, height: 992 });
+
+  const root = new URL(BASE);
+  const url = new URL('/api/products?market=CM&limit=1000', root);
+  const response = await request.get(url.toString());
+  expect(response.ok(), 'Catalogue CM HTTP ' + response.status()).toBeTruthy();
+  const raw = await response.json();
+  const products = Array.isArray(raw) ? raw
+    : (raw.products || raw.items || raw.data?.products || []);
+  expect(Array.isArray(products), 'Structure catalogue CM').toBe(true);
+  const norm = value => String(value || '').normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const target = products.find(p => {
+    const name = norm(p.name || p.title || p.product_name);
+    return name.includes('debardeur') && (name.includes('dos fendu') || name.includes('coupe ample'));
+  });
+  expect(target, 'Débardeur CM réel absent. Exemples catalogue: ' +
+    products.slice(0, 15).map(p => p.name || p.title).join(' | ')).toBeDefined();
+
+  const out = path.join(OUT, 'cm-real-fidelity');
+  fs.mkdirSync(out, { recursive: true });
+  await page.goto(new URL('/CM', root).toString(), { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('#k-modal-overlay', { state: 'attached', timeout: 12000 });
+  await page.evaluate(async item => {
+    const [{ state }, { bus }] = await Promise.all([
+      import('/boutique/js/b-store.js'), import('/boutique/js/b-bus.js'),
+    ]);
+    const product = { ...item, id: item.id || item.product_id };
+    if (!state.products.some(p => String(p.id) === String(product.id))) state.products.push(product);
+    bus.emit('modal:open', { id: product.id });
+  }, target);
+  await expect(page.locator('#k-modal')).toBeVisible({ timeout: 12000 });
+  await expect(page.locator('#k-modal-name')).toContainText(/Débardeur/i, { timeout: 15000 });
+  await expect(page.locator('#k-modal-long-description')).toBeVisible({ timeout: 15000 });
+  await page.waitForTimeout(1500);
+
+  const audit = await page.evaluate(() => {
+    const q = selector => document.querySelector(selector);
+    const box = el => {
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      const css = getComputedStyle(el);
+      return {
+        x: Math.round(r.x * 10) / 10, y: Math.round(r.y * 10) / 10,
+        w: Math.round(r.width * 10) / 10, h: Math.round(r.height * 10) / 10,
+        bottom: Math.round(r.bottom * 10) / 10,
+        display: css.display, position: css.position, gap: css.gap,
+        padding: css.padding, fontSize: css.fontSize, borderRadius: css.borderRadius,
+        objectFit: css.objectFit, aspectRatio: css.aspectRatio,
+      };
+    };
+    const main = q('#k-modal .k-modal-main');
+    const gallery = q('#k-modal .k-modal-img-wrap');
+    const carousel = q('#k-modal .k-modal-carousel');
+    const panel = q('#k-modal-long-details');
+    const title = q('#k-modal-name');
+    const side = q('#k-modal .k-modal-cart-slot');
+    const add = q('#k-add-cart-btn');
+    const buy = q('#k-buy-now-btn');
+    const slides = [...document.querySelectorAll('#k-modal .k-modal-slide')];
+    const activeSlide = slides.find(el => el.getBoundingClientRect().x >= (carousel?.getBoundingClientRect().x || 0) - 10) || slides[0];
+    const swatches = [...document.querySelectorAll('#k-modal .k-sku--color')].map(box);
+    const thumbs = [...document.querySelectorAll('#k-modal .k-modal-thumbs img')].map(box);
+    const suggestionCards = [...document.querySelectorAll('#k-modal-suggestions .k-sug-card')].map(box);
+    const geom = {
+      width: innerWidth, height: innerHeight,
+      main: box(main), side: box(side),
+      gallery: box(gallery), carousel: box(carousel),
+      thumbnails: box(q('#k-modal .k-modal-thumbs')), thumbs,
+      slide: box(activeSlide),
+      buybox: box(q('#k-modal .k-modal-right-rail')),
+      title: box(title), price: box(q('#k-modal-price')),
+      swatches, add: box(add), buy: box(buy),
+      desc: box(q('#k-modal-long-description')),
+      details: box(panel), specs: box(panel?.querySelector('.k-modal-enriched-block--specs')),
+      suggestions: box(q('#k-modal-suggestions')), suggestionCards,
+      brand: box(q('#k-modal .k-modal-brand')),
+      cardTitle: q('#k-modal-suggestions .k-sug-title')?.textContent.trim() || '',
+      productTitle: title?.textContent.trim() || '',
+      productPrice: q('#k-modal-price')?.textContent.trim() || '',
+      description: q('#k-modal-long-description')?.textContent.trim().slice(0, 700) || '',
+      imageSrc: activeSlide?.currentSrc || activeSlide?.src || '',
+      imageNatural: { width: activeSlide?.naturalWidth, height: activeSlide?.naturalHeight },
+      miniCartCount: q('#k-modal .k-modal-cart-slot')?.querySelectorAll('.k-sc-item').length || 0,
+      bodyScrollY: main?.scrollTop, productCount: slides.length,
+      suggestionCount: suggestionCards.length,
+      suggestionsHidden: !!q('#k-modal-suggestions')?.classList.contains('u-hidden'),
+    };
+    geom.sideRatio = geom.side?.w / geom.width;
+    geom.galleryRatio = geom.gallery?.w / geom.width;
+    geom.buyboxRatio = geom.buybox?.w / geom.width;
+    geom.buyButtonRatio = geom.buy?.w / (geom.buy?.w + geom.add?.w);
+    geom.galleryThumbGap = (geom.carousel?.x || 0) - (geom.thumbnails?.x || 0) - (geom.thumbnails?.w || 0);
+    geom.descriptionGap = (geom.details?.y || 0) - Math.max(geom.gallery?.bottom || 0, geom.buybox?.bottom || 0);
+    return geom;
+  });
+  fs.writeFileSync(path.join(out, 'cm-real-layout.json'), JSON.stringify({
+    product: { id: target.id || target.product_id, name: target.name || target.title },
+    measured: audit,
+    reference: {
+      imageSize: { w: 1586, h: 992 }, 
+      note: 'Mock utilisateur; cibles indicatives à corroborer par revue visuelle',
+      cartWidthPx: [250, 300],
+      photoHeightPx: [480, 515],
+      addShareOfCtas: [0.42, 0.48],
+      suggestionsVisibleInViewport: true,
+      detailPanelStartsNear: 610,
+    },
+  }, null, 2));
+  await page.screenshot({ path: path.join(out, 'cm-real-at-open-1586x992.png'), animations: 'disabled' });
+  await page.locator('#k-modal .k-modal-main').evaluate(el => { el.scrollTop = 380; });
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: path.join(out, 'cm-real-after-scroll-1586x992.png'), animations: 'disabled' });
+  console.log('PDP_CM_REAL_FIDELITY_AUDIT', JSON.stringify(audit));
+  expect(audit.productTitle.toLowerCase()).toContain('débardeur');
+  expect(audit.gallery).not.toBeNull();
+  expect(audit.buybox).not.toBeNull();
+  expect(audit.side).not.toBeNull();
+});
