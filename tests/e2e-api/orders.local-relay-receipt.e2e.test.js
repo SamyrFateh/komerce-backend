@@ -118,6 +118,12 @@ describeE2E('Orders - local relay receipt without hub',({db})=>{
   });
 
   test('paid local -> receipt proof -> available -> secure parcel pickup once',async()=>{
+    // Une tentative préalable de répartition Hub ne crée JAMAIS un colis
+    // local : seule l'attestation relais peut le faire après preuve physique.
+    const preHub = await require('../../services/auto-parcel').distributeOrder(orders.local);
+    expect(preHub).toMatchObject({ success: true, nothing_eligible: true, local_direct_items: 1 });
+    expect((await q('SELECT count(*)::int AS n FROM parcel_items WHERE order_item_id=$1',
+      [items.local])).rows[0].n).toBe(0);
     const secret=await generateAndStoreSecret({orderId:orders.local,relaisId:relay,channel:'cash_relais'});
     const response=await send('local');
     expect(response.status).toBe(200);

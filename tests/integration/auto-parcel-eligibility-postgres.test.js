@@ -64,28 +64,32 @@ describeDb('Repartition automatique — eligibilite des colis (PG16 jetable)', (
   });
   afterAll(async () => { await db.pool.end().catch(() => {}); });
 
-  test('cas fixture : import pret ensemble, local a part, article non recu sans colis', async () => {
+  test('import prêt sans colis local : LOCAL_STOCK attend sa preuve physique au relais', async () => {
     const results = [];
     for (const k of ['101', '102', '103', 'LOCAL']) results.push(await autoParcel.distributeOrder(o[k]));
     const p101 = await parcelOf('101'); const p102 = await parcelOf('102'); const pLocal = await parcelOf('LOCAL');
-    expect(p101).not.toBeNull(); expect(p102).not.toBeNull(); expect(pLocal).not.toBeNull();
-    expect(p101.id).not.toBe(p102.id);           // import : un colis par commande (trigger 394 sac->box)
+    expect(p101).not.toBeNull(); expect(p102).not.toBeNull();
+    expect(p101.id).not.toBe(p102.id);
     expect((await q('SELECT order_id FROM parcels WHERE id=$1', [p101.id])).rows[0].order_id).toBe(o['101']);
-    expect(pLocal.id).not.toBe(p101.id);         // local jamais avec import
-    expect(await parcelOf('103')).toBeNull();    // non approvisionne / non recu : aucun colis
+    expect(pLocal).toBeNull(); // Le relais seul peut attester et créer ce colis.
+    expect(await parcelOf('103')).toBeNull();
     expect(results[2]).toMatchObject({ success: true, nothing_eligible: true });
+    expect(results[3]).toMatchObject({ success: true, nothing_eligible: true, local_direct_items: 1 });
     expect(await itemsIn(p101.id)).toEqual([item['101']]);
     expect(await itemsIn(p102.id)).toEqual([item['102']]);
-    expect(await itemsIn(pLocal.id)).toEqual([item.LOCAL]);
+    expect((await q('SELECT count(*)::int AS n FROM parcel_items WHERE order_item_id=$1', [item.LOCAL])).rows[0].n).toBe(0);
   });
 
-  test('idempotent : un second passage ne cree ni ne deplace rien, 103 reste sans colis', async () => {
+  test('idempotent : un second passage ne crée rien pour IMPORT non reçu ou LOCAL_STOCK', async () => {
     const before = (await q('SELECT count(*)::int AS n FROM parcel_items pi JOIN order_items oi ON oi.id=pi.order_item_id WHERE oi.order_id = ANY($1)', [Object.values(o)])).rows[0].n;
     const r101 = await autoParcel.distributeOrder(o['101']);
     const r103 = await autoParcel.distributeOrder(o['103']);
+    const rLocal = await autoParcel.distributeOrder(o.LOCAL);
     const after = (await q('SELECT count(*)::int AS n FROM parcel_items pi JOIN order_items oi ON oi.id=pi.order_item_id WHERE oi.order_id = ANY($1)', [Object.values(o)])).rows[0].n;
     expect(r101).toMatchObject({ already_assigned: true });
     expect(r103.nothing_eligible).toBe(true);
+    expect(rLocal).toMatchObject({ nothing_eligible: true, local_direct_items: 1 });
+    expect(await parcelOf('LOCAL')).toBeNull();
     expect(after).toBe(before);
   });
 
@@ -95,6 +99,51 @@ describeDb('Repartition automatique — eligibilite des colis (PG16 jetable)', (
     expect(r.success).toBe(true);
     const p103 = await parcelOf('103'); const pLocal = await parcelOf('LOCAL');
     expect(p103).not.toBeNull();
-    expect(p103.id).not.toBe(pLocal.id);
+    expect(pLocal).toBeNull();
   });
+  test('C1 H4 : deux opérateurs PG simultanés sur la même commande IMPORT — un seul colis actif', async () => {
+    // Cohorte PG16 jetable uniquement, pas de staging ni d'objets métier externes.
+    await mkOrder('C1', 'IMPORT', { received: 2 });
+    const clients = await Promise.all([0, 1].map(async () => {
+      const client = new Client({ connectionString: process.env.DATABASE_URL });
+      await client.connect();
+      return client;
+    }));
+    expect(new Set(clients.map(c => c.processID)).size).toBe(2);
+    let results;
+    try {
+      await Promise.all(clients.map(c => c.query('BEGIN')));
+      // La première transaction porte le verrou FOR UPDATE jusqu'au COMMIT.
+      // L'autre vraie session attend, puis lit le résultat effectivement persisté.
+      results = await Promise.all(clients.map(async client => {
+        try {
+          const result = await autoParcel.distributeOrder(o.C1, client);
+          await client.query('COMMIT');
+          return result;
+        } catch (error) {
+          await client.query('ROLLBACK').catch(() => {});
+          throw error;
+        }
+      }));
+    } finally {
+      await Promise.all(clients.map(c => c.end()));
+    }
+    expect(results.filter(x => x.success && x.parcel_created)).toHaveLength(1);
+    expect(results.filter(x => x.success && x.already_assigned)).toHaveLength(1);
+    const active = await q(
+      "SELECT COUNT(*)::int AS n, COALESCE(SUM(pi.quantity),0)::int AS qty, COUNT(DISTINCT pi.parcel_id)::int AS parcels " +
+      "FROM parcel_items pi JOIN parcels p ON p.id=pi.parcel_id AND p.cancelled_at IS NULL " +
+      "WHERE pi.order_item_id=$1",
+      [item.C1]);
+    expect(active.rows).toEqual([{ n: 1, qty: 2, parcels: 1 }]);
+    const h4 = await q(
+      "SELECT pi.order_item_id FROM parcel_items pi " +
+      "JOIN parcels p ON p.id=pi.parcel_id AND p.cancelled_at IS NULL " +
+      "JOIN order_items oi ON oi.id=pi.order_item_id " +
+      "WHERE pi.order_item_id=$1 GROUP BY pi.order_item_id, oi.quantity " +
+      "HAVING SUM(pi.quantity) > oi.quantity",
+      [item.C1]);
+    expect(h4.rows).toHaveLength(0);
+  });
+
 });

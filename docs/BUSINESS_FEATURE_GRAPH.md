@@ -618,7 +618,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 > Rembourser un client de facon tracable et sans double remboursement, quel que soit le flux appelant.
 
 - services: 9
-- tests: 19
+- tests: 20
 - tables owned (lifecycle): 3 — `refunds`, `refund_execution_intents`, `order_item_refund_reservations`
 - tables written: 3
 - interfaces exposed: 0
@@ -2318,7 +2318,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 2337 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 2338 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 216 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 79 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -2499,7 +2499,7 @@ Meta Graph monté : oui.
 | logistics | documents | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
 | logistics | economic-engine | static-code | 1 | **OBSERVED_UNDECLARED** |
 | logistics | incident-management | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
-| logistics | infrastructure | static-code | 120 | **DECLARED_AND_OBSERVED** |
+| logistics | infrastructure | static-code | 121 | **DECLARED_AND_OBSERVED** |
 | logistics | local-stock | data-read | 2 | **DECLARED_AND_OBSERVED** |
 | logistics | loyalty | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | logistics | market | static-code | 3 | **DECLARED_AND_OBSERVED** |
@@ -2577,7 +2577,7 @@ Meta Graph monté : oui.
 | orders | economic-engine | static-code | 10 | **DECLARED_AND_OBSERVED** |
 | orders | infrastructure | static-code, interface | 70 | **DECLARED_AND_OBSERVED** |
 | orders | local-stock | static-code, interface | 5 | **DECLARED_AND_OBSERVED** |
-| orders | logistics | static-code, interface, data-read | 37 | **DECLARED_AND_OBSERVED** |
+| orders | logistics | static-code, interface, data-read | 38 | **DECLARED_AND_OBSERVED** |
 | orders | loyalty | static-code | 7 | **DECLARED_AND_OBSERVED** |
 | orders | market | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | orders | market-autonomy | static-code | 5 | **DECLARED_AND_OBSERVED** |
@@ -2652,7 +2652,7 @@ Meta Graph monté : oui.
 | recommendations | platform-ops | static-code | 10 | **DECLARED_AND_OBSERVED** |
 | recommendations | providers-services | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | refunds | auth | static-code | 1 | **OBSERVED_UNDECLARED** |
-| refunds | documents | static-code | 10 | **DECLARED_AND_OBSERVED** |
+| refunds | documents | static-code | 11 | **DECLARED_AND_OBSERVED** |
 | refunds | economic-engine | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | refunds | infrastructure | static-code | 11 | **DECLARED_AND_OBSERVED** |
 | refunds | logistics | data-read | 1 | **DECLARED_AND_OBSERVED** |

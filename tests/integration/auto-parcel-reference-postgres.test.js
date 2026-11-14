@@ -12,7 +12,7 @@ const path = require('path');
 const { Client } = require('pg');
 const db = require('../../db');
 const { assertTestDatabase } = require('../helpers/e2eDbKit');
-const autoParcel = require('../../services/auto-parcel');
+const { generateParcelRef } = require('../../utils/reference');
 
 jest.setTimeout(120000);
 const describeDb = process.env.DATABASE_URL ? describe : describe.skip;
@@ -52,7 +52,19 @@ describeDb('Références colis — un seul générateur (PG16 jetable)', () => {
     expect(new Set(clients.map((c) => c.processID)).size).toBe(N); // connexions distinctes
     let results;
     try {
-      results = await Promise.all(orders.map((o, i) => autoParcel.distributeOrder(o.order, clients[i])));
+      // Ce test certifie le générateur unique de références, pas la décision
+      // de répartir physiquement un colis. Cette décision exige désormais
+      // IMPORT reçu ; son E2E propre est auto-parcel-eligibility-postgres.
+      // INSERT réservé exclusivement à cette base PG16 jetable, pour prouver
+      // la contrainte UNIQUE persistée sous concurrence réelle.
+      results = await Promise.all(orders.map(async (o, i) => {
+        const ref = await generateParcelRef(clients[i]);
+        await clients[i].query(
+          "INSERT INTO parcels(id,order_id,reference,status,type,label) VALUES ($1,$2,$3,'preparation','standard','test sequence concurrence')",
+          [crypto.randomUUID(), o.order, ref]
+        );
+        return { success: true, parcel_created: true, parcel_ref: ref };
+      }));
     } finally { await Promise.all(clients.map((c) => c.end())); }
     expect(results.every((r) => r.success && r.parcel_created)).toBe(true);
     const refs = results.map((r) => r.parcel_ref);

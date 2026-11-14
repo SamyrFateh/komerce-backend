@@ -46,7 +46,8 @@ function makeOrder(overrides = {}) {
 }
 
 function makeItem(overrides = {}) {
-  return { id: 'oi-001', quantity: 2, product_id: 'product-001', ...overrides };
+  // Une ligne IMPORT ne peut être colisée que reçue ; sans provenance, refus fermé.
+  return { id: 'oi-001', quantity: 2, product_id: 'product-001', fulfillment_source: 'IMPORT', received: 2, ...overrides };
 }
 
 describe('auto-parcel', () => {
@@ -94,6 +95,25 @@ describe('auto-parcel', () => {
       expect(result.items_assigned).toBe(1);
       expect(db.query.mock.calls.some(call => String(call[0]).includes('INSERT INTO parcels'))).toBe(false);
       expect(db.query.mock.calls[4][1]).toEqual(['parcel-open', 'oi-001', 1, 'product-001']);
+    });
+
+    it('LOCAL_STOCK : aucune distribution Hub ni INSERT colis avant attestation relais', async () => {
+      db.query
+        .mockResolvedValueOnce({ rows: [makeOrder()] })
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({ rows: [makeItem({ fulfillment_source: 'LOCAL_STOCK', received: 0 })] });
+      const result = await distributeOrder('order-001');
+      expect(result).toMatchObject({ success: true, nothing_eligible: true, local_direct_items: 1 });
+      expect(db.query.mock.calls.some(([sql]) => /INSERT INTO (parcels|parcel_items)/.test(sql))).toBe(false);
+    });
+
+    it('provenance inconnue : échec fermé sans création physique', async () => {
+      db.query
+        .mockResolvedValueOnce({ rows: [makeOrder()] })
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({ rows: [makeItem({ fulfillment_source: null })] });
+      await expect(distributeOrder('order-001')).rejects.toThrow('AUTO_PARCEL_FULFILLMENT_SOURCE_UNKNOWN');
+      expect(db.query.mock.calls.some(([sql]) => /INSERT INTO (parcels|parcel_items)/.test(sql))).toBe(false);
     });
 
     it('retourne already_assigned si la commande a deja des items dans un colis actif', async () => {
