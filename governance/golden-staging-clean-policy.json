@@ -169,6 +169,7 @@
       "parcels",
       "physical_outcome_receipts",
       "pickup_collect_failures",
+      "pickup_code_generations",
       "pickup_print_tokens",
       "pickup_reveal_codes",
       "pickup_verify_attempts",

@@ -219,8 +219,8 @@ npm run map:check
 
 - `main` est l'unique branche d'intégration. Les branches PR éphémères sont autorisées ; ne pas rechercher ou réactiver une ancienne branche `agent/*` sauf demande humaine explicite.
 - `.agent/README.md` est la seule instruction active sous `.agent/`.
-- `.agent/LEDGER.md` contient uniquement le chantier courant et les prochains actes décidés. Un palier clos n'est jamais rouvert à cause d'un ancien state, worklog, audit ou compteur.
-- Lecture minimale obligatoire : `AGENTS.md` → `npm run agent:context -- --pack <type>` → `npm run arch:impact -- <cible>` → fichiers directement utiles. `CARTE_FIRST_INDEX`, carte complète et `.agent/LEDGER.md` ne sont lus directement que si la projection signale un manque.
+- `docs/chantier/STATUS.md` est le **registre partagé actif** des tâches et des propriétaires entre GPT, Sonnet et Opus. `.agent/LEDGER.md` est un document historique, jamais une seconde file de travail. Une clôture de palier ne se rouvre pas sur un ancien state, worklog, audit ou compteur.
+- Lecture minimale obligatoire pour une intervention : `AGENTS.md` → lire **la section active pertinente** de `docs/chantier/STATUS.md` pour réserver le périmètre → `npm run agent:context -- --pack <type>` → `npm run arch:impact -- <cible>` → fichiers directement utiles. `CARTE_FIRST_INDEX`, carte complète et `.agent/LEDGER.md` ne sont lus directement que si la projection signale un manque.
 - Ne pas scanner par défaut les archives, rapports datés, preuves brutes, anciens prompts, sorties générées volumineuses ou historiques de tâches. Les ouvrir seulement lorsqu'un fichier actif les référence précisément ou qu'une preuve ne peut pas être régénérée.
 - Préférer les recherches ciblées et les extraits courts. Ne pas recopier des fichiers entiers dans les rapports ou réponses.
 - Ne pas créer de document horodaté, prompt bis, ZIP, patch ou rapport parallèle lorsqu'un document canonique existe déjà.
@@ -228,6 +228,14 @@ npm run map:check
 - Toute nouvelle instruction d'agent doit remplacer une instruction obsolète, jamais s'empiler avec elle.
 - Sandbox jetable : dans une session Claude Code cloud, `.claude/settings.json` sauvegarde automatiquement l'arbre de travail sur `wip/<branche>` (après les éditions, au plus toutes les 2 min, et à chaque fin de tour). Une session interrompue se reprend avec `npm run agent:restore -- <branche>`. `wip/*` n'est jamais une PR : livrer passe toujours par `pr:preflight` puis la branche normale.
 - **Capacités avant conclusion** : un agent ne doit jamais déclarer « je ne peux pas pousser / ouvrir une PR / utiliser GitHub » sur la seule base de son sandbox ou de ses hypothèses. Avant cette conclusion, il vérifie le runtime sans lire de secret : `git rev-parse --is-inside-work-tree`, accès distant via `git ls-remote --heads origin main`, puis capacité d'écriture avec `git push --dry-run --force --porcelain origin HEAD:refs/heads/wip/capability-probe`. Le `--dry-run` ne modifie pas le remote ; `wip/*` est exempté du tampon pre-push. Si le probe réussit, l'agent est un agent d'exécution et poursuit jusqu'au push/PR selon la gouvernance. S'il échoue, il rapporte l'erreur d'authentification/capacité telle quelle, sans demander ni rechercher de token.
+
+## 7.0. Coordination inter-agents — STATUS partagé (GPT / Sonnet / Opus)
+
+- Avant de modifier le code : consulter `docs/chantier/STATUS.md` **sur `main`** et les PR actives ; inscrire le chantier, le propriétaire unique, la zone de fichiers, la branche, la PR et la prochaine action. Ne pas reprendre la zone d'un autre agent sans transfert explicite.
+- Après ouverture de PR, blocage, merge ou abandon : **mettre à jour le même fichier** avec un lien de preuve. Un draft n'est pas `FAIT`; une PR mergée n'est pas une certification staging.
+- Chaque agent écrit dans ce registre commun, sans dupliquer les listes dans `.agent/LEDGER.md`, des prompts ou des docs datées. Historique détaillé, preuves et conversations restent dans les issues/PR.
+- Les écritures du fichier partagé suivent le workflow Git et les gates ordinaires : version fraîche de `main`, modification ciblée, SHA/rebase, résolution explicite des conflits avant merge. Ne jamais écraser silencieusement une ligne écrite par Sonnet, GPT ou Opus.
+- La réservation de tâche est une règle de **coordination**, pas une nouvelle permission sur le code, les marchés, les paiements, les migrations ou les déploiements. `AGENTS.md` et les cartes restent prioritaires.
 
 ## 7.1. Économie de tokens — contexte compilé obligatoire
 

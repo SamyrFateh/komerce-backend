@@ -51,7 +51,7 @@ async function loadDossier(client, requestId, lock) {
        JOIN orders o ON o.id = d.order_id
        JOIN order_items oi ON oi.id = d.return_order_item_id AND oi.order_id = o.id
       WHERE d.id = $1 AND o.simulation_scope IS NULL
-      ${lock ? 'FOR UPDATE OF d' : ''}`, [requestId]);
+      ${lock ? 'FOR UPDATE OF d, oi' : ''}`, [requestId]);
   if (!row || row.type !== 'product_return') fail('COMPENSATION_DOSSIER_NOT_FOUND', 'Dossier de retour introuvable.', 404);
   return row;
 }
@@ -133,6 +133,16 @@ async function decideCompensation({ actor, requestId, movement, amount, reason, 
     }
     if (Number(dossier.qty_collected) < Number(dossier.return_quantity)) {
       fail('COMPENSATION_NOT_AFTER_HANDOVER', 'Compensation SAV réservée aux articles remis au client.', 409);
+    }
+    // FA-10 : cumul des unités compensées sur l'article, TOUS dossiers (y compris clos). La ligne d'article est verrouillée
+    // par loadDossier : deux opérateurs sur deux dossiers du même article se sérialisent ici.
+    const { rows: [prior] } = await client.query(
+      `SELECT COALESCE(SUM(d.return_quantity), 0)::int AS units
+         FROM relay_return_compensations c JOIN disputes d ON d.id = c.request_id
+        WHERE d.type = 'product_return' AND d.return_order_item_id = $1 AND c.request_id <> $2`,
+      [dossier.return_order_item_id, requestId]);
+    if (Number(prior?.units || 0) + Number(dossier.return_quantity) > Number(dossier.qty_collected)) {
+      fail('COMPENSATION_EXCEEDS_DELIVERED_UNITS', 'Les compensations cumulées dépasseraient les unités réellement remises au client.', 409);
     }
     const { currency, lineValue } = movement === 'reship'
       ? { currency: await walletService.resolveOrderWalletCurrency(client, dossier), lineValue: 0 }
