@@ -1317,8 +1317,11 @@
           boxScan.value=context.hubVerifiedBoxes[String(box.unit_id)]||'';
           const bagScan=field('Scanner le sac client','Scanner référence du sac client');
           bagScan.setAttribute('data-hub-bag-scan','');
+          // Le serveur déduit le colis import unique de la commande du sac.
+          // Sélection explicite uniquement pour l'exception : plusieurs colis possibles.
           const parcel=doc.createElement('select');
-          parcel.setAttribute('aria-label','Colis client rattaché au sac scanné');
+          parcel.setAttribute('aria-label','Colis client si plusieurs colis pour ce sac');
+          parcel.hidden=true;
           const add=makeActionButton(doc,'Placer le sac','put-bag-in-box');
           const boxMethod=doc.createElement('select');
           boxMethod.setAttribute('aria-label','Mode de preuve du rattachement dans '+box.reference);
@@ -1336,18 +1339,19 @@
           });
           const identify=()=>{
             const bag=readyBags.find(b=>b.reference===bagScan.value.trim());
-            const previousParcel=parcel.value;
+            const matching=bag?(d.client_parcels||[]).filter(p=>String(p.order_id)===String(bag.order_id)):[];
+            const selected=parcel.value;
+            const ambiguous=matching.length>1;
             parcel.replaceChildren();
-            parcel.appendChild(Object.assign(doc.createElement('option'),{
-              value:'',textContent:bag?'Choisir le colis client…':'Scanner un sac identifié…',
-            }));
-            if(bag) (d.client_parcels||[]).filter(p=>String(p.order_id)===String(bag.order_id))
-              .forEach(p=>parcel.appendChild(Object.assign(doc.createElement('option'),{
+            if(ambiguous){
+              parcel.appendChild(Object.assign(doc.createElement('option'),{value:'',textContent:'Choisir le colis client (cas exceptionnel)…'}));
+              matching.forEach(p=>parcel.appendChild(Object.assign(doc.createElement('option'),{
                 value:p.id,textContent:p.reference+' · '+bag.order_ref,
               })));
-            if([...parcel.options].some(opt=>opt.value===previousParcel))parcel.value=previousParcel;
-            else if(parcel.options.length===2)parcel.selectedIndex=1;
-            add.disabled=!(bag&&boxScan.value.trim()===box.reference&&parcel.value);
+              if(matching.some(p=>p.id===selected))parcel.value=selected;
+            }
+            parcel.hidden=!ambiguous;
+            add.disabled=!(bag&&boxScan.value.trim()===box.reference&&(!ambiguous||parcel.value));
             return bag;
           };
           boxScan.addEventListener('input',()=>{
@@ -1363,12 +1367,12 @@
           });
           bagScan.addEventListener('input',identify);
           bagScan.addEventListener('keydown',event=>{
-            if(event.key==='Enter'){event.preventDefault();identify();parcel.focus();}
+            if(event.key==='Enter'){event.preventDefault();identify();(parcel.hidden?boxMethod:parcel).focus();}
           });
           parcel.addEventListener('change',identify);
           add.addEventListener('click',()=>{
             const bag=readyBags.find(b=>b.reference===bagScan.value.trim());
-            if(!bag||boxScan.value.trim()!==box.reference||!parcel.value)return;
+            if(!bag||boxScan.value.trim()!==box.reference||(!parcel.hidden&&!parcel.value))return;
             const manualBox=boxMethod.value==='MANUAL';
             const boxProofRef=String(boxProof.value||'').trim();
             if(manualBox&&boxProofRef.length<6){
@@ -1378,7 +1382,7 @@
             runAction(context,add,{
               url:endpointFor(context.marketCode,'boxes/'+encodeURIComponent(box.unit_id)+'/bags'),
               body:{
-                bag_unit_id:bag.unit_id,parcel_id:parcel.value,
+                bag_unit_id:bag.unit_id,...(!parcel.hidden?{parcel_id:parcel.value}:{}),
                 bag_reference_scan:bagScan.value.trim(),box_reference_scan:boxScan.value.trim(),
                 ...(manualBox?{evidence_method:'MANUAL',evidence_ref:boxProofRef}:{evidence_method:'SCAN'}),
               },

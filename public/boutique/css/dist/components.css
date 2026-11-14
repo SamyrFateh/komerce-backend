@@ -3292,7 +3292,8 @@ html.k-mobile-premium-v1 .k-chip-label {
   /* REF-2026-07 : label "Retour" visible desktop (était masqué globalement) */
   #k-modal #k-modal-back-label { display: inline; }
   #k-modal #k-modal-nav { display: flex; visibility: visible; margin-left: 10px; } /* restore après hide mobile (VIS-4) */
-  #k-modal .k-modal-cart-btn { width: 38px; height: 38px; }
+  /* Le panier est déjà visible dans la colonne droite : pas de 2e panier dans la topbar. */
+  #k-modal .k-modal-cart-btn { display: none; }
   #k-modal .k-modal-cart-icon { width: 28px; height: 28px; }
   .k-modal-breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); margin-left: 12px; flex: 1; min-width: 0; overflow: hidden; }
   .k-modal-breadcrumb span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -3698,19 +3699,20 @@ html.k-mobile-premium-v1 .k-chip-label {
     display: grid; flex-direction: unset; padding: 0;
   }
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card {
-    display: flex; flex-direction: column;
-    grid-template-columns: unset; grid-template-rows: unset;
-    min-height: unset; height: auto; border-radius: 14px; overflow: hidden;
+    display: grid; grid-template-columns: 96px minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
+    min-height: 108px; height: auto; border-radius: 14px; overflow: hidden;
     background: var(--white); box-shadow: none;
     border: 1px solid var(--border-text-08);
     transition: border-color .18s; cursor: pointer;
   }
   /* D10 — pas de transform ni de halo au hover : bordure seule. */
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card:hover { border-color: var(--border-text-15); }
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-img { width: 100%; height: auto; aspect-ratio: 1; grid-column: unset; grid-row: unset; border-radius: 0; }
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-img { width: 96px; height: 100%; min-height: 108px; aspect-ratio: auto; grid-column: 1; grid-row: 1 / -1; border-radius: 0; align-self: stretch; }
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-img img { width: 100%; height: 100%; object-fit: contain; padding: 8px; }
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-name { grid-column: unset; grid-row: unset; padding: 8px 10px 4px; font-size: 13px; }
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-bottom { grid-column: unset; grid-row: unset; padding: 0 10px 10px; }
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-name { grid-column: 2; grid-row: 1; padding: 10px 10px 2px; font-size: 13px; }
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-reason { grid-column: 2; grid-row: 2; padding: 0 10px; }
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-bottom { grid-column: 2; grid-row: 3; padding: 2px 10px 10px; }
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-title { position: static; padding: 0 0 10px; background: none; }
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-chips { position: static; background: none; padding: 0 0 10px; margin-bottom: 0; }
 
@@ -4098,7 +4100,7 @@ html.k-mobile-premium-v1 .k-chip-label {
 @media (min-width: 900px) {
   #k-modal .k-modal-product-zone > #k-modal-suggestions {
     grid-column: 1 / -1;
-    grid-row: 2;
+    grid-row: 4;
     align-self: start;
     box-sizing: border-box;
     width: 100%;
@@ -4108,18 +4110,99 @@ html.k-mobile-premium-v1 .k-chip-label {
 
   #k-modal .k-modal-product-zone.k-modal-product-zone--no-enriched
   > #k-modal-suggestions {
-    grid-row: 2;
+    grid-row: 3;
   }
 
   #k-modal .k-modal-product-zone > .k-modal-long-details {
     grid-column: 1 / -1;
-    grid-row: 3;
+    grid-row: 2;
   }
 
   #k-modal .k-modal-product-zone > #k-modal-enriched-content {
     grid-column: 1 / -1;
-    grid-row: 4;
+    grid-row: 3;
   }
+}
+
+/* PDP canonique desktop — mock validé le 14 novembre 2026.
+   Une seule surface de détails sous le hero, puis les recommandations.
+   Ces styles n'affectent ni la composition mobile ni Discovery. */
+@media (min-width: 900px) {
+  #k-modal .k-modal-topbar { position: relative; }
+  #k-modal .k-modal-brand {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text);
+    font-weight: 700;
+    font-size: 25px;
+    letter-spacing: -.025em;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  #k-modal .k-modal-brand img { width: 32px; height: 32px; object-fit: contain; }
+  #k-modal .k-modal-product-zone {
+    row-gap: 16px;
+  }
+  #k-modal .k-modal-product-zone > .k-modal-long-details {
+    grid-column: 1 / -1;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px 32px;
+    margin: 0 18px;
+    background: var(--page-bg);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    min-width: 0;
+  }
+  #k-modal .k-modal-product-zone > .k-modal-long-details.k-modal-long-details--two-columns {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  #k-modal .k-modal-product-zone > .k-modal-long-details.k-modal-long-details--empty {
+    display: none;
+  }
+  #k-modal .k-modal-long-details-heading {
+    grid-column: 1 / -1;
+    font-size: 20px;
+    line-height: 1.25;
+    margin: 0;
+    color: var(--text);
+  }
+  #k-modal .k-modal-long-details-heading[hidden] { display: none; }
+  #k-modal .k-modal-long-description { min-width: 0; }
+  #k-modal .k-modal-long-description[hidden] { display: none; }
+  #k-modal .k-modal-long-details .k-modal-enriched-block {
+    min-width: 0;
+    padding: 0;
+    margin: 0;
+  }
+  #k-modal .k-modal-long-details .k-modal-section-title {
+    font-size: 15px;
+    color: var(--ocean-dark);
+    margin: 0 0 6px;
+  }
+  #k-modal .k-modal-long-details .k-modal-enriched-spec-list {
+    min-width: 0;
+  }
+  #k-modal .k-modal-long-details--two-columns > .k-modal-enriched-block--specs {
+    border-left: 1px solid var(--border);
+    padding-left: 32px;
+  }
+  #k-modal .k-modal-product-zone > #k-modal-enriched-content {
+    grid-column: 1 / -1;
+  }
+  #k-modal .k-modal-product-zone > #k-modal-suggestions {
+    grid-column: 1 / -1;
+    padding-top: 0;
+  }
+}
+@media (max-width: 899px) {
+  #k-modal .k-modal-brand { display: none; }
 }
 
 /* ── U1 — Discovery detail inside the canonical Komerce modal ───────── */
@@ -4632,13 +4715,14 @@ html.k-mobile-premium-v1 .k-chip-label {
    que borner la taille du hero LUI-MÃŠME Ã  l'intÃ©rieur de cet espace. */
 @media (min-width: 900px) {
   #k-modal .k-modal-product-zone .k-modal-img-wrap {
-    min-height: 480px;
+    min-height: 0;
     max-height: none;
     /* ProductMedia complet :
        rail 52px + gap 8px + hero carrÃ© jusqu'Ã  640px. */
     max-width: none;
     width: 100%;
-    height: calc(100dvh - 90px);
+    /* Le carousel 4:3 détermine seul la hauteur du média : pas de vide 810px. */
+    height: auto;
     /* T-018-bis â€” DÃ‰CISION A (audit desktop finition, 2026-07) :
        align-self repasse de `center` Ã  `start`. La note MIGRATION v3.0
        prÃ©cÃ©dente confondait deux sujets distincts : position:sticky
@@ -4656,7 +4740,7 @@ html.k-mobile-premium-v1 .k-chip-label {
        rÃ©cit = 108px, diff:0, capture desktop-stress-hero-alignment.png). */
     margin-inline: 0;
     margin-block: 0;
-    align-self: stretch;
+    align-self: start;
     /* Contour visible (cf. reference-modale-4-etats.html v2.1) : le container
        image n'avait jamais de border nulle part â€” flottait sans cadre contre
        le fond ivoire du shell. background/border-radius NE sont PAS ajoutÃ©s
@@ -6317,7 +6401,7 @@ html.k-mobile-premium-v1 .k-chip-label {
     width: 100%;
   }
   #k-modal .k-modal-product-zone > .k-modal-long-details {
-    padding: 0 clamp(24px, 2vw, 36px);
+    padding: 16px 20px 20px;
   }
 
   #k-modal .k-modal-product-zone .k-modal-info {
@@ -6887,14 +6971,16 @@ html.k-mobile-premium-v1 .k-chip-label {
     aspect-ratio: 1 / 1;
   }
 
-  /* Swatches couleur purs : plus compacts mais eux aussi élastiques. */
+  /* Pastilles du mock : dimension fixe et rondes, jamais étirées par la grille. */
   #k-modal .k-modal-buybox .k-vg-skus .k-sku--color {
-    flex: 1 1 0;
-    width: auto;
+    flex: 0 0 36px;
+    width: 36px;
     min-width: 36px;
-    max-width: 72px;
-    height: auto;
+    max-width: 36px;
+    height: 36px;
     aspect-ratio: 1 / 1;
+    border-radius: 50%;
+    padding: 0;
   }
 }
 
@@ -6997,15 +7083,30 @@ html.k-mobile-premium-v1 .k-chip-label {
   }
 
   #k-modal .k-modal-fav-btn {
-    position: static;
     flex: 0 0 40px;
     width: 40px;
     height: 40px;
     margin: 0;
   }
 
+  /* Sur mobile le bouton favori existant est replacé DANS le média par
+     b-modal-product-detail-bootstrap.js : aucun clone, aucun faux coeur.
+     Le positionnement n'affecte pas la PDP desktop. */
+  #k-modal .k-modal-img-wrap > .k-modal-fav-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border-radius: 50%;
+    background: var(--surface-sand-94);
+    border: 1px solid var(--border-text-10);
+    z-index: 5;
+  }
+
   #k-modal .k-modal-info h2 {
-    font-size: 16px;
+    font-size: 18px;
     line-height: 1.2;
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -7143,7 +7244,7 @@ html.k-mobile-premium-v1 .k-chip-label {
      36vh single) rendait la hauteur du hero dépendante du mode galerie
      plutôt que d'un ratio stable — Golden Elite (multi-image) produisait un
      cadre visiblement plus haut qu'une fixture SVG single-image, à contenu
-     équivalent. Remplacé par un ratio 4:3 compact, identique
+     équivalent. Remplacé par un ratio 16:9 compact, identique
      quel que soit gallery-mode ou has-variants : la hauteur ne dépend plus
      que de la largeur du wrapper, donc cohérente entre produits.
 
@@ -7158,7 +7259,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   #k-modal .k-modal-img-wrap[data-gallery-mode="multiple"],
   #k-modal .k-modal-img-wrap[data-gallery-mode="single"] {
     width: 100%;
-    aspect-ratio: 4 / 3;
+    aspect-ratio: 16 / 9;
     height: auto;
     min-height: 150px;
     max-height: 62vh;
@@ -7183,14 +7284,14 @@ html.k-mobile-premium-v1 .k-chip-label {
 
   /* ── P3-fix : Hero compact pour produits avec variantes ─────────────────
      k-modal--has-variants est posé par renderMobileProductDetail(). Avec le
-     ratio 4:3 (plus compact que l'ancien 48vh), le hero libère déjà plus
+     ratio 16:9 (plus compact que l'ancien 48vh), le hero libère déjà plus
      d'espace vertical pour les chips Taille qu'avant — pas de surcharge
      supplémentaire nécessaire ici. Règle conservée à titre explicite pour
      ne pas dépendre implicitement du fallback ci-dessus si le contrat
      évolue. */
   #k-modal.k-modal--has-variants .k-modal-img-wrap,
   #k-modal.k-modal--has-variants .k-modal-img-wrap[data-gallery-mode="multiple"] {
-    aspect-ratio: 4 / 3;
+    aspect-ratio: 16 / 9;
     height: auto;
     min-height: 150px;
     max-height: 62vh;
@@ -7596,6 +7697,16 @@ html.k-mobile-premium-v1 .k-chip-label {
     margin: 12px 0 0;
   }
 
+  .k-mdm-details-title {
+    margin: 0;
+    padding: 14px 14px 2px;
+    color: var(--text);
+    font-size: 19px;
+    line-height: 1.2;
+    font-weight: 700;
+    letter-spacing: -.02em;
+  }
+
   /* ── MDM-7 : Description section ───────────────────────────── */
 
   .k-mdm-desc-section {
@@ -7604,8 +7715,8 @@ html.k-mobile-premium-v1 .k-chip-label {
   }
 
   .k-mdm-section-heading {
-    font-size: 13px;
-    font-weight: 500;
+    font-size: 14px;
+    font-weight: 700;
     color: var(--text);
     margin: 0 0 6px;
   }
@@ -7623,8 +7734,8 @@ html.k-mobile-premium-v1 .k-chip-label {
   }
 
   .k-mdm-desc-text {
-    font-size: 12px;
-    line-height: 1.5;
+    font-size: 13px;
+    line-height: 1.55;
     color: var(--text-muted);
     display: -webkit-box;
     -webkit-line-clamp: 3;
@@ -11277,20 +11388,55 @@ body.cart-open  #k-section-index { display:none; }
   /* Le panier garde un ancrage optique légèrement décalé à droite pendant tout le scroll.
      L'identité produit reste strictement dans la moitié gauche et
      ne peut jamais passer sous le panier. */
+  /* V4 mini-héro : le panier rejoint le groupe droit UNIQUEMENT au scroll. */
   #k-modal.is-scrolled .k-modal-topbar-product {
-    max-width: calc(50% - 34px);
+    max-width: none;
+    min-width: 0;
     margin-left: 0;
-    gap: 6px;
+    flex: 1 1 0;
+    gap: 8px;
   }
 
+  #k-modal.is-scrolled .k-modal-topbar-right {
+    margin-left: 4px;
+    gap: 3px;
+  }
+
+  #k-modal.is-scrolled .k-modal-cart-btn {
+    position: relative;
+    top: auto;
+    left: auto;
+    transform: none;
+    flex-shrink: 0;
+  }
+
+  #k-modal.is-scrolled .k-modal-cart-btn:active { transform: scale(.94); }
+
   #k-modal.is-scrolled .k-topbar-thumb {
-    width: 34px;
-    height: 34px;
-    flex-basis: 34px;
+    appearance: none;
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+    border: 0;
+    padding: 0;
+    background: var(--sand);
+    cursor: pointer;
   }
 
   #k-modal.is-scrolled .k-topbar-name {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    max-height: 2.5em;
+    white-space: normal;
     font-size: 12px;
+    line-height: 1.25;
+    font-weight: 600;
+  }
+
+  #k-modal.is-scrolled .k-topbar-price-val {
+    font-size: 14px;
+    font-weight: 700;
   }
 
   #k-modal.is-scrolled .k-topbar-price {

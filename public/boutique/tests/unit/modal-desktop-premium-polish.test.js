@@ -38,7 +38,8 @@ describe('PDP desktop premium polish', () => {
     )?.[1] ?? '';
 
     expect(heroRule).toMatch(/max-width\s*:\s*none/);
-    expect(heroRule).toMatch(/align-self\s*:\s*stretch/);
+    expect(heroRule).toMatch(/align-self\s*:\s*start/);
+    expect(heroRule).toMatch(/height\s*:\s*auto/);
 
     expect(carouselRule).toMatch(/max-width\s*:\s*none/);
     expect(carouselRule).toMatch(/height\s*:\s*auto/);

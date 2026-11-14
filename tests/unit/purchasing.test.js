@@ -9,9 +9,8 @@
 /**
  * Tests unitaires — purchasing-trigger-service (A-BE-05)
  *
- * processReceive (purchasing-receive-service) a été extrait dans son propre
- * fichier tests/unit/purchasing-receive-service.test.js (audit 2026-07-07)
- * pour s'aligner avec la convention testBaseKey() de feature-guard.js.
+ * La réception déclarative historique a été retirée en HB-10 ; ces tests ne
+ * concernent que le déclenchement d'achat, pas le reçu physique Hub.
  *
  * Chemins couverts :
  *   triggerPurchasing :

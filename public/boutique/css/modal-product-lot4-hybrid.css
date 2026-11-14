@@ -68,7 +68,7 @@
     width: 100%;
   }
   #k-modal .k-modal-product-zone > .k-modal-long-details {
-    padding: 0 clamp(24px, 2vw, 36px);
+    padding: 16px 20px 20px;
   }
 
   #k-modal .k-modal-product-zone .k-modal-info {
@@ -638,13 +638,15 @@
     aspect-ratio: 1 / 1;
   }
 
-  /* Swatches couleur purs : plus compacts mais eux aussi élastiques. */
+  /* Pastilles du mock : dimension fixe et rondes, jamais étirées par la grille. */
   #k-modal .k-modal-buybox .k-vg-skus .k-sku--color {
-    flex: 1 1 0;
-    width: auto;
+    flex: 0 0 36px;
+    width: 36px;
     min-width: 36px;
-    max-width: 72px;
-    height: auto;
+    max-width: 36px;
+    height: 36px;
     aspect-ratio: 1 / 1;
+    border-radius: 50%;
+    padding: 0;
   }
 }

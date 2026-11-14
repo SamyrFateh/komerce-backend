@@ -94,6 +94,7 @@ module.exports = {
       { fn: 'createReconciliationIncident', file: 'services/incident-write-service.js' },
       { fn: 'createAlertEngineIncidentIfNew', file: 'services/incident-write-service.js' },
       { fn: 'acknowledgeAlertEngineIncident', file: 'services/incident-write-service.js' },
+      { fn: 'createSupplierShortageIncident', file: 'services/incident-write-service.js' },
       { fn: 'resolveOpsIncident', file: 'services/incident-write-service.js' },
       { fn: 'resolvePhysicalProofIncident', file: 'services/incident-write-service.js' },
       { fn: 'resolveUpstreamTruthIncident', file: 'services/incident-write-service.js' },

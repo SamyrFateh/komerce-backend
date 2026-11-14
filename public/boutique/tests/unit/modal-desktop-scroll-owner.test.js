@@ -109,10 +109,11 @@ describe('scroll owner unique desktop — oracle RÉF-2026-07f', () => {
   test('le hero desktop exploite toute sa colonne sans recréer de scroll owner', () => {
     const imgRule = media.match(/#k-modal \.k-modal-product-zone \.k-modal-img-wrap\s*\{([^}]*)\}/)?.[1] ?? '';
     expect(imgRule).not.toMatch(/aspect-ratio\s*:/);
-    expect(imgRule).toMatch(/min-height\s*:\s*480px/);
+    expect(imgRule).toMatch(/min-height\s*:\s*0/);
+    expect(imgRule).toMatch(/height\s*:\s*auto/);
     expect(imgRule).toMatch(/max-height\s*:\s*none/);
     expect(imgRule).toMatch(/max-width\s*:\s*none/);
-    expect(imgRule).toMatch(/align-self\s*:\s*stretch/);
+    expect(imgRule).toMatch(/align-self\s*:\s*start/);
 
     const carouselRule = media.match(
       /#k-modal \.k-modal-product-zone \.k-modal-carousel\s*\{([^}]*)\}/

@@ -25,6 +25,16 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 const HOUR = 3600 * 1000;
 const ISSUED_NOT_SENT_AFTER_H = 24;
 const SENT_NOT_CONFIRMED_AFTER_H = 72;
+// Décision 6 (#3998) : alerte directrice au-delà de 48 h d'ancienneté d'une tâche.
+const TASK_OVERDUE_AFTER_H = 48;
+
+// Ancienneté d'une tâche, dérivée de la date du fait déclencheur (jamais stockée). Date inconnue : champs null.
+function withAge(task, now) {
+  const t = task.since ? new Date(task.since).getTime() : NaN;
+  if (!Number.isFinite(t)) return { ...task, since: null, age_hours: null, overdue: false };
+  const ageHours = Math.max(0, Math.floor((now.getTime() - t) / HOUR));
+  return { ...task, since: new Date(t).toISOString(), age_hours: ageHours, overdue: ageHours >= TASK_OVERDUE_AFTER_H };
+}
 
 function failure(status, code, message) {
   const error = new Error(message);
@@ -127,7 +137,7 @@ const PHYSICAL_BY_ITEM_SQL = `
    WHERE a.market_id = $1 AND a.order_item_id = ANY($2::uuid[])
    GROUP BY a.order_item_id`;
 
-function buildTodo({ orders, unsourced, needBatches, purchaseOrders, bagsOpen, bagsReady, boxes, viewer }) {
+function buildTodo({ orders, unsourced, needBatches, purchaseOrders, bagsOpen, bagsReady, boxes, viewer, parcelsToReconcile = [], blockedItems = [], queuedOrders = [], now = new Date() }) {
   const todo = [];
   const can = (flag, reason) => (viewer === null ? { viewer_can_act: null, blocked_reason: null }
     : flag ? { viewer_can_act: true, blocked_reason: null } : { viewer_can_act: false, blocked_reason: reason });
@@ -145,6 +155,7 @@ function buildTodo({ orders, unsourced, needBatches, purchaseOrders, bagsOpen, b
       why: list.some((u) => !u.supplier_mapping_present)
         ? 'Aucun fournisseur admissible pour le produit et la plateforme du SKU.'
         : 'Aucune ligne d’achat créée.',
+      since: list[0].order_created_at || null,
       action: { type: 'resolve_sourcing', order_id: orderId, label: 'Ouvrir une ligne d’achat' }, ...can(true),
     });
   }
@@ -153,6 +164,7 @@ function buildTodo({ orders, unsourced, needBatches, purchaseOrders, bagsOpen, b
       id: `PREPARE_PO:${batch.key}`, kind: 'PREPARE_PO', priority: 20, owner: 'agent_hub', subject: { batch_key: batch.key },
       missing: `${batch.quantity} u à regrouper chez ${batch.supplier_name}`,
       why: `${batch.order_count} commande(s) à regrouper en une PO.`,
+      since: batch.oldest_at || null,
       action: { type: 'prepare_po', batch_key: batch.key, label: batch.compatible_draft_po_ids.length ? 'Rattacher au brouillon' : 'Préparer la PO' },
       ...can(true),
     });
@@ -164,28 +176,33 @@ function buildTodo({ orders, unsourced, needBatches, purchaseOrders, bagsOpen, b
       push({ id: `AUTHORIZE_COMMITMENT:${po.id}`, kind: 'AUTHORIZE_COMMITMENT', priority: 30, owner: 'responsable_hub', subject,
         missing: `${ref} : engagement à valider`,
         why: 'Sans la responsable Hub, la PO ne part pas.',
+        since: po.created_at,
         action: { type: 'authorize_commitment', po_id: po.id, label: 'Valider l’engagement' },
         ...can(viewer && viewer.can_authorize_commitment, 'réservé à la responsable Hub') });
     } else if (po.step.key === 'validation') {
       push({ id: `SUBMIT_PO:${po.id}`, kind: 'SUBMIT_PO', priority: 31, owner: 'agent_hub', subject,
         missing: `${ref} : engagement validé, à soumettre`,
         why: 'Le fournisseur n’est pas encore informé.',
+        since: po.authorizations.commitment && po.authorizations.commitment.decided_at,
         action: { type: 'submit_po', po_id: po.id, label: 'Soumettre la PO' }, ...can(true) });
     } else if (po.step.key === 'engaged') {
       push({ id: `RECORD_SENT:${po.id}`, kind: 'RECORD_SENT', priority: 32, owner: 'agent_hub', subject,
         missing: `${ref} : envoi à enregistrer`,
         why: 'Une PO soumise n’est pas encore envoyée.',
+        since: po.ordered_at || po.updated_at,
         action: { type: 'record_sent', po_id: po.id, label: 'Enregistrer l’envoi' }, ...can(true) });
     } else if (po.status === 'notified' && po.sent_at) {
       push({ id: `CONFIRM_PO:${po.id}`, kind: 'CONFIRM_PO', priority: 33, owner: 'agent_hub', subject,
         missing: `${ref} : confirmation fournisseur à saisir`,
         why: 'Quantités confirmées par le fournisseur.',
+        since: po.sent_at,
         action: { type: 'confirm_po', po_id: po.id, label: 'Enregistrer la confirmation' }, ...can(true) });
     }
     if (po.status !== 'draft' && po.status !== 'cancelled' && po.authorizations.commitment && !po.authorizations.payment) {
       push({ id: `AUTHORIZE_PAYMENT:${po.id}`, kind: 'AUTHORIZE_PAYMENT', priority: 40, owner: 'responsable_hub', subject,
         missing: `${ref} : paiement à autoriser`,
         why: 'Engagement validé ne vaut pas paiement.',
+        since: po.authorizations.commitment.decided_at,
         action: { type: 'authorize_payment', po_id: po.id, label: 'Autoriser le paiement' },
         ...can(viewer && viewer.can_authorize_payment, 'réservé à la responsable Hub') });
     }
@@ -193,12 +210,14 @@ function buildTodo({ orders, unsourced, needBatches, purchaseOrders, bagsOpen, b
       push({ id: `AWAIT_RECEIPT:${po.id}`, kind: 'AWAIT_RECEIPT', priority: 50, owner: 'agent_hub', subject,
         missing: `${ref} : ${po.totals.missing} u attendue(s)`,
         why: 'Seule la réception physique compte.',
+        since: po.confirmed_at || po.sent_at || po.ordered_at,
         action: { type: 'receive', po_id: po.id, label: 'Enregistrer une réception' }, ...can(true) });
     }
     if (po.totals.anomaly > 0) {
       push({ id: `REVIEW_ANOMALY:${po.id}`, kind: 'REVIEW_ANOMALY', priority: 45, owner: 'agent_hub', subject,
         missing: `${ref} : ${po.totals.anomaly} u en écart`,
         why: 'Ces unités ne comptent pas comme reçues.',
+        since: po.updated_at,
         action: { type: 'open_physical', po_id: po.id, label: 'Voir le détail physique' }, ...can(true) });
     }
   }
@@ -207,6 +226,7 @@ function buildTodo({ orders, unsourced, needBatches, purchaseOrders, bagsOpen, b
       push({ id: `PREPARE_BAG:${order.id}`, kind: 'PREPARE_BAG', priority: 60, owner: 'agent_hub', subject: { order_id: order.id },
         missing: `${order.reference} : sac à préparer`,
         why: 'Commande complète : prête à emballer.',
+        since: order.created_at,
         action: { type: 'create_bag', order_id: order.id, label: 'Créer le sac client' }, ...can(true) });
     }
   }
@@ -217,29 +237,65 @@ function buildTodo({ orders, unsourced, needBatches, purchaseOrders, bagsOpen, b
       push({ id: `CLOSE_BAG:${bag.unit_id}`, kind: 'CLOSE_BAG', priority: 61, owner: 'agent_hub', subject: { order_id: bag.order_id, bag_unit_id: bag.unit_id },
         missing: `${bag.order_ref} : sac à fermer`,
         why: 'Seul un sac fermé entre en KOM-BOX.',
+        since: bag.created_at,
         action: { type: 'close_bag', bag_unit_id: bag.unit_id, label: 'Fermer le sac' }, ...can(true) });
     } else if (planned > 0) {
       push({ id: `DEPOSIT_BAG:${bag.unit_id}`, kind: 'DEPOSIT_BAG', priority: 62, owner: 'agent_hub', subject: { order_id: bag.order_id, bag_unit_id: bag.unit_id },
         missing: `${bag.order_ref} : sac ${actual}/${planned}`,
         why: 'Chaque dépôt exige un scan.',
+        since: bag.created_at,
         action: { type: 'open_physical', label: 'Déposer dans le sac (scan)' }, ...can(true) });
     }
   }
   if (bagsReady.length) {
     push({ id: 'BOX_BAGS', kind: 'BOX_BAGS', priority: 63, owner: 'agent_hub', subject: {},
       missing: `${bagsReady.length} sac(s) fermé(s) à mettre en KOM-BOX`, why: 'Scan du sac puis de la KOM-BOX.',
+      since: bagsReady.map((b) => b.since).filter(Boolean).sort()[0] || null,
       action: { type: 'open_physical', label: 'Placer en KOM-BOX (scan)' }, ...can(true) });
   }
   for (const b of boxes) {
     if (b.state === 'PACKED' && !b.shipment_ref) {
       push({ id: `BOX_UNSHIPPED:${b.unit_id}`, kind: 'BOX_UNSHIPPED', priority: 64, owner: 'agent_hub', subject: { box_unit_id: b.unit_id },
         missing: `${b.reference} : à rattacher à une expédition`, why: 'Sans expédition, la KOM-BOX ne part pas.',
+        since: b.created_at,
         action: { type: 'open_physical', label: 'Rattacher à une expédition' }, ...can(true) });
     }
   }
+  // HB-08 : colis fournisseur arrivé sans contenu déclaré — invisible des allocations, donc des tâches par PO.
+  for (const parcel of parcelsToReconcile) {
+    push({ id: `RECONCILE_PARCEL:${parcel.unit_id}`, kind: 'RECONCILE_PARCEL', priority: 35, owner: 'agent_hub', severity: 'anomaly',
+      subject: { parcel_unit_id: parcel.unit_id },
+      missing: `Colis ${parcel.reference} arrivé à rapprocher`,
+      why: 'Reçu au Hub sans contenu déclaré : il n’appartient à aucune PO tant qu’il n’est pas déballé.',
+      since: parcel.created_at,
+      action: { type: 'open_physical', label: 'Déballer et rapprocher (scan)' }, ...can(true) });
+  }
+  // HB-02 : commande dont les lignes d'achat sont toutes soldées ou annulées sous le besoin — elle n'avancera jamais seule.
+  const blockedByOrder = new Map();
+  blockedItems.forEach((b) => blockedByOrder.set(b.order_id, [...(blockedByOrder.get(b.order_id) || []), b]));
+  for (const [orderId, list] of blockedByOrder) {
+    const units = list.reduce((t, b) => t + (b.ordered - b.covered), 0);
+    push({ id: `BLOCKED_BY_SHORTFALL:${orderId}`, kind: 'BLOCKED_BY_SHORTFALL', priority: 11, owner: 'responsable_hub', severity: 'anomaly',
+      subject: { order_id: orderId },
+      missing: `${list[0].order_ref} : bloquée par rupture · ${units} u non couvertes`,
+      why: 'Toutes les lignes d’achat sont soldées ou annulées sous le besoin : arbitrer (envoi partiel et remboursement de la quantité manquante).',
+      since: list.map((b) => b.since).filter(Boolean).sort().slice(-1)[0] || null,
+      action: { type: 'open_order', order_id: orderId, label: 'Ouvrir la commande' }, ...can(true) });
+  }
+  // HB-12 : aucun colis local ne peut accueillir le reliquat et le maximum de trois
+  // colis ouverts au relais est atteint. Le constat reste une projection, jamais un état enregistré.
+  for (const wait of queuedOrders) {
+    push({ id: `PARCEL_CAPACITY_WAIT:${wait.order_id}`, kind: 'PARCEL_CAPACITY_WAIT', priority: 57,
+      owner: 'agent_hub', severity: 'anomaly', subject: { order_id: wait.order_id },
+      missing: `${wait.order_ref} : en file de colis · ${wait.relais_name || 'relais'} (${wait.open_parcels} ouverts)`,
+      why: 'La capacité des trois colis locaux ouverts est saturée : expédier ou libérer une place avant de répartir.',
+      since: wait.since,
+      action: { type: 'open_order', order_id: wait.order_id, label: 'Ouvrir la commande en attente' }, ...can(true),
+    });
+  }
   // Actions exécutables par le rôle courant d'abord, puis attentes d'un autre rôle ; priorité métier ensuite.
   const own = (t) => (t.viewer_can_act === false ? 1 : 0);
-  return todo.sort((a, b) => own(a) - own(b) || a.priority - b.priority);
+  return todo.map((t) => withAge(t, now)).sort((a, b) => own(a) - own(b) || a.priority - b.priority);
 }
 
 
@@ -346,6 +402,7 @@ function buildPhysical({ orders, bagsOpen, bagsReady, boxes, poById }) {
 
 async function loadCockpit({
   q, marketId, viewer, orderMap, needsRows, purchaseOrders, unsourcedItems, bagsOpen, bagsReady, boxes,
+  parcelsToReconcile = [], blockedItems = [], queuedOrders = [], now = new Date(),
 }) {
   const grants = new Set();
   if (viewer && viewer.id) {
@@ -468,9 +525,10 @@ async function loadCockpit({
     const key = `${n.supplier_id}|${n.procurement_hub_ref || ''}|${marketId}`;
     if (!batches.has(key)) batches.set(key, {
       key, supplier_id: n.supplier_id, supplier_name: n.supplier_name, procurement_hub_ref: n.procurement_hub_ref || null,
-      market_id: marketId, quantity: 0, order_ids: new Set(), groups: new Map(),
+      market_id: marketId, quantity: 0, order_ids: new Set(), groups: new Map(), oldest_at: null,
     });
     const batch = batches.get(key);
+    if (n.created_at && (!batch.oldest_at || new Date(n.created_at) < new Date(batch.oldest_at))) batch.oldest_at = n.created_at;
     batch.quantity += Number(n.quantity);
     batch.order_ids.add(n.order_id);
     const skuKey = n.product_sku_id || `ref:${n.supplier_sku || n.product_name}`;
@@ -484,7 +542,7 @@ async function loadCockpit({
   }
   const needBatches = [...batches.values()].map((b) => ({
     key: b.key, supplier_id: b.supplier_id, supplier_name: b.supplier_name, procurement_hub_ref: b.procurement_hub_ref,
-    market_id: b.market_id, quantity: b.quantity, order_count: b.order_ids.size,
+    market_id: b.market_id, quantity: b.quantity, order_count: b.order_ids.size, oldest_at: b.oldest_at,
     groups: [...b.groups.values()],
     // Une ligne ne se rattache qu'à un brouillon dont l'engagement n'est pas encore validé (même fournisseur, Hub et marché).
     compatible_draft_po_ids: purchaseOrders.filter((po) => po.status === 'draft' && !po.authorizations.commitment
@@ -501,7 +559,7 @@ async function loadCockpit({
     orders,
     unit_legend: Object.entries(UNIT_LABELS).filter(([state]) => state !== 'sourcing').map(([state, label]) => ({ state, label })),
     physical: buildPhysical({ orders, bagsOpen, bagsReady, boxes, poById }),
-    todo: buildTodo({ orders, unsourced: unsourcedItems, needBatches, purchaseOrders, bagsOpen, bagsReady, boxes, viewer: rights }),
+    todo: buildTodo({ orders, unsourced: unsourcedItems, needBatches, purchaseOrders, bagsOpen, bagsReady, boxes, viewer: rights, parcelsToReconcile, blockedItems, queuedOrders, now }),
   };
 }
 
@@ -560,7 +618,7 @@ async function getDossier({ marketId, supplierId = null, viewer = null, now = ne
     if (uncovered > 0) {
       unsourcedItems.push({
         order_id: r.order_id, order_ref: r.order_ref, order_item_id: r.order_item_id,
-        product_name: r.product_name, missing_quantity: uncovered,
+        product_name: r.product_name, missing_quantity: uncovered, order_created_at: r.order_created_at || null,
         supplier_mapping_present: supplierMapped,
       });
     }
@@ -676,7 +734,7 @@ async function getDossier({ marketId, supplierId = null, viewer = null, now = ne
      GROUP BY u.id ORDER BY u.created_at DESC LIMIT 100`, [marketId]);
 
   const { rows: boxRows } = await q.query(`
-    SELECT u.id AS unit_id, u.reference, u.state, u.market_id, sh.reference AS shipment_ref, sh.stage AS shipment_stage,
+    SELECT u.id AS unit_id, u.reference, u.state, u.market_id, u.created_at, sh.reference AS shipment_ref, sh.stage AS shipment_stage,
            a.order_id, o.reference AS order_ref, a.purchase_line_id, p.quantity, p.bag_unit_id
       FROM hub_physical_units u
       JOIN hub_box_effective_placements p ON p.box_unit_id = u.id
@@ -689,7 +747,7 @@ async function getDossier({ marketId, supplierId = null, viewer = null, now = ne
   const boxes = new Map();
   for (const r of boxRows) {
     if (!boxes.has(r.unit_id)) {
-      boxes.set(r.unit_id, { unit_id: r.unit_id, reference: r.reference, state: r.state, shipment_ref: r.shipment_ref || null,
+      boxes.set(r.unit_id, { unit_id: r.unit_id, reference: r.reference, state: r.state, created_at: r.created_at || null, shipment_ref: r.shipment_ref || null,
         shipment_stage: r.shipment_stage || null, contents: [] });
     }
     boxes.get(r.unit_id).contents.push({ order_id: r.order_id, order_ref: r.order_ref, line_id: r.purchase_line_id, qty: Number(r.quantity), bag_unit_id: r.bag_unit_id || null });
@@ -697,13 +755,13 @@ async function getDossier({ marketId, supplierId = null, viewer = null, now = ne
 
   // KOM-BOX vides (créées depuis le Hub, pas encore composées) : visibles pour pouvoir être remplies.
   const { rows: emptyBoxRows } = await q.query(`
-    SELECT u.id AS unit_id, u.reference, u.state FROM hub_physical_units u
+    SELECT u.id AS unit_id, u.reference, u.state, u.created_at FROM hub_physical_units u
      WHERE u.unit_type = 'MARKET_PARCEL' AND u.state NOT IN ('DISPATCHED','SUPERSEDED','QUARANTINED')
        AND (u.market_id = $1 OR u.market_id IS NULL)
        AND NOT EXISTS (SELECT 1 FROM hub_box_effective_placements p WHERE p.box_unit_id = u.id)
      ORDER BY u.created_at DESC LIMIT 20`, [marketId]);
   for (const r of emptyBoxRows) {
-    if (!boxes.has(r.unit_id)) boxes.set(r.unit_id, { unit_id: r.unit_id, reference: r.reference, state: r.state, shipment_ref: null, shipment_stage: null, contents: [] });
+    if (!boxes.has(r.unit_id)) boxes.set(r.unit_id, { unit_id: r.unit_id, reference: r.reference, state: r.state, created_at: r.created_at || null, shipment_ref: null, shipment_stage: null, contents: [] });
   }
 
   // Quantités reçues pas encore mises en carton : sources proposées pour composer une KOM-BOX (REPACK), sans ressaisie.
@@ -731,7 +789,7 @@ async function getDossier({ marketId, supplierId = null, viewer = null, now = ne
   // mono-commande, dont le manifeste est immuable et partial-friendly.
   const {rows:openBagRows}=await q.query(
     "SELECT u.id AS unit_id, u.reference, u.state, u.order_id, " +
-    "o.reference AS order_ref, u.bag_plan, " +
+    "o.reference AS order_ref, u.bag_plan, u.created_at, " +
     "COALESCE((SELECT jsonb_agg(jsonb_build_object('order_item_id',q.order_item_id, " +
     "'quantity',q.actual_qty)) FROM (SELECT a.order_item_id,SUM(p.quantity)::int AS actual_qty " +
     "FROM hub_physical_unit_placements p JOIN hub_purchase_allocations a ON a.id=p.allocation_id " +
@@ -744,12 +802,12 @@ async function getDossier({ marketId, supplierId = null, viewer = null, now = ne
   );
   const bags_open=openBagRows.map(r=>({
     unit_id:r.unit_id,reference:r.reference,state:r.state,order_id:r.order_id,
-    order_ref:r.order_ref,bag_plan:r.bag_plan||[],actual_contents:r.actual_contents||[],
+    order_ref:r.order_ref,created_at:r.created_at||null,bag_plan:r.bag_plan||[],actual_contents:r.actual_contents||[],
   }));
 
   // Sacs clients scellés, encore hors carton : à scanner dans une KOM-BOX.
   const { rows: readyBagRows } = await q.query(
-    "SELECT u.id AS unit_id, u.reference, u.order_id, o.reference AS order_ref, " +
+    "SELECT u.id AS unit_id, u.reference, u.order_id, o.reference AS order_ref, u.updated_at AS since, " +
     "sum(p.quantity)::int AS quantity " +
     "FROM hub_physical_units u " +
     "JOIN orders o ON o.id=u.order_id " +
@@ -758,12 +816,12 @@ async function getDossier({ marketId, supplierId = null, viewer = null, now = ne
     "WHERE u.unit_type='HANDLING_UNIT' AND u.order_id IS NOT NULL " +
     "AND u.state='PACKED' AND a.market_id=$1 " +
     "AND NOT EXISTS (SELECT 1 FROM hub_box_bags l WHERE l.bag_unit_id=u.id) " +
-    "GROUP BY u.id, u.reference, u.order_id, o.reference " +
+    "GROUP BY u.id, u.reference, u.order_id, o.reference, u.updated_at " +
     "ORDER BY u.reference LIMIT 100", [marketId]
   );
   const bags_ready = readyBagRows.map(r => ({
     unit_id: r.unit_id, reference: r.reference, order_id: r.order_id,
-    order_ref: r.order_ref, quantity: Number(r.quantity),
+    order_ref: r.order_ref, quantity: Number(r.quantity), since: r.since || null,
   }));
 
   // Expéditions encore ouvertes (hub_ready) du marché : cibles de rattachement proposées au Hub, sans ressaisie.
@@ -804,11 +862,67 @@ async function getDossier({ marketId, supplierId = null, viewer = null, now = ne
     if (['PACKED'].includes(b.state) && !b.shipment_ref) toHandle.push({ kind: 'BOX_UNSHIPPED', unit_id: b.unit_id, reason: `Carton ${b.reference} emballé, sans expédition` });
   }
 
+  // HB-08 : colis fournisseur arrivé sans aucun placement (donc sans allocation, ni marché lisible par les tâches par PO).
+  // Un colis sans marché connu est projeté dans chaque marché ; la vue directrice le dédoublonne.
+  const { rows: parcelRows } = await q.query(`
+    SELECT u.id AS unit_id, u.reference, u.created_at
+      FROM hub_physical_units u
+     WHERE u.unit_type = 'SUPPLIER_PACKAGE' AND u.state = 'RECEIVED' AND u.outcome_type IS NULL
+       AND (u.market_id = $1 OR u.market_id IS NULL)
+       AND NOT EXISTS (SELECT 1 FROM hub_physical_unit_placements p WHERE p.physical_unit_id = u.id)
+     ORDER BY u.created_at, u.id LIMIT 100`, [marketId]);
+  // HB-02 : article IMPORT dont toutes les lignes d'achat sont soldées/annulées sous le besoin (invariant H2).
+  const { rows: blockedRows } = await q.query(`
+    SELECT o.id AS order_id, o.reference AS order_ref, oi.id AS order_item_id, oi.quantity AS ordered,
+           SUM(v.effective_quantity)::int AS covered, MAX(pl.updated_at) AS since
+      FROM order_items oi
+      JOIN orders o ON o.id = oi.order_id
+      JOIN v_purchase_line_progress v ON v.order_item_id = oi.id AND v.line_id IS NOT NULL
+      JOIN purchase_lines pl ON pl.id = v.line_id
+     WHERE o.market_id = $1 AND o.status IN ('ordered', 'preparation') AND oi.fulfillment_source = 'IMPORT'
+     GROUP BY o.id, o.reference, oi.id, oi.quantity
+    HAVING SUM(v.effective_quantity) < oi.quantity AND bool_and(v.cancelled OR v.received_quantity >= v.effective_quantity)`, [marketId]);
+
+  // HB-12 : même limite que auto-parcel (trois colis locaux ouverts par relais,
+  // 30 unités et dix commandes par colis). La file n'est signalée que si aucun colis
+  // existant n'a la capacité d'absorber la quantité locale encore non affectée.
+  const { rows: queuedRows } = await q.query(`
+    SELECT o.id AS order_id, o.reference AS order_ref, o.created_at AS since,
+           r.name AS relais_name, COUNT(DISTINCT p.id)::int AS open_parcels
+      FROM orders o
+      JOIN relais r ON r.id = o.relais_id
+      JOIN LATERAL (
+        SELECT COALESCE(SUM(oi.quantity), 0)::int AS pending_qty
+          FROM order_items oi
+         WHERE oi.order_id = o.id AND COALESCE(oi.fulfillment_source, '') <> 'IMPORT'
+           AND NOT EXISTS (
+             SELECT 1 FROM parcel_items pi
+               JOIN parcels assigned ON assigned.id = pi.parcel_id AND assigned.status <> 'cancelled'
+              WHERE pi.order_item_id = oi.id
+           )
+      ) pending ON pending.pending_qty > 0
+      JOIN parcels p ON p.relais_id = o.relais_id AND p.status IN ('draft', 'preparation')
+      LEFT JOIN LATERAL (
+        SELECT COUNT(pi.id)::int AS item_count,
+               COUNT(DISTINCT oi.order_id)::int AS order_count,
+               ARRAY_AGG(DISTINCT CASE WHEN oi.fulfillment_source = 'IMPORT' THEN 'import' ELSE 'local' END) AS lanes
+          FROM parcel_items pi JOIN order_items oi ON oi.id = pi.order_item_id
+         WHERE pi.parcel_id = p.id
+      ) capacity ON TRUE
+     WHERE o.market_id = $1 AND o.status IN ('ordered', 'preparation')
+       AND (capacity.lanes IS NULL OR capacity.lanes = ARRAY['local']::text[])
+     GROUP BY o.id, o.reference, o.created_at, r.name, pending.pending_qty
+    HAVING COUNT(DISTINCT p.id) >= 3
+       AND BOOL_AND(capacity.item_count + pending.pending_qty > 30 OR capacity.order_count >= 10)
+     ORDER BY o.created_at LIMIT 100`, [marketId]);
+
   const count = (stage) => purchaseOrders.filter((po) => po.stage === stage).length;
   // Cockpit : mêmes lectures, enrichies (couverture, réception, ventilation physique, autorisations, À faire maintenant).
   const cockpit = await loadCockpit({
     q, marketId, viewer, orderMap: orders, needsRows, purchaseOrders, unsourcedItems,
     bagsOpen: bags_open, bagsReady: bags_ready, boxes: [...boxes.values()],
+    parcelsToReconcile: parcelRows, queuedOrders: queuedRows, now,
+    blockedItems: blockedRows.map((r) => ({ ...r, ordered: Number(r.ordered), covered: Number(r.covered) })),
   });
   return {
     market_id: marketId,
@@ -840,6 +954,33 @@ async function getDossier({ marketId, supplierId = null, viewer = null, now = ne
     fillable,
     open_shipments: shipmentRows,
     to_handle: toHandle,
+  };
+}
+
+// Vue directrice (décision 6) : tâches de TOUS les marchés actifs, la plus ancienne d'abord, alerte au-delà de 48 h.
+// Même service et mêmes tâches que le dossier par marché : aucune seconde source de vérité.
+async function getDirectorTodo({ viewer = null, now = new Date() } = {}, q = db) {
+  const { rows: markets } = await q.query('SELECT id, code, name FROM markets WHERE is_active = TRUE ORDER BY code');
+  const tasks = new Map();
+  for (const market of markets) {
+    const d = await getDossier({ marketId: market.id, viewer, now }, q);
+    for (const t of d.cockpit.todo) {
+      // Une action "BOX_BAGS" (ou autre ID local) peut exister dans plusieurs marchés.
+      // Le dossier directeur ne doit pas effacer les tâches du deuxième marché.
+      // Seul le colis fournisseur sans rattachement est réellement global et dédoublonné par unité.
+      const key = t.kind === 'RECONCILE_PARCEL' ? t.id : `${market.id}:${t.id}`;
+      if (!tasks.has(key)) tasks.set(key, { ...t, market: { id: market.id, code: market.code, name: market.name } });
+    }
+  }
+  const list = [...tasks.values()].sort((a, b) => (b.overdue - a.overdue) || ((b.age_hours ?? -1) - (a.age_hours ?? -1)) || a.priority - b.priority);
+  return {
+    generated_at: now.toISOString(),
+    scope: 'ALL_MARKETS',
+    overdue_after_hours: TASK_OVERDUE_AFTER_H,
+    total: list.length,
+    overdue_count: list.filter((t) => t.overdue).length,
+    markets: markets.map((m) => m.code),
+    tasks: list,
   };
 }
 
@@ -910,4 +1051,4 @@ async function getOrderCompleteness(orderId, q = db) {
   return { has_import: rows.length > 0, complete: rows.length > 0 && pending.length === 0, pending_items: pending };
 }
 
-module.exports = { resolveMarket, getDossier, getTrace, poStage, getOrderCompleteness, orderStatus };
+module.exports = { resolveMarket, getDossier, getDirectorTodo, getTrace, poStage, getOrderCompleteness, orderStatus, withAge, TASK_OVERDUE_AFTER_H };

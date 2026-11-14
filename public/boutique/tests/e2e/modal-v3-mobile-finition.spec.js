@@ -349,8 +349,16 @@ test.describe('PDP mobile retouches 2026-11 — Chromium geometry', () => {
         const swatchName = document.querySelector('#k-modal .k-sku--color .k-sku-name');
         const swatchStyle = getComputedStyle(swatchName);
         return {
-          favTopDifference: Math.abs(fav.top - title.top),
+          favInsideMedia: Boolean(document.querySelector('#k-modal .k-modal-img-wrap > #k-modal-fav-btn')),
           favWidth: fav.width,
+          favMediaClear: (() => {
+            const img = document.querySelector('#k-modal .k-modal-img-wrap').getBoundingClientRect();
+            return fav.top >= img.top && fav.right <= img.right && fav.bottom <= img.bottom;
+          })(),
+          heroRatio: (() => {
+            const img = document.querySelector('#k-modal .k-modal-img-wrap').getBoundingClientRect();
+            return img.width / img.height;
+          })(),
           trustLeftDifference: Math.abs(trust.left - title.left),
           itemLeftDifference: Math.abs(item.left - title.left),
           trustNarrowerThanInfo: trust.width < info.width - 12,
@@ -360,8 +368,10 @@ test.describe('PDP mobile retouches 2026-11 — Chromium geometry', () => {
           labelFontSize: parseFloat(swatchStyle.fontSize),
         };
       });
-      expect(metrics.favTopDifference).toBeLessThanOrEqual(3);
-      expect(metrics.favWidth).toBeGreaterThanOrEqual(40);
+      expect(metrics.favInsideMedia).toBe(true);
+      expect(metrics.favMediaClear).toBe(true);
+      expect(metrics.heroRatio).toBeCloseTo(16 / 9, 1);
+      expect(metrics.favWidth).toBeGreaterThanOrEqual(44);
       expect(metrics.trustLeftDifference).toBeLessThanOrEqual(3);
       expect(metrics.itemLeftDifference).toBeLessThanOrEqual(3);
       expect(metrics.trustNarrowerThanInfo).toBe(true);
@@ -372,4 +382,76 @@ test.describe('PDP mobile retouches 2026-11 — Chromium geometry', () => {
       if (viewport.key === '390x844') await shot(page, 'mobile-pdp-identity-trust-colors-390.png');
     });
   }
+});
+
+async function openV4GalleryFixture(page, viewport, key) {
+  await page.setViewportSize({ width: viewport.width, height: viewport.height });
+  await stubFixtureCatalogue(page);
+  const entry = catalogue.cases.find((item) => item.key === key);
+  const product = catalogue.products.find((item) => String(item.id) === String(entry.detail.product.id));
+  await page.goto('/boutique/index.html', { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => window._kbus && window._kstate, null, { timeout: 10000 });
+  await page.evaluate((item) => {
+    if (!window._kstate.products.some((p) => String(p.id) === String(item.id))) {
+      window._kstate.products.push(item);
+    }
+    window._kbus.emit('modal:open', { id: item.id });
+  }, product);
+  await expect(page.locator('#k-modal-overlay')).toHaveClass(/open/, { timeout: 8000 });
+  await expect(page.locator('#k-modal-name')).toHaveText(entry.detail.product.name, { timeout: 8000 });
+  return entry;
+}
+
+test.describe('PDP mobile retouches 2026-11 — Galerie & détails V4', () => {
+  for (const viewport of VIEWPORTS) {
+    test(`PDP mobile retouches 2026-11 — ${viewport.key} : galerie 16:9, favori réel et détails lisibles`, async ({ page }) => {
+      await openV4GalleryFixture(page, viewport, 'stress');
+      const hero = page.locator('#k-modal .k-modal-img-wrap');
+      const favorite = page.locator('#k-modal .k-modal-img-wrap > #k-modal-fav-btn');
+      await expect(hero).toBeVisible();
+      await expect(favorite).toBeVisible();
+      await expect(page.locator('.k-mdm-details-title')).toHaveText('Détails du produit');
+
+      const geom = await page.evaluate(() => {
+        const h = document.querySelector('#k-modal .k-modal-img-wrap').getBoundingClientRect();
+        const f = document.getElementById('k-modal-fav-btn').getBoundingClientRect();
+        const c = document.getElementById('k-modal');
+        return {
+          ratio: h.width / h.height,
+          favoriteInside: f.left >= h.left && f.right <= h.right && f.top >= h.top && f.bottom <= h.bottom,
+          favoriteSize: Math.min(f.width, f.height),
+          noHorizontalScroll: c.scrollWidth <= c.clientWidth + 1,
+          singleFavorite: document.querySelectorAll('#k-modal-fav-btn').length === 1,
+        };
+      });
+      expect(geom.ratio).toBeCloseTo(16 / 9, 1);
+      expect(geom.favoriteInside).toBe(true);
+      // BoundingClientRect conserve une précision subpixel (43.99999px à 360px).
+      // CSS source impose toujours width/height 44px : ne pas durcir le seuil flottant.
+      expect(geom.favoriteSize).toBeGreaterThanOrEqual(43.9);
+      expect(geom.singleFavorite).toBe(true);
+      expect(geom.noHorizontalScroll).toBe(true);
+      await shot(page, `mobile-pdp-v4-gallery-details-${viewport.key}.png`);
+    });
+  }
+});
+
+
+test('PDP mobile retouches 2026-11 — vrai favori interactif et retour desktop au resize', async ({ page }) => {
+  await openV4GalleryFixture(page, { width: 390, height: 844 }, 'stress');
+  const favorite = page.locator('#k-modal-fav-btn');
+  await expect(page.locator('#k-modal .k-modal-img-wrap > #k-modal-fav-btn')).toBeVisible();
+  const before = await favorite.getAttribute('aria-pressed');
+  await favorite.click();
+  await expect(favorite).toHaveAttribute('aria-pressed', before === 'true' ? 'false' : 'true');
+
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await expect.poll(() => favorite.evaluate((el) => el.closest('.k-modal-name-row') !== null)).toBe(true);
+  await expect(page.locator('#k-modal .k-modal-name-row > #k-modal-fav-btn')).toBeVisible();
+  expect(await page.locator('#k-modal-fav-btn').count()).toBe(1);
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect.poll(() => favorite.evaluate((el) => el.closest('.k-modal-img-wrap') !== null)).toBe(true);
+  await expect(page.locator('#k-modal .k-modal-img-wrap > #k-modal-fav-btn')).toBeVisible();
+  expect(await page.locator('#k-modal-fav-btn').count()).toBe(1);
 });
