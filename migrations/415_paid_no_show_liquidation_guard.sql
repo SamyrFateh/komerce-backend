@@ -2,7 +2,7 @@
 -- @domain unsold-resolution
 -- @purpose Fable F3 (#4107/#4115) : fail-closed paid no-show at database boundary.
 -- 14 days uncollected is NEVER a transfer of ownership. No backfill or payout.
--- The legacy auto_unsold() remains installed for historical compatibility but
+-- An unsold_price_kmf numeric recalculation alone does not transfer custody.\n-- The legacy auto_unsold() remains installed for historical compatibility but
 -- cannot mutate a paid order; paid unsold_items cannot be created or mutated.
 --
 -- A complete parcel-level custody, notice and financial closure must replace
@@ -14,8 +14,7 @@ LANGUAGE plpgsql
 AS $$
 BEGIN
   IF NEW.payment_status = 'paid'
-     AND (NEW.unsold_at IS DISTINCT FROM OLD.unsold_at
-       OR NEW.unsold_price_kmf IS DISTINCT FROM OLD.unsold_price_kmf) THEN
+     AND NEW.unsold_at IS DISTINCT FROM OLD.unsold_at THEN
     RAISE EXCEPTION 'UNSOLD_PAID_ORDER_PROTECTED: paid order cannot enter liquidation'
       USING ERRCODE = 'check_violation';
   END IF;
@@ -25,7 +24,7 @@ $$;
 
 DROP TRIGGER IF EXISTS trg_guard_paid_no_show_order ON public.orders;
 CREATE TRIGGER trg_guard_paid_no_show_order
-BEFORE UPDATE OF unsold_at, unsold_price_kmf ON public.orders
+BEFORE UPDATE OF unsold_at ON public.orders
 FOR EACH ROW EXECUTE FUNCTION public.guard_paid_no_show_order();
 
 CREATE OR REPLACE FUNCTION public.guard_paid_unsold_item()
