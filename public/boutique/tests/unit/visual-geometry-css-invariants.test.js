@@ -357,8 +357,8 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
 
       expect(shell).toMatch(/grid-template-columns\s*:\s*minmax\(0,\s*1fr\)\s+296px/);
       const density = readCss('modal-desktop-density.css');
-      expect(density).toMatch(/grid-template-columns\s*:\s*minmax\(0,\s*1fr\)\s+clamp\(320px,\s*22vw,\s*390px\)/);
-      expect(density).toMatch(/grid-template-columns\s*:\s*minmax\(0,\s*1\.326fr\)\s+minmax\(0,\s*1fr\)/);
+      expect(density).toMatch(/grid-template-columns\s*:\s*minmax\(0,\s*1fr\)\s+clamp\(264px,\s*18vw,\s*320px\)/);
+      expect(density).toMatch(/grid-template-columns\s*:\s*minmax\(0,\s*\.83fr\)\s+minmax\(0,\s*1fr\)/);
       expect(desktop).toMatch(/\.k-sc-empty\s*\{[^}]*min-height:\s*220px[^}]*justify-content:\s*center/s);
       expect(polish).toMatch(/\.k-side-cart--in-modal \.k-sc-item-name\s*\{[^}]*-webkit-line-clamp:\s*1/s);
     });
@@ -1105,7 +1105,7 @@ describe('PDP desktop - hero imposant et panier centre', () => {
     expect(wrapper).toMatch(/max-width\s*:\s*none/);
     expect(carousel).toMatch(/width\s*:\s*100%/);
     expect(carousel).toMatch(/max-width\s*:\s*none/);
-    expect(carousel).toMatch(/aspect-ratio\s*:\s*4\s*\/\s*3/);
+    expect(carousel).toMatch(/aspect-ratio\s*:\s*1\s*\/\s*1/);
   });
 
   it('centre le panier court et borne le panier long dans la modal', () => {
@@ -1158,12 +1158,12 @@ describe('FINISH PDP desktop media', () => {
       )?.[1] ?? '';
 
     expect(grid).toMatch(
-      /grid-template-columns\s*:\s*68px\s+minmax\(0,\s*1fr\)/
+      /grid-template-columns\s*:\s*var\(--k-pdp-thumb-size\)\s+minmax\(0,\s*1fr\)/
     );
-    expect(grid).toMatch(/column-gap\s*:\s*10px/);
+    expect(grid).toMatch(/column-gap\s*:\s*var\(--k-pdp-thumb-gap\)/);
 
-    expect(thumb).toMatch(/width\s*:\s*68px/);
-    expect(thumb).toMatch(/height\s*:\s*68px/);
+    expect(thumb).toMatch(/width\s*:\s*var\(--k-pdp-thumb-size\)/);
+    expect(thumb).toMatch(/height\s*:\s*var\(--k-pdp-thumb-size\)/);
     expect(thumb).toMatch(
       /border\s*:\s*1\.5px\s+solid/
     );
@@ -1171,7 +1171,7 @@ describe('FINISH PDP desktop media', () => {
     expect(thumbImg).toMatch(/padding\s*:\s*3px/);
 
     expect(media).toMatch(
-      /left\s*:\s*calc\(68px\s*\+\s*10px\s*\+\s*12px\)/
+      /left\s*:\s*calc\(var\(--k-pdp-thumb-size,\s*68px\)\s*\+\s*var\(--k-pdp-thumb-gap,\s*10px\)\s*\+\s*12px\)/
     );
   });
 
