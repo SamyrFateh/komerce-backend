@@ -649,14 +649,25 @@ function appendEditorialSections(root, sections) {
  * seule la description s'affiche).
  */
 function renderBelowFold(detail, root, vm) {
+  const description = detail.product.description || '';
+  const hasDetails = Boolean(
+    description || vm.highlights.length || vm.specificationGroups.length
+    || vm.materials.length || vm.care.length || vm.warnings.length
+    || vm.sections.length
+  );
+  if (!hasDetails) return; // pas de titre ni de séparateur orphelin
+
   const fold = document.createElement('hr');
   fold.className = 'k-mdm-fold';
   root.appendChild(fold);
+  const heading = document.createElement('h3');
+  heading.className = 'k-mdm-details-title';
+  heading.textContent = 'Détails du produit';
+  root.appendChild(heading);
 
   // Description longue — priorité au texte produit historique ; le chapeau
   // éditorial (content.short_description), quand distinct, l'introduit sans
   // jamais dupliquer le même texte deux fois.
-  const description = detail.product.description || '';
   if (description) {
     const lead =
       vm.shortDescription && vm.shortDescription !== description

@@ -349,8 +349,16 @@ test.describe('PDP mobile retouches 2026-11 — Chromium geometry', () => {
         const swatchName = document.querySelector('#k-modal .k-sku--color .k-sku-name');
         const swatchStyle = getComputedStyle(swatchName);
         return {
-          favTopDifference: Math.abs(fav.top - title.top),
+          favInsideMedia: Boolean(document.querySelector('#k-modal .k-modal-img-wrap > #k-modal-fav-btn')),
           favWidth: fav.width,
+          favMediaClear: (() => {
+            const img = document.querySelector('#k-modal .k-modal-img-wrap').getBoundingClientRect();
+            return fav.top >= img.top && fav.right <= img.right && fav.bottom <= img.bottom;
+          })(),
+          heroRatio: (() => {
+            const img = document.querySelector('#k-modal .k-modal-img-wrap').getBoundingClientRect();
+            return img.width / img.height;
+          })(),
           trustLeftDifference: Math.abs(trust.left - title.left),
           itemLeftDifference: Math.abs(item.left - title.left),
           trustNarrowerThanInfo: trust.width < info.width - 12,
@@ -360,8 +368,10 @@ test.describe('PDP mobile retouches 2026-11 — Chromium geometry', () => {
           labelFontSize: parseFloat(swatchStyle.fontSize),
         };
       });
-      expect(metrics.favTopDifference).toBeLessThanOrEqual(3);
-      expect(metrics.favWidth).toBeGreaterThanOrEqual(40);
+      expect(metrics.favInsideMedia).toBe(true);
+      expect(metrics.favMediaClear).toBe(true);
+      expect(metrics.heroRatio).toBeCloseTo(16 / 9, 1);
+      expect(metrics.favWidth).toBeGreaterThanOrEqual(44);
       expect(metrics.trustLeftDifference).toBeLessThanOrEqual(3);
       expect(metrics.itemLeftDifference).toBeLessThanOrEqual(3);
       expect(metrics.trustNarrowerThanInfo).toBe(true);
@@ -370,6 +380,38 @@ test.describe('PDP mobile retouches 2026-11 — Chromium geometry', () => {
       expect(metrics.labelLineClamp).toBe('2');
       expect(metrics.labelFontSize).toBeGreaterThanOrEqual(10);
       if (viewport.key === '390x844') await shot(page, 'mobile-pdp-identity-trust-colors-390.png');
+    });
+  }
+});
+
+test.describe('PDP mobile retouches 2026-11 — Galerie & détails V4', () => {
+  for (const viewport of VIEWPORTS) {
+    test(`PDP mobile retouches 2026-11 — ${viewport.key} : galerie 16:9, favori réel et détails lisibles`, async ({ page }) => {
+      await openAt(page, viewport, 'stress');
+      const hero = page.locator('#k-modal .k-modal-img-wrap');
+      const favorite = page.locator('#k-modal .k-modal-img-wrap > #k-modal-fav-btn');
+      await expect(hero).toBeVisible();
+      await expect(favorite).toBeVisible();
+      await expect(page.locator('.k-mdm-details-title')).toHaveText('Détails du produit');
+
+      const geom = await page.evaluate(() => {
+        const h = document.querySelector('#k-modal .k-modal-img-wrap').getBoundingClientRect();
+        const f = document.getElementById('k-modal-fav-btn').getBoundingClientRect();
+        const c = document.getElementById('k-modal');
+        return {
+          ratio: h.width / h.height,
+          favoriteInside: f.left >= h.left && f.right <= h.right && f.top >= h.top && f.bottom <= h.bottom,
+          favoriteSize: Math.min(f.width, f.height),
+          noHorizontalScroll: c.scrollWidth <= c.clientWidth + 1,
+          singleFavorite: document.querySelectorAll('#k-modal-fav-btn').length === 1,
+        };
+      });
+      expect(geom.ratio).toBeCloseTo(16 / 9, 1);
+      expect(geom.favoriteInside).toBe(true);
+      expect(geom.favoriteSize).toBeGreaterThanOrEqual(44);
+      expect(geom.singleFavorite).toBe(true);
+      expect(geom.noHorizontalScroll).toBe(true);
+      await shot(page, `mobile-pdp-v4-gallery-details-${viewport.key}.png`);
     });
   }
 });

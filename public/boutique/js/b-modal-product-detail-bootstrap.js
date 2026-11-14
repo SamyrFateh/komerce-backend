@@ -96,6 +96,20 @@ function renderDetailUnavailable() {
   container.appendChild(el);
 }
 
+// V4 : un seul bouton favori natif, déplacé (et non cloné) dans la galerie
+// mobile. Le listener de b-modal-core reste attaché au même noeud et le
+// breakpoint desktop le restitue à son emplacement initial dans le titre.
+function syncFavoritePlacement(mode) {
+  const root = dom.modal || document.getElementById('k-modal');
+  const favorite = root?.querySelector('#k-modal-fav-btn');
+  const target = root?.querySelector(
+    mode === 'mobile' ? '.k-modal-img-wrap' : '.k-modal-name-row'
+  );
+  if (favorite && target && favorite.parentElement !== target) {
+    target.appendChild(favorite);
+  }
+}
+
 function renderResponsiveProductDetail(detail, selection, forceMedia) {
   _viewportMode = viewportMode();
   if (_viewportMode === 'mobile') {
@@ -103,6 +117,7 @@ function renderResponsiveProductDetail(detail, selection, forceMedia) {
   } else {
     renderDesktopProductDetail(detail, selection, { forceMedia });
   }
+  syncFavoritePlacement(_viewportMode);
   bus.emit('modal:detail-ready');
 }
 
@@ -168,6 +183,7 @@ export function setupProductDetailModal() {
   _installed = true;
 
   bus.on('modal:opened', (product) => {
+    syncFavoritePlacement(viewportMode());
     loadProductDetail(product);
   });
 
@@ -176,6 +192,7 @@ export function setupProductDetailModal() {
   }
 
   bus.on('modal:closed', () => {
+    syncFavoritePlacement('desktop');
     _generation += 1;
     clearTimeout(_resizeTimer);
     _viewportMode = null;
