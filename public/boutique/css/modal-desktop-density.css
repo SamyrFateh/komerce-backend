@@ -23,7 +23,7 @@
   #k-modal .k-modal-product-zone {
     grid-template-columns: minmax(0, .83fr) minmax(0, 1fr);
     gap: 18px;
-    padding: 16px 18px;
+    padding: 16px 18px 16px 40px;
   }
 
   /* Une buybox plus large n'a pas besoin des gros paddings historiques. */
