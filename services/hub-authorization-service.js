@@ -230,11 +230,23 @@ async function decideVariance({ purchaseOrderId, actor, body = {} }, database = 
 }
 
 /** Garde d'écriture : un paiement fournisseur suppose l'autorisation de paiement, dans la devise et le plafond autorisés. */
-async function assertPaymentAuthorized(client, purchaseOrderId, expectedAmount, currency, { excludePaymentKey = null } = {}) {
+async function assertPaymentAuthorized(client, purchaseOrderId, expectedAmount, currency, opts = {}) {
+  // Pool/module db reçu : le service ouvre sa propre transaction (contrôle de lecture atomique, sans écriture à sérialiser).
+  if (client && typeof client.withTransaction === 'function') {
+    return client.withTransaction((tx) => assertPaymentAuthorized(tx, purchaseOrderId, expectedAmount, currency, opts));
+  }
+  const { excludePaymentKey = null } = opts;
   // FA-23 : sérialise tous les paiements d'une même PO jusqu'à la fin de la transaction de l'appelant ; la somme ci-dessous lit
   // ensuite les paiements déjà validés par les concurrents. Verrou consultatif (et non FOR UPDATE sur la PO) : l'INSERT du paiement
   // pose déjà un FOR KEY SHARE sur la PO via la FK, dont la promotion provoquerait un deadlock entre deux opérateurs.
   await client.query("SELECT pg_advisory_xact_lock(hashtextextended('supplier_payment_po:' || $1::text, 0))", [purchaseOrderId]);
+  // Fail-closed : hors transaction le verrou xact est libéré dès la fin de l'instruction et la sérialisation est perdue.
+  // Un verrou consultatif encore détenu par cette session prouve que l'appelant tient bien une transaction.
+  const { rows: held } = await client.query(
+    "SELECT 1 FROM pg_locks WHERE pid = pg_backend_pid() AND locktype = 'advisory' AND granted LIMIT 1");
+  if (!held.length) {
+    fail(500, 'SUPPLIER_PAYMENT_TRANSACTION_REQUIRED', 'Le contrôle du plafond de paiement exige une transaction ouverte par l\'appelant (sérialisation par PO)');
+  }
   const { rows: decisions } = await client.query(
     "SELECT authorization_type, amount, currency FROM purchase_order_authorizations WHERE purchase_order_id = $1 AND authorization_type IN ('supplier_payment','purchase_commitment')", [purchaseOrderId]);
   const auth = decisions.find((d) => d.authorization_type === 'supplier_payment');

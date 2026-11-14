@@ -115,4 +115,17 @@ if (!process.env.DATABASE_URL) {
     expect(await refused(pay(km, 1))).toBe('SUPPLIER_PAYMENT_EXCEEDS_AUTHORIZATION');
     expect((await pay(cm, 100)).outcome).toBe('succeeded');
   });
+
+  test('hors transaction : un client brut est refusé (fail-closed) ; le pool ouvre sa propre transaction', async () => {
+    const po = await seedPo({ market: markets[0] });
+    const raw = await db.getClient();
+    try {
+      await expect(auth.assertPaymentAuthorized(raw, po.poId, 10, 'AED')).rejects.toMatchObject({ code: 'SUPPLIER_PAYMENT_TRANSACTION_REQUIRED' });
+      await raw.query('BEGIN');
+      await expect(auth.assertPaymentAuthorized(raw, po.poId, 10, 'AED')).resolves.toBeUndefined();
+      await raw.query('COMMIT');
+    } finally { raw.release(); }
+    await expect(auth.assertPaymentAuthorized(db, po.poId, 10, 'AED')).resolves.toBeUndefined();
+    await expect(auth.assertPaymentAuthorized(db, po.poId, 101, 'AED')).rejects.toMatchObject({ code: 'SUPPLIER_PAYMENT_EXCEEDS_AUTHORIZATION' });
+  });
 }

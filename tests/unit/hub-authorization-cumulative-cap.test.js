@@ -13,6 +13,7 @@ const auth = require('../../services/hub-authorization-service');
 const clientWith = (prior) => ({
   query: jest.fn(async (sql) => {
     if (/pg_advisory_xact_lock/.test(sql)) return { rows: [] };
+    if (/pg_locks/.test(sql)) return { rows: [{ '?column?': 1 }] };
     if (/FROM purchase_order_authorizations/.test(sql)) {
       return { rows: [{ authorization_type: 'supplier_payment', amount: '100', currency: 'AED' }, { authorization_type: 'purchase_commitment', amount: '100', currency: 'AED' }] };
     }

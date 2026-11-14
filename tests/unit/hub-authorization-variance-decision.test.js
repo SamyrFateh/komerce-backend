@@ -12,6 +12,7 @@ const ADMIN = '00000000-0000-4000-8000-000000000002';
 function clientWith({ paid = 20, justified = 40, entries = 2, decision = null, wrong = 0 } = {}) {
   const client = { query: jest.fn(async (sql, args) => {
     if (sql.includes('pg_advisory_xact_lock')) return { rows: [] };
+    if (sql.includes('pg_locks')) return { rows: [{ x: 1 }] };
     if (sql.includes('FROM purchase_order_authorizations') && sql.includes("'purchase_commitment'") && sql.includes('IN ('))
       return { rows: [{ authorization_type: 'supplier_payment', amount: '100', currency: 'AED' }, { authorization_type: 'purchase_commitment', amount: '100', currency: 'AED' }] };
     if (sql.includes('FROM purchase_order_authorizations'))
