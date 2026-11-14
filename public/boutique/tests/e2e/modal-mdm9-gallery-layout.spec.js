@@ -90,7 +90,7 @@ for(const viewport of VIEWPORTS){
       expect(m.modalScrollWidth).toBeLessThanOrEqual(m.modalClientWidth+1);
       expect(m.actionsTop).toBeGreaterThanOrEqual(m.priceBottom);
       if(viewport.width<900){
-        expect(m.wrapHeight).toBeCloseTo(m.wrapWidth*0.75,0);
+        expect(m.wrapHeight).toBeCloseTo(m.wrapWidth*9/16,0);
       }
       await closeModal(page);
     });
@@ -121,7 +121,7 @@ for(const viewport of VIEWPORTS){
         await page.locator('#k-modal-dots .k-modal-dot').nth(1).click();
         await expect.poll(async()=>(await measure(page)).trackTransform,{timeout:2000}).toContain('-100%');
         m=await measure(page);
-        expect(m.wrapHeight).toBeCloseTo(m.wrapWidth*0.75,0);
+        expect(m.wrapHeight).toBeCloseTo(m.wrapWidth*9/16,0);
       }else{
         expect(m.thumbsCount).toBe(3);
         await page.locator('.k-modal-carousel-handle--next').click();
@@ -144,7 +144,7 @@ for(const viewport of VIEWPORTS){
       await closeModal(page);
     });
 
-    test('mobile geometry — single and multiple share the canonical 4:3 hero',async({page})=>{
+    test('mobile geometry — single and multiple share the canonical 16:9 hero',async({page})=>{
       test.skip(viewport.width>=900,'contrat géométrique mobile uniquement');
       await page.goto(BASE_URL);
       await page.waitForSelector('#k-modal',{state:'attached'});
@@ -159,9 +159,9 @@ for(const viewport of VIEWPORTS){
       const multiple=await measure(page);
 
       // Doctrine actuelle : depuis P1 audit-3 la hauteur n'est plus 36/48vh.
-      // Le hero est volontairement stable à 4:3, indépendamment du nombre de médias.
-      expect(single.wrapHeight).toBeCloseTo(single.wrapWidth*0.75,0);
-      expect(multiple.wrapHeight).toBeCloseTo(multiple.wrapWidth*0.75,0);
+      // Le hero est volontairement stable à 16:9, indépendamment du nombre de médias.
+      expect(single.wrapHeight).toBeCloseTo(single.wrapWidth*9/16,0);
+      expect(multiple.wrapHeight).toBeCloseTo(multiple.wrapWidth*9/16,0);
       expect(Math.abs(single.wrapHeight-multiple.wrapHeight)).toBeLessThanOrEqual(2);
       expect(single.actionsVisible).toBe(true);
       expect(multiple.actionsVisible).toBe(true);
