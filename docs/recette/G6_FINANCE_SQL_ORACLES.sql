@@ -4,8 +4,13 @@
 -- Même SHA, mêmes requêtes pour ChatGPT et Opus, cohortes distinctes (filtrer par références de cohorte).
 -- Chaque requête doit renvoyer 0 ligne sur les objets de la cohorte ; une ligne = anomalie à qualifier.
 -- Provenance : https://github.com/SamyrFateh/komerce-backend/issues/3987 (section 2, texte d'origine conservé).
--- Colonnes issues de docs/db/railway-live-schema.sql : vérifier sur le schéma live avant la campagne ;
--- une requête invalide = NOT_PROVEN, jamais PASS. Zéro écriture.
+-- Colonnes issues de docs/db/railway-live-schema.sql. Vérifiées sur le schéma live le 14/11/2026
+-- (staging cda381f47, run Actions 43581631265, lecture seule) : les 18 requêtes I1..I15 sont valides.
+-- Une requête invalide = NOT_PROVEN, jamais PASS. Zéro écriture.
+-- État de référence au 14/11 hors cohorte : I1-I6 et I8-I14 = 0 ligne ; I7 = 112 et I15 (factures) = 112,
+-- les mêmes commandes, toutes `simulation_scope` non nul (simulation de marché KM/CM/CG, nov. 2026,
+-- cash_relais marquées payées sans cash_collections ni facture). Ce stock préexistant impose de filtrer
+-- I7 et I15 par cohorte : un comptage global n'est jamais un verdict.
 
 -- I1 Wallet : aucun solde négatif, solde = somme du journal (FA-01/02/16)
 SELECT w.id, w.currency, w.balance_kmf,
