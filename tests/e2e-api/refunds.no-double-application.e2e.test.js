@@ -34,7 +34,7 @@ const { stripeIntentFieldsForOrder } = require('../helpers/stripeIntentFields');
  *   5. GARDE RÔLE     un client ne peut pas déclencher de remboursement
  */
 
-const request = require('supertest');
+const request = require('../helpers/supertest-order-key');
 const express = require('express');
 const Stripe = require('stripe');
 const { signAuthToken } = require('../../utils/auth-session');

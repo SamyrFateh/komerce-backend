@@ -338,6 +338,10 @@ window.K = (() => {
   };
 
   // ── ORDERS ─────────────────────────────────────────────────
+  function _newIdempotencyKey() {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+    return 'k-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 12);
+  }
   const orders = {
     list(filters = {}) {
       const qs = new URLSearchParams(filters).toString();
@@ -345,8 +349,22 @@ window.K = (() => {
     },
     get(id) { return request(`/api/orders/${id}`); },
 	 // ✅ ICI
-  create(data) {
-    return request('/api/orders', 'POST', data);
+  // FA-22 : Idempotency-Key obligatoire côté serveur ; L3/N06 : le total accepté
+  // (expected_total_kmf) l'est aussi. Sans total fourni, il est lu dans l'aperçu serveur
+  // (POST /api/orders/preview) : jamais de création silencieuse au nouveau prix.
+  // Une clé fournie par l'appelant permet le rejeu ; sinon une clé neuve est générée
+  // (les retries réseau internes de request() réutilisent la même clé).
+  async create(data, options = {}) {
+    const idempotencyKey = options.idempotencyKey || _newIdempotencyKey();
+    let body = data;
+    if (data && data.expected_total_kmf == null) {
+      const quote = await request('/api/orders/preview', 'POST', data);
+      if (!quote || !Number.isSafeInteger(quote.total_kmf)) {
+        throw new Error('Total serveur indisponible : actualisez le récapitulatif avant de commander.');
+      }
+      body = { ...data, expected_total_kmf: quote.total_kmf };
+    }
+    return request('/api/orders', 'POST', body, 2, { ...options, idempotencyKey });
 	 },
   };
 

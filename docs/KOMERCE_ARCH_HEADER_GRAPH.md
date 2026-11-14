@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 812
-- Files with full headers: 757
+- Scanned code files: 811
+- Files with full headers: 756
 - Files with lite headers: 55
-- Files with any headers: 812
+- Files with any headers: 811
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 2059
-- Edges: 10202
+- Graph nodes: 2058
+- Edges: 10196
 - DB tables: 239
 - Doctrines: 801
 - Impact areas: 207
-- Unresolved code edges: 971
+- Unresolved code edges: 972
 - Tables multi-écrivains directs (>=2): 96
 - Avertissements db-write / db-write-via en chevauchement: 12
 
@@ -61,7 +61,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - providers-services: 7
 - purchasing: 53
 - recommendations: 6
-- refunds: 8
+- refunds: 7
 - settlement: 2
 - shared: 1
 - shared-cart: 25
@@ -109,7 +109,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - ui-runtime: 2
 - ui-service: 5
 - ui-state: 1
-- util: 33
+- util: 32
 - util-ui: 1
 - utility: 2
 - validators: 1
@@ -1061,7 +1061,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - order_comments: 3 écrivains directs — routes/hub-dashboard.js, routes/relay-dashboard.js, services/operations-workspace.js
 - otp_codes: 3 écrivains directs — routes/auth-step-up-otp.js, routes/otp.js, services/g6-staging-buyer-identity-guard.js
 - price_history: 3 écrivains directs — services/economic-price-audit-service.js, services/pricing-apply.js, services/pricing-strategy-service.js
-- refunds: 3 écrivains directs — services/item-refund-psp-orchestrator.js, services/refund-service.js, utils/refunds.js
 - relais: 3 écrivains directs — routes/admin/system.js, services/relais-mutation-service.js, services/routing.js
 - sms_log: 3 écrivains directs — routes/admin/delete-order-cascade.js, routes/admin/system.js, routes/admin/users.js
 - sourcing_captures: 3 écrivains directs — services/sourcing-catalog-change-observation.js, services/sourcing-observation-shadow-service.js, services/sourcing-source-autopilot.js
@@ -1074,6 +1073,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - business_rules: 2 écrivains directs — routes/admin-rules.js, utils/rules.js
 - business_rules_history: 2 écrivains directs — routes/admin-rules.js, utils/rules.js
 - cart_shares: 2 écrivains directs — routes/shares.js, services/cart-share-service.js
+- cash_deposits: 2 écrivains directs — routes/cash.js, services/cash-deposit-service.js
 
 ## DB Write / Write-Via Overlap Warnings
 

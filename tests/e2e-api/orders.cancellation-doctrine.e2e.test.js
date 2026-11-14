@@ -34,7 +34,7 @@
  * DOCTRINE RED — les assertions expriment le contrat métier attendu.
  */
 
-const request = require('supertest');
+const request = require('../helpers/supertest-order-key');
 const express = require('express');
 const { signAuthToken } = require('../../utils/auth-session');
 

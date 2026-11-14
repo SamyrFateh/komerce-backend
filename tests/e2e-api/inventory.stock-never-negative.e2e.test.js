@@ -41,7 +41,7 @@ const { stripeIntentFieldsForOrder } = require('../helpers/stripeIntentFields');
  *                      directement — le garde de dernier recours existe
  */
 
-const request = require('supertest');
+const request = require('../helpers/supertest-order-key');
 const express = require('express');
 const Stripe = require('stripe');
 const { signAuthToken } = require('../../utils/auth-session');

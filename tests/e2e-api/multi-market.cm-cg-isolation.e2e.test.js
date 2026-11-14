@@ -9,7 +9,7 @@
  * encaissement, commandes, remboursements, relais, indicateurs de dashboards. Un tarif ou une autorisation
  * posé(e) sur l'un ne doit jamais débloquer ni modifier l'autre.
  */
-const request = require('supertest');
+const request = require('../helpers/supertest-order-key');
 const express = require('express');
 const { signAuthToken } = require('../../utils/auth-session');
 const {

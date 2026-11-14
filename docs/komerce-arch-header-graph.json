@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 812,
-    "filesWithFullHeaders": 757,
+    "scannedCodeFiles": 811,
+    "filesWithFullHeaders": 756,
     "filesWithLiteHeaders": 55,
-    "filesWithAnyHeaders": 812,
+    "filesWithAnyHeaders": 811,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 2059,
-    "edges": 10202,
+    "graphNodes": 2058,
+    "edges": 10196,
     "dbTables": 239,
     "doctrines": 801,
     "impactAreas": 207,
-    "unresolvedCodeEdges": 971,
+    "unresolvedCodeEdges": 972,
     "dbWriteViaOverlapWarnings": 12,
     "multiWriterTables": 96
   },
@@ -71,7 +71,7 @@
     "external-provider-contracts": 1,
     "finance": 3,
     "incident-management": 5,
-    "refunds": 8,
+    "refunds": 7,
     "market-autonomy": 4,
     "markets": 1,
     "payments": 1,
@@ -98,7 +98,7 @@
     "util-ui": 1,
     "ui-infrastructure": 1,
     "state": 1,
-    "util": 33,
+    "util": 32,
     "domain-helper": 1,
     "adapter": 6,
     "ui-runtime": 2,
@@ -122,7 +122,7 @@
   },
   "byCriticality": {
     "critical": 125,
-    "medium": 157,
+    "medium": 156,
     "high": 465,
     "low": 64,
     "unknown": 1
@@ -38664,7 +38664,6 @@
         "utils/parcels.js",
         "utils/pricing-cache.js",
         "utils/rates.js",
-        "utils/refunds.js",
         "utils/rules.js",
         "utils/store-credits.js"
       ],
@@ -39113,44 +39112,6 @@
       ],
       "dbRead": [],
       "dbWrite": [],
-      "dbWriteVia": [],
-      "dbTxn": [],
-      "doctrine": [
-        "resolve_before_behavior_change"
-      ],
-      "impactAreas": [
-        "unknown"
-      ],
-      "version": "2026-06"
-    },
-    {
-      "id": "utils/refunds.js",
-      "file": "utils/refunds.js",
-      "type": "file",
-      "headerType": "full",
-      "role": "refunds",
-      "domain": "refunds",
-      "layer": "util",
-      "criticality": "medium",
-      "owner": null,
-      "purpose": null,
-      "inputs": [
-        "runtime_context",
-        "request_or_service_payload"
-      ],
-      "outputs": [
-        "response_or_domain_result",
-        "side_effects"
-      ],
-      "depends": [
-        "services/wallet-service.js",
-        "utils/logger.js"
-      ],
-      "usedBy": [],
-      "dbRead": [],
-      "dbWrite": [
-        "refunds"
-      ],
       "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
@@ -94126,7 +94087,7 @@
     },
     {
       "from": "services/refund-intent-ledger.js",
-      "to": "utils/refunds.js",
+      "to": "refunds",
       "type": "depends",
       "label": "refunds"
     },
@@ -106163,12 +106124,6 @@
       "label": "utils/rates.js"
     },
     {
-      "from": "utils/refunds.js",
-      "to": "utils/logger.js",
-      "type": "uses",
-      "label": "utils/refunds.js"
-    },
-    {
       "from": "utils/rules.js",
       "to": "utils/logger.js",
       "type": "uses",
@@ -106839,36 +106794,6 @@
     },
     {
       "from": "utils/reference.js",
-      "to": "impact:unknown",
-      "type": "impact",
-      "label": "unknown"
-    },
-    {
-      "from": "utils/refunds.js",
-      "to": "services/wallet-service.js",
-      "type": "depends",
-      "label": "services/wallet-service.js"
-    },
-    {
-      "from": "utils/refunds.js",
-      "to": "utils/logger.js",
-      "type": "depends",
-      "label": "utils/logger.js"
-    },
-    {
-      "from": "utils/refunds.js",
-      "to": "db:refunds",
-      "type": "db-write",
-      "label": "refunds"
-    },
-    {
-      "from": "utils/refunds.js",
-      "to": "doctrine:resolve_before_behavior_change",
-      "type": "doctrine",
-      "label": "resolve_before_behavior_change"
-    },
-    {
-      "from": "utils/refunds.js",
       "to": "impact:unknown",
       "type": "impact",
       "label": "unknown"
@@ -138244,7 +138169,7 @@
       "directDependsOn": [
         "db.js",
         "orders",
-        "utils/refunds.js",
+        "refunds",
         "refund_execution_intents"
       ],
       "directUsedBy": [
@@ -138276,8 +138201,7 @@
         "services/item-refund-reservation-service.js",
         "services/refund-evidence-verifier.js",
         "services/refund-intent-reconciliation.js",
-        "services/sav-ledger-refund.js",
-        "utils/refunds.js"
+        "services/sav-ledger-refund.js"
       ]
     },
     "services/refund-intent-reconciliation.js": {
@@ -145040,8 +144964,7 @@
         "services/refund-service.js",
         "services/relay-return-compensation-service.js",
         "services/simulator/state-advancer.js",
-        "utils/logger.js",
-        "utils/refunds.js"
+        "utils/logger.js"
       ]
     },
     "services/webauthn-management-service.js": {
@@ -145883,7 +145806,6 @@
         "utils/parcels.js",
         "utils/pricing-cache.js",
         "utils/rates.js",
-        "utils/refunds.js",
         "utils/rules.js",
         "utils/store-credits.js"
       ],
@@ -146040,7 +145962,6 @@
         "utils/parcels.js",
         "utils/pricing-cache.js",
         "utils/rates.js",
-        "utils/refunds.js",
         "utils/rules.js"
       ]
     },
@@ -146490,39 +146411,6 @@
         "services/parcel-operations.js",
         "services/parcelOptimizationService.js",
         "utils/parcels.js"
-      ]
-    },
-    "utils/refunds.js": {
-      "role": "refunds",
-      "domain": "refunds",
-      "criticality": "medium",
-      "headerType": "full",
-      "owner": null,
-      "purpose": null,
-      "directDependsOn": [
-        "services/wallet-service.js",
-        "utils/logger.js"
-      ],
-      "directUsedBy": [],
-      "ownedFiles": [],
-      "dbRead": [],
-      "dbWrite": [
-        "refunds"
-      ],
-      "dbWriteVia": [],
-      "doctrines": [
-        "resolve_before_behavior_change"
-      ],
-      "impactAreas": [
-        "unknown"
-      ],
-      "mustCheck": [
-        "db:refunds",
-        "doctrine:resolve_before_behavior_change",
-        "impact:unknown",
-        "services/refund-intent-ledger.js",
-        "services/wallet-service.js",
-        "utils/logger.js"
       ]
     },
     "utils/relay-commission.js": {
@@ -147309,15 +147197,6 @@
       ]
     },
     {
-      "table": "refunds",
-      "writerCount": 3,
-      "writers": [
-        "services/item-refund-psp-orchestrator.js",
-        "services/refund-service.js",
-        "utils/refunds.js"
-      ]
-    },
-    {
       "table": "relais",
       "writerCount": 3,
       "writers": [
@@ -147635,6 +147514,14 @@
       "writers": [
         "routes/admin/users.js",
         "services/order-checkout-service.js"
+      ]
+    },
+    {
+      "table": "refunds",
+      "writerCount": 2,
+      "writers": [
+        "services/item-refund-psp-orchestrator.js",
+        "services/refund-service.js"
       ]
     },
     {
@@ -152138,6 +152025,12 @@
       "to": "orders",
       "type": "depends",
       "label": "orders"
+    },
+    {
+      "from": "services/refund-intent-ledger.js",
+      "to": "refunds",
+      "type": "depends",
+      "label": "refunds"
     },
     {
       "from": "services/refund-intent-ledger.js",
