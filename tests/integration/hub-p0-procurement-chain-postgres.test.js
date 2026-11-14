@@ -583,8 +583,14 @@ describeDb('Hub P0 — chaîne d\'approvisionnement complète (REAL_DB)', () => 
       expect(await received(pl.lineId)).toBe(1);
       const unit = (await q('SELECT id FROM hub_physical_units WHERE reference=$1', [ref])).rows;
       expect(unit).toHaveLength(1);
-      // Mutation autorisée seulement sur la base PostgreSQL 16 jetable de la CI.
-      await q("UPDATE hub_physical_units SET state='QUARANTINED' WHERE id=$1", [unit[0].id]);
+      // La quarantaine non destructive exige un incident préalable (garde SQL).
+      // Tester ici une unité perdue via le writer canonique : état QUARANTINED,
+      // outcome LOST durable, exclusion de la couverture. Aucun bypass du trigger.
+      const { recordPhysicalUnitOutcome } = require('../../services/hub-physical-identity');
+      const lost = await db.withTransaction((client) => recordPhysicalUnitOutcome(client, {
+        unitId: unit[0].id, outcomeType: 'LOST', details: { reason: 'T4 colis perdu en contrôle' },
+      }));
+      expect(lost.unit).toMatchObject({ state: 'QUARANTINED', outcome_type: 'LOST' });
       expect(await received(pl.lineId)).toBe(0);
       const verdict = await completion.evaluateOrderProcurementCompletion(o.orderId, { actor: actor() });
       expect(verdict.complete).toBe(false);
