@@ -196,62 +196,48 @@ describeE2E('E2E-P2-UNSOLD — auto_unsold() + v_unsold_pipeline contre schéma 
     expect(Number(viewRows[0].jours_en_stock)).toBeLessThan(1);
   });
 
-  it('4 — CYCLE COMPLET via HTTP réel : scan → apparition liste → resolve → disparition de la liste', async () => {
-    const orderId = await seedOrder({ label: 'cycle', daysAgo: 20, totalKmf: 12000 });
+  it('4 — F3 scan HTTP bloqué : commande payée à J+20 conservée, aucun unsold_item', async () => {
+    const orderId = await seedOrder({ label: 'blockedJ20', daysAgo: 20, totalKmf: 12000 });
 
-    // ── scan : bascule la commande ET crée la ligne unsold_items (route réelle) ──
     const scanRes = await request(app)
       .post('/api/unsold/scan')
       .set('Authorization', `Bearer ${adminToken}`);
-    expect(scanRes.status).toBe(200);
-    expect(scanRes.body.items_created).toBeGreaterThanOrEqual(1);
+    expect(scanRes.status).toBe(409);
+    expect(scanRes.body.code).toBe('UNSOLD_NO_SHOW_NOT_CERTIFIED');
 
-    const created = await unsoldRowsForOrder(orderId);
-    expect(created).toHaveLength(1);
-    const unsoldItemId = created[0].id;
-    expect(Number(created[0].unsold_price_kmf)).toBe(9000); // 12000 * 0.75
+    const state = await orderState(orderId);
+    expect(state.unsold_at).toBeNull();
+    expect(await unsoldRowsForOrder(orderId)).toHaveLength(0);
+  });
 
-    // ── apparition dans la liste publique (vue v_unsold_pipeline) ──
-    const listRes = await request(app)
-      .get('/api/unsold')
-      .set('Authorization', `Bearer ${adminToken}`);
-    expect(listRes.status).toBe(200);
-    expect(listRes.body.some(row => row.id === unsoldItemId)).toBe(true);
-
-    // ── resolve : marque vendu WhatsApp ──
-    const resolveRes = await request(app)
-      .post(`/api/unsold/${unsoldItemId}/resolve`)
-      .set('Authorization', `Bearer ${adminToken}`)
-      .send({ status: 'sold_whatsapp', resolved_price_kmf: 9000 });
-    expect(resolveRes.status).toBe(200);
-    expect(resolveRes.body.status).toBe('sold_whatsapp');
-
-    // ── disparition : la vue filtre ui.status = 'available', désormais faux ──
-    const listAfterRes = await request(app)
-      .get('/api/unsold')
-      .set('Authorization', `Bearer ${adminToken}`);
-    expect(listAfterRes.status).toBe(200);
-    expect(listAfterRes.body.some(row => row.id === unsoldItemId)).toBe(false);
-
-    // ── mais la ligne existe toujours en base, juste hors pipeline actif ──
-    const { rows: stillThere } = await db.query(
-      'SELECT status, resolved_at FROM unsold_items WHERE id = $1',
-      [unsoldItemId]
+  it('5 — F3 ancien invendu PAYÉ : ni revente, ni don, ni destruction, ni WhatsApp', async () => {
+    const orderId = await seedOrder({ label: 'legacyPaid', daysAgo: 30, alreadyUnsold: true, totalKmf: 8000 });
+    const { rows: [item] } = await db.query(
+      `INSERT INTO unsold_items(order_id, product_name, original_price_kmf, unsold_price_kmf)
+       VALUES($1, 'Article client sous garde', 8000, 6000) RETURNING id`,
+      [orderId]
     );
-    expect(stillThere).toHaveLength(1);
-    expect(stillThere[0].status).toBe('sold_whatsapp');
-    expect(stillThere[0].resolved_at).not.toBeNull();
+    for (const status of ['sold_whatsapp', 'sold_reseller', 'donated', 'destroyed']) {
+      const res = await request(app)
+        .post(`/api/unsold/${item.id}/resolve`)
+        .set('Authorization', `Bearer ${adminToken}`).send({ status, resolved_price_kmf: 6000 });
+      expect(res.status).toBe(404);
+    }
+    const patch = await request(app).patch(`/api/unsold/${item.id}`)
+      .set('Authorization', `Bearer ${adminToken}`).send({ channel: 'reseller' });
+    expect(patch.status).toBe(404);
+    const message = await request(app).get(`/api/unsold/${item.id}/whatsapp`)
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(message.status).toBe(404);
+    const detail = await request(app).get(`/api/unsold/${item.id}`)
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(detail.status).toBe(404);
+
+    const { rows: [still] } = await db.query(
+      'SELECT status, resolved_at FROM unsold_items WHERE id=$1', [item.id]
+    );
+    expect(still.status).toBe('available');
+    expect(still.resolved_at).toBeNull();
   });
 
-  it("5 — scan rejoué sur une commande déjà traitée ne crée pas de doublon unsold_items", async () => {
-    const orderId = await seedOrder({ label: 'noDupe', daysAgo: 20, totalKmf: 5000 });
-
-    await request(app).post('/api/unsold/scan').set('Authorization', `Bearer ${adminToken}`);
-    const afterFirst = await unsoldRowsForOrder(orderId);
-    expect(afterFirst).toHaveLength(1);
-
-    await request(app).post('/api/unsold/scan').set('Authorization', `Bearer ${adminToken}`);
-    const afterSecond = await unsoldRowsForOrder(orderId);
-    expect(afterSecond).toHaveLength(1);
-  });
 });
