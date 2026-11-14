@@ -41,8 +41,8 @@
 <script src="/boutique/js/anti-fouc.js"></script>
 <link rel="stylesheet" href="/boutique/css/dist/base.css?v=266">
 <link rel="stylesheet" href="/boutique/css/dist/critical-home.css?v=5">
-<link id="k-components-preload" rel="preload" href="/boutique/css/dist/components.css?v=662" as="style">
-<noscript><link rel="stylesheet" href="/boutique/css/dist/components.css?v=661"></noscript>
+<link id="k-components-preload" rel="preload" href="/boutique/css/dist/components.css?v=663" as="style">
+<noscript><link rel="stylesheet" href="/boutique/css/dist/components.css?v=663"></noscript>
 <script src="/boutique/js/preload-css-swap.js"></script>
 <link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=157">
 <!-- event.css RETIRÉ (2026-07) : ce bundle ne contenait QUE tokens.css, déjà
@@ -280,6 +280,7 @@
 <div class="k-modal-overlay" id="k-modal-overlay">
   <div class="k-modal" id="k-modal">
     <div class="k-modal-topbar">
+      <div class="k-modal-brand" aria-label="Komerce"><img src="/images/panier_tresse_vert.webp" alt="" aria-hidden="true" width="32" height="32"><span>Komerce</span></div>
       <button class="k-modal-back" id="k-modal-back">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
         <span id="k-modal-back-label">Catalogue</span>
@@ -381,6 +382,7 @@
         <!-- PDP v3.1 — détails produit immédiatement sous Media | BuyBox.
              La description longue vit ici ; le chapeau court reste dans la BuyBox. -->
         <div class="k-modal-long-details" id="k-modal-long-details">
+          <h3 class="k-modal-long-details-heading" id="k-modal-long-details-heading" hidden>Détails du produit</h3>
           <div id="k-modal-long-description" class="k-modal-long-description" hidden></div>
           <div id="k-modal-payment" class="k-modal-payment"></div>
         </div>

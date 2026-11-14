@@ -157,6 +157,35 @@ for (const width of SIZES) {
     expect(ratio.side).toBeGreaterThan(.18);
     expect(ratio.side).toBeLessThan(.26);
     expect(evidence.transportText).not.toContain('26 KMF');
+    // Oracle du mock canonique : fiche descriptif/caractéristiques avant
+    // suggestions, une seule colonne scrollable, panier stationnaire.
+    const hierarchy = await page.evaluate(() => {
+      const panel = document.getElementById('k-modal-long-details');
+      const desc = document.getElementById('k-modal-long-description');
+      const specs = panel?.querySelector('.k-modal-enriched-block--specs');
+      const suggestions = document.getElementById('k-modal-suggestions');
+      const main = document.querySelector('#k-modal .k-modal-main');
+      const cart = document.querySelector('#k-modal .k-modal-cart-slot');
+      const box = e => e?.getBoundingClientRect();
+      return {
+        heading: panel?.querySelector('#k-modal-long-details-heading')?.textContent,
+        description: desc?.textContent,
+        specs: specs?.textContent,
+        panelColumns: getComputedStyle(panel).gridTemplateColumns.split(' ').length,
+        panelTop: box(panel)?.top,
+        suggestionsTop: box(suggestions)?.top,
+        cartTop: box(cart)?.top,
+        mainOverflow: getComputedStyle(main).overflowY,
+        brandVisible: box(document.querySelector('#k-modal .k-modal-brand'))?.width > 0,
+      };
+    });
+    expect(hierarchy.heading).toContain('Détails du produit');
+    expect(hierarchy.description?.length).toBeGreaterThan(10);
+    expect(hierarchy.specs?.length).toBeGreaterThan(10);
+    expect(hierarchy.panelColumns).toBe(2);
+    expect(hierarchy.suggestionsTop).toBeGreaterThan(hierarchy.panelTop);
+    expect(hierarchy.mainOverflow).toBe('auto');
+    expect(hierarchy.brandVisible).toBe(true);
   });
 }
 
