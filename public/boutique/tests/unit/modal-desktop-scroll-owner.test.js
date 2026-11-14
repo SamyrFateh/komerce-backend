@@ -106,11 +106,11 @@ describe('scroll owner unique desktop — oracle RÉF-2026-07f', () => {
     }
   });
 
-  test('le hero desktop exploite toute sa colonne sans recréer de scroll owner', () => {
+  test('le hero desktop utilise la largeur disponible avec une hauteur bornée, sans scroll owner interne', () => {
     const imgRule = media.match(/#k-modal \.k-modal-product-zone \.k-modal-img-wrap\s*\{([^}]*)\}/)?.[1] ?? '';
     expect(imgRule).not.toMatch(/aspect-ratio\s*:/);
     expect(imgRule).toMatch(/min-height\s*:\s*480px/);
-    expect(imgRule).toMatch(/max-height\s*:\s*none/);
+    expect(imgRule).toMatch(/max-height\s*:\s*560px/);
     expect(imgRule).toMatch(/max-width\s*:\s*none/);
     expect(imgRule).toMatch(/align-self\s*:\s*stretch/);
 
@@ -134,7 +134,7 @@ describe('scroll owner unique desktop — oracle RÉF-2026-07f', () => {
 
     expect(simpleHero).not.toMatch(/aspect-ratio\s*:/);
     expect(simpleHero).toMatch(/min-height\s*:\s*0/);
-    expect(simpleHero).toMatch(/max-height\s*:\s*none/);
+    expect(simpleHero).toMatch(/max-height\s*:\s*560px/);
     expect(simpleHero).toMatch(/max-width\s*:\s*none/);
     expect(simpleSlide).not.toMatch(/padding\s*:/);
     expect(simpleSlide).toMatch(/object-position\s*:\s*center\s+center/);
