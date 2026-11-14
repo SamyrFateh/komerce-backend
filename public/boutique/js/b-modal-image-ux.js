@@ -25,7 +25,7 @@
  *
  * Lightbox plein écran :
  *   Tap sur l'image ou "Voir en grand" → .k-modal-fullscreen
- *   avec swipe horizontal et pinch-zoom natif (touch-action: pinch-zoom).
+ *   avec boucle fantôme, sortie par swipe haut et pinch-zoom natif (touch-action: pinch-zoom).
  *   Mobile uniquement — désactivé sur desktop (zoom loupe géré par setupZoom).
  *
  * Bouton "Voir en grand" :
@@ -52,7 +52,15 @@ const COUNTER_THRESHOLD = 5;
 let _fsOpen      = false;
 let _fsIdx       = 0;
 let _fsTouchX    = 0;
+let _fsTouchY    = 0;
+let _fsMultiTouch = false;
+let _fsGestureMoved = false;
+let _fsIgnoreClick = false;
 let _fsImages    = [];
+let _fsPreviousOverflow = '';
+let _fsPreviousFocus = null;
+let _fsGhostPending = false;
+let _fsResetTimer = null;
 let _fsTrack     = null;
 let _fsCounter   = null;
 let _fsRoot      = null;
@@ -172,28 +180,66 @@ function _injectViewFullBtn() {
 //  FULLSCREEN LIGHTBOX
 // ═══════════════════════════════════════════════════════════════
 
+
+/**
+ * Ghost loop, uniquement dans la lightbox : [dernier fantôme, 1..N, premier
+ * fantôme]. Aucun clone n'est ajouté au carousel PDC ni au contrat média.
+ */
 function _buildFsSlides() {
   if (!_fsTrack) return;
   _fsTrack.innerHTML = '';
-  _fsImages.forEach(function(src) {
-    let slide = document.createElement('div');
+  const sources = _fsImages.length > 1
+    ? [_fsImages[_fsImages.length - 1], ..._fsImages, _fsImages[0]]
+    : _fsImages;
+  sources.forEach((src, index) => {
+    const slide = document.createElement('div');
     slide.className = 'k-modal-fullscreen-slide';
-    let img = document.createElement('img');
+    if (_fsImages.length > 1 && (index === 0 || index === sources.length - 1)) {
+      slide.dataset.ghost = '1';
+      slide.setAttribute('aria-hidden', 'true');
+    }
+    const img = document.createElement('img');
     img.src = src.replace(/(,w_)\d+(\/|,)/, '$11600$2');
     img.alt = '';
     img.loading = 'lazy';
+    img.draggable = false;
     slide.appendChild(img);
     _fsTrack.appendChild(slide);
   });
 }
 
-function _goTo(i) {
-  _fsIdx = Math.max(0, Math.min(_fsImages.length - 1, i));
-  _fsTrack.style.transform = 'translateX(-' + (_fsIdx * 100) + '%)';
-  if (_fsCounter) {
-    _fsCounter.textContent = (_fsIdx + 1) + '\u202f/\u202f' + _fsImages.length;
+function _finishFsGhostStep() {
+  if (!_fsGhostPending || !_fsTrack) return;
+  _fsGhostPending = false;
+  clearTimeout(_fsResetTimer);
+  _fsResetTimer = null;
+  _fsTrack.style.transition = 'none';
+  _fsTrack.style.transform = 'translateX(-' + ((_fsIdx + (_fsImages.length > 1 ? 1 : 0)) * 100) + '%)';
+  // Force le snap invisible avant réactivation de l'animation suivante.
+  void _fsTrack.offsetWidth;
+  _fsTrack.style.transition = '';
+}
+
+function _goTo(index, animate = true) {
+  const count = _fsImages.length;
+  if (!count || !_fsTrack || _fsGhostPending) return;
+  const hasGhosts = count > 1;
+  _fsIdx = ((index % count) + count) % count;
+  // index=-1 ou count : l'animation parcourt le ghost avant snap invisible.
+  const ghostStep = hasGhosts && (index < 0 || index >= count);
+  const physicalIndex = ghostStep
+    ? (index < 0 ? 0 : count + 1)
+    : _fsIdx + (hasGhosts ? 1 : 0);
+  _fsTrack.style.transition = animate ? '' : 'none';
+  _fsTrack.style.transform = 'translateX(-' + (physicalIndex * 100) + '%)';
+  if (_fsCounter) _fsCounter.textContent = (_fsIdx + 1) + '\u202f/\u202f' + count;
+  if (ghostStep) {
+    _fsGhostPending = true;
+    _fsResetTimer = setTimeout(_finishFsGhostStep, 380); // fallback transitionend
   }
 }
+
+export function isImageFullscreenOpen() { return _fsOpen; }
 
 function _ensureFs() {
   let fs = document.querySelector('.k-modal-fullscreen');
@@ -229,8 +275,11 @@ function _openFs(startIdx) {
   let fs = _ensureFs();
   if (!fs) return;
   _fsOpen = true;
+  _fsPreviousOverflow = document.body.style.overflow;
+  _fsPreviousFocus = document.activeElement;
+  _fsGhostPending = false;
   _buildFsSlides();
-  _goTo(startIdx);
+  _goTo(startIdx, false);
   fs.classList.add('is-open');
   fs.querySelector('.k-modal-fullscreen-close')?.focus();
   document.body.style.overflow = 'hidden';
@@ -247,45 +296,97 @@ export function openCurrentImageFullscreen(startIdx = state.carouselIndex || 0) 
   _openFs(startIdx);
 }
 
-function _closeFs() {
+
+function _closeFs({ syncGallery = true } = {}) {
   if (!_fsOpen) return;
   _fsOpen = false;
-  let fs = document.querySelector('.k-modal-fullscreen');
+  clearTimeout(_fsResetTimer);
+  _fsResetTimer = null;
+  _fsGhostPending = false;
+  const fs = document.querySelector('.k-modal-fullscreen');
   if (fs) fs.classList.remove('is-open');
-  document.body.style.overflow = '';
+  document.body.style.overflow = _fsPreviousOverflow;
+  _fsPreviousOverflow = '';
+  if (syncGallery) {
+    // Le propriétaire du carrousel normal reprend l'image N affichée dans le
+    // zoom (sans importer b-modal-product.js et créer un cycle de dépendances).
+    bus.emit('carousel:fullscreen-return', _fsIdx);
+    if (_fsPreviousFocus?.isConnected && typeof _fsPreviousFocus.focus === 'function') {
+      _fsPreviousFocus.focus({ preventScroll: true });
+    }
+  }
+  _fsPreviousFocus = null;
 }
 
 function _setupFsHandlers(fs) {
   if (!fs) return;
-
-  _fsTrack   = fs.querySelector('.k-modal-fullscreen-track');
+  _fsTrack = fs.querySelector('.k-modal-fullscreen-track');
   _fsCounter = fs.querySelector('.k-modal-fullscreen-counter');
+  fs.querySelector('.k-modal-fullscreen-close')?.addEventListener('click', () => _closeFs());
 
-  let closeBtn = fs.querySelector('.k-modal-fullscreen-close');
-  if (closeBtn) closeBtn.addEventListener('click', _closeFs);
+  _fsTrack?.addEventListener('transitionend', (event) => {
+    if (event.target === _fsTrack && (!event.propertyName || event.propertyName === 'transform')) {
+      _finishFsGhostStep();
+    }
+  });
 
-  fs.addEventListener('touchstart', function(e) {
-    _fsTouchX = e.touches[0].clientX;
+  fs.addEventListener('touchstart', (event) => {
+    if (!_fsOpen) return;
+    if (event.touches?.length !== 1) {
+      _fsMultiTouch = true;
+      return;
+    }
+    _fsMultiTouch = false;
+    _fsGestureMoved = false;
+    _fsTouchX = event.touches[0].clientX;
+    _fsTouchY = event.touches[0].clientY ?? 0;
   }, { passive: true });
 
-  fs.addEventListener('touchend', function(e) {
-    let dx = e.changedTouches[0].clientX - _fsTouchX;
-    if (Math.abs(dx) > 44) {
+  fs.addEventListener('touchmove', (event) => {
+    if (event.touches?.length !== 1) {
+      _fsMultiTouch = true; // pinch : jamais interprété comme un swipe
+      return;
+    }
+    if (Math.abs(event.touches[0].clientX - _fsTouchX) > 10
+      || Math.abs((event.touches[0].clientY ?? 0) - _fsTouchY) > 10) {
+      _fsGestureMoved = true;
+    }
+  }, { passive: true });
+
+  fs.addEventListener('touchcancel', () => {
+    _fsMultiTouch = true;
+    _fsGestureMoved = false;
+  }, { passive: true });
+
+  fs.addEventListener('touchend', (event) => {
+    if (!_fsOpen || _fsMultiTouch || !event.changedTouches?.length) return;
+    const dx = event.changedTouches[0].clientX - _fsTouchX;
+    const dy = (event.changedTouches[0].clientY ?? 0) - _fsTouchY;
+    const zoomed = (window.visualViewport?.scale || 1) > 1.05;
+    if (Math.abs(dx) > 12 || Math.abs(dy) > 12 || _fsGestureMoved) {
+      _fsIgnoreClick = true;
+      setTimeout(() => { _fsIgnoreClick = false; }, 260);
+    }
+    if (zoomed) return; // ne pas voler le déplacement d'une photo agrandie
+    if (dy <= -90 && Math.abs(dy) > Math.abs(dx) * 1.25) {
+      _closeFs(); // swipe haut = quitter le zoom, PAS fermer la PDP
+    } else if (Math.abs(dx) > 44 && Math.abs(dx) > Math.abs(dy) * 1.2) {
       _goTo(_fsIdx + (dx < 0 ? 1 : -1));
     }
   }, { passive: true });
 
-  fs.addEventListener('click', function(e) {
-    if (
-      e.target === fs ||
-      e.target.classList.contains('k-modal-fullscreen-slide')
-    ) {
+  fs.addEventListener('click', (event) => {
+    if (_fsIgnoreClick) return;
+    if (event.target === fs || event.target.classList.contains('k-modal-fullscreen-slide')) {
       _closeFs();
     }
   });
 
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape' && _fsOpen) _closeFs();
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && _fsOpen) {
+      event.stopImmediatePropagation();
+      _closeFs();
+    }
   });
 }
 
@@ -338,6 +439,7 @@ function _setupCarouselSync() {
   bus.on('carousel:changed', function(idx) {
     _refreshCounter(idx);
   });
+  bus.on('modal:closed', () => _closeFs({ syncGallery: false }));
   // Les images peuvent terminer leur chargement après l'ouverture du produit.
   // Capture=true : load ne remonte pas en bubbling depuis un <img>.
   document.addEventListener('load', function(event) {
