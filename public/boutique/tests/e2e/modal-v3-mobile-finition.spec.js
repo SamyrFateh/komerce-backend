@@ -433,3 +433,23 @@ test.describe('PDP mobile retouches 2026-11 — Galerie & détails V4', () => {
     });
   }
 });
+
+
+test('PDP mobile retouches 2026-11 — vrai favori interactif et retour desktop au resize', async ({ page }) => {
+  await openV4GalleryFixture(page, { width: 390, height: 844 }, 'stress');
+  const favorite = page.locator('#k-modal-fav-btn');
+  await expect(page.locator('#k-modal .k-modal-img-wrap > #k-modal-fav-btn')).toBeVisible();
+  const before = await favorite.getAttribute('aria-pressed');
+  await favorite.click();
+  await expect(favorite).toHaveAttribute('aria-pressed', before === 'true' ? 'false' : 'true');
+
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await expect.poll(() => favorite.evaluate((el) => el.closest('.k-modal-name-row') !== null)).toBe(true);
+  await expect(page.locator('#k-modal .k-modal-name-row > #k-modal-fav-btn')).toBeVisible();
+  expect(await page.locator('#k-modal-fav-btn').count()).toBe(1);
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect.poll(() => favorite.evaluate((el) => el.closest('.k-modal-img-wrap') !== null)).toBe(true);
+  await expect(page.locator('#k-modal .k-modal-img-wrap > #k-modal-fav-btn')).toBeVisible();
+  expect(await page.locator('#k-modal-fav-btn').count()).toBe(1);
+});
