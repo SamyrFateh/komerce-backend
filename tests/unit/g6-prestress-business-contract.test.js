@@ -71,6 +71,26 @@ describe('G6 pré-stress — unique business contract ChatGPT / Opus',()=>{
     expect(data.same_staging_sha_required).toBe(true);
     expect(data.distinct_run8_and_order_by_agent).toBe(true);
   });
+  test('O-ECO Fable Q1-Q3 et cas extrêmes rattachés à des scénarios existants',()=>{
+    const oracle=data.transversal_oracles['O-ECO'];
+    expect(oracle.read_only_controls).toEqual(['Q1','Q2','Q3']);
+    const sql=fs.readFileSync(path.join(__dirname,'../../',oracle.source),'utf8');
+    for(const id of oracle.read_only_controls) expect(sql).toMatch(new RegExp('^-- '+id+'\\b','m'));
+    expect(sql).not.toMatch(/\b(INSERT|UPDATE|DELETE|TRUNCATE|ALTER|DROP)\b/i);
+    const ids=new Set(data.scenarios.map(s=>s.id));
+    expect(oracle.extreme_cases.cases).toHaveLength(7);
+    for(const c of oracle.extreme_cases.cases) for(const id of c.scenarios) expect(ids.has(id)).toBe(true);
+  });
+  test('cas limites Fable L01-L25 : chacun rattaché à un ID existant ou reporté au stress',()=>{
+    const b=data.fable_stress_boundary_cases;
+    const ids=new Set(data.scenarios.map(s=>s.id));
+    for(let i=1;i<=25;i++){
+      const l='L'+String(i).padStart(2,'0');
+      const mapped=b.mapped[l], deferred=b.deferred_to_stress[l];
+      expect(Boolean(mapped)!==Boolean(deferred)).toBe(true);
+      if(mapped) for(const id of mapped){ expect(ids.has(id)).toBe(true); expect(data.scenarios.find(s=>s.id===id).boundary_cases).toContain(l); }
+    }
+  });
   test('guide humain et contrat machine conservent exactement les mêmes IDs',()=>{
     const md=fs.readFileSync(documentation,'utf8');
     const ids=[...md.matchAll(/^\| ([MN]\d{2}) \|/gm)].map(m=>m[1]);

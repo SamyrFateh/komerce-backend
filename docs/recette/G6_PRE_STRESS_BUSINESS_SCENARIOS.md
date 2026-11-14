@@ -90,7 +90,7 @@
 Variations à jouer quand elles s'appliquent : deux variantes du même produit et quantités multiples ; réception partielle, backorder ou excès ; consolidation multi-PO et carton multi-commandes ; écart de prix confirmé (N40) ; annulation ou remboursement partiel. Arbre de corrélation commun : `order_item → source/supplier → PO/purchase_line → achat physique (C04) → réception Hub → sac/KOM-BOX/expédition → réception Relais → parcel_item → scan de retrait → finance/document/notification`.
 
 ### Oracles transversaux
-- **O-ECO** : N1/N2/N3 sur les objets réels ; fret non doublé, allocations causales, N3 séparé, snapshots prix/FX intacts.
+- **O-ECO** : N1/N2/N3 sur les objets réels ; fret non doublé, allocations causales, N3 séparé, snapshots prix/FX intacts. Complété par les contrôles Fable Q1–Q3 et les cas extrêmes ECO-X1 à ECO-X7 (voir « Oracle O-ECO » plus bas).
 - **O-DOC** : document officiel uniquement après événement confirmé, privé, immuable, idempotent, SHA-256.
 
 | Événement | Attendu |
@@ -143,7 +143,7 @@ Les deux campagnes utilisent la même version applicative (SHA identique, noté 
 - État des lots : L-A1, L-A2, L-A5, L-A6, L-SEC, L3 et L7 sont fusionnés. **L-A8 est livré (#3951)** : `purchase_order_pdf` devient prouvable. W1 (dépense du wallet dans la devise du marché) et W2 (garde de non-envoi WhatsApp Meta) sont en cours.
 
 ### Gates
-**G0** SHA servi = SHA cible, allowlist `AUTHKEY_ALLOWED_PHONES` vide ou sans numéro de recette, fixtures par agent → **G1** arbitrages (fait le 12/11) → **G2** lots P0 déployés avant les scénarios qu'ils débloquent, sinon BLOCKED explicite → **G3** M → **G4** N P0 → **G5** N P1 → **G6** comparatif ChatGPT ↔ Opus → `GO_PRE_STRESS` → recette humaine #3754 → stress. Rien ne s'exécute sans « GO tests métiers » explicite du propriétaire.
+**G0** SHA servi = SHA cible, allowlist `AUTHKEY_ALLOWED_PHONES` vide ou sans numéro de recette, fixtures par agent, rythme de chaque campagne sous les limiteurs par IP (#4070 ST-F1 ; un 429 = NOT_PROVEN, pas FAIL) → **G1** arbitrages (fait le 12/11) → **G2** lots P0 déployés avant les scénarios qu'ils débloquent, sinon BLOCKED explicite → **G3** M → **G4** N P0 → **G5** N P1 → **G6** comparatif ChatGPT ↔ Opus → `GO_PRE_STRESS` → recette humaine #3754 → stress. Rien ne s'exécute sans « GO tests métiers » explicite du propriétaire.
 
 ## Oracle transversal O-FIN — audit Fable #3987 (partagé GPT / Opus)
 
@@ -164,6 +164,48 @@ Le script SQL **lecture seule** [`G6_HUB_SQL_ORACLES.sql`](./G6_HUB_SQL_ORACLES.
 - **Preuve métier complémentaire obligatoire :** arrêt/redémarrage au dernier reçu, rejeu idempotent, réception partielle, refus confirmation sous le reçu, quarantaine, deux répartitions concurrentes sur PostgreSQL réel, commande manuelle M06 avec variante, rupture soldée → incident unique → réservation et exécution de remboursement validées par l'admin. Aucune autorisation de paiement ni mouvement financier n'est fabriqué par le script SQL.
 
 La source Fable est [#3998](https://github.com/SamyrFateh/komerce-backend/issues/3998). **Aucun des contrôles SQL ci-dessus n'est déclaré exécuté ni PASS par l'ajout documentaire.** La campagne E2E reste sous le GO explicite du propriétaire.
+
+## Oracle O-ECO — contre-expertise Fable #3988 (partagé GPT / Opus)
+
+Le script SQL **lecture seule** [`G6_ECO_SQL_CONTROLS.sql`](./G6_ECO_SQL_CONTROLS.sql) reprend les contrôles **Q1 à Q3** : frais globaux appliqués à CM/CG sans surcharge marché (ME-04), fret au poids et moyennes non calibrées (ME-02/03), achat « réel » pris dans le catalogue (ME-14). Ce sont des **diagnostics de configuration** : chaque ligne se qualifie (constat ME connu, décision du propriétaire ou anomalie), sans assertion « zéro ligne ».
+
+Les sept cas extrêmes chiffrés de #3988 deviennent des variantes de scénarios existants, sans nouvel ID :
+
+| ID | Cas | Attendu | Scénarios |
+|---|---|---|---|
+| ECO-X1 | Premier lot minuscule, accessoire puis volumineux | Plancher et snapshot cohérents ; volumineux sous minimum signalé (ME-11) | N35 |
+| ECO-X2 | Fret 400 / 600 / 900 €/m³, volumineux | Plancher issu du fret du marché, sans doublon | N35, M04, M05 |
+| ECO-X3 | Devise d'achat +10 % / +25 % | Non représentable (ME-10) : constat, pas FAIL | N31 |
+| ECO-X4 | Casse et non-retrait aux bornes | Provision de risque du marché appliquée | N35 |
+| ECO-X5 | Léger mais volumineux | Fret au volume ; fret au poids actif = constat ME-03 | N35 |
+| ECO-X6 | Produit manuel Fournisseur central | Coût réel = achat confirmé, pas `products.cost_kmf` (ME-14) | M06, N34 |
+| ECO-X7 | Stock local, achat 5 000 KMF | Plancher stable ; N3 hors snapshot (#4034) | M02 |
+
+Les hypothèses CM/CG de Fable ne sont pas sourcées : elles calibrent les cas, pas les verdicts.
+
+## Cas limites du plan de stress Fable #4070 (L01–L25)
+
+Chaque cas rattaché s'exécute comme **variante de l'ID existant** (champ `boundary_cases` du JSON) ; les 46 IDs restent inchangés.
+
+| Cas limites | Scénario |
+|---|---|
+| L04 (quantité 100 puis 101), L05 (dernière unité locale, 2 clients) | N04 |
+| L05 | M03 |
+| L06 (prix ou taux modifié entre panier et validation) | N06 |
+| L01 (même clé ×5 simultanés), L02 (même clé, contenu différent), L03 (sans clé → 428, prix conservé) | N08 |
+| L09 (webhook ×3, remboursement avant paiement), L10 (carte sur commande payée cash), L11 (mobile money sans montant/devise) | N10 |
+| L14 (3 fournisseurs, 1 en **rupture définitive**) | N13 |
+| L15 (réception partielle puis solde, rejeu), L16 (**colis non rapproché** : article en trop, mauvaise variante, sans étiquette) | N14 |
+| L17 (31ᵉ ligne, 4ᵉ colis), L18 (deux opérateurs répartissent la même commande) | N15 |
+| L19 (2 puis 3 codes faux), L20 (code expiré, autre relais), L23 (6 retraits/min même IP) | N22 / N23 |
+| L21 (double scan < 100 ms, rejeu après réponse perdue) | N24 |
+| L24 (second dossier SAV sur la même unité) | N25 |
+| L07 (wallet 100 % puis annulation), L08 (wallet retiré pendant paiement carte, webhook simulé uniquement) | N26 |
+| L22 (retrait partiel puis solde, tiers autorisé, facture unique) | N27 / N37 |
+| L13 (annulation au passage « expédiée ») | N39 |
+
+- **L23** : le refus au 6ᵉ retrait est aujourd'hui attendu (limiteur par IP) ; constat, pas FAIL, tant que la décision #4070 §8.1 n'est pas prise.
+- **Reportés au stress** : L12 (bornes 23 h 59 / 24 h 01, horloge non maîtrisable sur le staging : preuve PostgreSQL ou cible isolée) et L25 (redéploiement sous charge, interdit pendant les campagnes : scénario P1).
 
 ## Coordination et paquet de preuve
 
