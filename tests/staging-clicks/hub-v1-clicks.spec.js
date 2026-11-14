@@ -205,13 +205,69 @@ test.describe.serial(`Hub V1 : clics reels Chromium (${MARKET_CODE}, fixture E2E
       await scanResp;
       const qty = card.locator('input.kmc-workspace-receive-qty').first();
       await qty.fill(await qty.getAttribute('max'));
-      await gesture(page, {
+      // T2 : mémoriser uniquement en mémoire la requête exacte envoyée par le clic UI.
+      let originalPost = null;
+      const captureReceive = (request) => {
+        if (request.method() === 'POST' && new URL(request.url()).pathname === '/api/scans/hub/receive') {
+          originalPost = request.postDataJSON();
+        }
+      };
+      page.on('request', captureReceive);
+      const receipt = await gesture(page, {
         key: `hub:receive:${poId.slice(0, 8)}`, role: 'agent_hub', route: 'POST /api/scans/hub/receive',
         ui: 'operations-workspace.js:createReceptionCard (Enregistrer la réception)', match: (p) => p === '/api/scans/hub/receive',
         click: () => card.locator('[data-workspace-action="receive-supplier"]').click(),
       });
+      page.off('request', captureReceive);
+
+      expect(receipt.verdict).toBe('CLICK_PASS');
+      const receivedRef = receipt.json?.unit?.reference;
+      expect(receivedRef, 'T2 référence du colis fournisseur créé').toMatch(/^SUPPLIER_PACKAGE-/);
+      expect(originalPost?.reference, 'T2 payload original du clic').toBe(receivedRef);
+      expect(originalPost?.contents?.length).toBeGreaterThan(0);
+      const beforeReplay = await q("SELECT COUNT(*)::int AS n FROM hub_physical_units WHERE reference=$1", [receivedRef]);
+      expect(beforeReplay[0].n).toBe(1);
+      // Le client API Playwright n'injecte pas d'Origin automatiquement : sans cet en-tête,
+      // la protection CSRF répond 403 (et ce refus ne doit jamais être pris pour un refus métier).
+      const replay = await page.request.post('/api/scans/hub/receive', {
+        headers: { Origin: new URL(page.url()).origin },
+        data: originalPost,
+      });
+      const replayResult = await replay.json().catch(() => ({}));
+      expect(replay.status(), 'T2 rejeu authentifié + Origin canonique ; code=' + (replayResult.code || 'none')).toBe(200);
+      const afterReplay = await q("SELECT COUNT(*)::int AS n FROM hub_physical_units WHERE reference=$1", [receivedRef]);
+      expect(afterReplay[0].n).toBe(1);
+      evidence.t_cases = evidence.t_cases || [];
+      evidence.t_cases.push({ id: 'T2', verdict: 'API_PG_PASS_UI_REPLAY_NOT_PROVEN',
+        physical_reference: receivedRef, original_ui_http: receipt.http, replay_http: replay.status(),
+        before: beforeReplay[0].n, after: afterReplay[0].n });
+      save();
       await page.waitForTimeout(1500);
     }
+    // T1 : même cohorte, SHA et marché que les clics de réception.
+    for (const suffix of ['KOM-101', 'KOM-102']) {
+      const orderRef = 'E2E-HUB-V1-' + RUN8 + '-' + suffix;
+      const orders = await q("SELECT id,status::text AS status FROM orders WHERE reference=$1", [orderRef]);
+      expect(orders, 'commande unique T1 ' + orderRef).toHaveLength(1);
+      const order = orders[0];
+      const physical = await q(
+        "SELECT COUNT(*)::int AS n, COALESCE(SUM(pi.quantity),0)::int AS qty " +
+        "FROM parcel_items pi JOIN order_items oi ON oi.id=pi.order_item_id " +
+        "JOIN parcels p ON p.id=pi.parcel_id AND p.cancelled_at IS NULL WHERE oi.order_id=$1",
+        [order.id]);
+      const scans = await q(
+        "SELECT COUNT(*)::int AS n FROM scans WHERE order_id=$1 AND step='preparation' " +
+        "AND scan_code=('AUTO-HUB-' || $1::text)", [order.id]);
+      expect(order.status, 'T1 passage automatique en préparation').toBe('preparation');
+      expect(physical[0].n, 'T1 colis client présent').toBeGreaterThan(0);
+      expect(physical[0].qty, 'T1 quantité répartie').toBeGreaterThan(0);
+      expect(scans[0].n, 'T1 SCAN 3 enregistré exactement une fois').toBe(1);
+      evidence.t_cases.push({ id: 'T1', verdict: 'CHROMIUM_HTTP_PG_PASS',
+        order_reference: orderRef, order_id: order.id, status: order.status,
+        parcel_lines: physical[0].n, distributed_qty: physical[0].qty, scan3: scans[0].n,
+        capture: await shot(page, 'T1-' + suffix) });
+    }
+    save();
     await ctx.close();
   });
 
@@ -327,6 +383,22 @@ test.describe.serial(`Hub V1 : clics reels Chromium (${MARKET_CODE}, fixture E2E
       save();
       await page.waitForTimeout(2500);
     }
+    // T7 : rattachements issus de deux vrais gestes UI, pas d'insertion de preuve par SQL.
+    const lineage = await q(
+      "SELECT COUNT(*)::int AS links, COUNT(DISTINCT hb.bag_unit_id)::int AS bags, " +
+      "COUNT(DISTINCT hb.parcel_id)::int AS client_parcels, " +
+      "COUNT(*) FILTER (WHERE hb.linked_by IS NOT NULL)::int AS actor_traced " +
+      "FROM hub_box_bags hb JOIN hub_physical_units box ON box.id=hb.box_unit_id " +
+      "WHERE box.reference=$1", [shared.box]);
+    expect(lineage[0].links, 'T7 les deux sacs sont en KOM-BOX').toBe(2);
+    expect(lineage[0].bags).toBe(2);
+    expect(lineage[0].client_parcels).toBe(2);
+    expect(lineage[0].actor_traced, 'T7 trace de l’auteur des rattachements').toBe(2);
+    evidence.t_cases = evidence.t_cases || [];
+    evidence.t_cases.push({ id: 'T7', verdict: 'CHROMIUM_HTTP_PG_PASS_H9_COHORT_PENDING',
+      box_reference: shared.box, ...lineage[0], capture: await shot(page, 'T7-bags-in-box') });
+    save();
+
     for (let i = 0; i < 8; i++) {
       await reveal();
       const adv = page.locator('tr').filter({ hasText: shared.box }).locator('[data-workspace-action="advance-box"]');
