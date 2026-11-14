@@ -440,6 +440,7 @@ describe('b-modal-product', () => {
       dom.modalName = document.createElement('h2');
       dom.modalName.textContent = 'Organisateur';
       dom.modalPrice.textContent = '18 400 XAF';
+      state.modalIdentityProjection = { name: 'Organisateur', price: '18 400 XAF' };
       state.modalProduct = makeProduct({ image_url: 'parent.jpg' });
       state.modalProductDetail = { media: [{ url: 'parent.jpg' }], pricing: { promo_pct: 0 } };
       state.modalSelection = { selected_media: [{ url: 'model-a.jpg' }] };
@@ -453,6 +454,7 @@ describe('b-modal-product', () => {
       expect(mini.querySelector('.k-topbar-thumb-img').getAttribute('src')).toBe('model-a.jpg');
 
       dom.modalPrice.textContent = '19 900 XAF';
+      state.modalIdentityProjection = { name: 'Organisateur', price: '19 900 XAF' };
       state.modalSelection = { selected_media: [{ url: 'model-b.jpg' }] };
       syncEnrichedTopbarProduct();
       expect(mini.querySelector('.k-topbar-price-val').textContent).toBe('19 900 XAF');

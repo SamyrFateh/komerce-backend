@@ -534,10 +534,9 @@ import { optimizeImgUrl, fmtPrice, applyProductImageFallback } from './b-utils.j
     const detail = state.modalProductDetail;
     const selection = state.modalSelection;
 
-    el.querySelector('.k-topbar-name').textContent =
-      dom.modalName?.textContent || product?.name || '';
-    el.querySelector('.k-topbar-price-val').textContent =
-      dom.modalPrice?.textContent || (product?.price_kmf != null ? fmtPrice(product.price_kmf) : '');
+    const projection = state.modalIdentityProjection;
+    el.querySelector('.k-topbar-name').textContent = projection?.name || product?.name || '';
+    el.querySelector('.k-topbar-price-val').textContent = projection?.price ?? '';
 
     const media = selection?.selected_media?.[0]?.url
       || detail?.media?.[0]?.url || product?.image_url || product?.images?.[0] || '';
