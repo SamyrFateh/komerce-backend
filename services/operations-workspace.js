@@ -484,14 +484,16 @@ async function runDistribution(market) {
        LEFT JOIN relais r ON r.id = o.relais_id
       WHERE o.market_id = $1
         AND o.status IN ('ordered', 'preparation')
-        AND NOT EXISTS (
-          SELECT 1
-            FROM parcel_items pi
-            JOIN order_items oi ON oi.id = pi.order_item_id
-            JOIN parcels p ON p.id = pi.parcel_id AND p.status <> 'cancelled'
+        AND EXISTS (
+          SELECT 1 FROM order_items oi
            WHERE oi.order_id = o.id
+             AND oi.fulfillment_source = 'IMPORT'
+             AND NOT EXISTS (
+               SELECT 1 FROM parcel_items pi
+               JOIN parcels p ON p.id = pi.parcel_id AND p.status <> 'cancelled'
+               WHERE pi.order_item_id = oi.id
+             )
         )
-        AND EXISTS (SELECT 1 FROM order_items oi WHERE oi.order_id = o.id)
       ORDER BY o.created_at ASC`,
     [resolvedMarket.id]
   );
@@ -514,6 +516,7 @@ async function runDistribution(market) {
         success: Boolean(result && result.success),
         queued: Boolean(result && result.queued),
         already_assigned: Boolean(result && result.already_assigned),
+        nothing_eligible: Boolean(result && result.nothing_eligible),
         parcel_ref: result && result.parcel_ref ? result.parcel_ref : null,
         error: result && result.error ? result.error : null,
       });
@@ -523,6 +526,7 @@ async function runDistribution(market) {
         success: false,
         queued: false,
         already_assigned: false,
+        nothing_eligible: false,
         parcel_ref: null,
         error: err.message,
       });
@@ -532,7 +536,7 @@ async function runDistribution(market) {
   return Object.freeze({
     market: resolvedMarket.code,
     attempted: rows.length,
-    distributed: details.filter(row => row.success && !row.queued && !row.already_assigned).length,
+    distributed: details.filter(row => row.success && !row.queued && !row.already_assigned && !row.nothing_eligible).length,
     queued: details.filter(row => row.queued).length,
     already_assigned: details.filter(row => row.already_assigned).length,
     errors: details.filter(row => !row.success).length,
