@@ -198,5 +198,6 @@ jobs:
             test-results/hub-v1-clicks/captures/
             test-results/hub-v1-clicks/evidence.json
             test-results/hub-v1-clicks/playwright.json
+            test-results/hub-v1-http/hub-v1-http-actions-*.json
           if-no-files-found: warn
           retention-days: 30
