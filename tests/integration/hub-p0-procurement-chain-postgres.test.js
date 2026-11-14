@@ -555,6 +555,48 @@ describeDb('Hub P0 — chaîne d\'approvisionnement complète (REAL_DB)', () => 
         .rejects.toMatchObject({ code: 'HUB_BOX_SHIPMENT_MARKET_MISMATCH' });
     });
 
+    test('T4/HB-06 PG16 : réception en quarantaine exclue du reçu et de la complétude', async () => {
+      // Le test porte sur la vérité physique PostgreSQL. L'action UI de mise
+      // en quarantaine reste une preuve séparée, jamais simulée comme un clic.
+      const completion = require('../../services/purchasing-completion-service');
+      const o = await makeOrder({
+        market: km, relais: relaisKm, supplier: supplierA,
+        items: [{ sku: sku2, qty: 2 }],
+      });
+      const pl = o.lines[0];
+      const prepared = await grouped.preparePurchaseOrder(
+        { supplier_id: supplierA, procurement_hub_ref: 'DXB', line_ids: [pl.lineId] },
+        { actor: actor() });
+      const po = prepared.purchase_order.id;
+      await submitAuthorized(engagement, po, { actor: actor() });
+      await engagement.recordPurchaseOrderSent(
+        po, { channel: 'whatsapp', note: 'T4 mise en quarantaine PG' }, { actor: actor() });
+      await engagement.confirmGroupedPurchaseOrder(po, {
+        purchase_proof_ref: 'T4-HB06-' + tag,
+        seller_label: 'Fournisseur test',
+        supplier_order_id: 'T4-' + tag,
+        lines: [{ purchase_line_id: pl.lineId, confirmed_quantity: 2 }],
+      }, { actor: actor() });
+
+      const ref = tag + '-T4-QUAR';
+      expect((await receive(po, sku2.id, 1, ref)).status).toBe(201);
+      expect(await received(pl.lineId)).toBe(1);
+      const unit = (await q('SELECT id FROM hub_physical_units WHERE reference=$1', [ref])).rows;
+      expect(unit).toHaveLength(1);
+      // Mutation autorisée seulement sur la base PostgreSQL 16 jetable de la CI.
+      await q("UPDATE hub_physical_units SET state='QUARANTINED' WHERE id=$1", [unit[0].id]);
+      expect(await received(pl.lineId)).toBe(0);
+      const verdict = await completion.evaluateOrderProcurementCompletion(o.orderId, { actor: actor() });
+      expect(verdict.complete).toBe(false);
+      expect(verdict.transition).toBe('skipped');
+      expect((await q('SELECT status::text AS status FROM orders WHERE id=$1', [o.orderId])).rows[0].status)
+        .toBe('ordered');
+      expect((await q(
+        'SELECT COUNT(*)::int AS n FROM parcel_items pi ' +
+        'JOIN order_items oi ON oi.id=pi.order_item_id WHERE oi.order_id=$1',
+        [o.orderId])).rows[0].n).toBe(0);
+    });
+
     test('T3/HB-02 PG16 : rupture soldée sans reliquat => incident unique, reçu réparti, commande avancée', async () => {
       // Cohorte locale PostgreSQL 16 uniquement : aucune donnée staging ou PSP réel.
       const completion = require('../../services/purchasing-completion-service');
