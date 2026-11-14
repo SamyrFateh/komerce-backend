@@ -99,7 +99,7 @@ async function evidence(page, name, tasks, requests) {
 function task(kind, orderId, missing, age, overdue, why) {
   return {
     id: kind + ':' + orderId, kind, severity: 'anomaly',
-    owner: 'agent_hub', viewer_can_act: true,
+    owner: kind === 'BLOCKED_BY_SHORTFALL' ? 'responsable_hub' : 'agent_hub', viewer_can_act: true,
     subject: { order_id: orderId }, missing, why,
     age_hours: age, overdue, since: '2026-11-10T00:00:00Z',
   };
@@ -116,7 +116,7 @@ test('T3: la rupture fournisseur est visible et mène au bon dossier', async ({ 
   const blocked = page.locator('[data-hlc-todo-item="BLOCKED_BY_SHORTFALL"]');
   await expect(blocked).toBeVisible();
   await expect(blocked).toContainText('1 u non couverte');
-  await expect(blocked).toHaveAttribute('data-owner', 'agent_hub');
+  await expect(blocked).toHaveAttribute('data-owner', 'responsable_hub');
   await blocked.click();
   await expect(page.locator('[data-hub-cockpit]'))
     .toHaveAttribute('data-hlc-selection', 'order:' + ORDER_A);
