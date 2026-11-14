@@ -439,10 +439,10 @@ describeDb('Hub P0 — chaîne d\'approvisionnement complète (REAL_DB)', () => 
       );
       expect(coverage.physical_qty).toBe(1);
       const { rows: [ordered] } = await q(
-        'SELECT confirmed_quantity, received_quantity FROM v_purchase_line_progress WHERE line_id=$1',
+        'SELECT effective_quantity, received_quantity FROM v_purchase_line_progress WHERE line_id=$1',
         [lineId]
       );
-      expect(Number(ordered.received_quantity)).toBeLessThanOrEqual(Number(ordered.confirmed_quantity));
+      expect(Number(ordered.received_quantity)).toBeLessThanOrEqual(Number(ordered.effective_quantity));
     });
 
     test('C3 H5a/H5b : confirmation réduite en concurrence avec réception interdit le reliquat fantôme', async () => {
@@ -483,10 +483,10 @@ describeDb('Hub P0 — chaîne d\'approvisionnement complète (REAL_DB)', () => 
       expect(confirmation.status === 'fulfilled' ||
         (reception.status === 'fulfilled' && reception.value.status === 201)).toBe(true);
       const { rows: [progress] } = await q(
-        'SELECT confirmed_quantity, received_quantity FROM v_purchase_line_progress WHERE line_id=$1',
+        'SELECT effective_quantity, received_quantity FROM v_purchase_line_progress WHERE line_id=$1',
         [o.lines[0].lineId]
       );
-      const confirmed = Number(progress.confirmed_quantity);
+      const confirmed = Number(progress.effective_quantity);
       const qtyReceived = Number(progress.received_quantity);
       expect(qtyReceived).toBeLessThanOrEqual(confirmed);
       if (qtyReceived === 2) expect(confirmation.status).toBe('rejected');
