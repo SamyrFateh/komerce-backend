@@ -8,7 +8,7 @@
  * @outputs       relay_scoped_eligible_lines_and_dispute_return_requests
  * @depends       db (transaction supplied), services/dispute-mutation-service.js, services/catalog-product-quality-service.js, orders, order_items, products
  * @used-by       routes/relay-dashboard.js
- * @db-read       orders, order_items, products, disputes, relay_product_return_receipts
+ * @db-read       orders, order_items, products, disputes, relay_product_return_receipts, relay_return_compensations
  * @db-write      none
  * @db-write-via:dispute-mutation-service disputes
  * @db-txn        owns_request_transaction; queries_accept_executor
@@ -74,7 +74,8 @@ async function eligibleOrder({ actor, reference, executor }) {
               SELECT SUM(d.return_quantity)
                 FROM disputes d
                WHERE d.type = 'product_return' AND d.return_order_item_id = oi.id
-                 AND d.status IN ('open','processing','resolved')
+                 AND (d.status IN ('open','processing','resolved')
+                      OR EXISTS (SELECT 1 FROM relay_return_compensations c WHERE c.request_id = d.id))
             ), 0)::int AS qty_already_requested
        FROM order_items oi JOIN products p ON p.id = oi.product_id
       WHERE oi.order_id = $1 AND oi.qty_collected > 0
@@ -157,7 +158,8 @@ async function createReturnRequest({ actor, reference, orderItemId, quantity, re
               COUNT(*) FILTER (WHERE status IN ('open','processing'))::int AS active
          FROM disputes
         WHERE return_order_item_id = $1 AND type = 'product_return'
-          AND status <> 'closed'`,
+          AND (status <> 'closed'
+               OR EXISTS (SELECT 1 FROM relay_return_compensations c WHERE c.request_id = disputes.id))`,
       [orderItemId]
     );
     const existing = sums[0] || {};
