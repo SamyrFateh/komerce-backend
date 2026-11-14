@@ -107,7 +107,10 @@ async function _totals(client, paymentId) {
 
 function _assertCaps(n, pay, t) {
   if (n.kind === 'payment') {
-    const cap = cur(pay.observed_amount != null ? pay.observed_amount : pay.expected_amount);
+    // FA-23 : l'observé ne peut que resserrer le plafond, jamais l'élargir au-delà du montant attendu/autorisé.
+    const expected = cur(pay.expected_amount);
+    const observed = pay.observed_amount != null ? cur(pay.observed_amount) : null;
+    const cap = observed != null && observed < expected ? observed : expected;
     if (t.paidC + n.amountCurrency > cap) {
       throw fail(409, 'SETTLEMENT_EXCEEDS_PAYMENT_AMOUNT', 'Σ des règlements dépasserait le montant du paiement fournisseur', {
         cap_currency: fmt(cap, 4), already_settled_currency: fmt(t.paidC, 4),
