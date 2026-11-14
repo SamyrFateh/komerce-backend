@@ -67,7 +67,7 @@ router.get('/:id', authenticate, requireAdmin, async (req, res, next) => {
       `SELECT v.* FROM v_unsold_pipeline v
        JOIN unsold_items ui ON ui.id = v.id
        JOIN orders o ON o.id = ui.order_id
-       WHERE v.id = 'SELECT * FROM v_unsold_pipeline WHERE id = $1', [req.params.id] AND o.payment_status IS DISTINCT FROM 'paid'`, [req.params.id]
+       WHERE v.id = $1 AND o.payment_status IS DISTINCT FROM 'paid'`, [req.params.id]
     );
     if (!rows.length) return res.status(404).json({ error: 'Invendu introuvable' });
     res.json(rows[0]);
@@ -123,7 +123,10 @@ router.post('/:id/resolve', authenticate, requireAdmin, async (req, res, next) =
 router.get('/:id/whatsapp', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const { rows } = await db.query(
-      'SELECT * FROM v_unsold_pipeline WHERE id = $1', [req.params.id]
+      `SELECT v.* FROM v_unsold_pipeline v
+       JOIN unsold_items ui ON ui.id = v.id
+       JOIN orders o ON o.id = ui.order_id
+       WHERE v.id = $1 AND o.payment_status IS DISTINCT FROM 'paid'`, [req.params.id]
     );
     if (!rows.length) return res.status(404).json({ error: 'Invendu introuvable' });
     const item = rows[0];
