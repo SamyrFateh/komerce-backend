@@ -555,6 +555,73 @@ describeDb('Hub P0 — chaîne d\'approvisionnement complète (REAL_DB)', () => 
         .rejects.toMatchObject({ code: 'HUB_BOX_SHIPMENT_MARKET_MISMATCH' });
     });
 
+    test('T3/HB-02 PG16 : rupture soldée sans reliquat => incident unique, reçu réparti, commande avancée', async () => {
+      // Cohorte locale PostgreSQL 16 uniquement : aucune donnée staging ou PSP réel.
+      const completion = require('../../services/purchasing-completion-service');
+      const o = await makeOrder({
+        market: km, relais: relaisKm, supplier: supplierA,
+        items: [{ sku: sku2, qty: 2 }],
+      });
+      const pl = o.lines[0];
+      const prepared = await grouped.preparePurchaseOrder(
+        { supplier_id: supplierA, procurement_hub_ref: 'DXB', line_ids: [pl.lineId] },
+        { actor: actor() });
+      const po = prepared.purchase_order.id;
+      await submitAuthorized(engagement, po, { actor: actor() });
+      await engagement.recordPurchaseOrderSent(
+        po, { channel: 'whatsapp', note: 'T3 envoi fournisseur simulé' }, { actor: actor() });
+      await engagement.confirmGroupedPurchaseOrder(po, {
+        purchase_proof_ref: 'T3-HB02-' + tag,
+        seller_label: 'Fournisseur test',
+        supplier_order_id: 'T3-' + tag,
+        lines: [{ purchase_line_id: pl.lineId, confirmed_quantity: 2 }],
+      }, { actor: actor() });
+
+      const inbound = await receive(po, sku2.id, 1, tag + '-T3-RECU');
+      expect(inbound.status).toBe(201);
+      expect(await received(pl.lineId)).toBe(1);
+      expect((await q('SELECT status::text AS status FROM orders WHERE id=$1', [o.orderId])).rows[0].status)
+        .toBe('ordered');
+
+      const settled = await engagement.settleLine(pl.lineId, {
+        settled_quantity: 1, reason: 'rupture fournisseur définitive T3',
+        reopen_remainder: false,
+      }, { actor: actor() });
+      expect(settled.remnant).toBeNull();
+      const verdict = await completion.evaluateOrderProcurementCompletion(o.orderId, { actor: actor() });
+      expect(verdict).toMatchObject({ complete: true, transition: 'preparation',
+        shortages: [{ order_item_id: pl.itemId, missing_quantity: 1, received_quantity: 1 }] });
+      const state = (await q('SELECT status::text AS status FROM orders WHERE id=$1', [o.orderId])).rows[0];
+      expect(state.status).toBe('preparation');
+      const distributed = (await q(
+        'SELECT COALESCE(SUM(pi.quantity),0)::int AS qty FROM parcel_items pi ' +
+        'JOIN order_items oi ON oi.id=pi.order_item_id ' +
+        'JOIN parcels p ON p.id=pi.parcel_id AND p.cancelled_at IS NULL WHERE oi.order_id=$1',
+        [o.orderId])).rows[0];
+      expect(distributed.qty).toBe(1);
+
+      const incidents = (await q(
+        "SELECT id FROM incidents WHERE order_item_id=$1 AND details->>'type'='supplier_shortage'",
+        [pl.itemId])).rows;
+      expect(incidents).toHaveLength(1);
+      const alerts = (await q(
+        "SELECT COUNT(*)::int AS n FROM alerts WHERE type='supplier_shortage_refund_required' AND entity_id=$1",
+        [incidents[0].id])).rows[0];
+      expect(alerts.n).toBe(1);
+
+      // Le recalcul après réception/rejeu ne crée ni second incident, ni second colis.
+      await completion.evaluateOrderProcurementCompletion(o.orderId, { actor: actor() });
+      expect((await q(
+        "SELECT COUNT(*)::int AS n FROM incidents WHERE order_item_id=$1 AND details->>'type'='supplier_shortage'",
+        [pl.itemId])).rows[0].n).toBe(1);
+      expect((await q(
+        'SELECT COALESCE(SUM(pi.quantity),0)::int AS qty FROM parcel_items pi ' +
+        'JOIN order_items oi ON oi.id=pi.order_item_id ' +
+        'JOIN parcels p ON p.id=pi.parcel_id AND p.cancelled_at IS NULL WHERE oi.order_id=$1',
+        [o.orderId])).rows[0].qty).toBe(1);
+      // Le paiement effectif du remboursement appartient à F1/F2 et n'est PAS certifié ici.
+    });
+
     test('fournisseur indisponible : annulation puis reprise chez B, le reliquat réapparaît dans les besoins', async () => {
       const o = await makeOrder({ market: km, relais: relaisKm, supplier: supplierA, items: [{ sku: sku2, qty: 2 }] });
       await grouped.cancelLine(o.lines[0].lineId, 'fournisseur A indisponible');
