@@ -373,3 +373,44 @@ test.describe('PDP mobile retouches 2026-11 — Chromium geometry', () => {
     });
   }
 });
+
+
+test.describe('PDP mobile retouches 2026-11 — Mini-héro V4 canonique', () => {
+  for (const viewport of VIEWPORTS) {
+    test(`PDP mobile retouches 2026-11 — ${viewport.key} : mini-héro, retour galerie, CTA hors scroll`, async ({ page }) => {
+      await openAt(page, viewport, 'stress');
+      const scroll = page.locator('#k-modal .k-modal-scroll');
+      const thumb = page.getByRole('button', { name: 'Revenir aux photos du produit' });
+      await expect(page.locator('#k-modal .k-modal-img-wrap')).toBeVisible();
+      await expect(page.locator('.k-modal-topbar-product')).toBeAttached();
+      await scroll.evaluate((el) => { el.scrollTop = el.scrollHeight; });
+      await expect(page.locator('#k-modal')).toHaveClass(/is-scrolled/);
+      await expect(thumb).toBeVisible();
+      await expect(page.locator('.k-topbar-price-val')).toHaveText(await page.locator('#k-modal-price').innerText());
+      await shot(page, `mobile-pdp-minihero-scroll-${viewport.key}.png`);
+
+      const positions = await page.evaluate(() => {
+        const root = document.getElementById('k-modal');
+        const footer = root.querySelector(':scope > .k-modal-actions')?.getBoundingClientRect();
+        const cart = root.querySelector('.k-modal-cart-btn').getBoundingClientRect();
+        const close = root.querySelector('.k-modal-close').getBoundingClientRect();
+        const img = root.querySelector('.k-modal-img-wrap');
+        return {
+          footerVisible: Boolean(footer && footer.top >= -1 && footer.bottom <= innerHeight + 1),
+          cartClear: cart.right <= close.left + 1,
+          noOverflow: root.scrollWidth <= root.clientWidth + 1,
+          photoPosition: getComputedStyle(img).position,
+        };
+      });
+      expect(positions.footerVisible).toBe(true);
+      expect(positions.cartClear).toBe(true);
+      expect(positions.noOverflow).toBe(true);
+      expect(positions.photoPosition).not.toBe('sticky');
+      expect(positions.photoPosition).not.toBe('fixed');
+      await thumb.click();
+      await expect.poll(() => scroll.evaluate((el) => el.scrollTop), { timeout: 5000 }).toBeLessThan(10);
+      await expect(page.locator('#k-modal')).not.toHaveClass(/is-scrolled/);
+      await shot(page, `mobile-pdp-minihero-return-${viewport.key}.png`);
+    });
+  }
+});
