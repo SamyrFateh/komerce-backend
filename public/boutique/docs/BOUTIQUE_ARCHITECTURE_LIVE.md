@@ -44,7 +44,7 @@
 | `modal-product.css` | 1510 | components.css |
 | `modal-product-lot4-hybrid.css` | 651 | components.css |
 | `modal-product-polish.css` | 454 | components.css |
-| `modal-shell.css` | 1538 | components.css |
+| `modal-shell.css` | 1620 | components.css |
 | `modal-suggestion-card-polish.css` | 26 | components.css |
 | `modal-suggestion-filter.css` | 22 | components.css |
 | `notifications.css` | 64 | components.css |
@@ -69,7 +69,7 @@ Cascade réelle des bundles livrés :
 ```
  1. /boutique/css/dist/base.css?v=266
  2. /boutique/css/dist/critical-home.css?v=5
- 3. /boutique/css/dist/components.css?v=663
+ 3. /boutique/css/dist/components.css?v=664
  4. /boutique/css/dist/components.css?v=661
  5. /boutique/css/dist/desktop.css?v=157
 ```
