@@ -145,6 +145,18 @@ async function main() {
       await client.query('ROLLBACK TO SAVEPOINT s_diag').catch(() => {});
       report.diagnostic_i7_i15 = { error: String(err.message).slice(0, 300) };
     }
+    // Contrôle SQL F3 (#4025) : l'état d'intention durable que lit routes/orders/cancel.js existe sur le schéma live.
+    try {
+      await client.query('SAVEPOINT s_intents');
+      report.durable_intents = (await client.query(
+        `SELECT provider, status, count(*)::int AS n FROM refund_execution_intents GROUP BY 1,2 ORDER BY 1,2`)).rows;
+      report.durable_intents_columns = (await client.query(
+        `SELECT column_name FROM information_schema.columns WHERE table_name='refund_execution_intents' ORDER BY ordinal_position`)
+      ).rows.map((r) => r.column_name);
+    } catch (err) {
+      await client.query('ROLLBACK TO SAVEPOINT s_intents').catch(() => {});
+      report.durable_intents = { error: String(err.message).slice(0, 300) };
+    }
     await client.query('ROLLBACK');
   } finally {
     await client.end().catch(() => {});
@@ -154,6 +166,7 @@ async function main() {
     const errs = o.statements.filter((s) => !s.valid).map((s) => `#${s.index}: ${s.error}`).join(' | ');
     console.log(`${o.id}\t${o.valid ? 'VALID' : 'INVALID'}\tviolations=${o.violations}${cohort_suffix(o)}${errs ? '\t' + errs : ''}`);
   }
+  console.log('INTENTS ' + JSON.stringify(report.durable_intents));
   console.log('DIAG ' + JSON.stringify(report.diagnostic_i7_i15));
   console.log(`statements=${report.oracles.reduce((a, o) => a + o.statements.length, 0)} live_commit=${report.live_commit}`);
 }
