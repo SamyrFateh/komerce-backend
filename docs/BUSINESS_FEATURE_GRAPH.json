@@ -52614,6 +52614,19 @@
       "lifecycleOwner": "logistics",
       "resolution": "declared-table-owner"
     },
+    "pickup_code_generations": {
+      "writers": [
+        {
+          "feature": "logistics",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "logistics",
+      "resolution": "declared-table-owner"
+    },
     "pickup_verify_attempts": {
       "writers": [
         {

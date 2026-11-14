@@ -390,8 +390,8 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - boutique: 1
 - dash: 2
 - tests: 93
-- tables owned (lifecycle): 25 — `parcels`, `relais`, `parcel_items`, `hub_physical_unit_placements`, `hub_physical_units`, `hub_purchase_allocations`, `scan_events`, `scans`, `pickup_print_tokens`, `pickup_reveal_codes`, `relay_product_return_receipts`, `carriers`, `hub_custody_events`, `hub_box_bags`, `international_shipment_charges`, `international_shipment_events`, `international_shipment_hub_units`, `international_shipment_relay_receipts`, `international_shipments`, `market_transport_sale_rates`, `parcel_events`, `pickup_collect_failures`, `pickup_verify_attempts`, `product_sku_physical_codes`, `shipments`
-- tables written: 27
+- tables owned (lifecycle): 26 — `parcels`, `relais`, `parcel_items`, `hub_physical_unit_placements`, `hub_physical_units`, `hub_purchase_allocations`, `scan_events`, `scans`, `pickup_print_tokens`, `pickup_reveal_codes`, `relay_product_return_receipts`, `carriers`, `hub_custody_events`, `hub_box_bags`, `international_shipment_charges`, `international_shipment_events`, `international_shipment_hub_units`, `international_shipment_relay_receipts`, `international_shipments`, `market_transport_sale_rates`, `parcel_events`, `pickup_collect_failures`, `pickup_code_generations`, `pickup_verify_attempts`, `product_sku_physical_codes`, `shipments`
+- tables written: 28
 - interfaces exposed: 78
 - internal APIs: 32
 - dependencies (consumes): 17 — customs, documents, incident-management, infrastructure, business-rules, orders, local-stock, auth, auth-identity, catalog, notifications, payments, refunds, purchasing, loyalty, market, market-delegation
@@ -863,6 +863,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `paypal_events_processed` | `payments` | single-writer | payments | — |
 | `physical_offers` | `providers-services` | single-writer | providers-services | market-delegation |
 | `physical_outcome_receipts` | `infrastructure` | single-writer | infrastructure | — |
+| `pickup_code_generations` | `logistics` | declared-table-owner | logistics | — |
 | `pickup_collect_failures` | `logistics` | declared-table-owner | logistics | — |
 | `pickup_print_tokens` | `logistics` | declared-table-owner | infrastructure, logistics | — |
 | `pickup_reveal_codes` | `logistics` | declared-table-owner | infrastructure, logistics | — |

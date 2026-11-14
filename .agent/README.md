@@ -4,7 +4,7 @@ Ce dossier ne pilote aucun runtime de tâches, de lanes ou de branches.
 
 ## Gouvernance persistante
 
-Entrer dans `.agent/` ne change jamais le cadre de décision : `AGENTS.md` reste actif et prioritaire. Le ledger et les rapports de palier ajoutent du contexte opérationnel ; ils ne peuvent pas réduire le périmètre de gouvernance, contourner les headers/mustCheck, Feature First ou Debt Zero.
+Entrer dans `.agent/` ne change jamais le cadre de décision : `AGENTS.md` reste actif et prioritaire. Le registre partagé `docs/chantier/STATUS.md`, le ledger historique et les rapports de palier ajoutent du contexte opérationnel ; ils ne peuvent pas réduire le périmètre de gouvernance, contourner les headers/mustCheck, Feature First ou Debt Zero.
 
 ## Sources de vérité
 
@@ -12,7 +12,7 @@ Entrer dans `.agent/` ne change jamais le cadre de décision : `AGENTS.md` reste
 2. `AGENTS.md` ;
 3. `docs/CARTE_FIRST_INDEX.md` ;
 4. la carte de la feature concernée ;
-5. `.agent/LEDGER.md`.
+5. `docs/chantier/STATUS.md` (coordination active) ; `.agent/LEDGER.md` demeure un historique, pas un tableau concurrent.
 
 Sous `.agent/`, seuls sont conservés :
 

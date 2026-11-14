@@ -19082,6 +19082,10 @@
             "resolution": "declared-table-owner"
           },
           {
+            "table": "pickup_code_generations",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "pickup_collect_failures",
             "resolution": "declared-table-owner"
           },
@@ -19215,6 +19219,12 @@
           },
           {
             "table": "parcels",
+            "mode": "RW",
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "pickup_code_generations",
             "mode": "RW",
             "lifecycleOwner": "logistics",
             "ownershipStatus": "owner"
@@ -19408,6 +19418,10 @@
             "resolution": "declared-table-owner"
           },
           {
+            "table": "pickup_code_generations",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "pickup_collect_failures",
             "resolution": "declared-table-owner"
           },
@@ -19541,6 +19555,12 @@
           },
           {
             "table": "parcels",
+            "mode": "RW",
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "pickup_code_generations",
             "mode": "RW",
             "lifecycleOwner": "logistics",
             "ownershipStatus": "owner"
