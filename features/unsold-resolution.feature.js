@@ -41,6 +41,9 @@ module.exports = {
 
   // ── Perimetre fichiers ───────────────────────────────────────────────────
   files: {
+    migrations: [
+      'migrations/415_paid_no_show_liquidation_guard.sql',
+    ],
     routes: [
       'routes/unsold.js',
     ],
@@ -92,7 +95,7 @@ module.exports = {
   debt: {
     knownGaps: [
       'F3 #4115 : sortie du no-show par colis, relances, arbitrage de marché et réconciliation du code de retrait / argent / stock non certifiés. Le scanner automatique est bloqué.',
-      'La fonction SQL legacy auto_unsold() demeure physiquement présente : ne pas l appeler directement ; sa refonte atomique est nécessaire avant GO.',
+      'La fonction SQL legacy auto_unsold() demeure installée ; la migration 415 bloque toute mutation paid sous SQL, mais la procédure no-show par colis et l arbitrage financier restent à construire.',
     ],
   },
 
