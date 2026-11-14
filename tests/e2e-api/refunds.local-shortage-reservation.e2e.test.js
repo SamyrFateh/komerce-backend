@@ -29,6 +29,7 @@ describeE2E('F1/F2 native shortage obligation — real PostgreSQL isolation', ({
     primary = await db.connect();
     try {
       await primary.query('CREATE SCHEMA ' + schema);
+      await primary.query('SET search_path TO ' + schema + ',public');
       for (const create of [
         'CREATE TABLE users (id uuid PRIMARY KEY)',
         'CREATE TABLE markets (id uuid PRIMARY KEY, currency text)',
@@ -41,7 +42,7 @@ describeE2E('F1/F2 native shortage obligation — real PostgreSQL isolation', ({
         'CREATE TABLE refund_execution_intents (id uuid PRIMARY KEY,order_id uuid)',
         'CREATE TABLE order_item_refund_reservations (id uuid PRIMARY KEY,order_id uuid)',
         'CREATE TABLE refunds (id uuid PRIMARY KEY,order_id uuid)',
-      ]) await primary.query('CREATE ' + create.slice('CREATE '.length).replace('TABLE ', 'TABLE '));
+      ]) await primary.query(create);
       // All tables created under one isolated search_path, never public.
       // Re-run canonical migration 416 against the isolated schema.
       const source = fs.readFileSync(
