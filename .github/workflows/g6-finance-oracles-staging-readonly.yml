@@ -27,6 +27,8 @@ jobs:
       STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
       DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
       PGOPTIONS: '-c default_transaction_read_only=on'
+      ORACLE_COHORT_SCOPE: ${{ vars.G6_ORACLE_COHORT_SCOPE }}
+      ORACLE_COHORT_REFS: ${{ vars.G6_ORACLE_COHORT_REFS }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

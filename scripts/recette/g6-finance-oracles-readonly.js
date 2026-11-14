@@ -79,6 +79,17 @@ async function main() {
 
     await client.query('BEGIN READ ONLY');
     await client.query("SET LOCAL statement_timeout = '25s'");
+    // Filtre facultatif par cohorte (lecture seule, comptes uniquement). Sans variable : comportement inchangé.
+    const cohortScope = (process.env.ORACLE_COHORT_SCOPE || '').trim() || null;
+    const cohortRefs = (process.env.ORACLE_COHORT_REFS || '').split(',').map((x) => x.trim()).filter(Boolean);
+    let cohort = null;
+    if (cohortScope || cohortRefs.length) {
+      const c = await client.query(
+        'SELECT id::text AS id, reference FROM orders WHERE ($1::text IS NOT NULL AND simulation_scope = $1) OR reference = ANY($2::text[])',
+        [cohortScope, cohortRefs]);
+      cohort = { ids: c.rows.map((r) => r.id), refs: c.rows.map((r) => r.reference).filter(Boolean) };
+      report.cohort = { scope: cohortScope, refs_requested: cohortRefs.length, orders: cohort.ids.length };
+    }
     for (const o of oracles) {
       const entry = { id: o.id, title: o.title, statements: [] };
       for (const [i, stmt] of o.statements.entries()) {
@@ -87,7 +98,21 @@ async function main() {
           await client.query(`SAVEPOINT ${sp}`);
           const r = await client.query(`SELECT count(*)::int AS n FROM (${stmt}) q`);
           await client.query(`RELEASE SAVEPOINT ${sp}`);
-          entry.statements.push({ index: i, valid: true, violations: r.rows[0].n });
+          const st = { index: i, valid: true, violations: r.rows[0].n };
+          if (cohort) {
+            const probe = await client.query(`SELECT * FROM (${stmt}) q LIMIT 0`);
+            const keys = probe.fields.map((f) => f.name);
+            const idCols = keys.filter((k) => ['id', 'order_id', 'reference_id'].includes(k));
+            const refCols = keys.filter((k) => k === 'reference');
+            if (idCols.length || refCols.length) {
+              const cond = [...idCols.map((k) => `q.${k}::text = ANY($1::text[])`),
+                ...refCols.map((k) => `q.${k}::text = ANY($2::text[])`)].join(' OR ');
+              const cr = await client.query(`SELECT count(*)::int AS n FROM (${stmt}) q WHERE cardinality($1::text[]) >= 0 AND cardinality($2::text[]) >= 0 AND (${cond})`,
+                [cohort.ids, cohort.refs]);
+              st.cohort_violations = cr.rows[0].n;
+            } else { st.cohort_violations = null; st.cohort_applicable = false; }
+          }
+          entry.statements.push(st);
         } catch (err) {
           await client.query(`ROLLBACK TO SAVEPOINT ${sp}`).catch(() => {});
           entry.statements.push({ index: i, valid: false, error: String(err.message).slice(0, 300) });
@@ -95,6 +120,7 @@ async function main() {
       }
       entry.valid = entry.statements.length > 0 && entry.statements.every((s) => s.valid);
       entry.violations = entry.statements.reduce((a, s) => a + (s.violations || 0), 0);
+      if (cohort) entry.cohort_violations = entry.statements.reduce((a, s) => a + (s.cohort_violations || 0), 0);
       report.oracles.push(entry);
     }
     // Diagnostic agrégé des écarts I7 et I15 (aucune ligne, uniquement des comptes).
@@ -126,10 +152,14 @@ async function main() {
   }
   for (const o of report.oracles) {
     const errs = o.statements.filter((s) => !s.valid).map((s) => `#${s.index}: ${s.error}`).join(' | ');
-    console.log(`${o.id}\t${o.valid ? 'VALID' : 'INVALID'}\tviolations=${o.violations}${errs ? '\t' + errs : ''}`);
+    console.log(`${o.id}\t${o.valid ? 'VALID' : 'INVALID'}\tviolations=${o.violations}${cohort_suffix(o)}${errs ? '\t' + errs : ''}`);
   }
   console.log('DIAG ' + JSON.stringify(report.diagnostic_i7_i15));
   console.log(`statements=${report.oracles.reduce((a, o) => a + o.statements.length, 0)} live_commit=${report.live_commit}`);
+}
+
+function cohort_suffix(o) {
+  return o.cohort_violations === undefined ? '' : `\tcohort=${o.cohort_violations}${o.statements.some((s) => s.cohort_applicable === false) ? '(partiel: instruction sans colonne commande)' : ''}`;
 }
 
 if (require.main === module) {
