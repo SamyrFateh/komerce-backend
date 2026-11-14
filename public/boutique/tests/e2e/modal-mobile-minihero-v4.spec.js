@@ -3,10 +3,28 @@
 
 const { test, expect } = require('@playwright/test');
 const { IS_REMOTE } = require('./helpers/boutique.helpers');
-const { catalogue, stubFixtureCatalogue, openFixtureFromSearch, selectOptions } =
+const { catalogue, stubFixtureCatalogue, selectOptions } =
   require('./helpers/modal-v3-fixture-catalogue');
 
 test.skip(IS_REMOTE, 'Tests locaux déterministes — API stubbée.');
+
+async function openMiniheroContractFixture(page, viewport, key) {
+  await page.setViewportSize(viewport);
+  await stubFixtureCatalogue(page);
+  const entry = catalogue.cases.find((item) => item.key === key);
+  const product = catalogue.products.find((item) => String(item.id) === String(entry.detail.product.id));
+  await page.goto('/boutique/index.html', { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => window._kbus && window._kstate, null, { timeout: 10000 });
+  await page.evaluate((item) => {
+    if (!window._kstate.products.some((p) => String(p.id) === String(item.id))) {
+      window._kstate.products.push(item);
+    }
+    window._kbus.emit('modal:open', { id: item.id });
+  }, product);
+  await expect(page.locator('#k-modal-overlay')).toHaveClass(/open/, { timeout: 8000 });
+  await expect(page.locator('#k-modal-name')).toHaveText(entry.detail.product.name, { timeout: 8000 });
+  return entry;
+}
 
 const VIEWPORTS = [
   { width: 360, height: 800 },
@@ -16,10 +34,7 @@ const VIEWPORTS = [
 
 for (const viewport of VIEWPORTS) {
   test(`PDP V4 mini-héro @ ${viewport.width}px : défilement, footer et retour photo`, async ({ page }) => {
-    await page.setViewportSize(viewport);
-    await stubFixtureCatalogue(page);
-    const entry = catalogue.cases.find((item) => item.key === 'stress');
-    await openFixtureFromSearch(page, entry);
+    await openMiniheroContractFixture(page, viewport, 'stress');
 
     const scroll = page.locator('#k-modal .k-modal-scroll');
     const image = page.locator('#k-modal .k-modal-img-wrap');
@@ -66,10 +81,7 @@ for (const viewport of VIEWPORTS) {
 }
 
 test('PDP V4 mini-héro : média et prix recalculés depuis la sélection SKU', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  await stubFixtureCatalogue(page);
-  const entry = catalogue.cases.find((item) => item.key === 'elite');
-  await openFixtureFromSearch(page, entry);
+  const entry = await openMiniheroContractFixture(page, { width: 390, height: 844 }, 'elite');
   await selectOptions(page, entry.validSelection);
   await page.locator('#k-modal .k-modal-scroll').evaluate((el) => { el.scrollTop = el.scrollHeight; });
   await expect(page.locator('#k-modal')).toHaveClass(/is-scrolled/);
