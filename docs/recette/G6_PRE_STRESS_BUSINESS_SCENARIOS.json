@@ -1,5 +1,5 @@
 {
-  "version": "G6-PRE-STRESS-1",
+  "version": "G6-PRE-STRESS-2",
   "source_doc": "docs/recette/G6_PRE_STRESS_BUSINESS_SCENARIOS.md",
   "basis_issue": 3754,
   "created": "2026-11-12",
@@ -20,7 +20,8 @@
     "PASS",
     "FAIL",
     "BLOCKED",
-    "NOT_PROVEN"
+    "NOT_PROVEN",
+    "NOT_APPLICABLE"
   ],
   "required_proof": [
     "scenario_id",
@@ -34,7 +35,9 @@
     "postgres_before_after",
     "financial_or_none",
     "audited_events",
-    "verdict"
+    "verdict",
+    "documents_or_none",
+    "notifications_or_none"
   ],
   "scenarios": [
     {
@@ -46,18 +49,38 @@
       "title": "Fournisseur réel -> catalogue approuvé -> prix/exposition KM -> vrai panier/boutique/POST commande -> cash simulé -> engagement PO puis autorisation paiement -> réception Hub -> sac/KOM-BOX -> transitaire/douane -> Relais -> remise -> finance",
       "expected": "Une filiation source→commande→colis→remise, quantités et coûts sans doubles",
       "priority": "P0",
-      "verdict": "NOT_PROVEN"
+      "verdict": "NOT_PROVEN",
+      "oracles": [
+        "O-ECO",
+        "O-DOC",
+        "O-NOTIF",
+        "O-HUB",
+        "O-FIN"
+      ],
+      "depends_on": [
+        "L-A5"
+      ]
     },
     {
       "id": "M02",
       "kind": "nominal",
       "markets": [
-        "KM"
+        "KM",
+        "CM",
+        "CG"
       ],
       "title": "Produit LOCAL_STOCK vendable -> vrai achat boutique -> cash test -> mise à disposition Relais -> code canonique saisi au clavier -> remise",
       "expected": "Sans Hub, PO ou transport import ; commande, colis et lignes physiques collected",
       "priority": "P0",
-      "verdict": "NOT_PROVEN"
+      "verdict": "NOT_PROVEN",
+      "oracles": [
+        "O-DOC",
+        "O-NOTIF",
+        "O-FIN"
+      ],
+      "depends_on": [
+        "L-A5"
+      ]
     },
     {
       "id": "M03",
@@ -68,7 +91,20 @@
       "title": "Panier mixte stock local + import, deux branches de traitement, deux retraits possibles",
       "expected": "Pas de statut collected tant que les lignes import n'ont pas été remises",
       "priority": "P0",
-      "verdict": "NOT_PROVEN"
+      "verdict": "NOT_PROVEN",
+      "oracles": [
+        "O-ECO",
+        "O-DOC",
+        "O-NOTIF",
+        "O-HUB",
+        "O-FIN"
+      ],
+      "depends_on": [
+        "L-A5"
+      ],
+      "boundary_cases": [
+        "L05"
+      ]
     },
     {
       "id": "M04",
@@ -79,7 +115,17 @@
       "title": "M01 avec responsable marché CM, caisse, fournisseur, transitaire et Relais CM",
       "expected": "Prix XAF, clients et stocks CM, aucune fuite KM/CG",
       "priority": "P0",
-      "verdict": "NOT_PROVEN"
+      "verdict": "NOT_PROVEN",
+      "oracles": [
+        "O-ECO",
+        "O-DOC",
+        "O-NOTIF",
+        "O-HUB",
+        "O-FIN"
+      ],
+      "depends_on": [
+        "L-A5"
+      ]
     },
     {
       "id": "M05",
@@ -90,7 +136,42 @@
       "title": "M01 avec responsable marché CG, caisse, fournisseur, transitaire et Relais CG",
       "expected": "Prix XAF, clients et stocks CG, aucune fuite KM/CM",
       "priority": "P0",
-      "verdict": "NOT_PROVEN"
+      "verdict": "NOT_PROVEN",
+      "oracles": [
+        "O-ECO",
+        "O-DOC",
+        "O-NOTIF",
+        "O-HUB",
+        "O-FIN"
+      ],
+      "depends_on": [
+        "L-A5"
+      ]
+    },
+    {
+      "id": "M06",
+      "kind": "nominal",
+      "markets": [
+        "KM"
+      ],
+      "title": "Produit manuel -> Fournisseur central Hub -> vrai achat client -> sourcing physique Hub -> PO deux autorisations -> Hub -> Relais -> remise -> SAV",
+      "expected": "Produit rattaché au Fournisseur central sans fournisseur inventé ; confirmation refusée sans justificatif (MANUAL_PURCHASE_PROOF_REQUIRED) ni prix (CONFIRMED_PRICE_REQUIRED) ; vendeur réel structuré par achat à la confirmation, jamais central_hub ; rapprochement achats <-> paiement autorisé ; aucun SOI, stock, dette ou paiement fabriqué ; même circuit Hub/Relais canonique",
+      "priority": "P0",
+      "verdict": "NOT_PROVEN",
+      "oracles": [
+        "O-ECO",
+        "O-DOC",
+        "O-NOTIF",
+        "O-HUB",
+        "O-FIN"
+      ],
+      "depends_on": [
+        "L-A2",
+        "L-A5"
+      ],
+      "configurations": [
+        "C04"
+      ]
     },
     {
       "id": "N01",
@@ -142,7 +223,11 @@
       "title": "Stock zéro / quantité trop grande",
       "expected": "Pas de stock négatif ni réserve fictive",
       "priority": "P0",
-      "verdict": "NOT_PROVEN"
+      "verdict": "NOT_PROVEN",
+      "boundary_cases": [
+        "L04",
+        "L05"
+      ]
     },
     {
       "id": "N05",
@@ -168,7 +253,13 @@
       "title": "Prix change pendant checkout",
       "expected": "Nouveau prix proposé et accepté explicitement",
       "priority": "P0",
-      "verdict": "NOT_PROVEN"
+      "verdict": "NOT_PROVEN",
+      "oracles": [
+        "O-FIN"
+      ],
+      "boundary_cases": [
+        "L06"
+      ]
     },
     {
       "id": "N07",
@@ -181,7 +272,10 @@
       "title": "Double clic commande",
       "expected": "Une commande maximum",
       "priority": "P0",
-      "verdict": "NOT_PROVEN"
+      "verdict": "NOT_PROVEN",
+      "oracles": [
+        "O-FIN"
+      ]
     },
     {
       "id": "N08",
@@ -194,7 +288,15 @@
       "title": "Clé idempotence concurrente",
       "expected": "Aucun doublon paiement, stock ou commande",
       "priority": "P0",
-      "verdict": "NOT_PROVEN"
+      "verdict": "NOT_PROVEN",
+      "oracles": [
+        "O-FIN"
+      ],
+      "boundary_cases": [
+        "L01",
+        "L02",
+        "L03"
+      ]
     },
     {
       "id": "N09",
@@ -205,9 +307,12 @@
         "CG"
       ],
       "title": "Cash non encaissé puis tentative remise",
-      "expected": "Aucun collected sans paid",
+      "expected": "Invariant non payé = aucune remise ; joué sur le flux où le cash peut rester impayé (M02, cash au Relais), pas sur l'import où le paiement précède le sourcing",
       "priority": "P0",
-      "verdict": "NOT_PROVEN"
+      "verdict": "NOT_PROVEN",
+      "oracles": [
+        "O-FIN"
+      ]
     },
     {
       "id": "N10",
@@ -218,9 +323,21 @@
         "CG"
       ],
       "title": "Webhook PSP simulé dupliqué/non signé",
-      "expected": "Pas de double règlement, signature obligatoire",
+      "expected": "Pas de double règlement, signature obligatoire ; Chromium NOT_APPLICABLE (webhook)",
       "priority": "P0",
-      "verdict": "NOT_PROVEN"
+      "verdict": "NOT_PROVEN",
+      "proof_channels": [
+        "http",
+        "postgres_before_after"
+      ],
+      "oracles": [
+        "O-FIN"
+      ],
+      "boundary_cases": [
+        "L09",
+        "L10",
+        "L11"
+      ]
     },
     {
       "id": "N11",
@@ -233,7 +350,10 @@
       "title": "PO sans validation engagement",
       "expected": "Aucun engagement fournisseur",
       "priority": "P0",
-      "verdict": "NOT_PROVEN"
+      "verdict": "NOT_PROVEN",
+      "oracles": [
+        "O-FIN"
+      ]
     },
     {
       "id": "N12",
@@ -246,7 +366,10 @@
       "title": "Paiement fournisseur sans deuxième validation",
       "expected": "Refus ; preuves d'autorisation distinctes",
       "priority": "P0",
-      "verdict": "NOT_PROVEN"
+      "verdict": "NOT_PROVEN",
+      "oracles": [
+        "O-FIN"
+      ]
     },
     {
       "id": "N13",
@@ -259,7 +382,13 @@
       "title": "Rupture fournisseur / backorder",
       "expected": "Reliquat enregistré, sans réception fictive",
       "priority": "P0",
-      "verdict": "NOT_PROVEN"
+      "verdict": "NOT_PROVEN",
+      "oracles": [
+        "O-HUB"
+      ],
+      "boundary_cases": [
+        "L14"
+      ]
     },
     {
       "id": "N14",
@@ -272,7 +401,14 @@
       "title": "Réception partielle / excès / quantité négative",
       "expected": "Quantités exactes, refus/incident si écart",
       "priority": "P0",
-      "verdict": "NOT_PROVEN"
+      "verdict": "NOT_PROVEN",
+      "oracles": [
+        "O-HUB"
+      ],
+      "boundary_cases": [
+        "L15",
+        "L16"
+      ]
     },
     {
       "id": "N15",
@@ -285,7 +421,14 @@
       "title": "Sac/carton incomplet",
       "expected": "Pas de fermeture ni départ non conforme",
       "priority": "P0",
-      "verdict": "NOT_PROVEN"
+      "verdict": "NOT_PROVEN",
+      "oracles": [
+        "O-HUB"
+      ],
+      "boundary_cases": [
+        "L17",
+        "L18"
+      ]
     },
     {
       "id": "N16",
@@ -298,7 +441,10 @@
       "title": "Carton non DISPATCHED / composition figée",
       "expected": "Refus de remise et de modification post-remise",
       "priority": "P0",
-      "verdict": "NOT_PROVEN"
+      "verdict": "NOT_PROVEN",
+      "oracles": [
+        "O-HUB"
+      ]
     },
     {
       "id": "N17",
@@ -361,7 +507,7 @@
         "CG"
       ],
       "title": "Agent du mauvais Relais",
-      "expected": "Refus et aucune fuite de données",
+      "expected": "Agent d'un autre Relais : écriture refusée ET aucune donnée divulguée en lecture (table R)",
       "priority": "P0",
       "verdict": "NOT_PROVEN"
     },
@@ -374,9 +520,12 @@
         "CG"
       ],
       "title": "Deux Relais A/B du même marché",
-      "expected": "Isolation inter-relais démontrée en deux profils",
+      "expected": "Deux Relais A/B du même marché, deux profils : mêmes assertions que N21 dans les deux sens (table R)",
       "priority": "P0",
-      "verdict": "NOT_PROVEN"
+      "verdict": "NOT_PROVEN",
+      "boundary_cases": [
+        "L20"
+      ]
     },
     {
       "id": "N23",
@@ -389,7 +538,15 @@
       "title": "Retrait sans code, last4, code erroné, brute-force",
       "expected": "Refus vérifié ; pas de remise ; compteur sécurité",
       "priority": "P0",
-      "verdict": "NOT_PROVEN"
+      "verdict": "NOT_PROVEN",
+      "depends_on": [
+        "L-A5"
+      ],
+      "boundary_cases": [
+        "L19",
+        "L20",
+        "L23"
+      ]
     },
     {
       "id": "N24",
@@ -402,7 +559,16 @@
       "title": "Deux remises simultanées",
       "expected": "Une attestation de remise maximum",
       "priority": "P0",
-      "verdict": "NOT_PROVEN"
+      "verdict": "NOT_PROVEN",
+      "depends_on": [
+        "L-A5"
+      ],
+      "oracles": [
+        "O-FIN"
+      ],
+      "boundary_cases": [
+        "L21"
+      ]
     },
     {
       "id": "N25",
@@ -413,9 +579,18 @@
         "CG"
       ],
       "title": "SAV retour et double reprise",
-      "expected": "Reprise unique, produit gelé, pas de revente automatique",
+      "expected": "Reprise physique unique, produit gelé, pas de revente ni compensation automatique à la simple reprise",
       "priority": "P0",
-      "verdict": "NOT_PROVEN"
+      "verdict": "NOT_PROVEN",
+      "depends_on": [
+        "L-A1"
+      ],
+      "oracles": [
+        "O-FIN"
+      ],
+      "boundary_cases": [
+        "L24"
+      ]
     },
     {
       "id": "N26",
@@ -426,9 +601,28 @@
         "CG"
       ],
       "title": "Avoir/wallet/remboursement",
-      "expected": "Rapprochement exact, aucun PSP réel",
+      "expected": "N26a avant retrait : annulation/remboursement de ligne confirmé + avoir partiel. N26b après retrait : décision admin motivée, wallet prioritaire devise marché, payeur réel. Aucun PSP réel",
       "priority": "P0",
-      "verdict": "NOT_PROVEN"
+      "verdict": "NOT_PROVEN",
+      "variants": {
+        "N26a": {
+          "depends_on": [
+            "L-A6"
+          ]
+        },
+        "N26b": {
+          "depends_on": [
+            "L-A1"
+          ]
+        }
+      },
+      "oracles": [
+        "O-FIN"
+      ],
+      "boundary_cases": [
+        "L07",
+        "L08"
+      ]
     },
     {
       "id": "N27",
@@ -439,9 +633,18 @@
         "CG"
       ],
       "title": "Annulation après retrait partiel",
-      "expected": "Seul le non remis peut être annulé et remboursé",
+      "expected": "Reliquat non remis annulable selon son palier F1/F2/F3 et son état fournisseur ; ligne déjà remise = SAV (N26b), jamais annulation ; articles évalués séparément",
       "priority": "P0",
-      "verdict": "NOT_PROVEN"
+      "verdict": "NOT_PROVEN",
+      "depends_on": [
+        "L-A6"
+      ],
+      "oracles": [
+        "O-FIN"
+      ],
+      "boundary_cases": [
+        "L22"
+      ]
     },
     {
       "id": "N28",
@@ -493,7 +696,10 @@
       "title": "FX KMF/XAF et remboursement",
       "expected": "Snapshot conservé, remboursement sur encaissement",
       "priority": "P0",
-      "verdict": "NOT_PROVEN"
+      "verdict": "NOT_PROVEN",
+      "oracles": [
+        "O-FIN"
+      ]
     },
     {
       "id": "N32",
@@ -504,9 +710,12 @@
         "CG"
       ],
       "title": "Marché et rôles croisés",
-      "expected": "Pas de lecture ou écriture hors délégation",
+      "expected": "Pas de lecture ou d'écriture hors délégation ni hors marché (table R) ; physical-codes/confirm BLOCKED jusqu'à L-SEC",
       "priority": "P0",
-      "verdict": "NOT_PROVEN"
+      "verdict": "NOT_PROVEN",
+      "depends_on": [
+        "L-SEC"
+      ]
     },
     {
       "id": "N33",
@@ -530,9 +739,15 @@
         "CG"
       ],
       "title": "Fournisseur central Hub pour produit manuel",
-      "expected": "Une source Hub stable si vendeur inconnu, pas de fausse dette fournisseur",
+      "expected": "N34a : Fournisseur central unique, immuable, non désactivable, sans dette fictive. N34b : un fournisseur réel choisi explicitement n'est jamais remplacé par le Hub",
       "priority": "P0",
-      "verdict": "NOT_PROVEN"
+      "verdict": "NOT_PROVEN",
+      "variants": {
+        "N34a": {
+          "existing_test": ".github/workflows/p0-central-hub-supplier-postgres.yml (#3933)"
+        },
+        "N34b": {}
+      }
     },
     {
       "id": "N35",
@@ -543,9 +758,10 @@
         "CG"
       ],
       "title": "Coût rendu Relais, N1/N2/N3, plancher et contribution",
-      "expected": "Fret non doublé, allocations causales, N3 séparé, total détail=plancher",
+      "expected": "Oracle O-ECO appliqué aux objets des M/C : fret non doublé, allocations causales, N3 séparé, total détail = plancher",
       "priority": "P0",
-      "verdict": "NOT_PROVEN"
+      "verdict": "NOT_PROVEN",
+      "oracle_only": true
     },
     {
       "id": "N36",
@@ -556,9 +772,12 @@
         "CG"
       ],
       "title": "Mode manuel physique sans scanner de bout en bout",
-      "expected": "Réception Hub, sac, KOM-BOX, transitaire, Relais, SAV avec mode MANUAL, même writer et audit",
+      "expected": "Modalité d'exécution de M01/M06 entièrement en MANUAL (pas un second circuit) : provenance MANUAL relue en PostgreSQL à chaque geste, même writer et audit que le scan",
       "priority": "P0",
-      "verdict": "NOT_PROVEN"
+      "verdict": "NOT_PROVEN",
+      "depends_on": [
+        "#3900"
+      ]
     },
     {
       "id": "N37",
@@ -569,9 +788,427 @@
         "CG"
       ],
       "title": "Documents et information client",
-      "expected": "Devis, commande, reçu, suivi, remise et avoir rattachés au même dossier ; pas de notification externe réelle",
-      "priority": "P1",
-      "verdict": "NOT_PROVEN"
+      "expected": "Cohérence O-DOC/O-NOTIF sur le même dossier et O-SEC-DOC : aucun document téléchargeable hors propriétaire/marché ; zéro envoi externe réel",
+      "priority": "P0",
+      "verdict": "NOT_PROVEN",
+      "boundary_cases": [
+        "L22"
+      ]
+    },
+    {
+      "id": "N38",
+      "kind": "negative_or_edge",
+      "markets": [
+        "KM",
+        "CM",
+        "CG"
+      ],
+      "title": "Échec post-commit d'un document ou d'une notification puis reprise",
+      "expected": "Événement métier conservé, échec tracé, reprise idempotente sans doublon ni faux envoi",
+      "priority": "P0",
+      "verdict": "NOT_PROVEN",
+      "oracles": [
+        "O-DOC",
+        "O-NOTIF",
+        "O-FIN"
+      ]
+    },
+    {
+      "id": "N39",
+      "kind": "negative_or_edge",
+      "markets": [
+        "KM",
+        "CM",
+        "CG"
+      ],
+      "title": "Annulation client après engagement ou paiement de la PO",
+      "expected": "F1 avant achat ou plancher 24 h : 100 % ; F2 achat engagé : demande admin, wallet uniquement si accordée ; F3 embarqué : fermée ; aucun remboursement ni engagement silencieux",
+      "priority": "P0",
+      "verdict": "NOT_PROVEN",
+      "oracles": [
+        "O-FIN"
+      ],
+      "boundary_cases": [
+        "L13"
+      ]
+    },
+    {
+      "id": "N40",
+      "kind": "negative_or_edge",
+      "markets": [
+        "KM",
+        "CM",
+        "CG"
+      ],
+      "title": "Prix fournisseur confirmé différent du devis ou article indisponible",
+      "expected": "Écart motivé et validé séparément, backorder ou arbitrage, pas de substitution ni paiement silencieux ; impact O-ECO tracé",
+      "priority": "P0",
+      "verdict": "NOT_PROVEN",
+      "oracles": [
+        "O-ECO",
+        "O-FIN"
+      ]
     }
-  ]
+  ],
+  "updated": "2026-11-14",
+  "decision_ref": "issue #3927 comment 6828953843 (A1-A8, A2-bis, A2-ter)",
+  "not_applicable_rule": "NOT_APPLICABLE exige un motif et la branche non concernée, au niveau assertion ou scénario ; jamais compté comme PASS ; interdit pour masquer un P0 obligatoire.",
+  "gates": {
+    "G0": "SHA servi = SHA cible ; AUTHKEY_ALLOWED_PHONES vide ou sans numéro de recette ; zéro envoi réel ; fixtures par agent ; catalogue multi-sources KM/CM/CG prêt (catalog_prerequisites) ; limiteurs de débit par IP (#4070 ST-F1 : 10 commandes/min, 5 retraits/min, 3 confirmations cash/min, 500 req/15 min sur /api) : rythme de chaque campagne réglé sous ces seuils et les deux campagnes jamais simultanées sur le même relais, sinon un 429 est qualifié NOT_PROVEN, pas FAIL",
+    "G1": "Arbitrages A1-A8 validés (fait le 12/11)",
+    "G2": "Lots P0 fusionnés et déployés avant les scénarios qu'ils débloquent ; sinon BLOCKED explicite",
+    "G3": "Scénarios M",
+    "G4": "N P0",
+    "G5": "N P1",
+    "G6": "Comparatif ChatGPT <-> Opus par ID",
+    "exit": "GO_PRE_STRESS puis recette humaine #3754, puis stress"
+  },
+  "p0_fix_lots": {
+    "L-A5": "Preuve de retrait par geste réel (par colis), ancrée scans.id, code 8 caractères et retrait nominatif exceptionnel, idempotente",
+    "L-A6": "Avoir/reçu partiel après remboursement de ligne confirmé, lié à la facture d'origine immuable",
+    "L-A2": "Vendeur réel structuré par achat physique et allocation ligne/variante/quantité/montant (M06-C04) ; rapprochement achats confirmés <-> total justifié <-> paiement autorisé (cumuls et plafonds), devises PO et client préservées",
+    "L-A1": "Compensation SAV après remise : décision admin motivée rattachée au retour, wallet prioritaire dans la devise du marché, payeur réel, produit gelé",
+    "L-SEC": "Garde marché sur /api/hub/physical-codes/confirm : 403 et zéro mutation inter-marché"
+  },
+  "p1_lots": {
+    "L-A8": "Livré (#3951) : O-DOC:purchase_order_pdf devient prouvable"
+  },
+  "separate_decisions": {
+    "L-A3": "WhatsApp inchangé en production ; écart doctrine/code signalé O-NOTIF/DRIFT_DOCTRINE"
+  },
+  "configurations": {
+    "C01": {
+      "applies_to": [
+        "M01",
+        "M04",
+        "M05"
+      ],
+      "data": "1 produit, 1 variante, 1 fournisseur connu",
+      "multi_sourcing_note": "Insuffisant seul pour la certification : chaque M import doit aussi être joué en C03 (multi-sourcing)"
+    },
+    "C02": {
+      "applies_to": [
+        "M01",
+        "M04",
+        "M05"
+      ],
+      "data": "3 SKU chez un seul fournisseur, achat groupé, lignes préservées",
+      "multi_sourcing_note": "Insuffisant seul pour la certification : chaque M import doit aussi être joué en C03 (multi-sourcing)"
+    },
+    "C03": {
+      "applies_to": [
+        "M01",
+        "M04",
+        "M05"
+      ],
+      "data": "4 produits chez 3 fournisseurs contractuels ; PO mono-marché par fournisseur, arrivages asynchrones, consolidation Hub"
+    },
+    "C04": {
+      "applies_to": [
+        "M06"
+      ],
+      "data": "Commande spéciale, achats physiques chez plusieurs petits vendeurs A/B/C sous coordination du Fournisseur central Hub",
+      "requires": [
+        "L-A2"
+      ]
+    },
+    "C05": {
+      "applies_to": [
+        "M03"
+      ],
+      "data": "Import multi-fournisseurs + stock local Relais ; branche locale NOT_APPLICABLE pour Hub/PO",
+      "requires": [
+        "L-A5"
+      ]
+    },
+    "naming": "ID-Cxx-MARCHE, ex. M01-C03-KM",
+    "mandatory_variations": [
+      "2 variantes du même produit + quantités multiples",
+      "réception partielle/backorder/excès",
+      "consolidation multi-PO et carton multi-commandes",
+      "écart prix confirmé",
+      "annulation/remboursement partiel"
+    ],
+    "correlation_tree": "order_item -> source/supplier -> PO/purchase_line -> manual_purchase (C04) -> Hub receipt -> bag/KOM-BOX/shipment -> Relay receipt -> parcel_item -> pickup scan -> finance/document/notification"
+  },
+  "transversal_oracles": {
+    "O-ECO": {
+      "summary": "N1/N2/N3 sur les objets réels : fret non doublé, allocations causales, N3 séparé, snapshots prix/FX intacts (ex-N35)",
+      "audit_issue": 3988,
+      "source": "docs/recette/G6_ECO_SQL_CONTROLS.sql",
+      "read_only_controls": [
+        "Q1",
+        "Q2",
+        "Q3"
+      ],
+      "controls_mode": "Diagnostics de configuration en lecture seule, même SHA pour les deux campagnes ; chaque ligne est qualifiée (ME-xx connu, décision propriétaire ou anomalie), pas d'assertion zéro",
+      "extreme_cases": {
+        "source": "#3988 section 3 (hypothèses CM/CG Fable non sourcées)",
+        "cases": [
+          {
+            "id": "ECO-X1",
+            "case": "Premier lot minuscule, accessoire puis volumineux",
+            "expected": "Plancher affiché et snapshot cohérents ; volumineux sur lot sous minimum signalé (ME-11), jamais vendu sous plancher silencieusement",
+            "scenarios": [
+              "N35"
+            ]
+          },
+          {
+            "id": "ECO-X2",
+            "case": "Fret 400/600/900 €/m³, volumineux",
+            "expected": "Plancher recalculé depuis le composant fret du marché, sans doublon de fret",
+            "scenarios": [
+              "N35",
+              "M04",
+              "M05"
+            ]
+          },
+          {
+            "id": "ECO-X3",
+            "case": "Devise d'achat +10 % / +25 %",
+            "expected": "Non représentable en scénario (ME-10) : constat consigné, pas FAIL",
+            "scenarios": [
+              "N31"
+            ]
+          },
+          {
+            "id": "ECO-X4",
+            "case": "Casse et non-retrait aux bornes",
+            "expected": "Provision de risque appliquée selon la configuration du marché",
+            "scenarios": [
+              "N35"
+            ]
+          },
+          {
+            "id": "ECO-X5",
+            "case": "Léger mais volumineux (0,5 kg, 0,08 m³)",
+            "expected": "Fret au volume ; fret au poids actif = constat ME-03",
+            "scenarios": [
+              "N35"
+            ]
+          },
+          {
+            "id": "ECO-X6",
+            "case": "Produit manuel Fournisseur central",
+            "expected": "Coût réel = coût d'achat confirmé, pas products.cost_kmf (Q3, ME-14)",
+            "scenarios": [
+              "M06",
+              "N34"
+            ]
+          },
+          {
+            "id": "ECO-X7",
+            "case": "Stock local, achat 5 000 KMF",
+            "expected": "Plancher stable KM/CM/CG ; N3 hors snapshot (ME-05, #4034)",
+            "scenarios": [
+              "M02"
+            ]
+          }
+        ]
+      }
+    },
+    "O-DOC": {
+      "rule": "Document officiel uniquement après événement confirmé, privé, immuable, idempotent (document_type, subject_type, subject_id), SHA-256",
+      "expected": {
+        "order_created": "NONE (devis éphémère éventuel, aucune facture)",
+        "payment_confirmed": "facture",
+        "po_engaged_or_paid": "enregistrement PO + purchase_order_authorizations + PDF interne du bon fournisseur (#3951)",
+        "pickup_handoff": "preuve de retrait par scans.id (L-A5)",
+        "refund_confirmed": "avoir/reçu, partiel par ligne (L-A6)",
+        "wallet_movement_confirmed": "reçu wallet",
+        "customs": "document douane lorsqu'il est émis",
+        "unpaid_or_unattested": "NONE"
+      }
+    },
+    "O-NOTIF": {
+      "rule": "In-app client : preparation, shipped, available une fois chacun ; in_transit NONE ; résolution au retrait/annulation/remboursement ; order.exception.* seulement sur fait confirmé avec action",
+      "staging": "Zéro envoi réel ; seules des lignes notification_logs skipped/blocked sont attendues",
+      "DRIFT_DOCTRINE": "WhatsApp order_created, payment_confirmed, shipped, delivered/collected actifs dans services/notifications/order.js ; consigné, non corrigé (décision séparée)"
+    },
+    "O-SEC-DOC": "Téléchargement de document refusé hors session/propriétaire/marché (ex-N37 partie accès)",
+    "O-HUB": {
+      "source": "docs/recette/G6_HUB_SQL_ORACLES.sql",
+      "audit_issue": 3998,
+      "ids": [
+        "H1",
+        "H2",
+        "H3",
+        "H4",
+        "H5",
+        "H6",
+        "H7",
+        "H8",
+        "H9"
+      ],
+      "mode": "PostgreSQL read-only à état stabilisé : avant/après geste; même SHA et mêmes 9 contrôles, deux cohortes ChatGPT et Opus",
+      "interpretation": "H1/H3/H4/H5a/H6/H7 : zéro anomalie à état stabilisé; H2 : sous-couverture à rapprocher d'un incident supplier_shortage et d'une décision admin; H5b : diagnostic allocation figée (pas FAIL automatique); H8/H9 : chaque tâche âgée doit être visible avec alerte 48h. Ne jamais utiliser une ligne SQL seule comme PASS E2E."
+    },
+    "O-FIN": {
+      "source": "docs/recette/G6_FINANCE_SQL_ORACLES.sql",
+      "origin": "Audit Fable #3987 (FA-01..FA-25), invariants I1..I15",
+      "rule": "Zéro ligne sur les objets de la cohorte, à état stabilisé, sur le même SHA pour les deux campagnes ; requête invalide sur le schéma live = NOT_PROVEN",
+      "invariants": [
+        "I1",
+        "I2",
+        "I3",
+        "I4",
+        "I5",
+        "I6",
+        "I7",
+        "I8",
+        "I9",
+        "I10",
+        "I11",
+        "I12",
+        "I13",
+        "I14",
+        "I15"
+      ],
+      "applies_to": [
+        "M01",
+        "M02",
+        "M03",
+        "M04",
+        "M05",
+        "M06",
+        "N06",
+        "N07",
+        "N08",
+        "N09",
+        "N10",
+        "N11",
+        "N12",
+        "N24",
+        "N25",
+        "N26",
+        "N27",
+        "N31",
+        "N38",
+        "N39",
+        "N40"
+      ]
+    }
+  },
+  "rights_table_R": {
+    "shape": "rôle x geste x marché -> 200 attendu ou 403/404 avec zéro mutation prouvée en PostgreSQL",
+    "referenced_by": [
+      "N17",
+      "N21",
+      "N22",
+      "N29",
+      "N32"
+    ],
+    "known_gap": "/api/hub/physical-codes/confirm sans garde marché -> BLOCKED jusqu'à L-SEC"
+  },
+  "p0_fix_lots_status": {
+    "L-A5": "merged #3948",
+    "L-A6": "merged #3946",
+    "L-A2": "merged #3949",
+    "L-A1": "merged #3950",
+    "L-SEC": "merged #3945",
+    "L3-checkout": "merged #3952",
+    "L7": "merged #3947",
+    "L-A8": "merged #3951 (P1 livré)",
+    "W1-wallet-devise-marche": "en cours",
+    "W2-garde-meta-wa": "en cours"
+  },
+  "catalog_prerequisites": {
+    "rule": "Catalogue CM et CG peuplé par le vrai parcours de sourcing (pas d'insertion directe) avec de vrais produits fournisseurs, plus des produits manuels via le Fournisseur central Hub ; marqueur CLAUDE-PAR sur les objets de recette",
+    "multi_sourcing": "Critère de test obligatoire de chaque E2E M01/M03/M04/M05 : au moins 3 sources distinctes (fournisseurs réels distincts et/ou Fournisseur central Hub) dans la même commande, PO mono-marché par fournisseur, consolidation Hub",
+    "per_market_minimum": "KM, CM, CG : >= 4 produits vendables (prix LOCAL_ACTIVE + exposition ENABLED) répartis chez >= 3 sources dont >= 1 produit manuel Fournisseur central ; stock local vendable dans le relais CLAUDE-PAR du marché pour M02/M03"
+  },
+  "dual_execution": {
+    "rule": "Deux campagnes complètes et indépendantes (GPT-G6, CLAUDE-PAR) jouent les 46 scénarios sur KM, CM et CG, avec la même version applicative (SHA identique noté par run), les mêmes règles et les mêmes assertions, mais des commandes, produits, comptes et preuves distincts",
+    "scope": "Multi-sourcing CJ + AliExpress + Fournisseur central Hub ; parcours client -> achat -> Hub -> transitaire -> relais -> client -> SAV ; preuves Chromium + HTTP + PostgreSQL",
+    "comparison": "Comparaison ligne par ligne par ID x marché. PASS chez l'un et FAIL/BLOCKED chez l'autre = ANOMALIE à investiguer, jamais un PASS global. Seul un PASS des deux campagnes sur le même SHA compte comme PASS",
+    "reports": "Un rapport indépendant par campagne ; le comparatif est produit après les deux rapports"
+  },
+  "fable_stress_boundary_cases": {
+    "source_issue": 4070,
+    "rule": "Cas limites L01–L25 du plan de stress Fable. Ceux rattachés à un scénario sont exécutés comme variantes de cet ID (aucune renumérotation, toujours 46 IDs) ; les autres sont reportés au stress avec leur motif.",
+    "mapped": {
+      "L01": [
+        "N08"
+      ],
+      "L02": [
+        "N08"
+      ],
+      "L03": [
+        "N08"
+      ],
+      "L04": [
+        "N04"
+      ],
+      "L05": [
+        "N04",
+        "M03"
+      ],
+      "L06": [
+        "N06"
+      ],
+      "L07": [
+        "N26"
+      ],
+      "L08": [
+        "N26"
+      ],
+      "L09": [
+        "N10"
+      ],
+      "L10": [
+        "N10"
+      ],
+      "L11": [
+        "N10"
+      ],
+      "L13": [
+        "N39"
+      ],
+      "L14": [
+        "N13"
+      ],
+      "L15": [
+        "N14"
+      ],
+      "L16": [
+        "N14"
+      ],
+      "L17": [
+        "N15"
+      ],
+      "L18": [
+        "N15"
+      ],
+      "L19": [
+        "N23"
+      ],
+      "L20": [
+        "N22",
+        "N23"
+      ],
+      "L21": [
+        "N24"
+      ],
+      "L22": [
+        "N27",
+        "N37"
+      ],
+      "L23": [
+        "N23"
+      ],
+      "L24": [
+        "N25"
+      ]
+    },
+    "notes": {
+      "L08": "Carte = webhook simulé signé uniquement (aucun effet PSP réel) ; sinon NOT_APPLICABLE",
+      "L23": "6 retraits/min depuis une même IP : refus au 6e attendu aujourd'hui (limiteur par IP). Constat, pas FAIL, tant que la décision #4070 §8.1 n'est pas prise",
+      "L14": "Couvre la « rupture définitive » (décision 1 de #3998)",
+      "L16": "Couvre le « colis non rapproché » (article en trop, mauvaise variante, colis sans étiquette → quarantaine, H8)"
+    },
+    "deferred_to_stress": {
+      "L12": "Bornes 23 h 59 / 24 h 01 : exigent de maîtriser l'horloge ; preuve PostgreSQL/unitaire ou cible isolée du stress, jamais d'écriture d'horodatage sur le staging",
+      "L25": "Redéploiement entre paiement et facture : interdit pendant les campagnes (gel des fusions) ; scénario stress P1"
+    }
+  }
 }
