@@ -2718,13 +2718,13 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Kind** : business-feature  ·  **Status** : production
 
-**Service** : Arbitrer et liquider la valeur immobilisée d'une commande invendue (WhatsApp, revendeur, don, destruction).
+**Service** : Garder les colis non retirés sous responsabilité du relais ; la liquidation n'est autorisée qu'après clôture physique, juridique et financière certifiée.
 
 **Perimeter** :
 - _in_ :
-  - détection des commandes disponibles depuis 14 jours sans retrait (auto_unsold() sur orders)
-  - arbitrage et résolution d'un invendu : vente WhatsApp, vente revendeur, don, destruction
-  - calcul du prix de liquidation depuis le prix original (politique actuelle : 75% par défaut, ajustable via PATCH avant résolution)
+  - scan historique J+14 bloqué faute de clôture de garde et de droits client certifiée
+  - mutation de l'invendu uniquement pour des commandes non payées et un état available
+  - prohibition de la promotion ou cession de marchandises payées tant que les droits de retrait persistent
 - _out_ :
   - réception, affectation et dispatch des articles au hub (feature inventory — aucun point de contact technique : pas de table écrite en commun, pas de require croisé)
   - décision de publication produit (feature catalog)
@@ -2732,6 +2732,8 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Authority** : backend-core — tout changement de calcul de liquidation doit etre valide par le proprietaire de routes/unsold.js
 
 **Invariants** :
+- [object Object]
+- [object Object]
 - un invendu résolu ne revient jamais en available
 - toute résolution possède un statut terminal autorisé et un horodatage resolved_at
 
@@ -2752,8 +2754,9 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 4 fichier(s) déclaré(s)
+**Implementation** : 5 fichier(s) déclaré(s)
   - dash : 1
+  - migrations : 1
   - routes : 1
   - tests : 2
 
