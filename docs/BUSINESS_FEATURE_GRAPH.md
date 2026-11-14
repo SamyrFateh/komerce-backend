@@ -690,8 +690,9 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 ### unsold-resolution _(business-feature)_
 
-> Arbitrer et liquider la valeur immobilisée d'une commande invendue (WhatsApp, revendeur, don, destruction).
+> Garder les colis non retirés sous responsabilité du relais ; la liquidation n'est autorisée qu'après clôture physique, juridique et financière certifiée.
 
+- migrations: 1
 - routes: 1
 - dash: 1
 - tests: 2
