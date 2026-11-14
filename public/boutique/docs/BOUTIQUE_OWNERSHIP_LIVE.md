@@ -38,7 +38,7 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 | `b-checkout-render.js` | 79 | 0 | 0/0 | — |
 | `boutique.js` | 15 | 49 | 3/0 | Modal produit, Grille produits, Chips catégories |
 | `b-tracking.js` | 44 | 0 | 0/0 | Section catalogue |
-| `b-modal-product.js` | 28 | 11 | 0/1 | Modal produit |
+| `b-modal-product.js` | 28 | 11 | 2/1 | Modal produit |
 | `b-cart-quote.js` | 33 | 0 | 3/0 | Panier |
 | `b-phone.js` | 16 | 17 | 0/0 | — |
 | `b-komerce.js` | 31 | 0 | 0/1 | Section catalogue |

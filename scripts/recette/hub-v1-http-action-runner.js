@@ -168,12 +168,21 @@ async function run({ env = process.env, db, run8 } = {}) {
       return { pg: { rows: rows.length, supplier_execution_payments_total: n } };
     });
     const lines2 = await q('SELECT id, quantity FROM purchase_lines WHERE purchase_order_id=$1 AND cancelled_at IS NULL', [id]);
-    const cbody2 = { purchase_proof_ref: `SIM-RECU-${run8}-${label}`, supplier_order_id: `SIM-SO-${run8}-${label}`, lines: lines2.map((l) => ({ purchase_line_id: l.id, confirmed_quantity: l.quantity })) };
+    // A2 : meme en recette, une confirmation manuelle doit declarer un vendeur distinct du Hub central.
+    // Identite explicitement simulee, canalisable vers manual_purchase_executions ; aucune sortie fournisseur reelle.
+    const sellerLabel = `VENDEUR-RECETTE-${run8}-${label}`;
+    const cbody2 = { purchase_proof_ref: `SIM-RECU-${run8}-${label}`, supplier_order_id: `SIM-SO-${run8}-${label}`,
+      seller_label: sellerLabel, channel: 'in_person',
+      lines: lines2.map((l) => ({ purchase_line_id: l.id, confirmed_quantity: l.quantity })) };
     await decide('confirm', 'hub_agent', { ...cbody2, purchase_proof_ref: '' }, { http: [400, 409, 422], deny: true }, 'confirm:no-proof');
     await decide('confirm', 'hub_agent', cbody2, { http: 200 }, 'confirm', async () => {
       const [pg] = await q('SELECT status::text AS status FROM purchase_orders WHERE id=$1', [id]);
       if (['draft', 'notified', 'cancelled'].includes(pg.status)) throw new Error('CONFIRM_STATUS_' + pg.status);
-      return { pg };
+      const [{ n, qty }] = await q(`SELECT COUNT(*)::int AS n, COALESCE(SUM(quantity),0)::int AS qty
+        FROM manual_purchase_executions WHERE purchase_order_id=$1 AND seller_label=$2 AND channel='in_person'`, [id, sellerLabel]);
+      const expectedQty = lines2.reduce((total, line) => total + Number(line.quantity), 0);
+      if (n !== lines2.length || qty !== expectedQty) throw new Error(`MANUAL_SELLER_EXECUTION_READBACK:${n}/${qty}`);
+      return { pg, seller_proof: { executions: n, quantity: qty, channel: 'in_person', simulated: true } };
     });
   }
   report.finished_at = new Date().toISOString();

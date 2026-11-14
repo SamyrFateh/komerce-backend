@@ -43,7 +43,7 @@
 | `modal-mobile-suggestion-actions.css` | 68 | components.css |
 | `modal-product.css` | 1510 | components.css |
 | `modal-product-lot4-hybrid.css` | 651 | components.css |
-| `modal-product-polish.css` | 419 | components.css |
+| `modal-product-polish.css` | 454 | components.css |
 | `modal-shell.css` | 1620 | components.css |
 | `modal-suggestion-card-polish.css` | 26 | components.css |
 | `modal-suggestion-filter.css` | 22 | components.css |
