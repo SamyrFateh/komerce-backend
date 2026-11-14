@@ -1,0 +1,30 @@
+name: Auditor V50 certification guard
+on:
+  pull_request:
+    paths:
+      - 'tools/business-auditor/v50-certification-gate.js'
+      - 'tools/business-auditor/v50-certification-gate.test.js'
+      - '.github/workflows/auditor-v50-certification.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  v50-gate-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify fail-closed G2 G4 G5 gate
+        run: node --test tools/business-auditor/v50-certification-gate.test.js
+      - name: Prove missing evidence is NO-GO
+        shell: bash
+        run: |
+          set -euo pipefail
+          if node tools/business-auditor/v50-certification-gate.js --v49 /dev/null --g2 /dev/null --g5 /dev/null; then
+            echo 'FAIL: missing evidence incorrectly accepted'
+            exit 1
+          fi
+          echo 'PASS: absence of certification evidence rejects release'
