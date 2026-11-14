@@ -1,5 +1,7 @@
 /** @test-kind unit @test-runner jest @test-requires none */
 'use strict';
+// Le test de service est isolé : aucune connexion PostgreSQL, writer mocké.
+jest.mock('../../db', () => ({ withTransaction: jest.fn() }));
 const fs = require('fs');
 const path = require('path');
 const bagBox = require('../../services/hub-bag-box-service');
@@ -68,5 +70,65 @@ describe('Réception fournisseur Hub : saisie manuelle (#3900 P0-2)', () => {
     expect(ui).toMatch(/manualToggle\.checked\s*\?\s*\(line\.product_sku_id && String\(manualProof/);
     expect(ui).toContain('matched.confirmed && !manualToggle.checked');
     expect(ui).toContain("{ evidence_method: 'MANUAL', evidence_ref: String(manualProof.value).trim() }");
+  });
+});
+
+describe('Audit Fable #3998 — colis client déduit du sac sans ressaisie', () => {
+  const db = jest.requireMock('../../db');
+  afterEach(() => jest.restoreAllMocks());
+
+  function mockCandidates(candidates) {
+    const writes = [];
+    jest.spyOn(db, 'withTransaction').mockImplementation(async work => work({
+      query: async (sql, args) => {
+        if (sql.includes('SELECT b.id, b.order_id')) return {
+          rows: [{ id: base.bagUnitId, order_id: id(6), market_id: base.expectedMarketId }],
+        };
+        if (sql.includes('SELECT DISTINCT p.id')) {
+          expect(args).toEqual([id(6)]);
+          return { rows: candidates.map(value => ({ id: value })) };
+        }
+        if (sql.includes('FROM hub_box_bags WHERE')) return { rows: [] };
+        if (sql.includes('INSERT INTO hub_box_bags')) {
+          writes.push({ sql, args });
+          return { rows: [{ bag_unit_id: base.bagUnitId, box_unit_id: base.boxUnitId,
+            parcel_id: args[2], evidence_method: 'SCAN' }] };
+        }
+        throw new Error('SQL inattendu: ' + sql);
+      },
+    }));
+    return writes;
+  }
+
+  test('le serveur rattache un colis import unique en conservant les deux preuves scannées', async () => {
+    const writes = mockCandidates([base.parcelId]);
+    const result = await bagBox.attachBagToBox({
+      ...base, parcelId: undefined, evidenceMethod: 'SCAN',
+    });
+    expect(result.parcel_id).toBe(base.parcelId);
+    expect(result.already_linked).toBe(false);
+    expect(writes).toHaveLength(1);
+    expect(writes[0].args.slice(0, 3)).toEqual([base.bagUnitId, base.boxUnitId, base.parcelId]);
+    expect(writes[0].args.slice(4, 6)).toEqual([base.bagReferenceScan, base.boxReferenceScan]);
+  });
+
+  test.each([
+    [[], 'HUB_BAG_PARCEL_NOT_READY'],
+    [[id(3), id(7)], 'HUB_BAG_PARCEL_AMBIGUOUS'],
+  ])('refuse une déduction absente ou ambiguë sans écrire', async (candidates, code) => {
+    const writes = mockCandidates(candidates);
+    await expect(bagBox.attachBagToBox({
+      ...base, parcelId: undefined, evidenceMethod: 'SCAN',
+    })).rejects.toMatchObject({ code, status: 409 });
+    expect(writes).toHaveLength(0);
+  });
+
+  test('Hub Live ne ressaisit plus parcel_id mais conserve scan et provenance', () => {
+    const source = fs.readFileSync(path.join(__dirname,
+      '../../public/dashboards/canonical/js/operations-workspace.js'), 'utf8');
+    expect(source).not.toContain('bag_unit_id:bag.unit_id,parcel_id:parcel.value');
+    expect(source).toContain('bag_unit_id:bag.unit_id,...(!parcel.hidden?{parcel_id:parcel.value}:{})');
+    expect(source).toContain('parcel.hidden=!ambiguous');
+    expect(source).toContain('bag_reference_scan:bagScan.value.trim(),box_reference_scan:boxScan.value.trim()');
   });
 });

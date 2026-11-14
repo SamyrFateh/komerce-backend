@@ -940,3 +940,7 @@ Migrations 391–394 appliquées sur Railway staging le 2026-11-04 à 13:09 UTC 
 
 `relay_return_compensations` is a new append-only table proposed by migration 406. It records one admin-motivated after-handover compensation decision per product-return dispute. Wallet credits commit with the decision. Migration 409 links a PSP decision to its durable `refund_intent_id` and `refund_amount_kmf`; settlement is read from the refund ledger. Migration 410 links a no-charge replacement via `replacement_order_id` and records `order_items.replacement_source_item_id` for the exact original item. The `sav_replacement` payment mode has no client capture.
 <!-- /schema-pending -->
+
+### purchase_line_received_quantity (migration 414)
+
+`purchase_line_received_quantity(line_id)` est l'unique définition SQL de la quantité reçue d'une ligne d'achat : placements actifs hors unités `QUARANTINED`/`SUPERSEDED` et hors `outcome_type`. `v_purchase_line_progress.received_quantity` (branche ligne), la répartition de réception d'une PO regroupée et le refus de confirmation sous le reçu l'utilisent. La garde `purchase_lines_guard_groupable` refuse désormais toute ligne sans `product_sku_id`, cas manuel `central_hub` compris (code `purchase_line_variant_required`).

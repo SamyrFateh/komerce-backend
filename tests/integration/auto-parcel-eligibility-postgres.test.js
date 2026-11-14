@@ -64,28 +64,32 @@ describeDb('Repartition automatique — eligibilite des colis (PG16 jetable)', (
   });
   afterAll(async () => { await db.pool.end().catch(() => {}); });
 
-  test('cas fixture : import pret ensemble, local a part, article non recu sans colis', async () => {
+  test('import prêt sans colis local : LOCAL_STOCK attend sa preuve physique au relais', async () => {
     const results = [];
     for (const k of ['101', '102', '103', 'LOCAL']) results.push(await autoParcel.distributeOrder(o[k]));
     const p101 = await parcelOf('101'); const p102 = await parcelOf('102'); const pLocal = await parcelOf('LOCAL');
-    expect(p101).not.toBeNull(); expect(p102).not.toBeNull(); expect(pLocal).not.toBeNull();
-    expect(p101.id).not.toBe(p102.id);           // import : un colis par commande (trigger 394 sac->box)
+    expect(p101).not.toBeNull(); expect(p102).not.toBeNull();
+    expect(p101.id).not.toBe(p102.id);
     expect((await q('SELECT order_id FROM parcels WHERE id=$1', [p101.id])).rows[0].order_id).toBe(o['101']);
-    expect(pLocal.id).not.toBe(p101.id);         // local jamais avec import
-    expect(await parcelOf('103')).toBeNull();    // non approvisionne / non recu : aucun colis
+    expect(pLocal).toBeNull(); // Le relais seul peut attester et créer ce colis.
+    expect(await parcelOf('103')).toBeNull();
     expect(results[2]).toMatchObject({ success: true, nothing_eligible: true });
+    expect(results[3]).toMatchObject({ success: true, nothing_eligible: true, local_direct_items: 1 });
     expect(await itemsIn(p101.id)).toEqual([item['101']]);
     expect(await itemsIn(p102.id)).toEqual([item['102']]);
-    expect(await itemsIn(pLocal.id)).toEqual([item.LOCAL]);
+    expect((await q('SELECT count(*)::int AS n FROM parcel_items WHERE order_item_id=$1', [item.LOCAL])).rows[0].n).toBe(0);
   });
 
-  test('idempotent : un second passage ne cree ni ne deplace rien, 103 reste sans colis', async () => {
+  test('idempotent : un second passage ne crée rien pour IMPORT non reçu ou LOCAL_STOCK', async () => {
     const before = (await q('SELECT count(*)::int AS n FROM parcel_items pi JOIN order_items oi ON oi.id=pi.order_item_id WHERE oi.order_id = ANY($1)', [Object.values(o)])).rows[0].n;
     const r101 = await autoParcel.distributeOrder(o['101']);
     const r103 = await autoParcel.distributeOrder(o['103']);
+    const rLocal = await autoParcel.distributeOrder(o.LOCAL);
     const after = (await q('SELECT count(*)::int AS n FROM parcel_items pi JOIN order_items oi ON oi.id=pi.order_item_id WHERE oi.order_id = ANY($1)', [Object.values(o)])).rows[0].n;
     expect(r101).toMatchObject({ already_assigned: true });
     expect(r103.nothing_eligible).toBe(true);
+    expect(rLocal).toMatchObject({ nothing_eligible: true, local_direct_items: 1 });
+    expect(await parcelOf('LOCAL')).toBeNull();
     expect(after).toBe(before);
   });
 
@@ -95,6 +99,6 @@ describeDb('Repartition automatique — eligibilite des colis (PG16 jetable)', (
     expect(r.success).toBe(true);
     const p103 = await parcelOf('103'); const pLocal = await parcelOf('LOCAL');
     expect(p103).not.toBeNull();
-    expect(p103.id).not.toBe(pLocal.id);
+    expect(pLocal).toBeNull();
   });
 });

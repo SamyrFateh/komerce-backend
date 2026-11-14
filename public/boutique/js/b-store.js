@@ -136,6 +136,9 @@ export const state = {
   modalHistory: [],
   /** PDC-4 — contrat détail produit public actuellement affiché sur mobile. */
   modalProductDetail: null,
+  /** Projection des champs affichés, écrite uniquement par b-modal-product-fields.js.
+   * Le mini-héro est un consommateur en lecture seule (aucune logique de prix). */
+  modalIdentityProjection: null,
   /** PDC-3 — état dérivé unique de sélection SKU, partagé par les renderers. */
   modalSelection: null,
   /**

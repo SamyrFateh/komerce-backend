@@ -283,20 +283,55 @@
   /* Le panier garde un ancrage optique légèrement décalé à droite pendant tout le scroll.
      L'identité produit reste strictement dans la moitié gauche et
      ne peut jamais passer sous le panier. */
+  /* V4 mini-héro : le panier rejoint le groupe droit UNIQUEMENT au scroll. */
   #k-modal.is-scrolled .k-modal-topbar-product {
-    max-width: calc(50% - 34px);
+    max-width: none;
+    min-width: 0;
     margin-left: 0;
-    gap: 6px;
+    flex: 1 1 0;
+    gap: 8px;
   }
 
+  #k-modal.is-scrolled .k-modal-topbar-right {
+    margin-left: 4px;
+    gap: 3px;
+  }
+
+  #k-modal.is-scrolled .k-modal-cart-btn {
+    position: relative;
+    top: auto;
+    left: auto;
+    transform: none;
+    flex-shrink: 0;
+  }
+
+  #k-modal.is-scrolled .k-modal-cart-btn:active { transform: scale(.94); }
+
   #k-modal.is-scrolled .k-topbar-thumb {
-    width: 34px;
-    height: 34px;
-    flex-basis: 34px;
+    appearance: none;
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+    border: 0;
+    padding: 0;
+    background: var(--sand);
+    cursor: pointer;
   }
 
   #k-modal.is-scrolled .k-topbar-name {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    max-height: 2.5em;
+    white-space: normal;
     font-size: 12px;
+    line-height: 1.25;
+    font-weight: 600;
+  }
+
+  #k-modal.is-scrolled .k-topbar-price-val {
+    font-size: 14px;
+    font-weight: 700;
   }
 
   #k-modal.is-scrolled .k-topbar-price {

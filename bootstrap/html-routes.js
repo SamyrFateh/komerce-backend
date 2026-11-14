@@ -363,9 +363,9 @@ function mountHtmlRoutes(app, rootDir) {
   app.get('/relais', (req, res) => {
     sendHtml(res, path.join(publicDir, 'relais', 'index.html'));
   });
-  app.get('/hub', (req, res) => {
-    sendHtml(res, path.join(publicDir, 'hub', 'index.html'));
-  });
+  // L'ancien écran n'est plus une autorité d'écriture. La page statique /hub/
+  // renvoie aussi vers le cockpit canonique quand express.static répond avant.
+  app.get('/hub', (_req, res) => res.redirect(302, '/admin/hub'));
 
   app.get('/event/create', (req, res) => redirectToBoutique(res));
   app.get('/event/manage/:creatorToken', (req, res) => redirectToBoutique(res));

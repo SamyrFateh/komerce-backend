@@ -525,6 +525,35 @@ import { optimizeImgUrl, fmtPrice, applyProductImageFallback } from './b-utils.j
    * Configure la topbar sticky du modal (vignette, nom, prix, accès panier).
    * Sur mobile, on garde la vue produit légère et on laisse le panier visible.
    */
+
+  // Projection du contrat produit courant ; aucun prix recalculé dans la topbar.
+  function syncEnrichedTopbarProduct() {
+    const el = dom.modal?.querySelector('.k-modal-topbar-product');
+    if (!el) return;
+    const product = state.modalProduct;
+    const detail = state.modalProductDetail;
+    const selection = state.modalSelection;
+
+    const projection = state.modalIdentityProjection;
+    el.querySelector('.k-topbar-name').textContent = projection?.name || product?.name || '';
+    el.querySelector('.k-topbar-price-val').textContent = projection?.price ?? '';
+
+    const media = selection?.selected_media?.[0]?.url
+      || detail?.media?.[0]?.url || product?.image_url || product?.images?.[0] || '';
+    const img = el.querySelector('.k-topbar-thumb-img');
+    if (img) {
+      const src = media ? optimizeImgUrl(media, 120) : '';
+      if (src && img.getAttribute('src') !== src) img.src = src;
+      if (!src) img.removeAttribute('src');
+    }
+    const promo = Number(detail?.pricing?.promo_pct ?? product?.promo_pct ?? 0);
+    const badge = el.querySelector('.k-topbar-price-promo');
+    if (badge) {
+      badge.textContent = promo > 0 ? '-' + promo + '%' : '';
+      badge.classList.toggle('u-hidden', promo <= 0);
+    }
+  }
+
   function setupEnrichedTopbar() {
     const modal = document.getElementById('k-modal');
     const topbar = modal ? modal.querySelector('.k-modal-topbar') : null;
@@ -537,9 +566,9 @@ import { optimizeImgUrl, fmtPrice, applyProductImageFallback } from './b-utils.j
       productEl = document.createElement('div');
       productEl.className = 'k-modal-topbar-product';
       productEl.innerHTML = `
-        <div class="k-topbar-thumb" role="button" aria-label="Revenir en haut">
+        <button class="k-topbar-thumb" type="button" aria-label="Revenir aux photos du produit">
           <img class="k-topbar-thumb-img" src="" alt="">
-        </div>
+        </button>
         <div class="k-topbar-info">
           <div class="k-topbar-name"></div>
           <div class="k-topbar-price">
@@ -576,22 +605,8 @@ import { optimizeImgUrl, fmtPrice, applyProductImageFallback } from './b-utils.j
       });
     }
 
-    // 2. Mettre à jour le contenu avec le produit actuel
-    const thumb = productEl.querySelector('.k-topbar-thumb-img');
-    const name = productEl.querySelector('.k-topbar-name');
-    const priceVal = productEl.querySelector('.k-topbar-price-val');
-    const pricePromo = productEl.querySelector('.k-topbar-price-promo');
-    if (thumb) thumb.src = optimizeImgUrl(product.image_url, 80);
-    if (name) name.textContent = product.name || '';
-    if (priceVal) priceVal.textContent = fmtPrice(product.price_kmf);
-    if (pricePromo) {
-      if (product.promo_pct && product.promo_pct > 0) {
-        pricePromo.textContent = '-' + product.promo_pct + '%';
-        pricePromo.classList.remove('u-hidden');
-      } else {
-        pricePromo.classList.add('u-hidden');
-      }
-    }
+    // Valeurs provisoires puis contrat final/SKU — propriétaire unique.
+    syncEnrichedTopbarProduct();
 
     // 3. Observer le scroll : toggle .is-scrolled sur .k-modal
     // Créer un sentinel élément en haut du scroll
@@ -607,7 +622,7 @@ import { optimizeImgUrl, fmtPrice, applyProductImageFallback } from './b-utils.j
         (entries) => {
           entries.forEach(entry => {
             const backTopFab = document.getElementById('k-modal-back-top');
-            if (entry.intersectionRatio < 0.3) {
+            if (entry.intersectionRatio < 0.05) {
               modal.classList.add('is-scrolled');
               if (backTopFab) backTopFab.classList.add('visible');
             } else {
@@ -616,7 +631,7 @@ import { optimizeImgUrl, fmtPrice, applyProductImageFallback } from './b-utils.j
             }
           });
         },
-        { root: scrollEl, threshold: [0, 0.3, 0.7, 1] }
+        { root: scrollEl, threshold: [0, 0.05, 1] }
       );
       state._topbarObserver.observe(imgWrap);
     }
@@ -803,6 +818,12 @@ import { optimizeImgUrl, fmtPrice, applyProductImageFallback } from './b-utils.j
     }
   }
 
+// Les événements du contrat détail sont le seul point de convergence entre
+// le renderer mobile et le rappel produit. Zéro import croisé, zéro listener
+// accumulé à chaque ouverture de modale.
+bus.on('modal:detail-ready', syncEnrichedTopbarProduct);
+bus.on('modal:selection-rendered', syncEnrichedTopbarProduct);
+
 // Surface publique ré-exportée par b-modal.js : buildCarouselSlides, goToSlide,
 // openSizeGuide, closeSizeGuide. Helpers consommés par openModal/closeModal :
 // _syncScrollPadding, setupModalFAB, hideModalFAB.
@@ -810,5 +831,5 @@ import { optimizeImgUrl, fmtPrice, applyProductImageFallback } from './b-utils.j
 export {
   buildCarouselSlides, goToSlide, openSizeGuide, closeSizeGuide,
   _syncScrollPadding,
-  setupModalFAB, hideModalFAB,
+  setupModalFAB, hideModalFAB, syncEnrichedTopbarProduct,
 };

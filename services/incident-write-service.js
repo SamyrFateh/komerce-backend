@@ -148,6 +148,49 @@ async function createHubPhysicalReconciliationIncident(executor, {
   return incident;
 }
 
+/**
+ * H1 / HB-02 — rupture fournisseur : la clôture Hub d'une ligne d'achat sans reliquat vaut constat (acteur + ligne PO
+ * en preuve). Un incident par ligne d'achat, jamais dupliqué (tout statut). Il sert de `source_incident_id` à la
+ * réservation de remboursement de ligne (item-refund-reservation-service).
+ */
+async function createSupplierShortageIncident(executor, {
+  purchaseLineId, orderId, orderItemId, missingQuantity, receivedQuantity = null, reason = null, actorId = null,
+}) {
+  const db = requireExecutor(executor);
+  if (!purchaseLineId || !orderItemId || !Number.isInteger(missingQuantity) || missingQuantity <= 0) {
+    throw new TypeError('[createSupplierShortageIncident] purchaseLineId, orderItemId et missingQuantity (>0) requis');
+  }
+  const governance = resolveGovernanceOrThrow({ incident_type: 'reconciliation_error', subtype: 'supplier_shortage' });
+  const { rows: existing } = await db.query(`
+    SELECT * FROM incidents
+     WHERE incident_type = 'reconciliation_error' AND details->>'type' = 'supplier_shortage'
+       AND details->>'purchase_line_id' = $1
+     LIMIT 1
+  `, [String(purchaseLineId)]);
+  if (existing.length > 0) return { incident: existing[0], created: false };
+
+  const title = `Rupture fournisseur : ${missingQuantity} unité(s) manquante(s) sur la ligne d'achat`;
+  const { rows: [incident] } = await db.query(`
+    INSERT INTO incidents (
+      parcel_id, order_id, order_item_id, incident_type, severity, title, description, details,
+      client_impact, detected_by, detected_source, origin_domain, resolver_domain, resolution_class, due_at
+    ) VALUES (NULL,$1,$2,'reconciliation_error','high',$3,$4,$5,'partial_delivery',$6,$7,$8,$9,$10,$11)
+    RETURNING *
+  `, [
+    orderId || null, orderItemId, title,
+    `Ligne d'achat ${purchaseLineId} clôturée sans reliquat${reason ? ` : ${reason}` : ''}`,
+    JSON.stringify({
+      type: 'supplier_shortage', purchase_line_id: String(purchaseLineId), order_item_id: String(orderItemId),
+      missing_quantity: missingQuantity, received_quantity: receivedQuantity, settle_reason: reason,
+      closed_by: actorId ? String(actorId) : null,
+    }),
+    actorId || null, actorId ? 'hub_agent' : 'system',
+    governance.origin_domain, governance.resolver_domain, governance.resolution_class,
+    computeDueAt(governance.resolution_class),
+  ]);
+  return { incident, created: true };
+}
+
 const ALERT_TYPE_TO_INCIDENT_TYPE = Object.freeze({ stuck_parcel: 'delay' });
 
 async function createAlertEngineIncidentIfNew(executor, {
@@ -466,6 +509,7 @@ async function seedIncident(executor, values) {
 }
 
 module.exports = {
+  createSupplierShortageIncident,
   createScanIncident,
   createReconciliationIncident,
   createHubPhysicalReconciliationIncident,

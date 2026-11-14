@@ -23,7 +23,7 @@ jest.mock('../../services/order-status-machine', () => ({
   transitionOrderStatus: (...args) => mockTransitionOrderStatus(...args),
 }));
 
-describe('TEST-1B transactional flows', () => {
+describe('TEST-1B cash pickup transactional flows (legacy G2 writer removed)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.resetModules();
@@ -130,62 +130,4 @@ describe('TEST-1B transactional flows', () => {
     expectTransactionRolledBack(client);
   });
 
-  test('G2 receivePurchaseOrder commits PO update and order transition atomically when order is complete', async () => {
-    const po = { id: 'po-1', order_id: 'order-3', qty: 2, received_qty: 1, status: 'confirmed', hub_received_at: null };
-    const updatedPo = { ...po, received_qty: 2, status: 'received' };
-    const client = makeClient([
-      { rows: [po] },
-      { rows: [updatedPo] },
-      { rows: [{ total: '1', recus: '1', qty_totale: '2', qty_recue: '2' }] },
-    ]);
-    mockDb.getClient.mockResolvedValue(client);
-    mockTransitionOrderStatus.mockResolvedValue({ success: true, noop: false });
-
-    const { receivePurchaseOrder } = require('../../services/receive-purchase-order');
-    const triggerScan3 = jest.fn(() => Promise.resolve());
-
-    const result = await receivePurchaseOrder({
-      poId: po.id,
-      qtyReceived: 1,
-      actor: { id: 'admin-1', role: 'admin' },
-      triggerScan3,
-    });
-
-    expect(result.status).toBe(200);
-    expect(result.body.ready_to_prepare).toBe(true);
-    expect(mockTransitionOrderStatus).toHaveBeenCalledWith(expect.objectContaining({
-      orderId: po.order_id,
-      newStatus: 'preparation',
-      source: 'system',
-      dbClient: client,
-    }));
-    expectTransactionCommitted(client);
-    expect(triggerScan3).toHaveBeenCalledWith(po.order_id, 'admin-1');
-  });
-
-  test('G2 receivePurchaseOrder rolls back when status transition fails', async () => {
-    const po = { id: 'po-2', order_id: 'order-4', qty: 1, received_qty: 0, status: 'confirmed', hub_received_at: null };
-    const updatedPo = { ...po, received_qty: 1, status: 'received' };
-    const client = makeClient([
-      { rows: [po] },
-      { rows: [updatedPo] },
-      { rows: [{ total: '1', recus: '1', qty_totale: '1', qty_recue: '1' }] },
-    ]);
-    mockDb.getClient.mockResolvedValue(client);
-    mockTransitionOrderStatus.mockResolvedValue({ success: false, error: 'transition impossible' });
-
-    const { receivePurchaseOrder } = require('../../services/receive-purchase-order');
-    const triggerScan3 = jest.fn(() => Promise.resolve());
-
-    const result = await receivePurchaseOrder({
-      poId: po.id,
-      qtyReceived: 1,
-      actor: { id: 'admin-1', role: 'admin' },
-      triggerScan3,
-    });
-
-    expect(result.status).toBe(409);
-    expect(triggerScan3).not.toHaveBeenCalled();
-    expectTransactionRolledBack(client);
-  });
 });
