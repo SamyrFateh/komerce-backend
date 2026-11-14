@@ -144,7 +144,7 @@ function unavailableMessage(detail, state, axisKey, value, optionState) {
  * - une seule combinaison vendable résout immédiatement son SKU.
  * Aucun choix fondé sur le premier SKU, le titre ou la photo du produit.
  */
-export function createModalSelection(detail) {
+export function createModalSelection(detail, { preselectUnique = true } = {}) {
   if (!detail || detail.inventory_model !== 'SKU') return deriveLegacyState(detail);
   const availableUnits = detail.sellable_units.filter((unit) => unit.stock_status === 'AVAILABLE');
   const selectedOptions = {};
@@ -152,7 +152,7 @@ export function createModalSelection(detail) {
     const availableValues = axis.values.filter((option) =>
       availableUnits.some((unit) => unit.option_values[axis.key] === option.value)
     );
-    if (availableValues.length === 1) selectedOptions[axis.key] = availableValues[0].value;
+    if (preselectUnique && availableValues.length === 1) selectedOptions[axis.key] = availableValues[0].value;
   }
   return deriveSkuState(detail, selectedOptions);
 }
