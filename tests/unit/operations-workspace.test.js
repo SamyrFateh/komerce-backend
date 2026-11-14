@@ -95,3 +95,29 @@ describe('operations-workspace.js — provenance manuelle (#3900)', () => {
     expect(ui).toContain('data-receive-manual-toggle');
   });
 });
+
+describe('T8 — arrivée fournisseur sans manifeste (HB-08)', () => {
+  const ui = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/operations-workspace.js'), 'utf8');
+  const ops = fs.readFileSync(path.join(__dirname, '../../services/hub-operations.js'), 'utf8');
+  const routes = fs.readFileSync(path.join(__dirname, '../../routes/scans.js'), 'utf8');
+
+  test('le poste expose le constat même sans PO et sans inventer de contenu', () => {
+    expect(ui).toContain("data-hub-unmanifested-arrival");
+    expect(ui).toContain("data-hub-unmanifested-form");
+    expect(ui).toContain("data-hub-unmanifested-reference");
+    expect(ui).toContain("data-hub-unmanifested-location");
+    expect(ui).toContain("data-hub-unmanifested-tracking");
+    expect(ui).toMatch(/slot\.appendChild\(createUnmanifestedArrivalCard\(doc, context\)\);[\s\S]*if \(context\.receivableError\)/);
+    expect(ui).toMatch(/url: RECEIVE_ENDPOINT,[\s\S]*contents: \[\],/);
+    expect(ui).not.toContain("data-hub-unmanifested-purchase-order");
+  });
+
+  test('la confirmation explicite appelle uniquement le writer physique canonique et garde sa référence sur erreur', () => {
+    expect(routes).toContain("router.post('/hub/receive'");
+    expect(routes).toContain("hubOps.receiveSupplierPackageCommand(req.body || {}, req.user.id)");
+    expect(ops).toContain("reconciliation_mode: parsedPurchaseOrderId ? 'PRE_RECONCILED_TAG' : 'UNRECONCILED'");
+    expect(ui).toContain('context.unmanifestedArrivalReference = null;');
+    expect(ui).toContain('Vérifiez le dossier par référence avant de recommencer');
+    expect(ui).toContain('Aucun article n’est attribué à une commande avant déballage et rapprochement.');
+  });
+});

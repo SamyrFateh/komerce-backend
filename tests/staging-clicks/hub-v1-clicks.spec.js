@@ -271,6 +271,63 @@ test.describe.serial(`Hub V1 : clics reels Chromium (${MARKET_CODE}, fixture E2E
     await ctx.close();
   });
 
+  test('T8 : arrivée fournisseur sans manifeste, tâche Hub et directrice', async ({ browser, baseURL }) => {
+    const { ctx, page } = await login(browser, baseURL, 'hub');
+    await openMarket(page, '/admin/hub-live?view=execute');
+    await page.getByRole('tab', { name: 'Réceptions' }).click();
+    const form = page.locator('[data-hub-unmanifested-form]');
+    await expect(form).toBeVisible({ timeout: 20000 });
+    const reference = `E2E-HUB-V1-${RUN8}-UNMANIFESTED`;
+    await form.locator('[data-hub-unmanifested-reference]').fill(reference);
+    await form.locator('[data-hub-unmanifested-location]').fill('HUB-E2E-RECEPTION');
+    await form.locator('[data-hub-unmanifested-tracking]').fill(`E2E-TRACK-${RUN8}`);
+    const recorded = await gesture(page, {
+      key: 'hub:T8-arrival-unmanifested', role: 'agent_hub',
+      route: 'POST /api/scans/hub/receive',
+      ui: 'operations-workspace.js:createUnmanifestedArrivalCard',
+      match: p => p === '/api/scans/hub/receive',
+      click: () => form.locator('[data-workspace-action="hub-unmanifested-arrival"]').click(),
+    });
+    expect(recorded.verdict, 'T8 vrai clic arrivée sans manifeste').toBe('CLICK_PASS');
+    expect(recorded.http, 'T8 réponse canonique d’arrivée').toBe(201);
+    expect(recorded.json?.reconciliation_mode).toBe('UNRECONCILED');
+    const units = await q(
+      "SELECT id, reference, unit_type, state, created_at FROM hub_physical_units WHERE reference=$1", [reference]);
+    expect(units, 'T8 une unité physique unique').toHaveLength(1);
+    const unit = units[0];
+    expect(unit).toMatchObject({ unit_type: 'SUPPLIER_PACKAGE', state: 'RECEIVED' });
+    const placement = await q(
+      "SELECT COUNT(*)::int AS n FROM hub_physical_unit_placements WHERE physical_unit_id=$1", [unit.id]);
+    expect(placement[0].n, 'T8 aucune allocation PO inventée').toBe(0);
+    const audit = await q(
+      "SELECT COUNT(*)::int AS n FROM hub_custody_events WHERE physical_unit_id=$1", [unit.id]);
+    expect(audit[0].n, 'T8 événement de garde physique durable').toBeGreaterThan(0);
+    const market = await q('SELECT id FROM markets WHERE code=$1', [MARKET_CODE]);
+    expect(market).toHaveLength(1);
+    const dossier = await require('../../services/hub-procurement-dossier')
+      .getDossier({ marketId: market[0].id });
+    const task = dossier.cockpit.todo.find(t => t.id === 'RECONCILE_PARCEL:' + unit.id);
+    expect(task, 'T8 file Hub a une tâche de rapprochement').toBeDefined();
+    expect(task.since, 'T8 tâche datée').toBeTruthy();
+    const director = await require('../../services/hub-procurement-dossier').getDirectorTodo({});
+    expect(director.tasks.some(t => t.id === 'RECONCILE_PARCEL:' + unit.id),
+      'T8 task visible directrice').toBe(true);
+    await page.getByRole('tab', { name: 'Dossiers' }).click();
+    await page.locator('[data-hlc-todo]').waitFor({ timeout: 20000 });
+    const all = page.locator('[data-hlc-action="todo-toggle"]');
+    if (await all.count()) await all.click();
+    const visibleTask = page.locator('[data-hlc-todo-item="RECONCILE_PARCEL"]').filter({ hasText: reference });
+    await expect(visibleTask, 'T8 file visible sur le vrai cockpit Chromium').toBeVisible({ timeout: 10000 });
+    evidence.t_cases = evidence.t_cases || [];
+    evidence.t_cases.push({ id: 'T8', verdict: 'CHROMIUM_HTTP_PG_AUDIT_PASS',
+      reference, unit_id: unit.id, http: recorded.http, physical_state: unit.state,
+      allocated: placement[0].n, custody_events: audit[0].n,
+      since: task.since, director_visible: true,
+      capture: await shot(page, 'T8-unmanifested-todo') });
+    save();
+    await ctx.close();
+  });
+
   test('Hub : sacs clients KOM-101 et KOM-102 (creer, deposer par scan, fermer)', async ({ browser, baseURL }) => {
     const { ctx, page } = await login(browser, baseURL, 'hub');
     await openMarket(page, '/admin/hub-live?view=execute');

@@ -685,6 +685,81 @@
     return card;
   }
 
+  // T8/HB-08 : le colis arrive physiquement sans manifeste. Aucun contenu, aucune PO
+  // ni quantité ne sont supposés. Le writer est le même /api/scans/hub/receive.
+  function createUnmanifestedArrivalCard(doc, context) {
+    const card = doc.createElement('article');
+    card.className = 'kmc-workspace-receive-card';
+    card.setAttribute('data-hub-unmanifested-arrival', '');
+    card.appendChild(text(doc, 'h3', '', 'Arrivée fournisseur sans manifeste'));
+    card.appendChild(text(doc, 'p', 'kmc-workspace-muted',
+      'Constater uniquement le colis physiquement présent. Aucun article n’est attribué à une commande avant déballage et rapprochement.'));
+    const form = doc.createElement('form');
+    form.setAttribute('data-hub-unmanifested-form', '');
+    card.appendChild(form);
+    const physical = doc.createElement('input');
+    physical.type = 'text';
+    physical.maxLength = 200;
+    physical.value = context.unmanifestedArrivalReference || newReceptionReference();
+    context.unmanifestedArrivalReference = physical.value;
+    physical.setAttribute('aria-label', 'Référence physique unique du colis sans manifeste');
+    physical.setAttribute('data-hub-unmanifested-reference', '');
+    physical.addEventListener('input', () => {
+      context.unmanifestedArrivalReference = String(physical.value || '').trim();
+      sync();
+    });
+    const location = doc.createElement('input');
+    location.type = 'text';
+    location.maxLength = 120;
+    location.placeholder = 'Zone de réception réelle (obligatoire)';
+    location.setAttribute('aria-label', 'Zone physique où le colis est reçu');
+    location.setAttribute('data-hub-unmanifested-location', '');
+    const tracking = doc.createElement('input');
+    tracking.type = 'text';
+    tracking.maxLength = 120;
+    tracking.placeholder = 'Tracking fournisseur (facultatif)';
+    tracking.setAttribute('aria-label', 'Tracking réel du colis sans manifeste');
+    tracking.setAttribute('data-hub-unmanifested-tracking', '');
+    [physical, location, tracking].forEach(node => form.appendChild(node));
+    const button = makeActionButton(doc, 'Attester l’arrivée sans manifeste', 'hub-unmanifested-arrival');
+    button.type = 'submit';
+    button.disabled = true;
+    const hint = text(doc, 'p', 'kmc-workspace-muted',
+      'Sans manifeste : aucun SKU, quantité ou PO créé. La tâche « Colis à rapprocher » reste à traiter.');
+    form.appendChild(hint);
+    form.appendChild(button);
+    function sync() {
+      button.disabled = String(physical.value || '').trim().length < 6 ||
+        String(location.value || '').trim().length < 4;
+    }
+    location.addEventListener('input', sync);
+    form.addEventListener('submit', event => {
+      event.preventDefault();
+      sync();
+      if (button.disabled) return;
+      const reference = String(physical.value).trim();
+      const locationRef = String(location.value).trim();
+      const trackingRef = String(tracking.value).trim();
+      runAction(context, button, {
+        url: RECEIVE_ENDPOINT,
+        body: {
+          reference, location_ref: locationRef, ...(trackingRef ? { tracking_ref: trackingRef } : {}),
+          contents: [],
+        },
+        confirmMessage: 'Le colis ' + reference + ' est-il physiquement présent à ' + locationRef +
+          ' ? Il sera enregistré sans articles ni PO jusqu’au rapprochement.',
+        runningMessage: 'Constat d’arrivée physique en cours…',
+        successMessage: result => 'Arrivée enregistrée : ' + (result?.unit?.reference || reference) +
+          '. Colis à rapprocher, aucune quantité attribuée.',
+        onSuccess: () => { context.unmanifestedArrivalReference = null; },
+      }).catch(error => {
+        setFeedback(context.root, 'Arrivée non confirmée : ' + error.message +
+          '. Vérifiez le dossier par référence avant de recommencer (réponse réseau possiblement perdue).', 'critical');
+      });
+    });
+    return card;
+  }
+
   function renderReceptionSection(rootNode, ui, doc, context) {
     const slot = createSection(
       rootNode,
@@ -692,6 +767,8 @@
       'Hub · Réception fournisseur',
       'Enregistrez ce qui est physiquement arrivé au Hub. Le statut fournisseur (par exemple SHIPPED) n’est jamais une réception ; les réceptions partielles sont acceptées.'
     );
+    // Accessible même sans PO en attente : c’est précisément le cas d’un colis à rapprocher.
+    slot.appendChild(createUnmanifestedArrivalCard(doc, context));
     if (context.receivableError) {
       slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', `Réception indisponible : ${context.receivableError}`));
       return;
