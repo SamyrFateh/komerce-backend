@@ -375,10 +375,28 @@ test.describe('PDP mobile retouches 2026-11 — Chromium geometry', () => {
 });
 
 
+async function openMiniheroContractFixture(page, viewport, key) {
+  await page.setViewportSize({ width: viewport.width, height: viewport.height });
+  await stubFixtureCatalogue(page);
+  const entry = catalogue.cases.find((item) => item.key === key);
+  const item = catalogue.products.find((product) => String(product.id) === String(entry.detail.product.id));
+  await page.goto('/boutique/index.html', { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => window._kbus && window._kstate, null, { timeout: 10000 });
+  await page.evaluate((product) => {
+    if (!window._kstate.products.some((p) => String(p.id) === String(product.id))) {
+      window._kstate.products.push(product);
+    }
+    window._kbus.emit('modal:open', { id: product.id });
+  }, item);
+  await expect(page.locator('#k-modal-overlay')).toHaveClass(/open/, { timeout: 8000 });
+  await expect(page.locator('#k-modal-name')).toHaveText(entry.detail.product.name, { timeout: 8000 });
+  return entry;
+}
+
 test.describe('PDP mobile retouches 2026-11 — Mini-héro V4 canonique', () => {
   for (const viewport of VIEWPORTS) {
     test(`PDP mobile retouches 2026-11 — ${viewport.key} : mini-héro, retour galerie, CTA hors scroll`, async ({ page }) => {
-      await openAt(page, viewport, 'stress');
+      await openMiniheroContractFixture(page, viewport, 'stress');
       const scroll = page.locator('#k-modal .k-modal-scroll');
       const thumb = page.getByRole('button', { name: 'Revenir aux photos du produit' });
       await expect(page.locator('#k-modal .k-modal-img-wrap')).toBeVisible();
