@@ -97,6 +97,28 @@ async function main() {
       entry.violations = entry.statements.reduce((a, s) => a + (s.violations || 0), 0);
       report.oracles.push(entry);
     }
+    // Diagnostic agrégé des écarts I7 et I15 (aucune ligne, uniquement des comptes).
+    const i7 = oracles.find((o) => o.id === 'I7').statements[0];
+    const i15 = oracles.find((o) => o.id === 'I15').statements[0];
+    const diag = `
+      WITH a AS (SELECT id FROM (${i7}) x), b AS (SELECT id FROM (${i15}) y),
+      u AS (SELECT id, (id IN (SELECT id FROM a)) AS in_i7, (id IN (SELECT id FROM b)) AS in_i15
+              FROM (SELECT id FROM a UNION SELECT id FROM b) z)
+      SELECT u.in_i7, u.in_i15, o.payment_mode, mk.code AS market,
+             to_char(date_trunc('month', o.created_at), 'YYYY-MM') AS month,
+             (o.simulation_scope IS NOT NULL) AS simulated, o.status,
+             (o.cash_paid_at IS NOT NULL) AS has_cash_paid_at,
+             (o.payment_received_at IS NOT NULL) AS has_payment_received_at,
+             (COALESCE(o.total_kmf, 0) = 0) AS zero_total, count(*)::int AS n
+        FROM u JOIN orders o ON o.id = u.id LEFT JOIN markets mk ON mk.id = o.market_id
+       GROUP BY 1,2,3,4,5,6,7,8,9,10 ORDER BY n DESC`;
+    try {
+      await client.query('SAVEPOINT s_diag');
+      report.diagnostic_i7_i15 = (await client.query(diag)).rows;
+    } catch (err) {
+      await client.query('ROLLBACK TO SAVEPOINT s_diag').catch(() => {});
+      report.diagnostic_i7_i15 = { error: String(err.message).slice(0, 300) };
+    }
     await client.query('ROLLBACK');
   } finally {
     await client.end().catch(() => {});
@@ -106,6 +128,7 @@ async function main() {
     const errs = o.statements.filter((s) => !s.valid).map((s) => `#${s.index}: ${s.error}`).join(' | ');
     console.log(`${o.id}\t${o.valid ? 'VALID' : 'INVALID'}\tviolations=${o.violations}${errs ? '\t' + errs : ''}`);
   }
+  console.log('DIAG ' + JSON.stringify(report.diagnostic_i7_i15));
   console.log(`statements=${report.oracles.reduce((a, o) => a + o.statements.length, 0)} live_commit=${report.live_commit}`);
 }
 
