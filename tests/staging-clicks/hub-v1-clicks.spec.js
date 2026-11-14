@@ -205,6 +205,7 @@ test.describe.serial(`Hub V1 : clics reels Chromium (${MARKET_CODE}, fixture E2E
       await scanResp;
       const qty = card.locator('input.kmc-workspace-receive-qty').first();
       await qty.fill(await qty.getAttribute('max'));
+      const qtyRequested = Number(await qty.inputValue());
       const receipt = await gesture(page, {
         key: `hub:receive:${poId.slice(0, 8)}`, role: 'agent_hub', route: 'POST /api/scans/hub/receive',
         ui: 'operations-workspace.js:createReceptionCard (Enregistrer la réception)', match: (p) => p === '/api/scans/hub/receive',
@@ -222,7 +223,7 @@ test.describe.serial(`Hub V1 : clics reels Chromium (${MARKET_CODE}, fixture E2E
       const replay = await page.request.post('/api/scans/hub/receive', { data: {
         reference: receivedRef,
         contents: [{ purchase_order_id: poId, product_sku_id: skus[0].id,
-          quantity: Number(await qty.inputValue()) }],
+          quantity: qtyRequested }],
       } });
       expect(replay.status(), 'T2 rejeu canonique sans duplication').toBe(200);
       const afterReplay = await q("SELECT COUNT(*)::int AS n FROM hub_physical_units WHERE reference=$1", [receivedRef]);
@@ -373,6 +374,22 @@ test.describe.serial(`Hub V1 : clics reels Chromium (${MARKET_CODE}, fixture E2E
       save();
       await page.waitForTimeout(2500);
     }
+    // T7 : rattachements issus de deux vrais gestes UI, pas d'insertion de preuve par SQL.
+    const lineage = await q(
+      "SELECT COUNT(*)::int AS links, COUNT(DISTINCT hb.bag_unit_id)::int AS bags, " +
+      "COUNT(DISTINCT hb.parcel_id)::int AS client_parcels, " +
+      "COUNT(*) FILTER (WHERE hb.linked_by IS NOT NULL)::int AS actor_traced " +
+      "FROM hub_box_bags hb JOIN hub_physical_units box ON box.id=hb.box_unit_id " +
+      "WHERE box.reference=$1", [shared.box]);
+    expect(lineage[0].links, 'T7 les deux sacs sont en KOM-BOX').toBe(2);
+    expect(lineage[0].bags).toBe(2);
+    expect(lineage[0].client_parcels).toBe(2);
+    expect(lineage[0].actor_traced, 'T7 trace de l’auteur des rattachements').toBe(2);
+    evidence.t_cases = evidence.t_cases || [];
+    evidence.t_cases.push({ id: 'T7', verdict: 'CHROMIUM_HTTP_PG_PASS_H9_COHORT_PENDING',
+      box_reference: shared.box, ...lineage[0], capture: await shot(page, 'T7-bags-in-box') });
+    save();
+
     for (let i = 0; i < 8; i++) {
       await reveal();
       const adv = page.locator('tr').filter({ hasText: shared.box }).locator('[data-workspace-action="advance-box"]');
