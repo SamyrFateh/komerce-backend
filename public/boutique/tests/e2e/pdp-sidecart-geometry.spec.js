@@ -142,7 +142,7 @@ for (const width of SIZES) {
     expect(evidence.gallery).not.toBeNull();
     expect(evidence.buybox).not.toBeNull();
     console.log('PDP_GEOMETRY_EVIDENCE', JSON.stringify(evidence));
-    expect(evidence.side.width).toBeGreaterThanOrEqual(width === 1440 ? 310 : width === 1700 ? 365 : 385);
+    expect(evidence.side.width).toBeGreaterThanOrEqual(width === 1440 ? 260 : width === 1700 ? 302 : 316);
     expect(evidence.overflowCount, JSON.stringify(evidence.overflow)).toBe(0);
     expect(evidence.documentOverflowX).toBeLessThanOrEqual(2);
     const ratio = {
@@ -150,13 +150,20 @@ for (const width of SIZES) {
       buybox: evidence.buybox.width / evidence.body.width,
       side: evidence.side.width / evidence.body.width,
     };
-    expect(ratio.gallery).toBeGreaterThan(.40);
-    expect(ratio.gallery).toBeLessThan(.49);
-    expect(ratio.buybox).toBeGreaterThan(.28);
-    expect(ratio.buybox).toBeLessThan(.39);
-    expect(ratio.side).toBeGreaterThan(.18);
-    expect(ratio.side).toBeLessThan(.26);
+    expect(ratio.gallery).toBeGreaterThan(.33);
+    expect(ratio.gallery).toBeLessThan(.40);
+    expect(ratio.buybox).toBeGreaterThan(.39);
+    expect(ratio.buybox).toBeLessThan(.49);
+    expect(ratio.side).toBeGreaterThan(.16);
+    expect(ratio.side).toBeLessThan(.20);
     expect(evidence.transportText).not.toContain('26 KMF');
+    const ctaRatio = await page.evaluate(() => {
+      const add = document.getElementById('k-add-cart-btn')?.getBoundingClientRect().width || 0;
+      const buy = document.getElementById('k-buy-now-btn')?.getBoundingClientRect().width || 0;
+      return add / (add + buy);
+    });
+    expect(ctaRatio).toBeGreaterThan(.41);
+    expect(ctaRatio).toBeLessThan(.49);
     // Oracle du mock canonique : fiche descriptif/caractéristiques avant
     // suggestions, une seule colonne scrollable, panier stationnaire.
     const hierarchy = await page.evaluate(() => {
