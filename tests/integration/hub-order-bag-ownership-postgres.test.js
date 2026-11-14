@@ -257,12 +257,25 @@ describeDb('Hub V1 — sac client mono-commande (PG réel)', () => {
       expectedMarketId:marketId,actorId,
     })).rejects.toMatchObject({code:'HUB_BOX_BAG_PARCEL_ORDER_MISMATCH'});
 
-    const first = await bagBox.attachBagToBox({
+    // C5/H9 : deux opérateurs tentent simultanément le même sac dans la même KOM-BOX.
+    // Chaque appel ouvre une transaction indépendante via db.withTransaction.
+    const sameBag = () => bagBox.attachBagToBox({
       bagUnitId: bag1Id, boxUnitId: boxId, parcelId: parcel1,
       evidenceMethod:'SCAN',bagReferenceScan:tag + '-SAC1', boxReferenceScan: tag + '-BOX',
       expectedMarketId: marketId, actorId,
     });
-    expect(first.already_linked).toBe(false);
+    const concurrent = await Promise.allSettled([sameBag(), sameBag()]);
+    const accepted = concurrent.filter(r => r.status === 'fulfilled').map(r => r.value);
+    const refused = concurrent.filter(r => r.status === 'rejected').map(r => r.reason);
+    expect(accepted.filter(r => r.already_linked === false)).toHaveLength(1);
+    expect(accepted.every(r => r.already_linked === false || r.already_linked === true)).toBe(true);
+    for (const error of refused) {
+      expect(error).toMatchObject({ status: 409, code: 'HUB_BAG_ALREADY_BOXED' });
+    }
+    const { rows: [c5] } = await q(
+      'SELECT COUNT(*)::int AS n FROM hub_box_bags WHERE bag_unit_id=$1', [bag1Id]
+    );
+    expect(c5.n).toBe(1);
     const second = await bagBox.attachBagToBox({
       bagUnitId: bag2Id, boxUnitId: boxId, parcelId: parcel2,
       evidenceMethod:'MANUAL',evidenceRef:'Constat clavier : étiquette abîmée',
