@@ -51,12 +51,12 @@ router.get('/stats/summary', authenticate, requireAdmin, async (req, res, next) 
     const { rows } = await db.query(`
       SELECT
         COUNT(*)                                    AS total_actifs,
-        SUM(unsold_price_kmf)                       AS valeur_liquidation_kmf,
-        SUM(original_price_kmf)                     AS valeur_initiale_kmf,
-        AVG(jours_en_stock)::NUMERIC(5,1)           AS jours_moy_en_stock,
-        COUNT(*) FILTER (WHERE channel = 'whatsapp') AS canal_whatsapp,
-        COUNT(*) FILTER (WHERE channel = 'reseller') AS canal_revendeur,
-        COUNT(*) FILTER (WHERE channel = 'both')     AS canal_both
+        SUM(v.unsold_price_kmf)                       AS valeur_liquidation_kmf,
+        SUM(v.original_price_kmf)                     AS valeur_initiale_kmf,
+        AVG(v.jours_en_stock)::NUMERIC(5,1)           AS jours_moy_en_stock,
+        COUNT(*) FILTER (WHERE v.channel = 'whatsapp') AS canal_whatsapp,
+        COUNT(*) FILTER (WHERE v.channel = 'reseller') AS canal_revendeur,
+        COUNT(*) FILTER (WHERE v.channel = 'both')     AS canal_both
       FROM v_unsold_pipeline v
       JOIN unsold_items ui ON ui.id = v.id
       JOIN orders o ON o.id = ui.order_id
