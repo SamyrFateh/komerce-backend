@@ -1158,12 +1158,12 @@ describe('FINISH PDP desktop media', () => {
       )?.[1] ?? '';
 
     expect(grid).toMatch(
-      /grid-template-columns\s*:\s*68px\s+minmax\(0,\s*1fr\)/
+      /grid-template-columns\s*:\s*var\(--k-pdp-thumb-size\)\s+minmax\(0,\s*1fr\)/
     );
-    expect(grid).toMatch(/column-gap\s*:\s*10px/);
+    expect(grid).toMatch(/column-gap\s*:\s*var\(--k-pdp-thumb-gap\)/);
 
-    expect(thumb).toMatch(/width\s*:\s*68px/);
-    expect(thumb).toMatch(/height\s*:\s*68px/);
+    expect(thumb).toMatch(/width\s*:\s*var\(--k-pdp-thumb-size\)/);
+    expect(thumb).toMatch(/height\s*:\s*var\(--k-pdp-thumb-size\)/);
     expect(thumb).toMatch(
       /border\s*:\s*1\.5px\s+solid/
     );
@@ -1171,7 +1171,7 @@ describe('FINISH PDP desktop media', () => {
     expect(thumbImg).toMatch(/padding\s*:\s*3px/);
 
     expect(media).toMatch(
-      /left\s*:\s*calc\(68px\s*\+\s*10px\s*\+\s*12px\)/
+      /left\s*:\s*calc\(var\(--k-pdp-thumb-size,\s*68px\)\s*\+\s*var\(--k-pdp-thumb-gap,\s*10px\)\s*\+\s*12px\)/
     );
   });
 
