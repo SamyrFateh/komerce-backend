@@ -238,10 +238,31 @@ test.describe.serial(`Hub V1 : clics reels Chromium (${MARKET_CODE}, fixture E2E
       expect(replay.status(), 'T2 rejeu authentifié + Origin canonique ; code=' + (replayResult.code || 'none')).toBe(200);
       const afterReplay = await q("SELECT COUNT(*)::int AS n FROM hub_physical_units WHERE reference=$1", [receivedRef]);
       expect(afterReplay[0].n).toBe(1);
+      // Controle independant de la seconde action UI apres le retour canonique.
+      // Une PO totalement recue ne doit plus permettre un second enregistrement.
+      const remaining = await q(
+        "SELECT COALESCE(SUM(GREATEST(v.effective_quantity-v.received_quantity,0)),0)::int AS qty " +
+        "FROM v_purchase_line_progress v JOIN purchase_lines pl ON pl.id=v.line_id " +
+        "WHERE pl.purchase_order_id=$1 AND NOT v.cancelled", [poId]);
+      const button = page.locator('[data-receive-po="' + poId + '"] [data-workspace-action="receive-supplier"]');
+      const buttonVisible = await button.isVisible().catch(() => false);
+      const buttonEnabled = buttonVisible && await button.isEnabled();
+      // Le bouton peut legitimement rester actif si une AUTRE ligne PO attend.
+      // Dans ce cas, ne pas baptiser l'etat UI comme preuve de protection T2.
+      const uiGuard = remaining[0].qty === 0
+        ? (buttonEnabled ? 'RETRY_STILL_ACTIONABLE' : 'RETRY_UNAVAILABLE')
+        : 'PO_OTHER_LINE_PENDING';
+      if (remaining[0].qty === 0) {
+        expect(buttonEnabled, 'T2 PO entierement recue : aucun second clic actionnable').toBe(false);
+      }
       evidence.t_cases = evidence.t_cases || [];
-      evidence.t_cases.push({ id: 'T2', verdict: 'API_PG_PASS_UI_REPLAY_NOT_PROVEN',
+      evidence.t_cases.push({ id: 'T2', verdict: uiGuard === 'RETRY_UNAVAILABLE'
+          ? 'CHROMIUM_UI_GUARD_API_PG_PASS_NO_SECOND_POST'
+          : 'API_PG_PASS_UI_REPLAY_NOT_PROVEN',
         physical_reference: receivedRef, original_ui_http: receipt.http, replay_http: replay.status(),
-        before: beforeReplay[0].n, after: afterReplay[0].n });
+        before: beforeReplay[0].n, after: afterReplay[0].n,
+        po_remaining_qty: remaining[0].qty, ui_retry_guard: uiGuard,
+        note: 'La preuve UI est la non-repetition de l action sur la PO soldee, pas un second POST Chromium.' });
       save();
       await page.waitForTimeout(1500);
     }
@@ -452,9 +473,28 @@ test.describe.serial(`Hub V1 : clics reels Chromium (${MARKET_CODE}, fixture E2E
     expect(lineage[0].bags).toBe(2);
     expect(lineage[0].client_parcels).toBe(2);
     expect(lineage[0].actor_traced, 'T7 trace de l’auteur des rattachements').toBe(2);
+    // Projection H9 limitee a la cohorte : aucun sac PACKED orphelin, aucune
+    // ligne de lien dupliquee. Ne prouve PAS le seuil temporel 48h de T9.
+    const orderRefs = ['KOM-101', 'KOM-102'].map(s => 'E2E-HUB-V1-' + RUN8 + '-' + s);
+    const h9 = await q(
+      "SELECT COUNT(*)::int AS orphan_bags FROM hub_physical_units u " +
+      "JOIN orders o ON o.id=u.order_id " +
+      "WHERE o.reference = ANY($1::text[]) AND u.unit_type='HANDLING_UNIT' " +
+      "AND u.state='PACKED' AND u.outcome_type IS NULL " +
+      "AND NOT EXISTS (SELECT 1 FROM hub_box_bags hb WHERE hb.bag_unit_id=u.id)",
+      [orderRefs]);
+    const duplicateLinks = await q(
+      "SELECT COUNT(*)::int AS n FROM (SELECT hb.bag_unit_id FROM hub_box_bags hb " +
+      "JOIN hub_physical_units box ON box.id=hb.box_unit_id WHERE box.reference=$1 " +
+      "GROUP BY hb.bag_unit_id HAVING COUNT(*)>1) d", [shared.box]);
+    expect(h9[0].orphan_bags, 'T7 aucun sac ferme orphelin dans la cohorte').toBe(0);
+    expect(duplicateLinks[0].n, 'T7 aucun sac rattache deux fois').toBe(0);
     evidence.t_cases = evidence.t_cases || [];
-    evidence.t_cases.push({ id: 'T7', verdict: 'CHROMIUM_HTTP_PG_PASS_H9_COHORT_PENDING',
-      box_reference: shared.box, ...lineage[0], capture: await shot(page, 'T7-bags-in-box') });
+    evidence.t_cases.push({ id: 'T7', verdict: 'CHROMIUM_HTTP_PG_H9_NEW_COHORT_PASS_MANUAL',
+      box_reference: shared.box, ...lineage[0], h9_scope_orphan_bags: h9[0].orphan_bags,
+      duplicate_links: duplicateLinks[0].n, scanner_physical: 'NOT_PROVEN',
+      h9_over_48h: 'NOT_APPLICABLE_TO_NEW_COHORT',
+      capture: await shot(page, 'T7-bags-in-box') });
     save();
 
     for (let i = 0; i < 8; i++) {
