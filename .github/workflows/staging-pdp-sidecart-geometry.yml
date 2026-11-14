@@ -27,7 +27,7 @@ jobs:
     timeout-minutes: 20
     env:
       CI: '1'
-      BASE_URL: ${{ github.event_name == 'issues' && 'https://komerce-backend-production.up.railway.app/boutique/' || '' }}
+      BASE_URL: ${{ (github.event_name == 'issues' || github.head_ref == 'audit/pdp-desktop-cm-mock-chromium-20261115') && 'https://komerce-backend-production.up.railway.app/boutique/' || '' }}
     steps:
       - name: Checkout PR head or deployed main
         uses: actions/checkout@v4
@@ -45,7 +45,7 @@ jobs:
         working-directory: public/boutique
         run: npx playwright install --with-deps chromium
       - name: Record staging deployment version (remote campaign only)
-        if: github.event_name == 'issues'
+        if: env.BASE_URL != ''
         shell: bash
         run: |
           mkdir -p public/boutique/test-results/pdp-sidecart-geometry
