@@ -48,11 +48,11 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 | Objet | Compte | Note |
 |---|---|---|
-| Tables | 237 | Vérifié sur le dump live Railway. |
+| Tables | 238 | Vérifié sur le dump live Railway. |
 | Vues | 21 | Vérifié sur le dump live Railway. |
 | ENUMs | 17 | Types métier présents dans le dump live Railway. |
-| Index | 535 | Performance + contraintes uniques |
-| Foreign keys | 477 | Cohérence relationnelle |
+| Index | 536 | Performance + contraintes uniques |
+| Foreign keys | 478 | Cohérence relationnelle |
 | Fonctions | 134 | Fonctions présentes dans le dump live Railway. |
 | Triggers | 151 | Triggers présents dans le dump live Railway. |
 | Extensions | `pgcrypto`, `uuid-ossp` | UUID + chiffrement |
@@ -93,13 +93,6 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 
 
-<!-- schema-pending
-object: pickup_code_generations
-kind: table
-migration: 412
-section: ### 4.1 Logistique commande (7 tables)
-role: Audit append-only des codes de retrait regénérés par le client propriétaire (POST /api/pickup/customer-regenerate/:orderId) ; sert aussi de quota 5 par commande et par 24 h. Colonnes order_id, user_id, created_at. Aucun code ni hash stocké.
--->
 
 | Table | Rôle |
 |---|---|
@@ -113,6 +106,7 @@ role: Audit append-only des codes de retrait regénérés par le client proprié
 | `manual_purchase_executions` | Allocations vendeur réel append-only par ligne PO manuelle, quantité et montant justifiés, canal et preuve. Ne pas interpréter comme un paiement fournisseur. **Migration 404 — promue le 2026-11-13 (schema-promote, dump live verifie).** |
 | `order_checkout_idempotency` | Réservation transactionnelle UNIQUE(user_id, idempotency_key) et snapshot immuable du résultat du checkout ; réémission sans double création, stock ni débit wallet. Ne pas confondre avec une table live tant que le dump Railway ne confirme pas la migration. **Migration 408 — promue le 2026-11-13 (schema-promote, dump live verifie).** |
 | `pickup_collect_failures` | Compteur append-only des échecs de retrait par code (code inconnu ou incorrect) par agent et relais ; au-delà de 5 échecs en 15 minutes glissantes, collectByPickupCode répond 429. Colonnes agent_id, relais_id, created_at. Aucun code stocké. **Migration 413 — promue le 2026-11-13 (schema-promote, dump live verifie).** |
+| `pickup_code_generations` | Audit append-only des codes de retrait regénérés par le client propriétaire (POST /api/pickup/customer-regenerate/:orderId) ; sert aussi de quota 5 par commande et par 24 h. Colonnes order_id, user_id, created_at. Aucun code ni hash stocké. **Migration 412 — promue le 2026-11-13 (schema-promote, dump live verifie).** |
 
 > **Ajouté** : migration 071 (A-BE-18, 26 mai 2026). Ces tables étaient auparavant créées au runtime par `ensureRelayTables()` dans `routes/relay-dashboard.js`. Elles sont désormais versionnées dans `migrations/071_relay_dashboard_tables.sql` (idempotent). Colonnes : voir migration pour le DDL complet (types incidents, priorités, statuts, résolution). Index : `idx_incidents_order`, `idx_incidents_status`, `idx_comments_order`.
 | `order_item_cost_imputations` | Imputations de coûts par item (audit). **Migration 164 (2026-09-06, `intended_migration_schema`)** : + `estimated_business_variable_cost_kmf` NUMERIC(12,2) nullable pour figer les coûts variables business (paiement + provision risque) et + `estimated_fixed_overhead_kmf` NUMERIC(12,2) nullable comme allocation analytique historique des charges fixes. `estimated_business_complete_cost_kmf` est conservé pour compatibilité legacy. Cette allocation fixe n'est jamais une dette intrinsèque du SKU ni une autorité de prix. Le backfill reste NULL lorsqu'un snapshot historique ne permet pas une reconstruction fiable ; aucune valeur 0 n'est inventée. |
@@ -946,3 +940,7 @@ Migrations 391–394 appliquées sur Railway staging le 2026-11-04 à 13:09 UTC 
 
 `relay_return_compensations` is a new append-only table proposed by migration 406. It records one admin-motivated after-handover compensation decision per product-return dispute. Wallet credits commit with the decision. Migration 409 links a PSP decision to its durable `refund_intent_id` and `refund_amount_kmf`; settlement is read from the refund ledger. Migration 410 links a no-charge replacement via `replacement_order_id` and records `order_items.replacement_source_item_id` for the exact original item. The `sav_replacement` payment mode has no client capture.
 <!-- /schema-pending -->
+
+### purchase_line_received_quantity (migration 414)
+
+`purchase_line_received_quantity(line_id)` est l'unique définition SQL de la quantité reçue d'une ligne d'achat : placements actifs hors unités `QUARANTINED`/`SUPERSEDED` et hors `outcome_type`. `v_purchase_line_progress.received_quantity` (branche ligne), la répartition de réception d'une PO regroupée et le refus de confirmation sous le reçu l'utilisent. La garde `purchase_lines_guard_groupable` refuse désormais toute ligne sans `product_sku_id`, cas manuel `central_hub` compris (code `purchase_line_variant_required`).

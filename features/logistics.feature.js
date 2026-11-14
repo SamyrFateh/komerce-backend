@@ -201,6 +201,7 @@ module.exports = {
       'tests/unit/hub-dubai-projection.test.js',
       'tests/unit/hub-global-board.test.js',
       'tests/unit/hub-unsourced-order-dossier.test.js',
+      'tests/unit/hub-director-todo-age.test.js',
       'tests/unit/hub-order-status.test.js',
       'tests/e2e-api/orders.pickup-code-vs-authorized-name.e2e.test.js',
       'tests/integration/hub-physical-identity-postgres.test.js',
@@ -309,6 +310,7 @@ module.exports = {
       'parcel_items: RW!',
       'parcels: RW!',
       'pickup_collect_failures: RW!', // R2 #3900: compteur d'échecs agent + relais (migration 413)
+      'pickup_code_generations: RW!', // R1 #3900 : générations de code de retrait par le client (migration 412)
       'pickup_print_tokens: RW!',
       'pickup_reveal_codes: RW!',
       'pickup_verify_attempts: RW',

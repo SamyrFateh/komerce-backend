@@ -13,14 +13,14 @@
  *
  * Contexte : routes/purchasing.js était à 0 % — aucun test dédié.
  * tests/unit/purchasing.test.js existant ne couvre que les SERVICES
- * (purchasing-trigger-service, purchasing-receive-service), jamais la
+ * (purchasing-trigger-service), jamais la
  * couche HTTP du router. Ce fichier ferme ce trou : guards auth/rôle,
  * parsing query/body, construction SQL conditionnelle (WHERE dynamique),
  * délégation aux services admin (delete/confirm/cancel), et relais
  * status/body incluant les erreurs avec `err.status`.
  *
  * db.query est mocké directement (pas de DB réelle) ; les services
- * purchasing-admin-service / purchasing-receive-service / purchasing-trigger-service
+ * purchasing-admin-service / purchasing-trigger-service
  * sont mockés — leur logique métier est déjà testée ailleurs.
  */
 
@@ -45,9 +45,6 @@ jest.mock('../../services/purchasing-trigger-service', () => ({
   triggerPurchasing: jest.fn(),
 }));
 
-jest.mock('../../services/purchasing-receive-service', () => ({
-  processReceive: jest.fn(),
-}));
 
 jest.mock('../../services/purchasing-admin-service', () => ({
   deleteSupplier: jest.fn(),
@@ -79,7 +76,6 @@ const grouped = require('../../services/purchasing-grouped-service');
 const { getPurchaseOrderDetail } = require('../../services/purchasing-order-detail');
 const { resolveCanonicalMappingMoney } = require('../../services/purchasing-canonical-money');
 const engagement = require('../../services/purchasing-engagement-service');
-const { processReceive } = require('../../services/purchasing-receive-service');
 const {
   deleteSupplier,
   confirmPurchaseOrder,
@@ -483,7 +479,7 @@ describe('POST /api/purchasing/:id/receive — fermée (C2)', () => {
     const res = await request(app).post('/api/purchasing/po1/receive').send(body);
     expect(res.status).toBe(410);
     expect(res.body).toMatchObject({ code: 'DECLARATIVE_RECEIVE_CLOSED', canonical: 'POST /api/scans/hub/receive' });
-    expect(processReceive).not.toHaveBeenCalled();
+    expect(db.query).not.toHaveBeenCalled();
   });
 });
 

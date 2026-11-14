@@ -1818,6 +1818,10 @@ const KNOWN_RESPONSES = {
   '/api/hub/administration': {
     get: { fields: ['scope','markets','approval_trace_available','kpis','purchase_orders'], source: 'route-read' }
   },
+  // H4 / #3998 : lecture centralisée multi-marchés pour la directrice du Hub.
+  '/api/hub/director-todo': {
+    get: { fields: ['generated_at','scope','overdue_after_hours','total','overdue_count','markets','tasks'], source: 'route-read' }
+  },
   '/api/hub/board': {
     get: { fields: ['scope','markets','orders'], source: 'route-read' }
   },

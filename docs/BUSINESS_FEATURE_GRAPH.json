@@ -13398,7 +13398,7 @@
         "category": "services",
         "declared": "services/pickup-secret-customer-rotation-service.js",
         "resolvedPath": "services/pickup-secret-customer-rotation-service.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "logistics",
@@ -13888,6 +13888,13 @@
         "category": "tests",
         "declared": "tests/unit/hub-unsourced-order-dossier.test.js",
         "resolvedPath": "tests/unit/hub-unsourced-order-dossier.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/unit/hub-director-todo-age.test.js",
+        "resolvedPath": "tests/unit/hub-director-todo-age.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -18541,22 +18548,8 @@
       {
         "feature": "purchasing",
         "category": "services",
-        "declared": "services/purchasing-receive-service.js",
-        "resolvedPath": "services/purchasing-receive-service.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "purchasing",
-        "category": "services",
         "declared": "services/purchasing-cancel-service.js",
         "resolvedPath": "services/purchasing-cancel-service.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "purchasing",
-        "category": "services",
-        "declared": "services/receive-purchase-order.js",
-        "resolvedPath": "services/receive-purchase-order.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -18621,6 +18614,13 @@
         "declared": "services/purchasing-completion-service.js",
         "resolvedPath": "services/purchasing-completion-service.js",
         "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "purchasing",
+        "category": "services",
+        "declared": "services/supplier-shortage-service.js",
+        "resolvedPath": "services/supplier-shortage-service.js",
+        "status": "resolved-on-disk-no-header"
       },
       {
         "feature": "purchasing",
@@ -19143,6 +19143,20 @@
       {
         "feature": "purchasing",
         "category": "tests",
+        "declared": "tests/unit/hub-h3-quantities.test.js",
+        "resolvedPath": "tests/unit/hub-h3-quantities.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/unit/hub-physical-identity.test.js",
+        "resolvedPath": "tests/unit/hub-physical-identity.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
         "declared": "tests/unit/hub-authorization-cumulative-cap.test.js",
         "resolvedPath": "tests/unit/hub-authorization-cumulative-cap.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -19159,6 +19173,20 @@
         "category": "tests",
         "declared": "tests/unit/purchasing-completion-service.test.js",
         "resolvedPath": "tests/unit/purchasing-completion-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/unit/supplier-shortage-refund.test.js",
+        "resolvedPath": "tests/unit/supplier-shortage-refund.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/unit/auto-parcel-closed-short.test.js",
+        "resolvedPath": "tests/unit/auto-parcel-closed-short.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -19264,13 +19292,6 @@
         "category": "tests",
         "declared": "tests/unit/purchasing.test.js",
         "resolvedPath": "tests/unit/purchasing.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "purchasing",
-        "category": "tests",
-        "declared": "tests/unit/purchasing-receive-service.test.js",
-        "resolvedPath": "tests/unit/purchasing-receive-service.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -19451,13 +19472,6 @@
       {
         "feature": "purchasing",
         "category": "tests",
-        "declared": "tests/unit/receive-purchase-order.test.js",
-        "resolvedPath": "tests/unit/receive-purchase-order.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "purchasing",
-        "category": "tests",
         "declared": "tests/unit/repair-ordered-purchasing.test.js",
         "resolvedPath": "tests/unit/repair-ordered-purchasing.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -19548,13 +19562,6 @@
       },
       {
         "feature": "refunds",
-        "category": "utils",
-        "declared": "utils/refunds.js",
-        "resolvedPath": "utils/refunds.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "refunds",
         "category": "services",
         "declared": "services/refund-service.js",
         "resolvedPath": "services/refund-service.js",
@@ -19579,6 +19586,13 @@
         "category": "services",
         "declared": "services/refund-intent-ledger.js",
         "resolvedPath": "services/refund-intent-ledger.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "refunds",
+        "category": "services",
+        "declared": "services/paypal-refund-authority.js",
+        "resolvedPath": "services/paypal-refund-authority.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -19654,6 +19668,13 @@
       {
         "feature": "refunds",
         "category": "tests",
+        "declared": "tests/unit/paypal-refund-authority.test.js",
+        "resolvedPath": "tests/unit/paypal-refund-authority.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "refunds",
+        "category": "tests",
         "declared": "tests/unit/sav-ledger-refund.test.js",
         "resolvedPath": "tests/unit/sav-ledger-refund.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -19705,13 +19726,6 @@
         "category": "tests",
         "declared": "tests/unit/refund-stripe-txn-known-risk.test.js",
         "resolvedPath": "tests/unit/refund-stripe-txn-known-risk.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "refunds",
-        "category": "tests",
-        "declared": "tests/unit/refunds-util.test.js",
-        "resolvedPath": "tests/unit/refunds-util.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -27480,6 +27494,12 @@
       },
       {
         "feature": "incident-management",
+        "fn": "createSupplierShortageIncident",
+        "file": "services/incident-write-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "incident-management",
         "fn": "resolveOpsIncident",
         "file": "services/incident-write-service.js",
         "status": "resolved"
@@ -30266,6 +30286,12 @@
       },
       {
         "from": "purchasing",
+        "to": "incident-management",
+        "raw": "incident-management (H1 : incident « rupture fournisseur » à la clôture d'une ligne sans reliquat, via createSupplierShortageIncident du boundary incident-write-service)",
+        "resolved": true
+      },
+      {
+        "from": "purchasing",
         "to": "logistics",
         "raw": "logistics (declenche scan preparation + notification client apres reception hub complete — services/scan-operations.js triggerScan3, O7.2 Cycle C)",
         "resolved": true
@@ -30370,6 +30396,12 @@
         "from": "refunds",
         "to": "documents",
         "raw": "documents (reçu)",
+        "resolved": true
+      },
+      {
+        "from": "refunds",
+        "to": "notifications",
+        "raw": "notifications (alerte critique de rapprochement de remboursement PSP incertain)",
         "resolved": true
       },
       {
@@ -36749,10 +36781,6 @@
               },
               {
                 "sourceFileId": "routes/hub-dashboard.js",
-                "targetFile": "utils/reference.js"
-              },
-              {
-                "sourceFileId": "routes/hub-dashboard.js",
                 "targetFile": "utils/logger.js"
               },
               {
@@ -37041,31 +37069,7 @@
               },
               {
                 "sourceFileId": "routes/hub-dashboard.js",
-                "targetFile": "utils/parcelSync.js"
-              },
-              {
-                "sourceFileId": "routes/hub-dashboard.js",
-                "targetFile": "services/scan-write-service.js"
-              },
-              {
-                "sourceFileId": "routes/hub-dashboard.js",
-                "targetFile": "services/parcel-item-mutation-service.js"
-              },
-              {
-                "sourceFileId": "routes/hub-dashboard.js",
-                "targetFile": "services/parcel-order-membership.js"
-              },
-              {
-                "sourceFileId": "routes/hub-dashboard.js",
-                "targetFile": "services/parcel-mutation-service.js"
-              },
-              {
-                "sourceFileId": "routes/hub-dashboard.js",
                 "targetFile": "services/hub-dubai-projection.js"
-              },
-              {
-                "sourceFileId": "routes/hub-dashboard.js",
-                "targetFile": "services/parcel-security.js"
               },
               {
                 "sourceFileId": "routes/relay-dashboard.js",
@@ -37394,10 +37398,6 @@
               {
                 "sourceFileId": "routes/admin-dashboard-market.js",
                 "targetFile": "services/dashboard-rct1-orders.js"
-              },
-              {
-                "sourceFileId": "routes/hub-dashboard.js",
-                "targetFile": "services/order-status-machine.js"
               },
               {
                 "sourceFileId": "routes/relay-dashboard.js",
@@ -40066,6 +40066,10 @@
               {
                 "sourceFileId": "bootstrap/api-routes.js",
                 "targetFile": "routes/purchasing.js"
+              },
+              {
+                "sourceFileId": "bootstrap/crons.js",
+                "targetFile": "services/purchasing-completion-service.js"
               },
               {
                 "sourceFileId": "tests/integration/o9-1-critical-runtime-proofs.test.js",
@@ -45654,15 +45658,7 @@
               },
               {
                 "sourceFileId": "services/payment-paypal.js",
-                "targetFile": "services/payment-service.js"
-              },
-              {
-                "sourceFileId": "services/payment-paypal.js",
                 "targetFile": "services/order-mutation-service.js"
-              },
-              {
-                "sourceFileId": "services/payment-paypal.js",
-                "targetFile": "services/order-status-machine.js"
               },
               {
                 "sourceFileId": "services/payment-cash-confirm.js",
@@ -45711,18 +45707,6 @@
               {
                 "sourceFileId": "tests/unit/payment-paypal.test.js",
                 "targetFile": "services/order-payment-confirmation.js"
-              },
-              {
-                "sourceFileId": "tests/unit/payment-paypal.test.js",
-                "targetFile": "services/order-status-machine.js"
-              },
-              {
-                "sourceFileId": "tests/unit/payment-paypal-known-logic-bugs.test.js",
-                "targetFile": "services/payment-service.js"
-              },
-              {
-                "sourceFileId": "tests/unit/payment-paypal-known-logic-bugs.test.js",
-                "targetFile": "services/order-status-machine.js"
               },
               {
                 "sourceFileId": "tests/unit/cash-operations-service.test.js",
@@ -45818,10 +45802,6 @@
                 "targetFile": "services/purchasing-trigger-service.js"
               },
               {
-                "sourceFileId": "tests/unit/isweep-transactional-flows.test.js",
-                "targetFile": "services/receive-purchase-order.js"
-              },
-              {
                 "sourceFileId": "tests/integration/post-o8-payments-seams.test.js",
                 "targetFile": "services/purchasing-trigger-service.js"
               },
@@ -45847,11 +45827,11 @@
             "evidence": [
               {
                 "sourceFileId": "services/payment-paypal.js",
-                "targetFile": "services/refund-service.js"
+                "targetFile": "services/paypal-refund-authority.js"
               },
               {
-                "sourceFileId": "tests/unit/payment-paypal.test.js",
-                "targetFile": "services/refund-service.js"
+                "sourceFileId": "routes/payments-paypal.js",
+                "targetFile": "services/paypal-refund-authority.js"
               }
             ]
           }
@@ -46549,15 +46529,6 @@
         "to": "purchasing",
         "channels": [
           {
-            "channel": "static-code",
-            "evidence": [
-              {
-                "sourceFileId": "tests/integration/isweep-transactional-flows.test.js",
-                "targetFile": "services/receive-purchase-order.js"
-              }
-            ]
-          },
-          {
             "channel": "interface",
             "evidence": [
               {
@@ -46973,6 +46944,26 @@
       },
       {
         "from": "purchasing",
+        "to": "incident-management",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/supplier-shortage-service.js",
+                "targetFile": "services/incident-write-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/supplier-shortage-refund.test.js",
+                "targetFile": "services/incident-governance.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "purchasing",
         "to": "infrastructure",
         "channels": [
           {
@@ -47003,27 +46994,11 @@
                 "targetFile": "db.js"
               },
               {
-                "sourceFileId": "services/purchasing-receive-service.js",
-                "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "services/purchasing-receive-service.js",
-                "targetFile": "utils/logger.js"
-              },
-              {
                 "sourceFileId": "services/purchasing-cancel-service.js",
                 "targetFile": "db.js"
               },
               {
                 "sourceFileId": "services/purchasing-cancel-service.js",
-                "targetFile": "utils/logger.js"
-              },
-              {
-                "sourceFileId": "services/receive-purchase-order.js",
-                "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "services/receive-purchase-order.js",
                 "targetFile": "utils/logger.js"
               },
               {
@@ -47183,6 +47158,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "tests/unit/hub-h3-quantities.test.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "tests/unit/purchasing-completion-service.test.js",
                 "targetFile": "db.js"
               },
@@ -47223,14 +47202,6 @@
                 "targetFile": "db.js"
               },
               {
-                "sourceFileId": "tests/unit/receive-purchase-order.test.js",
-                "targetFile": "tests/integration/test-harness/mock-db.js"
-              },
-              {
-                "sourceFileId": "tests/unit/receive-purchase-order.test.js",
-                "targetFile": "db.js"
-              },
-              {
                 "sourceFileId": "tests/unit/repair-ordered-purchasing.test.js",
                 "targetFile": "db.js"
               },
@@ -47255,16 +47226,16 @@
                 "targetFile": "services/hub-procurement-dossier.js"
               },
               {
-                "sourceFileId": "services/purchasing-receive-service.js",
-                "targetFile": "services/scan-operations.js"
-              },
-              {
                 "sourceFileId": "services/purchasing-engagement-service.js",
                 "targetFile": "services/hub-reference.js"
               },
               {
                 "sourceFileId": "services/purchasing-completion-service.js",
                 "targetFile": "services/scan-operations.js"
+              },
+              {
+                "sourceFileId": "services/purchasing-completion-service.js",
+                "targetFile": "services/auto-parcel.js"
               },
               {
                 "sourceFileId": "tests/integration/supplier-source-anomaly-postgres.test.js",
@@ -47299,16 +47270,16 @@
                 "targetFile": "tests/integration/test-harness/seed-helpers.js"
               },
               {
+                "sourceFileId": "tests/unit/auto-parcel-closed-short.test.js",
+                "targetFile": "services/auto-parcel.js"
+              },
+              {
                 "sourceFileId": "tests/unit/hub-operations-grouped-completion.test.js",
                 "targetFile": "services/hub-physical-identity.js"
               },
               {
                 "sourceFileId": "tests/unit/hub-operations-grouped-completion.test.js",
                 "targetFile": "services/hub-operations.js"
-              },
-              {
-                "sourceFileId": "tests/unit/purchasing-receive-service.test.js",
-                "targetFile": "services/scan-operations.js"
               }
             ]
           },
@@ -47356,6 +47327,10 @@
                 "targetFile": "utils/alerts.js"
               },
               {
+                "sourceFileId": "services/supplier-shortage-service.js",
+                "targetFile": "utils/alerts.js"
+              },
+              {
                 "sourceFileId": "tests/unit/purchasing-trigger-service.test.js",
                 "targetFile": "services/notification-service.js"
               },
@@ -47380,14 +47355,6 @@
             "channel": "static-code",
             "evidence": [
               {
-                "sourceFileId": "services/purchasing-receive-service.js",
-                "targetFile": "services/order-status-machine.js"
-              },
-              {
-                "sourceFileId": "services/receive-purchase-order.js",
-                "targetFile": "services/order-status-machine.js"
-              },
-              {
                 "sourceFileId": "services/purchasing-admin-service.js",
                 "targetFile": "services/order-mutation-service.js"
               },
@@ -47397,10 +47364,6 @@
               },
               {
                 "sourceFileId": "tests/e2e-api/purchasing.no-duplicate-po.e2e.test.js",
-                "targetFile": "services/order-status-machine.js"
-              },
-              {
-                "sourceFileId": "tests/unit/receive-purchase-order.test.js",
                 "targetFile": "services/order-status-machine.js"
               }
             ]
@@ -47420,6 +47383,22 @@
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "purchasing",
+        "to": "refunds",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "tests/unit/supplier-shortage-refund.test.js",
+                "targetFile": "services/item-refund-reservation-service.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "OBSERVED_UNDECLARED"
       },
       {
         "from": "purchasing",
@@ -47843,11 +47822,19 @@
                 "targetFile": "services/documents/refund-receipt.js"
               },
               {
+                "sourceFileId": "services/paypal-refund-authority.js",
+                "targetFile": "services/documents/refund-receipt.js"
+              },
+              {
                 "sourceFileId": "services/sav-ledger-refund.js",
                 "targetFile": "services/documents/refund-receipt.js"
               },
               {
                 "sourceFileId": "tests/unit/item-refund-psp-orchestrator.test.js",
+                "targetFile": "services/documents/refund-receipt.js"
+              },
+              {
+                "sourceFileId": "tests/unit/paypal-refund-authority.test.js",
                 "targetFile": "services/documents/refund-receipt.js"
               },
               {
@@ -47887,10 +47874,6 @@
             "channel": "static-code",
             "evidence": [
               {
-                "sourceFileId": "utils/refunds.js",
-                "targetFile": "utils/logger.js"
-              },
-              {
                 "sourceFileId": "services/refund-service.js",
                 "targetFile": "utils/logger.js"
               },
@@ -47909,6 +47892,10 @@
               {
                 "sourceFileId": "services/refund-intent-ledger.js",
                 "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/paypal-refund-authority.js",
+                "targetFile": "utils/logger.js"
               },
               {
                 "sourceFileId": "services/refund-intent-reconciliation.js",
@@ -47957,6 +47944,26 @@
       },
       {
         "from": "refunds",
+        "to": "notifications",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/paypal-refund-authority.js",
+                "targetFile": "utils/alerts.js"
+              },
+              {
+                "sourceFileId": "tests/unit/paypal-refund-authority.test.js",
+                "targetFile": "utils/alerts.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "refunds",
         "to": "orders",
         "channels": [
           {
@@ -47971,6 +47978,14 @@
                 "targetFile": "services/order-item-refund-settlement.js"
               },
               {
+                "sourceFileId": "services/paypal-refund-authority.js",
+                "targetFile": "services/payment-service.js"
+              },
+              {
+                "sourceFileId": "services/paypal-refund-authority.js",
+                "targetFile": "services/order-status-machine.js"
+              },
+              {
                 "sourceFileId": "tests/e2e-api/refunds.no-double-application.e2e.test.js",
                 "targetFile": "services/order-status-machine.js"
               },
@@ -47981,6 +47996,14 @@
               {
                 "sourceFileId": "tests/e2e-api/refunds.no-double-application.e2e.test.js",
                 "targetFile": "routes/admin/orders.js"
+              },
+              {
+                "sourceFileId": "tests/unit/paypal-refund-authority.test.js",
+                "targetFile": "services/payment-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/paypal-refund-authority.test.js",
+                "targetFile": "services/order-status-machine.js"
               }
             ]
           },
@@ -48031,10 +48054,6 @@
           {
             "channel": "static-code",
             "evidence": [
-              {
-                "sourceFileId": "utils/refunds.js",
-                "targetFile": "services/wallet-service.js"
-              },
               {
                 "sourceFileId": "services/refund-service.js",
                 "targetFile": "services/wallet-service.js"
@@ -49589,11 +49608,6 @@
           "raw": "CSS_BUNDLES_PATH"
         },
         {
-          "sourceFileId": "tests/integration/txg03-hub-dashboard.test.js",
-          "kind": "require",
-          "raw": "TARGET"
-        },
-        {
           "sourceFileId": "tests/unit/canonical-purchasing-workspace-boundary.test.js",
           "kind": "require",
           "raw": "path.join(ROOT, WORKSPACE"
@@ -49749,7 +49763,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2332
+        "filesObserved": 2334
       },
       "boutique": {
         "filesObserved": 216,
@@ -49785,7 +49799,7 @@
     "familySummary": {
       "PROJECTION": 0,
       "COMPOSITION_ROOT_WIRING": 20,
-      "NON_RUNTIME_TEST": 17,
+      "NON_RUNTIME_TEST": 18,
       "TECHNICAL_PRIMITIVE": 0,
       "BUSINESS_TRANSVERSAL_SERVICE": 0,
       "CROSS_FEATURE_DIRECT_IMPORT": 0,
@@ -50305,6 +50319,21 @@
         "exceptionReasons": []
       },
       {
+        "from": "purchasing",
+        "to": "refunds",
+        "family": "NON_RUNTIME_TEST",
+        "evidenceRole": "TEST_ONLY",
+        "consumerKind": "business-feature",
+        "providerKind": "business-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "non-runtime-evidence",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
         "from": "refunds",
         "to": "auth",
         "family": "NON_RUNTIME_TEST",
@@ -50360,7 +50389,7 @@
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|business-file-import": 2,
       "COMPOSITION_ROOT_WIRING|RUNTIME_AND_TEST|technical-foundation|business-feature|business-file-import": 3,
       "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-feature|business-file-import": 7,
-      "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-transversal|business-file-import": 2,
+      "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-transversal|business-file-import": 3,
       "NON_RUNTIME_TEST|TEST_ONLY|business-feature|unclassified|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-feature|business-file-import": 3,
       "COMPOSITION_ROOT_WIRING|RUNTIME_AND_TEST|technical-transversal|business-transversal|business-file-import": 1,
@@ -52599,6 +52628,19 @@
       "lifecycleOwner": "logistics",
       "resolution": "declared-table-owner"
     },
+    "pickup_code_generations": {
+      "writers": [
+        {
+          "feature": "logistics",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "logistics",
+      "resolution": "declared-table-owner"
+    },
     "pickup_verify_attempts": {
       "writers": [
         {
@@ -53714,15 +53756,18 @@
       "resolution": "no-declared-writer"
     }
   },
-  "orphanTechnicalNodes": [],
+  "orphanTechnicalNodes": [
+    "services/purchasing-receive-service.js",
+    "services/receive-purchase-order.js"
+  ],
   "bigMap": {
     "perRepo": {
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 706,
-        "technicalNodesOwned": 706,
-        "technicalOrphans": 0
+        "technicalNodesTotal": 707,
+        "technicalNodesOwned": 705,
+        "technicalOrphans": 2
       },
       "dash": {
         "manifestsDiscovered": 3,
@@ -53795,7 +53840,7 @@
           "openQuestion": "Faut-il créer une feature 'analytics' dédiée côté backend/dash (si un service de collecte équivalent existe ou est prévu côté serveur), ou rattacher ce manifeste à une feature existante par proximité fonctionnelle (ex. platform-ops) ? Décision produit non tranchée par O4."
         }
       ],
-      "technicalOrphansRemaining": 0
+      "technicalOrphansRemaining": 2
     }
   },
   "scopeTopology": {
@@ -53821,6 +53866,16 @@
   "drifts": {
     "error": [],
     "warn": [
+      {
+        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
+        "ref": "services/purchasing-receive-service.js",
+        "msg": "nœud technique \"services/purchasing-receive-service.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
+      },
+      {
+        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
+        "ref": "services/receive-purchase-order.js",
+        "msg": "nœud technique \"services/receive-purchase-order.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
+      },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "order_item_real_cost_allocations",
@@ -53853,6 +53908,16 @@
       }
     ],
     "debt": [
+      {
+        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
+        "ref": "services/purchasing-receive-service.js",
+        "msg": "nœud technique \"services/purchasing-receive-service.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
+      },
+      {
+        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
+        "ref": "services/receive-purchase-order.js",
+        "msg": "nœud technique \"services/receive-purchase-order.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
+      },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "order_item_real_cost_allocations",
@@ -53963,7 +54028,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "infrastructure -> purchasing",
-        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"purchasing\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"purchasing\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -54067,6 +54132,11 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "purchasing -> refunds",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"purchasing\" vers \"refunds\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "refunds -> auth",
         "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"refunds\" vers \"auth\""
       },
@@ -54130,7 +54200,7 @@
       {
         "type": "DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED",
         "ref": "scope:backend",
-        "msg": "31 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope backend (ex. tests/unit/modal-mobile-canonical.test.js: CSS_BUNDLES_PATH | tests/integration/txg03-hub-dashboard.test.js: TARGET | tests/unit/canonical-purchasing-workspace-boundary.test.js: path.join(ROOT, WORKSPACE) — limitation du modèle statique O5, jamais inventé"
+        "msg": "30 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope backend (ex. tests/unit/modal-mobile-canonical.test.js: CSS_BUNDLES_PATH | tests/unit/canonical-purchasing-workspace-boundary.test.js: path.join(ROOT, WORKSPACE | tests/unit/canonical-pricing-atelier-views.test.js: path.join(CANONICAL, 'js', 'pricing-atelier-views.js') — limitation du modèle statique O5, jamais inventé"
       },
       {
         "type": "DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED",
@@ -54189,11 +54259,11 @@
       }
     ],
     "summary": {
-      "signals": 6,
-      "debt": 6,
-      "expectedTopology": 48,
+      "signals": 8,
+      "debt": 8,
+      "expectedTopology": 49,
       "generatorLimitations": 12,
-      "classifiedCandidates": 66
+      "classifiedCandidates": 69
     }
   }
 }

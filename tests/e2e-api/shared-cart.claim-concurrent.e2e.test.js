@@ -54,7 +54,7 @@
  *                  en achetant en réalité le produit B (mismatch produit)
  */
 
-const request = require('supertest');
+const request = require('../helpers/supertest-order-key');
 const express = require('express');
 const { signAuthToken } = require('../../utils/auth-session');
 

@@ -8,6 +8,8 @@ Porte d'entree agent :
 2. docs/CARTE_FIRST_INDEX.md
 3. features/<feature>.feature.js
 
+Coordination GPT / Sonnet / Opus : `docs/chantier/STATUS.md` (registre commun des tâches, propriétaires, PR et clôtures). Ne pas recréer les anciens worklogs/trackers sous `.agent/`.
+
 ## Gates actifs
 
 - npm run feature:registry

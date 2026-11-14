@@ -102,7 +102,7 @@ describe('order-cost-snapshot', () => {
     expect(sql).toMatch(/p\.volume_cm3\s*,\s*0\)\s*\/\s*1000000\.0\)\s+AS volume_m3/);
   });
 
-  it('fige N1/N2/N3 par item et garde le CDR legacy pour compatibilite', async () => {
+  it('ME-05 : fige N1+N2 par item, N3 jamais imputee (colonne NULL)', async () => {
     process.env.ORDER_COST_SNAPSHOT_ACTIVE = 'true';
     const items = [
       { order_item_id: 'oi-1', product_id: 'prod-1', quantity: 2, price_kmf: 3000, category: 'food', weight_kg: 1, product_cost_kmf: 1000, volume_m3: 0.1 },
@@ -140,8 +140,8 @@ describe('order-cost-snapshot', () => {
       skipped: false,
       total_estimated_landed_kmf: 4900,
       total_estimated_business_variable_kmf: 1300,
-      total_estimated_fixed_overhead_kmf: 1800,
-      total_estimated_business_kmf: 8000,
+      total_estimated_fixed_overhead_kmf: 0,
+      total_estimated_business_kmf: 6200,
     });
     expect(pricingEngine.loadGlobalConfig).toHaveBeenCalledTimes(1);
     expect(pricingEngine.recommend).toHaveBeenCalledWith(expect.objectContaining({ product_id: 'prod-1', current_price_kmf: 3000 }), { config: { cfg: true } });
@@ -152,9 +152,35 @@ describe('order-cost-snapshot', () => {
     expect(insertSql).toContain('estimated_fixed_overhead_kmf');
     expect(insertParams.slice(0, 12)).toEqual([
       'order-001', 'oi-1', 'prod-1', 2, 3000, 6000,
-      2400, 4000, 600, 1000, 2000, 33.33,
+      2400, 3000, 600, null, 3000, 50,
     ]);
     expect(client.query.mock.calls[3][0]).toContain('UPDATE orders');
+  });
+
+  it('ME-05 : cout estime = (N1+N2) x quantite, independant de la N3 / objectif de volume', async () => {
+    process.env.ORDER_COST_SNAPSHOT_ACTIVE = 'true';
+    const run = async (n3) => {
+      const client = { query: jest.fn()
+        .mockResolvedValueOnce({ rows: [{ order_item_id: 'oi', product_id: 'p', quantity: 3, price_kmf: 5000 }] })
+        .mockResolvedValueOnce({ rows: [{ id: 'i' }] })
+        .mockResolvedValueOnce({ rows: [] }) };
+      pricingEngine.loadGlobalConfig.mockResolvedValueOnce({});
+      pricingEngine.recommend.mockResolvedValueOnce({
+        n1_landed_relay_cost_kmf: 1000, n2_business_variable_cost_kmf: 200,
+        n3_fixed_overhead_allocation_kmf: n3, cdr_complete_kmf: 1200 + n3,
+      });
+      const res = await lockEstimatedCostsForOrder('o', client);
+      return { res, params: client.query.mock.calls[1][1] };
+    };
+    const a = await run(0);
+    const b = await run(9999);
+    for (const r of [a, b]) {
+      expect(r.res.total_estimated_business_kmf).toBe(3600);
+      expect(r.res.total_estimated_fixed_overhead_kmf).toBe(0);
+      expect(r.params[7]).toBe(3600);
+      expect(r.params[9]).toBeNull();
+    }
+    expect(a.params.slice(0, 12)).toEqual(b.params.slice(0, 12));
   });
 
   it('charge le modèle de coûts du marché figé sur la commande', async () => {
