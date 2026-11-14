@@ -47318,6 +47318,10 @@
                 "targetFile": "services/hub-procurement-dossier.js"
               },
               {
+                "sourceFileId": "tests/integration/hub-p0-procurement-chain-postgres.test.js",
+                "targetFile": "services/hub-physical-identity.js"
+              },
+              {
                 "sourceFileId": "tests/integration/hub-autonomous-purchasing-postgres.test.js",
                 "targetFile": "services/hub-operations.js"
               },
