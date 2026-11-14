@@ -159,6 +159,12 @@ async function decide({ purchaseOrderId, authorizationType, actor, body = {} }, 
       const amount = Number(body.amount);
       const currency = typeof body.currency === 'string' ? body.currency.toUpperCase() : '';
       if (!(amount > 0) || !/^[A-Z]{3}$/.test(currency)) fail(400, 'AUTHORIZATION_AMOUNT_REQUIRED', 'Montant et devise du paiement requis');
+      // FA-23 : paiement autorisé ≤ engagement PO, même devise (deux validations distinctes, jamais élargies tacitement).
+      const { rows: [commitment] } = await client.query(
+        "SELECT amount, currency FROM purchase_order_authorizations WHERE purchase_order_id = $1 AND authorization_type = 'purchase_commitment'", [po.id]);
+      if (commitment.currency !== currency || amount > Number(commitment.amount) + 0.0001) {
+        fail(409, 'SUPPLIER_PAYMENT_AUTHORIZATION_EXCEEDS_COMMITMENT', 'L\'autorisation de paiement dépasse l\'engagement d\'achat (montant ou devise)');
+      }
       money = { amount, currency };
     }
     const { rows: [row] } = await client.query(
@@ -224,18 +230,46 @@ async function decideVariance({ purchaseOrderId, actor, body = {} }, database = 
 }
 
 /** Garde d'écriture : un paiement fournisseur suppose l'autorisation de paiement, dans la devise et le plafond autorisés. */
-async function assertPaymentAuthorized(client, purchaseOrderId, expectedAmount, currency, { excludePaymentKey = null } = {}) {
-  const { rows: [auth] } = await client.query(
-    "SELECT amount, currency FROM purchase_order_authorizations WHERE purchase_order_id = $1 AND authorization_type = 'supplier_payment'", [purchaseOrderId]);
+async function assertPaymentAuthorized(client, purchaseOrderId, expectedAmount, currency, opts = {}) {
+  // Pool/module db reçu : le service ouvre sa propre transaction (contrôle de lecture atomique, sans écriture à sérialiser).
+  if (client && typeof client.withTransaction === 'function') {
+    return client.withTransaction((tx) => assertPaymentAuthorized(tx, purchaseOrderId, expectedAmount, currency, opts));
+  }
+  const { excludePaymentKey = null } = opts;
+  // FA-23 : sérialise tous les paiements d'une même PO jusqu'à la fin de la transaction de l'appelant ; la somme ci-dessous lit
+  // ensuite les paiements déjà validés par les concurrents. Verrou consultatif (et non FOR UPDATE sur la PO) : l'INSERT du paiement
+  // pose déjà un FOR KEY SHARE sur la PO via la FK, dont la promotion provoquerait un deadlock entre deux opérateurs.
+  await client.query("SELECT pg_advisory_xact_lock(hashtextextended('supplier_payment_po:' || $1::text, 0))", [purchaseOrderId]);
+  // Fail-closed : hors transaction le verrou xact est libéré dès la fin de l'instruction et la sérialisation est perdue.
+  // Un verrou consultatif encore détenu par cette session prouve que l'appelant tient bien une transaction.
+  const { rows: held } = await client.query(
+    "SELECT 1 FROM pg_locks WHERE pid = pg_backend_pid() AND locktype = 'advisory' AND granted LIMIT 1");
+  if (!held.length) {
+    fail(500, 'SUPPLIER_PAYMENT_TRANSACTION_REQUIRED', 'Le contrôle du plafond de paiement exige une transaction ouverte par l\'appelant (sérialisation par PO)');
+  }
+  const { rows: decisions } = await client.query(
+    "SELECT authorization_type, amount, currency FROM purchase_order_authorizations WHERE purchase_order_id = $1 AND authorization_type IN ('supplier_payment','purchase_commitment')", [purchaseOrderId]);
+  const auth = decisions.find((d) => d.authorization_type === 'supplier_payment');
+  const commitment = decisions.find((d) => d.authorization_type === 'purchase_commitment');
   if (!auth) fail(409, 'SUPPLIER_PAYMENT_NOT_AUTHORIZED', 'Paiement fournisseur non autorisé par la directrice');
   if (auth.currency !== String(currency).toUpperCase() || Number(expectedAmount) > Number(auth.amount)) {
     fail(409, 'SUPPLIER_PAYMENT_EXCEEDS_AUTHORIZATION', 'Le paiement dépasse le montant ou la devise autorisés');
   }
+  // Chaîne de plafonds : paiements ≤ autorisation ≤ engagement PO (même devise). Une autorisation héritée hors engagement est refusée.
+  if (!commitment || commitment.currency !== auth.currency || Number(auth.amount) > Number(commitment.amount) + 0.0001) {
+    fail(409, 'SUPPLIER_PAYMENT_AUTHORIZATION_EXCEEDS_COMMITMENT', 'L\'autorisation de paiement dépasse l\'engagement d\'achat (montant ou devise)');
+  }
   // A2-ter : plafond cumulé (tranches/acomptes autorisés), pas égalité de chaque tranche au total de la PO.
+  // Montant engagé d'un paiement = max(attendu, observé) : un observé supérieur ne libère jamais de marge.
   const { rows: [prior] } = await client.query(
-    `SELECT COALESCE(SUM(expected_amount), 0) AS total FROM supplier_execution_payments
-      WHERE purchase_order_id = $1 AND currency = $2 AND status IN ('prepared','requested','succeeded','ambiguous')
+    `SELECT COALESCE(SUM(GREATEST(expected_amount, COALESCE(observed_amount, 0))) FILTER (WHERE currency = $2), 0) AS total,
+            COUNT(*) FILTER (WHERE currency <> $2)::int AS other_currency
+       FROM supplier_execution_payments
+      WHERE purchase_order_id = $1 AND status IN ('prepared','requested','succeeded','ambiguous')
         AND ($3::text IS NULL OR payment_execution_key <> $3)`, [purchaseOrderId, auth.currency, excludePaymentKey]);
+  if (Number(prior.other_currency || 0) > 0) {
+    fail(409, 'SUPPLIER_PAYMENT_EXCEEDS_AUTHORIZATION', 'Paiement existant dans une autre devise que l\'autorisation');
+  }
   const cumulative = Number(prior.total) + Number(expectedAmount);
   if (cumulative > Number(auth.amount) + 0.0001) {
     fail(409, 'SUPPLIER_PAYMENT_EXCEEDS_AUTHORIZATION', 'Le cumul des paiements dépasse le plafond autorisé');
