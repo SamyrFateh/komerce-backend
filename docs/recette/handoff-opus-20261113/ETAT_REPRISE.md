@@ -1,5 +1,7 @@
 # Reprise Opus : certification pré-E2E G6 (revue croisée du 13/11/2026 — correctifs Hub et matrice O-HUB)
 
+> **Archivé le 14/11/2026.** Ce fichier n'est plus suivi. Le registre commun unique est `docs/chantier/STATUS.md` sur `main` (#4031). Les briefs et scripts de ce dossier restent consultables comme référence.
+
 Point de départ pour tout agent qui reprend après une coupure. Fil de coordination : issue **#3927**. Matrice commune : PR draft **#3944**, branche `docs/g6-matrix-v2`.
 
 ## Décisions du propriétaire en vigueur
