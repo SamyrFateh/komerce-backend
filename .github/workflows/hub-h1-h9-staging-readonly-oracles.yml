@@ -1,11 +1,11 @@
-name: Hub H1-H9 - staging read-only oracles (#3998 / S7)
+name: Hub H1-H9 - post-merge staging read-only recheck GPT (#3998)
 
 # Ne s'exécute QUE sur la branche dédiée. Barrière : scripts/recette/hub-h1-h9-expected-sha.txt
 # doit contenir le SHA de main déployé après fusion contrôlée de #4014 ; tant qu'il est vide,
 # aucun secret base n'est exposé et aucune requête staging n'est émise (NOT_PROVEN).
 on:
   push:
-    branches: [research/hub-h1-h9-readonly-oracles-20261114]
+    branches: [cert/gpt-h1-h9-postmerge-20261114]
     paths:
       - '.github/workflows/hub-h1-h9-staging-readonly-oracles.yml'
       - 'scripts/recette/hub-h1-h9-readonly-oracles.js'
