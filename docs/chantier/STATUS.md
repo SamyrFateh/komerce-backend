@@ -32,7 +32,10 @@ Statuts autorisés : `À_FAIRE` · `EN_COURS` · `PR_EN_REVUE` · `BLOQUÉ` · `
 | G5 | E7 réservations actif, décaissement coupé | Opus | FAIT | Railway `be4a1566` SUCCESS |
 | G6 | Simulation de marché qualifiée (commandes payées sans encaissement ni facture, I7/I15) | Propriétaire | DÉCISION_PROPRIÉTAIRE | Voulu ou non ; arrêt pendant les campagnes ? |
 | G7 | Gel des fusions annoncé pour toute la durée des deux campagnes | Opus | À_FAIRE | Annonce ici + dans #3944 au moment du GO |
-| GO | GO explicite du propriétaire pour l'E2E G6 final | Propriétaire | NON_DONNÉ | Seulement quand G0–G7 sont FAIT |
+| G8 | Remboursement des commandes payées en espèces ou mobile money (F1, F2 de l'audit [#4107](https://github.com/SamyrFateh/komerce-backend/issues/4107)) | Propriétaire | DÉCISION_PROPRIÉTAIRE | Remboursement de ligne refusé hors Stripe/PayPal ; annulation cash = avoir wallet sans sortie. Décider le moyen, puis corriger ou inscrire « non couvert » dans la matrice (N13, N26, N39) |
+| G9 | Colis payé non retiré (F3 de [#4107](https://github.com/SamyrFateh/komerce-backend/issues/4107)) | Propriétaire | DÉCISION_PROPRIÉTAIRE | Liquidation à 14 jours sans effet sur commande, code, argent ni stock. Ajouter à la matrice ou déclarer hors périmètre par écrit |
+| G10 | Anomalies A1 (commande mixte bloquée) et A2 (KOM-BOX en double au rejeu) de la passe 2 #3900 | à attribuer | DÉCISION_PROPRIÉTAIRE | [Passe 2](https://github.com/SamyrFateh/komerce-backend/issues/3900#issuecomment-6879768689) ; feraient échouer M03 et N28 dans les deux campagnes |
+| GO | GO explicite du propriétaire pour l'E2E G6 final | Propriétaire | NON_DONNÉ | Seulement quand G0–G10 sont FAIT ou tranchés |
 
 ## Tâches actives — reprise contrôlée (14 novembre 2026)
 
