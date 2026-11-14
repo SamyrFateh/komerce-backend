@@ -103,7 +103,15 @@ router.post('/preview', authenticateOrCreateGuest, validate(orderCreateSchema), 
 router.post('/', authenticateOrCreateGuest, validate(orderCreateSchema), async (req, res, next) => {
   let result;
   try {
-    result = await runOrderCheckout({ user: req.user, body: req.body, idempotencyKey: req.get('Idempotency-Key') || null });
+    const idempotencyKey = req.get('Idempotency-Key') || null;
+    // FA-22 : clé obligatoire avant toute écriture (400 stable, jamais de création sans clé).
+    if (!idempotencyKey) {
+      return res.status(400).json({
+        error: 'Clé anti-doublon (Idempotency-Key) obligatoire pour créer une commande.',
+        code: 'idempotency_key_required',
+      });
+    }
+    result = await runOrderCheckout({ user: req.user, body: req.body, idempotencyKey });
   } catch (err) {
     return next(err);
   }

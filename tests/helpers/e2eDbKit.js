@@ -134,9 +134,26 @@ function createCleanup(db) {
       const errors = [];
       while (stack.length) {
         const entry = stack.pop();
+        const run = () => (entry.sql
+          ? db.query(entry.sql, entry.params)
+          : db.query(`DELETE FROM ${entry.table} WHERE ${entry.column} = $1`, [entry.value]));
         try {
-          if (entry.sql) await db.query(entry.sql, entry.params);
-          else await db.query(`DELETE FROM ${entry.table} WHERE ${entry.column} = $1`, [entry.value]);
+          try {
+            await run();
+          } catch (err) {
+            // FA-22 : toute commande créée par la route porte une ligne order_checkout_idempotency
+            // (FK RESTRICT vers orders et users). On la purge pour exactement les lignes visées par
+            // la suppression en échec, puis on rejoue cette suppression.
+            const m = err.constraint && /^order_checkout_idempotency_/.test(err.constraint)
+              ? /^\s*DELETE FROM (orders|users) WHERE ([\s\S]+)$/i.exec(entry.sql || `DELETE FROM ${entry.table} WHERE ${entry.column} = $1`)
+              : null;
+            if (!m) throw err;
+            const col = m[1].toLowerCase() === 'orders' ? 'order_id' : 'user_id';
+            await db.query(
+              `DELETE FROM order_checkout_idempotency WHERE ${col} IN (SELECT id FROM ${m[1]} WHERE ${m[2]})`,
+              entry.sql ? entry.params : [entry.value]);
+            await run();
+          }
         } catch (err) {
           errors.push(`${entry.sql || entry.table}: ${err.message}`);
         }

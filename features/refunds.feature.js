@@ -56,9 +56,7 @@ module.exports = {
 
   // ── Perimetre fichiers ───────────────────────────────────────────────────
   files: {
-    utils: [
-      'utils/refunds.js',
-    ],
+    utils: [],
     services: [
       'services/refund-service.js',
       'services/item-refund-reservation-service.js',
@@ -93,7 +91,6 @@ module.exports = {
       'tests/e2e-api/refunds.intent-provider-reference-unique.e2e.test.js',
       'tests/e2e-api/refunds.durable-intent-ledger.e2e.test.js',
       'tests/unit/refund-stripe-txn-known-risk.test.js',
-      'tests/unit/refunds-util.test.js',
       'tests/unit/refund-receipt-html.test.js',
     ],
   },

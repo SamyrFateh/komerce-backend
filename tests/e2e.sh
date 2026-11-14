@@ -93,10 +93,20 @@ R=$(curl -s "$BASE/api/payments/rates"); check "Exchange rates" "eur_kmf" "$R"
 
 
 # ─── PHASE 3: COMMANDE ───────────────────────────────────────────
+# L3/N06 : POST /api/orders porte Idempotency-Key et le total accepté, lu dans l'aperçu serveur
+order_post() { # $1 = corps JSON
+  local q t b
+  q=$(curl -s -b "$CC" -X POST "$BASE/api/orders/preview" -H "Content-Type: application/json" -d "$1")
+  t=$(echo "$q" | python3 -c "import sys,json;print(json.load(sys.stdin).get('total_kmf',''))" 2>/dev/null)
+  b=$(python3 -c "import sys,json;b=json.loads(sys.argv[1]);t=sys.argv[2]
+if t.isdigit(): b['expected_total_kmf']=int(t)
+print(json.dumps(b))" "$1" "$t")
+  curl -s -b "$CC" -X POST "$BASE/api/orders" -H "Content-Type: application/json" -H "Idempotency-Key: e2e-$(date +%s%N)-$RANDOM" -d "$b"
+}
+
 echo ""; echo "━━━ 3. Commande Client (6 tests) ━━━"
 
-R=$(curl -s -b "$CC" -X POST "$BASE/api/orders" -H "Content-Type: application/json" \
-  -d "{\"items\":[{\"product_id\":\"$P1\",\"quantity\":1},{\"product_id\":\"$P2\",\"quantity\":2}],\"payment_mode\":\"cash_relais\",\"recipient_name\":\"Destinataire E2E\",\"recipient_phone\":\"+2693001122\",\"relais_id\":\"$RID\"}")
+R=$(order_post "{\"items\":[{\"product_id\":\"$P1\",\"quantity\":1},{\"product_id\":\"$P2\",\"quantity\":2}],\"payment_mode\":\"cash_relais\",\"recipient_name\":\"Destinataire E2E\",\"recipient_phone\":\"+2693001122\",\"relais_id\":\"$RID\"}")
 check "Create order" "reference" "$R"
 OID=$(echo "$R" | python3 -c "import sys,json;print(json.load(sys.stdin).get('order',{}).get('id',''))" 2>/dev/null)
 OREF=$(echo "$R" | python3 -c "import sys,json;print(json.load(sys.stdin).get('order',{}).get('reference',''))" 2>/dev/null)
@@ -107,8 +117,7 @@ R=$(curl -s -b "$CC" "$BASE/api/orders"); check "My orders" "reference" "$R"
 R=$(curl -s -b "$CC" "$BASE/api/orders/credits"); check "Credits" "total_kmf" "$R"
 
 # 2nd order for cancel
-R=$(curl -s -b "$CC" -X POST "$BASE/api/orders" -H "Content-Type: application/json" \
-  -d "{\"items\":[{\"product_id\":\"$P1\",\"quantity\":1}],\"payment_mode\":\"cash_relais\",\"recipient_name\":\"Cancel\",\"recipient_phone\":\"+2690009\",\"relais_id\":\"$RID\"}")
+R=$(order_post "{\"items\":[{\"product_id\":\"$P1\",\"quantity\":1}],\"payment_mode\":\"cash_relais\",\"recipient_name\":\"Cancel\",\"recipient_phone\":\"+2690009\",\"relais_id\":\"$RID\"}")
 O2=$(echo "$R" | python3 -c "import sys,json;print(json.load(sys.stdin).get('order',{}).get('id',''))" 2>/dev/null)
 
 R=$(curl -s -b "$CC" -X POST "$BASE/api/orders/$O2/cancel" -H "Content-Type: application/json" \

@@ -31419,7 +31419,7 @@
               {
                 "declared": "services/paypal-refund-authority.js",
                 "resolvedPath": "services/paypal-refund-authority.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/refund-evidence-verifier.js",
@@ -31449,7 +31449,7 @@
             ]
           },
           "tests": {
-            "count": 18,
+            "count": 17,
             "files": [
               {
                 "declared": "tests/e2e-api/refunds.credits-cash-numeric.e2e.test.js",
@@ -31532,29 +31532,14 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
-                "declared": "tests/unit/refunds-util.test.js",
-                "resolvedPath": "tests/unit/refunds-util.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
                 "declared": "tests/unit/sav-ledger-refund.test.js",
                 "resolvedPath": "tests/unit/sav-ledger-refund.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
-          },
-          "utils": {
-            "count": 1,
-            "files": [
-              {
-                "declared": "utils/refunds.js",
-                "resolvedPath": "utils/refunds.js",
-                "status": "resolved-in-technical-graph"
-              }
-            ]
           }
         },
-        "totalFiles": 27,
+        "totalFiles": 25,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,

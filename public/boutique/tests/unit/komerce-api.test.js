@@ -359,8 +359,27 @@ describe('komerce-api (window.K)', () => {
       expect(global.fetch.mock.calls[0][0]).toBe('http://localhost/api/orders/3');
 
       mockFetchOnce(200, {});
-      await K.orders.create({ total: 100 });
+      await K.orders.create({ total: 100, expected_total_kmf: 100 });
       expect(global.fetch.mock.calls[0]).toEqual(['http://localhost/api/orders', expect.objectContaining({ method: 'POST' })]);
+    });
+
+    it('orders.create : aperçu serveur puis POST avec Idempotency-Key et expected_total_kmf', async () => {
+      global.fetch = jest.fn((url) => Promise.resolve({
+        ok: true, status: 200, json: () => Promise.resolve(/preview$/.test(url) ? { total_kmf: 7990 } : {}),
+      }));
+      await K.orders.create({ total: 100 });
+      expect(global.fetch.mock.calls[0][0]).toBe('http://localhost/api/orders/preview');
+      const post = global.fetch.mock.calls[1];
+      expect(post[0]).toBe('http://localhost/api/orders');
+      expect(post[1].headers['Idempotency-Key']).toMatch(/^[A-Za-z0-9._:-]{8,128}$/);
+      expect(JSON.parse(post[1].body).expected_total_kmf).toBe(7990);
+    });
+
+    it('orders.create : total fourni = pas d\'aperçu, clé fournie conservée pour un rejeu', async () => {
+      mockFetchOnce(200, {});
+      await K.orders.create({ total: 100, expected_total_kmf: 500 }, { idempotencyKey: 'retry-key-0001' });
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+      expect(global.fetch.mock.calls[0][1].headers['Idempotency-Key']).toBe('retry-key-0001');
     });
 
     it('logistics.shipments.list / get / create', async () => {

@@ -70,8 +70,9 @@ test('order fixture is committed as simulated BEFORE notifier and real POST rout
  expect(hook).toBeGreaterThan(commit);
  expect(s).toContain("payment_mode!=='cash_relais'");
  const route=fs.readFileSync(path.join(__dirname,'../../routes/orders/create.js'),'utf8');
- expect(route).toMatch(/runOrderCheckout\(\{\s*user:\s*req\.user,\s*body:\s*req\.body,/);
- expect(route).toContain("idempotencyKey: req.get('Idempotency-Key') || null");
+ expect(route).toMatch(/runOrderCheckout\(\{\s*user:\s*req\.user,\s*body:\s*req\.body,\s*idempotencyKey\s*\}/);
+ expect(route).toContain("const idempotencyKey = req.get('Idempotency-Key') || null");
+ expect(route).toContain("code: 'idempotency_key_required'");
  expect(route).not.toContain('internalSimulation: req.body');
  const notify=fs.readFileSync(path.join(__dirname,'../../services/order-post-commit-hooks.js'),'utf8');
  expect(notify).toContain('if (order && order.simulation_scope != null) return');

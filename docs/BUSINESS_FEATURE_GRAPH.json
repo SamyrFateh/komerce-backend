@@ -19555,13 +19555,6 @@
       },
       {
         "feature": "refunds",
-        "category": "utils",
-        "declared": "utils/refunds.js",
-        "resolvedPath": "utils/refunds.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "refunds",
         "category": "services",
         "declared": "services/refund-service.js",
         "resolvedPath": "services/refund-service.js",
@@ -19593,7 +19586,7 @@
         "category": "services",
         "declared": "services/paypal-refund-authority.js",
         "resolvedPath": "services/paypal-refund-authority.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "refunds",
@@ -19726,13 +19719,6 @@
         "category": "tests",
         "declared": "tests/unit/refund-stripe-txn-known-risk.test.js",
         "resolvedPath": "tests/unit/refund-stripe-txn-known-risk.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "refunds",
-        "category": "tests",
-        "declared": "tests/unit/refunds-util.test.js",
-        "resolvedPath": "tests/unit/refunds-util.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -47910,10 +47896,6 @@
             "channel": "static-code",
             "evidence": [
               {
-                "sourceFileId": "utils/refunds.js",
-                "targetFile": "utils/logger.js"
-              },
-              {
                 "sourceFileId": "services/refund-service.js",
                 "targetFile": "utils/logger.js"
               },
@@ -48094,10 +48076,6 @@
           {
             "channel": "static-code",
             "evidence": [
-              {
-                "sourceFileId": "utils/refunds.js",
-                "targetFile": "services/wallet-service.js"
-              },
               {
                 "sourceFileId": "services/refund-service.js",
                 "targetFile": "services/wallet-service.js"
@@ -49812,7 +49790,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2335
+        "filesObserved": 2333
       },
       "boutique": {
         "filesObserved": 216,

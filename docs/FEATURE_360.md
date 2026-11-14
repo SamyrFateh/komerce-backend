@@ -2400,10 +2400,9 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 27 fichier(s) déclaré(s)
+**Implementation** : 25 fichier(s) déclaré(s)
   - services : 8
-  - tests : 18
-  - utils : 1
+  - tests : 17
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="refunds"]_
 

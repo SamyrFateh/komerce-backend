@@ -110,7 +110,20 @@ api() {
   local a=(-s -o /tmp/v6_r.json -w '%{http_code}')
   [[ -n "$c" ]] && a+=(-b "$c")
   [[ "$m" != "GET" ]] && a+=(-X "$m")
+  # L3/N06 : POST /api/orders porte le total accepté, lu dans l'aperçu serveur (si le corps est valide).
+  if [[ "$m" == "POST" && "$p" == "/api/orders" && -n "$d" && -n "$c" ]]; then
+    local q; q=$(curl -s -b "$c" -X POST -H 'Content-Type: application/json' -d "$d" "${BASE}/api/orders/preview" 2>/dev/null)
+    d=$(python3 -c 'import sys,json
+try:
+    b=json.loads(sys.argv[1]); t=json.loads(sys.argv[2]).get("total_kmf")
+    if isinstance(t,int) and "expected_total_kmf" not in b: b["expected_total_kmf"]=t
+    print(json.dumps(b))
+except Exception:
+    print(sys.argv[1])' "$d" "$q")
+  fi
   [[ -n "$d" ]] && a+=(-H 'Content-Type: application/json' -d "$d")
+  # FA-22 : POST /api/orders exige une Idempotency-Key (clé neuve par appel)
+  [[ "$m" == "POST" && "$p" == "/api/orders" ]] && a+=(-H "Idempotency-Key: v6-$(date +%s%N)-$RANDOM")
   HTTP=$(curl "${a[@]}" "${BASE}${p}" 2>/dev/null)
   BODY=$(cat /tmp/v6_r.json 2>/dev/null)
 }
