@@ -27,6 +27,7 @@ const log = require('../../utils/logger').child({ module: 'admin/orders' });
 const { deleteOrderCascade } = require('./delete-order-cascade');
 const { refundCancelledOrder } = require('../../services/admin-order-refund');
 const { reserveVerifiedShortage } = require('../../services/item-refund-reservation-service');
+const { reserveLocalShortage } = require('../../services/local-item-refund-reservation');
 const { executeReservedItemRefund, reconcileUncertainItemRefund } = require('../../services/item-refund-psp-orchestrator');
 
 const guard = [authenticate, requireRole(['admin'])];
@@ -124,6 +125,33 @@ router.post('/orders/:id/refund', ...guard, async (req, res, next) => {
     });
     return res.status(result.status).json(result.body);
   } catch (err) { next(err); }
+});
+
+// Fable F1/F2 : réserve une DETTE locale pour manquant réellement attesté.
+// Aucune sortie caisse, aucun virement Mobile Money, aucun wallet ou refunds.completed.
+// Activation staging explicite. L'identité du payeur et la sortie réelle doivent
+// être rapprochées dans un futur parcours d'exécution séparé.
+router.post('/orders/:id/items/:itemId/local-refund-reservations', ...guard, async (req, res, next) => {
+  if (process.env.KOMERCE_ENV !== 'staging' ||
+      process.env.FABLE_LOCAL_REFUND_RESERVATIONS_ENABLED !== '1') {
+    return res.status(409).json({
+      code: 'LOCAL_REFUND_RESERVATION_NOT_CERTIFIED',
+      error: 'Réservation locale non certifiée ou hors staging'
+    });
+  }
+  const { incident_id, quantity, operation_key, reason } = req.body || {};
+  try {
+    const result = await reserveLocalShortage({
+      orderId: req.params.id, orderItemId: req.params.itemId,
+      incidentId: incident_id, quantity, operationKey: operation_key,
+      reason, actor: req.user
+    });
+    return res.status(result.replayed ? 200 : 202).json(result);
+  } catch (err) {
+    if (err.status && err.code)
+      return res.status(err.status).json({ code: err.code, error: err.message });
+    return next(err);
+  }
 });
 
 // E7 pilote : réserve une indemnisation de manquant article par article.
