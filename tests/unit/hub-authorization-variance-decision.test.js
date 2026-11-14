@@ -11,10 +11,13 @@ const PO = '00000000-0000-4000-8000-000000000001';
 const ADMIN = '00000000-0000-4000-8000-000000000002';
 function clientWith({ paid = 20, justified = 40, entries = 2, decision = null, wrong = 0 } = {}) {
   const client = { query: jest.fn(async (sql, args) => {
+    if (sql.includes('pg_advisory_xact_lock')) return { rows: [] };
+    if (sql.includes('FROM purchase_order_authorizations') && sql.includes("'purchase_commitment'") && sql.includes('IN ('))
+      return { rows: [{ authorization_type: 'supplier_payment', amount: '100', currency: 'AED' }, { authorization_type: 'purchase_commitment', amount: '100', currency: 'AED' }] };
     if (sql.includes('FROM purchase_order_authorizations'))
       return { rows: [{ amount: '100', currency: 'AED' }] };
     if (sql.includes('FROM supplier_execution_payments'))
-      return { rows: [{ total: String(paid) }] };
+      return { rows: [{ total: String(paid), other_currency: 0 }] };
     if (sql.includes('FROM manual_purchase_executions'))
       return { rows: [{ entries, wrong_currency: wrong, total: String(justified) }] };
     if (sql.includes('FROM purchase_variance_decisions'))

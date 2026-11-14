@@ -11,9 +11,13 @@ jest.mock('../../db', () => ({ query: jest.fn(), getClient: jest.fn() }));
 const auth = require('../../services/hub-authorization-service');
 
 const clientWith = (prior) => ({
-  query: jest.fn(async (sql) => (/FROM purchase_order_authorizations/.test(sql)
-    ? { rows: [{ amount: '100', currency: 'AED' }] }
-    : { rows: [{ total: String(prior) }] })),
+  query: jest.fn(async (sql) => {
+    if (/pg_advisory_xact_lock/.test(sql)) return { rows: [] };
+    if (/FROM purchase_order_authorizations/.test(sql)) {
+      return { rows: [{ authorization_type: 'supplier_payment', amount: '100', currency: 'AED' }, { authorization_type: 'purchase_commitment', amount: '100', currency: 'AED' }] };
+    }
+    return { rows: [{ total: String(prior), other_currency: 0 }] };
+  }),
 });
 
 describe('assertPaymentAuthorized — cumul', () => {
