@@ -738,7 +738,12 @@ function explicitLegacySpecificationGroups(detail) {
     ).filter(value => typeof value === 'string' && value.trim());
     if (values.length) push('Tailles', values.join(', '));
   }
-  return items.length ? [{ group: null, items }] : [];
+  // Le mock conserve une table courte : les informations complémentaires
+  // (matière et coloris) restent disponibles intégralement dans la description.
+  const priority = new Set(['Coupe', 'Dos', 'Tailles', 'Contenu']);
+  const featured = items.filter(item => priority.has(item.label));
+  const visible = featured.length >= 3 ? featured : items.slice(0, 4);
+  return visible.length ? [{ group: null, items: visible }] : [];
 }
 
 /**
@@ -769,8 +774,13 @@ function renderEnrichedContent(detail) {
   const vm = buildProductContentViewModel(detail.content);
 
   appendEnrichedBulletBlock(container, { heading: CONTENT_LABELS.highlights, items: vm.highlights.map((h) => h.label), variant: 'highlights' });
+  // Repli historique uniquement quand la fiche possède sa vraie carte
+  // de détails/description. Un short_description seul reste sans enrichissement.
+  const canInferFromExplicitCopy = Boolean(detailsPanel &&
+    document.getElementById('k-modal-long-description')?.hidden === false);
   const specGroups = vm.specificationGroups.length
-    ? vm.specificationGroups : explicitLegacySpecificationGroups(detail);
+    ? vm.specificationGroups
+    : (canInferFromExplicitCopy ? explicitLegacySpecificationGroups(detail) : []);
   appendEnrichedSpecifications(container, specGroups);
   appendEnrichedBulletBlock(container, { heading: CONTENT_LABELS.materials, items: vm.materials, variant: 'materials' });
   appendEnrichedBulletBlock(container, { heading: CONTENT_LABELS.care, items: vm.care, variant: 'care' });
