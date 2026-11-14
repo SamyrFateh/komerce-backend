@@ -31,8 +31,8 @@ function fixtureProduct(detail) {
   };
 }
 
-async function openWithFourCartLines(page) {
-  const detail = buildEnrichedFixture();
+async function openWithFourCartLines(page, customDetail = null) {
+  const detail = customDetail || buildEnrichedFixture();
   // Le rail unique est volontairement sans supplément visible.
   detail.delivery_options = [{
     code: 'SEA_STANDARD', label: 'Livraison standard',
@@ -186,8 +186,77 @@ for (const width of SIZES) {
     expect(hierarchy.suggestionsTop).toBeGreaterThan(hierarchy.panelTop);
     expect(hierarchy.mainOverflow).toBe('auto');
     expect(hierarchy.brandVisible).toBe(true);
+    // La capture CM a révélé une galerie de ~810px avec photo ~390px,
+    // donc 250-350px de vide avant la carte. Ce ratio doit rester borné.
+    const fidelity = await page.evaluate(() => {
+      const q = selector => document.querySelector(selector);
+      const rect = e => e?.getBoundingClientRect();
+      const gallery = rect(q('#k-modal .k-modal-img-wrap'));
+      const carousel = rect(q('#k-modal .k-modal-carousel'));
+      const buybox = rect(q('#k-modal .k-modal-right-rail'));
+      const panel = rect(q('#k-modal-long-details'));
+      return {
+        emptyMediaTail: gallery.height - carousel.height,
+        mediaHeight: gallery.height,
+        panelGap: panel.top - Math.max(gallery.bottom, buybox.bottom),
+        brandCount: document.querySelectorAll('#k-modal .k-modal-brand').length,
+        cartIconDisplay: getComputedStyle(q('#k-modal .k-modal-cart-btn')).display,
+        longDescriptionClamped: Boolean(q('#k-modal-long-description .k-modal-enriched-read-more')),
+      };
+    });
+    expect(fidelity.emptyMediaTail).toBeLessThanOrEqual(35);
+    expect(fidelity.mediaHeight).toBeLessThanOrEqual(670);
+    expect(fidelity.panelGap).toBeGreaterThanOrEqual(-2);
+    expect(fidelity.panelGap).toBeLessThanOrEqual(65);
+    expect(fidelity.brandCount).toBe(1);
+    expect(fidelity.cartIconDisplay).toBe('none');
+    expect(fidelity.longDescriptionClamped).toBe(false);
+    fs.writeFileSync(path.join(OUT, 'fidelity-' + width + '.json'), JSON.stringify(fidelity, null, 2));
+    await page.locator('#k-modal .k-modal-main').evaluate(el => { el.scrollTop = 420; });
+    await page.screenshot({
+      path: path.join(OUT, 'pdp-below-hero-' + width + '.png'),
+      animations: 'disabled',
+    });
   });
 }
+
+test('PDP desktop CM : fiche historique sans content.specifications', async ({ page }) => {
+  await page.setViewportSize({ width: 1650, height: 900 });
+  const detail = buildEnrichedFixture();
+  detail.content = null;
+  detail.product.description =
+    'Débardeur de sport à coupe ample et dos fendu. ' +
+    'Matière : tissu lycra, composition 100 % fibre de cupro. ' +
+    'Coloris proposés : bleu saphir, noir, caramel, camel. ' +
+    'Tailles : S, M, L, XL. Les tailles asiatiques taillent plus petit. ' +
+    'Contenu : 1 débardeur.';
+  detail.option_axes[0].values = ['Gris', 'Noir', 'Beige', 'Camel']
+    .map(value => ({ value, thumbnail_url: null }));
+  await openWithFourCartLines(page, detail);
+  const panel = page.locator('#k-modal-long-details');
+  await expect(panel.locator('.k-modal-enriched-block--specs')).toContainText('Tailles');
+  await expect(panel.locator('.k-modal-enriched-block--specs')).toContainText('Contenu');
+  await expect(panel.locator('.k-modal-enriched-block--specs')).toContainText('Coupe');
+  await expect(panel.locator('.k-modal-enriched-block--specs')).toContainText('Dos');
+  await expect(page.locator('#k-modal-long-description .k-modal-enriched-read-more')).toHaveCount(0);
+  const swatches = await page.locator('#k-modal .k-vg-skus .k-sku--color').evaluateAll(els =>
+    els.map(el => {
+      const style = getComputedStyle(el);
+      const rect = el.getBoundingClientRect();
+      return { width: rect.width, height: rect.height, radius: style.borderRadius };
+    })
+  );
+  expect(swatches.length).toBe(4);
+  swatches.forEach(swatch => {
+    expect(swatch.width).toBeLessThanOrEqual(44);
+    expect(Math.abs(swatch.width - swatch.height)).toBeLessThanOrEqual(2);
+    expect(parseFloat(swatch.radius)).toBeGreaterThanOrEqual(swatch.width / 2);
+  });
+  fs.mkdirSync(OUT, { recursive: true });
+  await page.screenshot({
+    path: path.join(OUT, 'pdp-cm-legacy-1650.png'), animations: 'disabled',
+  });
+});
 
 test('marché KM — devis maritime interne non exposé sur le détail public réel', async ({ request }) => {
   test.skip(!process.env.BASE_URL, 'Contrôle du serveur réel réservé à la campagne staging');
