@@ -64,20 +64,21 @@ describeE2E('E2E-P2-UNSOLD — auto_unsold() + v_unsold_pipeline contre schéma 
   let marketId;
 
   /** Insère une commande dans un état donné, avec available_at daté à `daysAgo` jours. */
-  async function seedOrder({ label, daysAgo, alreadyUnsold = false, totalKmf = 8000 }) {
+  async function seedOrder({ label, daysAgo, alreadyUnsold = false, totalKmf = 8000, paymentStatus = 'paid' }) {
     const id = uuid();
     orderIds.push(id);
     await db.query(
       `INSERT INTO orders (
          id, reference, user_id, relais_id, market_id, total_kmf, payment_mode, payment_status,
          status, available_at, unsold_at, unsold_price_kmf
-       ) VALUES ($1, $2, $3, $4, $5, $6, 'cash_relais', 'paid', 'available',
+       ) VALUES ($1, $2, $3, $4, $5, $6, 'cash_relais', $10, 'available',
                  NOW() - ($7 || ' days')::interval, $8, $9)`,
       [
         id, `E2E-UNSOLD-${tag(label)}`, buyerId, relaisId, marketId, totalKmf,
         daysAgo,
         alreadyUnsold ? new Date() : null,
         alreadyUnsold ? Math.round(totalKmf * 0.75) : null,
+        paymentStatus,
       ]
     );
     return id;
@@ -145,8 +146,8 @@ describeE2E('E2E-P2-UNSOLD — auto_unsold() + v_unsold_pipeline contre schéma 
   });
 
   it("1 — FRONTIÈRE 14 JOURS : J-13 intact, J-15 basculé avec remise 75% exacte", async () => {
-    const tooRecent = await seedOrder({ label: 'j13', daysAgo: 13, totalKmf: 8000 });
-    const overdue = await seedOrder({ label: 'j15', daysAgo: 15, totalKmf: 8000 });
+    const tooRecent = await seedOrder({ label: 'j13', daysAgo: 13, totalKmf: 8000, paymentStatus: 'pending' });
+    const overdue = await seedOrder({ label: 'j15', daysAgo: 15, totalKmf: 8000, paymentStatus: 'pending' });
 
     await db.query('SELECT auto_unsold()');
 
@@ -159,7 +160,7 @@ describeE2E('E2E-P2-UNSOLD — auto_unsold() + v_unsold_pipeline contre schéma 
   });
 
   it("2 — IDEMPOTENCE : une commande déjà basculée n'est pas retouchée par un second scan", async () => {
-    const orderId = await seedOrder({ label: 'idem', daysAgo: 30, totalKmf: 8000 });
+    const orderId = await seedOrder({ label: 'idem', daysAgo: 30, totalKmf: 8000, paymentStatus: 'pending' });
 
     await db.query('SELECT auto_unsold()');
     const afterFirst = await orderState(orderId);
@@ -174,7 +175,7 @@ describeE2E('E2E-P2-UNSOLD — auto_unsold() + v_unsold_pipeline contre schéma 
   });
 
   it('3 — v_unsold_pipeline calcule remise_pct et jours_en_stock à partir des vraies lignes', async () => {
-    const orderId = await seedOrder({ label: 'view', daysAgo: 20, alreadyUnsold: true, totalKmf: 10000 });
+    const orderId = await seedOrder({ label: 'view', daysAgo: 20, alreadyUnsold: true, totalKmf: 10000, paymentStatus: 'pending' });
     await db.query(
       `INSERT INTO unsold_items (order_id, product_name, original_price_kmf, unsold_price_kmf)
        VALUES ($1, 'E2E Produit Vue', 10000, 7500)`,
@@ -208,36 +209,19 @@ describeE2E('E2E-P2-UNSOLD — auto_unsold() + v_unsold_pipeline contre schéma 
     const state = await orderState(orderId);
     expect(state.unsold_at).toBeNull();
     expect(await unsoldRowsForOrder(orderId)).toHaveLength(0);
+    // La fonction SQL historique ne peut pas contourner la garde de commande.
+    await expect(db.query('SELECT auto_unsold()')).rejects.toThrow(/UNSOLD_PAID_ORDER_PROTECTED/);
   });
 
-  it('5 — F3 ancien invendu PAYÉ : ni revente, ni don, ni destruction, ni WhatsApp', async () => {
+  it('5 — F3 SQL refuse la création de toute ligne invendue pour une commande payée', async () => {
     const orderId = await seedOrder({ label: 'legacyPaid', daysAgo: 30, alreadyUnsold: true, totalKmf: 8000 });
-    const { rows: [item] } = await db.query(
+    await expect(db.query(
       `INSERT INTO unsold_items(order_id, product_name, original_price_kmf, unsold_price_kmf)
-       VALUES($1, 'Article client sous garde', 8000, 6000) RETURNING id`,
+       VALUES($1, 'Article client sous garde', 8000, 6000)`,
       [orderId]
-    );
-    for (const status of ['sold_whatsapp', 'sold_reseller', 'donated', 'destroyed']) {
-      const res = await request(app)
-        .post(`/api/unsold/${item.id}/resolve`)
-        .set('Authorization', `Bearer ${adminToken}`).send({ status, resolved_price_kmf: 6000 });
-      expect(res.status).toBe(404);
-    }
-    const patch = await request(app).patch(`/api/unsold/${item.id}`)
-      .set('Authorization', `Bearer ${adminToken}`).send({ channel: 'reseller' });
-    expect(patch.status).toBe(404);
-    const message = await request(app).get(`/api/unsold/${item.id}/whatsapp`)
-      .set('Authorization', `Bearer ${adminToken}`);
-    expect(message.status).toBe(404);
-    const detail = await request(app).get(`/api/unsold/${item.id}`)
-      .set('Authorization', `Bearer ${adminToken}`);
-    expect(detail.status).toBe(404);
+    )).rejects.toThrow(/UNSOLD_PAID_ITEM_PROTECTED/);
 
-    const { rows: [still] } = await db.query(
-      'SELECT status, resolved_at FROM unsold_items WHERE id=$1', [item.id]
-    );
-    expect(still.status).toBe('available');
-    expect(still.resolved_at).toBeNull();
+    expect(await unsoldRowsForOrder(orderId)).toHaveLength(0);
   });
 
 });
