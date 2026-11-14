@@ -13,6 +13,7 @@
   #k-modal .k-modal-product-zone {
     grid-template-columns: minmax(0, 48%) minmax(0, 52%);
     background: var(--page-bg);
+    row-gap: 0;
   }
 
   /* PDP v3.1 — vraie region transactionnelle desktop.
@@ -68,7 +69,12 @@
     width: 100%;
   }
   #k-modal .k-modal-product-zone > .k-modal-long-details {
-    padding: 0 clamp(24px, 2vw, 36px);
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 980px;
+    justify-self: center;
+    padding: 22px clamp(18px, 2.4vw, 34px) 14px;
+    border-top: 1px solid var(--border);
   }
 
   #k-modal .k-modal-product-zone .k-modal-info {
@@ -351,7 +357,40 @@
      modal-shell.css. Grille 4 cols à 1024+, 5 sur large : ce bloc. ── */
   #k-modal-suggestions.k-modal-suggestions--desktop-list {
     background: var(--page-bg);
-    padding: 34px clamp(32px, 5vw, 72px) 56px;
+    padding: 22px clamp(22px, 3vw, 42px) 36px;
+  }
+
+  /* Compact horizontal recommendations from the approved PDP mock. */
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card {
+    display: grid;
+    grid-template-columns: 96px minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
+    min-height: 108px;
+    align-content: center;
+  }
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-img {
+    grid-column: 1;
+    grid-row: 1 / -1;
+    width: 96px;
+    height: 100%;
+    min-height: 108px;
+    aspect-ratio: auto;
+    align-self: stretch;
+  }
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-name {
+    grid-column: 2;
+    grid-row: 1;
+    padding: 10px 10px 2px;
+  }
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-reason {
+    grid-column: 2;
+    grid-row: 2;
+    padding: 0 10px;
+  }
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-bottom {
+    grid-column: 2;
+    grid-row: 3;
+    padding: 2px 10px 10px;
   }
 
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-title {
@@ -370,8 +409,8 @@
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid,
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--same,
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--other {
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 18px;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 285px), 1fr));
+    gap: 12px;
   }
 
   /* D10 — grille suggestions : 5 colonnes dès 1200px.
@@ -383,7 +422,7 @@
     #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid,
     #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--same,
     #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--other {
-      grid-template-columns: repeat(5, 1fr);
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 285px), 1fr));
     }
   }
 }

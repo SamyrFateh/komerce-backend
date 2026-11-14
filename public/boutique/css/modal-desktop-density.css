@@ -15,14 +15,15 @@
   /* Autorité finale de la coque desktop. 22vw borné à 320–390px :
      confortable à 1440, 1700 et 1920, sans surcharge de la modal. */
   #k-modal .k-modal-body {
-    grid-template-columns: minmax(0, 1fr) clamp(320px, 22vw, 390px);
+    grid-template-columns: minmax(0, 1fr) clamp(320px, 20vw, 360px);
   }
 
   /* Proportions globales cibles ~45/33/22, après réserve du side-cart.
      1.326fr / 1fr évite 57% + 43% + gap qui ferait déborder la grille. */
   #k-modal .k-modal-product-zone {
-    grid-template-columns: minmax(0, 1.326fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1.22fr) minmax(0, 1fr);
     gap: 18px;
+    row-gap: 0;
     padding: 16px 18px;
   }
 

@@ -3372,10 +3372,7 @@ html.k-mobile-premium-v1 .k-chip-label {
        simple, haute pour un produit à variantes nombreuses). */
   }
 
-  /* PDP v3.1 : sans contenu enrichi, aucun track vide n'est reserve. */
-  #k-modal .k-modal-product-zone.k-modal-product-zone--no-enriched {
-    grid-template-rows: auto auto auto;
-  }
+  /* Les quatre rangées gardent un ordre stable ; row-gap est nul en desktop. */
 
   /* ── Image : col gauche sticky ───────────────────────────── */
   /* height + overflow : owned par le bloc FIX ci-dessous (même fichier).
@@ -4084,41 +4081,31 @@ html.k-mobile-premium-v1 .k-chip-label {
      exclusivement par le bloc LOT 6D plus bas. */
 }
 
-/* ══════════════════════════════════════════════════════════════════════════
-   LOT 6D — SUGGESTIONS TRANSVERSALES DESKTOP
-
-   row 1 : ProductMedia | ProductBuyBox
-   row 2 : Suggestions pleine largeur
-   row 3 : Description longue
-   row 4 : Contenu enrichi
-
-   Le RightRail ne possède plus les suggestions.
-   Leur présentation interne reste celle du renderer desktop historique.
-   ══════════════════════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════
+   PDP desktop canonique — mock validé (14/11/2026)
+   Rangée 1 : galerie | BuyBox
+   Rangée 2 : description intégrale
+   Rangée 3 : caractéristiques et contenu enrichi
+   Rangée 4 : recommandations toujours en dernier
+   Le DOM et le rendu mobile ne changent pas.
+   ══════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
-  #k-modal .k-modal-product-zone > #k-modal-suggestions {
+  #k-modal .k-modal-product-zone > .k-modal-long-details {
     grid-column: 1 / -1;
     grid-row: 2;
+  }
+  #k-modal .k-modal-product-zone > #k-modal-enriched-content {
+    grid-column: 1 / -1;
+    grid-row: 3;
+  }
+  #k-modal .k-modal-product-zone > #k-modal-suggestions {
+    grid-column: 1 / -1;
+    grid-row: 4;
     align-self: start;
     box-sizing: border-box;
     width: 100%;
     min-width: 0;
     margin-top: 0;
-  }
-
-  #k-modal .k-modal-product-zone.k-modal-product-zone--no-enriched
-  > #k-modal-suggestions {
-    grid-row: 2;
-  }
-
-  #k-modal .k-modal-product-zone > .k-modal-long-details {
-    grid-column: 1 / -1;
-    grid-row: 3;
-  }
-
-  #k-modal .k-modal-product-zone > #k-modal-enriched-content {
-    grid-column: 1 / -1;
-    grid-row: 4;
   }
 }
 
@@ -6262,6 +6249,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   #k-modal .k-modal-product-zone {
     grid-template-columns: minmax(0, 48%) minmax(0, 52%);
     background: var(--page-bg);
+    row-gap: 0;
   }
 
   /* PDP v3.1 — vraie region transactionnelle desktop.
@@ -6317,7 +6305,12 @@ html.k-mobile-premium-v1 .k-chip-label {
     width: 100%;
   }
   #k-modal .k-modal-product-zone > .k-modal-long-details {
-    padding: 0 clamp(24px, 2vw, 36px);
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 980px;
+    justify-self: center;
+    padding: 22px clamp(18px, 2.4vw, 34px) 14px;
+    border-top: 1px solid var(--border);
   }
 
   #k-modal .k-modal-product-zone .k-modal-info {
@@ -6600,7 +6593,40 @@ html.k-mobile-premium-v1 .k-chip-label {
      modal-shell.css. Grille 4 cols à 1024+, 5 sur large : ce bloc. ── */
   #k-modal-suggestions.k-modal-suggestions--desktop-list {
     background: var(--page-bg);
-    padding: 34px clamp(32px, 5vw, 72px) 56px;
+    padding: 22px clamp(22px, 3vw, 42px) 36px;
+  }
+
+  /* Compact horizontal recommendations from the approved PDP mock. */
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card {
+    display: grid;
+    grid-template-columns: 96px minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
+    min-height: 108px;
+    align-content: center;
+  }
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-img {
+    grid-column: 1;
+    grid-row: 1 / -1;
+    width: 96px;
+    height: 100%;
+    min-height: 108px;
+    aspect-ratio: auto;
+    align-self: stretch;
+  }
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-name {
+    grid-column: 2;
+    grid-row: 1;
+    padding: 10px 10px 2px;
+  }
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-reason {
+    grid-column: 2;
+    grid-row: 2;
+    padding: 0 10px;
+  }
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-bottom {
+    grid-column: 2;
+    grid-row: 3;
+    padding: 2px 10px 10px;
   }
 
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-title {
@@ -6619,8 +6645,8 @@ html.k-mobile-premium-v1 .k-chip-label {
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid,
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--same,
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--other {
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 18px;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 285px), 1fr));
+    gap: 12px;
   }
 
   /* D10 — grille suggestions : 5 colonnes dès 1200px.
@@ -6632,7 +6658,7 @@ html.k-mobile-premium-v1 .k-chip-label {
     #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid,
     #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--same,
     #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--other {
-      grid-template-columns: repeat(5, 1fr);
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 285px), 1fr));
     }
   }
 }
@@ -6917,14 +6943,15 @@ html.k-mobile-premium-v1 .k-chip-label {
   /* Autorité finale de la coque desktop. 22vw borné à 320–390px :
      confortable à 1440, 1700 et 1920, sans surcharge de la modal. */
   #k-modal .k-modal-body {
-    grid-template-columns: minmax(0, 1fr) clamp(320px, 22vw, 390px);
+    grid-template-columns: minmax(0, 1fr) clamp(320px, 20vw, 360px);
   }
 
   /* Proportions globales cibles ~45/33/22, après réserve du side-cart.
      1.326fr / 1fr évite 57% + 43% + gap qui ferait déborder la grille. */
   #k-modal .k-modal-product-zone {
-    grid-template-columns: minmax(0, 1.326fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1.22fr) minmax(0, 1fr);
     gap: 18px;
+    row-gap: 0;
     padding: 16px 18px;
   }
 

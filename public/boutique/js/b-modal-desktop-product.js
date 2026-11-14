@@ -603,6 +603,7 @@ function renderLongDescription(detail) {
      hero dès qu'elle existe, AVEC OU SANS variantes. La BuyBox ne conserve que
      la short_description (renderIdentity). Aucun fallback vers short_description
      ici, aucune troncature fabriquée à partir de la description. */
+  const longPanel = container.closest('.k-modal-long-details');
   const description =
     typeof detail?.product?.description === 'string'
       ? detail.product.description.trim()
@@ -610,14 +611,16 @@ function renderLongDescription(detail) {
 
   if (!description) {
     container.hidden = true;
+    if (longPanel) longPanel.hidden = !document.getElementById('k-modal-payment')?.hasChildNodes();
     return;
   }
 
   container.hidden = false;
+  if (longPanel) longPanel.hidden = false;
   appendEnrichedTextBlock(container, {
     heading: 'Description',
     text: description,
-    offerReadMore: shouldOfferReadMore(description),
+    offerReadMore: false, // Texte intégral sous la galerie et la BuyBox.
   });
 }
 

@@ -142,7 +142,7 @@ for (const width of SIZES) {
     expect(evidence.gallery).not.toBeNull();
     expect(evidence.buybox).not.toBeNull();
     console.log('PDP_GEOMETRY_EVIDENCE', JSON.stringify(evidence));
-    expect(evidence.side.width).toBeGreaterThanOrEqual(width === 1440 ? 310 : width === 1700 ? 365 : 385);
+    expect(evidence.side.width).toBeGreaterThanOrEqual(320);
     expect(evidence.overflowCount, JSON.stringify(evidence.overflow)).toBe(0);
     expect(evidence.documentOverflowX).toBeLessThanOrEqual(2);
     const ratio = {
@@ -157,6 +157,40 @@ for (const width of SIZES) {
     expect(ratio.side).toBeGreaterThan(.18);
     expect(ratio.side).toBeLessThan(.26);
     expect(evidence.transportText).not.toContain('26 KMF');
+    // Géométrie et ordre du mock validé, dans le VRAI navigateur Chromium.
+    const composition = await page.evaluate(async () => {
+      const { state } = await import('/boutique/js/b-store.js');
+      const q = selector => document.querySelector(selector);
+      const gallery = q('#k-modal .k-modal-img-wrap').getBoundingClientRect();
+      const buybox = q('#k-modal .k-modal-right-rail').getBoundingClientRect();
+      return {
+        mediaShare: gallery.width / (gallery.width + buybox.width),
+        description: q('#k-modal-long-description').textContent.trim(),
+        descriptionHidden: q('#k-modal-long-description').hidden,
+        rowDescription: getComputedStyle(q('#k-modal-long-details')).gridRowStart,
+        rowDetails: getComputedStyle(q('#k-modal-enriched-content')).gridRowStart,
+        rowRecommendations: getComputedStyle(q('#k-modal-suggestions')).gridRowStart,
+        selectedOptions: state.modalSelection?.selected_options || {},
+      };
+    });
+    expect(composition.mediaShare).toBeGreaterThan(.53);
+    expect(composition.mediaShare).toBeLessThan(.57);
+    expect(evidence.side.width).toBeGreaterThanOrEqual(320);
+    expect(evidence.side.width).toBeLessThanOrEqual(361);
+    expect(composition.description).toContain('Chaussure de football haute performance');
+    expect(composition.descriptionHidden).toBe(false);
+    expect(composition.rowDescription).toBe('2');
+    expect(composition.rowDetails).toBe('3');
+    expect(composition.rowRecommendations).toBe('4');
+    expect(Object.keys(composition.selectedOptions)).toHaveLength(0);
+    await page.evaluate(() => {
+      const main = document.querySelector('#k-modal .k-modal-main');
+      main.scrollTop = main.scrollHeight;
+    });
+    await page.screenshot({
+      path: path.join(OUT, 'pdp-below-hero-' + width + '.png'),
+      animations: 'disabled',
+    });
   });
 }
 
