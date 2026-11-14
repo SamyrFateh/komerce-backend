@@ -6997,15 +6997,30 @@ html.k-mobile-premium-v1 .k-chip-label {
   }
 
   #k-modal .k-modal-fav-btn {
-    position: static;
     flex: 0 0 40px;
     width: 40px;
     height: 40px;
     margin: 0;
   }
 
+  /* Sur mobile le bouton favori existant est replacé DANS le média par
+     b-modal-product-detail-bootstrap.js : aucun clone, aucun faux coeur.
+     Le positionnement n'affecte pas la PDP desktop. */
+  #k-modal .k-modal-img-wrap > .k-modal-fav-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border-radius: 50%;
+    background: var(--surface-sand-94);
+    border: 1px solid var(--border-text-10);
+    z-index: 5;
+  }
+
   #k-modal .k-modal-info h2 {
-    font-size: 16px;
+    font-size: 18px;
     line-height: 1.2;
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -7143,7 +7158,7 @@ html.k-mobile-premium-v1 .k-chip-label {
      36vh single) rendait la hauteur du hero dépendante du mode galerie
      plutôt que d'un ratio stable — Golden Elite (multi-image) produisait un
      cadre visiblement plus haut qu'une fixture SVG single-image, à contenu
-     équivalent. Remplacé par un ratio 4:3 compact, identique
+     équivalent. Remplacé par un ratio 16:9 compact, identique
      quel que soit gallery-mode ou has-variants : la hauteur ne dépend plus
      que de la largeur du wrapper, donc cohérente entre produits.
 
@@ -7158,7 +7173,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   #k-modal .k-modal-img-wrap[data-gallery-mode="multiple"],
   #k-modal .k-modal-img-wrap[data-gallery-mode="single"] {
     width: 100%;
-    aspect-ratio: 4 / 3;
+    aspect-ratio: 16 / 9;
     height: auto;
     min-height: 150px;
     max-height: 62vh;
@@ -7183,14 +7198,14 @@ html.k-mobile-premium-v1 .k-chip-label {
 
   /* ── P3-fix : Hero compact pour produits avec variantes ─────────────────
      k-modal--has-variants est posé par renderMobileProductDetail(). Avec le
-     ratio 4:3 (plus compact que l'ancien 48vh), le hero libère déjà plus
+     ratio 16:9 (plus compact que l'ancien 48vh), le hero libère déjà plus
      d'espace vertical pour les chips Taille qu'avant — pas de surcharge
      supplémentaire nécessaire ici. Règle conservée à titre explicite pour
      ne pas dépendre implicitement du fallback ci-dessus si le contrat
      évolue. */
   #k-modal.k-modal--has-variants .k-modal-img-wrap,
   #k-modal.k-modal--has-variants .k-modal-img-wrap[data-gallery-mode="multiple"] {
-    aspect-ratio: 4 / 3;
+    aspect-ratio: 16 / 9;
     height: auto;
     min-height: 150px;
     max-height: 62vh;
@@ -7596,6 +7611,16 @@ html.k-mobile-premium-v1 .k-chip-label {
     margin: 12px 0 0;
   }
 
+  .k-mdm-details-title {
+    margin: 0;
+    padding: 14px 14px 2px;
+    color: var(--text);
+    font-size: 19px;
+    line-height: 1.2;
+    font-weight: 700;
+    letter-spacing: -.02em;
+  }
+
   /* ── MDM-7 : Description section ───────────────────────────── */
 
   .k-mdm-desc-section {
@@ -7604,8 +7629,8 @@ html.k-mobile-premium-v1 .k-chip-label {
   }
 
   .k-mdm-section-heading {
-    font-size: 13px;
-    font-weight: 500;
+    font-size: 14px;
+    font-weight: 700;
     color: var(--text);
     margin: 0 0 6px;
   }
@@ -7623,8 +7648,8 @@ html.k-mobile-premium-v1 .k-chip-label {
   }
 
   .k-mdm-desc-text {
-    font-size: 12px;
-    line-height: 1.5;
+    font-size: 13px;
+    line-height: 1.55;
     color: var(--text-muted);
     display: -webkit-box;
     -webkit-line-clamp: 3;
