@@ -19598,6 +19598,13 @@
       {
         "feature": "refunds",
         "category": "services",
+        "declared": "services/stripe-refund-authority.js",
+        "resolvedPath": "services/stripe-refund-authority.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "refunds",
+        "category": "services",
         "declared": "services/sav-ledger-refund.js",
         "resolvedPath": "services/sav-ledger-refund.js",
         "status": "resolved-in-technical-graph"
@@ -19670,6 +19677,20 @@
         "category": "tests",
         "declared": "tests/unit/paypal-refund-authority.test.js",
         "resolvedPath": "tests/unit/paypal-refund-authority.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "refunds",
+        "category": "tests",
+        "declared": "tests/unit/stripe-refund-authority.test.js",
+        "resolvedPath": "tests/unit/stripe-refund-authority.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "refunds",
+        "category": "tests",
+        "declared": "tests/e2e-api/refunds.stripe-business-intent-concurrency.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/refunds.stripe-business-intent-concurrency.e2e.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -41704,6 +41725,14 @@
                 "targetFile": "services/refund-service.js"
               },
               {
+                "sourceFileId": "services/parcel-operations.js",
+                "targetFile": "services/stripe-refund-authority.js"
+              },
+              {
+                "sourceFileId": "tests/unit/parcel-operations.test.js",
+                "targetFile": "services/stripe-refund-authority.js"
+              },
+              {
                 "sourceFileId": "tests/unit/parcel-operations.test.js",
                 "targetFile": "services/refund-service.js"
               }
@@ -44498,6 +44527,10 @@
                 "targetFile": "services/notification-service.js"
               },
               {
+                "sourceFileId": "routes/orders/cancel.js",
+                "targetFile": "utils/alerts.js"
+              },
+              {
                 "sourceFileId": "routes/order-api-v2.js",
                 "targetFile": "services/notification-service.js"
               },
@@ -44508,6 +44541,10 @@
               {
                 "sourceFileId": "tests/unit/order-post-commit-hooks.test.js",
                 "targetFile": "services/notification-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/orders-cancel-route.test.js",
+                "targetFile": "utils/alerts.js"
               },
               {
                 "sourceFileId": "tests/unit/orders-cancel-route.test.js",
@@ -44812,6 +44849,10 @@
                 "targetFile": "services/refund-service.js"
               },
               {
+                "sourceFileId": "routes/orders/cancel.js",
+                "targetFile": "services/stripe-refund-authority.js"
+              },
+              {
                 "sourceFileId": "tests/unit/admin-order-refund.test.js",
                 "targetFile": "services/refund-service.js"
               },
@@ -44822,6 +44863,10 @@
               {
                 "sourceFileId": "tests/unit/orders-cancel-route.test.js",
                 "targetFile": "services/refund-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/orders-cancel-route.test.js",
+                "targetFile": "services/stripe-refund-authority.js"
               }
             ]
           },
@@ -47826,6 +47871,10 @@
                 "targetFile": "services/documents/refund-receipt.js"
               },
               {
+                "sourceFileId": "services/stripe-refund-authority.js",
+                "targetFile": "services/documents/refund-receipt.js"
+              },
+              {
                 "sourceFileId": "services/sav-ledger-refund.js",
                 "targetFile": "services/documents/refund-receipt.js"
               },
@@ -47835,6 +47884,10 @@
               },
               {
                 "sourceFileId": "tests/unit/paypal-refund-authority.test.js",
+                "targetFile": "services/documents/refund-receipt.js"
+              },
+              {
+                "sourceFileId": "tests/unit/stripe-refund-authority.test.js",
                 "targetFile": "services/documents/refund-receipt.js"
               },
               {
@@ -47898,12 +47951,24 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "services/stripe-refund-authority.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/stripe-refund-authority.js",
+                "targetFile": "utils/logger.js"
+              },
+              {
                 "sourceFileId": "services/refund-intent-reconciliation.js",
                 "targetFile": "db.js"
               },
               {
                 "sourceFileId": "tests/unit/refund-service.test.js",
                 "targetFile": "tests/integration/test-harness/mock-db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/stripe-refund-authority.test.js",
+                "targetFile": "db.js"
               }
             ]
           }
@@ -47954,7 +48019,15 @@
                 "targetFile": "utils/alerts.js"
               },
               {
+                "sourceFileId": "services/stripe-refund-authority.js",
+                "targetFile": "utils/alerts.js"
+              },
+              {
                 "sourceFileId": "tests/unit/paypal-refund-authority.test.js",
+                "targetFile": "utils/alerts.js"
+              },
+              {
+                "sourceFileId": "tests/unit/stripe-refund-authority.test.js",
                 "targetFile": "utils/alerts.js"
               }
             ]
@@ -47986,6 +48059,14 @@
                 "targetFile": "services/order-status-machine.js"
               },
               {
+                "sourceFileId": "services/stripe-refund-authority.js",
+                "targetFile": "services/payment-service.js"
+              },
+              {
+                "sourceFileId": "services/stripe-refund-authority.js",
+                "targetFile": "services/order-status-machine.js"
+              },
+              {
                 "sourceFileId": "tests/e2e-api/refunds.no-double-application.e2e.test.js",
                 "targetFile": "services/order-status-machine.js"
               },
@@ -48003,6 +48084,14 @@
               },
               {
                 "sourceFileId": "tests/unit/paypal-refund-authority.test.js",
+                "targetFile": "services/order-status-machine.js"
+              },
+              {
+                "sourceFileId": "tests/unit/stripe-refund-authority.test.js",
+                "targetFile": "services/payment-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/stripe-refund-authority.test.js",
                 "targetFile": "services/order-status-machine.js"
               }
             ]
@@ -49763,7 +49852,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2334
+        "filesObserved": 2337
       },
       "boutique": {
         "filesObserved": 216,
