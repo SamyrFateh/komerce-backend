@@ -1588,6 +1588,67 @@
   #k-cart-surface-switch.k-cart-tabs {
     --k-side-cart-bar-h: 72px;
   }
+
+  /* Protéger le bord droit sans sacrifier la lisibilité des lignes. */
+  #k-modal .k-modal-cart-slot {
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  /* Sur le grand desktop, la réserve générale du catalogue (260–296px)
+     ne doit jamais rétrécir le panier reparenté dans sa propre piste.
+     La grille #k-modal .k-modal-body détermine seule sa largeur. */
+  #k-modal .k-side-cart--in-modal {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  #k-modal .k-side-cart--in-modal .k-sc-items {
+    padding-inline: 16px;
+  }
+
+  #k-modal .k-side-cart--in-modal .k-sc-header {
+    padding: 12px 16px 16px;
+    min-width: 0;
+  }
+
+  #k-modal .k-side-cart--in-modal .k-sc-item {
+    min-width: 0;
+    gap: 11px;
+  }
+
+  #k-modal .k-side-cart--in-modal .k-sc-item-info {
+    min-width: 0;
+  }
+
+  #k-modal .k-side-cart--in-modal .k-sc-item-name {
+    -webkit-line-clamp: 2;
+  }
+
+  #k-modal .k-side-cart--in-modal .k-sc-item-meta {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 5px 8px;
+    min-width: 0;
+  }
+
+  #k-modal .k-side-cart--in-modal .k-sc-item-actions {
+    margin-left: auto;
+    max-width: 100%;
+  }
+
+  #k-modal .k-side-cart--in-modal .k-sc-subtotal-row {
+    flex-wrap: wrap;
+    gap: 5px 8px;
+  }
+
+  #k-modal .k-side-cart--in-modal .k-sc-subtotal-amount {
+    max-width: 100%;
+    overflow-wrap: normal;
+    white-space: nowrap;
+  }
 }
 
 

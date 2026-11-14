@@ -65,6 +65,26 @@ describe('Mobile Money amount contract', () => {
     expect(mobileMoney.providerContractMatches(tx, { amount: 13280, currency: 'EUR' })).toEqual({ ok: false, reason: 'currency_mismatch' });
   });
 
+  test.each([
+    [{ currency: 'XAF' }, 'amount_missing'],
+    [{ amount: 13280 }, 'currency_missing'],
+  ])('refuse un succès sans preuve complète du prestataire', (proof, reason) => {
+    const tx = { amount_minor: 13280, minor_unit: 0, currency: 'XAF' };
+    expect(mobileMoney.providerContractMatches(tx, { status: 'succeeded', ...proof }))
+      .toEqual({ ok: false, reason });
+  });
+
+  test('le contrat MTN sandbox exige une preuve au départ et au retour', () => {
+    const tx = {
+      provider: 'mtn_momo', amount_minor: 13280, minor_unit: 0, currency: 'XAF',
+      provider_payload: { provider: { sandbox_transport: true } },
+    };
+    const proof = { status: 'succeeded', safePayload: { sandbox_transport: true } };
+    expect(mobileMoney.providerContractMatches(tx, proof)).toEqual({ ok: true });
+    expect(mobileMoney.providerContractMatches({ ...tx, provider_payload: {} }, proof))
+      .toEqual({ ok: false, reason: 'amount_missing' });
+  });
+
   test('absence montant/devise dans un status provider ne fabrique pas de mismatch', () => {
     const tx = { amount_minor: 13280, minor_unit: 0, currency: 'XAF' };
     expect(mobileMoney.providerContractMatches(tx, {})).toEqual({ ok: true });
@@ -212,6 +232,25 @@ describe('S5 Mobile Money ordering and replay', () => {
     expect(result.reconciled).toBe(true);
     expect(require('../../services/order-payment-confirmation').confirmPaymentCycle).not.toHaveBeenCalled();
     expect(client.query).toHaveBeenCalledWith('COMMIT');
+  });
+
+  test('une nouvelle capture sur une commande déjà payée déclenche une alerte dans la transaction', async () => {
+    const tx = { ...terminalTx, status: 'pending', payment_status: 'paid' };
+    mockDb.query.mockImplementationOnce(() => q([tx]))
+      .mockImplementationOnce(() => q([{ ...tx, status: 'succeeded' }]));
+    mockAdapter.getStatus.mockResolvedValueOnce({ status: 'succeeded', amount: 13334, currency: 'XAF' });
+    const client = { query: jest.fn().mockResolvedValue({ rows: [] }), release: jest.fn() };
+    client.query.mockImplementationOnce(() => q([])).mockImplementationOnce(() => q([tx]));
+    mockDb.getClient.mockResolvedValueOnce(client);
+
+    await mobileMoney.reconcileMobileMoneyTransaction(tx.id);
+
+    expect(require('../../utils/alerts').createAlert).toHaveBeenCalledWith(client, expect.objectContaining({
+      type: 'mobile_money_capture_reconciliation_required',
+      entityId: tx.order_id,
+    }));
+    expect(require('../../services/order-payment-confirmation').confirmPaymentCycle).not.toHaveBeenCalled();
+    expect(client.query).toHaveBeenLastCalledWith('COMMIT');
   });
 
   test('already succeeded transaction is idempotent and does not call provider again', async () => {

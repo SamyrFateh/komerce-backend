@@ -52,7 +52,7 @@ describe('P3-A.2 refundCancelledOrder → payment-service', () => {
       id: 'order-1',
       reference: 'KM-1',
       status: 'cancelled',
-      payment_status: 'pending',
+      payment_status: 'paid', // vraie capture préexistante obligatoire avant remboursement (FA-07)
       payment_mode: 'stripe_eur',
       stripe_payment_id: 'pi_123',
       total_kmf: 12000,

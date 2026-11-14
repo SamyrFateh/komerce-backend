@@ -1411,6 +1411,9 @@ const KNOWN_RESPONSES = {
   '/api/pickup/regenerate/{orderId}': {
     post: { fields: ['success','message','code','order_ref'], source: 'route-read' }
   },
+  '/api/pickup/customer-regenerate/{orderId}': {
+    post: { fields: ['success','order_ref','code','remaining_today'], source: 'route-read' }
+  },
   '/api/pickup/status/{orderId}': {
     get: { fields: ['order_ref','status','payment_status','total_kmf','client_name','tracking'], source: 'route-read' }
   },

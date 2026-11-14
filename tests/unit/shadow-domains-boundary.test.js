@@ -99,11 +99,13 @@ describe('Shadow boundary — local-stock & providers-services (Vague 1 + Vague 
   // eux-mêmes, ils ajoutent des points d'intégration gouvernés de plus.
   const ALLOWED_WAVE3_ROUTE_CONSUMERS = [
     'routes/market-delegation-local-offer.js',
+    'routes/market-local-stock.js', // W3 : déclaration de réception (writer HTTP, via le service délégué)
     'routes/market-delegation-provider.js',
   ];
   const ALLOWED_WAVE3_SERVICE_CONSUMERS = [
     'services/local-stock-checkout-preview.js',
     'services/market-delegation-local-offer-service.js',
+    'services/market-delegation-local-stock-service.js', // W3 : réutilise setLocalStock/setLocalStockExposure, pas de second writer
     'services/market-delegation-provider-service.js',
     'services/order-checkout-service.js',
     'services/providers-inquiry-service.js',

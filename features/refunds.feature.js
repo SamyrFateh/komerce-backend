@@ -56,14 +56,13 @@ module.exports = {
 
   // ── Perimetre fichiers ───────────────────────────────────────────────────
   files: {
-    utils: [
-      'utils/refunds.js',
-    ],
+    utils: [],
     services: [
       'services/refund-service.js',
       'services/item-refund-reservation-service.js',
       'services/item-refund-psp-orchestrator.js',
       'services/refund-intent-ledger.js',
+      'services/paypal-refund-authority.js',
       'services/sav-ledger-refund.js',
       'services/refund-evidence-verifier.js',
       'services/refund-intent-reconciliation.js',
@@ -83,6 +82,7 @@ module.exports = {
       'tests/unit/item-refund-psp-orchestrator.test.js',
       'tests/e2e-api/refunds.item-partial-physical.e2e.test.js',
       'tests/unit/refund-intent-ledger.test.js',
+      'tests/unit/paypal-refund-authority.test.js',
       'tests/unit/sav-ledger-refund.test.js',
       'tests/unit/refund-evidence-verifier.test.js',
       'tests/unit/refund-intent-reconciliation.test.js',
@@ -91,7 +91,6 @@ module.exports = {
       'tests/e2e-api/refunds.intent-provider-reference-unique.e2e.test.js',
       'tests/e2e-api/refunds.durable-intent-ledger.e2e.test.js',
       'tests/unit/refund-stripe-txn-known-risk.test.js',
-      'tests/unit/refunds-util.test.js',
       'tests/unit/refund-receipt-html.test.js',
     ],
   },
@@ -141,6 +140,7 @@ module.exports = {
       'payments (capture PSP, intention durable et réconciliation du remboursement en EUR)',
       'wallet (credit)',
       'documents (reçu)',
+      'notifications (alerte critique de rapprochement de remboursement PSP incertain)',
       'economic-engine (A8 : rafraîchissement transactionnel de la marge réelle canonique via canonical-margin-writer ; no-op si la règle CANONICAL_MARGIN_WRITER_ENABLED vaut 0)',
     ],
   },
@@ -151,6 +151,8 @@ module.exports = {
   // ── Invariants propres ───────────────────────────────────────────────────
   invariants: [
     { statement: 'RC-9 deux connexions PostgreSQL reelles serialisent reserve et claim sans double intention ni double execution', test: 'tests/e2e-api/refunds.intents-physical-concurrency.e2e.test.js' },
+    { statement: 'FA-05/21 F3 : PayPal admin reserve et claim une intention durable avant POST, rejeu/timeout inconnus sont sans nouveau POST, settlement partiel confirme sans clore la commande, activation sandbox explicite',
+      test: 'tests/unit/paypal-refund-authority.test.js' },
     { statement: 'RC-9 : reference externe unique par fournisseur et intention, prouvee en PostgreSQL',
       test: 'tests/e2e-api/refunds.intent-provider-reference-unique.e2e.test.js' },
     { statement: 'RC-5/RC-9 : le rapprochement PSP relit la preuve hors transaction, verrouille ensuite commande puis intention, interdit changement de marché/capture/montant, ne marque confirmed que si preuve complète et ne modifie ni refunds ni orders',
@@ -165,6 +167,7 @@ module.exports = {
       test: 'tests/unit/refund-intent-ledger.test.js' },
     { statement: 'RC-5 — toute sortie PSP requiert une intention de remboursement committee avant appel externe ; le vrai service et le faux Stripe documentent provisoirement cette rupture sans prétendre la corriger',
       test: 'tests/unit/refund-stripe-txn-known-risk.test.js' },
+    { statement: 'FA-04 : un POST Stripe sans verdict (timeout, panne, erreur) ou une capture absente bloque la mutation colis et ne crédite jamais le wallet par repli', test: 'tests/unit/refund-service.test.js' },
     'un remboursement n\'est jamais applique deux fois pour le meme evenement source',
     "tout refund externe ou crédit compensatoire est idempotent par événement source ; un rejeu ne déclenche jamais un second remboursement",
   ],

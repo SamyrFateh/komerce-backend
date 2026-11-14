@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db, services/notification-service.js, services/order-item-availability-service.js, services/order-status-machine.js, services/parcel-guards.js, services/parcel-service.js, services/parcel-transition-guard.js, services/refund-service.js, utils/logger.js, utils/reference.js, utils/rules.js
+ * @depends       db, services/notification-service.js, services/order-item-availability-service.js, services/order-status-machine.js, services/parcel-guards.js, services/parcel-service.js, services/parcel-transition-guard.js, services/refund-service.js, utils/alerts.js, utils/logger.js, utils/reference.js, utils/rules.js
  * @used-by       routes/orders/parcels.js
  * @db-read       order_items, orders, parcel_items, parcels, products, relais, users
  * @db-write      parcel_items, parcels
@@ -52,6 +52,7 @@ const { getRule, getRuleNumber }        = require('../utils/rules');
 const { generateParcelRef }             = require('../utils/reference');
 const { processRefundWithFallback }     = require('./refund-service');
 const { computeRefundEurForOrder }      = require('./order-fx-snapshot');
+const { createAlert }                   = require('../utils/alerts');
 const { PARCEL_SMS }                    = require('./parcel-service');
 const { transitionOrderStatus, appendOrderHistoryNote } = require('./order-status-machine');
 const {
@@ -585,6 +586,25 @@ async function cancelBackorder(orderId, body, user) {
 
   } catch (err) {
     await client.query('ROLLBACK');
+    // FA-04 : ne jamais perdre la visibilité de l'ambiguïté PSP après rollback.
+    // L'alerte est un signal à rapprocher, PAS une preuve de remboursement ni
+    // une nouvelle intention financière. Elle doit être écrite hors transaction.
+    if (err.code === 'REFUND_STRIPE_OUTCOME_UNKNOWN' ||
+        err.code === 'REFUND_STRIPE_CAPTURE_MISSING') {
+      try {
+        await createAlert(db, {
+          type: 'refund_provider_reconciliation_required',
+          entityType: 'order',
+          entityId: orderId,
+          severity: 'high',
+          title: 'Remboursement Stripe à rapprocher — annulation colis bloquée',
+          description: `order_id=${orderId} parcel_id=${parcelId} provider_key=${err.providerRequestKey || 'missing'} reason=${err.code}`,
+        });
+      } catch (alertErr) {
+        log.error({ err: alertErr, order_id: orderId, parcel_id: parcelId },
+          '[REFUND] Alerte de rapprochement Stripe non persistée');
+      }
+    }
     throw err;
   } finally {
     client.release();

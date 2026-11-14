@@ -18,6 +18,20 @@ describe('order-checkout-service explicit relay boundary', () => {
     expect(source).toContain('relais_id obligatoire');
   });
 
+  test('FA-03 : le schéma HTTP refuse un PaymentIntent choisi par le client', () => {
+    const schema = require('../../validators').orders.create.body.extract('stripe_payment_intent');
+    expect(schema.validate('pi_autre_commande').error).toBeDefined();
+    expect(schema.validate(undefined).error).toBeUndefined();
+  });
+
+  test('FA-03 : le service direct refuse avant DB et ne persiste jamais le PaymentIntent client', () => {
+    expect(source).toContain("Object.prototype.hasOwnProperty.call(body || {}, 'stripe_payment_intent')");
+    expect(source).toContain("code: 'STRIPE_INTENT_CLIENT_FORBIDDEN'");
+    expect(source).toContain('paymentMode: payment_mode, stripePaymentIntent: null');
+    expect(source.indexOf("Object.prototype.hasOwnProperty.call(body || {}, 'stripe_payment_intent')"))
+      .toBeLessThan(source.indexOf('const client = await db.getClient()'));
+  });
+
   test('le service ne choisit plus un relais actif arbitraire', () => {
     expect(source).not.toMatch(/SELECT \* FROM relais WHERE is_active = TRUE ORDER BY id LIMIT 1/);
   });

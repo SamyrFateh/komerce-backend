@@ -380,6 +380,20 @@ function mountHtmlRoutes(app, rootDir) {
   app.get('/boutique', (req, res) => {
     sendHtml(res, path.join(publicDir, 'boutique', 'index.html'));
   });
+
+  // Entrées publiques pays : une seule boutique, catalogue/prix/relais résolus
+  // par le contexte URL côté client puis par les API marché côté serveur.
+  // L'alias /boutique et la racine restent compatibles (marché KM par défaut).
+  app.get(/^\/(KM|CM|CG|DJ|YT)\/?$/i, (req, res) => {
+    const code = req.params[0].toUpperCase();
+    const canonicalPath = '/' + code;
+    if (req.path !== canonicalPath) {
+      const queryAt = req.originalUrl.indexOf('?');
+      const query = queryAt < 0 ? '' : req.originalUrl.slice(queryAt);
+      return res.redirect(301, canonicalPath + query);
+    }
+    sendHtml(res, path.join(publicDir, 'boutique', 'index.html'));
+  });
   app.get('/login.html', (req, res) => {
     sendHtml(res, path.join(publicDir, 'login.html'));
   });

@@ -28,11 +28,12 @@ module.exports = {
   perimeter: {
     in: [
       'solde wallet et historique de credit/debit',
-      'application/retrait du wallet sur une commande (orders.wallet_applied_kmf)',
+      'application du wallet atomique au checkout (orders.wallet_applied_kmf) et restitution par annulation métier uniquement ; routes legacy apply/remove refusées en 409 (FA-01/02/15)',
     ],
     out: [
       'paiement carte/PayPal (feature payments)',
       'remboursement initiateur (feature refunds, qui credite le wallet)',
+      'avoir admin depuis commande via endpoint legacy (FA-06 : route maintenue en 409, remboursement via refunds)',
       'programme de fidelite et ses recompenses (feature loyalty, scindee de wallet-loyalty au Lot O1)',
       'emission du recu wallet (services/documents/wallet-receipt.js, @domain documents — consommateur en aval, pas ownership wallet)',
     ],
@@ -110,6 +111,7 @@ module.exports = {
       'POST /api/wallet/admin/reverse-lot',
     ],
     consumes: [
+      "market (2026-11-13 #3927 — conversion KMF↔devise du marché via la seule autorité fx-authority/currency_parities ; preuve: services/wallet-service.js -> services/fx-authority.js)",
       'orders (persistence via order-mutation-service ? LOT11)',
       'platform-ops (monitoring/exploitation transverse observé dans le code)',
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',

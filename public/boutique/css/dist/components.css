@@ -4344,7 +4344,7 @@ html.k-mobile-premium-v1 .k-chip-label {
    Plus lisible que des dots quand il y en a beaucoup. */
 .k-modal-counter {
   display: none;
-  position: absolute; bottom: 10px; right: 10px; z-index: 3;
+  position: absolute; bottom: var(--k-counter-bottom, 10px); right: var(--k-counter-right, 10px); z-index: 3;
   padding: 3px 10px; min-width: 38px; text-align: center;
   background: var(--overlay-dark-md); color: var(--white);
   font-size: 11px; font-weight: 500; letter-spacing: .02em;
@@ -5004,7 +5004,7 @@ html.k-mobile-premium-v1 .k-chip-label {
     display: flex;
     flex-wrap: nowrap;
     justify-content: flex-start;
-    gap: clamp(14px, 6vw, 24px);
+    gap: clamp(10px, 4vw, 18px);
     padding: 5px 0;
     border-top: 0.5px solid var(--sand-dark);
     margin-top: 6px;
@@ -5013,7 +5013,7 @@ html.k-mobile-premium-v1 .k-chip-label {
     display: flex;
     align-items: center;
     gap: 4px;
-    font-size: 10px;
+    font-size: 11px;
     line-height: 1.2;
     font-weight: 500;
     color: var(--text-muted-dark);
@@ -6914,16 +6914,16 @@ html.k-mobile-premium-v1 .k-chip-label {
    ═══════════════════════════════════════════════════════════════ */
 
 @media (min-width: 1200px) {
-  /* Le side-cart reste lisible mais rend quelques pixels au produit. */
+  /* Autorité finale de la coque desktop. 22vw borné à 320–390px :
+     confortable à 1440, 1700 et 1920, sans surcharge de la modal. */
   #k-modal .k-modal-body {
-    grid-template-columns: minmax(0, 1fr) 288px;
+    grid-template-columns: minmax(0, 1fr) clamp(320px, 22vw, 390px);
   }
 
-  /* Réduire le déséquilibre "grand vide média / buybox étroite".
-     La piste droite gagne assez de présence pour les grands écrans sans
-     introduire un breakpoint supplémentaire hors contrat. */
+  /* Proportions globales cibles ~45/33/22, après réserve du side-cart.
+     1.326fr / 1fr évite 57% + 43% + gap qui ferait déborder la grille. */
   #k-modal .k-modal-product-zone {
-    grid-template-columns: minmax(0, 1fr) minmax(460px, 520px);
+    grid-template-columns: minmax(0, 1.326fr) minmax(0, 1fr);
     gap: 18px;
     padding: 16px 18px;
   }
@@ -6987,16 +6987,20 @@ html.k-mobile-premium-v1 .k-chip-label {
     position: relative;
   }
 
+  /* Favori aligné sur la première ligne du titre, sans flottement
+     dans la zone prix/référence quand le titre prend deux lignes. */
   #k-modal .k-modal-name-row {
-    display: block;
-    padding-right: 42px;
-    gap: 0;
+    display: flex;
+    align-items: flex-start;
+    padding-right: 0;
+    gap: 8px;
   }
 
   #k-modal .k-modal-fav-btn {
-    position: absolute;
-    top: 5px;
-    right: 14px;
+    position: static;
+    flex: 0 0 40px;
+    width: 40px;
+    height: 40px;
     margin: 0;
   }
 
@@ -7023,7 +7027,7 @@ html.k-mobile-premium-v1 .k-chip-label {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: calc(100% - 42px);
+    max-width: 100%;
   }
 
   /* Price row: tight, no overflow issues */
@@ -7113,10 +7117,16 @@ html.k-mobile-premium-v1 .k-chip-label {
   /* Réassurance = une information, pas un bandeau. Le stock est déjà porté
      par la pill accolée au prix : on conserve uniquement paiement + retrait,
      sur une ligne respirante de 34px maximum dans le flux transactionnel. */
+  /* Une seule ligne d'informations, ancrée à gauche sur titre/prix.
+     Ne pas étirer son trait et son espacement sur toute la largeur. */
   #k-modal .k-modal-trust {
+    align-self: flex-start;
+    width: max-content;
+    max-width: 100%;
     min-height: 34px;
-    border-bottom: 0.5px solid var(--sand-dark);
-    overflow: hidden;
+    justify-content: flex-start;
+    border-bottom: 0;
+    overflow: visible;
   }
 
   #k-modal .k-modal-trust-item {
@@ -7162,6 +7172,14 @@ html.k-mobile-premium-v1 .k-chip-label {
      indépendant de la source de hauteur du wrapper. Le scale est plafonné
      et conserve une marge de sécurité (0.88) côté JS : jamais de coupe des
      bords utiles du produit. object-position reste centré. */
+
+  /* Petit préfixe explicite : 2/3 en haut = produits, Photo 3/5 = média.
+     Le compteur reste dans l'image, l'affichage desktop est inchangé. */
+  #k-modal .k-modal-img-wrap > .k-modal-counter::before {
+    content: 'Photo ';
+    font-size: 10px;
+    opacity: .85;
+  }
 
   /* ── P3-fix : Hero compact pour produits avec variantes ─────────────────
      k-modal--has-variants est posé par renderMobileProductDetail(). Avec le
@@ -7247,7 +7265,7 @@ html.k-mobile-premium-v1 .k-chip-label {
      Ne dépend jamais d'un contenu enfant pour obtenir sa hauteur. */
   #k-modal .k-sku--color {
     flex: 0 0 auto;
-    width: 42px;
+    width: 54px;
     height: auto;
     aspect-ratio: auto;
     padding: 2px 2px 3px;
@@ -7287,13 +7305,18 @@ html.k-mobile-premium-v1 .k-chip-label {
      (inchangé), ceci est un ajout purement visuel pour distinguer des
      teintes proches sans dépendre de la seule couleur. */
   #k-modal .k-sku-name {
-    display: block;
-    font-size: 9px;
-    line-height: 1.1;
-    max-width: 42px;
-    white-space: nowrap;
+    display: -webkit-box;
+    font-size: 10px;
+    line-height: 1.15;
+    width: 100%;
+    max-width: 54px;
+    min-height: 23px;
+    white-space: normal;
     overflow: hidden;
-    text-overflow: ellipsis;
+    overflow-wrap: anywhere;
+    text-overflow: clip;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
     text-align: center;
     color: var(--text-muted);
   }
@@ -15277,6 +15300,7 @@ body.k-id-scroll-lock { overflow: hidden; }
 .ck-delivery-line[hidden] { display: none; }
 
 /* Checkout boutique — polish visuel sur les tokens existants, sans nouveau thème. */
+.ck-mobile-relay-heading { display: none; }
 .k-order-overlay.open .ck-checkout-primary,
 .k-order-overlay.open .ck-checkout-aside {
   border-color: rgba(31,48,36,.10);
@@ -15547,8 +15571,7 @@ body.k-id-scroll-lock { overflow: hidden; }
 }
 
 @media (max-width: 899px) {
-  .k-order-overlay.open .ck-checkout-primary,
-  .k-order-overlay.open .ck-checkout-aside { border-radius: 18px; }
+  /* Rayon mobile fixé ci-dessous, sans déclaration intermédiaire concurrente. */
   .ck-recap-subtotal {
     margin-top: 9px;
     gap: 10px;
@@ -15556,15 +15579,208 @@ body.k-id-scroll-lock { overflow: hidden; }
   }
   .ck-recap-subtotal strong { font-size: 1.16rem; }
   .ck-checkout-trust { font-size: .6rem; }
-  .k-order-overlay.open .ck-pay-chip { min-height: 62px; padding: 9px 10px; }
-  .k-order-overlay.open .ck-pay-chip .ck-chip-icon {
-    flex-basis: 31px;
-    width: 31px;
-    height: 31px;
-    font-size: 1.05rem;
-  }
+  .k-order-overlay.open .ck-pay-chip .ck-chip-icon { font-size: 1.05rem; }
   .k-order-overlay.open .ck-pay-chip--active::after { top: 5px; right: 5px; }
-  .k-order-overlay.open .ck-checkout-aside .ck-checkout-heading { padding: 22px 18px 25px; }
+  /* Checkout mobile compact V2 : les sections existantes restent les seuls
+     composants de sélection/identité/relais/paiement. Aucun circuit parallèle. */
+  .k-order-overlay.open .k-order-body--checkout {
+    padding: 9px 12px 15px;
+  }
+  .k-order-overlay.open .ck-checkout-primary {
+    margin: 0 0 10px;
+    padding: 10px 12px 12px;
+    border-radius: 19px;
+    box-shadow: var(--shadow-sm);
+  }
+  .k-order-overlay.open .ck-recap-step { margin: 0; }
+  .k-order-overlay.open .ck-recap-toggle {
+    min-height: 46px;
+    padding: 7px 3px;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .k-order-overlay.open .ck-recap-toggle-label {
+    font-size: .94rem;
+    font-weight: 900;
+  }
+  .k-order-overlay.open .ck-recap-count { font-weight: 750; }
+  .k-order-overlay.open .ck-recap-origin-line { flex-wrap: wrap; gap: 4px 8px; }
+  .k-order-overlay.open .ck-recap-origin-title,
+  .k-order-overlay.open .ck-recap-toggle-sub { font-size: .65rem; }
+  .k-order-overlay.open .ck-recap-toggle-sub {
+    margin-left: 0;
+    white-space: normal;
+  }
+  .k-order-overlay.open .ck-recap-toggle-chevron {
+    font-size: 1.32rem;
+    color: var(--checkout-accent-deep);
+  }
+  .k-order-overlay.open .ck-recap-content {
+    padding: 3px 0 0;
+    border-top: 1px solid var(--border-text-08);
+  }
+  .k-order-overlay.open .ck-recap-fulfillment-groups {
+    gap: 5px;
+    padding: 6px 0 2px;
+  }
+  .k-order-overlay.open .ck-recap-fulfillment-heading { padding: 4px 0 0; }
+  .k-order-overlay.open .ck-recap-fulfillment-note { display: none; }
+  .k-order-overlay.open .ck-recap-step .ck-recap-item {
+    grid-template-columns: 17px 44px minmax(0,1fr) auto;
+    min-height: 58px;
+    gap: 8px;
+    padding: 8px 0;
+  }
+  .k-order-overlay.open .ck-recap-item-img,
+  .k-order-overlay.open .ck-recap-item-img--empty {
+    width: 44px;
+    height: 44px;
+    border-radius: 11px;
+  }
+  .k-order-overlay.open .ck-recap-item-info { gap: 1px; }
+  .k-order-overlay.open .ck-recap-item-name {
+    display: block;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-size: .77rem;
+    font-weight: 800;
+  }
+  .k-order-overlay.open .ck-recap-item-qty { font-size: .67rem; }
+  .k-order-overlay.open .ck-recap-item-price { font-size: .76rem; }
+  .k-order-overlay.open .ck-recap-subtotal {
+    margin: 7px 0 0;
+    padding: 12px 13px;
+    border-color: var(--commerce-yellow-hover);
+    border-radius: 14px;
+    background: linear-gradient(110deg,var(--cream-amber-bg),var(--cream-warm));
+    box-shadow: none;
+  }
+  .k-order-overlay.open .ck-recap-subtotal::before {
+    top: 10px;
+    bottom: 10px;
+    background: var(--commerce-yellow-hover);
+  }
+  .k-order-overlay.open .ck-recap-subtotal-caption { font-size: .76rem; }
+  .k-order-overlay.open .ck-recap-subtotal-caption small {
+    margin-top: 3px;
+    font-size: .64rem;
+    line-height: 1.25;
+  }
+  .k-order-overlay.open .ck-recap-subtotal strong {
+    color: var(--text);
+    font-size: 1.18rem;
+  }
+  .k-order-overlay.open .ck-checkout-trust {
+    margin: 8px 0 0;
+    padding: 9px 4px;
+    border-radius: 12px;
+    gap: 4px;
+    font-size: .59rem;
+  }
+  .k-order-overlay.open .ck-checkout-aside {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  .k-order-overlay.open .ck-checkout-aside .ck-checkout-heading { display: none; }
+  .k-order-overlay.open .ck-identity-summary { margin: 0 0 8px; }
+  .k-order-overlay.open .k-ck-guest-hint {
+    margin: 0 0 9px;
+    padding: 10px 12px;
+    min-height: 52px;
+    box-shadow: none;
+  }
+  .k-order-overlay.open .ck-mobile-relay-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    margin: 2px 3px 6px;
+  }
+  .k-order-overlay.open .ck-mobile-relay-heading strong {
+    color: var(--text);
+    font-size: .86rem;
+    font-weight: 900;
+  }
+  .k-order-overlay.open .ck-mobile-relay-heading span {
+    font-size: .67rem;
+    color: var(--text-muted);
+  }
+  .k-order-overlay.open .ck-relais-section { margin: 0 0 8px; }
+  .k-order-overlay.open .ck-relais-section .ck-step-header {
+    min-height: 60px;
+    padding: 10px 12px;
+    border: 1px solid var(--border-sage-35);
+    border-radius: 14px;
+    background: var(--sage-bg-pale);
+    box-shadow: var(--shadow-sm);
+  }
+  .k-order-overlay.open .ck-relais-section .ck-step-header-text::before { display: none; }
+  .k-order-overlay.open .ck-relais-section .ck-step-header-icon {
+    background: var(--sage-bg);
+  }
+  .k-order-overlay.open .ck-relais-section .ck-step-header-label { font-size: .83rem; }
+  .k-order-overlay.open .ck-relais-loading,
+  .k-order-overlay.open .ck-relais-empty,
+  .k-order-overlay.open .ck-relais-error {
+    min-height: 54px;
+    padding: 10px 12px;
+  }
+  .k-order-overlay.open .ck-payment-section {
+    margin: 10px 0 6px;
+    padding: 10px 2px 0;
+    border-top: 1px solid var(--border-text-08);
+  }
+  .k-order-overlay.open #ck-payment-summary .ck-section-title {
+    padding: 0 0 6px;
+    font-size: .9rem;
+  }
+  .k-order-overlay.open .ck-pay-grid { gap: 8px; margin-bottom: 9px; }
+  .k-order-overlay.open .ck-pay-chip {
+    min-height: 54px;
+    padding: 9px 10px;
+    border-radius: 12px;
+    box-shadow: none;
+  }
+  .k-order-overlay.open .ck-pay-chip .ck-chip-icon {
+    width: 29px;
+    height: 29px;
+    flex-basis: 29px;
+  }
+  .k-order-overlay.open .k-wallet-section { margin-bottom: 8px; }
+  .k-order-overlay.open .ck-secure-pickup-notice--footer {
+    margin: 3px 0 0;
+    padding: 6px 0 0;
+    font-size: .7rem;
+  }
+  .k-order-overlay.open .ck-final-total {
+    margin: 7px 2px 0;
+    padding: 11px 2px 4px;
+    align-items: center;
+  }
+  .k-order-overlay.open .ck-final-total span { font-size: .76rem; }
+  .k-order-overlay.open .ck-final-total strong { font-size: 1.1rem; }
+  .k-order-overlay.open .ck-confirm-btn:not(:disabled) {
+    min-height: 54px;
+    background: var(--checkout-accent-deep);
+    color: var(--white);
+    box-shadow: var(--shadow-md);
+  }
+  .k-order-overlay.open .ck-confirm-btn {
+    width: calc(100% - 24px);
+    margin: 7px 12px calc(10px + env(safe-area-inset-bottom));
+    padding: 9px 12px;
+    border-radius: 14px;
+  }
+  .k-order-overlay.open .ck-confirm-main { font-size: .85rem; }
+  .k-order-overlay.open .ck-confirm-btn:not(:disabled) .ck-confirm-subtext {
+    color: var(--white);
+  }
 }
 
 

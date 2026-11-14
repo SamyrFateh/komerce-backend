@@ -21,6 +21,7 @@
  */
 
 'use strict';
+// W2 : la garde est désormais factorisée dans utils/non-prod-phone-guard.js (comportement inchangé).
 
 // Mock global fetch pour isoler les appels réseau
 global.fetch = jest.fn();

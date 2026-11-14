@@ -232,13 +232,19 @@ export default function () {
     group('Commande', () => {
       const phone = `700${1000 + Math.floor(Math.random() * 8999)}`;
 
-      const res = apiPost('/api/orders', {
+      // FA-22 : Idempotency-Key obligatoire ; L3/N06 : total accepté issu de l'aperçu serveur.
+      const orderBody = {
         items: [{ product_id: productId, quantity: 1 }],
         payment_mode: 'cash_relais',
         relais_id: relaisId,
         recipient_name: `Load Test ${__VU}`,
         recipient_phone: phone,
-      });
+      };
+      const quote = apiPost('/api/orders/preview', orderBody);
+      let quoted = null;
+      try { quoted = quote.json('total_kmf'); } catch (_) { quoted = null; }
+      const res = apiPost('/api/orders', { ...orderBody, expected_total_kmf: quoted },
+        { headers: { ...headers, 'Idempotency-Key': `lt-${__VU}-${__ITER}-${Date.now()}` } });
 
       orderDuration.add(res.timings.duration);
 

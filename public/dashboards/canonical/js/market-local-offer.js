@@ -6,7 +6,7 @@
  * @criticality   medium
  * @inputs        authenticated user, server admin context, market-delegation local-offer read model
  * @outputs       local offer exposure controls (services + offres physiques)
- * @depends       /api/admin/dashboard/context, /api/market-delegation/markets/:marketCode/local-offer/services, /api/market-delegation/markets/:marketCode/local-offer/physical-offers
+ * @depends       /api/admin/dashboard/context, /api/markets/:marketCode/local-stock, /api/market-delegation/markets/:marketCode/local-offer/services, /api/market-delegation/markets/:marketCode/local-offer/physical-offers
  * @used-by       /dashboards/canonical/market-autonomy.html
  * @db-read       none
  * @db-write      none
@@ -57,6 +57,7 @@
       credentials: 'include',
       headers: {
         Accept: 'application/json',
+        ...(options.headers || {}),
         ...(options.body == null ? {} : { 'Content-Type': 'application/json' }),
       },
       body: options.body == null ? undefined : JSON.stringify(options.body),
@@ -120,6 +121,81 @@
       card.appendChild(action);
     }
     return card;
+  }
+
+  // Stock local : réception déclarée par le responsable pays (pool du marché). 403 = section absente.
+  async function appendLocalStock(section, marketCode, refresh) {
+    const base = `/api/markets/${encodeURIComponent(marketCode)}/local-stock`;
+    let data;
+    try {
+      data = await request(base);
+    } catch (error) {
+      if (error.status !== 403) section.appendChild(el('div', 'kmc-team-empty', `${error.message}${error.code ? ` · ${error.code}` : ''}`));
+      return;
+    }
+    section.appendChild(el('h3', 'kmc-section-title', 'Stock local'));
+    section.appendChild(el('p', 'kmc-workspace-note', 'Déclarer une réception : la quantité s’ajoute au stock du marché. Le relais, le justificatif et la quantité sont tracés.'));
+    const list = el('div', 'kmc-team-list');
+    if (!(data.stock || []).length) list.appendChild(el('div', 'kmc-team-empty', 'Aucun stock local déclaré pour ce Market ID.'));
+    (data.stock || []).forEach((row) => {
+      const card = el('article', 'kmc-team-member');
+      const head = el('div', 'kmc-team-member-head');
+      const copy = el('div', 'kmc-team-member-copy');
+      copy.appendChild(el('strong', '', row.name || row.product_id));
+      copy.appendChild(el('small', '', `${row.qty_physical} en stock`));
+      head.appendChild(copy);
+      head.appendChild(pill(row.commercial_exposure === 'ENABLED' ? 'Exposé' : 'Masqué', row.commercial_exposure === 'ENABLED'));
+      card.appendChild(head);
+      const next = row.commercial_exposure === 'ENABLED' ? 'DISABLED' : 'ENABLED';
+      const btn = el('button', 'kmc-workspace-action is-secondary', next === 'ENABLED' ? 'Exposer' : 'Masquer');
+      btn.type = 'button';
+      btn.addEventListener('click', async () => {
+        btn.disabled = true;
+        try {
+          await request(`${base}/${encodeURIComponent(row.product_id)}/exposure`, { method: 'PUT', body: { commercial_exposure: next } });
+          await refresh();
+        } catch (error) { global.alert(`${error.message}${error.code ? ` · ${error.code}` : ''}`); btn.disabled = false; }
+      });
+      card.appendChild(btn);
+      list.appendChild(card);
+    });
+    section.appendChild(list);
+
+    const form = el('form', 'kmc-team-invite');
+    const field = (name, placeholder, type = 'text') => {
+      const input = el('input');
+      input.name = name; input.placeholder = placeholder; input.type = type; input.required = name !== 'note';
+      form.appendChild(input);
+      return input;
+    };
+    const product = field('product_id', 'ID produit');
+    const relais = el('select');
+    relais.name = 'relais_id'; relais.required = true;
+    (data.relais || []).forEach((r) => { const o = el('option', '', r.name || r.id); o.value = r.id; relais.appendChild(o); });
+    form.appendChild(relais);
+    const qty = field('qty_received', 'Quantité reçue', 'number');
+    qty.min = '1'; qty.step = '1';
+    const proof = field('proof_ref', 'Justificatif (réf. bon de livraison)');
+    const note = field('note', 'Note (facultatif)');
+    const submit = el('button', 'kmc-workspace-action', 'Déclarer la réception');
+    submit.type = 'submit';
+    form.appendChild(submit);
+    // Une clé par tentative de saisie : un double clic rejoue la même réception sans doublon.
+    let key = global.crypto && global.crypto.randomUUID ? global.crypto.randomUUID() : String(Date.now()) + Math.random();
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      submit.disabled = true;
+      try {
+        await request(`${base}/receipts`, {
+          method: 'POST',
+          headers: { 'Idempotency-Key': key },
+          body: { product_id: product.value.trim(), relais_id: relais.value, qty_received: Number(qty.value), proof_ref: proof.value.trim(), note: note.value.trim() || undefined },
+        });
+        key = null;
+        await refresh();
+      } catch (error) { global.alert(`${error.message}${error.code ? ` · ${error.code}` : ''}`); submit.disabled = false; }
+    });
+    section.appendChild(form);
   }
 
   async function mountLocalOffer() {
@@ -195,6 +271,7 @@
         section.appendChild(el('div', 'kmc-team-empty', `${offersError.message}${offersError.code ? ` · ${offersError.code}` : ''}`));
       }
 
+      await appendLocalStock(section, marketCode, refresh);
       root.appendChild(section);
     } finally {
       mounting = false;

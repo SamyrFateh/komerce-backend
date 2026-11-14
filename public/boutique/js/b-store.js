@@ -78,14 +78,27 @@ function _migrateLegacyCartItem(item) {
 }
 
 /**
+ * Un marché = un panier personnel distinct. KM garde les clés historiques
+ * pour ne perdre aucun panier existant sur / ou /boutique.
+ * Le marché est un contexte d'affichage, jamais une autorisation d'achat.
+ */
+export function cartStorageKeys() {
+  const market = typeof window !== 'undefined' ? window.KomerceMarket?.get?.()?.code : null;
+  const code = typeof market === 'string' && /^[A-Z]{2}$/.test(market) ? market : 'KM';
+  const suffix = code === 'KM' ? '' : '_' + code;
+  return { cart: 'kmrc_cart' + suffix, version: 'kmrc_cart_v' + suffix };
+}
+
+/**
  * Charge le panier depuis localStorage en vérifiant la version.
  * @returns {Array} Tableau d'items panier (peut être vide)
  */
 function _loadCart() {
   try {
-    const v = localStorage.getItem('kmrc_cart_v');
+    const keys = cartStorageKeys();
+    const v = localStorage.getItem(keys.version);
     if (String(v) !== String(CART_VERSION)) return [];
-    const items = JSON.parse(localStorage.getItem('kmrc_cart') || '[]');
+    const items = JSON.parse(localStorage.getItem(keys.cart) || '[]');
     return Array.isArray(items) ? items.map(_migrateLegacyCartItem) : [];
   } catch(e) { return []; }
 }

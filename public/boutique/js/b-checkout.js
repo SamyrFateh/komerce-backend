@@ -1650,6 +1650,11 @@ function _buildRecapItemsBlock(
   if (!Array.isArray(items) || !items.length) return null;
 
   const origin = _checkoutOriginPresentation(source, displayContext);
+  // Une seule source de vérité : la sélection transactionnelle, pas le
+  // nombre de produits du catalogue ni un compteur de panier séparé.
+  const selectedCount = (lines) => lines.reduce((sum, line) =>
+    sum + (line.checkout_included === false ? 0 : Number(line.qty || 1)), 0);
+  const articleCountLabel = (n) => n + ' article' + (n > 1 ? 's' : '');
 
   const wrap = document.createElement('section');
   wrap.className = 'ck-recap-step';
@@ -1663,7 +1668,8 @@ function _buildRecapItemsBlock(
   toggle.setAttribute('aria-controls', 'ck-recap-content');
   toggle.innerHTML =
     '<span class="ck-recap-toggle-text">'
-      + '<span class="ck-recap-toggle-label">Votre commande</span>'
+      + '<span class="ck-recap-toggle-label">Votre commande <span class="ck-recap-count">('
+      + articleCountLabel(selectedCount(items)) + ')</span></span>'
       + '<span class="ck-recap-origin-line">'
         + '<span class="ck-recap-origin-title">' + sanitize(origin.title) + '</span>'
         + (origin.badge
@@ -1687,7 +1693,13 @@ function _buildRecapItemsBlock(
   const appendRow = (target, entry) => {
     const it = entry.item;
     const index = entry.index;
-    const product = it.product || {};
+    // Ligne sans snapshot produit (produit manuel / Fournisseur central) : nom et image restent lus
+    // sur la ligne panier elle-même, jamais perdus.
+    const rawProduct = it.product || {};
+    const product = Object.assign({}, rawProduct, {
+      name: rawProduct.name || it.name || it.product_name || '',
+      image_url: rawProduct.image_url || rawProduct.image || it.image_url || it.image || '',
+    });
     const imgSrc = product.image_url
       ? optimizeImgUrl(product.image_url, 128)
       : '';
@@ -1763,11 +1775,12 @@ function _buildRecapItemsBlock(
       _setCheckoutLineIncluded(index, checkbox.checked);
       row.classList.toggle('is-excluded', !checkbox.checked);
 
+      const selectedItems = _currentCheckoutSelection().items;
       if (toggleSub) {
-        toggleSub.textContent = _checkoutFulfillmentSummaryLabel(
-          _currentCheckoutSelection().items
-        );
+        toggleSub.textContent = _checkoutFulfillmentSummaryLabel(selectedItems);
       }
+      const count = toggle.querySelector('.ck-recap-count');
+      if (count) count.textContent = '(' + articleCountLabel(selectedCount(selectedItems)) + ')';
     });
 
     target.appendChild(row);
@@ -1986,7 +1999,7 @@ export function renderCheckout() {
     articleSubtotal.className = 'ck-recap-subtotal';
     articleSubtotal.innerHTML =
       '<span class="ck-recap-subtotal-caption">Sous-total des articles'
-      + '<small>Indicatif · montant final vérifié avant confirmation</small></span>'
+      + '<small>Livraison incluse · total confirmé avant paiement</small></span>'
       + '<strong id="ck-recap-subtotal-value"></strong>';
     articleSubtotal.querySelector('#ck-recap-subtotal-value').textContent =
       fmt(_checkoutSelectionTotal(_currentCheckoutSelection().items), 'KMF');
@@ -2147,7 +2160,8 @@ export function renderCheckout() {
 
     /* ── 2b. Point relais ── */
     const sRelais = document.createElement('div');
-    sRelais.className = 'ck-section-block';
+    sRelais.className = 'ck-mobile-relay-heading';
+    sRelais.innerHTML = '<strong>Point de retrait</strong><span>Choisissez votre relais</span>';
     checkoutAside.appendChild(sRelais);
     const relaisSection = document.createElement('div');
     relaisSection.id = 'ck-relais-section';

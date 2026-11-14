@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        server_product_market_and_untrusted_simulation
  * @outputs       never_persisted_provisional_floor_preview
- * @depends       services/pricing-floor-forecast-shadow.js
+ * @depends       services/pricing-floor-forecast-shadow.js, utils/currency.js
  * @used-by       routes/admin-pricing-workspace.js
  * @db-read       none
  * @db-write      none
@@ -18,6 +18,7 @@
 'use strict';
 
 const floor = require('./pricing-floor-forecast-shadow');
+const { projectAmount } = require('../utils/currency');
 
 const SCENARIOS = floor.CASES;
 const IMPORT_FIELDS = Object.freeze([
@@ -29,6 +30,12 @@ const IMPORT_FIELDS = Object.freeze([
 const LOCAL_FIELDS = Object.freeze([
   'local_delivery', 'relay_commission', 'payment',
   'payment_pct', 'risk_damage_pct', 'risk_pickup_pct',
+]);
+// Only monetary amounts are projected. Physical quantities and percentages
+// must remain exactly as supplied, never treated as currencies.
+const MONEY_FIELDS = Object.freeze([
+  'supplier_delivery', 'hub_packaging', 'freight', 'lot_fee',
+  'last_mile', 'local_delivery', 'relay_commission', 'payment',
 ]);
 
 function safePositive(value) {
@@ -163,4 +170,80 @@ function preview({ market, product, payload, date = new Date().toISOString().sli
   };
 }
 
-module.exports = { preview, ForecastPreviewError, IMPORT_FIELDS, LOCAL_FIELDS };
+/**
+ * The Atelier accepts monetary hypotheses and candidate selling prices in
+ * the market currency. Pricing calculations remain in their canonical KMF
+ * base. Only the server-resolved market.currency selects the FX pair.
+ * projectAmount delegates to fx-authority (EUR pivot, no invented rates).
+ */
+async function previewForMarket({ market, product, payload, date }) {
+  const currency = String(market?.currency || '').trim().toUpperCase();
+  if (!/^[A-Z]{3}$/.test(currency)) {
+    throw new ForecastPreviewError('Devise du marché indisponible : conversion interdite.');
+  }
+  const original = payload || {};
+  if (currency !== 'KMF' && Object.prototype.hasOwnProperty.call(original, 'candidate_prices_kmf')) {
+    throw new ForecastPreviewError('Prix en KMF fourni pour un marché non-KMF : saisir le prix dans la devise du marché.');
+  }
+  const localPrices = original.candidate_prices_local ??
+    (currency === 'KMF' ? (original.candidate_prices_kmf || []) : []);
+  if (!Array.isArray(localPrices)) {
+    throw new ForecastPreviewError('Prix candidats invalides : liste requise.');
+  }
+  const memo = new Map();
+  async function convertAmount(amount, from, to) {
+    if (amount == null || !Number.isFinite(amount) || from === to) return amount;
+    const key = from + ':' + to + ':' + amount;
+    if (!memo.has(key)) memo.set(key, projectAmount(amount, from, to));
+    return Number(await memo.get(key));
+  }
+  const scenarios = {};
+  for (const name of SCENARIOS) {
+    const entry = original.scenarios?.[name];
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+      scenarios[name] = entry;
+      continue;
+    }
+    const normalized = { ...entry };
+    for (const field of MONEY_FIELDS) {
+      if (Object.prototype.hasOwnProperty.call(entry, field) && validAmount(entry[field])) {
+        normalized[field] = await convertAmount(entry[field], currency, 'KMF');
+      }
+    }
+    scenarios[name] = normalized;
+  }
+  const priceKmf = [];
+  for (const amount of localPrices) {
+    priceKmf.push(safePositive(amount) === null ? amount :
+      await convertAmount(Number(amount), currency, 'KMF'));
+  }
+  const answer = preview({
+    market, product, date,
+    payload: { ...original, scenarios, candidate_prices_kmf: priceKmf },
+  });
+  const result = answer.forecast;
+  const central = result.cases?.central;
+  async function inLocal(amount) {
+    return amount == null ? null : convertAmount(Number(amount), 'KMF', currency);
+  }
+  const displayPrices = [];
+  for (const item of result.prices || []) {
+    displayPrices.push({
+      price: await inLocal(item.price_kmf),
+      contribution: await inLocal(item.contribution_centrale_kmf),
+    });
+  }
+  return {
+    ...answer, market_currency: currency, internal_currency: 'KMF',
+    fx_authority: 'fx-authority',
+    local_display: {
+      plancher_central: await inLocal(result.plancher_central_kmf),
+      plancher_prudent: await inLocal(result.plancher_prudent_kmf),
+      central_n1: await inLocal(central?.n1_kmf),
+      central_n2: await inLocal(central?.n2_fixed_kmf),
+      prices: displayPrices,
+    },
+  };
+}
+
+module.exports = { preview, previewForMarket, ForecastPreviewError, IMPORT_FIELDS, LOCAL_FIELDS, MONEY_FIELDS };

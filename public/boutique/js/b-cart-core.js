@@ -22,7 +22,7 @@
  * Exports : cartQty, cartTotal, saveCart, updateCartBadge, isFav, saveFavs
  */
 
-import { state, CART_VERSION } from './b-store.js';
+import { state, CART_VERSION, cartStorageKeys } from './b-store.js';
 import { bus } from './b-bus.js';
 export { showToast } from './b-utils.js';
 
@@ -62,8 +62,9 @@ export function cartTotal() {
  */
 export function saveCart() {
   try {
-    localStorage.setItem('kmrc_cart', JSON.stringify(state.cart));
-    localStorage.setItem('kmrc_cart_v', String(CART_VERSION));
+    const keys = cartStorageKeys();
+    localStorage.setItem(keys.cart, JSON.stringify(state.cart));
+    localStorage.setItem(keys.version, String(CART_VERSION));
   } catch(e) {}
   updateCartBadge();
 }

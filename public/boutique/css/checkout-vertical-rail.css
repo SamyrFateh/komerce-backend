@@ -1313,6 +1313,7 @@
 .ck-delivery-line[hidden] { display: none; }
 
 /* Checkout boutique — polish visuel sur les tokens existants, sans nouveau thème. */
+.ck-mobile-relay-heading { display: none; }
 .k-order-overlay.open .ck-checkout-primary,
 .k-order-overlay.open .ck-checkout-aside {
   border-color: rgba(31,48,36,.10);
@@ -1583,8 +1584,7 @@
 }
 
 @media (max-width: 899px) {
-  .k-order-overlay.open .ck-checkout-primary,
-  .k-order-overlay.open .ck-checkout-aside { border-radius: 18px; }
+  /* Rayon mobile fixé ci-dessous, sans déclaration intermédiaire concurrente. */
   .ck-recap-subtotal {
     margin-top: 9px;
     gap: 10px;
@@ -1592,13 +1592,206 @@
   }
   .ck-recap-subtotal strong { font-size: 1.16rem; }
   .ck-checkout-trust { font-size: .6rem; }
-  .k-order-overlay.open .ck-pay-chip { min-height: 62px; padding: 9px 10px; }
-  .k-order-overlay.open .ck-pay-chip .ck-chip-icon {
-    flex-basis: 31px;
-    width: 31px;
-    height: 31px;
-    font-size: 1.05rem;
-  }
+  .k-order-overlay.open .ck-pay-chip .ck-chip-icon { font-size: 1.05rem; }
   .k-order-overlay.open .ck-pay-chip--active::after { top: 5px; right: 5px; }
-  .k-order-overlay.open .ck-checkout-aside .ck-checkout-heading { padding: 22px 18px 25px; }
+  /* Checkout mobile compact V2 : les sections existantes restent les seuls
+     composants de sélection/identité/relais/paiement. Aucun circuit parallèle. */
+  .k-order-overlay.open .k-order-body--checkout {
+    padding: 9px 12px 15px;
+  }
+  .k-order-overlay.open .ck-checkout-primary {
+    margin: 0 0 10px;
+    padding: 10px 12px 12px;
+    border-radius: 19px;
+    box-shadow: var(--shadow-sm);
+  }
+  .k-order-overlay.open .ck-recap-step { margin: 0; }
+  .k-order-overlay.open .ck-recap-toggle {
+    min-height: 46px;
+    padding: 7px 3px;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .k-order-overlay.open .ck-recap-toggle-label {
+    font-size: .94rem;
+    font-weight: 900;
+  }
+  .k-order-overlay.open .ck-recap-count { font-weight: 750; }
+  .k-order-overlay.open .ck-recap-origin-line { flex-wrap: wrap; gap: 4px 8px; }
+  .k-order-overlay.open .ck-recap-origin-title,
+  .k-order-overlay.open .ck-recap-toggle-sub { font-size: .65rem; }
+  .k-order-overlay.open .ck-recap-toggle-sub {
+    margin-left: 0;
+    white-space: normal;
+  }
+  .k-order-overlay.open .ck-recap-toggle-chevron {
+    font-size: 1.32rem;
+    color: var(--checkout-accent-deep);
+  }
+  .k-order-overlay.open .ck-recap-content {
+    padding: 3px 0 0;
+    border-top: 1px solid var(--border-text-08);
+  }
+  .k-order-overlay.open .ck-recap-fulfillment-groups {
+    gap: 5px;
+    padding: 6px 0 2px;
+  }
+  .k-order-overlay.open .ck-recap-fulfillment-heading { padding: 4px 0 0; }
+  .k-order-overlay.open .ck-recap-fulfillment-note { display: none; }
+  .k-order-overlay.open .ck-recap-step .ck-recap-item {
+    grid-template-columns: 17px 44px minmax(0,1fr) auto;
+    min-height: 58px;
+    gap: 8px;
+    padding: 8px 0;
+  }
+  .k-order-overlay.open .ck-recap-item-img,
+  .k-order-overlay.open .ck-recap-item-img--empty {
+    width: 44px;
+    height: 44px;
+    border-radius: 11px;
+  }
+  .k-order-overlay.open .ck-recap-item-info { gap: 1px; }
+  .k-order-overlay.open .ck-recap-item-name {
+    display: block;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-size: .77rem;
+    font-weight: 800;
+  }
+  .k-order-overlay.open .ck-recap-item-qty { font-size: .67rem; }
+  .k-order-overlay.open .ck-recap-item-price { font-size: .76rem; }
+  .k-order-overlay.open .ck-recap-subtotal {
+    margin: 7px 0 0;
+    padding: 12px 13px;
+    border-color: var(--commerce-yellow-hover);
+    border-radius: 14px;
+    background: linear-gradient(110deg,var(--cream-amber-bg),var(--cream-warm));
+    box-shadow: none;
+  }
+  .k-order-overlay.open .ck-recap-subtotal::before {
+    top: 10px;
+    bottom: 10px;
+    background: var(--commerce-yellow-hover);
+  }
+  .k-order-overlay.open .ck-recap-subtotal-caption { font-size: .76rem; }
+  .k-order-overlay.open .ck-recap-subtotal-caption small {
+    margin-top: 3px;
+    font-size: .64rem;
+    line-height: 1.25;
+  }
+  .k-order-overlay.open .ck-recap-subtotal strong {
+    color: var(--text);
+    font-size: 1.18rem;
+  }
+  .k-order-overlay.open .ck-checkout-trust {
+    margin: 8px 0 0;
+    padding: 9px 4px;
+    border-radius: 12px;
+    gap: 4px;
+    font-size: .59rem;
+  }
+  .k-order-overlay.open .ck-checkout-aside {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  .k-order-overlay.open .ck-checkout-aside .ck-checkout-heading { display: none; }
+  .k-order-overlay.open .ck-identity-summary { margin: 0 0 8px; }
+  .k-order-overlay.open .k-ck-guest-hint {
+    margin: 0 0 9px;
+    padding: 10px 12px;
+    min-height: 52px;
+    box-shadow: none;
+  }
+  .k-order-overlay.open .ck-mobile-relay-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    margin: 2px 3px 6px;
+  }
+  .k-order-overlay.open .ck-mobile-relay-heading strong {
+    color: var(--text);
+    font-size: .86rem;
+    font-weight: 900;
+  }
+  .k-order-overlay.open .ck-mobile-relay-heading span {
+    font-size: .67rem;
+    color: var(--text-muted);
+  }
+  .k-order-overlay.open .ck-relais-section { margin: 0 0 8px; }
+  .k-order-overlay.open .ck-relais-section .ck-step-header {
+    min-height: 60px;
+    padding: 10px 12px;
+    border: 1px solid var(--border-sage-35);
+    border-radius: 14px;
+    background: var(--sage-bg-pale);
+    box-shadow: var(--shadow-sm);
+  }
+  .k-order-overlay.open .ck-relais-section .ck-step-header-text::before { display: none; }
+  .k-order-overlay.open .ck-relais-section .ck-step-header-icon {
+    background: var(--sage-bg);
+  }
+  .k-order-overlay.open .ck-relais-section .ck-step-header-label { font-size: .83rem; }
+  .k-order-overlay.open .ck-relais-loading,
+  .k-order-overlay.open .ck-relais-empty,
+  .k-order-overlay.open .ck-relais-error {
+    min-height: 54px;
+    padding: 10px 12px;
+  }
+  .k-order-overlay.open .ck-payment-section {
+    margin: 10px 0 6px;
+    padding: 10px 2px 0;
+    border-top: 1px solid var(--border-text-08);
+  }
+  .k-order-overlay.open #ck-payment-summary .ck-section-title {
+    padding: 0 0 6px;
+    font-size: .9rem;
+  }
+  .k-order-overlay.open .ck-pay-grid { gap: 8px; margin-bottom: 9px; }
+  .k-order-overlay.open .ck-pay-chip {
+    min-height: 54px;
+    padding: 9px 10px;
+    border-radius: 12px;
+    box-shadow: none;
+  }
+  .k-order-overlay.open .ck-pay-chip .ck-chip-icon {
+    width: 29px;
+    height: 29px;
+    flex-basis: 29px;
+  }
+  .k-order-overlay.open .k-wallet-section { margin-bottom: 8px; }
+  .k-order-overlay.open .ck-secure-pickup-notice--footer {
+    margin: 3px 0 0;
+    padding: 6px 0 0;
+    font-size: .7rem;
+  }
+  .k-order-overlay.open .ck-final-total {
+    margin: 7px 2px 0;
+    padding: 11px 2px 4px;
+    align-items: center;
+  }
+  .k-order-overlay.open .ck-final-total span { font-size: .76rem; }
+  .k-order-overlay.open .ck-final-total strong { font-size: 1.1rem; }
+  .k-order-overlay.open .ck-confirm-btn:not(:disabled) {
+    min-height: 54px;
+    background: var(--checkout-accent-deep);
+    color: var(--white);
+    box-shadow: var(--shadow-md);
+  }
+  .k-order-overlay.open .ck-confirm-btn {
+    width: calc(100% - 24px);
+    margin: 7px 12px calc(10px + env(safe-area-inset-bottom));
+    padding: 9px 12px;
+    border-radius: 14px;
+  }
+  .k-order-overlay.open .ck-confirm-main { font-size: .85rem; }
+  .k-order-overlay.open .ck-confirm-btn:not(:disabled) .ck-confirm-subtext {
+    color: var(--white);
+  }
 }

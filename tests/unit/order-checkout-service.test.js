@@ -42,6 +42,15 @@ describe('order-checkout-service market lifecycle', () => {
   });
 });
 
+describe('order-checkout-service — wallet dans la devise du marché', () => {
+  test('marché non-KMF : plan de dépense par planWalletSpend (fx-authority), refus 409 si parité absente, KMF inchangé', () => {
+    expect(source).toMatch(/walletService\.planWalletSpend\(client, \{/);
+    expect(source).toMatch(/WALLET_FX_PARITY_UNAVAILABLE/);
+    expect(source).toMatch(/getBalanceInTx\(client, user\.id, 'KMF'\)/);
+    expect(source).toMatch(/walletDebit: walletPlan\.debit/);
+  });
+});
+
 describe('order-checkout-service — relais actif comme destination finale', () => {
   test('relais explicite et marché actif, sans garde de livrabilité documentaire', () => {
     expect(source).toMatch(/SELECT \* FROM relais WHERE id = \$1 AND is_active = TRUE/);

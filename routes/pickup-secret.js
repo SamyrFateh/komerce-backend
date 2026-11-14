@@ -34,6 +34,7 @@
  *   POST /api/pickup/verify/:orderId     — Vérifier un code au retrait (rate-limited)
  *   POST /api/pickup/collect/:orderId    — Marquer comme récupéré (après verify OK)
  *   POST /api/pickup/regenerate/:orderId — Admin : régénérer un code (perte de reçu)
+ *   POST /api/pickup/customer-regenerate/:orderId — Client propriétaire : nouveau code (R1 #3900)
  *
  * Lot 5 — retrait exceptionnel par autorisation nominative (substitution,
  * jamais le moyen normal) :
@@ -53,6 +54,7 @@ const { pickup } = require('../validators');
 const { transitionOrderStatus } = require('../services/order-status-machine');
 const { confirmPickupCashPayment } = require('../services/confirm-pickup-cash-payment');
 const { consumeRevealCodeOnce } = require('../services/pickup-secret-access-service');
+const { customerGenerateNewCode } = require('../services/pickup-secret-customer-rotation-service');
 const log = require('../utils/logger').child({ module: 'pickup-secret' });
 const { buildReceiptHTML, escapeHTML } = require('../utils/pickup-receipt-html');
 // O7.2 (Cycle B) : generatePickupCode/hashCode/generateAndStoreSecret/
@@ -528,6 +530,15 @@ router.get('/reveal-once/:orderId', authenticate, async (req, res, next) => {
       warning:     'Ce code ne s\'affichera qu\'une seule fois. Notez-le ou prenez une capture d\'écran maintenant.',
     });
 
+  } catch (err) { next(err); }
+});
+
+// POST /customer-regenerate/:orderId — #3900 R1 : le propriétaire génère un
+// nouveau code (rotation canonique, affiché une seule fois, quota 5/24 h, audité).
+router.post('/customer-regenerate/:orderId', authenticate, async (req, res, next) => {
+  try {
+    const result = await customerGenerateNewCode({ orderId: req.params.orderId, userId: req.user.id });
+    res.status(result.status).json(result.body);
   } catch (err) { next(err); }
 });
 

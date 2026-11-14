@@ -87,6 +87,7 @@ module.exports = {
     ],
     services: [
       'services/whatsapp-meta.js',
+      'utils/non-prod-phone-guard.js',
       // services/authkey-client.js rehomé depuis auth-identity (O7.1,
       // REHOME_CONSUMER, docs/O7_1_OWNERSHIP_ANALYSIS.md CAS A) — adaptateur
       // externe WhatsApp du fournisseur authkey.io, 100% consommé par

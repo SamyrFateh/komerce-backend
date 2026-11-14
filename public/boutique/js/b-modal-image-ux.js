@@ -86,6 +86,31 @@ function _isEnrichedMobileDetail() {
 //  COMPTEUR 1/N
 // ═══════════════════════════════════════════════════════════════
 
+/**
+ * Place le compteur dans la zone réellement dessinée par object-fit: contain.
+ * Un simple right:10px sur le wrapper 4:3 le laisse hors de la photo
+ * lorsqu'une image portrait est centrée (PDP mobile Samsung/Chromium).
+ * Les dimensions sont recalculées lors du chargement, du swipe et du resize.
+ */
+function _positionCounterOnVisiblePhoto(idx, counterEl) {
+  const wrap = counterEl?.closest('.k-modal-img-wrap');
+  const slide = _getSlides()[idx];
+  if (!wrap || !slide || !slide.naturalWidth || !slide.naturalHeight) {
+    counterEl?.style.removeProperty('--k-counter-right');
+    counterEl?.style.removeProperty('--k-counter-bottom');
+    return;
+  }
+  const { width, height } = wrap.getBoundingClientRect();
+  if (!width || !height) return;
+  const scale = Math.min(width / slide.naturalWidth, height / slide.naturalHeight);
+  const visibleWidth = slide.naturalWidth * scale;
+  const visibleHeight = slide.naturalHeight * scale;
+  const insetRight = Math.max(10, (width - visibleWidth) / 2 + 10);
+  const insetBottom = Math.max(10, (height - visibleHeight) / 2 + 10);
+  counterEl.style.setProperty('--k-counter-right', `${Math.round(insetRight)}px`);
+  counterEl.style.setProperty('--k-counter-bottom', `${Math.round(insetBottom)}px`);
+}
+
 function _refreshCounter(idx) {
   let counterEl = modalZone('.k-modal-counter');
   if (!counterEl) return;
@@ -96,6 +121,7 @@ function _refreshCounter(idx) {
   if (showCounter) {
     counterEl.textContent = (idx + 1) + '\u202f/\u202f' + total;
     counterEl.classList.add('is-visible');
+    _positionCounterOnVisiblePhoto(idx, counterEl);
     let dots = modalZone('.k-modal-dots');
     if (dots) dots.style.display = 'none';
   } else {
@@ -312,6 +338,16 @@ function _setupCarouselSync() {
   bus.on('carousel:changed', function(idx) {
     _refreshCounter(idx);
   });
+  // Les images peuvent terminer leur chargement après l'ouverture du produit.
+  // Capture=true : load ne remonte pas en bubbling depuis un <img>.
+  document.addEventListener('load', function(event) {
+    if (event.target?.matches?.('#k-modal .k-modal-slide')) {
+      _refreshCounter(state.carouselIndex || 0);
+    }
+  }, true);
+  window.addEventListener('resize', function() {
+    _refreshCounter(state.carouselIndex || 0);
+  }, { passive: true });
 }
 
 // ═══════════════════════════════════════════════════════════════

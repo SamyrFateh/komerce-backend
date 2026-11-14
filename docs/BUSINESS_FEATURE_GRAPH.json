@@ -9259,6 +9259,13 @@
       {
         "feature": "economic-engine",
         "category": "tests",
+        "declared": "tests/integration/relay-commission-per-order-postgres.test.js",
+        "resolvedPath": "tests/integration/relay-commission-per-order-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
         "declared": "tests/unit/relay-commission.test.js",
         "resolvedPath": "tests/unit/relay-commission.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -13382,6 +13389,20 @@
       {
         "feature": "logistics",
         "category": "services",
+        "declared": "services/pickup-agent-lockout.js",
+        "resolvedPath": "services/pickup-agent-lockout.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "logistics",
+        "category": "services",
+        "declared": "services/pickup-secret-customer-rotation-service.js",
+        "resolvedPath": "services/pickup-secret-customer-rotation-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "logistics",
+        "category": "services",
         "declared": "services/pickup-secret-access-service.js",
         "resolvedPath": "services/pickup-secret-access-service.js",
         "status": "resolved-in-technical-graph"
@@ -14147,6 +14168,20 @@
         "category": "tests",
         "declared": "tests/unit/pickup-secret-rotation-service.test.js",
         "resolvedPath": "tests/unit/pickup-secret-rotation-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/unit/pickup-agent-lockout.test.js",
+        "resolvedPath": "tests/unit/pickup-agent-lockout.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/unit/pickup-secret-customer-rotation-service.test.js",
+        "resolvedPath": "tests/unit/pickup-secret-customer-rotation-service.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -15006,6 +15041,13 @@
       {
         "feature": "market-autonomy",
         "category": "dash",
+        "declared": "dashboards/canonical/js/market-local-offer.js",
+        "resolvedPath": "public/dashboards/canonical/js/market-local-offer.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "dash",
         "declared": "dashboards/canonical/css/market-cash-control.css",
         "resolvedPath": "public/dashboards/canonical/css/market-cash-control.css",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -15524,6 +15566,13 @@
       {
         "feature": "market-delegation",
         "category": "services",
+        "declared": "services/market-delegation-local-stock-service.js",
+        "resolvedPath": "services/market-delegation-local-stock-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "services",
         "declared": "services/market-delegation-client-case-service.js",
         "resolvedPath": "services/market-delegation-client-case-service.js",
         "status": "resolved-in-technical-graph"
@@ -15603,6 +15652,13 @@
         "category": "routes",
         "declared": "routes/market-delegation-local-offer.js",
         "resolvedPath": "routes/market-delegation-local-offer.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "routes",
+        "declared": "routes/market-local-stock.js",
+        "resolvedPath": "routes/market-local-stock.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -16287,6 +16343,13 @@
       {
         "feature": "notifications",
         "category": "services",
+        "declared": "utils/non-prod-phone-guard.js",
+        "resolvedPath": "utils/non-prod-phone-guard.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "notifications",
+        "category": "services",
         "declared": "services/authkey-client.js",
         "resolvedPath": "services/authkey-client.js",
         "status": "resolved-in-technical-graph"
@@ -16471,7 +16534,7 @@
         "category": "services",
         "declared": "services/order-checkout-idempotency.js",
         "resolvedPath": "services/order-checkout-idempotency.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "orders",
@@ -16562,14 +16625,14 @@
         "category": "services",
         "declared": "services/relay-return-compensation-service.js",
         "resolvedPath": "services/relay-return-compensation-service.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "orders",
         "category": "services",
         "declared": "services/sav-replacement-order.js",
         "resolvedPath": "services/sav-replacement-order.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "orders",
@@ -19485,13 +19548,6 @@
       },
       {
         "feature": "refunds",
-        "category": "utils",
-        "declared": "utils/refunds.js",
-        "resolvedPath": "utils/refunds.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "refunds",
         "category": "services",
         "declared": "services/refund-service.js",
         "resolvedPath": "services/refund-service.js",
@@ -19521,9 +19577,16 @@
       {
         "feature": "refunds",
         "category": "services",
+        "declared": "services/paypal-refund-authority.js",
+        "resolvedPath": "services/paypal-refund-authority.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "refunds",
+        "category": "services",
         "declared": "services/sav-ledger-refund.js",
         "resolvedPath": "services/sav-ledger-refund.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "refunds",
@@ -19591,6 +19654,13 @@
       {
         "feature": "refunds",
         "category": "tests",
+        "declared": "tests/unit/paypal-refund-authority.test.js",
+        "resolvedPath": "tests/unit/paypal-refund-authority.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "refunds",
+        "category": "tests",
         "declared": "tests/unit/sav-ledger-refund.test.js",
         "resolvedPath": "tests/unit/sav-ledger-refund.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -19642,13 +19712,6 @@
         "category": "tests",
         "declared": "tests/unit/refund-stripe-txn-known-risk.test.js",
         "resolvedPath": "tests/unit/refund-stripe-txn-known-risk.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "refunds",
-        "category": "tests",
-        "declared": "tests/unit/refunds-util.test.js",
-        "resolvedPath": "tests/unit/refunds-util.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -29621,6 +29684,12 @@
       },
       {
         "from": "market-delegation",
+        "to": "local-stock",
+        "raw": "local-stock",
+        "resolved": true
+      },
+      {
+        "from": "market-delegation",
         "to": "market",
         "raw": "market",
         "resolved": true
@@ -30305,6 +30374,12 @@
       },
       {
         "from": "refunds",
+        "to": "notifications",
+        "raw": "notifications (alerte critique de rapprochement de remboursement PSP incertain)",
+        "resolved": true
+      },
+      {
+        "from": "refunds",
         "to": "economic-engine",
         "raw": "economic-engine (A8 : rafraîchissement transactionnel de la marge réelle canonique via canonical-margin-writer ; no-op si la règle CANONICAL_MARGIN_WRITER_ENABLED vaut 0)",
         "resolved": true
@@ -30463,6 +30538,12 @@
         "from": "unsold-resolution",
         "to": "infrastructure",
         "raw": "infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)",
+        "resolved": true
+      },
+      {
+        "from": "wallet",
+        "to": "market",
+        "raw": "market (2026-11-13 #3927 — conversion KMF↔devise du marché via la seule autorité fx-authority/currency_parities ; preuve: services/wallet-service.js -> services/fx-authority.js)",
         "resolved": true
       },
       {
@@ -32975,7 +33056,7 @@
               },
               {
                 "endpoint": "/api/admin/dashboard/control-tower",
-                "routeFile": "routes/admin-dashboard-market.js",
+                "routeFile": "routes/admin-dashboard.js",
                 "consumerFileId": "dash:dashboards/admin/js/views/ControlTowerView.js"
               },
               {
@@ -32990,7 +33071,7 @@
               },
               {
                 "endpoint": "/api/admin/dashboard/costing",
-                "routeFile": "routes/admin-dashboard-market.js",
+                "routeFile": "routes/admin-dashboard.js",
                 "consumerFileId": "dash:dashboards/admin/js/views/CostingView.js"
               },
               {
@@ -33010,12 +33091,12 @@
               },
               {
                 "endpoint": "/api/admin/dashboard/logistics",
-                "routeFile": "routes/admin-dashboard-market.js",
+                "routeFile": "routes/admin-dashboard.js",
                 "consumerFileId": "dash:dashboards/admin/js/views/OrdersLogisticsView.js"
               },
               {
                 "endpoint": "/api/admin/dashboard/unified",
-                "routeFile": "routes/admin-dashboard-market.js",
+                "routeFile": "routes/admin-dashboard.js",
                 "consumerFileId": "dash:dashboards/admin/js/views/PilotageView.js"
               },
               {
@@ -34797,6 +34878,21 @@
               {
                 "sourceFileId": "tests/unit/golden-product-gpm1.test.js",
                 "targetFile": "services/transport-rails.js"
+              }
+            ]
+          },
+          {
+            "channel": "interface",
+            "evidence": [
+              {
+                "endpoint": "/api/relais",
+                "routeFile": "routes/relais.js",
+                "consumerFileId": "public/boutique/js/market-hydration.js"
+              },
+              {
+                "endpoint": "/api/relais/public",
+                "routeFile": "routes/relais.js",
+                "consumerFileId": "public/boutique/js/market-hydration.js"
               }
             ]
           }
@@ -38614,6 +38710,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "tests/integration/relay-commission-per-order-postgres.test.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "tests/unit/apply-pricing-updates.test.js",
                 "targetFile": "db.js"
               },
@@ -38893,6 +38993,10 @@
               {
                 "sourceFileId": "services/pricing-parameters-status.js",
                 "targetFile": "services/fx-authority.js"
+              },
+              {
+                "sourceFileId": "services/pricing-floor-forecast-preview.js",
+                "targetFile": "utils/currency.js"
               },
               {
                 "sourceFileId": "services/pricing-cdr.js",
@@ -39740,6 +39844,10 @@
               {
                 "sourceFileId": "bootstrap/api-routes.js",
                 "targetFile": "routes/market-delegation-local-offer.js"
+              },
+              {
+                "sourceFileId": "bootstrap/api-routes.js",
+                "targetFile": "routes/market-local-stock.js"
               },
               {
                 "sourceFileId": "bootstrap/api-routes.js",
@@ -40715,6 +40823,14 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "services/pickup-secret-customer-rotation-service.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/pickup-secret-customer-rotation-service.js",
+                "targetFile": "utils/logger.js"
+              },
+              {
                 "sourceFileId": "services/pickup-secret-access-service.js",
                 "targetFile": "db.js"
               },
@@ -41055,6 +41171,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "tests/unit/pickup-agent-lockout.test.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "tests/unit/scan-operations.test.js",
                 "targetFile": "db.js"
               },
@@ -41219,6 +41339,10 @@
                 "targetFile": "services/notification-service.js"
               },
               {
+                "sourceFileId": "services/parcel-operations.js",
+                "targetFile": "utils/alerts.js"
+              },
+              {
                 "sourceFileId": "services/local-relay-receipt-service.js",
                 "targetFile": "services/client-notification-service.js"
               },
@@ -41265,6 +41389,14 @@
               {
                 "sourceFileId": "tests/unit/scan-operations.test.js",
                 "targetFile": "services/notifications/relay-location.js"
+              },
+              {
+                "sourceFileId": "tests/unit/parcel-operations.test.js",
+                "targetFile": "utils/alerts.js"
+              },
+              {
+                "sourceFileId": "tests/unit/parcel-operations.test.js",
+                "targetFile": "services/notification-service.js"
               }
             ]
           }
@@ -41324,6 +41456,10 @@
               },
               {
                 "sourceFileId": "services/pickup-secret-rotation-service.js",
+                "targetFile": "services/order-mutation-service.js"
+              },
+              {
+                "sourceFileId": "services/pickup-secret-customer-rotation-service.js",
                 "targetFile": "services/order-mutation-service.js"
               },
               {
@@ -41567,6 +41703,10 @@
             "evidence": [
               {
                 "sourceFileId": "services/parcel-operations.js",
+                "targetFile": "services/refund-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/parcel-operations.test.js",
                 "targetFile": "services/refund-service.js"
               }
             ]
@@ -42438,6 +42578,10 @@
                 "targetFile": "middleware/auth.js"
               },
               {
+                "sourceFileId": "routes/market-local-stock.js",
+                "targetFile": "middleware/auth.js"
+              },
+              {
                 "sourceFileId": "routes/market-delegation-client.js",
                 "targetFile": "middleware/auth.js"
               },
@@ -42653,6 +42797,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "routes/market-local-stock.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "routes/market-delegation-client.js",
                 "targetFile": "utils/logger.js"
               },
@@ -42703,6 +42851,22 @@
               {
                 "sourceFileId": "tests/integration/retired-mark-ordered-capability-postgres.test.js",
                 "targetFile": "db.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "market-delegation",
+        "to": "local-stock",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/market-delegation-local-stock-service.js",
+                "targetFile": "services/local-stock-service.js"
               }
             ]
           }
@@ -43152,12 +43316,12 @@
                 "targetFile": "utils/logger.js"
               },
               {
-                "sourceFileId": "services/authkey-client.js",
-                "targetFile": "utils/logger.js"
+                "sourceFileId": "utils/non-prod-phone-guard.js",
+                "targetFile": "middleware/require-non-production.js"
               },
               {
                 "sourceFileId": "services/authkey-client.js",
-                "targetFile": "middleware/require-non-production.js"
+                "targetFile": "utils/logger.js"
               },
               {
                 "sourceFileId": "services/notifications/internals.js",
@@ -43908,6 +44072,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "tests/unit/order-checkout-service-relay-boundary.test.js",
+                "targetFile": "validators/index.js"
+              },
+              {
                 "sourceFileId": "tests/unit/hub-v1-fixture-payment.test.js",
                 "targetFile": "db.js"
               },
@@ -44008,6 +44176,16 @@
               {
                 "sourceFileId": "services/order-checkout-persistence.js",
                 "targetFile": "services/local-stock-service.js"
+              }
+            ]
+          },
+          {
+            "channel": "interface",
+            "evidence": [
+              {
+                "endpoint": "/api/local-stock/checkout-preview",
+                "routeFile": "routes/local-stock.js",
+                "consumerFileId": "public/boutique/js/b-checkout.js"
               }
             ]
           }
@@ -45482,15 +45660,7 @@
               },
               {
                 "sourceFileId": "services/payment-paypal.js",
-                "targetFile": "services/payment-service.js"
-              },
-              {
-                "sourceFileId": "services/payment-paypal.js",
                 "targetFile": "services/order-mutation-service.js"
-              },
-              {
-                "sourceFileId": "services/payment-paypal.js",
-                "targetFile": "services/order-status-machine.js"
               },
               {
                 "sourceFileId": "services/payment-cash-confirm.js",
@@ -45539,18 +45709,6 @@
               {
                 "sourceFileId": "tests/unit/payment-paypal.test.js",
                 "targetFile": "services/order-payment-confirmation.js"
-              },
-              {
-                "sourceFileId": "tests/unit/payment-paypal.test.js",
-                "targetFile": "services/order-status-machine.js"
-              },
-              {
-                "sourceFileId": "tests/unit/payment-paypal-known-logic-bugs.test.js",
-                "targetFile": "services/payment-service.js"
-              },
-              {
-                "sourceFileId": "tests/unit/payment-paypal-known-logic-bugs.test.js",
-                "targetFile": "services/order-status-machine.js"
               },
               {
                 "sourceFileId": "tests/unit/cash-operations-service.test.js",
@@ -45675,11 +45833,11 @@
             "evidence": [
               {
                 "sourceFileId": "services/payment-paypal.js",
-                "targetFile": "services/refund-service.js"
+                "targetFile": "services/paypal-refund-authority.js"
               },
               {
-                "sourceFileId": "tests/unit/payment-paypal.test.js",
-                "targetFile": "services/refund-service.js"
+                "sourceFileId": "routes/payments-paypal.js",
+                "targetFile": "services/paypal-refund-authority.js"
               }
             ]
           }
@@ -47671,11 +47829,19 @@
                 "targetFile": "services/documents/refund-receipt.js"
               },
               {
+                "sourceFileId": "services/paypal-refund-authority.js",
+                "targetFile": "services/documents/refund-receipt.js"
+              },
+              {
                 "sourceFileId": "services/sav-ledger-refund.js",
                 "targetFile": "services/documents/refund-receipt.js"
               },
               {
                 "sourceFileId": "tests/unit/item-refund-psp-orchestrator.test.js",
+                "targetFile": "services/documents/refund-receipt.js"
+              },
+              {
+                "sourceFileId": "tests/unit/paypal-refund-authority.test.js",
                 "targetFile": "services/documents/refund-receipt.js"
               },
               {
@@ -47715,10 +47881,6 @@
             "channel": "static-code",
             "evidence": [
               {
-                "sourceFileId": "utils/refunds.js",
-                "targetFile": "utils/logger.js"
-              },
-              {
                 "sourceFileId": "services/refund-service.js",
                 "targetFile": "utils/logger.js"
               },
@@ -47737,6 +47899,10 @@
               {
                 "sourceFileId": "services/refund-intent-ledger.js",
                 "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/paypal-refund-authority.js",
+                "targetFile": "utils/logger.js"
               },
               {
                 "sourceFileId": "services/refund-intent-reconciliation.js",
@@ -47785,6 +47951,26 @@
       },
       {
         "from": "refunds",
+        "to": "notifications",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/paypal-refund-authority.js",
+                "targetFile": "utils/alerts.js"
+              },
+              {
+                "sourceFileId": "tests/unit/paypal-refund-authority.test.js",
+                "targetFile": "utils/alerts.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "refunds",
         "to": "orders",
         "channels": [
           {
@@ -47799,6 +47985,14 @@
                 "targetFile": "services/order-item-refund-settlement.js"
               },
               {
+                "sourceFileId": "services/paypal-refund-authority.js",
+                "targetFile": "services/payment-service.js"
+              },
+              {
+                "sourceFileId": "services/paypal-refund-authority.js",
+                "targetFile": "services/order-status-machine.js"
+              },
+              {
                 "sourceFileId": "tests/e2e-api/refunds.no-double-application.e2e.test.js",
                 "targetFile": "services/order-status-machine.js"
               },
@@ -47809,6 +48003,14 @@
               {
                 "sourceFileId": "tests/e2e-api/refunds.no-double-application.e2e.test.js",
                 "targetFile": "routes/admin/orders.js"
+              },
+              {
+                "sourceFileId": "tests/unit/paypal-refund-authority.test.js",
+                "targetFile": "services/payment-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/paypal-refund-authority.test.js",
+                "targetFile": "services/order-status-machine.js"
               }
             ]
           },
@@ -47859,10 +48061,6 @@
           {
             "channel": "static-code",
             "evidence": [
-              {
-                "sourceFileId": "utils/refunds.js",
-                "targetFile": "services/wallet-service.js"
-              },
               {
                 "sourceFileId": "services/refund-service.js",
                 "targetFile": "services/wallet-service.js"
@@ -49220,6 +49418,22 @@
       },
       {
         "from": "wallet",
+        "to": "market",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/wallet-service.js",
+                "targetFile": "services/fx-authority.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "wallet",
         "to": "notifications",
         "channels": [
           {
@@ -49561,7 +49775,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2323
+        "filesObserved": 2332
       },
       "boutique": {
         "filesObserved": 216,
@@ -52398,6 +52612,32 @@
       "lifecycleOwner": "logistics",
       "resolution": "declared-table-owner"
     },
+    "pickup_collect_failures": {
+      "writers": [
+        {
+          "feature": "logistics",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "logistics",
+      "resolution": "declared-table-owner"
+    },
+    "pickup_code_generations": {
+      "writers": [
+        {
+          "feature": "logistics",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "logistics",
+      "resolution": "declared-table-owner"
+    },
     "pickup_verify_attempts": {
       "writers": [
         {
@@ -52880,6 +53120,19 @@
       "lifecycleOwner": "orders",
       "resolution": "single-writer"
     },
+    "relay_return_compensations": {
+      "writers": [
+        {
+          "feature": "orders",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "orders",
+      "resolution": "declared-table-owner"
+    },
     "order_checkout_idempotency": {
       "writers": [
         {
@@ -53074,6 +53327,32 @@
       "readers": [],
       "lifecycleOwner": "purchasing",
       "resolution": "single-writer"
+    },
+    "manual_purchase_executions": {
+      "writers": [
+        {
+          "feature": "purchasing",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "purchasing",
+      "resolution": "declared-table-owner"
+    },
+    "purchase_variance_decisions": {
+      "writers": [
+        {
+          "feature": "purchasing",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "purchasing",
+      "resolution": "declared-table-owner"
     },
     "supplier_execution_events": {
       "writers": [
@@ -53480,8 +53759,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 698,
-        "technicalNodesOwned": 698,
+        "technicalNodesTotal": 707,
+        "technicalNodesOwned": 707,
         "technicalOrphans": 0
       },
       "dash": {
@@ -53713,7 +53992,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "infrastructure -> market-delegation",
-        "msg": "dépendance cross-feature observée (canal: static-code, 14 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"market-delegation\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 15 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"market-delegation\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",

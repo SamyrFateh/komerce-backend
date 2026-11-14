@@ -55,15 +55,15 @@ describe('modal-mobile-canonical.css - suggestion responsibilities', () => {
     );
   });
 
-  test('keeps reassurance to one useful 34px row without duplicating stock', () => {
+  test('keeps reassurance left-aligned and visible without duplicating stock', () => {
     expect(css).toMatch(
-      /#k-modal\s+\.k-modal-trust\s*\{[^}]*min-height:\s*34px[^}]*overflow:\s*hidden/s
+      /#k-modal\s+\.k-modal-trust\s*\{[^}]*min-height:\s*34px[^}]*overflow:\s*visible/s
     );
     expect(css).toMatch(
       /#k-modal\s+\.k-modal-trust-item:nth-child\(3\)\s*\{[^}]*display:\s*none/s
     );
     expect(productCss).toMatch(
-      /#k-modal\s+\.k-modal-trust\s*\{[^}]*justify-content:\s*flex-start[^}]*gap:\s*clamp\(14px,\s*6vw,\s*24px\)[^}]*padding:\s*5px 0/s
+      /#k-modal\s+\.k-modal-trust\s*\{[^}]*justify-content:\s*flex-start[^}]*gap:\s*clamp\(10px,\s*4vw,\s*18px\)[^}]*padding:\s*5px 0/s
     );
   });
 

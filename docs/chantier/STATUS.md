@@ -1,0 +1,54 @@
+# STATUS — registre commun des chantiers Komerce
+
+> Dernière vérification : **2026-11-14**, GitHub.  
+> **Seul tableau de coordination actif** pour ChatGPT/GPT, Sonnet et Opus. Il remplace les journaux de tâches historiques ; il ne remplace ni le code, ni les données live, ni `AGENTS.md`, ni les cartes Feature First, ni les checks GitHub.
+> La PR et ses checks font foi pour l'état du code. Un nom d'agent n'est pas une preuve d'exécution.
+
+## Comment travailler à plusieurs sans collision
+
+1. **Lire ce fichier sur `main` et les PR ouvertes avant d'agir.** Ne pas reprendre une tâche déjà attribuée sans transfert explicite. Ne jamais interpréter une vieille section « terminé » comme preuve actuelle.
+2. **Réserver une tâche avant le premier changement de code** : une seule ligne active avec ID issue/PR, propriétaire (`GPT`, `Sonnet`, `Opus`), périmètre/chemins concernés, branche, statut et prochaine action. Pas de double propriétaire actif. Si l'assignation est inconnue, inscrire `à attribuer` plutôt que deviner.
+3. **Mettre à jour après chaque événement vérifié** : début, PR ouverte, blocage, changement de propriétaire, checks, merge. `FAIT` exige une PR effectivement fusionnée dans `main` (ou une preuve précise si aucun code n'était à livrer). La certification staging/production est un verdict séparé.
+4. **Ne pas se marcher dessus** : une tâche = un propriétaire à la fois ; scope technique et fichiers clairement indiqués ; pas de changement de même writer, migration ou contrat transversal en parallèle sans coordination. Si conflit de périmètre, mettre en `BLOQUÉ` et signaler.
+5. **Pas d'écrasement concurrent de STATUS.md** : relire la version la plus récente sur `main` avant chaque écriture ; faire une modification minimale, conserver les lignes d'autrui ; utiliser le SHA de fichier / rebase, et en cas de conflit relire et recomposer, jamais forcer. Une modification de coordination passe par le workflow Git prévu par `AGENTS.md` ; ne pas court-circuiter ses gates.
+6. **Éviter la bureaucratie** : une ligne courte par chantier actif ; lien issue/PR ; tests/checks et commits précis. Les détails, discussions et preuves longues restent dans les PR. Archiver les tâches closes hors du tableau actif après une période raisonnable, avec le lien de preuve. Pas de second tracker dans `.agent/`, `docs/Work/` ou des prompts.
+
+Statuts autorisés : `À_FAIRE` · `EN_COURS` · `PR_EN_REVUE` · `BLOQUÉ` · `FAIT` · `ABANDONNÉ`. Une PR draft ouverte n'est pas `FAIT`.
+
+## Tâches actives — reprise contrôlée (14 novembre 2026)
+
+| Chantier | Responsable | Statut | PR / source | Zone réservée | Prochaine action / preuve |
+| --- | --- | --- | --- | --- | --- |
+| Fermer les writers Hub legacy HB-09 | **GPT** (priorité demandée) | **PR_EN_REVUE** (draft, non mergée) | [#4014](https://github.com/SamyrFateh/komerce-backend/pull/4014) · [#4013](https://github.com/SamyrFateh/komerce-backend/issues/4013) | Hub legacy : `routes/hub-dashboard.js`, `/hub`, `public/hub/index.html` ; vérifier le diff réel avant toute édition | Mettre à jour #4014, obtenir preflight/checks requis verts, vérifier mergeabilité, merger selon `AGENTS.md`. **Ne pas en faire un chantier Sonnet en parallèle.** |
+| Consolidation audit Hub H1–H4 (ancienne PR) | **À attribuer**, **gelée** pendant #4014 | **BLOQUÉ** | [#4004](https://github.com/SamyrFateh/komerce-backend/pull/4004), draft ouverte · [#3998](https://github.com/SamyrFateh/komerce-backend/issues/3998) | Reprise/quantités/réception/supervision Hub | Après #4014, comparer couverture avec #4010 et les merges réels ; ne pas fermer ni merger par simple présomption de doublon. |
+| Consolidation audit Hub + simplification KOM-BOX | **À attribuer**, **gelée** pendant #4014 | **BLOQUÉ** | [#4010](https://github.com/SamyrFateh/komerce-backend/pull/4010), draft ouverte · [#3998](https://github.com/SamyrFateh/komerce-backend/issues/3998) | Hub H1–H4 / placement sac→KOM-BOX | Réconcilier avec #4004 après #4014 ; désigner **un seul** PR porteur et fermer l'autre seulement une fois la couverture prouvée. |
+| F3-PayPal — FA-05/21 remboursement admin durable, partiel et rapprochement PSP | **GPT** | **PR_EN_REVUE** (ouverte, non fusionnée ; Required vert) | [#4020](https://github.com/SamyrFateh/komerce-backend/pull/4020) · [#4018](https://github.com/SamyrFateh/komerce-backend/issues/4018) · [#3987](https://github.com/SamyrFateh/komerce-backend/issues/3987) | `services/paypal-refund-authority.js`, `services/payment-paypal.js`, route admin refund, tests · `fix/finance-f3-paypal-durable-20261114` | Avant fusion/activation : vérifier prérequis et tests PG concurrence/crash, réconciliation GET sandbox et dossiers historiques ; flag OFF, pas de GO financier. #4025 dépend de cette intégration. |
+| F3-Stripe — FA-04/08 annulation commande/backorder après COMMIT, intention durable | **GPT** | **BLOQUÉ** (draft ; Required rouge sur tête vérifiée) | [#4025](https://github.com/SamyrFateh/komerce-backend/pull/4025) · [#4018](https://github.com/SamyrFateh/komerce-backend/issues/4018) · [#3987](https://github.com/SamyrFateh/komerce-backend/issues/3987) | `routes/orders/cancel.js`, `services/parcel-operations.js`, `services/stripe-refund-authority.js` + tests · `fix/finance-f3-stripe-cancel-backorder-20261114` | Corriger le gate Required rouge, rebaser après #4020 ; preuves PG crash/concurrence, rapprochement GET Stripe sandbox, oracles finance I1–I15 et revue avant fusion. Aucun flag PSP actif. |
+| Certification Hub H1–H9 (#3998) : oracles SQL lecture seule, contention 2 opérateurs, Chromium | **Sonnet** | **BLOQUÉ** (attend #4014) | [#4029](https://github.com/SamyrFateh/komerce-backend/pull/4029) (draft, préparation) | scripts/workflow lecture seule ; **aucun chemin Hub** · `research/hub-h1-h9-readonly-oracles-20261114` | Après fusion + déploiement de #4014 : SHA dans `hub-h1-h9-expected-sha.txt`, exécution cohorte isolée, verdicts PASS/FAIL/NOT_PROVEN. |
+| Matrice commune G6 v2 (46 scénarios, double exécution GPT/Opus) | **Opus** | **PR_EN_REVUE** (draft) | [#3944](https://github.com/SamyrFateh/komerce-backend/pull/3944) · [#3927](https://github.com/SamyrFateh/komerce-backend/issues/3927) | `docs/recette/G6_PRE_STRESS_BUSINESS_SCENARIOS.{md,json}`, test contrat · `docs/g6-matrix-v2` | Ajouter oracles H1–H9 (#3998) et I1–I15 (#3987), scénarios « rupture définitive » et « colis non rapproché » ; revue GPT ; fusion. |
+| Seconde passe #3900 (mode manuel KM, cohorte CLAUDE-PAR) | **Opus** (exécution Sonnet) | **BLOQUÉ** | [#3900](https://github.com/SamyrFateh/komerce-backend/issues/3900) · `cert/claude-par-3900` | staging, cohorte CLAUDE-PAR uniquement | Rejouer après fusion de #4014 et des P0 finance ; aucun GO E2E G6 final à ce stade. Reprise : 12 points listés dans [#3900](https://github.com/SamyrFateh/komerce-backend/issues/3900) (commentaire de passe 1 6848393664 + R1–R6 fusionnés). |
+| Activer `E7_ITEM_RESERVATIONS_ENABLED=1` sur le staging (décision propriétaire 13/11) | **Opus** | **À_FAIRE** | [#3998](https://github.com/SamyrFateh/komerce-backend/issues/3998) | variable Railway staging (redémarre le service) | Dans le créneau de fusion de #4014, hors run staging actif. |
+
+> **Reprise après coupure (handoff unique)** : ce tableau + la section `## Reprise` de chaque PR citée. Pour une tâche sans PR, la ligne pointe vers l'issue qui porte le détail. Aucun autre fichier de reprise n'est maintenu ; l'ancien dossier `docs/recette/handoff-opus-20261113/` (branche `handoff/opus-pre-e2e-20261113`) est **archivé** et ne doit plus être mis à jour.
+
+> Ce tableau est un **instantané de coordination**, pas une déclaration d'exhaustivité des PR ou des corrections financières. Avant d'ajouter un chantier, consulter GitHub et éviter les doublons ; les attributions non observées ne doivent pas être inventées. Priorité de reprise : **#4014 d'abord**.
+
+## Modèle à copier pour une nouvelle tâche
+
+`| Action métier précise | Sonnet/GPT/Opus | À_FAIRE / EN_COURS / PR_EN_REVUE / BLOQUÉ | #issue / #PR | fichiers/feature + branche | prochaine action factuelle |`
+
+## Clôtures récentes
+
+| Date | Chantier | Responsable | Preuve | Certification / suite |
+| --- | --- | --- | --- | --- |
+| 2026-11-14 | ME-05 — snapshot de commande = N1+N2, N3 hors coût estimé | Sonnet (fusion Opus) | [#4034](https://github.com/SamyrFateh/komerce-backend/pull/4034) fusionnée | Required SUCCESS ; test PG KM/CM/CG. Snapshots historiques non réécrits. |
+| 2026-11-14 | FA-22/FA-25 — `Idempotency-Key` obligatoire (428 prix conservé), `utils/refunds.js` supprimé | Sonnet (fusion Opus) | [#4028](https://github.com/SamyrFateh/komerce-backend/pull/4028) fusionnée | Required SUCCESS ; e2e-api PG réels. |
+| 2026-11-14 | Reset d'usine robuste aux délégations Hub (régression `txg04` après FA-23) : suppression limitée à `hub_authorization_grants`, NULL limité à 2 traces opérationnelles, tout autre fait métier rapporté (409) sans écriture | Sonnet (fusion Opus) | [#4039](https://github.com/SamyrFateh/komerce-backend/pull/4039) fusionnée | Required SUCCESS ; tests PG réels. Débloque la CI de #4028 et #4034. |
+| 2026-11-14 | FA-23 — Σ paiements fournisseur ≤ autorisation ≤ engagement PO (fail-closed hors transaction) | Sonnet (fusion Opus) | [#4024](https://github.com/SamyrFateh/komerce-backend/pull/4024), merge `021c22ad1` | Required SUCCESS ; tests PG16 réels (concurrence, devise, isolation). Certification staging : non faite. |
+| 2026-11-14 | FA-10 — cumul compensations SAV ≤ unités remises (tous dossiers, 2 opérateurs) | Sonnet (fusion Opus) | [#4026](https://github.com/SamyrFateh/komerce-backend/pull/4026), merge `0f36a2dc7` | Required SUCCESS ; tests PG16 réels. Certification staging : non faite. |
+| 2026-11-14 | Déclarer `pickup_code_generations` dans la carte logistics (porte Headers ↔ SQL rouge sur `main`) | Opus | [#4027](https://github.com/SamyrFateh/komerce-backend/pull/4027) fusionnée | Débloque les preflights ; gouvernance seulement. |
+| 2026-11-14 | `serve` 14.2.8 boutique (audit gate) | Opus | [#4030](https://github.com/SamyrFateh/komerce-backend/pull/4030) fusionnée | Gouvernance dépendances. |
+| 2026-11-14 | Classer `pickup_code_generations` dans la politique deep-clean staging | Opus | [#4032](https://github.com/SamyrFateh/komerce-backend/pull/4032) fusionnée | Débloque la CI des PR finance. |
+| 2026-11-14 | Anciennes PR Hub Opus #4000–#4003 | Opus | fermées (couvertes par #4004/#4010/#4014) | Aucun code perdu à reprendre ; ne pas rouvrir. |
+
+Lors de chaque clôture, ajouter un enregistrement daté avec le numéro de PR, le merge SHA et le niveau de preuve atteint. Ne jamais confondre « tests verts », « mergé » et « certifié staging/production ».

@@ -418,6 +418,15 @@
     manualProof.placeholder = 'Mode dégradé : justification de la saisie manuelle (6 caractères min.)';
     manualProof.setAttribute('aria-label', 'Justification de la réception en saisie manuelle');
     manualProof.setAttribute('data-receive-manual-proof', '');
+    manualProof.hidden = true;
+    // Interrupteur explicite : un scanner émule un clavier, la frappe seule ne prouve pas la provenance.
+    const manualToggleLabel = text(doc, 'label', 'kmc-workspace-receive-manual-toggle', 'Saisie manuelle (sans scanner) ');
+    const manualToggle = doc.createElement('input');
+    manualToggle.type = 'checkbox';
+    manualToggle.setAttribute('data-receive-manual-toggle', '');
+    manualToggle.setAttribute('aria-label', 'Saisie manuelle : provenance MANUAL avec justification obligatoire');
+    manualToggleLabel.appendChild(manualToggle);
+    scannerPanel.appendChild(manualToggleLabel);
     scannerPanel.appendChild(manualProof);
     card.appendChild(scannerPanel);
 
@@ -487,10 +496,11 @@
           contents.push({
             purchase_order_id: po.purchase_order_id,
             ...(line.product_sku_id ? { product_sku_id: line.product_sku_id } : {}),
-            ...(scannedCodeBySku.has(String(line.product_sku_id)) ?
-              { evidence_code: scannedCodeBySku.get(String(line.product_sku_id)) }
-              : (line.product_sku_id && String(manualProof.value || '').trim().length >= 6
-                ? { evidence_method: 'MANUAL', evidence_ref: String(manualProof.value).trim() } : {})),
+            ...(manualToggle.checked
+              ? (line.product_sku_id && String(manualProof.value || '').trim().length >= 6
+                ? { evidence_method: 'MANUAL', evidence_ref: String(manualProof.value).trim() } : {})
+              : (scannedCodeBySku.has(String(line.product_sku_id))
+                ? { evidence_code: scannedCodeBySku.get(String(line.product_sku_id)) } : {})),
             quantity,
           });
         }
@@ -504,11 +514,20 @@
       button.disabled = invalid || contents.length === 0 || unverified;
       hint.textContent = invalid
         ? 'Quantité invalide : entier entre 0 et le restant attendu.'
-        : unverified ? 'Scanner toutes les références reçues, ou justifier la saisie manuelle (mode dégradé).'
+        : unverified ? (manualToggle.checked
+          ? 'Saisie manuelle : justification de 6 caractères minimum obligatoire.'
+          : 'Scanner toutes les références reçues, ou activer « Saisie manuelle » et la justifier.')
         : 'Quantité réellement comptée et références scannées : prêt à enregistrer.';
     }
     inputs.forEach(({ input }) => input.addEventListener('input', sync));
     manualProof.addEventListener('input', sync);
+    manualToggle.addEventListener('change', () => {
+      manualProof.hidden = !manualToggle.checked;
+      scannerResult.textContent = manualToggle.checked
+        ? 'Saisie manuelle active : provenance MANUAL, justification obligatoire.'
+        : 'Scanner la référence avant de déclarer sa quantité reçue.';
+      sync();
+    });
     let scanning = false;
     const PHYSICAL_CODE_TYPES = Object.freeze([
       ['EAN_GTIN', 'EAN / GTIN imprimé (universel)'],
@@ -613,7 +632,7 @@
           ? `Référence confirmée : ${candidate.line.product_name}. Comptez puis saisissez la quantité réellement reçue.`
           : `Référence fournisseur déclarée : ${candidate.line.product_name}. Vérification physique du code à confirmer.`;
         scannerResult.dataset.scanTone = matched.confirmed ? 'success' : 'warning';
-        if (matched.confirmed) {
+        if (matched.confirmed && !manualToggle.checked) {
           scannedCodeBySku.set(String(candidate.line.product_sku_id), String(matched.code));
         }
         sync();
@@ -2347,6 +2366,7 @@
               const input = doc.createElement('input');
               input.type = 'number';
               input.min = '0';
+              input.max = String(item.expected);
               input.step = '1';
               input.placeholder = '0 à ' + item.expected;
               input.setAttribute('aria-label', 'Reçu ' + item.product);
@@ -2389,6 +2409,10 @@
             const qty = Number(input.value);
             if (!Number.isInteger(qty) || qty < 0) {
               setFeedback(context.root, 'Quantité reçue invalide pour ' + item.product + '.', 'critical');
+              return;
+            }
+            if (qty > Number(item.expected)) {
+              setFeedback(context.root, 'Reçu supérieur à l’expédié pour ' + item.product + ' (' + formatNumber(item.expected) + ' max).', 'critical');
               return;
             }
             lines.push({ order_item_id: item.order_item_id, received_qty: qty });

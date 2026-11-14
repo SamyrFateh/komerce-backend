@@ -1258,6 +1258,38 @@ describe('b-checkout', () => {
     });
   });
 
+  describe('checkout mobile compact — sélection et relais canoniques', () => {
+    it('garde la liste dépliable et synchronise son compteur sur les lignes incluses', () => {
+      state.cart = [
+        { product: { id: 'robe-xl', name: 'Robe XL', price_kmf: 7990 }, qty: 1 },
+        { product: { id: 'robe-m', name: 'Robe M', price_kmf: 7990 }, qty: 1 },
+      ];
+      renderCheckout();
+      const summary = dom.orderBody.querySelector('#ck-order-summary');
+      const toggle = summary.querySelector('.ck-recap-toggle');
+      const count = summary.querySelector('.ck-recap-count');
+      const aside = dom.orderBody.querySelector('.ck-checkout-aside');
+
+      expect(count.textContent).toBe('(2 articles)');
+      expect(toggle.getAttribute('aria-expanded')).toBe('false');
+      expect(summary.classList.contains('is-expanded')).toBe(false);
+      toggle.click();
+      expect(toggle.getAttribute('aria-expanded')).toBe('true');
+      expect(summary.classList.contains('is-expanded')).toBe(true);
+
+      const checkboxes = summary.querySelectorAll('.ck-recap-item-select');
+      expect(checkboxes).toHaveLength(2);
+      checkboxes[1].checked = false;
+      checkboxes[1].dispatchEvent(new Event('change', { bubbles: true }));
+      expect(count.textContent).toBe('(1 article)');
+      expect(aside.querySelector('.ck-mobile-relay-heading strong').textContent).toBe('Point de retrait');
+      expect(aside.querySelector('#ck-relais-section')).not.toBeNull();
+      expect(aside.querySelector('#ck-pay-grid')).not.toBeNull();
+      expect(dom.orderBody.querySelector('.ck-recap-subtotal-caption small').textContent)
+        .toContain('Livraison incluse');
+    });
+  });
+
   describe('checkout premium — projection sans modification métier', () => {
     it('montre un sous-total indicatif et des variantes lisibles', async () => {
       state.cart = [{
@@ -2111,5 +2143,13 @@ describe('b-checkout', () => {
       );
       expect(suggestionCall).toBeUndefined();
     });
+  });
+});
+
+describe('récap checkout : produit manuel sans snapshot (#3900 R5)', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '../../js/b-checkout.js'), 'utf8');
+  test('nom et image retombent sur la ligne panier', () => {
+    expect(src).toContain("name: rawProduct.name || it.name || it.product_name || ''");
+    expect(src).toContain("image_url: rawProduct.image_url || rawProduct.image || it.image_url || it.image || ''");
   });
 });

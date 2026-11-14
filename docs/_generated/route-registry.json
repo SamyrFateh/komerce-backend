@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-11-12T17:15:26.685Z",
+  "generatedAt": "2026-11-13T09:26:52.135Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 815,
+  "count": 824,
   "routes": [
     {
       "method": "GET",
@@ -5849,6 +5849,36 @@
     },
     {
       "method": "GET",
+      "fullPath": "/api/markets/:marketCode/local-stock",
+      "mountPrefix": "/api/markets",
+      "localPath": "/:marketCode/local-stock",
+      "routeFile": "routes/market-local-stock.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "PUT",
+      "fullPath": "/api/markets/:marketCode/local-stock/:productId/exposure",
+      "mountPrefix": "/api/markets",
+      "localPath": "/:marketCode/local-stock/:productId/exposure",
+      "routeFile": "routes/market-local-stock.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/markets/:marketCode/local-stock/receipts",
+      "mountPrefix": "/api/markets",
+      "localPath": "/:marketCode/local-stock/receipts",
+      "routeFile": "routes/market-local-stock.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
       "fullPath": "/api/modules",
       "mountPrefix": "/api/modules",
       "localPath": "/",
@@ -6434,6 +6464,16 @@
       "fullPath": "/api/pickup/collect/:orderId",
       "mountPrefix": "/api/pickup",
       "localPath": "/collect/:orderId",
+      "routeFile": "routes/pickup-secret.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/pickup/customer-regenerate/:orderId",
+      "mountPrefix": "/api/pickup",
+      "localPath": "/customer-regenerate/:orderId",
       "routeFile": "routes/pickup-secret.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
@@ -7109,6 +7149,16 @@
       ]
     },
     {
+      "method": "GET",
+      "fullPath": "/api/purchasing/po/:po_id/commitment-pdf",
+      "mountPrefix": "/api/purchasing",
+      "localPath": "/po/:po_id/commitment-pdf",
+      "routeFile": "routes/purchasing.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
       "method": "POST",
       "fullPath": "/api/purchasing/po/:po_id/confirm",
       "mountPrefix": "/api/purchasing",
@@ -7139,6 +7189,16 @@
       ]
     },
     {
+      "method": "GET",
+      "fullPath": "/api/purchasing/po/:po_id/reconciliation",
+      "mountPrefix": "/api/purchasing",
+      "localPath": "/po/:po_id/reconciliation",
+      "routeFile": "routes/purchasing.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
       "method": "POST",
       "fullPath": "/api/purchasing/po/:po_id/sent",
       "mountPrefix": "/api/purchasing",
@@ -7153,6 +7213,16 @@
       "fullPath": "/api/purchasing/po/:po_id/submit",
       "mountPrefix": "/api/purchasing",
       "localPath": "/po/:po_id/submit",
+      "routeFile": "routes/purchasing.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/purchasing/po/:po_id/variance-decision",
+      "mountPrefix": "/api/purchasing",
+      "localPath": "/po/:po_id/variance-decision",
       "routeFile": "routes/purchasing.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
@@ -7353,6 +7423,26 @@
       "fullPath": "/api/relay/returns",
       "mountPrefix": "/api/relay",
       "localPath": "/returns",
+      "routeFile": "routes/relay-dashboard.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/relay/returns/:id/compensation",
+      "mountPrefix": "/api/relay",
+      "localPath": "/returns/:id/compensation",
+      "routeFile": "routes/relay-dashboard.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/relay/returns/:id/compensation-proposal",
+      "mountPrefix": "/api/relay",
+      "localPath": "/returns/:id/compensation-proposal",
       "routeFile": "routes/relay-dashboard.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"

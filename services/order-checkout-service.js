@@ -121,6 +121,23 @@ async function runOrderCheckout({ user, body, internalSimulation = null, preview
       throw Object.assign(new Error(code), { code });
     }
   }
+  // FA-03 : ne jamais persister une référence Stripe issue du navigateur,
+  // y compris via un appel service direct qui contournerait le validateur HTTP.
+  // Le PaymentIntent est créé/rattaché uniquement par payment-stripe.js avec
+  // metadata.order_id et contrat montant/devise vérifiés.
+  if (Object.prototype.hasOwnProperty.call(body || {}, 'stripe_payment_intent')) {
+    return fail(400, {
+      code: 'STRIPE_INTENT_CLIENT_FORBIDDEN',
+      error: 'La référence Stripe est exclusivement attribuée par le serveur.',
+    });
+  }
+  // FA-22 : toute création réelle exige une clé anti-doublon (le rejeu d'un même
+  // payload renvoie la commande initiale, un payload divergent est refusé 409).
+  // Les aperçus et les fixtures de recette internes ont leur propre garde.
+  if (!previewOnly && !internalSimulation && !idempotencyKey) {
+    throw Object.assign(new Error('Clé anti-doublon (Idempotency-Key) obligatoire pour créer une commande.'),
+      { code: 'idempotency_key_required', status: 400 });
+  }
   const client = await db.getClient();
 
   try {
@@ -415,13 +432,28 @@ async function runOrderCheckout({ user, body, internalSimulation = null, preview
     }
     let creditApplied = 0;
 
-    // Wallet : seul un solde dans la devise du marché règle la commande ; le wallet KMF ne s'applique qu'à un marché KMF
-    // (aucune conversion implicite). Règlement par un wallet non-KMF : non géré ici (voir PR L6, section Reprise).
-    const walletCurrencyOk = !checkoutMarket || String(checkoutMarket.currency || 'KMF').toUpperCase() === 'KMF';
-    if (use_wallet && user?.id && walletCurrencyOk) {
-      const walletBalance = await walletService.getBalanceInTx(client, user.id, 'KMF');
-      if (walletBalance > 0) {
-        creditApplied = Math.min(walletBalance, total_kmf);
+    // Wallet : seul le solde dans la devise du marché règle la commande (KMF → KMF, XAF → XAF).
+    // Débit en devise du marché ; équivalent KMF (reste à payer) par fx-authority ; aucune conversion entre soldes.
+    let walletPlan = null;
+    if (use_wallet && user?.id) {
+      const marketCcy = String(checkoutMarket?.currency || 'KMF').toUpperCase();
+      try {
+        if (marketCcy === 'KMF') {
+          const walletBalance = await walletService.getBalanceInTx(client, user.id, 'KMF');
+          const spend = Math.min(walletBalance, total_kmf);
+          walletPlan = { currency: 'KMF', debit: spend, equivKmf: spend };
+        } else {
+          walletPlan = await walletService.planWalletSpend(client, {
+            userId: user.id, currency: marketCcy, remainingKmf: total_kmf,
+          });
+        }
+      } catch (err) {
+        if (err.code !== 'WALLET_FX_PARITY_UNAVAILABLE') throw err;
+        await client.query('ROLLBACK');
+        return fail(409, { error: err.message, code: err.code });
+      }
+      if (walletPlan.debit > 0) {
+        creditApplied = walletPlan.equivKmf;
         total_kmf -= creditApplied;
       }
     }
@@ -464,8 +496,8 @@ async function runOrderCheckout({ user, body, internalSimulation = null, preview
     // Le prix annoncé par le devis serveur doit être explicitement accepté.
     // Montant AVANT débit wallet (mais APRES remise) pour ne pas forcer le client
     // à accepter un nouveau prix lorsque seul son solde wallet a changé.
-    // Les anciens intégrateurs sans clé restent compatibles ; toute tentative
-    // boutique portant Idempotency-Key EXIGE ce montant signé par l'UI.
+    // Jamais de création silencieuse au nouveau prix (L3/N06) : la clé étant obligatoire (FA-22),
+    // tout appelant réel doit porter le total accepté, issu de l'aperçu (POST /api/orders/preview).
     const expectedTotal = body.expected_total_kmf;
     if (!internalSimulation && checkoutClaim && expectedTotal == null) {
       await client.query('ROLLBACK');
@@ -534,7 +566,7 @@ async function runOrderCheckout({ user, body, internalSimulation = null, preview
       reference, userId: user.id, recipientId: recipient_id, relaisId: relais?.id || null,
       trackingPhone: tracking_phone,
       totalKmf: total_kmf, totalEur: fxSnapshotBuilt.totalEur,
-      paymentMode: payment_mode, stripePaymentIntent: stripe_payment_intent, cashRefCode: cash_ref_code,
+      paymentMode: payment_mode, stripePaymentIntent: null, cashRefCode: cash_ref_code,
       confectionType: confection_type, confectionInstructions: confection_instructions,
       confectionDelayDays: confection_delay_days, confectionArtisanId: confection_artisan_id,
       moduleType: module_type, moduleFabricId: module_fabric_id, moduleFabricType: module_fabric_type,
@@ -571,6 +603,8 @@ async function runOrderCheckout({ user, body, internalSimulation = null, preview
       await applyWalletDebit(client, {
         userId: user.id,
         amountKmf: creditApplied,
+        walletDebit: walletPlan.debit,
+        walletCurrency: walletPlan.currency,
         orderId: order.id,
         orderReference: order.reference,
       });

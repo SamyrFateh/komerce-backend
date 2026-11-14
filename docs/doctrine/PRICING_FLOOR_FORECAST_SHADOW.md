@@ -54,7 +54,7 @@ Une liste de postes indispensables est imposée au circuit import (livraison fou
 
 L'Atelier affiche un panneau repliable dans le dossier du produit. Pour calculer, l'utilisateur renseigne manuellement chacun des trois scénarios ; **aucun champ n'est prérempli**. Le circuit import/local est une hypothèse de simulation, jamais la déclaration opérationnelle de stock. L'unité de commission relais (commande ou unité) doit être explicitement choisie et confirmée par contrat avant toute référence de tarification.
 
-Le serveur utilise `req.workspaceMarket` et `products.cost_kmf`, `weight_kg`, `volume_cm3` lus par requête `SELECT` sous `pricing.simulate`. Le navigateur ne fournit ni marché autoritaire, ni coût d'achat, ni marqueur de preuve contractuelle. Tous les taux sont saisis **en KMF ou en pourcentages avec leurs assiettes indiquées** ; les montants facturés en EUR/AED doivent être convertis par l'autorité FX avant saisie. Cela reste une simulation et non une procédure de certification des données.
+Le serveur utilise `req.workspaceMarket` et `products.cost_kmf`, `weight_kg`, `volume_cm3` lus par requête `SELECT` sous `pricing.simulate`. Le navigateur ne fournit ni marché autoritaire, ni coût d'achat, ni marqueur de preuve contractuelle. Les montants monétaires du formulaire sont saisis **dans la devise du marché résolue par le serveur** (KMF pour KM, XAF pour CM/CG). Les quantités physiques (kg, m³) et les taux en % ne sont jamais convertis. Le serveur normalise les montants de simulation via `utils/currency.projectAmount` → `fx-authority` et son pivot EUR, calcule en KMF puis restitue les planchers, N1/N2 et les prix candidats dans la devise locale. Le détail technique est explicitement libellé KMF. Aucun taux navigateur ni conversion implicite sans parité gouvernée. Les montants facturés en EUR/AED doivent être convertis en devise du marché avant saisie : cette interface ne prétend pas avoir récupéré un devis. Cela reste une simulation et non une procédure de certification des données.
 
 **Aucun résultat ne modifie le prix actif, les paramètres, les devis ou la base.** Aucun tarif douanier ni prix de transport n'est automatiquement deviné.
 
@@ -79,3 +79,37 @@ npx playwright test -c playwright.catalog-pricing-integration.config.js --grep '
 ```
 
 Les quatre exemples ne sont que des simulations, **pas des produits sourcés, des coûts payés, des devis réels ni des prix validés**. La doctrine d'Opus et les scénarios initiaux sont disponibles dans le document reçu pour l'issue #3830.
+
+## Diagnostic complémentaire ME-02 — référence mono-article du CDR (issue #3994)
+
+Le calcul opérationnel `computeCDR(product, ctx)` conserve **pour l'instant** ses répartitions historiques selon les valeurs `finance_config.avg_articles_per_order/parcel/shipment`. Il reste le chemin utilisé par le moteur actuel : la correction de ses règles de décision exige une validation distincte, et ne peut pas recalculer silencieusement les prix actifs.
+
+Un appel **explicite** à `computeSingleArticleReferenceCDR(product, ctx)` fournit la comparaison prudente : tous les forfaits `kmf_per_order`, `kmf_per_parcel` et `kmf_per_shipment` ont une clé de répartition `q=1` pour l'article étudié. Ce résultat a le marqueur `single_article_reference.mode = SHADOW_REFERENCE_ONLY`, `no_price_activation=true`, les diviseurs opérationnels historiques et un statut `PROVISOIRE` ou `NON_DECISIONNEL`.
+
+Il **ne constitue ni une preuve d'un lot physique d'un seul article, ni la répartition comptable réelle** d'une expédition déjà consolidée. Les allocations physiques réelles conservent leurs quantités observées. N3 reste indépendante des coûts variables et n'est pas ajoutée au plancher SKU.
+
+Des garde-fous déclarent `NON_DECISIONNEL` pour une devise/marché non résolu, un coût ou périmètre inconnu, une unité de commission relais prévisionnelle par commande non réconciliée avec la remise réelle par article, ou des coûts hérités sans provenance du corridor CM/CG. La présence d'un composant `market_override` prouve seulement sa portée déclarée : elle **ne certifie pas** que sa valeur est issue d'un devis réel.
+
+Ce diagnostic ne crée aucun nouveau circuit d'activation ni une seconde autorité de prix. **À arbitrer pour clore P0** : unité contractuelle de commission (article/commande/remise), sources et clés physiques réelles des corridors KM/CM/CG, et adoption éventuelle de la référence prudente dans la décision commerciale.
+
+
+## P0 #3994 — audit lecture seule des coûts par marché et de l'unité relais
+
+L'API authentifiée `GET /api/admin/workspaces/pricing/market/{KM|CM|CG}/economic-p0-audit` utilise le marché **résolu côté serveur**, l'autorisation `pricing.read` et la requête canonique `cost-component-market-service.listEffectiveComponents(marketId)`. Elle n'autorise aucune écriture, n'accepte aucun `market_id` fourni par le navigateur et renvoie `Cache-Control: private, no-store`.
+
+La réponse inventorie, sans conversion implicite : `key`, `category`, valeur numérique **dans son unité**, `unit`, `allocation_method`, `source`, `confidence`, `scope`, `island`, état actif/daté, héritage/surcharge et **présence** de provenance ou de note. Une surcharge locale prouve au plus sa **portée marché**, pas la facture de transport ni son taux FX ; toute entrée conserve `cost_evidence_status: NOT_VERIFIED`.
+
+Les alertes non décisionnelles distinguent :
+- `INHERITED_CORRIDOR_UNVERIFIED` — fret, transit, douane, frais portuaires ou distribution hérités sans justification propre à CM/CG ;
+- `KM_SPECIFIC_UNVERIFIED_OUTSIDE_KM` — clé Comores / inter-îles héritée hors marché KM ;
+- `RELAY_FORECAST_REAL_UNIT_MISMATCH` — le nouveau writer de remise utilise **une commission par commande** (`kmf_per_order`, `per_order`). Un composant dont l'unité/méthode diffère est refusé ; les anciennes allocations `per_item` restent historiques et sont signalées en audit, pas transformées silencieusement.
+
+Le endpoint retourne toujours `certified: false`, `status: NON_DECISIONNEL`, `no_price_activation: true`. L'absence d'alerte technique **ne certifie jamais** un tarif. Les contrôles de vraies valeurs nécessitent une lecture autorisée du staging après déploiement sur le SHA réellement servi, avec devis/factures et acteurs marché autorisés. Ni l'audit, ni cette réponse ne modifient les coûts ou les prix actifs.
+
+## ME-13 — commission de relais à la première remise confirmée
+
+Convention opérationnelle adoptée pour les **nouvelles** allocations après cette PR : un montant fixe dû **une fois par commande** lorsque le premier colis de cette commande passe à l'état `collected`. L'allocateur `allocateParcelRealCosts` prend un verrou sur les lignes `orders` avant de rechercher les allocations relais déjà présentes, puis ventile le forfait sur les lignes physiques du premier colis remis, au prorata des quantités avec conservation des centimes. Si une remise ultérieure porte des articles supplémentaires de la même commande, elle n'ajoute **aucun deuxième forfait**. Si deux commandes distinctes sont représentées dans un même colis, chacune a sa propre commission et son propre bénéficiaire `orders.relais_id`.
+
+Aucune allocation sur un colis simplement `available`, aucune commission sans bénéficiaire identifié ; aucune écriture si un coût relais historique de la commande existe déjà, quelle que soit sa méthode `per_item`, `per_order` ou manuelle. Ces anciens montants sont **préservés**, non supprimés et non requalifiés. Une configuration du composant canonique autre que `kmf_per_order` / `per_order` provoque un refus explicite `RELAY_COMMISSION_BASIS_CONFLICT`.
+
+Un forfait de source `finance_config` ou valeur de repli demeure une estimation ; le statut `is_actual` exige auteur, provenance justifiée et commande réelle compatible. Les frais de collecte du cash, les remboursements et les éventuelles conventions de relais différents restent des natures de coût distinctes. La présente convention d'imputation ne prétend **pas** prouver le versement contractuel : facture/preuve de règlement et comparaison aux contrats réels restent indispensables à la certification P0. Aucun prix de vente existant n'est recalculé ni activé.

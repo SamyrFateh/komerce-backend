@@ -90,6 +90,7 @@ module.exports = {
       'dashboards/canonical/css/market-team.css',
       'dashboards/canonical/js/market-team.js',
       'dashboards/canonical/js/market-network.js',
+      'dashboards/canonical/js/market-local-offer.js',
       'dashboards/canonical/css/market-cash-control.css',
       'dashboards/canonical/js/market-cash-control.js',
       'dashboards/canonical/js/market-readonly-views.js',

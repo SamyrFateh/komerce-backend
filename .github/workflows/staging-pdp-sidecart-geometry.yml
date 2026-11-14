@@ -1,0 +1,76 @@
+name: PDP side-cart geometry — Chromium 1440/1700/1920
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/staging-pdp-sidecart-geometry.yml'
+      - 'public/boutique/playwright.pdp-sidecart.config.js'
+      - 'public/boutique/tests/e2e/pdp-sidecart-geometry.spec.js'
+      - 'public/boutique/css/modal-shell.css'
+      - 'public/boutique/css/modal-product-lot4-hybrid.css'
+      - 'public/boutique/css/side-cart-desktop-polish.css'
+      - 'routes/catalog-product-detail.js'
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+
+jobs:
+  chromium:
+    if: >-
+      github.event_name == 'pull_request' ||
+      (github.event_name == 'issues' &&
+       github.actor == github.repository_owner &&
+       github.event.issue.title == '[staging-op] pdp-sidecart-geometry')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CI: '1'
+      BASE_URL: ${{ github.event_name == 'issues' && 'https://komerce-backend-production.up.railway.app/boutique/' || '' }}
+    steps:
+      - name: Checkout PR head or deployed main
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'issues' && 'main' || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: public/boutique/package-lock.json
+      - name: Install Boutique dependencies
+        working-directory: public/boutique
+        run: npm ci
+      - name: Install real Chromium
+        working-directory: public/boutique
+        run: npx playwright install --with-deps chromium
+      - name: Record staging deployment version (remote campaign only)
+        if: github.event_name == 'issues'
+        shell: bash
+        run: |
+          mkdir -p public/boutique/test-results/pdp-sidecart-geometry
+          curl --fail --silent --show-error --retry 3 \
+            https://komerce-backend-production.up.railway.app/health/version \
+            | tee public/boutique/test-results/pdp-sidecart-geometry/deployed-version.json
+          echo "Checked out main: $(git rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
+      - name: Chromium geometry and shipping proof
+        working-directory: public/boutique
+        run: npx playwright test --config=playwright.pdp-sidecart.config.js
+      - name: Report evidence index
+        if: always()
+        shell: bash
+        run: |
+          echo "## PDP desktop Chromium geometry" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Local fixture browser on PR; staging browser/API on owner issue." >> "$GITHUB_STEP_SUMMARY"
+          echo "- Widths: 1440, 1700, 1920; no checkout/payment mutation." >> "$GITHUB_STEP_SUMMARY"
+          find public/boutique/test-results/pdp-sidecart-geometry -maxdepth 1 -type f -printf '  %f\n' >> "$GITHUB_STEP_SUMMARY" || true
+      - name: Upload screenshots and geometry proofs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pdp-sidecart-chromium-${{ github.run_id }}
+          path: |
+            public/boutique/test-results/pdp-sidecart-geometry/
+            public/boutique/.playwright-pdp-geometry/
+          if-no-files-found: warn
+          retention-days: 14

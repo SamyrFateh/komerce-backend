@@ -40,6 +40,25 @@ describe('checkout — responsive intrinsèque sans seuil local', () => {
     );
   });
 
+  it('propose une interface mobile compacte sans nouveau breakpoint ni faux parcours', () => {
+    const normalized = compact(css);
+    expect(css).toContain('@media (max-width: 899px)');
+    expect(normalized).toMatch(/\.k-order-overlay\.open \.ck-mobile-relay-heading \{[^}]*display: flex/);
+    expect(normalized).toMatch(/\.k-order-overlay\.open \.ck-checkout-aside \.ck-checkout-heading \{ display: none/);
+    expect(normalized).toMatch(/\.k-order-overlay\.open \.ck-recap-toggle \{[^}]*min-height: 46px/);
+    expect(normalized).toMatch(/\.k-order-overlay\.open \.ck-recap-subtotal \{[^}]*--cream-amber-bg/);
+    expect(normalized).toMatch(/\.k-order-overlay\.open \.ck-confirm-btn:not\(:disabled\) \{[^}]*--checkout-accent-deep/);
+  });
+
+  it('livre le checkout mobile dans le bundle réel et invalide son cache CSS', () => {
+    const served = fs.readFileSync(path.join(__dirname, '../../css/dist/components.css'), 'utf8');
+    const html = fs.readFileSync(path.join(__dirname, '../../index.html'), 'utf8');
+    expect(served).toContain('Checkout mobile compact V2');
+    expect(served).toContain('.k-order-overlay.open .ck-mobile-relay-heading {');
+    expect(served).toContain('display: flex;');
+    expect(html).toContain('components.css?v=661');
+  });
+
   it('le corps du checkout réduit son padding horizontal de façon fluide', () => {
     const normalized = compact(css);
     expect(normalized).toMatch(

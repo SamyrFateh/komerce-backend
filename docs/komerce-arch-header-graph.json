@@ -13,28 +13,28 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 803,
-    "filesWithFullHeaders": 748,
+    "scannedCodeFiles": 812,
+    "filesWithFullHeaders": 757,
     "filesWithLiteHeaders": 55,
-    "filesWithAnyHeaders": 803,
+    "filesWithAnyHeaders": 812,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 2034,
-    "edges": 10041,
-    "dbTables": 233,
-    "doctrines": 791,
+    "graphNodes": 2061,
+    "edges": 10227,
+    "dbTables": 239,
+    "doctrines": 803,
     "impactAreas": 207,
-    "unresolvedCodeEdges": 961,
+    "unresolvedCodeEdges": 972,
     "dbWriteViaOverlapWarnings": 12,
-    "multiWriterTables": 95
+    "multiWriterTables": 97
   },
   "byDomain": {
     "infrastructure": 25,
     "bootstrap": 2,
-    "notification": 21,
+    "notification": 22,
     "auth": 14,
-    "market-delegation": 36,
+    "market-delegation": 38,
     "platform-ops": 2,
     "catalog": 137,
     "admin-dashboard": 39,
@@ -42,7 +42,7 @@
     "market": 9,
     "economic-engine": 69,
     "sourcing": 37,
-    "logistics": 69,
+    "logistics": 71,
     "boutique": 24,
     "checkout": 3,
     "shared-cart": 25,
@@ -60,7 +60,7 @@
     "market-control-plane": 5,
     "settlement": 2,
     "business-rules": 1,
-    "orders": 37,
+    "orders": 40,
     "documents": 16,
     "auth-identity": 12,
     "operations": 11,
@@ -71,7 +71,7 @@
     "external-provider-contracts": 1,
     "finance": 3,
     "incident-management": 5,
-    "refunds": 7,
+    "refunds": 8,
     "market-autonomy": 4,
     "markets": 1,
     "payments": 1,
@@ -110,9 +110,9 @@
     "ui-behavior": 1,
     "state-store": 1,
     "schema": 1,
-    "route": 137,
+    "route": 138,
     "entrypoint": 1,
-    "service": 484,
+    "service": 492,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -121,9 +121,9 @@
     "validators": 1
   },
   "byCriticality": {
-    "critical": 122,
-    "medium": 157,
-    "high": 459,
+    "critical": 126,
+    "medium": 156,
+    "high": 465,
     "low": 64,
     "unknown": 1
   },
@@ -162,6 +162,7 @@
         "routes/market-delegation-provider.js",
         "routes/market-delegation-catalog.js",
         "routes/market-delegation-local-offer.js",
+        "routes/market-local-stock.js",
         "routes/market-delegation-client-case.js",
         "routes/market-delegation-settlement.js",
         "routes/market-delegation-structure-event.js",
@@ -6961,6 +6962,7 @@
       "outputs": [
         "canonical_pricing_projection",
         "market_cost_projection",
+        "read_only_p0_cost_audit",
         "market_decision_projection",
         "market_price_decisions",
         "market_corridor_projection",
@@ -6976,6 +6978,7 @@
         "middleware/require-pricing-global-authority.js",
         "middleware/require-market-delegated-capability.js",
         "services/pricing-workspace.js",
+        "services/cost-component-market-service.js",
         "services/pricing-market-decision-policy.js",
         "services/pricing-market-decision-projection.js",
         "services/pricing-market-corridor.js",
@@ -10549,6 +10552,58 @@
       "version": "2026-10"
     },
     {
+      "id": "routes/market-local-stock.js",
+      "file": "routes/market-local-stock.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "market-local-stock-api",
+      "domain": "market-delegation",
+      "layer": "route",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated user",
+        "market code",
+        "receipt payload",
+        "Idempotency-Key"
+      ],
+      "outputs": [
+        "local stock list",
+        "receipt declaration",
+        "exposure update"
+      ],
+      "depends": [
+        "middleware/auth.js",
+        "services/market-delegation-local-stock-service.js"
+      ],
+      "usedBy": [
+        "bootstrap/api-routes.js",
+        "public/dashboards/canonical/js/market-local-offer.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [
+        {
+          "via": "market-delegation-local-stock-service",
+          "tables": [
+            "local_stock",
+            "market_delegation_audit"
+          ]
+        }
+      ],
+      "dbTxn": [],
+      "doctrine": [
+        "country_lead_only_local_stock_declaration",
+        "client_market_id_never_authority"
+      ],
+      "impactAreas": [
+        "market-delegation",
+        "local-stock"
+      ],
+      "version": "2026-11"
+    },
+    {
       "id": "routes/meta-whatsapp.js",
       "file": "routes/meta-whatsapp.js",
       "type": "file",
@@ -11691,7 +11746,8 @@
         "middleware/auth.js",
         "middleware/auth-guest.js",
         "services/paypal-client.js",
-        "services/payment-paypal.js"
+        "services/payment-paypal.js",
+        "services/paypal-refund-authority.js"
       ],
       "usedBy": [
         "bootstrap/api-routes.js"
@@ -16211,6 +16267,7 @@
         "customs_shipment_parcels",
         "customs_shipments",
         "finance_config",
+        "order_item_real_cost_allocations",
         "order_items",
         "orders",
         "parcel_items",
@@ -16722,7 +16779,8 @@
       ],
       "outputs": [
         "effective_market_cost_components",
-        "audited_override_mutations"
+        "audited_override_mutations",
+        "read_only_p0_corridor_relay_evidence"
       ],
       "depends": [
         "db.js"
@@ -18379,6 +18437,7 @@
       ],
       "dbRead": [
         "orders",
+        "scans",
         "invoices",
         "refunds",
         "transaction_documents"
@@ -18528,13 +18587,19 @@
         "db.js"
       ],
       "usedBy": [
-        "services/verify-qr-collection.js (post-commit)"
+        "services/pickup-collection-service.js",
+        "services/pickup-exceptional-collection-service.js (post-commit",
+        "par scan)"
       ],
       "dbRead": [
         "orders",
         "recipients",
         "relais",
-        "users"
+        "users",
+        "scans",
+        "parcels",
+        "parcel_items",
+        "order_items"
       ],
       "dbWrite": [
         "transaction_documents"
@@ -19931,7 +19996,8 @@
         "purchase_order_authorizations"
       ],
       "depends": [
-        "db"
+        "db",
+        "services/documents/pdf-renderer.js"
       ],
       "usedBy": [
         "routes/purchasing.js",
@@ -19943,11 +20009,18 @@
         "purchase_lines",
         "purchase_orders",
         "purchase_order_authorizations",
-        "users"
+        "supplier_execution_payments",
+        "manual_purchase_executions",
+        "purchase_variance_decisions",
+        "users",
+        "suppliers",
+        "order_items",
+        "products"
       ],
       "dbWrite": [
         "hub_authorization_grants",
-        "purchase_order_authorizations"
+        "purchase_order_authorizations",
+        "purchase_variance_decisions"
       ],
       "dbWriteVia": [],
       "dbTxn": [
@@ -20365,7 +20438,8 @@
       "dbRead": [
         "product_sku_physical_codes",
         "purchase_orders",
-        "purchase_lines"
+        "purchase_lines",
+        "v_purchase_line_market"
       ],
       "dbWrite": [
         "product_sku_physical_codes"
@@ -22432,6 +22506,72 @@
         "providers-services"
       ],
       "version": "2026-09"
+    },
+    {
+      "id": "services/market-delegation-local-stock-service.js",
+      "file": "services/market-delegation-local-stock-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "market-delegation-local-stock-service",
+      "domain": "market-delegation",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "actor user",
+        "market code",
+        "product_id",
+        "relais_id",
+        "qty_received",
+        "proof_ref",
+        "Idempotency-Key"
+      ],
+      "outputs": [
+        "local_stock_row",
+        "receipt_audit",
+        "exposure_row"
+      ],
+      "depends": [
+        "services/local-stock-service.js",
+        "services/market-delegation-service.js",
+        "services/market-delegation-team-service.js"
+      ],
+      "usedBy": [],
+      "dbRead": [
+        "products",
+        "relais",
+        "local_stock",
+        "market_delegation_audit"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [
+        {
+          "via": "local-stock-service",
+          "tables": [
+            "local_stock"
+          ]
+        },
+        {
+          "via": "market-delegation-service",
+          "tables": [
+            "market_delegation_audit"
+          ]
+        }
+      ],
+      "dbTxn": [
+        "advisory_lock_session"
+      ],
+      "doctrine": [
+        "country_lead_only_local_stock_declaration",
+        "market_pool_stock_km_main",
+        "no_second_stock_writer"
+      ],
+      "impactAreas": [
+        "market-delegation",
+        "local-stock"
+      ],
+      "version": "2026-11"
     },
     {
       "id": "services/market-delegation-network-service.js",
@@ -24713,7 +24853,8 @@
         "inventory_items",
         "order_incidents",
         "hub_box_bags",
-        "e2e_test_accounts"
+        "e2e_test_accounts",
+        "cash_collections"
       ],
       "dbWrite": [
         "order_comments"
@@ -24849,6 +24990,54 @@
         "market-authorization"
       ],
       "version": "2026-10"
+    },
+    {
+      "id": "services/order-checkout-idempotency.js",
+      "file": "services/order-checkout-idempotency.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "order-checkout-idempotency",
+      "domain": "orders",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "user_id",
+        "Idempotency-Key",
+        "validated_checkout_body"
+      ],
+      "outputs": [
+        "one_order_and_wallet_debit_per_key",
+        "immutable_replay_response"
+      ],
+      "depends": [
+        "node:crypto"
+      ],
+      "usedBy": [
+        "services/order-checkout-service.js"
+      ],
+      "dbRead": [
+        "order_checkout_idempotency"
+      ],
+      "dbWrite": [
+        "order_checkout_idempotency"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "same_transaction_as_checkout"
+      ],
+      "doctrine": [
+        "idempotency_scope_is_authenticated_buyer",
+        "no_new_order_on_replay"
+      ],
+      "impactAreas": [
+        "checkout",
+        "orders",
+        "payments",
+        "wallet"
+      ],
+      "version": "2026-11"
     },
     {
       "id": "services/order-checkout-item-resolution.js",
@@ -25645,7 +25834,8 @@
       ],
       "depends": [
         "db.js",
-        "services/client-notification-service.js"
+        "services/client-notification-service.js",
+        "services/pickup-secret-service.js"
       ],
       "usedBy": [
         "order-payment-confirmation.js",
@@ -25659,7 +25849,9 @@
         "orders",
         "products",
         "relais",
-        "scans"
+        "scans",
+        "wallet_transactions",
+        "wallets"
       ],
       "dbWrite": [
         "order_items",
@@ -25667,6 +25859,12 @@
         "orders"
       ],
       "dbWriteVia": [
+        {
+          "via": "pickup-secret-service",
+          "tables": [
+            "pickup_reveal_codes"
+          ]
+        },
         {
           "via": "customs-shipment-service",
           "tables": [
@@ -26051,6 +26249,7 @@
         "services/parcel-service.js",
         "services/parcel-transition-guard.js",
         "services/refund-service.js",
+        "utils/alerts.js",
         "utils/logger.js",
         "utils/reference.js",
         "utils/rules.js"
@@ -26631,7 +26830,7 @@
         "db.js",
         "services/paypal-client.js",
         "services/order-payment-confirmation.js",
-        "services/documents/refund-receipt.js",
+        "services/paypal-refund-authority.js",
         "routes/pickup-secret.js"
       ],
       "usedBy": [
@@ -26871,6 +27070,117 @@
       "version": "2026-06"
     },
     {
+      "id": "services/paypal-refund-authority.js",
+      "file": "services/paypal-refund-authority.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "durable-paypal-admin-refund-authority",
+      "domain": "refunds",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "order_id",
+        "admin",
+        "explicit idempotency key",
+        "original capture",
+        "provider evidence"
+      ],
+      "outputs": [
+        "durable intent",
+        "verified refunds row",
+        "partial/full settlement"
+      ],
+      "depends": [
+        "db.js",
+        "services/refund-intent-ledger.js",
+        "services/refund-intent-reconciliation.js",
+        "services/refund-service.js",
+        "services/payment-service.js",
+        "services/order-status-machine.js",
+        "services/documents/refund-receipt.js",
+        "utils/alerts.js"
+      ],
+      "usedBy": [
+        "services/payment-paypal.js"
+      ],
+      "dbRead": [
+        "orders",
+        "refund_execution_intents",
+        "refunds"
+      ],
+      "dbWrite": [
+        "refund_execution_intents",
+        "refunds",
+        "orders",
+        "order_status_history"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "reserve_commit_then_claim_commit_then_provider_post_then_verified_settlement_commit"
+      ],
+      "doctrine": [
+        "no_psp_in_sql_transaction",
+        "durable_intent",
+        "no_duplicate_refund",
+        "fail_closed_on_unknown",
+        "refunds_to_original_payer"
+      ],
+      "impactAreas": [
+        "payments",
+        "orders",
+        "refunds",
+        "documents",
+        "finance"
+      ],
+      "version": "2026-11"
+    },
+    {
+      "id": "services/pickup-agent-lockout.js",
+      "file": "services/pickup-agent-lockout.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "pickup-agent-lockout",
+      "domain": "logistics",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "client",
+        "user"
+      ],
+      "outputs": [
+        "lockout_state"
+      ],
+      "depends": [
+        "db.js"
+      ],
+      "usedBy": [
+        "services/pickup-collection-service.js"
+      ],
+      "dbRead": [
+        "pickup_collect_failures",
+        "users"
+      ],
+      "dbWrite": [
+        "pickup_collect_failures"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "compatible_with_caller"
+      ],
+      "doctrine": [
+        "brute_force_guard"
+      ],
+      "impactAreas": [
+        "logistics",
+        "security"
+      ],
+      "version": "2026-11"
+    },
+    {
       "id": "services/pickup-authorization-service.js",
       "file": "services/pickup-authorization-service.js",
       "type": "file",
@@ -27050,10 +27360,12 @@
         "side_effects"
       ],
       "depends": [
+        "services/pickup-agent-lockout.js",
         "db.js",
         "services/order-status-machine.js",
         "services/pickup-code-helpers.js",
         "services/pickup-collection-recorder.js",
+        "services/documents/pickup-proof.js",
         "utils/alerts.js"
       ],
       "usedBy": [
@@ -27068,6 +27380,7 @@
       ],
       "dbWrite": [
         "alerts",
+        "pickup_collect_failures",
         "pickup_print_tokens",
         "pickup_reveal_codes",
         "scans"
@@ -27136,6 +27449,7 @@
       "depends": [
         "db.js",
         "services/pickup-collection-recorder.js",
+        "services/documents/pickup-proof.js",
         "services/pickup-collection-service.js",
         "services/pickup-authorization-service.js",
         "services/notifications/notification-service.js",
@@ -27256,6 +27570,61 @@
       ],
       "version": "2026-08 (extrait de pickup-secret-service.js, LOT 5B — nettoyage architectural)",
       "dbWriteViaOverlapWarning": "services/pickup-secret-access-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> orders"
+    },
+    {
+      "id": "services/pickup-secret-customer-rotation-service.js",
+      "file": "services/pickup-secret-customer-rotation-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "pickup-secret-customer-rotation",
+      "domain": "logistics",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "orderId",
+        "userId"
+      ],
+      "outputs": [
+        "new_pickup_code_one_shot"
+      ],
+      "depends": [
+        "db.js",
+        "services/pickup-secret-issuer.js",
+        "services/order-mutation-service.js"
+      ],
+      "usedBy": [
+        "routes/pickup-secret.js"
+      ],
+      "dbRead": [
+        "orders",
+        "pickup_code_generations"
+      ],
+      "dbWrite": [
+        "pickup_code_generations",
+        "pickup_reveal_codes",
+        "pickup_print_tokens"
+      ],
+      "dbWriteVia": [
+        {
+          "via": "order-mutation-service",
+          "tables": [
+            "orders"
+          ]
+        }
+      ],
+      "dbTxn": [
+        "single_transaction_for_update"
+      ],
+      "doctrine": [
+        "no_second_secret_writer"
+      ],
+      "impactAreas": [
+        "logistics",
+        "pickup"
+      ],
+      "version": "2026-11"
     },
     {
       "id": "services/pickup-secret-issuer.js",
@@ -27794,7 +28163,8 @@
         "never_persisted_provisional_floor_preview"
       ],
       "depends": [
-        "services/pricing-floor-forecast-shadow.js"
+        "services/pricing-floor-forecast-shadow.js",
+        "utils/currency.js"
       ],
       "usedBy": [
         "routes/admin-pricing-workspace.js"
@@ -29651,16 +30021,20 @@
         "routes/purchasing.js"
       ],
       "dbRead": [
+        "manual_purchase_executions",
         "order_items",
         "orders",
         "product_suppliers",
         "products",
         "purchase_lines",
+        "purchase_order_authorizations",
         "purchase_orders",
+        "supplier_execution_payments",
         "suppliers",
         "v_purchase_line_progress"
       ],
       "dbWrite": [
+        "manual_purchase_executions",
         "purchase_lines",
         "purchase_orders"
       ],
@@ -30476,7 +30850,9 @@
         "refund_execution_intents"
       ],
       "usedBy": [
-        "future refund orchestrators (NOT ACTIVATED)"
+        "services/paypal-refund-authority.js",
+        "services/sav-ledger-refund.js",
+        "services/item-refund-reservation-service.js"
       ],
       "dbRead": [
         "orders",
@@ -30585,6 +30961,7 @@
         "orders",
         "refunds",
         "wallets",
+        "wallet_transactions",
         "markets"
       ],
       "dbWrite": [
@@ -30858,6 +31235,80 @@
       "version": "2026-11"
     },
     {
+      "id": "services/relay-return-compensation-service.js",
+      "file": "services/relay-return-compensation-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "relay-return-compensation-service",
+      "domain": "orders",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "admin_actor",
+        "product_return_dispute_id",
+        "movement",
+        "amount",
+        "reason",
+        "scale_code"
+      ],
+      "outputs": [
+        "one_immutable_compensation_decision_per_return_request",
+        "wallet_credit_in_market_currency"
+      ],
+      "depends": [
+        "db.js",
+        "services/wallet-service.js",
+        "services/fx-authority.js",
+        "services/sav-ledger-refund.js",
+        "services/sav-replacement-order.js",
+        "disputes",
+        "orders",
+        "order_items"
+      ],
+      "usedBy": [
+        "routes/relay-dashboard.js"
+      ],
+      "dbRead": [
+        "disputes",
+        "orders",
+        "order_items",
+        "business_rules",
+        "relay_return_compensations",
+        "relay_product_return_receipts"
+      ],
+      "dbWrite": [
+        "relay_return_compensations"
+      ],
+      "dbWriteVia": [
+        {
+          "via": "wallet-service",
+          "tables": [
+            "wallets",
+            "wallet_transactions",
+            "wallet_credit_lots"
+          ]
+        }
+      ],
+      "dbTxn": [
+        "owns_transaction_with_dispute_row_lock"
+      ],
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_NON_CONFORMITE.md",
+        "return_is_dispute_not_parallel_object",
+        "no_implicit_refund_no_sellable_stock",
+        "financial_authority_never_delegated"
+      ],
+      "impactAreas": [
+        "orders",
+        "wallet",
+        "refunds",
+        "dashboard"
+      ],
+      "version": "2026-11"
+    },
+    {
       "id": "services/relay-return-request-service.js",
       "file": "services/relay-return-request-service.js",
       "type": "file",
@@ -30894,7 +31345,8 @@
         "order_items",
         "products",
         "disputes",
-        "relay_product_return_receipts"
+        "relay_product_return_receipts",
+        "relay_return_compensations"
       ],
       "dbWrite": [],
       "dbWriteVia": [
@@ -31120,6 +31572,114 @@
         "unknown"
       ],
       "version": "2026-06"
+    },
+    {
+      "id": "services/sav-ledger-refund.js",
+      "file": "services/sav-ledger-refund.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "sav-ledger-refund",
+      "domain": "refunds",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "locked_return_decision",
+        "original_capture",
+        "compensation_amount"
+      ],
+      "outputs": [
+        "reserved_intent",
+        "verified_refund_status"
+      ],
+      "depends": [
+        "services/refund-intent-ledger.js",
+        "services/refund-intent-reconciliation.js",
+        "services/refund-service.js",
+        "services/item-refund-psp-orchestrator.js",
+        "services/fx-authority.js",
+        "services/paypal-client.js",
+        "services/documents/refund-receipt.js"
+      ],
+      "usedBy": [
+        "services/relay-return-compensation-service.js"
+      ],
+      "dbRead": [
+        "refund_execution_intents"
+      ],
+      "dbWrite": [
+        "refund_execution_intents"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "reserve_in_caller_transaction_then_claim_and_reconcile_outside"
+      ],
+      "doctrine": [
+        "refund_to_payer",
+        "no_duplicate_refund",
+        "no_psp_in_sql_transaction"
+      ],
+      "impactAreas": [
+        "orders",
+        "refunds",
+        "finance"
+      ],
+      "version": "2026-11"
+    },
+    {
+      "id": "services/sav-replacement-order.js",
+      "file": "services/sav-replacement-order.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "sav-replacement-order",
+      "domain": "orders",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "physically_received_return",
+        "exact_original_order_item",
+        "locked_decision"
+      ],
+      "outputs": [
+        "zero_charge_order_in_existing_fulfillment_circuit"
+      ],
+      "depends": [
+        "services/order-service.js",
+        "services/order-status-machine.js",
+        "services/order-checkout-persistence.js",
+        "services/purchasing-trigger-service.js"
+      ],
+      "usedBy": [
+        "services/relay-return-compensation-service.js"
+      ],
+      "dbRead": [
+        "orders",
+        "order_items",
+        "relais"
+      ],
+      "dbWrite": [
+        "orders",
+        "order_items"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "caller_owned_then_procurement_after_commit"
+      ],
+      "doctrine": [
+        "return_is_dispute_not_parallel_object",
+        "status_transition_source_unique",
+        "no_implicit_refund_no_sellable_stock"
+      ],
+      "impactAreas": [
+        "orders",
+        "logistics",
+        "local-stock",
+        "purchasing"
+      ],
+      "version": "2026-11"
     },
     {
       "id": "services/scan-engine.js",
@@ -37118,7 +37678,8 @@
         "relais"
       ],
       "dbWrite": [
-        "users"
+        "users",
+        "hub_authorization_grants"
       ],
       "dbWriteVia": [],
       "dbTxn": [
@@ -37210,7 +37771,8 @@
       "depends": [
         "db.js",
         "services/documents/wallet-receipt.js",
-        "services/order-mutation-service.js"
+        "services/order-mutation-service.js",
+        "services/fx-authority.js (devise marché non-KMF)"
       ],
       "usedBy": [
         "routes/wallet.js",
@@ -37218,6 +37780,7 @@
         "services/order-payment-confirmation.js"
       ],
       "dbRead": [
+        "markets",
         "orders",
         "users",
         "wallet_consumptions",
@@ -37375,7 +37938,8 @@
       ],
       "depends": [
         "Meta Graph API",
-        "env META_WA_*"
+        "env META_WA_*",
+        "utils/non-prod-phone-guard.js"
       ],
       "usedBy": [
         "notification-service.js",
@@ -38172,7 +38736,6 @@
         "utils/parcels.js",
         "utils/pricing-cache.js",
         "utils/rates.js",
-        "utils/refunds.js",
         "utils/rules.js",
         "utils/store-credits.js"
       ],
@@ -38223,6 +38786,47 @@
         "logistics"
       ],
       "version": "2026-07"
+    },
+    {
+      "id": "utils/non-prod-phone-guard.js",
+      "file": "utils/non-prod-phone-guard.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "non-prod-phone-guard",
+      "domain": "notification",
+      "layer": "util",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "env AUTHKEY_ALLOWED_PHONES",
+        "runtime environment",
+        "recipient_phone"
+      ],
+      "outputs": [
+        "allowed_boolean"
+      ],
+      "depends": [
+        "middleware/require-non-production.js"
+      ],
+      "usedBy": [
+        "services/authkey-client.js",
+        "services/whatsapp-meta.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "no_external_send_outside_production",
+        "fail_safe_empty_allowlist"
+      ],
+      "impactAreas": [
+        "whatsapp",
+        "notifications",
+        "shared-cart"
+      ],
+      "version": "2026-11"
     },
     {
       "id": "utils/orderParcelLinkRules.js",
@@ -38580,44 +39184,6 @@
       ],
       "dbRead": [],
       "dbWrite": [],
-      "dbWriteVia": [],
-      "dbTxn": [],
-      "doctrine": [
-        "resolve_before_behavior_change"
-      ],
-      "impactAreas": [
-        "unknown"
-      ],
-      "version": "2026-06"
-    },
-    {
-      "id": "utils/refunds.js",
-      "file": "utils/refunds.js",
-      "type": "file",
-      "headerType": "full",
-      "role": "refunds",
-      "domain": "refunds",
-      "layer": "util",
-      "criticality": "medium",
-      "owner": null,
-      "purpose": null,
-      "inputs": [
-        "runtime_context",
-        "request_or_service_payload"
-      ],
-      "outputs": [
-        "response_or_domain_result",
-        "side_effects"
-      ],
-      "depends": [
-        "services/wallet-service.js",
-        "utils/logger.js"
-      ],
-      "usedBy": [],
-      "dbRead": [],
-      "dbWrite": [
-        "refunds"
-      ],
       "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
@@ -39361,6 +39927,11 @@
       "table": "market_team_invitations"
     },
     {
+      "id": "db:local_stock",
+      "type": "db-table",
+      "table": "local_stock"
+    },
+    {
       "id": "db:fabrics",
       "type": "db-table",
       "table": "fabrics"
@@ -39721,6 +40292,16 @@
       "table": "purchase_order_authorizations"
     },
     {
+      "id": "db:manual_purchase_executions",
+      "type": "db-table",
+      "table": "manual_purchase_executions"
+    },
+    {
+      "id": "db:purchase_variance_decisions",
+      "type": "db-table",
+      "table": "purchase_variance_decisions"
+    },
+    {
       "id": "db:international_shipment_hub_units",
       "type": "db-table",
       "table": "international_shipment_hub_units"
@@ -39749,6 +40330,11 @@
       "id": "db:product_sku_physical_codes",
       "type": "db-table",
       "table": "product_sku_physical_codes"
+    },
+    {
+      "id": "db:v_purchase_line_market",
+      "type": "db-table",
+      "table": "v_purchase_line_market"
     },
     {
       "id": "db:hub_box_effective_placements",
@@ -39786,11 +40372,6 @@
       "table": "international_shipment_relay_receipts"
     },
     {
-      "id": "db:local_stock",
-      "type": "db-table",
-      "table": "local_stock"
-    },
-    {
       "id": "db:product_market_price_draft_events",
       "type": "db-table",
       "table": "product_market_price_draft_events"
@@ -39816,6 +40397,11 @@
       "table": "market_central_collection_modes"
     },
     {
+      "id": "db:order_checkout_idempotency",
+      "type": "db-table",
+      "table": "order_checkout_idempotency"
+    },
+    {
       "id": "db:physical_outcome_receipts",
       "type": "db-table",
       "table": "physical_outcome_receipts"
@@ -39836,9 +40422,19 @@
       "table": "paypal_events_processed"
     },
     {
+      "id": "db:pickup_collect_failures",
+      "type": "db-table",
+      "table": "pickup_collect_failures"
+    },
+    {
       "id": "db:user_pickup_authorizations",
       "type": "db-table",
       "table": "user_pickup_authorizations"
+    },
+    {
+      "id": "db:pickup_code_generations",
+      "type": "db-table",
+      "table": "pickup_code_generations"
     },
     {
       "id": "db:pricing_benchmarks",
@@ -39891,11 +40487,6 @@
       "table": "pricing_strategy_history"
     },
     {
-      "id": "db:v_purchase_line_market",
-      "type": "db-table",
-      "table": "v_purchase_line_market"
-    },
-    {
       "id": "db:supplier_execution_group_members",
       "type": "db-table",
       "table": "supplier_execution_group_members"
@@ -39909,6 +40500,11 @@
       "id": "db:relay_product_return_receipts",
       "type": "db-table",
       "table": "relay_product_return_receipts"
+    },
+    {
+      "id": "db:relay_return_compensations",
+      "type": "db-table",
+      "table": "relay_return_compensations"
     },
     {
       "id": "db:shared_cart_saved_access",
@@ -41149,6 +41745,11 @@
       "id": "doctrine:legacy_scope_is_projection",
       "type": "doctrine",
       "doctrine": "legacy_scope_is_projection"
+    },
+    {
+      "id": "doctrine:country_lead_only_local_stock_declaration",
+      "type": "doctrine",
+      "doctrine": "country_lead_only_local_stock_declaration"
     },
     {
       "id": "doctrine:order_creation_idempotent",
@@ -42551,6 +43152,16 @@
       "doctrine": "local_offer_authority_is_capability_based"
     },
     {
+      "id": "doctrine:market_pool_stock_km_main",
+      "type": "doctrine",
+      "doctrine": "market_pool_stock_km_main"
+    },
+    {
+      "id": "doctrine:no_second_stock_writer",
+      "type": "doctrine",
+      "doctrine": "no_second_stock_writer"
+    },
+    {
       "id": "doctrine:network_authority_is_capability_based",
       "type": "doctrine",
       "doctrine": "network_authority_is_capability_based"
@@ -42911,6 +43522,16 @@
       "doctrine": "semantic_state_source_reuse"
     },
     {
+      "id": "doctrine:idempotency_scope_is_authenticated_buyer",
+      "type": "doctrine",
+      "doctrine": "idempotency_scope_is_authenticated_buyer"
+    },
+    {
+      "id": "doctrine:no_new_order_on_replay",
+      "type": "doctrine",
+      "doctrine": "no_new_order_on_replay"
+    },
+    {
       "id": "doctrine:explicit_relay_market_anchor",
       "type": "doctrine",
       "doctrine": "explicit_relay_market_anchor"
@@ -43086,6 +43707,21 @@
       "doctrine": "wallet_non_modifie_ici"
     },
     {
+      "id": "doctrine:fail_closed_on_unknown",
+      "type": "doctrine",
+      "doctrine": "fail_closed_on_unknown"
+    },
+    {
+      "id": "doctrine:refunds_to_original_payer",
+      "type": "doctrine",
+      "doctrine": "refunds_to_original_payer"
+    },
+    {
+      "id": "doctrine:brute_force_guard",
+      "type": "doctrine",
+      "doctrine": "brute_force_guard"
+    },
+    {
       "id": "doctrine:exceptional_pickup_strict_normalized_match",
       "type": "doctrine",
       "doctrine": "exceptional_pickup_strict_normalized_match"
@@ -43094,6 +43730,11 @@
       "id": "doctrine:docs/architecture/IMPACT_FEATURE_FIRST_FULFILLMENT_MIXTE.md R9-R10",
       "type": "doctrine",
       "doctrine": "docs/architecture/IMPACT_FEATURE_FIRST_FULFILLMENT_MIXTE.md R9-R10"
+    },
+    {
+      "id": "doctrine:no_second_secret_writer",
+      "type": "doctrine",
+      "doctrine": "no_second_secret_writer"
     },
     {
       "id": "doctrine:docs/architecture/IMPACT_FEATURE_FIRST_FULFILLMENT_MIXTE.md R10",
@@ -43426,19 +44067,24 @@
       "doctrine": "relay_scope_from_session"
     },
     {
+      "id": "doctrine:docs/doctrine/DOCTRINE_NON_CONFORMITE.md",
+      "type": "doctrine",
+      "doctrine": "docs/doctrine/DOCTRINE_NON_CONFORMITE.md"
+    },
+    {
       "id": "doctrine:return_is_dispute_not_parallel_object",
       "type": "doctrine",
       "doctrine": "return_is_dispute_not_parallel_object"
     },
     {
-      "id": "doctrine:relay_scope_is_server_authority",
-      "type": "doctrine",
-      "doctrine": "relay_scope_is_server_authority"
-    },
-    {
       "id": "doctrine:financial_authority_never_delegated",
       "type": "doctrine",
       "doctrine": "financial_authority_never_delegated"
+    },
+    {
+      "id": "doctrine:relay_scope_is_server_authority",
+      "type": "doctrine",
+      "doctrine": "relay_scope_is_server_authority"
     },
     {
       "id": "doctrine:relay_reception_attested_by_relay",
@@ -43914,6 +44560,16 @@
       "id": "doctrine:GAP_ANALYSIS_CURRENCY_BOUNDARY.md — FREEZE FINAL 22-08-2026.",
       "type": "doctrine",
       "doctrine": "GAP_ANALYSIS_CURRENCY_BOUNDARY.md — FREEZE FINAL 22-08-2026."
+    },
+    {
+      "id": "doctrine:no_external_send_outside_production",
+      "type": "doctrine",
+      "doctrine": "no_external_send_outside_production"
+    },
+    {
+      "id": "doctrine:fail_safe_empty_allowlist",
+      "type": "doctrine",
+      "doctrine": "fail_safe_empty_allowlist"
     },
     {
       "id": "doctrine:API_CONTRACTS",
@@ -45052,6 +45708,12 @@
       "to": "routes/market-delegation-local-offer.js",
       "type": "depends",
       "label": "routes/market-delegation-local-offer.js"
+    },
+    {
+      "from": "bootstrap/api-routes.js",
+      "to": "routes/market-local-stock.js",
+      "type": "depends",
+      "label": "routes/market-local-stock.js"
     },
     {
       "from": "bootstrap/api-routes.js",
@@ -55058,6 +55720,12 @@
     },
     {
       "from": "routes/admin-pricing-workspace.js",
+      "to": "services/cost-component-market-service.js",
+      "type": "depends",
+      "label": "services/cost-component-market-service.js"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
       "to": "services/pricing-market-decision-policy.js",
       "type": "depends",
       "label": "services/pricing-market-decision-policy.js"
@@ -60486,6 +61154,68 @@
       "label": "dashboard"
     },
     {
+      "from": "routes/market-local-stock.js",
+      "to": "middleware/auth.js",
+      "type": "depends",
+      "label": "middleware/auth.js"
+    },
+    {
+      "from": "routes/market-local-stock.js",
+      "to": "services/market-delegation-local-stock-service.js",
+      "type": "depends",
+      "label": "services/market-delegation-local-stock-service.js"
+    },
+    {
+      "from": "bootstrap/api-routes.js",
+      "to": "routes/market-local-stock.js",
+      "type": "uses",
+      "label": "bootstrap/api-routes.js"
+    },
+    {
+      "from": "public/dashboards/canonical/js/market-local-offer.js",
+      "to": "routes/market-local-stock.js",
+      "type": "uses",
+      "label": "public/dashboards/canonical/js/market-local-offer.js"
+    },
+    {
+      "from": "routes/market-local-stock.js",
+      "to": "db:local_stock",
+      "type": "db-write-via",
+      "label": "local_stock",
+      "via": "market-delegation-local-stock-service"
+    },
+    {
+      "from": "routes/market-local-stock.js",
+      "to": "db:market_delegation_audit",
+      "type": "db-write-via",
+      "label": "market_delegation_audit",
+      "via": "market-delegation-local-stock-service"
+    },
+    {
+      "from": "routes/market-local-stock.js",
+      "to": "doctrine:country_lead_only_local_stock_declaration",
+      "type": "doctrine",
+      "label": "country_lead_only_local_stock_declaration"
+    },
+    {
+      "from": "routes/market-local-stock.js",
+      "to": "doctrine:client_market_id_never_authority",
+      "type": "doctrine",
+      "label": "client_market_id_never_authority"
+    },
+    {
+      "from": "routes/market-local-stock.js",
+      "to": "impact:market-delegation",
+      "type": "impact",
+      "label": "market-delegation"
+    },
+    {
+      "from": "routes/market-local-stock.js",
+      "to": "impact:local-stock",
+      "type": "impact",
+      "label": "local-stock"
+    },
+    {
       "from": "routes/meta-whatsapp.js",
       "to": "db.js",
       "type": "depends",
@@ -62221,6 +62951,12 @@
       "to": "services/payment-paypal.js",
       "type": "depends",
       "label": "services/payment-paypal.js"
+    },
+    {
+      "from": "routes/payments-paypal.js",
+      "to": "services/paypal-refund-authority.js",
+      "type": "depends",
+      "label": "services/paypal-refund-authority.js"
     },
     {
       "from": "bootstrap/api-routes.js",
@@ -69542,6 +70278,12 @@
     },
     {
       "from": "services/cost-allocation/allocate.js",
+      "to": "db:order_item_real_cost_allocations",
+      "type": "db-read",
+      "label": "order_item_real_cost_allocations"
+    },
+    {
+      "from": "services/cost-allocation/allocate.js",
       "to": "db:order_items",
       "type": "db-read",
       "label": "order_items"
@@ -73259,6 +74001,12 @@
     },
     {
       "from": "services/documents/document-reconciliation.js",
+      "to": "db:scans",
+      "type": "db-read",
+      "label": "scans"
+    },
+    {
+      "from": "services/documents/document-reconciliation.js",
       "to": "db:invoices",
       "type": "db-read",
       "label": "invoices"
@@ -73453,10 +74201,22 @@
       "label": "db.js"
     },
     {
-      "from": "services/verify-qr-collection.js (post-commit)",
+      "from": "services/pickup-collection-service.js",
       "to": "services/documents/pickup-proof.js",
       "type": "uses",
-      "label": "services/verify-qr-collection.js (post-commit)"
+      "label": "services/pickup-collection-service.js"
+    },
+    {
+      "from": "services/pickup-exceptional-collection-service.js (post-commit",
+      "to": "services/documents/pickup-proof.js",
+      "type": "uses",
+      "label": "services/pickup-exceptional-collection-service.js (post-commit"
+    },
+    {
+      "from": "par scan)",
+      "to": "services/documents/pickup-proof.js",
+      "type": "uses",
+      "label": "par scan)"
     },
     {
       "from": "services/documents/pickup-proof.js",
@@ -73481,6 +74241,30 @@
       "to": "db:users",
       "type": "db-read",
       "label": "users"
+    },
+    {
+      "from": "services/documents/pickup-proof.js",
+      "to": "db:scans",
+      "type": "db-read",
+      "label": "scans"
+    },
+    {
+      "from": "services/documents/pickup-proof.js",
+      "to": "db:parcels",
+      "type": "db-read",
+      "label": "parcels"
+    },
+    {
+      "from": "services/documents/pickup-proof.js",
+      "to": "db:parcel_items",
+      "type": "db-read",
+      "label": "parcel_items"
+    },
+    {
+      "from": "services/documents/pickup-proof.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
     },
     {
       "from": "services/documents/pickup-proof.js",
@@ -75933,6 +76717,12 @@
       "label": "db"
     },
     {
+      "from": "services/hub-authorization-service.js",
+      "to": "services/documents/pdf-renderer.js",
+      "type": "depends",
+      "label": "services/documents/pdf-renderer.js"
+    },
+    {
       "from": "routes/purchasing.js",
       "to": "services/hub-authorization-service.js",
       "type": "uses",
@@ -75976,9 +76766,45 @@
     },
     {
       "from": "services/hub-authorization-service.js",
+      "to": "db:supplier_execution_payments",
+      "type": "db-read",
+      "label": "supplier_execution_payments"
+    },
+    {
+      "from": "services/hub-authorization-service.js",
+      "to": "db:manual_purchase_executions",
+      "type": "db-read",
+      "label": "manual_purchase_executions"
+    },
+    {
+      "from": "services/hub-authorization-service.js",
+      "to": "db:purchase_variance_decisions",
+      "type": "db-read",
+      "label": "purchase_variance_decisions"
+    },
+    {
+      "from": "services/hub-authorization-service.js",
       "to": "db:users",
       "type": "db-read",
       "label": "users"
+    },
+    {
+      "from": "services/hub-authorization-service.js",
+      "to": "db:suppliers",
+      "type": "db-read",
+      "label": "suppliers"
+    },
+    {
+      "from": "services/hub-authorization-service.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
+    },
+    {
+      "from": "services/hub-authorization-service.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
     },
     {
       "from": "services/hub-authorization-service.js",
@@ -75991,6 +76817,12 @@
       "to": "db:purchase_order_authorizations",
       "type": "db-write",
       "label": "purchase_order_authorizations"
+    },
+    {
+      "from": "services/hub-authorization-service.js",
+      "to": "db:purchase_variance_decisions",
+      "type": "db-write",
+      "label": "purchase_variance_decisions"
     },
     {
       "from": "services/hub-authorization-service.js",
@@ -76777,6 +77609,12 @@
       "to": "db:purchase_lines",
       "type": "db-read",
       "label": "purchase_lines"
+    },
+    {
+      "from": "services/hub-physical-codes.js",
+      "to": "db:v_purchase_line_market",
+      "type": "db-read",
+      "label": "v_purchase_line_market"
     },
     {
       "from": "services/hub-physical-codes.js",
@@ -80354,6 +81192,92 @@
       "label": "providers-services"
     },
     {
+      "from": "services/market-delegation-local-stock-service.js",
+      "to": "services/local-stock-service.js",
+      "type": "depends",
+      "label": "services/local-stock-service.js"
+    },
+    {
+      "from": "services/market-delegation-local-stock-service.js",
+      "to": "services/market-delegation-service.js",
+      "type": "depends",
+      "label": "services/market-delegation-service.js"
+    },
+    {
+      "from": "services/market-delegation-local-stock-service.js",
+      "to": "services/market-delegation-team-service.js",
+      "type": "depends",
+      "label": "services/market-delegation-team-service.js"
+    },
+    {
+      "from": "services/market-delegation-local-stock-service.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/market-delegation-local-stock-service.js",
+      "to": "db:relais",
+      "type": "db-read",
+      "label": "relais"
+    },
+    {
+      "from": "services/market-delegation-local-stock-service.js",
+      "to": "db:local_stock",
+      "type": "db-read",
+      "label": "local_stock"
+    },
+    {
+      "from": "services/market-delegation-local-stock-service.js",
+      "to": "db:market_delegation_audit",
+      "type": "db-read",
+      "label": "market_delegation_audit"
+    },
+    {
+      "from": "services/market-delegation-local-stock-service.js",
+      "to": "db:local_stock",
+      "type": "db-write-via",
+      "label": "local_stock",
+      "via": "local-stock-service"
+    },
+    {
+      "from": "services/market-delegation-local-stock-service.js",
+      "to": "db:market_delegation_audit",
+      "type": "db-write-via",
+      "label": "market_delegation_audit",
+      "via": "market-delegation-service"
+    },
+    {
+      "from": "services/market-delegation-local-stock-service.js",
+      "to": "doctrine:country_lead_only_local_stock_declaration",
+      "type": "doctrine",
+      "label": "country_lead_only_local_stock_declaration"
+    },
+    {
+      "from": "services/market-delegation-local-stock-service.js",
+      "to": "doctrine:market_pool_stock_km_main",
+      "type": "doctrine",
+      "label": "market_pool_stock_km_main"
+    },
+    {
+      "from": "services/market-delegation-local-stock-service.js",
+      "to": "doctrine:no_second_stock_writer",
+      "type": "doctrine",
+      "label": "no_second_stock_writer"
+    },
+    {
+      "from": "services/market-delegation-local-stock-service.js",
+      "to": "impact:market-delegation",
+      "type": "impact",
+      "label": "market-delegation"
+    },
+    {
+      "from": "services/market-delegation-local-stock-service.js",
+      "to": "impact:local-stock",
+      "type": "impact",
+      "label": "local-stock"
+    },
+    {
       "from": "services/market-delegation-network-service.js",
       "to": "services/market-delegation-service.js",
       "type": "depends",
@@ -83902,6 +84826,12 @@
     },
     {
       "from": "services/operations-workspace.js",
+      "to": "db:cash_collections",
+      "type": "db-read",
+      "label": "cash_collections"
+    },
+    {
+      "from": "services/operations-workspace.js",
       "to": "db:order_comments",
       "type": "db-write",
       "label": "order_comments"
@@ -84282,6 +85212,66 @@
       "to": "impact:market-authorization",
       "type": "impact",
       "label": "market-authorization"
+    },
+    {
+      "from": "services/order-checkout-idempotency.js",
+      "to": "node:crypto",
+      "type": "depends",
+      "label": "node:crypto"
+    },
+    {
+      "from": "services/order-checkout-service.js",
+      "to": "services/order-checkout-idempotency.js",
+      "type": "uses",
+      "label": "services/order-checkout-service.js"
+    },
+    {
+      "from": "services/order-checkout-idempotency.js",
+      "to": "db:order_checkout_idempotency",
+      "type": "db-read",
+      "label": "order_checkout_idempotency"
+    },
+    {
+      "from": "services/order-checkout-idempotency.js",
+      "to": "db:order_checkout_idempotency",
+      "type": "db-write",
+      "label": "order_checkout_idempotency"
+    },
+    {
+      "from": "services/order-checkout-idempotency.js",
+      "to": "doctrine:idempotency_scope_is_authenticated_buyer",
+      "type": "doctrine",
+      "label": "idempotency_scope_is_authenticated_buyer"
+    },
+    {
+      "from": "services/order-checkout-idempotency.js",
+      "to": "doctrine:no_new_order_on_replay",
+      "type": "doctrine",
+      "label": "no_new_order_on_replay"
+    },
+    {
+      "from": "services/order-checkout-idempotency.js",
+      "to": "impact:checkout",
+      "type": "impact",
+      "label": "checkout"
+    },
+    {
+      "from": "services/order-checkout-idempotency.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
+    },
+    {
+      "from": "services/order-checkout-idempotency.js",
+      "to": "impact:payments",
+      "type": "impact",
+      "label": "payments"
+    },
+    {
+      "from": "services/order-checkout-idempotency.js",
+      "to": "impact:wallet",
+      "type": "impact",
+      "label": "wallet"
     },
     {
       "from": "services/order-checkout-item-resolution.js",
@@ -85596,6 +86586,12 @@
       "label": "services/client-notification-service.js"
     },
     {
+      "from": "services/order-status-machine.js",
+      "to": "services/pickup-secret-service.js",
+      "type": "depends",
+      "label": "services/pickup-secret-service.js"
+    },
+    {
       "from": "services/order-payment-confirmation.js",
       "to": "services/order-status-machine.js",
       "type": "uses",
@@ -85657,6 +86653,18 @@
     },
     {
       "from": "services/order-status-machine.js",
+      "to": "db:wallet_transactions",
+      "type": "db-read",
+      "label": "wallet_transactions"
+    },
+    {
+      "from": "services/order-status-machine.js",
+      "to": "db:wallets",
+      "type": "db-read",
+      "label": "wallets"
+    },
+    {
+      "from": "services/order-status-machine.js",
       "to": "db:order_items",
       "type": "db-write",
       "label": "order_items"
@@ -85672,6 +86680,13 @@
       "to": "db:orders",
       "type": "db-write",
       "label": "orders"
+    },
+    {
+      "from": "services/order-status-machine.js",
+      "to": "db:pickup_reveal_codes",
+      "type": "db-write-via",
+      "label": "pickup_reveal_codes",
+      "via": "pickup-secret-service"
     },
     {
       "from": "services/order-status-machine.js",
@@ -86218,6 +87233,12 @@
       "to": "services/refund-service.js",
       "type": "depends",
       "label": "services/refund-service.js"
+    },
+    {
+      "from": "services/parcel-operations.js",
+      "to": "utils/alerts.js",
+      "type": "depends",
+      "label": "utils/alerts.js"
     },
     {
       "from": "services/parcel-operations.js",
@@ -87088,9 +88109,9 @@
     },
     {
       "from": "services/payment-paypal.js",
-      "to": "services/documents/refund-receipt.js",
+      "to": "services/paypal-refund-authority.js",
       "type": "depends",
-      "label": "services/documents/refund-receipt.js"
+      "label": "services/paypal-refund-authority.js"
     },
     {
       "from": "services/payment-paypal.js",
@@ -87449,6 +88470,210 @@
       "label": "payment"
     },
     {
+      "from": "services/paypal-refund-authority.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/paypal-refund-authority.js",
+      "to": "services/refund-intent-ledger.js",
+      "type": "depends",
+      "label": "services/refund-intent-ledger.js"
+    },
+    {
+      "from": "services/paypal-refund-authority.js",
+      "to": "services/refund-intent-reconciliation.js",
+      "type": "depends",
+      "label": "services/refund-intent-reconciliation.js"
+    },
+    {
+      "from": "services/paypal-refund-authority.js",
+      "to": "services/refund-service.js",
+      "type": "depends",
+      "label": "services/refund-service.js"
+    },
+    {
+      "from": "services/paypal-refund-authority.js",
+      "to": "services/payment-service.js",
+      "type": "depends",
+      "label": "services/payment-service.js"
+    },
+    {
+      "from": "services/paypal-refund-authority.js",
+      "to": "services/order-status-machine.js",
+      "type": "depends",
+      "label": "services/order-status-machine.js"
+    },
+    {
+      "from": "services/paypal-refund-authority.js",
+      "to": "services/documents/refund-receipt.js",
+      "type": "depends",
+      "label": "services/documents/refund-receipt.js"
+    },
+    {
+      "from": "services/paypal-refund-authority.js",
+      "to": "utils/alerts.js",
+      "type": "depends",
+      "label": "utils/alerts.js"
+    },
+    {
+      "from": "services/payment-paypal.js",
+      "to": "services/paypal-refund-authority.js",
+      "type": "uses",
+      "label": "services/payment-paypal.js"
+    },
+    {
+      "from": "services/paypal-refund-authority.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/paypal-refund-authority.js",
+      "to": "db:refund_execution_intents",
+      "type": "db-read",
+      "label": "refund_execution_intents"
+    },
+    {
+      "from": "services/paypal-refund-authority.js",
+      "to": "db:refunds",
+      "type": "db-read",
+      "label": "refunds"
+    },
+    {
+      "from": "services/paypal-refund-authority.js",
+      "to": "db:refund_execution_intents",
+      "type": "db-write",
+      "label": "refund_execution_intents"
+    },
+    {
+      "from": "services/paypal-refund-authority.js",
+      "to": "db:refunds",
+      "type": "db-write",
+      "label": "refunds"
+    },
+    {
+      "from": "services/paypal-refund-authority.js",
+      "to": "db:orders",
+      "type": "db-write",
+      "label": "orders"
+    },
+    {
+      "from": "services/paypal-refund-authority.js",
+      "to": "db:order_status_history",
+      "type": "db-write",
+      "label": "order_status_history"
+    },
+    {
+      "from": "services/paypal-refund-authority.js",
+      "to": "doctrine:no_psp_in_sql_transaction",
+      "type": "doctrine",
+      "label": "no_psp_in_sql_transaction"
+    },
+    {
+      "from": "services/paypal-refund-authority.js",
+      "to": "doctrine:durable_intent",
+      "type": "doctrine",
+      "label": "durable_intent"
+    },
+    {
+      "from": "services/paypal-refund-authority.js",
+      "to": "doctrine:no_duplicate_refund",
+      "type": "doctrine",
+      "label": "no_duplicate_refund"
+    },
+    {
+      "from": "services/paypal-refund-authority.js",
+      "to": "doctrine:fail_closed_on_unknown",
+      "type": "doctrine",
+      "label": "fail_closed_on_unknown"
+    },
+    {
+      "from": "services/paypal-refund-authority.js",
+      "to": "doctrine:refunds_to_original_payer",
+      "type": "doctrine",
+      "label": "refunds_to_original_payer"
+    },
+    {
+      "from": "services/paypal-refund-authority.js",
+      "to": "impact:payments",
+      "type": "impact",
+      "label": "payments"
+    },
+    {
+      "from": "services/paypal-refund-authority.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
+    },
+    {
+      "from": "services/paypal-refund-authority.js",
+      "to": "impact:refunds",
+      "type": "impact",
+      "label": "refunds"
+    },
+    {
+      "from": "services/paypal-refund-authority.js",
+      "to": "impact:documents",
+      "type": "impact",
+      "label": "documents"
+    },
+    {
+      "from": "services/paypal-refund-authority.js",
+      "to": "impact:finance",
+      "type": "impact",
+      "label": "finance"
+    },
+    {
+      "from": "services/pickup-agent-lockout.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/pickup-collection-service.js",
+      "to": "services/pickup-agent-lockout.js",
+      "type": "uses",
+      "label": "services/pickup-collection-service.js"
+    },
+    {
+      "from": "services/pickup-agent-lockout.js",
+      "to": "db:pickup_collect_failures",
+      "type": "db-read",
+      "label": "pickup_collect_failures"
+    },
+    {
+      "from": "services/pickup-agent-lockout.js",
+      "to": "db:users",
+      "type": "db-read",
+      "label": "users"
+    },
+    {
+      "from": "services/pickup-agent-lockout.js",
+      "to": "db:pickup_collect_failures",
+      "type": "db-write",
+      "label": "pickup_collect_failures"
+    },
+    {
+      "from": "services/pickup-agent-lockout.js",
+      "to": "doctrine:brute_force_guard",
+      "type": "doctrine",
+      "label": "brute_force_guard"
+    },
+    {
+      "from": "services/pickup-agent-lockout.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
+    },
+    {
+      "from": "services/pickup-agent-lockout.js",
+      "to": "impact:security",
+      "type": "impact",
+      "label": "security"
+    },
+    {
       "from": "services/pickup-authorization-service.js",
       "to": "db.js",
       "type": "depends",
@@ -87661,6 +88886,12 @@
     },
     {
       "from": "services/pickup-collection-service.js",
+      "to": "services/pickup-agent-lockout.js",
+      "type": "depends",
+      "label": "services/pickup-agent-lockout.js"
+    },
+    {
+      "from": "services/pickup-collection-service.js",
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
@@ -87682,6 +88913,12 @@
       "to": "services/pickup-collection-recorder.js",
       "type": "depends",
       "label": "services/pickup-collection-recorder.js"
+    },
+    {
+      "from": "services/pickup-collection-service.js",
+      "to": "services/documents/pickup-proof.js",
+      "type": "depends",
+      "label": "services/documents/pickup-proof.js"
     },
     {
       "from": "services/pickup-collection-service.js",
@@ -87730,6 +88967,12 @@
       "to": "db:alerts",
       "type": "db-write",
       "label": "alerts"
+    },
+    {
+      "from": "services/pickup-collection-service.js",
+      "to": "db:pickup_collect_failures",
+      "type": "db-write",
+      "label": "pickup_collect_failures"
     },
     {
       "from": "services/pickup-collection-service.js",
@@ -87870,6 +89113,12 @@
       "to": "services/pickup-collection-recorder.js",
       "type": "depends",
       "label": "services/pickup-collection-recorder.js"
+    },
+    {
+      "from": "services/pickup-exceptional-collection-service.js",
+      "to": "services/documents/pickup-proof.js",
+      "type": "depends",
+      "label": "services/documents/pickup-proof.js"
     },
     {
       "from": "services/pickup-exceptional-collection-service.js",
@@ -88122,6 +89371,85 @@
       "to": "impact:logistics",
       "type": "impact",
       "label": "logistics"
+    },
+    {
+      "from": "services/pickup-secret-customer-rotation-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/pickup-secret-customer-rotation-service.js",
+      "to": "services/pickup-secret-issuer.js",
+      "type": "depends",
+      "label": "services/pickup-secret-issuer.js"
+    },
+    {
+      "from": "services/pickup-secret-customer-rotation-service.js",
+      "to": "services/order-mutation-service.js",
+      "type": "depends",
+      "label": "services/order-mutation-service.js"
+    },
+    {
+      "from": "routes/pickup-secret.js",
+      "to": "services/pickup-secret-customer-rotation-service.js",
+      "type": "uses",
+      "label": "routes/pickup-secret.js"
+    },
+    {
+      "from": "services/pickup-secret-customer-rotation-service.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/pickup-secret-customer-rotation-service.js",
+      "to": "db:pickup_code_generations",
+      "type": "db-read",
+      "label": "pickup_code_generations"
+    },
+    {
+      "from": "services/pickup-secret-customer-rotation-service.js",
+      "to": "db:pickup_code_generations",
+      "type": "db-write",
+      "label": "pickup_code_generations"
+    },
+    {
+      "from": "services/pickup-secret-customer-rotation-service.js",
+      "to": "db:pickup_reveal_codes",
+      "type": "db-write",
+      "label": "pickup_reveal_codes"
+    },
+    {
+      "from": "services/pickup-secret-customer-rotation-service.js",
+      "to": "db:pickup_print_tokens",
+      "type": "db-write",
+      "label": "pickup_print_tokens"
+    },
+    {
+      "from": "services/pickup-secret-customer-rotation-service.js",
+      "to": "db:orders",
+      "type": "db-write-via",
+      "label": "orders",
+      "via": "order-mutation-service"
+    },
+    {
+      "from": "services/pickup-secret-customer-rotation-service.js",
+      "to": "doctrine:no_second_secret_writer",
+      "type": "doctrine",
+      "label": "no_second_secret_writer"
+    },
+    {
+      "from": "services/pickup-secret-customer-rotation-service.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
+    },
+    {
+      "from": "services/pickup-secret-customer-rotation-service.js",
+      "to": "impact:pickup",
+      "type": "impact",
+      "label": "pickup"
     },
     {
       "from": "services/pickup-secret-issuer.js",
@@ -88949,6 +90277,12 @@
       "to": "services/pricing-floor-forecast-shadow.js",
       "type": "depends",
       "label": "services/pricing-floor-forecast-shadow.js"
+    },
+    {
+      "from": "services/pricing-floor-forecast-preview.js",
+      "to": "utils/currency.js",
+      "type": "depends",
+      "label": "utils/currency.js"
     },
     {
       "from": "routes/admin-pricing-workspace.js",
@@ -91807,6 +93141,12 @@
     },
     {
       "from": "services/purchasing-engagement-service.js",
+      "to": "db:manual_purchase_executions",
+      "type": "db-read",
+      "label": "manual_purchase_executions"
+    },
+    {
+      "from": "services/purchasing-engagement-service.js",
       "to": "db:order_items",
       "type": "db-read",
       "label": "order_items"
@@ -91837,9 +93177,21 @@
     },
     {
       "from": "services/purchasing-engagement-service.js",
+      "to": "db:purchase_order_authorizations",
+      "type": "db-read",
+      "label": "purchase_order_authorizations"
+    },
+    {
+      "from": "services/purchasing-engagement-service.js",
       "to": "db:purchase_orders",
       "type": "db-read",
       "label": "purchase_orders"
+    },
+    {
+      "from": "services/purchasing-engagement-service.js",
+      "to": "db:supplier_execution_payments",
+      "type": "db-read",
+      "label": "supplier_execution_payments"
     },
     {
       "from": "services/purchasing-engagement-service.js",
@@ -91852,6 +93204,12 @@
       "to": "db:v_purchase_line_progress",
       "type": "db-read",
       "label": "v_purchase_line_progress"
+    },
+    {
+      "from": "services/purchasing-engagement-service.js",
+      "to": "db:manual_purchase_executions",
+      "type": "db-write",
+      "label": "manual_purchase_executions"
     },
     {
       "from": "services/purchasing-engagement-service.js",
@@ -92973,7 +94331,7 @@
     },
     {
       "from": "services/refund-intent-ledger.js",
-      "to": "utils/refunds.js",
+      "to": "refunds",
       "type": "depends",
       "label": "refunds"
     },
@@ -92984,10 +94342,22 @@
       "label": "refund_execution_intents"
     },
     {
-      "from": "future refund orchestrators (NOT ACTIVATED)",
+      "from": "services/paypal-refund-authority.js",
       "to": "services/refund-intent-ledger.js",
       "type": "uses",
-      "label": "future refund orchestrators (NOT ACTIVATED)"
+      "label": "services/paypal-refund-authority.js"
+    },
+    {
+      "from": "services/sav-ledger-refund.js",
+      "to": "services/refund-intent-ledger.js",
+      "type": "uses",
+      "label": "services/sav-ledger-refund.js"
+    },
+    {
+      "from": "services/item-refund-reservation-service.js",
+      "to": "services/refund-intent-ledger.js",
+      "type": "uses",
+      "label": "services/item-refund-reservation-service.js"
     },
     {
       "from": "services/refund-intent-ledger.js",
@@ -93150,6 +94520,12 @@
       "to": "db:wallets",
       "type": "db-read",
       "label": "wallets"
+    },
+    {
+      "from": "services/refund-service.js",
+      "to": "db:wallet_transactions",
+      "type": "db-read",
+      "label": "wallet_transactions"
     },
     {
       "from": "services/refund-service.js",
@@ -93632,6 +95008,171 @@
       "label": "refunds"
     },
     {
+      "from": "services/relay-return-compensation-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/relay-return-compensation-service.js",
+      "to": "services/wallet-service.js",
+      "type": "depends",
+      "label": "services/wallet-service.js"
+    },
+    {
+      "from": "services/relay-return-compensation-service.js",
+      "to": "services/fx-authority.js",
+      "type": "depends",
+      "label": "services/fx-authority.js"
+    },
+    {
+      "from": "services/relay-return-compensation-service.js",
+      "to": "services/sav-ledger-refund.js",
+      "type": "depends",
+      "label": "services/sav-ledger-refund.js"
+    },
+    {
+      "from": "services/relay-return-compensation-service.js",
+      "to": "services/sav-replacement-order.js",
+      "type": "depends",
+      "label": "services/sav-replacement-order.js"
+    },
+    {
+      "from": "services/relay-return-compensation-service.js",
+      "to": "disputes",
+      "type": "depends",
+      "label": "disputes"
+    },
+    {
+      "from": "services/relay-return-compensation-service.js",
+      "to": "orders",
+      "type": "depends",
+      "label": "orders"
+    },
+    {
+      "from": "services/relay-return-compensation-service.js",
+      "to": "order_items",
+      "type": "depends",
+      "label": "order_items"
+    },
+    {
+      "from": "routes/relay-dashboard.js",
+      "to": "services/relay-return-compensation-service.js",
+      "type": "uses",
+      "label": "routes/relay-dashboard.js"
+    },
+    {
+      "from": "services/relay-return-compensation-service.js",
+      "to": "db:disputes",
+      "type": "db-read",
+      "label": "disputes"
+    },
+    {
+      "from": "services/relay-return-compensation-service.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/relay-return-compensation-service.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
+    },
+    {
+      "from": "services/relay-return-compensation-service.js",
+      "to": "db:business_rules",
+      "type": "db-read",
+      "label": "business_rules"
+    },
+    {
+      "from": "services/relay-return-compensation-service.js",
+      "to": "db:relay_return_compensations",
+      "type": "db-read",
+      "label": "relay_return_compensations"
+    },
+    {
+      "from": "services/relay-return-compensation-service.js",
+      "to": "db:relay_product_return_receipts",
+      "type": "db-read",
+      "label": "relay_product_return_receipts"
+    },
+    {
+      "from": "services/relay-return-compensation-service.js",
+      "to": "db:relay_return_compensations",
+      "type": "db-write",
+      "label": "relay_return_compensations"
+    },
+    {
+      "from": "services/relay-return-compensation-service.js",
+      "to": "db:wallets",
+      "type": "db-write-via",
+      "label": "wallets",
+      "via": "wallet-service"
+    },
+    {
+      "from": "services/relay-return-compensation-service.js",
+      "to": "db:wallet_transactions",
+      "type": "db-write-via",
+      "label": "wallet_transactions",
+      "via": "wallet-service"
+    },
+    {
+      "from": "services/relay-return-compensation-service.js",
+      "to": "db:wallet_credit_lots",
+      "type": "db-write-via",
+      "label": "wallet_credit_lots",
+      "via": "wallet-service"
+    },
+    {
+      "from": "services/relay-return-compensation-service.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_NON_CONFORMITE.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_NON_CONFORMITE.md"
+    },
+    {
+      "from": "services/relay-return-compensation-service.js",
+      "to": "doctrine:return_is_dispute_not_parallel_object",
+      "type": "doctrine",
+      "label": "return_is_dispute_not_parallel_object"
+    },
+    {
+      "from": "services/relay-return-compensation-service.js",
+      "to": "doctrine:no_implicit_refund_no_sellable_stock",
+      "type": "doctrine",
+      "label": "no_implicit_refund_no_sellable_stock"
+    },
+    {
+      "from": "services/relay-return-compensation-service.js",
+      "to": "doctrine:financial_authority_never_delegated",
+      "type": "doctrine",
+      "label": "financial_authority_never_delegated"
+    },
+    {
+      "from": "services/relay-return-compensation-service.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
+    },
+    {
+      "from": "services/relay-return-compensation-service.js",
+      "to": "impact:wallet",
+      "type": "impact",
+      "label": "wallet"
+    },
+    {
+      "from": "services/relay-return-compensation-service.js",
+      "to": "impact:refunds",
+      "type": "impact",
+      "label": "refunds"
+    },
+    {
+      "from": "services/relay-return-compensation-service.js",
+      "to": "impact:dashboard",
+      "type": "impact",
+      "label": "dashboard"
+    },
+    {
       "from": "services/relay-return-request-service.js",
       "to": "db (transaction supplied)",
       "type": "depends",
@@ -93702,6 +95243,12 @@
       "to": "db:relay_product_return_receipts",
       "type": "db-read",
       "label": "relay_product_return_receipts"
+    },
+    {
+      "from": "services/relay-return-request-service.js",
+      "to": "db:relay_return_compensations",
+      "type": "db-read",
+      "label": "relay_return_compensations"
     },
     {
       "from": "services/relay-return-request-service.js",
@@ -94057,6 +95604,204 @@
       "to": "impact:unknown",
       "type": "impact",
       "label": "unknown"
+    },
+    {
+      "from": "services/sav-ledger-refund.js",
+      "to": "services/refund-intent-ledger.js",
+      "type": "depends",
+      "label": "services/refund-intent-ledger.js"
+    },
+    {
+      "from": "services/sav-ledger-refund.js",
+      "to": "services/refund-intent-reconciliation.js",
+      "type": "depends",
+      "label": "services/refund-intent-reconciliation.js"
+    },
+    {
+      "from": "services/sav-ledger-refund.js",
+      "to": "services/refund-service.js",
+      "type": "depends",
+      "label": "services/refund-service.js"
+    },
+    {
+      "from": "services/sav-ledger-refund.js",
+      "to": "services/item-refund-psp-orchestrator.js",
+      "type": "depends",
+      "label": "services/item-refund-psp-orchestrator.js"
+    },
+    {
+      "from": "services/sav-ledger-refund.js",
+      "to": "services/fx-authority.js",
+      "type": "depends",
+      "label": "services/fx-authority.js"
+    },
+    {
+      "from": "services/sav-ledger-refund.js",
+      "to": "services/paypal-client.js",
+      "type": "depends",
+      "label": "services/paypal-client.js"
+    },
+    {
+      "from": "services/sav-ledger-refund.js",
+      "to": "services/documents/refund-receipt.js",
+      "type": "depends",
+      "label": "services/documents/refund-receipt.js"
+    },
+    {
+      "from": "services/relay-return-compensation-service.js",
+      "to": "services/sav-ledger-refund.js",
+      "type": "uses",
+      "label": "services/relay-return-compensation-service.js"
+    },
+    {
+      "from": "services/sav-ledger-refund.js",
+      "to": "db:refund_execution_intents",
+      "type": "db-read",
+      "label": "refund_execution_intents"
+    },
+    {
+      "from": "services/sav-ledger-refund.js",
+      "to": "db:refund_execution_intents",
+      "type": "db-write",
+      "label": "refund_execution_intents"
+    },
+    {
+      "from": "services/sav-ledger-refund.js",
+      "to": "doctrine:refund_to_payer",
+      "type": "doctrine",
+      "label": "refund_to_payer"
+    },
+    {
+      "from": "services/sav-ledger-refund.js",
+      "to": "doctrine:no_duplicate_refund",
+      "type": "doctrine",
+      "label": "no_duplicate_refund"
+    },
+    {
+      "from": "services/sav-ledger-refund.js",
+      "to": "doctrine:no_psp_in_sql_transaction",
+      "type": "doctrine",
+      "label": "no_psp_in_sql_transaction"
+    },
+    {
+      "from": "services/sav-ledger-refund.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
+    },
+    {
+      "from": "services/sav-ledger-refund.js",
+      "to": "impact:refunds",
+      "type": "impact",
+      "label": "refunds"
+    },
+    {
+      "from": "services/sav-ledger-refund.js",
+      "to": "impact:finance",
+      "type": "impact",
+      "label": "finance"
+    },
+    {
+      "from": "services/sav-replacement-order.js",
+      "to": "services/order-service.js",
+      "type": "depends",
+      "label": "services/order-service.js"
+    },
+    {
+      "from": "services/sav-replacement-order.js",
+      "to": "services/order-status-machine.js",
+      "type": "depends",
+      "label": "services/order-status-machine.js"
+    },
+    {
+      "from": "services/sav-replacement-order.js",
+      "to": "services/order-checkout-persistence.js",
+      "type": "depends",
+      "label": "services/order-checkout-persistence.js"
+    },
+    {
+      "from": "services/sav-replacement-order.js",
+      "to": "services/purchasing-trigger-service.js",
+      "type": "depends",
+      "label": "services/purchasing-trigger-service.js"
+    },
+    {
+      "from": "services/relay-return-compensation-service.js",
+      "to": "services/sav-replacement-order.js",
+      "type": "uses",
+      "label": "services/relay-return-compensation-service.js"
+    },
+    {
+      "from": "services/sav-replacement-order.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/sav-replacement-order.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
+    },
+    {
+      "from": "services/sav-replacement-order.js",
+      "to": "db:relais",
+      "type": "db-read",
+      "label": "relais"
+    },
+    {
+      "from": "services/sav-replacement-order.js",
+      "to": "db:orders",
+      "type": "db-write",
+      "label": "orders"
+    },
+    {
+      "from": "services/sav-replacement-order.js",
+      "to": "db:order_items",
+      "type": "db-write",
+      "label": "order_items"
+    },
+    {
+      "from": "services/sav-replacement-order.js",
+      "to": "doctrine:return_is_dispute_not_parallel_object",
+      "type": "doctrine",
+      "label": "return_is_dispute_not_parallel_object"
+    },
+    {
+      "from": "services/sav-replacement-order.js",
+      "to": "doctrine:status_transition_source_unique",
+      "type": "doctrine",
+      "label": "status_transition_source_unique"
+    },
+    {
+      "from": "services/sav-replacement-order.js",
+      "to": "doctrine:no_implicit_refund_no_sellable_stock",
+      "type": "doctrine",
+      "label": "no_implicit_refund_no_sellable_stock"
+    },
+    {
+      "from": "services/sav-replacement-order.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
+    },
+    {
+      "from": "services/sav-replacement-order.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
+    },
+    {
+      "from": "services/sav-replacement-order.js",
+      "to": "impact:local-stock",
+      "type": "impact",
+      "label": "local-stock"
+    },
+    {
+      "from": "services/sav-replacement-order.js",
+      "to": "impact:purchasing",
+      "type": "impact",
+      "label": "purchasing"
     },
     {
       "from": "services/scan-engine.js",
@@ -102727,6 +104472,12 @@
     },
     {
       "from": "services/user-mutation-service.js",
+      "to": "db:hub_authorization_grants",
+      "type": "db-write",
+      "label": "hub_authorization_grants"
+    },
+    {
+      "from": "services/user-mutation-service.js",
       "to": "doctrine:lifecycle_owner_persistence_boundary",
       "type": "doctrine",
       "label": "lifecycle_owner_persistence_boundary"
@@ -102858,6 +104609,12 @@
       "label": "services/order-mutation-service.js"
     },
     {
+      "from": "services/wallet-service.js",
+      "to": "services/fx-authority.js (devise marché non-KMF)",
+      "type": "depends",
+      "label": "services/fx-authority.js (devise marché non-KMF)"
+    },
+    {
       "from": "routes/wallet.js",
       "to": "services/wallet-service.js",
       "type": "uses",
@@ -102874,6 +104631,12 @@
       "to": "services/wallet-service.js",
       "type": "uses",
       "label": "services/order-payment-confirmation.js"
+    },
+    {
+      "from": "services/wallet-service.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
     },
     {
       "from": "services/wallet-service.js",
@@ -103097,6 +104860,12 @@
       "to": "env META_WA_*",
       "type": "depends",
       "label": "env META_WA_*"
+    },
+    {
+      "from": "services/whatsapp-meta.js",
+      "to": "utils/non-prod-phone-guard.js",
+      "type": "depends",
+      "label": "utils/non-prod-phone-guard.js"
     },
     {
       "from": "notification-service.js",
@@ -104623,12 +106392,6 @@
       "label": "utils/rates.js"
     },
     {
-      "from": "utils/refunds.js",
-      "to": "utils/logger.js",
-      "type": "uses",
-      "label": "utils/refunds.js"
-    },
-    {
       "from": "utils/rules.js",
       "to": "utils/logger.js",
       "type": "uses",
@@ -104681,6 +106444,54 @@
       "to": "impact:logistics",
       "type": "impact",
       "label": "logistics"
+    },
+    {
+      "from": "utils/non-prod-phone-guard.js",
+      "to": "middleware/require-non-production.js",
+      "type": "depends",
+      "label": "middleware/require-non-production.js"
+    },
+    {
+      "from": "services/authkey-client.js",
+      "to": "utils/non-prod-phone-guard.js",
+      "type": "uses",
+      "label": "services/authkey-client.js"
+    },
+    {
+      "from": "services/whatsapp-meta.js",
+      "to": "utils/non-prod-phone-guard.js",
+      "type": "uses",
+      "label": "services/whatsapp-meta.js"
+    },
+    {
+      "from": "utils/non-prod-phone-guard.js",
+      "to": "doctrine:no_external_send_outside_production",
+      "type": "doctrine",
+      "label": "no_external_send_outside_production"
+    },
+    {
+      "from": "utils/non-prod-phone-guard.js",
+      "to": "doctrine:fail_safe_empty_allowlist",
+      "type": "doctrine",
+      "label": "fail_safe_empty_allowlist"
+    },
+    {
+      "from": "utils/non-prod-phone-guard.js",
+      "to": "impact:whatsapp",
+      "type": "impact",
+      "label": "whatsapp"
+    },
+    {
+      "from": "utils/non-prod-phone-guard.js",
+      "to": "impact:notifications",
+      "type": "impact",
+      "label": "notifications"
+    },
+    {
+      "from": "utils/non-prod-phone-guard.js",
+      "to": "impact:shared-cart",
+      "type": "impact",
+      "label": "shared-cart"
     },
     {
       "from": "utils/orderParcelLinkRules.js",
@@ -105256,36 +107067,6 @@
       "label": "unknown"
     },
     {
-      "from": "utils/refunds.js",
-      "to": "services/wallet-service.js",
-      "type": "depends",
-      "label": "services/wallet-service.js"
-    },
-    {
-      "from": "utils/refunds.js",
-      "to": "utils/logger.js",
-      "type": "depends",
-      "label": "utils/logger.js"
-    },
-    {
-      "from": "utils/refunds.js",
-      "to": "db:refunds",
-      "type": "db-write",
-      "label": "refunds"
-    },
-    {
-      "from": "utils/refunds.js",
-      "to": "doctrine:resolve_before_behavior_change",
-      "type": "doctrine",
-      "label": "resolve_before_behavior_change"
-    },
-    {
-      "from": "utils/refunds.js",
-      "to": "impact:unknown",
-      "type": "impact",
-      "label": "unknown"
-    },
-    {
       "from": "services/cost-allocation/allocate.js",
       "to": "utils/relay-commission.js",
       "type": "uses",
@@ -105557,6 +107338,7 @@
         "routes/market-delegation-provider.js",
         "routes/market-delegation-catalog.js",
         "routes/market-delegation-local-offer.js",
+        "routes/market-local-stock.js",
         "routes/market-delegation-client-case.js",
         "routes/market-delegation-settlement.js",
         "routes/market-delegation-structure-event.js",
@@ -105702,6 +107484,7 @@
         "routes/market-delegation-settlement.js",
         "routes/market-delegation-structure-event.js",
         "routes/market-delegation-team.js",
+        "routes/market-local-stock.js",
         "routes/meta-whatsapp.js",
         "routes/modules.js",
         "routes/notification-api.js",
@@ -106342,6 +108125,7 @@
         "routes/market-delegation-settlement.js",
         "routes/market-delegation-structure-event.js",
         "routes/market-delegation-team.js",
+        "routes/market-local-stock.js",
         "routes/meta-whatsapp.js",
         "routes/modules.js",
         "routes/notification-api.js",
@@ -106947,7 +108731,8 @@
         "impact:security",
         "impact:simulator",
         "routes/admin/system.js",
-        "routes/simulator.js"
+        "routes/simulator.js",
+        "utils/non-prod-phone-guard.js"
       ]
     },
     "middleware/require-pricing-global-authority.js": {
@@ -112702,6 +114487,7 @@
         "middleware/require-pricing-global-authority.js",
         "middleware/require-market-delegated-capability.js",
         "services/pricing-workspace.js",
+        "services/cost-component-market-service.js",
         "services/pricing-market-decision-policy.js",
         "services/pricing-market-decision-projection.js",
         "services/pricing-market-corridor.js",
@@ -116231,6 +118017,53 @@
         "services/market-scope-projector.js"
       ]
     },
+    "routes/market-local-stock.js": {
+      "role": "market-local-stock-api",
+      "domain": "market-delegation",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "middleware/auth.js",
+        "services/market-delegation-local-stock-service.js"
+      ],
+      "directUsedBy": [
+        "bootstrap/api-routes.js",
+        "public/dashboards/canonical/js/market-local-offer.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [
+        {
+          "via": "market-delegation-local-stock-service",
+          "tables": [
+            "local_stock",
+            "market_delegation_audit"
+          ]
+        }
+      ],
+      "doctrines": [
+        "country_lead_only_local_stock_declaration",
+        "client_market_id_never_authority"
+      ],
+      "impactAreas": [
+        "market-delegation",
+        "local-stock"
+      ],
+      "mustCheck": [
+        "bootstrap/api-routes.js",
+        "db:local_stock",
+        "db:market_delegation_audit",
+        "doctrine:client_market_id_never_authority",
+        "doctrine:country_lead_only_local_stock_declaration",
+        "impact:local-stock",
+        "impact:market-delegation",
+        "middleware/auth.js",
+        "services/market-delegation-local-stock-service.js"
+      ]
+    },
     "routes/meta-whatsapp.js": {
       "role": "notification-meta-whatsapp",
       "domain": "notification",
@@ -117344,7 +119177,8 @@
         "middleware/auth.js",
         "middleware/auth-guest.js",
         "services/paypal-client.js",
-        "services/payment-paypal.js"
+        "services/payment-paypal.js",
+        "services/paypal-refund-authority.js"
       ],
       "directUsedBy": [
         "bootstrap/api-routes.js"
@@ -117373,6 +119207,7 @@
         "services/market-payment-collection-gate.js",
         "services/payment-paypal.js",
         "services/paypal-client.js",
+        "services/paypal-refund-authority.js",
         "utils/logger.js"
       ]
     },
@@ -117535,6 +119370,7 @@
         "services/order-mutation-service.js",
         "services/payment-paypal.js",
         "services/payment-stripe.js",
+        "services/pickup-secret-customer-rotation-service.js",
         "services/pickup-secret-service.js",
         "utils/logger.js",
         "utils/pickup-receipt-html.js"
@@ -117930,6 +119766,7 @@
         "services/live-projection.js",
         "services/relay-dashboard-queries.js",
         "services/relay-product-return-intake-service.js",
+        "services/relay-return-compensation-service.js",
         "services/relay-return-request-service.js",
         "utils/logger.js"
       ]
@@ -118978,7 +120815,8 @@
         "services/notifications/order.js",
         "services/notifications/otp-auth.js",
         "services/notifications/parcel.js",
-        "utils/logger.js"
+        "utils/logger.js",
+        "utils/non-prod-phone-guard.js"
       ]
     },
     "services/auto-parcel.js": {
@@ -121939,6 +123777,7 @@
         "customs_shipment_parcels",
         "customs_shipments",
         "finance_config",
+        "order_item_real_cost_allocations",
         "order_items",
         "orders",
         "parcel_items",
@@ -124146,6 +125985,7 @@
       "ownedFiles": [],
       "dbRead": [
         "orders",
+        "scans",
         "invoices",
         "refunds",
         "transaction_documents"
@@ -124184,6 +126024,7 @@
         "db:invoices",
         "db:orders",
         "db:refunds",
+        "db:scans",
         "db:transaction_documents",
         "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
         "doctrine:un document ne prouve jamais une intention",
@@ -124276,6 +126117,7 @@
         "impact:account",
         "impact:documents",
         "services/documents/document-service.js",
+        "services/hub-authorization-service.js",
         "services/invoice-service.js"
       ]
     },
@@ -124291,14 +126133,20 @@
         "db.js"
       ],
       "directUsedBy": [
-        "services/verify-qr-collection.js (post-commit)"
+        "services/pickup-collection-service.js",
+        "services/pickup-exceptional-collection-service.js (post-commit",
+        "par scan)"
       ],
       "ownedFiles": [],
       "dbRead": [
         "orders",
         "recipients",
         "relais",
-        "users"
+        "users",
+        "scans",
+        "parcels",
+        "parcel_items",
+        "order_items"
       ],
       "dbWrite": [
         "transaction_documents"
@@ -124311,15 +126159,21 @@
         "orders"
       ],
       "mustCheck": [
+        "db:order_items",
         "db:orders",
+        "db:parcel_items",
+        "db:parcels",
         "db:recipients",
         "db:relais",
+        "db:scans",
         "db:transaction_documents",
         "db:users",
         "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
         "impact:orders",
         "services/documents/document-reconciliation.js",
         "services/documents/document-service.js",
+        "services/pickup-collection-service.js",
+        "services/pickup-exceptional-collection-service.js",
         "services/verify-qr-collection.js",
         "utils/documents/pickup-proof-html.js",
         "utils/logger.js"
@@ -124378,7 +126232,8 @@
         "services/admin-order-refund.js",
         "services/documents/document-reconciliation.js",
         "services/documents/document-service.js",
-        "services/payment-paypal.js",
+        "services/paypal-refund-authority.js",
+        "services/sav-ledger-refund.js",
         "utils/documents/refund-receipt-html.js",
         "utils/logger.js"
       ]
@@ -125239,6 +127094,8 @@
         "services/market-transport-sale-rates.js",
         "services/order-fx-snapshot.js",
         "services/pricing-parameters-status.js",
+        "services/relay-return-compensation-service.js",
+        "services/sav-ledger-refund.js",
         "utils/currency.js",
         "utils/rates.js"
       ]
@@ -125749,7 +127606,8 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
-        "db"
+        "db",
+        "services/documents/pdf-renderer.js"
       ],
       "directUsedBy": [
         "routes/purchasing.js",
@@ -125762,11 +127620,18 @@
         "purchase_lines",
         "purchase_orders",
         "purchase_order_authorizations",
-        "users"
+        "supplier_execution_payments",
+        "manual_purchase_executions",
+        "purchase_variance_decisions",
+        "users",
+        "suppliers",
+        "order_items",
+        "products"
       ],
       "dbWrite": [
         "hub_authorization_grants",
-        "purchase_order_authorizations"
+        "purchase_order_authorizations",
+        "purchase_variance_decisions"
       ],
       "dbWriteVia": [],
       "doctrines": [
@@ -125780,9 +127645,15 @@
       ],
       "mustCheck": [
         "db:hub_authorization_grants",
+        "db:manual_purchase_executions",
+        "db:order_items",
+        "db:products",
         "db:purchase_lines",
         "db:purchase_order_authorizations",
         "db:purchase_orders",
+        "db:purchase_variance_decisions",
+        "db:supplier_execution_payments",
+        "db:suppliers",
         "db:users",
         "doctrine:append_only_decisions",
         "doctrine:no_implicit_power",
@@ -125790,6 +127661,7 @@
         "impact:finance",
         "impact:purchasing",
         "routes/purchasing.js",
+        "services/documents/pdf-renderer.js",
         "services/purchasing-engagement-service.js",
         "services/supplier-payment-orchestrator.js"
       ]
@@ -126202,7 +128074,8 @@
       "dbRead": [
         "product_sku_physical_codes",
         "purchase_orders",
-        "purchase_lines"
+        "purchase_lines",
+        "v_purchase_line_market"
       ],
       "dbWrite": [
         "product_sku_physical_codes"
@@ -126216,6 +128089,7 @@
         "db:product_sku_physical_codes",
         "db:purchase_lines",
         "db:purchase_orders",
+        "db:v_purchase_line_market",
         "doctrine:code_identifies_sku_not_client; allocation_remains_in_hub_purchase_allocations",
         "routes/hub.js"
       ]
@@ -127265,7 +129139,8 @@
         "impact:orders",
         "impact:refunds",
         "routes/admin/orders.js",
-        "services/order-item-refund-settlement.js"
+        "services/order-item-refund-settlement.js",
+        "services/sav-ledger-refund.js"
       ]
     },
     "services/item-refund-reservation-service.js": {
@@ -127578,7 +129453,8 @@
         "impact:orders",
         "routes/local-stock.js",
         "services/discovery-rail-composer.js",
-        "services/local-stock-checkout-preview.js"
+        "services/local-stock-checkout-preview.js",
+        "services/market-delegation-local-stock-service.js"
       ]
     },
     "services/logistics-control-chain-projection.js": {
@@ -128317,6 +130193,66 @@
         "services/providers-service.js"
       ]
     },
+    "services/market-delegation-local-stock-service.js": {
+      "role": "market-delegation-local-stock-service",
+      "domain": "market-delegation",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/local-stock-service.js",
+        "services/market-delegation-service.js",
+        "services/market-delegation-team-service.js"
+      ],
+      "directUsedBy": [],
+      "ownedFiles": [],
+      "dbRead": [
+        "products",
+        "relais",
+        "local_stock",
+        "market_delegation_audit"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [
+        {
+          "via": "local-stock-service",
+          "tables": [
+            "local_stock"
+          ]
+        },
+        {
+          "via": "market-delegation-service",
+          "tables": [
+            "market_delegation_audit"
+          ]
+        }
+      ],
+      "doctrines": [
+        "country_lead_only_local_stock_declaration",
+        "market_pool_stock_km_main",
+        "no_second_stock_writer"
+      ],
+      "impactAreas": [
+        "market-delegation",
+        "local-stock"
+      ],
+      "mustCheck": [
+        "db:local_stock",
+        "db:market_delegation_audit",
+        "db:products",
+        "db:relais",
+        "doctrine:country_lead_only_local_stock_declaration",
+        "doctrine:market_pool_stock_km_main",
+        "doctrine:no_second_stock_writer",
+        "impact:local-stock",
+        "impact:market-delegation",
+        "routes/market-local-stock.js",
+        "services/local-stock-service.js",
+        "services/market-delegation-service.js",
+        "services/market-delegation-team-service.js"
+      ]
+    },
     "services/market-delegation-network-service.js": {
       "role": "market-delegation-network-service",
       "domain": "market-delegation",
@@ -128562,6 +130498,7 @@
         "services/market-delegation-catalog-service.js",
         "services/market-delegation-client-case-service.js",
         "services/market-delegation-local-offer-service.js",
+        "services/market-delegation-local-stock-service.js",
         "services/market-delegation-network-service.js",
         "services/market-delegation-provider-service.js",
         "services/market-delegation-settlement-service.js",
@@ -128765,6 +130702,7 @@
         "services/market-delegation-cost-statement-service.js",
         "services/market-delegation-customs-service.js",
         "services/market-delegation-local-offer-service.js",
+        "services/market-delegation-local-stock-service.js",
         "services/market-delegation-performance-service.js",
         "services/market-delegation-service.js",
         "services/market-delegation-settlement-service.js",
@@ -130583,7 +132521,8 @@
         "inventory_items",
         "order_incidents",
         "hub_box_bags",
-        "e2e_test_accounts"
+        "e2e_test_accounts",
+        "cash_collections"
       ],
       "dbWrite": [
         "order_comments"
@@ -130648,6 +132587,7 @@
         "market-authorization"
       ],
       "mustCheck": [
+        "db:cash_collections",
         "db:e2e_test_accounts",
         "db:hub_box_bags",
         "db:incidents",
@@ -130770,6 +132710,48 @@
         "services/logistics-control-chain-projection.js"
       ]
     },
+    "services/order-checkout-idempotency.js": {
+      "role": "order-checkout-idempotency",
+      "domain": "orders",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "node:crypto"
+      ],
+      "directUsedBy": [
+        "services/order-checkout-service.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "order_checkout_idempotency"
+      ],
+      "dbWrite": [
+        "order_checkout_idempotency"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "idempotency_scope_is_authenticated_buyer",
+        "no_new_order_on_replay"
+      ],
+      "impactAreas": [
+        "checkout",
+        "orders",
+        "payments",
+        "wallet"
+      ],
+      "mustCheck": [
+        "db:order_checkout_idempotency",
+        "doctrine:idempotency_scope_is_authenticated_buyer",
+        "doctrine:no_new_order_on_replay",
+        "impact:checkout",
+        "impact:orders",
+        "impact:payments",
+        "impact:wallet",
+        "services/order-checkout-service.js"
+      ]
+    },
     "services/order-checkout-item-resolution.js": {
       "role": "orders-checkout-item-resolution",
       "domain": "orders",
@@ -130864,6 +132846,7 @@
         "impact:orders",
         "services/order-checkout-service.js",
         "services/order-status-machine.js",
+        "services/sav-replacement-order.js",
         "services/wallet-service.js"
       ]
     },
@@ -130945,6 +132928,7 @@
         "services/market-payment-collection-gate.js",
         "services/market-transport-sale-rates.js",
         "services/market-transport-tariff-gate.js",
+        "services/order-checkout-idempotency.js",
         "services/order-checkout-item-resolution.js",
         "services/order-checkout-persistence.js",
         "services/order-fx-snapshot.js",
@@ -131337,6 +133321,7 @@
         "services/pickup-collection-recorder.js",
         "services/pickup-exceptional-collection-service.js",
         "services/pickup-secret-access-service.js",
+        "services/pickup-secret-customer-rotation-service.js",
         "services/pickup-secret-issuer.js",
         "services/pickup-secret-rotation-service.js",
         "services/pickup-secret-service.js",
@@ -131554,6 +133539,7 @@
         "impact:tracking",
         "impact:wallet",
         "routes/orders.js",
+        "services/sav-replacement-order.js",
         "services/shared-cart-engine.js",
         "services/wallet-service.js"
       ]
@@ -131567,7 +133553,8 @@
       "purpose": null,
       "directDependsOn": [
         "db.js",
-        "services/client-notification-service.js"
+        "services/client-notification-service.js",
+        "services/pickup-secret-service.js"
       ],
       "directUsedBy": [
         "services/order-payment-confirmation.js",
@@ -131582,7 +133569,9 @@
         "orders",
         "products",
         "relais",
-        "scans"
+        "scans",
+        "wallet_transactions",
+        "wallets"
       ],
       "dbWrite": [
         "order_items",
@@ -131590,6 +133579,12 @@
         "orders"
       ],
       "dbWriteVia": [
+        {
+          "via": "pickup-secret-service",
+          "tables": [
+            "pickup_reveal_codes"
+          ]
+        },
         {
           "via": "customs-shipment-service",
           "tables": [
@@ -131624,10 +133619,13 @@
         "db:order_items",
         "db:order_status_history",
         "db:orders",
+        "db:pickup_reveal_codes",
         "db:product_variants",
         "db:products",
         "db:relais",
         "db:scans",
+        "db:wallet_transactions",
+        "db:wallets",
         "doctrine:annulation_tracee",
         "doctrine:payment_to_stock_single_entry",
         "doctrine:status_transition_source_unique",
@@ -131655,12 +133653,15 @@
         "services/parcel-auto-create-service.js",
         "services/parcel-operations.js",
         "services/payment-status-validator.js",
+        "services/paypal-refund-authority.js",
         "services/pickup-collection-recorder.js",
         "services/pickup-collection-service.js",
+        "services/pickup-secret-service.js",
         "services/purchasing-completion-service.js",
         "services/purchasing-receive-service.js",
         "services/qr-collection-core.js",
         "services/receive-purchase-order.js",
+        "services/sav-replacement-order.js",
         "services/scan-engine.js",
         "services/scan-operations.js",
         "services/simulator/state-advancer.js",
@@ -131982,6 +133983,7 @@
         "services/parcel-service.js",
         "services/parcel-transition-guard.js",
         "services/refund-service.js",
+        "utils/alerts.js",
         "utils/logger.js",
         "utils/reference.js",
         "utils/rules.js"
@@ -132055,6 +134057,7 @@
         "services/parcel-transition-guard.js",
         "services/refund-service.js",
         "services/simulator/state-advancer.js",
+        "utils/alerts.js",
         "utils/logger.js",
         "utils/reference.js",
         "utils/rules.js"
@@ -132558,7 +134561,7 @@
         "db.js",
         "services/paypal-client.js",
         "services/order-payment-confirmation.js",
-        "services/documents/refund-receipt.js",
+        "services/paypal-refund-authority.js",
         "routes/pickup-secret.js"
       ],
       "directUsedBy": [
@@ -132606,10 +134609,10 @@
         "impact:payment",
         "routes/payments-paypal.js",
         "routes/pickup-secret.js",
-        "services/documents/refund-receipt.js",
         "services/order-payment-confirmation.js",
         "services/payment-service.js",
         "services/paypal-client.js",
+        "services/paypal-refund-authority.js",
         "services/pickup-secret-service.js",
         "utils/alerts.js",
         "utils/logger.js"
@@ -132666,6 +134669,7 @@
         "services/payment-paypal.js",
         "services/payment-status-validator.js",
         "services/payment-stripe.js",
+        "services/paypal-refund-authority.js",
         "services/simulator/state-advancer.js"
       ]
     },
@@ -132798,7 +134802,119 @@
         "routes/payments-paypal.js",
         "services/payment-paypal.js",
         "services/refund-evidence-verifier.js",
+        "services/sav-ledger-refund.js",
         "utils/logger.js"
+      ]
+    },
+    "services/paypal-refund-authority.js": {
+      "role": "durable-paypal-admin-refund-authority",
+      "domain": "refunds",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "services/refund-intent-ledger.js",
+        "services/refund-intent-reconciliation.js",
+        "services/refund-service.js",
+        "services/payment-service.js",
+        "services/order-status-machine.js",
+        "services/documents/refund-receipt.js",
+        "utils/alerts.js"
+      ],
+      "directUsedBy": [
+        "services/payment-paypal.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "orders",
+        "refund_execution_intents",
+        "refunds"
+      ],
+      "dbWrite": [
+        "refund_execution_intents",
+        "refunds",
+        "orders",
+        "order_status_history"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "no_psp_in_sql_transaction",
+        "durable_intent",
+        "no_duplicate_refund",
+        "fail_closed_on_unknown",
+        "refunds_to_original_payer"
+      ],
+      "impactAreas": [
+        "payments",
+        "orders",
+        "refunds",
+        "documents",
+        "finance"
+      ],
+      "mustCheck": [
+        "db:order_status_history",
+        "db:orders",
+        "db:refund_execution_intents",
+        "db:refunds",
+        "doctrine:durable_intent",
+        "doctrine:fail_closed_on_unknown",
+        "doctrine:no_duplicate_refund",
+        "doctrine:no_psp_in_sql_transaction",
+        "doctrine:refunds_to_original_payer",
+        "impact:documents",
+        "impact:finance",
+        "impact:orders",
+        "impact:payments",
+        "impact:refunds",
+        "routes/payments-paypal.js",
+        "services/documents/refund-receipt.js",
+        "services/order-status-machine.js",
+        "services/payment-paypal.js",
+        "services/payment-service.js",
+        "services/refund-intent-ledger.js",
+        "services/refund-intent-reconciliation.js",
+        "services/refund-service.js",
+        "utils/alerts.js"
+      ]
+    },
+    "services/pickup-agent-lockout.js": {
+      "role": "pickup-agent-lockout",
+      "domain": "logistics",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js"
+      ],
+      "directUsedBy": [
+        "services/pickup-collection-service.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "pickup_collect_failures",
+        "users"
+      ],
+      "dbWrite": [
+        "pickup_collect_failures"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "brute_force_guard"
+      ],
+      "impactAreas": [
+        "logistics",
+        "security"
+      ],
+      "mustCheck": [
+        "db:pickup_collect_failures",
+        "db:users",
+        "doctrine:brute_force_guard",
+        "impact:logistics",
+        "impact:security",
+        "services/pickup-collection-service.js"
       ]
     },
     "services/pickup-authorization-service.js": {
@@ -132957,10 +135073,12 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
+        "services/pickup-agent-lockout.js",
         "db.js",
         "services/order-status-machine.js",
         "services/pickup-code-helpers.js",
         "services/pickup-collection-recorder.js",
+        "services/documents/pickup-proof.js",
         "utils/alerts.js"
       ],
       "directUsedBy": [
@@ -132976,6 +135094,7 @@
       ],
       "dbWrite": [
         "alerts",
+        "pickup_collect_failures",
         "pickup_print_tokens",
         "pickup_reveal_codes",
         "scans"
@@ -133023,6 +135142,7 @@
         "db:orders",
         "db:parcel_items",
         "db:parcels",
+        "db:pickup_collect_failures",
         "db:pickup_print_tokens",
         "db:pickup_reveal_codes",
         "db:product_variants",
@@ -133032,7 +135152,9 @@
         "db:users",
         "doctrine:resolve_before_behavior_change",
         "impact:logistics",
+        "services/documents/pickup-proof.js",
         "services/order-status-machine.js",
+        "services/pickup-agent-lockout.js",
         "services/pickup-code-helpers.js",
         "services/pickup-collection-recorder.js",
         "services/pickup-exceptional-collection-service.js",
@@ -133051,6 +135173,7 @@
       "directDependsOn": [
         "db.js",
         "services/pickup-collection-recorder.js",
+        "services/documents/pickup-proof.js",
         "services/pickup-collection-service.js",
         "services/pickup-authorization-service.js",
         "services/notifications/notification-service.js",
@@ -133118,6 +135241,7 @@
         "db:users",
         "doctrine:resolve_before_behavior_change",
         "impact:logistics",
+        "services/documents/pickup-proof.js",
         "services/notifications/notification-service.js",
         "services/order-mutation-service.js",
         "services/pickup-authorization-service.js",
@@ -133186,6 +135310,59 @@
         "utils/pickup-receipt-html.js"
       ]
     },
+    "services/pickup-secret-customer-rotation-service.js": {
+      "role": "pickup-secret-customer-rotation",
+      "domain": "logistics",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "services/pickup-secret-issuer.js",
+        "services/order-mutation-service.js"
+      ],
+      "directUsedBy": [
+        "routes/pickup-secret.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "orders",
+        "pickup_code_generations"
+      ],
+      "dbWrite": [
+        "pickup_code_generations",
+        "pickup_reveal_codes",
+        "pickup_print_tokens"
+      ],
+      "dbWriteVia": [
+        {
+          "via": "order-mutation-service",
+          "tables": [
+            "orders"
+          ]
+        }
+      ],
+      "doctrines": [
+        "no_second_secret_writer"
+      ],
+      "impactAreas": [
+        "logistics",
+        "pickup"
+      ],
+      "mustCheck": [
+        "db:orders",
+        "db:pickup_code_generations",
+        "db:pickup_print_tokens",
+        "db:pickup_reveal_codes",
+        "doctrine:no_second_secret_writer",
+        "impact:logistics",
+        "impact:pickup",
+        "routes/pickup-secret.js",
+        "services/order-mutation-service.js",
+        "services/pickup-secret-issuer.js"
+      ]
+    },
     "services/pickup-secret-issuer.js": {
       "role": "pickup-secret-issuer",
       "domain": "logistics",
@@ -133229,6 +135406,7 @@
         "impact:pickup",
         "services/order-mutation-service.js",
         "services/pickup-code-helpers.js",
+        "services/pickup-secret-customer-rotation-service.js",
         "services/pickup-secret-rotation-service.js",
         "services/pickup-secret-service.js"
       ]
@@ -133374,6 +135552,7 @@
         "routes/pickup-secret.js",
         "services/order-mutation-service.js",
         "services/order-post-commit-hooks.js",
+        "services/order-status-machine.js",
         "services/payment-paypal.js",
         "services/payment-stripe.js",
         "services/pickup-code-helpers.js",
@@ -133719,7 +135898,8 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
-        "services/pricing-floor-forecast-shadow.js"
+        "services/pricing-floor-forecast-shadow.js",
+        "utils/currency.js"
       ],
       "directUsedBy": [
         "routes/admin-pricing-workspace.js"
@@ -133738,7 +135918,8 @@
         "doctrine:docs/doctrine/PRICING_FLOOR_FORECAST_SHADOW.md",
         "impact:economic-engine",
         "routes/admin-pricing-workspace.js",
-        "services/pricing-floor-forecast-shadow.js"
+        "services/pricing-floor-forecast-shadow.js",
+        "utils/currency.js"
       ]
     },
     "services/pricing-floor-forecast-shadow.js": {
@@ -135524,16 +137705,20 @@
       ],
       "ownedFiles": [],
       "dbRead": [
+        "manual_purchase_executions",
         "order_items",
         "orders",
         "product_suppliers",
         "products",
         "purchase_lines",
+        "purchase_order_authorizations",
         "purchase_orders",
+        "supplier_execution_payments",
         "suppliers",
         "v_purchase_line_progress"
       ],
       "dbWrite": [
+        "manual_purchase_executions",
         "purchase_lines",
         "purchase_orders"
       ],
@@ -135546,12 +137731,15 @@
         "supplier-integration"
       ],
       "mustCheck": [
+        "db:manual_purchase_executions",
         "db:order_items",
         "db:orders",
         "db:product_suppliers",
         "db:products",
         "db:purchase_lines",
+        "db:purchase_order_authorizations",
         "db:purchase_orders",
+        "db:supplier_execution_payments",
         "db:suppliers",
         "db:v_purchase_line_progress",
         "doctrine:docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md",
@@ -135797,6 +137985,7 @@
         "services/procurement-execution-context.js",
         "services/purchase-line-snapshot.js",
         "services/purchasing-canonical-money.js",
+        "services/sav-replacement-order.js",
         "services/supplier-execution-persistence.js",
         "services/supplier-source-resolution.js",
         "services/suppliers/canonical-unit-purchasing-gate.js",
@@ -136325,11 +138514,13 @@
       "directDependsOn": [
         "db.js",
         "orders",
-        "utils/refunds.js",
+        "refunds",
         "refund_execution_intents"
       ],
       "directUsedBy": [
-        "future refund orchestrators (NOT ACTIVATED)"
+        "services/paypal-refund-authority.js",
+        "services/sav-ledger-refund.js",
+        "services/item-refund-reservation-service.js"
       ],
       "ownedFiles": [],
       "dbRead": [
@@ -136355,9 +138546,10 @@
         "doctrine:legacy_reconciliation_first",
         "doctrine:multi_market_isolation",
         "services/item-refund-reservation-service.js",
+        "services/paypal-refund-authority.js",
         "services/refund-evidence-verifier.js",
         "services/refund-intent-reconciliation.js",
-        "utils/refunds.js"
+        "services/sav-ledger-refund.js"
       ]
     },
     "services/refund-intent-reconciliation.js": {
@@ -136396,8 +138588,10 @@
         "doctrine:fail_closed_provider_evidence",
         "doctrine:market_isolation",
         "doctrine:no_psp_in_transaction",
+        "services/paypal-refund-authority.js",
         "services/refund-evidence-verifier.js",
-        "services/refund-intent-ledger.js"
+        "services/refund-intent-ledger.js",
+        "services/sav-ledger-refund.js"
       ]
     },
     "services/refund-service.js": {
@@ -136423,6 +138617,7 @@
         "orders",
         "refunds",
         "wallets",
+        "wallet_transactions",
         "markets"
       ],
       "dbWrite": [
@@ -136443,6 +138638,7 @@
         "db:markets",
         "db:orders",
         "db:refunds",
+        "db:wallet_transactions",
         "db:wallets",
         "doctrine:idempotent_stripe_refund",
         "doctrine:refund_confirmed_only",
@@ -136455,6 +138651,8 @@
         "services/cost-allocation/canonical-margin-writer.js",
         "services/order-fx-snapshot.js",
         "services/parcel-operations.js",
+        "services/paypal-refund-authority.js",
+        "services/sav-ledger-refund.js",
         "services/wallet-service.js",
         "utils/logger.js"
       ]
@@ -136710,6 +138908,85 @@
         "routes/relay-dashboard.js"
       ]
     },
+    "services/relay-return-compensation-service.js": {
+      "role": "relay-return-compensation-service",
+      "domain": "orders",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "services/wallet-service.js",
+        "services/fx-authority.js",
+        "services/sav-ledger-refund.js",
+        "services/sav-replacement-order.js",
+        "disputes",
+        "orders",
+        "order_items"
+      ],
+      "directUsedBy": [
+        "routes/relay-dashboard.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "disputes",
+        "orders",
+        "order_items",
+        "business_rules",
+        "relay_return_compensations",
+        "relay_product_return_receipts"
+      ],
+      "dbWrite": [
+        "relay_return_compensations"
+      ],
+      "dbWriteVia": [
+        {
+          "via": "wallet-service",
+          "tables": [
+            "wallets",
+            "wallet_transactions",
+            "wallet_credit_lots"
+          ]
+        }
+      ],
+      "doctrines": [
+        "docs/doctrine/DOCTRINE_NON_CONFORMITE.md",
+        "return_is_dispute_not_parallel_object",
+        "no_implicit_refund_no_sellable_stock",
+        "financial_authority_never_delegated"
+      ],
+      "impactAreas": [
+        "orders",
+        "wallet",
+        "refunds",
+        "dashboard"
+      ],
+      "mustCheck": [
+        "db:business_rules",
+        "db:disputes",
+        "db:order_items",
+        "db:orders",
+        "db:relay_product_return_receipts",
+        "db:relay_return_compensations",
+        "db:wallet_credit_lots",
+        "db:wallet_transactions",
+        "db:wallets",
+        "doctrine:docs/doctrine/DOCTRINE_NON_CONFORMITE.md",
+        "doctrine:financial_authority_never_delegated",
+        "doctrine:no_implicit_refund_no_sellable_stock",
+        "doctrine:return_is_dispute_not_parallel_object",
+        "impact:dashboard",
+        "impact:orders",
+        "impact:refunds",
+        "impact:wallet",
+        "routes/relay-dashboard.js",
+        "services/fx-authority.js",
+        "services/sav-ledger-refund.js",
+        "services/sav-replacement-order.js",
+        "services/wallet-service.js"
+      ]
+    },
     "services/relay-return-request-service.js": {
       "role": "orders-product-return-request-service",
       "domain": "orders",
@@ -136734,7 +139011,8 @@
         "order_items",
         "products",
         "disputes",
-        "relay_product_return_receipts"
+        "relay_product_return_receipts",
+        "relay_return_compensations"
       ],
       "dbWrite": [],
       "dbWriteVia": [
@@ -136762,6 +139040,7 @@
         "db:orders",
         "db:products",
         "db:relay_product_return_receipts",
+        "db:relay_return_compensations",
         "doctrine:financial_authority_never_delegated",
         "doctrine:relay_scope_is_server_authority",
         "doctrine:return_is_dispute_not_parallel_object",
@@ -136963,6 +139242,117 @@
         "server.js",
         "services/shared-cart-lifecycle.js",
         "utils/logger.js"
+      ]
+    },
+    "services/sav-ledger-refund.js": {
+      "role": "sav-ledger-refund",
+      "domain": "refunds",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/refund-intent-ledger.js",
+        "services/refund-intent-reconciliation.js",
+        "services/refund-service.js",
+        "services/item-refund-psp-orchestrator.js",
+        "services/fx-authority.js",
+        "services/paypal-client.js",
+        "services/documents/refund-receipt.js"
+      ],
+      "directUsedBy": [
+        "services/relay-return-compensation-service.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "refund_execution_intents"
+      ],
+      "dbWrite": [
+        "refund_execution_intents"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "refund_to_payer",
+        "no_duplicate_refund",
+        "no_psp_in_sql_transaction"
+      ],
+      "impactAreas": [
+        "orders",
+        "refunds",
+        "finance"
+      ],
+      "mustCheck": [
+        "db:refund_execution_intents",
+        "doctrine:no_duplicate_refund",
+        "doctrine:no_psp_in_sql_transaction",
+        "doctrine:refund_to_payer",
+        "impact:finance",
+        "impact:orders",
+        "impact:refunds",
+        "services/documents/refund-receipt.js",
+        "services/fx-authority.js",
+        "services/item-refund-psp-orchestrator.js",
+        "services/paypal-client.js",
+        "services/refund-intent-ledger.js",
+        "services/refund-intent-reconciliation.js",
+        "services/refund-service.js",
+        "services/relay-return-compensation-service.js"
+      ]
+    },
+    "services/sav-replacement-order.js": {
+      "role": "sav-replacement-order",
+      "domain": "orders",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/order-service.js",
+        "services/order-status-machine.js",
+        "services/order-checkout-persistence.js",
+        "services/purchasing-trigger-service.js"
+      ],
+      "directUsedBy": [
+        "services/relay-return-compensation-service.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "orders",
+        "order_items",
+        "relais"
+      ],
+      "dbWrite": [
+        "orders",
+        "order_items"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "return_is_dispute_not_parallel_object",
+        "status_transition_source_unique",
+        "no_implicit_refund_no_sellable_stock"
+      ],
+      "impactAreas": [
+        "orders",
+        "logistics",
+        "local-stock",
+        "purchasing"
+      ],
+      "mustCheck": [
+        "db:order_items",
+        "db:orders",
+        "db:relais",
+        "doctrine:no_implicit_refund_no_sellable_stock",
+        "doctrine:return_is_dispute_not_parallel_object",
+        "doctrine:status_transition_source_unique",
+        "impact:local-stock",
+        "impact:logistics",
+        "impact:orders",
+        "impact:purchasing",
+        "services/order-checkout-persistence.js",
+        "services/order-service.js",
+        "services/order-status-machine.js",
+        "services/purchasing-trigger-service.js",
+        "services/relay-return-compensation-service.js"
       ]
     },
     "services/scan-engine.js": {
@@ -142776,7 +145166,8 @@
         "relais"
       ],
       "dbWrite": [
-        "users"
+        "users",
+        "hub_authorization_grants"
       ],
       "dbWriteVia": [],
       "doctrines": [
@@ -142788,6 +145179,7 @@
         "loyalty"
       ],
       "mustCheck": [
+        "db:hub_authorization_grants",
         "db:loyalty_tiers",
         "db:orders",
         "db:relais",
@@ -142864,7 +145256,8 @@
       "directDependsOn": [
         "db.js",
         "services/documents/wallet-receipt.js",
-        "services/order-mutation-service.js"
+        "services/order-mutation-service.js",
+        "services/fx-authority.js (devise marché non-KMF)"
       ],
       "directUsedBy": [
         "routes/wallet.js",
@@ -142873,6 +145266,7 @@
       ],
       "ownedFiles": [],
       "dbRead": [
+        "markets",
         "orders",
         "users",
         "wallet_consumptions",
@@ -142903,6 +145297,7 @@
         "wallet"
       ],
       "mustCheck": [
+        "db:markets",
         "db:orders",
         "db:users",
         "db:wallet_consumptions",
@@ -142921,9 +145316,9 @@
         "services/order-payment-confirmation.js",
         "services/order-service.js",
         "services/refund-service.js",
+        "services/relay-return-compensation-service.js",
         "services/simulator/state-advancer.js",
-        "utils/logger.js",
-        "utils/refunds.js"
+        "utils/logger.js"
       ]
     },
     "services/webauthn-management-service.js": {
@@ -143017,7 +145412,8 @@
       "purpose": null,
       "directDependsOn": [
         "Meta Graph API",
-        "env META_WA_*"
+        "env META_WA_*",
+        "utils/non-prod-phone-guard.js"
       ],
       "directUsedBy": [
         "notification-service.js",
@@ -143049,7 +145445,8 @@
         "impact:shared-cart",
         "impact:whatsapp",
         "routes/meta-whatsapp.js",
-        "services/notifications/notification-service.js"
+        "services/notifications/notification-service.js",
+        "utils/non-prod-phone-guard.js"
       ]
     },
     "utils/alerts.js": {
@@ -143093,9 +145490,11 @@
         "impact:refunds",
         "services/catalog-approval.js",
         "services/fx-observation-service.js",
+        "services/parcel-operations.js",
         "services/payment-cash-confirm.js",
         "services/payment-paypal.js",
         "services/payment-stripe.js",
+        "services/paypal-refund-authority.js",
         "services/pickup-authorization-service.js",
         "services/pickup-collection-service.js",
         "services/purchasing-cancel-service.js",
@@ -143389,6 +145788,7 @@
         "services/market-transport-sale-rates.js",
         "services/order-display-snapshot.js",
         "services/payment-mobile-money.js",
+        "services/pricing-floor-forecast-preview.js",
         "services/pricing-market-corridor.js"
       ]
     },
@@ -143761,7 +146161,6 @@
         "utils/parcels.js",
         "utils/pricing-cache.js",
         "utils/rates.js",
-        "utils/refunds.js",
         "utils/rules.js",
         "utils/store-credits.js"
       ],
@@ -143918,7 +146317,6 @@
         "utils/parcels.js",
         "utils/pricing-cache.js",
         "utils/rates.js",
-        "utils/refunds.js",
         "utils/rules.js"
       ]
     },
@@ -143952,6 +146350,44 @@
         "services/pickup-authorization-service.js",
         "services/pickup-exceptional-collection-service.js",
         "services/pickup-secret-service.js"
+      ]
+    },
+    "utils/non-prod-phone-guard.js": {
+      "role": "non-prod-phone-guard",
+      "domain": "notification",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "middleware/require-non-production.js"
+      ],
+      "directUsedBy": [
+        "services/authkey-client.js",
+        "services/whatsapp-meta.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "no_external_send_outside_production",
+        "fail_safe_empty_allowlist"
+      ],
+      "impactAreas": [
+        "whatsapp",
+        "notifications",
+        "shared-cart"
+      ],
+      "mustCheck": [
+        "doctrine:fail_safe_empty_allowlist",
+        "doctrine:no_external_send_outside_production",
+        "impact:notifications",
+        "impact:shared-cart",
+        "impact:whatsapp",
+        "middleware/require-non-production.js",
+        "services/authkey-client.js",
+        "services/whatsapp-meta.js"
       ]
     },
     "utils/orderParcelLinkRules.js": {
@@ -144332,39 +146768,6 @@
         "utils/parcels.js"
       ]
     },
-    "utils/refunds.js": {
-      "role": "refunds",
-      "domain": "refunds",
-      "criticality": "medium",
-      "headerType": "full",
-      "owner": null,
-      "purpose": null,
-      "directDependsOn": [
-        "services/wallet-service.js",
-        "utils/logger.js"
-      ],
-      "directUsedBy": [],
-      "ownedFiles": [],
-      "dbRead": [],
-      "dbWrite": [
-        "refunds"
-      ],
-      "dbWriteVia": [],
-      "doctrines": [
-        "resolve_before_behavior_change"
-      ],
-      "impactAreas": [
-        "unknown"
-      ],
-      "mustCheck": [
-        "db:refunds",
-        "doctrine:resolve_before_behavior_change",
-        "impact:unknown",
-        "services/refund-intent-ledger.js",
-        "services/wallet-service.js",
-        "utils/logger.js"
-      ]
-    },
     "utils/relay-commission.js": {
       "role": "relay-commission-resolver",
       "domain": "economic-engine",
@@ -144556,7 +146959,7 @@
   "multiWriterTables": [
     {
       "table": "orders",
-      "writerCount": 33,
+      "writerCount": 35,
       "writers": [
         "routes/admin-customs-shipments.js",
         "routes/admin/delete-order-cascade.js",
@@ -144583,11 +146986,13 @@
         "services/payment-paypal.js",
         "services/payment-service.js",
         "services/payment-stripe.js",
+        "services/paypal-refund-authority.js",
         "services/pickup-secret-access-service.js",
         "services/pickup-secret-service.js",
         "services/purchasing-admin-service.js",
         "services/qr-collection-core.js",
         "services/routing.js",
+        "services/sav-replacement-order.js",
         "services/scan-operations.js",
         "services/simulation-scope-service.js",
         "services/verify-qr-collection.js"
@@ -144712,6 +147117,36 @@
       ]
     },
     {
+      "table": "order_items",
+      "writerCount": 9,
+      "writers": [
+        "routes/admin/delete-order-cascade.js",
+        "routes/admin/system.js",
+        "services/order-checkout-persistence.js",
+        "services/order-checkout-service.js",
+        "services/order-item-availability-service.js",
+        "services/order-item-refund-settlement.js",
+        "services/order-status-machine.js",
+        "services/sav-replacement-order.js",
+        "services/scan-engine.js"
+      ]
+    },
+    {
+      "table": "order_status_history",
+      "writerCount": 9,
+      "writers": [
+        "routes/admin/delete-order-cascade.js",
+        "routes/admin/system.js",
+        "routes/admin/users.js",
+        "routes/orders/cancel.js",
+        "services/hub-v1-fixture-payment.js",
+        "services/order-checkout-persistence.js",
+        "services/order-checkout-service.js",
+        "services/order-status-machine.js",
+        "services/paypal-refund-authority.js"
+      ]
+    },
+    {
       "table": "supplier_execution_events",
       "writerCount": 9,
       "writers": [
@@ -144727,31 +147162,29 @@
       ]
     },
     {
-      "table": "order_items",
-      "writerCount": 8,
+      "table": "pickup_print_tokens",
+      "writerCount": 7,
       "writers": [
-        "routes/admin/delete-order-cascade.js",
-        "routes/admin/system.js",
-        "services/order-checkout-persistence.js",
-        "services/order-checkout-service.js",
-        "services/order-item-availability-service.js",
-        "services/order-item-refund-settlement.js",
-        "services/order-status-machine.js",
-        "services/scan-engine.js"
+        "bootstrap/crons.js",
+        "routes/pickup-secret.js",
+        "services/pickup-collection-recorder.js",
+        "services/pickup-collection-service.js",
+        "services/pickup-secret-access-service.js",
+        "services/pickup-secret-customer-rotation-service.js",
+        "services/pickup-secret-rotation-service.js"
       ]
     },
     {
-      "table": "order_status_history",
-      "writerCount": 8,
+      "table": "pickup_reveal_codes",
+      "writerCount": 7,
       "writers": [
-        "routes/admin/delete-order-cascade.js",
-        "routes/admin/system.js",
-        "routes/admin/users.js",
-        "routes/orders/cancel.js",
-        "services/hub-v1-fixture-payment.js",
-        "services/order-checkout-persistence.js",
-        "services/order-checkout-service.js",
-        "services/order-status-machine.js"
+        "bootstrap/crons.js",
+        "routes/pickup-secret.js",
+        "services/pickup-collection-recorder.js",
+        "services/pickup-collection-service.js",
+        "services/pickup-secret-access-service.js",
+        "services/pickup-secret-customer-rotation-service.js",
+        "services/pickup-secret-rotation-service.js"
       ]
     },
     {
@@ -144780,30 +147213,6 @@
       ]
     },
     {
-      "table": "pickup_print_tokens",
-      "writerCount": 6,
-      "writers": [
-        "bootstrap/crons.js",
-        "routes/pickup-secret.js",
-        "services/pickup-collection-recorder.js",
-        "services/pickup-collection-service.js",
-        "services/pickup-secret-access-service.js",
-        "services/pickup-secret-rotation-service.js"
-      ]
-    },
-    {
-      "table": "pickup_reveal_codes",
-      "writerCount": 6,
-      "writers": [
-        "bootstrap/crons.js",
-        "routes/pickup-secret.js",
-        "services/pickup-collection-recorder.js",
-        "services/pickup-collection-service.js",
-        "services/pickup-secret-access-service.js",
-        "services/pickup-secret-rotation-service.js"
-      ]
-    },
-    {
       "table": "purchase_lines",
       "writerCount": 6,
       "writers": [
@@ -144813,6 +147222,18 @@
         "services/purchasing-engagement-service.js",
         "services/purchasing-grouped-service.js",
         "services/purchasing-trigger-service.js"
+      ]
+    },
+    {
+      "table": "refund_execution_intents",
+      "writerCount": 6,
+      "writers": [
+        "services/item-refund-psp-orchestrator.js",
+        "services/item-refund-reservation-service.js",
+        "services/paypal-refund-authority.js",
+        "services/refund-intent-ledger.js",
+        "services/refund-intent-reconciliation.js",
+        "services/sav-ledger-refund.js"
       ]
     },
     {
@@ -145013,16 +147434,6 @@
       ]
     },
     {
-      "table": "refund_execution_intents",
-      "writerCount": 4,
-      "writers": [
-        "services/item-refund-psp-orchestrator.js",
-        "services/item-refund-reservation-service.js",
-        "services/refund-intent-ledger.js",
-        "services/refund-intent-reconciliation.js"
-      ]
-    },
-    {
       "table": "sourcing_candidates",
       "writerCount": 4,
       "writers": [
@@ -145148,8 +147559,8 @@
       "writerCount": 3,
       "writers": [
         "services/item-refund-psp-orchestrator.js",
-        "services/refund-service.js",
-        "utils/refunds.js"
+        "services/paypal-refund-authority.js",
+        "services/refund-service.js"
       ]
     },
     {
@@ -145329,6 +147740,14 @@
       ]
     },
     {
+      "table": "hub_authorization_grants",
+      "writerCount": 2,
+      "writers": [
+        "services/hub-authorization-service.js",
+        "services/user-mutation-service.js"
+      ]
+    },
+    {
       "table": "inquiries",
       "writerCount": 2,
       "writers": [
@@ -145414,6 +147833,14 @@
       "writers": [
         "services/payment-paypal-events.js",
         "services/payment-paypal.js"
+      ]
+    },
+    {
+      "table": "pickup_collect_failures",
+      "writerCount": 2,
+      "writers": [
+        "services/pickup-agent-lockout.js",
+        "services/pickup-collection-service.js"
       ]
     },
     {
@@ -147039,6 +149466,12 @@
       "label": "market operator dashboard"
     },
     {
+      "from": "public/dashboards/canonical/js/market-local-offer.js",
+      "to": "routes/market-local-stock.js",
+      "type": "uses",
+      "label": "public/dashboards/canonical/js/market-local-offer.js"
+    },
+    {
       "from": "routes/meta-whatsapp.js",
       "to": "db.js",
       "type": "depends",
@@ -148509,10 +150942,16 @@
       "label": "db.js"
     },
     {
-      "from": "services/verify-qr-collection.js (post-commit)",
+      "from": "services/pickup-exceptional-collection-service.js (post-commit",
       "to": "services/documents/pickup-proof.js",
       "type": "uses",
-      "label": "services/verify-qr-collection.js (post-commit)"
+      "label": "services/pickup-exceptional-collection-service.js (post-commit"
+    },
+    {
+      "from": "par scan)",
+      "to": "services/documents/pickup-proof.js",
+      "type": "uses",
+      "label": "par scan)"
     },
     {
       "from": "services/documents/refund-receipt.js",
@@ -149301,6 +151740,12 @@
       "label": "dashboard-finance-canonical"
     },
     {
+      "from": "services/order-checkout-idempotency.js",
+      "to": "node:crypto",
+      "type": "depends",
+      "label": "node:crypto"
+    },
+    {
       "from": "services/order-checkout-service.js",
       "to": "db.js",
       "type": "depends",
@@ -149535,6 +151980,18 @@
       "label": "stripe_webhooks"
     },
     {
+      "from": "services/paypal-refund-authority.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/pickup-agent-lockout.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
       "from": "services/pickup-authorization-service.js",
       "to": "db.js",
       "type": "depends",
@@ -149575,6 +152032,12 @@
       "to": "services/pickup-secret-access-service.js",
       "type": "uses",
       "label": "services/pickup-secret-service.js (réexport)"
+    },
+    {
+      "from": "services/pickup-secret-customer-rotation-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
     },
     {
       "from": "services/pickup-secret-issuer.js",
@@ -149938,15 +152401,15 @@
     },
     {
       "from": "services/refund-intent-ledger.js",
+      "to": "refunds",
+      "type": "depends",
+      "label": "refunds"
+    },
+    {
+      "from": "services/refund-intent-ledger.js",
       "to": "refund_execution_intents",
       "type": "depends",
       "label": "refund_execution_intents"
-    },
-    {
-      "from": "future refund orchestrators (NOT ACTIVATED)",
-      "to": "services/refund-intent-ledger.js",
-      "type": "uses",
-      "label": "future refund orchestrators (NOT ACTIVATED)"
     },
     {
       "from": "services/refund-intent-reconciliation.js",
@@ -150025,6 +152488,30 @@
       "to": "relay_product_return_receipts",
       "type": "depends",
       "label": "relay_product_return_receipts"
+    },
+    {
+      "from": "services/relay-return-compensation-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/relay-return-compensation-service.js",
+      "to": "disputes",
+      "type": "depends",
+      "label": "disputes"
+    },
+    {
+      "from": "services/relay-return-compensation-service.js",
+      "to": "orders",
+      "type": "depends",
+      "label": "orders"
+    },
+    {
+      "from": "services/relay-return-compensation-service.js",
+      "to": "order_items",
+      "type": "depends",
+      "label": "order_items"
     },
     {
       "from": "services/relay-return-request-service.js",
@@ -151069,6 +153556,12 @@
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
+    },
+    {
+      "from": "services/wallet-service.js",
+      "to": "services/fx-authority.js (devise marché non-KMF)",
+      "type": "depends",
+      "label": "services/fx-authority.js (devise marché non-KMF)"
     },
     {
       "from": "services/webauthn-management-service.js",

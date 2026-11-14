@@ -155,6 +155,11 @@ test('buildQueues ne crée aucune transition métier côté présentation', () =
 
   expect(queues.hub.to_ship.map(row => row.reference)).toEqual(['PCL-1']);
   expect(queues.relay.cash_pending.map(row => row.reference)).toEqual(['CMD-2']);
+  const withConfirmed = workspace.buildQueues([
+    { reference: 'CASH-OK', status: 'pending', payment_mode: 'cash_relais', payment_status: 'pending', cash_confirmed: true },
+    { reference: 'CASH-TODO', status: 'pending', payment_mode: 'cash_relais', payment_status: 'pending', cash_confirmed: false },
+  ], []);
+  expect(withConfirmed.relay.cash_pending.map(row => row.reference)).toEqual(['CASH-TODO']);
   expect(queues.relay.to_receive.map(row => row.reference)).toEqual(['PCL-2']);
   expect(queues.relay.to_collect.map(row => row.reference)).toEqual(['PCL-3']);
 });

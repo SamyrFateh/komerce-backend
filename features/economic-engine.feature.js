@@ -211,6 +211,7 @@ module.exports = {
       'tests/unit/pricing-observed-cost-truth.test.js',
       'tests/unit/sourcing-analysis-density.test.js',
       'tests/unit/relay-commission-allocation.test.js',
+      'tests/integration/relay-commission-per-order-postgres.test.js',
       'tests/unit/relay-commission.test.js',
       'tests/unit/admin-cost-components.test.js',
       'tests/unit/cost-component-admin-service.test.js',

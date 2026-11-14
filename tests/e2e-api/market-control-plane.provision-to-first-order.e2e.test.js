@@ -9,7 +9,7 @@
  * -> readiness verte -> ACTIVE -> première commande.
  * Toutes les mutations métier passent par les routes/services canoniques.
  */
-const request=require('supertest');
+const request=require('../helpers/supertest-order-key');
 const express=require('express');
 const { signAuthToken }=require('../../utils/auth-session');
 const { describeE2E, createCleanup, activateLocalPrice, authorizeCentralCollectionForTest, tag, uuid }=require('../helpers/e2eDbKit');

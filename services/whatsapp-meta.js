@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        phone_number_id, template_name, recipient_phone, message_payload
  * @outputs       meta_message_id, delivery_response, adapter_error
- * @depends       Meta Graph API, env META_WA_*
+ * @depends       Meta Graph API, env META_WA_*, utils/non-prod-phone-guard.js
  * @used-by       notification-service.js, routes/meta-whatsapp.js
  * @db-read       none
  * @db-write      none
@@ -19,6 +19,7 @@
 'use strict';
 
 const fetch = global.fetch;
+const { isNonProdPhoneAllowed } = require('../utils/non-prod-phone-guard');
 
 const GRAPH_VERSION = process.env.META_WA_GRAPH_VERSION || 'v23.0';
 const TOKEN = process.env.META_WA_TOKEN;
@@ -35,6 +36,11 @@ function normalizeWhatsAppPhone(phone) {
 async function sendTemplateWhatsApp({ to, templateName, lang = 'fr', components = [] }) {
   if (!TOKEN || !PHONE_NUMBER_ID) {
     return { success: false, skipped: true, reason: 'meta_not_configured' };
+  }
+
+  // Hors production : envoi uniquement vers AUTHKEY_ALLOWED_PHONES, rien si la liste est vide.
+  if (!isNonProdPhoneAllowed(to)) {
+    return { success: false, skipped: true, reason: 'non_prod_not_allowed' };
   }
 
   const payload = {

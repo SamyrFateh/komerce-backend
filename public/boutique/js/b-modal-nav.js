@@ -97,6 +97,7 @@ import { state, dom } from './b-store.js';
     if (!shouldShow) return;
 
     if (counter) counter.textContent = `${currentIdx + 1}/${list.length}`;
+    if (counter) counter.setAttribute('aria-label', `Produit ${currentIdx + 1} sur ${list.length}`);
     if (prevBtn) prevBtn.classList.toggle('is-disabled', currentIdx <= 0);
     if (nextBtn) nextBtn.classList.toggle('is-disabled', currentIdx >= list.length - 1);
   }

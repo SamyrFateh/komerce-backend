@@ -24,6 +24,11 @@ jest.mock('../../services/market-payment-collection-gate', () => ({
 }));
 jest.mock('../../services/paypal-client', () => ({}));
 
+const mockReconcilePaypal = jest.fn();
+jest.mock('../../services/paypal-refund-authority', () => ({
+  reconcilePaypalRefund: (...args) => mockReconcilePaypal(...args),
+}));
+
 jest.mock('../../services/payment-paypal', () => ({
   createPaypalOrder: jest.fn(),
   capturePaypalOrder: jest.fn(),
@@ -58,6 +63,7 @@ function setAuth(user) { mockUser = user; }
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockReconcilePaypal.mockReset();
   setAuth(null);
   app = express();
   app.use(express.json());
@@ -198,6 +204,46 @@ describe('POST /api/payments/paypal/refund/:orderId', () => {
     const res = await request(app).post('/api/payments/paypal/refund/o1').send({});
     expect(res.status).toBe(403);
     expect(res.body.error).toMatch(/Admin uniquement/);
+  });
+
+  it('admin: reconcile est une lecture PSP, jamais un deuxieme remboursement', async () => {
+    setAuth({ id: 'admin-1', role: 'admin' });
+    mockReconcilePaypal.mockResolvedValue({
+      status: 200, body: { refund_status: 'confirmed', replayed: true },
+    });
+    const res = await request(app)
+      .post('/api/payments/paypal/refund/o1')
+      .set('Idempotency-Key', 'PAYPAL-TEST-00001')
+      .send({ action: 'reconcile', provider_ref: 'RF-EXISTING' });
+    expect(res.status).toBe(200);
+    expect(mockReconcilePaypal).toHaveBeenCalledWith(expect.objectContaining({
+      orderId: 'o1', providerRefundId: 'RF-EXISTING',
+      requestKey: 'PAYPAL-TEST-00001',
+      adminUser: { id: 'admin-1', role: 'admin' },
+    }));
+    expect(paymentPaypal.refundPaypalOrder).not.toHaveBeenCalled();
+  });
+
+  it('admin: reconcile refuse montant ou raison (aucune nouvelle sortie PSP)', async () => {
+    setAuth({ id: 'admin-1', role: 'admin' });
+    const res = await request(app)
+      .post('/api/payments/paypal/refund/o1')
+      .send({ action: 'reconcile', provider_ref: 'RF-EXISTING', amount_eur: 10 });
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('REFUND_RECONCILIATION_PAYLOAD_INVALID');
+    expect(mockReconcilePaypal).not.toHaveBeenCalled();
+    expect(paymentPaypal.refundPaypalOrder).not.toHaveBeenCalled();
+  });
+
+  it('admin: action inconnue refusee sans toucher au remboursement', async () => {
+    setAuth({ id: 'admin-1', role: 'admin' });
+    const res = await request(app)
+      .post('/api/payments/paypal/refund/o1')
+      .send({ action: 'retry', provider_ref: 'RF-EXISTING' });
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('REFUND_ACTION_INVALID');
+    expect(paymentPaypal.refundPaypalOrder).not.toHaveBeenCalled();
+    expect(mockReconcilePaypal).not.toHaveBeenCalled();
   });
 
   it('admin nominal → delegue a refundPaypalOrder et reflete son status/body', async () => {

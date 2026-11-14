@@ -92,5 +92,6 @@ describe('operations-workspace.js — provenance manuelle (#3900)', () => {
     expect(ui).toContain('data-hub-box-evidence-method');
     expect(ui).toContain('data-hub-box-manual-proof');
     expect(ui).toContain('data-receive-manual-proof');
+    expect(ui).toContain('data-receive-manual-toggle');
   });
 });
