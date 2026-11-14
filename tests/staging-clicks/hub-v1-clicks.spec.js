@@ -205,27 +205,36 @@ test.describe.serial(`Hub V1 : clics reels Chromium (${MARKET_CODE}, fixture E2E
       await scanResp;
       const qty = card.locator('input.kmc-workspace-receive-qty').first();
       await qty.fill(await qty.getAttribute('max'));
-      const qtyRequested = Number(await qty.inputValue());
+      // T2 : mémoriser uniquement en mémoire la requête exacte envoyée par le clic UI.
+      let originalPost = null;
+      const captureReceive = (request) => {
+        if (request.method() === 'POST' && new URL(request.url()).pathname === '/api/scans/hub/receive') {
+          originalPost = request.postDataJSON();
+        }
+      };
+      page.on('request', captureReceive);
       const receipt = await gesture(page, {
         key: `hub:receive:${poId.slice(0, 8)}`, role: 'agent_hub', route: 'POST /api/scans/hub/receive',
         ui: 'operations-workspace.js:createReceptionCard (Enregistrer la réception)', match: (p) => p === '/api/scans/hub/receive',
         click: () => card.locator('[data-workspace-action="receive-supplier"]').click(),
       });
+      page.off('request', captureReceive);
 
       expect(receipt.verdict).toBe('CLICK_PASS');
       const receivedRef = receipt.json?.unit?.reference;
       expect(receivedRef, 'T2 référence du colis fournisseur créé').toMatch(/^SUPPLIER_PACKAGE-/);
-      const skus = await q(
-        "SELECT product_sku_id AS id FROM purchase_lines WHERE purchase_order_id=$1 AND product_sku_id IS NOT NULL LIMIT 1", [poId]);
-      expect(skus).toHaveLength(1);
+      expect(originalPost?.reference, 'T2 payload original du clic').toBe(receivedRef);
+      expect(originalPost?.contents?.length).toBeGreaterThan(0);
       const beforeReplay = await q("SELECT COUNT(*)::int AS n FROM hub_physical_units WHERE reference=$1", [receivedRef]);
       expect(beforeReplay[0].n).toBe(1);
-      const replay = await page.request.post('/api/scans/hub/receive', { data: {
-        reference: receivedRef,
-        contents: [{ purchase_order_id: poId, product_sku_id: skus[0].id,
-          quantity: qtyRequested }],
-      } });
-      expect(replay.status(), 'T2 rejeu canonique sans duplication').toBe(200);
+      // Le client API Playwright n'injecte pas d'Origin automatiquement : sans cet en-tête,
+      // la protection CSRF répond 403 (et ce refus ne doit jamais être pris pour un refus métier).
+      const replay = await page.request.post('/api/scans/hub/receive', {
+        headers: { Origin: new URL(page.url()).origin },
+        data: originalPost,
+      });
+      const replayResult = await replay.json().catch(() => ({}));
+      expect(replay.status(), 'T2 rejeu authentifié + Origin canonique ; code=' + (replayResult.code || 'none')).toBe(200);
       const afterReplay = await q("SELECT COUNT(*)::int AS n FROM hub_physical_units WHERE reference=$1", [receivedRef]);
       expect(afterReplay[0].n).toBe(1);
       evidence.t_cases = evidence.t_cases || [];
