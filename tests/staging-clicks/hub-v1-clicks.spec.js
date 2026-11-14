@@ -312,10 +312,19 @@ test.describe.serial(`Hub V1 : clics reels Chromium (${MARKET_CODE}, fixture E2E
       await row.locator('[data-hub-bag-scan]').press('Enter');
       const sel = row.locator('select').last();
       await page.waitForTimeout(500);
-      if ((await sel.locator('option').count()) > 1) await sel.selectOption({ index: 1 });
+      // Mode manuel explicitement motivé : saisir la preuve AVANT le clic.
+      // Cette campagne ne prétend pas valider un vrai scan matériel.
+      if ((await sel.locator('option').count()) > 1) await sel.selectOption('MANUAL');
+      const method = await row.locator('[data-hub-box-evidence-method]').inputValue();
+      if (method === 'MANUAL') {
+        await row.locator('[data-hub-box-manual-proof]').fill(`RECETTE-MANUELLE-${RUN8}-${suffix}`);
+      }
       const put = row.locator('[data-workspace-action="put-bag-in-box"]');
-      await gesture(page, { key: `hub:box-add-bag:${suffix}`, role: 'agent_hub', route: `POST ${KM}/boxes/:id/bags`, ui: 'operations-workspace.js:1160 (Placer le sac)',
+      const placement = await gesture(page, { key: `hub:box-add-bag:${suffix}`, role: 'agent_hub', route: `POST ${KM}/boxes/:id/bags`, ui: 'operations-workspace.js:1160 (Placer le sac)',
         match: (pp) => /\/boxes\/[^/]+\/bags$/.test(pp), click: () => put.click(), absent: (await put.count()) === 0 ? 'geste Placer le sac absent' : null });
+      placement.evidence_method = method;
+      placement.scope_note = method === 'MANUAL' ? 'Preuve de saisie manuelle ; scan physique non certifié' : 'Saisie de références dans champs de scan ; aucun périphérique scanner matériel certifié';
+      save();
       await page.waitForTimeout(2500);
     }
     for (let i = 0; i < 8; i++) {
