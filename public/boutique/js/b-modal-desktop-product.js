@@ -617,7 +617,7 @@ function renderLongDescription(detail) {
   appendEnrichedTextBlock(container, {
     heading: 'Description',
     text: description,
-    offerReadMore: shouldOfferReadMore(description),
+    offerReadMore: false, // La description principale reste intégrale dans sa carte desktop.
   });
 }
 
@@ -699,6 +699,49 @@ function appendEnrichedSpecifications(container, specificationGroups) {
 }
 
 /**
+ * Quand un produit ancien ne fournit pas content.specifications, afficher
+ * uniquement les caractéristiques EXPLICITES de sa description ou de ses axes.
+ * Aucune valeur supposée (matière, coupe, stock, dimensions) n'est inventée.
+ * Strictement desktop : le view-model partagé et le rendu mobile ne changent pas.
+ */
+function explicitLegacySpecificationGroups(detail) {
+  const description = typeof detail?.product?.description === 'string'
+    ? detail.product.description : '';
+  const items = [];
+  const seen = new Set();
+  const push = (label, value) => {
+    const clean = typeof value === 'string' ? value.trim().replace(/[,;]+$/, '') : '';
+    if (!clean || clean.length > 110 || seen.has(label)) return;
+    items.push({ label, value: clean, unit: null });
+    seen.add(label);
+  };
+  const coupe = description.match(/\bcoupe\s+(ample|fluide|droite|ajustée|cintrée|oversize)\b/i);
+  const dos = description.match(/\bdos\s+(fendu|ouvert|croisé|nageur)\b/i);
+  if (coupe) push('Coupe', coupe[1]);
+  if (dos) push('Dos', dos[1]);
+  // Découpage limité aux étiquettes présentes dans le texte réel du catalogue.
+  for (const [label, expression] of [
+    ['Tailles', /\bTailles?\s*:\s*([^.!?\n]+)/i],
+    ['Contenu', /\bContenu\s*:\s*([^.!?\n]+)/i],
+    ['Matière', /\bMati[èe]re\s*:\s*([^.!?\n]+)/i],
+    ['Coloris', /\bColoris(?:\s+proposés)?\s*:\s*([^.!?\n]+)/i],
+  ]) {
+    const match = description.match(expression);
+    if (match) push(label, match[1]);
+  }
+  if (!seen.has('Tailles')) {
+    const sizeAxis = (detail?.option_axes || []).find(axis =>
+      /^(taille|size|pointure|tailles)$/i.test(axis?.key || axis?.display_name || '')
+    );
+    const values = (sizeAxis?.values || []).map(value =>
+      typeof value === 'string' ? value : value?.value
+    ).filter(value => typeof value === 'string' && value.trim());
+    if (values.length) push('Tailles', values.join(', '));
+  }
+  return items.length ? [{ group: null, items }] : [];
+}
+
+/**
  * Rend content.* dans #k-modal-enriched-content, sous la zone transactionnelle
  * (galerie + buy box). No-op si le conteneur est absent du shell (compat
  * markup non encore migré) ou si le produit n'a aucune matière enrichie —
@@ -726,7 +769,9 @@ function renderEnrichedContent(detail) {
   const vm = buildProductContentViewModel(detail.content);
 
   appendEnrichedBulletBlock(container, { heading: CONTENT_LABELS.highlights, items: vm.highlights.map((h) => h.label), variant: 'highlights' });
-  appendEnrichedSpecifications(container, vm.specificationGroups);
+  const specGroups = vm.specificationGroups.length
+    ? vm.specificationGroups : explicitLegacySpecificationGroups(detail);
+  appendEnrichedSpecifications(container, specGroups);
   appendEnrichedBulletBlock(container, { heading: CONTENT_LABELS.materials, items: vm.materials, variant: 'materials' });
   appendEnrichedBulletBlock(container, { heading: CONTENT_LABELS.care, items: vm.care, variant: 'care' });
   appendEnrichedBulletBlock(container, { heading: CONTENT_LABELS.warnings, items: vm.warnings, variant: 'warnings' });
