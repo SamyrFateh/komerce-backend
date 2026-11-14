@@ -149,7 +149,9 @@ async function loadProductDetail(product) {
     if (!state.modalOpen) return;
     if (currentProductId() !== productId) return;
 
-    const selection = createModalSelection(detail, { preselectUnique: !isDesktop() });
+    const selection = isDesktop()
+      ? createModalSelection(detail, { preselectUnique: false })
+      : createModalSelection(detail);
     state.modalProductDetail = detail;
     state.modalSelection = selection;
     renderResponsiveProductDetail(detail, selection, true);
