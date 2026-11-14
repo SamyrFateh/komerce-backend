@@ -356,7 +356,7 @@ async function triggerScan3(order_id, scanned_by = null) {
   try {
     const { rows: [scanRow] } = await db.query(
       `INSERT INTO scans (order_id, step, scan_code, scanned_by, notes)
-       VALUES ($1, 'preparation', 'AUTO-HUB-' || $1, $2, 'Auto-déclenché après complétude réception hub')
+       VALUES ($1, 'preparation', 'AUTO-HUB-' || ($1::uuid)::text, $2, 'Auto-déclenché après complétude réception hub')
        RETURNING id`,
       [order_id, scanned_by]
     );

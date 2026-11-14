@@ -377,6 +377,52 @@ describeDb('Hub P0 — chaîne d\'approvisionnement complète (REAL_DB)', () => 
       await expect(engagement.recordPurchaseOrderSent(km1.po, { channel: 'pigeon' }, { actor: actor() })).rejects.toMatchObject({ status: 400 });
     });
 
+    test('T1/T2 : réception complète IMPORT déclenche préparation, SCAN 3, colis, rejeu sans duplication', async () => {
+      const o = await makeOrder({
+        market: km, relais: relaisKm, supplier: supplierA,
+        items: [{ sku: sku1, qty: 1 }],
+      });
+      const prepared = await grouped.preparePurchaseOrder(
+        { supplier_id: supplierA, procurement_hub_ref: 'DXB', line_ids: [o.lines[0].lineId] },
+        { actor: actor() }
+      );
+      const poId = prepared.purchase_order.id;
+      await submitAuthorized(engagement, poId, { actor: actor() });
+      await engagement.recordPurchaseOrderSent(poId, { channel: 'whatsapp' }, { actor: actor() });
+      await engagement.confirmGroupedPurchaseOrder(poId, {
+        purchase_proof_ref: 'T1-T2-COMPLETE', seller_label: 'Vendeur test',
+        supplier_order_id: 'T1-T2-' + tag,
+        lines: [{ purchase_line_id: o.lines[0].lineId, confirmed_quantity: 1 }],
+      }, { actor: actor() });
+
+      const ref = tag + '-T1-T2-RX';
+      const before = await q('SELECT status::text AS status FROM orders WHERE id=$1', [o.orderId]);
+      expect(before.rows[0].status).toBe('ordered');
+      const res = await receive(poId, sku1.id, 1, ref);
+      expect(res.status).toBe(201);
+      const after = await q('SELECT status::text AS status FROM orders WHERE id=$1', [o.orderId]);
+      expect(after.rows[0].status).toBe('preparation');
+      const count = async () => {
+        const { rows: [r] } = await q(
+          "SELECT (SELECT COUNT(*)::int FROM scans WHERE order_id=$1 AND step='preparation' " +
+          "AND scan_code = 'AUTO-HUB-' || $1::text) AS scan3, " +
+          "(SELECT COUNT(*)::int FROM parcel_items pi JOIN order_items oi ON oi.id=pi.order_item_id " +
+          "JOIN parcels p ON p.id=pi.parcel_id AND p.cancelled_at IS NULL WHERE oi.order_id=$1) AS parcel_lines, " +
+          "(SELECT COALESCE(SUM(pi.quantity),0)::int FROM parcel_items pi " +
+          "JOIN order_items oi ON oi.id=pi.order_item_id " +
+          "JOIN parcels p ON p.id=pi.parcel_id AND p.cancelled_at IS NULL WHERE oi.order_id=$1) AS parcel_qty, " +
+          "(SELECT COUNT(*)::int FROM hub_physical_units WHERE reference=$2) AS received_units",
+          [o.orderId, ref]);
+        return r;
+      };
+      const first = await count();
+      expect(first).toEqual({ scan3: 1, parcel_lines: 1, parcel_qty: 1, received_units: 1 });
+      const replay = await receive(poId, sku1.id, 1, ref);
+      expect(replay.status).toBe(200);
+      expect(await count()).toEqual(first);
+      expect((await q('SELECT status::text AS status FROM orders WHERE id=$1', [o.orderId])).rows[0].status).toBe('preparation');
+    });
+
     test('mauvaise variante, sur-réception et double saisie idempotente', async () => {
       await engagement.confirmGroupedPurchaseOrder(km1.po, { purchase_proof_ref: 'RECU-HUB-P0', seller_label: 'Vendeur test',
         supplier_order_id: `SO2-${tag}`, lines: [{ purchase_line_id: km1.lines[0].lineId, confirmed_quantity: 1 }],
