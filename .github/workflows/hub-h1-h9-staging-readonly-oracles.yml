@@ -1,0 +1,73 @@
+name: Hub H1-H9 - staging read-only oracles (#3998 / S7)
+
+# Ne s'exécute QUE sur la branche dédiée. Barrière : scripts/recette/hub-h1-h9-expected-sha.txt
+# doit contenir le SHA de main déployé après fusion contrôlée de #4014 ; tant qu'il est vide,
+# aucun secret base n'est exposé et aucune requête staging n'est émise (NOT_PROVEN).
+on:
+  push:
+    branches: [research/hub-h1-h9-readonly-oracles-20261114]
+    paths:
+      - '.github/workflows/hub-h1-h9-staging-readonly-oracles.yml'
+      - 'scripts/recette/hub-h1-h9-readonly-oracles.js'
+      - 'scripts/recette/hub-h1-h9-expected-sha.txt'
+      - 'scripts/recette/sql/hub-h1-h9-readonly.sql'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hub-h1-h9-staging-readonly
+  cancel-in-progress: false
+
+jobs:
+  oracles:
+    name: Run H1-H9 read-only on confirmed staging SHA
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: SHA gate (no database secret before this passes)
+        id: gate
+        run: |
+          sha="$(tr -d '[:space:]' < scripts/recette/hub-h1-h9-expected-sha.txt)"
+          if [ -z "$sha" ]; then
+            echo "NOT_PROVEN: expected SHA empty (#4014 not merged/deployed). Nothing executed."
+            echo "go=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "go=true" >> "$GITHUB_OUTPUT"
+            echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/setup-node@v4
+        if: steps.gate.outputs.go == 'true'
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install locked dependencies without hooks
+        if: steps.gate.outputs.go == 'true'
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Static read-only safety check
+        if: steps.gate.outputs.go == 'true'
+        run: |
+          node --check scripts/recette/hub-h1-h9-readonly-oracles.js
+          if grep -Eiq '\b(INSERT[[:space:]]+INTO|UPDATE[[:space:]]+[a-z_]+[[:space:]]+SET|DELETE[[:space:]]+FROM|TRUNCATE|ALTER[[:space:]]+TABLE|DROP[[:space:]]+TABLE)\b' scripts/recette/sql/hub-h1-h9-readonly.sql; then
+            echo 'Refus : SQL mutable dans les oracles'; exit 1
+          fi
+      - name: Run oracles (session and transaction read-only)
+        if: steps.gate.outputs.go == 'true'
+        env:
+          CI: 'true'
+          NODE_ENV: test
+          KOMERCE_ENV: staging
+          STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+          HUB_EXPECTED_SHA: ${{ steps.gate.outputs.sha }}
+          DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+          PGOPTIONS: '-c default_transaction_read_only=on'
+        run: node scripts/recette/hub-h1-h9-readonly-oracles.js
+      - name: Preserve oracle report
+        if: always() && steps.gate.outputs.go == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: hub-h1-h9-readonly-${{ github.run_id }}
+          path: test-results/staging-hub-h1-h9/oracles.json
+          if-no-files-found: warn
+          retention-days: 14
