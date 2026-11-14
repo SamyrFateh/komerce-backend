@@ -141,6 +141,8 @@ for (const width of SIZES) {
     expect(evidence.cart.right).toBeLessThanOrEqual(evidence.side.right + 2);
     expect(evidence.gallery).not.toBeNull();
     expect(evidence.buybox).not.toBeNull();
+    // Le hero ne doit jamais occuper toute la hauteur du viewport.
+    expect(evidence.gallery.height).toBeLessThanOrEqual(570);
     console.log('PDP_GEOMETRY_EVIDENCE', JSON.stringify(evidence));
     expect(evidence.side.width).toBeGreaterThanOrEqual(320);
     expect(evidence.overflowCount, JSON.stringify(evidence.overflow)).toBe(0);
@@ -183,10 +185,11 @@ for (const width of SIZES) {
     expect(composition.rowDetails).toBe('3');
     expect(composition.rowRecommendations).toBe('4');
     expect(Object.keys(composition.selectedOptions)).toHaveLength(0);
-    await page.evaluate(() => {
-      const main = document.querySelector('#k-modal .k-modal-main');
-      main.scrollTop = main.scrollHeight;
-    });
+    // Vérification fonctionnelle : la description sous le hero est réellement
+    // atteignable et visible dans le viewport, pas seulement placée en row 2.
+    const description = page.locator('#k-modal-long-description');
+    await description.scrollIntoViewIfNeeded();
+    await expect(description).toBeInViewport();
     await page.screenshot({
       path: path.join(OUT, 'pdp-below-hero-' + width + '.png'),
       animations: 'disabled',
