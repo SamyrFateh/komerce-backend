@@ -1,0 +1,54 @@
+name: G6 finance oracles - real staging read-only check (#3987)
+
+on:
+  push:
+    branches: [cert/fin-oracles-readonly-20261114]
+    paths:
+      - '.github/workflows/g6-finance-oracles-staging-readonly.yml'
+      - 'scripts/recette/g6-finance-oracles-readonly.js'
+      - 'docs/recette/G6_FINANCE_SQL_ORACLES.sql'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: g6-finance-oracles-readonly
+  cancel-in-progress: false
+
+jobs:
+  oracles:
+    name: Run O-FIN I1-I15 on staging schema, read-only, counts only
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      PGOPTIONS: '-c default_transaction_read_only=on'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install locked dependencies without hooks
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Static read-only safety check
+        run: |
+          node --check scripts/recette/g6-finance-oracles-readonly.js
+          if grep -Eiq '\b(INSERT[[:space:]]+INTO|UPDATE[[:space:]]+[a-z_]+[[:space:]]+SET|DELETE[[:space:]]+FROM|TRUNCATE|ALTER[[:space:]]+TABLE|DROP[[:space:]]+TABLE)\b' scripts/recette/g6-finance-oracles-readonly.js docs/recette/G6_FINANCE_SQL_ORACLES.sql; then
+            echo 'Refus : SQL mutable'
+            exit 1
+          fi
+      - name: Run oracles (session and transaction read-only)
+        run: node scripts/recette/g6-finance-oracles-readonly.js
+      - name: Preserve report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g6-finance-oracles-readonly-${{ github.run_id }}
+          path: test-results/staging-finance-oracles/report.json
+          if-no-files-found: warn
+          retention-days: 14
