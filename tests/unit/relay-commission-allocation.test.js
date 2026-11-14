@@ -32,9 +32,10 @@ describe('LOT 1A-3 — allocation réelle commission relais', () => {
   test('cost_components gagne sur finance_config.standard et la provenance est tracée', async () => {
     const client = makeClient([
       { rows: [{ id: 'parcel-001', order_id: 'order-001', status: 'collected' }] },
-      { rows: [], rowCount: 0 },
-      { rows: [{ order_item_id: 'oi-001', quantity: '2', weight_kg: '1' }] },
-      { rows: [{ component_value: '620.0000', legacy_standard_value: 500 }] },
+      { rows: [{ order_item_id: 'oi-001', order_id: 'order-001', quantity: '2' }] },
+      { rows: [{ id: 'order-001', relais_id: 'relay-001', simulation_scope: null }] },
+      { rows: [] },
+      { rows: [{ component_value: '620.0000', component_unit: 'kmf_per_order', component_allocation_method: 'per_order', legacy_standard_value: 500 }] },
       { rows: [], rowCount: 1 },
     ]);
     db.pool.connect.mockResolvedValue(client);
@@ -43,7 +44,7 @@ describe('LOT 1A-3 — allocation réelle commission relais', () => {
 
     const insert = findRelayInsert(client);
     expect(insert).toBeDefined();
-    expect(insert[1][3]).toBe(1240); // 620 × quantité 2
+    expect(insert[1][3]).toBe(620); // forfait PAR COMMANDE, même pour 2 unités
     expect(insert[1][4]).toBe('cost_components.commission_relais_kmf');
     expect(result.relay_commission_kmf).toBe(620);
     expect(result.relay_commission_source).toBe('cost_components.commission_relais_kmf');
@@ -53,8 +54,9 @@ describe('LOT 1A-3 — allocation réelle commission relais', () => {
   test('finance_config.standard reste le fallback legacy si le composant est absent', async () => {
     const client = makeClient([
       { rows: [{ id: 'parcel-002', order_id: 'order-002', status: 'collected' }] },
-      { rows: [], rowCount: 0 },
-      { rows: [{ order_item_id: 'oi-002', quantity: '1', weight_kg: '1' }] },
+      { rows: [{ order_item_id: 'oi-002', order_id: 'order-002', quantity: '1' }] },
+      { rows: [{ id: 'order-002', relais_id: 'relay-002', simulation_scope: null }] },
+      { rows: [] },
       { rows: [{ component_value: null, legacy_standard_value: '600' }] },
       { rows: [], rowCount: 1 },
     ]);

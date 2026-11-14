@@ -9259,6 +9259,13 @@
       {
         "feature": "economic-engine",
         "category": "tests",
+        "declared": "tests/integration/relay-commission-per-order-postgres.test.js",
+        "resolvedPath": "tests/integration/relay-commission-per-order-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
         "declared": "tests/unit/relay-commission.test.js",
         "resolvedPath": "tests/unit/relay-commission.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -13382,16 +13389,16 @@
       {
         "feature": "logistics",
         "category": "services",
-        "declared": "services/pickup-secret-customer-rotation-service.js",
-        "resolvedPath": "services/pickup-secret-customer-rotation-service.js",
+        "declared": "services/pickup-agent-lockout.js",
+        "resolvedPath": "services/pickup-agent-lockout.js",
         "status": "resolved-in-technical-graph"
       },
       {
         "feature": "logistics",
         "category": "services",
-        "declared": "services/pickup-agent-lockout.js",
-        "resolvedPath": "services/pickup-agent-lockout.js",
-        "status": "resolved-in-technical-graph"
+        "declared": "services/pickup-secret-customer-rotation-service.js",
+        "resolvedPath": "services/pickup-secret-customer-rotation-service.js",
+        "status": "resolved-on-disk-no-header"
       },
       {
         "feature": "logistics",
@@ -14166,15 +14173,15 @@
       {
         "feature": "logistics",
         "category": "tests",
-        "declared": "tests/unit/pickup-secret-customer-rotation-service.test.js",
-        "resolvedPath": "tests/unit/pickup-secret-customer-rotation-service.test.js",
+        "declared": "tests/unit/pickup-agent-lockout.test.js",
+        "resolvedPath": "tests/unit/pickup-agent-lockout.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
         "feature": "logistics",
         "category": "tests",
-        "declared": "tests/unit/pickup-agent-lockout.test.js",
-        "resolvedPath": "tests/unit/pickup-agent-lockout.test.js",
+        "declared": "tests/unit/pickup-secret-customer-rotation-service.test.js",
+        "resolvedPath": "tests/unit/pickup-secret-customer-rotation-service.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -38697,6 +38704,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "tests/integration/relay-commission-per-order-postgres.test.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "tests/unit/apply-pricing-updates.test.js",
                 "targetFile": "db.js"
               },
@@ -38976,6 +38987,10 @@
               {
                 "sourceFileId": "services/pricing-parameters-status.js",
                 "targetFile": "services/fx-authority.js"
+              },
+              {
+                "sourceFileId": "services/pricing-floor-forecast-preview.js",
+                "targetFile": "utils/currency.js"
               },
               {
                 "sourceFileId": "services/pricing-cdr.js",
@@ -41318,6 +41333,10 @@
                 "targetFile": "services/notification-service.js"
               },
               {
+                "sourceFileId": "services/parcel-operations.js",
+                "targetFile": "utils/alerts.js"
+              },
+              {
                 "sourceFileId": "services/local-relay-receipt-service.js",
                 "targetFile": "services/client-notification-service.js"
               },
@@ -41364,6 +41383,14 @@
               {
                 "sourceFileId": "tests/unit/scan-operations.test.js",
                 "targetFile": "services/notifications/relay-location.js"
+              },
+              {
+                "sourceFileId": "tests/unit/parcel-operations.test.js",
+                "targetFile": "utils/alerts.js"
+              },
+              {
+                "sourceFileId": "tests/unit/parcel-operations.test.js",
+                "targetFile": "services/notification-service.js"
               }
             ]
           }
@@ -41670,6 +41697,10 @@
             "evidence": [
               {
                 "sourceFileId": "services/parcel-operations.js",
+                "targetFile": "services/refund-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/parcel-operations.test.js",
                 "targetFile": "services/refund-service.js"
               }
             ]
@@ -44033,6 +44064,10 @@
               {
                 "sourceFileId": "tests/unit/order-payment-confirmation.test.js",
                 "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/order-checkout-service-relay-boundary.test.js",
+                "targetFile": "validators/index.js"
               },
               {
                 "sourceFileId": "tests/unit/hub-v1-fixture-payment.test.js",
@@ -49714,7 +49749,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2331
+        "filesObserved": 2332
       },
       "boutique": {
         "filesObserved": 216,
@@ -52551,6 +52586,19 @@
       "lifecycleOwner": "logistics",
       "resolution": "declared-table-owner"
     },
+    "pickup_collect_failures": {
+      "writers": [
+        {
+          "feature": "logistics",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "logistics",
+      "resolution": "declared-table-owner"
+    },
     "pickup_verify_attempts": {
       "writers": [
         {
@@ -53033,6 +53081,19 @@
       "lifecycleOwner": "orders",
       "resolution": "single-writer"
     },
+    "relay_return_compensations": {
+      "writers": [
+        {
+          "feature": "orders",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "orders",
+      "resolution": "declared-table-owner"
+    },
     "order_checkout_idempotency": {
       "writers": [
         {
@@ -53227,6 +53288,32 @@
       "readers": [],
       "lifecycleOwner": "purchasing",
       "resolution": "single-writer"
+    },
+    "manual_purchase_executions": {
+      "writers": [
+        {
+          "feature": "purchasing",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "purchasing",
+      "resolution": "declared-table-owner"
+    },
+    "purchase_variance_decisions": {
+      "writers": [
+        {
+          "feature": "purchasing",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "purchasing",
+      "resolution": "declared-table-owner"
     },
     "supplier_execution_events": {
       "writers": [
@@ -53633,8 +53720,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 707,
-        "technicalNodesOwned": 707,
+        "technicalNodesTotal": 706,
+        "technicalNodesOwned": 706,
         "technicalOrphans": 0
       },
       "dash": {

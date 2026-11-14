@@ -537,6 +537,9 @@ test('preview plancher marché : lecture seule, achat et scope résolus côté s
     if (String(sql).includes('FROM products WHERE product_ref')) return { rows: [
       { product_ref: 'KPR-1', cost_kmf: 3936, weight_kg: .15, volume_m3: .0008, is_active: true },
     ] };
+    if (String(sql).includes('FROM currency_parities')) {
+      return { rows: [{ rate: params[0] === 'XAF' ? '655.957' : '491.96775' }] };
+    }
     return { rows: [] };
   });
   const values = {
@@ -550,17 +553,26 @@ test('preview plancher marché : lecture seule, achat et scope résolus côté s
     circuit: 'import', commission_basis: 'fixed_unit',
     scenarios: { favorable: { ...values, customs_duties: 0 },
       central: values, defavorable: { ...values, customs_duties: 42 } },
-    candidate_prices_kmf: [9000],
+    candidate_prices_local: [9000],
   };
   let res = await request(app()).post('/api/admin/workspaces/pricing/market/CM/products/KPR-1/forecast-preview').send(body);
   expect(res.status).toBe(200);
   expect(res.headers['cache-control']).toContain('no-store');
   expect(res.body.simulation_only).toBe(true);
   expect(res.body.forecast.market_code).toBe('CM');
+  expect(res.body.market_currency).toBe('XAF');
+  expect(res.body.internal_currency).toBe('KMF');
+  expect(res.body.local_display.prices[0].price).toBeCloseTo(9000, 1);
+  expect(res.body.forecast.prices[0].price_kmf).not.toBe(9000);
   expect(res.body.forecast.status).toBe('PROVISOIRE');
   expect(res.body.forecast.cases.central.lines.every(l => l.evidence === 'ASSUMED')).toBe(true);
   expect(db.query.mock.calls.filter(([sql]) => /FROM products WHERE product_ref/.test(sql))).toHaveLength(1);
   expect(db.query.mock.calls.every(([sql]) => /^\s*SELECT\b/i.test(sql))).toBe(true);
+
+  res = await request(app()).post('/api/admin/workspaces/pricing/market/CM/products/KPR-1/forecast-preview')
+    .send({ ...body, candidate_prices_kmf: [9000] });
+  expect(res.status).toBe(422);
+  expect(res.body.code).toBe('pricing_forecast_preview_invalid');
 
   res = await request(app()).post('/api/admin/workspaces/pricing/market/CM/products/KPR-1/forecast-preview')
     .send({ ...body, scenarios: { ...body.scenarios, central: { ...values, market_code: 'KM' } } });
@@ -571,4 +583,66 @@ test('preview plancher marché : lecture seule, achat et scope résolus côté s
   res = await request(app()).post('/api/admin/workspaces/pricing/market/CM/products/KPR-1/forecast-preview').send(body);
   expect(res.status).toBe(403);
   expect(res.body.code).toBe('MARKET_CAPABILITY_REQUIRED');
+});
+
+
+describe('#3994 ME-04/ME-13 — audit économique marché authentifié, lecture seule', () => {
+  test('viewer CM obtient les composants et alertes CM via market_id serveur seulement', async () => {
+    mockScopeRole = 'viewer';
+    db.query.mockImplementation(async (sql, params) => {
+      if (String(sql).includes('FROM markets')) {
+        return { rows: [{ id: 'market-cm', code: 'CM', currency: 'XAF' }] };
+      }
+      if (String(sql).includes('FROM cost_components cc')) {
+        return { rows: [
+          { id: 'cc-freight', key: 'fret_global', category: 'freight',
+            family: 'landed_relay', unit: 'eur', allocation_method: 'by_volume',
+            base_default_value: '250', base_is_active: true, is_exceptional: false,
+            source: 'default', confidence: 'low', override_id: null },
+          { id: 'cc-relay', key: 'commission_relais_kmf', category: 'relay',
+            family: 'landed_relay', unit: 'kmf_per_order', allocation_method: 'per_order',
+            base_default_value: '500', base_is_active: true, is_exceptional: false,
+            source: 'default', confidence: 'medium', override_id: null },
+        ] };
+      }
+      return { rows: [{ role: mockRole }] };
+    });
+
+    const res = await request(app()).get('/api/admin/workspaces/pricing/market/CM/economic-p0-audit');
+    expect(res.status).toBe(200);
+    expect(res.headers['cache-control']).toBe('private, no-store');
+    expect(res.body).toMatchObject({
+      read_only: true, no_price_activation: true, certified: false,
+      status: 'NON_DECISIONNEL', market_code: 'CM', market_currency: 'XAF',
+      summary: { active_components: 2, unresolved_issues: 1 },
+    });
+    expect(res.body.issues.map(i => i.code)).toEqual(['INHERITED_CORRIDOR_UNVERIFIED']);
+    expect(res.body.components.find(c => c.key === 'commission_relais_kmf'))
+      .toMatchObject({ relay_forecast_unit: 'per_order', relay_real_current_unit: 'per_order', relay_unit_consistent: true });
+    const query = db.query.mock.calls.find(([sql]) => String(sql).includes('FROM cost_components cc'));
+    expect(query[1]).toEqual(['market-cm']);
+    expect(query[0]).toContain('cc.provenance AS base_provenance');
+    expect(db.query.mock.calls.some(([sql]) => /\b(?:UPDATE|INSERT|DELETE)\b/i.test(sql))).toBe(false);
+  });
+
+  test('revocation pricing.read et isolation CG refusent avant toute lecture de composants', async () => {
+    mockPricingReadGranted = false;
+    let res = await request(app()).get('/api/admin/workspaces/pricing/market/CM/economic-p0-audit');
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe('MARKET_CAPABILITY_REQUIRED');
+    expect(db.query.mock.calls.some(([sql]) => String(sql).includes('FROM cost_components cc'))).toBe(false);
+    mockPricingReadGranted = true;
+    jest.clearAllMocks();
+    res = await request(app()).get('/api/admin/workspaces/pricing/market/CG/economic-p0-audit');
+    expect(res.status).toBe(403);
+    expect(db.query.mock.calls.some(([sql]) => String(sql).includes('FROM cost_components cc'))).toBe(false);
+  });
+
+  test('market_id imposé via query ne remplace jamais le marché autorisé', async () => {
+    const res = await request(app())
+      .get('/api/admin/workspaces/pricing/market/CM/economic-p0-audit?market_id=market-cg');
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('pricing_internal_authority_forbidden');
+    expect(db.query).not.toHaveBeenCalled();
+  });
 });

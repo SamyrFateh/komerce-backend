@@ -5,8 +5,8 @@
  * @layer         route
  * @criticality   high
  * @inputs        authenticated_pricing_operator, resolved_market_code, business_refs, pricing_payload, governed_market_decision_policy, structure_cost_event, allocation_policies, attribution_reason
- * @outputs       canonical_pricing_projection, market_cost_projection, market_decision_projection, market_price_decisions, market_corridor_projection, activation_preview, action_results, structure_cost_event_fact, structure_cost_event_history, market_cost_attribution_journal
- * @depends       db.js, middleware/auth.js, middleware/require-pricing-global-authority.js, middleware/require-market-delegated-capability.js, services/pricing-workspace.js, services/pricing-market-decision-policy.js, services/pricing-market-decision-projection.js, services/pricing-market-corridor.js, services/market-commercial-price-service.js, services/market-local-price-activation-service.js, services/pricing-period-structure.js, services/market-cost-attribution-service.js
+ * @outputs       canonical_pricing_projection, market_cost_projection, read_only_p0_cost_audit, market_decision_projection, market_price_decisions, market_corridor_projection, activation_preview, action_results, structure_cost_event_fact, structure_cost_event_history, market_cost_attribution_journal
+ * @depends       db.js, middleware/auth.js, middleware/require-pricing-global-authority.js, middleware/require-market-delegated-capability.js, services/pricing-workspace.js, services/cost-component-market-service.js, services/pricing-market-decision-policy.js, services/pricing-market-decision-projection.js, services/pricing-market-corridor.js, services/market-commercial-price-service.js, services/market-local-price-activation-service.js, services/pricing-period-structure.js, services/market-cost-attribution-service.js
  * @used-by       bootstrap/api-routes.js
  * @db-read       markets, products, product_market_exposure, pricing_global_access_grants, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, charges, economic_structure_cost_events, users
  * @db-write      none
@@ -28,6 +28,7 @@ const { authenticate, requireRole } = require('../middleware/auth');
 const { requireMarketDelegatedCapability } = require('../middleware/require-market-delegated-capability');
 const { hasPricingGlobalAuthority, requirePricingGlobalAuthority } = require('../middleware/require-pricing-global-authority');
 const workspace = require('../services/pricing-workspace');
+const marketCostAudit = require('../services/cost-component-market-service');
 const marketDecisionPolicy = require('../services/pricing-market-decision-policy');
 const marketDecisionProjection = require('../services/pricing-market-decision-projection');
 const pricingMarketCorridor = require('../services/pricing-market-corridor');
@@ -263,6 +264,18 @@ router.get('/market/:marketCode', requirePricingReadCapability('pricing.read'), 
   } catch (error) { handleError(error, res, next); }
 });
 
+// #3994 P0 — inventaire de coûts effectifs du marché, strictement en lecture
+// seule. Même autorisation pricing.read que le workspace, aucun total simulé
+// n'est promu comme facture ou prix publiable.
+router.get('/market/:marketCode/economic-p0-audit',
+  requirePricingReadCapability('pricing.read'), async (req, res, next) => {
+    try {
+      res.set('Cache-Control', 'private, no-store');
+      res.json(await marketCostAudit.buildMarketEconomicP0Audit(req.workspaceMarket));
+    } catch (error) { handleError(error, res, next); }
+  }
+);
+
 // Surface de décision : aucune date n'est fournie par le navigateur. La fenêtre
 // est dérivée côté serveur depuis la politique courante du marché.
 router.get('/market/:marketCode/decision', requirePricingReadCapability('pricing.read'), async (req, res, next) => {
@@ -359,7 +372,7 @@ router.post('/market/:marketCode/products/:productRef/forecast-preview',
         return res.status(404).json({ code: 'pricing_forecast_product_not_found',
           error: 'Produit actif introuvable.' });
       }
-      return res.json(forecastPreview.preview({
+      return res.json(await forecastPreview.previewForMarket({
         market: req.workspaceMarket,
         product: rows[0],
         payload: req.body,

@@ -253,105 +253,206 @@ describe('allocateShipmentRealCosts', () => {
 // 2. allocateParcelRealCosts
 // ════════════════════════════════════════════════════════════════
 
-describe('allocateParcelRealCosts', () => {
-  it('retourne parcel_not_found si parcel inconnu', async () => {
+// #3994 — source canonique per_order (commande effectivement remise).
+// Le mock suit les SELECT réels dans l'ordre, y compris la prise de verrou
+// FOR UPDATE et le contrôle des allocations historiques avant tout INSERT.
+function relayOrderClient({ parcelStatus = 'collected', items = [
+  { order_item_id: 'oi-001', order_id: 'order-001', quantity: '1' },
+], existing = [], cfgRow = {
+  component_value: '600', component_unit: 'kmf_per_order',
+  component_allocation_method: 'per_order', legacy_standard_value: '500',
+}, relaisId = 'relay-001', simulationScope = null, extraOrders = [] } = {}) {
+  const orders = [{ id: 'order-001', relais_id: relaisId, simulation_scope: simulationScope }, ...extraOrders];
+  return makeClient([
+    { rows: [{ id: 'parcel-001', order_id: 'order-001', status: parcelStatus }] },
+    ...(parcelStatus === 'collected' ? [
+      { rows: items },
+      ...(items.length ? [
+        { rows: orders },
+        { rows: existing },
+        { rows: [cfgRow] },
+        ...items.map(() => ({ rows: [], rowCount: 1 })),
+      ] : []),
+    ] : []),
+  ]);
+}
+function relayInserts(client) {
+  return client.query.mock.calls.filter(([sql]) =>
+    String(sql).includes('INSERT INTO order_item_real_cost_allocations') && String(sql).includes("'relay'"));
+}
+
+describe('allocateParcelRealCosts — commission par commande remise (#3994)', () => {
+  it('retourne parcel_not_found si colis inconnu', async () => {
     const client = makeClient([{ rows: [] }]);
     db.pool.connect.mockResolvedValue(client);
-
     const result = await allocateParcelRealCosts('parcel-xxx');
-
     expect(result.error).toBe('parcel_not_found');
     expectTransactionRolledBack(client);
   });
 
-  it('retourne no_items si parcel sans parcel_items', async () => {
-    const client = makeClient([
-      { rows: [{ id: 'parcel-001', order_id: 'order-001', status: 'collected' }] },
-      { rows: [], rowCount: 0 },  // DELETE
-      { rows: [] },               // parcel_items → vide
-    ]);
+  it('ne crée aucune commission avant la remise client', async () => {
+    const client = relayOrderClient({ parcelStatus: 'available' });
     db.pool.connect.mockResolvedValue(client);
-
     const result = await allocateParcelRealCosts('parcel-001');
-
-    expect(result.reason).toBe('no_items');
-    expect(result.allocations_count).toBe(0);
+    expect(result).toMatchObject({ allocations_count: 0, reason: 'parcel_not_collected' });
+    expect(relayInserts(client)).toHaveLength(0);
     expectTransactionCommitted(client);
   });
 
-  it('nominal : 2 items → 2 allocations relay (per_item)', async () => {
-    const client = makeClient([
-      { rows: [{ id: 'parcel-001', order_id: 'order-001', status: 'collected' }] },
-      { rows: [], rowCount: 0 },  // DELETE local_distribution + relay
-      { rows: [                   // parcel_items
-        { order_item_id: 'oi-001', quantity: '1', weight_kg: '0.5' },
-        { order_item_id: 'oi-002', quantity: '2', weight_kg: '1.0' },
-      ]},
-      { rows: [{ commission_relais_standard_kmf: '600' }] }, // finance_config
-      { rows: [], rowCount: 1 },  // INSERT relay oi-001
-      { rows: [], rowCount: 1 },  // INSERT relay oi-002
-    ]);
+  it('retourne no_items sans effacer les écritures historiques', async () => {
+    const client = relayOrderClient({ items: [] });
     db.pool.connect.mockResolvedValue(client);
-
     const result = await allocateParcelRealCosts('parcel-001');
-
-    expect(result.allocations_count).toBe(2);
-    expect(result.items_count).toBe(2);
+    expect(result.reason).toBe('no_items');
+    expect(result.allocations_count).toBe(0);
+    expect(client.query.mock.calls.some(([sql]) => String(sql).includes('DELETE FROM'))).toBe(false);
     expectTransactionCommitted(client);
+  });
+
+  it('3 articles sur 2 lignes → une seule commission 600 répartie 200/400, non 1800', async () => {
+    const client = relayOrderClient({ items: [
+      { order_item_id: 'oi-001', order_id: 'order-001', quantity: '1' },
+      { order_item_id: 'oi-002', order_id: 'order-001', quantity: '2' },
+    ] });
+    db.pool.connect.mockResolvedValue(client);
+    const result = await allocateParcelRealCosts('parcel-001');
+    const inserts = relayInserts(client);
+    expect(inserts).toHaveLength(2);
+    expect(inserts.map(([sql, args]) => args[3])).toEqual([200, 400]);
+    expect(inserts.every(([sql]) => sql.includes("'per_order'"))).toBe(true);
+    expect(result).toMatchObject({
+      allocations_count: 2, items_count: 2,
+      relay_commission_kmf: 600, relay_commission_basis: 'per_order',
+    });
+    expect(result.orders).toContainEqual(expect.objectContaining({
+      order_id: 'order-001', status: 'allocated_per_order', amount_kmf: 600,
+    }));
+    expect(client.query.mock.calls.some(([sql]) => String(sql).includes('FOR UPDATE'))).toBe(true);
+    expect(client.query.mock.calls.some(([sql]) => String(sql).includes('DELETE FROM'))).toBe(false);
+    expectTransactionCommitted(client);
+  });
+
+  it('une deuxième remise de la même commande : commission historique inchangée, pas de doublon', async () => {
+    const client = relayOrderClient({ existing: [{
+      order_id: 'order-001', count: 1, total_kmf: '600', methods: ['per_order'],
+    }] });
+    db.pool.connect.mockResolvedValue(client);
+    const result = await allocateParcelRealCosts('parcel-001');
+    expect(relayInserts(client)).toHaveLength(0);
+    expect(result.orders).toContainEqual(expect.objectContaining({
+      status: 'already_allocated_preserved', existing_total_kmf: 600,
+    }));
+    expectTransactionCommitted(client);
+  });
+
+  it('historique per_item à 1800 préservé, jamais requalifié ni fusionné silencieusement', async () => {
+    const client = relayOrderClient({ existing: [{
+      order_id: 'order-001', count: 3, total_kmf: '1800', methods: ['per_item'],
+    }] });
+    db.pool.connect.mockResolvedValue(client);
+    const result = await allocateParcelRealCosts('parcel-001');
+    expect(result.orders).toContainEqual(expect.objectContaining({
+      status: 'already_allocated_preserved', existing_total_kmf: 1800, existing_methods: ['per_item'],
+    }));
+    expect(relayInserts(client)).toHaveLength(0);
+    expect(client.query.mock.calls.some(([sql]) => String(sql).includes('DELETE FROM'))).toBe(false);
+  });
+
+  it('sans bénéficiaire relais, aucune commission supposée et aucun coût réel', async () => {
+    const client = relayOrderClient({ relaisId: null });
+    db.pool.connect.mockResolvedValue(client);
+    const result = await allocateParcelRealCosts('parcel-001');
+    expect(result.orders).toContainEqual({ order_id: 'order-001', status: 'relay_beneficiary_missing' });
+    expect(relayInserts(client)).toHaveLength(0);
+  });
+
+  it('quantité physique invalide : erreur 422 et rollback', async () => {
+    const client = relayOrderClient({ items: [{ order_item_id: 'oi-001', order_id: 'order-001', quantity: '0' }] });
+    db.pool.connect.mockResolvedValue(client);
+    await expect(allocateParcelRealCosts('parcel-001')).rejects.toMatchObject({ code: 'RELAY_COMMISSION_QUANTITY_UNKNOWN', status: 422 });
+    expect(relayInserts(client)).toHaveLength(0);
+    expectTransactionRolledBack(client);
+  });
+
+  it('composant passé en per_item : refus explicite, aucune conversion financière inventée', async () => {
+    const client = relayOrderClient({ cfgRow: {
+      component_value: '620', component_unit: 'kmf', component_allocation_method: 'per_item',
+    } });
+    db.pool.connect.mockResolvedValue(client);
+    await expect(allocateParcelRealCosts('parcel-001')).rejects.toMatchObject({ code: 'RELAY_COMMISSION_BASIS_CONFLICT', status: 422 });
+    expect(relayInserts(client)).toHaveLength(0);
+    expectTransactionRolledBack(client);
+  });
+
+  it('division monétaire au centime : 0,01 KMF partagé sur 3 lignes sans perte', async () => {
+    const client = relayOrderClient({ items: [1,2,3].map(n => ({
+      order_item_id: 'oi-' + n, order_id: 'order-001', quantity: '1',
+    })), cfgRow: {
+      component_value: '0.01', component_unit: 'kmf_per_order',
+      component_allocation_method: 'per_order',
+    } });
+    db.pool.connect.mockResolvedValue(client);
+    const result = await allocateParcelRealCosts('parcel-001');
+    expect(relayInserts(client).reduce((s, [, params]) => s + params[3], 0)).toBeCloseTo(.01, 6);
+    expect(result.relay_commission_kmf).toBe(.01);
+  });
+
+  it('colis multi-commandes : une commission distincte par commande, liens order_item autoritaires', async () => {
+    const client = relayOrderClient({
+      items: [
+        { order_item_id: 'oi-1', order_id: 'order-001', quantity: '2' },
+        { order_item_id: 'oi-2', order_id: 'order-002', quantity: '1' },
+      ],
+      extraOrders: [{ id: 'order-002', relais_id: 'relay-002', simulation_scope: null }],
+    });
+    db.pool.connect.mockResolvedValue(client);
+    const result = await allocateParcelRealCosts('parcel-001');
+    expect(result.allocations_count).toBe(2);
+    expect(relayInserts(client).map(([, p]) => [p[0], p[1], p[3]])).toEqual([
+      ['order-001','oi-1',600], ['order-002','oi-2',600],
+    ]);
   });
 });
 
-describe('relay : une commission non validée n’est jamais un coût réel (C2)', () => {
-  function relayInsertParams(client) {
-    return client.query.mock.calls.filter(c => String(c[0]).includes("INSERT INTO order_item_real_cost_allocations") && String(c[0]).includes("'relay'")).map(c => c[1]);
-  }
+describe('relay : absence de preuve ne devient jamais un coût réel (C2)', () => {
+  function relayInsertParams(client) { return relayInserts(client).map(([, params]) => params); }
   function build(cfgRow, simulationScope = null) {
-    return makeClient([
-      { rows: [{ id: 'parcel-001', order_id: 'order-001', status: 'collected', simulation_scope: simulationScope }] },
-      { rows: [], rowCount: 0 },
-      { rows: [{ order_item_id: 'oi-001', quantity: '1', weight_kg: '0.5' }] },
-      { rows: [cfgRow] },
-      { rows: [], rowCount: 1 },
-    ]);
+    return relayOrderClient({
+      simulationScope,
+      cfgRow: { component_unit: 'kmf_per_order', component_allocation_method: 'per_order', ...cfgRow },
+    });
   }
-
-  it('composant jamais saisi par un opérateur → estimation (is_actual=false)', async () => {
+  it('composant sans validation d’opérateur → estimation', async () => {
     const client = build({ component_value: '500', component_updated_by: null, legacy_standard_value: '500' });
     db.pool.connect.mockResolvedValue(client);
     await allocateParcelRealCosts('parcel-001');
-    const params = relayInsertParams(client)[0];
-    expect(params).toContain(false);
+    expect(relayInsertParams(client)[0]).toContain(false);
   });
-
-  it('repli finance_config ou littéral → estimation', async () => {
+  it('repli finance_config → estimation', async () => {
     const client = build({ component_value: null, component_updated_by: null, legacy_standard_value: '500' });
     db.pool.connect.mockResolvedValue(client);
     await allocateParcelRealCosts('parcel-001');
     expect(relayInsertParams(client)[0]).toContain(false);
   });
-
-  it('L3 : auteur SANS provenance → jamais un coût réel', async () => {
+  it('auteur sans provenance → estimation', async () => {
     const client = build({ component_value: '600', component_updated_by: 'user-1', component_provenance: null, legacy_standard_value: '500' });
     db.pool.connect.mockResolvedValue(client);
     await allocateParcelRealCosts('parcel-001');
     expect(relayInsertParams(client)[0]).not.toContain(true);
   });
-
-  it('L3 : valeur FICTIF sur une commande d’activité réelle → jamais un coût réel', async () => {
+  it('provenance FICTIF sur commande réelle → estimation', async () => {
     const client = build({ component_value: '600', component_updated_by: 'user-1', component_provenance: 'FICTIF recette', legacy_standard_value: '500' });
     db.pool.connect.mockResolvedValue(client);
     await allocateParcelRealCosts('parcel-001');
     expect(relayInsertParams(client)[0]).not.toContain(true);
   });
-
-  it('provenance réelle déclarée sur une commande réelle → is_actual=true', async () => {
+  it('provenance contractuelle réelle et bénéficiaire → is_actual=true', async () => {
     const client = build({ component_value: '600', component_updated_by: 'user-1', component_provenance: 'Contrat relais 2026-10', legacy_standard_value: '500' });
     db.pool.connect.mockResolvedValue(client);
     await allocateParcelRealCosts('parcel-001');
     expect(relayInsertParams(client)[0]).toContain(true);
   });
-
-  it('auteur ET provenance FICTIF sur une commande du périmètre de recette → is_actual=true, provenance recopiée', async () => {
+  it('FICTIF avec commande explicitement de recette : statut réel uniquement dans son périmètre', async () => {
     const client = build({ component_value: '600', component_updated_by: 'user-1', component_provenance: 'FICTIF recette', legacy_standard_value: '500' }, 'RCT1');
     db.pool.connect.mockResolvedValue(client);
     await allocateParcelRealCosts('parcel-001');
@@ -487,6 +588,13 @@ describe('allocateProductPurchaseCosts', () => {
 
     expect(result.order_id).toBe('order-001');
     expect(result.allocations_count).toBe(2);
+    const purchaseInserts = client.query.mock.calls
+      .map(([sql]) => String(sql))
+      .filter(sql => sql.includes('INSERT INTO order_item_real_cost_allocations'));
+    expect(purchaseInserts).toHaveLength(2);
+    for (const sql of purchaseInserts) {
+      expect(sql).toContain("'products.cost_kmf', FALSE, 'low'");
+    }
     expectTransactionCommitted(client);
   });
 

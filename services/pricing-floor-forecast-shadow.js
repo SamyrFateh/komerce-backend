@@ -76,9 +76,17 @@ function componentAmount(component, product, units, baseAmounts, cif, n1, proble
     case 'fret_m3_minimum':
       if (!positive(product.volume_m3) || !positive(component.lot_volume_m3) ||
           !valid(component.minimum_billable_m3)) break;
+      if (product.volume_m3 > component.lot_volume_m3) {
+        problems.push(component.code + ': volume produit supérieur au volume du lot');
+        return null;
+      }
       return v * product.volume_m3 * Math.max(1, component.minimum_billable_m3 / component.lot_volume_m3);
     case 'lot_fixed_m3':
       if (!positive(product.volume_m3) || !positive(component.lot_volume_m3)) break;
+      if (product.volume_m3 > component.lot_volume_m3) {
+        problems.push(component.code + ': volume produit supérieur au volume du lot');
+        return null;
+      }
       return v * product.volume_m3 / component.lot_volume_m3;
     case 'pct_purchase': return product.purchase_kmf * v / 100;
     case 'pct_cif':

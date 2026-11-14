@@ -45,6 +45,7 @@ jest.mock('../../services/order-fx-snapshot', () => ({
 jest.mock('../../services/refund-service', () => ({
   processRefundWithFallback: jest.fn().mockResolvedValue({ method: 'store_credit', storeCreditId: 'sc-01' }),
 }));
+jest.mock('../../utils/alerts', () => ({ createAlert: jest.fn().mockResolvedValue({ id: 'alert-1' }) }));
 jest.mock('../../services/order-status-machine', () => ({
   transitionOrderStatus: jest.fn().mockResolvedValue({ success: true }),
   // Sprint A — délègue réellement à client.query pour ne pas décaler les
@@ -59,6 +60,7 @@ jest.mock('../../services/order-status-machine', () => ({
 }));
 
 const pool = require('../../db');
+const { createAlert } = require('../../utils/alerts');
 const { markAvailability, partialShip, updateParcelStatus, cancelBackorder } =
   require('../../services/parcel-operations');
 
@@ -424,6 +426,52 @@ describe('cancelBackorder', () => {
     expect(result.body.refund).not.toBeNull();
     expect(result.body.refund.method).toBe('store_credit');
     expectTransactionCommitted(client);
+  });
+
+  test('FA-04 : Stripe incertain annule la transaction colis, sans succes ni SMS', async () => {
+    const refund = require('../../services/refund-service');
+    const { notifyText } = require('../../services/notification-service');
+    const error = Object.assign(new Error('Rapprochement Stripe requis'), {
+      code: 'REFUND_STRIPE_OUTCOME_UNKNOWN', statusCode: 409,
+      providerRequestKey: 'refund_order-001_partial_parcel-001',
+    });
+    createAlert.mockClear();
+    refund.processRefundWithFallback.mockRejectedValueOnce(error);
+    notifyText.mockClear();
+    const client = makeClient(makeCancelScript(makeOrder({
+      payment_mode: 'stripe_eur', stripe_payment_id: 'pi_test',
+    }), makeParcel()));
+    pool.getClient.mockResolvedValue(client);
+
+    await expect(cancelBackorder(
+      ORDER_ID, { parcel_id: PARCEL_ID, reason: 'Test timeout PSP' }, USER_ADMIN
+    )).rejects.toMatchObject({ code: 'REFUND_STRIPE_OUTCOME_UNKNOWN' });
+
+    expectTransactionRolledBack(client);
+    expect(client.calls.some(c => c.sql === 'COMMIT')).toBe(false);
+    expect(notifyText).not.toHaveBeenCalled();
+    expect(createAlert).toHaveBeenCalledWith(pool, expect.objectContaining({
+      type: 'refund_provider_reconciliation_required',
+      entityType: 'order', entityId: ORDER_ID, severity: 'high',
+      description: expect.stringContaining('refund_order-001_partial_parcel-001'),
+    }));
+  });
+
+  test('FA-04 : echec persistence alerte ne transforme pas le refund incertain en succes', async () => {
+    const refund = require('../../services/refund-service');
+    const error = Object.assign(new Error('Stripe resultat inconnu'), {
+      code: 'REFUND_STRIPE_OUTCOME_UNKNOWN', statusCode: 409,
+    });
+    refund.processRefundWithFallback.mockRejectedValueOnce(error);
+    createAlert.mockRejectedValueOnce(new Error('alert storage down'));
+    const client = makeClient(makeCancelScript(makeOrder({
+      payment_mode: 'stripe_eur', stripe_payment_id: 'pi_test',
+    }), makeParcel()));
+    pool.getClient.mockResolvedValue(client);
+    await expect(cancelBackorder(
+      ORDER_ID, { parcel_id: PARCEL_ID }, USER_ADMIN
+    )).rejects.toMatchObject({ code: 'REFUND_STRIPE_OUTCOME_UNKNOWN' });
+    expectTransactionRolledBack(client);
   });
 
   test('404 — commande introuvable', async () => {

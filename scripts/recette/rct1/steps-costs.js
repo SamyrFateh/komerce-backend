@@ -47,9 +47,11 @@ const manualStep = (ref, type, amount) => ({
   },
 });
 
-// Ventilation colis (relais + distribution) : service proprietaire ; rejouable (supprime puis reinsere ses propres lignes).
+// Commission relais : le fait générateur est la remise client confirmée,
+// jamais le simple scan d'arrivée au relais. Ré-exécution non destructive
+// des écritures héritées : le writer ne poste qu'un forfait par commande.
 const parcelAllocStep = (ref) => ({
-  id: `cost.parcel-alloc.${ref}`, deps: [`ops.scan.${ref}.relais_received`, ...(ref === 'RCT1-F' ? [] : ['cost.relay-commission'])],
+  id: `cost.parcel-alloc.${ref}`, deps: [`ops.collect.${ref}`, ...(ref === 'RCT1-F' ? [] : ['cost.relay-commission'])],
   inspect: async ({ db }) => {
     const r = await q1(db, `SELECT COUNT(*)::int AS n, COUNT(*) FILTER (WHERE a.is_actual)::int AS actual FROM order_item_real_cost_allocations a
       JOIN orders o ON o.id=a.order_id WHERE o.reference=$1 AND a.cost_type='relay'`, [ref]);
