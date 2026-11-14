@@ -59,6 +59,11 @@ jest.mock('../../services/fx-public-reference-feed', () => ({
   ingestEcbDaily: (...args) => mockIngestEcbDaily(...args),
 }));
 
+const mockSweepStalledOrders = jest.fn();
+jest.mock('../../services/purchasing-completion-service', () => ({
+  sweepStalledOrders: (...args) => mockSweepStalledOrders(...args),
+}));
+
 const crons = require('../../bootstrap/crons');
 
 describe('bootstrap/crons', () => {
@@ -528,6 +533,19 @@ describe('bootstrap/crons', () => {
       expect(mockGenerateSignals).toHaveBeenCalled();
     });
 
+    test('H1 : le balayage de complétude d\'achat tourne à intervalle, ne se chevauche pas et avale les erreurs', async () => {
+      mockSweepStalledOrders.mockResolvedValue({ ordered: 1, distributed: 0, errors: 0 });
+      crons.startPurchasingCompletionSweepCron({ intervalMs: 1000, initialDelayMs: 10 });
+      await jest.advanceTimersByTimeAsync(20);
+      expect(mockSweepStalledOrders).toHaveBeenCalledTimes(1);
+      expect(mockLog.info).toHaveBeenCalledWith({ ordered: 1, distributed: 0, errors: 0 }, 'Purchasing completion sweep');
+
+      mockSweepStalledOrders.mockRejectedValueOnce(new Error('boom'));
+      await jest.advanceTimersByTimeAsync(1000);
+      expect(mockSweepStalledOrders).toHaveBeenCalledTimes(2);
+      expect(mockLog.error).toHaveBeenCalled();
+    });
+
     test('expose bien toutes les fonctions individuelles pour tests/monitoring ciblés', () => {
       expect(typeof crons.startOperationalCrons).toBe('function');
       expect(typeof crons.startCashRelaisCron).toBe('function');
@@ -536,6 +554,7 @@ describe('bootstrap/crons', () => {
       expect(typeof crons.startPickupTokenCleanupCron).toBe('function');
       expect(typeof crons.startJwtRevocationCleanupCron).toBe('function');
       expect(typeof crons.startFinancialJournalCron).toBe('function');
+      expect(typeof crons.startPurchasingCompletionSweepCron).toBe('function');
     });
   });
 });

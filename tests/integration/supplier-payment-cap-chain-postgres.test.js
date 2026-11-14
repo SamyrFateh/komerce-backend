@@ -24,9 +24,11 @@ if (!process.env.DATABASE_URL) {
   const q = (sql, params) => db.query(sql, params);
   const tag = `FA23-${Date.now().toString(36)}-${crypto.randomBytes(3).toString('hex')}`;
   let user; let supplier; let markets;
+  const poIds = [];
 
   async function seedPo({ market, commitment = 100, authorized = 100, currency = 'AED', withAuth = true }) {
     const poId = id(); const groupId = id();
+    poIds.push(poId);
     await db.withTransaction(async (c) => {
       await c.query('SET LOCAL session_replication_role = replica');
       await c.query("INSERT INTO purchase_orders (id, supplier_id, status, qty, market_id) VALUES ($1,$2,'notified',NULL,$3)", [poId, supplier, market]);
@@ -60,7 +62,22 @@ if (!process.env.DATABASE_URL) {
     supplier = id();
     await q("INSERT INTO suppliers(id,name,platform,is_active) VALUES($1,$2,'local',true)", [supplier, `S ${tag}`]);
   });
-  afterAll(async () => { await db.pool.end().catch(() => {}); });
+  afterAll(async () => {
+    // Nettoyage complet (tables append-only incluses, via replica sur connexion dédiée) : aucune délégation ni autorisation résiduelle
+    // ne doit survivre à la suite (sinon le reset d'usine bute sur les FK vers users).
+    const c = await db.getClient();
+    try {
+      await c.query("SET session_replication_role='replica'");
+      for (const [t, col] of [['supplier_payment_settlements', null], ['supplier_execution_payments', 'purchase_order_id'], ['supplier_execution_groups', 'purchase_order_id'],
+        ['purchase_order_authorizations', 'purchase_order_id'], ['purchase_orders', 'id']]) {
+        if (!col) continue;
+        await c.query(`DELETE FROM ${t} WHERE ${col} = ANY($1::uuid[])`, [poIds]).catch(() => {});
+      }
+      await c.query('DELETE FROM hub_authorization_grants WHERE user_id = $1 OR granted_by = $1', [user]).catch(() => {});
+      await c.query('DELETE FROM users WHERE id = $1', [user]).catch(() => {});
+      await c.query('DELETE FROM suppliers WHERE id = $1', [supplier]).catch(() => {});
+    } finally { await c.query("SET session_replication_role='origin'").catch(() => {}); c.release(); await db.pool.end().catch(() => {}); }
+  });
 
   test('nominal : tranches 60 + 40 passent, +1 refusé ; une autre devise est refusée', async () => {
     const po = await seedPo({ market: markets[0] });

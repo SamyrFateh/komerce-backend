@@ -7,7 +7,7 @@
   },
   "x-contract-debt": {
     "unknown_responses": 80,
-    "total_routes": 760,
+    "total_routes": 761,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -27508,6 +27508,59 @@
                       "x-observed": true
                     },
                     "purchase_orders": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/hub/director-todo": {
+      "get": {
+        "summary": "GET /api/hub/director-todo",
+        "x-route-file": "routes/hub.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "generated_at": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "scope": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "overdue_after_hours": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "total": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "overdue_count": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "markets": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "tasks": {
                       "type": "string",
                       "x-observed": true
                     }

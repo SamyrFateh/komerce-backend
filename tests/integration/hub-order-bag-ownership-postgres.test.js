@@ -220,13 +220,20 @@ describeDb('Hub V1 — sac client mono-commande (PG réel)', () => {
   });
 
   test('M7 : deux sacs scellés restent intacts dans une KOM-BOX, avec preuve du colis relais', async () => {
-    const parcel1 = id(), parcel2 = id();
-    const pi1 = id(), pi2 = id();
-    await q("INSERT INTO parcels(id,order_id,reference,status) VALUES ($1,$2,$3,'preparation'),($4,$5,$6,'preparation')",
-      [parcel1,order1,tag + '-P1',parcel2,order2,tag + '-P2']);
-    const product = (await q('SELECT product_id FROM order_items WHERE id=$1',[item1])).rows[0].product_id;
-    await q('INSERT INTO parcel_items(id,parcel_id,order_item_id,product_id,quantity) VALUES($1,$2,$3,$4,1),($5,$6,$7,$4,1)',
-      [pi1,parcel1,item1,product,pi2,parcel2,item2]);
+    // H1 / HB-03 : la réception a déjà réparti les articles en colis clients.
+    // Le test doit réutiliser cette preuve canonique, pas créer un deuxième colis par article
+    // (le garde unique_order_item_per_parcel refuserait légitimement ce doublon).
+    const { rows: [firstParcel] } = await q(
+      'SELECT p.id, pi.id AS parcel_item_id FROM parcels p JOIN parcel_items pi ON pi.parcel_id=p.id WHERE p.order_id=$1 AND pi.order_item_id=$2',
+      [order1, item1]);
+    const { rows: [secondParcel] } = await q(
+      'SELECT p.id, pi.id AS parcel_item_id FROM parcels p JOIN parcel_items pi ON pi.parcel_id=p.id WHERE p.order_id=$1 AND pi.order_item_id=$2',
+      [order2, item2]);
+    expect(firstParcel).toBeDefined();
+    expect(secondParcel).toBeDefined();
+    const parcel1 = firstParcel.id, parcel2 = secondParcel.id;
+    const pi1 = firstParcel.parcel_item_id, pi2 = secondParcel.parcel_item_id;
+    expect(parcel1).not.toBe(parcel2);
 
     const newBox = await hubOps.createOperatorUnitCommand({
       unit_type: 'MARKET_PARCEL', reference: tag + '-BOX',

@@ -1,188 +1,52 @@
-'use strict';
-
 /**
  * @test-kind integration
  * @test-runner jest
  * @test-requires postgres
  */
+'use strict';
+
 /**
- * TXG-03 — preuve de régression SAVEPOINT (REAL_DB_INTEGRATION)
- * Cible: routes/hub-dashboard.js — POST /orders/:id/auto-prepare (~l.287-296)
- *
- * Mécanisme: l'INSERT scans best-effort échoue (table absente, simulée par
- * rename) => sans SAVEPOINT le client devient "aborted", l'INSERT
- * order_comments suivant échoue à son tour => catch global fait ROLLBACK =>
- * le colis (parcels) et l'assignation des articles (parcel_items), pourtant
- * légitimes, sont perdus (auto-prepare annulé silencieusement, 500 renvoyé).
- *
- * GREEN : la requête réussit (201), le colis + parcel_items +
- *         order_comments sont bien committés, seul le scan auto-prepare
- *         est sauté (loggué best-effort).
- *
- * 2026-07 : le volet RED-avant (comparaison contre un BASELINE pré-fix)
- * a été retiré. Il dépendait de fichiers sandbox /home/claude/baseline/
- * et /home/claude/fixed/ jamais commités dans le repo — non reproductible
- * hors de la session d'origine, et le mécanisme réécrivait le fichier
- * route réel sur disque pendant les tests. Le fix SAVEPOINT est permanent
- * dans routes/hub-dashboard.js (sp_scans_auto_prepare) ; ce test vérifie
- * désormais uniquement le comportement GREEN contre le fichier tel que
- * commité, sans jamais l'écrire.
+ * #4013 / HB-09 — preuve contre PostgreSQL réel : aucun des anciens endpoints
+ * ne peut écrire après la fermeture. Les anciennes preuves TXG de mutation
+ * sont remplacées : le writer canonique est désormais Hub physique/auto-parcel.
  */
-const hasIntegrationEnv = Boolean(process.env.DATABASE_URL);
-
-if (!hasIntegrationEnv) {
-  describe.skip('TXG-03 hub dashboard (needs DATABASE_URL)', () => {
-    test('skipped — DATABASE_URL not configured', () => {});
-  });
-} else {
-
-const path = require('path');
-const request = require('supertest');
 const express = require('express');
+const request = require('supertest');
 const { Pool } = require('pg');
+const hasDb = Boolean(process.env.DATABASE_URL);
+jest.mock('../../middleware/auth', () => ({
+  authenticate: (req, _res, next) => {
+    req.user = { id: '00000000-0000-4000-8000-000000000097', role: 'agent_hub' };
+    next();
+  },
+  requireRole: () => (_req, _res, next) => next(),
+}));
 
-const TARGET = path.join(__dirname, '../../routes/hub-dashboard.js');
+const routes = ["/orders/00000000-0000-4000-8000-000000000099/auto-prepare","/orders/00000000-0000-4000-8000-000000000099/start-prep"];
+const run = hasDb ? describe : describe.skip;
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-
-const ORDER_ID = '00000000-0000-0000-0000-0000000000c1';
-const HUB_USER_ID = '00000000-0000-0000-0000-000000000002';
-
-jest.setTimeout(30000);
-
-function loadRouter() {
-  jest.resetModules();
-  jest.doMock('../../middleware/auth', () => ({
-    authenticate: (req, _res, next) => { req.user = { id: HUB_USER_ID, role: 'agent_hub' }; next(); },
-    requireRole: () => (_req, _res, next) => next(),
-  }));
-  return require(TARGET);
-}
-
-function buildApp() {
-  const router = loadRouter();
+run('HB-09 — writer Hub historique ferme (preuve PG)', () => {
+  const pool = hasDb ? new Pool({ connectionString: process.env.DATABASE_URL }) : null;
   const app = express();
   app.use(express.json());
-  app.use('/api/hub', router);
-  app.use((err, _req, res, _next) => res.status(500).json({ error: err.message }));
-  return app;
-}
+  app.use('/api/hub-dash', require('../../routes/hub-dashboard'));
+  afterAll(async () => { if (pool) await pool.end(); });
 
-async function hideScans() {
-  await pool.query('ALTER TABLE scans RENAME TO scans_hidden');
-}
-async function restoreScans() {
-  await pool.query('ALTER TABLE scans_hidden RENAME TO scans');
-}
-
-async function resolveKmMarketId() {
-  const { rows } = await pool.query(
-    `SELECT id FROM markets WHERE code = 'KM' AND is_active = TRUE LIMIT 1`
-  );
-  if (!rows[0]) {
-    throw new Error('TXG-03 requires canonical active market KM');
-  }
-  return rows[0].id;
-}
-
-async function resetOrderState() {
-  // Ré-assure l'existence de la fixture order/order_items : le mode
-  // 'factory' de TXG-04 exécute TRUNCATE orders CASCADE de façon
-  // inconditionnelle (hors du bloc if(mode==='factory')) et peut donc
-  // purger cette commande si les suites tournent dans un ordre différent
-  // de celui du fichier. On upsert ici pour rester auto-suffisant.
-  //
-  // Le mode 'factory' exécute aussi `DELETE FROM users WHERE role !=
-  // 'admin'`, ce qui supprime HUB_USER_ID (agent_hub) dont dépend la FK
-  // order_comments.author_id de la route auto-prepare. On le réhydrate ici
-  // aussi pour ne pas dépendre de l'ordre d'exécution des suites jest (le
-  // séquenceur par défaut ne garantit aucun ordre stable entre fichiers).
-  const marketId = await resolveKmMarketId();
-  await pool.query(`
-    INSERT INTO users (id, full_name, email, role)
-    VALUES ('${HUB_USER_ID}', 'Hub Agent Test', 'hub-test@komerce.test', 'agent_hub')
-    ON CONFLICT (id) DO NOTHING;
-  `);
-  await pool.query(`
-    INSERT INTO products (id, name, price_kmf)
-    VALUES ('00000000-0000-0000-0000-0000000000b1', 'Produit Test TXG', 10000)
-    ON CONFLICT (id) DO NOTHING;
-  `);
-  await pool.query(`
-    INSERT INTO relais (id, name, agent_name, phone, address, market_id)
-    VALUES ('00000000-0000-0000-0000-0000000000a1', 'Relais Test Moroni', 'Agent Relais Test', '+269000000', 'Adresse Test Moroni', $1)
-    ON CONFLICT (id) DO UPDATE SET market_id = EXCLUDED.market_id;
-  `, [marketId]);
-  await pool.query(`
-    INSERT INTO orders (id, reference, relais_id, market_id, total_kmf, payment_mode, status)
-    VALUES ($1, 'KOM-TEST-TXG03', '00000000-0000-0000-0000-0000000000a1', $2, 10000, 'cash_relais', 'preparation')
-    ON CONFLICT (id) DO UPDATE SET
-      status = 'preparation',
-      relais_id = EXCLUDED.relais_id,
-      market_id = EXCLUDED.market_id
-  `, [ORDER_ID, marketId]);
-  await pool.query(`
-    INSERT INTO order_items (id, order_id, product_id, price_kmf, quantity)
-    VALUES ('00000000-0000-0000-0000-0000000000d1', $1, '00000000-0000-0000-0000-0000000000b1', 10000, 1)
-    ON CONFLICT (id) DO UPDATE SET quantity = 1
-  `, [ORDER_ID]);
-
-  const { rows: [authority] } = await pool.query(`
-    SELECT o.market_id AS order_market_id, r.market_id AS relais_market_id
-      FROM orders o
-      JOIN relais r ON r.id = o.relais_id
-     WHERE o.id = $1
-  `, [ORDER_ID]);
-  if (!authority || String(authority.order_market_id) !== String(authority.relais_market_id)) {
-    throw new Error('TXG-03 fixture violates order/relais market authority');
-  }
-
-  // Nettoyer tout colis / assignation créés par des runs précédents
-  await pool.query(`
-    DELETE FROM parcel_items WHERE order_item_id IN (
-      SELECT id FROM order_items WHERE order_id = $1
-    )
-  `, [ORDER_ID]);
-  // Trigger DB interdit le DELETE sur parcels (RAISE EXCEPTION, cf. db/schema.sql:458) —
-  // on neutralise les colis des runs précédents via status=cancelled au lieu de les supprimer.
-  await pool.query("UPDATE parcels SET status = 'cancelled' WHERE order_id = $1", [ORDER_ID]);
-  await pool.query('DELETE FROM order_comments WHERE order_id = $1', [ORDER_ID]);
-  await pool.query("UPDATE orders SET status = 'preparation' WHERE id = $1", [ORDER_ID]);
-}
-
-beforeAll(async () => {
-  await resetOrderState();
-});
-
-afterAll(async () => {
-  await pool.end();
-});
-
-describe('TXG-03 — auto-prepare scans SAVEPOINT', () => {
-  test('GREEN: colis créé et committé malgré scans indisponible', async () => {
-    await resetOrderState();
-    const app = buildApp();
-    await hideScans();
-    try {
-      const res = await request(app)
-        .post(`/api/hub/orders/${ORDER_ID}/auto-prepare`)
-        .send({});
-
-      expect(res.status).toBe(201);
-      expect(res.body.items_assigned).toBe(1);
-
-      const { rows: parcelRows } = await pool.query(
-        "SELECT id FROM parcels WHERE order_id = $1 AND status != 'cancelled'",
-        [ORDER_ID]
-      );
-      expect(parcelRows.length).toBe(1); // <- colis bien committé
-
-      const { rows: commentRows } = await pool.query('SELECT id FROM order_comments WHERE order_id = $1', [ORDER_ID]);
-      expect(commentRows.length).toBe(1); // <- commentaire bien committé
-    } finally {
-      await restoreScans();
-    }
+  test.each(routes)('POST %s — 410 et zéro mutation parcel_items', async (endpoint) => {
+    // Identifiant inexistant mais stable : toute création illégitime serait visible.
+    const orderItemId = '00000000-0000-4000-8000-000000000099';
+    const before = await pool.query(
+      'SELECT COUNT(*)::int AS n FROM parcel_items WHERE order_item_id = $1',
+      [orderItemId]
+    );
+    const response = await request(app).post('/api/hub-dash' + endpoint)
+      .send({ order_item_id: orderItemId, quantity: 1, item_ids: [orderItemId] });
+    const after = await pool.query(
+      'SELECT COUNT(*)::int AS n FROM parcel_items WHERE order_item_id = $1',
+      [orderItemId]
+    );
+    expect(response.status).toBe(410);
+    expect(response.body.code).toBe('HUB_LEGACY_WRITER_CLOSED');
+    expect(after.rows[0].n).toBe(before.rows[0].n);
   });
 });
-
-} // end hasIntegrationEnv guard

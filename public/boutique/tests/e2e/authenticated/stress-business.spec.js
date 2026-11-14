@@ -96,17 +96,24 @@ test.describe('STRESS — Concurrence stock (S1)', () => {
     const results = await page.evaluate(async (args) => {
       const makeOrder = async (idx) => {
         try {
+          // FA-22 + L3/N06 : clé distincte par tentative (2 commandes concurrentes voulues)
+          // et total accepté lu dans l'aperçu serveur.
+          const payload = {
+            items: [{ product_id: args.productId, quantity: 1 }],
+            payment_mode: 'cash_relais',
+            relais_id: args.relaisId,
+            recipient_name: `Stress Concurrent ${idx}`,
+            recipient_phone: `700${1110 + idx}`,
+          };
+          const quote = await fetch(new URL('/api/orders/preview', args.base).href, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+            body: JSON.stringify(payload),
+          }).then((r) => r.json()).catch(() => ({}));
           const resp = await fetch(new URL('/api/orders', args.base).href, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'Idempotency-Key': `stress-s1-${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 10)}` },
             credentials: 'include',
-            body: JSON.stringify({
-              items: [{ product_id: args.productId, quantity: 1 }],
-              payment_mode: 'cash_relais',
-              relais_id: args.relaisId,
-              recipient_name: `Stress Concurrent ${idx}`,
-              recipient_phone: `700${1110 + idx}`,
-            }),
+            body: JSON.stringify({ ...payload, expected_total_kmf: quote.total_kmf }),
           });
           const body = await resp.json().catch(() => ({}));
           return { status: resp.status, ref: body.order?.reference || null, error: body.error };
