@@ -399,7 +399,9 @@
     width: 100%;
     max-width: none;
     height: auto;
-    aspect-ratio: 4 / 3;
+    /* L'image CJ est souvent carrée (1000×1000). Le mock présente un
+       cadrage haut, sans bande latérale : carrousel carré natif. */
+    aspect-ratio: 1 / 1;
     align-self: start;
   }
 
