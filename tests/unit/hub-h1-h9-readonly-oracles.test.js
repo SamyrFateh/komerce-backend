@@ -37,7 +37,7 @@ test('barrière de SHA : absent ou différent = pas de preuve', () => {
 
 test('le workflow ne donne le secret base qu\'après la barrière SHA et reste limité à la branche dédiée', () => {
   const wf = fs.readFileSync(path.join(__dirname, '../../.github/workflows/hub-h1-h9-staging-readonly-oracles.yml'), 'utf8');
-  expect(wf).toMatch(/branches: \[research\/hub-h1-h9-readonly-oracles-20261114\]/);
+  expect(wf).toMatch(/branches: \[cert\/gpt-h1-h9-postmerge-20261114\]/);
   const before = wf.slice(0, wf.indexOf('Run oracles'));
   expect(before).not.toMatch(/RAILWAY_DATABASE_URL/);
   expect(wf).toMatch(/steps\.gate\.outputs\.go == 'true'/);
