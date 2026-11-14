@@ -56,7 +56,14 @@ describe('checkout — responsive intrinsèque sans seuil local', () => {
     expect(served).toContain('Checkout mobile compact V2');
     expect(served).toContain('.k-order-overlay.open .ck-mobile-relay-heading {');
     expect(served).toContain('display: flex;');
-    expect(html).toContain('components.css?v=661');
+    // Valider la version du bundle effectivement générée, sans figer un
+    // numéro de cache-buster qui change à chaque évolution du CSS.
+    const cacheState = JSON.parse(fs.readFileSync(
+      path.join(__dirname, '../../.cache-buster-state.json'), 'utf8'
+    ));
+    const version = cacheState.versions['components.css'];
+    expect(Number.isInteger(version)).toBe(true);
+    expect(html).toContain(`components.css?v=${version}`);
   });
 
   it('le corps du checkout réduit son padding horizontal de façon fluide', () => {

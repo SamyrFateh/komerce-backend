@@ -68,7 +68,7 @@
     width: 100%;
   }
   #k-modal .k-modal-product-zone > .k-modal-long-details {
-    padding: 0 clamp(24px, 2vw, 36px);
+    padding: 16px 20px 20px;
   }
 
   #k-modal .k-modal-product-zone .k-modal-info {
