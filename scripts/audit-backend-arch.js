@@ -288,17 +288,11 @@ const STATE_MACHINE_ATTESTED_SOURCES = new Set(['local_relay_receipt', 'relay_at
 // (newStatus='refunded' uniquement). Ne pas classer comme forward-only.
 const STATE_MACHINE_REFUND_SOURCES = new Set(['refund_external']);
 
-// Source a garde EXCLUSIVE : order-status-machine accepte uniquement
-// newStatus='refunded' apres remboursement PSP externe prouve. Ce n'est
-// ni une source forward-only, ni un PATCH generique.
-const STATE_MACHINE_REFUND_SOURCES = new Set(['refund_external']);
-
 // Union : toutes les sources reconnues
 const STATE_MACHINE_ALL_SOURCES = new Set([
   ...STATE_MACHINE_FORWARD_SOURCES,
   ...STATE_MACHINE_PATCH_SOURCES,
   ...STATE_MACHINE_PAYMENT_SOURCES,
-  ...STATE_MACHINE_REFUND_SOURCES,
   ...STATE_MACHINE_REFUND_SOURCES,
   ...STATE_MACHINE_ATTESTED_SOURCES,
 ]);
