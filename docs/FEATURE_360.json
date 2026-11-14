@@ -56,7 +56,7 @@
     "healthy": 34,
     "attention": 6,
     "blocked": 0,
-    "businessDependencies": 328,
+    "businessDependencies": 329,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
@@ -13945,6 +13945,11 @@
             "status": "resolved"
           },
           {
+            "fn": "createSupplierShortageIncident",
+            "file": "services/incident-write-service.js",
+            "status": "resolved"
+          },
+          {
             "fn": "detachUserFromIncidents",
             "file": "services/incident-write-service.js",
             "status": "resolved"
@@ -14074,6 +14079,13 @@
           "channels": [
             "static-code",
             "data-read"
+          ]
+        },
+        {
+          "consumer": "purchasing",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
           ]
         }
       ],
@@ -28521,7 +28533,6 @@
           "provider": "purchasing",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code",
             "interface"
           ]
         },
@@ -29606,7 +29617,7 @@
             ]
           },
           "services": {
-            "count": 53,
+            "count": 52,
             "files": [
               {
                 "declared": "scripts/recette/audit-sku-supplier-link.js",
@@ -29669,18 +29680,8 @@
                 "status": "resolved-in-technical-graph"
               },
               {
-                "declared": "services/purchasing-receive-service.js",
-                "resolvedPath": "services/purchasing-receive-service.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
                 "declared": "services/purchasing-trigger-service.js",
                 "resolvedPath": "services/purchasing-trigger-service.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
-                "declared": "services/receive-purchase-order.js",
-                "resolvedPath": "services/receive-purchase-order.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -29732,6 +29733,11 @@
                 "declared": "services/supplier-real-debit-verification.js",
                 "resolvedPath": "services/supplier-real-debit-verification.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/supplier-shortage-service.js",
+                "resolvedPath": "services/supplier-shortage-service.js",
+                "status": "resolved-on-disk-no-header"
               },
               {
                 "declared": "services/supplier-source-resolution.js",
@@ -29876,7 +29882,7 @@
             ]
           },
           "tests": {
-            "count": 90,
+            "count": 92,
             "files": [
               {
                 "declared": "tests/e2e-api/purchasing.grouped-flow.e2e.test.js",
@@ -30034,6 +30040,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/auto-parcel-closed-short.test.js",
+                "resolvedPath": "tests/unit/auto-parcel-closed-short.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/canonical-unit-cutover-comparison.test.js",
                 "resolvedPath": "tests/unit/canonical-unit-cutover-comparison.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -30129,8 +30140,18 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/hub-h3-quantities.test.js",
+                "resolvedPath": "tests/unit/hub-h3-quantities.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/hub-operations-grouped-completion.test.js",
                 "resolvedPath": "tests/unit/hub-operations-grouped-completion.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/hub-physical-identity.test.js",
+                "resolvedPath": "tests/unit/hub-physical-identity.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -30214,11 +30235,6 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
-                "declared": "tests/unit/purchasing-receive-service.test.js",
-                "resolvedPath": "tests/unit/purchasing-receive-service.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
                 "declared": "tests/unit/purchasing-route.test.js",
                 "resolvedPath": "tests/unit/purchasing-route.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -30241,11 +30257,6 @@
               {
                 "declared": "tests/unit/purchasing.test.js",
                 "resolvedPath": "tests/unit/purchasing.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
-                "declared": "tests/unit/receive-purchase-order.test.js",
-                "resolvedPath": "tests/unit/receive-purchase-order.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -30324,6 +30335,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/supplier-shortage-refund.test.js",
+                "resolvedPath": "tests/unit/supplier-shortage-refund.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/supplier-source-resolution.test.js",
                 "resolvedPath": "tests/unit/supplier-source-resolution.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -30331,7 +30347,7 @@
             ]
           }
         },
-        "totalFiles": 175,
+        "totalFiles": 176,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -30809,6 +30825,13 @@
           ]
         },
         {
+          "provider": "incident-management",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "infrastructure",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -30903,7 +30926,6 @@
           "consumer": "platform-ops",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code",
             "interface"
           ]
         },
@@ -30921,11 +30943,15 @@
       },
       "technicalContext": {
         "technicalPrimitiveDependencies": 0,
-        "testOnlyRelations": 1,
+        "testOnlyRelations": 2,
         "compositionRootRelations": 0,
         "details": [
           {
             "to": "decision-signals",
+            "family": "NON_RUNTIME_TEST"
+          },
+          {
+            "to": "refunds",
             "family": "NON_RUNTIME_TEST"
           }
         ]

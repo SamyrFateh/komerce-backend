@@ -10,14 +10,14 @@
 |---|---|
 | PROJECTION | 0 |
 | COMPOSITION_ROOT_WIRING | 20 |
-| NON_RUNTIME_TEST | 17 |
+| NON_RUNTIME_TEST | 18 |
 | TECHNICAL_PRIMITIVE | 0 |
 | BUSINESS_TRANSVERSAL_SERVICE | 0 |
 | CROSS_FEATURE_DIRECT_IMPORT | 0 |
 | BUSINESS_FEATURE_INTERFACE | 0 |
 | PILOTING_CAPABILITY | 0 |
 | UNCLASSIFIED | 0 |
-| **TOTAL** | **37** |
+| **TOTAL** | **38** |
 
 ## The 94 pairs (from → to)
 
@@ -57,6 +57,7 @@
 | platform-ops → recommendations | COMPOSITION_ROOT_WIRING | RUNTIME_ONLY | technical-transversal | business-feature | static-code | business-file-import | application-wiring-not-consumption | — | `` |
 | platform-ops → shared-cart | COMPOSITION_ROOT_WIRING | RUNTIME_AND_TEST | technical-transversal | business-feature | static-code | business-file-import | application-wiring-not-consumption | — | `` |
 | purchasing → decision-signals | NON_RUNTIME_TEST | TEST_ONLY | business-feature | piloting-capability | static-code | business-file-import | non-runtime-evidence | — | `` |
+| purchasing → refunds | NON_RUNTIME_TEST | TEST_ONLY | business-feature | business-transversal | static-code | business-file-import | non-runtime-evidence | — | `` |
 | refunds → auth | NON_RUNTIME_TEST | TEST_ONLY | business-transversal | technical-transversal | static-code | technical-primitive | non-runtime-evidence | — | `` |
 | supplier-connectivity → purchasing | NON_RUNTIME_TEST | TEST_ONLY | integration-adapter | business-feature | static-code | business-file-import | non-runtime-evidence | — | `` |
 | wallet → notifications | NON_RUNTIME_TEST | TEST_ONLY | business-feature | business-transversal | static-code | technical-primitive | non-runtime-evidence | — | `` |
