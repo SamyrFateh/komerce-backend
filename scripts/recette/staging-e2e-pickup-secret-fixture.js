@@ -45,12 +45,16 @@ function checkOwnerAndFixture(env) {
   if (!/^[A-F0-9]{8}$/.test(run8) || !MARKETS.has(market)) {
     throw new Error('PICKUP_FIXTURE_RUN_OR_MARKET_INVALID');
   }
-  return { run8, market, reference: 'E2E-HUB-V1-' + run8 + '-LOCAL' };
+  const suffix = env.PICKUP_FIXTURE_SUFFIX || 'LOCAL';
+  if (!['KOM-101', 'LOCAL'].includes(suffix)) {
+    throw new Error('PICKUP_FIXTURE_SUFFIX_NOT_ALLOWED');
+  }
+  return { run8, market, suffix, reference: 'E2E-HUB-V1-' + run8 + '-' + suffix };
 }
 
 async function main() {
   const env = process.env;
-  const { run8, market, reference } = checkOwnerAndFixture(env);
+  const { run8, market, suffix, reference } = checkOwnerAndFixture(env);
   const versionRes = await fetch(BASE + '/health/version');
   if (!versionRes.ok) throw new Error('PICKUP_FIXTURE_HEALTH_UNAVAILABLE');
   const version = await versionRes.json();
@@ -120,10 +124,12 @@ async function main() {
   // The browser runner receives the real generated secret via GitHub's
   // process-local environment file. No log, report or artifact contains it.
   process.stdout.write('::add-mask::' + code + '\n');
-  fs.appendFileSync(env.GITHUB_ENV, 'G3_PICKUP_CODE=' + code + '\n', { mode: 0o600 });
+  const key = suffix === 'LOCAL' ? 'HUB_PICKUP_CODE_LOCAL' : 'HUB_PICKUP_CODE_IMPORT';
+  fs.appendFileSync(env.GITHUB_ENV, key + '=' + code + '\n' +
+    (suffix === 'LOCAL' ? 'G3_PICKUP_CODE=' + code + '\n' : ''), { mode: 0o600 });
   console.log(JSON.stringify({
     verdict: 'CANONICAL_PICKUP_SECRET_ISSUED',
-    market, run8, code_issued: true, secret_in_logs: false
+    market, run8, suffix, code_issued: true, secret_in_logs: false
   }));
 }
 
