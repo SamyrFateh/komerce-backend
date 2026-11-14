@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-11-13T00:31:53.938Z",
+  "generatedAt": "2026-11-13T15:21:10.599Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 823,
+  "count": 826,
   "routes": [
     {
       "method": "GET",
@@ -3012,6 +3012,16 @@
       ]
     },
     {
+      "method": "GET",
+      "fullPath": "/api/admin/workspaces/pricing/market/:marketCode/economic-p0-audit",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/market/:marketCode/economic-p0-audit",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
       "method": "POST",
       "fullPath": "/api/admin/workspaces/pricing/market/:marketCode/price-observations",
       "mountPrefix": "/api/admin/workspaces/pricing",
@@ -4919,6 +4929,16 @@
     },
     {
       "method": "GET",
+      "fullPath": "/api/hub/director-todo",
+      "mountPrefix": "/api/hub",
+      "localPath": "/director-todo",
+      "routeFile": "routes/hub.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
       "fullPath": "/api/hub/dossier",
       "mountPrefix": "/api/hub",
       "localPath": "/dossier",
@@ -6464,6 +6484,16 @@
       "fullPath": "/api/pickup/collect/:orderId",
       "mountPrefix": "/api/pickup",
       "localPath": "/collect/:orderId",
+      "routeFile": "routes/pickup-secret.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/pickup/customer-regenerate/:orderId",
+      "mountPrefix": "/api/pickup",
+      "localPath": "/customer-regenerate/:orderId",
       "routeFile": "routes/pickup-secret.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"

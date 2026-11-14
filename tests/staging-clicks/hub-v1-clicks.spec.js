@@ -312,10 +312,19 @@ test.describe.serial(`Hub V1 : clics reels Chromium (${MARKET_CODE}, fixture E2E
       await row.locator('[data-hub-bag-scan]').press('Enter');
       const sel = row.locator('select').last();
       await page.waitForTimeout(500);
-      if ((await sel.locator('option').count()) > 1) await sel.selectOption({ index: 1 });
+      // Mode manuel explicitement motivé : saisir la preuve AVANT le clic.
+      // Cette campagne ne prétend pas valider un vrai scan matériel.
+      if ((await sel.locator('option').count()) > 1) await sel.selectOption('MANUAL');
+      const method = await row.locator('[data-hub-box-evidence-method]').inputValue();
+      if (method === 'MANUAL') {
+        await row.locator('[data-hub-box-manual-proof]').fill(`RECETTE-MANUELLE-${RUN8}-${suffix}`);
+      }
       const put = row.locator('[data-workspace-action="put-bag-in-box"]');
-      await gesture(page, { key: `hub:box-add-bag:${suffix}`, role: 'agent_hub', route: `POST ${KM}/boxes/:id/bags`, ui: 'operations-workspace.js:1160 (Placer le sac)',
+      const placement = await gesture(page, { key: `hub:box-add-bag:${suffix}`, role: 'agent_hub', route: `POST ${KM}/boxes/:id/bags`, ui: 'operations-workspace.js:1160 (Placer le sac)',
         match: (pp) => /\/boxes\/[^/]+\/bags$/.test(pp), click: () => put.click(), absent: (await put.count()) === 0 ? 'geste Placer le sac absent' : null });
+      placement.evidence_method = method;
+      placement.scope_note = method === 'MANUAL' ? 'Preuve de saisie manuelle ; scan physique non certifié' : 'Saisie de références dans champs de scan ; aucun périphérique scanner matériel certifié';
+      save();
       await page.waitForTimeout(2500);
     }
     for (let i = 0; i < 8; i++) {
@@ -441,7 +450,7 @@ test.describe.serial(`Hub V1 : clics reels Chromium (${MARKET_CODE}, fixture E2E
   // ---------- Relais : attestation (import), remise import, circuit local ----------
   const RELAY_URL = '/admin/relais-live?view=execute';
   const parcelsOfRun = () => q(`SELECT p.reference, p.status::text AS status, o.reference AS order_ref FROM parcels p JOIN orders o ON o.id = p.order_id WHERE o.reference LIKE $1 AND p.cancelled_at IS NULL ORDER BY o.reference`, [`E2E-HUB-V1-${RUN8}-%`]);
-  // Une ligne de file : la reference colis doit apparaitre dans la section, avec son bouton. Absence = file masquee (orders.simulation_scope).
+  // Seuls l'expédition et la réception sont des actions par ligne. Le retrait exige le code client complet.
   const rowButton = (page, ref, label) => page.locator('tr', { hasText: ref }).getByRole('button', { name: label });
 
   test('Relais : attestation de reception de l\'expedition (import)', async ({ browser, baseURL }) => {
@@ -465,58 +474,166 @@ test.describe.serial(`Hub V1 : clics reels Chromium (${MARKET_CODE}, fixture E2E
     await ctx.close();
   });
 
-  test('Relais : remise client du colis import (file « Relais · Distribuer »)', async ({ browser, baseURL }) => {
+  const canonicalPickupCode = (which) => {
+    // Émission par le writer canonique, sur la seule fixture possédée par ce run.
+    // Jamais de hash/last4 lu pour fabriquer un code, ni secret dans l'artefact.
+    const code = String(process.env[which === 'IMPORT'
+      ? 'HUB_PICKUP_CODE_IMPORT' : 'HUB_PICKUP_CODE_LOCAL'] || '');
+    expect(code, 'code client canonique de la fixture ' + which)
+      .toMatch(/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$/);
+    return code;
+  };
+  const parcelStatus = async (ref) => {
+    const rows = await q(
+      'SELECT status::text AS status FROM parcels WHERE reference=$1 AND cancelled_at IS NULL',
+      [ref]);
+    expect(rows, 'colis unique ' + ref).toHaveLength(1);
+    return rows[0].status;
+  };
+  const activatePickupQueue = async (page) => {
+    const ws = page.locator('[data-workspace-mode="relay-execution"]');
+    await expect(ws).toBeVisible({ timeout: 25000 });
+    const jump = ws.locator('[data-relay-execution-jump="collect"]');
+    await expect(jump).toBeVisible({ timeout: 20000 });
+    await jump.click();
+    await expect(ws).toHaveAttribute('data-relay-active-operation', 'collect');
+    await expect(ws.locator('#relay-execution-collect')).toBeVisible();
+    return ws;
+  };
+
+  test('Relais : remise client import par code complet, faux code et seconde remise refusés', async ({ browser, baseURL }) => {
     const parcels = await parcelsOfRun();
-    const imp = parcels.find((x) => !/-LOCAL$/.test(x.order_ref));
-    expect(imp, 'colis import de la fixture').toBeTruthy();
-    for (const who of ['relais', 'admin']) {
-      const { ctx, page } = await login(browser, baseURL, who);
-      await openMarket(page, who === 'admin' ? `${RELAY_URL}&sim=1` : RELAY_URL);
-      await page.waitForTimeout(2500);
-      const btn = rowButton(page, imp.reference, 'Remis au client');
-      const present = (await btn.count()) > 0;
-      const key = who === 'relais' ? 'relay:collect' : 'relay:collect:admin_sim';
-      await gesture(page, { key, role: who === 'relais' ? 'agent_relais' : 'admin(include_simulation)', route: `POST ${KM}/parcels/:ref/collect`, ui: 'operations-workspace.js:1356 (Remis au client)',
-        match: (pp) => pp === `${KM}/parcels/${imp.reference}/collect`, click: () => btn.first().click(),
-        absent: present ? null : `colis ${imp.reference} absent de la file : queryParcels exclut orders.simulation_scope (le parametre include_simulation ne couvre que hub-dash/queue et relay/orders, pas le workspace canonique)` });
-      await ctx.close();
-      if (present) break;
-    }
+    const imp = parcels.find((x) => x.order_ref === 'E2E-HUB-V1-' + RUN8 + '-KOM-101');
+    expect(imp, 'colis de la fixture import KOM-101').toBeTruthy();
+    expect(await parcelStatus(imp.reference)).toBe('available');
+    const code = canonicalPickupCode('IMPORT');
+    const { ctx, page } = await login(browser, baseURL, 'relais');
+    await openMarket(page, RELAY_URL);
+    const ws = await activatePickupQueue(page);
+    await expect(ws.locator('#relay-execution-collect tr').filter({ hasText: imp.reference })).toBeVisible({ timeout: 20000 });
+    const input = ws.locator('[data-pickup-code-input]');
+    const confirm = ws.locator('[data-pickup-code-confirm]');
+    await expect(confirm).toBeVisible();
+    // Mauvais code complet = refus 4xx, aucune mutation.
+    const bad = (code[0] === 'A' ? 'B' : 'A') + code.slice(1);
+    await input.fill(bad);
+    const badResponse = page.waitForResponse(r =>
+      r.request().method() === 'POST' && new URL(r.url()).pathname === '/api/scans/collect');
+    await confirm.click();
+    const rejected = await badResponse;
+    expect(rejected.status(), 'faux code rejeté').toBeGreaterThanOrEqual(400);
+    expect(rejected.status(), 'rejet métier, non 5xx').toBeLessThan(500);
+    expect(await parcelStatus(imp.reference), 'faux code : aucun retrait').toBe('available');
+    evidence.pickup_checks = evidence.pickup_checks || [];
+    evidence.pickup_checks.push({ key: 'relay:bad-full-code', expected: 'HTTP 4xx, colis available',
+      http: rejected.status(), verdict: 'PASS' });
+
+    const row = await gesture(page, {
+      key: 'relay:collect', role: 'agent_relais', route: 'POST /api/scans/collect',
+      ui: 'operations-workspace.js:renderPickupCodeSection (Vérifier et remettre)',
+      match: p => p === '/api/scans/collect',
+      click: async () => { await input.fill(code); await confirm.click(); },
+    });
+    expect(row.verdict, 'remise par code sur le guichet canonique').toBe('CLICK_PASS');
+    expect(row.json?.parcel_reference, 'colis effectivement remis').toBe(imp.reference);
+    expect(await parcelStatus(imp.reference)).toBe('collected');
+    const remaining = await q(
+      "SELECT count(*)::int AS n FROM parcels WHERE order_id=(SELECT id FROM orders WHERE reference=$1) AND status='available' AND cancelled_at IS NULL",
+      [imp.order_ref]);
+    expect(remaining[0].n).toBe(0);
+    // Après la remise, le guichet peut disparaître. Rejeu HTTP authentifié ;
+    // ce n'est pas un deuxième clic Chromium fictif.
+    const duplicate = await page.request.post('/api/scans/collect', { data: { pickup_code: code } });
+    expect(duplicate.status(), 'deuxième remise impossible').toBeGreaterThanOrEqual(400);
+    expect(duplicate.status()).toBeLessThan(500);
+    expect(await parcelStatus(imp.reference), 'seconde remise : état inchangé').toBe('collected');
+    evidence.pickup_checks.push({ key: 'relay:double-collect', expected: 'HTTP 4xx, colis reste collected',
+      http: duplicate.status(), verdict: 'PASS' });
+    await ctx.close();
   });
 
-  test('Circuit local : Hub Expedier, Relais Receptionner, Relais Remis au client', async ({ browser, baseURL }) => {
-    const parcels = await parcelsOfRun();
-    const loc = parcels.find((x) => /-LOCAL$/.test(x.order_ref));
-    expect(loc, 'colis local de la fixture').toBeTruthy();
-    const steps = [
-      { key: 'local:ship', who: 'hub', role: 'agent_hub', url: '/admin/hub-live?view=execute', label: 'Expédier', suffix: 'ship', ui: 'operations-workspace.js:1322 (Hub · Expédier)' },
-      { key: 'local:receive', who: 'relais', role: 'agent_relais', url: RELAY_URL, label: 'Reçu au relais', suffix: 'receive', ui: 'operations-workspace.js:1346 (Relais · Réceptionner)' },
-      { key: 'local:collect', who: 'relais', role: 'agent_relais', url: RELAY_URL, label: 'Remis au client', suffix: 'collect', ui: 'operations-workspace.js:1356 (Relais · Distribuer)' },
-    ];
-    for (const st of steps) {
-      const { ctx, page } = await login(browser, baseURL, st.who);
-      await openMarket(page, st.url);
-      if (st.who === 'hub') { const t = page.getByRole('tab', { name: 'Actions Hub' }); if (await t.count()) await t.click(); }
-      if (st.who === 'relais') {
-        // The four-column Relay Kanban is exclusive: after an imported pickup
-        // it may open on "Remise client" even though "Réception locale" has 1.
-        // This must be an actual Chromium click, not a URL/query shortcut.
-        const operation=st.suffix === 'receive' ? 'receive' : 'collect';
-        const workspace=page.locator('[data-workspace-mode="relay-execution"]');
-        await expect(workspace).toBeVisible({timeout:25000});
-        const jump=workspace.locator('[data-relay-execution-jump="'+operation+'"]');
-        await expect(jump).toBeVisible({timeout:20000});
-        await jump.click();
-        await expect(workspace).toHaveAttribute('data-relay-active-operation',operation);
-        await expect(jump).toHaveAttribute('aria-current','true');
-        await expect(workspace.locator('#relay-execution-'+operation)).toBeVisible();
-      }
-      await page.waitForTimeout(800);
-      const btn = rowButton(page, loc.reference, st.label);
-      await gesture(page, { key: st.key, role: st.role, route: `POST ${KM}/parcels/:ref/${st.suffix}`, ui: st.ui,
-        match: (pp) => pp === `${KM}/parcels/${loc.reference}/${st.suffix}`, click: () => btn.first().click(),
-        absent: (await btn.count()) === 0 ? `colis ${loc.reference} absent après clic sur la file Kanban ${st.suffix}` : null });
-      await ctx.close();
-    }
+  test('Circuit LOCAL_STOCK : attestation physique au relais puis retrait par code', async ({ browser, baseURL }) => {
+    const localOrderRef = 'E2E-HUB-V1-' + RUN8 + '-LOCAL';
+    const orders = await q('SELECT id, status::text AS status, payment_status::text AS payment_status FROM orders WHERE reference=$1',
+      [localOrderRef]);
+    expect(orders, 'commande locale unique de ce RUN8').toHaveLength(1);
+    const order = orders[0];
+    expect(order.payment_status).toBe('paid');
+    const before = await q(
+      'SELECT pi.id FROM parcel_items pi JOIN order_items oi ON oi.id=pi.order_item_id WHERE oi.order_id=$1',
+      [order.id]);
+    expect(before, 'aucun colis Hub ne doit préempter la réception locale').toHaveLength(0);
+
+    const { ctx, page } = await login(browser, baseURL, 'relais');
+    await openMarket(page, RELAY_URL);
+    const ws = page.locator('[data-workspace-mode="relay-execution"]');
+    await expect(ws).toBeVisible({ timeout: 25000 });
+    const jump = ws.locator('[data-relay-execution-jump="receive"]');
+    await expect(jump).toBeVisible({ timeout: 20000 });
+    await jump.click();
+    await expect(ws).toHaveAttribute('data-relay-active-operation', 'receive');
+    const lane = ws.locator('[data-relay-direct-local-receipts]');
+    const card = lane.locator('[data-relay-local-order="' + localOrderRef + '"]');
+    await expect(card, 'commande visible dans la file des réceptions directes').toBeVisible({ timeout: 20000 });
+    await card.locator('[data-local-physical-proof]').check();
+    await card.locator('[data-local-receipt-note]').fill('RECEPTION-PHYSIQUE-LOCALE-' + RUN8);
+
+    const receipt = await gesture(page, {
+      key: 'local:direct-receipt', role: 'agent_relais',
+      route: 'POST /api/orders/:id/local-relay-receipt',
+      ui: 'operations-workspace.js:renderDirectLocalReceiptSection (Attester la réception)',
+      match: pp => pp === '/api/orders/' + order.id + '/local-relay-receipt',
+      click: () => card.locator('[data-workspace-action="local-relay-receipt"]').click(),
+    });
+    expect(receipt.verdict, 'preuve physique locale par le bon relais').toBe('CLICK_PASS');
+    expect(receipt.json?.status).toBe('available');
+    expect(receipt.json?.parcel_reference).toBeTruthy();
+    const ref = receipt.json.parcel_reference;
+    expect(await parcelStatus(ref)).toBe('available');
+
+    const physical = await q(
+      "SELECT p.reference, p.shipped_at, p.in_transit_at, p.shipment_id, "+
+      "pi.quantity, pi.qty_shipped, pi.qty_received, pi.qty_collected "+
+      "FROM parcels p JOIN parcel_items pi ON pi.parcel_id=p.id "+
+      "JOIN order_items oi ON oi.id=pi.order_item_id WHERE oi.order_id=$1 AND p.cancelled_at IS NULL",
+      [order.id]);
+    expect(physical).toHaveLength(1);
+    expect(physical[0].reference).toBe(ref);
+    expect(physical[0].shipped_at).toBeNull();
+    expect(physical[0].in_transit_at).toBeNull();
+    expect(physical[0].shipment_id).toBeNull();
+    expect(Number(physical[0].qty_shipped), 'aucun expédié fictif').toBe(0);
+    expect(Number(physical[0].qty_received), 'réception physique complète').toBe(Number(physical[0].quantity));
+    expect(Number(physical[0].qty_collected)).toBe(0);
+    const proof = await q("SELECT id FROM scans WHERE order_id=$1 AND parcel_id=(SELECT id FROM parcels WHERE reference=$2) AND step='relais_received'",
+      [order.id, ref]);
+    expect(proof, 'attestation de réception persistée').toHaveLength(1);
+    await ctx.close();
+
+    const { ctx: collectCtx, page: collectPage } = await login(browser, baseURL, 'relais');
+    await openMarket(collectPage, RELAY_URL);
+    const collectWs = await activatePickupQueue(collectPage);
+    await expect(collectWs.locator('#relay-execution-collect tr').filter({ hasText: ref })).toBeVisible({ timeout: 20000 });
+    const code = canonicalPickupCode('LOCAL');
+    const result = await gesture(collectPage, {
+      key: 'local:collect', role: 'agent_relais', route: 'POST /api/scans/collect',
+      ui: 'operations-workspace.js:renderPickupCodeSection (Vérifier et remettre)',
+      match: pp => pp === '/api/scans/collect',
+      click: async () => {
+        await collectWs.locator('[data-pickup-code-input]').fill(code);
+        await collectWs.locator('[data-pickup-code-confirm]').click();
+      },
+    });
+    expect(result.verdict, 'remise locale canonique par code complet').toBe('CLICK_PASS');
+    expect(result.json?.parcel_reference).toBe(ref);
+    expect(await parcelStatus(ref)).toBe('collected');
+    const after = await q(
+      'SELECT pi.quantity,pi.qty_collected,pi.qty_received,pi.qty_shipped FROM parcel_items pi JOIN parcels p ON p.id=pi.parcel_id WHERE p.reference=$1',
+      [ref]);
+    expect(after).toHaveLength(1);
+    expect(Number(after[0].qty_collected)).toBe(Number(after[0].quantity));
+    expect(Number(after[0].qty_received)).toBe(Number(after[0].quantity));
+    expect(Number(after[0].qty_shipped)).toBe(0);
+    await collectCtx.close();
   });
 });

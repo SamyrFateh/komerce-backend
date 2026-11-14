@@ -18,6 +18,12 @@
 
 'use strict';
 
+const mockRefundAdminPayPal = jest.fn();
+jest.mock('../../services/paypal-refund-authority', () => ({
+  refundPaypalOrder: (...args) => mockRefundAdminPayPal(...args),
+  reconcilePaypalRefund: jest.fn(),
+}));
+
 jest.mock('../../utils/logger', () => {
   const child = () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() });
   return { child, forModule: child };
@@ -85,6 +91,9 @@ const mockConnect = jest.fn();
 const makeDb = () => ({ query: mockDbQuery, pool: { connect: mockConnect } });
 
 beforeEach(() => {
+  mockRefundAdminPayPal.mockReset().mockResolvedValue({
+    status: 202, body: { success: false, refund_status: 'unknown' },
+  });
   mockDbQuery.mockReset();
   mockClientQuery.mockReset();
   mockClientRelease.mockReset();
@@ -204,92 +213,20 @@ describe('handlePaypalWebhookEvent — idempotence', () => {
   });
 });
 
-describe('refundPaypalOrder', () => {
-  test('404 si commande introuvable', async () => {
-    mockDbQuery.mockResolvedValueOnce({ rows: [] });
-
-    const result = await refundPaypalOrder({
-      orderId: 'missing', amountEur: undefined, reason: undefined,
-      adminUser: { id: 'admin-1' }, paypal: {}, db: makeDb(),
-    });
-
-    expect(result.status).toBe(404);
-  });
-
-  test('409 si pas de capture PayPal liée', async () => {
-    mockDbQuery.mockResolvedValueOnce({
-      rows: [{ id: 'order-4', reference: 'KMC-004', total_eur: '10.00', payment_status: 'paid', paypal_capture_id: null }],
-    });
-
-    const result = await refundPaypalOrder({
-      orderId: 'order-4', adminUser: { id: 'admin-1' }, paypal: {}, db: makeDb(),
-    });
-
-    expect(result.status).toBe(409);
-    expect(result.body.error).toMatch(/Pas de capture/);
-  });
-
-  test('409 si commande non payée', async () => {
-    mockDbQuery.mockResolvedValueOnce({
-      rows: [{ id: 'order-5', reference: 'KMC-005', total_eur: '10.00', payment_status: 'pending', paypal_capture_id: 'CAP-5' }],
-    });
-
-    const result = await refundPaypalOrder({
-      orderId: 'order-5', adminUser: { id: 'admin-1' }, paypal: {}, db: makeDb(),
-    });
-
-    expect(result.status).toBe(409);
-    expect(result.body.error).toMatch(/non payée/);
-  });
-
-  test('nominal : refund effectué', async () => {
-    mockDbQuery
-      .mockResolvedValueOnce({ rows: [{ id: 'order-6', reference: 'KMC-006', total_eur: '10.00', payment_status: 'paid', paypal_capture_id: 'CAP-6' }] }) // SELECT order
-      .mockResolvedValueOnce({ rows: [{ id: 'refund-1' }] })  // INSERT refunds RETURNING id
-      .mockResolvedValueOnce({ rows: [] })                    // INSERT order_status_history
-      .mockResolvedValueOnce({ rowCount: 1 })                 // markRefunded → UPDATE orders SET payment_status='refunded'...
-      .mockResolvedValueOnce({ rowCount: 1 });                // UPDATE orders SET status='refunded' (I3, exception tracée)
-    const paypal = {
-      refundCapture: jest.fn().mockResolvedValue({ id: 'REFUND-1', status: 'COMPLETED' }),
+describe('refundPaypalOrder — unique boundary F3', () => {
+  test('le service PayPal delegue au writer refunds sans envoyer de POST prestataire', async () => {
+    const paypal = { refundCapture: jest.fn() };
+    const args = {
+      orderId: 'order-1', amountEur: 25, reason: 'partial',
+      requestKey: 'refund-case-0001', adminUser: { id: 'admin-1', role: 'admin' },
+      paypal, db: makeDb(),
     };
-
-    const result = await refundPaypalOrder({
-      orderId: 'order-6', amountEur: 10, reason: 'Client request',
-      adminUser: { id: 'admin-1' }, paypal, db: makeDb(),
-    });
-
-    expect(result.status).toBe(200);
-    expect(result.body.success).toBe(true);
-    expect(result.body.refund_id).toBe('REFUND-1');
-    expect(paypal.refundCapture).toHaveBeenCalledWith('CAP-6', expect.objectContaining({
-      amountEur: 10, reason: 'Client request',
-    }));
-
-    // Post Sprint B/D-02 : recordExternalRefund et transitionOrderStatus sont mockés.
-    // markRefunded (payment_status) est le seul db.query direct restant.
-    const { recordExternalRefund } = require('../../services/refund-service');
-    expect(recordExternalRefund).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
-      orderId: 'order-6', method: 'paypal',
-    }));
-    const { transitionOrderStatus } = require('../../services/order-status-machine');
-    expect(transitionOrderStatus).toHaveBeenCalledWith(expect.objectContaining({
-      orderId: 'order-6', newStatus: 'refunded', source: 'refund_external',
-    }));
-  });
-
-  test('502 si refundCapture échoue', async () => {
-    mockDbQuery.mockResolvedValueOnce({
-      rows: [{ id: 'order-7', reference: 'KMC-007', total_eur: '10.00', payment_status: 'paid', paypal_capture_id: 'CAP-7' }],
-    });
-    const paypal = {
-      refundCapture: jest.fn().mockRejectedValue(new Error('paypal down')),
-    };
-
-    const result = await refundPaypalOrder({
-      orderId: 'order-7', adminUser: { id: 'admin-1' }, paypal, db: makeDb(),
-    });
-
-    expect(result.status).toBe(502);
+    const result = await refundPaypalOrder(args);
+    expect(result.status).toBe(202);
+    expect(mockRefundAdminPayPal).toHaveBeenCalledTimes(1);
+    expect(mockRefundAdminPayPal).toHaveBeenCalledWith(args);
+    expect(paypal.refundCapture).not.toHaveBeenCalled();
+    expect(mockDbQuery).not.toHaveBeenCalled();
   });
 });
 
@@ -756,73 +693,6 @@ describe('handlePaypalWebhookEvent — dispatch par event_type', () => {
   });
 });
 
-describe('refundPaypalOrder — validations montant', () => {
-  test('400 si amountEur fourni invalide (NaN / <=0)', async () => {
-    mockDbQuery.mockResolvedValueOnce({
-      rows: [{ id: 'o-inv', reference: 'KMC-INV', total_eur: '10.00', payment_status: 'paid', paypal_capture_id: 'CAP-INV' }],
-    });
-    const result = await refundPaypalOrder({
-      orderId: 'o-inv', amountEur: -5, adminUser: { id: 'a1' }, paypal: {}, db: makeDb(),
-    });
-    expect(result.status).toBe(400);
-    expect(result.body.error).toMatch(/amountEur invalide/);
-  });
-
-  test('400 si montant refund > total commande (au-delà de la tolérance)', async () => {
-    mockDbQuery.mockResolvedValueOnce({
-      rows: [{ id: 'o-over', reference: 'KMC-OVER', total_eur: '10.00', payment_status: 'paid', paypal_capture_id: 'CAP-OVER' }],
-    });
-    const result = await refundPaypalOrder({
-      orderId: 'o-over', amountEur: 50, adminUser: { id: 'a1' }, paypal: {}, db: makeDb(),
-    });
-    expect(result.status).toBe(400);
-    expect(result.body.error).toMatch(/supérieur au total/);
-  });
-
-  test('refund partiel : amountKmf calculé au prorata (pas full refund)', async () => {
-    mockDbQuery
-      .mockResolvedValueOnce({ rows: [{
-        id: 'o-part', reference: 'KMC-PART', total_eur: '100.00', total_kmf: '50000',
-        payment_status: 'paid', paypal_capture_id: 'CAP-PART',
-      }] })
-      .mockResolvedValueOnce({ rows: [{ id: 'refund-part' }] })
-      .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({ rowCount: 1 })
-      .mockResolvedValueOnce({ rowCount: 1 });
-    const paypal = { refundCapture: jest.fn().mockResolvedValue({ id: 'REFUND-PART', status: 'COMPLETED' }) };
-
-    const result = await refundPaypalOrder({
-      orderId: 'o-part', amountEur: 25, reason: 'partial', adminUser: { id: 'a1' }, paypal, db: makeDb(),
-    });
-
-    expect(result.status).toBe(200);
-    // 25/100 * 50000 = 12500 → vérifié via le mock recordExternalRefund
-    const { recordExternalRefund } = require('../../services/refund-service');
-    expect(recordExternalRefund).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
-      orderId: 'o-part', amountKmf: 12500, amountEur: 25, refundType: 'partial',
-    }));
-  });
-
-  test('échec de l\'émission du reçu de remboursement est non-bloquant (log warn, pas de throw)', async () => {
-    mockDbQuery
-      .mockResolvedValueOnce({ rows: [{
-        id: 'o-receipt', reference: 'KMC-RCPT', total_eur: '10.00', payment_status: 'paid', paypal_capture_id: 'CAP-RCPT',
-      }] })
-      .mockResolvedValueOnce({ rows: [{ id: 'refund-rcpt' }] })
-      .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({ rowCount: 1 })
-      .mockResolvedValueOnce({ rowCount: 1 });
-    const paypal = { refundCapture: jest.fn().mockResolvedValue({ id: 'REFUND-RCPT', status: 'COMPLETED' }) };
-
-    const result = await refundPaypalOrder({
-      orderId: 'o-receipt', adminUser: { id: 'a1' }, paypal, db: makeDb(),
-    });
-
-    expect(result.status).toBe(200);
-    // le .catch() interne du fire-and-forget est vérifié indirectement : pas de rejet propagé
-  });
-});
-
 describe('Lot A — dernières branches d\'erreur non-bloquantes', () => {
   test('cacheCodeForReveal rejette après COMMIT → catch avalé, ne fait pas planter la capture', async () => {
     const order = { id: 'ord-cache', reference: 'KMC-CACHE', total_eur: '10.00', payment_status: 'pending' };
@@ -857,24 +727,4 @@ describe('Lot A — dernières branches d\'erreur non-bloquantes', () => {
     expect(result).toEqual({ received: true, ignored: true });
   });
 
-  test('refundReceiptService.issue rejette → non-bloquant, refund reste 200 (catch avalé)', async () => {
-    mockDbQuery
-      .mockResolvedValueOnce({ rows: [{
-        id: 'o-rcpt-fail', reference: 'KMC-RCPTFAIL', total_eur: '10.00',
-        payment_status: 'paid', paypal_capture_id: 'CAP-RCPTFAIL',
-      }] })
-      .mockResolvedValueOnce({ rows: [{ id: 'refund-rcptfail' }] })
-      .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({ rowCount: 1 })
-      .mockResolvedValueOnce({ rowCount: 1 });
-    refundReceiptService.issue.mockRejectedValueOnce(new Error('pdf gen failed'));
-    const paypal = { refundCapture: jest.fn().mockResolvedValue({ id: 'REFUND-RCPTFAIL', status: 'COMPLETED' }) };
-
-    const result = await refundPaypalOrder({
-      orderId: 'o-rcpt-fail', adminUser: { id: 'a1' }, paypal, db: makeDb(),
-    });
-
-    expect(result.status).toBe(200);
-    await flush(); // laisse le .catch() du fire-and-forget s'exécuter
-  });
 });

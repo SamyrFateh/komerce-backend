@@ -155,6 +155,11 @@ test('buildQueues ne crée aucune transition métier côté présentation', () =
 
   expect(queues.hub.to_ship.map(row => row.reference)).toEqual(['PCL-1']);
   expect(queues.relay.cash_pending.map(row => row.reference)).toEqual(['CMD-2']);
+  const withConfirmed = workspace.buildQueues([
+    { reference: 'CASH-OK', status: 'pending', payment_mode: 'cash_relais', payment_status: 'pending', cash_confirmed: true },
+    { reference: 'CASH-TODO', status: 'pending', payment_mode: 'cash_relais', payment_status: 'pending', cash_confirmed: false },
+  ], []);
+  expect(withConfirmed.relay.cash_pending.map(row => row.reference)).toEqual(['CASH-TODO']);
   expect(queues.relay.to_receive.map(row => row.reference)).toEqual(['PCL-2']);
   expect(queues.relay.to_collect.map(row => row.reference)).toEqual(['PCL-3']);
 });
@@ -207,6 +212,10 @@ test('runDistribution ne distribue que les commandes présélectionnées dans le
   const result = await workspace.runDistribution(MARKET);
 
   expect(mockQuery.mock.calls[0][1]).toEqual(['market-cm-id']);
+  // Aucune commande 100 % locale ne quitte le circuit direct Relais via le Hub.
+  // Les commandes mixtes restent éligibles par leurs seules lignes IMPORT sans colis.
+  expect(String(mockQuery.mock.calls[0][0])).toContain("oi.fulfillment_source = 'IMPORT'");
+  expect(String(mockQuery.mock.calls[0][0])).toContain('pi.order_item_id = oi.id');
   expect(mockDistributeOrder.mock.calls).toEqual([
     ['order-cm-1'],
     ['order-cm-2'],

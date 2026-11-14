@@ -7,14 +7,14 @@
  * @inputs        order, provider, capture, event id, EUR amount
  * @outputs       durable intent id and stable PSP request key
  * @depends       db.js, orders, refunds, refund_execution_intents
- * @used-by       future refund orchestrators (NOT ACTIVATED)
+ * @used-by       services/paypal-refund-authority.js, services/sav-ledger-refund.js, services/item-refund-reservation-service.js
  * @db-read       orders, refunds, refund_execution_intents
  * @db-write      refund_execution_intents
  * @db-txn        explicit BEGIN / COMMIT before PSP; NO PSP call here
  * @doctrine      multi_market_isolation, idempotent_refund, legacy_reconciliation_first
  *
- * Foundation RC-5/RC-9 only. Callers MUST NOT send payments until after commit.
- * The existing Stripe/PayPal refund flows are NOT rewired by this module.
+ * RC-5/RC-9 durable authority. All PSP calls occur after a committed intent.
+ * PayPal admin is gated to staging sandbox; other writers await F3 cutover.
  */
 'use strict';
 
@@ -77,9 +77,6 @@ async function reserveRefundIntentInTransaction(client, {
   if (!order || !order.market_id) {
     throw new RefundIntentError('REFUND_ORDER_UNKNOWN', 'Commande ou marché introuvable');
   }
-  if (order.payment_status !== 'paid') {
-    throw new RefundIntentError('REFUND_PAYMENT_NOT_CONFIRMED', 'Commande non payée');
-  }
   if (!orderCapture(order, provider) || String(orderCapture(order, provider)) !== String(captureRef)) {
     throw new RefundIntentError('REFUND_CAPTURE_MISMATCH', 'Prestataire ou capture incohérent');
   }
@@ -99,6 +96,12 @@ async function reserveRefundIntentInTransaction(client, {
     }
     return { intentId: existing.id, providerRequestKey: providerKey(existing.id),
       status: existing.status, replayed: true, executable: false };
+  }
+
+  // A verified, exact replay must remain readable after a full refund set
+  // payment_status=refunded. Only a NEW operation requires a paid order.
+  if (order.payment_status !== 'paid') {
+    throw new RefundIntentError('REFUND_PAYMENT_NOT_CONFIRMED', 'Commande non payée');
   }
 
   // ANY existing refund (wallet or PSP) is not automatically migrated or

@@ -66,7 +66,8 @@ router.get('/', async (req, res, next) => {
              FROM transaction_documents td
              JOIN orders o ON o.id = td.order_id
             WHERE COALESCE(td.owner_user_id, o.user_id) = $1
-              AND td.document_type = 'refund_receipt'
+              AND (td.document_type = 'refund_receipt'
+                   OR (td.document_type = 'pickup_proof' AND td.subject_type = 'pickup_handoff'))
               AND ($2::text IS NULL OR o.reference = $2)
          ) d
         ORDER BY d.issued_at DESC
@@ -117,7 +118,8 @@ router.get('/:id/download', async (req, res, next) => {
            LEFT JOIN orders o ON o.id = td.order_id
           WHERE td.id = $1
             AND COALESCE(td.owner_user_id, o.user_id) = $2
-            AND td.document_type = 'refund_receipt'
+            AND (td.document_type = 'refund_receipt'
+                 OR (td.document_type = 'pickup_proof' AND td.subject_type = 'pickup_handoff'))
           LIMIT 1`,
         [req.params.id, req.user.id]
       );

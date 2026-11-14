@@ -163,6 +163,8 @@ async function receiveShipment({ market, actor, reference, body = {} }, database
       if (!expectedByItem.has(l.itemId)) fail(409, 'RELAY_RECEIPT_ITEM_NOT_EXPECTED', 'Article non attendu par ce relais dans cette expédition');
       const expected = expectedByItem.get(l.itemId);
       const info = mine.find((e) => e.order_item_id === l.itemId);
+      // Un relais ne peut pas attester plus que ce qui a été expédié vers lui : refus avant toute écriture.
+      if (l.qty > expected) fail(409, 'RELAY_RECEIPT_EXCEEDS_SHIPPED', `Quantité reçue (${l.qty}) supérieure à la quantité expédiée (${expected})`);
       let incidentId = null;
       if (l.qty !== expected) {
         const missing = l.qty < expected;

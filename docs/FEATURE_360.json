@@ -56,7 +56,7 @@
     "healthy": 34,
     "attention": 6,
     "blocked": 0,
-    "businessDependencies": 327,
+    "businessDependencies": 329,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
@@ -11715,7 +11715,7 @@
             ]
           },
           "tests": {
-            "count": 105,
+            "count": 106,
             "files": [
               {
                 "declared": "tests/integration/canonical-margin-writer-real-db.test.js",
@@ -11740,6 +11740,11 @@
               {
                 "declared": "tests/integration/product-margin-steering-real-db.test.js",
                 "resolvedPath": "tests/integration/product-margin-steering-real-db.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/relay-commission-per-order-postgres.test.js",
+                "resolvedPath": "tests/integration/relay-commission-per-order-postgres.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -12265,7 +12270,7 @@
             ]
           }
         },
-        "totalFiles": 218,
+        "totalFiles": 219,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -13940,6 +13945,11 @@
             "status": "resolved"
           },
           {
+            "fn": "createSupplierShortageIncident",
+            "file": "services/incident-write-service.js",
+            "status": "resolved"
+          },
+          {
             "fn": "detachUserFromIncidents",
             "file": "services/incident-write-service.js",
             "status": "resolved"
@@ -14069,6 +14079,13 @@
           "channels": [
             "static-code",
             "data-read"
+          ]
+        },
+        {
+          "consumer": "purchasing",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
           ]
         }
       ],
@@ -18267,7 +18284,7 @@
             ]
           },
           "services": {
-            "count": 47,
+            "count": 49,
             "files": [
               {
                 "declared": "services/auto-parcel.js",
@@ -18420,6 +18437,11 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/pickup-agent-lockout.js",
+                "resolvedPath": "services/pickup-agent-lockout.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/pickup-code-helpers.js",
                 "resolvedPath": "services/pickup-code-helpers.js",
                 "status": "resolved-in-technical-graph"
@@ -18442,6 +18464,11 @@
               {
                 "declared": "services/pickup-secret-access-service.js",
                 "resolvedPath": "services/pickup-secret-access-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/pickup-secret-customer-rotation-service.js",
+                "resolvedPath": "services/pickup-secret-customer-rotation-service.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -18507,7 +18534,7 @@
             ]
           },
           "tests": {
-            "count": 90,
+            "count": 93,
             "files": [
               {
                 "declared": "tests/e2e-api/hub-membership-readers.e2e.test.js",
@@ -18647,6 +18674,11 @@
               {
                 "declared": "tests/unit/hub-bag-box-ui-contract.test.js",
                 "resolvedPath": "tests/unit/hub-bag-box-ui-contract.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/hub-director-todo-age.test.js",
+                "resolvedPath": "tests/unit/hub-director-todo-age.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -18825,6 +18857,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/pickup-agent-lockout.test.js",
+                "resolvedPath": "tests/unit/pickup-agent-lockout.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/pickup-code-helpers.test.js",
                 "resolvedPath": "tests/unit/pickup-code-helpers.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -18852,6 +18889,11 @@
               {
                 "declared": "tests/unit/pickup-secret-access-service.test.js",
                 "resolvedPath": "tests/unit/pickup-secret-access-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/pickup-secret-customer-rotation-service.test.js",
+                "resolvedPath": "tests/unit/pickup-secret-customer-rotation-service.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -18982,7 +19024,7 @@
             ]
           }
         },
-        "totalFiles": 184,
+        "totalFiles": 189,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -19049,6 +19091,14 @@
           },
           {
             "table": "parcels",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "pickup_code_generations",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "pickup_collect_failures",
             "resolution": "declared-table-owner"
           },
           {
@@ -19181,6 +19231,18 @@
           },
           {
             "table": "parcels",
+            "mode": "RW",
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "pickup_code_generations",
+            "mode": "RW",
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "pickup_collect_failures",
             "mode": "RW",
             "lifecycleOwner": "logistics",
             "ownershipStatus": "owner"
@@ -19368,6 +19430,14 @@
             "resolution": "declared-table-owner"
           },
           {
+            "table": "pickup_code_generations",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "pickup_collect_failures",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "pickup_print_tokens",
             "resolution": "declared-table-owner"
           },
@@ -19497,6 +19567,18 @@
           },
           {
             "table": "parcels",
+            "mode": "RW",
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "pickup_code_generations",
+            "mode": "RW",
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "pickup_collect_failures",
             "mode": "RW",
             "lifecycleOwner": "logistics",
             "ownershipStatus": "owner"
@@ -24730,6 +24812,13 @@
           ]
         },
         {
+          "consumer": "refunds",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "consumer": "shared-cart",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -25618,6 +25707,10 @@
             "resolution": "multi-writer-resolved-by-classification-signal"
           },
           {
+            "table": "relay_return_compensations",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "sms_log",
             "resolution": "multi-writer-resolved-by-classification-signal"
           }
@@ -25673,6 +25766,12 @@
           },
           {
             "table": "recipients",
+            "mode": "RW",
+            "lifecycleOwner": "orders",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "relay_return_compensations",
             "mode": "RW",
             "lifecycleOwner": "orders",
             "ownershipStatus": "owner"
@@ -25766,6 +25865,10 @@
             "resolution": "multi-writer-resolved-by-classification-signal"
           },
           {
+            "table": "relay_return_compensations",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "sms_log",
             "resolution": "multi-writer-resolved-by-classification-signal"
           }
@@ -25821,6 +25924,12 @@
           },
           {
             "table": "recipients",
+            "mode": "RW",
+            "lifecycleOwner": "orders",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "relay_return_compensations",
             "mode": "RW",
             "lifecycleOwner": "orders",
             "ownershipStatus": "owner"
@@ -26463,6 +26572,14 @@
       },
       "authority": "backend-core — tout changement de provider, callback, webhook ou logique d idempotence paiement doit etre valide par le propriétaire payments.",
       "invariants": [
+        {
+          "statement": "FA-13/24 : un succès Mobile Money exige une preuve de montant et devise, et une nouvelle capture sur une commande déjà payée laisse une alerte dans la même transaction.",
+          "test": "tests/unit/payment-mobile-money.test.js"
+        },
+        {
+          "statement": "FA-12 : un encaissement Stripe hors cycle laisse une alerte et un événement atomiques, même si la confirmation est rejetée ou que la commande est déjà payée.",
+          "test": "tests/unit/payment-stripe.test.js"
+        },
         {
           "statement": "RC-9 : getRefund lit PayPal par GET sans exécuter un refund, rejette tout ID douteux et fournit seulement une preuve à confronter au ledger.",
           "test": "tests/unit/paypal-client.test.js"
@@ -28416,7 +28533,6 @@
           "provider": "purchasing",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code",
             "interface"
           ]
         },
@@ -29501,7 +29617,7 @@
             ]
           },
           "services": {
-            "count": 53,
+            "count": 52,
             "files": [
               {
                 "declared": "scripts/recette/audit-sku-supplier-link.js",
@@ -29564,18 +29680,8 @@
                 "status": "resolved-in-technical-graph"
               },
               {
-                "declared": "services/purchasing-receive-service.js",
-                "resolvedPath": "services/purchasing-receive-service.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
                 "declared": "services/purchasing-trigger-service.js",
                 "resolvedPath": "services/purchasing-trigger-service.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
-                "declared": "services/receive-purchase-order.js",
-                "resolvedPath": "services/receive-purchase-order.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -29627,6 +29733,11 @@
                 "declared": "services/supplier-real-debit-verification.js",
                 "resolvedPath": "services/supplier-real-debit-verification.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/supplier-shortage-service.js",
+                "resolvedPath": "services/supplier-shortage-service.js",
+                "status": "resolved-on-disk-no-header"
               },
               {
                 "declared": "services/supplier-source-resolution.js",
@@ -29771,7 +29882,7 @@
             ]
           },
           "tests": {
-            "count": 90,
+            "count": 92,
             "files": [
               {
                 "declared": "tests/e2e-api/purchasing.grouped-flow.e2e.test.js",
@@ -29929,6 +30040,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/auto-parcel-closed-short.test.js",
+                "resolvedPath": "tests/unit/auto-parcel-closed-short.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/canonical-unit-cutover-comparison.test.js",
                 "resolvedPath": "tests/unit/canonical-unit-cutover-comparison.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -30024,8 +30140,18 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/hub-h3-quantities.test.js",
+                "resolvedPath": "tests/unit/hub-h3-quantities.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/hub-operations-grouped-completion.test.js",
                 "resolvedPath": "tests/unit/hub-operations-grouped-completion.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/hub-physical-identity.test.js",
+                "resolvedPath": "tests/unit/hub-physical-identity.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -30109,11 +30235,6 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
-                "declared": "tests/unit/purchasing-receive-service.test.js",
-                "resolvedPath": "tests/unit/purchasing-receive-service.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
                 "declared": "tests/unit/purchasing-route.test.js",
                 "resolvedPath": "tests/unit/purchasing-route.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -30136,11 +30257,6 @@
               {
                 "declared": "tests/unit/purchasing.test.js",
                 "resolvedPath": "tests/unit/purchasing.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
-                "declared": "tests/unit/receive-purchase-order.test.js",
-                "resolvedPath": "tests/unit/receive-purchase-order.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -30219,6 +30335,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/supplier-shortage-refund.test.js",
+                "resolvedPath": "tests/unit/supplier-shortage-refund.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/supplier-source-resolution.test.js",
                 "resolvedPath": "tests/unit/supplier-source-resolution.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -30226,7 +30347,7 @@
             ]
           }
         },
-        "totalFiles": 175,
+        "totalFiles": 176,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -30237,6 +30358,10 @@
         "ownsTables": [
           {
             "table": "hub_authorization_grants",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "manual_purchase_executions",
             "resolution": "declared-table-owner"
           },
           {
@@ -30253,6 +30378,10 @@
           },
           {
             "table": "purchase_orders",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "purchase_variance_decisions",
             "resolution": "declared-table-owner"
           },
           {
@@ -30296,6 +30425,12 @@
             "ownershipStatus": "owner"
           },
           {
+            "table": "manual_purchase_executions",
+            "mode": "RW",
+            "lifecycleOwner": "purchasing",
+            "ownershipStatus": "owner"
+          },
+          {
             "table": "product_suppliers",
             "mode": "RW",
             "lifecycleOwner": "purchasing",
@@ -30315,6 +30450,12 @@
           },
           {
             "table": "purchase_orders",
+            "mode": "RW",
+            "lifecycleOwner": "purchasing",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "purchase_variance_decisions",
             "mode": "RW",
             "lifecycleOwner": "purchasing",
             "ownershipStatus": "owner"
@@ -30398,6 +30539,10 @@
             "resolution": "declared-table-owner"
           },
           {
+            "table": "manual_purchase_executions",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "product_suppliers",
             "resolution": "single-writer"
           },
@@ -30411,6 +30556,10 @@
           },
           {
             "table": "purchase_orders",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "purchase_variance_decisions",
             "resolution": "declared-table-owner"
           },
           {
@@ -30454,6 +30603,12 @@
             "ownershipStatus": "owner"
           },
           {
+            "table": "manual_purchase_executions",
+            "mode": "RW",
+            "lifecycleOwner": "purchasing",
+            "ownershipStatus": "owner"
+          },
+          {
             "table": "product_suppliers",
             "mode": "RW",
             "lifecycleOwner": "purchasing",
@@ -30473,6 +30628,12 @@
           },
           {
             "table": "purchase_orders",
+            "mode": "RW",
+            "lifecycleOwner": "purchasing",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "purchase_variance_decisions",
             "mode": "RW",
             "lifecycleOwner": "purchasing",
             "ownershipStatus": "owner"
@@ -30664,6 +30825,13 @@
           ]
         },
         {
+          "provider": "incident-management",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "infrastructure",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -30758,7 +30926,6 @@
           "consumer": "platform-ops",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code",
             "interface"
           ]
         },
@@ -30776,11 +30943,15 @@
       },
       "technicalContext": {
         "technicalPrimitiveDependencies": 0,
-        "testOnlyRelations": 1,
+        "testOnlyRelations": 2,
         "compositionRootRelations": 0,
         "details": [
           {
             "to": "decision-signals",
+            "family": "NON_RUNTIME_TEST"
+          },
+          {
+            "to": "refunds",
             "family": "NON_RUNTIME_TEST"
           }
         ]
@@ -31214,8 +31385,24 @@
       "authority": "backend-core — tout changement de logique de remboursement doit etre valide par le proprietaire de refund-service.js",
       "invariants": [
         {
+          "statement": "FA-04/08 F3 : annulation Stripe reserve l intention avant COMMIT metier, jamais de POST fournisseur sous transaction, un resultat inconnu ne declenche aucun fallback wallet et reste a rapprocher",
+          "test": "tests/unit/stripe-refund-authority.test.js"
+        },
+        {
+          "statement": "FA-08 : annulation Stripe en deux transactions PostgreSQL physiques, une seule intention, rollback avant COMMIT sans trace PSP ni annulation perdue",
+          "test": "tests/e2e-api/refunds.stripe-business-intent-concurrency.e2e.test.js"
+        },
+        {
+          "statement": "FA-04/08 F3 certification : quatre frontieres de crash (avant reservation, avant appel PSP, apres PSP avant COMMIT, apres COMMIT avant marquage) sur PostgreSQL reel avec transport Stripe bouchonne, une seule intention, aucun double remboursement, reprise avec la meme cle fournisseur, I4/I8 tenus",
+          "test": "tests/e2e-api/refunds.stripe-crash-boundaries.e2e.test.js"
+        },
+        {
           "statement": "RC-9 deux connexions PostgreSQL reelles serialisent reserve et claim sans double intention ni double execution",
           "test": "tests/e2e-api/refunds.intents-physical-concurrency.e2e.test.js"
+        },
+        {
+          "statement": "FA-05/21 F3 : PayPal admin reserve et claim une intention durable avant POST, rejeu/timeout inconnus sont sans nouveau POST, settlement partiel confirme sans clore la commande, activation sandbox explicite",
+          "test": "tests/unit/paypal-refund-authority.test.js"
         },
         {
           "statement": "RC-9 : reference externe unique par fournisseur et intention, prouvee en PostgreSQL",
@@ -31245,13 +31432,17 @@
           "statement": "RC-5 — toute sortie PSP requiert une intention de remboursement committee avant appel externe ; le vrai service et le faux Stripe documentent provisoirement cette rupture sans prétendre la corriger",
           "test": "tests/unit/refund-stripe-txn-known-risk.test.js"
         },
+        {
+          "statement": "FA-04 : un POST Stripe sans verdict (timeout, panne, erreur) ou une capture absente bloque la mutation colis et ne crédite jamais le wallet par repli",
+          "test": "tests/unit/refund-service.test.js"
+        },
         "un remboursement n'est jamais applique deux fois pour le meme evenement source",
         "tout refund externe ou crédit compensatoire est idempotent par événement source ; un rejeu ne déclenche jamais un second remboursement"
       ],
       "implementation": {
         "byCategory": {
           "services": {
-            "count": 7,
+            "count": 9,
             "files": [
               {
                 "declared": "services/item-refund-psp-orchestrator.js",
@@ -31261,6 +31452,11 @@
               {
                 "declared": "services/item-refund-reservation-service.js",
                 "resolvedPath": "services/item-refund-reservation-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/paypal-refund-authority.js",
+                "resolvedPath": "services/paypal-refund-authority.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -31287,11 +31483,16 @@
                 "declared": "services/sav-ledger-refund.js",
                 "resolvedPath": "services/sav-ledger-refund.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/stripe-refund-authority.js",
+                "resolvedPath": "services/stripe-refund-authority.js",
+                "status": "resolved-on-disk-no-header"
               }
             ]
           },
           "tests": {
-            "count": 17,
+            "count": 20,
             "files": [
               {
                 "declared": "tests/e2e-api/refunds.credits-cash-numeric.e2e.test.js",
@@ -31329,6 +31530,16 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/e2e-api/refunds.stripe-business-intent-concurrency.e2e.test.js",
+                "resolvedPath": "tests/e2e-api/refunds.stripe-business-intent-concurrency.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/e2e-api/refunds.stripe-crash-boundaries.e2e.test.js",
+                "resolvedPath": "tests/e2e-api/refunds.stripe-crash-boundaries.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/item-refund-psp-orchestrator.test.js",
                 "resolvedPath": "tests/unit/item-refund-psp-orchestrator.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -31336,6 +31547,11 @@
               {
                 "declared": "tests/unit/item-refund-reservation-service.test.js",
                 "resolvedPath": "tests/unit/item-refund-reservation-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/paypal-refund-authority.test.js",
+                "resolvedPath": "tests/unit/paypal-refund-authority.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -31369,29 +31585,19 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
-                "declared": "tests/unit/refunds-util.test.js",
-                "resolvedPath": "tests/unit/refunds-util.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
                 "declared": "tests/unit/sav-ledger-refund.test.js",
                 "resolvedPath": "tests/unit/sav-ledger-refund.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
-              }
-            ]
-          },
-          "utils": {
-            "count": 1,
-            "files": [
+              },
               {
-                "declared": "utils/refunds.js",
-                "resolvedPath": "utils/refunds.js",
-                "status": "resolved-in-technical-graph"
+                "declared": "tests/unit/stripe-refund-authority.test.js",
+                "resolvedPath": "tests/unit/stripe-refund-authority.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           }
         },
-        "totalFiles": 25,
+        "totalFiles": 29,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -31549,6 +31755,13 @@
         },
         {
           "provider": "market",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "notifications",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -34771,11 +34984,12 @@
       "perimeter": {
         "in": [
           "solde wallet et historique de credit/debit",
-          "application/retrait du wallet sur une commande (orders.wallet_applied_kmf)"
+          "application du wallet atomique au checkout (orders.wallet_applied_kmf) et restitution par annulation métier uniquement ; routes legacy apply/remove refusées en 409 (FA-01/02/15)"
         ],
         "out": [
           "paiement carte/PayPal (feature payments)",
           "remboursement initiateur (feature refunds, qui credite le wallet)",
+          "avoir admin depuis commande via endpoint legacy (FA-06 : route maintenue en 409, remboursement via refunds)",
           "programme de fidelite et ses recompenses (feature loyalty, scindee de wallet-loyalty au Lot O1)",
           "emission du recu wallet (services/documents/wallet-receipt.js, @domain documents — consommateur en aval, pas ownership wallet)"
         ]

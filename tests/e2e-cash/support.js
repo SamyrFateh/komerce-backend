@@ -33,9 +33,21 @@ function target() {
 }
 
 async function api(request, method, path, body) {
+  // L3/N06 : POST /api/orders porte le total accepté, lu dans l'aperçu serveur.
+  if (method === 'POST' && path === '/api/orders' && body && body.expected_total_kmf == null) {
+    const quote = await api(request, 'POST', '/api/orders/preview', body);
+    if (quote.status === 200 && Number.isSafeInteger(quote.json && quote.json.total_kmf)) {
+      body = { ...body, expected_total_kmf: quote.json.total_kmf };
+    }
+  }
   const response = await request.fetch(path, {
     method,
-    headers: { 'content-type': 'application/json', origin: target().base },
+    // FA-22 : POST /api/orders exige une Idempotency-Key (clé neuve par appel).
+    headers: {
+      'content-type': 'application/json', origin: target().base,
+      ...(method === 'POST' && path === '/api/orders'
+        ? { 'idempotency-key': `e2e-cash-${Date.now()}-${Math.random().toString(36).slice(2, 10)}` } : {}),
+    },
     data: body === undefined ? undefined : JSON.stringify(body),
     failOnStatusCode: false,
   });

@@ -1411,6 +1411,9 @@ const KNOWN_RESPONSES = {
   '/api/pickup/regenerate/{orderId}': {
     post: { fields: ['success','message','code','order_ref'], source: 'route-read' }
   },
+  '/api/pickup/customer-regenerate/{orderId}': {
+    post: { fields: ['success','order_ref','code','remaining_today'], source: 'route-read' }
+  },
   '/api/pickup/status/{orderId}': {
     get: { fields: ['order_ref','status','payment_status','total_kmf','client_name','tracking'], source: 'route-read' }
   },
@@ -1814,6 +1817,10 @@ const KNOWN_RESPONSES = {
   },
   '/api/hub/administration': {
     get: { fields: ['scope','markets','approval_trace_available','kpis','purchase_orders'], source: 'route-read' }
+  },
+  // H4 / #3998 : lecture centralisée multi-marchés pour la directrice du Hub.
+  '/api/hub/director-todo': {
+    get: { fields: ['generated_at','scope','overdue_after_hours','total','overdue_count','markets','tasks'], source: 'route-read' }
   },
   '/api/hub/board': {
     get: { fields: ['scope','markets','orders'], source: 'route-read' }

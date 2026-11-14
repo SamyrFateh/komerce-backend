@@ -2145,3 +2145,11 @@ describe('b-checkout', () => {
     });
   });
 });
+
+describe('récap checkout : produit manuel sans snapshot (#3900 R5)', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '../../js/b-checkout.js'), 'utf8');
+  test('nom et image retombent sur la ligne panier', () => {
+    expect(src).toContain("name: rawProduct.name || it.name || it.product_name || ''");
+    expect(src).toContain("image_url: rawProduct.image_url || rawProduct.image || it.image_url || it.image || ''");
+  });
+});

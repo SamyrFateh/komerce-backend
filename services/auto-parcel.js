@@ -8,9 +8,9 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       db, utils/logger.js, utils/reference.js
  * @used-by       routes/auto-distribute-api.js
- * @db-read       order_items, orders, parcel_items, parcels, relais, users, scan_events, scans, hub_box_bags, customs_shipment_parcels, incidents, invoices, order_item_real_cost_allocations
+ * @db-read       order_items, orders, parcel_items, parcels, purchase_lines, v_purchase_line_progress, relais, users, scan_events, scans, hub_box_bags, customs_shipment_parcels, incidents, invoices, order_item_real_cost_allocations
  * @db-write      parcel_items, parcels
- * @db-txn        resolve_before_behavior_change
+ * @db-txn        distributeOrder verrouille la commande (FOR UPDATE) ; transaction propre sans client fourni
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  logistics
  * @version       2026-06
@@ -48,7 +48,16 @@ async function nextParcelRef(client) {
 
 // ── Core: distribute one order ──────────────────────────────────
 async function distributeOrder(orderId, dbClient) {
-  const client = dbClient || db;
+  // H2 / HB-04 : la répartition d'une commande est sérialisée par un verrou de ligne sur la commande. Sans client fourni,
+  // on ouvre notre propre transaction (le verrou tient jusqu'au COMMIT) ; avec un client, l'appelant porte la transaction.
+  // Le second appelant concurrent attend, relit les lignes déjà colisées et sort en `already_assigned`.
+  if (!dbClient) return db.withTransaction((client) => distributeOrderLocked(orderId, client));
+  return distributeOrderLocked(orderId, dbClient);
+}
+
+async function distributeOrderLocked(orderId, dbClient) {
+  const client = dbClient;
+  await client.query('SELECT id FROM orders WHERE id = $1 FOR UPDATE', [orderId]);
 
   // Get order + relais info
   const { rows: [order] } = await client.query(`
@@ -88,7 +97,11 @@ async function distributeOrder(orderId, dbClient) {
   const { rows: allItems } = await client.query(`
     SELECT oi.id, oi.quantity, oi.product_id, oi.fulfillment_source,
            COALESCE((SELECT SUM(v.received_quantity)::int FROM v_purchase_line_progress v
-                      WHERE v.order_item_id = oi.id AND NOT v.cancelled), 0) AS received
+                      WHERE v.order_item_id = oi.id AND NOT v.cancelled), 0) AS received,
+           -- H1 / HB-02 : rupture définitive = au moins une ligne soldée, plus aucune ligne en attente de réception.
+           (EXISTS (SELECT 1 FROM purchase_lines pl WHERE pl.order_item_id = oi.id AND pl.cancelled_at IS NULL AND pl.settled_at IS NOT NULL)
+            AND NOT EXISTS (SELECT 1 FROM v_purchase_line_progress v
+                             WHERE v.order_item_id = oi.id AND NOT v.cancelled AND v.received_quantity < v.effective_quantity)) AS closed_short
       FROM order_items oi
      WHERE oi.order_id = $1
        AND NOT EXISTS (SELECT 1 FROM parcel_items pi JOIN parcels p ON p.id = pi.parcel_id AND p.status NOT IN ('cancelled')
@@ -98,20 +111,38 @@ async function distributeOrder(orderId, dbClient) {
 
   // Doctrine d'eligibilite : un colis ne contient que des articles du MEME circuit et PRETS. Jamais de melange local/import,
   // jamais d'article non approvisionne ou non recu avec des articles prets : ceux-la restent sans colis jusqu'a reception.
-  const laneOf = (item) => item.fulfillment_source === 'IMPORT'
-    ? (Number(item.received) >= Number(item.quantity || 1) ? 'import' : 'import_pending')
-    : 'local';
+  // Rupture définitive : le colis part avec la quantité reçue (le manquant est remboursé en amont).
+  const shortReceived = (item) => item.closed_short === true && Number(item.received) > 0 && Number(item.received) < Number(item.quantity || 1);
+  // LOCAL_STOCK n'a aucune étape Hub : réception physique et création du
+  // seul colis local sont du ressort de local-relay-receipt-service.
+  // Une commande mixte garde ses lignes locales en attente au relais tandis
+  // que ses lignes IMPORT reçues peuvent être réparties au Hub.
+  // Provenance inconnue = refus, jamais requalifiée implicitement en local.
+  const laneOf = (item) => {
+    if (item.fulfillment_source === 'LOCAL_STOCK') return 'local_direct';
+    if (item.fulfillment_source === 'IMPORT') {
+      return (Number(item.received) >= Number(item.quantity || 1) || shortReceived(item))
+        ? 'import' : 'import_pending';
+    }
+    throw new Error('AUTO_PARCEL_FULFILLMENT_SOURCE_UNKNOWN');
+  };
   const groups = new Map();
   const deferred = [];
+  let directLocalItems = 0;
   for (const item of allItems) {
     const lane = laneOf(item);
+    if (lane === 'local_direct') { directLocalItems++; continue; }
+    if (lane === 'import' && shortReceived(item)) item.quantity = Number(item.received);
     if (lane === 'import_pending') { deferred.push(item.id); continue; }
     if (!groups.has(lane)) groups.set(lane, []);
     groups.get(lane).push(item);
   }
   if (groups.size === 0) {
     return { success: true, order_ref: order.reference, nothing_eligible: true, deferred_items: deferred.length,
-      reason: 'Aucun article pret (import non recu au Hub) : aucun colis cree' };
+      local_direct_items: directLocalItems,
+      reason: directLocalItems && !deferred.length
+        ? 'LOCAL_STOCK : réception attestée directement au relais, aucun colis Hub'
+        : 'Aucun article IMPORT reçu au Hub : aucun colis créé' };
   }
 
   const relaisId = order.relais_id;
@@ -123,7 +154,8 @@ async function distributeOrder(orderId, dbClient) {
     outcomes.push({ ...outcome, lane });
   }
   const { lane: _lane, ...first } = outcomes[0];
-  const extra = deferred.length ? { deferred_items: deferred.length } : {};
+  const extra = { ...(deferred.length ? { deferred_items: deferred.length } : {}),
+    ...(directLocalItems ? { local_direct_items: directLocalItems } : {}) };
   return outcomes.length === 1
     ? { ...first, ...extra }
     : { ...first, parcels: outcomes.map(o => ({ parcel_ref: o.parcel_ref, lane: o.lane, items_assigned: o.items_assigned })), ...extra };
@@ -251,6 +283,7 @@ async function distributeAll() {
       AND EXISTS (
         SELECT 1 FROM order_items oi
          WHERE oi.order_id = o.id
+           AND oi.fulfillment_source = 'IMPORT'
            AND NOT EXISTS (SELECT 1 FROM parcel_items pi JOIN parcels p ON p.id = pi.parcel_id AND p.status NOT IN ('cancelled')
                             WHERE pi.order_item_id = oi.id)
       )
@@ -327,6 +360,8 @@ async function getDistribution() {
     LEFT JOIN users u ON u.id = o.user_id
     LEFT JOIN relais r ON r.id = o.relais_id
     WHERE o.status IN ('ordered', 'preparation')
+      AND EXISTS (SELECT 1 FROM order_items oi
+                   WHERE oi.order_id = o.id AND oi.fulfillment_source = 'IMPORT')
       AND NOT EXISTS (
         SELECT 1 FROM parcel_items pi
         JOIN order_items oi ON oi.id = pi.order_item_id

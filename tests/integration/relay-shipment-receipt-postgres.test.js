@@ -122,6 +122,9 @@ if (!process.env.DATABASE_URL) {
       .rejects.toMatchObject({ status: 400, code: 'RELAY_RECEIPT_PROOF_REQUIRED' });
     await expect(relay.receiveShipment({ market, actor: agentA, reference: ref, body: { proof_ref: 'P', lines: [{ order_item_id: items.a.itemId, received_qty: -1 }] } }))
       .rejects.toMatchObject({ status: 400 });
+    // #3900 R6 : reçu > expédié refusé côté serveur, aucune attestation écrite.
+    await expect(relay.receiveShipment({ market, actor: agentA, reference: ref, body: { proof_ref: 'P', lines: [{ order_item_id: items.a.itemId, received_qty: 4 }] } }))
+      .rejects.toMatchObject({ status: 409, code: 'RELAY_RECEIPT_EXCEEDS_SHIPPED' });
   });
 
   test('réception avec écart : attestation immuable + incident traçable ; l\'expédition n\'est pas reçue tant qu\'un relais n\'a pas attesté', async () => {

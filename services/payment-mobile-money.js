@@ -331,6 +331,19 @@ async function initiateMobileMoney({ orderReference, msisdn = null }) {
 }
 
 function providerContractMatches(tx, providerResult) {
+  // MTN validates the synthetic amount and currency against its sandbox
+  // contract before returning. Both initiation and readback must attest it.
+  const verifiedMtnSandbox = tx.provider === 'mtn_momo'
+    && tx.provider_payload?.provider?.sandbox_transport === true
+    && providerResult.safePayload?.sandbox_transport === true;
+  if (providerResult.status === 'succeeded' && !verifiedMtnSandbox) {
+    if (providerResult.amount == null || String(providerResult.amount).trim() === '') {
+      return { ok: false, reason: 'amount_missing' };
+    }
+    if (!providerResult.currency || String(providerResult.currency).trim() === '') {
+      return { ok: false, reason: 'currency_missing' };
+    }
+  }
   if (providerResult.currency && String(providerResult.currency).toUpperCase() !== String(tx.currency).toUpperCase()) {
     return { ok: false, reason: 'currency_mismatch' };
   }
@@ -405,6 +418,14 @@ async function finalizeSucceededTransaction(tx, providerResult) {
             WHERE id=$1`,
           [locked.id, providerResult.providerStatus || 'SUCCESSFUL']
         );
+        await createAlert(client, {
+          type: 'mobile_money_capture_reconciliation_required',
+          entityType: 'order',
+          entityId: locked.order_id,
+          severity: 'high',
+          title: `Mobile Money encaissé sur une commande déjà payée — ${orderReference}`,
+          description: `provider=${locked.provider} transaction=${locked.external_transaction_id || locked.id} montant=${providerResult.amount} devise=${providerResult.currency}`,
+        });
       }
       await client.query('COMMIT');
       return { alreadyPaid: true, stockBlocked: false, transactionId: locked.id };

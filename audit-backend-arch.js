@@ -284,11 +284,16 @@ const STATE_MACHINE_PAYMENT_SOURCES = new Set([
   'shared_cart_full_payment', 'paypal_capture',
 ]);
 
+// Source de remboursement PSP vérifié : branche spéciale de la state machine
+// (newStatus='refunded' uniquement). Ne pas classer comme forward-only.
+const STATE_MACHINE_REFUND_SOURCES = new Set(['refund_external']);
+
 // Union : toutes les sources reconnues
 const STATE_MACHINE_ALL_SOURCES = new Set([
   ...STATE_MACHINE_FORWARD_SOURCES,
   ...STATE_MACHINE_PATCH_SOURCES,
   ...STATE_MACHINE_PAYMENT_SOURCES,
+  ...STATE_MACHINE_REFUND_SOURCES,
 ]);
 
 // Exemptions : chaos-testing — transitions délibérément incohérentes

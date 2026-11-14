@@ -26,7 +26,7 @@ if (!hasEnv) {
     test('skipped', () => {});
   });
 } else {
-  const request = require('supertest');
+  const request = require('../helpers/supertest-order-key');
   const { createUser, cleanup } = require('./test-harness/seed-helpers');
   let app;
 

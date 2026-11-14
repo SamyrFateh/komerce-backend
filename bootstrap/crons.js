@@ -202,6 +202,7 @@ function startOperationalCrons() {
   startPublicFxReferenceCron(); // BCE cotations publiques, EUR pivot, refresh 7j/7
   startOutboxWorkerCron(); // HUB-000 F0 — consommateur durable de l'outbox (reçus d'audit)
   startFinancialJournalCron(); // Lot 5 — projection idempotente du journal financier
+  startPurchasingCompletionSweepCron(); // H1 — rattrapage des commandes reçues restées ordered
 }
 
 // HUB-000 F3 — SLA incident : composition root uniquement.
@@ -378,8 +379,30 @@ function startJwtRevocationCleanupCron() {
   log.info({ interval_h: 1 }, 'JWT revocation cleanup cron scheduled');
 }
 
+// H1 (HB-01) : balayage idempotent des commandes `ordered` entièrement reçues (reprise après redémarrage / rejeu).
+function startPurchasingCompletionSweepCron({ intervalMs = 10 * 60 * 1000, initialDelayMs = 120 * 1000 } = {}) {
+  let running = false;
+  const run = async () => {
+    if (running) return;
+    running = true;
+    try {
+      const { sweepStalledOrders } = require('../services/purchasing-completion-service');
+      const swept = await sweepStalledOrders();
+      if (swept.ordered || swept.distributed || swept.errors) log.info(swept, 'Purchasing completion sweep');
+    } catch (err) {
+      log.error({ err }, 'Purchasing completion sweep failed');
+    } finally {
+      running = false;
+    }
+  };
+  setTimeout(run, initialDelayMs).unref?.();
+  setInterval(run, intervalMs).unref?.();
+  log.info({ interval_min: intervalMs / 60000 }, 'Purchasing completion sweep cron scheduled');
+}
+
 // V4.1 — Machine d'état panier partagé.
 module.exports = {
+  startPurchasingCompletionSweepCron,
   startOperationalCrons,
   startPublicFxReferenceCron,
   startCashRelaisCron,

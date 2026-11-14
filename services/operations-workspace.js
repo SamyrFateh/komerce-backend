@@ -8,7 +8,7 @@
  * @outputs       market_scoped_operations_work_queue, delegated_domain_mutations
  * @depends       db, services/order-status-machine.js, services/auto-parcel.js, services/scan-engine.js, services/inventory-service.js, services/parcel-auto-create-service.js, services/operations-relay-projection.js
  * @used-by       routes/admin-operations-workspace.js
- * @db-read       orders, order_items, parcels, parcel_items, products, relais, users, inventory_items, order_incidents, hub_box_bags, e2e_test_accounts
+ * @db-read       orders, order_items, parcels, parcel_items, products, relais, users, inventory_items, order_incidents, hub_box_bags, e2e_test_accounts, cash_collections
  * @db-write      order_comments
  * @db-write-via:order-status-machine product_variants, order_status_history, products
  * @db-write-via:auto-parcel parcel_items, parcels
@@ -79,6 +79,7 @@ async function queryOrders(marketId, relaisId = null, includeSimulation = false)
                 JOIN order_items linked_oi ON linked_oi.id = local_pi.order_item_id
                 WHERE linked_oi.order_id = o.id AND linked_oi.fulfillment_source = 'LOCAL_STOCK')
             ) AS local_receipt_candidate,
+            EXISTS (SELECT 1 FROM cash_collections cc WHERE cc.order_id = o.id) AS cash_confirmed,
             u.full_name AS client_name,
             r.name AS relais_name, r.island AS relais_island,
             (SELECT COUNT(*)::int FROM order_items oi WHERE oi.order_id = o.id) AS item_count
@@ -335,7 +336,9 @@ function buildQueues(orders, parcels, viewer = null) {
       cash_pending: orders.filter(row =>
         row.status === 'pending' &&
         ['cash_relais', 'cash_relay'].includes(row.payment_mode) &&
-        row.payment_status !== 'paid'
+        row.payment_status !== 'paid' &&
+        // Cash déjà encaissé (cash_collections) : jamais re-proposé à l'encaissement.
+        row.cash_confirmed !== true
       ),
       // Projection d'attente, jamais une attestation physique. La mutation
       // conserve ses gardes serveur (paiement, allocations, rôle et relais).
@@ -481,14 +484,16 @@ async function runDistribution(market) {
        LEFT JOIN relais r ON r.id = o.relais_id
       WHERE o.market_id = $1
         AND o.status IN ('ordered', 'preparation')
-        AND NOT EXISTS (
-          SELECT 1
-            FROM parcel_items pi
-            JOIN order_items oi ON oi.id = pi.order_item_id
-            JOIN parcels p ON p.id = pi.parcel_id AND p.status <> 'cancelled'
+        AND EXISTS (
+          SELECT 1 FROM order_items oi
            WHERE oi.order_id = o.id
+             AND oi.fulfillment_source = 'IMPORT'
+             AND NOT EXISTS (
+               SELECT 1 FROM parcel_items pi
+               JOIN parcels p ON p.id = pi.parcel_id AND p.status <> 'cancelled'
+               WHERE pi.order_item_id = oi.id
+             )
         )
-        AND EXISTS (SELECT 1 FROM order_items oi WHERE oi.order_id = o.id)
       ORDER BY o.created_at ASC`,
     [resolvedMarket.id]
   );
@@ -511,6 +516,7 @@ async function runDistribution(market) {
         success: Boolean(result && result.success),
         queued: Boolean(result && result.queued),
         already_assigned: Boolean(result && result.already_assigned),
+        nothing_eligible: Boolean(result && result.nothing_eligible),
         parcel_ref: result && result.parcel_ref ? result.parcel_ref : null,
         error: result && result.error ? result.error : null,
       });
@@ -520,6 +526,7 @@ async function runDistribution(market) {
         success: false,
         queued: false,
         already_assigned: false,
+        nothing_eligible: false,
         parcel_ref: null,
         error: err.message,
       });
@@ -529,7 +536,7 @@ async function runDistribution(market) {
   return Object.freeze({
     market: resolvedMarket.code,
     attempted: rows.length,
-    distributed: details.filter(row => row.success && !row.queued && !row.already_assigned).length,
+    distributed: details.filter(row => row.success && !row.queued && !row.already_assigned && !row.nothing_eligible).length,
     queued: details.filter(row => row.queued).length,
     already_assigned: details.filter(row => row.already_assigned).length,
     errors: details.filter(row => !row.success).length,

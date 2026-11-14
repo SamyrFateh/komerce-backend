@@ -363,9 +363,9 @@ function mountHtmlRoutes(app, rootDir) {
   app.get('/relais', (req, res) => {
     sendHtml(res, path.join(publicDir, 'relais', 'index.html'));
   });
-  app.get('/hub', (req, res) => {
-    sendHtml(res, path.join(publicDir, 'hub', 'index.html'));
-  });
+  // L'ancien écran n'est plus une autorité d'écriture. La page statique /hub/
+  // renvoie aussi vers le cockpit canonique quand express.static répond avant.
+  app.get('/hub', (_req, res) => res.redirect(302, '/admin/hub'));
 
   app.get('/event/create', (req, res) => redirectToBoutique(res));
   app.get('/event/manage/:creatorToken', (req, res) => redirectToBoutique(res));
@@ -378,6 +378,20 @@ function mountHtmlRoutes(app, rootDir) {
     sendHtml(res, path.join(publicDir, 'boutique', 'index.html'));
   });
   app.get('/boutique', (req, res) => {
+    sendHtml(res, path.join(publicDir, 'boutique', 'index.html'));
+  });
+
+  // Entrées publiques pays : une seule boutique, catalogue/prix/relais résolus
+  // par le contexte URL côté client puis par les API marché côté serveur.
+  // L'alias /boutique et la racine restent compatibles (marché KM par défaut).
+  app.get(/^\/(KM|CM|CG|DJ|YT)\/?$/i, (req, res) => {
+    const code = req.params[0].toUpperCase();
+    const canonicalPath = '/' + code;
+    if (req.path !== canonicalPath) {
+      const queryAt = req.originalUrl.indexOf('?');
+      const query = queryAt < 0 ? '' : req.originalUrl.slice(queryAt);
+      return res.redirect(301, canonicalPath + query);
+    }
     sendHtml(res, path.join(publicDir, 'boutique', 'index.html'));
   });
   app.get('/login.html', (req, res) => {

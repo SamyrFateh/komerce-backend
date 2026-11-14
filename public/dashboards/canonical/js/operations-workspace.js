@@ -418,6 +418,15 @@
     manualProof.placeholder = 'Mode dégradé : justification de la saisie manuelle (6 caractères min.)';
     manualProof.setAttribute('aria-label', 'Justification de la réception en saisie manuelle');
     manualProof.setAttribute('data-receive-manual-proof', '');
+    manualProof.hidden = true;
+    // Interrupteur explicite : un scanner émule un clavier, la frappe seule ne prouve pas la provenance.
+    const manualToggleLabel = text(doc, 'label', 'kmc-workspace-receive-manual-toggle', 'Saisie manuelle (sans scanner) ');
+    const manualToggle = doc.createElement('input');
+    manualToggle.type = 'checkbox';
+    manualToggle.setAttribute('data-receive-manual-toggle', '');
+    manualToggle.setAttribute('aria-label', 'Saisie manuelle : provenance MANUAL avec justification obligatoire');
+    manualToggleLabel.appendChild(manualToggle);
+    scannerPanel.appendChild(manualToggleLabel);
     scannerPanel.appendChild(manualProof);
     card.appendChild(scannerPanel);
 
@@ -487,10 +496,11 @@
           contents.push({
             purchase_order_id: po.purchase_order_id,
             ...(line.product_sku_id ? { product_sku_id: line.product_sku_id } : {}),
-            ...(scannedCodeBySku.has(String(line.product_sku_id)) ?
-              { evidence_code: scannedCodeBySku.get(String(line.product_sku_id)) }
-              : (line.product_sku_id && String(manualProof.value || '').trim().length >= 6
-                ? { evidence_method: 'MANUAL', evidence_ref: String(manualProof.value).trim() } : {})),
+            ...(manualToggle.checked
+              ? (line.product_sku_id && String(manualProof.value || '').trim().length >= 6
+                ? { evidence_method: 'MANUAL', evidence_ref: String(manualProof.value).trim() } : {})
+              : (scannedCodeBySku.has(String(line.product_sku_id))
+                ? { evidence_code: scannedCodeBySku.get(String(line.product_sku_id)) } : {})),
             quantity,
           });
         }
@@ -504,11 +514,20 @@
       button.disabled = invalid || contents.length === 0 || unverified;
       hint.textContent = invalid
         ? 'Quantité invalide : entier entre 0 et le restant attendu.'
-        : unverified ? 'Scanner toutes les références reçues, ou justifier la saisie manuelle (mode dégradé).'
+        : unverified ? (manualToggle.checked
+          ? 'Saisie manuelle : justification de 6 caractères minimum obligatoire.'
+          : 'Scanner toutes les références reçues, ou activer « Saisie manuelle » et la justifier.')
         : 'Quantité réellement comptée et références scannées : prêt à enregistrer.';
     }
     inputs.forEach(({ input }) => input.addEventListener('input', sync));
     manualProof.addEventListener('input', sync);
+    manualToggle.addEventListener('change', () => {
+      manualProof.hidden = !manualToggle.checked;
+      scannerResult.textContent = manualToggle.checked
+        ? 'Saisie manuelle active : provenance MANUAL, justification obligatoire.'
+        : 'Scanner la référence avant de déclarer sa quantité reçue.';
+      sync();
+    });
     let scanning = false;
     const PHYSICAL_CODE_TYPES = Object.freeze([
       ['EAN_GTIN', 'EAN / GTIN imprimé (universel)'],
@@ -613,7 +632,7 @@
           ? `Référence confirmée : ${candidate.line.product_name}. Comptez puis saisissez la quantité réellement reçue.`
           : `Référence fournisseur déclarée : ${candidate.line.product_name}. Vérification physique du code à confirmer.`;
         scannerResult.dataset.scanTone = matched.confirmed ? 'success' : 'warning';
-        if (matched.confirmed) {
+        if (matched.confirmed && !manualToggle.checked) {
           scannedCodeBySku.set(String(candidate.line.product_sku_id), String(matched.code));
         }
         sync();
@@ -1298,8 +1317,11 @@
           boxScan.value=context.hubVerifiedBoxes[String(box.unit_id)]||'';
           const bagScan=field('Scanner le sac client','Scanner référence du sac client');
           bagScan.setAttribute('data-hub-bag-scan','');
+          // Le serveur déduit le colis import unique de la commande du sac.
+          // Sélection explicite uniquement pour l'exception : plusieurs colis possibles.
           const parcel=doc.createElement('select');
-          parcel.setAttribute('aria-label','Colis client rattaché au sac scanné');
+          parcel.setAttribute('aria-label','Colis client si plusieurs colis pour ce sac');
+          parcel.hidden=true;
           const add=makeActionButton(doc,'Placer le sac','put-bag-in-box');
           const boxMethod=doc.createElement('select');
           boxMethod.setAttribute('aria-label','Mode de preuve du rattachement dans '+box.reference);
@@ -1317,18 +1339,19 @@
           });
           const identify=()=>{
             const bag=readyBags.find(b=>b.reference===bagScan.value.trim());
-            const previousParcel=parcel.value;
+            const matching=bag?(d.client_parcels||[]).filter(p=>String(p.order_id)===String(bag.order_id)):[];
+            const selected=parcel.value;
+            const ambiguous=matching.length>1;
             parcel.replaceChildren();
-            parcel.appendChild(Object.assign(doc.createElement('option'),{
-              value:'',textContent:bag?'Choisir le colis client…':'Scanner un sac identifié…',
-            }));
-            if(bag) (d.client_parcels||[]).filter(p=>String(p.order_id)===String(bag.order_id))
-              .forEach(p=>parcel.appendChild(Object.assign(doc.createElement('option'),{
+            if(ambiguous){
+              parcel.appendChild(Object.assign(doc.createElement('option'),{value:'',textContent:'Choisir le colis client (cas exceptionnel)…'}));
+              matching.forEach(p=>parcel.appendChild(Object.assign(doc.createElement('option'),{
                 value:p.id,textContent:p.reference+' · '+bag.order_ref,
               })));
-            if([...parcel.options].some(opt=>opt.value===previousParcel))parcel.value=previousParcel;
-            else if(parcel.options.length===2)parcel.selectedIndex=1;
-            add.disabled=!(bag&&boxScan.value.trim()===box.reference&&parcel.value);
+              if(matching.some(p=>p.id===selected))parcel.value=selected;
+            }
+            parcel.hidden=!ambiguous;
+            add.disabled=!(bag&&boxScan.value.trim()===box.reference&&(!ambiguous||parcel.value));
             return bag;
           };
           boxScan.addEventListener('input',()=>{
@@ -1344,12 +1367,12 @@
           });
           bagScan.addEventListener('input',identify);
           bagScan.addEventListener('keydown',event=>{
-            if(event.key==='Enter'){event.preventDefault();identify();parcel.focus();}
+            if(event.key==='Enter'){event.preventDefault();identify();(parcel.hidden?boxMethod:parcel).focus();}
           });
           parcel.addEventListener('change',identify);
           add.addEventListener('click',()=>{
             const bag=readyBags.find(b=>b.reference===bagScan.value.trim());
-            if(!bag||boxScan.value.trim()!==box.reference||!parcel.value)return;
+            if(!bag||boxScan.value.trim()!==box.reference||(!parcel.hidden&&!parcel.value))return;
             const manualBox=boxMethod.value==='MANUAL';
             const boxProofRef=String(boxProof.value||'').trim();
             if(manualBox&&boxProofRef.length<6){
@@ -1359,7 +1382,7 @@
             runAction(context,add,{
               url:endpointFor(context.marketCode,'boxes/'+encodeURIComponent(box.unit_id)+'/bags'),
               body:{
-                bag_unit_id:bag.unit_id,parcel_id:parcel.value,
+                bag_unit_id:bag.unit_id,...(!parcel.hidden?{parcel_id:parcel.value}:{}),
                 bag_reference_scan:bagScan.value.trim(),box_reference_scan:boxScan.value.trim(),
                 ...(manualBox?{evidence_method:'MANUAL',evidence_ref:boxProofRef}:{evidence_method:'SCAN'}),
               },
@@ -2347,6 +2370,7 @@
               const input = doc.createElement('input');
               input.type = 'number';
               input.min = '0';
+              input.max = String(item.expected);
               input.step = '1';
               input.placeholder = '0 à ' + item.expected;
               input.setAttribute('aria-label', 'Reçu ' + item.product);
@@ -2389,6 +2413,10 @@
             const qty = Number(input.value);
             if (!Number.isInteger(qty) || qty < 0) {
               setFeedback(context.root, 'Quantité reçue invalide pour ' + item.product + '.', 'critical');
+              return;
+            }
+            if (qty > Number(item.expected)) {
+              setFeedback(context.root, 'Reçu supérieur à l’expédié pour ' + item.product + ' (' + formatNumber(item.expected) + ' max).', 'critical');
               return;
             }
             lines.push({ order_item_id: item.order_item_id, received_qty: qty });

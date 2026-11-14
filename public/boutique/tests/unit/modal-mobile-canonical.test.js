@@ -79,6 +79,12 @@ describe('modal-mobile-canonical.css - suggestion responsibilities', () => {
     );
   });
 
+  test('V4 mobile — galerie 16:9, favori 44px overlay, détails hiérarchisés', () => {
+    expect(css).toMatch(/aspect-ratio:\s*16 \/ 9/);
+    expect(css).toMatch(/#k-modal \.k-modal-img-wrap > \.k-modal-fav-btn\s*\{[^}]*position:\s*absolute[^}]*width:\s*44px[^}]*height:\s*44px/s);
+    expect(css).toMatch(/\.k-mdm-details-title\s*\{[^}]*font-size:\s*19px/s);
+  });
+
   test('uses compact color, size and delivery controls below the hero', () => {
     expect(css).toMatch(
       /#k-modal\s+\.k-sku-color-dot\s*\{[^}]*width:\s*30px[^}]*height:\s*30px/s

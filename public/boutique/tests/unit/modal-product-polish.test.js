@@ -93,7 +93,7 @@ describe('modal-product-polish — invariants topbar responsive', () => {
     )?.[1] ?? '';
 
     expect(product).toMatch(
-      /max-width\s*:\s*calc\(50%\s*-\s*34px\)/
+      /max-width\s*:\s*none/
     );
     expect(product).toMatch(/margin-left\s*:\s*0/);
   });

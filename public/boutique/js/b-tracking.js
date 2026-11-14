@@ -98,6 +98,13 @@ export function formatOrderDate(isoDate) {
   } catch(e) { return ''; }
 }
 
+// Le détail serveur (GET /api/orders/:ref) expose total_kmf, la liste tracking totalKmf : lecture
+// directe du champ serveur, jamais de recalcul côté client (0 KMF affiché à tort sur total_amount seul).
+function orderTotalKmf(order) {
+  const value = order && (order.total_amount ?? order.total_kmf ?? order.totalKmf);
+  return Number(value) || 0;
+}
+
 export function renderOrdersHistory(orders, container) {
   if (!orders.length) {
     container.innerHTML = '<div class="k-search-empty">Aucune commande trouvée.</div>';
@@ -109,16 +116,17 @@ export function renderOrdersHistory(orders, container) {
         <span class="k-order-ref">${sanitize(o.reference || o.id || "")}</span>
         <span class="k-order-date">${o.created_at ? new Date(o.created_at).toLocaleDateString('fr-FR') : ''}</span>
       </div>
-      <div class="k-order-card-total">${fmt(o.total_amount || 0, 'KMF')}</div>
+      <div class="k-order-card-total">${fmt(orderTotalKmf(o), 'KMF')}</div>
       <div class="k-track-steps k-track-steps--compact">${buildTimeline(o.status || 'pending')}</div>
     </div>`).join('');
 }
 
 function essentialDocumentLabel(documentRow, order) {
   if (documentRow.document_type === 'invoice') return 'Facture';
+  if (documentRow.document_type === 'pickup_proof') return 'Preuve de retrait';
   if (documentRow.document_type !== 'refund_receipt') return null;
   const refunded = Number(documentRow.amount_kmf || 0);
-  const total = Number(order.total_amount ?? order.total_kmf ?? 0);
+  const total = orderTotalKmf(order);
   return refunded > 0 && total > 0 && refunded >= total
     ? 'Remboursement total'
     : 'Remboursement partiel';
@@ -197,6 +205,43 @@ function appendEssentialOrderResources(container, order, resources) {
   container.querySelector('.k-order-card')?.appendChild(section);
 }
 
+// #3900 R1 : le propriétaire d'une commande prête au retrait génère un nouveau
+// code (rotation serveur, ancien code invalidé, affiché une seule fois).
+function appendPickupCodeAction(container, order) {
+  if (order.status !== 'available' || !order.id) return;
+  const section = document.createElement('section');
+  section.className = 'k-order-essentials k-order-pickup-code';
+  const title = document.createElement('h3');
+  title.textContent = 'Code de retrait';
+  const hint = document.createElement('p');
+  hint.textContent = 'Code perdu ? Générez-en un nouveau : l\u2019ancien ne fonctionnera plus.';
+  const out = document.createElement('div');
+  out.className = 'k-pickup-code-output';
+  out.setAttribute('aria-live', 'polite');
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'k-order-pickup-code-generate';
+  button.textContent = 'Générer un nouveau code';
+  button.addEventListener('click', async () => {
+    if (button.disabled) return;
+    // La rotation est irréversible : l'ancien code cesse immédiatement de fonctionner.
+    if (!window.confirm('Générer un nouveau code de retrait ? L’ancien code ne sera plus valable.')) return;
+    button.disabled = true;
+    try {
+      const res = await apiPost('/api/pickup/customer-regenerate/' + encodeURIComponent(order.id), {});
+      out.textContent = 'Votre code : ' + res.code + ' — notez-le maintenant, il ne sera plus affiché.';
+    } catch (err) {
+      out.textContent = err?.status === 429
+        ? 'Limite atteinte (5 codes par 24 h).'
+        : 'Impossible de générer un code pour le moment.';
+    } finally {
+      button.disabled = false;
+    }
+  });
+  section.append(title, hint, button, out);
+  container.querySelector('.k-order-card')?.appendChild(section);
+}
+
 export function renderOrderDetail(order, container, { privateResources = null } = {}) {
   container.innerHTML = `
     <div class="k-order-card">
@@ -204,10 +249,11 @@ export function renderOrderDetail(order, container, { privateResources = null } 
         <span class="k-order-ref">${sanitize(order.reference || order.id || "")}</span>
         <span class="k-order-date">${order.created_at ? new Date(order.created_at).toLocaleDateString('fr-FR') : ''}</span>
       </div>
-      <div class="k-order-card-total">${fmt(order.total_amount || 0, 'KMF')}</div>
+      <div class="k-order-card-total">${fmt(orderTotalKmf(order), 'KMF')}</div>
       <div class="k-track-steps">${buildTimeline(order.status || 'pending')}</div>
     </div>`;
   appendEssentialOrderResources(container, order, privateResources);
+  appendPickupCodeAction(container, order);
 }
 
 export function renderMyOrdersList(el, orders) {

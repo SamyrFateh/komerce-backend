@@ -26,6 +26,10 @@
  *   revealOnce             — introuvable / ownership / pending / déjà révélé / expiré / cache absent / nominal
  */
 
+jest.mock('../../services/pickup-agent-lockout', () => ({
+  checkAgentLockout: jest.fn(async () => ({ locked: false })),
+  recordAgentFailure: jest.fn(async () => ({ count: 1, justLocked: false })),
+}));
 jest.mock('../../db', () => {
   const query = jest.fn();
   return {

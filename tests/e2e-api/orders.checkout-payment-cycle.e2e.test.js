@@ -36,7 +36,7 @@
  *   - [payments] un paiement confirmé ne peut être confirmé deux fois
  */
 
-const request = require('supertest');
+const request = require('../helpers/supertest-order-key');
 const express = require('express');
 const Stripe = require('stripe');
 const { signAuthToken } = require('../../utils/auth-session');

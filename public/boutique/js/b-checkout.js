@@ -1693,7 +1693,13 @@ function _buildRecapItemsBlock(
   const appendRow = (target, entry) => {
     const it = entry.item;
     const index = entry.index;
-    const product = it.product || {};
+    // Ligne sans snapshot produit (produit manuel / Fournisseur central) : nom et image restent lus
+    // sur la ligne panier elle-même, jamais perdus.
+    const rawProduct = it.product || {};
+    const product = Object.assign({}, rawProduct, {
+      name: rawProduct.name || it.name || it.product_name || '',
+      image_url: rawProduct.image_url || rawProduct.image || it.image_url || it.image || '',
+    });
     const imgSrc = product.image_url
       ? optimizeImgUrl(product.image_url, 128)
       : '';

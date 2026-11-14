@@ -34,6 +34,13 @@
  *   Cette séparation est nécessaire pour calculer la contribution
  *   (prix - N1 - N2) sans transformer N3 en dette du SKU.
  *
+ *   ME-05 (2026-11-14) : pour les snapshots créés à partir de ce lot,
+ *   estimated_business_complete_cost_kmf = N1 + N2 (nom legacy conservé),
+ *   estimated_fixed_overhead_kmf = NULL et orders.cost_estimated_kmf = N1 + N2.
+ *   Les snapshots antérieurs peuvent contenir de la N3 dans ces champs
+ *   (estimated_fixed_overhead_kmf non NULL => snapshot « pré-ME-05 ») ; ils
+ *   ne sont pas réécrits.
+ *
  *   Le snapshot est stocké dans order_item_cost_imputations avec contrainte
  *   UNIQUE sur order_item_id => idempotent par construction.
  *
@@ -175,8 +182,13 @@ async function lockEstimatedCostsForOrder(orderId, dbClient, options = {}) {
 
     const estLandedTotal = canonical.n1 != null ? canonical.n1 * quantity : null;
     const estBusinessVariableTotal = canonical.n2 != null ? canonical.n2 * quantity : null;
-    const estFixedOverheadTotal = canonical.n3 != null ? canonical.n3 * quantity : null;
-    const estBusinessTotal = canonical.cdr != null ? canonical.cdr * quantity : null;
+    // ME-05 : N3 = structure de période, jamais imputée à l'article ni à la commande.
+    // Le coût estimé de commande = N1 + N2 uniquement (indépendant de l'objectif de volume).
+    // La N3 n'est pas figée ici (colonne NULL) ; la couverture de période la lit au niveau période.
+    const estFixedOverheadTotal = null;
+    const estBusinessTotal = canonical.n1 != null && canonical.n2 != null
+      ? (canonical.n1 + canonical.n2) * quantity
+      : null;
 
     let estMarginKmf = null;
     let estMarginPct = null;

@@ -8,7 +8,7 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 - Healthy : **34**
 - Attention : **6**
 - Blocked : **0**
-- Business dependencies : **327**
+- Business dependencies : **329**
 - Direct cross-feature imports : **0**
 - Runtime cycles : **0**
 - Ambiguous ownership signals : **0**
@@ -40,27 +40,27 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 | documents | business-transversal | 🟢 HEALTHY | 🟢 HEALTHY | invoices, transaction_documents | auth, auth-identity, catalog, customs, infrastructure, logistics, orders, refunds, wallet | admin-dashboard, auth-identity, customs, dashboard, logistics, orders, payments, platform-ops, purchasing, refunds, wallet | 0 |
 | economic-engine | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | charges, competitor_prices, cost_benchmarks, cost_component_events, cost_component_market_override_events, cost_component_market_overrides, cost_components, economic_risk_cost_events, economic_risk_watermark_events, economic_snapshots, economic_structure_cost_events, exchange_rates, finance_config, financial_movement_documents, financial_movements, international_n1_reconciliations, market_cost_attributions, market_price_observation_events, market_price_observations, order_cost_entry_events, order_item_real_cost_allocations, price_history, pricing_category_dims, pricing_category_taxes, pricing_components, pricing_market_decision_policy_events, pricing_matrices_audit, pricing_maturity_disposition_events, pricing_strategies, pricing_strategy_history, risk_provisions | auth, auth-identity, business-rules, catalog, customs, dashboard, infrastructure, local-stock, logistics, loyalty, market, market-autonomy, market-delegation, orders, platform-ops, refunds | admin-dashboard, catalog, customs, dashboard, decision-signals, infrastructure, loyalty, market-autonomy, market-control-plane, market-delegation, orders, platform-ops, purchasing, refunds, sourcing | 0 |
 | external-provider-contracts | technical-transversal | 🟡 ATTENTION | 🟢 HEALTHY | _aucune_ | _aucune_ | catalog, dashboard, purchasing, supplier-connectivity | 1 |
-| incident-management | business-transversal | 🟢 HEALTHY | 🟢 HEALTHY | incidents | decision-signals, infrastructure, logistics, orders | dashboard, logistics, notifications, payments, platform-ops | 0 |
+| incident-management | business-transversal | 🟢 HEALTHY | 🟢 HEALTHY | incidents | decision-signals, infrastructure, logistics, orders | dashboard, logistics, notifications, payments, platform-ops, purchasing | 0 |
 | infrastructure | technical-foundation | 🟢 HEALTHY | 🟢 HEALTHY | outbox_events, physical_outcome_receipts, schema_migrations | auth, catalog, customs, dashboard, economic-engine, inventory, logistics, market, notifications, orders, payments, platform-ops, recommendations, shared-cart, wallet | auth, auth-identity, auth-passkey, business-rules, catalog, customs, dashboard, decision-signals, documents, economic-engine, incident-management, inventory, local-stock, logistics, loyalty, market, market-autonomy, market-control-plane, market-delegation, market-operator-dashboard, notifications, orders, payments, platform-ops, providers-services, purchasing, recommendations, refunds, settlement, shared-cart, sourcing, unsold-resolution, wallet | 0 |
 | inventory | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | inventory_items | auth, catalog, infrastructure, logistics, orders | admin-dashboard, dashboard, infrastructure | 0 |
 | legacy-control-tower | deprecated | 🟢 HEALTHY | 🟢 HEALTHY | _aucune_ | _aucune_ | _aucune_ | 0 |
 | local-stock | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | local_stock, local_stock_allocations | catalog, infrastructure, logistics, market | dashboard, economic-engine, logistics, market-delegation, orders, providers-services, recommendations | 0 |
-| logistics | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | carriers, hub_box_bags, hub_custody_events, hub_physical_unit_placements, hub_physical_units, hub_purchase_allocations, international_shipment_charges, international_shipment_events, international_shipment_hub_units, international_shipment_relay_receipts, international_shipments, market_transport_sale_rates, parcel_events, parcel_items, parcels, pickup_print_tokens, pickup_reveal_codes, pickup_verify_attempts, product_sku_physical_codes, relais, relay_product_return_receipts, scan_events, scans, shipments | auth, auth-identity, business-rules, catalog, customs, documents, incident-management, infrastructure, local-stock, loyalty, market, market-delegation, notifications, orders, payments, purchasing, refunds | admin-dashboard, auth-identity, catalog, customs, dashboard, decision-signals, documents, economic-engine, incident-management, infrastructure, inventory, local-stock, market-control-plane, market-delegation, notifications, orders, payments, platform-ops, purchasing, recommendations, refunds | 0 |
+| logistics | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | carriers, hub_box_bags, hub_custody_events, hub_physical_unit_placements, hub_physical_units, hub_purchase_allocations, international_shipment_charges, international_shipment_events, international_shipment_hub_units, international_shipment_relay_receipts, international_shipments, market_transport_sale_rates, parcel_events, parcel_items, parcels, pickup_code_generations, pickup_collect_failures, pickup_print_tokens, pickup_reveal_codes, pickup_verify_attempts, product_sku_physical_codes, relais, relay_product_return_receipts, scan_events, scans, shipments | auth, auth-identity, business-rules, catalog, customs, documents, incident-management, infrastructure, local-stock, loyalty, market, market-delegation, notifications, orders, payments, purchasing, refunds | admin-dashboard, auth-identity, catalog, customs, dashboard, decision-signals, documents, economic-engine, incident-management, infrastructure, inventory, local-stock, market-control-plane, market-delegation, notifications, orders, payments, platform-ops, purchasing, recommendations, refunds | 0 |
 | loyalty | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | loyalty_rewards, loyalty_tiers | auth, auth-identity, economic-engine, infrastructure, notifications, orders | auth-identity, economic-engine, logistics, orders, payments | 0 |
 | market | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | currency_parities, fx_public_reference_quotes, fx_rate_observations, markets, operator_market_scopes | infrastructure, notifications | catalog, customs, dashboard, economic-engine, infrastructure, local-stock, logistics, market-autonomy, market-control-plane, market-delegation, market-operator-dashboard, orders, payments, providers-services, recommendations, refunds, settlement, wallet | 0 |
 | market-autonomy | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | product_market_price_draft_events, product_market_price_drafts | catalog, economic-engine, infrastructure, market | catalog, dashboard, economic-engine, market-delegation, market-operator-dashboard, orders, recommendations, shared-cart | 2 |
 | market-control-plane | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | market_delivery_attestations | auth, catalog, dashboard, decision-signals, economic-engine, infrastructure, logistics, market, market-delegation, orders, payments, sourcing | _aucune_ | 1 |
 | market-delegation | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | assignment_capability_ceiling, assignment_memberships, capability_registry, ceiling_template_capabilities, ceiling_templates, market_cash_control_policies, market_delegation_audit, market_operating_assignments, market_team_invitations, membership_capabilities | auth, auth-identity, catalog, dashboard, economic-engine, infrastructure, local-stock, logistics, market, market-autonomy, orders, payments, providers-services, settlement | dashboard, decision-signals, economic-engine, logistics, market-control-plane, market-operator-dashboard, payments, settlement | 0 |
 | market-operator-dashboard | unclassified | 🟡 ATTENTION | 🟢 HEALTHY | _aucune_ | catalog, infrastructure, market, market-autonomy, market-delegation | _aucune_ | 4 |
-| notifications | business-transversal | 🟢 HEALTHY | 🟢 HEALTHY | alerts, client_notifications, notification_log | auth, auth-identity, incident-management, infrastructure, logistics, orders, platform-ops | auth, auth-identity, catalog, dashboard, infrastructure, logistics, loyalty, market, orders, payments, purchasing, shared-cart | 0 |
-| orders | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | customs_history, disputes, order_checkout_idempotency, order_comments, order_item_cost_imputations, order_items, order_status_history, orders, recipients, sms_log | auth, auth-identity, business-rules, catalog, customs, dashboard, decision-signals, documents, economic-engine, infrastructure, local-stock, logistics, loyalty, market, market-autonomy, notifications, payments, platform-ops, purchasing, refunds, shared-cart, wallet | admin-dashboard, auth-identity, catalog, customs, dashboard, documents, economic-engine, incident-management, infrastructure, inventory, logistics, loyalty, market-control-plane, market-delegation, notifications, payments, platform-ops, purchasing, recommendations, refunds, shared-cart, unsold-resolution, wallet | 1 |
+| notifications | business-transversal | 🟢 HEALTHY | 🟢 HEALTHY | alerts, client_notifications, notification_log | auth, auth-identity, incident-management, infrastructure, logistics, orders, platform-ops | auth, auth-identity, catalog, dashboard, infrastructure, logistics, loyalty, market, orders, payments, purchasing, refunds, shared-cart | 0 |
+| orders | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | customs_history, disputes, order_checkout_idempotency, order_comments, order_item_cost_imputations, order_items, order_status_history, orders, recipients, relay_return_compensations, sms_log | auth, auth-identity, business-rules, catalog, customs, dashboard, decision-signals, documents, economic-engine, infrastructure, local-stock, logistics, loyalty, market, market-autonomy, notifications, payments, platform-ops, purchasing, refunds, shared-cart, wallet | admin-dashboard, auth-identity, catalog, customs, dashboard, documents, economic-engine, incident-management, infrastructure, inventory, logistics, loyalty, market-control-plane, market-delegation, notifications, payments, platform-ops, purchasing, recommendations, refunds, shared-cart, unsold-resolution, wallet | 1 |
 | payments | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | cash_collections, cash_confirmation_controls, cash_custody_losses, cash_custody_receipts, cash_deposit_allocations, cash_deposits, market_cash_destinations, market_payment_accounts, market_payment_providers, mobile_money_transactions, paypal_events_processed, stripe_events_processed | auth, auth-identity, business-rules, documents, incident-management, infrastructure, logistics, loyalty, market, market-delegation, notifications, orders, platform-ops, purchasing, refunds | admin-dashboard, dashboard, decision-signals, infrastructure, logistics, market-control-plane, market-delegation, orders, refunds | 0 |
 | platform | frontend-transversal | 🟢 HEALTHY | 🟢 HEALTHY | _aucune_ | _aucune_ | _aucune_ | 0 |
 | platform-ops | technical-transversal | 🟢 HEALTHY | 🟢 HEALTHY | fabrics, garment_models | auth, auth-identity, business-rules, catalog, documents, economic-engine, incident-management, infrastructure, logistics, orders, purchasing, wallet | auth-identity, auth-passkey, catalog, economic-engine, infrastructure, notifications, orders, payments, providers-services, recommendations, shared-cart, wallet | 0 |
 | providers-services | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | inquiries, physical_offers, providers, services | auth, auth-identity, infrastructure, local-stock, market, platform-ops, recommendations | market-delegation, recommendations | 0 |
-| purchasing | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | hub_authorization_grants, product_suppliers, purchase_lines, purchase_order_authorizations, purchase_orders, supplier_execution_events, supplier_execution_fulfillments, supplier_execution_order_lines, supplier_execution_orders, supplier_execution_payment_proofs, supplier_execution_payments, supplier_payment_settlements, suppliers | auth, catalog, documents, economic-engine, external-provider-contracts, infrastructure, logistics, notifications, orders, sourcing, supplier-connectivity | catalog, dashboard, decision-signals, logistics, orders, payments, platform-ops, sourcing | 0 |
+| purchasing | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | hub_authorization_grants, manual_purchase_executions, product_suppliers, purchase_lines, purchase_order_authorizations, purchase_orders, purchase_variance_decisions, supplier_execution_events, supplier_execution_fulfillments, supplier_execution_order_lines, supplier_execution_orders, supplier_execution_payment_proofs, supplier_execution_payments, supplier_payment_settlements, suppliers | auth, catalog, documents, economic-engine, external-provider-contracts, incident-management, infrastructure, logistics, notifications, orders, sourcing, supplier-connectivity | catalog, dashboard, decision-signals, logistics, orders, payments, platform-ops, sourcing | 0 |
 | recommendations | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | _aucune_ | catalog, infrastructure, local-stock, logistics, market, market-autonomy, orders, platform-ops, providers-services | infrastructure, providers-services, shared-cart | 0 |
-| refunds | business-transversal | 🟢 HEALTHY | 🟢 HEALTHY | order_item_refund_reservations, refund_execution_intents, refunds | documents, economic-engine, infrastructure, logistics, market, orders, payments, wallet | documents, economic-engine, logistics, orders, payments | 0 |
+| refunds | business-transversal | 🟢 HEALTHY | 🟢 HEALTHY | order_item_refund_reservations, refund_execution_intents, refunds | documents, economic-engine, infrastructure, logistics, market, notifications, orders, payments, wallet | documents, economic-engine, logistics, orders, payments | 0 |
 | settlement | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | market_settlement_events, market_settlements | auth, auth-identity, infrastructure, market, market-delegation | market-delegation | 0 |
 | shared-cart | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | basket_items, baskets, cart_shares, shared_cart_events, shared_cart_items, shared_cart_saved_access, shared_carts | auth, auth-identity, catalog, infrastructure, market-autonomy, notifications, orders, platform-ops, recommendations | catalog, dashboard, infrastructure, orders | 0 |
 | sourcing | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | import_runtime_item_events, import_runtime_runs, provider_credentials, sourcing_candidate_events, sourcing_candidates, sourcing_canonical_entities, sourcing_canonical_entity_refs, sourcing_captures, sourcing_match_proposals, sourcing_observation_evidence, sourcing_observations, sourcing_provider_control_events, sourcing_resolution_bindings, sourcing_resolution_decisions, sourcing_source_provides, sourcing_source_requests, sourcing_sources, supplier_commercial_category_mappings | auth, catalog, customs, dashboard, economic-engine, infrastructure, purchasing | catalog, dashboard, market-control-plane, purchasing | 0 |
@@ -784,13 +784,13 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 218 fichier(s) déclaré(s)
+**Implementation** : 219 fichier(s) déclaré(s)
   - dash : 6
   - middleware : 1
   - migrations : 34
   - routes : 13
   - services : 56
-  - tests : 105
+  - tests : 106
   - utils : 3
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="economic-engine"]_
@@ -904,21 +904,21 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Owns** : `incidents`
 
-**Exposes** : 16 internal API(s), 0 HTTP interface(s)
+**Exposes** : 17 internal API(s), 0 HTTP interface(s)
   - `acknowledgeAlertEngineIncident` (services/incident-write-service.js) — resolved
   - `assertParcelTransitionAllowed` (services/parcel-transition-guard.js) — resolved
   - `createAlertEngineIncidentIfNew` (services/incident-write-service.js) — resolved
   - `createReconciliationIncident` (services/incident-write-service.js) — resolved
   - `createScanIncident` (services/incident-write-service.js) — resolved
+  - `createSupplierShortageIncident` (services/incident-write-service.js) — resolved
   - `detachUserFromIncidents` (services/incident-write-service.js) — resolved
   - `escalateIncident` (services/incident-service.js) — resolved
   - `getIncident` (services/incident-service.js) — resolved
   - `getIncidentDashboard` (services/incident-service.js) — resolved
-  - `listIncidents` (services/incident-service.js) — resolved
-  - _...6 de plus, voir FEATURE_360.json_
+  - _...7 de plus, voir FEATURE_360.json_
 
 **Consumes** : decision-signals (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED)
-**Consumed by** : dashboard (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED)
+**Consumed by** : dashboard (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED), purchasing (DECLARED_AND_OBSERVED)
 
 **Projections** : _aucune_
 
@@ -1236,7 +1236,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - [object Object]
 - [object Object]
 
-**Owns** : `carriers`, `hub_box_bags`, `hub_custody_events`, `hub_physical_unit_placements`, `hub_physical_units`, `hub_purchase_allocations`, `international_shipment_charges`, `international_shipment_events`, `international_shipment_hub_units`, `international_shipment_relay_receipts`, `international_shipments`, `market_transport_sale_rates`, `parcel_events`, `parcel_items`, `parcels`, `pickup_print_tokens`, `pickup_reveal_codes`, `pickup_verify_attempts`, `product_sku_physical_codes`, `relais`, `relay_product_return_receipts`, `scan_events`, `scans`, `shipments`
+**Owns** : `carriers`, `hub_box_bags`, `hub_custody_events`, `hub_physical_unit_placements`, `hub_physical_units`, `hub_purchase_allocations`, `international_shipment_charges`, `international_shipment_events`, `international_shipment_hub_units`, `international_shipment_relay_receipts`, `international_shipments`, `market_transport_sale_rates`, `parcel_events`, `parcel_items`, `parcels`, `pickup_code_generations`, `pickup_collect_failures`, `pickup_print_tokens`, `pickup_reveal_codes`, `pickup_verify_attempts`, `product_sku_physical_codes`, `relais`, `relay_product_return_receipts`, `scan_events`, `scans`, `shipments`
 **Writes (not owner)** : `order_items` (writer-not-owner), `products` (writer-not-owner)
 
 **Exposes** : 32 internal API(s), 78 HTTP interface(s)
@@ -1265,15 +1265,15 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 184 fichier(s) déclaré(s)
+**Implementation** : 189 fichier(s) déclaré(s)
   - boutique : 1
   - dash : 2
   - docs : 7
   - middleware : 1
   - migrations : 15
   - routes : 18
-  - services : 47
-  - tests : 90
+  - services : 49
+  - tests : 93
   - utils : 3
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="logistics"]_
@@ -1824,7 +1824,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - `setNotificationOutcomeListener` (services/notifications/internals.js) — resolved
 
 **Consumes** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), incident-management (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED)
-**Consumed by** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), loyalty (DECLARED_AND_OBSERVED), market (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), purchasing (DECLARED_AND_OBSERVED), shared-cart (DECLARED_AND_OBSERVED)
+**Consumed by** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), loyalty (DECLARED_AND_OBSERVED), market (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), purchasing (DECLARED_AND_OBSERVED), refunds (DECLARED_AND_OBSERVED), shared-cart (DECLARED_AND_OBSERVED)
 
 **Projections** : _aucune_
 
@@ -1886,7 +1886,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - transition de statut uniquement via order-status-machine.js
 - annulation libere les achats fournisseurs lies dans la meme transaction via purchasing
 
-**Owns** : `customs_history`, `disputes`, `order_checkout_idempotency`, `order_comments`, `order_item_cost_imputations`, `order_items`, `order_status_history`, `orders`, `recipients`, `sms_log`
+**Owns** : `customs_history`, `disputes`, `order_checkout_idempotency`, `order_comments`, `order_item_cost_imputations`, `order_items`, `order_status_history`, `orders`, `recipients`, `relay_return_compensations`, `sms_log`
 **Writes (not owner)** : `scans` (writer-not-owner), `signals` (writer-not-owner)
 
 **Exposes** : 30 internal API(s), 27 HTTP interface(s)
@@ -1948,6 +1948,8 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Authority** : backend-core — tout changement de provider, callback, webhook ou logique d idempotence paiement doit etre valide par le propriétaire payments.
 
 **Invariants** :
+- [object Object]
+- [object Object]
 - [object Object]
 - [object Object]
 - [object Object]
@@ -2258,7 +2260,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - tout message WhatsApp fournisseur part d un purchase_order déjà persisté ; un rejeu de notification ne recrée jamais le bon ni ne confirme son statut
 - un préflight fournisseur ne peut jamais créer de commande fournisseur ni déclencher un paiement ; toute mutation externe exige un gate explicite séparé
 
-**Owns** : `hub_authorization_grants`, `product_suppliers`, `purchase_lines`, `purchase_order_authorizations`, `purchase_orders`, `supplier_execution_events`, `supplier_execution_fulfillments`, `supplier_execution_order_lines`, `supplier_execution_orders`, `supplier_execution_payment_proofs`, `supplier_execution_payments`, `supplier_payment_settlements`, `suppliers`
+**Owns** : `hub_authorization_grants`, `manual_purchase_executions`, `product_suppliers`, `purchase_lines`, `purchase_order_authorizations`, `purchase_orders`, `purchase_variance_decisions`, `supplier_execution_events`, `supplier_execution_fulfillments`, `supplier_execution_order_lines`, `supplier_execution_orders`, `supplier_execution_payment_proofs`, `supplier_execution_payments`, `supplier_payment_settlements`, `suppliers`
 
 **Exposes** : 14 internal API(s), 21 HTTP interface(s)
   - `adaptShippingRate` (services/suppliers/allegro-shipping-capability-adapter.js) — resolved
@@ -2273,12 +2275,12 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - `resolveCanonicalSupplierMoney` (services/purchasing-canonical-money.js) — resolved
   - _...4 de plus, voir FEATURE_360.json_
 
-**Consumes** : auth (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), documents (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), external-provider-contracts (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), sourcing (DECLARED_AND_OBSERVED), supplier-connectivity (DECLARED_AND_OBSERVED)
+**Consumes** : auth (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), documents (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), external-provider-contracts (DECLARED_AND_OBSERVED), incident-management (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), sourcing (DECLARED_AND_OBSERVED), supplier-connectivity (DECLARED_AND_OBSERVED)
 **Consumed by** : catalog (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), decision-signals (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED), sourcing (DECLARED_AND_OBSERVED)
 
 **Projections** : _aucune_
 
-**Technical context** : 0 primitive dependencies, 1 test-only, 0 composition-root
+**Technical context** : 0 primitive dependencies, 2 test-only, 0 composition-root
 
 **Boundary health** : 🟢 HEALTHY — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
 **Governance health** : 🟢 HEALTHY — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
@@ -2286,12 +2288,12 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 175 fichier(s) déclaré(s)
+**Implementation** : 176 fichier(s) déclaré(s)
   - migrations : 17
   - routes : 1
   - scripts : 14
-  - services : 53
-  - tests : 90
+  - services : 52
+  - tests : 92
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="purchasing"]_
 
@@ -2375,6 +2377,11 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - [object Object]
 - [object Object]
 - [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
 - un remboursement n'est jamais applique deux fois pour le meme evenement source
 - tout refund externe ou crédit compensatoire est idempotent par événement source ; un rejeu ne déclenche jamais un second remboursement
 
@@ -2383,7 +2390,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Exposes** : 1 internal API(s), 0 HTTP interface(s)
   - `processRefund(orderOrCartId, reason)`  — documented-signature-no-file
 
-**Consumes** : documents (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), market (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), wallet (DECLARED_AND_OBSERVED)
+**Consumes** : documents (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), market (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), wallet (DECLARED_AND_OBSERVED)
 **Consumed by** : documents (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED)
 
 **Projections** : _aucune_
@@ -2396,10 +2403,9 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 25 fichier(s) déclaré(s)
-  - services : 7
-  - tests : 17
-  - utils : 1
+**Implementation** : 29 fichier(s) déclaré(s)
+  - services : 9
+  - tests : 20
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="refunds"]_
 
@@ -2762,10 +2768,11 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Perimeter** :
 - _in_ :
   - solde wallet et historique de credit/debit
-  - application/retrait du wallet sur une commande (orders.wallet_applied_kmf)
+  - application du wallet atomique au checkout (orders.wallet_applied_kmf) et restitution par annulation métier uniquement ; routes legacy apply/remove refusées en 409 (FA-01/02/15)
 - _out_ :
   - paiement carte/PayPal (feature payments)
   - remboursement initiateur (feature refunds, qui credite le wallet)
+  - avoir admin depuis commande via endpoint legacy (FA-06 : route maintenue en 409, remboursement via refunds)
   - programme de fidelite et ses recompenses (feature loyalty, scindee de wallet-loyalty au Lot O1)
   - emission du recu wallet (services/documents/wallet-receipt.js, @domain documents — consommateur en aval, pas ownership wallet)
 

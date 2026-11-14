@@ -6,6 +6,10 @@
  * @test-requires none
  */
 
+jest.mock('../../services/pickup-agent-lockout', () => ({
+  checkAgentLockout: jest.fn(async () => ({ locked: false })),
+  recordAgentFailure: jest.fn(async () => ({ count: 1, justLocked: false })),
+}));
 jest.mock('../../db', () => {
   const query = jest.fn();
   return { query, withTransaction: jest.fn(cb => cb({ query })) };

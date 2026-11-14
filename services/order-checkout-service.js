@@ -121,6 +121,23 @@ async function runOrderCheckout({ user, body, internalSimulation = null, preview
       throw Object.assign(new Error(code), { code });
     }
   }
+  // FA-03 : ne jamais persister une référence Stripe issue du navigateur,
+  // y compris via un appel service direct qui contournerait le validateur HTTP.
+  // Le PaymentIntent est créé/rattaché uniquement par payment-stripe.js avec
+  // metadata.order_id et contrat montant/devise vérifiés.
+  if (Object.prototype.hasOwnProperty.call(body || {}, 'stripe_payment_intent')) {
+    return fail(400, {
+      code: 'STRIPE_INTENT_CLIENT_FORBIDDEN',
+      error: 'La référence Stripe est exclusivement attribuée par le serveur.',
+    });
+  }
+  // FA-22 : toute création réelle exige une clé anti-doublon (le rejeu d'un même
+  // payload renvoie la commande initiale, un payload divergent est refusé 409).
+  // Les aperçus et les fixtures de recette internes ont leur propre garde.
+  if (!previewOnly && !internalSimulation && !idempotencyKey) {
+    throw Object.assign(new Error('Clé anti-doublon (Idempotency-Key) obligatoire pour créer une commande.'),
+      { code: 'idempotency_key_required', status: 400 });
+  }
   const client = await db.getClient();
 
   try {
@@ -479,8 +496,8 @@ async function runOrderCheckout({ user, body, internalSimulation = null, preview
     // Le prix annoncé par le devis serveur doit être explicitement accepté.
     // Montant AVANT débit wallet (mais APRES remise) pour ne pas forcer le client
     // à accepter un nouveau prix lorsque seul son solde wallet a changé.
-    // Les anciens intégrateurs sans clé restent compatibles ; toute tentative
-    // boutique portant Idempotency-Key EXIGE ce montant signé par l'UI.
+    // Jamais de création silencieuse au nouveau prix (L3/N06) : la clé étant obligatoire (FA-22),
+    // tout appelant réel doit porter le total accepté, issu de l'aperçu (POST /api/orders/preview).
     const expectedTotal = body.expected_total_kmf;
     if (!internalSimulation && checkoutClaim && expectedTotal == null) {
       await client.query('ROLLBACK');
@@ -549,7 +566,7 @@ async function runOrderCheckout({ user, body, internalSimulation = null, preview
       reference, userId: user.id, recipientId: recipient_id, relaisId: relais?.id || null,
       trackingPhone: tracking_phone,
       totalKmf: total_kmf, totalEur: fxSnapshotBuilt.totalEur,
-      paymentMode: payment_mode, stripePaymentIntent: stripe_payment_intent, cashRefCode: cash_ref_code,
+      paymentMode: payment_mode, stripePaymentIntent: null, cashRefCode: cash_ref_code,
       confectionType: confection_type, confectionInstructions: confection_instructions,
       confectionDelayDays: confection_delay_days, confectionArtisanId: confection_artisan_id,
       moduleType: module_type, moduleFabricId: module_fabric_id, moduleFabricType: module_fabric_type,

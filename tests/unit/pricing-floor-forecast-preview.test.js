@@ -1,7 +1,15 @@
 'use strict';
 
 /** @test-kind unit @test-runner jest @test-requires none */
-const { preview, ForecastPreviewError, IMPORT_FIELDS, LOCAL_FIELDS } =
+jest.mock('../../utils/currency', () => ({
+  projectAmount: jest.fn(async (amount, from, to) => {
+    if (from === to) return amount;
+    if (from === 'XAF' && to === 'KMF') return Number(amount) * .75;
+    if (from === 'KMF' && to === 'XAF') return Number(amount) / .75;
+    throw new Error('FX_UNSUPPORTED_IN_TEST');
+  }),
+}));
+const { preview, previewForMarket, ForecastPreviewError, IMPORT_FIELDS, LOCAL_FIELDS } =
   require('../../services/pricing-floor-forecast-preview');
 
 const DATE = '2026-11-11';
@@ -35,6 +43,50 @@ const payload = (overrides = {}) => ({
 });
 const calculate = (body = payload(), more = {}) =>
   preview({ market, product, payload: body, date: DATE, ...more });
+const localPayload = prices => {
+  const body = payload();
+  delete body.candidate_prices_kmf; // no legacy KMF authority on XAF markets
+  body.candidate_prices_local = prices;
+  return body;
+};
+
+describe('projection de la simulation selon la devise du marché', () => {
+  test('CM : montants XAF convertis côté serveur, physique et taux inchangés, restitution XAF', async () => {
+    const result = await previewForMarket({
+      market: { code: 'CM', currency: 'XAF' }, product,
+      payload: localPayload([10000]),
+      date: DATE,
+    });
+    expect(result.market_currency).toBe('XAF');
+    expect(result.internal_currency).toBe('KMF');
+    expect(result.fx_authority).toBe('fx-authority');
+    expect(result.forecast.prices[0].price_kmf).toBe(7500);
+    expect(result.local_display.prices[0].price).toBe(10000);
+    expect(result.forecast.cases.central.lines.find(l => l.code === 'supplier_delivery').charged_value).toBe(738 * .75);
+    expect(result.forecast.cases.central.lines.find(l => l.code === 'bank_fee').charged_value).toBe(1.5);
+    expect(result.forecast.cases.central.lines.find(l => l.code === 'freight').charged_value).toBe(88552.8 * .75);
+    expect(result.forecast.cases.central.lines.find(l => l.code === 'freight').amount_kmf).toBeGreaterThan(0);
+    expect(result.simulation_only).toBe(true);
+    expect(result.writes).toBe(false);
+  });
+  test('XAF : injection candidate_prices_kmf ou devise manquante refusée sans conversion implicite', async () => {
+    await expect(previewForMarket({
+      market: { code: 'CM', currency: 'XAF' }, product, date: DATE, payload: payload(),
+    })).rejects.toThrow(ForecastPreviewError);
+    await expect(previewForMarket({
+      market: { code: 'CM' }, product, date: DATE, payload: payload(),
+    })).rejects.toThrow(ForecastPreviewError);
+  });
+  test('KM : les hypothèses et prix restent en KMF, sans variation', async () => {
+    const x = await previewForMarket({
+      market: { code: 'KM', currency: 'KMF' }, product,
+      payload: localPayload([9000]),
+      date: DATE,
+    });
+    expect(x.forecast.prices[0].price_kmf).toBe(9000);
+    expect(x.local_display.prices[0].price).toBe(9000);
+  });
+});
 
 describe('contrat HTTP pur : preview du plancher non persistant', () => {
   test('la simulation réaliste reste PROVISOIRE, sans prix activé', () => {

@@ -55,6 +55,12 @@ jest.mock('../../services/order-fx-snapshot', () => ({
 jest.mock('../../services/refund-service', () => ({
   processRefund: jest.fn(),
 }));
+jest.mock('../../services/stripe-refund-authority', () => ({
+  reserveStripeBusinessRefund: jest.fn(),
+  executeReservedStripeRefund: jest.fn(),
+}));
+jest.mock('../../utils/alerts', () => ({ createAlert: jest.fn().mockResolvedValue({id:'alert-1'}) }));
+
 
 jest.mock('../../services/notification-service', () => ({
   notifyCancellation: jest.fn(),
@@ -75,6 +81,9 @@ jest.mock('../../utils/logger', () => ({
 const db = require('../../db');
 const { getRule } = require('../../utils/rules');
 const { processRefund } = require('../../services/refund-service');
+const { reserveStripeBusinessRefund, executeReservedStripeRefund } = require('../../services/stripe-refund-authority');
+const { createAlert } = require('../../utils/alerts');
+const { computeClosingRefund } = require('../../services/order-fx-snapshot');
 const { notifyCancellation } = require('../../services/notification-service');
 const { transitionOrderStatus } = require('../../services/order-status-machine');
 const refundReceiptService = require('../../services/documents/refund-receipt');
@@ -97,6 +106,13 @@ function defaultMocks() {
   getRule.mockImplementation((key, fallback) => Promise.resolve(fallback));
   transitionOrderStatus.mockResolvedValue({ success: true, cancelEffects: {} });
   db.query.mockResolvedValue({ rows: [] });
+  reserveStripeBusinessRefund.mockResolvedValue({
+    intentId: '11111111-2222-4333-8444-555555555555', status: 'reserved',
+  });
+  executeReservedStripeRefund.mockResolvedValue({
+    status: 202, body: { refund_status: 'reserved', requires_reconciliation: true },
+  });
+  createAlert.mockResolvedValue({ id: 'alert-1' });
 }
 
 beforeEach(() => {
@@ -204,6 +220,68 @@ describe('orders/cancel — calcul remboursement', () => {
     expect(res.status).toBe(200);
     expect(processRefund).not.toHaveBeenCalled();
     expect(res.body.message).toMatch(/aucun prélèvement/);
+  });
+
+  it('FA-02 : wallet partiel remboursé séparément du net capturé, sans doubler la valeur', async () => {
+    const mixed = orderRow({
+      payment_status: 'paid', total_kmf: 6000, total_eur: 12.20,
+      wallet_applied_kmf: 4000,
+    });
+    const client = makeClient([{ rows: [mixed] }]);
+    db.getClient.mockResolvedValue(client);
+    processRefund.mockResolvedValue({ method: 'stripe', amountEur: 12.20, amountKmf: 6000 });
+    transitionOrderStatus.mockResolvedValue({
+      success: true,
+      cancelEffects: { walletReversalAmount: 4000, walletReversalTxId: 'reverse-mixed-1' },
+    });
+
+    const res = await request(app).post('/api/orders/o1/cancel').send({});
+    expect(res.status).toBe(200);
+    expect(processRefund).toHaveBeenCalledWith(
+      client, mixed, 6000, 12.20, 'full', 'Annulation client', 'user-1'
+    );
+    expect(res.body.refund.wallet_reversal.amount_kmf).toBe(4000);
+    expectTransactionCommitted(client);
+  });
+
+  it('FA-14 : refuse le raccourci wallet-only si une capture EUR existe', async () => {
+    const incoherent = orderRow({
+      payment_status: 'paid', total_kmf: 0, total_eur: 5, wallet_applied_kmf: 10000,
+    });
+    const client = makeClient([{ rows: [incoherent] }]);
+    db.getClient.mockResolvedValue(client);
+
+    const res = await request(app).post('/api/orders/o1/cancel').send({});
+
+    expect(res.status).toBe(409);
+    expect(processRefund).not.toHaveBeenCalled();
+    expect(transitionOrderStatus).not.toHaveBeenCalled();
+    expectTransactionRolledBack(client);
+  });
+
+  it('FA-14 : annule une commande 100% wallet sans faux remboursement PSP', async () => {
+    const paidWithWallet = orderRow({
+      payment_status: 'paid', total_kmf: 0, total_eur: 0, wallet_applied_kmf: 10000,
+    });
+    const client = makeClient([{ rows: [paidWithWallet] }]);
+    db.getClient.mockResolvedValue(client);
+    transitionOrderStatus.mockResolvedValue({
+      success: true,
+      cancelEffects: { walletReversalAmount: 10000, walletReversalTxId: 'reversal-1' },
+    });
+
+    const res = await request(app).post('/api/orders/o1/cancel').send({ reason: 'Annulation test' });
+
+    expect(res.status).toBe(200);
+    expect(computeClosingRefund).not.toHaveBeenCalled();
+    expect(processRefund).not.toHaveBeenCalled();
+    expect(transitionOrderStatus).toHaveBeenCalledWith(expect.objectContaining({
+      orderId: 'o1', newStatus: 'cancelled', dbClient: client,
+    }));
+    expect(res.body.refund.wallet_reversal).toEqual({
+      amount_kmf: 10000, wallet_tx_id: 'reversal-1',
+    });
+    expectTransactionCommitted(client);
   });
 
   it('remboursement 100% dans la fenêtre gratuite', async () => {
@@ -370,6 +448,69 @@ describe('orders/cancel — erreur générique', () => {
 
     expect(res.status).toBe(500);
     expect(res.body).toEqual({ error: 'connexion perdue' });
+    expectTransactionRolledBack(client);
+  });
+});
+
+
+describe('FA-08 — annulation Stripe par intention durable', () => {
+  const stripeOrder = (overrides={})=>orderRow({
+    payment_status: 'paid', payment_mode: 'stripe_eur', stripe_payment_id: 'pi_test_original',
+    total_kmf: 10000, total_eur: '20.33', market_id: 'market-1',
+    ...overrides,
+  });
+  it('reserve DANS transaction, COMMIT avant tout post-commit, 202 tant que PSP non verifie', async () => {
+    const order = stripeOrder();
+    const client = makeClient([{ rows: [order] }]);
+    db.getClient.mockResolvedValue(client);
+    executeReservedStripeRefund.mockImplementationOnce(async() => {
+      const calls=client.calls.map(x=>x.sql);
+      expect(calls).toContain('COMMIT');
+      return {status:202,body:{refund_status:'reserved',requires_reconciliation:true}};
+    });
+    const result=await request(app).post('/api/orders/o1/cancel').send({});
+    expect(result.status).toBe(202);
+    expect(reserveStripeBusinessRefund).toHaveBeenCalledWith(client,expect.objectContaining({
+      order, operationKey:'cancel:order:o1',amountEur:20.33,
+    }));
+    expect(executeReservedStripeRefund).toHaveBeenCalledWith(expect.objectContaining({
+      orderId:'o1',intentId:'11111111-2222-4333-8444-555555555555',
+    }));
+    expect(processRefund).not.toHaveBeenCalled();
+    expect(result.body.refund.psp_pending.refund_status).toBe('reserved');
+    expect(result.body.message).not.toMatch(/€ remboursés via Stripe/);
+    expectTransactionCommitted(client);
+  });
+  it('transition de commande refusee => aucune sortie PSP et rollback de la reservation',async()=>{
+    const client=makeClient([{rows:[stripeOrder()]}]);db.getClient.mockResolvedValue(client);
+    transitionOrderStatus.mockResolvedValueOnce({success:false,error:'too late'});
+    const res=await request(app).post('/api/orders/o1/cancel').send({});
+    expect(res.status).toBe(422);
+    expect(reserveStripeBusinessRefund).toHaveBeenCalledTimes(1);
+    expect(executeReservedStripeRefund).not.toHaveBeenCalled();
+    expectTransactionRolledBack(client);
+  });
+  it('commit annulation puis timeout executor => 202 et alerte hors transaction',async()=>{
+    const client=makeClient([{rows:[stripeOrder()]}]);db.getClient.mockResolvedValue(client);
+    executeReservedStripeRefund.mockRejectedValueOnce(new Error('PSP unavailable after commit'));
+    const res=await request(app).post('/api/orders/o1/cancel').send({});
+    expect(res.status).toBe(202);
+    expectTransactionCommitted(client);
+    expect(createAlert).toHaveBeenCalledWith(db,expect.objectContaining({
+      entityType:'order',type:'refund_provider_reconciliation_required',severity:'high',
+    }));
+    expect(processRefund).not.toHaveBeenCalled();
+  });
+  it('rejeu de commande annulee lit intention et ne reenvoie pas Stripe',async()=>{
+    const client=makeClient([
+      {rows:[stripeOrder({status:'cancelled'})]},
+      {rows:[{id:'intent-old',status:'unknown'}]},
+    ]);
+    db.getClient.mockResolvedValue(client);
+    const res=await request(app).post('/api/orders/o1/cancel').send({});
+    expect(res.status).toBe(202);
+    expect(res.body.refund.intent_id).toBe('intent-old');
+    expect(executeReservedStripeRefund).not.toHaveBeenCalled();
     expectTransactionRolledBack(client);
   });
 });
