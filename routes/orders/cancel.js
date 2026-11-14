@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       db.js, middleware/auth.js, services/*
  * @used-by       bootstrap/api-routes.js
- * @db-read       orders, recipients, refunds, users
+ * @db-read       orders, recipients, refunds, refund_execution_intents, users
  * @db-write      order_status_history, orders
  * @db-write-via:refund-service      refunds
  * @db-write-via:stripe-refund-authority refund_execution_intents
