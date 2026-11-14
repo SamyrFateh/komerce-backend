@@ -46,6 +46,52 @@ async function getOrderPhysicalCoverage(executor, orderId) {
     usable: Number(r.usable),
     missing: Math.max(0, Number(r.needed) - Number(r.usable)),
   }));
+  // H1/HB-02 : seules les quantités non livrées couvertes par une rupture
+  // définitive, soldée sans reliquat et par un incident sont dispensées.
+  // Il faut encore une réception physique positive, sans quarantaine.
+  const missingIds = lines.filter((l) => l.missing > 0).map((l) => l.order_item_id);
+  if (missingIds.length) {
+    const { rows: exceptions } = await executor.query(
+      `SELECT oi.id AS order_item_id, v.effective_qty::int AS effective_qty
+         FROM order_items oi
+         CROSS JOIN LATERAL (
+           SELECT COUNT(*)::int AS line_count,
+                  COALESCE(SUM(p.effective_quantity),0)::int AS effective_qty,
+                  COALESCE(SUM(p.received_quantity),0)::int AS received_qty,
+                  COALESCE(BOOL_AND(p.received_quantity >= p.effective_quantity),false) AS fully_received
+             FROM v_purchase_line_progress p
+            WHERE p.order_item_id=oi.id AND NOT p.cancelled
+         ) v
+        WHERE oi.order_id=$1 AND oi.id=ANY($2::uuid[])
+          AND v.line_count > 0
+          AND v.effective_qty > 0
+          AND v.effective_qty < oi.quantity
+          AND v.received_qty >= v.effective_qty
+          AND v.fully_received
+          AND (SELECT COALESCE(SUM((i.details->>'missing_quantity')::int),0)::int
+                 FROM incidents i JOIN purchase_lines pl
+                   ON pl.id::text=i.details->>'purchase_line_id'
+                WHERE i.order_item_id=oi.id
+                  AND i.details->>'type'='supplier_shortage'
+                  AND pl.order_item_id=oi.id
+                  AND pl.settled_at IS NOT NULL AND pl.cancelled_at IS NULL
+                  AND NOT EXISTS (
+                    SELECT 1 FROM purchase_lines remnant
+                     WHERE remnant.parent_line_id=pl.id AND remnant.cancelled_at IS NULL
+                  )
+              ) = oi.quantity - v.effective_qty`,
+      [orderId, missingIds]
+    );
+    const allowed = new Map((exceptions || []).map((r) => [String(r.order_item_id), Number(r.effective_qty)]));
+    for (const line of lines) {
+      const effective = allowed.get(String(line.order_item_id));
+      if (effective === undefined) continue;
+      line.original_needed = line.needed;
+      line.terminal_supplier_shortage = line.needed - effective;
+      line.needed = effective;
+      line.missing = Math.max(0, effective - line.usable);
+    }
+  }
   const uncovered = lines.filter((l) => l.missing > 0);
   return { covered: uncovered.length === 0, lines, uncovered };
 }
