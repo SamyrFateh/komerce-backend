@@ -120,7 +120,7 @@ describePg('Fable F1 — cash proof, handoff and settlement (real PG)',()=>{
     expect(refunds.rows[0]).toMatchObject({status:'completed',refund_method:'cash',amount_kmf:'2000.00'});
     expect(refunds.rows[0].local_cash_refund_payout_id).toBe(done.payoutId);
     const custody=(await sql('SELECT SUM(delta_kmf)::numeric AS balance FROM cash_custody_movements WHERE holder_id=$1 AND market_id=$2',[holderId,marketId])).rows[0];
-    expect(custody.balance).toBe('8000');
+    expect(Number(custody.balance)).toBe(8000);
     const replay=await confirm(a.authorizationId,B);
     expect(replay).toMatchObject({paid:true,replayed:true,refundId:done.refundId});
     expect((await sql('SELECT COUNT(*)::int n FROM local_cash_refund_payouts')).rows[0].n).toBe(1);
@@ -169,7 +169,7 @@ describePg('Fable F1 — cash proof, handoff and settlement (real PG)',()=>{
     expect(x.payoutId).toBe(y.payoutId);
     expect([x.replayed,y.replayed].sort()).toEqual([false,true]);
     expect((await sql('SELECT COUNT(*)::int n FROM local_cash_refund_payouts')).rows[0].n).toBe(1);
-    expect((await sql('SELECT SUM(delta_kmf)::numeric AS balance FROM cash_custody_movements WHERE holder_id=$1',[holderId])).rows[0].balance).toBe('8000');
+    expect(Number((await sql('SELECT SUM(delta_kmf)::numeric AS balance FROM cash_custody_movements WHERE holder_id=$1',[holderId])).rows[0].balance)).toBe(8000);
   });
 
   test('direct SQL cannot counterfeit completion, mutate payout or use another rail',async()=>{
