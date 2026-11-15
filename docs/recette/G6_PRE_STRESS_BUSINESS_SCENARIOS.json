@@ -850,7 +850,7 @@
       ]
     }
   ],
-  "updated": "2026-11-14",
+  "updated": "2026-11-15",
   "decision_ref": "issue #3927 comment 6828953843 (A1-A8, A2-bis, A2-ter)",
   "not_applicable_rule": "NOT_APPLICABLE exige un motif et la branche non concernée, au niveau assertion ou scénario ; jamais compté comme PASS ; interdit pour masquer un P0 obligatoire.",
   "gates": {
@@ -1209,6 +1209,58 @@
     "deferred_to_stress": {
       "L12": "Bornes 23 h 59 / 24 h 01 : exigent de maîtriser l'horloge ; preuve PostgreSQL/unitaire ou cible isolée du stress, jamais d'écriture d'horodatage sur le staging",
       "L25": "Redéploiement entre paiement et facture : interdit pendant les campagnes (gel des fusions) ; scénario stress P1"
+    }
+  },
+  "fable_business_blindspots": {
+    "source_issue": 4107,
+    "rule": "Constats F1–F8 de l'audit des angles morts. Un comportement « non couvert » par décision du propriétaire (STATUS G8/G9) est qualifié NON_COUVERT, jamais PASS ni FAIL ; tout écart au comportement attendu actuel reste un FAIL.",
+    "findings": {
+      "F1": {
+        "scenarios": [
+          "N13",
+          "N20",
+          "N40"
+        ],
+        "expected_now": "Commande cash ou mobile money avec manquant attesté : E7 refuse (ITEM_REFUND_PAYMENT_METHOD_UNSUPPORTED) ; la réservation locale (#4117, flag staging FABLE_LOCAL_REFUND_RESERVATIONS_ENABLED) renvoie 202 reserved, paid:false, une seule fois par quantité, garde anti-double entre rails",
+        "not_covered": "Sortie d'argent cash/MM, reçu, garde de caisse : NON_COUVERT tant que G8 n'est pas tranchée"
+      },
+      "F2": {
+        "scenarios": [
+          "N26",
+          "N27",
+          "N39"
+        ],
+        "expected_now": "Annulation d'une commande payée en cash : crédit wallet dans la devise du marché, conforme aux paliers N39 ; aucun appel PSP",
+        "not_covered": "Remboursement sur le moyen d'encaissement (espèces, mobile money) : NON_COUVERT (G8)"
+      },
+      "F3": {
+        "scenarios": [
+          "M01",
+          "N26"
+        ],
+        "expected_now": "Commande payée non retirée : le scan d'invendus renvoie 409, aucune ligne unsold_items ni unsold_at sur une commande payée (garde SQL 415), code de retrait toujours valide, argent du client intact",
+        "not_covered": "Rappels, délai, clôture du droit de retrait, sort de l'argent : NON_COUVERT (G9)"
+      },
+      "F4": {
+        "scenarios": [],
+        "deferred": "Suspension d'un relais avec encours : non jouée en campagne (perturberait l'autre cohorte) ; constat #4107, traitement après les E2E"
+      },
+      "F5": {
+        "scenarios": [],
+        "deferred": "Sort physique d'un article retourné : après les E2E"
+      },
+      "F6": {
+        "scenarios": [],
+        "deferred": "Créance fournisseur sur trop-payé : après les E2E ; O-ECO note le drapeau overpaid sans verdict"
+      },
+      "F7": {
+        "scenarios": [],
+        "deferred": "Changement de numéro client : après les E2E"
+      },
+      "F8": {
+        "scenarios": [],
+        "deferred": "Expédition entière perdue : après les E2E (stress ou recette dédiée)"
+      }
     }
   }
 }

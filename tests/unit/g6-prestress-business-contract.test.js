@@ -91,6 +91,12 @@ describe('G6 pré-stress — unique business contract ChatGPT / Opus',()=>{
       if(mapped) for(const id of mapped){ expect(ids.has(id)).toBe(true); expect(data.scenarios.find(s=>s.id===id).boundary_cases).toContain(l); }
     }
   });
+  test('angles morts Fable F1-F8 : rattachés à des IDs existants ou reportés',()=>{
+    const f=data.fable_business_blindspots.findings; const ids=new Set(data.scenarios.map(s=>s.id));
+    for(let i=1;i<=8;i++){ const e=f['F'+i]; expect(e).toBeTruthy();
+      expect(e.scenarios.length>0 || Boolean(e.deferred)).toBe(true);
+      for(const id of e.scenarios) expect(ids.has(id)).toBe(true); }
+  });
   test('guide humain et contrat machine conservent exactement les mêmes IDs',()=>{
     const md=fs.readFileSync(documentation,'utf8');
     const ids=[...md.matchAll(/^\| ([MN]\d{2}) \|/gm)].map(m=>m[1]);

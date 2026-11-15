@@ -207,6 +207,18 @@ Chaque cas rattaché s'exécute comme **variante de l'ID existant** (champ `boun
 - **L23** : le refus au 6ᵉ retrait est aujourd'hui attendu (limiteur par IP) ; constat, pas FAIL, tant que la décision #4070 §8.1 n'est pas prise.
 - **Reportés au stress** : L12 (bornes 23 h 59 / 24 h 01, horloge non maîtrisable sur le staging : preuve PostgreSQL ou cible isolée) et L25 (redéploiement sous charge, interdit pendant les campagnes : scénario P1).
 
+## Angles morts métier — audit Fable #4107 (F1–F8)
+
+Un comportement que le propriétaire a déclaré non couvert (STATUS G8, G9) est qualifié **NON_COUVERT**, jamais PASS ni FAIL. Tout écart au comportement attendu aujourd'hui reste un FAIL.
+
+| Constat | Scénarios | Attendu aujourd'hui | Non couvert |
+|---|---|---|---|
+| F1 manquant sur commande cash / mobile money | N13, N20, N40 | E7 refuse (`ITEM_REFUND_PAYMENT_METHOD_UNSUPPORTED`) ; réservation locale #4117 (flag staging) : 202 `reserved, paid:false`, une seule fois, sans double entre rails | Sortie d'argent, reçu, garde de caisse (G8) |
+| F2 annulation d'une commande payée en cash | N26, N27, N39 | Crédit wallet en devise du marché selon les paliers N39, aucun appel PSP | Remboursement sur le moyen d'encaissement (G8) |
+| F3 colis payé non retiré | M01, N26 | Scan d'invendus 409 ; aucune liquidation d'une commande payée (garde SQL 415) ; code valide, argent intact | Rappels, délai, clôture, sort de l'argent (G9) |
+
+**Hors campagne, après les E2E** : F4 (suspension d'un relais avec encours, perturberait l'autre cohorte), F5 (sort d'un article retourné), F6 (créance fournisseur), F7 (changement de numéro), F8 (expédition entière perdue).
+
 ## Coordination et paquet de preuve
 
 - **Référentiel de vérité** : ce fichier plus #3754 ; pas de deuxième nomenclature propre à Opus.
