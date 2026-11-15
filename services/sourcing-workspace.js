@@ -545,7 +545,7 @@ async function scanCandidate(candidateRef, actor) {
 }
 
 async function recordWatchReview(candidateRef, body, actor) {
-  return controlledWatchReview.recordControlledWatchReview(candidateRef, body, actor?.id || null);
+  return candidateActions.recordControlledWatchReview(candidateRef, body, actor?.id || null);
 }
 
 async function watchlistCandidate(candidateRef, actor) {
