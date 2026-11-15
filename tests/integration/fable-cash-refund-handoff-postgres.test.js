@@ -244,7 +244,7 @@ describePg('Fable F1 — cash proof, handoff and settlement (real PG)',()=>{
     await expect(request('confirm',{...transfer,payee_fingerprint:other})).rejects.toMatchObject({code:'LOCAL_MOBILE_REFUND_TRANSFER_MISMATCH'});
     await expect(request('confirm',{...transfer,amount_minor:'1201'})).rejects.toMatchObject({code:'LOCAL_MOBILE_REFUND_TRANSFER_MISMATCH'});
     expect((await sql('SELECT COUNT(*)::int n FROM refunds')).rows[0].n).toBe(0);
-    const results=await Promise.all([request('confirm',transfer),request('confirm',transfer,adminId,B)]);
+    const results=await Promise.all([request('confirm',transfer),request('confirm',transfer,verifierId,B)]);
     expect(results.map(x=>x.replayed).sort()).toEqual([false,true]);
     expect(results[0]).toMatchObject({paid:true,status:'settled',receiptRef:'REM-FABLE-PG-TEST'});
     expect(results[0].refundId).toBe(results[1].refundId);
