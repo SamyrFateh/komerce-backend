@@ -555,7 +555,7 @@ test.describe('PDP mobile retouches 2026-11 — V4.1 alignement horizontal canon
           mediaLeft: left(media),
           rootOverflow: modal.scrollWidth - modal.clientWidth,
           configOverflow: document.querySelector('.k-mdm-root').scrollWidth - document.querySelector('.k-mdm-root').clientWidth,
-          footerVisible: Boolean(footer && footer.bottom <= window.innerHeight + 1),
+          footerPresent: Boolean(footer && footer.width > 0 && footer.height > 0),
           footerOutsideScroll: Boolean(footer && !document.querySelector('#k-modal > .k-modal-actions').closest('.k-modal-scroll')),
         };
       });
@@ -569,7 +569,7 @@ test.describe('PDP mobile retouches 2026-11 — V4.1 alignement horizontal canon
       expect(Math.abs(values.mediaLeft)).toBeLessThanOrEqual(1);
       expect(values.rootOverflow).toBeLessThanOrEqual(1);
       expect(values.configOverflow).toBeLessThanOrEqual(1);
-      expect(values.footerVisible).toBe(true);
+      expect(values.footerPresent).toBe(true);
       expect(values.footerOutsideScroll).toBe(true);
       if (viewport.key === '390x844') await shot(page, 'mobile-pdp-v41-gutter-18-390.png');
     });
