@@ -180,7 +180,7 @@ for (const width of SIZES) {
         specs: specs?.textContent,
         panelColumns: getComputedStyle(panel).gridTemplateColumns.split(' ').length,
         panelTop: box(panel)?.top,
-        suggestionsTop: box(suggestions)?.top,
+        suggestionsHidden: suggestions?.classList.contains('u-hidden'),
         cartTop: box(cart)?.top,
         mainOverflow: getComputedStyle(main).overflowY,
         brandVisible: box(document.querySelector('#k-modal .k-modal-brand'))?.width > 0,
@@ -190,7 +190,7 @@ for (const width of SIZES) {
     expect(hierarchy.description?.length).toBeGreaterThan(10);
     expect(hierarchy.specs?.length).toBeGreaterThan(10);
     expect(hierarchy.panelColumns).toBe(2);
-    expect(hierarchy.suggestionsTop).toBeGreaterThan(hierarchy.panelTop);
+    expect(hierarchy.suggestionsHidden).toBe(true);
     expect(hierarchy.mainOverflow).toBe('auto');
     expect(hierarchy.brandVisible).toBe(true);
     // La capture CM a révélé une galerie de ~810px avec photo ~390px,
@@ -308,6 +308,13 @@ test('AUDIT VISUEL — vraie fiche débardeur CM, sans fixture ni mutation', asy
   fs.mkdirSync(out, { recursive: true });
   await page.goto(new URL('/CM', root).toString(), { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#k-modal-overlay', { state: 'attached', timeout: 12000 });
+  const suggestionsResponse = page.waitForResponse(response => {
+    const url = new URL(response.url());
+    return url.pathname === '/api/boutique/suggestions' &&
+      url.searchParams.get('surface') === 'pdp' &&
+      url.searchParams.get('market') === 'CM' &&
+      url.searchParams.get('viewed_product_id') === String(target.id || target.product_id);
+  });
   await page.evaluate(async item => {
     const [{ state }, { bus }] = await Promise.all([
       import('/boutique/js/b-store.js'), import('/boutique/js/b-bus.js'),
@@ -319,7 +326,16 @@ test('AUDIT VISUEL — vraie fiche débardeur CM, sans fixture ni mutation', asy
   await expect(page.locator('#k-modal')).toBeVisible({ timeout: 12000 });
   await expect(page.locator('#k-modal-name')).toContainText(/Débardeur/i, { timeout: 15000 });
   await expect(page.locator('#k-modal-long-description')).toBeVisible({ timeout: 15000 });
-  await page.waitForTimeout(1500);
+  const suggestionsResult = await suggestionsResponse;
+  expect(suggestionsResult.ok()).toBe(true);
+  const { suggestions } = await suggestionsResult.json();
+  expect(suggestions.length).toBeLessThanOrEqual(3);
+  const visibleIds = new Set(products.map(product => String(product.id || product.product_id)));
+  for (const suggestion of suggestions) {
+    expect(visibleIds.has(String(suggestion.product_id))).toBe(true);
+    expect(suggestion.name).not.toMatch(/casserole/i);
+  }
+  await page.waitForTimeout(350);
 
   const audit = await page.evaluate(() => {
     const q = selector => document.querySelector(selector);
@@ -390,7 +406,6 @@ test('AUDIT VISUEL — vraie fiche débardeur CM, sans fixture ni mutation', asy
       cartWidthPx: [250, 300],
       photoHeightPx: [480, 515],
       addShareOfCtas: [0.42, 0.48],
-      suggestionsVisibleInViewport: true,
       detailPanelStartsNear: 610,
     },
   }, null, 2));
@@ -423,6 +438,11 @@ test('AUDIT VISUEL — vraie fiche débardeur CM, sans fixture ni mutation', asy
   expect(audit.galleryThumbGap).toBeLessThanOrEqual(26);
   expect(audit.thumbnails.h).toBeLessThanOrEqual(460);
   expect(audit.gallery.bottom).toBeLessThanOrEqual(audit.buybox.bottom + 10);
-  expect(audit.suggestions.y).toBeGreaterThanOrEqual(audit.details.bottom);
-  expect(audit.suggestions.y - audit.details.bottom).toBeLessThan(48);
+  expect(audit.suggestionCount).toBe(suggestions.length);
+  if (suggestions.length) {
+    expect(audit.suggestions.y).toBeGreaterThanOrEqual(audit.details.bottom);
+    expect(audit.suggestions.y - audit.details.bottom).toBeLessThan(48);
+  } else {
+    expect(audit.suggestionsHidden).toBe(true);
+  }
 });

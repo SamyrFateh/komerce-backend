@@ -85,6 +85,16 @@ describe('modal-mobile-canonical.css - suggestion responsibilities', () => {
     expect(css).toMatch(/\.k-mdm-details-title\s*\{[^}]*font-size:\s*19px/s);
   });
 
+  test('V4.1 — un seul gutter de 18px : identité, variantes, livraison, description', () => {
+    expect(css).toContain('--k-pdp-mobile-gutter: 18px;');
+    expect(css).toMatch(/#k-modal \.k-mdm-root\s*\{[^}]*box-sizing:\s*border-box;[^}]*padding-inline:\s*var\(--k-pdp-mobile-gutter\)/s);
+    expect(css).toMatch(/#k-modal \.k-modal-info\s*\{[^}]*padding:\s*5px var\(--k-pdp-mobile-gutter\) 0/s);
+    expect(css).toMatch(/\.k-mdm-details-title\s*\{[^}]*padding:\s*14px 0 2px/s);
+    expect(css).toMatch(/\.k-mdm-desc-section\s*\{[^}]*padding:\s*12px 0/s);
+    expect(css).toMatch(/\.k-mdm-fold\s*\{[^}]*calc\(0px - var\(--k-pdp-mobile-gutter\)\)/s);
+    expect(css).toMatch(/#k-modal \.k-modal-actions\s*\{[^}]*padding:\s*7px 10px/s);
+  });
+
   test('uses compact color, size and delivery controls below the hero', () => {
     expect(css).toMatch(
       /#k-modal\s+\.k-sku-color-dot\s*\{[^}]*width:\s*30px[^}]*height:\s*30px/s

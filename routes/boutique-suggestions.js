@@ -22,6 +22,7 @@
  *
  * Deux surfaces read-only sous la même façade recommendations :
  * - surface absente : ranking produit historique, inchangé ;
+ * - surface=pdp     : suggestions pertinentes et visibles sur le marché demandé ;
  * - surface=local   : projection DiscoveryCard locale, activation serveur.
  *
  * Aucun calcul métier dans la route : parsing puis délégation au service owner.
@@ -79,8 +80,15 @@ router.get('/', async (req, res, next) => {
       limit,
     } = req.query;
 
+    const isPdp = surface === 'pdp';
+    if (isPdp && (!UUID_RE.test(viewed_product_id || '') ||
+        typeof market !== 'string' || !/^[A-Z]{2}$/i.test(market))) {
+      return res.status(400).json({ error: 'Produit et code marché valides requis pour surface=pdp' });
+    }
+
     const signals = {
-      viewed_product_id: UUID_RE.test(viewed_product_id || '') ? viewed_product_id : null,
+      ...(isPdp ? { pdpMarketCode: market.toUpperCase() } : {}),
+      viewed_product_id: UUID_RE.test(viewed_product_id || '') ? String(viewed_product_id).toLowerCase() : null,
       category:          category  ? String(category).slice(0, 80)  : null,
       subcategory:       subcategory ? String(subcategory).slice(0, 80) : null,
       recently_viewed:   parseUUIDs(rvRaw),

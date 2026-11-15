@@ -9,6 +9,13 @@ const path = require('path');
 const ui = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/operations-workspace.js'), 'utf8');
 const route = fs.readFileSync(path.join(__dirname, '../../routes/admin-operations-workspace.js'), 'utf8');
 
+test('A2 : la création de KOM-BOX envoie une Idempotency-Key conservée après échec et la route l\'exige', () => {
+  expect(ui).toContain("'Idempotency-Key': options.idempotencyKey");
+  expect(ui).toContain('idempotencyKey: boxKey');
+  expect(ui).toContain('onSuccess: () => { boxKey = null; boxKeyRef = null; }');
+  expect(route).toContain("req.get('Idempotency-Key')");
+});
+
 test('Hub Live compose les KOM-BOX uniquement via les routes Workspace marché', () => {
   expect(ui).toContain("endpointFor(context.marketCode, 'boxes')");
   expect(ui).toContain("'boxes/'+encodeURIComponent(box.unit_id)+'/bags'");

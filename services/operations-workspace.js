@@ -172,7 +172,7 @@ async function queryDistribution(marketId) {
        LEFT JOIN relais r ON r.id = o.relais_id
       WHERE o.market_id = $1
         AND (o.relais_id IS NULL OR r.market_id = $1)
-        AND o.status IN ('ordered', 'preparation')
+        AND o.status IN ('ordered', 'preparation', 'available')
         AND EXISTS (
           SELECT 1 FROM order_items oi
            WHERE oi.order_id = o.id
@@ -483,7 +483,7 @@ async function runDistribution(market) {
        FROM orders o
        LEFT JOIN relais r ON r.id = o.relais_id
       WHERE o.market_id = $1
-        AND o.status IN ('ordered', 'preparation')
+        AND o.status IN ('ordered', 'preparation', 'available')
         AND EXISTS (
           SELECT 1 FROM order_items oi
            WHERE oi.order_id = o.id
@@ -548,7 +548,9 @@ async function runDistribution(market) {
 async function distributeSingleOrder(reference, market) {
   const resolvedMarket = requireMarket(market);
   const order = await resolveOrderInMarket(reference, resolvedMarket.id);
-  if (!['ordered', 'preparation'].includes(order.status)) {
+  // A1 : 'available' = réception locale déjà attestée (commande mixte). Les étapes Hub de la ligne IMPORT
+  // non répartie restent ouvertes ; distributeOrder refuse (already_assigned) une commande sans ligne à répartir.
+  if (!['ordered', 'preparation', 'available'].includes(order.status)) {
     throw new OperationsWorkspaceError(
       'order_not_distributable',
       `Répartition impossible : la commande ${order.reference} est au statut ${order.status}`,

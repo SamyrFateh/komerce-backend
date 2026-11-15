@@ -29737,7 +29737,7 @@
               {
                 "declared": "services/supplier-shortage-service.js",
                 "resolvedPath": "services/supplier-shortage-service.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/supplier-source-resolution.js",
@@ -31005,7 +31005,7 @@
       "perimeter": {
         "in": [
           "moteur de classement boutique",
-          "endpoint de suggestions",
+          "endpoint de suggestions, avec une surface PDP limitée aux produits visibles sur le marché et liés au produit consulté",
           "DiscoveryCard — projection de lecture mixte (product|physical_offer|service), jamais persistée",
           "politique éditoriale serveur explicite du rail local : activation globale, candidats et ordre"
         ],
@@ -31475,7 +31475,7 @@
               {
                 "declared": "services/local-item-refund-reservation.js",
                 "resolvedPath": "services/local-item-refund-reservation.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/paypal-refund-authority.js",
@@ -31510,7 +31510,7 @@
               {
                 "declared": "services/stripe-refund-authority.js",
                 "resolvedPath": "services/stripe-refund-authority.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               }
             ]
           },

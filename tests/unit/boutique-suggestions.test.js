@@ -201,3 +201,22 @@ describe('GET /api/boutique/suggestions — limit', () => {
     expect(Number.isNaN(call.limit)).toBe(true);
   });
 });
+
+describe('GET /api/boutique/suggestions — PDP market', () => {
+  it.each(['cm', 'km', 'cg'])('passes the requested market %s to the ranking engine', async (market) => {
+    const response = await request(buildApp())
+      .get(`/api/boutique/suggestions?surface=pdp&market=${market}&viewed_product_id=${VALID_UUID}`);
+    expect(response.status).toBe(200);
+    expect(mockComputeSuggestions).toHaveBeenCalledWith(expect.objectContaining({
+      pdpMarketCode: market.toUpperCase(),
+      viewed_product_id: VALID_UUID,
+    }));
+  });
+
+  it('rejects PDP requests without a market', async () => {
+    const response = await request(buildApp())
+      .get(`/api/boutique/suggestions?surface=pdp&viewed_product_id=${VALID_UUID}`);
+    expect(response.status).toBe(400);
+    expect(mockComputeSuggestions).not.toHaveBeenCalled();
+  });
+});
