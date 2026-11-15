@@ -22,6 +22,7 @@
 const { canonicalizeProductIdentity } = require('./catalog-promotion/editorial-identity');
 const { findConfirmed, chooseCommercialPair } = require('./supplier-commercial-category-mapping');
 const {semanticIntent,semanticConflict} = require('./commercial-taxonomy-semantics');
+const categoryAgreement = require('./commercial-category-agreement');
 const centralHubSupplier = require('./suppliers/central-hub-supplier');
 
 function sourceLocaleFromCandidate(candidate = {}) {
@@ -102,6 +103,44 @@ async function resolveCommercialTaxonomyVerdict(q, candidate = {}) {
   if (human?.status === 'CONFIRMED' && human.category && human.subcategory) {
     return {status:'EXPLICIT_REVIEW',category:human.category,
       subcategory:human.subcategory,source:'OPERATOR_CONFIRMED'};
+  }
+  // Feature-flagged category-only rollout for CJ/AliExpress. These two
+  // inputs are independent: actual object from source title AND actual
+  // supplier-provided category root. No Discovery, customs, lexical tie-break
+  // or guessed leaf is allowed to manufacture a complete pair.
+  if (categoryAgreement.enabled() && categoryAgreement.eligibleSupplier(candidate)) {
+    const semantic = semanticIntent(candidate);
+    if (semantic.kind === 'conflict') {
+      return {status:'REVIEW_REQUIRED',category:null,subcategory:null,
+        source:semantic.reason};
+    }
+    const provider=candidate.normalized_source_contract?.supplier_name||candidate.supplier_name;
+    const path=candidate.supplier_category||candidate.normalized_source_contract?.supplier_category;
+    // Already human-confirmed reusable provider/path mappings are authoritative
+    // for the full pair; the experimental lexicon never overrides that proof.
+    if (provider && path) {
+      const mapped=await findConfirmed(provider,path,q);
+      if (mapped) {
+        const conflict=semanticConflict(candidate,mapped);
+        if (conflict) return {status:'REVIEW_REQUIRED',category:null,
+          subcategory:null,source:conflict};
+        return {status:'AUTO_CLASSIFIED',...mapped,source:'CONFIRMED_SUPPLIER_PATH'};
+      }
+    }
+    const decision=categoryAgreement.decideCategory(candidate);
+    if (decision.kind!=='category') {
+      return {status:'REVIEW_REQUIRED',category:null,subcategory:null,
+        source:decision.reason};
+    }
+    // Never propose inactive/commercial-filter categories.
+    const {rows:[active]}=await q.query(
+      'SELECT key FROM boutique_categories WHERE key=$1 AND is_active=TRUE AND filter_type IS NULL LIMIT 1',
+      [decision.category]);
+    if(!active) return {status:'REVIEW_REQUIRED',category:null,subcategory:null,
+      source:'CATEGORY_NOT_ACTIVE'};
+    return {status:'CATEGORY_AUTO_REVIEW_REQUIRED',category:decision.category,
+      subcategory:null,proposed_subcategory:decision.proposed_subcategory,
+      source:decision.source,requires_human_subcategory:true};
   }
   // Analyse de la hiérarchie entière AVANT les correspondances fournisseur :
   // un chemin "Women's Clothing" est une preuve métier, même lorsque la feuille

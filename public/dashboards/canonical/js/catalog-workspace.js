@@ -1963,24 +1963,36 @@
           SOURCING_ENDPOINT + '/candidates/' + encodeURIComponent(row.candidate_ref) +
           '/boutique-category-options');
         const candidates = Array.isArray(options.categories) ? options.categories : [];
-        const suggestion = (options.suggestions || []).find(item =>
+        const decision = options.category_decision || null;
+        const categoryOnly = decision?.status === 'CATEGORY_AUTO_REVIEW_REQUIRED' &&
+          candidates.some(pair => pair.category === decision.category);
+        // Never pre-select, or apply on behalf of the operator, an unproven
+        // subcategory just because the parent category passed its own gate.
+        const suggestion = categoryOnly ? null : (options.suggestions || []).find(item =>
           candidates.some(pair => pair.category === item.category &&
             pair.subcategory === item.subcategory));
-        const ordered = suggestion
-          ? [suggestion, ...candidates.filter(pair =>
-              pair.category !== suggestion.category || pair.subcategory !== suggestion.subcategory)]
-          : candidates;
+        const ordered = categoryOnly
+          ? [...candidates.filter(pair => pair.category === decision.category),
+             ...candidates.filter(pair => pair.category !== decision.category)]
+          : suggestion
+            ? [suggestion, ...candidates.filter(pair =>
+                pair.category !== suggestion.category || pair.subcategory !== suggestion.subcategory)]
+            : candidates;
         if (!ordered.length) throw new Error('Aucune catégorie Boutique active disponible.');
         const previous = panel.querySelector('[data-catalog-candidate-category-form]');
         if (previous) previous.remove();
         const form = doc.createElement('form');
         form.className = 'kmc-catalog-inspector-form';
         form.setAttribute('data-catalog-candidate-category-form', '');
+        if (categoryOnly) form.setAttribute('data-category-only-review', '');
         form.appendChild(text(doc, 'strong', '', 'Proposition de classement Boutique'));
         form.appendChild(text(doc, 'p', 'kmc-catalog-correction-hint',
-          suggestion
-            ? 'Proposition issue du moteur Komerce. Vérifiez sa preuve et sa pertinence.'
-            : 'Aucune proposition sûre. Sélectionnez une catégorie Boutique existante.'));
+          categoryOnly
+            ? 'Catégorie reconnue (objet + branche fournisseur) : ' + decision.category +
+              '. Sélectionnez et confirmez personnellement la sous-catégorie ; aucune feuille n’est appliquée automatiquement.'
+            : suggestion
+              ? 'Proposition issue du moteur Komerce. Vérifiez sa preuve et sa pertinence.'
+              : 'Aucune proposition sûre. Sélectionnez une catégorie Boutique existante.'));
         if (suggestion) {
           const basis = [suggestion.basis, suggestion.reason, suggestion.confidence]
             .filter(Boolean).join(' · ');
@@ -2021,6 +2033,12 @@
           form.appendChild(apply);
         }
         select.addEventListener('change', () => {
+          // A category-only placement is not a human subcategory confirmation.
+          // The operator must explicitly click the form confirmation button.
+          if (categoryOnly) {
+            save.hidden = select.value === '';
+            return;
+          }
           if (select.value !== '') form.requestSubmit();
         });
         form.addEventListener('submit', async event => {
