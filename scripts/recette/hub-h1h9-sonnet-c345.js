@@ -50,6 +50,10 @@ const noRaw5xx = (rs) => rs.every((r) => r.http >= 200 && r.http < 500);
 // ── C3 : confirmation reduite en concurrence avec une reception (PO envoyee, non confirmee) ──
 async function c3({ env, db, run8 }) {
   const { A, q, orderRef, code, rep, fin, close } = await ctx({ env, db, run8 });
+  // SEAM explicite, comme hub-v1-http-action-runner : l'ouverture des lignes d'achat n'a pas de route HTTP (paiement confirme).
+  const trigger = require('../../services/purchasing-trigger-service');
+  process.env.ADMIN_PHONE = '';
+  for (const sfx of ['KOM-101', 'KOM-102']) { const [ro] = await q('SELECT id FROM orders WHERE reference=$1', [orderRef(sfx)]); if (!ro) throw Error('FIXTURE_ORDER_ABSENT'); await trigger.triggerPurchasing(ro.id); }
   const lines = await q(
     `SELECT pl.id, pl.supplier_id, pl.product_sku_id AS sku, oi.quantity::int AS qty, o.reference
        FROM purchase_lines pl JOIN order_items oi ON oi.id=pl.order_item_id JOIN orders o ON o.id=oi.order_id
