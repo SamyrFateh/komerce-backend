@@ -111,6 +111,43 @@ async function _loadItemRefundMetadata(db, refund) {
 }
 
 /**
+ * F1 cash — human-verified handoff, never a PSP confirmation.
+ * Original payer identity is not inferred from orders.user_id or the cashier.
+ * Store independently inspected evidence references, not personal data.
+ */
+async function _loadLocalCashRefundMetadata(db, refund) {
+  const { rows: [r] } = await db.query(
+    'SELECT res.id, res.order_item_id, res.quantity, res.amount_kmf, res.reason, ' +
+    'oi.product_id, oi.sku_id, oi.variant_combo, oi.price_kmf, oi.quantity AS line_quantity, ' +
+    'sk.sku AS sku_code, p.signed_receipt_ref, p.payer_signature_proof_ref, ' +
+    'p.witness_proof_ref, a.original_payer_proof_ref, a.identity_check_proof_ref, ' +
+    'm.currency AS market_currency ' +
+    'FROM local_cash_refund_payouts p ' +
+    'JOIN local_cash_refund_authorizations a ON a.id=p.authorization_id ' +
+    'JOIN local_item_refund_reservations res ON res.id=p.reservation_id ' +
+    'JOIN order_items oi ON oi.id=res.order_item_id ' +
+    'LEFT JOIN product_skus sk ON sk.id=oi.sku_id ' +
+    'JOIN markets m ON m.id=res.market_id ' +
+    'WHERE p.id=$1 AND res.order_id=$2',
+    [refund.local_cash_refund_payout_id, refund.order_id]);
+  if (!r || String(refund.refund_type)!==('cash_shortage:'+r.id))
+    throw new Error('[refund-receipt] Invalid cash handoff for refund '+refund.id);
+  return {
+    partial: true, refund_reservation_id:r.id,
+    line: {order_item_id:r.order_item_id,product_id:r.product_id,sku_id:r.sku_id||null,
+      sku:r.sku_code||null,variant_combo:r.variant_combo||null,
+      quantity:Number(r.quantity),line_quantity:Number(r.line_quantity),
+      unit_price_kmf:r.price_kmf,amount_kmf:r.amount_kmf,amount_eur:null},
+    refund_currency:'KMF',market_currency:r.market_currency,
+    payer:{method:'ORIGINAL_PAYER_VERIFIED_OFFLINE', original_payer_proof_ref:r.original_payer_proof_ref,
+      identity_check_proof_ref:r.identity_check_proof_ref,
+      signed_receipt_ref:r.signed_receipt_ref,
+      payer_signature_proof_ref:r.payer_signature_proof_ref,witness_proof_ref:r.witness_proof_ref},
+    original_invoice_immutable:true,
+  };
+}
+
+/**
  * Émet le reçu de remboursement pour un remboursement confirmé.
  *
  * @param {string} refundId  - UUID de la ligne refunds (status doit être 'completed')
@@ -166,7 +203,9 @@ async function issue(refundId, { dbClient, issuedBy } = {}) {
   // Chargé AVANT la référence : un reçu de ligne incomplet ne consomme aucun numéro.
   const itemMetadata = String(refund.refund_type || '').startsWith('item:')
     ? await _loadItemRefundMetadata(db, refund)
-    : null;
+    : String(refund.refund_type || '').startsWith('cash_shortage:')
+      ? await _loadLocalCashRefundMetadata(db, refund)
+      : null;
 
   // ── Générer la référence ──────────────────────────────────────────────────
   const reference = await _generateReference(db);
