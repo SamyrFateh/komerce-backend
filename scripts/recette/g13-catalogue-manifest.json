@@ -5,7 +5,7 @@
   "CM",
   "CG"
  ],
- "note": "Réf. CJ épinglées après découverte et inspection. Auto : 0 produit retenu (candidats refusés à l'inspection ou décision WATCH). AliExpress : 0 retenu (images à marques ou texte).",
+ "note": "Réf. épinglées après découverte et inspection (critère : ni marque ou logo identifiable, ni personnage, ni filigrane masquant). La décision de sourcing est dérivée du moteur économique : aucune route admin ne la pose, seuls les candidats TEST sont retenus.",
  "entries": [
   {
    "id": "G13-01",
@@ -230,48 +230,46 @@
    "keyword": null,
    "name_fr": "Tissu wax motif hirondelles",
    "description_fr": "Tissu wax en coton, motif hirondelles vertes sur fond rayé, vendu à la coupe."
-  }
- ],
- "discovery": [
-  {
-   "source": "cj",
-   "keyword": "car seat back organizer",
-   "size": 5
   },
   {
+   "id": "G13-19",
+   "category": "Auto",
+   "subcategory": "Moto",
    "source": "cj",
-   "keyword": "car dash cam",
-   "size": 5
+   "supplier_ref": "F6ED244B-353F-449B-B888-7557B9096BF2",
+   "keyword": null,
+   "name_fr": "Support de téléphone moto avec chargeur",
+   "description_fr": "Support de téléphone pour guidon de moto avec bras à pinces et alimentation de charge."
   },
   {
+   "id": "G13-20",
+   "category": "Auto",
+   "subcategory": "Moto",
    "source": "cj",
-   "keyword": "car interior led light",
-   "size": 5
+   "supplier_ref": "2603300743211618800",
+   "keyword": null,
+   "name_fr": "Support de téléphone moto en alliage",
+   "description_fr": "Support de téléphone en alliage d'aluminium à fixer sur le guidon, maintien solide."
   },
   {
-   "source": "cj",
-   "keyword": "steering wheel cover",
-   "size": 5
+   "id": "G13-21",
+   "category": "Maison",
+   "subcategory": "Rangement",
+   "source": "aliexpress",
+   "supplier_ref": "1005008222543759",
+   "keyword": null,
+   "name_fr": "Clips adhésifs range-câbles",
+   "description_fr": "Lot de clips adhésifs pour ranger et fixer les câbles sur un bureau, un mur ou un meuble."
   },
   {
-   "source": "cj",
-   "keyword": "car seat cushion",
-   "size": 5
-  },
-  {
-   "source": "cj",
-   "keyword": "windshield wiper blade",
-   "size": 5
-  },
-  {
-   "source": "cj",
-   "keyword": "motorcycle phone holder",
-   "size": 5
-  },
-  {
-   "source": "cj",
-   "keyword": "car trunk mat",
-   "size": 5
+   "id": "G13-22",
+   "category": "Tech",
+   "subcategory": "Phones",
+   "source": "aliexpress",
+   "supplier_ref": "1005013175958920",
+   "keyword": null,
+   "name_fr": "Coque de téléphone léopard avec dragonne",
+   "description_fr": "Coque en silicone souple motif léopard avec anneau et dragonne tressée, plusieurs coloris."
   }
  ]
 }
