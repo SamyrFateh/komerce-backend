@@ -19628,14 +19628,14 @@
         "category": "services",
         "declared": "services/local-mobile-refund-handoff.js",
         "resolvedPath": "services/local-mobile-refund-handoff.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "refunds",
         "category": "services",
         "declared": "services/local-cash-refund-handoff.js",
         "resolvedPath": "services/local-cash-refund-handoff.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "refunds",
@@ -54112,8 +54112,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 708,
-        "technicalNodesOwned": 708,
+        "technicalNodesTotal": 710,
+        "technicalNodesOwned": 710,
         "technicalOrphans": 0
       },
       "dash": {

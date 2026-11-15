@@ -1,4 +1,10 @@
 'use strict';
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 const { validateManifest, referenceAmount } = require('../../scripts/recette/g13-catalogue-seed');
 const manifest = require('../../scripts/recette/g13-catalogue-manifest.json');
 

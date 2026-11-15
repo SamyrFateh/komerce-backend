@@ -13,21 +13,21 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 813,
-    "filesWithFullHeaders": 758,
+    "scannedCodeFiles": 815,
+    "filesWithFullHeaders": 760,
     "filesWithLiteHeaders": 55,
-    "filesWithAnyHeaders": 813,
+    "filesWithAnyHeaders": 815,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 2072,
-    "edges": 10299,
-    "dbTables": 240,
-    "doctrines": 812,
+    "graphNodes": 2083,
+    "edges": 10353,
+    "dbTables": 243,
+    "doctrines": 818,
     "impactAreas": 207,
-    "unresolvedCodeEdges": 975,
+    "unresolvedCodeEdges": 979,
     "dbWriteViaOverlapWarnings": 12,
-    "multiWriterTables": 97
+    "multiWriterTables": 99
   },
   "byDomain": {
     "infrastructure": 25,
@@ -71,7 +71,7 @@
     "external-provider-contracts": 1,
     "finance": 3,
     "incident-management": 5,
-    "refunds": 10,
+    "refunds": 12,
     "market-autonomy": 4,
     "markets": 1,
     "payments": 1,
@@ -112,7 +112,7 @@
     "schema": 1,
     "route": 138,
     "entrypoint": 1,
-    "service": 493,
+    "service": 495,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -121,9 +121,9 @@
     "validators": 1
   },
   "byCriticality": {
-    "critical": 127,
+    "critical": 128,
     "medium": 155,
-    "high": 466,
+    "high": 467,
     "low": 64,
     "unknown": 1
   },
@@ -13421,7 +13421,9 @@
         "side_effects"
       ],
       "depends": [
-        "db"
+        "db",
+        "services/catalog-public-view.js",
+        "services/market-local-price-resolution-service.js"
       ],
       "usedBy": [
         "routes/boutique-suggestions.js"
@@ -14818,6 +14820,7 @@
       "dbRead": [
         "boutique_categories",
         "boutique_subcategories",
+        "catalog_media",
         "customs_categories",
         "order_items",
         "orders",
@@ -14825,6 +14828,8 @@
         "products"
       ],
       "dbWrite": [
+        "catalog_media",
+        "product_content_profile",
         "product_variants",
         "products"
       ],
@@ -15878,6 +15883,7 @@
         "product_market_price_drafts",
         "catalog_media",
         "catalog_media_visual_fr_reviews",
+        "product_content_profile",
         "product_skus",
         "product_variants",
         "finance_config",
@@ -15888,6 +15894,7 @@
       "dbWrite": [],
       "dbWriteVia": [],
       "dbTxn": [
+        "transactional_editorial_update",
         "delegated_to_domain_authority"
       ],
       "doctrine": [
@@ -18658,7 +18665,11 @@
         "refund_execution_intents",
         "order_items",
         "product_skus",
-        "markets"
+        "markets",
+        "local_cash_refund_payouts",
+        "local_cash_refund_authorizations",
+        "local_item_refund_reservations",
+        "local_mobile_refund_handoffs"
       ],
       "dbWrite": [
         "transaction_documents"
@@ -20383,6 +20394,7 @@
       ],
       "dbRead": [
         "business_rules",
+        "hub_custody_events",
         "hub_physical_units",
         "parcel_items",
         "parcels",
@@ -21572,6 +21584,78 @@
       "version": "2026-10"
     },
     {
+      "id": "services/local-cash-refund-handoff.js",
+      "file": "services/local-cash-refund-handoff.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "fable-cash-refund-custody-handoff",
+      "domain": "refunds",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "admin-approved verified original payer and cash holder; physical handoff receipt by holder"
+      ],
+      "outputs": [
+        "independent approval",
+        "nonrepeatable handoff",
+        "atomic custody outflow / refunds / qty / receipt"
+      ],
+      "depends": [
+        "db",
+        "services/documents/refund-receipt.js",
+        "migrations/417_fable_cash_refund_custody_handoff.sql"
+      ],
+      "usedBy": [
+        "routes/admin/orders.js"
+      ],
+      "dbRead": [
+        "orders",
+        "local_item_refund_reservations",
+        "cash_collections",
+        "users",
+        "relais",
+        "local_cash_refund_authorizations",
+        "local_cash_refund_payouts",
+        "refunds",
+        "cash_custody_movements"
+      ],
+      "dbWrite": [
+        "local_cash_refund_authorizations",
+        "local_cash_refund_payouts"
+      ],
+      "dbWriteVia": [
+        {
+          "via": "local-cash-refund-payout-trigger",
+          "tables": [
+            "order_items",
+            "refunds"
+          ]
+        }
+      ],
+      "dbTxn": [
+        "order lock",
+        "approval lock",
+        "cash_custody_lock",
+        "balance nonnegative",
+        "receipt before COMMIT"
+      ],
+      "doctrine": [
+        "human_verified_original_payer",
+        "two_distinct_actors",
+        "no_retry_ambiguous_handoff",
+        "cash_only_KMF"
+      ],
+      "impactAreas": [
+        "refunds",
+        "orders",
+        "cash-custody",
+        "documents"
+      ],
+      "version": "2026-11"
+    },
+    {
       "id": "services/local-item-refund-reservation.js",
       "file": "services/local-item-refund-reservation.js",
       "type": "file",
@@ -21632,6 +21716,61 @@
         "payments",
         "cash-custody",
         "logistics"
+      ],
+      "version": "2026-11"
+    },
+    {
+      "id": "services/local-mobile-refund-handoff.js",
+      "file": "services/local-mobile-refund-handoff.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "verified-manual-mobile-refund-handoff",
+      "domain": "refunds",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated operators",
+        "reserved native obligation",
+        "reviewed offline transfer evidence"
+      ],
+      "outputs": [
+        "approved",
+        "transfer_pending or settled handoff"
+      ],
+      "depends": [
+        "db",
+        "services/documents/refund-receipt.js",
+        "migrations/418_fable_manual_mobile_money_refund.sql"
+      ],
+      "usedBy": [
+        "routes/admin/orders.js"
+      ],
+      "dbRead": [
+        "orders",
+        "local_item_refund_reservations",
+        "mobile_money_transactions",
+        "local_mobile_refund_handoffs",
+        "refunds"
+      ],
+      "dbWrite": [
+        "local_mobile_refund_handoffs"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "order lock then handoff lock",
+        "proof-backed settlement before document issuance"
+      ],
+      "doctrine": [
+        "independent_human_attestation",
+        "original_payer",
+        "no_blind_retry"
+      ],
+      "impactAreas": [
+        "refunds",
+        "payments",
+        "documents"
       ],
       "version": "2026-11"
     },
@@ -30039,6 +30178,7 @@
       ],
       "usedBy": [
         "services/hub-operations.js",
+        "services/purchasing-engagement-service.js",
         "bootstrap/crons.js"
       ],
       "dbRead": [
@@ -30100,6 +30240,7 @@
         "services/purchase-line-snapshot.js",
         "services/notification-service.js",
         "services/hub-reference.js",
+        "services/purchasing-completion-service.js",
         "services/suppliers/provider-authority.js",
         "services/suppliers/canonical-unit-purchasing-gate.js",
         "services/suppliers/purchase-order-confirmation-boundary.js",
@@ -40379,6 +40520,26 @@
       "table": "order_item_refund_reservations"
     },
     {
+      "id": "db:local_cash_refund_payouts",
+      "type": "db-table",
+      "table": "local_cash_refund_payouts"
+    },
+    {
+      "id": "db:local_cash_refund_authorizations",
+      "type": "db-table",
+      "table": "local_cash_refund_authorizations"
+    },
+    {
+      "id": "db:local_item_refund_reservations",
+      "type": "db-table",
+      "table": "local_item_refund_reservations"
+    },
+    {
+      "id": "db:local_mobile_refund_handoffs",
+      "type": "db-table",
+      "table": "local_mobile_refund_handoffs"
+    },
+    {
       "id": "db:economic_variables",
       "type": "db-table",
       "table": "economic_variables"
@@ -40492,11 +40653,6 @@
       "id": "db:international_shipment_relay_receipts",
       "type": "db-table",
       "table": "international_shipment_relay_receipts"
-    },
-    {
-      "id": "db:local_item_refund_reservations",
-      "type": "db-table",
-      "table": "local_item_refund_reservations"
     },
     {
       "id": "db:product_market_price_draft_events",
@@ -43164,6 +43320,26 @@
       "doctrine": "no_contact_data_in_live_payloads"
     },
     {
+      "id": "doctrine:human_verified_original_payer",
+      "type": "doctrine",
+      "doctrine": "human_verified_original_payer"
+    },
+    {
+      "id": "doctrine:two_distinct_actors",
+      "type": "doctrine",
+      "doctrine": "two_distinct_actors"
+    },
+    {
+      "id": "doctrine:no_retry_ambiguous_handoff",
+      "type": "doctrine",
+      "doctrine": "no_retry_ambiguous_handoff"
+    },
+    {
+      "id": "doctrine:cash_only_KMF",
+      "type": "doctrine",
+      "doctrine": "cash_only_KMF"
+    },
+    {
       "id": "doctrine:payer_original_only",
       "type": "doctrine",
       "doctrine": "payer_original_only"
@@ -43182,6 +43358,16 @@
       "id": "doctrine:no_unverified_payout",
       "type": "doctrine",
       "doctrine": "no_unverified_payout"
+    },
+    {
+      "id": "doctrine:independent_human_attestation",
+      "type": "doctrine",
+      "doctrine": "independent_human_attestation"
+    },
+    {
+      "id": "doctrine:original_payer",
+      "type": "doctrine",
+      "doctrine": "original_payer"
     },
     {
       "id": "doctrine:local_stock_is_physical_availability_authority",
@@ -65818,6 +66004,18 @@
       "label": "db"
     },
     {
+      "from": "services/boutique-ranking-engine.js",
+      "to": "services/catalog-public-view.js",
+      "type": "depends",
+      "label": "services/catalog-public-view.js"
+    },
+    {
+      "from": "services/boutique-ranking-engine.js",
+      "to": "services/market-local-price-resolution-service.js",
+      "type": "depends",
+      "label": "services/market-local-price-resolution-service.js"
+    },
+    {
       "from": "routes/boutique-suggestions.js",
       "to": "services/boutique-ranking-engine.js",
       "type": "uses",
@@ -68105,6 +68303,12 @@
     },
     {
       "from": "services/catalog-product-mutation-service.js",
+      "to": "db:catalog_media",
+      "type": "db-read",
+      "label": "catalog_media"
+    },
+    {
+      "from": "services/catalog-product-mutation-service.js",
       "to": "db:customs_categories",
       "type": "db-read",
       "label": "customs_categories"
@@ -68132,6 +68336,18 @@
       "to": "db:products",
       "type": "db-read",
       "label": "products"
+    },
+    {
+      "from": "services/catalog-product-mutation-service.js",
+      "to": "db:catalog_media",
+      "type": "db-write",
+      "label": "catalog_media"
+    },
+    {
+      "from": "services/catalog-product-mutation-service.js",
+      "to": "db:product_content_profile",
+      "type": "db-write",
+      "label": "product_content_profile"
     },
     {
       "from": "services/catalog-product-mutation-service.js",
@@ -69746,6 +69962,12 @@
       "to": "db:catalog_media_visual_fr_reviews",
       "type": "db-read",
       "label": "catalog_media_visual_fr_reviews"
+    },
+    {
+      "from": "services/catalog-workspace.js",
+      "to": "db:product_content_profile",
+      "type": "db-read",
+      "label": "product_content_profile"
     },
     {
       "from": "services/catalog-workspace.js",
@@ -74555,6 +74777,30 @@
     },
     {
       "from": "services/documents/refund-receipt.js",
+      "to": "db:local_cash_refund_payouts",
+      "type": "db-read",
+      "label": "local_cash_refund_payouts"
+    },
+    {
+      "from": "services/documents/refund-receipt.js",
+      "to": "db:local_cash_refund_authorizations",
+      "type": "db-read",
+      "label": "local_cash_refund_authorizations"
+    },
+    {
+      "from": "services/documents/refund-receipt.js",
+      "to": "db:local_item_refund_reservations",
+      "type": "db-read",
+      "label": "local_item_refund_reservations"
+    },
+    {
+      "from": "services/documents/refund-receipt.js",
+      "to": "db:local_mobile_refund_handoffs",
+      "type": "db-read",
+      "label": "local_mobile_refund_handoffs"
+    },
+    {
+      "from": "services/documents/refund-receipt.js",
       "to": "db:transaction_documents",
       "type": "db-write",
       "label": "transaction_documents"
@@ -77671,6 +77917,12 @@
     },
     {
       "from": "services/hub-operations.js",
+      "to": "db:hub_custody_events",
+      "type": "db-read",
+      "label": "hub_custody_events"
+    },
+    {
+      "from": "services/hub-operations.js",
       "to": "db:hub_physical_units",
       "type": "db-read",
       "label": "hub_physical_units"
@@ -79849,6 +80101,158 @@
       "label": "privacy"
     },
     {
+      "from": "services/local-cash-refund-handoff.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/local-cash-refund-handoff.js",
+      "to": "services/documents/refund-receipt.js",
+      "type": "depends",
+      "label": "services/documents/refund-receipt.js"
+    },
+    {
+      "from": "services/local-cash-refund-handoff.js",
+      "to": "migrations/417_fable_cash_refund_custody_handoff.sql",
+      "type": "depends",
+      "label": "migrations/417_fable_cash_refund_custody_handoff.sql"
+    },
+    {
+      "from": "routes/admin/orders.js",
+      "to": "services/local-cash-refund-handoff.js",
+      "type": "uses",
+      "label": "routes/admin/orders.js"
+    },
+    {
+      "from": "services/local-cash-refund-handoff.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/local-cash-refund-handoff.js",
+      "to": "db:local_item_refund_reservations",
+      "type": "db-read",
+      "label": "local_item_refund_reservations"
+    },
+    {
+      "from": "services/local-cash-refund-handoff.js",
+      "to": "db:cash_collections",
+      "type": "db-read",
+      "label": "cash_collections"
+    },
+    {
+      "from": "services/local-cash-refund-handoff.js",
+      "to": "db:users",
+      "type": "db-read",
+      "label": "users"
+    },
+    {
+      "from": "services/local-cash-refund-handoff.js",
+      "to": "db:relais",
+      "type": "db-read",
+      "label": "relais"
+    },
+    {
+      "from": "services/local-cash-refund-handoff.js",
+      "to": "db:local_cash_refund_authorizations",
+      "type": "db-read",
+      "label": "local_cash_refund_authorizations"
+    },
+    {
+      "from": "services/local-cash-refund-handoff.js",
+      "to": "db:local_cash_refund_payouts",
+      "type": "db-read",
+      "label": "local_cash_refund_payouts"
+    },
+    {
+      "from": "services/local-cash-refund-handoff.js",
+      "to": "db:refunds",
+      "type": "db-read",
+      "label": "refunds"
+    },
+    {
+      "from": "services/local-cash-refund-handoff.js",
+      "to": "db:cash_custody_movements",
+      "type": "db-read",
+      "label": "cash_custody_movements"
+    },
+    {
+      "from": "services/local-cash-refund-handoff.js",
+      "to": "db:local_cash_refund_authorizations",
+      "type": "db-write",
+      "label": "local_cash_refund_authorizations"
+    },
+    {
+      "from": "services/local-cash-refund-handoff.js",
+      "to": "db:local_cash_refund_payouts",
+      "type": "db-write",
+      "label": "local_cash_refund_payouts"
+    },
+    {
+      "from": "services/local-cash-refund-handoff.js",
+      "to": "db:order_items",
+      "type": "db-write-via",
+      "label": "order_items",
+      "via": "local-cash-refund-payout-trigger"
+    },
+    {
+      "from": "services/local-cash-refund-handoff.js",
+      "to": "db:refunds",
+      "type": "db-write-via",
+      "label": "refunds",
+      "via": "local-cash-refund-payout-trigger"
+    },
+    {
+      "from": "services/local-cash-refund-handoff.js",
+      "to": "doctrine:human_verified_original_payer",
+      "type": "doctrine",
+      "label": "human_verified_original_payer"
+    },
+    {
+      "from": "services/local-cash-refund-handoff.js",
+      "to": "doctrine:two_distinct_actors",
+      "type": "doctrine",
+      "label": "two_distinct_actors"
+    },
+    {
+      "from": "services/local-cash-refund-handoff.js",
+      "to": "doctrine:no_retry_ambiguous_handoff",
+      "type": "doctrine",
+      "label": "no_retry_ambiguous_handoff"
+    },
+    {
+      "from": "services/local-cash-refund-handoff.js",
+      "to": "doctrine:cash_only_KMF",
+      "type": "doctrine",
+      "label": "cash_only_KMF"
+    },
+    {
+      "from": "services/local-cash-refund-handoff.js",
+      "to": "impact:refunds",
+      "type": "impact",
+      "label": "refunds"
+    },
+    {
+      "from": "services/local-cash-refund-handoff.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
+    },
+    {
+      "from": "services/local-cash-refund-handoff.js",
+      "to": "impact:cash-custody",
+      "type": "impact",
+      "label": "cash-custody"
+    },
+    {
+      "from": "services/local-cash-refund-handoff.js",
+      "to": "impact:documents",
+      "type": "impact",
+      "label": "documents"
+    },
+    {
       "from": "services/local-item-refund-reservation.js",
       "to": "db",
       "type": "depends",
@@ -79985,6 +80389,102 @@
       "to": "impact:logistics",
       "type": "impact",
       "label": "logistics"
+    },
+    {
+      "from": "services/local-mobile-refund-handoff.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/local-mobile-refund-handoff.js",
+      "to": "services/documents/refund-receipt.js",
+      "type": "depends",
+      "label": "services/documents/refund-receipt.js"
+    },
+    {
+      "from": "services/local-mobile-refund-handoff.js",
+      "to": "migrations/418_fable_manual_mobile_money_refund.sql",
+      "type": "depends",
+      "label": "migrations/418_fable_manual_mobile_money_refund.sql"
+    },
+    {
+      "from": "routes/admin/orders.js",
+      "to": "services/local-mobile-refund-handoff.js",
+      "type": "uses",
+      "label": "routes/admin/orders.js"
+    },
+    {
+      "from": "services/local-mobile-refund-handoff.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/local-mobile-refund-handoff.js",
+      "to": "db:local_item_refund_reservations",
+      "type": "db-read",
+      "label": "local_item_refund_reservations"
+    },
+    {
+      "from": "services/local-mobile-refund-handoff.js",
+      "to": "db:mobile_money_transactions",
+      "type": "db-read",
+      "label": "mobile_money_transactions"
+    },
+    {
+      "from": "services/local-mobile-refund-handoff.js",
+      "to": "db:local_mobile_refund_handoffs",
+      "type": "db-read",
+      "label": "local_mobile_refund_handoffs"
+    },
+    {
+      "from": "services/local-mobile-refund-handoff.js",
+      "to": "db:refunds",
+      "type": "db-read",
+      "label": "refunds"
+    },
+    {
+      "from": "services/local-mobile-refund-handoff.js",
+      "to": "db:local_mobile_refund_handoffs",
+      "type": "db-write",
+      "label": "local_mobile_refund_handoffs"
+    },
+    {
+      "from": "services/local-mobile-refund-handoff.js",
+      "to": "doctrine:independent_human_attestation",
+      "type": "doctrine",
+      "label": "independent_human_attestation"
+    },
+    {
+      "from": "services/local-mobile-refund-handoff.js",
+      "to": "doctrine:original_payer",
+      "type": "doctrine",
+      "label": "original_payer"
+    },
+    {
+      "from": "services/local-mobile-refund-handoff.js",
+      "to": "doctrine:no_blind_retry",
+      "type": "doctrine",
+      "label": "no_blind_retry"
+    },
+    {
+      "from": "services/local-mobile-refund-handoff.js",
+      "to": "impact:refunds",
+      "type": "impact",
+      "label": "refunds"
+    },
+    {
+      "from": "services/local-mobile-refund-handoff.js",
+      "to": "impact:payments",
+      "type": "impact",
+      "label": "payments"
+    },
+    {
+      "from": "services/local-mobile-refund-handoff.js",
+      "to": "impact:documents",
+      "type": "impact",
+      "label": "documents"
     },
     {
       "from": "services/local-relay-receipt-service.js",
@@ -93391,6 +93891,12 @@
       "label": "services/hub-operations.js"
     },
     {
+      "from": "services/purchasing-engagement-service.js",
+      "to": "services/purchasing-completion-service.js",
+      "type": "uses",
+      "label": "services/purchasing-engagement-service.js"
+    },
+    {
       "from": "bootstrap/crons.js",
       "to": "services/purchasing-completion-service.js",
       "type": "uses",
@@ -93533,6 +94039,12 @@
       "to": "services/hub-reference.js",
       "type": "depends",
       "label": "services/hub-reference.js"
+    },
+    {
+      "from": "services/purchasing-engagement-service.js",
+      "to": "services/purchasing-completion-service.js",
+      "type": "depends",
+      "label": "services/purchasing-completion-service.js"
     },
     {
       "from": "services/purchasing-engagement-service.js",
@@ -115967,7 +116479,9 @@
         "services/admin-order-refund.js",
         "services/item-refund-psp-orchestrator.js",
         "services/item-refund-reservation-service.js",
+        "services/local-cash-refund-handoff.js",
         "services/local-item-refund-reservation.js",
+        "services/local-mobile-refund-handoff.js",
         "utils/logger.js"
       ]
     },
@@ -121511,7 +122025,9 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
-        "db"
+        "db",
+        "services/catalog-public-view.js",
+        "services/market-local-price-resolution-service.js"
       ],
       "directUsedBy": [
         "routes/boutique-suggestions.js"
@@ -121536,7 +122052,9 @@
         "db:products",
         "doctrine:resolve_before_behavior_change",
         "impact:recommendations",
-        "routes/boutique-suggestions.js"
+        "routes/boutique-suggestions.js",
+        "services/catalog-public-view.js",
+        "services/market-local-price-resolution-service.js"
       ]
     },
     "services/boutique-taxonomy-admin.js": {
@@ -122923,6 +123441,7 @@
       "dbRead": [
         "boutique_categories",
         "boutique_subcategories",
+        "catalog_media",
         "customs_categories",
         "order_items",
         "orders",
@@ -122930,6 +123449,8 @@
         "products"
       ],
       "dbWrite": [
+        "catalog_media",
+        "product_content_profile",
         "product_variants",
         "products"
       ],
@@ -122944,9 +123465,11 @@
       "mustCheck": [
         "db:boutique_categories",
         "db:boutique_subcategories",
+        "db:catalog_media",
         "db:customs_categories",
         "db:order_items",
         "db:orders",
+        "db:product_content_profile",
         "db:product_variants",
         "db:products",
         "doctrine:WRITES != OWNS — catalog owns products/product_variants lifecycle",
@@ -123465,6 +123988,7 @@
         "impact:product-discovery",
         "routes/catalog-product-detail.js",
         "routes/products.js",
+        "services/boutique-ranking-engine.js",
         "services/catalog-market-exposure-service.js",
         "services/catalog-product-read-cutover-trial.js",
         "services/catalog-run-progress.js",
@@ -123959,6 +124483,7 @@
         "product_market_price_drafts",
         "catalog_media",
         "catalog_media_visual_fr_reviews",
+        "product_content_profile",
         "product_skus",
         "product_variants",
         "finance_config",
@@ -123996,6 +124521,7 @@
         "db:import_runtime_runs",
         "db:markets",
         "db:order_items",
+        "db:product_content_profile",
         "db:product_market_exposure",
         "db:product_market_price_drafts",
         "db:product_skus",
@@ -126823,7 +127349,11 @@
         "refund_execution_intents",
         "order_items",
         "product_skus",
-        "markets"
+        "markets",
+        "local_cash_refund_payouts",
+        "local_cash_refund_authorizations",
+        "local_item_refund_reservations",
+        "local_mobile_refund_handoffs"
       ],
       "dbWrite": [
         "transaction_documents"
@@ -126838,6 +127368,10 @@
       ],
       "mustCheck": [
         "db:invoices",
+        "db:local_cash_refund_authorizations",
+        "db:local_cash_refund_payouts",
+        "db:local_item_refund_reservations",
+        "db:local_mobile_refund_handoffs",
         "db:markets",
         "db:order_item_refund_reservations",
         "db:order_items",
@@ -126852,6 +127386,8 @@
         "services/admin-order-refund.js",
         "services/documents/document-reconciliation.js",
         "services/documents/document-service.js",
+        "services/local-cash-refund-handoff.js",
+        "services/local-mobile-refund-handoff.js",
         "services/paypal-refund-authority.js",
         "services/sav-ledger-refund.js",
         "services/stripe-refund-authority.js",
@@ -128622,6 +129158,7 @@
       "ownedFiles": [],
       "dbRead": [
         "business_rules",
+        "hub_custody_events",
         "hub_physical_units",
         "parcel_items",
         "parcels",
@@ -129865,6 +130402,81 @@
         "routes/relay-dashboard.js"
       ]
     },
+    "services/local-cash-refund-handoff.js": {
+      "role": "fable-cash-refund-custody-handoff",
+      "domain": "refunds",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db",
+        "services/documents/refund-receipt.js",
+        "migrations/417_fable_cash_refund_custody_handoff.sql"
+      ],
+      "directUsedBy": [
+        "routes/admin/orders.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "orders",
+        "local_item_refund_reservations",
+        "cash_collections",
+        "users",
+        "relais",
+        "local_cash_refund_authorizations",
+        "local_cash_refund_payouts",
+        "refunds",
+        "cash_custody_movements"
+      ],
+      "dbWrite": [
+        "local_cash_refund_authorizations",
+        "local_cash_refund_payouts"
+      ],
+      "dbWriteVia": [
+        {
+          "via": "local-cash-refund-payout-trigger",
+          "tables": [
+            "order_items",
+            "refunds"
+          ]
+        }
+      ],
+      "doctrines": [
+        "human_verified_original_payer",
+        "two_distinct_actors",
+        "no_retry_ambiguous_handoff",
+        "cash_only_KMF"
+      ],
+      "impactAreas": [
+        "refunds",
+        "orders",
+        "cash-custody",
+        "documents"
+      ],
+      "mustCheck": [
+        "db:cash_collections",
+        "db:cash_custody_movements",
+        "db:local_cash_refund_authorizations",
+        "db:local_cash_refund_payouts",
+        "db:local_item_refund_reservations",
+        "db:order_items",
+        "db:orders",
+        "db:refunds",
+        "db:relais",
+        "db:users",
+        "doctrine:cash_only_KMF",
+        "doctrine:human_verified_original_payer",
+        "doctrine:no_retry_ambiguous_handoff",
+        "doctrine:two_distinct_actors",
+        "impact:cash-custody",
+        "impact:documents",
+        "impact:orders",
+        "impact:refunds",
+        "routes/admin/orders.js",
+        "services/documents/refund-receipt.js"
+      ]
+    },
     "services/local-item-refund-reservation.js": {
       "role": "verified-local-item-refund-reservation",
       "domain": "refunds",
@@ -129931,6 +130543,59 @@
         "impact:payments",
         "impact:refunds",
         "routes/admin/orders.js"
+      ]
+    },
+    "services/local-mobile-refund-handoff.js": {
+      "role": "verified-manual-mobile-refund-handoff",
+      "domain": "refunds",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db",
+        "services/documents/refund-receipt.js",
+        "migrations/418_fable_manual_mobile_money_refund.sql"
+      ],
+      "directUsedBy": [
+        "routes/admin/orders.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "orders",
+        "local_item_refund_reservations",
+        "mobile_money_transactions",
+        "local_mobile_refund_handoffs",
+        "refunds"
+      ],
+      "dbWrite": [
+        "local_mobile_refund_handoffs"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "independent_human_attestation",
+        "original_payer",
+        "no_blind_retry"
+      ],
+      "impactAreas": [
+        "refunds",
+        "payments",
+        "documents"
+      ],
+      "mustCheck": [
+        "db:local_item_refund_reservations",
+        "db:local_mobile_refund_handoffs",
+        "db:mobile_money_transactions",
+        "db:orders",
+        "db:refunds",
+        "doctrine:independent_human_attestation",
+        "doctrine:no_blind_retry",
+        "doctrine:original_payer",
+        "impact:documents",
+        "impact:payments",
+        "impact:refunds",
+        "routes/admin/orders.js",
+        "services/documents/refund-receipt.js"
       ]
     },
     "services/local-relay-receipt-service.js": {
@@ -131629,6 +132294,7 @@
         "impact:shared-cart",
         "routes/catalog-product-detail.js",
         "routes/products.js",
+        "services/boutique-ranking-engine.js",
         "services/catalog-market-exposure-service.js",
         "services/discovery-rail-composer.js",
         "services/market-local-price-activation-service.js",
@@ -138346,6 +139012,7 @@
       ],
       "directUsedBy": [
         "services/hub-operations.js",
+        "services/purchasing-engagement-service.js",
         "bootstrap/crons.js"
       ],
       "ownedFiles": [],
@@ -138395,6 +139062,7 @@
         "services/auto-parcel.js",
         "services/hub-operations.js",
         "services/order-status-machine.js",
+        "services/purchasing-engagement-service.js",
         "services/scan-operations.js",
         "services/supplier-shortage-service.js",
         "utils/alerts.js",
@@ -138415,6 +139083,7 @@
         "services/purchase-line-snapshot.js",
         "services/notification-service.js",
         "services/hub-reference.js",
+        "services/purchasing-completion-service.js",
         "services/suppliers/provider-authority.js",
         "services/suppliers/canonical-unit-purchasing-gate.js",
         "services/suppliers/purchase-order-confirmation-boundary.js",
@@ -138476,6 +139145,7 @@
         "services/hub-reference.js",
         "services/notification-service.js",
         "services/purchase-line-snapshot.js",
+        "services/purchasing-completion-service.js",
         "services/purchasing-grouped-service.js",
         "services/supplier-shortage-service.js",
         "services/suppliers/canonical-unit-purchasing-gate.js",
@@ -148465,6 +149135,14 @@
       ]
     },
     {
+      "table": "catalog_media",
+      "writerCount": 2,
+      "writers": [
+        "services/catalog-product-mutation-service.js",
+        "services/catalog-promotion.js"
+      ]
+    },
+    {
       "table": "client_notifications",
       "writerCount": 2,
       "writers": [
@@ -148638,6 +149316,14 @@
       "writers": [
         "routes/parcels.js",
         "routes/tracking.js"
+      ]
+    },
+    {
+      "table": "product_content_profile",
+      "writerCount": 2,
+      "writers": [
+        "services/catalog-product-mutation-service.js",
+        "services/catalog-promotion.js"
       ]
     },
     {
@@ -152289,6 +152975,18 @@
       "label": "db"
     },
     {
+      "from": "services/local-cash-refund-handoff.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/local-cash-refund-handoff.js",
+      "to": "migrations/417_fable_cash_refund_custody_handoff.sql",
+      "type": "depends",
+      "label": "migrations/417_fable_cash_refund_custody_handoff.sql"
+    },
+    {
       "from": "services/local-item-refund-reservation.js",
       "to": "db",
       "type": "depends",
@@ -152299,6 +152997,18 @@
       "to": "migrations/416_fable_local_item_refund_reservations.sql",
       "type": "depends",
       "label": "migrations/416_fable_local_item_refund_reservations.sql"
+    },
+    {
+      "from": "services/local-mobile-refund-handoff.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/local-mobile-refund-handoff.js",
+      "to": "migrations/418_fable_manual_mobile_money_refund.sql",
+      "type": "depends",
+      "label": "migrations/418_fable_manual_mobile_money_refund.sql"
     },
     {
       "from": "services/local-relay-receipt-service.js",
