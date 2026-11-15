@@ -108,7 +108,8 @@ async function findCandidate(db, e) {
   if (!e.supplier_ref) return null;
   const rows = await ro(db,
     `SELECT sc.candidate_ref, sc.state, sc.product_id, sc.supplier_name, UPPER(sc.scan_result->>'sourcing_decision') AS decision,
-            p.product_ref, p.lifecycle_status, p.is_active, p.category, p.subcategory
+            p.product_ref, p.lifecycle_status, p.is_active,
+            COALESCE(p.boutique_category_key, p.category) AS category, COALESCE(p.boutique_subcategory_key, p.subcategory) AS subcategory
        FROM sourcing_candidates sc LEFT JOIN products p ON p.id = sc.product_id
       WHERE sc.supplier_product_id = $1 ORDER BY sc.updated_at DESC LIMIT 1`, [String(e.supplier_ref)]);
   return rows[0] || null;
@@ -161,12 +162,20 @@ async function main(env = process.env) {
         report.import_now = { status: res.status, body: JSON.stringify(res.body)?.slice(0, 600) };
       }
     }
-    if (phaseSel === 'dump' || phaseSel === 'import-now' || (phaseSel === 'curate' && execute)) {
+    if (phaseSel === 'discover') {
+      report.discover = [];
+      for (const d of MANIFEST.discovery || []) {
+        if (!execute) { report.discover.push({ ...d, status: 'PLANIFIE' }); continue; }
+        const res = await admin.call('POST', '/api/admin/workspaces/sourcing/imports', { source_type: 'api', ...PROVIDERS[d.source || 'cj'], keyword: d.keyword, page: 1, size: d.size || 5 });
+        report.discover.push({ keyword: d.keyword, status: res.status, code: res.body?.code || null });
+      }
+    }
+    if (phaseSel === 'dump' || phaseSel === 'discover' || phaseSel === 'import-now' || (phaseSel === 'curate' && execute)) {
       // Lecture seule : inventaire des candidats (pour épingler) et de leurs médias actifs (pour l'inspection).
       report.dump = await ro(db,
         `SELECT sc.candidate_ref, sc.supplier_name, sc.supplier_product_id, sc.product_name, sc.supplier_category, sc.state,
                 UPPER(sc.scan_result->>'sourcing_decision') AS decision, sc.purchase_price, sc.currency, sc.image_url,
-                p.product_ref, p.lifecycle_status, p.category, p.subcategory,
+                p.product_ref, p.lifecycle_status, COALESCE(p.boutique_category_key, p.category) AS category, COALESCE(p.boutique_subcategory_key, p.subcategory) AS subcategory,
                 (SELECT jsonb_agg(jsonb_build_object('id', cm.id, 'source_media_id', cm.source_media_id, 'url', cm.url) ORDER BY cm.display_order, cm.created_at)
                    FROM catalog_media cm WHERE cm.product_id = p.id AND cm.is_active = TRUE) AS media
            FROM sourcing_candidates sc LEFT JOIN products p ON p.id = sc.product_id ORDER BY sc.created_at`);
@@ -331,14 +340,14 @@ async function main(env = process.env) {
     // --- census : lecture seule SQL + contrôle HTTP public ---
     if (phaseSel === 'all' || phaseSel === 'census') {
       const rows = await ro(db,
-        `SELECT p.category, m.code AS market, COUNT(DISTINCT p.id)::int AS n,
+        `SELECT COALESCE(p.boutique_category_key, p.category) AS category, m.code AS market, COUNT(DISTINCT p.id)::int AS n,
                 array_agg(DISTINCT COALESCE(sc.supplier_name, 'inconnu')) AS sources
            FROM products p
            JOIN product_market_price_drafts d ON d.product_id = p.id AND d.status = 'LOCAL_ACTIVE'
            JOIN markets m ON m.id = d.market_id
            JOIN product_market_exposure x ON x.product_id = p.id AND x.market_id = m.id AND x.commercial_exposure = 'ENABLED'
            LEFT JOIN sourcing_candidates sc ON sc.product_id = p.id
-          WHERE p.is_active = TRUE AND p.is_available = TRUE GROUP BY p.category, m.code ORDER BY p.category, m.code`);
+          WHERE p.is_active = TRUE AND p.is_available = TRUE GROUP BY 1, 2 ORDER BY 1, 2`);
       const http = {};
       for (const c of [...new Set(MANIFEST.entries.map((x) => x.category))]) {
         for (const m of MANIFEST.markets) {
