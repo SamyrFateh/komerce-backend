@@ -8,7 +8,7 @@
  * @outputs       versioned certification verdict and reasons
  * @depends       services/product-publication-guard.js, utils/certification-accounting.js
  * @used-by       services/catalog-approval.js, scripts/catalog-e2e-712-acceptance.js, scripts/catalog-refinery-final-acceptance.js
- * @db-read       boutique_categories, boutique_subcategories, catalog_media, product_market_exposure, product_skus, products, sourcing_candidates
+ * @db-read       boutique_categories, boutique_subcategories, catalog_media, product_market_exposure, product_skus, products, sourcing_candidates, sourcing_candidate_events
  * @db-write      none
  * @db-txn        none
  * @doctrine      docs/doctrine/DOCTRINE_CERTIFICATION_CATALOGUE_SOURCING.md
@@ -18,6 +18,7 @@
 'use strict';
 
 const { validatePublicationUpdate } = require('./product-publication-guard');
+const { authorizedWatchSql } = require('./sourcing-controlled-watch-review');
 const { inspectMediaSet } = require('./catalog-media-visual-fr-proof');
 const { reconcileCertificationBatch } = require('../utils/certification-accounting');
 
@@ -53,8 +54,11 @@ function evaluateCatalogProductCertification(row = {}, options = {}) {
     if (!nonEmpty(row.supplier_product_id)) reasons.push('supplier_product_id_missing');
   }
 
+  const economicDecision = String(row.sourcing_decision || '').toUpperCase();
+  const humanControlledTest = economicDecision === 'WATCH'
+    && row.controlled_watch_test_authorized === true;
   if (requireAcceptedSourcingDecision
-      && !ACCEPTED_SOURCING_DECISIONS.includes(String(row.sourcing_decision || '').toUpperCase())) {
+      && !ACCEPTED_SOURCING_DECISIONS.includes(economicDecision) && !humanControlledTest) {
     reasons.push('decision_not_accepted');
   }
 
@@ -178,6 +182,7 @@ async function loadCatalogProductCertificationFacts(q, productId) {
             sc.supplier_product_id,
             sc.normalized_source_contract,
             UPPER(COALESCE(sc.scan_result->>'sourcing_decision','UNKNOWN')) AS sourcing_decision,
+            COALESCE(sc.controlled_watch_test_authorized,FALSE) AS controlled_watch_test_authorized,
             COALESCE(media.active_media,0)::int AS active_media,
             COALESCE(sku.supplier_skus,0)::int AS supplier_skus,
             COALESCE(sku.active_supplier_skus,0)::int AS active_supplier_skus,
@@ -189,7 +194,8 @@ async function loadCatalogProductCertificationFacts(q, productId) {
                 candidate.supplier_name,
                 candidate.supplier_product_id,
                 candidate.normalized_source_contract,
-                candidate.scan_result
+                candidate.scan_result,
+                ${authorizedWatchSql('candidate')} AS controlled_watch_test_authorized
            FROM sourcing_candidates candidate
           WHERE candidate.product_id=p.id
             AND candidate.state='imported_to_catalog'

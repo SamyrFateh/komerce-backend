@@ -402,6 +402,14 @@ router.post('/candidates/:candidateRef/scan', async (req, res, next) => {
   catch (err) { handleError(err, res, next); }
 });
 
+// A controlled WATCH test is an authenticated human decision, not an economic rescan.
+router.post('/candidates/:candidateRef/commercial-watch-review', async (req, res, next) => {
+  if (req.user?.role !== 'admin') return res.status(403).json({ code:'WATCH_REVIEW_ADMIN_REQUIRED' });
+  try { sendAction(res, 'review_watch_commercial_test',
+    await workspace.recordWatchReview(req.params.candidateRef, req.body || {}, req.user)); }
+  catch (err) { handleError(err, res, next); }
+});
+
 router.post('/candidates/:candidateRef/promote', async (req, res, next) => {
   try { sendAction(res, 'promote_candidate', await workspace.promoteCandidate(req.params.candidateRef, req.body, req.user)); }
   catch (err) { handleError(err, res, next); }

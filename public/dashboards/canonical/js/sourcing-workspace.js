@@ -184,13 +184,30 @@
     return wrap;
   }
 
-  // Only actual Sourcing-side remedies belong in this exception list.
-  // Sourcing pipeline / WATCH / classification candidates remain traceable
-  // through the KIR and the unified Catalogue, not as fake source problems.
+  // Commercial WATCH review is explicit and separate from the economic decision.
+  // Never offer it for incomplete/unknown/loss-making source data.
   function sourcingRemedy(row = {}) {
     const state = String(row.state || '').toLowerCase();
-    if (['imported_to_catalog','rejected','archived','quarantined'].includes(state) ||
-        String(row.scan_result?.sourcing_decision || '').toUpperCase() === 'EXCLUDED') return null;
+    const scan = row.scan_result || {};
+    const decision = String(scan.sourcing_decision || '').toUpperCase();
+    if (['rejected','archived','quarantined'].includes(state) || decision === 'EXCLUDED') return null;
+    const margin = Number(scan.economic_test_margin_pct);
+    const testPrice = Number(scan.test_price_kmf);
+    const cost = Number(scan.variable_cost_complete_kmf ?? scan.variable_cost_estimated_kmf);
+    if (decision === 'WATCH' && row.controlled_watch_test_authorized === true) {
+      return { key: 'revoke-watch', label: 'Révoquer le test limité',
+        reason: 'Test commercial déjà autorisé · révocation explicite et auditée possible' };
+    }
+    if (decision === 'WATCH' && row.controlled_watch_test_authorized !== true
+      && scan.economic_test_health_status === 'fragile'
+      && Number.isFinite(margin) && margin >= 15 && margin < 25
+      && testPrice > cost && cost > 0 && Number(row.purchase_price_kmf) > 0
+      && row.komerce_category && row.supplier_product_id
+      && !scan.fx_gate?.code && scan.customs_review?.status !== 'REQUIRED') {
+      return { key: 'review-watch', label: 'Arbitrer un test limité',
+        reason: 'Marge fragile mesurée · décision humaine motivée requise (ne change pas WATCH)' };
+    }
+    if (state === 'imported_to_catalog') return null;
     const currency = String(row.currency || '').toUpperCase();
     const price = Number(row.purchase_price);
     if (!Number.isFinite(price) || price <= 0 || !['AED','EUR','USD','KMF','PLN'].includes(currency)) {
@@ -205,10 +222,11 @@
   }
 
   function nextCandidateAction(row = {}) {
+    const remedy = sourcingRemedy(row);
+    if (remedy) return remedy;
     if (row.state === 'imported_to_catalog')
       return { key: 'view-product', label: 'Voir le produit transmis' };
-    return sourcingRemedy(row) ||
-      { key: 'view-catalog', label: 'Consulter dans le Catalogue' };
+    return { key: 'view-catalog', label: 'Consulter dans le Catalogue' };
   }
 
   function openCandidateForm(context, title, help, trigger) {
@@ -283,8 +301,8 @@
   }
 
   function renderCandidates(rootNode, ui, doc, payload, context) {
-    const slot = createSection(rootNode, ui, 'Exceptions fournisseur à résoudre',
-      'Uniquement les faits fournisseur corrigeables ici. Les classements, traductions et validations sont dans le Catalogue.');
+    const slot = createSection(rootNode, ui, 'Points Sourcing à traiter',
+      'Faits fournisseur et arbitrages WATCH mesurés. Un arbitrage humain ne modifie jamais le score économique ni ne publie un produit.');
     const rows = (payload.candidates || []).filter(row =>
       context.focusCandidateRef ? row.candidate_ref === context.focusCandidateRef
         : Boolean(sourcingRemedy(row)));
@@ -360,6 +378,45 @@
           purchase.focus();
         });
         actions.appendChild(edit);
+      } else if (issue?.key === 'review-watch' || issue?.key === 'revoke-watch') {
+        const revoke = issue.key === 'revoke-watch';
+        const review = makeButton(doc, issue.label, revoke ? 'revoke-controlled-watch' : 'review-controlled-watch');
+        review.className += ' kmc-sourcing-next-action';
+        review.addEventListener('click', () => {
+          const editor = openCandidateForm(context,
+            (revoke ? 'Révoquer le test WATCH · ' : 'Arbitrage commercial WATCH · ') + row.candidate_ref,
+            revoke
+              ? 'Justifiez la révocation. Le moteur reste WATCH ; aucune commande ni transaction n’est créée.'
+              : 'Essai limité uniquement : l\'avis économique reste WATCH. Motivez le risque et la contribution attendue ; les contrôles Catalogue, fournisseur, images et prix marché restent obligatoires.',
+            review);
+          const label = doc.createElement('label');
+          label.className = 'kmc-sourcing-editor-field';
+          label.appendChild(text(doc, 'span', '', 'Justification commerciale (30 caractères minimum)'));
+          const reason = doc.createElement('textarea');
+          reason.required = true;
+          reason.minLength = 30;
+          reason.maxLength = 1500;
+          reason.rows = 4;
+          reason.setAttribute('data-watch-review-reason', '');
+          label.appendChild(reason);
+          editor.form.insertBefore(label, editor.form.querySelector('.kmc-sourcing-editor-actions'));
+          editor.form.addEventListener('submit', async event => {
+            event.preventDefault();
+            const rationale = reason.value.trim();
+            if (rationale.length < 30 || rationale.length > 1500) {
+              editor.feedback.textContent = 'Justification requise : 30 à 1 500 caractères.';
+              return;
+            }
+            await sendCandidateForm(context, editor,
+              ENDPOINT + '/candidates/' + encodeURIComponent(row.candidate_ref) + '/commercial-watch-review',
+              { action: revoke ? 'REVOKE' : 'AUTHORIZE_CONTROLLED_TEST', reason:rationale },
+              row.candidate_ref + (revoke
+                ? ' : autorisation révoquée et auditée.'
+                : ' : arbitrage humain consigné. Score WATCH conservé, aucune publication.'));
+          });
+          reason.focus();
+        });
+        actions.appendChild(review);
       } else if (issue?.key === 'scan-candidate' && !row.product_ref) {
         const scan = makeButton(doc, issue.label, 'scan-candidate');
         scan.className += ' kmc-sourcing-next-action';

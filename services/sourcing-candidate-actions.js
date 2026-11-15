@@ -6,9 +6,9 @@
  * @criticality   high
  * @inputs        candidate_id_internal, import_id_internal, validated_candidate_payload, actor_id
  * @outputs       candidate_mutation_result, inactive_catalog_draft, automatic_catalogue_handoff_summary
- * @depends       db.js, services/supplier-commercial-category-mapping.js, services/supplier-catalog-scanner.js, services/pricing-engine.js, services/catalog-candidate-product-service.js, services/catalog-promotion.js, services/catalog-enrichment.js, services/import-runtime-runs.js, services/sourcing-certification.js
+ * @depends       db.js, services/sourcing-controlled-watch-review.js, services/supplier-commercial-category-mapping.js, services/supplier-catalog-scanner.js, services/pricing-engine.js, services/catalog-candidate-product-service.js, services/catalog-promotion.js, services/catalog-enrichment.js, services/import-runtime-runs.js, services/sourcing-certification.js
  * @used-by       routes/sourcing-scanner.js, services/sourcing-workspace.js
- * @db-read       sourcing_candidates, sourcing_candidate_events, supplier_catalog_imports, import_runtime_runs
+ * @db-read       sourcing_candidates, sourcing_candidate_events, supplier_catalog_imports, import_runtime_runs, products
  * @db-write      sourcing_candidates, sourcing_candidate_events
  * @db-write-via:catalog-candidate-product-service products
  * @db-write-via:catalog-promotion catalog_media, product_variants, product_skus, product_sku_media
@@ -29,6 +29,7 @@ const { createDraftProductFromSourcingCandidate, resolveCommercialTaxonomyVerdic
 const { promoteCatalog } = require('./catalog-promotion');
 const importRuns = require('./import-runtime-runs');
 const certification = require('./sourcing-certification');
+const controlledWatch = require('./sourcing-controlled-watch-review');
 const commercialMapping = require('./supplier-commercial-category-mapping');
 
 class SourcingCandidateActionError extends Error {
@@ -525,12 +526,70 @@ async function handoffImportResult(result, actorId = null, options = {}) {
   };
 }
 
+const WATCH_ACTOR_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+async function recordControlledWatchReview(candidateRef, { action, reason } = {}, actorId, database = db) {
+  const decision = String(action || '').trim().toUpperCase();
+  const rationale = String(reason || '').trim();
+  if (!WATCH_ACTOR_UUID.test(String(actorId || ''))) {
+    throw new controlledWatch.ControlledWatchReviewError(403, 'REVIEWER_ID_REQUIRED', 'Administrateur authentifié requis');
+  }
+  if (![controlledWatch.AUTHORIZE, controlledWatch.REVOKE].includes(decision)) {
+    throw new controlledWatch.ControlledWatchReviewError(400, 'WATCH_ACTION_INVALID', 'Décision commerciale inconnue');
+  }
+  if (rationale.length < 30 || rationale.length > 1500) {
+    throw new controlledWatch.ControlledWatchReviewError(400, 'WATCH_REASON_REQUIRED', 'Motif explicite requis (30 à 1 500 caractères)');
+  }
+  if (typeof database.withTransaction !== 'function') {
+    throw new Error('WATCH_REVIEW_TRANSACTION_REQUIRED');
+  }
+  return database.withTransaction(async tx => {
+    const { rows: [row] } = await tx.query(
+      'SELECT sc.*, p.is_active AS catalog_product_active FROM sourcing_candidates sc ' +
+      'LEFT JOIN products p ON p.id=sc.product_id WHERE sc.candidate_ref=$1 FOR UPDATE OF sc',
+      [candidateRef]
+    );
+    if (!row) throw new controlledWatch.ControlledWatchReviewError(404, 'CANDIDATE_NOT_FOUND', 'Candidat introuvable');
+    const evaluation = controlledWatch.evaluateWatchEligibility(row);
+    if (decision === controlledWatch.AUTHORIZE && !evaluation.eligible) {
+      throw new controlledWatch.ControlledWatchReviewError(409, 'WATCH_NOT_ELIGIBLE_FOR_MANUAL_TEST',
+        'La décision WATCH exige d’abord une correction des données ou des risques.', evaluation.reasons);
+    }
+    if (decision === controlledWatch.REVOKE && !row.scan_at) {
+      throw new controlledWatch.ControlledWatchReviewError(409, 'CURRENT_SCAN_REQUIRED', 'Aucun scan à révoquer');
+    }
+    const currentScanAt = new Date(row.scan_at).toISOString();
+    const evidence = {
+      kind: controlledWatch.KIND,
+      action: decision,
+      scan_at: currentScanAt,
+      scan_result: row.scan_result,
+      facts: controlledWatch.inputSnapshot(row),
+      margin_pct: evaluation.margin_pct,
+    };
+    await tx.query(
+      "INSERT INTO sourcing_candidate_events (candidate_id,event_type,result,notes,triggered_by) " +
+      "VALUES ($1,'note_added',$2::jsonb,$3,$4)",
+      [row.id, JSON.stringify(evidence), rationale, actorId]
+    );
+    return {
+      candidate_ref: candidateRef,
+      economic_decision: String(row.scan_result?.sourcing_decision || 'UNKNOWN'),
+      commercial_review: decision,
+      current_scan_at: currentScanAt,
+      catalogue_publication_changed: false,
+      market_price_changed: false,
+    };
+  });
+}
+
 module.exports = {
   SourcingCandidateActionError,
   SourcingCatalogueHandoffError,
   requireCandidate,
   updateCandidate,
   scanCandidate,
+  recordControlledWatchReview,
   watchlistCandidate,
   rejectCandidate,
   promoteCandidate,

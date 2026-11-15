@@ -18,6 +18,7 @@ function readyRow(overrides = {}) {
     supplier_product_id: 'CJ-1',
     normalized_source_contract: { schema_version: '2' },
     sourcing_decision: 'TEST',
+    controlled_watch_test_authorized: false,
     product_id: 'p-1',
     product_ref: 'KPR-1',
     name: 'Chargeur USB-C 20W',
@@ -85,6 +86,8 @@ describe('catalog canonical certification', () => {
     ['supplier identity', { supplier_product_id: null }, 'supplier_product_id_missing'],
     ['source contract', { normalized_source_contract: { schema_version: '1' } }, 'source_contract_v2_missing'],
     ['sourcing decision', { sourcing_decision: 'WATCH' }, 'decision_not_accepted'],
+    ['unknown economic decision even with review', { sourcing_decision: 'UNKNOWN', controlled_watch_test_authorized: true }, 'decision_not_accepted'],
+    ['loss decision even with review', { sourcing_decision: 'LOSS', controlled_watch_test_authorized: true }, 'decision_not_accepted'],
     ['editorial review', { needs_review: true }, 'french_editorial_not_ready'],
     ['customs category', { category: null }, 'customs_category_missing'],
     ['boutique category', { boutique_category_key: null }, 'boutique_category_missing'],
@@ -101,6 +104,22 @@ describe('catalog canonical certification', () => {
     });
     expect(result.certified).toBe(false);
     expect(result.reasons).toContain(expectedReason);
+  });
+
+  test('commercial WATCH authorization is separate from the economic verdict and never waives other catalogue guards', () => {
+    const reviewed = evaluateCatalogProductCertification(readyRow({ sourcing_decision:'WATCH', controlled_watch_test_authorized:true }), { publicationGuard:PASS_GUARD });
+    expect(reviewed.certified).toBe(true);
+    const refused = evaluateCatalogProductCertification(readyRow({ sourcing_decision:'WATCH', controlled_watch_test_authorized:true, active_supplier_skus:0 }), { publicationGuard:PASS_GUARD });
+    expect(refused.certified).toBe(false);
+    expect(refused.reasons).toContain('active_supplier_sku_missing');
+  });
+
+  test('SQL review is tied to current scan and current supplier facts', async () => {
+    const q = { query: jest.fn().mockResolvedValueOnce({ rows: [] }) };
+    await certifyCatalogProduct(q, 'p-1', { publicationGuard: PASS_GUARD });
+    const sql=q.query.mock.calls[0][0];
+    expect(sql).toContain("result->'scan_result'=candidate.scan_result");
+    expect(sql).toContain('controlled_watch_test_authorized');
   });
 
   test('un produit natif non sourcé peut être certifié sans identité fournisseur', () => {
