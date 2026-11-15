@@ -550,7 +550,9 @@ test.describe('PDP mobile retouches 2026-11 — V4.1 alignement horizontal canon
           price: left(price), sku: left(sku), variant: left(variant),
           delivery: left(delivery), deliveryCard: left(deliveryCard),
           details: left(details), description: left(description),
-          configRight: right(config), mediaLeft: left(media),
+          cardRight: right(deliveryCard),
+          configPaddingRight: parseFloat(getComputedStyle(document.querySelector('#k-modal .k-mdm-root')).paddingRight),
+          mediaLeft: left(media),
           rootOverflow: modal.scrollWidth - modal.clientWidth,
           configOverflow: document.querySelector('.k-mdm-root').scrollWidth - document.querySelector('.k-mdm-root').clientWidth,
           footerVisible: Boolean(footer && footer.bottom <= window.innerHeight + 1),
@@ -562,7 +564,8 @@ test.describe('PDP mobile retouches 2026-11 — V4.1 alignement horizontal canon
         expect(values[key], key + ' must align to canonical 18px inset').not.toBeNull();
         expect(Math.abs(values[key] - 18), key + ' misaligned: ' + JSON.stringify(values)).toBeLessThanOrEqual(1.5);
       }
-      expect(values.configRight).toBeGreaterThanOrEqual(17);
+      expect(values.configPaddingRight).toBe(18);
+      expect(values.cardRight).toBeGreaterThanOrEqual(17);
       expect(Math.abs(values.mediaLeft)).toBeLessThanOrEqual(1);
       expect(values.rootOverflow).toBeLessThanOrEqual(1);
       expect(values.configOverflow).toBeLessThanOrEqual(1);
