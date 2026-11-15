@@ -34,20 +34,20 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 | `b-checkout.js` | 113 | 6 | 0/5 | Bottom-nav mobile |
 | `b-modal-desktop-product.js` | 96 | 1 | 0/1 | Modal produit |
 | `b-modal-mobile-product.js` | 89 | 1 | 0/1 | Modal produit |
-| `b-modal-core.js` | 17 | 70 | 4/5 | Modal produit, Side-cart desktop, Carte produit, Grille produits |
 | `b-checkout-render.js` | 79 | 0 | 0/0 | — |
+| `b-modal-core.js` | 13 | 65 | 4/5 | Modal produit, Side-cart desktop, Carte produit, Grille produits |
 | `boutique.js` | 15 | 49 | 3/0 | Modal produit, Grille produits, Chips catégories |
 | `b-tracking.js` | 44 | 0 | 0/0 | Section catalogue |
-| `b-modal-product.js` | 28 | 11 | 2/1 | Modal produit |
+| `b-modal-product.js` | 28 | 11 | 3/1 | Modal produit |
 | `b-cart-quote.js` | 33 | 0 | 3/0 | Panier |
 | `b-phone.js` | 16 | 17 | 0/0 | — |
 | `b-komerce.js` | 31 | 0 | 0/1 | Section catalogue |
+| `b-modal-image-ux.js` | 11 | 14 | 2/2 | Modal produit |
 | `b-cart-pill.js` | 6 | 18 | 3/0 | Grille produits, Section catalogue |
 | `b-wallet.js` | 24 | 0 | 0/0 | Section catalogue |
 | `b-mini-cart.js` | 4 | 19 | 2/0 | Panier |
 | `b-modal-buybox-shared.js` | 22 | 0 | 0/1 | Modal produit |
 | `b-pager.js` | 1 | 20 | 0/1 | Grille produits, Header, Hero, Chips catégories, Bottom-nav mobile |
-| `b-modal-image-ux.js` | 11 | 9 | 1/1 | Modal produit |
 | `b-modal-nav.js` | 10 | 10 | 1/4 | Modal produit |
 | `b-catalog.js` | 16 | 2 | 3/3 | Carte produit, Grille produits, Hero, Chips catégories, Section catalogue |
 | `b-identity.js` | 11 | 5 | 0/0 | — |
