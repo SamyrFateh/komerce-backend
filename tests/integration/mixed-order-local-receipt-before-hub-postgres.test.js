@@ -92,7 +92,11 @@ describeDb('A1 — commande mixte : réception locale avant répartition Hub (PG
     sourceUnitId = received.body.unit.id;
     importAllocation = (await q('SELECT id FROM hub_purchase_allocations WHERE purchase_line_id=$1', [purchaseLineId])).rows[0].id;
   });
-  afterAll(async () => { await db.pool.end().catch(() => {}); });
+  afterAll(async () => {
+    // Le rattachement agent→relais ne doit pas survivre au test (le reset d'usine supprime les relais).
+    await q('UPDATE users SET relais_id=NULL WHERE id=$1', [admin]).catch(() => {});
+    await db.pool.end().catch(() => {});
+  });
 
   test('état de départ : réception locale faite, commande available, ligne import sans colis', async () => {
     expect(await orderStatus()).toBe('available');
