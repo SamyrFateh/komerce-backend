@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-11-15T15:53:14.799Z",
+  "generatedAt": "2026-11-15T22:41:31.400Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 833,
+  "count": 834,
   "routes": [
     {
       "method": "GET",
@@ -2074,6 +2074,16 @@
       "fullPath": "/api/admin/sourcing/candidates",
       "mountPrefix": "/api/admin/sourcing",
       "localPath": "/candidates",
+      "routeFile": "routes/sourcing-scanner.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/sourcing/candidates/:candidateRef/restore-source-skus",
+      "mountPrefix": "/api/admin/sourcing",
+      "localPath": "/candidates/:candidateRef/restore-source-skus",
       "routeFile": "routes/sourcing-scanner.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
