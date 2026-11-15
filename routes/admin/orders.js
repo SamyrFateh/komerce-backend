@@ -28,7 +28,7 @@ const { deleteOrderCascade } = require('./delete-order-cascade');
 const { refundCancelledOrder } = require('../../services/admin-order-refund');
 const { reserveVerifiedShortage } = require('../../services/item-refund-reservation-service');
 const { reserveLocalShortage } = require('../../services/local-item-refund-reservation');
-const { authorizeCashRefund, beginCashHandoff, confirmCashHandoff } = require('../../services/local-cash-refund-handoff');
+const { authorizeCashRefund } = require('../../services/local-cash-refund-handoff');
 const { executeReservedItemRefund, reconcileUncertainItemRefund } = require('../../services/item-refund-psp-orchestrator');
 
 const guard = [authenticate, requireRole(['admin'])];
@@ -178,31 +178,6 @@ router.post('/orders/:id/items/:itemId/local-refund-reservations/:reservationId/
         identityCheckProofRef:b.identity_check_proof_ref,actor:req.user
       });
       return res.status(result.replayed?200:201).json(result);
-    }catch(err){return cashRefundError(err,res,next);}
-  });
-router.post('/orders/:id/items/:itemId/local-cash-handoffs/:authorizationId/start',
-  authenticate, requireRole(['agent_relais']), async (req,res,next) => {
-    if (!localCashRefundEnabled()) return denyUncertifiedCashRefund(res);
-    try {
-      const result=await beginCashHandoff({
-        orderId:req.params.id,orderItemId:req.params.itemId,
-        authorizationId:req.params.authorizationId,actor:req.user
-      });
-      return res.status(result.replayed?200:202).json(result);
-    }catch(err){return cashRefundError(err,res,next);}
-  });
-router.post('/orders/:id/items/:itemId/local-cash-handoffs/:authorizationId/confirm',
-  authenticate, requireRole(['agent_relais']), async (req,res,next) => {
-    if (!localCashRefundEnabled()) return denyUncertifiedCashRefund(res);
-    try {
-      const b=req.body||{};
-      const result=await confirmCashHandoff({
-        orderId:req.params.id,orderItemId:req.params.itemId,
-        authorizationId:req.params.authorizationId,actor:req.user,
-        signedReceiptRef:b.signed_receipt_ref,payerSignatureProofRef:b.payer_signature_proof_ref,
-        witnessProofRef:b.witness_proof_ref
-      });
-      return res.status(200).json(result);
     }catch(err){return cashRefundError(err,res,next);}
   });
 
