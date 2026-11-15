@@ -53,7 +53,16 @@ describe('G13 catalogue seed (outillage de recette)', () => {
     expect(source).not.toContain("scan_result.sourcing_decision = 'TEST'");
   });
   test('prix de référence : arrondi supérieur du moteur, jamais inventé', () => {
-    expect(referenceAmount({ selected: { economics: { coverage_reference_price_xaf: 1234.2 } } }, 'CM')).toBe(1235);
+    const observedXaf = { market: { currency: 'XAF' },
+      corridor: { local: { status: 'READY', scope: 'market', authority: 'OBSERVED_REFERENCE_NOT_GATE',
+        sample_count: 3, target: { observed_amount: 1234.2, currency: 'XAF' } } } };
+    expect(referenceAmount(observedXaf, 'CM')).toBe(1235);
+    expect(referenceAmount(observedXaf, 'CG')).toBe(1235);
+    // XAF is *not* a projection or an economic field in the pricing corridor.
+    expect(referenceAmount({ selected: { economics: { coverage_reference_price_xaf: 1234.2, coverage_reference_price_kmf: 1500 } } }, 'CM')).toBeNull();
+    expect(referenceAmount({ corridor: { global_reference: { target: { observed_amount: 1234.2, currency: 'XAF' } } } }, 'CM')).toBeNull();
+    expect(referenceAmount({ corridor: { local: { status: 'EMERGING', scope:'market', authority:'OBSERVED_REFERENCE_NOT_GATE', sample_count:1, target: { observed_amount: 1234.2, currency: 'XAF' } } } }, 'CM')).toBeNull();
+    expect(referenceAmount({ corridor: { local: { status: 'READY', scope:'market', authority:'OBSERVED_REFERENCE_NOT_GATE', sample_count:3, target: { observed_amount: 1234.2, currency: 'KMF' } } } }, 'CM')).toBeNull();
     expect(referenceAmount({ selected: { economics: { minimum_safe_price_kmf: 900 } } }, 'KM')).toBe(900);
     expect(referenceAmount({ selected: { economics: {} } }, 'CG')).toBeNull();
     expect(referenceAmount(null, 'KM')).toBeNull();

@@ -56,11 +56,23 @@ function validateManifest(man, taxonomy = null) {
 
 /** Montant de référence du moteur économique à partir du corridor (jamais inventé). */
 function referenceAmount(corridor, market) {
-  const cur = CURRENCY[market];
+  const currency = CURRENCY[market];
+  if (!currency || corridor?.market?.currency && corridor.market.currency !== currency) return null;
+  // The pricing engine calculates global economic reference prices in KMF.
+  // They are not an XAF local commercial decision. Non-KM markets can only
+  // use a target established from their OWN observed market-price references.
+  if (currency !== 'KMF') {
+    const local = corridor?.corridor?.local;
+    if (local?.status !== 'READY' || local?.scope !== 'market' ||
+        local?.authority !== 'OBSERVED_REFERENCE_NOT_GATE' ||
+        Number(local.sample_count) < 3 ||
+        local?.target?.currency !== currency) return null;
+    const observed = Number(local.target.observed_amount);
+    return Number.isFinite(observed) && observed > 0 ? Math.ceil(observed) : null;
+  }
   const eco = corridor?.selected?.economics;
-  if (!eco || !cur) return null;
-  const k = cur.toLowerCase();
-  const value = Number(eco[`coverage_reference_price_${k}`] ?? eco[`minimum_safe_price_${k}`]);
+  if (!eco) return null;
+  const value = Number(eco.coverage_reference_price_kmf ?? eco.minimum_safe_price_kmf);
   return Number.isFinite(value) && value > 0 ? Math.ceil(value) : null;
 }
 
@@ -203,6 +215,10 @@ async function main(env = process.env) {
             http_status:res.status, currency:CURRENCY[market],
             reference_amount:res.ok ? referenceAmount(res.body,market) : null,
             local_price_keys:Object.keys(eco).filter(key=>key.includes(currency) && /price|minimum|coverage/i.test(key)),
+            local_evidence_status:res.body?.corridor?.local?.status || null,
+            local_observations:Number(res.body?.corridor?.local?.sample_count || 0),
+            local_target_amount:res.body?.corridor?.local?.target?.observed_amount ?? null,
+            local_target_currency:res.body?.corridor?.local?.target?.currency || null,
             blockers:(res.body?.blockers || res.body?.selected?.blockers || []).slice?.(0,6) || [],
             error_code:res.body?.code || res.body?.selected?.code || null,
           };
