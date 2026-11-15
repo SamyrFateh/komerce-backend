@@ -2378,7 +2378,7 @@ Meta Graph monté : oui.
 | catalog | notifications | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | catalog | orders | static-code, data-read | 15 | **DECLARED_AND_OBSERVED** |
 | catalog | platform-ops | static-code | 78 | **DECLARED_AND_OBSERVED** |
-| catalog | purchasing | static-code, data-read | 13 | **DECLARED_AND_OBSERVED** |
+| catalog | purchasing | static-code, data-read | 14 | **DECLARED_AND_OBSERVED** |
 | catalog | shared-cart | static-code, interface | 13 | **DECLARED_AND_OBSERVED** |
 | catalog | sourcing | static-code, data-write, data-read | 39 | **DECLARED_AND_OBSERVED** |
 | catalog | supplier-connectivity | static-code | 8 | **DECLARED_AND_OBSERVED** |
