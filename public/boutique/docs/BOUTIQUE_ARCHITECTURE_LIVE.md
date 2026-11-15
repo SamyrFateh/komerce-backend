@@ -17,7 +17,7 @@
 | `boutique-desktop.css` | 1323 | desktop.css |
 | `cart.css` | 2420 | components.css |
 | `categories.css` | 983 | components.css |
-| `category-cutout-navigation.css` | 478 | components.css |
+| `category-cutout-navigation.css` | 484 | components.css |
 | `category-cutout-navigation-desktop.css` | 649 | desktop.css |
 | `checkout-desktop-v2.css` | 83 | checkout-desktop-v2.css |
 | `checkout-vertical-rail.css` | 1798 | components.css |
@@ -69,8 +69,8 @@ Cascade réelle des bundles livrés :
 ```
  1. /boutique/css/dist/base.css?v=266
  2. /boutique/css/dist/critical-home.css?v=5
- 3. /boutique/css/dist/components.css?v=675
- 4. /boutique/css/dist/components.css?v=675
+ 3. /boutique/css/dist/components.css?v=677
+ 4. /boutique/css/dist/components.css?v=677
  5. /boutique/css/dist/desktop.css?v=157
 ```
 

@@ -3601,7 +3601,7 @@
               {
                 "declared": "services/commercial-category-agreement.js",
                 "resolvedPath": "services/commercial-category-agreement.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/commercial-taxonomy-semantics.js",
