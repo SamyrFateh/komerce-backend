@@ -213,6 +213,29 @@ describeE2E('E2E-P2-UNSOLD — auto_unsold() + v_unsold_pipeline contre schéma 
     await expect(db.query('SELECT auto_unsold()')).rejects.toThrow(/UNSOLD_PAID_ORDER_PROTECTED/);
   });
 
+  it('F3 — refus d une commande payée déjà marquée invendue (entrée INSERT)', async () => {
+    const id = uuid();
+    orderIds.push(id);
+    await expect(db.query(
+      `INSERT INTO orders(id,reference,user_id,relais_id,market_id,total_kmf,payment_mode,
+        payment_status,status,unsold_at) VALUES($1,$2,$3,$4,$5,8000,'cash_relais',
+        'paid','available',NOW())`,
+      [id,`E2E-UNSOLD-${tag('paid-insert')}`,buyerId,relaisId,marketId]
+    )).rejects.toThrow(/UNSOLD_PAID_ORDER_PROTECTED/);
+  });
+
+  it('F3 — paiement interdit après marquage invendu sous statut impayé', async () => {
+    const id = await seedOrder({label:'unsold-to-paid',daysAgo:30,alreadyUnsold:true,paymentStatus:'pending'});
+    await db.query(
+      `INSERT INTO unsold_items(order_id,product_name,original_price_kmf,unsold_price_kmf)
+       VALUES($1,'Article sous garde',8000,6000)`,[id]);
+    await expect(db.query(
+      `UPDATE orders SET payment_status='paid' WHERE id=$1`,[id]
+    )).rejects.toThrow(/UNSOLD_PAID_ORDER_PROTECTED|UNSOLD_PAID_ITEM_PROTECTED/);
+    const result=await db.query('SELECT payment_status FROM orders WHERE id=$1',[id]);
+    expect(result.rows[0].payment_status).toBe('pending');
+  });
+
   it('5 — F3 SQL refuse la création de toute ligne invendue pour une commande payée', async () => {
     const orderId = await seedOrder({ label: 'legacyPaid', daysAgo: 30, alreadyUnsold: true, totalKmf: 8000 });
     await expect(db.query(
