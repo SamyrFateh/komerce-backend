@@ -108,6 +108,16 @@ router.post('/products', async (req, res, next) => {
 
 router.post('/products/:productRef/update', async (req, res, next) => {
   try {
+    if (Object.hasOwn(req.body || {}, 'editorial')) {
+      const { editorial } = req.body;
+      if (!editorial || typeof editorial !== 'object' || Array.isArray(editorial) ||
+          Object.keys(req.body).length !== 1 ||
+          Object.keys(editorial).some(key => !['short_description', 'cover_media_id'].includes(key))) {
+        return res.status(422).json({ code: 'catalog_editorial_invalid', error: 'Modification éditoriale invalide' });
+      }
+      return res.json({ ok: true, action: 'product_editorial_updated',
+        result: await workspace.updateEditorial(req.params.productRef, editorial) });
+    }
     res.json({ ok: true, action: 'product_updated', result: await workspace.updateProduct(req.params.productRef, req.body, req.user) });
   } catch (err) { sendError(err, res, next); }
 });

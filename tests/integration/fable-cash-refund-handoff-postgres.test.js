@@ -65,8 +65,6 @@ describePg('Fable F1 — cash proof, handoff and settlement (real PG)',()=>{
       await main.query(m416.replace(/public\./g,schema+'.'));
       await main.query("CREATE FUNCTION cash_collection_market(uuid,uuid) RETURNS uuid LANGUAGE sql STABLE AS $f$ SELECT market_id FROM relais WHERE id=$1 $f$");
       await main.query("CREATE FUNCTION cash_custody_lock(uuid,uuid) RETURNS void LANGUAGE plpgsql AS $f$ DECLARE k text; BEGIN FOR k IN SELECT DISTINCT x FROM unnest(ARRAY[$1::text,$2::text]) x WHERE x IS NOT NULL ORDER BY x LOOP PERFORM pg_advisory_xact_lock(hashtext('cash_hold:'||k)); END LOOP; END $f$");
-      // The cash custody function is created before 417; its view is resolved when invoked.
-      await main.query("CREATE FUNCTION cash_custody_assert_nonnegative(uuid,uuid) RETURNS void LANGUAGE plpgsql AS $f$ BEGIN IF (SELECT COALESCE(SUM(delta_kmf),0) FROM cash_custody_movements WHERE holder_id=$1 AND market_id=$2)<0 THEN RAISE EXCEPTION 'cash_custody: negative' USING ERRCODE='23514'; END IF; END $f$");
       const m417=fs.readFileSync(path.join(__dirname,'../../migrations/417_fable_cash_refund_custody_handoff.sql'),'utf8');
       await main.query(m417.replace(/public\./g,schema+'.'));
       A=await db.getClient(); B=await db.getClient();
@@ -138,15 +136,34 @@ describePg('Fable F1 — cash proof, handoff and settlement (real PG)',()=>{
     await expect(confirm(a.authorizationId,B,{actor:{id:adminId,role:'agent_relais'}})).rejects.toMatchObject({code:'LOCAL_CASH_REFUND_WRONG_HOLDER'});
   });
 
-  test('insufficient custody rolls back all facts and leaves ambiguous handoff pending',async()=>{
+  test('insufficient custody refuses the handoff before cash can leave',async()=>{
     await sql('UPDATE cash_collections SET amount_kmf=1000 WHERE id=$1',[ccId]);
-    const a=await approve();await begin(a.authorizationId);
-    await expect(confirm(a.authorizationId)).rejects.toMatchObject({code:'LOCAL_CASH_REFUND_DB_GUARD'});
-    expect((await sql('SELECT status FROM local_cash_refund_authorizations')).rows[0].status).toBe('handoff_pending');
+    const a=await approve();
+    await expect(begin(a.authorizationId)).rejects.toMatchObject({code:'LOCAL_CASH_REFUND_DB_GUARD'});
+    expect((await sql('SELECT status FROM local_cash_refund_authorizations')).rows[0].status).toBe('approved');
     expect((await sql('SELECT qty_refunded FROM order_items')).rows[0].qty_refunded).toBe(0);
     expect((await sql('SELECT COUNT(*)::int n FROM refunds')).rows[0].n).toBe(0);
     expect((await sql('SELECT COUNT(*)::int n FROM local_cash_refund_payouts')).rows[0].n).toBe(0);
-    expect((await begin(a.authorizationId,B)).doNotHandOverAgain).toBe(true);
+    await expect(begin(a.authorizationId,B)).rejects.toMatchObject({code:'LOCAL_CASH_REFUND_DB_GUARD'});
+  });
+
+  test('pending handoff reserves custody without a ledger outflow and settles at exact balance',async()=>{
+    await sql('UPDATE cash_collections SET amount_kmf=2000 WHERE id=$1',[ccId]);
+    const a=await approve();
+    await begin(a.authorizationId);
+    expect(Number((await sql('SELECT SUM(delta_kmf) balance FROM cash_custody_movements')).rows[0].balance)).toBe(2000);
+    // Model the existing cash-loss writer: it locks custody then asserts the
+    // available balance in the same transaction after inserting the movement.
+    await B.query('BEGIN');
+    try {
+      await B.query('SELECT cash_custody_lock($1,NULL)',[holderId]);
+      await B.query("INSERT INTO cash_custody_losses(id,holder_id,market_id,kind,amount_kmf) VALUES($1,$2,$3,'LOSS',1)",
+        [uid(),holderId,marketId]);
+      await expect(B.query('SELECT cash_custody_assert_nonnegative($1,$2)',[holderId,marketId]))
+        .rejects.toThrow(/CASH_CUSTODY_INSUFFICIENT_AVAILABLE_BALANCE/);
+    } finally { await B.query('ROLLBACK'); }
+    expect(await confirm(a.authorizationId)).toMatchObject({paid:true,status:'settled'});
+    expect(Number((await sql('SELECT SUM(delta_kmf) balance FROM cash_custody_movements')).rows[0].balance)).toBe(0);
   });
 
   test('digital document outage cannot roll back physically paid cash; same POST reissues document',async()=>{

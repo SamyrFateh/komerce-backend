@@ -141,3 +141,14 @@ describe('catalog-product-mutation-service', () => {
     await expect(service.assignKomerceCategory(fallback, 'p1', '')).rejects.toMatchObject({ code: 'komerce_category_required' });
   });
 });
+
+
+test('la présentation manuelle écrit le profil et la couverture dans la transaction fournie', async () => {
+  const client = { query: jest.fn().mockResolvedValue({ rows: [] }) };
+  await service.saveEditorial(client, 'product', {
+    shortDescription: 'Coupe ample.',
+    coverMediaId: 'media',
+  });
+  expect(client.query).toHaveBeenNthCalledWith(1, expect.stringContaining("'MANUAL'"), ['product', 'Coupe ample.']);
+  expect(client.query).toHaveBeenNthCalledWith(2, expect.stringContaining('WHERE product_id = $1'), ['product', 'media']);
+});

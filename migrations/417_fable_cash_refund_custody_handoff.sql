@@ -25,6 +25,9 @@ CREATE TABLE public.local_cash_refund_authorizations (
     (status='settled' AND handoff_started_at IS NOT NULL AND settled_at IS NOT NULL))
 );
 CREATE INDEX idx_local_cash_refund_auth_order ON public.local_cash_refund_authorizations(order_id);
+CREATE INDEX idx_local_cash_refund_pending_custody
+  ON public.local_cash_refund_authorizations(holder_id,market_id)
+  WHERE status='handoff_pending';
 
 CREATE TABLE public.local_cash_refund_payouts (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -55,6 +58,9 @@ DECLARE v_source public.local_item_refund_reservations%ROWTYPE;
 BEGIN
   IF TG_OP='DELETE' THEN RAISE EXCEPTION 'CASH_REFUND_AUTH_APPEND_ONLY' USING ERRCODE='23514'; END IF;
   IF TG_OP='INSERT' THEN
+    IF NEW.status <> 'approved' THEN
+      RAISE EXCEPTION 'CASH_REFUND_AUTH_MUST_START_APPROVED' USING ERRCODE='23514';
+    END IF;
     SELECT * INTO v_source FROM public.local_item_refund_reservations WHERE id=NEW.reservation_id;
     IF v_source.id IS NULL OR v_source.order_id<>NEW.order_id OR v_source.market_id<>NEW.market_id
        OR v_source.payment_mode<>'cash_relais' OR v_source.currency<>'KMF' OR v_source.minor_unit<>0
@@ -78,7 +84,10 @@ BEGIN
     RAISE EXCEPTION 'CASH_REFUND_AUTH_PROOF_IMMUTABLE' USING ERRCODE='23514';
   END IF;
   IF OLD.status='approved' AND NEW.status='handoff_pending'
-    AND NEW.handoff_started_at IS NOT NULL AND NEW.settled_at IS NULL THEN RETURN NEW; END IF;
+    AND NEW.handoff_started_at IS NOT NULL AND NEW.settled_at IS NULL THEN
+    PERFORM public.cash_custody_lock(NEW.holder_id,NULL);
+    RETURN NEW;
+  END IF;
   IF OLD.status='handoff_pending' AND NEW.status='settled'
     AND NEW.handoff_started_at IS NOT DISTINCT FROM OLD.handoff_started_at
     AND NEW.settled_at IS NOT NULL
@@ -126,6 +135,36 @@ CREATE OR REPLACE VIEW public.cash_custody_movements AS
 COMMENT ON VIEW public.cash_custody_movements IS
   'Single custody authority incl. verified operator-attested cash-refund outflow; no wallet or simulated cash.';
 
+-- Pending physical handoffs reserve custody, without creating ledger entries.
+-- The existing receipt/loss writers call this same assertion under the custody lock.
+CREATE OR REPLACE FUNCTION public.cash_custody_assert_nonnegative(p_holder uuid, p_market uuid)
+RETURNS void LANGUAGE plpgsql AS $f$
+DECLARE available_kmf numeric;
+BEGIN
+  IF p_holder IS NULL THEN RETURN; END IF;
+  SELECT COALESCE(SUM(delta_kmf),0) INTO available_kmf
+    FROM public.cash_custody_movements
+   WHERE holder_id=p_holder AND market_id IS NOT DISTINCT FROM p_market;
+  SELECT available_kmf - COALESCE(SUM(r.amount_kmf),0) INTO available_kmf
+    FROM public.local_cash_refund_authorizations a
+    JOIN public.local_item_refund_reservations r ON r.id=a.reservation_id
+   WHERE a.status='handoff_pending' AND a.holder_id=p_holder AND a.market_id=p_market;
+  IF available_kmf<0 THEN
+    RAISE EXCEPTION 'CASH_CUSTODY_INSUFFICIENT_AVAILABLE_BALANCE' USING ERRCODE='23514';
+  END IF;
+END $f$;
+
+CREATE OR REPLACE FUNCTION public.assert_cash_refund_handoff_funded()
+RETURNS trigger LANGUAGE plpgsql AS $f$
+BEGIN
+  PERFORM public.cash_custody_assert_nonnegative(NEW.holder_id,NEW.market_id);
+  RETURN NEW;
+END $f$;
+CREATE TRIGGER trg_cash_refund_handoff_funded
+AFTER UPDATE OF status ON public.local_cash_refund_authorizations
+FOR EACH ROW WHEN (OLD.status='approved' AND NEW.status='handoff_pending')
+EXECUTE FUNCTION public.assert_cash_refund_handoff_funded();
+
 CREATE OR REPLACE FUNCTION public.guard_cash_refund_payout()
 RETURNS trigger LANGUAGE plpgsql AS $f$
 DECLARE a public.local_cash_refund_authorizations%ROWTYPE;
@@ -163,7 +202,6 @@ CREATE OR REPLACE FUNCTION public.finalize_cash_refund_payout()
 RETURNS trigger LANGUAGE plpgsql AS $f$
 DECLARE r public.local_item_refund_reservations%ROWTYPE;
 BEGIN
-  PERFORM public.cash_custody_assert_nonnegative(NEW.holder_id,NEW.market_id);
   SELECT * INTO r FROM public.local_item_refund_reservations WHERE id=NEW.reservation_id;
   UPDATE public.order_items SET qty_refunded=COALESCE(qty_refunded,0)+r.quantity WHERE id=r.order_item_id;
   INSERT INTO public.refunds(order_id,amount_kmf,refund_type,refund_method,reason,initiated_by,
@@ -174,6 +212,7 @@ BEGIN
      SET status='settled',settled_at=NEW.disbursed_at
    WHERE id=NEW.authorization_id AND status='handoff_pending';
   IF NOT FOUND THEN RAISE EXCEPTION 'CASH_REFUND_AUTH_NOT_SETTLED' USING ERRCODE='23514'; END IF;
+  PERFORM public.cash_custody_assert_nonnegative(NEW.holder_id,NEW.market_id);
   RETURN NEW;
 END $f$;
 CREATE TRIGGER trg_cash_refund_payout_finalize
