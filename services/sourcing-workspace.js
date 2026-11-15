@@ -8,7 +8,7 @@
  * @outputs       global_sourcing_projection, sourcing_mutation_result
  * @depends       db.js, services/pricing-engine.js, services/customs-dynamic-category-classifier.js, services/sourcing-analysis.js, services/sourcing-mutations.js, services/sourcing-candidate-actions.js, services/sourcing-import-dispatch.js, services/sourcing-source-autopilot.js, services/sourcing-source-registry.js, services/sourcing-provider-control-policy.js, services/suppliers/catalog-import-orchestrator.js, services/partner-admin-service.js
  * @used-by       routes/admin-sourcing-workspace.js
- * @db-read       products, sourcing_candidates, supplier_catalog_imports, suppliers, partners, suppliers_stats, sourcing_sources, sourcing_captures, boutique_categories, boutique_subcategories
+ * @db-read       products, sourcing_candidates, sourcing_candidate_events, supplier_catalog_imports, suppliers, partners, suppliers_stats, sourcing_sources, sourcing_captures, boutique_categories, boutique_subcategories
  * @db-write-via:sourcing-mutations products
  * @db-write-via:sourcing-candidate-actions sourcing_candidates, sourcing_candidate_events, products, catalog_media, product_variants, product_skus, product_sku_media
  * @db-write-via:catalog-import-orchestrator supplier_catalog_imports, sourcing_candidates
@@ -27,6 +27,7 @@ const db = require('../db');
 const sourcingAnalysis = require('./sourcing-analysis');
 const sourcingMutations = require('./sourcing-mutations');
 const candidateActions = require('./sourcing-candidate-actions');
+const controlledWatchReview = require('./sourcing-controlled-watch-review');
 const importDispatch = require('./sourcing-import-dispatch');
 const credentialService = require('./provider-credential-service');
 const sourceAutopilot = require('./sourcing-source-autopilot');
@@ -163,6 +164,7 @@ async function listCandidates(focusedCandidateRef = null) {
             sc.target_margin_pct,
             sc.scan_result,
             sc.scan_at,
+            ${controlledWatchReview.authorizedWatchSql('sc')} AS controlled_watch_test_authorized,
             sc.confidence,
             sc.state,
             sc.promotion_status,
@@ -542,6 +544,10 @@ async function scanCandidate(candidateRef, actor) {
   return { ...stripInternalIds(row), candidate_ref: candidateRef };
 }
 
+async function recordWatchReview(candidateRef, body, actor) {
+  return controlledWatchReview.recordControlledWatchReview(candidateRef, body, actor?.id || null);
+}
+
 async function watchlistCandidate(candidateRef, actor) {
   const candidate = await resolveCandidateRef(candidateRef);
   return candidateActions.watchlistCandidate(candidate.id, actor?.id || null);
@@ -802,6 +808,7 @@ module.exports = {
   getCandidateBoutiqueCategoryOptions,
   confirmCandidateBoutiqueCategory,
   scanCandidate,
+  recordWatchReview,
   watchlistCandidate,
   rejectCandidate,
   promoteCandidate,
