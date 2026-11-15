@@ -60,7 +60,7 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 | providers-services | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | inquiries, physical_offers, providers, services | auth, auth-identity, infrastructure, local-stock, market, platform-ops, recommendations | market-delegation, recommendations | 0 |
 | purchasing | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | hub_authorization_grants, manual_purchase_executions, product_suppliers, purchase_lines, purchase_order_authorizations, purchase_orders, purchase_variance_decisions, supplier_execution_events, supplier_execution_fulfillments, supplier_execution_order_lines, supplier_execution_orders, supplier_execution_payment_proofs, supplier_execution_payments, supplier_payment_settlements, suppliers | auth, catalog, documents, economic-engine, external-provider-contracts, incident-management, infrastructure, logistics, notifications, orders, sourcing, supplier-connectivity | catalog, dashboard, decision-signals, logistics, orders, payments, platform-ops, sourcing | 0 |
 | recommendations | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | _aucune_ | catalog, infrastructure, local-stock, logistics, market, market-autonomy, orders, platform-ops, providers-services | infrastructure, providers-services, shared-cart | 0 |
-| refunds | business-transversal | 🟢 HEALTHY | 🟢 HEALTHY | order_item_refund_reservations, refund_execution_intents, refunds | documents, economic-engine, infrastructure, logistics, market, notifications, orders, payments, wallet | documents, economic-engine, logistics, orders, payments | 0 |
+| refunds | business-transversal | 🟢 HEALTHY | 🟢 HEALTHY | local_item_refund_reservations, order_item_refund_reservations, refund_execution_intents, refunds | documents, economic-engine, infrastructure, logistics, market, notifications, orders, payments, wallet | documents, economic-engine, logistics, orders, payments | 0 |
 | settlement | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | market_settlement_events, market_settlements | auth, auth-identity, infrastructure, market, market-delegation | market-delegation | 0 |
 | shared-cart | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | basket_items, baskets, cart_shares, shared_cart_events, shared_cart_items, shared_cart_saved_access, shared_carts | auth, auth-identity, catalog, infrastructure, market-autonomy, notifications, orders, platform-ops, recommendations | catalog, dashboard, infrastructure, orders | 0 |
 | sourcing | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | import_runtime_item_events, import_runtime_runs, provider_credentials, sourcing_candidate_events, sourcing_candidates, sourcing_canonical_entities, sourcing_canonical_entity_refs, sourcing_captures, sourcing_match_proposals, sourcing_observation_evidence, sourcing_observations, sourcing_provider_control_events, sourcing_resolution_bindings, sourcing_resolution_decisions, sourcing_source_provides, sourcing_source_requests, sourcing_sources, supplier_commercial_category_mappings | auth, catalog, customs, dashboard, economic-engine, infrastructure, purchasing | catalog, dashboard, market-control-plane, purchasing | 0 |
@@ -2382,10 +2382,12 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - [object Object]
 - [object Object]
 - [object Object]
+- [object Object]
+- [object Object]
 - un remboursement n'est jamais applique deux fois pour le meme evenement source
 - tout refund externe ou crédit compensatoire est idempotent par événement source ; un rejeu ne déclenche jamais un second remboursement
 
-**Owns** : `order_item_refund_reservations`, `refund_execution_intents`, `refunds`
+**Owns** : `local_item_refund_reservations`, `order_item_refund_reservations`, `refund_execution_intents`, `refunds`
 
 **Exposes** : 1 internal API(s), 0 HTTP interface(s)
   - `processRefund(orderOrCartId, reason)`  — documented-signature-no-file
@@ -2403,9 +2405,10 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 29 fichier(s) déclaré(s)
-  - services : 9
-  - tests : 20
+**Implementation** : 33 fichier(s) déclaré(s)
+  - migrations : 1
+  - services : 10
+  - tests : 22
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="refunds"]_
 

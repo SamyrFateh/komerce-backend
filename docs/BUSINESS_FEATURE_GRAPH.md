@@ -617,10 +617,11 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 > Rembourser un client de facon tracable et sans double remboursement, quel que soit le flux appelant.
 
-- services: 9
-- tests: 20
-- tables owned (lifecycle): 3 — `refunds`, `refund_execution_intents`, `order_item_refund_reservations`
-- tables written: 3
+- migrations: 1
+- services: 10
+- tests: 22
+- tables owned (lifecycle): 4 — `refunds`, `refund_execution_intents`, `order_item_refund_reservations`, `local_item_refund_reservations`
+- tables written: 4
 - interfaces exposed: 0
 - internal APIs: 1
 - dependencies (consumes): 9 — market, infrastructure, orders, logistics, payments, wallet, documents, notifications, economic-engine
@@ -820,6 +821,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `international_shipments` | `logistics` | declared-table-owner | logistics | — |
 | `inventory_items` | `inventory` | single-writer | inventory | — |
 | `invoices` | `documents` | multi-writer-resolved-by-classification-signal | dashboard, documents | auth-identity, logistics, platform-ops |
+| `local_item_refund_reservations` | `refunds` | single-writer | refunds | — |
 | `local_stock` | `local-stock` | single-writer | local-stock | logistics |
 | `local_stock_allocations` | `local-stock` | single-writer | local-stock | logistics |
 | `loyalty_rewards` | `loyalty` | single-writer | loyalty | — |
@@ -2319,7 +2321,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 2338 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 2341 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 216 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 79 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -2586,7 +2588,7 @@ Meta Graph monté : oui.
 | orders | payments | static-code, interface | 9 | **DECLARED_AND_OBSERVED** |
 | orders | platform-ops | static-code | 42 | **DECLARED_AND_OBSERVED** |
 | orders | purchasing | static-code | 3 | **DECLARED_AND_OBSERVED** |
-| orders | refunds | static-code, data-read | 11 | **DECLARED_AND_OBSERVED** |
+| orders | refunds | static-code, data-read | 12 | **DECLARED_AND_OBSERVED** |
 | orders | shared-cart | static-code | 9 | **DECLARED_AND_OBSERVED** |
 | orders | wallet | static-code, interface | 12 | **DECLARED_AND_OBSERVED** |
 | payments | auth | static-code | 9 | **DECLARED_AND_OBSERVED** |
@@ -2655,7 +2657,7 @@ Meta Graph monté : oui.
 | refunds | auth | static-code | 1 | **OBSERVED_UNDECLARED** |
 | refunds | documents | static-code | 11 | **DECLARED_AND_OBSERVED** |
 | refunds | economic-engine | static-code | 1 | **DECLARED_AND_OBSERVED** |
-| refunds | infrastructure | static-code | 11 | **DECLARED_AND_OBSERVED** |
+| refunds | infrastructure | static-code | 12 | **DECLARED_AND_OBSERVED** |
 | refunds | logistics | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | refunds | market | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | refunds | notifications | static-code | 4 | **DECLARED_AND_OBSERVED** |
