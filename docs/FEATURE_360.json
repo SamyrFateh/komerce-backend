@@ -3391,7 +3391,7 @@
             ]
           },
           "services": {
-            "count": 85,
+            "count": 86,
             "files": [
               {
                 "declared": "services/boutique-taxonomy-admin.js",
@@ -3597,6 +3597,11 @@
                 "declared": "services/catalog-workspace.js",
                 "resolvedPath": "services/catalog-workspace.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/commercial-category-agreement.js",
+                "resolvedPath": "services/commercial-category-agreement.js",
+                "status": "resolved-on-disk-no-header"
               },
               {
                 "declared": "services/commercial-taxonomy-semantics.js",
@@ -3821,7 +3826,7 @@
             ]
           },
           "tests": {
-            "count": 208,
+            "count": 209,
             "files": [
               {
                 "declared": "tests/e2e-api/products.kmf-numeric.e2e.test.js",
@@ -4489,6 +4494,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/commercial-category-agreement.test.js",
+                "resolvedPath": "tests/unit/commercial-category-agreement.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/commercial-taxonomy-semantics.test.js",
                 "resolvedPath": "tests/unit/commercial-taxonomy-semantics.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -4876,7 +4886,7 @@
             ]
           }
         },
-        "totalFiles": 453,
+        "totalFiles": 455,
         "boutiqueManifest": "modal-product",
         "boutiqueFiles": {
           "count": 33,
@@ -31496,7 +31506,7 @@
               {
                 "declared": "services/local-cash-refund-handoff.js",
                 "resolvedPath": "services/local-cash-refund-handoff.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/local-item-refund-reservation.js",
@@ -31506,7 +31516,7 @@
               {
                 "declared": "services/local-mobile-refund-handoff.js",
                 "resolvedPath": "services/local-mobile-refund-handoff.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/paypal-refund-authority.js",

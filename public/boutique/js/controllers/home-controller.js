@@ -225,6 +225,47 @@ export function syncRailActiveState(categoryKey, options = {}) {
   return activeChip;
 }
 
+const categoryScrollCueUpdates = new WeakMap();
+
+function syncCategoryScrollCue(rail) {
+  const shell = rail.parentElement;
+  const cue = shell?.querySelector('.k-category-scroll-cue');
+  if (!cue) return;
+
+  let update = categoryScrollCueUpdates.get(rail);
+  if (!update) {
+    let hintChip;
+    let hintDismissed = false;
+    update = () => {
+      const range = rail.scrollWidth - rail.clientWidth;
+      const position = Math.max(0, Math.min(rail.scrollLeft, range));
+      cue.hidden = range <= 1;
+      cue.style.setProperty('--k-category-scroll-position', range > 1 ? position / range : 0);
+      shell.classList.toggle('k-cats-can-scroll-back', position > 1);
+      shell.classList.toggle('k-cats-can-scroll-forward', range - position > 1);
+
+      if (hintDismissed) return;
+      if (position > 1 || (hintChip && (range <= 1 || isDesktop()))) {
+        hintDismissed = true;
+        hintChip?.classList.remove('k-category-peek-glow');
+        return;
+      }
+      if (hintChip || range <= 1 || isDesktop()) return;
+
+      const railEnd = rail.getBoundingClientRect().left + rail.clientWidth;
+      hintChip = Array.from(rail.querySelectorAll('.k-chip')).find((chip) => {
+        const { left, right } = chip.getBoundingClientRect();
+        return left < railEnd && right > railEnd;
+      });
+      hintChip?.classList.add('k-category-peek-glow');
+    };
+    rail.addEventListener('scroll', update, { passive: true });
+    new ResizeObserver(update).observe(rail);
+    categoryScrollCueUpdates.set(rail, update);
+  }
+  update();
+}
+
 export function renderCategoryRail() {
   const catsEl = getCatsEl();
   if (!catsEl) return null;
@@ -247,6 +288,7 @@ export function renderCategoryRail() {
     delete catsEl.dataset.bound;
   }
 
+  syncCategoryScrollCue(catsEl);
   return catsEl;
 }
 

@@ -256,6 +256,54 @@ test('boutique options return only active commercial pairs and confirmed proposa
   expect(mockPricingConfig).not.toHaveBeenCalled();
 });
 
+test('flagged supplier classification exposes category only and no strong leaf',async()=>{
+  const flag='KOMERCE_COMMERCIAL_CATEGORY_AUTO_V1';
+  const prior=process.env[flag];
+  process.env[flag]='1';
+  try {
+    const candidate={candidate_ref:'KSC-000052',supplier_name:'AliExpress',
+      supplier_category:'Phones & Telecommunications Accessories > Cases',
+      product_name:'Clear Phone Case',state:'watchlist',commercial_taxonomy_review:null};
+    mockQuery.mockResolvedValueOnce({rows:[candidate]}).mockResolvedValueOnce({rows:[
+      {category:'Tech',category_label:'Tech',subcategory:'Phones',subcategory_label:'Phones'},
+      {category:'Tech',category_label:'Tech',subcategory:'Audio',subcategory_label:'Audio'},
+      {category:'Maison',category_label:'Maison',subcategory:'Cuisine',subcategory_label:'Cuisine'},
+    ]}).mockResolvedValueOnce({rows:[]}).mockResolvedValueOnce({rows:[{key:'Tech'}]});
+    const result=await workspace.getCandidateBoutiqueCategoryOptions('KSC-000052');
+    expect(result.category_decision).toMatchObject({
+      status:'CATEGORY_AUTO_REVIEW_REQUIRED',category:'Tech',requires_human_subcategory:true});
+    expect(result.suggestions[0]).toMatchObject({
+      category:'Tech',subcategory:'Phones',confidence:'review_required'});
+    expect(result.categories).toHaveLength(3);
+    expect(mockQuery.mock.calls.every(([sql])=>!/UPDATE |INSERT /i.test(sql))).toBe(true);
+  } finally {
+    if(prior===undefined)delete process.env[flag];
+    else process.env[flag]=prior;
+  }
+});
+
+test('flagged supplier category mismatch has no strong suggestion',async()=>{
+  const flag='KOMERCE_COMMERCIAL_CATEGORY_AUTO_V1';
+  const prior=process.env[flag];
+  process.env[flag]='1';
+  try {
+    const candidate={candidate_ref:'KSC-000053',supplier_name:'AliExpress',
+      supplier_category:'Automobiles, Parts & Accessories > Interior',
+      product_name:'Car Seat Gap Organizer',state:'watchlist',commercial_taxonomy_review:null};
+    mockQuery.mockResolvedValueOnce({rows:[candidate]}).mockResolvedValueOnce({rows:[
+      {category:'Auto',category_label:'Auto',subcategory:'Accessoires',subcategory_label:'Accessoires'},
+      {category:'Maison',category_label:'Maison',subcategory:'Rangement',subcategory_label:'Rangement'},
+    ]}).mockResolvedValueOnce({rows:[]});
+    const result=await workspace.getCandidateBoutiqueCategoryOptions('KSC-000053');
+    expect(result.category_decision).toMatchObject({
+      status:'REVIEW_REQUIRED',source:'OBJECT_SUPPLIER_CATEGORY_CONFLICT'});
+    expect(result.suggestions).toEqual([]);
+  } finally {
+    if(prior===undefined)delete process.env[flag];
+    else process.env[flag]=prior;
+  }
+});
+
 test('workspace delegates the commercial confirmation to its Sourcing mutation owner',async()=>{
   const actions=require('../../services/sourcing-candidate-actions');
   actions.confirmCandidateBoutiqueCategory.mockResolvedValueOnce({

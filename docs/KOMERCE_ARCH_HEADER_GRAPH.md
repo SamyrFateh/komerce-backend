@@ -6,20 +6,20 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 813
-- Files with full headers: 758
+- Scanned code files: 815
+- Files with full headers: 760
 - Files with lite headers: 55
-- Files with any headers: 813
+- Files with any headers: 815
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 2072
-- Edges: 10299
-- DB tables: 240
-- Doctrines: 812
+- Graph nodes: 2083
+- Edges: 10353
+- DB tables: 243
+- Doctrines: 818
 - Impact areas: 207
-- Unresolved code edges: 975
-- Tables multi-écrivains directs (>=2): 97
+- Unresolved code edges: 979
+- Tables multi-écrivains directs (>=2): 99
 - Avertissements db-write / db-write-via en chevauchement: 12
 
 ## Domains
@@ -61,7 +61,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - providers-services: 7
 - purchasing: 52
 - recommendations: 6
-- refunds: 10
+- refunds: 12
 - settlement: 2
 - shared: 1
 - shared-cart: 25
@@ -92,7 +92,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 138
 - route-manifest: 1
 - schema: 1
-- service: 493
+- service: 495
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -177,6 +177,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/inventory-service.js — inventory-inventory-service (inventory, critical, full)
 - services/item-refund-psp-orchestrator.js — e7-sandbox-item-refund-orchestrator (refunds, critical, full)
 - services/item-refund-reservation-service.js — item-refund-reservation (refunds, critical, full)
+- services/local-cash-refund-handoff.js — fable-cash-refund-custody-handoff (refunds, critical, full)
 - services/local-item-refund-reservation.js — verified-local-item-refund-reservation (refunds, critical, full)
 - services/local-relay-receipt-service.js — logistics-local-relay-receipt (logistics, critical, full)
 - services/market-cash-control-policy-service.js — market-cash-control-policy-service (market-delegation, critical, full)
@@ -490,6 +491,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/incident-write-service.js — incident-management-write-boundary (incident-management, high, full)
 - services/international-n1-reconciliation.js — international-shipment-costs-owner (economic-engine, high, full)
 - services/international-shipment-journey.js — international-shipment-journey-owner (logistics, high, full)
+- services/local-mobile-refund-handoff.js — verified-manual-mobile-refund-handoff (refunds, high, full)
 - services/local-stock-checkout-preview.js — local-stock-checkout-preview (local-stock, high, full)
 - services/local-stock-decision-projection.js — local-stock-decision-projection (local-stock, high, full)
 - services/local-stock-service.js — local-stock-local-stock-service (local-stock, high, full)
@@ -832,6 +834,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/catalog-field-sync-application.js -> catalog_field_sync_state
 - WRITE services/catalog-media-recovery.js -> catalog_media_recovery_audit
 - WRITE services/catalog-visual-fr-human-review-write.js -> catalog_media_visual_fr_reviews
+- WRITE services/catalog-product-mutation-service.js -> catalog_media
 - WRITE services/catalog-promotion.js -> catalog_media
 - WRITE services/catalog-product-quality-service.js -> catalog_product_quality_notes
 - WRITE services/catalog-product-quality-service.js -> catalog_product_sale_holds
@@ -890,7 +893,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/hub-physical-identity.js -> hub_physical_unit_placements
 - WRITE services/hub-physical-identity.js -> hub_physical_units
 - WRITE services/hub-physical-identity.js -> hub_purchase_allocations
-- WRITE services/import-runtime-item-events.js -> import_runtime_item_events
 
 ## DB Write-Via Edges (délégation déclarée)
 

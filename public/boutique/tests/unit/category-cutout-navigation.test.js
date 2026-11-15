@@ -49,7 +49,7 @@ describe('Komerce Shelf category navigation contract', () => {
     expect(mobileBlock).toMatch(/\.k-shelf-rail\s*\{[^}]*flex-wrap:\s*nowrap/s);
     expect(mobileBlock).toMatch(/\.k-shelf-rail\s*\{[^}]*overflow-x:\s*auto/s);
     expect(mobileBlock).not.toMatch(/grid-template-columns/);
-    expect(mobileBlock).toMatch(/\.k-shelf-rail \.k-cat-cutout\s*\{[^}]*flex:\s*0 0 56px[^}]*height:\s*56px/s);
+    expect(mobileBlock).toMatch(/\.k-shelf-rail \.k-cat-cutout\s*\{[^}]*flex:\s*0 0 clamp\(56px,[^;]+\)[^}]*height:\s*56px/s);
     expect(mobileBlock).toMatch(/\.k-cat-cutout \.k-chip-photo,[\s\S]*width:\s*46px[\s\S]*height:\s*30px/s);
     expect(mobileBlock).toContain('--k-optical-scale: .94;');
     expect(mobileBlock).toContain('--k-optical-active-scale: 1.01;');

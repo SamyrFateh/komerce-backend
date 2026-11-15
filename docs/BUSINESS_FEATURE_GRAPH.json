@@ -2119,6 +2119,13 @@
       {
         "feature": "catalog",
         "category": "services",
+        "declared": "services/commercial-category-agreement.js",
+        "resolvedPath": "services/commercial-category-agreement.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
         "declared": "services/catalog-product-mutation-service.js",
         "resolvedPath": "services/catalog-product-mutation-service.js",
         "status": "resolved-in-technical-graph"
@@ -3892,6 +3899,13 @@
         "category": "tests",
         "declared": "tests/unit/commercial-taxonomy-semantics.test.js",
         "resolvedPath": "tests/unit/commercial-taxonomy-semantics.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/commercial-category-agreement.test.js",
+        "resolvedPath": "tests/unit/commercial-category-agreement.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -19628,14 +19642,14 @@
         "category": "services",
         "declared": "services/local-mobile-refund-handoff.js",
         "resolvedPath": "services/local-mobile-refund-handoff.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "refunds",
         "category": "services",
         "declared": "services/local-cash-refund-handoff.js",
         "resolvedPath": "services/local-cash-refund-handoff.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "refunds",
@@ -35553,6 +35567,10 @@
                 "targetFile": "services/suppliers/allegro-fulfillment-adapter.js"
               },
               {
+                "sourceFileId": "services/catalog-certification.js",
+                "targetFile": "services/supplier-source-resolution.js"
+              },
+              {
                 "sourceFileId": "services/product-admin-service.js",
                 "targetFile": "services/suppliers/central-hub-supplier.js"
               },
@@ -49052,6 +49070,10 @@
                 "targetFile": "services/catalog-candidate-product-service.js"
               },
               {
+                "sourceFileId": "services/sourcing-workspace.js",
+                "targetFile": "services/commercial-category-agreement.js"
+              },
+              {
                 "sourceFileId": "services/sourcing-source-autopilot.js",
                 "targetFile": "services/sourcing-import-dispatch.js"
               },
@@ -50061,7 +50083,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2347
+        "filesObserved": 2349
       },
       "boutique": {
         "filesObserved": 216,
@@ -54112,8 +54134,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 708,
-        "technicalNodesOwned": 708,
+        "technicalNodesTotal": 710,
+        "technicalNodesOwned": 710,
         "technicalOrphans": 0
       },
       "dash": {

@@ -1,0 +1,186 @@
+{
+ "schema": "g13-visual-verdicts/1",
+ "note": "Clé = URL de l'image source (ou source_media_id). Verdict issu de l'inspection réelle de chaque image de la galerie (Read) : aucun texte, marque, logo, personnage ni filigrane.",
+ "verdicts": {
+  "G13-01": {
+   "https://cf.cjdropshipping.com/15838560/904579066665.jpg": {
+    "verdict": "APPROVED",
+    "text_presence": "NONE"
+   }
+  },
+  "G13-02": {
+   "https://cf.cjdropshipping.com/quick/product/2de4dd27-2d04-493d-b4cf-fd9bd9d13615.jpg": {
+    "verdict": "APPROVED",
+    "text_presence": "NONE"
+   }
+  },
+  "G13-03": {
+   "https://cf.cjdropshipping.com/20200406/6027153319150.jpg": {
+    "verdict": "APPROVED",
+    "text_presence": "NONE"
+   }
+  },
+  "G13-04": {
+   "https://cf.cjdropshipping.com/203107/4099188501004.jpg": {
+    "verdict": "APPROVED",
+    "text_presence": "NONE"
+   }
+  },
+  "G13-05": {
+   "https://cf.cjdropshipping.com/20200908/3765912208910.jpg": {
+    "verdict": "APPROVED",
+    "text_presence": "NONE"
+   }
+  },
+  "G13-06": {
+   "https://cf.cjdropshipping.com/quick/product/212239e1-886d-4834-8c1c-a8f86bd2af76.jpg": {
+    "verdict": "APPROVED",
+    "text_presence": "NONE"
+   }
+  },
+  "G13-07": {
+   "https://cf.cjdropshipping.com/bdb9cd0b-b76c-459d-8aeb-f5ca3dbd43be.jpg": {
+    "verdict": "APPROVED",
+    "text_presence": "NONE"
+   }
+  },
+  "G13-08": {
+   "https://oss-cf.cjdropshipping.com/product/2026/10/29/06/29fe65f5-b460-4ab5-81af-a286f84416d3.jpg": {
+    "verdict": "APPROVED",
+    "text_presence": "NONE"
+   }
+  },
+  "G13-09": {
+   "https://oss-cf.cjdropshipping.com/product/2026/11/06/01/2ae656ce-da67-4b65-831b-48879fd961bc_trans.jpeg": {
+    "verdict": "APPROVED",
+    "text_presence": "NONE"
+   }
+  },
+  "G13-10": {
+   "https://cf.cjdropshipping.com/6a92e38a-f315-49b2-99fe-62a44faea4fa.jpg": {
+    "verdict": "APPROVED",
+    "text_presence": "NONE"
+   }
+  },
+  "G13-11": {
+   "https://cf.cjdropshipping.com/1618549342663.jpg": {
+    "verdict": "APPROVED",
+    "text_presence": "NONE"
+   }
+  },
+  "G13-12": {
+   "https://cf.cjdropshipping.com/1619763271006.jpg": {
+    "verdict": "APPROVED",
+    "text_presence": "NONE"
+   }
+  },
+  "G13-13": {
+   "https://cf.cjdropshipping.com/23327c22-a0e8-4fa4-85eb-70ab1cc318d9.jpg": {
+    "verdict": "APPROVED",
+    "text_presence": "NONE"
+   }
+  },
+  "G13-14": {
+   "https://cf.cjdropshipping.com/fe869a7f-e261-437d-b179-bbda4295a3f2.jpg": {
+    "verdict": "APPROVED",
+    "text_presence": "NONE"
+   }
+  },
+  "G13-15": {
+   "https://cf.cjdropshipping.com/1622363478634.jpg": {
+    "verdict": "APPROVED",
+    "text_presence": "NONE"
+   }
+  },
+  "G13-16": {
+   "https://cf.cjdropshipping.com/e66f5e1c-c80a-475f-bda6-4ab09712cc05.jpg": {
+    "verdict": "APPROVED",
+    "text_presence": "NONE"
+   }
+  },
+  "G13-17": {
+   "https://cf.cjdropshipping.com/quick/product/bc7f4a9c-bdf2-4edb-a9c2-b043a297bf87.jpg": {
+    "verdict": "APPROVED",
+    "text_presence": "NONE"
+   }
+  },
+  "G13-18": {
+   "https://cf.cjdropshipping.com/1617949939911.jpg": {
+    "verdict": "APPROVED",
+    "text_presence": "NONE"
+   }
+  },
+  "G13-19": {
+   "https://cf.cjdropshipping.com/2047/833029495719.jpg": {
+    "verdict": "APPROVED",
+    "text_presence": "NONE"
+   }
+  },
+  "G13-20": {
+   "https://oss-cf.cjdropshipping.com/product/2026/03/30/07/ed3f0028-411a-484c-9207-39b5a2acd5ef_trans.jpeg": {
+    "verdict": "APPROVED",
+    "text_presence": "NONE"
+   }
+  },
+  "G13-21": {
+   "https://ae01.alicdn.com/kf/S5d6b30ff6d9b4ec2869eeab07895e0d3e.jpg": {
+    "verdict": "APPROVED",
+    "text_presence": "NONE"
+   },
+   "https://ae01.alicdn.com/kf/Scdeb7a73a3f649ebb2724e079c9ea96fP.jpg": {
+    "verdict": "APPROVED",
+    "text_presence": "NONE"
+   },
+   "https://ae01.alicdn.com/kf/Sfd43ddd185754e5a91d335d621db9682K.jpg": {
+    "verdict": "APPROVED",
+    "text_presence": "NONE"
+   },
+   "https://ae01.alicdn.com/kf/S91f23a7f3b0a42ea8dbb4ccdaccb42b4p.jpg": {
+    "verdict": "APPROVED",
+    "text_presence": "NONE"
+   },
+   "https://ae01.alicdn.com/kf/S6796d87e223a469697336db523a49eb2r.jpg": {
+    "verdict": "APPROVED",
+    "text_presence": "NONE"
+   },
+   "https://ae01.alicdn.com/kf/S988f9d9f2aa443bfa8e2684252886a33i.jpg": {
+    "verdict": "APPROVED",
+    "text_presence": "NONE"
+   },
+   "https://ae-pic-a1.aliexpress-media.com/kf/S5d6b30ff6d9b4ec2869eeab07895e0d3e.jpg": {
+    "verdict": "APPROVED",
+    "text_presence": "NONE"
+   }
+  },
+  "G13-22": {
+   "https://ae01.alicdn.com/kf/S184ed1e166614a86a8ef9c8e523ad2aej.jpg": {
+    "verdict": "APPROVED",
+    "text_presence": "NONE"
+   },
+   "https://ae01.alicdn.com/kf/S86aa437cc20e4eb087b92664f089fe6bX.jpg": {
+    "verdict": "APPROVED",
+    "text_presence": "NONE"
+   },
+   "https://ae01.alicdn.com/kf/Sb3f42c6c30cc4999bcb6d8dfd192f59eP.jpg": {
+    "verdict": "APPROVED",
+    "text_presence": "NONE"
+   },
+   "https://ae01.alicdn.com/kf/Sc1ef26ab95744bb3a1e602fb552d325aZ.jpg": {
+    "verdict": "APPROVED",
+    "text_presence": "NONE"
+   },
+   "https://ae01.alicdn.com/kf/Sc289bb8dc81448e98b1e89d2e4505cfez.jpg": {
+    "verdict": "APPROVED",
+    "text_presence": "NONE"
+   },
+   "https://ae01.alicdn.com/kf/S6d6af5db348a4609bc63f27c2af6f1d22.jpg": {
+    "verdict": "APPROVED",
+    "text_presence": "NONE"
+   },
+   "https://ae-pic-a1.aliexpress-media.com/kf/S184ed1e166614a86a8ef9c8e523ad2aej.jpg": {
+    "verdict": "APPROVED",
+    "text_presence": "NONE"
+   }
+  }
+ }
+}

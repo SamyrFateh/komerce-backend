@@ -1,0 +1,71 @@
+# G13 : outillage de recette qui rejoue les gestes API canoniques du catalogue sur le staging.
+# Declenchement MANUEL uniquement (workflow_dispatch), proprietaire, confirmation saisie. dry-run par defaut.
+# Aucun SQL d'ecriture (PGOPTIONS lecture seule) ; ecritures = routes API avec les comptes E2E.
+name: G13 catalogue seed (staging)
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'dry-run (aucune ecriture) ou execute'
+        required: true
+        type: choice
+        default: dry-run
+        options: [dry-run, execute]
+      phase:
+        description: 'Phase : all ou une seule (validate, dump, discover, import-now, import, curate, publish, supplier-link, price, stock, census)'
+        required: true
+        type: choice
+        default: all
+        options: [all, validate, dump, discover, import-now, import, curate, publish, supplier-link, price, stock, census]
+      confirmation:
+        description: 'Saisir exactement SEED-G13-CATALOGUE'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: komerce-g13-catalogue-seed
+  cancel-in-progress: false
+
+jobs:
+  seed:
+    if: github.actor == github.repository_owner && inputs.confirmation == 'SEED-G13-CATALOGUE'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      GITHUB_ACTIONS: 'true'
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      EXPECTED_RAILWAY_ENVIRONMENT: staging
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      KOMERCE_STAGING_RESET_DB_PIN: ${{ vars.STAGING_DB_PIN }}
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      PGOPTIONS: '-c default_transaction_read_only=on'
+      G13_MODE: ${{ inputs.mode }}
+      G13_PHASE: ${{ inputs.phase }}
+      G13_CONFIRMATION: ${{ inputs.confirmation }}
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      E2E_MARKET_OPERATOR_EMAIL: ${{ secrets.E2E_MARKET_OPERATOR_EMAIL }}
+      E2E_MARKET_OPERATOR_PASSWORD: ${{ secrets.E2E_MARKET_OPERATOR_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Seed G13
+        run: node scripts/recette/g13-catalogue-seed.js
+      - name: Conserver le rapport
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g13-catalogue-seed-${{ github.run_id }}
+          path: test-results/g13-catalogue-seed/report.json
+          retention-days: 21
+          if-no-files-found: warn

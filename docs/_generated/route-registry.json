@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-11-13T15:21:10.599Z",
+  "generatedAt": "2026-11-15T15:53:14.799Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 826,
+  "count": 833,
   "routes": [
     {
       "method": "GET",
@@ -1397,6 +1397,42 @@
     },
     {
       "method": "POST",
+      "fullPath": "/api/admin/orders/:id/items/:itemId/local-refund-reservations",
+      "mountPrefix": "/api/admin",
+      "localPath": "/orders/:id/items/:itemId/local-refund-reservations",
+      "routeFile": "routes/admin/orders.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js",
+        "routes/admin.js",
+        "routes/admin/index.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/orders/:id/items/:itemId/local-refund-reservations/:reservationId/authorize-cash",
+      "mountPrefix": "/api/admin",
+      "localPath": "/orders/:id/items/:itemId/local-refund-reservations/:reservationId/authorize-cash",
+      "routeFile": "routes/admin/orders.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js",
+        "routes/admin.js",
+        "routes/admin/index.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/orders/:id/items/:itemId/local-refund-reservations/:reservationId/manual-mobile/:action",
+      "mountPrefix": "/api/admin",
+      "localPath": "/orders/:id/items/:itemId/local-refund-reservations/:reservationId/manual-mobile/:action",
+      "routeFile": "routes/admin/orders.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js",
+        "routes/admin.js",
+        "routes/admin/index.js"
+      ]
+    },
+    {
+      "method": "POST",
       "fullPath": "/api/admin/orders/:id/items/:itemId/refund-reservations",
       "mountPrefix": "/api/admin",
       "localPath": "/orders/:id/items/:itemId/refund-reservations",
@@ -1436,6 +1472,18 @@
       "fullPath": "/api/admin/orders/:id/refund",
       "mountPrefix": "/api/admin",
       "localPath": "/orders/:id/refund",
+      "routeFile": "routes/admin/orders.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js",
+        "routes/admin.js",
+        "routes/admin/index.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/orders/local-refunds",
+      "mountPrefix": "/api/admin",
+      "localPath": "/orders/local-refunds",
       "routeFile": "routes/admin/orders.js",
       "mountedFrom": [
         "bootstrap/api-routes.js",
@@ -7370,6 +7418,16 @@
     },
     {
       "method": "GET",
+      "fullPath": "/api/relay/local-cash-refunds",
+      "mountPrefix": "/api/relay",
+      "localPath": "/local-cash-refunds",
+      "routeFile": "routes/relay-dashboard.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
       "fullPath": "/api/relay/orders",
       "mountPrefix": "/api/relay",
       "localPath": "/orders",
@@ -7423,6 +7481,26 @@
       "fullPath": "/api/relay/orders/:id/incident",
       "mountPrefix": "/api/relay",
       "localPath": "/orders/:id/incident",
+      "routeFile": "routes/relay-dashboard.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/relay/orders/:id/items/:itemId/local-cash-handoffs/:authorizationId/confirm",
+      "mountPrefix": "/api/relay",
+      "localPath": "/orders/:id/items/:itemId/local-cash-handoffs/:authorizationId/confirm",
+      "routeFile": "routes/relay-dashboard.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/relay/orders/:id/items/:itemId/local-cash-handoffs/:authorizationId/start",
+      "mountPrefix": "/api/relay",
+      "localPath": "/orders/:id/items/:itemId/local-cash-handoffs/:authorizationId/start",
       "routeFile": "routes/relay-dashboard.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
