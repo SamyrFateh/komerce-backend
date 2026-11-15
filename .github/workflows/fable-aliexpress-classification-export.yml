@@ -1,0 +1,94 @@
+name: Fable AliExpress classification sample — staging read only
+
+on:
+  workflow_dispatch:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fable-aliexpress-classification-sample-staging
+  cancel-in-progress: false
+
+jobs:
+  sample:
+    name: Export 300 original AliExpress titles and source paths
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issues' &&
+       github.actor == github.repository_owner &&
+       github.event.issue.title == '[staging-op] fable-aliexpress-classification-export')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+
+    steps:
+      - name: Checkout pinned main branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+      - name: Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Dependencies, no installation scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Guarded snapshot (read only; no supplier calls)
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${DATABASE_URL:-}" || { echo "::error::STAGING_DATABASE_SECRET_MISSING"; exit 1; }
+          node <<'NODE'
+          'use strict';
+          const fs = require('node:fs');
+          const crypto = require('node:crypto');
+          const db = require('./db');
+          const {confirmTarget} = require('./scripts/recette/target-guard');
+          const output='test-results/fable-aliexpress/ali-classification-source-sample.csv';
+          const quoted=(v)=>'"'+String(v??'').replace(/"/g,'""')+'"';
+          async function main(){
+            if(process.env.KOMERCE_ENV!=='staging'||process.env.NODE_ENV==='production')
+              throw new Error('STAGING_ONLY');
+            const target=await confirmTarget({db,env:process.env});
+            if(target?.confirmed!==true)throw new Error('STAGING_TARGET_NOT_CONFIRMED');
+            const client=await db.pool.connect();
+            try{
+              await client.query('BEGIN READ ONLY');
+              await client.query("SET LOCAL statement_timeout='25000ms'");
+              const {rows:[total]}=await client.query(
+                "SELECT COUNT(*)::int AS n FROM sourcing_candidates WHERE supplier_name ILIKE 'ali%'");
+              const {rows}=await client.query(
+                "SELECT supplier_name,product_name,supplier_category FROM sourcing_candidates "+
+                "WHERE supplier_name ILIKE 'ali%' AND NULLIF(BTRIM(product_name),'') IS NOT NULL "+
+                "AND NULLIF(BTRIM(supplier_category),'') IS NOT NULL "+
+                "ORDER BY md5(id::text || 'fable-aliexpress-20261115-blind-v1') LIMIT 300");
+              await client.query('ROLLBACK');
+              if(rows.length===0)throw new Error('ALIEXPRESS_TITLES_AND_PATHS_NOT_FOUND_IN_STAGING');
+              const header=['supplier_name','product_name','supplier_category'];
+              const csv=[header.map(quoted).join(','),...rows.map(row=>header.map(key=>quoted(row[key])).join(','))].join('\n')+'\n';
+              fs.mkdirSync('test-results/fable-aliexpress',{recursive:true});
+              fs.writeFileSync(output,csv,{mode:0o600});
+              const sha256=crypto.createHash('sha256').update(csv).digest('hex');
+              console.log(JSON.stringify({status:'READ_ONLY_SAMPLE_READY',source_rows:total.n,exported:rows.length,sha256,columns:header,source:'staging_alias_aliexpress',writes:0,provider_calls:0}));
+            }catch(e){await client.query('ROLLBACK').catch(()=>{});throw e;}
+            finally{client.release();}
+          }
+          main().catch(e=>{console.error('EXPORT_BLOCKED: '+e.message);process.exitCode=1}).finally(()=>db.pool.end());
+          NODE
+      - name: Preserve source sample for Fable (short retention)
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fable-aliexpress-original-source-sample-${{ github.run_id }}
+          path: test-results/fable-aliexpress/ali-classification-source-sample.csv
+          retention-days: 7
+          if-no-files-found: error
