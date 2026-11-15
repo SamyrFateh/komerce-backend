@@ -7,7 +7,7 @@
  * @inputs        order_id, hub_allocations, actor
  * @outputs       order_completion_verdict, purchase_order_hub_received, order_status_preparation
  * @depends       db, services/auto-parcel.js, services/supplier-shortage-service.js, services/order-status-machine.js, services/scan-operations.js, utils/alerts.js, utils/logger.js
- * @used-by       services/hub-operations.js, bootstrap/crons.js
+ * @used-by       services/hub-operations.js, services/purchasing-engagement-service.js, bootstrap/crons.js
  * @db-read       order_items, purchase_lines, hub_physical_unit_placements, hub_purchase_allocations, parcel_items, orders, purchase_orders, v_purchase_line_progress
  * @db-write      alerts, incidents, purchase_orders, parcels, parcel_items
  * @db-txn        owns_transaction
@@ -101,9 +101,11 @@ function computeCompletion(items, lines, settledLineIds = new Set()) {
   let complete = 0;
   let receivedTotal = 0;
   const shortages = [];
+  const blockers = new Set();
   for (const item of items) {
     const entry = byItem.get(item.id);
-    if (!entry || !entry.allReceived) continue;
+    if (!entry) { blockers.add('NO_PURCHASE_LINE'); continue; }
+    if (!entry.allReceived) { blockers.add('LINE_NOT_FULLY_RECEIVED'); continue; }
     if (entry.effective >= Number(item.quantity)) { complete += 1; receivedTotal += entry.received; continue; }
     // H1 / HB-02 : rupture définitive (ligne soldée sans reliquat) : la quantité soldée vaut couverture.
     // Le manquant est remboursé (décision 1), la commande part avec ce qui a été reçu.
@@ -111,11 +113,13 @@ function computeCompletion(items, lines, settledLineIds = new Set()) {
       complete += 1;
       receivedTotal += entry.received;
       shortages.push({ order_item_id: item.id, missing_quantity: Number(item.quantity) - entry.received, received_quantity: entry.received });
-    }
+    } else blockers.add('UNDER_COVERED_NOT_SETTLED');
   }
   // Une commande dont rien n'a été reçu ne part pas : elle relève du remboursement, pas de la préparation.
   const allCovered = items.length > 0 && complete === items.length;
-  return { items_total: items.length, items_complete: complete, complete: allCovered && receivedTotal > 0, shortages };
+  if (items.length === 0) blockers.add('NO_ORDER_ITEM');
+  else if (allCovered && receivedTotal === 0) blockers.add('NOTHING_RECEIVED');
+  return { items_total: items.length, items_complete: complete, complete: allCovered && receivedTotal > 0, shortages, blockers: [...blockers].sort() };
 }
 
 async function evaluateOrderProcurementCompletion(orderId, { actor = null } = {}) {
@@ -145,10 +149,11 @@ async function evaluateOrderProcurementCompletion(orderId, { actor = null } = {}
   for (const shortage of evaluation.shortages) await openShortageRefundRequest(orderId, shortage);
   const verdict = {
     order_id: orderId, found: true, complete: evaluation.complete, shortages: evaluation.shortages,
-    items_total: evaluation.items_total, items_complete: evaluation.items_complete,
+    items_total: evaluation.items_total, items_complete: evaluation.items_complete, blockers: evaluation.blockers,
     purchase_orders_closed: evaluation.closed, transition: 'skipped',
   };
-  if (!evaluation.complete || evaluation.status !== 'ordered') return verdict;
+  if (!evaluation.complete) return verdict;
+  if (evaluation.status !== 'ordered') return { ...verdict, blockers: ['STATUS_NOT_ORDERED'] };
 
   const result = await transitionOrderStatus({
     orderId,
@@ -243,29 +248,56 @@ async function completeOrdersForPhysicalUnit(unitId, { actor = null } = {}) {
   }
 }
 
+// Curseur (created_at, id) du balayage `ordered` : une commande évaluée sans transition ne bloque plus les suivantes.
+// État volatil (perdu au redémarrage = on repart du début, sans danger : le balayage est idempotent).
+let orderedSweepCursor = null;
+const SWEEP_MAX_EVALUATIONS = 200;
+
+function resetSweepCursor() { orderedSweepCursor = null; }
+
 /**
  * Balayage périodique (invariant H1) : commandes `ordered` dont tout est reçu, et commandes `preparation` restées sans
  * ligne de colis (arrêt entre transition et répartition). Idempotent ; ne lève jamais.
+ *
+ * Sans famine : la sélection `ordered` est paginée par curseur (created_at, id) jusqu'à épuisement ou jusqu'à
+ * `maxEvaluations` ; si le plafond est atteint, le passage suivant reprend après la dernière commande évaluée.
+ * Toute la file est donc couverte en ceil(N / maxEvaluations) passages. Un compte agrégé (sans donnée personnelle) est
+ * journalisé à chaque passage.
  */
-async function sweepStalledOrders({ limit = 50 } = {}) {
-  const swept = { ordered: 0, distributed: 0, errors: 0 };
+async function sweepStalledOrders({ limit = 50, maxEvaluations = SWEEP_MAX_EVALUATIONS } = {}) {
+  const swept = { ordered: 0, distributed: 0, errors: 0, evaluated: 0, no_transition: {}, exhausted: true };
   try {
-    const { rows: ordered } = await db.query(`
-      SELECT o.id FROM orders o
-       WHERE o.status = 'ordered'
-         AND EXISTS (SELECT 1 FROM order_items oi WHERE oi.order_id = o.id AND oi.fulfillment_source = 'IMPORT')
-         AND NOT EXISTS (SELECT 1 FROM v_purchase_line_progress v
-                          WHERE v.order_id = o.id AND NOT v.cancelled AND v.received_quantity < v.effective_quantity)
-       ORDER BY o.created_at ASC LIMIT $1`, [limit]);
-    for (const { id } of ordered) {
-      try {
-        const verdict = await evaluateOrderProcurementCompletion(id, { actor: null });
-        if (verdict.transition === 'preparation') swept.ordered += 1;
-      } catch (err) {
-        swept.errors += 1;
-        log.error({ err, order_id: id }, '[purchasing-completion] balayage : complétude en échec');
+    let cursor = orderedSweepCursor;
+    while (swept.evaluated < maxEvaluations) {
+      const { rows: ordered } = await db.query(`
+        SELECT o.id, o.created_at FROM orders o
+         WHERE o.status = 'ordered'
+           AND EXISTS (SELECT 1 FROM order_items oi WHERE oi.order_id = o.id AND oi.fulfillment_source = 'IMPORT')
+           AND NOT EXISTS (SELECT 1 FROM v_purchase_line_progress v
+                            WHERE v.order_id = o.id AND NOT v.cancelled AND v.received_quantity < v.effective_quantity)
+           AND ($2::timestamptz IS NULL OR (o.created_at, o.id::text) > ($2::timestamptz, $3::text))
+         ORDER BY o.created_at ASC, o.id::text ASC LIMIT $1`,
+      [limit, cursor ? cursor.createdAt : null, cursor ? cursor.id : null]);
+      for (const { id } of ordered) {
+        swept.evaluated += 1;
+        try {
+          const verdict = await evaluateOrderProcurementCompletion(id, { actor: null });
+          if (verdict.transition === 'preparation') swept.ordered += 1;
+          else {
+            const reasons = verdict.found === false ? ['ORDER_NOT_FOUND'] : (verdict.blockers && verdict.blockers.length ? verdict.blockers : [verdict.transition]);
+            for (const reason of reasons) swept.no_transition[reason] = (swept.no_transition[reason] || 0) + 1;
+          }
+        } catch (err) {
+          swept.errors += 1;
+          log.error({ err, order_id: id }, '[purchasing-completion] balayage : complétude en échec');
+        }
       }
+      const last = ordered[ordered.length - 1];
+      if (ordered.length < limit || !last) { cursor = null; swept.exhausted = true; break; }
+      cursor = { createdAt: last.created_at, id: last.id };
+      swept.exhausted = false;
     }
+    orderedSweepCursor = swept.exhausted ? null : cursor;
     const { rows: undistributed } = await db.query(`
       SELECT o.id FROM orders o
        WHERE o.status = 'preparation'
@@ -282,6 +314,8 @@ async function sweepStalledOrders({ limit = 50 } = {}) {
     swept.errors += 1;
     log.error({ err }, '[purchasing-completion] balayage en échec');
   }
+  log.info({ evaluated: swept.evaluated, advanced: swept.ordered, distributed: swept.distributed, no_transition: swept.no_transition, errors: swept.errors, exhausted: swept.exhausted },
+    '[purchasing-completion] balayage');
   return swept;
 }
 
@@ -329,5 +363,6 @@ module.exports = {
   computeCompletion,
   completeOrdersForPhysicalUnit,
   sweepStalledOrders,
+  resetSweepCursor,
   autoDistribute,
 };

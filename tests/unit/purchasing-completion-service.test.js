@@ -61,12 +61,12 @@ beforeEach(() => {
 describe('computeCompletion', () => {
   test('un item est complet si couvert (Σ effectif ≥ quantité) ET entièrement reçu', () => {
     const items = [{ id: 'i1', quantity: 5 }, { id: 'i2', quantity: 2 }];
-    expect(svc.computeCompletion(items, [line('l1', 'i1', PO, 5, 5), line('l2', 'i2', PO, 2, 2)])).toEqual({ items_total: 2, items_complete: 2, complete: true, shortages: [] });
+    expect(svc.computeCompletion(items, [line('l1', 'i1', PO, 5, 5), line('l2', 'i2', PO, 2, 2)])).toEqual({ items_total: 2, items_complete: 2, complete: true, shortages: [], blockers: [] });
   });
 
   test('fail-closed : ligne soldée sans reliquat (Σ effectif < quantité) laisse l\'item incomplet', () => {
     const result = svc.computeCompletion([{ id: 'i1', quantity: 10 }], [line('l1', 'i1', PO, 6, 6)]);
-    expect(result).toEqual({ items_total: 1, items_complete: 0, complete: false, shortages: [] });
+    expect(result).toEqual({ items_total: 1, items_complete: 0, complete: false, shortages: [], blockers: ['UNDER_COVERED_NOT_SETTLED'] });
   });
 
   test('un reliquat ouvert non reçu bloque l\'item ; une somme sur plusieurs lignes est acceptée', () => {
@@ -262,7 +262,7 @@ describe('H1 — avancement automatique', () => {
 
   test('HB-02 computeCompletion : ligne soldée sans reliquat = couverte ; le manquant est signalé', () => {
     const r = svc.computeCompletion([{ id: 'i1', quantity: 10 }], [line(LINE_SHORT, 'i1', PO, 6, 6)], new Set([LINE_SHORT]));
-    expect(r).toEqual({ items_total: 1, items_complete: 1, complete: true, shortages: [{ order_item_id: 'i1', missing_quantity: 4, received_quantity: 6 }] });
+    expect(r).toEqual({ items_total: 1, items_complete: 1, complete: true, shortages: [{ order_item_id: 'i1', missing_quantity: 4, received_quantity: 6 }], blockers: [] });
   });
 
   test('HB-02 : une ligne soldée dont rien n\'a été reçu ne fait pas partir la commande', () => {
@@ -310,18 +310,35 @@ describe('H1 — avancement automatique', () => {
       .mockResolvedValueOnce({ rows: [] });            // aucune commande preparation sans colis
     useClient({ items: [{ id: 'i1', quantity: 2 }], lines: [line('l1', 'i1', null, 2, 2)] });
     const swept = await svc.sweepStalledOrders();
-    expect(swept).toEqual({ ordered: 1, distributed: 0, errors: 0 });
+    expect(swept).toMatchObject({ ordered: 1, distributed: 0, errors: 0, evaluated: 1, exhausted: true });
     expect(mockTransition).toHaveBeenCalledWith(expect.objectContaining({ orderId: ORDER, newStatus: 'preparation' }));
     expect(mockDistribute).toHaveBeenCalledWith(ORDER);
   });
 
   test('balayage idempotent : second passage = rien à faire ; reprise des commandes preparation sans colis', async () => {
     db.query.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [{ id: ORDER }] });
-    expect(await svc.sweepStalledOrders()).toEqual({ ordered: 0, distributed: 1, errors: 0 });
+    expect(await svc.sweepStalledOrders()).toMatchObject({ ordered: 0, distributed: 1, errors: 0 });
     expect(mockTransition).not.toHaveBeenCalled();
     expect(mockDistribute).toHaveBeenCalledWith(ORDER);
     db.query.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [] });
-    expect(await svc.sweepStalledOrders()).toEqual({ ordered: 0, distributed: 0, errors: 0 });
+    expect(await svc.sweepStalledOrders()).toMatchObject({ ordered: 0, distributed: 0, errors: 0 });
+  });
+
+  test('balayage sans famine : plafond atteint → curseur (created_at, id) repris au passage suivant, motifs agrégés', async () => {
+    svc.resetSweepCursor();
+    const t1 = '2026-01-01T00:00:00Z';
+    db.query
+      .mockResolvedValueOnce({ rows: [{ id: 'a', created_at: t1 }, { id: 'b', created_at: t1 }] }) // plein (limit 2) : on continue
+      .mockResolvedValueOnce({ rows: [] })                                                          // distribution
+      .mockResolvedValueOnce({ rows: [{ id: 'c', created_at: t1 }] })                               // 2e passage : reprise après b
+      .mockResolvedValueOnce({ rows: [] });
+    useClient({ items: [{ id: 'i1', quantity: 1 }], lines: [] });
+    const first = await svc.sweepStalledOrders({ limit: 2, maxEvaluations: 2 });
+    expect(first).toMatchObject({ evaluated: 2, exhausted: false, no_transition: { NO_PURCHASE_LINE: 2 } });
+    const second = await svc.sweepStalledOrders({ limit: 2, maxEvaluations: 2 });
+    expect(db.query.mock.calls[2][1]).toEqual([2, t1, 'b']);
+    expect(second).toMatchObject({ evaluated: 1, exhausted: true });
+    svc.resetSweepCursor();
   });
 
   test('balayage : une erreur sur une commande n\'arrête pas les suivantes ni ne lève', async () => {
