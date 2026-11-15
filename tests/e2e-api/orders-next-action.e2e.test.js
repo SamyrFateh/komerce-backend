@@ -27,8 +27,11 @@ describeE2E('L8 — files de prochaine action des commandes', ({ db }) => {
   let cleanup; let market;
 
   async function seedOrder(key, status, source) {
-    await q(`INSERT INTO orders (id, user_id, relais_id, market_id, reference, status, payment_status, payment_mode, total_kmf, total_eur)
-             VALUES ($1,$2,$3,$4,$5,$6,'paid','cash_relais',50000,100)`, [orders[key], userId, relaisId, market.id, `${REF}-${key}`, status]);
+    // created_at très ancien : les files sont triées par ancienneté et tronquées à 25 ; les commandes `ordered` laissées par
+    // d'autres suites de la même base ne doivent pas repousser ces fixtures hors de la page lue.
+    await q(`INSERT INTO orders (id, user_id, relais_id, market_id, reference, status, payment_status, payment_mode, total_kmf, total_eur, created_at)
+             VALUES ($1,$2,$3,$4,$5,$6,'paid','cash_relais',50000,100, TIMESTAMPTZ '2000-01-01 00:00:00+00' + ($7 || ' seconds')::interval)`,
+    [orders[key], userId, relaisId, market.id, `${REF}-${key}`, status, String(Object.keys(orders).indexOf(key))]);
     await q(`INSERT INTO order_items (id, order_id, product_id, quantity, price_kmf, fulfillment_source) VALUES ($1,$2,$3,$4,25000,$5)`,
       [items[key] || uuid(), orders[key], productId, key === 'partial' ? 3 : 2, source]);
   }
@@ -82,7 +85,6 @@ describeE2E('L8 — files de prochaine action des commandes', ({ db }) => {
 
   test('confirmed payée → À commander ; ordered sans réception → attente 0/N sans action ; stock local → Préparer le colis ; annulée exclue', async () => {
     const queues = await getWorkQueues(market);
-    process.stderr.write(`L8DEBUG ${JSON.stringify({ totals: [queues.to_order_total, queues.awaiting_hub_reception_total, queues.ready_for_parcel_total], awaitingShown: queues.awaiting_hub_reception.length, readyRefs: queues.ready_for_parcel.map(o => String(o.reference).slice(0, 12)), awaitingRefs: queues.awaiting_hub_reception.map(o => String(o.reference).slice(0, 12)) })}\n`);
     expect(pick(queues.to_order)).toEqual(['confirmed']);
     expect(queues.to_order.find(o => o.reference.endsWith('-confirmed')).next_action).toMatchObject({ label: 'À commander', actionable: true });
     expect(pick(queues.awaiting_hub_reception)).toEqual(['none', 'partial']);
