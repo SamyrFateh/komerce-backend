@@ -17,7 +17,7 @@ const connected = require('../services/suppliers/connectors/aliexpress-connected
 const base = require('../services/suppliers/connectors/aliexpress-connector');
 const discovery = require('../services/suppliers/aliexpress-discovery');
 
-const TARGET=240, PER_ROOT=24, MAX_FEED_CALLS=144, MAX_DETAIL_CALLS=260;
+const TARGET=240, PER_ROOT=40, MAX_FEED_CALLS=180, MAX_DETAIL_CALLS=260;
 const sleep = ms => new Promise(resolve=>setTimeout(resolve,ms));
 const text = v=>String(v==null?'':v).trim();
 const csvCell = v=>'"'+text(v).replace(/"/g,'""').replace(/[\r\n]+/g,' ')+'"';
