@@ -424,6 +424,28 @@
     opacity: .28;
   }
 
+  .k-shelf-rail .k-category-peek-glow .k-chip-photo::before {
+    left: 36%;
+    bottom: 2px;
+    width: 34px;
+    height: 24px;
+    background: radial-gradient(ellipse, var(--green-valid), transparent 72%);
+    filter: blur(3px);
+    opacity: .30;
+    animation: k-category-peek-glow 1.35s ease-in-out both;
+  }
+
+  @keyframes k-category-peek-glow {
+    0%, 100% { opacity: 0; }
+    35%, 60% { opacity: .55; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .k-shelf-rail .k-category-peek-glow .k-chip-photo::before {
+      animation: none;
+    }
+  }
+
   .k-shelf-rail .k-cat-cutout.active .k-chip-photo::after {
     opacity: 1;
     transform: scale(1);
