@@ -94,11 +94,20 @@ async function run({ env = process.env, db, run8 }) {
   const incs = await inc();
   const alerts = incs.length ? (await q("SELECT COUNT(*)::int n FROM alerts WHERE type='supplier_shortage_refund_required' AND entity_id=$1", [incs[0].id]))[0].n : null;
   const parcelQty = (await q('SELECT COALESCE(SUM(pi.quantity),0)::int n FROM parcel_items pi JOIN order_items oi ON oi.id=pi.order_item_id JOIN parcels p ON p.id=pi.parcel_id AND p.cancelled_at IS NULL WHERE oi.order_id=$1', [lA.order_id]))[0].n;
+  // Attendu : le colis porte le reçu de TOUTES les lignes de la commande (A soldée + B reçue par C2), lu dans PostgreSQL.
+  const receivedByLine = await q(`SELECT v.line_id, v.order_item_id, v.effective_quantity::int AS effective, v.received_quantity::int AS received
+      FROM v_purchase_line_progress v WHERE v.order_id=$1 AND NOT v.cancelled ORDER BY v.line_id`, [lA.order_id]);
+  const expectedParcelQty = receivedByLine.reduce((sum, l) => sum + Number(l.received), 0);
+  const parcelByItem = await q(`SELECT oi.id AS order_item_id, COALESCE(SUM(pi.quantity),0)::int AS parcel_qty
+      FROM order_items oi LEFT JOIN parcel_items pi ON pi.order_item_id=oi.id
+      LEFT JOIN parcels p ON p.id=pi.parcel_id AND p.cancelled_at IS NULL
+     WHERE oi.order_id=$1 AND pi.parcel_id IS NOT NULL AND p.id IS NOT NULL GROUP BY oi.id ORDER BY oi.id`, [lA.order_id]);
+  const perLine = receivedByLine.map((l) => ({ ...l, parcel_qty: (parcelByItem.find((x) => x.order_item_id === l.order_item_id) || { parcel_qty: 0 }).parcel_qty }));
   const replay = await adm.call('POST', `/api/purchasing/lines/${lA.line_id}/settle`, { settled_quantity: 1, reason: 'rejeu T3', reopen_remainder: false });
   const incs2 = await inc();
-  fin('T3', t3r.http === 201 && settle.http === 200 && incs.length === 1 && alerts === 1 && status === 'preparation' && parcelQty === 1 && incs2.length === 1 ? 'PASS' : 'FAIL',
+  fin('T3', t3r.http === 201 && settle.http === 200 && incs.length === 1 && alerts === 1 && status === 'preparation' && expectedParcelQty > 0 && parcelQty === expectedParcelQty && incs2.length === 1 ? 'PASS' : 'FAIL',
     { receive: t3r.http, settle: settle.http, settle_code: settle.code, incidents: incs.length, alerts, order_status: status, advanced_immediately: immediate,
-      advanced_after_s: status === 'preparation' ? waited : null, diag, parcel_qty: parcelQty, replay_http: replay.http, incidents_after_replay: incs2.length });
+      advanced_after_s: status === 'preparation' ? waited : null, diag, parcel_qty: parcelQty, expected_parcel_qty: expectedParcelQty, per_line: perLine, replay_http: replay.http, incidents_after_replay: incs2.length });
 
   rep.sha_end = await getSha();
   rep.sha_pinned = env_sha(); rep.sha_stable = rep.sha_end === rep.sha_start && (!rep.sha_pinned || rep.sha_pinned === rep.sha_start);
