@@ -35888,6 +35888,10 @@
                 "targetFile": "services/suppliers/provider-capability-certifications.js"
               },
               {
+                "sourceFileId": "services/catalog-promotion.js",
+                "targetFile": "services/suppliers/supplier-order-identity.js"
+              },
+              {
                 "sourceFileId": "services/catalog-promotion/sku.js",
                 "targetFile": "services/suppliers/supplier-order-identity.js"
               },
