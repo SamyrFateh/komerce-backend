@@ -7526,14 +7526,19 @@ html.k-mobile-premium-v1 .k-chip-label {
   #k-modal .k-sug-grid {
     display: flex;
     flex-wrap: nowrap;
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
     overflow-x: auto;
-    padding: 2px 2px 4px;
-    /* FIX teaser : réserve ~45px de marge droite pour que la carte en bord
-       de rail soit toujours visiblement coupée (amorce de scroll), même
-       quand N cartes × (110px + gap) tombe presque pile sur la largeur
-       visible (cas très fréquent sur mobile — cf. 3 cartes ≈ 350px pour
-       ~351px dispo, aucune amorce sans cette marge). */
-    margin-right: 45px;
+    /* Le swipe doit faire défiler les CARTES dans leur propre rail, pas
+       déporter le bloc titre et le scroll de la PDP. La marge extérieure
+       de 45px sur un élément width:100% créait un débordement de parent.
+       On conserve la même amorce visuelle dans l'espace scrollable interne. */
+    padding: 2px 45px 4px 2px;
+    margin-right: 0;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
     scrollbar-width: none;
   }
 
@@ -7548,6 +7553,7 @@ html.k-mobile-premium-v1 .k-chip-label {
     flex: 0 0 132px;
     width: 132px;
     max-width: 132px;
+    scroll-snap-align: start;
   }
 
   /* ── MDM-4 : Selection message ─────────────────────────────── */
