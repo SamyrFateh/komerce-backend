@@ -53,7 +53,10 @@ async function recordVisualFrReview(q, { productId, mediaId, review, reviewerId 
   const proof = {
     source_media_id: review?.source_media_id,
     source_url: review?.source_url,
-    option_values: review?.option_values ?? null,
+    // A media without variant options has one unambiguous empty option set.
+    // Keep true variant omissions fail-closed via inspectOne/sameOptions.
+    option_values: review?.option_values == null && media.option_values == null
+      ? {} : (review?.option_values ?? null),
     text_presence: review?.text_presence,
     source_transcription: review?.source_transcription ?? null,
     french_translation: review?.french_translation ?? null,

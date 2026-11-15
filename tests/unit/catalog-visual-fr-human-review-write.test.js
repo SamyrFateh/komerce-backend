@@ -71,3 +71,19 @@ test('missing reviewer and media options are handled without a default approval'
  const db={query:jest.fn().mockResolvedValueOnce({rows:[{...media,option_values:null}]}).mockResolvedValueOnce({rows:[{media_id:media.id}]})};
  expect((await recordVisualFrReview(db,{productId,mediaId:media.id,review:{...review,option_values:null},reviewerId:'admin'})).status).toBe(200);
 });
+
+
+test('image without variants accepts omitted option set but keeps exact source identity',async()=>{
+ const noVariant={...media,option_values:null};
+ const q={query:jest.fn().mockResolvedValueOnce({rows:[noVariant]}).mockResolvedValueOnce({rows:[{media_id:media.id}]})};
+ const result=await recordVisualFrReview(q,{productId,mediaId:media.id,review:{source_media_id:media.source_media_id,source_url:media.url,text_presence:'NONE'},reviewerId:'admin'});
+ expect(result).toMatchObject({status:200,ready:true,code:'VISUAL_FR_REVIEW_RECORDED'});
+ expect(q.query.mock.calls[1][1][4]).toBe('{}');
+});
+
+test('image with variants cannot omit option set',async()=>{
+ const q={query:jest.fn().mockResolvedValue({rows:[media]})};
+ const result=await recordVisualFrReview(q,{productId,mediaId:media.id,review:{source_media_id:media.source_media_id,source_url:media.url,text_presence:'NONE'},reviewerId:'admin'});
+ expect(result).toMatchObject({status:409,code:'SOURCE_IMAGE_OR_VARIANT_CHANGED'});
+ expect(q.query).toHaveBeenCalledTimes(1);
+});

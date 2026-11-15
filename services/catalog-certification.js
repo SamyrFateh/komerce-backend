@@ -8,7 +8,7 @@
  * @outputs       versioned certification verdict and reasons
  * @depends       services/product-publication-guard.js, utils/certification-accounting.js
  * @used-by       services/catalog-approval.js, scripts/catalog-e2e-712-acceptance.js, scripts/catalog-refinery-final-acceptance.js
- * @db-read       boutique_categories, boutique_subcategories, catalog_media, product_market_exposure, product_skus, products, sourcing_candidates
+ * @db-read       boutique_categories, boutique_subcategories, catalog_media, product_market_exposure, product_skus, products, sourcing_candidates, product_suppliers, suppliers
  * @db-write      none
  * @db-txn        none
  * @doctrine      docs/doctrine/DOCTRINE_CERTIFICATION_CATALOGUE_SOURCING.md
@@ -18,6 +18,7 @@
 'use strict';
 
 const { validatePublicationUpdate } = require('./product-publication-guard');
+const { skuSourceResolvedSql } = require('./supplier-source-resolution');
 const { inspectMediaSet } = require('./catalog-media-visual-fr-proof');
 const { reconcileCertificationBatch } = require('../utils/certification-accounting');
 
@@ -73,6 +74,11 @@ function evaluateCatalogProductCertification(row = {}, options = {}) {
     if (Number(row.active_supplier_skus || 0) < 1) reasons.push('active_supplier_sku_missing');
     if (Number(row.complete_supplier_skus || 0) !== Number(row.active_supplier_skus || 0)) {
       reasons.push('supplier_order_identity_incomplete');
+    }
+    // A technically complete SKU is still not orderable without an eligible
+    // supplier mapping. Refuse publication instead of silently hiding it in Boutique.
+    if (Number(row.unresolved_supplier_skus || 0) > 0) {
+      reasons.push('supplier_mapping_missing');
     }
   }
 
@@ -138,9 +144,13 @@ async function loadCatalogProductCertificationFacts(q, productId) {
                   AND is_active=TRUE
                   AND NULLIF(BTRIM(supplier_unit_ref), '') IS NOT NULL
                   AND jsonb_typeof(supplier_order_identity) = 'object' AND supplier_order_identity <> '{}'::jsonb
-              )::int AS complete_supplier_skus
-         FROM product_skus
-        WHERE product_id=$1
+              )::int AS complete_supplier_skus,
+              COUNT(*) FILTER (
+                WHERE source='SUPPLIER' AND is_active=TRUE AND stock>0
+                  AND NOT ${skuSourceResolvedSql('sk')}
+              )::int AS unresolved_supplier_skus
+         FROM product_skus sk
+        WHERE sk.product_id=$1
         GROUP BY product_id
      ),
      exposure AS (
@@ -182,6 +192,7 @@ async function loadCatalogProductCertificationFacts(q, productId) {
             COALESCE(sku.supplier_skus,0)::int AS supplier_skus,
             COALESCE(sku.active_supplier_skus,0)::int AS active_supplier_skus,
             COALESCE(sku.complete_supplier_skus,0)::int AS complete_supplier_skus,
+            COALESCE(sku.unresolved_supplier_skus,0)::int AS unresolved_supplier_skus,
             COALESCE(exposure.enabled_markets,0)::int AS enabled_markets
        FROM products p
        LEFT JOIN LATERAL (
