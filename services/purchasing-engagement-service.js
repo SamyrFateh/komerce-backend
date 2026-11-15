@@ -6,7 +6,7 @@
  * @criticality   critical
  * @inputs        purchase_order_id, purchase_line_id, supplier_confirmation, runtime_context
  * @outputs       response_or_domain_result, side_effects
- * @depends       db, services/purchasing-grouped-service.js, services/supplier-shortage-service.js, services/purchase-line-snapshot.js, services/notification-service.js, services/hub-reference.js, services/suppliers/provider-authority.js, services/suppliers/canonical-unit-purchasing-gate.js, services/suppliers/purchase-order-confirmation-boundary.js, services/suppliers/execution-adapter-registry.js, services/suppliers/supplier-fulfillment-adapter-contract.js, utils/logger.js
+ * @depends       db, services/purchasing-grouped-service.js, services/supplier-shortage-service.js, services/purchase-line-snapshot.js, services/notification-service.js, services/hub-reference.js, services/purchasing-completion-service.js, services/suppliers/provider-authority.js, services/suppliers/canonical-unit-purchasing-gate.js, services/suppliers/purchase-order-confirmation-boundary.js, services/suppliers/execution-adapter-registry.js, services/suppliers/supplier-fulfillment-adapter-contract.js, utils/logger.js
  * @used-by       routes/purchasing.js
  * @db-read       manual_purchase_executions, order_items, orders, product_suppliers, products, purchase_lines, purchase_order_authorizations, purchase_orders, supplier_execution_payments, suppliers, v_purchase_line_progress
  * @db-write      alerts, incidents, manual_purchase_executions, purchase_lines, purchase_orders
@@ -681,6 +681,19 @@ async function closeGroupedPurchaseOrderIfComplete(client, poId) {
   return true;
 }
 
+async function evaluateCompletionAfterSettle(orderItemId) {
+  try {
+    const { rows: [row] } = await db.query('SELECT order_id FROM order_items WHERE id = $1', [orderItemId]);
+    if (!row || !row.order_id) return null;
+    const { completeOrdersAfterHubReceipt } = require('./purchasing-completion-service');
+    const [verdict] = await completeOrdersAfterHubReceipt([{ order_id: row.order_id }], { actor: null });
+    return verdict ? { order_id: verdict.order_id, transition: verdict.transition || null, complete: Boolean(verdict.complete), error: verdict.error || null } : null;
+  } catch (err) {
+    log.error({ err, order_item_id: orderItemId }, '[purchasing-engagement] complétude après clôture en échec');
+    return null;
+  }
+}
+
 async function settleLine(lineId, body = {}, { actor = null } = {}) {
   requireUuid(lineId, 'line_id');
   const settledQuantity = requireNonNegativeInt(body.settled_quantity, 'settled_quantity');
@@ -746,8 +759,12 @@ async function settleLine(lineId, body = {}, { actor = null } = {}) {
       });
     }
     const closed = await closeGroupedPurchaseOrderIfComplete(client, po.id);
-    return { lineId, remnantId, remaining, poId: po.id, closed };
+    return { lineId, remnantId, remaining, poId: po.id, closed, orderItemId: line.order_item_id };
   });
+
+  // H1 / T3 : la clôture peut compléter la commande (rupture définitive = couverture). Même évaluation que la réception
+  // Hub, hors transaction, sans lever : la clôture reste acquise quoi qu'il arrive (le balayage est le filet).
+  const orderCompletion = await evaluateCompletionAfterSettle(outcome.orderItemId);
 
   const [line] = await loadLinesByIds(db, [outcome.lineId]);
   const remnants = outcome.remnantId ? await loadLinesByIds(db, [outcome.remnantId]) : [];
@@ -757,6 +774,7 @@ async function settleLine(lineId, body = {}, { actor = null } = {}) {
     remnant: remnants[0] || null,
     unsettled_quantity: outcome.remaining,
     purchase_order: purchaseOrder,
+    order_completion: orderCompletion,
     ...summarizeCommitmentByMarket([line], remnants),
   };
 }
