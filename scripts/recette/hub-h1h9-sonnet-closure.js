@@ -14,6 +14,7 @@
  */
 const fs = require('node:fs');
 const path = require('node:path');
+const env_sha = () => String(process.env.E2E_EXPECTED_DEPLOY_SHA || '');
 const { Actor, assertTarget } = require('./hub-v1-http-action-runner');
 
 async function run({ env = process.env, db, run8 }) {
@@ -39,51 +40,57 @@ async function run({ env = process.env, db, run8 }) {
   const fin = (k, verdict, extra) => { rep.cases[k] = { verdict, ...extra }; };
 
   const l101 = [await lineOf('KOM-101', 0), await lineOf('KOM-101', 1)];
-  const l102 = await lineOf('KOM-102', 0);
-  if (!l101[0] || !l101[1] || !l102 || l101.some((l) => !l.code) || !l102.code) throw Error('FIXTURE_PO_CHAIN_NOT_READY');
+    if (!l101[0] || !l101[1] || l101.some((l) => !l.code)) throw Error('FIXTURE_PO_CHAIN_NOT_READY');
   // La ligne A (x2) et la ligne B (x1) de KOM-101 : on distingue par la quantite commandee.
   const qtyOf = async (l) => Number((await q('SELECT quantity FROM order_items WHERE id=$1', [l.item]))[0].quantity);
   const [lA, lB] = (await qtyOf(l101[0])) === 2 ? l101 : [l101[1], l101[0]];
 
-  // C2 : deux operateurs, deux references, UNE unite autorisee (ligne B x1).
+  // C2 : deux operateurs, deux references, UNE unite autorisee (ligne B x1). 201 = recu ; 202 ou 4xx = refus metier explicite.
   const [r1, r2] = await Promise.all([rcv(hub, lB, 1, `E2E-HUB-V1-${run8}-C2-RX1`), rcv(adm, lB, 1, `E2E-HUB-V1-${run8}-C2-RX2`)]);
   const st = [r1.http, r2.http];
   const got = await received(lB.line_id);
-  const dupUnits = (await q("SELECT COUNT(*)::int n FROM hub_physical_units WHERE reference LIKE $1", [`E2E-HUB-V1-${run8}-C2-RX%`]))[0].n;
-  const explicit = st.every((s) => s === 201 || (s >= 400 && s < 500 && s !== 0));
+  const units = (await q("SELECT reference, state FROM hub_physical_units WHERE reference LIKE $1 ORDER BY reference", [`E2E-HUB-V1-${run8}-C2-RX%`]));
+  const explicit = st.every((s) => s === 201 || s === 202 || (s >= 400 && s < 500));
   fin('C2', st.filter((s) => s === 201).length === 1 && explicit && got === 1 ? 'PASS' : 'FAIL',
-    { http: st, codes: [r1.code, r2.code], received_after: got, units_created_with_prefix: dupUnits });
+    { http: st, codes: [r1.code, r2.code], received_after: got, units });
 
-  // T3 : 1 sur 2 recu (A), reste solde sans reliquat -> incident unique, commande avancee (B recu par C2).
+  // T4 : sur la ligne A (x2) : 1 recu puis colis perdu (POST /api/hub/outcome LOST) -> exclu du recu, commande non avancee.
+  const t4ref = `E2E-HUB-V1-${run8}-T4-QUAR`;
+  const t4r = await rcv(hub, lA, 1, t4ref);
+  const [unit] = await q('SELECT id FROM hub_physical_units WHERE reference=$1', [t4ref]);
+  const before = await received(lA.line_id);
+  const lost = unit ? await hub.call('POST', '/api/hub/outcome', { unit_id: unit.id, outcome_type: 'LOST', details: { reason: 'T4 colis perdu en controle (cohorte Sonnet)' } }) : { http: 0 };
+  const after = await received(lA.line_id);
+  const st4 = (await q('SELECT status::text s FROM orders WHERE id=$1', [lA.order_id]))[0].s;
+  const pi4 = (await q('SELECT COUNT(*)::int n FROM parcel_items pi JOIN order_items oi ON oi.id=pi.order_item_id WHERE oi.order_id=$1', [lA.order_id]))[0].n;
+  const ustate = unit ? (await q('SELECT state, outcome_type FROM hub_physical_units WHERE id=$1', [unit.id]))[0] : null;
+  fin('T4', t4r.http === 201 && before === 1 && lost.http === 200 && after === 0 && st4 === 'ordered' && pi4 === 0 ? 'PASS' : 'FAIL',
+    { receive: t4r.http, outcome: lost.http, outcome_code: lost.code, received_before: before, received_after: after, order_status: st4, parcel_items: pi4, unit: ustate });
+
+  // T3 : meme ligne A : 1 recu, reste solde sans reliquat -> incident unique, alerte unique, commande avancee (B recu par C2).
+  // L'avancement n'est PAS evalue par la route settle (purchasing-engagement-service.js:684) : il vient du balayage
+  // sweepStalledOrders (cron 10 min, bootstrap/crons.js:382). On interroge jusqu'a 12 min et on consigne le delai.
   const t3r = await rcv(hub, lA, 1, `E2E-HUB-V1-${run8}-T3-RECU`);
+  const t3start = Date.now();
   const settle = await adm.call('POST', `/api/purchasing/lines/${lA.line_id}/settle`,
     { settled_quantity: 1, reason: 'rupture fournisseur definitive T3 (cohorte Sonnet)', reopen_remainder: false });
   const inc = () => q("SELECT id FROM incidents WHERE order_item_id=$1 AND details->>'type'='supplier_shortage'", [lA.item]);
+  const stOf = async () => (await q('SELECT status::text s FROM orders WHERE id=$1', [lA.order_id]))[0].s;
+  let status = await stOf();
+  const immediate = status === 'preparation';
+  while (status !== 'preparation' && Date.now() - t3start < 12 * 60 * 1000) { await new Promise((r) => setTimeout(r, 20000)); status = await stOf(); }
+  const waited = Math.round((Date.now() - t3start) / 1000);
   const incs = await inc();
   const alerts = incs.length ? (await q("SELECT COUNT(*)::int n FROM alerts WHERE type='supplier_shortage_refund_required' AND entity_id=$1", [incs[0].id]))[0].n : null;
-  const status = (await q('SELECT status::text s FROM orders WHERE id=$1', [lA.order_id]))[0].s;
   const parcelQty = (await q('SELECT COALESCE(SUM(pi.quantity),0)::int n FROM parcel_items pi JOIN order_items oi ON oi.id=pi.order_item_id JOIN parcels p ON p.id=pi.parcel_id AND p.cancelled_at IS NULL WHERE oi.order_id=$1', [lA.order_id]))[0].n;
   const replay = await adm.call('POST', `/api/purchasing/lines/${lA.line_id}/settle`, { settled_quantity: 1, reason: 'rejeu T3', reopen_remainder: false });
   const incs2 = await inc();
-  fin('T3', t3r.http === 201 && settle.http === 200 && incs.length === 1 && alerts === 1 && status === 'preparation' && incs2.length === 1 ? 'PASS' : 'FAIL',
-    { receive: t3r.http, settle: settle.http, settle_code: settle.code, incidents: incs.length, alerts, order_status: status, parcel_qty: parcelQty,
-      replay_http: replay.http, incidents_after_replay: incs2.length });
-
-  // T4 : reception puis colis perdu (POST /api/hub/outcome LOST) -> exclu du recu, commande non avancee.
-  const t4ref = `E2E-HUB-V1-${run8}-T4-QUAR`;
-  const t4r = await rcv(hub, l102, 1, t4ref);
-  const [unit] = await q('SELECT id FROM hub_physical_units WHERE reference=$1', [t4ref]);
-  const before = await received(l102.line_id);
-  const lost = unit ? await hub.call('POST', '/api/hub/outcome', { unit_id: unit.id, outcome_type: 'LOST', details: { reason: 'T4 colis perdu en controle (cohorte Sonnet)' } }) : { http: 0 };
-  const after = await received(l102.line_id);
-  const st102 = (await q('SELECT status::text s FROM orders WHERE id=$1', [l102.order_id]))[0].s;
-  const pi102 = (await q('SELECT COUNT(*)::int n FROM parcel_items pi JOIN order_items oi ON oi.id=pi.order_item_id WHERE oi.order_id=$1', [l102.order_id]))[0].n;
-  const ustate = unit ? (await q('SELECT state, outcome_type FROM hub_physical_units WHERE id=$1', [unit.id]))[0] : null;
-  fin('T4', t4r.http === 201 && before === 1 && lost.http === 200 && after === 0 && st102 === 'ordered' && pi102 === 0 ? 'PASS' : 'FAIL',
-    { receive: t4r.http, outcome: lost.http, outcome_code: lost.code, received_before: before, received_after: after, order_status: st102, parcel_items: pi102, unit: ustate });
+  fin('T3', t3r.http === 201 && settle.http === 200 && incs.length === 1 && alerts === 1 && status === 'preparation' && parcelQty === 1 && incs2.length === 1 ? 'PASS' : 'FAIL',
+    { receive: t3r.http, settle: settle.http, settle_code: settle.code, incidents: incs.length, alerts, order_status: status, advanced_immediately: immediate,
+      advanced_after_s: status === 'preparation' ? waited : null, parcel_qty: parcelQty, replay_http: replay.http, incidents_after_replay: incs2.length });
 
   rep.sha_end = await getSha();
-  rep.sha_stable = rep.sha_end === rep.sha_start;
+  rep.sha_pinned = env_sha(); rep.sha_stable = rep.sha_end === rep.sha_start && (!rep.sha_pinned || rep.sha_pinned === rep.sha_start);
   rep.finished_at = new Date().toISOString();
   rep.verdict = !rep.sha_stable ? 'RUN_VOID_SHA_CHANGED' : Object.values(rep.cases).some((c) => c.verdict !== 'PASS') ? 'CLOSURE_FAIL' : 'CLOSURE_PASS';
   return rep;

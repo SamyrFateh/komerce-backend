@@ -27,7 +27,7 @@ jobs:
   closure:
     if: github.actor == github.repository_owner && inputs.confirmation == 'RUN-HUB-H1H9-SONNET'
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 45
     env:
       NODE_ENV: test
       KOMERCE_ENV: staging
