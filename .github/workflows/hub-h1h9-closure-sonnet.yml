@@ -64,19 +64,19 @@ jobs:
         shell: bash
         run: |
           d=cert/hub-h1h9-sonnet
-          for m in T9_CREATE T9_CHECK ARMED; do
-            if [ -f "$d/RUN_$m" ]; then echo "$m=1" >> "$GITHUB_OUTPUT"; fi
+          for m in T9_CREATE T9_CHECK ARMED ARMED_C3 ARMED_C45; do
+            if [ -f "$d/RUN_$m" ]; then echo "$m=1" >> "$GITHUB_OUTPUT"; echo "any=1" >> "$GITHUB_OUTPUT"; fi
           done
       - uses: actions/setup-node@v4
-        if: steps.arm.outputs.T9_CREATE == '1' || steps.arm.outputs.T9_CHECK == '1' || steps.arm.outputs.ARMED == '1'
+        if: steps.arm.outputs.any == '1'
         with:
           node-version: '20'
           cache: npm
       - name: Install
-        if: steps.arm.outputs.T9_CREATE == '1' || steps.arm.outputs.T9_CHECK == '1' || steps.arm.outputs.ARMED == '1'
+        if: steps.arm.outputs.any == '1'
         run: npm ci
       - name: Refuse any other staging run in progress
-        if: steps.arm.outputs.T9_CREATE == '1' || steps.arm.outputs.T9_CHECK == '1' || steps.arm.outputs.ARMED == '1'
+        if: steps.arm.outputs.any == '1'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -85,7 +85,7 @@ jobs:
           gh api "repos/$GITHUB_REPOSITORY/actions/runs?status=in_progress&per_page=50" --jq ".workflow_runs[] | select(.id != ${GITHUB_RUN_ID}) | \"\(.id) \(.name)\""
           test "$n" = "0"
       - name: Require precise Railway database target
-        if: steps.arm.outputs.T9_CREATE == '1' || steps.arm.outputs.T9_CHECK == '1' || steps.arm.outputs.ARMED == '1'
+        if: steps.arm.outputs.any == '1'
         run: node scripts/recette/target-guard.js
       - name: T9 create (object inerte, un seul POST HTTP identique a l'UI)
         if: steps.arm.outputs.T9_CREATE == '1'
@@ -118,8 +118,33 @@ jobs:
       - name: C2, T3, T4 (HTTP + PG lecture seule), SHA identique debut/fin
         if: steps.arm.outputs.ARMED == '1'
         run: node scripts/recette/hub-h1h9-sonnet-closure.js
+      - name: C3 (fixture neuve sans chaine PO ; PO envoyee, non confirmee ; confirmation reduite || reception)
+        if: steps.arm.outputs.ARMED_C3 == '1'
+        shell: bash
+        run: |
+          set -euo pipefail
+          SHA="$(curl -fsS "$STAGING_BASE_URL/health/version" | node -pe 'JSON.parse(require("fs").readFileSync(0)).commit')"
+          RUN8="$(node -p 'require("crypto").randomBytes(4).toString("hex").toUpperCase()')"
+          echo "RUN8 C3 cohorte Sonnet: $RUN8"
+          export HUB_V1_CERTIFICATION_RUN="$RUN8" E2E_PROOF_RUN8="$RUN8" E2E_EXPECTED_DEPLOY_SHA="$SHA"
+          node scripts/recette/hub-v1-certification-runner.js --allow-remote-staging --run="$RUN8" --market=KM --stop-after=2 --dry-run
+          node scripts/recette/hub-v1-certification-runner.js --allow-remote-staging --run="$RUN8" --market=KM --stop-after=2
+          node scripts/recette/hub-h1h9-sonnet-c345.js c3
+      - name: C4 et C5 (fixture neuve + chaine PO ; reception, sac, KOM-BOX ; deux operateurs simultanes)
+        if: steps.arm.outputs.ARMED_C45 == '1'
+        shell: bash
+        run: |
+          set -euo pipefail
+          SHA="$(curl -fsS "$STAGING_BASE_URL/health/version" | node -pe 'JSON.parse(require("fs").readFileSync(0)).commit')"
+          RUN8="$(node -p 'require("crypto").randomBytes(4).toString("hex").toUpperCase()')"
+          echo "RUN8 C4/C5 cohorte Sonnet: $RUN8"
+          export HUB_V1_CERTIFICATION_RUN="$RUN8" E2E_PROOF_RUN8="$RUN8" HTTP_RUNNER_RUN8="$RUN8" HTTP_RUNNER_MARKET=KM E2E_EXPECTED_DEPLOY_SHA="$SHA"
+          node scripts/recette/hub-v1-certification-runner.js --allow-remote-staging --run="$RUN8" --market=KM --stop-after=2 --dry-run
+          node scripts/recette/hub-v1-certification-runner.js --allow-remote-staging --run="$RUN8" --market=KM --stop-after=2
+          node scripts/recette/hub-v1-http-action-runner.js
+          node scripts/recette/hub-h1h9-sonnet-c345.js c45
       - name: Preserve evidence
-        if: always() && (steps.arm.outputs.T9_CREATE == '1' || steps.arm.outputs.T9_CHECK == '1' || steps.arm.outputs.ARMED == '1')
+        if: always() && (steps.arm.outputs.any == '1')
         uses: actions/upload-artifact@v4
         with:
           name: hub-h1h9-sonnet-${{ github.run_id }}
