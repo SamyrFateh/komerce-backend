@@ -4,8 +4,9 @@ const fs = require('node:fs');
 const path = require('node:path');
 const {
   AUTHORIZE, REVOKE, inputSnapshot, evaluateWatchEligibility,
-  authorizedWatchSql, recordControlledWatchReview,
+  authorizedWatchSql,
 } = require('../../services/sourcing-controlled-watch-review');
+const { recordControlledWatchReview } = require('../../services/sourcing-candidate-actions');
 
 const actorId = '00000000-0000-0000-0000-000000000001';
 const candidate = () => ({
