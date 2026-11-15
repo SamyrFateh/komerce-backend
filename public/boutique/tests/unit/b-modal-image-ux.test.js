@@ -343,4 +343,134 @@ describe('b-modal-image-ux', () => {
       expect(document.querySelector('.k-modal-counter').textContent).toContain('5');
     });
   });
+
+  describe('gestes avancés ghost — protections et cycle de vie', () => {
+    function send(fs, type, x, y, options = {}) {
+      const event = new Event(type, { bubbles: true, cancelable: true });
+      const p = { clientX: x, clientY: y };
+      const points = options.multi ? [p, { clientX: x + 120, clientY: y }] : [p];
+      event.touches = type === 'touchend' || type === 'touchcancel' ? [] : points;
+      event.changedTouches = type === 'touchend' && options.noChanged ? [] : points;
+      fs.dispatchEvent(event);
+      return event;
+    }
+    function startWithSlides(count = 3, idx = 0) {
+      buildModalDom(count);
+      setupImageUX();
+      const api = require('../../js/b-modal-image-ux.js');
+      api.openCurrentImageFullscreen(idx);
+      const fs = document.querySelector('.k-modal-fullscreen');
+      return { fs, track: fs.querySelector('.k-modal-fullscreen-track'), api };
+    }
+
+    test('état observable, réouverture, aucune seconde visionneuse ou handler', () => {
+      const { fs, api } = startWithSlides(3, 1);
+      expect(api.isImageFullscreenOpen()).toBe(true);
+      api.openCurrentImageFullscreen(0);
+      expect(document.querySelectorAll('.k-modal-fullscreen')).toHaveLength(1);
+      expect(fs.querySelector('.k-modal-fullscreen-counter').textContent).toContain('2');
+      fs.querySelector('.k-modal-fullscreen-close').click();
+      expect(api.isImageFullscreenOpen()).toBe(false);
+      api.openCurrentImageFullscreen(2);
+      expect(api.isImageFullscreenOpen()).toBe(true);
+      expect(fs.querySelector('.k-modal-fullscreen-counter').textContent).toContain('3');
+      fs.querySelector('.k-modal-fullscreen-close').click();
+    });
+
+    test('le modal:closed externe ferme la lightbox sans restituer un média sur modal fermée', () => {
+      const { fs, api } = startWithSlides(3, 2);
+      const returnSpy = jest.fn();
+      bus.on('carousel:fullscreen-return', returnSpy);
+      bus.emit('modal:closed');
+      expect(api.isImageFullscreenOpen()).toBe(false);
+      expect(fs.classList.contains('is-open')).toBe(false);
+      expect(returnSpy).not.toHaveBeenCalled();
+      bus.off('carousel:fullscreen-return', returnSpy);
+    });
+
+    test('fermeture rend le focus initial et son overflow propre à la PDP', () => {
+      const before = document.createElement('button');
+      before.textContent = 'origine';
+      document.body.appendChild(before);
+      before.focus();
+      document.body.style.overflow = 'auto';
+      const { fs } = startWithSlides(2, 0);
+      expect(document.body.style.overflow).toBe('hidden');
+      fs.querySelector('.k-modal-fullscreen-close').click();
+      expect(document.body.style.overflow).toBe('auto');
+      expect(document.activeElement).toBe(before);
+      document.body.style.overflow = '';
+    });
+
+    test('swipe diagonal, gestes sous seuil et absence de changedTouches ne modifient pas la photo', () => {
+      const { fs, track } = startWithSlides(3, 0);
+      send(fs, 'touchstart', 200, 200);
+      send(fs, 'touchend', 170, 125); // vertical prédominant, <90px de sortie
+      expect(track.style.transform).toBe('translateX(-100%)');
+      send(fs, 'touchstart', 200, 200);
+      send(fs, 'touchend', 155, 200); // exactement 45px : avance
+      expect(track.style.transform).toBe('translateX(-200%)');
+      send(fs, 'touchstart', 140, 150);
+      send(fs, 'touchend', 0, 0, { noChanged: true });
+      expect(track.style.transform).toBe('translateX(-200%)');
+      expect(fs.classList.contains('is-open')).toBe(true);
+      fs.querySelector('.k-modal-fullscreen-close').click();
+    });
+
+    test('touchmove mono puis pinch et touchcancel empêchent fermeture accidentelle', () => {
+      const { fs } = startWithSlides(2);
+      send(fs, 'touchstart', 170, 280);
+      send(fs, 'touchmove', 169, 250);
+      send(fs, 'touchmove', 169, 220, { multi: true });
+      send(fs, 'touchend', 169, 100);
+      expect(fs.classList.contains('is-open')).toBe(true);
+      send(fs, 'touchstart', 170, 280);
+      send(fs, 'touchcancel', 170, 250);
+      send(fs, 'touchend', 169, 100);
+      expect(fs.classList.contains('is-open')).toBe(true);
+      fs.querySelector('.k-modal-fullscreen-close').click();
+    });
+
+    test('viewport pinch-zoom agrandi : le swipe haut et horizontal sont ignorés', () => {
+      const { fs, track } = startWithSlides(3);
+      Object.defineProperty(window, 'visualViewport', { configurable: true, value: { scale: 2 } });
+      send(fs, 'touchstart', 150, 300);
+      send(fs, 'touchend', 151, 100);
+      expect(fs.classList.contains('is-open')).toBe(true);
+      send(fs, 'touchstart', 220, 200);
+      send(fs, 'touchend', 110, 200);
+      expect(track.style.transform).toBe('translateX(-100%)');
+      delete window.visualViewport;
+      fs.querySelector('.k-modal-fullscreen-close').click();
+    });
+
+    test('ghost : fallback 380ms normalise même sans transitionend et ignore les gestes concurrentiels', () => {
+      jest.useFakeTimers();
+      const { fs, track } = startWithSlides(3, 2);
+      send(fs, 'touchstart', 200, 150);
+      send(fs, 'touchend', 110, 150);
+      expect(track.style.transform).toBe('translateX(-400%)');
+      send(fs, 'touchstart', 190, 150);
+      send(fs, 'touchend', 100, 150);
+      expect(track.style.transform).toBe('translateX(-400%)');
+      jest.advanceTimersByTime(400);
+      expect(track.style.transform).toBe('translateX(-100%)');
+      fs.querySelector('.k-modal-fullscreen-close').click();
+      jest.useRealTimers();
+    });
+
+    test('tap sur surface ou slide vide ferme, clic sur image ne ferme pas', () => {
+      const { fs } = startWithSlides(2);
+      fs.querySelector('.k-modal-fullscreen-slide img').click();
+      expect(fs.classList.contains('is-open')).toBe(true);
+      fs.querySelector('.k-modal-fullscreen-slide').click();
+      expect(fs.classList.contains('is-open')).toBe(false);
+      const api=require('../../js/b-modal-image-ux.js');
+      api.openCurrentImageFullscreen(0);
+      fs.click();
+      expect(fs.classList.contains('is-open')).toBe(false);
+    });
+  });
+
+
 });
