@@ -117,7 +117,8 @@ describePg('Fable F1 — cash proof, handoff and settlement (real PG)',()=>{
     expect(got.qty_refunded).toBe(2);
     const refunds=await sql('SELECT status,refund_method,amount_kmf,local_cash_refund_payout_id FROM refunds');
     expect(refunds.rows).toHaveLength(1);
-    expect(refunds.rows[0]).toMatchObject({status:'completed',refund_method:'cash',amount_kmf:'2000.00'});
+    expect(refunds.rows[0]).toMatchObject({status:'completed',refund_method:'cash'});
+    expect(Number(refunds.rows[0].amount_kmf)).toBe(2000);
     expect(refunds.rows[0].local_cash_refund_payout_id).toBe(done.payoutId);
     const custody=(await sql('SELECT SUM(delta_kmf)::numeric AS balance FROM cash_custody_movements WHERE holder_id=$1 AND market_id=$2',[holderId,marketId])).rows[0];
     expect(Number(custody.balance)).toBe(8000);
