@@ -70,7 +70,7 @@
 ## Version 2 — décisions intégrées (#3927)
 
 ### Verdicts
-`PASS | FAIL | BLOCKED | NOT_PROVEN | NOT_APPLICABLE`. `NOT_APPLICABLE` exige un motif et la branche non concernée, au niveau de l'assertion ou du scénario. Il n'est jamais compté comme PASS et ne peut pas masquer un P0 obligatoire.
+`PASS | FAIL | BLOCKED | NOT_PROVEN | NOT_APPLICABLE`. `NOT_APPLICABLE` exige un motif et la branche non concernée, au niveau de l'assertion ou du scénario. Il n'est jamais compté comme PASS et ne peut pas masquer un P0 obligatoire. La couverture (`COUVERT` / `NON_COUVERT`) est une qualification distincte, jamais un verdict (voir « Angles morts métier »).
 
 ### Variantes d'ID (sans renumérotation)
 - **N26a** : avant retrait, remboursement de ligne confirmé + avoir partiel (L-A6). **N26b** : après retrait, compensation SAV (L-A1).
@@ -209,15 +209,27 @@ Chaque cas rattaché s'exécute comme **variante de l'ID existant** (champ `boun
 
 ## Angles morts métier — audit Fable #4107 (F1–F8)
 
-Un comportement que le propriétaire a déclaré non couvert (STATUS G8, G9) est qualifié **NON_COUVERT**, jamais PASS ni FAIL. Tout écart au comportement attendu aujourd'hui reste un FAIL.
+**Couverture ≠ verdict.** Chaque assertion porte une qualification de couverture : `COUVERT` ou `NON_COUVERT` (champ `coverage_statuses` du JSON). Une assertion `COUVERT` reçoit un verdict PASS / FAIL / BLOCKED / NOT_PROVEN / NOT_APPLICABLE. Une assertion `NON_COUVERT` ne reçoit **aucun** verdict : elle porte un motif et la décision du propriétaire attendue, et ne change ni le verdict du scénario ni celui des autres assertions.
 
-| Constat | Scénarios | Attendu aujourd'hui | Non couvert |
+| Variante | Scénarios | Assertions COUVERT (verdict + preuve) | NON_COUVERT |
 |---|---|---|---|
-| F1 manquant sur commande cash / mobile money | N13, N20, N40 | E7 refuse (`ITEM_REFUND_PAYMENT_METHOD_UNSUPPORTED`) ; réservation locale #4117 (flag staging) : 202 `reserved, paid:false`, une seule fois, sans double entre rails | Sortie d'argent, reçu, garde de caisse (G8) |
-| F2 annulation d'une commande payée en cash | N26, N27, N39 | Crédit wallet en devise du marché selon les paliers N39, aucun appel PSP | Remboursement sur le moyen d'encaissement (G8) |
-| F3 colis payé non retiré | M01, N26 | Scan d'invendus 409 ; aucune liquidation d'une commande payée (garde SQL 415) ; code valide, argent intact | Rappels, délai, clôture, sort de l'argent (G9) |
+| F1 manquant sur commande cash / mobile money | N13, N20, N40 (O-FIN) | **F1-a** E7 refuse (`ITEM_REFUND_PAYMENT_METHOD_UNSUPPORTED`), aucune réservation écrite · **F1-b** si le flag `FABLE_LOCAL_REFUND_RESERVATIONS_ENABLED` est effectivement actif (lu et consigné) : 202 `reserved, paid:false`, une ligne, montant ≤ reçu, O-FIN scopé à zéro, sinon NOT_APPLICABLE motivé · **F1-c** rejeu ou dépassement refusé, aucune double dette entre rails | F1-d sortie d'argent, reçu, garde de caisse (G8) |
+| F2 annulation d'une commande payée en cash | N26, N27, N39 | **F2-a** crédit wallet en devise du marché selon le palier N39, une fois · **F2-b** aucun appel PSP ni intention de remboursement | F2-c remboursement sur le moyen d'encaissement (G8) |
+| F3 colis payé non retiré, **variante pré-retrait F3-PRE** | N26 | **F3-a** scan d'invendus 409, aucune écriture `unsold_at` ni `unsold_items` · **F3-b** création ou résolution d'invendu refusée · **F3-c** ensuite, le code reste valide et la remise aboutit, argent intact | F3-d rappels, délai, clôture, sort de l'argent (G9) |
+
+M01 nominal se termine par la remise : il ne prouve pas la garde F3.
 
 **Hors campagne, après les E2E** : F4 (suspension d'un relais avec encours, perturberait l'autre cohorte), F5 (sort d'un article retourné), F6 (créance fournisseur), F7 (changement de numéro), F8 (expédition entière perdue).
+
+## Portée par cohorte des oracles SQL (O-FIN, O-HUB)
+
+Les requêtes Fable restent **inchangées** et en lecture seule ; la portée se fait autour d'elles.
+
+1. **Manifeste de cohorte** (`cohort-manifest.json`, un par agent) : dérivé en lecture seule, à état stabilisé, à partir des seuls RUN8 et références créés par la cohorte, jamais saisi à la main. Il liste user, wallet, order, order_item, refund, PO, purchase_line, allocation, colis, unités physiques et événements PSP simulés, avec agent, marché, SHA et horodatages. Son SHA-256 est consigné **avant** le calcul des verdicts, puis il est immuable.
+2. Chaque requête tourne **avant** la campagne (baseline) et **à état stabilisé** (final), sur le même SHA. Les comptes globaux sont consignés, jamais comme verdict.
+3. **Verdict** = lignes finales dont la clé de portée (table `scope_keys` du JSON, une par invariant I1–I15 et H1–H9) appartient au manifeste. Zéro ligne attendue.
+4. Ligne finale hors manifeste et absente de la baseline : rapprochée du manifeste de l'autre cohorte, sinon `ANOMALIE_HORS_COHORTE` signalée (simulation, autre activité), jamais comptée ni masquée. Ligne présente dès la baseline : historique, signalée une fois (par exemple les 112 commandes simulées de I7 et I15).
+5. Requête invalide, clé absente de la sortie ou liaison impossible : `NOT_PROVEN`, jamais PASS implicite.
 
 ## Coordination et paquet de preuve
 

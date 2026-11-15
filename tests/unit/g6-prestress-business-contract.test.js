@@ -97,6 +97,34 @@ describe('G6 pré-stress — unique business contract ChatGPT / Opus',()=>{
       expect(e.scenarios.length>0 || Boolean(e.deferred)).toBe(true);
       for(const id of e.scenarios) expect(ids.has(id)).toBe(true); }
   });
+  test('revue GPT A : oracles cités dans expected rattachés machine ; F1 exige O-FIN',()=>{
+    const keys=Object.keys(data.transversal_oracles);
+    for(const s of data.scenarios){ const txt=JSON.stringify(s.expected||'');
+      for(const k of keys) if(new RegExp('\\b'+k.replace('-','\\-')+'\\b').test(txt)) expect(s.oracles||[]).toContain(k); }
+    const by=Object.fromEntries(data.scenarios.map(s=>[s.id,s]));
+    expect(by.N35.oracles).toContain('O-ECO');
+    for(const k of ['O-DOC','O-NOTIF','O-SEC-DOC']) expect(by.N37.oracles).toContain(k);
+    for(const id of data.fable_business_blindspots.findings.F1.scenarios){ expect(by[id].oracles).toContain('O-FIN'); expect(data.transversal_oracles['O-FIN'].applies_to).toContain(id); }
+  });
+  test('revue GPT B : chaque invariant O-FIN et O-HUB a une clé de portée cohorte',()=>{
+    const sc=data.sql_oracle_cohort_scoping;
+    for(const i of data.transversal_oracles['O-FIN'].invariants) expect(sc.scope_keys[i]).toBeTruthy();
+    for(const h of data.transversal_oracles['O-HUB'].ids) expect(sc.scope_keys[h]).toBeTruthy();
+    expect(sc.procedure.join(' ')).toMatch(/NOT_PROVEN/);
+    expect(sc.manifest.frozen).toMatch(/SHA-256/);
+  });
+  test('revue GPT C : NON_COUVERT est une couverture, jamais un verdict ; F1-F3 ont preuve positive et négative',()=>{
+    expect(data.verdicts).not.toContain('NON_COUVERT');
+    expect(data.coverage_statuses.values).toEqual(['COUVERT','NON_COUVERT']);
+    for(const k of ['F1','F2','F3']){ const a=data.fable_business_blindspots.findings[k].assertions;
+      const cov=a.filter(x=>x.coverage==='COUVERT'), non=a.filter(x=>x.coverage==='NON_COUVERT');
+      expect(cov.some(x=>x.kind==='positive')).toBe(true); expect(cov.some(x=>x.kind==='negative')).toBe(true);
+      for(const x of cov) expect(x.proof.length).toBeGreaterThan(0);
+      expect(non.length).toBeGreaterThan(0);
+      for(const x of non){ expect(x.reason).toBeTruthy(); expect(x.decision_ref).toBeTruthy(); expect(x.verdict).toBeUndefined(); } }
+    const f3=data.fable_business_blindspots.findings.F3;
+    expect(f3.variant).toMatch(/pré-retrait/); expect(f3.scenarios).not.toContain('M01');
+  });
   test('guide humain et contrat machine conservent exactement les mêmes IDs',()=>{
     const md=fs.readFileSync(documentation,'utf8');
     const ids=[...md.matchAll(/^\| ([MN]\d{2}) \|/gm)].map(m=>m[1]);

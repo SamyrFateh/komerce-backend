@@ -384,7 +384,8 @@
       "priority": "P0",
       "verdict": "NOT_PROVEN",
       "oracles": [
-        "O-HUB"
+        "O-HUB",
+        "O-FIN"
       ],
       "boundary_cases": [
         "L14"
@@ -496,7 +497,10 @@
       "title": "Écart réception Relais",
       "expected": "Quantité réellement constatée et incident",
       "priority": "P0",
-      "verdict": "NOT_PROVEN"
+      "verdict": "NOT_PROVEN",
+      "oracles": [
+        "O-FIN"
+      ]
     },
     {
       "id": "N21",
@@ -761,7 +765,10 @@
       "expected": "Oracle O-ECO appliqué aux objets des M/C : fret non doublé, allocations causales, N3 séparé, total détail = plancher",
       "priority": "P0",
       "verdict": "NOT_PROVEN",
-      "oracle_only": true
+      "oracle_only": true,
+      "oracles": [
+        "O-ECO"
+      ]
     },
     {
       "id": "N36",
@@ -793,6 +800,11 @@
       "verdict": "NOT_PROVEN",
       "boundary_cases": [
         "L22"
+      ],
+      "oracles": [
+        "O-DOC",
+        "O-NOTIF",
+        "O-SEC-DOC"
       ]
     },
     {
@@ -1078,6 +1090,8 @@
         "N10",
         "N11",
         "N12",
+        "N13",
+        "N20",
         "N24",
         "N25",
         "N26",
@@ -1213,7 +1227,7 @@
   },
   "fable_business_blindspots": {
     "source_issue": 4107,
-    "rule": "Constats F1–F8 de l'audit des angles morts. Un comportement « non couvert » par décision du propriétaire (STATUS G8/G9) est qualifié NON_COUVERT, jamais PASS ni FAIL ; tout écart au comportement attendu actuel reste un FAIL.",
+    "rule": "Constats F1–F8 de l'audit des angles morts. Chaque variante F1–F3 porte des assertions COUVERT (avec verdict et preuve, au moins une positive et une négative) et des assertions NON_COUVERT (sans verdict, motif et décision, voir coverage_statuses).",
     "findings": {
       "F1": {
         "scenarios": [
@@ -1221,8 +1235,51 @@
           "N20",
           "N40"
         ],
-        "expected_now": "Commande cash ou mobile money avec manquant attesté : E7 refuse (ITEM_REFUND_PAYMENT_METHOD_UNSUPPORTED) ; la réservation locale (#4117, flag staging FABLE_LOCAL_REFUND_RESERVATIONS_ENABLED) renvoie 202 reserved, paid:false, une seule fois par quantité, garde anti-double entre rails",
-        "not_covered": "Sortie d'argent cash/MM, reçu, garde de caisse : NON_COUVERT tant que G8 n'est pas tranchée"
+        "oracles": [
+          "O-FIN"
+        ],
+        "assertions": [
+          {
+            "id": "F1-a",
+            "coverage": "COUVERT",
+            "kind": "negative",
+            "assertion": "E7 refuse la réservation de ligne d'une commande cash ou mobile money (ITEM_REFUND_PAYMENT_METHOD_UNSUPPORTED) et n'écrit aucune ligne order_item_refund_reservations",
+            "proof": [
+              "HTTP",
+              "SQL"
+            ]
+          },
+          {
+            "id": "F1-b",
+            "coverage": "COUVERT",
+            "kind": "positive",
+            "assertion": "Flag FABLE_LOCAL_REFUND_RESERVATIONS_ENABLED effectivement actif (lu et consigné) : réservation locale 202 reserved, paid:false, une ligne local_item_refund_reservations, montant ≤ reçu, O-FIN scopé à zéro anomalie",
+            "proof": [
+              "HTTP",
+              "SQL",
+              "O-FIN"
+            ],
+            "not_applicable_if": "flag inactif sur le SHA servi : NOT_APPLICABLE motivé"
+          },
+          {
+            "id": "F1-c",
+            "coverage": "COUVERT",
+            "kind": "negative",
+            "assertion": "Rejeu ou seconde réservation au-delà du manquant attesté refusé, aucune double dette entre rails E7 et local",
+            "proof": [
+              "HTTP",
+              "SQL",
+              "O-FIN"
+            ]
+          },
+          {
+            "id": "F1-d",
+            "coverage": "NON_COUVERT",
+            "assertion": "Sortie d'argent cash ou mobile money, reçu client, garde de caisse",
+            "reason": "Non implémenté (#4117 réserve seulement)",
+            "decision_ref": "STATUS G8 (décision propriétaire attendue)"
+          }
+        ]
       },
       "F2": {
         "scenarios": [
@@ -1230,16 +1287,81 @@
           "N27",
           "N39"
         ],
-        "expected_now": "Annulation d'une commande payée en cash : crédit wallet dans la devise du marché, conforme aux paliers N39 ; aucun appel PSP",
-        "not_covered": "Remboursement sur le moyen d'encaissement (espèces, mobile money) : NON_COUVERT (G8)"
+        "assertions": [
+          {
+            "id": "F2-a",
+            "coverage": "COUVERT",
+            "kind": "positive",
+            "assertion": "Annulation d'une commande payée cash : crédit wallet en devise du marché selon le palier N39 applicable, une seule fois",
+            "proof": [
+              "HTTP",
+              "SQL",
+              "O-FIN"
+            ]
+          },
+          {
+            "id": "F2-b",
+            "coverage": "COUVERT",
+            "kind": "negative",
+            "assertion": "Aucun appel PSP, aucune ligne refund_execution_intents ni remboursement Stripe/PayPal pour une commande cash",
+            "proof": [
+              "SQL"
+            ]
+          },
+          {
+            "id": "F2-c",
+            "coverage": "NON_COUVERT",
+            "assertion": "Remboursement sur le moyen d'encaissement (espèces, mobile money)",
+            "reason": "Capacité absente",
+            "decision_ref": "STATUS G8 (décision propriétaire attendue)"
+          }
+        ]
       },
       "F3": {
         "scenarios": [
-          "M01",
           "N26"
         ],
-        "expected_now": "Commande payée non retirée : le scan d'invendus renvoie 409, aucune ligne unsold_items ni unsold_at sur une commande payée (garde SQL 415), code de retrait toujours valide, argent du client intact",
-        "not_covered": "Rappels, délai, clôture du droit de retrait, sort de l'argent : NON_COUVERT (G9)"
+        "variant": "F3-PRE : commande payée, disponible au relais, NON retirée (pré-retrait) ; M01 nominal se termine par la remise et ne prouve pas cette garde",
+        "assertions": [
+          {
+            "id": "F3-a",
+            "coverage": "COUVERT",
+            "kind": "negative",
+            "assertion": "Scan d'invendus sur la commande payée non retirée : 409, aucune écriture orders.unsold_at ni unsold_items (garde SQL 415)",
+            "proof": [
+              "HTTP",
+              "SQL"
+            ]
+          },
+          {
+            "id": "F3-b",
+            "coverage": "COUVERT",
+            "kind": "negative",
+            "assertion": "Création ou résolution d'invendu (vente, don, destruction) d'une commande payée refusée par l'API",
+            "proof": [
+              "HTTP",
+              "SQL"
+            ]
+          },
+          {
+            "id": "F3-c",
+            "coverage": "COUVERT",
+            "kind": "positive",
+            "assertion": "Après ces refus, le code de retrait reste valide et la remise par code aboutit ; argent du client intact (O-FIN scopé)",
+            "proof": [
+              "HTTP",
+              "SQL",
+              "O-FIN"
+            ]
+          },
+          {
+            "id": "F3-d",
+            "coverage": "NON_COUVERT",
+            "assertion": "Rappels, délai de non-retrait, clôture du droit de retrait, sort de l'argent",
+            "reason": "Doctrine non décidée",
+            "decision_ref": "STATUS G9 (décision propriétaire attendue)"
+          }
+        ]
       },
       "F4": {
         "scenarios": [],
@@ -1262,5 +1384,75 @@
         "deferred": "Expédition entière perdue : après les E2E (stress ou recette dédiée)"
       }
     }
+  },
+  "sql_oracle_cohort_scoping": {
+    "applies_to_oracles": [
+      "O-FIN",
+      "O-HUB"
+    ],
+    "manifest": {
+      "file": "cohort-manifest.json (un par agent, dans le paquet de preuve)",
+      "built_by": "Requête de dérivation en lecture seule à état stabilisé, à partir des seuls RUN8 et références créés par la cohorte ; jamais saisi à la main",
+      "frozen": "SHA-256 du manifeste consigné AVANT le calcul des verdicts ; manifeste immuable ensuite",
+      "fields": [
+        "agent",
+        "run8",
+        "market",
+        "staging_sha",
+        "started_at",
+        "stabilized_at",
+        "user_ids",
+        "wallet_ids",
+        "order_ids",
+        "order_item_ids",
+        "refund_ids",
+        "purchase_order_ids",
+        "purchase_line_ids",
+        "allocation_ids",
+        "parcel_ids",
+        "physical_unit_ids",
+        "psp_event_ids"
+      ]
+    },
+    "procedure": [
+      "Exécuter chaque requête Fable INCHANGÉE (lecture seule) avant la campagne (baseline) et à état stabilisé (final), sur le même SHA ; consigner les comptes globaux, jamais comme verdict",
+      "Verdict de l'invariant = lignes du final dont la clé de portée appartient au manifeste de la cohorte ; zéro ligne attendue",
+      "Ligne finale hors manifeste et absente de la baseline : rapprochée du manifeste de l'autre cohorte ; sinon ANOMALIE_HORS_COHORTE signalée (simulation, autre activité), jamais comptée dans le verdict ni masquée",
+      "Ligne déjà présente dans la baseline : historique, signalée une fois, sans verdict",
+      "Requête invalide, clé de portée absente de la sortie ou liaison impossible : NOT_PROVEN, jamais PASS implicite"
+    ],
+    "scope_keys": {
+      "I1": "id → wallet_ids",
+      "I2": "id → wallet_ids",
+      "I3": "id → order_ids",
+      "I4": "id → order_ids",
+      "I5": "id → order_ids",
+      "I6": "id → order_ids",
+      "I7": "id → order_ids",
+      "I8": "requête 1 : stripe_event_id → psp_event_ids (webhooks simulés de la cohorte, sinon NOT_APPLICABLE motivé) ; requête 2 : order_id → order_ids",
+      "I9": "user_id → user_ids",
+      "I10": "return_order_item_id → order_item_ids",
+      "I11": "order_id → order_ids",
+      "I12": "order_id → order_ids (deux requêtes)",
+      "I13": "purchase_order_id → purchase_order_ids",
+      "I14": "id → order_ids",
+      "I15": "requête 1 : id → order_ids ; requête 2 : id → refund_ids",
+      "H1": "id → order_ids",
+      "H2": "order_id → order_ids",
+      "H3": "id → order_ids",
+      "H4": "order_item_id → order_item_ids",
+      "H5": "H5a : line_id → purchase_line_ids ; H5b : id → allocation_ids",
+      "H6": "id → order_item_ids",
+      "H7": "id → entité source de la requête H7 (parcel_ids ou purchase_order_ids, confirmée par le runner) ; sinon NOT_PROVEN",
+      "H8": "id → physical_unit_ids",
+      "H9": "id → physical_unit_ids"
+    }
+  },
+  "coverage_statuses": {
+    "values": [
+      "COUVERT",
+      "NON_COUVERT"
+    ],
+    "rule": "Qualification de couverture d'une assertion, distincte du verdict. Une assertion COUVERT reçoit un verdict (PASS/FAIL/BLOCKED/NOT_PROVEN/NOT_APPLICABLE) ; une assertion NON_COUVERT ne reçoit aucun verdict, porte un motif et une décision du propriétaire, et ne change ni le verdict du scénario ni celui des autres assertions."
   }
 }

@@ -18,10 +18,21 @@
    ══════════════════════════════════════════════════════════════ */
 @media (max-width: 899px) {
 
-  .k-mdm-root {
+  /* V4.1 — même axe de lecture pour identité, variantes, livraison et détails.
+     Le configurateur est un frère de .k-modal-info dans le DOM et n'héritait
+     donc pas de son padding. Le média, la topbar et le footer restent full width. */
+  #k-modal {
+    --k-pdp-mobile-gutter: 18px;
+  }
+
+  #k-modal .k-mdm-root {
     display: flex;
     flex-direction: column;
     gap: 0;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    padding-inline: var(--k-pdp-mobile-gutter);
   }
 
   /* ── MDM-3 : Identity compact overrides ────────────────────── */
@@ -172,7 +183,7 @@
   /* ── MDM-3 : Info section (padding tightened) ──────────────── */
 
   #k-modal .k-modal-info {
-    padding: 5px 14px 0;
+    padding: 5px var(--k-pdp-mobile-gutter) 0;
   }
 
   /* Réassurance = une information, pas un bandeau. Le stock est déjà porté
@@ -654,12 +665,13 @@
   .k-mdm-fold {
     border: none;
     border-top: 3px solid var(--sand-dark);
-    margin: 12px 0 0;
+    /* Le séparateur demeure bord à bord ; seuls les textes sont inset. */
+    margin: 12px calc(0px - var(--k-pdp-mobile-gutter)) 0;
   }
 
   .k-mdm-details-title {
     margin: 0;
-    padding: 14px 14px 2px;
+    padding: 14px 0 2px;
     color: var(--text);
     font-size: 19px;
     line-height: 1.2;
@@ -670,7 +682,7 @@
   /* ── MDM-7 : Description section ───────────────────────────── */
 
   .k-mdm-desc-section {
-    padding: 12px 14px;
+    padding: 12px 0;
     border-bottom: 0.5px solid var(--border);
   }
 
