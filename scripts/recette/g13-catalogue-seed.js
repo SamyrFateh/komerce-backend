@@ -108,7 +108,8 @@ async function findCandidate(db, e) {
   if (!e.supplier_ref) return null;
   const rows = await ro(db,
     `SELECT sc.candidate_ref, sc.state, sc.product_id, sc.supplier_name, UPPER(sc.scan_result->>'sourcing_decision') AS decision,
-            p.product_ref, p.lifecycle_status, p.is_active, p.category, p.subcategory
+            p.product_ref, p.lifecycle_status, p.is_active,
+            COALESCE(p.boutique_category_key, p.category) AS category, COALESCE(p.boutique_subcategory_key, p.subcategory) AS subcategory
        FROM sourcing_candidates sc LEFT JOIN products p ON p.id = sc.product_id
       WHERE sc.supplier_product_id = $1 ORDER BY sc.updated_at DESC LIMIT 1`, [String(e.supplier_ref)]);
   return rows[0] || null;
@@ -155,6 +156,30 @@ async function main(env = process.env) {
 
     const wanted = phaseSel === 'all' ? PHASES : [phaseSel];
     const execute = mode === 'execute';
+    if (phaseSel === 'import-now') {
+      if (!execute) { report.import_now = 'PLANIFIE'; } else {
+        const res = await admin.call('POST', '/api/admin/workspaces/sourcing/sources/api:aliexpress/import-now');
+        report.import_now = { status: res.status, body: JSON.stringify(res.body)?.slice(0, 600) };
+      }
+    }
+    if (phaseSel === 'discover') {
+      report.discover = [];
+      for (const d of MANIFEST.discovery || []) {
+        if (!execute) { report.discover.push({ ...d, status: 'PLANIFIE' }); continue; }
+        const res = await admin.call('POST', '/api/admin/workspaces/sourcing/imports', { source_type: 'api', ...PROVIDERS[d.source || 'cj'], keyword: d.keyword, page: 1, size: d.size || 5 });
+        report.discover.push({ keyword: d.keyword, status: res.status, code: res.body?.code || null });
+      }
+    }
+    if (phaseSel === 'dump' || phaseSel === 'discover' || phaseSel === 'import-now' || (phaseSel === 'curate' && execute)) {
+      // Lecture seule : inventaire des candidats (pour épingler) et de leurs médias actifs (pour l'inspection).
+      report.dump = await ro(db,
+        `SELECT sc.candidate_ref, sc.supplier_name, sc.supplier_product_id, sc.product_name, sc.supplier_category, sc.state,
+                UPPER(sc.scan_result->>'sourcing_decision') AS decision, sc.purchase_price, sc.currency, sc.image_url,
+                p.product_ref, p.lifecycle_status, COALESCE(p.boutique_category_key, p.category) AS category, COALESCE(p.boutique_subcategory_key, p.subcategory) AS subcategory,
+                (SELECT jsonb_agg(jsonb_build_object('id', cm.id, 'source_media_id', cm.source_media_id, 'url', cm.url) ORDER BY cm.display_order, cm.created_at)
+                   FROM catalog_media cm WHERE cm.product_id = p.id AND cm.is_active = TRUE) AS media
+           FROM sourcing_candidates sc LEFT JOIN products p ON p.id = sc.product_id ORDER BY sc.created_at`);
+    }
     const hubRes = await admin.call('GET', '/api/admin/workspaces/sourcing/catalog-suppliers');
     const hubList = hubRes.body?.suppliers || hubRes.body?.items || (Array.isArray(hubRes.body) ? hubRes.body : []);
     const hub = hubList.find((s) => s.system_key === 'central_hub') || null;
@@ -177,7 +202,7 @@ async function main(env = process.env) {
               ? { source_type: 'manual', supplier_id: hub.id, items: [e.manual_item] }
               : { source_type: 'api', ...PROVIDERS[e.source], ...(e.supplier_ref ? { product_ids: [String(e.supplier_ref)] } : { keyword: e.keyword, page: 1, size: 5 }) };
             const res = await admin.call('POST', '/api/admin/workspaces/sourcing/imports', body);
-            if (!res.ok) blocked(r, 'import', codeOf(res), JSON.stringify(res.body)?.slice(0, 200));
+            if (!res.ok) blocked(r, 'import', codeOf(res), JSON.stringify(res.body)?.slice(0, 900));
             else if (!e.supplier_ref) done(r, 'import', 'DECOUVERTE_A_EPINGLER', { import_ref: res.body?.import_ref });
             else { done(r, 'import', 'OK', { import_ref: res.body?.import_ref }); cand = await findCandidate(db, e); }
           }
@@ -199,8 +224,11 @@ async function main(env = process.env) {
               cand = await findCandidate(db, e);
             }
             if (ok && cand?.product_ref) {
-              if (cand.category !== e.category || cand.subcategory !== e.subcategory) ok = blocked(r, 'curate', 'CATEGORIE_PRODUIT_DIFFERENTE', `${cand.category}/${cand.subcategory}`);
-              else {
+              if (cand.category !== e.category || cand.subcategory !== e.subcategory) {
+                const cl = await admin.call('POST', `/api/admin/workspaces/catalog/products/${cand.product_ref}/classify`, { category: e.category, subcategory: e.subcategory });
+                if (!cl.ok) ok = blocked(r, 'curate', 'CLASSIFICATION_' + codeOf(cl));
+              }
+              if (ok) {
                 const fr = await admin.call('POST', `/api/admin/workspaces/catalog/approval/${cand.product_ref}/prepare-fr`, { name: e.name_fr, description: e.description_fr });
                 ok = fr.ok ? done(r, 'curate', 'OK') : blocked(r, 'curate', 'FICHE_FR_' + codeOf(fr));
               }
@@ -215,16 +243,17 @@ async function main(env = process.env) {
           else {
             const media = await ro(db, `SELECT id, source_media_id, url, option_values FROM catalog_media WHERE product_id = $1 AND is_active = TRUE ORDER BY display_order, created_at`, [cand.product_id]);
             const v = VERDICTS[e.id] || {};
-            const missing = media.filter((m) => !v[m.source_media_id]);
+            const vk = (m) => v[m.source_media_id] || v[m.url];
+            const missing = media.filter((m) => !vk(m));
             r.media = { active: media.length, verdicts_missing: missing.length, urls: missing.map((m) => ({ source_media_id: m.source_media_id, url: m.url })).slice(0, 20) };
             if (!media.length) blocked(r, 'publish', 'AUCUN_MEDIA_ACTIF');
             else if (missing.length) blocked(r, 'publish', 'VERDICT_VISUEL_ABSENT', `${missing.length}/${media.length}`);
-            else if (media.some((m) => v[m.source_media_id].verdict !== 'APPROVED')) blocked(r, 'publish', 'IMAGE_REFUSEE_PAR_INSPECTION');
+            else if (media.some((m) => vk(m).verdict !== 'APPROVED')) blocked(r, 'publish', 'IMAGE_REFUSEE_PAR_INSPECTION');
             else if (!execute) done(r, 'publish', 'PLANIFIE');
             else {
               let ok = true;
               for (const m of media) {
-                const x = v[m.source_media_id];
+                const x = vk(m);
                 const res = await admin.call('POST', `/api/admin/catalog/approval-queue/${cand.product_id}/media/${m.id}/visual-fr-review`, {
                   execution_mode: 'AUTOMATED_STAGING', run_id: env.GITHUB_RUN_ID, source_media_id: m.source_media_id, source_url: m.url,
                   option_values: m.option_values ?? {}, text_presence: x.text_presence,
@@ -315,14 +344,14 @@ async function main(env = process.env) {
     // --- census : lecture seule SQL + contrôle HTTP public ---
     if (phaseSel === 'all' || phaseSel === 'census') {
       const rows = await ro(db,
-        `SELECT p.category, m.code AS market, COUNT(DISTINCT p.id)::int AS n,
+        `SELECT COALESCE(p.boutique_category_key, p.category) AS category, m.code AS market, COUNT(DISTINCT p.id)::int AS n,
                 array_agg(DISTINCT COALESCE(sc.supplier_name, 'inconnu')) AS sources
            FROM products p
            JOIN product_market_price_drafts d ON d.product_id = p.id AND d.status = 'LOCAL_ACTIVE'
            JOIN markets m ON m.id = d.market_id
            JOIN product_market_exposure x ON x.product_id = p.id AND x.market_id = m.id AND x.commercial_exposure = 'ENABLED'
            LEFT JOIN sourcing_candidates sc ON sc.product_id = p.id
-          WHERE p.is_active = TRUE AND p.is_available = TRUE GROUP BY p.category, m.code ORDER BY p.category, m.code`);
+          WHERE p.is_active = TRUE AND p.is_available = TRUE GROUP BY 1, 2 ORDER BY 1, 2`);
       const http = {};
       for (const c of [...new Set(MANIFEST.entries.map((x) => x.category))]) {
         for (const m of MANIFEST.markets) {

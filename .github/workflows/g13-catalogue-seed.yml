@@ -13,11 +13,11 @@ on:
         default: dry-run
         options: [dry-run, execute]
       phase:
-        description: 'Phase : all ou une seule (validate, import, curate, publish, supplier-link, price, stock, census)'
+        description: 'Phase : all ou une seule (validate, dump, discover, import-now, import, curate, publish, supplier-link, price, stock, census)'
         required: true
         type: choice
         default: all
-        options: [all, validate, import, curate, publish, supplier-link, price, stock, census]
+        options: [all, validate, dump, discover, import-now, import, curate, publish, supplier-link, price, stock, census]
       confirmation:
         description: 'Saisir exactement SEED-G13-CATALOGUE'
         required: true

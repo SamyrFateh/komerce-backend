@@ -5,58 +5,58 @@
   "CM",
   "CG"
  ],
- "note": "supplier_ref null = produit à épingler après la phase discover (artefact). Les produits central_hub exigent manual_item.image_url (https) avant import.",
+ "note": "Réf. épinglées après découverte et inspection (critère : ni marque ou logo identifiable, ni personnage, ni filigrane masquant). La décision de sourcing est dérivée du moteur économique : aucune route admin ne la pose, seuls les candidats TEST sont retenus.",
  "entries": [
   {
    "id": "G13-01",
    "category": "Mode & Beauté",
    "subcategory": "Femme",
    "source": "cj",
-   "supplier_ref": null,
-   "keyword": "women summer dress",
-   "name_fr": "Robe d'été femme",
-   "description_fr": "Robe légère pour femme, tissu fluide et respirant, plusieurs tailles disponibles.",
+   "supplier_ref": "64B978E2-2F17-4A0A-A0D7-6E59995742A8",
+   "keyword": null,
+   "name_fr": "Robe mi-longue verte femme",
+   "description_fr": "Robe verte mi-longue pour femme, coupe près du corps et manches trois-quarts, plusieurs tailles.",
    "multi_sku": true
   },
   {
    "id": "G13-02",
    "category": "Mode & Beauté",
-   "subcategory": "Homme",
-   "source": "aliexpress",
-   "supplier_ref": null,
-   "keyword": "men polo shirt",
-   "name_fr": "Polo homme coton",
-   "description_fr": "Polo en coton pour homme, coupe droite, idéal pour la ville comme pour la chaleur."
+   "subcategory": "Femme",
+   "source": "cj",
+   "supplier_ref": "1787129037127684096",
+   "keyword": null,
+   "name_fr": "Robe longue fleurie en mousseline",
+   "description_fr": "Robe longue fluide à motifs floraux rouges, épaules dénudées et fente latérale."
   },
   {
    "id": "G13-03",
    "category": "Mode & Beauté",
    "subcategory": "Beauté",
    "source": "cj",
-   "supplier_ref": null,
-   "keyword": "facial cleansing brush",
-   "name_fr": "Brosse nettoyante visage",
-   "description_fr": "Brosse rechargeable pour le nettoyage du visage, résistante à l'eau."
+   "supplier_ref": "86466142-EA0A-44C0-B5E0-60EE91FEC1BA",
+   "keyword": null,
+   "name_fr": "Brosse nettoyante visage en silicone",
+   "description_fr": "Brosse électrique en silicone doux pour nettoyer le visage en profondeur, étanche."
   },
   {
    "id": "G13-04",
    "category": "Maison",
    "subcategory": "Déco",
-   "source": "aliexpress",
-   "supplier_ref": null,
-   "keyword": "led night light",
-   "name_fr": "Veilleuse LED",
-   "description_fr": "Veilleuse LED à faible consommation pour chambre ou couloir."
+   "source": "cj",
+   "supplier_ref": "6DA27597-5A51-47E7-8F1F-FE8D83C45E7A",
+   "keyword": null,
+   "name_fr": "Veilleuse LED 3D motif méduse",
+   "description_fr": "Veilleuse décorative LED avec motif méduse gravé en 3D, lumière chaude pour chambre ou salon."
   },
   {
    "id": "G13-05",
    "category": "Maison",
-   "subcategory": "Rangement",
+   "subcategory": "Déco",
    "source": "cj",
-   "supplier_ref": null,
-   "keyword": "storage organizer box",
-   "name_fr": "Boîte de rangement",
-   "description_fr": "Boîte de rangement empilable pour le linge, les jouets ou la cuisine."
+   "supplier_ref": "FA2870A6-6095-45E5-BAAC-FEC9A3BF48C9",
+   "keyword": null,
+   "name_fr": "Lampes solaires de jardin en mosaïque",
+   "description_fr": "Lot de lampes solaires à piquer dans le sol, abat-jour en mosaïque colorée, allumage automatique."
   },
   {
    "id": "G13-06",
@@ -65,18 +65,18 @@
    "source": "central_hub",
    "supplier_ref": "G13-HUB-TORCHONS",
    "keyword": null,
-   "name_fr": "Lot de torchons en coton",
-   "description_fr": "Lot de torchons de cuisine en coton absorbant, lavables en machine.",
+   "name_fr": "Lot de torchons de cuisine à carreaux",
+   "description_fr": "Lot de torchons de cuisine en coton à carreaux, absorbants et lavables en machine.",
    "manual_item": {
-    "supplier_product_id": "G13-HUB-TORCHONS",
-    "product_name": "Lot de torchons en coton",
-    "supplier_category": "Maison > Cuisine",
     "purchase_price": 6,
-    "currency": "EUR",
-    "image_url": null,
-    "description": "Lot de torchons de cuisine en coton absorbant, lavables en machine.",
+    "image_url": "https://cf.cjdropshipping.com/quick/product/212239e1-886d-4834-8c1c-a8f86bd2af76.jpg",
     "stock_available": 200,
-    "weight_kg": 0.4
+    "weight_kg": 0.4,
+    "supplier_product_id": "G13-HUB-TORCHONS",
+    "product_name": "Lot de torchons de cuisine à carreaux",
+    "supplier_category": "Maison > Cuisine",
+    "description": "Lot de torchons de cuisine en coton à carreaux, absorbants et lavables en machine.",
+    "currency": "EUR"
    },
    "local_stock": {
     "CM": 5
@@ -85,241 +85,191 @@
   {
    "id": "G13-07",
    "category": "Tech",
-   "subcategory": "Phones",
+   "subcategory": "Audio",
    "source": "cj",
-   "supplier_ref": null,
-   "keyword": "phone holder stand",
-   "name_fr": "Support de téléphone de bureau",
-   "description_fr": "Support réglable pour téléphone, compatible tous modèles."
+   "supplier_ref": "1662711610953179136",
+   "keyword": null,
+   "name_fr": "Écouteurs Bluetooth sans fil avec boîtier",
+   "description_fr": "Écouteurs sans fil Bluetooth livrés avec un boîtier de charge compact."
   },
   {
    "id": "G13-08",
    "category": "Tech",
-   "subcategory": "Audio",
-   "source": "aliexpress",
-   "supplier_ref": null,
-   "keyword": "bluetooth earbuds",
-   "name_fr": "Écouteurs Bluetooth sans fil",
-   "description_fr": "Écouteurs sans fil avec boîtier de charge et micro intégré."
+   "subcategory": "Montres",
+   "source": "cj",
+   "supplier_ref": "2610290650521601600",
+   "keyword": null,
+   "name_fr": "Montre connectée sport",
+   "description_fr": "Montre connectée au boîtier robuste, cadran rond, suivi d'activité."
   },
   {
    "id": "G13-09",
-   "category": "Tech",
-   "subcategory": "Montres",
+   "category": "Enfant",
+   "subcategory": "Fille",
    "source": "cj",
-   "supplier_ref": null,
-   "keyword": "smart watch",
-   "name_fr": "Montre connectée",
-   "description_fr": "Montre connectée avec suivi d'activité et notifications."
+   "supplier_ref": "2611060113401636600",
+   "keyword": null,
+   "name_fr": "Combinaison dinosaure pour enfant",
+   "description_fr": "Combinaison douce à capuche en forme de dinosaure rose, idéale pour jouer et se déguiser."
   },
   {
    "id": "G13-10",
    "category": "Enfant",
-   "subcategory": "Jouets",
+   "subcategory": "Garçon",
    "source": "cj",
-   "supplier_ref": null,
-   "keyword": "kids building blocks",
-   "name_fr": "Blocs de construction enfant",
-   "description_fr": "Jeu de blocs de construction pour enfant, à partir de 3 ans."
+   "supplier_ref": "2118966903112306690",
+   "keyword": null,
+   "name_fr": "Pyjama de Noël enfant manches longues",
+   "description_fr": "Ensemble pyjama deux pièces à manches longues, motifs de Noël, tissu doux."
   },
   {
    "id": "G13-11",
-   "category": "Enfant",
-   "subcategory": "Bébé",
-   "source": "aliexpress",
-   "supplier_ref": null,
-   "keyword": "baby bottle",
-   "name_fr": "Biberon bébé",
-   "description_fr": "Biberon sans BPA avec tétine silicone, facile à nettoyer."
-  },
-  {
-   "id": "G13-12",
-   "category": "Enfant",
-   "subcategory": "École",
-   "source": "cj",
-   "supplier_ref": null,
-   "keyword": "kids backpack school",
-   "name_fr": "Sac à dos scolaire enfant",
-   "description_fr": "Sac à dos scolaire résistant avec bretelles rembourrées."
-  },
-  {
-   "id": "G13-13",
    "category": "Bricolage",
    "subcategory": "Outillage",
    "source": "cj",
-   "supplier_ref": null,
-   "keyword": "screwdriver set",
-   "name_fr": "Jeu de tournevis",
-   "description_fr": "Jeu de tournevis de précision avec embouts interchangeables."
-  },
-  {
-   "id": "G13-14",
-   "category": "Bricolage",
-   "subcategory": "Electricité",
-   "source": "aliexpress",
-   "supplier_ref": null,
-   "keyword": "led work light",
-   "name_fr": "Lampe de travail LED",
-   "description_fr": "Lampe de chantier LED rechargeable, support magnétique."
-  },
-  {
-   "id": "G13-15",
-   "category": "Bricolage",
-   "subcategory": "Sécurité",
-   "source": "central_hub",
-   "supplier_ref": "G13-HUB-CADENAS",
+   "supplier_ref": "1382879470578438144",
    "keyword": null,
-   "name_fr": "Cadenas à clé en laiton",
-   "description_fr": "Cadenas robuste en laiton, deux clés fournies, pour portes, portails et armoires.",
+   "name_fr": "Jeu de clés hexagonales coudées",
+   "description_fr": "Jeu de clés mâles hexagonales et Torx coudées, codes couleur par taille, acier traité."
+  },
+  {
+   "id": "G13-12",
+   "category": "Bricolage",
+   "subcategory": "Outillage",
+   "source": "central_hub",
+   "supplier_ref": "G13-HUB-COFFRET-PRECISION",
+   "keyword": null,
+   "name_fr": "Coffret de tournevis de précision",
+   "description_fr": "Coffret de tournevis de précision avec nombreux embouts interchangeables, idéal pour l'électronique et les petites réparations.",
    "manual_item": {
-    "supplier_product_id": "G13-HUB-CADENAS",
-    "product_name": "Cadenas à clé en laiton",
-    "supplier_category": "Bricolage > Sécurité",
-    "purchase_price": 4,
-    "currency": "EUR",
-    "image_url": null,
-    "description": "Cadenas robuste en laiton, deux clés fournies.",
-    "stock_available": 150,
-    "weight_kg": 0.3
+    "purchase_price": 8,
+    "image_url": "https://cf.cjdropshipping.com/1619763271006.jpg",
+    "stock_available": 120,
+    "weight_kg": 0.45,
+    "supplier_product_id": "G13-HUB-COFFRET-PRECISION",
+    "product_name": "Coffret de tournevis de précision",
+    "supplier_category": "Bricolage > Outillage",
+    "description": "Coffret de tournevis de précision avec nombreux embouts interchangeables, idéal pour l'électronique et les petites réparations.",
+    "currency": "EUR"
    },
    "local_stock": {
     "CG": 5
    }
   },
   {
-   "id": "G13-16",
+   "id": "G13-13",
+   "category": "Créations personnelles",
+   "subcategory": "Cadeau",
+   "source": "cj",
+   "supplier_ref": "1998576444732968961",
+   "keyword": null,
+   "name_fr": "Mug photo personnalisable 11 oz",
+   "description_fr": "Mug en céramique blanche de 11 oz à personnaliser avec votre photo, idée de cadeau."
+  },
+  {
+   "id": "G13-14",
    "category": "Créations personnelles",
    "subcategory": "Cadeau",
    "source": "central_hub",
-   "supplier_ref": "G13-HUB-MUG",
+   "supplier_ref": "G13-HUB-MUG-DAMIER",
    "keyword": null,
-   "name_fr": "Mug personnalisable",
-   "description_fr": "Mug en céramique à personnaliser avec un nom, un message ou un motif.",
+   "name_fr": "Mug en céramique motif damier",
+   "description_fr": "Mug en céramique émaillée à motif damier noir et crème, grande anse arrondie.",
    "manual_item": {
-    "supplier_product_id": "G13-HUB-MUG",
-    "product_name": "Mug personnalisable",
-    "supplier_category": "Créations > Cadeau",
     "purchase_price": 3,
-    "currency": "EUR",
-    "image_url": null,
-    "description": "Mug en céramique à personnaliser.",
+    "image_url": "https://cf.cjdropshipping.com/fe869a7f-e261-437d-b179-bbda4295a3f2.jpg",
     "stock_available": 300,
-    "weight_kg": 0.35
+    "weight_kg": 0.4,
+    "supplier_product_id": "G13-HUB-MUG-DAMIER",
+    "product_name": "Mug en céramique motif damier",
+    "supplier_category": "Créations personnelles > Cadeau",
+    "description": "Mug en céramique émaillée à motif damier noir et crème, grande anse arrondie.",
+    "currency": "EUR"
    },
    "local_stock": {
     "KM": 5
    }
   },
   {
-   "id": "G13-17",
-   "category": "Créations personnelles",
-   "subcategory": "Impression",
-   "source": "aliexpress",
-   "supplier_ref": null,
-   "keyword": "blank t-shirt for printing",
-   "name_fr": "T-shirt uni à personnaliser",
-   "description_fr": "T-shirt uni en coton, prêt pour l'impression ou la broderie."
-  },
-  {
-   "id": "G13-18",
-   "category": "Créations personnelles",
-   "subcategory": "Cérémonie",
-   "source": "cj",
-   "supplier_ref": null,
-   "keyword": "wedding gift box",
-   "name_fr": "Coffret cadeau cérémonie",
-   "description_fr": "Coffret cadeau élégant pour mariage et cérémonies."
-  },
-  {
-   "id": "G13-19",
-   "category": "Sport",
-   "subcategory": "Foot",
-   "source": "cj",
-   "supplier_ref": null,
-   "keyword": "soccer ball size 5",
-   "name_fr": "Ballon de football taille 5",
-   "description_fr": "Ballon de football taille 5, coutures renforcées."
-  },
-  {
-   "id": "G13-20",
+   "id": "G13-15",
    "category": "Sport",
    "subcategory": "Fitness",
-   "source": "aliexpress",
-   "supplier_ref": null,
-   "keyword": "resistance bands set",
-   "name_fr": "Bandes de résistance fitness",
-   "description_fr": "Jeu de bandes élastiques de résistance pour le sport à domicile."
+   "source": "cj",
+   "supplier_ref": "1398920310576779264",
+   "keyword": null,
+   "name_fr": "Corde à sauter lestée sans fil",
+   "description_fr": "Corde à sauter sans fil avec poignées lestées antidérapantes pour le fitness à la maison."
   },
   {
-   "id": "G13-21",
+   "id": "G13-16",
    "category": "Sport",
-   "subcategory": "Outdoor",
+   "subcategory": "Fitness",
    "source": "cj",
-   "supplier_ref": null,
-   "keyword": "camping tent 2 person",
-   "name_fr": "Tente de camping 2 places",
-   "description_fr": "Tente de camping légère 2 places, étanche.",
+   "supplier_ref": "2112058410662567938",
+   "keyword": null,
+   "name_fr": "Vélo d'appartement pliable",
+   "description_fr": "Vélo d'appartement pliable avec dossier et résistance magnétique réglable, rangement facile.",
    "bulky": true
   },
   {
-   "id": "G13-22",
-   "category": "Auto",
-   "subcategory": "Filtres",
-   "source": "aliexpress",
-   "supplier_ref": null,
-   "keyword": "car air filter",
-   "name_fr": "Filtre à air voiture",
-   "description_fr": "Filtre à air de remplacement pour véhicule."
-  },
-  {
-   "id": "G13-23",
-   "category": "Auto",
-   "subcategory": "Éclairage",
-   "source": "cj",
-   "supplier_ref": null,
-   "keyword": "led headlight bulb h7",
-   "name_fr": "Ampoule LED H7",
-   "description_fr": "Ampoule LED H7 pour phare de voiture."
-  },
-  {
-   "id": "G13-24",
-   "category": "Auto",
-   "subcategory": "Accessoires",
-   "source": "cj",
-   "supplier_ref": null,
-   "keyword": "car vacuum cleaner portable",
-   "name_fr": "Aspirateur de voiture portable",
-   "description_fr": "Aspirateur portable 12 V pour l'habitacle."
-  },
-  {
-   "id": "G13-25",
+   "id": "G13-17",
    "category": "Sur-mesure",
    "subcategory": "Couture",
    "source": "cj",
-   "supplier_ref": null,
-   "keyword": "sewing kit",
-   "name_fr": "Kit de couture",
-   "description_fr": "Kit de couture complet avec fils, aiguilles et ciseaux."
+   "supplier_ref": "2408030940071621100",
+   "keyword": null,
+   "name_fr": "Tissu wax africain, assortiment de motifs",
+   "description_fr": "Tissus wax africains aux motifs variés et colorés pour la couture de tenues et accessoires."
   },
   {
-   "id": "G13-26",
+   "id": "G13-18",
    "category": "Sur-mesure",
-   "subcategory": "Broderie",
-   "source": "aliexpress",
-   "supplier_ref": null,
-   "keyword": "embroidery thread set",
-   "name_fr": "Fils à broder assortis",
-   "description_fr": "Assortiment de fils à broder en coton, couleurs variées."
-  },
-  {
-   "id": "G13-27",
-   "category": "Sur-mesure",
-   "subcategory": "Mesure",
+   "subcategory": "Couture",
    "source": "cj",
-   "supplier_ref": null,
-   "keyword": "tape measure tailor",
-   "name_fr": "Mètre ruban de couturier",
-   "description_fr": "Mètre ruban souple de couturier, graduation en centimètres."
+   "supplier_ref": "1380409018161434624",
+   "keyword": null,
+   "name_fr": "Tissu wax motif hirondelles",
+   "description_fr": "Tissu wax en coton, motif hirondelles vertes sur fond rayé, vendu à la coupe."
+  },
+  {
+   "id": "G13-19",
+   "category": "Auto",
+   "subcategory": "Moto",
+   "source": "cj",
+   "supplier_ref": "F6ED244B-353F-449B-B888-7557B9096BF2",
+   "keyword": null,
+   "name_fr": "Support de téléphone moto avec chargeur",
+   "description_fr": "Support de téléphone pour guidon de moto avec bras à pinces et alimentation de charge."
+  },
+  {
+   "id": "G13-20",
+   "category": "Auto",
+   "subcategory": "Moto",
+   "source": "cj",
+   "supplier_ref": "2603300743211618800",
+   "keyword": null,
+   "name_fr": "Support de téléphone moto en alliage",
+   "description_fr": "Support de téléphone en alliage d'aluminium à fixer sur le guidon, maintien solide."
+  },
+  {
+   "id": "G13-21",
+   "category": "Maison",
+   "subcategory": "Rangement",
+   "source": "aliexpress",
+   "supplier_ref": "1005008222543759",
+   "keyword": null,
+   "name_fr": "Clips adhésifs range-câbles",
+   "description_fr": "Lot de clips adhésifs pour ranger et fixer les câbles sur un bureau, un mur ou un meuble."
+  },
+  {
+   "id": "G13-22",
+   "category": "Tech",
+   "subcategory": "Phones",
+   "source": "aliexpress",
+   "supplier_ref": "1005013175958920",
+   "keyword": null,
+   "name_fr": "Coque de téléphone léopard avec dragonne",
+   "description_fr": "Coque en silicone souple motif léopard avec anneau et dragonne tressée, plusieurs coloris."
   }
  ]
 }
