@@ -636,6 +636,65 @@ test.describe('PDP mobile retouches 2026-11 — suggestions après les détails'
     expect(order.gutter).toBe('18px');
     expect(order.rootPadding).toBe('18px');
     expect(order.scrollOverflow).toBeLessThanOrEqual(1);
+    // Swipe tactile NATIF dans le rail (pas un faux TouchEvent dispatché JS).
+    // Le titre et le scroll vertical doivent rester immobiles pendant le geste.
+    await page.evaluate(() => {
+      const scroll = document.querySelector('.k-modal-scroll');
+      scroll.style.scrollBehavior = 'auto'; // éviter l'animation du scroll pendant la preuve CDP
+      scroll.scrollTop = scroll.scrollHeight;
+    });
+    await page.waitForTimeout(80);
+    const beforeSwipe = await page.evaluate(() => {
+      const rail = document.querySelector('#k-modal .k-sug-grid');
+      const title = rail.closest('.k-sug-section').querySelector('.k-sug-title');
+      const scroll = document.querySelector('.k-modal-scroll');
+      const img = rail.querySelector('.k-sug-card-img');
+      const rr = rail.getBoundingClientRect();
+      const ir = img.getBoundingClientRect();
+      return {
+        scrollWidth: rail.scrollWidth, clientWidth: rail.clientWidth,
+        overflowX: getComputedStyle(rail).overflowX,
+        scrollLeft: rail.scrollLeft,
+        titleLeft: title.getBoundingClientRect().left,
+        scrollTop: scroll.scrollTop,
+        x: Math.min(ir.left + Math.min(ir.width / 2, 55), rr.right - 12),
+        y: ir.top + Math.min(ir.height / 2, 60),
+      };
+    });
+    expect(beforeSwipe.overflowX).toBe('auto');
+    expect(beforeSwipe.scrollWidth - beforeSwipe.clientWidth).toBeGreaterThan(40);
+
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 1 });
+    const x0 = Math.round(beforeSwipe.x);
+    const y0 = Math.round(beforeSwipe.y);
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchStart', touchPoints: [{ x: x0, y: y0 }],
+    });
+    for (let step = 1; step <= 8; step += 1) {
+      await cdp.send('Input.dispatchTouchEvent', {
+        type: 'touchMove', touchPoints: [{ x: x0 - step * 18, y: y0 }],
+      });
+      await page.waitForTimeout(25);
+    }
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await page.waitForTimeout(450);
+    const afterSwipe = await page.evaluate(() => {
+      const rail = document.querySelector('#k-modal .k-sug-grid');
+      return {
+        scrollLeft: rail.scrollLeft,
+        titleLeft: rail.closest('.k-sug-section').querySelector('.k-sug-title').getBoundingClientRect().left,
+        scrollTop: document.querySelector('.k-modal-scroll').scrollTop,
+        overflow: document.getElementById('k-modal').scrollWidth - document.getElementById('k-modal').clientWidth,
+      };
+    });
+    expect(afterSwipe.scrollLeft).toBeGreaterThan(beforeSwipe.scrollLeft + 25);
+    expect(Math.abs(afterSwipe.titleLeft - beforeSwipe.titleLeft)).toBeLessThan(2);
+    expect(Math.abs(afterSwipe.scrollTop - beforeSwipe.scrollTop)).toBeLessThan(2);
+    expect(afterSwipe.overflow).toBeLessThanOrEqual(1);
+    await shot(page, 'mobile-pdp-suggestions-after-swipe-390.png');
+    await cdp.detach();
+
     await shot(page, 'mobile-pdp-suggestions-after-details-390.png');
   });
 });
