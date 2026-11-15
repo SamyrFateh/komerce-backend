@@ -82,6 +82,7 @@ describeE2E('L8 — files de prochaine action des commandes', ({ db }) => {
 
   test('confirmed payée → À commander ; ordered sans réception → attente 0/N sans action ; stock local → Préparer le colis ; annulée exclue', async () => {
     const queues = await getWorkQueues(market);
+    process.stderr.write(`L8DEBUG ${JSON.stringify({ totals: [queues.to_order_total, queues.awaiting_hub_reception_total, queues.ready_for_parcel_total], awaitingShown: queues.awaiting_hub_reception.length, readyRefs: queues.ready_for_parcel.map(o => String(o.reference).slice(0, 12)), awaitingRefs: queues.awaiting_hub_reception.map(o => String(o.reference).slice(0, 12)) })}\n`);
     expect(pick(queues.to_order)).toEqual(['confirmed']);
     expect(queues.to_order.find(o => o.reference.endsWith('-confirmed')).next_action).toMatchObject({ label: 'À commander', actionable: true });
     expect(pick(queues.awaiting_hub_reception)).toEqual(['none', 'partial']);
