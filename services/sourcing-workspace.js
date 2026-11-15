@@ -403,9 +403,6 @@ async function getCandidateBoutiqueCategoryOptions(candidateRef) {
   const saved = candidate.commercial_taxonomy_review?.status === 'CONFIRMED'
     ? candidate.commercial_taxonomy_review : null;
   let preferred = saved && { category:saved.category, subcategory:saved.subcategory };
-  if (!preferred && provider && sourcePath) {
-    preferred = await commercialMapping.findConfirmed(provider, sourcePath);
-  }
   // The experimental category-only result is computed on demand. It never
   // writes a candidate decision, confirms a supplier mapping or creates a
   // draft. The operator must select a complete ACTIVE pair to advance.
@@ -438,6 +435,9 @@ async function getCandidateBoutiqueCategoryOptions(candidateRef) {
     if(verdict.status==='AUTO_CLASSIFIED') {
       preferred={category:verdict.category,subcategory:verdict.subcategory};
     }
+  }
+  if (!preferred && provider && sourcePath) {
+    preferred = await commercialMapping.findConfirmed(provider, sourcePath);
   }
   if (!preferred) {
     preferred = await resolveCommercialObjectTaxonomy(db,candidate);
