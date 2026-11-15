@@ -56,7 +56,7 @@
     "healthy": 34,
     "attention": 6,
     "blocked": 0,
-    "businessDependencies": 329,
+    "businessDependencies": 330,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
@@ -9901,6 +9901,13 @@
           "channels": [
             "static-code",
             "data-read"
+          ]
+        },
+        {
+          "provider": "refunds",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
           ]
         },
         {
@@ -31385,6 +31392,10 @@
       "authority": "backend-core — tout changement de logique de remboursement doit etre valide par le proprietaire de refund-service.js",
       "invariants": [
         {
+          "statement": "Fable F1 cash : admin et détenteur distincts ; aucune sortie avant remise explicitement engagée, quittance signée et identité du payeur attestée ; mouvements de garde, refunds.completed et qty_refunded transactionnels et non rejouables",
+          "test": "tests/integration/fable-cash-refund-handoff-postgres.test.js"
+        },
+        {
           "statement": "Fable F1/F2: le paiement cash ou Mobile Money attesté ouvre une obligation locale en devise d origine, sans marquer paid ni écrire refunds ou wallet avant preuve de sortie ; les rails PSP restent exclus",
           "test": "tests/e2e-api/refunds.local-shortage-reservation.e2e.test.js"
         },
@@ -31450,17 +31461,27 @@
       "implementation": {
         "byCategory": {
           "migrations": {
-            "count": 1,
+            "count": 3,
             "files": [
               {
                 "declared": "migrations/416_fable_local_item_refund_reservations.sql",
                 "resolvedPath": "migrations/416_fable_local_item_refund_reservations.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/417_fable_cash_refund_custody_handoff.sql",
+                "resolvedPath": "migrations/417_fable_cash_refund_custody_handoff.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/418_fable_manual_mobile_money_refund.sql",
+                "resolvedPath": "migrations/418_fable_manual_mobile_money_refund.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           },
           "services": {
-            "count": 10,
+            "count": 12,
             "files": [
               {
                 "declared": "services/item-refund-psp-orchestrator.js",
@@ -31473,9 +31494,19 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/local-cash-refund-handoff.js",
+                "resolvedPath": "services/local-cash-refund-handoff.js",
+                "status": "resolved-on-disk-no-header"
+              },
+              {
                 "declared": "services/local-item-refund-reservation.js",
                 "resolvedPath": "services/local-item-refund-reservation.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/local-mobile-refund-handoff.js",
+                "resolvedPath": "services/local-mobile-refund-handoff.js",
+                "status": "resolved-on-disk-no-header"
               },
               {
                 "declared": "services/paypal-refund-authority.js",
@@ -31515,7 +31546,7 @@
             ]
           },
           "tests": {
-            "count": 22,
+            "count": 23,
             "files": [
               {
                 "declared": "tests/e2e-api/refunds.credits-cash-numeric.e2e.test.js",
@@ -31565,6 +31596,11 @@
               {
                 "declared": "tests/e2e-api/refunds.stripe-crash-boundaries.e2e.test.js",
                 "resolvedPath": "tests/e2e-api/refunds.stripe-crash-boundaries.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/fable-cash-refund-handoff-postgres.test.js",
+                "resolvedPath": "tests/integration/fable-cash-refund-handoff-postgres.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -31630,7 +31666,7 @@
             ]
           }
         },
-        "totalFiles": 33,
+        "totalFiles": 38,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -31640,7 +31676,19 @@
       "ownership": {
         "ownsTables": [
           {
+            "table": "local_cash_refund_authorizations",
+            "resolution": "single-writer"
+          },
+          {
+            "table": "local_cash_refund_payouts",
+            "resolution": "single-writer"
+          },
+          {
             "table": "local_item_refund_reservations",
+            "resolution": "single-writer"
+          },
+          {
+            "table": "local_mobile_refund_handoffs",
             "resolution": "single-writer"
           },
           {
@@ -31658,7 +31706,25 @@
         ],
         "writesTables": [
           {
+            "table": "local_cash_refund_authorizations",
+            "mode": "RW",
+            "lifecycleOwner": "refunds",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "local_cash_refund_payouts",
+            "mode": "RW",
+            "lifecycleOwner": "refunds",
+            "ownershipStatus": "owner"
+          },
+          {
             "table": "local_item_refund_reservations",
+            "mode": "RW",
+            "lifecycleOwner": "refunds",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "local_mobile_refund_handoffs",
             "mode": "RW",
             "lifecycleOwner": "refunds",
             "ownershipStatus": "owner"
@@ -31704,7 +31770,19 @@
       "data": {
         "ownsTables": [
           {
+            "table": "local_cash_refund_authorizations",
+            "resolution": "single-writer"
+          },
+          {
+            "table": "local_cash_refund_payouts",
+            "resolution": "single-writer"
+          },
+          {
             "table": "local_item_refund_reservations",
+            "resolution": "single-writer"
+          },
+          {
+            "table": "local_mobile_refund_handoffs",
             "resolution": "single-writer"
           },
           {
@@ -31722,7 +31800,25 @@
         ],
         "writesTables": [
           {
+            "table": "local_cash_refund_authorizations",
+            "mode": "RW",
+            "lifecycleOwner": "refunds",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "local_cash_refund_payouts",
+            "mode": "RW",
+            "lifecycleOwner": "refunds",
+            "ownershipStatus": "owner"
+          },
+          {
             "table": "local_item_refund_reservations",
+            "mode": "RW",
+            "lifecycleOwner": "refunds",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "local_mobile_refund_handoffs",
             "mode": "RW",
             "lifecycleOwner": "refunds",
             "ownershipStatus": "owner"
@@ -31845,6 +31941,13 @@
         }
       ],
       "consumedBy": [
+        {
+          "consumer": "dashboard",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
         {
           "consumer": "documents",
           "disposition": "DECLARED_AND_OBSERVED",
