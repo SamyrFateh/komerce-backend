@@ -1,0 +1,174 @@
+name: Hub H1-H9 cloture G2 (cohorte Sonnet, staging)
+
+# Declenche par workflow_dispatch (proprietaire, confirmation saisie). Aucun declencheur push.
+# Ecritures limitees a la fixture RUN8 de cette cohorte ; PG en lecture seule ; aucun PSP, aucun envoi reel.
+on:
+  workflow_dispatch:
+    inputs:
+      run:
+        description: 'Epreuve : C2T3T4, C3, C45, T5PREP (ecritures sur fixture RUN8 neuve) ou T9CHECK (lecture seule)'
+        required: true
+        type: choice
+        options: [C2T3T4, C3, C45, T5PREP, T9CHECK]
+      confirmation:
+        description: 'Saisir exactement RUN-HUB-H1H9-SONNET'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: komerce-hub-v1-http-actions-staging
+  cancel-in-progress: false
+
+jobs:
+  closure:
+    if: github.actor == github.repository_owner && inputs.confirmation == 'RUN-HUB-H1H9-SONNET'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_TARGET_ENV: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      EXPECTED_RAILWAY_ENVIRONMENT: staging
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      KOMERCE_STAGING_RESET_DB_PIN: ${{ vars.STAGING_DB_PIN }}
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      HTTP_RUNNER_BASE_URL: https://komerce-backend-production.up.railway.app
+      HUB_V1_E2E_APPLY_MODE: approved
+      HUB_V1_STAGING_DISPOSABLE_MODE: '1'
+      HUB_V1_STAGING_EXISTING_FIXTURE_ACTIONS: '1'
+      HTTP_RUNNER_ALLOW_DISTRIBUTION: '0'
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      E2E_AGENT_HUB_EMAIL: ${{ secrets.E2E_AGENT_HUB_EMAIL }}
+      E2E_AGENT_HUB_PASSWORD: ${{ secrets.E2E_AGENT_HUB_PASSWORD }}
+      E2E_HUB_DIRECTOR_EMAIL: ${{ secrets.E2E_HUB_DIRECTOR_EMAIL }}
+      E2E_HUB_DIRECTOR_PASSWORD: ${{ secrets.E2E_HUB_DIRECTOR_PASSWORD }}
+      E2E_MARKET_OPERATOR_EMAIL: ${{ secrets.E2E_MARKET_OPERATOR_EMAIL }}
+      E2E_MARKET_OPERATOR_PASSWORD: ${{ secrets.E2E_MARKET_OPERATOR_PASSWORD }}
+      E2E_AGENT_RELAIS_EMAIL: ${{ secrets.E2E_AGENT_RELAIS_EMAIL }}
+      E2E_AGENT_RELAIS_PASSWORD: ${{ secrets.E2E_AGENT_RELAIS_PASSWORD }}
+      E2E_AGENT_TRANSITAIRE_EMAIL: ${{ secrets.E2E_AGENT_TRANSITAIRE_EMAIL }}
+      E2E_AGENT_TRANSITAIRE_PASSWORD: ${{ secrets.E2E_AGENT_TRANSITAIRE_PASSWORD }}
+      STRIPE_SECRET_KEY: sk_test_certification_placeholder
+      STRIPE_WEBHOOK_SECRET: whsec_certification_placeholder
+      PAYPAL_CLIENT_ID: ci-certification-placeholder
+      PAYPAL_CLIENT_SECRET: ci-certification-placeholder
+      PAYPAL_WEBHOOK_ID: ci-certification-placeholder
+      META_WA_APP_SECRET: ci-certification-placeholder
+      AUTHKEY_API_KEY: ci-certification-placeholder
+      JWT_SECRET: ci-certification-placeholder
+      QR_SECRET: ci-certification-placeholder
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select epreuve
+        id: arm
+        env:
+          RUN_INPUT: ${{ inputs.run }}
+        run: |
+          case "$RUN_INPUT" in
+            C2T3T4) echo "ARMED=1" >> "$GITHUB_OUTPUT";;
+            C3) echo "ARMED_C3=1" >> "$GITHUB_OUTPUT";;
+            C45) echo "ARMED_C45=1" >> "$GITHUB_OUTPUT";;
+            T5PREP) echo "T5PREP=1" >> "$GITHUB_OUTPUT";;
+            T9CHECK) echo "T9_CHECK=1" >> "$GITHUB_OUTPUT";;
+            *) echo "unknown epreuve"; exit 1;;
+          esac
+          echo "any=1" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-node@v4
+        if: steps.arm.outputs.any == '1'
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install
+        if: steps.arm.outputs.any == '1'
+        run: npm ci
+      - name: Refuse any other staging run in progress
+        if: steps.arm.outputs.any == '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          n=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?status=in_progress&per_page=50" --jq "[.workflow_runs[] | select(.id != ${GITHUB_RUN_ID} and (.name|test(\"staging|g6|hub|recette|certif|e2e|G2|campagne\";\"i\")))] | length")
+          echo "other in_progress runs: $n"
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs?status=in_progress&per_page=50" --jq ".workflow_runs[] | select(.id != ${GITHUB_RUN_ID}) | \"\(.id) \(.name)\""
+          test "$n" = "0"
+      - name: Require precise Railway database target
+        if: steps.arm.outputs.any == '1'
+        run: node scripts/recette/target-guard.js
+      - name: T9 check (lecture seule, objet cree le 15/11)
+        if: steps.arm.outputs.T9_CHECK == '1'
+        run: |
+          export T9_RUN8=EB87CC74 T9_EXPECTED_CREATED_AT=2026-11-15T00:52:06.790Z
+          node scripts/recette/hub-h1h9-sonnet-t9.js check
+      - name: Fixture RUN8 neuve + chaine PO (rien recu)
+        if: steps.arm.outputs.ARMED == '1'
+        shell: bash
+        run: |
+          set -euo pipefail
+          SHA="$(curl -fsS "$STAGING_BASE_URL/health/version" | node -pe 'JSON.parse(require("fs").readFileSync(0)).commit')"
+          RUN8="$(node -p 'require("crypto").randomBytes(4).toString("hex").toUpperCase()')"
+          {
+            echo "E2E_EXPECTED_DEPLOY_SHA=$SHA"
+            echo "HUB_V1_CERTIFICATION_RUN=$RUN8"; echo "E2E_PROOF_RUN8=$RUN8"; echo "HTTP_RUNNER_RUN8=$RUN8"
+            echo "HTTP_RUNNER_MARKET=KM"
+          } >> "$GITHUB_ENV"
+          echo "RUN8 cohorte Sonnet: $RUN8 (sha ${SHA:0:12})"
+          export HUB_V1_CERTIFICATION_RUN="$RUN8" E2E_EXPECTED_DEPLOY_SHA="$SHA"
+          node scripts/recette/hub-v1-certification-runner.js --allow-remote-staging --run="$RUN8" --market=KM --stop-after=2 --dry-run
+          node scripts/recette/hub-v1-certification-runner.js --allow-remote-staging --run="$RUN8" --market=KM --stop-after=2
+          E2E_PROOF_RUN8="$RUN8" HTTP_RUNNER_RUN8="$RUN8" node scripts/recette/hub-v1-http-action-runner.js
+      - name: C2, T3, T4 (HTTP + PG lecture seule), SHA identique debut/fin
+        if: steps.arm.outputs.ARMED == '1'
+        run: node scripts/recette/hub-h1h9-sonnet-closure.js
+      - name: C3 (fixture neuve sans chaine PO ; PO envoyee, non confirmee ; confirmation reduite || reception)
+        if: steps.arm.outputs.ARMED_C3 == '1'
+        shell: bash
+        run: |
+          set -euo pipefail
+          SHA="$(curl -fsS "$STAGING_BASE_URL/health/version" | node -pe 'JSON.parse(require("fs").readFileSync(0)).commit')"
+          RUN8="$(node -p 'require("crypto").randomBytes(4).toString("hex").toUpperCase()')"
+          echo "RUN8 C3 cohorte Sonnet: $RUN8"
+          export HUB_V1_CERTIFICATION_RUN="$RUN8" E2E_PROOF_RUN8="$RUN8" E2E_EXPECTED_DEPLOY_SHA="$SHA"
+          node scripts/recette/hub-v1-certification-runner.js --allow-remote-staging --run="$RUN8" --market=KM --stop-after=2 --dry-run
+          node scripts/recette/hub-v1-certification-runner.js --allow-remote-staging --run="$RUN8" --market=KM --stop-after=2
+          node scripts/recette/hub-h1h9-sonnet-c345.js c3
+      - name: C4 et C5 (fixture neuve + chaine PO ; reception, sac, KOM-BOX ; deux operateurs simultanes)
+        if: steps.arm.outputs.ARMED_C45 == '1'
+        shell: bash
+        run: |
+          set -euo pipefail
+          SHA="$(curl -fsS "$STAGING_BASE_URL/health/version" | node -pe 'JSON.parse(require("fs").readFileSync(0)).commit')"
+          RUN8="$(node -p 'require("crypto").randomBytes(4).toString("hex").toUpperCase()')"
+          echo "RUN8 C4/C5 cohorte Sonnet: $RUN8"
+          export HUB_V1_CERTIFICATION_RUN="$RUN8" E2E_PROOF_RUN8="$RUN8" HTTP_RUNNER_RUN8="$RUN8" HTTP_RUNNER_MARKET=KM E2E_EXPECTED_DEPLOY_SHA="$SHA"
+          node scripts/recette/hub-v1-certification-runner.js --allow-remote-staging --run="$RUN8" --market=KM --stop-after=2 --dry-run
+          node scripts/recette/hub-v1-certification-runner.js --allow-remote-staging --run="$RUN8" --market=KM --stop-after=2
+          node scripts/recette/hub-v1-http-action-runner.js
+          node scripts/recette/hub-h1h9-sonnet-c345.js c45
+      - name: T5 preparation (fixture neuve + chaine PO + reception KOM-101 ; lecture de l'etat)
+        if: steps.arm.outputs.T5PREP == '1'
+        shell: bash
+        run: |
+          set -euo pipefail
+          SHA="$(curl -fsS "$STAGING_BASE_URL/health/version" | node -pe 'JSON.parse(require("fs").readFileSync(0)).commit')"
+          RUN8="$(node -p 'require("crypto").randomBytes(4).toString("hex").toUpperCase()')"
+          echo "RUN8 T5 cohorte Sonnet: $RUN8"
+          export HUB_V1_CERTIFICATION_RUN="$RUN8" E2E_PROOF_RUN8="$RUN8" HTTP_RUNNER_RUN8="$RUN8" HTTP_RUNNER_MARKET=KM E2E_EXPECTED_DEPLOY_SHA="$SHA"
+          node scripts/recette/hub-v1-certification-runner.js --allow-remote-staging --run="$RUN8" --market=KM --stop-after=2 --dry-run
+          node scripts/recette/hub-v1-certification-runner.js --allow-remote-staging --run="$RUN8" --market=KM --stop-after=2
+          node scripts/recette/hub-v1-http-action-runner.js
+          node scripts/recette/hub-h1h9-sonnet-c345.js t5prep
+      - name: Preserve evidence
+        if: always() && (steps.arm.outputs.any == '1')
+        uses: actions/upload-artifact@v4
+        with:
+          name: hub-h1h9-sonnet-${{ github.run_id }}
+          path: |
+            test-results/hub-h1h9-sonnet
+            test-results/hub-v1-http
+          if-no-files-found: warn
+          retention-days: 30
