@@ -3,6 +3,11 @@ on:
   pull_request:
     paths:
       - 'services/commercial-taxonomy-semantics.js'
+      - 'services/commercial-category-agreement.js'
+      - 'services/sourcing-workspace.js'
+      - 'public/dashboards/canonical/js/catalog-workspace.js'
+      - 'tests/unit/commercial-category-agreement.test.js'
+      - 'tests/unit/sourcing-workspace.test.js'
       - 'services/catalog-candidate-product-service.js'
       - 'tests/unit/commercial-taxonomy-semantics.test.js'
       - '.github/workflows/semantic-commercial-classifier-proof.yml'
@@ -23,6 +28,9 @@ jobs:
       - name: Syntax checks
         run: |
           node --check services/commercial-taxonomy-semantics.js
+          node --check services/commercial-category-agreement.js
+          node --check services/sourcing-workspace.js
+          node --check public/dashboards/canonical/js/catalog-workspace.js
           node --check services/catalog-candidate-product-service.js
       - name: Semantic regression + 10000 replay + existing catalog tests
-        run: npx jest --config jest.unit.config.js tests/unit/commercial-taxonomy-semantics.test.js tests/unit/catalog-candidate-product-service.test.js tests/unit/supplier-commercial-category-mapping.test.js --runInBand --no-coverage
+        run: npx jest --config jest.unit.config.js tests/unit/commercial-taxonomy-semantics.test.js tests/unit/catalog-candidate-product-service.test.js tests/unit/supplier-commercial-category-mapping.test.js tests/unit/commercial-category-agreement.test.js tests/unit/sourcing-workspace.test.js --runInBand --no-coverage
