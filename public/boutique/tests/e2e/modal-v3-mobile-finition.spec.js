@@ -523,3 +523,55 @@ test.describe('PDP mobile retouches 2026-11 — Zoom ghost V5', () => {
     await expect(page.locator('#k-modal-overlay')).toHaveClass(/open/);
   });
 });
+
+test.describe('PDP mobile retouches 2026-11 — V4.1 alignement horizontal canonique', () => {
+  for (const viewport of VIEWPORTS) {
+    test(`gutter 18px sur identité, variantes, livraison et détails @ ${viewport.key}`, async ({ page }) => {
+      await openV4GalleryFixture(page, viewport, 'stress');
+      const values = await page.evaluate(() => {
+        const modal = document.getElementById('k-modal');
+        const rect = (selector) => document.querySelector(selector)?.getBoundingClientRect();
+        const outer = modal.getBoundingClientRect();
+        const price = rect('#k-modal-price');
+        const sku = rect('#k-modal-sku');
+        const variant = rect('#k-modal .k-vg-label');
+        const delivery = rect('#k-modal .k-mdm-delivery-heading');
+        const deliveryCard = rect('#k-modal .k-mdm-chip--delivery');
+        const details = rect('#k-modal .k-mdm-details-title');
+        const description = rect('#k-modal .k-mdm-desc-section');
+        const media = rect('#k-modal .k-modal-img-wrap');
+        const footer = rect('#k-modal > .k-modal-actions');
+        const config = rect('#k-modal .k-mdm-root');
+        const style = getComputedStyle(modal);
+        const left = (r) => r ? r.left - outer.left : null;
+        const right = (r) => r ? outer.right - r.right : null;
+        return {
+          gutter: parseFloat(style.getPropertyValue('--k-pdp-mobile-gutter')),
+          price: left(price), sku: left(sku), variant: left(variant),
+          delivery: left(delivery), deliveryCard: left(deliveryCard),
+          details: left(details), description: left(description),
+          cardRight: right(deliveryCard),
+          configPaddingRight: parseFloat(getComputedStyle(document.querySelector('#k-modal .k-mdm-root')).paddingRight),
+          mediaLeft: left(media),
+          rootOverflow: modal.scrollWidth - modal.clientWidth,
+          configOverflow: document.querySelector('.k-mdm-root').scrollWidth - document.querySelector('.k-mdm-root').clientWidth,
+          footerPresent: Boolean(footer && footer.width > 0 && footer.height > 0),
+          footerOutsideScroll: Boolean(footer && !document.querySelector('#k-modal > .k-modal-actions').closest('.k-modal-scroll')),
+        };
+      });
+      expect(values.gutter).toBe(18);
+      for (const key of ['price', 'sku', 'variant', 'delivery', 'deliveryCard', 'details', 'description']) {
+        expect(values[key], key + ' must align to canonical 18px inset').not.toBeNull();
+        expect(Math.abs(values[key] - 18), key + ' misaligned: ' + JSON.stringify(values)).toBeLessThanOrEqual(1.5);
+      }
+      expect(values.configPaddingRight).toBe(18);
+      expect(values.cardRight).toBeGreaterThanOrEqual(17);
+      expect(Math.abs(values.mediaLeft)).toBeLessThanOrEqual(1);
+      expect(values.rootOverflow).toBeLessThanOrEqual(1);
+      expect(values.configOverflow).toBeLessThanOrEqual(1);
+      expect(values.footerPresent).toBe(true);
+      expect(values.footerOutsideScroll).toBe(true);
+      if (viewport.key === '390x844') await shot(page, 'mobile-pdp-v41-gutter-18-390.png');
+    });
+  }
+});
