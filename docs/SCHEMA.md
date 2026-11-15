@@ -951,3 +951,24 @@ Migrations 391–394 appliquées sur Railway staging le 2026-11-04 à 13:09 UTC 
 
 `local_item_refund_reservations` est une nouvelle table **non live**, proposée par la migration 416 (#4114 / PR #4117). Chaque ligne représente une obligation financière réservée et non un paiement : commande et article, preuve d'incident, marché, encaissement cash ou Mobile Money d'origine, montant KMF de base et montant en unités mineures de la devise payée, quantité, clé d'événement et auteur admin. Une réservation est immuable en état `reserved` : aucun statut `confirmed`, aucune écriture `refunds`, crédit wallet ni modification de `qty_refunded`. La garde PostgreSQL bloque la remise physique concurrente et l'ouverture d'un second circuit PSP ou legacy. Le décaissement réel nécessite une future procédure séparée : identité du payeur, caisse / opérateur, rapprochement indépendant et autorisations ; cette migration ne déclenche aucun remboursement. Activation de l'endpoint admin limitée au staging et au flag explicite `FABLE_LOCAL_REFUND_RESERVATIONS_ENABLED=1` ; ce flag n'est pas activé par la migration. À intégrer après migration 415 de la PR F3 #4116, puis PostgreSQL / Chromium / finance à certifier avant tout GO.
 <!-- /schema-pending -->
+
+
+<!-- schema-pending: local_cash_refund_authorizations (migration 417, intended_migration_schema; not yet live) -->
+### F1 cash — autorisations contradictoires (migration 417 — intended_migration_schema)
+
+`local_cash_refund_authorizations` (non live) porte la dette `local_item_refund_reservations` réservée, son marché, le détenteur d'espèces, le validateur admin distinct, et **deux références de preuves papier contrôlées hors ligne** : encaissement par le payeur original et contrôle d'identité indépendant. Le rôle `agent_relais` doit correspondre au marché. L'identité du payeur ne peut **jamais** être inférée depuis `orders.user_id` ou `cash_collections.collected_by`.
+
+États : `approved` (aucun argent remis), `handoff_pending` (remise physique engagée, rejeu automatique interdit), `settled` (preuve de quittance enregistrée). Les preuves et les acteurs sont immuables. Cette table n'est pas une preuve machine de la validité des pièces d'identité.
+<!-- /schema-pending -->
+
+<!-- schema-pending: local_cash_refund_payouts (migration 417, intended_migration_schema; not yet live) -->
+### F1 cash — sortie de caisse prouvée et unique (migration 417 — intended_migration_schema)
+
+`local_cash_refund_payouts` (non live) enregistre **une** remise physique avec preuve de quittance signée, signature du payeur et attestation témoin. Une sortie n'est possible qu'après approbation distincte et engagement de remise, sous verrou de détenteur `cash_custody_lock` et plafond de la vue autoritaire `cash_custody_movements`. Le nouveau mouvement `CUSTOMER_REFUND` retranche le montant KMF au détenteur, sans aucun crédit wallet. Le trigger SQL insère dans la même transaction la ligne `refunds.completed`, augmente `order_items.qty_refunded` et clôt l'autorisation. Tout refus de garde ou contradiction annule l'intégralité des écritures. La quittance **papier signée** est l'autorité immédiate ; le reçu numérique est réconciliable après COMMIT et ne peut jamais annuler un décaissement physique confirmé.
+<!-- /schema-pending -->
+
+### refunds.local_cash_refund_payout_id (migration 417 — intended_migration_schema)
+
+Nouvelle colonne UUID nullable, FK restrictive et index UNIQUE sur `refunds.local_cash_refund_payout_id`, **non live** avant déploiement. Seuls les remboursements `cash_shortage:<reservation_id>` avec `refund_method='cash'`, montant exact et quittance de garde ont le droit d'utiliser cette colonne. Le trigger interdit un faux `completed`, toute modification ultérieure du remboursement local et tout chevauchement PSP/wallet. L'ancien schéma PSP reste intact.
+
+Migration 417 est uniquement un schéma visé. Ne pas lancer en production ni activer `FABLE_LOCAL_CASH_REFUND_HANDOFF_ENABLED` avant revue d'identité, preuve PG16/HTTP/Chromium et décision opérateur. Le parcours F2 Mobile Money reste distinct et non implémenté faute de remboursement opérateur vérifiable.
