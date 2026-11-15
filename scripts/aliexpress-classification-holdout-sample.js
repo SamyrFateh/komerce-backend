@@ -40,55 +40,63 @@ async function main(){
   const categories=discovery.categories(await invoke('aliexpress.ds.category.get',{})).slice(0,48);
   if(!feeds.length||!categories.length)throw new Error('ALIEXPRESS_FEEDS_OR_CATEGORIES_ABSENT');
   const selected=[], seen=new Set(), countByRoot=new Map(), failures={};
-  let calls=0,detailCalls=0;
-  for(const cat of categories){
+  const known=await db.query("SELECT supplier_product_id FROM sourcing_candidates WHERE supplier_name ILIKE 'ali%' AND supplier_product_id IS NOT NULL");
+  const knownIds=new Set(known.rows.map(row=>text(row.supplier_product_id)));
+  // Prioritize unfiltered feed pages: the provider's own product category
+  // evidence, not a requested category_id, determines a defensible root.
+  // Historical supplier workers default to AE; KM may return an empty feed.
+  const slots=[
+    ...feeds.flatMap(feed=>[1,2,3,4].map(page=>({feed,page,cat:null}))),
+    ...categories.flatMap(cat=>feeds.flatMap(feed=>[1,2].map(page=>({cat,feed,page})))),
+  ];
+  let calls=0,detailCalls=0,itemsSeen=0,idsSeen=0,unfilteredCalls=0;
+  for(const slot of slots){
     if(selected.length>=TARGET||calls>=MAX_FEED_CALLS)break;
-    const root=text(cat.name);
-    if(!root)continue;
-    for(const feed of feeds){
-      if(selected.length>=TARGET||calls>=MAX_FEED_CALLS||(countByRoot.get(root)||0)>=PER_ROOT)break;
-      for(let page=1;page<=2;page++){
-        if(selected.length>=TARGET||calls>=MAX_FEED_CALLS||(countByRoot.get(root)||0)>=PER_ROOT)break;
-        let payload;
-        calls++;
-        try {
-          payload=await invoke('aliexpress.ds.recommend.feed.get',{
-            country:'KM',target_currency:'USD',target_language:'EN',
-            page_size:50,page_no:page,category_id:cat.id,
-            sort:'volumeDesc',feed_name:feed,
-          });
-        }catch(e){
-          const reason=discovery.isEmptyResultError(e)?'EMPTY_FEED':'FEED_ERROR';
-          failures[reason]=(failures[reason]||0)+1;
-          if(reason==='FEED_ERROR')console.warn('FABLE_FEED_ERROR '+JSON.stringify({category_id:cat.id,reason,code:String(e.code||'').slice(0,60)}));
-          continue;
-        }
-        const items=base.flattenFeedProducts(payload);
-        for(const item of items){
-          if(selected.length>=TARGET||(countByRoot.get(root)||0)>=PER_ROOT)break;
-          const id=text(base.extractProductId(item.product_id||item.itemId));
-          if(!/^\d{5,20}$/.test(id)||seen.has(id))continue;
-          seen.add(id);
-          let name=text(item.product_title||item.subject||item.product_name);
-          if(!name&&detailCalls<MAX_DETAIL_CALLS){
-            detailCalls++;
-            try{
-              const detail=await base.fetchProductDetail(id,{countryCode:'KM',env});
-              const data=discovery.unwrap(detail);
-              name=text(data?.ae_item_base_info_dto?.subject||data?.result?.ae_item_base_info_dto?.subject);
-            }catch(e){failures.DETAIL_ERROR=(failures.DETAIL_ERROR||0)+1;}
-            await sleep(550);
-          }
-          if(!name)continue;
-          const path=sourcePath(item,cat.name);
-          if(!path.path)continue;
-          selected.push({supplier_name:'AliExpress',supplier_product_id:id,product_name:name,
-            supplier_category:path.path,path_evidence:path.provenance,provider_category_id:cat.id});
-          countByRoot.set(root,(countByRoot.get(root)||0)+1);
-        }
-        await sleep(220);
-      }
+    const {feed,page,cat}=slot;
+    let payload;
+    calls++;
+    if(!cat)unfilteredCalls++;
+    try {
+      payload=await invoke('aliexpress.ds.recommend.feed.get',{
+        country:'AE',target_currency:'USD',target_language:'EN',
+        page_size:50,page_no:page,
+        ...(cat?.id?{category_id:cat.id}:{}),
+        sort:'volumeDesc',feed_name:feed,
+      });
+    }catch(e){
+      const reason=discovery.isEmptyResultError(e)?'EMPTY_FEED':'FEED_ERROR';
+      failures[reason]=(failures[reason]||0)+1;
+      if(reason==='FEED_ERROR')console.warn('FABLE_FEED_ERROR '+JSON.stringify({category_id:cat?.id||null,reason,code:String(e.code||'').slice(0,60)}));
+      continue;
     }
+    const items=base.flattenFeedProducts(payload);
+    itemsSeen+=items.length;
+    idsSeen+=discovery.productIds(payload).length;
+    for(const item of items){
+      if(selected.length>=TARGET)break;
+      const id=text(base.extractProductId(item.product_id||item.itemId));
+      if(!/^\\d{5,20}$/.test(id)||seen.has(id)||knownIds.has(id))continue;
+      const path=sourcePath(item,cat?.name||null);
+      if(!path.path)continue;
+      const root=text(path.path.split(' > ')[0]);
+      if(!root||(countByRoot.get(root)||0)>=PER_ROOT)continue;
+      let name=text(item.product_title||item.subject||item.product_name);
+      if(!name&&detailCalls<MAX_DETAIL_CALLS){
+        detailCalls++;
+        try{
+          const detail=await base.fetchProductDetail(id,{countryCode:'AE',env});
+          const data=discovery.unwrap(detail);
+          name=text(data?.ae_item_base_info_dto?.subject||data?.result?.ae_item_base_info_dto?.subject);
+        }catch(e){failures.DETAIL_ERROR=(failures.DETAIL_ERROR||0)+1;}
+        await sleep(550);
+      }
+      if(!name)continue;
+      seen.add(id);
+      selected.push({supplier_name:'AliExpress',supplier_product_id:id,product_name:name,
+        supplier_category:path.path,path_evidence:path.provenance,provider_category_id:cat?.id||''});
+      countByRoot.set(root,(countByRoot.get(root)||0)+1);
+    }
+    await sleep(220);
   }
   const headers=['supplier_name','supplier_product_id','product_name','supplier_category','path_evidence','provider_category_id'];
   const csv=[headers.map(csvCell).join(','),...selected.map(row=>headers.map(h=>csvCell(row[h])).join(','))].join('\n')+'\n';
@@ -98,7 +106,7 @@ async function main(){
   const roots=new Set(selected.map(x=>x.supplier_category.split(' > ')[0])).size;
   const result={status:selected.length>=200&&roots>=8&&full>=200?'SUFFICIENT_RAW_HOLDOUT':'PARTIAL_RAW_HOLDOUT',
     selected:selected.length,distinct_roots:roots,full_supplier_paths:full,feed_root_only:rootOnly,
-    category_filter_only:selected.length-full-rootOnly,feed_calls:calls,detail_calls:detailCalls,
+    category_filter_only:selected.length-full-rootOnly,feed_calls:calls,unfiltered_feed_calls:unfilteredCalls,raw_feed_items:itemsSeen,provider_ids:idsSeen,known_staging_ids:knownIds.size,detail_calls:detailCalls,
     failures,sha256:hash,provider_calls:calls+detailCalls+2,product_writes:0,
     note:'Reference labels still require independent human review; no automatic classification certified'};
   console.log('FABLE_HOLDOUT_RESULT='+JSON.stringify(result));
