@@ -1439,7 +1439,34 @@ html.k-mobile-premium-v1 .k-chip-label {
   }
 
   .k-shelf-rail .k-cat-cutout.active .k-chip-photo::before {
-    opacity: .28;
+    bottom: -3px;
+    width: 58px;
+    height: 38px;
+    background: radial-gradient(ellipse, var(--green-valid) 0%, var(--green-valid) 25%, transparent 73%);
+    filter: blur(2px);
+    opacity: .68;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .k-shelf-rail .k-cat-cutout.active::after {
+      content: '';
+      position: absolute;
+      inset: 1px calc((100% - 46px) / 2) auto;
+      height: 32px;
+      z-index: 2;
+      border-radius: 50%;
+      background-image: linear-gradient(112deg, transparent 37%, var(--white) 50%, transparent 63%);
+      background-size: 240% 100%;
+      background-repeat: no-repeat;
+      pointer-events: none;
+      animation: k-category-selection-shine .68s ease-out both;
+    }
+  }
+
+  @keyframes k-category-selection-shine {
+    0% { background-position: 100% 0; opacity: 0; }
+    35%, 65% { opacity: .77; }
+    100% { background-position: 0 0; opacity: 0; }
   }
 
   .k-shelf-rail .k-cat-cutout.active .k-chip-photo::after {
