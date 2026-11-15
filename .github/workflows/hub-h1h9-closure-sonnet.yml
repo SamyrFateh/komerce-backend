@@ -82,6 +82,7 @@ jobs:
         run: |
           n=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?status=in_progress&per_page=50" --jq "[.workflow_runs[] | select(.id != ${GITHUB_RUN_ID} and (.name|test(\"staging|chromium|g6|recette|hub-v1|e2e|certif\";\"i\")))] | length")
           echo "other in_progress runs: $n"
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs?status=in_progress&per_page=50" --jq ".workflow_runs[] | select(.id != ${GITHUB_RUN_ID}) | \"\(.id) \(.name)\""
           test "$n" = "0"
       - name: Require precise Railway database target
         if: steps.arm.outputs.T9_CREATE == '1' || steps.arm.outputs.T9_CHECK == '1' || steps.arm.outputs.ARMED == '1'
