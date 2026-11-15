@@ -741,3 +741,39 @@ describe('b-modal-mobile-product — série produit meta hero (M6, spec §5.2, c
     expect(cat.hidden).toBe(true);
   });
 });
+
+
+describe('PDP mobile — axes localisés sans mutation de variante SKU', () => {
+  beforeEach(() => { jest.clearAllMocks(); installDom(); });
+
+  test('Color/Size sont des libellés UI Couleur/Taille, Navy Blue reçoit un bleu marine et le SKU reste identique', () => {
+    const detail = baseDetail({
+      inventory_model: 'SKU',
+      option_axes: [
+        { key: 'Color', display_name: 'Color', values: [{ value: 'Navy Blue', thumbnail_url: null }, { value: 'Black', thumbnail_url: null }] },
+        { key: 'Size', display_name: 'Size', values: [{ value: '2XL', thumbnail_url: null }, { value: 'XL', thumbnail_url: null }] },
+      ],
+      sellable_units: [{ sku_id: 'sku-2xl', stock_status: 'AVAILABLE', available_quantity: 4 }],
+    });
+    const selection = baseSelection({
+      selection_supported: true,
+      selected_sku_id: 'sku-2xl',
+      selected_options: { Color: 'Navy Blue', Size: '2XL' },
+      option_states: {
+        Color: [{ value: 'Navy Blue', state: 'AVAILABLE' }, { value: 'Black', state: 'AVAILABLE' }],
+        Size: [{ value: '2XL', state: 'AVAILABLE' }, { value: 'XL', state: 'AVAILABLE' }],
+      },
+    });
+    renderMobileProductDetail(detail, selection);
+    const labels = [...document.querySelectorAll('.k-vg-label-type')].map((x) => x.textContent);
+    expect(labels).toEqual(['Couleur', 'Taille']);
+    const color = document.querySelector('.k-vg[data-axis-key="Color"] [data-option-value="Navy Blue"]');
+    expect(color.getAttribute('aria-label')).toContain('Couleur Navy Blue');
+    expect(color.querySelector('.k-sku-color-dot').style.background).toBe('rgb(13, 47, 86)');
+    const size = document.querySelector('.k-vg[data-axis-key="Size"] [data-option-value="2XL"]');
+    expect(size.getAttribute('aria-pressed')).toBe('true');
+    expect(state.modalSelection.selected_sku_id).toBe('sku-2xl');
+    expect(state.modalSelection.selected_options).toEqual({ Color: 'Navy Blue', Size: '2XL' });
+  });
+});
+
