@@ -1,6 +1,6 @@
 # Classification Sourcing : mesure CJ498 (rapport de synthèse)
 
-Rejeu hors ligne de `tests/fixtures/cj-real-498-20261112.json`, sans appel fournisseur ni écriture. Reproduire : `python3 -I eval.py && python3 -I sim.py` (sortie attendue : `RESULTATS.txt`).
+Rejeu hors ligne de `tests/fixtures/cj-real-498-20261112.json`, sans appel fournisseur ni écriture. Reproduire : `python3 -I eval.py && python3 -I sim.py && python3 -I ali_eval.py` (sortie attendue : `RESULTATS.txt`).
 
 | Mesure | Placés | Précision catégorie | Précision feuille |
 |---|---|---|---|
@@ -21,10 +21,10 @@ Causes des 444 non classés sur `main` : aucune règle hors vêtements 252 ; che
 Limites de la preuve
 - `gold.py` = étiquetage Fable, non validé par un humain.
 - Le lexique de `sim.py` a été écrit après lecture des 498 titres : mesure non aveugle, optimiste.
-- AliExpress : NOT_PROVEN. L'API publique du staging n'expose ni titre fournisseur ni chemin ; aucune archive brute dans le dépôt. Investigation arrêtée (coût > bénéfice sans accès base).
+- AliExpress (`ali_eval.py`, export staging du 15/11, lexique inchangé) : 19 produits, 10 placés (53 %), 10/10 justes ; 2 objets mal reconnus arrêtés par la branche ; 7 sans objet reconnu. Lot trop petit (2 racines) pour conclure.
 
 Verdict : **GO conditionnel** pour l'implémentation de la règle « objet + branche concordante ».
 1. Livrer derrière un drapeau, en mode suggestion, sans écriture automatique.
 2. Validation humaine de 150 étiquettes tirées par strate ; écart toléré ≤ 5 %.
-3. Lot brut AliExpress jamais vu (≥ 200 produits, titre et chemin fournisseur) : activer l'automatique seulement si précision catégorie ≥ 95 % ; sinon rester en suggestion.
+3. Lot brut AliExpress élargi (≥ 200 produits, toutes racines ; 19 obtenus) : activer l'automatique seulement si précision catégorie ≥ 95 % ; sinon rester en suggestion.
 4. Désaccord ou ambiguïté : revue groupée dans le Catalogue global (décision 4).

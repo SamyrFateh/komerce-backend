@@ -35,3 +35,23 @@ objet reconnu mais chemin en désaccord 158 dont objet juste 135
 E  objet + (chemin OU Discovery) d’accord: placés 461/498 (92.6%) dont feuille 444, parent 17 | précision catégorie 439/461 (95.2%) | précision feuille 413/444 (93.0%) | catégorie fausse 22
 reste après C 186 groupes (objet × branche) 68 | top 12 couvrent 87
 groupes par famille d’objet seule 21 [(('Créations personnelles', 'Cadeau'), 24), (('Maison', 'Déco'), 21), (None, 15), (('Maison', 'Cuisine'), 12), (('Tech', 'Phones'), 12), (('Créations personnelles', 'Impression'), 12), (('Bricolage', 'Sécurité'), 11), (('Auto', 'Éclairage'), 11)]
+ALIEXPRESS n=19 | objet reconnu 12 dont catégorie juste 10 | règle retenue : placés 10 (53%), catégorie juste 10/10, feuille juste 10/10
+REVUE | objet=('Maison', 'Rangement') | branche=Auto | attendu=Auto/Accessoires | 1pcs Leather Car Seat Gap Organizer Multifunctio
+REVUE | objet=None | branche=Auto | attendu=Auto/Accessoires | Leg Support Extension Seat Cover For Tesla 2026 
+REVUE | objet=None | branche=Tech | attendu=Tech/Phones | For Honor Magic8 Pro Air Case Simple Transparent
+REVUE | objet=None | branche=Auto | attendu=Auto/Accessoires | Car Tachometer Cover Stickers for Mini Cooper F5
+AUTO  | objet=('Tech', 'Phones') | branche=Tech | attendu=Tech/Phones|Auto/Accessoires | Toocki 120W Mini Car Charger Qi2.2 45W Max USB C
+AUTO  | objet=('Tech', 'Phones') | branche=Tech | attendu=Tech/Phones | For OPPO Reno 11 Pro Reno11 11Pro Reno11Pro Chin
+AUTO  | objet=('Tech', 'Phones') | branche=Tech | attendu=Tech/Phones | Matte Armor Magnetic Wireless Charging Phone Cas
+REVUE | objet=('Bricolage', 'Sécurité') | branche=Tech | attendu=Tech/Phones | Translucent Magnetic For Magsafe Case For iPhone
+AUTO  | objet=('Tech', 'Phones') | branche=Tech | attendu=Tech/Phones | Leopard Pattern Wrist Strap Silicone Phone Case 
+AUTO  | objet=('Tech', 'Phones') | branche=Tech | attendu=Tech/Phones | Cute Leopard Print Clear Phone Case For iPhone 1
+AUTO  | objet=('Tech', 'Phones') | branche=Tech | attendu=Tech/Phones | One P-Piece Luffys Wanted Notice Phone Case For 
+REVUE | objet=None | branche=Tech | attendu=Sport|X | Treadmill Support Frame Fixed Running Support Wr
+AUTO  | objet=('Tech', 'Phones') | branche=Tech | attendu=Tech/Phones|Auto/Accessoires | Essager 80W USB Car Charger PD USB Type C Quick 
+REVUE | objet=None | branche=Tech | attendu=Tech/Phones | Anime H-Hunter X Hunter Gon Killua Case for Sams
+AUTO  | objet=('Tech', 'Phones') | branche=Tech | attendu=Tech/Phones | Essager 30W Type C Travel Charger Portable USB C
+REVUE | objet=None | branche=Tech | attendu=Tech/Phones | Crystal Silicone Soft TPU Case For Samsung Galax
+REVUE | objet=None | branche=Auto | attendu=Auto/Accessoires | BUTURE 5500A Car Jump Starter BC02 Power Bank Po
+AUTO  | objet=('Tech', 'Phones') | branche=Tech | attendu=Tech/Phones|Auto/Accessoires | Baseus 160W Magnetic Car Charger Type-C for Xiao
+AUTO  | objet=('Tech', 'Phones') | branche=Tech | attendu=Tech/Phones|Maison/Rangement | 10/20/50PCS Cable Organizer Clips Wire Winder Ho
