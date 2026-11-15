@@ -154,6 +154,64 @@ async function main(env = process.env) {
     }
     report.operator_market_access = operatorMarkets;
 
+    // Diagnostic G13 = lectures SQL et GET authentifiés uniquement. Aucun POST,
+    // aucun reclassement du WATCH, aucune suggestion de conversion KMF/XAF.
+    if (phaseSel === 'diagnose') {
+      if (execute) throw new Error('G13_DIAGNOSTIC_MUST_BE_READ_ONLY');
+      report.diagnostics = [];
+      for (const entry of MANIFEST.entries) {
+        const candidate = await findCandidate(db, entry);
+        const row = {
+          id: entry.id, source: entry.source, category: entry.category,
+          candidate_ref: candidate?.candidate_ref || null,
+          product_ref: candidate?.product_ref || null,
+          sourcing_decision: candidate?.decision || null,
+          lifecycle: candidate?.lifecycle_status || null,
+          economic_reason: null, source_currency: null,
+          sku_count: 0, stocked_skus: 0, supplier_links: 0,
+          price_markets: {},
+        };
+        if (candidate) {
+          const [scan] = await ro(db,
+            `SELECT scan_result->>'reason' AS economic_reason, currency AS source_currency FROM sourcing_candidates WHERE candidate_ref=$1`,
+            [candidate.candidate_ref]);
+          row.economic_reason = scan?.economic_reason || null;
+          row.source_currency = scan?.source_currency || null;
+        }
+        if (candidate?.product_id) {
+          const [skus] = await ro(db,
+            `SELECT COUNT(*) FILTER (WHERE is_active = TRUE)::int AS active, COUNT(*) FILTER (WHERE is_active = TRUE AND stock > 0)::int AS stocked FROM product_skus WHERE product_id=$1`,
+            [candidate.product_id]);
+          row.sku_count = Number(skus?.active || 0);
+          row.stocked_skus = Number(skus?.stocked || 0);
+          const [links] = await ro(db,
+            `SELECT COUNT(*)::int AS n FROM product_suppliers ps JOIN suppliers s ON s.id=ps.supplier_id AND s.is_active=TRUE AND s.deleted_at IS NULL WHERE ps.product_id=$1 AND ps.is_active=TRUE AND ps.deleted_at IS NULL`,
+            [candidate.product_id]);
+          row.supplier_links = Number(links?.n || 0);
+        }
+        for (const market of MANIFEST.markets) {
+          if (!candidate?.product_ref) {
+            row.price_markets[market] = {status:'NO_PRODUCT'};
+            continue;
+          }
+          const res = await operator.call('GET',
+            `/api/admin/workspaces/pricing/market/${market}/corridor?product_ref=${encodeURIComponent(candidate.product_ref)}`);
+          const eco = res.body?.selected?.economics || {};
+          const currency = CURRENCY[market].toLowerCase();
+          row.price_markets[market] = {
+            http_status:res.status, currency:CURRENCY[market],
+            reference_amount:res.ok ? referenceAmount(res.body,market) : null,
+            local_price_keys:Object.keys(eco).filter(key=>key.includes(currency) && /price|minimum|coverage/i.test(key)),
+            blockers:(res.body?.blockers || res.body?.selected?.blockers || []).slice?.(0,6) || [],
+            error_code:res.body?.code || res.body?.selected?.code || null,
+          };
+        }
+        report.diagnostics.push(row);
+      }
+      report.verdict = 'DIAGNOSTIC_OK_NOT_G13_GO';
+      return report;
+    }
+
     const wanted = phaseSel === 'all' ? PHASES : [phaseSel];
     const execute = mode === 'execute';
     if (phaseSel === 'import-now') {
