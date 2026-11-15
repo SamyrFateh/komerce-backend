@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   chromium:
-    name: 7 isolated Hub PO click proofs · no staging/credentials/database
+    name: 10 isolated Hub UI click and alert proofs · no staging/credentials/database
     if: >-
       (github.event_name == 'issues' &&
        github.event.issue.user.login == github.repository_owner &&
@@ -37,7 +37,7 @@ jobs:
       - run: npm ci
       - name: Install real Chromium
         run: npx playwright install --with-deps chromium
-      - name: Seven genuine GUI clicks against canonical Hub PO JavaScript, without HTTP
+      - name: Seven PO clicks and three T3/T9/T10 tasks in real Chromium, without HTTP
         run: npx playwright test --config=playwright.g2-hub-po-isolated.config.js
       - name: Archive only synthetic data and screenshots (no secrets)
         if: always()
@@ -51,4 +51,4 @@ jobs:
         if: always()
         shell: bash
         run: |
-          echo "G2 Hub PO: browser clicks use the real production UI module in Chromium with *controlled isolated in-memory* dossier states. No network, no authenticated backend, no PG readback, no staging mutation. Not a 13-step transactional certification. G2 staging HOLD and G4 NOT_PROVEN remain unchanged." >> "$GITHUB_STEP_SUMMARY"
+          echo "G2 Hub PO + T3/T9/T10: browser clicks and alerts use the real production UI module in Chromium with *controlled isolated in-memory* dossier states. No network, no authenticated backend, no PG readback, no staging mutation. Not a 13-step transactional certification. G2 staging HOLD and G4 NOT_PROVEN remain unchanged." >> "$GITHUB_STEP_SUMMARY"

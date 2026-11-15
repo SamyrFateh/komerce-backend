@@ -351,7 +351,7 @@
      modal-shell.css. Grille 4 cols à 1024+, 5 sur large : ce bloc. ── */
   #k-modal-suggestions.k-modal-suggestions--desktop-list {
     background: var(--page-bg);
-    padding: 34px clamp(32px, 5vw, 72px) 56px;
+    padding: 8px clamp(18px, 2vw, 32px) 24px;
   }
 
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-title {
@@ -360,8 +360,8 @@
 
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-title-text {
     font-family: var(--font-display, var(--font));
-    font-size: 15px;
-    font-weight: 500;
+    font-size: 19px;
+    font-weight: 650;
     line-height: 1.2;
     letter-spacing: -.01em;
     color: var(--text);
@@ -383,7 +383,7 @@
     #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid,
     #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--same,
     #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--other {
-      grid-template-columns: repeat(5, 1fr);
+      grid-template-columns: repeat(3, minmax(0, 1fr));
     }
   }
 }
