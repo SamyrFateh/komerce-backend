@@ -2,8 +2,8 @@
   "generatedAt": "2026-11-15T10:03:16.568Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 844,
-    "protected": 785,
+    "total": 846,
+    "protected": 787,
     "public": 59,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -6162,6 +6162,20 @@
       "key": "POST /webhook/meta-whatsapp",
       "level": "PUBLIC",
       "roles": []
+    },
+    {
+      "key": "GET /api/admin/orders/local-refunds",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/relay/local-cash-refunds",
+      "level": "PROTECTED",
+      "roles": [
+        "agent_relais"
+      ]
     }
   ]
 }
