@@ -595,7 +595,8 @@ async function restoreSourceMediaOnly(client, productId, contract) {
  */
 async function restoreMissingSourceSkusOnly(client, productId, contract) {
   validateForPromotion(contract);
-  const units = contract?.sellable_units;
+  const units = Array.isArray(contract?.sellable_units)
+    ? contract.sellable_units.filter(unit=>unit?.is_active!==false) : null;
   if (!Array.isArray(units) || units.length === 0)
     throw Object.assign(new Error('Unités V2 manquantes'), {status:422,code:'source_skus_missing'});
   const { normalizeIdentity } = require('./suppliers/supplier-order-identity');
@@ -603,7 +604,7 @@ async function restoreMissingSourceSkusOnly(client, productId, contract) {
   for (const unit of units) {
     const sku = String(unit?.supplier_sku || '').trim();
     const ref = String(unit?.supplier_unit_ref || '').trim();
-    if (!sku || !ref || seen.has(sku) || unit?.is_active === false)
+    if (!sku || !ref || seen.has(sku))
       throw Object.assign(new Error('SKU source inactif, incomplet ou doublonné'), {status:409,code:'source_sku_not_exact'});
     seen.add(sku);
     const identity=normalizeIdentity(unit.supplier_order_identity,ref);
