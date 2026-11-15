@@ -587,8 +587,44 @@ async function restoreSourceMediaOnly(client, productId, contract) {
   return [...byId.keys()];
 }
 
+/**
+ * G13 recovery: restore missing supplier SKU identities on an already-linked
+ * inactive Catalogue draft. The Sourcing authority owns target selection,
+ * transaction + locks; Catalog owns this *existing* SKU reconciliation writer.
+ * No replay of title, media, content, inventory cutover, price or approval.
+ */
+async function restoreMissingSourceSkusOnly(client, productId, contract) {
+  validateForPromotion(contract);
+  const units = contract?.sellable_units;
+  if (!Array.isArray(units) || units.length === 0)
+    throw Object.assign(new Error('Unités V2 manquantes'), {status:422,code:'source_skus_missing'});
+  const { normalizeIdentity } = require('./suppliers/supplier-order-identity');
+  const seen = new Set();
+  for (const unit of units) {
+    const sku = String(unit?.supplier_sku || '').trim();
+    const ref = String(unit?.supplier_unit_ref || '').trim();
+    if (!sku || !ref || seen.has(sku) || unit?.is_active === false)
+      throw Object.assign(new Error('SKU source inactif, incomplet ou doublonné'), {status:409,code:'source_sku_not_exact'});
+    seen.add(sku);
+    const identity=normalizeIdentity(unit.supplier_order_identity,ref);
+    if(identity.provider !== 'cj')
+      throw Object.assign(new Error('Identité SKU non CJ'), {status:409,code:'source_sku_provider_mismatch'});
+  }
+  const {rows:[count]}=await client.query(
+    'SELECT COUNT(*)::int AS n FROM product_skus WHERE product_id=$1',
+    [productId]);
+  if(Number(count.n)!==0)
+    throw Object.assign(new Error('Le produit possède déjà des SKU ; réparation interdite'), {status:409,code:'source_skus_already_exist'});
+  await promoteAxes(client,productId,contract.option_axes);
+  const mapped=await promoteSkus(client,productId,units);
+  if(mapped.size!==units.length)
+    throw Object.assign(new Error('Réconciliation des SKU incomplète'), {status:409,code:'source_sku_recovery_partial'});
+  return {restored: mapped.size};
+}
+
 module.exports = {
   restoreSourceMediaOnly,
+  restoreMissingSourceSkusOnly,
   validateForPromotion,
   promoteCatalog,
   _promoteContentProfile: promoteContentProfile,
