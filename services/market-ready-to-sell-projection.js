@@ -31,6 +31,18 @@ function positive(value) {
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
+// Cost economics provide an informational decision reference. They are never
+// a competitor observation or an automatic market pricing decision.
+function costReferenceKmf(economics) {
+  const variableCost = positive(economics?.variable_cost_complete_kmf);
+  const recommended = positive(economics?.coverage_reference_price_kmf);
+  const safe = positive(economics?.minimum_safe_price_kmf);
+  if (variableCost == null || recommended == null || recommended < variableCost) return null;
+  if (safe != null && recommended < safe) return null;
+  if (economics?.strategy_risk === 'destructive') return null;
+  return recommended;
+}
+
 function decisionState({ priceActive, shapeCompatible, proposalAmount, corridorStatus, viability }) {
   if (priceActive) return { key: 'READY', label: 'Prix actif · prêt à exposer', tone: 'positive' };
   if (!shapeCompatible) return { key: 'BLOCKED', label: 'Bloqué · prix SKU/variante', tone: 'critical' };
@@ -152,24 +164,29 @@ async function buildReadyToSell({
         return Number.isFinite(local) && local > 0 ? Math.round(local * 100) / 100 : null;
       } catch (_) { return null; }
     }
-    const [variableLocal, landedLocal, minimumSafeLocal] = await Promise.all([
+    const [variableLocal, landedLocal, minimumSafeLocal, economicReferenceLocal] = await Promise.all([
       localCost(costEconomics?.variable_cost_complete_kmf),
       localCost(costEconomics?.landed_relay_cost_kmf),
       localCost(costEconomics?.minimum_safe_price_kmf),
+      localCost(costReferenceKmf(costEconomics)),
     ]);
     const priceDecision = priceByProduct.get(String(product.id)) || null;
     const priceActive = priceDecision?.status === ACTIVE_PRICE;
     const local = corridor?.corridor?.local || null;
     const existingAmount = positive(priceDecision?.amount);
     const targetAmount = positive(local?.target?.observed_amount);
-    const proposalAmount = priceActive ? existingAmount : (existingAmount || targetAmount);
+    // A local price corridor remains optional. Without observations a price
+    // suggestion may be projected from cost economics, but never bulk-activated.
+    const proposalAmount = priceActive ? existingAmount : (existingAmount || targetAmount || economicReferenceLocal);
     const proposalSource = priceActive
       ? 'LOCAL_ACTIVE'
       : existingAmount
         ? 'EXISTING_LOCAL_DECISION'
         : targetAmount
           ? 'MARKET_TARGET'
-          : 'NONE';
+          : economicReferenceLocal
+            ? 'ECONOMIC_REFERENCE_TO_CONFIRM'
+            : 'NONE';
     const viability = local?.viability?.status || null;
     const state = decisionState({
       priceActive,
@@ -210,6 +227,7 @@ async function buildReadyToSell({
       landed_relay_cost_kmf: positive(costEconomics?.landed_relay_cost_kmf),
       landed_relay_cost_local: landedLocal,
       minimum_safe_price_local: minimumSafeLocal,
+      economic_reference_local: economicReferenceLocal,
       cost_quality: costEconomics?.data_quality || null,
       corridor: {
         status: local?.status || 'UNAVAILABLE',
@@ -252,4 +270,4 @@ async function buildReadyToSell({
   };
 }
 
-module.exports = { ACTIVE_PRICE, APPROVAL_CAPABILITIES, decisionState, buildReadyToSell };
+module.exports = { ACTIVE_PRICE, APPROVAL_CAPABILITIES, costReferenceKmf, decisionState, buildReadyToSell };
