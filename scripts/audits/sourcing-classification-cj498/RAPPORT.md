@@ -1,30 +1,31 @@
-# Classification Sourcing : mesure CJ498 (rapport de synthèse)
+# Classification Sourcing : mesure CJ498 + lot AliExpress jamais vu (synthèse)
 
-Rejeu hors ligne de `tests/fixtures/cj-real-498-20261112.json`, sans appel fournisseur ni écriture. Reproduire : `python3 -I eval.py && python3 -I sim.py && python3 -I ali_eval.py` (sortie attendue : `RESULTATS.txt`).
+Rejeu hors ligne, sans appel fournisseur ni écriture. Reproduire :
+`python3 -I eval.py && python3 -I sim.py && python3 -I ali_eval.py && python3 -I ali216_eval.py` (sortie attendue : `RESULTATS.txt`).
 
-| Mesure | Placés | Précision catégorie | Précision feuille |
+| Règle « objet identifié + branche fournisseur concordante » | Placés | Précision catégorie | Précision feuille |
 |---|---|---|---|
-| `main` actuel (vêtements seulement) | 54 (10,8 %) | 100 % | 100 % |
-| Objet du titre seul | 483 (97,0 %) | 93,6 % | 91,4 % |
-| **Règle retenue : objet + branche fournisseur d'accord** | **312 (62,7 %)** | **98,4 %** | **97,3 %** |
-| Objet + Discovery d'accord (écarté, décision 1) | 412 (82,7 %) | 95,6 % | 93,5 % |
+| CJ498 (réglage, non aveugle) | 312 / 498 (62,7 %) | 98,4 % | 97,3 % |
+| **AliExpress 216 (jamais vu, lexique gelé)** | **95 / 216 (44,0 %)** | **100 % (95/95)** | **93,3 % (84/90)** |
+| AliExpress 19 (staging) | 10 / 19 | 10/10 | 10/10 |
+| Référence : `main` actuel sur CJ498 | 54 / 498 (10,8 %) | 100 % | 100 % |
 
-Causes des 444 non classés sur `main` : aucune règle hors vêtements 252 ; chemin fournisseur faux 105 ; titre générique CJ 54 ; feuille absente 20 ; aucun rayon actif 13. Racine CJ seule juste à 69,6 %.
-
-Écarts à connaître
-- Règle retenue : 5 catégories fausses sur 312, 8 feuilles fausses sur 299.
-- Reste en revue : 186 produits, 68 groupes (objet × branche), 21 familles d'objet.
-- En désaccord objet / branche (158), l'objet a raison 135 fois : bonne suggestion de revue, pas une preuve.
-- Décision 2 appliquée : vêtements enfants = `Mode & Beauté / Enfant`. La racine CJ « Toys, Kids & Babies » pointe vers `Enfant` : ces vêtements partent en revue tant que la table des branches n'est pas affinée.
-- Objectif 90 % placés à 95 % de précision : non atteint en automatique avec des preuves fiables (62,7 %).
+Lecture du lot AliExpress 216 (9 racines fournisseur)
+- Aucune catégorie fausse sur 95 placements ; borne basse à 95 % de confiance : 96 %.
+- Feuille sous le seuil de 95 % : 6 erreurs sur 90 (4 genres de chaussures, 2 accessoires PC rangés en Phones).
+- Couverture faible : objet reconnu 143 / 216 (66 %), dont 103 dans la bonne catégorie ; 73 sans objet reconnu.
+- Désaccord objet / branche : 47, où l'objet n'a raison que 7 fois (135 / 158 sur CJ). Hors CJ, l'objet seul
+  n'est pas fiable : c'est la branche qui protège. Auto 2 / 40 et Computer 5 / 40 placés : lexique à étendre.
+- Table des racines AliExpress : 8 lignes, écrite depuis les noms de chemins ; 2 produits sans racine connue.
 
 Limites de la preuve
-- `gold.py` = étiquetage Fable, non validé par un humain.
-- Le lexique de `sim.py` a été écrit après lecture des 498 titres : mesure non aveugle, optimiste.
-- AliExpress (`ali_eval.py`, export staging du 15/11, lexique inchangé) : 19 produits, 10 placés (53 %), 10/10 justes ; 2 objets mal reconnus arrêtés par la branche ; 7 sans objet reconnu. Lot trop petit (2 racines) pour conclure.
+- Étiquettes de référence (498 + 216) posées par Fable, non validées par un humain.
+- Le lexique a été réglé sur CJ498 : seul le lot AliExpress 216 est une mesure indépendante.
+- Lot AliExpress : 9 racines, 23 branches ; bijoux, beauté, maison, bricolage non couverts.
 
-Verdict : **GO conditionnel** pour l'implémentation de la règle « objet + branche concordante ».
-1. Livrer derrière un drapeau, en mode suggestion, sans écriture automatique.
-2. Validation humaine de 150 étiquettes tirées par strate ; écart toléré ≤ 5 %.
-3. Lot brut AliExpress élargi (≥ 200 produits, toutes racines ; 19 obtenus) : activer l'automatique seulement si précision catégorie ≥ 95 % ; sinon rester en suggestion.
-4. Désaccord ou ambiguïté : revue groupée dans le Catalogue global (décision 4).
+Verdict : **GO conditionnel**
+1. GO pour implémenter la règle au niveau **catégorie**, derrière un drapeau.
+2. Feuille automatique : NO GO en l'état (93,3 %) ; la proposer en suggestion, à confirmer en revue.
+3. Avant activation : validation humaine de 150 étiquettes tirées par strate (écart toléré ≤ 5 %).
+4. Étendre le lexique d'objets (auto, informatique, coques) puis rejouer sur un lot neuf, jamais sur celui-ci.
+5. Désaccord, ambiguïté ou racine inconnue : revue groupée dans le Catalogue global. Discovery : aide à la revue seulement.

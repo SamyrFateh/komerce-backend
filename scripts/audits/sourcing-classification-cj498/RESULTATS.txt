@@ -55,3 +55,21 @@ REVUE | objet=None | branche=Tech | attendu=Tech/Phones | Crystal Silicone Soft 
 REVUE | objet=None | branche=Auto | attendu=Auto/Accessoires | BUTURE 5500A Car Jump Starter BC02 Power Bank Po
 AUTO  | objet=('Tech', 'Phones') | branche=Tech | attendu=Tech/Phones|Auto/Accessoires | Baseus 160W Magnetic Car Charger Type-C for Xiao
 AUTO  | objet=('Tech', 'Phones') | branche=Tech | attendu=Tech/Phones|Maison/Rangement | 10/20/50PCS Cable Organizer Clips Wire Winder Ho
+ALIEXPRESS-216 n=216 | objet reconnu 143 (66.2%) dont catégorie juste 103
+règle retenue (objet + branche d'accord) : placés 95 (44.0%) | précision catégorie 95/95 (100.0%) | précision feuille 84/90 (93.3%)
+désaccord objet/branche 47 (objet juste 7) | sans objet reconnu 73 | racine sans table 2
+  Phones & Telecommunications Accessories    total  40 | placés  18 | catégorie juste  18
+  Automobiles, Parts & Accessories           total  40 | placés   2 | catégorie juste   2
+  Computer & Office                          total  40 | placés   5 | catégorie juste   5
+  Shoes                                      total  40 | placés  27 | catégorie juste  27
+  Men's Clothing                             total  28 | placés  23 | catégorie juste  23
+  Toys & Hobbies                             total  23 | placés  17 | catégorie juste  17
+  Office & School Supplies                   total   2 | placés   0 | catégorie juste   0
+  Mother & Kids                              total   2 | placés   2 | catégorie juste   2
+  Consumer Electronics                       total   1 | placés   1 | catégorie juste   1
+FEUILLE ('Tech', 'Phones') attendu=Tech | Mechanical Keyboard Coiled Cable, Type-C USB Port, Aviator C
+FEUILLE ('Tech', 'Phones') attendu=Tech | iDsonix USB 3.0 HUB 5Gbps Dock Station 7 Port USB A Type C H
+FEUILLE ('Mode & Beauté', 'Homme') attendu=Mode & Beauté/Femme|Mode & Beauté | Summer Women Slippers Lightweight Comfortable White Flats Fl
+FEUILLE ('Mode & Beauté', 'Enfant') attendu=Mode & Beauté/Homme | Flip-Flops For Men Summer Anti-Skid Breathable Home Outdoor 
+FEUILLE ('Mode & Beauté', 'Enfant') attendu=Mode & Beauté/Femme | Winter Women's Slippers Indoor Cartoon Black Cat Cute Girls 
+FEUILLE ('Mode & Beauté', 'Homme') attendu=Mode & Beauté | Couple Style Men's and Women's Slippers, Clogs, Mules, Solid
