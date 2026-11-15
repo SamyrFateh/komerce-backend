@@ -154,6 +154,7 @@ async function main(env = process.env) {
     }
     report.operator_market_access = operatorMarkets;
 
+    const execute = mode === 'execute';
     // Diagnostic G13 = lectures SQL et GET authentifiés uniquement. Aucun POST,
     // aucun reclassement du WATCH, aucune suggestion de conversion KMF/XAF.
     if (phaseSel === 'diagnose') {
@@ -213,7 +214,6 @@ async function main(env = process.env) {
     }
 
     const wanted = phaseSel === 'all' ? PHASES : [phaseSel];
-    const execute = mode === 'execute';
     if (phaseSel === 'import-now') {
       if (!execute) { report.import_now = 'PLANIFIE'; } else {
         const res = await admin.call('POST', '/api/admin/workspaces/sourcing/sources/api:aliexpress/import-now');
