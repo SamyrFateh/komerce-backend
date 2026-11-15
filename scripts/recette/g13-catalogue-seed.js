@@ -19,7 +19,7 @@ const CONFIRMATION = 'SEED-G13-CATALOGUE';
 const MANIFEST = require('./g13-catalogue-manifest.json');
 const VERDICTS = require('./g13-visual-verdicts.json').verdicts || {};
 const OUT = path.resolve('test-results/g13-catalogue-seed');
-const PHASES = ['validate', 'import', 'curate', 'publish', 'supplier-link', 'price', 'stock', 'census'];
+const PHASES = ['validate', 'import', 'curate', 'supplier-link', 'publish', 'price', 'stock', 'census'];
 const PROVIDERS = {
   cj: { supplier_id: 'cj', supplier_name: 'CJdropshipping', platform: 'cj' },
   aliexpress: { supplier_id: 'aliexpress', supplier_name: 'AliExpress', platform: 'aliexpress' },
@@ -236,6 +236,37 @@ async function main(env = process.env) {
           }
         }
 
+        // --- supplier-link (D3 : liaision fournisseur AVANT approbation) ---
+        if (wanted.includes('supplier-link') && cand?.product_id) {
+          const links = await ro(db, `SELECT ps.id FROM product_suppliers ps JOIN suppliers s ON s.id = ps.supplier_id AND s.is_active = TRUE AND s.deleted_at IS NULL JOIN product_skus sku ON sku.product_id = ps.product_id AND sku.supplier_sku = ps.supplier_sku AND sku.is_active = TRUE AND sku.stock > 0 WHERE ps.product_id = $1 AND ps.is_active = TRUE AND ps.deleted_at IS NULL AND ($2::text IS NULL OR LOWER(s.platform) = $2) LIMIT 1`, [cand.product_id, e.source === 'central_hub' ? null : PROVIDERS[e.source].platform]);
+          if (links.length) done(r, 'supplier-link', 'DEJA_PRESENT');
+          else if (!execute) done(r, 'supplier-link', 'PLANIFIE');
+          else {
+            const list = await admin.call('GET', '/api/purchasing/suppliers');
+            const arr = Array.isArray(list.body) ? list.body : list.body?.suppliers || [];
+            const platform = e.source === 'central_hub' ? null : PROVIDERS[e.source].platform;
+            let sup = e.source === 'central_hub' ? (hub ? arr.find((s) => s.id === hub.id) || hub : null)
+              : arr.find((s) => s.platform === platform && s.is_active !== false && !s.deleted_at);
+            if (!sup && platform) {
+              const c = await admin.call('POST', '/api/purchasing/suppliers', { name: providerName(e), platform, auto_order: false, notes: `G13 recette ${env.GITHUB_RUN_ID}; aucune commande fournisseur` });
+              if (c.ok) sup = c.body?.supplier || c.body;
+            }
+            const sku = (await ro(db, `SELECT supplier_sku FROM product_skus WHERE product_id = $1 AND is_active = TRUE AND stock > 0 ORDER BY created_at LIMIT 1`, [cand.product_id]))[0];
+            if (!sup?.id) blocked(r, 'supplier-link', 'FOURNISSEUR_ABSENT');
+            else if (!sku) blocked(r, 'supplier-link', 'SKU_STOCKE_ABSENT');
+            else {
+              const m = await admin.call('POST', `/api/purchasing/suppliers/${sup.id}/map`, { product_id: cand.product_id, supplier_sku: sku.supplier_sku, notes: `G13 recette ${env.GITHUB_RUN_ID}` });
+              if (!m.ok) blocked(r, 'supplier-link', codeOf(m));
+              else {
+                const linked = await ro(db, `SELECT ps.id FROM product_suppliers ps JOIN suppliers s ON s.id = ps.supplier_id AND s.is_active = TRUE AND s.deleted_at IS NULL JOIN product_skus sku ON sku.product_id = ps.product_id AND sku.supplier_sku = ps.supplier_sku AND sku.is_active = TRUE AND sku.stock > 0 WHERE ps.product_id = $1 AND ps.supplier_id = $2 AND ps.supplier_sku = $3 AND ps.is_active = TRUE AND ps.deleted_at IS NULL LIMIT 1`, [cand.product_id, sup.id, sku.supplier_sku]);
+                if (linked.length) done(r, 'supplier-link', 'OK');
+                else blocked(r, 'supplier-link', 'MAPPING_NON_RESOLU_APRES_HTTP');
+              }
+            }
+          }
+        }
+
+
         // --- publish : revue visuelle AUTOMATED_STAGING puis approbation ---
         if (wanted.includes('publish') && cand?.product_ref) {
           if (cand.lifecycle_status === 'active') done(r, 'publish', 'DEJA_ACTIF');
@@ -267,32 +298,6 @@ async function main(env = process.env) {
               }
             }
             cand = await findCandidate(db, e);
-          }
-        }
-
-        // --- supplier-link (D3 : sans product_suppliers le produit reste invisible) ---
-        if (wanted.includes('supplier-link') && cand?.product_id) {
-          const links = await ro(db, `SELECT 1 FROM product_suppliers WHERE product_id = $1 AND is_active = TRUE AND deleted_at IS NULL LIMIT 1`, [cand.product_id]);
-          if (links.length) done(r, 'supplier-link', 'DEJA_PRESENT');
-          else if (cand.lifecycle_status !== 'active') blocked(r, 'supplier-link', 'PRODUIT_NON_PUBLIE');
-          else if (!execute) done(r, 'supplier-link', 'PLANIFIE');
-          else {
-            const list = await admin.call('GET', '/api/purchasing/suppliers');
-            const arr = Array.isArray(list.body) ? list.body : list.body?.suppliers || [];
-            const platform = e.source === 'central_hub' ? null : PROVIDERS[e.source].platform;
-            let sup = e.source === 'central_hub' ? (hub ? arr.find((s) => s.id === hub.id) || hub : null)
-              : arr.find((s) => s.platform === platform && s.is_active !== false && !s.deleted_at);
-            if (!sup && platform) {
-              const c = await admin.call('POST', '/api/purchasing/suppliers', { name: providerName(e), platform, auto_order: false, notes: `G13 recette ${env.GITHUB_RUN_ID}; aucune commande fournisseur` });
-              if (c.ok) sup = c.body?.supplier || c.body;
-            }
-            const sku = (await ro(db, `SELECT supplier_sku FROM product_skus WHERE product_id = $1 AND is_active = TRUE AND stock > 0 ORDER BY created_at LIMIT 1`, [cand.product_id]))[0];
-            if (!sup?.id) blocked(r, 'supplier-link', 'FOURNISSEUR_ABSENT');
-            else if (!sku) blocked(r, 'supplier-link', 'SKU_STOCKE_ABSENT');
-            else {
-              const m = await admin.call('POST', `/api/purchasing/suppliers/${sup.id}/map`, { product_id: cand.product_id, supplier_sku: sku.supplier_sku, notes: `G13 recette ${env.GITHUB_RUN_ID}` });
-              if (m.ok) done(r, 'supplier-link', 'OK'); else blocked(r, 'supplier-link', codeOf(m));
-            }
           }
         }
 
