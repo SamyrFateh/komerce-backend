@@ -47,6 +47,8 @@ describe('b-modal-image-ux', () => {
   beforeEach(() => {
     jest.resetModules();
     document.body.innerHTML = '';
+    // Une lightbox d'un autre cas peut avoir verrouillé l'overflow en inline.
+    document.body.style.overflow = '';
 
     ({ bus } = require('../../js/b-bus.js'));
     ({ state, dom } = require('../../js/b-store.js'));
@@ -265,6 +267,7 @@ describe('b-modal-image-ux', () => {
       buildModalDom(1);setupImageUX();
       document.querySelector('.k-modal-view-full').click();
       expect(document.querySelectorAll('.k-modal-fullscreen-slide')).toHaveLength(1);
+      document.querySelector('.k-modal-fullscreen-close').click();
     });
 
     test('Escape ferme la lightbox si ouverte', () => {
