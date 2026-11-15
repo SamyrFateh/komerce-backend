@@ -31385,6 +31385,14 @@
       "authority": "backend-core — tout changement de logique de remboursement doit etre valide par le proprietaire de refund-service.js",
       "invariants": [
         {
+          "statement": "Fable F1/F2: le paiement cash ou Mobile Money attesté ouvre une obligation locale en devise d origine, sans marquer paid ni écrire refunds ou wallet avant preuve de sortie ; les rails PSP restent exclus",
+          "test": "tests/e2e-api/refunds.local-shortage-reservation.e2e.test.js"
+        },
+        {
+          "statement": "Fable F1/F2: l opération UUID est rejouable à l identique, mais refusée en divergence ; quantités et sommes réservées restent plafonnées à la preuve physique et à la capture, même avec une autre route de remboursement",
+          "test": "tests/unit/local-item-refund-reservation.test.js"
+        },
+        {
           "statement": "FA-04/08 F3 : annulation Stripe reserve l intention avant COMMIT metier, jamais de POST fournisseur sous transaction, un resultat inconnu ne declenche aucun fallback wallet et reste a rapprocher",
           "test": "tests/unit/stripe-refund-authority.test.js"
         },
@@ -31441,8 +31449,18 @@
       ],
       "implementation": {
         "byCategory": {
+          "migrations": {
+            "count": 1,
+            "files": [
+              {
+                "declared": "migrations/416_fable_local_item_refund_reservations.sql",
+                "resolvedPath": "migrations/416_fable_local_item_refund_reservations.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              }
+            ]
+          },
           "services": {
-            "count": 9,
+            "count": 10,
             "files": [
               {
                 "declared": "services/item-refund-psp-orchestrator.js",
@@ -31453,6 +31471,11 @@
                 "declared": "services/item-refund-reservation-service.js",
                 "resolvedPath": "services/item-refund-reservation-service.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/local-item-refund-reservation.js",
+                "resolvedPath": "services/local-item-refund-reservation.js",
+                "status": "resolved-on-disk-no-header"
               },
               {
                 "declared": "services/paypal-refund-authority.js",
@@ -31492,7 +31515,7 @@
             ]
           },
           "tests": {
-            "count": 20,
+            "count": 22,
             "files": [
               {
                 "declared": "tests/e2e-api/refunds.credits-cash-numeric.e2e.test.js",
@@ -31525,6 +31548,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/e2e-api/refunds.local-shortage-reservation.e2e.test.js",
+                "resolvedPath": "tests/e2e-api/refunds.local-shortage-reservation.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/e2e-api/refunds.no-double-application.e2e.test.js",
                 "resolvedPath": "tests/e2e-api/refunds.no-double-application.e2e.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -31547,6 +31575,11 @@
               {
                 "declared": "tests/unit/item-refund-reservation-service.test.js",
                 "resolvedPath": "tests/unit/item-refund-reservation-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/local-item-refund-reservation.test.js",
+                "resolvedPath": "tests/unit/local-item-refund-reservation.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -31597,7 +31630,7 @@
             ]
           }
         },
-        "totalFiles": 29,
+        "totalFiles": 33,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -31606,6 +31639,10 @@
       },
       "ownership": {
         "ownsTables": [
+          {
+            "table": "local_item_refund_reservations",
+            "resolution": "single-writer"
+          },
           {
             "table": "order_item_refund_reservations",
             "resolution": "single-writer"
@@ -31620,6 +31657,12 @@
           }
         ],
         "writesTables": [
+          {
+            "table": "local_item_refund_reservations",
+            "mode": "RW",
+            "lifecycleOwner": "refunds",
+            "ownershipStatus": "owner"
+          },
           {
             "table": "order_item_refund_reservations",
             "mode": "RW",
@@ -31661,6 +31704,10 @@
       "data": {
         "ownsTables": [
           {
+            "table": "local_item_refund_reservations",
+            "resolution": "single-writer"
+          },
+          {
             "table": "order_item_refund_reservations",
             "resolution": "single-writer"
           },
@@ -31674,6 +31721,12 @@
           }
         ],
         "writesTables": [
+          {
+            "table": "local_item_refund_reservations",
+            "mode": "RW",
+            "lifecycleOwner": "refunds",
+            "ownershipStatus": "owner"
+          },
           {
             "table": "order_item_refund_reservations",
             "mode": "RW",
