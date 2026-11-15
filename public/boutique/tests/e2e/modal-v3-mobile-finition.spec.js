@@ -638,8 +638,12 @@ test.describe('PDP mobile retouches 2026-11 — suggestions après les détails'
     expect(order.scrollOverflow).toBeLessThanOrEqual(1);
     // Swipe tactile NATIF dans le rail (pas un faux TouchEvent dispatché JS).
     // Le titre et le scroll vertical doivent rester immobiles pendant le geste.
-    const grid = page.locator('#k-modal .k-sug-grid--same');
-    await grid.scrollIntoViewIfNeeded();
+    await page.evaluate(() => {
+      const scroll = document.querySelector('.k-modal-scroll');
+      scroll.style.scrollBehavior = 'auto'; // éviter l'animation du scroll pendant la preuve CDP
+      scroll.scrollTop = scroll.scrollHeight;
+    });
+    await page.waitForTimeout(80);
     const beforeSwipe = await page.evaluate(() => {
       const rail = document.querySelector('#k-modal .k-sug-grid--same');
       const title = rail.closest('.k-sug-section').querySelector('.k-sug-title');
