@@ -1,0 +1,49 @@
+# G13 CJ SKU recovery: one candidate canary first, remaining 17 only on separate owner issue.
+# All mutations use the existing permissioned Sourcing API; SQL always READ ONLY.
+name: G13 native CJ source SKU recovery — guarded staging
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: read
+concurrency:
+  group: komerce-g13-catalogue-seed
+  cancel-in-progress: false
+jobs:
+  recover:
+    if: >-
+      github.actor == github.repository_owner &&
+      (github.event.issue.title == '[staging-op] g13-native-cj-skus-canary' ||
+       github.event.issue.title == '[staging-op] g13-native-cj-skus-batch')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      GITHUB_ACTIONS: 'true'
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      EXPECTED_RAILWAY_ENVIRONMENT: staging
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      KOMERCE_STAGING_RESET_DB_PIN: ${{ vars.STAGING_DB_PIN }}
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      PGOPTIONS: '-c default_transaction_read_only=on'
+      G13_SKU_RECOVERY_SCOPE: ${{ github.event.issue.title == '[staging-op] g13-native-cj-skus-canary' && 'canary' || 'batch' }}
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Restore native CJ V2 SKUs through authorized API
+        run: node scripts/recette/g13-native-cj-source-sku-recovery.js
+      - name: Preserve exact before/after evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g13-native-cj-skus-${{ github.run_id }}
+          path: test-results/g13-native-cj-sku-recovery/report.json
+          retention-days: 21
+          if-no-files-found: warn

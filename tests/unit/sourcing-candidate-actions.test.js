@@ -20,7 +20,7 @@ jest.mock('../../services/catalog-candidate-product-service', () => ({
       ? {status:'AUTO_CLASSIFIED',category:'Tech',subcategory:'Phones'}
       : {status:'REVIEW_REQUIRED',category:null,subcategory:null}),
 }));
-jest.mock('../../services/catalog-promotion', () => ({ promoteCatalog: jest.fn() }));
+jest.mock('../../services/catalog-promotion', () => ({ promoteCatalog: jest.fn(), restoreMissingSourceSkusOnly: jest.fn() }));
 
 const {
   SourcingCandidateActionError,
@@ -29,6 +29,7 @@ const {
   watchlistCandidate,
   rejectCandidate,
   confirmCandidateBoutiqueCategory,
+  recoverMissingSourceSkus,
 } = require('../../services/sourcing-candidate-actions');
 const candidateProductService = jest.requireActual('../../services/catalog-candidate-product-service');
 
@@ -266,4 +267,68 @@ test('source category without a confirmed provider mapping still requires review
   await expect(promoteCandidate('unknown-source',{},null,{syncRuntime:false}))
     .rejects.toMatchObject({code:'candidate_commercial_category_review_required',status:409});
   expect(catalog.createDraftProductFromSourcingCandidate).not.toHaveBeenCalled();
+});
+
+describe('G13 existing draft native CJ source SKU recovery',()=>{
+  const db = require('../../db');
+  const promotion = require('../../services/catalog-promotion');
+  const cjRow=(overrides={})=>({
+    id:'candidate-id',candidate_ref:'KSC-000490',state:'imported_to_catalog',
+    product_id:'product-id',product_ref:'KPR-000165',supplier_name:'CJdropshipping',
+    normalized_source_contract:{schema_version:'2',supplier_name:'CJdropshipping',sellable_units:[{
+      supplier_sku:'CJ-1',supplier_unit_ref:'vid-1',supplier_order_identity:{
+        provider:'cj',version:1,payload:{pid:'pid-1',vid:'vid-1'}
+      }
+    }]},
+    lifecycle_status:'candidate',is_active:false,...overrides,
+  });
+  beforeEach(()=>jest.clearAllMocks());
+  it('repairs only linked inactive CJ draft and audits within one transaction',async()=>{
+    const client={query:jest.fn(async sql=>{
+      if(sql.includes('FROM sourcing_candidates sc'))return {rows:[cjRow()]};
+      return {rows:[],rowCount:1};
+    }),release:jest.fn()};
+    db.getClient.mockResolvedValue(client);
+    promotion.restoreMissingSourceSkusOnly.mockResolvedValue({restored:1});
+    await expect(recoverMissingSourceSkus('KSC-000490','admin-id'))
+      .resolves.toMatchObject({status:'SOURCE_SKUS_RESTORED_NO_PUBLICATION',restored:1,product_ref:'KPR-000165'});
+    expect(promotion.restoreMissingSourceSkusOnly).toHaveBeenCalledWith(
+      client,'product-id',expect.objectContaining({schema_version:'2'}));
+    const sql=client.query.mock.calls.map(([stmt])=>stmt);
+    expect(sql[0]).toBe('BEGIN');
+    expect(sql.some(stmt=>stmt.includes('FOR UPDATE OF sc,p'))).toBe(true);
+    expect(sql.some(stmt=>stmt.includes('INSERT INTO sourcing_candidate_events'))).toBe(true);
+    expect(sql.at(-1)).toBe('COMMIT');
+    expect(client.release).toHaveBeenCalledTimes(1);
+    expect(sql.some(stmt=>/UPDATE products|INSERT INTO products|UPDATE sourcing_candidates/.test(stmt))).toBe(false);
+  });
+  it.each([
+    ['already active',{is_active:true}],
+    ['already published',{lifecycle_status:'active'}],
+    ['not imported',{state:'scanned'}],
+    ['wrong provider',{supplier_name:'AliExpress',normalized_source_contract:{
+      schema_version:'2',supplier_name:'AliExpress'}}],
+    ['missing V2',{normalized_source_contract:null}],
+  ])('fails closed for %s before any source SKU writer',async(_name,overrides)=>{
+    const client={query:jest.fn(async sql=>{
+      if(sql.includes('FROM sourcing_candidates sc'))return {rows:[cjRow(overrides)]};
+      return {rows:[],rowCount:1};
+    }),release:jest.fn()};
+    db.getClient.mockResolvedValue(client);
+    await expect(recoverMissingSourceSkus('KSC-000490','admin-id'))
+      .rejects.toMatchObject({status:409,code:'source_sku_recovery_not_eligible'});
+    expect(promotion.restoreMissingSourceSkusOnly).not.toHaveBeenCalled();
+    expect(client.query.mock.calls.at(-1)[0]).toBe('ROLLBACK');
+  });
+  it('rolls back without event when supplier SKU reconciliation throws',async()=>{
+    const client={query:jest.fn(async sql=>{
+      if(sql.includes('FROM sourcing_candidates sc'))return {rows:[cjRow()]};
+      return {rows:[],rowCount:1};
+    }),release:jest.fn()};
+    db.getClient.mockResolvedValue(client);
+    promotion.restoreMissingSourceSkusOnly.mockRejectedValue(Object.assign(new Error('No matching source'),{status:409}));
+    await expect(recoverMissingSourceSkus('KSC-000490','admin-id')).rejects.toThrow('No matching source');
+    expect(client.query.mock.calls.some(([stmt])=>stmt.includes('INSERT INTO sourcing_candidate_events'))).toBe(false);
+    expect(client.query.mock.calls.at(-1)[0]).toBe('ROLLBACK');
+  });
 });

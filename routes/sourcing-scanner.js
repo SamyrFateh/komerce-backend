@@ -225,6 +225,16 @@ router.post('/candidates/scan-batch', authenticate, requireAdminOrFounder, async
   } catch (err) { next(err); }
 });
 
+// Explicit one-time SKU repair for a source-linked inactive CJ Catalogue draft.
+// Same admin + GLOBAL Sourcing authorization as the ordinary promotion;
+// no generic SKU mutation, product publication, pricing or customs override.
+router.post('/candidates/:candidateRef/restore-source-skus', authenticate, requireAdminOrFounder, async (req,res,next)=>{
+  try {
+    const result=await candidateActions.recoverMissingSourceSkus(req.params.candidateRef,req.user?.id||null);
+    res.json(result);
+  } catch (err) { legacyCandidateError(err,res,next); }
+});
+
 router.post('/candidates/:id/import-product', authenticate, requireAdminOrFounder, async (req, res, next) => {
   try {
     res.json(await candidateActions.promoteCandidate(

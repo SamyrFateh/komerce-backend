@@ -2,8 +2,8 @@
   "generatedAt": "2026-11-15T10:03:16.568Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 846,
-    "protected": 787,
+    "total": 847,
+    "protected": 788,
     "public": 59,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -1856,6 +1856,13 @@
     },
     {
       "key": "POST /api/admin/sourcing/bulk-rail",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/sourcing/candidates/{candidateRef}/restore-source-skus",
       "level": "PROTECTED",
       "roles": [
         "admin"
