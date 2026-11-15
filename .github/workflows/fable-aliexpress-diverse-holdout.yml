@@ -67,7 +67,11 @@ jobs:
           fi
           printf 'Fable provider result: %s\n' "${summary:-NO_SUMMARY}"
           if [ "$status" != "0" ]; then
-            printf '%s\n' "$result" | grep 'FABLE_HOLDOUT_ERROR=' | tail -n1 || true
+            # Only safe CLI error diagnostics, never print command output or credentials.
+            printf '%s\n' "$result" |
+              grep -Ei '(error|unsupported|unrecognized|invalid|unauthorized|usage|not linked|cannot|failed|missing|not found)' |
+              grep -Evi '(DATABASE_URL|token=|secret=|password=|APP_KEY=|SESSION=)' |
+              tail -n 12 || true
             echo "::error::HOLDOUT_PROVIDER_FAILED exit=$status"
             exit "$status"
           fi
