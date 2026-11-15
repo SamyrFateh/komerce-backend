@@ -19,7 +19,7 @@ const CONFIRMATION = 'SEED-G13-CATALOGUE';
 const MANIFEST = require('./g13-catalogue-manifest.json');
 const VERDICTS = require('./g13-visual-verdicts.json').verdicts || {};
 const OUT = path.resolve('test-results/g13-catalogue-seed');
-const PHASES = ['validate', 'import', 'curate', 'publish', 'supplier-link', 'price', 'stock', 'census'];
+const PHASES = ['validate', 'import', 'skus', 'curate', 'publish', 'supplier-link', 'price', 'stock', 'census'];
 const PROVIDERS = {
   cj: { supplier_id: 'cj', supplier_name: 'CJdropshipping', platform: 'cj' },
   aliexpress: { supplier_id: 'aliexpress', supplier_name: 'AliExpress', platform: 'aliexpress' },
@@ -174,7 +174,7 @@ async function main(env = process.env) {
       // Lecture seule : inventaire des candidats (pour épingler) et de leurs médias actifs (pour l'inspection).
       report.dump = await ro(db,
         `SELECT sc.candidate_ref, sc.supplier_name, sc.supplier_product_id, sc.product_name, sc.supplier_category, sc.state,
-                UPPER(sc.scan_result->>'sourcing_decision') AS decision, sc.purchase_price, sc.currency, sc.image_url,
+                UPPER(sc.scan_result->>'sourcing_decision') AS decision, sc.scan_result->>'reason' AS reason, sc.purchase_price, sc.currency, sc.image_url,
                 p.product_ref, p.lifecycle_status, COALESCE(p.boutique_category_key, p.category) AS category, COALESCE(p.boutique_subcategory_key, p.subcategory) AS subcategory,
                 (SELECT jsonb_agg(jsonb_build_object('id', cm.id, 'source_media_id', cm.source_media_id, 'url', cm.url) ORDER BY cm.display_order, cm.created_at)
                    FROM catalog_media cm WHERE cm.product_id = p.id AND cm.is_active = TRUE) AS media
@@ -210,6 +210,18 @@ async function main(env = process.env) {
         if (!cand) { cand = await findCandidate(db, e); }
         if (!cand) { r.steps.next = { status: 'ARRET', code: e.supplier_ref ? 'CANDIDAT_ABSENT' : 'REFERENCE_A_EPINGLER' }; continue; }
 
+        // --- skus : le Catalogue exige un SKU fournisseur actif ; l'import CJ doit porter les unités commandables ---
+        if (wanted.includes('skus') && e.source === 'cj' && cand?.product_id && cand.lifecycle_status !== 'active') {
+          const n = (await ro(db, `SELECT COUNT(*)::int AS n FROM product_skus WHERE product_id = $1 AND is_active = TRUE`, [cand.product_id]))[0].n;
+          if (n > 0) done(r, 'skus', 'DEJA_PRESENT', { n });
+          else if (!execute) done(r, 'skus', 'PLANIFIE');
+          else {
+            const res = await admin.call('POST', '/api/admin/workspaces/sourcing/imports', { source_type: 'api', ...PROVIDERS.cj, product_ids: [String(e.supplier_ref)], include_commandable_units: true });
+            const n2 = (await ro(db, `SELECT COUNT(*)::int AS n FROM product_skus WHERE product_id = $1 AND is_active = TRUE`, [cand.product_id]))[0].n;
+            if (n2 > 0) done(r, 'skus', 'OK', { n: n2 }); else blocked(r, 'skus', 'SKU_TOUJOURS_ABSENT_' + codeOf(res), JSON.stringify(res.body)?.slice(0, 300));
+          }
+        }
+
         // --- curate : catégorie boutique + fiche FR ---
         if (wanted.includes('curate')) {
           if (cand.lifecycle_status === 'active') done(r, 'curate', 'DEJA_ACTIF');
@@ -218,10 +230,13 @@ async function main(env = process.env) {
             let ok = true;
             if (!cand.product_id) {
               const c1 = await admin.call('POST', `/api/admin/workspaces/sourcing/candidates/${cand.candidate_ref}/confirm-boutique-category`, { category: e.category, subcategory: e.subcategory });
-              const c2 = c1.ok && await admin.call('POST', `/api/admin/workspaces/sourcing/candidates/${cand.candidate_ref}/promote`, {});
               if (!c1.ok) ok = blocked(r, 'curate', 'CATEGORIE_' + codeOf(c1));
-              else if (!c2.ok) ok = blocked(r, 'curate', 'PROMOTION_' + codeOf(c2));
               cand = await findCandidate(db, e);
+              if (ok && !cand.product_id) {
+                const c2 = await admin.call('POST', `/api/admin/workspaces/sourcing/candidates/${cand.candidate_ref}/promote`, {});
+                if (!c2.ok) ok = blocked(r, 'curate', 'PROMOTION_' + codeOf(c2));
+                cand = await findCandidate(db, e);
+              }
             }
             if (ok && cand?.product_ref) {
               if (cand.category !== e.category || cand.subcategory !== e.subcategory) {
@@ -308,7 +323,7 @@ async function main(env = process.env) {
             const base = `/api/admin/workspaces/pricing/market/${mk}/products/${cand.product_ref}/local-price`;
             const cor = await operator.call('GET', `/api/admin/workspaces/pricing/market/${mk}/corridor?product_ref=${encodeURIComponent(cand.product_ref)}`);
             const amount = cor.ok ? referenceAmount(cor.body, mk) : null;
-            if (!amount) { blocked(r, key, cor.ok ? 'PRIX_ECONOMIQUE_ABSENT' : 'CORRIDOR_' + codeOf(cor)); continue; }
+            if (!amount) { blocked(r, key, cor.ok ? 'PRIX_ECONOMIQUE_ABSENT' : 'CORRIDOR_' + codeOf(cor), cor.ok ? JSON.stringify({ eco: Object.keys(cor.body?.selected?.economics || {}).filter((k) => /price|blocker|reason/i.test(k)), sel: cor.body?.selected?.status || cor.body?.selected?.code || null, blockers: cor.body?.blockers || cor.body?.selected?.blockers || null }) : undefined); continue; }
             const reason = `Recette G13 ${env.GITHUB_RUN_ID} : prix de référence du moteur économique, staging`;
             const d = await operator.call('POST', base, { amount, reason });
             if (!d.ok) { blocked(r, key, 'BROUILLON_' + codeOf(d)); continue; }
