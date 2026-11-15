@@ -554,7 +554,7 @@ test.describe('PDP mobile retouches 2026-11 — V4.1 alignement horizontal canon
           rootOverflow: modal.scrollWidth - modal.clientWidth,
           configOverflow: document.querySelector('.k-mdm-root').scrollWidth - document.querySelector('.k-mdm-root').clientWidth,
           footerVisible: Boolean(footer && footer.bottom <= window.innerHeight + 1),
-          footerOutsideScroll: Boolean(footer && !footer.closest('.k-modal-scroll')),
+          footerOutsideScroll: Boolean(footer && !document.querySelector('#k-modal > .k-modal-actions').closest('.k-modal-scroll')),
         };
       });
       expect(values.gutter).toBe(18);
