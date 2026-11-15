@@ -417,6 +417,55 @@ describe('b-modal-core', () => {
     });
   });
 
+
+  describe('cycle de vie Discovery (même propriétaire de modal, sans produit)', () => {
+    it('ouvre une offre avec titre, annonce son événement et protège le scroll mobile', () => {
+      const wasWidth = window.innerWidth;
+      Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 });
+      const scroll = document.createElement('div');
+      scroll.className = 'k-modal-scroll';
+      scroll.scrollTop = 60;
+      dom.modal.appendChild(scroll);
+      dom.pageScroll.style.cssText = 'position:fixed;top:12px;overflow:hidden';
+      const grid = document.createElement('div');
+      grid.id = 'k-grid';
+      grid.className = 'k-grid-flat-subcat';
+      grid.scrollLeft = 120;
+      document.body.appendChild(grid);
+      const observer = jest.fn();
+      bus.on('modal:discovery-opened', observer);
+      const detail = { title: 'Réparation d’équipements', price: 1500 };
+
+      openModal('offer-1', { kind: 'physical_offer', detail });
+
+      expect(state.modalKind).toBe('physical_offer');
+      expect(state.modalRef).toBe('offer-1');
+      expect(state.modalDetail).toBe(detail);
+      expect(state.modalProduct).toBeNull();
+      expect(state.modalOpen).toBe(true);
+      expect(dom.modal.classList.contains('k-modal--discovery')).toBe(true);
+      expect(dom.modalOverlay.classList.contains('open')).toBe(true);
+      expect(scroll.scrollTop).toBe(0);
+      expect(observer).toHaveBeenCalledWith({ kind: 'physical_offer', ref: 'offer-1', detail });
+      expect(document.body.classList.contains('modal-open')).toBe(true);
+      expect(state._savedPagerInlineStyles.position).toBe('fixed');
+      expect(grid.style.scrollSnapType).toBe('none');
+      expect(state._savedGridScrollLeft).toBe(120);
+
+      bus.off('modal:discovery-opened', observer);
+      closeModal({ skipHistoryBack: true });
+      Object.defineProperty(window, 'innerWidth', { configurable: true, value: wasWidth });
+      expect(dom.modalOverlay.classList.contains('open')).toBe(false);
+    });
+
+    it('refuse une Discovery sans titre/contrat et ne modifie pas l’overlay', () => {
+      openModal('bad-service', { kind: 'service', detail: {} });
+      expect(dom.modalOverlay.classList.contains('open')).toBe(false);
+      openModal('bad-kind', { kind: 'unknown', detail: { title: 'X' } });
+      expect(dom.modalOverlay.classList.contains('open')).toBe(false);
+    });
+  });
+
   // ── Zone tactile mobile : swipe carousel, pull-to-close, tap→fullscreen ──
   // Jamais testée (ni unitaire ni e2e — le spec Playwright ne couvre que
   // Escape). setupImageZoneTouch est exporté publiquement par la façade ;
