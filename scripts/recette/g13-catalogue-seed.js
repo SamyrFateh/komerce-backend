@@ -267,6 +267,16 @@ async function main(env = process.env) {
       return report;
     }
 
+    // G13 partial remediation is never allowed to produce an overall G13 GO.
+    // The 17th CJ item has 12 real but ALL INACTIVE source units: do not
+    // promote them or fake their availability to meet the catalogue quota.
+    const scope = env.G13_SCOPE || 'all';
+    if (!['all','cj-ready-16'].includes(scope)) throw new Error('G13_SCOPE_UNSUPPORTED');
+    report.scope = scope;
+    report.scope_exclusions = scope==='cj-ready-16' ? ['G13-10:ALL_SUPPLIER_UNITS_INACTIVE'] : [];
+    const selectedEntries = scope==='cj-ready-16'
+      ? MANIFEST.entries.filter(e=>e.source==='cj' && e.id!=='G13-10')
+      : MANIFEST.entries;
     const wanted = phaseSel === 'all' ? PHASES : [phaseSel];
     if (phaseSel === 'import-now') {
       if (!execute) { report.import_now = 'PLANIFIE'; } else {
@@ -296,7 +306,7 @@ async function main(env = process.env) {
     const hubList = hubRes.body?.suppliers || hubRes.body?.items || (Array.isArray(hubRes.body) ? hubRes.body : []);
     const hub = hubList.find((s) => s.system_key === 'central_hub') || null;
 
-    for (const e of MANIFEST.entries) {
+    for (const e of selectedEntries) {
       const r = { id: e.id, category: e.category, subcategory: e.subcategory, source: e.source, steps: {} };
       report.entries.push(r);
       try {
@@ -481,7 +491,9 @@ async function main(env = process.env) {
     }
     const blockedSteps = report.entries.flatMap((x) => Object.values(x.steps)).filter((s) => s.status === 'BLOCKED').length;
     report.blocked_steps = blockedSteps;
-    report.verdict = mode === 'dry-run' ? 'DRY_RUN_OK' : blockedSteps ? 'PARTIAL_BLOCKED' : 'SEED_OK';
+    report.verdict = scope==='cj-ready-16'
+      ? (mode==='dry-run' ? 'SCOPED_DRY_RUN_NOT_G13_GO' : blockedSteps ? 'SCOPED_PARTIAL_BLOCKED' : 'SCOPED_PHASE_PASS_NOT_G13_GO')
+      : mode === 'dry-run' ? 'DRY_RUN_OK' : blockedSteps ? 'PARTIAL_BLOCKED' : 'SEED_OK';
   } catch (error) {
     report.verdict = 'BLOCKED';
     report.error = String(error.message).slice(0, 300);
