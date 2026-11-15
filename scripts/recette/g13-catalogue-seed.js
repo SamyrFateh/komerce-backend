@@ -180,8 +180,10 @@ async function main(env = process.env) {
           product_ref: candidate?.product_ref || null,
           sourcing_decision: candidate?.decision || null,
           lifecycle: candidate?.lifecycle_status || null,
+          product_is_active: candidate?.is_active === true,
           economic_reason: null, source_currency: null, customs_category: null,
           source_v2_present: false, source_v2_units: 0, source_v2_exact_units: 0,
+          source_v2_active_units: 0, source_v2_active_exact_units: 0,
           sku_count: 0, stocked_skus: 0, supplier_links: 0,
           price_markets: {},
         };
@@ -201,7 +203,21 @@ async function main(env = process.env) {
                     ) unit WHERE NULLIF(BTRIM(unit->>'supplier_sku'),'') IS NOT NULL
                              AND NULLIF(BTRIM(unit->>'supplier_unit_ref'),'') IS NOT NULL
                              AND jsonb_typeof(unit->'supplier_order_identity')='object'
-                    ) AS source_v2_exact_units
+                    ) AS source_v2_exact_units,
+                    (SELECT COUNT(*)::int FROM jsonb_array_elements(
+                      CASE WHEN jsonb_typeof(normalized_source_contract->'sellable_units')='array'
+                           THEN normalized_source_contract->'sellable_units'
+                           ELSE '[]'::jsonb END
+                    ) unit WHERE COALESCE((unit->>'is_active')::boolean,TRUE)) AS source_v2_active_units,
+                    (SELECT COUNT(*)::int FROM jsonb_array_elements(
+                      CASE WHEN jsonb_typeof(normalized_source_contract->'sellable_units')='array'
+                           THEN normalized_source_contract->'sellable_units'
+                           ELSE '[]'::jsonb END
+                    ) unit WHERE COALESCE((unit->>'is_active')::boolean,TRUE)
+                             AND NULLIF(BTRIM(unit->>'supplier_sku'),'') IS NOT NULL
+                             AND NULLIF(BTRIM(unit->>'supplier_unit_ref'),'') IS NOT NULL
+                             AND jsonb_typeof(unit->'supplier_order_identity')='object'
+                    ) AS source_v2_active_exact_units
                FROM sourcing_candidates WHERE candidate_ref=$1`,
             [candidate.candidate_ref]);
           row.economic_reason = scan?.economic_reason || null;
@@ -210,6 +226,8 @@ async function main(env = process.env) {
           row.source_v2_present = scan?.source_v2_present === true;
           row.source_v2_units = Number(scan?.source_v2_units || 0);
           row.source_v2_exact_units = Number(scan?.source_v2_exact_units || 0);
+          row.source_v2_active_units = Number(scan?.source_v2_active_units || 0);
+          row.source_v2_active_exact_units = Number(scan?.source_v2_active_exact_units || 0);
         }
         if (candidate?.product_id) {
           const [skus] = await ro(db,
