@@ -32,6 +32,8 @@ import {
 } from './b-modal-desktop-product.js';
 
 let _installed = false;
+import { currentMarketCode } from './product-store.js';
+
 let _generation = 0;
 let _viewportMode = null;
 let _resizeTimer = null;
@@ -42,12 +44,6 @@ function viewportMode() {
 
 function currentProductId() {
   return state.modalProduct ? String(state.modalProduct.id) : null;
-}
-
-function currentMarketCode() {
-  const api = typeof window !== 'undefined' ? window.KomerceMarket : null;
-  if (!api) return null;
-  return (api.getPreviewOverride && api.getPreviewOverride()) || api.DEFAULT || null;
 }
 
 function clearProductDetailState() {

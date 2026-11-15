@@ -279,7 +279,7 @@ async function distributeAll() {
   const { rows: unassigned } = await db.query(`
     SELECT o.id, o.reference
     FROM orders o
-    WHERE o.status IN ('ordered', 'preparation')
+    WHERE o.status IN ('ordered', 'preparation', 'available')
       AND EXISTS (
         SELECT 1 FROM order_items oi
          WHERE oi.order_id = o.id
@@ -359,15 +359,13 @@ async function getDistribution() {
     FROM orders o
     LEFT JOIN users u ON u.id = o.user_id
     LEFT JOIN relais r ON r.id = o.relais_id
-    WHERE o.status IN ('ordered', 'preparation')
+    WHERE o.status IN ('ordered', 'preparation', 'available')
       AND EXISTS (SELECT 1 FROM order_items oi
-                   WHERE oi.order_id = o.id AND oi.fulfillment_source = 'IMPORT')
-      AND NOT EXISTS (
-        SELECT 1 FROM parcel_items pi
-        JOIN order_items oi ON oi.id = pi.order_item_id
-        JOIN parcels p ON p.id = pi.parcel_id AND p.status NOT IN ('cancelled')
-        WHERE oi.order_id = o.id
-      )
+                   WHERE oi.order_id = o.id AND oi.fulfillment_source = 'IMPORT'
+                     AND NOT EXISTS (
+                       SELECT 1 FROM parcel_items pi
+                       JOIN parcels p ON p.id = pi.parcel_id AND p.status NOT IN ('cancelled')
+                       WHERE pi.order_item_id = oi.id))
     ORDER BY o.created_at ASC
   `);
 
