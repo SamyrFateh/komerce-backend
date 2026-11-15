@@ -194,6 +194,10 @@
     const margin = Number(scan.economic_test_margin_pct);
     const testPrice = Number(scan.test_price_kmf);
     const cost = Number(scan.variable_cost_complete_kmf ?? scan.variable_cost_estimated_kmf);
+    if (decision === 'WATCH' && row.controlled_watch_test_authorized === true) {
+      return { key: 'revoke-watch', label: 'Révoquer le test limité',
+        reason: 'Test commercial déjà autorisé · révocation explicite et auditée possible' };
+    }
     if (decision === 'WATCH' && row.controlled_watch_test_authorized !== true
       && scan.economic_test_health_status === 'fragile'
       && Number.isFinite(margin) && margin >= 15 && margin < 25
@@ -374,13 +378,16 @@
           purchase.focus();
         });
         actions.appendChild(edit);
-      } else if (issue?.key === 'review-watch') {
-        const review = makeButton(doc, issue.label, 'review-controlled-watch');
+      } else if (issue?.key === 'review-watch' || issue?.key === 'revoke-watch') {
+        const revoke = issue.key === 'revoke-watch';
+        const review = makeButton(doc, issue.label, revoke ? 'revoke-controlled-watch' : 'review-controlled-watch');
         review.className += ' kmc-sourcing-next-action';
         review.addEventListener('click', () => {
           const editor = openCandidateForm(context,
-            'Arbitrage commercial WATCH · ' + row.candidate_ref,
-            'Essai limité uniquement : l\'avis économique reste WATCH. Motivez le risque et la contribution attendue ; les contrôles Catalogue, fournisseur, images et prix marché restent obligatoires.',
+            (revoke ? 'Révoquer le test WATCH · ' : 'Arbitrage commercial WATCH · ') + row.candidate_ref,
+            revoke
+              ? 'Justifiez la révocation. Le moteur reste WATCH ; aucune commande ni transaction n’est créée.'
+              : 'Essai limité uniquement : l\'avis économique reste WATCH. Motivez le risque et la contribution attendue ; les contrôles Catalogue, fournisseur, images et prix marché restent obligatoires.',
             review);
           const label = doc.createElement('label');
           label.className = 'kmc-sourcing-editor-field';
@@ -402,8 +409,10 @@
             }
             await sendCandidateForm(context, editor,
               ENDPOINT + '/candidates/' + encodeURIComponent(row.candidate_ref) + '/commercial-watch-review',
-              { action:'AUTHORIZE_CONTROLLED_TEST', reason:rationale },
-              row.candidate_ref + ' : arbitrage humain consigné. Score WATCH conservé, aucune publication.');
+              { action: revoke ? 'REVOKE' : 'AUTHORIZE_CONTROLLED_TEST', reason:rationale },
+              row.candidate_ref + (revoke
+                ? ' : autorisation révoquée et auditée.'
+                : ' : arbitrage humain consigné. Score WATCH conservé, aucune publication.'));
           });
           reason.focus();
         });
