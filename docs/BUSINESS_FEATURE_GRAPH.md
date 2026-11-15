@@ -81,7 +81,7 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 
 | Dépôt | Manifests découverts | Manifests connectés | Nœuds techniques | Owned | Orphelins |
 |---|---|---|---|---|---|
-| backend | 36 | 36 | 707 | 705 | 2 |
+| backend | 36 | 36 | 708 | 708 | 0 |
 | dash | 3 | 3 | N/A | N/A | N/A |
 | boutique | 16 | 16 | 105 | 105 | 0 |
 
@@ -2228,12 +2228,10 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - none
 
-### DETTE / DRIFT ACTIONNABLE (8)
+### DETTE / DRIFT ACTIONNABLE (6)
 
 Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la dette gouvernance. Les topologies attendues et limites du générateur restent visibles séparément et ne consomment aucun budget de dette.
 
-- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** _[ACTIONABLE_DRIFT]_ services/purchasing-receive-service.js — nœud technique "services/purchasing-receive-service.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
-- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** _[ACTIONABLE_DRIFT]_ services/receive-purchase-order.js — nœud technique "services/receive-purchase-order.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ order_item_real_cost_allocations — table "order_item_real_cost_allocations" : lifecycle owner = economic-engine (db.tables "!"), mais aussi écrite par customs
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ order_items — table "order_items" : lifecycle owner = orders (db.tables "!"), mais aussi écrite par logistics
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ orders — table "orders" : lifecycle owner = orders (db.tables "!"), mais aussi écrite par economic-engine
@@ -2312,8 +2310,7 @@ Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la det
 
 Fichiers présents dans le Technical Architecture Graph, non revendiqués par une carte feature ni un transversal déclaré (`governance/transversal-paths.json`).
 
-- services/purchasing-receive-service.js
-- services/receive-purchase-order.js
+- none
 
 ## Lot O5 — Feature Dependency Conformance & Hidden Coupling Gate
 

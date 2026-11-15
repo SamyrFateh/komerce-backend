@@ -126,3 +126,13 @@ test('l’interface source les articles via les seules API purchasing existantes
   expect(SOURCE).toMatch(/\/api\/purchasing\/lines/);
   expect(SOURCE).not.toContain('createHubSourcingParallelWriter');
 });
+
+test('A2 : jsonRequest transmet Idempotency-Key uniquement quand elle est fournie', async () => {
+  const mk = () => jest.fn().mockResolvedValue({ ok: true, status: 200, json: jest.fn().mockResolvedValue({}) });
+  const withKey = mk();
+  await workspace.jsonRequest(withKey, '/x/boxes', { method: 'POST', body: {}, idempotencyKey: 'K-1' });
+  expect(withKey.mock.calls[0][1].headers['Idempotency-Key']).toBe('K-1');
+  const without = mk();
+  await workspace.jsonRequest(without, '/x/boxes', { method: 'POST', body: {} });
+  expect(without.mock.calls[0][1].headers).not.toHaveProperty('Idempotency-Key');
+});

@@ -52,7 +52,7 @@ class Actor {
     this.role = me.json && (me.json.role || (me.json.user && me.json.user.role)) || null;
   }
   async call(method, p, body) {
-    const r = await fetch(this.base + p, { method, headers: { cookie: this.cookie || '', origin: this.base, ...(body ? { 'content-type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined });
+    const r = await fetch(this.base + p, { method, headers: { cookie: this.cookie || '', origin: this.base, ...(body ? { 'content-type': 'application/json' } : {}), ...(method === 'POST' && /\/boxes$/.test(p) ? { 'idempotency-key': require('crypto').randomUUID() } : {}) }, body: body ? JSON.stringify(body) : undefined });
     const json = await r.json().catch(() => null);
     return { http: r.status, json, code: json && json.code || null };
   }

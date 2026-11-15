@@ -69,6 +69,7 @@
       headers: {
         Accept: 'application/json',
         ...(options.body == null ? {} : { 'Content-Type': 'application/json' }),
+        ...(options.idempotencyKey ? { 'Idempotency-Key': options.idempotencyKey } : {}),
       },
       body: options.body == null ? undefined : JSON.stringify(options.body),
     });
@@ -314,6 +315,7 @@
       result = await jsonRequest(context.fetch, options.url, {
         method: 'POST',
         body: options.body,
+        idempotencyKey: options.idempotencyKey,
       });
     } catch (error) {
       setFeedback(context.root, error.message, 'critical');
@@ -1235,12 +1237,24 @@
     createBar.setAttribute('data-supply-box-create', '');
     const newRef = field('Référence du carton (facultative)', 'Référence de la nouvelle KOM-BOX');
     const newBox = makeActionButton(doc, 'Créer une KOM-BOX', 'create-box');
-    newBox.addEventListener('click', () => runAction(context, newBox, {
+    // A2 : la clé d'opération survit à un échec (coupure réseau) pour qu'un nouvel essai du même geste
+    // renvoie la même KOM-BOX ; elle change si la référence saisie change, et après un succès.
+    let boxKey = null; let boxKeyRef = null;
+    const makeKey = () => (typeof globalThis.crypto !== 'undefined' && globalThis.crypto.randomUUID
+      ? globalThis.crypto.randomUUID()
+      : `box-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`);
+    newBox.addEventListener('click', () => {
+      const wanted = newRef.value.trim();
+      if (!boxKey || boxKeyRef !== wanted) { boxKey = makeKey(); boxKeyRef = wanted; }
+      return runAction(context, newBox, {
       url: endpointFor(context.marketCode, 'boxes'),
-      body: newRef.value.trim() ? { reference: newRef.value.trim() } : {},
+      idempotencyKey: boxKey,
+      onSuccess: () => { boxKey = null; boxKeyRef = null; },
+      body: wanted ? { reference: wanted } : {},
       runningMessage: 'Création de la KOM-BOX…',
-      successMessage: result => `KOM-BOX ${result && result.physical_unit ? result.physical_unit.reference : ''} créée.`,
-    }).catch(() => {}));
+      successMessage: result => `KOM-BOX ${result && result.physical_unit ? result.physical_unit.reference : ''} ${result && result.replayed ? 'déjà créée (rejeu reconnu)' : 'créée'}.`,
+      }).catch(() => {});
+    });
     [newRef, newBox].forEach(node => createBar.appendChild(node));
     boxes.appendChild(createBar);
 
