@@ -58,7 +58,9 @@ async function main(){
    const me=role.ok()?await role.json():{};
    report.identity={http:role.status(),role:(me.user||me).role||null};
    if(report.identity.role!=='admin')throw Error('G8_ADMIN_ROLE_NOT_VERIFIED');
-   await page.locator('#g8-env').getByText('Parcours désactivé').waitFor({timeout:20000});
+   await page.waitForFunction(() =>
+     document.querySelector('#g8-env')?.textContent?.trim() === 'Parcours désactivé',
+     {timeout:20000});
    report.ui={gate:await page.locator('#g8-env').innerText(),
      visibleError:await page.locator('#g8-status').innerText(),
      cases:await page.locator('[data-g8-case]').count()};
