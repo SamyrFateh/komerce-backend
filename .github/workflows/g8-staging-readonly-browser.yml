@@ -35,8 +35,33 @@ jobs:
           node-version: '20'
           cache: npm
       - run: npm ci
-      - name: Pin live deploy and reject deployed-path differences
-        run: node scripts/recette/resolve-staging-deploy-pin.js
+      - name: Pin staging SHA with exact G8 runner-only allowlist
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const {execFileSync}=require('child_process'),fs=require('fs');
+          const git=a=>execFileSync('git',a,{encoding:'utf8'}).trim();
+          (async()=>{
+            const base=process.env.STAGING_BASE_URL;
+            if(base!=='https://komerce-backend-production.up.railway.app')throw Error('G8_WRONG_STAGING_ORIGIN');
+            const resp=await fetch(base+'/health/version');
+            if(!resp.ok)throw Error('G8_DEPLOY_HEALTH_'+resp.status);
+            const sha=String((await resp.json()).commit||''),head=git(['rev-parse','HEAD']);
+            if(!/^[a-f0-9]{40}$/i.test(sha)||!/^[a-f0-9]{40}$/i.test(head))
+              throw Error('G8_SHA_INVALID');
+            try{git(['merge-base','--is-ancestor',sha,head]);}
+            catch{throw Error('G8_DEPLOY_NOT_ANCESTOR');}
+            const changed=sha===head?[]:git(['diff','--name-only',sha+'..'+head]).split('\n').filter(Boolean);
+            const allowed=new Set([
+              '.github/workflows/g8-staging-readonly-browser.yml',
+              'scripts/recette/g8-staging-readonly-browser.js'
+            ]);
+            const unsafe=changed.filter(p=>!allowed.has(p));
+            if(unsafe.length)throw Error('G8_DEPLOYED_PATHS_DIFFER:'+unsafe.join(','));
+            fs.appendFileSync(process.env.GITHUB_ENV,'E2E_EXPECTED_DEPLOY_SHA='+sha+'\n');
+            console.log(JSON.stringify({kind:'G8_DEPLOY_PIN',stagingSha:sha,head,runnerOnlyChanges:changed,verdict:'PASS'}));
+          })().catch(e=>{console.error(e.message);process.exitCode=2});
+          NODE
       - name: Require verified staging DB identity
         run: node scripts/recette/target-guard.js
       - name: Install Chromium
