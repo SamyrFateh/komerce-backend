@@ -1,0 +1,130 @@
+name: G8 — official Railway staging synthetic F1/F2 Chromium certification
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: read
+concurrency:
+  group: komerce-g8-official-staging-positive
+  cancel-in-progress: false
+jobs:
+  g8-official:
+    if: >-
+      github.actor == github.repository_owner &&
+      github.event.issue.user.login == github.repository_owner &&
+      (github.event.issue.title == '[staging-op] g8-positive-f1f2-preflight' ||
+       github.event.issue.title == '[staging-op] g8-positive-f1f2-execute')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_TARGET_ENV: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      HUB_V1_E2E_APPLY_MODE: approved
+      HUB_V1_STAGING_DISPOSABLE_MODE: '1'
+      G8_STAGING_SYNTHETIC_APPROVED: '1'
+      EXPECTED_RAILWAY_ENVIRONMENT: staging
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      STRIPE_SECRET_KEY: sk_test_certification_placeholder
+      STRIPE_WEBHOOK_SECRET: whsec_certification_placeholder
+      PAYPAL_CLIENT_ID: ci-certification-placeholder
+      PAYPAL_CLIENT_SECRET: ci-certification-placeholder
+      PAYPAL_WEBHOOK_ID: ci-certification-placeholder
+      META_WA_APP_SECRET: ci-certification-placeholder
+      AUTHKEY_API_KEY: ci-certification-placeholder
+      JWT_SECRET: ci-certification-placeholder
+      QR_SECRET: ci-certification-placeholder
+      ADMIN_PASSWORD: ci-certification-placeholder
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install canonical backend and browser test dependencies
+        run: npm ci
+      - name: Pin one owner-approved RUN8
+        shell: bash
+        run: |
+          echo "HUB_V1_CERTIFICATION_RUN=$(node -p 'require("crypto").randomBytes(4).toString("hex").toUpperCase()')" >> "$GITHUB_ENV"
+      - name: Pin real Railway commit, allow only non-deployed test and docs paths
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const fs=require('fs'),{execFileSync}=require('child_process');
+          const git=xs=>execFileSync('git',xs,{encoding:'utf8'}).trim();
+          (async()=>{
+            if(process.env.STAGING_BASE_URL!=='https://komerce-backend-production.up.railway.app')throw Error('G8_OFFICIAL_URL_REQUIRED');
+            const response=await fetch(process.env.STAGING_BASE_URL+'/health/version');
+            if(!response.ok)throw Error('G8_STAGING_VERSION_NOT_AVAILABLE');
+            const j=await response.json(),sha=String(j.commit||''),head=git(['rev-parse','HEAD']);
+            if(!/^[0-9a-f]{40}$/i.test(sha)||!/^[0-9a-f]{40}$/i.test(head))throw Error('G8_SHA_INVALID');
+            try{git(['merge-base','--is-ancestor',sha,head]);}catch{throw Error('G8_DEPLOYED_SHA_NOT_ANCESTOR');}
+            const diff=sha===head?[]:git(['diff','--name-only',sha+'..'+head]).split('\n').filter(Boolean);
+            const testPaths=new Set([
+             '.github/workflows/g8-staging-positive.yml',
+             'scripts/recette/g8-staging-positive-prepare.js',
+             'scripts/recette/g8-staging-credentials-revoke.js',
+             'scripts/recette/g8-staging-flags-on.js',
+             'tests/staging-clicks/g8-staging-positive.spec.js',
+             'playwright.g8-staging-positive.config.js',
+             'docs/BUSINESS_FEATURE_GRAPH.json','docs/BUSINESS_FEATURE_GRAPH.md',
+             'docs/FEATURE_360.json','docs/FEATURE_360.md','docs/chantier/STATUS.md'
+            ]);
+            const appDrift=diff.filter(p=>!testPaths.has(p));
+            if(appDrift.length)throw Error('G8_STAGING_APPLICATION_DRIFT:'+appDrift.join(','));
+            fs.appendFileSync(process.env.GITHUB_ENV,'E2E_EXPECTED_DEPLOY_SHA='+sha+'\n');
+            console.log(JSON.stringify({verdict:'G8_STAGING_SHA_PIN_PASS',deploySha:sha,
+              runnerHead:head,nonDeployedFiles:diff,writes:0}));
+          })().catch(e=>{console.error('G8_STAGING_SHA_REFUSED:'+e.message);process.exitCode=2});
+          NODE
+      - name: Refuse missing or local database secret
+        shell: bash
+        run: |
+          test -n "$DATABASE_URL"
+          node -e "let x=new URL(process.env.DATABASE_URL);if(['localhost','127.0.0.1','::1','[::1]'].includes(x.hostname))process.exit(2)"
+      - name: Confirm official staging PostgreSQL fingerprint before writes
+        run: node scripts/recette/target-guard.js
+      - name: All ten existing official staging fixture gates (READ ONLY)
+        run: node scripts/recette/hub-v1-staging-transactional-preflight.js
+      - name: Install real Chromium for synthetic execution
+        if: github.event.issue.title == '[staging-op] g8-positive-f1f2-execute'
+        run: npx playwright install --with-deps chromium
+      - name: Authenticated browser verifies three FABLE flags ON before ANY fixture write
+        if: github.event.issue.title == '[staging-op] g8-positive-f1f2-execute'
+        run: node scripts/recette/g8-staging-flags-on.js
+      - name: Create scoped real Railway staging synthetic payment facts
+        if: github.event.issue.title == '[staging-op] g8-positive-f1f2-execute'
+        run: node scripts/recette/g8-staging-positive-prepare.js
+      - name: Official staging G8 F1/F2 real Chromium, HTTP, PostgreSQL and replay proof
+        if: github.event.issue.title == '[staging-op] g8-positive-f1f2-execute'
+        run: npx playwright test --config=playwright.g8-staging-positive.config.js
+      - name: Revoke all four E2E login credentials on Railway staging
+        if: always() && github.event.issue.title == '[staging-op] g8-positive-f1f2-execute'
+        run: node scripts/recette/g8-staging-credentials-revoke.js
+      - name: Preserve full evidence on success and HOLD
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g8-official-staging-synthetic-${{ github.run_id }}
+          path: |
+            test-results/g8-staging-positive/
+            test-results/hub-v1-cert/
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Never call a synthetic refund proof an external payout
+        if: always()
+        shell: bash
+        run: |
+          echo '### G8 official Railway staging — synthetics only' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Live backend SHA + PostgreSQL fingerprint checked. F1/F2 refunds only against E2E-HUB-V1 synthetic orders.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'No physical cash payout or external Mobile Money transfer was executed. External financial GO remains a separate validation.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Revoke E2E passwords after run; set all FABLE_LOCAL_* flags back to OFF in Railway.' >> "$GITHUB_STEP_SUMMARY"
