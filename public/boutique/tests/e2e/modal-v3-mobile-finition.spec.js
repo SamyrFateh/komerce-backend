@@ -645,7 +645,7 @@ test.describe('PDP mobile retouches 2026-11 — suggestions après les détails'
     });
     await page.waitForTimeout(80);
     const beforeSwipe = await page.evaluate(() => {
-      const rail = document.querySelector('#k-modal .k-sug-grid--same');
+      const rail = document.querySelector('#k-modal .k-sug-grid');
       const title = rail.closest('.k-sug-section').querySelector('.k-sug-title');
       const scroll = document.querySelector('.k-modal-scroll');
       const img = rail.querySelector('.k-sug-card-img');
@@ -680,7 +680,7 @@ test.describe('PDP mobile retouches 2026-11 — suggestions après les détails'
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
     await page.waitForTimeout(450);
     const afterSwipe = await page.evaluate(() => {
-      const rail = document.querySelector('#k-modal .k-sug-grid--same');
+      const rail = document.querySelector('#k-modal .k-sug-grid');
       return {
         scrollLeft: rail.scrollLeft,
         titleLeft: rail.closest('.k-sug-section').querySelector('.k-sug-title').getBoundingClientRect().left,
