@@ -97,6 +97,7 @@ module.exports = {
       'tests/e2e-api/refunds.local-shortage-reservation.e2e.test.js',
       'tests/integration/fable-cash-refund-handoff-postgres.test.js',
       'tests/unit/g8-refund-operator-ui.test.js',
+      'tests/staging-canonical/g8-refunds-readonly.spec.js',
       'tests/unit/item-refund-psp-orchestrator.test.js',
       'tests/e2e-api/refunds.item-partial-physical.e2e.test.js',
       'tests/unit/refund-intent-ledger.test.js',
