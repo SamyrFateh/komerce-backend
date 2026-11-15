@@ -614,6 +614,15 @@
     rootNode.setAttribute('data-workspace-kind', 'accounting');
     rootNode.replaceChildren();
     rootNode.appendChild(createHeader(doc, payload, context));
+    // G8: action visible pour l'administrateur uniquement ; l'API et les flags restent autoritaires.
+    if (context.user && context.user.role === 'admin') {
+      const link = doc.createElement('a');
+      link.setAttribute('href', '/g8-remboursements.html');
+      link.className = 'kmc-link-primary';
+      link.textContent = 'Remboursements locaux · espèces / Mobile Money →';
+      link.setAttribute('data-g8-refund-link', 'true');
+      rootNode.appendChild(link);
+    }
     // UX-04 : le filtre de période n'est plus dans le Hero, il ouvre la première section.
     createSection(rootNode, ui, 'Période', 'Dates et seuil de cash non encaissé appliqués à toute la page.')
       .appendChild(filterControls(doc, payload, context));

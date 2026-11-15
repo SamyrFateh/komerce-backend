@@ -56,7 +56,12 @@ module.exports = {
 
   // ── Perimetre fichiers ───────────────────────────────────────────────────
   files: {
-    utils: [],
+    // G8 UI opérateur F1/F2 : formulaire staging, aucun déclencheur de virement.
+    utils: [
+      'public/g8-remboursements.html',
+      'public/css/g8-remboursements.css',
+      'public/js/g8-remboursements.js',
+    ],
     migrations: [
       'migrations/416_fable_local_item_refund_reservations.sql',
       'migrations/417_fable_cash_refund_custody_handoff.sql',
@@ -91,6 +96,8 @@ module.exports = {
       'tests/unit/local-item-refund-reservation.test.js',
       'tests/e2e-api/refunds.local-shortage-reservation.e2e.test.js',
       'tests/integration/fable-cash-refund-handoff-postgres.test.js',
+      'tests/unit/g8-refund-operator-ui.test.js',
+      'tests/staging-canonical/g8-refunds-readonly.spec.js',
       'tests/unit/item-refund-psp-orchestrator.test.js',
       'tests/e2e-api/refunds.item-partial-physical.e2e.test.js',
       'tests/unit/refund-intent-ledger.test.js',

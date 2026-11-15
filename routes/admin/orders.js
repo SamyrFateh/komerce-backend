@@ -129,6 +129,39 @@ router.post('/orders/:id/refund', ...guard, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+
+/**
+ * G8 F1/F2 — lecture des obligations locales pour l'écran opérateur.
+ * Les pièces financières sont produites hors de cet écran ; aucun paiement automatique.
+ */
+router.get('/orders/local-refunds', ...guard, async (req, res, next) => {
+  if (process.env.KOMERCE_ENV !== 'staging' ||
+      process.env.FABLE_LOCAL_REFUND_RESERVATIONS_ENABLED !== '1') {
+    return res.status(409).json({ code: 'LOCAL_REFUND_NOT_CERTIFIED',
+      error: 'Parcours de remboursement non activé en recette' });
+  }
+  try {
+    const { rows } = await db.query(`
+      SELECT r.id AS reservation_id, r.order_id, r.order_item_id, r.market_id,
+             r.payment_mode, r.currency, r.amount_minor::text, r.amount_kmf::text,
+             r.quantity, r.reason, r.created_at, o.reference AS order_reference,
+             m.code AS market_code, ca.id AS cash_authorization_id,
+             ca.status AS cash_status, ca.holder_id AS cash_holder_id,
+             mh.status AS mobile_status, mh.operator_id AS mobile_operator_id,
+             mh.approved_by AS mobile_approver_id, mh.confirmed_by AS mobile_reviewer_id
+        FROM local_item_refund_reservations r
+        JOIN orders o ON o.id = r.order_id
+        JOIN markets m ON m.id = r.market_id
+        LEFT JOIN local_cash_refund_authorizations ca ON ca.reservation_id = r.id
+        LEFT JOIN local_mobile_refund_handoffs mh ON mh.reservation_id = r.id
+       WHERE r.status = 'reserved'
+       ORDER BY r.created_at DESC LIMIT 100
+    `);
+    res.set('Cache-Control', 'no-store');
+    return res.json({ refunds: rows });
+  } catch (error) { return next(error); }
+});
+
 // Fable F1/F2 : réserve une DETTE locale pour manquant réellement attesté.
 // Aucune sortie caisse, aucun virement Mobile Money, aucun wallet ou refunds.completed.
 // Activation staging explicite. L'identité du payeur et la sortie réelle doivent
