@@ -820,7 +820,7 @@ bus.on('modal:open', function({ id, pushHistory, kind, detail }) {
 
     document.addEventListener('keydown', (e) => {
       if (!dom.modalOverlay.classList.contains('open')) return;
-      if (isImageFullscreenOpen()) return; // Escape appartient au zoom, jamais à la PDP.
+      if (e.defaultPrevented || isImageFullscreenOpen()) return; // Escape appartient au zoom.
       if (e.key === 'ArrowRight') navigateModal(1);
       if (e.key === 'ArrowLeft') navigateModal(-1);
       if (e.key === 'Escape') closeModal();
