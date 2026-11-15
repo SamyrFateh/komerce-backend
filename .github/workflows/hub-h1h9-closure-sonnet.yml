@@ -1,14 +1,19 @@
 name: Hub H1-H9 cloture G2 (cohorte Sonnet, staging)
 
-# Declenche par push sur la branche dediee, uniquement si un fichier d'armement existe (cert/hub-h1h9-sonnet/RUN_*).
+# Declenche par workflow_dispatch (proprietaire, confirmation saisie). Aucun declencheur push.
 # Ecritures limitees a la fixture RUN8 de cette cohorte ; PG en lecture seule ; aucun PSP, aucun envoi reel.
 on:
-  push:
-    branches: [cert/hub-h1h9-closure-sonnet-20261115]
-    paths:
-      - '.github/workflows/hub-h1h9-closure-sonnet.yml'
-      - 'scripts/recette/hub-h1h9-sonnet-*.js'
-      - 'cert/hub-h1h9-sonnet/RUN_*'
+  workflow_dispatch:
+    inputs:
+      run:
+        description: 'Epreuve : C2T3T4, C3, C45, T5PREP (ecritures sur fixture RUN8 neuve) ou T9CHECK (lecture seule)'
+        required: true
+        type: choice
+        options: [C2T3T4, C3, C45, T5PREP, T9CHECK]
+      confirmation:
+        description: 'Saisir exactement RUN-HUB-H1H9-SONNET'
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -20,6 +25,7 @@ concurrency:
 
 jobs:
   closure:
+    if: github.actor == github.repository_owner && inputs.confirmation == 'RUN-HUB-H1H9-SONNET'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
@@ -59,14 +65,20 @@ jobs:
       QR_SECRET: ci-certification-placeholder
     steps:
       - uses: actions/checkout@v4
-      - name: Detect arming files
+      - name: Select epreuve
         id: arm
-        shell: bash
+        env:
+          RUN_INPUT: ${{ inputs.run }}
         run: |
-          d=cert/hub-h1h9-sonnet
-          for m in T9_CREATE T9_CHECK ARMED ARMED_C3 ARMED_C45; do
-            if [ -f "$d/RUN_$m" ]; then echo "$m=1" >> "$GITHUB_OUTPUT"; echo "any=1" >> "$GITHUB_OUTPUT"; fi
-          done
+          case "$RUN_INPUT" in
+            C2T3T4) echo "ARMED=1" >> "$GITHUB_OUTPUT";;
+            C3) echo "ARMED_C3=1" >> "$GITHUB_OUTPUT";;
+            C45) echo "ARMED_C45=1" >> "$GITHUB_OUTPUT";;
+            T5PREP) echo "T5PREP=1" >> "$GITHUB_OUTPUT";;
+            T9CHECK) echo "T9_CHECK=1" >> "$GITHUB_OUTPUT";;
+            *) echo "unknown epreuve"; exit 1;;
+          esac
+          echo "any=1" >> "$GITHUB_OUTPUT"
       - uses: actions/setup-node@v4
         if: steps.arm.outputs.any == '1'
         with:
@@ -87,16 +99,10 @@ jobs:
       - name: Require precise Railway database target
         if: steps.arm.outputs.any == '1'
         run: node scripts/recette/target-guard.js
-      - name: T9 create (object inerte, un seul POST HTTP identique a l'UI)
-        if: steps.arm.outputs.T9_CREATE == '1'
-        run: |
-          export T9_RUN8="$(head -n1 cert/hub-h1h9-sonnet/RUN_T9_CREATE | tr -d '\r ' | tr a-f A-F)"
-          node scripts/recette/hub-h1h9-sonnet-t9.js create
-      - name: T9 check (lecture seule, apres 48 h)
+      - name: T9 check (lecture seule, objet cree le 15/11)
         if: steps.arm.outputs.T9_CHECK == '1'
         run: |
-          export T9_RUN8="$(sed -n 1p cert/hub-h1h9-sonnet/RUN_T9_CHECK | tr -d '\r ' | tr a-f A-F)"
-          export T9_EXPECTED_CREATED_AT="$(sed -n 2p cert/hub-h1h9-sonnet/RUN_T9_CHECK | tr -d '\r ')"
+          export T9_RUN8=EB87CC74 T9_EXPECTED_CREATED_AT=2026-11-15T00:52:06.790Z
           node scripts/recette/hub-h1h9-sonnet-t9.js check
       - name: Fixture RUN8 neuve + chaine PO (rien recu)
         if: steps.arm.outputs.ARMED == '1'
@@ -143,6 +149,19 @@ jobs:
           node scripts/recette/hub-v1-certification-runner.js --allow-remote-staging --run="$RUN8" --market=KM --stop-after=2
           node scripts/recette/hub-v1-http-action-runner.js
           node scripts/recette/hub-h1h9-sonnet-c345.js c45
+      - name: T5 preparation (fixture neuve + chaine PO + reception KOM-101 ; lecture de l'etat)
+        if: steps.arm.outputs.T5PREP == '1'
+        shell: bash
+        run: |
+          set -euo pipefail
+          SHA="$(curl -fsS "$STAGING_BASE_URL/health/version" | node -pe 'JSON.parse(require("fs").readFileSync(0)).commit')"
+          RUN8="$(node -p 'require("crypto").randomBytes(4).toString("hex").toUpperCase()')"
+          echo "RUN8 T5 cohorte Sonnet: $RUN8"
+          export HUB_V1_CERTIFICATION_RUN="$RUN8" E2E_PROOF_RUN8="$RUN8" HTTP_RUNNER_RUN8="$RUN8" HTTP_RUNNER_MARKET=KM E2E_EXPECTED_DEPLOY_SHA="$SHA"
+          node scripts/recette/hub-v1-certification-runner.js --allow-remote-staging --run="$RUN8" --market=KM --stop-after=2 --dry-run
+          node scripts/recette/hub-v1-certification-runner.js --allow-remote-staging --run="$RUN8" --market=KM --stop-after=2
+          node scripts/recette/hub-v1-http-action-runner.js
+          node scripts/recette/hub-h1h9-sonnet-c345.js t5prep
       - name: Preserve evidence
         if: always() && (steps.arm.outputs.any == '1')
         uses: actions/upload-artifact@v4

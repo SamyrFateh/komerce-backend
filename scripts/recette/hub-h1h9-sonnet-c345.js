@@ -143,6 +143,33 @@ async function c45({ env, db, run8 }) {
   return close();
 }
 
+// ── T5 : etat a redemarrer. Recoit tout KOM-101 puis lit si la commande est restee 'ordered' (callback non joue) ──
+// Le callback de completude est synchrone apres COMMIT : par l'API seule l'etat n'est atteint que si le callback a echoue.
+// Sinon on rapporte T5_STATE_NOT_REACHABLE_VIA_API (NOT_PROVEN) au lieu de fabriquer l'etat.
+async function t5prep({ env, db, run8 }) {
+  const { A, q, orderRef, code, rep, fin, close } = await ctx({ env, db, run8 });
+  const [o] = await q('SELECT id, reference FROM orders WHERE reference=$1', [orderRef('KOM-101')]);
+  if (!o) throw Error('FIXTURE_ORDER_ABSENT');
+  const rows = await q(`SELECT pl.purchase_order_id AS po, pl.product_sku_id AS sku, oi.quantity::int AS qty FROM purchase_lines pl
+      JOIN order_items oi ON oi.id=pl.order_item_id WHERE oi.order_id=$1 AND pl.cancelled_at IS NULL AND pl.purchase_order_id IS NOT NULL`, [o.id]);
+  const byPo = new Map(); for (const r of rows) { if (!byPo.has(r.po)) byPo.set(r.po, []); byPo.get(r.po).push(r); }
+  const https = [];
+  for (const [po, ls] of byPo) {
+    const contents = []; for (const l of ls) contents.push({ purchase_order_id: po, product_sku_id: l.sku, evidence_code: await code(l.sku), quantity: l.qty });
+    https.push((await A.hub.call('POST', '/api/scans/hub/receive', { reference: `E2E-HUB-V1-${run8}-T5-RCV-${String(po).slice(0, 8)}`, contents })).http);
+  }
+  const [st] = await q('SELECT status::text s FROM orders WHERE id=$1', [o.id]);
+  const [pi] = await q('SELECT COUNT(*)::int n FROM parcel_items pi JOIN order_items oi ON oi.id=pi.order_item_id WHERE oi.order_id=$1', [o.id]);
+  const [pend] = await q(`SELECT COUNT(*)::int n FROM v_purchase_line_progress v WHERE v.order_id=$1 AND NOT v.cancelled AND v.received_quantity < v.effective_quantity`, [o.id]);
+  const stalled = (st.s === 'ordered' && pend.n === 0) || (st.s === 'preparation' && pi.n === 0);
+  fin('T5', stalled ? 'T5_READY_FOR_RESTART' : 'T5_STATE_NOT_REACHABLE_VIA_API',
+    { order_reference: o.reference, receive_http: https, order_status: st.s, parcel_items: pi.n, lines_not_fully_received: pend.n,
+      sweep: 'purchasing-completion-service.sweepStalledOrders (cron) doit faire avancer la commande apres redemarrage' });
+  const r = await close();
+  r.verdict = r.sha_stable ? (stalled ? 'T5_READY_FOR_RESTART' : 'T5_NOT_PROVEN_STATE_NOT_REACHABLE') : r.verdict;
+  return r;
+}
+
 async function main() {
   const mode = process.argv[2];
   const db = require('../../db');
@@ -151,13 +178,13 @@ async function main() {
     const { confirmTarget } = require('./target-guard');
     if (!(await confirmTarget({ db })).confirmed) throw Error('TARGET_MISMATCH');
     const run8 = String(process.env.HUB_V1_CERTIFICATION_RUN || '').toUpperCase();
-    const fn = { c3, c45 }[mode]; if (!fn) throw Error('MODE_c3_or_c45');
+    const fn = { c3, c45, t5prep }[mode]; if (!fn) throw Error('MODE_c3_c45_t5prep');
     const rep = await fn({ env: process.env, db, run8 });
     const dir = path.join('test-results', 'hub-h1h9-sonnet'); fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(path.join(dir, `${mode}-${run8}.json`), JSON.stringify(rep, null, 2) + '\n');
     console.log(JSON.stringify({ verdict: rep.verdict, cases: Object.fromEntries(Object.entries(rep.cases).map(([k, v]) => [k, v.verdict])) }));
-    if (rep.verdict !== 'PASS') process.exitCode = 1;
+    if (!['PASS', 'T5_READY_FOR_RESTART', 'T5_NOT_PROVEN_STATE_NOT_REACHABLE'].includes(rep.verdict)) process.exitCode = 1;
   } finally { if (db.pool && db.pool.end) await db.pool.end(); }
 }
 if (require.main === module) main().catch((e) => { console.error('C345_REFUSED:' + String(e.message).slice(0, 200)); process.exitCode = 2; });
-module.exports = { c3, c45 };
+module.exports = { c3, c45, t5prep };
