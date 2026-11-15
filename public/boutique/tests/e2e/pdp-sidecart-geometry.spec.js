@@ -421,6 +421,8 @@ test('AUDIT VISUEL — vraie fiche débardeur CM, sans fixture ni mutation', asy
   expect(audit.buyButtonRatio).toBeLessThan(.59);
   expect(audit.galleryThumbGap).toBeGreaterThanOrEqual(20);
   expect(audit.galleryThumbGap).toBeLessThanOrEqual(26);
+  expect(audit.thumbnails.h).toBeLessThanOrEqual(460);
+  expect(audit.gallery.bottom).toBeLessThanOrEqual(audit.buybox.bottom + 10);
   expect(audit.suggestions.y).toBeGreaterThanOrEqual(audit.details.bottom);
   expect(audit.suggestions.y - audit.details.bottom).toBeLessThan(48);
 });
