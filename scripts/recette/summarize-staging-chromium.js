@@ -15,7 +15,7 @@ fs.mkdirSync(root,{recursive:true});
 // La preuve Hub Director a son propre schéma et ne représente pas un graphe
 // de navigation. Ne pas l'interpréter comme un profil Chromium ordinaire.
 const files=fs.existsSync(dir)?fs.readdirSync(dir)
-  .filter(x=>x.endsWith('.json')&&x!=='hub-director-readonly.json'):[];
+  .filter(x=>x.endsWith('.json')&&x!=='hub-director-readonly.json'&&x!=='g8-refunds-readonly.json'):[];
 const runs=files.map(f=>{
   const evidence=JSON.parse(fs.readFileSync(path.join(dir,f),'utf8'));
   if(!evidence.role || !Array.isArray(evidence.findings) ||
@@ -31,7 +31,35 @@ const deploymentPreflightFile=path.join(root,'deployment-preflight.json');
 const deploymentPreflight=fs.existsSync(deploymentPreflightFile)?JSON.parse(fs.readFileSync(deploymentPreflightFile,'utf8')):null;
 // A filtered Hub Director run emits a different, strictly redacted evidence
 // format: booleans, HTTP codes and a SHA. It is not a navigation graph.
-if (process.env.E2E_CHROMIUM_SPEC_FILTER === 'hub-director-readonly') {
+// A dedicated G8 audit is a strict, redacted safety/OFF proof, not a
+// navigation graph and NEVER a proof of external cash or Mobile Money payout.
+if (process.env.E2E_CHROMIUM_SPEC_FILTER === 'g8-refunds-readonly') {
+  const file = path.join(dir, 'g8-refunds-readonly.json');
+  if (!fs.existsSync(file)) throw new Error('G8_READONLY_PROOF_MISSING');
+  const proof = JSON.parse(fs.readFileSync(file, 'utf8'));
+  const expectedSha = String(process.env.E2E_EXPECTED_DEPLOY_SHA || '');
+  const shaMatches = /^[a-f0-9]{40}$/i.test(expectedSha) &&
+    proof.initialSha === expectedSha && proof.finalSha === expectedSha;
+  const valid = proof.verdict === 'G8_STAGING_DISABLED_UI_PASS' && shaMatches &&
+    proof.admin === true && proof.relay === true && proof.disabled === true &&
+    proof.blockedWrites === 0 && proof.jsErrors === 0 && proof.realPayouts === 0;
+  const report = [
+    '# Komerce — G8 F1/F2 Chromium staging (lecture seule)',
+    '',
+    'Verdict securite des operations desactivees : ' + (valid ? 'PASS' : 'FAIL'),
+    'SHA exact debut et fin : ' + (shaMatches ? expectedSha : 'NON PROUVE'),
+    'Admin et relais, vraies connexions et parcours navigateur : ' + (valid ? 'PASS' : 'NON PROUVE'),
+    'Routes de remboursement OFF (GET HTTP 409), formulaires absents : ' + (valid ? 'PASS' : 'NON PROUVE'),
+    'Zero ecriture financiere, zero erreur JavaScript : ' + (valid ? 'PASS' : 'NON PROUVE'),
+    '',
+    'La recette OFF ne prouve PAS le remboursement reel F1 ni le transfert Mobile Money manuel F2.',
+    'Preuves positives de decaissement physique et de rapprochement operateur : NOT_PROVEN.',
+    'Aucun numero de compte, identite, cookie, preuve privee, image ou trace archive.'
+  ].join('\n') + '\n';
+  fs.writeFileSync(path.join(root, 'rapport.md'), report);
+  console.log('[G8-readonly-summary] ' + JSON.stringify({ status: valid ? 'PASS' : 'FAIL', sha_match: shaMatches }));
+  if (!valid) process.exitCode = 2;
+} else if (process.env.E2E_CHROMIUM_SPEC_FILTER === 'hub-director-readonly') {
   const file = path.join(dir,'hub-director-readonly.json');
   if (!fs.existsSync(file)) throw new Error('HUB_DIRECTOR_PROOF_MISSING');
   const proof=JSON.parse(fs.readFileSync(file,'utf8'));

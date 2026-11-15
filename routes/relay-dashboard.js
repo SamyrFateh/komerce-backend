@@ -39,6 +39,7 @@ const express = require('express');
 const router  = express.Router();
 const db      = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
+const { beginCashHandoff, confirmCashHandoff } = require('../services/local-cash-refund-handoff');
 const { attachMarketDelegatedRoleFor } = require('../middleware/require-market-delegated-role');
 const { attachAuthorizedMarketsForCapability, requireMarketDelegatedCapability } = require('../middleware/require-market-delegated-capability');
 const log = require('../utils/logger').child({ module: 'relay-dashboard' });
@@ -370,5 +371,70 @@ router.patch('/orders/:id/client-absent', ...relaySupervise, resolveOrderMarket,
     res.json({ success: true, message: 'Client marqué absent, relance programmée' });
   } catch(err) { next(err); }
 });
+
+
+
+/**
+ * G8 F1 — file de remises espèces réservée au détenteur authentifié.
+ * Ne divulgue aucune obligation d'un autre relais ou marché.
+ */
+router.get('/local-cash-refunds',
+  authenticate, requireRole(['agent_relais']), async (req, res, next) => {
+    if (!relayCashRefundEnabled()) return denyUncertifiedRelayCash(res);
+    try {
+      const { rows } = await db.query(`
+        SELECT ca.id AS authorization_id, ca.order_id, r.order_item_id,
+               ca.status, ca.authorized_at, ca.holder_id,
+               o.reference AS order_reference, m.code AS market_code,
+               r.currency, r.amount_kmf::text, r.quantity
+          FROM local_cash_refund_authorizations ca
+          JOIN local_item_refund_reservations r ON r.id = ca.reservation_id
+          JOIN orders o ON o.id = ca.order_id
+          JOIN markets m ON m.id = ca.market_id
+         WHERE ca.holder_id = $1 AND ca.status IN ('approved','handoff_pending','settled')
+         ORDER BY ca.authorized_at DESC LIMIT 100
+      `, [req.user.id]);
+      res.set('Cache-Control', 'no-store');
+      return res.json({ refunds: rows });
+    } catch (error) { return next(error); }
+  });
+
+// Fable F1: physical cash custody handoff belongs to the relay, never admin.
+// Server-side service checks authenticated holder identity against the exact
+// approved holder+market+order+line; the UI cannot select an arbitrary relay.
+const relayCashRefundEnabled = () => process.env.KOMERCE_ENV === 'staging' &&
+  process.env.FABLE_LOCAL_REFUND_RESERVATIONS_ENABLED === '1' &&
+  process.env.FABLE_LOCAL_CASH_REFUND_HANDOFF_ENABLED === '1';
+const denyUncertifiedRelayCash = (res) => res.status(409).json({
+  code: 'LOCAL_CASH_REFUND_HANDOFF_NOT_CERTIFIED', error: 'Remise cash non activée ou hors staging'
+});
+const relayCashRefundError = (err,res,next) => err.status && err.code
+  ? res.status(err.status).json({code:err.code,error:err.message}) : next(err);
+
+router.post('/orders/:id/items/:itemId/local-cash-handoffs/:authorizationId/start',
+  authenticate, requireRole(['agent_relais']), async (req,res,next) => {
+    if (!relayCashRefundEnabled()) return denyUncertifiedRelayCash(res);
+    try {
+      const result=await beginCashHandoff({
+        orderId:req.params.id,orderItemId:req.params.itemId,
+        authorizationId:req.params.authorizationId,actor:req.user
+      });
+      return res.status(result.replayed?200:202).json(result);
+    }catch(err){return relayCashRefundError(err,res,next);}
+  });
+router.post('/orders/:id/items/:itemId/local-cash-handoffs/:authorizationId/confirm',
+  authenticate, requireRole(['agent_relais']), async (req,res,next) => {
+    if (!relayCashRefundEnabled()) return denyUncertifiedRelayCash(res);
+    try {
+      const b=req.body||{};
+      const result=await confirmCashHandoff({
+        orderId:req.params.id,orderItemId:req.params.itemId,
+        authorizationId:req.params.authorizationId,actor:req.user,
+        signedReceiptRef:b.signed_receipt_ref,payerSignatureProofRef:b.payer_signature_proof_ref,
+        witnessProofRef:b.witness_proof_ref
+      });
+      return res.status(200).json(result);
+    }catch(err){return relayCashRefundError(err,res,next);}
+  });
 
 module.exports = router;

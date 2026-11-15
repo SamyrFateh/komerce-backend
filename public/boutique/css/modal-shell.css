@@ -939,6 +939,7 @@
     border-top: 0;
     margin-top: 0;
   }
+  #k-modal .k-modal-suggestions.u-hidden { display: none; }
   /* Visuels fallback (mode modal standard, non --desktop-list) — owned : modal-shell */
   /* Les visuels --desktop-list (fond, padding responsive) sont owned exclusivement
      par modal-product-lot4-hybrid.css. D10 — aplat --page-bg, dégradé retiré. */

@@ -25,6 +25,19 @@ describe('modal-mobile-canonical.css - suggestion responsibilities', () => {
     );
   });
 
+  test('M4 : rail de suggestions est le seul propriétaire du swipe horizontal', () => {
+    const grid = css.match(/#k-modal \.k-sug-grid\s*\{([^}]*)\}/s)?.[1];
+    expect(grid).toBeTruthy();
+    expect(grid).toMatch(/overflow-x:\s*auto/);
+    expect(grid).toMatch(/box-sizing:\s*border-box/);
+    expect(grid).toMatch(/padding:\s*2px 45px 4px 2px/);
+    expect(grid).toMatch(/margin-right:\s*0/);
+    expect(grid).toMatch(/overscroll-behavior-x:\s*contain/);
+    expect(grid).toMatch(/scroll-snap-type:\s*x proximity/);
+    expect(css).toMatch(/#k-modal \.k-sug-grid \.k-sug-card\s*\{[^}]*scroll-snap-align:\s*start/s);
+    expect(css).not.toMatch(/margin-right:\s*45px/);
+  });
+
   test('keeps the vertical price then actions layout', () => {
     expect(css).toMatch(
       /#k-modal\s+\.k-sug-card-bottom\s*\{[^}]*flex-direction:\s*column[^}]*align-items:\s*stretch/s

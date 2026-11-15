@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-11-13T15:21:45.463Z",
+  "generatedAt": "2026-11-15T10:03:16.568Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 840,
-    "protected": 781,
+    "total": 846,
+    "protected": 787,
     "public": 59,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -1395,6 +1395,27 @@
     },
     {
       "key": "POST /api/admin/markets",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/orders/{id}/items/{itemId}/local-refund-reservations/{reservationId}/authorize-cash",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/orders/{id}/items/{itemId}/local-refund-reservations/{reservationId}/manual-mobile/{action}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/orders/{id}/items/{itemId}/local-refund-reservations",
       "level": "PROTECTED",
       "roles": [
         "admin"
@@ -5439,6 +5460,20 @@
       ]
     },
     {
+      "key": "POST /api/relay/orders/{id}/items/{itemId}/local-cash-handoffs/{authorizationId}/confirm",
+      "level": "PROTECTED",
+      "roles": [
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "POST /api/relay/orders/{id}/items/{itemId}/local-cash-handoffs/{authorizationId}/start",
+      "level": "PROTECTED",
+      "roles": [
+        "agent_relais"
+      ]
+    },
+    {
       "key": "GET /api/relay/orders/{id}",
       "level": "PROTECTED",
       "roles": [
@@ -6129,10 +6164,17 @@
       "roles": []
     },
     {
-      "key": "POST /api/admin/orders/{id}/items/{itemId}/local-refund-reservations",
+      "key": "GET /api/admin/orders/local-refunds",
       "level": "PROTECTED",
       "roles": [
         "admin"
+      ]
+    },
+    {
+      "key": "GET /api/relay/local-cash-refunds",
+      "level": "PROTECTED",
+      "roles": [
+        "agent_relais"
       ]
     }
   ]
