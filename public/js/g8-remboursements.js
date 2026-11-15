@@ -104,6 +104,7 @@
     if (caution) append(form, 'p', 'hint', caution);
     const button = append(form, 'button', 'action' + (requireConfirmation ? ' action-warning' : ''), action);
     button.type = 'submit';
+    button.setAttribute('data-g8-action', endpoint.split('/').slice(-2).join('-'));
     form.addEventListener('submit', async function (event) {
       event.preventDefault();
       if (!form.reportValidity()) return;
@@ -126,6 +127,7 @@
   function clickAction(parent, label, endpoint, confirmText) {
     const button = append(parent, 'button', 'action action-warning', label);
     button.type = 'button';
+    button.setAttribute('data-g8-action', endpoint.split('/').slice(-2).join('-'));
     button.addEventListener('click', async function () {
       if (!window.confirm(confirmText)) return;
       button.disabled = true;
@@ -204,8 +206,67 @@
       append(box, 'p', 'hint', 'Remise clôturée ; aucune deuxième sortie de caisse.');
     }
   }
+  function ensureReservationForm() {
+    if (userRole !== 'admin' || document.querySelector('#g8-new-reservation')) return;
+    const panel = node('details', 'case');
+    panel.id = 'g8-new-reservation';
+    panel.style.marginBottom = '20px';
+    const summary = append(panel, 'summary', 'case-head', 'Créer une obligation pour un manquant attesté');
+    summary.style.cursor = 'pointer';
+    const box = append(panel, 'div', 'case-body');
+    append(box, 'p', 'hint', 'La réservation ne débite aucune caisse ni opérateur. Une preuve d\'incident existante est obligatoire, et le serveur plafonne les quantités.');
+    const form = append(box, 'form');
+    const keys = [
+      ['order_id', 'UUID de la commande'],
+      ['order_item_id', 'UUID de la ligne manquante'],
+      ['incident_id', 'UUID de l’incident fournisseur ou relais'],
+      ['quantity', 'Quantité effectivement manquante'],
+      ['reason', 'Motif vérifié (au moins 8 caractères)']
+    ];
+    const inputs = {};
+    keys.forEach(([key, labelText]) => {
+      const label = append(form, 'label', 'field');
+      append(label, 'span', '', labelText);
+      const input = append(label, 'input');
+      input.type = key === 'quantity' ? 'number' : 'text';
+      input.required = true;
+      input.name = key;
+      input.autocomplete = 'off';
+      input.maxLength = 200;
+      if (key === 'quantity') input.min = '1';
+      inputs[key] = input;
+    });
+    const btn = append(form, 'button', 'action', 'Réserver cette dette');
+    btn.type = 'submit';
+    btn.setAttribute('data-g8-action', 'reserve');
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      if (!form.reportValidity()) return;
+      if (!window.confirm('Le manquant est-il attesté par un incident existant et la commande réellement encaissée ?')) return;
+      const id = inputs.order_id.value.trim(), itemId = inputs.order_item_id.value.trim();
+      btn.disabled = true;
+      announce('Réservation en cours…');
+      try {
+        const result = await json('/api/admin/orders/' + encodeURIComponent(id) +
+          '/items/' + encodeURIComponent(itemId) + '/local-refund-reservations',
+          'POST', {
+            incident_id: inputs.incident_id.value.trim(),
+            quantity: Number(inputs.quantity.value),
+            operation_key: window.crypto.randomUUID(),
+            reason: inputs.reason.value.trim()
+          });
+        announce('Dette réservée : ' + result.reservationId + '. Aucun montant n’a encore été remboursé.', 'ok');
+        form.reset();
+        await load(true);
+      } catch (error) {
+        announce((error.code ? error.code + ' — ' : '') + error.message, 'error');
+      } finally { btn.disabled = false; }
+    });
+    list.parentNode.insertBefore(panel, list);
+  }
   function renderCase(row) {
     const card = append(list, 'article', 'case');
+    card.setAttribute('data-g8-case', String(row.reservation_id || row.authorization_id));
     const head = append(card, 'div', 'case-head');
     append(head, 'div', 'case-eyebrow', (row.market_code || '') + ' · ' +
       (row.payment_mode === 'cash_relais' ? 'F1 espèces' : 'F2 Mobile Money'));
@@ -236,6 +297,7 @@
         rows.forEach(renderCase);
       }
       env.textContent = 'Recette autorisée';
+      ensureReservationForm();
       if (!preserveNotice) announce('Lecture autorisée. Les opérations ne réalisent aucun transfert automatique.', 'ok');
     } catch (error) {
       env.textContent = 'Parcours désactivé';
