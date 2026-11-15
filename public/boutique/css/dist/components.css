@@ -3387,8 +3387,10 @@ html.k-mobile-premium-v1 .k-chip-label {
        Le carousel n'a plus à réserver artificiellement le rail via padding. */
     grid-column: 1; grid-row: 1;
     display: grid;
-    grid-template-columns: 68px minmax(0, 1fr);
-    column-gap: 10px;
+    --k-pdp-thumb-size: clamp(68px, 5.2vw, 82px);
+    --k-pdp-thumb-gap: clamp(10px, 1.5vw, 24px);
+    grid-template-columns: var(--k-pdp-thumb-size) minmax(0, 1fr);
+    column-gap: var(--k-pdp-thumb-gap);
     align-items: stretch;
     border-radius: 0;
     margin: 0;
@@ -3437,9 +3439,11 @@ html.k-mobile-premium-v1 .k-chip-label {
     flex-direction: column;
     gap: 10px;
     position: static;
-    width: 68px;
-    min-width: 68px;
-    max-height: 100%;
+    width: var(--k-pdp-thumb-size);
+    min-width: var(--k-pdp-thumb-size);
+    /* Rail pouvant défiler indépendamment : six miniatures ne doivent pas
+       agrandir artificiellement la rangée hero au-delà de la photo. */
+    max-height: clamp(340px, 28.5vw, 520px);
     margin: 8px 0;
     z-index: 8;
     overflow-y: auto;
@@ -3455,9 +3459,9 @@ html.k-mobile-premium-v1 .k-chip-label {
      stricte que le checkpoint T-028 d'origine, qui réintroduisait un
      box-shadow décoratif issu d'une base pré-T-021). */
   #k-modal .k-modal-thumb {
-    width: 68px;
-    height: 68px;
-    flex: 0 0 68px;
+    width: var(--k-pdp-thumb-size);
+    height: var(--k-pdp-thumb-size);
+    flex: 0 0 var(--k-pdp-thumb-size);
     border-radius: 12px;
     border: 1.5px solid var(--border-text-10);
     background: var(--white);
@@ -3640,14 +3644,14 @@ html.k-mobile-premium-v1 .k-chip-label {
     width: 132px;
   }
   #k-modal .k-modal-product-zone .k-modal-actions .k-add-cart-btn {
-    flex: 0 0 112px; width: 112px; height: 48px; border-radius: 999px;
+    flex: 0 0 calc(45% - 4px); width: auto; height: 48px; border-radius: 999px;
     background: var(--white); color: var(--action-commerce-text); border: 1.5px solid var(--action-commerce-border);
     font-size: 14px; font-weight: 700;
     /* P0 fix (DIFF-pdp-desktop-simple-vs-enrichi) : overflow:hidden hérité de la
        règle de base fait retomber le min-width automatique du flex-item à 0 au
        lieu de la largeur du texte → troncature ("Ajouter au pa…"). On neutralise
        ici, desktop uniquement. */
-    overflow: visible; text-overflow: clip; min-width: 112px;
+    overflow: visible; text-overflow: clip; min-width: 128px;
   }
   #k-modal .k-modal-product-zone .k-modal-actions.k-modal-actions--filled .k-add-cart-btn {
     display: none;
@@ -4090,9 +4094,9 @@ html.k-mobile-premium-v1 .k-chip-label {
    LOT 6D — SUGGESTIONS TRANSVERSALES DESKTOP
 
    row 1 : ProductMedia | ProductBuyBox
-   row 2 : Suggestions pleine largeur
-   row 3 : Description longue
-   row 4 : Contenu enrichi
+   row 2 : Description longue
+   row 3 : Suggestions pertinentes
+   row 4 : Contenu enrichi complémentaire (après les suggestions)
 
    Le RightRail ne possède plus les suggestions.
    Leur présentation interne reste celle du renderer desktop historique.
@@ -4100,7 +4104,7 @@ html.k-mobile-premium-v1 .k-chip-label {
 @media (min-width: 900px) {
   #k-modal .k-modal-product-zone > #k-modal-suggestions {
     grid-column: 1 / -1;
-    grid-row: 4;
+    grid-row: 3;
     align-self: start;
     box-sizing: border-box;
     width: 100%;
@@ -4120,7 +4124,7 @@ html.k-mobile-premium-v1 .k-chip-label {
 
   #k-modal .k-modal-product-zone > #k-modal-enriched-content {
     grid-column: 1 / -1;
-    grid-row: 3;
+    grid-row: 4;
   }
 }
 
@@ -4583,7 +4587,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   }
 
   #k-modal .k-modal-carousel-handle--prev {
-    left: calc(68px + 10px + 12px);
+    left: calc(var(--k-pdp-thumb-size, 68px) + var(--k-pdp-thumb-gap, 10px) + 12px);
   }
 
   #k-modal .k-modal-carousel-handle--next {
@@ -4770,7 +4774,9 @@ html.k-mobile-premium-v1 .k-chip-label {
     width: 100%;
     max-width: none;
     height: auto;
-    aspect-ratio: 4 / 3;
+    /* L'image CJ est souvent carrée (1000×1000). Le mock présente un
+       cadrage haut, sans bande latérale : carrousel carré natif. */
+    aspect-ratio: 1 / 1;
     align-self: start;
   }
 
@@ -6684,7 +6690,7 @@ html.k-mobile-premium-v1 .k-chip-label {
      modal-shell.css. Grille 4 cols à 1024+, 5 sur large : ce bloc. ── */
   #k-modal-suggestions.k-modal-suggestions--desktop-list {
     background: var(--page-bg);
-    padding: 34px clamp(32px, 5vw, 72px) 56px;
+    padding: 8px clamp(18px, 2vw, 32px) 24px;
   }
 
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-title {
@@ -6693,8 +6699,8 @@ html.k-mobile-premium-v1 .k-chip-label {
 
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-title-text {
     font-family: var(--font-display, var(--font));
-    font-size: 15px;
-    font-weight: 500;
+    font-size: 19px;
+    font-weight: 650;
     line-height: 1.2;
     letter-spacing: -.01em;
     color: var(--text);
@@ -6716,7 +6722,7 @@ html.k-mobile-premium-v1 .k-chip-label {
     #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid,
     #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--same,
     #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--other {
-      grid-template-columns: repeat(5, 1fr);
+      grid-template-columns: repeat(3, minmax(0, 1fr));
     }
   }
 }
@@ -7000,18 +7006,18 @@ html.k-mobile-premium-v1 .k-chip-label {
    ═══════════════════════════════════════════════════════════════ */
 
 @media (min-width: 1200px) {
-  /* Autorité finale de la coque desktop. 22vw borné à 320–390px :
-     confortable à 1440, 1700 et 1920, sans surcharge de la modal. */
+  /* Coque alignée au mock : panier ~18vw, borné à 264–320px.
+     Le contenu produit récupère l'espace sans agrandir la fenêtre. */
   #k-modal .k-modal-body {
-    grid-template-columns: minmax(0, 1fr) clamp(320px, 22vw, 390px);
+    grid-template-columns: minmax(0, 1fr) clamp(264px, 18vw, 320px);
   }
 
-  /* Proportions globales cibles ~45/33/22, après réserve du side-cart.
-     1.326fr / 1fr évite 57% + 43% + gap qui ferait déborder la grille. */
+  /* Proportions internes du mock : média ~45%, BuyBox ~55%.
+     Évite la domination de la galerie observée dans Chromium CM. */
   #k-modal .k-modal-product-zone {
-    grid-template-columns: minmax(0, 1.326fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, .83fr) minmax(0, 1fr);
     gap: 18px;
-    padding: 16px 18px;
+    padding: 16px 18px 16px 40px;
   }
 
   /* Une buybox plus large n'a pas besoin des gros paddings historiques. */

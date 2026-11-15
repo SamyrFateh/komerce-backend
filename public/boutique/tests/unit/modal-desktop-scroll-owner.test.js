@@ -119,7 +119,7 @@ describe('scroll owner unique desktop — oracle RÉF-2026-07f', () => {
       /#k-modal \.k-modal-product-zone \.k-modal-carousel\s*\{([^}]*)\}/
     )?.[1] ?? '';
 
-    expect(carouselRule).toMatch(/aspect-ratio\s*:\s*4\s*\/\s*3/);
+    expect(carouselRule).toMatch(/aspect-ratio\s*:\s*1\s*\/\s*1/);
     expect(carouselRule).toMatch(/max-width\s*:\s*none/);
     expect(carouselRule).toMatch(/height\s*:\s*auto/);
     expect(carouselRule).toMatch(/align-self\s*:\s*start/);

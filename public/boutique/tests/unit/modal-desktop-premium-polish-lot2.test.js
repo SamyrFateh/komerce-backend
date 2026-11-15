@@ -53,9 +53,9 @@ describe('PDP desktop premium polish — lot 2', () => {
 
     expect(add).toMatch(/height:\s*48px/);
     expect(add).toMatch(/font-size:\s*14px/);
-    expect(add).toMatch(/flex:\s*0 0 112px/);
-    expect(add).toMatch(/width:\s*112px/);
-    expect(add).toMatch(/min-width:\s*112px/);
+    expect(add).toMatch(/flex:\s*0 0 calc\(45% - 4px\)/);
+    expect(add).toMatch(/width:\s*auto/);
+    expect(add).toMatch(/min-width:\s*128px/);
     expect(buy).toMatch(/height:\s*48px/);
     expect(buy).toMatch(/font-size:\s*14px/);
     expect(desktopProduct).toMatch(/textContent\s*=\s*'⚡ Acheter'/);

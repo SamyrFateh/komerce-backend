@@ -616,7 +616,7 @@
         "status": "production",
         "owner": "backend-core",
         "since": "2026-07",
-        "service": "Arbitrer et liquider la valeur immobilisée d'une commande invendue (WhatsApp, revendeur, don, destruction).",
+        "service": "Garder les colis non retirés sous responsabilité du relais ; la liquidation n'est autorisée qu'après clôture physique, juridique et financière certifiée.",
         "businessKind": "business-feature",
         "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
@@ -19562,6 +19562,13 @@
       },
       {
         "feature": "refunds",
+        "category": "migrations",
+        "declared": "migrations/416_fable_local_item_refund_reservations.sql",
+        "resolvedPath": "migrations/416_fable_local_item_refund_reservations.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "refunds",
         "category": "services",
         "declared": "services/refund-service.js",
         "resolvedPath": "services/refund-service.js",
@@ -19573,6 +19580,13 @@
         "declared": "services/item-refund-reservation-service.js",
         "resolvedPath": "services/item-refund-reservation-service.js",
         "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "refunds",
+        "category": "services",
+        "declared": "services/local-item-refund-reservation.js",
+        "resolvedPath": "services/local-item-refund-reservation.js",
+        "status": "resolved-on-disk-no-header"
       },
       {
         "feature": "refunds",
@@ -19649,6 +19663,20 @@
         "category": "tests",
         "declared": "tests/unit/item-refund-reservation-service.test.js",
         "resolvedPath": "tests/unit/item-refund-reservation-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "refunds",
+        "category": "tests",
+        "declared": "tests/unit/local-item-refund-reservation.test.js",
+        "resolvedPath": "tests/unit/local-item-refund-reservation.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "refunds",
+        "category": "tests",
+        "declared": "tests/e2e-api/refunds.local-shortage-reservation.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/refunds.local-shortage-reservation.e2e.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -21126,6 +21154,13 @@
         "category": "tests",
         "declared": "tests/unit/supplier-platform-allegro.test.js",
         "resolvedPath": "tests/unit/supplier-platform-allegro.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "unsold-resolution",
+        "category": "migrations",
+        "declared": "migrations/415_paid_no_show_liquidation_guard.sql",
+        "resolvedPath": "migrations/415_paid_no_show_liquidation_guard.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -44857,6 +44892,10 @@
               },
               {
                 "sourceFileId": "routes/admin/orders.js",
+                "targetFile": "services/local-item-refund-reservation.js"
+              },
+              {
+                "sourceFileId": "routes/admin/orders.js",
                 "targetFile": "services/item-refund-psp-orchestrator.js"
               },
               {
@@ -47318,6 +47357,10 @@
                 "targetFile": "services/hub-procurement-dossier.js"
               },
               {
+                "sourceFileId": "tests/integration/hub-p0-procurement-chain-postgres.test.js",
+                "targetFile": "services/hub-physical-identity.js"
+              },
+              {
                 "sourceFileId": "tests/integration/hub-autonomous-purchasing-postgres.test.js",
                 "targetFile": "services/hub-operations.js"
               },
@@ -47951,6 +47994,10 @@
               },
               {
                 "sourceFileId": "services/item-refund-reservation-service.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/local-item-refund-reservation.js",
                 "targetFile": "db.js"
               },
               {
@@ -49871,7 +49918,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2338
+        "filesObserved": 2341
       },
       "boutique": {
         "filesObserved": 216,
@@ -53544,6 +53591,19 @@
       "resolution": "single-writer"
     },
     "order_item_refund_reservations": {
+      "writers": [
+        {
+          "feature": "refunds",
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "refunds",
+      "resolution": "single-writer"
+    },
+    "local_item_refund_reservations": {
       "writers": [
         {
           "feature": "refunds",

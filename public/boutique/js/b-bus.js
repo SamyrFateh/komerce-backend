@@ -38,6 +38,7 @@
  *   discovery:request { kind, ref, source, requestedWindow } — agir sur une offre/service Discovery ; requestedWindow est facultatif ; catalog → providers-services
  *   modal:suggestions-rendered { product } — suggestions modal rendues, prêtes pour curation PDP
  *   carousel:changed { index }             — slide produit actif changé ; synchroniser l'UX image
+ *   carousel:fullscreen-return { index }   — fermeture du zoom : restituer l'image N du SKU dans le carrousel canonique [b-modal-image-ux.js → b-modal-product.js]
  *   modal:detail-ready —                  — Product Detail Contract résolu ; réconcilier l'état panier modal
  *   modal:selection-rendered —            — un axe SKU a été choisi et le renderer responsive a fini ; réconcilier les CTA sur la sélection finale
  *   nav:goto-track   —                  — ouvrir l'onglet Suivi depuis la confirmation de commande [b-checkout.js → b-nav.js, FIX 2026-07-11]
@@ -87,7 +88,7 @@
  * ajouté ici, pas seulement câblé) :
  *   modal:opened     : b-modal-product-detail-bootstrap.js, boutique.js, b-pdp-curation-suggestions.js, b-pager.js, b-modal-desktop-enhancers.js
  *   modal:discovery-opened : b-modal-discovery-detail.js
- *   modal:closed     : b-modal-product-detail-bootstrap.js, b-modal-discovery-detail.js, b-pager.js, group-side-cart.js, local-stock-badge-mount.js, discovery-rail.js
+ *   modal:closed     : b-modal-product-detail-bootstrap.js, b-modal-discovery-detail.js, b-modal-image-ux.js, b-pager.js, group-side-cart.js, local-stock-badge-mount.js, discovery-rail.js
  *   modal:composition-synced : b-modal-desktop-enhancers.js, b-modal-core.js, b-modal-suggestions.js
  *   discovery:request : discovery-inquiry.js
  *

@@ -2,8 +2,8 @@
   "generatedAt": "2026-11-13T15:21:45.463Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 839,
-    "protected": 780,
+    "total": 840,
+    "protected": 781,
     "public": 59,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -6127,6 +6127,13 @@
       "key": "POST /webhook/meta-whatsapp",
       "level": "PUBLIC",
       "roles": []
+    },
+    {
+      "key": "POST /api/admin/orders/{id}/items/{itemId}/local-refund-reservations",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
     }
   ]
 }

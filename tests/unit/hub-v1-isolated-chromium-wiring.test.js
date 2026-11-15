@@ -99,8 +99,9 @@ test('Customs page requires its actual international journey component, not unre
   expect(src).toContain("info.status !== 'passed'");
   expect(src).toContain("verdict: info.status === 'skipped' ? 'NOT_RUN' : 'CLICK_FAIL'");
   expect(src).toContain("key: 'full-suite:coverage'");
-  expect((src.match(/^\s*test\('/gm)||[])).toHaveLength(10);
-  expect(src).toContain("if (successfulTests !== 10)");
+  expect((src.match(/^\s*test\('/gm)||[])).toHaveLength(11);
+  expect(src).toContain("const REQUIRED_CHROMIUM_TESTS = 11;");
+  expect(src).toContain("if (successfulTests !== REQUIRED_CHROMIUM_TESTS)");
 });
 test('Relay LOCAL_STOCK flow uses the physical receipt lane, then the code-only handoff Kanban',()=>{
   const src=get('tests/staging-clicks/hub-v1-clicks.spec.js');

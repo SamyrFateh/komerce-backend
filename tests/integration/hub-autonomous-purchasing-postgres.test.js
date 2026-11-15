@@ -98,6 +98,34 @@ if (!process.env.DATABASE_URL) {
     expect(need).toBe(5); // 3 soldées + 2 reliquat : aucun double comptage
   });
 
+  test('T6/HB-11 PG16 : PO manuelle sans variante SKU refusée avant tout engagement', async () => {
+    // Une ligne manuelle sans SKU est permise à la saisie. Elle ne doit pas
+    // être transformée en PO regroupée impossible à réceptionner ensuite.
+    const item = await makeOrderItem(1);
+    await q('UPDATE order_items SET sku_id=NULL WHERE id=$1', [item]);
+    const { supplier, mapping } = await localSupplier('SansVariante');
+    const created = await engagement.createManualLine(
+      { order_item_id: item, product_supplier_id: mapping, quantity: 1 },
+      { actor: admin });
+    const lineId = created.line.line_id;
+    expect((await q(
+      'SELECT product_sku_id FROM purchase_lines WHERE id=$1', [lineId]
+    )).rows[0].product_sku_id).toBeNull();
+
+    await expect(grouped.preparePurchaseOrder({
+      supplier_id: supplier, procurement_hub_ref: 'DXB', line_ids: [lineId],
+      execution_mode: 'manual',
+    }, { actor: admin })).rejects.toMatchObject({
+      status: 409, code: 'PURCHASE_LINE_VARIANT_REQUIRED',
+    });
+    const stillOpen = (await q(
+      'SELECT purchase_order_id, cancelled_at FROM purchase_lines WHERE id=$1',
+      [lineId])).rows[0];
+    expect(stillOpen.purchase_order_id).toBeNull();
+    expect(stillOpen.cancelled_at).toBeNull();
+    // Le message lisible sur Chromium reste à prouver dans T6 staging.
+  });
+
   test('mode API refusé pour un fournisseur sans intégration distante ; mode invalide refusé', async () => {
     const item = await makeOrderItem(1);
     const { supplier, mapping } = await localSupplier('Local2');

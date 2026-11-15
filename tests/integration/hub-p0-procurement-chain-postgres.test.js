@@ -377,6 +377,52 @@ describeDb('Hub P0 — chaîne d\'approvisionnement complète (REAL_DB)', () => 
       await expect(engagement.recordPurchaseOrderSent(km1.po, { channel: 'pigeon' }, { actor: actor() })).rejects.toMatchObject({ status: 400 });
     });
 
+    test('T1/T2 : réception complète IMPORT déclenche préparation, SCAN 3, colis, rejeu sans duplication', async () => {
+      const o = await makeOrder({
+        market: km, relais: relaisKm, supplier: supplierA,
+        items: [{ sku: sku1, qty: 1 }],
+      });
+      const prepared = await grouped.preparePurchaseOrder(
+        { supplier_id: supplierA, procurement_hub_ref: 'DXB', line_ids: [o.lines[0].lineId] },
+        { actor: actor() }
+      );
+      const poId = prepared.purchase_order.id;
+      await submitAuthorized(engagement, poId, { actor: actor() });
+      await engagement.recordPurchaseOrderSent(poId, { channel: 'whatsapp' }, { actor: actor() });
+      await engagement.confirmGroupedPurchaseOrder(poId, {
+        purchase_proof_ref: 'T1-T2-COMPLETE', seller_label: 'Vendeur test',
+        supplier_order_id: 'T1-T2-' + tag,
+        lines: [{ purchase_line_id: o.lines[0].lineId, confirmed_quantity: 1 }],
+      }, { actor: actor() });
+
+      const ref = tag + '-T1-T2-RX';
+      const before = await q('SELECT status::text AS status FROM orders WHERE id=$1', [o.orderId]);
+      expect(before.rows[0].status).toBe('ordered');
+      const res = await receive(poId, sku1.id, 1, ref);
+      expect(res.status).toBe(201);
+      const after = await q('SELECT status::text AS status FROM orders WHERE id=$1', [o.orderId]);
+      expect(after.rows[0].status).toBe('preparation');
+      const count = async () => {
+        const { rows: [r] } = await q(
+          "SELECT (SELECT COUNT(*)::int FROM scans WHERE order_id=$1 AND step='preparation' " +
+          "AND scan_code = 'AUTO-HUB-' || $1::text) AS scan3, " +
+          "(SELECT COUNT(*)::int FROM parcel_items pi JOIN order_items oi ON oi.id=pi.order_item_id " +
+          "JOIN parcels p ON p.id=pi.parcel_id AND p.cancelled_at IS NULL WHERE oi.order_id=$1) AS parcel_lines, " +
+          "(SELECT COALESCE(SUM(pi.quantity),0)::int FROM parcel_items pi " +
+          "JOIN order_items oi ON oi.id=pi.order_item_id " +
+          "JOIN parcels p ON p.id=pi.parcel_id AND p.cancelled_at IS NULL WHERE oi.order_id=$1) AS parcel_qty, " +
+          "(SELECT COUNT(*)::int FROM hub_physical_units WHERE reference=$2) AS received_units",
+          [o.orderId, ref]);
+        return r;
+      };
+      const first = await count();
+      expect(first).toEqual({ scan3: 1, parcel_lines: 1, parcel_qty: 1, received_units: 1 });
+      const replay = await receive(poId, sku1.id, 1, ref);
+      expect(replay.status).toBe(200);
+      expect(await count()).toEqual(first);
+      expect((await q('SELECT status::text AS status FROM orders WHERE id=$1', [o.orderId])).rows[0].status).toBe('preparation');
+    });
+
     test('mauvaise variante, sur-réception et double saisie idempotente', async () => {
       await engagement.confirmGroupedPurchaseOrder(km1.po, { purchase_proof_ref: 'RECU-HUB-P0', seller_label: 'Vendeur test',
         supplier_order_id: `SO2-${tag}`, lines: [{ purchase_line_id: km1.lines[0].lineId, confirmed_quantity: 1 }],
@@ -397,6 +443,102 @@ describeDb('Hub P0 — chaîne d\'approvisionnement complète (REAL_DB)', () => 
       expect(await received(km1.lines[0].lineId)).toBe(1);
     });
 
+    test('C2 H5a/H6 : deux réceptions concurrentes sur une PO et la même variante ne sur-reçoivent jamais', async () => {
+      // Deux demandes indépendantes, références distinctes, pour une seule unité autorisée.
+      // Le service crée ses propres transactions PostgreSQL (pas de données staging).
+      const o = await makeOrder({
+        market: km, relais: relaisKm, supplier: supplierA,
+        items: [{ sku: sku1, qty: 1 }],
+      });
+      const prepared = await grouped.preparePurchaseOrder(
+        { supplier_id: supplierA, procurement_hub_ref: 'DXB', line_ids: [o.lines[0].lineId] },
+        { actor: actor() }
+      );
+      const poId = prepared.purchase_order.id;
+      await submitAuthorized(engagement, poId, { actor: actor() });
+      await engagement.recordPurchaseOrderSent(poId, { channel: 'whatsapp' }, { actor: actor() });
+      await engagement.confirmGroupedPurchaseOrder(poId, {
+        purchase_proof_ref: 'C2-CONTENTION-RECU',
+        seller_label: 'Vendeur test',
+        supplier_order_id: 'C2-' + tag,
+        lines: [{ purchase_line_id: o.lines[0].lineId, confirmed_quantity: 1 }],
+      }, { actor: actor() });
+
+      const outcomes = await Promise.allSettled([
+        receive(poId, sku1.id, 1, tag + '-C2-RX1'),
+        receive(poId, sku1.id, 1, tag + '-C2-RX2'),
+      ]);
+      // Une exception brute (23505, 23514, 500, etc.) ne vaut jamais refus métier.
+      expect(outcomes.every(r => r.status === 'fulfilled')).toBe(true);
+      const statuses = outcomes.map(r => r.value.status);
+      expect(statuses.filter(s => s === 201)).toHaveLength(1);
+      expect(statuses.every(s => s === 201 || s === 202 || (s >= 400 && s < 500))).toBe(true);
+
+      const lineId = o.lines[0].lineId;
+      expect(await received(lineId)).toBe(1);
+      const { rows: [coverage] } = await q(
+        "SELECT COALESCE(SUM(pl.quantity),0)::int AS physical_qty " +
+        "FROM hub_physical_unit_placements pl " +
+        "JOIN hub_purchase_allocations a ON a.id=pl.allocation_id " +
+        "WHERE a.purchase_line_id=$1 AND pl.operation_type='RECEIVE' AND pl.removed_at IS NULL",
+        [lineId]
+      );
+      expect(coverage.physical_qty).toBe(1);
+      const { rows: [ordered] } = await q(
+        'SELECT effective_quantity, received_quantity FROM v_purchase_line_progress WHERE line_id=$1',
+        [lineId]
+      );
+      expect(Number(ordered.received_quantity)).toBeLessThanOrEqual(Number(ordered.effective_quantity));
+    });
+
+    test('C3 H5a/H5b : confirmation réduite en concurrence avec réception interdit le reliquat fantôme', async () => {
+      const o = await makeOrder({
+        market: km, relais: relaisKm, supplier: supplierA,
+        items: [{ sku: sku2, qty: 2 }],
+      });
+      const prepared = await grouped.preparePurchaseOrder(
+        { supplier_id: supplierA, procurement_hub_ref: 'DXB', line_ids: [o.lines[0].lineId] },
+        { actor: actor() }
+      );
+      const poId = prepared.purchase_order.id;
+      await submitAuthorized(engagement, poId, { actor: actor() });
+      await engagement.recordPurchaseOrderSent(poId, { channel: 'whatsapp' }, { actor: actor() });
+
+      const results = await Promise.allSettled([
+        engagement.confirmGroupedPurchaseOrder(poId, {
+          purchase_proof_ref: 'C3-CONTENTION-RECU', seller_label: 'Vendeur test',
+          supplier_order_id: 'C3-' + tag,
+          lines: [{ purchase_line_id: o.lines[0].lineId, confirmed_quantity: 1 }],
+        }, { actor: actor() }),
+        receive(poId, sku2.id, 2, tag + '-C3-RECEIVE'),
+      ]);
+      const confirmation = results[0];
+      const reception = results[1];
+      if (reception.status === 'fulfilled') {
+        expect(reception.value.status).toBeLessThan(500);
+      } else {
+        // Une erreur SQL brute est un défaut, pas un refus de ligne de commande.
+        expect(reception.reason.status).toBeGreaterThanOrEqual(400);
+        expect(reception.reason.status).toBeLessThan(500);
+      }
+      if (confirmation.status === 'rejected') {
+        expect(confirmation.reason.status).toBeGreaterThanOrEqual(400);
+        expect(confirmation.reason.status).toBeLessThan(500);
+      }
+      // Au moins une action doit avoir passé l'autorité métier ; aucun faux PASS si les deux bloquent.
+      expect(confirmation.status === 'fulfilled' ||
+        (reception.status === 'fulfilled' && reception.value.status === 201)).toBe(true);
+      const { rows: [progress] } = await q(
+        'SELECT effective_quantity, received_quantity FROM v_purchase_line_progress WHERE line_id=$1',
+        [o.lines[0].lineId]
+      );
+      const confirmed = Number(progress.effective_quantity);
+      const qtyReceived = Number(progress.received_quantity);
+      expect(qtyReceived).toBeLessThanOrEqual(confirmed);
+      if (qtyReceived === 2) expect(confirmation.status).toBe('rejected');
+      if (confirmation.status === 'fulfilled') expect(confirmed).toBe(1);
+    });
+
     test('carton CM refusé vers une expédition KM, et carton rattaché deux fois', async () => {
       const shipKm = `${tag}-SHIPKM`;
       await q(`INSERT INTO international_shipments(id,market_id,reference,forwarder_name,transport_mode,stage,created_by)
@@ -411,6 +553,121 @@ describeDb('Hub P0 — chaîne d\'approvisionnement complète (REAL_DB)', () => 
       } finally { await client.query("SET session_replication_role='origin'"); client.release(); }
       await expect(boxShipment.attachBoxToShipment({ unitId: boxCm, shipmentReference: shipKm }))
         .rejects.toMatchObject({ code: 'HUB_BOX_SHIPMENT_MARKET_MISMATCH' });
+    });
+
+    test('T4/HB-06 PG16 : réception en quarantaine exclue du reçu et de la complétude', async () => {
+      // Le test porte sur la vérité physique PostgreSQL. L'action UI de mise
+      // en quarantaine reste une preuve séparée, jamais simulée comme un clic.
+      const completion = require('../../services/purchasing-completion-service');
+      const o = await makeOrder({
+        market: km, relais: relaisKm, supplier: supplierA,
+        items: [{ sku: sku2, qty: 2 }],
+      });
+      const pl = o.lines[0];
+      const prepared = await grouped.preparePurchaseOrder(
+        { supplier_id: supplierA, procurement_hub_ref: 'DXB', line_ids: [pl.lineId] },
+        { actor: actor() });
+      const po = prepared.purchase_order.id;
+      await submitAuthorized(engagement, po, { actor: actor() });
+      await engagement.recordPurchaseOrderSent(
+        po, { channel: 'whatsapp', note: 'T4 mise en quarantaine PG' }, { actor: actor() });
+      await engagement.confirmGroupedPurchaseOrder(po, {
+        purchase_proof_ref: 'T4-HB06-' + tag,
+        seller_label: 'Fournisseur test',
+        supplier_order_id: 'T4-' + tag,
+        lines: [{ purchase_line_id: pl.lineId, confirmed_quantity: 2 }],
+      }, { actor: actor() });
+
+      const ref = tag + '-T4-QUAR';
+      expect((await receive(po, sku2.id, 1, ref)).status).toBe(201);
+      expect(await received(pl.lineId)).toBe(1);
+      const unit = (await q('SELECT id FROM hub_physical_units WHERE reference=$1', [ref])).rows;
+      expect(unit).toHaveLength(1);
+      // La quarantaine non destructive exige un incident préalable (garde SQL).
+      // Tester ici une unité perdue via le writer canonique : état QUARANTINED,
+      // outcome LOST durable, exclusion de la couverture. Aucun bypass du trigger.
+      const { recordPhysicalUnitOutcome } = require('../../services/hub-physical-identity');
+      const lost = await db.withTransaction((client) => recordPhysicalUnitOutcome(client, {
+        unitId: unit[0].id, outcomeType: 'LOST', details: { reason: 'T4 colis perdu en contrôle' },
+      }));
+      expect(lost.unit).toMatchObject({ state: 'QUARANTINED', outcome_type: 'LOST' });
+      expect(await received(pl.lineId)).toBe(0);
+      const verdict = await completion.evaluateOrderProcurementCompletion(o.orderId, { actor: actor() });
+      expect(verdict.complete).toBe(false);
+      expect(verdict.transition).toBe('skipped');
+      expect((await q('SELECT status::text AS status FROM orders WHERE id=$1', [o.orderId])).rows[0].status)
+        .toBe('ordered');
+      expect((await q(
+        'SELECT COUNT(*)::int AS n FROM parcel_items pi ' +
+        'JOIN order_items oi ON oi.id=pi.order_item_id WHERE oi.order_id=$1',
+        [o.orderId])).rows[0].n).toBe(0);
+    });
+
+    test('T3/HB-02 PG16 : rupture soldée sans reliquat => incident unique, reçu réparti, commande avancée', async () => {
+      // Cohorte locale PostgreSQL 16 uniquement : aucune donnée staging ou PSP réel.
+      const completion = require('../../services/purchasing-completion-service');
+      const o = await makeOrder({
+        market: km, relais: relaisKm, supplier: supplierA,
+        items: [{ sku: sku2, qty: 2 }],
+      });
+      const pl = o.lines[0];
+      const prepared = await grouped.preparePurchaseOrder(
+        { supplier_id: supplierA, procurement_hub_ref: 'DXB', line_ids: [pl.lineId] },
+        { actor: actor() });
+      const po = prepared.purchase_order.id;
+      await submitAuthorized(engagement, po, { actor: actor() });
+      await engagement.recordPurchaseOrderSent(
+        po, { channel: 'whatsapp', note: 'T3 envoi fournisseur simulé' }, { actor: actor() });
+      await engagement.confirmGroupedPurchaseOrder(po, {
+        purchase_proof_ref: 'T3-HB02-' + tag,
+        seller_label: 'Fournisseur test',
+        supplier_order_id: 'T3-' + tag,
+        lines: [{ purchase_line_id: pl.lineId, confirmed_quantity: 2 }],
+      }, { actor: actor() });
+
+      const inbound = await receive(po, sku2.id, 1, tag + '-T3-RECU');
+      expect(inbound.status).toBe(201);
+      expect(await received(pl.lineId)).toBe(1);
+      expect((await q('SELECT status::text AS status FROM orders WHERE id=$1', [o.orderId])).rows[0].status)
+        .toBe('ordered');
+
+      const settled = await engagement.settleLine(pl.lineId, {
+        settled_quantity: 1, reason: 'rupture fournisseur définitive T3',
+        reopen_remainder: false,
+      }, { actor: actor() });
+      expect(settled.remnant).toBeNull();
+      const verdict = await completion.evaluateOrderProcurementCompletion(o.orderId, { actor: actor() });
+      expect(verdict).toMatchObject({ complete: true, transition: 'preparation',
+        shortages: [{ order_item_id: pl.itemId, missing_quantity: 1, received_quantity: 1 }] });
+      const state = (await q('SELECT status::text AS status FROM orders WHERE id=$1', [o.orderId])).rows[0];
+      expect(state.status).toBe('preparation');
+      const distributed = (await q(
+        'SELECT COALESCE(SUM(pi.quantity),0)::int AS qty FROM parcel_items pi ' +
+        'JOIN order_items oi ON oi.id=pi.order_item_id ' +
+        'JOIN parcels p ON p.id=pi.parcel_id AND p.cancelled_at IS NULL WHERE oi.order_id=$1',
+        [o.orderId])).rows[0];
+      expect(distributed.qty).toBe(1);
+
+      const incidents = (await q(
+        "SELECT id FROM incidents WHERE order_item_id=$1 AND details->>'type'='supplier_shortage'",
+        [pl.itemId])).rows;
+      expect(incidents).toHaveLength(1);
+      const alerts = (await q(
+        "SELECT COUNT(*)::int AS n FROM alerts WHERE type='supplier_shortage_refund_required' AND entity_id=$1",
+        [incidents[0].id])).rows[0];
+      expect(alerts.n).toBe(1);
+
+      // Le recalcul après réception/rejeu ne crée ni second incident, ni second colis.
+      await completion.evaluateOrderProcurementCompletion(o.orderId, { actor: actor() });
+      expect((await q(
+        "SELECT COUNT(*)::int AS n FROM incidents WHERE order_item_id=$1 AND details->>'type'='supplier_shortage'",
+        [pl.itemId])).rows[0].n).toBe(1);
+      expect((await q(
+        'SELECT COALESCE(SUM(pi.quantity),0)::int AS qty FROM parcel_items pi ' +
+        'JOIN order_items oi ON oi.id=pi.order_item_id ' +
+        'JOIN parcels p ON p.id=pi.parcel_id AND p.cancelled_at IS NULL WHERE oi.order_id=$1',
+        [o.orderId])).rows[0].qty).toBe(1);
+      // Le paiement effectif du remboursement appartient à F1/F2 et n'est PAS certifié ici.
     });
 
     test('fournisseur indisponible : annulation puis reprise chez B, le reliquat réapparaît dans les besoins', async () => {

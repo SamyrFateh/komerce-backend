@@ -57,9 +57,13 @@ module.exports = {
   // ── Perimetre fichiers ───────────────────────────────────────────────────
   files: {
     utils: [],
+    migrations: [
+      'migrations/416_fable_local_item_refund_reservations.sql',
+    ],
     services: [
       'services/refund-service.js',
       'services/item-refund-reservation-service.js',
+      'services/local-item-refund-reservation.js',
       'services/item-refund-psp-orchestrator.js',
       'services/refund-intent-ledger.js',
       'services/paypal-refund-authority.js',
@@ -80,6 +84,8 @@ module.exports = {
       'tests/e2e-api/refunds.credits-cash-numeric.e2e.test.js',
       'tests/unit/refund-service.test.js',
       'tests/unit/item-refund-reservation-service.test.js',
+      'tests/unit/local-item-refund-reservation.test.js',
+      'tests/e2e-api/refunds.local-shortage-reservation.e2e.test.js',
       'tests/unit/item-refund-psp-orchestrator.test.js',
       'tests/e2e-api/refunds.item-partial-physical.e2e.test.js',
       'tests/unit/refund-intent-ledger.test.js',
@@ -116,6 +122,7 @@ module.exports = {
       'refunds: RW',
       'refund_execution_intents: RW',
       'order_item_refund_reservations: RW',
+      'local_item_refund_reservations: RW',
       'order_items: R',
       'international_shipment_relay_receipts: R',
       'wallets: R',
@@ -154,6 +161,10 @@ module.exports = {
 
   // ── Invariants propres ───────────────────────────────────────────────────
   invariants: [
+    { statement: 'Fable F1/F2: le paiement cash ou Mobile Money attesté ouvre une obligation locale en devise d origine, sans marquer paid ni écrire refunds ou wallet avant preuve de sortie ; les rails PSP restent exclus',
+      test: 'tests/e2e-api/refunds.local-shortage-reservation.e2e.test.js' },
+    { statement: 'Fable F1/F2: l opération UUID est rejouable à l identique, mais refusée en divergence ; quantités et sommes réservées restent plafonnées à la preuve physique et à la capture, même avec une autre route de remboursement',
+      test: 'tests/unit/local-item-refund-reservation.test.js' },
     { statement: 'FA-04/08 F3 : annulation Stripe reserve l intention avant COMMIT metier, jamais de POST fournisseur sous transaction, un resultat inconnu ne declenche aucun fallback wallet et reste a rapprocher',
       test: 'tests/unit/stripe-refund-authority.test.js' },
     { statement: 'FA-08 : annulation Stripe en deux transactions PostgreSQL physiques, une seule intention, rollback avant COMMIT sans trace PSP ni annulation perdue', test: 'tests/e2e-api/refunds.stripe-business-intent-concurrency.e2e.test.js' },

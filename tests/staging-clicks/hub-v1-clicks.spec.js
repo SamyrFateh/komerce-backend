@@ -26,6 +26,7 @@ const MARKET_LABEL = MARKET_LABELS[MARKET_CODE];
 if (!MARKET_LABEL) throw new Error('E2E_CLICKS_MARKET invalide : ' + MARKET_CODE);
 const evidence = { schema: 'komerce-hub-v1-clicks/1', run8: RUN8, base: null, gestures: [], tests: [] };
 const save = () => { fs.mkdirSync(OUT, { recursive: true }); fs.writeFileSync(EVID, JSON.stringify(evidence, (k, v) => (k === 'json' ? undefined : v), 2) + '\n'); };
+const REQUIRED_CHROMIUM_TESTS = 11; // 10 gestes canoniques + T8, modifier avec le plan de recette.
 const shared = { bagRefs: {}, box: null, shipment: null, states: {} }; // states : une connexion par role (evite le rate-limit du login)
 let counter = 0;
 
@@ -166,9 +167,9 @@ test.describe.serial(`Hub V1 : clics reels Chromium (${MARKET_CODE}, fixture E2E
   test.afterAll(async () => {
     if (process.env.E2E_CLICKS_ALLOW_DISTRIBUTION === '1') {
       const successfulTests = evidence.tests.filter(t => t.status === 'passed').length;
-      if (successfulTests !== 10) evidence.gestures.push({
+      if (successfulTests !== REQUIRED_CHROMIUM_TESTS) evidence.gestures.push({
         key: 'full-suite:coverage', role: 'harness', route: null, verdict: 'NOT_RUN', http: null,
-        note: 'campagne physique incomplète : ' + successfulTests + '/10 tests Playwright réussis',
+        note: 'campagne physique incomplète : ' + successfulTests + '/' + REQUIRED_CHROMIUM_TESTS + ' tests Playwright réussis',
       });
     }
     const failures=evidence.gestures.filter((row)=>row.verdict!=='CLICK_PASS');
@@ -205,13 +206,147 @@ test.describe.serial(`Hub V1 : clics reels Chromium (${MARKET_CODE}, fixture E2E
       await scanResp;
       const qty = card.locator('input.kmc-workspace-receive-qty').first();
       await qty.fill(await qty.getAttribute('max'));
-      await gesture(page, {
+      // T2 : mémoriser uniquement en mémoire la requête exacte envoyée par le clic UI.
+      let originalPost = null;
+      const captureReceive = (request) => {
+        if (request.method() === 'POST' && new URL(request.url()).pathname === '/api/scans/hub/receive') {
+          originalPost = request.postDataJSON();
+        }
+      };
+      page.on('request', captureReceive);
+      const receipt = await gesture(page, {
         key: `hub:receive:${poId.slice(0, 8)}`, role: 'agent_hub', route: 'POST /api/scans/hub/receive',
         ui: 'operations-workspace.js:createReceptionCard (Enregistrer la réception)', match: (p) => p === '/api/scans/hub/receive',
         click: () => card.locator('[data-workspace-action="receive-supplier"]').click(),
       });
+      page.off('request', captureReceive);
+
+      expect(receipt.verdict).toBe('CLICK_PASS');
+      const receivedRef = receipt.json?.unit?.reference;
+      expect(receivedRef, 'T2 référence du colis fournisseur créé').toMatch(/^SUPPLIER_PACKAGE-/);
+      expect(originalPost?.reference, 'T2 payload original du clic').toBe(receivedRef);
+      expect(originalPost?.contents?.length).toBeGreaterThan(0);
+      const beforeReplay = await q("SELECT COUNT(*)::int AS n FROM hub_physical_units WHERE reference=$1", [receivedRef]);
+      expect(beforeReplay[0].n).toBe(1);
+      // Le client API Playwright n'injecte pas d'Origin automatiquement : sans cet en-tête,
+      // la protection CSRF répond 403 (et ce refus ne doit jamais être pris pour un refus métier).
+      const replay = await page.request.post('/api/scans/hub/receive', {
+        headers: { Origin: new URL(page.url()).origin },
+        data: originalPost,
+      });
+      const replayResult = await replay.json().catch(() => ({}));
+      expect(replay.status(), 'T2 rejeu authentifié + Origin canonique ; code=' + (replayResult.code || 'none')).toBe(200);
+      const afterReplay = await q("SELECT COUNT(*)::int AS n FROM hub_physical_units WHERE reference=$1", [receivedRef]);
+      expect(afterReplay[0].n).toBe(1);
+      // Controle independant de la seconde action UI apres le retour canonique.
+      // Une PO totalement recue ne doit plus permettre un second enregistrement.
+      const remaining = await q(
+        "SELECT COALESCE(SUM(GREATEST(v.effective_quantity-v.received_quantity,0)),0)::int AS qty " +
+        "FROM v_purchase_line_progress v JOIN purchase_lines pl ON pl.id=v.line_id " +
+        "WHERE pl.purchase_order_id=$1 AND NOT v.cancelled", [poId]);
+      const button = page.locator('[data-receive-po="' + poId + '"] [data-workspace-action="receive-supplier"]');
+      const buttonVisible = await button.isVisible().catch(() => false);
+      const buttonEnabled = buttonVisible && await button.isEnabled();
+      // Le bouton peut legitimement rester actif si une AUTRE ligne PO attend.
+      // Dans ce cas, ne pas baptiser l'etat UI comme preuve de protection T2.
+      const uiGuard = remaining[0].qty === 0
+        ? (buttonEnabled ? 'RETRY_STILL_ACTIONABLE' : 'RETRY_UNAVAILABLE')
+        : 'PO_OTHER_LINE_PENDING';
+      if (remaining[0].qty === 0) {
+        expect(buttonEnabled, 'T2 PO entierement recue : aucun second clic actionnable').toBe(false);
+      }
+      evidence.t_cases = evidence.t_cases || [];
+      evidence.t_cases.push({ id: 'T2', verdict: uiGuard === 'RETRY_UNAVAILABLE'
+          ? 'CHROMIUM_UI_GUARD_API_PG_PASS_NO_SECOND_POST'
+          : 'API_PG_PASS_UI_REPLAY_NOT_PROVEN',
+        physical_reference: receivedRef, original_ui_http: receipt.http, replay_http: replay.status(),
+        before: beforeReplay[0].n, after: afterReplay[0].n,
+        po_remaining_qty: remaining[0].qty, ui_retry_guard: uiGuard,
+        note: 'La preuve UI est la non-repetition de l action sur la PO soldee, pas un second POST Chromium.' });
+      save();
       await page.waitForTimeout(1500);
     }
+    // T1 : même cohorte, SHA et marché que les clics de réception.
+    for (const suffix of ['KOM-101', 'KOM-102']) {
+      const orderRef = 'E2E-HUB-V1-' + RUN8 + '-' + suffix;
+      const orders = await q("SELECT id,status::text AS status FROM orders WHERE reference=$1", [orderRef]);
+      expect(orders, 'commande unique T1 ' + orderRef).toHaveLength(1);
+      const order = orders[0];
+      const physical = await q(
+        "SELECT COUNT(*)::int AS n, COALESCE(SUM(pi.quantity),0)::int AS qty " +
+        "FROM parcel_items pi JOIN order_items oi ON oi.id=pi.order_item_id " +
+        "JOIN parcels p ON p.id=pi.parcel_id AND p.cancelled_at IS NULL WHERE oi.order_id=$1",
+        [order.id]);
+      const scans = await q(
+        "SELECT COUNT(*)::int AS n FROM scans WHERE order_id=$1 AND step='preparation' " +
+        "AND scan_code=('AUTO-HUB-' || $1::text)", [order.id]);
+      expect(order.status, 'T1 passage automatique en préparation').toBe('preparation');
+      expect(physical[0].n, 'T1 colis client présent').toBeGreaterThan(0);
+      expect(physical[0].qty, 'T1 quantité répartie').toBeGreaterThan(0);
+      expect(scans[0].n, 'T1 SCAN 3 enregistré exactement une fois').toBe(1);
+      evidence.t_cases.push({ id: 'T1', verdict: 'CHROMIUM_HTTP_PG_PASS',
+        order_reference: orderRef, order_id: order.id, status: order.status,
+        parcel_lines: physical[0].n, distributed_qty: physical[0].qty, scan3: scans[0].n,
+        capture: await shot(page, 'T1-' + suffix) });
+    }
+    save();
+    await ctx.close();
+  });
+
+  test('T8 : arrivée fournisseur sans manifeste, tâche Hub et directrice', async ({ browser, baseURL }) => {
+    const { ctx, page } = await login(browser, baseURL, 'hub');
+    await openMarket(page, '/admin/hub-live?view=execute');
+    await page.getByRole('tab', { name: 'Réceptions' }).click();
+    const form = page.locator('[data-hub-unmanifested-form]');
+    await expect(form).toBeVisible({ timeout: 20000 });
+    const reference = `E2E-HUB-V1-${RUN8}-UNMANIFESTED`;
+    await form.locator('[data-hub-unmanifested-reference]').fill(reference);
+    await form.locator('[data-hub-unmanifested-location]').fill('HUB-E2E-RECEPTION');
+    await form.locator('[data-hub-unmanifested-tracking]').fill(`E2E-TRACK-${RUN8}`);
+    const recorded = await gesture(page, {
+      key: 'hub:T8-arrival-unmanifested', role: 'agent_hub',
+      route: 'POST /api/scans/hub/receive',
+      ui: 'operations-workspace.js:createUnmanifestedArrivalCard',
+      match: p => p === '/api/scans/hub/receive',
+      click: () => form.locator('[data-workspace-action="hub-unmanifested-arrival"]').click(),
+    });
+    expect(recorded.verdict, 'T8 vrai clic arrivée sans manifeste').toBe('CLICK_PASS');
+    expect(recorded.http, 'T8 réponse canonique d’arrivée').toBe(201);
+    expect(recorded.json?.reconciliation_mode).toBe('UNRECONCILED');
+    const units = await q(
+      "SELECT id, reference, unit_type, state, created_at FROM hub_physical_units WHERE reference=$1", [reference]);
+    expect(units, 'T8 une unité physique unique').toHaveLength(1);
+    const unit = units[0];
+    expect(unit).toMatchObject({ unit_type: 'SUPPLIER_PACKAGE', state: 'RECEIVED' });
+    const placement = await q(
+      "SELECT COUNT(*)::int AS n FROM hub_physical_unit_placements WHERE physical_unit_id=$1", [unit.id]);
+    expect(placement[0].n, 'T8 aucune allocation PO inventée').toBe(0);
+    const audit = await q(
+      "SELECT COUNT(*)::int AS n FROM hub_custody_events WHERE physical_unit_id=$1", [unit.id]);
+    expect(audit[0].n, 'T8 événement de garde physique durable').toBeGreaterThan(0);
+    const market = await q('SELECT id FROM markets WHERE code=$1', [MARKET_CODE]);
+    expect(market).toHaveLength(1);
+    const dossier = await require('../../services/hub-procurement-dossier')
+      .getDossier({ marketId: market[0].id });
+    const task = dossier.cockpit.todo.find(t => t.id === 'RECONCILE_PARCEL:' + unit.id);
+    expect(task, 'T8 file Hub a une tâche de rapprochement').toBeDefined();
+    expect(task.since, 'T8 tâche datée').toBeTruthy();
+    const director = await require('../../services/hub-procurement-dossier').getDirectorTodo({});
+    expect(director.tasks.some(t => t.id === 'RECONCILE_PARCEL:' + unit.id),
+      'T8 task visible directrice').toBe(true);
+    await page.getByRole('tab', { name: 'Dossiers' }).click();
+    await page.locator('[data-hlc-todo]').waitFor({ timeout: 20000 });
+    const all = page.locator('[data-hlc-action="todo-toggle"]');
+    if (await all.count()) await all.click();
+    const visibleTask = page.locator('[data-hlc-todo-item="RECONCILE_PARCEL"]').filter({ hasText: reference });
+    await expect(visibleTask, 'T8 file visible sur le vrai cockpit Chromium').toBeVisible({ timeout: 10000 });
+    evidence.t_cases = evidence.t_cases || [];
+    evidence.t_cases.push({ id: 'T8', verdict: 'CHROMIUM_HTTP_PG_AUDIT_PASS',
+      reference, unit_id: unit.id, http: recorded.http, physical_state: unit.state,
+      allocated: placement[0].n, custody_events: audit[0].n,
+      since: task.since, director_visible: true,
+      capture: await shot(page, 'T8-unmanifested-todo') });
+    save();
     await ctx.close();
   });
 
@@ -327,6 +462,41 @@ test.describe.serial(`Hub V1 : clics reels Chromium (${MARKET_CODE}, fixture E2E
       save();
       await page.waitForTimeout(2500);
     }
+    // T7 : rattachements issus de deux vrais gestes UI, pas d'insertion de preuve par SQL.
+    const lineage = await q(
+      "SELECT COUNT(*)::int AS links, COUNT(DISTINCT hb.bag_unit_id)::int AS bags, " +
+      "COUNT(DISTINCT hb.parcel_id)::int AS client_parcels, " +
+      "COUNT(*) FILTER (WHERE hb.linked_by IS NOT NULL)::int AS actor_traced " +
+      "FROM hub_box_bags hb JOIN hub_physical_units box ON box.id=hb.box_unit_id " +
+      "WHERE box.reference=$1", [shared.box]);
+    expect(lineage[0].links, 'T7 les deux sacs sont en KOM-BOX').toBe(2);
+    expect(lineage[0].bags).toBe(2);
+    expect(lineage[0].client_parcels).toBe(2);
+    expect(lineage[0].actor_traced, 'T7 trace de l’auteur des rattachements').toBe(2);
+    // Projection H9 limitee a la cohorte : aucun sac PACKED orphelin, aucune
+    // ligne de lien dupliquee. Ne prouve PAS le seuil temporel 48h de T9.
+    const orderRefs = ['KOM-101', 'KOM-102'].map(s => 'E2E-HUB-V1-' + RUN8 + '-' + s);
+    const h9 = await q(
+      "SELECT COUNT(*)::int AS orphan_bags FROM hub_physical_units u " +
+      "JOIN orders o ON o.id=u.order_id " +
+      "WHERE o.reference = ANY($1::text[]) AND u.unit_type='HANDLING_UNIT' " +
+      "AND u.state='PACKED' AND u.outcome_type IS NULL " +
+      "AND NOT EXISTS (SELECT 1 FROM hub_box_bags hb WHERE hb.bag_unit_id=u.id)",
+      [orderRefs]);
+    const duplicateLinks = await q(
+      "SELECT COUNT(*)::int AS n FROM (SELECT hb.bag_unit_id FROM hub_box_bags hb " +
+      "JOIN hub_physical_units box ON box.id=hb.box_unit_id WHERE box.reference=$1 " +
+      "GROUP BY hb.bag_unit_id HAVING COUNT(*)>1) d", [shared.box]);
+    expect(h9[0].orphan_bags, 'T7 aucun sac ferme orphelin dans la cohorte').toBe(0);
+    expect(duplicateLinks[0].n, 'T7 aucun sac rattache deux fois').toBe(0);
+    evidence.t_cases = evidence.t_cases || [];
+    evidence.t_cases.push({ id: 'T7', verdict: 'CHROMIUM_HTTP_PG_H9_NEW_COHORT_PASS_MANUAL',
+      box_reference: shared.box, ...lineage[0], h9_scope_orphan_bags: h9[0].orphan_bags,
+      duplicate_links: duplicateLinks[0].n, scanner_physical: 'NOT_PROVEN',
+      h9_over_48h: 'NOT_APPLICABLE_TO_NEW_COHORT',
+      capture: await shot(page, 'T7-bags-in-box') });
+    save();
+
     for (let i = 0; i < 8; i++) {
       await reveal();
       const adv = page.locator('tr').filter({ hasText: shared.box }).locator('[data-workspace-action="advance-box"]');

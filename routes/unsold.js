@@ -28,42 +28,22 @@ const { authenticate, requireAdmin } = require('../middleware/auth');
 // ── GET /api/unsold — liste des invendus disponibles ──────────────────────────
 router.get('/', authenticate, requireAdmin, async (req, res, next) => {
   try {
-    const { rows } = await db.query('SELECT * FROM v_unsold_pipeline');
+    const { rows } = await db.query(`SELECT v.* FROM v_unsold_pipeline v
+       JOIN unsold_items ui ON ui.id = v.id
+       JOIN orders o ON o.id = ui.order_id
+       WHERE o.payment_status IS DISTINCT FROM 'paid'`);
     res.json(rows);
   } catch(err) { next(err); }
 });
 
-// ── POST /api/unsold/scan — déclencher le scan d'invendus manuellement ─────────
-router.post('/scan', authenticate, requireAdmin, async (req, res, next) => {
-  try {
-    const { rows } = await db.query('SELECT auto_unsold() AS count');
-    const count = rows[0].count;
-
-    // Créer les unsold_items pour chaque commande fraîchement basculée
-    const { rows: newUnsold } = await db.query(`
-      SELECT o.id AS order_id, o.total_kmf, o.unsold_price_kmf,
-             p.id AS product_id, p.name AS product_name, p.price_kmf
-      FROM orders o
-      LEFT JOIN order_items oi ON oi.order_id = o.id
-      LEFT JOIN products p ON p.id = oi.product_id
-      WHERE o.unsold_at >= NOW() - INTERVAL '1 minute'
-        AND NOT EXISTS (SELECT 1 FROM unsold_items ui WHERE ui.order_id = o.id)
-    `);
-
-    for (const row of newUnsold) {
-      await db.query(
-        `INSERT INTO unsold_items
-           (order_id, product_id, product_name, original_price_kmf, unsold_price_kmf)
-         VALUES ($1, $2, $3, $4, $5)
-         ON CONFLICT DO NOTHING`,
-        [row.order_id, row.product_id, row.product_name || 'Article',
-         row.price_kmf || row.total_kmf, row.unsold_price_kmf || Math.round((row.price_kmf || row.total_kmf) * 0.75)]
-      );
-    }
-
-    res.json({ scanned: parseInt(count), items_created: newUnsold.length });
-  } catch(err) { next(err); }
-});
+// F3 #4107/#4115 : aucun délai ne transfère à Komerce la propriété d'un
+// colis payé. auto_unsold() modifie aujourd'hui l'ordre entier et rend le
+// même article vendable alors que son code client peut encore fonctionner.
+// Avant doctrine de garde / clôture financière et circuit par colis : arrêt.
+router.post('/scan', authenticate, requireAdmin, (_req, res) => res.status(409).json({
+  code: 'UNSOLD_NO_SHOW_NOT_CERTIFIED',
+  error: 'Pas de liquidation automatique de colis non retiré : intervention du marché requise.'
+}));
 
 // ── GET /api/unsold/stats — statistiques invendus ─────────────────────────────
 router.get('/stats/summary', authenticate, requireAdmin, async (req, res, next) => {
@@ -71,13 +51,16 @@ router.get('/stats/summary', authenticate, requireAdmin, async (req, res, next) 
     const { rows } = await db.query(`
       SELECT
         COUNT(*)                                    AS total_actifs,
-        SUM(unsold_price_kmf)                       AS valeur_liquidation_kmf,
-        SUM(original_price_kmf)                     AS valeur_initiale_kmf,
-        AVG(jours_en_stock)::NUMERIC(5,1)           AS jours_moy_en_stock,
-        COUNT(*) FILTER (WHERE channel = 'whatsapp') AS canal_whatsapp,
-        COUNT(*) FILTER (WHERE channel = 'reseller') AS canal_revendeur,
-        COUNT(*) FILTER (WHERE channel = 'both')     AS canal_both
-      FROM v_unsold_pipeline
+        SUM(v.unsold_price_kmf)                       AS valeur_liquidation_kmf,
+        SUM(v.original_price_kmf)                     AS valeur_initiale_kmf,
+        AVG(v.jours_en_stock)::NUMERIC(5,1)           AS jours_moy_en_stock,
+        COUNT(*) FILTER (WHERE v.channel = 'whatsapp') AS canal_whatsapp,
+        COUNT(*) FILTER (WHERE v.channel = 'reseller') AS canal_revendeur,
+        COUNT(*) FILTER (WHERE v.channel = 'both')     AS canal_both
+      FROM v_unsold_pipeline v
+      JOIN unsold_items ui ON ui.id = v.id
+      JOIN orders o ON o.id = ui.order_id
+      WHERE o.payment_status IS DISTINCT FROM 'paid'
     `);
     res.json(rows[0]);
   } catch(err) { next(err); }
@@ -87,7 +70,10 @@ router.get('/stats/summary', authenticate, requireAdmin, async (req, res, next) 
 router.get('/:id', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const { rows } = await db.query(
-      'SELECT * FROM v_unsold_pipeline WHERE id = $1', [req.params.id]
+      `SELECT v.* FROM v_unsold_pipeline v
+       JOIN unsold_items ui ON ui.id = v.id
+       JOIN orders o ON o.id = ui.order_id
+       WHERE v.id = $1 AND o.payment_status IS DISTINCT FROM 'paid'`, [req.params.id]
     );
     if (!rows.length) return res.status(404).json({ error: 'Invendu introuvable' });
     res.json(rows[0]);
@@ -99,11 +85,14 @@ router.patch('/:id', authenticate, requireAdmin, async (req, res, next) => {
   const { unsold_price_kmf, channel, notes } = req.body;
   try {
     const { rows } = await db.query(
-      `UPDATE unsold_items
-       SET unsold_price_kmf = COALESCE($1, unsold_price_kmf),
-           channel          = COALESCE($2, channel),
-           notes            = COALESCE($3, notes)
-       WHERE id = $4 RETURNING *`,
+      `UPDATE unsold_items ui
+       SET unsold_price_kmf = COALESCE($1, ui.unsold_price_kmf),
+           channel          = COALESCE($2, ui.channel),
+           notes            = COALESCE($3, ui.notes)
+       WHERE ui.id = $4 AND ui.status = 'available'
+         AND EXISTS (SELECT 1 FROM orders o WHERE o.id = ui.order_id
+                       AND o.payment_status IS DISTINCT FROM 'paid')
+       RETURNING ui.*`,
       [unsold_price_kmf, channel, notes, req.params.id]
     );
     if (!rows.length) return res.status(404).json({ error: 'Invendu introuvable' });
@@ -119,13 +108,16 @@ router.post('/:id/resolve', authenticate, requireAdmin, async (req, res, next) =
 
   try {
     const { rows } = await db.query(
-      `UPDATE unsold_items
+      `UPDATE unsold_items ui
        SET status             = $1,
            resolved_at        = NOW(),
            resolved_price_kmf = $2,
            reseller_id        = $3,
-           notes              = COALESCE($4, notes)
-       WHERE id = $5 RETURNING *`,
+           notes              = COALESCE($4, ui.notes)
+       WHERE ui.id = $5 AND ui.status = 'available'
+         AND EXISTS (SELECT 1 FROM orders o WHERE o.id = ui.order_id
+                       AND o.payment_status IS DISTINCT FROM 'paid')
+       RETURNING ui.*`,
       [status, resolved_price_kmf, reseller_id, notes, req.params.id]
     );
     if (!rows.length) return res.status(404).json({ error: 'Invendu introuvable' });
@@ -137,7 +129,10 @@ router.post('/:id/resolve', authenticate, requireAdmin, async (req, res, next) =
 router.get('/:id/whatsapp', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const { rows } = await db.query(
-      'SELECT * FROM v_unsold_pipeline WHERE id = $1', [req.params.id]
+      `SELECT v.* FROM v_unsold_pipeline v
+       JOIN unsold_items ui ON ui.id = v.id
+       JOIN orders o ON o.id = ui.order_id
+       WHERE v.id = $1 AND o.payment_status IS DISTINCT FROM 'paid'`, [req.params.id]
     );
     if (!rows.length) return res.status(404).json({ error: 'Invendu introuvable' });
     const item = rows[0];

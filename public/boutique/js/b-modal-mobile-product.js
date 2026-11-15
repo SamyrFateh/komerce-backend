@@ -93,6 +93,7 @@ const _COLOR_HEX_MAP = {
   jaune: '#fbc02d', yellow: '#fbc02d', or: '#ffd54f', gold: '#ffd54f',
   vert: '#388e3c', green: '#388e3c', kaki: '#827717', olive: '#827717',
   bleu: '#1565c0', blue: '#1565c0', marine: '#0d47a1', navy: '#0d47a1',
+  'navy blue': '#0d2f56', 'dark blue': '#123b69', 'bleu marine': '#0d2f56',
   turquoise: '#00897b', cyan: '#0097a7',
   violet: '#6a1b9a', purple: '#7b1fa2', lilas: '#9c27b0',
 };
@@ -211,6 +212,13 @@ function renderIdentity(detail, selection) {
 
 /* ── MDM-4 : Options SKU + availability ──────────────────────── */
 
+function mobileAxisLabel(axis) {
+  const name = String(axis.display_name || axis.key || '');
+  if (/^(color|colour|couleur|coloris)$/i.test(name)) return 'Couleur';
+  if (/^(size|taille)$/i.test(name)) return 'Taille';
+  return name; // autres axes : ne jamais inventer une traduction
+}
+
 function renderAxis(detail, selection, axis, onSelectionChanged) {
   const group = document.createElement('section');
   group.className = 'k-vg';
@@ -223,7 +231,7 @@ function renderAxis(detail, selection, axis, onSelectionChanged) {
     '<span class="k-vg-label-type"></span>' +
     '<span class="k-vg-label-sep">·</span>' +
     '<span class="k-vg-label-val"></span>';
-  label.querySelector('.k-vg-label-type').textContent = axis.display_name;
+  label.querySelector('.k-vg-label-type').textContent = mobileAxisLabel(axis);
   label.querySelector('.k-vg-label-val').textContent = selected || 'Choisir';
   group.appendChild(label);
 
@@ -249,7 +257,7 @@ function renderAxis(detail, selection, axis, onSelectionChanged) {
     button.setAttribute('aria-pressed', active ? 'true' : 'false');
     button.setAttribute(
       'aria-label',
-      `${axis.display_name} ${option.value}${
+      `${mobileAxisLabel(axis)} ${option.value}${
         unavailable ? ` — ${optionMessage(stateValue)}` : ''
       }`
     );
