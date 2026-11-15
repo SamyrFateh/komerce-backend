@@ -1,0 +1,100 @@
+name: Fable AliExpress diversified source holdout — staging
+
+on:
+  workflow_dispatch:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fable-aliexpress-diverse-source-holdout
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    name: Acquire up to 240 real AliExpress product titles and supplier paths
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issues' &&
+       github.actor == github.repository_owner &&
+       github.event.issue.title == '[staging-op] fable-aliexpress-240-independent-holdout')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 28
+    env:
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      RAILWAY_PROJECT_ID: '1c5c37ab-557b-41b1-885a-8b3ead573795'
+      RAILWAY_ENVIRONMENT_ID: '7a0ce7dc-93a0-4bfa-88c9-088f70e8883a'
+      RAILWAY_SERVICE_ID: '48ee010d-a1c3-4c47-9028-c1aacf90e00f'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install official Railway CLI
+        run: npm install --global @railway/cli
+      - name: Check disposable staging target and execute bounded provider read
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${RAILWAY_TOKEN:-}" || { echo '::error::RAILWAY_TOKEN_MISSING'; exit 1; }
+          test "$RAILWAY_ENVIRONMENT_ID" = '7a0ce7dc-93a0-4bfa-88c9-088f70e8883a'
+          test "$RAILWAY_SERVICE_ID" = '48ee010d-a1c3-4c47-9028-c1aacf90e00f'
+          mkdir -p test-results/fable-aliexpress-holdout
+          set +e
+          result="$(timeout 1350s railway run \
+            --project "$RAILWAY_PROJECT_ID" \
+            --environment "$RAILWAY_ENVIRONMENT_ID" \
+            --service "$RAILWAY_SERVICE_ID" \
+            --no-local \
+            env NODE_ENV=test KOMERCE_ENV=staging \
+            STAGING_BASE_URL=https://komerce-backend-production.up.railway.app \
+            node scripts/aliexpress-classification-holdout-sample.js 2>&1)"
+          status="$?"
+          set -e
+          summary="$(printf '%s\n' "$result" | grep 'FABLE_HOLDOUT_RESULT=' | tail -n1 | sed 's/^.*FABLE_HOLDOUT_RESULT=//' || true)"
+          encoded="$(printf '%s\n' "$result" | grep 'FABLE_HOLDOUT_GZIP_BASE64=' | tail -n1 | sed 's/^.*FABLE_HOLDOUT_GZIP_BASE64=//' || true)"
+          if [ -n "$encoded" ]; then
+            printf '%s' "$encoded" | base64 --decode | gzip --decompress \
+              > test-results/fable-aliexpress-holdout/source-holdout.csv
+            printf '%s\n' "$summary" \
+              > test-results/fable-aliexpress-holdout/summary.json
+          fi
+          printf 'Fable provider result: %s\n' "${summary:-NO_SUMMARY}"
+          if [ "$status" != "0" ]; then
+            printf '%s\n' "$result" | grep 'FABLE_HOLDOUT_ERROR=' | tail -n1 || true
+            echo "::error::HOLDOUT_PROVIDER_FAILED exit=$status"
+            exit "$status"
+          fi
+          test -s test-results/fable-aliexpress-holdout/source-holdout.csv ||
+            { echo "::error::HOLDOUT_CSV_NOT_CREATED"; exit 1; }
+      - name: Retain bounded supplier evidence for independent human labeling
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fable-aliexpress-diverse-source-${{ github.run_id }}
+          path: test-results/fable-aliexpress-holdout/
+          retention-days: 21
+          if-no-files-found: warn
+      - name: Show certification boundary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## AliExpress external holdout'
+            echo
+            echo '- Supplier: official AliExpress Open Platform feeds/categories; no checkout/orders.'
+            echo '- Scope: staging, exact backend/DB fingerprint guard, maximum 240 rows.'
+            echo '- Classification: not executed; labels: not independently validated.'
+            echo '- Source paths: feed full path versus provider category filter explicitly distinguished.'
+            echo '- No candidate, catalogue or pricing writes; managed OAuth may refresh its token.'
+            if [ -s test-results/fable-aliexpress-holdout/summary.json ]; then
+              echo '- Result:'
+              cat test-results/fable-aliexpress-holdout/summary.json
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
