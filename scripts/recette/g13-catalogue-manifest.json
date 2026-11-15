@@ -231,5 +231,47 @@
    "name_fr": "Tissu wax motif hirondelles",
    "description_fr": "Tissu wax en coton, motif hirondelles vertes sur fond rayé, vendu à la coupe."
   }
+ ],
+ "discovery": [
+  {
+   "source": "cj",
+   "keyword": "car seat back organizer",
+   "size": 5
+  },
+  {
+   "source": "cj",
+   "keyword": "car dash cam",
+   "size": 5
+  },
+  {
+   "source": "cj",
+   "keyword": "car interior led light",
+   "size": 5
+  },
+  {
+   "source": "cj",
+   "keyword": "steering wheel cover",
+   "size": 5
+  },
+  {
+   "source": "cj",
+   "keyword": "car seat cushion",
+   "size": 5
+  },
+  {
+   "source": "cj",
+   "keyword": "windshield wiper blade",
+   "size": 5
+  },
+  {
+   "source": "cj",
+   "keyword": "motorcycle phone holder",
+   "size": 5
+  },
+  {
+   "source": "cj",
+   "keyword": "car trunk mat",
+   "size": 5
+  }
  ]
 }
