@@ -24,7 +24,9 @@ const { confirmTarget } = require('./target-guard');
 // Meme selection que sweepStalledOrders (sans LIMIT).
 const CANDIDATES_SQL = `
   SELECT o.id, o.created_at, o.payment_status::text AS payment_status, o.payment_mode::text AS payment_mode,
-         (o.reference ~ '^(E2E|HP0|TEST)' ) AS fixture_like
+         (o.reference ~ '^(E2E|HP0|TEST)' ) AS fixture_like,
+         regexp_replace(COALESCE(o.reference, ''), '(-[0-9A-F]{6,}|-[0-9]{4,}).*$', '') AS ref_family,
+         (SELECT m.code FROM markets m WHERE m.id = o.market_id) AS market
     FROM orders o
    WHERE o.status = 'ordered'
      AND EXISTS (SELECT 1 FROM order_items oi WHERE oi.order_id = o.id AND oi.fulfillment_source = 'IMPORT')
@@ -39,7 +41,10 @@ async function classify(client) {
   const tally = {};
   const bump = (key) => { tally[key] = (tally[key] || 0) + 1; };
   const ages = [];
+  const completeRanks = [];
+  let rank = 0;
   for (const o of candidates) {
+    rank += 1;
     const { rows: items } = await client.query(
       `SELECT id, quantity FROM order_items WHERE order_id = $1 AND COALESCE(fulfillment_source, '') <> 'LOCAL_STOCK'`, [o.id]);
     const { rows: lines } = await client.query(
@@ -56,14 +61,15 @@ async function classify(client) {
       coverage = cov.covered ? 'covered' : 'PHYSICAL_RECEPTION_INCOMPLETE';
     }
     const reason = verdict.complete ? `COMPLETE_${coverage}` : verdict.blockers.join('+') || 'UNKNOWN';
-    bump(JSON.stringify({ reason, payment_status: o.payment_status, payment_mode: o.payment_mode, purchase_lines: lines.length ? 'some' : 'none', legacy_purchase_orders: legacy.n ? 'some' : 'none', fixture_like: Boolean(o.fixture_like) }));
+    if (verdict.complete) completeRanks.push({ rank, created_day: new Date(o.created_at).toISOString().slice(0, 10), ref_family: o.ref_family, market: o.market });
+    bump(JSON.stringify({ reason, ref_family: o.ref_family, market: o.market, created_day: new Date(o.created_at).toISOString().slice(0, 10), payment_status: o.payment_status, payment_mode: o.payment_mode, purchase_lines: lines.length ? 'some' : 'none', legacy_purchase_orders: legacy.n ? 'some' : 'none', fixture_like: Boolean(o.fixture_like) }));
     ages.push(new Date(o.created_at).getTime());
   }
   const by_reason = {};
   const rows = Object.entries(tally).map(([k, n]) => ({ ...JSON.parse(k), orders: n }));
   for (const r of rows) by_reason[r.reason] = (by_reason[r.reason] || 0) + r.orders;
   return {
-    candidates: candidates.length, by_reason, breakdown: rows.sort((a, b) => b.orders - a.orders),
+    candidates: candidates.length, by_reason, complete_orders_rank: completeRanks, breakdown: rows.sort((a, b) => b.orders - a.orders),
     oldest: ages.length ? new Date(Math.min(...ages)).toISOString().slice(0, 10) : null,
     newest: ages.length ? new Date(Math.max(...ages)).toISOString().slice(0, 10) : null,
   };
