@@ -1,0 +1,55 @@
+name: F3 — paid no-show staging guard (HTTP/PG rollback)
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: read
+concurrency:
+  group: komerce-f3-no-show-staging
+  cancel-in-progress: false
+jobs:
+  f3-guard:
+    if: >-
+      github.repository == 'SamyrFateh/komerce-backend' &&
+      github.actor == github.repository_owner &&
+      github.event.issue.user.login == github.repository_owner &&
+      github.event.issue.title == '[staging-op] f3-paid-no-show-guard'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_TARGET_ENV: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      EXPECTED_RAILWAY_ENVIRONMENT: staging
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      F3_CERT_CONFIRMATION: F3-ROLLBACK-ONLY
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Pin deployed Railway SHA
+        run: node scripts/recette/resolve-staging-deploy-pin.js
+      - name: Confirm exact disposable staging database fingerprint
+        run: node scripts/recette/target-guard.js
+      - name: Check F3 real HTTP and PostgreSQL (rollback-only)
+        run: node tests/recette/f3-no-show-staging-guard-proof.js
+      - name: Archive F3 proof, even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: f3-no-show-staging-${{ github.run_id }}
+          path: |
+            test-results/f3-no-show/
+            test-results/hub-v1-http/deploy-pin.json
+          if-no-files-found: warn
+          retention-days: 30

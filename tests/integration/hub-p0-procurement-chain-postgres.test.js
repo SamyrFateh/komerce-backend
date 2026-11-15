@@ -637,7 +637,7 @@ describeDb('Hub P0 — chaîne d\'approvisionnement complète (REAL_DB)', () => 
       }, { actor: actor() });
       expect(settled.remnant).toBeNull();
       const verdict = await completion.evaluateOrderProcurementCompletion(o.orderId, { actor: actor() });
-      expect(verdict).toMatchObject({ complete: true, transition: 'preparation',
+      expect(verdict).toMatchObject({ complete: true, transition: 'skipped',
         shortages: [{ order_item_id: pl.itemId, missing_quantity: 1, received_quantity: 1 }] });
       const state = (await q('SELECT status::text AS status FROM orders WHERE id=$1', [o.orderId])).rows[0];
       expect(state.status).toBe('preparation');

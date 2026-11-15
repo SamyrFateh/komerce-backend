@@ -313,9 +313,13 @@ router.post(
   async (req, res, next) => {
     try {
       const body = req.body || {};
+      // A2 : un rejeu après coupure renvoie la même KOM-BOX ; la clé est portée par le marché.
       const out = await hubOps.createOperatorUnitCommand({
         unit_type: 'MARKET_PARCEL', ...(body.reference ? { reference: body.reference } : {}),
-      }, req.user.id);
+      }, req.user.id, {
+        idempotencyKey: req.get('Idempotency-Key') || '',
+        idempotencyScope: req.workspaceMarket.id,
+      });
       return res.status(out.status).json(out.body);
     } catch (err) { return sendWorkspaceError(err, res, next); }
   }

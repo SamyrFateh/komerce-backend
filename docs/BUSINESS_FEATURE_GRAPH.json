@@ -18620,7 +18620,7 @@
         "category": "services",
         "declared": "services/supplier-shortage-service.js",
         "resolvedPath": "services/supplier-shortage-service.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "purchasing",
@@ -19562,9 +19562,44 @@
       },
       {
         "feature": "refunds",
+        "category": "utils",
+        "declared": "public/g8-remboursements.html",
+        "resolvedPath": "public/g8-remboursements.html",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "refunds",
+        "category": "utils",
+        "declared": "public/css/g8-remboursements.css",
+        "resolvedPath": "public/css/g8-remboursements.css",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "refunds",
+        "category": "utils",
+        "declared": "public/js/g8-remboursements.js",
+        "resolvedPath": "public/js/g8-remboursements.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "refunds",
         "category": "migrations",
         "declared": "migrations/416_fable_local_item_refund_reservations.sql",
         "resolvedPath": "migrations/416_fable_local_item_refund_reservations.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "refunds",
+        "category": "migrations",
+        "declared": "migrations/417_fable_cash_refund_custody_handoff.sql",
+        "resolvedPath": "migrations/417_fable_cash_refund_custody_handoff.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "refunds",
+        "category": "migrations",
+        "declared": "migrations/418_fable_manual_mobile_money_refund.sql",
+        "resolvedPath": "migrations/418_fable_manual_mobile_money_refund.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -19586,6 +19621,20 @@
         "category": "services",
         "declared": "services/local-item-refund-reservation.js",
         "resolvedPath": "services/local-item-refund-reservation.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "refunds",
+        "category": "services",
+        "declared": "services/local-mobile-refund-handoff.js",
+        "resolvedPath": "services/local-mobile-refund-handoff.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "refunds",
+        "category": "services",
+        "declared": "services/local-cash-refund-handoff.js",
+        "resolvedPath": "services/local-cash-refund-handoff.js",
         "status": "resolved-on-disk-no-header"
       },
       {
@@ -19614,7 +19663,7 @@
         "category": "services",
         "declared": "services/stripe-refund-authority.js",
         "resolvedPath": "services/stripe-refund-authority.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "refunds",
@@ -19677,6 +19726,27 @@
         "category": "tests",
         "declared": "tests/e2e-api/refunds.local-shortage-reservation.e2e.test.js",
         "resolvedPath": "tests/e2e-api/refunds.local-shortage-reservation.e2e.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "refunds",
+        "category": "tests",
+        "declared": "tests/integration/fable-cash-refund-handoff-postgres.test.js",
+        "resolvedPath": "tests/integration/fable-cash-refund-handoff-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "refunds",
+        "category": "tests",
+        "declared": "tests/unit/g8-refund-operator-ui.test.js",
+        "resolvedPath": "tests/unit/g8-refund-operator-ui.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "refunds",
+        "category": "tests",
+        "declared": "tests/staging-canonical/g8-refunds-readonly.spec.js",
+        "resolvedPath": "tests/staging-canonical/g8-refunds-readonly.spec.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -21161,6 +21231,13 @@
         "category": "migrations",
         "declared": "migrations/415_paid_no_show_liquidation_guard.sql",
         "resolvedPath": "migrations/415_paid_no_show_liquidation_guard.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "unsold-resolution",
+        "category": "migrations",
+        "declared": "migrations/419_paid_no_show_payment_transition_guard.sql",
+        "resolvedPath": "migrations/419_paid_no_show_payment_transition_guard.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -29049,6 +29126,12 @@
         "from": "dashboard",
         "to": "payments",
         "raw": "payments (lecture paiements)",
+        "resolved": true
+      },
+      {
+        "from": "dashboard",
+        "to": "refunds",
+        "raw": "refunds (Relais Live délègue les remises cash F1 à local-cash-refund-handoff ; le propriétaire refunds contrôle la garde et la preuve)",
         "resolved": true
       },
       {
@@ -37612,6 +37695,22 @@
       },
       {
         "from": "dashboard",
+        "to": "refunds",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "routes/relay-dashboard.js",
+                "targetFile": "services/local-cash-refund-handoff.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "dashboard",
         "to": "shared-cart",
         "channels": [
           {
@@ -44896,6 +44995,14 @@
               },
               {
                 "sourceFileId": "routes/admin/orders.js",
+                "targetFile": "services/local-mobile-refund-handoff.js"
+              },
+              {
+                "sourceFileId": "routes/admin/orders.js",
+                "targetFile": "services/local-cash-refund-handoff.js"
+              },
+              {
+                "sourceFileId": "routes/admin/orders.js",
                 "targetFile": "services/item-refund-psp-orchestrator.js"
               },
               {
@@ -47929,6 +48036,14 @@
                 "targetFile": "services/documents/refund-receipt.js"
               },
               {
+                "sourceFileId": "services/local-mobile-refund-handoff.js",
+                "targetFile": "services/documents/refund-receipt.js"
+              },
+              {
+                "sourceFileId": "services/local-cash-refund-handoff.js",
+                "targetFile": "services/documents/refund-receipt.js"
+              },
+              {
                 "sourceFileId": "services/item-refund-psp-orchestrator.js",
                 "targetFile": "services/documents/refund-receipt.js"
               },
@@ -47942,6 +48057,10 @@
               },
               {
                 "sourceFileId": "services/sav-ledger-refund.js",
+                "targetFile": "services/documents/refund-receipt.js"
+              },
+              {
+                "sourceFileId": "tests/integration/fable-cash-refund-handoff-postgres.test.js",
                 "targetFile": "services/documents/refund-receipt.js"
               },
               {
@@ -48009,6 +48128,14 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "services/local-mobile-refund-handoff.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/local-cash-refund-handoff.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "services/item-refund-psp-orchestrator.js",
                 "targetFile": "db.js"
               },
@@ -48039,6 +48166,10 @@
               {
                 "sourceFileId": "tests/unit/refund-service.test.js",
                 "targetFile": "tests/integration/test-harness/mock-db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/fable-cash-refund-handoff-postgres.test.js",
+                "targetFile": "db.js"
               },
               {
                 "sourceFileId": "tests/unit/stripe-refund-authority.test.js",
@@ -49930,7 +50061,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2341
+        "filesObserved": 2347
       },
       "boutique": {
         "filesObserved": 216,
@@ -53628,6 +53759,45 @@
       "lifecycleOwner": "refunds",
       "resolution": "single-writer"
     },
+    "local_cash_refund_authorizations": {
+      "writers": [
+        {
+          "feature": "refunds",
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "refunds",
+      "resolution": "single-writer"
+    },
+    "local_cash_refund_payouts": {
+      "writers": [
+        {
+          "feature": "refunds",
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "refunds",
+      "resolution": "single-writer"
+    },
+    "local_mobile_refund_handoffs": {
+      "writers": [
+        {
+          "feature": "refunds",
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "refunds",
+      "resolution": "single-writer"
+    },
     "market_settlement_events": {
       "writers": [
         {
@@ -53936,18 +54106,15 @@
       "resolution": "no-declared-writer"
     }
   },
-  "orphanTechnicalNodes": [
-    "services/purchasing-receive-service.js",
-    "services/receive-purchase-order.js"
-  ],
+  "orphanTechnicalNodes": [],
   "bigMap": {
     "perRepo": {
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 707,
-        "technicalNodesOwned": 705,
-        "technicalOrphans": 2
+        "technicalNodesTotal": 708,
+        "technicalNodesOwned": 708,
+        "technicalOrphans": 0
       },
       "dash": {
         "manifestsDiscovered": 3,
@@ -54020,7 +54187,7 @@
           "openQuestion": "Faut-il créer une feature 'analytics' dédiée côté backend/dash (si un service de collecte équivalent existe ou est prévu côté serveur), ou rattacher ce manifeste à une feature existante par proximité fonctionnelle (ex. platform-ops) ? Décision produit non tranchée par O4."
         }
       ],
-      "technicalOrphansRemaining": 2
+      "technicalOrphansRemaining": 0
     }
   },
   "scopeTopology": {
@@ -54046,16 +54213,6 @@
   "drifts": {
     "error": [],
     "warn": [
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "services/purchasing-receive-service.js",
-        "msg": "nœud technique \"services/purchasing-receive-service.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "services/receive-purchase-order.js",
-        "msg": "nœud technique \"services/receive-purchase-order.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "order_item_real_cost_allocations",
@@ -54088,16 +54245,6 @@
       }
     ],
     "debt": [
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "services/purchasing-receive-service.js",
-        "msg": "nœud technique \"services/purchasing-receive-service.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "services/receive-purchase-order.js",
-        "msg": "nœud technique \"services/receive-purchase-order.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "order_item_real_cost_allocations",
@@ -54439,11 +54586,11 @@
       }
     ],
     "summary": {
-      "signals": 8,
-      "debt": 8,
+      "signals": 6,
+      "debt": 6,
       "expectedTopology": 49,
       "generatorLimitations": 12,
-      "classifiedCandidates": 69
+      "classifiedCandidates": 67
     }
   }
 }

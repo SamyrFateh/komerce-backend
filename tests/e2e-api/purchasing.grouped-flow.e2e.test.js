@@ -383,16 +383,18 @@ describeE2E('E2E-P0-PURCHASING — achats regroupés : flux complet', ({ db }) =
     expect(out.error).toBeUndefined();
     expect(await signalOf(open.orderId)).toBe(1);
 
-    // Ligne soldée sans reliquat (fail-closed) : item non couvert → signal.
+    // Ligne soldée sans reliquat (H1 / T3) : la rupture définitive vaut couverture, la clôture avance la commande
+    // (reçu réparti, manquant remboursé) : elle quitte `ordered`, donc plus de signal « sans achat couvert ».
     const po = (await grouped.preparePurchaseOrder({ supplier_id: supplier1, procurement_hub_ref: hubRef, line_ids: [solded.lineId] })).purchase_order;
     await submitAuthorized(engagement, po.id);
     await engagement.confirmGroupedPurchaseOrder(po.id, { purchase_proof_ref: 'TEST-RECEIPT', seller_label: 'Vendeur test', supplier_order_id: `SUP-${tag('sg')}`, lines: [{ purchase_line_id: solded.lineId, confirmed_quantity: 2 }] });
     await hubReceive(solded.lineId, 1); // le Hub a reçu 1 sur 2 : la clôture ne peut pas aller en dessous
     await engagement.settleLine(solded.lineId, { settled_quantity: 1, reason: 'écart constaté', reopen_remainder: false });
     out = await GENERATORS.ordered_without_purchase_order();
-    expect(await signalOf(solded.orderId)).toBe(1);
+    expect((await one('SELECT status::text AS status FROM orders WHERE id = $1', [solded.orderId])).status).toBe('preparation');
+    expect(await signalOf(solded.orderId)).toBe(0);
 
-    // Aucun reliquat rouvert : le besoin reste non couvert (la commande reste bloquée avant préparation).
+    // Aucun reliquat rouvert : la commande est partie avec le reçu.
     const stuck = await GENERATORS.purchase_order_receipt_stuck();
     expect(stuck.error).toBeUndefined();
   });

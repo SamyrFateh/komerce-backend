@@ -1,0 +1,123 @@
+name: G8 — isolated positive F1/F2 real Chromium HTTP PG16
+on:
+  workflow_dispatch: {}
+  issues:
+    types: [opened]
+permissions:
+  contents: read
+concurrency:
+  group: komerce-g8-isolated-positive
+  cancel-in-progress: false
+jobs:
+  g8-positive:
+    if: >-
+      github.actor == github.repository_owner &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event_name == 'issues' &&
+        github.event.issue.user.login == github.repository_owner &&
+        github.event.issue.title == '[cert-op] g8-isolated-positive-chromium'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_test
+        ports: [5432:5432]
+        options: >-
+          --health-cmd "pg_isready -U komerce -d komerce_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 6
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      KOMERCE_ENV: test
+      KOMERCE_DISABLE_CRONS: 'true'
+      DATABASE_URL: postgresql://komerce:komerce@localhost:5432/komerce_test
+      G8_ISOLATED_LOCAL: '1'
+      E2E_CLICKS_BASE_URL: http://localhost:3917
+      PORT: '3917'
+      JWT_SECRET: isolated-g8-f1f2-jwt-test-only
+      ADMIN_PASSWORD: isolated-g8-f1f2-credential-test-only
+      STRIPE_SECRET_KEY: sk_test_ci_placeholder
+      STRIPE_WEBHOOK_SECRET: whsec_ci_placeholder
+      QR_SECRET: isolated-g8-f1f2-qr-test
+      AUTHKEY_API_KEY: isolated-g8-no-provider
+      PAYPAL_CLIENT_ID: ci-isolated
+      PAYPAL_CLIENT_SECRET: ci-isolated
+      PAYPAL_WEBHOOK_ID: ci-isolated
+      META_WA_APP_SECRET: ci-isolated
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Refuse shared staging, enforce ephemeral localhost PostgreSQL16
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$DATABASE_URL" = 'postgresql://komerce:komerce@localhost:5432/komerce_test'
+          test "$G8_ISOLATED_LOCAL" = '1'
+          test "$E2E_CLICKS_BASE_URL" = 'http://localhost:3917'
+          test -z "$(printenv STAGING_BASE_URL || true)"
+          test -z "$(printenv E2E_STAGING_BASE_URL || true)"
+          node -e "require('./scripts/recette/hub-v1-certification-runner').assertEphemeralTarget(process.env.DATABASE_URL,[])"
+          echo "E2E_EXPECTED_DEPLOY_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          echo "GIT_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+      - name: Canonical schema and migrations on disposable PG16
+        shell: bash
+        run: |
+          set -euo pipefail
+          PGPASSWORD=komerce psql -v ON_ERROR_STOP=1 -h localhost -U komerce -d komerce_test -f docs/db/railway-live-schema.sql >/dev/null
+          node scripts/ci-db-bootstrap.js
+      - name: Build two synthetic paid refund liabilities without external money
+        run: node scripts/recette/g8-isolated-positive-prepare.js
+      - name: Start real Komerce localhost backend with G8 flags only on runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          export KOMERCE_ENV=staging
+          export FABLE_LOCAL_REFUND_RESERVATIONS_ENABLED=1
+          export FABLE_LOCAL_CASH_REFUND_HANDOFF_ENABLED=1
+          export FABLE_LOCAL_MOBILE_REFUND_HANDOFF_ENABLED=1
+          node server.js > "$RUNNER_TEMP/g8-server.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/g8-server.pid"
+          READY=0
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:3917/health/version >/dev/null; then READY=1; break; fi
+            sleep 2
+          done
+          if [[ "$READY" != 1 ]]; then tail -n 45 "$RUNNER_TEMP/g8-server.log"; exit 2; fi
+          node - <<'NODE'
+          (async()=>{
+            const r=await fetch('http://localhost:3917/health/version'),j=await r.json();
+            if(j.commit!==process.env.E2E_EXPECTED_DEPLOY_SHA)throw Error('G8_LOCAL_SHA_MISMATCH');
+            console.log('G8_LOCAL_SHA_PINNED');
+          })().catch(e=>{console.error(e.message);process.exitCode=2});
+          NODE
+      - name: Install real Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Test synthetic F1/F2 through real authenticated Chromium, API and SQL
+        env:
+          KOMERCE_ENV: staging
+        run: npx playwright test --config=playwright.g8-isolated-positive.config.js
+      - name: Archive evidence even on HOLD
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g8-positive-isolated
+          path: test-results/g8-positive-isolated/
+          retention-days: 21
+          if-no-files-found: warn
+      - name: Explicit scope
+        if: always()
+        run: |
+          echo 'G8: Disposable localhost PG16, synthetic paid facts. No Railway staging, provider call, physical payout, nor external financial certification.' >> "$GITHUB_STEP_SUMMARY"

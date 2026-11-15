@@ -1,0 +1,114 @@
+name: G8 — real staging Chromium OFF-guard audit (READ ONLY)
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: read
+concurrency:
+  group: komerce-g8-staging-readonly
+  cancel-in-progress: false
+jobs:
+  g8-readonly:
+    if: >-
+      github.event.issue.user.login == github.repository_owner &&
+      github.event.issue.title == '[staging-op] g8-readonly-browser-audit'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_TARGET_ENV: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      EXPECTED_RAILWAY_ENVIRONMENT: staging
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Pin staging SHA with exact G8 runner-only allowlist
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const {execFileSync}=require('child_process'),fs=require('fs');
+          const git=a=>execFileSync('git',a,{encoding:'utf8'}).trim();
+          (async()=>{
+            const base=process.env.STAGING_BASE_URL;
+            if(base!=='https://komerce-backend-production.up.railway.app')throw Error('G8_WRONG_STAGING_ORIGIN');
+            const resp=await fetch(base+'/health/version');
+            if(!resp.ok)throw Error('G8_DEPLOY_HEALTH_'+resp.status);
+            const sha=String((await resp.json()).commit||''),head=git(['rev-parse','HEAD']);
+            if(!/^[a-f0-9]{40}$/i.test(sha)||!/^[a-f0-9]{40}$/i.test(head))
+              throw Error('G8_SHA_INVALID');
+            try{git(['merge-base','--is-ancestor',sha,head]);}
+            catch{throw Error('G8_DEPLOY_NOT_ANCESTOR');}
+            const changed=sha===head?[]:git(['diff','--name-only',sha+'..'+head]).split('\n').filter(Boolean);
+            const allowed=new Set([
+              '.github/workflows/g8-staging-readonly-browser.yml',
+              'scripts/recette/g8-staging-readonly-browser.js'
+            ]);
+            const unsafe=changed.filter(p=>!allowed.has(p));
+            if(unsafe.length)throw Error('G8_DEPLOYED_PATHS_DIFFER:'+unsafe.join(','));
+            fs.appendFileSync(process.env.GITHUB_ENV,'E2E_EXPECTED_DEPLOY_SHA='+sha+'\n');
+            console.log(JSON.stringify({kind:'G8_DEPLOY_PIN',stagingSha:sha,head,runnerOnlyChanges:changed,verdict:'PASS'}));
+          })().catch(e=>{console.error(e.message);process.exitCode=2});
+          NODE
+      - name: Require verified staging DB identity
+        run: node scripts/recette/target-guard.js
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Real authenticated Chromium negative proof (all business POST blocked)
+        run: node scripts/recette/g8-staging-readonly-browser.js
+      - name: Independent PG16 read-only inventory (no fixture creation)
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const fs=require('fs'),db=require('./db');
+          (async()=>{
+            const client=await db.getClient();let transaction=false;
+            try{
+              await client.query('BEGIN READ ONLY');transaction=true;
+              const tables=['local_item_refund_reservations','local_cash_refund_authorizations',
+                'local_cash_refund_payouts','local_mobile_refund_handoffs'];
+              const counts={};
+              for(const table of tables){
+                const r=await client.query('SELECT COUNT(*)::int AS n FROM public.'+table);
+                counts[table]=r.rows[0].n;
+              }
+              const fin=await client.query(`SELECT COUNT(*)::int AS n FROM public.refunds
+                WHERE local_cash_refund_payout_id IS NOT NULL
+                   OR local_mobile_refund_handoff_id IS NOT NULL`);
+              counts.completed_g8_refunds=fin.rows[0].n;
+              await client.query('COMMIT');transaction=false;
+              fs.mkdirSync('test-results/g8-staging-readonly',{recursive:true});
+              fs.writeFileSync('test-results/g8-staging-readonly/pg-readonly.json',
+                JSON.stringify({kind:'G8_REAL_STAGING_PG_READ_ONLY',counts,verdict:'INVENTORY_ONLY'},null,2)+'\n');
+              console.log('G8_REAL_STAGING_PG_READONLY_OK');
+            }finally{
+              if(transaction)await client.query('ROLLBACK').catch(()=>{});
+              client.release();await db.pool.end();
+            }
+          })().catch(e=>{console.error('G8_PG_READONLY_FAIL:'+e.message);process.exitCode=2});
+          NODE
+      - name: Archive captured evidence even on HOLD
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g8-staging-readonly-${{ github.run_id }}
+          path: test-results/g8-staging-readonly/
+          retention-days: 21
+          if-no-files-found: warn
+      - name: Explicitly delimit certification
+        if: always()
+        run: |
+          echo 'G8 READ ONLY: shows actual Chromium + HTTP staging OFF-guard, PG inventory and deploy SHA.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'This is NOT evidence of cash being physically delivered nor a third-party Mobile Money settlement.' >> "$GITHUB_STEP_SUMMARY"

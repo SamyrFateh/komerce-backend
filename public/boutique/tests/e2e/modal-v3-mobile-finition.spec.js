@@ -575,3 +575,126 @@ test.describe('PDP mobile retouches 2026-11 — V4.1 alignement horizontal canon
     });
   }
 });
+
+test.describe('PDP mobile retouches 2026-11 — suggestions après les détails', () => {
+  test('recommandations réapparues après Composition sans toucher à la géométrie PDP @ 390x844', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await stubFixtureCatalogue(page);
+    const entry = catalogue.cases.find((item) => item.key === 'stress');
+    const product = catalogue.products.find((item) => String(item.id) === String(entry.detail.product.id));
+    const related = catalogue.products.filter((item) => String(item.id) !== String(product.id)).slice(0, 3);
+    expect(related.length).toBeGreaterThan(0);
+
+    // DTO public réel : product_id, pas l'id de la carte. Moteur server-side
+    // simulé ; on certifie le placement et le rendu mobile sans DB ni prix fictif.
+    await page.route((url) => url.pathname === '/api/boutique/suggestions', (route) => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        suggestions: related.map((item) => ({
+          product_id: item.id,
+          category: item.category,
+          reason_label: 'Même catégorie',
+        })),
+      }),
+    }));
+    await page.goto('/boutique/index.html', { waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => window._kbus && window._kstate, null, { timeout: 10000 });
+    await page.evaluate((item) => {
+      if (!window._kstate.products.some((p) => String(p.id) === String(item.id))) {
+        window._kstate.products.push(item);
+      }
+      window._kbus.emit('modal:open', { id: item.id });
+    }, product);
+    await expect(page.locator('#k-modal-overlay')).toHaveClass(/open/);
+    await expect(page.locator('#k-modal-suggestions')).toBeVisible({ timeout: 8000 });
+    await expect(page.locator('#k-sug-rail .k-sug-card')).toHaveCount(related.length);
+
+    const order = await page.evaluate(() => {
+      const section = document.getElementById('k-modal-suggestions');
+      const enriched = document.getElementById('k-modal-enriched-content');
+      const zone = document.querySelector('#k-modal .k-modal-product-zone');
+      const hero = document.querySelector('#k-modal .k-modal-img-wrap');
+      const modal = document.getElementById('k-modal');
+      const root = document.querySelector('.k-mdm-root');
+      const scroll = document.querySelector('.k-modal-scroll');
+      scroll.scrollTop = scroll.scrollHeight;
+      return {
+        inProductZone: section.parentElement === zone,
+        afterEnriched: Boolean(enriched.compareDocumentPosition(section) & Node.DOCUMENT_POSITION_FOLLOWING),
+        cards: section.querySelectorAll('.k-sug-card').length,
+        heroFullWidth: Math.abs(hero.getBoundingClientRect().width - modal.getBoundingClientRect().width) < 2,
+        gutter: getComputedStyle(modal).getPropertyValue('--k-pdp-mobile-gutter').trim(),
+        rootPadding: getComputedStyle(root).paddingLeft,
+        scrollOverflow: scroll.scrollWidth - scroll.clientWidth,
+      };
+    });
+    expect(order.inProductZone).toBe(true);
+    expect(order.afterEnriched).toBe(true);
+    expect(order.cards).toBe(related.length);
+    expect(order.heroFullWidth).toBe(true);
+    expect(order.gutter).toBe('18px');
+    expect(order.rootPadding).toBe('18px');
+    expect(order.scrollOverflow).toBeLessThanOrEqual(1);
+    // Swipe tactile NATIF dans le rail (pas un faux TouchEvent dispatché JS).
+    // Le titre et le scroll vertical doivent rester immobiles pendant le geste.
+    await page.evaluate(() => {
+      const scroll = document.querySelector('.k-modal-scroll');
+      scroll.style.scrollBehavior = 'auto'; // éviter l'animation du scroll pendant la preuve CDP
+      scroll.scrollTop = scroll.scrollHeight;
+    });
+    await page.waitForTimeout(80);
+    const beforeSwipe = await page.evaluate(() => {
+      const rail = document.querySelector('#k-modal .k-sug-grid');
+      const title = rail.closest('.k-sug-section').querySelector('.k-sug-title');
+      const scroll = document.querySelector('.k-modal-scroll');
+      const img = rail.querySelector('.k-sug-card-img');
+      const rr = rail.getBoundingClientRect();
+      const ir = img.getBoundingClientRect();
+      return {
+        scrollWidth: rail.scrollWidth, clientWidth: rail.clientWidth,
+        overflowX: getComputedStyle(rail).overflowX,
+        scrollLeft: rail.scrollLeft,
+        titleLeft: title.getBoundingClientRect().left,
+        scrollTop: scroll.scrollTop,
+        x: Math.min(ir.left + Math.min(ir.width / 2, 55), rr.right - 12),
+        y: ir.top + Math.min(ir.height / 2, 60),
+      };
+    });
+    expect(beforeSwipe.overflowX).toBe('auto');
+    expect(beforeSwipe.scrollWidth - beforeSwipe.clientWidth).toBeGreaterThan(40);
+
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 1 });
+    const x0 = Math.round(beforeSwipe.x);
+    const y0 = Math.round(beforeSwipe.y);
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchStart', touchPoints: [{ x: x0, y: y0 }],
+    });
+    for (let step = 1; step <= 8; step += 1) {
+      await cdp.send('Input.dispatchTouchEvent', {
+        type: 'touchMove', touchPoints: [{ x: x0 - step * 18, y: y0 }],
+      });
+      await page.waitForTimeout(25);
+    }
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await page.waitForTimeout(450);
+    const afterSwipe = await page.evaluate(() => {
+      const rail = document.querySelector('#k-modal .k-sug-grid');
+      return {
+        scrollLeft: rail.scrollLeft,
+        titleLeft: rail.closest('.k-sug-section').querySelector('.k-sug-title').getBoundingClientRect().left,
+        scrollTop: document.querySelector('.k-modal-scroll').scrollTop,
+        overflow: document.getElementById('k-modal').scrollWidth - document.getElementById('k-modal').clientWidth,
+      };
+    });
+    expect(afterSwipe.scrollLeft).toBeGreaterThan(beforeSwipe.scrollLeft + 25);
+    expect(Math.abs(afterSwipe.titleLeft - beforeSwipe.titleLeft)).toBeLessThan(2);
+    expect(Math.abs(afterSwipe.scrollTop - beforeSwipe.scrollTop)).toBeLessThan(2);
+    expect(afterSwipe.overflow).toBeLessThanOrEqual(1);
+    await shot(page, 'mobile-pdp-suggestions-after-swipe-390.png');
+    await cdp.detach();
+
+    await shot(page, 'mobile-pdp-suggestions-after-details-390.png');
+  });
+});

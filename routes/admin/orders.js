@@ -28,6 +28,8 @@ const { deleteOrderCascade } = require('./delete-order-cascade');
 const { refundCancelledOrder } = require('../../services/admin-order-refund');
 const { reserveVerifiedShortage } = require('../../services/item-refund-reservation-service');
 const { reserveLocalShortage } = require('../../services/local-item-refund-reservation');
+const { recordManualMobileRefund } = require('../../services/local-mobile-refund-handoff');
+const { authorizeCashRefund } = require('../../services/local-cash-refund-handoff');
 const { executeReservedItemRefund, reconcileUncertainItemRefund } = require('../../services/item-refund-psp-orchestrator');
 
 const guard = [authenticate, requireRole(['admin'])];
@@ -127,6 +129,39 @@ router.post('/orders/:id/refund', ...guard, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+
+/**
+ * G8 F1/F2 — lecture des obligations locales pour l'écran opérateur.
+ * Les pièces financières sont produites hors de cet écran ; aucun paiement automatique.
+ */
+router.get('/orders/local-refunds', ...guard, async (req, res, next) => {
+  if (process.env.KOMERCE_ENV !== 'staging' ||
+      process.env.FABLE_LOCAL_REFUND_RESERVATIONS_ENABLED !== '1') {
+    return res.status(409).json({ code: 'LOCAL_REFUND_NOT_CERTIFIED',
+      error: 'Parcours de remboursement non activé en recette' });
+  }
+  try {
+    const { rows } = await db.query(`
+      SELECT r.id AS reservation_id, r.order_id, r.order_item_id, r.market_id,
+             r.payment_mode, r.currency, r.amount_minor::text, r.amount_kmf::text,
+             r.quantity, r.reason, r.created_at, o.reference AS order_reference,
+             m.code AS market_code, ca.id AS cash_authorization_id,
+             ca.status AS cash_status, ca.holder_id AS cash_holder_id,
+             mh.status AS mobile_status, mh.operator_id AS mobile_operator_id,
+             mh.approved_by AS mobile_approver_id, mh.confirmed_by AS mobile_reviewer_id
+        FROM local_item_refund_reservations r
+        JOIN orders o ON o.id = r.order_id
+        JOIN markets m ON m.id = r.market_id
+        LEFT JOIN local_cash_refund_authorizations ca ON ca.reservation_id = r.id
+        LEFT JOIN local_mobile_refund_handoffs mh ON mh.reservation_id = r.id
+       WHERE r.status = 'reserved'
+       ORDER BY r.created_at DESC LIMIT 100
+    `);
+    res.set('Cache-Control', 'no-store');
+    return res.json({ refunds: rows });
+  } catch (error) { return next(error); }
+});
+
 // Fable F1/F2 : réserve une DETTE locale pour manquant réellement attesté.
 // Aucune sortie caisse, aucun virement Mobile Money, aucun wallet ou refunds.completed.
 // Activation staging explicite. L'identité du payeur et la sortie réelle doivent
@@ -153,6 +188,56 @@ router.post('/orders/:id/items/:itemId/local-refund-reservations', ...guard, asy
     return next(err);
   }
 });
+
+
+// Fable F1 cash: dual human approval and actual physical handoff must stay
+// distinct. OFF by default; staging-only. These routes never hand out cash
+// themselves: holder confirms an already completed real-world handoff.
+const localCashRefundEnabled = () => process.env.KOMERCE_ENV === 'staging' &&
+  process.env.FABLE_LOCAL_REFUND_RESERVATIONS_ENABLED === '1' &&
+  process.env.FABLE_LOCAL_CASH_REFUND_HANDOFF_ENABLED === '1';
+const denyUncertifiedCashRefund = (res) => res.status(409).json({
+  code: 'LOCAL_CASH_REFUND_HANDOFF_NOT_CERTIFIED', error: 'Remise cash non activée ou hors staging'
+});
+const cashRefundError = (err,res,next) => err.status && err.code
+  ? res.status(err.status).json({code:err.code,error:err.message}) : next(err);
+router.post('/orders/:id/items/:itemId/local-refund-reservations/:reservationId/authorize-cash',
+  ...guard, async (req,res,next) => {
+    if (!localCashRefundEnabled()) return denyUncertifiedCashRefund(res);
+    try {
+      const b=req.body||{};
+      const result=await authorizeCashRefund({
+        orderId:req.params.id,orderItemId:req.params.itemId,reservationId:req.params.reservationId,
+        holderId:b.holder_id,originalPayerProofRef:b.original_payer_proof_ref,
+        identityCheckProofRef:b.identity_check_proof_ref,actor:req.user
+      });
+      return res.status(result.replayed?200:201).json(result);
+    }catch(err){return cashRefundError(err,res,next);}
+  });
+
+router.post('/orders/:id/items/:itemId/local-refund-reservations/:reservationId/manual-mobile/:action',
+  ...guard, async (req, res, next) => {
+    if (process.env.KOMERCE_ENV !== 'staging' ||
+        process.env.FABLE_LOCAL_REFUND_RESERVATIONS_ENABLED !== '1' ||
+        process.env.FABLE_LOCAL_MOBILE_REFUND_HANDOFF_ENABLED !== '1') {
+      return res.status(409).json({
+        code: 'LOCAL_MOBILE_REFUND_NOT_CERTIFIED', error: 'Reversement manuel non activé ou hors staging'
+      });
+    }
+    try {
+      const result = await recordManualMobileRefund({
+        action: req.params.action,
+        orderId: req.params.id,
+        orderItemId: req.params.itemId,
+        reservationId: req.params.reservationId,
+        actor: req.user,
+        body: req.body || {},
+      });
+      return res.status(result.paid || result.replayed ? 200 : 202).json(result);
+    } catch (error) {
+      return cashRefundError(error, res, next);
+    }
+  });
 
 // E7 pilote : réserve une indemnisation de manquant article par article.
 // Ne déplace JAMAIS l'argent : la résolution PSP indépendante reste obligatoire.

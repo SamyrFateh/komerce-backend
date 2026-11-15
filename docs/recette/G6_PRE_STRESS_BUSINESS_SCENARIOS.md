@@ -213,9 +213,9 @@ Chaque cas rattaché s'exécute comme **variante de l'ID existant** (champ `boun
 
 | Variante | Scénarios | Assertions COUVERT (verdict + preuve) | NON_COUVERT |
 |---|---|---|---|
-| F1 manquant sur commande cash / mobile money | N13, N20, N40 (O-FIN) | **F1-a** E7 refuse (`ITEM_REFUND_PAYMENT_METHOD_UNSUPPORTED`), aucune réservation écrite · **F1-b** si le flag `FABLE_LOCAL_REFUND_RESERVATIONS_ENABLED` est effectivement actif (lu et consigné) : 202 `reserved, paid:false`, une ligne, montant ≤ reçu, O-FIN scopé à zéro, sinon NOT_APPLICABLE motivé · **F1-c** rejeu ou dépassement refusé, aucune double dette entre rails | F1-d sortie d'argent, reçu, garde de caisse (G8) |
+| F1 manquant sur commande cash / mobile money | N13, N20, N40 (O-FIN) | **F1-a** E7 refuse (`ITEM_REFUND_PAYMENT_METHOD_UNSUPPORTED`), aucune réservation écrite · **F1-b** préconditions : migration 416, flag `FABLE_LOCAL_REFUND_RESERVATIONS_ENABLED` est effectivement actif (lu et consigné) : 202 `reserved, paid:false`, une ligne, montant ≤ reçu, O-FIN scopé à zéro, sinon NOT_APPLICABLE motivé · **F1-c** rejeu ou dépassement refusé, aucune double dette entre rails | F1-d sortie d'argent, reçu, garde de caisse (G8) |
 | F2 annulation d'une commande payée en cash | N26, N27, N39 | **F2-a** crédit wallet en devise du marché selon le palier N39, une fois · **F2-b** aucun appel PSP ni intention de remboursement | F2-c remboursement sur le moyen d'encaissement (G8) |
-| F3 colis payé non retiré, **variante pré-retrait F3-PRE** | N26 | **F3-a** scan d'invendus 409, aucune écriture `unsold_at` ni `unsold_items` · **F3-b** création ou résolution d'invendu refusée · **F3-c** ensuite, le code reste valide et la remise aboutit, argent intact | F3-d rappels, délai, clôture, sort de l'argent (G9) |
+| F3 colis payé non retiré, **variante pré-retrait F3-PRE** | N26 | **F3-a** scan d'invendus 409 **et** tentative transactionnelle contrôlée refusée par la garde SQL (migrations 415, 419) puis ROLLBACK, aucune mutation `unsold_at`, `unsold_items` ni finances ; un 409 seul ne certifie pas · **F3-b** création ou résolution d'invendu refusée · **F3-c** ensuite, le code reste valide et la remise aboutit, argent intact | F3-d rappels, délai, clôture, sort de l'argent (G9) |
 
 M01 nominal se termine par la remise : il ne prouve pas la garde F3.
 
@@ -230,6 +230,15 @@ Les requêtes Fable restent **inchangées** et en lecture seule ; la portée se 
 3. **Verdict** = lignes finales dont la clé de portée (table `scope_keys` du JSON, une par invariant I1–I15 et H1–H9) appartient au manifeste. Zéro ligne attendue.
 4. Ligne finale hors manifeste et absente de la baseline : rapprochée du manifeste de l'autre cohorte, sinon `ANOMALIE_HORS_COHORTE` signalée (simulation, autre activité), jamais comptée ni masquée. Ligne présente dès la baseline : historique, signalée une fois (par exemple les 112 commandes simulées de I7 et I15).
 5. Requête invalide, clé absente de la sortie ou liaison impossible : `NOT_PROVEN`, jamais PASS implicite.
+
+## Cadence d'exécution (G0c, contre-revue GPT)
+
+- Les deux cohortes sont **sérialisées pour les écritures**, jamais simultanées sur l'IP partagée des runners.
+- Plafonds, tous agents confondus : **1 création de commande / 12 s**, **1 retrait / 20 s**, **1 confirmation cash / 30 s** ; API globale nettement sous 500 requêtes / 15 min.
+- Horodatage et IP de sortie consignés (sans secret), compteur par endpoint.
+- Un 429 arrête la sous-campagne : **NOT_PROVEN**, jamais de contournement des limiteurs.
+- Deux RUN8 distincts, même SHA, identités isolées.
+- H7 reste **NOT_PROVEN** tant que la liaison placement → allocation → commande n'est pas démontrée par le runner.
 
 ## Coordination et paquet de preuve
 

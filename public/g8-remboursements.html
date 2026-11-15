@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="robots" content="noindex,nofollow" />
+  <title>Komerce · Remboursements locaux G8</title>
+  <link rel="stylesheet" href="/css/g8-remboursements.css" />
+  <script src="/js/g8-remboursements.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/admin/finance">KOMERCE <span>/ Opérations financières</span></a>
+    <a class="back" id="g8-back" href="/admin/finance">Retour à mon espace</a>
+  </header>
+  <main class="shell">
+    <div class="eyebrow">G8 · F1 / F2 · Suivi des obligations</div>
+    <div class="hero">
+      <div>
+        <h1>Remboursements locaux</h1>
+        <p>Espèces au relais ou Mobile Money manuel, uniquement après preuve du manquant et vérification du payeur d’origine.</p>
+      </div>
+      <span class="state" id="g8-env">Vérification…</span>
+    </div>
+    <div class="notice" role="note">
+      <strong>Pas de virement dans Komerce.</strong> Un transfert Mobile Money se réalise dans l’outil officiel de l’opérateur. La confirmation ici atteste un paiement déjà réalisé et rapproche les écritures ; elle ne doit jamais servir de simulation sur une vraie commande.
+    </div>
+    <div class="status" role="status" aria-live="polite" id="g8-status">Chargement de la session…</div>
+    <div class="toolbar"><h2 id="g8-title">Obligations en attente</h2><button id="g8-refresh" type="button">Actualiser</button></div>
+    <section class="cards" id="g8-list" aria-label="Remboursements disponibles"></section>
+    <p class="footnote">Les justificatifs originaux sont conservés et vérifiés en dehors de cet écran. Les opérations sont journalisées dans PostgreSQL et protégées contre les doubles paiements.</p>
+  </main>
+</body>
+</html>

@@ -224,7 +224,10 @@ async function computeSuggestions(signals = {}) {
   const marketCode = signals.pdpMarketCode;
   let { rows: products } = await db.query(
     `SELECT
-       p.id, p.product_ref, p.name, p.category, p.subcategory,
+       p.id, p.product_ref, p.name,
+       ${marketCode
+         ? 'COALESCE(p.boutique_category_key, p.category) AS category, COALESCE(p.boutique_subcategory_key, p.subcategory) AS subcategory'
+         : 'p.category, p.subcategory'},
        p.price_kmf, p.promo_pct, p.is_promo, p.promo_until,
        ${marketCode ? canonicalProductImageSql('p') : 'p.image_url'} AS image_url,
        p.compatibility_group, p.is_active,
@@ -245,8 +248,14 @@ async function computeSuggestions(signals = {}) {
 
   if (marketCode) {
     const anchor = products.find(product => String(product.id) === signals.viewed_product_id);
+    // PDP : priorité au même sous-univers / groupe compatible, mais les autres
+    // articles de la même catégorie sont des alternatives honnêtes lorsque le
+    // sous-univers ne contient qu'un seul produit (ex. chemise femme).
+    // rankProducts() conserve P1 compatibilité > P2 sous-catégorie > P7
+    // catégorie. Aucun produit hors marché n'entre ici : exposition publique
+    // filtrée en SQL, prix LOCAL_ACTIVE et achetabilité vérifiés ci-dessous.
     products = anchor ? products.filter(product =>
-      (anchor.subcategory && product.category === anchor.category && product.subcategory === anchor.subcategory) ||
+      (anchor.category && product.category === anchor.category) ||
       (anchor.compatibility_group && product.compatibility_group === anchor.compatibility_group) ||
       product === anchor
     ) : [];

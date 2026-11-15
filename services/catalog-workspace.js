@@ -8,10 +8,10 @@
  * @outputs       catalog_work_queue, delegated_catalog_mutations
  * @depends       db, utils/rules.js, services/catalog-product-quality-service.js, services/product-admin-service.js, services/catalog-approval.js, services/catalog-overrides.js, services/boutique-taxonomy-admin.js, services/catalog-commercial-assortment.js, services/pricing-parameters-status.js
  * @used-by       routes/admin-catalog-workspace.js
- * @db-read       catalog_product_sale_holds, catalog_product_quality_notes, disputes, order_items, products, sourcing_candidates, boutique_categories, boutique_subcategories, import_runtime_runs, markets, product_market_exposure, product_market_price_drafts, catalog_media, catalog_media_visual_fr_reviews, product_skus, product_variants, finance_config, currency_parities, exchange_rates, cost_components
+ * @db-read       catalog_product_sale_holds, catalog_product_quality_notes, disputes, order_items, products, sourcing_candidates, boutique_categories, boutique_subcategories, import_runtime_runs, markets, product_market_exposure, product_market_price_drafts, catalog_media, catalog_media_visual_fr_reviews, product_content_profile, product_skus, product_variants, finance_config, currency_parities, exchange_rates, cost_components
  * @db-write      none
- * @db-write-via  product-admin-service, catalog-approval, catalog-overrides, boutique-taxonomy-admin
- * @db-txn        delegated_to_domain_authority
+ * @db-write-via  product-admin-service, catalog-approval, catalog-overrides, boutique-taxonomy-admin, catalog-product-mutation-service
+ * @db-txn        transactional_editorial_update, delegated_to_domain_authority
  * @doctrine      workspace_acts_dashboard_observes, global_catalog_not_market_scoped, commercial_catalog_is_union_of_approved_products_from_closed_kirs, reuse_domain_mutation_authorities, product_ref_is_public_identity, no_paid_ai_api_for_fr_preparation
  * @impact-areas  admin-dashboard, catalog, boutique
  * @version       2026-10
@@ -572,6 +572,7 @@ function publicProductDossier(facts, product, marketHandoff = null, details = {}
         : (Number(row.active_supplier_skus) > 0 &&
           Number(row.active_supplier_skus) === Number(row.complete_supplier_skus)),
     },
+    editorial: { short_description: details.shortDescription || null },
     media: {
       // UUIDs exposed only through the authenticated Catalogue + Sourcing dossier.
       product_id: row.has_sourcing_candidate === true ? product.id : null,
@@ -655,7 +656,7 @@ async function getProductDossier(productRef) {
     'catalog_facts_unavailable', 'Fiche canonique indisponible', 503
   );
   const skuStockAuthority = facts.row.inventory_model === 'SKU';
-  const [mediaResult, variantResult, visual] = await Promise.all([
+  const [mediaResult, variantResult, visual, profile] = await Promise.all([
     db.query(`SELECT cm.id AS media_id, cm.url, cm.alt, cm.role, cm.source_media_id,
               cm.option_values, cm.display_order,
               vr.source_media_id AS review_source_media_id,
@@ -676,11 +677,13 @@ async function getProductDossier(productRef) {
                    ORDER BY display_order ASC, variant_type ASC, variant_value ASC LIMIT 51`, [product.id]),
     facts.row.has_sourcing_candidate === true
       ? inspectCatalogVisualFrEvidence(db, product.id) : Promise.resolve(null),
+    db.query('SELECT short_description FROM product_content_profile WHERE product_id=$1', [product.id]),
   ]);
   return publicProductDossier(facts, product, handoff, {
     media: mediaResult.rows,
     variants: variantResult.rows,
     visual,
+    shortDescription: profile.rows[0]?.short_description,
   });
 }
 
@@ -707,6 +710,40 @@ async function updateProduct(productRef, body, actor) {
   const result = await productAdmin.updateProduct(db, product.id, sanitizeProductUpdate(body), actor);
   if (result.status >= 400) throw new CatalogWorkspaceError(result.body.code || 'product_update_rejected', result.body.error || 'Modification produit refusée', result.status);
   return publicProduct(result.body);
+}
+
+async function updateEditorial(productRef, body = {}) {
+  const { short_description: description, cover_media_id: coverMediaId } = body;
+  if ((description === undefined && coverMediaId === undefined) ||
+      (description !== undefined && (typeof description !== 'string' || description.trim().length > 240)) ||
+      (coverMediaId !== undefined && (typeof coverMediaId !== 'string' ||
+        !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(coverMediaId)))) {
+    throw new CatalogWorkspaceError('catalog_editorial_invalid', 'Accroche ou photo de couverture invalide', 422);
+  }
+  const product = await resolveProduct(productRef);
+  return db.withTransaction(async client => {
+    const locked = await client.query('SELECT id FROM products WHERE id=$1 FOR UPDATE', [product.id]);
+    if (!locked.rows.length) throw new CatalogWorkspaceError('catalog_product_not_found', 'Produit introuvable', 404);
+    if (coverMediaId) {
+      const { rows: [media] } = await client.query(
+        `SELECT cm.source_media_id, cm.url FROM catalog_media cm
+          WHERE cm.id=$2 AND cm.product_id=$1 AND cm.is_active=TRUE
+            AND EXISTS (SELECT 1 FROM sourcing_candidates sc
+                         WHERE sc.product_id=cm.product_id AND sc.state='imported_to_catalog')
+          FOR UPDATE`, [product.id, coverMediaId]
+      );
+      const evidence = media && await inspectCatalogVisualFrEvidence(client, product.id);
+      if (!media || !/^https:\/\//i.test(media.url) || !evidence.results.some(item =>
+        item.ready && item.source_media_id === media.source_media_id)) {
+        throw new CatalogWorkspaceError('catalog_cover_not_reviewed', 'Choisissez une photo active dont le contrôle visuel est validé', 422);
+      }
+    }
+    await catalogProductMutation.saveEditorial(client, product.id, {
+      shortDescription: description === undefined ? undefined : description.trim() || null,
+      coverMediaId,
+    });
+    return { product_ref: product.product_ref };
+  });
 }
 
 // Classification boutique du produit remis : l'autorité Catalog valide la paire.
@@ -870,6 +907,7 @@ module.exports = {
   getProductDossier,
   createProduct,
   updateProduct,
+  updateEditorial,
   classifyProduct,
   recoverProductSourceMedia: catalogMediaRecovery.recoverSourceMedia,
   deactivateProduct,

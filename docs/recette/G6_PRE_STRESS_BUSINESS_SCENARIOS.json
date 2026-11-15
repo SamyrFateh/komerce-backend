@@ -866,7 +866,7 @@
   "decision_ref": "issue #3927 comment 6828953843 (A1-A8, A2-bis, A2-ter)",
   "not_applicable_rule": "NOT_APPLICABLE exige un motif et la branche non concernée, au niveau assertion ou scénario ; jamais compté comme PASS ; interdit pour masquer un P0 obligatoire.",
   "gates": {
-    "G0": "SHA servi = SHA cible ; AUTHKEY_ALLOWED_PHONES vide ou sans numéro de recette ; zéro envoi réel ; fixtures par agent ; catalogue multi-sources KM/CM/CG prêt (catalog_prerequisites) ; limiteurs de débit par IP (#4070 ST-F1 : 10 commandes/min, 5 retraits/min, 3 confirmations cash/min, 500 req/15 min sur /api) : rythme de chaque campagne réglé sous ces seuils et les deux campagnes jamais simultanées sur le même relais, sinon un 429 est qualifié NOT_PROVEN, pas FAIL",
+    "G0": "SHA servi = SHA cible ; AUTHKEY_ALLOWED_PHONES vide ou sans numéro de recette ; zéro envoi réel ; fixtures par agent ; catalogue multi-sources KM/CM/CG prêt (catalog_prerequisites) ; limiteurs de débit par IP (#4070 ST-F1 : 10 commandes/min, 5 retraits/min, 3 confirmations cash/min, 500 req/15 min sur /api) : rythme de chaque campagne réglé sous ces seuils et les deux campagnes jamais simultanées sur le même relais, sinon un 429 est qualifié NOT_PROVEN, pas FAIL ; cadence d'exécution : voir execution_cadence",
     "G1": "Arbitrages A1-A8 validés (fait le 12/11)",
     "G2": "Lots P0 fusionnés et déployés avant les scénarios qu'ils débloquent ; sinon BLOCKED explicite",
     "G3": "Scénarios M",
@@ -1259,7 +1259,12 @@
               "SQL",
               "O-FIN"
             ],
-            "not_applicable_if": "flag inactif sur le SHA servi : NOT_APPLICABLE motivé"
+            "not_applicable_if": "une précondition manque : aucun 202 attendu, NOT_APPLICABLE motivé",
+            "preconditions": [
+              "migration 416 appliquée",
+              "flag FABLE_LOCAL_REFUND_RESERVATIONS_ENABLED réellement actif (lu et consigné)",
+              "commande KM cash rapprochée ou capture mobile money admissible"
+            ]
           },
           {
             "id": "F1-c",
@@ -1327,10 +1332,11 @@
             "id": "F3-a",
             "coverage": "COUVERT",
             "kind": "negative",
-            "assertion": "Scan d'invendus sur la commande payée non retirée : 409, aucune écriture orders.unsold_at ni unsold_items (garde SQL 415)",
+            "assertion": "Scan d'invendus sur la commande payée non retirée : 409 HTTP, ET tentative transactionnelle contrôlée d'écriture unsold_at / unsold_items refusée par la garde SQL (migrations 415, 419) puis ROLLBACK ; aucune mutation de orders.unsold_at, unsold_items ni des finances. Un 409 HTTP seul ne certifie pas",
             "proof": [
               "HTTP",
-              "SQL"
+              "SQL (tentative + ROLLBACK)",
+              "O-FIN"
             ]
           },
           {
@@ -1443,7 +1449,7 @@
       "H4": "order_item_id → order_item_ids",
       "H5": "H5a : line_id → purchase_line_ids ; H5b : id → allocation_ids",
       "H6": "id → order_item_ids",
-      "H7": "id → entité source de la requête H7 (parcel_ids ou purchase_order_ids, confirmée par le runner) ; sinon NOT_PROVEN",
+      "H7": "NOT_PROVEN tant que la liaison hub_physical_unit_placements.id → allocation → commande n'est pas démontrée par le runner ; un placement n'est jamais assimilé à un parcel_id",
       "H8": "id → physical_unit_ids",
       "H9": "id → physical_unit_ids"
     }
@@ -1454,5 +1460,16 @@
       "NON_COUVERT"
     ],
     "rule": "Qualification de couverture d'une assertion, distincte du verdict. Une assertion COUVERT reçoit un verdict (PASS/FAIL/BLOCKED/NOT_PROVEN/NOT_APPLICABLE) ; une assertion NON_COUVERT ne reçoit aucun verdict, porte un motif et une décision du propriétaire, et ne change ni le verdict du scénario ni celui des autres assertions."
+  },
+  "execution_cadence": {
+    "source": "Contre-revue GPT #3944 (15/11), condition G0c",
+    "rules": [
+      "Les deux cohortes sont sérialisées pour les écritures (jamais simultanées) sur l'IP partagée des runners",
+      "Plafonds tous agents confondus : 1 création de commande / 12 s, 1 retrait / 20 s, 1 confirmation cash / 30 s",
+      "API globale nettement sous 500 requêtes / 15 min",
+      "Horodatage et IP de sortie consignés (sans secret), compteur par endpoint",
+      "Un 429 arrête la sous-campagne : NOT_PROVEN, jamais de contournement des limiteurs",
+      "Deux RUN8 distincts, même SHA, identités isolées"
+    ]
   }
 }

@@ -169,7 +169,9 @@ export function buildProductContentViewModel(content) {
   const highlights = buildHighlights(safe.highlights);
   const specificationGroups = buildSpecificationGroups(safe.specifications);
   const sections = buildSections(safe.sections);
-  const materials = normalizeStringList(safe.materials);
+  // « Cloth » décrit un tissu indéterminé, pas une composition produit.
+  const materials = normalizeStringList(safe.materials)
+    .filter((material) => material.toLowerCase() !== 'cloth');
   const care = normalizeStringList(safe.care);
   const warnings = normalizeStringList(safe.warnings);
   const provenance = safe.provenance && typeof safe.provenance === 'object' ? safe.provenance : null;
