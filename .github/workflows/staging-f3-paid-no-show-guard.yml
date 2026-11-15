@@ -42,7 +42,7 @@ jobs:
       - name: Confirm exact disposable staging database fingerprint
         run: node scripts/recette/target-guard.js
       - name: Check F3 real HTTP and PostgreSQL (rollback-only)
-        run: node scripts/recette/f3-no-show-staging-guard-proof.js
+        run: node tests/recette/f3-no-show-staging-guard-proof.js
       - name: Archive F3 proof, even on failure
         if: always()
         uses: actions/upload-artifact@v4
