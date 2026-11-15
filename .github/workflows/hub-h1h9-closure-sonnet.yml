@@ -80,7 +80,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          n=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?status=in_progress&per_page=50" --jq "[.workflow_runs[] | select(.id != ${GITHUB_RUN_ID} and (.name|test(\"staging|chromium|g6|recette|hub-v1|e2e|certif\";\"i\")))] | length")
+          n=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?status=in_progress&per_page=50" --jq "[.workflow_runs[] | select(.id != ${GITHUB_RUN_ID} and (.name|test(\"staging|g6|hub|recette|certif|e2e|G2|campagne\";\"i\")))] | length")
           echo "other in_progress runs: $n"
           gh api "repos/$GITHUB_REPOSITORY/actions/runs?status=in_progress&per_page=50" --jq ".workflow_runs[] | select(.id != ${GITHUB_RUN_ID}) | \"\(.id) \(.name)\""
           test "$n" = "0"
