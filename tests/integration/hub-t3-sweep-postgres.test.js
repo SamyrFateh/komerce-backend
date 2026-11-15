@@ -204,7 +204,9 @@ describeDb('H1 / T3 — avancement à la clôture et balayage sans famine (REAL_
 
   afterAll(async () => {
     // Ne laisse aucune commande `ordered` : les files du tableau de bord (L8, limitées à 25) partagent la même base.
-    await q("UPDATE orders SET status='cancelled' WHERE reference LIKE $1 AND status IN ('ordered', 'preparation')", [`${tag}%`]).catch(() => {});
+    await q("DELETE FROM order_items WHERE order_id IN (SELECT id FROM orders WHERE reference LIKE $1)", [`${tag}-OLD%`]);
+    await q("DELETE FROM orders WHERE reference LIKE $1", [`${tag}-OLD%`]);
+    await q("UPDATE orders SET status='cancelled' WHERE reference LIKE $1 AND status IN ('ordered', 'preparation')", [`${tag}%`]);
     await db.pool.end().catch(() => {});
   });
 });
