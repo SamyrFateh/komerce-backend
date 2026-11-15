@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-11-13T15:21:45.463Z",
+  "generatedAt": "2026-11-15T01:35:00.000Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 840,
-    "protected": 781,
+    "total": 843,
+    "protected": 784,
     "public": 59,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -6133,6 +6133,27 @@
       "level": "PROTECTED",
       "roles": [
         "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/orders/{id}/items/{itemId}/local-refund-reservations/{reservationId}/authorize-cash",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/relay/orders/{id}/items/{itemId}/local-cash-handoffs/{authorizationId}/confirm",
+      "level": "PROTECTED",
+      "roles": [
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "POST /api/relay/orders/{id}/items/{itemId}/local-cash-handoffs/{authorizationId}/start",
+      "level": "PROTECTED",
+      "roles": [
+        "agent_relais"
       ]
     }
   ]
