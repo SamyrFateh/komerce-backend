@@ -37,7 +37,8 @@ const partnerAdmin = require('./partner-admin-service');
 const pricingEngine = require('./pricing-engine');
 const categoryClassifier = require('./customs-dynamic-category-classifier');
 const commercialMapping = require('./supplier-commercial-category-mapping');
-const { resolveCommercialObjectTaxonomy } = require('./catalog-candidate-product-service');
+const { resolveCommercialObjectTaxonomy, resolveCommercialTaxonomyVerdict } = require('./catalog-candidate-product-service');
+const categoryAgreement = require('./commercial-category-agreement');
 
 class SourcingWorkspaceError extends Error {
   constructor(status, message, code = null, details = null) {
@@ -404,6 +405,39 @@ async function getCandidateBoutiqueCategoryOptions(candidateRef) {
   let preferred = saved && { category:saved.category, subcategory:saved.subcategory };
   if (!preferred && provider && sourcePath) {
     preferred = await commercialMapping.findConfirmed(provider, sourcePath);
+  }
+  // The experimental category-only result is computed on demand. It never
+  // writes a candidate decision, confirms a supplier mapping or creates a
+  // draft. The operator must select a complete ACTIVE pair to advance.
+  if (categoryAgreement.enabled() && categoryAgreement.eligibleSupplier(candidate)
+      && !saved) {
+    const verdict=await resolveCommercialTaxonomyVerdict(db,candidate);
+    if (verdict.status==='CATEGORY_AUTO_REVIEW_REQUIRED') {
+      const within=pairs.filter(pair=>pair.category===verdict.category);
+      const proposed=within.find(pair=>pair.subcategory===verdict.proposed_subcategory);
+      const suggestions=proposed?[{
+        ...proposed,source:'OBJECT_LEAF_PROPOSAL',confidence:'review_required',
+      }]:[];
+      return {
+        candidate_ref:candidateRef,product_name:candidate.product_name,
+        supplier_category:sourcePath,source:'boutique_categories',
+        categories:pairs,suggestions,
+        category_decision:{status:verdict.status,category:verdict.category,
+          source:verdict.source,requires_human_subcategory:true},
+        note:'Catégorie reconnue par objet + branche fournisseur. La sous-catégorie doit être validée par un opérateur avant toute création de brouillon.',
+      };
+    }
+    if (verdict.status==='REVIEW_REQUIRED') {
+      return {candidate_ref:candidateRef,product_name:candidate.product_name,
+        supplier_category:sourcePath,source:'boutique_categories',
+        categories:pairs,suggestions:[],
+        category_decision:{status:'REVIEW_REQUIRED',category:null,source:verdict.source},
+        note:'Désaccord, objet absent ou racine inconnue : revue humaine sans suggestion forte.',
+      };
+    }
+    if(verdict.status==='AUTO_CLASSIFIED') {
+      preferred={category:verdict.category,subcategory:verdict.subcategory};
+    }
   }
   if (!preferred) {
     preferred = await resolveCommercialObjectTaxonomy(db,candidate);
