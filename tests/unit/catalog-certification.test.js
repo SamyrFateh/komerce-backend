@@ -37,6 +37,7 @@ function readyRow(overrides = {}) {
     active_media: 2,
     active_supplier_skus: 2,
     complete_supplier_skus: 2,
+    unresolved_supplier_skus: 0,
     enabled_markets: 0,
     ...overrides,
   };
@@ -93,6 +94,7 @@ describe('catalog canonical certification', () => {
     ['media', { active_media: 0 }, 'media_missing'],
     ['supplier sku', { active_supplier_skus: 0, complete_supplier_skus: 0 }, 'active_supplier_sku_missing'],
     ['supplier order identity', { active_supplier_skus: 2, complete_supplier_skus: 1 }, 'supplier_order_identity_incomplete'],
+    ['supplier mapping', { active_supplier_skus: 2, complete_supplier_skus: 2, unresolved_supplier_skus: 1 }, 'supplier_mapping_missing'],
     ['candidate lifecycle', { lifecycle_status: 'active', is_active: true }, 'not_inactive_candidate'],
     ['market exposure', { enabled_markets: 1 }, 'market_exposure_enabled'],
   ])('fails closed when %s invariant is broken', (_label, mutation, expectedReason) => {
@@ -144,6 +146,9 @@ describe('catalog canonical certification', () => {
     const sql = q.query.mock.calls[0][0];
     expect(sql).toContain("NULLIF(BTRIM(supplier_unit_ref), '') IS NOT NULL");
     expect(sql).toContain("jsonb_typeof(supplier_order_identity) = 'object' AND supplier_order_identity <> '{}'::jsonb");
+    expect(sql).toContain('FROM product_suppliers ps');
+    expect(sql).toContain('JOIN suppliers s ON s.id = ps.supplier_id');
+    expect(sql).toContain('AS unresolved_supplier_skus');
   });
 
   test('combined refinery certification requires explicit source-linked visual FR review', () => {

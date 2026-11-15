@@ -141,6 +141,7 @@
       media_missing: 'média Catalogue absent',
       active_supplier_sku_missing: 'SKU fournisseur actif absent',
       supplier_order_identity_incomplete: 'identité de commande fournisseur incomplète',
+      supplier_mapping_missing: 'fournisseur actif non rattaché au produit ou à ses SKU — associer le fournisseur avant publication',
       not_inactive_candidate: 'produit hors état candidate inactif',
       market_exposure_enabled: 'exposition marché déjà activée',
     };
