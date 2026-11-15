@@ -19562,6 +19562,27 @@
       },
       {
         "feature": "refunds",
+        "category": "utils",
+        "declared": "public/g8-remboursements.html",
+        "resolvedPath": "public/g8-remboursements.html",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "refunds",
+        "category": "utils",
+        "declared": "public/css/g8-remboursements.css",
+        "resolvedPath": "public/css/g8-remboursements.css",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "refunds",
+        "category": "utils",
+        "declared": "public/js/g8-remboursements.js",
+        "resolvedPath": "public/js/g8-remboursements.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "refunds",
         "category": "migrations",
         "declared": "migrations/416_fable_local_item_refund_reservations.sql",
         "resolvedPath": "migrations/416_fable_local_item_refund_reservations.sql",
@@ -19712,6 +19733,20 @@
         "category": "tests",
         "declared": "tests/integration/fable-cash-refund-handoff-postgres.test.js",
         "resolvedPath": "tests/integration/fable-cash-refund-handoff-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "refunds",
+        "category": "tests",
+        "declared": "tests/unit/g8-refund-operator-ui.test.js",
+        "resolvedPath": "tests/unit/g8-refund-operator-ui.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "refunds",
+        "category": "tests",
+        "declared": "tests/staging-canonical/g8-refunds-readonly.spec.js",
+        "resolvedPath": "tests/staging-canonical/g8-refunds-readonly.spec.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -50019,7 +50054,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2344
+        "filesObserved": 2347
       },
       "boutique": {
         "filesObserved": 216,
