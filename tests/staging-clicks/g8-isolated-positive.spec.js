@@ -55,7 +55,8 @@ async function clickPost(page,where,fields,name,suffix,okStatus){
  return b;
 }
 async function rawPost(page,url,body,expected,name){
- const r=await page.request.post(url,{data:body||{}}),b=await r.json().catch(()=>({}));
+ const r=await page.request.post(url,{data:body||{},headers:{origin:LOCAL}}),b=await r.json().catch(()=>({}));
+ check(name+'_not_csrf',b.code!=='csrf_origin_required',b.code||null);
  check(name,expected.includes(r.status()),b.code||r.status());
  proof.http.push({action:name,status:r.status(),code:b.code||null});
  return b;
