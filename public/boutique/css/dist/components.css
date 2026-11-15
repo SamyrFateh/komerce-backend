@@ -3441,7 +3441,9 @@ html.k-mobile-premium-v1 .k-chip-label {
     position: static;
     width: var(--k-pdp-thumb-size);
     min-width: var(--k-pdp-thumb-size);
-    max-height: 100%;
+    /* Rail pouvant défiler indépendamment : six miniatures ne doivent pas
+       agrandir artificiellement la rangée hero au-delà de la photo. */
+    max-height: clamp(340px, 28.5vw, 520px);
     margin: 8px 0;
     z-index: 8;
     overflow-y: auto;

@@ -72,10 +72,10 @@ describe('PDP fullscreen media identity', () => {
     const counter = fs.querySelector('.k-modal-fullscreen-counter').textContent;
 
     expect(fs.classList.contains('is-open')).toBe(true);
-    expect(track.style.transform).toBe('translateX(-200%)');
+    expect(track.style.transform).toBe('translateX(-300%)');
     expect(counter).toContain('3');
     expect(counter).toContain('4');
-    expect(images[2].src).toContain('image-2.jpg');
+    expect(images[3].src).toContain('image-2.jpg');
   });
 
   test('mobile : tap court sur image 2/4 ouvre image 2/4 et ne remonte pas au fullscreen legacy', () => {
@@ -95,8 +95,8 @@ describe('PDP fullscreen media identity', () => {
     const fs = document.querySelector('.k-modal-fullscreen');
     expect(legacyTouchEnd).not.toHaveBeenCalled();
     expect(fs.classList.contains('is-open')).toBe(true);
-    expect(fs.querySelector('.k-modal-fullscreen-track').style.transform).toBe('translateX(-100%)');
+    expect(fs.querySelector('.k-modal-fullscreen-track').style.transform).toBe('translateX(-200%)');
     expect(fs.querySelector('.k-modal-fullscreen-counter').textContent).toContain('2');
-    expect(fs.querySelectorAll('.k-modal-fullscreen-slide img')[1].src).toContain('image-1.jpg');
+    expect(fs.querySelectorAll('.k-modal-fullscreen-slide img')[2].src).toContain('image-1.jpg');
   });
 });
