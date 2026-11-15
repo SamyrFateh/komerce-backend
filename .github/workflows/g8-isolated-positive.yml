@@ -71,6 +71,7 @@ jobs:
           test -z "$(printenv E2E_STAGING_BASE_URL || true)"
           node -e "require('./scripts/recette/hub-v1-certification-runner').assertEphemeralTarget(process.env.DATABASE_URL,[])"
           echo "E2E_EXPECTED_DEPLOY_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          echo "GIT_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
       - name: Canonical schema and migrations on disposable PG16
         shell: bash
         run: |
