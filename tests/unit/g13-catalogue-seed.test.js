@@ -47,6 +47,8 @@ describe('G13 catalogue seed (outillage de recette)', () => {
     const source = fs.readFileSync(path.join(__dirname, '../../scripts/recette/g13-catalogue-seed.js'), 'utf8');
     expect(source).toContain("if (phaseSel === 'diagnose')");
     expect(source).toContain("G13_DIAGNOSTIC_MUST_BE_READ_ONLY");
+    expect(source.indexOf("const execute = mode === 'execute';")).toBeLessThan(
+      source.indexOf("if (phaseSel === 'diagnose')"));
     expect(source).toContain("DIAGNOSTIC_OK_NOT_G13_GO");
     expect(source).not.toContain("scan_result.sourcing_decision = 'TEST'");
   });
