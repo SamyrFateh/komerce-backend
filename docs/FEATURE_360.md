@@ -2306,7 +2306,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Perimeter** :
 - _in_ :
   - moteur de classement boutique
-  - endpoint de suggestions
+  - endpoint de suggestions, avec une surface PDP limitée aux produits visibles sur le marché et liés au produit consulté
   - DiscoveryCard — projection de lecture mixte (product|physical_offer|service), jamais persistée
   - politique éditoriale serveur explicite du rail local : activation globale, candidats et ordre
 - _out_ :

@@ -72,6 +72,7 @@ import {
   _syncScrollPadding,
   setupModalFAB, hideModalFAB,
 }                           from './b-modal-product.js';
+import { currentMarketCode } from './product-store.js';
 import { renderSuggestions }                 from './b-modal-suggestions.js';
 import { updateModalNavArrows, navigateModal } from './b-modal-nav.js';
 import { _syncModalQtyUI, setupModalCart, resetAddCartButtonState }   from './b-modal-cart.js';
@@ -104,52 +105,34 @@ bus.on('modal:open', function({ id, pushHistory, kind, detail }) {
 
   /**
    * RANK-01 — Appelle GET /api/boutique/suggestions et délègue l'affichage
-   * à renderSuggestions (surface passive). Fallback local si réseau KO.
+   * à renderSuggestions (surface passive).
    * @param {Object} product - Produit actif (modalProduct)
    */
-  function _fetchAndRenderSuggestions(product) {
-    // Construction des signaux disponibles
-    const params = new URLSearchParams({ limit: '20' });
-    if (product.id)       params.set('viewed_product_id', String(product.id));
-    if (product.category) params.set('category', product.category);
-    if (product.subcategory) params.set('subcategory', product.subcategory);
-
-    // Signal panier
-    const cartIds = (state.cart || []).map(i => String(i.product?.id ?? i.id)).filter(Boolean);
-    if (cartIds.length) params.set('cart_product_ids', cartIds.join(','));
-
-    // Signal historique produits vus
-    const viewed = (state.viewedHistory || []).filter(id => String(id) !== String(product.id));
-    if (viewed.length) params.set('recently_viewed', viewed.slice(-10).join(','));
-
-    fetch('/api/boutique/suggestions?' + params.toString(), { credentials: 'include' })
-      .then(r => r.ok ? r.json() : Promise.reject(r.status))
-      .then(payload => {
-        // FIX : la route renvoie un OBJET { count, suggestions, ... }, pas un tableau.
-        // items.filter() levait une TypeError -> catch -> fallback systématique.
-        const items = Array.isArray(payload) ? payload : (payload && payload.suggestions) || [];
-        if (!items.length) throw new Error('empty-suggestions');
-        // Reconstruire sameCat / otherCat depuis la réponse enrichie (reason_label inclus)
-        const sameCat = items
-          .filter(s => s.category === product.category)
-          .map(s => Object.assign({}, state.products.find(p => String(p.id) === String(s.product_id)) || {}, s))
-          .filter(p => p.id);
-        const otherCat = items
-          .filter(s => s.category !== product.category)
-          .map(s => Object.assign({}, state.products.find(p => String(p.id) === String(s.product_id)) || {}, s))
-          .filter(p => p.id);
-        renderSuggestions(sameCat, otherCat, product.category);
-      })
-      .catch(() => {
-        // Fallback éditorial si API indisponible — pas de Math.random()
-        const sameCat = state.products
-          .filter(p => p.category === product.category && p.id !== product.id)
-          .slice(0, 20);
-        const otherCat = state.products
-          .filter(p => p.category !== product.category && p.id !== product.id)
-          .slice(0, 16);
-        renderSuggestions(sameCat, otherCat, product.category);
+  async function _fetchAndRenderSuggestions(product) {
+    renderSuggestions([], [], product.category);
+    const market = currentMarketCode();
+    if (!market || !product.id) return;
+    const params = new URLSearchParams({
+      surface: 'pdp', market, viewed_product_id: String(product.id), limit: '3',
+    });
+    try {
+      const response = await fetch('/api/boutique/suggestions?' + params, { credentials: 'include' });
+      if (!response.ok) return;
+      const { suggestions } = await response.json();
+      if (state.modalProduct !== product || currentMarketCode() !== market) return;
+      const catalogById = new Map(state.products.map(item => [String(item.id), item]));
+      const cards = suggestions.flatMap(suggestion => {
+        const catalogProduct = catalogById.get(String(suggestion.product_id));
+        return catalogProduct ? [{ ...catalogProduct, ...suggestion, id: catalogProduct.id }] : [];
       });
+      renderSuggestions(
+        cards.filter(card => card.category === product.category),
+        cards.filter(card => card.category !== product.category),
+        product.category
+      );
+    } catch {
+      // Les suggestions restent masquées si le service est indisponible.
+    }
   }
 
   /* ── FIX: Back button = fermer modal au lieu de quitter le site ── */

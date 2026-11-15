@@ -23,53 +23,9 @@ import { renderProductCard, renderAddControl } from './render/render-product-car
 
 const _delegatedRoots = new WeakSet();
 
-function _productId(product) {
-  const value = product && (product.id ?? product.product_id);
-  return value == null ? '' : String(value);
-}
-
 function _findProduct(productId) {
   const pid = String(productId);
   return state.products.find((product) => String(product.id) === pid) || null;
-}
-
-/**
- * Garantit deux niveaux de suggestions quand le catalogue local le permet.
- */
-function _ensureTwoSuggestionLevels(sameCat, otherCat) {
-  const product = state.modalProduct;
-  if (!product || !Array.isArray(state.products)) return { sameCat, otherCat };
-
-  const currentId = _productId(product);
-  const seen = new Set([currentId].filter(Boolean));
-  sameCat.concat(otherCat).forEach((candidate) => {
-    const id = _productId(candidate);
-    if (id) seen.add(id);
-  });
-
-  if (sameCat.length === 0) {
-    sameCat = state.products
-      .filter((candidate) => {
-        const id = _productId(candidate);
-        return candidate.category === product.category && id && !seen.has(id);
-      })
-      .slice(0, 20);
-    sameCat.forEach((candidate) => {
-      const id = _productId(candidate);
-      if (id) seen.add(id);
-    });
-  }
-
-  if (otherCat.length === 0) {
-    otherCat = state.products
-      .filter((p) => {
-        const id = _productId(p);
-        return p.category !== product.category && id && !seen.has(id);
-      })
-      .slice(0, 16);
-  }
-
-  return { sameCat, otherCat };
 }
 
 function _applySubcatFilter(root) {
@@ -271,7 +227,6 @@ function _clearLegacyMobileSuggestionAdvance() {
 function renderSuggestions(sameCat, otherCat, categoryName) {
   sameCat = sameCat || [];
   otherCat = otherCat || [];
-  ({ sameCat, otherCat } = _ensureTwoSuggestionLevels(sameCat, otherCat));
 
   const sugSection = document.getElementById('k-modal-suggestions');
   if (!sugSection || !dom.sugRail) return;
