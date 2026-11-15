@@ -746,6 +746,23 @@ describe('b-modal-mobile-product — série produit meta hero (M6, spec §5.2, c
 describe('PDP mobile — axes localisés sans mutation de variante SKU', () => {
   beforeEach(() => { jest.clearAllMocks(); installDom(); });
 
+  test('axe inconnu Finition reste affiché sans traduction inventée', () => {
+    const detail = baseDetail({
+      inventory_model: 'SKU',
+      option_axes: [{ key: 'Finition', display_name: 'Finition', values: [{ value: 'Brillant', thumbnail_url: null }] }],
+      sellable_units: [],
+    });
+    const selection = baseSelection({
+      selection_supported: true,
+      selected_options: {},
+      option_states: { Finition: [{ value: 'Brillant', state: 'AVAILABLE' }] },
+    });
+    renderMobileProductDetail(detail, selection);
+    expect(document.querySelector('.k-vg-label-type').textContent).toBe('Finition');
+    expect(document.querySelector('.k-vg-label-val').textContent).toBe('Choisir');
+    expect(document.querySelector('[data-option-value="Brillant"]').textContent).toBe('Brillant');
+  });
+
   test('Color/Size sont des libellés UI Couleur/Taille, Navy Blue reçoit un bleu marine et le SKU reste identique', () => {
     const detail = baseDetail({
       inventory_model: 'SKU',
