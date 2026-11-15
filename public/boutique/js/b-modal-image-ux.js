@@ -384,7 +384,8 @@ function _setupFsHandlers(fs) {
 
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && _fsOpen) {
-      event.stopImmediatePropagation();
+      // Le core vérifie déjà isImageFullscreenOpen() et ne ferme pas la PDP.
+      // Ne pas bloquer les autres écouteurs document (accessibilité / tests).
       _closeFs();
     }
   });
