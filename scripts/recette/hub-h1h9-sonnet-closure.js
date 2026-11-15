@@ -84,6 +84,10 @@ async function run({ env = process.env, db, run8 }) {
   const diag = status === 'preparation' ? null : {
     items: await q("SELECT COALESCE(fulfillment_source,'NULL') fs, COUNT(*)::int n FROM order_items WHERE order_id=$1 GROUP BY 1", [lA.order_id]),
     lines: await q('SELECT line_id, effective_quantity::int e, received_quantity::int r, cancelled FROM v_purchase_line_progress WHERE order_id=$1', [lA.order_id]),
+    sweep_eligible: (await q(`SELECT COUNT(*)::int AS total, COUNT(*) FILTER (WHERE o.created_at < (SELECT created_at FROM orders WHERE id=$1))::int AS older
+        FROM orders o WHERE o.status='ordered'
+         AND EXISTS (SELECT 1 FROM order_items oi WHERE oi.order_id=o.id AND oi.fulfillment_source='IMPORT')
+         AND NOT EXISTS (SELECT 1 FROM v_purchase_line_progress v WHERE v.order_id=o.id AND NOT v.cancelled AND v.received_quantity < v.effective_quantity)`, [lA.order_id]))[0],
     distribution_alerts: (await q("SELECT COUNT(*)::int n FROM alerts WHERE type='purchasing_distribution_failed' AND entity_id=$1", [lA.order_id]))[0].n,
     completion_alerts: await q("SELECT type, COUNT(*)::int n FROM alerts WHERE entity_id=$1 GROUP BY type", [lA.order_id]),
   };
