@@ -1,7 +1,6 @@
 # Classification Sourcing : mesure CJ498 + lot AliExpress jamais vu (synthèse)
 
-Rejeu hors ligne, sans appel fournisseur ni écriture. Reproduire :
-`python3 -I eval.py && python3 -I sim.py && python3 -I ali_eval.py && python3 -I ali216_eval.py` (sortie attendue : `RESULTATS.txt`).
+Rejeu hors ligne, sans appel fournisseur ni écriture. Reproduire : `python3 -I eval.py && python3 -I sim.py && python3 -I ali_eval.py && python3 -I ali216_eval.py` (sortie attendue : `RESULTATS.txt`).
 
 | Règle « objet identifié + branche fournisseur concordante » | Placés | Précision catégorie | Précision feuille |
 |---|---|---|---|
@@ -14,8 +13,7 @@ Lecture du lot AliExpress 216 (9 racines fournisseur)
 - Aucune catégorie fausse sur 95 placements ; borne basse à 95 % de confiance : 96 %.
 - Feuille sous le seuil de 95 % : 6 erreurs sur 90 (4 genres de chaussures, 2 accessoires PC rangés en Phones).
 - Couverture faible : objet reconnu 143 / 216 (66 %), dont 103 dans la bonne catégorie ; 73 sans objet reconnu.
-- Désaccord objet / branche : 47, où l'objet n'a raison que 7 fois (135 / 158 sur CJ). Hors CJ, l'objet seul
-  n'est pas fiable : c'est la branche qui protège. Auto 2 / 40 et Computer 5 / 40 placés : lexique à étendre.
+- Désaccord objet / branche : 47, où l'objet n'a raison que 7 fois (135 / 158 sur CJ). Hors CJ, l'objet seul n'est pas fiable : c'est la branche qui protège. Auto 2 / 40 et Computer 5 / 40 placés : lexique à étendre.
 - Table des racines AliExpress : 8 lignes, écrite depuis les noms de chemins ; 2 produits sans racine connue.
 
 Limites de la preuve
