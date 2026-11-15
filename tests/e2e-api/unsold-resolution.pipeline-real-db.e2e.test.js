@@ -237,7 +237,7 @@ describeE2E('E2E-P2-UNSOLD — auto_unsold() + v_unsold_pipeline contre schéma 
   });
 
   it('5 — F3 SQL refuse la création de toute ligne invendue pour une commande payée', async () => {
-    const orderId = await seedOrder({ label: 'legacyPaid', daysAgo: 30, alreadyUnsold: true, totalKmf: 8000 });
+    const orderId = await seedOrder({ label: 'legacyPaid', daysAgo: 30, alreadyUnsold: false, totalKmf: 8000 });
     await expect(db.query(
       `INSERT INTO unsold_items(order_id, product_name, original_price_kmf, unsold_price_kmf)
        VALUES($1, 'Article client sous garde', 8000, 6000)`,
