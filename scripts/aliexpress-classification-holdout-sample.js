@@ -75,7 +75,7 @@ async function main(){
     for(const item of items){
       if(selected.length>=TARGET)break;
       const id=text(base.extractProductId(item.product_id||item.itemId));
-      if(!/^\\d{5,20}$/.test(id)||seen.has(id)||knownIds.has(id))continue;
+      if(!/^\d{5,20}$/.test(id)||seen.has(id)||knownIds.has(id))continue;
       const path=sourcePath(item,cat?.name||null);
       if(!path.path)continue;
       const root=text(path.path.split(' > ')[0]);
