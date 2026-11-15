@@ -6,18 +6,15 @@
  * @owner sourcing
  * @purpose Record an auditable human authorization for a marginal WATCH test without rewriting economic scan truth.
  * @db-read sourcing_candidates, products, sourcing_candidate_events
- * @db-write sourcing_candidate_events
- * @db-txn delegated_to_database_withTransaction
+ * @db-write none
+ * @db-txn none
  * @impact-areas sourcing,catalog,economic-engine
  */
 'use strict';
 
-const db = require('../db');
-
 const KIND = 'CONTROLLED_WATCH_TEST_V1';
 const AUTHORIZE = 'AUTHORIZE_CONTROLLED_TEST';
 const REVOKE = 'REVOKE';
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 class ControlledWatchReviewError extends Error {
   constructor(status, code, message, reasons = []) {
@@ -106,63 +103,9 @@ function authorizedWatchSql(alias = 'sc') {
   ].join(' ');
 }
 
-async function recordControlledWatchReview(candidateRef, { action, reason } = {}, actorId, database = db) {
-  const decision = String(action || '').trim().toUpperCase();
-  const rationale = String(reason || '').trim();
-  if (!UUID.test(String(actorId || ''))) {
-    throw new ControlledWatchReviewError(403, 'REVIEWER_ID_REQUIRED', 'Administrateur authentifié requis');
-  }
-  if (![AUTHORIZE, REVOKE].includes(decision)) {
-    throw new ControlledWatchReviewError(400, 'WATCH_ACTION_INVALID', 'Décision commerciale inconnue');
-  }
-  if (rationale.length < 30 || rationale.length > 1500) {
-    throw new ControlledWatchReviewError(400, 'WATCH_REASON_REQUIRED', 'Motif explicite requis (30 à 1 500 caractères)');
-  }
-  if (typeof database.withTransaction !== 'function') {
-    throw new Error('WATCH_REVIEW_TRANSACTION_REQUIRED');
-  }
-  return database.withTransaction(async tx => {
-    const { rows: [row] } = await tx.query(
-      'SELECT sc.*, p.is_active AS catalog_product_active FROM sourcing_candidates sc ' +
-      'LEFT JOIN products p ON p.id=sc.product_id WHERE sc.candidate_ref=$1 FOR UPDATE OF sc',
-      [candidateRef]
-    );
-    if (!row) throw new ControlledWatchReviewError(404, 'CANDIDATE_NOT_FOUND', 'Candidat introuvable');
-    const evaluation = evaluateWatchEligibility(row);
-    if (decision === AUTHORIZE && !evaluation.eligible) {
-      throw new ControlledWatchReviewError(409, 'WATCH_NOT_ELIGIBLE_FOR_MANUAL_TEST',
-        'La décision WATCH exige d’abord une correction des données ou des risques.', evaluation.reasons);
-    }
-    if (decision === REVOKE && !row.scan_at) {
-      throw new ControlledWatchReviewError(409, 'CURRENT_SCAN_REQUIRED', 'Aucun scan à révoquer');
-    }
-    const currentScanAt = new Date(row.scan_at).toISOString();
-    const evidence = {
-      kind: KIND,
-      action: decision,
-      scan_at: currentScanAt,
-      scan_result: row.scan_result,
-      facts: inputSnapshot(row),
-      margin_pct: evaluation.margin_pct,
-    };
-    await tx.query(
-      "INSERT INTO sourcing_candidate_events (candidate_id,event_type,result,notes,triggered_by) " +
-      "VALUES ($1,'note_added',$2::jsonb,$3,$4)",
-      [row.id, JSON.stringify(evidence), rationale, actorId]
-    );
-    return {
-      candidate_ref: candidateRef,
-      economic_decision: String(row.scan_result?.sourcing_decision || 'UNKNOWN'),
-      commercial_review: decision,
-      current_scan_at: currentScanAt,
-      catalogue_publication_changed: false,
-      market_price_changed: false,
-    };
-  });
-}
 
 module.exports = {
   KIND, AUTHORIZE, REVOKE,
   inputSnapshot, evaluateWatchEligibility, authorizedWatchSql,
-  recordControlledWatchReview, ControlledWatchReviewError,
+  ControlledWatchReviewError,
 };
