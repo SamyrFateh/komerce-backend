@@ -231,7 +231,7 @@ function _goTo(index, animate = true) {
     ? (index < 0 ? 0 : count + 1)
     : _fsIdx + (hasGhosts ? 1 : 0);
   _fsTrack.style.transition = animate ? '' : 'none';
-  _fsTrack.style.transform = 'translateX(-' + (physicalIndex * 100) + '%)';
+  _fsTrack.style.transform = 'translateX(' + (-physicalIndex * 100) + '%)';
   if (_fsCounter) _fsCounter.textContent = (_fsIdx + 1) + '\u202f/\u202f' + count;
   if (ghostStep) {
     _fsGhostPending = true;
