@@ -2,6 +2,7 @@
  * @role frozen-commercial-object-supplier-category-agreement
  * @domain catalog
  * @layer service
+ * @owner backend-core
  * @purpose Guarded category-only decision from independent item-title object and supplier-origin category root.
  * @db-read none
  * @db-write none
