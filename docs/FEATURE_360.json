@@ -31546,7 +31546,7 @@
             ]
           },
           "tests": {
-            "count": 23,
+            "count": 25,
             "files": [
               {
                 "declared": "tests/e2e-api/refunds.credits-cash-numeric.e2e.test.js",
@@ -31601,6 +31601,16 @@
               {
                 "declared": "tests/integration/fable-cash-refund-handoff-postgres.test.js",
                 "resolvedPath": "tests/integration/fable-cash-refund-handoff-postgres.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/staging-canonical/g8-refunds-readonly.spec.js",
+                "resolvedPath": "tests/staging-canonical/g8-refunds-readonly.spec.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/g8-refund-operator-ui.test.js",
+                "resolvedPath": "tests/unit/g8-refund-operator-ui.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -31664,9 +31674,29 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
+          },
+          "utils": {
+            "count": 3,
+            "files": [
+              {
+                "declared": "public/css/g8-remboursements.css",
+                "resolvedPath": "public/css/g8-remboursements.css",
+                "status": "resolved-on-disk-no-header"
+              },
+              {
+                "declared": "public/g8-remboursements.html",
+                "resolvedPath": "public/g8-remboursements.html",
+                "status": "resolved-on-disk-no-header"
+              },
+              {
+                "declared": "public/js/g8-remboursements.js",
+                "resolvedPath": "public/js/g8-remboursements.js",
+                "status": "resolved-on-disk-no-header"
+              }
+            ]
           }
         },
-        "totalFiles": 38,
+        "totalFiles": 43,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
