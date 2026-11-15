@@ -1,0 +1,50 @@
+# G13 : diagnostic economique + SKU + fournisseur, STRICTEMENT sans gestes metier ecrivants.
+# Trigger owner-only par issue unique ; staging epingle via target-guard.
+name: G13 pre-E2E read-only diagnosis (staging)
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: read
+concurrency:
+  group: komerce-g13-readonly-diagnostic
+  cancel-in-progress: false
+jobs:
+  diagnostic:
+    if: github.actor == github.repository_owner && github.event.issue.title == '[staging-op] g13-pre-e2e-readonly-diagnostic'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      GITHUB_ACTIONS: 'true'
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      EXPECTED_RAILWAY_ENVIRONMENT: staging
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      KOMERCE_STAGING_RESET_DB_PIN: ${{ vars.STAGING_DB_PIN }}
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      PGOPTIONS: '-c default_transaction_read_only=on'
+      G13_MODE: dry-run
+      G13_PHASE: diagnose
+      G13_CONFIRMATION: SEED-G13-CATALOGUE
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      E2E_MARKET_OPERATOR_EMAIL: ${{ secrets.E2E_MARKET_OPERATOR_EMAIL }}
+      E2E_MARKET_OPERATOR_PASSWORD: ${{ secrets.E2E_MARKET_OPERATOR_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Verify staging and diagnose G13 without business mutations
+        run: node scripts/recette/g13-catalogue-seed.js
+      - name: Preserve diagnostic report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g13-readonly-diagnostic-${{ github.run_id }}
+          path: test-results/g13-catalogue-seed/report.json
+          retention-days: 21
+          if-no-files-found: warn
