@@ -109,6 +109,78 @@
     "verdict": "APPROVED",
     "text_presence": "NONE"
    }
+  },
+  "G13-19": {
+   "https://cf.cjdropshipping.com/2047/833029495719.jpg": {
+    "verdict": "APPROVED",
+    "text_presence": "NONE"
+   }
+  },
+  "G13-20": {
+   "https://oss-cf.cjdropshipping.com/product/2026/03/30/07/ed3f0028-411a-484c-9207-39b5a2acd5ef_trans.jpeg": {
+    "verdict": "APPROVED",
+    "text_presence": "NONE"
+   }
+  },
+  "G13-21": {
+   "https://ae01.alicdn.com/kf/S5d6b30ff6d9b4ec2869eeab07895e0d3e.jpg": {
+    "verdict": "APPROVED",
+    "text_presence": "NONE"
+   },
+   "https://ae01.alicdn.com/kf/Scdeb7a73a3f649ebb2724e079c9ea96fP.jpg": {
+    "verdict": "APPROVED",
+    "text_presence": "NONE"
+   },
+   "https://ae01.alicdn.com/kf/Sfd43ddd185754e5a91d335d621db9682K.jpg": {
+    "verdict": "APPROVED",
+    "text_presence": "NONE"
+   },
+   "https://ae01.alicdn.com/kf/S91f23a7f3b0a42ea8dbb4ccdaccb42b4p.jpg": {
+    "verdict": "APPROVED",
+    "text_presence": "NONE"
+   },
+   "https://ae01.alicdn.com/kf/S6796d87e223a469697336db523a49eb2r.jpg": {
+    "verdict": "APPROVED",
+    "text_presence": "NONE"
+   },
+   "https://ae01.alicdn.com/kf/S988f9d9f2aa443bfa8e2684252886a33i.jpg": {
+    "verdict": "APPROVED",
+    "text_presence": "NONE"
+   },
+   "https://ae-pic-a1.aliexpress-media.com/kf/S5d6b30ff6d9b4ec2869eeab07895e0d3e.jpg": {
+    "verdict": "APPROVED",
+    "text_presence": "NONE"
+   }
+  },
+  "G13-22": {
+   "https://ae01.alicdn.com/kf/S184ed1e166614a86a8ef9c8e523ad2aej.jpg": {
+    "verdict": "APPROVED",
+    "text_presence": "NONE"
+   },
+   "https://ae01.alicdn.com/kf/S86aa437cc20e4eb087b92664f089fe6bX.jpg": {
+    "verdict": "APPROVED",
+    "text_presence": "NONE"
+   },
+   "https://ae01.alicdn.com/kf/Sb3f42c6c30cc4999bcb6d8dfd192f59eP.jpg": {
+    "verdict": "APPROVED",
+    "text_presence": "NONE"
+   },
+   "https://ae01.alicdn.com/kf/Sc1ef26ab95744bb3a1e602fb552d325aZ.jpg": {
+    "verdict": "APPROVED",
+    "text_presence": "NONE"
+   },
+   "https://ae01.alicdn.com/kf/Sc289bb8dc81448e98b1e89d2e4505cfez.jpg": {
+    "verdict": "APPROVED",
+    "text_presence": "NONE"
+   },
+   "https://ae01.alicdn.com/kf/S6d6af5db348a4609bc63f27c2af6f1d22.jpg": {
+    "verdict": "APPROVED",
+    "text_presence": "NONE"
+   },
+   "https://ae-pic-a1.aliexpress-media.com/kf/S184ed1e166614a86a8ef9c8e523ad2aej.jpg": {
+    "verdict": "APPROVED",
+    "text_presence": "NONE"
+   }
   }
  }
 }

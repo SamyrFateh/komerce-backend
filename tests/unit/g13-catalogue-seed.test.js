@@ -14,6 +14,8 @@ describe('G13 catalogue seed (outillage de recette)', () => {
     const cats = new Set(manifest.entries.map((e) => e.category));
     for (const c of cats) expect(manifest.entries.filter((e) => e.category === c).length).toBeGreaterThanOrEqual(2);
     for (const e of manifest.entries) expect(e.supplier_ref).toBeTruthy();
+    expect(new Set(manifest.entries.map((e) => e.category)).size).toBe(9);
+    expect(manifest.entries.filter((e) => e.source === 'aliexpress').length).toBeGreaterThanOrEqual(2);
   });
   test('chaque produit épinglé a un verdict visuel par URL ou média', () => {
     const verdicts = require('../../scripts/recette/g13-visual-verdicts.json').verdicts;
