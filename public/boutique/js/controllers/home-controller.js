@@ -210,7 +210,7 @@ export function centerRailChip(chip) {
   const catsEl = getCatsEl();
   if (!chip || !catsEl || window.innerWidth >= 900) return;
   const left = chip.offsetLeft - (catsEl.clientWidth / 2) + (chip.clientWidth / 2);
-  catsEl.scrollTo({ left, behavior: 'smooth' });
+  catsEl.scrollTo({ left, behavior: 'instant' });
 }
 
 export function syncRailActiveState(categoryKey, options = {}) {
