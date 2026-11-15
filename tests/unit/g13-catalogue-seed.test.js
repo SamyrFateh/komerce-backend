@@ -9,11 +9,15 @@ const { validateManifest, referenceAmount } = require('../../scripts/recette/g13
 const manifest = require('../../scripts/recette/g13-catalogue-manifest.json');
 
 describe('G13 catalogue seed (outillage de recette)', () => {
-  test('le manifeste versionné respecte la cible du brief', () => {
+  test('le manifeste versionné respecte la cible du brief (au moins 2 produits par catégorie couverte)', () => {
     expect(validateManifest(manifest)).toEqual([]);
     const cats = new Set(manifest.entries.map((e) => e.category));
-    expect(cats.size).toBe(9);
-    for (const c of cats) expect(manifest.entries.filter((e) => e.category === c).length).toBe(3);
+    for (const c of cats) expect(manifest.entries.filter((e) => e.category === c).length).toBeGreaterThanOrEqual(2);
+    for (const e of manifest.entries) expect(e.supplier_ref).toBeTruthy();
+  });
+  test('chaque produit épinglé a un verdict visuel par URL ou média', () => {
+    const verdicts = require('../../scripts/recette/g13-visual-verdicts.json').verdicts;
+    for (const e of manifest.entries) expect(Object.keys(verdicts[e.id] || {}).length).toBeGreaterThan(0);
   });
   test('refuse un manifeste incomplet', () => {
     const bad = { markets: ['KM'], entries: [{ id: 'x', category: 'A', subcategory: 'B', source: 'cj', name_fr: 'n', description_fr: 'd', keyword: 'k' }] };

@@ -224,8 +224,11 @@ async function main(env = process.env) {
               cand = await findCandidate(db, e);
             }
             if (ok && cand?.product_ref) {
-              if (cand.category !== e.category || cand.subcategory !== e.subcategory) ok = blocked(r, 'curate', 'CATEGORIE_PRODUIT_DIFFERENTE', `${cand.category}/${cand.subcategory}`);
-              else {
+              if (cand.category !== e.category || cand.subcategory !== e.subcategory) {
+                const cl = await admin.call('POST', `/api/admin/workspaces/catalog/products/${cand.product_ref}/classify`, { category: e.category, subcategory: e.subcategory });
+                if (!cl.ok) ok = blocked(r, 'curate', 'CLASSIFICATION_' + codeOf(cl));
+              }
+              if (ok) {
                 const fr = await admin.call('POST', `/api/admin/workspaces/catalog/approval/${cand.product_ref}/prepare-fr`, { name: e.name_fr, description: e.description_fr });
                 ok = fr.ok ? done(r, 'curate', 'OK') : blocked(r, 'curate', 'FICHE_FR_' + codeOf(fr));
               }
@@ -240,16 +243,17 @@ async function main(env = process.env) {
           else {
             const media = await ro(db, `SELECT id, source_media_id, url, option_values FROM catalog_media WHERE product_id = $1 AND is_active = TRUE ORDER BY display_order, created_at`, [cand.product_id]);
             const v = VERDICTS[e.id] || {};
-            const missing = media.filter((m) => !v[m.source_media_id]);
+            const vk = (m) => v[m.source_media_id] || v[m.url];
+            const missing = media.filter((m) => !vk(m));
             r.media = { active: media.length, verdicts_missing: missing.length, urls: missing.map((m) => ({ source_media_id: m.source_media_id, url: m.url })).slice(0, 20) };
             if (!media.length) blocked(r, 'publish', 'AUCUN_MEDIA_ACTIF');
             else if (missing.length) blocked(r, 'publish', 'VERDICT_VISUEL_ABSENT', `${missing.length}/${media.length}`);
-            else if (media.some((m) => v[m.source_media_id].verdict !== 'APPROVED')) blocked(r, 'publish', 'IMAGE_REFUSEE_PAR_INSPECTION');
+            else if (media.some((m) => vk(m).verdict !== 'APPROVED')) blocked(r, 'publish', 'IMAGE_REFUSEE_PAR_INSPECTION');
             else if (!execute) done(r, 'publish', 'PLANIFIE');
             else {
               let ok = true;
               for (const m of media) {
-                const x = v[m.source_media_id];
+                const x = vk(m);
                 const res = await admin.call('POST', `/api/admin/catalog/approval-queue/${cand.product_id}/media/${m.id}/visual-fr-review`, {
                   execution_mode: 'AUTOMATED_STAGING', run_id: env.GITHUB_RUN_ID, source_media_id: m.source_media_id, source_url: m.url,
                   option_values: m.option_values ?? {}, text_presence: x.text_presence,
