@@ -12,6 +12,10 @@ jest.mock('../../services/market-local-price-resolution-service', () => ({
   assertProductPriceShapeCompatible: (...args) => mockShape(...args),
 }));
 
+jest.mock('../../utils/currency', () => ({
+  projectAmount: jest.fn(),
+}));
+
 const projection = require('../../services/market-ready-to-sell-projection');
 
 function executor(priceRows, productRows) {
@@ -148,4 +152,46 @@ describe('market-ready-to-sell-projection', () => {
     const source = fs.readFileSync(path.join(__dirname, '..', '..', 'services', 'market-ready-to-sell-projection.js'), 'utf8');
     expect(source).not.toMatch(/\b(?:INSERT|UPDATE|DELETE)\b\s+(?:INTO|FROM|products|product_)/i);
   });
+  test('XAF sans observations : repère économique via FX, jamais prix concurrent ni bulk', async () => {
+    const { projectAmount } = require('../../utils/currency');
+    const db = executor([], [
+      { id: 'p-xaf', product_ref: 'KPR-CM', name: 'Exemple', category: 'Maison',
+        cost_kmf: 7000, price_kmf: null, is_active: true },
+    ]);
+    mockBuildCorridor.mockResolvedValueOnce({
+      selected: { economics: {
+        variable_cost_complete_kmf: 8000, minimum_safe_price_kmf: 9000,
+        coverage_reference_price_kmf: 12000, strategy_risk: 'covered',
+      } },
+      corridor: { local: { status: 'LOCAL_EVIDENCE_MISSING', sample_count: 0,
+        target: null, viability: { status: 'MARKET_EVIDENCE_INSUFFICIENT' } } },
+    });
+    projectAmount.mockResolvedValue(15000);
+    const result = await projection.buildReadyToSell({
+      executor: db,
+      market: { id: 'mkt-cm', code: 'CM', currency: 'XAF' },
+      capabilities: ['catalog.expose', 'pricing.decide', 'pricing.activate'],
+      exposure: [{ product_id: 'p-xaf', product_ref: 'KPR-CM', decision_recorded: false,
+        commercial_exposure: 'DISABLED' }],
+    });
+    expect(result.items[0]).toMatchObject({
+      proposed_price: { amount: 15000, currency: 'XAF', source: 'ECONOMIC_REFERENCE_TO_CONFIRM' },
+      corridor: { status: 'LOCAL_EVIDENCE_MISSING', sample_count: 0, target: null },
+      local_price_active: false, bulk_eligible: false, can_approve: true,
+      decision_state: { key: 'REVIEW' },
+    });
+    expect(projectAmount).toHaveBeenCalledWith(12000, 'KMF', 'XAF');
+  });
+
+  test('coût incomplet/dangereux ne fabrique jamais de prix de référence', () => {
+    expect(projection.costReferenceKmf({ coverage_reference_price_kmf: 12000 })).toBeNull();
+    expect(projection.costReferenceKmf({ variable_cost_complete_kmf: 15000, coverage_reference_price_kmf: 12000 })).toBeNull();
+    expect(projection.costReferenceKmf({ variable_cost_complete_kmf: 10000, coverage_reference_price_kmf: 12000,
+      minimum_safe_price_kmf: 13000 })).toBeNull();
+    expect(projection.costReferenceKmf({ variable_cost_complete_kmf: 10000, coverage_reference_price_kmf: 12000,
+      minimum_safe_price_kmf: 11000 })).toBe(12000);
+    expect(projection.costReferenceKmf({ variable_cost_complete_kmf: 10000, coverage_reference_price_kmf: 12000,
+      strategy_risk: 'destructive' })).toBeNull();
+  });
+
 });
