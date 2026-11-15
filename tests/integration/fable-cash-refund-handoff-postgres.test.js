@@ -148,6 +148,21 @@ describePg('Fable F1 — cash proof, handoff and settlement (real PG)',()=>{
     expect((await begin(a.authorizationId,B)).doNotHandOverAgain).toBe(true);
   });
 
+  test('digital document outage cannot roll back physically paid cash; same POST reissues document',async()=>{
+    const receipt=require('../../services/documents/refund-receipt');
+    const a=await approve();await begin(a.authorizationId);
+    receipt.issue.mockRejectedValueOnce(new Error('document-store temporarily unavailable'));
+    const done=await confirm(a.authorizationId);
+    expect(done).toMatchObject({paid:true,documentStatus:'pending',receiptRef:null,
+      documentError:'REFUND_RECEIPT_RECONCILIATION_REQUIRED'});
+    expect((await sql('SELECT COUNT(*)::int n FROM local_cash_refund_payouts')).rows[0].n).toBe(1);
+    expect((await sql('SELECT COUNT(*)::int n FROM refunds WHERE status=$1',['completed'])).rows[0].n).toBe(1);
+    expect((await sql('SELECT qty_refunded FROM order_items')).rows[0].qty_refunded).toBe(2);
+    const replay=await confirm(a.authorizationId,B);
+    expect(replay).toMatchObject({paid:true,replayed:true,documentStatus:'issued',refundId:done.refundId});
+    expect((await sql('SELECT COUNT(*)::int n FROM local_cash_refund_payouts')).rows[0].n).toBe(1);
+  });
+
   test('two physical PG sessions confirm same payout: one immutable custody outflow',async()=>{
     const a=await approve();await begin(a.authorizationId);
     const [x,y]=await Promise.all([confirm(a.authorizationId,A),confirm(a.authorizationId,B)]);
