@@ -59,11 +59,15 @@ module.exports = {
     utils: [],
     migrations: [
       'migrations/416_fable_local_item_refund_reservations.sql',
+      'migrations/417_fable_cash_refund_custody_handoff.sql',
+      'migrations/418_fable_manual_mobile_money_refund.sql',
     ],
     services: [
       'services/refund-service.js',
       'services/item-refund-reservation-service.js',
       'services/local-item-refund-reservation.js',
+      'services/local-mobile-refund-handoff.js',
+      'services/local-cash-refund-handoff.js',
       'services/item-refund-psp-orchestrator.js',
       'services/refund-intent-ledger.js',
       'services/paypal-refund-authority.js',
@@ -86,6 +90,7 @@ module.exports = {
       'tests/unit/item-refund-reservation-service.test.js',
       'tests/unit/local-item-refund-reservation.test.js',
       'tests/e2e-api/refunds.local-shortage-reservation.e2e.test.js',
+      'tests/integration/fable-cash-refund-handoff-postgres.test.js',
       'tests/unit/item-refund-psp-orchestrator.test.js',
       'tests/e2e-api/refunds.item-partial-physical.e2e.test.js',
       'tests/unit/refund-intent-ledger.test.js',
@@ -123,6 +128,9 @@ module.exports = {
       'refund_execution_intents: RW',
       'order_item_refund_reservations: RW',
       'local_item_refund_reservations: RW',
+      'local_cash_refund_authorizations: RW',
+      'local_cash_refund_payouts: RW',
+      'local_mobile_refund_handoffs: RW',
       'order_items: R',
       'international_shipment_relay_receipts: R',
       'wallets: R',
@@ -161,6 +169,7 @@ module.exports = {
 
   // ── Invariants propres ───────────────────────────────────────────────────
   invariants: [
+    {statement: 'Fable F1 cash : admin et détenteur distincts ; aucune sortie avant remise explicitement engagée, quittance signée et identité du payeur attestée ; mouvements de garde, refunds.completed et qty_refunded transactionnels et non rejouables', test:'tests/integration/fable-cash-refund-handoff-postgres.test.js'},
     { statement: 'Fable F1/F2: le paiement cash ou Mobile Money attesté ouvre une obligation locale en devise d origine, sans marquer paid ni écrire refunds ou wallet avant preuve de sortie ; les rails PSP restent exclus',
       test: 'tests/e2e-api/refunds.local-shortage-reservation.e2e.test.js' },
     { statement: 'Fable F1/F2: l opération UUID est rejouable à l identique, mais refusée en divergence ; quantités et sommes réservées restent plafonnées à la preuve physique et à la capture, même avec une autre route de remboursement',
