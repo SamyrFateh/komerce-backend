@@ -37,7 +37,7 @@
  */
 
 const { makeClient } = require('../integration/test-harness/mock-db');
-const { promoteCatalog, validateForPromotion } = require('../../services/catalog-promotion');
+const { promoteCatalog, validateForPromotion, restoreMissingSourceSkusOnly } = require('../../services/catalog-promotion');
 
 // baseContractV2() ne porte aucun champ éditorial (brand/highlights/specifications/
 // sections/materials/care/warnings tous absents) -> mapContentToProfileRow renvoie un
@@ -243,5 +243,50 @@ describe('catalog-promotion (Lot 6)', () => {
       expect(deactivateCall).toBeTruthy();
       expect(deactivateCall.params).toEqual(['sku-1']);
     });
+  });
+});
+
+describe('G13 bounded native source SKU-only recovery',()=>{
+  const unit=()=>({supplier_sku:'CJ-SKU-1',supplier_unit_ref:'CJ-VID-1',
+    stock_available:15,purchase_price:3.5,currency:'USD',option_values:{},
+    supplier_order_identity:{provider:'cj',version:1,payload:{pid:'CJ-PID',vid:'CJ-VID-1'}}});
+  const src=()=>baseContractV2({supplier_name:'CJdropshipping',currency:'USD',
+    option_axes:[],media:[],sellable_units:[unit()]});
+  function fakeClient(n=0){
+    return {query:jest.fn(async (sql,params)=>{
+      if(sql.includes('COUNT(*)::int AS n FROM product_skus'))return {rows:[{n}]};
+      if(sql.includes('SELECT id, supplier_sku, source, variant_combo, stock, is_active'))return {rows:[]};
+      if(sql.includes('INSERT INTO product_skus'))return {rows:[{id:'id-native',supplier_sku:params[1]}]};
+      throw new Error('UNEXPECTED_SOURCE_RECOVERY_SQL: '+sql);
+    })};
+  }
+  test('reuses Catalog SKU writer exactly; no edit to title, media, price or lifecycle',async()=>{
+    const client=fakeClient();
+    await expect(restoreMissingSourceSkusOnly(client,'product-id',src())).resolves.toEqual({restored:1});
+    const sql=client.query.mock.calls.map(([stmt])=>stmt);
+    expect(sql.filter(q=>q.includes('INSERT INTO product_skus'))).toHaveLength(1);
+    expect(sql.some(q=>/INSERT INTO catalog_media|INSERT INTO products|UPDATE products|UPDATE sourcing_candidates|product_market_price_drafts/.test(q))).toBe(false);
+    const params=client.query.mock.calls.find(([stmt])=>stmt.includes('INSERT INTO product_skus'))[1];
+    expect(params).toEqual(expect.arrayContaining(['CJ-SKU-1','CJ-VID-1']));
+    expect(params.some(x=>String(x).includes('"provider":"cj"'))).toBe(true);
+  });
+  test('existing SKU rejects entire recovery before any mutation',async()=>{
+    const client=fakeClient(1);
+    await expect(restoreMissingSourceSkusOnly(client,'product-id',src()))
+      .rejects.toMatchObject({status:409,code:'source_skus_already_exist'});
+    expect(client.query.mock.calls.some(([sql])=>/INSERT|UPDATE/.test(sql))).toBe(false);
+  });
+  test('wrong/missing provider native identity fails before database access',async()=>{
+    const client=fakeClient();
+    for(const bad of [
+      {...unit(),supplier_order_identity:{provider:'aliexpress',version:1,payload:{pid:'x'}}},
+      {...unit(),supplier_unit_ref:null},
+      {...unit(),supplier_order_identity:null},
+    ]){
+      await expect(restoreMissingSourceSkusOnly(client,'product-id',
+        baseContractV2({supplier_name:'CJdropshipping',option_axes:[],media:[],sellable_units:[bad]})))
+        .rejects.toThrow();
+    }
+    expect(client.query).not.toHaveBeenCalled();
   });
 });
