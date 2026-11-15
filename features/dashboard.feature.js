@@ -256,6 +256,7 @@ module.exports = {
       'incident-management (incident persistence via incident-write-service)','orders (lecture commandes)',
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
       'payments (lecture paiements)',
+      'refunds (Relais Live délègue les remises cash F1 à local-cash-refund-handoff ; le propriétaire refunds contrôle la garde et la preuve)',
       'logistics (lecture colis)',
       'inventory (lecture stock hub/transit)',
       'local-stock (lecture de disponibilité physique market-scoped via local-stock-service ; jamais products.stock)',
