@@ -54,7 +54,18 @@ async function main(){
   for(const entry of entries){
     const [before]=await read(
       `SELECT sc.candidate_ref,sc.state,sc.product_id,p.lifecycle_status,p.is_active,
-              (SELECT COUNT(*)::int FROM product_skus WHERE product_id=p.id) AS skus
+              (SELECT COUNT(*)::int FROM product_skus WHERE product_id=p.id) AS skus,
+              (SELECT COUNT(*)::int
+                 FROM jsonb_array_elements(sc.normalized_source_contract->'sellable_units') unit
+                WHERE COALESCE((unit->>'is_active')::boolean,TRUE)) AS expected_active,
+              (SELECT COUNT(*)::int
+                 FROM product_skus sku
+                 JOIN jsonb_array_elements(sc.normalized_source_contract->'sellable_units') unit
+                   ON sku.supplier_sku=unit->>'supplier_sku'
+                  AND sku.supplier_unit_ref=unit->>'supplier_unit_ref'
+                  AND sku.supplier_order_identity=unit->'supplier_order_identity'
+                WHERE sku.product_id=p.id AND sku.is_active=TRUE
+                  AND COALESCE((unit->>'is_active')::boolean,TRUE)) AS verified_exact
          FROM sourcing_candidates sc JOIN products p ON p.id=sc.product_id
         WHERE sc.supplier_product_id=$1 AND LOWER(sc.supplier_name) LIKE 'cj%'`,
       [String(entry.supplier_ref)]);
@@ -63,8 +74,19 @@ async function main(){
       restored:null,actual_skus:null};
     result.entries.push(row);
     if(!before||before.state!=='imported_to_catalog'||before.is_active||
-      before.lifecycle_status==='active'||Number(before.skus)!==0){
+      before.lifecycle_status==='active'||Number(before.expected_active)<=0){
       row.code='PRECONDITION_NOT_MET';continue;
+    }
+    // Batch after the successful canary: do not reissue a writer request if
+    // every existing source SKU and its native identity match the V2 snapshot.
+    if(Number(before.skus)>0){
+      if(Number(before.skus)===Number(before.expected_active) &&
+         Number(before.verified_exact)===Number(before.expected_active)){
+        row.api_status=200;row.code='ALREADY_RESTORED_VERIFIED';
+        row.restored=Number(before.expected_active);
+        row.actual_skus=Number(before.skus);
+      } else row.code='PREEXISTING_SKU_IDENTITY_MISMATCH';
+      continue;
     }
     const url='/api/admin/sourcing/candidates/'+encodeURIComponent(before.candidate_ref)+'/restore-source-skus';
     const resp=await call(url,{method:'POST',headers:{cookie,origin:BASE,'content-type':'application/json'},body:'{}'});
