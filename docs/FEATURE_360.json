@@ -34991,11 +34991,16 @@
             ]
           },
           "migrations": {
-            "count": 1,
+            "count": 2,
             "files": [
               {
                 "declared": "migrations/415_paid_no_show_liquidation_guard.sql",
                 "resolvedPath": "migrations/415_paid_no_show_liquidation_guard.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/419_paid_no_show_payment_transition_guard.sql",
+                "resolvedPath": "migrations/419_paid_no_show_payment_transition_guard.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -35026,7 +35031,7 @@
             ]
           }
         },
-        "totalFiles": 5,
+        "totalFiles": 6,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,

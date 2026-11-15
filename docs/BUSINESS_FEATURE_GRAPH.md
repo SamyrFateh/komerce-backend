@@ -694,7 +694,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 > Garder les colis non retirés sous responsabilité du relais ; la liquidation n'est autorisée qu'après clôture physique, juridique et financière certifiée.
 
-- migrations: 1
+- migrations: 2
 - routes: 1
 - dash: 1
 - tests: 2

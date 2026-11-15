@@ -21235,6 +21235,13 @@
       },
       {
         "feature": "unsold-resolution",
+        "category": "migrations",
+        "declared": "migrations/419_paid_no_show_payment_transition_guard.sql",
+        "resolvedPath": "migrations/419_paid_no_show_payment_transition_guard.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "unsold-resolution",
         "category": "routes",
         "declared": "routes/unsold.js",
         "resolvedPath": "routes/unsold.js",
