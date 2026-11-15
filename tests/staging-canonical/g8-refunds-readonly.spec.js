@@ -56,7 +56,11 @@ test('G8 UI: two real authenticated roles, flags OFF and zero financial writes',
       const me=await page.request.get('/api/auth/me');
       expect(me.status()).toBe(200);
       expect((await me.json()).role).toBe(role);
-      await page.goto('/g8-remboursements.html',{waitUntil:'domcontentloaded'});
+      // Login already navigates to the requested page via next=. Await that
+      // exact redirect rather than issuing a competing second page.goto.
+      await page.waitForURL(url => url.pathname === '/g8-remboursements.html',
+        { timeout: 20000 });
+      await page.waitForLoadState('domcontentloaded');
       await expect(page.getByRole('heading',{name:'Remboursements locaux'})).toBeVisible();
       await expect(page.locator('#g8-env')).toHaveText('Parcours désactivé',{timeout:15000});
       await expect(page.locator('#g8-list .empty')).toBeVisible();

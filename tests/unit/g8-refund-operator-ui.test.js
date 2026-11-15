@@ -97,6 +97,17 @@ describe('G8 standalone operator UI', () => {
     expect(x.nodes.some(n=>n.tagName==='button' && n.textContent==='Engager une remise physique')).toBe(true);
     expect(x.nodes.some(n=>n.tagName==='input' && n.name==='operator_id')).toBe(false);
   });
+  test('manual Mobile Money payer fingerprint requires exactly 64 lowercase SHA-256 hex characters', async () => {
+    const row = { reservation_id:'r1',order_id:'o1',order_item_id:'i1',
+      order_reference:'G8-TEST-MM',market_code:'CG',payment_mode:'mobile_money',
+      amount_minor:'1200',currency:'XAF',quantity:1,reason:'Rupture attestée' };
+    const x = makeUi('admin', { refunds:[row] });
+    await settle();
+    const fingerprint = x.nodes.find(n => n.tagName === 'input' && n.name === 'payer_fingerprint');
+    expect(fingerprint).toBeTruthy();
+    expect(fingerprint.attributes.pattern).toBe('[a-f0-9]{64}');
+    expect(fingerprint.maxLength).toBe(64);
+  });
   test('the UI does not forge payment receipts, inject server strings as HTML or call providers', () => {
     expect(script).not.toMatch(/\.innerHTML\s*=/);
     expect(script).not.toMatch(/fetch\(['"]https?:\/\//);
