@@ -224,6 +224,7 @@ beforeEach(() => {
   dom.grid.scrollLeft = 140;
   dom.grid.style.scrollSnapType = 'x mandatory';
   mockGetScrollY.mockReturnValue(321);
+  window.KomerceMarket = { DEFAULT: 'CM' };
   global.fetch = jest.fn(() => Promise.resolve({
     ok: true,
     json: async () => ({
@@ -236,6 +237,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  delete window.KomerceMarket;
   jest.runOnlyPendingTimers();
   jest.useRealTimers();
   document.querySelectorAll('#k-modal-fullscreen').forEach((node) => node.remove());
@@ -302,6 +304,10 @@ test('openModal charge les suggestions sans fetch legacy /api/products/:id puis 
   // PDC-6 : le fetch legacy /api/products/:id + _renderVariants n'existent plus.
   expect(global.fetch).not.toHaveBeenCalledWith(
     expect.stringMatching(/^\/api\/products\//),
+    expect.anything()
+  );
+  expect(global.fetch).toHaveBeenCalledWith(
+    expect.stringContaining('surface=pdp&market=CM&viewed_product_id=1'),
     expect.anything()
   );
   expect(mockRenderSuggestions).toHaveBeenCalledWith(
