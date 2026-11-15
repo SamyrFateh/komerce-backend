@@ -76,6 +76,37 @@ function referenceAmount(corridor, market) {
   return Number.isFinite(value) && value > 0 ? Math.ceil(value) : null;
 }
 
+/**
+ * Verdict borné du recensement 9 catégories x 3 marchés : exige simultanément
+ * les lignes SQL commercialement activées ET 2 fiches distinctes avec images
+ * réellement exposées par l'API publique pour chaque couple.
+ * Ne vaut jamais GO G13 à lui seul (sources Hub, identité, économie, rôles).
+ */
+function evaluateG13Census(manifest, sql, http) {
+  const categories = [...new Set((manifest?.entries || []).map((entry) => entry.category).filter(Boolean))];
+  const markets = manifest?.markets || [];
+  const cells = [];
+  for (const category of categories) {
+    for (const market of markets) {
+      const row = (sql || []).find((x) => x.category === category && x.market === market);
+      const pub = http?.[`${category}|${market}`] || {};
+      const sqlCount = Number(row?.n || 0);
+      const httpTotal = Number(pub.total || 0);
+      const distinctWithImage = Number(pub.distinct_with_image || 0);
+      cells.push({
+        category, market, sql_count: sqlCount, http_status: pub.status ?? null,
+        http_total: httpTotal, http_distinct_with_image: distinctWithImage,
+        pass: sqlCount >= 2 && pub.status === 200 && httpTotal >= 2 && distinctWithImage >= 2,
+      });
+    }
+  }
+  const expectedMarkets = ['KM', 'CM', 'CG'];
+  const validMarkets = markets.length === expectedMarkets.length && expectedMarkets.every((m) => markets.includes(m));
+  const passed = categories.length === 9 && validMarkets && cells.length === 27 && cells.every((x) => x.pass);
+  return { passed, expected_categories: 9, expected_markets: expectedMarkets, checked_cells: cells.length,
+    passed_cells: cells.filter((x) => x.pass).length, cells, blockers: cells.filter((x) => !x.pass) };
+}
+
 class Actor {
   constructor(label, email, password) { Object.assign(this, { label, email, password, cookie: '', role: null, id: null }); }
   async login() {
@@ -484,16 +515,25 @@ async function main(env = process.env) {
         for (const m of MANIFEST.markets) {
           const res = await fetch(`${BASE}/api/products?market=${m}&category=${encodeURIComponent(c)}&limit=50`);
           const j = await res.json().catch(() => ({}));
-          http[`${c}|${m}`] = { status: res.status, total: j.total ?? null, with_price_and_image: (j.products || []).filter((p) => p.image_url || p.image).length };
+          // /api/products applique deja la garde prix LOCAL_ACTIVE + exposition ;
+          // on exige en plus deux identites distinctes presentant une image.
+          const products = Array.isArray(j.products) ? j.products : (Array.isArray(j.items) ? j.items : []);
+          const distinct = new Set(products.filter((p) => (p.image_url || p.image) && (p.product_ref || p.id))
+            .map((p) => String(p.product_ref || p.id)));
+          http[`${c}|${m}`] = { status: res.status, total: j.total ?? null, distinct_with_image: distinct.size };
         }
       }
-      report.census = { sql: rows, http_public: http };
+      report.census = { sql: rows, http_public: http, ...evaluateG13Census(MANIFEST, rows, http) };
     }
     const blockedSteps = report.entries.flatMap((x) => Object.values(x.steps)).filter((s) => s.status === 'BLOCKED').length;
     report.blocked_steps = blockedSteps;
     report.verdict = scope==='cj-ready-16'
       ? (mode==='dry-run' ? 'SCOPED_DRY_RUN_NOT_G13_GO' : blockedSteps ? 'SCOPED_PARTIAL_BLOCKED' : 'SCOPED_PHASE_PASS_NOT_G13_GO')
-      : mode === 'dry-run' ? 'DRY_RUN_OK' : blockedSteps ? 'PARTIAL_BLOCKED' : 'SEED_OK';
+      : phaseSel === 'census'
+        ? (report.census?.passed ? 'CENSUS_27_PASS_NOT_G13_GO' : 'CENSUS_27_NO_GO')
+        : mode === 'dry-run' ? 'DRY_RUN_OK'
+          : blockedSteps ? 'PARTIAL_BLOCKED'
+            : report.census?.passed ? 'SEED_PHASES_PASS_NOT_G13_GO' : 'CENSUS_27_NO_GO';
   } catch (error) {
     report.verdict = 'BLOCKED';
     report.error = String(error.message).slice(0, 300);
@@ -508,4 +548,4 @@ async function main(env = process.env) {
 }
 
 if (require.main === module) main();
-module.exports = { validateManifest, referenceAmount, PHASES, CONFIRMATION };
+module.exports = { validateManifest, referenceAmount, evaluateG13Census, PHASES, CONFIRMATION };
