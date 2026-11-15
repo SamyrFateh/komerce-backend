@@ -373,6 +373,32 @@ router.patch('/orders/:id/client-absent', ...relaySupervise, resolveOrderMarket,
 });
 
 
+
+/**
+ * G8 F1 — file de remises espèces réservée au détenteur authentifié.
+ * Ne divulgue aucune obligation d'un autre relais ou marché.
+ */
+router.get('/local-cash-refunds',
+  authenticate, requireRole(['agent_relais']), async (req, res, next) => {
+    if (!relayCashRefundEnabled()) return denyUncertifiedRelayCash(res);
+    try {
+      const { rows } = await db.query(`
+        SELECT ca.id AS authorization_id, ca.order_id, r.order_item_id,
+               ca.status, ca.authorized_at, ca.holder_id,
+               o.reference AS order_reference, m.code AS market_code,
+               r.currency, r.amount_kmf::text, r.quantity
+          FROM local_cash_refund_authorizations ca
+          JOIN local_item_refund_reservations r ON r.id = ca.reservation_id
+          JOIN orders o ON o.id = ca.order_id
+          JOIN markets m ON m.id = ca.market_id
+         WHERE ca.holder_id = $1 AND ca.status IN ('approved','handoff_pending','settled')
+         ORDER BY ca.authorized_at DESC LIMIT 100
+      `, [req.user.id]);
+      res.set('Cache-Control', 'no-store');
+      return res.json({ refunds: rows });
+    } catch (error) { return next(error); }
+  });
+
 // Fable F1: physical cash custody handoff belongs to the relay, never admin.
 // Server-side service checks authenticated holder identity against the exact
 // approved holder+market+order+line; the UI cannot select an arbitrary relay.
