@@ -205,10 +205,10 @@ module.exports = {
       },
       {
         artifact: '../js/b-modal-suggestions.js',
-        label:    'modal suggestions keep discovery level when API is narrow',
+        label:    'modal suggestions hide the rail when no relevant products are available',
         mustContain: [
-          /function\s+_ensureTwoSuggestionLevels\(sameCat,\s*otherCat\)/m,
-          /p\.category\s*!==\s*product\.category/m,
+          /sameCat\.length === 0 && otherCat\.length === 0/m,
+          /sugSection\.classList\.add\('u-hidden'\)/m,
         ],
       },
       {

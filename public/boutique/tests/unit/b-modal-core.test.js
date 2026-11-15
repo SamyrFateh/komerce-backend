@@ -343,19 +343,21 @@ describe('b-modal-core', () => {
       expect(pushStateSpy).not.toHaveBeenCalled();
     });
 
-    it('fallback suggestions (API vide) : renderSuggestions appelé avec les produits locaux', async () => {
+    it('les suggestions restent masquées lorsque l’API ne retourne aucun résultat', async () => {
       state.products = [
         makeProduct({ id: 1, category: 'Alimentation' }),
         makeProduct({ id: 2, category: 'Alimentation' }),
         makeProduct({ id: 3, category: 'Mode' }),
       ];
-      openModal(1);
-      await flushPromises();
-      expect(renderSuggestions).toHaveBeenCalled();
-      const [sameCat, otherCat, cat] = renderSuggestions.mock.calls[0];
-      expect(cat).toBe('Alimentation');
-      expect(sameCat.some(p => p.id === 2)).toBe(true);
-      expect(otherCat.some(p => p.id === 3)).toBe(true);
+      window.KomerceMarket = { DEFAULT: 'CM' };
+      global.fetch.mockResolvedValueOnce({ ok: true, json: async () => ({ suggestions: [] }) });
+      try {
+        openModal(1);
+        await flushPromises();
+        expect(renderSuggestions).toHaveBeenLastCalledWith([], [], 'Alimentation');
+      } finally {
+        delete window.KomerceMarket;
+      }
     });
   });
 
