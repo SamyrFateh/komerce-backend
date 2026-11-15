@@ -206,9 +206,9 @@ describePg('Fable F1 — cash proof, handoff and settlement (real PG)',()=>{
   });
 
   test('Mobile Money manual: original payer, distinct reviewer, unique closure and no blind retry',async()=>{
-    const captureId=uid(), mobileReservation=uid(), operatorId=uid();
+    const captureId=uid(), mobileReservation=uid(), operatorId=uid(), verifierId=uid();
     const payer='a'.repeat(64), other='b'.repeat(64);
-    await sql("INSERT INTO users(id,role) VALUES($1,'admin')",[operatorId]);
+    await sql("INSERT INTO users(id,role) VALUES($1,'admin'),($2,'admin')",[operatorId,verifierId]);
     await sql(`INSERT INTO mobile_money_transactions
       VALUES($1,$2,$3,'mtn_momo','succeeded','XAF',0,10000,'CAPTURE-0001')`,[captureId,orderId,marketId]);
     // Dedicated fixture switches from the cash liability created by beforeEach.
@@ -218,7 +218,7 @@ describePg('Fable F1 — cash proof, handoff and settlement (real PG)',()=>{
        capture_ref,currency,minor_unit,amount_minor,amount_kmf,quantity,reason,initiated_by)
       VALUES($1,$2,$3,$4,$5,$6,'mobile_money',$7,'XAF',0,1200,1000,2,'Manquant attesté',$8)`,
       [mobileReservation,orderId,itemId,incidentId,marketId,uid(),captureId,adminId]);
-    const request=(action,body,actorId=adminId,c=A)=>recordManualMobileRefund({
+    const request=(action,body,actorId=(action==='confirm'?verifierId:adminId),c=A)=>recordManualMobileRefund({
       action,body,orderId,orderItemId:itemId,reservationId:mobileReservation,
       actor:{id:actorId,role:'admin'},db:{withTransaction:async run=>{
         await c.query('BEGIN');
@@ -227,13 +227,20 @@ describePg('Fable F1 — cash proof, handoff and settlement (real PG)',()=>{
       }},
     });
     const approval={operator_id:operatorId,payer_fingerprint:payer,original_payer_proof_ref:'PAYER-PROOF-001'};
-    const transfer={amount_minor:'1200',currency:'XAF',payee_fingerprint:payer,transfer_ref:'TRANSFER-001',transfer_proof_ref:'SETTLED-RECEIPT-001'};
+    const transfer={amount_minor:'1200',currency:'XAF',payee_fingerprint:payer,
+      capture_external_transaction_id:'CAPTURE-0001',operator_verification_ref:'OPERATOR-PORTAL-CHECK-001',
+      transfer_ref:'TRANSFER-001',transfer_proof_ref:'SETTLED-RECEIPT-001'};
     await expect(request('approve',approval)).resolves.toMatchObject({status:'approved',paid:false});
     await expect(request('start',{},adminId)).rejects.toMatchObject({status:403});
     const starts=await Promise.all([request('start',{},operatorId),request('start',{},operatorId,B)]);
     expect(starts.map(x=>x.replayed).sort()).toEqual([false,true]);
     expect(starts.find(x=>x.replayed)).toMatchObject({doNotTransferAgain:true,paid:false});
     await expect(request('confirm',transfer,operatorId)).rejects.toMatchObject({status:403});
+    await expect(request('confirm',transfer,adminId)).rejects.toMatchObject({status:403});
+    await expect(request('confirm',{...transfer,capture_external_transaction_id:'WRONG-CAPTURE-001'}))
+      .rejects.toMatchObject({code:'LOCAL_MOBILE_REFUND_TRANSFER_MISMATCH'});
+    await expect(request('confirm',{...transfer,operator_verification_ref:'SETTLED-RECEIPT-001'}))
+      .rejects.toMatchObject({code:'LOCAL_MOBILE_REFUND_TRANSFER_MISMATCH'});
     await expect(request('confirm',{...transfer,payee_fingerprint:other})).rejects.toMatchObject({code:'LOCAL_MOBILE_REFUND_TRANSFER_MISMATCH'});
     await expect(request('confirm',{...transfer,amount_minor:'1201'})).rejects.toMatchObject({code:'LOCAL_MOBILE_REFUND_TRANSFER_MISMATCH'});
     expect((await sql('SELECT COUNT(*)::int n FROM refunds')).rows[0].n).toBe(0);
@@ -253,13 +260,14 @@ describePg('Fable F1 — cash proof, handoff and settlement (real PG)',()=>{
       VALUES($1,$2,$3,$4,$5,$6,'mobile_money',$7,'XAF',0,1200,1000,2,'Autre manquant attesté',$8)`,
       [duplicateReservation,orderId,duplicateItem,anotherIncident,marketId,uid(),captureId,adminId]);
     await sql(`INSERT INTO local_mobile_refund_handoffs
-        (reservation_id,approved_by,operator_id,provider,payer_fingerprint,original_payer_proof_ref)
-        VALUES($1,$2,$3,'mtn_momo',$4,'OTHER-PAYER-RECEIPT')`,[duplicateReservation,adminId,operatorId,payer]);
+        (reservation_id,approved_by,operator_id,provider,payer_fingerprint,original_payer_proof_ref,source_capture_ref)
+        VALUES($1,$2,$3,'mtn_momo',$4,'OTHER-PAYER-RECEIPT','CAPTURE-0001')`,[duplicateReservation,adminId,operatorId,payer]);
     await sql("UPDATE local_mobile_refund_handoffs SET status='transfer_pending',started_at=NOW() WHERE reservation_id=$1",[duplicateReservation]);
     await expect(sql(`UPDATE local_mobile_refund_handoffs SET status='settled',
         confirmed_at=NOW(),confirmed_by=$2,transfer_ref='transfer-001',transfer_proof_ref='SECOND-PROOF-001',
+        operator_verification_ref='OPERATOR-PORTAL-CHECK-002',
         settled_amount_minor=1200,settled_currency='XAF',settled_payee_fingerprint=$3 WHERE reservation_id=$1`,
-        [duplicateReservation,adminId,payer])).rejects.toMatchObject({code:'23505'});
+        [duplicateReservation,verifierId,payer])).rejects.toMatchObject({code:'23505'});
     expect((await sql('SELECT COUNT(*)::int n FROM refunds')).rows[0].n).toBe(1);
 
   });

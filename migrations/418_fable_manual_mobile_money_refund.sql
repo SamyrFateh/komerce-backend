@@ -8,12 +8,14 @@ CREATE TABLE public.local_mobile_refund_handoffs (
   provider text NOT NULL,
   payer_fingerprint text NOT NULL CHECK (payer_fingerprint ~ '^[a-f0-9]{64}$'),
   original_payer_proof_ref text NOT NULL CHECK (length(btrim(original_payer_proof_ref)) BETWEEN 8 AND 200),
+  source_capture_ref text NOT NULL CHECK (length(btrim(source_capture_ref)) BETWEEN 8 AND 200),
   status text NOT NULL DEFAULT 'approved' CHECK (status IN ('approved','transfer_pending','settled')),
   started_at timestamptz,
   confirmed_at timestamptz,
   confirmed_by uuid REFERENCES public.users(id) ON DELETE RESTRICT,
   transfer_ref text,
   transfer_proof_ref text,
+  operator_verification_ref text,
   settled_amount_minor bigint,
   settled_currency text,
   settled_payee_fingerprint text,
@@ -21,13 +23,15 @@ CREATE TABLE public.local_mobile_refund_handoffs (
     (status <> 'settled' AND settled_amount_minor IS NULL AND settled_currency IS NULL AND settled_payee_fingerprint IS NULL)
     OR (status='settled' AND settled_amount_minor IS NOT NULL AND settled_currency IS NOT NULL AND settled_payee_fingerprint IS NOT NULL)
   ),
-  CHECK (approved_by <> operator_id AND confirmed_by IS DISTINCT FROM operator_id),
+  CHECK (approved_by <> operator_id AND confirmed_by IS DISTINCT FROM operator_id
+         AND confirmed_by IS DISTINCT FROM approved_by),
   CHECK (
-    (status='approved' AND started_at IS NULL AND confirmed_at IS NULL AND confirmed_by IS NULL AND transfer_ref IS NULL AND transfer_proof_ref IS NULL) OR
-    (status='transfer_pending' AND started_at IS NOT NULL AND confirmed_at IS NULL AND confirmed_by IS NULL AND transfer_ref IS NULL AND transfer_proof_ref IS NULL) OR
+    (status='approved' AND started_at IS NULL AND confirmed_at IS NULL AND confirmed_by IS NULL AND transfer_ref IS NULL AND transfer_proof_ref IS NULL AND operator_verification_ref IS NULL) OR
+    (status='transfer_pending' AND started_at IS NOT NULL AND confirmed_at IS NULL AND confirmed_by IS NULL AND transfer_ref IS NULL AND transfer_proof_ref IS NULL AND operator_verification_ref IS NULL) OR
     (status='settled' AND started_at IS NOT NULL AND confirmed_at IS NOT NULL AND confirmed_by IS NOT NULL AND
       length(btrim(COALESCE(transfer_ref,''))) BETWEEN 8 AND 200 AND
-      length(btrim(COALESCE(transfer_proof_ref,''))) BETWEEN 8 AND 200)
+      length(btrim(COALESCE(transfer_proof_ref,''))) BETWEEN 8 AND 200 AND
+      length(btrim(COALESCE(operator_verification_ref,''))) BETWEEN 8 AND 200)
   )
 );
 CREATE UNIQUE INDEX ux_local_mobile_refund_transfer
@@ -51,6 +55,7 @@ BEGIN
      WHERE t.id::text=r.capture_ref AND t.order_id=r.order_id AND t.market_id=r.market_id
        AND t.provider=NEW.provider AND t.status='succeeded'
        AND t.currency=r.currency AND t.minor_unit=r.minor_unit AND t.amount_minor>=r.amount_minor
+       AND t.external_transaction_id=NEW.source_capture_ref
        AND NULLIF(btrim(t.external_transaction_id),'') IS NOT NULL
        AND lower(btrim(t.external_transaction_id)) IS DISTINCT FROM lower(btrim(NEW.transfer_ref))
   ) THEN
@@ -61,13 +66,16 @@ BEGIN
        (SELECT COUNT(*) FROM public.users WHERE role='admin' AND id IN (NEW.approved_by,NEW.operator_id))=2
     THEN RETURN NEW; END IF;
   ELSE
-    IF (NEW.reservation_id,NEW.approved_by,NEW.operator_id,NEW.provider,NEW.payer_fingerprint,NEW.original_payer_proof_ref)
+    IF (NEW.reservation_id,NEW.approved_by,NEW.operator_id,NEW.provider,NEW.payer_fingerprint,NEW.original_payer_proof_ref,NEW.source_capture_ref)
        IS DISTINCT FROM
-       (OLD.reservation_id,OLD.approved_by,OLD.operator_id,OLD.provider,OLD.payer_fingerprint,OLD.original_payer_proof_ref)
+       (OLD.reservation_id,OLD.approved_by,OLD.operator_id,OLD.provider,OLD.payer_fingerprint,OLD.original_payer_proof_ref,OLD.source_capture_ref)
     THEN RAISE EXCEPTION 'LOCAL_MOBILE_REFUND_APPROVAL_IMMUTABLE' USING ERRCODE='23514'; END IF;
     IF OLD.status='approved' AND NEW.status='transfer_pending' THEN RETURN NEW; END IF;
     IF OLD.status='transfer_pending' AND NEW.status='settled' AND NEW.started_at=OLD.started_at
        AND NEW.transfer_proof_ref<>NEW.original_payer_proof_ref
+       AND NEW.transfer_ref<>NEW.source_capture_ref
+       AND NEW.operator_verification_ref NOT IN (NEW.original_payer_proof_ref, NEW.transfer_proof_ref)
+       AND NEW.confirmed_by<>NEW.approved_by
        AND NEW.settled_amount_minor=r.amount_minor AND NEW.settled_currency=r.currency
        AND NEW.settled_payee_fingerprint=NEW.payer_fingerprint
        AND EXISTS (SELECT 1 FROM public.users WHERE id=NEW.confirmed_by AND role='admin')

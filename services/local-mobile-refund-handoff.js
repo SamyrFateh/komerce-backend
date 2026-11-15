@@ -41,7 +41,8 @@ async function loadHandoff(client, { orderId, orderItemId, reservationId }) {
   );
   if (!order) fail('LOCAL_MOBILE_REFUND_ORDER_NOT_PAID', 'Commande payée introuvable', 404);
   const { rows: [reservation] } = await client.query(
-    `SELECT r.amount_minor, r.currency, r.minor_unit, t.provider
+    `SELECT r.amount_minor, r.currency, r.minor_unit, t.provider,
+              t.external_transaction_id AS capture_external_transaction_id
        FROM local_item_refund_reservations r
        JOIN mobile_money_transactions t ON t.id::text=r.capture_ref
         AND t.order_id=r.order_id AND t.market_id=r.market_id
@@ -73,9 +74,10 @@ async function approve(client, reservation, handoff, reservationId, actor, body)
   }
   await client.query(
     `INSERT INTO local_mobile_refund_handoffs
-     (reservation_id,approved_by,operator_id,provider,payer_fingerprint,original_payer_proof_ref)
-     VALUES ($1,$2,$3,$4,$5,$6)`,
-    [reservationId, actor.id, operatorId, reservation.provider, fingerprint, proof]
+     (reservation_id,approved_by,operator_id,provider,payer_fingerprint,original_payer_proof_ref,source_capture_ref)
+     VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+    [reservationId, actor.id, operatorId, reservation.provider, fingerprint, proof,
+      evidenceRef(reservation.capture_external_transaction_id)]
   );
   return { status: 'approved', replayed: false };
 }
@@ -95,20 +97,29 @@ async function start(client, handoff, reservationId, actor) {
 }
 
 async function confirm(client, reservation, handoff, reservationId, actor, body) {
-  if (handoff.operator_id === actor.id) {
-    fail('LOCAL_MOBILE_REFUND_INDEPENDENT_REVIEW_REQUIRED', 'Le vérificateur doit être distinct de l’opérateur', 403);
+  if (handoff.operator_id === actor.id || handoff.approved_by === actor.id) {
+    fail('LOCAL_MOBILE_REFUND_INDEPENDENT_REVIEW_REQUIRED',
+      'Contrôleur distinct de l’opérateur et de l’autorisateur requis', 403);
   }
+  // Manual verification: the independent reviewer must inspect BOTH external
+  // documents. An MSISDN typed by a customer is not original-payer evidence.
+  const sourceRef = evidenceRef(body.capture_external_transaction_id);
+  const verificationRef = evidenceRef(body.operator_verification_ref);
   const ref = evidenceRef(body.transfer_ref);
   const proof = evidenceRef(body.transfer_proof_ref);
   const { amount_minor: minor, currency, payee_fingerprint: fingerprint } = body;
   if (typeof minor !== 'string' || !MINOR.test(minor) || minor !== String(reservation.amount_minor) ||
       currency !== reservation.currency || fingerprint !== handoff.payer_fingerprint ||
+      sourceRef !== handoff.source_capture_ref ||
+      ref.toLowerCase() === sourceRef.toLowerCase() ||
+      verificationRef === proof || verificationRef === handoff.original_payer_proof_ref ||
       proof === handoff.original_payer_proof_ref) {
     fail('LOCAL_MOBILE_REFUND_TRANSFER_MISMATCH', 'La preuve du virement doit correspondre au montant, à la devise et au payeur d’origine');
   }
   const replayed = handoff.status === 'settled';
   if (replayed) {
-    if (handoff.transfer_ref !== ref || handoff.transfer_proof_ref !== proof) {
+    if (handoff.transfer_ref !== ref || handoff.transfer_proof_ref !== proof ||
+        handoff.operator_verification_ref !== verificationRef) {
       fail('LOCAL_MOBILE_REFUND_REPLAY_CONFLICT', 'Virement déjà rapproché avec une autre preuve');
     }
   } else {
@@ -118,8 +129,8 @@ async function confirm(client, reservation, handoff, reservationId, actor, body)
     await client.query(
       `UPDATE local_mobile_refund_handoffs SET status='settled', confirmed_at=NOW(), confirmed_by=$2,
          transfer_ref=$3, transfer_proof_ref=$4, settled_amount_minor=$5, settled_currency=$6,
-         settled_payee_fingerprint=$7 WHERE reservation_id=$1`,
-      [reservationId, actor.id, ref, proof, minor, currency, fingerprint]
+         settled_payee_fingerprint=$7, operator_verification_ref=$8 WHERE reservation_id=$1`,
+      [reservationId, actor.id, ref, proof, minor, currency, fingerprint, verificationRef]
     );
   }
   const { rows: [refund] } = await client.query(
