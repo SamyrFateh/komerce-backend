@@ -107,6 +107,28 @@ function evaluateG13Census(manifest, sql, http) {
     passed_cells: cells.filter((x) => x.pass).length, cells, blockers: cells.filter((x) => !x.pass) };
 }
 
+/**
+ * Staging-only economic reference for delegated test-market decisions.
+ * A technical reference is NEVER a local competitor observation or a
+ * production market price. Returned only with owner-only explicit staging opt-in.
+ */
+async function stagingEconomicReferenceAmount(corridor, market, convert = null) {
+  const currency = CURRENCY[market];
+  if (!currency || (corridor?.market?.currency && corridor.market.currency !== currency)) return null;
+  const e = corridor?.selected?.economics;
+  const n = x => Number.isFinite(Number(x)) && Number(x) > 0 ? Number(x) : null;
+  const cost = n(e?.variable_cost_complete_kmf);
+  const amount = n(e?.coverage_reference_price_kmf);
+  const floor = n(e?.minimum_safe_price_kmf);
+  if (cost == null || amount == null || amount < cost || (floor != null && amount < floor)
+      || e?.strategy_risk === 'destructive') return null;
+  if (currency === 'KMF') return Math.ceil(amount);
+  // Resolve FX through the canonical KMF -> EUR -> market currency boundary.
+  const fxProject = convert || require('../../utils/currency').projectAmount;
+  const local = Number(await fxProject(amount, 'KMF', currency));
+  return Number.isFinite(local) && local > 0 ? Math.ceil(local) : null;
+}
+
 class Actor {
   constructor(label, email, password) { Object.assign(this, { label, email, password, cookie: '', role: null, id: null }); }
   async login() {
@@ -302,12 +324,19 @@ async function main(env = process.env) {
     // The 17th CJ item has 12 real but ALL INACTIVE source units: do not
     // promote them or fake their availability to meet the catalogue quota.
     const scope = env.G13_SCOPE || 'all';
-    if (!['all','cj-ready-16'].includes(scope)) throw new Error('G13_SCOPE_UNSUPPORTED');
+    if (!['all','cj-ready-16','market-price-18'].includes(scope)) throw new Error('G13_SCOPE_UNSUPPORTED');
+    const priceTrial = scope==='market-price-18';
+    if (priceTrial && !(execute && phaseSel==='price' && env.G13_PRICE_BASIS==='STAGING_ECONOMICS'
+       && env.KOMERCE_ENV==='staging' && env.GITHUB_ACTOR===env.GITHUB_REPOSITORY_OWNER)) {
+      throw new Error('G13_MARKET_PRICE_TRIAL_GUARD_REFUSED');
+    }
     report.scope = scope;
-    report.scope_exclusions = scope==='cj-ready-16' ? ['G13-10:ALL_SUPPLIER_UNITS_INACTIVE'] : [];
+    report.scope_exclusions = scope==='cj-ready-16' ? ['G13-10:ALL_SUPPLIER_UNITS_INACTIVE']
+      : priceTrial ? ['G13-10:ALL_SOURCE_UNITS_INACTIVE','G13-06/12/14:CENTRAL_HUB_WATCH'] : [];
     const selectedEntries = scope==='cj-ready-16'
       ? MANIFEST.entries.filter(e=>e.source==='cj' && e.id!=='G13-10')
-      : MANIFEST.entries;
+      : priceTrial ? MANIFEST.entries.filter(e=>e.source!=='central_hub' && e.id!=='G13-10')
+        : MANIFEST.entries;
     const wanted = phaseSel === 'all' ? PHASES : [phaseSel];
     if (phaseSel === 'import-now') {
       if (!execute) { report.import_now = 'PLANIFIE'; } else {
@@ -465,15 +494,20 @@ async function main(env = process.env) {
             if (!execute) { done(r, key, 'PLANIFIE'); continue; }
             const base = `/api/admin/workspaces/pricing/market/${mk}/products/${cand.product_ref}/local-price`;
             const cor = await operator.call('GET', `/api/admin/workspaces/pricing/market/${mk}/corridor?product_ref=${encodeURIComponent(cand.product_ref)}`);
-            const amount = cor.ok ? referenceAmount(cor.body, mk) : null;
+            const amount = !cor.ok ? null : priceTrial
+              ? await stagingEconomicReferenceAmount(cor.body, mk) : referenceAmount(cor.body, mk);
             if (!amount) { blocked(r, key, cor.ok ? 'PRIX_ECONOMIQUE_ABSENT' : 'CORRIDOR_' + codeOf(cor)); continue; }
-            const reason = `Recette G13 ${env.GITHUB_RUN_ID} : prix de référence du moteur économique, staging`;
+            const reason = priceTrial
+              ? `RECETTE STAGING G13 ${env.GITHUB_RUN_ID} : décision du compte opérateur à partir de coûts complets; référence économique projetée par Currency Boundary, NON observation concurrentielle; sous gates économiques canoniques.`
+              : `Recette G13 ${env.GITHUB_RUN_ID} : prix de référence du moteur économique, staging`;
             const d = await operator.call('POST', base, { amount, reason });
             if (!d.ok) { blocked(r, key, 'BROUILLON_' + codeOf(d)); continue; }
             const pv = await operator.call('GET', `${base}/activation-preview`);
             if (!pv.ok || pv.body?.activation?.allowed !== true) { blocked(r, key, 'GARDE_ECONOMIQUE_REFUSE', JSON.stringify(pv.body?.activation || pv.body)?.slice(0, 200)); continue; }
             const a = await operator.call('POST', `${base}/activate`, { reason });
-            if (a.ok) done(r, key, 'OK', { amount }); else blocked(r, key, 'ACTIVATION_' + codeOf(a));
+            if (a.ok) done(r, key, 'OK', { amount, currency: CURRENCY[mk],
+              basis: priceTrial ? 'COST_REFERENCE_STAGING_TEST_NOT_COMPETITOR_OBSERVATION' : 'MARKET_CORRIDOR' });
+            else blocked(r, key, 'ACTIVATION_' + codeOf(a));
           }
         }
 
@@ -527,8 +561,10 @@ async function main(env = process.env) {
     }
     const blockedSteps = report.entries.flatMap((x) => Object.values(x.steps)).filter((s) => s.status === 'BLOCKED').length;
     report.blocked_steps = blockedSteps;
-    report.verdict = scope==='cj-ready-16'
-      ? (mode==='dry-run' ? 'SCOPED_DRY_RUN_NOT_G13_GO' : blockedSteps ? 'SCOPED_PARTIAL_BLOCKED' : 'SCOPED_PHASE_PASS_NOT_G13_GO')
+    report.verdict = priceTrial
+      ? (blockedSteps ? 'MARKET_TEST_PRICES_BLOCKED_NOT_G13_GO' : 'MARKET_TEST_PRICES_APPLIED_NOT_G13_GO')
+      : scope==='cj-ready-16'
+        ? (mode==='dry-run' ? 'SCOPED_DRY_RUN_NOT_G13_GO' : blockedSteps ? 'SCOPED_PARTIAL_BLOCKED' : 'SCOPED_PHASE_PASS_NOT_G13_GO')
       : phaseSel === 'census'
         ? (report.census?.passed ? 'CENSUS_27_PASS_NOT_G13_GO' : 'CENSUS_27_NO_GO')
         : mode === 'dry-run' ? 'DRY_RUN_OK'
@@ -536,7 +572,7 @@ async function main(env = process.env) {
             : report.census?.passed ? 'SEED_PHASES_PASS_NOT_G13_GO' : 'CENSUS_27_NO_GO';
     // Le rapport n'est pas une certification si une des 27 cellules manque.
     // Une CI verte ne doit pas masquer ce NO GO commercial.
-    if (report.verdict === 'CENSUS_27_NO_GO') process.exitCode = 2;
+    if (report.verdict === 'CENSUS_27_NO_GO' || report.verdict === 'MARKET_TEST_PRICES_BLOCKED_NOT_G13_GO') process.exitCode = 2;
   } catch (error) {
     report.verdict = 'BLOCKED';
     report.error = String(error.message).slice(0, 300);
@@ -551,4 +587,4 @@ async function main(env = process.env) {
 }
 
 if (require.main === module) main();
-module.exports = { validateManifest, referenceAmount, evaluateG13Census, PHASES, CONFIRMATION };
+module.exports = { validateManifest, referenceAmount, stagingEconomicReferenceAmount, evaluateG13Census, PHASES, CONFIRMATION };
