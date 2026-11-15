@@ -155,6 +155,22 @@ async function main(env = process.env) {
 
     const wanted = phaseSel === 'all' ? PHASES : [phaseSel];
     const execute = mode === 'execute';
+    if (phaseSel === 'import-now') {
+      if (!execute) { report.import_now = 'PLANIFIE'; } else {
+        const res = await admin.call('POST', '/api/admin/workspaces/sourcing/sources/api:aliexpress/import-now');
+        report.import_now = { status: res.status, body: JSON.stringify(res.body)?.slice(0, 600) };
+      }
+    }
+    if (phaseSel === 'dump' || phaseSel === 'import-now' || (phaseSel === 'curate' && execute)) {
+      // Lecture seule : inventaire des candidats (pour épingler) et de leurs médias actifs (pour l'inspection).
+      report.dump = await ro(db,
+        `SELECT sc.candidate_ref, sc.supplier_name, sc.supplier_product_id, sc.product_name, sc.supplier_category, sc.state,
+                UPPER(sc.scan_result->>'sourcing_decision') AS decision, sc.purchase_price, sc.currency, sc.image_url,
+                p.product_ref, p.lifecycle_status, p.category, p.subcategory,
+                (SELECT jsonb_agg(jsonb_build_object('id', cm.id, 'source_media_id', cm.source_media_id, 'url', cm.url) ORDER BY cm.display_order, cm.created_at)
+                   FROM catalog_media cm WHERE cm.product_id = p.id AND cm.is_active = TRUE) AS media
+           FROM sourcing_candidates sc LEFT JOIN products p ON p.id = sc.product_id ORDER BY sc.created_at`);
+    }
     const hubRes = await admin.call('GET', '/api/admin/workspaces/sourcing/catalog-suppliers');
     const hubList = hubRes.body?.suppliers || hubRes.body?.items || (Array.isArray(hubRes.body) ? hubRes.body : []);
     const hub = hubList.find((s) => s.system_key === 'central_hub') || null;
@@ -177,7 +193,7 @@ async function main(env = process.env) {
               ? { source_type: 'manual', supplier_id: hub.id, items: [e.manual_item] }
               : { source_type: 'api', ...PROVIDERS[e.source], ...(e.supplier_ref ? { product_ids: [String(e.supplier_ref)] } : { keyword: e.keyword, page: 1, size: 5 }) };
             const res = await admin.call('POST', '/api/admin/workspaces/sourcing/imports', body);
-            if (!res.ok) blocked(r, 'import', codeOf(res), JSON.stringify(res.body)?.slice(0, 200));
+            if (!res.ok) blocked(r, 'import', codeOf(res), JSON.stringify(res.body)?.slice(0, 900));
             else if (!e.supplier_ref) done(r, 'import', 'DECOUVERTE_A_EPINGLER', { import_ref: res.body?.import_ref });
             else { done(r, 'import', 'OK', { import_ref: res.body?.import_ref }); cand = await findCandidate(db, e); }
           }
