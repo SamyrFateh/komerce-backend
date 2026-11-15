@@ -225,6 +225,30 @@ export function syncRailActiveState(categoryKey, options = {}) {
   return activeChip;
 }
 
+const categoryScrollCueUpdates = new WeakMap();
+
+function syncCategoryScrollCue(rail) {
+  const shell = rail.parentElement;
+  const cue = shell?.querySelector('.k-category-scroll-cue');
+  if (!cue) return;
+
+  let update = categoryScrollCueUpdates.get(rail);
+  if (!update) {
+    update = () => {
+      const range = rail.scrollWidth - rail.clientWidth;
+      const position = Math.max(0, Math.min(rail.scrollLeft, range));
+      cue.hidden = range <= 1;
+      cue.style.setProperty('--k-category-scroll-position', range > 1 ? position / range : 0);
+      shell.classList.toggle('k-cats-can-scroll-back', position > 1);
+      shell.classList.toggle('k-cats-can-scroll-forward', range - position > 1);
+    };
+    rail.addEventListener('scroll', update, { passive: true });
+    new ResizeObserver(update).observe(rail);
+    categoryScrollCueUpdates.set(rail, update);
+  }
+  update();
+}
+
 export function renderCategoryRail() {
   const catsEl = getCatsEl();
   if (!catsEl) return null;
@@ -247,6 +271,7 @@ export function renderCategoryRail() {
     delete catsEl.dataset.bound;
   }
 
+  syncCategoryScrollCue(catsEl);
   return catsEl;
 }
 
