@@ -448,7 +448,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 453 fichier(s) déclaré(s), boutique: 33 fichier(s)
+**Implementation** : 455 fichier(s) déclaré(s), boutique: 33 fichier(s)
   - boutique : 39
   - ci : 25
   - config : 1
@@ -459,8 +459,8 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - routes : 7
   - schemas : 5
   - scripts : 35
-  - services : 85
-  - tests : 208
+  - services : 86
+  - tests : 209
   - utils : 1
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="catalog"]_

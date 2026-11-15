@@ -183,7 +183,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - ci: 25
 - utils: 1
 - scripts: 35
-- services: 85
+- services: 86
 - schemas: 5
 - migrations: 26
 - config: 1
@@ -191,7 +191,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - routes: 7
 - boutique: 39
 - dash: 1
-- tests: 208
+- tests: 209
 - tables owned (lifecycle): 26 — `products`, `boutique_categories`, `boutique_subcategories`, `catalog_taxonomy_audit`, `catalog_field_overrides`, `catalog_terminology_reference`, `catalog_enrichment_runs`, `catalog_media`, `catalog_media_recovery_audit`, `product_skus`, `product_sku_media`, `product_variants`, `product_content_profile`, `product_content_sections`, `product_market_exposure`, `product_attributes`, `supplier_catalog_imports`, `supplier_catalog_sync_checkpoints`, `supplier_oauth_connections`, `catalog_field_sync_state`, `catalog_media_visual_fr_reviews`, `catalog_publication_decision_audit`, `catalog_product_sale_holds`, `catalog_product_quality_notes`, `catalog_stock_sync_state`, `supplier_catalog_import_rejections`
 - tables written: 27
 - interfaces exposed: 47
@@ -2323,7 +2323,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 2347 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 2349 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 216 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 79 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -2682,7 +2682,7 @@ Meta Graph monté : oui.
 | shared-cart | platform-ops | static-code | 50 | **DECLARED_AND_OBSERVED** |
 | shared-cart | recommendations | static-code, interface | 3 | **DECLARED_AND_OBSERVED** |
 | sourcing | auth | static-code | 2 | **DECLARED_AND_OBSERVED** |
-| sourcing | catalog | static-code, data-read | 32 | **DECLARED_AND_OBSERVED** |
+| sourcing | catalog | static-code, data-read | 33 | **DECLARED_AND_OBSERVED** |
 | sourcing | customs | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | sourcing | dashboard | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | sourcing | economic-engine | static-code | 6 | **DECLARED_AND_OBSERVED** |

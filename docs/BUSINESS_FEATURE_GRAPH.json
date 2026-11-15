@@ -2119,6 +2119,13 @@
       {
         "feature": "catalog",
         "category": "services",
+        "declared": "services/commercial-category-agreement.js",
+        "resolvedPath": "services/commercial-category-agreement.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
         "declared": "services/catalog-product-mutation-service.js",
         "resolvedPath": "services/catalog-product-mutation-service.js",
         "status": "resolved-in-technical-graph"
@@ -3892,6 +3899,13 @@
         "category": "tests",
         "declared": "tests/unit/commercial-taxonomy-semantics.test.js",
         "resolvedPath": "tests/unit/commercial-taxonomy-semantics.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/commercial-category-agreement.test.js",
+        "resolvedPath": "tests/unit/commercial-category-agreement.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -49056,6 +49070,10 @@
                 "targetFile": "services/catalog-candidate-product-service.js"
               },
               {
+                "sourceFileId": "services/sourcing-workspace.js",
+                "targetFile": "services/commercial-category-agreement.js"
+              },
+              {
                 "sourceFileId": "services/sourcing-source-autopilot.js",
                 "targetFile": "services/sourcing-import-dispatch.js"
               },
@@ -50065,7 +50083,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2347
+        "filesObserved": 2349
       },
       "boutique": {
         "filesObserved": 216,
