@@ -18620,7 +18620,7 @@
         "category": "services",
         "declared": "services/supplier-shortage-service.js",
         "resolvedPath": "services/supplier-shortage-service.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "purchasing",
@@ -19586,7 +19586,7 @@
         "category": "services",
         "declared": "services/local-item-refund-reservation.js",
         "resolvedPath": "services/local-item-refund-reservation.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "refunds",
@@ -19614,7 +19614,7 @@
         "category": "services",
         "declared": "services/stripe-refund-authority.js",
         "resolvedPath": "services/stripe-refund-authority.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "refunds",
@@ -53924,18 +53924,15 @@
       "resolution": "no-declared-writer"
     }
   },
-  "orphanTechnicalNodes": [
-    "services/purchasing-receive-service.js",
-    "services/receive-purchase-order.js"
-  ],
+  "orphanTechnicalNodes": [],
   "bigMap": {
     "perRepo": {
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 707,
-        "technicalNodesOwned": 705,
-        "technicalOrphans": 2
+        "technicalNodesTotal": 708,
+        "technicalNodesOwned": 708,
+        "technicalOrphans": 0
       },
       "dash": {
         "manifestsDiscovered": 3,
@@ -54008,7 +54005,7 @@
           "openQuestion": "Faut-il créer une feature 'analytics' dédiée côté backend/dash (si un service de collecte équivalent existe ou est prévu côté serveur), ou rattacher ce manifeste à une feature existante par proximité fonctionnelle (ex. platform-ops) ? Décision produit non tranchée par O4."
         }
       ],
-      "technicalOrphansRemaining": 2
+      "technicalOrphansRemaining": 0
     }
   },
   "scopeTopology": {
@@ -54034,16 +54031,6 @@
   "drifts": {
     "error": [],
     "warn": [
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "services/purchasing-receive-service.js",
-        "msg": "nœud technique \"services/purchasing-receive-service.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "services/receive-purchase-order.js",
-        "msg": "nœud technique \"services/receive-purchase-order.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "order_item_real_cost_allocations",
@@ -54076,16 +54063,6 @@
       }
     ],
     "debt": [
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "services/purchasing-receive-service.js",
-        "msg": "nœud technique \"services/purchasing-receive-service.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "services/receive-purchase-order.js",
-        "msg": "nœud technique \"services/receive-purchase-order.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "order_item_real_cost_allocations",
@@ -54427,11 +54404,11 @@
       }
     ],
     "summary": {
-      "signals": 8,
-      "debt": 8,
+      "signals": 6,
+      "debt": 6,
       "expectedTopology": 49,
       "generatorLimitations": 12,
-      "classifiedCandidates": 69
+      "classifiedCandidates": 67
     }
   }
 }

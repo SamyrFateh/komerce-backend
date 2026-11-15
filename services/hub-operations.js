@@ -8,7 +8,7 @@
  * @outputs       physical_unit_result, custody_side_effects
  * @depends       db, services/hub-physical-identity.js, services/hub-reference.js, services/purchasing-completion-service.js
  * @used-by       routes/hub.js, routes/scans.js
- * @db-read       business_rules, hub_physical_units, parcel_items, parcels, products, scan_events
+ * @db-read       business_rules, hub_custody_events, hub_physical_units, parcel_items, parcels, products, scan_events
  * @db-write      products, scan_events
  * @db-write-via:hub-physical-identity hub_purchase_allocations, hub_physical_units, hub_physical_unit_placements, hub_custody_events, incidents, outbox_events
  * @db-txn        operator_command_atomic

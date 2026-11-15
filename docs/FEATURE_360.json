@@ -29737,7 +29737,7 @@
               {
                 "declared": "services/supplier-shortage-service.js",
                 "resolvedPath": "services/supplier-shortage-service.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/supplier-source-resolution.js",
@@ -31475,7 +31475,7 @@
               {
                 "declared": "services/local-item-refund-reservation.js",
                 "resolvedPath": "services/local-item-refund-reservation.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/paypal-refund-authority.js",
@@ -31510,7 +31510,7 @@
               {
                 "declared": "services/stripe-refund-authority.js",
                 "resolvedPath": "services/stripe-refund-authority.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               }
             ]
           },
