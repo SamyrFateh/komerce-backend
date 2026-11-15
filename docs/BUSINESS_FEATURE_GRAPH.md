@@ -81,7 +81,7 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 
 | Dépôt | Manifests découverts | Manifests connectés | Nœuds techniques | Owned | Orphelins |
 |---|---|---|---|---|---|
-| backend | 36 | 36 | 707 | 705 | 2 |
+| backend | 36 | 36 | 708 | 708 | 0 |
 | dash | 3 | 3 | N/A | N/A | N/A |
 | boutique | 16 | 16 | 105 | 105 | 0 |
 
@@ -617,10 +617,11 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 > Rembourser un client de facon tracable et sans double remboursement, quel que soit le flux appelant.
 
-- services: 9
-- tests: 20
-- tables owned (lifecycle): 3 — `refunds`, `refund_execution_intents`, `order_item_refund_reservations`
-- tables written: 3
+- migrations: 1
+- services: 10
+- tests: 22
+- tables owned (lifecycle): 4 — `refunds`, `refund_execution_intents`, `order_item_refund_reservations`, `local_item_refund_reservations`
+- tables written: 4
 - interfaces exposed: 0
 - internal APIs: 1
 - dependencies (consumes): 9 — market, infrastructure, orders, logistics, payments, wallet, documents, notifications, economic-engine
@@ -690,8 +691,9 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 ### unsold-resolution _(business-feature)_
 
-> Arbitrer et liquider la valeur immobilisée d'une commande invendue (WhatsApp, revendeur, don, destruction).
+> Garder les colis non retirés sous responsabilité du relais ; la liquidation n'est autorisée qu'après clôture physique, juridique et financière certifiée.
 
+- migrations: 1
 - routes: 1
 - dash: 1
 - tests: 2
@@ -819,6 +821,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `international_shipments` | `logistics` | declared-table-owner | logistics | — |
 | `inventory_items` | `inventory` | single-writer | inventory | — |
 | `invoices` | `documents` | multi-writer-resolved-by-classification-signal | dashboard, documents | auth-identity, logistics, platform-ops |
+| `local_item_refund_reservations` | `refunds` | single-writer | refunds | — |
 | `local_stock` | `local-stock` | single-writer | local-stock | logistics |
 | `local_stock_allocations` | `local-stock` | single-writer | local-stock | logistics |
 | `loyalty_rewards` | `loyalty` | single-writer | loyalty | — |
@@ -2225,12 +2228,10 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - none
 
-### DETTE / DRIFT ACTIONNABLE (8)
+### DETTE / DRIFT ACTIONNABLE (6)
 
 Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la dette gouvernance. Les topologies attendues et limites du générateur restent visibles séparément et ne consomment aucun budget de dette.
 
-- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** _[ACTIONABLE_DRIFT]_ services/purchasing-receive-service.js — nœud technique "services/purchasing-receive-service.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
-- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** _[ACTIONABLE_DRIFT]_ services/receive-purchase-order.js — nœud technique "services/receive-purchase-order.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ order_item_real_cost_allocations — table "order_item_real_cost_allocations" : lifecycle owner = economic-engine (db.tables "!"), mais aussi écrite par customs
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ order_items — table "order_items" : lifecycle owner = orders (db.tables "!"), mais aussi écrite par logistics
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ orders — table "orders" : lifecycle owner = orders (db.tables "!"), mais aussi écrite par economic-engine
@@ -2309,8 +2310,7 @@ Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la det
 
 Fichiers présents dans le Technical Architecture Graph, non revendiqués par une carte feature ni un transversal déclaré (`governance/transversal-paths.json`).
 
-- services/purchasing-receive-service.js
-- services/receive-purchase-order.js
+- none
 
 ## Lot O5 — Feature Dependency Conformance & Hidden Coupling Gate
 
@@ -2318,7 +2318,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 2338 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 2341 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 216 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 79 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -2585,7 +2585,7 @@ Meta Graph monté : oui.
 | orders | payments | static-code, interface | 9 | **DECLARED_AND_OBSERVED** |
 | orders | platform-ops | static-code | 42 | **DECLARED_AND_OBSERVED** |
 | orders | purchasing | static-code | 3 | **DECLARED_AND_OBSERVED** |
-| orders | refunds | static-code, data-read | 11 | **DECLARED_AND_OBSERVED** |
+| orders | refunds | static-code, data-read | 12 | **DECLARED_AND_OBSERVED** |
 | orders | shared-cart | static-code | 9 | **DECLARED_AND_OBSERVED** |
 | orders | wallet | static-code, interface | 12 | **DECLARED_AND_OBSERVED** |
 | payments | auth | static-code | 9 | **DECLARED_AND_OBSERVED** |
@@ -2636,25 +2636,25 @@ Meta Graph monté : oui.
 | purchasing | external-provider-contracts | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | purchasing | incident-management | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | purchasing | infrastructure | static-code | 60 | **DECLARED_AND_OBSERVED** |
-| purchasing | logistics | static-code, data-read | 16 | **DECLARED_AND_OBSERVED** |
+| purchasing | logistics | static-code, data-read | 17 | **DECLARED_AND_OBSERVED** |
 | purchasing | notifications | static-code | 10 | **DECLARED_AND_OBSERVED** |
 | purchasing | orders | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
 | purchasing | refunds | static-code | 1 | **OBSERVED_UNDECLARED** |
 | purchasing | sourcing | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | purchasing | supplier-connectivity | static-code | 25 | **DECLARED_AND_OBSERVED** |
-| recommendations | catalog | static-code, data-read | 6 | **DECLARED_AND_OBSERVED** |
+| recommendations | catalog | static-code, data-read | 7 | **DECLARED_AND_OBSERVED** |
 | recommendations | infrastructure | static-code | 6 | **DECLARED_AND_OBSERVED** |
 | recommendations | local-stock | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | recommendations | logistics | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | recommendations | market | data-read | 1 | **DECLARED_AND_OBSERVED** |
-| recommendations | market-autonomy | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| recommendations | market-autonomy | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | recommendations | orders | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
 | recommendations | platform-ops | static-code | 10 | **DECLARED_AND_OBSERVED** |
 | recommendations | providers-services | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | refunds | auth | static-code | 1 | **OBSERVED_UNDECLARED** |
 | refunds | documents | static-code | 11 | **DECLARED_AND_OBSERVED** |
 | refunds | economic-engine | static-code | 1 | **DECLARED_AND_OBSERVED** |
-| refunds | infrastructure | static-code | 11 | **DECLARED_AND_OBSERVED** |
+| refunds | infrastructure | static-code | 12 | **DECLARED_AND_OBSERVED** |
 | refunds | logistics | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | refunds | market | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | refunds | notifications | static-code | 4 | **DECLARED_AND_OBSERVED** |
@@ -2668,7 +2668,7 @@ Meta Graph monté : oui.
 | settlement | market-delegation | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
 | shared-cart | auth | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | shared-cart | auth-identity | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
-| shared-cart | catalog | static-code, data-read | 6 | **DECLARED_AND_OBSERVED** |
+| shared-cart | catalog | static-code, data-read | 7 | **DECLARED_AND_OBSERVED** |
 | shared-cart | infrastructure | static-code | 18 | **DECLARED_AND_OBSERVED** |
 | shared-cart | market-autonomy | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | shared-cart | notifications | static-code | 2 | **DECLARED_AND_OBSERVED** |

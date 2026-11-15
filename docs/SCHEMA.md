@@ -944,3 +944,10 @@ Migrations 391–394 appliquées sur Railway staging le 2026-11-04 à 13:09 UTC 
 ### purchase_line_received_quantity (migration 414)
 
 `purchase_line_received_quantity(line_id)` est l'unique définition SQL de la quantité reçue d'une ligne d'achat : placements actifs hors unités `QUARANTINED`/`SUPERSEDED` et hors `outcome_type`. `v_purchase_line_progress.received_quantity` (branche ligne), la répartition de réception d'une PO regroupée et le refus de confirmation sous le reçu l'utilisent. La garde `purchase_lines_guard_groupable` refuse désormais toute ligne sans `product_sku_id`, cas manuel `central_hub` compris (code `purchase_line_variant_required`).
+
+
+<!-- schema-pending: local_item_refund_reservations (migration 416, intended_migration_schema; not yet live) -->
+### Réservations locales de remboursement F1/F2 (migration 416 — intended_migration_schema)
+
+`local_item_refund_reservations` est une nouvelle table **non live**, proposée par la migration 416 (#4114 / PR #4117). Chaque ligne représente une obligation financière réservée et non un paiement : commande et article, preuve d'incident, marché, encaissement cash ou Mobile Money d'origine, montant KMF de base et montant en unités mineures de la devise payée, quantité, clé d'événement et auteur admin. Une réservation est immuable en état `reserved` : aucun statut `confirmed`, aucune écriture `refunds`, crédit wallet ni modification de `qty_refunded`. La garde PostgreSQL bloque la remise physique concurrente et l'ouverture d'un second circuit PSP ou legacy. Le décaissement réel nécessite une future procédure séparée : identité du payeur, caisse / opérateur, rapprochement indépendant et autorisations ; cette migration ne déclenche aucun remboursement. Activation de l'endpoint admin limitée au staging et au flag explicite `FABLE_LOCAL_REFUND_RESERVATIONS_ENABLED=1` ; ce flag n'est pas activé par la migration. À intégrer après migration 415 de la PR F3 #4116, puis PostgreSQL / Chromium / finance à certifier avant tout GO.
+<!-- /schema-pending -->

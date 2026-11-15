@@ -28,7 +28,7 @@ module.exports = {
   perimeter: {
     in: [
       'moteur de classement boutique',
-      'endpoint de suggestions',
+      'endpoint de suggestions, avec une surface PDP limitée aux produits visibles sur le marché et liés au produit consulté',
       'DiscoveryCard — projection de lecture mixte (product|physical_offer|service), jamais persistée',
       'politique éditoriale serveur explicite du rail local : activation globale, candidats et ordre',
     ],
@@ -101,8 +101,9 @@ module.exports = {
     status: 'CONFIRMED_PUBLIC_BY_DESIGN',
     authedRoutesDetected: 0,
     totalRoutes: 1,
-    note: 'GET /api/boutique/suggestions reste la seule route HTTP. Ses deux modes sont ' +
-      'read-only et publics : ranking anonyme historique, ou surface=local qui ne retourne ' +
+    note: 'GET /api/boutique/suggestions reste la seule route HTTP. Ses modes sont ' +
+      'read-only et publics : ranking anonyme historique, surface=pdp limitée au marché et au produit consulté, ' +
+      'ou surface=local qui ne retourne ' +
       'que des DiscoveryCard déjà filtrées par les owners d’exposabilité. Le client fournit ' +
       'un code marché de navigation ; le service le résout côté serveur avant composition.',
   },

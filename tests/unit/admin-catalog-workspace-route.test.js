@@ -41,6 +41,7 @@ const mockRegistryReadiness = jest.fn();
 const mockGetProductDossier = jest.fn();
 const mockCreateProduct = jest.fn();
 const mockUpdateProduct = jest.fn();
+const mockUpdateEditorial = jest.fn();
 const mockClassifyProduct = jest.fn();
 const mockRecoverProductSourceMedia = jest.fn();
 const mockDeactivateProduct = jest.fn();
@@ -64,6 +65,7 @@ jest.mock('../../services/catalog-workspace', () => {
     getProductDossier: (...args) => mockGetProductDossier(...args),
     createProduct: (...args) => mockCreateProduct(...args),
     updateProduct: (...args) => mockUpdateProduct(...args),
+    updateEditorial: (...args) => mockUpdateEditorial(...args),
     classifyProduct: (...args) => mockClassifyProduct(...args),
     recoverProductSourceMedia: (...args) => mockRecoverProductSourceMedia(...args),
     deactivateProduct: (...args) => mockDeactivateProduct(...args),
@@ -311,4 +313,20 @@ test('Dossier Produit : lecture centrale et double autorité, aucun écrit', asy
   expect(deniedCatalog.status).toBe(403);
   expect(mockGetProductDossier).toHaveBeenCalledTimes(1);
   expect(mockApproveCandidate).not.toHaveBeenCalled();
+});
+
+
+test('la présentation boutique passe par l’autorité Catalogue globale', async () => {
+  const url = '/api/admin/workspaces/catalog/products/KPR-000144/update';
+  const change = { short_description: 'Coupe ample, dos fendu.' };
+  mockUpdateEditorial.mockResolvedValue({ product_ref: 'KPR-000144' });
+  const allowed = await request(app()).post(url).send({ editorial: change });
+  expect(allowed.status).toBe(200);
+  expect(mockUpdateEditorial).toHaveBeenCalledWith('KPR-000144', change);
+
+  mockCatalogAllowed = false;
+  mockUpdateEditorial.mockClear();
+  const denied = await request(app()).post(url).send({ editorial: change });
+  expect(denied.status).toBe(403);
+  expect(mockUpdateEditorial).not.toHaveBeenCalled();
 });

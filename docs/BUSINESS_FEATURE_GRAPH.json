@@ -616,7 +616,7 @@
         "status": "production",
         "owner": "backend-core",
         "since": "2026-07",
-        "service": "Arbitrer et liquider la valeur immobilisée d'une commande invendue (WhatsApp, revendeur, don, destruction).",
+        "service": "Garder les colis non retirés sous responsabilité du relais ; la liquidation n'est autorisée qu'après clôture physique, juridique et financière certifiée.",
         "businessKind": "business-feature",
         "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
@@ -18620,7 +18620,7 @@
         "category": "services",
         "declared": "services/supplier-shortage-service.js",
         "resolvedPath": "services/supplier-shortage-service.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "purchasing",
@@ -19562,6 +19562,13 @@
       },
       {
         "feature": "refunds",
+        "category": "migrations",
+        "declared": "migrations/416_fable_local_item_refund_reservations.sql",
+        "resolvedPath": "migrations/416_fable_local_item_refund_reservations.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "refunds",
         "category": "services",
         "declared": "services/refund-service.js",
         "resolvedPath": "services/refund-service.js",
@@ -19572,6 +19579,13 @@
         "category": "services",
         "declared": "services/item-refund-reservation-service.js",
         "resolvedPath": "services/item-refund-reservation-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "refunds",
+        "category": "services",
+        "declared": "services/local-item-refund-reservation.js",
+        "resolvedPath": "services/local-item-refund-reservation.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -19600,7 +19614,7 @@
         "category": "services",
         "declared": "services/stripe-refund-authority.js",
         "resolvedPath": "services/stripe-refund-authority.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "refunds",
@@ -19649,6 +19663,20 @@
         "category": "tests",
         "declared": "tests/unit/item-refund-reservation-service.test.js",
         "resolvedPath": "tests/unit/item-refund-reservation-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "refunds",
+        "category": "tests",
+        "declared": "tests/unit/local-item-refund-reservation.test.js",
+        "resolvedPath": "tests/unit/local-item-refund-reservation.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "refunds",
+        "category": "tests",
+        "declared": "tests/e2e-api/refunds.local-shortage-reservation.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/refunds.local-shortage-reservation.e2e.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -21126,6 +21154,13 @@
         "category": "tests",
         "declared": "tests/unit/supplier-platform-allegro.test.js",
         "resolvedPath": "tests/unit/supplier-platform-allegro.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "unsold-resolution",
+        "category": "migrations",
+        "declared": "migrations/415_paid_no_show_liquidation_guard.sql",
+        "resolvedPath": "migrations/415_paid_no_show_liquidation_guard.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -44857,6 +44892,10 @@
               },
               {
                 "sourceFileId": "routes/admin/orders.js",
+                "targetFile": "services/local-item-refund-reservation.js"
+              },
+              {
+                "sourceFileId": "routes/admin/orders.js",
                 "targetFile": "services/item-refund-psp-orchestrator.js"
               },
               {
@@ -47318,6 +47357,10 @@
                 "targetFile": "services/hub-procurement-dossier.js"
               },
               {
+                "sourceFileId": "tests/integration/hub-p0-procurement-chain-postgres.test.js",
+                "targetFile": "services/hub-physical-identity.js"
+              },
+              {
                 "sourceFileId": "tests/integration/hub-autonomous-purchasing-postgres.test.js",
                 "targetFile": "services/hub-operations.js"
               },
@@ -47620,6 +47663,10 @@
                 "targetFile": "scripts/cj-real-showcase-seed.js"
               },
               {
+                "sourceFileId": "services/boutique-ranking-engine.js",
+                "targetFile": "services/catalog-public-view.js"
+              },
+              {
                 "sourceFileId": "services/discovery-rail-composer.js",
                 "targetFile": "services/catalog-market-exposure-service.js"
               },
@@ -47740,6 +47787,10 @@
           {
             "channel": "static-code",
             "evidence": [
+              {
+                "sourceFileId": "services/boutique-ranking-engine.js",
+                "targetFile": "services/market-local-price-resolution-service.js"
+              },
               {
                 "sourceFileId": "services/discovery-rail-composer.js",
                 "targetFile": "services/market-local-price-resolution-service.js"
@@ -47951,6 +48002,10 @@
               },
               {
                 "sourceFileId": "services/item-refund-reservation-service.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/local-item-refund-reservation.js",
                 "targetFile": "db.js"
               },
               {
@@ -48344,6 +48399,10 @@
               {
                 "sourceFileId": "public/boutique/js/b-modal-core.js",
                 "targetFile": "public/boutique/js/b-modal-product-fields.js"
+              },
+              {
+                "sourceFileId": "public/boutique/js/b-modal-core.js",
+                "targetFile": "public/boutique/js/product-store.js"
               },
               {
                 "sourceFileId": "public/boutique/js/b-modal-cart.js",
@@ -49871,7 +49930,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2338
+        "filesObserved": 2341
       },
       "boutique": {
         "filesObserved": 216,
@@ -53556,6 +53615,19 @@
       "lifecycleOwner": "refunds",
       "resolution": "single-writer"
     },
+    "local_item_refund_reservations": {
+      "writers": [
+        {
+          "feature": "refunds",
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "refunds",
+      "resolution": "single-writer"
+    },
     "market_settlement_events": {
       "writers": [
         {
@@ -53864,18 +53936,15 @@
       "resolution": "no-declared-writer"
     }
   },
-  "orphanTechnicalNodes": [
-    "services/purchasing-receive-service.js",
-    "services/receive-purchase-order.js"
-  ],
+  "orphanTechnicalNodes": [],
   "bigMap": {
     "perRepo": {
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 707,
-        "technicalNodesOwned": 705,
-        "technicalOrphans": 2
+        "technicalNodesTotal": 708,
+        "technicalNodesOwned": 708,
+        "technicalOrphans": 0
       },
       "dash": {
         "manifestsDiscovered": 3,
@@ -53948,7 +54017,7 @@
           "openQuestion": "Faut-il créer une feature 'analytics' dédiée côté backend/dash (si un service de collecte équivalent existe ou est prévu côté serveur), ou rattacher ce manifeste à une feature existante par proximité fonctionnelle (ex. platform-ops) ? Décision produit non tranchée par O4."
         }
       ],
-      "technicalOrphansRemaining": 2
+      "technicalOrphansRemaining": 0
     }
   },
   "scopeTopology": {
@@ -53974,16 +54043,6 @@
   "drifts": {
     "error": [],
     "warn": [
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "services/purchasing-receive-service.js",
-        "msg": "nœud technique \"services/purchasing-receive-service.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "services/receive-purchase-order.js",
-        "msg": "nœud technique \"services/receive-purchase-order.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "order_item_real_cost_allocations",
@@ -54016,16 +54075,6 @@
       }
     ],
     "debt": [
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "services/purchasing-receive-service.js",
-        "msg": "nœud technique \"services/purchasing-receive-service.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "services/receive-purchase-order.js",
-        "msg": "nœud technique \"services/receive-purchase-order.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "order_item_real_cost_allocations",
@@ -54367,11 +54416,11 @@
       }
     ],
     "summary": {
-      "signals": 8,
-      "debt": 8,
+      "signals": 6,
+      "debt": 6,
       "expectedTopology": 49,
       "generatorLimitations": 12,
-      "classifiedCandidates": 69
+      "classifiedCandidates": 67
     }
   }
 }

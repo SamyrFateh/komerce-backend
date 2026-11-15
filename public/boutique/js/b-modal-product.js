@@ -823,6 +823,9 @@ import { optimizeImgUrl, fmtPrice, applyProductImageFallback } from './b-utils.j
 // accumulé à chaque ouverture de modale.
 bus.on('modal:detail-ready', syncEnrichedTopbarProduct);
 bus.on('modal:selection-rendered', syncEnrichedTopbarProduct);
+bus.on('carousel:fullscreen-return', (index) => {
+  if (state.modalOpen && state.carouselCount > 0) goToSlide(index);
+});
 
 // Surface publique ré-exportée par b-modal.js : buildCarouselSlides, goToSlide,
 // openSizeGuide, closeSizeGuide. Helpers consommés par openModal/closeModal :

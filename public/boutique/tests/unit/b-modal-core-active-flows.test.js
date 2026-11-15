@@ -17,6 +17,8 @@ const mockIsDesktop = jest.fn(() => false);
 const mockGetScrollY = jest.fn(() => 0);
 const mockScrollToPosition = jest.fn();
 const mockSetupImageUX = jest.fn();
+const mockOpenCurrentImageFullscreen = jest.fn();
+const mockIsImageFullscreenOpen = jest.fn(() => false);
 const mockSetupSocialProof = jest.fn();
 const mockBuildCarouselSlides = jest.fn();
 const mockGoToSlide = jest.fn();
@@ -68,7 +70,11 @@ jest.mock('../../js/b-scroll-owner.js', () => ({
   scrollToPosition: mockScrollToPosition,
 }));
 
-jest.mock('../../js/b-modal-image-ux.js', () => ({ setupImageUX: mockSetupImageUX }));
+jest.mock('../../js/b-modal-image-ux.js', () => ({
+  setupImageUX: mockSetupImageUX,
+  openCurrentImageFullscreen: mockOpenCurrentImageFullscreen,
+  isImageFullscreenOpen: mockIsImageFullscreenOpen,
+}));
 jest.mock('../../js/b-modal-social-proof.js', () => ({ setupSocialProof: mockSetupSocialProof }));
 jest.mock('../../js/b-modal-product.js', () => ({
   buildCarouselSlides: mockBuildCarouselSlides,
@@ -218,6 +224,7 @@ beforeEach(() => {
   dom.grid.scrollLeft = 140;
   dom.grid.style.scrollSnapType = 'x mandatory';
   mockGetScrollY.mockReturnValue(321);
+  window.KomerceMarket = { DEFAULT: 'CM' };
   global.fetch = jest.fn(() => Promise.resolve({
     ok: true,
     json: async () => ({
@@ -230,6 +237,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  delete window.KomerceMarket;
   jest.runOnlyPendingTimers();
   jest.useRealTimers();
   document.querySelectorAll('#k-modal-fullscreen').forEach((node) => node.remove());
@@ -296,6 +304,10 @@ test('openModal charge les suggestions sans fetch legacy /api/products/:id puis 
   // PDC-6 : le fetch legacy /api/products/:id + _renderVariants n'existent plus.
   expect(global.fetch).not.toHaveBeenCalledWith(
     expect.stringMatching(/^\/api\/products\//),
+    expect.anything()
+  );
+  expect(global.fetch).toHaveBeenCalledWith(
+    expect.stringContaining('surface=pdp&market=CM&viewed_product_id=1'),
     expect.anything()
   );
   expect(mockRenderSuggestions).toHaveBeenCalledWith(
@@ -368,22 +380,13 @@ test('navigation clavier et zones image desktop délèguent correctement', () =>
   Object.defineProperty(window, 'innerWidth', { configurable: true, value: 500 });
 });
 
-test('un tap ouvre le fullscreen, le swipe change de slide puis ferme', () => {
+test('un tap sur média délègue la lightbox unique sans overlay concurrent', () => {
   state.modalProduct = state.products[0];
   const wrap = dom.modal.querySelector('.k-modal-img-wrap');
+  state.carouselIndex = 1;
   wrap.dispatchEvent(touchEvent('touchstart', 120, 100));
   wrap.dispatchEvent(touchEvent('touchend', 120, 100));
-
-  const fullscreen = document.getElementById('k-modal-fullscreen');
-  expect(fullscreen).not.toBeNull();
-  const track = fullscreen.querySelector('.k-modal-fullscreen-track');
-  track.dispatchEvent(touchEvent('touchstart', 160, 100));
-  track.dispatchEvent(touchEvent('touchmove', 70, 100));
-  track.dispatchEvent(touchEvent('touchend', 70, 100));
-  expect(track.style.transform).toBe('translateX(-100%)');
-
-  fullscreen.querySelector('.k-modal-fullscreen-close').click();
-  jest.advanceTimersByTime(200);
+  expect(mockOpenCurrentImageFullscreen).toHaveBeenCalledWith(1);
   expect(document.getElementById('k-modal-fullscreen')).toBeNull();
 });
 
