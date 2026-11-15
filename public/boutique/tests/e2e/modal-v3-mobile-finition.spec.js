@@ -575,3 +575,67 @@ test.describe('PDP mobile retouches 2026-11 — V4.1 alignement horizontal canon
     });
   }
 });
+
+test.describe('PDP mobile retouches 2026-11 — suggestions après les détails', () => {
+  test('recommandations réapparues après Composition sans toucher à la géométrie PDP @ 390x844', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await stubFixtureCatalogue(page);
+    const entry = catalogue.cases.find((item) => item.key === 'stress');
+    const product = catalogue.products.find((item) => String(item.id) === String(entry.detail.product.id));
+    const related = catalogue.products.filter((item) => String(item.id) !== String(product.id)).slice(0, 3);
+    expect(related.length).toBeGreaterThan(0);
+
+    // DTO public réel : product_id, pas l'id de la carte. Moteur server-side
+    // simulé ; on certifie le placement et le rendu mobile sans DB ni prix fictif.
+    await page.route(/\\/api\\/boutique\\/suggestions/, (route) => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        suggestions: related.map((item) => ({
+          product_id: item.id,
+          category: item.category,
+          reason_label: 'Même catégorie',
+        })),
+      }),
+    }));
+    await page.goto('/boutique/index.html', { waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => window._kbus && window._kstate, null, { timeout: 10000 });
+    await page.evaluate((item) => {
+      if (!window._kstate.products.some((p) => String(p.id) === String(item.id))) {
+        window._kstate.products.push(item);
+      }
+      window._kbus.emit('modal:open', { id: item.id });
+    }, product);
+    await expect(page.locator('#k-modal-overlay')).toHaveClass(/open/);
+    await expect(page.locator('#k-modal-suggestions')).toBeVisible({ timeout: 8000 });
+    await expect(page.locator('#k-sug-rail .k-sug-card')).toHaveCount(related.length);
+
+    const order = await page.evaluate(() => {
+      const section = document.getElementById('k-modal-suggestions');
+      const enriched = document.getElementById('k-modal-enriched-content');
+      const zone = document.querySelector('#k-modal .k-modal-product-zone');
+      const hero = document.querySelector('#k-modal .k-modal-img-wrap');
+      const modal = document.getElementById('k-modal');
+      const root = document.querySelector('.k-mdm-root');
+      const scroll = document.querySelector('.k-modal-scroll');
+      scroll.scrollTop = scroll.scrollHeight;
+      return {
+        inProductZone: section.parentElement === zone,
+        afterEnriched: Boolean(enriched.compareDocumentPosition(section) & Node.DOCUMENT_POSITION_FOLLOWING),
+        cards: section.querySelectorAll('.k-sug-card').length,
+        heroFullWidth: Math.abs(hero.getBoundingClientRect().width - modal.getBoundingClientRect().width) < 2,
+        gutter: getComputedStyle(modal).getPropertyValue('--k-pdp-mobile-gutter').trim(),
+        rootPadding: getComputedStyle(root).paddingLeft,
+        scrollOverflow: scroll.scrollWidth - scroll.clientWidth,
+      };
+    });
+    expect(order.inProductZone).toBe(true);
+    expect(order.afterEnriched).toBe(true);
+    expect(order.cards).toBe(related.length);
+    expect(order.heroFullWidth).toBe(true);
+    expect(order.gutter).toBe('18px');
+    expect(order.rootPadding).toBe('18px');
+    expect(order.scrollOverflow).toBeLessThanOrEqual(1);
+    await shot(page, 'mobile-pdp-suggestions-after-details-390.png');
+  });
+});
