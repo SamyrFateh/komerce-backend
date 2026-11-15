@@ -238,11 +238,17 @@ END $f$;
 CREATE OR REPLACE FUNCTION public.guard_completed_cash_refund_immutable()
 RETURNS trigger LANGUAGE plpgsql AS $f$
 BEGIN
-  IF OLD.local_cash_refund_payout_id IS NOT NULL OR
-     (TG_OP='UPDATE' AND NEW.local_cash_refund_payout_id IS NOT NULL) THEN
+  IF TG_OP='DELETE' THEN
+    IF OLD.local_cash_refund_payout_id IS NOT NULL THEN
+      RAISE EXCEPTION 'CASH_REFUND_COMPLETION_IMMUTABLE' USING ERRCODE='23514';
+    END IF;
+    RETURN OLD;
+  END IF;
+  IF OLD.local_cash_refund_payout_id IS NOT NULL
+      OR NEW.local_cash_refund_payout_id IS NOT NULL THEN
     RAISE EXCEPTION 'CASH_REFUND_COMPLETION_IMMUTABLE' USING ERRCODE='23514';
   END IF;
-  RETURN CASE WHEN TG_OP='DELETE' THEN OLD ELSE NEW END;
+  RETURN NEW;
 END $f$;
 CREATE TRIGGER trg_completed_cash_refund_immutable
 BEFORE UPDATE OR DELETE ON public.refunds
