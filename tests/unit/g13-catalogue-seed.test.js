@@ -5,7 +5,7 @@
  * @test-runner jest
  * @test-requires none
  */
-const { validateManifest, referenceAmount } = require('../../scripts/recette/g13-catalogue-seed');
+const { validateManifest, referenceAmount, PHASES } = require('../../scripts/recette/g13-catalogue-seed');
 const manifest = require('../../scripts/recette/g13-catalogue-manifest.json');
 
 describe('G13 catalogue seed (outillage de recette)', () => {
@@ -29,6 +29,26 @@ describe('G13 catalogue seed (outillage de recette)', () => {
   test('refuse une taxonomie inconnue', () => {
     const tax = new Map([['Tech', new Set(['Phones'])]]);
     expect(validateManifest(manifest, tax).some((e) => e.startsWith('TAXONOMIE_INCONNUE'))).toBe(true);
+  });
+
+  test('D3 : liaison du fournisseur en brouillon AVANT approbation et jamais publication aveugle', () => {
+    const fs = require('node:fs');
+    const path = require('node:path');
+    const source = fs.readFileSync(path.join(__dirname, '../../scripts/recette/g13-catalogue-seed.js'), 'utf8');
+    expect(PHASES.indexOf('supplier-link')).toBeLessThan(PHASES.indexOf('publish'));
+    expect(source.indexOf('// --- supplier-link')).toBeLessThan(source.indexOf('// --- publish'));
+    expect(source).not.toContain("blocked(r, 'supplier-link', 'PRODUIT_NON_PUBLIE')");
+    expect(source).toContain("'MAPPING_NON_RESOLU_APRES_HTTP'");
+    expect(source).toContain("JOIN product_skus sku ON sku.product_id = ps.product_id");
+  });
+  test('diagnostic économique G13 est explicitement lecture seule et sans dérogation WATCH', () => {
+    const fs = require('node:fs');
+    const path = require('node:path');
+    const source = fs.readFileSync(path.join(__dirname, '../../scripts/recette/g13-catalogue-seed.js'), 'utf8');
+    expect(source).toContain("if (phaseSel === 'diagnose')");
+    expect(source).toContain("G13_DIAGNOSTIC_MUST_BE_READ_ONLY");
+    expect(source).toContain("DIAGNOSTIC_OK_NOT_G13_GO");
+    expect(source).not.toContain("scan_result.sourcing_decision = 'TEST'");
   });
   test('prix de référence : arrondi supérieur du moteur, jamais inventé', () => {
     expect(referenceAmount({ selected: { economics: { coverage_reference_price_xaf: 1234.2 } } }, 'CM')).toBe(1235);
