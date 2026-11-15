@@ -41,6 +41,9 @@ function inputSnapshot(row = {}) {
     estimated_weight_kg: stringOrNull(row.estimated_weight_kg),
     estimated_volume_m3: stringOrNull(row.estimated_volume_m3),
     komerce_category: stringOrNull(row.komerce_category),
+    target_margin_pct: stringOrNull(row.target_margin_pct),
+    data_sources: row.data_sources ?? {},
+    normalized_source_contract: row.normalized_source_contract ?? {},
   };
 }
 
@@ -93,7 +96,10 @@ function authorizedWatchSql(alias = 'sc') {
     "'purchase_price_kmf'," + a + '.purchase_price_kmf::text,',
     "'estimated_weight_kg'," + a + '.estimated_weight_kg::text,',
     "'estimated_volume_m3'," + a + '.estimated_volume_m3::text,',
-    "'komerce_category'," + a + '.komerce_category)',
+    "'komerce_category'," + a + '.komerce_category,',
+    "'target_margin_pct'," + a + '.target_margin_pct::text,',
+    "'data_sources'," + a + '.data_sources,',
+    "'normalized_source_contract'," + a + '.normalized_source_contract)',
     'AND ev.triggered_by IS NOT NULL AND length(btrim(ev.notes)) >= 30',
     'ORDER BY ev.created_at DESC, ev.id DESC LIMIT 1',
     '),FALSE)',
