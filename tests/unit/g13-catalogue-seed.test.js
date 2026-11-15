@@ -52,6 +52,19 @@ describe('G13 catalogue seed (outillage de recette)', () => {
     expect(source).toContain("DIAGNOSTIC_OK_NOT_G13_GO");
     expect(source).not.toContain("scan_result.sourcing_decision = 'TEST'");
   });
+  test('le replay CJ16 n’inclut jamais G13-10 aux unités inactives et n’attribue jamais GO complet', () => {
+    const fs = require('node:fs');
+    const path = require('node:path');
+    const source = fs.readFileSync(path.join(__dirname, '../../scripts/recette/g13-catalogue-seed.js'), 'utf8');
+    const action = fs.readFileSync(path.join(__dirname, '../../.github/workflows/g13-cj16-guarded-phase-replay.yml'), 'utf8');
+    expect(source).toContain("e.source==='cj' && e.id!=='G13-10'");
+    expect(source).toContain("G13-10:ALL_SUPPLIER_UNITS_INACTIVE");
+    expect(source).toContain("SCOPED_PHASE_PASS_NOT_G13_GO");
+    expect(source).toContain("SCOPED_PARTIAL_BLOCKED");
+    expect(action).toContain('G13_SCOPE: cj-ready-16');
+    expect(action).toContain("github.actor == github.repository_owner");
+    expect(action).toContain("PGOPTIONS: '-c default_transaction_read_only=on'");
+  });
   test('prix de référence : arrondi supérieur du moteur, jamais inventé', () => {
     const observedXaf = { market: { currency: 'XAF' },
       corridor: { local: { status: 'READY', scope: 'market', authority: 'OBSERVED_REFERENCE_NOT_GATE',
