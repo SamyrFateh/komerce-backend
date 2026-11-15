@@ -5,7 +5,7 @@
  * @test-runner jest
  * @test-requires none
  */
-const { validateManifest, referenceAmount, PHASES } = require('../../scripts/recette/g13-catalogue-seed');
+const { validateManifest, referenceAmount, evaluateG13Census, PHASES } = require('../../scripts/recette/g13-catalogue-seed');
 const manifest = require('../../scripts/recette/g13-catalogue-manifest.json');
 
 describe('G13 catalogue seed (outillage de recette)', () => {
@@ -80,4 +80,22 @@ describe('G13 catalogue seed (outillage de recette)', () => {
     expect(referenceAmount({ selected: { economics: {} } }, 'CG')).toBeNull();
     expect(referenceAmount(null, 'KM')).toBeNull();
   });
+  test('G13 : 9x3 prix locaux et HTTP public sans collision de produits, sinon NO GO', () => {
+    const cats = [...new Set(manifest.entries.map((e) => e.category))];
+    const sql = cats.flatMap((category) => manifest.markets.map((market) => ({ category, market, n: 2 })));
+    const http = Object.fromEntries(cats.flatMap((category) => manifest.markets.map((market) =>
+      [`${category}|${market}`, { status: 200, total: 2, distinct_with_image: 2 }])));
+    const green = evaluateG13Census(manifest, sql, http);
+    expect(green.passed).toBe(true);
+    expect(green.checked_cells).toBe(27);
+    expect(green.passed_cells).toBe(27);
+
+    // Une boutique et un marche non couverts doivent refuser le GO,
+    // meme si les 26 autres cellules sont vertes.
+    expect(evaluateG13Census(manifest, sql.filter((x) => !(x.category === 'Enfant' && x.market === 'CM')), http).passed).toBe(false);
+    expect(evaluateG13Census(manifest, sql, { ...http, 'Maison|CG': { status: 200, total: 2, distinct_with_image: 1 } }).passed).toBe(false);
+    expect(evaluateG13Census(manifest, sql, { ...http, 'Tech|KM': { status: 503, total: 2, distinct_with_image: 2 } }).passed).toBe(false);
+    expect(evaluateG13Census(manifest, sql, { ...http, 'Auto|KM': { status: 200, total: null, distinct_with_image: 2 } }).passed).toBe(false);
+  });
+
 });
