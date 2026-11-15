@@ -524,7 +524,7 @@ test.describe('PDP mobile retouches 2026-11 — Zoom ghost V5', () => {
   });
 });
 
-test.describe('PDP mobile V4.1 — alignement horizontal canonique', () => {
+test.describe('PDP mobile retouches 2026-11 — V4.1 alignement horizontal canonique', () => {
   for (const viewport of VIEWPORTS) {
     test(`gutter 18px sur identité, variantes, livraison et détails @ ${viewport.key}`, async ({ page }) => {
       await openV4GalleryFixture(page, viewport, 'stress');
