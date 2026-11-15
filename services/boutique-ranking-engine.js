@@ -224,7 +224,10 @@ async function computeSuggestions(signals = {}) {
   const marketCode = signals.pdpMarketCode;
   let { rows: products } = await db.query(
     `SELECT
-       p.id, p.product_ref, p.name, p.category, p.subcategory,
+       p.id, p.product_ref, p.name,
+       ${marketCode
+         ? 'COALESCE(p.boutique_category_key, p.category) AS category, COALESCE(p.boutique_subcategory_key, p.subcategory) AS subcategory'
+         : 'p.category, p.subcategory'},
        p.price_kmf, p.promo_pct, p.is_promo, p.promo_until,
        ${marketCode ? canonicalProductImageSql('p') : 'p.image_url'} AS image_url,
        p.compatibility_group, p.is_active,

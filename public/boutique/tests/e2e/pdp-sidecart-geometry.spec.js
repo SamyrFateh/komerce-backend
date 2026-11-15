@@ -180,7 +180,7 @@ for (const width of SIZES) {
         specs: specs?.textContent,
         panelColumns: getComputedStyle(panel).gridTemplateColumns.split(' ').length,
         panelTop: box(panel)?.top,
-        suggestionsHidden: suggestions?.classList.contains('u-hidden'),
+        suggestionsHidden: suggestions && getComputedStyle(suggestions).display === 'none',
         cartTop: box(cart)?.top,
         mainOverflow: getComputedStyle(main).overflowY,
         brandVisible: box(document.querySelector('#k-modal .k-modal-brand'))?.width > 0,
@@ -387,7 +387,7 @@ test('AUDIT VISUEL — vraie fiche débardeur CM, sans fixture ni mutation', asy
       miniCartCount: q('#k-modal .k-modal-cart-slot')?.querySelectorAll('.k-sc-item').length || 0,
       bodyScrollY: main?.scrollTop, productCount: slides.length,
       suggestionCount: suggestionCards.length,
-      suggestionsHidden: !!q('#k-modal-suggestions')?.classList.contains('u-hidden'),
+      suggestionsHidden: q('#k-modal-suggestions') && getComputedStyle(q('#k-modal-suggestions')).display === 'none',
     };
     geom.sideRatio = geom.side?.w / geom.width;
     geom.galleryRatio = geom.gallery?.w / geom.width;

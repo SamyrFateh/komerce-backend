@@ -146,7 +146,7 @@ describe('buildProductContentViewModel — sections éditoriales', () => {
 describe('buildProductContentViewModel — materials / care / warnings', () => {
   test('nettoie les chaînes vides ou non-string', () => {
     const vm = buildProductContentViewModel({
-      materials: ['Cuir', '  ', null, 'Synthétique'],
+      materials: ['Cuir', '  ', null, 'Cloth', 'Synthétique'],
       care: ['Nettoyer à sec'],
       warnings: [],
     });
