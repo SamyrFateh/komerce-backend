@@ -393,9 +393,9 @@ describe('b-modal-image-ux', () => {
     });
 
     test('touchend après swipe empêché : le click synthétique sur le fond ne ferme pas', () => {
-      jest.useFakeTimers();
       buildModalDom(3);setupImageUX();
       document.querySelector('.k-modal-view-full').click();
+      jest.useFakeTimers(); // après ouverture (le rendu initial utilise rAF)
       const fs=document.querySelector('.k-modal-fullscreen');
       swipe(fs,'touchstart',160,210);
       swipe(fs,'touchend',100,210);
