@@ -26,7 +26,7 @@
  *     buyNowBtn, modalCartBtn, image-zone, …).
  *   - Gestion de l'historique navigateur (_modalHistoryPushed, _closingFromPopstate,
  *     _pendingHistoryBack, handler popstate) — flags mutables, intra-module, non exportables.
- *   - Image-zone : setupImageZoneDesktopClick, setupImageZoneTouch, openImageFullscreen.
+ *   - Image-zone : setupImageZoneDesktopClick, setupImageZoneTouch (fullscreen délégué au média).
  *   - Handlers bus modal:open / modal:close (openModal/closeModal accessibles
  *     directement ici, sans typeof-guard).
  *
@@ -62,7 +62,9 @@ import {
   normalizeCategoryKey, getCategorySectionEmoji,
 }                         from './shop-schema.js';
 import { isDesktop, getScrollY, scrollToPosition } from './b-scroll-owner.js';
-import { setupImageUX }     from './b-modal-image-ux.js';
+import {
+  setupImageUX, openCurrentImageFullscreen, isImageFullscreenOpen,
+} from './b-modal-image-ux.js';
 import { setupSocialProof } from './b-modal-social-proof.js';
 import { paintProvisionalFields } from './b-modal-product-fields.js';
 import {
@@ -818,6 +820,7 @@ bus.on('modal:open', function({ id, pushHistory, kind, detail }) {
 
     document.addEventListener('keydown', (e) => {
       if (!dom.modalOverlay.classList.contains('open')) return;
+      if (e.defaultPrevented || isImageFullscreenOpen()) return; // Escape appartient au zoom.
       if (e.key === 'ArrowRight') navigateModal(1);
       if (e.key === 'ArrowLeft') navigateModal(-1);
       if (e.key === 'Escape') closeModal();
@@ -940,102 +943,12 @@ bus.on('modal:open', function({ id, pushHistory, kind, detail }) {
         }
       } else if (direction === null) {
         // TAP court (pas de mouvement significatif) → fullscreen image avec pinch-zoom natif
-        openImageFullscreen(state.carouselIndex);
+        openCurrentImageFullscreen(state.carouselIndex);
       }
     });
   }
 
-  /**
-   * Ouvre une image en plein écran (mobile).
-   * Le navigateur gère nativement le pinch-to-zoom grâce à touch-action.
-   * Tap simple ou bouton retour ferme le fullscreen.
-   * @param {number} startIndex - Index de l'image à afficher en premier
-   */
-  function openImageFullscreen(startIndex) {
-    if (!state.modalProduct) return;
-    let images = state.modalProduct.images || [state.modalProduct.image_url];
-    images = images.filter(Boolean);
-    if (!images.length) return;
-
-    // Réutilise un overlay existant si présent
-    let overlay = document.getElementById('k-modal-fullscreen');
-    if (overlay) overlay.remove();
-
-    overlay = document.createElement('div');
-    overlay.id = 'k-modal-fullscreen';
-    overlay.className = 'k-modal-fullscreen';
-    overlay.innerHTML =
-      '<button class="k-modal-fullscreen-close" aria-label="Fermer">' +
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>' +
-      '</button>' +
-      '<div class="k-modal-fullscreen-counter"></div>' +
-      '<div class="k-modal-fullscreen-track">' +
-        images.map(function(url) {
-          return '<div class="k-modal-fullscreen-slide"><img src="' +
-            optimizeImgUrl(url, 1600) + '" alt="" draggable="false"></div>';
-        }).join('') +
-      '</div>';
-
-    document.body.appendChild(overlay);
-
-    let track = overlay.querySelector('.k-modal-fullscreen-track');
-    let counter = overlay.querySelector('.k-modal-fullscreen-counter');
-    let idx = Math.max(0, Math.min(startIndex || 0, images.length - 1));
-
-    function updateCounter() {
-      counter.textContent = (idx + 1) + ' / ' + images.length;
-      counter.style.display = images.length > 1 ? 'block' : 'none';
-    }
-    function snapTo(i) {
-      idx = Math.max(0, Math.min(i, images.length - 1));
-      track.style.transition = 'transform .3s cubic-bezier(.22,1,.36,1)';
-      track.style.transform = 'translateX(-' + (idx * 100) + '%)';
-      updateCounter();
-    }
-    snapTo(idx);
-    track.style.transition = 'none'; // pas d'anim sur l'ouverture initiale
-    track.style.transform = 'translateX(-' + (idx * 100) + '%)';
-    setTimeout(function() { updateCounter(); }, 0);
-
-    // Ouverture animée
-    requestAnimationFrame(function() { overlay.classList.add('is-open'); });
-
-    // Fermeture
-    function close() {
-      overlay.classList.remove('is-open');
-      setTimeout(function() { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }, 200);
-    }
-    overlay.querySelector('.k-modal-fullscreen-close').addEventListener('click', close);
-
-    // Swipe horizontal sur fullscreen pour changer d'image (sans bloquer le pinch-zoom)
-    let fsStartX = null, fsMoved = false, fsLocked = null;
-    track.addEventListener('touchstart', function(e) {
-      // Si plus d'un doigt = pinch-zoom, on n'intercepte rien
-      if (e.touches.length !== 1) { fsStartX = null; return; }
-      fsStartX = e.touches[0].clientX;
-      fsMoved = false;
-      fsLocked = null;
-    }, { passive: true });
-    track.addEventListener('touchmove', function(e) {
-      if (fsStartX == null || e.touches.length !== 1) return;
-      let dx = e.touches[0].clientX - fsStartX;
-      if (Math.abs(dx) > 6) fsMoved = true;
-    }, { passive: true });
-    track.addEventListener('touchend', function(e) {
-      if (fsStartX == null) { fsStartX = null; return; }
-      let dx = (e.changedTouches[0] || {}).clientX != null
-        ? e.changedTouches[0].clientX - fsStartX : 0;
-      if (!fsMoved) {
-        // tap simple → ferme
-        close();
-      } else if (images.length > 1) {
-        if (dx < -50) snapTo(idx + 1);
-        else if (dx > 50) snapTo(idx - 1);
-      }
-      fsStartX = null;
-    });
-  }
-
+  // Visionneuse unique : b-modal-image-ux.js, sur les médias du SKU rendu.
   // ── Navigation ← → entre produits dans la modal
 
 

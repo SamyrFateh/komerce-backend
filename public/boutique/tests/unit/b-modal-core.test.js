@@ -72,6 +72,8 @@ jest.mock('../../js/b-scroll-owner.js', () => ({
 
 jest.mock('../../js/b-modal-image-ux.js', () => ({
   setupImageUX: jest.fn(),
+  openCurrentImageFullscreen: jest.fn(),
+  isImageFullscreenOpen: jest.fn(() => false),
 }));
 
 jest.mock('../../js/b-modal-social-proof.js', () => ({
@@ -115,6 +117,7 @@ const { getScrollY, scrollToPosition } = require('../../js/b-scroll-owner.js');
 
 const { openModal, closeModal, modalGoBack, setupImageZoneTouch } = require('../../js/b-modal-core.js');
 const { goToSlide } = require('../../js/b-modal-product.js');
+const { openCurrentImageFullscreen } = require('../../js/b-modal-image-ux.js');
 
 function makeProduct(overrides) {
   return Object.assign({
@@ -414,6 +417,55 @@ describe('b-modal-core', () => {
     });
   });
 
+
+  describe('cycle de vie Discovery (même propriétaire de modal, sans produit)', () => {
+    it('ouvre une offre avec titre, annonce son événement et protège le scroll mobile', () => {
+      const wasWidth = window.innerWidth;
+      Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 });
+      const scroll = document.createElement('div');
+      scroll.className = 'k-modal-scroll';
+      scroll.scrollTop = 60;
+      dom.modal.appendChild(scroll);
+      dom.pageScroll.style.cssText = 'position:fixed;top:12px;overflow:hidden';
+      const grid = document.createElement('div');
+      grid.id = 'k-grid';
+      grid.className = 'k-grid-flat-subcat';
+      grid.scrollLeft = 120;
+      document.body.appendChild(grid);
+      const observer = jest.fn();
+      bus.on('modal:discovery-opened', observer);
+      const detail = { title: 'Réparation d’équipements', price: 1500 };
+
+      openModal('offer-1', { kind: 'physical_offer', detail });
+
+      expect(state.modalKind).toBe('physical_offer');
+      expect(state.modalRef).toBe('offer-1');
+      expect(state.modalDetail).toBe(detail);
+      expect(state.modalProduct).toBeNull();
+      expect(state.modalOpen).toBe(true);
+      expect(dom.modal.classList.contains('k-modal--discovery')).toBe(true);
+      expect(dom.modalOverlay.classList.contains('open')).toBe(true);
+      expect(scroll.scrollTop).toBe(0);
+      expect(observer).toHaveBeenCalledWith({ kind: 'physical_offer', ref: 'offer-1', detail });
+      expect(document.body.classList.contains('modal-open')).toBe(true);
+      expect(state._savedPagerInlineStyles.position).toBe('fixed');
+      expect(grid.style.scrollSnapType).toBe('none');
+      expect(state._savedGridScrollLeft).toBe(120);
+
+      bus.off('modal:discovery-opened', observer);
+      closeModal({ skipHistoryBack: true });
+      Object.defineProperty(window, 'innerWidth', { configurable: true, value: wasWidth });
+      expect(dom.modalOverlay.classList.contains('open')).toBe(false);
+    });
+
+    it('refuse une Discovery sans titre/contrat et ne modifie pas l’overlay', () => {
+      openModal('bad-service', { kind: 'service', detail: {} });
+      expect(dom.modalOverlay.classList.contains('open')).toBe(false);
+      openModal('bad-kind', { kind: 'unknown', detail: { title: 'X' } });
+      expect(dom.modalOverlay.classList.contains('open')).toBe(false);
+    });
+  });
+
   // ── Zone tactile mobile : swipe carousel, pull-to-close, tap→fullscreen ──
   // Jamais testée (ni unitaire ni e2e — le spec Playwright ne couvre que
   // Escape). setupImageZoneTouch est exporté publiquement par la façade ;
@@ -498,7 +550,8 @@ describe('b-modal-core', () => {
       state.modalProduct = makeProduct({ images: ['a.jpg', 'b.jpg'] });
       imgWrap.dispatchEvent(touchEvent('touchstart', 100, 100));
       imgWrap.dispatchEvent(touchEvent('touchend', 100, 100));
-      expect(document.getElementById('k-modal-fullscreen')).not.toBeNull();
+      expect(openCurrentImageFullscreen).toHaveBeenCalledWith(0);
+      expect(document.getElementById('k-modal-fullscreen')).toBeNull();
     });
 
     it.each([
@@ -527,82 +580,15 @@ describe('b-modal-core', () => {
     });
   });
 
-  describe('openImageFullscreen (atteint via le tap de setupImageZoneTouch)', () => {
-    let imgWrap;
-
-    beforeEach(() => {
-      jest.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => { cb(); return 1; });
+  describe('fullscreen délégué au seul propriétaire b-modal-image-ux', () => {
+    it('tap sur image passe le carouselIndex courant sans créer de legacy overlay', () => {
       setupImageZoneTouch();
-      imgWrap = dom.modal.querySelector('.k-modal-img-wrap');
-      Object.defineProperty(imgWrap, 'offsetWidth', { value: 300, configurable: true });
-      state.modalProduct = makeProduct({ images: ['a.jpg', 'b.jpg', 'c.jpg'] });
-      state.carouselIndex = 1;
+      state.carouselIndex = 2;
+      const imgWrap = dom.modal.querySelector('.k-modal-img-wrap');
       imgWrap.dispatchEvent(touchEvent('touchstart', 100, 100));
       imgWrap.dispatchEvent(touchEvent('touchend', 100, 100));
-    });
-
-    it('produit sans image (images vides et pas d\'image_url) → n\'ouvre aucun overlay', () => {
-      document.getElementById('k-modal-fullscreen').remove();
-      state.modalProduct = makeProduct({ images: [], image_url: null });
-      imgWrap.dispatchEvent(touchEvent('touchstart', 100, 100));
-      imgWrap.dispatchEvent(touchEvent('touchend', 100, 100));
+      expect(openCurrentImageFullscreen).toHaveBeenCalledWith(2);
       expect(document.getElementById('k-modal-fullscreen')).toBeNull();
-    });
-
-    it('crée l\'overlay avec une slide par image, une par image', () => {
-      const overlay = document.getElementById('k-modal-fullscreen');
-      expect(overlay).not.toBeNull();
-      expect(overlay.querySelectorAll('.k-modal-fullscreen-slide')).toHaveLength(3);
-    });
-
-    it('démarre sur l\'image courante (carouselIndex) et affiche le compteur "2 / 3"', () => {
-      const counter = document.querySelector('#k-modal-fullscreen .k-modal-fullscreen-counter');
-      expect(counter.textContent).toBe('2 / 3');
-    });
-
-    it('un seul appel réutilise/replace un overlay déjà ouvert (pas de doublon)', () => {
-      state.carouselIndex = 0;
-      imgWrap.dispatchEvent(touchEvent('touchstart', 100, 100));
-      imgWrap.dispatchEvent(touchEvent('touchend', 100, 100));
-      expect(document.querySelectorAll('#k-modal-fullscreen').length).toBe(1);
-    });
-
-    it('le bouton fermer retire l\'overlay après l\'anim (200ms)', () => {
-      jest.useFakeTimers();
-      document.querySelector('.k-modal-fullscreen-close')
-        .dispatchEvent(new Event('click', { bubbles: true }));
-      jest.advanceTimersByTime(200);
-      expect(document.getElementById('k-modal-fullscreen')).toBeNull();
-      jest.useRealTimers();
-    });
-
-    it('swipe horizontal > 50px sur le track fullscreen change de slide sans fermer', () => {
-      const track = document.querySelector('#k-modal-fullscreen .k-modal-fullscreen-track');
-      track.dispatchEvent(touchEvent('touchstart', 200, 100));
-      track.dispatchEvent(touchEvent('touchmove', 100, 100)); // dx=-100 → fsMoved=true
-      track.dispatchEvent(touchEvent('touchend', 100, 100));
-      const counter = document.querySelector('#k-modal-fullscreen .k-modal-fullscreen-counter');
-      expect(counter.textContent).toBe('3 / 3');
-      expect(document.getElementById('k-modal-fullscreen')).not.toBeNull();
-    });
-
-    it('tap simple sur le track (sans mouvement) ferme après l\'anim (200ms)', () => {
-      jest.useFakeTimers();
-      const track = document.querySelector('#k-modal-fullscreen .k-modal-fullscreen-track');
-      track.dispatchEvent(touchEvent('touchstart', 100, 100));
-      track.dispatchEvent(touchEvent('touchend', 100, 100));
-      jest.advanceTimersByTime(200);
-      expect(document.getElementById('k-modal-fullscreen')).toBeNull();
-      jest.useRealTimers();
-    });
-
-    it('multi-touch (pinch, 2 doigts) sur le track fullscreen n\'intercepte rien et ne throw pas', () => {
-      const track = document.querySelector('#k-modal-fullscreen .k-modal-fullscreen-track');
-      expect(() => {
-        track.dispatchEvent(multiTouchEvent('touchstart', [{ x: 100, y: 100 }, { x: 200, y: 100 }]));
-        track.dispatchEvent(multiTouchEvent('touchend', [{ x: 100, y: 100 }, { x: 200, y: 100 }]));
-      }).not.toThrow();
-      expect(document.getElementById('k-modal-fullscreen')).not.toBeNull();
     });
   });
 });

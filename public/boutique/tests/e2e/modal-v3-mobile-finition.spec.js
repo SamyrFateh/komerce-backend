@@ -455,3 +455,71 @@ test('PDP mobile retouches 2026-11 — vrai favori interactif et retour desktop 
   await expect(page.locator('#k-modal .k-modal-img-wrap > #k-modal-fav-btn')).toBeVisible();
   expect(await page.locator('#k-modal-fav-btn').count()).toBe(1);
 });
+
+
+test.describe('PDP mobile retouches 2026-11 — Zoom ghost V5', () => {
+  async function swipeTouch(page, startX, startY, endX, endY, pinch = false) {
+    await page.locator('.k-modal-fullscreen').evaluate((root, data) => {
+      const [sx, sy, ex, ey, pinchTouch] = data;
+      const mk = (id, x, y) => new Touch({ identifier: id, target: root, clientX: x, clientY: y });
+      const start = [mk(1, sx, sy)];
+      if (pinchTouch) start.push(mk(2, sx + 100, sy));
+      root.dispatchEvent(new TouchEvent('touchstart', {
+        bubbles: true, cancelable: true, touches: start, changedTouches: start, targetTouches: start,
+      }));
+      const finish = [mk(1, ex, ey)];
+      root.dispatchEvent(new TouchEvent('touchend', {
+        bubbles: true, cancelable: true, touches: [], changedTouches: finish, targetTouches: [],
+      }));
+    }, [startX, startY, endX, endY, pinch]);
+  }
+
+  test('PDP mobile retouches 2026-11 — ghost circulaire, retour galerie sur même photo, swipe haut', async ({ page }) => {
+    await openV4GalleryFixture(page, { width: 390, height: 844 }, 'stress');
+    const mediaCount = await page.locator('#k-modal .k-modal-carousel-track .k-modal-slide').count();
+    expect(mediaCount).toBeGreaterThan(1);
+    await page.locator('#k-modal .k-modal-carousel').click();
+    const overlay = page.locator('.k-modal-fullscreen');
+    await expect(overlay).toHaveClass(/is-open/);
+    const track = page.locator('.k-modal-fullscreen-track');
+    await expect(page.locator('.k-modal-fullscreen-slide')).toHaveCount(mediaCount + 2);
+    await expect(page.locator('.k-modal-fullscreen-slide[data-ghost="1"]')).toHaveCount(2);
+    await expect(page.locator('.k-modal-fullscreen-counter')).toContainText('1');
+
+    // Image 1 ← swipe droit → ghost du dernier ; transitionend normalise sans flash.
+    await swipeTouch(page, 120, 200, 225, 200);
+    await expect(page.locator('.k-modal-fullscreen-counter')).toContainText(String(mediaCount));
+    await expect(track).toHaveAttribute('class', /k-modal-fullscreen-track/);
+    const ghostIndex = await track.evaluate((el) => el.style.transform);
+    expect(ghostIndex).toBe('translateX(0%)');
+    await track.evaluate((el) => el.dispatchEvent(new Event('transitionend', { bubbles: true })));
+    const normalized = await track.evaluate((el) => el.style.transform);
+    expect(normalized).toBe('translateX(-' + mediaCount * 100 + '%)');
+
+    // Dernier → premier en glissant vers la gauche à travers le ghost.
+    await swipeTouch(page, 230, 200, 110, 200);
+    await expect(page.locator('.k-modal-fullscreen-counter')).toContainText('1');
+    expect(await track.evaluate((el) => el.style.transform)).toBe('translateX(-' + (mediaCount + 1) * 100 + '%)');
+    await track.evaluate((el) => el.dispatchEvent(new Event('transitionend', { bubbles: true })));
+    expect(await track.evaluate((el) => el.style.transform)).toBe('translateX(-100%)');
+
+    // Swipe vertical haut : sortie de la seule lightbox, la PDP reste ouverte.
+    await swipeTouch(page, 170, 300, 172, 160);
+    await expect(overlay).not.toHaveClass(/is-open/);
+    await expect(page.locator('#k-modal-overlay')).toHaveClass(/open/);
+    expect(await page.evaluate(() => window._kstate.carouselIndex)).toBe(0);
+    await shot(page, 'mobile-pdp-zoom-ghost-return-390.png');
+  });
+
+  test('PDP mobile retouches 2026-11 — pinch protégé et aucune fermeture involontaire', async ({ page }) => {
+    await openV4GalleryFixture(page, { width: 360, height: 800 }, 'garment');
+    await page.locator('#k-modal .k-modal-carousel').click();
+    const overlay = page.locator('.k-modal-fullscreen');
+    await expect(overlay).toHaveClass(/is-open/);
+    await swipeTouch(page, 100, 310, 102, 150, true);
+    await expect(overlay).toHaveClass(/is-open/);
+    await overlay.locator('.k-modal-fullscreen-close').click();
+    await expect(overlay).not.toHaveClass(/is-open/);
+    await expect(page.locator('#k-modal-overlay')).toHaveClass(/open/);
+  });
+});
