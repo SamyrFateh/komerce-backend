@@ -1442,7 +1442,7 @@ html.k-mobile-premium-v1 .k-chip-label {
     bottom: -3px;
     width: 58px;
     height: 38px;
-    background: radial-gradient(ellipse, var(--green-valid) 0%, var(--green-valid) 25%, transparent 73%);
+    background: radial-gradient(ellipse, var(--coral) 0%, var(--coral) 25%, transparent 73%);
     filter: blur(2px);
     opacity: .68;
   }
@@ -1455,7 +1455,7 @@ html.k-mobile-premium-v1 .k-chip-label {
       height: 32px;
       z-index: 2;
       border-radius: 50%;
-      background-image: linear-gradient(112deg, transparent 37%, var(--white) 50%, transparent 63%);
+      background-image: linear-gradient(112deg, transparent 37%, var(--cream-peach) 50%, transparent 63%);
       background-size: 240% 100%;
       background-repeat: no-repeat;
       pointer-events: none;

@@ -69,8 +69,8 @@ Cascade réelle des bundles livrés :
 ```
  1. /boutique/css/dist/base.css?v=266
  2. /boutique/css/dist/critical-home.css?v=5
- 3. /boutique/css/dist/components.css?v=678
- 4. /boutique/css/dist/components.css?v=678
+ 3. /boutique/css/dist/components.css?v=679
+ 4. /boutique/css/dist/components.css?v=679
  5. /boutique/css/dist/desktop.css?v=157
 ```
 
