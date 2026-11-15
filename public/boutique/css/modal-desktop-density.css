@@ -12,18 +12,18 @@
    ═══════════════════════════════════════════════════════════════ */
 
 @media (min-width: 1200px) {
-  /* Autorité finale de la coque desktop. 22vw borné à 320–390px :
-     confortable à 1440, 1700 et 1920, sans surcharge de la modal. */
+  /* Coque alignée au mock : panier ~18vw, borné à 264–320px.
+     Le contenu produit récupère l'espace sans agrandir la fenêtre. */
   #k-modal .k-modal-body {
-    grid-template-columns: minmax(0, 1fr) clamp(320px, 22vw, 390px);
+    grid-template-columns: minmax(0, 1fr) clamp(264px, 18vw, 320px);
   }
 
-  /* Proportions globales cibles ~45/33/22, après réserve du side-cart.
-     1.326fr / 1fr évite 57% + 43% + gap qui ferait déborder la grille. */
+  /* Proportions internes du mock : média ~45%, BuyBox ~55%.
+     Évite la domination de la galerie observée dans Chromium CM. */
   #k-modal .k-modal-product-zone {
-    grid-template-columns: minmax(0, 1.326fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, .83fr) minmax(0, 1fr);
     gap: 18px;
-    padding: 16px 18px;
+    padding: 16px 18px 16px 40px;
   }
 
   /* Une buybox plus large n'a pas besoin des gros paddings historiques. */

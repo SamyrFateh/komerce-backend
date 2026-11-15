@@ -23,8 +23,8 @@ describe('PDP desktop premium polish', () => {
     expect(hybrid).toMatch(/grid-template-columns:\s*minmax\(0,\s*48%\)\s*minmax\(0,\s*52%\)/);
     // Densité desktop v2 : la BuyBox et le panier restent proportionnés
     // au viewport, sans reconstruire un rail fixe à 288px.
-    expect(density).toMatch(/grid-template-columns:\s*minmax\(0,\s*1fr\)\s*clamp\(320px,\s*22vw,\s*390px\)/);
-    expect(density).toMatch(/grid-template-columns:\s*minmax\(0,\s*1\.326fr\)\s*minmax\(0,\s*1fr\)/);
+    expect(density).toMatch(/grid-template-columns:\s*minmax\(0,\s*1fr\)\s*clamp\(264px,\s*18vw,\s*320px\)/);
+    expect(density).toMatch(/grid-template-columns:\s*minmax\(0,\s*\.83fr\)\s*minmax\(0,\s*1fr\)/);
     expect(hybrid).toMatch(/clamp\(24px,\s*2vw,\s*36px\)/);
   });
 
@@ -43,7 +43,7 @@ describe('PDP desktop premium polish', () => {
 
     expect(carouselRule).toMatch(/max-width\s*:\s*none/);
     expect(carouselRule).toMatch(/height\s*:\s*auto/);
-    expect(carouselRule).toMatch(/aspect-ratio\s*:\s*4\s*\/\s*3/);
+    expect(carouselRule).toMatch(/aspect-ratio\s*:\s*1\s*\/\s*1/);
     expect(carouselRule).toMatch(/align-self\s*:\s*start/);
   });
   test('renforce la hiÃ©rarchie titre prix actions', () => {
