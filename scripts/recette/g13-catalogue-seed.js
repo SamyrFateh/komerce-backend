@@ -180,16 +180,36 @@ async function main(env = process.env) {
           product_ref: candidate?.product_ref || null,
           sourcing_decision: candidate?.decision || null,
           lifecycle: candidate?.lifecycle_status || null,
-          economic_reason: null, source_currency: null,
+          economic_reason: null, source_currency: null, customs_category: null,
+          source_v2_present: false, source_v2_units: 0, source_v2_exact_units: 0,
           sku_count: 0, stocked_skus: 0, supplier_links: 0,
           price_markets: {},
         };
         if (candidate) {
           const [scan] = await ro(db,
-            `SELECT scan_result->>'reason' AS economic_reason, currency AS source_currency FROM sourcing_candidates WHERE candidate_ref=$1`,
+            `SELECT scan_result->>'reason' AS economic_reason,
+                    currency AS source_currency,
+                    komerce_category AS customs_category,
+                    normalized_source_contract IS NOT NULL AS source_v2_present,
+                    CASE WHEN jsonb_typeof(normalized_source_contract->'sellable_units')='array'
+                         THEN jsonb_array_length(normalized_source_contract->'sellable_units')
+                         ELSE 0 END AS source_v2_units,
+                    (SELECT COUNT(*)::int FROM jsonb_array_elements(
+                      CASE WHEN jsonb_typeof(normalized_source_contract->'sellable_units')='array'
+                           THEN normalized_source_contract->'sellable_units'
+                           ELSE '[]'::jsonb END
+                    ) unit WHERE NULLIF(BTRIM(unit->>'supplier_sku'),'') IS NOT NULL
+                             AND NULLIF(BTRIM(unit->>'supplier_unit_ref'),'') IS NOT NULL
+                             AND jsonb_typeof(unit->'supplier_order_identity')='object'
+                    ) AS source_v2_exact_units
+               FROM sourcing_candidates WHERE candidate_ref=$1`,
             [candidate.candidate_ref]);
           row.economic_reason = scan?.economic_reason || null;
           row.source_currency = scan?.source_currency || null;
+          row.customs_category = scan?.customs_category || null;
+          row.source_v2_present = scan?.source_v2_present === true;
+          row.source_v2_units = Number(scan?.source_v2_units || 0);
+          row.source_v2_exact_units = Number(scan?.source_v2_exact_units || 0);
         }
         if (candidate?.product_id) {
           const [skus] = await ro(db,
