@@ -587,7 +587,7 @@ test.describe('PDP mobile retouches 2026-11 — suggestions après les détails'
 
     // DTO public réel : product_id, pas l'id de la carte. Moteur server-side
     // simulé ; on certifie le placement et le rendu mobile sans DB ni prix fictif.
-    await page.route(/\\/api\\/boutique\\/suggestions/, (route) => route.fulfill({
+    await page.route((url) => url.pathname === '/api/boutique/suggestions', (route) => route.fulfill({
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({
