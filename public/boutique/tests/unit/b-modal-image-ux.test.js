@@ -347,6 +347,108 @@ describe('b-modal-image-ux', () => {
     });
   });
 
+
+  describe('fullscreen : états bordures et sources du carousel', () => {
+    function swipe(fs, type, x, y, options = {}) {
+      const ev = new Event(type, { bubbles: true, cancelable: true });
+      ev.touches = type === 'touchend' ? [] : [{ clientX: x, clientY: y }];
+      ev.changedTouches = options.noChange ? [] : [{ clientX: x, clientY: y }];
+      fs.dispatchEvent(ev);
+    }
+
+    test('démarrage initial sans overlay préexistant : création unique accessible', () => {
+      buildModalDom(2);
+      document.querySelector('.k-modal-fullscreen').remove();
+      setupImageUX();
+      const ux = require('../../js/b-modal-image-ux.js');
+      ux.openCurrentImageFullscreen(1);
+      const fs = document.querySelector('.k-modal-fullscreen');
+      expect(fs.getAttribute('role')).toBe('dialog');
+      expect(fs.getAttribute('aria-modal')).toBe('true');
+      expect(fs.getAttribute('aria-label')).toBe('Image produit agrandie');
+      expect(fs.querySelector('.k-modal-fullscreen-track').style.transform).toBe('translateX(-200%)');
+      fs.querySelector('.k-modal-fullscreen-close').click();
+      fs.querySelector('.k-modal-fullscreen-close').click(); // fermé : idempotent
+      expect(ux.isImageFullscreenOpen()).toBe(false);
+      bus.emit('modal:closed'); // idempotent même lorsque déjà fermé
+    });
+
+    test('retour au carousel lors de Escape ; événements au mauvais target ignorés', () => {
+      buildModalDom(3);setupImageUX();
+      const ux = require('../../js/b-modal-image-ux.js');
+      const got = jest.fn();
+      bus.on('carousel:fullscreen-return', got);
+      ux.openCurrentImageFullscreen(2);
+      const fs=document.querySelector('.k-modal-fullscreen');
+      const track=fs.querySelector('.k-modal-fullscreen-track');
+      swipe(fs,'touchstart',200,200);
+      swipe(fs,'touchend',110,200);
+      track.querySelector('img').dispatchEvent(new Event('transitionend',{bubbles:true}));
+      expect(track.style.transform).toBe('translateX(-400%)'); // image, pas track
+      track.dispatchEvent(new Event('transitionend'));
+      expect(track.style.transform).toBe('translateX(-100%)');
+      document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape'}));
+      expect(got).toHaveBeenCalledWith(0);
+      bus.off('carousel:fullscreen-return',got);
+    });
+
+    test('touchend après swipe empêché : le click synthétique sur le fond ne ferme pas', () => {
+      jest.useFakeTimers();
+      buildModalDom(3);setupImageUX();
+      document.querySelector('.k-modal-view-full').click();
+      const fs=document.querySelector('.k-modal-fullscreen');
+      swipe(fs,'touchstart',160,210);
+      swipe(fs,'touchend',100,210);
+      fs.click();
+      expect(fs.classList.contains('is-open')).toBe(true);
+      jest.advanceTimersByTime(270);
+      fs.click();
+      expect(fs.classList.contains('is-open')).toBe(false);
+      jest.useRealTimers();
+    });
+
+    test('touchend court, glissé et multitouch sur la galerie : seul le tap simple ouvre', () => {
+      buildModalDom(3);
+      window.matchMedia = jest.fn().mockReturnValue({ matches: true });
+      setupImageUX();
+      const carousel=document.querySelector('.k-modal-carousel');
+      function dispatch(type, points) {
+        const e = new Event(type,{bubbles:true,cancelable:true});
+        e.touches = type==='touchend' ? [] : points;
+        e.changedTouches=points;
+        carousel.dispatchEvent(e);
+      }
+      dispatch('touchstart',[{clientX:200,clientY:200}]);
+      dispatch('touchend',[{clientX:150,clientY:200}]);
+      expect(document.querySelector('.k-modal-fullscreen').classList.contains('is-open')).toBe(false);
+      dispatch('touchstart',[{clientX:200,clientY:200},{clientX:300,clientY:200}]);
+      dispatch('touchend',[{clientX:200,clientY:200},{clientX:300,clientY:200}]);
+      expect(document.querySelector('.k-modal-fullscreen').classList.contains('is-open')).toBe(false);
+      dispatch('touchstart',[{clientX:200,clientY:200}]);
+      dispatch('touchend',[{clientX:201,clientY:202}]);
+      expect(document.querySelector('.k-modal-fullscreen').classList.contains('is-open')).toBe(true);
+      document.querySelector('.k-modal-fullscreen-close').click();
+    });
+
+    test('compteur suit la zone réelle du portrait object-fit contain, y compris resize', () => {
+      buildModalDom(2);
+      state.modalProductDetail={ product: { id: 'portrait' } };
+      window.matchMedia=jest.fn().mockReturnValue({ matches: true });
+      const wrap=document.querySelector('.k-modal-img-wrap');
+      const counter=document.querySelector('.k-modal-counter');
+      wrap.appendChild(counter);
+      wrap.getBoundingClientRect=()=>({ width:390, height:220 });
+      const img=document.querySelector('.k-modal-slide');
+      Object.defineProperty(img,'naturalWidth',{configurable:true,value:500});
+      Object.defineProperty(img,'naturalHeight',{configurable:true,value:1000});
+      setupImageUX();
+      expect(counter.style.getPropertyValue('--k-counter-right')).toBe('150px');
+      expect(counter.style.getPropertyValue('--k-counter-bottom')).toBe('10px');
+      window.dispatchEvent(new Event('resize'));
+      expect(counter.classList.contains('is-visible')).toBe(true);
+    });
+  });
+
   describe('gestes avancés ghost — protections et cycle de vie', () => {
     function send(fs, type, x, y, options = {}) {
       const event = new Event(type, { bubbles: true, cancelable: true });
