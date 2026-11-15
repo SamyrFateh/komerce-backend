@@ -69,7 +69,9 @@
         method: 'POST',
         body: {
           amount: localAmount,
-          reason: 'Mise en vente depuis la file Prêts à vendre',
+          reason: row.proposed_price?.source === 'ECONOMIC_REFERENCE_TO_CONFIRM'
+            ? 'Choix explicite pays sur repère économique sans observation concurrentielle'
+            : 'Mise en vente depuis la file Prêts à vendre',
           source: 'market_ready_to_sell',
         },
       });
@@ -233,8 +235,23 @@
           ? 'Cible observée'
           : row.proposed_price?.source === 'EXISTING_LOCAL_DECISION'
             ? 'Décision existante'
-            : 'À saisir';
+            : row.proposed_price?.source === 'ECONOMIC_REFERENCE_TO_CONFIRM'
+              ? 'Repère économique (pas un prix concurrent) · choix pays requis'
+              : 'À saisir';
       priceCell.appendChild(source);
+      const usesEconomicReference = !row.local_price_active
+        && row.proposed_price?.source === 'ECONOMIC_REFERENCE_TO_CONFIRM';
+      let confirmEconomic = null;
+      if (usesEconomicReference) {
+        const acknowledgement = doc.createElement('label');
+        acknowledgement.className = 'kmc-workspace-note';
+        confirmEconomic = doc.createElement('input');
+        confirmEconomic.type = 'checkbox';
+        confirmEconomic.setAttribute('aria-label', 'Confirmer mon choix de prix local sans observation concurrentielle');
+        acknowledgement.appendChild(confirmEconomic);
+        acknowledgement.appendChild(doc.createTextNode(' Je confirme ce prix comme choix commercial de mon marché.'));
+        priceCell.appendChild(acknowledgement);
+      }
       tr.appendChild(priceCell);
 
       const high = doc.createElement('td');
@@ -260,8 +277,10 @@
       button.type = 'button';
       button.className = 'kmc-workspace-action';
       button.textContent = row.local_price_active ? 'Finaliser le catalogue' : 'Mettre en vente';
-      button.disabled = !row.can_approve || row.decision_state?.key === 'BLOCKED'
-        || (!row.local_price_active && !(number(input.value) > 0));
+      const actionDisabled = () => !row.can_approve || row.decision_state?.key === 'BLOCKED'
+        || (!row.local_price_active && !(number(input.value) > 0))
+        || (usesEconomicReference && !confirmEconomic?.checked);
+      button.disabled = actionDisabled();
       actionCell.appendChild(button);
       tr.appendChild(actionCell);
 
@@ -272,11 +291,11 @@
           checkbox.disabled = modified;
           checkbox.checked = !modified;
         }
-        button.disabled = !row.can_approve || row.decision_state?.key === 'BLOCKED'
-          || (!row.local_price_active && !(number(input.value) > 0));
+        button.disabled = actionDisabled();
         refreshBulkLabel();
       });
       checkbox.addEventListener('change', refreshBulkLabel);
+      if (confirmEconomic) confirmEconomic.addEventListener('change', () => { button.disabled = actionDisabled(); });
 
       button.addEventListener('click', async () => {
         button.disabled = true;
