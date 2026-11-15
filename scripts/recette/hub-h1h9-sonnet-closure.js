@@ -80,6 +80,13 @@ async function run({ env = process.env, db, run8 }) {
   const immediate = status === 'preparation';
   while (status !== 'preparation' && Date.now() - t3start < 12 * 60 * 1000) { await new Promise((r) => setTimeout(r, 20000)); status = await stOf(); }
   const waited = Math.round((Date.now() - t3start) / 1000);
+  // Diagnostic lecture seule si la commande n'avance pas (cause : cron desactive, balayage en echec ou predicat IMPORT).
+  const diag = status === 'preparation' ? null : {
+    items: await q("SELECT COALESCE(fulfillment_source,'NULL') fs, COUNT(*)::int n FROM order_items WHERE order_id=$1 GROUP BY 1", [lA.order_id]),
+    lines: await q('SELECT line_id, effective_quantity::int e, received_quantity::int r, cancelled FROM v_purchase_line_progress WHERE order_id=$1', [lA.order_id]),
+    distribution_alerts: (await q("SELECT COUNT(*)::int n FROM alerts WHERE type='purchasing_distribution_failed' AND entity_id=$1", [lA.order_id]))[0].n,
+    completion_alerts: await q("SELECT type, COUNT(*)::int n FROM alerts WHERE entity_id=$1 GROUP BY type", [lA.order_id]),
+  };
   const incs = await inc();
   const alerts = incs.length ? (await q("SELECT COUNT(*)::int n FROM alerts WHERE type='supplier_shortage_refund_required' AND entity_id=$1", [incs[0].id]))[0].n : null;
   const parcelQty = (await q('SELECT COALESCE(SUM(pi.quantity),0)::int n FROM parcel_items pi JOIN order_items oi ON oi.id=pi.order_item_id JOIN parcels p ON p.id=pi.parcel_id AND p.cancelled_at IS NULL WHERE oi.order_id=$1', [lA.order_id]))[0].n;
@@ -87,7 +94,7 @@ async function run({ env = process.env, db, run8 }) {
   const incs2 = await inc();
   fin('T3', t3r.http === 201 && settle.http === 200 && incs.length === 1 && alerts === 1 && status === 'preparation' && parcelQty === 1 && incs2.length === 1 ? 'PASS' : 'FAIL',
     { receive: t3r.http, settle: settle.http, settle_code: settle.code, incidents: incs.length, alerts, order_status: status, advanced_immediately: immediate,
-      advanced_after_s: status === 'preparation' ? waited : null, parcel_qty: parcelQty, replay_http: replay.http, incidents_after_replay: incs2.length });
+      advanced_after_s: status === 'preparation' ? waited : null, diag, parcel_qty: parcelQty, replay_http: replay.http, incidents_after_replay: incs2.length });
 
   rep.sha_end = await getSha();
   rep.sha_pinned = env_sha(); rep.sha_stable = rep.sha_end === rep.sha_start && (!rep.sha_pinned || rep.sha_pinned === rep.sha_start);
