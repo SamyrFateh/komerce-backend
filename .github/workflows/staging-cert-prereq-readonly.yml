@@ -44,7 +44,7 @@ jobs:
         run: |
           if [ -z "${DATABASE_URL}" ]; then echo '::error::RAILWAY_DATABASE_URL manque'; exit 1; fi
       - name: Prerequis par marche (READ ONLY)
-        run: node scripts/recette/staging-cert-prereq-readonly.js
+        run: node scripts/recette/staging-t3-stalled-orders-readonly.js
       - uses: actions/upload-artifact@v4
         if: always()
         with:
