@@ -28,6 +28,7 @@ const { deleteOrderCascade } = require('./delete-order-cascade');
 const { refundCancelledOrder } = require('../../services/admin-order-refund');
 const { reserveVerifiedShortage } = require('../../services/item-refund-reservation-service');
 const { reserveLocalShortage } = require('../../services/local-item-refund-reservation');
+const { recordManualMobileRefund } = require('../../services/local-mobile-refund-handoff');
 const { authorizeCashRefund } = require('../../services/local-cash-refund-handoff');
 const { executeReservedItemRefund, reconcileUncertainItemRefund } = require('../../services/item-refund-psp-orchestrator');
 
@@ -179,6 +180,30 @@ router.post('/orders/:id/items/:itemId/local-refund-reservations/:reservationId/
       });
       return res.status(result.replayed?200:201).json(result);
     }catch(err){return cashRefundError(err,res,next);}
+  });
+
+router.post('/orders/:id/items/:itemId/local-refund-reservations/:reservationId/manual-mobile/:action',
+  ...guard, async (req, res, next) => {
+    if (process.env.KOMERCE_ENV !== 'staging' ||
+        process.env.FABLE_LOCAL_REFUND_RESERVATIONS_ENABLED !== '1' ||
+        process.env.FABLE_LOCAL_MOBILE_REFUND_HANDOFF_ENABLED !== '1') {
+      return res.status(409).json({
+        code: 'LOCAL_MOBILE_REFUND_NOT_CERTIFIED', error: 'Reversement manuel non activé ou hors staging'
+      });
+    }
+    try {
+      const result = await recordManualMobileRefund({
+        action: req.params.action,
+        orderId: req.params.id,
+        orderItemId: req.params.itemId,
+        reservationId: req.params.reservationId,
+        actor: req.user,
+        body: req.body || {},
+      });
+      return res.status(result.paid || result.replayed ? 200 : 202).json(result);
+    } catch (error) {
+      return cashRefundError(error, res, next);
+    }
   });
 
 // E7 pilote : réserve une indemnisation de manquant article par article.

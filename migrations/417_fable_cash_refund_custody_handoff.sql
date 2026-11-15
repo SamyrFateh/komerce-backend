@@ -150,7 +150,8 @@ BEGIN
     JOIN public.local_item_refund_reservations r ON r.id=a.reservation_id
    WHERE a.status='handoff_pending' AND a.holder_id=p_holder AND a.market_id=p_market;
   IF available_kmf<0 THEN
-    RAISE EXCEPTION 'CASH_CUSTODY_INSUFFICIENT_AVAILABLE_BALANCE' USING ERRCODE='23514';
+    RAISE EXCEPTION 'cash_custody: solde négatif interdit pour % (Market %) : % [CASH_CUSTODY_INSUFFICIENT_AVAILABLE_BALANCE]',
+      p_holder, p_market, available_kmf USING ERRCODE='23514';
   END IF;
 END $f$;
 

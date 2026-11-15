@@ -120,8 +120,12 @@ function renderLines(pdf, documentType, document) {
   } else {
     rows.push(['Commande', meta.order_reference || '—']);
     if (documentType === 'refund_receipt') {
-      rows.push(['Montant remboursé', formatAmount(meta.amount_kmf)]);
-      rows.push(['Mode', meta.refund_method || '—']);
+      rows.push(['Montant remboursé', meta.refund_amount_native_label || formatAmount(meta.amount_kmf)]);
+      rows.push(['Mode', meta.refund_method === 'mobile_money' ? 'Mobile Money' : (meta.refund_method || '—')]);
+      if (meta.mobile_money_transfer_ref) {
+        rows.push(['Référence du virement', meta.mobile_money_transfer_ref]);
+        rows.push(['Quantité remboursée', String(meta.quantity)]);
+      }
       rows.push(['Confirmé le', formatDate(meta.confirmed_at)]);
     } else if (documentType === 'wallet_receipt') {
       rows.push(['Mouvement', meta.direction || '—']);

@@ -60,11 +60,13 @@ module.exports = {
     migrations: [
       'migrations/416_fable_local_item_refund_reservations.sql',
       'migrations/417_fable_cash_refund_custody_handoff.sql',
+      'migrations/418_fable_manual_mobile_money_refund.sql',
     ],
     services: [
       'services/refund-service.js',
       'services/item-refund-reservation-service.js',
       'services/local-item-refund-reservation.js',
+      'services/local-mobile-refund-handoff.js',
       'services/local-cash-refund-handoff.js',
       'services/item-refund-psp-orchestrator.js',
       'services/refund-intent-ledger.js',
@@ -128,6 +130,7 @@ module.exports = {
       'local_item_refund_reservations: RW',
       'local_cash_refund_authorizations: RW',
       'local_cash_refund_payouts: RW',
+      'local_mobile_refund_handoffs: RW',
       'order_items: R',
       'international_shipment_relay_receipts: R',
       'wallets: R',

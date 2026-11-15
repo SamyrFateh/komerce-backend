@@ -972,3 +972,11 @@ Migrations 391–394 appliquées sur Railway staging le 2026-11-04 à 13:09 UTC 
 Nouvelle colonne UUID nullable, FK restrictive et index UNIQUE sur `refunds.local_cash_refund_payout_id`, **non live** avant déploiement. Seuls les remboursements `cash_shortage:<reservation_id>` avec `refund_method='cash'`, montant exact et quittance de garde ont le droit d'utiliser cette colonne. Le trigger interdit un faux `completed`, toute modification ultérieure du remboursement local et tout chevauchement PSP/wallet. L'ancien schéma PSP reste intact.
 
 Migration 417 est uniquement un schéma visé. Ne pas lancer en production ni activer `FABLE_LOCAL_CASH_REFUND_HANDOFF_ENABLED` avant revue d'identité, preuve PG16/HTTP/Chromium et décision opérateur. Le parcours F2 Mobile Money reste distinct et non implémenté faute de remboursement opérateur vérifiable.
+
+<!-- schema-pending: local_mobile_refund_handoffs (migration 418, intended_migration_schema; not yet live) -->
+### G8 F2 Mobile Money manuel (migration 418)
+
+`local_mobile_refund_handoffs` porte une autorisation immuable liée à la capture réussie et à la dette native. Un opérateur distinct engage une seule fois son virement hors Komerce. Une fois engagé, le reversement reste en `transfer_pending` jusqu’au rapprochement humain, sans nouvelle autorisation d’envoi. Un admin distinct de l’opérateur rapproche les pièces et compare le montant, la devise et l’empreinte du payeur attesté. Une référence de virement normalisée est unique par opérateur Mobile Money.
+
+Le lien `refunds.local_mobile_refund_handoff_id` est restrictif et unique. La clôture, l’augmentation de `qty_refunded` et `refunds.completed` sont atomiques. Le reçu numérique suit le COMMIT. Aucune pièce d’identité, aucun numéro de téléphone et aucune empreinte ne sont publiés dans le reçu. Le flux est borné au staging derrière des flags désactivés par défaut.
+<!-- /schema-pending -->

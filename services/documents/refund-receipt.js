@@ -10,7 +10,7 @@
  * @used-by       routes/orders/cancel.js (post-commit), services/refund-service.js (post-commit),
  *                services/item-refund-psp-orchestrator.js (post-commit, remboursement de ligne confirmé),
  *                services/documents/document-reconciliation.js (reprise)
- * @db-read       invoices, orders, refunds, order_item_refund_reservations, refund_execution_intents, order_items, product_skus, markets
+ * @db-read       invoices, orders, refunds, order_item_refund_reservations, refund_execution_intents, order_items, product_skus, markets, local_cash_refund_payouts, local_cash_refund_authorizations, local_item_refund_reservations, local_mobile_refund_handoffs
  * @db-write      transaction_documents
  * @db-txn        caller_transaction_optional
  * @doctrine      DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md
@@ -147,6 +147,32 @@ async function _loadLocalCashRefundMetadata(db, refund) {
   };
 }
 
+async function loadManualMobileRefundMetadata(db, refund) {
+  const { rows: [transfer] } = await db.query(
+    `SELECT h.provider, h.confirmed_at, h.transfer_ref, r.order_item_id,
+            r.quantity, r.amount_minor, r.minor_unit, r.currency
+       FROM local_mobile_refund_handoffs h
+       JOIN local_item_refund_reservations r ON r.id=h.reservation_id
+      WHERE h.reservation_id=$1 AND r.order_id=$2 AND h.status='settled'`,
+    [refund.local_mobile_refund_handoff_id, refund.order_id]
+  );
+  if (!transfer) throw new Error('[refund-receipt] Reversement Mobile Money vérifié introuvable');
+  const scale = transfer.minor_unit;
+  const digits = String(transfer.amount_minor).padStart(scale + 1, '0');
+  const nativeAmount = scale ? digits.slice(0, -scale) + ',' + digits.slice(-scale) : digits;
+  return {
+    partial: true,
+    line: { order_item_id: transfer.order_item_id, quantity: transfer.quantity },
+    refund_amount_native_label: nativeAmount + ' ' + transfer.currency,
+    quantity: transfer.quantity,
+    refund_amount_minor: String(transfer.amount_minor),
+    refund_minor_unit: transfer.minor_unit,
+    refund_currency: transfer.currency,
+    mobile_money_provider: transfer.provider,
+    mobile_money_transfer_ref: transfer.transfer_ref,
+  };
+}
+
 /**
  * Émet le reçu de remboursement pour un remboursement confirmé.
  *
@@ -205,7 +231,9 @@ async function issue(refundId, { dbClient, issuedBy } = {}) {
     ? await _loadItemRefundMetadata(db, refund)
     : String(refund.refund_type || '').startsWith('cash_shortage:')
       ? await _loadLocalCashRefundMetadata(db, refund)
-      : null;
+      : refund.local_mobile_refund_handoff_id
+        ? await loadManualMobileRefundMetadata(db, refund)
+        : null;
 
   // ── Générer la référence ──────────────────────────────────────────────────
   const reference = await _generateReference(db);
@@ -276,6 +304,7 @@ function buildDisplayData(doc) {
     wallet_credit: 'Avoir Komerce (wallet)',
     cash:          'Espèces',
     paypal:        'PayPal',
+    mobile_money:  'Mobile Money',
   }[meta.refund_method] || meta.refund_method || '—';
 
   const fmtKMF = n => n != null
@@ -291,7 +320,8 @@ function buildDisplayData(doc) {
     document_type:   'Reçu de remboursement',
     order_reference: meta.order_reference || '—',
     invoice_number:  meta.invoice_number  || null,
-    amount_kmf:      fmtKMF(meta.amount_kmf),
+    amount_kmf:      meta.refund_amount_native_label ? null : fmtKMF(meta.amount_kmf),
+    amount_native:   meta.refund_amount_native_label || null,
     amount_eur:      meta.amount_eur != null ? `${Number(meta.amount_eur).toFixed(2)} EUR` : null,
     method:          methodLabel,
     refund_type:     meta.refund_type || '—',
