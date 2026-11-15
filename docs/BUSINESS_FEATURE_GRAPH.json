@@ -35553,6 +35553,10 @@
                 "targetFile": "services/suppliers/allegro-fulfillment-adapter.js"
               },
               {
+                "sourceFileId": "services/catalog-certification.js",
+                "targetFile": "services/supplier-source-resolution.js"
+              },
+              {
                 "sourceFileId": "services/product-admin-service.js",
                 "targetFile": "services/suppliers/central-hub-supplier.js"
               },
