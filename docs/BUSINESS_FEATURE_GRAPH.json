@@ -47663,6 +47663,10 @@
                 "targetFile": "scripts/cj-real-showcase-seed.js"
               },
               {
+                "sourceFileId": "services/boutique-ranking-engine.js",
+                "targetFile": "services/catalog-public-view.js"
+              },
+              {
                 "sourceFileId": "services/discovery-rail-composer.js",
                 "targetFile": "services/catalog-market-exposure-service.js"
               },
@@ -47783,6 +47787,10 @@
           {
             "channel": "static-code",
             "evidence": [
+              {
+                "sourceFileId": "services/boutique-ranking-engine.js",
+                "targetFile": "services/market-local-price-resolution-service.js"
+              },
               {
                 "sourceFileId": "services/discovery-rail-composer.js",
                 "targetFile": "services/market-local-price-resolution-service.js"
@@ -48391,6 +48399,10 @@
               {
                 "sourceFileId": "public/boutique/js/b-modal-core.js",
                 "targetFile": "public/boutique/js/b-modal-product-fields.js"
+              },
+              {
+                "sourceFileId": "public/boutique/js/b-modal-core.js",
+                "targetFile": "public/boutique/js/product-store.js"
               },
               {
                 "sourceFileId": "public/boutique/js/b-modal-cart.js",
