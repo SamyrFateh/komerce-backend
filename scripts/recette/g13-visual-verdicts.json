@@ -1,0 +1,5 @@
+{
+ "schema": "g13-visual-verdicts/1",
+ "note": "entry_id -> source_media_id -> {verdict:APPROVED|REJECTED,text_presence:NONE|PRESENT|UNREADABLE,...}. Uniquement issu d'une inspection réelle image par image.",
+ "verdicts": {}
+}
