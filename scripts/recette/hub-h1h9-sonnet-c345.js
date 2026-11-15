@@ -30,6 +30,7 @@ async function ctx({ env, db, run8 }) {
   const A = {
     hub: new Actor('hub_agent', base, env.E2E_AGENT_HUB_EMAIL, env.E2E_AGENT_HUB_PASSWORD),
     adm: new Actor('admin', base, env.E2E_ADMIN_EMAIL, env.E2E_ADMIN_PASSWORD),
+    hub2: new Actor('hub_agent_session_2', base, env.E2E_AGENT_HUB_EMAIL, env.E2E_AGENT_HUB_PASSWORD),
     dir: new Actor('hub_director', base, env.E2E_HUB_DIRECTOR_EMAIL, env.E2E_HUB_DIRECTOR_PASSWORD),
   };
   await Promise.all(Object.values(A).map((a) => a.login()));
@@ -119,9 +120,9 @@ async function c45({ env, db, run8 }) {
   };
   // C4 : meme depot, meme scan, deux operateurs au meme instant.
   const first = fillable[0]; const b4 = await depositBody(first);
-  const [d1, d2] = await Promise.all([A.hub.call('POST', `${WS}/bags/${bagUnit.id}/deposit`, b4), A.adm.call('POST', `${WS}/bags/${bagUnit.id}/deposit`, b4)]);
+  const [d1, d2] = await Promise.all([A.hub.call('POST', `${WS}/bags/${bagUnit.id}/deposit`, b4), A.hub2.call('POST', `${WS}/bags/${bagUnit.id}/deposit`, b4)]);
   const [pl] = await q("SELECT COUNT(*)::int n, COALESCE(SUM(quantity),0)::int qty FROM hub_physical_unit_placements WHERE physical_unit_id=$1 AND allocation_id=$2 AND removed_at IS NULL AND operation_type<>'RECEIVE'", [bagUnit.id, first.allocation_id]);
-  const ok4 = noRaw5xx([d1, d2]) && [d1, d2].some((r) => r.http === 200 || r.http === 201) && pl.qty === b4.quantity && pl.n === 1;
+  const ok4 = noRaw5xx([d1, d2]) && ![d1, d2].some((r) => r.http === 403) && [d1, d2].some((r) => r.http === 200 || r.http === 201) && pl.qty === b4.quantity && pl.n === 1;
   fin('C4', ok4 ? 'PASS' : 'FAIL', { http: [d1.http, d2.http], codes: [d1.code, d2.code], active_placements: pl.n, qty: pl.qty, expected_qty: b4.quantity });
   // Fin du remplissage (sequentiel), fermeture, puis C5.
   for (const l of (await dossier()).fillable.filter((x) => String(x.order_id) === String(o.id))) {
@@ -140,10 +141,10 @@ async function c45({ env, db, run8 }) {
     return close();
   }
   const b5 = { bag_unit_id: ready.unit_id, parcel_id: pid.id, bag_reference_scan: ready.reference, box_reference_scan: boxUnit.reference, evidence_method: 'SCAN' };
-  const [x1, x2] = await Promise.all([A.hub.call('POST', `${WS}/boxes/${boxUnit.id}/bags`, b5), A.adm.call('POST', `${WS}/boxes/${boxUnit.id}/bags`, b5)]);
+  const [x1, x2] = await Promise.all([A.hub.call('POST', `${WS}/boxes/${boxUnit.id}/bags`, b5), A.hub2.call('POST', `${WS}/boxes/${boxUnit.id}/bags`, b5)]);
   const [lk] = await q('SELECT COUNT(*)::int n FROM hub_box_bags WHERE bag_unit_id=$1', [bagUnit.id]);
   const okStatus = [x1, x2].every((r) => (r.http >= 200 && r.http < 300) || (r.http === 409 && r.code === 'HUB_BAG_ALREADY_BOXED'));
-  fin('C5', noRaw5xx([x1, x2]) && okStatus && [x1, x2].some((r) => r.http >= 200 && r.http < 300) && lk.n === 1 ? 'PASS' : 'FAIL',
+  fin('C5', noRaw5xx([x1, x2]) && ![x1, x2].some((r) => r.http === 403) && okStatus && [x1, x2].some((r) => r.http >= 200 && r.http < 300) && lk.n === 1 ? 'PASS' : 'FAIL',
     { http: [x1.http, x2.http], codes: [x1.code, x2.code], links_for_bag: lk.n });
   return close();
 }
