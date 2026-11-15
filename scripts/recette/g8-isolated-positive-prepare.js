@@ -47,12 +47,20 @@ async function main(){
   await db.query('UPDATE users SET password_hash=$1,account_activation_required=false WHERE id=$2',
     [await bcrypt.hash(pwd,10),user.id]);
  }
- const cash=orders['KOM-101'],mm=orders['KOM-102'];
+ const cash=orders['KOM-101'],source=orders['KOM-102'];
+ // Snapshot is immutable after INSERT; never mutate a pre-existing paid order.
+ // Create a dedicated synthetic Mobile Money order with its original rail and FX snapshot.
+ const mm={...source,id:uuid(),reference:'E2E-HUB-V1-'+run+'-MOBILE',
+   item:{...source.item,id:uuid()}};
+ const mAmount=String(mm.total_kmf).split('.')[0],capture='G8-SYNTH-CAPTURE-'+run;
+ const fx=JSON.stringify({market:{market_id:mm.market_id,currency:'KMF',
+   minor_unit:0,amount_text:mAmount}});
+ await db.query("INSERT INTO orders(id,reference,user_id,market_id,relais_id,total_kmf,payment_mode,payment_status,status,fx_snapshot,simulation_scope) VALUES($1,$2,$3,$4,$5,$6,'mobile_money','paid','confirmed',$7::jsonb,'E2E-HUB-V1')",
+   [mm.id,mm.reference,s.fixture.users.client.id,mm.market_id,mm.relais_id,mm.total_kmf,fx]);
+ await db.query("INSERT INTO order_items(id,order_id,product_id,quantity,price_kmf,sku_id,fulfillment_source) SELECT $1,$2,product_id,quantity,price_kmf,sku_id,fulfillment_source FROM order_items WHERE id=$3",
+   [mm.item.id,mm.id,source.item.id]);
  await db.query('INSERT INTO cash_collections(id,order_id,amount_kmf,collected_by,relais_id) VALUES($1,$2,$3,$4,$5)',
    [uuid(),cash.id,String(cash.total_kmf),ids.relay,cash.relais_id]);
- const mAmount=String(mm.total_kmf).split('.')[0],capture='G8-SYNTH-CAPTURE-'+run;
- await db.query("UPDATE orders SET payment_mode='mobile_money',fx_snapshot=$2::jsonb WHERE id=$1",
-   [mm.id,JSON.stringify({market:{market_id:mm.market_id,currency:'KMF',minor_unit:0,amount_text:mAmount}})]);
  await db.query("INSERT INTO mobile_money_transactions (id,order_id,market_id,provider,status,currency,minor_unit,amount_minor,external_transaction_id) VALUES($1,$2,$3,'orange_money','succeeded','KMF',0,$4,$5)",
    [uuid(),mm.id,mm.market_id,mAmount,capture]);
  const cases={};
