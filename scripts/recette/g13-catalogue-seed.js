@@ -534,6 +534,9 @@ async function main(env = process.env) {
         : mode === 'dry-run' ? 'DRY_RUN_OK'
           : blockedSteps ? 'PARTIAL_BLOCKED'
             : report.census?.passed ? 'SEED_PHASES_PASS_NOT_G13_GO' : 'CENSUS_27_NO_GO';
+    // Le rapport n'est pas une certification si une des 27 cellules manque.
+    // Une CI verte ne doit pas masquer ce NO GO commercial.
+    if (report.verdict === 'CENSUS_27_NO_GO') process.exitCode = 2;
   } catch (error) {
     report.verdict = 'BLOCKED';
     report.error = String(error.message).slice(0, 300);
