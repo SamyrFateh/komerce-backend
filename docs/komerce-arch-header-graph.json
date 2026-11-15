@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 2085,
-    "edges": 10359,
+    "edges": 10360,
     "dbTables": 243,
     "doctrines": 818,
     "impactAreas": 208,
@@ -33113,7 +33113,8 @@
         "sourcing_candidates",
         "sourcing_candidate_events",
         "supplier_catalog_imports",
-        "import_runtime_runs"
+        "import_runtime_runs",
+        "products"
       ],
       "dbWrite": [
         "sourcing_candidates",
@@ -33150,7 +33151,8 @@
       ],
       "dbTxn": [
         "promoteCandidate",
-        "confirmCandidateBoutiqueCategory : transactions dédiées"
+        "confirmCandidateBoutiqueCategory",
+        "recoverMissingSourceSkus : transactions dédiées"
       ],
       "doctrine": [
         "single_sourcing_candidate_mutation_authority",
@@ -98892,6 +98894,12 @@
     },
     {
       "from": "services/sourcing-candidate-actions.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/sourcing-candidate-actions.js",
       "to": "db:sourcing_candidates",
       "type": "db-write",
       "label": "sourcing_candidates"
@@ -142035,7 +142043,8 @@
         "sourcing_candidates",
         "sourcing_candidate_events",
         "supplier_catalog_imports",
-        "import_runtime_runs"
+        "import_runtime_runs",
+        "products"
       ],
       "dbWrite": [
         "sourcing_candidates",
