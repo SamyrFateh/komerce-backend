@@ -2642,12 +2642,12 @@ Meta Graph monté : oui.
 | purchasing | refunds | static-code | 1 | **OBSERVED_UNDECLARED** |
 | purchasing | sourcing | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | purchasing | supplier-connectivity | static-code | 25 | **DECLARED_AND_OBSERVED** |
-| recommendations | catalog | static-code, data-read | 6 | **DECLARED_AND_OBSERVED** |
+| recommendations | catalog | static-code, data-read | 7 | **DECLARED_AND_OBSERVED** |
 | recommendations | infrastructure | static-code | 6 | **DECLARED_AND_OBSERVED** |
 | recommendations | local-stock | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | recommendations | logistics | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | recommendations | market | data-read | 1 | **DECLARED_AND_OBSERVED** |
-| recommendations | market-autonomy | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| recommendations | market-autonomy | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | recommendations | orders | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
 | recommendations | platform-ops | static-code | 10 | **DECLARED_AND_OBSERVED** |
 | recommendations | providers-services | static-code | 1 | **DECLARED_AND_OBSERVED** |
@@ -2668,7 +2668,7 @@ Meta Graph monté : oui.
 | settlement | market-delegation | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
 | shared-cart | auth | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | shared-cart | auth-identity | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
-| shared-cart | catalog | static-code, data-read | 6 | **DECLARED_AND_OBSERVED** |
+| shared-cart | catalog | static-code, data-read | 7 | **DECLARED_AND_OBSERVED** |
 | shared-cart | infrastructure | static-code | 18 | **DECLARED_AND_OBSERVED** |
 | shared-cart | market-autonomy | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | shared-cart | notifications | static-code | 2 | **DECLARED_AND_OBSERVED** |

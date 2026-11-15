@@ -6,7 +6,7 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db
+ * @depends       db, services/catalog-public-view.js, services/market-local-price-resolution-service.js
  * @used-by       routes/boutique-suggestions.js
  * @db-read       order_items, orders, products
  * @db-write      none
@@ -36,6 +36,8 @@
 'use strict';
 
 const db = require('../db');
+const { canonicalProductImageSql, publicCatalogVisibilitySql } = require('./catalog-public-view');
+const { applyActiveMarketPricesToCatalogRows } = require('./market-local-price-resolution-service');
 
 // ── Poids des signaux — rangs P1..P8 du brief, alignés doctrine §9 ──────────
 const SIGNAL_WEIGHTS = {
@@ -219,10 +221,13 @@ function rankProducts(products, signals = {}, coOcc = {}) {
  * Charge le catalogue puis délègue à rankProducts. Signature et réponse inchangées.
  */
 async function computeSuggestions(signals = {}) {
-  const { rows: products } = await db.query(
+  const marketCode = signals.pdpMarketCode;
+  let { rows: products } = await db.query(
     `SELECT
        p.id, p.product_ref, p.name, p.category, p.subcategory,
-       p.price_kmf, p.image_url, p.compatibility_group, p.is_active,
+       p.price_kmf, p.promo_pct, p.is_promo, p.promo_until,
+       ${marketCode ? canonicalProductImageSql('p') : 'p.image_url'} AS image_url,
+       p.compatibility_group, p.is_active,
        COALESCE(p.sku, '') AS sku,
        COALESCE(order_stats.sale_count, 0) AS sale_count
      FROM products p
@@ -234,8 +239,31 @@ async function computeSuggestions(signals = {}) {
         GROUP BY oi.product_id
      ) order_stats ON order_stats.product_id = p.id
      WHERE p.is_active = TRUE
-       AND p.price_kmf > 0`
+       AND ${marketCode ? publicCatalogVisibilitySql('p', { marketCodeParamIndex: 1 }) : 'p.price_kmf > 0'}`,
+    marketCode ? [marketCode] : []
   );
+
+  if (marketCode) {
+    const anchor = products.find(product => String(product.id) === signals.viewed_product_id);
+    products = anchor ? products.filter(product =>
+      (anchor.subcategory && product.category === anchor.category && product.subcategory === anchor.subcategory) ||
+      (anchor.compatibility_group && product.compatibility_group === anchor.compatibility_group) ||
+      product === anchor
+    ) : [];
+    if (products.length > 1) {
+      products = (await applyActiveMarketPricesToCatalogRows(db, { marketCode, products }))
+        .filter(product => product.market_price_source === 'LOCAL_ACTIVE' && product.purchasable !== false);
+      if (!products.some(product => product.id === anchor.id)) products = [];
+    } else {
+      products = [];
+    }
+    signals = {
+      viewed_product_id: signals.viewed_product_id,
+      category: anchor?.category,
+      subcategory: anchor?.subcategory,
+      limit: Math.min(parseInt(signals.limit) || 3, 3),
+    };
+  }
 
   const suggestions = products.length ? rankProducts(products, signals) : [];
 
