@@ -150,7 +150,11 @@ async function confirmCashHandoff({ orderId, orderItemId, authorizationId,
     signed=proof(signedReceiptRef,'Quittance signée'),signature=proof(payerSignatureProofRef,'Preuve signature payeur'),
     witness=proof(witnessProofRef,'Preuve témoin');
   if (signature===witness) fail('LOCAL_CASH_REFUND_WITNESS_INDEPENDENT','Témoin et signature sont des preuves distinctes');
-  return transaction(db, async c => {
+
+  // CRITICAL: commit the authoritative physical handoff, custody outflow and
+  // refunds/qty BEFORE attempting a generated digital document. A PDF outage
+  // must never roll back books after real cash physically left the custodian.
+  const outcome=await transaction(db, async c => {
     const { auth,r }=await lockAuthorization(c,aid,oid,iid);
     checkHolder(auth,actor);
     if (auth.status==='settled') {
@@ -161,8 +165,8 @@ async function confirmCashHandoff({ orderId, orderItemId, authorizationId,
       if (!p || p.signed_receipt_ref!==signed ||
         p.payer_signature_proof_ref!==signature || p.witness_proof_ref!==witness)
         fail('LOCAL_CASH_REFUND_SETTLED_CONFLICT','Déjà remboursé avec une autre quittance');
-      const doc=await issueRefundReceipt(p.refund_id,{dbClient:c,issuedBy:actor.id});
-      return {authorizationId:aid,status:'settled',paid:true,replayed:true,payoutId:p.id,refundId:p.refund_id,receiptRef:doc.reference};
+      return {authorizationId:aid,status:'settled',paid:true,replayed:true,
+        payoutId:p.id,refundId:p.refund_id};
     }
     if (auth.status!=='handoff_pending')
       fail('LOCAL_CASH_REFUND_HANDOFF_NOT_STARTED','La remise physique doit être engagée avant confirmation');
@@ -172,14 +176,24 @@ async function confirmCashHandoff({ orderId, orderItemId, authorizationId,
       'signed_receipt_ref,payer_signature_proof_ref,witness_proof_ref) ' +
       'VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id',
       [aid,r.id,oid,r.market_id,auth.holder_id,actor.id,r.amount_kmf,signed,signature,witness]);
-    // SQL AFTER INSERT trigger checks custody and atomically writes refunds.completed and qty_refunded.
+    // SQL AFTER INSERT trigger serializes custody and inserts refunds.completed + qty_refunded.
     const { rows: [f] }=await c.query(
       'SELECT id FROM refunds WHERE local_cash_refund_payout_id=$1',[p.id]);
     if (!f) fail('LOCAL_CASH_REFUND_FINALIZATION_MISSING','Transaction financière non finalisée');
-    const doc=await issueRefundReceipt(f.id,{dbClient:c,issuedBy:actor.id});
     return {authorizationId:aid,status:'settled',paid:true,replayed:false,
-      payoutId:p.id,refundId:f.id,receiptRef:doc.reference};
+      payoutId:p.id,refundId:f.id};
   });
+
+  // Post-commit idempotent document. Paper signed receipt remains durable in
+  // local_cash_refund_payouts. On failure the caller sees paid=true and a
+  // document_pending state; no second physical handoff or ledger mutation.
+  try {
+    const doc=await issueRefundReceipt(outcome.refundId,{issuedBy:actor.id});
+    return {...outcome,documentStatus:'issued',receiptRef:doc.reference};
+  } catch(error) {
+    return {...outcome,documentStatus:'pending',receiptRef:null,
+      documentError:'REFUND_RECEIPT_RECONCILIATION_REQUIRED'};
+  }
 }
 
 module.exports={ CashHandoffError, authorizeCashRefund, beginCashHandoff, confirmCashHandoff };
