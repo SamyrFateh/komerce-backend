@@ -384,8 +384,9 @@ function _setupFsHandlers(fs) {
 
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && _fsOpen) {
-      // Le core vérifie déjà isImageFullscreenOpen() et ne ferme pas la PDP.
-      // Ne pas bloquer les autres écouteurs document (accessibilité / tests).
+      // Un autre gestionnaire keydown peut être câblé avant OU après nous.
+      // defaultPrevented préserve la fiche dans les deux ordres d'écouteurs.
+      event.preventDefault();
       _closeFs();
     }
   });
