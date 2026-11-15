@@ -282,7 +282,30 @@ async function reconcileSupplierPackageCommand(payload, userId) {
 }
 
 
-async function createOperatorUnitCommand(payload, userId) {
+// A2 (#3900) : idempotence par clé d'opération. La clé (en-tête Idempotency-Key, portée par marché) est
+// inscrite dans l'événement de garde de création (append-only) ; un verrou transactionnel sérialise les
+// rejeux simultanés. Même clé + même contenu = même unité (200, replayed) ; même clé + contenu
+// différent = 409 HUB_IDEMPOTENCY_KEY_REUSED. Sans clé : comportement historique inchangé.
+async function findUnitByIdempotency(client, scope, fingerprint) {
+  await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1, 0))', [`hub-unit-create:${scope}`]);
+  const { rows: [found] } = await client.query(
+    `SELECT u.*, e.details->>'request_fingerprint' AS request_fingerprint
+       FROM hub_custody_events e JOIN hub_physical_units u ON u.id = e.physical_unit_id
+      WHERE e.event_type = 'STATE_TRANSITION' AND e.from_state IS NULL
+        AND e.details->>'idempotency_scope' = $1
+      ORDER BY e.created_at ASC LIMIT 1`,
+    [scope]
+  );
+  if (!found) return null;
+  if (found.request_fingerprint !== fingerprint) {
+    const error = new HubPhysicalError('HUB_IDEMPOTENCY_KEY_REUSED', "Cette clé d'opération a déjà servi pour un contenu différent");
+    throw error;
+  }
+  const { request_fingerprint: _omit, ...unit } = found;
+  return unit;
+}
+
+async function createOperatorUnitCommand(payload, userId, options = {}) {
   try {
     const unitType = String(payload && payload.unit_type || '').trim().toUpperCase();
     if (!OPERATOR_CONTAINER_TYPES.has(unitType)) {
@@ -299,18 +322,51 @@ async function createOperatorUnitCommand(payload, userId) {
       throw badRequest('Plan de sac invalide', 'HUB_ORDER_BAG_PLAN_INVALID');
     }
     if (orderId && unitType !== 'HANDLING_UNIT') throw badRequest('Un sac client exige HANDLING_UNIT', 'HUB_ORDER_BAG_REQUIRES_HANDLING_UNIT');
-    const unit = await withOperatorTransaction((client) => createPhysicalUnit(client, {
-      reference,
-      unitType,
-      orderId,
-      bagPlan,
-      externalRef: payload.external_ref ? String(payload.external_ref).trim() : null,
-      actorId: userId || null,
-      locationRef: payload.location_ref ? String(payload.location_ref).trim() : null,
-      initialState: 'RECEIVED',
-      details: { operator_created: true },
-    }));
-    return { status: 201, body: { physical_unit: unit, label: { reference: unit.reference, kind: orderId ? 'KOM-SAC' : unitType === 'HANDLING_UNIT' ? 'KOM-ITEM' : 'KOM-BOX' } } };
+    let idempotency = null;
+    if (options.idempotencyKey !== undefined) {
+      const key = String(options.idempotencyKey == null ? '' : options.idempotencyKey).trim();
+      if (!key || key.length > 200) {
+        throw badRequest('Idempotency-Key requise (1 à 200 caractères)', 'HUB_OPERATOR_IDEMPOTENCY_KEY_REQUIRED');
+      }
+      const scope = `${String(options.idempotencyScope || 'global')}:${unitType}:${key}`;
+      // Le contenu demandé (hors référence générée) : une référence absente reste « absente ».
+      const fingerprint = require('crypto').createHash('sha256').update(JSON.stringify({
+        unit_type: unitType, reference: payload.reference ? reference : null, order_id: orderId, bag_plan: bagPlan,
+        external_ref: payload.external_ref ? String(payload.external_ref).trim() : null,
+        location_ref: payload.location_ref ? String(payload.location_ref).trim() : null,
+      })).digest('hex');
+      idempotency = { scope, fingerprint };
+    }
+    const outcome = await withOperatorTransaction(async (client) => {
+      if (idempotency) {
+        const previous = await findUnitByIdempotency(client, idempotency.scope, idempotency.fingerprint);
+        if (previous) return { unit: previous, replayed: true };
+      }
+      const unit = await createPhysicalUnit(client, {
+        reference,
+        unitType,
+        orderId,
+        bagPlan,
+        externalRef: payload.external_ref ? String(payload.external_ref).trim() : null,
+        actorId: userId || null,
+        locationRef: payload.location_ref ? String(payload.location_ref).trim() : null,
+        initialState: 'RECEIVED',
+        details: {
+          operator_created: true,
+          ...(idempotency ? { idempotency_scope: idempotency.scope, request_fingerprint: idempotency.fingerprint } : {}),
+        },
+      });
+      return { unit, replayed: false };
+    });
+    const unit = outcome.unit;
+    return {
+      status: outcome.replayed ? 200 : 201,
+      body: {
+        physical_unit: unit,
+        label: { reference: unit.reference, kind: unit.order_id ? 'KOM-SAC' : unitType === 'HANDLING_UNIT' ? 'KOM-ITEM' : 'KOM-BOX' },
+        ...(idempotency ? { replayed: outcome.replayed } : {}),
+      },
+    };
   } catch (error) {
     return hubErrorResponse(error);
   }
