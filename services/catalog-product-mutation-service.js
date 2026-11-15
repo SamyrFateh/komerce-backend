@@ -8,8 +8,8 @@
  * @outputs       updated catalog product state
  * @depends       db contract supplied by caller
  * @used-by       services/pricing-apply.js, services/apply-pricing-updates.js, services/pricing-strategy-service.js, services/sourcing-mutations.js, scripts/catalog-taxonomy-provenance-backfill.js
- * @db-read       boutique_categories, boutique_subcategories, customs_categories, order_items, orders, product_variants, products
- * @db-write      product_variants, products
+ * @db-read       boutique_categories, boutique_subcategories, catalog_media, customs_categories, order_items, orders, product_variants, products
+ * @db-write      catalog_media, product_content_profile, product_variants, products
  * @db-txn        caller transaction preserved; replaceVariantsForSourcing owns its legacy dedicated transaction
  * @doctrine      WRITES != OWNS — catalog owns products/product_variants lifecycle
  * @impact-areas  catalog, economic-engine
@@ -400,7 +400,29 @@ async function replaceVariantsForSourcing(dbPool, productId, variants) {
   }
 }
 
+// L'ordre -1 réserve la première place à un choix éditorial manuel.
+async function saveEditorial(client, productId, { shortDescription, coverMediaId }) {
+  if (shortDescription !== undefined) {
+    await client.query(
+      `INSERT INTO product_content_profile (product_id, short_description, source)
+       VALUES ($1, $2, 'MANUAL')
+       ON CONFLICT (product_id) DO UPDATE
+         SET short_description = EXCLUDED.short_description, source = 'MANUAL', updated_at = NOW()`,
+      [productId, shortDescription]
+    );
+  }
+  if (coverMediaId) {
+    await client.query(
+      `UPDATE catalog_media
+          SET display_order = CASE WHEN id = $2 THEN -1 ELSE NULL END, updated_at = NOW()
+        WHERE product_id = $1 AND (id = $2 OR display_order = -1)`,
+      [productId, coverMediaId]
+    );
+  }
+}
+
 module.exports = {
+  saveEditorial,
   applyPrice,
   resolveBoutiqueTaxonomy,
   assignBoutiqueTaxonomy,

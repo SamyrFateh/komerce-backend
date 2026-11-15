@@ -2231,6 +2231,60 @@
     figure.appendChild(detail);
   }
 
+  function appendProductEditorial(context, doc, slot, row, dossier, gallery) {
+    const form = doc.createElement('form');
+    form.className = 'kmc-catalog-inline-editor';
+    form.appendChild(text(doc, 'strong', '', 'Présentation boutique'));
+
+    const description = editorField(doc, 'Accroche sous le prix', 'short_description', true);
+    description.control.maxLength = 240;
+    description.control.value = dossier.editorial?.short_description || '';
+    form.appendChild(description.wrap);
+
+    const coverLabel = doc.createElement('label');
+    coverLabel.className = 'kmc-catalog-inline-field';
+    coverLabel.appendChild(text(doc, 'span', '', 'Photo de couverture'));
+    const cover = doc.createElement('select');
+    const current = text(doc, 'option', '', 'Conserver la couverture actuelle');
+    current.value = '';
+    cover.appendChild(current);
+    const evidence = dossier.media?.visual_fr?.results || [];
+    gallery.forEach((item, index) => {
+      if (!item.media_id || !evidence.some(review => review.ready &&
+          review.source_media_id === item.source_media_id)) return;
+      const option = text(doc, 'option', '', 'Photo ' + (index + 1));
+      option.value = item.media_id;
+      cover.appendChild(option);
+    });
+    coverLabel.appendChild(cover);
+    if (cover.options.length > 1) form.appendChild(coverLabel);
+
+    const save = makeButton(doc, 'Enregistrer la présentation', 'save-catalog-editorial', true);
+    save.type = 'submit';
+    const feedback = text(doc, 'p', '', '');
+    feedback.setAttribute('role', 'status');
+    form.appendChild(save);
+    form.appendChild(feedback);
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      save.disabled = true;
+      try {
+        const body = { short_description: description.control.value };
+        if (cover.value) body.cover_media_id = cover.value;
+        const result = await jsonRequest(context.fetch, ENDPOINT + '/products/' +
+          encodeURIComponent(row.product_ref) + '/update', { method: 'POST', body: { editorial: body } });
+        if (!result?.ok) throw Error('Écriture non confirmée');
+        await loadProductDossier(context, doc, slot, row);
+        setFeedback(context.root, 'Présentation enregistrée.', 'positive');
+      } catch (error) {
+        feedback.textContent = 'Présentation non enregistrée : ' + actionErrorMessage(error);
+      } finally {
+        save.disabled = false;
+      }
+    });
+    slot.appendChild(form);
+  }
+
   function renderProductDossierDetails(context, slot, doc, dossier, row) {
     slot.replaceChildren();
     const header = text(doc, 'strong', 'kmc-catalog-inspector-section',
@@ -2250,6 +2304,7 @@
         : 'État Catalogue à vérifier · aucune nouvelle validation implicite');
     slot.appendChild(text(doc, 'p', 'kmc-catalog-inspector-next-step', status));
     const gallery = Array.isArray(media.gallery) ? media.gallery : [];
+    appendProductEditorial(context, doc, slot, row, dossier, gallery);
     const photos = doc.createElement('section');
     photos.className = 'kmc-catalog-dossier-gallery';
     photos.setAttribute('data-catalog-canonical-gallery', '');

@@ -136,7 +136,7 @@ async function promoteMedia(client, productId, media) {
          role = EXCLUDED.role,
          alt = EXCLUDED.alt,
          option_values = EXCLUDED.option_values,
-         display_order = EXCLUDED.display_order,
+         display_order = CASE WHEN catalog_media.display_order = -1 THEN -1 ELSE EXCLUDED.display_order END,
          updated_at = now()
        RETURNING id, source_media_id`,
       [
