@@ -1,7 +1,7 @@
 {
   "generatedAt": "2026-11-15T15:53:14.799Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 833,
+  "count": 834,
   "routes": [
     {
       "method": "GET",
@@ -3504,6 +3504,16 @@
       "fullPath": "/api/admin/workspaces/sourcing/candidates/:candidateRef/category-options",
       "mountPrefix": "/api/admin/workspaces/sourcing",
       "localPath": "/candidates/:candidateRef/category-options",
+      "routeFile": "routes/admin-sourcing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/sourcing/candidates/:candidateRef/commercial-watch-review",
+      "mountPrefix": "/api/admin/workspaces/sourcing",
+      "localPath": "/candidates/:candidateRef/commercial-watch-review",
       "routeFile": "routes/admin-sourcing-workspace.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
