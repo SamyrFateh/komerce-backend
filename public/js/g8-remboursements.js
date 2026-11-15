@@ -97,6 +97,7 @@
       input.required = true;
       input.autocomplete = 'off';
       input.maxLength = key.includes('fingerprint') ? 64 : 200;
+      if (key.includes('fingerprint')) input.setAttribute('pattern', '[a-f0-9]{64}');
       if (key.endsWith('_id') && !key.includes('transaction')) input.minLength = 36;
       input.value = initial;
       controls.set(key, input);
