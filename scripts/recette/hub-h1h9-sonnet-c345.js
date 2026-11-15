@@ -16,6 +16,7 @@
  */
 const fs = require('node:fs');
 const path = require('node:path');
+const env_sha = () => String(process.env.E2E_EXPECTED_DEPLOY_SHA || '');
 const { Actor, assertTarget } = require('./hub-v1-http-action-runner');
 
 const MARKET = 'KM';
@@ -38,7 +39,7 @@ async function ctx({ env, db, run8 }) {
   const rep = { schema: 'hub-h1h9-sonnet-c345/1', run8, started_at: new Date().toISOString(), sha_start: await getSha(), cases: {} };
   const fin = (k, verdict, extra) => { rep.cases[k] = { verdict, ...extra }; };
   const close = async () => {
-    rep.sha_end = await getSha(); rep.sha_stable = rep.sha_end === rep.sha_start; rep.finished_at = new Date().toISOString();
+    rep.sha_end = await getSha(); rep.sha_pinned = env_sha(); rep.sha_stable = rep.sha_end === rep.sha_start && (!rep.sha_pinned || rep.sha_pinned === rep.sha_start); rep.finished_at = new Date().toISOString();
     rep.verdict = !rep.sha_stable ? 'RUN_VOID_SHA_CHANGED' : Object.values(rep.cases).some((c) => c.verdict !== 'PASS') ? 'FAIL' : 'PASS';
     return rep;
   };
