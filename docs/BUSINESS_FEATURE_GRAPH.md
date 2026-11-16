@@ -81,7 +81,7 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 
 | Dépôt | Manifests découverts | Manifests connectés | Nœuds techniques | Owned | Orphelins |
 |---|---|---|---|---|---|
-| backend | 36 | 36 | 710 | 710 | 0 |
+| backend | 36 | 36 | 711 | 711 | 0 |
 | dash | 3 | 3 | N/A | N/A | N/A |
 | boutique | 16 | 16 | 105 | 105 | 0 |
 
@@ -432,7 +432,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - services: 4
 - migrations: 3
-- dash: 24
+- dash: 25
 - tests: 11
 - tables owned (lifecycle): 2 — `product_market_price_drafts`, `product_market_price_draft_events`
 - tables written: 2
@@ -2323,7 +2323,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 2349 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 2350 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 216 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 79 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -2381,7 +2381,7 @@ Meta Graph monté : oui.
 | catalog | purchasing | static-code, data-read | 14 | **DECLARED_AND_OBSERVED** |
 | catalog | shared-cart | static-code, interface | 13 | **DECLARED_AND_OBSERVED** |
 | catalog | sourcing | static-code, data-write, data-read | 39 | **DECLARED_AND_OBSERVED** |
-| catalog | supplier-connectivity | static-code | 8 | **DECLARED_AND_OBSERVED** |
+| catalog | supplier-connectivity | static-code | 9 | **DECLARED_AND_OBSERVED** |
 | customs | auth | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | customs | catalog | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | customs | documents | static-code | 2 | **DECLARED_AND_OBSERVED** |
@@ -2553,7 +2553,7 @@ Meta Graph monté : oui.
 | market-delegation | infrastructure | static-code | 25 | **DECLARED_AND_OBSERVED** |
 | market-delegation | local-stock | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | market-delegation | logistics | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
-| market-delegation | market | static-code, data-read | 7 | **DECLARED_AND_OBSERVED** |
+| market-delegation | market | static-code, data-read | 8 | **DECLARED_AND_OBSERVED** |
 | market-delegation | market-autonomy | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
 | market-delegation | market-operator-dashboard | static-code | 1 | **OBSERVED_UNDECLARED** |
 | market-delegation | orders | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |

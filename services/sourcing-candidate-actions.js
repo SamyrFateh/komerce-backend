@@ -8,13 +8,13 @@
  * @outputs       candidate_mutation_result, inactive_catalog_draft, automatic_catalogue_handoff_summary
  * @depends       db.js, services/supplier-commercial-category-mapping.js, services/supplier-catalog-scanner.js, services/pricing-engine.js, services/catalog-candidate-product-service.js, services/catalog-promotion.js, services/catalog-enrichment.js, services/import-runtime-runs.js, services/sourcing-certification.js
  * @used-by       routes/sourcing-scanner.js, services/sourcing-workspace.js
- * @db-read       sourcing_candidates, sourcing_candidate_events, supplier_catalog_imports, import_runtime_runs
+ * @db-read       sourcing_candidates, sourcing_candidate_events, supplier_catalog_imports, import_runtime_runs, products
  * @db-write      sourcing_candidates, sourcing_candidate_events
  * @db-write-via:catalog-candidate-product-service products
  * @db-write-via:catalog-promotion catalog_media, product_variants, product_skus, product_sku_media
  * @db-write-via:import-runtime-runs import_runtime_runs
  * @db-write-via:supplier-commercial-category-mapping supplier_commercial_category_mappings
- * @db-txn        promoteCandidate, confirmCandidateBoutiqueCategory : transactions dédiées
+ * @db-txn        promoteCandidate, confirmCandidateBoutiqueCategory, recoverMissingSourceSkus : transactions dédiées
  * @doctrine      single_sourcing_candidate_mutation_authority, sourcing_certified_auto_handoff, catalog_promotion_owner_respected, engine_price_is_not_market_decision, draft_handoff_has_no_market_price, publication_requires_price
  * @impact-areas  sourcing, catalog, economic-engine
  * @version       2026-09
@@ -26,7 +26,7 @@ const db = require('../db');
 const scanner = require('./supplier-catalog-scanner');
 const pricingEngine = require('./pricing-engine');
 const { createDraftProductFromSourcingCandidate, resolveCommercialTaxonomyVerdict } = require('./catalog-candidate-product-service');
-const { promoteCatalog } = require('./catalog-promotion');
+const { promoteCatalog, restoreMissingSourceSkusOnly } = require('./catalog-promotion');
 const importRuns = require('./import-runtime-runs');
 const certification = require('./sourcing-certification');
 const commercialMapping = require('./supplier-commercial-category-mapping');
@@ -525,6 +525,48 @@ async function handoffImportResult(result, actorId = null, options = {}) {
   };
 }
 
+/**
+ * Explicit recovery of the source-native units for an already imported,
+ * never-published CJ draft. No reset of source decision, no new product,
+ * no generic resync. All guards and writes happen in one transaction.
+ */
+async function recoverMissingSourceSkus(candidateRef, actorId = null) {
+  const client=await db.getClient();
+  try {
+    await client.query('BEGIN');
+    const {rows:[row]}=await client.query(
+      `SELECT sc.id,sc.candidate_ref,sc.state,sc.product_id,
+              sc.supplier_name,sc.normalized_source_contract,
+              p.lifecycle_status,p.is_active,p.product_ref
+         FROM sourcing_candidates sc
+         JOIN products p ON p.id=sc.product_id
+        WHERE sc.candidate_ref=$1 FOR UPDATE OF sc,p`,
+      [candidateRef]);
+    if(!row)
+      throw new SourcingCandidateActionError(404,'Candidat déjà associé introuvable','source_sku_recovery_not_found');
+    const contract=row.normalized_source_contract;
+    const provider=String(contract?.supplier_name||row.supplier_name||'').toLowerCase();
+    if(row.state!=='imported_to_catalog' || row.is_active===true ||
+       row.lifecycle_status==='active' || !['cj','cjdropshipping'].includes(provider) ||
+       String(contract?.schema_version)!=='2')
+      throw new SourcingCandidateActionError(409,'Réparation limitée aux brouillons CJ V2 déjà liés','source_sku_recovery_not_eligible');
+    const result=await restoreMissingSourceSkusOnly(client,row.product_id,contract);
+    await client.query(
+      `INSERT INTO sourcing_candidate_events
+        (candidate_id,event_type,changes,notes,triggered_by)
+        VALUES ($1,'data_correction',$2,'G13: réconciliation canoniquement bornée des SKU V2', $3)`,
+      [row.id,JSON.stringify({action:'RESTORE_MISSING_NATIVE_SOURCE_SKUS',product_ref:row.product_ref,restored:result.restored}),actorId]);
+    await client.query('COMMIT');
+    return {candidate_ref:row.candidate_ref,product_ref:row.product_ref,...result,
+      status:'SOURCE_SKUS_RESTORED_NO_PUBLICATION'};
+  } catch(err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
 module.exports = {
   SourcingCandidateActionError,
   SourcingCatalogueHandoffError,
@@ -534,6 +576,7 @@ module.exports = {
   watchlistCandidate,
   rejectCandidate,
   promoteCandidate,
+  recoverMissingSourceSkus,
   confirmCandidateBoutiqueCategory,
   handoffCertifiedImport,
   handoffImportResult,

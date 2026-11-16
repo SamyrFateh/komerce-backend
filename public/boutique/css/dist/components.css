@@ -1234,18 +1234,46 @@ html.k-mobile-premium-v1 .k-chip-label {
   .k-cats-can-scroll-back .k-cats-wrap-fade-left,
   .k-cats-can-scroll-forward .k-cats-wrap-fade-right {
     display: block;
-    width: 14px;
     bottom: 12px;
     z-index: 1;
     pointer-events: none;
   }
 
   .k-cats-can-scroll-back .k-cats-wrap-fade-left {
+    width: 14px;
     background: linear-gradient(to right, var(--white), transparent);
   }
 
   .k-cats-can-scroll-forward .k-cats-wrap-fade-right {
+    width: 36px;
     background: linear-gradient(to left, var(--white), transparent);
+  }
+
+  /* Keep the direction cue inside the viewport even when only a sliver of
+     the next category is visible. The overlay leaves the native swipe free. */
+  .k-cats-can-scroll-forward .k-cats-wrap-fade-right::before {
+    content: '';
+    position: absolute;
+    top: 14px;
+    right: 4px;
+    width: 22px;
+    height: 22px;
+    border: 1px solid var(--green-alpha-28);
+    border-radius: 50%;
+    background: var(--white);
+    box-shadow: 0 0 9px var(--green-valid);
+  }
+
+  .k-cats-can-scroll-forward .k-cats-wrap-fade-right::after {
+    content: '';
+    position: absolute;
+    top: 21px;
+    right: 13px;
+    width: 7px;
+    height: 7px;
+    border-top: 2px solid var(--green-text-sett);
+    border-right: 2px solid var(--green-text-sett);
+    transform: rotate(45deg);
   }
 
   .k-shelf-rail::-webkit-scrollbar {
@@ -1411,29 +1439,34 @@ html.k-mobile-premium-v1 .k-chip-label {
   }
 
   .k-shelf-rail .k-cat-cutout.active .k-chip-photo::before {
-    opacity: .28;
+    bottom: -3px;
+    width: 58px;
+    height: 38px;
+    background: radial-gradient(ellipse, var(--coral) 0%, var(--coral) 25%, transparent 73%);
+    filter: blur(2px);
+    opacity: .68;
   }
 
-  .k-shelf-rail .k-category-peek-glow .k-chip-photo::before {
-    left: 36%;
-    bottom: 2px;
-    width: 34px;
-    height: 24px;
-    background: radial-gradient(ellipse, var(--green-valid), transparent 72%);
-    filter: blur(3px);
-    opacity: .30;
-    animation: k-category-peek-glow 1.35s ease-in-out both;
-  }
-
-  @keyframes k-category-peek-glow {
-    0%, 100% { opacity: 0; }
-    35%, 60% { opacity: .55; }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .k-shelf-rail .k-category-peek-glow .k-chip-photo::before {
-      animation: none;
+  @media (prefers-reduced-motion: no-preference) {
+    .k-shelf-rail .k-cat-cutout.active::after {
+      content: '';
+      position: absolute;
+      inset: 1px calc((100% - 46px) / 2) auto;
+      height: 32px;
+      z-index: 2;
+      border-radius: 50%;
+      background-image: linear-gradient(112deg, transparent 37%, var(--cream-peach) 50%, transparent 63%);
+      background-size: 240% 100%;
+      background-repeat: no-repeat;
+      pointer-events: none;
+      animation: k-category-selection-shine .68s ease-out both;
     }
+  }
+
+  @keyframes k-category-selection-shine {
+    0% { background-position: 100% 0; opacity: 0; }
+    35%, 65% { opacity: .77; }
+    100% { background-position: 0 0; opacity: 0; }
   }
 
   .k-shelf-rail .k-cat-cutout.active .k-chip-photo::after {

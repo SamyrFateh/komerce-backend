@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 815
+- Scanned code files: 816
 - Files with full headers: 760
-- Files with lite headers: 55
-- Files with any headers: 815
+- Files with lite headers: 56
+- Files with any headers: 816
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 2083
-- Edges: 10353
+- Graph nodes: 2085
+- Edges: 10360
 - DB tables: 243
 - Doctrines: 818
-- Impact areas: 207
-- Unresolved code edges: 979
+- Impact areas: 208
+- Unresolved code edges: 980
 - Tables multi-écrivains directs (>=2): 99
 - Avertissements db-write / db-write-via en chevauchement: 12
 
@@ -32,7 +32,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - bootstrap: 2
 - boutique: 24
 - business-rules: 1
-- catalog: 137
+- catalog: 138
 - checkout: 3
 - customs: 8
 - dashboard: 32
@@ -92,7 +92,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 138
 - route-manifest: 1
 - schema: 1
-- service: 495
+- service: 496
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -761,6 +761,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/catalog-refinery-combined-proof.js -> owner catalog (catalog-refinery-combined-proof)
 - services/catalog-visual-fr-evidence-read.js -> owner catalog (catalog-visual-fr-evidence-read)
 - services/catalog-visual-fr-human-review-write.js -> owner catalog (catalog-visual-fr-human-review-write)
+- services/commercial-category-agreement.js -> owner backend-core (frozen-commercial-object-supplier-category-agreement)
 - services/commercial-taxonomy-semantics.js -> owner backend-core (commercial-taxonomy-semantic-intent)
 - services/dashboard-rct1-orders.js -> owner backend-core (rct1-orders-readonly-projection)
 - services/g6-staging-buyer-identity-guard.js -> owner backend-core (g6-staging-buyer-identity-guard)

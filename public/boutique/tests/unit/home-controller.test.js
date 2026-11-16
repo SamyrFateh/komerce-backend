@@ -275,7 +275,7 @@ describe('home-controller', () => {
       catsEl.scrollTo = jest.fn();
       centerRailChip(document.querySelector('.k-chip'));
       expect(catsEl.scrollTo).toHaveBeenCalledWith(
-        expect.objectContaining({ left: expect.any(Number), behavior: 'smooth' }),
+        expect.objectContaining({ left: expect.any(Number), behavior: 'instant' }),
       );
     });
   });

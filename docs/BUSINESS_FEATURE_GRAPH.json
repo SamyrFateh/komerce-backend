@@ -2121,7 +2121,7 @@
         "category": "services",
         "declared": "services/commercial-category-agreement.js",
         "resolvedPath": "services/commercial-category-agreement.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "catalog",
@@ -15029,6 +15029,13 @@
         "category": "dash",
         "declared": "dashboards/canonical/css/market-ready-to-sell.css",
         "resolvedPath": "public/dashboards/canonical/css/market-ready-to-sell.css",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "dash",
+        "declared": "dashboards/canonical/js/market-ready-to-sell.js",
+        "resolvedPath": "public/dashboards/canonical/js/market-ready-to-sell.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -35888,6 +35895,10 @@
                 "targetFile": "services/suppliers/provider-capability-certifications.js"
               },
               {
+                "sourceFileId": "services/catalog-promotion.js",
+                "targetFile": "services/suppliers/supplier-order-identity.js"
+              },
+              {
                 "sourceFileId": "services/catalog-promotion/sku.js",
                 "targetFile": "services/suppliers/supplier-order-identity.js"
               },
@@ -43122,6 +43133,10 @@
               {
                 "sourceFileId": "tests/unit/market-operator-provisioning.test.js",
                 "targetFile": "services/market-scope-admin-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/market-ready-to-sell-projection.test.js",
+                "targetFile": "utils/currency.js"
               }
             ]
           },
@@ -50083,7 +50098,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2349
+        "filesObserved": 2350
       },
       "boutique": {
         "filesObserved": 216,
@@ -54134,8 +54149,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 710,
-        "technicalNodesOwned": 710,
+        "technicalNodesTotal": 711,
+        "technicalNodesOwned": 711,
         "technicalOrphans": 0
       },
       "dash": {

@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 815,
+    "scannedCodeFiles": 816,
     "filesWithFullHeaders": 760,
-    "filesWithLiteHeaders": 55,
-    "filesWithAnyHeaders": 815,
+    "filesWithLiteHeaders": 56,
+    "filesWithAnyHeaders": 816,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 2083,
-    "edges": 10353,
+    "graphNodes": 2085,
+    "edges": 10360,
     "dbTables": 243,
     "doctrines": 818,
-    "impactAreas": 207,
-    "unresolvedCodeEdges": 979,
+    "impactAreas": 208,
+    "unresolvedCodeEdges": 980,
     "dbWriteViaOverlapWarnings": 12,
     "multiWriterTables": 99
   },
@@ -36,7 +36,7 @@
     "auth": 14,
     "market-delegation": 38,
     "platform-ops": 2,
-    "catalog": 137,
+    "catalog": 138,
     "admin-dashboard": 39,
     "decision-signals": 14,
     "market": 9,
@@ -112,7 +112,7 @@
     "schema": 1,
     "route": 138,
     "entrypoint": 1,
-    "service": 495,
+    "service": 496,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -124,7 +124,7 @@
     "critical": 128,
     "medium": 155,
     "high": 467,
-    "low": 64,
+    "low": 65,
     "unknown": 1
   },
   "nodes": [
@@ -14219,7 +14219,9 @@
         "product_market_exposure",
         "product_skus",
         "products",
-        "sourcing_candidates"
+        "sourcing_candidates",
+        "product_suppliers",
+        "suppliers"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -16121,6 +16123,33 @@
         "boutique"
       ],
       "version": "2026-08"
+    },
+    {
+      "id": "services/commercial-category-agreement.js",
+      "file": "services/commercial-category-agreement.js",
+      "type": "file-lite",
+      "headerType": "lite",
+      "role": "frozen-commercial-object-supplier-category-agreement",
+      "domain": "catalog",
+      "layer": "service",
+      "criticality": "low",
+      "owner": "backend-core",
+      "purpose": "Guarded category-only decision from independent item-title object and supplier-origin category root.",
+      "inputs": [],
+      "outputs": [],
+      "depends": [],
+      "usedBy": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [],
+      "impactAreas": [
+        "catalog",
+        "sourcing",
+        "catalogue-review"
+      ],
+      "version": null
     },
     {
       "id": "services/commercial-taxonomy-semantics.js",
@@ -33084,7 +33113,8 @@
         "sourcing_candidates",
         "sourcing_candidate_events",
         "supplier_catalog_imports",
-        "import_runtime_runs"
+        "import_runtime_runs",
+        "products"
       ],
       "dbWrite": [
         "sourcing_candidates",
@@ -33121,7 +33151,8 @@
       ],
       "dbTxn": [
         "promoteCandidate",
-        "confirmCandidateBoutiqueCategory : transactions dédiées"
+        "confirmCandidateBoutiqueCategory",
+        "recoverMissingSourceSkus : transactions dédiées"
       ],
       "doctrine": [
         "single_sourcing_candidate_mutation_authority",
@@ -45778,6 +45809,11 @@
       "id": "impact:audit",
       "type": "impact-area",
       "area": "audit"
+    },
+    {
+      "id": "impact:catalogue-review",
+      "type": "impact-area",
+      "area": "catalogue-review"
     },
     {
       "id": "impact:reconciliation",
@@ -67366,6 +67402,18 @@
     },
     {
       "from": "services/catalog-certification.js",
+      "to": "db:product_suppliers",
+      "type": "db-read",
+      "label": "product_suppliers"
+    },
+    {
+      "from": "services/catalog-certification.js",
+      "to": "db:suppliers",
+      "type": "db-read",
+      "label": "suppliers"
+    },
+    {
+      "from": "services/catalog-certification.js",
       "to": "doctrine:docs/doctrine/DOCTRINE_CERTIFICATION_CATALOGUE_SOURCING.md",
       "type": "doctrine",
       "label": "docs/doctrine/DOCTRINE_CERTIFICATION_CATALOGUE_SOURCING.md"
@@ -70454,6 +70502,30 @@
       "to": "impact:boutique",
       "type": "impact",
       "label": "boutique"
+    },
+    {
+      "from": "services/commercial-category-agreement.js",
+      "to": "backend-core",
+      "type": "owned-by",
+      "label": "backend-core"
+    },
+    {
+      "from": "services/commercial-category-agreement.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "services/commercial-category-agreement.js",
+      "to": "impact:sourcing",
+      "type": "impact",
+      "label": "sourcing"
+    },
+    {
+      "from": "services/commercial-category-agreement.js",
+      "to": "impact:catalogue-review",
+      "type": "impact",
+      "label": "catalogue-review"
     },
     {
       "from": "services/commercial-taxonomy-semantics.js",
@@ -98822,6 +98894,12 @@
     },
     {
       "from": "services/sourcing-candidate-actions.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/sourcing-candidate-actions.js",
       "to": "db:sourcing_candidates",
       "type": "db-write",
       "label": "sourcing_candidates"
@@ -122835,7 +122913,9 @@
         "product_market_exposure",
         "product_skus",
         "products",
-        "sourcing_candidates"
+        "sourcing_candidates",
+        "product_suppliers",
+        "suppliers"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -122854,8 +122934,10 @@
         "db:catalog_media",
         "db:product_market_exposure",
         "db:product_skus",
+        "db:product_suppliers",
         "db:products",
         "db:sourcing_candidates",
+        "db:suppliers",
         "doctrine:docs/doctrine/DOCTRINE_CERTIFICATION_CATALOGUE_SOURCING.md",
         "impact:catalog",
         "impact:ci",
@@ -124772,6 +124854,32 @@
         "routes/admin/demo-order-flow.js",
         "routes/client-notifications.js",
         "services/order-status-machine.js"
+      ]
+    },
+    "services/commercial-category-agreement.js": {
+      "role": "frozen-commercial-object-supplier-category-agreement",
+      "domain": "catalog",
+      "criticality": "low",
+      "headerType": "lite",
+      "owner": "backend-core",
+      "purpose": "Guarded category-only decision from independent item-title object and supplier-origin category root.",
+      "directDependsOn": [],
+      "directUsedBy": [],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [],
+      "impactAreas": [
+        "catalog",
+        "sourcing",
+        "catalogue-review"
+      ],
+      "mustCheck": [
+        "backend-core",
+        "impact:catalog",
+        "impact:catalogue-review",
+        "impact:sourcing"
       ]
     },
     "services/commercial-taxonomy-semantics.js": {
@@ -141935,7 +142043,8 @@
         "sourcing_candidates",
         "sourcing_candidate_events",
         "supplier_catalog_imports",
-        "import_runtime_runs"
+        "import_runtime_runs",
+        "products"
       ],
       "dbWrite": [
         "sourcing_candidates",
@@ -151923,6 +152032,12 @@
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
+    },
+    {
+      "from": "services/commercial-category-agreement.js",
+      "to": "backend-core",
+      "type": "owned-by",
+      "label": "backend-core"
     },
     {
       "from": "services/commercial-taxonomy-semantics.js",

@@ -1,0 +1,52 @@
+# G13 owner-only commercial test pricing on disposable Railway staging.
+# Canonical market operator APIs only. Never submit payment, order or supplier purchase.
+name: G13 — staged cost-based market price decisions (KM CM CG)
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: read
+concurrency:
+  group: komerce-g13-catalogue-seed
+  cancel-in-progress: false
+jobs:
+  price:
+    if: github.actor == github.repository_owner && github.event.issue.title == '[staging-op] g13-market-test-prices-active18'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      GITHUB_ACTIONS: 'true'
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      EXPECTED_RAILWAY_ENVIRONMENT: staging
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      KOMERCE_STAGING_RESET_DB_PIN: ${{ vars.STAGING_DB_PIN }}
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      PGOPTIONS: '-c default_transaction_read_only=on'
+      G13_MODE: execute
+      G13_PHASE: price
+      G13_SCOPE: market-price-18
+      G13_PRICE_BASIS: STAGING_ECONOMICS
+      G13_CONFIRMATION: SEED-G13-CATALOGUE
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      E2E_MARKET_OPERATOR_EMAIL: ${{ secrets.E2E_MARKET_OPERATOR_EMAIL }}
+      E2E_MARKET_OPERATOR_PASSWORD: ${{ secrets.E2E_MARKET_OPERATOR_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Apply cost-based STAGING TEST prices via market operator canonical APIs
+        run: node scripts/recette/g13-catalogue-seed.js
+      - name: Archive each market decision and economic gate result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g13-market-test-prices-${{ github.run_id }}
+          path: test-results/g13-catalogue-seed/report.json
+          retention-days: 21
+          if-no-files-found: error

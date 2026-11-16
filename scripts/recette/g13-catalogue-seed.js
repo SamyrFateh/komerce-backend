@@ -19,7 +19,7 @@ const CONFIRMATION = 'SEED-G13-CATALOGUE';
 const MANIFEST = require('./g13-catalogue-manifest.json');
 const VERDICTS = require('./g13-visual-verdicts.json').verdicts || {};
 const OUT = path.resolve('test-results/g13-catalogue-seed');
-const PHASES = ['validate', 'import', 'curate', 'publish', 'supplier-link', 'price', 'stock', 'census'];
+const PHASES = ['validate', 'import', 'curate', 'supplier-link', 'publish', 'price', 'stock', 'census'];
 const PROVIDERS = {
   cj: { supplier_id: 'cj', supplier_name: 'CJdropshipping', platform: 'cj' },
   aliexpress: { supplier_id: 'aliexpress', supplier_name: 'AliExpress', platform: 'aliexpress' },
@@ -56,12 +56,77 @@ function validateManifest(man, taxonomy = null) {
 
 /** Montant de référence du moteur économique à partir du corridor (jamais inventé). */
 function referenceAmount(corridor, market) {
-  const cur = CURRENCY[market];
+  const currency = CURRENCY[market];
+  if (!currency || corridor?.market?.currency && corridor.market.currency !== currency) return null;
+  // The pricing engine calculates global economic reference prices in KMF.
+  // They are not an XAF local commercial decision. Non-KM markets can only
+  // use a target established from their OWN observed market-price references.
+  if (currency !== 'KMF') {
+    const local = corridor?.corridor?.local;
+    if (local?.status !== 'READY' || local?.scope !== 'market' ||
+        local?.authority !== 'OBSERVED_REFERENCE_NOT_GATE' ||
+        Number(local.sample_count) < 3 ||
+        local?.target?.currency !== currency) return null;
+    const observed = Number(local.target.observed_amount);
+    return Number.isFinite(observed) && observed > 0 ? Math.ceil(observed) : null;
+  }
   const eco = corridor?.selected?.economics;
-  if (!eco || !cur) return null;
-  const k = cur.toLowerCase();
-  const value = Number(eco[`coverage_reference_price_${k}`] ?? eco[`minimum_safe_price_${k}`]);
+  if (!eco) return null;
+  const value = Number(eco.coverage_reference_price_kmf ?? eco.minimum_safe_price_kmf);
   return Number.isFinite(value) && value > 0 ? Math.ceil(value) : null;
+}
+
+/**
+ * Verdict borné du recensement 9 catégories x 3 marchés : exige simultanément
+ * les lignes SQL commercialement activées ET 2 fiches distinctes avec images
+ * réellement exposées par l'API publique pour chaque couple.
+ * Ne vaut jamais GO G13 à lui seul (sources Hub, identité, économie, rôles).
+ */
+function evaluateG13Census(manifest, sql, http) {
+  const categories = [...new Set((manifest?.entries || []).map((entry) => entry.category).filter(Boolean))];
+  const markets = manifest?.markets || [];
+  const cells = [];
+  for (const category of categories) {
+    for (const market of markets) {
+      const row = (sql || []).find((x) => x.category === category && x.market === market);
+      const pub = http?.[`${category}|${market}`] || {};
+      const sqlCount = Number(row?.n || 0);
+      const httpTotal = Number(pub.total || 0);
+      const distinctWithImage = Number(pub.distinct_with_image || 0);
+      cells.push({
+        category, market, sql_count: sqlCount, http_status: pub.status ?? null,
+        http_total: httpTotal, http_distinct_with_image: distinctWithImage,
+        pass: sqlCount >= 2 && pub.status === 200 && httpTotal >= 2 && distinctWithImage >= 2,
+      });
+    }
+  }
+  const expectedMarkets = ['KM', 'CM', 'CG'];
+  const validMarkets = markets.length === expectedMarkets.length && expectedMarkets.every((m) => markets.includes(m));
+  const passed = categories.length === 9 && validMarkets && cells.length === 27 && cells.every((x) => x.pass);
+  return { passed, expected_categories: 9, expected_markets: expectedMarkets, checked_cells: cells.length,
+    passed_cells: cells.filter((x) => x.pass).length, cells, blockers: cells.filter((x) => !x.pass) };
+}
+
+/**
+ * Staging-only economic reference for delegated test-market decisions.
+ * A technical reference is NEVER a local competitor observation or a
+ * production market price. Returned only with owner-only explicit staging opt-in.
+ */
+async function stagingEconomicReferenceAmount(corridor, market, convert = null) {
+  const currency = CURRENCY[market];
+  if (!currency || (corridor?.market?.currency && corridor.market.currency !== currency)) return null;
+  const e = corridor?.selected?.economics;
+  const n = x => Number.isFinite(Number(x)) && Number(x) > 0 ? Number(x) : null;
+  const cost = n(e?.variable_cost_complete_kmf);
+  const amount = n(e?.coverage_reference_price_kmf);
+  const floor = n(e?.minimum_safe_price_kmf);
+  if (cost == null || amount == null || amount < cost || (floor != null && amount < floor)
+      || e?.strategy_risk === 'destructive') return null;
+  if (currency === 'KMF') return Math.ceil(amount);
+  // Resolve FX through the canonical KMF -> EUR -> market currency boundary.
+  const fxProject = convert || require('../../utils/currency').projectAmount;
+  const local = Number(await fxProject(amount, 'KMF', currency));
+  return Number.isFinite(local) && local > 0 ? Math.ceil(local) : null;
 }
 
 class Actor {
@@ -154,8 +219,125 @@ async function main(env = process.env) {
     }
     report.operator_market_access = operatorMarkets;
 
-    const wanted = phaseSel === 'all' ? PHASES : [phaseSel];
     const execute = mode === 'execute';
+    // Diagnostic G13 = lectures SQL et GET authentifiés uniquement. Aucun POST,
+    // aucun reclassement du WATCH, aucune suggestion de conversion KMF/XAF.
+    if (phaseSel === 'diagnose') {
+      if (execute) throw new Error('G13_DIAGNOSTIC_MUST_BE_READ_ONLY');
+      report.diagnostics = [];
+      for (const entry of MANIFEST.entries) {
+        const candidate = await findCandidate(db, entry);
+        const row = {
+          id: entry.id, source: entry.source, category: entry.category,
+          candidate_ref: candidate?.candidate_ref || null,
+          product_ref: candidate?.product_ref || null,
+          sourcing_decision: candidate?.decision || null,
+          lifecycle: candidate?.lifecycle_status || null,
+          product_is_active: candidate?.is_active === true,
+          economic_reason: null, source_currency: null, customs_category: null,
+          source_v2_present: false, source_v2_units: 0, source_v2_exact_units: 0,
+          source_v2_active_units: 0, source_v2_active_exact_units: 0,
+          sku_count: 0, stocked_skus: 0, supplier_links: 0,
+          price_markets: {},
+        };
+        if (candidate) {
+          const [scan] = await ro(db,
+            `SELECT scan_result->>'reason' AS economic_reason,
+                    currency AS source_currency,
+                    komerce_category AS customs_category,
+                    normalized_source_contract IS NOT NULL AS source_v2_present,
+                    CASE WHEN jsonb_typeof(normalized_source_contract->'sellable_units')='array'
+                         THEN jsonb_array_length(normalized_source_contract->'sellable_units')
+                         ELSE 0 END AS source_v2_units,
+                    (SELECT COUNT(*)::int FROM jsonb_array_elements(
+                      CASE WHEN jsonb_typeof(normalized_source_contract->'sellable_units')='array'
+                           THEN normalized_source_contract->'sellable_units'
+                           ELSE '[]'::jsonb END
+                    ) unit WHERE NULLIF(BTRIM(unit->>'supplier_sku'),'') IS NOT NULL
+                             AND NULLIF(BTRIM(unit->>'supplier_unit_ref'),'') IS NOT NULL
+                             AND jsonb_typeof(unit->'supplier_order_identity')='object'
+                    ) AS source_v2_exact_units,
+                    (SELECT COUNT(*)::int FROM jsonb_array_elements(
+                      CASE WHEN jsonb_typeof(normalized_source_contract->'sellable_units')='array'
+                           THEN normalized_source_contract->'sellable_units'
+                           ELSE '[]'::jsonb END
+                    ) unit WHERE COALESCE((unit->>'is_active')::boolean,TRUE)) AS source_v2_active_units,
+                    (SELECT COUNT(*)::int FROM jsonb_array_elements(
+                      CASE WHEN jsonb_typeof(normalized_source_contract->'sellable_units')='array'
+                           THEN normalized_source_contract->'sellable_units'
+                           ELSE '[]'::jsonb END
+                    ) unit WHERE COALESCE((unit->>'is_active')::boolean,TRUE)
+                             AND NULLIF(BTRIM(unit->>'supplier_sku'),'') IS NOT NULL
+                             AND NULLIF(BTRIM(unit->>'supplier_unit_ref'),'') IS NOT NULL
+                             AND jsonb_typeof(unit->'supplier_order_identity')='object'
+                    ) AS source_v2_active_exact_units
+               FROM sourcing_candidates WHERE candidate_ref=$1`,
+            [candidate.candidate_ref]);
+          row.economic_reason = scan?.economic_reason || null;
+          row.source_currency = scan?.source_currency || null;
+          row.customs_category = scan?.customs_category || null;
+          row.source_v2_present = scan?.source_v2_present === true;
+          row.source_v2_units = Number(scan?.source_v2_units || 0);
+          row.source_v2_exact_units = Number(scan?.source_v2_exact_units || 0);
+          row.source_v2_active_units = Number(scan?.source_v2_active_units || 0);
+          row.source_v2_active_exact_units = Number(scan?.source_v2_active_exact_units || 0);
+        }
+        if (candidate?.product_id) {
+          const [skus] = await ro(db,
+            `SELECT COUNT(*) FILTER (WHERE is_active = TRUE)::int AS active, COUNT(*) FILTER (WHERE is_active = TRUE AND stock > 0)::int AS stocked FROM product_skus WHERE product_id=$1`,
+            [candidate.product_id]);
+          row.sku_count = Number(skus?.active || 0);
+          row.stocked_skus = Number(skus?.stocked || 0);
+          const [links] = await ro(db,
+            `SELECT COUNT(*)::int AS n FROM product_suppliers ps JOIN suppliers s ON s.id=ps.supplier_id AND s.is_active=TRUE AND s.deleted_at IS NULL WHERE ps.product_id=$1 AND ps.is_active=TRUE AND ps.deleted_at IS NULL`,
+            [candidate.product_id]);
+          row.supplier_links = Number(links?.n || 0);
+        }
+        for (const market of MANIFEST.markets) {
+          if (!candidate?.product_ref) {
+            row.price_markets[market] = {status:'NO_PRODUCT'};
+            continue;
+          }
+          const res = await operator.call('GET',
+            `/api/admin/workspaces/pricing/market/${market}/corridor?product_ref=${encodeURIComponent(candidate.product_ref)}`);
+          const eco = res.body?.selected?.economics || {};
+          const currency = CURRENCY[market].toLowerCase();
+          row.price_markets[market] = {
+            http_status:res.status, currency:CURRENCY[market],
+            reference_amount:res.ok ? referenceAmount(res.body,market) : null,
+            local_price_keys:Object.keys(eco).filter(key=>key.includes(currency) && /price|minimum|coverage/i.test(key)),
+            local_evidence_status:res.body?.corridor?.local?.status || null,
+            local_observations:Number(res.body?.corridor?.local?.sample_count || 0),
+            local_target_amount:res.body?.corridor?.local?.target?.observed_amount ?? null,
+            local_target_currency:res.body?.corridor?.local?.target?.currency || null,
+            blockers:(res.body?.blockers || res.body?.selected?.blockers || []).slice?.(0,6) || [],
+            error_code:res.body?.code || res.body?.selected?.code || null,
+          };
+        }
+        report.diagnostics.push(row);
+      }
+      report.verdict = 'DIAGNOSTIC_OK_NOT_G13_GO';
+      return report;
+    }
+
+    // G13 partial remediation is never allowed to produce an overall G13 GO.
+    // The 17th CJ item has 12 real but ALL INACTIVE source units: do not
+    // promote them or fake their availability to meet the catalogue quota.
+    const scope = env.G13_SCOPE || 'all';
+    if (!['all','cj-ready-16','market-price-18'].includes(scope)) throw new Error('G13_SCOPE_UNSUPPORTED');
+    const priceTrial = scope==='market-price-18';
+    if (priceTrial && !(execute && phaseSel==='price' && env.G13_PRICE_BASIS==='STAGING_ECONOMICS'
+       && env.KOMERCE_ENV==='staging' && env.GITHUB_ACTOR===env.GITHUB_REPOSITORY_OWNER)) {
+      throw new Error('G13_MARKET_PRICE_TRIAL_GUARD_REFUSED');
+    }
+    report.scope = scope;
+    report.scope_exclusions = scope==='cj-ready-16' ? ['G13-10:ALL_SUPPLIER_UNITS_INACTIVE']
+      : priceTrial ? ['G13-10:ALL_SOURCE_UNITS_INACTIVE','G13-06/12/14:CENTRAL_HUB_WATCH'] : [];
+    const selectedEntries = scope==='cj-ready-16'
+      ? MANIFEST.entries.filter(e=>e.source==='cj' && e.id!=='G13-10')
+      : priceTrial ? MANIFEST.entries.filter(e=>e.source!=='central_hub' && e.id!=='G13-10')
+        : MANIFEST.entries;
+    const wanted = phaseSel === 'all' ? PHASES : [phaseSel];
     if (phaseSel === 'import-now') {
       if (!execute) { report.import_now = 'PLANIFIE'; } else {
         const res = await admin.call('POST', '/api/admin/workspaces/sourcing/sources/api:aliexpress/import-now');
@@ -184,7 +366,7 @@ async function main(env = process.env) {
     const hubList = hubRes.body?.suppliers || hubRes.body?.items || (Array.isArray(hubRes.body) ? hubRes.body : []);
     const hub = hubList.find((s) => s.system_key === 'central_hub') || null;
 
-    for (const e of MANIFEST.entries) {
+    for (const e of selectedEntries) {
       const r = { id: e.id, category: e.category, subcategory: e.subcategory, source: e.source, steps: {} };
       report.entries.push(r);
       try {
@@ -236,6 +418,37 @@ async function main(env = process.env) {
           }
         }
 
+        // --- supplier-link (D3 : liaision fournisseur AVANT approbation) ---
+        if (wanted.includes('supplier-link') && cand?.product_id) {
+          const links = await ro(db, `SELECT ps.id FROM product_suppliers ps JOIN suppliers s ON s.id = ps.supplier_id AND s.is_active = TRUE AND s.deleted_at IS NULL JOIN product_skus sku ON sku.product_id = ps.product_id AND sku.supplier_sku = ps.supplier_sku AND sku.is_active = TRUE AND sku.stock > 0 WHERE ps.product_id = $1 AND ps.is_active = TRUE AND ps.deleted_at IS NULL AND ($2::text IS NULL OR LOWER(s.platform) = $2) LIMIT 1`, [cand.product_id, e.source === 'central_hub' ? null : PROVIDERS[e.source].platform]);
+          if (links.length) done(r, 'supplier-link', 'DEJA_PRESENT');
+          else if (!execute) done(r, 'supplier-link', 'PLANIFIE');
+          else {
+            const list = await admin.call('GET', '/api/purchasing/suppliers');
+            const arr = Array.isArray(list.body) ? list.body : list.body?.suppliers || [];
+            const platform = e.source === 'central_hub' ? null : PROVIDERS[e.source].platform;
+            let sup = e.source === 'central_hub' ? (hub ? arr.find((s) => s.id === hub.id) || hub : null)
+              : arr.find((s) => s.platform === platform && s.is_active !== false && !s.deleted_at);
+            if (!sup && platform) {
+              const c = await admin.call('POST', '/api/purchasing/suppliers', { name: providerName(e), platform, auto_order: false, notes: `G13 recette ${env.GITHUB_RUN_ID}; aucune commande fournisseur` });
+              if (c.ok) sup = c.body?.supplier || c.body;
+            }
+            const sku = (await ro(db, `SELECT supplier_sku FROM product_skus WHERE product_id = $1 AND is_active = TRUE AND stock > 0 ORDER BY created_at LIMIT 1`, [cand.product_id]))[0];
+            if (!sup?.id) blocked(r, 'supplier-link', 'FOURNISSEUR_ABSENT');
+            else if (!sku) blocked(r, 'supplier-link', 'SKU_STOCKE_ABSENT');
+            else {
+              const m = await admin.call('POST', `/api/purchasing/suppliers/${sup.id}/map`, { product_id: cand.product_id, supplier_sku: sku.supplier_sku, notes: `G13 recette ${env.GITHUB_RUN_ID}` });
+              if (!m.ok) blocked(r, 'supplier-link', codeOf(m));
+              else {
+                const linked = await ro(db, `SELECT ps.id FROM product_suppliers ps JOIN suppliers s ON s.id = ps.supplier_id AND s.is_active = TRUE AND s.deleted_at IS NULL JOIN product_skus sku ON sku.product_id = ps.product_id AND sku.supplier_sku = ps.supplier_sku AND sku.is_active = TRUE AND sku.stock > 0 WHERE ps.product_id = $1 AND ps.supplier_id = $2 AND ps.supplier_sku = $3 AND ps.is_active = TRUE AND ps.deleted_at IS NULL LIMIT 1`, [cand.product_id, sup.id, sku.supplier_sku]);
+                if (linked.length) done(r, 'supplier-link', 'OK');
+                else blocked(r, 'supplier-link', 'MAPPING_NON_RESOLU_APRES_HTTP');
+              }
+            }
+          }
+        }
+
+
         // --- publish : revue visuelle AUTOMATED_STAGING puis approbation ---
         if (wanted.includes('publish') && cand?.product_ref) {
           if (cand.lifecycle_status === 'active') done(r, 'publish', 'DEJA_ACTIF');
@@ -270,32 +483,6 @@ async function main(env = process.env) {
           }
         }
 
-        // --- supplier-link (D3 : sans product_suppliers le produit reste invisible) ---
-        if (wanted.includes('supplier-link') && cand?.product_id) {
-          const links = await ro(db, `SELECT 1 FROM product_suppliers WHERE product_id = $1 AND is_active = TRUE AND deleted_at IS NULL LIMIT 1`, [cand.product_id]);
-          if (links.length) done(r, 'supplier-link', 'DEJA_PRESENT');
-          else if (cand.lifecycle_status !== 'active') blocked(r, 'supplier-link', 'PRODUIT_NON_PUBLIE');
-          else if (!execute) done(r, 'supplier-link', 'PLANIFIE');
-          else {
-            const list = await admin.call('GET', '/api/purchasing/suppliers');
-            const arr = Array.isArray(list.body) ? list.body : list.body?.suppliers || [];
-            const platform = e.source === 'central_hub' ? null : PROVIDERS[e.source].platform;
-            let sup = e.source === 'central_hub' ? (hub ? arr.find((s) => s.id === hub.id) || hub : null)
-              : arr.find((s) => s.platform === platform && s.is_active !== false && !s.deleted_at);
-            if (!sup && platform) {
-              const c = await admin.call('POST', '/api/purchasing/suppliers', { name: providerName(e), platform, auto_order: false, notes: `G13 recette ${env.GITHUB_RUN_ID}; aucune commande fournisseur` });
-              if (c.ok) sup = c.body?.supplier || c.body;
-            }
-            const sku = (await ro(db, `SELECT supplier_sku FROM product_skus WHERE product_id = $1 AND is_active = TRUE AND stock > 0 ORDER BY created_at LIMIT 1`, [cand.product_id]))[0];
-            if (!sup?.id) blocked(r, 'supplier-link', 'FOURNISSEUR_ABSENT');
-            else if (!sku) blocked(r, 'supplier-link', 'SKU_STOCKE_ABSENT');
-            else {
-              const m = await admin.call('POST', `/api/purchasing/suppliers/${sup.id}/map`, { product_id: cand.product_id, supplier_sku: sku.supplier_sku, notes: `G13 recette ${env.GITHUB_RUN_ID}` });
-              if (m.ok) done(r, 'supplier-link', 'OK'); else blocked(r, 'supplier-link', codeOf(m));
-            }
-          }
-        }
-
         // --- price : décision par marché avec le compte opérateur, puis activation ---
         if (wanted.includes('price') && cand?.product_ref) {
           for (const mk of MANIFEST.markets) {
@@ -307,15 +494,20 @@ async function main(env = process.env) {
             if (!execute) { done(r, key, 'PLANIFIE'); continue; }
             const base = `/api/admin/workspaces/pricing/market/${mk}/products/${cand.product_ref}/local-price`;
             const cor = await operator.call('GET', `/api/admin/workspaces/pricing/market/${mk}/corridor?product_ref=${encodeURIComponent(cand.product_ref)}`);
-            const amount = cor.ok ? referenceAmount(cor.body, mk) : null;
+            const amount = !cor.ok ? null : priceTrial
+              ? await stagingEconomicReferenceAmount(cor.body, mk) : referenceAmount(cor.body, mk);
             if (!amount) { blocked(r, key, cor.ok ? 'PRIX_ECONOMIQUE_ABSENT' : 'CORRIDOR_' + codeOf(cor)); continue; }
-            const reason = `Recette G13 ${env.GITHUB_RUN_ID} : prix de référence du moteur économique, staging`;
+            const reason = priceTrial
+              ? `RECETTE STAGING G13 ${env.GITHUB_RUN_ID} : décision du compte opérateur à partir de coûts complets; référence économique projetée par Currency Boundary, NON observation concurrentielle; sous gates économiques canoniques.`
+              : `Recette G13 ${env.GITHUB_RUN_ID} : prix de référence du moteur économique, staging`;
             const d = await operator.call('POST', base, { amount, reason });
             if (!d.ok) { blocked(r, key, 'BROUILLON_' + codeOf(d)); continue; }
             const pv = await operator.call('GET', `${base}/activation-preview`);
             if (!pv.ok || pv.body?.activation?.allowed !== true) { blocked(r, key, 'GARDE_ECONOMIQUE_REFUSE', JSON.stringify(pv.body?.activation || pv.body)?.slice(0, 200)); continue; }
             const a = await operator.call('POST', `${base}/activate`, { reason });
-            if (a.ok) done(r, key, 'OK', { amount }); else blocked(r, key, 'ACTIVATION_' + codeOf(a));
+            if (a.ok) done(r, key, 'OK', { amount, currency: CURRENCY[mk],
+              basis: priceTrial ? 'COST_REFERENCE_STAGING_TEST_NOT_COMPETITOR_OBSERVATION' : 'MARKET_CORRIDOR' });
+            else blocked(r, key, 'ACTIVATION_' + codeOf(a));
           }
         }
 
@@ -357,14 +549,30 @@ async function main(env = process.env) {
         for (const m of MANIFEST.markets) {
           const res = await fetch(`${BASE}/api/products?market=${m}&category=${encodeURIComponent(c)}&limit=50`);
           const j = await res.json().catch(() => ({}));
-          http[`${c}|${m}`] = { status: res.status, total: j.total ?? null, with_price_and_image: (j.products || []).filter((p) => p.image_url || p.image).length };
+          // /api/products applique deja la garde prix LOCAL_ACTIVE + exposition ;
+          // on exige en plus deux identites distinctes presentant une image.
+          const products = Array.isArray(j.products) ? j.products : (Array.isArray(j.items) ? j.items : []);
+          const distinct = new Set(products.filter((p) => (p.image_url || p.image) && (p.product_ref || p.id))
+            .map((p) => String(p.product_ref || p.id)));
+          http[`${c}|${m}`] = { status: res.status, total: j.total ?? null, distinct_with_image: distinct.size };
         }
       }
-      report.census = { sql: rows, http_public: http };
+      report.census = { sql: rows, http_public: http, ...evaluateG13Census(MANIFEST, rows, http) };
     }
     const blockedSteps = report.entries.flatMap((x) => Object.values(x.steps)).filter((s) => s.status === 'BLOCKED').length;
     report.blocked_steps = blockedSteps;
-    report.verdict = mode === 'dry-run' ? 'DRY_RUN_OK' : blockedSteps ? 'PARTIAL_BLOCKED' : 'SEED_OK';
+    report.verdict = priceTrial
+      ? (blockedSteps ? 'MARKET_TEST_PRICES_BLOCKED_NOT_G13_GO' : 'MARKET_TEST_PRICES_APPLIED_NOT_G13_GO')
+      : scope==='cj-ready-16'
+        ? (mode==='dry-run' ? 'SCOPED_DRY_RUN_NOT_G13_GO' : blockedSteps ? 'SCOPED_PARTIAL_BLOCKED' : 'SCOPED_PHASE_PASS_NOT_G13_GO')
+      : phaseSel === 'census'
+        ? (report.census?.passed ? 'CENSUS_27_PASS_NOT_G13_GO' : 'CENSUS_27_NO_GO')
+        : mode === 'dry-run' ? 'DRY_RUN_OK'
+          : blockedSteps ? 'PARTIAL_BLOCKED'
+            : report.census?.passed ? 'SEED_PHASES_PASS_NOT_G13_GO' : 'CENSUS_27_NO_GO';
+    // Le rapport n'est pas une certification si une des 27 cellules manque.
+    // Une CI verte ne doit pas masquer ce NO GO commercial.
+    if (report.verdict === 'CENSUS_27_NO_GO' || report.verdict === 'MARKET_TEST_PRICES_BLOCKED_NOT_G13_GO') process.exitCode = 2;
   } catch (error) {
     report.verdict = 'BLOCKED';
     report.error = String(error.message).slice(0, 300);
@@ -379,4 +587,4 @@ async function main(env = process.env) {
 }
 
 if (require.main === module) main();
-module.exports = { validateManifest, referenceAmount, PHASES, CONFIRMATION };
+module.exports = { validateManifest, referenceAmount, stagingEconomicReferenceAmount, evaluateG13Census, PHASES, CONFIRMATION };
