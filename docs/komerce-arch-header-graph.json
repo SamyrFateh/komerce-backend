@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 817,
-    "filesWithFullHeaders": 761,
+    "scannedCodeFiles": 816,
+    "filesWithFullHeaders": 760,
     "filesWithLiteHeaders": 56,
-    "filesWithAnyHeaders": 817,
+    "filesWithAnyHeaders": 816,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 2086,
-    "edges": 10370,
+    "graphNodes": 2085,
+    "edges": 10362,
     "dbTables": 243,
     "doctrines": 818,
     "impactAreas": 208,
-    "unresolvedCodeEdges": 985,
+    "unresolvedCodeEdges": 980,
     "dbWriteViaOverlapWarnings": 12,
     "multiWriterTables": 99
   },
@@ -36,7 +36,7 @@
     "auth": 14,
     "market-delegation": 38,
     "platform-ops": 2,
-    "catalog": 139,
+    "catalog": 138,
     "admin-dashboard": 39,
     "decision-signals": 14,
     "market": 9,
@@ -112,7 +112,7 @@
     "schema": 1,
     "route": 138,
     "entrypoint": 1,
-    "service": 497,
+    "service": 496,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -123,7 +123,7 @@
   "byCriticality": {
     "critical": 128,
     "medium": 155,
-    "high": 468,
+    "high": 467,
     "low": 65,
     "unknown": 1
   },
@@ -1619,11 +1619,7 @@
         "response_or_domain_result",
         "side_effects"
       ],
-      "depends": [
-        "multer",
-        "fs",
-        "path"
-      ],
+      "depends": [],
       "usedBy": [
         "middleware/upload-hub.js",
         "routes/products.js"
@@ -1638,7 +1634,7 @@
       "impactAreas": [
         "auth"
       ],
-      "version": "2026-11"
+      "version": "2026-06"
     },
     {
       "id": "middleware/validate.js",
@@ -12051,8 +12047,6 @@
         "db.js",
         "validators.js",
         "middleware/auth.js",
-        "middleware/upload.js",
-        "services/product-media-storage.js",
         "services/catalog-public-view.js",
         "services/market-local-price-resolution-service.js",
         "services/catalog-product-source-read-service.js"
@@ -20010,6 +20004,7 @@
         "markets",
         "orders",
         "purchase_order_authorizations",
+        "purchase_variance_decisions",
         "purchase_orders",
         "purchase_lines",
         "supplier_execution_payments",
@@ -29357,45 +29352,6 @@
       "dbWriteViaOverlapWarning": "services/product-admin-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> products"
     },
     {
-      "id": "services/product-media-storage.js",
-      "file": "services/product-media-storage.js",
-      "type": "file",
-      "headerType": "full",
-      "role": "product-media-storage",
-      "domain": "catalog",
-      "layer": "service",
-      "criticality": "high",
-      "owner": null,
-      "purpose": null,
-      "inputs": [
-        "validated_product_image_buffer",
-        "product_id"
-      ],
-      "outputs": [
-        "durable_https_image_url",
-        "provider_file_id"
-      ],
-      "depends": [
-        "ImageKit upload API",
-        "IMAGEKIT_PRIVATE_KEY"
-      ],
-      "usedBy": [
-        "routes/products.js"
-      ],
-      "dbRead": [],
-      "dbWrite": [],
-      "dbWriteVia": [],
-      "dbTxn": [
-        "no"
-      ],
-      "doctrine": [
-        "resolve_before_behavior_change",
-        "produit_reference_stable"
-      ],
-      "impactAreas": [],
-      "version": "2026-11"
-    },
-    {
       "id": "services/product-price-audit.js",
       "file": "services/product-price-audit.js",
       "type": "file",
@@ -30400,6 +30356,7 @@
         "products",
         "suppliers",
         "v_purchase_line_market",
+        "v_purchase_line_progress",
         "purchase_order_authorizations"
       ],
       "dbWrite": [
@@ -40656,14 +40613,14 @@
       "table": "purchase_order_authorizations"
     },
     {
-      "id": "db:manual_purchase_executions",
-      "type": "db-table",
-      "table": "manual_purchase_executions"
-    },
-    {
       "id": "db:purchase_variance_decisions",
       "type": "db-table",
       "table": "purchase_variance_decisions"
+    },
+    {
+      "id": "db:manual_purchase_executions",
+      "type": "db-table",
+      "table": "manual_purchase_executions"
     },
     {
       "id": "db:international_shipment_hub_units",
@@ -48379,24 +48336,6 @@
       "to": "impact:quality",
       "type": "impact",
       "label": "quality"
-    },
-    {
-      "from": "middleware/upload.js",
-      "to": "multer",
-      "type": "depends",
-      "label": "multer"
-    },
-    {
-      "from": "middleware/upload.js",
-      "to": "fs",
-      "type": "depends",
-      "label": "fs"
-    },
-    {
-      "from": "middleware/upload.js",
-      "to": "path",
-      "type": "depends",
-      "label": "path"
     },
     {
       "from": "middleware/upload-hub.js",
@@ -63827,18 +63766,6 @@
     },
     {
       "from": "routes/products.js",
-      "to": "middleware/upload.js",
-      "type": "depends",
-      "label": "middleware/upload.js"
-    },
-    {
-      "from": "routes/products.js",
-      "to": "services/product-media-storage.js",
-      "type": "depends",
-      "label": "services/product-media-storage.js"
-    },
-    {
-      "from": "routes/products.js",
       "to": "services/catalog-public-view.js",
       "type": "depends",
       "label": "services/catalog-public-view.js"
@@ -77245,6 +77172,12 @@
       "to": "db:purchase_order_authorizations",
       "type": "db-read",
       "label": "purchase_order_authorizations"
+    },
+    {
+      "from": "services/hub-administration-board.js",
+      "to": "db:purchase_variance_decisions",
+      "type": "db-read",
+      "label": "purchase_variance_decisions"
     },
     {
       "from": "services/hub-administration-board.js",
@@ -92838,36 +92771,6 @@
       "label": "admin-dashboard"
     },
     {
-      "from": "services/product-media-storage.js",
-      "to": "ImageKit upload API",
-      "type": "depends",
-      "label": "ImageKit upload API"
-    },
-    {
-      "from": "services/product-media-storage.js",
-      "to": "IMAGEKIT_PRIVATE_KEY",
-      "type": "depends",
-      "label": "IMAGEKIT_PRIVATE_KEY"
-    },
-    {
-      "from": "routes/products.js",
-      "to": "services/product-media-storage.js",
-      "type": "uses",
-      "label": "routes/products.js"
-    },
-    {
-      "from": "services/product-media-storage.js",
-      "to": "doctrine:resolve_before_behavior_change",
-      "type": "doctrine",
-      "label": "resolve_before_behavior_change"
-    },
-    {
-      "from": "services/product-media-storage.js",
-      "to": "doctrine:produit_reference_stable",
-      "type": "doctrine",
-      "label": "produit_reference_stable"
-    },
-    {
       "from": "services/product-price-audit.js",
       "to": "services/economic-price-audit-service.js",
       "type": "depends",
@@ -94456,6 +94359,12 @@
       "to": "db:v_purchase_line_market",
       "type": "db-read",
       "label": "v_purchase_line_market"
+    },
+    {
+      "from": "services/purchasing-grouped-service.js",
+      "to": "db:v_purchase_line_progress",
+      "type": "db-read",
+      "label": "v_purchase_line_progress"
     },
     {
       "from": "services/purchasing-grouped-service.js",
@@ -110264,11 +110173,7 @@
       "headerType": "full",
       "owner": null,
       "purpose": null,
-      "directDependsOn": [
-        "multer",
-        "fs",
-        "path"
-      ],
+      "directDependsOn": [],
       "directUsedBy": [
         "middleware/upload-hub.js",
         "routes/products.js"
@@ -120785,8 +120690,6 @@
         "db.js",
         "validators.js",
         "middleware/auth.js",
-        "middleware/upload.js",
-        "services/product-media-storage.js",
         "services/catalog-public-view.js",
         "services/market-local-price-resolution-service.js",
         "services/catalog-product-source-read-service.js"
@@ -120845,7 +120748,6 @@
         "services/catalog-public-view.js",
         "services/market-local-price-resolution-service.js",
         "services/product-admin-service.js",
-        "services/product-media-storage.js",
         "utils/logger.js"
       ]
     },
@@ -128941,6 +128843,7 @@
         "markets",
         "orders",
         "purchase_order_authorizations",
+        "purchase_variance_decisions",
         "purchase_orders",
         "purchase_lines",
         "supplier_execution_payments",
@@ -128964,6 +128867,7 @@
         "db:purchase_lines",
         "db:purchase_order_authorizations",
         "db:purchase_orders",
+        "db:purchase_variance_decisions",
         "db:supplier_execution_payments",
         "db:users",
         "doctrine:one_po_one_supplier_one_market",
@@ -138431,35 +138335,6 @@
         "utils/logger.js"
       ]
     },
-    "services/product-media-storage.js": {
-      "role": "product-media-storage",
-      "domain": "catalog",
-      "criticality": "high",
-      "headerType": "full",
-      "owner": null,
-      "purpose": null,
-      "directDependsOn": [
-        "ImageKit upload API",
-        "IMAGEKIT_PRIVATE_KEY"
-      ],
-      "directUsedBy": [
-        "routes/products.js"
-      ],
-      "ownedFiles": [],
-      "dbRead": [],
-      "dbWrite": [],
-      "dbWriteVia": [],
-      "doctrines": [
-        "resolve_before_behavior_change",
-        "produit_reference_stable"
-      ],
-      "impactAreas": [],
-      "mustCheck": [
-        "doctrine:produit_reference_stable",
-        "doctrine:resolve_before_behavior_change",
-        "routes/products.js"
-      ]
-    },
     "services/product-price-audit.js": {
       "role": "catalog-product-price-audit-boundary",
       "domain": "catalog",
@@ -139431,6 +139306,7 @@
         "products",
         "suppliers",
         "v_purchase_line_market",
+        "v_purchase_line_progress",
         "purchase_order_authorizations"
       ],
       "dbWrite": [
@@ -139455,6 +139331,7 @@
         "db:purchase_orders",
         "db:suppliers",
         "db:v_purchase_line_market",
+        "db:v_purchase_line_progress",
         "doctrine:docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md",
         "impact:admin-dashboard",
         "impact:purchasing",
@@ -149907,24 +149784,6 @@
       "label": "routes/hub.js (POST /photo)"
     },
     {
-      "from": "middleware/upload.js",
-      "to": "multer",
-      "type": "depends",
-      "label": "multer"
-    },
-    {
-      "from": "middleware/upload.js",
-      "to": "fs",
-      "type": "depends",
-      "label": "fs"
-    },
-    {
-      "from": "middleware/upload.js",
-      "to": "path",
-      "type": "depends",
-      "label": "path"
-    },
-    {
       "from": "public/boutique/js/b-komerce.js",
       "to": "documents API",
       "type": "depends",
@@ -153967,18 +153826,6 @@
       "to": "db",
       "type": "depends",
       "label": "db"
-    },
-    {
-      "from": "services/product-media-storage.js",
-      "to": "ImageKit upload API",
-      "type": "depends",
-      "label": "ImageKit upload API"
-    },
-    {
-      "from": "services/product-media-storage.js",
-      "to": "IMAGEKIT_PRIVATE_KEY",
-      "type": "depends",
-      "label": "IMAGEKIT_PRIVATE_KEY"
     },
     {
       "from": "services/product-publication-guard.js",

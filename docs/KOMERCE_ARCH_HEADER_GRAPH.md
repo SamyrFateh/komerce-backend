@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 817
-- Files with full headers: 761
+- Scanned code files: 816
+- Files with full headers: 760
 - Files with lite headers: 56
-- Files with any headers: 817
+- Files with any headers: 816
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 2086
-- Edges: 10370
+- Graph nodes: 2085
+- Edges: 10362
 - DB tables: 243
 - Doctrines: 818
 - Impact areas: 208
-- Unresolved code edges: 985
+- Unresolved code edges: 980
 - Tables multi-écrivains directs (>=2): 99
 - Avertissements db-write / db-write-via en chevauchement: 12
 
@@ -32,7 +32,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - bootstrap: 2
 - boutique: 24
 - business-rules: 1
-- catalog: 139
+- catalog: 138
 - checkout: 3
 - customs: 8
 - dashboard: 32
@@ -92,7 +92,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 138
 - route-manifest: 1
 - schema: 1
-- service: 497
+- service: 496
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -580,7 +580,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/procurement-execution-context.js — procurement-execution-context (purchasing, high, full)
 - services/product-360.js — canonical-product-360-service (admin-dashboard, high, full)
 - services/product-admin-service.js — catalog-product-admin-service (catalog, high, full)
-- services/product-media-storage.js — product-media-storage (catalog, high, full)
 - services/product-price-audit.js — catalog-product-price-audit-boundary (catalog, high, full)
 - services/product-publication-guard.js — catalog-product-publication-guard (catalog, high, full)
 - services/product-sellable-service.js — catalog-product-sellable-service (catalog, high, full)
@@ -1217,8 +1216,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: middleware/require-verified-identity.js -> db (db)
 - depends: middleware/soft-auth.js -> db (db)
 - depends: middleware/upload-hub.js -> middleware/upload.js (validateMagicBytes) (middleware/upload.js (validateMagicBytes))
-- depends: middleware/upload.js -> fs (fs)
-- depends: middleware/upload.js -> multer (multer)
+- uses: modal-modules -> public/boutique/js/b-scroll-owner.js (modal-modules)
+- uses: modal-suggestions -> routes/boutique-suggestions.js (modal-suggestions)
 
 ## Files Still Without Headers Or Aggregation
 
