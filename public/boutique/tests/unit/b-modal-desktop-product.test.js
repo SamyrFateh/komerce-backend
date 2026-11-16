@@ -733,6 +733,49 @@ describe('b-modal-desktop-product — suggestions pleine largeur (PDP v3.1 §1/�
 
   const RAIL = 'k-modal-product-zone--suggestions-in-rail';
 
+  test('desktop : quatre caractéristiques en aperçu, puis dépliage et repliage', () => {
+    const product = detail({
+      content: {
+        specifications: Array.from({ length: 6 }, (_, index) => ({
+          key: `spec-${index}`,
+          group: index < 4 ? 'Général' : 'Complément',
+          label: `Caractéristique ${index + 1}`,
+          value: `Valeur ${index + 1}`,
+          display_order: index,
+        })),
+      },
+    });
+    const selection = createModalSelection(product);
+    const visibleSpecs = () => document.querySelectorAll('#k-modal-desktop-specifications dt:not([hidden])');
+    renderDesktopProductDetail(product, selection);
+
+    let button = document.querySelector('[data-desktop-details-toggle]');
+    expect(visibleSpecs()).toHaveLength(4);
+    expect(button.textContent).toBe('Voir tous les détails');
+    expect(button.getAttribute('aria-expanded')).toBe('false');
+    expect(document.querySelectorAll('#k-modal-desktop-specifications .k-modal-enriched-spec-group-label[hidden]')).toHaveLength(1);
+
+    button.click();
+    expect(visibleSpecs()).toHaveLength(6);
+    expect(button.textContent).toBe('Réduire');
+
+    renderDesktopProductDetail(product, selection);
+    button = document.querySelector('[data-desktop-details-toggle]');
+    expect(button.getAttribute('aria-expanded')).toBe('true');
+    button.click();
+    expect(visibleSpecs()).toHaveLength(4);
+    expect(document.getElementById('k-modal-suggestions').parentElement.classList.contains('k-modal-product-zone')).toBe(true);
+  });
+
+  test('desktop : une description courte seule ne déclenche pas de dépliage', () => {
+    const product = detail({ option_axes: [], content: {} });
+    renderDesktopProductDetail(product, createModalSelection(product));
+
+    expect(document.querySelector('#k-modal-long-description .k-modal-enriched-text').textContent).toBe('Robe fluide');
+    expect(document.querySelector('[data-desktop-details-toggle]')).toBeNull();
+  });
+
+
   test('produit SIMPLE (aucun axe) → suggestions pleine largeur, aucune classe rail', () => {
     const product = detail({
       inventory_model: 'SIMPLE',
