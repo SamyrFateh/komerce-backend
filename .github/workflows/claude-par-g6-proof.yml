@@ -1,0 +1,56 @@
+name: CLAUDE-PAR G6 - preuves PostgreSQL de cohorte (lecture seule)
+on:
+  push:
+    branches: [cert/claude-par-g6]
+    paths:
+      - '.github/workflows/claude-par-g6-proof.yml'
+      - 'scripts/recette/claude-par-g6-proof.js'
+      - 'scripts/recette/claude-par-g6-run.json'
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: claude-par-g6-proof
+  cancel-in-progress: false
+jobs:
+  proof:
+    name: Manifeste + oracles O-FIN/O-HUB/O-ECO (read-only)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      EXPECTED_RAILWAY_ENVIRONMENT: staging
+      KOMERCE_STAGING_RESET_DB_PIN: ${{ vars.STAGING_DB_PIN }}
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      PGOPTIONS: '-c default_transaction_read_only=on'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22', cache: npm }
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Static read-only safety check
+        run: |
+          node --check scripts/recette/claude-par-g6-proof.js
+          if grep -Eiq '\b(INSERT[[:space:]]+INTO|UPDATE[[:space:]]+[a-z_]+[[:space:]]+SET|DELETE[[:space:]]+FROM|TRUNCATE|ALTER[[:space:]]+TABLE|DROP[[:space:]]+TABLE)\b' scripts/recette/claude-par-g6-proof.js docs/recette/G6_*_SQL_*.sql; then echo 'Refus : SQL mutable'; exit 1; fi
+      - name: Baseline precedente (si fournie)
+        run: |
+          id=$(node -p "JSON.parse(require('fs').readFileSync('scripts/recette/claude-par-g6-run.json','utf8')).baseline_run_id||''")
+          echo "BASELINE_RUN_ID=$id" >> "$GITHUB_ENV"
+      - uses: actions/download-artifact@v4
+        if: env.BASELINE_RUN_ID != ''
+        with:
+          name: claude-par-g6-proof-${{ env.BASELINE_RUN_ID }}
+          path: baseline
+          run-id: ${{ env.BASELINE_RUN_ID }}
+          github-token: ${{ github.token }}
+      - run: node scripts/recette/claude-par-g6-proof.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: claude-par-g6-proof-${{ github.run_id }}
+          path: test-results/claude-par-g6/
+          if-no-files-found: warn
+          retention-days: 30
