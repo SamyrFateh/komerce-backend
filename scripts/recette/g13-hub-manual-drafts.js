@@ -16,6 +16,8 @@ const db = require('../../db');
 const { confirmTarget } = require('./target-guard');
 
 const BASE = 'https://komerce-backend-production.up.railway.app';
+// PostgreSQL requires a positive legacy price even for inactive fixtures.
+const DRAFT_PRICE_KMF = 1;
 const OUT = 'test-results/g13-hub-manual-drafts/report.json';
 const names = [
   ['Torchons de cuisine à carreaux', 'Maison', 'Cuisine', 'Lot de torchons pour essuyer la vaisselle et les surfaces de cuisine.'],
@@ -72,7 +74,7 @@ async function main() {
         const res = await fetch(BASE + '/api/admin/workspaces/catalog/products', {
           method: 'POST', headers,
           body: JSON.stringify({
-            name, category, subcategory, description, price_kmf: 0, stock: 0,
+            name, category, subcategory, description, price_kmf: DRAFT_PRICE_KMF, stock: 0,
             is_active: false, is_available: false,
           }),
         });
@@ -88,7 +90,7 @@ async function main() {
       entry.passed = Boolean(row?.product_ref && row.system_key === 'central_hub' &&
         row.category === category && row.subcategory === subcategory &&
         row.is_active === false && row.is_available === false &&
-        Number(row.price_kmf) === 0 && Number(row.stock) === 0);
+        Number(row.price_kmf) === DRAFT_PRICE_KMF && Number(row.stock) === 0);
     }
     report.verdict = report.entries.every(entry => entry.passed) ? 'THREE_MANUAL_DRAFTS_PROVEN' : 'DRAFTS_INCOMPLETE';
   } catch (error) {
