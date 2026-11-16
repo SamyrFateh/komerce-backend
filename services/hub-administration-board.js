@@ -8,7 +8,7 @@
  * @outputs       all-market PO administration read model
  * @depends       db, services/hub-procurement-dossier.js
  * @used-by       routes/hub.js
- * @db-read       hub_authorization_grants, markets, orders, purchase_order_authorizations, purchase_orders, purchase_lines, supplier_execution_payments, users
+ * @db-read       hub_authorization_grants, markets, orders, purchase_order_authorizations, purchase_variance_decisions, purchase_orders, purchase_lines, supplier_execution_payments, users
  * @db-write      none
  * @db-txn        none
  * @doctrine      one_po_one_supplier_one_market, supplier_payment_authorization_distinct_from_debit
@@ -99,6 +99,10 @@ function attachAuthorizations(orders, rows) {
   for (const row of rows || []) {
     const entry = byPO.get(String(row.purchase_order_id)) || {};
     entry[row.authorization_type] = decisionOf(row);
+    if (row.variance_total != null) entry.variance = {
+      amount: row.variance_total, currency: row.currency,
+      reason: row.variance_reason, proof_ref: row.variance_proof_ref,
+    };
     byPO.set(String(row.purchase_order_id), entry);
   }
   return orders.map(po => {
@@ -109,6 +113,7 @@ function attachAuthorizations(orders, rows) {
       ...po,
       commitment_decision: commitment,
       payment_decision: payment,
+      variance_decision: found.variance || null,
       commitment_authorization: commitment ? 'Validé · ' + dateLabel(commitment.decided_at) : 'À valider',
       payment_authorization: payment ? 'Autorisé · ' + dateLabel(payment.decided_at) :
         commitment ? 'À autoriser' : 'Après engagement',
@@ -136,8 +141,13 @@ async function getAdministrationBoard(query = db,
   ) : { rows: [] };
   const { rows: decisions } = ids.length ? await query.query(
     `SELECT a.purchase_order_id, a.authorization_type, a.decided_by, a.decided_at, a.amount, a.currency, a.proof_ref,
-            u.full_name AS decided_by_name
-       FROM purchase_order_authorizations a LEFT JOIN users u ON u.id = a.decided_by
+            u.full_name AS decided_by_name, v.approved_total::text AS variance_total,
+            v.reason AS variance_reason, v.proof_ref AS variance_proof_ref
+       FROM purchase_order_authorizations a
+       LEFT JOIN users u ON u.id = a.decided_by
+       LEFT JOIN purchase_variance_decisions v
+         ON a.authorization_type = 'supplier_payment'
+        AND v.purchase_order_id = a.purchase_order_id AND v.currency = a.currency
       WHERE a.purchase_order_id = ANY($1::uuid[])`, [ids]
   ) : { rows: [] };
   const { rows: grants } = viewerId ? await query.query(
