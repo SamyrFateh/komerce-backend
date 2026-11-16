@@ -6,10 +6,18 @@ on:
   workflow_dispatch:
     inputs:
       run:
-        description: 'Epreuve : C2T3T4, C3, C45, T5PREP (ecritures sur fixture RUN8 neuve) ou T9CHECK (lecture seule)'
+        description: 'Epreuve : C2T3T4, C3, C45, T5PREP, T9CREATE (ecritures sur fixture RUN8 neuve) ou T9CHECK (lecture seule)'
         required: true
         type: choice
-        options: [C2T3T4, C3, C45, T5PREP, T9CHECK]
+        options: [C2T3T4, C3, C45, T5PREP, T9CREATE, T9CHECK]
+      t9_run8:
+        description: 'T9CHECK : RUN8 de l objet T9 a controler (defaut EB87CC74, objet du 15/11)'
+        required: false
+        type: string
+      t9_created_at:
+        description: 'T9CHECK : created_at attendu ISO (defaut objet du 15/11)'
+        required: false
+        type: string
       confirmation:
         description: 'Saisir exactement RUN-HUB-H1H9-SONNET'
         required: true
@@ -75,6 +83,7 @@ jobs:
             C3) echo "ARMED_C3=1" >> "$GITHUB_OUTPUT";;
             C45) echo "ARMED_C45=1" >> "$GITHUB_OUTPUT";;
             T5PREP) echo "T5PREP=1" >> "$GITHUB_OUTPUT";;
+            T9CREATE) echo "T9_CREATE=1" >> "$GITHUB_OUTPUT";;
             T9CHECK) echo "T9_CHECK=1" >> "$GITHUB_OUTPUT";;
             *) echo "unknown epreuve"; exit 1;;
           esac
@@ -99,11 +108,26 @@ jobs:
       - name: Require precise Railway database target
         if: steps.arm.outputs.any == '1'
         run: node scripts/recette/target-guard.js
-      - name: T9 check (lecture seule, objet cree le 15/11)
+      - name: T9 check (lecture seule ; par defaut l'objet cree le 15/11)
         if: steps.arm.outputs.T9_CHECK == '1'
+        env:
+          T9_RUN8_INPUT: ${{ inputs.t9_run8 }}
+          T9_CREATED_AT_INPUT: ${{ inputs.t9_created_at }}
         run: |
-          export T9_RUN8=EB87CC74 T9_EXPECTED_CREATED_AT=2026-11-15T00:52:06.790Z
+          export T9_RUN8="${T9_RUN8_INPUT:-EB87CC74}" T9_EXPECTED_CREATED_AT="${T9_CREATED_AT_INPUT:-2026-11-15T00:52:06.790Z}"
           node scripts/recette/hub-h1h9-sonnet-t9.js check
+      - name: T9 create (fixture RUN8 neuve + UN colis fournisseur sans manifeste ; objet ensuite inerte)
+        if: steps.arm.outputs.T9_CREATE == '1'
+        shell: bash
+        run: |
+          set -euo pipefail
+          SHA="$(curl -fsS "$STAGING_BASE_URL/health/version" | node -pe 'JSON.parse(require("fs").readFileSync(0)).commit')"
+          RUN8="$(node -p 'require("crypto").randomBytes(4).toString("hex").toUpperCase()')"
+          echo "RUN8 T9 cohorte Sonnet: $RUN8"
+          export HUB_V1_CERTIFICATION_RUN="$RUN8" E2E_PROOF_RUN8="$RUN8" E2E_EXPECTED_DEPLOY_SHA="$SHA"
+          node scripts/recette/hub-v1-certification-runner.js --allow-remote-staging --run="$RUN8" --market=KM --stop-after=2 --dry-run
+          node scripts/recette/hub-v1-certification-runner.js --allow-remote-staging --run="$RUN8" --market=KM --stop-after=2
+          T9_RUN8="$RUN8" node scripts/recette/hub-h1h9-sonnet-t9.js create
       - name: Fixture RUN8 neuve + chaine PO (rien recu)
         if: steps.arm.outputs.ARMED == '1'
         shell: bash
