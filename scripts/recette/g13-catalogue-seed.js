@@ -164,6 +164,37 @@ async function ro(db, sql, params = []) {
   } finally { await c.query('ROLLBACK').catch(() => {}); c.release(); }
 }
 
+
+// A manually entered product has an internal Hub procurement owner, not an
+// external CJ/AliExpress sellable-unit contract. The business proofs are its
+// operator-attested cost, provenance, available quantity and own media.
+// In particular, a borrowed CJ picture is NOT evidence of a Hub-owned item.
+function hubManualEvidence(entry) {
+  if (entry?.source !== 'central_hub') return { applicable:false, passed:true, blockers:[] };
+  const item = entry.manual_item || {};
+  const proof = entry.manual_evidence || {};
+  const blockers = [];
+  const media = String(item.image_url || '').trim();
+  const url = (() => { try { return new URL(media); } catch { return null; } })();
+  if (!url || url.protocol !== 'https:') blockers.push('HUB_MEDIA_HTTPS_ABSENT');
+  if (url && /(^|\\.)cjdropshipping\\.com$/i.test(url.hostname)) blockers.push('HUB_MEDIA_CJ_NOT_MANUAL_PROVENANCE');
+  if (!String(proof.media_origin_ref || '').trim()) blockers.push('HUB_MEDIA_ORIGIN_UNATTESTED');
+  if (!String(proof.cost_ref || '').trim()) blockers.push('HUB_COST_UNATTESTED');
+  if (!String(proof.stock_ref || '').trim()) blockers.push('HUB_STOCK_UNATTESTED');
+  if (!String(proof.customs_category || '').trim()) blockers.push('HUB_CUSTOMS_UNATTESTED');
+  return { applicable:true, passed:blockers.length===0, blockers };
+}
+
+// D3 for a manual Hub source is the protected procurement_supplier_id link.
+// Neither a fictitious vendor SKU nor a CJ source V2 is required.
+async function readHubProcurementOwner(db, productId) {
+  const [row] = await ro(db,
+    `SELECT s.system_key, s.is_active, s.deleted_at
+       FROM products p JOIN suppliers s ON s.id = p.procurement_supplier_id
+      WHERE p.id = $1 LIMIT 1`, [productId]);
+  return row?.system_key === 'central_hub' && row.is_active === true && row.deleted_at == null;
+}
+
 const providerName = (e) => (e.source === 'central_hub' ? null : PROVIDERS[e.source].supplier_name);
 const blocked = (r, step, code, detail) => { r.steps[step] = { status: 'BLOCKED', code, detail: detail ? String(detail).slice(0, 300) : undefined }; return false; };
 const done = (r, step, status = 'OK', extra = {}) => { r.steps[step] = { status, ...extra }; return true; };
@@ -288,10 +319,15 @@ async function main(env = process.env) {
             [candidate.product_id]);
           row.sku_count = Number(skus?.active || 0);
           row.stocked_skus = Number(skus?.stocked || 0);
-          const [links] = await ro(db,
-            `SELECT COUNT(*)::int AS n FROM product_suppliers ps JOIN suppliers s ON s.id=ps.supplier_id AND s.is_active=TRUE AND s.deleted_at IS NULL WHERE ps.product_id=$1 AND ps.is_active=TRUE AND ps.deleted_at IS NULL`,
-            [candidate.product_id]);
-          row.supplier_links = Number(links?.n || 0);
+          if (entry.source === 'central_hub') {
+            row.hub_procurement_owner_proven = await readHubProcurementOwner(db, candidate.product_id);
+            row.supplier_links = row.hub_procurement_owner_proven ? 1 : 0;
+          } else {
+            const [links] = await ro(db,
+              `SELECT COUNT(*)::int AS n FROM product_suppliers ps JOIN suppliers s ON s.id=ps.supplier_id AND s.is_active=TRUE AND s.deleted_at IS NULL WHERE ps.product_id=$1 AND ps.is_active=TRUE AND ps.deleted_at IS NULL`,
+              [candidate.product_id]);
+            row.supplier_links = Number(links?.n || 0);
+          }
         }
         for (const market of MANIFEST.markets) {
           if (!candidate?.product_ref) {
@@ -387,7 +423,11 @@ async function main(env = process.env) {
 
         // --- import ---
         if (wanted.includes('import')) {
-          if (cand) done(r, 'import', 'DEJA_PRESENT');
+          const manualProof = hubManualEvidence(e);
+          if (manualProof.applicable) r.hub_manual_evidence = manualProof;
+          if (e.source === 'central_hub' && !manualProof.passed)
+            blocked(r, 'import', 'HUB_MANUAL_PROOFS_REQUIRED', manualProof.blockers.join(','));
+          else if (cand) done(r, 'import', 'DEJA_PRESENT');
           else if (e.source === 'central_hub' && !e.manual_item?.image_url) blocked(r, 'import', 'MANUAL_IMAGE_HTTPS_A_EPINGLER');
           else if (e.source === 'central_hub' && !hub) blocked(r, 'import', 'FOURNISSEUR_CENTRAL_INTROUVABLE');
           else if (!execute) done(r, 'import', 'PLANIFIE');
@@ -431,7 +471,11 @@ async function main(env = process.env) {
         }
 
         // --- supplier-link (D3 : liaision fournisseur AVANT approbation) ---
-        if (wanted.includes('supplier-link') && cand?.product_id) {
+        if (wanted.includes('supplier-link') && cand?.product_id && e.source === 'central_hub') {
+          const linked = await readHubProcurementOwner(db, cand.product_id);
+          if (linked) done(r, 'supplier-link', 'HUB_PROCUREMENT_OWNER_PROVEN');
+          else blocked(r, 'supplier-link', 'HUB_PROCUREMENT_OWNER_ABSENT');
+        } else if (wanted.includes('supplier-link') && cand?.product_id) {
           const links = await ro(db, `SELECT ps.id FROM product_suppliers ps JOIN suppliers s ON s.id = ps.supplier_id AND s.is_active = TRUE AND s.deleted_at IS NULL JOIN product_skus sku ON sku.product_id = ps.product_id AND sku.supplier_sku = ps.supplier_sku AND sku.is_active = TRUE AND sku.stock > 0 WHERE ps.product_id = $1 AND ps.is_active = TRUE AND ps.deleted_at IS NULL AND ($2::text IS NULL OR LOWER(s.platform) = $2) LIMIT 1`, [cand.product_id, e.source === 'central_hub' ? null : PROVIDERS[e.source].platform]);
           if (links.length) done(r, 'supplier-link', 'DEJA_PRESENT');
           else if (!execute) done(r, 'supplier-link', 'PLANIFIE');
@@ -599,4 +643,4 @@ async function main(env = process.env) {
 }
 
 if (require.main === module) main();
-module.exports = { validateManifest, referenceAmount, stagingEconomicReferenceAmount, evaluateG13Census, PHASES, CONFIRMATION };
+module.exports = { validateManifest, hubManualEvidence, referenceAmount, stagingEconomicReferenceAmount, evaluateG13Census, PHASES, CONFIRMATION };
