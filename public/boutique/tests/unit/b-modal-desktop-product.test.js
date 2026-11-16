@@ -776,6 +776,40 @@ describe('b-modal-desktop-product — suggestions pleine largeur (PDP v3.1 §1/�
   });
 
 
+  test('desktop : le contrôle suit le débordement réel de la description au redimensionnement', () => {
+    const originalObserver = global.ResizeObserver;
+    let resize;
+    const disconnect = jest.fn();
+    global.ResizeObserver = jest.fn(callback => {
+      resize = callback;
+      return { observe: jest.fn(), disconnect };
+    });
+    let width = 360;
+    const widthSpy = jest.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockImplementation(() => width);
+    const heightSpy = jest.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockImplementation(() => width === 360 ? 80 : 100);
+    const scrollSpy = jest.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockReturnValue(100);
+    try {
+      const product = detail({ option_axes: [], content: {} });
+      renderDesktopProductDetail(product, createModalSelection(product));
+      const toggle = () => document.querySelector('[data-desktop-details-toggle]');
+      expect(toggle().getAttribute('aria-controls')).toBe('k-modal-long-description');
+      toggle().click();
+      expect(toggle().getAttribute('aria-expanded')).toBe('true');
+      expect(document.querySelector('#k-modal-long-description .k-modal-enriched-text').classList.contains('is-expanded')).toBe(true);
+      toggle().click();
+      width = 560;
+      resize();
+      expect(toggle()).toBeNull();
+      clearDesktopProductDetailState();
+      expect(disconnect).toHaveBeenCalledTimes(1);
+    } finally {
+      widthSpy.mockRestore();
+      heightSpy.mockRestore();
+      scrollSpy.mockRestore();
+      global.ResizeObserver = originalObserver;
+    }
+  });
+
   test('produit SIMPLE (aucun axe) → suggestions pleine largeur, aucune classe rail', () => {
     const product = detail({
       inventory_model: 'SIMPLE',
