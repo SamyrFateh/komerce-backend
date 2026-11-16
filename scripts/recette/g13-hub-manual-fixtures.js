@@ -89,15 +89,20 @@ async function currentMarkets(id) {
 async function complete(item, entry, admin, operator) {
   const before = await product(item.ref);
   const steps = entry.steps;
+  const path = '/api/admin/workspaces/catalog/products/' + item.ref + '/update';
   if (!before.image_url) {
     const res = await fetch(item.image, { redirect: 'error' });
     if (!res.ok || !res.headers.get('content-type')?.startsWith('image/')) throw new Error('ILLUSTRATION_UNAVAILABLE');
     const blob = await res.blob();
     const form = new FormData();
     form.set('image', blob, 'recette-illustration.jpg');
+    // The canonical upload route requires an active product. Keep it unavailable during upload.
+    await checked(admin, steps, 'prepare', 'POST', path, {
+      description: item.description, weight_kg: item.weight, stock: item.stock,
+      price_kmf: item.km, is_active: true, is_available: false,
+    });
     await checked(admin, steps, 'image', 'POST', '/api/products/' + before.id + '/image', form);
   }
-  const path = '/api/admin/workspaces/catalog/products/' + item.ref + '/update';
   await checked(admin, steps, 'catalogue', 'POST', path, {
     description: item.description, weight_kg: item.weight, stock: item.stock,
     price_kmf: item.km, is_active: true, is_available: true,
