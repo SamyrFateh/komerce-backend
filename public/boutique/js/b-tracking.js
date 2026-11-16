@@ -205,40 +205,78 @@ function appendEssentialOrderResources(container, order, resources) {
   container.querySelector('.k-order-card')?.appendChild(section);
 }
 
-// #3900 R1 : le propriétaire d'une commande prête au retrait génère un nouveau
-// code (rotation serveur, ancien code invalidé, affiché une seule fois).
+// #3900 R1 / G6 Chromium : révélation du secret existant au destinataire,
+// une seule fois et uniquement après un clic humain. Le GET est consommant :
+// ne jamais le lancer au rendu, en préchargement ni en retry automatique.
 function appendPickupCodeAction(container, order) {
   if (order.status !== 'available' || !order.id) return;
+
   const section = document.createElement('section');
   section.className = 'k-order-essentials k-order-pickup-code';
   const title = document.createElement('h3');
   title.textContent = 'Code de retrait';
   const hint = document.createElement('p');
-  hint.textContent = 'Code perdu ? Générez-en un nouveau : l\u2019ancien ne fonctionnera plus.';
+  hint.textContent = 'Affichez votre code une seule fois et conservez-le. La première révélation est possible pendant 30 minutes après son émission. Si le délai est dépassé, générez un nouveau code : l’ancien sera invalidé.';
   const out = document.createElement('div');
   out.className = 'k-pickup-code-output';
+  out.setAttribute('role', 'status');
   out.setAttribute('aria-live', 'polite');
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.className = 'k-order-pickup-code-generate';
-  button.textContent = 'Générer un nouveau code';
-  button.addEventListener('click', async () => {
-    if (button.disabled) return;
+
+  const revealButton = document.createElement('button');
+  revealButton.type = 'button';
+  revealButton.className = 'k-order-pickup-code-generate k-order-pickup-code-reveal';
+  revealButton.textContent = 'Afficher mon code';
+  revealButton.addEventListener('click', async () => {
+    if (revealButton.disabled) return;
+    revealButton.disabled = true;
+    try {
+      const result = await apiGet('/api/pickup/reveal-once/' + encodeURIComponent(order.id));
+      if (result?.code) {
+        out.textContent = 'Votre code : ' + result.code + ' — notez-le maintenant, il ne sera plus affiché.';
+        revealButton.hidden = true;
+      } else if (result?.status === 'pending') {
+        out.textContent = 'Paiement en cours de validation. Réessayez lorsque le paiement sera confirmé.';
+      } else {
+        out.textContent = 'Code indisponible. Vous pouvez générer un nouveau code lorsque la commande est disponible.';
+      }
+    } catch (err) {
+      if (err?.status === 410) {
+        out.textContent = 'Ce code a déjà été révélé ou sa fenêtre de 30 minutes a expiré. Générez un nouveau code.';
+        revealButton.hidden = true;
+      } else if (err?.status === 401 || err?.status === 403) {
+        out.textContent = 'Accès refusé. Reconnectez-vous avec le compte destinataire de la commande.';
+        revealButton.hidden = true;
+      } else {
+        // Une erreur réseau peut survenir APRÈS consommation du code : aucun rejeu automatique.
+        out.textContent = 'Révélation non confirmée. Ne multipliez pas les essais : si le code reste inaccessible, générez-en un nouveau.';
+      }
+    } finally {
+      revealButton.disabled = false;
+    }
+  });
+
+  const regenerateButton = document.createElement('button');
+  regenerateButton.type = 'button';
+  regenerateButton.className = 'k-order-pickup-code-generate';
+  regenerateButton.textContent = 'Générer un nouveau code';
+  regenerateButton.addEventListener('click', async () => {
+    if (regenerateButton.disabled) return;
     // La rotation est irréversible : l'ancien code cesse immédiatement de fonctionner.
     if (!window.confirm('Générer un nouveau code de retrait ? L’ancien code ne sera plus valable.')) return;
-    button.disabled = true;
+    regenerateButton.disabled = true;
     try {
-      const res = await apiPost('/api/pickup/customer-regenerate/' + encodeURIComponent(order.id), {});
-      out.textContent = 'Votre code : ' + res.code + ' — notez-le maintenant, il ne sera plus affiché.';
+      const result = await apiPost('/api/pickup/customer-regenerate/' + encodeURIComponent(order.id), {});
+      out.textContent = 'Votre code : ' + result.code + ' — notez-le maintenant, il ne sera plus affiché.';
+      revealButton.hidden = true;
     } catch (err) {
       out.textContent = err?.status === 429
         ? 'Limite atteinte (5 codes par 24 h).'
         : 'Impossible de générer un code pour le moment.';
     } finally {
-      button.disabled = false;
+      regenerateButton.disabled = false;
     }
   });
-  section.append(title, hint, button, out);
+  section.append(title, hint, revealButton, regenerateButton, out);
   container.querySelector('.k-order-card')?.appendChild(section);
 }
 
@@ -253,7 +291,9 @@ export function renderOrderDetail(order, container, { privateResources = null } 
       <div class="k-track-steps">${buildTimeline(order.status || 'pending')}</div>
     </div>`;
   appendEssentialOrderResources(container, order, privateResources);
-  appendPickupCodeAction(container, order);
+  // Ne pas proposer l'accès au secret dans la recherche publique par référence.
+  // Le rendu privé provient de « Mes commandes » après restauration d'identité.
+  if (privateResources !== null) appendPickupCodeAction(container, order);
 }
 
 export function renderMyOrdersList(el, orders) {
