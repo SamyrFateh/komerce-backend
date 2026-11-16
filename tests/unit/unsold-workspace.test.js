@@ -1,4 +1,9 @@
 'use strict';
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 const { refusalMessage, isActionable } = require('../../public/dashboards/canonical/js/unsold-workspace');
 
 describe('unsold-workspace (F3)', () => {

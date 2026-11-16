@@ -8,6 +8,11 @@
  * @impact-areas unsold, f3
  */
 'use strict';
+/**
+ * @test-kind e2e
+ * @test-runner playwright
+ * @test-requires postgres
+ */
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const { test, expect } = require('@playwright/test');
