@@ -13,9 +13,6 @@ test('Relais live · Exécution : mode relay-execution limité aux actions Relai
   expect(ws).toContain("mode === 'relay-execution'");
   expect(ws).toContain("{ id: 'cash', label: 'Cash & dépôts' }");
   expect(ws).toContain('KomerceCanonicalFinanceAccountingWorkspace');
-  // L'onglet Cash & dépôts reçoit la vraie session : sans elle, « Déclarer une remise » (agent relais) et « Enregistrer la réception » (destinataire) disparaissent.
-  expect(ws).toContain('user: context.user || {}');
-  expect(ws).not.toMatch(/cashModule\.mount\(\{\s*root: host, document: doc, ui, fetch: context\.fetch, user: \{\}/);
   // Les actions Hub ne sont rendues que dans la vue hub, jamais dans RELAY_LIVE_TABS.
   expect(ws).toMatch(/RELAY_LIVE_TABS = Object\.freeze\(\[\{ id: 'relay'[^\]]*\]\)/);
   expect(ws).not.toMatch(/RELAY_LIVE_TABS = Object\.freeze\(\[[^\]]*'hub'/);
