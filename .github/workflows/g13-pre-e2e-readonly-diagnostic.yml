@@ -1,5 +1,5 @@
 # G13 : diagnostic economique + SKU + fournisseur, STRICTEMENT sans gestes metier ecrivants.
-# Trigger owner-only par issue unique ; staging epingle via target-guard.
+# Trigger owner-only par issues exactes ; staging epingle via target-guard.
 name: G13 pre-E2E read-only diagnosis (staging)
 on:
   issues:
@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   diagnostic:
-    if: github.actor == github.repository_owner && github.event.issue.title == '[staging-op] g13-pre-e2e-readonly-diagnostic'
+    if: github.actor == github.repository_owner && (github.event.issue.title == '[staging-op] g13-pre-e2e-readonly-diagnostic' || github.event.issue.title == '[staging-op] g13-sourcing-pool-dump-readonly')
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
@@ -25,7 +25,7 @@ jobs:
       DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
       PGOPTIONS: '-c default_transaction_read_only=on'
       G13_MODE: dry-run
-      G13_PHASE: diagnose
+      G13_PHASE: ${{ github.event.issue.title == '[staging-op] g13-sourcing-pool-dump-readonly' && 'dump' || 'diagnose' }}
       G13_CONFIRMATION: SEED-G13-CATALOGUE
       E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
       E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
@@ -38,7 +38,7 @@ jobs:
           node-version: '20'
           cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Verify staging and diagnose G13 without business mutations
+      - name: Verify staging and inventory G13 without business mutations
         run: node scripts/recette/g13-catalogue-seed.js
       - name: Preserve diagnostic report
         if: always()
