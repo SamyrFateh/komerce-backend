@@ -30,6 +30,8 @@
 
 export const PHONE_COUNTRIES = [
   { code: '+269', flag: '🇰🇲', name: 'Comores',          digits: 7,  max: 7,  ph: '321 12 34' },
+  { code: '+237', flag: '🇨🇲', name: 'Cameroun',         digits: 9,  max: 9,  ph: '612 345 678' },
+  { code: '+242', flag: '🇨🇬', name: 'Congo',            digits: 9,  max: 9,  ph: '06 123 45 67' },
   { code: '+33',  flag: '🇫🇷', name: 'France',           digits: 9,  max: 10, ph: '06 12 34 56 78' },
   { code: '+262', flag: '🇷🇪', name: 'Réunion / Mayotte',digits: 9,  max: 10, ph: '0692 12 34 56' },
   { code: '+32',  flag: '🇧🇪', name: 'Belgique',         digits: 9,  max: 10, ph: '0470 12 34 56' },
