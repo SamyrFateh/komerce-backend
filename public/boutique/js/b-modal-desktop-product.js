@@ -752,6 +752,74 @@ function explicitLegacySpecificationGroups(detail) {
  * markup non encore migré) ou si le produit n'a aucune matière enrichie —
  * jamais de bloc vide, comme en mobile.
  */
+// La carte repliée montre les quatre premières caractéristiques, tous groupes confondus.
+const DESKTOP_SPEC_PREVIEW_COUNT = 4;
+let desktopDetailsExpanded = false;
+let desktopDescriptionObserver = null;
+
+function renderDetailsDisclosure(panel, specifications) {
+  desktopDescriptionObserver?.disconnect();
+  desktopDescriptionObserver = null;
+  panel?.querySelector('[data-desktop-details-toggle]')?.remove();
+  if (!panel) return;
+
+  const description = panel.querySelector('#k-modal-long-description .k-modal-enriched-text');
+  const lists = Array.from(specifications?.querySelectorAll('.k-modal-enriched-spec-list') || []);
+  const cells = lists.flatMap(list => Array.from(list.children));
+  if (specifications) specifications.id = 'k-modal-desktop-specifications';
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.dataset.desktopDetailsToggle = '';
+  button.className = 'k-modal-enriched-read-more';
+  button.setAttribute('aria-controls', [
+    description && 'k-modal-long-description',
+    specifications?.id,
+  ].filter(Boolean).join(' '));
+
+  const apply = () => {
+    const expanded = desktopDetailsExpanded;
+    const hasMoreSpecs = cells.length > DESKTOP_SPEC_PREVIEW_COUNT * 2;
+    description?.classList.toggle('is-expanded', expanded);
+    const hasMoreText = Boolean(description && description.scrollHeight > description.clientHeight + 1);
+    if (description && !expanded && !hasMoreText) description.classList.add('is-expanded');
+
+    cells.forEach((cell, index) => {
+      cell.hidden = !expanded && index >= DESKTOP_SPEC_PREVIEW_COUNT * 2;
+    });
+    lists.forEach(list => {
+      const label = list.previousElementSibling;
+      if (label?.classList.contains('k-modal-enriched-spec-group-label')) {
+        label.hidden = Boolean(list.firstElementChild?.hidden);
+      }
+    });
+
+    const host = description?.parentElement || specifications;
+    if (host && (expanded || hasMoreSpecs || hasMoreText)) {
+      button.textContent = expanded ? 'Réduire' : 'Voir tous les détails';
+      button.setAttribute('aria-expanded', String(expanded));
+      if (!button.isConnected) host.appendChild(button);
+    } else {
+      button.remove();
+    }
+  };
+
+  button.addEventListener('click', () => {
+    desktopDetailsExpanded = !desktopDetailsExpanded;
+    apply();
+  });
+  apply();
+
+  if (description && typeof ResizeObserver !== 'undefined') {
+    let width = description.clientWidth;
+    desktopDescriptionObserver = new ResizeObserver(() => {
+      if (!description.isConnected || width === description.clientWidth) return;
+      width = description.clientWidth;
+      if (!desktopDetailsExpanded) apply();
+    });
+    desktopDescriptionObserver.observe(description);
+  }
+}
+
 function renderEnrichedContent(detail) {
   const container = document.getElementById('k-modal-enriched-content');
   if (!container) return;
@@ -804,6 +872,7 @@ function renderEnrichedContent(detail) {
   detailsPanel?.classList.toggle('k-modal-long-details--empty', !hasDescription && !hasSpecs);
   const heading = document.getElementById('k-modal-long-details-heading');
   if (heading) heading.hidden = !hasDescription && !hasSpecs;
+  renderDetailsDisclosure(detailsPanel, specifications);
 
   // short_description et brand ne suffisent pas à créer une section
   // desktop sous le hero : seules les sections réellement rendues comptent.
@@ -923,6 +992,9 @@ export function refreshDesktopProductSubtotal() {
 }
 
 export function clearDesktopProductDetailState() {
+  desktopDetailsExpanded = false;
+  desktopDescriptionObserver?.disconnect();
+  desktopDescriptionObserver = null;
   if (_qtyObserver) _qtyObserver.disconnect();
   _qtyObserver = null;
   _qtyObservedEl = null;
