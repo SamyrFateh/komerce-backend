@@ -5,10 +5,41 @@
  * @test-runner jest
  * @test-requires none
  */
-const { validateManifest, referenceAmount, stagingEconomicReferenceAmount, evaluateG13Census, PHASES } = require('../../scripts/recette/g13-catalogue-seed');
+const { validateManifest, referenceAmount, stagingEconomicReferenceAmount, evaluateG13Census, hubManualEvidence, PHASES } = require('../../scripts/recette/g13-catalogue-seed');
 const manifest = require('../../scripts/recette/g13-catalogue-manifest.json');
 
 describe('G13 catalogue seed (outillage de recette)', () => {
+
+  test('Hub manuel: l\'identité d\'approvisionnement est interne et jamais un SKU CJ imposé', () => {
+    const hubs = manifest.entries.filter(e => e.source === 'central_hub');
+    expect(hubs).toHaveLength(3);
+    for (const e of hubs) {
+      const result = hubManualEvidence(e);
+      expect(result.applicable).toBe(true);
+      expect(result.passed).toBe(false);
+      expect(result.blockers).toContain('HUB_MEDIA_CJ_NOT_MANUAL_PROVENANCE');
+      expect(result.blockers).toContain('HUB_STOCK_UNATTESTED');
+    }
+    const realistic = { source:'central_hub', manual_item:{
+      image_url:'https://images.operator.example/torchon-reel.jpg' },
+      manual_evidence: {media_origin_ref:'PHOTO-HUB-1',cost_ref:'COUT-HUB-1',
+        stock_ref:'STOCK-HUB-1',customs_category:'textile-maison'} };
+    expect(hubManualEvidence(realistic)).toMatchObject({passed:true,blockers:[]});
+    expect(hubManualEvidence({...realistic,source:'cj'}).applicable).toBe(false);
+    expect(hubManualEvidence({...realistic,manual_item:{image_url:'http://example.com'}}).passed).toBe(false);
+  });
+  test('G13 distingue Hub procurement_supplier_id et liens externes supplier_sku',()=>{
+    const fs = require('node:fs');
+    const code = fs.readFileSync(require('node:path').join(__dirname,'../../scripts/recette/g13-catalogue-seed.js'),'utf8');
+    expect(code).toContain("s.id = p.procurement_supplier_id");
+    expect(code).toContain("'HUB_PROCUREMENT_OWNER_PROVEN'");
+    expect(code).toContain("'HUB_PROCUREMENT_OWNER_ABSENT'");
+    expect(code).toContain("entry.source === 'central_hub'");
+    expect(code).toContain("HUB_MANUAL_PROOFS_REQUIRED");
+    expect(code).toContain("wanted.some(step => step !== 'census' && step !== 'validate')");
+    expect(code.indexOf("blocked(r, 'hub-preflight'")).toBeLessThan(code.indexOf('// --- import ---'));
+  });
+
   test('le manifeste versionné respecte la cible du brief (au moins 2 produits par catégorie couverte)', () => {
     expect(validateManifest(manifest)).toEqual([]);
     const cats = new Set(manifest.entries.map((e) => e.category));
