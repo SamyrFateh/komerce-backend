@@ -7,7 +7,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: komerce-g13-catalogue-seed
+  group: komerce-g13-cj-source-refresh
   cancel-in-progress: false
 jobs:
   refresh:
