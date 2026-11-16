@@ -789,7 +789,8 @@ function renderDetailsDisclosure(panel, specifications) {
     lists.forEach(list => {
       const label = list.previousElementSibling;
       if (label?.classList.contains('k-modal-enriched-spec-group-label')) {
-        label.hidden = Boolean(list.firstElementChild?.hidden);
+        const generic = /^(general|général)$/i.test(label.textContent.trim());
+        label.hidden = !expanded && (generic || Boolean(list.firstElementChild?.hidden));
       }
     });
 
