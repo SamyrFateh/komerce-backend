@@ -30,6 +30,9 @@
 
 export const PHONE_COUNTRIES = [
   { code: '+269', flag: '🇰🇲', name: 'Comores',          digits: 7,  max: 7,  ph: '321 12 34' },
+  { code: '+237', flag: '🇨🇲', name: 'Cameroun',         digits: 9,  max: 9,  ph: '6 70 12 34 56' },
+  { code: '+242', flag: '🇨🇬', name: 'Congo (Brazzaville)', digits: 9, max: 9, ph: '06 123 45 67' },
+  { code: '+253', flag: '🇩🇯', name: 'Djibouti',         digits: 8,  max: 8,  ph: '77 83 10 10' },
   { code: '+33',  flag: '🇫🇷', name: 'France',           digits: 9,  max: 10, ph: '06 12 34 56 78' },
   { code: '+262', flag: '🇷🇪', name: 'Réunion / Mayotte',digits: 9,  max: 10, ph: '0692 12 34 56' },
   { code: '+32',  flag: '🇧🇪', name: 'Belgique',         digits: 9,  max: 10, ph: '0470 12 34 56' },
@@ -81,6 +84,18 @@ function formattedMaxLength(country) {
 export function prettifyLocal(raw, country) {
   const d = digitsOnly(raw).slice(0, country.max);
   if (!d) return '';
+  // Les marchés CM/CG/DJ ont des longueurs et groupements différents.
+  // Le 0 de début du Congo (+242) fait partie du numéro E.164 : ne pas le supprimer.
+  if (['+237', '+242', '+253'].includes(country.code)) {
+    const groups = country.code === '+237' ? [1, 2, 2, 2, 2]
+      : country.code === '+242' ? [2, 3, 2, 2] : [2, 2, 2, 2];
+    let cursor = 0;
+    return groups.map(size => {
+      const part = d.slice(cursor, cursor + size);
+      cursor += size;
+      return part;
+    }).filter(Boolean).join(' ');
+  }
   if (['+33','+262','+32','+41'].includes(country.code)) {
     return d.replace(/(\d{2})(?=\d)/g, '$1 ').trim();
   }
