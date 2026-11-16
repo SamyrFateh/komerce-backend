@@ -870,13 +870,15 @@ describe('renderListsTab — bibliothèque de listes (GAP-01/02)', () => {
   });
 });
 
+// Les actions sur secret ne sont proposées que dans Mes commandes authentifiées,
+// jamais dans une recherche publique par référence de suivi.
 describe('renderOrderDetail — code de retrait (#3900 R1)', () => {
   afterEach(() => jest.restoreAllMocks());
 
   it('ne régénère aucun code lorsque le client annule la confirmation', async () => {
     jest.spyOn(window, 'confirm').mockReturnValue(false);
     const container = document.createElement('div');
-    renderOrderDetail({ id: 'o-1', reference: 'K9ZZZZ', total_amount: 5000, status: 'available' }, container);
+    renderOrderDetail({ id: 'o-1', reference: 'K9ZZZZ', total_amount: 5000, status: 'available' }, container, { privateResources: { documents: [], wallet: null } });
     container.querySelector('.k-order-pickup-code-generate').click();
     await Promise.resolve();
     expect(apiPost).not.toHaveBeenCalledWith('/api/pickup/customer-regenerate/o-1', {});
@@ -886,7 +888,7 @@ describe('renderOrderDetail — code de retrait (#3900 R1)', () => {
     const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(true);
     apiPost.mockResolvedValueOnce({ code: 'ABC23DEF' });
     const container = document.createElement('div');
-    renderOrderDetail({ id: 'o-1', reference: 'K9ZZZZ', total_amount: 5000, status: 'available' }, container);
+    renderOrderDetail({ id: 'o-1', reference: 'K9ZZZZ', total_amount: 5000, status: 'available' }, container, { privateResources: { documents: [], wallet: null } });
     const btn = container.querySelector('.k-order-pickup-code-generate');
     expect(btn).not.toBeNull();
     btn.click();
