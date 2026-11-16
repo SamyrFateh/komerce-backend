@@ -382,6 +382,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Authority** : backend-core — normalized-product possede le contrat source versionne ; catalog possede le catalogue canonique et le contrat detail public ; toute modification modal catalogue suit DOCTRINE_PRODUCT_DETAIL_CONTRACT.md et docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md
 
 **Invariants** :
+- [object Object]
 - un produit publie a toujours passe product-publication-guard.js
 - [object Object]
 - [object Object]
@@ -448,7 +449,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 455 fichier(s) déclaré(s), boutique: 33 fichier(s)
+**Implementation** : 457 fichier(s) déclaré(s), boutique: 33 fichier(s)
   - boutique : 39
   - ci : 25
   - config : 1
@@ -459,8 +460,8 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - routes : 7
   - schemas : 5
   - scripts : 35
-  - services : 86
-  - tests : 209
+  - services : 87
+  - tests : 210
   - utils : 1
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="catalog"]_
