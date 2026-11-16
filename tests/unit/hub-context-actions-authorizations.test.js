@@ -91,3 +91,20 @@ test('régression P0-3 : un UUID réel (5 groupes) active les actions d\'achat �
   expect(actions(menu)).toEqual(['Attester l’envoi fournisseur']);
   expect(actions(run({ status: 'notified', sent_at: '2026-11-03T09:00:00Z' }, 'Fournisseur', {}))).toEqual([]);
 });
+
+test('écart fournisseur : la décision est distincte et réservée au détenteur du grant paiement', () => {
+  const po = { status: 'confirmed', payment_decision: decision };
+  expect(actions(run(po, 'Paiement', {}))).toEqual([]);
+  expect(actions(run(po, 'Paiement', { supplier_payment: true }, { role: 'finance' }))).toEqual([]);
+  expect(actions(run(po, 'Justificatifs', { supplier_payment: true }))).toEqual([]);
+  expect(actions(run(po, 'Paiement', { supplier_payment: true }))).toEqual(['Décider un écart fournisseur']);
+});
+
+test('écart déjà décidé : la preuve s’affiche sans offrir de nouvelle décision', () => {
+  const menu = run({
+    status: 'confirmed', payment_decision: decision,
+    variance_decision: { amount: '25', currency: 'AED', reason: 'Écart de prix', proof_ref: 'DEVIS-2' },
+  }, 'Paiement', { supplier_payment: true });
+  expect(actions(menu)).toEqual([]);
+  expect(texts(menu)).toContain('25 AED · Écart de prix · Pièce DEVIS-2');
+});

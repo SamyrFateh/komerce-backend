@@ -136,3 +136,8 @@ test('A2 : jsonRequest transmet Idempotency-Key uniquement quand elle est fourni
   await workspace.jsonRequest(without, '/x/boxes', { method: 'POST', body: {} });
   expect(without.mock.calls[0][1].headers).not.toHaveProperty('Idempotency-Key');
 });
+
+test('l’onglet Cash & dépôts de Relais live reçoit la vraie session (déclarer / recevoir une remise)', () => {
+  expect(SOURCE).toContain('user: context.user || {}');
+  expect(SOURCE).not.toMatch(/cashModule\.mount\(\{\s*root: host, document: doc, ui, fetch: context\.fetch, user: \{\}/);
+});

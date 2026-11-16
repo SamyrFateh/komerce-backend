@@ -8,7 +8,7 @@
  * @outputs       open-line groups, draft grouped purchase order, detach/discard/cancel results
  * @depends       db, services/purchase-line-snapshot.js, utils/logger.js
  * @used-by       routes/purchasing.js, services/purchasing-admin-service.js
- * @db-read       purchase_lines, purchase_orders, order_items, orders, markets, products, suppliers, v_purchase_line_market, purchase_order_authorizations
+ * @db-read       purchase_lines, purchase_orders, order_items, orders, markets, products, suppliers, v_purchase_line_market, v_purchase_line_progress, purchase_order_authorizations
  * @db-write      purchase_lines, purchase_orders
  * @db-txn        owned
  * @doctrine      docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md
@@ -274,12 +274,13 @@ async function listOpenLines({ market_id: marketId } = {}, q = db) {
 
 async function loadPurchaseOrderLines(q, poId) {
   const { rows } = await q.query(`
-    SELECT ${LINE_COLUMNS}
+    SELECT ${LINE_COLUMNS}, vp.received_quantity
     ${LINE_JOINS}
+      JOIN v_purchase_line_progress vp ON vp.line_id = pl.id
      WHERE pl.purchase_order_id = $1
      ORDER BY o.created_at, pl.created_at, pl.id
   `, [poId]);
-  return rows.map(shapeLine);
+  return rows.map((row) => ({ ...shapeLine(row), received_quantity: row.received_quantity }));
 }
 
 /** Lecture d'une PO regroupée : marché canonique de l'en-tête et commandes clientes de ses lignes. */

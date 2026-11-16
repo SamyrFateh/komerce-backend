@@ -104,6 +104,7 @@
     'pricing-workspace': 'pricing',
     'catalog-workspace': 'catalog',
     'market-catalog': 'markets',
+    unsold: 'markets',
     'product-360': 'catalog',
     commerce: 'orders',
     orders: 'orders',
@@ -136,7 +137,7 @@
     'pricing-workspace', 'catalog-workspace', 'sourcing-workspace', 'purchasing-workspace',
     'operations-workspace', 'shipping-customs-workspace', 'accounting-workspace', 'client-index',
     'users-admin', 'providers-admin', 'settings', 'demo',
-    'market-access', 'market-autonomy', 'market-catalog',
+    'market-access', 'market-autonomy', 'market-catalog', 'unsold',
   ]);
 
   const SURFACE_TO_SPACE = Object.freeze({
@@ -327,7 +328,9 @@
       path === '/dashboards/canonical/access.html'
       || path === '/dashboards/canonical/market-autonomy.html'
       || path === '/dashboards/canonical/market-catalog.html'
+      || path === '/dashboards/canonical/unsold.html'
     ) {
+      if (path.includes('unsold')) return 'unsold';
       if (path.includes('access')) return 'market-access';
       if (path.includes('market-catalog')) return 'market-catalog';
       return 'market-autonomy';
@@ -877,6 +880,7 @@
     'markets-home': '◎',
     'market-autonomy': '◎',
     'market-catalog': '▣',
+    unsold: '▦',
   });
 
   const SIDEBAR_GROUPS = Object.freeze([
@@ -940,6 +944,7 @@
         Object.freeze({ id: 'markets-home', label: 'Responsables pays', href: '/dashboards/canonical/access.html', roles: ['admin'], surfaces: ['market-access'] }),
         Object.freeze({ id: 'market-autonomy', label: 'Autonomie marché', href: '/dashboards/canonical/market-autonomy.html', roles: ['market_operator'], surfaces: ['market-autonomy'] }),
         Object.freeze({ id: 'market-catalog', label: 'Catalogue pays', href: '/dashboards/canonical/market-catalog.html', roles: ['admin', 'market_operator'], surfaces: ['market-catalog'] }),
+        Object.freeze({ id: 'unsold', label: 'Invendus', href: '/dashboards/canonical/unsold.html', roles: ['admin'], surfaces: ['unsold'] }),
       ]),
     }),
     Object.freeze({
@@ -975,6 +980,7 @@
       Object.freeze({ id: 'market-access', label: 'Accès pays', href: '/dashboards/canonical/access.html', roles: ['admin'] }),
       Object.freeze({ id: 'market-autonomy', label: 'Autonomie marché', href: '/dashboards/canonical/market-autonomy.html', roles: ['market_operator'] }),
       Object.freeze({ id: 'catalog-country', label: 'Catalogue pays', href: '/dashboards/canonical/market-catalog.html', roles: ['admin', 'market_operator'] }),
+      Object.freeze({ id: 'unsold', label: 'Invendus', href: '/dashboards/canonical/unsold.html', roles: ['admin'] }),
     ]),
   });
 
@@ -1198,6 +1204,7 @@
     }
     if (domainId === 'markets') {
       if (surface === 'market-catalog') return 'catalog-country';
+      if (surface === 'unsold') return 'unsold';
       return surface === 'market-autonomy' ? 'market-autonomy' : 'market-access';
     }
     return activeSpaceFor(surface) || path;
