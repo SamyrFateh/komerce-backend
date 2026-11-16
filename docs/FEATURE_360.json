@@ -35010,11 +35010,21 @@
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 1,
+            "count": 3,
             "files": [
               {
                 "declared": "dashboards/admin/js/api-client-unsold.js",
                 "resolvedPath": "public/dashboards/admin/js/api-client-unsold.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/js/unsold-workspace.js",
+                "resolvedPath": "public/dashboards/canonical/js/unsold-workspace.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/unsold.html",
+                "resolvedPath": "public/dashboards/canonical/unsold.html",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -35045,11 +35055,21 @@
             ]
           },
           "tests": {
-            "count": 2,
+            "count": 4,
             "files": [
               {
                 "declared": "tests/e2e-api/unsold-resolution.pipeline-real-db.e2e.test.js",
                 "resolvedPath": "tests/e2e-api/unsold-resolution.pipeline-real-db.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/local-chromium/g6e-unsold.spec.js",
+                "resolvedPath": "tests/local-chromium/g6e-unsold.spec.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/unsold-workspace.test.js",
+                "resolvedPath": "tests/unit/unsold-workspace.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -35060,7 +35080,7 @@
             ]
           }
         },
-        "totalFiles": 6,
+        "totalFiles": 10,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
