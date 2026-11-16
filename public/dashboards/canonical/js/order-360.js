@@ -48,6 +48,21 @@
     return `${formatNumber(value)} KMF`;
   }
 
+  function formatOrderMarketTotal(order) {
+    const currency = String(order?.market?.currency || 'KMF').toUpperCase();
+    const payment = order?.payment || {};
+    if (currency === 'KMF') return formatKmf(payment.total_kmf);
+    // Un total en devise locale doit provenir du snapshot client conservé par le serveur.
+    // Jamais de simple changement d'étiquette du pivot interne total_kmf.
+    if (payment.market_total_available === true
+        && String(payment.market_currency || '').toUpperCase() === currency
+        && payment.market_total != null
+        && Number.isFinite(Number(payment.market_total))) {
+      return `${formatNumber(payment.market_total)} ${currency}`;
+    }
+    return `— (${currency} non disponible)`;
+  }
+
   // L3 : fuseau métier du serveur (marché de l'objet), jamais celui du navigateur.
   let activeTimezone = null;
   function formatDate(value, timezone) {
@@ -113,7 +128,7 @@
     return [
       { key: 'status', label: 'Statut', value: order.status || '—' },
       { key: 'payment', label: 'Paiement', value: order.payment && order.payment.status || '—', tone: order.payment && order.payment.status === 'paid' ? 'positive' : 'warning' },
-      { key: 'total', label: 'Total', value: formatKmf(order.payment && order.payment.total_kmf) },
+      { key: 'total', label: 'Total client', value: formatOrderMarketTotal(order) },
       { key: 'assigned', label: 'Articles affectés', value: `${formatNumber(summary.items_assigned)}/${formatNumber(summary.items)}`, tone: Number(summary.items_assigned) >= Number(summary.items) && Number(summary.items) > 0 ? 'positive' : 'neutral' },
       { key: 'parcels', label: 'Colis', value: formatNumber(summary.parcels) },
       { key: 'incidents', label: 'Incidents ouverts', value: formatNumber(summary.open_incidents), tone: Number(summary.open_incidents) > 0 ? 'critical' : 'positive' },
@@ -635,6 +650,7 @@
     referenceFromPath,
     formatNumber,
     formatKmf,
+    formatOrderMarketTotal,
     formatDate,
     productDrills,
     purchaseOrderDrills,

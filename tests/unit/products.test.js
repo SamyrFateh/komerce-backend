@@ -50,20 +50,26 @@ jest.mock('../../middleware/upload', () => {
   const m = {
     single: () => (req, res, next) => {
       if (req.headers['x-test-file'] === '1') {
-        req.file = { filename: 'photo123.jpg', path: '/tmp/photo123.jpg' };
+        req.file = { originalname: 'photo123.jpg', buffer: Buffer.from([0xFF, 0xD8, 0xFF]), detectedMimeType: 'image/jpeg' };
       }
       next();
     },
     array: () => (req, res, next) => {
       if (req.headers['x-test-files']) {
         const n = Number(req.headers['x-test-files']);
-        req.files = Array.from({ length: n }, (_, i) => ({ filename: `img${i}.jpg`, path: `/tmp/img${i}.jpg` }));
+        req.files = Array.from({ length: n }, (_, i) => ({ originalname: `img${i}.jpg`, buffer: Buffer.from([0xFF, 0xD8, 0xFF]), detectedMimeType: 'image/jpeg' }));
       }
       next();
     },
+    validateMagicBytes: (req, res, next) => next(),
   };
   return m;
 });
+
+jest.mock('../../services/product-media-storage', () => ({
+  uploadProductImage: jest.fn(),
+  deleteProductImage: jest.fn(),
+}));
 
 jest.mock('../../services/product-admin-service', () => ({
   createProduct: jest.fn(),
@@ -79,21 +85,19 @@ jest.mock('../../services/product-admin-service', () => ({
   auditProductSkuReadiness: jest.fn(),
 }));
 
-jest.mock('fs', () => ({ unlinkSync: jest.fn() }));
-
 jest.mock('../../utils/logger', () => ({
   child: jest.fn(() => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() })),
 }));
 
-const fs = require('fs');
 const productAdminService = require('../../services/product-admin-service');
+const productMediaStorage = require('../../services/product-media-storage');
 const productsRouter = require('../../routes/products');
 
 function buildApp() {
   const app = express();
   app.use(express.json());
   app.use('/api/products', productsRouter);
-  app.use((err, req, res, next) => res.status(500).json({ error: err.message }));
+  app.use((err, req, res, next) => res.status(err.status || 500).json({ error: err.message }));
   return app;
 }
 
@@ -102,6 +106,10 @@ const VALID_UUID = '11111111-1111-1111-1111-111111111111';
 beforeEach(() => {
   jest.clearAllMocks();
   mockUser = { id: 'admin-1', role: 'admin' };
+  productMediaStorage.uploadProductImage.mockImplementation(async (_file, _productId) => ({
+    url: `https://ik.imagekit.io/komerce/products/${Math.random().toString(16).slice(2)}.jpg`,
+    fileId: `file-${Math.random().toString(16).slice(2)}`,
+  }));
 });
 
 describe('GET /api/products — liste', () => {
@@ -484,21 +492,39 @@ describe('POST /api/products/:id/image — upload image principale (admin)', () 
     expect(res.body).toEqual({ error: 'Aucune image envoyée. Champ attendu : "image" (multipart/form-data)' });
   });
 
-  it('produit introuvable → 404 + fichier uploadé supprimé du disque', async () => {
+  it('produit introuvable → 404 + média distant nettoyé', async () => {
+    productMediaStorage.uploadProductImage.mockResolvedValue({ url: 'https://ik.imagekit.io/komerce/products/test.jpg', fileId: 'file-1' });
     productAdminService.setMainImage.mockResolvedValue({ status: 404, body: { error: 'Produit introuvable ou inactif' } });
     const res = await request(buildApp()).post(`/api/products/${VALID_UUID}/image`).set('x-test-file', '1');
     expect(res.status).toBe(404);
-    expect(fs.unlinkSync).toHaveBeenCalledWith('/tmp/photo123.jpg');
+    expect(productMediaStorage.deleteProductImage).toHaveBeenCalledWith('file-1');
   });
 
-  it('nominal → 200 + image_url construite depuis le filename', async () => {
+  it('nominal → 200 + image_url persistante fournie par ImageKit', async () => {
+    productMediaStorage.uploadProductImage.mockResolvedValue({ url: 'https://ik.imagekit.io/komerce/products/test.jpg', fileId: 'file-1' });
     productAdminService.setMainImage.mockResolvedValue({
       status: 200,
-      body: { success: true, image_url: '/uploads/products/photo123.jpg', product: { id: VALID_UUID, name: 'Produit A' } },
+      body: { success: true, image_url: 'https://ik.imagekit.io/komerce/products/test.jpg', product: { id: VALID_UUID, name: 'Produit A' } },
     });
     const res = await request(buildApp()).post(`/api/products/${VALID_UUID}/image`).set('x-test-file', '1');
     expect(res.status).toBe(200);
-    expect(productAdminService.setMainImage).toHaveBeenCalledWith(expect.anything(), VALID_UUID, '/uploads/products/photo123.jpg');
+    expect(productMediaStorage.uploadProductImage).toHaveBeenCalledWith(expect.objectContaining({ buffer: expect.any(Buffer) }), VALID_UUID);
+    expect(productAdminService.setMainImage).toHaveBeenCalledWith(expect.anything(), VALID_UUID, 'https://ik.imagekit.io/komerce/products/test.jpg');
+  });
+
+  it('échec du provider → aucune URL catalogue écrite', async () => {
+    productMediaStorage.uploadProductImage.mockRejectedValue(Object.assign(new Error('ImageKit indisponible'), { status: 503 }));
+    const res = await request(buildApp()).post(`/api/products/${VALID_UUID}/image`).set('x-test-file', '1');
+    expect(res.status).toBe(503);
+    expect(productAdminService.setMainImage).not.toHaveBeenCalled();
+  });
+
+  it('échec de l’écriture catalogue → le média distant créé est nettoyé', async () => {
+    productMediaStorage.uploadProductImage.mockResolvedValue({ url: 'https://ik.imagekit.io/komerce/products/test.jpg', fileId: 'file-1' });
+    productAdminService.setMainImage.mockRejectedValue(new Error('database unavailable'));
+    const res = await request(buildApp()).post(`/api/products/${VALID_UUID}/image`).set('x-test-file', '1');
+    expect(res.status).toBe(500);
+    expect(productMediaStorage.deleteProductImage).toHaveBeenCalledWith('file-1');
   });
 });
 
@@ -509,21 +535,37 @@ describe('POST /api/products/:id/images — upload galerie (admin)', () => {
     expect(res.body).toEqual({ error: 'Aucune image envoyée. Champ attendu : "images" (max 5)' });
   });
 
-  it('produit introuvable → 404 + tous les fichiers supprimés', async () => {
+  it('produit introuvable → 404 + tous les médias distants nettoyés', async () => {
     productAdminService.appendImages.mockResolvedValue({ status: 404, body: { error: 'Produit introuvable ou inactif' } });
+    productMediaStorage.uploadProductImage
+      .mockResolvedValueOnce({ url: 'https://ik.imagekit.io/komerce/products/one.jpg', fileId: 'file-1' })
+      .mockResolvedValueOnce({ url: 'https://ik.imagekit.io/komerce/products/two.jpg', fileId: 'file-2' })
+      .mockResolvedValueOnce({ url: 'https://ik.imagekit.io/komerce/products/three.jpg', fileId: 'file-3' });
     const res = await request(buildApp()).post(`/api/products/${VALID_UUID}/images`).set('x-test-files', '3');
     expect(res.status).toBe(404);
-    expect(fs.unlinkSync).toHaveBeenCalledTimes(3);
+    expect(productMediaStorage.deleteProductImage.mock.calls).toEqual([['file-1'], ['file-2'], ['file-3']]);
+  });
+
+  it('échec au milieu de l’upload galerie → nettoie les médias déjà créés sans écrire au catalogue', async () => {
+    productMediaStorage.uploadProductImage
+      .mockResolvedValueOnce({ url: 'https://ik.imagekit.io/komerce/products/one.jpg', fileId: 'file-1' })
+      .mockRejectedValueOnce(Object.assign(new Error('ImageKit indisponible'), { status: 503 }));
+    const res = await request(buildApp()).post(`/api/products/${VALID_UUID}/images`).set('x-test-files', '2');
+    expect(res.status).toBe(503);
+    expect(productMediaStorage.deleteProductImage).toHaveBeenCalledWith('file-1');
+    expect(productAdminService.appendImages).not.toHaveBeenCalled();
   });
 
   it('nominal → 200, product_name retiré du corps de réponse', async () => {
     productAdminService.appendImages.mockResolvedValue({
       status: 200,
-      body: { product_name: 'Produit A', images: ['/uploads/products/img0.jpg'], new_images: ['/uploads/products/img0.jpg'], total_count: 1 },
+      body: { product_name: 'Produit A', images: ['https://ik.imagekit.io/komerce/products/img0.jpg'], new_images: ['https://ik.imagekit.io/komerce/products/img0.jpg'], total_count: 1 },
     });
+    productMediaStorage.uploadProductImage.mockResolvedValue({ url: 'https://ik.imagekit.io/komerce/products/img0.jpg', fileId: 'file-1' });
     const res = await request(buildApp()).post(`/api/products/${VALID_UUID}/images`).set('x-test-files', '1');
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ images: ['/uploads/products/img0.jpg'], new_images: ['/uploads/products/img0.jpg'], total_count: 1 });
+    expect(productAdminService.appendImages).toHaveBeenCalledWith(expect.anything(), VALID_UUID, ['https://ik.imagekit.io/komerce/products/img0.jpg']);
+    expect(res.body).toEqual({ images: ['https://ik.imagekit.io/komerce/products/img0.jpg'], new_images: ['https://ik.imagekit.io/komerce/products/img0.jpg'], total_count: 1 });
   });
 });
 

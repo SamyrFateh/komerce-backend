@@ -561,7 +561,108 @@
     parent.appendChild(block);
   }
 
-  function renderSupplierExecution(doc, slot, execution) {
+  function appendOperatorForm(doc, parent, title, fields, submitAction) {
+    const panel = doc.createElement('details');
+    panel.appendChild(text(doc, 'summary', '', title));
+    const form = doc.createElement('form');
+    form.className = 'kmc-purchasing-confirm';
+    const inputs = fields.map(({ label, ...properties }) => {
+      const wrapper = text(doc, 'label', '', label);
+      const input = Object.assign(doc.createElement('input'), properties);
+      wrapper.appendChild(input);
+      form.appendChild(wrapper);
+      return input;
+    });
+    const submit = makeButton(doc, 'Enregistrer', 'record-operator-action');
+    submit.type = 'submit';
+    form.appendChild(submit);
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      if (!submit.disabled && form.reportValidity()) submitAction(submit, inputs);
+    });
+    panel.appendChild(form);
+    parent.appendChild(panel);
+  }
+
+  function renderPaymentSettlement(doc, parent, payment, context) {
+    if (!payment.id || payment.status !== 'succeeded' || payment.real_debit_verified !== true) return;
+    const key = `payment-settlement:${payment.id}`;
+    const url = `${ENDPOINT}/supplier-payments/${encodeURIComponent(payment.id)}/settlements`;
+    const history = makeButton(doc, 'Voir les règlements consignés', 'read-payment-settlements', true);
+    const historySlot = doc.createElement('div');
+    historySlot.setAttribute('aria-live', 'polite');
+    history.addEventListener('click', async () => {
+      history.disabled = true;
+      try {
+        const result = await jsonRequest(context.fetchFn, url);
+        historySlot.replaceChildren();
+        const rows = result.settlements || [];
+        if (!rows.length) historySlot.appendChild(text(doc, 'p', '', 'Aucun règlement consigné.'));
+        renderExecutionTable(doc, historySlot, 'Règlements consignés',
+          ['Nature', 'Montant', 'Débit hors frais', 'Frais', 'Justificatif'], rows,
+          (row) => [row.kind, formatExactAmount(row.amount_currency, row.currency),
+            formatExactAmount(row.amount_kmf, 'KMF'), formatExactAmount(row.fees_kmf, 'KMF'), row.proof_ref],
+          'settlements');
+      } catch (error) {
+        historySlot.textContent = describeError(error);
+      } finally {
+        history.disabled = false;
+      }
+    });
+    parent.append(history, historySlot);
+    const amount = { type: 'number', required: true, min: '0.01', step: '0.01' };
+    appendOperatorForm(doc, parent,
+      `Consigner le débit vérifié · ${payment.payment_ref || shortId(payment.id)}`, [
+        { ...amount, label: `Montant débité en ${payment.currency}`, min: '0.0001', step: '0.0001' },
+        { ...amount, label: 'Montant du débit hors frais (KMF)' },
+        { ...amount, label: 'Frais constatés (KMF)', required: false, min: '0' },
+        { label: 'Référence unique du débit (relevé ou reçu)', required: true, maxLength: 180 },
+      ], (button, [native, kmf, fees, proof]) => {
+        if (context.busy.has(key)) return;
+        const reference = proof.value.trim();
+        if (!reference) {
+          setFeedback(context.root, 'La référence du débit est obligatoire.', 'critical');
+          return;
+        }
+        context.act(button, key, {
+          url,
+          body: {
+            kind: 'payment', currency: payment.currency, amount_currency: native.value,
+            amount_kmf: kmf.value, fees_kmf: fees.value || '0',
+            proof_ref: reference, idempotency_key: `purchasing-ui:${reference}`,
+          },
+          successMessage: 'Débit déjà effectué consigné dans les règlements fournisseur.',
+        });
+      });
+  }
+
+  function renderLineSettlement(doc, parent, po, line, context) {
+    if (line.settled_at || line.cancelled || !['notified', 'confirmed'].includes(po.status)) return;
+    if (po.status === 'confirmed' && line.confirmed_quantity == null) return;
+    const received = line.received_quantity;
+    const effective = line.effective_quantity;
+    if (!Number.isInteger(received) || !Number.isInteger(effective) || received >= effective) return;
+    const key = `line-settlement:${line.line_id}`;
+    appendOperatorForm(doc, parent,
+      `Clôturer la ligne ${line.order_reference || shortId(line.line_id)} · ${received}/${effective} reçu(s)`, [
+        { label: 'Motif de clôture', required: true },
+        { label: 'Rouvrir le reliquat pour un autre achat', type: 'checkbox', checked: true },
+      ], (button, [reason, reopen]) => {
+        if (context.busy.has(key)) return;
+        if (!reason.value.trim()) {
+          setFeedback(context.root, 'Le motif de clôture est obligatoire.', 'critical');
+          return;
+        }
+        if (!reopen.checked && !context.confirm('Confirmer la rupture définitive du reliquat ? Un incident sera ouvert.')) return;
+        context.act(button, key, {
+          url: `${ENDPOINT}/lines/${encodeURIComponent(line.line_id)}/settle`,
+          body: { settled_quantity: received, reason: reason.value.trim(), reopen_remainder: reopen.checked },
+          successMessage: (result) => result.remnant ? 'Ligne clôturée et reliquat rouvert.' : 'Ligne clôturée.',
+        });
+      });
+  }
+
+  function renderSupplierExecution(doc, slot, execution, context) {
     const source = execution || {};
     const orders = source.orders || [];
     const orderLines = source.order_lines || [];
@@ -644,6 +745,10 @@
       ],
       'payments');
 
+    if (context.user.role === 'admin') {
+      payments.forEach((payment) => renderPaymentSettlement(doc, section, payment, context));
+    }
+
     renderExecutionTable(doc, section, 'Preuves de paiement',
       ['Provider', 'Source', 'Référence', 'Montant observé', 'Débit confirmé', 'Sandbox', 'Simulée'],
       proofs,
@@ -723,7 +828,8 @@
     const executionSummary = doc.createElement('summary');
     executionSummary.textContent = 'Exécution fournisseur · ordres, paiements, preuves et événements';
     executionPanel.appendChild(executionSummary);
-    renderSupplierExecution(doc, executionPanel, detail.supplier_execution);
+    renderSupplierExecution(doc, executionPanel, detail.supplier_execution, context);
+    lines.forEach((line) => renderLineSettlement(doc, slot, po, line, context));
     slot.appendChild(executionPanel);
 
     // Une PO ouverte peut accueillir de nouveaux besoins CLIENTS du même fournisseur,

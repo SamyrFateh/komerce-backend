@@ -361,3 +361,41 @@ describe('makeIntlPhoneInput', () => {
     expect(sel.value).toBe('+269'); // reste sur le défaut
   });
 });
+
+// Régression G13 : les marchés CM/CG/DJ doivent être sélectionnables au checkout.
+describe('indicatifs Cameroun, Congo et Djibouti', () => {
+  const examples = [
+    ['+237', '670123456', '6 70 12 34 56'],
+    ['+242', '061234567', '06 123 45 67'],
+    ['+253', '77831010', '77 83 10 10'],
+  ];
+
+  it.each(examples)('%s : indicatif disponible, longueur, format et E.164', (code, local, expectedDisplay) => {
+    const country = PHONE_COUNTRIES.find(c => c.code === code);
+    expect(country).toBeDefined();
+    expect(isValidLocalLength(code, local)).toBe(true);
+    expect(isValidLocalLength(code, local.slice(0, -1))).toBe(false);
+    expect(prettifyLocal(local, country)).toBe(expectedDisplay);
+    expect(buildE164(code, local)).toBe(code + local);
+  });
+
+  it.each(examples)('%s : le champ checkout permet la sélection et la saisie', (code, local, expectedDisplay) => {
+    const data = { phone: '' };
+    const group = makeIntlPhoneInput('checkout-phone', 'Téléphone', data, 'phone');
+    document.body.appendChild(group);
+    const sel = group.querySelector('select');
+    const input = group.querySelector('input');
+    expect([...sel.options].some(option => option.value === code)).toBe(true);
+    sel.value = code;
+    sel.dispatchEvent(new Event('change'));
+    input.value = local;
+    input.dispatchEvent(new Event('input'));
+    expect(input.value).toBe(expectedDisplay);
+    expect(data.phone).toBe(code + local);
+  });
+
+  it('préserve le zéro significatif du Congo lors de la normalisation', () => {
+    expect(normalizeLocal('+242', '061234567')).toBe('061234567');
+    expect(buildE164('+242', '06 123 45 67')).toBe('+242061234567');
+  });
+});
