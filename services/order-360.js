@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        server_resolved_order, projection_options
  * @outputs       order_360_projection, authorized_purchasing_projection, authorized_costs_projection, logistics_control_position
- * @depends       db, logistics-control-chain-projection, dashboard-finance-canonical
+ * @depends       db, logistics-control-chain-projection, dashboard-finance-canonical, relay-collect-amount
  * @used-by       routes/admin-order-360.js
  * @db-read       orders, users, relais, markets, order_items, products, parcels, parcel_items, order_status_history, scans, order_incidents, order_comments, client_notifications, invoices, transaction_documents, purchase_orders, purchase_lines, suppliers
  * @db-write      none
@@ -22,6 +22,7 @@ const db = require('../db');
 const { resolveBusinessTimezone } = require('./market-business-day');
 const controlChain = require('./logistics-control-chain-projection');
 const financeCanonical = require('./dashboard-finance-canonical');
+const { resolveCollectAmount } = require('./relay-collect-amount');
 
 const ORDER_REFERENCE = /^[A-Za-z0-9][A-Za-z0-9._-]{1,79}$/;
 
@@ -40,7 +41,8 @@ async function resolveOrder(reference) {
       o.status::text AS status,
       o.payment_status::text AS payment_status,
       o.payment_mode::text AS payment_mode,
-      o.total_kmf, o.destination_island, o.routing_mode, o.transit_hub,
+      o.total_kmf, o.display_total_amount, o.display_currency,
+      o.destination_island, o.routing_mode, o.transit_hub,
       o.created_at, o.updated_at, o.simulation_scope,
       u.full_name AS customer_name, u.email AS customer_email, u.phone AS customer_phone,
       r.name AS relais_name, r.address AS relais_address, r.phone AS relais_phone,
@@ -58,6 +60,14 @@ async function resolveOrder(reference) {
 }
 
 function publicOrder(order) {
+  // Le pivot KMF n'est pas le prix d'achat affichable sur les marchés XAF.
+  // Reprendre uniquement le snapshot client conservé à la commande (fail-closed).
+  const marketTotal = resolveCollectAmount({
+    total_kmf: order.total_kmf,
+    display_total_amount: order.display_total_amount,
+    display_currency: order.display_currency,
+    market_currency: order.market_currency,
+  });
   return Object.freeze({
     reference: order.reference,
     status: order.status,
@@ -66,7 +76,10 @@ function publicOrder(order) {
     payment: Object.freeze({
       status: order.payment_status,
       mode: order.payment_mode,
-      total_kmf: Number(order.total_kmf) || 0,
+      total_kmf: Number(order.total_kmf) || 0, // pivot comptable, jamais étiqueté XAF
+      market_total: marketTotal.amount,
+      market_currency: marketTotal.currency,
+      market_total_available: marketTotal.available,
     }),
     destination: Object.freeze({
       island: order.destination_island || null,

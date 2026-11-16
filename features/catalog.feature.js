@@ -185,6 +185,7 @@ module.exports = {
       'services/catalog-fr-quality.js',
       'services/catalog-terminology-memory.js',
       'services/product-admin-service.js',
+      'services/product-media-storage.js',
       'services/suppliers/catalog-import-orchestrator.js',
       'services/product-variant-service.js',
       'services/product-sku-service.js',
@@ -480,6 +481,7 @@ module.exports = {
       'tests/unit/normalized-product.test.js',
       'tests/unit/normalized-product-source-contract-v2.test.js',
       'tests/unit/product-admin-service.test.js',
+      'tests/unit/product-media-storage.test.js',
       'tests/unit/product-variant-service.test.js',
       'tests/unit/product-sku-service.test.js',
       'tests/unit/product-sellable-service.test.js',
@@ -740,6 +742,8 @@ module.exports = {
   authority: 'backend-core — normalized-product possede le contrat source versionne ; catalog possede le catalogue canonique et le contrat detail public ; toute modification modal catalogue suit DOCTRINE_PRODUCT_DETAIL_CONTRACT.md et docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md',
 
   invariants: [
+    { statement: 'les nouveaux médias produit sont stockés chez ImageKit avant écriture de leur URL en base ; aucun upload produit ne persiste un chemin sur le disque Railway',
+      test: 'tests/unit/product-media-storage.test.js' },
     'un produit publie a toujours passe product-publication-guard.js',
     { statement: 'un brouillon Catalogue issu du Sourcing peut exister sans price_kmf uniquement tant qu il reste lifecycle candidate, is_active=false et is_available=false ; le prix de vente strictement positif devient obligatoire au gate de publication, jamais à la remise Sourcing → Catalogue',
       test: 'tests/unit/product-publication-guard.test.js' },

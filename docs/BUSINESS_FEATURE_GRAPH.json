@@ -2049,6 +2049,13 @@
       {
         "feature": "catalog",
         "category": "services",
+        "declared": "services/product-media-storage.js",
+        "resolvedPath": "services/product-media-storage.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
         "declared": "services/suppliers/catalog-import-orchestrator.js",
         "resolvedPath": "services/suppliers/catalog-import-orchestrator.js",
         "status": "resolved-in-technical-graph"
@@ -3997,6 +4004,13 @@
         "category": "tests",
         "declared": "tests/unit/product-admin-service.test.js",
         "resolvedPath": "tests/unit/product-admin-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/product-media-storage.test.js",
+        "resolvedPath": "tests/unit/product-media-storage.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -50130,7 +50144,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2353
+        "filesObserved": 2355
       },
       "boutique": {
         "filesObserved": 216,
