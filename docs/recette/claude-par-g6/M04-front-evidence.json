@@ -1,0 +1,24 @@
+{
+ "run8": "7B3E9A52",
+ "sha": "502739ab2",
+ "scenario": "M04 (CM) — partiel",
+ "order": {
+  "reference": "KYFOXNU",
+  "payment_mode": "cash_relais",
+  "pdp_price": "6 655 XAF",
+  "checkout_total": "6 655 XAF"
+ },
+ "cash": {
+  "http": 200,
+  "replay": {
+   "status": 404,
+   "code": "cash_confirmation_rejected"
+  },
+  "other_market": {
+   "status": 403,
+   "code": "MARKET_MEMBERSHIP_REQUIRED"
+  }
+ },
+ "finding": "12:02:22Z uncaughtException 'terminating connection due to idle-in-transaction timeout' ~20 s apres la confirmation cash (12:02:02Z) ; aucune ligne d'achat ouverte (purchase_line_ids=0, proof run 43863236734) ; suspect services/purchasing-trigger-service.js:123-126 (BEGIN puis awaits longs, pas de gestionnaire d'erreur client)",
+ "ui_limit": "public/boutique/js/b-phone.js:31-43 : pas d'indicatif +237/+242 dans l'identification acheteur"
+}

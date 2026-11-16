@@ -1,0 +1,96 @@
+// Commande boutique par un acheteur CLAUDE-PAR (Chromium). Usage: node order.js MARKET PRODUCT_REF RELAY_NAME
+'use strict';
+const fs=require('fs'),path=require('path');
+const {chromium}=require('/home/claude/wt-G6PAR/node_modules/playwright');
+const S='/tmp/claude-0/-home-claude/011d1491-2f57-5b4d-98e0-a4b4e0b2f674/scratchpad/claude-par-keys';
+const ORIGIN='https://komerce-backend-production.up.railway.app';
+const [MK,REF,RELAY]=process.argv.slice(2);
+const OUT=path.join('/home/claude/g6lot','out',MK+'-'+REF);fs.mkdirSync(OUT,{recursive:true});
+const buyers=JSON.parse(fs.readFileSync(S+'/buyers-fresh.json'));
+const B=buyers.filter(b=>b.market===MK).pop();
+const R={market:MK,ref:REF,steps:[]};const save=()=>fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(R,null,2));
+const st=(k,v)=>{R.steps.push([k,v]);save()};
+(async()=>{
+ const sha0=(await (await fetch(ORIGIN+'/health/version')).json()).commit;R.sha_start=sha0;
+ const prods=(await (await fetch(ORIGIN+`/api/products?limit=1000&market=${MK}`)).json()).products;
+ const P=prods.find(p=>p.product_ref===REF);if(!P){st('product_absent',REF);process.exitCode=2;return}
+ R.product={id:P.id,name:P.name,price_kmf:P.price_kmf,market_price:[P.market_price_amount,P.market_price_currency],stock:P.stock};
+let ctx0;const browser=await chromium.launch({headless:true,executablePath:'/opt/pw-browsers/chromium-1243/chrome-linux64/chrome',args:['--no-sandbox']});
+ try{
+  const sf=S+'/session-'+MK+'.json';const reuse=process.env.REUSE==='1'&&fs.existsSync(sf);const ctx=ctx0=await browser.newContext({viewport:{width:1440,height:900},locale:'fr-FR',...(reuse?{storageState:sf}:{})});
+  const page=await ctx.newPage();let orders=0;
+  await page.route('**/*',async route=>{const rq=route.request(),m=rq.method();
+   if(['GET','HEAD','OPTIONS'].includes(m))return route.continue();
+   const u=new URL(rq.url());
+   if(m==='POST'&&u.origin===ORIGIN&&['/api/auth/otp/request','/api/auth/otp/verify','/api/orders','/api/orders/preview'].includes(u.pathname)){
+    if(u.pathname==='/api/orders'&&++orders!==1)return route.abort();return route.continue()}
+   if(u.origin!==ORIGIN&&m==='POST')return route.continue();
+   R.blocked=(R.blocked||[]).concat(m+' '+u.pathname);return route.abort()});
+  if(reuse){await page.goto(`${ORIGIN}/boutique/?market=${MK}`,{waitUntil:'domcontentloaded'});st('session_reused',true)}else if(MK==='KM'){
+  await page.goto(`${ORIGIN}/boutique/?market=${MK}`,{waitUntil:'domcontentloaded'});
+    await page.locator('.k-header-nav-btn[data-tab="komerce"]').first().click();
+    await page.locator('#k-kmc-identify').click();
+    await page.locator('#k-id-step-phone').waitFor({state:'visible',timeout:15000});
+    await page.locator('#k-id-name').fill('CLAUDE-PAR');await page.locator('#k-id-lastname').fill('7B3E9A52');
+    const local=B.phone.replace(/^\+(269|237|242)/,'');
+    await page.locator('#k-id-phone-country').selectOption(B.phone.slice(0,B.phone.startsWith('+269')?4:4));
+    await page.locator('#k-id-phone').fill(local);
+    const rq=page.waitForResponse(r=>r.url().endsWith('/api/auth/otp/request')&&r.request().method()==='POST',{timeout:15000});
+    await page.locator('#k-id-phone-cta').click();const rr=await rq;st('otp_request',rr.status());
+    await page.locator('#k-id-step-otp').waitFor({state:'visible',timeout:12000});
+    const ver=page.waitForResponse(r=>r.url().endsWith('/api/auth/otp/verify')&&r.request().method()==='POST',{timeout:16000});
+    for(let i=0;i<6;i++)await page.locator('.k-id-otp-box').nth(i).fill(B.otp[i]);
+    const vr=await ver;st('otp_verify',vr.status());
+    if(vr.status()!==200)throw Error('OTP_VERIFY_'+vr.status());
+  }else{
+   // /boutique ne propose pas +237/+242 dans le selecteur d'indicatif (b-phone.js:31-43) : identification par HTTP, memes routes que l'UI.
+   R.ui_identity_limit='PHONE_COUNTRIES sans +237/+242 : connexion acheteur CM/CG par HTTP otp/request + otp/verify';
+   const H={origin:ORIGIN,'content-type':'application/json'};
+   const r1=await ctx.request.post(ORIGIN+'/api/auth/otp/request',{headers:H,data:{phone:B.phone,purpose:'login'}});st('otp_request_http',r1.status());
+   const r2=await ctx.request.post(ORIGIN+'/api/auth/otp/verify',{headers:H,data:{phone:B.phone,code:B.otp,purpose:'login'}});st('otp_verify_http',r2.status());
+   if(r2.status()!==200)throw Error('OTP_VERIFY_HTTP_'+r2.status());
+   await page.goto(`${ORIGIN}/boutique/?market=${MK}`,{waitUntil:'domcontentloaded'});
+  }
+  if(!reuse)await ctx.storageState({path:sf});
+  await page.goto(`${ORIGIN}/boutique/?market=${MK}`,{waitUntil:'domcontentloaded'});
+  await page.locator('#k-search-input').fill(P.name);
+  const item=page.locator('#k-search-dropdown .k-search-item[data-id="'+P.id+'"]');
+  await item.waitFor({state:'visible',timeout:25000});await item.click();
+  await page.locator('#k-modal-name').waitFor({state:'visible',timeout:13000});
+  await page.locator('#k-modal-variants [data-pdc5-root]').waitFor({state:'attached',timeout:20000}).catch(()=>{});
+  const add=page.locator('#k-add-cart-btn');
+  for(let n=0;n<12&&!await add.isEnabled();n++){
+   const o=page.locator('#k-modal-variants button[data-option-state="AVAILABLE"][data-option-value]:not([aria-pressed="true"])');
+   if(!await o.count())break;await o.first().click()}
+  st('add_enabled',await add.isEnabled());if(!await add.isEnabled())throw Error('NOT_PURCHASABLE');
+  R.pdp_price_text=(await page.locator('#k-modal-price').innerText()).trim();
+  await add.click();
+  await page.waitForFunction(()=>Number(document.querySelector('#k-modal-cart-badge')?.textContent||0)>0,null,{timeout:10000});
+  await page.locator('#k-modal-close').click();
+  await page.locator('#k-side-cart.has-items').waitFor({state:'visible',timeout:12000});
+  const co=page.locator('#k-sc-checkout');if(await co.isVisible())await co.click();else await page.locator('#k-cart-btn').click();
+  await page.locator('#k-order-modal.open').waitFor({state:'visible',timeout:15000});
+  await page.locator('#k-order-modal .ck-chip-lbl',{hasText:/^Cash$/}).first().click().catch(()=>{});await page.waitForTimeout(1500);
+  await page.waitForFunction(()=>{const e=document.getElementById('btn-confirm-order');return e&&!e.disabled},null,{timeout:16000});
+  R.relay_default=(await page.locator('#ck-relais-summary').innerText().catch(()=>'')).replace(/\s+/g,' ');
+  if(RELAY&&!R.relay_default.includes(RELAY)){
+   const n=await page.locator('.ck-step-header-change').count();
+   await page.locator('.ck-step-header-change').nth(n>1?1:0).click();await page.waitForTimeout(1500);
+   await page.locator('.ck-relais-item').first().waitFor({timeout:15000}).catch(()=>{});
+   const it=page.locator('.ck-relais-item').filter({hasText:RELAY}).first();
+   R.relay_choices=await page.locator('.ck-relais-item').allInnerTexts().then(a=>a.map(x=>x.replace(/\s+/g,' ').slice(0,60)));
+   st('relay_offered',await it.count()>0);if(await it.count())await it.click();
+   const cta=page.locator('.ck-relais-sheet-cta');await page.waitForTimeout(1200);if(await cta.isVisible().catch(()=>false))await cta.click({force:true}).catch(()=>{});
+   await page.waitForTimeout(800);
+   R.relay_selected=(await page.locator('#ck-relais-summary').innerText().catch(()=>'')).replace(/\s+/g,' ');
+  }
+  R.checkout_total_text=(await page.locator('#ck-final-total-amount').innerText()).trim();
+  await page.screenshot({path:path.join(OUT,'checkout.png')});
+  const resp=page.waitForResponse(r=>r.url().endsWith('/api/orders')&&r.request().method()==='POST',{timeout:25000});
+  await page.locator('#btn-confirm-order').click();const cr=await resp,body=await cr.json().catch(()=>null);
+  st('order_post',cr.status());
+  R.order=body&&body.order?{id:body.order.id,reference:body.order.reference,total_kmf:body.order.total_kmf,status:body.order.status,payment_mode:body.order.payment_mode}:{err:JSON.stringify(body).slice(0,300)};
+  await page.screenshot({path:path.join(OUT,'confirmation.png')});
+ }catch(e){R.error=String(e.message).slice(0,300);try{const pg=ctx0&&ctx0.pages()[0];if(pg){await pg.screenshot({path:path.join(OUT,'error.png')});R.err_text=(await pg.locator('#k-order-modal').innerText().catch(()=>'')).replace(/\s+/g,' ').slice(0,700)}}catch(_){}}
+ finally{await browser.close();R.sha_end=(await (await fetch(ORIGIN+'/health/version')).json()).commit;save();console.log(JSON.stringify({error:R.error||null,order:R.order||null,sha:R.sha_start===R.sha_end,relay:R.relay_selected||R.relay_default}))}
+})();

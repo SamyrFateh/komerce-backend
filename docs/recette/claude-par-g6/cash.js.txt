@@ -1,0 +1,41 @@
+// Encaissement cash par l'agent relais CLAUDE-PAR (Chromium) + rejeu + autre marche. Usage: node cash.js MARKET ORDER_REF
+'use strict';
+const fs=require('fs'),path=require('path');
+const {chromium}=require('/home/claude/wt-G6PAR/node_modules/playwright');
+const S='/tmp/claude-0/-home-claude/011d1491-2f57-5b4d-98e0-a4b4e0b2f674/scratchpad/claude-par-keys';
+const ORIGIN='https://komerce-backend-production.up.railway.app';
+const [MK,REF]=process.argv.slice(2);
+const creds=MK==='KM'?JSON.parse(fs.readFileSync(S+'/creds.json'))['agent-relais']:JSON.parse(fs.readFileSync(S+'/creds-cm-cg.json'))[MK.toLowerCase()+'-agent-relais'];
+const LAB={KM:'KM · Comores',CM:'CM · Cameroun',CG:'CG · Congo-Brazzaville'};
+const OUT=path.join('/home/claude/g6lot','out','cash-'+MK+'-'+REF);fs.mkdirSync(OUT,{recursive:true});
+const R={market:MK,ref:REF};const save=()=>fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(R,null,2));
+(async()=>{
+ R.sha_start=(await (await fetch(ORIGIN+'/health/version')).json()).commit;
+ const browser=await chromium.launch({headless:true,executablePath:'/opt/pw-browsers/chromium-1243/chrome-linux64/chrome',args:['--no-sandbox']});let page;
+ try{
+  const ctx=await browser.newContext({viewport:{width:1440,height:900}});page=await ctx.newPage();page.on('dialog',d=>d.accept());
+  await page.goto(ORIGIN+'/login.html');
+  await page.locator('#email').fill(creds.email);await page.locator('#password').fill(creds.password);
+  const lr=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/auth/login'&&r.request().method()==='POST');
+  await page.locator('#btn-submit').click();R.login=(await lr).status();
+  await page.waitForURL(u=>u.pathname!=='/login.html',{timeout:20000});
+  await page.goto(ORIGIN+`/admin/relais-live?view=execute&market=${MK}`,{waitUntil:'domcontentloaded'});
+  const sel=page.locator('select').first();
+  if(await sel.count()){await sel.selectOption({label:LAB[MK]}).catch(()=>{})}
+  await page.waitForLoadState('networkidle').catch(()=>{});
+  await page.locator('[data-relay-execution-jump="cash"]').click({timeout:20000});
+  const row=page.locator('tr',{hasText:REF});
+  await row.waitFor({timeout:25000});R.row_visible=true;
+  await page.screenshot({path:path.join(OUT,'cash-pending.png')});
+  const p=`/api/admin/workspaces/operations/market/${MK}/orders/${REF}/confirm-cash`;let cap=null;
+  page.on('request',r=>{if(new URL(r.url()).pathname===p&&r.method()==='POST')cap={headers:r.headers(),body:r.postData()}});
+  const cr=page.waitForResponse(r=>new URL(r.url()).pathname===p&&r.request().method()==='POST',{timeout:30000});
+  await row.locator('[data-workspace-action="confirm-cash"]').click();
+  const c1=await cr;R.cash_http=c1.status();R.cash_body=await c1.json().catch(()=>null);
+  await page.screenshot({path:path.join(OUT,'cash-confirmed.png')});
+  const rep=async url=>page.evaluate(async({url,h,b})=>{const r=await fetch(url,{method:'POST',credentials:'include',headers:h,body:b});let j=null;try{j=await r.json()}catch(e){}return{status:r.status,code:j&&(j.code||j.error&&j.error.code)||null}},{url:ORIGIN+url,h:Object.fromEntries(Object.entries(cap.headers).filter(([k])=>!['content-length','host','cookie'].includes(k))),b:cap.body});
+  await new Promise(r=>setTimeout(r,31000));
+  if(cap){R.replay=await rep(p);R.other_market=await rep(p.replace('/market/'+MK+'/','/market/'+(MK==='CM'?'CG':'CM')+'/'))}
+ }catch(e){R.error=String(e.message).slice(0,300);try{await page.screenshot({path:path.join(OUT,'error.png')})}catch(_){}}
+ finally{await browser.close();R.sha_end=(await (await fetch(ORIGIN+'/health/version')).json()).commit;save();console.log(JSON.stringify(R))}
+})();

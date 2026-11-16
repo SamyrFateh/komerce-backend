@@ -1,0 +1,12 @@
+const fs=require('fs');const S='/tmp/claude-0/-home-claude/011d1491-2f57-5b4d-98e0-a4b4e0b2f674/scratchpad/claude-par-keys';
+const O='https://komerce-backend-production.up.railway.app';
+const C=JSON.parse(fs.readFileSync(S+'/creds.json')),C2=JSON.parse(fs.readFileSync(S+'/creds-cm-cg.json'));
+const key={hub_agent:C['agent-hub'],hub_director:C['hub-director'],sourcing:C['sourcing'],finance:C['finance'],admin:C['admin'],
+ km_relais:C['agent-relais'],km_op:C['market-operator'],km_transit:C['agent-transitaire'],...Object.fromEntries(Object.entries(C2).map(([k,v])=>[k.replace(/-/g,'_'),v]))};
+const jar={};
+async function as(role){if(jar[role])return jar[role];
+ const c=key[role];const r=await fetch(O+'/api/auth/login',{method:'POST',headers:{'content-type':'application/json',origin:O},body:JSON.stringify(c)});
+ if(r.status!==200)throw Error('LOGIN_'+role+'_'+r.status);
+ const ck=r.headers.getSetCookie().map(x=>x.split(';')[0]).join('; ');
+ return jar[role]=async(m,p,b)=>{const x=await fetch(O+p,{method:m,headers:{cookie:ck,origin:O,...(b?{'content-type':'application/json'}:{})},body:b?JSON.stringify(b):undefined});const j=await x.json().catch(()=>null);return{http:x.status,json:j,code:j&&(j.code||(j.error&&j.error.code))||null}}}
+module.exports={as,O};
