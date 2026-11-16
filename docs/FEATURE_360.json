@@ -2481,6 +2481,10 @@
       },
       "authority": "backend-core — normalized-product possede le contrat source versionne ; catalog possede le catalogue canonique et le contrat detail public ; toute modification modal catalogue suit DOCTRINE_PRODUCT_DETAIL_CONTRACT.md et docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md",
       "invariants": [
+        {
+          "statement": "les nouveaux médias produit sont stockés chez ImageKit avant écriture de leur URL en base ; aucun upload produit ne persiste un chemin sur le disque Railway",
+          "test": "tests/unit/product-media-storage.test.js"
+        },
         "un produit publie a toujours passe product-publication-guard.js",
         {
           "statement": "un brouillon Catalogue issu du Sourcing peut exister sans price_kmf uniquement tant qu il reste lifecycle candidate, is_active=false et is_available=false ; le prix de vente strictement positif devient obligatoire au gate de publication, jamais à la remise Sourcing → Catalogue",
@@ -3391,7 +3395,7 @@
             ]
           },
           "services": {
-            "count": 86,
+            "count": 87,
             "files": [
               {
                 "declared": "services/boutique-taxonomy-admin.js",
@@ -3629,6 +3633,11 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/product-media-storage.js",
+                "resolvedPath": "services/product-media-storage.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/product-price-audit.js",
                 "resolvedPath": "services/product-price-audit.js",
                 "status": "resolved-in-technical-graph"
@@ -3826,7 +3835,7 @@
             ]
           },
           "tests": {
-            "count": 209,
+            "count": 210,
             "files": [
               {
                 "declared": "tests/e2e-api/products.kmf-numeric.e2e.test.js",
@@ -4689,6 +4698,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/product-media-storage.test.js",
+                "resolvedPath": "tests/unit/product-media-storage.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/product-price-audit.test.js",
                 "resolvedPath": "tests/unit/product-price-audit.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -4886,7 +4900,7 @@
             ]
           }
         },
-        "totalFiles": 455,
+        "totalFiles": 457,
         "boutiqueManifest": "modal-product",
         "boutiqueFiles": {
           "count": 33,

@@ -24,8 +24,6 @@
  *   ✓ le module exporte bien une instance multer configurée (limite 5 Mo)
  */
 
-const path = require('path');
-
 jest.mock('fs', () => ({
   existsSync: jest.fn().mockReturnValue(true),
   mkdirSync: jest.fn(),
@@ -46,6 +44,11 @@ jest.mock('multer', () => {
   mockMulter.diskStorage = (storageConfig) => {
     capturedStorageConfig = storageConfig;
     return actualMulter.diskStorage(storageConfig);
+  };
+  mockMulter.memoryStorage = () => {
+    const storage = actualMulter.memoryStorage();
+    capturedStorageConfig = storage;
+    return storage;
   };
   return mockMulter;
 });
@@ -88,6 +91,18 @@ describe('validateMagicBytes — pas de fichier', () => {
 });
 
 describe('validateMagicBytes — signatures valides', () => {
+  it('valide le buffer en mémoire utilisé par les uploads produits et expose son MIME détecté', async () => {
+    const req = { file: { buffer: Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]) } };
+    const res = makeRes();
+    const next = jest.fn();
+
+    await validateMagicBytes(req, res, next);
+
+    expect(req.file.detectedMimeType).toBe('image/png');
+    expect(next).toHaveBeenCalledWith();
+    expect(fs.openSync).not.toHaveBeenCalled();
+  });
+
   it('accepte un JPEG (FF D8 FF)', async () => {
     mockReadBytes([0xFF, 0xD8, 0xFF, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
     const req = { file: { path: '/tmp/img.jpg' } };
@@ -219,28 +234,10 @@ describe('module upload — configuration multer', () => {
     expect(typeof upload.validateMagicBytes).toBe('function');
   });
 
-  it('storage.destination redirige toujours vers UPLOAD_DIR', () => {
-    const cb = jest.fn();
-    capturedStorageConfig.destination({}, {}, cb);
-    expect(cb).toHaveBeenCalledWith(null, expect.stringContaining(path.join('public', 'uploads', 'products')));
-  });
-
-  it('storage.filename génère un nom aléatoire en conservant l\'extension (minuscule)', () => {
-    const cb = jest.fn();
-    capturedStorageConfig.filename({}, { originalname: 'Photo.PNG' }, cb);
-
-    expect(cb).toHaveBeenCalledTimes(1);
-    const [err, name] = cb.mock.calls[0];
-    expect(err).toBeNull();
-    expect(name).toMatch(/^[0-9a-f]{32}\.png$/);
-  });
-
-  it("storage.filename retombe sur .jpg si le fichier n'a pas d'extension", () => {
-    const cb = jest.fn();
-    capturedStorageConfig.filename({}, { originalname: 'noextension' }, cb);
-
-    const [, name] = cb.mock.calls[0];
-    expect(name).toMatch(/^[0-9a-f]{32}\.jpg$/);
+  it('conserve temporairement les fichiers en mémoire au lieu du disque éphémère', () => {
+    expect(typeof capturedStorageConfig._handleFile).toBe('function');
+    expect(capturedStorageConfig.destination).toBeUndefined();
+    expect(capturedMulterConfig.limits.fileSize).toBe(5 * 1024 * 1024);
   });
 
   describe('fileFilter (config réelle capturée depuis multer())', () => {
@@ -270,17 +267,9 @@ describe('module upload — configuration multer', () => {
   });
 });
 
-describe('module upload — création du dossier au chargement', () => {
-  it("crée UPLOAD_DIR (mkdirSync récursif) si le dossier n'existe pas encore", () => {
-    fs.existsSync.mockReturnValueOnce(false);
-
-    jest.isolateModules(() => {
-      require('../../middleware/upload');
-    });
-
-    expect(fs.mkdirSync).toHaveBeenCalledWith(
-      expect.stringContaining(path.join('public', 'uploads', 'products')),
-      { recursive: true }
-    );
+describe('module upload — pas de stockage produit sur disque', () => {
+  it('ne crée pas de répertoire local pour recevoir les images produits', () => {
+    expect(fs.mkdirSync).not.toHaveBeenCalled();
+    expect(fs.existsSync).not.toHaveBeenCalled();
   });
 });

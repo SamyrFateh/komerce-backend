@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 816,
-    "filesWithFullHeaders": 760,
+    "scannedCodeFiles": 817,
+    "filesWithFullHeaders": 761,
     "filesWithLiteHeaders": 56,
-    "filesWithAnyHeaders": 816,
+    "filesWithAnyHeaders": 817,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 2085,
-    "edges": 10360,
+    "graphNodes": 2086,
+    "edges": 10370,
     "dbTables": 243,
     "doctrines": 818,
     "impactAreas": 208,
-    "unresolvedCodeEdges": 980,
+    "unresolvedCodeEdges": 985,
     "dbWriteViaOverlapWarnings": 12,
     "multiWriterTables": 99
   },
@@ -36,7 +36,7 @@
     "auth": 14,
     "market-delegation": 38,
     "platform-ops": 2,
-    "catalog": 138,
+    "catalog": 139,
     "admin-dashboard": 39,
     "decision-signals": 14,
     "market": 9,
@@ -112,7 +112,7 @@
     "schema": 1,
     "route": 138,
     "entrypoint": 1,
-    "service": 496,
+    "service": 497,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -123,7 +123,7 @@
   "byCriticality": {
     "critical": 128,
     "medium": 155,
-    "high": 467,
+    "high": 468,
     "low": 65,
     "unknown": 1
   },
@@ -1619,7 +1619,11 @@
         "response_or_domain_result",
         "side_effects"
       ],
-      "depends": [],
+      "depends": [
+        "multer",
+        "fs",
+        "path"
+      ],
       "usedBy": [
         "middleware/upload-hub.js",
         "routes/products.js"
@@ -1634,7 +1638,7 @@
       "impactAreas": [
         "auth"
       ],
-      "version": "2026-06"
+      "version": "2026-11"
     },
     {
       "id": "middleware/validate.js",
@@ -12047,6 +12051,8 @@
         "db.js",
         "validators.js",
         "middleware/auth.js",
+        "middleware/upload.js",
+        "services/product-media-storage.js",
         "services/catalog-public-view.js",
         "services/market-local-price-resolution-service.js",
         "services/catalog-product-source-read-service.js"
@@ -29349,6 +29355,45 @@
       ],
       "version": "2026-08 (LOT 3B — adjustStock/adjustSkuStock/adjustLegacyStock extraits vers",
       "dbWriteViaOverlapWarning": "services/product-admin-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> products"
+    },
+    {
+      "id": "services/product-media-storage.js",
+      "file": "services/product-media-storage.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "product-media-storage",
+      "domain": "catalog",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "validated_product_image_buffer",
+        "product_id"
+      ],
+      "outputs": [
+        "durable_https_image_url",
+        "provider_file_id"
+      ],
+      "depends": [
+        "ImageKit upload API",
+        "IMAGEKIT_PRIVATE_KEY"
+      ],
+      "usedBy": [
+        "routes/products.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "no"
+      ],
+      "doctrine": [
+        "resolve_before_behavior_change",
+        "produit_reference_stable"
+      ],
+      "impactAreas": [],
+      "version": "2026-11"
     },
     {
       "id": "services/product-price-audit.js",
@@ -48336,6 +48381,24 @@
       "label": "quality"
     },
     {
+      "from": "middleware/upload.js",
+      "to": "multer",
+      "type": "depends",
+      "label": "multer"
+    },
+    {
+      "from": "middleware/upload.js",
+      "to": "fs",
+      "type": "depends",
+      "label": "fs"
+    },
+    {
+      "from": "middleware/upload.js",
+      "to": "path",
+      "type": "depends",
+      "label": "path"
+    },
+    {
       "from": "middleware/upload-hub.js",
       "to": "middleware/upload.js",
       "type": "uses",
@@ -63761,6 +63824,18 @@
       "to": "middleware/auth.js",
       "type": "depends",
       "label": "middleware/auth.js"
+    },
+    {
+      "from": "routes/products.js",
+      "to": "middleware/upload.js",
+      "type": "depends",
+      "label": "middleware/upload.js"
+    },
+    {
+      "from": "routes/products.js",
+      "to": "services/product-media-storage.js",
+      "type": "depends",
+      "label": "services/product-media-storage.js"
     },
     {
       "from": "routes/products.js",
@@ -92763,6 +92838,36 @@
       "label": "admin-dashboard"
     },
     {
+      "from": "services/product-media-storage.js",
+      "to": "ImageKit upload API",
+      "type": "depends",
+      "label": "ImageKit upload API"
+    },
+    {
+      "from": "services/product-media-storage.js",
+      "to": "IMAGEKIT_PRIVATE_KEY",
+      "type": "depends",
+      "label": "IMAGEKIT_PRIVATE_KEY"
+    },
+    {
+      "from": "routes/products.js",
+      "to": "services/product-media-storage.js",
+      "type": "uses",
+      "label": "routes/products.js"
+    },
+    {
+      "from": "services/product-media-storage.js",
+      "to": "doctrine:resolve_before_behavior_change",
+      "type": "doctrine",
+      "label": "resolve_before_behavior_change"
+    },
+    {
+      "from": "services/product-media-storage.js",
+      "to": "doctrine:produit_reference_stable",
+      "type": "doctrine",
+      "label": "produit_reference_stable"
+    },
+    {
       "from": "services/product-price-audit.js",
       "to": "services/economic-price-audit-service.js",
       "type": "depends",
@@ -110159,7 +110264,11 @@
       "headerType": "full",
       "owner": null,
       "purpose": null,
-      "directDependsOn": [],
+      "directDependsOn": [
+        "multer",
+        "fs",
+        "path"
+      ],
       "directUsedBy": [
         "middleware/upload-hub.js",
         "routes/products.js"
@@ -120676,6 +120785,8 @@
         "db.js",
         "validators.js",
         "middleware/auth.js",
+        "middleware/upload.js",
+        "services/product-media-storage.js",
         "services/catalog-public-view.js",
         "services/market-local-price-resolution-service.js",
         "services/catalog-product-source-read-service.js"
@@ -120734,6 +120845,7 @@
         "services/catalog-public-view.js",
         "services/market-local-price-resolution-service.js",
         "services/product-admin-service.js",
+        "services/product-media-storage.js",
         "utils/logger.js"
       ]
     },
@@ -138319,6 +138431,35 @@
         "utils/logger.js"
       ]
     },
+    "services/product-media-storage.js": {
+      "role": "product-media-storage",
+      "domain": "catalog",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "ImageKit upload API",
+        "IMAGEKIT_PRIVATE_KEY"
+      ],
+      "directUsedBy": [
+        "routes/products.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "resolve_before_behavior_change",
+        "produit_reference_stable"
+      ],
+      "impactAreas": [],
+      "mustCheck": [
+        "doctrine:produit_reference_stable",
+        "doctrine:resolve_before_behavior_change",
+        "routes/products.js"
+      ]
+    },
     "services/product-price-audit.js": {
       "role": "catalog-product-price-audit-boundary",
       "domain": "catalog",
@@ -149766,6 +149907,24 @@
       "label": "routes/hub.js (POST /photo)"
     },
     {
+      "from": "middleware/upload.js",
+      "to": "multer",
+      "type": "depends",
+      "label": "multer"
+    },
+    {
+      "from": "middleware/upload.js",
+      "to": "fs",
+      "type": "depends",
+      "label": "fs"
+    },
+    {
+      "from": "middleware/upload.js",
+      "to": "path",
+      "type": "depends",
+      "label": "path"
+    },
+    {
       "from": "public/boutique/js/b-komerce.js",
       "to": "documents API",
       "type": "depends",
@@ -153808,6 +153967,18 @@
       "to": "db",
       "type": "depends",
       "label": "db"
+    },
+    {
+      "from": "services/product-media-storage.js",
+      "to": "ImageKit upload API",
+      "type": "depends",
+      "label": "ImageKit upload API"
+    },
+    {
+      "from": "services/product-media-storage.js",
+      "to": "IMAGEKIT_PRIVATE_KEY",
+      "type": "depends",
+      "label": "IMAGEKIT_PRIVATE_KEY"
     },
     {
       "from": "services/product-publication-guard.js",

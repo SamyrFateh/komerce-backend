@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        product_filters, product_id, optional_market_code, admin_product_payload
  * @outputs       market_aware_product_list, market_aware_product_detail, product_mutation_result
- * @depends       db.js, validators.js, middleware/auth.js, services/catalog-public-view.js, services/market-local-price-resolution-service.js, services/catalog-product-source-read-service.js
+ * @depends       db.js, validators.js, middleware/auth.js, middleware/upload.js, services/product-media-storage.js, services/catalog-public-view.js, services/market-local-price-resolution-service.js, services/catalog-product-source-read-service.js
  * @used-by       bootstrap/api-routes.js, public/boutique/js/b-catalog.js, public/boutique/js/b-modal-core.js, komerce-api.js
  * @db-read       product_skus, product_variants, products
  * @db-write      none
@@ -32,6 +32,7 @@ const router  = express.Router();
 const db      = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const upload = require('../middleware/upload');
+const productMediaStorage = require('../services/product-media-storage');
 const { validate } = require('../middleware/validate');
 const { products } = require('../validators');
 const productAdminService = require('../services/product-admin-service');
@@ -289,41 +290,54 @@ router.delete('/:id', authenticate, requireRole(['admin']), requireUUID, validat
   }
 });
 
-router.post('/:id/image', authenticate, requireRole(['admin']), requireUUID, upload.single('image'), async (req, res, next) => {
+async function discardUploadedMedia(items) {
+  for (const item of items || []) {
+    if (!item?.fileId) continue;
+    try { await productMediaStorage.deleteProductImage(item.fileId); }
+    catch (error) { log.warn(`Nettoyage ImageKit impossible pour un média produit: ${error.message}`); }
+  }
+}
+
+router.post('/:id/image', authenticate, requireRole(['admin']), requireUUID, upload.single('image'), upload.validateMagicBytes, async (req, res, next) => {
+  let stored = null;
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'Aucune image envoyée. Champ attendu : "image" (multipart/form-data)' });
     }
-    const imageUrl = `/uploads/products/${req.file.filename}`;
-    const result = await productAdminService.setMainImage(db, req.params.id, imageUrl);
+    stored = await productMediaStorage.uploadProductImage(req.file, req.params.id);
+    const result = await productAdminService.setMainImage(db, req.params.id, stored.url);
     if (result.status === 404) {
-      const fs = require('fs');
-      try { fs.unlinkSync(req.file.path); } catch (_) {}
+      await discardUploadedMedia([stored]);
       return res.status(404).json(result.body);
     }
-    log.info(`Image uploadée pour "${result.body.product.name}" — ${imageUrl}`);
+    log.info(`Image persistante uploadée pour "${result.body.product.name}" — ${stored.url}`);
     return res.json(result.body);
   } catch (err) {
+    if (stored) await discardUploadedMedia([stored]);
     next(err);
   }
 });
 
-router.post('/:id/images', authenticate, requireRole(['admin']), requireUUID, upload.array('images', 5), async (req, res, next) => {
+router.post('/:id/images', authenticate, requireRole(['admin']), requireUUID, upload.array('images', 5), upload.validateMagicBytes, async (req, res, next) => {
+  const stored = [];
   try {
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ error: 'Aucune image envoyée. Champ attendu : "images" (max 5)' });
     }
-    const imageUrls = req.files.map(f => `/uploads/products/${f.filename}`);
+    for (const file of req.files) {
+      stored.push(await productMediaStorage.uploadProductImage(file, req.params.id));
+    }
+    const imageUrls = stored.map(item => item.url);
     const result = await productAdminService.appendImages(db, req.params.id, imageUrls);
     if (result.status === 404) {
-      const fs = require('fs');
-      req.files.forEach(f => { try { fs.unlinkSync(f.path); } catch (_) {} });
+      await discardUploadedMedia(stored);
       return res.status(404).json(result.body);
     }
     const { product_name, ...body } = result.body;
     log.info(`${imageUrls.length} images uploadées pour "${product_name}"`);
     return res.json(body);
   } catch (err) {
+    await discardUploadedMedia(stored);
     next(err);
   }
 });
