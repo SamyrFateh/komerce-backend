@@ -46,7 +46,7 @@ function makeClient(handler) {
       ) return { rows: [], rowCount: 0 };
       return handler(normalized, params);
     }),
-    release: jest.fn(),
+    release: jest.fn(), on: jest.fn(), removeListener: jest.fn(),
   };
   return client;
 }
