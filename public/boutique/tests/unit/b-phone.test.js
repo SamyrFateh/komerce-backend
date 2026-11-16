@@ -122,6 +122,33 @@ describe('isValidLocalLength', () => {
   });
 });
 
+// G6 Chromium : les marchés actifs doivent aussi être accessibles dans la
+// véritable identité/checkout boutique (pas uniquement dans la garde staging).
+describe('identité boutique Cameroun et Congo', () => {
+  it.each([
+    ['+237', '612345678', '+237612345678'],
+    ['+242', '061234567', '+242061234567'],
+  ])('propose %s et construit le numéro E.164 exact', (code, local, expected) => {
+    const country = PHONE_COUNTRIES.find(c => c.code === code);
+    expect(country).toMatchObject({ digits: 9, max: 9 });
+    expect(buildE164(code, local)).toBe(expected);
+    expect(isValidLocalLength(code, local)).toBe(true);
+    expect(isValidLocalLength(code, local.slice(0, -1))).toBe(false);
+
+    document.body.innerHTML = '<select id="country"></select><input id="phone" type="tel">';
+    const onChange = jest.fn();
+    buildPhoneSelect('country', 'phone', code, onChange);
+    expect(document.getElementById('country').value).toBe(code);
+    document.getElementById('phone').value = local;
+    document.getElementById('phone').dispatchEvent(new Event('input'));
+    expect(onChange).toHaveBeenLastCalledWith(expected, true);
+  });
+
+  it('conserve +269 comme défaut d’identité', () => {
+    expect(DEFAULT_IDENTITY_PHONE_CODE).toBe('+269');
+  });
+});
+
 describe('prettifyLocal', () => {
   it('formate un numéro FR par groupes de 2', () => {
     const country = PHONE_COUNTRIES.find(c => c.code === '+33');
