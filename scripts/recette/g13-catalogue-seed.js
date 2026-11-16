@@ -357,6 +357,18 @@ async function main(env = process.env) {
       report.dump = await ro(db,
         `SELECT sc.candidate_ref, sc.supplier_name, sc.supplier_product_id, sc.product_name, sc.supplier_category, sc.state,
                 UPPER(sc.scan_result->>'sourcing_decision') AS decision, sc.purchase_price, sc.currency, sc.image_url,
+                sc.stock_available, sc.komerce_category AS customs_category,
+                sc.scan_result->>'reason' AS sourcing_reason,
+                (sc.normalized_source_contract IS NOT NULL) AS source_v2_present,
+                CASE WHEN jsonb_typeof(sc.normalized_source_contract->'sellable_units')='array'
+                     THEN jsonb_array_length(sc.normalized_source_contract->'sellable_units') ELSE 0 END AS source_v2_units,
+                (SELECT COUNT(*)::int FROM jsonb_array_elements(
+                    CASE WHEN jsonb_typeof(sc.normalized_source_contract->'sellable_units')='array'
+                         THEN sc.normalized_source_contract->'sellable_units' ELSE '[]'::jsonb END
+                  ) unit WHERE COALESCE((unit->>'is_active')::boolean,TRUE)
+                     AND NULLIF(BTRIM(unit->>'supplier_sku'),'') IS NOT NULL
+                     AND NULLIF(BTRIM(unit->>'supplier_unit_ref'),'') IS NOT NULL
+                     AND jsonb_typeof(unit->'supplier_order_identity')='object') AS source_v2_active_exact_units,
                 p.product_ref, p.lifecycle_status, COALESCE(p.boutique_category_key, p.category) AS category, COALESCE(p.boutique_subcategory_key, p.subcategory) AS subcategory,
                 (SELECT jsonb_agg(jsonb_build_object('id', cm.id, 'source_media_id', cm.source_media_id, 'url', cm.url) ORDER BY cm.display_order, cm.created_at)
                    FROM catalog_media cm WHERE cm.product_id = p.id AND cm.is_active = TRUE) AS media
