@@ -2051,7 +2051,7 @@
         "category": "services",
         "declared": "services/product-media-storage.js",
         "resolvedPath": "services/product-media-storage.js",
-        "status": "resolved-in-technical-graph"
+        "status": "resolved-on-disk-no-header"
       },
       {
         "feature": "catalog",
@@ -54163,8 +54163,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 712,
-        "technicalNodesOwned": 712,
+        "technicalNodesTotal": 711,
+        "technicalNodesOwned": 711,
         "technicalOrphans": 0
       },
       "dash": {

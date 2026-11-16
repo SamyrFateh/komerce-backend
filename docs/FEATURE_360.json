@@ -3635,7 +3635,7 @@
               {
                 "declared": "services/product-media-storage.js",
                 "resolvedPath": "services/product-media-storage.js",
-                "status": "resolved-in-technical-graph"
+                "status": "resolved-on-disk-no-header"
               },
               {
                 "declared": "services/product-price-audit.js",
