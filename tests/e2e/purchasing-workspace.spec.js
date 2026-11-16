@@ -211,6 +211,54 @@ async function expectNoHorizontalOverflow(page) {
 const mutatingCalls = (api, suffix) => api.state.calls.filter((c) => c.key === `POST /api/purchasing${suffix}`);
 
 test.describe('Achats fournisseurs — espace canonique', () => {
+  test('consigne uniquement un débit vérifié et clôture sur la quantité physique lue', async ({ page }) => {
+    const api = createFakeApi();
+    const poId = 'cccccccc-cccc-4ccc-8ccc-000000000001';
+    const payment = {
+      id: '10000000-0000-4000-8000-000000000019', payment_ref: 'PAY-VERIFIE',
+      status: 'succeeded', real_debit_verified: true, currency: 'USD',
+    };
+    const line = api.state.lines[0];
+    Object.assign(line, { purchase_order_id: poId, confirmed_quantity: 5, received_quantity: 2 });
+    api.state.pos.set(poId, { id: poId, status: 'confirmed', procurement_hub_ref: HUB, trigger_mode: 'manual' });
+    api.state.executions.set(poId, { ...emptyExecution(), payments: [
+      payment, { ...payment, id: 'ambiguous', payment_ref: 'PAY-AMBIGU', real_debit_verified: false },
+    ] });
+    const settlementPath = `/supplier-payments/${payment.id}/settlements`;
+    const closurePath = `/lines/${line.line_id}/settle`;
+    const handle = api.handle;
+    api.handle = async (method, pathname, search, body) => {
+      if (method === 'POST' && [settlementPath, closurePath].some(path => pathname === `/api/purchasing${path}`)) {
+        api.state.calls.push({ key: `POST ${pathname}`, body });
+        if (pathname.endsWith('/settle')) line.settled_at = '2026-11-16T15:00:00Z';
+        return { status: 201, json: {} };
+      }
+      return handle(method, pathname, search, body);
+    };
+
+    await mountWorkspace(page, api, { search: `?po=${poId}` });
+    await page.locator('[data-purchasing-execution-fold] > summary').click();
+    await expect(page.getByText('Consigner le débit vérifié · PAY-AMBIGU')).toHaveCount(0);
+    await page.getByText('Consigner le débit vérifié · PAY-VERIFIE').click();
+    await page.getByLabel('Montant débité en USD').fill('19.99');
+    await page.getByLabel('Montant du débit hors frais (KMF)').fill('9000');
+    await page.getByLabel('Référence unique du débit (relevé ou reçu)').fill('RELEVE-19');
+    await page.getByRole('button', { name: 'Enregistrer', exact: true }).click();
+    await expect(page.getByText('Débit déjà effectué consigné dans les règlements fournisseur.')).toBeVisible();
+    expect(mutatingCalls(api, settlementPath)).toEqual([expect.objectContaining({ body: {
+      kind: 'payment', currency: 'USD', amount_currency: '19.99', amount_kmf: '9000',
+      fees_kmf: '0', proof_ref: 'RELEVE-19', idempotency_key: 'purchasing-ui:RELEVE-19',
+    } })]);
+
+    await page.getByText('Clôturer la ligne KOM-1001 · 2/5 reçu(s)').click();
+    await page.getByLabel('Motif de clôture').fill('Rupture confirmée par le fournisseur');
+    await page.getByRole('button', { name: 'Enregistrer', exact: true }).click();
+    await expect(page.getByText('Ligne clôturée.', { exact: true })).toBeVisible();
+    expect(mutatingCalls(api, closurePath)).toEqual([expect.objectContaining({ body: {
+      settled_quantity: 2, reason: 'Rupture confirmée par le fournisseur', reopen_remainder: true,
+    } })]);
+  });
+
   test('liste groupée par fournisseur + Hub, marché visible par ligne et en badge multi-marchés', async ({ page }) => {
     const api = createFakeApi();
     await mountWorkspace(page, api);

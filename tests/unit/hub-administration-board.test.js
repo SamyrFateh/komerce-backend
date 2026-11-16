@@ -114,3 +114,14 @@ describe('Décisions de la directrice (P04)',()=>{
     expect(out.approval_trace_available).toBe(true);
   });
 });
+
+test('une décision d’écart tracée est projetée séparément de l’autorisation de paiement', () => {
+  const [result] = attachAuthorizations([{ id: 'PO1' }], [{
+    purchase_order_id: 'PO1', authorization_type: 'supplier_payment', currency: 'AED', amount: 50,
+    variance_total: '45.0000', variance_reason: 'Écart de prix', variance_proof_ref: 'DEVIS-2',
+  }]);
+  expect(result.payment_decision.amount).toBe(50);
+  expect(result.variance_decision).toEqual({
+    amount: '45.0000', currency: 'AED', reason: 'Écart de prix', proof_ref: 'DEVIS-2',
+  });
+});

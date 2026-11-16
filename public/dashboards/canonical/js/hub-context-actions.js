@@ -467,6 +467,25 @@
       }),refresh));
     return true;
   }
+  function varianceDecision(menu, doc, po, grants, fetchFn, refresh) {
+    const variance = po.variance_decision;
+    if (variance) {
+      explanation(menu, doc, `Écart décidé · ${variance.amount} ${variance.currency} · ${variance.reason} · Pièce ${variance.proof_ref}`);
+      return;
+    }
+    const authorization = po.payment_decision;
+    if (!validUuid(po.id) || !grants.supplier_payment || !authorization?.currency || !['notified', 'confirmed', 'hub_received'].includes(po.status)) return;
+    action(menu, doc, 'Décider un écart fournisseur', 'Plafond exceptionnel motivé dans la devise autorisée.', () => form(
+      menu, doc, 'Décision d’écart fournisseur', [
+        { name: 'approved_total', label: 'Total approuvé (' + authorization.currency + ')', type: 'number', min: '0.0001', max: authorization.amount, step: '0.0001', required: true },
+        { name: 'reason', label: 'Motif précis de l’écart', required: true },
+        { name: 'proof_ref', label: 'Référence du justificatif', required: true },
+      ], values => request(fetchFn, '/api/purchasing/po/' + encodeURIComponent(po.id) + '/variance-decision', {
+        approved_total: values.approved_total, currency: authorization.currency,
+        reason: values.reason.trim(), proof_ref: values.proof_ref.trim(),
+      }), refresh));
+  }
+
   function administration(menu,{doc,fetch:fetchFn,user,po,field,refresh,grants = {}}) {
     if(!writableRoles.includes(user?.role))return false;
     if(field==='Fournisseur'){
@@ -487,6 +506,7 @@
       explanation(menu,doc,
         (po.payment_evidence||'Aucune preuve de débit')+
         ' · Une preuve de débit ne remplace pas l’autorisation de paiement.');
+      if (field === 'Paiement') varianceDecision(menu, doc, po, grants, fetchFn, refresh);
     }else if(field==='Réception'){
       explanation(menu,doc,
         'Réception : utiliser le contrôle physique et le manifeste fournisseur dans Opérations. Le statut fournisseur ne suffit pas.');
