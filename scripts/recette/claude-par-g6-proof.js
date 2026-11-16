@@ -108,7 +108,8 @@ async function main() {
     R.markets = await sec(c, 'r_m', `SELECT code, id FROM markets ORDER BY code`);
     R.claude_par_accounts = await sec(c, 'r_acc', `SELECT u.role::text AS role, m.code AS relay_market, (u.relais_id IS NOT NULL) AS has_relais FROM users u LEFT JOIN relais r ON r.id=u.relais_id LEFT JOIN markets m ON m.id=r.market_id WHERE u.email ILIKE 'claude-par-%' ORDER BY 1`);
     R.relais_by_market = await sec(c, 'r_rel', `SELECT m.code, r.is_active, COUNT(*)::int AS n FROM relais r JOIN markets m ON m.id=r.market_id GROUP BY 1,2 ORDER BY 1`);
-    R.local_stock = await sec(c, 'r_ls', `SELECT m.code, ls.commercial_exposure, COUNT(*)::int AS products, SUM(ls.qty_physical)::int AS qty FROM local_stock ls JOIN markets m ON m.id=ls.market_id GROUP BY 1,2 ORDER BY 1`);
+    R.local_stock = await sec(c, 'r_ls', `SELECT m.code, p.product_ref, ls.location, ls.commercial_exposure, ls.qty_physical, p.is_active FROM local_stock ls JOIN markets m ON m.id=ls.market_id JOIN products p ON p.id=ls.product_id ORDER BY 1,2`);
+    R.claude_par_relais = await sec(c, 'r_cpr', `SELECT m.code, r.name, r.is_active FROM users u JOIN relais r ON r.id=u.relais_id JOIN markets m ON m.id=r.market_id WHERE u.email ILIKE 'claude-par-%' AND u.role::text='agent_relais'`);
     R.exposure = await sec(c, 'r_ex', `SELECT m.code, e.commercial_exposure, COUNT(*)::int AS n FROM product_market_exposure e JOIN markets m ON m.id=e.market_id GROUP BY 1,2 ORDER BY 1`);
     R.orders_by_status = await sec(c, 'r_ob', `SELECT status::text AS status, COUNT(*)::int AS n FROM orders GROUP BY 1 ORDER BY 1`);
     R.e2e_marked_clients = await sec(c, 'r_e2e', `SELECT COUNT(*)::int AS n FROM e2e_test_accounts e JOIN users u ON u.id=e.user_id WHERE u.role='client'`);
