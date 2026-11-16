@@ -124,9 +124,7 @@ Cela insère :
 | `AT_SENDER_ID` | ID expéditeur SMS | ✅ | `KOMERCE` |
 | `STRIPE_SECRET_KEY` | Clé secrète Stripe | ✅ | `sk_live_xxxxxxxxxxxxxxx` |
 | `STRIPE_WEBHOOK_SECRET` | Secret webhook Stripe | ✅ | `whsec_xxxxxxxxxxxxxxx` |
-| `CLOUDINARY_CLOUD_NAME` | Nom du cloud Cloudinary | ✅ | `komerce-prod` |
-| `CLOUDINARY_API_KEY` | Clé API Cloudinary | ✅ | `123456789012345` |
-| `CLOUDINARY_API_SECRET` | Secret API Cloudinary | ✅ | `aBcDeFgHiJkLmNoPqRsTuVwXyZ` |
+| `IMAGEKIT_PRIVATE_KEY` | Clé privée serveur pour le stockage média produit persistant | ✅ pour les uploads produits | `private_xxxxxxxxxxxxx` |
 | `RATE_EUR_KMF` | Taux de change EUR → KMF | ✅ | `492.00` |
 | `RATE_AED_KMF` | Taux de change AED → KMF | ✅ | `134.00` |
 | `FRONTEND_URL` | URL du frontend (CORS) | ✅ | `https://komerce.km` |
@@ -324,33 +322,22 @@ Le système supporte également l'envoi via Orange Comores en fallback.
 
 ---
 
-## 🖼️ Configuration Cloudinary
+## 🖼️ Stockage persistant des images produits
 
-### 1. Créer un compte
+Les uploads produits sont conservés dans ImageKit. La clé privée reste côté serveur et n'est jamais exposée au navigateur.
 
-1. Inscrivez-vous sur [cloudinary.com](https://cloudinary.com) (plan gratuit : 25 crédits/mois)
-2. Dashboard → récupérez les identifiants
+### Configuration
 
-### 2. Variables
+Configurer `IMAGEKIT_PRIVATE_KEY` dans Railway et dans l'environnement local. ImageKit renvoie l'URL HTTPS canonique enregistrée dans `products.image_url` ou `products.images`.
 
-```env
-CLOUDINARY_CLOUD_NAME=votre-cloud-name
-CLOUDINARY_API_KEY=123456789012345
-CLOUDINARY_API_SECRET=aBcDeFgHiJkLmNoPqRsTuVwXyZ
-```
+Sans cette clé, l'upload produit échoue en `503` sans enregistrer d'URL locale éphémère.
 
-### 3. Configuration recommandée
+### Upload
 
-- **Dossier** : `komerce/products/` pour les images produits
-- **Transformations** : redimensionnement automatique (800x800 max)
-- **Format** : WebP auto pour optimiser la performance
-
-### 4. Upload
-
-Les images sont uploadées via Multer (middleware `upload`) puis transférées à Cloudinary :
+Les images passent par Multer en mémoire, sont validées par leur signature binaire, puis transférées à ImageKit avant toute écriture de leur URL en base :
 
 ```
-Client → POST /api/products (multipart) → Multer (temp) → Cloudinary (permanent)
+Client → POST /api/products/:id/image(s) → Multer (mémoire) → ImageKit → PostgreSQL
 ```
 
 ---
