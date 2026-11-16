@@ -45,6 +45,7 @@ jest.mock('multer', () => {
     capturedStorageConfig = storageConfig;
     return actualMulter.diskStorage(storageConfig);
   };
+  mockMulter.memoryStorage = () => actualMulter.memoryStorage();
   return mockMulter;
 });
 
