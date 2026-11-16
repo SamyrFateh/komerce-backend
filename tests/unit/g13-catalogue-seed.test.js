@@ -5,7 +5,7 @@
  * @test-runner jest
  * @test-requires none
  */
-const { validateManifest, referenceAmount, stagingEconomicReferenceAmount, evaluateG13Census, hubManualEvidence, PHASES } = require('../../scripts/recette/g13-catalogue-seed');
+const { validateManifest, referenceAmount, stagingEconomicReferenceAmount, evaluateG13Census, distinctRefsWithRealImage, hubManualEvidence, PHASES } = require('../../scripts/recette/g13-catalogue-seed');
 const manifest = require('../../scripts/recette/g13-catalogue-manifest.json');
 
 describe('G13 catalogue seed (outillage de recette)', () => {
@@ -127,6 +127,35 @@ describe('G13 catalogue seed (outillage de recette)', () => {
     expect(evaluateG13Census(manifest, sql, { ...http, 'Maison|CG': { status: 200, total: 2, distinct_with_image: 1 } }).passed).toBe(false);
     expect(evaluateG13Census(manifest, sql, { ...http, 'Tech|KM': { status: 503, total: 2, distinct_with_image: 2 } }).passed).toBe(false);
     expect(evaluateG13Census(manifest, sql, { ...http, 'Auto|KM': { status: 200, total: null, distinct_with_image: 2 } }).passed).toBe(false);
+  });
+
+  test('G13 : une image ne compte que si l URL repond 200 avec un content-type image', async () => {
+    const answers = {
+      'https://x.test/uploads/ok.jpg': { status: 200, type: 'image/jpeg' },
+      'https://x.test/uploads/gone.jpg': { status: 200, type: 'text/html; charset=utf-8' },
+      'https://cdn.test/a.jpg': { status: 200, type: 'image/jpg' },
+      'https://cdn.test/404.jpg': { status: 404, type: 'image/jpeg' },
+    };
+    const calls = [];
+    const fetchFn = async (url) => {
+      calls.push(url);
+      if (url.includes('boom')) throw new Error('network');
+      const a = answers[url];
+      return { status: a.status, headers: { get: () => a.type } };
+    };
+    const products = [
+      { product_ref: 'A', image_url: '/uploads/ok.jpg' },
+      { product_ref: 'B', image_url: '/uploads/gone.jpg' },
+      { product_ref: 'C', image_url: 'https://cdn.test/a.jpg' },
+      { product_ref: 'D', image_url: 'https://cdn.test/404.jpg' },
+      { product_ref: 'E', image_url: 'https://cdn.test/boom.jpg' },
+      { product_ref: 'F' },
+      { product_ref: 'A', image_url: '/uploads/ok.jpg' },
+    ];
+    const cache = new Map();
+    const refs = await distinctRefsWithRealImage(products, 'https://x.test/', cache, fetchFn);
+    expect([...refs].sort()).toEqual(['A', 'C']);
+    expect(calls.filter((u) => u.endsWith('/ok.jpg'))).toHaveLength(1);
   });
 
   test('G13 staging only : projection locale via Currency Boundary, sans prix concurrent inventé', async () => {

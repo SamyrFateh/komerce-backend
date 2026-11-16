@@ -77,6 +77,30 @@ function referenceAmount(corridor, market) {
 }
 
 /**
+ * Identifiants distincts dont l'image repond reellement : HTTP 200 et content-type image/*.
+ * `fetchFn` et `cache` sont injectables pour les tests ; le corps n'est jamais lu.
+ */
+async function distinctRefsWithRealImage(products, base, cache = new Map(), fetchFn = fetch) {
+  const refs = new Set();
+  for (const p of products || []) {
+    const raw = p.image_url || p.image;
+    const ref = p.product_ref || p.id;
+    if (!raw || !ref) continue;
+    const url = /^https?:\/\//i.test(raw) ? raw : `${String(base).replace(/\/$/, '')}${raw.startsWith('/') ? '' : '/'}${raw}`;
+    if (!cache.has(url)) {
+      try {
+        const res = await fetchFn(url, { redirect: 'follow' });
+        const type = String(res.headers.get('content-type') || '').toLowerCase();
+        cache.set(url, res.status === 200 && type.startsWith('image/'));
+        if (res.body && res.body.cancel) await res.body.cancel().catch(() => {});
+      } catch { cache.set(url, false); }
+    }
+    if (cache.get(url)) refs.add(String(ref));
+  }
+  return refs;
+}
+
+/**
  * Verdict borné du recensement 9 catégories x 3 marchés : exige simultanément
  * les lignes SQL commercialement activées ET 2 fiches distinctes avec images
  * réellement exposées par l'API publique pour chaque couple.
@@ -607,6 +631,7 @@ async function main(env = process.env) {
            LEFT JOIN sourcing_candidates sc ON sc.product_id = p.id
           WHERE p.is_active = TRUE AND p.is_available = TRUE GROUP BY 1, 2 ORDER BY 1, 2`);
       const http = {};
+      const imageCache = new Map();
       for (const c of [...new Set(MANIFEST.entries.map((x) => x.category))]) {
         for (const m of MANIFEST.markets) {
           const res = await fetch(`${BASE}/api/products?market=${m}&category=${encodeURIComponent(c)}&limit=50`);
@@ -614,8 +639,9 @@ async function main(env = process.env) {
           // /api/products applique deja la garde prix LOCAL_ACTIVE + exposition ;
           // on exige en plus deux identites distinctes presentant une image.
           const products = Array.isArray(j.products) ? j.products : (Array.isArray(j.items) ? j.items : []);
-          const distinct = new Set(products.filter((p) => (p.image_url || p.image) && (p.product_ref || p.id))
-            .map((p) => String(p.product_ref || p.id)));
+          // Une image ne compte que si son URL repond 200 avec un content-type image
+          // (un /uploads/ efface renvoie 200 text/html via le repli SPA).
+          const distinct = await distinctRefsWithRealImage(products, BASE, imageCache);
           http[`${c}|${m}`] = { status: res.status, total: j.total ?? null, distinct_with_image: distinct.size };
         }
       }
@@ -649,4 +675,4 @@ async function main(env = process.env) {
 }
 
 if (require.main === module) main();
-module.exports = { validateManifest, hubManualEvidence, referenceAmount, stagingEconomicReferenceAmount, evaluateG13Census, PHASES, CONFIRMATION };
+module.exports = { validateManifest, hubManualEvidence, referenceAmount, stagingEconomicReferenceAmount, evaluateG13Census, distinctRefsWithRealImage, PHASES, CONFIRMATION };
