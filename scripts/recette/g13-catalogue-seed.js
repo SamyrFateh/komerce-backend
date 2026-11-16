@@ -421,13 +421,19 @@ async function main(env = process.env) {
         let cand = await findCandidate(db, e);
         r.state = cand ? { candidate: cand.candidate_ref, product_ref: cand.product_ref, lifecycle: cand.lifecycle_status } : 'ABSENT';
 
+        // Owner-only staging Hub fixtures must not bypass human provenance
+        // simply by selecting curate/publish/price/stock without "import".
+        // Census remains strictly read-only and independent of the fixture.
+        const manualProof = hubManualEvidence(e);
+        if (manualProof.applicable) r.hub_manual_evidence = manualProof;
+        if (!manualProof.passed && wanted.some(step => step !== 'census' && step !== 'validate')) {
+          blocked(r, 'hub-preflight', 'HUB_MANUAL_PROOFS_REQUIRED', manualProof.blockers.join(','));
+          continue;
+        }
+
         // --- import ---
         if (wanted.includes('import')) {
-          const manualProof = hubManualEvidence(e);
-          if (manualProof.applicable) r.hub_manual_evidence = manualProof;
-          if (e.source === 'central_hub' && !manualProof.passed)
-            blocked(r, 'import', 'HUB_MANUAL_PROOFS_REQUIRED', manualProof.blockers.join(','));
-          else if (cand) done(r, 'import', 'DEJA_PRESENT');
+          if (cand) done(r, 'import', 'DEJA_PRESENT');
           else if (e.source === 'central_hub' && !e.manual_item?.image_url) blocked(r, 'import', 'MANUAL_IMAGE_HTTPS_A_EPINGLER');
           else if (e.source === 'central_hub' && !hub) blocked(r, 'import', 'FOURNISSEUR_CENTRAL_INTROUVABLE');
           else if (!execute) done(r, 'import', 'PLANIFIE');
