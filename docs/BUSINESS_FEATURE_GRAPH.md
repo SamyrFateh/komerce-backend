@@ -696,8 +696,8 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - migrations: 2
 - routes: 1
-- dash: 1
-- tests: 2
+- dash: 3
+- tests: 4
 - tables owned (lifecycle): 1 — `unsold_items`
 - tables written: 1
 - interfaces exposed: 7
@@ -2323,7 +2323,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 2350 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 2353 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 216 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 79 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -2692,7 +2692,7 @@ Meta Graph monté : oui.
 | supplier-connectivity | purchasing | static-code | 5 | **OBSERVED_UNDECLARED** |
 | unsold-resolution | auth | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | unsold-resolution | catalog | data-read | 1 | **DECLARED_AND_OBSERVED** |
-| unsold-resolution | infrastructure | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| unsold-resolution | infrastructure | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | unsold-resolution | orders | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | wallet | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | wallet | auth-identity | static-code, data-read | 3 | **DECLARED_AND_OBSERVED** |

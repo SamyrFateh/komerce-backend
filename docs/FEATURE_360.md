@@ -2759,11 +2759,11 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 6 fichier(s) déclaré(s)
-  - dash : 1
+**Implementation** : 10 fichier(s) déclaré(s)
+  - dash : 3
   - migrations : 2
   - routes : 1
-  - tests : 2
+  - tests : 4
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="unsold-resolution"]_
 

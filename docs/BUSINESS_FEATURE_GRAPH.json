@@ -21277,9 +21277,37 @@
       },
       {
         "feature": "unsold-resolution",
+        "category": "dash",
+        "declared": "dashboards/canonical/unsold.html",
+        "resolvedPath": "public/dashboards/canonical/unsold.html",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "unsold-resolution",
+        "category": "dash",
+        "declared": "dashboards/canonical/js/unsold-workspace.js",
+        "resolvedPath": "public/dashboards/canonical/js/unsold-workspace.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "unsold-resolution",
         "category": "tests",
         "declared": "tests/unit/unsold.test.js",
         "resolvedPath": "tests/unit/unsold.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "unsold-resolution",
+        "category": "tests",
+        "declared": "tests/unit/unsold-workspace.test.js",
+        "resolvedPath": "tests/unit/unsold-workspace.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "unsold-resolution",
+        "category": "tests",
+        "declared": "tests/local-chromium/g6e-unsold.spec.js",
+        "resolvedPath": "tests/local-chromium/g6e-unsold.spec.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -49605,6 +49633,10 @@
               {
                 "sourceFileId": "routes/unsold.js",
                 "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/local-chromium/g6e-unsold.spec.js",
+                "targetFile": "db.js"
               }
             ]
           }
@@ -50098,7 +50130,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2350
+        "filesObserved": 2353
       },
       "boutique": {
         "filesObserved": 216,
