@@ -16,7 +16,9 @@ SELECT key, unit, allocation_method FROM cost_components
  WHERE is_active AND category IN ('freight', 'transit')
    AND NOT (allocation_method = 'by_volume' OR unit = 'kmf_per_m3');
 SELECT avg_articles_per_order, avg_articles_per_parcel, avg_articles_per_shipment,
-       allocation_calibrated_at, minimum_safety_margin_pct FROM finance_config WHERE id = 1;
+       allocation_calibrated_at FROM finance_config WHERE id = 1;
+-- Q2b : la colonne minimum_safety_margin_pct n'existe pas dans finance_config (schema live, 16/11/2026) : retiree ici.
+-- Constat a qualifier : services/pricing-cdr.js:531 la lit et retombe donc sur 10 % par defaut (aucune colonne de marge de securite en base).
 
 -- Q3 Achat « réel » issu du catalogue (ME-14)
 SELECT COUNT(*) FROM order_item_real_cost_allocations

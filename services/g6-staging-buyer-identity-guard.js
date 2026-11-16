@@ -11,6 +11,8 @@
  */
 'use strict';
 const bcrypt = require('bcryptjs');
+// Formats nationaux acceptes (meme regle fail-closed pour chaque marche) : KM +269 (7 chiffres), CM +237 et CG +242 (9 chiffres).
+const G6_BUYER_PHONE = /^(?:\+269\d{7}|\+237\d{9}|\+242\d{9})$/;
 const G6_BUYER_EMAIL = /^g6-e2e-[a-f0-9]{8}@komerce\.test$/i;
 const fail = code => Object.assign(new Error(code), {code, status:409});
 
@@ -28,7 +30,7 @@ async function verifyMarkedG6Buyer(executor,user,env=process.env) {
   return true;
 }
 async function findMarkedG6BuyerByPhone(executor,phone,env=process.env) {
-  if(!isStaging(env)||!/^\+269\d{7}$/.test(String(phone||'')))return null;
+  if(!isStaging(env)||!G6_BUYER_PHONE.test(String(phone||'')))return null;
   const {rows}=await executor.query(
     `SELECT u.id,u.email,u.role::text AS role
        FROM users u JOIN e2e_test_accounts e ON e.user_id=u.id
@@ -39,7 +41,7 @@ async function findMarkedG6BuyerByPhone(executor,phone,env=process.env) {
   return rows[0]||null;
 }
 async function preseedG6BuyerOtp(executor,{buyer,phone,code,purpose='login',env=process.env}) {
-  if(!isStaging(env)||env.NODE_ENV!=='test'||!/^\+269\d{7}$/.test(String(phone||''))||
+  if(!isStaging(env)||env.NODE_ENV!=='test'||!G6_BUYER_PHONE.test(String(phone||''))||
      !/^\d{6}$/.test(String(code||''))||purpose!=='login'||!await verifyMarkedG6Buyer(executor,buyer,env))
     throw fail('G6_OTP_FIXTURE_PROVISION_FORBIDDEN');
   const known=await findMarkedG6BuyerByPhone(executor,phone,env);
