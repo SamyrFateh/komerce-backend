@@ -36,6 +36,8 @@ describe('G13 catalogue seed (outillage de recette)', () => {
     expect(code).toContain("'HUB_PROCUREMENT_OWNER_ABSENT'");
     expect(code).toContain("entry.source === 'central_hub'");
     expect(code).toContain("HUB_MANUAL_PROOFS_REQUIRED");
+    expect(code).toContain("wanted.some(step => step !== 'census' && step !== 'validate')");
+    expect(code.indexOf("blocked(r, 'hub-preflight'")).toBeLessThan(code.indexOf('// --- import ---'));
   });
 
   test('le manifeste versionné respecte la cible du brief (au moins 2 produits par catégorie couverte)', () => {
