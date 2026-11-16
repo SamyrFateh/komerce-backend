@@ -15034,6 +15034,13 @@
       {
         "feature": "market-autonomy",
         "category": "dash",
+        "declared": "dashboards/canonical/js/market-ready-to-sell.js",
+        "resolvedPath": "public/dashboards/canonical/js/market-ready-to-sell.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "dash",
         "declared": "dashboards/canonical/js/markets-decision-bootstrap.js",
         "resolvedPath": "public/dashboards/canonical/js/markets-decision-bootstrap.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -43126,6 +43133,10 @@
               {
                 "sourceFileId": "tests/unit/market-operator-provisioning.test.js",
                 "targetFile": "services/market-scope-admin-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/market-ready-to-sell-projection.test.js",
+                "targetFile": "utils/currency.js"
               }
             ]
           },
@@ -50087,7 +50098,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2349
+        "filesObserved": 2350
       },
       "boutique": {
         "filesObserved": 216,
