@@ -83,7 +83,7 @@ function makeClient(script = []) {
       if (next.error) throw next.error;
       return { rows: next.rows || [], rowCount: next.rowCount ?? (next.rows?.length ?? 0) };
     }),
-    release: jest.fn(() => { client.released = true; }),
+    release: jest.fn(() => { client.released = true; }), on: jest.fn(), removeListener: jest.fn(),
   };
   return client;
 }
