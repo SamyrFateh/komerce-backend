@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 2085,
-    "edges": 10360,
+    "edges": 10362,
     "dbTables": 243,
     "doctrines": 818,
     "impactAreas": 208,
@@ -20004,6 +20004,7 @@
         "markets",
         "orders",
         "purchase_order_authorizations",
+        "purchase_variance_decisions",
         "purchase_orders",
         "purchase_lines",
         "supplier_execution_payments",
@@ -30355,6 +30356,7 @@
         "products",
         "suppliers",
         "v_purchase_line_market",
+        "v_purchase_line_progress",
         "purchase_order_authorizations"
       ],
       "dbWrite": [
@@ -40611,14 +40613,14 @@
       "table": "purchase_order_authorizations"
     },
     {
-      "id": "db:manual_purchase_executions",
-      "type": "db-table",
-      "table": "manual_purchase_executions"
-    },
-    {
       "id": "db:purchase_variance_decisions",
       "type": "db-table",
       "table": "purchase_variance_decisions"
+    },
+    {
+      "id": "db:manual_purchase_executions",
+      "type": "db-table",
+      "table": "manual_purchase_executions"
     },
     {
       "id": "db:international_shipment_hub_units",
@@ -77173,6 +77175,12 @@
     },
     {
       "from": "services/hub-administration-board.js",
+      "to": "db:purchase_variance_decisions",
+      "type": "db-read",
+      "label": "purchase_variance_decisions"
+    },
+    {
+      "from": "services/hub-administration-board.js",
       "to": "db:purchase_orders",
       "type": "db-read",
       "label": "purchase_orders"
@@ -94351,6 +94359,12 @@
       "to": "db:v_purchase_line_market",
       "type": "db-read",
       "label": "v_purchase_line_market"
+    },
+    {
+      "from": "services/purchasing-grouped-service.js",
+      "to": "db:v_purchase_line_progress",
+      "type": "db-read",
+      "label": "v_purchase_line_progress"
     },
     {
       "from": "services/purchasing-grouped-service.js",
@@ -128829,6 +128843,7 @@
         "markets",
         "orders",
         "purchase_order_authorizations",
+        "purchase_variance_decisions",
         "purchase_orders",
         "purchase_lines",
         "supplier_execution_payments",
@@ -128852,6 +128867,7 @@
         "db:purchase_lines",
         "db:purchase_order_authorizations",
         "db:purchase_orders",
+        "db:purchase_variance_decisions",
         "db:supplier_execution_payments",
         "db:users",
         "doctrine:one_po_one_supplier_one_market",
@@ -139290,6 +139306,7 @@
         "products",
         "suppliers",
         "v_purchase_line_market",
+        "v_purchase_line_progress",
         "purchase_order_authorizations"
       ],
       "dbWrite": [
@@ -139314,6 +139331,7 @@
         "db:purchase_orders",
         "db:suppliers",
         "db:v_purchase_line_market",
+        "db:v_purchase_line_progress",
         "doctrine:docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md",
         "impact:admin-dashboard",
         "impact:purchasing",
