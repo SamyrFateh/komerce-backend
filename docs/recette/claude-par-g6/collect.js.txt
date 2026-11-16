@@ -1,0 +1,26 @@
+// Remise client au comptoir relais (Chromium, code saisi au clavier). Usage: node collect.js MARKET LABEL
+'use strict';
+const fs=require('fs'),path=require('path');
+const {chromium}=require('/home/claude/wt-G6PAR/node_modules/playwright');
+const S='/tmp/claude-0/-home-claude/011d1491-2f57-5b4d-98e0-a4b4e0b2f674/scratchpad/claude-par-keys';
+const O='https://komerce-backend-production.up.railway.app';const [MK,LAB]=process.argv.slice(2);
+const creds=MK==='KM'?JSON.parse(fs.readFileSync(S+'/creds.json'))['agent-relais']:JSON.parse(fs.readFileSync(S+'/creds-cm-cg.json'))[MK.toLowerCase()+'-agent-relais'];
+const code=fs.readFileSync(`${S}/pickup-${LAB}.txt`,'utf8').trim();
+const OUT=path.join('/home/claude/g6lot/out','collect-'+LAB);fs.mkdirSync(OUT,{recursive:true});const R={market:MK};
+(async()=>{R.sha_start=(await (await fetch(O+'/health/version')).json()).commit;
+ const b=await chromium.launch({headless:true,executablePath:'/opt/pw-browsers/chromium-1243/chrome-linux64/chrome',args:['--no-sandbox']});let page;
+ try{const ctx=await b.newContext({viewport:{width:1440,height:900}});page=await ctx.newPage();page.on('dialog',d=>d.accept());
+  await page.goto(O+'/login.html');await page.locator('#email').fill(creds.email);await page.locator('#password').fill(creds.password);
+  await page.locator('#btn-submit').click();await page.waitForURL(u=>u.pathname!=='/login.html',{timeout:20000});
+  await page.goto(O+`/admin/relais-live?view=remises&market=${MK}`,{waitUntil:'domcontentloaded'});
+  await page.locator('[data-pickup-code-input]').waitFor({timeout:25000});await page.screenshot({path:path.join(OUT,'1-comptoir.png')});
+  const inp=page.locator('[data-pickup-code-input]'),ok=page.locator('[data-pickup-code-confirm]');
+  const norm=code.toUpperCase().replace(/[\s-]/g,'');const bad=(norm[0]==='A'?'B':'A')+norm.slice(1);
+  const rq=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/scans/collect'&&r.request().method()==='POST');
+  await inp.fill(bad);await ok.click();R.bad_code_http=(await rq).status();
+  await new Promise(r=>setTimeout(r,21000));
+  const rq2=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/scans/collect'&&r.request().method()==='POST');
+  await inp.fill(code);await ok.click();const r2=await rq2;R.good_code_http=r2.status();const j=await r2.json().catch(()=>({}));R.parcel_reference=j.parcel_reference||null;R.resp_keys=Object.keys(j);
+  await page.screenshot({path:path.join(OUT,'2-remis.png')});
+ }catch(e){R.error=String(e.message).slice(0,300);try{await page.screenshot({path:path.join(OUT,'err.png')})}catch(_){}}
+ finally{await b.close();R.sha_end=(await (await fetch(O+'/health/version')).json()).commit;fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(R,null,1));console.log(JSON.stringify(R))}})();

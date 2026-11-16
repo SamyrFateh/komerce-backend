@@ -8,5 +8,5 @@ async function as(role){if(jar[role])return jar[role];
  const c=key[role];const r=await fetch(O+'/api/auth/login',{method:'POST',headers:{'content-type':'application/json',origin:O},body:JSON.stringify(c)});
  if(r.status!==200)throw Error('LOGIN_'+role+'_'+r.status);
  const ck=r.headers.getSetCookie().map(x=>x.split(';')[0]).join('; ');
- return jar[role]=async(m,p,b)=>{const x=await fetch(O+p,{method:m,headers:{cookie:ck,origin:O,...(b?{'content-type':'application/json'}:{})},body:b?JSON.stringify(b):undefined});const j=await x.json().catch(()=>null);return{http:x.status,json:j,code:j&&(j.code||(j.error&&j.error.code))||null}}}
+ return jar[role]=async(m,p,b)=>{const x=await fetch(O+p,{method:m,headers:{cookie:ck,origin:O,...(b?{'content-type':'application/json'}:{}),...(m==='POST'&&/\/boxes$/.test(p)?{'idempotency-key':require('crypto').randomUUID()}:{})},body:b?JSON.stringify(b):undefined});const j=await x.json().catch(()=>null);return{http:x.status,json:j,code:j&&(j.code||(j.error&&j.error.code))||null}}}
 module.exports={as,O};

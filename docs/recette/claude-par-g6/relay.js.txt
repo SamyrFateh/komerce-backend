@@ -1,0 +1,16 @@
+// Reception relais (HTTP) + code client (reveal-once, session acheteur). Usage: node relay.js MARKET SHIP ORDER_ID LABEL
+const fs=require('fs');const {as,O}=require('./act');const [MK,SHIP,OID,LAB]=process.argv.slice(2);const WS=`/api/admin/workspaces/operations/market/${MK}`;
+const S='/tmp/claude-0/-home-claude/011d1491-2f57-5b4d-98e0-a4b4e0b2f674/scratchpad/claude-par-keys';
+(async()=>{
+ const rl=await as(MK.toLowerCase()+'_relais'===MK.toLowerCase()+'_relais'&&MK==='KM'?'km_relais':MK.toLowerCase()+'_agent_relais');
+ const rs=await rl('GET',WS+'/relay-shipments');const list=(rs.json&&(rs.json.shipments||rs.json.items))||[];const sh=list.find(x=>x.reference===SHIP);
+ console.log('relay-shipments',rs.http,list.length,'found',!!sh,sh&&{receivable:sh.receivable,stage:sh.stage});
+ if(!sh||!sh.receivable)return;
+ const lines=[];for(const b of sh.boxes||[])for(const o of b.orders||[])for(const i of o.items||[])if(i.received==null)lines.push({order_item_id:i.order_item_id,received_qty:Number(i.shipped)});
+ const r=await rl('POST',`${WS}/relay-shipments/${sh.reference}/receive`,{proof_ref:`SIM-RELAIS-${LAB}`,lines});console.log('relay-receive',r.http,r.code||'');
+ // code client : session acheteur (reveal-once, une seule fois)
+ const st=JSON.parse(fs.readFileSync(`${S}/session-${MK}.json`));const ck=st.cookies.filter(c=>O.includes(c.domain.replace(/^\./,''))).map(c=>c.name+'='+c.value).join('; ');
+ const rv=await fetch(O+'/api/pickup/reveal-once/'+OID,{headers:{cookie:ck,origin:O}});const j=await rv.json().catch(()=>({}));
+ console.log('reveal-once',rv.status,Object.keys(j).join(','));
+ const code=j.code||j.pickup_code||j.secret||null;if(code){fs.writeFileSync(`${S}/pickup-${LAB}.txt`,String(code),{mode:0o600});console.log('code_saved',String(code).length)}
+})().catch(e=>console.log('ERR',e.message));

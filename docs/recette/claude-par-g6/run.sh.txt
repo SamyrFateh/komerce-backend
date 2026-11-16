@@ -1,0 +1,14 @@
+#!/bin/bash
+# usage: run.sh MK PRODUCT_REF RELAY_NAME LABEL   (acheteurs frais deja deployes, session reutilisee si REUSE=1)
+MK=$1; REF=$2; RELAY=$3; LAB=$4; cd /home/claude/g6lot
+[ "$SKIP_ORDER" = 1 ] || { node order.js $MK $REF "$RELAY" > o-$LAB.txt; head -c 400 o-$LAB.txt; echo; }
+OID=$(python3 -c "import json;print(json.load(open('out/$MK-$REF/report.json'))['order']['id'])" 2>/dev/null) || { echo NO_ORDER; exit 1; }
+OREF=$(python3 -c "import json;print(json.load(open('out/$MK-$REF/report.json'))['order']['reference'])")
+echo "order $OREF"; sleep 14
+timeout 118 node cash.js $MK $OREF | python3 -c "import sys,json;d=json.loads(sys.stdin.read());print('cash',{k:d.get(k) for k in ['cash_http','replay','other_market','error']})"
+sleep 6; node po.js $OID $LAB 2>&1 | grep -v "^$" | awk '{print $1,$2,$3}' | tr '\n' ';'; echo
+node hubchain.js $MK $OID $LAB 2>&1 | awk '{print $1,$2,$3}' | tr '\n' ';'; echo
+SHIP=$(python3 -c "import json;print(json.load(open('hub-$LAB.json'))['shipRef'])" 2>/dev/null)
+node journey.js $MK $SHIP $LAB 2>&1 | tail -2 | tr '\n' ';'; echo
+node relay.js $MK $SHIP $OID $LAB 2>&1 | tr '\n' ';'; echo
+timeout 110 node collect.js $MK $LAB

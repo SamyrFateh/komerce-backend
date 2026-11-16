@@ -1,0 +1,18 @@
+const fs=require('fs');const {as}=require('./act');const [MK,SHIP,LAB]=process.argv.slice(2);const WSC=`/api/admin/workspaces/shipping-customs/market/${MK}`;const J=`${WSC}/international/${SHIP}`;const R=[];
+const log=(k,r,x)=>{R.push({k,http:r.http,code:r.code,...x});console.log(k,r.http,r.code||'',(r.json&&r.json.error&&typeof r.json.error==='string')?r.json.error.slice(0,100):'')};
+(async()=>{
+ const A={hub:await as('hub_agent'),tr:await as(MK.toLowerCase()+'_agent_transitaire'),admin:await as('admin')};
+ const step=async(to,who,extra)=>{let r=await A[who]('POST',J+'/transition',{to_stage:to,proof_ref:`SIM-${to.toUpperCase()}-${LAB}`,...extra});log(`${to}[${who}]`,r);if(r.http!==200&&who!=='admin'){r=await A.admin('POST',J+'/transition',{to_stage:to,proof_ref:`SIM-${to.toUpperCase()}-${LAB}`,...extra});log(`${to}[admin-proxy]`,r,{finding:'APP_BLOCKAGE_'+who.toUpperCase()})}return r.http===200};
+ let go=await step('handed_over','hub',{forwarder_name:'CLAUDE-PAR Transitaire',transport_mode:'sea'});
+ go=go&&await step('forwarder_received','tr',{});
+ let t=await A.tr('POST',J+'/tracking',{proof_ref:`SIM-TRACKING-${LAB}`,tracking_reference:`TRK-${LAB}`});log('tracking[tr]',t);if(t.http!==200){t=await A.admin('POST',J+'/tracking',{proof_ref:`SIM-TRACKING-${LAB}`,tracking_reference:`TRK-${LAB}`});log('tracking[admin-proxy]',t)}
+ go=go&&t.http===200&&await step('in_transit','tr',{});
+ go=go&&await step('arrived','tr',{});
+ if(go){const cust=`CLPAR-DOU-${LAB}`;
+  const cc=await A.admin('POST',WSC+'/customs/shipments',{reference:cust,shipment_date:new Date().toISOString().slice(0,10),cif_value_kmf:1000,parcel_refs:[]});log('customs-create',cc);
+  const lk=await A.admin('POST',J+'/link-customs',{customs_reference:cust,proof_ref:`SIM-LINK-${LAB}`});log('link-customs',lk);
+  const am=await A.admin('POST',J+'/customs-amount',{amount_kmf:0,proof_ref:`SIM-DROITS-${LAB}`});log('customs-amount',am);
+  go=cc.http===201&&lk.http===200&&am.http===200&&await step('customs_released','admin',{});
+  go=go&&await step('local_delivery','hub',{});}
+ fs.writeFileSync(`journey-${LAB}.json`,JSON.stringify({R,go},null,1));console.log('journey_complete',go);
+})().catch(e=>console.log('ERR',e.message));

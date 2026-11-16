@@ -1,0 +1,30 @@
+// Chaine PO HTTP (memes routes que l'UI) pour une commande CLAUDE-PAR. Usage: node po.js ORDER_ID LABEL
+const fs=require('fs');const {as}=require('./act');const [OID,LAB]=process.argv.slice(2);const R=[];const log=(k,r,x)=>{R.push({k,http:r.http,code:r.code,...x});console.log(k,r.http,r.code||'',JSON.stringify(x||'').slice(0,160))};
+(async()=>{
+ const hub=await as('hub_agent'),dir=await as('hub_director');
+ const ol=await hub('GET','/api/purchasing/open-lines');
+ const groups=ol.json.groups.filter(g=>g.lines.some(l=>l.order_id===OID));
+ if(!groups.length){console.log('NO_OPEN_LINES');return}
+ for(const g of groups){
+  const ids=g.lines.filter(l=>l.order_id===OID).map(l=>l.line_id);
+  const prep=await hub('POST','/api/purchasing/po/prepare',{supplier_id:g.supplier_id,procurement_hub_ref:g.procurement_hub_ref||'DXB',line_ids:ids,execution_mode:'manual'});log('prepare',prep,{});
+  const id=prep.json&&prep.json.purchase_order&&prep.json.purchase_order.id;if(!id)continue;
+  const sub0=await hub('POST',`/api/purchasing/po/${id}/submit`,{});log('submit_before_commitment(refus attendu 409)',sub0,{});
+  const c=await dir('POST',`/api/purchasing/po/${id}/authorize-commitment`,{proof_ref:`SIM-ENGAGEMENT-${LAB}`});log('authorize_commitment',c,{});
+  const po=await hub('GET',`/api/purchasing/po/${id}`);const au=(po.json&&(po.json.authorizations||po.json.purchase_order&&po.json.purchase_order.authorizations))||[];
+  const cm=(c.json&&c.json.amount!==undefined?c.json:{});
+  log('po_readback',po,{status:po.json&&(po.json.purchase_order||po.json).status,commit_amount:cm.amount,cur:cm.currency});
+  const s=await hub('POST',`/api/purchasing/po/${id}/submit`,{});log('submit',s,{channel:s.json&&s.json.notification&&s.json.notification.channel,place_order_invoked:s.json&&s.json.place_order_invoked});
+  const s2=await hub('POST',`/api/purchasing/po/${id}/submit`,{});log('submit_replay(refus attendu)',s2,{});
+  const sent=await hub('POST',`/api/purchasing/po/${id}/sent`,{channel:'phone',note:`ENVOI FOURNISSEUR SIMULE ${LAB}`});log('sent',sent,{});
+  const pay0=await hub('POST',`/api/purchasing/po/${id}/authorize-payment`,{proof_ref:`SIM-PAIEMENT-${LAB}`,amount:cm.amount,currency:cm.currency});log('authorize_payment_by_hub_agent(refus attendu)',pay0,{});
+  const pay=await dir('POST',`/api/purchasing/po/${id}/authorize-payment`,{proof_ref:`SIM-PAIEMENT-FOURNISSEUR-${LAB}`,amount:cm.amount,currency:cm.currency});log('authorize_payment',pay,{});
+  const lines=g.lines.filter(l=>l.order_id===OID).map(l=>({purchase_line_id:l.line_id,confirmed_quantity:l.quantity||1}));
+  const body={purchase_proof_ref:`SIM-RECU-${LAB}`,supplier_order_id:`SIM-SO-${LAB}`,seller_label:`VENDEUR-RECETTE-${LAB}`,channel:'in_person',lines};
+  const cf0=await hub('POST',`/api/purchasing/po/${id}/confirm`,{...body,purchase_proof_ref:''});log('confirm_no_proof(refus attendu)',cf0,{});
+  const cf=await hub('POST',`/api/purchasing/po/${id}/confirm`,body);log('confirm',cf,{});
+  const fin=await hub('GET',`/api/purchasing/po/${id}`);log('final',fin,{status:fin.json&&(fin.json.purchase_order||fin.json).status});
+  R.push({po:id});
+ }
+ fs.writeFileSync(`po-${LAB}.json`,JSON.stringify(R,null,1));
+})().catch(e=>console.log('ERR',e.message));

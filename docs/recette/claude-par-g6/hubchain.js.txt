@@ -1,0 +1,26 @@
+// Chaine physique Hub (HTTP, memes routes que l'UI, preuve MANUAL). Usage: node hubchain.js MARKET ORDER_ID LABEL
+const fs=require('fs');const {as}=require('./act');const [MK,OID,LAB]=process.argv.slice(2);const WS=`/api/admin/workspaces/operations/market/${MK}`;const R=[];
+const log=(k,r,x)=>{R.push({k,http:r.http,code:r.code,...x});console.log(k,r.http,r.code||'',JSON.stringify(x||'').slice(0,200))};
+const uid=r=>{const u=r.json&&(r.json.physical_unit||r.json.result&&r.json.result.physical_unit||r.json.unit||{});return u.id||u.unit_id};
+(async()=>{
+ const hub=await as('hub_agent');const dos=async()=>{const r=await hub('GET',WS+'/supply');return r.json.dossier||r.json};
+ let d=await dos();
+ const fill=(d.fillable||[]).filter(l=>l.order_id===OID);
+ const plan=fill.map(l=>({order_item_id:l.order_item_id,quantity:l.quantity}));
+ const rb=(d.bags_ready||[]).find(b=>b.order_id===OID);let bagId=rb&&rb.unit_id;
+ if(!bagId){const bag=await hub('POST',WS+'/bags',{order_id:OID,bag_plan:plan});log('bag-create',bag,{});bagId=uid(bag)}
+ if(!bagId)return;
+ if(!rb){for(const l of fill){const r=await hub('POST',`${WS}/bags/${bagId}/deposit`,{from_unit_id:l.from_unit_id,allocation_id:l.allocation_id,quantity:l.quantity,evidence_method:'MANUAL',evidence_ref:`CLAUDE-PAR ${LAB} depot manuel`});log('bag-deposit',r,{})}
+ log('bag-close',await hub('POST',`${WS}/bags/${bagId}/close`,{}),{});}
+ const box=await hub('POST',WS+'/boxes',{});log('box-create',box,{});const boxId=uid(box),boxRef=box.json&&(box.json.physical_unit||{}).reference;
+ d=await dos();console.log('parcels',(d.client_parcels||[]).filter(p=>p.order_id===OID).length,'bags_ready',(d.bags_ready||[]).length);
+ let ready=(d.bags_ready||[]).find(b=>b.unit_id===bagId);let parcel=(d.client_parcels||[]).find(p=>p.order_id===OID);
+ if(!parcel){const dr=await hub('POST',WS+'/distribution/run',{});log('distribution-run',dr,{});d=await dos();ready=(d.bags_ready||[]).find(b=>b.unit_id===bagId);parcel=(d.client_parcels||[]).find(p=>p.order_id===OID)}
+ console.log('ready',!!ready,'parcel',!!parcel);
+ if(!ready||!parcel){fs.writeFileSync(`hub-${LAB}.json`,JSON.stringify(R,null,1));return}
+ log('box-add-bag',await hub('POST',`${WS}/boxes/${boxId}/bags`,{bag_unit_id:ready.unit_id,parcel_id:parcel.id,bag_reference_scan:ready.reference,box_reference_scan:boxRef,evidence_method:'MANUAL',evidence_ref:`CLAUDE-PAR ${LAB} sac->box manuel`}),{});
+ const NEXT={RECEIVED:'IDENTIFIED',IDENTIFIED:'QUALITY_CHECKED',QUALITY_CHECKED:'LOCATED',LOCATED:'ALLOCATED',ALLOCATED:'PICKED',PICKED:'PACKED',PACKED:'DISPATCHED'};
+ for(let i=0;i<8;i++){const cur=((await dos()).boxes||[]).find(b=>b.unit_id===boxId);if(!cur||cur.state==='DISPATCHED')break;const to=NEXT[cur.state];const r=await hub('POST',`${WS}/boxes/${boxId}/advance`,{to_state:to});log('box-advance:'+to,r,{});if(![200,201].includes(r.http))break}
+ const shipRef=`CLPAR-${LAB}`;log('shipment-open',await hub('POST',WS+'/boxes/shipment',{reference:shipRef,hub_unit_ids:[boxId]}),{shipRef});
+ fs.writeFileSync(`hub-${LAB}.json`,JSON.stringify({R,shipRef,boxId,bagId},null,1));
+})().catch(e=>console.log('ERR',e.message));
