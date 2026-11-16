@@ -88,6 +88,9 @@ function enhanceCuration() {
   if (sameSection) {
     sameSection.classList.add('k-pdp-curation-section--same');
     setSectionTitle(sameSection, null, 'Dans le même univers');
+    const heading = sameSection.querySelector('.k-sug-title');
+    const filters = sameSection.querySelector(':scope > .k-sug-chips');
+    if (heading && filters) heading.append(filters);
   }
 
   if (otherSection) {

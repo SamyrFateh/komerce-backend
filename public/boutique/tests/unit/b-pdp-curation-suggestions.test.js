@@ -98,6 +98,9 @@ describe('b-pdp-curation-suggestions', () => {
     isDesktop.mockReturnValue(true);
     mockSyncRaf();
     const { suggestions, sameSection, otherSection } = mountSuggestions();
+    const filters = document.createElement('div');
+    filters.className = 'k-sug-chips';
+    sameSection.append(filters);
     state.modalProduct = { id: 1, category: 'Mode & Beauté' };
     setupPdpCurationSuggestions();
 
@@ -109,6 +112,7 @@ describe('b-pdp-curation-suggestions', () => {
     expect(sameSection.querySelector('.k-sug-title-text').textContent).toBe('Dans le même univers');
     expect(sameSection.querySelector('.k-pdp-curation-subtitle')).toBeNull();
     expect(sameSection.querySelector('.k-sug-title-icon')).toBeNull();
+    expect(sameSection.querySelector('.k-sug-title > .k-sug-chips')).toBe(filters);
     expect(otherSection.classList.contains('k-pdp-curation-section--editorial')).toBe(true);
     expect(otherSection.querySelector('.k-sug-title-text').textContent).toBe('Sélection Komerce');
   });
