@@ -753,7 +753,7 @@ describe('b-modal-desktop-product — suggestions pleine largeur (PDP v3.1 §1/�
     expect(visibleSpecs()).toHaveLength(4);
     expect(button.textContent).toBe('Voir tous les détails');
     expect(button.getAttribute('aria-expanded')).toBe('false');
-    expect(document.querySelectorAll('#k-modal-desktop-specifications .k-modal-enriched-spec-group-label[hidden]')).toHaveLength(1);
+    expect(document.querySelectorAll('#k-modal-desktop-specifications .k-modal-enriched-spec-group-label[hidden]')).toHaveLength(2);
 
     button.click();
     expect(visibleSpecs()).toHaveLength(6);
