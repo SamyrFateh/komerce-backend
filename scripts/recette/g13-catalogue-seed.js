@@ -177,7 +177,7 @@ function hubManualEvidence(entry) {
   const media = String(item.image_url || '').trim();
   const url = (() => { try { return new URL(media); } catch { return null; } })();
   if (!url || url.protocol !== 'https:') blockers.push('HUB_MEDIA_HTTPS_ABSENT');
-  if (url && /(^|\\.)cjdropshipping\\.com$/i.test(url.hostname)) blockers.push('HUB_MEDIA_CJ_NOT_MANUAL_PROVENANCE');
+  if (url && /(^|\.)cjdropshipping\.com$/i.test(url.hostname)) blockers.push('HUB_MEDIA_CJ_NOT_MANUAL_PROVENANCE');
   if (!String(proof.media_origin_ref || '').trim()) blockers.push('HUB_MEDIA_ORIGIN_UNATTESTED');
   if (!String(proof.cost_ref || '').trim()) blockers.push('HUB_COST_UNATTESTED');
   if (!String(proof.stock_ref || '').trim()) blockers.push('HUB_STOCK_UNATTESTED');
