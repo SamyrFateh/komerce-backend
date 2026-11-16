@@ -68,6 +68,41 @@ test('publicOrder ne publie aucun identifiant interne', () => {
   expect(projected.market).toEqual({ code: 'CM', name: 'Cameroun', currency: 'XAF' });
 });
 
+test('Order 360 respecte le snapshot XAF d une commande CG sans renommer le pivot KMF', () => {
+  const order = {
+    id: 'internal-id', reference: 'KCG123', status: 'paid', market_code: 'CG',
+    market_currency: 'XAF', payment_status: 'paid', payment_mode: 'cash_relais',
+    total_kmf: '4991', display_total_amount: '12500', display_currency: 'XAF',
+  };
+  const projected = service.publicOrder(order);
+  expect(projected.payment).toMatchObject({
+    total_kmf: 4991,
+    market_total: 12500,
+    market_currency: 'XAF',
+    market_total_available: true,
+  });
+  expect(JSON.stringify(projected)).not.toContain('internal-id');
+
+  const missing = service.publicOrder({ ...order, display_total_amount: null });
+  expect(missing.payment.market_total_available).toBe(false);
+  expect(missing.payment.market_total).toBeNull();
+
+  const mismatched = service.publicOrder({ ...order, display_currency: 'KMF' });
+  expect(mismatched.payment.market_total_available).toBe(false);
+  expect(mismatched.payment.market_total).toBeNull();
+});
+
+test('Order 360 conserve le montant pivot KMF sur KM', () => {
+  const projected = service.publicOrder({
+    id: 'internal-id', reference: 'KKM123', market_code: 'KM',
+    market_currency: 'KMF', total_kmf: '7990',
+    payment_status: 'paid', payment_mode: 'cash_relais',
+  });
+  expect(projected.payment.market_total).toBe(7990);
+  expect(projected.payment.market_currency).toBe('KMF');
+  expect(projected.payment.market_total_available).toBe(true);
+});
+
 test('loadOrder360 agrège les facettes sans exposer leurs UUID', async () => {
   mockGetOrderControlSnapshot.mockResolvedValue({
     order_reference: 'CMD-CM-001',

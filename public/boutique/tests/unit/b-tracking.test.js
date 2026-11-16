@@ -289,6 +289,64 @@ describe('renderOrderDetail', () => {
     await flush();
     expect(apiDownload).toHaveBeenCalledWith('/api/auth/me/documents/doc-1/download', { timeoutMs: 20000 });
   });
+
+  it('propose la révélation une seule fois depuis le détail privé, jamais depuis une recherche publique', async () => {
+    apiGet.mockReset();
+    const container = document.createElement('div');
+    const order = { id: 'o-g6', reference: 'K6G6', status: 'available' };
+    renderOrderDetail(order, container);
+    expect(container.querySelector('.k-order-pickup-code-reveal')).toBeNull();
+    renderOrderDetail(order, container, { privateResources: { documents: [], wallet: null } });
+    const reveal = container.querySelector('.k-order-pickup-code-reveal');
+    expect(reveal).not.toBeNull();
+    expect(apiGet).not.toHaveBeenCalled(); // pas de GET consommant au rendu
+    apiGet.mockResolvedValueOnce({ code: '12345678' });
+    reveal.click();
+    await flush();
+    expect(apiGet).toHaveBeenCalledWith('/api/pickup/reveal-once/o-g6');
+    expect(container.querySelector('.k-pickup-code-output').textContent).toContain('12345678');
+    expect(reveal.hidden).toBe(true);
+  });
+
+  it('gère le code expiré (410) sans rotation automatique', async () => {
+    apiGet.mockReset();
+    apiPost.mockReset();
+    const container = document.createElement('div');
+    renderOrderDetail(
+      { id: 'o-410', reference: 'K410', status: 'available' },
+      container, { privateResources: { documents: [], wallet: null } },
+    );
+    apiGet.mockRejectedValueOnce(Object.assign(new Error('Gone'), { status: 410 }));
+    const reveal = container.querySelector('.k-order-pickup-code-reveal');
+    reveal.click();
+    await flush();
+    expect(container.textContent).toContain('a déjà été révélé');
+    expect(reveal.hidden).toBe(true);
+    expect(apiPost).not.toHaveBeenCalled();
+  });
+
+  it('la rotation reste un geste distinct avec confirmation explicite', async () => {
+    apiGet.mockReset();
+    apiPost.mockReset();
+    const confirm = jest.spyOn(window, 'confirm').mockReturnValue(true);
+    try {
+      const container = document.createElement('div');
+      renderOrderDetail(
+        { id: 'o-rotate', reference: 'KROT', status: 'available' },
+        container, { privateResources: { documents: [], wallet: null } },
+      );
+      apiPost.mockResolvedValueOnce({ code: '87654321' });
+      container.querySelector('.k-order-pickup-code-generate:not(.k-order-pickup-code-reveal)').click();
+      await flush();
+      expect(confirm).toHaveBeenCalled();
+      expect(apiPost).toHaveBeenCalledWith('/api/pickup/customer-regenerate/o-rotate', {});
+      expect(apiGet).not.toHaveBeenCalled();
+      expect(container.querySelector('.k-pickup-code-output').textContent).toContain('87654321');
+    } finally {
+      confirm.mockRestore();
+    }
+  });
+
 });
 
 describe('renderMyOrdersList', () => {
@@ -812,14 +870,16 @@ describe('renderListsTab — bibliothèque de listes (GAP-01/02)', () => {
   });
 });
 
+// Les actions sur secret ne sont proposées que dans Mes commandes authentifiées,
+// jamais dans une recherche publique par référence de suivi.
 describe('renderOrderDetail — code de retrait (#3900 R1)', () => {
   afterEach(() => jest.restoreAllMocks());
 
   it('ne régénère aucun code lorsque le client annule la confirmation', async () => {
     jest.spyOn(window, 'confirm').mockReturnValue(false);
     const container = document.createElement('div');
-    renderOrderDetail({ id: 'o-1', reference: 'K9ZZZZ', total_amount: 5000, status: 'available' }, container);
-    container.querySelector('.k-order-pickup-code-generate').click();
+    renderOrderDetail({ id: 'o-1', reference: 'K9ZZZZ', total_amount: 5000, status: 'available' }, container, { privateResources: { documents: [], wallet: null } });
+    container.querySelector('.k-order-pickup-code-generate:not(.k-order-pickup-code-reveal)').click();
     await Promise.resolve();
     expect(apiPost).not.toHaveBeenCalledWith('/api/pickup/customer-regenerate/o-1', {});
   });
@@ -828,8 +888,8 @@ describe('renderOrderDetail — code de retrait (#3900 R1)', () => {
     const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(true);
     apiPost.mockResolvedValueOnce({ code: 'ABC23DEF' });
     const container = document.createElement('div');
-    renderOrderDetail({ id: 'o-1', reference: 'K9ZZZZ', total_amount: 5000, status: 'available' }, container);
-    const btn = container.querySelector('.k-order-pickup-code-generate');
+    renderOrderDetail({ id: 'o-1', reference: 'K9ZZZZ', total_amount: 5000, status: 'available' }, container, { privateResources: { documents: [], wallet: null } });
+    const btn = container.querySelector('.k-order-pickup-code-generate:not(.k-order-pickup-code-reveal)');
     expect(btn).not.toBeNull();
     btn.click();
     await Promise.resolve(); await Promise.resolve();
