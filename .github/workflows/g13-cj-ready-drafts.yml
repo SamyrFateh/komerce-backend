@@ -1,0 +1,44 @@
+name: G13 CJ 3 real-source Catalogue drafts (staging)
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: read
+concurrency:
+  group: komerce-g13-cj-three-drafts
+  cancel-in-progress: false
+jobs:
+  curate:
+    if: github.actor == github.repository_owner && github.event.issue.title == '[staging-op] g13-cj-three-drafts'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      GITHUB_ACTIONS: 'true'
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      EXPECTED_RAILWAY_ENVIRONMENT: staging
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      KOMERCE_STAGING_RESET_DB_PIN: ${{ vars.STAGING_DB_PIN }}
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      PGOPTIONS: '-c default_transaction_read_only=on'
+      G13_DRAFT_SCOPE: three-source-proven
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Canonical draft preparation and D3 supplier-link, no publication
+        run: node scripts/recette/g13-cj-ready-drafts.js
+      - name: Preserve 3-category source, draft and visual review evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g13-cj-three-drafts-${{ github.run_id }}
+          path: test-results/g13-cj-ready-drafts/report.json
+          retention-days: 21
+          if-no-files-found: error
