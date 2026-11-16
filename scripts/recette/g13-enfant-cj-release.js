@@ -119,14 +119,21 @@ async function prepare(admin, report) {
     `SELECT p.id, p.lifecycle_status,
        (SELECT COUNT(*)::int FROM product_skus sku
          WHERE sku.product_id=p.id AND sku.is_active AND sku.stock>0
-          AND EXISTS (SELECT 1 FROM product_suppliers ps JOIN suppliers s ON s.id=ps.supplier_id
-           WHERE ps.product_id=p.id AND ps.supplier_sku=sku.supplier_sku AND ps.is_active
-             AND s.is_active AND LOWER(s.platform)='cj')) AS stocked_cj_skus
+           AND NULLIF(BTRIM(sku.supplier_sku),'') IS NOT NULL
+           AND EXISTS (SELECT 1 FROM jsonb_array_elements(sc.normalized_source_contract->'sellable_units') unit
+                        WHERE unit->>'supplier_sku'=sku.supplier_sku
+                          AND COALESCE((unit->>'is_active')::boolean, TRUE)
+                          AND jsonb_typeof(unit->'supplier_order_identity')='object')) AS stocked_cj_skus,
+       EXISTS (SELECT 1 FROM product_suppliers ps JOIN suppliers s ON s.id=ps.supplier_id
+                JOIN product_skus sku ON sku.product_id=p.id AND sku.supplier_sku=ps.supplier_sku
+               WHERE ps.product_id=p.id AND ps.is_active AND ps.deleted_at IS NULL
+                 AND sku.is_active AND sku.stock>0 AND s.is_active AND LOWER(s.platform)='cj') AS d3_linked
       FROM products p JOIN sourcing_candidates sc ON sc.product_id=p.id
      WHERE p.product_ref=$1 AND sc.candidate_ref='KSC-000524'
        AND sc.supplier_product_id='2601060946311626300'`, [REF]);
   report.stocked_cj_skus = product?.stocked_cj_skus;
-  if (product?.stocked_cj_skus !== 5) throw new Error('FIVE_LINKED_CJ_SKUS_REQUIRED');
+  report.d3_linked = product?.d3_linked;
+  if (product?.stocked_cj_skus !== 5 || !product.d3_linked) throw new Error('FIVE_SOURCE_SKUS_AND_D3_REQUIRED');
   if (product.lifecycle_status === 'active') return;
   const { rows: media } = await db.query(
     'SELECT id, source_media_id, url, option_values FROM catalog_media WHERE product_id=$1 AND is_active',
