@@ -450,7 +450,7 @@ describe('bootstrap/html-routes', () => {
   describe('/portail et /pilotage — portail de pilotage', () => {
     test.each(['/portail', '/pilotage'])('%s sert portal-pilotage.html', (routePath) => {
       const res = fakeRes();
-      await app._routes[routePath]({ query:{} }, res);
+      app._routes[routePath]({}, res);
       expect(res.sendFile).toHaveBeenCalledWith(
         require('path').join(PUBLIC_DIR, 'dashboards', 'admin', 'portal-pilotage.html'),
         expect.any(Function)
@@ -535,7 +535,7 @@ describe('bootstrap/html-routes', () => {
   describe('boutique / login', () => {
     test.each(['/Komerce_Boutique.html', '/boutique'])('%s sert boutique/index.html', async (routePath) => {
       const res = fakeRes();
-      app._routes[routePath]({}, res);
+      await app._routes[routePath]({query:{}}, res);
       expect(res.sendFile).toHaveBeenCalledWith(
         require('path').join(PUBLIC_DIR, 'boutique', 'index.html'),
         expect.any(Function)
