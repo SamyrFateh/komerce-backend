@@ -216,7 +216,7 @@ test('real staging: full navigation, market context and browser errors',async({p
    }
    // Étape d'écran commune : preuve de l'accès réseau dans le Market ID réel.
    if(['admin','market_operator'].includes(role)){
-     const granted=(result.context?.allowedMarkets||[]).filter(m=>markets.includes(m));
+     const granted=(result.context?.allowedMarkets||[]).filter(m=>/^[A-Z]{2}$/.test(m));
      const selected=QUICK?granted.slice(0,1):granted;
      for(const market of selected){
        try{
