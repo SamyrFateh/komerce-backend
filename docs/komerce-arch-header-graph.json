@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 2090,
-    "edges": 10388,
+    "edges": 10393,
     "dbTables": 244,
     "doctrines": 820,
     "impactAreas": 208,
@@ -7848,7 +7848,10 @@
         "products",
         "recipients",
         "relais",
-        "users"
+        "users",
+        "local_cash_refund_authorizations",
+        "local_item_refund_reservations",
+        "local_mobile_refund_handoffs"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -12304,7 +12307,9 @@
         "assignment_memberships",
         "membership_capabilities",
         "assignment_capability_ceiling",
-        "orders"
+        "orders",
+        "local_cash_refund_authorizations",
+        "local_item_refund_reservations"
       ],
       "dbWrite": [
         "order_comments",
@@ -40140,6 +40145,21 @@
       "table": "invoices"
     },
     {
+      "id": "db:local_cash_refund_authorizations",
+      "type": "db-table",
+      "table": "local_cash_refund_authorizations"
+    },
+    {
+      "id": "db:local_item_refund_reservations",
+      "type": "db-table",
+      "table": "local_item_refund_reservations"
+    },
+    {
+      "id": "db:local_mobile_refund_handoffs",
+      "type": "db-table",
+      "table": "local_mobile_refund_handoffs"
+    },
+    {
       "id": "db:partners",
       "type": "db-table",
       "table": "partners"
@@ -40663,21 +40683,6 @@
       "id": "db:local_cash_refund_payouts",
       "type": "db-table",
       "table": "local_cash_refund_payouts"
-    },
-    {
-      "id": "db:local_cash_refund_authorizations",
-      "type": "db-table",
-      "table": "local_cash_refund_authorizations"
-    },
-    {
-      "id": "db:local_item_refund_reservations",
-      "type": "db-table",
-      "table": "local_item_refund_reservations"
-    },
-    {
-      "id": "db:local_mobile_refund_handoffs",
-      "type": "db-table",
-      "table": "local_mobile_refund_handoffs"
     },
     {
       "id": "db:economic_variables",
@@ -57679,6 +57684,24 @@
     },
     {
       "from": "routes/admin/orders.js",
+      "to": "db:local_cash_refund_authorizations",
+      "type": "db-read",
+      "label": "local_cash_refund_authorizations"
+    },
+    {
+      "from": "routes/admin/orders.js",
+      "to": "db:local_item_refund_reservations",
+      "type": "db-read",
+      "label": "local_item_refund_reservations"
+    },
+    {
+      "from": "routes/admin/orders.js",
+      "to": "db:local_mobile_refund_handoffs",
+      "type": "db-read",
+      "label": "local_mobile_refund_handoffs"
+    },
+    {
+      "from": "routes/admin/orders.js",
       "to": "doctrine:resolve_before_behavior_change",
       "type": "doctrine",
       "label": "resolve_before_behavior_change"
@@ -64387,6 +64410,18 @@
       "to": "db:orders",
       "type": "db-read",
       "label": "orders"
+    },
+    {
+      "from": "routes/relay-dashboard.js",
+      "to": "db:local_cash_refund_authorizations",
+      "type": "db-read",
+      "label": "local_cash_refund_authorizations"
+    },
+    {
+      "from": "routes/relay-dashboard.js",
+      "to": "db:local_item_refund_reservations",
+      "type": "db-read",
+      "label": "local_item_refund_reservations"
     },
     {
       "from": "routes/relay-dashboard.js",
@@ -116835,7 +116870,10 @@
         "products",
         "recipients",
         "relais",
-        "users"
+        "users",
+        "local_cash_refund_authorizations",
+        "local_item_refund_reservations",
+        "local_mobile_refund_handoffs"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -116849,6 +116887,9 @@
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
+        "db:local_cash_refund_authorizations",
+        "db:local_item_refund_reservations",
+        "db:local_mobile_refund_handoffs",
         "db:markets",
         "db:order_items",
         "db:orders",
@@ -121236,7 +121277,9 @@
         "assignment_memberships",
         "membership_capabilities",
         "assignment_capability_ceiling",
-        "orders"
+        "orders",
+        "local_cash_refund_authorizations",
+        "local_item_refund_reservations"
       ],
       "dbWrite": [
         "order_comments",
@@ -121265,6 +121308,8 @@
         "db:assignment_capability_ceiling",
         "db:assignment_memberships",
         "db:disputes; catalog-product-quality-service catalog_product_quality_notes; relay-product-return-intake-service relay_product_return_receipts",
+        "db:local_cash_refund_authorizations",
+        "db:local_item_refund_reservations",
         "db:market_operating_assignments",
         "db:markets",
         "db:membership_capabilities",
