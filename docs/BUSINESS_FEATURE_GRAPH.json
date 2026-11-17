@@ -6312,6 +6312,13 @@
       {
         "feature": "dashboard",
         "category": "dash",
+        "declared": "dashboards/admin/js/views/MarketsView.js",
+        "resolvedPath": "public/dashboards/admin/js/views/MarketsView.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
         "declared": "dashboards/admin/js/views/ControlTowerView.js",
         "resolvedPath": "public/dashboards/admin/js/views/ControlTowerView.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -14620,6 +14627,13 @@
       },
       {
         "feature": "market",
+        "category": "migrations",
+        "declared": "migrations/420_market_storefront_editorial_seed.sql",
+        "resolvedPath": "migrations/420_market_storefront_editorial_seed.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market",
         "category": "services",
         "declared": "services/fx-chain-service.js",
         "resolvedPath": "services/fx-chain-service.js",
@@ -14910,6 +14924,13 @@
         "category": "tests",
         "declared": "tests/unit/public-market-storefront.test.js",
         "resolvedPath": "tests/unit/public-market-storefront.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market",
+        "category": "tests",
+        "declared": "tests/unit/market-storefront-editor.test.js",
+        "resolvedPath": "tests/unit/market-storefront-editor.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -25552,6 +25573,14 @@
         "entry": "POST /api/admin/markets/:marketCode/lifecycle",
         "method": "POST",
         "path": "/api/admin/markets/{id}/lifecycle",
+        "routeFile": "routes/admin-market-control-plane.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "market-control-plane",
+        "entry": "PUT /api/admin/markets/:marketCode/storefront",
+        "method": "PUT",
+        "path": "/api/admin/markets/{id}/storefront",
         "routeFile": "routes/admin-market-control-plane.js",
         "status": "resolved-owned"
       },
@@ -40035,6 +40064,10 @@
                 "targetFile": "services/fx-public-reference-feed.js"
               },
               {
+                "sourceFileId": "bootstrap/html-routes.js",
+                "targetFile": "services/public-market-storefront.js"
+              },
+              {
                 "sourceFileId": "server.js",
                 "targetFile": "services/public-market-storefront.js"
               }
@@ -42649,6 +42682,10 @@
               {
                 "sourceFileId": "services/market-provisioning-service.js",
                 "targetFile": "services/market-lifecycle-service.js"
+              },
+              {
+                "sourceFileId": "routes/admin-market-control-plane.js",
+                "targetFile": "services/market-lifecycle-service.js"
               }
             ]
           },
@@ -42701,6 +42738,10 @@
               },
               {
                 "sourceFileId": "services/market-delivery-proof-service.js",
+                "targetFile": "services/market-delegation-service.js"
+              },
+              {
+                "sourceFileId": "routes/admin-market-control-plane.js",
                 "targetFile": "services/market-delegation-service.js"
               },
               {
@@ -50162,7 +50203,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2357
+        "filesObserved": 2359
       },
       "boutique": {
         "filesObserved": 216,

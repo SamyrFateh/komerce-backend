@@ -223,7 +223,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - services: 46
 - routes: 28
 - migrations: 2
-- dash: 176
+- dash: 177
 - tests: 211
 - tables owned (lifecycle): 2 — `order_incidents`, `partners`
 - tables written: 20
@@ -416,9 +416,9 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 > Porter le référentiel des marchés ouverts (pays, devise) et l'historique d'accès des opérateurs à un marché — jamais le settlement ni l'attribution économique, qui restent une primitive séparée et différée.
 
 - scripts: 3
-- migrations: 14
+- migrations: 15
 - services: 11
-- tests: 31
+- tests: 32
 - tables owned (lifecycle): 5 — `markets`, `operator_market_scopes`, `currency_parities`, `fx_rate_observations`, `fx_public_reference_quotes`
 - tables written: 5
 - interfaces exposed: 0
@@ -451,7 +451,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - tests: 12
 - tables owned (lifecycle): 1 — `market_delivery_attestations`
 - tables written: 1
-- interfaces exposed: 6
+- interfaces exposed: 7
 - internal APIs: 9
 - dependencies (consumes): 13 — orders, market, market-delegation, providers-services, payments, logistics, dashboard, catalog, decision-signals, economic-engine, sourcing, auth, infrastructure
 - consumers: 1 — orders
@@ -1393,6 +1393,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `POST /api/loyalty/recalculate-all` | loyalty | `routes/loyalty.js` (resolved-owned) |
 | `POST /api/admin/markets` | market-control-plane | `routes/admin-market-control-plane.js` (resolved-owned) |
 | `POST /api/admin/markets/{id}/lifecycle` | market-control-plane | `routes/admin-market-control-plane.js` (resolved-owned) |
+| `PUT /api/admin/markets/{id}/storefront` | market-control-plane | `routes/admin-market-control-plane.js` (resolved-owned) |
 | `POST /api/admin/markets/{id}/reprovision` | market-control-plane | `routes/admin-market-control-plane.js` (resolved-owned) |
 | `GET /api/admin/markets` | market-control-plane | `routes/admin-market-control-plane.js` (resolved-owned) |
 | `GET /api/admin/markets/central-authority` | market-control-plane | `routes/admin-market-control-plane.js` (resolved-owned) |
@@ -2323,7 +2324,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 2357 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 2359 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 216 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 79 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -2471,7 +2472,7 @@ Meta Graph monté : oui.
 | infrastructure | local-stock | static-code | 2 | **OBSERVED_UNDECLARED** |
 | infrastructure | logistics | static-code | 22 | **DECLARED_AND_OBSERVED** |
 | infrastructure | loyalty | static-code | 2 | **OBSERVED_UNDECLARED** |
-| infrastructure | market | static-code | 3 | **DECLARED_AND_OBSERVED** |
+| infrastructure | market | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | infrastructure | market-control-plane | static-code | 1 | **OBSERVED_UNDECLARED** |
 | infrastructure | market-delegation | static-code | 15 | **OBSERVED_UNDECLARED** |
 | infrastructure | notifications | static-code | 4 | **DECLARED_AND_OBSERVED** |
@@ -2540,8 +2541,8 @@ Meta Graph monté : oui.
 | market-control-plane | economic-engine | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | market-control-plane | infrastructure | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | market-control-plane | logistics | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
-| market-control-plane | market | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
-| market-control-plane | market-delegation | static-code, data-read | 15 | **DECLARED_AND_OBSERVED** |
+| market-control-plane | market | static-code, data-read | 3 | **DECLARED_AND_OBSERVED** |
+| market-control-plane | market-delegation | static-code, data-read | 16 | **DECLARED_AND_OBSERVED** |
 | market-control-plane | orders | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
 | market-control-plane | payments | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
 | market-control-plane | sourcing | static-code | 1 | **DECLARED_AND_OBSERVED** |
