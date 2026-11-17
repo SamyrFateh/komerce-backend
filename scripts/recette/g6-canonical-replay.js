@@ -48,7 +48,9 @@ const RESUME_DIFF_ALLOWLIST=new Set([
   'scripts/recette/g6-canonical-replay.js',
   'tests/staging-clicks/g6-p3-kuyiyuk.spec.js',
   'tests/unit/g6-canonical-journey-replay.test.js',
-  'docs/recette/PARCOURS_REFERENCE_UNIQUE.md'
+  'docs/recette/PARCOURS_REFERENCE_UNIQUE.md',
+  // STATUS est un journal de preuves, jamais une autorité de mutation.
+  'docs/chantier/STATUS.md'
 ]);
 function isToolingOnlyResumeDiff(files) {
   return Array.isArray(files) && files.length>0 && files.every(f=>RESUME_DIFF_ALLOWLIST.has(f));
