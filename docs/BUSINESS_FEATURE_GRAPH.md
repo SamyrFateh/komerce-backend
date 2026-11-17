@@ -417,8 +417,8 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - scripts: 3
 - migrations: 14
-- services: 10
-- tests: 30
+- services: 11
+- tests: 31
 - tables owned (lifecycle): 5 — `markets`, `operator_market_scopes`, `currency_parities`, `fx_rate_observations`, `fx_public_reference_quotes`
 - tables written: 5
 - interfaces exposed: 0
@@ -2323,7 +2323,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 2355 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 2357 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 216 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 79 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -2471,7 +2471,7 @@ Meta Graph monté : oui.
 | infrastructure | local-stock | static-code | 2 | **OBSERVED_UNDECLARED** |
 | infrastructure | logistics | static-code | 22 | **DECLARED_AND_OBSERVED** |
 | infrastructure | loyalty | static-code | 2 | **OBSERVED_UNDECLARED** |
-| infrastructure | market | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| infrastructure | market | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | infrastructure | market-control-plane | static-code | 1 | **OBSERVED_UNDECLARED** |
 | infrastructure | market-delegation | static-code | 15 | **OBSERVED_UNDECLARED** |
 | infrastructure | notifications | static-code | 4 | **DECLARED_AND_OBSERVED** |
