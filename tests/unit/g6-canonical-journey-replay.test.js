@@ -5,7 +5,7 @@ const {
   business,canonicalScenario,resolveCanonicalReplay,resolveRelayCashRefs
 }=require('../../scripts/recette/g6-canonical-journey-binding');
 const {
-  validateGuard,validateBuyerProof,validateCashProof,validateHubProof,validateCommitmentCheckpoint,validateVendorReadinessCheckpoint,isToolingOnlyResumeDiff,verifyResumeTooling
+  validateGuard,validateBuyerProof,validateCashProof,validateHubProof,validateCommitmentCheckpoint,validateVendorReadinessCheckpoint,validateHubReceivingCheckpoint,isToolingOnlyResumeDiff,verifyResumeTooling
 }=require('../../scripts/recette/g6-canonical-replay');
 
 const sha='a'.repeat(40);
@@ -183,6 +183,27 @@ describe('G6 canonical journey — same order, original matrix, real staging gua
     expect(()=>validateVendorReadinessCheckpoint({...prior,stages:prior.stages.slice(0,3)},commitment,scope)).toThrow();
     expect(()=>validateVendorReadinessCheckpoint(prior,{...commitment,after:{...commitment.after,payment_authorization_count:1}},scope)).toThrow();
     expect(()=>validateVendorReadinessCheckpoint(prior,{...commitment,external_supplier_calls:1},scope)).toThrow();
+  });
+  test('reçoit uniquement le PO M01 ayant une preuve fournisseur simulée liée au même ordre',()=>{
+    const po='8353f1a3-f2a5-4c5e-b01c-95b4cb2004e3';
+    const orderId='56adad65-d1fa-4e80-8d69-c25e0fe92a76';
+    const prior={scenario_id:'M01',market:'KM',verdict:'NOT_PROVEN',
+      full_chain_certified:false,production_permitted:false,
+      next_stage:'HUB_RECEIVING',po_id:po,db_fingerprint:'same-staging',
+      order:{id:orderId,reference:'KL1WGP6'},
+      stages:[{id:'HUB_VENDOR_SIMULATED',verdict:'PASS_SIMULATED_STAGING',po_id:po}]};
+    const simulated={verdict:'G6_VENDOR_SIMULATED_SEND_AND_CONFIRM_CHROMIUM_PASS_NOT_RECEIPT_GO',
+      reference:'KL1WGP6',po_id:po,order_id:orderId,db_fingerprint:'same-staging',
+      after:{po_status:'confirmed',confirmed_quantity:1,manual_executions:1,payment_authorizations:0},
+      provenance:'SIMULATED / STAGING ONLY',external_supplier_calls:0,
+      external_payment_executed:false,physical_receipt_certified:false};
+    expect(validateHubReceivingCheckpoint(prior,simulated,scope)).toMatchObject({poId:po});
+    expect(()=>validateHubReceivingCheckpoint({...prior,po_id:'other'},simulated,scope)).toThrow();
+    expect(()=>validateHubReceivingCheckpoint({...prior,next_stage:'KOM_BOX'},simulated,scope)).toThrow();
+    expect(()=>validateHubReceivingCheckpoint(prior,{...simulated,order_id:'other'},scope)).toThrow();
+    expect(()=>validateHubReceivingCheckpoint(prior,{...simulated,db_fingerprint:'other'},scope)).toThrow();
+    expect(()=>validateHubReceivingCheckpoint(prior,{...simulated,provenance:'REAL'},scope)).toThrow();
+    expect(()=>validateHubReceivingCheckpoint(prior,{...simulated,after:{...simulated.after,payment_authorizations:1}},scope)).toThrow();
   });
   test('refuse cash sur un autre ordre, une autre DB, ou un état financier incomplet',()=>{
     expect(validateCashProof(cash,buyer,scope,env)).toMatchObject({reference:'K123456',paid:true});

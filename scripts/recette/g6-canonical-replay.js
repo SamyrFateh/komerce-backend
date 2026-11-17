@@ -30,6 +30,8 @@ const RESUME_COMMITMENT=path.join(ROOT,'test-results/g6-canonical-resume/g6-hub-
 const VENDOR_READY=path.join(ROOT,'test-results/g6-hub-vendor-readiness/report.json');
 const RESUME_VENDOR_READY=path.join(ROOT,'test-results/g6-canonical-resume/g6-hub-vendor-readiness/report.json');
 const VENDOR_SIMULATION=path.join(ROOT,'test-results/g6-hub-vendor-simulation/report.json');
+const RESUME_VENDOR_SIMULATION=path.join(ROOT,'test-results/g6-canonical-resume/g6-hub-vendor-simulation/report.json');
+const HUB_RECEIVING=path.join(ROOT,'test-results/g6-hub-receiving/report.json');
 const ORIGIN='https://komerce-backend-production.up.railway.app';
 const VALID_SHA=/^[a-f0-9]{40}$/;
 const VALID_REF=/^[A-Z0-9][A-Z0-9-]{5,63}$/;
@@ -208,6 +210,30 @@ function validateVendorSimulationCheckpoint(previous,ready,scope) {
   return {order:previous.order,poId:previous.po_id,dbFingerprint:previous.db_fingerprint};
 }
 
+function validateHubReceivingCheckpoint(previous,simulated,scope) {
+  const po='8353f1a3-f2a5-4c5e-b01c-95b4cb2004e3';
+  const orderId='56adad65-d1fa-4e80-8d69-c25e0fe92a76';
+  if(scope.id!=='M01'||scope.market!=='KM'||
+     previous.scenario_id!=='M01'||previous.market!=='KM'||
+     previous.verdict!=='NOT_PROVEN'||previous.full_chain_certified!==false||
+     previous.production_permitted!==false||previous.next_stage!=='HUB_RECEIVING'||
+     previous.po_id!==po||previous.order?.reference!=='KL1WGP6'||previous.order?.id!==orderId||
+     !previous.db_fingerprint||
+     !previous.stages?.some(s=>s.id==='HUB_VENDOR_SIMULATED'&&
+       s.verdict==='PASS_SIMULATED_STAGING'&&s.po_id===po)||
+     simulated.verdict!=='G6_VENDOR_SIMULATED_SEND_AND_CONFIRM_CHROMIUM_PASS_NOT_RECEIPT_GO'||
+     simulated.reference!=='KL1WGP6'||simulated.po_id!==po||simulated.order_id!==orderId||
+     simulated.db_fingerprint!==previous.db_fingerprint||
+     simulated.after?.po_status!=='confirmed'||
+     Number(simulated.after?.confirmed_quantity)!==1||
+     Number(simulated.after?.manual_executions)!==1||
+     Number(simulated.after?.payment_authorizations)!==0||
+     simulated.provenance!=='SIMULATED / STAGING ONLY'||
+     simulated.external_supplier_calls!==0||simulated.external_payment_executed!==false||
+     simulated.physical_receipt_certified!==false)throw Error('G6_RECEIVING_PRIOR_SUPPLIER_PROOF_INVALID');
+  return {order:previous.order,poId:po,dbFingerprint:previous.db_fingerprint};
+}
+
 function executeExistingHub(env) {
   fs.rmSync(HUB_PROOF,{force:true});
   const p=spawnSync(process.platform==='win32'?'npx.cmd':'npx',[
@@ -231,7 +257,7 @@ async function main(env=process.env) {
   try{
     const scope=validateGuard(env);
     const phase=String(env.G6_CANONICAL_PHASE||'BUYER_CASH');
-    if(!['BUYER_CASH','HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION'].includes(phase) || (['HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION'].includes(phase)&&(scope.id!=='M01'||scope.market!=='KM')))
+    if(!['BUYER_CASH','HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION','HUB_RECEIVING'].includes(phase) || (['HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION','HUB_RECEIVING'].includes(phase)&&(scope.id!=='M01'||scope.market!=='KM')))
       throw new Error('G6_CANONICAL_PHASE_NOT_BOUND');
     report.scenario_id=scope.id;report.market=scope.market;
     report.source_matrix_version=scope.source_version;
@@ -244,8 +270,41 @@ async function main(env=process.env) {
     // must fail closed, not rebuild or silently switch to a new buyer.
     let buyer, resumeDiff=null;
     const resumeRun=String(env.G6_CANONICAL_RESUME_RUN_ID||'');
-    if(['HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION'].includes(phase)&&!resumeRun)
+    if(['HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION','HUB_RECEIVING'].includes(phase)&&!resumeRun)
       throw new Error('G6_CANONICAL_HUB_REQUIRES_PREVIOUS_STAGE_PROOF');
+    if(phase==='HUB_RECEIVING'){
+      if(!/^\d{8,}$/.test(resumeRun)||!fs.existsSync(RESUME_CANONICAL)||
+         !fs.existsSync(RESUME_VENDOR_SIMULATION))
+        throw Error('G6_RECEIVING_PREVIOUS_VENDOR_ARTIFACT_MISSING');
+      const previous=JSON.parse(fs.readFileSync(RESUME_CANONICAL,'utf8'));
+      const simulated=JSON.parse(fs.readFileSync(RESUME_VENDOR_SIMULATION,'utf8'));
+      const bound=validateHubReceivingCheckpoint(previous,simulated,scope);
+      report.resumed_from_run_id=resumeRun;
+      report.previous_staging_sha=previous.staging_sha;
+      report.order=bound.order;report.po_id=bound.poId;report.db_fingerprint=bound.dbFingerprint;
+      report.stages=previous.stages.map(st=>({
+        id:st.id,verdict:'PREVIOUS_RUN_PASS',source_run_id:resumeRun,
+        reference:bound.order.reference
+      }));
+      report.next_stage='HUB_RECEIVING';save();
+      const received=executeExisting('scripts/recette/g6-hub-receiving-chromium.js',
+        HUB_RECEIVING,{...env,G6_CANONICAL_ORDER_ID:bound.order.id,
+          G6_CANONICAL_ORDER_REFERENCE:bound.order.reference,
+          G6_CANONICAL_PO_ID:bound.poId,G6_CANONICAL_DB_FINGERPRINT:bound.dbFingerprint});
+      if(received.verdict!=='G6_HUB_RECEIPT_SIMULATED_CHROMIUM_PASS_NOT_KOM_BOX_GO'||
+         received.reference!==bound.order.reference||received.po_id!==bound.poId||
+         received.db_fingerprint!==bound.dbFingerprint||
+         received.physical_receipt_certified!==true||
+         received.external_supplier_calls!==0||received.external_payment_executed!==false||
+         received.provenance!=='SIMULATED / STAGING ONLY')
+        throw Error('G6_RECEIVING_CHROMIUM_PROOF_INVALID');
+      report.stages.push({id:'HUB_RECEIVING',verdict:'PASS_SIMULATED_STAGING',
+        via:'Chromium_UI',po_id:bound.poId,reference:bound.order.reference,
+        evidence:'test-results/g6-hub-receiving/report.json'});
+      report.next_stage='KOM_BOX';report.verdict='NOT_PROVEN';save();
+      console.log('[g6-canonical] same PO Hub reception PASS simulated staging; KOM-BOX NOT_PROVEN');
+      return report;
+    }
     if(phase==='HUB_VENDOR_SIMULATION'){
       if(!/^\d{8,}$/.test(resumeRun)||!fs.existsSync(RESUME_CANONICAL)||
          !fs.existsSync(RESUME_VENDOR_READY))
@@ -460,4 +519,4 @@ async function main(env=process.env) {
 }
 
 if(require.main===module)main().catch(e=>{console.error(e.message);process.exitCode=2});
-module.exports={validateGuard,validateBuyerProof,validateCashProof,validateHubProof,validateCommitmentCheckpoint,validateVendorReadinessCheckpoint,validateVendorSimulationCheckpoint,isToolingOnlyResumeDiff,verifyResumeTooling,main};
+module.exports={validateGuard,validateBuyerProof,validateCashProof,validateHubProof,validateCommitmentCheckpoint,validateVendorReadinessCheckpoint,validateVendorSimulationCheckpoint,validateHubReceivingCheckpoint,isToolingOnlyResumeDiff,verifyResumeTooling,main};
