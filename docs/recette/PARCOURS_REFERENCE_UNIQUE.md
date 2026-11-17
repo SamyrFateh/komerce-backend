@@ -79,7 +79,7 @@ Les déclencheurs **propriétaire uniquement**, sérialisés :
 Aucun scénario autre que M01/M04/M05 n'est implicitement pris en charge, en particulier M02 stock local, M03 mixte et M06 fournisseur central manuel. Les adapter au même moteur par ajout de branche métier, **pas par un nouveau script de parcours**. Les 46 E2E restent suspendus au GO propriétaire, les flux PSP/fournisseurs réels interdits.
 
 
-### Reprise après erreur de contrat de preuve (18 novembre, runner G6)
+### Reprise après erreur de contrat de preuve (17 novembre 2026, runner G6)
 
 La première exécution M01/KM [#4425](https://github.com/SamyrFateh/komerce-backend/issues/4425) a réellement créé la commande `KL1WGP6` en Chromium sur staging `8f394eac`. **La caisse n'a pas été exécutée** : l'ancien rapport d'achat n'exposait pas le champ `payment_mode`, pourtant déjà vérifié par le script d'achat lui-même en PostgreSQL. Aucun accès ni aucun paiement supplémentaire n'est attesté par ce run.
 
