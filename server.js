@@ -294,7 +294,7 @@ app.get('/api/public/config', async (req, res) => {
 // ── HTML routes / SPA fallback ─────────────────────────────────────────────
 const fs = require('fs');
 log.info({ exists: fs.existsSync(path.join(__dirname, 'public/dashboards/admin/index.html')), dir: path.join(__dirname, 'public') }, '[boot] html-routes check');
-mountHtmlRoutes(app, __dirname);
+mountHtmlRoutes(app, __dirname, db);
 
 app.use(errorHandler);
 
