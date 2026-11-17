@@ -13,6 +13,7 @@ const {test,expect}=require('@playwright/test');
 const {markets,pages,dimensions,processes}=require('./matrix');
 const {expectedPath,resolveNavigationHttp}=require('./navigation-audit-policy');
 const {clickDiscoveredLink}=require('./link-replay');
+const {inspectMarketNetwork}=require('./market-network-stage');
 const ORIGIN=process.env.E2E_STAGING_BASE_URL||'https://komerce-backend-production.up.railway.app';
 const ROOT=path.resolve('test-results/staging-chromium/evidence');
 const QUICK=process.env.E2E_AUDIT_QUICK==='1';
@@ -24,7 +25,7 @@ test('real staging: full navigation, market context and browser errors',async({p
  const role=info.project.name.replace(/-(mobile|desktop)$/,'');
  const mobile=info.project.name.endsWith('-mobile');
  const result={target:ORIGIN,role,mode:QUICK?'QUICK_READONLY':'EXHAUSTIVE_READONLY',viewport:mobile?'390x844':'1440x900',version:null,
-  markets,dimensions,processes,context:null,routes:[],edges:[],marketViews:[],
+  markets,dimensions,processes,context:null,routes:[],edges:[],marketViews:[],networkViews:[],
   blockedWrites:[],apiErrors:[],jsErrors:[],canonicalRedirects:[],expectedDenials:[],findings:[]};
  const fail=(severity,code,detail)=>result.findings.push({severity,code,detail:short(detail)});
  const file=path.join(ROOT,info.project.name+'.json');
@@ -210,6 +211,23 @@ test('real staging: full navigation, market context and browser errors',async({p
              fail('P1','MARKET_OVERVIEW',market+' '+surface);
          }catch(e){fail('P1','MARKET_OVERVIEW_EXCEPTION',market+' '+surface+': '+short(e.message));}
        }
+     }
+   }
+   // Étape d'écran commune : preuve de l'accès réseau dans le Market ID réel.
+   if(['admin','market_operator'].includes(role)){
+     const granted=(result.context?.allowedMarkets||[]).filter(m=>markets.includes(m));
+     const selected=QUICK?granted.slice(0,1):granted;
+     for(const market of selected){
+       try{
+         const network=await inspectMarketNetwork(page,{
+           origin:ORIGIN,market,
+           accessRequired:role==='admin'||process.env.E2E_NETWORK_ACCESS_REQUIRED==='1'
+         });
+         result.networkViews.push(network);
+         if(network.verdict==='BLOCKED')
+           fail('P1','NETWORK_STAGE_BLOCKED',market+' '+network.reason);
+       }catch(e){fail('P1','NETWORK_STAGE_EXCEPTION',market+' '+short(e.message));}
+       save();
      }
    }
    if(role==='market_operator'){
