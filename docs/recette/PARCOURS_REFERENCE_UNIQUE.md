@@ -86,3 +86,12 @@ La première exécution M01/KM [#4425](https://github.com/SamyrFateh/komerce-bac
 Pour **reprendre sans refaire l'achat**, une issue propriétaire `[staging-op] g6-canonical-resume-M01-KM` contenant `resume_run_id: 44167858336` télécharge l'artefact GitHub de l'ancien run, vérifie l'ID d'exécution, la référence de commande, le marché, le scénario et l'empreinte PG, et **refuse tout changement de code runtime** entre les deux SHA (diff Git limité à l'orchestrateur de test, son workflow, ses tests et la documentation). Le nouvel agent Relais vérifie à nouveau **à l'écran et par PostgreSQL** que la commande est encore pending / cash_relais, avant tout clic d'encaissement. Sinon `BLOCKED` ; jamais de nouveau checkout implicite.
 
 Le test global reste `NOT_PROVEN` après reprise, tant que `HUB_PO`, transport, Douane, remise client et documents ne sont pas raccordés à cette même référence.
+
+
+### Étape Hub PO liée à la même commande (17 novembre 2026)
+
+Le contrôle buyer+cash M01/KM a été confirmé sur le staging réel par [run #44169528939](https://github.com/SamyrFateh/komerce-backend/actions/runs/44169528939) / [artefact #14367985714](https://github.com/SamyrFateh/komerce-backend/actions/runs/44169528939/artifacts/14367985714) : commande `KL1WGP6`, même ID buyer, même fingerprint PG, cash 200 et une seule collecte.
+
+Le déclencheur propriétaire `[staging-op] g6-canonical-hub-po-M01-KM` avec `resume_run_id: 44169528939` réutilise **le même orchestrateur G6** pour lire le checkpoint buyer+cash vérifié et exécuter directement le test Hub Chromium existant `tests/staging-clicks/g6-p3-kuyiyuk.spec.js`, maintenant paramétrable par `order_id`, `reference`, `buyer_id` plutôt que fixé à `KUYIYUK`. Ce test réalise la ligne d'achat (si nécessaire) et le brouillon de PO depuis le cockpit Hub, puis vérifie en PG la même commande, la caisse unique, une ligne et un PO.
+
+**Pas d'engagement/paiement fournisseur réel** et aucune facture fictive créée par le harnais. Si l'ordre est introuvable à l'écran, le fournisseur lié manque ou l'état physique est inéligible : `BLOCKED`, pas de simulation de PO via API. Une preuve Hub PO positive ne clôture ni les deux validations directrice, ni réception, KOM-BOX, transitaire, douane, relais, remise et documents. Verdict M01 complet `NOT_PROVEN` tant que le parcours n'a pas traversé ces gestes réels.
