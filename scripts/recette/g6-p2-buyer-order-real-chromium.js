@@ -60,7 +60,7 @@ async function resolveCurrentSaleableProduct(){
 }
 async function queryOrders(userId){
  const {rows}=await db.query(
- 'SELECT o.id,o.reference,o.total_kmf,o.payment_mode::text AS payment_mode, '+
+ 'SELECT o.id,o.reference,o.total_kmf,o.display_total_amount,o.display_currency,o.payment_mode::text AS payment_mode, '+
  'o.payment_status::text AS payment_status,o.status::text AS status,o.simulation_scope, '+
  'm.code AS market, '+
  '(SELECT COUNT(*)::int FROM order_items i WHERE i.order_id=o.id) AS lines, '+
@@ -165,6 +165,11 @@ async function browserCheckout({buyer,phone,code}){
   check((await ctx.cookies()).some(x=>x.name.endsWith('kmrc_jwt')&&x.httpOnly),'OTP_HTTPONLY_SESSION_NOT_SET');
   record('CHROMIUM_OTP_VERIFIED',{request_status:rr.status(),verify_status:vr.status(),session:true,external_notification:false});
   await page.goto(ORIGIN+'/boutique/?market='+MARKET,{waitUntil:'domcontentloaded'});
+  // The catalog's async load must finish before the first search input event.
+  await page.waitForFunction(() => {
+    const count=document.getElementById('k-hero-count');
+    return !!count && !count.hidden && /[1-9]/.test(count.textContent||'');
+  },null,{timeout:30000});
   const {rows:[actualProduct]}=await db.query('SELECT name,product_ref FROM products WHERE id=$1',[PRODUCT]);
   check(actualProduct?.product_ref===REF&&!!actualProduct.name,'G6_PRODUCT_PROVENANCE_MISMATCH');
   await page.locator('#k-search-input').fill(actualProduct.name);
@@ -236,7 +241,7 @@ async function browserCheckout({buyer,phone,code}){
   const total=await page.locator('#ck-final-total-amount').innerText();
   const checkoutTotal=Number(total.replace(/[^0-9]/g,''));
   check(checkoutTotal===EXPECTED_PRICE,'G6_CHECKOUT_TOTAL_NOT_CURRENT_PRICE');
-  report.checkout_expected_total_kmf=checkoutTotal;
+  report.checkout_display_total=checkoutTotal;
   record('REAL_CHECKOUT',{display_total:total,relay:await page.locator('#ck-relais-summary').innerText().catch(()=>null)});
   await page.screenshot({path:path.join(OUT,'04-real-checkout-before-POST.png')});
   const response=page.waitForResponse(r=>r.url().endsWith('/api/orders')&&r.request().method()==='POST',{timeout:25000});
@@ -267,11 +272,15 @@ async function browserCheckout({buyer,phone,code}){
   check(orders.length===1,'G6_EXACTLY_ONE_ORDER_NOT_SATISFIED');
   const o=orders[0];
   check(o.id===order.id&&o.reference===order.reference&&o.simulation_scope==='G6-BUYER'&&
-    o.market===MARKET&&Number(o.total_kmf)===report.checkout_expected_total_kmf&&o.payment_mode==='cash_relais'&&
+    o.market===MARKET&&Number(o.display_total_amount)===report.checkout_display_total&&
+    o.display_currency===(MARKET==='KM'?'KMF':'XAF')&&Number(o.total_kmf)>0&&
+    (MARKET!=='KM'||Number(o.total_kmf)===report.checkout_display_total)&&o.payment_mode==='cash_relais'&&
     o.status==='pending'&&o.payment_status!=='paid'&&o.lines===1&&o.qty===1&&o.products?.includes(REF),
     'G6_POSTGRES_CANONICAL_ORDER_MISMATCH');
   report.order={id:o.id,reference:o.reference,status:o.status,payment_status:o.payment_status,
-    scope:o.simulation_scope,total_kmf:Number(o.total_kmf),market:o.market,lines:o.lines,quantity:o.qty,products:o.products};
+    scope:o.simulation_scope,total_kmf:Number(o.total_kmf),
+    display_total_amount:Number(o.display_total_amount),display_currency:o.display_currency,
+    checkout_display_total:report.checkout_display_total,market:o.market,lines:o.lines,quantity:o.qty,products:o.products};
   record('INDEPENDENT_POSTGRES_READBACK',report.order);await runtime();
   report.verdict='G6_P2_REAL_OTP_CHROMIUM_ORDER_CREATED_NO_EXTERNAL_EFFECTS';
  }catch(e){report.verdict='BLOCKED';report.error=String(e.message||e).slice(0,480);process.exitCode=2}
