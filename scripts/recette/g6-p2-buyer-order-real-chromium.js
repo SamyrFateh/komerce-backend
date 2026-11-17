@@ -273,7 +273,9 @@ async function browserCheckout({buyer,phone,code}){
     o.status==='pending'&&o.payment_status!=='paid'&&o.lines===1&&o.qty===1&&o.products?.includes(REF),
     'G6_POSTGRES_CANONICAL_ORDER_MISMATCH');
   report.order={id:o.id,reference:o.reference,status:o.status,payment_status:o.payment_status,
-    scope:o.simulation_scope,total_kmf:Number(o.total_kmf),market:o.market,lines:o.lines,quantity:o.qty,products:o.products};
+    scope:o.simulation_scope,total_kmf:Number(o.total_kmf),
+    display_total_amount:Number(o.display_total_amount),display_currency:o.display_currency,
+    checkout_display_total:report.checkout_display_total,market:o.market,lines:o.lines,quantity:o.qty,products:o.products};
   record('INDEPENDENT_POSTGRES_READBACK',report.order);await runtime();
   report.verdict='G6_P2_REAL_OTP_CHROMIUM_ORDER_CREATED_NO_EXTERNAL_EFFECTS';
  }catch(e){report.verdict='BLOCKED';report.error=String(e.message||e).slice(0,480);process.exitCode=2}
