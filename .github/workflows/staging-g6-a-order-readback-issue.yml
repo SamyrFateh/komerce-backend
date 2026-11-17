@@ -1,0 +1,130 @@
+# Read-only independent proof of a G6-A buyer's existing cash order.
+# Does not create an order, authenticate a customer, pay or reveal a pickup code.
+name: G6 A — existing KM cash order PostgreSQL readback (staging)
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: read
+concurrency:
+  group: komerce-g6-a-km-order-readback
+  cancel-in-progress: false
+jobs:
+  readback:
+    if: >-
+      github.repository == 'SamyrFateh/komerce-backend' &&
+      github.actor == github.repository_owner &&
+      github.event.issue.user.login == github.repository_owner &&
+      github.event.issue.title == '[staging-op] g6-a-km-order-readback'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_TARGET_ENV: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      EXPECTED_RAILWAY_ENVIRONMENT: staging
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      KOMERCE_STAGING_RESET_DB_PIN: ${{ vars.STAGING_DB_PIN }}
+      PGOPTIONS: '-c default_transaction_read_only=on'
+      G6_ORDER_REFERENCE: KIQMX2V
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Pin Railway staging and confirm independent PostgreSQL target
+        run: |
+          node scripts/recette/resolve-staging-deploy-pin.js
+          node scripts/recette/target-guard.js
+      - name: Read existing order and compare staging SHA before/after (no writes)
+        shell: bash
+        run: |
+          node <<'JS'
+          'use strict';
+          const fs=require('fs');
+          const path=require('path');
+          const db=require('./db');
+          const {confirmTarget}=require('./scripts/recette/target-guard');
+          const BASE='https://komerce-backend-production.up.railway.app';
+          const REF=process.env.G6_ORDER_REFERENCE;
+          const out=path.resolve('test-results/g6-a-order-readback');
+          fs.mkdirSync(out,{recursive:true});
+          const report={run_id:process.env.GITHUB_RUN_ID,order_reference:REF,verdict:'NOT_PROVEN',read_only:true};
+          const save=()=>fs.writeFileSync(path.join(out,'report.json'),JSON.stringify(report,null,2)+'\n');
+          const assert=(condition,code)=>{if(!condition)throw new Error(code)};
+          const version=async()=>{
+            const r=await fetch(BASE+'/health/version');
+            assert(r.status===200,'STAGING_VERSION_UNAVAILABLE');
+            const v=await r.json();
+            assert(/^[a-f0-9]{40}$/.test(v.commit||''),'STAGING_SHA_INVALID');
+            return v.commit;
+          };
+          const snapshot=async()=>{
+            const c=await db.getClient();
+            try{
+              await c.query('BEGIN READ ONLY');
+              const {rows}=await c.query(`
+                SELECT o.id,o.reference,o.status::text AS status,o.payment_status::text AS payment_status,
+                  o.payment_mode::text AS payment_mode,o.total_kmf::text AS total_kmf,
+                  o.simulation_scope,m.code AS market,
+                  (u.role::text='client' AND u.email ~* '^g6-e2e-[a-f0-9]{8}@komerce\\.test$'
+                    AND EXISTS(SELECT 1 FROM e2e_test_accounts e WHERE e.user_id=u.id)) AS marked_buyer,
+                  (SELECT COUNT(*)::int FROM order_items oi WHERE oi.order_id=o.id) AS line_count,
+                  (SELECT COALESCE(SUM(oi.quantity),0)::int FROM order_items oi WHERE oi.order_id=o.id) AS quantity,
+                  (SELECT array_agg(DISTINCT p.product_ref) FROM order_items oi
+                     JOIN products p ON p.id=oi.product_id WHERE oi.order_id=o.id) AS products
+                FROM orders o JOIN users u ON u.id=o.user_id
+                  JOIN markets m ON m.id=o.market_id WHERE o.reference=$1`,[REF]);
+              await c.query('ROLLBACK');
+              return rows;
+            }finally{await c.query('ROLLBACK').catch(()=>{});c.release()}
+          };
+          (async()=>{
+            try{
+              assert(process.env.KOMERCE_ENV==='staging'&&process.env.KOMERCE_TARGET_ENV==='staging'&&
+                process.env.GITHUB_EVENT_NAME==='issues'&&process.env.GITHUB_ACTOR===process.env.GITHUB_REPOSITORY_OWNER&&
+                process.env.STAGING_BASE_URL===BASE&&/^[A-Z0-9]{7}$/.test(REF||'')&&
+                (process.env.PGOPTIONS||'').includes('default_transaction_read_only=on'),
+                'OWNER_STAGING_READONLY_GUARD');
+              const target=await confirmTarget({db});
+              assert(target.confirmed,'DB_TARGET_NOT_CONFIRMED');
+              report.db_fingerprint=target.fingerprint;
+              const sha=await version();
+              assert(sha===process.env.E2E_EXPECTED_DEPLOY_SHA,'STAGING_SHA_BEFORE_DRIFT');
+              const before=await snapshot();
+              assert(before.length===1,'G6_ORDER_NOT_UNIQUE');
+              const o=before[0];
+              report.order={id:o.id,reference:o.reference,market:o.market,scope:o.simulation_scope,
+                status:o.status,payment_status:o.payment_status,payment_mode:o.payment_mode,
+                total_kmf:Number(o.total_kmf),marked_buyer:o.marked_buyer,
+                line_count:o.line_count,quantity:o.quantity,products:o.products};
+              assert(o.market==='KM'&&o.simulation_scope==='G6-BUYER'&&o.marked_buyer===true,
+                'G6_MARKED_KM_BUYER_MISMATCH');
+              assert(o.status==='pending'&&o.payment_status==='pending'&&o.payment_mode==='cash_relais',
+                'G6_EXPECTED_PENDING_CASH_STATE_CHANGED');
+              assert(Number(o.total_kmf)===5990&&o.line_count===1&&o.quantity===1&&
+                Array.isArray(o.products)&&o.products.length===1&&o.products[0]==='KPR-000165',
+                'G6_PRODUCTS_TOTAL_MISMATCH');
+              assert(JSON.stringify(await snapshot())===JSON.stringify(before),'G6_ORDER_CHANGED_DURING_READBACK');
+              assert(await version()===sha,'STAGING_SHA_AFTER_DRIFT');
+              report.runtime_sha=sha;
+              report.verdict='G6_A_KM_EXISTING_CASH_ORDER_READBACK_PASS';
+            }catch(e){report.error=String(e.message).slice(0,180);process.exitCode=2;}
+            finally{save();await db.pool.end();console.log(JSON.stringify(report));}
+          })();
+          JS
+      - name: Archive verified readback
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g6-a-km-order-readback-${{ github.run_id }}
+          path: test-results/g6-a-order-readback/report.json
+          if-no-files-found: warn
+          retention-days: 21
