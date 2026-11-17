@@ -666,7 +666,7 @@ async function getDossier({ marketId, supplierId = null, viewer = null, now = ne
   const { rows: poRows } = await q.query(`
     SELECT po.id AS po_id, po.status, po.sent_at, po.sent_channel, po.sent_note, po.supplier_order_id, po.supplier_id,
            s.name AS supplier_name, po.procurement_hub_ref, po.created_at, po.updated_at, po.ordered_at,
-           pl.id AS line_id, pl.order_item_id, oi.order_id, o.reference AS order_ref, o.simulation_scope, p.name AS product_name,
+           pl.id AS line_id, pl.order_item_id, oi.order_id, o.reference AS order_ref, NULLIF(to_jsonb(o)->>'simulation_scope','') AS simulation_scope, p.name AS product_name,
            pl.product_sku_id, pl.quantity AS ordered, vp.effective_quantity AS effective, vp.received_quantity AS received,
            po.trigger_mode, po.confirmed_at, po.market_id AS po_market_id,
            pl.supplier_unit_price, pl.supplier_currency, o.created_at AS order_created_at
