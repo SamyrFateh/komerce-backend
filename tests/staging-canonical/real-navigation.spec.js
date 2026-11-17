@@ -222,7 +222,9 @@ test('real staging: full navigation, market context and browser errors',async({p
        try{
          const network=await inspectMarketNetwork(page,{
            origin:ORIGIN,market,
-           accessRequired:role==='admin'||process.env.E2E_NETWORK_ACCESS_REQUIRED==='1'
+           // Le rôle global admin n'implique pas network.read : le serveur fait foi.
+           // La preuve positive attendue porte sur le responsable marché habilité.
+           accessRequired:role==='market_operator'||process.env.E2E_NETWORK_ACCESS_REQUIRED==='1'
          });
          result.networkViews.push(network);
          if(network.verdict==='BLOCKED')
