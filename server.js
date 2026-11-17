@@ -182,6 +182,23 @@ app.get('/boutique/js/market-registry.js', async (_req, res) => {
   }
 });
 
+// express.static would otherwise serve /boutique/ and /boutique/index.html
+// BEFORE html-routes. Enforce the same ACTIVE market gate on every storefront
+// entry point; aliases and disabled markets must never bypass the lifecycle.
+app.get(['/', '/boutique', '/boutique/', '/boutique/index.html'], async (req, res, next) => {
+  const code = req.query && req.query.market != null
+    ? String(req.query.market).trim().toUpperCase() : 'KM';
+  if (!/^[A-Z]{2}$/.test(code)) return res.status(404).send('Marché indisponible');
+  try {
+    const markets = await listPublicMarkets(db);
+    if (!markets.some(m => m.code === code)) return res.status(404).send('Marché indisponible');
+    return next();
+  } catch (error) {
+    log.error({ err: error.message }, '[public-storefront] marché indisponible');
+    return res.status(503).send('Boutique temporairement indisponible');
+  }
+});
+
 app.use(express.static(path.join(__dirname, 'public'), {
   setHeaders: staticSetHeaders,
 }));
