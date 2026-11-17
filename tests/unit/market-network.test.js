@@ -8,6 +8,11 @@ const path = require('path');
 const ui = fs.readFileSync(path.join(__dirname, '..', '..', 'public', 'dashboards', 'canonical', 'js', 'market-network.js'), 'utf8');
 
 describe('market-network (Réseau local) — île et rattachement agent', () => {
+  test('résolution du Market ID identique à Autonomie pays, sans fallback silencieux', () => {
+    expect(ui).toContain('KomerceAdminContext');
+    expect(ui).toContain('contract.resolveExplicitMarket(context, global.location.search).marketCode');
+    expect(ui).not.toContain('return allowed[0] || null');
+  });
   test('marché insulaire : sélecteur d\'île alimenté par island_options du serveur, obligatoire, remplace le champ libre', () => {
     expect(ui).toContain('relaisData.island_options || []');
     expect(ui).toContain('islandOptions.forEach((code)');
