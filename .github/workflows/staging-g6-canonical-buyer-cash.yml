@@ -6,6 +6,7 @@ on:
     types: [opened]
 permissions:
   contents: read
+  actions: read
 concurrency:
   group: komerce-g6-canonical-real-transaction
   cancel-in-progress: false
@@ -17,7 +18,8 @@ jobs:
       github.event.issue.user.login == github.repository_owner &&
       (github.event.issue.title == '[staging-op] g6-canonical-buyer-cash-M01-KM' ||
        github.event.issue.title == '[staging-op] g6-canonical-buyer-cash-M04-CM' ||
-       github.event.issue.title == '[staging-op] g6-canonical-buyer-cash-M05-CG')
+       github.event.issue.title == '[staging-op] g6-canonical-buyer-cash-M05-CG' ||
+       github.event.issue.title == '[staging-op] g6-canonical-resume-M01-KM')
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
@@ -48,6 +50,31 @@ jobs:
         run: |
           node scripts/recette/resolve-staging-deploy-pin.js
           node scripts/recette/target-guard.js
+      - id: resume
+        name: Validate optional prior-run checkpoint (owner request only)
+        env:
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: |
+          node <<'NODE'
+          const fs=require('node:fs');
+          const isResume=process.env.ISSUE_TITLE==='[staging-op] g6-canonical-resume-M01-KM';
+          if(isResume) {
+            const m=String(process.env.ISSUE_BODY||'').match(/^resume_run_id:\s*(\d{8,})\s*$/m);
+            if(!m)throw Error('G6_RESUME_RUN_ID_REQUIRED');
+            fs.appendFileSync(process.env.GITHUB_OUTPUT,'run_id='+m[1]+'\\n');
+            fs.appendFileSync(process.env.GITHUB_ENV,'G6_CANONICAL_RESUME_RUN_ID='+m[1]+'\\n');
+          }
+          NODE
+      - name: Retrieve original buyer proof from verified GitHub Actions run
+        if: steps.resume.outputs.run_id != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: g6-canonical-buyer-cash-${{ steps.resume.outputs.run_id }}
+          path: test-results/g6-canonical-resume
+          repository: ${{ github.repository }}
+          run-id: ${{ steps.resume.outputs.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install real Chromium
         run: npx playwright install chromium --only-shell
       - name: Replay same order in boutique then relay cash (UI only)
