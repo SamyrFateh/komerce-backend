@@ -80,6 +80,9 @@
   }
 
   async function resolveMarketCode() {
+    // Only trust a market marked after a successful server-side network.read GET
+    // from the authorized, market-scoped minimal shell.
+    if (root.dataset.networkOnlyMarket) return root.dataset.networkOnlyMarket;
     const context = await request('/api/admin/dashboard/context');
     return marketFromContext(context);
   }
