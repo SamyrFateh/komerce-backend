@@ -62,6 +62,17 @@ async function main() {
     assert.equal(target.confirmed, true, 'Staging database target not confirmed');
     report.fingerprint = target.fingerprint;
     report.runtime_sha = await runtime();
+    // Read role metadata independently before UI login. Do not read the login
+    // response body after its automatic cross-document navigation (CDP may
+    // already have discarded that response resource).
+    report.account_bindings = {};
+    for (const [prefix, role] of [['E2E_ADMIN', 'admin'], ['E2E_AGENT_RELAIS', 'agent_relais']]) {
+      const { rows } = await db.query('SELECT role::text AS role FROM users WHERE lower(email)=lower($1)', [process.env[`${prefix}_EMAIL`]]);
+      assert.equal(rows.length, 1, `Existing ${prefix} account required`);
+      assert.equal(rows[0].role, role, `Expected ${prefix} role`);
+      report.account_bindings[role] = { present: true, role };
+    }
+    save();
     const before = await snapshot();
     assert.equal(before.length, 3, 'Three existing recipe orders required');
     assert.deepEqual(before.map(row => row.market).sort(), ['CG', 'CM', 'KM']);
@@ -88,7 +99,6 @@ async function main() {
     await page.locator('#btn-submit').click();
     const login = await loginResponse;
     assert.equal(login.status(), 200, 'Admin login through UI failed');
-    assert.equal((await login.json()).user?.role, 'admin', 'Expected dedicated admin role');
     await page.waitForURL(url => !url.pathname.startsWith('/login'));
     report.admin_login_ui = true;
     // The separately provisioned relay identity must also work through the real login screen.
@@ -113,7 +123,6 @@ async function main() {
     await relayPage.locator('#btn-submit').click();
     const relayLogin = await relayLoginResponse;
     assert.equal(relayLogin.status(), 200, 'Relay login through UI failed');
-    assert.equal((await relayLogin.json()).user?.role, 'agent_relais', 'Expected dedicated relay role');
     await relayPage.waitForURL(url => !url.pathname.startsWith('/login'));
     report.relay_login_ui = true;
     await relayContext.close();
