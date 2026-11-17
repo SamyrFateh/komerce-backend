@@ -100,6 +100,7 @@ module.exports = {
       'services/fx-engine-rates.js',
       'services/fx-observation-service.js',
       'services/market-lifecycle-service.js',
+      'services/public-market-storefront.js',
       'services/market-operation-guard.js',
     ],
     tests: [
@@ -133,6 +134,7 @@ module.exports = {
       'tests/unit/cm-cg-market-clean-reset.test.js',
       'tests/unit/cm-cg-market-full-reset.test.js',
       'tests/unit/market-lifecycle-service.test.js',
+      'tests/unit/public-market-storefront.test.js',
     ],
   },
 
