@@ -240,6 +240,15 @@ test('real staging: full navigation, market context and browser errors',async({p
        if(r.ok())fail('P0','CROSS_MARKET_DATA_LEAK','market='+market+' GET /unified/market/'+market);
      }
    }
+   // Le dernier SHA doit être relevé APRÈS toutes les étapes de navigation,
+   // y compris Réseau local et les contrôles négatifs multi-marchés.
+   const finalResp=await page.request.get('/health/version',{timeout:20000}).catch(()=>null);
+   const finalVersion=finalResp&&finalResp.ok()?
+     await finalResp.json().catch(()=>({})):{};
+   result.versionAtEnd=finalVersion.commit||finalVersion.sha||null;
+   if(!result.versionAtEnd||result.versionAtEnd!==result.version)
+     fail('P0','DEPLOY_SHA_CHANGED_DURING_NETWORK_REPLAY',
+       'start='+short(result.version)+' end='+short(result.versionAtEnd));
    for(const e of result.apiErrors.filter(x=>x.status>=500))fail('P1','API_5XX',e.api+' '+e.status);
    for(const e of result.jsErrors)fail('P1','JS_EXCEPTION',e.at+': '+e.message);
    for(const e of result.blockedWrites)fail('P2','READ_ONLY_GUARD_TRIGGERED',e.method+' '+e.path);
