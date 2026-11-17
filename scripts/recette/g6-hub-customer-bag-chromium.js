@@ -48,11 +48,15 @@ async function snapshot(){
   +'WHERE p.allocation_id=$1 ORDER BY p.placed_at,p.id',[order.allocation_id])).rows;
  const bags=(await db.query(
   "SELECT id,reference,state::text state,bag_plan FROM hub_physical_units WHERE order_id=$1 AND unit_type='HANDLING_UNIT' ORDER BY created_at",[ORDER])).rows;
+ const custody=(await db.query(
+  "SELECT e.physical_unit_id,e.event_type,e.operation_id,e.operation_type,e.quantity,e.actor_id,e.to_state,e.details "
+  +"FROM hub_custody_events e WHERE e.allocation_id=$1 OR e.physical_unit_id IN (SELECT id FROM hub_physical_units WHERE order_id=$2 AND unit_type='HANDLING_UNIT') "
+  +"ORDER BY e.created_at,e.id",[order.allocation_id,ORDER])).rows;
  const links=(await db.query('SELECT l.bag_unit_id,l.box_unit_id,l.parcel_id FROM hub_box_bags l JOIN hub_physical_units u ON u.id=l.bag_unit_id WHERE u.order_id=$1',[ORDER])).rows;
  const parcels=(await db.query(
   "SELECT DISTINCT p.id,p.reference,p.status::text status FROM parcels p JOIN parcel_items pi ON pi.parcel_id=p.id JOIN order_items oi ON oi.id=pi.order_item_id "
   +"WHERE p.order_id=$1 AND oi.order_id=$1 AND oi.fulfillment_source='IMPORT' AND p.status<>'cancelled' ORDER BY p.id",[ORDER])).rows;
- return {order,units,bags,links,parcels};
+ return {order,units,bags,custody,links,parcels};
 }
 function validateBase(s){
  const o=s.order;
@@ -170,6 +174,11 @@ async function main(){
    const active=deposited.units.filter(u=>u.active);
    check(active.length===1&&active[0].id===bag.id&&Number(active[0].quantity)===1&&
      active[0].evidence_method==='MANUAL'&&active[0].evidence_ref===PROOF,'G6_BAG_DEPOSIT_PG_INVALID');
+   const movedOut=deposited.custody.filter(e=>e.physical_unit_id===receipt.id&&e.event_type==='PLACEMENT_OUT'&&e.operation_type==='REPACK'&&Number(e.quantity)===1);
+   const movedIn=deposited.custody.filter(e=>e.physical_unit_id===bag.id&&e.event_type==='PLACEMENT_IN'&&e.operation_type==='REPACK'&&Number(e.quantity)===1);
+   check(movedOut.length===1&&movedIn.length===1&&movedOut[0].operation_id&&
+     movedOut[0].operation_id===movedIn[0].operation_id&&movedOut[0].actor_id&&
+     movedOut[0].actor_id===movedIn[0].actor_id,'G6_BAG_DEPOSIT_CUSTODY_INVALID');
    prep=await openDetails(actor.page);
    holder=prep.locator('.kmc-hub-bag-open').filter({hasText:bag.reference+' · '+REF});
    await holder.waitFor({state:'visible',timeout:25000});
@@ -180,6 +189,9 @@ async function main(){
    check(final.bags.length===1&&final.bags[0].id===bag.id&&final.bags[0].state==='PACKED'&&
      final.units.filter(u=>u.active).length===1&&final.units.find(u=>u.active).id===bag.id,
      'G6_BAG_SEAL_PG_INVALID');
+   check(final.custody.some(e=>e.physical_unit_id===bag.id&&e.event_type==='STATE_TRANSITION'&&
+     e.to_state==='PACKED'&&e.actor_id&&e.details?.operator_action==='close_customer_bag'),
+     'G6_BAG_SEAL_CUSTODY_INVALID');
    await runtime();
    report.bag_id=bag.id;report.bag_ref=bag.reference;report.parcel_count=final.parcels.length;
    report.next_stage='KOM_BOX';report.verdict='G6_CUSTOMER_BAG_SIMULATED_CHROMIUM_PG_PASS';
