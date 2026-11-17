@@ -1,0 +1,106 @@
+# Owner-only READ ONLY inspection of G6-A cash orders and relay-agent assignment.
+name: G6 A — cash relay assignment diagnostic (READ ONLY staging)
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: read
+concurrency:
+  group: komerce-g6-a-cash-relay-eligibility-readonly
+  cancel-in-progress: false
+jobs:
+  inspect:
+    if: >-
+      github.repository == 'SamyrFateh/komerce-backend' &&
+      github.actor == github.repository_owner &&
+      github.event.issue.user.login == github.repository_owner &&
+      github.event.issue.title == '[staging-op] g6-a-cash-relay-eligibility'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    env:
+      KOMERCE_ENV: staging
+      KOMERCE_TARGET_ENV: staging
+      NODE_ENV: test
+      KOMERCE_DISABLE_CRONS: 'true'
+      EXPECTED_RAILWAY_ENVIRONMENT: staging
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      E2E_AGENT_RELAIS_EMAIL: ${{ secrets.E2E_AGENT_RELAIS_EMAIL }}
+      PGOPTIONS: '-c default_transaction_read_only=on'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Pin staging SHA and protected PostgreSQL target
+        run: |
+          node scripts/recette/resolve-staging-deploy-pin.js
+          node scripts/recette/target-guard.js
+      - name: Examine exact order relay assignments without mutation
+        run: |
+          node <<'JS'
+          'use strict';
+          const fs=require('node:fs');
+          const db=require('./db');
+          const {confirmTarget}=require('./scripts/recette/target-guard');
+          const BASE='https://komerce-backend-production.up.railway.app';
+          const REFS=['K18SFYN','KW34OBY','KSJWLND'];
+          const report={run_id:process.env.GITHUB_RUN_ID,verdict:'NOT_PROVEN',orders:[],read_only:true};
+          const save=()=>{
+            fs.mkdirSync('test-results/g6-a-cash-relay', {recursive:true});
+            fs.writeFileSync('test-results/g6-a-cash-relay/report.json',JSON.stringify(report,null,2));
+          };
+          const assert=(condition,why)=>{if(!condition)throw Error(why)};
+          const runtime=async()=>{
+            const r=await fetch(BASE+'/health/version');
+            assert(r.ok,'STAGING_VERSION_UNAVAILABLE');
+            return (await r.json()).commit;
+          };
+          (async()=>{
+            try{
+              assert(process.env.KOMERCE_ENV==='staging' && process.env.GITHUB_ACTOR===process.env.GITHUB_REPOSITORY_OWNER &&
+                process.env.GITHUB_EVENT_NAME==='issues' && process.env.STAGING_BASE_URL===BASE &&
+                process.env.E2E_AGENT_RELAIS_EMAIL && String(process.env.PGOPTIONS||'').includes('read_only=on'),
+                'STAGING_READONLY_OWNER_PREREQ');
+              const target=await confirmTarget({db});
+              assert(target.confirmed,'STAGING_DB_MISMATCH');
+              report.fingerprint=target.fingerprint;
+              const sha=await runtime();
+              assert(sha===process.env.E2E_EXPECTED_DEPLOY_SHA,'STAGING_SHA_DRIFT_BEFORE');
+              const client=await db.getClient();
+              try{
+                await client.query('BEGIN READ ONLY');
+                const {rows}=await client.query(`
+                  SELECT o.reference,m.code AS market,o.status::text AS status,o.payment_status::text AS payment_status,
+                    o.payment_mode::text AS payment_mode,
+                    EXISTS(SELECT 1 FROM users u WHERE lower(u.email)=lower($2)
+                       AND u.role::text='agent_relais' AND u.relais_id=o.relais_id) AS bound_relay_matches,
+                    (SELECT COUNT(*)::int FROM users u WHERE u.role::text='agent_relais'
+                       AND u.relais_id=o.relais_id) AS agent_count_at_relay,
+                    (o.relais_id IS NOT NULL) AS relay_present
+                  FROM orders o JOIN markets m ON m.id=o.market_id
+                  WHERE o.reference=ANY($1::text[]) ORDER BY m.code`,
+                  [REFS,process.env.E2E_AGENT_RELAIS_EMAIL]);
+                assert(rows.length===3,'G6_A_ORDER_SET_NOT_EXACT');
+                report.orders=rows;
+                await client.query('ROLLBACK');
+              }finally{await client.query('ROLLBACK').catch(()=>{});client.release();}
+              assert(await runtime()===sha,'STAGING_SHA_DRIFT_AFTER');
+              report.sha=sha;report.verdict='G6_A_CASH_RELAY_READONLY_INVENTORY_PASS';
+            }catch(e){report.error=String(e.message).slice(0,150);process.exitCode=2;}
+            finally{save();await db.pool.end();console.log(JSON.stringify(report));}
+          })();
+          JS
+      - name: Archive sanitized decision evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g6-a-cash-relay-eligibility-${{ github.run_id }}
+          path: test-results/g6-a-cash-relay/report.json
+          if-no-files-found: warn
+          retention-days: 14
