@@ -53,6 +53,9 @@ const mockUpdateCustomsShipment = jest.fn();
 const mockDeclareCustomsShipment = jest.fn();
 const mockDeactivateCustomsShipment = jest.fn();
 const mockActivateCustomsShipment = jest.fn();
+const mockHoldCustomsShipment = jest.fn();
+const mockReleaseCustomsShipment = jest.fn();
+let mockSuperviseMarketCodes = new Set(['CM']);
 
 jest.mock('../../services/shipping-customs-workspace', () => {
   class ShippingCustomsWorkspaceError extends Error {
@@ -71,6 +74,8 @@ jest.mock('../../services/shipping-customs-workspace', () => {
     declareCustomsShipment: (...args) => mockDeclareCustomsShipment(...args),
     deactivateCustomsShipment: (...args) => mockDeactivateCustomsShipment(...args),
     activateCustomsShipment: (...args) => mockActivateCustomsShipment(...args),
+    holdCustomsShipment: (...args) => mockHoldCustomsShipment(...args),
+    releaseCustomsShipment: (...args) => mockReleaseCustomsShipment(...args),
   };
 });
 
@@ -134,12 +139,17 @@ beforeEach(() => {
   mockUserRole = 'admin';
   mockGrantedMarketCodes = new Set(['CM']);
   mockTransitMarketCodes = new Set(['CM']);
+  mockSuperviseMarketCodes = new Set(['CM']);
+  mockHoldCustomsShipment.mockResolvedValue({ customs_held: true });
+  mockReleaseCustomsShipment.mockResolvedValue({ customs_held: false });
   mockResolveAuthorization.mockImplementation(async (_db, { marketCode, requiredCapability }) => {
     const allowed = requiredCapability === 'logistics.read'
       ? mockGrantedMarketCodes.has(marketCode)
       : requiredCapability === 'execution.transit.confirm'
         ? mockTransitMarketCodes.has(marketCode)
-        : false;
+        : requiredCapability === 'hub.supervise'
+          ? mockSuperviseMarketCodes.has(marketCode)
+          : false;
     if (allowed) {
       const marketId = marketCode === 'CM' ? 'market-cm-id' : marketCode === 'CG' ? 'market-cg-id' : `market-${marketCode}-id`;
       return { market_id: marketId, market_code: marketCode, assignment_id: 'assignment-1', membership_id: 'membership-1' };
@@ -429,5 +439,38 @@ describe('Hub central : transit sans membership sur marché ACTIF (doctrine #343
   test('market_operator sans membership reste refuse sur KM', async () => {
     mockUserRole = 'market_operator';
     expect((await request(app()).get(`${base}/KM`)).status).toBe(403);
+  });
+});
+
+describe('G6-E retenue en douane (N17 / N18)', () => {
+  const base = '/api/admin/workspaces/shipping-customs/market';
+  beforeEach(() => { mockGlobalAllowed = true; mockGrantedMarketCodes = new Set(['CM']); });
+  test('N17 : un acteur hors rôle (agent_relais) ne peut ni retenir ni libérer', async () => {
+    mockUserRole = 'agent_relais';
+    expect((await request(app()).post(`${base}/CM/customs/shipments/D-1/hold`).send({ reason: 'x y z' })).status).toBe(403);
+    expect((await request(app()).post(`${base}/CM/customs/shipments/D-1/release`).send({})).status).toBe(403);
+    expect(mockHoldCustomsShipment).not.toHaveBeenCalled();
+  });
+  test('N18 : le transitaire retient mais ne peut pas libérer', async () => {
+    mockUserRole = 'agent_transitaire';
+    mockGlobalAllowed = false;
+    const hold = await request(app()).post(`${base}/KM/customs/shipments/D-1/hold`).send({ reason: 'Inspection' });
+    expect(hold.status).toBe(201);
+    expect(mockHoldCustomsShipment).toHaveBeenCalledWith('D-1', { reason: 'Inspection' }, expect.objectContaining({ code: 'KM' }), expect.objectContaining({ role: 'agent_transitaire' }));
+    expect((await request(app()).post(`${base}/KM/customs/shipments/D-1/release`).send({})).status).toBe(403);
+    expect(mockReleaseCustomsShipment).not.toHaveBeenCalled();
+  });
+  test('N18 : le responsable marché libère son marché, refusé sans hub.supervise ou hors marché', async () => {
+    mockUserRole = 'market_operator';
+    mockGlobalAllowed = false;
+    expect((await request(app()).post(`${base}/CM/customs/shipments/D-1/release`).send({ note: 'ok' })).status).toBe(200);
+    mockSuperviseMarketCodes = new Set();
+    expect((await request(app()).post(`${base}/CM/customs/shipments/D-1/release`).send({})).status).toBe(403);
+    mockSuperviseMarketCodes = new Set(['CM']);
+    mockGrantedMarketCodes = new Set(['CG']);
+    expect((await request(app()).post(`${base}/CM/customs/shipments/D-1/release`).send({})).status).toBe(403);
+  });
+  test('admin libère', async () => {
+    expect((await request(app()).post(`${base}/CM/customs/shipments/D-1/release`).send({})).status).toBe(200);
   });
 });

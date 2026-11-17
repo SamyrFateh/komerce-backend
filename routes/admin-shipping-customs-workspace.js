@@ -204,6 +204,34 @@ router.post('/market/:marketCode/customs/shipments/:reference/declare', requireC
   }
 });
 
+// G6-E « retenu en douane » : déclaré par transitaire (central), responsable marché de CE marché (hub.supervise) ou admin.
+const requireHoldDeclareRole = requireRole(['admin', 'agent_transitaire', 'market_operator']);
+// Mainlevée : responsable marché de CE marché (hub.supervise prouvé sur le marché de la route) ou admin ; jamais le transitaire.
+const requireHoldReleaseRole = requireRole(['admin', 'market_operator']);
+const requireMarketSupervise = requireMarketDelegatedCapability('hub.supervise');
+function requireSuperviseForOperator(req, res, next) {
+  if (req.user && req.user.role === 'market_operator') return requireMarketSupervise(req, res, next);
+  return next();
+}
+
+router.post('/market/:marketCode/customs/shipments/:reference/hold', requireHoldDeclareRole, requireSuperviseForOperator, async (req, res, next) => {
+  try {
+    const result = await workspace.holdCustomsShipment(req.params.reference, req.body || {}, req.workspaceMarket, actionActor(req));
+    return res.status(201).json({ ok: true, action: 'hold_customs_shipment', result });
+  } catch (err) {
+    return sendWorkspaceError(err, res, next);
+  }
+});
+
+router.post('/market/:marketCode/customs/shipments/:reference/release', requireHoldReleaseRole, requireSuperviseForOperator, async (req, res, next) => {
+  try {
+    const result = await workspace.releaseCustomsShipment(req.params.reference, req.body || {}, req.workspaceMarket, actionActor(req));
+    return res.json({ ok: true, action: 'release_customs_shipment', result });
+  } catch (err) {
+    return sendWorkspaceError(err, res, next);
+  }
+});
+
 router.post('/market/:marketCode/customs/shipments/:reference/deactivate', requireCustomsAction, async (req, res, next) => {
   try {
     const result = await workspace.deactivateCustomsShipment(req.params.reference, req.body || {}, req.workspaceMarket);

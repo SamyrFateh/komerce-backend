@@ -8,8 +8,8 @@
  * @outputs       market_scoped_shipping_customs_queue, delegated_domain_mutations
  * @depends       db, services/scan-engine.js, services/customs-shipment-service.js
  * @used-by       routes/admin-shipping-customs-workspace.js
- * @db-read       orders, parcels, parcel_items, users, relais, scan_events, customs_shipments, customs_shipment_parcels, international_shipments
- * @db-write      none
+ * @db-read       orders, parcels, parcel_items, users, relais, scan_events, customs_shipments, customs_shipment_parcels, international_shipments, customs_shipment_holds
+ * @db-write      customs_shipment_holds
  * @db-write-via:scan-engine parcels, scan_events, incidents, orders
  * @db-write-via:customs-shipment-service customs_shipments, customs_shipment_parcels, orders, parcels, order_item_real_cost_allocations
  * @db-txn        delegated_to_domain_authority
@@ -106,12 +106,15 @@ async function queryCustoms(marketId) {
             cs.total_weight_kg, cs.nb_parcels, cs.allocation_method,
             cs.status, cs.is_active, cs.declared_at, cs.created_at,
             COUNT(csp.parcel_id)::int AS linked_parcels,
+            (h.id IS NOT NULL) AS customs_held, h.reason AS hold_reason, h.held_at AS hold_held_at,
+            h.held_by_role AS hold_held_by_role,
             (SELECT s.reference FROM international_shipments s
               WHERE s.customs_shipment_id = cs.id LIMIT 1) AS journey_reference
        FROM customs_shipments cs
        LEFT JOIN customs_shipment_parcels csp ON csp.shipment_id = cs.id
+       LEFT JOIN customs_shipment_holds h ON h.shipment_id = cs.id AND h.status = 'held'
       WHERE cs.market_id = $1
-      GROUP BY cs.id
+      GROUP BY cs.id, h.id
       ORDER BY cs.shipment_date DESC, cs.created_at DESC`,
     [marketId]
   );
@@ -403,9 +406,73 @@ async function updateCustomsShipment(reference, body, market, actor = {}) {
   };
 }
 
+const HOLD_DECLARE_ROLES = Object.freeze(['admin', 'agent_transitaire', 'market_operator']);
+const HOLD_RELEASE_ROLES = Object.freeze(['admin', 'market_operator']);
+
+async function activeHold(shipmentId, executor = db) {
+  const { rows } = await executor.query(
+    `SELECT id, reason, held_at FROM customs_shipment_holds WHERE shipment_id = $1 AND status = 'held' LIMIT 1`,
+    [shipmentId]
+  );
+  return rows[0] || null;
+}
+
+// État « retenu en douane » : motif obligatoire ; transitaire, responsable marché (de CE marché, prouvé en route) ou admin.
+async function holdCustomsShipment(reference, body, market, actor = {}) {
+  const resolved = requireMarket(market);
+  if (!HOLD_DECLARE_ROLES.includes(actor.role)) {
+    throw new ShippingCustomsWorkspaceError('customs_hold_role_forbidden', 'Rôle non habilité à déclarer une retenue en douane', 403);
+  }
+  const reason = String((body && body.reason) || '').trim();
+  if (reason.length < 3) {
+    throw new ShippingCustomsWorkspaceError('customs_hold_reason_required', 'Motif de retenue obligatoire', 400);
+  }
+  const shipment = await resolveShipment(reference, resolved.id);
+  if (!shipment.is_active) {
+    throw new ShippingCustomsWorkspaceError('customs_shipment_inactive', 'Dossier douane inactif', 409);
+  }
+  try {
+    const { rows } = await db.query(
+      `INSERT INTO customs_shipment_holds (shipment_id, market_id, reason, held_by, held_by_role)
+       VALUES ($1,$2,$3,$4,$5) RETURNING id, held_at`,
+      [shipment.id, resolved.id, reason.slice(0, 500), actor.id, actor.role]
+    );
+    return { reference: shipment.reference, customs_held: true, hold_id: rows[0].id, held_at: rows[0].held_at };
+  } catch (err) {
+    if (err && err.code === '23505') {
+      throw new ShippingCustomsWorkspaceError('customs_already_held', 'Dossier déjà retenu en douane', 409);
+    }
+    throw err;
+  }
+}
+
+// Mainlevée : responsable marché de son marché (prouvé en route) ou admin. Transitaire refusé.
+async function releaseCustomsShipment(reference, body, market, actor = {}) {
+  const resolved = requireMarket(market);
+  if (!HOLD_RELEASE_ROLES.includes(actor.role)) {
+    throw new ShippingCustomsWorkspaceError('customs_release_role_forbidden', 'Seul le responsable marché ou l’admin peut lever la retenue', 403);
+  }
+  const shipment = await resolveShipment(reference, resolved.id);
+  const note = String((body && body.note) || '').trim().slice(0, 500) || null;
+  const { rows } = await db.query(
+    `UPDATE customs_shipment_holds
+        SET status = 'released', released_by = $2, released_by_role = $3, released_at = now(), release_note = $4
+      WHERE shipment_id = $1 AND market_id = $5 AND status = 'held'
+      RETURNING id, released_at`,
+    [shipment.id, actor.id, actor.role, note, resolved.id]
+  );
+  if (!rows.length) {
+    throw new ShippingCustomsWorkspaceError('customs_not_held', 'Dossier non retenu en douane', 409);
+  }
+  return { reference: shipment.reference, customs_held: false, released_at: rows[0].released_at };
+}
+
 async function declareCustomsShipment(reference, body, market, actor = {}) {
   const resolved = requireMarket(market);
   const shipment = await resolveShipment(reference, resolved.id);
+  if (await activeHold(shipment.id)) {
+    throw new ShippingCustomsWorkspaceError('customs_held', 'Dossier retenu en douane : mainlevée requise avant déclaration', 409);
+  }
   return customs.declareCustomsPayment(db, shipment.id, {
     customs_paid_kmf: body && body.customs_paid_kmf,
     freight_kmf: body && body.freight_kmf,
@@ -438,6 +505,8 @@ module.exports = {
   declareCustomsShipment,
   deactivateCustomsShipment,
   activateCustomsShipment,
+  holdCustomsShipment,
+  releaseCustomsShipment,
   _test: {
     CUSTOMS_PARCEL_STATUSES,
     requireMarket,
