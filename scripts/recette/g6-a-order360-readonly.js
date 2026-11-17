@@ -23,8 +23,14 @@ async function main() {
   assert.equal(process.env.KOMERCE_ENV, 'staging');
   assert.equal(process.env.KOMERCE_TARGET_ENV, 'staging');
   assert.equal(process.env.STAGING_BASE_URL, BASE);
-  for (const name of ['E2E_ADMIN_EMAIL', 'E2E_ADMIN_PASSWORD', 'E2E_EXPECTED_DEPLOY_SHA']) {
-    assert.ok(process.env[name], `Missing ${name}`);
+  const missing = ['E2E_ADMIN_EMAIL', 'E2E_ADMIN_PASSWORD', 'E2E_AGENT_RELAIS_EMAIL', 'E2E_AGENT_RELAIS_PASSWORD', 'E2E_EXPECTED_DEPLOY_SHA']
+    .filter(name => !process.env[name]);
+  if (missing.length) {
+    fs.mkdirSync(OUT, { recursive: true });
+    fs.writeFileSync(path.join(OUT, 'report.json'), JSON.stringify({ verdict: 'BLOCKED_AT_LOGIN', missing_names: missing }));
+    process.stderr.write(`Missing required configuration names: ${missing.join(', ')}\n`);
+    process.exitCode = 1;
+    return;
   }
   const db = require('../../db');
   let browser;
@@ -75,15 +81,43 @@ async function main() {
       report.blocked_mutations.push({ method: request.method(), path: url.pathname });
       return route.abort();
     });
-    await page.goto(`${BASE}/login`, { waitUntil: 'domcontentloaded' });
+    await page.goto(`${BASE}/login.html`, { waitUntil: 'domcontentloaded' });
     await page.locator('#email').fill(process.env.E2E_ADMIN_EMAIL);
     await page.locator('#password').fill(process.env.E2E_ADMIN_PASSWORD);
     const loginResponse = page.waitForResponse(response => new URL(response.url()).pathname === '/api/auth/login' && response.request().method() === 'POST');
     await page.locator('#btn-submit').click();
     const login = await loginResponse;
     assert.equal(login.status(), 200, 'Admin login through UI failed');
+    assert.equal((await login.json()).user?.role, 'admin', 'Expected dedicated admin role');
     await page.waitForURL(url => !url.pathname.startsWith('/login'));
     report.admin_login_ui = true;
+    // The separately provisioned relay identity must also work through the real login screen.
+    const relayContext = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'fr-FR' });
+    const relayPage = await relayContext.newPage();
+    let relayLoginAllowed = true;
+    await relayPage.route('**/*', route => {
+      const request = route.request();
+      const url = new URL(request.url());
+      if (['GET', 'HEAD', 'OPTIONS'].includes(request.method())) return route.continue();
+      if (relayLoginAllowed && request.method() === 'POST' && url.origin === BASE && url.pathname === '/api/auth/login') {
+        relayLoginAllowed = false;
+        return route.continue();
+      }
+      report.blocked_mutations.push({ method: request.method(), path: url.pathname });
+      return route.abort();
+    });
+    await relayPage.goto(`${BASE}/login.html`, { waitUntil: 'domcontentloaded' });
+    await relayPage.locator('#email').fill(process.env.E2E_AGENT_RELAIS_EMAIL);
+    await relayPage.locator('#password').fill(process.env.E2E_AGENT_RELAIS_PASSWORD);
+    const relayLoginResponse = relayPage.waitForResponse(response => new URL(response.url()).pathname === '/api/auth/login' && response.request().method() === 'POST');
+    await relayPage.locator('#btn-submit').click();
+    const relayLogin = await relayLoginResponse;
+    assert.equal(relayLogin.status(), 200, 'Relay login through UI failed');
+    assert.equal((await relayLogin.json()).user?.role, 'agent_relais', 'Expected dedicated relay role');
+    await relayPage.waitForURL(url => !url.pathname.startsWith('/login'));
+    report.relay_login_ui = true;
+    await relayContext.close();
+    save();
     for (const row of before) {
       const endpoint = `/api/admin/entities/orders/${row.reference}`;
       const apiResponse = page.waitForResponse(response => new URL(response.url()).pathname === endpoint);
