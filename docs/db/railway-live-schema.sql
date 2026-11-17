@@ -262,6 +262,19 @@ CREATE TYPE public.user_role AS ENUM (
 
 
 --
+-- Name: assert_cash_refund_handoff_funded(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.assert_cash_refund_handoff_funded() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  PERFORM public.cash_custody_assert_nonnegative(NEW.holder_id,NEW.market_id);
+  RETURN NEW;
+END $$;
+
+
+--
 -- Name: audit_customs_shipment_financial_change(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -444,18 +457,21 @@ $$;
 CREATE FUNCTION public.cash_custody_assert_nonnegative(p_holder uuid, p_market uuid) RETURNS void
     LANGUAGE plpgsql
     AS $$
-DECLARE
-  bal numeric;
+DECLARE available_kmf numeric;
 BEGIN
   IF p_holder IS NULL THEN RETURN; END IF;
-  SELECT COALESCE(SUM(delta_kmf), 0) INTO bal
-    FROM cash_custody_movements WHERE holder_id = p_holder AND market_id IS NOT DISTINCT FROM p_market;
-  IF bal < 0 THEN
-    RAISE EXCEPTION 'cash_custody: solde négatif interdit pour % (Market %) : %', p_holder, p_market, bal
-      USING ERRCODE = 'check_violation';
+  SELECT COALESCE(SUM(delta_kmf),0) INTO available_kmf
+    FROM public.cash_custody_movements
+   WHERE holder_id=p_holder AND market_id IS NOT DISTINCT FROM p_market;
+  SELECT available_kmf - COALESCE(SUM(r.amount_kmf),0) INTO available_kmf
+    FROM public.local_cash_refund_authorizations a
+    JOIN public.local_item_refund_reservations r ON r.id=a.reservation_id
+   WHERE a.status='handoff_pending' AND a.holder_id=p_holder AND a.market_id=p_market;
+  IF available_kmf<0 THEN
+    RAISE EXCEPTION 'cash_custody: solde négatif interdit pour % (Market %) : % [CASH_CUSTODY_INSUFFICIENT_AVAILABLE_BALANCE]',
+      p_holder, p_market, available_kmf USING ERRCODE='23514';
   END IF;
-END
-$$;
+END $$;
 
 
 --
@@ -1426,6 +1442,49 @@ $$;
 
 
 --
+-- Name: finalize_cash_refund_payout(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.finalize_cash_refund_payout() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE r public.local_item_refund_reservations%ROWTYPE;
+BEGIN
+  SELECT * INTO r FROM public.local_item_refund_reservations WHERE id=NEW.reservation_id;
+  UPDATE public.order_items SET qty_refunded=COALESCE(qty_refunded,0)+r.quantity WHERE id=r.order_item_id;
+  INSERT INTO public.refunds(order_id,amount_kmf,refund_type,refund_method,reason,initiated_by,
+                             status,completed_at,local_cash_refund_payout_id)
+    VALUES(r.order_id,r.amount_kmf,'cash_shortage:' || r.id::text,'cash',r.reason,NEW.paid_by,
+           'completed',NEW.disbursed_at,NEW.id);
+  UPDATE public.local_cash_refund_authorizations
+     SET status='settled',settled_at=NEW.disbursed_at
+   WHERE id=NEW.authorization_id AND status='handoff_pending';
+  IF NOT FOUND THEN RAISE EXCEPTION 'CASH_REFUND_AUTH_NOT_SETTLED' USING ERRCODE='23514'; END IF;
+  PERFORM public.cash_custody_assert_nonnegative(NEW.holder_id,NEW.market_id);
+  RETURN NEW;
+END $$;
+
+
+--
+-- Name: finalize_local_mobile_refund_handoff(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.finalize_local_mobile_refund_handoff() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE r public.local_item_refund_reservations%ROWTYPE;
+BEGIN
+  SELECT * INTO STRICT r FROM public.local_item_refund_reservations WHERE id=NEW.reservation_id;
+  UPDATE public.order_items SET qty_refunded=COALESCE(qty_refunded,0)+r.quantity WHERE id=r.order_item_id;
+  INSERT INTO public.refunds(order_id,amount_kmf,refund_type,refund_method,reason,initiated_by,
+                             status,completed_at,local_mobile_refund_handoff_id)
+    VALUES(r.order_id,r.amount_kmf,'mobile_shortage:' || r.id::text,'mobile_money',r.reason,NEW.confirmed_by,
+           'completed',NEW.confirmed_at,NEW.reservation_id);
+  RETURN NEW;
+END $$;
+
+
+--
 -- Name: financial_movements_guard(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -1545,6 +1604,112 @@ $$;
 
 
 --
+-- Name: guard_cash_refund_authorization(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.guard_cash_refund_authorization() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE v_source public.local_item_refund_reservations%ROWTYPE;
+BEGIN
+  IF TG_OP='DELETE' THEN RAISE EXCEPTION 'CASH_REFUND_AUTH_APPEND_ONLY' USING ERRCODE='23514'; END IF;
+  IF TG_OP='INSERT' THEN
+    IF NEW.status <> 'approved' THEN
+      RAISE EXCEPTION 'CASH_REFUND_AUTH_MUST_START_APPROVED' USING ERRCODE='23514';
+    END IF;
+    SELECT * INTO v_source FROM public.local_item_refund_reservations WHERE id=NEW.reservation_id;
+    IF v_source.id IS NULL OR v_source.order_id<>NEW.order_id OR v_source.market_id<>NEW.market_id
+       OR v_source.payment_mode<>'cash_relais' OR v_source.currency<>'KMF' OR v_source.minor_unit<>0
+       OR v_source.status<>'reserved' THEN
+      RAISE EXCEPTION 'CASH_REFUND_INVALID_SOURCE' USING ERRCODE='23514';
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM public.users WHERE id=NEW.approved_by AND role='admin') THEN
+      RAISE EXCEPTION 'CASH_REFUND_ADMIN_APPROVAL_REQUIRED' USING ERRCODE='23514';
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM public.users u JOIN public.relais rel ON rel.id=u.relais_id
+                   WHERE u.id=NEW.holder_id AND u.role='agent_relais' AND rel.market_id=NEW.market_id) THEN
+      RAISE EXCEPTION 'CASH_REFUND_HOLDER_WRONG_MARKET' USING ERRCODE='23514';
+    END IF;
+    RETURN NEW;
+  END IF;
+  IF (NEW.id,NEW.reservation_id,NEW.order_id,NEW.market_id,NEW.holder_id,NEW.approved_by,
+      NEW.original_payer_proof_ref,NEW.identity_check_proof_ref,NEW.authorized_at)
+     IS DISTINCT FROM
+     (OLD.id,OLD.reservation_id,OLD.order_id,OLD.market_id,OLD.holder_id,OLD.approved_by,
+      OLD.original_payer_proof_ref,OLD.identity_check_proof_ref,OLD.authorized_at) THEN
+    RAISE EXCEPTION 'CASH_REFUND_AUTH_PROOF_IMMUTABLE' USING ERRCODE='23514';
+  END IF;
+  IF OLD.status='approved' AND NEW.status='handoff_pending'
+    AND NEW.handoff_started_at IS NOT NULL AND NEW.settled_at IS NULL THEN
+    PERFORM public.cash_custody_lock(NEW.holder_id,NULL);
+    RETURN NEW;
+  END IF;
+  IF OLD.status='handoff_pending' AND NEW.status='settled'
+    AND NEW.handoff_started_at IS NOT DISTINCT FROM OLD.handoff_started_at
+    AND NEW.settled_at IS NOT NULL
+    AND EXISTS (SELECT 1 FROM public.local_cash_refund_payouts WHERE authorization_id=NEW.id)
+  THEN RETURN NEW; END IF;
+  RAISE EXCEPTION 'CASH_REFUND_AUTH_TRANSITION_FORBIDDEN' USING ERRCODE='23514';
+END $$;
+
+
+--
+-- Name: guard_cash_refund_payout(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.guard_cash_refund_payout() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE a public.local_cash_refund_authorizations%ROWTYPE;
+        r public.local_item_refund_reservations%ROWTYPE;
+        balance_kmf numeric;
+BEGIN
+  IF TG_OP<>'INSERT' THEN RAISE EXCEPTION 'CASH_REFUND_PAYOUT_IMMUTABLE' USING ERRCODE='23514'; END IF;
+  -- Order row is locked by the service before this row. Direct SQL must not bypass it.
+  PERFORM 1 FROM public.orders WHERE id=NEW.order_id FOR UPDATE;
+  SELECT * INTO a FROM public.local_cash_refund_authorizations WHERE id=NEW.authorization_id FOR UPDATE;
+  SELECT * INTO r FROM public.local_item_refund_reservations WHERE id=NEW.reservation_id;
+  IF a.id IS NULL OR r.id IS NULL OR a.status<>'handoff_pending' OR a.reservation_id<>r.id
+     OR a.order_id<>NEW.order_id OR a.market_id<>NEW.market_id OR a.holder_id<>NEW.holder_id
+     OR a.approved_by=NEW.paid_by OR NEW.paid_by<>NEW.holder_id
+     OR r.order_id<>NEW.order_id OR r.market_id<>NEW.market_id
+     OR r.payment_mode<>'cash_relais' OR r.currency<>'KMF' OR r.minor_unit<>0
+     OR NEW.amount_kmf<>r.amount_kmf OR NEW.amount_kmf<>r.amount_minor::numeric THEN
+    RAISE EXCEPTION 'CASH_REFUND_PAYOUT_INVALID_OR_UNATTESTED' USING ERRCODE='23514';
+  END IF;
+  PERFORM public.cash_custody_lock(NEW.holder_id,NULL);
+  SELECT COALESCE(SUM(delta_kmf),0) INTO balance_kmf FROM public.cash_custody_movements
+   WHERE holder_id=NEW.holder_id AND market_id=NEW.market_id;
+  IF balance_kmf<NEW.amount_kmf THEN
+    RAISE EXCEPTION 'CASH_REFUND_HOLDER_INSUFFICIENT_CUSTODY' USING ERRCODE='23514';
+  END IF;
+  RETURN NEW;
+END $$;
+
+
+--
+-- Name: guard_completed_cash_refund_immutable(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.guard_completed_cash_refund_immutable() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF TG_OP='DELETE' THEN
+    IF (OLD.local_cash_refund_payout_id IS NOT NULL OR OLD.local_mobile_refund_handoff_id IS NOT NULL) THEN
+      RAISE EXCEPTION 'CASH_REFUND_COMPLETION_IMMUTABLE' USING ERRCODE='23514';
+    END IF;
+    RETURN OLD;
+  END IF;
+  IF (OLD.local_cash_refund_payout_id IS NOT NULL OR OLD.local_mobile_refund_handoff_id IS NOT NULL)
+      OR (NEW.local_cash_refund_payout_id IS NOT NULL OR NEW.local_mobile_refund_handoff_id IS NOT NULL) THEN
+    RAISE EXCEPTION 'CASH_REFUND_COMPLETION_IMMUTABLE' USING ERRCODE='23514';
+  END IF;
+  RETURN NEW;
+END $$;
+
+
+--
 -- Name: guard_international_n1_against_legacy_duplicate(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -1607,6 +1772,135 @@ END $$;
 
 
 --
+-- Name: guard_legacy_refund_vs_local_obligation(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.guard_legacy_refund_vs_local_obligation() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE p public.local_cash_refund_payouts%ROWTYPE;
+        r public.local_item_refund_reservations%ROWTYPE;
+        h public.local_mobile_refund_handoffs%ROWTYPE;
+BEGIN
+  PERFORM 1 FROM public.orders WHERE id=NEW.order_id FOR UPDATE;
+  IF NEW.local_mobile_refund_handoff_id IS NOT NULL THEN
+    SELECT * INTO h FROM public.local_mobile_refund_handoffs WHERE reservation_id=NEW.local_mobile_refund_handoff_id;
+    SELECT * INTO r FROM public.local_item_refund_reservations WHERE id=h.reservation_id;
+    IF h.status IS DISTINCT FROM 'settled' OR r.order_id IS DISTINCT FROM NEW.order_id
+       OR r.amount_kmf IS DISTINCT FROM NEW.amount_kmf
+       OR NEW.refund_type IS DISTINCT FROM ('mobile_shortage:' || r.id::text)
+       OR NEW.refund_method IS DISTINCT FROM 'mobile_money' OR NEW.status IS DISTINCT FROM 'completed'
+       OR NEW.completed_at IS DISTINCT FROM h.confirmed_at OR NEW.initiated_by IS DISTINCT FROM h.confirmed_by
+       OR NEW.local_cash_refund_payout_id IS NOT NULL OR NEW.store_credit_id IS NOT NULL OR NEW.stripe_refund_id IS NOT NULL
+    THEN RAISE EXCEPTION 'LOCAL_MOBILE_REFUND_NO_VERIFIED_TRANSFER' USING ERRCODE='23514'; END IF;
+    RETURN NEW;
+  END IF;
+  IF NEW.local_cash_refund_payout_id IS NOT NULL THEN
+    SELECT * INTO p FROM public.local_cash_refund_payouts WHERE id=NEW.local_cash_refund_payout_id;
+    IF p.id IS NULL THEN RAISE EXCEPTION 'CASH_REFUND_NO_PAYOUT' USING ERRCODE='23514'; END IF;
+    SELECT * INTO r FROM public.local_item_refund_reservations WHERE id=p.reservation_id;
+    IF r.id IS NULL OR r.order_id<>NEW.order_id OR p.order_id<>NEW.order_id
+      OR p.amount_kmf<>NEW.amount_kmf OR r.amount_kmf<>NEW.amount_kmf
+      OR NEW.refund_type<>('cash_shortage:' || r.id::text)
+      OR NEW.refund_method<>'cash' OR NEW.status<>'completed' OR NEW.completed_at IS NULL
+      OR NEW.store_credit_id IS NOT NULL OR NEW.stripe_refund_id IS NOT NULL
+    THEN RAISE EXCEPTION 'CASH_REFUND_NO_CONFIRMED_HANDED_MONEY' USING ERRCODE='23514'; END IF;
+    RETURN NEW;
+  END IF;
+  IF EXISTS (SELECT 1 FROM public.local_item_refund_reservations WHERE order_id=NEW.order_id) THEN
+    RAISE EXCEPTION 'REFUND_LOCAL_OBLIGATION_UNRESOLVED' USING ERRCODE='23514';
+  END IF;
+  RETURN NEW;
+END $$;
+
+
+--
+-- Name: guard_local_item_refund_pending_collection(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.guard_local_item_refund_pending_collection() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE v_local integer;
+BEGIN
+ IF NEW.qty_collected IS NOT DISTINCT FROM OLD.qty_collected
+    AND NEW.qty_refunded IS NOT DISTINCT FROM OLD.qty_refunded
+    AND NEW.quantity IS NOT DISTINCT FROM OLD.quantity THEN RETURN NEW; END IF;
+ SELECT COALESCE(SUM(r.quantity),0)::integer INTO v_local
+ FROM public.local_item_refund_reservations r
+ WHERE r.order_item_id=NEW.id AND r.status='reserved'
+   AND NOT EXISTS (SELECT 1 FROM public.local_cash_refund_payouts p WHERE p.reservation_id=r.id)
+   AND NOT EXISTS (SELECT 1 FROM public.local_mobile_refund_handoffs h WHERE h.reservation_id=r.id AND h.status='settled');
+ IF COALESCE(NEW.qty_collected,0)+COALESCE(NEW.qty_refunded,0)+v_local>NEW.quantity THEN
+   RAISE EXCEPTION 'LOCAL_ITEM_REFUND_QTY_RESERVED_NOT_COLLECTABLE' USING ERRCODE='23514';
+ END IF;
+ RETURN NEW;
+END $$;
+
+
+--
+-- Name: guard_local_mobile_refund_handoff(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.guard_local_mobile_refund_handoff() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE r public.local_item_refund_reservations%ROWTYPE;
+BEGIN
+  IF TG_OP='DELETE' THEN
+    RAISE EXCEPTION 'LOCAL_MOBILE_REFUND_IMMUTABLE' USING ERRCODE='23514';
+  END IF;
+  SELECT * INTO r FROM public.local_item_refund_reservations WHERE id=NEW.reservation_id;
+  PERFORM 1 FROM public.orders WHERE id=r.order_id AND payment_status='paid' FOR UPDATE;
+  IF NOT FOUND OR r.payment_mode<>'mobile_money' OR NOT EXISTS (
+    SELECT 1 FROM public.mobile_money_transactions t
+     WHERE t.id::text=r.capture_ref AND t.order_id=r.order_id AND t.market_id=r.market_id
+       AND t.provider=NEW.provider AND t.status='succeeded'
+       AND t.currency=r.currency AND t.minor_unit=r.minor_unit AND t.amount_minor>=r.amount_minor
+       AND t.external_transaction_id=NEW.source_capture_ref
+       AND NULLIF(btrim(t.external_transaction_id),'') IS NOT NULL
+       AND lower(btrim(t.external_transaction_id)) IS DISTINCT FROM lower(btrim(NEW.transfer_ref))
+  ) THEN
+    RAISE EXCEPTION 'LOCAL_MOBILE_REFUND_CAPTURE_INVALID' USING ERRCODE='23514';
+  END IF;
+  IF TG_OP='INSERT' THEN
+    IF NEW.status='approved' AND
+       (SELECT COUNT(*) FROM public.users WHERE role='admin' AND id IN (NEW.approved_by,NEW.operator_id))=2
+    THEN RETURN NEW; END IF;
+  ELSE
+    IF (NEW.reservation_id,NEW.approved_by,NEW.operator_id,NEW.provider,NEW.payer_fingerprint,NEW.original_payer_proof_ref,NEW.source_capture_ref)
+       IS DISTINCT FROM
+       (OLD.reservation_id,OLD.approved_by,OLD.operator_id,OLD.provider,OLD.payer_fingerprint,OLD.original_payer_proof_ref,OLD.source_capture_ref)
+    THEN RAISE EXCEPTION 'LOCAL_MOBILE_REFUND_APPROVAL_IMMUTABLE' USING ERRCODE='23514'; END IF;
+    IF OLD.status='approved' AND NEW.status='transfer_pending' THEN RETURN NEW; END IF;
+    IF OLD.status='transfer_pending' AND NEW.status='settled' AND NEW.started_at=OLD.started_at
+       AND NEW.transfer_proof_ref<>NEW.original_payer_proof_ref
+       AND NEW.transfer_ref<>NEW.source_capture_ref
+       AND NEW.operator_verification_ref NOT IN (NEW.original_payer_proof_ref, NEW.transfer_proof_ref)
+       AND NEW.confirmed_by<>NEW.approved_by
+       AND NEW.settled_amount_minor=r.amount_minor AND NEW.settled_currency=r.currency
+       AND NEW.settled_payee_fingerprint=NEW.payer_fingerprint
+       AND EXISTS (SELECT 1 FROM public.users WHERE id=NEW.confirmed_by AND role='admin')
+    THEN RETURN NEW; END IF;
+  END IF;
+  RAISE EXCEPTION 'LOCAL_MOBILE_REFUND_TRANSITION_FORBIDDEN' USING ERRCODE='23514';
+END $$;
+
+
+--
+-- Name: guard_local_refund_immutable(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.guard_local_refund_immutable() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RAISE EXCEPTION 'LOCAL_REFUND_RESERVATION_IMMUTABLE'
+    USING ERRCODE='23514';
+END $$;
+
+
+--
 -- Name: guard_new_order_item_catalog_hold(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -1627,6 +1921,75 @@ BEGIN
   RETURN NEW;
 END;
 $$;
+
+
+--
+-- Name: guard_paid_no_show_order(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.guard_paid_no_show_order() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF NEW.payment_status::text = 'paid' THEN
+    IF NEW.unsold_at IS NOT NULL THEN
+      RAISE EXCEPTION 'UNSOLD_PAID_ORDER_PROTECTED: paid order cannot enter liquidation'
+        USING ERRCODE = 'check_violation';
+    END IF;
+    -- Prevent paying a previously-unpaid order already commercialized via
+    -- legacy unsold_items. The order row is locked by the UPDATE; the
+    -- unsold_items writer locks that same row (migration 415).
+    IF EXISTS (SELECT 1 FROM public.unsold_items ui WHERE ui.order_id = NEW.id) THEN
+      RAISE EXCEPTION 'UNSOLD_PAID_ITEM_PROTECTED: refuse payment on liquidated order'
+        USING ERRCODE = 'check_violation';
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: guard_paid_unsold_item(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.guard_paid_unsold_item() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  v_payment_status text;
+BEGIN
+  IF TG_OP = 'UPDATE' AND NEW.order_id IS DISTINCT FROM OLD.order_id THEN
+    RAISE EXCEPTION 'UNSOLD_ORDER_REASSIGN_FORBIDDEN: sale provenance is immutable'
+      USING ERRCODE = 'check_violation';
+  END IF;
+
+  -- Lock the order so the payment->paid transition cannot race a liquidation.
+  SELECT payment_status::text INTO v_payment_status
+    FROM public.orders WHERE id = NEW.order_id FOR UPDATE;
+  IF v_payment_status = 'paid' THEN
+    RAISE EXCEPTION 'UNSOLD_PAID_ITEM_PROTECTED: customer-paid goods remain under custody'
+      USING ERRCODE = 'check_violation';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: guard_psp_refund_vs_local_obligation(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.guard_psp_refund_vs_local_obligation() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  PERFORM 1 FROM public.orders WHERE id=NEW.order_id FOR UPDATE;
+  IF EXISTS (SELECT 1 FROM public.local_item_refund_reservations WHERE order_id=NEW.order_id) THEN
+    RAISE EXCEPTION 'ITEM_REFUND_LOCAL_CROSS_RAIL_UNRESOLVED' USING ERRCODE='23514';
+  END IF;
+  RETURN NEW;
+END $$;
 
 
 --
@@ -3190,6 +3553,27 @@ $$;
 
 
 --
+-- Name: purchase_line_received_quantity(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.purchase_line_received_quantity(p_line_id uuid) RETURNS integer
+    LANGUAGE sql STABLE
+    AS $$
+  SELECT COALESCE((
+    SELECT (sum(p.quantity))::integer
+      FROM public.purchase_lines pl
+      JOIN public.hub_purchase_allocations a
+        ON (a.purchase_line_id = pl.id
+            OR (a.purchase_line_id IS NULL AND a.purchase_order_id = pl.purchase_order_id AND a.order_item_id = pl.order_item_id))
+      JOIN public.hub_physical_unit_placements p ON p.allocation_id = a.id AND p.removed_at IS NULL
+      JOIN public.hub_physical_units u ON u.id = p.physical_unit_id
+           AND u.state <> ALL (ARRAY['QUARANTINED'::text, 'SUPERSEDED'::text]) AND u.outcome_type IS NULL
+     WHERE pl.id = p_line_id
+  ), 0)
+$$;
+
+
+--
 -- Name: purchase_lines_guard_attachment(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -3383,7 +3767,11 @@ BEGIN
   IF v_supplier_system_key = 'central_hub' AND v_po.trigger_mode IN ('manual', 'whatsapp') THEN
     -- Actual seller, price and proof are captured by the existing manual PO
     -- confirmation/authorization steps; no API identity is manufactured here.
-    NULL;
+    -- HB-11 : la réception d'une PO regroupée se fait par variante, une ligne sans variante est non réceptionnable.
+    IF NEW.product_sku_id IS NULL THEN
+      RAISE EXCEPTION 'purchase_line_variant_required: une ligne sans variante (product_sku_id) ne peut pas être regroupée'
+        USING ERRCODE = '23514';
+    END IF;
   ELSIF NEW.product_sku_id IS NULL
      OR NEW.supplier_unit_ref IS NULL
      OR NEW.supplier_order_identity IS NULL
@@ -4675,6 +5063,38 @@ COMMENT ON COLUMN public.cash_deposits.regularizes_deposit_id IS 'Remise histori
 
 
 --
+-- Name: local_cash_refund_payouts; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.local_cash_refund_payouts (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    authorization_id uuid NOT NULL,
+    reservation_id uuid NOT NULL,
+    order_id uuid NOT NULL,
+    market_id uuid NOT NULL,
+    holder_id uuid NOT NULL,
+    paid_by uuid NOT NULL,
+    amount_kmf numeric(14,2) NOT NULL,
+    signed_receipt_ref text NOT NULL,
+    payer_signature_proof_ref text NOT NULL,
+    witness_proof_ref text NOT NULL,
+    disbursed_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT cash_refund_payer_is_holder CHECK ((paid_by = holder_id)),
+    CONSTRAINT local_cash_refund_payouts_amount_kmf_check CHECK ((amount_kmf > (0)::numeric)),
+    CONSTRAINT local_cash_refund_payouts_payer_signature_proof_ref_check CHECK (((char_length(btrim(payer_signature_proof_ref)) >= 8) AND (char_length(btrim(payer_signature_proof_ref)) <= 200))),
+    CONSTRAINT local_cash_refund_payouts_signed_receipt_ref_check CHECK (((char_length(btrim(signed_receipt_ref)) >= 8) AND (char_length(btrim(signed_receipt_ref)) <= 200))),
+    CONSTRAINT local_cash_refund_payouts_witness_proof_ref_check CHECK (((char_length(btrim(witness_proof_ref)) >= 8) AND (char_length(btrim(witness_proof_ref)) <= 200)))
+);
+
+
+--
+-- Name: TABLE local_cash_refund_payouts; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.local_cash_refund_payouts IS 'Cash physically handed to identified original payer with signed receipt. Custody ledger outflow and refund completion are atomic.';
+
+
+--
 -- Name: cash_custody_movements; Type: VIEW; Schema: public; Owner: -
 --
 
@@ -4745,14 +5165,23 @@ UNION ALL
             ELSE l.amount_kmf
         END AS delta_kmf,
     l.created_at AS occurred_at
-   FROM public.cash_custody_losses l;
+   FROM public.cash_custody_losses l
+UNION ALL
+ SELECT 'CUSTOMER_REFUND'::text AS source,
+    p.id AS ref_id,
+    NULL::uuid AS deposit_id,
+    p.holder_id,
+    p.market_id,
+    (- p.amount_kmf) AS delta_kmf,
+    p.disbursed_at AS occurred_at
+   FROM public.local_cash_refund_payouts p;
 
 
 --
 -- Name: VIEW cash_custody_movements; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON VIEW public.cash_custody_movements IS 'Autorité unique des soldes de garde : encaissements (+), transferts acceptés (−/+), clôtures finales contrôlées (−), pertes décidées (−), contre-écritures. Une déclaration seule ne bouge rien.';
+COMMENT ON VIEW public.cash_custody_movements IS 'Single custody authority incl. verified operator-attested cash-refund outflow; no wallet or simulated cash.';
 
 
 --
@@ -5871,6 +6300,29 @@ CREATE SEQUENCE public.customs_shipment_financial_audit_id_seq
 --
 
 ALTER SEQUENCE public.customs_shipment_financial_audit_id_seq OWNED BY public.customs_shipment_financial_audit.id;
+
+
+--
+-- Name: customs_shipment_holds; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.customs_shipment_holds (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    shipment_id uuid NOT NULL,
+    market_id uuid NOT NULL,
+    status text DEFAULT 'held'::text NOT NULL,
+    reason text NOT NULL,
+    held_by uuid NOT NULL,
+    held_by_role text NOT NULL,
+    held_at timestamp with time zone DEFAULT now() NOT NULL,
+    released_by uuid,
+    released_by_role text,
+    released_at timestamp with time zone,
+    release_note text,
+    CONSTRAINT customs_shipment_holds_reason_check CHECK ((length(btrim(reason)) >= 3)),
+    CONSTRAINT customs_shipment_holds_release_coherent CHECK ((((status = 'held'::text) AND (released_at IS NULL) AND (released_by IS NULL)) OR ((status = 'released'::text) AND (released_at IS NOT NULL) AND (released_by IS NOT NULL)))),
+    CONSTRAINT customs_shipment_holds_status_check CHECK ((status = ANY (ARRAY['held'::text, 'released'::text])))
+);
 
 
 --
@@ -7471,6 +7923,111 @@ COMMENT ON COLUMN public.invoices.total_eur IS 'Montant en EUR — snapshot de o
 --
 
 COMMENT ON COLUMN public.invoices.payment_total_amount IS 'Montant réellement encaissé dans payment_currency ; alimenté par les rails dont la devise n est pas déductible de total_kmf/total_eur (ex. Mobile Money XAF).';
+
+
+--
+-- Name: local_cash_refund_authorizations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.local_cash_refund_authorizations (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    reservation_id uuid NOT NULL,
+    order_id uuid NOT NULL,
+    market_id uuid NOT NULL,
+    holder_id uuid NOT NULL,
+    approved_by uuid NOT NULL,
+    original_payer_proof_ref text CONSTRAINT local_cash_refund_authorizati_original_payer_proof_ref_not_null NOT NULL,
+    identity_check_proof_ref text CONSTRAINT local_cash_refund_authorizati_identity_check_proof_ref_not_null NOT NULL,
+    status text DEFAULT 'approved'::text NOT NULL,
+    authorized_at timestamp with time zone DEFAULT now() NOT NULL,
+    handoff_started_at timestamp with time zone,
+    settled_at timestamp with time zone,
+    CONSTRAINT cash_refund_auth_state_chk CHECK ((((status = 'approved'::text) AND (handoff_started_at IS NULL) AND (settled_at IS NULL)) OR ((status = 'handoff_pending'::text) AND (handoff_started_at IS NOT NULL) AND (settled_at IS NULL)) OR ((status = 'settled'::text) AND (handoff_started_at IS NOT NULL) AND (settled_at IS NOT NULL)))),
+    CONSTRAINT cash_refund_dual_actor CHECK ((holder_id <> approved_by)),
+    CONSTRAINT local_cash_refund_authorizations_identity_check_proof_ref_check CHECK (((char_length(btrim(identity_check_proof_ref)) >= 8) AND (char_length(btrim(identity_check_proof_ref)) <= 200))),
+    CONSTRAINT local_cash_refund_authorizations_original_payer_proof_ref_check CHECK (((char_length(btrim(original_payer_proof_ref)) >= 8) AND (char_length(btrim(original_payer_proof_ref)) <= 200))),
+    CONSTRAINT local_cash_refund_authorizations_status_check CHECK ((status = ANY (ARRAY['approved'::text, 'handoff_pending'::text, 'settled'::text])))
+);
+
+
+--
+-- Name: TABLE local_cash_refund_authorizations; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.local_cash_refund_authorizations IS 'Two separate actors; approved or handoff_pending is NOT paid. Original payer evidence is independently reviewed offline.';
+
+
+--
+-- Name: local_item_refund_reservations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.local_item_refund_reservations (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    order_id uuid NOT NULL,
+    order_item_id uuid NOT NULL,
+    source_incident_id uuid NOT NULL,
+    market_id uuid NOT NULL,
+    operation_key uuid NOT NULL,
+    payment_mode text NOT NULL,
+    capture_ref text NOT NULL,
+    currency text NOT NULL,
+    minor_unit integer NOT NULL,
+    amount_minor bigint NOT NULL,
+    amount_kmf numeric(14,2) NOT NULL,
+    quantity integer NOT NULL,
+    reason text NOT NULL,
+    status text DEFAULT 'reserved'::text NOT NULL,
+    initiated_by uuid NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT local_item_refund_reservations_amount_kmf_check CHECK ((amount_kmf > (0)::numeric)),
+    CONSTRAINT local_item_refund_reservations_amount_minor_check CHECK ((amount_minor > 0)),
+    CONSTRAINT local_item_refund_reservations_capture_ref_check CHECK ((length(btrim(capture_ref)) > 0)),
+    CONSTRAINT local_item_refund_reservations_currency_check CHECK ((currency ~ '^[A-Z]{3}$'::text)),
+    CONSTRAINT local_item_refund_reservations_minor_unit_check CHECK (((minor_unit >= 0) AND (minor_unit <= 4))),
+    CONSTRAINT local_item_refund_reservations_payment_mode_check CHECK ((payment_mode = ANY (ARRAY['cash_relais'::text, 'mobile_money'::text]))),
+    CONSTRAINT local_item_refund_reservations_quantity_check CHECK ((quantity > 0)),
+    CONSTRAINT local_item_refund_reservations_reason_check CHECK ((length(btrim(reason)) >= 8)),
+    CONSTRAINT local_item_refund_reservations_status_check CHECK ((status = 'reserved'::text))
+);
+
+
+--
+-- Name: TABLE local_item_refund_reservations; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.local_item_refund_reservations IS 'F1/F2 reserved liability only; cash/MM payouts cannot be marked completed here. Separate verified custody or provider settlement is required.';
+
+
+--
+-- Name: local_mobile_refund_handoffs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.local_mobile_refund_handoffs (
+    reservation_id uuid NOT NULL,
+    approved_by uuid NOT NULL,
+    operator_id uuid NOT NULL,
+    provider text NOT NULL,
+    payer_fingerprint text NOT NULL,
+    original_payer_proof_ref text NOT NULL,
+    source_capture_ref text NOT NULL,
+    status text DEFAULT 'approved'::text NOT NULL,
+    started_at timestamp with time zone,
+    confirmed_at timestamp with time zone,
+    confirmed_by uuid,
+    transfer_ref text,
+    transfer_proof_ref text,
+    operator_verification_ref text,
+    settled_amount_minor bigint,
+    settled_currency text,
+    settled_payee_fingerprint text,
+    CONSTRAINT local_mobile_refund_handoffs_check CHECK ((((status <> 'settled'::text) AND (settled_amount_minor IS NULL) AND (settled_currency IS NULL) AND (settled_payee_fingerprint IS NULL)) OR ((status = 'settled'::text) AND (settled_amount_minor IS NOT NULL) AND (settled_currency IS NOT NULL) AND (settled_payee_fingerprint IS NOT NULL)))),
+    CONSTRAINT local_mobile_refund_handoffs_check1 CHECK (((approved_by <> operator_id) AND (confirmed_by IS DISTINCT FROM operator_id) AND (confirmed_by IS DISTINCT FROM approved_by))),
+    CONSTRAINT local_mobile_refund_handoffs_check2 CHECK ((((status = 'approved'::text) AND (started_at IS NULL) AND (confirmed_at IS NULL) AND (confirmed_by IS NULL) AND (transfer_ref IS NULL) AND (transfer_proof_ref IS NULL) AND (operator_verification_ref IS NULL)) OR ((status = 'transfer_pending'::text) AND (started_at IS NOT NULL) AND (confirmed_at IS NULL) AND (confirmed_by IS NULL) AND (transfer_ref IS NULL) AND (transfer_proof_ref IS NULL) AND (operator_verification_ref IS NULL)) OR ((status = 'settled'::text) AND (started_at IS NOT NULL) AND (confirmed_at IS NOT NULL) AND (confirmed_by IS NOT NULL) AND ((length(btrim(COALESCE(transfer_ref, ''::text))) >= 8) AND (length(btrim(COALESCE(transfer_ref, ''::text))) <= 200)) AND ((length(btrim(COALESCE(transfer_proof_ref, ''::text))) >= 8) AND (length(btrim(COALESCE(transfer_proof_ref, ''::text))) <= 200)) AND ((length(btrim(COALESCE(operator_verification_ref, ''::text))) >= 8) AND (length(btrim(COALESCE(operator_verification_ref, ''::text))) <= 200))))),
+    CONSTRAINT local_mobile_refund_handoffs_original_payer_proof_ref_check CHECK (((length(btrim(original_payer_proof_ref)) >= 8) AND (length(btrim(original_payer_proof_ref)) <= 200))),
+    CONSTRAINT local_mobile_refund_handoffs_payer_fingerprint_check CHECK ((payer_fingerprint ~ '^[a-f0-9]{64}$'::text)),
+    CONSTRAINT local_mobile_refund_handoffs_source_capture_ref_check CHECK (((length(btrim(source_capture_ref)) >= 8) AND (length(btrim(source_capture_ref)) <= 200))),
+    CONSTRAINT local_mobile_refund_handoffs_status_check CHECK ((status = ANY (ARRAY['approved'::text, 'transfer_pending'::text, 'settled'::text])))
+);
 
 
 --
@@ -11024,7 +11581,9 @@ CREATE TABLE public.refunds (
     initiated_by uuid,
     status text DEFAULT 'pending'::text NOT NULL,
     completed_at timestamp with time zone,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    local_cash_refund_payout_id uuid,
+    local_mobile_refund_handoff_id uuid
 );
 
 
@@ -13284,11 +13843,7 @@ CREATE VIEW public.v_purchase_line_progress AS
             ELSE 'historical'::text
         END AS po_shape,
     public.purchase_line_effective_quantity(pl.cancelled_at, pl.settled_quantity, pl.confirmed_quantity, pl.quantity) AS effective_quantity,
-    COALESCE(( SELECT (sum(p.quantity))::integer AS sum
-           FROM ((public.hub_purchase_allocations a
-             JOIN public.hub_physical_unit_placements p ON (((p.allocation_id = a.id) AND (p.removed_at IS NULL))))
-             JOIN public.hub_physical_units u ON (((u.id = p.physical_unit_id) AND (u.state <> ALL (ARRAY['QUARANTINED'::text, 'SUPERSEDED'::text])) AND (u.outcome_type IS NULL))))
-          WHERE ((a.purchase_line_id = pl.id) OR ((a.purchase_line_id IS NULL) AND (a.purchase_order_id = pl.purchase_order_id) AND (a.order_item_id = pl.order_item_id)))), 0) AS received_quantity,
+    public.purchase_line_received_quantity(pl.id) AS received_quantity,
     (pl.cancelled_at IS NOT NULL) AS cancelled,
     pl.product_supplier_id,
     po.hub_received_at,
@@ -14211,6 +14766,14 @@ ALTER TABLE ONLY public.customs_shipment_financial_audit
 
 
 --
+-- Name: customs_shipment_holds customs_shipment_holds_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.customs_shipment_holds
+    ADD CONSTRAINT customs_shipment_holds_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: customs_shipment_parcel_events customs_shipment_parcel_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -14584,6 +15147,70 @@ ALTER TABLE ONLY public.invoices
 
 ALTER TABLE ONLY public.invoices
     ADD CONSTRAINT invoices_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: local_cash_refund_authorizations local_cash_refund_authorizations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.local_cash_refund_authorizations
+    ADD CONSTRAINT local_cash_refund_authorizations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: local_cash_refund_authorizations local_cash_refund_authorizations_reservation_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.local_cash_refund_authorizations
+    ADD CONSTRAINT local_cash_refund_authorizations_reservation_id_key UNIQUE (reservation_id);
+
+
+--
+-- Name: local_cash_refund_payouts local_cash_refund_payouts_authorization_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.local_cash_refund_payouts
+    ADD CONSTRAINT local_cash_refund_payouts_authorization_id_key UNIQUE (authorization_id);
+
+
+--
+-- Name: local_cash_refund_payouts local_cash_refund_payouts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.local_cash_refund_payouts
+    ADD CONSTRAINT local_cash_refund_payouts_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: local_cash_refund_payouts local_cash_refund_payouts_reservation_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.local_cash_refund_payouts
+    ADD CONSTRAINT local_cash_refund_payouts_reservation_id_key UNIQUE (reservation_id);
+
+
+--
+-- Name: local_cash_refund_payouts local_cash_refund_payouts_signed_receipt_ref_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.local_cash_refund_payouts
+    ADD CONSTRAINT local_cash_refund_payouts_signed_receipt_ref_key UNIQUE (signed_receipt_ref);
+
+
+--
+-- Name: local_item_refund_reservations local_item_refund_reservations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.local_item_refund_reservations
+    ADD CONSTRAINT local_item_refund_reservations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: local_mobile_refund_handoffs local_mobile_refund_handoffs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.local_mobile_refund_handoffs
+    ADD CONSTRAINT local_mobile_refund_handoffs_pkey PRIMARY KEY (reservation_id);
 
 
 --
@@ -15395,6 +16022,14 @@ ALTER TABLE ONLY public.refund_execution_intents
 
 
 --
+-- Name: refunds refunds_local_mobile_refund_handoff_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.refunds
+    ADD CONSTRAINT refunds_local_mobile_refund_handoff_id_key UNIQUE (local_mobile_refund_handoff_id);
+
+
+--
 -- Name: refunds refunds_order_refund_type_unique; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -16088,6 +16723,14 @@ ALTER TABLE ONLY public.international_shipment_hub_units
 
 ALTER TABLE ONLY public.order_item_refund_reservations
     ADD CONSTRAINT uq_item_refund_order_operation UNIQUE (order_id, operation_key);
+
+
+--
+-- Name: local_item_refund_reservations uq_local_item_refund_operation; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.local_item_refund_reservations
+    ADD CONSTRAINT uq_local_item_refund_operation UNIQUE (order_id, operation_key);
 
 
 --
@@ -16831,6 +17474,13 @@ CREATE INDEX idx_customs_shipment ON public.customs_history USING btree (shipmen
 
 
 --
+-- Name: idx_customs_shipment_holds_market; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_customs_shipment_holds_market ON public.customs_shipment_holds USING btree (market_id, status);
+
+
+--
 -- Name: idx_customs_shipments_market_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -17234,6 +17884,34 @@ CREATE UNIQUE INDEX idx_invoices_public_token ON public.invoices USING btree (pu
 --
 
 CREATE INDEX idx_item_refund_reservations_line ON public.order_item_refund_reservations USING btree (order_item_id, created_at);
+
+
+--
+-- Name: idx_local_cash_refund_auth_order; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_local_cash_refund_auth_order ON public.local_cash_refund_authorizations USING btree (order_id);
+
+
+--
+-- Name: idx_local_cash_refund_pending_custody; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_local_cash_refund_pending_custody ON public.local_cash_refund_authorizations USING btree (holder_id, market_id) WHERE (status = 'handoff_pending'::text);
+
+
+--
+-- Name: idx_local_item_refund_item; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_local_item_refund_item ON public.local_item_refund_reservations USING btree (order_item_id, status);
+
+
+--
+-- Name: idx_local_item_refund_order; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_local_item_refund_order ON public.local_item_refund_reservations USING btree (order_id, status, created_at);
 
 
 --
@@ -19715,6 +20393,13 @@ CREATE UNIQUE INDEX uq_catalog_sale_hold_one_active ON public.catalog_product_sa
 
 
 --
+-- Name: uq_customs_shipment_holds_one_active; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX uq_customs_shipment_holds_one_active ON public.customs_shipment_holds USING btree (shipment_id) WHERE (status = 'held'::text);
+
+
+--
 -- Name: uq_disputes_product_return_active_line; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -19897,6 +20582,13 @@ CREATE UNIQUE INDEX ux_hub_purchase_allocations_po_historical ON public.hub_purc
 
 
 --
+-- Name: ux_local_mobile_refund_transfer; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX ux_local_mobile_refund_transfer ON public.local_mobile_refund_handoffs USING btree (provider, lower(btrim(transfer_ref))) WHERE (transfer_ref IS NOT NULL);
+
+
+--
 -- Name: ux_local_stock_product_market_location; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -19985,6 +20677,13 @@ CREATE UNIQUE INDEX ux_product_suppliers_active_priority ON public.product_suppl
 --
 
 CREATE UNIQUE INDEX ux_purchase_orders_order_item_supplier_active ON public.purchase_orders USING btree (order_item_id, product_supplier_id) WHERE ((order_item_id IS NOT NULL) AND (product_supplier_id IS NOT NULL) AND (status <> 'cancelled'::text));
+
+
+--
+-- Name: ux_refunds_local_cash_payout_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX ux_refunds_local_cash_payout_id ON public.refunds USING btree (local_cash_refund_payout_id) WHERE (local_cash_refund_payout_id IS NOT NULL);
 
 
 --
@@ -20261,6 +20960,34 @@ CREATE TRIGGER trg_cash_provenance_no_update BEFORE DELETE OR UPDATE ON public.c
 
 
 --
+-- Name: local_cash_refund_authorizations trg_cash_refund_authorization_guard; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_cash_refund_authorization_guard BEFORE INSERT OR DELETE OR UPDATE ON public.local_cash_refund_authorizations FOR EACH ROW EXECUTE FUNCTION public.guard_cash_refund_authorization();
+
+
+--
+-- Name: local_cash_refund_authorizations trg_cash_refund_handoff_funded; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_cash_refund_handoff_funded AFTER UPDATE OF status ON public.local_cash_refund_authorizations FOR EACH ROW WHEN (((old.status = 'approved'::text) AND (new.status = 'handoff_pending'::text))) EXECUTE FUNCTION public.assert_cash_refund_handoff_funded();
+
+
+--
+-- Name: local_cash_refund_payouts trg_cash_refund_payout_finalize; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_cash_refund_payout_finalize AFTER INSERT ON public.local_cash_refund_payouts FOR EACH ROW EXECUTE FUNCTION public.finalize_cash_refund_payout();
+
+
+--
+-- Name: local_cash_refund_payouts trg_cash_refund_payout_guard; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_cash_refund_payout_guard BEFORE INSERT OR DELETE OR UPDATE ON public.local_cash_refund_payouts FOR EACH ROW EXECUTE FUNCTION public.guard_cash_refund_payout();
+
+
+--
 -- Name: catalog_media trg_catalog_media_updated; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -20279,6 +21006,13 @@ CREATE TRIGGER trg_ceiling_removal_member_grants_guard BEFORE DELETE OR UPDATE O
 --
 
 CREATE TRIGGER trg_check_parcel_item_qty BEFORE INSERT OR UPDATE ON public.parcel_items FOR EACH ROW EXECUTE FUNCTION public.check_parcel_item_quantities();
+
+
+--
+-- Name: refunds trg_completed_cash_refund_immutable; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_completed_cash_refund_immutable BEFORE DELETE OR UPDATE ON public.refunds FOR EACH ROW EXECUTE FUNCTION public.guard_completed_cash_refund_immutable();
 
 
 --
@@ -20373,6 +21107,13 @@ CREATE TRIGGER trg_fabrics_updated BEFORE UPDATE ON public.fabrics FOR EACH ROW 
 
 
 --
+-- Name: local_mobile_refund_handoffs trg_finalize_local_mobile_refund_handoff; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_finalize_local_mobile_refund_handoff AFTER UPDATE OF status ON public.local_mobile_refund_handoffs FOR EACH ROW WHEN (((old.status = 'transfer_pending'::text) AND (new.status = 'settled'::text))) EXECUTE FUNCTION public.finalize_local_mobile_refund_handoff();
+
+
+--
 -- Name: financial_movements trg_financial_movements_guard; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -20387,10 +21128,52 @@ CREATE TRIGGER trg_guard_item_refund_pending_collection BEFORE UPDATE OF qty_col
 
 
 --
+-- Name: refunds trg_guard_legacy_refund_vs_local_obligation; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_guard_legacy_refund_vs_local_obligation BEFORE INSERT ON public.refunds FOR EACH ROW EXECUTE FUNCTION public.guard_legacy_refund_vs_local_obligation();
+
+
+--
+-- Name: order_items trg_guard_local_item_refund_pending_collection; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_guard_local_item_refund_pending_collection BEFORE UPDATE OF qty_collected, qty_refunded, quantity ON public.order_items FOR EACH ROW EXECUTE FUNCTION public.guard_local_item_refund_pending_collection();
+
+
+--
+-- Name: local_item_refund_reservations trg_guard_local_refund_immutable; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_guard_local_refund_immutable BEFORE DELETE OR UPDATE ON public.local_item_refund_reservations FOR EACH ROW EXECUTE FUNCTION public.guard_local_refund_immutable();
+
+
+--
 -- Name: order_items trg_guard_new_order_item_catalog_hold; Type: TRIGGER; Schema: public; Owner: -
 --
 
 CREATE TRIGGER trg_guard_new_order_item_catalog_hold BEFORE INSERT ON public.order_items FOR EACH ROW EXECUTE FUNCTION public.guard_new_order_item_catalog_hold();
+
+
+--
+-- Name: orders trg_guard_paid_no_show_order; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_guard_paid_no_show_order BEFORE INSERT OR UPDATE OF payment_status, unsold_at ON public.orders FOR EACH ROW EXECUTE FUNCTION public.guard_paid_no_show_order();
+
+
+--
+-- Name: unsold_items trg_guard_paid_unsold_item; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_guard_paid_unsold_item BEFORE INSERT OR UPDATE ON public.unsold_items FOR EACH ROW EXECUTE FUNCTION public.guard_paid_unsold_item();
+
+
+--
+-- Name: order_item_refund_reservations trg_guard_psp_refund_vs_local_obligation; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_guard_psp_refund_vs_local_obligation BEFORE INSERT ON public.order_item_refund_reservations FOR EACH ROW EXECUTE FUNCTION public.guard_psp_refund_vs_local_obligation();
 
 
 --
@@ -20580,6 +21363,13 @@ CREATE TRIGGER trg_international_hub_draft_transfer_guard BEFORE UPDATE OF stage
 --
 
 CREATE TRIGGER trg_international_shipment_hub_units_guard BEFORE INSERT OR DELETE OR UPDATE ON public.international_shipment_hub_units FOR EACH ROW EXECUTE FUNCTION public.international_shipment_hub_units_guard();
+
+
+--
+-- Name: local_mobile_refund_handoffs trg_local_mobile_refund_handoff_guard; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_local_mobile_refund_handoff_guard BEFORE INSERT OR DELETE OR UPDATE ON public.local_mobile_refund_handoffs FOR EACH ROW EXECUTE FUNCTION public.guard_local_mobile_refund_handoff();
 
 
 --
@@ -21803,6 +22593,38 @@ ALTER TABLE ONLY public.customs_shipment_fees
 
 
 --
+-- Name: customs_shipment_holds customs_shipment_holds_held_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.customs_shipment_holds
+    ADD CONSTRAINT customs_shipment_holds_held_by_fkey FOREIGN KEY (held_by) REFERENCES public.users(id);
+
+
+--
+-- Name: customs_shipment_holds customs_shipment_holds_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.customs_shipment_holds
+    ADD CONSTRAINT customs_shipment_holds_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id);
+
+
+--
+-- Name: customs_shipment_holds customs_shipment_holds_released_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.customs_shipment_holds
+    ADD CONSTRAINT customs_shipment_holds_released_by_fkey FOREIGN KEY (released_by) REFERENCES public.users(id);
+
+
+--
+-- Name: customs_shipment_holds customs_shipment_holds_shipment_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.customs_shipment_holds
+    ADD CONSTRAINT customs_shipment_holds_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.customs_shipments(id);
+
+
+--
 -- Name: customs_shipment_parcels customs_shipment_parcels_parcel_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -22448,6 +23270,166 @@ ALTER TABLE ONLY public.invoices
 
 ALTER TABLE ONLY public.invoices
     ADD CONSTRAINT invoices_parcel_id_fkey FOREIGN KEY (parcel_id) REFERENCES public.parcels(id);
+
+
+--
+-- Name: local_cash_refund_authorizations local_cash_refund_authorizations_approved_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.local_cash_refund_authorizations
+    ADD CONSTRAINT local_cash_refund_authorizations_approved_by_fkey FOREIGN KEY (approved_by) REFERENCES public.users(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: local_cash_refund_authorizations local_cash_refund_authorizations_holder_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.local_cash_refund_authorizations
+    ADD CONSTRAINT local_cash_refund_authorizations_holder_id_fkey FOREIGN KEY (holder_id) REFERENCES public.users(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: local_cash_refund_authorizations local_cash_refund_authorizations_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.local_cash_refund_authorizations
+    ADD CONSTRAINT local_cash_refund_authorizations_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: local_cash_refund_authorizations local_cash_refund_authorizations_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.local_cash_refund_authorizations
+    ADD CONSTRAINT local_cash_refund_authorizations_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: local_cash_refund_authorizations local_cash_refund_authorizations_reservation_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.local_cash_refund_authorizations
+    ADD CONSTRAINT local_cash_refund_authorizations_reservation_id_fkey FOREIGN KEY (reservation_id) REFERENCES public.local_item_refund_reservations(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: local_cash_refund_payouts local_cash_refund_payouts_authorization_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.local_cash_refund_payouts
+    ADD CONSTRAINT local_cash_refund_payouts_authorization_id_fkey FOREIGN KEY (authorization_id) REFERENCES public.local_cash_refund_authorizations(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: local_cash_refund_payouts local_cash_refund_payouts_holder_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.local_cash_refund_payouts
+    ADD CONSTRAINT local_cash_refund_payouts_holder_id_fkey FOREIGN KEY (holder_id) REFERENCES public.users(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: local_cash_refund_payouts local_cash_refund_payouts_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.local_cash_refund_payouts
+    ADD CONSTRAINT local_cash_refund_payouts_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: local_cash_refund_payouts local_cash_refund_payouts_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.local_cash_refund_payouts
+    ADD CONSTRAINT local_cash_refund_payouts_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: local_cash_refund_payouts local_cash_refund_payouts_paid_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.local_cash_refund_payouts
+    ADD CONSTRAINT local_cash_refund_payouts_paid_by_fkey FOREIGN KEY (paid_by) REFERENCES public.users(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: local_cash_refund_payouts local_cash_refund_payouts_reservation_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.local_cash_refund_payouts
+    ADD CONSTRAINT local_cash_refund_payouts_reservation_id_fkey FOREIGN KEY (reservation_id) REFERENCES public.local_item_refund_reservations(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: local_item_refund_reservations local_item_refund_reservations_initiated_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.local_item_refund_reservations
+    ADD CONSTRAINT local_item_refund_reservations_initiated_by_fkey FOREIGN KEY (initiated_by) REFERENCES public.users(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: local_item_refund_reservations local_item_refund_reservations_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.local_item_refund_reservations
+    ADD CONSTRAINT local_item_refund_reservations_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: local_item_refund_reservations local_item_refund_reservations_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.local_item_refund_reservations
+    ADD CONSTRAINT local_item_refund_reservations_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: local_item_refund_reservations local_item_refund_reservations_order_item_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.local_item_refund_reservations
+    ADD CONSTRAINT local_item_refund_reservations_order_item_id_fkey FOREIGN KEY (order_item_id) REFERENCES public.order_items(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: local_item_refund_reservations local_item_refund_reservations_source_incident_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.local_item_refund_reservations
+    ADD CONSTRAINT local_item_refund_reservations_source_incident_id_fkey FOREIGN KEY (source_incident_id) REFERENCES public.incidents(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: local_mobile_refund_handoffs local_mobile_refund_handoffs_approved_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.local_mobile_refund_handoffs
+    ADD CONSTRAINT local_mobile_refund_handoffs_approved_by_fkey FOREIGN KEY (approved_by) REFERENCES public.users(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: local_mobile_refund_handoffs local_mobile_refund_handoffs_confirmed_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.local_mobile_refund_handoffs
+    ADD CONSTRAINT local_mobile_refund_handoffs_confirmed_by_fkey FOREIGN KEY (confirmed_by) REFERENCES public.users(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: local_mobile_refund_handoffs local_mobile_refund_handoffs_operator_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.local_mobile_refund_handoffs
+    ADD CONSTRAINT local_mobile_refund_handoffs_operator_id_fkey FOREIGN KEY (operator_id) REFERENCES public.users(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: local_mobile_refund_handoffs local_mobile_refund_handoffs_reservation_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.local_mobile_refund_handoffs
+    ADD CONSTRAINT local_mobile_refund_handoffs_reservation_id_fkey FOREIGN KEY (reservation_id) REFERENCES public.local_item_refund_reservations(id) ON DELETE RESTRICT;
 
 
 --
@@ -24016,6 +24998,22 @@ ALTER TABLE ONLY public.refund_execution_intents
 
 ALTER TABLE ONLY public.refunds
     ADD CONSTRAINT refunds_initiated_by_fkey FOREIGN KEY (initiated_by) REFERENCES public.users(id);
+
+
+--
+-- Name: refunds refunds_local_cash_refund_payout_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.refunds
+    ADD CONSTRAINT refunds_local_cash_refund_payout_id_fkey FOREIGN KEY (local_cash_refund_payout_id) REFERENCES public.local_cash_refund_payouts(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: refunds refunds_local_mobile_refund_handoff_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.refunds
+    ADD CONSTRAINT refunds_local_mobile_refund_handoff_id_fkey FOREIGN KEY (local_mobile_refund_handoff_id) REFERENCES public.local_mobile_refund_handoffs(reservation_id) ON DELETE RESTRICT;
 
 
 --
