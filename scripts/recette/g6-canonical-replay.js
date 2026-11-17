@@ -34,6 +34,8 @@ const RESUME_VENDOR_SIMULATION=path.join(ROOT,'test-results/g6-canonical-resume/
 const HUB_RECEIVING=path.join(ROOT,'test-results/g6-hub-receiving/report.json');
 const RESUME_HUB_RECEIVING=path.join(ROOT,'test-results/g6-canonical-resume/g6-hub-receiving/report.json');
 const HUB_RECEIVING_READBACK=path.join(ROOT,'test-results/g6-hub-receiving-readback/report.json');
+const RESUME_RECEIVING_READBACK=path.join(ROOT,'test-results/g6-canonical-resume/g6-hub-receiving-readback/report.json');
+const CUSTOMER_BAG=path.join(ROOT,'test-results/g6-hub-customer-bag/report.json');
 const ORIGIN='https://komerce-backend-production.up.railway.app';
 const VALID_SHA=/^[a-f0-9]{40}$/;
 const VALID_REF=/^[A-Z0-9][A-Z0-9-]{5,63}$/;
@@ -236,6 +238,27 @@ function validateHubReceivingCheckpoint(previous,simulated,scope) {
   return {order:previous.order,poId:po,dbFingerprint:previous.db_fingerprint};
 }
 
+function validateCustomerBagCheckpoint(previous,receipt,scope){
+  const po='8353f1a3-f2a5-4c5e-b01c-95b4cb2004e3';
+  const orderId='56adad65-d1fa-4e80-8d69-c25e0fe92a76';
+  const sourceRef='SUPPLIER_PACKAGE-17824209-30d1-41be-87ad-1ef55c8a2994';
+  if(scope.id!=='M01'||scope.market!=='KM'||previous.scenario_id!=='M01'||previous.market!=='KM'||
+    previous.verdict!=='NOT_PROVEN'||previous.full_chain_certified!==false||previous.production_permitted!==false||
+    previous.next_stage!=='KOM_BOX'||previous.order?.id!==orderId||previous.order?.reference!=='KL1WGP6'||
+    previous.po_id!==po||!previous.db_fingerprint||
+    !previous.stages?.some(x=>x.id==='HUB_RECEIVING'&&x.verdict==='PASS_SIMULATED_STAGING')||
+    receipt.verdict!=='G6_HUB_RECEIPT_SIMULATED_CHROMIUM_HISTORICAL_UI_PG_READBACK_PASS'||
+    receipt.reference!=='KL1WGP6'||receipt.order_id!==orderId||receipt.po_id!==po||
+    receipt.physical_ref!==sourceRef||receipt.db_fingerprint!==previous.db_fingerprint||
+    receipt.read_only!==true||receipt.external_supplier_calls!==0||receipt.external_payment_executed!==false||
+    receipt.readback?.po?.status!=='hub_received'||receipt.readback?.remaining!==0||
+    receipt.readback?.placements?.length!==1||receipt.readback.placements[0].reference!==sourceRef||
+    receipt.readback.placements[0].evidence_method!=='MANUAL'||
+    Number(receipt.readback.placements[0].quantity)!==1)
+      throw Error('G6_CUSTOMER_BAG_RECEIPT_PROVENANCE_INVALID');
+  return {order:previous.order,poId:po,dbFingerprint:previous.db_fingerprint,sourceRef};
+}
+
 function executeExistingHub(env) {
   fs.rmSync(HUB_PROOF,{force:true});
   const p=spawnSync(process.platform==='win32'?'npx.cmd':'npx',[
@@ -259,7 +282,7 @@ async function main(env=process.env) {
   try{
     const scope=validateGuard(env);
     const phase=String(env.G6_CANONICAL_PHASE||'BUYER_CASH');
-    if(!['BUYER_CASH','HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION','HUB_RECEIVING','HUB_RECEIVING_READBACK'].includes(phase) || (['HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION','HUB_RECEIVING','HUB_RECEIVING_READBACK'].includes(phase)&&(scope.id!=='M01'||scope.market!=='KM')))
+    if(!['BUYER_CASH','HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION','HUB_RECEIVING','HUB_RECEIVING_READBACK','HUB_CUSTOMER_BAG'].includes(phase) || (['HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION','HUB_RECEIVING','HUB_RECEIVING_READBACK','HUB_CUSTOMER_BAG'].includes(phase)&&(scope.id!=='M01'||scope.market!=='KM')))
       throw new Error('G6_CANONICAL_PHASE_NOT_BOUND');
     report.scenario_id=scope.id;report.market=scope.market;
     report.source_matrix_version=scope.source_version;
@@ -272,8 +295,39 @@ async function main(env=process.env) {
     // must fail closed, not rebuild or silently switch to a new buyer.
     let buyer, resumeDiff=null;
     const resumeRun=String(env.G6_CANONICAL_RESUME_RUN_ID||'');
-    if(['HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION','HUB_RECEIVING','HUB_RECEIVING_READBACK'].includes(phase)&&!resumeRun)
+    if(['HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION','HUB_RECEIVING','HUB_RECEIVING_READBACK','HUB_CUSTOMER_BAG'].includes(phase)&&!resumeRun)
       throw new Error('G6_CANONICAL_HUB_REQUIRES_PREVIOUS_STAGE_PROOF');
+    if(phase==='HUB_CUSTOMER_BAG'){
+      if(!/^\d{8,}$/.test(resumeRun)||!fs.existsSync(RESUME_CANONICAL)||!fs.existsSync(RESUME_RECEIVING_READBACK))
+        throw Error('G6_CUSTOMER_BAG_RECEIVING_ARTIFACT_MISSING');
+      const previous=JSON.parse(fs.readFileSync(RESUME_CANONICAL,'utf8'));
+      const receipt=JSON.parse(fs.readFileSync(RESUME_RECEIVING_READBACK,'utf8'));
+      const bound=validateCustomerBagCheckpoint(previous,receipt,scope);
+      report.resumed_from_run_id=resumeRun;report.order=bound.order;report.po_id=bound.poId;
+      report.db_fingerprint=bound.dbFingerprint;
+      report.stages=previous.stages.map(st=>({
+        id:st.id,verdict:st.verdict==='PASS_SIMULATED_STAGING'?'PASS_SIMULATED_STAGING':'PREVIOUS_RUN_PASS',
+        source_run_id:resumeRun,reference:bound.order.reference
+      }));
+      report.next_stage='HUB_CUSTOMER_BAG';save();
+      const bag=executeExisting('scripts/recette/g6-hub-customer-bag-chromium.js',
+        CUSTOMER_BAG,{...env,PGOPTIONS:'-c default_transaction_read_only=on',
+          G6_CANONICAL_ORDER_ID:bound.order.id,G6_CANONICAL_ORDER_REFERENCE:bound.order.reference,
+          G6_CANONICAL_PO_ID:bound.poId,G6_CANONICAL_DB_FINGERPRINT:bound.dbFingerprint,
+          G6_CANONICAL_RECEIPT_REFERENCE:bound.sourceRef});
+      if(bag.verdict!=='G6_CUSTOMER_BAG_SIMULATED_CHROMIUM_PG_PASS'||bag.order_id!==bound.order.id||
+         bag.po_id!==bound.poId||bag.source_ref!==bound.sourceRef||
+         bag.db_fingerprint!==bound.dbFingerprint||bag.provenance!=='SIMULATED / STAGING ONLY'||
+         bag.external_supplier_calls!==0||bag.external_payment_executed!==false||
+         !bag.bag_id||!bag.bag_ref||bag.events?.length!==3)
+        throw Error('G6_CUSTOMER_BAG_FINAL_PROOF_INVALID');
+      report.stages.push({id:'HUB_CUSTOMER_BAG',verdict:'PASS_SIMULATED_STAGING',via:'Chromium_UI',
+        reference:bound.order.reference,bag_id:bag.bag_id,bag_ref:bag.bag_ref,
+        evidence:'test-results/g6-hub-customer-bag/report.json'});
+      report.next_stage='KOM_BOX';report.verdict='NOT_PROVEN';save();
+      console.log('[g6-canonical] customer bag packed on SAME order; KOM-BOX NOT_PROVEN');
+      return report;
+    }
     if(phase==='HUB_RECEIVING_READBACK'){
       if(!/^\d{8,}$/.test(resumeRun)||!fs.existsSync(RESUME_CANONICAL)||
          !fs.existsSync(RESUME_HUB_RECEIVING))
@@ -567,4 +621,4 @@ async function main(env=process.env) {
 }
 
 if(require.main===module)main().catch(e=>{console.error(e.message);process.exitCode=2});
-module.exports={validateGuard,validateBuyerProof,validateCashProof,validateHubProof,validateCommitmentCheckpoint,validateVendorReadinessCheckpoint,validateVendorSimulationCheckpoint,validateHubReceivingCheckpoint,isToolingOnlyResumeDiff,verifyResumeTooling,main};
+module.exports={validateGuard,validateBuyerProof,validateCashProof,validateHubProof,validateCommitmentCheckpoint,validateVendorReadinessCheckpoint,validateVendorSimulationCheckpoint,validateHubReceivingCheckpoint,validateCustomerBagCheckpoint,isToolingOnlyResumeDiff,verifyResumeTooling,main};
