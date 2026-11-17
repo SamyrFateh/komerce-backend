@@ -21,6 +21,7 @@
   'use strict';
 
   const LIMIT_CAPS = [
+    ['cash.custody.receive','Réception de caisse'],
     ['execution.cash.confirm','Confirmation cash'],
     ['settlement.receive','Réception settlement'],
     ['finance.act','Action finance'],
