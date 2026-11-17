@@ -24,6 +24,13 @@ describe('G6 P2 — le devis serveur anonyme n est pas une commande',()=>{
   expect(src).toContain('default_transaction_read_only=on');
   expect(src).not.toContain("rows.length!==1?rows[0]:");
  });
+ test('la cible KM vient d un produit réel et résout son UUID depuis la référence',()=>{
+  expect(src).toContain("const REF='KPR-000165'");
+  expect(src).toContain('const EXPECTED_PRICE=5990');
+  expect(src).toContain('"WHERE p.product_ref=$1",[REF]');
+  expect(src).toContain('BUYER_PRODUCT_ID_CHANGED');
+  expect(src).not.toContain('KPR-000099');
+ });
  test('le serveur utilise previewOnly et refuse une identité absente',()=>{
   expect(server).toContain("router.post('/preview', authenticateOrCreateGuest");
   expect(server).toContain("previewOnly: true");
