@@ -225,8 +225,8 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - migrations: 2
 - dash: 177
 - tests: 211
-- tables owned (lifecycle): 2 — `order_incidents`, `partners`
-- tables written: 20
+- tables owned (lifecycle): 3 — `customs_shipment_holds`, `order_incidents`, `partners`
+- tables written: 21
 - interfaces exposed: 88
 - internal APIs: 0
 - dependencies (consumes): 27 — shared-cart, incident-management, orders, infrastructure, payments, refunds, logistics, inventory, local-stock, economic-engine, wallet, auth, auth-identity, market-delegation, customs, documents, notifications, purchasing, supplier-connectivity, external-provider-contracts, business-rules, decision-signals, market, market-delegation, sourcing, catalog, market-autonomy
@@ -785,6 +785,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `customs_effective_rates` | _ambiguë_ | no-declared-writer | — | customs, dashboard |
 | `customs_history` | `orders` | single-writer | orders | — |
 | `customs_shipment_fees` | `customs` | declared-table-owner | customs | — |
+| `customs_shipment_holds` | `dashboard` | single-writer | dashboard | — |
 | `customs_shipment_parcel_events` | `customs` | declared-table-owner | customs | — |
 | `customs_shipment_parcels` | `customs` | single-writer | customs | dashboard, documents, economic-engine |
 | `customs_shipments` | `customs` | single-writer | customs | dashboard, documents, economic-engine, logistics |
