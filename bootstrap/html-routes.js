@@ -6,9 +6,10 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result
- * @depends       utils/logger.js
+ * @depends       utils/logger.js, services/public-market-storefront.js
  * @db-write      none
  * @db-read      none
+ * @db-read-via:public-market-storefront markets
  * @used-by       server.js
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  bootstrap
@@ -49,8 +50,23 @@ function redirectToGroup(res, token, extra = '') {
   res.redirect(302, '/boutique/?' + params.toString());
 }
 
-function mountHtmlRoutes(app, rootDir) {
+function mountHtmlRoutes(app, rootDir, marketExecutor) {
   const publicDir = path.join(rootDir, 'public');
+  const { listPublicMarkets } = require('../services/public-market-storefront');
+
+  async function serveAuthorizedStorefront(req, res, rawCode) {
+    const code = String(rawCode || '').trim().toUpperCase();
+    if (!/^[A-Z]{2}$/.test(code)) return res.status(404).send('Marché introuvable');
+    try {
+      const activeMarkets = await listPublicMarkets(marketExecutor);
+      if (!activeMarkets.some(m => m.code === code)) return res.status(404).send('Marché indisponible');
+    } catch (error) {
+      log.error({ code, err: error.message }, 'Lecture des marchés actifs impossible');
+      return res.status(503).send('Boutique temporairement indisponible');
+    }
+    sendHtml(res, path.join(publicDir, 'boutique', 'index.html'));
+  }
+
 
   app.get('/s/:token', (req, res) => {
     sendHtml(res, path.join(publicDir, 'suivi.html'));
@@ -330,6 +346,9 @@ function mountHtmlRoutes(app, rootDir) {
   // Paramètres : natif Canonical (settings-workspace.js). Le rollback
   // ?legacy=1 et SettingsView Legacy sont retirés (L9).
   // Providers & certifications (Administration) — lecture seule.
+  // MarketsView.js is still hosted by Legacy 1; never serve the boutique here.
+  app.get('/admin/markets', (_req, res) => sendLegacyAdmin(res));
+
   app.get('/admin/providers', (req, res) => {
     sendCanonicalAdmin(res);
   });
@@ -374,25 +393,31 @@ function mountHtmlRoutes(app, rootDir) {
   app.get('/event/:creatorToken/manage', (req, res) => redirectToBoutique(res));
   app.get('/workspace/:publicToken', (req, res) => redirectToBoutique(res));
 
-  app.get('/Komerce_Boutique.html', (req, res) => {
-    sendHtml(res, path.join(publicDir, 'boutique', 'index.html'));
-  });
-  app.get('/boutique', (req, res) => {
-    sendHtml(res, path.join(publicDir, 'boutique', 'index.html'));
-  });
+  function requestedMarket(req) {
+    return req.query && req.query.market != null
+      ? String(req.query.market).trim().toUpperCase() : 'KM';
+  }
+  // The public page is readable only when its market is actually ACTIVE.
+  app.get('/', (req, res) => serveAuthorizedStorefront(req, res, requestedMarket(req)));
+  app.get('/Komerce_Boutique.html', (req, res) => serveAuthorizedStorefront(req, res, requestedMarket(req)));
+  app.get('/boutique', (req, res) => serveAuthorizedStorefront(req, res, requestedMarket(req)));
 
-  // Entrées publiques pays : une seule boutique, catalogue/prix/relais résolus
-  // par le contexte URL côté client puis par les API marché côté serveur.
-  // L'alias /boutique et la racine restent compatibles (marché KM par défaut).
-  app.get(/^\/(KM|CM|CG|DJ|YT)\/?$/i, (req, res) => {
+  // A two-letter country path is never a generic SPA fallback.
+  app.get(/^\/([A-Za-z]{2})\/?$/, async (req, res) => {
     const code = req.params[0].toUpperCase();
     const canonicalPath = '/' + code;
     if (req.path !== canonicalPath) {
+      try {
+        const active = await listPublicMarkets(marketExecutor);
+        if (!active.some(m => m.code === code)) return res.status(404).send('Marché indisponible');
+      } catch (error) {
+        return res.status(503).send('Boutique temporairement indisponible');
+      }
       const queryAt = req.originalUrl.indexOf('?');
       const query = queryAt < 0 ? '' : req.originalUrl.slice(queryAt);
       return res.redirect(301, canonicalPath + query);
     }
-    sendHtml(res, path.join(publicDir, 'boutique', 'index.html'));
+    return serveAuthorizedStorefront(req, res, code);
   });
   app.get('/login.html', (req, res) => {
     sendHtml(res, path.join(publicDir, 'login.html'));

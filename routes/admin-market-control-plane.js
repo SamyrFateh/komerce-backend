@@ -13,6 +13,8 @@
  * @db-write-via:market-delivery-proof-service market_delivery_attestations, market_delegation_audit
  * @db-write-via:market-transport-sale-rate-command market_transport_sale_rates, market_delegation_audit
  * @db-write-via:market-provisioning-service markets, market_operating_assignments, assignment_capability_ceiling, assignment_memberships, membership_capabilities, market_cash_control_policies, market_payment_providers, relais
+ * @db-write-via:market-lifecycle-service markets
+ * @db-write-via:market-delegation-service market_delegation_audit
  * @db-read-via:market-control-plane markets, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, market_payment_providers, market_cash_control_policies, relais, market_delivery_attestations, orders
  * @db-read-via:market-transport-sale-rate-command market_transport_sale_rates, markets
  * @db-txn        explicit for mutation routes
@@ -30,6 +32,8 @@ const controlPlane = require('../services/market-control-plane');
 const deliveryProof = require('../services/market-delivery-proof-service');
 const transportSale = require('../services/market-transport-sale-rate-command');
 const centralAuthority = require('../services/central-authority');
+const delegation = require('../services/market-delegation-service');
+const { updateMarketStorefront } = require('../services/market-lifecycle-service');
 const { provisionMarket, reprovisionMarket, setMarketLifecycle, setAssignmentLifecycle } = require('../services/market-provisioning-service');
 
 // Vue centrale par rôle (Q4 du chantier) : déclarée ici, jamais implicite.
@@ -95,6 +99,34 @@ router.post('/:marketCode/reprovision', ...centralAdmin, async (req, res, next) 
       correlationId: req.headers['x-correlation-id'] ? String(req.headers['x-correlation-id']).slice(0, 200) : null,
     }));
     res.status(201).json(result);
+  } catch (error) {
+    if (!sendKnownError(res, error)) next(error);
+  }
+});
+
+// Central admin edits only public editorial fields; the canonical market
+// writer owns markets.storefront_texts, delegation audit owns the evidence.
+router.put('/:marketCode/storefront', ...centralAdmin, async (req, res, next) => {
+  try {
+    const result = await withTransaction(async client => {
+      const edit = await updateMarketStorefront(client, {
+        marketCode: req.params.marketCode,
+        storefrontTexts: req.body && req.body.storefront_texts,
+      });
+      if (edit.changed) {
+        await delegation.audit(client, {
+          actorUserId: req.user.id,
+          marketId: edit.before.id,
+          action: 'MARKET_STOREFRONT_UPDATED',
+          before: edit.before.storefront_texts,
+          after: edit.after.storefront_texts,
+          correlationId: req.headers['x-correlation-id']
+            ? String(req.headers['x-correlation-id']).slice(0, 200) : null,
+        });
+      }
+      return { changed: edit.changed, market: { code: edit.after.code, storefront_texts: edit.after.storefront_texts } };
+    });
+    res.json(result);
   } catch (error) {
     if (!sendKnownError(res, error)) next(error);
   }

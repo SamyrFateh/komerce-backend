@@ -603,8 +603,8 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 464 fichier(s) déclaré(s)
-  - dash : 176
+**Implementation** : 465 fichier(s) déclaré(s)
+  - dash : 177
   - middleware : 1
   - migrations : 2
   - routes : 28
@@ -1408,11 +1408,11 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 59 fichier(s) déclaré(s)
-  - migrations : 14
+**Implementation** : 61 fichier(s) déclaré(s)
+  - migrations : 15
   - scripts : 3
   - services : 11
-  - tests : 31
+  - tests : 32
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="market"]_
 
@@ -1499,6 +1499,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - GET /api/admin/markets/central-authority : titulaires actifs des cinq autorisations centrales explicites (dashboard, catalog, decision_signal, pricing, sourcing) et autorité déclarée de chaque capability de groupe
   - GET /api/admin/markets/:marketCode/control-plane : affectation, équipe et capacités, plafond, fournisseurs de paiement, politique de caisse, relais actifs, écarts
   - POST /api/admin/markets/:marketCode/lifecycle : transition lifecycle centrale ; ACTIVE exige readiness plate-forme ET exploitation vertes
+  - PUT /api/admin/markets/:marketCode/storefront : édition des textes boutique par admin central, via market-lifecycle-service et audit
   - POST /api/admin/markets/:marketCode/reprovision : reconstruit la configuration opérationnelle d’un Market ID historique déjà remis en PROVISIONING, sans recréer son identité
   - rapport d’écarts calculé (computeGaps) + deux verdicts readiness indépendants : platform et operations ; MARKET_INACTIVE n’est pas un blocker de readiness pendant PROVISIONING
 - _out_ :
@@ -1520,7 +1521,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Owns** : `market_delivery_attestations`
 
-**Exposes** : 9 internal API(s), 6 HTTP interface(s)
+**Exposes** : 9 internal API(s), 7 HTTP interface(s)
   - `central()`  — documented-signature-no-file
   - `computeGaps()`  — documented-signature-no-file
   - `getControlPlane()`  — documented-signature-no-file

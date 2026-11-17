@@ -629,6 +629,7 @@ module.exports = {
       'dashboards/admin/js/views/ProblemsView.js',
       'dashboards/admin/js/views/SanteView.js',
       'dashboards/admin/js/views/SimulatorView.js',
+      'dashboards/admin/js/views/MarketsView.js',
       'dashboards/admin/js/views/ControlTowerView.js',
       'dashboards/admin/js/views/SalesView.js',
       'dashboards/admin/js/views/PilotageView.js',

@@ -160,4 +160,55 @@ async function loadProvisioningMarket(executor, { marketCode }) {
   return market;
 }
 
-module.exports = { ALLOWED_TRANSITIONS, createProvisioningMarket, loadProvisioningMarket, normalizeCurrency, transitionMarketLifecycle };
+// The market feature is the sole runtime writer of its editorial metadata.
+// This is never a financial, payment or market-authorization write.
+const { PUBLIC_TEXT_KEYS } = require('./public-market-storefront');
+const PUBLIC_KEY_SET = new Set(PUBLIC_TEXT_KEYS);
+
+function validateStorefrontTexts(input) {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) {
+    throw lifecycleError('MARKET_STOREFRONT_TEXTS_INVALID', 'Paramètres boutique invalides.', 400);
+  }
+  const clean = {};
+  for (const [key, value] of Object.entries(input)) {
+    if (!PUBLIC_KEY_SET.has(key)) {
+      throw lifecycleError('MARKET_STOREFRONT_FIELD_UNKNOWN', 'Champ boutique non autorisé.', 400);
+    }
+    if (value === null && key === 'relay_default_zone') {
+      clean[key] = null;
+      continue;
+    }
+    if (typeof value !== 'string' || value.length > 500) {
+      throw lifecycleError('MARKET_STOREFRONT_VALUE_INVALID', 'Texte boutique invalide (500 caractères maximum).', 400);
+    }
+    clean[key] = value.trim();
+  }
+  return clean;
+}
+
+async function updateMarketStorefront(executor, { marketCode, storefrontTexts }) {
+  const db = requireExecutor(executor);
+  const code = normalizeMarketCode(marketCode);
+  if (!code) throw lifecycleError('MARKET_CODE_INVALID', 'Code marché invalide.', 400);
+  const texts = validateStorefrontTexts(storefrontTexts);
+  const { rows } = await db.query(
+    'SELECT id,code,lifecycle_status,storefront_texts FROM markets WHERE code=$1 FOR UPDATE',
+    [code]
+  );
+  if (!rows[0]) throw lifecycleError('MARKET_NOT_FOUND', 'Marché introuvable.', 404);
+  if (rows[0].lifecycle_status === 'CLOSED') {
+    throw lifecycleError('MARKET_CLOSED', 'Marché fermé : édition interdite.', 409);
+  }
+  // Preserve historical/future non-public metadata; only caller-supplied
+  // whitelisted display fields may be modified through this command.
+  const merged = { ...(rows[0].storefront_texts || {}), ...texts };
+  const { rows: edited } = await db.query(
+    `UPDATE markets SET storefront_texts=$2::jsonb WHERE id=$1::uuid
+        AND storefront_texts IS DISTINCT FROM $2::jsonb
+      RETURNING id,code,storefront_texts`,
+    [rows[0].id, JSON.stringify(merged)]
+  );
+  return { changed: edited.length > 0, before: rows[0], after: edited[0] || rows[0] };
+}
+
+module.exports = { ALLOWED_TRANSITIONS, createProvisioningMarket, loadProvisioningMarket, normalizeCurrency, transitionMarketLifecycle, validateStorefrontTexts, updateMarketStorefront };
