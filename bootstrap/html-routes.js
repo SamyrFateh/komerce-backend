@@ -402,7 +402,7 @@ function mountHtmlRoutes(app, rootDir, marketExecutor = require('../db')) {
   app.get('/boutique', (req, res) => serveAuthorizedStorefront(req, res, requestedMarket(req)));
 
   // A two-letter country path is never a generic SPA fallback.
-  app.get(/^\\/([A-Za-z]{2})\\/?$/, async (req, res) => {
+  app.get(/^\/([A-Za-z]{2})\/?$/, async (req, res) => {
     const code = req.params[0].toUpperCase();
     const canonicalPath = '/' + code;
     if (req.path !== canonicalPath) {
