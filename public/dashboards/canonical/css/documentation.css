@@ -52,3 +52,14 @@
 @media(max-width:980px){.doc-layout{grid-template-columns:minmax(0,1fr)}.doc-side{position:static;max-height:none}.doc-side nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.kmc-documentation{padding-top:20px}}
 @media(max-width:620px){.doc-heading-row{display:block}.doc-print{margin-top:20px}.doc-side nav{display:block}.doc-tiles{grid-template-columns:1fr}.doc-glossary{grid-template-columns:1fr;gap:4px}.doc-glossary dd{margin-bottom:9px}.doc-chapter{padding:25px 19px}.kmc-documentation{padding-left:14px;padding-right:14px}}
 @media print{body.kmc-shell-v4{padding:0!important;background:#fff!important}.kmc-admin-navigation,#canonical-admin-topbar,#canonical-admin-domain-tabs,.doc-side,.doc-print,.doc-alert{display:none!important}.kmc-documentation{max-width:none;padding:0}.doc-heading{background:#fff!important;color:#111!important;box-shadow:none;border-bottom:2px solid #ddd;border-radius:0;padding:0 0 20px}.doc-heading *{color:#111!important}.doc-layout{display:block}.doc-chapter{display:block!important;border:0;box-shadow:none;border-radius:0;padding:18px 0;margin:0;break-inside:avoid-page}.doc-figure img{max-height:420px}.doc-empty{display:none!important}.doc-figure{break-inside:avoid}.doc-chapter h2{break-after:avoid}}
+
+/* Fiches processus : chaîne de responsabilités, actions, contrôles et exceptions. */
+.doc-process-index{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:18px 0 32px}
+.doc-process-index a{display:block;padding:11px 13px;background:#f3f6fa;border:1px solid #e1e8f0;border-radius:9px;font-size:.84rem;font-weight:750}
+.doc-process-index a:hover,.doc-process-index a:focus-visible{background:#e9ecff;text-decoration:none}
+.doc-process{scroll-margin-top:80px;border-top:1px solid #e3eaf3;padding-top:24px;margin-top:25px}
+.doc-process-id{letter-spacing:.14em;text-transform:uppercase;color:#c85e4b;font-size:.72rem;font-weight:850}
+.doc-process h3{font-size:1.2rem;margin:8px 0 10px}
+.doc-process > p:last-child{margin-bottom:2px}
+@media(max-width:620px){.doc-process-index{grid-template-columns:1fr}}
+@media print{.doc-process{break-before:auto;break-inside:auto}.doc-process h3{break-after:avoid}}

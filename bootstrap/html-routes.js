@@ -6,7 +6,7 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result
- * @depends       utils/logger.js, services/public-market-storefront.js
+ * @depends       utils/logger.js, services/public-market-storefront.js, middleware/auth.js
  * @db-write      none
  * @db-read      none
  * @db-read-via:public-market-storefront markets

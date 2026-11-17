@@ -46,7 +46,7 @@
         </select>
         <label for="doc-search">Rechercher dans le guide</label>
         <input id="doc-search" type="search" placeholder="Ex. code de retrait, prix, SAV…" autocomplete="off">
-        <p id="doc-count" class="doc-count" aria-live="polite">16 chapitres</p>
+        <p id="doc-count" class="doc-count" aria-live="polite">17 chapitres</p>
         <nav aria-label="Chapitres">
           <a href="#introduction">01 · Vue d’ensemble</a>
           <a href="#acces">02 · Accès et sécurité</a>
@@ -63,7 +63,8 @@
           <a href="#finance">13 · Finance et caisse</a>
           <a href="#sav">14 · SAV et retours</a>
           <a href="#administration">15 · Administration</a>
-          <a href="#references">16 · Règles et assistance</a>
+          <a href="#processus">16 · Processus de bout en bout</a>
+          <a href="#references">17 · Règles et assistance</a>
         </nav>
       </aside>
       <div class="doc-content">
@@ -192,8 +193,137 @@
           <p>La <strong>Documentation</strong> est un outil de consultation. Elle n’ajoute pas d’autorité métier ni de nouveaux droits à son lecteur.</p>
         </section>
 
+
+        <section class="doc-chapter" id="processus" data-roles="all">
+          <div class="doc-chapter-no">CHAPITRE 16 · PROCÉDURES OPÉRATIONNELLES</div>
+          <h2>Processus métier de bout en bout</h2>
+          <p>Ces fiches décrivent le <strong>travail réel des équipes</strong> : le déclencheur, le responsable de chaque étape, l'écran à ouvrir, le contrôle attendu, la preuve à conserver et les exceptions. Elles ne constituent pas à elles seules une certification d'exécution sur staging. Si un geste ou un écran manque, l'opération reste bloquée : ne jamais simuler sa réussite.</p>
+          <div class="doc-process-index" aria-label="Processus détaillés">
+            <a href="#process-produit">P01 · Mettre un produit en vente</a>
+            <a href="#process-import">P02 · Commande importée</a>
+            <a href="#process-local">P03 · Commande locale</a>
+            <a href="#process-cash">P04 · Encaisser en espèces</a>
+            <a href="#process-procurement">P05 · Achat et réception Hub</a>
+            <a href="#process-retour">P06 · Retour / remboursement SAV</a>
+            <a href="#process-incident">P07 · Incident ou rupture</a>
+            <a href="#process-marche">P08 · Ouvrir un nouveau marché (cible)</a>
+          </div>
+
+          <article class="doc-process" id="process-produit">
+            <div class="doc-process-id">P01 · CATALOGUE</div><h3>De la source fournisseur à un produit vendable</h3>
+            <p><b>Déclencheur :</b> une référence CJ, AliExpress ou un produit manuel est proposé. <b>Acteurs :</b> Sourcing → Catalogue central → décision économique → Responsable marché.</p>
+            <p><b>Préconditions :</b> fournisseur identifiable (ou Fournisseur central Hub pour la saisie manuelle), catégorie et données produit contrôlables, images et variantes exploitables.</p>
+            <ol>
+              <li><b>Sourcing</b> — Dans <a href="/admin/import-runtime">Sourcing Live</a>, ouvrir le lot ou créer le candidat manuel. Vérifier l'origine, le titre, la source du prix, les images et les déclinaisons.</li>
+              <li><b>Qualification</b> — Corriger les champs manquants ; les candidats ambigus sont mis en attente. Ne jamais qualifier automatiquement une sous-catégorie sans décision prévue.</li>
+              <li><b>Catalogue central</b> — Dans <a href="/admin/workspaces/catalog">Catalogue global</a>, vérifier la fiche finale et son rattachement fournisseur. Contrôler doublons, état des médias, description et variantes.</li>
+              <li><b>Prix</b> — Dans <a href="/admin/workspaces/pricing">Atelier économique</a>, contrôler les coûts, les estimations, la contribution et les règles du marché. Aucun prix arbitraire.</li>
+              <li><b>Publication</b> — Valider les gates de qualité, puis rendre la référence publiable. <b>Responsable marché</b> : vérifier le prix local et l'exposition dans <a href="/dashboards/canonical/market-catalog.html">Catalogue pays</a>.</li>
+              <li><b>Contrôle final</b> — Ouvrir la <a href="/KM">boutique KM</a> ou le pays cible ; vérifier photo, variantes, prix en devise locale et possibilité d'ajout au panier.</li>
+            </ol>
+            <p><b>Résultat attendu :</b> référence vendable sur les marchés explicitement autorisés, jamais visibilité automatique sur tous les pays. <b>Preuves :</b> fiche source, décision catalogue, prix, médias persistants et affichage boutique.</p>
+            <p><b>Exceptions :</b> image indisponible après redémarrage, stock inexistant, catégorie ambiguë, absence de prix/autorisation → garder en attente, corriger et recontrôler sans publier.</p>
+          </article>
+
+          <article class="doc-process" id="process-import">
+            <div class="doc-process-id">P02 · COMMANDE IMPORTÉE</div><h3>De l'achat client à la remise en Relais</h3>
+            <p><b>Déclencheur :</b> achat d'un produit approvisionné via le Hub. <b>Chaîne :</b> Client → commande → paiement/confirmation → achats → Hub → transitaire → Relais → client.</p>
+            <p><b>Préconditions :</b> produit vendable, marché actif, mode de paiement affiché et permis, affectation des acteurs et règles de transport disponibles.</p>
+            <ol>
+              <li><b>Client</b> — Depuis <a href="/KM">la boutique du marché</a>, sélectionner produit et variantes, contrôler panier, lieu / relais et prix total ; confirmer la commande depuis l'écran (le devis seul n'en crée pas).</li>
+              <li><b>Commerce / caisse</b> — Retrouver la référence dans <a href="/admin/orders">Commandes</a> et sa fiche Order 360. Vérifier explicitement la situation financière avant toute préparation.</li>
+              <li><b>Achats</b> — Préparer le bon de commande fournisseur, soumettre et faire autoriser l'engagement puis le paiement, avec justificatifs distincts et identité fournisseur.</li>
+              <li><b>Hub</b> — Réceptionner réellement les unités commandées ; rapprocher quantités, fournisseur, marché et commande. Constituer les sacs / KOM-BOX selon le parcours autorisé.</li>
+              <li><b>Transitaire</b> — Prendre en charge les unités accompagnées des documents, tracer expédition, jalons et douane depuis <a href="/admin/workspaces/shipping-customs">Expéditions & Douane</a>.</li>
+              <li><b>Relais</b> — Dans <a href="/admin/relais-live">Relais Live</a>, accuser réception, contrôler identité du colis et disponibilité, puis remettre au client après contrôle du paiement et du code/scan.</li>
+              <li><b>Clôture</b> — Rechercher la commande dans Order 360 ; vérifier l'état <code>collected</code>, la preuve de remise, l’historique, les documents et l’absence de double retrait.</li>
+            </ol>
+            <p><b>Résultat :</b> commande remise avec continuité d'identité et preuves de chaque transfert. <b>Exceptions :</b> paiement en attente, fournisseur en rupture, colis non rapproché, douane bloquée, réseau Relais hors service, code indisponible → traiter l'incident à son poste, sans changement d’état forcé.</p>
+          </article>
+
+          <article class="doc-process" id="process-local">
+            <div class="doc-process-id">P03 · STOCK LOCAL</div><h3>Commande locale sans passage par le Hub international</h3>
+            <p><b>Déclencheur :</b> commande servie depuis un stock local déclaré et affecté à un marché / Relais. <b>Acteurs :</b> Responsable marché → Relais → client, avec contrôles de paiement.</p>
+            <ol>
+              <li><b>Marché</b> — Déclarer et vérifier la réception du stock local dans <a href="/dashboards/canonical/market-autonomy.html">Autonomie marché</a>, avec quantité et justificatif.</li>
+              <li><b>Client</b> — Commander l'article réellement disponible en local depuis la boutique du marché.</li>
+              <li><b>Relais</b> — Préparer la commande locale, confirmer le paiement selon le circuit, rendre disponible et enregistrer la remise au client.</li>
+              <li><b>Contrôle</b> — Vérifier décompte des quantités, statut de retrait et preuve, puis suivre la transaction en Order 360.</li>
+            </ol>
+            <p><b>Résultat :</b> livraison locale traçable. <b>Règle :</b> ne pas fabriquer de bon de transport international, d’achat Hub ou de passage transitaire pour une commande locale.</p>
+            <p><b>Exceptions :</b> stock insuffisant, relais non affecté, caisse non confirmée → blocage et escalade depuis le rôle compétent.</p>
+          </article>
+
+          <article class="doc-process" id="process-cash">
+            <div class="doc-process-id">P04 · ENCAISSEMENT</div><h3>Paiement cash Relais et dépôt de caisse</h3>
+            <p><b>Déclencheur :</b> le client choisit le paiement en espèces au Relais. <b>Acteurs :</b> agent Relais → responsable marché / Finance.</p>
+            <ol>
+              <li><b>Relais</b> — Identifier la commande, le marché, la devise, le montant attendu et la situation de paiement.</li>
+              <li>Recevoir les espèces <b>physiquement</b>, puis enregistrer la confirmation cash depuis l'écran prévu, jamais avant encaissement.</li>
+              <li>Vérifier le changement du statut financier, la trace d'audit et l'unicité de l’opération. Une deuxième confirmation ne doit pas créer un deuxième encaissement.</li>
+              <li><b>Caisse</b> — Déclarer le dépôt / transfert d’espèces avec références et justificatifs depuis l'espace autorisé.</li>
+              <li><b>Marché / Finance</b> — Accuser réception et rapprocher le dépôt si l’action correspondante est effectivement disponible et certifiée.</li>
+            </ol>
+            <p><b>Preuves :</b> montant, devise, référence commande, opérateur, horodatage, écriture financière et preuve du dépôt.</p>
+            <p><b>Exceptions :</b> écart montant, double encaissement, absence de connexion, dépôt non rapproché → incident ; ne pas inventer de réception finale de dépôt. Le succès d'un <code>POST</code> technique n'est pas une confirmation de la remise physique.</p>
+          </article>
+
+          <article class="doc-process" id="process-procurement">
+            <div class="doc-process-id">P05 · FOURNISSEURS / HUB</div><h3>Achat fournisseur, validation et réception physique</h3>
+            <p><b>Déclencheur :</b> des lignes d'achat sont requises pour une ou plusieurs commandes. <b>Acteurs :</b> préparation Achats / Hub → validation d’engagement → fournisseur → validation de paiement → réception Hub.</p>
+            <ol>
+              <li>Rassembler les lignes dues, leur marché, les quantités et les fournisseurs ; éviter toute duplication d'achat déjà engagé.</li>
+              <li>Préparer et soumettre le bon de commande depuis <a href="/admin/workspaces/purchasing">Achats fournisseurs</a> ou le dossier Hub compétent.</li>
+              <li>Obtenir la <b>première décision</b> : validation de l’engagement d'achat, justifiée et tracée par l’autorité désignée.</li>
+              <li>Enregistrer l'envoi / la confirmation fournisseur et ses références, puis procéder à la <b>seconde décision</b> : autorisation du paiement fournisseur.</li>
+              <li>Ne qualifier le paiement de <b>réglé</b> qu’après preuve de règlement ; l’autorisation seule ne suffit pas.</li>
+              <li>Réceptionner et rapprocher les unités physiquement au Hub. Toute quantité en excès, produit non identifié ou colis déjà transféré doit être refusé ou traité en écart.</li>
+            </ol>
+            <p><b>Résultat :</b> bon de commande cohérent, paiements prouvés si effectués, réception physique sans excédent et historisation des décisions. <b>Exceptions :</b> écart fournisseur, article indisponible, redémarrage pendant réception et pièces absentes → dossier d’anomalie, sans clôture automatique non prouvée.</p>
+          </article>
+
+          <article class="doc-process" id="process-retour">
+            <div class="doc-process-id">P06 · SAV / FINANCE</div><h3>Retour, avoir, réexpédition ou remboursement</h3>
+            <p><b>Déclencheur :</b> réclamation après une commande payée, reçue ou non récupérée. <b>Acteurs :</b> Relais / support → décision SAV → Finance / wallet / caisse → suivi commande.</p>
+            <ol>
+              <li>Identifier la commande d'origine, le marché, son paiement et son état physique (avant ou après remise).</li>
+              <li>Ouvrir le dossier SAV/incident dans le poste disponible ; collecter motif et preuves. Vérifier que l’objet n’a pas déjà été remboursé ou réexpédié.</li>
+              <li>Choisir la mesure autorisée selon les règles : remise en état, remplacement / réexpédition, avoir ou remboursement.</li>
+              <li>Faire approuver les montants et le mode de restitution par le profil habilité. Enregistrer l’écriture compensatrice dans le ledger lorsque le parcours le prévoit.</li>
+              <li>Si espèces ou paiement externe : distinguer l’ordre de remboursement de la <b>remise effective</b> au bénéficiaire.</li>
+              <li>Clôturer uniquement après concordance du dossier, des preuves physiques, du flux financier et de l’historique.</li>
+            </ol>
+            <p><b>Résultat :</b> décision SAV tracée et effet compensateur effectivement prouvé. <b>Exceptions :</b> preuve de retrait absente, remboursement après remise non supporté par l’écran, réseau hors service ou opérateur non habilité → ne pas clôturer ; escalader.</p>
+          </article>
+
+          <article class="doc-process" id="process-incident">
+            <div class="doc-process-id">P07 · EXCEPTIONS</div><h3>Traiter un blocage sans rompre la chaîne de preuves</h3>
+            <p><b>Déclencheur :</b> défaut de stock, image absente, écart prix, colis orphelin, paiement ambigu, code de retrait inaccessible, douane bloquée ou refus d’autorisation.</p>
+            <ol>
+              <li>Identifier l’objet et son état dans l’écran source (Produit 360, Order 360, Sourcing, Hub, Relais, Finance ou Action Center).</li>
+              <li>Noter le motif observable et la pièce manquante ; ne pas déduire une opération déjà faite d'une simple intention.</li>
+              <li>Transférer la décision au rôle compétent (Catalogue pour image/qualité, Achats pour fournisseur, Hub/Transitaire pour physique, Finance pour encaissement, SAV pour retour).</li>
+              <li>Faire la correction depuis le bon écran, puis revoir l'objet au même endroit et confirmer que la preuve finale a été persistée.</li>
+            </ol>
+            <p><b>Règle impérative :</b> absence d’écran ou bouton = <strong>BLOCKED / NOT_PROVEN</strong> pour la recette, jamais « PASS » obtenu en appelant une API, en injectant un état SQL ou en réutilisant une preuve d’un autre marché.</p>
+          </article>
+
+          <article class="doc-process" id="process-marche">
+            <div class="doc-process-id">P08 · CIBLE FUTURE, NON CERTIFIÉE</div><h3>Ouvrir un marché complet « all in the box »</h3>
+            <p><b>Objectif produit futur :</b> activer depuis l'administration un nouveau pays et son URL <code>/XX</code> sans développement spécifique par pays. Cette procédure décrit les contrôles requis, <strong>pas une fonction déclarée disponible</strong>.</p>
+            <ol>
+              <li>Créer la fiche marché et son code pays ; choisir le responsable et les rôles (marché, Relais, transitaire).</li>
+              <li>Configurer devise, taux et règle de conversion, prix, fiscalité et règles logistiques selon l'autorité en vigueur.</li>
+              <li>Configurer les méthodes de paiement réellement éligibles et autorisées : cash relais, Stripe/PayPal selon prérequis, puis d'autres moyens ultérieurs.</li>
+              <li>Rattacher les Relais / le transport et contrôler stocks, catalogue visible, médias, documents et notifications.</li>
+              <li>Exécuter sur le <strong>staging commun</strong> un vrai scénario de bout en bout en Chromium, rôle par rôle, avec preuves PostgreSQL/API en lecture, puis demander le GO propriétaire.</li>
+            </ol>
+            <p><b>Résultat cible :</b> marché activé, commande et retrait possibles avec prix et devise corrects. <b>État de cette procédure :</b> doctrine de cible ; aucune activation réelle ni certification n'est revendiquée par ce guide.</p>
+          </article>
+        </section>
+
         <section class="doc-chapter" id="references" data-roles="all">
-          <div class="doc-chapter-no">CHAPITRE 16</div><h2>Bonnes pratiques, dépannage et lexique</h2>
+          <div class="doc-chapter-no">CHAPITRE 17</div><h2>Bonnes pratiques, dépannage et lexique</h2>
           <h3>Quand une action n’apparaît pas</h3><p>Vérifiez votre rôle, le marché sélectionné, l’état réel du dossier et les éventuelles validations préalables. Une action absente ou en échec n’est jamais une autorisation à utiliser un appel API ou une modification SQL pour contourner l’écran.</p>
           <h3>Avant de déclarer une opération terminée</h3>
           <ul><li>Le geste est visible dans le bon écran et fait par le bon profil.</li><li>Le dossier affiche l’état attendu après rafraîchissement.</li><li>Le document, la preuve, le paiement et l’historique correspondent à l’action.</li><li>Les refus et cas exceptionnels ont été traités sans double opération.</li></ul>

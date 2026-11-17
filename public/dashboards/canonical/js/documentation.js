@@ -1,3 +1,19 @@
+/**
+ * @komerce-arch
+ * @role          canonical-admin-product-documentation-interactions
+ * @domain        admin-dashboard
+ * @layer         ui-presentation
+ * @criticality   low
+ * @inputs        documentation_search, role_filter, print_action
+ * @outputs       navigation_and_search_projection
+ * @depends       none
+ * @db-write      none
+ * @db-read       none
+ * @used-by       /admin/documentation
+ * @doctrine      documentation_read_only, role_filter_never_grants_authority
+ * @impact-areas  admin-dashboard
+ * @version       2026-11
+ */
 /* Guide produit — recherche client uniquement, aucune API métier ni donnée privée. */
 (function (global) {
   'use strict';
