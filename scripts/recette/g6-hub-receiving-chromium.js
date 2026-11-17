@@ -38,7 +38,7 @@ async function runtimeSha(initial){
  const p=JSON.parse(fs.readFileSync(path.join(ROOT,'test-results/staging-chromium/deployment-preflight.json'),'utf8'));
  check((p.status==='DEPLOY_SHA_MATCHED'&&sha===env.E2E_EXPECTED_DEPLOY_SHA)||
    (p.status==='DEPLOY_RUNTIME_EQUIVALENT'&&p.observed_sha===sha&&
-    p.expected_sha===env.E2E_EXPECTED_DEPLOY_SHA&&Array.isArray(p.tooling_diff)&&
+    p.observed_sha===env.E2E_EXPECTED_DEPLOY_SHA&&SHA.test(p.expected_sha)&&Array.isArray(p.tooling_diff)&&
     p.tooling_diff.length>0), 'G6_RECEIPT_RUNTIME_DRIFT');
  if(initial)check(sha===initial,'G6_RECEIPT_SHA_CHANGED_DURING_RUN');
  return sha;
