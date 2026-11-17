@@ -45,7 +45,7 @@ async function snapshot(){
   'SELECT u.id,u.reference,u.unit_type::text unit_type,u.state::text state,p.quantity,p.operation_type::text operation_type,'
   +'p.evidence_method::text evidence_method,p.evidence_ref,p.removed_at IS NULL AS active '
   +'FROM hub_physical_unit_placements p JOIN hub_physical_units u ON u.id=p.physical_unit_id '
-  +'WHERE p.allocation_id=$1 ORDER BY p.created_at',[order.allocation_id])).rows;
+  +'WHERE p.allocation_id=$1 ORDER BY p.placed_at,p.id',[order.allocation_id])).rows;
  const bags=(await db.query(
   "SELECT id,reference,state::text state,bag_plan FROM hub_physical_units WHERE order_id=$1 AND unit_type='HANDLING_UNIT' ORDER BY created_at",[ORDER])).rows;
  const links=(await db.query('SELECT l.bag_unit_id,l.box_unit_id,l.parcel_id FROM hub_box_bags l JOIN hub_physical_units u ON u.id=l.bag_unit_id WHERE u.order_id=$1',[ORDER])).rows;
