@@ -345,6 +345,27 @@
     root.appendChild(section);
   }
 
+  // Granular network delegates are not granted the legacy dashboard viewer
+  // baseline. A denied dashboard/pricing shell must not hide a network surface
+  // that the server explicitly authorizes. The market query is only a locator:
+  // the market network GET is the authority check (fail closed).
+  async function renderAuthorizedNetworkOnly(error) {
+    if (error.status !== 403) return false;
+    const marketCode = String(new URLSearchParams(global.location.search).get('market') || '').trim().toUpperCase();
+    if (!/^[A-Z]{2}$/.test(marketCode)) return false;
+    try {
+      await request(`/api/market-delegation/markets/${encodeURIComponent(marketCode)}/network/relais`);
+    } catch (_) {
+      return false;
+    }
+    root.dataset.networkOnlyMarket = marketCode;
+    root.className = 'kmc-workspace';
+    root.replaceChildren();
+    root.appendChild(el('h1', 'kmc-workspace-title', 'Réseau local'));
+    root.appendChild(el('p', 'kmc-workspace-note', `Relais du marché ${marketCode} · accès réseau uniquement`));
+    return true;
+  }
+
   async function load() {
     try {
       const context = await request('/api/admin/dashboard/context');
@@ -362,6 +383,7 @@
       renderCapabilities(workspace);
       renderPrices(marketCode, workspace, prices);
     } catch (error) {
+      if (await renderAuthorizedNetworkOnly(error)) return;
       root.className = 'canonical-boot';
       root.replaceChildren();
       root.appendChild(el('p', 'canonical-eyebrow', 'KOMERCE · AUTONOMIE PAYS'));
