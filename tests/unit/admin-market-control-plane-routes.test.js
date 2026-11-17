@@ -20,9 +20,15 @@ describe('admin market control plane — lecture centrale + provisioning', () =>
     expect(source).toMatch(/router\.post\('\/', \.\.\.centralAdmin/);
     expect(source).toMatch(/provisionMarket/);
     const nonPostMutations = source.match(/router\.(?:put|patch|delete)\('[^']+'/g) || [];
-    expect(nonPostMutations).toEqual(["router.put('/:marketCode/transport-sale-rates/:rateKey'"]);
+    expect(nonPostMutations).toEqual([
+      "router.put('/:marketCode/storefront'",
+      "router.put('/:marketCode/transport-sale-rates/:rateKey'"
+    ]);
     expect(source).toMatch(/router\.put\('\/:marketCode\/transport-sale-rates\/:rateKey', \.\.\.centralAdmin/);
     expect(source).toContain('withTransaction(client => transportSale.setSaleRate(client, {');
+    expect(source).toMatch(/router\\.put\\('\\/:marketCode\\/storefront', \\.\\.\\.centralAdmin/);
+    expect(source).toContain('await delegation.audit(client, {');
+    expect(source).toContain('await updateMarketStorefront(client, {');
   });
 
   test('la liste répond { markets } et la vue répond le résultat du service tel quel', () => {
