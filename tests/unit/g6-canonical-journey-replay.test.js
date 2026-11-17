@@ -5,7 +5,7 @@ const {
   business,canonicalScenario,resolveCanonicalReplay,resolveRelayCashRefs
 }=require('../../scripts/recette/g6-canonical-journey-binding');
 const {
-  validateGuard,validateBuyerProof,validateCashProof,validateHubProof,validateCommitmentCheckpoint,validateVendorReadinessCheckpoint,validateHubReceivingCheckpoint,isToolingOnlyResumeDiff,verifyResumeTooling
+  validateGuard,validateBuyerProof,validateCashProof,validateHubProof,validateCommitmentCheckpoint,validateVendorReadinessCheckpoint,validateHubReceivingCheckpoint,validateCustomerBagCheckpoint,isToolingOnlyResumeDiff,verifyResumeTooling
 }=require('../../scripts/recette/g6-canonical-replay');
 
 const sha='a'.repeat(40);
@@ -204,6 +204,25 @@ describe('G6 canonical journey — same order, original matrix, real staging gua
     expect(()=>validateHubReceivingCheckpoint(prior,{...simulated,db_fingerprint:'other'},scope)).toThrow();
     expect(()=>validateHubReceivingCheckpoint(prior,{...simulated,provenance:'REAL'},scope)).toThrow();
     expect(()=>validateHubReceivingCheckpoint(prior,{...simulated,after:{...simulated.after,payment_authorizations:1}},scope)).toThrow();
+  });
+  test('le sac client reprend uniquement le colis physique de la réception M01 certifiée',()=>{
+    const po='8353f1a3-f2a5-4c5e-b01c-95b4cb2004e3';
+    const orderId='56adad65-d1fa-4e80-8d69-c25e0fe92a76';
+    const source='SUPPLIER_PACKAGE-17824209-30d1-41be-87ad-1ef55c8a2994';
+    const previous={scenario_id:'M01',market:'KM',verdict:'NOT_PROVEN',
+      full_chain_certified:false,production_permitted:false,next_stage:'KOM_BOX',
+      order:{id:orderId,reference:'KL1WGP6'},po_id:po,db_fingerprint:'same',
+      stages:[{id:'HUB_RECEIVING',verdict:'PASS_SIMULATED_STAGING'}]};
+    const receipt={verdict:'G6_HUB_RECEIPT_SIMULATED_CHROMIUM_HISTORICAL_UI_PG_READBACK_PASS',
+      reference:'KL1WGP6',order_id:orderId,po_id:po,physical_ref:source,
+      db_fingerprint:'same',read_only:true,external_supplier_calls:0,external_payment_executed:false,
+      readback:{po:{status:'hub_received'},remaining:0,placements:[{reference:source,quantity:1,evidence_method:'MANUAL'}]}};
+    expect(validateCustomerBagCheckpoint(previous,receipt,scope)).toMatchObject({poId:po,sourceRef:source});
+    expect(()=>validateCustomerBagCheckpoint({...previous,stages:[]},receipt,scope)).toThrow();
+    expect(()=>validateCustomerBagCheckpoint(previous,{...receipt,physical_ref:'OTHER'},scope)).toThrow();
+    expect(()=>validateCustomerBagCheckpoint(previous,{...receipt,db_fingerprint:'OTHER'},scope)).toThrow();
+    expect(()=>validateCustomerBagCheckpoint(previous,{...receipt,readback:{...receipt.readback,remaining:1}},scope)).toThrow();
+    expect(()=>validateCustomerBagCheckpoint(previous,{...receipt,external_payment_executed:true},scope)).toThrow();
   });
   test('refuse cash sur un autre ordre, une autre DB, ou un état financier incomplet',()=>{
     expect(validateCashProof(cash,buyer,scope,env)).toMatchObject({reference:'K123456',paid:true});
