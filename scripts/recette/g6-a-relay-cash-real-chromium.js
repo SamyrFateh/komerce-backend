@@ -88,7 +88,7 @@ async function prepare(){
       const assignment=await delegation.resolveActiveAssignmentByMarketCode(client,code);
       await delegation.addMembership(client,{
         assignmentId:assignment.assignment_id,userId:op.id,actorUserId:a[0].id,
-        capabilities:['network.read','network.update'],actorIsCentral:true
+        capabilities:['network.read','network.update','pricing.read'],actorIsCentral:true
       });
       await projectAssignment(client,assignment.assignment_id);
     }
@@ -146,7 +146,23 @@ async function attachByUI(code,o,actor,operator){
   try {
     const p=s.page;
     await p.goto(BASE+'/dashboards/canonical/market-autonomy.html?market='+code,{waitUntil:'domcontentloaded'});
-    await p.locator('[data-market-network]').waitFor({state:'visible',timeout:25000});
+    // The canonical autonomy shell loads pricing workspace before mounting network.
+    // An operator needs pricing.read even when this test only mutates the network.
+    const root=p.locator('#market-autonomy-root');
+    await root.waitFor({state:'attached',timeout:15000});
+    try {
+      await p.locator('[data-market-network]').waitFor({state:'visible',timeout:25000});
+    } catch (e) {
+      const observed=await root.evaluate(el=>({
+        class_name:el.className,
+        error_title:el.querySelector('h1')?.textContent?.slice(0,70)||null,
+        first_text:el.textContent?.trim().slice(0,140)||null
+      })).catch(()=>({class_name:'unavailable'}));
+      step('NETWORK_SHELL_BLOCKED',{market:code,url_path:new URL(p.url()).pathname,
+        shell_class:observed.class_name,shell_title:observed.error_title,
+        shell_error:observed.first_text});
+      throw e;
+    }
     const target=p.locator('.kmc-team-member').filter({has:p.locator('strong', {hasText:o.relay_name})});
     check(await target.count()===1,'G6_A_UI_RELAY_CARD_NOT_UNIQUE_'+code);
     const select=target.locator('select[data-agent-select]');
