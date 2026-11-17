@@ -6,6 +6,7 @@
  * @owner backend-core
  * @purpose Parcourir les vrais écrans via Chromium, capter les anomalies et le contexte marchés sans écritures métier.
  * @impact-areas dashboard, market, staging-only
+ * @test-kind e2e @test-runner playwright @test-requires staging
  */
 'use strict';
 const fs=require('fs'),path=require('path');
