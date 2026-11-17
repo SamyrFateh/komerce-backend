@@ -3635,7 +3635,7 @@
               {
                 "declared": "services/product-media-storage.js",
                 "resolvedPath": "services/product-media-storage.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/product-price-audit.js",
@@ -20804,7 +20804,7 @@
               {
                 "declared": "services/public-market-storefront.js",
                 "resolvedPath": "services/public-market-storefront.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "utils/currency.js",

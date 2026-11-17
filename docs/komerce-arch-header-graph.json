@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 816,
-    "filesWithFullHeaders": 760,
+    "scannedCodeFiles": 818,
+    "filesWithFullHeaders": 762,
     "filesWithLiteHeaders": 56,
-    "filesWithAnyHeaders": 816,
+    "filesWithAnyHeaders": 818,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 2085,
-    "edges": 10362,
-    "dbTables": 243,
-    "doctrines": 818,
+    "graphNodes": 2090,
+    "edges": 10388,
+    "dbTables": 244,
+    "doctrines": 820,
     "impactAreas": 208,
-    "unresolvedCodeEdges": 980,
+    "unresolvedCodeEdges": 986,
     "dbWriteViaOverlapWarnings": 12,
     "multiWriterTables": 99
   },
@@ -36,10 +36,10 @@
     "auth": 14,
     "market-delegation": 38,
     "platform-ops": 2,
-    "catalog": 138,
+    "catalog": 139,
     "admin-dashboard": 39,
     "decision-signals": 14,
-    "market": 9,
+    "market": 10,
     "economic-engine": 69,
     "sourcing": 37,
     "logistics": 71,
@@ -112,7 +112,7 @@
     "schema": 1,
     "route": 138,
     "entrypoint": 1,
-    "service": 496,
+    "service": 498,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -123,7 +123,7 @@
   "byCriticality": {
     "critical": 128,
     "medium": 155,
-    "high": 467,
+    "high": 469,
     "low": 65,
     "unknown": 1
   },
@@ -408,7 +408,8 @@
         "response_or_domain_result"
       ],
       "depends": [
-        "utils/logger.js"
+        "utils/logger.js",
+        "services/public-market-storefront.js"
       ],
       "usedBy": [
         "server.js"
@@ -1619,7 +1620,11 @@
         "response_or_domain_result",
         "side_effects"
       ],
-      "depends": [],
+      "depends": [
+        "multer",
+        "fs",
+        "path"
+      ],
       "usedBy": [
         "middleware/upload-hub.js",
         "routes/products.js"
@@ -1634,7 +1639,7 @@
       "impactAreas": [
         "auth"
       ],
-      "version": "2026-06"
+      "version": "2026-11"
     },
     {
       "id": "middleware/validate.js",
@@ -5137,7 +5142,7 @@
       "layer": "ui-boundary",
       "criticality": "low",
       "owner": "public/boutique/js/market-context.js",
-      "purpose": "Unique module frontière frontend : porte les données pays",
+      "purpose": "Unique module frontière frontend : projette les données pays",
       "inputs": [],
       "outputs": [],
       "depends": [],
@@ -6603,6 +6608,18 @@
             "market_cash_control_policies",
             "market_payment_providers",
             "relais"
+          ]
+        },
+        {
+          "via": "market-lifecycle-service",
+          "tables": [
+            "markets"
+          ]
+        },
+        {
+          "via": "market-delegation-service",
+          "tables": [
+            "market_delegation_audit"
           ]
         }
       ],
@@ -12047,6 +12064,8 @@
         "db.js",
         "validators.js",
         "middleware/auth.js",
+        "middleware/upload.js",
+        "services/product-media-storage.js",
         "services/catalog-public-view.js",
         "services/market-local-price-resolution-service.js",
         "services/catalog-product-source-read-service.js"
@@ -17228,6 +17247,7 @@
         "customs_effective_rates",
         "customs_shipment_parcels",
         "customs_shipments",
+        "customs_shipment_holds",
         "international_shipments",
         "order_item_real_cost_allocations",
         "order_items",
@@ -21304,6 +21324,7 @@
         "international_shipment_events",
         "orders",
         "customs_shipments",
+        "customs_shipment_holds",
         "customs_shipment_parcels",
         "customs_shipment_fees",
         "international_n1_reconciliations"
@@ -25191,7 +25212,8 @@
       "depends": [
         "db",
         "logistics-control-chain-projection",
-        "dashboard-finance-canonical"
+        "dashboard-finance-canonical",
+        "relay-collect-amount"
       ],
       "usedBy": [
         "routes/admin-order-360.js"
@@ -29352,6 +29374,45 @@
       "dbWriteViaOverlapWarning": "services/product-admin-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> products"
     },
     {
+      "id": "services/product-media-storage.js",
+      "file": "services/product-media-storage.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "product-media-storage",
+      "domain": "catalog",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "validated_product_image_buffer",
+        "product_id"
+      ],
+      "outputs": [
+        "durable_https_image_url",
+        "provider_file_id"
+      ],
+      "depends": [
+        "ImageKit upload API",
+        "IMAGEKIT_PRIVATE_KEY"
+      ],
+      "usedBy": [
+        "routes/products.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "no"
+      ],
+      "doctrine": [
+        "resolve_before_behavior_change",
+        "produit_reference_stable"
+      ],
+      "impactAreas": [],
+      "version": "2026-11"
+    },
+    {
       "id": "services/product-price-audit.js",
       "file": "services/product-price-audit.js",
       "type": "file",
@@ -29969,6 +30030,44 @@
         "pricing"
       ],
       "version": "2026-11"
+    },
+    {
+      "id": "services/public-market-storefront.js",
+      "file": "services/public-market-storefront.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "public-market-storefront-read-model",
+      "domain": "market",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "canonical markets lifecycle and storefront_texts"
+      ],
+      "outputs": [
+        "public active-market storefront projection"
+      ],
+      "depends": [],
+      "usedBy": [],
+      "dbRead": [
+        "markets"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "active_markets_only",
+        "public_projection_not_authority"
+      ],
+      "impactAreas": [
+        "boutique",
+        "market",
+        "hero",
+        "seo",
+        "checkout"
+      ],
+      "version": null
     },
     {
       "id": "services/purchase-line-snapshot.js",
@@ -32484,9 +32583,12 @@
         "scan_events",
         "customs_shipments",
         "customs_shipment_parcels",
-        "international_shipments"
+        "international_shipments",
+        "customs_shipment_holds"
       ],
-      "dbWrite": [],
+      "dbWrite": [
+        "customs_shipment_holds"
+      ],
       "dbWriteVia": [
         {
           "via": "scan-engine",
@@ -40538,6 +40640,11 @@
       "table": "customs_effective_rates"
     },
     {
+      "id": "db:customs_shipment_holds",
+      "type": "db-table",
+      "table": "customs_shipment_holds"
+    },
+    {
       "id": "db:international_shipments",
       "type": "db-table",
       "table": "international_shipments"
@@ -44318,6 +44425,16 @@
       "doctrine": "IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md §Providers-services"
     },
     {
+      "id": "doctrine:active_markets_only",
+      "type": "doctrine",
+      "doctrine": "active_markets_only"
+    },
+    {
+      "id": "doctrine:public_projection_not_authority",
+      "type": "doctrine",
+      "doctrine": "public_projection_not_authority"
+    },
+    {
       "id": "doctrine:docs/doctrine/DOCTRINE_CANONICAL_UNIT_PURCHASING.md",
       "type": "doctrine",
       "doctrine": "docs/doctrine/DOCTRINE_CANONICAL_UNIT_PURCHASING.md"
@@ -46592,6 +46709,12 @@
       "label": "utils/logger.js"
     },
     {
+      "from": "bootstrap/html-routes.js",
+      "to": "services/public-market-storefront.js",
+      "type": "depends",
+      "label": "services/public-market-storefront.js"
+    },
+    {
       "from": "server.js",
       "to": "bootstrap/html-routes.js",
       "type": "uses",
@@ -48336,6 +48459,24 @@
       "to": "impact:quality",
       "type": "impact",
       "label": "quality"
+    },
+    {
+      "from": "middleware/upload.js",
+      "to": "multer",
+      "type": "depends",
+      "label": "multer"
+    },
+    {
+      "from": "middleware/upload.js",
+      "to": "fs",
+      "type": "depends",
+      "label": "fs"
+    },
+    {
+      "from": "middleware/upload.js",
+      "to": "path",
+      "type": "depends",
+      "label": "path"
     },
     {
       "from": "middleware/upload-hub.js",
@@ -55474,6 +55615,20 @@
       "type": "db-write-via",
       "label": "relais",
       "via": "market-provisioning-service"
+    },
+    {
+      "from": "routes/admin-market-control-plane.js",
+      "to": "db:markets",
+      "type": "db-write-via",
+      "label": "markets",
+      "via": "market-lifecycle-service"
+    },
+    {
+      "from": "routes/admin-market-control-plane.js",
+      "to": "db:market_delegation_audit",
+      "type": "db-write-via",
+      "label": "market_delegation_audit",
+      "via": "market-delegation-service"
     },
     {
       "from": "routes/admin-market-control-plane.js",
@@ -63763,6 +63918,18 @@
       "to": "middleware/auth.js",
       "type": "depends",
       "label": "middleware/auth.js"
+    },
+    {
+      "from": "routes/products.js",
+      "to": "middleware/upload.js",
+      "type": "depends",
+      "label": "middleware/upload.js"
+    },
+    {
+      "from": "routes/products.js",
+      "to": "services/product-media-storage.js",
+      "type": "depends",
+      "label": "services/product-media-storage.js"
     },
     {
       "from": "routes/products.js",
@@ -72218,6 +72385,12 @@
     },
     {
       "from": "services/customs-shipment-service.js",
+      "to": "db:customs_shipment_holds",
+      "type": "db-read",
+      "label": "customs_shipment_holds"
+    },
+    {
+      "from": "services/customs-shipment-service.js",
       "to": "db:international_shipments",
       "type": "db-read",
       "label": "international_shipments"
@@ -79596,6 +79769,12 @@
     },
     {
       "from": "services/international-shipment-journey.js",
+      "to": "db:customs_shipment_holds",
+      "type": "db-read",
+      "label": "customs_shipment_holds"
+    },
+    {
+      "from": "services/international-shipment-journey.js",
       "to": "db:customs_shipment_parcels",
       "type": "db-read",
       "label": "customs_shipment_parcels"
@@ -85965,6 +86144,12 @@
       "to": "dashboard-finance-canonical",
       "type": "depends",
       "label": "dashboard-finance-canonical"
+    },
+    {
+      "from": "services/order-360.js",
+      "to": "relay-collect-amount",
+      "type": "depends",
+      "label": "relay-collect-amount"
     },
     {
       "from": "routes/admin-order-360.js",
@@ -92771,6 +92956,36 @@
       "label": "admin-dashboard"
     },
     {
+      "from": "services/product-media-storage.js",
+      "to": "ImageKit upload API",
+      "type": "depends",
+      "label": "ImageKit upload API"
+    },
+    {
+      "from": "services/product-media-storage.js",
+      "to": "IMAGEKIT_PRIVATE_KEY",
+      "type": "depends",
+      "label": "IMAGEKIT_PRIVATE_KEY"
+    },
+    {
+      "from": "routes/products.js",
+      "to": "services/product-media-storage.js",
+      "type": "uses",
+      "label": "routes/products.js"
+    },
+    {
+      "from": "services/product-media-storage.js",
+      "to": "doctrine:resolve_before_behavior_change",
+      "type": "doctrine",
+      "label": "resolve_before_behavior_change"
+    },
+    {
+      "from": "services/product-media-storage.js",
+      "to": "doctrine:produit_reference_stable",
+      "type": "doctrine",
+      "label": "produit_reference_stable"
+    },
+    {
       "from": "services/product-price-audit.js",
       "to": "services/economic-price-audit-service.js",
       "type": "depends",
@@ -93591,6 +93806,54 @@
       "to": "impact:pricing",
       "type": "impact",
       "label": "pricing"
+    },
+    {
+      "from": "services/public-market-storefront.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "services/public-market-storefront.js",
+      "to": "doctrine:active_markets_only",
+      "type": "doctrine",
+      "label": "active_markets_only"
+    },
+    {
+      "from": "services/public-market-storefront.js",
+      "to": "doctrine:public_projection_not_authority",
+      "type": "doctrine",
+      "label": "public_projection_not_authority"
+    },
+    {
+      "from": "services/public-market-storefront.js",
+      "to": "impact:boutique",
+      "type": "impact",
+      "label": "boutique"
+    },
+    {
+      "from": "services/public-market-storefront.js",
+      "to": "impact:market",
+      "type": "impact",
+      "label": "market"
+    },
+    {
+      "from": "services/public-market-storefront.js",
+      "to": "impact:hero",
+      "type": "impact",
+      "label": "hero"
+    },
+    {
+      "from": "services/public-market-storefront.js",
+      "to": "impact:seo",
+      "type": "impact",
+      "label": "seo"
+    },
+    {
+      "from": "services/public-market-storefront.js",
+      "to": "impact:checkout",
+      "type": "impact",
+      "label": "checkout"
     },
     {
       "from": "services/purchase-line-snapshot.js",
@@ -97840,6 +98103,18 @@
       "to": "db:international_shipments",
       "type": "db-read",
       "label": "international_shipments"
+    },
+    {
+      "from": "services/shipping-customs-workspace.js",
+      "to": "db:customs_shipment_holds",
+      "type": "db-read",
+      "label": "customs_shipment_holds"
+    },
+    {
+      "from": "services/shipping-customs-workspace.js",
+      "to": "db:customs_shipment_holds",
+      "type": "db-write",
+      "label": "customs_shipment_holds"
     },
     {
       "from": "services/shipping-customs-workspace.js",
@@ -108931,7 +109206,8 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
-        "utils/logger.js"
+        "utils/logger.js",
+        "services/public-market-storefront.js"
       ],
       "directUsedBy": [
         "server.js"
@@ -108950,6 +109226,7 @@
         "doctrine:resolve_before_behavior_change",
         "impact:bootstrap",
         "server.js",
+        "services/public-market-storefront.js",
         "utils/logger.js"
       ]
     },
@@ -110173,7 +110450,11 @@
       "headerType": "full",
       "owner": null,
       "purpose": null,
-      "directDependsOn": [],
+      "directDependsOn": [
+        "multer",
+        "fs",
+        "path"
+      ],
       "directUsedBy": [
         "middleware/upload-hub.js",
         "routes/products.js"
@@ -113848,7 +114129,7 @@
       "criticality": "low",
       "headerType": "lite",
       "owner": "public/boutique/js/market-context.js",
-      "purpose": "Unique module frontière frontend : porte les données pays",
+      "purpose": "Unique module frontière frontend : projette les données pays",
       "directDependsOn": [],
       "directUsedBy": [],
       "ownedFiles": [
@@ -115316,6 +115597,18 @@
             "market_cash_control_policies",
             "market_payment_providers",
             "relais"
+          ]
+        },
+        {
+          "via": "market-lifecycle-service",
+          "tables": [
+            "markets"
+          ]
+        },
+        {
+          "via": "market-delegation-service",
+          "tables": [
+            "market_delegation_audit"
           ]
         }
       ],
@@ -120690,6 +120983,8 @@
         "db.js",
         "validators.js",
         "middleware/auth.js",
+        "middleware/upload.js",
+        "services/product-media-storage.js",
         "services/catalog-public-view.js",
         "services/market-local-price-resolution-service.js",
         "services/catalog-product-source-read-service.js"
@@ -120748,6 +121043,7 @@
         "services/catalog-public-view.js",
         "services/market-local-price-resolution-service.js",
         "services/product-admin-service.js",
+        "services/product-media-storage.js",
         "utils/logger.js"
       ]
     },
@@ -125947,6 +126243,7 @@
         "customs_effective_rates",
         "customs_shipment_parcels",
         "customs_shipments",
+        "customs_shipment_holds",
         "international_shipments",
         "order_item_real_cost_allocations",
         "order_items",
@@ -125989,6 +126286,7 @@
       ],
       "mustCheck": [
         "db:customs_effective_rates",
+        "db:customs_shipment_holds",
         "db:customs_shipment_parcel_events",
         "db:customs_shipment_parcels",
         "db:customs_shipments",
@@ -130194,6 +130492,7 @@
         "international_shipment_events",
         "orders",
         "customs_shipments",
+        "customs_shipment_holds",
         "customs_shipment_parcels",
         "customs_shipment_fees",
         "international_n1_reconciliations"
@@ -130227,6 +130526,7 @@
       "impactAreas": [],
       "mustCheck": [
         "db:customs_shipment_fees",
+        "db:customs_shipment_holds",
         "db:customs_shipment_parcels",
         "db:customs_shipments",
         "db:hub_box_bags",
@@ -134119,7 +134419,8 @@
       "directDependsOn": [
         "db",
         "services/logistics-control-chain-projection.js",
-        "dashboard-finance-canonical"
+        "dashboard-finance-canonical",
+        "relay-collect-amount"
       ],
       "directUsedBy": [
         "routes/admin-order-360.js"
@@ -138335,6 +138636,35 @@
         "utils/logger.js"
       ]
     },
+    "services/product-media-storage.js": {
+      "role": "product-media-storage",
+      "domain": "catalog",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "ImageKit upload API",
+        "IMAGEKIT_PRIVATE_KEY"
+      ],
+      "directUsedBy": [
+        "routes/products.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "resolve_before_behavior_change",
+        "produit_reference_stable"
+      ],
+      "impactAreas": [],
+      "mustCheck": [
+        "doctrine:produit_reference_stable",
+        "doctrine:resolve_before_behavior_change",
+        "routes/products.js"
+      ]
+    },
     "services/product-price-audit.js": {
       "role": "catalog-product-price-audit-boundary",
       "domain": "catalog",
@@ -138915,6 +139245,44 @@
         "services/catalog-public-view.js",
         "services/market-local-price-resolution-service.js",
         "services/order-checkout-item-resolution.js"
+      ]
+    },
+    "services/public-market-storefront.js": {
+      "role": "public-market-storefront-read-model",
+      "domain": "market",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [],
+      "directUsedBy": [],
+      "ownedFiles": [],
+      "dbRead": [
+        "markets"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "active_markets_only",
+        "public_projection_not_authority"
+      ],
+      "impactAreas": [
+        "boutique",
+        "market",
+        "hero",
+        "seo",
+        "checkout"
+      ],
+      "mustCheck": [
+        "bootstrap/html-routes.js",
+        "db:markets",
+        "doctrine:active_markets_only",
+        "doctrine:public_projection_not_authority",
+        "impact:boutique",
+        "impact:checkout",
+        "impact:hero",
+        "impact:market",
+        "impact:seo"
       ]
     },
     "services/purchase-line-snapshot.js": {
@@ -141426,9 +141794,12 @@
         "scan_events",
         "customs_shipments",
         "customs_shipment_parcels",
-        "international_shipments"
+        "international_shipments",
+        "customs_shipment_holds"
       ],
-      "dbWrite": [],
+      "dbWrite": [
+        "customs_shipment_holds"
+      ],
       "dbWriteVia": [
         {
           "via": "scan-engine",
@@ -141464,6 +141835,7 @@
         "market-authorization"
       ],
       "mustCheck": [
+        "db:customs_shipment_holds",
         "db:customs_shipment_parcels",
         "db:customs_shipments",
         "db:incidents",
@@ -149784,6 +150156,24 @@
       "label": "routes/hub.js (POST /photo)"
     },
     {
+      "from": "middleware/upload.js",
+      "to": "multer",
+      "type": "depends",
+      "label": "multer"
+    },
+    {
+      "from": "middleware/upload.js",
+      "to": "fs",
+      "type": "depends",
+      "label": "fs"
+    },
+    {
+      "from": "middleware/upload.js",
+      "to": "path",
+      "type": "depends",
+      "label": "path"
+    },
+    {
       "from": "public/boutique/js/b-komerce.js",
       "to": "documents API",
       "type": "depends",
@@ -153384,6 +153774,12 @@
       "label": "dashboard-finance-canonical"
     },
     {
+      "from": "services/order-360.js",
+      "to": "relay-collect-amount",
+      "type": "depends",
+      "label": "relay-collect-amount"
+    },
+    {
       "from": "services/order-checkout-idempotency.js",
       "to": "node:crypto",
       "type": "depends",
@@ -153826,6 +154222,18 @@
       "to": "db",
       "type": "depends",
       "label": "db"
+    },
+    {
+      "from": "services/product-media-storage.js",
+      "to": "ImageKit upload API",
+      "type": "depends",
+      "label": "ImageKit upload API"
+    },
+    {
+      "from": "services/product-media-storage.js",
+      "to": "IMAGEKIT_PRIVATE_KEY",
+      "type": "depends",
+      "label": "IMAGEKIT_PRIVATE_KEY"
     },
     {
       "from": "services/product-publication-guard.js",

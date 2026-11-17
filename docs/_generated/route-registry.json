@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-11-15T22:41:31.400Z",
+  "generatedAt": "2026-11-17T10:02:35.945Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 834,
+  "count": 839,
   "routes": [
     {
       "method": "GET",
@@ -1336,6 +1336,16 @@
       "fullPath": "/api/admin/markets/:marketCode/reprovision",
       "mountPrefix": "/api/admin/markets",
       "localPath": "/:marketCode/reprovision",
+      "routeFile": "routes/admin-market-control-plane.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "PUT",
+      "fullPath": "/api/admin/markets/:marketCode/storefront",
+      "mountPrefix": "/api/admin/markets",
+      "localPath": "/:marketCode/storefront",
       "routeFile": "routes/admin-market-control-plane.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
@@ -3374,6 +3384,26 @@
       "fullPath": "/api/admin/workspaces/shipping-customs/market/:marketCode/customs/shipments/:reference/declare",
       "mountPrefix": "/api/admin/workspaces/shipping-customs",
       "localPath": "/market/:marketCode/customs/shipments/:reference/declare",
+      "routeFile": "routes/admin-shipping-customs-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/shipping-customs/market/:marketCode/customs/shipments/:reference/hold",
+      "mountPrefix": "/api/admin/workspaces/shipping-customs",
+      "localPath": "/market/:marketCode/customs/shipments/:reference/hold",
+      "routeFile": "routes/admin-shipping-customs-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/shipping-customs/market/:marketCode/customs/shipments/:reference/release",
+      "mountPrefix": "/api/admin/workspaces/shipping-customs",
+      "localPath": "/market/:marketCode/customs/shipments/:reference/release",
       "routeFile": "routes/admin-shipping-customs-workspace.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
@@ -7048,6 +7078,14 @@
     },
     {
       "method": "GET",
+      "fullPath": "/api/public/markets",
+      "mountPrefix": "",
+      "localPath": "/api/public/markets",
+      "routeFile": "server.js",
+      "mountedFrom": []
+    },
+    {
+      "method": "GET",
       "fullPath": "/api/purchasing",
       "mountPrefix": "/api/purchasing",
       "localPath": "/",
@@ -8391,6 +8429,14 @@
       "mountedFrom": [
         "bootstrap/api-routes.js"
       ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/boutique/js/market-registry.js",
+      "mountPrefix": "",
+      "localPath": "/boutique/js/market-registry.js",
+      "routeFile": "server.js",
+      "mountedFrom": []
     },
     {
       "method": "GET",
