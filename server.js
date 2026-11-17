@@ -164,6 +164,41 @@ app.get('/*.html', (req, res, next) => {
 const { markVersionedRequest, staticSetHeaders } = require('./middleware/versioned-asset-cache');
 app.use(markVersionedRequest);
 
+// A defer script keeps the existing synchronous boutique consumers compatible,
+// but the payload is always generated from the canonical ACTIVE markets in DB.
+// Must precede express.static so no static fallback can advertise stale markets.
+app.get('/boutique/js/market-registry.js', async (_req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.type('application/javascript; charset=utf-8');
+  try {
+    const markets = await listPublicMarkets(db);
+    // Defend JS context against authored text containing script-sensitive chars.
+    const safe = JSON.stringify(markets).replace(/[<\u2028\u2029]/g, ch =>
+      ch === '<' ? '\\u003c' : ch === '\u2028' ? '\\u2028' : '\\u2029');
+    return res.send('window.KomerceMarketRegistry = ' + safe + ';');
+  } catch (error) {
+    log.error({ err: error.message }, '[market-registry] PostgreSQL indisponible');
+    return res.status(503).send('throw new Error("MARKETS_UNAVAILABLE");');
+  }
+});
+
+// express.static would otherwise serve /boutique/ and /boutique/index.html
+// BEFORE html-routes. Enforce the same ACTIVE market gate on every storefront
+// entry point; aliases and disabled markets must never bypass the lifecycle.
+app.get(['/', '/boutique', '/boutique/', '/boutique/index.html'], async (req, res, next) => {
+  const code = req.query && req.query.market != null
+    ? String(req.query.market).trim().toUpperCase() : 'KM';
+  if (!/^[A-Z]{2}$/.test(code)) return res.status(404).send('Marché indisponible');
+  try {
+    const markets = await listPublicMarkets(db);
+    if (!markets.some(m => m.code === code)) return res.status(404).send('Marché indisponible');
+    return next();
+  } catch (error) {
+    log.error({ err: error.message }, '[public-storefront] marché indisponible');
+    return res.status(503).send('Boutique temporairement indisponible');
+  }
+});
+
 app.use(express.static(path.join(__dirname, 'public'), {
   setHeaders: staticSetHeaders,
 }));
@@ -259,7 +294,7 @@ app.get('/api/public/config', async (req, res) => {
 // ── HTML routes / SPA fallback ─────────────────────────────────────────────
 const fs = require('fs');
 log.info({ exists: fs.existsSync(path.join(__dirname, 'public/dashboards/admin/index.html')), dir: path.join(__dirname, 'public') }, '[boot] html-routes check');
-mountHtmlRoutes(app, __dirname);
+mountHtmlRoutes(app, __dirname, db);
 
 app.use(errorHandler);
 

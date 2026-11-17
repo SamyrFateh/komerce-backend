@@ -30,6 +30,16 @@ describe('Boutique runtime CSP contract', () => {
     expect(catalogFeature).toContain("'../js/market-hydration.js'");
   });
 
+  test('PostgreSQL registry loads before synchronous market-context and hydration',()=>{
+    const registry=index.indexOf('/boutique/js/market-registry.js');
+    const context=index.indexOf('/boutique/js/market-context.js');
+    const hydration=index.indexOf('/boutique/js/market-hydration.js');
+    expect(registry).toBeGreaterThan(0);
+    expect(registry).toBeLessThan(context);
+    expect(context).toBeLessThan(hydration);
+    expect(index).not.toMatch(/<script[^>]*>\\s*window\\.KomerceMarketRegistry/);
+  });
+
   test('product image fallback uses delegated listeners, never inline event attributes', () => {
     expect(utils).toContain('data-k-product-image="1"');
     expect(utils).toContain("document.addEventListener('error'");

@@ -6904,7 +6904,7 @@
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 176,
+            "count": 177,
             "files": [
               {
                 "declared": "chart.umd.min.js",
@@ -7204,6 +7204,11 @@
               {
                 "declared": "dashboards/admin/js/views/InvoicesView.js",
                 "resolvedPath": "public/dashboards/admin/js/views/InvoicesView.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/admin/js/views/MarketsView.js",
+                "resolvedPath": "public/dashboards/admin/js/views/MarketsView.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -9254,7 +9259,7 @@
             ]
           }
         },
-        "totalFiles": 464,
+        "totalFiles": 465,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -20649,7 +20654,7 @@
       "implementation": {
         "byCategory": {
           "migrations": {
-            "count": 14,
+            "count": 15,
             "files": [
               {
                 "declared": "migrations/135_markets_foundation.sql",
@@ -20719,6 +20724,11 @@
               {
                 "declared": "migrations/319_fx_public_reference_quotes.sql",
                 "resolvedPath": "migrations/319_fx_public_reference_quotes.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/420_market_storefront_editorial_seed.sql",
+                "resolvedPath": "migrations/420_market_storefront_editorial_seed.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -20804,7 +20814,7 @@
             ]
           },
           "tests": {
-            "count": 31,
+            "count": 32,
             "files": [
               {
                 "declared": "tests/e2e-api/market-operation-guard.e2e.test.js",
@@ -20952,6 +20962,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/market-storefront-editor.test.js",
+                "resolvedPath": "tests/unit/market-storefront-editor.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/public-market-storefront.test.js",
                 "resolvedPath": "tests/unit/public-market-storefront.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -20964,7 +20979,7 @@
             ]
           }
         },
-        "totalFiles": 59,
+        "totalFiles": 61,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -21899,6 +21914,7 @@
           "GET /api/admin/markets/central-authority : titulaires actifs des cinq autorisations centrales explicites (dashboard, catalog, decision_signal, pricing, sourcing) et autorité déclarée de chaque capability de groupe",
           "GET /api/admin/markets/:marketCode/control-plane : affectation, équipe et capacités, plafond, fournisseurs de paiement, politique de caisse, relais actifs, écarts",
           "POST /api/admin/markets/:marketCode/lifecycle : transition lifecycle centrale ; ACTIVE exige readiness plate-forme ET exploitation vertes",
+          "PUT /api/admin/markets/:marketCode/storefront : édition des textes boutique par admin central, via market-lifecycle-service et audit",
           "POST /api/admin/markets/:marketCode/reprovision : reconstruit la configuration opérationnelle d’un Market ID historique déjà remis en PROVISIONING, sans recréer son identité",
           "rapport d’écarts calculé (computeGaps) + deux verdicts readiness indépendants : platform et operations ; MARKET_INACTIVE n’est pas un blocker de readiness pendant PROVISIONING"
         ],
@@ -22249,7 +22265,7 @@
           }
         ],
         "httpInterfaces": {
-          "count": 6
+          "count": 7
         }
       },
       "businessDependencies": [

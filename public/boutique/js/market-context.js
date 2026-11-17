@@ -4,9 +4,9 @@
  * @domain        catalog
  * @layer         ui-boundary
  * @owner         public/boutique/js/market-context.js
- * @purpose       Unique module frontière frontend : porte les données pays
+ * @purpose       Unique module frontière frontend : projette les données pays
  *                consommées par le hero, la home et les surfaces de navigation.
- *                Aucun autre fichier boutique ne doit contenir de littéral pays.
+ *                Les données pays sont servies depuis le référentiel PostgreSQL.
  * @impact-areas  boutique, hero, home, footer, checkout
  * @version       2026-09
  *
@@ -18,173 +18,75 @@
  */
 'use strict';
 
-// ── Registre des marchés ────────────────────────────────────────────────
-// Ajouter un marché = ajouter un enregistrement. Zéro fichier touché ailleurs.
-const MARKETS = {
-  KM: {
-    code:            'KM',
-    name:            'Comores',
-    gentile:         'La boutique comorienne',
-    gentile_short:   'Comores',
-    delivery_line:   'Mode, tech, beauté — livré aux Comores',
-    payment_label:   'Paiement cash',
-    pickup_label:    'Retrait relais',
-    currency:        'KMF',
-    minor_unit:      0,
-    relay_group_label: 'Île',
-    relay_default_zone: null,
-    seo_title:       'Komerce — La boutique en ligne des Comores',
-    seo_description: 'La boutique en ligne des Comores. Mode, tech, maison, beauté — commandez depuis l\'Europe, retirez en cash chez votre relais local.',
-    og_title:        'Komerce — La boutique comorienne',
-    og_description:  'Mode, tech, maison, beauté — livré aux Comores. Paiement cash, retrait relais.',
-    footer_tagline:  'La boutique en ligne qui livre aux Comores. Commandez depuis l\'Europe, retirez en cash chez votre relais local.',
-    free_ship_label: 'Livraison incluse aux Comores',
-    price_label:     'Prix en KMF',
-  },
-  // ── Marchés suivants ──────────────────────────────────────────────────
-  YT: {
-    code:            'YT',
-    name:            'Mayotte',
-    gentile:         'La boutique mahoraise',
-    gentile_short:   'Mayotte',
-    delivery_line:   'Mode, tech, beauté — livré à Mayotte',
-    payment_label:   'Paiement carte',
-    pickup_label:    'Retrait relais',
-    currency:        'EUR',
-    minor_unit:      2,
-    relay_group_label: 'Zone',
-    relay_default_zone: null,
-    seo_title:       'Komerce — La boutique en ligne de Mayotte',
-    seo_description: 'La boutique en ligne de Mayotte. Mode, tech, maison, beauté — commandez et retirez chez votre relais local.',
-    og_title:        'Komerce — La boutique mahoraise',
-    og_description:  'Mode, tech, maison, beauté — livré à Mayotte. Paiement carte, retrait relais.',
-    footer_tagline:  'La boutique en ligne qui livre à Mayotte. Commandez en ligne, retirez chez votre relais local.',
-    free_ship_label: 'Livraison incluse à Mayotte',
-    price_label:     'Prix en EUR',
-  },
-  CM: {
-    code:            'CM',
-    name:            'Cameroun',
-    gentile:         'La boutique camerounaise',
-    gentile_short:   'Cameroun',
-    delivery_line:   'Mode, tech, beauté — livré au Cameroun',
-    payment_label:   'Paiement mobile money',
-    pickup_label:    'Retrait relais',
-    currency:        'XAF',
-    minor_unit:      0,
-    relay_group_label: 'Ville',
-    relay_default_zone: 'Yaoundé',
-    seo_title:       'Komerce — La boutique en ligne du Cameroun',
-    seo_description: 'La boutique en ligne du Cameroun. Mode, tech, maison, beauté — commandez et retirez chez votre relais local.',
-    og_title:        'Komerce — La boutique camerounaise',
-    og_description:  'Mode, tech, maison, beauté — livré au Cameroun. Paiement mobile money, retrait relais.',
-    footer_tagline:  'La boutique en ligne qui livre au Cameroun. Commandez en ligne, retirez chez votre relais local.',
-    free_ship_label: 'Livraison incluse au Cameroun',
-    price_label:     'Prix en XAF',
-  },
-  DJ: {
-    code:            'DJ',
-    name:            'Djibouti',
-    gentile:         'La boutique djiboutienne',
-    gentile_short:   'Djibouti',
-    delivery_line:   'Mode, tech, beauté — à Djibouti',
-    payment_label:   'Paiement selon les moyens disponibles',
-    pickup_label:    'Retrait relais',
-    currency:        'DJF',
-    minor_unit:      0,
-    relay_group_label: 'Ville',
-    relay_default_zone: 'Djibouti',
-    seo_title:       'Komerce — La boutique en ligne de Djibouti',
-    seo_description: 'La boutique en ligne de Djibouti. Découvrez les offres disponibles et les points de retrait.',
-    og_title:        'Komerce — La boutique djiboutienne',
-    og_description:  'Découvrez les produits disponibles à Djibouti et les points de retrait.',
-    footer_tagline:  'Découvrez la sélection Komerce pour Djibouti.',
-    free_ship_label: 'Livraison selon offre',
-    price_label:     'Prix en DJF',
-  },
-  CG: {
-    code:            'CG',
-    name:            'Congo',
-    gentile:         'La boutique de Brazzaville',
-    gentile_short:   'Congo',
-    delivery_line:   'Mode, tech, beauté — livré à Brazzaville',
-    payment_label:   'Paiement mobile money',
-    pickup_label:    'Retrait relais',
-    currency:        'XAF',
-    minor_unit:      0,
-    relay_group_label: 'Ville',
-    relay_default_zone: 'Brazzaville',
-    seo_title:       'Komerce — La boutique en ligne de Brazzaville',
-    seo_description: 'La boutique en ligne de Brazzaville. Mode, tech, maison, beauté — commandez et retirez chez votre relais local.',
-    og_title:        'Komerce — La boutique de Brazzaville',
-    og_description:  'Mode, tech, maison, beauté — livré à Brazzaville. Paiement mobile money, retrait relais.',
-    footer_tagline:  'La boutique en ligne qui livre à Brazzaville. Commandez en ligne, retirez chez votre relais local.',
-    free_ship_label: 'Livraison incluse à Brazzaville',
-    price_label:     'Prix en XAF',
-  },
-};
-
-// ── Marché par défaut ───────────────────────────────────────────────────
-// KM reste le marché par défaut de la boutique réelle — inchangé.
-// Demain (M2 branché), résolu depuis le relais choisi > préférence stockée > défaut.
-const DEFAULT_MARKET = 'KM';
-
-// ── Entrées pays publiques : /KM, /CM, /CG, /DJ, /YT ──────────────
-// L'URL est un contexte de navigation, jamais une autorisation d'achat.
-// Une URL pays a priorité sur ?market= afin qu'un lien partagé soit stable.
-function getPathMarketCode() {
-  try {
-    const match = /^\/([a-z]{2})\/?$/i.exec(window.location.pathname || '');
-    const code = match ? match[1].toUpperCase() : '';
-    return Object.prototype.hasOwnProperty.call(MARKETS, code) ? code : null;
-  } catch (e) {
-    return null;
-  }
+// Loaded synchronously from the public read-only PostgreSQL projection by
+// /boutique/js/market-registry.js (script defer ordered before this one).
+// NO client-side fallback table: disabled/unknown markets must not reappear.
+const MARKET_ROWS = Array.isArray(window.KomerceMarketRegistry)
+  ? window.KomerceMarketRegistry : [];
+const MARKETS = Object.create(null);
+for (const row of MARKET_ROWS) {
+  if (!row || !/^[A-Z]{2}$/.test(row.code) || !/^[A-Z]{3}$/.test(row.currency)) continue;
+  const t = row.storefront_texts && typeof row.storefront_texts === 'object'
+    ? row.storefront_texts : {};
+  const name = String(row.name || '').trim();
+  if (!name) continue;
+  MARKETS[row.code] = Object.freeze({
+    code: row.code, name, currency: row.currency, minor_unit: Number(row.minor_unit),
+    gentile: t.gentile || 'La boutique Komerce',
+    gentile_short: t.gentile_short || name,
+    delivery_line: t.delivery_line || 'Découvrez les produits disponibles',
+    payment_label: t.payment_label || 'Paiement selon les moyens disponibles',
+    pickup_label: t.pickup_label || 'Retrait relais',
+    relay_group_label: t.relay_group_label || 'Zone',
+    relay_default_zone: t.relay_default_zone || null,
+    seo_title: t.seo_title || ('Komerce — ' + name),
+    seo_description: t.seo_description || ('La boutique Komerce ' + name),
+    og_title: t.og_title || ('Komerce — ' + name),
+    og_description: t.og_description || ('Découvrez les offres Komerce ' + name),
+    footer_tagline: t.footer_tagline || ('Découvrez Komerce ' + name),
+    free_ship_label: t.free_ship_label || 'Livraison selon offre',
+    price_label: t.price_label || ('Prix en ' + row.currency),
+    welcome: t.welcome || '',
+  });
 }
 
-// ── Alias historique de prévisualisation (?market=) ────────────────
-// Conservé pour /boutique?market=CM et les consommateurs existants.
-// Ce retour devient aussi le contexte explicite du pathname pays.
-// Aucun code client n'en déduit une autorisation métier.
+const DEFAULT_MARKET = 'KM';
+const hasMarket = code => Object.prototype.hasOwnProperty.call(MARKETS, code);
+
+function getPathMarketCode() {
+  const match = /^\/([a-z]{2})\/?$/i.exec(window.location.pathname || '');
+  const code = match ? match[1].toUpperCase() : '';
+  return hasMarket(code) ? code : null;
+}
+
 function getPreviewMarketOverride() {
   const pathMarket = getPathMarketCode();
   if (pathMarket) return pathMarket;
   try {
     const params = new URLSearchParams(window.location.search);
-    const code = String(params.get('market') || '').toUpperCase();
-    return Object.prototype.hasOwnProperty.call(MARKETS, code) ? code : null;
-  } catch (e) {
+    const code = String(params.get('market') || '').trim().toUpperCase();
+    return hasMarket(code) ? code : null;
+  } catch (_) {
     return null;
   }
 }
 
-// ── Résolution ──────────────────────────────────────────────────────────
-
-/**
- * Retourne le contexte marché courant.
- * /XX (pays) > ?market= (alias historique) > KM par défaut.
- * Le contexte est de présentation ; l'autorité de transaction reste côté API.
- *
- * @returns {object} — un enregistrement MARKETS, jamais null
- */
 function getMarketContext() {
-  return MARKETS[getPreviewMarketOverride() || DEFAULT_MARKET];
+  const market = MARKETS[getPreviewMarketOverride() || DEFAULT_MARKET];
+  // Missing registry or missing KM is a *failure*, not an implied permission
+  // to sell to a country not present in the canonical active-market list.
+  if (!market) throw new Error('STORE_MARKET_UNAVAILABLE');
+  return market;
 }
 
-/**
- * Retourne un marché par code. Usage interne uniquement.
- * @param {string} code
- * @returns {object|undefined}
- */
 function getMarket(code) {
-  return MARKETS[code];
+  return hasMarket(String(code || '').toUpperCase()) ? MARKETS[String(code).toUpperCase()] : undefined;
 }
 
-// ── Exports (IIFE-compatible, pas de module ES pour rester aligné avec le reste) ──
 window.KomerceMarket = {
-  get:                getMarketContext,
-  getByCode:          getMarket,
+  get: getMarketContext,
+  getByCode: getMarket,
   getPreviewOverride: getPreviewMarketOverride,
-  getPathCode:       getPathMarketCode,
-  DEFAULT:            DEFAULT_MARKET,
+  getPathCode: getPathMarketCode,
+  DEFAULT: DEFAULT_MARKET,
 };

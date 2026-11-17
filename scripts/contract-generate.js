@@ -554,6 +554,9 @@ const KNOWN_RESPONSES = {
   '/api/admin/markets/{marketCode}/reprovision': {
     post: { fields: ['market','assignment_id','central_referent_user_id','lead','readiness','gaps'], source: 'route-read' }
   },
+  '/api/admin/markets/{marketCode}/storefront': {
+    put: { fields: ['changed','market'], source: 'route-read' }
+  },
   '/api/admin/markets/{marketCode}/lifecycle': {
     post: { fields: ['before','after','changed'], source: 'route-read' }
   },

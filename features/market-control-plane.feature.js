@@ -48,6 +48,7 @@ module.exports = {
       'GET /api/admin/markets/central-authority : titulaires actifs des cinq autorisations centrales explicites (dashboard, catalog, decision_signal, pricing, sourcing) et autorité déclarée de chaque capability de groupe',
       'GET /api/admin/markets/:marketCode/control-plane : affectation, équipe et capacités, plafond, fournisseurs de paiement, politique de caisse, relais actifs, écarts',
       'POST /api/admin/markets/:marketCode/lifecycle : transition lifecycle centrale ; ACTIVE exige readiness plate-forme ET exploitation vertes',
+      'PUT /api/admin/markets/:marketCode/storefront : édition des textes boutique par admin central, via market-lifecycle-service et audit',
       'POST /api/admin/markets/:marketCode/reprovision : reconstruit la configuration opérationnelle d’un Market ID historique déjà remis en PROVISIONING, sans recréer son identité',
       'rapport d’écarts calculé (computeGaps) + deux verdicts readiness indépendants : platform et operations ; MARKET_INACTIVE n’est pas un blocker de readiness pendant PROVISIONING',
     ],
@@ -122,6 +123,7 @@ module.exports = {
     exposes: [
       'POST /api/admin/markets', // admin central — provisionne, n’active pas
       'POST /api/admin/markets/:marketCode/lifecycle', // admin central — ACTIVE gated par readiness
+      'PUT /api/admin/markets/:marketCode/storefront', // admin central — éditorial, writer canonique
       'POST /api/admin/markets/:marketCode/reprovision', // admin central — recompose un Market ID historique PROVISIONING
       'GET /api/admin/markets', // admin central
       'GET /api/admin/markets/central-authority', // admin central
