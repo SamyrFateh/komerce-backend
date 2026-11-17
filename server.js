@@ -164,6 +164,24 @@ app.get('/*.html', (req, res, next) => {
 const { markVersionedRequest, staticSetHeaders } = require('./middleware/versioned-asset-cache');
 app.use(markVersionedRequest);
 
+// A defer script keeps the existing synchronous boutique consumers compatible,
+// but the payload is always generated from the canonical ACTIVE markets in DB.
+// Must precede express.static so no static fallback can advertise stale markets.
+app.get('/boutique/js/market-registry.js', async (_req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.type('application/javascript; charset=utf-8');
+  try {
+    const markets = await listPublicMarkets(db);
+    // Defend JS context against authored text containing script-sensitive chars.
+    const safe = JSON.stringify(markets).replace(/[<\u2028\u2029]/g, ch =>
+      ch === '<' ? '\\u003c' : ch === '\u2028' ? '\\u2028' : '\\u2029');
+    return res.send('window.KomerceMarketRegistry = ' + safe + ';');
+  } catch (error) {
+    log.error({ err: error.message }, '[market-registry] PostgreSQL indisponible');
+    return res.status(503).send('throw new Error("MARKETS_UNAVAILABLE");');
+  }
+});
+
 app.use(express.static(path.join(__dirname, 'public'), {
   setHeaders: staticSetHeaders,
 }));
