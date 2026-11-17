@@ -40,7 +40,7 @@ function validateGuard(env=process.env) {
 function validateBuyerProof(buyer, scope, env) {
   if(buyer.verdict!=='G6_P2_REAL_OTP_CHROMIUM_ORDER_CREATED_NO_EXTERNAL_EFFECTS' ||
       buyer.market!==scope.market || buyer.order?.market!==scope.market ||
-      buyer.order?.scope!=='G6-BUYER' || buyer.order?.payment_status==='paid' ||
+      buyer.order?.scope!=='G6-BUYER' || buyer.order?.payment_status!=='pending' || buyer.order?.status!=='pending' ||
       buyer.order?.payment_mode!=='cash_relais' ||
       !VALID_REF.test(String(buyer.order?.reference||'')) ||
       !buyer.order?.id || !buyer.db_fingerprint ||
