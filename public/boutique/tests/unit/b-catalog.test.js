@@ -56,6 +56,7 @@ const mockBindFlatSubcatControls = jest.fn();
 const mockRecalcPagerHeight = jest.fn();
 const mockSetupFlatSubcatPager = jest.fn();
 const mockWriteCache = jest.fn();
+const mockReadCache = jest.fn(() => []);
 const mockSetProducts = jest.fn((items) => items);
 const mockGetAllProducts = jest.fn(() => mockState.products || []);
 const mockMatchesSubcategory = jest.fn((category, key, value) => {
@@ -154,6 +155,7 @@ jest.mock('../../js/product-store.js', () => ({
   getAllProducts: mockGetAllProducts,
   getPromoProducts: jest.fn(() => []),
   writeCache: mockWriteCache,
+  readCache: mockReadCache,
 }));
 
 const catalog = require('../../js/b-catalog.js');
@@ -448,6 +450,32 @@ describe('b-catalog — navigation et recherche', () => {
     expect(mockCenterRailChip).toHaveBeenCalledWith(chip);
   });
 
+  test('sur mobile, restaure le pager et la liste AVANT ouverture du PDP depuis la recherche', () => {
+    jest.useFakeTimers();
+    mockIsDesktop.mockReturnValue(false);
+    mockState.activeCat = 'all';
+    mockState.products = [
+      product(1, 'Tech', { name: 'Écouteurs Alpha' }),
+      product(2, 'Maison', { name: 'Torchons Beta' }),
+    ];
+    mockState.filtered = [...mockState.products];
+    catalog.setupSearch();
+
+    mockDom.searchInput.value = 'écouteurs';
+    mockDom.searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+    jest.advanceTimersByTime(250);
+    expect(mockState.filtered).toHaveLength(1);
+
+    mockOpenModal.mockImplementationOnce((id) => {
+      expect(id).toBe('1');
+      expect(mockDom.searchDrop.classList.contains('open')).toBe(false);
+      expect(mockDom.searchInput.value).toBe('');
+      expect(mockState.filtered).toHaveLength(2);
+    });
+    mockDom.searchDrop.querySelector('.k-search-item').click();
+    expect(mockOpenModal).toHaveBeenCalledTimes(1);
+  });
+
   test('recherche dans la catégorie desktop et ouvre le résultat', () => {
     jest.useFakeTimers();
     mockState.activeCat = 'Tech';
@@ -515,6 +543,23 @@ describe('b-catalog — navigation et recherche', () => {
 });
 
 describe('b-catalog — chargement produits', () => {
+  test('fallback hors réseau : lit le cache canonique marché, pas la clé legacy', async () => {
+    const cached = [product(10, 'Tech'), product(11, 'Mode', { is_available: false })];
+    global.K.products.list.mockRejectedValue(new TypeError('Network lost'));
+    mockReadCache.mockReturnValue(cached);
+    mockSetProducts.mockImplementation((items) => {
+      mockState.products = items;
+      return items;
+    });
+    mockGetAllProducts.mockImplementation(() => mockState.products);
+
+    await catalog.loadProducts();
+
+    expect(mockReadCache).toHaveBeenCalledTimes(1);
+    expect(mockState.products).toEqual([cached[0]]);
+    expect(mockWriteCache).not.toHaveBeenCalled();
+  });
+
   test('charge, normalise, rend et nettoie le panier obsolète', async () => {
     const raw = [product(1), product(2, 'Mode', { is_available: false })];
     global.K.products.list.mockResolvedValue({ products: raw });
