@@ -13,7 +13,7 @@ const fs=require('node:fs'),path=require('node:path');
 const {chromium}=require('playwright');
 const db=require('../../db');
 const {confirmTarget}=require('./target-guard');
-const {login,openPo,stableSha}=require('./g6-hub-commitment-chromium');
+const {login,openPo}=require('./g6-hub-commitment-chromium');
 const env=process.env;
 const OUT=path.resolve('test-results/g6-hub-vendor-simulation');
 const REF=env.G6_CANONICAL_ORDER_REFERENCE||'';
@@ -27,6 +27,31 @@ const report={schema:'komerce-g6-vendor-simulation/1',scenario_id:'M01',market:'
  external_supplier_calls:0,external_payment_executed:false,provenance:'SIMULATED / STAGING ONLY'};
 const save=()=>{fs.mkdirSync(OUT,{recursive:true});fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2)+'\n');};
 function check(ok,code){if(!ok)throw Error(code);}
+// Match the canonical workflow preflight: the deployed business runtime may
+// retain the earlier SHA when ONLY this test-only Chromium script has changed.
+// Exact source identity, ancestry (workflow preflight) and same-SHA before/after
+// remain mandatory; no runtime/business code difference is tolerated.
+async function checkedRuntimeSha(initial=null){
+ const url=String(env.STAGING_BASE_URL||'').replace(/[/]$/,'')+'/health/version';
+ check(url.startsWith('https://'),'G6_SIM_STAGING_ORIGIN_REQUIRED');
+ const r=await fetch(url);
+ check(r.status===200,'G6_SIM_HEALTH_HTTP_'+r.status);
+ const v=await r.json();
+ const actual=String(v.commit||'');
+ check(SHA.test(actual),'G6_SIM_HEALTH_SHA_INVALID');
+ const expected=env.E2E_EXPECTED_DEPLOY_SHA;
+ if(actual!==expected){
+  const preflight=JSON.parse(fs.readFileSync(path.resolve('test-results/staging-chromium/deployment-preflight.json'),'utf8'));
+  check(preflight.status==='DEPLOY_RUNTIME_EQUIVALENT'&&
+    preflight.expected_sha===expected&&preflight.observed_sha===actual&&
+    Array.isArray(preflight.tooling_diff)&&preflight.tooling_diff.length===1&&
+    preflight.tooling_diff[0]==='scripts/recette/g6-hub-vendor-simulation-chromium.js',
+    'G6_SIM_UNVERIFIED_RUNTIME_SHA_DIFFERENCE');
+ }
+ if(initial)check(actual===initial,'G6_SIM_SHA_DEPLOY_DRIFT');
+ return actual;
+}
+
 async function state(){
  const {rows}=await db.query(`
    SELECT po.id AS po_id,po.status::text AS po_status,po.sent_at,po.sent_channel,
@@ -86,7 +111,7 @@ async function main(){
     'G6_VENDOR_SIMULATION_STAGING_OWNER_GUARD');
   const t=await confirmTarget({db,env});
   check(t.confirmed&&t.fingerprint===env.G6_CANONICAL_DB_FINGERPRINT,'G6_SIM_DB_TARGET_MISMATCH');
-  report.sha=await stableSha();report.db_fingerprint=t.fingerprint;
+  report.sha=await checkedRuntimeSha();report.db_fingerprint=t.fingerprint;
   const before=await state();verifyBase(before);
   check(before.po_status==='notified'&&!before.sent_at&&!before.sent_channel&&!before.sent_note&&
     !before.supplier_order_id&&before.confirmed_quantity===null&&Number(before.manual_executions)===0,
@@ -139,7 +164,7 @@ async function main(){
     after.seller_label==='SIMULATED-STAGING-FOURNISSEUR-'+REF&&
     after.proof_ref==='SIM-STAGING-ACHAT-'+REF,
     'G6_SIM_CONFIRM_PG_ORACLE_FAILED');
-  await stableSha();
+  await checkedRuntimeSha(report.sha);
   report.after={po_status:after.po_status,sent_channel:after.sent_channel,
     simulation_marker:true,confirmed_quantity:Number(after.confirmed_quantity),
     manual_executions:after.manual_executions,payment_authorizations:after.payment_authorizations};
