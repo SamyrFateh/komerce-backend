@@ -14684,6 +14684,13 @@
       {
         "feature": "market",
         "category": "services",
+        "declared": "services/public-market-storefront.js",
+        "resolvedPath": "services/public-market-storefront.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "market",
+        "category": "services",
         "declared": "services/market-operation-guard.js",
         "resolvedPath": "services/market-operation-guard.js",
         "status": "resolved-in-technical-graph"
@@ -14896,6 +14903,13 @@
         "category": "tests",
         "declared": "tests/unit/market-lifecycle-service.test.js",
         "resolvedPath": "tests/unit/market-lifecycle-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market",
+        "category": "tests",
+        "declared": "tests/unit/public-market-storefront.test.js",
+        "resolvedPath": "tests/unit/public-market-storefront.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -40019,6 +40033,10 @@
               {
                 "sourceFileId": "bootstrap/crons.js",
                 "targetFile": "services/fx-public-reference-feed.js"
+              },
+              {
+                "sourceFileId": "server.js",
+                "targetFile": "services/public-market-storefront.js"
               }
             ]
           }
@@ -50144,7 +50162,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2355
+        "filesObserved": 2357
       },
       "boutique": {
         "filesObserved": 216,

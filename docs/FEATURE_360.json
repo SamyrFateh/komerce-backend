@@ -20744,7 +20744,7 @@
             ]
           },
           "services": {
-            "count": 10,
+            "count": 11,
             "files": [
               {
                 "declared": "middleware/require-market-scope.js",
@@ -20792,6 +20792,11 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/public-market-storefront.js",
+                "resolvedPath": "services/public-market-storefront.js",
+                "status": "resolved-on-disk-no-header"
+              },
+              {
                 "declared": "utils/currency.js",
                 "resolvedPath": "utils/currency.js",
                 "status": "resolved-in-technical-graph"
@@ -20799,7 +20804,7 @@
             ]
           },
           "tests": {
-            "count": 30,
+            "count": 31,
             "files": [
               {
                 "declared": "tests/e2e-api/market-operation-guard.e2e.test.js",
@@ -20947,6 +20952,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/public-market-storefront.test.js",
+                "resolvedPath": "tests/unit/public-market-storefront.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/require-market-scope.test.js",
                 "resolvedPath": "tests/unit/require-market-scope.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -20954,7 +20964,7 @@
             ]
           }
         },
-        "totalFiles": 57,
+        "totalFiles": 59,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
