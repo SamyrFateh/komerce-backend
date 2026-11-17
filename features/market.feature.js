@@ -89,6 +89,7 @@ module.exports = {
       'migrations/142_currency_parities.sql',
       'migrations/143_orders_display_snapshot.sql',
       'migrations/278_market_lifecycle.sql',
+      'migrations/420_market_storefront_editorial_seed.sql',
     ],
     services: [
       'services/fx-chain-service.js',
@@ -135,6 +136,7 @@ module.exports = {
       'tests/unit/cm-cg-market-full-reset.test.js',
       'tests/unit/market-lifecycle-service.test.js',
       'tests/unit/public-market-storefront.test.js',
+      'tests/unit/market-storefront-editor.test.js',
     ],
   },
 
