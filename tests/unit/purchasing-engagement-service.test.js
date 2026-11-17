@@ -56,6 +56,9 @@ function scripted(handlers) {
       for (const [pattern, reply] of handlers) {
         if (pattern.test(sql)) return typeof reply === 'function' ? reply(sql, params) : reply;
       }
+      // Legacy unit fixtures exercise non-simulated PO flows and mock only the
+      // queries under test; their linked order remains a real (unmarked) one.
+      if (/SELECT DISTINCT NULLIF\(to_jsonb\(o\)/.test(sql)) return { rows: [{ simulation_scope: null, reference: 'LEGACY-UNIT' }] };
       return { rows: [] };
     }),
   };
@@ -522,5 +525,38 @@ describe('createManualLine', () => {
     await engagement.createManualLine(body, { actor: { id: 'pas-un-uuid' } });
     await engagement.createManualLine(body);
     expect(second.calls.some((c) => /SET created_by/.test(c.sql))).toBe(false);
+  });
+});
+
+
+describe('G6 vendor simulation — backend boundaries', () => {
+  const scope = [/SELECT DISTINCT NULLIF\(to_jsonb\(o\)/, { rows: [{ simulation_scope:'G6-BUYER', reference:'KL1WGP6' }] }];
+  it('refuse la déclaration d’envoi réel non marquée pour une PO G6', async () => {
+    const { calls } = scripted([
+      [/FROM purchase_orders WHERE id = \$1 FOR UPDATE/, { rows: [poRow({ status:'notified', trigger_mode:'manual' })] }],
+      scope,
+    ]);
+    await expect(engagement.recordPurchaseOrderSent(PO, { channel:'email', supplier_order_id:'FAKE' }))
+      .rejects.toMatchObject({ status:409, code:'G6_SUPPLIER_SIMULATION_DECLARATION_REQUIRED' });
+    expect(calls.some(c => /UPDATE purchase_orders/.test(c.sql))).toBe(false);
+  });
+  it('refuse une simulation fournisseur pour une commande réelle', async () => {
+    scripted([
+      [/FROM purchase_orders WHERE id = \$1 FOR UPDATE/, { rows: [poRow({ status:'notified', trigger_mode:'manual' })] }],
+    ]);
+    await expect(engagement.recordPurchaseOrderSent(PO, { channel:'other', simulated:true, supplier_order_id:'SIM-STAGING-LEGACY-UNIT' }))
+      .rejects.toMatchObject({ status:409, code:'G6_SUPPLIER_SIMULATION_DECLARATION_REQUIRED' });
+  });
+  it('refuse la simulation hors staging même avec référence de recette', async () => {
+    const previous=process.env.KOMERCE_ENV;
+    process.env.KOMERCE_ENV='production';
+    try {
+      scripted([
+        [/FROM purchase_orders WHERE id = \$1 FOR UPDATE/, { rows: [poRow({ status:'notified', trigger_mode:'manual' })] }],
+        scope,
+      ]);
+      await expect(engagement.recordPurchaseOrderSent(PO, { channel:'other', simulated:true, supplier_order_id:'SIM-STAGING-KL1WGP6' }))
+        .rejects.toMatchObject({ status:403, code:'G6_SUPPLIER_SIMULATION_STAGING_ONLY' });
+    } finally { if (previous === undefined) delete process.env.KOMERCE_ENV; else process.env.KOMERCE_ENV=previous; }
   });
 });
