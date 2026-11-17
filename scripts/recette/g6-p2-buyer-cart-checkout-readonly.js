@@ -44,7 +44,35 @@ async function snapshot(){
   "LEFT JOIN product_market_exposure e ON e.product_id=p.id AND e.market_id=m.id "+
   "LEFT JOIN product_market_price_drafts d ON d.product_id=p.id AND d.market_id=m.id AND d.status='LOCAL_ACTIVE' "+
   "WHERE p.id=$1",[ID]);
- if(rows.length!==1)throw Error('BUYER_PRICE_SNAPSHOT_NOT_UNIQUE');
+ if(rows.length!==1){
+  // A zero-row join means an obsolete product fixture or an inactive KM
+  // market, not necessarily a duplicate. Diagnose with independent, read-only
+  // counts; never relax the uniqueness assertion or mutate staging data.
+  const {rows:[counts]}=await db.query(
+   "SELECT "+
+   "(SELECT COUNT(*)::int FROM products WHERE id=$1) AS product_id_rows, "+
+   "(SELECT COUNT(*)::int FROM products WHERE product_ref=$2) AS reference_rows, "+
+   "(SELECT COUNT(*)::int FROM markets WHERE code='KM' AND is_active=TRUE) AS km_active_rows, "+
+   "(SELECT COUNT(*)::int FROM product_market_exposure WHERE product_id=$1) AS exposure_rows, "+
+   "(SELECT COUNT(*)::int FROM product_market_price_drafts WHERE product_id=$1 AND status='LOCAL_ACTIVE') AS local_active_price_rows",
+   [ID,REF]
+  );
+  const {rows:candidates}=await db.query(
+   "SELECT p.product_ref, d.amount::text AS amount, d.currency, "+
+   "(SELECT COUNT(*)::int FROM product_skus s "+
+   " WHERE s.product_id=p.id AND s.is_active=TRUE AND s.stock>0) AS stocked_skus "+
+   "FROM products p JOIN markets m ON m.code='KM' AND m.is_active=TRUE "+
+   "JOIN product_market_exposure e ON e.product_id=p.id AND e.market_id=m.id AND e.commercial_exposure='ENABLED' "+
+   "JOIN product_market_price_drafts d ON d.product_id=p.id AND d.market_id=m.id AND d.status='LOCAL_ACTIVE' "+
+   "WHERE p.is_active=TRUE AND p.is_available=TRUE "+
+   "AND EXISTS (SELECT 1 FROM product_skus s WHERE s.product_id=p.id AND s.is_active=TRUE AND s.stock>0) "+
+   "ORDER BY p.product_ref LIMIT 8"
+  );
+  report.snapshot_diagnostic={matching_rows:rows.length,...counts,
+   candidate_count_sampled:candidates.length,active_candidate_samples:candidates};
+  save();
+  throw Error(rows.length===0?'BUYER_PRICE_SNAPSHOT_NO_MATCH':'BUYER_PRICE_SNAPSHOT_MULTIPLE_ROWS');
+ }
  return rows[0];
 }
 async function run(){
