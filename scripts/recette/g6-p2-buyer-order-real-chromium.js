@@ -165,6 +165,11 @@ async function browserCheckout({buyer,phone,code}){
   check((await ctx.cookies()).some(x=>x.name.endsWith('kmrc_jwt')&&x.httpOnly),'OTP_HTTPONLY_SESSION_NOT_SET');
   record('CHROMIUM_OTP_VERIFIED',{request_status:rr.status(),verify_status:vr.status(),session:true,external_notification:false});
   await page.goto(ORIGIN+'/boutique/?market='+MARKET,{waitUntil:'domcontentloaded'});
+  // The catalog's async load must finish before the first search input event.
+  await page.waitForFunction(() => {
+    const count=document.getElementById('k-hero-count');
+    return !!count && !count.hidden && /[1-9]/.test(count.textContent||'');
+  },null,{timeout:30000});
   const {rows:[actualProduct]}=await db.query('SELECT name,product_ref FROM products WHERE id=$1',[PRODUCT]);
   check(actualProduct?.product_ref===REF&&!!actualProduct.name,'G6_PRODUCT_PROVENANCE_MISMATCH');
   await page.locator('#k-search-input').fill(actualProduct.name);
