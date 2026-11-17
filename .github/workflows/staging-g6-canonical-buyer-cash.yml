@@ -35,7 +35,7 @@ jobs:
       STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
       EXPECTED_RAILWAY_ENVIRONMENT: staging
       G6_CANONICAL_ACCEPT_PARTIAL_REPLAY: '1'
-      G6_CANONICAL_PHASE: ${{ github.event.issue.title == '[staging-op] g6-canonical-hub-receiving-M01-KM' && 'HUB_RECEIVING' || (github.event.issue.title == '[staging-op] g6-canonical-vendor-simulation-M01-KM' && 'HUB_VENDOR_SIMULATION' || (github.event.issue.title == '[staging-op] g6-canonical-vendor-readiness-M01-KM' && 'HUB_VENDOR_READINESS' || (github.event.issue.title == '[staging-op] g6-canonical-commitment-M01-KM' && 'HUB_COMMITMENT' || (github.event.issue.title == '[staging-op] g6-canonical-hub-po-M01-KM' && 'HUB_PO' || 'BUYER_CASH')))) }}
+      G6_CANONICAL_PHASE: ${{ github.event.issue.title == '[staging-op] g6-canonical-hub-receiving-M01-KM' && 'HUB_RECEIVING' || (github.event.issue.title == '[staging-op] g6-canonical-vendor-simulation-M01-KM' && 'HUB_VENDOR_SIMULATION' || (github.event.issue.title == '[staging-op] g6-canonical-vendor-readiness-M01-KM' && 'HUB_VENDOR_READINESS' || (github.event.issue.title == '[staging-op] g6-canonical-commitment-M01-KM' && 'HUB_COMMITMENT' || (github.event.issue.title == '[staging-op] g6-canonical-hub-po-M01-KM' && 'HUB_PO' || 'BUYER_CASH'))))) }}
       G6_CANONICAL_SCENARIO: ${{ github.event.issue.title == '[staging-op] g6-canonical-buyer-cash-M04-CM' && 'M04' || (github.event.issue.title == '[staging-op] g6-canonical-buyer-cash-M05-CG' && 'M05' || 'M01') }}
       G6_TARGET_MARKET: ${{ github.event.issue.title == '[staging-op] g6-canonical-buyer-cash-M04-CM' && 'CM' || (github.event.issue.title == '[staging-op] g6-canonical-buyer-cash-M05-CG' && 'CG' || 'KM') }}
       KOMERCE_STAGING_RESET_DB_PIN: ${{ vars.STAGING_DB_PIN }}
