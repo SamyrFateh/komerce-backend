@@ -475,6 +475,66 @@
     return form;
   }
 
+  // G6-E « retenu en douane » : motif obligatoire (formulaire intégré), mainlevée par responsable marché ou admin.
+  function openHoldForm(context, doc, host, row) {
+    while (host.firstChild) host.removeChild(host.firstChild);
+    const form = doc.createElement('form');
+    form.className = 'kmc-customs-form';
+    form.setAttribute('data-customs-hold-form', row.reference);
+    const label = text(doc, 'label', '', `Motif de la retenue en douane de ${row.reference}`);
+    const input = doc.createElement('input');
+    input.type = 'text';
+    input.required = true;
+    input.minLength = 3;
+    input.maxLength = 500;
+    input.setAttribute('data-customs-hold-reason', '');
+    input.setAttribute('aria-label', 'Motif de la retenue en douane');
+    const submit = makeButton(doc, 'Confirmer la retenue', 'confirm-hold-customs');
+    submit.type = 'submit';
+    const error = text(doc, 'div', 'kmc-workspace-hint', '');
+    error.setAttribute('role', 'alert');
+    form.appendChild(label); form.appendChild(input); form.appendChild(submit); form.appendChild(error);
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      const reason = String(input.value || '').trim();
+      if (reason.length < 3) { error.textContent = 'Le motif de retenue est obligatoire.'; return; }
+      await runAction(context, submit, {
+        url: endpointFor(context.marketCode, `customs/shipments/${encodeURIComponent(row.reference)}/hold`),
+        body: { reason },
+        successMessage: `${row.reference} retenu en douane.`,
+      });
+    });
+    host.appendChild(form);
+    input.focus();
+  }
+
+  function appendHoldControls(context, doc, td, formHost, row) {
+    const role = context.user && context.user.role;
+    if (!row.is_active) return;
+    if (row.customs_held) {
+      const badge = text(doc, 'span', 'kmc-workspace-hint', `Retenu en douane : ${row.hold_reason || ''}`);
+      badge.setAttribute('data-customs-held', row.reference);
+      td.appendChild(badge);
+      if (role === 'admin' || role === 'market_operator') {
+        const release = makeButton(doc, 'Mainlevée', 'release-customs');
+        release.addEventListener('click', () => runAction(context, release, {
+          url: endpointFor(context.marketCode, `customs/shipments/${encodeURIComponent(row.reference)}/release`),
+          body: {},
+          confirmMessage: `Lever la retenue douane de ${row.reference} ?`,
+          successMessage: `Mainlevée accordée pour ${row.reference}.`,
+        }));
+        td.appendChild(release);
+      }
+      return;
+    }
+    if (role === 'admin' || role === 'market_operator' || role === 'agent_transitaire') {
+      const hold = makeButton(doc, 'Retenir en douane', 'hold-customs');
+      hold.classList.add('is-secondary');
+      hold.addEventListener('click', () => openHoldForm(context, doc, formHost, row));
+      td.appendChild(hold);
+    }
+  }
+
   function renderCustoms(rootNode, ui, doc, payload, context) {
     const slot = createSection(
       rootNode,
@@ -535,7 +595,7 @@
         tr.className = 'is-highlighted';
         tr.setAttribute('aria-current', 'true');
       }
-      [row.reference, String(row.shipment_date || '').slice(0, 10), statusLabel(row.status), row.linked_parcels, formatKmf(row.cif_value_kmf), formatKmf(row.customs_paid_kmf), row.is_active ? 'Active' : 'Inactive'].forEach(value => {
+      [row.reference, String(row.shipment_date || '').slice(0, 10), (row.customs_held ? 'Retenu en douane' : statusLabel(row.status)), row.linked_parcels, formatKmf(row.cif_value_kmf), formatKmf(row.customs_paid_kmf), row.is_active ? 'Active' : 'Inactive'].forEach(value => {
         const td = doc.createElement('td');
         td.textContent = value == null || value === '' ? '—' : String(value);
         tr.appendChild(td);
@@ -579,6 +639,7 @@
       } else if (context.user && context.user.role === 'market_operator') {
         td.appendChild(text(doc, 'span', 'kmc-workspace-note', 'Pilotage pays'));
       }
+      appendHoldControls(context, doc, td, formHost, row);
       tr.appendChild(td);
       tbody.appendChild(tr);
     });

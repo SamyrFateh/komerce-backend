@@ -31,6 +31,12 @@ class ReturnRequestError extends Error {
     this.status = status;
   }
 }
+// Décision propriétaire 17/11 : commandes de recette (simulation_scope) acceptées au SAV
+// sur le staging uniquement ; en production l'exclusion reste stricte (fail-closed).
+const realOrStagingRecipe = (env = process.env) =>
+  String(env.KOMERCE_ENV || '').toLowerCase() === 'staging'
+    ? '(o.simulation_scope IS NULL OR o.simulation_scope IS NOT NULL)'
+    : 'o.simulation_scope IS NULL';
 const fail = (code, message, status) => { throw new ReturnRequestError(code, message, status); };
 
 function relayScope(actor) {
@@ -56,7 +62,7 @@ async function findOrder(executor, reference, scope, lock = false) {
   const { rows } = await executor.query(
     `SELECT o.id, o.reference, o.status, o.payment_status, o.relais_id, o.market_id
        FROM orders o
-      WHERE o.reference = $1 AND o.simulation_scope IS NULL
+      WHERE o.reference = $1 AND ${realOrStagingRecipe()}
         AND ($2::uuid IS NULL OR o.relais_id = $2::uuid)
       ${lock ? 'FOR UPDATE OF o' : ''}`,
     [reference, scope]
@@ -106,7 +112,7 @@ async function listReturnRequests({ actor, executor, limit = 50 }) {
        JOIN order_items oi ON oi.id = d.return_order_item_id AND oi.order_id = o.id
        JOIN products p ON p.id = oi.product_id
        LEFT JOIN relay_product_return_receipts rr ON rr.request_id=d.id
-      WHERE d.type = 'product_return' AND o.simulation_scope IS NULL
+      WHERE d.type = 'product_return' AND ${realOrStagingRecipe()}
         AND ($1::uuid IS NULL OR o.relais_id = $1::uuid)
       ORDER BY d.created_at DESC LIMIT $2`,
     [scope, count]

@@ -81,7 +81,7 @@ import {
 } from './controllers/home-controller.js';
 import { isDesktop, clearInlinePagerStyles, ensureDesktopScrollOwner, scrollPageToTop, scrollPageToElement } from './b-scroll-owner.js';
 import {
-  setProducts, getAllProducts, getPromoProducts, writeCache,
+  setProducts, getAllProducts, getPromoProducts, writeCache, readCache,
 }                             from './product-store.js';
 
 'use strict';
@@ -213,9 +213,11 @@ async function loadProducts() {
     products = setProducts(raw);           // product-store normalise + met en cache
   } catch (e) {
     console.warn('[loadProducts] API KO → fallback cache product-store');
-    const cached = localStorage.getItem('komerce_products_cache');
-    if (cached) {
-      products = setProducts(JSON.parse(cached).filter(p => p.is_available !== false));
+    // Même clé canonique que writeCache() : ne jamais exposer le cache KM
+    // aux visiteurs CM/CG lors d'une coupure API.
+    const cached = readCache();
+    if (cached.length) {
+      products = setProducts(cached.filter(p => p.is_available !== false));
     } else {
       _showCatalogLoadError(e);
       return;
@@ -966,14 +968,14 @@ function renderSearchDropdown(results) {
   dom.searchDrop.classList.add('open');
   dom.searchDrop.querySelectorAll('.k-search-item').forEach(item => {
     item.addEventListener('click', () => {
-      openModal(item.dataset.id);
+      const productId = item.dataset.id;
       dom.searchDrop.classList.remove('open');
       dom.searchInput.value = '';
-      // Vider l'input NE SUFFIT PAS : state.filtered contient encore les seuls
-      // résultats de la recherche. Sans cette restauration, le prochain rendu
-      // voit _searching=false (input vide) et applique _balancedPick() à cette
-      // liste étroite → 0 carte. Cf. _resetSearchFilter().
+      // Sur mobile, renderGrid() remonte le pager et ses styles de scroll.
+      // Le faire AVANT openModal(), qui verrouille ce scroll pour le PDP.
+      // Sinon le pager peut neutraliser l'ouverture de la fiche produit.
       _resetSearchFilter();
+      openModal(productId);
     });
   });
 }

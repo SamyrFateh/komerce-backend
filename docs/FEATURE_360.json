@@ -3635,7 +3635,7 @@
               {
                 "declared": "services/product-media-storage.js",
                 "resolvedPath": "services/product-media-storage.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/product-price-audit.js",
@@ -9269,6 +9269,10 @@
       "ownership": {
         "ownsTables": [
           {
+            "table": "customs_shipment_holds",
+            "resolution": "single-writer"
+          },
+          {
             "table": "order_incidents",
             "resolution": "single-writer"
           },
@@ -9289,6 +9293,12 @@
             "mode": "W",
             "lifecycleOwner": "shared-cart",
             "ownershipStatus": "writer-not-owner"
+          },
+          {
+            "table": "customs_shipment_holds",
+            "mode": "W",
+            "lifecycleOwner": "dashboard",
+            "ownershipStatus": "owner"
           },
           {
             "table": "invoices",
@@ -9517,6 +9527,10 @@
       "data": {
         "ownsTables": [
           {
+            "table": "customs_shipment_holds",
+            "resolution": "single-writer"
+          },
+          {
             "table": "order_incidents",
             "resolution": "single-writer"
           },
@@ -9537,6 +9551,12 @@
             "mode": "W",
             "lifecycleOwner": "shared-cart",
             "ownershipStatus": "writer-not-owner"
+          },
+          {
+            "table": "customs_shipment_holds",
+            "mode": "W",
+            "lifecycleOwner": "dashboard",
+            "ownershipStatus": "owner"
           },
           {
             "table": "invoices",
@@ -20804,7 +20824,7 @@
               {
                 "declared": "services/public-market-storefront.js",
                 "resolvedPath": "services/public-market-storefront.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "utils/currency.js",

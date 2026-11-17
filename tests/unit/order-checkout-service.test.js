@@ -112,3 +112,19 @@ describe('order-checkout-service — unification monétaire (pivot EUR, snapshot
     expect(source.slice(previewAt, insertAt)).toMatch(/ROLLBACK[\s\S]*items_total_kmf[\s\S]*transport_price_kmf[\s\S]*total_kmf/);
   });
 });
+
+const s_g6 = require('fs').readFileSync(require('path').join(__dirname, '../../services/order-checkout-service.js'), 'utf8');
+
+describe('garde acheteur de recette G6 (staging uniquement)', () => {
+  test('multi-lignes et multi-unités ; cash relais et mobile money simulé ; PSP et wallet refusés', () => {
+    expect(s_g6).toContain("['cash_relais','mobile_money'].includes(payment_mode)");
+    expect(s_g6).toContain('use_wallet||');
+    expect(s_g6).toContain('stripe_payment_intent||');
+    expect(s_g6).not.toContain('items.length!==1');
+    expect(s_g6).not.toContain('Number(items[0]?.quantity)!==1');
+  });
+  test('production fail-closed : le marquage ne s\'active que sur staging', () => {
+    const g = require('fs').readFileSync(require('path').join(__dirname, '../../services/g6-staging-buyer-identity-guard.js'), 'utf8');
+    expect(g).toContain('if(!isStaging(env)||!isG6BuyerName(user))return false');
+  });
+});

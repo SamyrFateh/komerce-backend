@@ -10,6 +10,21 @@ on:
         description: 'SHA complet attendu sur /health/version (optionnel)'
         required: false
         default: ''
+      order360:
+        description: 'Also verify existing KM/CM/CG recipe Order 360 through Chromium (read only)'
+        type: boolean
+        required: false
+        default: false
+      fixture_inventory:
+        description: 'Inventory existing campaign fixtures and login/relay eligibility metadata (no secret values, READ ONLY)'
+        type: boolean
+        required: false
+        default: false
+      client_probe:
+        description: 'Observe missing OTP guard on an existing G6 client through Chromium; never provision/verify a code'
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: read
@@ -44,10 +59,30 @@ jobs:
         run: |
           if [ -z "${DATABASE_URL}" ]; then echo '::error::RAILWAY_DATABASE_URL manque'; exit 1; fi
       - name: Prerequis par marche (READ ONLY)
+        env:
+          G6_A_FIXTURE_INVENTORY: ${{ inputs.fixture_inventory && 'true' || 'false' }}
+          E2E_AGENT_RELAIS_EMAIL: ${{ secrets.E2E_AGENT_RELAIS_EMAIL }}
         run: node scripts/recette/staging-cert-prereq-readonly.js
+      - name: Install Chromium for optional Order 360 proof
+        if: inputs.order360 || inputs.client_probe
+        run: npx playwright install --with-deps chromium
+      - name: Existing client connection guard through Chromium (no provisioning)
+        if: inputs.client_probe
+        run: node scripts/recette/g6-a-existing-client-probe.js
+      - name: Order 360 via admin login UI and independent PostgreSQL (READ ONLY)
+        if: inputs.order360
+        env:
+          E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+          E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+          E2E_AGENT_RELAIS_EMAIL: ${{ secrets.E2E_AGENT_RELAIS_EMAIL }}
+          E2E_AGENT_RELAIS_PASSWORD: ${{ secrets.E2E_AGENT_RELAIS_PASSWORD }}
+        run: node scripts/recette/g6-a-order360-readonly.js
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: staging-cert-prereq-${{ github.run_id }}
-          path: test-results/cert-prereq/prereq-readonly.json
+          path: |
+            test-results/cert-prereq/prereq-readonly.json
+            test-results/g6-a-order360/
+            test-results/g6-a-client-probe/
           if-no-files-found: warn
