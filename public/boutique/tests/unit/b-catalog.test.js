@@ -217,6 +217,7 @@ beforeEach(() => {
   mockIsDesktop.mockReturnValue(true);
   mockGetAllProducts.mockImplementation(() => mockState.products);
   mockSetProducts.mockImplementation((items) => items);
+  mockReadCache.mockReturnValue([]);
   mockPruneObsoleteCart.mockImplementation(() => {});
   global.requestAnimationFrame = (callback) => { callback(); return 1; };
   global.K = { products: { list: jest.fn() } };
