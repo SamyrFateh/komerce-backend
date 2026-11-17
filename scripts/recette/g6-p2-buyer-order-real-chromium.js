@@ -267,7 +267,9 @@ async function browserCheckout({buyer,phone,code}){
   check(orders.length===1,'G6_EXACTLY_ONE_ORDER_NOT_SATISFIED');
   const o=orders[0];
   check(o.id===order.id&&o.reference===order.reference&&o.simulation_scope==='G6-BUYER'&&
-    o.market===MARKET&&Number(o.total_kmf)===report.checkout_expected_total_kmf&&o.payment_mode==='cash_relais'&&
+    o.market===MARKET&&Number(o.display_total_amount)===report.checkout_display_total&&
+    o.display_currency===(MARKET==='KM'?'KMF':'XAF')&&Number(o.total_kmf)>0&&
+    (MARKET!=='KM'||Number(o.total_kmf)===report.checkout_display_total)&&o.payment_mode==='cash_relais'&&
     o.status==='pending'&&o.payment_status!=='paid'&&o.lines===1&&o.qty===1&&o.products?.includes(REF),
     'G6_POSTGRES_CANONICAL_ORDER_MISMATCH');
   report.order={id:o.id,reference:o.reference,status:o.status,payment_status:o.payment_status,
