@@ -1,4 +1,7 @@
 /**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
  * Documentation produit HTML : garde des rôles, intégrité des procédures et visuels.
  * Ces assertions de contrat ne remplacent pas le rendu Chromium sur staging.
  */
