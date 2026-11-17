@@ -12,13 +12,15 @@ const fs=require('node:fs');
 const path=require('node:path');
 const {test,expect}=require('@playwright/test');
 const OUT=path.resolve('test-results/g6-p3-kuyiyuk');
-const evidence={schema:'komerce-g6-p3-kuyiyuk/1',reference:'KUYIYUK',verdict:'NOT_PROVEN',external_supplier_calls:0,external_payment_executed:false,staging_cash_confirmation_recorded:false,gestures:[]};
+const CANONICAL=process.env.G6_CANONICAL_HUB_STAGE==='1';
+const REF=CANONICAL?String(process.env.G6_CANONICAL_ORDER_REFERENCE||''):'KUYIYUK';
+const evidence={schema:'komerce-g6-p3-kuyiyuk/1',reference:REF,verdict:'NOT_PROVEN',external_supplier_calls:0,external_payment_executed:false,staging_cash_confirmation_recorded:false,gestures:[]};
 const save=()=>{fs.mkdirSync(OUT,{recursive:true});fs.writeFileSync(path.join(OUT,'evidence.json'),JSON.stringify(evidence,null,2)+'\n');};
 let db;
 const q=async(sql,params=[]) => (await db.query(sql,params)).rows;
 const base='https://komerce-backend-production.up.railway.app';
-const buyer='aedfc0cb-db52-4f58-be1b-f709374151ad';
-const orderId='af34f91c-bfa2-45a2-87c2-ec611cc8c850';
+const buyer=CANONICAL?String(process.env.G6_CANONICAL_BUYER_ID||''):'aedfc0cb-db52-4f58-be1b-f709374151ad';
+const orderId=CANONICAL?String(process.env.G6_CANONICAL_ORDER_ID||''):'af34f91c-bfa2-45a2-87c2-ec611cc8c850';
 const orderState=async()=> {
   const [o]=await q(`SELECT o.id,o.reference,o.user_id,o.relais_id,o.simulation_scope,o.status::text AS status,o.payment_mode::text AS payment_mode,o.payment_status::text AS payment_status,
      (SELECT COUNT(*)::int FROM order_items oi WHERE oi.order_id=o.id) AS item_count,
@@ -26,7 +28,7 @@ const orderState=async()=> {
      (SELECT COUNT(DISTINCT pl.purchase_order_id)::int FROM purchase_lines pl JOIN order_items oi ON oi.id=pl.order_item_id WHERE oi.order_id=o.id AND pl.cancelled_at IS NULL AND pl.purchase_order_id IS NOT NULL) AS po_count,
      (SELECT COUNT(*)::int FROM cash_collections cc WHERE cc.order_id=o.id) AS cash_collection_count,
      (SELECT COUNT(*)::int FROM cash_confirmation_controls ccc WHERE ccc.order_id=o.id AND ccc.state='CONFIRMED') AS cash_control_confirmed_count
-    FROM orders o WHERE o.id=$1 AND o.reference='KUYIYUK'`,[orderId]);
+    FROM orders o WHERE o.id=$1 AND o.reference=$2`,[orderId,REF]);
   return o||null;
 };
 async function login(browser,baseURL,actor='hub'){
@@ -50,7 +52,7 @@ async function capture(page,name){
   fs.mkdirSync(path.join(OUT,'captures'),{recursive:true});
   await page.screenshot({path:path.join(OUT,'captures',name+'.png')});
 }
-test.describe.serial('G6 P3 KUYIYUK — Chromium Relais cash + Hub UI',()=>{
+test.describe.serial('G6 P3 '+REF+' — Chromium Relais cash + Hub UI',()=>{
   test.beforeAll(async()=>{
     db=require('../../db');
     const env=process.env;
@@ -59,6 +61,13 @@ test.describe.serial('G6 P3 KUYIYUK — Chromium Relais cash + Hub UI',()=>{
     expect(env.GITHUB_EVENT_NAME).toBe('issues');
     expect(env.GITHUB_ACTOR).toBe(env.GITHUB_REPOSITORY_OWNER);
     expect(env.STAGING_BASE_URL).toBe(base);
+    if(CANONICAL){
+      expect(env.G6_CANONICAL_SCENARIO).toBe('M01');
+      expect(env.G6_TARGET_MARKET).toBe('KM');
+      expect(REF).toMatch(/^[A-Z0-9][A-Z0-9-]{5,63}$/);
+      expect(buyer).toMatch(/^[a-f0-9-]{36}$/);
+      expect(orderId).toMatch(/^[a-f0-9-]{36}$/);
+    }
     const target=await require('../../scripts/recette/target-guard').confirmTarget({db,env});
     expect(target.confirmed).toBe(true);
     evidence.db_fingerprint=target.fingerprint;
@@ -123,10 +132,10 @@ test.describe.serial('G6 P3 KUYIYUK — Chromium Relais cash + Hub UI',()=>{
         });
         console.log('[G6_P3_CASH_SCOPE]',JSON.stringify(cashScope));
         await relayPage.locator('[data-relay-execution-jump="cash"]').click();
-        const cashRow=relayPage.locator('tr',{hasText:'KUYIYUK'});
+        const cashRow=relayPage.locator('tr',{hasText:REF});
         await cashRow.waitFor({timeout:20000});
         await capture(relayPage,'00-cash-pending');
-        const cashResponse=relayPage.waitForResponse(r=>new URL(r.url()).pathname==='/api/admin/workspaces/operations/market/KM/orders/KUYIYUK/confirm-cash'&&r.request().method()==='POST',{timeout:30000});
+        const cashResponse=relayPage.waitForResponse(r=>new URL(r.url()).pathname==='/api/admin/workspaces/operations/market/KM/orders/'+REF+'/confirm-cash'&&r.request().method()==='POST',{timeout:30000});
         await cashRow.locator('[data-workspace-action="confirm-cash"]').click();
         const cr=await cashResponse;
         const cbody=await cr.json().catch(()=>({}));
@@ -162,18 +171,18 @@ test.describe.serial('G6 P3 KUYIYUK — Chromium Relais cash + Hub UI',()=>{
       await page.waitForLoadState('networkidle').catch(()=>{});
       const dossiers=page.getByRole('tab',{name:'Dossiers'});
       if(await dossiers.count())await dossiers.click();
-      const orderCard=page.locator('[data-hlc-order]').filter({hasText:'KUYIYUK'});
+      const orderCard=page.locator('[data-hlc-order]').filter({hasText:REF});
       await orderCard.first().waitFor({timeout:25000});
       await capture(page,'01-order-visible');
       const afterCash=await orderState();
       if(Number(afterCash.line_count)===0){
-        const need=page.locator('[data-hlc-need]').filter({hasText:'KUYIYUK'});
+        const need=page.locator('[data-hlc-need]').filter({hasText:REF});
         await need.first().waitFor({timeout:20000});
         await need.first().click();
         const resolve=page.locator('[data-hlc-action="resolve-sourcing"]');
         await resolve.waitFor({timeout:15000});
         await resolve.click();
-        const form=page.locator('form[data-hub-sourcing-form="KUYIYUK"]');
+        const form=page.locator('form[data-hub-sourcing-form="'+REF+'"]');
         await form.waitFor({timeout:15000});
         const supplier=form.locator('[data-sourcing-supplier]');
         await expect.poll(async()=>supplier.locator('option').count(),{timeout:20000}).toBeGreaterThan(1);
@@ -197,12 +206,12 @@ test.describe.serial('G6 P3 KUYIYUK — Chromium Relais cash + Hub UI',()=>{
       const current=await orderState();
       expect(Number(current.line_count)).toBe(1);
       expect(Number(current.po_count)).toBe(0);
-      const need=page.locator('[data-hlc-need]').filter({hasText:'KUYIYUK'});
+      const need=page.locator('[data-hlc-need]').filter({hasText:REF});
       if(!(await need.count())){
         await page.reload({waitUntil:'domcontentloaded'});
         await page.waitForLoadState('networkidle').catch(()=>{});
       }
-      const activeNeed=page.locator('[data-hlc-need]').filter({hasText:'KUYIYUK'}).last();
+      const activeNeed=page.locator('[data-hlc-need]').filter({hasText:REF}).last();
       await activeNeed.waitFor({timeout:25000});
       await activeNeed.click();
       const prepare=page.locator('[data-hlc-action="prepare-po"]');
