@@ -15,6 +15,15 @@ describe('G6 P2 — le devis serveur anonyme n est pas une commande',()=>{
   expect(src).toContain("UNEXPECTED_BROWSER_WRITE_ATTEMPTS");
   expect(src).toContain("UNAUTHENTICATED_PREVIEW_MUST_BE_401");
  });
+ test('préflight prix : explique zéro ou plusieurs lignes sans contourner le garde',()=>{
+  expect(src).toContain('BUYER_PRICE_SNAPSHOT_NO_MATCH');
+  expect(src).toContain('BUYER_PRICE_SNAPSHOT_MULTIPLE_ROWS');
+  expect(src).toContain('report.snapshot_diagnostic');
+  expect(src).toContain('matching_rows:rows.length');
+  expect(src).toContain("ORDER BY p.product_ref LIMIT 8");
+  expect(src).toContain('default_transaction_read_only=on');
+  expect(src).not.toContain("rows.length!==1?rows[0]:");
+ });
  test('le serveur utilise previewOnly et refuse une identité absente',()=>{
   expect(server).toContain("router.post('/preview', authenticateOrCreateGuest");
   expect(server).toContain("previewOnly: true");
