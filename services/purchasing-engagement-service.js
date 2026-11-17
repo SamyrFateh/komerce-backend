@@ -546,6 +546,17 @@ async function confirmGroupedPurchaseOrder(poId, body = {}, { actor = null, cont
 
   const outcome = await withTransaction(async (client) => {
     const po = await lockGroupedPo(client, poId, { requireDraft: false });
+    const simulation = await g6SupplierSimulation(client, po, body);
+    if (simulation) {
+      const { rows: [sent] } = await client.query('SELECT sent_at, sent_channel, sent_note FROM purchase_orders WHERE id=$1', [po.id]);
+      if (!sent?.sent_at || sent.sent_channel !== 'other' || !sent.sent_note?.startsWith(G6_SUPPLIER_SIM_TAG) ||
+          supplierOrderId !== simulation.supplierOrderRef || manualProof !== simulation.purchaseProof ||
+          optionalText(body.seller_label) !== simulation.sellerLabel ||
+          body.tracking_url || body.tracking_number) {
+        throw fail(409, 'G6_SUPPLIER_SIMULATED_CONFIRMATION_PROOF_INVALID',
+          'Confirmation G6 exige un envoi simulé déjà tracé, vendeur et justificatif SIM-STAGING, aucun suivi externe');
+      }
+    }
     if (po.trigger_mode !== 'auto' && confirmations.some((line) => line.confirmedQuantity > 0) && (!manualProof || manualProof.length < 4)) {
       throw fail(400, 'MANUAL_PURCHASE_PROOF_REQUIRED', 'Une référence de justificatif d’achat est obligatoire avant toute confirmation manuelle.');
     }
@@ -904,6 +915,31 @@ async function changeLineSupplier(lineId, body = {}, { actor = null, context = {
   return { line, replaced_line_id: lineId, ...summarizeMarkets([line]) };
 }
 
+// G6 M01: an internal, explicitly labelled rehearsal is never an actual supplier transmission.
+// Read source orders under the PO lock; no fixture API/SQL path is offered to the operator.
+const G6_SUPPLIER_SIM_TAG = '[SIMULATED / STAGING ONLY]';
+async function g6SupplierSimulation(client, po, body) {
+  const { rows } = await client.query(`
+    SELECT DISTINCT o.simulation_scope, o.reference
+      FROM purchase_lines pl
+      JOIN order_items oi ON oi.id = pl.order_item_id
+      JOIN orders o ON o.id = oi.order_id
+     WHERE pl.purchase_order_id = $1 AND pl.cancelled_at IS NULL
+  `, [po.id]);
+  if (!rows.length) throw fail(409, 'SIMULATED_PO_WITHOUT_ORDER', 'PO sans commande liée');
+  const isG6 = rows.length === 1 && rows[0].simulation_scope === 'G6-BUYER';
+  if (Boolean(body.simulated) !== isG6) {
+    throw fail(409, 'G6_SUPPLIER_SIMULATION_DECLARATION_REQUIRED',
+      'Une commande G6 requiert une preuve fournisseur explicitement SIMULATED / STAGING ONLY ; une commande réelle ne peut pas utiliser cette voie');
+  }
+  if (isG6 && (process.env.KOMERCE_ENV !== 'staging' || po.trigger_mode === 'auto' || body.simulated !== true)) {
+    throw fail(403, 'G6_SUPPLIER_SIMULATION_STAGING_ONLY', 'Simulation fournisseur autorisée uniquement en staging, sur PO manuelle');
+  }
+  return isG6 ? { reference: rows[0].reference, supplierOrderRef: 'SIM-STAGING-' + rows[0].reference,
+    purchaseProof: 'SIM-STAGING-ACHAT-' + rows[0].reference,
+    sellerLabel: 'SIMULATED-STAGING-FOURNISSEUR-' + rows[0].reference } : null;
+}
+
 // ─── Preuve d'envoi : « bon émis » (submit) ≠ « envoyé au fournisseur » ─────────────────────────
 // Un lien WhatsApp généré n'est pas une transmission. L'opérateur (ou un adaptateur API) déclare
 // l'envoi réellement effectué : canal, auteur, heure ; immuable ensuite (trigger migration 358).
@@ -920,6 +956,10 @@ async function recordPurchaseOrderSent(poId, body = {}, { actor = null } = {}) {
 
   return withTransaction(async (client) => {
     const po = await lockGroupedPo(client, poId, { requireDraft: false });
+    const simulation = await g6SupplierSimulation(client, po, body);
+    if (simulation && (channel !== 'other' || supplierOrderId !== simulation.supplierOrderRef)) {
+      throw fail(400, 'G6_SUPPLIER_SIMULATED_SEND_PROOF_INVALID', 'Canal interne other et référence SIM-STAGING-<commande> obligatoires');
+    }
     if (po.status !== 'notified') {
       throw fail(409, 'PURCHASE_ORDER_NOT_SUBMITTED', `PO au statut "${po.status}" : seule une PO soumise (notified) peut être déclarée envoyée`, {
         current_status: po.status,
@@ -938,9 +978,11 @@ async function recordPurchaseOrderSent(poId, body = {}, { actor = null } = {}) {
               supplier_order_id = COALESCE(supplier_order_id, $5), updated_at = NOW()
         WHERE id = $1
         RETURNING id, status, sent_at, sent_channel, sent_by, sent_note, supplier_order_id`,
-      [po.id, channel, actor && actor.id ? actor.id : null, note, supplierOrderId]
+      [po.id, channel, actor && actor.id ? actor.id : null,
+        simulation ? `${G6_SUPPLIER_SIM_TAG} Aucun contact fournisseur; canal interne de recette; ${simulation.supplierOrderRef}` : note,
+        supplierOrderId]
     );
-    return { purchase_order_id: updated.id, already_sent: false, status: updated.status, sent_at: updated.sent_at,
+    return { simulated: Boolean(simulation), purchase_order_id: updated.id, already_sent: false, status: updated.status, sent_at: updated.sent_at,
       sent_channel: updated.sent_channel, sent_by: updated.sent_by, supplier_order_id: updated.supplier_order_id };
   });
 }
