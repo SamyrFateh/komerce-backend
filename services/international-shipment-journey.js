@@ -113,13 +113,13 @@ async function transition(market,actor,reference,body={},database=db){
   const proof=str(body.proof_ref,'proof_ref',240);
   return transact(database,async client=>{
     const s=await get(client,market,reference,true);
-    if(STAGES.indexOf(target)!==STAGES.indexOf(s.stage)+1)
-      fail(409,'JOURNEY_STAGE_ORDER','Les étapes doivent être validées dans l’ordre');
     if(s.customs_shipment_id){
       const {rows:held}=await client.query(
         "SELECT 1 FROM customs_shipment_holds WHERE shipment_id=$1 AND status='held' LIMIT 1",[s.customs_shipment_id]);
       if(held.length)fail(409,'JOURNEY_CUSTOMS_HELD','Dossier retenu en douane : mainlevée requise avant toute étape');
     }
+    if(STAGES.indexOf(target)!==STAGES.indexOf(s.stage)+1)
+      fail(409,'JOURNEY_STAGE_ORDER','Les étapes doivent être validées dans l’ordre');
     if(target==='in_transit'&&!s.tracking_reference&&!s.bill_of_lading_ref)
       fail(409,'JOURNEY_TRACKING_REQUIRED','Suivi ou connaissement requis avant départ');
     if(target==='customs_released'){
