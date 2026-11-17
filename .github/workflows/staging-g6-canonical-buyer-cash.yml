@@ -62,8 +62,8 @@ jobs:
           if(isResume) {
             const m=String(process.env.ISSUE_BODY||'').match(/^resume_run_id:\s*(\d{8,})\s*$/m);
             if(!m)throw Error('G6_RESUME_RUN_ID_REQUIRED');
-            fs.appendFileSync(process.env.GITHUB_OUTPUT,'run_id='+m[1]+'\\n');
-            fs.appendFileSync(process.env.GITHUB_ENV,'G6_CANONICAL_RESUME_RUN_ID='+m[1]+'\\n');
+            fs.appendFileSync(process.env.GITHUB_OUTPUT,'run_id='+m[1]+'\n');
+            fs.appendFileSync(process.env.GITHUB_ENV,'G6_CANONICAL_RESUME_RUN_ID='+m[1]+'\n');
           }
           NODE
       - name: Retrieve original buyer proof from verified GitHub Actions run
