@@ -10,6 +10,11 @@ on:
         description: 'SHA complet attendu sur /health/version (optionnel)'
         required: false
         default: ''
+      order360:
+        description: 'Also verify existing KM/CM/CG recipe Order 360 through Chromium (read only)'
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: read
@@ -45,9 +50,20 @@ jobs:
           if [ -z "${DATABASE_URL}" ]; then echo '::error::RAILWAY_DATABASE_URL manque'; exit 1; fi
       - name: Prerequis par marche (READ ONLY)
         run: node scripts/recette/staging-cert-prereq-readonly.js
+      - name: Install Chromium for optional Order 360 proof
+        if: inputs.order360
+        run: npx playwright install --with-deps chromium
+      - name: Order 360 via admin login UI and independent PostgreSQL (READ ONLY)
+        if: inputs.order360
+        env:
+          E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+          E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+        run: node scripts/recette/g6-a-order360-readonly.js
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: staging-cert-prereq-${{ github.run_id }}
-          path: test-results/cert-prereq/prereq-readonly.json
+          path: |
+            test-results/cert-prereq/prereq-readonly.json
+            test-results/g6-a-order360/
           if-no-files-found: warn
