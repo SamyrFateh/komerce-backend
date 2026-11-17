@@ -167,7 +167,10 @@ async function main(env=process.env) {
       if(!/^\d{8,}$/.test(resumeRun)||!fs.existsSync(RESUME_BUYER))
         throw new Error('G6_CANONICAL_RESUME_ARTIFACT_MISSING');
       buyer=JSON.parse(fs.readFileSync(RESUME_BUYER,'utf8'));
-      if(String(buyer.run_id)!==resumeRun)
+      const oldCanonical=phase==='HUB_PO'&&fs.existsSync(RESUME_CANONICAL)
+        ? JSON.parse(fs.readFileSync(RESUME_CANONICAL,'utf8')) : null;
+      const expectedBuyerRun=String(oldCanonical?.resumed_from_run_id||resumeRun);
+      if(String(buyer.run_id)!==expectedBuyerRun)
         throw new Error('G6_CANONICAL_RESUME_RUN_ID_MISMATCH');
       resumeDiff=verifyResumeTooling(buyer.runtime_sha,env.E2E_EXPECTED_DEPLOY_SHA);
       fs.mkdirSync(path.dirname(BUYER),{recursive:true});
