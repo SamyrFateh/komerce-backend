@@ -12,12 +12,19 @@ const HYDRATION_SOURCE = fs.readFileSync(
   path.join(__dirname, '../../js/market-hydration.js'), 'utf8'
 );
 
-function boot(pathname, search = '') {
+const ACTIVE_MARKETS = [
+  ['KM','Comores','KMF'], ['CM','Cameroun','XAF'], ['CG','Congo','XAF'],
+  ['DJ','Djibouti','DJF'], ['YT','Mayotte','EUR'], ['GA','Gabon','XAF'],
+].map(([code,name,currency])=>({code,name,currency,minor_unit:0,
+  storefront_texts:{seo_title:'Komerce — La boutique en ligne '+(code==='CM'?'du Cameroun':name)} }));
+
+function boot(pathname, search = '', registry = ACTIVE_MARKETS) {
   const nativeFetch = jest.fn(async () => ({ ok: true }));
   const window = {
     location: { origin: 'https://komerce.co', pathname, search },
     fetch: nativeFetch,
     addEventListener: jest.fn(),
+    KomerceMarketRegistry: registry,
   };
   const sandbox = { window, URLSearchParams };
   vm.runInNewContext(MARKET_SOURCE, sandbox);
@@ -37,6 +44,16 @@ describe('Boutique publique — URL pays canonique', () => {
     expect(window.KomerceMarket.getPathCode()).toBe(code);
     expect(window.KomerceMarket.get().code).toBe(code);
     expect(window.KomerceMarket.get().currency).toBe(currency);
+  });
+
+  test('un nouveau pays GA vient uniquement de la projection active', () => {
+    expect(boot('/GA').window.KomerceMarket.get().currency).toBe('XAF');
+    expect(boot('/GA', '', ACTIVE_MARKETS.filter(m=>m.code!=='GA')).window.KomerceMarket.getPathCode()).toBeNull();
+  });
+
+  test('sans référentiel actif, aucun pays inventé même KM', () => {
+    const {window}=boot('/', '', []);
+    expect(()=>window.KomerceMarket.get()).toThrow('STORE_MARKET_UNAVAILABLE');
   });
 
   test('la route /CM prime sur ?market=KM, même après partage du lien', () => {
