@@ -519,4 +519,4 @@ async function main(env=process.env) {
 }
 
 if(require.main===module)main().catch(e=>{console.error(e.message);process.exitCode=2});
-module.exports={validateGuard,validateBuyerProof,validateCashProof,validateHubProof,validateCommitmentCheckpoint,validateVendorReadinessCheckpoint,validateVendorSimulationCheckpoint,isToolingOnlyResumeDiff,verifyResumeTooling,main};
+module.exports={validateGuard,validateBuyerProof,validateCashProof,validateHubProof,validateCommitmentCheckpoint,validateVendorReadinessCheckpoint,validateVendorSimulationCheckpoint,validateHubReceivingCheckpoint,isToolingOnlyResumeDiff,verifyResumeTooling,main};
