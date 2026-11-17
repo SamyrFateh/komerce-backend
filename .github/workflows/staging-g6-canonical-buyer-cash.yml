@@ -122,17 +122,40 @@ jobs:
             if(!m)throw Error('G6_RESUME_RUN_ID_REQUIRED');
             fs.appendFileSync(process.env.GITHUB_OUTPUT,'run_id='+m[1]+'\n');
             fs.appendFileSync(process.env.GITHUB_ENV,'G6_CANONICAL_RESUME_RUN_ID='+m[1]+'\n');
+            const a=String(process.env.ISSUE_BODY||'').match(/^resume_artifact_id:\s*(\d{8,})\s*$/m);
+            if(a)fs.appendFileSync(process.env.GITHUB_OUTPUT,'artifact_id='+a[1]+'\n');
+            if(process.env.ISSUE_TITLE==='[staging-op] g6-canonical-hub-shipment-M01-KM'&&!a)
+              throw Error('G6_SHIPMENT_EXACT_ARTIFACT_ID_REQUIRED');
           }
           NODE
-      - name: Retrieve original buyer proof from verified GitHub Actions run
+      - name: Retrieve exact prior stage proof from verified GitHub Actions artifact
         if: steps.resume.outputs.run_id != ''
-        uses: actions/download-artifact@v4
-        with:
-          name: g6-canonical-buyer-cash-${{ steps.resume.outputs.run_id }}
-          path: test-results/g6-canonical-resume
-          repository: ${{ github.repository }}
-          run-id: ${{ steps.resume.outputs.run_id }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RESUME_RUN_ID: ${{ steps.resume.outputs.run_id }}
+          RESUME_ARTIFACT_ID: ${{ steps.resume.outputs.artifact_id }}
+        run: |
+          # Re-runs may retain distinct artifacts with the SAME name. Never let
+          # a name-only download silently select an earlier failed attempt.
+          set -euo pipefail
+          expected="g6-canonical-buyer-cash-$RESUME_RUN_ID"
+          matches="$(gh api --paginate "/repos/$GITHUB_REPOSITORY/actions/runs/$RESUME_RUN_ID/artifacts?per_page=100" --jq '.artifacts[] | select(.expired == false)' | jq -s --arg name "$expected" '[.[] | select(.name == $name)]')"
+          if [ -n "$RESUME_ARTIFACT_ID" ]; then
+            selected="$(jq -ce --arg id "$RESUME_ARTIFACT_ID" '[.[] | select((.id|tostring)==$id)] | if length==1 then .[0] else error("G6_EXACT_ARTIFACT_ID_INVALID") end' <<<"$matches")"
+          else
+            selected="$(jq -ce 'if length==1 then .[0] else error("G6_RESUME_ARTIFACT_AMBIGUOUS_OR_MISSING: specify resume_artifact_id") end' <<<"$matches")"
+          fi
+          id="$(jq -er '.id' <<<"$selected")"
+          digest="$(jq -er '.digest | select(test("^sha256:[a-f0-9]{64}$"))' <<<"$selected")"
+          archive="$(mktemp -p "$RUNNER_TEMP" g6-resume-XXXXXX.zip)"
+          trap 'rm -f "$archive"' EXIT
+          curl --fail --silent --show-error --location --retry 2 \
+            -H "Authorization: Bearer $GH_TOKEN" -H 'Accept: application/vnd.github+json' \
+            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/artifacts/$id/zip" -o "$archive"
+          printf '%s  %s\n' "${digest#sha256:}" "$archive" | sha256sum --check --status
+          mkdir -p test-results/g6-canonical-resume
+          unzip -q "$archive" -d test-results/g6-canonical-resume
+          echo "[G6_RESUME_EXACT_ARTIFACT] run=$RESUME_RUN_ID artifact=$id digest=$digest"
       - name: Install real Chromium
         run: npx playwright install chromium --only-shell
       - name: Replay same order through the selected canonical Chromium stage (UI only)
