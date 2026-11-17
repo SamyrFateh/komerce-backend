@@ -60,7 +60,7 @@ async function resolveCurrentSaleableProduct(){
 }
 async function queryOrders(userId){
  const {rows}=await db.query(
- 'SELECT o.id,o.reference,o.total_kmf,o.payment_mode::text AS payment_mode, '+
+ 'SELECT o.id,o.reference,o.total_kmf,o.display_total_amount,o.display_currency,o.payment_mode::text AS payment_mode, '+
  'o.payment_status::text AS payment_status,o.status::text AS status,o.simulation_scope, '+
  'm.code AS market, '+
  '(SELECT COUNT(*)::int FROM order_items i WHERE i.order_id=o.id) AS lines, '+
