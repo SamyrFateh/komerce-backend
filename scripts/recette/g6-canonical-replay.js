@@ -56,7 +56,7 @@ function verifyResumeTooling(oldSha,newSha) {
   try {
     execFileSync('git',['merge-base','--is-ancestor',oldSha,newSha],{cwd:ROOT,timeout:15000,stdio:'pipe'});
     const files=execFileSync('git',['diff','--name-only',oldSha,newSha],{cwd:ROOT,timeout:15000,encoding:'utf8'})
-      .split(/\\r?\\n/).filter(Boolean);
+      .split(/\r?\n/).filter(Boolean);
     if(isToolingOnlyResumeDiff(files))return {equivalent:true,changedFiles:files};
   }catch(_){}
   throw new Error('G6_CANONICAL_RESUME_RUNTIME_DIFF_UNVERIFIED');
@@ -129,7 +129,7 @@ async function main(env=process.env) {
     let buyer, resumeDiff=null;
     const resumeRun=String(env.G6_CANONICAL_RESUME_RUN_ID||'');
     if(resumeRun) {
-      if(!/^\\d{8,}$/.test(resumeRun)||!fs.existsSync(RESUME_BUYER))
+      if(!/^\d{8,}$/.test(resumeRun)||!fs.existsSync(RESUME_BUYER))
         throw new Error('G6_CANONICAL_RESUME_ARTIFACT_MISSING');
       buyer=JSON.parse(fs.readFileSync(RESUME_BUYER,'utf8'));
       if(String(buyer.run_id)!==resumeRun)
