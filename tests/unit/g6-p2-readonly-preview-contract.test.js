@@ -13,7 +13,10 @@ describe('G6 P2 — le devis serveur anonyme n est pas une commande',()=>{
   expect(src).toContain("return route.continue();");
   expect(src).toContain("return route.abort();");
   expect(src).toContain("UNEXPECTED_BROWSER_WRITE_ATTEMPTS");
-  expect(src).toContain("UNAUTHENTICATED_PREVIEW_MUST_BE_401");
+  expect(src).toContain("ANONYMOUS_PREVIEW_WRONG_STATUS");
+  expect(src).toContain('report.preview_http_statuses.some(x=>x!==401)');
+  expect(src).toContain('P2_PREAUTH_CART_NO_QUOTE_BROWSER_PASS_ORDER_NOT_ATTEMPTED');
+  expect(src).toContain('P2_PREAUTH_CART_QUOTE_401_BROWSER_PASS_ORDER_NOT_ATTEMPTED');
  });
  test('préflight prix : explique zéro ou plusieurs lignes sans contourner le garde',()=>{
   expect(src).toContain('BUYER_PRICE_SNAPSHOT_NO_MATCH');
