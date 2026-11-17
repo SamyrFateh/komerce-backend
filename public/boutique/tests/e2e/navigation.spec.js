@@ -56,16 +56,20 @@ test.describe('E-NAV — Navigation & deep-links', () => {
     );
   });
 
-  test('E21c — Deep-link ?tab=group ouvre le groupe', async ({ page }) => {
+  test('E21c — Deep-link legacy ?tab=group ouvre Mes Partages', async ({ page }) => {
     await page.goto(BASE_URL + '?tab=group');
 
-    // Attendre que l'onglet groupe soit actif dans la navigation
-    await page.waitForFunction(
-      () => {
-        const activeTab = document.querySelector('.k-bnav-item.active, .k-header-nav-btn.active');
-        return activeTab && activeTab.dataset.tab === 'group';
-      },
-      { timeout: 15_000 }
+    // Le deep-link historique est maintenu, mais l'onglet `group` n'existe
+    // plus : b-nav.js le résout vers l'onglet réel `shares`, affiché dans
+    // la vue Suivi/Partages. Ne pas attendre une nav `data-tab=group` fictive.
+    const activeShares = page.locator(
+      '.k-bnav-item.active[data-tab="shares"]:visible, .k-header-nav-btn.active[data-tab="shares"]:visible'
+    );
+    await expect(activeShares).toHaveCount(1, { timeout: 15_000 });
+    await expect(page.locator('#k-track-view.show')).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('#k-track-view')).toContainText(
+      /Pas encore de liste|Mes listes|Mes partages|M'identifier/i,
+      { timeout: 10_000 }
     );
   });
 
