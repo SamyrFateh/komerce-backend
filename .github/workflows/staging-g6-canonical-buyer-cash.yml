@@ -86,6 +86,14 @@ jobs:
           console.log('[G6_PIN_STRICT_CANONICAL] '+JSON.stringify({status:p.status,staging_sha:p.observed_sha,non_deployed_files:p.tooling_diff||[]}));
           NODE
           node scripts/recette/target-guard.js
+      - name: Restore full Git ancestry for same-order historical proof
+        run: |
+          # Runtime equivalence may fetch a depth-1 deployed SHA. The previous
+          # PO was created at an OLDER SHA: the canonical runner must still
+          # verify actual Git ancestry and every changed file, fail closed.
+          if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
+            git fetch --no-tags --unshallow origin main
+          fi
       - id: resume
         name: Validate optional prior-run checkpoint (owner request only)
         env:
