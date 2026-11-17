@@ -63,7 +63,10 @@ describe('bootstrap/html-routes', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     app = fakeApp();
-    mountHtmlRoutes(app, ROOT_DIR);
+    mountHtmlRoutes(app, ROOT_DIR, { query: jest.fn().mockResolvedValue({ rows: [{
+      code:'KM',name:'Comores',currency:'KMF',minor_unit:0,
+      is_active:true,lifecycle_status:'ACTIVE',storefront_texts:{}
+    }] }) });
   });
 
   // ── sendHtml (via une route simple) ─────────────────────────────────────
@@ -447,7 +450,7 @@ describe('bootstrap/html-routes', () => {
   describe('/portail et /pilotage — portail de pilotage', () => {
     test.each(['/portail', '/pilotage'])('%s sert portal-pilotage.html', (routePath) => {
       const res = fakeRes();
-      app._routes[routePath]({}, res);
+      await app._routes[routePath]({ query:{} }, res);
       expect(res.sendFile).toHaveBeenCalledWith(
         require('path').join(PUBLIC_DIR, 'dashboards', 'admin', 'portal-pilotage.html'),
         expect.any(Function)
@@ -530,7 +533,7 @@ describe('bootstrap/html-routes', () => {
   });
 
   describe('boutique / login', () => {
-    test.each(['/Komerce_Boutique.html', '/boutique'])('%s sert boutique/index.html', (routePath) => {
+    test.each(['/Komerce_Boutique.html', '/boutique'])('%s sert boutique/index.html', async (routePath) => {
       const res = fakeRes();
       app._routes[routePath]({}, res);
       expect(res.sendFile).toHaveBeenCalledWith(
