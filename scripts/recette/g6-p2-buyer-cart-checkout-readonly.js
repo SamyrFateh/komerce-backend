@@ -14,8 +14,11 @@ const {chromium}=require('playwright');
 const db=require('../../db');
 const {confirmTarget}=require('./target-guard');
 const BASE='https://komerce-backend-production.up.railway.app';
-const ID='76dacd6c-c1d8-4313-9455-f0d8f063835b';
-const REF='KPR-000099';
+// Chosen from real SQL staging evidence #43994692712: published KM price 5990, 4 stocked SKUs.
+// Resolve UUID at runtime; the original KPR-000099 fixture was removed from staging.
+const REF='KPR-000165';
+const EXPECTED_PRICE=5990;
+let ID=null;
 const OUT=path.resolve('test-results/g6-p2-buyer-readonly');
 fs.mkdirSync(OUT,{recursive:true});
 const report={
@@ -43,19 +46,19 @@ async function snapshot(){
   "FROM products p JOIN markets m ON m.code='KM' AND m.is_active=TRUE "+
   "LEFT JOIN product_market_exposure e ON e.product_id=p.id AND e.market_id=m.id "+
   "LEFT JOIN product_market_price_drafts d ON d.product_id=p.id AND d.market_id=m.id AND d.status='LOCAL_ACTIVE' "+
-  "WHERE p.id=$1",[ID]);
+  "WHERE p.product_ref=$1",[REF]);
  if(rows.length!==1){
   // A zero-row join means an obsolete product fixture or an inactive KM
-  // market, not necessarily a duplicate. Diagnose with independent, read-only
+  // market, not necessarily a duplicate. Ref is the canonical test identifier.
+  // Diagnose with independent, read-only
   // counts; never relax the uniqueness assertion or mutate staging data.
   const {rows:[counts]}=await db.query(
    "SELECT "+
-   "(SELECT COUNT(*)::int FROM products WHERE id=$1) AS product_id_rows, "+
-   "(SELECT COUNT(*)::int FROM products WHERE product_ref=$2) AS reference_rows, "+
+   "(SELECT COUNT(*)::int FROM products WHERE product_ref=$1) AS reference_rows, "+
    "(SELECT COUNT(*)::int FROM markets WHERE code='KM' AND is_active=TRUE) AS km_active_rows, "+
-   "(SELECT COUNT(*)::int FROM product_market_exposure WHERE product_id=$1) AS exposure_rows, "+
-   "(SELECT COUNT(*)::int FROM product_market_price_drafts WHERE product_id=$1 AND status='LOCAL_ACTIVE') AS local_active_price_rows",
-   [ID,REF]
+   "(SELECT COUNT(*)::int FROM product_market_exposure WHERE product_id IN (SELECT id FROM products WHERE product_ref=$1)) AS exposure_rows, "+
+   "(SELECT COUNT(*)::int FROM product_market_price_drafts WHERE product_id IN (SELECT id FROM products WHERE product_ref=$1) AND status='LOCAL_ACTIVE') AS local_active_price_rows",
+   [REF]
   );
   const {rows:candidates}=await db.query(
    "SELECT p.product_ref, d.amount::text AS amount, d.currency, "+
@@ -73,6 +76,10 @@ async function snapshot(){
   save();
   throw Error(rows.length===0?'BUYER_PRICE_SNAPSHOT_NO_MATCH':'BUYER_PRICE_SNAPSHOT_MULTIPLE_ROWS');
  }
+ const observedId=String(rows[0].id);
+ if(ID&&observedId!==ID)throw Error('BUYER_PRODUCT_ID_CHANGED');
+ ID=observedId;
+ report.product_id=observedId;
  return rows[0];
 }
 async function run(){
@@ -90,7 +97,7 @@ async function run(){
   report.before=await snapshot();
   if(report.before.product_ref!==REF||!report.before.is_active||!report.before.is_available||
      report.before.commercial_exposure!=='ENABLED'||
-     report.before.price_status!=='LOCAL_ACTIVE'||Number(report.before.amount)!==17990||
+     report.before.price_status!=='LOCAL_ACTIVE'||Number(report.before.amount)!==EXPECTED_PRICE||
      Number(report.before.stocked_skus)<1)throw Error('PRODUCT_NOT_COMMERCIALLY_READY');
   browser=await chromium.launch({headless:true});
   const ctx=await browser.newContext({viewport:{width:1440,height:900},locale:'fr-FR'});
@@ -117,7 +124,7 @@ async function run(){
   const publicResponse=await ctx.request.get(BASE+'/api/products/'+ID+'/detail?market=KM');
   if(publicResponse.status()!==200)throw Error('BUYER_PRODUCT_DETAIL_'+publicResponse.status());
   const detail=await publicResponse.json();
-  if(detail.product?.reference!==REF||Number(detail.pricing?.price_kmf)!==17990)
+  if(detail.product?.reference!==REF||Number(detail.pricing?.price_kmf)!==EXPECTED_PRICE)
     throw Error('BUYER_PRODUCT_PRICE_MISMATCH');
   step('PUBLIC_DETAIL',{status:200,price_kmf:detail.pricing.price_kmf});
   const doc=await page.goto(BASE+'/boutique/?market=KM',{waitUntil:'domcontentloaded'});
