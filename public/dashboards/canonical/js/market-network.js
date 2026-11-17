@@ -79,6 +79,9 @@
   }
 
   async function resolveMarketCode() {
+    // Set only after market-autonomy proved network.read with a server GET.
+    // Business reads and mutations below still verify their own capabilities.
+    if (root.dataset.networkOnlyMarket) return root.dataset.networkOnlyMarket;
     const context = await request('/api/admin/dashboard/context');
     return marketFromContext(context);
   }
