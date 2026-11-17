@@ -159,6 +159,7 @@
     'accounting-workspace': 'accounting-workspace',
   });
 
+  const DOCUMENTATION_ROLES = Object.freeze(['admin', 'market_operator', 'finance', 'sourcing', 'agent_hub', 'agent_relais', 'agent_transitaire', 'support']);
   const SETTINGS_UTILITY = Object.freeze({ id: 'settings', label: 'Paramètres', href: '/admin/settings', roles: Object.freeze(['admin']) });
 
   const BACK_TARGETS = Object.freeze({
@@ -336,6 +337,7 @@
       return 'market-autonomy';
     }
     if (path === '/admin/settings') return 'settings';
+    if (path === '/admin/documentation') return 'documentation';
 
     const app = global.KomerceCanonicalAdmin;
     if (!app || typeof app.surfaceForPath !== 'function') return 'pilotage';
@@ -403,6 +405,7 @@
   function canAccessSurface(user, surface) {
     const role = roleOf(user);
     if (surface === 'action-center' && FIELD_ACTION_CENTER_ROLES.includes(role)) return true;
+    if (surface === 'documentation') return DOCUMENTATION_ROLES.includes(role);
     const domain = visibleDomainsFor(user).find(row => row.id === activePrimarySurface(surface));
     if (!domain) return false;
     const spaceId = activeSpaceFor(surface);
@@ -856,6 +859,7 @@
     live: '◉',
     finance: '▤',
     settings: '⚙',
+    'help-docs': 'ⓘ',
     'admin-providers': '⛭',
     'admin-users': '⛭',
     'control-tower': '⌂',
@@ -954,6 +958,13 @@
         Object.freeze({ id: 'admin-users', label: 'Utilisateurs', href: '/admin/users', roles: ['admin'], surfaces: ['users-admin'] }),
         Object.freeze({ id: 'admin-providers', label: 'Providers', href: '/admin/providers', roles: ['admin'], surfaces: ['providers-admin'] }),
         Object.freeze({ id: 'settings', label: 'Paramètres', href: '/admin/settings', roles: ['admin'], surfaces: ['settings'] }),
+      ]),
+    }),
+    Object.freeze({
+      id: 'help',
+      label: 'Aide',
+      items: Object.freeze([
+        Object.freeze({ id: 'help-docs', label: 'Documentation', href: '/admin/documentation', roles: DOCUMENTATION_ROLES, surfaces: ['documentation'] }),
       ]),
     }),
   ]);

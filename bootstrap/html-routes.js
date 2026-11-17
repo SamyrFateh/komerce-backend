@@ -20,6 +20,7 @@
 
 const path = require('path');
 const log  = require('../utils/logger').child({ module: 'html-routes' });
+const { authenticate, requireRole } = require('../middleware/auth');
 
 function sendHtml(res, filePath, cache = 'no-cache') {
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -121,6 +122,16 @@ function mountHtmlRoutes(app, rootDir, marketExecutor) {
   app.get('/admin/pilotage', (req, res) => {
     if (req.query && req.query.legacy === '1') return sendLegacyAdmin(res);
     sendCanonicalAdmin(res);
+  });
+
+  // Guide produit documentaire : même authentification que les API staff,
+  // aucune API métier / aucun droit supplémentaire accordé par le document.
+  app.get('/admin/documentation', authenticate, requireRole([
+    'admin', 'market_operator', 'finance', 'sourcing',
+    'agent_hub', 'agent_relais', 'agent_transitaire', 'support',
+  ]), (_req, res) => {
+    res.setHeader('X-Admin-Generation', 'canonical');
+    sendHtml(res, path.join(publicDir, 'dashboards', 'canonical', 'documentation.html'));
   });
 
   // Golden E2E cockpit — guide de recette humaine, lecture/navigation uniquement.
