@@ -114,6 +114,24 @@ describe('product-store — cache local et API', () => {
     expect(JSON.parse(localStorage.getItem('komerce_products_cache'))).toEqual(products);
   });
 
+  it('isole le cache offline par marché et ne replie jamais CM sur KM', () => {
+    const previousMarket = window.KomerceMarket;
+    try {
+      window.KomerceMarket = { DEFAULT: 'KM' };
+      store.writeCache([{ id: 101, market: 'KM' }]);
+      expect(store.readCache()).toEqual([{ id: 101, market: 'KM' }]);
+
+      window.KomerceMarket = { DEFAULT: 'CM' };
+      expect(store.readCache()).toEqual([]);
+      store.writeCache([{ id: 202, market: 'CM' }]);
+      expect(store.readCache()).toEqual([{ id: 202, market: 'CM' }]);
+      expect(JSON.parse(localStorage.getItem('komerce_products_cache_KM'))).toEqual([{ id: 101, market: 'KM' }]);
+    } finally {
+      if (previousMarket === undefined) delete window.KomerceMarket;
+      else window.KomerceMarket = previousMarket;
+    }
+  });
+
   it('charge une liste API, retire les indisponibles et persiste le résultat brut disponible', async () => {
     global.K = {
       products: {
