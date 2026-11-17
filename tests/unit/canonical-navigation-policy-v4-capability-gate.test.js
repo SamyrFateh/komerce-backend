@@ -125,7 +125,7 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
     const nav = loadPolicy();
     const groups = nav.sidebarGroupsFor({ role: 'admin' }, null);
     expect(groups.map(group => group.id)).toEqual([
-      'pilot', 'commerce', 'economy', 'operations', 'finance', 'live', 'markets', 'administration',
+      'pilot', 'commerce', 'economy', 'operations', 'finance', 'live', 'markets', 'administration', 'help',
     ]);
     const labels = id => groups.find(group => group.id === id).items.map(item => item.label);
     expect(labels('pilot')).toEqual(['Tour de contrôle', 'À traiter']);
@@ -136,6 +136,7 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
     expect(groups.find(group => group.id === 'live').items.map(item => item.href))
       .toEqual(['/admin/import-runtime', '/admin/hub', '/admin/relais-live']);
     expect(labels('markets')).toEqual(['Responsables pays', 'Catalogue pays', 'Invendus']);
+    expect(labels('help')).toEqual(['Documentation']);
     const all = groups.flatMap(group => group.items);
     expect(all.some(item => item.href === '/admin/suppliers')).toBe(false);
     // « Produits » n'est plus une entrée de menu : onglet local du Catalogue uniquement.
