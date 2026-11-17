@@ -26,7 +26,7 @@ const LINE_ID = '00000000-0000-4000-8000-000000000043';
 test.use({ screenshot: 'off', trace: 'off', video: 'off' });
 
 async function cockpit(page, { step = 'draft', status = 'draft',
-  commitment = false, payment = false, director = false, need = false, readOnly = false,
+  commitment = false, payment = false, director = false, need = false, readOnly = false, simulation = false,
   sentAt = null } = {}) {
   // Network-deny is deliberate. These are actual Chromium UI clicks, NOT backend
   // transaction clicks; no synthetic response can be mistaken for HTTP/PG proof.
@@ -39,7 +39,7 @@ async function cockpit(page, { step = 'draft', status = 'draft',
   await page.setContent('<!doctype html><html lang="fr"><body><main id="workplace"></main></body></html>');
   await page.addScriptTag({ content: SCRIPT });
   await page.evaluate(({ poId, lineId, step, status, commitment, payment,
-    director, need, readOnly, sentAt }) => {
+    director, need, readOnly, sentAt, simulation }) => {
     const line = { line_id: lineId, order_id: 'ORDER-ISOLATED', order_ref: 'G2-ISOLATED',
       product: 'Produit de recette hors ligne', ordered: 2, confirmed: 2,
       received: 0, missing: 2, fifo_rank: 1, fifo_next: true };
@@ -49,7 +49,7 @@ async function cockpit(page, { step = 'draft', status = 'draft',
       step: { key: step, index: ['draft','validation','engaged','sent','received'].indexOf(step) + 1, partial: false },
       lines: [line], order_ids: [], totals: { effective: 2, received: 0, missing: 2 },
       authorizations: { commitment, payment }, amount: { derived: true, amount: 2000, currency: 'KMF' },
-      sent_at: sentAt,
+      sent_at: sentAt, simulation_scope: simulation ? 'G6-BUYER' : null,
     };
     const dossier = {
       market: { code: 'KM' }, orders: [], purchase_orders: need ? [] : [po],
@@ -85,7 +85,7 @@ async function cockpit(page, { step = 'draft', status = 'draft',
       document.getElementById('workplace'), ctx);
     window.__g2.render();
   }, { poId: PO_ID, lineId: LINE_ID, step, status, commitment, payment, director,
-    need, readOnly, sentAt });
+    need, readOnly, sentAt, simulation });
   return attempted;
 }
 
@@ -211,5 +211,35 @@ test('07 - mode lecture seule: aucune commande mutable et aucun formulaire possi
   await expect(page.locator('[data-hlc-action="authorize-payment"]')).toBeDisabled();
   expect(await page.locator('form[data-hlc-form]').count()).toBe(0);
   expect(await page.evaluate(() => window.__g2.calls)).toEqual([]);
+  expect(attempted).toEqual([]);
+});
+
+
+test('08 - G6 fournisseur fictif: envoi interne seulement, preuve marquée sans contact', async ({page}) => {
+  const attempted=await cockpit(page,{step:'engaged',status:'notified',commitment:true,simulation:true});
+  await page.locator('[data-hlc-po]').click();
+  await expect(page.locator('[data-hlc-po]')).toContainText('SIMULATION STAGING');
+  await page.locator('[data-hlc-action="record-sent"]').click();
+  const form=page.locator('form[data-hlc-form="sent"]');
+  await expect(form).toContainText('aucune commande, confirmation ou transmission');
+  expect(await form.locator('select option').evaluateAll(a=>a.map(x=>x.value))).toEqual(['other']);
+  await expect(form.locator('[name="supplier_order_id"]')).toHaveValue('SIM-STAGING-G2-ISOLATED');
+  await form.locator('[data-hlc-action="submit-sent"]').click();
+  await capture(page,'08-sent-simulation','/api/purchasing/po/'+PO_ID+'/sent',
+    {channel:'other',supplier_order_id:'SIM-STAGING-G2-ISOLATED',simulated:true});
+  expect(attempted).toEqual([]);
+});
+
+test('09 - G6 confirmation fictive : justificatif et vendeur explicitement simulés', async ({page}) => {
+  const attempted=await cockpit(page,{step:'sent',status:'notified',sentAt:'2026-11-17T00:00:00Z',commitment:true,simulation:true});
+  await page.locator('[data-hlc-po]').click();
+  await page.locator('[data-hlc-action="confirm-po"]').click();
+  const form=page.locator('form[data-hlc-form="confirm"]');
+  await expect(form.locator('[name="supplier_order_id"]')).toHaveValue('SIM-STAGING-G2-ISOLATED');
+  await expect(form.locator('[name="purchase_proof_ref"]')).toHaveValue('SIM-STAGING-ACHAT-G2-ISOLATED');
+  await expect(form.locator('[name="seller_label"]')).toHaveValue('SIMULATED-STAGING-FOURNISSEUR-G2-ISOLATED');
+  await form.locator('[data-hlc-action="submit-confirm"]').click();
+  await capture(page,'09-confirm-simulation','/api/purchasing/po/'+PO_ID+'/confirm',
+    {simulated:true,purchase_proof_ref:'SIM-STAGING-ACHAT-G2-ISOLATED',seller_label:'SIMULATED-STAGING-FOURNISSEUR-G2-ISOLATED'});
   expect(attempted).toEqual([]);
 });
