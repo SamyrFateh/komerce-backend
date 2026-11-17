@@ -48,7 +48,7 @@ async function stableSha(){
  check(v.commit===env.E2E_EXPECTED_DEPLOY_SHA,'G6_COMMITMENT_SHA_CHANGED');
  return v.commit;
 }
-async function login(browser,prefix){
+async function login(browser,prefix,{readOnly=false}={}){
  const email=env[prefix+'EMAIL'],password=env[prefix+'PASSWORD'];
  check(email&&password,'G6_COMMITMENT_IDENTITY_MISSING_'+prefix);
  const ctx=await browser.newContext({viewport:{width:1440,height:900},baseURL:ORIGIN});
@@ -59,8 +59,8 @@ async function login(browser,prefix){
   if(['GET','HEAD','OPTIONS'].includes(req.method()))return route.continue();
   const allowed=url.origin===ORIGIN&&req.method()==='POST'&&(
    url.pathname==='/api/auth/login'||
-   url.pathname==='/api/purchasing/po/'+env.G6_CANONICAL_PO_ID+'/authorize-commitment'||
-   url.pathname==='/api/purchasing/po/'+env.G6_CANONICAL_PO_ID+'/submit');
+   (!readOnly&&(url.pathname==='/api/purchasing/po/'+env.G6_CANONICAL_PO_ID+'/authorize-commitment'||
+   url.pathname==='/api/purchasing/po/'+env.G6_CANONICAL_PO_ID+'/submit')));
   if(allowed)return route.continue();
   blocked.push({method:req.method(),path:url.pathname});
   return route.abort('blockedbyclient');
@@ -89,7 +89,7 @@ async function openPo(page){
   'G6_COMMITMENT_UI_ORDER_MISMATCH');
  await po.click();
 }
-(async()=>{
+async function main(){
  let browser;
  try{
   save();
@@ -185,4 +185,6 @@ async function openPo(page){
   save();
  }catch(e){report.error=String(e.message||e).slice(0,350);report.verdict='BLOCKED';save();process.exitCode=2;}
  finally{if(browser)await browser.close().catch(()=>{});await db.pool.end().catch(()=>{});console.log(JSON.stringify(report));}
-})();
+}
+if(require.main===module)main();
+module.exports={login,openPo,stableSha};

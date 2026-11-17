@@ -21,7 +21,8 @@ jobs:
        github.event.issue.title == '[staging-op] g6-canonical-buyer-cash-M05-CG' ||
        github.event.issue.title == '[staging-op] g6-canonical-resume-M01-KM' ||
        github.event.issue.title == '[staging-op] g6-canonical-hub-po-M01-KM' ||
-       github.event.issue.title == '[staging-op] g6-canonical-commitment-M01-KM')
+       github.event.issue.title == '[staging-op] g6-canonical-commitment-M01-KM' ||
+       github.event.issue.title == '[staging-op] g6-canonical-vendor-readiness-M01-KM')
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
@@ -32,7 +33,7 @@ jobs:
       STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
       EXPECTED_RAILWAY_ENVIRONMENT: staging
       G6_CANONICAL_ACCEPT_PARTIAL_REPLAY: '1'
-      G6_CANONICAL_PHASE: ${{ github.event.issue.title == '[staging-op] g6-canonical-commitment-M01-KM' && 'HUB_COMMITMENT' || (github.event.issue.title == '[staging-op] g6-canonical-hub-po-M01-KM' && 'HUB_PO' || 'BUYER_CASH') }}
+      G6_CANONICAL_PHASE: ${{ github.event.issue.title == '[staging-op] g6-canonical-vendor-readiness-M01-KM' && 'HUB_VENDOR_READINESS' || (github.event.issue.title == '[staging-op] g6-canonical-commitment-M01-KM' && 'HUB_COMMITMENT' || (github.event.issue.title == '[staging-op] g6-canonical-hub-po-M01-KM' && 'HUB_PO' || 'BUYER_CASH')) }}
       G6_CANONICAL_SCENARIO: ${{ github.event.issue.title == '[staging-op] g6-canonical-buyer-cash-M04-CM' && 'M04' || (github.event.issue.title == '[staging-op] g6-canonical-buyer-cash-M05-CG' && 'M05' || 'M01') }}
       G6_TARGET_MARKET: ${{ github.event.issue.title == '[staging-op] g6-canonical-buyer-cash-M04-CM' && 'CM' || (github.event.issue.title == '[staging-op] g6-canonical-buyer-cash-M05-CG' && 'CG' || 'KM') }}
       KOMERCE_STAGING_RESET_DB_PIN: ${{ vars.STAGING_DB_PIN }}
@@ -71,6 +72,7 @@ jobs:
             'docs/recette/PARCOURS_REFERENCE_UNIQUE.md',
             'scripts/recette/g6-canonical-replay.js',
             'scripts/recette/g6-hub-commitment-chromium.js',
+            'scripts/recette/g6-hub-vendor-readiness-chromium.js',
             'tests/unit/g6-canonical-journey-replay.test.js',
             'tests/staging-clicks/g6-p3-kuyiyuk.spec.js'
           ]);
@@ -102,7 +104,7 @@ jobs:
         run: |
           node <<'NODE'
           const fs=require('node:fs');
-          const isResume=['[staging-op] g6-canonical-resume-M01-KM','[staging-op] g6-canonical-hub-po-M01-KM','[staging-op] g6-canonical-commitment-M01-KM'].includes(process.env.ISSUE_TITLE);
+          const isResume=['[staging-op] g6-canonical-resume-M01-KM','[staging-op] g6-canonical-hub-po-M01-KM','[staging-op] g6-canonical-commitment-M01-KM','[staging-op] g6-canonical-vendor-readiness-M01-KM'].includes(process.env.ISSUE_TITLE);
           if(isResume) {
             const m=String(process.env.ISSUE_BODY||'').match(/^resume_run_id:\s*(\d{8,})\s*$/m);
             if(!m)throw Error('G6_RESUME_RUN_ID_REQUIRED');
@@ -134,6 +136,7 @@ jobs:
             test-results/g6-a-relay-cash/
             test-results/g6-p3-kuyiyuk/
             test-results/g6-hub-commitment/
+            test-results/g6-hub-vendor-readiness/
             test-results/hub-v1-http/deploy-pin.json
           if-no-files-found: warn
           retention-days: 21

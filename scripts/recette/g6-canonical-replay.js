@@ -26,6 +26,8 @@ const RESUME_CANONICAL=path.join(ROOT,'test-results/g6-canonical-resume/g6-canon
 const HUB_PROOF=path.join(ROOT,'test-results/g6-p3-kuyiyuk/evidence.json');
 const RESUME_HUB_PROOF=path.join(ROOT,'test-results/g6-canonical-resume/g6-p3-kuyiyuk/evidence.json');
 const HUB_COMMITMENT=path.join(ROOT,'test-results/g6-hub-commitment/report.json');
+const RESUME_COMMITMENT=path.join(ROOT,'test-results/g6-canonical-resume/g6-hub-commitment/report.json');
+const VENDOR_READY=path.join(ROOT,'test-results/g6-hub-vendor-readiness/report.json');
 const ORIGIN='https://komerce-backend-production.up.railway.app';
 const VALID_SHA=/^[a-f0-9]{40}$/;
 const VALID_REF=/^[A-Z0-9][A-Z0-9-]{5,63}$/;
@@ -49,6 +51,7 @@ const RESUME_DIFF_ALLOWLIST=new Set([
   '.github/workflows/staging-g6-canonical-buyer-cash.yml',
   'scripts/recette/g6-canonical-replay.js',
   'scripts/recette/g6-hub-commitment-chromium.js',
+  'scripts/recette/g6-hub-vendor-readiness-chromium.js',
   'tests/staging-clicks/g6-p3-kuyiyuk.spec.js',
   'tests/unit/g6-canonical-journey-replay.test.js',
   'docs/recette/PARCOURS_REFERENCE_UNIQUE.md',
@@ -152,6 +155,36 @@ function validateCommitmentCheckpoint(previous,hub,buyer,scope) {
   return {order,poId:poIds[0],dbFingerprint:previous.db_fingerprint};
 }
 
+function validateVendorReadinessCheckpoint(previous,commitment,scope) {
+  const ref=String(previous.order?.reference||'');
+  const po=String(previous.po_id||'');
+  if(scope.id!=='M01'||scope.market!=='KM'||
+     previous.reference_contract!=='G6-CANONICAL-JOURNEY-v1'||
+     previous.scenario_id!==scope.id||previous.market!==scope.market||
+     previous.verdict!=='NOT_PROVEN'||previous.full_chain_certified!==false||
+     previous.production_permitted!==false||
+     previous.next_stage!=='VENDOR_PROOF_AND_RECEIVING'||
+     !/^[A-Z0-9][A-Z0-9-]{5,63}$/.test(ref)||
+     !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(po)||
+     !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(String(previous.order?.id||''))||
+     !previous.db_fingerprint||
+     !['BUYER','RELAY_CASH','HUB_PO'].every(id=>
+       previous.stages?.some(st=>st.id===id&&st.verdict==='PREVIOUS_RUN_PASS'))||
+     !previous.stages?.some(st=>st.id==='HUB_COMMITMENT'&&st.verdict==='PASS'&&
+       st.po_id===po&&st.reference===ref)||
+     commitment.verdict!=='G6_HUB_COMMITMENT_AND_INTERNAL_SUBMIT_CHROMIUM_PASS_NOT_VENDOR_OR_RECEIPT_GO'||
+     commitment.reference!==ref||commitment.po_id!==po||
+     commitment.db_fingerprint!==previous.db_fingerprint||
+     commitment.after?.po_status!=='notified'||
+     commitment.after?.commitment_count!==1||
+     commitment.after?.payment_authorization_count!==0||
+     commitment.external_supplier_calls!==0||
+     commitment.external_payment_executed!==false){
+    throw Error('G6_VENDOR_PRIOR_COMMITMENT_PROVENANCE_INVALID');
+  }
+  return {order:previous.order,poId:po,dbFingerprint:previous.db_fingerprint};
+}
+
 function executeExistingHub(env) {
   fs.rmSync(HUB_PROOF,{force:true});
   const p=spawnSync(process.platform==='win32'?'npx.cmd':'npx',[
@@ -175,7 +208,7 @@ async function main(env=process.env) {
   try{
     const scope=validateGuard(env);
     const phase=String(env.G6_CANONICAL_PHASE||'BUYER_CASH');
-    if(!['BUYER_CASH','HUB_PO','HUB_COMMITMENT'].includes(phase) || (['HUB_PO','HUB_COMMITMENT'].includes(phase)&&(scope.id!=='M01'||scope.market!=='KM')))
+    if(!['BUYER_CASH','HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS'].includes(phase) || (['HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS'].includes(phase)&&(scope.id!=='M01'||scope.market!=='KM')))
       throw new Error('G6_CANONICAL_PHASE_NOT_BOUND');
     report.scenario_id=scope.id;report.market=scope.market;
     report.source_matrix_version=scope.source_version;
@@ -188,8 +221,49 @@ async function main(env=process.env) {
     // must fail closed, not rebuild or silently switch to a new buyer.
     let buyer, resumeDiff=null;
     const resumeRun=String(env.G6_CANONICAL_RESUME_RUN_ID||'');
-    if(['HUB_PO','HUB_COMMITMENT'].includes(phase)&&!resumeRun)
+    if(['HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS'].includes(phase)&&!resumeRun)
       throw new Error('G6_CANONICAL_HUB_REQUIRES_PREVIOUS_STAGE_PROOF');
+    if(phase==='HUB_VENDOR_READINESS'){
+      if(!/^\d{8,}$/.test(resumeRun)||!fs.existsSync(RESUME_CANONICAL)||
+         !fs.existsSync(RESUME_COMMITMENT))
+        throw Error('G6_VENDOR_PRIOR_COMMITMENT_ARTIFACT_MISSING');
+      const previous=JSON.parse(fs.readFileSync(RESUME_CANONICAL,'utf8'));
+      const prior=JSON.parse(fs.readFileSync(RESUME_COMMITMENT,'utf8'));
+      const bound=validateVendorReadinessCheckpoint(previous,prior,scope);
+      const compatibility=verifyResumeTooling(previous.staging_sha,env.E2E_EXPECTED_DEPLOY_SHA);
+      report.resumed_from_run_id=resumeRun;
+      report.resume_tooling_diff=compatibility.changedFiles;
+      report.order=bound.order;
+      report.po_id=bound.poId;
+      report.db_fingerprint=bound.dbFingerprint;
+      report.stages=previous.stages.map(st=>({
+        id:st.id,verdict:'PREVIOUS_RUN_PASS',source_run_id:resumeRun,
+        reference:bound.order.reference
+      }));
+      report.next_stage='HUB_VENDOR_READINESS';save();
+      const vendor=executeExisting('scripts/recette/g6-hub-vendor-readiness-chromium.js',
+        VENDOR_READY,{...env,G6_CANONICAL_ORDER_ID:bound.order.id,
+          G6_CANONICAL_ORDER_REFERENCE:bound.order.reference,
+          G6_CANONICAL_PO_ID:bound.poId,
+          G6_CANONICAL_DB_FINGERPRINT:bound.dbFingerprint});
+      if(vendor.verdict!=='G6_VENDOR_SEND_UI_READY_BUT_EXTERNAL_EVENT_NOT_PROVEN'||
+         vendor.reference!==bound.order.reference||vendor.po_id!==bound.poId||
+         vendor.db_fingerprint!==bound.dbFingerprint||
+         vendor.supplier_send_certified!==false||
+         vendor.supplier_confirmation_certified!==false||
+         vendor.physical_receipt_certified!==false||
+         vendor.external_supplier_calls!==0||
+         vendor.external_payment_executed!==false||
+         vendor.screen?.external_send_form_not_submitted!==true)
+        throw Error('G6_VENDOR_READONLY_SCREEN_EVIDENCE_INVALID');
+      report.stages.push({id:'HUB_VENDOR_UI',verdict:'PASS_READONLY',via:'Chromium_UI',
+        po_id:bound.poId,reference:bound.order.reference,
+        evidence:'test-results/g6-hub-vendor-readiness/report.json'});
+      report.next_stage='REAL_SUPPLIER_SEND_EVIDENCE_REQUIRED';
+      report.verdict='NOT_PROVEN';save();
+      console.log('[g6-canonical] vendor send screen visible, no external supplier event; M01 NOT_PROVEN');
+      return report;
+    }
     if(phase==='HUB_COMMITMENT'){
       if(!/^\d{8,}$/.test(resumeRun)||!fs.existsSync(RESUME_CANONICAL)||
          !fs.existsSync(RESUME_HUB_PROOF)||!fs.existsSync(RESUME_BUYER))
@@ -328,4 +402,4 @@ async function main(env=process.env) {
 }
 
 if(require.main===module)main().catch(e=>{console.error(e.message);process.exitCode=2});
-module.exports={validateGuard,validateBuyerProof,validateCashProof,validateHubProof,validateCommitmentCheckpoint,isToolingOnlyResumeDiff,verifyResumeTooling,main};
+module.exports={validateGuard,validateBuyerProof,validateCashProof,validateHubProof,validateCommitmentCheckpoint,validateVendorReadinessCheckpoint,isToolingOnlyResumeDiff,verifyResumeTooling,main};
