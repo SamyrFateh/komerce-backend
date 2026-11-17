@@ -4,6 +4,16 @@
 > **Seul tableau de coordination actif** pour ChatGPT/GPT, Sonnet et Opus. Il remplace les journaux de tâches historiques ; il ne remplace ni le code, ni les données live, ni `AGENTS.md`, ni les cartes Feature First, ni les checks GitHub.
 > La PR et ses checks font foi pour l'état du code. Un nom d'agent n'est pas une preuve d'exécution.
 
+## Décision propriétaire du 17 novembre 2026 — certification exclusivement sur staging
+
+**RÈGLE TRANSVERSALE ET OBLIGATOIRE — GPT, Work, Sonnet, Opus : on valide TOUT sur le staging Railway réel de Komerce et on arrête les campagnes de validation isolées.** Le staging partagé est le terrain de recette ; ne plus substituer une base locale, un environnement éphémère, un test unitaire, un mock, un simulateur ou une preuve API seule à une validation fonctionnelle réelle. Ne pas inventer un « staging isolé » ni repartir sur une autre instance sans décision propriétaire expresse.
+
+1. **Avant toute validation fonctionnelle**, fusionner selon les gates habituels puis déployer sur **le staging Railway commun**, relever `/health/version` et le SHA exact servi (backend et services impliqués). Une CI verte ou un merge n'est **pas** une certification staging.
+2. **Exécuter les vrais parcours métier de bout en bout dans Chromium**, avec les rôles réels de recette, les écrans et les gestes humains dans le bon ordre : boutique, Catalogue/Sourcing, Admin, Hub, Achats, caisse, Transitaire, Relais, SAV et documents selon le cas. **Écran/action absent = FAIL/BLOCKED, jamais contourné par POST API, SQL, script ou fixture jouant l'opérateur.**
+3. **Prouver sur ce même staging** l'état avant/après dans PostgreSQL, les réponses HTTP, les droits, les traces d'audit, les images, les documents, les notifications et les effets financiers, selon le scénario ; SQL/API servent d'**oracles de lecture et de cohérence**, pas de remplaçants aux gestes Chromium. Les scénarios de concurrence, redémarrage, reprise et mode dégradé se rejouent sur staging avec cohortes identifiées et isolation des acteurs.
+4. **STOP aux campagnes isolées comme moyen de clôture** : ne plus programmer ou multiplier des runs de certification sur PG16 local, bases temporaires, serveurs de test parallèles ou harness purement API pour déclarer les lots terminés. **Les tests unitaires, d'intégration et les gates CI/preflight restent obligatoires pour la qualité du code et la fusion**, mais leur succès ne donne aucun `PASS staging` et n'ouvre aucun GO métier. Les résultats anciens de tests isolés restent des preuves techniques, **pas** des certifications opérationnelles.
+5. **Traçabilité et GO** : chaque lot consigne dans sa ligne existante `STATUS.md` le SHA staging, la cohorte, les gestes Chromium, preuves API/PG/audit, artefacts et verdict `PASS | FAIL | BLOCKED | NOT_PROVEN`. Si la preuve staging manque, verdict `NOT_PROVEN` ; corriger et rejouer sur staging avant de marquer certifié. Les 46 E2E restent suspendus jusqu'au GO explicite du propriétaire. Aucune activation PSP réelle, aucun décaissement externe, aucune écriture production autorisés par cette décision.
+
 ## Comment travailler à plusieurs sans collision
 
 1. **Lire ce fichier sur `main` et les PR ouvertes avant d'agir.** Ne pas reprendre une tâche déjà attribuée sans transfert explicite. Ne jamais interpréter une vieille section « terminé » comme preuve actuelle.
