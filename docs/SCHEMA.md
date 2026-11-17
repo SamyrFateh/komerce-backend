@@ -731,6 +731,12 @@ Migration 300 ajoute `customs_shipment_fees.post_closure` (boolean, défaut fals
 `customs_shipment_holds` is a new additive table proposed by migration 421. It records the « retenu en douane » state of a `customs_shipments` row: mandatory `reason`, `held_by`/`held_by_role` (forwarder or the market manager of that market), then release (mainlevée) by the market manager of that market or the Admin (`released_by`, `released_at`, `release_note`). At most one active (`status='held'`) hold per shipment. While a hold is active the linked international shipment cannot change stage and the customs declaration is refused. No existing table or enum is altered.
 <!-- /schema-pending -->
 
+<!-- schema-pending: guard_relay_product_return_receipt (migration 422) -->
+### Garde de reprise SAV et commandes de recette (migration 422 — intended_migration_schema)
+
+Migration 422 remplace uniquement la fonction `guard_relay_product_return_receipt()` (trigger de `relay_product_return_receipts`, créé en 401) : elle n'exclut plus les commandes portant `orders.simulation_scope`, afin de permettre la certification de la reprise SAV au comptoir sur le staging. Aucune table ni colonne modifiée ; aucune décision d'environnement en base (en production, les commandes de recette sont impossibles grâce à la garde acheteur). Les autres contrôles (type, statut, relais, quantité, collecte) sont inchangés.
+<!-- /schema-pending -->
+
 <!-- schema-pending: cash_custody_provenance_edges (migration 304, now live) -->
 ### Cash custody provenance edges (migration 304 — intended_migration_schema)
 
