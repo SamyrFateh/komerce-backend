@@ -12,7 +12,7 @@
 
 const fs=require('node:fs');
 const path=require('node:path');
-const {spawnSync}=require('node:child_process');
+const {spawnSync,execFileSync}=require('node:child_process');
 const {resolveCanonicalReplay}=require('./g6-canonical-journey-binding');
 
 const ROOT=path.resolve(__dirname,'../..');
@@ -20,6 +20,7 @@ const OUT=path.join(ROOT,'test-results/g6-canonical-replay');
 const REPORT=path.join(OUT,'report.json');
 const BUYER=path.join(ROOT,'test-results/g6-p2-buyer-order/report.json');
 const CASH=path.join(ROOT,'test-results/g6-a-relay-cash/report.json');
+const RESUME_BUYER=path.join(ROOT,'test-results/g6-canonical-resume/g6-p2-buyer-order/report.json');
 const ORIGIN='https://komerce-backend-production.up.railway.app';
 const VALID_SHA=/^[a-f0-9]{40}$/;
 const VALID_REF=/^[A-Z0-9][A-Z0-9-]{5,63}$/;
@@ -37,14 +38,40 @@ function validateGuard(env=process.env) {
   return resolveCanonicalReplay(env);
 }
 
-function validateBuyerProof(buyer, scope, env) {
+// Resuming from a previous GitHub run is only allowed after a Git-authenticated
+// SAME-STAGING SHA compatibility proof and fresh PostgreSQL readback in cash.
+const RESUME_DIFF_ALLOWLIST=new Set([
+  '.github/workflows/staging-g6-canonical-buyer-cash.yml',
+  'scripts/recette/g6-canonical-replay.js',
+  'tests/unit/g6-canonical-journey-replay.test.js',
+  'docs/recette/PARCOURS_REFERENCE_UNIQUE.md'
+]);
+function isToolingOnlyResumeDiff(files) {
+  return Array.isArray(files) && files.length>0 && files.every(f=>RESUME_DIFF_ALLOWLIST.has(f));
+}
+function verifyResumeTooling(oldSha,newSha) {
+  if(!VALID_SHA.test(String(oldSha||''))||!VALID_SHA.test(String(newSha||'')))
+    throw new Error('G6_CANONICAL_RESUME_SHA_INVALID');
+  if(oldSha===newSha)return {equivalent:true,changedFiles:[]};
+  try {
+    execFileSync('git',['merge-base','--is-ancestor',oldSha,newSha],{cwd:ROOT,timeout:15000,stdio:'pipe'});
+    const files=execFileSync('git',['diff','--name-only',oldSha,newSha],{cwd:ROOT,timeout:15000,encoding:'utf8'})
+      .split(/\r?\n/).filter(Boolean);
+    if(isToolingOnlyResumeDiff(files))return {equivalent:true,changedFiles:files};
+  }catch(_){}
+  throw new Error('G6_CANONICAL_RESUME_RUNTIME_DIFF_UNVERIFIED');
+}
+function validateBuyerProof(buyer, scope, env, {toolingEquivalent=false}={}) {
   if(buyer.verdict!=='G6_P2_REAL_OTP_CHROMIUM_ORDER_CREATED_NO_EXTERNAL_EFFECTS' ||
       buyer.market!==scope.market || buyer.order?.market!==scope.market ||
       buyer.order?.scope!=='G6-BUYER' || buyer.order?.payment_status!=='pending' || buyer.order?.status!=='pending' ||
-      buyer.order?.payment_mode!=='cash_relais' ||
+      // The historical buyer report omitted payment_mode, but its code asserts
+      // cash_relais against PG before emitting this exact verdict. The live
+      // relay precheck MUST recheck payment_mode before every cash action.
+      (buyer.order?.payment_mode && buyer.order.payment_mode!=='cash_relais') ||
       !VALID_REF.test(String(buyer.order?.reference||'')) ||
       !buyer.order?.id || !buyer.db_fingerprint ||
-      buyer.runtime_sha!==env.E2E_EXPECTED_DEPLOY_SHA ||
+      (buyer.runtime_sha!==env.E2E_EXPECTED_DEPLOY_SHA && !toolingEquivalent) ||
       buyer.blocked_requests?.length || buyer.payment_real || buyer.supplier_order_real) {
     throw new Error('G6_CANONICAL_BUYER_PROOF_INVALID');
   }
@@ -95,9 +122,27 @@ async function main(env=process.env) {
     report.staging_sha=env.E2E_EXPECTED_DEPLOY_SHA;
     save();
 
-    // No new buyer flow: invoke the SAME approved staging Chromium adapter.
-    const buyer=executeExisting('scripts/recette/g6-p2-buyer-order-real-chromium.js',BUYER,env);
-    const order=validateBuyerProof(buyer,scope,env);
+    // Reuse an older real Chromium buyer checkpoint only when fetched by the
+    // trusted owner-only GitHub workflow and when ONLY test tooling changed.
+    // A missing artifact, unrelated order, stale database or runtime change
+    // must fail closed, not rebuild or silently switch to a new buyer.
+    let buyer, resumeDiff=null;
+    const resumeRun=String(env.G6_CANONICAL_RESUME_RUN_ID||'');
+    if(resumeRun) {
+      if(!/^\d{8,}$/.test(resumeRun)||!fs.existsSync(RESUME_BUYER))
+        throw new Error('G6_CANONICAL_RESUME_ARTIFACT_MISSING');
+      buyer=JSON.parse(fs.readFileSync(RESUME_BUYER,'utf8'));
+      if(String(buyer.run_id)!==resumeRun)
+        throw new Error('G6_CANONICAL_RESUME_RUN_ID_MISMATCH');
+      resumeDiff=verifyResumeTooling(buyer.runtime_sha,env.E2E_EXPECTED_DEPLOY_SHA);
+      fs.mkdirSync(path.dirname(BUYER),{recursive:true});
+      fs.copyFileSync(RESUME_BUYER,BUYER);
+      report.resumed_from_run_id=resumeRun;
+      report.resume_tooling_diff=resumeDiff.changedFiles;
+    } else {
+      buyer=executeExisting('scripts/recette/g6-p2-buyer-order-real-chromium.js',BUYER,env);
+    }
+    const order=validateBuyerProof(buyer,scope,env,{toolingEquivalent:!!resumeDiff?.equivalent});
     report.db_fingerprint=buyer.db_fingerprint;report.order=order;
     report.stages.push({id:'BUYER',verdict:'PASS',via:'Chromium_UI',
       evidence:'test-results/g6-p2-buyer-order/report.json',reference:order.reference});
@@ -131,4 +176,4 @@ async function main(env=process.env) {
 }
 
 if(require.main===module)main().catch(e=>{console.error(e.message);process.exitCode=2});
-module.exports={validateGuard,validateBuyerProof,validateCashProof,main};
+module.exports={validateGuard,validateBuyerProof,validateCashProof,isToolingOnlyResumeDiff,verifyResumeTooling,main};

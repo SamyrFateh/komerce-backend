@@ -77,3 +77,12 @@ Les déclencheurs **propriétaire uniquement**, sérialisés :
 **Limite explicite :** la chaîne s'arrête à la transition `HUB_PO`. Cette étape n'est pas encore reliée à la même commande, de même que réception Hub, KOM-BOX, douane, Relais, code de retrait, SAV et documents. Le rapport `test-results/g6-canonical-replay/report.json` affiche `buyer_cash_verdict=PASS` uniquement si les deux gestes, l'identité de commande, le marché, le SHA et l'empreinte PostgreSQL concordent ; le verdict du **scénario complet reste NOT_PROVEN**, même quand GitHub Actions termine au vert.
 
 Aucun scénario autre que M01/M04/M05 n'est implicitement pris en charge, en particulier M02 stock local, M03 mixte et M06 fournisseur central manuel. Les adapter au même moteur par ajout de branche métier, **pas par un nouveau script de parcours**. Les 46 E2E restent suspendus au GO propriétaire, les flux PSP/fournisseurs réels interdits.
+
+
+### Reprise après erreur de contrat de preuve (17 novembre 2026, runner G6)
+
+La première exécution M01/KM [#4425](https://github.com/SamyrFateh/komerce-backend/issues/4425) a réellement créé la commande `KL1WGP6` en Chromium sur staging `8f394eac`. **La caisse n'a pas été exécutée** : l'ancien rapport d'achat n'exposait pas le champ `payment_mode`, pourtant déjà vérifié par le script d'achat lui-même en PostgreSQL. Aucun accès ni aucun paiement supplémentaire n'est attesté par ce run.
+
+Pour **reprendre sans refaire l'achat**, une issue propriétaire `[staging-op] g6-canonical-resume-M01-KM` contenant `resume_run_id: 44167858336` télécharge l'artefact GitHub de l'ancien run, vérifie l'ID d'exécution, la référence de commande, le marché, le scénario et l'empreinte PG, et **refuse tout changement de code runtime** entre les deux SHA (diff Git limité à l'orchestrateur de test, son workflow, ses tests et la documentation). Le nouvel agent Relais vérifie à nouveau **à l'écran et par PostgreSQL** que la commande est encore pending / cash_relais, avant tout clic d'encaissement. Sinon `BLOCKED` ; jamais de nouveau checkout implicite.
+
+Le test global reste `NOT_PROVEN` après reprise, tant que `HUB_PO`, transport, Douane, remise client et documents ne sont pas raccordés à cette même référence.
