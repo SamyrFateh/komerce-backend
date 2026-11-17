@@ -19,6 +19,7 @@ const {confirmTarget}=require('./target-guard');
 const {createAdminUser}=require('../../services/user-mutation-service');
 const {markE2eTestAccount,ensureRelayAgentMembership}=require('./staging-e2e-provision');
 const delegation=require('../../services/market-delegation-service');
+const {projectAssignment}=require('../../services/market-scope-projector');
 const BASE='https://komerce-backend-production.up.railway.app';
 const REFS=Object.freeze({KM:'K18SFYN',CM:'KW34OBY',CG:'KSJWLND'});
 const OUT=path.resolve('test-results/g6-a-relay-cash');
@@ -71,6 +72,27 @@ async function prepare(){
   const client=await db.getClient();let tx=false;
   try {
     await client.query('BEGIN');tx=true;
+    // Give one fresh, marked G6-A operator only network.read/update on these markets.
+    // Unlike central admin, the market network GET route requires a real membership.
+    // Projection is maintained by its canonical owner; no operator_market_scopes SQL.
+    const opPassword=crypto.randomBytes(24).toString('base64url')+'Aa1!';
+    const opEmail='g6-a-network-'+run8+'@komerce.test';
+    const opCreated=await createAdminUser(client,{
+      fullName:'G6-A Network '+run8,email:opEmail,role:'market_operator',currencyPref:'KMF',
+      passwordHash:await bcrypt.hash(opPassword,10)
+    });
+    const op=opCreated.rows[0];
+    check(!!op?.id,'G6_A_NETWORK_OPERATOR_PROVISION_FAILED');
+    await markE2eTestAccount(client,{userId:op.id,actorId:a[0].id});
+    for(const code of Object.keys(REFS)){
+      const assignment=await delegation.resolveActiveAssignmentByMarketCode(client,code);
+      await delegation.addMembership(client,{
+        assignmentId:assignment.assignment_id,userId:op.id,actorUserId:a[0].id,
+        capabilities:['network.read','network.update'],actorIsCentral:true
+      });
+      await projectAssignment(client,assignment.assignment_id);
+    }
+    users.networkOperator={id:op.id,email:opEmail,password:opPassword};
     for(const code of Object.keys(REFS)){
       const password=crypto.randomBytes(24).toString('base64url')+'Aa1!';
       const email='g6-a-relay-'+code.toLowerCase()+'-'+run8+'@komerce.test';
@@ -91,7 +113,7 @@ async function prepare(){
   } catch(e){if(tx)await client.query('ROLLBACK').catch(()=>{});throw e;}
   finally{client.release();}
   step('E2E_ACTORS_CREATED_BY_CANONICAL_WRITERS',{markets:Object.keys(REFS),role:'agent_relais',credentials_exposed:false,scope:'G6-A'});
-  return {byMarket,users};
+  return {byMarket,users,operator:users.networkOperator};
 }
 async function openUI(email,password,allowMutation){
   const ctx=await browser.newContext({viewport:{width:1440,height:900},locale:'fr-FR'});
@@ -118,9 +140,9 @@ async function openUI(email,password,allowMutation){
   await page.waitForURL(u=>u.pathname!=='/login.html',{timeout:15000});
   return {ctx,page};
 }
-async function attachByUI(code,o,actor){
+async function attachByUI(code,o,actor,operator){
   const pathPrefix='/api/market-delegation/markets/'+code+'/network/relais/'+o.relais_id+'/agents';
-  const s=await openUI(process.env.E2E_ADMIN_EMAIL,process.env.E2E_ADMIN_PASSWORD,p=>p===pathPrefix);
+  const s=await openUI(operator.email,operator.password,p=>p===pathPrefix);
   try {
     const p=s.page;
     await p.goto(BASE+'/dashboards/canonical/market-autonomy.html?market='+code,{waitUntil:'domcontentloaded'});
@@ -184,12 +206,12 @@ async function cashByUI(code,o,actor){
   check(target.confirmed,'G6_A_DB_TARGET_NOT_CONFIRMED');
   report.db_fingerprint=target.fingerprint;
   report.sha=await sha();
-  const {byMarket,users}=await prepare();
+  const {byMarket,users,operator}=await prepare();
   await sha();
   browser=await chromium.launch({headless:true});
   for(const code of Object.keys(REFS)){
     await sha();
-    await attachByUI(code,byMarket[code],users[code]);
+    await attachByUI(code,byMarket[code],users[code],operator);
     await sha();
     await cashByUI(code,byMarket[code],users[code]);
     await sha();
