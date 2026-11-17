@@ -5,7 +5,7 @@ const {
   business,canonicalScenario,resolveCanonicalReplay,resolveRelayCashRefs
 }=require('../../scripts/recette/g6-canonical-journey-binding');
 const {
-  validateGuard,validateBuyerProof,validateCashProof,isToolingOnlyResumeDiff,verifyResumeTooling
+  validateGuard,validateBuyerProof,validateCashProof,validateHubProof,isToolingOnlyResumeDiff,verifyResumeTooling
 }=require('../../scripts/recette/g6-canonical-replay');
 
 const sha='a'.repeat(40);
@@ -93,7 +93,8 @@ describe('G6 canonical journey — same order, original matrix, real staging gua
     expect(isToolingOnlyResumeDiff([
       'scripts/recette/g6-canonical-replay.js',
       '.github/workflows/staging-g6-canonical-buyer-cash.yml',
-      'tests/unit/g6-canonical-journey-replay.test.js'
+      'tests/unit/g6-canonical-journey-replay.test.js',
+      'tests/staging-clicks/g6-p3-kuyiyuk.spec.js'
     ])).toBe(true);
     expect(isToolingOnlyResumeDiff([])).toBe(false);
     expect(isToolingOnlyResumeDiff(['server.js'])).toBe(false);
@@ -102,6 +103,20 @@ describe('G6 canonical journey — same order, original matrix, real staging gua
     ])).toBe(false);
     expect(verifyResumeTooling(sha,sha)).toEqual({equivalent:true,changedFiles:[]});
     expect(()=>verifyResumeTooling('bad',sha)).toThrow('G6_CANONICAL_RESUME_SHA_INVALID');
+  });
+  test('la preuve PO Hub doit appartenir au même ordre payé et rester sans effet fournisseur',()=>{
+    const h={
+      verdict:'G6_P3_MANUAL_LINE_AND_DRAFT_PO_CHROMIUM_PASS',
+      reference:'K123456',external_supplier_calls:0,external_payment_executed:false,
+      final:{order_id:buyer.order.id,status:'confirmed',payment_status:'paid',
+        line_count:1,po_count:1,cash_collection_count:1,cash_control_confirmed_count:1}
+    };
+    const order={id:buyer.order.id,reference:'K123456'};
+    expect(validateHubProof(h,order,{reference:'K123456'})).toMatchObject({po_count:1,line_count:1});
+    expect(()=>validateHubProof({...h,reference:'OTHER'},order,{reference:'K123456'})).toThrow();
+    expect(()=>validateHubProof({...h,final:{...h.final,po_count:0}},order,{reference:'K123456'})).toThrow();
+    expect(()=>validateHubProof({...h,final:{...h.final,cash_collection_count:2}},order,{reference:'K123456'})).toThrow();
+    expect(()=>validateHubProof({...h,external_payment_executed:true},order,{reference:'K123456'})).toThrow();
   });
   test('refuse cash sur un autre ordre, une autre DB, ou un état financier incomplet',()=>{
     expect(validateCashProof(cash,buyer,scope,env)).toMatchObject({reference:'K123456',paid:true});
