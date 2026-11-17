@@ -125,7 +125,7 @@ async function main(){
    await actor.page.screenshot({path:path.join(OUT,'hub-receipt-simulated.png'),fullPage:true});
    check(actor.blocked.length===0,'G6_RECEIPT_UNEXPECTED_UI_WRITES');
   }finally{await actor.ctx.close();}
-  const after=await state();base(after,['confirmed','received','partially_received']);
+  const after=await state();base(after,['hub_received']);
   const physicalUnits=await physical(report.receipt.reference);
   check(physicalUnits.length===1&&physicalUnits[0].unit_type==='SUPPLIER_PACKAGE',
     'G6_RECEIPT_PHYSICAL_UNIT_NOT_UNIQUE');
