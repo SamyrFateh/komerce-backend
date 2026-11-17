@@ -5,7 +5,7 @@ const {
   business,canonicalScenario,resolveCanonicalReplay,resolveRelayCashRefs
 }=require('../../scripts/recette/g6-canonical-journey-binding');
 const {
-  validateGuard,validateBuyerProof,validateCashProof
+  validateGuard,validateBuyerProof,validateCashProof,isToolingOnlyResumeDiff,verifyResumeTooling
 }=require('../../scripts/recette/g6-canonical-replay');
 
 const sha='a'.repeat(40);
@@ -78,6 +78,30 @@ describe('G6 canonical journey — same order, original matrix, real staging gua
     expect(()=>validateBuyerProof({...buyer,order:{...buyer.order,payment_status:'paid'}},scope,env)).toThrow();
     expect(()=>validateBuyerProof({...buyer,runtime_sha:'b'.repeat(40)},scope,env)).toThrow();
     expect(()=>validateBuyerProof({...buyer,blocked_requests:[{method:'POST'}]},scope,env)).toThrow();
+  });
+  test('reprend la preuve du checkout historique sans recopier le clic ni les paramètres métier',()=>{
+    const previous={...buyer,order:{...buyer.order}};
+    delete previous.order.payment_mode; // ancien rapport G6 : SQL a quand même vérifié cash_relais
+    expect(validateBuyerProof(previous,scope,env)).toMatchObject({reference:'K123456'});
+    expect(()=>validateBuyerProof({...previous,runtime_sha:'b'.repeat(40)},scope,env)).toThrow();
+    expect(validateBuyerProof({...previous,runtime_sha:'b'.repeat(40)},scope,env,
+      {toolingEquivalent:true})).toMatchObject({reference:'K123456'});
+    expect(()=>validateBuyerProof({...previous,order:{...previous.order,payment_status:'paid'}},
+      scope,env,{toolingEquivalent:true})).toThrow();
+  });
+  test('reprise autorisée seulement si TOUS les fichiers modifiés sont des outils de recette déclarés',()=>{
+    expect(isToolingOnlyResumeDiff([
+      'scripts/recette/g6-canonical-replay.js',
+      '.github/workflows/staging-g6-canonical-buyer-cash.yml',
+      'tests/unit/g6-canonical-journey-replay.test.js'
+    ])).toBe(true);
+    expect(isToolingOnlyResumeDiff([])).toBe(false);
+    expect(isToolingOnlyResumeDiff(['server.js'])).toBe(false);
+    expect(isToolingOnlyResumeDiff([
+      'scripts/recette/g6-canonical-replay.js','public/boutique/js/b-komerce.js'
+    ])).toBe(false);
+    expect(verifyResumeTooling(sha,sha)).toEqual({equivalent:true,changedFiles:[]});
+    expect(()=>verifyResumeTooling('bad',sha)).toThrow('G6_CANONICAL_RESUME_SHA_INVALID');
   });
   test('refuse cash sur un autre ordre, une autre DB, ou un état financier incomplet',()=>{
     expect(validateCashProof(cash,buyer,scope,env)).toMatchObject({reference:'K123456',paid:true});
