@@ -5,7 +5,7 @@ const {
   business,canonicalScenario,resolveCanonicalReplay,resolveRelayCashRefs
 }=require('../../scripts/recette/g6-canonical-journey-binding');
 const {
-  validateGuard,validateBuyerProof,validateCashProof,validateHubProof,validateCommitmentCheckpoint,validateVendorReadinessCheckpoint,validateHubReceivingCheckpoint,validateCustomerBagCheckpoint,isToolingOnlyResumeDiff,verifyResumeTooling
+  validateGuard,validateBuyerProof,validateCashProof,validateHubProof,validateCommitmentCheckpoint,validateVendorReadinessCheckpoint,validateHubReceivingCheckpoint,validateCustomerBagCheckpoint,validateKomBoxCheckpoint,isToolingOnlyResumeDiff,verifyResumeTooling
 }=require('../../scripts/recette/g6-canonical-replay');
 
 const sha='a'.repeat(40);
@@ -223,6 +223,24 @@ describe('G6 canonical journey — same order, original matrix, real staging gua
     expect(()=>validateCustomerBagCheckpoint(previous,{...receipt,db_fingerprint:'OTHER'},scope)).toThrow();
     expect(()=>validateCustomerBagCheckpoint(previous,{...receipt,readback:{...receipt.readback,remaining:1}},scope)).toThrow();
     expect(()=>validateCustomerBagCheckpoint(previous,{...receipt,external_payment_executed:true},scope)).toThrow();
+  });
+  test('la KOM-BOX reprend un seul sac PACKED et le colis canonique lié à M01',()=>{
+    const po='8353f1a3-f2a5-4c5e-b01c-95b4cb2004e3',id='56adad65-d1fa-4e80-8d69-c25e0fe92a76';
+    const bagId='bcf810c9-33b2-438a-b4c3-857b024e2247',bagRef='KOM-ITEM-178D0AEA488AA4B5B9';
+    const parcelId='95045ede-d5b8-405b-b65f-d9dbdddb4756',allocationId='3b430dcf-8662-44b4-a29f-27e38df19253';
+    const previous={scenario_id:'M01',market:'KM',verdict:'NOT_PROVEN',full_chain_certified:false,
+      production_permitted:false,next_stage:'KOM_BOX',order:{id,reference:'KL1WGP6'},po_id:po,db_fingerprint:'same',
+      stages:[{id:'HUB_CUSTOMER_BAG',verdict:'PASS_SIMULATED_STAGING',bag_id:bagId}]};
+    const bag={verdict:'G6_CUSTOMER_BAG_SIMULATED_CHROMIUM_PG_PASS',order_id:id,po_id:po,bag_id:bagId,bag_ref:bagRef,
+      db_fingerprint:'same',external_supplier_calls:0,external_payment_executed:false,provenance:'SIMULATED / STAGING ONLY',
+      events:[{},{},{}],after:{order:{allocation_id:allocationId},bags:[{id:bagId,state:'PACKED'}],
+        units:[{id:bagId,active:true,quantity:1,evidence_method:'MANUAL'}],links:[],parcels:[{id:parcelId}]}};
+    expect(validateKomBoxCheckpoint(previous,bag,scope)).toMatchObject({bagId,parcelId,allocationId});
+    expect(()=>validateKomBoxCheckpoint(previous,{...bag,db_fingerprint:'other'},scope)).toThrow();
+    expect(()=>validateKomBoxCheckpoint(previous,{...bag,after:{...bag.after,bags:[{id:bagId,state:'RECEIVED'}]}},scope)).toThrow();
+    expect(()=>validateKomBoxCheckpoint(previous,{...bag,after:{...bag.after,links:[{}]}},scope)).toThrow();
+    expect(()=>validateKomBoxCheckpoint(previous,{...bag,after:{...bag.after,parcels:[{id:parcelId},{id:'other'}]}},scope)).toThrow();
+    expect(()=>validateKomBoxCheckpoint(previous,{...bag,external_payment_executed:true},scope)).toThrow();
   });
   test('refuse cash sur un autre ordre, une autre DB, ou un état financier incomplet',()=>{
     expect(validateCashProof(cash,buyer,scope,env)).toMatchObject({reference:'K123456',paid:true});
