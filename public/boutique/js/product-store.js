@@ -127,7 +127,7 @@ export function getRecommendedProducts(product, limit = 12) {
     .slice(0, limit);
 }
 
-function readCache() {
+export function readCache() {
   const cached = localStorage.getItem(cacheKey());
   if (!cached) return [];
   try {
