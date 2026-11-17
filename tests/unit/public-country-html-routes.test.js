@@ -6,29 +6,53 @@ const express = require('express');
 const request = require('supertest');
 const { mountHtmlRoutes } = require('../../bootstrap/html-routes');
 
-const app = express();
-mountHtmlRoutes(app, path.join(__dirname, '../..'));
+const countries = [
+  ['KM','Comores','KMF'], ['CM','Cameroun','XAF'], ['CG','Congo','XAF'],
+  ['DJ','Djibouti','DJF'], ['YT','Mayotte','EUR'], ['GA','Gabon','XAF'],
+];
+function setup(rows = countries.map(([code,name,currency])=>({
+  code,name,currency,minor_unit:0,is_active:true,lifecycle_status:'ACTIVE',storefront_texts:{}
+}))) {
+  const app=express();
+  const query=jest.fn().mockResolvedValue({rows});
+  mountHtmlRoutes(app,path.join(__dirname,'../..'),{query});
+  return {app,query};
+}
 
-describe('Routes publiques des catalogues pays', () => {
-  test.each(['KM', 'CM', 'CG', 'DJ', 'YT'])('/%s retourne la boutique sans redirection de marché', async code => {
-    const res = await request(app).get('/' + code);
+describe('Routes publiques des catalogues pays dynamiques (PostgreSQL)',()=>{
+  test.each(countries)('/%s retourne la boutique pour un marché ACTIVE',async code=>{
+    const {app}=setup();const res=await request(app).get('/'+code);
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toMatch(/text\/html/);
-    expect(res.text).toContain('/boutique/js/market-context.js');
+    expect(res.text).toContain('/boutique/js/market-registry.js');
   });
-
-  test('codes minuscules et slash final redirigent vers l’URL canonique', async () => {
-    const lower = await request(app).get('/cm?tab=shop');
-    expect(lower.status).toBe(301);
-    expect(lower.headers.location).toBe('/CM?tab=shop');
-
-    const trailing = await request(app).get('/YT/');
-    expect(trailing.status).toBe(301);
-    expect(trailing.headers.location).toBe('/YT');
+  test('nouveau pays accepté sans code applicatif nouveau, URL canonique respectée',async()=>{
+    const {app}=setup();
+    expect((await request(app).get('/ga?tab=shop')).headers.location).toBe('/GA?tab=shop');
+    expect((await request(app).get('/YT/')).headers.location).toBe('/YT');
   });
-
-  test('ancienne URL /boutique reste utilisable', async () => {
-    const res = await request(app).get('/boutique?market=CG');
+  test.each(['PROVISIONING','SUSPENDED','CLOSED'])('un marché %s n est jamais servi',async lifecycle_status=>{
+    const rows=[{code:'GA',name:'Gabon',currency:'XAF',minor_unit:0,is_active:lifecycle_status!=='PROVISIONING',lifecycle_status,storefront_texts:{}}];
+    const {app}=setup(rows);
+    expect((await request(app).get('/GA')).status).toBe(404);
+    expect((await request(app).get('/ga')).status).toBe(404);
+    expect((await request(app).get('/boutique?market=GA')).status).toBe(404);
+  });
+  test('code inconnu et alias non autorisé: 404; ancienne URL KM fonctionne',async()=>{
+    const {app}=setup();
+    expect((await request(app).get('/FR')).status).toBe(404);
+    expect((await request(app).get('/boutique?market=FR')).status).toBe(404);
+    expect((await request(app).get('/boutique?market=CG')).status).toBe(200);
+    expect((await request(app).get('/')).status).toBe(200);
+  });
+  test('panne PostgreSQL = 503 sans fallback aux anciens marchés',async()=>{
+    const {app,query}=setup();query.mockRejectedValue(new Error('database down'));
+    expect((await request(app).get('/CM')).status).toBe(503);
+    expect((await request(app).get('/')).status).toBe(503);
+  });
+  test('le back-office /admin/markets n est pas une boutique publique',async()=>{
+    const {app}=setup();const res=await request(app).get('/admin/markets');
     expect(res.status).toBe(200);
+    expect(res.headers['x-admin-generation']).toBe('legacy-1');
   });
 });
