@@ -725,6 +725,12 @@ Migration 300 ajoute `customs_shipment_fees.post_closure` (boolean, défaut fals
 `customs_shipment_parcel_events` is an append-only journal of parcel attach/detach events on an open customs shipment (groupage). Every event carries actor, date and a mandatory reason; UPDATE/DELETE are refused. It deliberately has no foreign key (like `customs_shipment_financial_audit`) so the evidence survives deactivation. Cost lines are re-allocated by the existing conserving allocator in the same transaction; prices and margin writers are untouched.
 
 
+<!-- schema-pending: customs_shipment_holds (migration 421) -->
+### Customs shipment holds (migration 421 — intended_migration_schema)
+
+`customs_shipment_holds` is a new additive table proposed by migration 421. It records the « retenu en douane » state of a `customs_shipments` row: mandatory `reason`, `held_by`/`held_by_role` (forwarder or the market manager of that market), then release (mainlevée) by the market manager of that market or the Admin (`released_by`, `released_at`, `release_note`). At most one active (`status='held'`) hold per shipment. While a hold is active the linked international shipment cannot change stage and the customs declaration is refused. No existing table or enum is altered.
+<!-- /schema-pending -->
+
 <!-- schema-pending: cash_custody_provenance_edges (migration 304, now live) -->
 ### Cash custody provenance edges (migration 304 — intended_migration_schema)
 

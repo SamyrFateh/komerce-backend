@@ -6,7 +6,7 @@
  * @criticality high
  * @inputs authenticated_actor, server_resolved_market, physical_evidence, real_invoices
  * @outputs immutable_shipment_facts, read_only_cost_reconciliation
- * @db-read international_shipments, international_shipment_hub_units, hub_physical_units, hub_physical_unit_placements, hub_box_bags, hub_box_effective_placements, hub_purchase_allocations, international_shipment_charges, international_shipment_events, orders, customs_shipments, customs_shipment_parcels, customs_shipment_fees, international_n1_reconciliations
+ * @db-read international_shipments, international_shipment_hub_units, hub_physical_units, hub_physical_unit_placements, hub_box_bags, hub_box_effective_placements, hub_purchase_allocations, international_shipment_charges, international_shipment_events, orders, customs_shipments, customs_shipment_holds, customs_shipment_parcels, customs_shipment_fees, international_n1_reconciliations
  * @db-write international_shipments, international_shipment_hub_units, international_shipment_events, international_shipment_charges
  * @db-write-via:parcel-shipment-handover parcel_events, parcels
  * @db-write-via:customs-shipment-service customs_shipments
@@ -113,6 +113,11 @@ async function transition(market,actor,reference,body={},database=db){
   const proof=str(body.proof_ref,'proof_ref',240);
   return transact(database,async client=>{
     const s=await get(client,market,reference,true);
+    if(s.customs_shipment_id){
+      const {rows:held}=await client.query(
+        "SELECT 1 FROM customs_shipment_holds WHERE shipment_id=$1 AND status='held' LIMIT 1",[s.customs_shipment_id]);
+      if(held.length)fail(409,'JOURNEY_CUSTOMS_HELD','Dossier retenu en douane : mainlevée requise avant toute étape');
+    }
     if(STAGES.indexOf(target)!==STAGES.indexOf(s.stage)+1)
       fail(409,'JOURNEY_STAGE_ORDER','Les étapes doivent être validées dans l’ordre');
     if(target==='in_transit'&&!s.tracking_reference&&!s.bill_of_lading_ref)
