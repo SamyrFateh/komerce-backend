@@ -18,12 +18,17 @@ const {createAdminUser}=require('../../services/user-mutation-service');
 const {markE2eTestAccount}=require('./staging-e2e-provision');
 const {preseedG6BuyerOtp}=require('../../services/g6-staging-buyer-identity-guard');
 const ORIGIN='https://komerce-backend-production.up.railway.app';
-const PRODUCT='76dacd6c-c1d8-4313-9455-f0d8f063835b',REF='KPR-000099';
+const REF='KPR-000165';
+const MARKET=String(process.env.G6_TARGET_MARKET||'KM').toUpperCase();
+const COUNTRY_PREFIX={KM:'+269',CM:'+237',CG:'+242'};
+const MARKET_PRICE={KM:5990,CM:7987,CG:7987};
+const EXPECTED_PRICE=MARKET_PRICE[MARKET];
+let PRODUCT=null;
 const OUT=path.resolve('test-results/g6-p2-buyer-order');
 fs.mkdirSync(OUT,{recursive:true});
 const run=crypto.randomBytes(4).toString('hex');
 const report={run_id:process.env.GITHUB_RUN_ID||null,run8:run.toUpperCase(),
-  phase:'G6-KM-CHROMIUM-REAL-OTP-ORDER',product_ref:REF,product_id:PRODUCT,
+  phase:'G6-'+MARKET+'-CHROMIUM-REAL-OTP-ORDER',market:MARKET,product_ref:REF,product_id:PRODUCT,
   verdict:'NOT_PROVEN',human_attestation:false,payment_real:false,supplier_order_real:false,
   blocked_requests:[],allowed_read_posts:[],preview_http_statuses:[],steps:[]};
 const save=()=>fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2)+'\n');
@@ -35,6 +40,23 @@ async function runtime(){
  const v=await r.json();
  check(/^[a-f0-9]{40}$/.test(String(v.commit||''))&&v.commit===process.env.E2E_EXPECTED_DEPLOY_SHA,'SHA_DEPLOY_DRIFT');
  report.runtime_sha=v.commit;
+}
+async function resolveCurrentSaleableProduct(){
+ const {rows}=await db.query(`
+  SELECT p.id,p.product_ref,p.name,d.amount
+  FROM products p
+  JOIN markets m ON m.code=$2
+  JOIN product_market_price_drafts d ON d.product_id=p.id AND d.market_id=m.id AND d.status='LOCAL_ACTIVE'
+  JOIN product_market_exposure e ON e.product_id=p.id AND e.market_id=m.id
+  WHERE p.product_ref=$1 AND p.lifecycle_status='active' AND p.is_active=TRUE
+    AND p.is_available=TRUE AND e.commercial_exposure='ENABLED'
+    AND EXISTS (SELECT 1 FROM product_skus sku
+      WHERE sku.product_id=p.id AND sku.is_active=TRUE AND sku.stock>0)`,[REF,MARKET]);
+ check(rows.length===1,'G6_RECIPE_PRODUCT_OR_PRICE_NOT_UNIQUE');
+ check(Number(rows[0].amount)===EXPECTED_PRICE,'G6_RECIPE_PRICE_DRIFT');
+ PRODUCT=rows[0].id;
+ report.product_id=PRODUCT;
+ record('CURRENT_SALEABLE_PRODUCT',{market:MARKET,ref:REF,price_market_minor:EXPECTED_PRICE,stocked:true});
 }
 async function queryOrders(userId){
  const {rows}=await db.query(
@@ -61,7 +83,10 @@ async function setup(){
  check(actor?.role==='admin','G6_ADMIN_DB_ROLE');
  let phone=null;
  for(let n=0;n<18;n++){
-  const p='+2693'+String(crypto.randomInt(0,1000000)).padStart(6,'0');
+  const local=MARKET==='KM'?'3'+String(crypto.randomInt(0,1000000)).padStart(6,'0'):
+    MARKET==='CM'?'6'+String(crypto.randomInt(0,100000000)).padStart(8,'0'):
+    '06'+String(crypto.randomInt(0,10000000)).padStart(7,'0');
+  const p=COUNTRY_PREFIX[MARKET]+local;
   const {rows}=await db.query('SELECT 1 FROM users WHERE phone=$1 OR whatsapp_phone=$1 LIMIT 1',[p]);
   if(!rows.length){phone=p;break}
  }
@@ -73,7 +98,7 @@ async function setup(){
   const hash=await bcrypt.hash(crypto.randomBytes(20).toString('base64url'),10);
   const {rows:[buyer]}=await createAdminUser(c,{
     fullName:'G6 E2E '+run+' Client',email:'g6-e2e-'+run+'@komerce.test',
-    phone,role:'client',currencyPref:'KMF',passwordHash:hash});
+    phone,role:'client',currencyPref:MARKET==='KM'?'KMF':'XAF',passwordHash:hash});
   check(!!buyer?.id,'G6_BUYER_MISSING');
   await markE2eTestAccount(c,{userId:buyer.id,actorId:actor.id});
   await preseedG6BuyerOtp(c,{buyer,phone,code,purpose:'login'});
@@ -118,14 +143,15 @@ async function browserCheckout({buyer,phone,code}){
     if(method==='POST'&&u.origin==='https://m.stripe.com'&&u.pathname==='/6'&&req.resourceType()==='xhr')return route.abort();
     report.blocked_requests.push(meta);return route.abort();
   });
-  const d=await page.goto(ORIGIN+'/boutique/?market=KM',{waitUntil:'domcontentloaded'});
+  const d=await page.goto(ORIGIN+'/boutique/?market='+MARKET,{waitUntil:'domcontentloaded'});
   check(d?.status()===200,'BOUTIQUE_DOC_NOT_200');
   await page.locator('.k-header-nav-btn[data-tab="komerce"]').first().click();
   await page.locator('#k-kmc-identify').click();
   await page.locator('#k-id-step-phone').waitFor({state:'visible',timeout:15000});
   await page.locator('#k-id-name').fill('G6');
   await page.locator('#k-id-lastname').fill('E2E');
-  await page.locator('#k-id-phone').fill(phone.slice(4));
+  await page.locator('#k-id-phone-country').selectOption(COUNTRY_PREFIX[MARKET]);
+  await page.locator('#k-id-phone').fill(phone.slice(COUNTRY_PREFIX[MARKET].length));
   const req=page.waitForResponse(r=>r.url().endsWith('/api/auth/otp/request')&&r.request().method()==='POST',{timeout:15000});
   await page.locator('#k-id-phone-cta').click();
   const rr=await req,rb=await rr.json().catch(()=>null);
@@ -138,7 +164,7 @@ async function browserCheckout({buyer,phone,code}){
   check(vr.status()===200&&vb?.user?.id===buyer.id&&!vb?._test,'OTP_REAL_BCRYPT_SESSION_FAIL');
   check((await ctx.cookies()).some(x=>x.name.endsWith('kmrc_jwt')&&x.httpOnly),'OTP_HTTPONLY_SESSION_NOT_SET');
   record('CHROMIUM_OTP_VERIFIED',{request_status:rr.status(),verify_status:vr.status(),session:true,external_notification:false});
-  await page.goto(ORIGIN+'/boutique/?market=KM',{waitUntil:'domcontentloaded'});
+  await page.goto(ORIGIN+'/boutique/?market='+MARKET,{waitUntil:'domcontentloaded'});
   const {rows:[actualProduct]}=await db.query('SELECT name,product_ref FROM products WHERE id=$1',[PRODUCT]);
   check(actualProduct?.product_ref===REF&&!!actualProduct.name,'G6_PRODUCT_PROVENANCE_MISMATCH');
   await page.locator('#k-search-input').fill(actualProduct.name);
@@ -208,7 +234,9 @@ async function browserCheckout({buyer,phone,code}){
   check(report.preview_http_statuses.length>0&&report.preview_http_statuses.every(x=>x===200),
     'G6_AUTHENTICATED_SERVER_QUOTE_NOT_200');
   const total=await page.locator('#ck-final-total-amount').innerText();
-  check(/17[\s\u202f.,]*990/.test(total),'G6_CHECKOUT_TOTAL_NOT_17990');
+  const checkoutTotal=Number(total.replace(/[^0-9]/g,''));
+  check(checkoutTotal===EXPECTED_PRICE,'G6_CHECKOUT_TOTAL_NOT_CURRENT_PRICE');
+  report.checkout_expected_total_kmf=checkoutTotal;
   record('REAL_CHECKOUT',{display_total:total,relay:await page.locator('#ck-relais-summary').innerText().catch(()=>null)});
   await page.screenshot({path:path.join(OUT,'04-real-checkout-before-POST.png')});
   const response=page.waitForResponse(r=>r.url().endsWith('/api/orders')&&r.request().method()==='POST',{timeout:25000});
@@ -229,7 +257,9 @@ async function browserCheckout({buyer,phone,code}){
    'OWNER_ONLY_STAGING_GUARD');
   const target=await confirmTarget({db,env:process.env});
   check(target.confirmed,'STAGING_DB_IDENTITY_MISMATCH');
+  check(Object.hasOwn(COUNTRY_PREFIX,MARKET)&&Number.isInteger(EXPECTED_PRICE),'G6_UNSUPPORTED_MARKET');
   report.db_fingerprint=target.fingerprint;await runtime();
+  await resolveCurrentSaleableProduct();
   const fixture=await setup();
   check((await queryOrders(fixture.buyer.id)).length===0,'BUYER_HAS_PREEXISTING_ORDERS');
   const order=await browserCheckout(fixture);
@@ -237,7 +267,7 @@ async function browserCheckout({buyer,phone,code}){
   check(orders.length===1,'G6_EXACTLY_ONE_ORDER_NOT_SATISFIED');
   const o=orders[0];
   check(o.id===order.id&&o.reference===order.reference&&o.simulation_scope==='G6-BUYER'&&
-    o.market==='KM'&&Number(o.total_kmf)===17990&&o.payment_mode==='cash_relais'&&
+    o.market===MARKET&&Number(o.total_kmf)===report.checkout_expected_total_kmf&&o.payment_mode==='cash_relais'&&
     o.status==='pending'&&o.payment_status!=='paid'&&o.lines===1&&o.qty===1&&o.products?.includes(REF),
     'G6_POSTGRES_CANONICAL_ORDER_MISMATCH');
   report.order={id:o.id,reference:o.reference,status:o.status,payment_status:o.payment_status,

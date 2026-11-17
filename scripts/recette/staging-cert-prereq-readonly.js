@@ -12,7 +12,7 @@
  * @used-by       .github/workflows/staging-cert-prereq-readonly.yml
  * @db-read       markets, schema_migrations, currency_parities, market_delegation_audit, operator_market_scopes, relais, users,
  *                market_central_collection_modes, market_transport_sale_rates, product_market_price_drafts, product_market_exposure,
- *                local_stock, product_suppliers + tables lues par getControlPlane
+ *                local_stock, product_suppliers, orders, e2e_test_accounts, otp_codes + tables lues par getControlPlane
  * @db-write      none
  * @db-txn        BEGIN READ ONLY ; SAVEPOINT par requete (une table absente est rapportee, jamais fatale)
  * @doctrine      staging_only, read_only, never_claims_business_go, no_secret_output
@@ -107,6 +107,47 @@ async function marketSection(client, code, controlPlane) {
   };
 }
 
+async function fixtureInventory(client, env) {
+  const actors = await safe(client, 'recipe_relay_binding', `
+    SELECT u.role::text AS role, (u.relais_id IS NOT NULL) AS has_relay,
+      EXISTS(SELECT 1 FROM e2e_test_accounts e WHERE e.user_id=u.id) AS marked
+    FROM users u WHERE lower(u.email)=lower($1)`, [env.E2E_AGENT_RELAIS_EMAIL || '']);
+  const counts = await safe(client, 'recipe_order_counts', `
+    SELECT m.code AS market,o.simulation_scope,o.status::text AS status,
+      o.payment_status::text AS payment_status,COUNT(*)::int AS n
+    FROM orders o JOIN markets m ON m.id=o.market_id
+    WHERE m.code=ANY($1::text[]) AND o.simulation_scope IS NOT NULL
+    GROUP BY 1,2,3,4 ORDER BY 1,2,3,4`, [['KM', 'CM', 'CG']]);
+  const candidates = await safe(client, 'recipe_order_candidates', `
+    SELECT o.reference,m.code AS market,o.simulation_scope,o.status::text AS status,
+      o.payment_status::text AS payment_status,o.payment_mode::text AS payment_mode,
+      EXISTS(SELECT 1 FROM e2e_test_accounts e WHERE e.user_id=o.user_id) AS buyer_marked,
+      EXISTS(SELECT 1 FROM otp_codes otp JOIN users buyer ON buyer.id=o.user_id
+        WHERE otp.phone IN (buyer.phone,buyer.whatsapp_phone) AND otp.purpose='login'
+          AND otp.verified=FALSE AND otp.expires_at>NOW() AND otp.attempts<5) AS has_live_login_otp,
+      COALESCE(o.relais_id=(SELECT u.relais_id FROM users u WHERE lower(u.email)=lower($2)),FALSE) AS matches_bound_relay,
+      (o.pickup_secret_emitted_at IS NOT NULL) AS pickup_emitted,
+      (o.pickup_secret_revealed_at IS NOT NULL) AS pickup_already_revealed,
+      COUNT(*) OVER()::int AS candidate_total
+    FROM orders o JOIN markets m ON m.id=o.market_id
+    WHERE m.code=ANY($1::text[]) AND o.simulation_scope IS NOT NULL
+      AND o.status::text NOT IN ('collected','cancelled','refunded')
+    ORDER BY (o.status::text='available') DESC,(o.payment_status::text='paid') DESC,o.reference
+    LIMIT 201`, [['KM', 'CM', 'CG'], env.E2E_AGENT_RELAIS_EMAIL || '']);
+  const rows = candidates.rows || [];
+  const total = rows.length ? Number(rows[0].candidate_total) : (candidates.ok ? 0 : null);
+  return {
+    mode: 'READ_ONLY_NO_CREDENTIAL_VALUES',
+    bound_relay: actors.ok ? actors.rows : { error: actors.error },
+    counts: counts.ok ? counts.rows : { error: counts.error },
+    candidates: rows.slice(0, 200).map(({ candidate_total, ...row }) => row),
+    candidate_total: total,
+    truncated: total == null ? null : total > 200,
+    error: candidates.ok ? null : candidates.error,
+    never_claims: 'A candidate is not an authorized actor or a proven browser login; no OTP, phone, email, password or pickup code is exposed.',
+  };
+}
+
 async function assess({ db, fetchImpl = fetch, env = process.env, root = process.cwd() } = {}) {
   if (env.KOMERCE_ENV !== 'staging' || env.KOMERCE_TARGET_ENV !== 'staging') throw new Error('STAGING_ONLY');
   const target = await confirmTarget({ db, fetchImpl, env });
@@ -129,6 +170,7 @@ async function assess({ db, fetchImpl = fetch, env = process.env, root = process
       catch (e) { await client.query('ROLLBACK TO SAVEPOINT cp'); cp = { error: String(e.code || e.message).slice(0, 80) }; }
       markets[code] = await marketSection(client, code, cp);
     }
+    const fixtures = env.G6_A_FIXTURE_INVENTORY === 'true' ? await fixtureInventory(client, env) : null;
     await client.query('ROLLBACK');
     const gates = [
       { id: 'RUNTIME_SHA_MATCHES_EXPECTED', pass: expected ? runtime.toLowerCase() === expected.toLowerCase() : null, observed: runtime.slice(0, 12) },
@@ -137,7 +179,7 @@ async function assess({ db, fetchImpl = fetch, env = process.env, root = process
       { id: 'DJ_NOT_ACTIVE', pass: !markets.DJ.present ? null : markets.DJ.lifecycle_status !== 'ACTIVE' && markets.DJ.is_active === false },
       ...['CM', 'CG', 'YT'].map((c) => ({ id: `${c}_ACTIVE_IS_CANONICAL`, pass: markets[c].present ? !(markets[c].checks.active_without_canonical_audit || markets[c].checks.active_but_not_ready) : null, observed: markets[c].lifecycle_status })),
     ];
-    return { mode: 'READ_ONLY', runtime_sha: runtime.slice(0, 12), expected_sha: expected.slice(0, 12) || null, global: glob, markets, gates,
+    return { mode: 'READ_ONLY', runtime_sha: runtime.slice(0, 12), expected_sha: expected.slice(0, 12) || null, global: glob, markets, gates, ...(fixtures ? { fixtures } : {}),
       never_claims: 'business GO ; ce rapport ne prouve ni transaction ni livrabilite' };
   } catch (e) {
     try { await client.query('ROLLBACK'); } catch (_) { /* connexion deja fermee */ }

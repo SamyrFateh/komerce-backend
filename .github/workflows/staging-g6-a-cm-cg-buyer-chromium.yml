@@ -1,0 +1,65 @@
+# Real CM/CG buyer OTP and cash order with Chromium on shared Railway staging.
+# Two isolated G6-BUYER cohorts, serialized; no external PSP/WhatsApp/supplier order.
+name: G6 A — CM CG real client OTP and cash order Chromium
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: read
+concurrency:
+  group: komerce-g6-a-cm-cg-otp-orders
+  cancel-in-progress: false
+jobs:
+  buyer:
+    if: >-
+      github.repository == 'SamyrFateh/komerce-backend' &&
+      github.actor == github.repository_owner &&
+      github.event.issue.user.login == github.repository_owner &&
+      github.event.issue.title == '[staging-op] g6-a-cm-cg-real-buyer-orders'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        market: [CM, CG]
+    env:
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_TARGET_ENV: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      EXPECTED_RAILWAY_ENVIRONMENT: staging
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      KOMERCE_STAGING_RESET_DB_PIN: ${{ vars.STAGING_DB_PIN }}
+      G6_TARGET_MARKET: ${{ matrix.market }}
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Pin actual Railway staging version and verify database target
+        run: |
+          node scripts/recette/resolve-staging-deploy-pin.js
+          node scripts/recette/target-guard.js
+      - name: Install Chromium headless shell
+        run: npx playwright install chromium --only-shell
+      - name: True market buyer OTP, PDP, quote, cash checkout and PG readback
+        run: node scripts/recette/g6-p2-buyer-order-real-chromium.js
+      - name: Archive redacted screenshots and independent order proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g6-a-${{ matrix.market }}-buyer-order-${{ github.run_id }}
+          path: |
+            test-results/g6-p2-buyer-order/
+            test-results/hub-v1-http/deploy-pin.json
+          if-no-files-found: warn
+          retention-days: 21

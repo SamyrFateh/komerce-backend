@@ -1,0 +1,58 @@
+# Owner-triggered staging Chromium proof for existing G6 buyer OTP guard.
+# No fixture provisioning or order mutation; PostgreSQL oracle is read-only.
+name: G6 A — existing client OTP guard Chromium (staging)
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: read
+concurrency:
+  group: komerce-g6-a-client-guard-staging
+  cancel-in-progress: false
+jobs:
+  client-guard:
+    if: >-
+      github.repository == 'SamyrFateh/komerce-backend' &&
+      github.actor == github.repository_owner &&
+      github.event.issue.user.login == github.repository_owner &&
+      github.event.issue.title == '[staging-op] g6-a-existing-client-guard'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_TARGET_ENV: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      EXPECTED_RAILWAY_ENVIRONMENT: staging
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      KOMERCE_STAGING_RESET_DB_PIN: ${{ vars.STAGING_DB_PIN }}
+      PGOPTIONS: '-c default_transaction_read_only=on'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Pin actual Railway staging SHA and verify PostgreSQL target
+        run: |
+          node scripts/recette/resolve-staging-deploy-pin.js
+          node scripts/recette/target-guard.js
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Observe G6 client OTP guard through real browser UI
+        run: node scripts/recette/g6-a-existing-client-probe.js
+      - name: Archive masked Chromium and PostgreSQL evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g6-a-client-guard-${{ github.run_id }}
+          path: |
+            test-results/g6-a-client-probe/
+            test-results/hub-v1-http/deploy-pin.json
+          if-no-files-found: warn
+          retention-days: 21
