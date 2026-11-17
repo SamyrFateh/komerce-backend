@@ -26,7 +26,7 @@ describe('admin market control plane — lecture centrale + provisioning', () =>
     ]);
     expect(source).toMatch(/router\.put\('\/:marketCode\/transport-sale-rates\/:rateKey', \.\.\.centralAdmin/);
     expect(source).toContain('withTransaction(client => transportSale.setSaleRate(client, {');
-    expect(source).toMatch(/router\\.put\\('\\/:marketCode\\/storefront', \\.\\.\\.centralAdmin/);
+    expect(source).toContain("router.put('/:marketCode/storefront', ...centralAdmin");
     expect(source).toContain('await delegation.audit(client, {');
     expect(source).toContain('await updateMarketStorefront(client, {');
   });
