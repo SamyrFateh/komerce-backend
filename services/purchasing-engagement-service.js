@@ -920,7 +920,7 @@ async function changeLineSupplier(lineId, body = {}, { actor = null, context = {
 const G6_SUPPLIER_SIM_TAG = '[SIMULATED / STAGING ONLY]';
 async function g6SupplierSimulation(client, po, body) {
   const { rows } = await client.query(`
-    SELECT DISTINCT o.simulation_scope, o.reference
+    SELECT DISTINCT NULLIF(to_jsonb(o)->>'simulation_scope','') AS simulation_scope, o.reference
       FROM purchase_lines pl
       JOIN order_items oi ON oi.id = pl.order_item_id
       JOIN orders o ON o.id = oi.order_id
