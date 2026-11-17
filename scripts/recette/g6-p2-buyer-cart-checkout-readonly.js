@@ -14,8 +14,11 @@ const {chromium}=require('playwright');
 const db=require('../../db');
 const {confirmTarget}=require('./target-guard');
 const BASE='https://komerce-backend-production.up.railway.app';
-const ID='76dacd6c-c1d8-4313-9455-f0d8f063835b';
-const REF='KPR-000099';
+// Chosen from real SQL staging evidence #43994692712: published KM price 5990, 4 stocked SKUs.
+// Resolve UUID at runtime; the original KPR-000099 fixture was removed from staging.
+const REF='KPR-000165';
+const EXPECTED_PRICE=5990;
+let ID=null;
 const OUT=path.resolve('test-results/g6-p2-buyer-readonly');
 fs.mkdirSync(OUT,{recursive:true});
 const report={
@@ -43,8 +46,40 @@ async function snapshot(){
   "FROM products p JOIN markets m ON m.code='KM' AND m.is_active=TRUE "+
   "LEFT JOIN product_market_exposure e ON e.product_id=p.id AND e.market_id=m.id "+
   "LEFT JOIN product_market_price_drafts d ON d.product_id=p.id AND d.market_id=m.id AND d.status='LOCAL_ACTIVE' "+
-  "WHERE p.id=$1",[ID]);
- if(rows.length!==1)throw Error('BUYER_PRICE_SNAPSHOT_NOT_UNIQUE');
+  "WHERE p.product_ref=$1",[REF]);
+ if(rows.length!==1){
+  // A zero-row join means an obsolete product fixture or an inactive KM
+  // market, not necessarily a duplicate. Ref is the canonical test identifier.
+  // Diagnose with independent, read-only
+  // counts; never relax the uniqueness assertion or mutate staging data.
+  const {rows:[counts]}=await db.query(
+   "SELECT "+
+   "(SELECT COUNT(*)::int FROM products WHERE product_ref=$1) AS reference_rows, "+
+   "(SELECT COUNT(*)::int FROM markets WHERE code='KM' AND is_active=TRUE) AS km_active_rows, "+
+   "(SELECT COUNT(*)::int FROM product_market_exposure WHERE product_id IN (SELECT id FROM products WHERE product_ref=$1)) AS exposure_rows, "+
+   "(SELECT COUNT(*)::int FROM product_market_price_drafts WHERE product_id IN (SELECT id FROM products WHERE product_ref=$1) AND status='LOCAL_ACTIVE') AS local_active_price_rows",
+   [REF]
+  );
+  const {rows:candidates}=await db.query(
+   "SELECT p.product_ref, d.amount::text AS amount, d.currency, "+
+   "(SELECT COUNT(*)::int FROM product_skus s "+
+   " WHERE s.product_id=p.id AND s.is_active=TRUE AND s.stock>0) AS stocked_skus "+
+   "FROM products p JOIN markets m ON m.code='KM' AND m.is_active=TRUE "+
+   "JOIN product_market_exposure e ON e.product_id=p.id AND e.market_id=m.id AND e.commercial_exposure='ENABLED' "+
+   "JOIN product_market_price_drafts d ON d.product_id=p.id AND d.market_id=m.id AND d.status='LOCAL_ACTIVE' "+
+   "WHERE p.is_active=TRUE AND p.is_available=TRUE "+
+   "AND EXISTS (SELECT 1 FROM product_skus s WHERE s.product_id=p.id AND s.is_active=TRUE AND s.stock>0) "+
+   "ORDER BY p.product_ref LIMIT 8"
+  );
+  report.snapshot_diagnostic={matching_rows:rows.length,...counts,
+   candidate_count_sampled:candidates.length,active_candidate_samples:candidates};
+  save();
+  throw Error(rows.length===0?'BUYER_PRICE_SNAPSHOT_NO_MATCH':'BUYER_PRICE_SNAPSHOT_MULTIPLE_ROWS');
+ }
+ const observedId=String(rows[0].id);
+ if(ID&&observedId!==ID)throw Error('BUYER_PRODUCT_ID_CHANGED');
+ ID=observedId;
+ report.product_id=observedId;
  return rows[0];
 }
 async function run(){
@@ -62,7 +97,7 @@ async function run(){
   report.before=await snapshot();
   if(report.before.product_ref!==REF||!report.before.is_active||!report.before.is_available||
      report.before.commercial_exposure!=='ENABLED'||
-     report.before.price_status!=='LOCAL_ACTIVE'||Number(report.before.amount)!==17990||
+     report.before.price_status!=='LOCAL_ACTIVE'||Number(report.before.amount)!==EXPECTED_PRICE||
      Number(report.before.stocked_skus)<1)throw Error('PRODUCT_NOT_COMMERCIALLY_READY');
   browser=await chromium.launch({headless:true});
   const ctx=await browser.newContext({viewport:{width:1440,height:900},locale:'fr-FR'});
@@ -89,7 +124,7 @@ async function run(){
   const publicResponse=await ctx.request.get(BASE+'/api/products/'+ID+'/detail?market=KM');
   if(publicResponse.status()!==200)throw Error('BUYER_PRODUCT_DETAIL_'+publicResponse.status());
   const detail=await publicResponse.json();
-  if(detail.product?.reference!==REF||Number(detail.pricing?.price_kmf)!==17990)
+  if(detail.product?.reference!==REF||Number(detail.pricing?.price_kmf)!==EXPECTED_PRICE)
     throw Error('BUYER_PRODUCT_PRICE_MISMATCH');
   step('PUBLIC_DETAIL',{status:200,price_kmf:detail.pricing.price_kmf});
   const doc=await page.goto(BASE+'/boutique/?market=KM',{waitUntil:'domcontentloaded'});
@@ -143,10 +178,15 @@ async function run(){
   if(JSON.stringify(report.before)!==JSON.stringify(report.after))
     throw Error('READONLY_BIZ_DB_CHANGED');
   if(report.blocked_requests.length)throw Error('UNEXPECTED_BROWSER_WRITE_ATTEMPTS');
-  if(!report.preview_http_statuses.length||report.preview_http_statuses.some(x=>x!==401))
-    throw Error('UNAUTHENTICATED_PREVIEW_MUST_BE_401');
+  // Un utilisateur anonyme ne peut pas confirmer : le bouton est désactivé.
+  // Zéro appel preview n'atteste aucun 401 (et ne doit pas en inventer).
+  // Si le navigateur tente un aperçu, la garde serveur doit répondre 401.
+  if(report.preview_http_statuses.some(x=>x!==401))
+    throw Error('ANONYMOUS_PREVIEW_WRONG_STATUS');
   await version();
-  report.verdict='P2_PREAUTH_CART_QUOTE_401_BROWSER_PASS_ORDER_NOT_ATTEMPTED';
+  report.verdict=report.preview_http_statuses.length
+   ? 'P2_PREAUTH_CART_QUOTE_401_BROWSER_PASS_ORDER_NOT_ATTEMPTED'
+   : 'P2_PREAUTH_CART_NO_QUOTE_BROWSER_PASS_ORDER_NOT_ATTEMPTED';
  }catch(e){
   report.verdict='BLOCKED';report.error=String(e.message||e).slice(0,350);process.exitCode=2;
  }finally{
