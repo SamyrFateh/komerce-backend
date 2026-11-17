@@ -5,7 +5,7 @@ const {
   business,canonicalScenario,resolveCanonicalReplay,resolveRelayCashRefs
 }=require('../../scripts/recette/g6-canonical-journey-binding');
 const {
-  validateGuard,validateBuyerProof,validateCashProof,validateHubProof,isToolingOnlyResumeDiff,verifyResumeTooling
+  validateGuard,validateBuyerProof,validateCashProof,validateHubProof,validateCommitmentCheckpoint,isToolingOnlyResumeDiff,verifyResumeTooling
 }=require('../../scripts/recette/g6-canonical-replay');
 
 const sha='a'.repeat(40);
@@ -92,6 +92,7 @@ describe('G6 canonical journey — same order, original matrix, real staging gua
   test('reprise autorisée seulement si TOUS les fichiers modifiés sont des outils de recette déclarés',()=>{
     expect(isToolingOnlyResumeDiff([
       'scripts/recette/g6-canonical-replay.js',
+      'scripts/recette/g6-hub-commitment-chromium.js',
       '.github/workflows/staging-g6-canonical-buyer-cash.yml',
       'tests/unit/g6-canonical-journey-replay.test.js',
       'tests/staging-clicks/g6-p3-kuyiyuk.spec.js',
@@ -119,6 +120,37 @@ describe('G6 canonical journey — same order, original matrix, real staging gua
     expect(()=>validateHubProof({...h,final:{...h.final,po_count:0}},order,{reference:'K123456'})).toThrow();
     expect(()=>validateHubProof({...h,final:{...h.final,cash_collection_count:2}},order,{reference:'K123456'})).toThrow();
     expect(()=>validateHubProof({...h,external_payment_executed:true},order,{reference:'K123456'})).toThrow();
+  });
+  test('la reprise directrice est attachée à une PO unique, à la même commande payée et au vrai rapport G6',()=>{
+    const poId='11111111-1111-4111-8111-111111111111';
+    const prior={
+      scenario_id:'M01',market:'KM',verdict:'NOT_PROVEN',
+      full_chain_certified:false,production_permitted:false,
+      buyer_cash_verdict:'PASS',hub_po_verdict:'PASS',
+      db_fingerprint:buyer.db_fingerprint,
+      order:{id:buyer.order.id,reference:buyer.order.reference},
+      stages:['BUYER','RELAY_CASH','HUB_PO'].map(id=>({id,verdict:'PASS'}))
+    };
+    const hub={
+      verdict:'G6_P3_MANUAL_LINE_AND_DRAFT_PO_CHROMIUM_PASS',
+      reference:buyer.order.reference,external_supplier_calls:0,external_payment_executed:false,
+      final:{order_id:buyer.order.id,status:'ordered',payment_status:'paid',
+        line_count:1,po_count:1,cash_collection_count:1,cash_control_confirmed_count:1},
+      gestures:[{key:'prepare-draft-po',verdict:'PASS',purchase_order_id:poId}]
+    };
+    expect(validateCommitmentCheckpoint(prior,hub,buyer,scope)).toMatchObject({
+      poId,order:{id:buyer.order.id,reference:buyer.order.reference}
+    });
+    expect(()=>validateCommitmentCheckpoint({...prior,market:'CG'},hub,buyer,scope)).toThrow();
+    expect(()=>validateCommitmentCheckpoint({...prior,hub_po_verdict:'NOT_PROVEN'},hub,buyer,scope)).toThrow();
+    expect(()=>validateCommitmentCheckpoint({...prior,full_chain_certified:true},hub,buyer,scope)).toThrow();
+    expect(()=>validateCommitmentCheckpoint({...prior,db_fingerprint:'OTHER'},hub,buyer,scope)).toThrow();
+    expect(()=>validateCommitmentCheckpoint({...prior,stages:prior.stages.slice(0,2)},hub,buyer,scope)).toThrow();
+    expect(()=>validateCommitmentCheckpoint(prior,{...hub,gestures:[]},buyer,scope)).toThrow();
+    expect(()=>validateCommitmentCheckpoint(prior,{...hub,gestures:[
+      ...hub.gestures,{key:'prepare-draft-po',verdict:'PASS',purchase_order_id:poId}
+    ]},buyer,scope)).toThrow();
+    expect(()=>validateCommitmentCheckpoint(prior,{...hub,final:{...hub.final,cash_collection_count:2}},buyer,scope)).toThrow();
   });
   test('refuse cash sur un autre ordre, une autre DB, ou un état financier incomplet',()=>{
     expect(validateCashProof(cash,buyer,scope,env)).toMatchObject({reference:'K123456',paid:true});
