@@ -58,3 +58,22 @@ Un menu introuvable (par exemple **« Réseau local »**), un écran sans action
 5. Ne déclarer ni `GO`, ni merge, ni certification sans leurs preuves distinctes. Ne pas toucher à la production.
 
 **État à la création : contrat documentaire, pas d'implémentation supplémentaire ni de certification nouvelle.** Le harnais métier transactionnel réutilisable devra consommer la matrice existante et respecter ce contrat, sans déplacer l'autorité des règles métier ou des droits dans le test.
+
+
+## Implémentation incrémentale — liaison d'une commande unique (17/11/2026)
+
+**Une seule entrée réutilisable** : `scripts/recette/g6-canonical-replay.js`, déclenchée sur le staging commun via `.github/workflows/staging-g6-canonical-buyer-cash.yml`. Elle lit les IDs de la **matrice G6 préexistante** et orchestre, sans copier les gestes Playwright, deux scripts historiques :
+
+1. `g6-p2-buyer-order-real-chromium.js` : OTP de recette, produit réel, panier, confirmation commande dans Chromium, oracle PostgreSQL de la nouvelle commande `G6-BUYER`.
+2. `g6-a-relay-cash-real-chromium.js` : le même `order.reference` injecté explicitement, rattachement Relais et confirmation cash par les écrans, oracle PG sur l'unicité de l'encaissement.
+
+Le connecteur `g6-canonical-journey-binding.js` valide le couple scénario/marché depuis `G6_PRE_STRESS_BUSINESS_SCENARIOS.json`, refuse un ID ou un marché incohérent, et conserve le chemin historique à trois références quand l'ancien script est lancé sans binding canonique. La nouvelle voie ne peut pas se rabattre silencieusement sur une référence codée en dur.
+
+Les déclencheurs **propriétaire uniquement**, sérialisés :
+- `[staging-op] g6-canonical-buyer-cash-M01-KM`
+- `[staging-op] g6-canonical-buyer-cash-M04-CM`
+- `[staging-op] g6-canonical-buyer-cash-M05-CG`
+
+**Limite explicite :** la chaîne s'arrête à la transition `HUB_PO`. Cette étape n'est pas encore reliée à la même commande, de même que réception Hub, KOM-BOX, douane, Relais, code de retrait, SAV et documents. Le rapport `test-results/g6-canonical-replay/report.json` affiche `buyer_cash_verdict=PASS` uniquement si les deux gestes, l'identité de commande, le marché, le SHA et l'empreinte PostgreSQL concordent ; le verdict du **scénario complet reste NOT_PROVEN**, même quand GitHub Actions termine au vert.
+
+Aucun scénario autre que M01/M04/M05 n'est implicitement pris en charge, en particulier M02 stock local, M03 mixte et M06 fournisseur central manuel. Les adapter au même moteur par ajout de branche métier, **pas par un nouveau script de parcours**. Les 46 E2E restent suspendus au GO propriétaire, les flux PSP/fournisseurs réels interdits.

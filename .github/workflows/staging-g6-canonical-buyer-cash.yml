@@ -1,0 +1,66 @@
+# A single reusable entrypoint for G6 nominal imported orders, not a new scenario.
+# Owner-only, same official Railway staging, serialized writes, no PSP or suppliers.
+name: G6 canonical — buyer to relay cash via real Chromium
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: read
+concurrency:
+  group: komerce-g6-canonical-real-transaction
+  cancel-in-progress: false
+jobs:
+  canonical:
+    if: >-
+      github.repository == 'SamyrFateh/komerce-backend' &&
+      github.actor == github.repository_owner &&
+      github.event.issue.user.login == github.repository_owner &&
+      (github.event.issue.title == '[staging-op] g6-canonical-buyer-cash-M01-KM' ||
+       github.event.issue.title == '[staging-op] g6-canonical-buyer-cash-M04-CM' ||
+       github.event.issue.title == '[staging-op] g6-canonical-buyer-cash-M05-CG')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_TARGET_ENV: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      EXPECTED_RAILWAY_ENVIRONMENT: staging
+      G6_CANONICAL_ACCEPT_PARTIAL_REPLAY: '1'
+      G6_CANONICAL_SCENARIO: ${{ github.event.issue.title == '[staging-op] g6-canonical-buyer-cash-M04-CM' && 'M04' || (github.event.issue.title == '[staging-op] g6-canonical-buyer-cash-M05-CG' && 'M05' || 'M01') }}
+      G6_TARGET_MARKET: ${{ github.event.issue.title == '[staging-op] g6-canonical-buyer-cash-M04-CM' && 'CM' || (github.event.issue.title == '[staging-op] g6-canonical-buyer-cash-M05-CG' && 'CG' || 'KM') }}
+      KOMERCE_STAGING_RESET_DB_PIN: ${{ vars.STAGING_DB_PIN }}
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Pin actual shared Railway staging and PostgreSQL identity
+        run: |
+          node scripts/recette/resolve-staging-deploy-pin.js
+          node scripts/recette/target-guard.js
+      - name: Install real Chromium
+        run: npx playwright install chromium --only-shell
+      - name: Replay same order in boutique then relay cash (UI only)
+        run: node scripts/recette/g6-canonical-replay.js
+      - name: Archive stage evidence with order ID, market and SHA
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g6-canonical-buyer-cash-${{ github.run_id }}
+          path: |
+            test-results/g6-canonical-replay/report.json
+            test-results/g6-p2-buyer-order/
+            test-results/g6-a-relay-cash/
+            test-results/hub-v1-http/deploy-pin.json
+          if-no-files-found: warn
+          retention-days: 21
