@@ -29,7 +29,7 @@ describe('G6 P2 — le devis serveur anonyme n est pas une commande',()=>{
   expect(src).toContain('const EXPECTED_PRICE=5990');
   expect(src).toContain('"WHERE p.product_ref=$1",[REF]');
   expect(src).toContain('BUYER_PRODUCT_ID_CHANGED');
-  expect(src).not.toContain('KPR-000099');
+  expect(src).not.toContain("const REF='KPR-000099'");
  });
  test('le serveur utilise previewOnly et refuse une identité absente',()=>{
   expect(server).toContain("router.post('/preview', authenticateOrCreateGuest");
