@@ -206,13 +206,16 @@ async function runOrderCheckout({ user, body, internalSimulation = null, preview
     // and only in staging. Set their simulation scope in the SAME checkout
     // transaction, so no post-commit notification can run.
     const g6Buyer=await verifyMarkedG6Buyer(client,user);
-    if (g6Buyer && (payment_mode!=='cash_relais'||use_wallet||
+    // Décision propriétaire 17/11 : plusieurs lignes et unités permises, en cash relais
+    // et mobile money simulé (aucun PSP : Stripe/PayPal restent refusés).
+    if (g6Buyer && (!['cash_relais','mobile_money'].includes(payment_mode)||use_wallet||
         stripe_payment_intent||share_token||pickup_code_recipient!=='buyer'||
-        !Array.isArray(items)||items.length!==1||Number(items[0]?.quantity)!==1||
+        !Array.isArray(items)||items.length<1||
+        items.some(it=>!Number.isInteger(Number(it?.quantity))||Number(it.quantity)<1)||
         (tracking_phone && tracking_phone!==user.phone))) {
       await client.query('ROLLBACK');
       return fail(409,{code:'G6_FIXTURE_CASH_SINGLE_PRODUCT_ONLY',
-        error:'Ce client de recette est réservé à une commande cash unitaire sans prestataire externe'});
+        error:'Ce client de recette est réservé à une commande cash relais ou mobile money simulé, sans prestataire externe'});
     }
 
     if (!Array.isArray(items) || items.length === 0) {

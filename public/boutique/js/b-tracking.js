@@ -280,6 +280,43 @@ function appendPickupCodeAction(container, order) {
   container.querySelector('.k-order-card')?.appendChild(section);
 }
 
+// N39 : annulation par le client depuis « Mon Komerce ». Le serveur
+// (POST /api/orders/:id/cancel) reste seul juge des paliers : cas autorisé ou refus
+// explicite. Aucun rejeu automatique (retries: 0), confirmation humaine obligatoire.
+const CANCEL_HIDDEN_STATUSES = ['cancelled', 'refunded', 'collected'];
+function appendCancelAction(container, order) {
+  if (!order.id || CANCEL_HIDDEN_STATUSES.includes(order.status)) return;
+  const section = document.createElement('section');
+  section.className = 'k-order-essentials k-order-cancel';
+  const title = document.createElement('h3');
+  title.textContent = 'Annuler la commande';
+  const out = document.createElement('div');
+  out.className = 'k-order-cancel-output';
+  out.setAttribute('role', 'status');
+  out.setAttribute('aria-live', 'polite');
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'k-order-cancel-btn';
+  button.textContent = 'Annuler';
+  button.addEventListener('click', async () => {
+    if (button.disabled) return;
+    if (!window.confirm('Annuler cette commande ? Le remboursement éventuel dépend de l’avancement de la commande.')) return;
+    button.disabled = true;
+    try {
+      const result = await apiPost('/api/orders/' + encodeURIComponent(order.id) + '/cancel', {}, { retries: 0 });
+      out.textContent = (result && result.message) || 'Commande annulée.';
+      button.hidden = true;
+    } catch (err) {
+      out.textContent = err?.status === 422 || err?.status === 403 || err?.status === 404
+        ? 'Annulation refusée : ' + (err.message || 'cette commande ne peut plus être annulée.')
+        : 'Annulation non confirmée. Vérifiez l’état de la commande avant de réessayer.';
+      button.disabled = false;
+    }
+  });
+  section.append(title, button, out);
+  container.querySelector('.k-order-card')?.appendChild(section);
+}
+
 export function renderOrderDetail(order, container, { privateResources = null } = {}) {
   container.innerHTML = `
     <div class="k-order-card">
@@ -293,7 +330,7 @@ export function renderOrderDetail(order, container, { privateResources = null } 
   appendEssentialOrderResources(container, order, privateResources);
   // Ne pas proposer l'accès au secret dans la recherche publique par référence.
   // Le rendu privé provient de « Mes commandes » après restauration d'identité.
-  if (privateResources !== null) appendPickupCodeAction(container, order);
+  if (privateResources !== null) { appendPickupCodeAction(container, order); appendCancelAction(container, order); }
 }
 
 export function renderMyOrdersList(el, orders) {

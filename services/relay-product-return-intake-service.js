@@ -43,6 +43,9 @@ function normalizeInput(requestId,condition,zone,observation){
   return {requestId,conditionCode,storageZone,note};
 }
 /** Physical custody; no mutation of the dispute, order, inventory or wallet. */
+// Même décision propriétaire 17/11 que relay-return-request-service : staging uniquement, prod fail-closed.
+const recipeScopeSql=()=>String(process.env.KOMERCE_ENV||'').toLowerCase()==='staging'
+  ?'(o.simulation_scope IS NULL OR o.simulation_scope IS NOT NULL)':'o.simulation_scope IS NULL';
 async function recordIntake({actor,requestId,condition,zone,observation,db}){
   const relayId=requireRelayAgent(actor);
   const fields=normalizeInput(requestId,condition,zone,observation);
@@ -56,7 +59,7 @@ async function recordIntake({actor,requestId,condition,zone,observation,db}){
          JOIN orders o ON o.id=d.order_id
          JOIN order_items oi ON oi.id=d.return_order_item_id AND oi.order_id=o.id
          JOIN products p ON p.id=oi.product_id
-        WHERE d.id=$1 AND o.relais_id=$2 AND o.simulation_scope IS NULL
+        WHERE d.id=$1 AND o.relais_id=$2 AND ${recipeScopeSql()}
         FOR UPDATE OF d`,
       [fields.requestId,relayId]
     );

@@ -9,7 +9,7 @@ describe('finance-journal-workspace', () => {
   test('marché invalide refusé', () => {
     expect(() => ws.endpointFor('../x', 'summary')).toThrow('canonical_accounting_journal_market_required');
   });
-  test('onglets : Synthèse, Journal, Rapprochements, Pièces justificatives (Cash & dépôts vit dans Relais live)', () => {
-    expect(ws.TABS.map(t => t.label)).toEqual(['Synthèse', 'Journal', 'Rapprochements', 'Pièces justificatives']);
+  test('onglets : Synthèse, Journal, Rapprochements, Pièces justificatives, Garde des espèces & dépôts (réception des dépôts par le responsable marché)', () => {
+    expect(ws.TABS.map(t => t.label)).toEqual(['Synthèse', 'Journal', 'Rapprochements', 'Pièces justificatives', 'Garde des espèces & dépôts']);
   });
 });

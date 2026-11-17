@@ -96,6 +96,7 @@ module.exports = {
       'customs_effective_rates: R',
       'customs_shipment_parcels: R',
       'customs_shipments: R',
+      'customs_shipment_holds: W',
       'exchange_rates: R',
       'hub_physical_unit_placements: R',
       'hub_physical_units: R',

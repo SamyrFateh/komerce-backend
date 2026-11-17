@@ -2051,7 +2051,7 @@
         "category": "services",
         "declared": "services/product-media-storage.js",
         "resolvedPath": "services/product-media-storage.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "catalog",
@@ -14700,7 +14700,7 @@
         "category": "services",
         "declared": "services/public-market-storefront.js",
         "resolvedPath": "services/public-market-storefront.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "market",
@@ -51862,6 +51862,19 @@
       "lifecycleOwner": "notifications",
       "resolution": "single-writer"
     },
+    "customs_shipment_holds": {
+      "writers": [
+        {
+          "feature": "dashboard",
+          "mode": "W",
+          "declaredOwner": false,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "dashboard",
+      "resolution": "single-writer"
+    },
     "exchange_rates": {
       "writers": [
         {
@@ -54254,8 +54267,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 711,
-        "technicalNodesOwned": 711,
+        "technicalNodesTotal": 713,
+        "technicalNodesOwned": 713,
         "technicalOrphans": 0
       },
       "dash": {
