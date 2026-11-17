@@ -66,12 +66,13 @@
   }
 
   function marketFromContext(context) {
-    const access = context && context.access || {};
-    const allowed = Array.isArray(access.allowedMarkets) ? access.allowedMarkets : [];
-    const requested = new URL(global.location.href).searchParams.get('market');
-    if (requested && allowed.includes(requested.toUpperCase())) return requested.toUpperCase();
-    if (access.defaultMarket && allowed.includes(access.defaultMarket)) return access.defaultMarket;
-    return allowed[0] || null;
+    // Le même contrat explicite que l'écran parent : pas de marché implicite.
+    // Un réseau local ne doit jamais s'afficher sous un Market ID de secours.
+    const contract = global.KomerceAdminContext;
+    if (!contract || typeof contract.resolveExplicitMarket !== 'function') {
+      throw new Error('CANONICAL_MARKET_CONTEXT_UNAVAILABLE');
+    }
+    return contract.resolveExplicitMarket(context, global.location.search).marketCode;
   }
 
   function pill(value, active = false) {
@@ -79,8 +80,8 @@
   }
 
   async function resolveMarketCode() {
-    // Set only after market-autonomy proved network.read with a server GET.
-    // Business reads and mutations below still verify their own capabilities.
+    // Only trust a market marked after a successful server-side network.read GET
+    // from the authorized, market-scoped minimal shell.
     if (root.dataset.networkOnlyMarket) return root.dataset.networkOnlyMarket;
     const context = await request('/api/admin/dashboard/context');
     return marketFromContext(context);

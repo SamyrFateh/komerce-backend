@@ -1,0 +1,75 @@
+unlabelled []
+GOLD {'feuille existante': 465, 'parent seulement': 20, 'aucun rayon actif': 13}
+MAIN auto 54 leaf ok 54 cat ok 54 []
+DISCOVERY leaf ok 359 cat ok 415 of 498
+PATH-ROOT cat proposée 483 ok 336 prec 0.696
+titres génériques 55
+contradiction chemin/objet 138 dont titres génériques 23
+  Home, Garden & Furniture       62/134
+  Automobiles & Motorcycles      51/57
+  Health, Beauty & Hair          31/55
+  Home Improvement               36/49
+  Women's Clothing               31/32
+  Jewelry & Watches              25/29
+  Consumer Electronics           27/27
+  Phones & Accessories           23/24
+  Toys, Kids & Babies            9/23
+  Bags & Shoes                   15/22
+  Men's Clothing                 21/21
+  Sports & Outdoors              5/10
+branches peu fiables: [('Toys, Kids & Babies > Baby Clothing', 1, 5), ('Toys, Kids & Babies > Shoes & Bags', 2, 5), ('Toys, Kids & Babies > Girls Clothing', 0, 4), ('Health, Beauty & Hair > Skin Care', 18, 37), ('Home Improvement > Home Appliances', 1, 4), ('Home, Garden & Furniture > Home Storage', 44, 110), ('Home, Garden & Furniture > Arts, Crafts & Sewing', 2, 4), ('Sports & Outdoors > Sportswear', 0, 4), ('Health, Beauty & Hair > Nail Art & Tools', 2, 4), ("Bags & Shoes > Women's Luggage & Bags", 4, 11), ('Automobiles & Motorcycles > Car Electronics', 4, 10), ('Jewelry & Watches > Fashion Jewelry', 4, 8), ('Home, Garden & Furniture > Home Textiles', 0, 4)]
+CAUSES 444
+   1 aucun rayon actif 13
+   2 parent seul (pas de feuille active) 20
+   4 titre générique (objet non identifiable) 54
+   5 chemin fournisseur faux, titre clair 105
+   6 chemin cohérent + titre clair, aucune règle 252
+A  main actuel: placés 54/498 (10.8%) dont feuille 54, parent 0 | précision catégorie 54/54 (100.0%) | précision feuille 54/54 (100.0%) | catégorie fausse 0
+B  objet seul (titre): placés 483/498 (97.0%) dont feuille 465, parent 18 | précision catégorie 452/483 (93.6%) | précision feuille 425/465 (91.4%) | catégorie fausse 31
+C  objet ET chemin d’accord (feuille): placés 312/498 (62.7%) dont feuille 299, parent 13 | précision catégorie 307/312 (98.4%) | précision feuille 291/299 (97.3%) | catégorie fausse 5
+C2 objet ET chemin d’accord (parent seulement): placés 312/498 (62.7%) dont feuille 54, parent 258 | précision catégorie 307/312 (98.4%) | précision feuille 54/54 (100.0%) | catégorie fausse 5
+D  objet ET Discovery d’accord (pour mémoire): placés 412/498 (82.7%) dont feuille 402, parent 10 | précision catégorie 394/412 (95.6%) | précision feuille 376/402 (93.5%) | catégorie fausse 18
+erreurs C: [(55, 'Baby Cotton Shoes, Soft Sole Baby ', ('Enfant', 'Bébé'), 'Mode & Beauté/Enfant'), (102, 'Factory Spot Size 304 Stainless St', ('Maison', 'Cuisine'), 'X'), (161, 'Lunch Bag Spot Portable Shawl Chil', ('Mode & Beauté', 'Enfant'), 'Maison/Cuisine'), (496, 'Baby Boy Summer Clothes Button Sho', ('Enfant', 'Bébé'), 'Mode & Beauté/Enfant'), (497, 'Baby My First Christmas Outfit, In', ('Enfant', 'Bébé'), 'Mode & Beauté/Enfant')]
+sans objet reconnu 15 ['Canopy Bed Frame Queen Size Metal Cano', 'Canopy Bed Frame Full Size Metal Canop', 'Roll paper hand tools', '5L Pump Tool Transmission Oil Pump Oil', 'HD LED Ear Endoscope Otoscope Camera W', 'Automotive Circuit Tester, 8 - 35 DCV ', 'Automatic chicken coop door , equipped', 'Automatic Chicken Coop Door, Solar & B', 'Solar Powered Automatic Chicken Coop D', 'Automatic Chicken Coop Door, DC & Batt', 'CIFbuy Custom Pet Memorial Grave Marke', 'Heel Sticker After Toe Sticker', 'Sticker', 'Clothes Size Sticker Digital Adhesive ']
+objet reconnu mais chemin en désaccord 158 dont objet juste 135
+E  objet + (chemin OU Discovery) d’accord: placés 461/498 (92.6%) dont feuille 444, parent 17 | précision catégorie 439/461 (95.2%) | précision feuille 413/444 (93.0%) | catégorie fausse 22
+reste après C 186 groupes (objet × branche) 68 | top 12 couvrent 87
+groupes par famille d’objet seule 21 [(('Créations personnelles', 'Cadeau'), 24), (('Maison', 'Déco'), 21), (None, 15), (('Maison', 'Cuisine'), 12), (('Tech', 'Phones'), 12), (('Créations personnelles', 'Impression'), 12), (('Bricolage', 'Sécurité'), 11), (('Auto', 'Éclairage'), 11)]
+ALIEXPRESS n=19 | objet reconnu 12 dont catégorie juste 10 | règle retenue : placés 10 (53%), catégorie juste 10/10, feuille juste 10/10
+REVUE | objet=('Maison', 'Rangement') | branche=Auto | attendu=Auto/Accessoires | 1pcs Leather Car Seat Gap Organizer Multifunctio
+REVUE | objet=None | branche=Auto | attendu=Auto/Accessoires | Leg Support Extension Seat Cover For Tesla 2026 
+REVUE | objet=None | branche=Tech | attendu=Tech/Phones | For Honor Magic8 Pro Air Case Simple Transparent
+REVUE | objet=None | branche=Auto | attendu=Auto/Accessoires | Car Tachometer Cover Stickers for Mini Cooper F5
+AUTO  | objet=('Tech', 'Phones') | branche=Tech | attendu=Tech/Phones|Auto/Accessoires | Toocki 120W Mini Car Charger Qi2.2 45W Max USB C
+AUTO  | objet=('Tech', 'Phones') | branche=Tech | attendu=Tech/Phones | For OPPO Reno 11 Pro Reno11 11Pro Reno11Pro Chin
+AUTO  | objet=('Tech', 'Phones') | branche=Tech | attendu=Tech/Phones | Matte Armor Magnetic Wireless Charging Phone Cas
+REVUE | objet=('Bricolage', 'Sécurité') | branche=Tech | attendu=Tech/Phones | Translucent Magnetic For Magsafe Case For iPhone
+AUTO  | objet=('Tech', 'Phones') | branche=Tech | attendu=Tech/Phones | Leopard Pattern Wrist Strap Silicone Phone Case 
+AUTO  | objet=('Tech', 'Phones') | branche=Tech | attendu=Tech/Phones | Cute Leopard Print Clear Phone Case For iPhone 1
+AUTO  | objet=('Tech', 'Phones') | branche=Tech | attendu=Tech/Phones | One P-Piece Luffys Wanted Notice Phone Case For 
+REVUE | objet=None | branche=Tech | attendu=Sport|X | Treadmill Support Frame Fixed Running Support Wr
+AUTO  | objet=('Tech', 'Phones') | branche=Tech | attendu=Tech/Phones|Auto/Accessoires | Essager 80W USB Car Charger PD USB Type C Quick 
+REVUE | objet=None | branche=Tech | attendu=Tech/Phones | Anime H-Hunter X Hunter Gon Killua Case for Sams
+AUTO  | objet=('Tech', 'Phones') | branche=Tech | attendu=Tech/Phones | Essager 30W Type C Travel Charger Portable USB C
+REVUE | objet=None | branche=Tech | attendu=Tech/Phones | Crystal Silicone Soft TPU Case For Samsung Galax
+REVUE | objet=None | branche=Auto | attendu=Auto/Accessoires | BUTURE 5500A Car Jump Starter BC02 Power Bank Po
+AUTO  | objet=('Tech', 'Phones') | branche=Tech | attendu=Tech/Phones|Auto/Accessoires | Baseus 160W Magnetic Car Charger Type-C for Xiao
+AUTO  | objet=('Tech', 'Phones') | branche=Tech | attendu=Tech/Phones|Maison/Rangement | 10/20/50PCS Cable Organizer Clips Wire Winder Ho
+ALIEXPRESS-216 n=216 | objet reconnu 143 (66.2%) dont catégorie juste 103
+règle retenue (objet + branche d'accord) : placés 95 (44.0%) | précision catégorie 95/95 (100.0%) | précision feuille 84/90 (93.3%)
+désaccord objet/branche 47 (objet juste 7) | sans objet reconnu 73 | racine sans table 2
+  Phones & Telecommunications Accessories    total  40 | placés  18 | catégorie juste  18
+  Automobiles, Parts & Accessories           total  40 | placés   2 | catégorie juste   2
+  Computer & Office                          total  40 | placés   5 | catégorie juste   5
+  Shoes                                      total  40 | placés  27 | catégorie juste  27
+  Men's Clothing                             total  28 | placés  23 | catégorie juste  23
+  Toys & Hobbies                             total  23 | placés  17 | catégorie juste  17
+  Office & School Supplies                   total   2 | placés   0 | catégorie juste   0
+  Mother & Kids                              total   2 | placés   2 | catégorie juste   2
+  Consumer Electronics                       total   1 | placés   1 | catégorie juste   1
+FEUILLE ('Tech', 'Phones') attendu=Tech | Mechanical Keyboard Coiled Cable, Type-C USB Port, Aviator C
+FEUILLE ('Tech', 'Phones') attendu=Tech | iDsonix USB 3.0 HUB 5Gbps Dock Station 7 Port USB A Type C H
+FEUILLE ('Mode & Beauté', 'Homme') attendu=Mode & Beauté/Femme|Mode & Beauté | Summer Women Slippers Lightweight Comfortable White Flats Fl
+FEUILLE ('Mode & Beauté', 'Enfant') attendu=Mode & Beauté/Homme | Flip-Flops For Men Summer Anti-Skid Breathable Home Outdoor 
+FEUILLE ('Mode & Beauté', 'Enfant') attendu=Mode & Beauté/Femme | Winter Women's Slippers Indoor Cartoon Black Cat Cute Girls 
+FEUILLE ('Mode & Beauté', 'Homme') attendu=Mode & Beauté | Couple Style Men's and Women's Slippers, Clogs, Mules, Solid
