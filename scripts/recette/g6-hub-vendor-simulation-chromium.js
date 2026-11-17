@@ -32,8 +32,8 @@ function check(ok,code){if(!ok)throw Error(code);}
 // Exact source identity, ancestry (workflow preflight) and same-SHA before/after
 // remain mandatory; no runtime/business code difference is tolerated.
 async function checkedRuntimeSha(initial=null){
- const url=String(env.STAGING_BASE_URL||'').replace(/\\/$/,'')+'/health/version';
- check(/^https:\\/\\//.test(url),'G6_SIM_STAGING_ORIGIN_REQUIRED');
+ const url=String(env.STAGING_BASE_URL||'').replace(/[/]$/,'')+'/health/version';
+ check(url.startsWith('https://'),'G6_SIM_STAGING_ORIGIN_REQUIRED');
  const r=await fetch(url);
  check(r.status===200,'G6_SIM_HEALTH_HTTP_'+r.status);
  const v=await r.json();
