@@ -24,6 +24,8 @@ const RESUME_BUYER=path.join(ROOT,'test-results/g6-canonical-resume/g6-p2-buyer-
 const RESUME_CASH=path.join(ROOT,'test-results/g6-canonical-resume/g6-a-relay-cash/report.json');
 const RESUME_CANONICAL=path.join(ROOT,'test-results/g6-canonical-resume/g6-canonical-replay/report.json');
 const HUB_PROOF=path.join(ROOT,'test-results/g6-p3-kuyiyuk/evidence.json');
+const RESUME_HUB_PROOF=path.join(ROOT,'test-results/g6-canonical-resume/g6-p3-kuyiyuk/evidence.json');
+const HUB_COMMITMENT=path.join(ROOT,'test-results/g6-hub-commitment/report.json');
 const ORIGIN='https://komerce-backend-production.up.railway.app';
 const VALID_SHA=/^[a-f0-9]{40}$/;
 const VALID_REF=/^[A-Z0-9][A-Z0-9-]{5,63}$/;
@@ -46,6 +48,7 @@ function validateGuard(env=process.env) {
 const RESUME_DIFF_ALLOWLIST=new Set([
   '.github/workflows/staging-g6-canonical-buyer-cash.yml',
   'scripts/recette/g6-canonical-replay.js',
+  'scripts/recette/g6-hub-commitment-chromium.js',
   'tests/staging-clicks/g6-p3-kuyiyuk.spec.js',
   'tests/unit/g6-canonical-journey-replay.test.js',
   'docs/recette/PARCOURS_REFERENCE_UNIQUE.md',
@@ -128,6 +131,27 @@ function validateHubProof(proof, order, cash) {
   return {reference:order.reference,order_id:order.id,po_count:1,line_count:1};
 }
 
+function validateCommitmentCheckpoint(previous,hub,buyer,scope) {
+  if(scope.id!=='M01'||scope.market!=='KM'||
+     previous.scenario_id!==scope.id||previous.market!==scope.market||
+     previous.verdict!=='NOT_PROVEN'||previous.full_chain_certified!==false||
+     previous.production_permitted!==false||previous.buyer_cash_verdict!=='PASS'||
+     previous.hub_po_verdict!=='PASS'||previous.db_fingerprint!==buyer.db_fingerprint||
+     previous.order?.id!==buyer.order?.id||
+     previous.order?.reference!==buyer.order?.reference||
+     !['BUYER','RELAY_CASH','HUB_PO'].every(id=>
+       previous.stages?.some(s=>s.id===id&&s.verdict==='PASS'))){
+    throw new Error('G6_COMMITMENT_PRIOR_CANONICAL_PROOF_INVALID');
+  }
+  const order={id:previous.order.id,reference:previous.order.reference,market:scope.market};
+  validateHubProof(hub,order,{reference:order.reference});
+  const poIds=(hub.gestures||[]).filter(g=>g.key==='prepare-draft-po'&&g.verdict==='PASS')
+    .map(g=>g.purchase_order_id);
+  if(poIds.length!==1||!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(poIds[0]))
+    throw new Error('G6_COMMITMENT_PRIOR_DRAFT_PO_NOT_UNIQUE');
+  return {order,poId:poIds[0],dbFingerprint:previous.db_fingerprint};
+}
+
 function executeExistingHub(env) {
   fs.rmSync(HUB_PROOF,{force:true});
   const p=spawnSync(process.platform==='win32'?'npx.cmd':'npx',[
@@ -151,7 +175,7 @@ async function main(env=process.env) {
   try{
     const scope=validateGuard(env);
     const phase=String(env.G6_CANONICAL_PHASE||'BUYER_CASH');
-    if(!['BUYER_CASH','HUB_PO'].includes(phase) || (phase==='HUB_PO'&&(scope.id!=='M01'||scope.market!=='KM')))
+    if(!['BUYER_CASH','HUB_PO','HUB_COMMITMENT'].includes(phase) || (['HUB_PO','HUB_COMMITMENT'].includes(phase)&&(scope.id!=='M01'||scope.market!=='KM')))
       throw new Error('G6_CANONICAL_PHASE_NOT_BOUND');
     report.scenario_id=scope.id;report.market=scope.market;
     report.source_matrix_version=scope.source_version;
@@ -164,7 +188,50 @@ async function main(env=process.env) {
     // must fail closed, not rebuild or silently switch to a new buyer.
     let buyer, resumeDiff=null;
     const resumeRun=String(env.G6_CANONICAL_RESUME_RUN_ID||'');
-    if(phase==='HUB_PO'&&!resumeRun)throw new Error('G6_CANONICAL_HUB_REQUIRES_PREVIOUS_CASH_PROOF');
+    if(['HUB_PO','HUB_COMMITMENT'].includes(phase)&&!resumeRun)
+      throw new Error('G6_CANONICAL_HUB_REQUIRES_PREVIOUS_STAGE_PROOF');
+    if(phase==='HUB_COMMITMENT'){
+      if(!/^\d{8,}$/.test(resumeRun)||!fs.existsSync(RESUME_CANONICAL)||
+         !fs.existsSync(RESUME_HUB_PROOF)||!fs.existsSync(RESUME_BUYER))
+        throw new Error('G6_COMMITMENT_PREVIOUS_HUB_ARTIFACT_MISSING');
+      if(!env.E2E_HUB_DIRECTOR_EMAIL||!env.E2E_HUB_DIRECTOR_PASSWORD||
+         !env.E2E_AGENT_HUB_EMAIL||!env.E2E_AGENT_HUB_PASSWORD)
+        throw new Error('G6_COMMITMENT_HUB_IDENTITIES_MISSING');
+      const previous=JSON.parse(fs.readFileSync(RESUME_CANONICAL,'utf8'));
+      const hub=JSON.parse(fs.readFileSync(RESUME_HUB_PROOF,'utf8'));
+      const priorBuyer=JSON.parse(fs.readFileSync(RESUME_BUYER,'utf8'));
+      const bound=validateCommitmentCheckpoint(previous,hub,priorBuyer,scope);
+      const compatibility=verifyResumeTooling(previous.staging_sha,env.E2E_EXPECTED_DEPLOY_SHA);
+      report.resumed_from_run_id=resumeRun;
+      report.resume_tooling_diff=compatibility.changedFiles;
+      report.db_fingerprint=bound.dbFingerprint;
+      report.order=bound.order;
+      report.po_id=bound.poId;
+      report.stages=previous.stages.map(s=>({
+        id:s.id,verdict:'PREVIOUS_RUN_PASS',source_run_id:resumeRun,reference:bound.order.reference
+      }));
+      report.next_stage='HUB_COMMITMENT';save();
+      const commitment=executeExisting('scripts/recette/g6-hub-commitment-chromium.js',
+        HUB_COMMITMENT,{...env,G6_CANONICAL_ORDER_ID:bound.order.id,
+          G6_CANONICAL_ORDER_REFERENCE:bound.order.reference,
+          G6_CANONICAL_PO_ID:bound.poId,
+          G6_CANONICAL_DB_FINGERPRINT:bound.dbFingerprint});
+      if(commitment.verdict!=='G6_HUB_COMMITMENT_AND_INTERNAL_SUBMIT_CHROMIUM_PASS_NOT_VENDOR_OR_RECEIPT_GO'||
+         commitment.reference!==bound.order.reference||
+         commitment.po_id!==bound.poId||
+         commitment.db_fingerprint!==bound.dbFingerprint||
+         commitment.external_supplier_calls!==0||commitment.external_payment_executed!==false||
+         commitment.after?.commitment_count!==1||
+         commitment.after?.payment_authorization_count!==0)
+        throw new Error('G6_CANONICAL_HUB_COMMITMENT_PROOF_INVALID');
+      report.stages.push({id:'HUB_COMMITMENT',verdict:'PASS',via:'Chromium_UI',
+        reference:bound.order.reference,po_id:bound.poId,
+        evidence:'test-results/g6-hub-commitment/report.json'});
+      report.next_stage='VENDOR_PROOF_AND_RECEIVING';
+      report.verdict='NOT_PROVEN';save();
+      console.log('[g6-canonical] same order director commitment and internal PO submit PASS; vendor/physical chain NOT_PROVEN');
+      return report;
+    }
     if(resumeRun) {
       if(!/^\d{8,}$/.test(resumeRun)||!fs.existsSync(RESUME_BUYER))
         throw new Error('G6_CANONICAL_RESUME_ARTIFACT_MISSING');
@@ -261,4 +328,4 @@ async function main(env=process.env) {
 }
 
 if(require.main===module)main().catch(e=>{console.error(e.message);process.exitCode=2});
-module.exports={validateGuard,validateBuyerProof,validateCashProof,validateHubProof,isToolingOnlyResumeDiff,verifyResumeTooling,main};
+module.exports={validateGuard,validateBuyerProof,validateCashProof,validateHubProof,validateCommitmentCheckpoint,isToolingOnlyResumeDiff,verifyResumeTooling,main};
