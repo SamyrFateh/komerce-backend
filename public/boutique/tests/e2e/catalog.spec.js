@@ -83,8 +83,15 @@ test.describe('E-CATALOG — Catalogue boutique', () => {
     // 1. Charger normalement pour remplir le cache
     await page.goto(BASE_URL);
     await waitForGrid(page);
-    const cacheRaw = await page.evaluate(() => localStorage.getItem('komerce_products_cache'));
-    expect(cacheRaw).toBeTruthy();
+    const cacheRaw = await page.evaluate(() => {
+      // Le catalogue est isolé par marché : la clé legacy non scopée
+      // n'est plus l'autorité, y compris pour KM.
+      const market = window.KomerceMarket;
+      const code = (market?.getPreviewOverride?.() || market?.DEFAULT || null);
+      const key = code ? `komerce_products_cache_${code}` : 'komerce_products_cache';
+      return localStorage.getItem(key);
+    });
+    expect(cacheRaw, 'cache persistant du marché courant absent').toBeTruthy();
     const cache = JSON.parse(cacheRaw);
     expect(cache.length).toBeGreaterThan(0);
 
