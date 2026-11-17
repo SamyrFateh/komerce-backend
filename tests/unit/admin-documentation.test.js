@@ -26,7 +26,12 @@ describe('Documentation produit Canonical', () => {
   });
 
   test('route staff avec session et rôle vérifiés par le serveur', () => {
-    expect(routes).toMatch(/app\.get\('\/admin\/documentation',\s*authenticate,\s*requireRole\(/);
+    expect(routes).toMatch(/app\.get\('\/admin\/documentation',\s*documentationAuthenticate,\s*documentationRequireRole/);
+    expect(routes).toContain("require('../middleware/auth').authenticate(req, res, next)");
+    expect(routes).toContain("require('../middleware/auth').requireRole(DOCUMENTATION_ROLES)(req, res, next)");
+    expect(routes).not.toContain("const { authenticate, requireRole } = require('../middleware/auth')");
+    expect(routes).toContain("'admin', 'market_operator', 'finance', 'sourcing'");
+    expect(routes).toContain("'agent_hub', 'agent_relais', 'agent_transitaire', 'support'");
     expect(routes).toContain("path.join(publicDir, 'dashboards', 'canonical', 'documentation.html')");
   });
 
