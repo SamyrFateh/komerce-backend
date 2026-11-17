@@ -1,0 +1,65 @@
+# Creation des acheteurs fictifs CLAUDE-PAR (KM, CM, CG) pour la campagne E2E G6.
+# Meme chemin d'ecriture que g6-p2-buyer-order-real-chromium.js ; identifiants livres chiffres (cle publique recipient.pub.pem).
+name: Claude PAR G6 - creation des acheteurs fictifs
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: 'Saisir CREATE-CLAUDE-PAR-BUYERS'
+        required: true
+      run8:
+        description: 'RUN8 (8 hex majuscules)'
+        required: true
+      per_market:
+        description: 'Acheteurs par marche (1-5)'
+        required: false
+        default: '2'
+permissions:
+  contents: read
+concurrency:
+  group: claude-par-g6-buyers
+  cancel-in-progress: false
+jobs:
+  buyers:
+    if: github.actor == github.repository_owner && inputs.confirmation == 'CREATE-CLAUDE-PAR-BUYERS'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_TARGET_ENV: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      EXPECTED_RAILWAY_ENVIRONMENT: staging
+      KOMERCE_STAGING_RESET_DB_PIN: ${{ vars.STAGING_DB_PIN }}
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      BUYERS_CONFIRM: ${{ inputs.confirmation }}
+      BUYERS_RUN8: ${{ inputs.run8 }}
+      BUYERS_PER_MARKET: ${{ inputs.per_market }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Verifier la cible staging
+        run: node scripts/recette/target-guard.js
+      - name: Creer et preparer les acheteurs
+        run: node scripts/recette/claude-par-g6-buyers.js
+      - name: Chiffrer les identifiants (cle publique du destinataire)
+        run: |
+          set -euo pipefail
+          umask 077
+          openssl rand -out "$RUNNER_TEMP/k.bin" 32
+          openssl enc -aes-256-cbc -pbkdf2 -salt -in "$RUNNER_TEMP/buyers.json" -out test-results/claude-par-g6-buyers/buyers.enc -pass "file:$RUNNER_TEMP/k.bin"
+          openssl pkeyutl -encrypt -pubin -inkey scripts/recette/claude-par/recipient.pub.pem -pkeyopt rsa_padding_mode:oaep -in "$RUNNER_TEMP/k.bin" -out test-results/claude-par-g6-buyers/key.enc
+          shred -u "$RUNNER_TEMP/k.bin" "$RUNNER_TEMP/buyers.json"
+          if grep -Eq '\+(269|237|242)[0-9]{7}' test-results/claude-par-g6-buyers/report.json; then echo 'Refus : numero dans le rapport'; exit 1; fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: claude-par-g6-buyers-${{ github.run_id }}
+          path: test-results/claude-par-g6-buyers/
+          if-no-files-found: warn
+          retention-days: 7

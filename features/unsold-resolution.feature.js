@@ -50,9 +50,13 @@ module.exports = {
     ],
     dash: [
       'dashboards/admin/js/api-client-unsold.js',
+      'dashboards/canonical/unsold.html',
+      'dashboards/canonical/js/unsold-workspace.js',
     ],
     tests: [
       'tests/unit/unsold.test.js',
+      'tests/unit/unsold-workspace.test.js',
+      'tests/local-chromium/g6e-unsold.spec.js',
       'tests/e2e-api/unsold-resolution.pipeline-real-db.e2e.test.js',
     ],
   },

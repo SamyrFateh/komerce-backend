@@ -77,6 +77,30 @@ function referenceAmount(corridor, market) {
 }
 
 /**
+ * Identifiants distincts dont l'image repond reellement : HTTP 200 et content-type image/*.
+ * `fetchFn` et `cache` sont injectables pour les tests ; le corps n'est jamais lu.
+ */
+async function distinctRefsWithRealImage(products, base, cache = new Map(), fetchFn = fetch) {
+  const refs = new Set();
+  for (const p of products || []) {
+    const raw = p.image_url || p.image;
+    const ref = p.product_ref || p.id;
+    if (!raw || !ref) continue;
+    const url = /^https?:\/\//i.test(raw) ? raw : `${String(base).replace(/\/$/, '')}${raw.startsWith('/') ? '' : '/'}${raw}`;
+    if (!cache.has(url)) {
+      try {
+        const res = await fetchFn(url, { redirect: 'follow' });
+        const type = String(res.headers.get('content-type') || '').toLowerCase();
+        cache.set(url, res.status === 200 && type.startsWith('image/'));
+        if (res.body && res.body.cancel) await res.body.cancel().catch(() => {});
+      } catch { cache.set(url, false); }
+    }
+    if (cache.get(url)) refs.add(String(ref));
+  }
+  return refs;
+}
+
+/**
  * Verdict borné du recensement 9 catégories x 3 marchés : exige simultanément
  * les lignes SQL commercialement activées ET 2 fiches distinctes avec images
  * réellement exposées par l'API publique pour chaque couple.
@@ -162,6 +186,37 @@ async function ro(db, sql, params = []) {
     const { rows } = await c.query(sql, params);
     return rows;
   } finally { await c.query('ROLLBACK').catch(() => {}); c.release(); }
+}
+
+
+// A manually entered product has an internal Hub procurement owner, not an
+// external CJ/AliExpress sellable-unit contract. The business proofs are its
+// operator-attested cost, provenance, available quantity and own media.
+// In particular, a borrowed CJ picture is NOT evidence of a Hub-owned item.
+function hubManualEvidence(entry) {
+  if (entry?.source !== 'central_hub') return { applicable:false, passed:true, blockers:[] };
+  const item = entry.manual_item || {};
+  const proof = entry.manual_evidence || {};
+  const blockers = [];
+  const media = String(item.image_url || '').trim();
+  const url = (() => { try { return new URL(media); } catch { return null; } })();
+  if (!url || url.protocol !== 'https:') blockers.push('HUB_MEDIA_HTTPS_ABSENT');
+  if (url && /(^|\.)cjdropshipping\.com$/i.test(url.hostname)) blockers.push('HUB_MEDIA_CJ_NOT_MANUAL_PROVENANCE');
+  if (!String(proof.media_origin_ref || '').trim()) blockers.push('HUB_MEDIA_ORIGIN_UNATTESTED');
+  if (!String(proof.cost_ref || '').trim()) blockers.push('HUB_COST_UNATTESTED');
+  if (!String(proof.stock_ref || '').trim()) blockers.push('HUB_STOCK_UNATTESTED');
+  if (!String(proof.customs_category || '').trim()) blockers.push('HUB_CUSTOMS_UNATTESTED');
+  return { applicable:true, passed:blockers.length===0, blockers };
+}
+
+// D3 for a manual Hub source is the protected procurement_supplier_id link.
+// Neither a fictitious vendor SKU nor a CJ source V2 is required.
+async function readHubProcurementOwner(db, productId) {
+  const [row] = await ro(db,
+    `SELECT s.system_key, s.is_active, s.deleted_at
+       FROM products p JOIN suppliers s ON s.id = p.procurement_supplier_id
+      WHERE p.id = $1 LIMIT 1`, [productId]);
+  return row?.system_key === 'central_hub' && row.is_active === true && row.deleted_at == null;
 }
 
 const providerName = (e) => (e.source === 'central_hub' ? null : PROVIDERS[e.source].supplier_name);
@@ -288,10 +343,15 @@ async function main(env = process.env) {
             [candidate.product_id]);
           row.sku_count = Number(skus?.active || 0);
           row.stocked_skus = Number(skus?.stocked || 0);
-          const [links] = await ro(db,
-            `SELECT COUNT(*)::int AS n FROM product_suppliers ps JOIN suppliers s ON s.id=ps.supplier_id AND s.is_active=TRUE AND s.deleted_at IS NULL WHERE ps.product_id=$1 AND ps.is_active=TRUE AND ps.deleted_at IS NULL`,
-            [candidate.product_id]);
-          row.supplier_links = Number(links?.n || 0);
+          if (entry.source === 'central_hub') {
+            row.hub_procurement_owner_proven = await readHubProcurementOwner(db, candidate.product_id);
+            row.supplier_links = row.hub_procurement_owner_proven ? 1 : 0;
+          } else {
+            const [links] = await ro(db,
+              `SELECT COUNT(*)::int AS n FROM product_suppliers ps JOIN suppliers s ON s.id=ps.supplier_id AND s.is_active=TRUE AND s.deleted_at IS NULL WHERE ps.product_id=$1 AND ps.is_active=TRUE AND ps.deleted_at IS NULL`,
+              [candidate.product_id]);
+            row.supplier_links = Number(links?.n || 0);
+          }
         }
         for (const market of MANIFEST.markets) {
           if (!candidate?.product_ref) {
@@ -385,6 +445,16 @@ async function main(env = process.env) {
         let cand = await findCandidate(db, e);
         r.state = cand ? { candidate: cand.candidate_ref, product_ref: cand.product_ref, lifecycle: cand.lifecycle_status } : 'ABSENT';
 
+        // Owner-only staging Hub fixtures must not bypass human provenance
+        // simply by selecting curate/publish/price/stock without "import".
+        // Census remains strictly read-only and independent of the fixture.
+        const manualProof = hubManualEvidence(e);
+        if (manualProof.applicable) r.hub_manual_evidence = manualProof;
+        if (!manualProof.passed && wanted.some(step => step !== 'census' && step !== 'validate')) {
+          blocked(r, 'hub-preflight', 'HUB_MANUAL_PROOFS_REQUIRED', manualProof.blockers.join(','));
+          continue;
+        }
+
         // --- import ---
         if (wanted.includes('import')) {
           if (cand) done(r, 'import', 'DEJA_PRESENT');
@@ -431,7 +501,11 @@ async function main(env = process.env) {
         }
 
         // --- supplier-link (D3 : liaision fournisseur AVANT approbation) ---
-        if (wanted.includes('supplier-link') && cand?.product_id) {
+        if (wanted.includes('supplier-link') && cand?.product_id && e.source === 'central_hub') {
+          const linked = await readHubProcurementOwner(db, cand.product_id);
+          if (linked) done(r, 'supplier-link', 'HUB_PROCUREMENT_OWNER_PROVEN');
+          else blocked(r, 'supplier-link', 'HUB_PROCUREMENT_OWNER_ABSENT');
+        } else if (wanted.includes('supplier-link') && cand?.product_id) {
           const links = await ro(db, `SELECT ps.id FROM product_suppliers ps JOIN suppliers s ON s.id = ps.supplier_id AND s.is_active = TRUE AND s.deleted_at IS NULL JOIN product_skus sku ON sku.product_id = ps.product_id AND sku.supplier_sku = ps.supplier_sku AND sku.is_active = TRUE AND sku.stock > 0 WHERE ps.product_id = $1 AND ps.is_active = TRUE AND ps.deleted_at IS NULL AND ($2::text IS NULL OR LOWER(s.platform) = $2) LIMIT 1`, [cand.product_id, e.source === 'central_hub' ? null : PROVIDERS[e.source].platform]);
           if (links.length) done(r, 'supplier-link', 'DEJA_PRESENT');
           else if (!execute) done(r, 'supplier-link', 'PLANIFIE');
@@ -557,6 +631,7 @@ async function main(env = process.env) {
            LEFT JOIN sourcing_candidates sc ON sc.product_id = p.id
           WHERE p.is_active = TRUE AND p.is_available = TRUE GROUP BY 1, 2 ORDER BY 1, 2`);
       const http = {};
+      const imageCache = new Map();
       for (const c of [...new Set(MANIFEST.entries.map((x) => x.category))]) {
         for (const m of MANIFEST.markets) {
           const res = await fetch(`${BASE}/api/products?market=${m}&category=${encodeURIComponent(c)}&limit=50`);
@@ -564,8 +639,9 @@ async function main(env = process.env) {
           // /api/products applique deja la garde prix LOCAL_ACTIVE + exposition ;
           // on exige en plus deux identites distinctes presentant une image.
           const products = Array.isArray(j.products) ? j.products : (Array.isArray(j.items) ? j.items : []);
-          const distinct = new Set(products.filter((p) => (p.image_url || p.image) && (p.product_ref || p.id))
-            .map((p) => String(p.product_ref || p.id)));
+          // Une image ne compte que si son URL repond 200 avec un content-type image
+          // (un /uploads/ efface renvoie 200 text/html via le repli SPA).
+          const distinct = await distinctRefsWithRealImage(products, BASE, imageCache);
           http[`${c}|${m}`] = { status: res.status, total: j.total ?? null, distinct_with_image: distinct.size };
         }
       }
@@ -599,4 +675,4 @@ async function main(env = process.env) {
 }
 
 if (require.main === module) main();
-module.exports = { validateManifest, referenceAmount, stagingEconomicReferenceAmount, evaluateG13Census, PHASES, CONFIRMATION };
+module.exports = { validateManifest, hubManualEvidence, referenceAmount, stagingEconomicReferenceAmount, evaluateG13Census, distinctRefsWithRealImage, PHASES, CONFIRMATION };

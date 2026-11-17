@@ -73,7 +73,7 @@ async function main(){
   const {isE2eTestAccount}=require('../../services/simulation-visibility');
   const expectedCaps=provision.RELAY_AGENT_CAPABILITIES.slice().sort();
   if(JSON.stringify(expectedCaps)!==JSON.stringify(
-    ['execution.parcel.collect','execution.parcel.receive']))
+    ['execution.cash.confirm','execution.parcel.collect','execution.parcel.receive']))
     throw Error('G3_LOCAL_RELAY_CAPABILITY_DOCTRINE_DRIFT');
   const grantClient=await db.getClient();
   let inTransaction=false;

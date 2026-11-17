@@ -5,10 +5,41 @@
  * @test-runner jest
  * @test-requires none
  */
-const { validateManifest, referenceAmount, stagingEconomicReferenceAmount, evaluateG13Census, PHASES } = require('../../scripts/recette/g13-catalogue-seed');
+const { validateManifest, referenceAmount, stagingEconomicReferenceAmount, evaluateG13Census, distinctRefsWithRealImage, hubManualEvidence, PHASES } = require('../../scripts/recette/g13-catalogue-seed');
 const manifest = require('../../scripts/recette/g13-catalogue-manifest.json');
 
 describe('G13 catalogue seed (outillage de recette)', () => {
+
+  test('Hub manuel: l\'identité d\'approvisionnement est interne et jamais un SKU CJ imposé', () => {
+    const hubs = manifest.entries.filter(e => e.source === 'central_hub');
+    expect(hubs).toHaveLength(3);
+    for (const e of hubs) {
+      const result = hubManualEvidence(e);
+      expect(result.applicable).toBe(true);
+      expect(result.passed).toBe(false);
+      expect(result.blockers).toContain('HUB_MEDIA_CJ_NOT_MANUAL_PROVENANCE');
+      expect(result.blockers).toContain('HUB_STOCK_UNATTESTED');
+    }
+    const realistic = { source:'central_hub', manual_item:{
+      image_url:'https://images.operator.example/torchon-reel.jpg' },
+      manual_evidence: {media_origin_ref:'PHOTO-HUB-1',cost_ref:'COUT-HUB-1',
+        stock_ref:'STOCK-HUB-1',customs_category:'textile-maison'} };
+    expect(hubManualEvidence(realistic)).toMatchObject({passed:true,blockers:[]});
+    expect(hubManualEvidence({...realistic,source:'cj'}).applicable).toBe(false);
+    expect(hubManualEvidence({...realistic,manual_item:{image_url:'http://example.com'}}).passed).toBe(false);
+  });
+  test('G13 distingue Hub procurement_supplier_id et liens externes supplier_sku',()=>{
+    const fs = require('node:fs');
+    const code = fs.readFileSync(require('node:path').join(__dirname,'../../scripts/recette/g13-catalogue-seed.js'),'utf8');
+    expect(code).toContain("s.id = p.procurement_supplier_id");
+    expect(code).toContain("'HUB_PROCUREMENT_OWNER_PROVEN'");
+    expect(code).toContain("'HUB_PROCUREMENT_OWNER_ABSENT'");
+    expect(code).toContain("entry.source === 'central_hub'");
+    expect(code).toContain("HUB_MANUAL_PROOFS_REQUIRED");
+    expect(code).toContain("wanted.some(step => step !== 'census' && step !== 'validate')");
+    expect(code.indexOf("blocked(r, 'hub-preflight'")).toBeLessThan(code.indexOf('// --- import ---'));
+  });
+
   test('le manifeste versionné respecte la cible du brief (au moins 2 produits par catégorie couverte)', () => {
     expect(validateManifest(manifest)).toEqual([]);
     const cats = new Set(manifest.entries.map((e) => e.category));
@@ -96,6 +127,35 @@ describe('G13 catalogue seed (outillage de recette)', () => {
     expect(evaluateG13Census(manifest, sql, { ...http, 'Maison|CG': { status: 200, total: 2, distinct_with_image: 1 } }).passed).toBe(false);
     expect(evaluateG13Census(manifest, sql, { ...http, 'Tech|KM': { status: 503, total: 2, distinct_with_image: 2 } }).passed).toBe(false);
     expect(evaluateG13Census(manifest, sql, { ...http, 'Auto|KM': { status: 200, total: null, distinct_with_image: 2 } }).passed).toBe(false);
+  });
+
+  test('G13 : une image ne compte que si l URL repond 200 avec un content-type image', async () => {
+    const answers = {
+      'https://x.test/uploads/ok.jpg': { status: 200, type: 'image/jpeg' },
+      'https://x.test/uploads/gone.jpg': { status: 200, type: 'text/html; charset=utf-8' },
+      'https://cdn.test/a.jpg': { status: 200, type: 'image/jpg' },
+      'https://cdn.test/404.jpg': { status: 404, type: 'image/jpeg' },
+    };
+    const calls = [];
+    const fetchFn = async (url) => {
+      calls.push(url);
+      if (url.includes('boom')) throw new Error('network');
+      const a = answers[url];
+      return { status: a.status, headers: { get: () => a.type } };
+    };
+    const products = [
+      { product_ref: 'A', image_url: '/uploads/ok.jpg' },
+      { product_ref: 'B', image_url: '/uploads/gone.jpg' },
+      { product_ref: 'C', image_url: 'https://cdn.test/a.jpg' },
+      { product_ref: 'D', image_url: 'https://cdn.test/404.jpg' },
+      { product_ref: 'E', image_url: 'https://cdn.test/boom.jpg' },
+      { product_ref: 'F' },
+      { product_ref: 'A', image_url: '/uploads/ok.jpg' },
+    ];
+    const cache = new Map();
+    const refs = await distinctRefsWithRealImage(products, 'https://x.test/', cache, fetchFn);
+    expect([...refs].sort()).toEqual(['A', 'C']);
+    expect(calls.filter((u) => u.endsWith('/ok.jpg'))).toHaveLength(1);
   });
 
   test('G13 staging only : projection locale via Currency Boundary, sans prix concurrent inventé', async () => {

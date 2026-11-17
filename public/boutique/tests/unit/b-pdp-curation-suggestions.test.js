@@ -98,6 +98,9 @@ describe('b-pdp-curation-suggestions', () => {
     isDesktop.mockReturnValue(true);
     mockSyncRaf();
     const { suggestions, sameSection, otherSection } = mountSuggestions();
+    const filters = document.createElement('div');
+    filters.className = 'k-sug-chips';
+    sameSection.append(filters);
     state.modalProduct = { id: 1, category: 'Mode & Beauté' };
     setupPdpCurationSuggestions();
 
@@ -107,7 +110,9 @@ describe('b-pdp-curation-suggestions', () => {
     expect(suggestions.classList.contains('k-pdp-curation')).toBe(true);
     expect(sameSection.classList.contains('k-pdp-curation-section--same')).toBe(true);
     expect(sameSection.querySelector('.k-sug-title-text').textContent).toBe('Dans le même univers');
-    expect(sameSection.querySelector('.k-pdp-curation-subtitle').textContent).toContain('Mode & Beauté');
+    expect(sameSection.querySelector('.k-pdp-curation-subtitle')).toBeNull();
+    expect(sameSection.querySelector('.k-sug-title-icon')).toBeNull();
+    expect(sameSection.querySelector('.k-sug-title > .k-sug-chips')).toBe(filters);
     expect(otherSection.classList.contains('k-pdp-curation-section--editorial')).toBe(true);
     expect(otherSection.querySelector('.k-sug-title-text').textContent).toBe('Sélection Komerce');
   });
@@ -176,11 +181,11 @@ describe('b-pdp-curation-suggestions', () => {
     trigger(bus);
     trigger(bus);
     expect(suggestions.dataset.curationProductId).toBe('1');
-    expect(suggestions.querySelectorAll('.k-pdp-curation-subtitle')).toHaveLength(2);
+    expect(suggestions.querySelectorAll('.k-pdp-curation-subtitle')).toHaveLength(1);
 
     state.modalProduct = { id: 2, category: 'Tech' };
     trigger(bus);
     expect(suggestions.dataset.curationProductId).toBe('2');
-    expect(suggestions.querySelectorAll('.k-pdp-curation-subtitle')).toHaveLength(2);
+    expect(suggestions.querySelectorAll('.k-pdp-curation-subtitle')).toHaveLength(1);
   });
 });

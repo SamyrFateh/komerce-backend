@@ -2123,7 +2123,7 @@
         host.appendChild(text(doc, 'p', 'kmc-workspace-note', 'Module Cash & dépôts indisponible.'));
       } else {
         cashModule.mount({
-          root: host, document: doc, ui, fetch: context.fetch, user: {},
+          root: host, document: doc, ui, fetch: context.fetch, user: context.user || {},
           adminContext: null, requestedMarket: context.marketCode,
           contextContract: { resolveMarketView: () => ({ marketCode: context.marketCode }) },
         }).catch(error => host.appendChild(text(doc, 'p', 'kmc-workspace-note', error.message)));

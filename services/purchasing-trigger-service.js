@@ -120,37 +120,57 @@ async function triggerPurchasing(orderId, options = {}) {
     FROM order_items oi JOIN products p ON p.id = oi.product_id WHERE oi.order_id = $1
   `, [orderId]);
 
+  // 1) HORS TRANSACTION (autocommit, avant le BEGIN) : tout ce qui est lent ou sans besoin du verrou (SKU exact,
+  //    readiness canonique, résolution fournisseur). La connexion n'est jamais « idle in transaction » pendant ce
+  //    calcul : une readiness lente ne peut plus déclencher idle_in_transaction_session_timeout. Lecture seule,
+  //    résultats rejoués sous verrou dans la transaction courte ci-dessous.
+  // 2) TRANSACTION COURTE : uniquement les écritures (couverture, ligne d'achat, alerte d'échec).
+  //    Les notifications sortantes sont collectées et envoyées APRÈS le COMMIT.
+  const afterCommit = [];
   const client = await db.getClient();
+  let releaseErr = null;
+  // Une coupure de connexion (avant ou pendant la transaction) ne doit jamais devenir une exception non rattrapée.
+  const onClientError = (err) => { releaseErr = releaseErr || err; log.error({ err }, '[PURCHASING] erreur de connexion'); };
+  client.on('error', onClientError);
   try {
+    const prepared = [];
+    for (const item of items) {
+      if (item.fulfillment_source === 'LOCAL_STOCK') { prepared.push({ local: true }); continue; }
+      const prep = { exactSku: null, canonicalMoney: null, ps: null, readinessErr: null, supplierErr: null };
+      try {
+        prep.exactSku = await loadExactSoldSku(client, item);
+        prep.canonicalMoney = prep.exactSku && !prep.exactSku.manualCatalogSku
+          ? await resolveExactSkuProcurementReadiness(client, prep.exactSku, item.quantity, readinessContext)
+          : null;
+      } catch (e) { prep.readinessErr = e; }
+      if (!prep.readinessErr) {
+        try { prep.ps = await loadSupplierMapping(client, item, prep.exactSku); } catch (e) { prep.supplierErr = e; }
+      }
+      prepared.push(prep);
+    }
     await client.query('BEGIN');
     for (let idx = 0; idx < items.length; idx += 1) {
       const item = items[idx];
+      const prep = prepared[idx];
       await client.query(`SAVEPOINT po_item_${idx}`);
 
-      if (item.fulfillment_source === 'LOCAL_STOCK') {
+      if (prep.local) {
         results.push({ item: item.product_name, status: 'local_stock_no_purchase', purchase_order_id: null });
         await client.query(`RELEASE SAVEPOINT po_item_${idx}`);
         continue;
       }
 
-      let exactSku = null;
-      let canonicalMoney = null;
-      try {
-        exactSku = await loadExactSoldSku(client, item);
-        canonicalMoney = exactSku && !exactSku.manualCatalogSku
-          ? await resolveExactSkuProcurementReadiness(client, exactSku, item.quantity, readinessContext)
-          : null;
-      } catch (itemErr) {
-        await alertItemFailure(client, orderId, item, idx, itemErr);
-        results.push({ item: item.product_name, status: 'error', error: itemErr.message });
+      if (prep.readinessErr) {
+        await client.query(`ROLLBACK TO SAVEPOINT po_item_${idx}`).catch(() => {});
+        await alertItemFailure(client, orderId, item, idx, prep.readinessErr);
+        results.push({ item: item.product_name, status: 'error', error: prep.readinessErr.message });
         continue;
       }
 
-      let ps = null;
       try {
-        ps = await loadSupplierMapping(client, item, exactSku);
-        if (!ps) {
-          await notifyAdminNoSupplier(order, item);
+        if (prep.supplierErr) throw prep.supplierErr;
+        if (!prep.ps) {
+          afterCommit.push(() => notifyAdminNoSupplier(order, item));
           results.push({ item: item.product_name, status: 'no_supplier', purchase_order_id: null });
           await client.query(`RELEASE SAVEPOINT po_item_${idx}`);
           continue;
@@ -161,21 +181,29 @@ async function triggerPurchasing(orderId, options = {}) {
           await client.query(`RELEASE SAVEPOINT po_item_${idx}`);
           continue;
         }
-        const snapshot = buildOpenSnapshot(ps, exactSku, canonicalMoney);
-        const line = await insertOpenPurchaseLine(client, { item, ps, snapshot, quantity: item.quantity });
+        const snapshot = buildOpenSnapshot(prep.ps, prep.exactSku, prep.canonicalMoney);
+        const line = await insertOpenPurchaseLine(client, { item, ps: prep.ps, snapshot, quantity: item.quantity });
         results.push({ item: item.product_name, status: 'line_opened', purchase_order_id: null, purchase_line_id: line.id });
         await client.query(`RELEASE SAVEPOINT po_item_${idx}`);
       } catch (itemErr) {
+        await client.query(`ROLLBACK TO SAVEPOINT po_item_${idx}`).catch(() => {});
         await alertItemFailure(client, orderId, item, idx, itemErr);
         results.push({ item: item.product_name, status: 'error', error: itemErr.message });
       }
     }
     await client.query('COMMIT');
   } catch (globalErr) {
+    releaseErr = releaseErr || globalErr;
     await client.query('ROLLBACK').catch(() => {});
     throw globalErr;
   } finally {
-    client.release();
+    client.removeListener('error', onClientError);
+    client.release(releaseErr || undefined);
+  }
+
+  // 3) APRÈS COMMIT : notifications (jamais bloquantes pour le résultat métier).
+  for (const send of afterCommit) {
+    try { await send(); } catch (err) { log.error({ err }, '[PURCHASING] notification post-commit échouée'); }
   }
 
   const opened = results.filter((r) => r.status === 'line_opened');

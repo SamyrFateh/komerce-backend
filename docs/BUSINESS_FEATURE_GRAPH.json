@@ -2049,6 +2049,13 @@
       {
         "feature": "catalog",
         "category": "services",
+        "declared": "services/product-media-storage.js",
+        "resolvedPath": "services/product-media-storage.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
         "declared": "services/suppliers/catalog-import-orchestrator.js",
         "resolvedPath": "services/suppliers/catalog-import-orchestrator.js",
         "status": "resolved-in-technical-graph"
@@ -3997,6 +4004,13 @@
         "category": "tests",
         "declared": "tests/unit/product-admin-service.test.js",
         "resolvedPath": "tests/unit/product-admin-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/product-media-storage.test.js",
+        "resolvedPath": "tests/unit/product-media-storage.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -14670,6 +14684,13 @@
       {
         "feature": "market",
         "category": "services",
+        "declared": "services/public-market-storefront.js",
+        "resolvedPath": "services/public-market-storefront.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "market",
+        "category": "services",
         "declared": "services/market-operation-guard.js",
         "resolvedPath": "services/market-operation-guard.js",
         "status": "resolved-in-technical-graph"
@@ -14882,6 +14903,13 @@
         "category": "tests",
         "declared": "tests/unit/market-lifecycle-service.test.js",
         "resolvedPath": "tests/unit/market-lifecycle-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market",
+        "category": "tests",
+        "declared": "tests/unit/public-market-storefront.test.js",
+        "resolvedPath": "tests/unit/public-market-storefront.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -21277,9 +21305,37 @@
       },
       {
         "feature": "unsold-resolution",
+        "category": "dash",
+        "declared": "dashboards/canonical/unsold.html",
+        "resolvedPath": "public/dashboards/canonical/unsold.html",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "unsold-resolution",
+        "category": "dash",
+        "declared": "dashboards/canonical/js/unsold-workspace.js",
+        "resolvedPath": "public/dashboards/canonical/js/unsold-workspace.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "unsold-resolution",
         "category": "tests",
         "declared": "tests/unit/unsold.test.js",
         "resolvedPath": "tests/unit/unsold.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "unsold-resolution",
+        "category": "tests",
+        "declared": "tests/unit/unsold-workspace.test.js",
+        "resolvedPath": "tests/unit/unsold-workspace.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "unsold-resolution",
+        "category": "tests",
+        "declared": "tests/local-chromium/g6e-unsold.spec.js",
+        "resolvedPath": "tests/local-chromium/g6e-unsold.spec.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -39977,6 +40033,10 @@
               {
                 "sourceFileId": "bootstrap/crons.js",
                 "targetFile": "services/fx-public-reference-feed.js"
+              },
+              {
+                "sourceFileId": "server.js",
+                "targetFile": "services/public-market-storefront.js"
               }
             ]
           }
@@ -49605,6 +49665,10 @@
               {
                 "sourceFileId": "routes/unsold.js",
                 "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/local-chromium/g6e-unsold.spec.js",
+                "targetFile": "db.js"
               }
             ]
           }
@@ -50098,7 +50162,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2350
+        "filesObserved": 2357
       },
       "boutique": {
         "filesObserved": 216,

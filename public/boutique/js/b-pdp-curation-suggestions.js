@@ -42,12 +42,17 @@ function setSectionTitle(section, iconText, titleText, subtitleText) {
   if (!title) return;
 
   const icon = title.querySelector('.k-sug-title-icon');
-  if (icon) icon.textContent = iconText;
+  if (icon && iconText) icon.textContent = iconText;
+  else icon?.remove();
 
   const text = title.querySelector('.k-sug-title-text');
   if (text) text.textContent = titleText;
 
   let subtitle = title.querySelector('.k-pdp-curation-subtitle');
+  if (!subtitleText) {
+    subtitle?.remove();
+    return;
+  }
   if (!subtitle) {
     subtitle = document.createElement('div');
     subtitle.className = 'k-pdp-curation-subtitle';
@@ -82,13 +87,10 @@ function enhanceCuration() {
 
   if (sameSection) {
     sameSection.classList.add('k-pdp-curation-section--same');
-    const cat = state.modalProduct && state.modalProduct.category ? state.modalProduct.category : 'ce produit';
-    setSectionTitle(
-      sameSection,
-      '🌊',
-      'Dans le même univers',
-      'Des alternatives proches dans ' + cat + ', pour comparer sans perdre le fil.'
-    );
+    setSectionTitle(sameSection, null, 'Dans le même univers');
+    const heading = sameSection.querySelector('.k-sug-title');
+    const filters = sameSection.querySelector(':scope > .k-sug-chips');
+    if (heading && filters) heading.append(filters);
   }
 
   if (otherSection) {

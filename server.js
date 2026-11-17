@@ -213,6 +213,20 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
+// Public storefront market reference, read-only and fail-closed on DB failure.
+// An ACTIVE market is a navigation option, not a payment or order authorization.
+const { listPublicMarkets } = require('./services/public-market-storefront');
+app.get('/api/public/markets', async (_req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  try {
+    const markets = await listPublicMarkets(db);
+    return res.json({ markets });
+  } catch (err) {
+    log.error({ err: err.message }, '[public-markets] référentiel indisponible');
+    return res.status(503).json({ error: 'MARKETS_UNAVAILABLE' });
+  }
+});
+
 // ── Public config ─────────────────────────────────────────────
 // currency_parities (P1, source unique) exposée en totalité — pas un seul
 // scalaire — pour que l'adapter client (P2, b-utils.js) puisse projeter

@@ -21,7 +21,7 @@ const EXPECTED = Object.freeze({
     'flow-operations', 'workspace-shipping', 'workspace-purchasing',
     'flow-finance', 'workspace-accounting',
     'live-import-runtime', 'live-hub', 'live-relais',
-    'markets-home', 'market-catalog',
+    'markets-home', 'market-catalog', 'unsold',
     'admin-users', 'admin-providers', 'settings',
   ],
   market_operator: [
